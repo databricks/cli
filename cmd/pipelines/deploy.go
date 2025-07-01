@@ -22,11 +22,9 @@ func Deploy() *cobra.Command {
 		Args:  root.NoArgs,
 	}
 
-	var force bool
 	var forceLock bool
 	var autoApprove bool
 	var verbose bool
-	cmd.Flags().BoolVar(&force, "force", false, "Force-override Git branch validation.")
 	cmd.Flags().BoolVar(&forceLock, "force-lock", false, "Force acquisition of deployment lock.")
 	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip interactive approvals that might be required for deployment.")
 	cmd.Flags().BoolVar(&verbose, "verbose", false, "Enable verbose output.")
@@ -39,7 +37,6 @@ func Deploy() *cobra.Command {
 
 		if !diags.HasError() {
 			bundle.ApplyFunc(ctx, b, func(context.Context, *bundle.Bundle) diag.Diagnostics {
-				b.Config.Bundle.Force = force
 				b.Config.Bundle.Deployment.Lock.Force = forceLock
 				b.AutoApprove = autoApprove
 				return nil

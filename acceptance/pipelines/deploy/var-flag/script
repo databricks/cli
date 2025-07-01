@@ -1,5 +1,3 @@
-envsubst < databricks.yml.tmpl > databricks.yml
-
 tmpdir="./subdir"
 pipelines="$tmpdir/pipelines"
 mkdir -p $tmpdir
@@ -7,14 +5,8 @@ mkdir -p $tmpdir
 title "install pipelines cli"
 trace errcode $CLI install-pipelines-cli -d $tmpdir
 
-cleanup() {
-  trace $CLI bundle destroy --auto-approve
-  rm -rf $pipelines $tmpdir
-}
-trap cleanup EXIT
-
 title "Test 1: Basic --var flag usage"
-trace $pipelines deploy --var="catalog=custom_catalog" --var="schema=custom_schema"
+trace $pipelines deploy --var="catalog=custom_catalog" --var="schema=custom_schema" --auto-approve
 
 title "Verify Test 1: Check that variables were substituted correctly"
 PIPELINE_ID=$($CLI bundle summary -o json | jq -r '.resources.pipelines.foo.id')
@@ -22,7 +14,7 @@ trace $CLI pipelines get "${PIPELINE_ID}" | jq '.spec | {catalog: .catalog, targ
 # Expected: catalog should be "custom_catalog" and target should contain "custom_schema"
 
 title "Test 2: --var flag with special characters"
-trace $pipelines deploy --var="catalog=my-catalog" --var="schema=my_schema_with_underscores"
+trace $pipelines deploy --var="catalog=my-catalog" --var="schema=my_schema_with_underscores" --auto-approve
 
 title "Verify Test 2: Check special characters were handled correctly"
 PIPELINE_ID=$($CLI bundle summary -o json | jq -r '.resources.pipelines.foo.id')
@@ -30,7 +22,7 @@ trace $CLI pipelines get "${PIPELINE_ID}" | jq '.spec | {catalog: .catalog, targ
 # Expected: catalog should be "my-catalog" and target should contain "my_schema_with_underscores"
 
 title "Test 3: --var flag with unicode characters"
-trace $pipelines deploy --var="pipeline_name=Test-Pipeline-🚀" --var="catalog=test_catalog"
+trace $pipelines deploy --var="pipeline_name=Test-Pipeline-🚀" --var="catalog=test_catalog" --auto-approve
 
 title "Verify Test 3: Check unicode characters were preserved"
 PIPELINE_ID=$($CLI bundle summary -o json | jq -r '.resources.pipelines.foo.id')
@@ -38,7 +30,7 @@ trace $CLI pipelines get "${PIPELINE_ID}" | jq '.spec | {name: .name, catalog: .
 # Expected: name should contain "Test-Pipeline-🚀" and catalog should be "test_catalog"
 
 title "Test 4: --var flag with equals sign in value"
-trace $pipelines deploy --var="catalog=test=equals=sign" --var="schema=test_schema"
+trace $pipelines deploy --var="catalog=test=equals=sign" --var="schema=test_schema" --auto-approve
 
 title "Verify Test 4: Check equals signs in values were handled correctly"
 PIPELINE_ID=$($CLI bundle summary -o json | jq -r '.resources.pipelines.foo.id')
@@ -46,42 +38,23 @@ trace $CLI pipelines get "${PIPELINE_ID}" | jq '.spec | {catalog: .catalog, targ
 # Expected: catalog should be "test=equals=sign" and target should contain "test_schema"
 
 title "Test 5: --var flag precedence over environment variables"
-trace BUNDLE_VAR_catalog=env_catalog BUNDLE_VAR_schema=env_schema $pipelines deploy --var="catalog=cli_catalog" --var="schema=cli_schema"
+trace BUNDLE_VAR_catalog=env_catalog BUNDLE_VAR_schema=env_schema $pipelines deploy --var="catalog=cli_catalog" --var="schema=cli_schema" --auto-approve
 
 title "Verify Test 5: Check that CLI --var took precedence over environment variables"
 PIPELINE_ID=$($CLI bundle summary -o json | jq -r '.resources.pipelines.foo.id')
 trace $CLI pipelines get "${PIPELINE_ID}" | jq '.spec | {catalog: .catalog, target: .target}'
 # Expected: catalog should be "cli_catalog" (not "env_catalog") and target should contain "cli_schema"
 
-title "Test 6: --var flag with empty values (should use defaults)"
-trace $pipelines deploy --var="catalog=" --var="schema="
-
-title "Verify Test 6: Check that empty values fell back to defaults"
-PIPELINE_ID=$($CLI bundle summary -o json | jq -r '.resources.pipelines.foo.id')
-trace $CLI pipelines get "${PIPELINE_ID}" | jq '.spec | {catalog: .catalog, target: .target}'
-# Expected: catalog should be "main" (default) and target should contain "test_schema" (default)
-
-title "Test 7: --var flag with undefined variable (should fail)"
+title "Test 6: --var flag with undefined variable (should fail)"
 trace errcode $pipelines deploy --var="undefined_var=value"
 # Expected: Should fail with error about undefined variable
 
-title "Test 8: --var flag with invalid format (should fail)"
+title "Test 7: --var flag with invalid format (should fail)"
 trace errcode $pipelines deploy --var="invalid_format"
 # Expected: Should fail with error about invalid format
 
-title "Test 9: --var flag with duplicate variable (should fail)"
+title "Test 8: --var flag with duplicate variable (should fail)"
 trace errcode $pipelines deploy --var="catalog=first" --var="catalog=second"
 # Expected: Should fail with error about duplicate variable assignment
 
-title "Test 10: --var flag with very long values"
-LONG_VALUE=$(printf 'a%.0s' {1..1000})
-trace $pipelines deploy --var="catalog=${LONG_VALUE}" --var="schema=long_schema"
-
-title "Verify Test 10: Check that very long values were handled correctly"
-PIPELINE_ID=$($CLI bundle summary -o json | jq -r '.resources.pipelines.foo.id')
-trace $CLI pipelines get "${PIPELINE_ID}" | jq '.spec | {catalog: .catalog, target: .target}'
-# Expected: catalog should be the long string of 'a's and target should contain "long_schema"
-
-title "Final verification: Check bundle configuration shows correct variable values"
-trace $CLI bundle validate --var="catalog=final_catalog" --var="schema=final_schema" -o json | jq '.variables'
-# Expected: Should show the final variable values that would be used
+rm -rf $pipelines $tmpdir

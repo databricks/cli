@@ -1,8 +1,5 @@
 bundle:
-  name: test-pipeline-var-flag-$UNIQUE_NAME
-
-workspace:
-  root_path: ~/.bundle/$UNIQUE_NAME
+  name: test-pipeline-var-flag
 
 variables:
   catalog:
@@ -18,7 +15,7 @@ variables:
 resources:
   pipelines:
     foo:
-      name: ${var.pipeline_name}-$UNIQUE_NAME
+      name: ${var.pipeline_name}
       libraries:
         - notebook:
             path: ./nb.sql
@@ -28,7 +25,7 @@ resources:
 
   schemas:
     bar:
-      name: ${var.schema}-$UNIQUE_NAME
+      name: ${var.schema}
       catalog_name: ${var.catalog}
       comment: This schema was created from DABs
 

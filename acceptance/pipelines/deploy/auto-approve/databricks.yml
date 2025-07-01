@@ -1,8 +1,5 @@
 bundle:
-  name: test-pipeline-auto-approve-$UNIQUE_NAME
-
-workspace:
-  root_path: ~/.bundle/$UNIQUE_NAME
+  name: test-pipeline-auto-approve
 
 variables:
   catalog:

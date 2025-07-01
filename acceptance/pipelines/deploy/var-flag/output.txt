@@ -4,48 +4,22 @@
 pipelines successfully installed in directory "./subdir"
 
 === Test 1: Basic --var flag usage
->>> ./subdir/pipelines deploy --var=catalog=custom_catalog --var=schema=custom_schema
-2025/06/26 16:03:45 INFO Phase: load
-2025/06/26 16:03:45 INFO Phase: initialize
-2025/06/26 16:03:45 INFO No local tasks in databricks.yml config, skipping auto detect mutator=artifacts.Prepare
-2025/06/26 16:03:45 INFO Phase: build
-2025/06/26 16:03:45 INFO Phase: deploy
-2025/06/26 16:03:45 INFO Acquiring deployment lock (force: false) mutator=lock:acquire
-2025/06/26 16:03:45 INFO Remote state file does not exist. Using local Terraform state. mutator=statemgmt:state-pull
-2025/06/26 16:03:45 INFO Opening remote deployment state file mutator=deploy:state-pull
-2025/06/26 16:03:45 INFO Remote deployment state file does not exist mutator=deploy:state-pull
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-2025/06/26 16:03:46 INFO Uploaded bundle files mutator=files.Upload
-2025/06/26 16:03:46 INFO Loading deployment state from [TEST_TMP_DIR]/.databricks/bundle/development/deployment.json mutator=deploy:state-update
-2025/06/26 16:03:46 INFO No deployment state file found mutator=deploy:state-update
-2025/06/26 16:03:46 INFO Writing local deployment state file to remote state directory mutator=deploy:state-push
+>>> ./subdir/pipelines deploy --var=catalog=custom_catalog --var=schema=custom_schema --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-var-flag/development/files...
 Deploying resources...
-2025/06/26 16:03:47 INFO terraform apply completed mutator=terraform.Apply
 Updating deployment state...
 Deployment complete!
-2025/06/26 16:03:47 INFO Releasing deployment lock mutator=lock:release
 
 === Verify Test 1: Check that variables were substituted correctly
 >>> [CLI] pipelines get [UUID]
 {
   "catalog": "custom_catalog",
-  "target": "custom_catalog.custom_schema-[UNIQUE_NAME]"
+  "target": "custom_catalog.custom_schema"
 }
 
 === Test 2: --var flag with special characters
->>> ./subdir/pipelines deploy --var=catalog=my-catalog --var=schema=my_schema_with_underscores
-2025/06/26 16:03:47 INFO Phase: load
-2025/06/26 16:03:47 INFO Phase: initialize
-2025/06/26 16:03:47 INFO No local tasks in databricks.yml config, skipping auto detect mutator=artifacts.Prepare
-2025/06/26 16:03:47 INFO Phase: build
-2025/06/26 16:03:47 INFO Phase: deploy
-2025/06/26 16:03:47 INFO Acquiring deployment lock (force: false) mutator=lock:acquire
-2025/06/26 16:03:48 INFO Opening remote deployment state file mutator=deploy:state-pull
-2025/06/26 16:03:48 INFO Local deployment state is the same or newer, ignoring remote state mutator=deploy:state-pull
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-2025/06/26 16:03:48 INFO Uploaded bundle files mutator=files.Upload
-2025/06/26 16:03:48 INFO Loading deployment state from [TEST_TMP_DIR]/.databricks/bundle/development/deployment.json mutator=deploy:state-update
-2025/06/26 16:03:48 INFO Writing local deployment state file to remote state directory mutator=deploy:state-push
+>>> ./subdir/pipelines deploy --var=catalog=my-catalog --var=schema=my_schema_with_underscores --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-var-flag/development/files...
 The following UC schemas will be deleted or recreated. Any underlying data may be lost:
   recreate schema bar
 
@@ -54,54 +28,100 @@ Streaming Tables (STs) and Materialized Views (MVs) managed by them. Recreating 
 restore the defined STs and MVs through full refresh. Note that recreation is necessary when pipeline
 properties such as the 'catalog' or 'storage' are changed:
   recreate pipeline foo
-2025/06/26 16:03:48 INFO Releasing deployment lock mutator=lock:release
-The Databricks CLI unexpectedly had a fatal error.
-Please report this issue to Databricks in the form of a GitHub issue at:
-https://github.com/databricks/cli
+Deploying resources...
+Updating deployment state...
+Deployment complete!
 
-CLI Version: [DEV_VERSION]
+=== Verify Test 2: Check special characters were handled correctly
+>>> [CLI] pipelines get [UUID]
+{
+  "catalog": "my-catalog",
+  "target": "my-catalog.my_schema_with_underscores"
+}
 
-Panic Payload: no cmdIO found in the context. Please report it as an issue
+=== Test 3: --var flag with unicode characters
+>>> ./subdir/pipelines deploy --var=pipeline_name=Test-Pipeline-🚀 --var=catalog=test_catalog --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-var-flag/development/files...
+The following UC schemas will be deleted or recreated. Any underlying data may be lost:
+  recreate schema bar
 
-Stack Trace:
-goroutine 1 [running]:
-runtime/debug.Stack()
-	/opt/homebrew/Cellar/go/[GO_VERSION]/libexec/src/runtime/debug/stack.go:26 +0x64
-github.com/databricks/cli/cmd/root.Execute.func1()
-	/Users/alyssa.gorbaneva/repos/cli/cmd/root/root.go:112 +0xa4
-panic({0x105bf71a0?, 0x105f9c850?})
-	/opt/homebrew/Cellar/go/[GO_VERSION]/libexec/src/runtime/panic.go:792 +0x124
-github.com/databricks/cli/libs/cmdio.fromContext(...)
-	/Users/alyssa.gorbaneva/repos/cli/libs/cmdio/io.go:284
-github.com/databricks/cli/libs/cmdio.IsInteractive({0x105fb3118, 0x1400034eb40})
-	/Users/alyssa.gorbaneva/repos/cli/libs/cmdio/io.go:52 +0x84
-github.com/databricks/cli/libs/cmdio.IsPromptSupported({0x105fb3118, 0x1400034eb40})
-	/Users/alyssa.gorbaneva/repos/cli/libs/cmdio/io.go:103 +0x24
-github.com/databricks/cli/bundle/phases.approvalForDeploy({0x105fb3118, 0x1400034eb40}, 0x[NUMID]c08)
-	/Users/alyssa.gorbaneva/repos/cli/bundle/phases/deploy.go:113 +0xc80
-github.com/databricks/cli/bundle/phases.Deploy({0x105fb3118, 0x1400034eb40}, 0x[NUMID]c08, 0x0)
-	/Users/alyssa.gorbaneva/repos/cli/bundle/phases/deploy.go:243 +0x748
-github.com/databricks/cli/cmd/pipelines.Deploy.func1(0x1400021cf08, {0x1400034c1e0?, 0x4?, 0x105869aae?})
-	/Users/alyssa.gorbaneva/repos/cli/cmd/pipelines/deploy.go:72 +0x574
-github.com/spf13/cobra.(*Command).execute(0x1400021cf08, {0x1400034c1c0, 0x2, 0x2})
-	/Users/alyssa.gorbaneva/go/pkg/mod/github.com/spf13/cobra@v1.9.1/command.go:1015 +0x844
-github.com/spf13/cobra.(*Command).ExecuteC(0x1400021cc08)
-	/Users/alyssa.gorbaneva/go/pkg/mod/github.com/spf13/cobra@v1.9.1/command.go:1148 +0x384
-github.com/spf13/cobra.(*Command).ExecuteContextC(...)
-	/Users/alyssa.gorbaneva/go/pkg/mod/github.com/spf13/cobra@v1.9.1/command.go:1080
-github.com/databricks/cli/cmd/root.Execute({0x105fb30e0, 0x106adf060}, 0x1400021cc08)
-	/Users/alyssa.gorbaneva/repos/cli/cmd/root/root.go:141 +0x10c
-main.main()
-	/Users/alyssa.gorbaneva/repos/cli/main.go:29 +0x44
+This action will result in the deletion or recreation of the following DLT Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them. Recreating the Pipelines will
+restore the defined STs and MVs through full refresh. Note that recreation is necessary when pipeline
+properties such as the 'catalog' or 'storage' are changed:
+  recreate pipeline foo
+Deploying resources...
+Updating deployment state...
+Deployment complete!
 
->>> [CLI] bundle destroy --auto-approve
-The following resources will be deleted:
-  delete pipeline foo
-  delete schema bar
+=== Verify Test 3: Check unicode characters were preserved
+>>> [CLI] pipelines get [UUID]
+{
+  "name": "Test-Pipeline-🚀",
+  "catalog": "test_catalog"
+}
 
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+=== Test 4: --var flag with equals sign in value
+>>> ./subdir/pipelines deploy --var=catalog=test=equals=sign --var=schema=test_schema --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-var-flag/development/files...
+The following UC schemas will be deleted or recreated. Any underlying data may be lost:
+  recreate schema bar
 
-Deleting files...
-Destroy complete!
+This action will result in the deletion or recreation of the following DLT Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them. Recreating the Pipelines will
+restore the defined STs and MVs through full refresh. Note that recreation is necessary when pipeline
+properties such as the 'catalog' or 'storage' are changed:
+  recreate pipeline foo
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Verify Test 4: Check equals signs in values were handled correctly
+>>> [CLI] pipelines get [UUID]
+{
+  "catalog": "test=equals=sign",
+  "target": "test=equals=sign.test_schema"
+}
+
+=== Test 5: --var flag precedence over environment variables
+>>> BUNDLE_VAR_catalog=env_catalog BUNDLE_VAR_schema=env_schema ./subdir/pipelines deploy --var=catalog=cli_catalog --var=schema=cli_schema --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-var-flag/development/files...
+The following UC schemas will be deleted or recreated. Any underlying data may be lost:
+  recreate schema bar
+
+This action will result in the deletion or recreation of the following DLT Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them. Recreating the Pipelines will
+restore the defined STs and MVs through full refresh. Note that recreation is necessary when pipeline
+properties such as the 'catalog' or 'storage' are changed:
+  recreate pipeline foo
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Verify Test 5: Check that CLI --var took precedence over environment variables
+>>> [CLI] pipelines get [UUID]
+{
+  "catalog": "cli_catalog",
+  "target": "cli_catalog.cli_schema"
+}
+
+=== Test 6: --var flag with undefined variable (should fail)
+>>> errcode ./subdir/pipelines deploy --var=undefined_var=value
+Error: variable undefined_var has not been defined
+
+
+Exit code: 1
+
+=== Test 7: --var flag with invalid format (should fail)
+>>> errcode ./subdir/pipelines deploy --var=invalid_format
+Error: unexpected flag value for variable assignment: invalid_format
+
+
+Exit code: 1
+
+=== Test 8: --var flag with duplicate variable (should fail)
+>>> errcode ./subdir/pipelines deploy --var=catalog=first --var=catalog=second
+Error: failed to assign second to catalog: variable has already been assigned value: first
+
 
 Exit code: 1

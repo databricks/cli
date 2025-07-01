@@ -1,24 +1,15 @@
 bundle:
-  name: test-pipeline-var-flag-$UNIQUE_NAME
-
-workspace:
-  root_path: ~/.bundle/$UNIQUE_NAME
+  name: test-pipeline-force-lock
 
 variables:
   catalog:
     description: The catalog the pipeline should use.
     default: main
-  schema:
-    description: The schema name for the pipeline.
-    default: test_schema
-  pipeline_name:
-    description: The name of the pipeline.
-    default: test-pipeline
 
 resources:
   pipelines:
     foo:
-      name: ${var.pipeline_name}-$UNIQUE_NAME
+      name: test-pipeline
       libraries:
         - notebook:
             path: ./nb.sql
@@ -28,8 +19,9 @@ resources:
 
   schemas:
     bar:
-      name: ${var.schema}-$UNIQUE_NAME
+      name: test-schema
       catalog_name: ${var.catalog}
+      comment: This schema was created from DABs
 
 targets:
   development:
