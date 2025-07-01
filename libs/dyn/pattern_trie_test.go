@@ -9,82 +9,82 @@ import (
 
 func TestPatternTrie_SearchPath(t *testing.T) {
 	tests := []struct {
-		name        string
-		pattern     string
-		expected    []string
-		notExpected []string
+		name         string
+		pattern      string
+		mustMatch    []string
+		mustNotMatch []string
 	}{
 		{
-			name:        "empty pattern",
-			pattern:     "",
-			expected:    []string{""},
-			notExpected: []string{"foo"},
+			name:         "empty pattern",
+			pattern:      "",
+			mustMatch:    []string{""},
+			mustNotMatch: []string{"foo"},
 		},
 		{
-			name:        "simple key pattern",
-			pattern:     "foo",
-			expected:    []string{"foo"},
-			notExpected: []string{"foo.bar", "foo[0]", "bar"},
+			name:         "simple key pattern",
+			pattern:      "foo",
+			mustMatch:    []string{"foo"},
+			mustNotMatch: []string{"foo.bar", "foo[0]", "bar"},
 		},
 		{
-			name:        "simple index pattern",
-			pattern:     "[0]",
-			expected:    []string{"[0]"},
-			notExpected: []string{"foo[0]", "foo.bar", "bar"},
+			name:         "simple index pattern",
+			pattern:      "[0]",
+			mustMatch:    []string{"[0]"},
+			mustNotMatch: []string{"foo[0]", "foo.bar", "bar"},
 		},
 		{
-			name:        "nested key pattern",
-			pattern:     "foo.bar",
-			expected:    []string{"foo.bar"},
-			notExpected: []string{"foo", "foo[0]", "bar.foo", "foo.baz"},
+			name:         "nested key pattern",
+			pattern:      "foo.bar",
+			mustMatch:    []string{"foo.bar"},
+			mustNotMatch: []string{"foo", "foo[0]", "bar.foo", "foo.baz"},
 		},
 		{
-			name:        "root wildcard",
-			pattern:     "*",
-			expected:    []string{"foo", "bar"},
-			notExpected: []string{"", "bar.foo", "foo.baz"},
+			name:         "root wildcard",
+			pattern:      "*",
+			mustMatch:    []string{"foo", "bar"},
+			mustNotMatch: []string{"", "bar.foo", "foo.baz"},
 		},
 		{
-			name:        "wildcard * after foo",
-			pattern:     "foo.*",
-			expected:    []string{"foo.bar", "foo.baz"},
-			notExpected: []string{"foo", "bar", "foo.bar.baz"},
+			name:         "wildcard * after foo",
+			pattern:      "foo.*",
+			mustMatch:    []string{"foo.bar", "foo.baz"},
+			mustNotMatch: []string{"foo", "bar", "foo.bar.baz"},
 		},
 		{
-			name:        "wildcard [*] after foo",
-			pattern:     "foo[*]",
-			expected:    []string{"foo[0]", "foo[1]", "foo[2025]"},
-			notExpected: []string{"foo", "bar", "foo[0].bar"},
+			name:         "wildcard [*] after foo",
+			pattern:      "foo[*]",
+			mustMatch:    []string{"foo[0]", "foo[1]", "foo[2025]"},
+			mustNotMatch: []string{"foo", "bar", "foo[0].bar"},
 		},
 		{
-			name:        "key after * wildcard",
-			pattern:     "foo.*.bar",
-			expected:    []string{"foo.abc.bar", "foo.def.bar"},
-			notExpected: []string{"foo", "bar", "foo.bar.baz"},
+			name:         "key after * wildcard",
+			pattern:      "foo.*.bar",
+			mustMatch:    []string{"foo.abc.bar", "foo.def.bar"},
+			mustNotMatch: []string{"foo", "bar", "foo.bar.baz"},
 		},
 		{
-			name:        "key after [*] wildcard",
-			pattern:     "foo[*].bar",
-			expected:    []string{"foo[0].bar", "foo[1].bar", "foo[2025].bar"},
-			notExpected: []string{"foo", "bar", "foo[0].baz"},
+			name:         "key after [*] wildcard",
+			pattern:      "foo[*].bar",
+			mustMatch:    []string{"foo[0].bar", "foo[1].bar", "foo[2025].bar"},
+			mustNotMatch: []string{"foo", "bar", "foo[0].baz"},
 		},
 		{
-			name:        "multiple * wildcards",
-			pattern:     "*.*.*",
-			expected:    []string{"foo.bar.baz", "foo.bar.qux"},
-			notExpected: []string{"foo", "bar", "foo.bar", "foo.bar.baz.qux"},
+			name:         "multiple * wildcards",
+			pattern:      "*.*.*",
+			mustMatch:    []string{"foo.bar.baz", "foo.bar.qux"},
+			mustNotMatch: []string{"foo", "bar", "foo.bar", "foo.bar.baz.qux"},
 		},
 		{
-			name:        "multiple [*] wildcards",
-			pattern:     "foo[*][*]",
-			expected:    []string{"foo[0][0]", "foo[1][1]", "foo[2025][2025]"},
-			notExpected: []string{"foo", "bar", "foo[0][0][0]"},
+			name:         "multiple [*] wildcards",
+			pattern:      "foo[*][*]",
+			mustMatch:    []string{"foo[0][0]", "foo[1][1]", "foo[2025][2025]"},
+			mustNotMatch: []string{"foo", "bar", "foo[0][0][0]"},
 		},
 		{
-			name:        "[*] after * wildcard",
-			pattern:     "*[*]",
-			expected:    []string{"foo[0]", "foo[1]", "foo[2025]"},
-			notExpected: []string{"foo", "bar", "foo[0].bar", "[0].foo"},
+			name:         "[*] after * wildcard",
+			pattern:      "*[*]",
+			mustMatch:    []string{"foo[0]", "foo[1]", "foo[2025]"},
+			mustNotMatch: []string{"foo", "bar", "foo[0].bar", "[0].foo"},
 		},
 	}
 	for _, tt := range tests {
@@ -93,11 +93,11 @@ func TestPatternTrie_SearchPath(t *testing.T) {
 			pattern := dyn.MustPatternFromString(tt.pattern)
 
 			// None of the expected paths should match yet.
-			for _, path := range tt.expected {
+			for _, path := range tt.mustMatch {
 				_, ok := trie.SearchPath(dyn.MustPathFromString(path))
 				assert.False(t, ok)
 			}
-			for _, path := range tt.notExpected {
+			for _, path := range tt.mustNotMatch {
 				_, ok := trie.SearchPath(dyn.MustPathFromString(path))
 				assert.False(t, ok)
 			}
@@ -106,12 +106,12 @@ func TestPatternTrie_SearchPath(t *testing.T) {
 			assert.NoError(t, err)
 
 			// Now all the expected paths should match.
-			for _, path := range tt.expected {
+			for _, path := range tt.mustMatch {
 				pattern, ok := trie.SearchPath(dyn.MustPathFromString(path))
 				assert.True(t, ok)
 				assert.Equal(t, dyn.MustPatternFromString(tt.pattern), pattern)
 			}
-			for _, path := range tt.notExpected {
+			for _, path := range tt.mustNotMatch {
 				_, ok := trie.SearchPath(dyn.MustPathFromString(path))
 				assert.False(t, ok)
 			}
