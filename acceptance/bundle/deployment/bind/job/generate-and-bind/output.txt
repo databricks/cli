@@ -1,0 +1,71 @@
+
+=== Create a pre-defined job:
+Created job with ID: [NUMID]
+
+>>> [CLI] workspace mkdirs /Workspace/Users/[USERNAME]/python-[UNIQUE_NAME]
+
+>>> [CLI] workspace import /Workspace/Users/[USERNAME]/python-[UNIQUE_NAME]/test --file test.py --language PYTHON
+
+>>> [CLI] bundle generate job --key test_job_key --existing-job-id [NUMID] --config-dir resources --source-dir src
+File successfully saved to src/test.py
+Job configuration successfully saved to resources/test_job_key.job.yml
+
+>>> ls src/
+test.py
+
+>>> cat resources/test_job_key.job.yml
+resources:
+  jobs:
+    test_job_key:
+      name: generate-job-[UNIQUE_NAME]
+      tasks:
+        - task_key: test
+          new_cluster:
+            [CLOUD_ENV_BASE]_attributes: {}
+            node_type_id: [NODE_TYPE_ID]
+            num_workers: 1
+            spark_conf:
+              "spark.databricks.enableWsfs": "true"
+              "spark.databricks.hive.metastore.glueCatalog.enabled": "true"
+              "spark.databricks.pip.ignoreSSL": "true"
+            spark_version: 13.3.x-snapshot-scala2.12
+          email_notifications: {}
+          notebook_task:
+            notebook_path: ../src/test.py
+            source: WORKSPACE
+          run_if: ALL_SUCCESS
+      email_notifications: {}
+      max_concurrent_runs: 1
+      queue:
+        enabled: true
+      webhook_notifications: {}
+
+>>> [CLI] bundle deployment bind test_job_key [NUMID] --auto-approve
+Updating deployment state...
+Successfully bound job with an id '[NUMID]'. Run 'bundle deploy' to deploy changes to your workspace
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-generate-bind-[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete job test_job_key
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-generate-bind-[UNIQUE_NAME]
+
+Deleting files...
+Destroy complete!
+
+=== Check that job is bound and does not exist after bundle is destroyed:
+>>> errcode [CLI] jobs get [NUMID] --output json
+Error: Job [NUMID] does not exist.
+
+Exit code: 1
+
+=== Delete the tmp folder:
+>>> [CLI] workspace delete /Workspace/Users/[USERNAME]/python-[UNIQUE_NAME]/test
+
+>>> [CLI] workspace delete /Workspace/Users/[USERNAME]/python-[UNIQUE_NAME]
