@@ -4,13 +4,25 @@
 pipelines successfully installed in directory "./subdir"
 
 >>> errcode ./subdir/pipelines
-Pipelines CLI (stub, to be filled in)
+Pipelines CLI
 
 Usage:
-  pipelines [flags]
+  pipelines [command]
+
+Available Commands:
+  completion  Generate the autocompletion script for the specified shell
+  help        Help about any command
+  init        Initialize a new pipelines project
 
 Flags:
-  -h, --help   help for pipelines
+      --debug            enable debug logging
+  -h, --help             help for pipelines
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    project target to use (if applicable)
+  -v, --version          version for pipelines
+
+Use "pipelines [command] --help" for more information about a command.
 
 === pipelines already installed
 >>> errcode [CLI] install-pipelines-cli -d ./subdir
@@ -27,10 +39,22 @@ Exit code: 1
 pipelines successfully installed in directory "./subdir"
 
 >>> errcode ./subdir/pipelines
-Pipelines CLI (stub, to be filled in)
+Pipelines CLI
 
 Usage:
-  pipelines [flags]
+  pipelines [command]
+
+Available Commands:
+  completion  Generate the autocompletion script for the specified shell
+  help        Help about any command
+  init        Initialize a new pipelines project
 
 Flags:
-  -h, --help   help for pipelines
+      --debug            enable debug logging
+  -h, --help             help for pipelines
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    project target to use (if applicable)
+  -v, --version          version for pipelines
+
+Use "pipelines [command] --help" for more information about a command.
