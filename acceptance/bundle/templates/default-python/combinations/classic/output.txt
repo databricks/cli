@@ -35,12 +35,6 @@ Validation OK!
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/X[UNIQUE_NAME]/dev/files...
 Deploying resources...
 Deployment complete!
-
->>> [CLI] bundle destroy -t dev --auto-approve
-The following resources will be deleted:
-
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/X[UNIQUE_NAME]/dev
-
 Deleting files...
 Destroy complete!
 
@@ -48,11 +42,5 @@ Destroy complete!
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/X[UNIQUE_NAME]/prod/files...
 Deploying resources...
 Deployment complete!
-
->>> [CLI] bundle destroy -t prod --auto-approve
-The following resources will be deleted:
-
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/X[UNIQUE_NAME]/prod
-
 Deleting files...
 Destroy complete!
