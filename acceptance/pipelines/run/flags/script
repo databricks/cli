@@ -1,7 +1,6 @@
 tmpdir="./subdir"
 pipelines="$tmpdir/pipelines"
 mkdir -p $tmpdir
-envsubst < databricks.yml.tmpl > databricks.yml
 
 title "install pipelines cli"
 trace $CLI install-pipelines-cli -d $tmpdir
@@ -17,16 +16,38 @@ print_requests() {
 
 trace print_requests
 
-title "run pipeline"
+title "test basic pipeline run"
 trace $pipelines run my_pipeline
 trace print_requests
 
-title "Fetch pipeline ID and verify remote state"
+title "test --no-wait flag"
+trace $pipelines run my_pipeline --no-wait
+trace print_requests
 
+title "test --refresh-all flag"
+trace $pipelines run my_pipeline --refresh-all
+trace print_requests
+
+title "test --refresh flag with specific tables"
+trace $pipelines run my_pipeline --refresh table1,table2
+trace print_requests
+
+title "test --full-refresh-all flag"
+trace $pipelines run my_pipeline --full-refresh-all
+trace print_requests
+
+title "test --full-refresh flag with specific tables"
+trace $pipelines run my_pipeline --full-refresh table1,table2
+trace print_requests
+
+title "test --restart flag"
+trace $pipelines run my_pipeline --restart
+trace print_requests
+
+title "Fetch pipeline ID and verify remote state"
 ppid=`read_id.py pipelines my_pipeline`
 trace $CLI pipelines get $ppid
 rm out.requests.txt
-
 
 title "Destroy the pipeline and verify that it's removed from the state and from remote"
 trace $CLI bundle destroy --auto-approve

@@ -304,6 +304,10 @@ func addDefaultHandlers(server *testserver.Server) {
 		return req.Workspace.PipelineGetUpdate(req.Vars["pipeline_id"], req.Vars["update_id"])
 	})
 
+	server.Handle("POST", "/api/2.0/pipelines/{pipeline_id}/stop", func(req testserver.Request) any {
+		return req.Workspace.PipelineStop(req.Vars["pipeline_id"])
+	})
+
 	// Quality monitors:
 
 	server.Handle("GET", "/api/2.1/unity-catalog/tables/{table_name}/monitor", func(req testserver.Request) any {

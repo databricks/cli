@@ -1,10 +1,10 @@
 bundle:
-  name: test-pipeline-run-$UNIQUE_NAME
+  name: test-pipeline-run-flags
 
 resources:
   pipelines:
     my_pipeline:
-      name: test-pipeline-$UNIQUE_NAME
+      name: test-pipeline-flags
       libraries:
         - file:
             path: pipeline_file.py

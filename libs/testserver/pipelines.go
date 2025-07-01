@@ -106,7 +106,25 @@ func (s *FakeWorkspace) PipelineStartUpdate(req Request, pipelineId string) Resp
 		}
 	}
 
+	// Parse the request body to extract flags
+	var startUpdate pipelines.StartUpdate
+	if len(req.Body) > 0 {
+		err := json.Unmarshal(req.Body, &startUpdate)
+		if err != nil {
+			return Response{
+				Body:       fmt.Sprintf("cannot unmarshal request body: %s", err),
+				StatusCode: 400,
+			}
+		}
+	}
+
+	startUpdate.PipelineId = pipelineId
+
+	if s.PipelineUpdates == nil {
+		s.PipelineUpdates = make(map[string]pipelines.StartUpdate)
+	}
 	updateId := uuid.New().String()
+	s.PipelineUpdates[updateId] = startUpdate
 
 	return Response{
 		Body: pipelines.StartUpdateResponse{
@@ -150,6 +168,25 @@ func (s *FakeWorkspace) PipelineGetUpdate(pipelineId, updateId string) Response 
 				UpdateId: updateId,
 				State:    pipelines.UpdateInfoStateCompleted,
 			},
+		},
+	}
+}
+
+func (s *FakeWorkspace) PipelineStop(pipelineId string) Response {
+	defer s.LockUnlock()()
+
+	_, exists := s.Pipelines[pipelineId]
+	if !exists {
+		return Response{
+			StatusCode: 404,
+			Body:       map[string]string{"message": fmt.Sprintf("The specified pipeline %s was not found.", pipelineId)},
+		}
+	}
+
+	return Response{
+		Body: pipelines.GetPipelineResponse{
+			PipelineId: pipelineId,
+			State:      pipelines.PipelineStateIdle,
 		},
 	}
 }
