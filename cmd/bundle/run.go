@@ -153,7 +153,7 @@ Example usage:
 			terraform.Interpolate(),
 			terraform.Write(),
 			statemgmt.StatePull(),
-			terraform.Load(terraform.ErrorOnEmptyState),
+			statemgmt.Load(statemgmt.ErrorOnEmptyState),
 		))
 		if diags.HasError() {
 			return renderDiagnostics(cmd.OutOrStdout(), b, diags)
