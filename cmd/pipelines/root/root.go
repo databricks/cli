@@ -1,3 +1,4 @@
+// Copied from cmd/root/root.go and adapted for pipelines use.
 package root
 
 import (

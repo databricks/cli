@@ -1,3 +1,4 @@
+// Copied from cmd/root/user_agent_command_exec_id.go and adapted for pipelines use.
 package root
 
 import (

@@ -1,3 +1,4 @@
+// Copied from cmd/root/user_agent_upstream.go and adapted for pipelines use.
 package root
 
 import (

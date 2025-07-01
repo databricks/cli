@@ -1,3 +1,4 @@
+// Copied from cmd/root/bundle.go and adapted for pipelines use.
 package root
 
 import (
