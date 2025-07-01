@@ -7,8 +7,10 @@ trace $CLI bundle validate -t dev
 trace $CLI bundle validate -t prod
 
 trace $TESTDIR/../check_output.py $CLI bundle deploy -t dev
+trace $CLI bundle destroy -t dev --auto-approve
 
 trace $TESTDIR/../check_output.py $CLI bundle deploy -t prod
+trace $CLI bundle destroy -t prod --auto-approve
 
 cd ..
 rm -fr X*

@@ -36,7 +36,27 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/X[UNIQUE_NAME]/dev
 Deploying resources...
 Deployment complete!
 
+>>> [CLI] bundle destroy -t dev --auto-approve
+The following resources will be deleted:
+  delete job X[UNIQUE_NAME]_job
+  delete pipeline X[UNIQUE_NAME]_pipeline
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/X[UNIQUE_NAME]/dev
+
+Deleting files...
+Destroy complete!
+
 >>> [TESTROOT]/bundle/templates/default-python/combinations/serverless/../check_output.py [CLI] bundle deploy -t prod
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/X[UNIQUE_NAME]/prod/files...
 Deploying resources...
 Deployment complete!
+
+>>> [CLI] bundle destroy -t prod --auto-approve
+The following resources will be deleted:
+  delete job X[UNIQUE_NAME]_job
+  delete pipeline X[UNIQUE_NAME]_pipeline
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/X[UNIQUE_NAME]/prod
+
+Deleting files...
+Destroy complete!
