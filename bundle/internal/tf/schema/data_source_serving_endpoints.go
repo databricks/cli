@@ -190,6 +190,7 @@ type DataSourceServingEndpointsEndpoints struct {
 	Config               []DataSourceServingEndpointsEndpointsConfig    `json:"config,omitempty"`
 	CreationTimestamp    int                                            `json:"creation_timestamp,omitempty"`
 	Creator              string                                         `json:"creator,omitempty"`
+	Description          string                                         `json:"description,omitempty"`
 	Id                   string                                         `json:"id,omitempty"`
 	LastUpdatedTimestamp int                                            `json:"last_updated_timestamp,omitempty"`
 	Name                 string                                         `json:"name,omitempty"`

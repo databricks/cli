@@ -18,6 +18,7 @@ var patterns = []dyn.Pattern{
 	forEachTaskLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("whl")),
 	forEachTaskLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("jar")),
 	envDepsPattern.Append(dyn.AnyIndex()),
+	pipelineEnvDepsPattern.Append(dyn.AnyIndex()),
 }
 
 type libData struct {
