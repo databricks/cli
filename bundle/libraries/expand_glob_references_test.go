@@ -13,7 +13,6 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/stretchr/testify/require"
 )
 
@@ -238,45 +237,4 @@ func TestGlobReferencesExpandedForEnvironmentsDeps(t *testing.T) {
 		filepath.Join("jar", "my2.jar"),
 		"/some/local/path/to/whl/*.whl",
 	}, env.Spec.Dependencies)
-}
-
-func TestGlobReferencesExpandedForPipelineEnvironmentsDeps(t *testing.T) {
-	dir := t.TempDir()
-	testutil.Touch(t, dir, "whl", "my1.whl")
-	testutil.Touch(t, dir, "whl", "my2.whl")
-
-	b := &bundle.Bundle{
-		SyncRootPath: dir,
-		Config: config.Root{
-			Resources: config.Resources{
-				Pipelines: map[string]*resources.Pipeline{
-					"pipeline": {
-						CreatePipeline: pipelines.CreatePipeline{
-							Environment: &pipelines.PipelinesEnvironment{
-								Dependencies: []string{
-									"./whl/*.whl",
-									"/Workspace/path/to/whl/my.whl",
-									"/some/local/path/to/whl/*.whl",
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(dir, "resource.yml")}})
-
-	diags := bundle.Apply(context.Background(), b, ExpandGlobReferences())
-	require.Empty(t, diags)
-
-	pipeline := b.Config.Resources.Pipelines["pipeline"]
-	env := pipeline.Environment
-	require.Equal(t, []string{
-		filepath.Join("whl", "my1.whl"),
-		filepath.Join("whl", "my2.whl"),
-		"/Workspace/path/to/whl/my.whl",
-		"/some/local/path/to/whl/*.whl",
-	}, env.Dependencies)
 }

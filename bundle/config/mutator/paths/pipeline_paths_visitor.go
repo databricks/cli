@@ -6,8 +6,11 @@ import (
 )
 
 type pipelineRewritePattern struct {
-	pattern     dyn.Pattern
-	mode        TranslateMode
+	pattern dyn.Pattern
+	mode    TranslateMode
+
+	// If function defined in skipRewrite returns true, we skip rewriting the path.
+	// For example, for environment dependencies, we skip rewriting if the path is not a local library.
 	skipRewrite func(string) bool
 }
 
@@ -70,7 +73,11 @@ func VisitPipelinePaths(value dyn.Value, fn VisitFunc) (dyn.Value, error) {
 
 	for _, rewritePattern := range pipelineRewritePatterns() {
 		newValue, err = dyn.MapByPattern(newValue, rewritePattern.pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-			if rewritePattern.skipRewrite(v.MustString()) {
+			sv, ok := v.AsString()
+			if !ok {
+				return v, nil
+			}
+			if rewritePattern.skipRewrite(sv) {
 				return v, nil
 			}
 
