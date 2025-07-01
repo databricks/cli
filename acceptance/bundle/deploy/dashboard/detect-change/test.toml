@@ -17,6 +17,6 @@ New = "[ALPHANUMID]"
 
 [[Repls]]
 # clean up ?o=<num> suffix after URL since not all workspaces have that
-Old = '\?o=\[(NUMBER|NUMID)\]'
+Old = '\?o=\[(NUMID|ALPHANUM)\]'
 New = ''
 Order = 1000
