@@ -24,7 +24,7 @@ func pipelineRewritePatterns() []pipelineRewritePattern {
 
 	pipelineEnvironmentsPatterns := []pipelineRewritePattern{
 		{
-			dyn.NewPattern(
+			pattern: dyn.NewPattern(
 				dyn.Key("resources"),
 				dyn.Key("pipelines"),
 				dyn.AnyKey(),
@@ -32,8 +32,8 @@ func pipelineRewritePatterns() []pipelineRewritePattern {
 				dyn.Key("dependencies"),
 				dyn.AnyIndex(),
 			),
-			TranslateModeLocalRelativeWithPrefix,
-			func(s string) bool {
+			mode: TranslateModeLocalRelativeWithPrefix,
+			skipRewrite: func(s string) bool {
 				return !libraries.IsLibraryLocal(s)
 			},
 		},
