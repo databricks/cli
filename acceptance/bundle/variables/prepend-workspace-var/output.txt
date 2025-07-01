@@ -5,10 +5,7 @@
     "git": {
       "bundle_root_path": "."
     },
-    "target": "dev",
-    "terraform": {
-      "exec_path": "[TERRAFORM]"
-    }
+    "target": "dev"
   },
   "resources": {
     "jobs": {

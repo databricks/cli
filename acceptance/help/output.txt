@@ -124,6 +124,9 @@ Clean Rooms
   clean-room-task-runs                   Clean room task runs are the executions of notebooks in a clean room.
   clean-rooms                            A clean room uses Delta Sharing and serverless compute to provide a secure and privacy-protecting environment where multiple parties can work together on sensitive enterprise data without direct access to each other’s data.
 
+Database
+  database                               Database Instances provide access to a database via REST API or direct SQL.
+
 Quality Monitor v2
   quality-monitor-v2                     Manage data quality of UC objects (currently support schema).
 

@@ -80,7 +80,6 @@ func newCreate() *cobra.Command {
 	var createReq compute.CreateInstancePool
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: aws_attributes
@@ -94,6 +93,8 @@ func newCreate() *cobra.Command {
 	cmd.Flags().IntVar(&createReq.MinIdleInstances, "min-idle-instances", createReq.MinIdleInstances, `Minimum number of idle instances to keep in the instance pool.`)
 	// TODO: array: preloaded_docker_images
 	// TODO: array: preloaded_spark_versions
+	cmd.Flags().IntVar(&createReq.RemoteDiskThroughput, "remote-disk-throughput", createReq.RemoteDiskThroughput, `If set, what the configurable throughput (in Mb/s) for the remote disk is.`)
+	cmd.Flags().IntVar(&createReq.TotalInitialRemoteDiskSize, "total-initial-remote-disk-size", createReq.TotalInitialRemoteDiskSize, `If set, what the total initial volume size (in GB) of the remote disks should be.`)
 
 	cmd.Use = "create INSTANCE_POOL_NAME NODE_TYPE_ID"
 	cmd.Short = `Create a new instance pool.`
@@ -182,7 +183,6 @@ func newDelete() *cobra.Command {
 	var deleteReq compute.DeleteInstancePool
 	var deleteJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "delete INSTANCE_POOL_ID"
@@ -279,13 +279,14 @@ func newEdit() *cobra.Command {
 	var editReq compute.EditInstancePool
 	var editJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&editJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: map via StringToStringVar: custom_tags
 	cmd.Flags().IntVar(&editReq.IdleInstanceAutoterminationMinutes, "idle-instance-autotermination-minutes", editReq.IdleInstanceAutoterminationMinutes, `Automatically terminates the extra instances in the pool cache after they are inactive for this time in minutes if min_idle_instances requirement is already met.`)
 	cmd.Flags().IntVar(&editReq.MaxCapacity, "max-capacity", editReq.MaxCapacity, `Maximum number of outstanding instances to keep in the pool, including both instances used by clusters and idle instances.`)
 	cmd.Flags().IntVar(&editReq.MinIdleInstances, "min-idle-instances", editReq.MinIdleInstances, `Minimum number of idle instances to keep in the instance pool.`)
+	cmd.Flags().IntVar(&editReq.RemoteDiskThroughput, "remote-disk-throughput", editReq.RemoteDiskThroughput, `If set, what the configurable throughput (in Mb/s) for the remote disk is.`)
+	cmd.Flags().IntVar(&editReq.TotalInitialRemoteDiskSize, "total-initial-remote-disk-size", editReq.TotalInitialRemoteDiskSize, `If set, what the total initial volume size (in GB) of the remote disks should be.`)
 
 	cmd.Use = "edit INSTANCE_POOL_ID INSTANCE_POOL_NAME NODE_TYPE_ID"
 	cmd.Short = `Edit an existing instance pool.`
@@ -377,8 +378,6 @@ func newGet() *cobra.Command {
 
 	var getReq compute.GetInstancePoolRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get INSTANCE_POOL_ID"
 	cmd.Short = `Get instance pool information.`
 	cmd.Long = `Get instance pool information.
@@ -447,8 +446,6 @@ func newGetPermissionLevels() *cobra.Command {
 
 	var getPermissionLevelsReq compute.GetInstancePoolPermissionLevelsRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get-permission-levels INSTANCE_POOL_ID"
 	cmd.Short = `Get instance pool permission levels.`
 	cmd.Long = `Get instance pool permission levels.
@@ -516,8 +513,6 @@ func newGetPermissions() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getPermissionsReq compute.GetInstancePoolPermissionsRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get-permissions INSTANCE_POOL_ID"
 	cmd.Short = `Get instance pool permissions.`
@@ -628,7 +623,6 @@ func newSetPermissions() *cobra.Command {
 	var setPermissionsReq compute.InstancePoolPermissionsRequest
 	var setPermissionsJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&setPermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: access_control_list
@@ -716,7 +710,6 @@ func newUpdatePermissions() *cobra.Command {
 	var updatePermissionsReq compute.InstancePoolPermissionsRequest
 	var updatePermissionsJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updatePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: access_control_list

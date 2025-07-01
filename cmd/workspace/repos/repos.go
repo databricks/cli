@@ -72,7 +72,6 @@ func newCreate() *cobra.Command {
 	var createReq workspace.CreateRepoRequest
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.Path, "path", createReq.Path, `Desired path for the repo in the workspace.`)
@@ -164,8 +163,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq workspace.DeleteRepoRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete REPO_ID"
 	cmd.Short = `Delete a repo.`
 	cmd.Long = `Delete a repo.
@@ -236,8 +233,6 @@ func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getReq workspace.GetRepoRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get REPO_ID"
 	cmd.Short = `Get a repo.`
@@ -310,8 +305,6 @@ func newGetPermissionLevels() *cobra.Command {
 
 	var getPermissionLevelsReq workspace.GetRepoPermissionLevelsRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get-permission-levels REPO_ID"
 	cmd.Short = `Get repo permission levels.`
 	cmd.Long = `Get repo permission levels.
@@ -379,8 +372,6 @@ func newGetPermissions() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getPermissionsReq workspace.GetRepoPermissionsRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get-permissions REPO_ID"
 	cmd.Short = `Get repo permissions.`
@@ -451,8 +442,6 @@ func newList() *cobra.Command {
 
 	var listReq workspace.ListReposRequest
 
-	// TODO: short flags
-
 	cmd.Flags().StringVar(&listReq.NextPageToken, "next-page-token", listReq.NextPageToken, `Token used to get the next page of results.`)
 	cmd.Flags().StringVar(&listReq.PathPrefix, "path-prefix", listReq.PathPrefix, `Filters repos that have paths starting with the given path prefix.`)
 
@@ -506,7 +495,6 @@ func newSetPermissions() *cobra.Command {
 	var setPermissionsReq workspace.RepoPermissionsRequest
 	var setPermissionsJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&setPermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: access_control_list
@@ -594,7 +582,6 @@ func newUpdate() *cobra.Command {
 	var updateReq workspace.UpdateRepoRequest
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateReq.Branch, "branch", updateReq.Branch, `Branch that the local version of the repo is checked out to.`)
@@ -686,7 +673,6 @@ func newUpdatePermissions() *cobra.Command {
 	var updatePermissionsReq workspace.RepoPermissionsRequest
 	var updatePermissionsJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updatePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: access_control_list

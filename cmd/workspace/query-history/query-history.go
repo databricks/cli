@@ -52,8 +52,6 @@ func newList() *cobra.Command {
 
 	var listReq sql.ListQueryHistoryRequest
 
-	// TODO: short flags
-
 	// TODO: complex arg: filter_by
 	cmd.Flags().BoolVar(&listReq.IncludeMetrics, "include-metrics", listReq.IncludeMetrics, `Whether to include the query metrics with each query.`)
 	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Limit the number of results returned in one page.`)

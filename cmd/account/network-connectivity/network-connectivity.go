@@ -72,7 +72,6 @@ func newCreateNetworkConnectivityConfiguration() *cobra.Command {
 	createNetworkConnectivityConfigurationReq.NetworkConnectivityConfig = settings.CreateNetworkConnectivityConfiguration{}
 	var createNetworkConnectivityConfigurationJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createNetworkConnectivityConfigurationJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "create-network-connectivity-configuration NAME REGION"
@@ -174,7 +173,6 @@ func newCreatePrivateEndpointRule() *cobra.Command {
 	createPrivateEndpointRuleReq.PrivateEndpointRule = settings.CreatePrivateEndpointRule{}
 	var createPrivateEndpointRuleJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createPrivateEndpointRuleJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: domain_names
@@ -260,8 +258,6 @@ func newDeleteNetworkConnectivityConfiguration() *cobra.Command {
 
 	var deleteNetworkConnectivityConfigurationReq settings.DeleteNetworkConnectivityConfigurationRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete-network-connectivity-configuration NETWORK_CONNECTIVITY_CONFIG_ID"
 	cmd.Short = `Delete a network connectivity configuration.`
 	cmd.Long = `Delete a network connectivity configuration.
@@ -317,8 +313,6 @@ func newDeletePrivateEndpointRule() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var deletePrivateEndpointRuleReq settings.DeletePrivateEndpointRuleRequest
-
-	// TODO: short flags
 
 	cmd.Use = "delete-private-endpoint-rule NETWORK_CONNECTIVITY_CONFIG_ID PRIVATE_ENDPOINT_RULE_ID"
 	cmd.Short = `Delete a private endpoint rule.`
@@ -383,8 +377,6 @@ func newGetNetworkConnectivityConfiguration() *cobra.Command {
 
 	var getNetworkConnectivityConfigurationReq settings.GetNetworkConnectivityConfigurationRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get-network-connectivity-configuration NETWORK_CONNECTIVITY_CONFIG_ID"
 	cmd.Short = `Get a network connectivity configuration.`
 	cmd.Long = `Get a network connectivity configuration.
@@ -440,8 +432,6 @@ func newGetPrivateEndpointRule() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getPrivateEndpointRuleReq settings.GetPrivateEndpointRuleRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get-private-endpoint-rule NETWORK_CONNECTIVITY_CONFIG_ID PRIVATE_ENDPOINT_RULE_ID"
 	cmd.Short = `Gets a private endpoint rule.`
@@ -501,8 +491,6 @@ func newListNetworkConnectivityConfigurations() *cobra.Command {
 
 	var listNetworkConnectivityConfigurationsReq settings.ListNetworkConnectivityConfigurationsRequest
 
-	// TODO: short flags
-
 	cmd.Flags().StringVar(&listNetworkConnectivityConfigurationsReq.PageToken, "page-token", listNetworkConnectivityConfigurationsReq.PageToken, `Pagination token to go to next page based on previous query.`)
 
 	cmd.Use = "list-network-connectivity-configurations"
@@ -552,8 +540,6 @@ func newListPrivateEndpointRules() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listPrivateEndpointRulesReq settings.ListPrivateEndpointRulesRequest
-
-	// TODO: short flags
 
 	cmd.Flags().StringVar(&listPrivateEndpointRulesReq.PageToken, "page-token", listPrivateEndpointRulesReq.PageToken, `Pagination token to go to next page based on previous query.`)
 
@@ -612,7 +598,6 @@ func newUpdatePrivateEndpointRule() *cobra.Command {
 	updatePrivateEndpointRuleReq.PrivateEndpointRule = settings.UpdatePrivateEndpointRule{}
 	var updatePrivateEndpointRuleJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updatePrivateEndpointRuleJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: domain_names

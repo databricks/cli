@@ -68,7 +68,6 @@ func newCreate() *cobra.Command {
 	var createReq catalog.CreateTableConstraint
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "create"
@@ -140,8 +139,6 @@ func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var deleteReq catalog.DeleteTableConstraintRequest
-
-	// TODO: short flags
 
 	cmd.Use = "delete FULL_NAME CONSTRAINT_NAME CASCADE"
 	cmd.Short = `Delete a table constraint.`

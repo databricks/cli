@@ -92,7 +92,12 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 		return nil, errors.New("providing both a profile and host is not supported")
 	}
 
-	err := setHostAndAccountId(ctx, args.profiler, args.profileName, args.authArguments, args.args)
+	existingProfile, err := loadProfileByName(ctx, args.profileName, args.profiler)
+	if err != nil {
+		return nil, err
+	}
+
+	err = setHostAndAccountId(ctx, existingProfile, args.authArguments, args.args)
 	if err != nil {
 		return nil, err
 	}

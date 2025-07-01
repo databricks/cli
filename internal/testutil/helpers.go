@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
@@ -36,15 +35,6 @@ func RandomName(prefix ...string) string {
 	}
 	out += strings.ReplaceAll(uuid.New().String(), "-", "")
 	return out
-}
-
-func SkipUntil(t TestingT, date string) {
-	deadline, err := time.Parse(time.DateOnly, date)
-	require.NoError(t, err)
-
-	if time.Now().Before(deadline) {
-		t.Skipf("Skipping test until %s. Time right now: %s", deadline.Format(time.DateOnly), time.Now())
-	}
 }
 
 func ReplaceWindowsLineEndings(s string) string {

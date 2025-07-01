@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/databricks/cli/bundle/config/generate"
+	"github.com/databricks/cli/bundle/generate"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dyn"
@@ -46,10 +46,10 @@ func NewGenerateAppCommand() *cobra.Command {
 			return err
 		}
 
-		downloader := newDownloader(w, sourceDir, configDir)
+		downloader := generate.NewDownloader(w, sourceDir, configDir)
 
 		sourceCodePath := app.DefaultSourceCodePath
-		err = downloader.markDirectoryForDownload(ctx, &sourceCodePath)
+		err = downloader.MarkDirectoryForDownload(ctx, &sourceCodePath)
 		if err != nil {
 			return err
 		}

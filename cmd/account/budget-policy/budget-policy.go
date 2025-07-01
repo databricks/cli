@@ -57,7 +57,6 @@ func newCreate() *cobra.Command {
 	var createReq billing.CreateBudgetPolicyRequest
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: policy
@@ -127,8 +126,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq billing.DeleteBudgetPolicyRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete POLICY_ID"
 	cmd.Short = `Delete a budget policy.`
 	cmd.Long = `Delete a budget policy.
@@ -184,8 +181,6 @@ func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getReq billing.GetBudgetPolicyRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get POLICY_ID"
 	cmd.Short = `Get a budget policy.`
@@ -243,8 +238,6 @@ func newList() *cobra.Command {
 
 	var listReq billing.ListBudgetPoliciesRequest
 
-	// TODO: short flags
-
 	// TODO: complex arg: filter_by
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `The maximum number of budget policies to return.`)
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `A page token, received from a previous ListServerlessPolicies call.`)
@@ -301,7 +294,6 @@ func newUpdate() *cobra.Command {
 	updateReq.Policy = billing.BudgetPolicy{}
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: limit_config
