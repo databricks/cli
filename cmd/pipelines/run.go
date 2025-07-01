@@ -11,7 +11,6 @@ import (
 	"github.com/databricks/cli/bundle/run"
 	"github.com/databricks/cli/bundle/run/output"
 	"github.com/databricks/cli/bundle/statemgmt"
-	bundlecmd "github.com/databricks/cli/cmd/bundle"
 	bundleutils "github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdgroup"
@@ -48,15 +47,15 @@ The KEY is the unique identifier of the resource to run.`,
 		ctx := cmd.Context()
 		b, diags := bundleutils.ConfigureBundleWithVariables(cmd)
 		if diags.HasError() {
-			return bundlecmd.RenderDiagnostics(cmd.OutOrStdout(), b, diags)
+			return renderDiagnostics(cmd.OutOrStdout(), b, diags)
 		}
 
 		diags = diags.Extend(phases.Initialize(ctx, b))
 		if diags.HasError() {
-			return bundlecmd.RenderDiagnostics(cmd.OutOrStdout(), b, diags)
+			return renderDiagnostics(cmd.OutOrStdout(), b, diags)
 		}
 
-		key, args, err := bundlecmd.ResolveRunArgument(ctx, b, args)
+		key, args, err := resolveRunArgument(ctx, b, args)
 		if err != nil {
 			return err
 		}
@@ -68,10 +67,10 @@ The KEY is the unique identifier of the resource to run.`,
 			terraform.Load(terraform.ErrorOnEmptyState),
 		))
 		if diags.HasError() {
-			return bundlecmd.RenderDiagnostics(cmd.OutOrStdout(), b, diags)
+			return renderDiagnostics(cmd.OutOrStdout(), b, diags)
 		}
 
-		runner, err := bundlecmd.KeyToRunner(b, key)
+		runner, err := keyToRunner(b, key)
 		if err != nil {
 			return err
 		}
@@ -140,7 +139,7 @@ The KEY is the unique identifier of the resource to run.`,
 			return maps.Keys(completions), cobra.ShellCompDirectiveNoFileComp
 		} else {
 			// If we know the resource to run, we can complete additional positional arguments.
-			runner, err := bundlecmd.KeyToRunner(b, args[0])
+			runner, err := keyToRunner(b, args[0])
 			if err != nil {
 				return nil, cobra.ShellCompDirectiveError
 			}

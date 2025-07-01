@@ -98,7 +98,6 @@ func (s *FakeWorkspace) PipelineUpdate(req Request, pipelineId string) Response 
 func (s *FakeWorkspace) PipelineStartUpdate(req Request, pipelineId string) Response {
 	defer s.LockUnlock()()
 
-	// Check if pipeline exists
 	_, exists := s.Pipelines[pipelineId]
 	if !exists {
 		return Response{
@@ -107,7 +106,6 @@ func (s *FakeWorkspace) PipelineStartUpdate(req Request, pipelineId string) Resp
 		}
 	}
 
-	// Generate a new update ID
 	updateId := uuid.New().String()
 
 	return Response{
@@ -120,7 +118,6 @@ func (s *FakeWorkspace) PipelineStartUpdate(req Request, pipelineId string) Resp
 func (s *FakeWorkspace) PipelineEvents(pipelineId string) Response {
 	defer s.LockUnlock()()
 
-	// Check if pipeline exists
 	_, exists := s.Pipelines[pipelineId]
 	if !exists {
 		return Response{
@@ -129,7 +126,6 @@ func (s *FakeWorkspace) PipelineEvents(pipelineId string) Response {
 		}
 	}
 
-	// Return empty events list in proper paginated format
 	return Response{
 		Body: map[string]any{
 			"events": []pipelines.PipelineEvent{},
@@ -140,7 +136,6 @@ func (s *FakeWorkspace) PipelineEvents(pipelineId string) Response {
 func (s *FakeWorkspace) PipelineGetUpdate(pipelineId, updateId string) Response {
 	defer s.LockUnlock()()
 
-	// Check if pipeline exists
 	_, exists := s.Pipelines[pipelineId]
 	if !exists {
 		return Response{
@@ -149,7 +144,6 @@ func (s *FakeWorkspace) PipelineGetUpdate(pipelineId, updateId string) Response 
 		}
 	}
 
-	// Return a completed update for now
 	return Response{
 		Body: pipelines.GetUpdateResponse{
 			Update: &pipelines.UpdateInfo{

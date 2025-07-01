@@ -85,12 +85,12 @@ func newDeployCommand() *cobra.Command {
 			}
 		}
 
-		return RenderDiagnostics(cmd.OutOrStdout(), b, diags)
+		return renderDiagnostics(cmd.OutOrStdout(), b, diags)
 	}
 	return cmd
 }
 
-func RenderDiagnostics(w io.Writer, b *bundle.Bundle, diags diag.Diagnostics) error {
+func renderDiagnostics(w io.Writer, b *bundle.Bundle, diags diag.Diagnostics) error {
 	renderOpts := render.RenderOptions{RenderSummaryTable: false}
 	err := render.RenderDiagnostics(w, b, diags, renderOpts)
 	if err != nil {
