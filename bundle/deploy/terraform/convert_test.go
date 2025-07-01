@@ -603,21 +603,7 @@ func TestBundleToTerraformDeletedResources(t *testing.T) {
 
 func TestTerraformToBundleEmptyLocalResources(t *testing.T) {
 	config := config.Root{
-		Resources: config.Resources{
-			Jobs:                  make(map[string]*resources.Job),
-			Pipelines:             make(map[string]*resources.Pipeline),
-			Models:                make(map[string]*resources.MlflowModel),
-			Experiments:           make(map[string]*resources.MlflowExperiment),
-			ModelServingEndpoints: make(map[string]*resources.ModelServingEndpoint),
-			RegisteredModels:      make(map[string]*resources.RegisteredModel),
-			QualityMonitors:       make(map[string]*resources.QualityMonitor),
-			Schemas:               make(map[string]*resources.Schema),
-			Volumes:               make(map[string]*resources.Volume),
-			Clusters:              make(map[string]*resources.Cluster),
-			Dashboards:            make(map[string]*resources.Dashboard),
-			Apps:                  make(map[string]*resources.App),
-			SecretScopes:          make(map[string]*resources.SecretScope),
-		},
+		Resources: config.Resources{},
 	}
 
 	state := ExportedResourcesMap{
