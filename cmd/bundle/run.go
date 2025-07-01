@@ -129,7 +129,7 @@ Example usage:
 		ctx := cmd.Context()
 		b, diags := utils.ConfigureBundleWithVariables(cmd)
 		if diags.HasError() {
-			return RenderDiagnostics(cmd.OutOrStdout(), b, diags)
+			return renderDiagnostics(cmd.OutOrStdout(), b, diags)
 		}
 
 		// If user runs the bundle run command as:
@@ -141,7 +141,7 @@ Example usage:
 
 		diags = diags.Extend(phases.Initialize(ctx, b))
 		if diags.HasError() {
-			return RenderDiagnostics(cmd.OutOrStdout(), b, diags)
+			return renderDiagnostics(cmd.OutOrStdout(), b, diags)
 		}
 
 		key, args, err := resolveRunArgument(ctx, b, args)
@@ -156,7 +156,7 @@ Example usage:
 			terraform.Load(terraform.ErrorOnEmptyState),
 		))
 		if diags.HasError() {
-			return RenderDiagnostics(cmd.OutOrStdout(), b, diags)
+			return renderDiagnostics(cmd.OutOrStdout(), b, diags)
 		}
 
 		runner, err := keyToRunner(b, key)

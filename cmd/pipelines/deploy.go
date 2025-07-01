@@ -1,3 +1,4 @@
+// Copied from cmd/bundle/deploy.go and adapted for pipelines use.
 package pipelines
 
 import (
@@ -6,15 +7,14 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/validate"
 	"github.com/databricks/cli/bundle/phases"
-	bundlecmd "github.com/databricks/cli/cmd/bundle"
 	"github.com/databricks/cli/cmd/bundle/utils"
+	pipelinesbundle "github.com/databricks/cli/cmd/pipelines/bundle"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/sync"
 	"github.com/spf13/cobra"
 )
 
-// Deploy is copied from cmd/bundle/deploy.go and adapted for pipelines use.
 func Deploy() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "deploy",
@@ -64,7 +64,7 @@ func Deploy() *cobra.Command {
 			}
 		}
 
-		return bundlecmd.RenderDiagnostics(cmd.OutOrStdout(), b, diags)
+		return pipelinesbundle.RenderDiagnostics(cmd.OutOrStdout(), b, diags)
 	}
 	return cmd
 }
