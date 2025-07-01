@@ -1,43 +1,25 @@
-const { createServer } = require('node:http');
-const hostname = '127.0.0.1';
+const express = require('express');
+const app = express();
 const port = process.env.PORT || 8000;
-const server = createServer((req, res) => {
-  res.statusCode = 200;
-  res.setHeader('Content-Type', 'text/plain');
-  res.end('Hello From App');
 
-  // Close the server and exit the process after sending response
-  server.close(() => {
-    console.log('Server closed');
-
-    // Ensure all file handles are closed before exiting
-    // This is particularly important on Windows to prevent file locking issues
-    process.stdin.destroy();
-    process.stdout.destroy();
-    process.stderr.destroy();
-
-    // Force exit after a short delay to ensure cleanup
-    setTimeout(() => {
-      process.exit(0);
-    }, 100);
+// Root route
+app.get('/', (req, res) => {
+  res.json({
+    message: 'Hello From App',
+    timestamp: new Date().toISOString(),
+    status: 'running'
   });
-});
 
-server.listen(port, hostname, () => {
-  console.log(`Server running at http://${hostname}:${port}/`);
-});
-
-// Handle process termination signals to ensure clean shutdown
-process.on('SIGTERM', () => {
-  console.log('Received SIGTERM, shutting down gracefully...');
-  server.close(() => {
+  console.log('Shutting down server...');
+  setTimeout(() => {
+    console.log('Server closed')
     process.exit(0);
-  });
+  }, 1000); // Give 1 second for response to be sent
 });
 
-process.on('SIGINT', () => {
-  console.log('Received SIGINT, shutting down gracefully...');
-  server.close(() => {
-    process.exit(0);
-  });
+// Start the server
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
 });
+
+module.exports = app;

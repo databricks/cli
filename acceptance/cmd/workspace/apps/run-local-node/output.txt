@@ -5,4 +5,4 @@ Hello, world
 === Waiting
 === Checking app is running...
 >>> curl -s -o - http://127.0.0.1:$(port)
-Hello From App
+{"message":"Hello From App","timestamp":"[TIMESTAMP]","status":"running"}

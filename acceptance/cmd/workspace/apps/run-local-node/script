@@ -24,7 +24,7 @@ title Waiting for the app to start...
 # Use a loop to check for the startup message instead of tail/sed which can be unreliable on Windows
 # due to file locking, buffering issues, and different text processing behavior across Windows versions.
 # A simple grep loop is more robust across platforms.
-while [ -z "$(grep -o "Server running at " out.run.txt 2>/dev/null)" ]; do
+while [ -z "$(grep -o "Server is running on port " out.run.txt 2>/dev/null)" ]; do
     sleep 1
 done
 
