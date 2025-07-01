@@ -189,6 +189,14 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 
 	if cloudEnv == "" {
 		internal.StartDefaultServer(t)
+		if os.Getenv("TEST_DEFAULT_WAREHOUSE_ID") == "" {
+			t.Setenv("TEST_DEFAULT_WAREHOUSE_ID", "8ec9edc1-db0c-40df-af8d-7580020fe61e")
+		}
+	}
+
+	testDefaultWarehouseId := os.Getenv("TEST_DEFAULT_WAREHOUSE_ID")
+	if testDefaultWarehouseId != "" {
+		repls.Set(testDefaultWarehouseId, "[TEST_DEFAULT_WAREHOUSE_ID]")
 	}
 
 	terraformrcPath := filepath.Join(buildDir, ".terraformrc")
@@ -296,6 +304,7 @@ func getEnvFilters(t *testing.T) []string {
 	}
 
 	filters := strings.Split(envFilterValue, ",")
+	outFilters := make([]string, len(filters))
 
 	for _, filter := range filters {
 		items := strings.Split(filter, "=")
@@ -305,9 +314,17 @@ func getEnvFilters(t *testing.T) []string {
 		key := items[0]
 		// Clear it just to be sure, since it's going to be part of os.Environ() and we're going to add different value based on settings.
 		os.Unsetenv(key)
+
+		if key == "DATABRICKS_CLI_DEPLOYMENT" && items[1] == "direct" {
+			// CLI only recognizes "direct-exp" at the moment, but in the future will recognize "direct" as well.
+			// On CI we set "direct". To avoid renaming jobs in CI on the future, we correct direct -> direct-exp here
+			items[1] = "direct-exp"
+		}
+
+		outFilters = append(outFilters, key+"="+items[1])
 	}
 
-	return filters
+	return outFilters
 }
 
 func getTests(t *testing.T) []string {

@@ -1,4 +1,16 @@
 
+=== Check summary before deployment -- should not have id but should have modified_status=created
+>>> [CLI] bundle summary --output json
+{
+  "display_name": "test-dashboard-[UNIQUE_NAME]",
+  "embed_credentials": false,
+  "file_path": "dashboard.lvdash.json",
+  "modified_status": "created",
+  "parent_path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/resources",
+  "permissions": [],
+  "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+}
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Deploying resources...
@@ -10,6 +22,21 @@ Deployment complete!
 {
   "object_type": "DASHBOARD",
   "path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/resources/test-dashboard-[UNIQUE_NAME].lvdash.json"
+}
+
+=== Check summary again -- should have id but no modified_status
+>>> [CLI] bundle summary --output json
+
+>>> cat out.summary.json
+{
+  "display_name": "test-dashboard-[UNIQUE_NAME]",
+  "embed_credentials": false,
+  "file_path": "dashboard.lvdash.json",
+  "id": "[ALPHANUMID]",
+  "parent_path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/resources",
+  "permissions": [],
+  "url": "[DATABRICKS_URL]/dashboardsv3/[ALPHANUMID]/published",
+  "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
 }
 
 === Load the dashboard by its ID and confirm its display name: {

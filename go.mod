@@ -7,7 +7,7 @@ toolchain go1.24.2
 require (
 	dario.cat/mergo v1.0.2 // BSD 3-Clause
 	github.com/BurntSushi/toml v1.5.0 // MIT
-	github.com/Masterminds/semver/v3 v3.3.1 // MIT
+	github.com/Masterminds/semver/v3 v3.4.0 // MIT
 	github.com/briandowns/spinner v1.23.1 // Apache 2.0
 	github.com/databricks/databricks-sdk-go v0.73.1 // Apache 2.0
 	github.com/fatih/color v1.18.0 // MIT

@@ -18,6 +18,9 @@ import (
 )
 
 func renderJsonOutput(cmd *cobra.Command, b *bundle.Bundle) error {
+	if b == nil {
+		return nil
+	}
 	buf, err := json.MarshalIndent(b.Config.Value().AsAny(), "", "  ")
 	if err != nil {
 		return err
