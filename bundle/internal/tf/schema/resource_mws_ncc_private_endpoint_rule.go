@@ -12,10 +12,10 @@ type ResourceMwsNccPrivateEndpointRule struct {
 	Enabled                     bool     `json:"enabled,omitempty"`
 	EndpointName                string   `json:"endpoint_name,omitempty"`
 	EndpointService             string   `json:"endpoint_service,omitempty"`
-	GroupId                     string   `json:"group_id"`
+	GroupId                     string   `json:"group_id,omitempty"`
 	Id                          string   `json:"id,omitempty"`
 	NetworkConnectivityConfigId string   `json:"network_connectivity_config_id"`
-	ResourceId                  string   `json:"resource_id"`
+	ResourceId                  string   `json:"resource_id,omitempty"`
 	ResourceNames               []string `json:"resource_names,omitempty"`
 	RuleId                      string   `json:"rule_id,omitempty"`
 	UpdatedTime                 int      `json:"updated_time,omitempty"`
