@@ -55,9 +55,10 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.
 	// parsed by [filepath.Glob] as being glob patterns and thus can cause
 	// unexpected behavior.
 	//
-	// The standard library does not support globbing from a relative path,
-	// so if we want to support this, we'll need to implement our own globbing
-	// function. We can use [filepath.Match] to do so.
+	// The standard library does not support globbing relative paths from a specified
+	// base directory. To support this, we can either:
+	// 1. Change CWD to the bundle root path before calling [filepath.Glob]
+	// 2. Implement our own custom globbing function. We can use [filepath.Match] to do so.
 	if char, ok := hasGlobCharacters(b.BundleRootPath); ok {
 		diags = diags.Append(diag.Diagnostic{
 			Severity: diag.Error,
