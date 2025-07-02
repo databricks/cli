@@ -1,18 +1,38 @@
-// Copied from cmd/bundle/run.go and adapted for pipelines use.
-package bundle
+package pipelines
 
 import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/render"
 	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/run"
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/diag"
 )
 
+// RenderDiagnostics renders the diagnostics in a human-readable format.
+// Copied from cmd/pipelines/bundle/deploy.go
+func RenderDiagnostics(w io.Writer, b *bundle.Bundle, diags diag.Diagnostics) error {
+	renderOpts := render.RenderOptions{RenderSummaryTable: false}
+	err := render.RenderDiagnostics(w, b, diags, renderOpts)
+	if err != nil {
+		return fmt.Errorf("failed to render output: %w", err)
+	}
+
+	if diags.HasError() {
+		return root.ErrAlreadyPrinted
+	}
+
+	return nil
+}
+
 // PromptRunArgument prompts the user to select a resource to run.
+// Copied from cmd/pipelines/bundle/run.go
 func PromptRunArgument(ctx context.Context, b *bundle.Bundle) (string, error) {
 	// Compute map of "Human readable name of resource" -> "resource key".
 	inv := make(map[string]string)
@@ -31,6 +51,7 @@ func PromptRunArgument(ctx context.Context, b *bundle.Bundle) (string, error) {
 
 // ResolveRunArgument resolves the resource key to run.
 // It returns the remaining arguments to pass to the runner, if applicable.
+// Copied from cmd/pipelines/bundle/run.go
 func ResolveRunArgument(ctx context.Context, b *bundle.Bundle, args []string) (string, []string, error) {
 	// If no arguments are specified, prompt the user to select something to run.
 	if len(args) == 0 && cmdio.IsPromptSupported(ctx) {
@@ -49,6 +70,7 @@ func ResolveRunArgument(ctx context.Context, b *bundle.Bundle, args []string) (s
 }
 
 // KeyToRunner converts a resource key to a runner.
+// Copied from cmd/pipelines/bundle/run.go
 func KeyToRunner(b *bundle.Bundle, arg string) (run.Runner, error) {
 	// Locate the resource to run.
 	ref, err := resources.Lookup(b, arg, run.IsRunnable)

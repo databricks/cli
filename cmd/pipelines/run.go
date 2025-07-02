@@ -12,7 +12,6 @@ import (
 	"github.com/databricks/cli/bundle/run/output"
 	"github.com/databricks/cli/bundle/statemgmt"
 	bundleutils "github.com/databricks/cli/cmd/bundle/utils"
-	pipelinesbundle "github.com/databricks/cli/cmd/pipelines/bundle"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdgroup"
 	"github.com/databricks/cli/libs/flags"
@@ -26,7 +25,7 @@ func newRunCommand() *cobra.Command {
 		Use:   "run [flags] [KEY]",
 		Short: "Run a pipeline",
 		Long: `Run the pipeline identified by KEY.
-The KEY is the unique identifier of the resource to run.`,
+The KEY is the unique identifier of the pipeline to run.`,
 	}
 
 	var runOptions run.Options
@@ -48,15 +47,15 @@ The KEY is the unique identifier of the resource to run.`,
 		ctx := cmd.Context()
 		b, diags := bundleutils.ConfigureBundleWithVariables(cmd)
 		if diags.HasError() {
-			return pipelinesbundle.RenderDiagnostics(cmd.OutOrStdout(), b, diags)
+			return RenderDiagnostics(cmd.OutOrStdout(), b, diags)
 		}
 
 		diags = diags.Extend(phases.Initialize(ctx, b))
 		if diags.HasError() {
-			return pipelinesbundle.RenderDiagnostics(cmd.OutOrStdout(), b, diags)
+			return RenderDiagnostics(cmd.OutOrStdout(), b, diags)
 		}
 
-		key, args, err := pipelinesbundle.ResolveRunArgument(ctx, b, args)
+		key, args, err := ResolveRunArgument(ctx, b, args)
 		if err != nil {
 			return err
 		}
@@ -68,10 +67,10 @@ The KEY is the unique identifier of the resource to run.`,
 			terraform.Load(terraform.ErrorOnEmptyState),
 		))
 		if diags.HasError() {
-			return pipelinesbundle.RenderDiagnostics(cmd.OutOrStdout(), b, diags)
+			return RenderDiagnostics(cmd.OutOrStdout(), b, diags)
 		}
 
-		runner, err := pipelinesbundle.KeyToRunner(b, key)
+		runner, err := KeyToRunner(b, key)
 		if err != nil {
 			return err
 		}
@@ -140,7 +139,7 @@ The KEY is the unique identifier of the resource to run.`,
 			return maps.Keys(completions), cobra.ShellCompDirectiveNoFileComp
 		} else {
 			// If we know the resource to run, we can complete additional positional arguments.
-			runner, err := pipelinesbundle.KeyToRunner(b, args[0])
+			runner, err := KeyToRunner(b, args[0])
 			if err != nil {
 				return nil, cobra.ShellCompDirectiveError
 			}
