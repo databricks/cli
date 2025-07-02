@@ -14,5 +14,6 @@
 ### Bundles
 * Added support for pipeline environment field ([#3153](https://github.com/databricks/cli/pull/3153))
 * "bundle summary" now prints diagnostic warnings to stderr ([#3123](https://github.com/databricks/cli/pull/3123))
+* "bundle open" will print the URL before opening the browser ([#3168](https://github.com/databricks/cli/pull/3168))
 
 ### API Changes
