@@ -54,7 +54,7 @@ func (r *ResourceApp) DoUpdate(ctx context.Context, id string) (string, error) {
 	return response.Name, nil
 }
 
-func (r *ResourceApp) DoDelete(ctx context.Context, id string) error {
+func DeleteApp(ctx context.Context, client *databricks.WorkspaceClient, id string) error {
 	// TODO: implement app deletion
 	return nil
 }

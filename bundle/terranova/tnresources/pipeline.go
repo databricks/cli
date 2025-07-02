@@ -49,8 +49,8 @@ func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string) (string, err
 	return id, nil
 }
 
-func (r *ResourcePipeline) DoDelete(ctx context.Context, id string) error {
-	err := r.client.Pipelines.DeleteByPipelineId(ctx, id)
+func DeletePipeline(ctx context.Context, client *databricks.WorkspaceClient, id string) error {
+	err := client.Pipelines.DeleteByPipelineId(ctx, id)
 	if err != nil {
 		return SDKError{Method: "Pipelines.DeleteByPipelineId", Err: err}
 	}

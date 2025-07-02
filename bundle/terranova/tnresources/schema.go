@@ -51,7 +51,7 @@ func (r *ResourceSchema) DoUpdate(ctx context.Context, id string) (string, error
 	return response.FullName, nil
 }
 
-func (r *ResourceSchema) DoDelete(ctx context.Context, id string) error {
+func DeleteSchema(ctx context.Context, client *databricks.WorkspaceClient, id string) error {
 	// TODO: implement schema deletion
 	return nil
 }
