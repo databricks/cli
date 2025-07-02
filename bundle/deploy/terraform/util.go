@@ -93,7 +93,7 @@ func ParseResourcesState(ctx context.Context, b *bundle.Bundle) (ExportedResourc
 
 			switch groupName {
 			case "apps":
-				fallthrough
+				group[resource.Name] = ResourceState{ID: instance.Attributes.Name}
 			case "secret_scopes":
 				group[resource.Name] = ResourceState{ID: instance.Attributes.Name}
 			case "dashboards":
