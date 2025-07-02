@@ -6,7 +6,6 @@ Analyze downloaded GH logs and print a report. Use gh_report.py instead of this 
 import sys
 import json
 import argparse
-import re
 from collections import Counter
 from pathlib import Path
 
@@ -78,7 +77,7 @@ def parse_file(path, filter):
         try:
             data = json.loads(line)
         except Exception as ex:
-            print(f"{filename}: {ex}\n{line!r}\n")
+            print(f"{path}: {ex}\n{line!r}\n")
             break
         testname = data.get("Test")
         if not testname:
@@ -106,7 +105,7 @@ def parse_file(path, filter):
         if "panic: " in str(lines):
             results.setdefault(testname, PANIC)
         else:
-            results.setdefault(testname, MISS)
+            results.setdefault(testname, MISSING)
 
     return results, outputs
 
@@ -272,14 +271,17 @@ def format_table(table, columns=None, markdown=False):
         for row in table:
             write("| " + " | ".join(str(row.get(col, "")).ljust(w) for col, w in zip(columns, widths)) + " |")
     else:
-        fmt = lambda cells: "  ".join(str(cell).ljust(w) for cell, w in zip(cells, widths))
-        write(fmt(columns))
+        write(fmt(columns, widths))
         for ind, row in enumerate(table):
-            write(fmt([row.get(col, "") for col in columns]))
+            write(fmt([row.get(col, "") for col in columns], widths))
 
     write("")
 
     return "\n".join(result)
+
+
+def fmt(cells, widths):
+    return "  ".join(str(cell).ljust(w) for cell, w in zip(cells, widths))
 
 
 def wrap_in_details(txt, summary):

@@ -169,9 +169,9 @@ def main():
     if args.filter_env:
         cmd.extend(["--filter-env", args.filter_env])
     if args.output:
-        cmd.append(f"--output")
+        cmd.append("--output")
     if args.markdown:
-        cmd.append(f"--markdown")
+        cmd.append("--markdown")
     cmd.append(f"{target_dir}")
     run(cmd, shell=True)
 
