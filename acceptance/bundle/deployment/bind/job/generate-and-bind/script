@@ -42,7 +42,7 @@ trace $CLI workspace import "${PYTHON_FILE}" --file test.py --language PYTHON
 
 trace $CLI bundle generate job --key test_job_key --existing-job-id $JOB_ID --config-dir resources --source-dir src
 trace ls src/
-trace cat resources/test_job_key.job.yml
+trace cat resources/test_job_key.job.yml | grep "name: generate-job-${UNIQUE_NAME}"
 
 trace $CLI bundle deployment bind test_job_key $JOB_ID --auto-approve
 trace $CLI bundle deploy

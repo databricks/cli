@@ -14,31 +14,7 @@ Job configuration successfully saved to resources/test_job_key.job.yml
 test.py
 
 >>> cat resources/test_job_key.job.yml
-resources:
-  jobs:
-    test_job_key:
       name: generate-job-[UNIQUE_NAME]
-      tasks:
-        - task_key: test
-          new_cluster:
-            [CLOUD_ENV_BASE]_attributes: {}
-            node_type_id: [NODE_TYPE_ID]
-            num_workers: 1
-            spark_conf:
-              "spark.databricks.enableWsfs": "true"
-              "spark.databricks.hive.metastore.glueCatalog.enabled": "true"
-              "spark.databricks.pip.ignoreSSL": "true"
-            spark_version: 13.3.x-snapshot-scala2.12
-          email_notifications: {}
-          notebook_task:
-            notebook_path: ../src/test.py
-            source: WORKSPACE
-          run_if: ALL_SUCCESS
-      email_notifications: {}
-      max_concurrent_runs: 1
-      queue:
-        enabled: true
-      webhook_notifications: {}
 
 >>> [CLI] bundle deployment bind test_job_key [NUMID] --auto-approve
 Updating deployment state...
