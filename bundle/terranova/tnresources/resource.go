@@ -11,19 +11,35 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 )
 
+const (
+	_jobs      = "jobs"
+	_pipelines = "pipelines"
+	_schemas   = "schemas"
+	_apps      = "apps"
+)
+
 var supportedResources = map[string]reflect.Value{
-	"jobs":      reflect.ValueOf(NewResourceJob),
-	"pipelines": reflect.ValueOf(NewResourcePipeline),
-	"schemas":   reflect.ValueOf(NewResourceSchema),
-	"apps":      reflect.ValueOf(NewResourceApp),
+	_jobs:      reflect.ValueOf(NewResourceJob),
+	_pipelines: reflect.ValueOf(NewResourcePipeline),
+	_schemas:   reflect.ValueOf(NewResourceSchema),
+	_apps:      reflect.ValueOf(NewResourceApp),
 }
 
 // This types matches what Config() returns and should match 'config' field in the resource struct
 var supportedResourcesTypes = map[string]reflect.Type{
-	"jobs":      reflect.TypeOf(ResourceJob{}.config),
-	"pipelines": reflect.TypeOf(ResourcePipeline{}.config),
-	"schemas":   reflect.TypeOf(ResourceSchema{}.config),
-	"apps":      reflect.TypeOf(ResourceApp{}.config),
+	_jobs:      reflect.TypeOf(ResourceJob{}.config),
+	_pipelines: reflect.TypeOf(ResourcePipeline{}.config),
+	_schemas:   reflect.TypeOf(ResourceSchema{}.config),
+	_apps:      reflect.TypeOf(ResourceApp{}.config),
+}
+
+type DeleteResourceFN = func(ctx context.Context, client *databricks.WorkspaceClient, oldID string) error
+
+var deletableResources = map[string]DeleteResourceFN{
+	_jobs:      DeleteJob,
+	_pipelines: DeletePipeline,
+	_schemas:   DeleteSchema,
+	_apps:      DeleteApp,
 }
 
 type IResource interface {
@@ -34,9 +50,7 @@ type IResource interface {
 
 	// Update the resource. Returns id of the resource.
 	// Usually returns the same id as oldId but can also return a different one (e.g. schemas and volumes when certain fields are changed)
-	DoUpdate(ctx context.Context, oldId string) (string, error)
-
-	DoDelete(ctx context.Context, oldId string) error
+	DoUpdate(ctx context.Context, oldID string) (string, error)
 
 	WaitAfterCreate(ctx context.Context) error
 	WaitAfterUpdate(ctx context.Context) error
@@ -59,9 +73,7 @@ func invokeConstructor(ctor reflect.Value, client *databricks.WorkspaceClient, c
 	// Prepare the config value matching the expected type.
 	var cfgVal reflect.Value
 	if cfg == nil {
-		// Treat nil as a request for the zero value of the expected config type. This
-		// is useful for actions (like deletion) where the config is irrelevant.
-		cfgVal = reflect.Zero(expectedCfgType)
+		return nil, errors.New("internal error, config must not be nil")
 	} else {
 		suppliedVal := reflect.ValueOf(cfg)
 		if suppliedVal.Type() != expectedCfgType {
@@ -115,4 +127,12 @@ func New(client *databricks.WorkspaceClient, group, name string, config any) (IR
 	}
 
 	return result, cfgType, nil
+}
+
+func DeleteResource(ctx context.Context, client *databricks.WorkspaceClient, group, id string) error {
+	fn, ok := deletableResources[group]
+	if !ok {
+		return fmt.Errorf("cannot delete %s", group)
+	}
+	return fn(ctx, client, id)
 }

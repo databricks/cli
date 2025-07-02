@@ -1,1 +1,2 @@
 EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["terraform"]  # "bundle summary" not implemented for direct deployment
+EnvMatrix.VARIANT = ["empty_resources.yml", "no_resources.yml"]

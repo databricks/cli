@@ -23,12 +23,11 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== Print summary after deploy; it should have id and no modified_status. Badness: incorrectly shows modified_status=created
+=== Print summary after deploy; it should have id and no modified_status
 >>> [CLI] bundle summary --output json
 {
   "backend_type": "DATABRICKS",
   "id": "my-secrets-[UUID]",
-  "modified_status": "created",
   "name": "my-secrets-[UUID]",
   "permissions": [
     {

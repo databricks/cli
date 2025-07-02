@@ -9,7 +9,6 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy"
-	tf "github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/stretchr/testify/require"
 )
@@ -22,7 +21,7 @@ func identityFiler(f filer.Filer) deploy.FilerFactory {
 }
 
 func localStateFile(t *testing.T, ctx context.Context, b *bundle.Bundle) string {
-	dir, err := tf.Dir(ctx, b)
+	dir, err := b.CacheDir(ctx, "terraform")
 	require.NoError(t, err)
 	return filepath.Join(dir, b.StateFilename())
 }
