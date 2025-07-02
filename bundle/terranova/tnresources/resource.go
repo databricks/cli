@@ -12,34 +12,38 @@ import (
 )
 
 const (
-	_jobs      = "jobs"
-	_pipelines = "pipelines"
-	_schemas   = "schemas"
-	_apps      = "apps"
+	_jobs           = "jobs"
+	_pipelines      = "pipelines"
+	_schemas        = "schemas"
+	_apps           = "apps"
+	_sql_warehouses = "sql_warehouses"
 )
 
 var supportedResources = map[string]reflect.Value{
-	_jobs:      reflect.ValueOf(NewResourceJob),
-	_pipelines: reflect.ValueOf(NewResourcePipeline),
-	_schemas:   reflect.ValueOf(NewResourceSchema),
-	_apps:      reflect.ValueOf(NewResourceApp),
+	_jobs:           reflect.ValueOf(NewResourceJob),
+	_pipelines:      reflect.ValueOf(NewResourcePipeline),
+	_schemas:        reflect.ValueOf(NewResourceSchema),
+	_apps:           reflect.ValueOf(NewResourceApp),
+	_sql_warehouses: reflect.ValueOf(NewResourceSqlWarehouse),
 }
 
 // This types matches what Config() returns and should match 'config' field in the resource struct
 var supportedResourcesTypes = map[string]reflect.Type{
-	_jobs:      reflect.TypeOf(ResourceJob{}.config),
-	_pipelines: reflect.TypeOf(ResourcePipeline{}.config),
-	_schemas:   reflect.TypeOf(ResourceSchema{}.config),
-	_apps:      reflect.TypeOf(ResourceApp{}.config),
+	_jobs:           reflect.TypeOf(ResourceJob{}.config),
+	_pipelines:      reflect.TypeOf(ResourcePipeline{}.config),
+	_schemas:        reflect.TypeOf(ResourceSchema{}.config),
+	_apps:           reflect.TypeOf(ResourceApp{}.config),
+	_sql_warehouses: reflect.TypeOf(ResourceSqlWarehouse{}.config),
 }
 
 type DeleteResourceFN = func(ctx context.Context, client *databricks.WorkspaceClient, oldID string) error
 
 var deletableResources = map[string]DeleteResourceFN{
-	_jobs:      DeleteJob,
-	_pipelines: DeletePipeline,
-	_schemas:   DeleteSchema,
-	_apps:      DeleteApp,
+	_jobs:           DeleteJob,
+	_pipelines:      DeletePipeline,
+	_schemas:        DeleteSchema,
+	_apps:           DeleteApp,
+	_sql_warehouses: DeleteSqlWarehouse,
 }
 
 type IResource interface {

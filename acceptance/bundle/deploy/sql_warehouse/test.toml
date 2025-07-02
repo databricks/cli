@@ -2,7 +2,7 @@ Cloud = true
 Local = true
 CloudSlow = true
 
-EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["terraform"]
+EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["terraform", "direct-exp"]
 
 Ignore = [
     "databricks.yml",
