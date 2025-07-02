@@ -1,7 +1,7 @@
 title "Create a pre-defined job:\n"
 
-PYTHON_FILE_PATH="/Workspace/Users/${CURRENT_USER_NAME}/python-${UNIQUE_NAME}"
-PYTHON_FILE="${PYTHON_FILE_PATH}/test"
+PYTHON_NOTEBOOK_DIR="/Workspace/Users/${CURRENT_USER_NAME}/python-${UNIQUE_NAME}"
+PYTHON_NOTEBOOK="${PYTHON_NOTEBOOK_DIR}/test"
 
 JOB_ID=$($CLI jobs create --json '
 {
@@ -20,7 +20,7 @@ JOB_ID=$($CLI jobs create --json '
 					}
       },
       "notebook_task": {
-        "notebook_path": "'${PYTHON_FILE}'"
+        "notebook_path": "'${PYTHON_NOTEBOOK}'"
       }
     }
   ]
@@ -32,13 +32,13 @@ envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
     title "Delete the tmp folder:"
-    trace $CLI workspace delete ${PYTHON_FILE}
-    trace $CLI workspace delete ${PYTHON_FILE_PATH}
+    trace $CLI workspace delete ${PYTHON_NOTEBOOK}
+    trace $CLI workspace delete ${PYTHON_NOTEBOOK_DIR}
 }
 trap cleanup EXIT
 
-trace $CLI workspace mkdirs "${PYTHON_FILE_PATH}"
-trace $CLI workspace import "${PYTHON_FILE}" --file test.py --language PYTHON
+trace $CLI workspace mkdirs "${PYTHON_NOTEBOOK_DIR}"
+trace $CLI workspace import "${PYTHON_NOTEBOOK}" --file test.py --language PYTHON
 
 trace $CLI bundle generate job --key test_job_key --existing-job-id $JOB_ID --config-dir resources --source-dir src
 trace ls src/
