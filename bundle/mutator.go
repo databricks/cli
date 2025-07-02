@@ -65,7 +65,7 @@ func Apply(ctx context.Context, b *Bundle, m Mutator) diag.Diagnostics {
 
 		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
 			Key:   safeMutatorName(m),
-			Value: time.Since(t0).Milliseconds(),
+			Value: duration,
 		})
 	}()
 
