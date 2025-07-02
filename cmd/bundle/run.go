@@ -150,8 +150,6 @@ Example usage:
 		}
 
 		diags = diags.Extend(bundle.ApplySeq(ctx, b,
-			terraform.Interpolate(),
-			terraform.Write(),
 			statemgmt.StatePull(),
 			terraform.Load(terraform.ErrorOnEmptyState),
 		))
