@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"os"
+	"path/filepath"
 )
 
 const NODE_DEBUG_PORT = "9229"
@@ -38,6 +39,19 @@ func (n *NodeApp) PrepareEnvironment() error {
 	installArgs := []string{"npm", "install"}
 	if err := runCommand(n.ctx, n.config.AppPath, installArgs); err != nil {
 		return err
+	}
+
+	// Install Python dependencies if requirements.txt exists
+	if _, err := os.Stat(filepath.Join(n.config.AppPath, "requirements.txt")); err == nil {
+		venvArgs := []string{"uv", "venv"}
+		if err := runCommand(n.ctx, n.config.AppPath, venvArgs); err != nil {
+			return err
+		}
+
+		installArgs := []string{"uv", "pip", "install", "-r", "requirements.txt"}
+		if err := runCommand(n.ctx, n.config.AppPath, installArgs); err != nil {
+			return err
+		}
 	}
 
 	// Run build script if it exists
