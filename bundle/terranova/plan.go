@@ -70,12 +70,17 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 	client := b.WorkspaceClient()
 	var actions []deployplan.Action
 
+	state := b.ResourceDatabase.ExportState(ctx)
+
 	_, err := dyn.MapByPattern(
 		b.Config.Value(),
 		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()),
 		func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 			group := p[1].Key()
 			name := p[2].Key()
+
+			groupState := state[group]
+			delete(groupState, name)
 
 			config, ok := b.GetResourceConfig(group, name)
 			if !ok {
@@ -102,11 +107,21 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 				})
 			}
 
-			// TODO: this does not handle resources that were deleted in the config
-
 			return v, nil
 		},
 	)
+
+	// Remained in state are resources that no longer present in the config
+	for group, groupState := range state {
+		for name := range groupState {
+			actions = append(actions, deployplan.Action{
+				Group:      group,
+				Name:       name,
+				ActionType: deployplan.ActionTypeDelete,
+			})
+		}
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf("while reading resources config: %w", err)
 	}
