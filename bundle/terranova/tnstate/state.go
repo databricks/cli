@@ -58,6 +58,9 @@ func (db *TerranovaState) DeleteState(group, resourceName string) error {
 	}
 
 	delete(groupData, resourceName)
+	if len(groupData) == 0 {
+		delete(db.Data.Resources, group)
+	}
 
 	return nil
 }
