@@ -117,6 +117,7 @@ func newOpenCommand() *cobra.Command {
 			return errors.New("resource does not have a URL associated with it (has it been deployed?)")
 		}
 
+		cmdio.LogString(ctx, fmt.Sprintf("Opening browser at %s", url))
 		return browser.OpenURL(url)
 	}
 
