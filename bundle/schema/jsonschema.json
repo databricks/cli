@@ -405,52 +405,42 @@
                     "type": "object",
                     "properties": {
                       "create_time": {
-                        "description": "The timestamp of when the dashboard was created.",
                         "$ref": "#/$defs/string"
                       },
                       "dashboard_id": {
-                        "description": "UUID identifying the dashboard.",
                         "$ref": "#/$defs/string"
                       },
                       "display_name": {
-                        "description": "The display name of the dashboard.",
                         "$ref": "#/$defs/string"
                       },
                       "embed_credentials": {
                         "$ref": "#/$defs/bool"
                       },
                       "etag": {
-                        "description": "The etag for the dashboard. Can be optionally provided on updates to ensure that the dashboard\nhas not been modified since the last read.\nThis field is excluded in List Dashboards responses.",
                         "$ref": "#/$defs/string"
                       },
                       "file_path": {
                         "$ref": "#/$defs/string"
                       },
                       "lifecycle_state": {
-                        "description": "The state of the dashboard resource. Used for tracking trashed status.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/dashboards.LifecycleState"
                       },
                       "parent_path": {
-                        "description": "The workspace path of the folder containing the dashboard. Includes leading slash and no\ntrailing slash.\nThis field is excluded in List Dashboards responses.",
                         "$ref": "#/$defs/string"
                       },
                       "path": {
-                        "description": "The workspace path of the dashboard asset, including the file name.\nExported dashboards always have the file extension `.lvdash.json`.\nThis field is excluded in List Dashboards responses.",
                         "$ref": "#/$defs/string"
                       },
                       "permissions": {
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.DashboardPermission"
                       },
                       "serialized_dashboard": {
-                        "description": "The contents of the dashboard in serialized string form.\nThis field is excluded in List Dashboards responses.\nUse the [get dashboard API](https://docs.databricks.com/api/workspace/lakeview/get)\nto retrieve an example response, which includes the `serialized_dashboard` field.\nThis field provides the structure of the JSON string that represents the dashboard's\nlayout and components.",
                         "$ref": "#/$defs/interface"
                       },
                       "update_time": {
-                        "description": "The timestamp of when the dashboard was last updated by the user.\nThis field is excluded in List Dashboards responses.",
                         "$ref": "#/$defs/string"
                       },
                       "warehouse_id": {
-                        "description": "The warehouse ID used to run the dashboard.",
                         "$ref": "#/$defs/string"
                       }
                     },
@@ -1410,6 +1400,110 @@
                   }
                 ]
               },
+              "resources.SqlWarehouse": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "auto_stop_mins": {
+                        "$ref": "#/$defs/int"
+                      },
+                      "channel": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.Channel"
+                      },
+                      "cluster_size": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "creator_name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "enable_photon": {
+                        "$ref": "#/$defs/bool"
+                      },
+                      "enable_serverless_compute": {
+                        "$ref": "#/$defs/bool"
+                      },
+                      "instance_profile_arn": {
+                        "$ref": "#/$defs/string",
+                        "deprecationMessage": "This field is deprecated",
+                        "deprecated": true
+                      },
+                      "max_num_clusters": {
+                        "$ref": "#/$defs/int"
+                      },
+                      "min_num_clusters": {
+                        "$ref": "#/$defs/int"
+                      },
+                      "name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "permissions": {
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.SqlWarehousePermission"
+                      },
+                      "spot_instance_policy": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.SpotInstancePolicy"
+                      },
+                      "tags": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.EndpointTags"
+                      },
+                      "warehouse_type": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.CreateWarehouseRequestWarehouseType"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.SqlWarehousePermission": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "group_name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "level": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.SqlWarehousePermissionLevel"
+                      },
+                      "service_principal_name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "user_name": {
+                        "$ref": "#/$defs/string"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "level"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.SqlWarehousePermissionLevel": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "CAN_MANAGE",
+                      "CAN_USE",
+                      "CAN_MONITOR",
+                      "CAN_VIEW"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "resources.Volume": {
                 "oneOf": [
                   {
@@ -1952,6 +2046,9 @@
                     },
                     "secret_scopes": {
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.SecretScope"
+                    },
+                    "sql_warehouses": {
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.SqlWarehouse"
                     },
                     "volumes": {
                       "description": "The volume definitions for the bundle, where each key is the name of the volume.",
@@ -7679,6 +7776,115 @@
                 }
               ]
             },
+            "sql.Channel": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Configures the channel name and DBSQL version of the warehouse. CHANNEL_NAME_CUSTOM should be chosen only when `dbsql_version` is specified.",
+                  "properties": {
+                    "dbsql_version": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "name": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.ChannelName"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "sql.ChannelName": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "CHANNEL_NAME_PREVIEW",
+                    "CHANNEL_NAME_CURRENT",
+                    "CHANNEL_NAME_PREVIOUS",
+                    "CHANNEL_NAME_CUSTOM"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "sql.CreateWarehouseRequestWarehouseType": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Warehouse type: `PRO` or `CLASSIC`. If you want to use serverless compute, you must set to `PRO` and also set the field `enable_serverless_compute` to `true`.",
+                  "enum": [
+                    "TYPE_UNSPECIFIED",
+                    "CLASSIC",
+                    "PRO"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "sql.EndpointTagPair": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "key": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "value": {
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "sql.EndpointTags": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "custom_tags": {
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/sql.EndpointTagPair"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "sql.SpotInstancePolicy": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Configurations whether the warehouse should use spot instances.",
+                  "enum": [
+                    "POLICY_UNSPECIFIED",
+                    "COST_OPTIMIZED",
+                    "RELIABILITY_OPTIMIZED"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "workspace.AzureKeyVaultSecretScopeMetadata": {
               "oneOf": [
                 {
@@ -7945,6 +8151,20 @@
                       "type": "object",
                       "additionalProperties": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.SecretScope"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.SqlWarehouse": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.SqlWarehouse"
                       }
                     },
                     {
@@ -8223,6 +8443,20 @@
                       "type": "array",
                       "items": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.SecretScopePermission"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.SqlWarehousePermission": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.SqlWarehousePermission"
                       }
                     },
                     {
@@ -8620,6 +8854,20 @@
                     "type": "array",
                     "items": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.ServedModelInput"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "sql.EndpointTagPair": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.EndpointTagPair"
                     }
                   },
                   {

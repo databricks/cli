@@ -212,6 +212,9 @@ github.com/databricks/cli/bundle/config.Resources:
   "secret_scopes":
     "description": |-
       PLACEHOLDER
+  "sql_warehouses":
+    "description": |-
+      PLACEHOLDER
   "volumes":
     "description": |-
       The volume definitions for the bundle, where each key is the name of the volume.
@@ -442,6 +445,37 @@ github.com/databricks/cli/bundle/config/resources.ClusterPermission:
   "user_name":
     "description": |-
       PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.Dashboard:
+  "create_time":
+    "description": |-
+      PLACEHOLDER
+  "dashboard_id":
+    "description": |-
+      PLACEHOLDER
+  "display_name":
+    "description": |-
+      PLACEHOLDER
+  "etag":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle_state":
+    "description": |-
+      PLACEHOLDER
+  "parent_path":
+    "description": |-
+      PLACEHOLDER
+  "path":
+    "description": |-
+      PLACEHOLDER
+  "serialized_dashboard":
+    "description": |-
+      PLACEHOLDER
+  "update_time":
+    "description": |-
+      PLACEHOLDER
+  "warehouse_id":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.DashboardPermission:
   "group_name":
     "description": |-
@@ -571,6 +605,62 @@ github.com/databricks/cli/bundle/config/resources.SecretScopePermission:
   "user_name":
     "description": |-
       The name of the user that has the permission set in level. This field translates to a `principal` field in secret scope ACL.
+github.com/databricks/cli/bundle/config/resources.SqlWarehouse:
+  "auto_stop_mins":
+    "description": |-
+      PLACEHOLDER
+  "channel":
+    "description": |-
+      PLACEHOLDER
+  "cluster_size":
+    "description": |-
+      PLACEHOLDER
+  "creator_name":
+    "description": |-
+      PLACEHOLDER
+  "enable_photon":
+    "description": |-
+      PLACEHOLDER
+  "enable_serverless_compute":
+    "description": |-
+      PLACEHOLDER
+  "instance_profile_arn":
+    "description": |-
+      PLACEHOLDER
+  "max_num_clusters":
+    "description": |-
+      PLACEHOLDER
+  "min_num_clusters":
+    "description": |-
+      PLACEHOLDER
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+  "spot_instance_policy":
+    "description": |-
+      PLACEHOLDER
+  "tags":
+    "description": |-
+      PLACEHOLDER
+  "warehouse_type":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.SqlWarehousePermission:
+  "group_name":
+    "description": |-
+      PLACEHOLDER
+  "level":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "user_name":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/variable.Lookup:
   "alert":
     "description": |-
