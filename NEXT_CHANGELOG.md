@@ -3,6 +3,7 @@
 ## Release v0.258.0
 
 ### Notable Changes
+* Switch default-python template to use pyproject.toml + dynamic\_version in dev target. uv is now required. ([#3042](https://github.com/databricks/cli/pull/3042))
 
 ### Dependency updates
 * Upgraded TF provider to 1.84.0 ([#3151](https://github.com/databricks/cli/pull/3151))

@@ -1,9 +1,16 @@
+{{$with_classic := (ne .serverless "yes") -}}
+{{$with_python := (eq .include_python "yes") -}}
 # This is a Databricks asset bundle definition for {{.project_name}}.
 # See https://docs.databricks.com/dev-tools/bundles/index.html for documentation.
 bundle:
   name: {{.project_name}}
   uuid: {{bundle_uuid}}
-
+{{ if $with_python }}
+artifacts:
+  python_artifact:
+    type: whl
+    build: uv build --wheel
+{{ end }}
 include:
   - resources/*.yml
   - resources/*/*.yml
@@ -18,7 +25,14 @@ targets:
     default: true
     workspace:
       host: {{workspace_host}}
-
+{{ if ($with_classic) }}
+    presets:
+      # Set dynamic_version: true on all artifacts of type "whl".
+      # This makes "bundle deploy" add a timestamp to wheel's version before uploading,
+      # new wheel takes over the previous installation even if actual wheel version is unchanged.
+      # See https://docs.databricks.com/aws/en/dev-tools/bundles/settings
+      artifacts_dynamic_version: true
+{{ end }}
   prod:
     mode: production
     workspace:
