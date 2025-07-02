@@ -1,6 +1,8 @@
 package dyn
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // PatternTrie is a trie data structure for storing and querying patterns.
 // It supports both exact matches and wildcard matches. You can insert [Pattern]s
@@ -84,7 +86,7 @@ func (t *PatternTrie) Insert(pattern Pattern) error {
 				}
 				next = current.pathKey[key]
 			} else {
-				return fmt.Errorf("specific index patterns are not supported")
+				return fmt.Errorf("fixed index patterns are not supported: %#v", pattern)
 			}
 		}
 

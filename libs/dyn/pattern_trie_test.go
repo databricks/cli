@@ -183,3 +183,13 @@ func TestPatternTrie_OverlappingPatterns(t *testing.T) {
 		assert.True(t, ok)
 	}
 }
+
+func TestPatternTrie_FixedIndexPatterns(t *testing.T) {
+	trie := dyn.NewPatternTrie()
+
+	err := trie.Insert(dyn.MustPatternFromString("foo[0]"))
+	assert.EqualError(t, err, "fixed index patterns are not supported: dyn.Pattern{dyn.pathComponent{key:\"foo\", index:0}, dyn.pathComponent{key:\"\", index:0}}")
+
+	err = trie.Insert(dyn.MustPatternFromString("foo[2]"))
+	assert.EqualError(t, err, "fixed index patterns are not supported: dyn.Pattern{dyn.pathComponent{key:\"foo\", index:0}, dyn.pathComponent{key:\"\", index:2}}")
+}
