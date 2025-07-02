@@ -126,16 +126,11 @@ func (d *Deployer) destroy(ctx context.Context, inputConfig any) error {
 		return nil
 	}
 
-	resource, _, err := tnresources.New(d.client, d.group, d.resourceName, inputConfig)
-	if err != nil {
-		return err
-	}
-
 	if entry.ID == "" {
 		return errors.New("invalid state: empty id")
 	}
 
-	err = d.Delete(ctx, resource, entry.ID)
+	err := d.Delete(ctx, entry.ID)
 	if err != nil {
 		return err
 	}
@@ -272,7 +267,7 @@ func (d *Deployer) Update(ctx context.Context, resource tnresources.IResource, o
 	return nil
 }
 
-func (d *Deployer) Delete(ctx context.Context, resource tnresources.IResource, oldID string) error {
+func (d *Deployer) Delete(ctx context.Context, oldID string) error {
 	// TODO: recognize 404 and 403 as "deleted" and proceed to removing state
 	err := tnresources.DeleteResource(ctx, d.client, d.group, oldID)
 	if err != nil {
