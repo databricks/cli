@@ -7,7 +7,7 @@
         "version": "[DEV_VERSION]",
         "command": "bundle_deploy",
         "operating_system": "[OS]",
-        "execution_time_ms": "SMALL_INT",
+        "execution_time_ms": SMALL_INT,
         "exit_code": 0
       },
       "bundle_deploy_event": {
