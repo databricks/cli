@@ -38,9 +38,9 @@ func NewGeneratePipelineCommand() *cobra.Command {
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		b, diags := root.MustConfigureBundle(cmd)
-		if err := diags.Error(); err != nil {
-			return diags.Error()
+		b := root.MustConfigureBundle(cmd)
+		if b == nil {
+			return root.ErrAlreadyPrinted
 		}
 
 		w := b.WorkspaceClient()

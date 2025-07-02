@@ -5,9 +5,13 @@ import (
 	"reflect"
 	"time"
 
+	"fmt"
+
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/telemetry/protos"
+
+	"github.com/databricks/cli/libs/logdiag"
 )
 
 // Mutator is the interface type that mutates a bundle's configuration or internal state.
@@ -52,8 +56,7 @@ func safeMutatorName(m Mutator) string {
 	return packageName + ".(" + typeName + ")"
 }
 
-func Apply(ctx context.Context, b *Bundle, m Mutator) diag.Diagnostics {
-	// Track the execution time of the mutator.
+func ApplyContext(ctx context.Context, b *Bundle, m Mutator) {
 	t0 := time.Now()
 	defer func() {
 		duration := time.Since(t0).Milliseconds()
@@ -75,43 +78,35 @@ func Apply(ctx context.Context, b *Bundle, m Mutator) diag.Diagnostics {
 
 	err := b.Config.MarkMutatorEntry(ctx)
 	if err != nil {
-		log.Errorf(ctx, "entry error: %s", err)
-		return diag.Errorf("entry error: %s", err)
+		logdiag.LogError(ctx, fmt.Errorf("entry error: %w", err))
+		return
 	}
 
 	defer func() {
 		err := b.Config.MarkMutatorExit(ctx)
 		if err != nil {
-			log.Errorf(ctx, "exit error: %s", err)
+			logdiag.LogError(ctx, fmt.Errorf("exit error: %w", err))
 		}
 	}()
 
 	diags := m.Apply(ctx, b)
 
-	// Log error in diagnostics if any.
-	// Note: errors should be logged when constructing them
-	// such that they are not logged multiple times.
-	// If this is done, we can omit this block.
-	if err := diags.Error(); err != nil {
-		log.Debugf(ctx, "Error: %s", err)
+	for _, d := range diags {
+		logdiag.LogDiag(ctx, d)
 	}
-
-	return diags
 }
 
-func ApplySeq(ctx context.Context, b *Bundle, mutators ...Mutator) diag.Diagnostics {
-	diags := diag.Diagnostics{}
+func ApplySeqContext(ctx context.Context, b *Bundle, mutators ...Mutator) {
 	for _, m := range mutators {
-		diags = diags.Extend(Apply(ctx, b, m))
-		if diags.HasError() {
-			return diags
+		ApplyContext(ctx, b, m)
+		if logdiag.HasError(ctx) {
+			break
 		}
 	}
-	return diags
 }
 
 type funcMutator struct {
-	fn func(context.Context, *Bundle) diag.Diagnostics
+	fn func(context.Context, *Bundle)
 }
 
 func (m funcMutator) Name() string {
@@ -119,10 +114,32 @@ func (m funcMutator) Name() string {
 }
 
 func (m funcMutator) Apply(ctx context.Context, b *Bundle) diag.Diagnostics {
-	return m.fn(ctx, b)
+	m.fn(ctx, b)
+	return nil
 }
 
-// ApplyFunc applies an inline-specified function mutator.
-func ApplyFunc(ctx context.Context, b *Bundle, fn func(context.Context, *Bundle) diag.Diagnostics) diag.Diagnostics {
-	return Apply(ctx, b, funcMutator{fn})
+// ApplyFuncContext applies an inline-specified function mutator.
+func ApplyFuncContext(ctx context.Context, b *Bundle, fn func(context.Context, *Bundle)) {
+	ApplyContext(ctx, b, funcMutator{fn})
+}
+
+// Test helpers. TODO: move to separate package.
+
+func Apply(ctx context.Context, b *Bundle, m Mutator) diag.Diagnostics {
+	if !logdiag.IsSetup(ctx) {
+		ctx = logdiag.InitContext(ctx)
+	}
+	logdiag.SetCollect(ctx, true)
+	ApplyContext(ctx, b, m)
+	return logdiag.FlushCollected(ctx)
+}
+
+// Test helper to get diagnostics in this call
+func ApplySeq(ctx context.Context, b *Bundle, mutators ...Mutator) diag.Diagnostics {
+	if !logdiag.IsSetup(ctx) {
+		ctx = logdiag.InitContext(ctx)
+	}
+	logdiag.SetCollect(ctx, true)
+	ApplySeqContext(ctx, b, mutators...)
+	return logdiag.FlushCollected(ctx)
 }

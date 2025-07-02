@@ -10,14 +10,17 @@ import (
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/stretchr/testify/require"
 )
 
 func load(t *testing.T, path string) *bundle.Bundle {
-	ctx := context.Background()
+	ctx := logdiag.InitContext(context.Background())
+	logdiag.SetCollect(ctx, true)
 	b, err := bundle.Load(ctx, path)
 	require.NoError(t, err)
-	diags := phases.Load(ctx, b)
+	phases.Load(ctx, b)
+	diags := diag.Diagnostics(logdiag.GetCollected(ctx))
 	require.NoError(t, diags.Error())
 	return b
 }
@@ -29,13 +32,15 @@ func loadTarget(t *testing.T, path, env string) *bundle.Bundle {
 }
 
 func loadTargetWithDiags(path, env string) (*bundle.Bundle, diag.Diagnostics) {
-	ctx := context.Background()
+	ctx := logdiag.InitContext(context.Background())
+	logdiag.SetCollect(ctx, true)
 	b, err := bundle.Load(ctx, path)
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
 
-	diags := phases.LoadNamedTarget(ctx, b, env)
+	phases.LoadNamedTarget(ctx, b, env)
+	diags := diag.Diagnostics(logdiag.GetCollected(ctx))
 
 	diags = diags.Extend(bundle.ApplySeq(ctx, b,
 		mutator.RewriteSyncPaths(),

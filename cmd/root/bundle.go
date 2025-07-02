@@ -7,8 +7,8 @@ import (
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/libs/cmdctx"
-	"github.com/databricks/cli/libs/diag"
 	envlib "github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/maps"
 )
@@ -61,38 +61,33 @@ func getProfile(cmd *cobra.Command) (value string) {
 }
 
 // configureProfile applies the profile flag to the bundle.
-func configureProfile(cmd *cobra.Command, b *bundle.Bundle) diag.Diagnostics {
+func configureProfile(cmd *cobra.Command, b *bundle.Bundle) {
 	profile := getProfile(cmd)
 	if profile == "" {
-		return nil
+		return
 	}
 
-	return bundle.ApplyFunc(cmd.Context(), b, func(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	bundle.ApplyFuncContext(cmd.Context(), b, func(ctx context.Context, b *bundle.Bundle) {
 		b.Config.Workspace.Profile = profile
-		return nil
 	})
 }
 
 // configureBundle loads the bundle configuration and configures flag values, if any.
-func configureBundle(cmd *cobra.Command, b *bundle.Bundle) (*bundle.Bundle, diag.Diagnostics) {
+func configureBundle(cmd *cobra.Command, b *bundle.Bundle) {
 	// Load bundle and select target.
 	ctx := cmd.Context()
-	var diags diag.Diagnostics
 	if target := getTarget(cmd); target == "" {
-		diags = phases.LoadDefaultTarget(ctx, b)
+		phases.LoadDefaultTarget(ctx, b)
 	} else {
-		diags = phases.LoadNamedTarget(ctx, b, target)
+		phases.LoadNamedTarget(ctx, b, target)
 	}
 
-	if diags.HasError() {
-		return b, diags
+	if logdiag.HasError(ctx) {
+		return
 	}
 
 	// Configure the workspace profile if the flag has been set.
-	diags = diags.Extend(configureProfile(cmd, b))
-	if diags.HasError() {
-		return b, diags
-	}
+	configureProfile(cmd, b)
 
 	// Set the auth configuration in the command context. This can be used
 	// downstream to initialize a API client.
@@ -101,67 +96,62 @@ func configureBundle(cmd *cobra.Command, b *bundle.Bundle) (*bundle.Bundle, diag
 	// is a fast operation. It does not perform network I/O or invoke processes (for example the Azure CLI).
 	client, err := b.WorkspaceClientE()
 	if err != nil {
-		return b, diags.Extend(diag.FromErr(err))
+		logdiag.LogError(ctx, err)
+		return
 	}
 	ctx = cmdctx.SetConfigUsed(ctx, client.Config)
 	cmd.SetContext(ctx)
-
-	return b, diags
 }
 
 // MustConfigureBundle configures a bundle on the command context.
-func MustConfigureBundle(cmd *cobra.Command) (*bundle.Bundle, diag.Diagnostics) {
+// TODO: no need to return ctx
+func MustConfigureBundle(cmd *cobra.Command) *bundle.Bundle {
 	// A bundle may be configured on the context when testing.
 	// If it is, return it immediately.
 	b := bundle.GetOrNil(cmd.Context())
 	if b != nil {
-		return b, nil
+		return b
 	}
 
-	b, err := bundle.MustLoad(cmd.Context())
-	if err != nil {
-		return nil, diag.FromErr(err)
+	b = bundle.MustLoad(cmd.Context())
+	if b != nil {
+		configureBundle(cmd, b)
 	}
-
-	return configureBundle(cmd, b)
+	return b
 }
 
 // TryConfigureBundle configures a bundle on the command context
 // if there is one, but doesn't fail if there isn't one.
-func TryConfigureBundle(cmd *cobra.Command) (*bundle.Bundle, diag.Diagnostics) {
+func TryConfigureBundle(cmd *cobra.Command) *bundle.Bundle {
 	// A bundle may be configured on the context when testing.
 	// If it is, return it immediately.
 	b := bundle.GetOrNil(cmd.Context())
 	if b != nil {
-		return b, nil
+		return b
 	}
 
-	b, err := bundle.TryLoad(cmd.Context())
-	if err != nil {
-		return nil, diag.FromErr(err)
-	}
-
+	ctx := cmd.Context()
+	b = bundle.TryLoad(ctx)
 	// No bundle is fine in this case.
-	if b == nil {
-		return nil, nil
+	if b == nil || logdiag.HasError(ctx) {
+		return nil
 	}
 
-	return configureBundle(cmd, b)
+	configureBundle(cmd, b)
+	return b
 }
 
 // targetCompletion executes to autocomplete the argument to the target flag.
 func targetCompletion(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	ctx := cmd.Context()
-	b, err := bundle.MustLoad(ctx)
-	if err != nil {
-		cobra.CompErrorln(err.Error())
+	b := bundle.MustLoad(ctx)
+	if b == nil || logdiag.HasError(ctx) {
 		return nil, cobra.ShellCompDirectiveError
 	}
 
 	// Load bundle but don't select a target (we're completing those).
-	diags := phases.Load(ctx, b)
-	if err := diags.Error(); err != nil {
-		cobra.CompErrorln(err.Error())
+	phases.Load(ctx, b)
+	if logdiag.HasError(ctx) {
 		return nil, cobra.ShellCompDirectiveError
 	}
 

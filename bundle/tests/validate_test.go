@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -127,12 +128,14 @@ func TestValidateUniqueResourceIdentifiers(t *testing.T) {
 
 	for _, tc := range tcases {
 		t.Run(tc.name, func(t *testing.T) {
-			ctx := context.Background()
+			ctx := logdiag.InitContext(context.Background())
+			logdiag.SetCollect(ctx, true)
 			b, err := bundle.Load(ctx, "./validate/"+tc.name)
 			require.NoError(t, err)
 
 			// The UniqueResourceKeys mutator is run as part of the Load phase.
-			diags := phases.Load(ctx, b)
+			phases.Load(ctx, b)
+			diags := diag.Diagnostics(logdiag.GetCollected(ctx))
 			assert.Equal(t, tc.diagnostics, diags)
 		})
 	}

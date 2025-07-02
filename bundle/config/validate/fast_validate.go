@@ -25,7 +25,7 @@ func (f *fastValidate) Name() string {
 }
 
 func (f *fastValidate) Apply(ctx context.Context, rb *bundle.Bundle) diag.Diagnostics {
-	return bundle.ApplyParallel(ctx, rb,
+	bundle.ApplyParallel(ctx, rb,
 		// Fast mutators with only in-memory checks
 		JobClusterKeyDefined(),
 		JobTaskClusterSpec(),
@@ -33,4 +33,6 @@ func (f *fastValidate) Apply(ctx context.Context, rb *bundle.Bundle) diag.Diagno
 		// Blocking mutators. Deployments will fail if these checks fail.
 		ValidateArtifactPath(),
 	)
+
+	return nil
 }
