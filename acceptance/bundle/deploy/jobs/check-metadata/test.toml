@@ -1,6 +1,8 @@
 Local = false
 Cloud = true
 
+EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["terraform"]  # require "bundle summary"
+
 Ignore = [
     "databricks.yml",
     "a/b/resources.yml",
@@ -14,5 +16,7 @@ Ignore = [
 MSYS_NO_PATHCONV = "1"
 
 [[Repls]]
-Old = "[0-9]{12,}"
-New = "[NUMID]"
+# clean up ?o=<num> suffix after URL since not all workspaces have that
+Old = '\?o=\[NUMID\]'
+New = ''
+Order = 1000

@@ -23,6 +23,10 @@ type AppPermission struct {
 }
 
 type App struct {
+	// This is app's name pulled from the state. Usually the same as Name but may be different if Name in the config
+	// was changed but the app was not re-deployed yet.
+	ID string `json:"id,omitempty" bundle:"readonly"`
+
 	// SourceCodePath is a required field used by DABs to point to Databricks app source code
 	// on local disk and to the corresponding workspace path during app deployment.
 	SourceCodePath string `json:"source_code_path"`
@@ -59,27 +63,26 @@ func (a *App) Exists(ctx context.Context, w *databricks.WorkspaceClient, name st
 
 func (*App) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
-		SingularName:          "app",
-		PluralName:            "apps",
-		SingularTitle:         "App",
-		PluralTitle:           "Apps",
-		TerraformResourceName: "databricks_app",
+		SingularName:  "app",
+		PluralName:    "apps",
+		SingularTitle: "App",
+		PluralTitle:   "Apps",
 	}
-}
-
-func (a *App) TerraformResourceName() string {
-	return "databricks_app"
 }
 
 func (a *App) InitializeURL(baseURL url.URL) {
 	if a.ModifiedStatus == "" || a.ModifiedStatus == ModifiedStatusCreated {
 		return
 	}
-	baseURL.Path = "apps/" + a.Name
+	baseURL.Path = "apps/" + a.GetName()
 	a.URL = baseURL.String()
 }
 
 func (a *App) GetName() string {
+	// Prefer name from the state - that is what is actually deployed
+	if a.ID != "" {
+		return a.ID
+	}
 	return a.Name
 }
 

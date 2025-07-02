@@ -23,6 +23,9 @@ type SecretScopePermission struct {
 }
 
 type SecretScope struct {
+	// ID is Name that is stored in resources state, usually the same as Name unless re-deployment is pending.
+	ID string `json:"id,omitempty" bundle:"readonly"`
+
 	// A unique name to identify the secret scope.
 	Name string `json:"name"`
 
@@ -74,19 +77,17 @@ func (s SecretScope) Exists(ctx context.Context, w *databricks.WorkspaceClient, 
 
 func (s SecretScope) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
-		SingularName:          "secret_scope",
-		PluralName:            "secret_scopes",
-		SingularTitle:         "Secret Scope",
-		PluralTitle:           "Secret Scopes",
-		TerraformResourceName: "databricks_secret_scope",
+		SingularName:  "secret_scope",
+		PluralName:    "secret_scopes",
+		SingularTitle: "Secret Scope",
+		PluralTitle:   "Secret Scopes",
 	}
 }
 
-func (s SecretScope) TerraformResourceName() string {
-	return "databricks_secret_scope"
-}
-
 func (s SecretScope) GetName() string {
+	if s.ID != "" {
+		return s.ID
+	}
 	return s.Name
 }
 

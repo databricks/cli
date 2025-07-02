@@ -12,7 +12,7 @@
       {
         "job_cluster_key": "key",
         "new_cluster": {
-          "node_type_id": "i3.xlarge",
+          "node_type_id": "[NODE_TYPE_ID]",
           "num_workers": 1,
           "spark_version": "13.3.x-scala2.12"
         }

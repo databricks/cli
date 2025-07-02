@@ -1,0 +1,12 @@
+bundle:
+  name: shell-cmd
+
+artifacts:
+  my_artifact:
+    executable: cmd
+    build: |-
+      if defined CMDCMDLINE (
+        echo shell is cmd.exe> out.shell.txt
+      )
+      echo multiline scripts should work>> out.shell.txt
+      echo %CD%>> out.shell.txt

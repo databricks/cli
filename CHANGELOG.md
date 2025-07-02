@@ -1,5 +1,57 @@
 # Version changelog
 
+## Release v0.257.0
+
+### Bundles
+* Improve error message for host mismatch between bundle and profile used ([#3100](https://github.com/databricks/cli/pull/3100))
+* Remove support for deprecated `experimental/pydabs` config, use `experimental/python` instead. See [Configuration in Python
+](https://docs.databricks.com/dev-tools/bundles/python). ([#3102](https://github.com/databricks/cli/pull/3102))
+* Pass through OIDC token env variable to Terraform ([#3113](https://github.com/databricks/cli/pull/3113))
+
+* The `default-python` template now prompts if you want to use serverless compute (default to `yes`) ([#3051](https://github.com/databricks/cli/pull/3051)).
+
+### API Changes
+* Removed `databricks custom-llms` command group.
+* Added `databricks ai-builder` command group.
+* Added `databricks feature-store` command group.
+
+
+## Release v0.256.0
+
+### Bundles
+* When building Python artifacts as part of "bundle deploy" we no longer delete `dist`, `build`, `*egg-info` and `__pycache__` directories ([#2982](https://github.com/databricks/cli/pull/2982))
+* When glob for wheels is used, like "\*.whl", it will filter out different version of the same package and will only take the most recent version ([#2982](https://github.com/databricks/cli/pull/2982))
+* Add preset `presets.artifacts_dynamic_version` that automatically enables `dynamic_version: true` on all "whl" artifacts ([#3074](https://github.com/databricks/cli/pull/3074))
+* Update client version to "2" for the serverless variation of the default-python template ([#3083](https://github.com/databricks/cli/pull/3083))
+* Fix reading dashboard contents when the sync root is different than the bundle root ([#3006](https://github.com/databricks/cli/pull/3006))
+* Fix variable resolution for lookup variables with other references ([#3054](https://github.com/databricks/cli/pull/3054))
+* Allow users to override the Terraform version to use by setting the `DATABRICKS_TF_VERSION` environment variable ([#3069](https://github.com/databricks/cli/pull/3069))
+
+
+## Release v0.255.0
+
+### Notable Changes
+
+* Fix `databricks auth login` to tolerate URLs copied from the browser ([#3001](https://github.com/databricks/cli/pull/3001)).
+
+### CLI
+* Use OS aware runner instead of bash for run-local command ([#2996](https://github.com/databricks/cli/pull/2996))
+
+### Bundles
+* Fix "bundle summary -o json" to render null values properly ([#2990](https://github.com/databricks/cli/pull/2990))
+* Fix dashboard generation for already imported dashboard ([#3016](https://github.com/databricks/cli/pull/3016))
+* Fixed null pointer de-reference if artifacts missing fields ([#3022](https://github.com/databricks/cli/pull/3022))
+* Update bundle templates to also include `resources/*/*.yml` ([#3024](https://github.com/databricks/cli/pull/3024))
+* Apply YAML formatter on default-python and dbt-sql templates ([#3026](https://github.com/databricks/cli/pull/3026))
+
+
+## Release v0.254.0
+
+### Bundles
+* Added `experimental.skip_artifact_cleanup` flag ([#2980](https://github.com/databricks/cli/pull/2980))
+* Add an experimental project template for Lakeflow Declarative Pipelines ([#2959](https://github.com/databricks/cli/pull/2959))
+
+
 ## Release v0.253.0
 
 ### Dependency updates

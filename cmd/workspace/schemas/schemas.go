@@ -63,7 +63,6 @@ func newCreate() *cobra.Command {
 	var createReq catalog.CreateSchema
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided free-form text description.`)
@@ -153,8 +152,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq catalog.DeleteSchemaRequest
 
-	// TODO: short flags
-
 	cmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `Force deletion even if the schema is not empty.`)
 
 	cmd.Use = "delete FULL_NAME"
@@ -169,28 +166,16 @@ func newDelete() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No FULL_NAME argument specified. Loading names for Schemas drop-down."
-			names, err := w.Schemas.SchemaInfoNameToFullNameMap(ctx, catalog.ListSchemasRequest{})
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Schemas drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "Full name of the schema")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have full name of the schema")
-		}
 		deleteReq.FullName = args[0]
 
 		err = w.Schemas.Delete(ctx, deleteReq)
@@ -226,8 +211,6 @@ func newGet() *cobra.Command {
 
 	var getReq catalog.GetSchemaRequest
 
-	// TODO: short flags
-
 	cmd.Flags().BoolVar(&getReq.IncludeBrowse, "include-browse", getReq.IncludeBrowse, `Whether to include schemas in the response for which the principal can only access selective metadata for.`)
 
 	cmd.Use = "get FULL_NAME"
@@ -243,28 +226,16 @@ func newGet() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No FULL_NAME argument specified. Loading names for Schemas drop-down."
-			names, err := w.Schemas.SchemaInfoNameToFullNameMap(ctx, catalog.ListSchemasRequest{})
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Schemas drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "Full name of the schema")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have full name of the schema")
-		}
 		getReq.FullName = args[0]
 
 		response, err := w.Schemas.Get(ctx, getReq)
@@ -299,8 +270,6 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq catalog.ListSchemasRequest
-
-	// TODO: short flags
 
 	cmd.Flags().BoolVar(&listReq.IncludeBrowse, "include-browse", listReq.IncludeBrowse, `Whether to include schemas in the response for which the principal can only access selective metadata for.`)
 	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of schemas to return.`)
@@ -364,11 +333,10 @@ func newUpdate() *cobra.Command {
 	var updateReq catalog.UpdateSchema
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `User-provided free-form text description.`)
-	cmd.Flags().Var(&updateReq.EnablePredictiveOptimization, "enable-predictive-optimization", `. Supported values: [DISABLE, ENABLE, INHERIT]`)
+	cmd.Flags().Var(&updateReq.EnablePredictiveOptimization, "enable-predictive-optimization", `Whether predictive optimization should be enabled for this object and objects under it. Supported values: [DISABLE, ENABLE, INHERIT]`)
 	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the schema.`)
 	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of schema.`)
 	// TODO: map via StringToStringVar: properties
@@ -388,6 +356,11 @@ func newUpdate() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -404,23 +377,6 @@ func newUpdate() *cobra.Command {
 					return err
 				}
 			}
-		}
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No FULL_NAME argument specified. Loading names for Schemas drop-down."
-			names, err := w.Schemas.SchemaInfoNameToFullNameMap(ctx, catalog.ListSchemasRequest{})
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Schemas drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "Full name of the schema")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have full name of the schema")
 		}
 		updateReq.FullName = args[0]
 

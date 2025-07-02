@@ -72,7 +72,6 @@ func newCreate() *cobra.Command {
 	var createReq catalog.CreateStorageCredential
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: aws_iam_role
@@ -81,7 +80,7 @@ func newCreate() *cobra.Command {
 	// TODO: complex arg: cloudflare_api_token
 	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `Comment associated with the credential.`)
 	// TODO: complex arg: databricks_gcp_service_account
-	cmd.Flags().BoolVar(&createReq.ReadOnly, "read-only", createReq.ReadOnly, `Whether the storage credential is only usable for read operations.`)
+	cmd.Flags().BoolVar(&createReq.ReadOnly, "read-only", createReq.ReadOnly, `Whether the credential is usable only for read operations.`)
 	cmd.Flags().BoolVar(&createReq.SkipValidation, "skip-validation", createReq.SkipValidation, `Supplying true to this argument skips validation of the created credential.`)
 
 	cmd.Use = "create NAME"
@@ -89,9 +88,13 @@ func newCreate() *cobra.Command {
 	cmd.Long = `Create a storage credential.
   
   Creates a new storage credential.
+  
+  The caller must be a metastore admin or have the **CREATE_STORAGE_CREDENTIAL**
+  privilege on the metastore.
 
   Arguments:
-    NAME: The credential name. The name must be unique within the metastore.`
+    NAME: The credential name. The name must be unique among storage and service
+      credentials within the metastore.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -161,9 +164,7 @@ func newDelete() *cobra.Command {
 
 	var deleteReq catalog.DeleteStorageCredentialRequest
 
-	// TODO: short flags
-
-	cmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `Force deletion even if there are dependent external locations or external tables.`)
+	cmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `Force an update even if there are dependent external locations or external tables (when purpose is **STORAGE**) or dependent services (when purpose is **SERVICE**).`)
 
 	cmd.Use = "delete NAME"
 	cmd.Short = `Delete a credential.`
@@ -177,28 +178,16 @@ func newDelete() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No NAME argument specified. Loading names for Storage Credentials drop-down."
-			names, err := w.StorageCredentials.StorageCredentialInfoNameToIdMap(ctx, catalog.ListStorageCredentialsRequest{})
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Storage Credentials drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "Name of the storage credential")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have name of the storage credential")
-		}
 		deleteReq.Name = args[0]
 
 		err = w.StorageCredentials.Delete(ctx, deleteReq)
@@ -233,8 +222,6 @@ func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getReq catalog.GetStorageCredentialRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get NAME"
 	cmd.Short = `Get a credential.`
@@ -294,8 +281,6 @@ func newList() *cobra.Command {
 
 	var listReq catalog.ListStorageCredentialsRequest
 
-	// TODO: short flags
-
 	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of storage credentials to return.`)
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
 
@@ -352,7 +337,6 @@ func newUpdate() *cobra.Command {
 	var updateReq catalog.UpdateStorageCredential
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: aws_iam_role
@@ -362,10 +346,10 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `Comment associated with the credential.`)
 	// TODO: complex arg: databricks_gcp_service_account
 	cmd.Flags().BoolVar(&updateReq.Force, "force", updateReq.Force, `Force update even if there are dependent external locations or external tables.`)
-	cmd.Flags().Var(&updateReq.IsolationMode, "isolation-mode", `. Supported values: [ISOLATION_MODE_ISOLATED, ISOLATION_MODE_OPEN]`)
+	cmd.Flags().Var(&updateReq.IsolationMode, "isolation-mode", `Whether the current securable is accessible from all workspaces or a specific set of workspaces. Supported values: [ISOLATION_MODE_ISOLATED, ISOLATION_MODE_OPEN]`)
 	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the storage credential.`)
 	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of credential.`)
-	cmd.Flags().BoolVar(&updateReq.ReadOnly, "read-only", updateReq.ReadOnly, `Whether the storage credential is only usable for read operations.`)
+	cmd.Flags().BoolVar(&updateReq.ReadOnly, "read-only", updateReq.ReadOnly, `Whether the credential is usable only for read operations.`)
 	cmd.Flags().BoolVar(&updateReq.SkipValidation, "skip-validation", updateReq.SkipValidation, `Supplying true to this argument skips validation of the updated credential.`)
 
 	cmd.Use = "update NAME"
@@ -373,11 +357,19 @@ func newUpdate() *cobra.Command {
 	cmd.Long = `Update a credential.
   
   Updates a storage credential on the metastore.
+  
+  The caller must be the owner of the storage credential or a metastore admin.
+  If the caller is a metastore admin, only the **owner** field can be changed.
 
   Arguments:
     NAME: Name of the storage credential.`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -395,23 +387,6 @@ func newUpdate() *cobra.Command {
 					return err
 				}
 			}
-		}
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No NAME argument specified. Loading names for Storage Credentials drop-down."
-			names, err := w.StorageCredentials.StorageCredentialInfoNameToIdMap(ctx, catalog.ListStorageCredentialsRequest{})
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Storage Credentials drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "Name of the storage credential")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have name of the storage credential")
 		}
 		updateReq.Name = args[0]
 
@@ -449,7 +424,6 @@ func newValidate() *cobra.Command {
 	var validateReq catalog.ValidateStorageCredential
 	var validateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&validateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: aws_iam_role
@@ -459,7 +433,7 @@ func newValidate() *cobra.Command {
 	// TODO: complex arg: databricks_gcp_service_account
 	cmd.Flags().StringVar(&validateReq.ExternalLocationName, "external-location-name", validateReq.ExternalLocationName, `The name of an existing external location to validate.`)
 	cmd.Flags().BoolVar(&validateReq.ReadOnly, "read-only", validateReq.ReadOnly, `Whether the storage credential is only usable for read operations.`)
-	cmd.Flags().StringVar(&validateReq.StorageCredentialName, "storage-credential-name", validateReq.StorageCredentialName, `The name of the storage credential to validate.`)
+	cmd.Flags().StringVar(&validateReq.StorageCredentialName, "storage-credential-name", validateReq.StorageCredentialName, `Required.`)
 	cmd.Flags().StringVar(&validateReq.Url, "url", validateReq.Url, `The external location url to validate.`)
 
 	cmd.Use = "validate"

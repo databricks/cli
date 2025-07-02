@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/resources"
+	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
@@ -81,13 +82,13 @@ func newOpenCommand() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		_, stateFileErr := os.Stat(filepath.Join(cacheDir, terraform.TerraformStateFileName))
+		_, stateFileErr := os.Stat(filepath.Join(cacheDir, b.StateFilename()))
 		_, configFileErr := os.Stat(filepath.Join(cacheDir, terraform.TerraformConfigFileName))
 		noCache := errors.Is(stateFileErr, os.ErrNotExist) || errors.Is(configFileErr, os.ErrNotExist)
 
 		if forcePull || noCache {
 			diags = bundle.ApplySeq(ctx, b,
-				terraform.StatePull(),
+				statemgmt.StatePull(),
 				terraform.Interpolate(),
 				terraform.Write(),
 			)

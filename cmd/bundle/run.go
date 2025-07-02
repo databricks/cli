@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/run"
 	"github.com/databricks/cli/bundle/run/output"
+	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/auth"
@@ -171,7 +172,7 @@ Example usage:
 		diags = diags.Extend(bundle.ApplySeq(ctx, b,
 			terraform.Interpolate(),
 			terraform.Write(),
-			terraform.StatePull(),
+			statemgmt.StatePull(),
 			terraform.Load(terraform.ErrorOnEmptyState),
 		))
 		if diags.HasError() {

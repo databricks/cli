@@ -40,36 +40,15 @@ func (m *interpolateMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 			//
 			//   ${databricks_pipeline.my_pipeline.id}
 			//
-			switch path[1] {
-			case dyn.Key("pipelines"):
-				path = dyn.NewPath(dyn.Key("databricks_pipeline")).Append(path[2:]...)
-			case dyn.Key("jobs"):
-				path = dyn.NewPath(dyn.Key("databricks_job")).Append(path[2:]...)
-			case dyn.Key("models"):
-				path = dyn.NewPath(dyn.Key("databricks_mlflow_model")).Append(path[2:]...)
-			case dyn.Key("experiments"):
-				path = dyn.NewPath(dyn.Key("databricks_mlflow_experiment")).Append(path[2:]...)
-			case dyn.Key("model_serving_endpoints"):
-				path = dyn.NewPath(dyn.Key("databricks_model_serving")).Append(path[2:]...)
-			case dyn.Key("registered_models"):
-				path = dyn.NewPath(dyn.Key("databricks_registered_model")).Append(path[2:]...)
-			case dyn.Key("quality_monitors"):
-				path = dyn.NewPath(dyn.Key("databricks_quality_monitor")).Append(path[2:]...)
-			case dyn.Key("schemas"):
-				path = dyn.NewPath(dyn.Key("databricks_schema")).Append(path[2:]...)
-			case dyn.Key("volumes"):
-				path = dyn.NewPath(dyn.Key("databricks_volume")).Append(path[2:]...)
-			case dyn.Key("clusters"):
-				path = dyn.NewPath(dyn.Key("databricks_cluster")).Append(path[2:]...)
-			case dyn.Key("dashboards"):
-				path = dyn.NewPath(dyn.Key("databricks_dashboard")).Append(path[2:]...)
-			case dyn.Key("apps"):
-				path = dyn.NewPath(dyn.Key("databricks_app")).Append(path[2:]...)
-			default:
+			resourceType := path[1].Key()
+			tfResourceName, ok := GroupToTerraformName[resourceType]
+			if !ok {
 				// Trigger "key not found" for unknown resource types.
 				return dyn.GetByPath(root, path)
 			}
 
+			// Replace the resource type with the Terraform resource name.
+			path = dyn.NewPath(dyn.Key(tfResourceName)).Append(path[2:]...)
 			return dyn.V(fmt.Sprintf("${%s}", path.String())), nil
 		})
 	})

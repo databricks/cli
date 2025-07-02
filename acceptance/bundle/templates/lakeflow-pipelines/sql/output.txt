@@ -1,0 +1,29 @@
+
+>>> [CLI] bundle init lakeflow-pipelines --config-file ./input.json --output-dir output
+
+Welcome to the template for Lakeflow Declarative Pipelines!
+
+
+Your new project has been created in the 'my_lakeflow_pipelines' directory!
+
+Refer to the README.md file for "getting started" instructions!
+
+>>> [CLI] bundle validate -t dev
+Name: my_lakeflow_pipelines
+Target: dev
+Workspace:
+  Host: [DATABRICKS_URL]
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/my_lakeflow_pipelines/dev
+
+Validation OK!
+
+>>> [CLI] bundle validate -t prod
+Name: my_lakeflow_pipelines
+Target: prod
+Workspace:
+  Host: [DATABRICKS_URL]
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/my_lakeflow_pipelines/prod
+
+Validation OK!

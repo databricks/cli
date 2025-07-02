@@ -55,12 +55,10 @@ func newBatchGet() *cobra.Command {
 
 	var batchGetReq marketplace.BatchGetProvidersRequest
 
-	// TODO: short flags
-
 	// TODO: array: ids
 
 	cmd.Use = "batch-get"
-	cmd.Short = `Get one batch of providers.`
+	cmd.Short = `Get one batch of providers. One may specify up to 50 IDs per request.`
 	cmd.Long = `Get one batch of providers. One may specify up to 50 IDs per request.
   
   Batch get a provider in the Databricks Marketplace with at least one visible
@@ -110,8 +108,6 @@ func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getReq marketplace.GetProviderRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get ID"
 	cmd.Short = `Get a provider.`
@@ -178,8 +174,6 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq marketplace.ListProvidersRequest
-
-	// TODO: short flags
 
 	cmd.Flags().BoolVar(&listReq.IsFeatured, "is-featured", listReq.IsFeatured, ``)
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)

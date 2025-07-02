@@ -30,10 +30,7 @@ func New() *cobra.Command {
 		Annotations: map[string]string{
 			"package": "settings",
 		},
-
-		// This service is being previewed; hide from help output.
-		Hidden: true,
-		RunE:   root.ReportUnknownSubcommand,
+		RunE: root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -67,7 +64,6 @@ func newCreateNetworkPolicyRpc() *cobra.Command {
 	createNetworkPolicyRpcReq.NetworkPolicy = settings.AccountNetworkPolicy{}
 	var createNetworkPolicyRpcJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createNetworkPolicyRpcJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createNetworkPolicyRpcReq.NetworkPolicy.AccountId, "account-id", createNetworkPolicyRpcReq.NetworkPolicy.AccountId, `The associated account ID for this Network Policy object.`)
@@ -139,8 +135,6 @@ func newDeleteNetworkPolicyRpc() *cobra.Command {
 
 	var deleteNetworkPolicyRpcReq settings.DeleteNetworkPolicyRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete-network-policy-rpc NETWORK_POLICY_ID"
 	cmd.Short = `Delete a network policy.`
 	cmd.Long = `Delete a network policy.
@@ -196,8 +190,6 @@ func newGetNetworkPolicyRpc() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getNetworkPolicyRpcReq settings.GetNetworkPolicyRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get-network-policy-rpc NETWORK_POLICY_ID"
 	cmd.Short = `Get a network policy.`
@@ -255,8 +247,6 @@ func newListNetworkPoliciesRpc() *cobra.Command {
 
 	var listNetworkPoliciesRpcReq settings.ListNetworkPoliciesRequest
 
-	// TODO: short flags
-
 	cmd.Flags().StringVar(&listNetworkPoliciesRpcReq.PageToken, "page-token", listNetworkPoliciesRpcReq.PageToken, `Pagination token to go to next page based on previous query.`)
 
 	cmd.Use = "list-network-policies-rpc"
@@ -309,7 +299,6 @@ func newUpdateNetworkPolicyRpc() *cobra.Command {
 	updateNetworkPolicyRpcReq.NetworkPolicy = settings.AccountNetworkPolicy{}
 	var updateNetworkPolicyRpcJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateNetworkPolicyRpcJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateNetworkPolicyRpcReq.NetworkPolicy.AccountId, "account-id", updateNetworkPolicyRpcReq.NetworkPolicy.AccountId, `The associated account ID for this Network Policy object.`)

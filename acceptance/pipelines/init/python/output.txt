@@ -1,0 +1,14 @@
+
+=== Install pipelines CLI
+>>> errcode [CLI] install-pipelines-cli -d ./subdir
+pipelines successfully installed in directory "./subdir"
+
+=== Test basic pipelines init with configuration file
+>>> ./subdir/pipelines init --config-file ./input.json --output-dir output
+
+Welcome to the template for pipelines!
+
+
+Your new project has been created in the 'my_python_project' directory!
+
+Refer to the README.md file for "getting started" instructions!

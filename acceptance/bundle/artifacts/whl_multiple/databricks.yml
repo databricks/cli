@@ -1,12 +1,12 @@
 artifacts:
-    my_test_code:
-      type: whl
-      path: "./my_test_code"
-      build: "python setup.py bdist_wheel"
-    my_test_code_2:
-      type: whl
-      path: "./my_test_code"
-      build: "python setup2.py bdist_wheel"
+  my_test_code:
+    type: whl
+    path: "./my_test_code"
+    build: "python setup.py bdist_wheel"
+  my_test_code_2:
+    type: whl
+    path: "./my_test_code"
+    build: "python setup2.py bdist_wheel"
 
 resources:
   jobs:
@@ -19,4 +19,4 @@ resources:
             package_name: "my_test_code"
             entry_point: "run"
           libraries:
-          - whl: ./my_test_code/dist/*.whl
+            - whl: ./my_test_code/dist/*.whl

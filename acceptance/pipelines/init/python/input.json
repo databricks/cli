@@ -1,0 +1,7 @@
+{
+    "project_name": "my_python_project",
+    "default_catalog": "main",
+    "personal_schemas": "yes",
+    "shared_schema": "default",
+    "language": "python"
+}

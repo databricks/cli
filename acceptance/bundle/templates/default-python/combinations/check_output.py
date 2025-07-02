@@ -3,8 +3,11 @@ import sys
 import os
 import subprocess
 
+SERVERLESS = os.environ["SERVERLESS"] == "yes"
+INCLUDE_PYTHON = os.environ["PY"] == "yes"
+
 CLOUD_ENV = os.environ.get("CLOUD_ENV")
-if CLOUD_ENV and os.environ["SERVERLESS"] == "yes" and not os.environ.get("TEST_METASTORE_ID"):
+if CLOUD_ENV and SERVERLESS and not os.environ.get("TEST_METASTORE_ID"):
     sys.exit(f"SKIP_TEST SERVERLESS=yes but TEST_METASTORE_ID is empty in this env {CLOUD_ENV=}")
 
 BUILDING = "Building python_artifact"
@@ -36,7 +39,7 @@ try:
         if is_printable_line(line):
             print(line.strip())
 
-    if os.environ["INCLUDE_PYTHON"] == "yes":
+    if INCLUDE_PYTHON:
         assert BUILDING in p.stderr
         assert UPLOADING in p.stderr
     else:

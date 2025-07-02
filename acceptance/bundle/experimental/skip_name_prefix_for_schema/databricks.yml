@@ -1,0 +1,23 @@
+variables:
+  skip:
+    default: false
+
+resources:
+  schemas:
+    foo:
+      name: my_schema
+      catalog_name: my_catalog
+
+experimental:
+  skip_name_prefix_for_schema: ${var.skip}
+
+targets:
+  one:
+    default: true
+    mode: development
+
+  two:
+    presets:
+      name_prefix: "[custom_prefix]"
+
+  three:

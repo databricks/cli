@@ -42,7 +42,7 @@ type command struct {
 
 func (c *command) Wait() error {
 	// After the command has finished (cmd.Wait call), remove the temporary script file
-	defer os.Remove(c.execContext.scriptFile)
+	defer c.execContext.cleanup()
 
 	err := c.cmd.Wait()
 	if err != nil {
@@ -61,19 +61,26 @@ func (c *command) Stderr() io.ReadCloser {
 }
 
 type Executor struct {
-	shell shell
-	dir   string
+	shell         shell
+	dir           string
+	inheritOutput bool
 }
 
+// NewCommandExecutor creates an Executor with default output behavior (no inheritance)
 func NewCommandExecutor(dir string) (*Executor, error) {
 	shell, err := findShell()
 	if err != nil {
 		return nil, err
 	}
 	return &Executor{
-		shell: shell,
-		dir:   dir,
+		shell:         shell,
+		dir:           dir,
+		inheritOutput: false,
 	}, nil
+}
+
+func (e *Executor) WithInheritOutput() {
+	e.inheritOutput = true
 }
 
 func NewCommandExecutorWithExecutable(dir string, execType ExecutableType) (*Executor, error) {
@@ -107,20 +114,24 @@ func (e *Executor) StartCommand(ctx context.Context, command string) (Command, e
 	if err != nil {
 		return nil, err
 	}
-	return e.start(ctx, cmd, ec)
+	return e.start(cmd, ec)
 }
 
-func (e *Executor) start(ctx context.Context, cmd *osexec.Cmd, ec *execContext) (Command, error) {
+func (e *Executor) start(cmd *osexec.Cmd, ec *execContext) (Command, error) {
+	if e.inheritOutput {
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		cmd.Stdin = os.Stdin
+		return &command{cmd, ec, nil, nil}, cmd.Start()
+	}
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return nil, err
 	}
-
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
 		return nil, err
 	}
-
 	return &command{cmd, ec, stdout, stderr}, cmd.Start()
 }
 
@@ -129,7 +140,7 @@ func (e *Executor) Exec(ctx context.Context, command string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer os.Remove(ec.scriptFile)
+	defer ec.cleanup()
 	return cmd.CombinedOutput()
 }
 

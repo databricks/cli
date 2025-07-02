@@ -1,0 +1,4 @@
+
+>>> [CLI] bundle generate dashboard --existing-id [DASHBOARD_ID] --dashboard-dir out/dashboard --resource-dir out/resource
+Writing dashboard to "out/dashboard/test_dashboard.lvdash.json"
+Writing configuration to "out/resource/test_dashboard.dashboard.yml"

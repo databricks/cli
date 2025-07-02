@@ -46,16 +46,11 @@ func (s *Schema) Exists(ctx context.Context, w *databricks.WorkspaceClient, full
 
 func (*Schema) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
-		SingularName:          "schema",
-		PluralName:            "schemas",
-		SingularTitle:         "Schema",
-		PluralTitle:           "Schemas",
-		TerraformResourceName: "databricks_schema",
+		SingularName:  "schema",
+		PluralName:    "schemas",
+		SingularTitle: "Schema",
+		PluralTitle:   "Schemas",
 	}
-}
-
-func (s *Schema) TerraformResourceName() string {
-	return "databricks_schema"
 }
 
 func (s *Schema) InitializeURL(baseURL url.URL) {

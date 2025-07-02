@@ -1,0 +1,16 @@
+
+>>> [CLI] bundle validate
+Error: Artifact not properly configured
+  in databricks.yml:7:15
+
+please specify artifact properties
+
+Name: nil_artifacts_test
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/nil_artifacts_test/default
+
+Found 1 error
+
+Exit code: 1

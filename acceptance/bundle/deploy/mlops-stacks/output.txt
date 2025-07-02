@@ -21,6 +21,14 @@ This directory contains an ML project based on the default
 [Databricks MLOps Stacks](https://github.com/databricks/mlops-stacks),
 
 >>> [CLI] bundle summary
+Warning: expected a string value, found null
+  at targets.dev.workspace.host
+  in databricks.yml:34:12
+
+Warning: unknown field: description
+  at resources.experiments.experiment
+  in resources/ml-artifacts-resource.yml:21:7
+
 Name: project_name_[UNIQUE_NAME]
 Target: dev
 Workspace:
@@ -75,6 +83,14 @@ Warning: unknown field: description
 
 
 >>> [CLI] bundle summary -o json
+Warning: expected a string value, found null
+  at targets.dev.workspace.host
+  in databricks.yml:34:12
+
+Warning: unknown field: description
+  at resources.experiments.experiment
+  in resources/ml-artifacts-resource.yml:21:7
+
 {
   "experiment_id": "[NUMID]",
   "model_id": "[dev [USERNAME]] dev-project_name_[UNIQUE_NAME]-model",
@@ -82,7 +98,16 @@ Warning: unknown field: description
   "training_job_id": "[NUMID]"
 }
 
-=== Assert the batch inference job actually exists{
+=== Assert the batch inference job actually exists
+Warning: expected a string value, found null
+  at targets.dev.workspace.host
+  in databricks.yml:34:12
+
+Warning: unknown field: description
+  at resources.experiments.experiment
+  in resources/ml-artifacts-resource.yml:21:7
+
+{
   "name": "[dev [USERNAME]] dev-project_name_[UNIQUE_NAME]-batch-inference-job"
 }
 
@@ -90,12 +115,8 @@ Warning: unknown field: description
 The following resources will be deleted:
   delete job batch_inference_job
   delete job model_training_job
-  delete mlflow_experiment experiment
-  delete mlflow_model model
-  delete permissions job_batch_inference_job
-  delete permissions job_model_training_job
-  delete permissions mlflow_experiment_experiment
-  delete permissions mlflow_model_model
+  delete experiment experiment
+  delete model model
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev
 
