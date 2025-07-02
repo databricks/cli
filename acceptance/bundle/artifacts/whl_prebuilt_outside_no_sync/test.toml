@@ -1,0 +1,5 @@
+Badness = "This test is expected to fail: referenced wheels outside the sync root are not uploaded without a sync section."
+
+[[Repls]]
+Old = '\\'
+New = '/'

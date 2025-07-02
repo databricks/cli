@@ -1,0 +1,24 @@
+---
+description: How to write, interpret, and run acceptance tests
+globs:
+alwaysApply: false
+---
+All acceptance tests are in the `acceptance` directory.
+They are run through the main acceptance test runner, located in the `acceptance` package.
+This package dynamically walks the directory tree and defines a test for each directory.
+Each test includes `out.*` files that capture the expected output.
+Tests write to these files when they run, and the actual contents is compared to the expected contents.
+The output is made portable through a series of replacements that turn variable substrings into constant ones.
+If the actual contents does not match the expected contents, a test fails.
+The test runner can be instructed to update the expected contents by passing the `-update` flag when running a test.
+
+To run a single test (for example, located in `acceptance/bundle/libraries/maven`), you can run the following command:
+
+```
+go test ./acceptance -v -run TestAccept/bundle/libraries/maven
+```
+
+Rules:
+* Execute tests from the root of the repository.
+* Don't edit `test.toml` files in parent directories; they affect sibling tests.
+* If you expect a test to fail, include the `Badness` field in the corresponding `test.toml` file, and explain why it is expected to fail.
