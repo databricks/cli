@@ -9,6 +9,8 @@ import argparse
 from collections import Counter
 from pathlib import Path
 
+# Total number of environments expected
+TOTAL_ENVS = 10
 
 # \u200c is zero-width space. It is added so that len of the string corresponds to real width.
 # ❌, ✅, 🔄 each take space of 2 characters.
@@ -17,11 +19,15 @@ FAIL = "❌\u200cFAIL"
 PASS = "✅\u200cpass"
 SKIP = "🙈\u200cskip"
 
+# Test fail is FAIL replacement that is used when it's very likely that it's really a test failure and not environment failure.
+# FAIL is replaced with BUG when test fails in all environments (and when we have >=TOTAL_ENVS-1 environments)
+BUG = "🪲\u200cBUG"
+
 # This happens when Eventually is used - there is output for the test but no result.
 MISSING = "🤯\u200cMISS"
 PANIC = "💥\u200cPANIC"
 
-INTERESTING_ACTIONS = (FAIL, FLAKY, PANIC, MISSING)
+INTERESTING_ACTIONS = (FAIL, BUG, FLAKY, PANIC, MISSING)
 ACTIONS_WITH_ICON = INTERESTING_ACTIONS + (PASS, SKIP)
 
 ACTION_MESSAGES = {
@@ -150,6 +156,34 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False):
         for e in all_envs:
             if e not in test_results:
                 test_results.setdefault(e, Counter())[MISSING] += 1
+
+    # Check if we can convert FAIL to BUG
+    def is_bug(test_results):
+        if len(test_results) < TOTAL_ENVS - 1:
+            # incomplete results
+            return False
+        count = 0
+        for e, env_results in test_results.items():
+            if PASS in env_results:
+                return False
+            if FLAKY in env_results:
+                return False
+            if SKIP in env_results:
+                count -= 1
+            else:
+                count += 1
+        return count >= 0
+
+    for testname in all_testnames:
+        test_results = per_test_per_env_stats.get(testname, {})
+        if not is_bug(test_results):
+            continue
+        for e, env_results in sorted(test_results.items()):
+            if env_results[FAIL] > 0:
+                env_results[FAIL] -= 1
+                if not env_results[FAIL]:
+                    env_results.pop(FAIL)
+                env_results[BUG] += 1
 
     per_env_stats = {}  # env -> action -> count
     for testname, items in per_test_per_env_stats.items():
