@@ -26,12 +26,7 @@ func TestPatternTrie_SearchPath(t *testing.T) {
 			mustMatch:    []string{"foo"},
 			mustNotMatch: []string{"foo.bar", "foo[0]", "bar"},
 		},
-		{
-			name:         "simple index pattern",
-			pattern:      "[0]",
-			mustMatch:    []string{"[0]"},
-			mustNotMatch: []string{"foo[0]", "foo.bar", "bar"},
-		},
+
 		{
 			name:         "nested key pattern",
 			pattern:      "foo.bar",
@@ -125,21 +120,20 @@ func TestPatternTrie_MultiplePatterns(t *testing.T) {
 	patterns := []string{
 		"foo.bar",
 		"foo.*.baz",
-		"abc[0]",
 		"def[*]",
 	}
 
-	expected := map[string]string{
+	mustMatch := map[string]string{
 		"foo.bar":     "foo.bar",
 		"foo.abc.baz": "foo.*.baz",
 		"foo.def.baz": "foo.*.baz",
-		"abc[0]":      "abc[0]",
 		"def[0]":      "def[*]",
 		"def[1]":      "def[*]",
 	}
 
-	notExpected := []string{
+	mustNotMatch := []string{
 		"foo",
+		"abc[0]",
 		"abc[1]",
 		"def[2].x",
 		"foo.y",
@@ -151,13 +145,13 @@ func TestPatternTrie_MultiplePatterns(t *testing.T) {
 		assert.NoError(t, err)
 	}
 
-	for path, expectedPattern := range expected {
+	for path, expectedPattern := range mustMatch {
 		pattern, ok := trie.SearchPath(dyn.MustPathFromString(path))
 		assert.True(t, ok)
 		assert.Equal(t, dyn.MustPatternFromString(expectedPattern), pattern)
 	}
 
-	for _, path := range notExpected {
+	for _, path := range mustNotMatch {
 		_, ok := trie.SearchPath(dyn.MustPathFromString(path))
 		assert.False(t, ok)
 	}

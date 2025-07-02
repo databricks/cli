@@ -15,14 +15,11 @@ type PatternTrie struct {
 // 1. An [AnyKey] component. This is the "*" wildcard which matches any map key.
 // 2. An [AnyIndex] component. This is the "[*]" wildcard which matches any array index.
 // 3. Multiple [Key] components. These are multiple static path keys for this this node would match.
-// 4. Multiple [Index] components. These are multiple static path indices for this this node would match.
 //
 // Note: It's valid for both anyKey and pathKey to be set at the same time.
 // For example, adding both "foo.*.bar" and "foo.bar" to a trie is valid.
-// Similarly, it's valid for both anyIndex and pathIndex to be set at the same time.
-// For example, adding both "foo[*].bar" and "foo[0]" to a trie is valid.
 //
-// Note: Setting both key (one of pathKey or anyKey) and index (one of pathIndex or anyIndex)
+// Note: Setting both key (one of pathKey or anyKey) and index (anyIndex)
 // is not supported by the [PatternTrie.SearchPath] method. We don't perform validation for this
 // case because it's not expected to arise in practice where a field is either a map or an array,
 // but not both.
@@ -38,10 +35,6 @@ type trieNode struct {
 	// Set of strings which this trie node matches.
 	// Maps to the [Key] component.
 	pathKey map[string]*trieNode
-
-	// Set of indices which this trie node matches.
-	// Maps to the [Index] component.
-	pathIndex map[int]*trieNode
 
 	// Indicates if this node is the end of a pattern. Encountering a node
 	// with isEnd set to true in a trie means the pattern from the root to this
@@ -91,14 +84,7 @@ func (t *PatternTrie) Insert(pattern Pattern) error {
 				}
 				next = current.pathKey[key]
 			} else {
-				idx := c.Index()
-				if current.pathIndex == nil {
-					current.pathIndex = make(map[int]*trieNode)
-				}
-				if _, exists := current.pathIndex[idx]; !exists {
-					current.pathIndex[idx] = &trieNode{}
-				}
-				next = current.pathIndex[idx]
+				return fmt.Errorf("specific index patterns are not supported")
 			}
 		}
 
@@ -181,23 +167,12 @@ func (t *PatternTrie) searchPathRecursive(node *trieNode, path Path, prefix Patt
 		return t.searchPathRecursive(child, path, prefix, index+1)
 	}
 
-	// First check if the index wildcard is set for the current index.
 	if currentComponent.isIndex() && node.anyIndex != nil {
 		prefix[index] = AnyIndex()
 		pattern, ok := t.searchPathRecursive(node.anyIndex, path, prefix, index+1)
 		if ok {
 			return pattern, true
 		}
-	}
-
-	// If no index wildcard is set, check if the index is an exact match.
-	if currentComponent.isIndex() {
-		child, exists := node.pathIndex[currentComponent.Index()]
-		if !exists {
-			return nil, false
-		}
-		prefix[index] = currentComponent
-		return t.searchPathRecursive(child, path, prefix, index+1)
 	}
 
 	// If we've reached this point, the path does not match any patterns in the trie.
