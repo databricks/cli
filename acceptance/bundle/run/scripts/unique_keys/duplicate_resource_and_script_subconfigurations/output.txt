@@ -14,5 +14,10 @@ Exit code: 1
 
 >>> [CLI] bundle run foo
 Error: multiple resources or scripts have been defined with the same key: foo
+  at resources.pipelines.foo
+     scripts.foo
+  in resource.yml:4:7
+     script.yml:3:5
+
 
 Exit code: 1

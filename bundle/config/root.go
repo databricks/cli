@@ -19,6 +19,11 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
+type Script struct {
+	// Content of the script to be executed.
+	Content string `json:"content"`
+}
+
 type Root struct {
 	value dyn.Value
 	depth int

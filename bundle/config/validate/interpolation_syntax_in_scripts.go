@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 	"regexp"
-	"sort"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/utils"
 )
 
 type noInterpolationSyntaxInScripts struct{}
@@ -28,11 +28,7 @@ func (f *noInterpolationSyntaxInScripts) Apply(ctx context.Context, b *bundle.Bu
 
 	// Sort the scripts to have a deterministic order for the
 	// generated diagnostics.
-	var scriptKeys []string
-	for k := range b.Config.Scripts {
-		scriptKeys = append(scriptKeys, k)
-	}
-	sort.Strings(scriptKeys)
+	scriptKeys := utils.SortedKeys(b.Config.Scripts)
 
 	for _, k := range scriptKeys {
 		script := b.Config.Scripts[k]
