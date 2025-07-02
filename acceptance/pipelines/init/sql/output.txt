@@ -1,10 +1,6 @@
 
-=== Install pipelines CLI
->>> errcode [CLI] install-pipelines-cli -d ./subdir
-pipelines successfully installed in directory "./subdir"
-
 === Test pipelines init with SQL configuration
->>> ./subdir/pipelines init --config-file ./input.json --output-dir output
+>>> [PIPELINES] init --config-file ./input.json --output-dir output
 
 Welcome to the template for pipelines!
 
