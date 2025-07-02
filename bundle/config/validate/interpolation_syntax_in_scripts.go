@@ -40,7 +40,7 @@ func (f *noInterpolationSyntaxInScripts) Apply(ctx context.Context, b *bundle.Bu
 		p := dyn.NewPath(dyn.Key("scripts"), dyn.Key(k), dyn.Key("content"))
 		v, err := dyn.GetByPath(b.Config.Value(), p)
 		if err != nil {
-			return diag.FromErr(err)
+			return diags.Extend(diag.FromErr(err))
 		}
 
 		diags = append(diags, diag.Diagnostic{
