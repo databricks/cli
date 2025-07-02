@@ -11,28 +11,35 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 )
 
+const (
+	_jobs      = "jobs"
+	_pipelines = "pipelines"
+	_schemas   = "schemas"
+	_apps      = "apps"
+)
+
 var supportedResources = map[string]reflect.Value{
-	"jobs":      reflect.ValueOf(NewResourceJob),
-	"pipelines": reflect.ValueOf(NewResourcePipeline),
-	"schemas":   reflect.ValueOf(NewResourceSchema),
-	"apps":      reflect.ValueOf(NewResourceApp),
+	_jobs:      reflect.ValueOf(NewResourceJob),
+	_pipelines: reflect.ValueOf(NewResourcePipeline),
+	_schemas:   reflect.ValueOf(NewResourceSchema),
+	_apps:      reflect.ValueOf(NewResourceApp),
 }
 
 // This types matches what Config() returns and should match 'config' field in the resource struct
 var supportedResourcesTypes = map[string]reflect.Type{
-	"jobs":      reflect.TypeOf(ResourceJob{}.config),
-	"pipelines": reflect.TypeOf(ResourcePipeline{}.config),
-	"schemas":   reflect.TypeOf(ResourceSchema{}.config),
-	"apps":      reflect.TypeOf(ResourceApp{}.config),
+	_jobs:      reflect.TypeOf(ResourceJob{}.config),
+	_pipelines: reflect.TypeOf(ResourcePipeline{}.config),
+	_schemas:   reflect.TypeOf(ResourceSchema{}.config),
+	_apps:      reflect.TypeOf(ResourceApp{}.config),
 }
 
 type DeleteResourceFN = func(ctx context.Context, client *databricks.WorkspaceClient, oldID string) error
 
 var deletableResources = map[string]DeleteResourceFN{
-	"jobs":      DeleteJob,
-	"pipelines": DeletePipeline,
-	"schemas":   DeleteSchema,
-	"apps":      DeleteApp,
+	_jobs:      DeleteJob,
+	_pipelines: DeletePipeline,
+	_schemas:   DeleteSchema,
+	_apps:      DeleteApp,
 }
 
 type IResource interface {
