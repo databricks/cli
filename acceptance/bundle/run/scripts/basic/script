@@ -3,5 +3,3 @@ trace $CLI bundle run foo
 trace $CLI bundle run me
 
 errcode trace $CLI bundle run foo arg1 arg2
-
-errcode trace $CLI bundle run bar

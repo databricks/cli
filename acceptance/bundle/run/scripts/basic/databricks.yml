@@ -1,13 +1,7 @@
-bundle:
-  name: "basic"
-
 scripts:
   foo:
     content: |
       echo 'hello'
-
-  bar:
-    content:
 
   me:
     content: $CLI current-user me

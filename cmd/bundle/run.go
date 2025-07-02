@@ -161,10 +161,6 @@ Example usage:
 			}
 
 			content := b.Config.Scripts[key].Content
-			if content == "" {
-				return fmt.Errorf("script %s has no content", key)
-			}
-
 			return executeScript(content, cmd, b)
 		}
 
