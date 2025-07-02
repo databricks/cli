@@ -6,30 +6,35 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
 )
 
-func configureVariables(cmd *cobra.Command, b *bundle.Bundle, variables []string) diag.Diagnostics {
-	return bundle.ApplyFunc(cmd.Context(), b, func(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func configureVariables(cmd *cobra.Command, b *bundle.Bundle, variables []string) {
+	bundle.ApplyFuncContext(cmd.Context(), b, func(ctx context.Context, b *bundle.Bundle) {
 		err := b.Config.InitializeVariables(variables)
-		return diag.FromErr(err)
+		if err != nil {
+			logdiag.LogError(ctx, err)
+		}
 	})
 }
 
-func ConfigureBundleWithVariables(cmd *cobra.Command) (*bundle.Bundle, diag.Diagnostics) {
+func ConfigureBundleWithVariables(cmd *cobra.Command) *bundle.Bundle {
 	// Load bundle config and apply target
-	b, diags := root.MustConfigureBundle(cmd)
-	if diags.HasError() {
-		return b, diags
+	b := root.MustConfigureBundle(cmd)
+	ctx := cmd.Context()
+	if logdiag.HasError(ctx) {
+		return b
 	}
 
 	variables, err := cmd.Flags().GetStringSlice("var")
 	if err != nil {
-		return b, diag.FromErr(err)
+		logdiag.LogDiag(ctx, diag.FromErr(err)[0])
+		return b
 	}
 
 	// Initialize variables by assigning them values passed as command line flags
-	diags = diags.Extend(configureVariables(cmd, b, variables))
+	configureVariables(cmd, b, variables)
 
-	return b, diags
+	return b
 }

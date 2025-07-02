@@ -9,7 +9,6 @@
 
 >>> errcode [CLI] bundle validate --var a=one --var a=two
 Error: failed to assign two to a: variable has already been assigned value: one
-
 Name: arg-repeat
 Target: default
 

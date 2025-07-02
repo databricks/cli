@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	mockfiler "github.com/databricks/cli/internal/mocks/libs/filer"
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -48,9 +49,9 @@ func TestStatePullLocalErrorWhenRemoteHasNoLineage(t *testing.T) {
 		// setup remote state.
 		m.filerFactory = identityFiler(mockStateFilerForPull(t, map[string]any{"serial": 5}, nil))
 
-		ctx := context.Background()
 		b := statePullTestBundle(t)
-		diags := bundle.Apply(ctx, b, m)
+		diags := bundle.Apply(context.Background(), b, m)
+
 		assert.EqualError(t, diags.Error(), "remote state file does not have a lineage")
 	})
 
@@ -58,7 +59,8 @@ func TestStatePullLocalErrorWhenRemoteHasNoLineage(t *testing.T) {
 		// setup remote state.
 		m.filerFactory = identityFiler(mockStateFilerForPull(t, map[string]any{"serial": 5}, nil))
 
-		ctx := context.Background()
+		ctx := logdiag.InitContext(context.Background())
+		logdiag.SetCollect(ctx, true)
 		b := statePullTestBundle(t)
 		writeLocalState(t, ctx, b, map[string]any{"serial": 5, "lineage": "aaaa"})
 
@@ -140,7 +142,7 @@ func TestStatePullLocal(t *testing.T) {
 				m.filerFactory = identityFiler(mockStateFilerForPull(t, tc.remote, nil))
 			}
 
-			ctx := context.Background()
+			ctx := logdiag.InitContext(context.Background())
 			b := statePullTestBundle(t)
 			if tc.local != nil {
 				writeLocalState(t, ctx, b, tc.local)

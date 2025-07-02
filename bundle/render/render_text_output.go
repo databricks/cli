@@ -4,14 +4,12 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"path/filepath"
 	"sort"
 	"strings"
 	"text/template"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/fatih/color"
 )
@@ -79,16 +77,17 @@ func pluralize(n int, singular, plural string) string {
 	return fmt.Sprintf("%d %s", n, plural)
 }
 
-func buildTrailer(diags diag.Diagnostics) string {
+func buildTrailer(ctx context.Context) string {
+	info := logdiag.GetContext(ctx)
 	var parts []string
-	if errors := len(diags.Filter(diag.Error)); errors > 0 {
-		parts = append(parts, color.RedString(pluralize(errors, "error", "errors")))
+	if info.Errors > 0 {
+		parts = append(parts, color.RedString(pluralize(info.Errors, "error", "errors")))
 	}
-	if warnings := len(diags.Filter(diag.Warning)); warnings > 0 {
-		parts = append(parts, color.YellowString(pluralize(warnings, "warning", "warnings")))
+	if info.Warnings > 0 {
+		parts = append(parts, color.YellowString(pluralize(info.Warnings, "warning", "warnings")))
 	}
-	if recommendations := len(diags.Filter(diag.Recommendation)); recommendations > 0 {
-		parts = append(parts, color.BlueString(pluralize(recommendations, "recommendation", "recommendations")))
+	if info.Recommendations > 0 {
+		parts = append(parts, color.BlueString(pluralize(info.Recommendations, "recommendation", "recommendations")))
 	}
 	switch {
 	case len(parts) >= 3:
@@ -130,57 +129,22 @@ func renderSummaryHeaderTemplate(out io.Writer, b *bundle.Bundle) error {
 	return err
 }
 
-func renderDiagnosticsOnly(out io.Writer, b *bundle.Bundle, diags diag.Diagnostics) error {
-	for _, d := range diags {
-		for i := range d.Locations {
-			if b == nil {
-				break
-			}
-
-			// Make location relative to bundle root
-			if d.Locations[i].File != "" {
-				out, err := filepath.Rel(b.BundleRootPath, d.Locations[i].File)
-				// if we can't relativize the path, just use path as-is
-				if err == nil {
-					d.Locations[i].File = out
-				}
-			}
-		}
-	}
-
-	return cmdio.RenderDiagnostics(out, diags)
-}
-
-// RenderOptions contains options for rendering diagnostics.
-type RenderOptions struct {
-	// variable to include leading new line
-
-	RenderSummaryTable bool
-}
-
 // RenderDiagnostics renders the diagnostics in a human-readable format.
-func RenderDiagnostics(out io.Writer, b *bundle.Bundle, diags diag.Diagnostics, opts RenderOptions) error {
-	err := renderDiagnosticsOnly(out, b, diags)
-	if err != nil {
-		return fmt.Errorf("failed to render diagnostics: %w", err)
-	}
-
-	if opts.RenderSummaryTable {
-		if b != nil {
-			err = renderSummaryHeaderTemplate(out, b)
-			if err != nil {
-				return fmt.Errorf("failed to render summary: %w", err)
-			}
-			_, err = io.WriteString(out, "\n")
-			if err != nil {
-				return err
-			}
+func RenderDiagnosticsSummary(ctx context.Context, out io.Writer, b *bundle.Bundle) error {
+	if b != nil {
+		err := renderSummaryHeaderTemplate(out, b)
+		if err != nil {
+			return fmt.Errorf("failed to render summary: %w", err)
 		}
-		trailer := buildTrailer(diags)
-		_, err = io.WriteString(out, trailer)
+		_, err = io.WriteString(out, "\n")
 		if err != nil {
 			return err
 		}
+	}
+	trailer := buildTrailer(ctx)
+	_, err := io.WriteString(out, trailer)
+	if err != nil {
+		return err
 	}
 
 	return nil

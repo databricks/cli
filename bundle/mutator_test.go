@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -36,8 +37,11 @@ func TestMutator(t *testing.T) {
 	}
 
 	b := &Bundle{}
-	diags := Apply(context.Background(), b, m)
+	ctx := logdiag.InitContext(context.Background())
+	logdiag.SetCollect(ctx, true)
+	diags := Apply(ctx, b, m)
 	assert.NoError(t, diags.Error())
+	assert.Empty(t, logdiag.GetCollected(ctx))
 
 	assert.Equal(t, 1, m.applyCalled)
 	assert.Equal(t, 1, nested[0].applyCalled)

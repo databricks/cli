@@ -8,11 +8,10 @@ import (
 	"github.com/databricks/cli/bundle/config/loader"
 	"github.com/databricks/cli/bundle/config/validate"
 	"github.com/databricks/cli/bundle/scripts"
-	"github.com/databricks/cli/libs/diag"
 )
 
-func DefaultMutators(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	return bundle.ApplySeq(ctx, b,
+func DefaultMutators(ctx context.Context, b *bundle.Bundle) {
+	bundle.ApplySeqContext(ctx, b,
 		loader.EntryPoint(),
 
 		// Execute preinit script before processing includes.

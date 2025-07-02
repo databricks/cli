@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
 
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/logdiag"
 
 	"github.com/databricks/databricks-sdk-go/logger"
 	"github.com/fatih/color"
@@ -220,7 +221,6 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 		if !mutateDiags.HasError() {
 			panic("mutateDiags has no error, but error is expected")
 		}
-
 		return mutateDiags
 	} else {
 		mutateDiags = mutateDiags.Extend(diag.FromErr(err))
@@ -230,12 +230,13 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 		return mutateDiags
 	}
 
-	mutateDiags = mutateDiags.Extend(resourcemutator.NormalizeAndInitializeResources(ctx, b, result.AddedResources))
-	if mutateDiags.HasError() {
+	resourcemutator.NormalizeAndInitializeResources(ctx, b, result.AddedResources)
+	if logdiag.HasError(ctx) {
 		return mutateDiags
 	}
 
-	return mutateDiags.Extend(resourcemutator.NormalizeResources(ctx, b, result.UpdatedResources))
+	resourcemutator.NormalizeResources(ctx, b, result.UpdatedResources)
+	return mutateDiags
 }
 
 func createCacheDir(ctx context.Context) (string, error) {

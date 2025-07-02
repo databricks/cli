@@ -11,10 +11,32 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// Test wrapper functions to make MustLoad/TryLoad tests more readable
+
+// mustLoad calls MustLoad and returns the bundle and collected diagnostics
+func mustLoad(t *testing.T) (*Bundle, []diag.Diagnostic) {
+	ctx := logdiag.InitContext(context.Background())
+	logdiag.SetCollect(ctx, true)
+	b := MustLoad(ctx)
+	diags := logdiag.GetCollected(ctx)
+	return b, diags
+}
+
+// tryLoad calls TryLoad and returns the bundle and collected diagnostics
+func tryLoad(t *testing.T) (*Bundle, []diag.Diagnostic) {
+	ctx := logdiag.InitContext(context.Background())
+	logdiag.SetCollect(ctx, true)
+	b := TryLoad(ctx)
+	diags := logdiag.GetCollected(ctx)
+	return b, diags
+}
 
 func TestLoadNotExists(t *testing.T) {
 	b, err := Load(context.Background(), "/doesntexist")
@@ -79,41 +101,49 @@ func TestBundleCacheDirOverride(t *testing.T) {
 
 func TestBundleMustLoadSuccess(t *testing.T) {
 	t.Setenv(env.RootVariable, "./tests/basic")
-	b, err := MustLoad(context.Background())
-	require.NoError(t, err)
+	b, diags := mustLoad(t)
+	require.NotNil(t, b)
+	assert.Empty(t, diags, "expected no diagnostics")
 	assert.Equal(t, "tests/basic", filepath.ToSlash(b.BundleRootPath))
 }
 
 func TestBundleMustLoadFailureWithEnv(t *testing.T) {
 	t.Setenv(env.RootVariable, "./tests/doesntexist")
-	_, err := MustLoad(context.Background())
-	require.Error(t, err, "not a directory")
+	b, diags := mustLoad(t)
+	require.Nil(t, b)
+	require.NotEmpty(t, diags, "expected diagnostics")
+	assert.Contains(t, diags[0].Summary, "invalid bundle root")
 }
 
 func TestBundleMustLoadFailureIfNotFound(t *testing.T) {
 	testutil.Chdir(t, t.TempDir())
-	_, err := MustLoad(context.Background())
-	require.Error(t, err, "unable to find bundle root")
+	b, diags := mustLoad(t)
+	require.Nil(t, b)
+	require.NotEmpty(t, diags, "expected diagnostics")
+	assert.Contains(t, diags[0].Summary, "unable to locate bundle root")
 }
 
 func TestBundleTryLoadSuccess(t *testing.T) {
 	t.Setenv(env.RootVariable, "./tests/basic")
-	b, err := TryLoad(context.Background())
-	require.NoError(t, err)
+	b, diags := tryLoad(t)
+	require.NotNil(t, b)
+	assert.Empty(t, diags, "expected no diagnostics")
 	assert.Equal(t, "tests/basic", filepath.ToSlash(b.BundleRootPath))
 }
 
 func TestBundleTryLoadFailureWithEnv(t *testing.T) {
 	t.Setenv(env.RootVariable, "./tests/doesntexist")
-	_, err := TryLoad(context.Background())
-	require.Error(t, err, "not a directory")
+	b, diags := tryLoad(t)
+	require.Nil(t, b)
+	require.NotEmpty(t, diags, "expected diagnostics")
+	assert.Contains(t, diags[0].Summary, "invalid bundle root")
 }
 
 func TestBundleTryLoadOkIfNotFound(t *testing.T) {
 	testutil.Chdir(t, t.TempDir())
-	b, err := TryLoad(context.Background())
-	assert.NoError(t, err)
+	b, diags := tryLoad(t)
 	assert.Nil(t, b)
+	assert.Empty(t, diags, "expected no diagnostics")
 }
 
 func TestBundleGetResourceConfigJobsPointer(t *testing.T) {

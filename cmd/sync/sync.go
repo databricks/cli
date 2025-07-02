@@ -207,7 +207,7 @@ func New() *cobra.Command {
 		// b := bundle.GetOrNil(cmd.Context())
 		// if b != nil {
 		// 	// Run initialize phase to make sure paths are set.
-		// 	err = bundle.Apply(cmd.Context(), b, phases.Initialize())
+		// 	err = bundle.ApplyContext(cmd.Context(), b, phases.Initialize())
 		// 	if err != nil {
 		// 		return err
 		// 	}

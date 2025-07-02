@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/yamlsaver"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/spf13/cobra"
@@ -33,10 +34,12 @@ func NewGenerateAppCommand() *cobra.Command {
 	cmd.Flags().BoolVarP(&force, "force", "f", false, `Force overwrite existing files in the output directory`)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		ctx := cmd.Context()
-		b, diags := root.MustConfigureBundle(cmd)
-		if err := diags.Error(); err != nil {
-			return diags.Error()
+		ctx := logdiag.InitContext(cmd.Context())
+		cmd.SetContext(ctx)
+
+		b := root.MustConfigureBundle(cmd)
+		if b == nil {
+			return root.ErrAlreadyPrinted
 		}
 
 		w := b.WorkspaceClient()

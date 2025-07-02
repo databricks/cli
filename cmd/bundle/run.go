@@ -22,6 +22,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/exec"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/maps"
 )
@@ -126,10 +127,12 @@ Example usage:
 	cmd.Flags().BoolVar(&restart, "restart", false, "Restart the run if it is already running.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		ctx := cmd.Context()
-		b, diags := utils.ConfigureBundleWithVariables(cmd)
-		if diags.HasError() {
-			return renderDiagnostics(cmd.OutOrStdout(), b, diags)
+		ctx := logdiag.InitContext(cmd.Context())
+		cmd.SetContext(ctx)
+
+		b := utils.ConfigureBundleWithVariables(cmd)
+		if b == nil || logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
 		}
 
 		// If user runs the bundle run command as:
@@ -139,9 +142,9 @@ Example usage:
 			return executeInline(cmd, args, b)
 		}
 
-		diags = diags.Extend(phases.Initialize(ctx, b))
-		if diags.HasError() {
-			return renderDiagnostics(cmd.OutOrStdout(), b, diags)
+		phases.Initialize(ctx, b)
+		if logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
 		}
 
 		key, args, err := resolveRunArgument(ctx, b, args)
@@ -150,21 +153,21 @@ Example usage:
 		}
 
 		if !b.DirectDeployment {
-			diags = diags.Extend(bundle.ApplySeq(ctx, b,
+			bundle.ApplySeqContext(ctx, b,
 				terraform.Interpolate(),
 				terraform.Write(),
-			))
-			if diags.HasError() {
-				return renderDiagnostics(cmd.OutOrStdout(), b, diags)
+			)
+			if logdiag.HasError(ctx) {
+				return root.ErrAlreadyPrinted
 			}
 		}
 
-		diags = diags.Extend(bundle.ApplySeq(ctx, b,
+		bundle.ApplySeqContext(ctx, b,
 			statemgmt.StatePull(),
 			statemgmt.Load(statemgmt.ErrorOnEmptyState),
-		))
-		if diags.HasError() {
-			return renderDiagnostics(cmd.OutOrStdout(), b, diags)
+		)
+		if logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
 		}
 
 		runner, err := keyToRunner(b, key)
@@ -218,16 +221,9 @@ Example usage:
 	}
 
 	cmd.ValidArgsFunction = func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		b, diags := root.MustConfigureBundle(cmd)
-		if err := diags.Error(); err != nil {
-			cobra.CompErrorln(err.Error())
+		b := root.MustConfigureBundle(cmd)
+		if b == nil || logdiag.HasError(cmd.Context()) {
 			return nil, cobra.ShellCompDirectiveError
-		}
-
-		// No completion in the context of a bundle.
-		// Source and destination paths are taken from bundle configuration.
-		if b == nil {
-			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
 
 		if len(args) == 0 {
