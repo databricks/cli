@@ -19,8 +19,8 @@ FAIL = "❌\u200cFAIL"
 PASS = "✅\u200cpass"
 SKIP = "🙈\u200cskip"
 
-# Test fail is FAIL replacement that is used when it's very likely that it's really a test failure and not environment failure.
 # FAIL is replaced with BUG when test fails in all environments (and when we have >=TOTAL_ENVS-1 environments)
+# This indicate that it's very likely that PR did broke this test rather than environment being flaky.
 BUG = "🪲\u200cBUG"
 
 # This happens when Eventually is used - there is output for the test but no result.
