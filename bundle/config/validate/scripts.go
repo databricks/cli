@@ -34,7 +34,6 @@ func (f *validateScripts) Apply(ctx context.Context, b *bundle.Bundle) diag.Diag
 		script := b.Config.Scripts[k]
 		p := dyn.NewPath(dyn.Key("scripts"), dyn.Key(k), dyn.Key("content"))
 
-		// Check for empty content
 		if script.Content == "" {
 			diags = append(diags, diag.Diagnostic{
 				Severity: diag.Error,
