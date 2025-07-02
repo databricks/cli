@@ -605,115 +605,49 @@ func TestTerraformToBundleEmptyLocalResources(t *testing.T) {
 	config := config.Root{
 		Resources: config.Resources{},
 	}
-	tfState := resourcesState{
-		Resources: []stateResource{
-			{
-				Type: "databricks_job",
-				Mode: "managed",
-				Name: "test_job",
-				Instances: []stateResourceInstance{
-					{Attributes: stateInstanceAttributes{ID: "1"}},
-				},
-			},
-			{
-				Type: "databricks_pipeline",
-				Mode: "managed",
-				Name: "test_pipeline",
-				Instances: []stateResourceInstance{
-					{Attributes: stateInstanceAttributes{ID: "1"}},
-				},
-			},
-			{
-				Type: "databricks_mlflow_model",
-				Mode: "managed",
-				Name: "test_mlflow_model",
-				Instances: []stateResourceInstance{
-					{Attributes: stateInstanceAttributes{ID: "1"}},
-				},
-			},
-			{
-				Type: "databricks_mlflow_experiment",
-				Mode: "managed",
-				Name: "test_mlflow_experiment",
-				Instances: []stateResourceInstance{
-					{Attributes: stateInstanceAttributes{ID: "1"}},
-				},
-			},
-			{
-				Type: "databricks_model_serving",
-				Mode: "managed",
-				Name: "test_model_serving",
-				Instances: []stateResourceInstance{
-					{Attributes: stateInstanceAttributes{ID: "1"}},
-				},
-			},
-			{
-				Type: "databricks_registered_model",
-				Mode: "managed",
-				Name: "test_registered_model",
-				Instances: []stateResourceInstance{
-					{Attributes: stateInstanceAttributes{ID: "1"}},
-				},
-			},
-			{
-				Type: "databricks_quality_monitor",
-				Mode: "managed",
-				Name: "test_monitor",
-				Instances: []stateResourceInstance{
-					{Attributes: stateInstanceAttributes{ID: "1"}},
-				},
-			},
-			{
-				Type: "databricks_schema",
-				Mode: "managed",
-				Name: "test_schema",
-				Instances: []stateResourceInstance{
-					{Attributes: stateInstanceAttributes{ID: "1"}},
-				},
-			},
-			{
-				Type: "databricks_volume",
-				Mode: "managed",
-				Name: "test_volume",
-				Instances: []stateResourceInstance{
-					{Attributes: stateInstanceAttributes{ID: "1"}},
-				},
-			},
-			{
-				Type: "databricks_cluster",
-				Mode: "managed",
-				Name: "test_cluster",
-				Instances: []stateResourceInstance{
-					{Attributes: stateInstanceAttributes{ID: "1"}},
-				},
-			},
-			{
-				Type: "databricks_dashboard",
-				Mode: "managed",
-				Name: "test_dashboard",
-				Instances: []stateResourceInstance{
-					{Attributes: stateInstanceAttributes{ID: "1"}},
-				},
-			},
-			{
-				Type: "databricks_app",
-				Mode: "managed",
-				Name: "test_app",
-				Instances: []stateResourceInstance{
-					{Attributes: stateInstanceAttributes{Name: "app1"}},
-				},
-			},
-			{
-				Type: "databricks_secret_scope",
-				Mode: "managed",
-				Name: "test_secret_scope",
-				Instances: []stateResourceInstance{
-					{Attributes: stateInstanceAttributes{Name: "secret_scope1"}},
-				},
-			},
+
+	state := ExportedResourcesMap{
+		"jobs": map[string]ResourceState{
+			"test_job": {ID: "1"},
+		},
+		"pipelines": map[string]ResourceState{
+			"test_pipeline": {ID: "1"},
+		},
+		"models": map[string]ResourceState{
+			"test_mlflow_model": {ID: "1"},
+		},
+		"experiments": map[string]ResourceState{
+			"test_mlflow_experiment": {ID: "1"},
+		},
+		"model_serving_endpoints": map[string]ResourceState{
+			"test_model_serving": {ID: "1"},
+		},
+		"registered_models": map[string]ResourceState{
+			"test_registered_model": {ID: "1"},
+		},
+		"quality_monitors": map[string]ResourceState{
+			"test_monitor": {ID: "1"},
+		},
+		"schemas": map[string]ResourceState{
+			"test_schema": {ID: "1"},
+		},
+		"volumes": map[string]ResourceState{
+			"test_volume": {ID: "1"},
+		},
+		"clusters": map[string]ResourceState{
+			"test_cluster": {ID: "1"},
+		},
+		"dashboards": map[string]ResourceState{
+			"test_dashboard": {ID: "1"},
+		},
+		"apps": map[string]ResourceState{
+			"test_app": {ID: "app1"},
+		},
+		"secret_scopes": map[string]ResourceState{
+			"test_secret_scope": {ID: "secret_scope1"},
 		},
 	}
-	err := TerraformToBundle(&tfState, &config)
+	err := TerraformToBundle(context.Background(), state, &config)
 	assert.NoError(t, err)
 
 	assert.Equal(t, "1", config.Resources.Jobs["test_job"].ID)
@@ -852,10 +786,8 @@ func TestTerraformToBundleEmptyRemoteResources(t *testing.T) {
 			},
 		},
 	}
-	tfState := resourcesState{
-		Resources: nil,
-	}
-	err := TerraformToBundle(&tfState, &config)
+
+	err := TerraformToBundle(context.Background(), nil, &config)
 	assert.NoError(t, err)
 
 	assert.Equal(t, "", config.Resources.Jobs["test_job"].ID)
@@ -1058,203 +990,57 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 			},
 		},
 	}
-	tfState := resourcesState{
-		Resources: []stateResource{
-			{
-				Type: "databricks_job",
-				Mode: "managed",
-				Name: "test_job",
-				Instances: []stateResourceInstance{
-					{Attributes: stateInstanceAttributes{ID: "1"}},
-				},
-			},
-			{
-				Type: "databricks_job",
-				Mode: "managed",
-				Name: "test_job_old",
-				Instances: []stateResourceInstance{
-					{Attributes: stateInstanceAttributes{ID: "2"}},
-				},
-			},
-			{
-				Type: "databricks_pipeline",
-				Mode: "managed",
-				Name: "test_pipeline",
-				Instances: []stateResourceInstance{
-					{Attributes: stateInstanceAttributes{ID: "1"}},
-				},
-			},
-			{
-				Type: "databricks_pipeline",
-				Mode: "managed",
-				Name: "test_pipeline_old",
-				Instances: []stateResourceInstance{
-					{Attributes: stateInstanceAttributes{ID: "2"}},
-				},
-			},
-			{
-				Type: "databricks_mlflow_model",
-				Mode: "managed",
-				Name: "test_mlflow_model",
-				Instances: []stateResourceInstance{
-					{Attributes: stateInstanceAttributes{ID: "1"}},
-				},
-			},
-			{
-				Type: "databricks_mlflow_model",
-				Mode: "managed",
-				Name: "test_mlflow_model_old",
-				Instances: []stateResourceInstance{
-					{Attributes: stateInstanceAttributes{ID: "2"}},
-				},
-			},
-			{
-				Type: "databricks_mlflow_experiment",
-				Mode: "managed",
-				Name: "test_mlflow_experiment",
-				Instances: []stateResourceInstance{
-					{Attributes: stateInstanceAttributes{ID: "1"}},
-				},
-			},
-			{
-				Type: "databricks_mlflow_experiment",
-				Mode: "managed",
-				Name: "test_mlflow_experiment_old",
-				Instances: []stateResourceInstance{
-					{Attributes: stateInstanceAttributes{ID: "2"}},
-				},
-			},
-			{
-				Type: "databricks_model_serving",
-				Mode: "managed",
-				Name: "test_model_serving",
-				Instances: []stateResourceInstance{
-					{Attributes: stateInstanceAttributes{ID: "1"}},
-				},
-			},
-			{
-				Type: "databricks_model_serving",
-				Mode: "managed",
-				Name: "test_model_serving_old",
-				Instances: []stateResourceInstance{
-					{Attributes: stateInstanceAttributes{ID: "2"}},
-				},
-			},
-			{
-				Type: "databricks_registered_model",
-				Mode: "managed",
-				Name: "test_registered_model",
-				Instances: []stateResourceInstance{
-					{Attributes: stateInstanceAttributes{ID: "1"}},
-				},
-			},
-			{
-				Type: "databricks_registered_model",
-				Mode: "managed",
-				Name: "test_registered_model_old",
-				Instances: []stateResourceInstance{
-					{Attributes: stateInstanceAttributes{ID: "2"}},
-				},
-			},
-			{
-				Type: "databricks_quality_monitor",
-				Mode: "managed",
-				Name: "test_monitor",
-				Instances: []stateResourceInstance{
-					{Attributes: stateInstanceAttributes{ID: "test_monitor"}},
-				},
-			},
-			{
-				Type: "databricks_quality_monitor",
-				Mode: "managed",
-				Name: "test_monitor_old",
-				Instances: []stateResourceInstance{
-					{Attributes: stateInstanceAttributes{ID: "test_monitor_old"}},
-				},
-			},
-			{
-				Type: "databricks_schema",
-				Mode: "managed",
-				Name: "test_schema",
-				Instances: []stateResourceInstance{
-					{Attributes: stateInstanceAttributes{ID: "1"}},
-				},
-			},
-			{
-				Type: "databricks_schema",
-				Mode: "managed",
-				Name: "test_schema_old",
-				Instances: []stateResourceInstance{
-					{Attributes: stateInstanceAttributes{ID: "2"}},
-				},
-			},
-			{
-				Type: "databricks_volume",
-				Mode: "managed",
-				Name: "test_volume",
-				Instances: []stateResourceInstance{
-					{Attributes: stateInstanceAttributes{ID: "1"}},
-				},
-			},
-			{
-				Type: "databricks_volume",
-				Mode: "managed",
-				Name: "test_volume_old",
-				Instances: []stateResourceInstance{
-					{Attributes: stateInstanceAttributes{ID: "2"}},
-				},
-			},
-			{
-				Type: "databricks_cluster",
-				Mode: "managed",
-				Name: "test_cluster",
-				Instances: []stateResourceInstance{
-					{Attributes: stateInstanceAttributes{ID: "1"}},
-				},
-			},
-			{
-				Type: "databricks_cluster",
-				Mode: "managed",
-				Name: "test_cluster_old",
-				Instances: []stateResourceInstance{
-					{Attributes: stateInstanceAttributes{ID: "2"}},
-				},
-			},
-			{
-				Type: "databricks_dashboard",
-				Mode: "managed",
-				Name: "test_dashboard",
-				Instances: []stateResourceInstance{
-					{Attributes: stateInstanceAttributes{ID: "1"}},
-				},
-			},
-			{
-				Type: "databricks_dashboard",
-				Mode: "managed",
-				Name: "test_dashboard_old",
-				Instances: []stateResourceInstance{
-					{Attributes: stateInstanceAttributes{ID: "2"}},
-				},
-			},
-			{
-				Type: "databricks_app",
-				Mode: "managed",
-				Name: "test_app",
-				Instances: []stateResourceInstance{
-					{Attributes: stateInstanceAttributes{Name: "test_app"}},
-				},
-			},
-			{
-				Type: "databricks_app",
-				Mode: "managed",
-				Name: "test_app_old",
-				Instances: []stateResourceInstance{
-					{Attributes: stateInstanceAttributes{Name: "test_app_old"}},
-				},
-			},
+	state := ExportedResourcesMap{
+		"jobs": map[string]ResourceState{
+			"test_job":     {ID: "1"},
+			"test_job_old": {ID: "2"},
+		},
+		"pipelines": map[string]ResourceState{
+			"test_pipeline":     {ID: "1"},
+			"test_pipeline_old": {ID: "2"},
+		},
+		"models": map[string]ResourceState{
+			"test_mlflow_model":     {ID: "1"},
+			"test_mlflow_model_old": {ID: "2"},
+		},
+		"experiments": map[string]ResourceState{
+			"test_mlflow_experiment":     {ID: "1"},
+			"test_mlflow_experiment_old": {ID: "2"},
+		},
+		"model_serving_endpoints": map[string]ResourceState{
+			"test_model_serving":     {ID: "1"},
+			"test_model_serving_old": {ID: "2"},
+		},
+		"registered_models": map[string]ResourceState{
+			"test_registered_model":     {ID: "1"},
+			"test_registered_model_old": {ID: "2"},
+		},
+		"quality_monitors": map[string]ResourceState{
+			"test_monitor":     {ID: "test_monitor"},
+			"test_monitor_old": {ID: "test_monitor_old"},
+		},
+		"schemas": map[string]ResourceState{
+			"test_schema":     {ID: "1"},
+			"test_schema_old": {ID: "2"},
+		},
+		"volumes": map[string]ResourceState{
+			"test_volume":     {ID: "1"},
+			"test_volume_old": {ID: "2"},
+		},
+		"clusters": map[string]ResourceState{
+			"test_cluster":     {ID: "1"},
+			"test_cluster_old": {ID: "2"},
+		},
+		"dashboards": map[string]ResourceState{
+			"test_dashboard":     {ID: "1"},
+			"test_dashboard_old": {ID: "2"},
+		},
+		"apps": map[string]ResourceState{
+			"test_app":     {ID: "test_app"},
+			"test_app_old": {ID: "test_app_old"},
 		},
 	}
-	err := TerraformToBundle(&tfState, &config)
+	err := TerraformToBundle(context.Background(), state, &config)
 	assert.NoError(t, err)
 
 	assert.Equal(t, "1", config.Resources.Jobs["test_job"].ID)
@@ -1335,7 +1121,7 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Dashboards["test_dashboard_new"].ModifiedStatus)
 
 	assert.Equal(t, "test_app", config.Resources.Apps["test_app"].Name)
-	assert.Equal(t, resources.ModifiedStatusUpdated, config.Resources.Apps["test_app"].ModifiedStatus)
+	assert.Equal(t, "", config.Resources.Apps["test_app"].ModifiedStatus)
 	assert.Equal(t, "test_app_old", config.Resources.Apps["test_app_old"].ID)
 	assert.Equal(t, "", config.Resources.Apps["test_app_old"].Name)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Apps["test_app_old"].ModifiedStatus)

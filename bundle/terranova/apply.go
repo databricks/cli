@@ -207,7 +207,7 @@ func (d *Deployer) Create(ctx context.Context, resource tnresources.IResource, c
 }
 
 func (d *Deployer) Recreate(ctx context.Context, oldResource tnresources.IResource, oldID string, config any) error {
-	err := oldResource.DoDelete(ctx, oldID)
+	err := tnresources.DeleteResource(ctx, d.client, d.group, oldID)
 	if err != nil {
 		return fmt.Errorf("deleting old id=%s: %w", oldID, err)
 	}
@@ -267,7 +267,7 @@ func (d *Deployer) Update(ctx context.Context, resource tnresources.IResource, o
 
 func (d *Deployer) Delete(ctx context.Context, resource tnresources.IResource, oldID string) error {
 	// TODO: recognize 404 and 403 as "deleted" and proceed to removing state
-	err := resource.DoDelete(ctx, oldID)
+	err := tnresources.DeleteResource(ctx, d.client, d.group, oldID)
 	if err != nil {
 		return fmt.Errorf("deleting id=%s: %w", oldID, err)
 	}

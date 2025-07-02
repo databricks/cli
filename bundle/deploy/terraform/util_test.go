@@ -25,7 +25,7 @@ func TestParseResourcesStateWithNoFile(t *testing.T) {
 	}
 	state, err := ParseResourcesState(context.Background(), b)
 	assert.NoError(t, err)
-	assert.Equal(t, &resourcesState{Version: SupportedStateVersion}, state)
+	assert.Equal(t, ExportedResourcesMap(nil), state)
 }
 
 func TestParseResourcesStateWithExistingStateFile(t *testing.T) {
@@ -89,17 +89,9 @@ func TestParseResourcesStateWithExistingStateFile(t *testing.T) {
 	assert.NoError(t, err)
 	state, err := ParseResourcesState(ctx, b)
 	assert.NoError(t, err)
-	expected := &resourcesState{
-		Version: 4,
-		Resources: []stateResource{
-			{
-				Mode: "managed",
-				Type: "databricks_pipeline",
-				Name: "test_pipeline",
-				Instances: []stateResourceInstance{
-					{Attributes: stateInstanceAttributes{ID: "123", Name: "test_pipeline"}},
-				},
-			},
+	expected := ExportedResourcesMap{
+		"pipelines": map[string]ResourceState{
+			"test_pipeline": {ID: "123"},
 		},
 	}
 	assert.Equal(t, expected, state)
