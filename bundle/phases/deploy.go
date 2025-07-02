@@ -209,13 +209,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return diags
 	}
 
-	if b.DirectDeployment {
-		err := b.OpenResourceDatabase(ctx)
-		if err != nil {
-			return diags.Extend(diag.FromErr(err))
-		}
-
-	} else {
+	if !b.DirectDeployment {
 		diags = diags.Extend(bundle.ApplySeq(ctx, b,
 			terraform.Interpolate(),
 			terraform.Write(),
