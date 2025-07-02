@@ -67,12 +67,17 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 		panic("direct deployment required")
 	}
 
+	err := b.OpenResourceDatabase(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	client := b.WorkspaceClient()
 	var actions []deployplan.Action
 
 	state := b.ResourceDatabase.ExportState(ctx)
 
-	_, err := dyn.MapByPattern(
+	_, err = dyn.MapByPattern(
 		b.Config.Value(),
 		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()),
 		func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
@@ -132,6 +137,11 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 func CalculateDestroyActions(ctx context.Context, b *bundle.Bundle) ([]deployplan.Action, error) {
 	if !b.DirectDeployment {
 		panic("direct deployment required")
+	}
+
+	err := b.OpenResourceDatabase(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	db := &b.ResourceDatabase

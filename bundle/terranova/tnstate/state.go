@@ -83,6 +83,13 @@ func (db *TerranovaState) Open(path string) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
+	if db.Path != "" {
+		if db.Path == path {
+			return nil
+		}
+		return fmt.Errorf("Already read state %v, cannot open %v", db.Path, path)
+	}
+
 	db.Path = path
 
 	data, err := os.ReadFile(path)

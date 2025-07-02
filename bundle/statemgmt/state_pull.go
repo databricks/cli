@@ -85,12 +85,6 @@ func (l *statePull) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 	remoteState, remoteContent, err := l.remoteState(ctx, b)
 	if errors.Is(err, fs.ErrNotExist) {
 		log.Infof(ctx, "Remote state file does not exist. Using local resources state.")
-		if b.DirectDeployment {
-			err = b.OpenResourceDatabase(ctx)
-			if err != nil {
-				return diag.Errorf("failed to read local state file: %v", err)
-			}
-		}
 		return nil
 	}
 	if err != nil {
@@ -126,14 +120,6 @@ func (l *statePull) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 		log.Infof(ctx, "Remote state is newer than local state (remote: %d, local: %d). Using remote resources state.", remoteState.Serial, localState.Serial)
 		err := os.WriteFile(localStatePath, remoteContent, 0o600)
 		return diag.FromErr(err)
-	}
-
-	if b.DirectDeployment {
-		// TODO: if we're using local state, we're parsing it twice, first in localState() function, then here. Can optimize that to one time.
-		err := b.OpenResourceDatabase(ctx)
-		if err != nil {
-			return diag.Errorf("failed to read local state file: %v", err)
-		}
 	}
 
 	// default: local state is newer or equal to remote state in terms of serial sequence.
