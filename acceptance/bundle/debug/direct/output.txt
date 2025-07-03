@@ -19,7 +19,7 @@ Validation OK!
  10:07:59 Debug: Apply pid=12345 mutator=metadata.AnnotatePipelines
 -10:07:59 Debug: Apply pid=12345 mutator=terraform.Initialize
 -10:07:59 Debug: Using Terraform from DATABRICKS_TF_EXEC_PATH at [TERRAFORM] pid=12345 mutator=terraform.Initialize
--10:07:59 Debug: DATABRICKS_TF_PROVIDER_VERSION as 1.68.0 does not match the current version 1.84.0, ignoring DATABRICKS_TF_CLI_CONFIG_FILE pid=12345 mutator=terraform.Initialize
+-10:07:59 Debug: Using Terraform CLI config from DATABRICKS_TF_CLI_CONFIG_FILE at [DATABRICKS_TF_CLI_CONFIG_FILE] pid=12345 mutator=terraform.Initialize
 -10:07:59 Debug: Environment variables for Terraform: ...redacted... pid=12345 mutator=terraform.Initialize
  10:07:59 Debug: Apply pid=12345 mutator=scripts.postinit
  10:07:59 Debug: No script defined for postinit, skipping pid=12345 mutator=scripts.postinit
