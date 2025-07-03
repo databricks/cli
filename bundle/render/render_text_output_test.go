@@ -24,7 +24,7 @@ import (
 func TestRenderSummaryHeaderTemplate_nilBundle(t *testing.T) {
 	writer := &bytes.Buffer{}
 
-	err := renderSummaryHeaderTemplate(writer, nil)
+	err := renderSummaryHeaderTemplate(context.Background(), writer, nil)
 	require.NoError(t, err)
 
 	assert.Equal(t, "", writer.String())

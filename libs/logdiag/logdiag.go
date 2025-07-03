@@ -18,11 +18,15 @@ const key = keyType(2)
 var Mu sync.Mutex
 
 type Value struct {
+	// How many diagnostics if each type were seen
 	Errors          int
 	Warnings        int
 	Recommendations int
-	Root            string
 
+	// Root to resolve location against
+	Root string
+
+	// If Collect is true, diagnostics are appended to Collected. Use SetCollected() to set.
 	Collect   bool
 	Collected []diag.Diagnostic
 }
