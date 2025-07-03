@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/databricks/databricks-sdk-go/service/database"
 	"path"
 	"path/filepath"
 	"sort"
@@ -76,6 +77,8 @@ type FakeWorkspace struct {
 
 	nextRepoId int64
 	Repos      map[string]workspace.RepoInfo
+
+	DatabaseInstances map[string]database.DatabaseInstance
 }
 
 func (w *FakeWorkspace) LockUnlock() func() {
@@ -157,6 +160,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		Dashboards:      map[string]dashboards.Dashboard{},
 		SqlWarehouses:   map[string]sql.GetWarehouseResponse{},
 		Repos:           map[string]workspace.RepoInfo{},
+		DatabaseInstances: map[string]database.DatabaseInstance{},
 	}
 }
 
