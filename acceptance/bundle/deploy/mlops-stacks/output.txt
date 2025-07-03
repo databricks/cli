@@ -21,14 +21,6 @@ This directory contains an ML project based on the default
 [Databricks MLOps Stacks](https://github.com/databricks/mlops-stacks),
 
 >>> [CLI] bundle summary
-Warning: expected a string value, found null
-  at targets.dev.workspace.host
-  in databricks.yml:34:12
-
-Warning: unknown field: description
-  at resources.experiments.experiment
-  in resources/ml-artifacts-resource.yml:21:7
-
 Name: project_name_[UNIQUE_NAME]
 Target: dev
 Workspace:
@@ -83,14 +75,6 @@ Updating deployment state...
 Deployment complete!
 
 >>> [CLI] bundle summary -o json
-Warning: expected a string value, found null
-  at targets.dev.workspace.host
-  in databricks.yml:34:12
-
-Warning: unknown field: description
-  at resources.experiments.experiment
-  in resources/ml-artifacts-resource.yml:21:7
-
 {
   "experiment_id": "[NUMID]",
   "model_id": "[dev [USERNAME]] dev-project_name_[UNIQUE_NAME]-model",
@@ -107,27 +91,11 @@ Warning: unknown field: description
   at resources.experiments.experiment
   in resources/ml-artifacts-resource.yml:21:7
 
-Warning: expected a string value, found null
-  at targets.dev.workspace.host
-  in databricks.yml:34:12
-
-Warning: unknown field: description
-  at resources.experiments.experiment
-  in resources/ml-artifacts-resource.yml:21:7
-
 {
   "name": "[dev [USERNAME]] dev-project_name_[UNIQUE_NAME]-batch-inference-job"
 }
 
 >>> [CLI] bundle destroy --auto-approve
-Warning: expected a string value, found null
-  at targets.dev.workspace.host
-  in databricks.yml:34:12
-
-Warning: unknown field: description
-  at resources.experiments.experiment
-  in resources/ml-artifacts-resource.yml:21:7
-
 The following resources will be deleted:
   delete job batch_inference_job
   delete job model_training_job

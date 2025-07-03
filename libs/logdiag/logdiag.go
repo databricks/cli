@@ -25,6 +25,9 @@ type Value struct {
 	Warnings        int
 	Recommendations int
 
+	// Only print diagnostics with this severity or lower (default: everything)
+	TargetSeverity diag.Severity
+
 	// Root to resolve location against
 	Root string
 
@@ -50,7 +53,9 @@ func InitContext(ctx context.Context) context.Context {
 	if ok {
 		panic("internal error: must not call InitContext() twice")
 	}
-	val := Value{}
+	val := Value{
+		TargetSeverity: 255,
+	}
 	return context.WithValue(ctx, key, &val)
 }
 
@@ -74,6 +79,13 @@ func HasError(ctx context.Context) bool {
 	defer Mu.Unlock()
 
 	return read(ctx).Errors > 0
+}
+
+func SetSeverity(ctx context.Context, target diag.Severity) {
+	Mu.Lock()
+	defer Mu.Unlock()
+
+	read(ctx).TargetSeverity = target
 }
 
 func SetRoot(ctx context.Context, root string) {
@@ -112,6 +124,10 @@ func LogDiag(ctx context.Context, d diag.Diagnostic) {
 		val.Warnings += 1
 	case diag.Recommendation:
 		val.Recommendations += 1
+	}
+
+	if d.Severity > val.TargetSeverity {
+		return
 	}
 
 	for i := range d.Locations {
