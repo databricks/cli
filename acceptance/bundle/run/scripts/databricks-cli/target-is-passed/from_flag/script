@@ -8,5 +8,5 @@ unset DATABRICKS_TOKEN
 
 # Explicitly select oauth target. This test asserts that
 # both the right target and the right auth credentials are
-# being passed to the script command.
+# being passed to the script invocation.
 trace $CLI bundle run validate -t oauth | jq .bundle.target
