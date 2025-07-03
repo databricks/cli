@@ -107,7 +107,7 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 	assert.Equal(t, "app1", config.Resources.Apps["test_app"].ID)
 	assert.Equal(t, "", config.Resources.Apps["test_app"].Name)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Apps["test_app"].ModifiedStatus)
-  
+
 	assert.Equal(t, "secret_scope1", config.Resources.SecretScopes["test_secret_scope"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.SecretScopes["test_secret_scope"].ModifiedStatus)
 
@@ -491,14 +491,14 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 			"test_app":     {ID: "test_app"},
 			"test_app_old": {ID: "test_app_old"},
 		},
-    "secret_scopes": map[string]ResourceState{
+		"secret_scopes": map[string]ResourceState{
 			"test_secret_scope":     {ID: "test_secret_scope"},
 			"test_secret_scope_old": {ID: "test_secret_scope_old"},
 		},
 		"sql_warehouses": map[string]ResourceState{
 			"test_sql_warehouse":     {ID: "1"},
 			"test_sql_warehouse_old": {ID: "2"},
-    },
+		},
 	}
 	err := StateToBundle(context.Background(), state, &config)
 	assert.NoError(t, err)
