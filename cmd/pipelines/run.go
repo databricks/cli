@@ -1,3 +1,4 @@
+// Copied from cmd/bundle/run.go and adapted for pipelines use.
 package pipelines
 
 import (
@@ -19,7 +20,6 @@ import (
 	"golang.org/x/exp/maps"
 )
 
-// newRunCommand is copied from cmd/bundle/run.go and adapted for pipelines use.
 func newRunCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "run [flags] [KEY]",
