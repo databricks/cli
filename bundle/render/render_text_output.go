@@ -104,9 +104,9 @@ func buildTrailer(ctx context.Context) string {
 	}
 }
 
-func renderSummaryHeaderTemplate(out io.Writer, b *bundle.Bundle) error {
+func renderSummaryHeaderTemplate(ctx context.Context, out io.Writer, b *bundle.Bundle) error {
 	if b == nil {
-		return renderSummaryHeaderTemplate(out, &bundle.Bundle{})
+		return nil
 	}
 
 	currentUser := &iam.User{}
@@ -132,7 +132,7 @@ func renderSummaryHeaderTemplate(out io.Writer, b *bundle.Bundle) error {
 // RenderDiagnostics renders the diagnostics in a human-readable format.
 func RenderDiagnosticsSummary(ctx context.Context, out io.Writer, b *bundle.Bundle) error {
 	if b != nil {
-		err := renderSummaryHeaderTemplate(out, b)
+		err := renderSummaryHeaderTemplate(ctx, out, b)
 		if err != nil {
 			return fmt.Errorf("failed to render summary: %w", err)
 		}
@@ -152,9 +152,9 @@ func RenderDiagnosticsSummary(ctx context.Context, out io.Writer, b *bundle.Bund
 
 func RenderSummary(ctx context.Context, out io.Writer, b *bundle.Bundle) error {
 	if b == nil {
-		panic("internal error: b must not be nil")
+		return nil
 	}
-	if err := renderSummaryHeaderTemplate(out, b); err != nil {
+	if err := renderSummaryHeaderTemplate(ctx, out, b); err != nil {
 		return err
 	}
 
