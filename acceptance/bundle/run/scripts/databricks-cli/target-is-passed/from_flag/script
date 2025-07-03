@@ -6,5 +6,7 @@ export DATABRICKS_CONFIG_FILE=.databrickscfg
 unset DATABRICKS_HOST
 unset DATABRICKS_TOKEN
 
-# Explicitly select oauth target
+# Explicitly select oauth target. This test asserts that
+# both the right target and the right auth credentials are
+# being passed to the script command.
 trace $CLI bundle run validate -t oauth | jq .bundle.target
