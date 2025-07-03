@@ -90,11 +90,18 @@ func newOpenCommand() *cobra.Command {
 		noCache := errors.Is(stateFileErr, os.ErrNotExist) || errors.Is(configFileErr, os.ErrNotExist)
 
 		if forcePull || noCache {
-			bundle.ApplySeqContext(ctx, b,
-				statemgmt.StatePull(),
-				terraform.Interpolate(),
-				terraform.Write(),
-			)
+			bundle.ApplyContext(ctx, b, statemgmt.StatePull())
+			if logdiag.HasError(ctx) {
+				return root.ErrAlreadyPrinted
+			}
+
+			if !b.DirectDeployment {
+				bundle.ApplySeqContext(ctx, b,
+					terraform.Interpolate(),
+					terraform.Write(),
+				)
+			}
+
 			if logdiag.HasError(ctx) {
 				return root.ErrAlreadyPrinted
 			}
@@ -126,8 +133,14 @@ func newOpenCommand() *cobra.Command {
 
 	cmd.ValidArgsFunction = func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		b := root.MustConfigureBundle(cmd)
-		if b == nil || logdiag.HasError(cmd.Context()) {
+		if logdiag.HasError(cmd.Context()) {
 			return nil, cobra.ShellCompDirectiveError
+		}
+
+		// No completion in the context of a bundle.
+		// Source and destination paths are taken from bundle configuration.
+		if b == nil {
+			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
 
 		if len(args) == 0 {
