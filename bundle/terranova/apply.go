@@ -59,9 +59,7 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 
 		var config any
 
-		if node.ActionType == deployplan.ActionTypeDelete {
-			config = nil
-		} else {
+		if node.ActionType != deployplan.ActionTypeDelete {
 			var ok bool
 			config, ok = b.GetResourceConfig(node.Group, node.Name)
 			if !ok {
