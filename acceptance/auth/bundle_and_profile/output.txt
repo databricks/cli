@@ -13,7 +13,7 @@
 
 === Inside the bundle, profile flag not matching bundle host. Should use profile from the flag and not the bundle.
 >>> errcode [CLI] current-user me -p profile_name
-Error: cannot resolve bundle auth configuration: the host in the profile (https://non-existing-subdomain.databricks.com) doesn’t match the host configured in the bundle ([DATABRICKS_TARGET]). The profile "DEFAULT" has host="[DATABRICKS_TARGET]" that matches host in the bundle. To select it, pass "-p DEFAULT"
+Error: Get "https://non-existing-subdomain.databricks.com/api/2.0/preview/scim/v2/Me": (redacted)
 
 Exit code: 1
 
