@@ -5,9 +5,9 @@ scripts:
   stdin:
     content: |
       cat -
-  stderr:
-    content: |
-      python3 -c "import sys; print('Hello', file=sys.stderr)"
   stdout:
     content: |
-      python3 -c "import sys; print('World')"
+      python3 -c "import sys; print('hello from stdout')"
+  stderr:
+    content: |
+      python3 -c "import sys; print('hello from stderr', file=sys.stderr)"

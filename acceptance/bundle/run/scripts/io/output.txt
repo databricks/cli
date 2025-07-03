@@ -3,7 +3,7 @@
 abc
 
 >>> [CLI] bundle run stdout
-World
+hello from stdout
 
 >>> [CLI] bundle run stderr
-Hello
+hello from stderr
