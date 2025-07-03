@@ -1,0 +1,12 @@
+
+>>> errcode [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-single-instance/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] database get-database-instance test-database-instance
+{
+  "name":"test-database-instance",
+  "uid":"[UUID]"
+}

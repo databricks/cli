@@ -1,0 +1,2 @@
+trace errcode $CLI bundle deploy
+trace $CLI database get-database-instance test-database-instance
