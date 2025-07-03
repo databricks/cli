@@ -1,0 +1,15 @@
+
+>>> touch empty.txt
+
+>>> [CLI] fs mkdir dbfs:/tmp/completion-test-[UNIQUE_NAME]/dir1
+
+>>> [CLI] fs cp empty.txt dbfs:/tmp/completion-test-[UNIQUE_NAME]/dir1/empty.txt
+empty.txt -> dbfs:/tmp/completion-test-[UNIQUE_NAME]/dir1/empty.txt
+
+>>> [CLI] fs ls dbfs:/tmp/completion-test-[UNIQUE_NAME]/dir1/
+empty.txt
+
+>>> [CLI] __complete fs ls dbfs:/tmp/completion-test-[UNIQUE_NAME]/
+dbfs:/tmp/completion-test-[UNIQUE_NAME]/dir1/
+:2
+Completion ended with directive: ShellCompDirectiveNoSpace
