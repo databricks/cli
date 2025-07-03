@@ -222,8 +222,14 @@ Example usage:
 
 	cmd.ValidArgsFunction = func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		b := root.MustConfigureBundle(cmd)
-		if b == nil || logdiag.HasError(cmd.Context()) {
+		if logdiag.HasError(cmd.Context()) {
 			return nil, cobra.ShellCompDirectiveError
+		}
+
+		// No completion in the context of a bundle.
+		// Source and destination paths are taken from bundle configuration.
+		if b == nil {
+			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
 
 		if len(args) == 0 {
