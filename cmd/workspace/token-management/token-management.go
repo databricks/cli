@@ -126,6 +126,7 @@ func newCreateOboToken() *cobra.Command {
 				return fmt.Errorf("expected to have application id of the service principal")
 			}
 			createOboTokenReq.ApplicationId = args[0]
+
 		}
 
 		response, err := w.TokenManagement.CreateOboToken(ctx, createOboTokenReq)

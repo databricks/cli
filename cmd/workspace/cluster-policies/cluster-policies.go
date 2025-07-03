@@ -324,6 +324,7 @@ func newEdit() *cobra.Command {
 				return fmt.Errorf("expected to have the id of the policy to update")
 			}
 			editReq.PolicyId = args[0]
+
 		}
 
 		err = w.ClusterPolicies.Edit(ctx, editReq)
