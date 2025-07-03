@@ -499,4 +499,12 @@ func addDefaultHandlers(server *testserver.Server) {
 		}
 		return testserver.Response{StatusCode: 404}
 	})
+
+	server.Handle("POST", "/api/2.0/database/instances", func(req testserver.Request) any {
+		return req.Workspace.DatabaseInstanceCreate(req)
+	})
+
+	server.Handle("GET", "/api/2.0/database/instances/{name}", func(req testserver.Request) any {
+		return testserver.MapGet(req.Workspace, req.Workspace.DatabaseInstances, req.Vars["name"])
+	})
 }
