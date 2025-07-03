@@ -1,5 +1,8 @@
 trace $CLI bundle validate
 trace $CLI bundle validate -o json | jq ".resources.sql_warehouses"
 
-trap "trace $CLI bundle destroy --auto-approve" EXIT
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
 trace $CLI bundle deploy
