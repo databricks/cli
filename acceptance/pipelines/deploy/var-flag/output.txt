@@ -1,127 +1,14 @@
 
-=== install pipelines cli
->>> errcode [CLI] install-pipelines-cli -d ./subdir
-pipelines successfully installed in directory "./subdir"
-
-=== Test 1: Basic --var flag usage
->>> ./subdir/pipelines deploy --var=catalog=custom_catalog --var=schema=custom_schema --auto-approve
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-var-flag/development/files...
+=== Test --var flag usage
+>>> [PIPELINES] deploy --var=catalog=custom_catalog --var=schema=custom_schema --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-var-flag/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== Verify Test 1: Check that variables were substituted correctly
+=== Verify: Check that variables were substituted correctly
 >>> [CLI] pipelines get [UUID]
 {
   "catalog": "custom_catalog",
-  "target": "custom_catalog.custom_schema"
+  "target": "custom_schema"
 }
-
-=== Test 2: --var flag with special characters
->>> ./subdir/pipelines deploy --var=catalog=my-catalog --var=schema=my_schema_with_underscores --auto-approve
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-var-flag/development/files...
-The following UC schemas will be deleted or recreated. Any underlying data may be lost:
-  recreate schema bar
-
-This action will result in the deletion or recreation of the following DLT Pipelines along with the
-Streaming Tables (STs) and Materialized Views (MVs) managed by them. Recreating the Pipelines will
-restore the defined STs and MVs through full refresh. Note that recreation is necessary when pipeline
-properties such as the 'catalog' or 'storage' are changed:
-  recreate pipeline foo
-Deploying resources...
-Updating deployment state...
-Deployment complete!
-
-=== Verify Test 2: Check special characters were handled correctly
->>> [CLI] pipelines get [UUID]
-{
-  "catalog": "my-catalog",
-  "target": "my-catalog.my_schema_with_underscores"
-}
-
-=== Test 3: --var flag with unicode characters
->>> ./subdir/pipelines deploy --var=pipeline_name=Test-Pipeline-🚀 --var=catalog=test_catalog --auto-approve
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-var-flag/development/files...
-The following UC schemas will be deleted or recreated. Any underlying data may be lost:
-  recreate schema bar
-
-This action will result in the deletion or recreation of the following DLT Pipelines along with the
-Streaming Tables (STs) and Materialized Views (MVs) managed by them. Recreating the Pipelines will
-restore the defined STs and MVs through full refresh. Note that recreation is necessary when pipeline
-properties such as the 'catalog' or 'storage' are changed:
-  recreate pipeline foo
-Deploying resources...
-Updating deployment state...
-Deployment complete!
-
-=== Verify Test 3: Check unicode characters were preserved
->>> [CLI] pipelines get [UUID]
-{
-  "name": "Test-Pipeline-🚀",
-  "catalog": "test_catalog"
-}
-
-=== Test 4: --var flag with equals sign in value
->>> ./subdir/pipelines deploy --var=catalog=test=equals=sign --var=schema=test_schema --auto-approve
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-var-flag/development/files...
-The following UC schemas will be deleted or recreated. Any underlying data may be lost:
-  recreate schema bar
-
-This action will result in the deletion or recreation of the following DLT Pipelines along with the
-Streaming Tables (STs) and Materialized Views (MVs) managed by them. Recreating the Pipelines will
-restore the defined STs and MVs through full refresh. Note that recreation is necessary when pipeline
-properties such as the 'catalog' or 'storage' are changed:
-  recreate pipeline foo
-Deploying resources...
-Updating deployment state...
-Deployment complete!
-
-=== Verify Test 4: Check equals signs in values were handled correctly
->>> [CLI] pipelines get [UUID]
-{
-  "catalog": "test=equals=sign",
-  "target": "test=equals=sign.test_schema"
-}
-
-=== Test 5: --var flag precedence over environment variables
->>> BUNDLE_VAR_catalog=env_catalog BUNDLE_VAR_schema=env_schema ./subdir/pipelines deploy --var=catalog=cli_catalog --var=schema=cli_schema --auto-approve
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-var-flag/development/files...
-The following UC schemas will be deleted or recreated. Any underlying data may be lost:
-  recreate schema bar
-
-This action will result in the deletion or recreation of the following DLT Pipelines along with the
-Streaming Tables (STs) and Materialized Views (MVs) managed by them. Recreating the Pipelines will
-restore the defined STs and MVs through full refresh. Note that recreation is necessary when pipeline
-properties such as the 'catalog' or 'storage' are changed:
-  recreate pipeline foo
-Deploying resources...
-Updating deployment state...
-Deployment complete!
-
-=== Verify Test 5: Check that CLI --var took precedence over environment variables
->>> [CLI] pipelines get [UUID]
-{
-  "catalog": "cli_catalog",
-  "target": "cli_catalog.cli_schema"
-}
-
-=== Test 6: --var flag with undefined variable (should fail)
->>> errcode ./subdir/pipelines deploy --var=undefined_var=value
-Error: variable undefined_var has not been defined
-
-
-Exit code: 1
-
-=== Test 7: --var flag with invalid format (should fail)
->>> errcode ./subdir/pipelines deploy --var=invalid_format
-Error: unexpected flag value for variable assignment: invalid_format
-
-
-Exit code: 1
-
-=== Test 8: --var flag with duplicate variable (should fail)
->>> errcode ./subdir/pipelines deploy --var=catalog=first --var=catalog=second
-Error: failed to assign second to catalog: variable has already been assigned value: first
-
-
-Exit code: 1

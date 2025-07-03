@@ -1,28 +1,7 @@
 bundle:
   name: test-pipeline-force-lock
 
-variables:
-  catalog:
-    description: The catalog the pipeline should use.
-    default: main
-
 resources:
   pipelines:
     foo:
       name: test-pipeline
-      libraries:
-        - notebook:
-            path: ./nb.sql
-      development: true
-      catalog: ${var.catalog}
-      target: ${resources.schemas.bar.id}
-
-  schemas:
-    bar:
-      name: test-schema
-      catalog_name: ${var.catalog}
-      comment: This schema was created from DABs
-
-targets:
-  development:
-    default: true

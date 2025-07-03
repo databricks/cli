@@ -1,14 +1,5 @@
 bundle:
   name: test-pipeline-auto-approve
 
-variables:
-  catalog:
-    description: The catalog the pipeline should use.
-    default: main
-
 include:
   - "./*.yml"
-
-targets:
-  development:
-    default: true

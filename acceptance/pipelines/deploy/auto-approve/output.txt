@@ -1,47 +1,16 @@
 
-=== install pipelines cli
->>> errcode [CLI] install-pipelines-cli -d ./subdir
-pipelines successfully installed in directory "./subdir"
-
->>> ./subdir/pipelines deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-auto-approve/development/files...
+>>> [PIPELINES] deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-auto-approve/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
-
-=== Assert the pipeline is created
->>> [CLI] pipelines get [UUID]
-{
-  "spec": {
-    "catalog": "main",
-    "channel": "CURRENT",
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-auto-approve/development/state/metadata.json"
-    },
-    "development": true,
-    "edition": "ADVANCED",
-    "id": "[UUID]",
-    "libraries": [
-      {
-        "notebook": {
-          "path": "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-auto-approve/development/files/nb"
-        }
-      }
-    ],
-    "name": "test-pipeline-$UNIQUE_NAME",
-    "target": "main.test-schema-$UNIQUE_NAME"
-  }
-}
 
 === Remove resources from configuration to test auto-approve
 >>> rm resources.yml
 
 === Try to redeploy without --auto-approve - should fail
->>> errcode ./subdir/pipelines deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-auto-approve/development/files...
-The following UC schemas will be deleted or recreated. Any underlying data may be lost:
-  delete schema bar
+>>> errcode [PIPELINES] deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-auto-approve/default/files...
 
 This action will result in the deletion or recreation of the following DLT Pipelines along with the
 Streaming Tables (STs) and Materialized Views (MVs) managed by them. Recreating the Pipelines will
@@ -54,10 +23,8 @@ Error: the deployment requires destructive actions, but current console does not
 Exit code: 1
 
 === Redeploy with --auto-approve - should succeed
->>> ./subdir/pipelines deploy --auto-approve
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-auto-approve/development/files...
-The following UC schemas will be deleted or recreated. Any underlying data may be lost:
-  delete schema bar
+>>> [PIPELINES] deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-auto-approve/default/files...
 
 This action will result in the deletion or recreation of the following DLT Pipelines along with the
 Streaming Tables (STs) and Materialized Views (MVs) managed by them. Recreating the Pipelines will

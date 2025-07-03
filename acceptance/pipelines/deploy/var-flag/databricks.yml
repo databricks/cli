@@ -3,32 +3,12 @@ bundle:
 
 variables:
   catalog:
-    description: The catalog the pipeline should use.
     default: main
   schema:
-    description: The schema name for the pipeline.
     default: test_schema
-  pipeline_name:
-    description: The name of the pipeline.
-    default: test-pipeline
 
 resources:
   pipelines:
     foo:
-      name: ${var.pipeline_name}
-      libraries:
-        - notebook:
-            path: ./nb.sql
-      development: true
       catalog: ${var.catalog}
-      target: ${resources.schemas.bar.id}
-
-  schemas:
-    bar:
-      name: ${var.schema}
-      catalog_name: ${var.catalog}
-      comment: This schema was created from DABs
-
-targets:
-  development:
-    default: true
+      target: ${var.schema}

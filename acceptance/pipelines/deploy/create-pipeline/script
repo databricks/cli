@@ -1,0 +1,5 @@
+trace $PIPELINES deploy
+
+title "Assert the pipeline is created"
+PIPELINE_ID=$($CLI bundle summary -o json | jq -r '.resources.pipelines.foo.id')
+trace $CLI pipelines get "${PIPELINE_ID}" | jq "{spec}"

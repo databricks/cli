@@ -14,7 +14,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func Deploy() *cobra.Command {
+func deployCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "deploy",
 		Short: "Deploy pipelines",
