@@ -25,7 +25,6 @@
     "mode": "development",
     "name": "project_name_[UNIQUE_NAME]",
     "target": "dev",
-    "terraform": {},
     "uuid": "[UUID]"
   },
   "include": [
