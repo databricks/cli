@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/databricks/databricks-sdk-go/service/database"
 	"path"
 	"sort"
 	"strconv"
@@ -51,6 +52,8 @@ type FakeWorkspace struct {
 	Apps       map[string]apps.App
 	Schemas    map[string]catalog.SchemaInfo
 	Dashboards map[string]dashboards.Dashboard
+
+	DatabaseInstances map[string]database.DatabaseInstance
 }
 
 func (w *FakeWorkspace) LockUnlock() func() {
@@ -114,16 +117,17 @@ func NewFakeWorkspace(url string) *FakeWorkspace {
 		directories: map[string]bool{
 			"/Workspace": true,
 		},
-		files:        make(map[string]FileEntry),
-		Jobs:         map[int64]jobs.Job{},
-		JobRuns:      map[int64]jobs.Run{},
-		nextJobId:    TestJobID,
-		nextJobRunId: TestRunID,
-		Pipelines:    map[string]pipelines.GetPipelineResponse{},
-		Monitors:     map[string]catalog.MonitorInfo{},
-		Apps:         map[string]apps.App{},
-		Schemas:      map[string]catalog.SchemaInfo{},
-		Dashboards:   map[string]dashboards.Dashboard{},
+		files:             make(map[string]FileEntry),
+		Jobs:              map[int64]jobs.Job{},
+		JobRuns:           map[int64]jobs.Run{},
+		nextJobId:         TestJobID,
+		nextJobRunId:      TestRunID,
+		Pipelines:         map[string]pipelines.GetPipelineResponse{},
+		Monitors:          map[string]catalog.MonitorInfo{},
+		Apps:              map[string]apps.App{},
+		Schemas:           map[string]catalog.SchemaInfo{},
+		Dashboards:        map[string]dashboards.Dashboard{},
+		DatabaseInstances: map[string]database.DatabaseInstance{},
 	}
 }
 

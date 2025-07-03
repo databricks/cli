@@ -25,6 +25,7 @@ type Resources struct {
 	Dashboards            map[string]*resources.Dashboard            `json:"dashboards,omitempty"`
 	Apps                  map[string]*resources.App                  `json:"apps,omitempty"`
 	SecretScopes          map[string]*resources.SecretScope          `json:"secret_scopes,omitempty"`
+	DatabaseInstances     map[string]*resources.DatabaseInstance     `json:"database_instances,omitempty"`
 }
 
 type ConfigResource interface {
@@ -84,6 +85,7 @@ func (r *Resources) AllResources() []ResourceGroup {
 		collectResourceMap(descriptions["volumes"], r.Volumes),
 		collectResourceMap(descriptions["apps"], r.Apps),
 		collectResourceMap(descriptions["secret_scopes"], r.SecretScopes),
+		collectResourceMap(descriptions["database_instances"], r.DatabaseInstances),
 	}
 }
 
