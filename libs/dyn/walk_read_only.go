@@ -7,7 +7,7 @@ func WalkReadOnly(v Value, fn func(p Path, v Value) error) error {
 	return walkReadOnly(v, EmptyPath, fn)
 }
 
-// Unexported counterpart to WalkRead.
+// Unexported counterpart to WalkReadOnly.
 // It carries the path leading up to the current node,
 // such that it can be passed to the callback function.
 func walkReadOnly(v Value, p Path, fn func(p Path, v Value) error) error {
