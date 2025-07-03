@@ -665,6 +665,9 @@ github.com/databricks/databricks-sdk-go/service/jobs.SubscriptionSubscriber:
     "description": |-
       PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/jobs.Task:
+  "dbt_platform_task":
+    "description": |-
+      PLACEHOLDER
   "gen_ai_compute_task":
     "description": |-
       PLACEHOLDER

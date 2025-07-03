@@ -57,8 +57,6 @@ func newGet() *cobra.Command {
 
 	var getReq catalog.GetArtifactAllowlistRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get ARTIFACT_TYPE"
 	cmd.Short = `Get an artifact allowlist.`
 	cmd.Long = `Get an artifact allowlist.
@@ -121,7 +119,6 @@ func newUpdate() *cobra.Command {
 	var updateReq catalog.SetArtifactAllowlist
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "update ARTIFACT_TYPE"

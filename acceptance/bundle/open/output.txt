@@ -1,0 +1,26 @@
+
+=== no run key specified
+>>> [CLI] bundle open
+Error: expected a KEY of the resource to open
+
+Exit code: 1
+
+=== not deployed yet
+>>> [CLI] bundle open foo
+Error: resource does not have a URL associated with it (has it been deployed?)
+
+Exit code: 1
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/caterpillar/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Modify PATH so that real open is not run
+=== open after deployment. This will fail to open browser and complain, that's ok, we only want the message
+>>> [CLI] bundle open foo
+Opening browser at [DATABRICKS_URL]/jobs/[NUMID]?o=[NUMID]
+Error: exec: "open": cannot run executable found relative to current directory
+
+Exit code (musterr): 1

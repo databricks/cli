@@ -355,7 +355,7 @@ func (d *dashboard) runForResource(ctx context.Context, b *bundle.Bundle) diag.D
 		terraform.Interpolate(),
 		terraform.Write(),
 		statemgmt.StatePull(),
-		terraform.Load(),
+		statemgmt.Load(),
 	))
 	if diags.HasError() {
 		return diags

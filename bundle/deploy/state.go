@@ -101,7 +101,7 @@ func (e *entry) Info() (fs.FileInfo, error) {
 	return e.info, nil
 }
 
-func FromSlice(files []fileset.File) (Filelist, error) {
+func fromSlice(files []fileset.File) (Filelist, error) {
 	var f Filelist
 	for k := range files {
 		file := &files[k]
@@ -117,7 +117,7 @@ func FromSlice(files []fileset.File) (Filelist, error) {
 	return f, nil
 }
 
-func (f Filelist) ToSlice(root vfs.Path) []fileset.File {
+func (f Filelist) toSlice(root vfs.Path) []fileset.File {
 	var files []fileset.File
 	for _, file := range f {
 		entry := newEntry(root, filepath.ToSlash(file.LocalPath))

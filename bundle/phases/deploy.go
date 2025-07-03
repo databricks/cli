@@ -20,6 +20,7 @@ import (
 	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/bundle/scripts"
 	"github.com/databricks/cli/bundle/statemgmt"
+	"github.com/databricks/cli/bundle/terranova"
 	"github.com/databricks/cli/bundle/trampoline"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
@@ -28,16 +29,26 @@ import (
 )
 
 func approvalForDeploy(ctx context.Context, b *bundle.Bundle) (bool, error) {
-	tf := b.Terraform
-	if tf == nil {
-		return false, errors.New("terraform not initialized")
+	var actions []deployplan.Action
+	var err error
+
+	if b.DirectDeployment {
+		actions, err = terranova.CalculateDeployActions(ctx, b)
+		if err != nil {
+			return false, err
+		}
+	} else {
+		tf := b.Terraform
+		if tf == nil {
+			return false, errors.New("terraform not initialized")
+		}
+		actions, err = terraform.ShowPlanFile(ctx, tf, b.Plan.TerraformPlanPath)
+		if err != nil {
+			return false, err
+		}
 	}
 
-	// read plan file
-	actions, err := terraform.ShowPlanFile(ctx, tf, b.Plan.Path)
-	if err != nil {
-		return false, err
-	}
+	b.Plan.Actions = actions
 
 	types := []deployplan.ActionType{deployplan.ActionTypeRecreate, deployplan.ActionTypeDelete}
 	schemaActions := deployplan.FilterGroup(actions, "schemas", types...)
@@ -116,13 +127,37 @@ func deployCore(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// Core mutators that CRUD resources and modify deployment state. These
 	// mutators need informed consent if they are potentially destructive.
 	cmdio.LogString(ctx, "Deploying resources...")
-	diags := bundle.Apply(ctx, b, terraform.Apply())
 
-	// following original logic, continuing with sequence below even if terraform had errors
+	var diags diag.Diagnostics
+
+	if b.DirectDeployment {
+		diags = bundle.Apply(ctx, b, terranova.TerranovaApply())
+	} else {
+		diags = bundle.Apply(ctx, b, terraform.Apply())
+	}
+
+	// Even if deployment failed, there might be updates in states that we need to upload
+	newDiags := bundle.Apply(ctx, b,
+		statemgmt.StatePush(),
+	)
+	diags = diags.Extend(newDiags)
+	if newDiags.HasError() {
+		return diags
+	}
+
+	if b.DirectDeployment {
+		// TODO: terraform.Load alternative
+	} else {
+		newDiags := bundle.Apply(ctx, b,
+			statemgmt.Load(),
+		)
+		diags = diags.Extend(newDiags)
+		if newDiags.HasError() {
+			return diags
+		}
+	}
 
 	diags = diags.Extend(bundle.ApplySeq(ctx, b,
-		statemgmt.StatePush(),
-		terraform.Load(),
 		apps.InterpolateVariables(),
 		apps.UploadConfig(),
 		metadata.Compute(),
@@ -157,7 +192,9 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		diags = diags.Extend(bundle.Apply(ctx, b, lock.Release(lock.GoalDeploy)))
 	}()
 
-	diags = bundle.ApplySeq(ctx, b,
+	// TODO: StatePull and OpenResourceDatabase both parse resources.json; we should do it only once
+
+	diags = diags.Extend(bundle.ApplySeq(ctx, b,
 		statemgmt.StatePull(),
 		terraform.CheckDashboardsModifiedRemotely(),
 		deploy.StatePull(),
@@ -178,11 +215,26 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		deploy.StateUpdate(),
 		deploy.StatePush(),
 		permissions.ApplyWorkspaceRootPermissions(),
-		terraform.Interpolate(),
-		terraform.Write(),
-		terraform.Plan(terraform.PlanGoal("deploy")),
 		metrics.TrackUsedCompute(),
-	)
+	))
+
+	if diags.HasError() {
+		return diags
+	}
+
+	if b.DirectDeployment {
+		err := b.OpenResourceDatabase(ctx)
+		if err != nil {
+			diags = diags.Extend(diag.FromErr(err))
+			return diags
+		}
+	} else {
+		diags = diags.Extend(bundle.ApplySeq(ctx, b,
+			terraform.Interpolate(),
+			terraform.Write(),
+			terraform.Plan(terraform.PlanGoal("deploy")),
+		))
+	}
 
 	if diags.HasError() {
 		return diags

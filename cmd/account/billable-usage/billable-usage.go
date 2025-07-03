@@ -52,8 +52,6 @@ func newDownload() *cobra.Command {
 
 	var downloadReq billing.DownloadRequest
 
-	// TODO: short flags
-
 	cmd.Flags().BoolVar(&downloadReq.PersonalData, "personal-data", downloadReq.PersonalData, `Specify whether to include personally identifiable information in the billable usage logs, for example the email addresses of cluster creators.`)
 
 	cmd.Use = "download START_MONTH END_MONTH"

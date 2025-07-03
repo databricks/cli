@@ -62,12 +62,13 @@ func newCreate() *cobra.Command {
 	var createReq sql.CreateWidget
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "create"
 	cmd.Short = `Add widget to a dashboard.`
-	cmd.Long = `Add widget to a dashboard.`
+	cmd.Long = `Add widget to a dashboard.
+  
+  Add widget to a dashboard`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -124,11 +125,11 @@ func newDelete() *cobra.Command {
 
 	var deleteReq sql.DeleteDashboardWidgetRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete ID"
 	cmd.Short = `Remove widget.`
 	cmd.Long = `Remove widget.
+  
+  Remove widget
 
   Arguments:
     ID: Widget ID returned by :method:dashboardwidgets/create`
@@ -181,12 +182,13 @@ func newUpdate() *cobra.Command {
 	var updateReq sql.CreateWidget
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "update ID"
 	cmd.Short = `Update existing widget.`
 	cmd.Long = `Update existing widget.
+  
+  Update existing widget
 
   Arguments:
     ID: Widget ID returned by :method:dashboardwidgets/create`

@@ -82,7 +82,7 @@ func newOpenCommand() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		_, stateFileErr := os.Stat(filepath.Join(cacheDir, terraform.TerraformStateFileName))
+		_, stateFileErr := os.Stat(filepath.Join(cacheDir, b.StateFilename()))
 		_, configFileErr := os.Stat(filepath.Join(cacheDir, terraform.TerraformConfigFileName))
 		noCache := errors.Is(stateFileErr, os.ErrNotExist) || errors.Is(configFileErr, os.ErrNotExist)
 
@@ -98,7 +98,7 @@ func newOpenCommand() *cobra.Command {
 		}
 
 		diags = bundle.ApplySeq(ctx, b,
-			terraform.Load(),
+			statemgmt.Load(),
 			mutator.InitializeURLs(),
 		)
 		if err := diags.Error(); err != nil {
@@ -117,6 +117,7 @@ func newOpenCommand() *cobra.Command {
 			return errors.New("resource does not have a URL associated with it (has it been deployed?)")
 		}
 
+		cmdio.LogString(ctx, "Opening browser at "+url)
 		return browser.OpenURL(url)
 	}
 

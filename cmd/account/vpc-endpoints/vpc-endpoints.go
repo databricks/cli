@@ -58,7 +58,6 @@ func newCreate() *cobra.Command {
 	var createReq provisioning.CreateVpcEndpointRequest
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.AwsVpcEndpointId, "aws-vpc-endpoint-id", createReq.AwsVpcEndpointId, `The ID of the VPC endpoint object in AWS.`)
@@ -154,8 +153,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq provisioning.DeleteVpcEndpointRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete VPC_ENDPOINT_ID"
 	cmd.Short = `Delete VPC endpoint configuration.`
 	cmd.Long = `Delete VPC endpoint configuration.
@@ -231,8 +228,6 @@ func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getReq provisioning.GetVpcEndpointRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get VPC_ENDPOINT_ID"
 	cmd.Short = `Get a VPC endpoint configuration.`

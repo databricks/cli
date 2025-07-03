@@ -1,5 +1,38 @@
 # Version changelog
 
+## Release v0.258.0
+
+### Notable Changes
+* Switch default-python template to use pyproject.toml + dynamic\_version in dev target. uv is now required. ([#3042](https://github.com/databricks/cli/pull/3042))
+
+### Dependency updates
+* Upgraded TF provider to 1.84.0 ([#3151](https://github.com/databricks/cli/pull/3151))
+
+### CLI
+* Fixed an issue where running `databricks auth login` would remove the `cluster_id` field from profiles in `.databrickscfg`. The login process now preserves the `cluster_id` field. ([#2988](https://github.com/databricks/cli/pull/2988))
+
+### Bundles
+* Added support for pipeline environment field ([#3153](https://github.com/databricks/cli/pull/3153))
+* "bundle summary" now prints diagnostic warnings to stderr ([#3123](https://github.com/databricks/cli/pull/3123))
+* "bundle open" will print the URL before opening the browser ([#3168](https://github.com/databricks/cli/pull/3168))
+
+
+## Release v0.257.0
+
+### Bundles
+* Improve error message for host mismatch between bundle and profile used ([#3100](https://github.com/databricks/cli/pull/3100))
+* Remove support for deprecated `experimental/pydabs` config, use `experimental/python` instead. See [Configuration in Python
+](https://docs.databricks.com/dev-tools/bundles/python). ([#3102](https://github.com/databricks/cli/pull/3102))
+* Pass through OIDC token env variable to Terraform ([#3113](https://github.com/databricks/cli/pull/3113))
+
+* The `default-python` template now prompts if you want to use serverless compute (default to `yes`) ([#3051](https://github.com/databricks/cli/pull/3051)).
+
+### API Changes
+* Removed `databricks custom-llms` command group.
+* Added `databricks ai-builder` command group.
+* Added `databricks feature-store` command group.
+
+
 ## Release v0.256.0
 
 ### Bundles

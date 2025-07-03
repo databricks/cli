@@ -34,6 +34,11 @@ func TestVisitPipelinePaths(t *testing.T) {
 								},
 							},
 						},
+						Environment: &pipelines.PipelinesEnvironment{
+							Dependencies: []string{
+								"src/foo.whl",
+							},
+						},
 					},
 				},
 			},
@@ -46,6 +51,7 @@ func TestVisitPipelinePaths(t *testing.T) {
 		dyn.MustPathFromString("resources.pipelines.pipeline0.libraries[1].notebook.path"),
 		dyn.MustPathFromString("resources.pipelines.pipeline0.libraries[2].glob.include"),
 		dyn.MustPathFromString("resources.pipelines.pipeline0.root_path"),
+		dyn.MustPathFromString("resources.pipelines.pipeline0.environment.dependencies[0]"),
 	}
 
 	assert.ElementsMatch(t, expected, actual)
