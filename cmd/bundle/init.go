@@ -56,7 +56,6 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 		}
 
 		ctx := cmd.Context()
-
 		tmpl, err := r.Resolve(ctx)
 		if errors.Is(err, template.ErrCustomSelected) {
 			cmdio.LogString(ctx, "Please specify a path or Git repository to use a custom template.")

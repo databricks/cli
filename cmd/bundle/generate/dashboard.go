@@ -410,8 +410,12 @@ func filterDashboards(ref resources.Reference) bool {
 // dashboardResourceCompletion executes to autocomplete the argument to the resource flag.
 func dashboardResourceCompletion(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	b := root.MustConfigureBundle(cmd)
-	if b == nil || logdiag.HasError(cmd.Context()) {
+	if logdiag.HasError(cmd.Context()) {
 		return nil, cobra.ShellCompDirectiveError
+	}
+
+	if b == nil {
+		return nil, cobra.ShellCompDirectiveNoFileComp
 	}
 
 	return maps.Keys(resources.Completions(b, filterDashboards)), cobra.ShellCompDirectiveNoFileComp
