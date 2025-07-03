@@ -17,7 +17,7 @@ title "Starting the app in background..."
 trace $CLI apps run-local --prepare-environment --debug --port "$PROXY_PORT" --debug-port "$DEBUG_PORT" --app-port "$PORT" > ../out.run.txt 2>&1 &
 PID=$!
 # Ensure background process is killed on script exit
-trap '(kill -9 $PID >/dev/null 2>&1) 2>/dev/null || true' EXIT
+trap '(kill $PID >/dev/null 2>&1) 2>/dev/null || true' EXIT
 cd ..
 
 title Waiting for the app to start...
@@ -39,5 +39,9 @@ trace curl -s -o /dev/null  http://127.0.0.1:$PROXY_PORT/shutdown || true
 while [ -z "$(grep -o "Server closed" out.run.txt 2>/dev/null)" ]; do
     sleep 1
 done
+
+# Wait for the background process to actually terminate
+title "Waiting for process to terminate..."
+wait $PID 2>/dev/null || true
 
 rm out.run.txt
