@@ -90,8 +90,6 @@ func (db *TerranovaState) Open(path string) error {
 		return fmt.Errorf("Already read state %v, cannot open %v", db.Path, path)
 	}
 
-	db.Path = path
-
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -100,12 +98,19 @@ func (db *TerranovaState) Open(path string) error {
 				Lineage:   uuid.New().String(),
 				Resources: make(map[string]map[string]ResourceEntry),
 			}
+			db.Path = path
 			return nil
 		}
 		return err
 	}
 
-	return json.Unmarshal(data, &db.Data)
+	err = json.Unmarshal(data, &db.Data)
+	if err != nil {
+		return err
+	}
+
+	db.Path = path
+	return nil
 }
 
 func (db *TerranovaState) Finalize() error {
