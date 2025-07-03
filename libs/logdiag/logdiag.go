@@ -29,21 +29,23 @@ type Value struct {
 
 // IsSetup is test helper, do not use in production code
 func IsSetup(ctx context.Context) bool {
+	Mu.Lock()
+	defer Mu.Unlock()
+
 	_, ok := ctx.Value(key).(*Value)
 	return ok
 }
 
 func InitContext(ctx context.Context) context.Context {
+	Mu.Lock()
+	defer Mu.Unlock()
+
 	_, ok := ctx.Value(key).(*Value)
 	if ok {
 		panic("internal error: must not call InitContext() twice")
 	}
 	val := Value{}
 	return context.WithValue(ctx, key, &val)
-}
-
-func SetRoot(ctx context.Context, root string) {
-	read(ctx).Root = root
 }
 
 func read(ctx context.Context) *Value {
@@ -57,30 +59,35 @@ func read(ctx context.Context) *Value {
 func GetContext(ctx context.Context) Value {
 	Mu.Lock()
 	defer Mu.Unlock()
+
 	return *read(ctx)
 }
 
 func HasError(ctx context.Context) bool {
 	Mu.Lock()
 	defer Mu.Unlock()
+
 	return read(ctx).Errors > 0
+}
+
+func SetRoot(ctx context.Context, root string) {
+	Mu.Lock()
+	defer Mu.Unlock()
+
+	read(ctx).Root = root
 }
 
 func SetCollect(ctx context.Context, collect bool) {
 	Mu.Lock()
 	defer Mu.Unlock()
-	read(ctx).Collect = collect
-}
 
-func GetCollected(ctx context.Context) []diag.Diagnostic {
-	Mu.Lock()
-	defer Mu.Unlock()
-	return read(ctx).Collected
+	read(ctx).Collect = collect
 }
 
 func FlushCollected(ctx context.Context) []diag.Diagnostic {
 	Mu.Lock()
 	defer Mu.Unlock()
+
 	val := read(ctx)
 	result := val.Collected
 	val.Collected = nil

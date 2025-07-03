@@ -42,7 +42,7 @@ func TestMutator(t *testing.T) {
 	logdiag.SetCollect(ctx, true)
 	diags := Apply(ctx, b, m)
 	assert.NoError(t, diags.Error())
-	assert.Empty(t, logdiag.GetCollected(ctx))
+	assert.Empty(t, logdiag.FlushCollected(ctx))
 
 	assert.Equal(t, 1, m.applyCalled)
 	assert.Equal(t, 1, nested[0].applyCalled)

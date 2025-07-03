@@ -57,7 +57,7 @@ workspace:
 	logdiag.SetCollect(ctx, true)
 	cmd.SetContext(ctx)
 	_ = MustConfigureBundle(cmd)
-	return logdiag.GetCollected(ctx)
+	return logdiag.FlushCollected(ctx)
 }
 
 func setupWithProfile(t *testing.T, cmd *cobra.Command, profile string) []diag.Diagnostic {
@@ -77,7 +77,7 @@ workspace:
 	logdiag.SetCollect(ctx, true)
 	cmd.SetContext(ctx)
 	_ = MustConfigureBundle(cmd)
-	return logdiag.GetCollected(ctx)
+	return logdiag.FlushCollected(ctx)
 }
 
 func TestBundleConfigureDefault(t *testing.T) {

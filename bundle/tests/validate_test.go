@@ -135,7 +135,7 @@ func TestValidateUniqueResourceIdentifiers(t *testing.T) {
 
 			// The UniqueResourceKeys mutator is run as part of the Load phase.
 			phases.Load(ctx, b)
-			diags := diag.Diagnostics(logdiag.GetCollected(ctx))
+			diags := diag.Diagnostics(logdiag.FlushCollected(ctx))
 			assert.Equal(t, tc.diagnostics, diags)
 		})
 	}
