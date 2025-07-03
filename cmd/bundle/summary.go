@@ -36,7 +36,7 @@ func newSummaryCommand() *cobra.Command {
 		var err error
 		ctx := logdiag.InitContext(cmd.Context())
 		cmd.SetContext(ctx)
-		logdiag.SetSeverity(ctx, diag.Error)
+		logdiag.SetSeverity(ctx, diag.Warning)
 
 		b := prepareBundleForSummary(cmd, forcePull, includeLocations)
 
