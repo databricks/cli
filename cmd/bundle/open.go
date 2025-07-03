@@ -92,8 +92,15 @@ func newOpenCommand() *cobra.Command {
 				return err
 			}
 
-			if err = diags.Error(); err != nil {
-				return err
+			if !b.DirectDeployment {
+				diags = bundle.ApplySeq(ctx, b,
+					terraform.Interpolate(),
+					terraform.Write(),
+				)
+
+				if err = diags.Error(); err != nil {
+					return err
+				}
 			}
 		}
 
