@@ -13,7 +13,10 @@ app.get('/', (req, res) => {
 
 app.get('/shutdown', (req, res) => {
   console.log('Server closed')
-  process.exit(0);
+  // Add a small delay to ensure response is sent before exit
+  setTimeout(() => {
+    process.exit(0);
+  }, 1000);
 });
 
 // Start the server
