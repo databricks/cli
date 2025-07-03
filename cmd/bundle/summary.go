@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
@@ -35,6 +36,7 @@ func newSummaryCommand() *cobra.Command {
 		var err error
 		ctx := logdiag.InitContext(cmd.Context())
 		cmd.SetContext(ctx)
+		logdiag.SetSeverity(ctx, diag.Error)
 
 		b := prepareBundleForSummary(cmd, forcePull, includeLocations)
 

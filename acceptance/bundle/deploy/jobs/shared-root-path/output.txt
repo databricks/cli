@@ -10,10 +10,6 @@ Updating deployment state...
 Deployment complete!
 
 >>> [CLI] bundle destroy --auto-approve
-Warning: the bundle root path /Workspace/Shared/[USERNAME]/.bundle/[UNIQUE_NAME] is writable by all workspace users
-
-The bundle is configured to use /Workspace/Shared, which will give read/write access to all users. If this is intentional, add CAN_MANAGE for 'group_name: users' permission to your bundle configuration. If the deployment should be restricted, move it to a restricted folder such as /Workspace/Users/<username or principal name>.
-
 The following resources will be deleted:
   delete job foo
 
