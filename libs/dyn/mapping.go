@@ -28,6 +28,9 @@ func NewMapping() Mapping {
 	}
 }
 
+// NewMappingFromPairs computes a [Mapping] from a list of [Pair]s. The index
+// map does not need to be provided since that will be computed from the
+// key-value pairs provided.
 func NewMappingFromPairs(pairs []Pair) Mapping {
 	index := make(map[string]int)
 	for i, p := range pairs {
