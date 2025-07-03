@@ -15,10 +15,17 @@ type TerranovaState struct {
 	mu   sync.Mutex
 }
 
+// Loading resources.json with state_version higher than CurrentStateVersion is never supported
+// Loading resources.json with state_version lower than CurrentStateVersion may be supported
+
+const CurrentStateVersion = 0
+
 type Database struct {
-	Lineage   string                              `json:"lineage"`
-	Serial    int                                 `json:"serial"`
-	Resources map[string]map[string]ResourceEntry `json:"resources"`
+	Lineage      string                              `json:"lineage"`
+	Serial       int                                 `json:"serial"`
+	StateVersion int                                 `json:"state_version"`
+	CLIVersion   CLIVersion                          `json:"cli_version"`
+	Resources    map[string]map[string]ResourceEntry `json:"resources"`
 }
 
 type ResourceEntry struct {
@@ -74,7 +81,7 @@ func (db *TerranovaState) GetResourceEntry(group, resourceName string) (Resource
 	return result, ok
 }
 
-func (db *TerranovaState) Open(path string) error {
+func (db *TerranovaState) Open(path string, cliVersion CLIVersion) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
@@ -84,16 +91,27 @@ func (db *TerranovaState) Open(path string) error {
 	if err != nil {
 		if os.IsNotExist(err) {
 			db.Data = Database{
-				Serial:    0,
-				Lineage:   uuid.New().String(),
-				Resources: make(map[string]map[string]ResourceEntry),
+				Serial:       0,
+				Lineage:      uuid.New().String(),
+				StateVersion: CurrentStateVersion,
+				CLIVersion:   cliVersion,
+				Resources:    make(map[string]map[string]ResourceEntry),
 			}
 			return nil
 		}
 		return err
 	}
 
-	return json.Unmarshal(data, &db.Data)
+	err = json.Unmarshal(data, &db.Data)
+	if err != nil {
+		return err
+	}
+
+	if db.Data.StateVersion > CurrentStateVersion {
+		return fmt.Errorf("state file format has version=%d (produced by CLI %s) which is higher than version=%d than your CLI %s supports. Upgrade of the CLI is required", db.Data.StateVersion, db.Data.CLIVersion, CurrentStateVersion, cliVersion)
+	}
+
+	return nil
 }
 
 func (db *TerranovaState) Finalize() error {
