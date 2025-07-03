@@ -3,7 +3,7 @@
 ## Release v0.258.0
 
 ### Notable Changes
-* Add scripts to DABs. Users can now define and co-version their scripts in their bundles. These scripts will automatically be authenticated to the same credentials as the bundle itself. ([#2813](https://github.com/databricks/cli/pull/2813))
+* Add support for arbitrary scripts in DABs. Users can now define scripts in their bundle configuration. These scripts automatically inherit the bundle's credentials for authentication. They can be invoked with the `bundle run` command. ([#2813](https://github.com/databricks/cli/pull/2813))
 
 ### Dependency updates
 * Upgraded TF provider to 1.84.0 ([#3151](https://github.com/databricks/cli/pull/3151))
