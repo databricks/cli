@@ -1,10 +1,11 @@
 
 >>> [CLI] bundle sync --dry-run --output text
 Warn: Running in dry-run mode. No actual changes will be made.
-Action: PUT: .gitignore, databricks.yml, project-folder/app.py, project-folder/app.yaml, project-folder/query.sql
+Action: PUT: .gitignore, databricks.yml, out.config.json, project-folder/app.py, project-folder/app.yaml, project-folder/query.sql
 Initial Sync Complete
 Uploaded .gitignore
 Uploaded databricks.yml
+Uploaded out.config.json
 Uploaded project-folder
 Uploaded project-folder/app.py
 Uploaded project-folder/app.yaml

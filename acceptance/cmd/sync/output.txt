@@ -1,8 +1,11 @@
 
 >>> [CLI] sync . /Users/[USERNAME]
-Action: PUT: .gitignore, project-folder/app.py, project-folder/app.yaml, project-folder/query.sql
+Action: PUT: .gitignore, dryrun/out.config.json, out.config.json, project-folder/app.py, project-folder/app.yaml, project-folder/query.sql
 Initial Sync Complete
 Uploaded .gitignore
+Uploaded dryrun
+Uploaded dryrun/out.config.json
+Uploaded out.config.json
 Uploaded project-folder
 Uploaded project-folder/app.py
 Uploaded project-folder/app.yaml

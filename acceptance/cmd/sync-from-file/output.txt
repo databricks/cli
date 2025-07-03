@@ -1,9 +1,10 @@
 
 >>> [CLI] sync . /Users/[USERNAME] --exclude-from ignore.test-fixture
-Action: PUT: .gitignore, ignore.test-fixture, project-folder/app.py, project-folder/app.yaml
+Action: PUT: .gitignore, ignore.test-fixture, out.config.json, project-folder/app.py, project-folder/app.yaml
 Initial Sync Complete
 Uploaded .gitignore
 Uploaded ignore.test-fixture
+Uploaded out.config.json
 Uploaded project-folder
 Uploaded project-folder/app.py
 Uploaded project-folder/app.yaml

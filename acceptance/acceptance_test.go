@@ -73,6 +73,8 @@ const (
 	MaxFileSize      = 100_000
 	// Filename to save replacements to (used by diff.py)
 	ReplsFile = "repls.json"
+	// Filename for materialized config (used as golden file)
+	MaterializedConfigFile = "out.config.json"
 
 	// ENVFILTER allows filtering subtests matching certain env var.
 	// e.g. ENVFILTER=SERVERLESS=yes will run all tests that run SERVERLESS to "yes"
@@ -464,10 +466,27 @@ func runTest(t *testing.T,
 	scriptContents := readMergedScriptContents(t, dir)
 	testutil.WriteFile(t, filepath.Join(tmpDir, EntryPointScript), scriptContents)
 
+	// Generate materialized config for this test
+	materializedConfig, err := internal.GenerateMaterializedConfig(config)
+	require.NoError(t, err)
+
+	// Check if reference materialized config file exists
+	refConfigPath := filepath.Join(dir, internal.MaterializedConfigFile)
+	_, refExists := tryReading(t, refConfigPath)
+
+	// Write materialized config to temp directory if reference exists (for comparison)
+	// or if we're in overwrite mode (for creating new files)
+	if refExists || testdiff.OverwriteMode {
+		testutil.WriteFile(t, filepath.Join(tmpDir, internal.MaterializedConfigFile), materializedConfig)
+	}
+
 	inputs := make(map[string]bool, 2)
 	outputs := make(map[string]bool, 2)
 	err = CopyDir(dir, tmpDir, inputs, outputs)
 	require.NoError(t, err)
+
+	// Add materialized config to outputs for comparison
+	outputs[internal.MaterializedConfigFile] = true
 
 	bundleConfigTarget := "databricks.yml"
 	if config.BundleConfigTarget != nil {
@@ -600,7 +619,11 @@ func runTest(t *testing.T,
 
 	// Compare expected outputs
 	for relPath := range outputs {
-		doComparison(t, repls, dir, tmpDir, relPath, &printedRepls)
+		skipRepls := false
+		if relPath == internal.MaterializedConfigFile {
+			skipRepls = true
+		}
+		doComparison(t, repls, dir, tmpDir, relPath, &printedRepls, skipRepls)
 	}
 
 	// Make sure there are not unaccounted for new files
@@ -623,7 +646,7 @@ func runTest(t *testing.T,
 		if strings.HasPrefix(relPath, "out") {
 			// We have a new file starting with "out"
 			// Show the contents & support overwrite mode for it:
-			doComparison(t, repls, dir, tmpDir, relPath, &printedRepls)
+			doComparison(t, repls, dir, tmpDir, relPath, &printedRepls, false)
 		}
 	}
 
@@ -662,7 +685,7 @@ func addEnvVar(t *testing.T, env []string, repls *testdiff.ReplacementsContext, 
 	return append(env, key+"="+newValue)
 }
 
-func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirNew, relPath string, printedRepls *bool) {
+func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirNew, relPath string, printedRepls *bool, skipRepls bool) {
 	pathRef := filepath.Join(dirRef, relPath)
 	pathNew := filepath.Join(dirNew, relPath)
 	bufRef, okRef := tryReading(t, pathRef)
@@ -677,7 +700,7 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirN
 
 	// Apply replacements to the new value only.
 	// The reference value is stored after applying replacements.
-	if !NoRepl {
+	if !NoRepl && !skipRepls {
 		valueNew = repls.Replace(valueNew)
 	}
 

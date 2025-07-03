@@ -3,6 +3,7 @@
 Warn: Running in dry-run mode. No actual changes will be made.
 Initial Sync Complete
 Uploaded .gitignore
+Uploaded out.config.json
 Uploaded project-folder
 Uploaded project-folder/app.py
 Uploaded project-folder/app.yaml
@@ -12,6 +13,7 @@ Uploaded project-folder/query.sql
 Warn: Running in dry-run mode. No actual changes will be made.
 Initial Sync Complete
 Uploaded .gitignore
+Uploaded out.config.json
 Uploaded project-folder
 Uploaded project-folder/query.sql
 
@@ -19,6 +21,7 @@ Uploaded project-folder/query.sql
 Warn: Running in dry-run mode. No actual changes will be made.
 Initial Sync Complete
 Uploaded .gitignore
+Uploaded out.config.json
 
 >>> [CLI] sync . /Users/[USERNAME] --dry-run --exclude project-folder/app.* --exclude project-folder/query.sql --include ignored-folder/*.py
 Warn: Running in dry-run mode. No actual changes will be made.
@@ -26,6 +29,7 @@ Initial Sync Complete
 Uploaded .gitignore
 Uploaded ignored-folder
 Uploaded ignored-folder/script.py
+Uploaded out.config.json
 
 >>> [CLI] sync . /Users/[USERNAME] --dry-run --exclude project-folder/app.* --exclude project-folder/query.sql --include ignored-folder/**/*.py
 Warn: Running in dry-run mode. No actual changes will be made.
@@ -34,6 +38,7 @@ Uploaded .gitignore
 Uploaded ignored-folder/folder1
 Uploaded ignored-folder/folder1/script.py
 Uploaded ignored-folder/script.py
+Uploaded out.config.json
 
 >>> [CLI] sync . /Users/[USERNAME] --dry-run --include ignored-folder/** --include !ignored-folder/folder1/big-blob
 Warn: Running in dry-run mode. No actual changes will be made.
@@ -43,6 +48,7 @@ Uploaded ignored-folder/folder1
 Uploaded ignored-folder/folder1/script.py
 Uploaded ignored-folder/folder1/script.yaml
 Uploaded ignored-folder/script.py
+Uploaded out.config.json
 Uploaded project-folder
 Uploaded project-folder/app.py
 Uploaded project-folder/app.yaml

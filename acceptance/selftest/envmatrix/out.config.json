@@ -1,0 +1,19 @@
+{
+  "local": true,
+  "cloud": false,
+  "env_matrix": {
+    "DATABRICKS_CLI_DEPLOYMENT": [
+      "terraform",
+      "direct-exp"
+    ],
+    "FIRST": [
+      "overriden-in-inner"
+    ],
+    "THIRD": [
+      "three $FIRST"
+    ]
+  },
+  "timeout_seconds": 20,
+  "timeout_windows_seconds": 60,
+  "timeout_cloud_seconds": 1500
+}
