@@ -15,9 +15,9 @@ import (
 	"github.com/databricks/cli/libs/diag"
 )
 
-// RenderDiagnostics renders the diagnostics in a human-readable format.
+// renderDiagnostics renders the diagnostics in a human-readable format.
 // Copied from cmd/bundle/deploy.go
-func RenderDiagnostics(w io.Writer, b *bundle.Bundle, diags diag.Diagnostics) error {
+func renderDiagnostics(w io.Writer, b *bundle.Bundle, diags diag.Diagnostics) error {
 	renderOpts := render.RenderOptions{RenderSummaryTable: false}
 	err := render.RenderDiagnostics(w, b, diags, renderOpts)
 	if err != nil {
@@ -31,9 +31,9 @@ func RenderDiagnostics(w io.Writer, b *bundle.Bundle, diags diag.Diagnostics) er
 	return nil
 }
 
-// PromptRunArgument prompts the user to select a resource to run.
+// promptRunArgument prompts the user to select a resource to run.
 // Copied from cmd/bundle/run.go
-func PromptRunArgument(ctx context.Context, b *bundle.Bundle) (string, error) {
+func promptRunArgument(ctx context.Context, b *bundle.Bundle) (string, error) {
 	// Compute map of "Human readable name of resource" -> "resource key".
 	inv := make(map[string]string)
 	for k, ref := range resources.Completions(b, run.IsRunnable) {
@@ -49,13 +49,13 @@ func PromptRunArgument(ctx context.Context, b *bundle.Bundle) (string, error) {
 	return key, nil
 }
 
-// ResolveRunArgument resolves the resource key to run.
+// resolveRunArgument resolves the resource key to run.
 // It returns the remaining arguments to pass to the runner, if applicable.
 // Copied from cmd/bundle/run.go
-func ResolveRunArgument(ctx context.Context, b *bundle.Bundle, args []string) (string, []string, error) {
+func resolveRunArgument(ctx context.Context, b *bundle.Bundle, args []string) (string, []string, error) {
 	// If no arguments are specified, prompt the user to select something to run.
 	if len(args) == 0 && cmdio.IsPromptSupported(ctx) {
-		key, err := PromptRunArgument(ctx, b)
+		key, err := promptRunArgument(ctx, b)
 		if err != nil {
 			return "", nil, err
 		}
@@ -69,9 +69,9 @@ func ResolveRunArgument(ctx context.Context, b *bundle.Bundle, args []string) (s
 	return args[0], args[1:], nil
 }
 
-// KeyToRunner converts a resource key to a runner.
+// keyToRunner converts a resource key to a runner.
 // Copied from cmd/bundle/run.go
-func KeyToRunner(b *bundle.Bundle, arg string) (run.Runner, error) {
+func keyToRunner(b *bundle.Bundle, arg string) (run.Runner, error) {
 	// Locate the resource to run.
 	ref, err := resources.Lookup(b, arg, run.IsRunnable)
 	if err != nil {

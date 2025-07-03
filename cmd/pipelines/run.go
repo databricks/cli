@@ -47,35 +47,41 @@ The KEY is the unique identifier of the pipeline to run.`,
 		ctx := cmd.Context()
 		b, diags := bundleutils.ConfigureBundleWithVariables(cmd)
 		if diags.HasError() {
-			return RenderDiagnostics(cmd.OutOrStdout(), b, diags)
+			return renderDiagnostics(cmd.OutOrStdout(), b, diags)
 		}
 
 		diags = diags.Extend(phases.Initialize(ctx, b))
 		if diags.HasError() {
-			return RenderDiagnostics(cmd.OutOrStdout(), b, diags)
+			return renderDiagnostics(cmd.OutOrStdout(), b, diags)
 		}
 
-		key, args, err := ResolveRunArgument(ctx, b, args)
+		key, args, err := resolveRunArgument(ctx, b, args)
 		if err != nil {
 			return err
+		}
+
+		if !b.DirectDeployment {
+			diags = diags.Extend(bundle.ApplySeq(ctx, b,
+				terraform.Interpolate(),
+				terraform.Write(),
+			))
+			if diags.HasError() {
+				return renderDiagnostics(cmd.OutOrStdout(), b, diags)
+			}
 		}
 
 		diags = diags.Extend(bundle.ApplySeq(ctx, b,
-			terraform.Interpolate(),
-			terraform.Write(),
 			statemgmt.StatePull(),
-			terraform.Load(terraform.ErrorOnEmptyState),
+			statemgmt.Load(statemgmt.ErrorOnEmptyState),
 		))
 		if diags.HasError() {
-			return RenderDiagnostics(cmd.OutOrStdout(), b, diags)
+			return renderDiagnostics(cmd.OutOrStdout(), b, diags)
 		}
 
-		runner, err := KeyToRunner(b, key)
+		runner, err := keyToRunner(b, key)
 		if err != nil {
 			return err
 		}
-
-		runOptions.NoWait = noWait
 
 		// Parse additional positional arguments.
 		err = runner.ParseArgs(args, &runOptions)
@@ -83,6 +89,7 @@ The KEY is the unique identifier of the pipeline to run.`,
 			return err
 		}
 
+		runOptions.NoWait = noWait
 		var output output.RunOutput
 		if restart {
 			output, err = runner.Restart(ctx, &runOptions)
@@ -139,7 +146,7 @@ The KEY is the unique identifier of the pipeline to run.`,
 			return maps.Keys(completions), cobra.ShellCompDirectiveNoFileComp
 		} else {
 			// If we know the resource to run, we can complete additional positional arguments.
-			runner, err := KeyToRunner(b, args[0])
+			runner, err := keyToRunner(b, args[0])
 			if err != nil {
 				return nil, cobra.ShellCompDirectiveError
 			}
