@@ -129,6 +129,10 @@ func Apply(ctx context.Context, b *Bundle, m Mutator) diag.Diagnostics {
 	if !logdiag.IsSetup(ctx) {
 		ctx = logdiag.InitContext(ctx)
 	}
+	previous := logdiag.FlushCollected(ctx)
+	if len(previous) > 0 {
+		panic(fmt.Sprintf("Already have %d diags collected: %v", len(previous), previous))
+	}
 	logdiag.SetCollect(ctx, true)
 	ApplyContext(ctx, b, m)
 	return logdiag.FlushCollected(ctx)
@@ -138,6 +142,10 @@ func Apply(ctx context.Context, b *Bundle, m Mutator) diag.Diagnostics {
 func ApplySeq(ctx context.Context, b *Bundle, mutators ...Mutator) diag.Diagnostics {
 	if !logdiag.IsSetup(ctx) {
 		ctx = logdiag.InitContext(ctx)
+	}
+	previous := logdiag.FlushCollected(ctx)
+	if len(previous) > 0 {
+		panic(fmt.Sprintf("Already have %d diags collected: %v", len(previous), previous))
 	}
 	logdiag.SetCollect(ctx, true)
 	ApplySeqContext(ctx, b, mutators...)
