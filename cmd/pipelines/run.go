@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/cli/bundle/run/output"
 	"github.com/databricks/cli/bundle/statemgmt"
 	bundleutils "github.com/databricks/cli/cmd/bundle/utils"
+	pipelinerun "github.com/databricks/cli/cmd/pipelines/run"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdgroup"
 	"github.com/databricks/cli/libs/flags"
@@ -28,12 +29,11 @@ func runCommand() *cobra.Command {
 The KEY is the unique identifier of the pipeline to run.`,
 	}
 
-	var runOptions run.Options
+	var pipelineOptions pipelinerun.PipelineOptions
 
-	// Only define pipeline flags, skip job flags
+	// Define pipeline flags using our custom PipelineOptions
 	pipelineGroup := cmdgroup.NewFlagGroup("Pipeline Run")
-	runOptions.Pipeline.Define(pipelineGroup.FlagSet())
-	pipelineGroup.FlagSet().MarkHidden("validate-only")
+	pipelineOptions.Define(pipelineGroup.FlagSet())
 
 	wrappedCmd := cmdgroup.NewCommandWithGroupFlag(cmd)
 	wrappedCmd.AddFlagGroup(pipelineGroup)
@@ -81,6 +81,18 @@ The KEY is the unique identifier of the pipeline to run.`,
 		runner, err := keyToRunner(b, key)
 		if err != nil {
 			return err
+		}
+
+		// Create run options with our custom pipeline options
+		runOptions := run.Options{
+			Pipeline: run.PipelineOptions{
+				RefreshAll:     pipelineOptions.RefreshAll,
+				Refresh:        pipelineOptions.Refresh,
+				FullRefreshAll: pipelineOptions.FullRefreshAll,
+				FullRefresh:    pipelineOptions.FullRefresh,
+				ValidateOnly:   false, // Always false for pipeline run
+			},
+			NoWait: noWait,
 		}
 
 		// Parse additional positional arguments.

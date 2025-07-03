@@ -1,0 +1,502 @@
+{
+  "method": "GET",
+  "path": "/api/2.0/preview/scim/v2/Me"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/default/state/deploy.lock",
+  "body": {
+    "ID": "[UUID]",
+    "AcquisitionTime": "[TIMESTAMP]-07:00",
+    "IsForced": false,
+    "User": "[USERNAME]"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/export"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/delete",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/default/artifacts/.internal",
+    "recursive": true
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/mkdirs",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/default/artifacts/.internal"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/mkdirs",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/default/files"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/default/files/test.toml",
+  "raw_body": "Badness = \"testserver not mocked yet\"\nRecordRequests = true\n"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/default/files/pipeline_file.py",
+  "raw_body": "import dlt\nfrom pyspark.sql import SparkSession\n\n\n@dlt.table\ndef my_table():\n    return spark.range(10)\n"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/default/files/output.txt",
+  "raw_body": "\n\u003e\u003e\u003e [CLI] bundle deploy\nUploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/default/files...\n"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/default/files/databricks.yml",
+  "raw_body": "bundle:\n  name: test-pipeline-run-flags\n\nresources:\n  pipelines:\n    my_pipeline:\n      name: test-pipeline-flags\n      libraries:\n        - file:\n            path: pipeline_file.py\n"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/default/files/script",
+  "raw_body": "errcode() {\n    # Temporarily disable 'set -e' to prevent the script from exiting on error\n    set +e\n    # Execute the provided command with all arguments\n    \"$@\"\n    local exit_code=$?\n    # Re-enable 'set -e' if it was previously set\n    set -e\n    if [ $exit_code -ne 0 ]; then\n        \u003e\u00262 printf \"\\nExit code: $exit_code\\n\"\n    fi\n}\n\nmusterr() {\n    # Temporarily disable 'set -e' to prevent the script from exiting on error\n    set +e\n    # Execute the provided command with all arguments\n    \"$@\"\n    local exit_code=$?\n    # Re-enable 'set -e'\n    set -e\n    if [ $exit_code -eq 0 ]; then\n        \u003e\u00262 printf \"\\nUnexpected success\\n\"\n        exit 1\n    fi\n    \u003e\u00262 printf \"\\nExit code (musterr): $exit_code\\n\"\n}\n\ntrace() {\n    \u003e\u00262 printf \"\\n\u003e\u003e\u003e %s\\n\" \"$*\"\n\n    if [[ \"$1\" == *\"=\"* ]]; then\n        # If the first argument contains '=', collect all env vars\n        local env_vars=()\n        while [[ \"$1\" == *\"=\"* ]]; do\n            env_vars+=(\"$1\")\n            shift\n        done\n        # Export environment variables in a subshell and execute the command\n        (\n            export \"${env_vars[@]}\"\n            \"$@\"\n        )\n    else\n        # Execute the command normally\n        \"$@\"\n    fi\n\n    return $?\n}\n\ngit-repo-init() {\n    git init -qb main\n    git config core.autocrlf false\n    git config user.name \"Tester\"\n    git config user.email \"[USERNAME]\"\n    git config core.hooksPath no-hooks\n    git add databricks.yml\n    git commit -qm 'Add databricks.yml'\n}\n\ntitle() {\n    local label=\"$1\"\n    printf \"\\n=== %b\" \"$label\"\n}\n\nwithdir() {\n    local dir=\"$1\"\n    shift\n    local orig_dir=\"$(pwd)\"\n    cd \"$dir\" || return $?\n    \"$@\"\n    local exit_code=$?\n    cd \"$orig_dir\" || return $?\n    return $exit_code\n}\n\nuuid() {\n    python3 -c 'import uuid; print(uuid.uuid4())'\n}\n\nvenv_activate() {\n    if [[ \"$OSTYPE\" == \"msys\" || \"$OSTYPE\" == \"cygwin\" || \"$OSTYPE\" == \"win32\" ]]; then\n        source .venv/Scripts/activate\n    else\n        source .venv/bin/activate\n    fi\n}\n\n(\ntrace $CLI bundle deploy\ntitle \"test --no-wait flag\"\ntrace $PIPELINES run my_pipeline --no-wait\n)\n\nrm -fr .databricks .gitignore\n"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/default/files/out.requests.txt",
+  "raw_body": "{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/preview/scim/v2/Me\"\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/default/state/deploy.lock\",\n  \"body\": {\n    \"ID\": \"[UUID]\",\n    \"AcquisitionTime\": \"[TIMESTAMP]-07:00\",\n    \"IsForced\": false,\n    \"User\": \"[USERNAME]\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/export\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\"\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace/delete\",\n  \"body\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/default/artifacts/.internal\",\n    \"recursive\": true\n  }\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace/mkdirs\",\n  \"body\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/default/artifacts/.internal\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\"\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace/mkdirs\",\n  \"body\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/default/files\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\"\n}\n"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/default/files/repls.json",
+  "body": [
+    {
+      "Old": "/Users/alyssa\\.gorbaneva/repos/pipelines-run/acceptance/build/darwin_arm64/databricks_bundles-0\\.258\\.0-py3-none-any\\.whl",
+      "New": "[DATABRICKS_BUNDLES_WHEEL]",
+      "Order": 0
+    },
+    {
+      "Old": "/Users/alyssa\\.gorbaneva/repos/pipelines-run/acceptance/build/darwin_arm64/databricks",
+      "New": "[CLI]",
+      "Order": 0
+    },
+    {
+      "Old": "/Users/alyssa\\.gorbaneva/repos/pipelines-run/acceptance/build/darwin_arm64/pipelines",
+      "New": "[PIPELINES]",
+      "Order": 0
+    },
+    {
+      "Old": "[TEST_DEFAULT_WAREHOUSE_ID]",
+      "New": "[TEST_DEFAULT_WAREHOUSE_ID]",
+      "Order": 0
+    },
+    {
+      "Old": "/Users/alyssa\\.gorbaneva/repos/pipelines-run/acceptance/build/darwin_arm64/\\.terraformrc",
+      "New": "[DATABRICKS_TF_CLI_CONFIG_FILE]",
+      "Order": 0
+    },
+    {
+      "Old": "/Users/alyssa\\.gorbaneva/repos/pipelines-run/acceptance/build/darwin_arm64/terraform",
+      "New": "[TERRAFORM]",
+      "Order": 0
+    },
+    {
+      "Old": "/Users/alyssa\\.gorbaneva/repos/pipelines-run/acceptance/build/darwin_arm64",
+      "New": "[BUILD_DIR]",
+      "Order": 0
+    },
+    {
+      "Old": "0\\.0\\.0-dev(\\+[a-f0-9]{10,16})?",
+      "New": "[DEV_VERSION]",
+      "Order": 0
+    },
+    {
+      "Old": "0\\.73\\.1",
+      "New": "[SDK_VERSION]",
+      "Order": 0
+    },
+    {
+      "Old": "1\\.24\\.3",
+      "New": "[GO_VERSION]",
+      "Order": 0
+    },
+    {
+      "Old": "/Users/alyssa\\.gorbaneva/repos/pipelines-run/acceptance",
+      "New": "[TESTROOT]",
+      "Order": 0
+    },
+    {
+      "Old": "dbapi[0-9a-f]+",
+      "New": "[DATABRICKS_TOKEN]",
+      "Order": 0
+    },
+    {
+      "Old": "i3\\.xlarge",
+      "New": "[NODE_TYPE_ID]",
+      "Order": 0
+    },
+    {
+      "Old": "[UNIQUE_NAME]",
+      "New": "[UNIQUE_NAME]",
+      "Order": 0
+    },
+    {
+      "Old": "[TEST_TMP_DIR]",
+      "New": "[TEST_TMP_DIR]",
+      "Order": 0
+    },
+    {
+      "Old": "[TEST_TMP_DIR]",
+      "New": "[TEST_TMP_DIR]",
+      "Order": 0
+    },
+    {
+      "Old": "[TEST_TMP_DIR]_PARENT",
+      "New": "[TEST_TMP_DIR]_PARENT",
+      "Order": 0
+    },
+    {
+      "Old": "[TEST_TMP_DIR]_PARENT",
+      "New": "[TEST_TMP_DIR]_PARENT",
+      "Order": 0
+    },
+    {
+      "Old": "[TEST_TMP_DIR]_GPARENT",
+      "New": "[TEST_TMP_DIR]_GPARENT",
+      "Order": 0
+    },
+    {
+      "Old": "[TEST_TMP_DIR]_GPARENT",
+      "New": "[TEST_TMP_DIR]_GPARENT",
+      "Order": 0
+    },
+    {
+      "Old": "[USERNAME]@databricks\\.com",
+      "New": "[USERNAME]",
+      "Order": 0
+    },
+    {
+      "Old": "[USERNAME]",
+      "New": "[USERNAME]",
+      "Order": 0
+    },
+    {
+      "Old": "[USERID]",
+      "New": "[USERID]",
+      "Order": 0
+    },
+    {
+      "Old": "https://127\\.0\\.0\\.1:49557",
+      "New": "[DATABRICKS_URL]",
+      "Order": 0
+    },
+    {
+      "Old": "http://127\\.0\\.0\\.1:49557",
+      "New": "[DATABRICKS_URL]",
+      "Order": 0
+    },
+    {
+      "Old": "127\\.0\\.0\\.1:49557",
+      "New": "[DATABRICKS_HOST]",
+      "Order": 0
+    },
+    {
+      "Old": "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}",
+      "New": "[UUID]",
+      "Order": 0
+    },
+    {
+      "Old": "\\d{20,}",
+      "New": "[NUMID]",
+      "Order": 10
+    },
+    {
+      "Old": "1[78]\\d{17}",
+      "New": "[UNIX_TIME_NANOS]",
+      "Order": 10
+    },
+    {
+      "Old": "\\d{17,}",
+      "New": "[NUMID]",
+      "Order": 10
+    },
+    {
+      "Old": "\\d{14,}",
+      "New": "[NUMID]",
+      "Order": 10
+    },
+    {
+      "Old": "1[78]\\d{11}",
+      "New": "[UNIX_TIME_MILLIS]",
+      "Order": 10
+    },
+    {
+      "Old": "\\d{11,}",
+      "New": "[NUMID]",
+      "Order": 10
+    },
+    {
+      "Old": "1[78]\\d{8}",
+      "New": "[UNIX_TIME_S]",
+      "Order": 10
+    },
+    {
+      "Old": "\\d{8,}",
+      "New": "[NUMID]",
+      "Order": 10
+    },
+    {
+      "Old": "2\\d\\d\\d-\\d\\d-\\d\\d(T| )\\d\\d:\\d\\d:\\d\\d(\\.\\d+(Z|\\+\\d\\d:\\d\\d)?)?",
+      "New": "[TIMESTAMP]",
+      "Order": 10
+    }
+  ]
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/default/state/deployment.json",
+  "body": {
+    "version": 1,
+    "seq": 1,
+    "cli_version": "[DEV_VERSION]",
+    "timestamp": "[TIMESTAMP]",
+    "files": [
+      {
+        "local_path": "script",
+        "is_notebook": false
+      },
+      {
+        "local_path": "test.toml",
+        "is_notebook": false
+      },
+      {
+        "local_path": "databricks.yml",
+        "is_notebook": false
+      },
+      {
+        "local_path": "out.requests.txt",
+        "is_notebook": false
+      },
+      {
+        "local_path": "output.txt",
+        "is_notebook": false
+      },
+      {
+        "local_path": "pipeline_file.py",
+        "is_notebook": false
+      },
+      {
+        "local_path": "repls.json",
+        "is_notebook": false
+      }
+    ],
+    "id": "[UUID]"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines",
+  "body": {
+    "channel": "CURRENT",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/default/state/metadata.json"
+    },
+    "edition": "ADVANCED",
+    "libraries": [
+      {
+        "file": {
+          "path": "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/default/files/pipeline_file.py"
+        }
+      }
+    ],
+    "name": "test-pipeline-flags"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/pipelines/[UUID]"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/pipelines/[UUID]"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/default/state/terraform.tfstate",
+  "body": {
+    "version": 4,
+    "terraform_version": "1.5.5",
+    "serial": 1,
+    "lineage": "[UUID]",
+    "outputs": {},
+    "resources": [
+      {
+        "mode": "managed",
+        "type": "databricks_pipeline",
+        "name": "my_pipeline",
+        "provider": "provider[\"registry.terraform.io/databricks/databricks\"]",
+        "instances": [
+          {
+            "schema_version": 0,
+            "attributes": {
+              "allow_duplicate_names": false,
+              "budget_policy_id": null,
+              "catalog": null,
+              "cause": null,
+              "channel": "CURRENT",
+              "cluster": [],
+              "cluster_id": null,
+              "configuration": null,
+              "continuous": false,
+              "creator_user_name": "[USERNAME]",
+              "deployment": [
+                {
+                  "kind": "BUNDLE",
+                  "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/default/state/metadata.json"
+                }
+              ],
+              "development": false,
+              "edition": "ADVANCED",
+              "environment": [],
+              "event_log": [],
+              "expected_last_modified": 0,
+              "filters": [],
+              "gateway_definition": [],
+              "health": null,
+              "id": "[UUID]",
+              "ingestion_definition": [],
+              "last_modified": [UNIX_TIME_MILLIS],
+              "latest_updates": null,
+              "library": [
+                {
+                  "file": [
+                    {
+                      "path": "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/default/files/pipeline_file.py"
+                    }
+                  ],
+                  "glob": [],
+                  "jar": "",
+                  "maven": [],
+                  "notebook": [],
+                  "whl": ""
+                }
+              ],
+              "name": "test-pipeline-flags",
+              "notification": [],
+              "photon": false,
+              "restart_window": [],
+              "root_path": null,
+              "run_as": [
+                {
+                  "service_principal_name": "",
+                  "user_name": "[USERNAME]"
+                }
+              ],
+              "run_as_user_name": "[USERNAME]",
+              "schema": null,
+              "serverless": false,
+              "state": "IDLE",
+              "storage": "dbfs:/pipelines/[UUID]",
+              "tags": null,
+              "target": null,
+              "timeouts": null,
+              "trigger": [],
+              "url": "[DATABRICKS_URL]/#joblist/pipelines/[UUID]"
+            },
+            "sensitive_attributes": [],
+            "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWZhdWx0IjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjEyMDAwMDAwMDAwMDAsInJlYWQiOjEyMDAwMDAwMDAwMDAsInVwZGF0ZSI6MTIwMDAwMDAwMDAwMH19"
+          }
+        ]
+      }
+    ],
+    "check_results": null
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/default/state/metadata.json",
+  "body": {
+    "version": 1,
+    "config": {
+      "bundle": {
+        "git": {
+          "bundle_root_path": "."
+        }
+      },
+      "workspace": {
+        "file_path": "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/default/files"
+      },
+      "resources": {}
+    }
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/export"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/delete",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/default/state/deploy.lock"
+  }
+}
+{
+  "method": "POST",
+  "path": "/telemetry-ext",
+  "body": {
+    "uploadTime": [UNIX_TIME_MILLIS],
+    "items": [],
+    "protoLogs": [
+      "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"execution_context\":{\"cmd_exec_id\":\"[UUID]\",\"version\":\"[DEV_VERSION]\",\"command\":\"bundle_deploy\",\"operating_system\":\"darwin\",\"execution_time_ms\":2285,\"exit_code\":0},\"bundle_deploy_event\":{\"bundle_uuid\":\"[UUID]\",\"deployment_id\":\"[UUID]\",\"resource_count\":1,\"resource_job_count\":0,\"resource_pipeline_count\":1,\"resource_model_count\":0,\"resource_experiment_count\":0,\"resource_model_serving_endpoint_count\":0,\"resource_registered_model_count\":0,\"resource_quality_monitor_count\":0,\"resource_schema_count\":0,\"resource_volume_count\":0,\"resource_cluster_count\":0,\"resource_dashboard_count\":0,\"resource_app_count\":0,\"resource_pipeline_ids\":[\"[UUID]\"],\"experimental\":{\"configuration_file_count\":1,\"variable_count\":0,\"complex_variable_count\":0,\"lookup_variable_count\":0,\"target_count\":1,\"bool_values\":[{\"key\":\"presets_name_prefix_is_set\",\"value\":false},{\"key\":\"skip_artifact_cleanup\",\"value\":false},{\"key\":\"python_wheel_wrapper_is_set\",\"value\":false},{\"key\":\"has_serverless_compute\",\"value\":false},{\"key\":\"has_classic_job_compute\",\"value\":false},{\"key\":\"has_classic_interactive_compute\",\"value\":false}],\"bundle_mode\":\"TYPE_UNSPECIFIED\",\"workspace_artifact_path_type\":\"WORKSPACE_FILE_SYSTEM\"}}}}}"
+    ]
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/preview/scim/v2/Me"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/default/state/terraform.tfstate"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates",
+  "body": {}
+}

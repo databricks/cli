@@ -1,5 +1,4 @@
 
-=== deploy pipeline
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/default/files...
 Deploying resources...
@@ -9,32 +8,3 @@ Deployment complete!
 === test --no-wait flag
 >>> [PIPELINES] run my_pipeline --no-wait
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
-
-
->>> print_requests
-{
-  "body": {
-    "channel": "CURRENT",
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/default/state/metadata.json"
-    },
-    "edition": "ADVANCED",
-    "libraries": [
-      {
-        "file": {
-          "path": "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/default/files/pipeline_file.py"
-        }
-      }
-    ],
-    "name": "test-pipeline-flags"
-  },
-  "method": "POST",
-  "path": "/api/2.0/pipelines"
-}
-{
-  "body": {},
-  "method": "POST",
-  "path": "/api/2.0/pipelines/[UUID]/updates"
-}
-pipelines my_pipeline id='[UUID]' name='test-pipeline-flags'

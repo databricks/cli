@@ -1,12 +1,3 @@
-title "deploy pipeline"
 trace $CLI bundle deploy
-
-print_requests() {
-    jq --sort-keys 'select(.method != "GET" and (.path | contains("/pipelines")))' < out.requests.txt
-    rm out.requests.txt
-    read_state.py pipelines my_pipeline id name
-}
-
 title "test --no-wait flag"
 trace $PIPELINES run my_pipeline --no-wait
-trace print_requests
