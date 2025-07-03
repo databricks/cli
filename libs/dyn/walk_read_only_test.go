@@ -4,7 +4,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/dyn"
 	assert "github.com/databricks/cli/libs/dyn/dynassert"
 )
@@ -243,28 +242,4 @@ func TestWalkReadOnly_SkipPaths(t *testing.T) {
 
 	assert.Equal(t, expectedPaths, visitedPaths)
 	assert.Equal(t, expectedValues, visitedValues)
-}
-
-// This took 40ms to run on 18th June 2025.
-func BenchmarkWalkReadOnly(b *testing.B) {
-	input := testutil.BundleV(b, 10000)
-
-	for b.Loop() {
-		err := dyn.WalkReadOnly(input, func(p dyn.Path, v dyn.Value) error {
-			return nil
-		})
-		assert.NoError(b, err)
-	}
-}
-
-// This took 160ms to run on 18th June 2025.
-func BenchmarkWalk(b *testing.B) {
-	input := testutil.BundleV(b, 10000)
-
-	for b.Loop() {
-		_, err := dyn.Walk(input, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-			return v, nil
-		})
-		assert.NoError(b, err)
-	}
 }
