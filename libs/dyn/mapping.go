@@ -28,8 +28,12 @@ func NewMapping() Mapping {
 	}
 }
 
-// This function is useful to create test fixtures.
-func NewMappingFromPairs(pairs []Pair, index map[string]int) Mapping {
+func NewMappingFromPairs(pairs []Pair) Mapping {
+	index := make(map[string]int)
+	for i, p := range pairs {
+		index[p.Key.MustString()] = i
+	}
+
 	return Mapping{
 		pairs: pairs,
 		index: index,

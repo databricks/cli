@@ -23,7 +23,6 @@ func TestWalkReadOnly(t *testing.T) {
 					{Key: dyn.V("a"), Value: dyn.V("1")},
 					{Key: dyn.V("b"), Value: dyn.V("2")},
 				},
-				map[string]int{"a": 0, "b": 1},
 			)),
 			expectedPaths: []dyn.Path{
 				dyn.EmptyPath,
@@ -36,7 +35,6 @@ func TestWalkReadOnly(t *testing.T) {
 						{Key: dyn.V("a"), Value: dyn.V("1")},
 						{Key: dyn.V("b"), Value: dyn.V("2")},
 					},
-					map[string]int{"a": 0, "b": 1},
 				)),
 				dyn.V("1"),
 				dyn.V("2"),
@@ -185,14 +183,12 @@ func TestWalkReadOnly_SkipPaths(t *testing.T) {
 			{Key: dyn.V("b"), Value: dyn.V("1")},
 			{Key: dyn.V("c"), Value: dyn.V("2")},
 		},
-		map[string]int{"b": 0, "c": 1},
 	))
 
 	vd := dyn.V(dyn.NewMappingFromPairs(
 		[]dyn.Pair{
 			{Key: dyn.V("e"), Value: dyn.V("3")},
 		},
-		map[string]int{"e": 0},
 	))
 
 	input := dyn.V(dyn.NewMappingFromPairs(
@@ -210,7 +206,6 @@ func TestWalkReadOnly_SkipPaths(t *testing.T) {
 				Value: dyn.V("4"),
 			},
 		},
-		map[string]int{"a": 0, "d": 1, "f": 2},
 	))
 
 	skipPaths := map[string]bool{
