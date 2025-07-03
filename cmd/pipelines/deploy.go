@@ -63,7 +63,7 @@ func deployCommand() *cobra.Command {
 			}
 		}
 
-		return RenderDiagnostics(cmd.OutOrStdout(), b, diags)
+		return renderDiagnostics(cmd.OutOrStdout(), b, diags)
 	}
 	return cmd
 }
