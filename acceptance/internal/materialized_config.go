@@ -2,7 +2,6 @@ package internal
 
 import (
 	"encoding/json"
-	"time"
 )
 
 const MaterializedConfigFile = "out.config.json"
@@ -41,11 +40,4 @@ func GenerateMaterializedConfig(config TestConfig) (string, error) {
 
 	// Add newline at the end of the JSON
 	return string(configBytes) + "\n", nil
-}
-
-func durationSeconds(d time.Duration) float64 {
-	if d == 0 {
-		return 0
-	}
-	return d.Seconds()
 }
