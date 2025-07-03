@@ -1,0 +1,91 @@
+
+=== deploy pipeline
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== test --refresh-all flag
+>>> [PIPELINES] run my_pipeline --refresh-all
+Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
+
+
+>>> print_requests
+{
+  "body": {
+    "channel": "CURRENT",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/default/state/metadata.json"
+    },
+    "edition": "ADVANCED",
+    "libraries": [
+      {
+        "file": {
+          "path": "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/default/files/pipeline_file.py"
+        }
+      }
+    ],
+    "name": "test-pipeline-flags"
+  },
+  "method": "POST",
+  "path": "/api/2.0/pipelines"
+}
+{
+  "body": {},
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates"
+}
+pipelines my_pipeline id='[UUID]' name='test-pipeline-flags'
+
+=== test --refresh flag with specific tables
+>>> [PIPELINES] run my_pipeline --refresh table1,table2
+Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
+
+
+>>> print_requests
+{
+  "body": {
+    "refresh_selection": [
+      "table1",
+      "table2"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates"
+}
+pipelines my_pipeline id='[UUID]' name='test-pipeline-flags'
+
+=== test --full-refresh-all flag
+>>> [PIPELINES] run my_pipeline --full-refresh-all
+Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
+
+
+>>> print_requests
+{
+  "body": {
+    "full_refresh": true
+  },
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates"
+}
+pipelines my_pipeline id='[UUID]' name='test-pipeline-flags'
+
+=== test --full-refresh flag with specific tables
+>>> [PIPELINES] run my_pipeline --full-refresh table1,table2
+Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
+
+
+>>> print_requests
+{
+  "body": {
+    "full_refresh_selection": [
+      "table1",
+      "table2"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates"
+}
+pipelines my_pipeline id='[UUID]' name='test-pipeline-flags'

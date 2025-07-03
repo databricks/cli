@@ -7,6 +7,6 @@ print_requests() {
     read_state.py pipelines my_pipeline id name
 }
 
-title "run pipeline"
-trace $PIPELINES run my_pipeline
+title "test --no-wait flag"
+trace $PIPELINES run my_pipeline --no-wait
 trace print_requests

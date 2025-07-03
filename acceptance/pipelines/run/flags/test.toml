@@ -1,2 +1,0 @@
-EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["terraform"]  # run command relies on terraform
-RecordRequests = true

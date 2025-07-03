@@ -11,6 +11,6 @@ func New(ctx context.Context) *cobra.Command {
 	cli := root.New(ctx)
 	initVariableFlag(cli)
 	cli.AddCommand(initCommand())
-	cli.AddCommand(newRunCommand())
+	cli.AddCommand(runCommand())
 	return cli
 }

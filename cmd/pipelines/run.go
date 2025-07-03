@@ -20,7 +20,7 @@ import (
 	"golang.org/x/exp/maps"
 )
 
-func newRunCommand() *cobra.Command {
+func runCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "run [flags] [KEY]",
 		Short: "Run a pipeline",
