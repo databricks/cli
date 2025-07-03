@@ -69,7 +69,7 @@ func prepareBundleForSummary(cmd *cobra.Command, forcePull, includeLocations boo
 	}
 
 	diags = diags.Extend(bundle.ApplySeq(ctx, b,
-		terraform.Load(),
+		statemgmt.Load(),
 		mutator.InitializeURLs(),
 	))
 
