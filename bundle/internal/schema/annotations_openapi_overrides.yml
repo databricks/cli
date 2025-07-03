@@ -129,6 +129,36 @@ github.com/databricks/cli/bundle/config/resources.Dashboard:
   "permissions":
     "description": |-
       PLACEHOLDER
+  "create_time":
+    "description": |-
+      PLACEHOLDER
+  "dashboard_id":
+    "description": |-
+      PLACEHOLDER
+  "display_name":
+    "description": |-
+      PLACEHOLDER
+  "etag":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle_state":
+    "description": |-
+      PLACEHOLDER
+  "parent_path":
+    "description": |-
+      PLACEHOLDER
+  "path":
+    "description": |-
+      PLACEHOLDER
+  "serialized_dashboard":
+    "description": |-
+      PLACEHOLDER
+  "update_time":
+    "description": |-
+      PLACEHOLDER
+  "warehouse_id":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.DashboardPermissionLevel:
   "_":
     "enum":
