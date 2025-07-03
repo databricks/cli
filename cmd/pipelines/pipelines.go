@@ -10,5 +10,6 @@ import (
 func New(ctx context.Context) *cobra.Command {
 	cli := root.New(ctx)
 	cli.AddCommand(initCommand())
+	cli.AddCommand(authCommand())
 	return cli
 }
