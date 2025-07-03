@@ -8,7 +8,6 @@ import (
 	"github.com/databricks/cli/bundle/config/validate"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
-	pipelinesbundle "github.com/databricks/cli/cmd/pipelines/bundle"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/sync"
@@ -64,7 +63,7 @@ func Deploy() *cobra.Command {
 			}
 		}
 
-		return pipelinesbundle.RenderDiagnostics(cmd.OutOrStdout(), b, diags)
+		return RenderDiagnostics(cmd.OutOrStdout(), b, diags)
 	}
 	return cmd
 }

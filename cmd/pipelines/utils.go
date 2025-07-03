@@ -1,5 +1,4 @@
-// Copied from cmd/bundle/deploy.go and adapted for pipelines use.
-package bundle
+package pipelines
 
 import (
 	"fmt"
@@ -12,6 +11,7 @@ import (
 )
 
 // RenderDiagnostics renders the diagnostics in a human-readable format.
+// Copied from cmd/bundle/deploy.go
 func RenderDiagnostics(w io.Writer, b *bundle.Bundle, diags diag.Diagnostics) error {
 	renderOpts := render.RenderOptions{RenderSummaryTable: false}
 	err := render.RenderDiagnostics(w, b, diags, renderOpts)
