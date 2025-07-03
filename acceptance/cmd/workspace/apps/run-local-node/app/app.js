@@ -9,12 +9,11 @@ app.get('/', (req, res) => {
     timestamp: new Date().toISOString(),
     status: 'running'
   });
+});
 
-  console.log('Shutting down server...');
-  setTimeout(() => {
-    console.log('Server closed')
-    process.exit(0);
-  }, 1000); // Give 1 second for response to be sent
+app.get('/shutdown', (req, res) => {
+  console.log('Server closed')
+  process.exit(0);
 });
 
 // Start the server
