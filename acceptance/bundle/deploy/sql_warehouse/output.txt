@@ -16,7 +16,8 @@ Validation OK!
     "enable_serverless_compute": true,
     "max_num_clusters": 1,
     "min_num_clusters": 1,
-    "name": "test_sql_warehouse"
+    "name": "test_sql_warehouse",
+    "permissions": []
   }
 }
 
