@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/databricks/databricks-sdk-go/service/serving"
+	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -63,6 +64,9 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 		"secret_scopes": map[string]ResourceState{
 			"test_secret_scope": {ID: "secret_scope1"},
 		},
+		"sql_warehouses": map[string]ResourceState{
+			"test_sql_warehouse": {ID: "1"},
+		},
 	}
 	err := StateToBundle(context.Background(), state, &config)
 	assert.NoError(t, err)
@@ -103,6 +107,9 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 	assert.Equal(t, "app1", config.Resources.Apps["test_app"].ID)
 	assert.Equal(t, "", config.Resources.Apps["test_app"].Name)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Apps["test_app"].ModifiedStatus)
+
+	assert.Equal(t, "1", config.Resources.SqlWarehouses["test_sql_warehouse"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.SqlWarehouses["test_sql_warehouse"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
 }
@@ -201,6 +208,13 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 					Name: "test_secret_scope",
 				},
 			},
+			SqlWarehouses: map[string]*resources.SqlWarehouse{
+				"test_sql_warehouse": {
+					CreateWarehouseRequest: sql.CreateWarehouseRequest{
+						Name: "test_sql_warehouse",
+					},
+				},
+			},
 		},
 	}
 
@@ -242,6 +256,9 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 
 	assert.Equal(t, "", config.Resources.Apps["test_app"].Name)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Apps["test_app"].ModifiedStatus)
+
+	assert.Equal(t, "", config.Resources.SqlWarehouses["test_sql_warehouse"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.SqlWarehouses["test_sql_warehouse"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
 }
@@ -405,6 +422,18 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 					Name: "test_secret_scope_new",
 				},
 			},
+			SqlWarehouses: map[string]*resources.SqlWarehouse{
+				"test_sql_warehouse": {
+					CreateWarehouseRequest: sql.CreateWarehouseRequest{
+						Name: "test_sql_warehouse",
+					},
+				},
+				"test_sql_warehouse_new": {
+					CreateWarehouseRequest: sql.CreateWarehouseRequest{
+						Name: "test_sql_warehouse_new",
+					},
+				},
+			},
 		},
 	}
 	state := ExportedResourcesMap{
@@ -455,6 +484,10 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 		"apps": map[string]ResourceState{
 			"test_app":     {ID: "test_app"},
 			"test_app_old": {ID: "test_app_old"},
+		},
+		"sql_warehouses": map[string]ResourceState{
+			"test_sql_warehouse":     {ID: "1"},
+			"test_sql_warehouse_old": {ID: "2"},
 		},
 	}
 	err := StateToBundle(context.Background(), state, &config)
@@ -544,6 +577,13 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Apps["test_app_old"].ModifiedStatus)
 	assert.Equal(t, "test_app_new", config.Resources.Apps["test_app_new"].Name)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Apps["test_app_new"].ModifiedStatus)
+
+	assert.Equal(t, "1", config.Resources.SqlWarehouses["test_sql_warehouse"].ID)
+	assert.Equal(t, "", config.Resources.SqlWarehouses["test_sql_warehouse"].ModifiedStatus)
+	assert.Equal(t, "2", config.Resources.SqlWarehouses["test_sql_warehouse_old"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.SqlWarehouses["test_sql_warehouse_old"].ModifiedStatus)
+	assert.Equal(t, "", config.Resources.SqlWarehouses["test_sql_warehouse_new"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.SqlWarehouses["test_sql_warehouse_new"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
 }
