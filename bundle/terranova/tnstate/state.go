@@ -1,11 +1,13 @@
 package tnstate
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"sync"
 
+	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/google/uuid"
 )
 
@@ -56,6 +58,9 @@ func (db *TerranovaState) DeleteState(group, resourceName string) error {
 	}
 
 	delete(groupData, resourceName)
+	if len(groupData) == 0 {
+		delete(db.Data.Resources, group)
+	}
 
 	return nil
 }
@@ -78,7 +83,12 @@ func (db *TerranovaState) Open(path string) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
-	db.Path = path
+	if db.Path != "" {
+		if db.Path == path {
+			return nil
+		}
+		return fmt.Errorf("Already read state %v, cannot open %v", db.Path, path)
+	}
 
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -88,12 +98,19 @@ func (db *TerranovaState) Open(path string) error {
 				Lineage:   uuid.New().String(),
 				Resources: make(map[string]map[string]ResourceEntry),
 			}
+			db.Path = path
 			return nil
 		}
 		return err
 	}
 
-	return json.Unmarshal(data, &db.Data)
+	err = json.Unmarshal(data, &db.Data)
+	if err != nil {
+		return err
+	}
+
+	db.Path = path
+	return nil
 }
 
 func (db *TerranovaState) Finalize() error {
@@ -107,6 +124,21 @@ func (db *TerranovaState) AssertOpened() {
 	if db.Path == "" {
 		panic("internal error: TerranovaState must be opened first")
 	}
+}
+
+func (db *TerranovaState) ExportState(ctx context.Context) resourcestate.ExportedResourcesMap {
+	result := make(resourcestate.ExportedResourcesMap, len(db.Data.Resources))
+	for groupName, group := range db.Data.Resources {
+		resultGroup := make(map[string]resourcestate.ResourceState, len(group))
+		result[groupName] = resultGroup
+		for resourceName, entry := range group {
+			resultGroup[resourceName] = resourcestate.ResourceState{
+				ID: entry.ID,
+				// TODO: extract Etag
+			}
+		}
+	}
+	return result
 }
 
 func (db *TerranovaState) unlockedSave() error {

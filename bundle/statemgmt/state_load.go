@@ -33,17 +33,28 @@ func (l *load) Name() string {
 }
 
 func (l *load) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	tf := b.Terraform
-	if tf == nil {
-		return diag.Errorf("terraform not initialized")
-	}
+	var state ExportedResourcesMap
+	var err error
 
-	err := tf.Init(ctx, tfexec.Upgrade(true))
-	if err != nil {
-		return diag.Errorf("terraform init: %v", err)
-	}
+	if b.DirectDeployment {
+		err = b.OpenResourceDatabase(ctx)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+		state = b.ResourceDatabase.ExportState(ctx)
+	} else {
+		tf := b.Terraform
+		if tf == nil {
+			return diag.Errorf("terraform not initialized")
+		}
 
-	state, err := terraform.ParseResourcesState(ctx, b)
+		err = tf.Init(ctx, tfexec.Upgrade(true))
+		if err != nil {
+			return diag.Errorf("terraform init: %v", err)
+		}
+
+		state, err = terraform.ParseResourcesState(ctx, b)
+	}
 	if err != nil {
 		return diag.FromErr(err)
 	}

@@ -58,13 +58,19 @@ func prepareBundleForSummary(cmd *cobra.Command, forcePull, includeLocations boo
 	noCache := errors.Is(stateFileErr, os.ErrNotExist) || errors.Is(configFileErr, os.ErrNotExist)
 
 	if forcePull || noCache {
-		diags = diags.Extend(bundle.ApplySeq(ctx, b,
-			statemgmt.StatePull(),
-			terraform.Interpolate(),
-			terraform.Write(),
-		))
+		diags = diags.Extend(bundle.Apply(ctx, b, statemgmt.StatePull()))
 		if err := diags.Error(); err != nil {
 			return nil, diags
+		}
+
+		if !b.DirectDeployment {
+			diags = diags.Extend(bundle.ApplySeq(ctx, b,
+				terraform.Interpolate(),
+				terraform.Write(),
+			))
+			if err := diags.Error(); err != nil {
+				return nil, diags
+			}
 		}
 	}
 

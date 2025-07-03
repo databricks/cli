@@ -107,6 +107,9 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 	assert.Equal(t, "app1", config.Resources.Apps["test_app"].ID)
 	assert.Equal(t, "", config.Resources.Apps["test_app"].Name)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Apps["test_app"].ModifiedStatus)
+  
+	assert.Equal(t, "secret_scope1", config.Resources.SecretScopes["test_secret_scope"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.SecretScopes["test_secret_scope"].ModifiedStatus)
 
 	assert.Equal(t, "1", config.Resources.SqlWarehouses["test_sql_warehouse"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.SqlWarehouses["test_sql_warehouse"].ModifiedStatus)
@@ -256,6 +259,9 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 
 	assert.Equal(t, "", config.Resources.Apps["test_app"].Name)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Apps["test_app"].ModifiedStatus)
+
+	assert.Equal(t, "", config.Resources.SecretScopes["test_secret_scope"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.SecretScopes["test_secret_scope"].ModifiedStatus)
 
 	assert.Equal(t, "", config.Resources.SqlWarehouses["test_sql_warehouse"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.SqlWarehouses["test_sql_warehouse"].ModifiedStatus)
@@ -485,10 +491,14 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 			"test_app":     {ID: "test_app"},
 			"test_app_old": {ID: "test_app_old"},
 		},
+    "secret_scopes": map[string]ResourceState{
+			"test_secret_scope":     {ID: "test_secret_scope"},
+			"test_secret_scope_old": {ID: "test_secret_scope_old"},
+		},
 		"sql_warehouses": map[string]ResourceState{
 			"test_sql_warehouse":     {ID: "1"},
 			"test_sql_warehouse_old": {ID: "2"},
-		},
+    },
 	}
 	err := StateToBundle(context.Background(), state, &config)
 	assert.NoError(t, err)
@@ -577,6 +587,14 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Apps["test_app_old"].ModifiedStatus)
 	assert.Equal(t, "test_app_new", config.Resources.Apps["test_app_new"].Name)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Apps["test_app_new"].ModifiedStatus)
+
+	assert.Equal(t, "test_secret_scope", config.Resources.SecretScopes["test_secret_scope"].Name)
+	assert.Equal(t, "", config.Resources.SecretScopes["test_secret_scope"].ModifiedStatus)
+	assert.Equal(t, "test_secret_scope_old", config.Resources.SecretScopes["test_secret_scope_old"].ID)
+	assert.Equal(t, "", config.Resources.SecretScopes["test_secret_scope_old"].Name)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.SecretScopes["test_secret_scope_old"].ModifiedStatus)
+	assert.Equal(t, "test_secret_scope_new", config.Resources.SecretScopes["test_secret_scope_new"].Name)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.SecretScopes["test_secret_scope_new"].ModifiedStatus)
 
 	assert.Equal(t, "1", config.Resources.SqlWarehouses["test_sql_warehouse"].ID)
 	assert.Equal(t, "", config.Resources.SqlWarehouses["test_sql_warehouse"].ModifiedStatus)

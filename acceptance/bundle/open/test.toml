@@ -1,3 +1,2 @@
 GOOS.windows = false
 GOOS.linux = false
-EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["terraform"]  # "bundle open" not implemented yet

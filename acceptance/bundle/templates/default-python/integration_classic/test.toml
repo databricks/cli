@@ -1,9 +1,6 @@
 Cloud = true
 Timeout = '1m'
 
-# "bundle summary" is not supported yet
-EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["terraform"]
-
 Ignore = [
     '.venv',
 ]
