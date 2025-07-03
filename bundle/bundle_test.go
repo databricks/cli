@@ -25,7 +25,7 @@ func mustLoad(t *testing.T) (*Bundle, []diag.Diagnostic) {
 	ctx := logdiag.InitContext(context.Background())
 	logdiag.SetCollect(ctx, true)
 	b := MustLoad(ctx)
-	diags := logdiag.GetCollected(ctx)
+	diags := logdiag.FlushCollected(ctx)
 	return b, diags
 }
 
@@ -34,7 +34,7 @@ func tryLoad(t *testing.T) (*Bundle, []diag.Diagnostic) {
 	ctx := logdiag.InitContext(context.Background())
 	logdiag.SetCollect(ctx, true)
 	b := TryLoad(ctx)
-	diags := logdiag.GetCollected(ctx)
+	diags := logdiag.FlushCollected(ctx)
 	return b, diags
 }
 

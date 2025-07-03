@@ -84,7 +84,7 @@ func assertBuiltinTemplateValid(t *testing.T, template string, settings map[stri
 	logdiag.SetCollect(ctx, true)
 
 	phases.LoadNamedTarget(ctx, b, target)
-	diags := logdiag.GetCollected(ctx)
+	diags := logdiag.FlushCollected(ctx)
 	require.Empty(t, diags)
 
 	// Apply initialize / validation mutators
@@ -100,13 +100,13 @@ func assertBuiltinTemplateValid(t *testing.T, template string, settings map[stri
 	b.WorkspaceClient()
 
 	phases.Initialize(ctx, b)
-	diags = logdiag.GetCollected(ctx)
+	diags = logdiag.FlushCollected(ctx)
 	require.Empty(t, diags)
 
 	// Apply build mutator
 	if build {
 		phases.Build(ctx, b)
-		diags = logdiag.GetCollected(ctx)
+		diags = logdiag.FlushCollected(ctx)
 		require.Empty(t, diags)
 	}
 }

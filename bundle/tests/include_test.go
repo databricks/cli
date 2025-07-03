@@ -20,7 +20,7 @@ func TestIncludeInvalid(t *testing.T) {
 	b, err := bundle.Load(ctx, "./include_invalid")
 	require.NoError(t, err)
 	phases.Load(ctx, b)
-	diags := diag.Diagnostics(logdiag.GetCollected(ctx))
+	diags := diag.Diagnostics(logdiag.FlushCollected(ctx))
 	require.Error(t, diags.Error())
 	assert.ErrorContains(t, diags.Error(), "notexists.yml defined in 'include' section does not match any files")
 }
