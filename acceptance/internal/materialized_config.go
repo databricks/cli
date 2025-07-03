@@ -45,7 +45,8 @@ func GenerateMaterializedConfig(config TestConfig) (string, error) {
 		return "", err
 	}
 
-	return string(configBytes), nil
+	// Add newline at the end of the JSON
+	return string(configBytes) + "\n", nil
 }
 
 func durationSeconds(d time.Duration) float64 {
