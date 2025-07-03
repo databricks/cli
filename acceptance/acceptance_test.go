@@ -469,16 +469,7 @@ func runTest(t *testing.T,
 	// Generate materialized config for this test
 	materializedConfig, err := internal.GenerateMaterializedConfig(config)
 	require.NoError(t, err)
-
-	// Check if reference materialized config file exists
-	refConfigPath := filepath.Join(dir, internal.MaterializedConfigFile)
-	_, refExists := tryReading(t, refConfigPath)
-
-	// Write materialized config to temp directory if reference exists (for comparison)
-	// or if we're in overwrite mode (for creating new files)
-	if refExists || testdiff.OverwriteMode {
-		testutil.WriteFile(t, filepath.Join(tmpDir, internal.MaterializedConfigFile), materializedConfig)
-	}
+	testutil.WriteFile(t, filepath.Join(tmpDir, internal.MaterializedConfigFile), materializedConfig)
 
 	inputs := make(map[string]bool, 2)
 	outputs := make(map[string]bool, 2)

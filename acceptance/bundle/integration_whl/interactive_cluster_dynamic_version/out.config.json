@@ -1,8 +1,8 @@
 {
-  "local": true,
-  "cloud": false,
-  "cloud_slow": true,
-  "env_matrix": {
+  "Local": false,
+  "Cloud": false,
+  "CloudSlow": true,
+  "EnvMatrix": {
     "DATABRICKS_CLI_DEPLOYMENT": [
       "terraform"
     ],
@@ -10,8 +10,5 @@
       "USER_ISOLATION",
       "SINGLE_USER"
     ]
-  },
-  "timeout_seconds": 20,
-  "timeout_windows_seconds": 60,
-  "timeout_cloud_seconds": 1500
+  }
 }

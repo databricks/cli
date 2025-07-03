@@ -8,18 +8,15 @@ import (
 const MaterializedConfigFile = "out.config.json"
 
 type MaterializedConfig struct {
-	GOOS                 map[string]bool     `json:"goos,omitempty"`
-	CloudEnvs            map[string]bool     `json:"cloud_envs,omitempty"`
-	Local                *bool               `json:"local,omitempty"`
-	Cloud                *bool               `json:"cloud,omitempty"`
-	CloudSlow            *bool               `json:"cloud_slow,omitempty"`
-	RequiresUnityCatalog *bool               `json:"requires_unity_catalog,omitempty"`
-	RequiresCluster      *bool               `json:"requires_cluster,omitempty"`
-	RequiresWarehouse    *bool               `json:"requires_warehouse,omitempty"`
-	EnvMatrix            map[string][]string `json:"env_matrix,omitempty"`
-	Timeout              float64             `json:"timeout_seconds,omitempty"`
-	TimeoutWindows       float64             `json:"timeout_windows_seconds,omitempty"`
-	TimeoutCloud         float64             `json:"timeout_cloud_seconds,omitempty"`
+	GOOS                 map[string]bool     `json:"GOOS,omitempty"`
+	CloudEnvs            map[string]bool     `json:"CloudEnvs,omitempty"`
+	Local                *bool               `json:"Local,omitempty"`
+	Cloud                *bool               `json:"Cloud,omitempty"`
+	CloudSlow            *bool               `json:"CloudSlow,omitempty"`
+	RequiresUnityCatalog *bool               `json:"RequiresUnityCatalog,omitempty"`
+	RequiresCluster      *bool               `json:"RequiresCluster,omitempty"`
+	RequiresWarehouse    *bool               `json:"RequiresWarehouse,omitempty"`
+	EnvMatrix            map[string][]string `json:"EnvMatrix,omitempty"`
 }
 
 // GenerateMaterializedConfig creates a JSON representation of the configuration fields
@@ -35,9 +32,6 @@ func GenerateMaterializedConfig(config TestConfig) (string, error) {
 		RequiresCluster:      config.RequiresCluster,
 		RequiresWarehouse:    config.RequiresWarehouse,
 		EnvMatrix:            config.EnvMatrix,
-		Timeout:              durationSeconds(config.Timeout),
-		TimeoutWindows:       durationSeconds(config.TimeoutWindows),
-		TimeoutCloud:         durationSeconds(config.TimeoutCloud),
 	}
 
 	configBytes, err := json.MarshalIndent(materialized, "", "  ")

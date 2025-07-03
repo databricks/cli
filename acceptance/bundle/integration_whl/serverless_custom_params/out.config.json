@@ -1,15 +1,12 @@
 {
-  "local": true,
-  "cloud": true,
-  "cloud_slow": true,
-  "requires_unity_catalog": true,
-  "env_matrix": {
+  "Local": false,
+  "Cloud": true,
+  "CloudSlow": true,
+  "RequiresUnityCatalog": true,
+  "EnvMatrix": {
     "DATABRICKS_CLI_DEPLOYMENT": [
       "terraform",
       "direct-exp"
     ]
-  },
-  "timeout_seconds": 20,
-  "timeout_windows_seconds": 60,
-  "timeout_cloud_seconds": 1500
+  }
 }

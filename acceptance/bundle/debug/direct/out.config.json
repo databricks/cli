@@ -1,12 +1,9 @@
 {
-  "local": true,
-  "cloud": false,
-  "env_matrix": {
+  "Local": true,
+  "Cloud": false,
+  "EnvMatrix": {
     "DATABRICKS_CLI_DEPLOYMENT": [
       "direct-exp"
     ]
-  },
-  "timeout_seconds": 20,
-  "timeout_windows_seconds": 60,
-  "timeout_cloud_seconds": 1500
+  }
 }

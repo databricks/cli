@@ -1,7 +1,7 @@
 {
-  "local": true,
-  "cloud": true,
-  "env_matrix": {
+  "Local": true,
+  "Cloud": true,
+  "EnvMatrix": {
     "DATABRICKS_CLI_DEPLOYMENT": [
       "terraform",
       "direct-exp"
@@ -13,8 +13,5 @@
       "3.12",
       "3.13"
     ]
-  },
-  "timeout_seconds": 60,
-  "timeout_windows_seconds": 60,
-  "timeout_cloud_seconds": 1500
+  }
 }
