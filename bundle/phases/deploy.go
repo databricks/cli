@@ -149,7 +149,7 @@ func deployCore(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// TODO: terraform.Load alternative
 	} else {
 		newDiags := bundle.Apply(ctx, b,
-			terraform.Load(),
+			statemgmt.Load(),
 		)
 		diags = diags.Extend(newDiags)
 		if newDiags.HasError() {

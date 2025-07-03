@@ -98,7 +98,7 @@ func newOpenCommand() *cobra.Command {
 		}
 
 		diags = bundle.ApplySeq(ctx, b,
-			terraform.Load(),
+			statemgmt.Load(),
 			mutator.InitializeURLs(),
 		)
 		if err := diags.Error(); err != nil {
