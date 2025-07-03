@@ -131,11 +131,11 @@ func LogDiag(ctx context.Context, d diag.Diagnostic) {
 func LogError(ctx context.Context, err error) {
 	Mu.Lock()
 	defer Mu.Unlock()
+
 	val := read(ctx)
 	val.Errors += 1
 
 	if val.Collect {
-		// Convert error to diagnostic and collect it
 		diags := diag.FromErr(err)
 		val.Collected = append(val.Collected, diags...)
 	} else {
