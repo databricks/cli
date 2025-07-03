@@ -165,6 +165,12 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	t.Setenv("CLI", execPath)
 	repls.SetPath(execPath, "[CLI]")
 
+	pipelinesPath := filepath.Join(buildDir, "pipelines") + exeSuffix
+	err = copyFile(execPath, pipelinesPath)
+	require.NoError(t, err)
+	t.Setenv("PIPELINES", pipelinesPath)
+	repls.SetPath(pipelinesPath, "[PIPELINES]")
+
 	paths := []string{
 		// Make helper scripts available
 		filepath.Join(cwd, "bin"),

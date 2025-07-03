@@ -165,11 +165,19 @@ Example usage:
 		}
 
 		// Load resource IDs from terraform state.
+		if !b.DirectDeployment {
+			diags = diags.Extend(bundle.ApplySeq(ctx, b,
+				terraform.Interpolate(),
+				terraform.Write(),
+			))
+			if diags.HasError() {
+				return renderDiagnostics(cmd.OutOrStdout(), b, diags)
+			}
+		}
+
 		diags = diags.Extend(bundle.ApplySeq(ctx, b,
-			terraform.Interpolate(),
-			terraform.Write(),
 			statemgmt.StatePull(),
-			terraform.Load(terraform.ErrorOnEmptyState),
+			statemgmt.Load(statemgmt.ErrorOnEmptyState),
 		))
 		if diags.HasError() {
 			return renderDiagnostics(cmd.OutOrStdout(), b, diags)

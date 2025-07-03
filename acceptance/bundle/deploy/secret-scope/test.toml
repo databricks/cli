@@ -1,7 +1,7 @@
 Cloud = true
 Local = true
 
-EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["terraform"]
+EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["terraform"]  # secret scopes not implemented
 
 Ignore = [
     "databricks.yml",
