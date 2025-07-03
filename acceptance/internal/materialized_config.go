@@ -1,24 +1,26 @@
 package internal
 
 import (
-	"encoding/json"
+	"bytes"
+
+	"github.com/BurntSushi/toml"
 )
 
-const MaterializedConfigFile = "out.config.json"
+const MaterializedConfigFile = "out.config.toml"
 
 type MaterializedConfig struct {
-	GOOS                 map[string]bool     `json:"GOOS,omitempty"`
-	CloudEnvs            map[string]bool     `json:"CloudEnvs,omitempty"`
-	Local                *bool               `json:"Local,omitempty"`
-	Cloud                *bool               `json:"Cloud,omitempty"`
-	CloudSlow            *bool               `json:"CloudSlow,omitempty"`
-	RequiresUnityCatalog *bool               `json:"RequiresUnityCatalog,omitempty"`
-	RequiresCluster      *bool               `json:"RequiresCluster,omitempty"`
-	RequiresWarehouse    *bool               `json:"RequiresWarehouse,omitempty"`
-	EnvMatrix            map[string][]string `json:"EnvMatrix,omitempty"`
+	GOOS                 map[string]bool     `toml:"GOOS,omitempty"`
+	CloudEnvs            map[string]bool     `toml:"CloudEnvs,omitempty"`
+	Local                *bool               `toml:"Local,omitempty"`
+	Cloud                *bool               `toml:"Cloud,omitempty"`
+	CloudSlow            *bool               `toml:"CloudSlow,omitempty"`
+	RequiresUnityCatalog *bool               `toml:"RequiresUnityCatalog,omitempty"`
+	RequiresCluster      *bool               `toml:"RequiresCluster,omitempty"`
+	RequiresWarehouse    *bool               `toml:"RequiresWarehouse,omitempty"`
+	EnvMatrix            map[string][]string `toml:"EnvMatrix,omitempty"`
 }
 
-// GenerateMaterializedConfig creates a JSON representation of the configuration fields
+// GenerateMaterializedConfig creates a TOML representation of the configuration fields
 // that determine where and how a test is executed
 func GenerateMaterializedConfig(config TestConfig) (string, error) {
 	materialized := MaterializedConfig{
@@ -33,11 +35,13 @@ func GenerateMaterializedConfig(config TestConfig) (string, error) {
 		EnvMatrix:            config.EnvMatrix,
 	}
 
-	configBytes, err := json.MarshalIndent(materialized, "", "  ")
+	var buf bytes.Buffer
+	encoder := toml.NewEncoder(&buf)
+	err := encoder.Encode(materialized)
 	if err != nil {
 		return "", err
 	}
 
-	// Add newline at the end of the JSON
-	return string(configBytes) + "\n", nil
+	// Add newline at the end of the TOML
+	return buf.String() + "\n", nil
 }

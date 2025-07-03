@@ -1,0 +1,7 @@
+Local = true
+Cloud = true
+RequiresCluster = true
+
+[EnvMatrix]
+  DATABRICKS_CLI_DEPLOYMENT = ["terraform"]
+
