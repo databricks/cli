@@ -216,7 +216,7 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 		cmd.SetContext(SkipLoadBundle(cmd.Context()))
 	}
 
-	ctx = cmdctx.SetConfigUsed(ctx, cfg)
+	ctx = cmdctx.SetConfigUsed(cmd.Context(), cfg)
 	cmd.SetContext(ctx)
 
 	// Try to load a bundle configuration if we're allowed to by the caller (see `./auth_options.go`).
