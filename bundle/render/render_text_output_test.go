@@ -130,9 +130,7 @@ func TestRenderDiagnosticsSummary(t *testing.T) {
 			err := RenderDiagnosticsSummary(ctx, writer, tc.bundle)
 			require.NoError(t, err)
 
-			// Remove color codes from output for testing
-			output := writer.String()
-			assert.Contains(t, output, tc.expectedSummary)
+			assert.Equal(t, tc.expectedSummary, writer.String())
 		})
 	}
 }
