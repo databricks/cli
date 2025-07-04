@@ -1,5 +1,26 @@
 
->>> errcode [CLI] bundle deploy
+>>> [CLI] bundle validate
+Name: deploy-lakebase-single-instance
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-single-instance/default
+
+Validation OK!
+
+>>> [CLI] bundle summary
+Name: deploy-lakebase-single-instance
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-single-instance/default
+Resources:
+  Database instances:
+    my_database:
+      Name: test-database-instance
+      URL:  (not deployed)
+
+>>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-single-instance/default/files...
 Deploying resources...
 Updating deployment state...
@@ -7,6 +28,40 @@ Deployment complete!
 
 >>> [CLI] database get-database-instance test-database-instance
 {
+  "capacity":"CU_1",
+  "creation_time":"[TIMESTAMP]Z",
+  "creator":"[USERNAME]",
+  "effective_stopped":false,
   "name":"test-database-instance",
+  "pg_version":"PG_VERSION_16",
+  "read_write_dns":"instance-[UUID].database.cloud.databricks.com",
+  "state":"STARTING",
+  "uid":"[UUID]"
+}
+
+>>> [CLI] bundle summary
+Name: deploy-lakebase-single-instance
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-single-instance/default
+Resources:
+  Database instances:
+    my_database:
+      Name: test-database-instance
+      URL:  (not deployed)
+
+>>> [CLI] database delete-database-instance test-database-instance --purge=true
+
+>>> [CLI] database get-database-instance test-database-instance
+{
+  "capacity":"CU_1",
+  "creation_time":"[TIMESTAMP]Z",
+  "creator":"[USERNAME]",
+  "effective_stopped":false,
+  "name":"test-database-instance",
+  "pg_version":"PG_VERSION_16",
+  "read_write_dns":"instance-[UUID].database.cloud.databricks.com",
+  "state":"DELETING",
   "uid":"[UUID]"
 }
