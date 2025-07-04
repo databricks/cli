@@ -221,6 +221,7 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 		if !mutateDiags.HasError() {
 			panic("mutateDiags has no error, but error is expected")
 		}
+
 		return mutateDiags
 	} else {
 		mutateDiags = mutateDiags.Extend(diag.FromErr(err))
