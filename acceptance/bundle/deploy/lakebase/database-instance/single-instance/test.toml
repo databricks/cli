@@ -1,4 +1,4 @@
 Local = true
-Cloud = false
+Cloud = true
 
-RecordRequests = true
+RecordRequests = false

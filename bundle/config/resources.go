@@ -58,6 +58,10 @@ func collectResourceMap[T ConfigResource](
 	description resources.ResourceDescription,
 	input map[string]T,
 ) ResourceGroup {
+	if description.PluralName == "" {
+		panic("description of a resource group cannot be empty")
+	}
+
 	r := make(map[string]ConfigResource)
 	for key, resource := range input {
 		r[key] = resource
@@ -194,5 +198,6 @@ func SupportedResources() map[string]resources.ResourceDescription {
 		"volumes":                 (&resources.Volume{}).ResourceDescription(),
 		"apps":                    (&resources.App{}).ResourceDescription(),
 		"secret_scopes":           (&resources.SecretScope{}).ResourceDescription(),
+		"database_instances":      (&resources.DatabaseInstance{}).ResourceDescription(),
 	}
 }
