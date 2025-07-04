@@ -1,0 +1,40 @@
+
+>>> envsubst
+
+>>> [CLI] schemas create schema-[UNIQUE_NAME] main
+{
+  "browse_only": false,
+  "catalog_name": "main",
+  "catalog_type": "MANAGED_CATALOG",
+  "created_at": [UNIX_TIME_MILLIS],
+  "created_by": "[USERNAME]",
+  "effective_predictive_optimization_flag": {
+    "inherited_from_type": "METASTORE",
+    "value": "DISABLE"
+  },
+  "enable_predictive_optimization": "INHERIT",
+  "full_name": "main.schema-[UNIQUE_NAME]",
+  "metastore_id": "[UUID]",
+  "name": "schema-[UNIQUE_NAME]",
+  "owner": "[USERNAME]",
+  "schema_id": "[UUID]",
+  "updated_at": [UNIX_TIME_MILLIS],
+  "updated_by": "[USERNAME]"
+}
+
+>>> musterr [CLI] bundle deploy
+Error: volume main.schema-[UNIQUE_NAME].my_volume does not exist
+  at workspace.artifact_path
+     resources.volumes.foo
+  in databricks.yml:6:18
+     databricks.yml:11:7
+
+You are using a volume in your artifact_path that is managed by
+this bundle but which has not been deployed yet. Please first deploy
+the volume using 'bundle deploy' and then switch over to using it in
+the artifact_path.
+
+
+Exit code (musterr): 1
+
+>>> [CLI] schemas delete main.schema-[UNIQUE_NAME]
