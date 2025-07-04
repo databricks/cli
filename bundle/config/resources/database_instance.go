@@ -3,12 +3,14 @@ package resources
 import (
 	"context"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/service/database"
 	"net/url"
 )
 
 type DatabaseInstance struct {
-	// A unique name to identify the database instance.
-	Name string `json:"name"`
+	URL string `json:"url,omitempty" bundle:"internal"`
+
+	database.DatabaseInstance
 }
 
 func (d DatabaseInstance) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {
@@ -17,8 +19,12 @@ func (d DatabaseInstance) Exists(ctx context.Context, w *databricks.WorkspaceCli
 }
 
 func (d DatabaseInstance) ResourceDescription() ResourceDescription {
-	//TODO implement me
-	panic("implement me: ResourceDescription")
+	return ResourceDescription{
+		SingularName:  "database instance",
+		PluralName:    "database instances",
+		SingularTitle: "Database instance",
+		PluralTitle:   "Database instances",
+	}
 }
 
 func (d DatabaseInstance) GetName() string {
@@ -26,11 +32,13 @@ func (d DatabaseInstance) GetName() string {
 }
 
 func (d DatabaseInstance) GetURL() string {
-	//TODO implement me
-	panic("implement me: GetURL")
+	return d.URL
 }
 
 func (d DatabaseInstance) InitializeURL(baseURL url.URL) {
-	//TODO implement me
-	panic("implement me: InitializeURL")
+	if d.Name == "" {
+		return
+	}
+	baseURL.Path = "compute/database-instances/" + d.Name
+	d.URL = baseURL.String()
 }
