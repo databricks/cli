@@ -84,7 +84,7 @@ func TestPatternTrie_SearchPath(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			trie := dyn.NewPatternTrie()
+			trie := &dyn.TrieNode{}
 			pattern := dyn.MustPatternFromString(tt.pattern)
 
 			// None of the expected paths should match yet.
@@ -115,7 +115,7 @@ func TestPatternTrie_SearchPath(t *testing.T) {
 }
 
 func TestPatternTrie_MultiplePatterns(t *testing.T) {
-	trie := dyn.NewPatternTrie()
+	trie := &dyn.TrieNode{}
 
 	patterns := []string{
 		"foo.bar",
@@ -158,7 +158,7 @@ func TestPatternTrie_MultiplePatterns(t *testing.T) {
 }
 
 func TestPatternTrie_OverlappingPatterns(t *testing.T) {
-	trie := dyn.NewPatternTrie()
+	trie := &dyn.TrieNode{}
 
 	// Insert overlapping patterns
 	patterns := []string{
@@ -185,7 +185,7 @@ func TestPatternTrie_OverlappingPatterns(t *testing.T) {
 }
 
 func TestPatternTrie_FixedIndexPatterns(t *testing.T) {
-	trie := dyn.NewPatternTrie()
+	trie := &dyn.TrieNode{}
 
 	err := trie.Insert(dyn.MustPatternFromString("foo[0]"))
 	assert.EqualError(t, err, "fixed index patterns are not supported: dyn.Pattern{dyn.pathComponent{key:\"foo\", index:0}, dyn.pathComponent{key:\"\", index:0}}")

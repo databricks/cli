@@ -23,34 +23,29 @@ import (
 // case because it's not expected to arise in practice where a field is either a map or an array,
 // but not both.
 type TrieNode struct {
-	// If set this indicates the trie node is an anyKey node.
+	// If set this indicates the trie node is an AnyKey node.
 	// Maps to the [AnyKey] component.
-	anyKey *TrieNode
+	AnyKey *TrieNode
 
-	// Indicates the trie node is an anyIndex node.
+	// Indicates the trie node is an AnyIndex node.
 	// Maps to the [AnyIndex] component.
-	anyIndex *TrieNode
+	AnyIndex *TrieNode
 
 	// Set of strings which this trie node matches.
 	// Maps to the [Key] component.
-	pathKey map[string]*TrieNode
+	PathKey map[string]*TrieNode
 
 	// Indicates if this node is the end of a pattern. Encountering a node
-	// with isEnd set to true in a trie means the pattern from the root to this
+	// with IsEnd set to true in a trie means the pattern from the root to this
 	// node is a complete pattern.
-	isEnd bool
-}
-
-// NewPatternTrie creates a new empty pattern trie.
-func NewPatternTrie() *TrieNode {
-	return &TrieNode{}
+	IsEnd bool
 }
 
 // Insert adds a pattern to the trie.
 func (t *TrieNode) Insert(pattern Pattern) error {
 	// Empty pattern represents the root.
 	if len(pattern) == 0 {
-		t.isEnd = true
+		t.IsEnd = true
 		return nil
 	}
 
@@ -60,26 +55,26 @@ func (t *TrieNode) Insert(pattern Pattern) error {
 		var next *TrieNode
 		switch c := component.(type) {
 		case anyKeyComponent:
-			if current.anyKey == nil {
-				current.anyKey = &TrieNode{}
+			if current.AnyKey == nil {
+				current.AnyKey = &TrieNode{}
 			}
-			next = current.anyKey
+			next = current.AnyKey
 
 		case anyIndexComponent:
-			if current.anyIndex == nil {
-				current.anyIndex = &TrieNode{}
+			if current.AnyIndex == nil {
+				current.AnyIndex = &TrieNode{}
 			}
-			next = current.anyIndex
+			next = current.AnyIndex
 
 		case pathComponent:
 			if key := c.Key(); key != "" {
-				if current.pathKey == nil {
-					current.pathKey = make(map[string]*TrieNode)
+				if current.PathKey == nil {
+					current.PathKey = make(map[string]*TrieNode)
 				}
-				if _, exists := current.pathKey[key]; !exists {
-					current.pathKey[key] = &TrieNode{}
+				if _, exists := current.PathKey[key]; !exists {
+					current.PathKey[key] = &TrieNode{}
 				}
-				next = current.pathKey[key]
+				next = current.PathKey[key]
 			} else {
 				return fmt.Errorf("fixed index patterns are not supported: %#v", pattern)
 			}
@@ -91,7 +86,7 @@ func (t *TrieNode) Insert(pattern Pattern) error {
 
 		// Mark as end of pattern if this is the last component.
 		if i == len(pattern)-1 {
-			next.isEnd = true
+			next.IsEnd = true
 		}
 
 		// Move to next node
@@ -134,21 +129,21 @@ func (t *TrieNode) searchPathRecursive(node *TrieNode, path Path, prefix Pattern
 	// is useful because users of this function can use it to check whether the root / empty pattern
 	// had been inserted into the trie.
 	if len(path) == 0 {
-		return nil, node.isEnd
+		return nil, node.IsEnd
 	}
 
 	// If we've reached the end of the path, check if this node is a valid end of a pattern.
 	isLast := index == len(path)
 	if isLast {
-		return prefix, node.isEnd
+		return prefix, node.IsEnd
 	}
 
 	currentComponent := path[index]
 
 	// First check if the key wildcard is set for the current index.
-	if currentComponent.isKey() && node.anyKey != nil {
+	if currentComponent.isKey() && node.AnyKey != nil {
 		prefix[index] = AnyKey()
-		pattern, ok := t.searchPathRecursive(node.anyKey, path, prefix, index+1)
+		pattern, ok := t.searchPathRecursive(node.AnyKey, path, prefix, index+1)
 		if ok {
 			return pattern, true
 		}
@@ -156,7 +151,7 @@ func (t *TrieNode) searchPathRecursive(node *TrieNode, path Path, prefix Pattern
 
 	// If no key wildcard is set, check if the key is an exact match.
 	if currentComponent.isKey() {
-		child, exists := node.pathKey[currentComponent.Key()]
+		child, exists := node.PathKey[currentComponent.Key()]
 		if !exists {
 			return nil, false
 		}
@@ -164,9 +159,9 @@ func (t *TrieNode) searchPathRecursive(node *TrieNode, path Path, prefix Pattern
 		return t.searchPathRecursive(child, path, prefix, index+1)
 	}
 
-	if currentComponent.isIndex() && node.anyIndex != nil {
+	if currentComponent.isIndex() && node.AnyIndex != nil {
 		prefix[index] = AnyIndex()
-		pattern, ok := t.searchPathRecursive(node.anyIndex, path, prefix, index+1)
+		pattern, ok := t.searchPathRecursive(node.AnyIndex, path, prefix, index+1)
 		if ok {
 			return pattern, true
 		}
