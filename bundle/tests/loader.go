@@ -20,7 +20,7 @@ func load(t *testing.T, path string) *bundle.Bundle {
 	b, err := bundle.Load(ctx, path)
 	require.NoError(t, err)
 	phases.Load(ctx, b)
-	diags := diag.Diagnostics(logdiag.FlushCollected(ctx))
+	diags := logdiag.FlushCollected(ctx)
 	require.NoError(t, diags.Error())
 	return b
 }
@@ -40,7 +40,7 @@ func loadTargetWithDiags(path, env string) (*bundle.Bundle, diag.Diagnostics) {
 	}
 
 	phases.LoadNamedTarget(ctx, b, env)
-	diags := diag.Diagnostics(logdiag.FlushCollected(ctx))
+	diags := logdiag.FlushCollected(ctx)
 
 	diags = diags.Extend(bundle.ApplySeq(ctx, b,
 		mutator.RewriteSyncPaths(),
