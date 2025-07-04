@@ -4,15 +4,12 @@ import (
 	"fmt"
 )
 
-// PatternTrie is a trie data structure for storing and querying patterns.
+// TrieNode is a trie data structure for storing and querying patterns.
 // It supports both exact matches and wildcard matches. You can insert [Pattern]s
 // into the trie and then query it to see if a given [Path] matches any of the
 // patterns.
-type PatternTrie struct {
-	root *trieNode
-}
-
-// trieNode represents a node in the pattern trie.
+//
+// TrieNode represents a node in the pattern trie.
 // Each node in the array represents one or more of:
 // 1. An [AnyKey] component. This is the "*" wildcard which matches any map key.
 // 2. An [AnyIndex] component. This is the "[*]" wildcard which matches any array index.
@@ -25,18 +22,18 @@ type PatternTrie struct {
 // is not supported by the [PatternTrie.SearchPath] method. We don't perform validation for this
 // case because it's not expected to arise in practice where a field is either a map or an array,
 // but not both.
-type trieNode struct {
+type TrieNode struct {
 	// If set this indicates the trie node is an anyKey node.
 	// Maps to the [AnyKey] component.
-	anyKey *trieNode
+	anyKey *TrieNode
 
 	// Indicates the trie node is an anyIndex node.
 	// Maps to the [AnyIndex] component.
-	anyIndex *trieNode
+	anyIndex *TrieNode
 
 	// Set of strings which this trie node matches.
 	// Maps to the [Key] component.
-	pathKey map[string]*trieNode
+	pathKey map[string]*TrieNode
 
 	// Indicates if this node is the end of a pattern. Encountering a node
 	// with isEnd set to true in a trie means the pattern from the root to this
@@ -45,44 +42,42 @@ type trieNode struct {
 }
 
 // NewPatternTrie creates a new empty pattern trie.
-func NewPatternTrie() *PatternTrie {
-	return &PatternTrie{
-		root: &trieNode{},
-	}
+func NewPatternTrie() *TrieNode {
+	return &TrieNode{}
 }
 
 // Insert adds a pattern to the trie.
-func (t *PatternTrie) Insert(pattern Pattern) error {
+func (t *TrieNode) Insert(pattern Pattern) error {
 	// Empty pattern represents the root.
 	if len(pattern) == 0 {
-		t.root.isEnd = true
+		t.isEnd = true
 		return nil
 	}
 
-	current := t.root
+	current := t
 	for i, component := range pattern {
 		// Create next node based on component type
-		var next *trieNode
+		var next *TrieNode
 		switch c := component.(type) {
 		case anyKeyComponent:
 			if current.anyKey == nil {
-				current.anyKey = &trieNode{}
+				current.anyKey = &TrieNode{}
 			}
 			next = current.anyKey
 
 		case anyIndexComponent:
 			if current.anyIndex == nil {
-				current.anyIndex = &trieNode{}
+				current.anyIndex = &TrieNode{}
 			}
 			next = current.anyIndex
 
 		case pathComponent:
 			if key := c.Key(); key != "" {
 				if current.pathKey == nil {
-					current.pathKey = make(map[string]*trieNode)
+					current.pathKey = make(map[string]*TrieNode)
 				}
 				if _, exists := current.pathKey[key]; !exists {
-					current.pathKey[key] = &trieNode{}
+					current.pathKey[key] = &TrieNode{}
 				}
 				next = current.pathKey[key]
 			} else {
@@ -108,12 +103,12 @@ func (t *PatternTrie) Insert(pattern Pattern) error {
 
 // SearchPath checks if the given path matches any pattern in the trie.
 // A path matches if it exactly matches a pattern or if it matches a pattern with wildcards.
-func (t *PatternTrie) SearchPath(path Path) (Pattern, bool) {
+func (t *TrieNode) SearchPath(path Path) (Pattern, bool) {
 	// We pre-allocate the prefix array that is used to track the current
 	// prefix accumulated while walking the prefix tree. Pre-allocating
 	// ensures that we do not allocate memory on every recursive call.
 	prefix := make(Pattern, len(path))
-	pattern, ok := t.searchPathRecursive(t.root, path, prefix, 0)
+	pattern, ok := t.searchPathRecursive(t, path, prefix, 0)
 	return pattern, ok
 }
 
@@ -126,7 +121,7 @@ func (t *PatternTrie) SearchPath(path Path) (Pattern, bool) {
 //
 // Note we always expect the path and prefix to be the same length because wildcards like * and [*]
 // only match a single path component.
-func (t *PatternTrie) searchPathRecursive(node *trieNode, path Path, prefix Pattern, index int) (Pattern, bool) {
+func (t *TrieNode) searchPathRecursive(node *TrieNode, path Path, prefix Pattern, index int) (Pattern, bool) {
 	if node == nil {
 		return nil, false
 	}
