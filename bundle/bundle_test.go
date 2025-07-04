@@ -111,7 +111,7 @@ func TestBundleMustLoadFailureWithEnv(t *testing.T) {
 	t.Setenv(env.RootVariable, "./tests/doesntexist")
 	b, diags := mustLoad(t)
 	require.Nil(t, b)
-	require.NotEmpty(t, diags, "expected diagnostics")
+	require.Len(t, diags, 1, "expected diagnostics")
 	assert.Contains(t, diags[0].Summary, "invalid bundle root")
 }
 
@@ -119,7 +119,7 @@ func TestBundleMustLoadFailureIfNotFound(t *testing.T) {
 	testutil.Chdir(t, t.TempDir())
 	b, diags := mustLoad(t)
 	require.Nil(t, b)
-	require.NotEmpty(t, diags, "expected diagnostics")
+	require.Len(t, diags, 1, "expected diagnostics")
 	assert.Contains(t, diags[0].Summary, "unable to locate bundle root")
 }
 
@@ -135,7 +135,7 @@ func TestBundleTryLoadFailureWithEnv(t *testing.T) {
 	t.Setenv(env.RootVariable, "./tests/doesntexist")
 	b, diags := tryLoad(t)
 	require.Nil(t, b)
-	require.NotEmpty(t, diags, "expected diagnostics")
+	require.Len(t, diags, 1, "expected diagnostics")
 	assert.Contains(t, diags[0].Summary, "invalid bundle root")
 }
 
