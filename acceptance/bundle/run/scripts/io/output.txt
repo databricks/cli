@@ -1,0 +1,9 @@
+
+>>> [CLI] bundle run stdin
+abc
+
+>>> [CLI] bundle run stdout
+hello from stdout
+
+>>> [CLI] bundle run stderr
+hello from stderr

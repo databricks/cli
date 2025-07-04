@@ -19,6 +19,11 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
+type Script struct {
+	// Content of the script to be executed.
+	Content string `json:"content"`
+}
+
 type Root struct {
 	value dyn.Value
 	depth int
@@ -74,6 +79,8 @@ type Root struct {
 	// Locations is an output-only field that holds configuration location
 	// information for every path in the configuration tree.
 	Locations *dynloc.Locations `json:"__locations,omitempty" bundle:"internal"`
+
+	Scripts map[string]Script `json:"scripts,omitempty"`
 }
 
 // Load loads the bundle configuration file at the specified path.
