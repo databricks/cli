@@ -12,8 +12,7 @@ import (
 	"github.com/databricks/cli/bundle/run"
 	"github.com/databricks/cli/bundle/run/output"
 	"github.com/databricks/cli/bundle/statemgmt"
-	bundleutils "github.com/databricks/cli/cmd/bundle/utils"
-	pipelinerun "github.com/databricks/cli/cmd/pipelines/run"
+	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdgroup"
 	"github.com/databricks/cli/libs/flags"
@@ -29,11 +28,16 @@ func runCommand() *cobra.Command {
 The KEY is the unique identifier of the pipeline to run.`,
 	}
 
-	var pipelineOptions pipelinerun.PipelineOptions
+	var refreshAll bool
+	var refresh []string
+	var fullRefreshAll bool
+	var fullRefresh []string
 
-	// Define pipeline flags using our custom PipelineOptions
 	pipelineGroup := cmdgroup.NewFlagGroup("Pipeline Run")
-	pipelineOptions.Define(pipelineGroup.FlagSet())
+	pipelineGroup.FlagSet().BoolVar(&refreshAll, "refresh-all", false, "Perform a full graph run.")
+	pipelineGroup.FlagSet().StringSliceVar(&refresh, "refresh", nil, "List of tables to run.")
+	pipelineGroup.FlagSet().BoolVar(&fullRefreshAll, "full-refresh-all", false, "Perform a full graph reset and recompute.")
+	pipelineGroup.FlagSet().StringSliceVar(&fullRefresh, "full-refresh", nil, "List of tables to reset and recompute.")
 
 	wrappedCmd := cmdgroup.NewCommandWithGroupFlag(cmd)
 	wrappedCmd.AddFlagGroup(pipelineGroup)
@@ -45,7 +49,7 @@ The KEY is the unique identifier of the pipeline to run.`,
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		b, diags := bundleutils.ConfigureBundleWithVariables(cmd)
+		b, diags := utils.ConfigureBundleWithVariables(cmd)
 		if diags.HasError() {
 			return renderDiagnostics(cmd.OutOrStdout(), b, diags)
 		}
@@ -55,7 +59,7 @@ The KEY is the unique identifier of the pipeline to run.`,
 			return renderDiagnostics(cmd.OutOrStdout(), b, diags)
 		}
 
-		key, args, err := resolveRunArgument(ctx, b, args)
+		key, _, err := resolveRunArgument(ctx, b, args)
 		if err != nil {
 			return err
 		}
@@ -83,25 +87,16 @@ The KEY is the unique identifier of the pipeline to run.`,
 			return err
 		}
 
-		// Create run options with our custom pipeline options
 		runOptions := run.Options{
 			Pipeline: run.PipelineOptions{
-				RefreshAll:     pipelineOptions.RefreshAll,
-				Refresh:        pipelineOptions.Refresh,
-				FullRefreshAll: pipelineOptions.FullRefreshAll,
-				FullRefresh:    pipelineOptions.FullRefresh,
-				ValidateOnly:   false, // Always false for pipeline run
+				RefreshAll:     refreshAll,
+				Refresh:        refresh,
+				FullRefreshAll: fullRefreshAll,
+				FullRefresh:    fullRefresh,
 			},
 			NoWait: noWait,
 		}
 
-		// Parse additional positional arguments.
-		err = runner.ParseArgs(args, &runOptions)
-		if err != nil {
-			return err
-		}
-
-		runOptions.NoWait = noWait
 		var output output.RunOutput
 		if restart {
 			output, err = runner.Restart(ctx, &runOptions)

@@ -8,3 +8,5 @@ Deployment complete!
 === test --no-wait flag
 >>> [PIPELINES] run my_pipeline --no-wait
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
+
+<EOL>

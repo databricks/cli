@@ -23,3 +23,5 @@ Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 === test --full-refresh flag with specific tables
 >>> [PIPELINES] run my_pipeline --full-refresh table1,table2
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
+
+<EOL>
