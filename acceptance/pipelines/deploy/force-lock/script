@@ -1,3 +1,0 @@
-trace $PIPELINES deploy
-trace errcode $PIPELINES deploy
-trace $PIPELINES deploy --force-lock

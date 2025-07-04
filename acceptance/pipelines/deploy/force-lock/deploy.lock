@@ -1,6 +1,0 @@
-{
-  "ID": "test-lock-id-12345",
-  "AcquisitionTime": "2024-01-15T10:30:00Z",
-  "IsForced": false,
-  "User": "test-user@databricks.com"
-}
