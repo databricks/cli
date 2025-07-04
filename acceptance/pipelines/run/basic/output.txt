@@ -6,7 +6,8 @@ Updating deployment state...
 Deployment complete!
 
 === run pipeline
->>> [PIPELINES] run my_pipeline
-Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
+>>> errcode [PIPELINES] run my_pipeline
+Error: No stub found for pattern: POST /api/2.0/pipelines/[UUID]/updates
 
+Exit code: 1
 <EOL>

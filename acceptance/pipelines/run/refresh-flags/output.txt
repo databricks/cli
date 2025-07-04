@@ -6,22 +6,26 @@ Updating deployment state...
 Deployment complete!
 
 === test --refresh-all flag
->>> [PIPELINES] run my_pipeline --refresh-all
-Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
+>>> errcode [PIPELINES] run my_pipeline --refresh-all
+Error: No stub found for pattern: POST /api/2.0/pipelines/[UUID]/updates
 
+Exit code: 1
 
 === test --refresh flag with specific tables
->>> [PIPELINES] run my_pipeline --refresh table1,table2
-Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
+>>> errcode [PIPELINES] run my_pipeline --refresh table1,table2
+Error: No stub found for pattern: POST /api/2.0/pipelines/[UUID]/updates
 
+Exit code: 1
 
 === test --full-refresh-all flag
->>> [PIPELINES] run my_pipeline --full-refresh-all
-Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
+>>> errcode [PIPELINES] run my_pipeline --full-refresh-all
+Error: No stub found for pattern: POST /api/2.0/pipelines/[UUID]/updates
 
+Exit code: 1
 
 === test --full-refresh flag with specific tables
->>> [PIPELINES] run my_pipeline --full-refresh table1,table2
-Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
+>>> errcode [PIPELINES] run my_pipeline --full-refresh table1,table2
+Error: No stub found for pattern: POST /api/2.0/pipelines/[UUID]/updates
 
+Exit code: 1
 <EOL>
