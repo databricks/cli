@@ -9,10 +9,12 @@ import (
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/phases"
+	"github.com/databricks/cli/bundle/render"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/spf13/cobra"
 )
 
@@ -31,7 +33,37 @@ func newSummaryCommand() *cobra.Command {
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		b, diags := prepareBundleForSummary(cmd, forcePull, includeLocations)
-		return renderBundle(cmd, b, diags, true)
+		var err error
+
+		if root.OutputType(cmd) == flags.OutputText {
+			err = render.RenderDiagnostics(cmd.OutOrStdout(), b, diags, render.RenderOptions{RenderSummaryTable: false})
+		} else {
+			err = render.RenderDiagnostics(cmd.OutOrStderr(), b, diags, render.RenderOptions{RenderSummaryTable: false})
+		}
+		if err != nil {
+			return err
+		}
+
+		if b != nil {
+			if root.OutputType(cmd) == flags.OutputText {
+				err = render.RenderSummary(cmd.Context(), cmd.OutOrStdout(), b)
+				if err != nil {
+					return err
+				}
+			}
+			if root.OutputType(cmd) == flags.OutputJSON {
+				err = renderJsonOutput(cmd, b)
+				if err != nil {
+					return err
+				}
+			}
+		}
+
+		if diags.HasError() {
+			return root.ErrAlreadyPrinted
+		}
+
+		return nil
 	}
 
 	return cmd
