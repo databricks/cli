@@ -199,22 +199,7 @@ func New() *cobra.Command {
 		var opts *sync.SyncOptions
 		var err error
 
-		//
-		// To be uncommented and used once our VS Code extension is bundle aware.
-		// Until then, this could interfere with extension usage where a `databricks.yml` file is present.
-		// See https://github.com/databricks/cli/pull/207.
-		//
-		// b := bundle.GetOrNil(cmd.Context())
-		// if b != nil {
-		// 	// Run initialize phase to make sure paths are set.
-		// 	err = bundle.Apply(cmd.Context(), b, phases.Initialize())
-		// 	if err != nil {
-		// 		return err
-		// 	}
-		// 	opts, err = syncOptionsFromBundle(cmd, args, b)
-		// } else {
 		opts, err = f.syncOptionsFromArgs(cmd, args)
-		// }
 		if err != nil {
 			return err
 		}
