@@ -1,9 +1,0 @@
-Local = true
-Cloud = false
-
-[GOOS]
-  windows = false
-
-[EnvMatrix]
-  DATABRICKS_CLI_DEPLOYMENT = ["terraform", "direct-exp"]
-

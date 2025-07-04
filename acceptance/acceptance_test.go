@@ -74,7 +74,7 @@ const (
 	// Filename to save replacements to (used by diff.py)
 	ReplsFile = "repls.json"
 	// Filename for materialized config (used as golden file)
-	MaterializedConfigFile = "out.config.json"
+	MaterializedConfigFile = "out.test.toml"
 
 	// ENVFILTER allows filtering subtests matching certain env var.
 	// e.g. ENVFILTER=SERVERLESS=yes will run all tests that run SERVERLESS to "yes"

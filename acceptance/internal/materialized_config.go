@@ -6,7 +6,7 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
-const MaterializedConfigFile = "out.config.toml"
+const MaterializedConfigFile = "out.test.toml"
 
 type MaterializedConfig struct {
 	GOOS                 map[string]bool     `toml:"GOOS,omitempty"`
@@ -43,5 +43,5 @@ func GenerateMaterializedConfig(config TestConfig) (string, error) {
 	}
 
 	// Add newline at the end of the TOML
-	return buf.String() + "\n", nil
+	return buf.String(), nil
 }
