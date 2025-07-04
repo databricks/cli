@@ -78,7 +78,7 @@ func pluralize(n int, singular, plural string) string {
 }
 
 func buildTrailer(ctx context.Context) string {
-	info := logdiag.GetContext(ctx)
+	info := logdiag.Copy(ctx)
 	var parts []string
 	if info.Errors > 0 {
 		parts = append(parts, color.RedString(pluralize(info.Errors, "error", "errors")))
