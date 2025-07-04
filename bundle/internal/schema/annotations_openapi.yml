@@ -98,28 +98,7 @@ github.com/databricks/cli/bundle/config/resources.Cluster:
       - Currently, Databricks allows at most 45 custom tags
 
       - Clusters can only reuse cloud resources if the resources' tags are a subset of the cluster tags
-  "data_security_mode":
-    "description": |-
-      Data security mode decides what data governance model to use when accessing data
-      from a cluster.
-
-      The following modes can only be used when `kind = CLASSIC_PREVIEW`.
-      * `DATA_SECURITY_MODE_AUTO`: Databricks will choose the most appropriate access mode depending on your compute configuration.
-      * `DATA_SECURITY_MODE_STANDARD`: Alias for `USER_ISOLATION`.
-      * `DATA_SECURITY_MODE_DEDICATED`: Alias for `SINGLE_USER`.
-
-      The following modes can be used regardless of `kind`.
-      * `NONE`: No security isolation for multiple users sharing the cluster. Data governance features are not available in this mode.
-      * `SINGLE_USER`: A secure cluster that can only be exclusively used by a single user specified in `single_user_name`. Most programming languages, cluster features and data governance features are available in this mode.
-      * `USER_ISOLATION`: A secure cluster that can be shared by multiple users. Cluster users are fully isolated so that they cannot see each other's data and credentials. Most data governance features are supported in this mode. But programming languages and cluster features might be limited.
-
-      The following modes are deprecated starting with Databricks Runtime 15.0 and
-      will be removed for future Databricks Runtime versions:
-
-      * `LEGACY_TABLE_ACL`: This mode is for users migrating from legacy Table ACL clusters.
-      * `LEGACY_PASSTHROUGH`: This mode is for users migrating from legacy Passthrough on high concurrency clusters.
-      * `LEGACY_SINGLE_USER`: This mode is for users migrating from legacy Passthrough on standard clusters.
-      * `LEGACY_SINGLE_USER_STANDARD`: This mode provides a way that doesn’t have UC nor passthrough enabled.
+  "data_security_mode": {}
   "docker_image":
     "description": |-
       Custom docker image BYOC
@@ -161,18 +140,7 @@ github.com/databricks/cli/bundle/config/resources.Cluster:
       This field can only be used when `kind = CLASSIC_PREVIEW`.
 
       When set to true, Databricks will automatically set single node related `custom_tags`, `spark_conf`, and `num_workers`
-  "kind":
-    "description": |-
-      The kind of compute described by this compute specification.
-
-      Depending on `kind`, different validations and default values will be applied.
-
-      Clusters with `kind = CLASSIC_PREVIEW` support the following fields, whereas clusters with no specified `kind` do not.
-      * [is_single_node](/api/workspace/clusters/create#is_single_node)
-      * [use_ml_runtime](/api/workspace/clusters/create#use_ml_runtime)
-      * [data_security_mode](/api/workspace/clusters/create#data_security_mode) set to `DATA_SECURITY_MODE_AUTO`, `DATA_SECURITY_MODE_DEDICATED`, or `DATA_SECURITY_MODE_STANDARD`
-
-      By using the [simple form](https://docs.databricks.com/compute/simple-form.html), your clusters are automatically using `kind = CLASSIC_PREVIEW`.
+  "kind": {}
   "node_type_id":
     "description": |-
       This field encodes, through a single value, the resources available to each of
@@ -243,52 +211,7 @@ github.com/databricks/cli/bundle/config/resources.Cluster:
       This field can only be used when `kind = CLASSIC_PREVIEW`.
 
       `effective_spark_version` is determined by `spark_version` (DBR release), this field `use_ml_runtime`, and whether `node_type_id` is gpu node or not.
-  "workload_type":
-    "description": |-
-      Cluster Attributes showing for clusters workload types.
-github.com/databricks/cli/bundle/config/resources.Dashboard:
-  "create_time":
-    "description": |-
-      The timestamp of when the dashboard was created.
-  "dashboard_id":
-    "description": |-
-      UUID identifying the dashboard.
-  "display_name":
-    "description": |-
-      The display name of the dashboard.
-  "etag":
-    "description": |-
-      The etag for the dashboard. Can be optionally provided on updates to ensure that the dashboard
-      has not been modified since the last read.
-      This field is excluded in List Dashboards responses.
-  "lifecycle_state":
-    "description": |-
-      The state of the dashboard resource. Used for tracking trashed status.
-  "parent_path":
-    "description": |-
-      The workspace path of the folder containing the dashboard. Includes leading slash and no
-      trailing slash.
-      This field is excluded in List Dashboards responses.
-  "path":
-    "description": |-
-      The workspace path of the dashboard asset, including the file name.
-      Exported dashboards always have the file extension `.lvdash.json`.
-      This field is excluded in List Dashboards responses.
-  "serialized_dashboard":
-    "description": |-
-      The contents of the dashboard in serialized string form.
-      This field is excluded in List Dashboards responses.
-      Use the [get dashboard API](https://docs.databricks.com/api/workspace/lakeview/get)
-      to retrieve an example response, which includes the `serialized_dashboard` field.
-      This field provides the structure of the JSON string that represents the dashboard's
-      layout and components.
-  "update_time":
-    "description": |-
-      The timestamp of when the dashboard was last updated by the user.
-      This field is excluded in List Dashboards responses.
-  "warehouse_id":
-    "description": |-
-      The warehouse ID used to run the dashboard.
+  "workload_type": {}
 github.com/databricks/cli/bundle/config/resources.Job:
   "budget_policy_id":
     "description": |-
@@ -331,9 +254,7 @@ github.com/databricks/cli/bundle/config/resources.Job:
       If `git_source` is set, these tasks retrieve the file from the remote repository by default. However, this behavior can be overridden by setting `source` to `WORKSPACE` on the task.
 
       Note: dbt and SQL File tasks support only version-controlled sources. If dbt or SQL File tasks are used, `git_source` must be defined on the job.
-  "health":
-    "description": |-
-      An optional set of health rules that can be defined for this job.
+  "health": {}
   "job_clusters":
     "description": |-
       A list of job cluster specifications that can be shared and reused by tasks of this job. Libraries cannot be declared in a shared job cluster. You must declare dependent libraries in task settings.
@@ -363,11 +284,7 @@ github.com/databricks/cli/bundle/config/resources.Job:
   "queue":
     "description": |-
       The queue settings of the job.
-  "run_as":
-    "description": |-
-      Write-only setting. Specifies the user or service principal that the job runs as. If not specified, the job runs as the user who created the job.
-
-      Either `user_name` or `service_principal_name` should be specified. If not, an error is thrown.
+  "run_as": {}
   "schedule":
     "description": |-
       An optional periodic schedule for this job. The default behavior is that the job only runs when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.
@@ -530,10 +447,6 @@ github.com/databricks/cli/bundle/config/resources.Pipeline:
     "x-databricks-preview": |-
       PRIVATE
   "run_as":
-    "description": |-
-      Write-only setting, available only in Create/Update calls. Specifies the user or service principal that the pipeline runs as. If not specified, the pipeline runs as the user who created the pipeline.
-
-      Only `user_name` or `service_principal_name` can be specified. If both are specified, an error is thrown.
     "x-databricks-preview": |-
       PRIVATE
   "schema":
@@ -641,6 +554,89 @@ github.com/databricks/cli/bundle/config/resources.Schema:
   "storage_root":
     "description": |-
       Storage root URL for managed tables within schema.
+github.com/databricks/cli/bundle/config/resources.SqlWarehouse:
+  "auto_stop_mins":
+    "description": |-
+      The amount of time in minutes that a SQL warehouse must be idle (i.e., no RUNNING queries) before
+      it is automatically stopped.
+
+      Supported values:
+        - Must be >= 0 mins for serverless warehouses
+        - Must be == 0 or >= 10 mins for non-serverless warehouses
+       - 0 indicates no autostop.
+
+      Defaults to 120 mins
+  "channel":
+    "description": |-
+      Channel Details
+  "cluster_size":
+    "description": |
+      Size of the clusters allocated for this warehouse.
+      Increasing the size of a spark cluster allows you to run larger queries on it.
+      If you want to increase the number of concurrent queries, please tune max_num_clusters.
+
+      Supported values:
+        - 2X-Small
+        - X-Small
+        - Small
+        - Medium
+        - Large
+        - X-Large
+        - 2X-Large
+        - 3X-Large
+        - 4X-Large
+  "creator_name":
+    "description": |-
+      warehouse creator name
+  "enable_photon":
+    "description": |-
+      Configures whether the warehouse should use Photon optimized clusters.
+
+      Defaults to false.
+  "enable_serverless_compute":
+    "description": |-
+      Configures whether the warehouse should use serverless compute
+  "instance_profile_arn":
+    "description": |-
+      Deprecated. Instance profile used to pass IAM role to the cluster
+    "deprecation_message": |-
+      This field is deprecated
+  "max_num_clusters":
+    "description": |-
+      Maximum number of clusters that the autoscaler will create to handle concurrent queries.
+
+      Supported values:
+        - Must be >= min_num_clusters
+        - Must be <= 30.
+
+      Defaults to min_clusters if unset.
+  "min_num_clusters":
+    "description": |-
+      Minimum number of available clusters that will be maintained for this SQL warehouse.
+      Increasing this will ensure that a larger number of clusters are always running and therefore may reduce
+      the cold start time for new queries. This is similar to reserved vs. revocable cores in a resource manager.
+
+      Supported values:
+        - Must be > 0
+        - Must be <= min(max_num_clusters, 30)
+
+      Defaults to 1
+  "name":
+    "description": |-
+      Logical name for the cluster.
+
+      Supported values:
+        - Must be unique within an org.
+        - Must be less than 100 characters.
+  "spot_instance_policy": {}
+  "tags":
+    "description": |-
+      A set of key-value pairs that will be tagged on all resources (e.g., AWS instances and EBS volumes) associated
+      with this SQL warehouse.
+
+      Supported values:
+        - Number of tags < 45.
+  "warehouse_type": {}
 github.com/databricks/cli/bundle/config/resources.Volume:
   "catalog_name":
     "description": |-
@@ -657,9 +653,7 @@ github.com/databricks/cli/bundle/config/resources.Volume:
   "storage_location":
     "description": |-
       The storage location on the cloud
-  "volume_type":
-    "description": |-
-      The type of the volume. An external volume is located in the specified external location. A managed volume is located in the default location which is specified by the parent schema, or the parent catalog, or the Metastore. [Learn more](https://docs.databricks.com/aws/en/volumes/managed-vs-external)
+  "volume_type": {}
 github.com/databricks/databricks-sdk-go/service/apps.AppDeployment:
   "create_time":
     "description": |-
@@ -1018,11 +1012,7 @@ github.com/databricks/databricks-sdk-go/service/compute.AwsAttributes:
   "_":
     "description": |-
       Attributes set during cluster creation which are related to Amazon Web Services.
-  "availability":
-    "description": |-
-      Availability type used for all subsequent nodes past the `first_on_demand` ones.
-
-      Note: If `first_on_demand` is zero, this availability type will be used for the entire cluster.
+  "availability": {}
   "ebs_volume_count":
     "description": |-
       The number of volumes launched for each instance. Users can choose up to 10 volumes.
@@ -1217,28 +1207,7 @@ github.com/databricks/databricks-sdk-go/service/compute.ClusterSpec:
       - Currently, Databricks allows at most 45 custom tags
 
       - Clusters can only reuse cloud resources if the resources' tags are a subset of the cluster tags
-  "data_security_mode":
-    "description": |-
-      Data security mode decides what data governance model to use when accessing data
-      from a cluster.
-
-      The following modes can only be used when `kind = CLASSIC_PREVIEW`.
-      * `DATA_SECURITY_MODE_AUTO`: Databricks will choose the most appropriate access mode depending on your compute configuration.
-      * `DATA_SECURITY_MODE_STANDARD`: Alias for `USER_ISOLATION`.
-      * `DATA_SECURITY_MODE_DEDICATED`: Alias for `SINGLE_USER`.
-
-      The following modes can be used regardless of `kind`.
-      * `NONE`: No security isolation for multiple users sharing the cluster. Data governance features are not available in this mode.
-      * `SINGLE_USER`: A secure cluster that can only be exclusively used by a single user specified in `single_user_name`. Most programming languages, cluster features and data governance features are available in this mode.
-      * `USER_ISOLATION`: A secure cluster that can be shared by multiple users. Cluster users are fully isolated so that they cannot see each other's data and credentials. Most data governance features are supported in this mode. But programming languages and cluster features might be limited.
-
-      The following modes are deprecated starting with Databricks Runtime 15.0 and
-      will be removed for future Databricks Runtime versions:
-
-      * `LEGACY_TABLE_ACL`: This mode is for users migrating from legacy Table ACL clusters.
-      * `LEGACY_PASSTHROUGH`: This mode is for users migrating from legacy Passthrough on high concurrency clusters.
-      * `LEGACY_SINGLE_USER`: This mode is for users migrating from legacy Passthrough on standard clusters.
-      * `LEGACY_SINGLE_USER_STANDARD`: This mode provides a way that doesn’t have UC nor passthrough enabled.
+  "data_security_mode": {}
   "docker_image":
     "description": |-
       Custom docker image BYOC
@@ -1280,18 +1249,7 @@ github.com/databricks/databricks-sdk-go/service/compute.ClusterSpec:
       This field can only be used when `kind = CLASSIC_PREVIEW`.
 
       When set to true, Databricks will automatically set single node related `custom_tags`, `spark_conf`, and `num_workers`
-  "kind":
-    "description": |-
-      The kind of compute described by this compute specification.
-
-      Depending on `kind`, different validations and default values will be applied.
-
-      Clusters with `kind = CLASSIC_PREVIEW` support the following fields, whereas clusters with no specified `kind` do not.
-      * [is_single_node](/api/workspace/clusters/create#is_single_node)
-      * [use_ml_runtime](/api/workspace/clusters/create#use_ml_runtime)
-      * [data_security_mode](/api/workspace/clusters/create#data_security_mode) set to `DATA_SECURITY_MODE_AUTO`, `DATA_SECURITY_MODE_DEDICATED`, or `DATA_SECURITY_MODE_STANDARD`
-
-      By using the [simple form](https://docs.databricks.com/compute/simple-form.html), your clusters are automatically using `kind = CLASSIC_PREVIEW`.
+  "kind": {}
   "node_type_id":
     "description": |-
       This field encodes, through a single value, the resources available to each of
@@ -1362,9 +1320,7 @@ github.com/databricks/databricks-sdk-go/service/compute.ClusterSpec:
       This field can only be used when `kind = CLASSIC_PREVIEW`.
 
       `effective_spark_version` is determined by `spark_version` (DBR release), this field `use_ml_runtime`, and whether `node_type_id` is gpu node or not.
-  "workload_type":
-    "description": |-
-      Cluster Attributes showing for clusters workload types.
+  "workload_type": {}
 github.com/databricks/databricks-sdk-go/service/compute.DataSecurityMode:
   "_":
     "description": |-
@@ -1952,9 +1908,7 @@ github.com/databricks/databricks-sdk-go/service/jobs.GitSource:
   "git_provider":
     "description": |-
       Unique identifier of the service used to host the Git repository. The value is case insensitive.
-  "git_snapshot":
-    "description": |-
-      Read-only state of the remote repository at the time the job was run. This field is only included on job runs.
+  "git_snapshot": {}
   "git_tag":
     "description": |-
       Name of the tag to be checked out and used by this job. This field cannot be specified in conjunction with git_branch or git_commit.
@@ -2032,10 +1986,7 @@ github.com/databricks/databricks-sdk-go/service/jobs.JobEnvironment:
   "environment_key":
     "description": |-
       The key of an environment. It has to be unique within a job.
-  "spec":
-    "description": |-
-      The environment entity used to preserve serverless environment side panel, jobs' environment for non-notebook task, and DLT's environment for classic and serverless pipelines.
-      In this minimal environment spec, only pip dependencies are supported.
+  "spec": {}
 github.com/databricks/databricks-sdk-go/service/jobs.JobNotificationSettings:
   "no_alert_for_canceled_runs":
     "description": |-
@@ -2122,18 +2073,8 @@ github.com/databricks/databricks-sdk-go/service/jobs.JobsHealthOperator:
       - |-
         GREATER_THAN
 github.com/databricks/databricks-sdk-go/service/jobs.JobsHealthRule:
-  "metric":
-    "description": |-
-      Specifies the health metric that is being evaluated for a particular health rule.
-
-      * `RUN_DURATION_SECONDS`: Expected total time for a run in seconds.
-      * `STREAMING_BACKLOG_BYTES`: An estimate of the maximum bytes of data waiting to be consumed across all streams. This metric is in Public Preview.
-      * `STREAMING_BACKLOG_RECORDS`: An estimate of the maximum offset lag across all streams. This metric is in Public Preview.
-      * `STREAMING_BACKLOG_SECONDS`: An estimate of the maximum consumer delay across all streams. This metric is in Public Preview.
-      * `STREAMING_BACKLOG_FILES`: An estimate of the maximum number of outstanding files across all streams. This metric is in Public Preview.
-  "op":
-    "description": |-
-      Specifies the operator used to compare the health metric value with the specified threshold.
+  "metric": {}
+  "op": {}
   "value":
     "description": |-
       Specifies the threshold value that the health metric should obey to satisfy the health rule.
@@ -2615,9 +2556,7 @@ github.com/databricks/databricks-sdk-go/service/jobs.Task:
   "gen_ai_compute_task":
     "x-databricks-preview": |-
       PRIVATE
-  "health":
-    "description": |-
-      An optional set of health rules that can be defined for this job.
+  "health": {}
   "job_cluster_key":
     "description": |-
       If job_cluster_key, this task is executed reusing the cluster specified in `job.settings.job_clusters`.
@@ -3845,6 +3784,50 @@ github.com/databricks/databricks-sdk-go/service/serving.TrafficConfig:
   "routes":
     "description": |-
       The list of routes that define traffic to each served entity.
+github.com/databricks/databricks-sdk-go/service/sql.Channel:
+  "_":
+    "description": |-
+      Configures the channel name and DBSQL version of the warehouse. CHANNEL_NAME_CUSTOM should be chosen only when `dbsql_version` is specified.
+  "dbsql_version": {}
+  "name": {}
+github.com/databricks/databricks-sdk-go/service/sql.ChannelName:
+  "_":
+    "enum":
+      - |-
+        CHANNEL_NAME_PREVIEW
+      - |-
+        CHANNEL_NAME_CURRENT
+      - |-
+        CHANNEL_NAME_PREVIOUS
+      - |-
+        CHANNEL_NAME_CUSTOM
+github.com/databricks/databricks-sdk-go/service/sql.CreateWarehouseRequestWarehouseType:
+  "_":
+    "description": |-
+      Warehouse type: `PRO` or `CLASSIC`. If you want to use serverless compute, you must set to `PRO` and also set the field `enable_serverless_compute` to `true`.
+    "enum":
+      - |-
+        TYPE_UNSPECIFIED
+      - |-
+        CLASSIC
+      - |-
+        PRO
+github.com/databricks/databricks-sdk-go/service/sql.EndpointTagPair:
+  "key": {}
+  "value": {}
+github.com/databricks/databricks-sdk-go/service/sql.EndpointTags:
+  "custom_tags": {}
+github.com/databricks/databricks-sdk-go/service/sql.SpotInstancePolicy:
+  "_":
+    "description": |-
+      Configurations whether the warehouse should use spot instances.
+    "enum":
+      - |-
+        POLICY_UNSPECIFIED
+      - |-
+        COST_OPTIMIZED
+      - |-
+        RELIABILITY_OPTIMIZED
 github.com/databricks/databricks-sdk-go/service/workspace.AzureKeyVaultSecretScopeMetadata:
   "dns_name":
     "description": |-

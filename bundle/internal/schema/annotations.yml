@@ -212,6 +212,9 @@ github.com/databricks/cli/bundle/config.Resources:
   "secret_scopes":
     "description": |-
       PLACEHOLDER
+  "sql_warehouses":
+    "description": |-
+      PLACEHOLDER
   "volumes":
     "description": |-
       The volume definitions for the bundle, where each key is the name of the volume.
@@ -571,6 +574,19 @@ github.com/databricks/cli/bundle/config/resources.SecretScopePermission:
   "user_name":
     "description": |-
       The name of the user that has the permission set in level. This field translates to a `principal` field in secret scope ACL.
+github.com/databricks/cli/bundle/config/resources.SqlWarehousePermission:
+  "group_name":
+    "description": |-
+      PLACEHOLDER
+  "level":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "user_name":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/variable.Lookup:
   "alert":
     "description": |-

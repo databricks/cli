@@ -44,6 +44,7 @@ func allResourceTypes(t *testing.T) []string {
 		"registered_models",
 		"schemas",
 		"secret_scopes",
+		"sql_warehouses",
 		"volumes",
 	},
 		resourceTypes,
@@ -144,6 +145,7 @@ var allowList = []string{
 	"experiments",
 	"schemas",
 	"secret_scopes",
+	"sql_warehouses",
 	"volumes",
 }
 
