@@ -1,0 +1,6 @@
+export SCHEMA_NAME=schema-$UNIQUE_NAME
+export VOLUME_NAME=doesnotexist
+trace envsubst < $TESTDIR/../databricks.yml.tmpl > databricks.yml
+trap "trace $CLI schemas delete main.$SCHEMA_NAME" EXIT
+trace $CLI schemas create $SCHEMA_NAME main
+trace musterr $CLI bundle deploy
