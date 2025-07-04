@@ -1,2 +1,4 @@
 Local = false
 Cloud = true
+
+Ignore = ["empty.txt"]
