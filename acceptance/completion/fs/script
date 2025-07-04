@@ -1,0 +1,5 @@
+trace touch empty.txt
+trace $CLI fs mkdir dbfs:/tmp/my-completion-test-$UNIQUE_NAME/dir1
+trace $CLI fs cp empty.txt dbfs:/tmp/my-completion-test-$UNIQUE_NAME/dir1/empty.txt
+trace $CLI fs ls dbfs:/tmp/my-completion-test-$UNIQUE_NAME/dir1/
+trace $CLI __complete fs ls dbfs:/tmp/my-completion-test-$UNIQUE_NAME/
