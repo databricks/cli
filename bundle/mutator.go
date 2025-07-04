@@ -2,9 +2,12 @@ package bundle
 
 import (
 	"context"
+	"reflect"
+	"time"
 
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/telemetry/protos"
 )
 
 // Mutator is the interface type that mutates a bundle's configuration or internal state.
@@ -17,7 +20,55 @@ type Mutator interface {
 	Apply(context.Context, *Bundle) diag.Diagnostics
 }
 
+// safeMutatorName returns the package name and type name of the underlying mutator type
+// in the format "package_name.(type_name)".
+//
+// We cannot rely on the .Name() method for the name here because it can contain user
+// input which would then leak into the telemetry. E.g. [SetDefault] or [loader.ProcessInclude]
+func safeMutatorName(m Mutator) string {
+	t := reflect.TypeOf(m)
+
+	// Handle pointer types by getting the element type
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+
+	// Get the package path and type name
+	pkgPath := t.PkgPath()
+	typeName := t.Name()
+
+	// Extract just the package name from the full package path
+	// e.g., "github.com/databricks/cli/bundle/config/mutator" -> "mutator"
+	packageName := pkgPath
+	if lastSlash := len(pkgPath) - 1; lastSlash >= 0 {
+		for i := lastSlash; i >= 0; i-- {
+			if pkgPath[i] == '/' {
+				packageName = pkgPath[i+1:]
+				break
+			}
+		}
+	}
+
+	return packageName + ".(" + typeName + ")"
+}
+
 func Apply(ctx context.Context, b *Bundle, m Mutator) diag.Diagnostics {
+	// Track the execution time of the mutator.
+	t0 := time.Now()
+	defer func() {
+		duration := time.Since(t0).Milliseconds()
+
+		// Don't track the mutator if it takes less than 1ms to execute.
+		if duration == 0 {
+			return
+		}
+
+		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
+			Key:   safeMutatorName(m),
+			Value: duration,
+		})
+	}()
+
 	ctx = log.NewContext(ctx, log.GetLogger(ctx).With("mutator", m.Name()))
 
 	log.Debugf(ctx, "Apply")

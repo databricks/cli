@@ -3,6 +3,7 @@ package phases
 import (
 	"context"
 	"slices"
+	"sort"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
@@ -12,6 +13,25 @@ import (
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
 )
+
+func getExecutionTimes(b *bundle.Bundle) []protos.IntMapEntry {
+	executionTimes := b.Metrics.ExecutionTimes
+
+	// Sort the execution times in descending order.
+	sort.Slice(executionTimes, func(i, j int) bool {
+		return executionTimes[i].Value > executionTimes[j].Value
+	})
+
+	// Keep only the top 1000 execution times. This keeps the telemetry event
+	// reasonable in size. This should be unnecessary in most cases but is
+	// done out of caution since the number of mutators depends upon user input.
+	// Eg: every pattern in `includes:` triggers a new mutator.
+	if len(executionTimes) > 1000 {
+		executionTimes = executionTimes[:1000]
+	}
+
+	return executionTimes
+}
 
 func logDeployTelemetry(ctx context.Context, b *bundle.Bundle) {
 	resourcesCount := int64(0)
@@ -149,18 +169,19 @@ func logDeployTelemetry(ctx context.Context, b *bundle.Bundle) {
 			ResourceDashboardIDs: dashboardIds,
 
 			Experimental: &protos.BundleDeployExperimental{
-				BundleMode:                  mode,
-				ConfigurationFileCount:      b.Metrics.ConfigurationFileCount,
-				TargetCount:                 b.Metrics.TargetCount,
-				WorkspaceArtifactPathType:   artifactPathType,
-				BoolValues:                  b.Metrics.BoolValues,
-				PythonAddedResourcesCount:   b.Metrics.PythonAddedResourcesCount,
-				PythonUpdatedResourcesCount: b.Metrics.PythonUpdatedResourcesCount,
-				PythonResourceLoadersCount:  int64(len(experimentalConfig.Python.Resources)),
-				PythonResourceMutatorsCount: int64(len(experimentalConfig.Python.Mutators)),
-				VariableCount:               int64(variableCount),
-				ComplexVariableCount:        complexVariableCount,
-				LookupVariableCount:         lookupVariableCount,
+				BundleMode:                   mode,
+				ConfigurationFileCount:       b.Metrics.ConfigurationFileCount,
+				TargetCount:                  b.Metrics.TargetCount,
+				WorkspaceArtifactPathType:    artifactPathType,
+				BoolValues:                   b.Metrics.BoolValues,
+				PythonAddedResourcesCount:    b.Metrics.PythonAddedResourcesCount,
+				PythonUpdatedResourcesCount:  b.Metrics.PythonUpdatedResourcesCount,
+				PythonResourceLoadersCount:   int64(len(experimentalConfig.Python.Resources)),
+				PythonResourceMutatorsCount:  int64(len(experimentalConfig.Python.Mutators)),
+				VariableCount:                int64(variableCount),
+				ComplexVariableCount:         complexVariableCount,
+				LookupVariableCount:          lookupVariableCount,
+				BundleMutatorExecutionTimeMs: getExecutionTimes(b),
 			},
 		},
 	})

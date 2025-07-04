@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/validate"
@@ -13,6 +14,7 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/sync"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/spf13/cobra"
 )
 
@@ -70,19 +72,34 @@ func newDeployCommand() *cobra.Command {
 				}
 			}
 
+			t0 := time.Now()
 			diags = diags.Extend(phases.Initialize(ctx, b))
+			b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
+				Key:   "phases.Initialize",
+				Value: time.Since(t0).Milliseconds(),
+			})
 
 			if !diags.HasError() {
 				diags = diags.Extend(bundle.Apply(ctx, b, validate.FastValidate()))
 			}
 
+			t1 := time.Now()
 			if !diags.HasError() {
 				diags = diags.Extend(phases.Build(ctx, b))
 			}
+			b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
+				Key:   "phases.Build",
+				Value: time.Since(t1).Milliseconds(),
+			})
 
+			t2 := time.Now()
 			if !diags.HasError() {
 				diags = diags.Extend(phases.Deploy(ctx, b, outputHandler))
 			}
+			b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
+				Key:   "phases.Deploy",
+				Value: time.Since(t2).Milliseconds(),
+			})
 		}
 
 		return renderDiagnostics(cmd.OutOrStdout(), b, diags)
