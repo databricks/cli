@@ -4,6 +4,7 @@ package root
 import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/phases"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/maps"
 )
@@ -11,16 +12,14 @@ import (
 // targetCompletion executes to autocomplete the argument to the target flag.
 func targetCompletion(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	ctx := cmd.Context()
-	b, err := bundle.MustLoad(ctx)
-	if err != nil {
-		cobra.CompErrorln(err.Error())
+	b := bundle.MustLoad(ctx)
+	if b == nil || logdiag.HasError(ctx) {
 		return nil, cobra.ShellCompDirectiveError
 	}
 
 	// Load project but don't select a target (we're completing those).
-	diags := phases.Load(ctx, b)
-	if err := diags.Error(); err != nil {
-		cobra.CompErrorln(err.Error())
+	phases.Load(ctx, b)
+	if logdiag.HasError(ctx) {
 		return nil, cobra.ShellCompDirectiveError
 	}
 

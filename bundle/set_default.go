@@ -6,6 +6,7 @@ import (
 
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/logdiag"
 )
 
 type setDefault struct {
@@ -45,17 +46,19 @@ func (m *setDefault) Apply(ctx context.Context, b *Bundle) diag.Diagnostics {
 	return nil
 }
 
-func SetDefault(ctx context.Context, b *Bundle, pattern string, value any) diag.Diagnostics {
+func SetDefault(ctx context.Context, b *Bundle, pattern string, value any) {
 	pat, err := dyn.NewPatternFromString(pattern)
 	if err != nil {
-		return diag.FromErr(fmt.Errorf("Internal error: invalid pattern: %s: %w", pattern, err))
+		logdiag.LogError(ctx, fmt.Errorf("Internal error: invalid pattern: %s: %w", pattern, err))
+		return
 	}
 
 	pat, key := pat.SplitKey()
 	if pat == nil || key == "" {
-		return diag.FromErr(fmt.Errorf("Internal error: invalid pattern: %s", pattern))
+		logdiag.LogError(ctx, fmt.Errorf("Internal error: invalid pattern: %s", pattern))
+		return
 	}
 
 	m := SetDefaultMutator(pat, key, value)
-	return Apply(ctx, b, m)
+	ApplyContext(ctx, b, m)
 }

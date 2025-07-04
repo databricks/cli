@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
@@ -39,10 +40,15 @@ func TestDashboard_ErrorOnLegacyDashboard(t *testing.T) {
 	})
 
 	ctx := context.Background()
+	ctx = logdiag.InitContext(ctx)
+	logdiag.SetCollect(ctx, true)
 	b := &bundle.Bundle{}
 	b.SetWorkpaceClient(m.WorkspaceClient)
 
-	_, diags := d.resolveID(ctx, b)
+	id := d.resolveID(ctx, b)
+	assert.Empty(t, id)
+
+	diags := logdiag.FlushCollected(ctx)
 	require.Len(t, diags, 1)
 	assert.Equal(t, "dashboard \"legacy dashboard\" is a legacy dashboard", diags[0].Summary)
 }

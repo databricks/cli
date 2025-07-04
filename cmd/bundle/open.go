@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/maps"
 
@@ -62,15 +63,17 @@ func newOpenCommand() *cobra.Command {
 	cmd.Flags().BoolVar(&forcePull, "force-pull", false, "Skip local cache and load the state from the remote workspace")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		ctx := cmd.Context()
-		b, diags := utils.ConfigureBundleWithVariables(cmd)
-		if err := diags.Error(); err != nil {
-			return diags.Error()
+		ctx := logdiag.InitContext(cmd.Context())
+		cmd.SetContext(ctx)
+
+		b := utils.ConfigureBundleWithVariables(cmd)
+		if b == nil || logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
 		}
 
-		diags = phases.Initialize(ctx, b)
-		if err := diags.Error(); err != nil {
-			return err
+		phases.Initialize(ctx, b)
+		if logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
 		}
 
 		arg, err := resolveOpenArgument(ctx, b, args)
@@ -87,29 +90,29 @@ func newOpenCommand() *cobra.Command {
 		noCache := errors.Is(stateFileErr, os.ErrNotExist) || errors.Is(configFileErr, os.ErrNotExist)
 
 		if forcePull || noCache {
-			diags = bundle.Apply(ctx, b, statemgmt.StatePull())
-			if err = diags.Error(); err != nil {
-				return err
+			bundle.ApplyContext(ctx, b, statemgmt.StatePull())
+			if logdiag.HasError(ctx) {
+				return root.ErrAlreadyPrinted
 			}
 
 			if !b.DirectDeployment {
-				diags = bundle.ApplySeq(ctx, b,
+				bundle.ApplySeqContext(ctx, b,
 					terraform.Interpolate(),
 					terraform.Write(),
 				)
+			}
 
-				if err = diags.Error(); err != nil {
-					return err
-				}
+			if logdiag.HasError(ctx) {
+				return root.ErrAlreadyPrinted
 			}
 		}
 
-		diags = bundle.ApplySeq(ctx, b,
+		bundle.ApplySeqContext(ctx, b,
 			statemgmt.Load(),
 			mutator.InitializeURLs(),
 		)
-		if err := diags.Error(); err != nil {
-			return err
+		if logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
 		}
 
 		// Locate resource to open.
@@ -129,9 +132,8 @@ func newOpenCommand() *cobra.Command {
 	}
 
 	cmd.ValidArgsFunction = func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		b, diags := root.MustConfigureBundle(cmd)
-		if err := diags.Error(); err != nil {
-			cobra.CompErrorln(err.Error())
+		b := root.MustConfigureBundle(cmd)
+		if logdiag.HasError(cmd.Context()) {
 			return nil, cobra.ShellCompDirectiveError
 		}
 

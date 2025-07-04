@@ -5,15 +5,15 @@ Deploying resources...
 Deployment complete!
 
 >>> [CLI] bundle deploy -t prod
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/prod/files...
-Deploying resources...
-Deployment complete!
 Recommendation: target with 'mode: production' should set 'workspace.root_path' to make sure only one copy is deployed
 
 A common practice is to use a username or principal name in this path, i.e. use
 
   root_path: /Workspace/Users/[USERNAME]/.bundle/${bundle.name}/${bundle.target}
 
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/prod/files...
+Deploying resources...
+Deployment complete!
 
 >>> cat out.requests.txt
 {
