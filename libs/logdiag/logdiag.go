@@ -15,11 +15,12 @@ import (
 
 type keyType int
 
-const key = keyType(2)
+const key = keyType(0)
 
+// Global mutex is used because we write to stderr.
 var Mu sync.Mutex
 
-type Value struct {
+type LogDiagData struct {
 	// How many diagnostics if each type were seen
 	Errors          int
 	Warnings        int
@@ -41,7 +42,7 @@ func IsSetup(ctx context.Context) bool {
 	Mu.Lock()
 	defer Mu.Unlock()
 
-	_, ok := ctx.Value(key).(*Value)
+	_, ok := ctx.Value(key).(*LogDiagData)
 	return ok
 }
 
@@ -49,25 +50,25 @@ func InitContext(ctx context.Context) context.Context {
 	Mu.Lock()
 	defer Mu.Unlock()
 
-	_, ok := ctx.Value(key).(*Value)
+	_, ok := ctx.Value(key).(*LogDiagData)
 	if ok {
 		panic("internal error: must not call InitContext() twice")
 	}
-	val := Value{
+	val := LogDiagData{
 		TargetSeverity: 255,
 	}
 	return context.WithValue(ctx, key, &val)
 }
 
-func read(ctx context.Context) *Value {
-	val, ok := ctx.Value(key).(*Value)
+func read(ctx context.Context) *LogDiagData {
+	val, ok := ctx.Value(key).(*LogDiagData)
 	if !ok || val == nil {
 		panic("internal error: must call InitContext() first")
 	}
 	return val
 }
 
-func GetContext(ctx context.Context) Value {
+func Copy(ctx context.Context) LogDiagData {
 	Mu.Lock()
 	defer Mu.Unlock()
 
