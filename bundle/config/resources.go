@@ -207,5 +207,6 @@ func SupportedResources() map[string]resources.ResourceDescription {
 		"apps":                    (&resources.App{}).ResourceDescription(),
 		"secret_scopes":           (&resources.SecretScope{}).ResourceDescription(),
 		"sql_warehouses":          (&resources.SqlWarehouse{}).ResourceDescription(),
+		"database_instances":      (&resources.DatabaseInstance{}).ResourceDescription(),
 	}
 }

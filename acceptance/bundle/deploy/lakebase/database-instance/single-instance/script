@@ -1,2 +1,12 @@
-trace errcode $CLI bundle deploy
+cleanup() {
+  # bundle destroy does not work yet for database instances
+  trace $CLI database delete-database-instance test-database-instance --purge=true
+  trace $CLI database get-database-instance test-database-instance
+}
+trap cleanup EXIT
+
+trace $CLI bundle validate
+trace $CLI bundle summary
+trace $CLI bundle deploy
 trace $CLI database get-database-instance test-database-instance
+trace $CLI bundle summary
