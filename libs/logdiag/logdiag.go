@@ -103,7 +103,7 @@ func SetCollect(ctx context.Context, collect bool) {
 	read(ctx).Collect = collect
 }
 
-func FlushCollected(ctx context.Context) []diag.Diagnostic {
+func FlushCollected(ctx context.Context) diag.Diagnostics {
 	Mu.Lock()
 	defer Mu.Unlock()
 
