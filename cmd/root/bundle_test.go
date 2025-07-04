@@ -95,7 +95,7 @@ func TestBundleConfigureWithMultipleMatches(t *testing.T) {
 
 	cmd := emptyCommand(t)
 	diags := setupWithHost(t, cmd, "https://a.com")
-	require.NotEmpty(t, diags)
+	require.Len(t, diags, 1)
 	assert.Contains(t, diags[0].Summary, "multiple profiles matched: PROFILE-1, PROFILE-2")
 }
 
@@ -107,7 +107,7 @@ func TestBundleConfigureWithNonExistentProfileFlag(t *testing.T) {
 	require.NoError(t, err)
 
 	diags := setupWithHost(t, cmd, "https://x.com")
-	require.NotEmpty(t, diags)
+	require.Len(t, diags, 1)
 	assert.Contains(t, diags[0].Summary, "has no NOEXIST profile configured")
 }
 
@@ -119,8 +119,7 @@ func TestBundleConfigureWithMismatchedProfile(t *testing.T) {
 	require.NoError(t, err)
 
 	diags := setupWithHost(t, cmd, "https://x.com")
-	require.NotEmpty(t, diags)
-	assert.Contains(t, diags[0].Summary, "cannot resolve bundle auth configuration")
+	assert.Equal(t, []diag.Diagnostic{{Summary: "cannot resolve bundle auth configuration: the host in the profile (https://a.com) doesn’t match the host configured in the bundle (https://x.com)"}}, diags)
 }
 
 func TestBundleConfigureWithCorrectProfile(t *testing.T) {
@@ -143,7 +142,7 @@ func TestBundleConfigureWithMismatchedProfileEnvVariable(t *testing.T) {
 	cmd := emptyCommand(t)
 
 	diags := setupWithHost(t, cmd, "https://x.com")
-	require.NotEmpty(t, diags)
+	require.Len(t, diags, 1)
 	assert.Contains(t, diags[0].Summary, "cannot resolve bundle auth configuration")
 }
 
