@@ -5,3 +5,4 @@ resources:
   database_instances:
     my_database:
       name: test-database-instance
+      capacity: CU_1
