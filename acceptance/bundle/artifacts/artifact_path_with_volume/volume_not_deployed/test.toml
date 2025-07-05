@@ -1,0 +1,3 @@
+Badness = "Requires two bundles; one for volumes, another for artifacts. Ideally it would just work but today we first upload then deploy, so it does not fit in that architecture."
+Cloud = true
+RequiresUnityCatalog = true

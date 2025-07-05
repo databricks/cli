@@ -12,5 +12,6 @@ func New(ctx context.Context) *cobra.Command {
 	initVariableFlag(cli)
 	cli.AddCommand(initCommand())
 	cli.AddCommand(deployCommand())
+	cli.AddCommand(authCommand())
 	return cli
 }
