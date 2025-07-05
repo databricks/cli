@@ -1,0 +1,8 @@
+bundle:
+  name: render-diagnostics-warning-pipeline
+
+resources:
+  pipelines:
+    test-pipeline:
+      # This is an unknown property that should trigger a warning
+      unknown_property: "this_should_trigger_a_warning"
