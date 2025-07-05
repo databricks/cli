@@ -1,0 +1,3 @@
+# All pipelines tests are local only
+Local = true
+Cloud = false
