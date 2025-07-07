@@ -37,11 +37,10 @@ type LogDiagData struct {
 	Collected []diag.Diagnostic
 }
 
-// IsSetup is test helper, do not use in production code
+// IsSetup returns whether InitContext() was already called.
+// It is meant to be used in test code. In production, code InitContext() should be placed
+// in unambiguous place instead.
 func IsSetup(ctx context.Context) bool {
-	Mu.Lock()
-	defer Mu.Unlock()
-
 	_, ok := ctx.Value(key).(*LogDiagData)
 	return ok
 }

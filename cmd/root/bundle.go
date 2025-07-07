@@ -104,7 +104,6 @@ func configureBundle(cmd *cobra.Command, b *bundle.Bundle) {
 }
 
 // MustConfigureBundle configures a bundle on the command context.
-// TODO: no need to return ctx
 func MustConfigureBundle(cmd *cobra.Command) *bundle.Bundle {
 	// A bundle may be configured on the context when testing.
 	// If it is, return it immediately.
