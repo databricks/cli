@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
-	"strings"
 	"sync"
 
 	"github.com/databricks/cli/libs/cmdio"
@@ -141,9 +139,7 @@ func LogDiag(ctx context.Context, d diag.Diagnostic) {
 			// - The forward slashes work on Windows as well.
 			// - It's informational.
 			// - It avoids output different between OSes which makes it easier to write cross-platform tests.
-			if runtime.GOOS == "windows" {
-				d.Locations[i].File = strings.ReplaceAll(d.Locations[i].File, "\\", "/")
-			}
+			d.Locations[i].File = filepath.ToSlash(d.Locations[i].File)
 		}
 	}
 
