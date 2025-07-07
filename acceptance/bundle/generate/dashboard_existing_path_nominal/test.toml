@@ -2,10 +2,6 @@
 Old = '\\\\'
 New = '/'
 
-[[Repls]]
-Old = "[0-9a-f]{32}"
-New = "[DASHBOARD_ID]"
-
 [[Server]]
 Pattern = "GET /api/2.0/workspace/get-status"
 Response.Body = '''
