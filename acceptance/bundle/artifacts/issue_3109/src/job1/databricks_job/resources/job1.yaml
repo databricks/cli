@@ -4,7 +4,6 @@ targets:
     artifacts:
       wheels:
         type: whl
-        #build: "pants package ::"
         build: "uv build --wheel"
     resources:
       jobs:
