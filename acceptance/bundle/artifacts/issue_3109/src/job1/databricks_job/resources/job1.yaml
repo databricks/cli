@@ -1,0 +1,22 @@
+targets:
+  dev:
+    mode: development
+    artifacts:
+      wheels:
+        type: whl
+        build: "uv build --wheel"
+    resources:
+      jobs:
+        job1:
+          name: job1
+          tasks:
+            - task_key: wheel_task
+              job_cluster_key: job_cluster
+              python_wheel_task:
+                package_name: job1_databricks_job
+          job_clusters:
+            - job_cluster_key: job_cluster
+              new_cluster:
+                spark_version: 11.3.x-scala2.12
+                node_type_id: i3.xlarge
+                num_workers: 2

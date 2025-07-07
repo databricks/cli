@@ -1,0 +1,1 @@
+EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["terraform"]  # Error: deploying jobs.some_other_job: creating: Method=Jobs.Create *retries.Err *apierr.APIError StatusCode=400 ErrorCode="INVALID_PARAMETER_VALUE" Message="The field 'node_type_id' cannot be supplied when an instance pool ID is provided."

@@ -1,0 +1,9 @@
+Local = true
+Cloud = false
+
+[EnvMatrix]
+  B_REGULAR_VAR = ["hello"]
+  DATABRICKS_CLI_DEPLOYMENT = ["terraform", "direct-exp"]
+  FIRST = ["one111", "two222"]
+  SECOND = ["variantA", "variantB"]
+  THIRD = ["three $FIRST"]
