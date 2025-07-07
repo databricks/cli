@@ -7,7 +7,7 @@ Local = false
 # - 10-20 seconds to deploy the bundle
 # This test includes 2 application starts, and it is taking aroung 420 seconds to complete the entire test
 #
-CloudSlow = true
+Cloud = true
 
 
 EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["terraform"]  # uses ${resources} reference
