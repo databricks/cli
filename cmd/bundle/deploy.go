@@ -80,26 +80,31 @@ func newDeployCommand() *cobra.Command {
 			})
 
 			if !diags.HasError() {
+				t1 := time.Now()
 				diags = diags.Extend(bundle.Apply(ctx, b, validate.FastValidate()))
+				b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
+					Key:   "validate.FastValidate",
+					Value: time.Since(t1).Milliseconds(),
+				})
 			}
 
-			t1 := time.Now()
 			if !diags.HasError() {
+				t2 := time.Now()
 				diags = diags.Extend(phases.Build(ctx, b))
+				b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
+					Key:   "phases.Build",
+					Value: time.Since(t2).Milliseconds(),
+				})
 			}
-			b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
-				Key:   "phases.Build",
-				Value: time.Since(t1).Milliseconds(),
-			})
 
-			t2 := time.Now()
 			if !diags.HasError() {
+				t3 := time.Now()
 				diags = diags.Extend(phases.Deploy(ctx, b, outputHandler))
+				b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
+					Key:   "phases.Deploy",
+					Value: time.Since(t3).Milliseconds(),
+				})
 			}
-			b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
-				Key:   "phases.Deploy",
-				Value: time.Since(t2).Milliseconds(),
-			})
 		}
 
 		return renderDiagnostics(cmd.OutOrStdout(), b, diags)
