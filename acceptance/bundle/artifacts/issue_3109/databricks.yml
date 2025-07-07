@@ -1,0 +1,3 @@
+include:
+  - src/job1/databricks_job/resources/*.yaml
+  - src/job2/databricks_job/resources/*.yaml

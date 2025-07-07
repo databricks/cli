@@ -1,0 +1,7 @@
+Building wheels...
+Error: [TEST_TMP_DIR]/src/job1/databricks_job/resources/dist/*.whl: no matching files
+  at artifacts.wheels.files[0].source
+  in :0:0
+
+
+Exit code: 1
