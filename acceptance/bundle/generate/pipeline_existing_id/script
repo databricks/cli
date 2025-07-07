@@ -1,0 +1,11 @@
+# Create the pipeline and files.
+pipeline_id=$($CLI pipelines create --json @pipeline.json | jq -r '.pipeline_id')
+trace $CLI workspace import /generate/pipeline/notebook.py --file notebook.py --format AUTO
+trace $CLI workspace import /generate/pipeline/file.py --file file.py --format AUTO
+
+# Generate the bundle.
+trace $CLI bundle generate pipeline --existing-pipeline-id $pipeline_id  --config-dir out/config --source-dir out/source --key test_pipeline
+
+$CLI pipelines delete $pipeline_id
+$CLI workspace delete /generate/pipeline/notebook
+$CLI workspace delete /generate/pipeline/file.py

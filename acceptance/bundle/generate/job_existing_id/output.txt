@@ -1,0 +1,6 @@
+
+>>> [CLI] workspace import /generate/job/notebook.py --file notebook.py --format AUTO
+
+>>> [CLI] bundle generate job --existing-job-id [NUMID] --config-dir out/config --source-dir out/source --key test_job
+File successfully saved to out/source/notebook.py
+Job configuration successfully saved to out/config/test_job.job.yml

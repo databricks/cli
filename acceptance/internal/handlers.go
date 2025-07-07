@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -110,6 +111,37 @@ func addDefaultHandlers(server *testserver.Server) {
 	server.Handle("POST", "/api/2.0/workspace-files/import-file/{path:.*}", func(req testserver.Request) any {
 		path := req.Vars["path"]
 		req.Workspace.WorkspaceFilesImportFile(path, req.Body)
+		return ""
+	})
+
+	server.Handle("POST", "/api/2.0/workspace/import", func(req testserver.Request) any {
+		var request workspace.Import
+		err := json.Unmarshal(req.Body, &request)
+		if err != nil {
+			return testserver.Response{
+				Body:       fmt.Sprintf("internal error: %s", err),
+				StatusCode: http.StatusInternalServerError,
+			}
+		}
+
+		if request.Format != workspace.ImportFormatAuto {
+			return testserver.Response{
+				Body:       "internal error: The test server only supports auto format.",
+				StatusCode: http.StatusInternalServerError,
+			}
+		}
+
+		// The /workspace/import endpoint returns the content as base64 encoded string.
+		// We need to decode it to get the actual content.
+		decoded, err := base64.StdEncoding.DecodeString(request.Content)
+		if err != nil {
+			return testserver.Response{
+				Body:       fmt.Sprintf("internal error: %s", err),
+				StatusCode: http.StatusInternalServerError,
+			}
+		}
+
+		req.Workspace.WorkspaceFilesImportFile(request.Path, decoded)
 		return ""
 	})
 

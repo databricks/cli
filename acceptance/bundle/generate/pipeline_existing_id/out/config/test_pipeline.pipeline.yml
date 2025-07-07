@@ -1,0 +1,14 @@
+resources:
+  pipelines:
+    test_pipeline:
+      name: test-pipeline
+      clusters:
+        - custom_tags:
+            "Tag1": "24X7-1234"
+        - spark_conf:
+            "spark.databricks.delta.preview.enabled": "true"
+      libraries:
+        - file:
+            path: ../source/file.py
+        - notebook:
+            path: ../source/notebook.py

@@ -1,0 +1,9 @@
+# Create the job and upload notebook.
+job_id=$($CLI jobs create --json @job.json | jq -r '.job_id')
+trace $CLI workspace import /generate/job/notebook.py --file notebook.py --format AUTO
+
+# Generate the bundle.
+trace $CLI bundle generate job --existing-job-id $job_id --config-dir out/config --source-dir out/source --key test_job
+
+$CLI jobs delete $job_id
+$CLI workspace delete /generate/job/notebook

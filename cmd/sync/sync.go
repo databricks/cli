@@ -243,13 +243,6 @@ func New() *cobra.Command {
 			return nil, cobra.ShellCompDirectiveError
 		}
 
-		// No completion in the context of a bundle.
-		// Source and destination paths are taken from bundle configuration.
-		b := bundle.GetOrNil(cmd.Context())
-		if b != nil {
-			return nil, cobra.ShellCompDirectiveNoFileComp
-		}
-
 		switch len(args) {
 		case 0:
 			return nil, cobra.ShellCompDirectiveFilterDirs
