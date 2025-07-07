@@ -10,6 +10,3 @@ title "Running pipeline with --restart flag"
 # Should stop the current pipeline and start a new update
 trace errcode $PIPELINES run my_pipeline --restart
 trace print_requests
-
-# This printf is here to fix the whitespace linter error (ensures exactly one newline at end)
-printf "<EOL>\n"

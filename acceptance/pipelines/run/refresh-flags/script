@@ -25,6 +25,3 @@ title "Running pipeline with --full-refresh flag and specific tables"
 # Should reset and recompute only the specified tables
 trace errcode $PIPELINES run my_pipeline --full-refresh table1,table2
 trace print_requests
-
-# This printf is here to fix the whitespace linter error (ensures exactly one newline at end)
-printf "<EOL>\n"

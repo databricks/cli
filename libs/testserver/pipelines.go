@@ -119,12 +119,8 @@ func (s *FakeWorkspace) PipelineStartUpdate(req Request, pipelineId string) Resp
 	}
 
 	startUpdate.PipelineId = pipelineId
-
-	if s.PipelineUpdates == nil {
-		s.PipelineUpdates = make(map[string]pipelines.StartUpdate)
-	}
 	updateId := uuid.New().String()
-	s.PipelineUpdates[updateId] = startUpdate
+	s.PipelineUpdates[updateId] = true
 
 	return Response{
 		Body: pipelines.StartUpdateResponse{
@@ -159,6 +155,15 @@ func (s *FakeWorkspace) PipelineGetUpdate(pipelineId, updateId string) Response 
 		return Response{
 			StatusCode: 404,
 			Body:       map[string]string{"message": fmt.Sprintf("The specified pipeline %s was not found.", pipelineId)},
+		}
+	}
+
+	// Check if the update exists
+	_, updateExists := s.PipelineUpdates[updateId]
+	if !updateExists {
+		return Response{
+			StatusCode: 404,
+			Body:       map[string]string{"message": fmt.Sprintf("The specified update %s was not found.", updateId)},
 		}
 	}
 
