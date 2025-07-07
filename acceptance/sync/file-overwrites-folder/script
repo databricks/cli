@@ -1,0 +1,197 @@
+#!/bin/bash
+
+# Helper functions
+check_remote_file_exists() {
+    local file_path="$1"
+    local remote_path="/Users/$CURRENT_USER_NAME/sync-test-overwrite/$file_path"
+
+    $CLI workspace get-status "$remote_path" >/dev/null 2>&1
+    return $?
+}
+
+check_remote_object_type() {
+    local file_path="$1"
+    local expected_type="$2"
+    local remote_path="/Users/$CURRENT_USER_NAME/sync-test-overwrite/$file_path"
+
+    local status=$($CLI workspace get-status "$remote_path" 2>/dev/null)
+    if echo "$status" | grep -q "\"object_type\":\"$expected_type\""; then
+        return 0
+    else
+        echo "Object type mismatch for $file_path"
+        echo "Expected: $expected_type"
+        echo "Actual status: $status"
+        return 1
+    fi
+}
+
+list_remote_dir() {
+    local dir_path="$1"
+    local remote_path="/Users/$CURRENT_USER_NAME/sync-test-overwrite/$dir_path"
+
+    $CLI workspace list "$remote_path" --output json 2>/dev/null | jq -r '.[].path' | sort
+}
+
+# Setup
+mkdir -p local-sync-test-overwrite
+cd local-sync-test-overwrite
+remote_path="/Users/$CURRENT_USER_NAME/sync-test-overwrite"
+
+# Start sync in background
+echo "Starting file overwrites folder sync..."
+$CLI sync . "$remote_path" --watch --output json > sync_output.log 2>&1 &
+sync_pid=$!
+
+# Wait a bit for sync to initialize
+sleep 5
+
+# Test 1: Create a folder with a file
+echo "Creating folder 'foo' with file 'bar.txt'..."
+mkdir -p foo
+echo "content in bar.txt" > foo/bar.txt
+sleep 3
+
+# Verify folder and file exist remotely
+if check_remote_object_type "foo" "DIRECTORY"; then
+    echo "✓ Remote directory 'foo' exists"
+else
+    echo "✗ Remote directory 'foo' does not exist"
+    exit 1
+fi
+
+if check_remote_file_exists "foo/bar.txt"; then
+    echo "✓ Remote file 'foo/bar.txt' exists"
+else
+    echo "✗ Remote file 'foo/bar.txt' does not exist"
+    exit 1
+fi
+
+# Test 2: Verify directory listing
+remote_files=$(list_remote_dir "foo")
+if echo "$remote_files" | grep -q "bar.txt"; then
+    echo "✓ bar.txt found in foo directory listing"
+else
+    echo "✗ bar.txt not found in foo directory listing"
+    exit 1
+fi
+
+# Test 3: Delete the folder contents and the folder
+echo "Deleting folder contents and folder..."
+rm foo/bar.txt
+rmdir foo
+sleep 3
+
+# Verify folder is deleted
+if check_remote_file_exists "foo"; then
+    echo "✗ Remote directory 'foo' still exists after deletion"
+    exit 1
+else
+    echo "✓ Remote directory 'foo' deleted successfully"
+fi
+
+# Test 4: Create a file with the same name as the deleted folder
+echo "Creating file 'foo'..."
+echo "this is now a file" > foo
+sleep 3
+
+# Verify it's now a file (not a directory)
+if check_remote_object_type "foo" "FILE"; then
+    echo "✓ Remote 'foo' is now a file"
+else
+    echo "✗ Remote 'foo' is not a file"
+    exit 1
+fi
+
+# Test 5: Test the reverse scenario - file replaced by folder
+echo "Testing file replaced by folder..."
+echo "Deleting file 'foo'..."
+rm foo
+sleep 3
+
+# Verify file is deleted
+if check_remote_file_exists "foo"; then
+    echo "✗ Remote file 'foo' still exists after deletion"
+    exit 1
+else
+    echo "✓ Remote file 'foo' deleted successfully"
+fi
+
+# Create a folder with the same name
+echo "Creating folder 'foo' with file 'new.txt'..."
+mkdir -p foo
+echo "new content" > foo/new.txt
+sleep 3
+
+# Verify it's now a directory
+if check_remote_object_type "foo" "DIRECTORY"; then
+    echo "✓ Remote 'foo' is now a directory"
+else
+    echo "✗ Remote 'foo' is not a directory"
+    exit 1
+fi
+
+# Verify the file in the directory
+if check_remote_file_exists "foo/new.txt"; then
+    echo "✓ Remote file 'foo/new.txt' exists"
+else
+    echo "✗ Remote file 'foo/new.txt' does not exist"
+    exit 1
+fi
+
+# Test 6: Test with nested structure
+echo "Testing nested structure replacement..."
+mkdir -p nested/deep/structure
+echo "deep content" > nested/deep/structure/file.txt
+sleep 3
+
+# Verify nested structure exists
+if check_remote_object_type "nested" "DIRECTORY"; then
+    echo "✓ Remote directory 'nested' exists"
+else
+    echo "✗ Remote directory 'nested' does not exist"
+    exit 1
+fi
+
+if check_remote_file_exists "nested/deep/structure/file.txt"; then
+    echo "✓ Remote file 'nested/deep/structure/file.txt' exists"
+else
+    echo "✗ Remote file 'nested/deep/structure/file.txt' does not exist"
+    exit 1
+fi
+
+# Delete the nested structure
+echo "Deleting nested structure..."
+rm -rf nested
+sleep 3
+
+# Verify it's deleted
+if check_remote_file_exists "nested"; then
+    echo "✗ Remote directory 'nested' still exists after deletion"
+    exit 1
+else
+    echo "✓ Remote directory 'nested' deleted successfully"
+fi
+
+# Create a file with the same name
+echo "Creating file 'nested'..."
+echo "now a file" > nested
+sleep 3
+
+# Verify it's now a file
+if check_remote_object_type "nested" "FILE"; then
+    echo "✓ Remote 'nested' is now a file"
+else
+    echo "✗ Remote 'nested' is not a file"
+    exit 1
+fi
+
+# Cleanup
+echo "Cleaning up..."
+kill $sync_pid 2>/dev/null
+cd ..
+rm -rf local-sync-test-overwrite
+
+# Clean up remote directory
+$CLI workspace delete "$remote_path" --recursive 2>/dev/null || true
+
+echo "File overwrites folder sync test completed successfully!"
