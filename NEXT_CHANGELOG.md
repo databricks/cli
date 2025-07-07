@@ -9,6 +9,6 @@
 ### CLI
 
 ### Bundles
-* Fix #3109: default search location for whl artifacts ([#3184](https://github.com/databricks/cli/pull/3184)). This was a regression introduced in 0.255.0.
+* Fix default search location for whl artifacts ([#3184](https://github.com/databricks/cli/pull/3184)). This was a regression introduced in 0.255.0.
 
 ### API Changes
