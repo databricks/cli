@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -221,7 +220,7 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 
 	// Try to load a bundle configuration if we're allowed to by the caller (see `./auth_options.go`).
 	if !shouldSkipLoadBundle(cmd.Context()) {
-		var b *bundle.Bundle = TryConfigureBundle(cmd)
+		b := TryConfigureBundle(cmd)
 		// Use the updated context from the command after TryConfigureBundle
 		ctx = cmd.Context()
 		if logdiag.HasError(ctx) {

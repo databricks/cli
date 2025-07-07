@@ -3,4 +3,5 @@
 Building my_artifact...
 Error: invalid is not supported as an artifact executable, options are: bash, sh or cmd
 
+
 Exit code: 1

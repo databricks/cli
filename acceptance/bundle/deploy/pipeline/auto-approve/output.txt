@@ -46,6 +46,7 @@ properties such as the 'catalog' or 'storage' are changed:
   delete pipeline bar
 Error: the deployment requires destructive actions, but current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed
 
+
 Exit code: 1
 
 >>> [CLI] bundle destroy --auto-approve

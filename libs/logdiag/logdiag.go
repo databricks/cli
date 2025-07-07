@@ -154,16 +154,8 @@ func LogDiag(ctx context.Context, d diag.Diagnostic) {
 }
 
 func LogError(ctx context.Context, err error) {
-	Mu.Lock()
-	defer Mu.Unlock()
-
-	val := read(ctx)
-	val.Errors += 1
-
-	if val.Collect {
-		diags := diag.FromErr(err)
-		val.Collected = append(val.Collected, diags...)
-	} else {
-		cmdio.LogError(ctx, err)
+	diags := diag.FromErr(err)
+	if len(diags) > 0 {
+		LogDiag(ctx, diags[0])
 	}
 }
