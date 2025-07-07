@@ -4,12 +4,15 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"io"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/iam"
@@ -133,6 +136,174 @@ func TestRenderDiagnosticsSummary(t *testing.T) {
 			assert.Equal(t, tc.expectedSummary, writer.String())
 		})
 	}
+}
+
+type renderDiagnosticsTestCase struct {
+	name     string
+	diags    diag.Diagnostics
+	expected string
+}
+
+func TestRenderDiagnostics(t *testing.T) {
+	// Disable colors for consistent test output
+	oldNoColor := color.NoColor
+	color.NoColor = true
+	defer func() {
+		color.NoColor = oldNoColor
+	}()
+
+	testCases := []renderDiagnosticsTestCase{
+		{
+			name:     "empty diagnostics",
+			diags:    diag.Diagnostics{},
+			expected: "",
+		},
+		{
+			name: "error with short summary",
+			diags: diag.Diagnostics{
+				{
+					Severity: diag.Error,
+					Summary:  "failed to load xxx",
+				},
+			},
+			expected: "Error: failed to load xxx\n\n",
+		},
+		{
+			name: "error with source location",
+			diags: diag.Diagnostics{
+				{
+					Severity: diag.Error,
+					Summary:  "failed to load xxx",
+					Detail:   "'name' is required",
+					Locations: []dyn.Location{{
+						File:   "foo.yaml",
+						Line:   1,
+						Column: 2,
+					}},
+				},
+			},
+			expected: "Error: failed to load xxx\n" +
+				"  in foo.yaml:1:2\n\n" +
+				"'name' is required\n\n",
+		},
+		{
+			name: "error with multiple source locations",
+			diags: diag.Diagnostics{
+				{
+					Severity: diag.Error,
+					Summary:  "failed to load xxx",
+					Detail:   "'name' is required",
+					Locations: []dyn.Location{
+						{
+							File:   "foo.yaml",
+							Line:   1,
+							Column: 2,
+						},
+						{
+							File:   "bar.yaml",
+							Line:   3,
+							Column: 4,
+						},
+					},
+				},
+			},
+			expected: "Error: failed to load xxx\n" +
+				"  in foo.yaml:1:2\n" +
+				"     bar.yaml:3:4\n\n" +
+				"'name' is required\n\n",
+		},
+		{
+			name: "error with path",
+			diags: diag.Diagnostics{
+				{
+					Severity: diag.Error,
+					Detail:   "'name' is required",
+					Summary:  "failed to load xxx",
+					Paths:    []dyn.Path{dyn.MustPathFromString("resources.jobs.xxx")},
+				},
+			},
+			expected: "Error: failed to load xxx\n" +
+				"  at resources.jobs.xxx\n" +
+				"\n" +
+				"'name' is required\n\n",
+		},
+		{
+			name: "error with multiple paths",
+			diags: diag.Diagnostics{
+				{
+					Severity: diag.Error,
+					Detail:   "'name' is required",
+					Summary:  "failed to load xxx",
+					Paths: []dyn.Path{
+						dyn.MustPathFromString("resources.jobs.xxx"),
+						dyn.MustPathFromString("resources.jobs.yyy"),
+						dyn.MustPathFromString("resources.jobs.zzz"),
+					},
+				},
+			},
+			expected: "Error: failed to load xxx\n" +
+				"  at resources.jobs.xxx\n" +
+				"     resources.jobs.yyy\n" +
+				"     resources.jobs.zzz\n" +
+				"\n" +
+				"'name' is required\n\n",
+		},
+		{
+			name: "recommendation with multiple paths and locations",
+			diags: diag.Diagnostics{
+				{
+					Severity: diag.Recommendation,
+					Summary:  "summary",
+					Detail:   "detail",
+					Paths: []dyn.Path{
+						dyn.MustPathFromString("resources.jobs.xxx"),
+						dyn.MustPathFromString("resources.jobs.yyy"),
+					},
+					Locations: []dyn.Location{
+						{File: "foo.yaml", Line: 1, Column: 2},
+						{File: "bar.yaml", Line: 3, Column: 4},
+					},
+				},
+			},
+			expected: "Recommendation: summary\n" +
+				"  at resources.jobs.xxx\n" +
+				"     resources.jobs.yyy\n" +
+				"  in foo.yaml:1:2\n" +
+				"     bar.yaml:3:4\n\n" +
+				"detail\n\n",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			writer := &bytes.Buffer{}
+
+			err := cmdio.RenderDiagnostics(writer, tc.diags)
+			require.NoError(t, err)
+
+			assert.Equal(t, tc.expected, writer.String())
+		})
+	}
+}
+
+func TestRenderSummaryTemplate_nilBundle(t *testing.T) {
+	// Disable colors for consistent test output
+	oldNoColor := color.NoColor
+	color.NoColor = true
+	defer func() {
+		color.NoColor = oldNoColor
+	}()
+
+	ctx := logdiag.InitContext(context.Background())
+	writer := &bytes.Buffer{}
+
+	err := renderSummaryHeaderTemplate(ctx, writer, nil)
+	require.NoError(t, err)
+
+	_, err = io.WriteString(writer, buildTrailer(ctx))
+	require.NoError(t, err)
+
+	assert.Equal(t, "Validation OK!\n", writer.String())
 }
 
 func TestRenderSummary(t *testing.T) {
