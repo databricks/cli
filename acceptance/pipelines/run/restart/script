@@ -1,6 +1,15 @@
+print_requests() {
+    jq --sort-keys 'select(.method != "GET" and (.path | contains("/pipelines")))' < out.requests.txt
+    rm out.requests.txt
+}
+
 trace $CLI bundle deploy
-title "test --restart flag"
+rm out.requests.txt
+
+title "Running pipeline with --restart flag"
+# Should stop the current pipeline and start a new update
 trace errcode $PIPELINES run my_pipeline --restart
-rm -f out.requests.txt
+trace print_requests
+
 # This printf is here to fix the whitespace linter error (ensures exactly one newline at end)
 printf "<EOL>\n"

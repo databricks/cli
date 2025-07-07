@@ -5,23 +5,63 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== test --refresh-all flag
+=== Running pipeline with --refresh-all flag
 >>> errcode [PIPELINES] run my_pipeline --refresh-all
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
 
-=== test --refresh flag with specific tables
+>>> print_requests
+{
+  "body": {},
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates"
+}
+
+=== Running pipeline with --refresh flag and specific tables
 >>> errcode [PIPELINES] run my_pipeline --refresh table1,table2
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
 
-=== test --full-refresh-all flag
+>>> print_requests
+{
+  "body": {
+    "refresh_selection": [
+      "table1",
+      "table2"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates"
+}
+
+=== Running pipeline with --full-refresh-all flag
 >>> errcode [PIPELINES] run my_pipeline --full-refresh-all
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
 
-=== test --full-refresh flag with specific tables
+>>> print_requests
+{
+  "body": {
+    "full_refresh": true
+  },
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates"
+}
+
+=== Running pipeline with --full-refresh flag and specific tables
 >>> errcode [PIPELINES] run my_pipeline --full-refresh table1,table2
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
+
+>>> print_requests
+{
+  "body": {
+    "full_refresh_selection": [
+      "table1",
+      "table2"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates"
+}
 <EOL>

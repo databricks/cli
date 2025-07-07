@@ -5,8 +5,19 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== test --restart flag
+=== Running pipeline with --restart flag
 >>> errcode [PIPELINES] run my_pipeline --restart
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
+
+>>> print_requests
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/stop"
+}
+{
+  "body": {},
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates"
+}
 <EOL>
