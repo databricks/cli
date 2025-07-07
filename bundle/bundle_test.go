@@ -113,6 +113,7 @@ func TestBundleMustLoadFailureWithEnv(t *testing.T) {
 	require.Nil(t, b)
 	require.Len(t, diags, 1, "expected diagnostics")
 	assert.Contains(t, diags[0].Summary, "invalid bundle root")
+	assert.Equal(t, diag.Error, diags[0].Severity)
 }
 
 func TestBundleMustLoadFailureIfNotFound(t *testing.T) {
@@ -121,6 +122,7 @@ func TestBundleMustLoadFailureIfNotFound(t *testing.T) {
 	require.Nil(t, b)
 	require.Len(t, diags, 1, "expected diagnostics")
 	assert.Contains(t, diags[0].Summary, "unable to locate bundle root")
+	assert.Equal(t, diag.Error, diags[0].Severity)
 }
 
 func TestBundleTryLoadSuccess(t *testing.T) {
@@ -137,6 +139,7 @@ func TestBundleTryLoadFailureWithEnv(t *testing.T) {
 	require.Nil(t, b)
 	require.Len(t, diags, 1, "expected diagnostics")
 	assert.Contains(t, diags[0].Summary, "invalid bundle root")
+	assert.Equal(t, diag.Error, diags[0].Severity)
 }
 
 func TestBundleTryLoadOkIfNotFound(t *testing.T) {
