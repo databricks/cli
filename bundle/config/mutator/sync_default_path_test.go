@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -54,7 +55,9 @@ func TestSyncDefaultPath_SkipIfSet(t *testing.T) {
 				Config:         config.Root{},
 			}
 
-			bundle.ApplyFuncContext(context.Background(), b, func(ctx context.Context, b *bundle.Bundle) {
+			ctx := logdiag.InitContext(context.Background())
+
+			bundle.ApplyFuncContext(ctx, b, func(ctx context.Context, b *bundle.Bundle) {
 				err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 					v, err := dyn.Set(v, "sync", dyn.V(dyn.NewMapping()))
 					if err != nil {
@@ -68,8 +71,8 @@ func TestSyncDefaultPath_SkipIfSet(t *testing.T) {
 				})
 				require.NoError(t, err)
 			})
+			require.False(t, logdiag.HasError(ctx))
 
-			ctx := context.Background()
 			diags := bundle.Apply(ctx, b, mutator.SyncDefaultPath())
 			require.NoError(t, diags.Error())
 

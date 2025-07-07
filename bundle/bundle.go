@@ -146,7 +146,7 @@ func Load(ctx context.Context, path string) (*Bundle, error) {
 }
 
 // MustLoad returns a bundle configuration.
-// It returns an error if a bundle was not found or could not be loaded.
+// The errors are recorded by logdiag, check with logdiag.HasErrors().
 func MustLoad(ctx context.Context) *Bundle {
 	root, err := mustGetRoot(ctx)
 	if err != nil {
@@ -165,7 +165,7 @@ func MustLoad(ctx context.Context) *Bundle {
 }
 
 // TryLoad returns a bundle configuration if there is one, but doesn't fail if there isn't one.
-// It returns an error if a bundle was found but could not be loaded.
+// The errors are recorded by logdiag, check with logdiag.HasErrors().
 // It returns a `nil` bundle if a bundle was not found.
 func TryLoad(ctx context.Context) *Bundle {
 	root, err := tryGetRoot(ctx)
