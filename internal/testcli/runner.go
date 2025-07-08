@@ -241,8 +241,16 @@ func (r *Runner) Eventually(condition func() bool, waitFor, tick time.Duration, 
 	ticker := time.NewTicker(tick)
 	defer ticker.Stop()
 
-	// Kick off condition check immediately.
+	var mu sync.Mutex
+
+	// Kick off condition check immediately. We wrap the creation of the goroutine
+	// in a mutex to avoid orphaned goroutines. If we do not have this check it is
+	// possible that multiple goroutines are created, one of them passes and the test
+	// terminates. In that scenario if any of the other goroutines fail, the resulting
+	// panic will bring down the entire test runner.
+	mu.Lock()
 	go func() { ch <- condition() }()
+	mu.Unlock()
 
 	for tick := ticker.C; ; {
 		select {
@@ -254,7 +262,9 @@ func (r *Runner) Eventually(condition func() bool, waitFor, tick time.Duration, 
 			return
 		case <-tick:
 			tick = nil
+			mu.Lock()
 			go func() { ch <- condition() }()
+			mu.Unlock()
 		case v := <-ch:
 			if v {
 				return
