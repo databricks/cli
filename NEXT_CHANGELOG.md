@@ -5,7 +5,7 @@
 ### Notable Changes
 * Diagnostics messages are no longer buffered to be printed at the end of command, flushed after every mutator ([#3175](https://github.com/databricks/cli/pull/3175))
 * Diagnostics are now always rendered with forward slashes in file paths, even on Windows ([#3175](https://github.com/databricks/cli/pull/3175))
-* "bundle summary" now prints diagnostics to stderr not to stdout in non-json mode ([#3175](https://github.com/databricks/cli/pull/3175))
+* "bundle summary" now prints diagnostics to stderr instead of stdout in text output mode ([#3175](https://github.com/databricks/cli/pull/3175))
 * "bundle summary" no longer prints recommendations, it will only prints warnings and errors ([#3175](https://github.com/databricks/cli/pull/3175))
 
 ### Dependency updates
