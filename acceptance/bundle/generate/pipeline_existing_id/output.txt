@@ -1,0 +1,9 @@
+
+>>> [CLI] workspace import /generate/pipeline/notebook.py --file notebook.py --format AUTO
+
+>>> [CLI] workspace import /generate/pipeline/file.py --file file.py --format AUTO
+
+>>> [CLI] bundle generate pipeline --existing-pipeline-id [UUID] --config-dir out/config --source-dir out/source --key test_pipeline
+File successfully saved to out/source/notebook.py
+File successfully saved to out/source/file.py
+Pipeline configuration successfully saved to out/config/test_pipeline.pipeline.yml

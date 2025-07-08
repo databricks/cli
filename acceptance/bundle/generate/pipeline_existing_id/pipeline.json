@@ -1,0 +1,27 @@
+{
+    "name": "test-pipeline",
+    "clusters": [
+        {
+            "custom_tags": {
+            "Tag1": "24X7-1234"
+            }
+        },
+        {
+            "spark_conf": {
+            "spark.databricks.delta.preview.enabled": "true"
+            }
+        }
+    ],
+    "libraries": [
+        {
+            "file": {
+            "path": "/generate/pipeline/file.py"
+            }
+        },
+        {
+            "notebook": {
+            "path": "/generate/pipeline/notebook"
+            }
+        }
+    ]
+}

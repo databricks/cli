@@ -1,0 +1,29 @@
+
+>>> [CLI] workspace import /generate/job/notebook.py --file notebook.py --format AUTO
+
+>>> cat resources/test_job.job.yml
+old content
+
+>>> [CLI] bundle generate job --existing-job-id [NUMID] --key test_job --force
+File successfully saved to src/notebook.py
+Job configuration successfully saved to resources/test_job.job.yml
+
+>>> cat resources/test_job.job.yml
+resources:
+  jobs:
+    test_job:
+      name: test-job
+      job_clusters:
+        - new_cluster:
+            custom_tags:
+              "Tag1": "24X7-1234"
+        - new_cluster:
+            spark_conf:
+              "spark.databricks.delta.preview.enabled": "true"
+      tasks:
+        - task_key: notebook_task
+          notebook_task:
+            notebook_path: ../src/notebook.py
+      parameters:
+        - name: empty
+          default: ""

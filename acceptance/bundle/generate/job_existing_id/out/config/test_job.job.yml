@@ -1,0 +1,18 @@
+resources:
+  jobs:
+    test_job:
+      name: test-job
+      job_clusters:
+        - new_cluster:
+            custom_tags:
+              "Tag1": "24X7-1234"
+        - new_cluster:
+            spark_conf:
+              "spark.databricks.delta.preview.enabled": "true"
+      tasks:
+        - task_key: notebook_task
+          notebook_task:
+            notebook_path: ../source/notebook.py
+      parameters:
+        - name: empty
+          default: ""
