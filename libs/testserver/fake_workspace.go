@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"path"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -179,17 +180,38 @@ func (s *FakeWorkspace) WorkspaceFilesImportFile(filePath string, body []byte) {
 
 	defer s.LockUnlock()()
 
-	s.files[filePath] = FileEntry{
-		Info: workspace.ObjectInfo{
-			ObjectType: "FILE",
-			Path:       filePath,
-			Language:   "SCALA",
-		},
-		Data: body,
+	workspacePath := filePath
+
+	// Note: Files with .py, .scala, .r or .sql extension can
+	// be notebooks if they contain a magical "Databricks notebook source"
+	// header comment. We omit support non-python extensions for now for simplicity.
+	extension := filepath.Ext(filePath)
+	if extension == ".py" && strings.HasPrefix(string(body), "# Databricks notebook source") {
+		// Notebooks are stripped of their extension by the workspace import API.
+		workspacePath = strings.TrimSuffix(filePath, extension)
+		s.files[workspacePath] = FileEntry{
+			Info: workspace.ObjectInfo{
+				ObjectType: "NOTEBOOK",
+				Path:       workspacePath,
+				Language:   "PYTHON",
+			},
+			Data: body,
+		}
+	} else {
+		// The endpoint does not set language for files, so we omit that
+		// here as well.
+		// ref: https://docs.databricks.com/api/workspace/workspace/getstatus#language
+		s.files[workspacePath] = FileEntry{
+			Info: workspace.ObjectInfo{
+				ObjectType: "FILE",
+				Path:       workspacePath,
+			},
+			Data: body,
+		}
 	}
 
 	// Add all directories in the path to the directories map
-	for dir := path.Dir(filePath); dir != "/"; dir = path.Dir(dir) {
+	for dir := path.Dir(workspacePath); dir != "/"; dir = path.Dir(dir) {
 		s.directories[dir] = true
 	}
 }

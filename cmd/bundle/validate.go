@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
 )
 
@@ -41,51 +42,67 @@ func newValidateCommand() *cobra.Command {
 	cmd.Flags().MarkHidden("include-locations")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		ctx := cmd.Context()
-		b, diags := utils.ConfigureBundleWithVariables(cmd)
+		ctx := logdiag.InitContext(cmd.Context())
+		cmd.SetContext(ctx)
+
+		b := prepareBundleForValidate(cmd, includeLocations)
 
 		if b == nil {
-			if err := diags.Error(); err != nil {
-				return diags.Error()
+			if logdiag.HasError(ctx) {
+				return root.ErrAlreadyPrinted
 			} else {
 				return errors.New("invariant failed: returned bundle is nil")
 			}
 		}
 
-		if !diags.HasError() {
-			diags = diags.Extend(phases.Initialize(ctx, b))
-		}
-
-		if !diags.HasError() {
-			diags = diags.Extend(validate.Validate(ctx, b))
-		}
-
-		// Include location information in the output if the flag is set.
-		if includeLocations {
-			diags = diags.Extend(bundle.Apply(ctx, b, mutator.PopulateLocations()))
-		}
-
 		if root.OutputType(cmd) == flags.OutputText {
-			err := render.RenderDiagnostics(cmd.OutOrStdout(), b, diags, render.RenderOptions{RenderSummaryTable: true})
+			err := render.RenderDiagnosticsSummary(ctx, cmd.OutOrStdout(), b)
 			if err != nil {
 				return err
 			}
 		}
+
 		if root.OutputType(cmd) == flags.OutputJSON {
-			err := render.RenderDiagnostics(cmd.ErrOrStderr(), b, diags, render.RenderOptions{RenderSummaryTable: false})
-			if err != nil {
-				return err
-			}
-			err = renderJsonOutput(cmd, b)
+			err := renderJsonOutput(cmd, b)
 			if err != nil {
 				return err
 			}
 		}
-		if diags.HasError() {
+
+		if logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}
+
 		return nil
 	}
 
 	return cmd
+}
+
+func prepareBundleForValidate(cmd *cobra.Command, includeLocations bool) *bundle.Bundle {
+	b := utils.ConfigureBundleWithVariables(cmd)
+	ctx := cmd.Context()
+
+	if b == nil || logdiag.HasError(ctx) {
+		return b
+	}
+
+	phases.Initialize(ctx, b)
+
+	if logdiag.HasError(ctx) {
+		return b
+	}
+
+	validate.Validate(ctx, b)
+
+	if logdiag.HasError(ctx) {
+		return b
+	}
+
+	// Include location information in the output if the flag is set.
+	if includeLocations {
+		bundle.ApplyContext(ctx, b, mutator.PopulateLocations())
+	}
+
+	return b
 }

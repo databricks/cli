@@ -14,7 +14,6 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/config/variable"
 	"github.com/databricks/cli/bundle/internal/bundletest"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go/service/compute"
@@ -834,16 +833,15 @@ func TestTranslatePathWithComplexVariables(t *testing.T) {
 
 	ctx := context.Background()
 	// Assign the variables to the dynamic configuration.
-	diags := bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	bundle.ApplyFuncContext(ctx, b, func(ctx context.Context, b *bundle.Bundle) {
 		err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 			p := dyn.MustPathFromString("resources.jobs.job.tasks[0]")
 			return dyn.SetByPath(v, p.Append(dyn.Key("libraries")), dyn.V("${var.cluster_libraries}"))
 		})
-		return diag.FromErr(err)
+		require.NoError(t, err)
 	})
-	require.NoError(t, diags.Error())
 
-	diags = bundle.ApplySeq(ctx, b,
+	diags := bundle.ApplySeq(ctx, b,
 		mutator.SetVariables(),
 		mutator.ResolveVariableReferencesOnlyResources("variables"),
 		mutator.NormalizePaths(),

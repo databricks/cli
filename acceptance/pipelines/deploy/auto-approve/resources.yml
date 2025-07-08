@@ -1,0 +1,4 @@
+resources:
+  pipelines:
+    foo:
+      name: test-pipeline

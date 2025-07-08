@@ -21,6 +21,7 @@ Exit code: 1
 >>> errcode [CLI] current-user me -t dev -p profile_name
 Error: cannot resolve bundle auth configuration: the host in the profile (https://non-existing-subdomain.databricks.com) doesn’t match the host configured in the bundle ([DATABRICKS_TARGET]). The profile "DEFAULT" has host="[DATABRICKS_TARGET]" that matches host in the bundle. To select it, pass "-p DEFAULT"
 
+
 Exit code: 1
 
 === Bundle commands load bundle configuration when no flags, validation OK
