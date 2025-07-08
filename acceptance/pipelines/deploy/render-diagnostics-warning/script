@@ -1,0 +1,3 @@
+trace $PIPELINES deploy
+# print newline to comply with whitespace linter
+printf "<EOL>\n"

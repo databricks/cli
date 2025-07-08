@@ -1,9 +1,9 @@
 
 === install pipelines cli
->>> errcode [CLI] install-pipelines-cli -d ./subdir
+>>> [CLI] install-pipelines-cli -d ./subdir
 pipelines successfully installed in directory "./subdir"
 
->>> errcode ./subdir/pipelines
+>>> ./subdir/pipelines
 Pipelines CLI
 
 Usage:
@@ -12,6 +12,7 @@ Usage:
 Available Commands:
   auth        Authentication related commands
   completion  Generate the autocompletion script for the specified shell
+  deploy      Deploy pipelines
   destroy     Destroy a pipelines project
   help        Help about any command
   init        Initialize a new pipelines project
@@ -28,7 +29,7 @@ Flags:
 Use "pipelines [command] --help" for more information about a command.
 
 === pipelines already installed
->>> errcode [CLI] install-pipelines-cli -d ./subdir
+>>> [CLI] install-pipelines-cli -d ./subdir
 pipelines already installed in directory "./subdir"
 
 === pipelines file exists, should not overwrite
@@ -38,10 +39,10 @@ Error: cannot install pipelines CLI: "subdir/pipelines" already exists
 Exit code: 1
 
 === databricks executable called with alias
->>> errcode ./subdir/notdatabricks install-pipelines-cli -d ./subdir
+>>> ./subdir/notdatabricks install-pipelines-cli -d ./subdir
 pipelines successfully installed in directory "./subdir"
 
->>> errcode ./subdir/pipelines
+>>> ./subdir/pipelines
 Pipelines CLI
 
 Usage:
@@ -50,6 +51,7 @@ Usage:
 Available Commands:
   auth        Authentication related commands
   completion  Generate the autocompletion script for the specified shell
+  deploy      Deploy pipelines
   destroy     Destroy a pipelines project
   help        Help about any command
   init        Initialize a new pipelines project
