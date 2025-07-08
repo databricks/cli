@@ -246,8 +246,8 @@ func (r *Runner) Eventually(condition func() bool, waitFor, tick time.Duration, 
 	// Kick off condition check immediately. We wrap the creation of the goroutine
 	// in a mutex to avoid orphaned goroutines. If we do not have this check it is
 	// possible that multiple goroutines are created, one of them passes and the test
-	// terminates. In that scenario if any of the other goroutines fail, the resulting
-	// panic will bring down the entire test runner.
+	// terminates. In that scenario if any of the other goroutines use the *testing.T
+	// interface, the resulting panic will bring down the entire test runner.
 	mu.Lock()
 	go func() { ch <- condition() }()
 	mu.Unlock()
