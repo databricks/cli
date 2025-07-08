@@ -1,0 +1,12 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-run/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== run pipeline
+>>> errcode [PIPELINES] run my_pipeline
+Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
+
+<EOL>

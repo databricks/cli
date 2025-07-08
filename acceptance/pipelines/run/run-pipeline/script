@@ -1,0 +1,5 @@
+trace $CLI bundle deploy
+title "run pipeline"
+trace errcode $PIPELINES run my_pipeline
+# This printf is here to fix the whitespace linter error (ensures exactly one newline at end)
+printf "<EOL>\n"
