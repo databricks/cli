@@ -2,10 +2,9 @@ package bundle
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"time"
-
-	"fmt"
 
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
