@@ -9,7 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/sync"
 	"github.com/spf13/cobra"
 )
@@ -31,39 +31,51 @@ func deployCommand() *cobra.Command {
 	cmd.Flags().MarkHidden("verbose")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		ctx := cmd.Context()
-		b, diags := utils.ConfigureBundleWithVariables(cmd)
+		ctx := logdiag.InitContext(cmd.Context())
+		cmd.SetContext(ctx)
+		b := utils.ConfigureBundleWithVariables(cmd)
 
-		if !diags.HasError() {
-			bundle.ApplyFunc(ctx, b, func(context.Context, *bundle.Bundle) diag.Diagnostics {
-				b.Config.Bundle.Deployment.Lock.Force = forceLock
-				b.AutoApprove = autoApprove
-				return nil
-			})
+		if logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
+		}
 
-			var outputHandler sync.OutputHandler
-			if verbose {
-				outputHandler = func(ctx context.Context, c <-chan sync.Event) {
-					sync.TextOutput(ctx, c, cmd.OutOrStdout())
-				}
-			}
+		bundle.ApplyFuncContext(ctx, b, func(context.Context, *bundle.Bundle) {
+			b.Config.Bundle.Deployment.Lock.Force = forceLock
+			b.AutoApprove = autoApprove
+		})
 
-			diags = diags.Extend(phases.Initialize(ctx, b))
-
-			if !diags.HasError() {
-				diags = diags.Extend(bundle.Apply(ctx, b, validate.FastValidate()))
-			}
-
-			if !diags.HasError() {
-				diags = diags.Extend(phases.Build(ctx, b))
-			}
-
-			if !diags.HasError() {
-				diags = diags.Extend(phases.Deploy(ctx, b, outputHandler))
+		var outputHandler sync.OutputHandler
+		if verbose {
+			outputHandler = func(ctx context.Context, c <-chan sync.Event) {
+				sync.TextOutput(ctx, c, cmd.OutOrStdout())
 			}
 		}
 
-		return renderDiagnostics(cmd.OutOrStdout(), b, diags)
+		phases.Initialize(ctx, b)
+
+		if logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
+		}
+
+		bundle.ApplyContext(ctx, b, validate.FastValidate())
+
+		if logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
+		}
+
+		phases.Build(ctx, b)
+
+		if logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
+		}
+
+		phases.Deploy(ctx, b, outputHandler)
+
+		if logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
+		}
+
+		return nil
 	}
 	return cmd
 }
