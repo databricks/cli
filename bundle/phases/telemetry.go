@@ -22,7 +22,7 @@ func getExecutionTimes(b *bundle.Bundle) []protos.IntMapEntry {
 		return executionTimes[i].Value > executionTimes[j].Value
 	})
 
-	// Keep only the top 1000 execution times. This keeps the telemetry event
+	// Keep only the top 250 execution times. This keeps the telemetry event
 	// reasonable in size. This should be unnecessary in most cases but is
 	// done out of caution since the number of mutators depends upon user input.
 	// Eg: every pattern in `includes:` triggers a new mutator.
