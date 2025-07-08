@@ -1,14 +1,4 @@
-tmpdir="./subdir"
-pipelines="$tmpdir/pipelines"
-mkdir -p $tmpdir
-
-title "Install pipelines CLI"
-trace errcode $CLI install-pipelines-cli -d $tmpdir
-
 title "Test basic pipelines init with configuration file"
-trace $pipelines init --config-file ./input.json --output-dir output
+trace $PIPELINES init --config-file ./input.json --output-dir output
 
 mv output/my_python_project/.gitignore output/my_python_project/out.gitignore
-
-rm -f $pipelines
-rm -rf $tmpdir

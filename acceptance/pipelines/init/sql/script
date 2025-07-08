@@ -1,15 +1,5 @@
-tmpdir="./subdir"
-pipelines="$tmpdir/pipelines"
-mkdir -p $tmpdir
-
-title "Install pipelines CLI"
-trace errcode $CLI install-pipelines-cli -d $tmpdir
-
 title "Test pipelines init with SQL configuration"
-trace $pipelines init --config-file ./input.json --output-dir output
+trace $PIPELINES init --config-file ./input.json --output-dir output
 
 # Do not affect this repository's git behaviour
 mv output/my_sql_project/.gitignore output/my_sql_project/out.gitignore
-
-rm -f $pipelines
-rm -rf $tmpdir

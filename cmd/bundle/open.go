@@ -87,18 +87,25 @@ func newOpenCommand() *cobra.Command {
 		noCache := errors.Is(stateFileErr, os.ErrNotExist) || errors.Is(configFileErr, os.ErrNotExist)
 
 		if forcePull || noCache {
-			diags = bundle.ApplySeq(ctx, b,
-				statemgmt.StatePull(),
-				terraform.Interpolate(),
-				terraform.Write(),
-			)
-			if err := diags.Error(); err != nil {
+			diags = bundle.Apply(ctx, b, statemgmt.StatePull())
+			if err = diags.Error(); err != nil {
 				return err
+			}
+
+			if !b.DirectDeployment {
+				diags = bundle.ApplySeq(ctx, b,
+					terraform.Interpolate(),
+					terraform.Write(),
+				)
+
+				if err = diags.Error(); err != nil {
+					return err
+				}
 			}
 		}
 
 		diags = bundle.ApplySeq(ctx, b,
-			terraform.Load(),
+			statemgmt.Load(),
 			mutator.InitializeURLs(),
 		)
 		if err := diags.Error(); err != nil {
