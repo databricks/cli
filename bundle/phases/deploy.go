@@ -23,8 +23,8 @@ import (
 	"github.com/databricks/cli/bundle/terranova"
 	"github.com/databricks/cli/bundle/trampoline"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/sync"
 )
 
@@ -123,65 +123,60 @@ This will result in changed IDs and permanent URLs of the dashboards that will b
 	return approved, nil
 }
 
-func deployCore(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func deployCore(ctx context.Context, b *bundle.Bundle) {
 	// Core mutators that CRUD resources and modify deployment state. These
 	// mutators need informed consent if they are potentially destructive.
 	cmdio.LogString(ctx, "Deploying resources...")
 
-	var diags diag.Diagnostics
-
 	if b.DirectDeployment {
-		diags = bundle.Apply(ctx, b, terranova.TerranovaApply())
+		bundle.ApplyContext(ctx, b, terranova.TerranovaApply())
 	} else {
-		diags = bundle.Apply(ctx, b, terraform.Apply())
+		bundle.ApplyContext(ctx, b, terraform.Apply())
 	}
 
 	// Even if deployment failed, there might be updates in states that we need to upload
-	newDiags := bundle.Apply(ctx, b,
+	bundle.ApplyContext(ctx, b,
 		statemgmt.StatePush(),
 	)
-	diags = diags.Extend(newDiags)
-	if newDiags.HasError() {
-		return diags
+	if logdiag.HasError(ctx) {
+		return
 	}
 
-	diags = diags.Extend(bundle.ApplySeq(ctx, b,
+	bundle.ApplySeqContext(ctx, b,
 		statemgmt.Load(),
 		apps.InterpolateVariables(),
 		apps.UploadConfig(),
 		metadata.Compute(),
 		metadata.Upload(),
-	))
+	)
 
-	if !diags.HasError() {
+	if !logdiag.HasError(ctx) {
 		cmdio.LogString(ctx, "Deployment complete!")
 	}
-
-	return diags
 }
 
 // The deploy phase deploys artifacts and resources.
-func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHandler) (diags diag.Diagnostics) {
+func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHandler) {
 	log.Info(ctx, "Phase: deploy")
 
 	// Core mutators that CRUD resources and modify deployment state. These
 	// mutators need informed consent if they are potentially destructive.
-	diags = bundle.ApplySeq(ctx, b,
+	bundle.ApplySeqContext(ctx, b,
 		scripts.Execute(config.ScriptPreDeploy),
 		lock.Acquire(),
 	)
 
-	if diags.HasError() {
+	if logdiag.HasError(ctx) {
 		// lock is not acquired here
-		return diags
+		return
 	}
 
 	// lock is acquired here
 	defer func() {
-		diags = diags.Extend(bundle.Apply(ctx, b, lock.Release(lock.GoalDeploy)))
+		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDeploy))
 	}()
 
-	diags = diags.Extend(bundle.ApplySeq(ctx, b,
+	bundle.ApplySeqContext(ctx, b,
 		statemgmt.StatePull(),
 		terraform.CheckDashboardsModifiedRemotely(),
 		deploy.StatePull(),
@@ -203,42 +198,42 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		deploy.StatePush(),
 		permissions.ApplyWorkspaceRootPermissions(),
 		metrics.TrackUsedCompute(),
-	))
+	)
 
-	if diags.HasError() {
-		return diags
+	if logdiag.HasError(ctx) {
+		return
 	}
 
 	if !b.DirectDeployment {
-		diags = diags.Extend(bundle.ApplySeq(ctx, b,
+		bundle.ApplySeqContext(ctx, b,
 			terraform.Interpolate(),
 			terraform.Write(),
 			terraform.Plan(terraform.PlanGoal("deploy")),
-		))
+		)
 	}
 
-	if diags.HasError() {
-		return diags
+	if logdiag.HasError(ctx) {
+		return
 	}
 
 	haveApproval, err := approvalForDeploy(ctx, b)
 	if err != nil {
-		diags = diags.Extend(diag.FromErr(err))
-		return diags
+		logdiag.LogError(ctx, err)
+		return
 	}
 
 	if haveApproval {
-		diags = diags.Extend(deployCore(ctx, b))
+		deployCore(ctx, b)
 	} else {
 		cmdio.LogString(ctx, "Deployment cancelled!")
 	}
 
-	if diags.HasError() {
-		return diags
+	if logdiag.HasError(ctx) {
+		return
 	}
 
 	logDeployTelemetry(ctx, b)
-	return diags.Extend(bundle.Apply(ctx, b, scripts.Execute(config.ScriptPostDeploy)))
+	bundle.ApplyContext(ctx, b, scripts.Execute(config.ScriptPostDeploy))
 }
 
 // If there are more than 1 thousand of a resource type, do not

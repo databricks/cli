@@ -3,7 +3,7 @@
 Created job with ID: [NUMID]
 
 === Expect binding to fail without an auto-approve flag:
-Error: failed to bind the resource, err: This bind operation requires user confirmation, but the current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed.
+Error: This bind operation requires user confirmation, but the current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed.
 
 === Deploy bundle:
 >>> [CLI] bundle deploy --force-lock
