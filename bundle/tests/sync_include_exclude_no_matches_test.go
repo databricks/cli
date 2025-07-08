@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"path"
-	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -28,7 +27,7 @@ func TestSyncIncludeExcludeNoMatchesTest(t *testing.T) {
 	require.Equal(t, "sync.exclude[0]", diags[0].Paths[0].String())
 
 	assert.Len(t, diags[0].Locations, 1)
-	require.Equal(t, diags[0].Locations[0].File, filepath.Join("sync", "override", "databricks.yml"))
+	require.Equal(t, diags[0].Locations[0].File, path.Join("sync", "override", "databricks.yml"))
 	require.Equal(t, 17, diags[0].Locations[0].Line)
 	require.Equal(t, 11, diags[0].Locations[0].Column)
 

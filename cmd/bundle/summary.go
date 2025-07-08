@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
 )
 
@@ -32,21 +33,16 @@ func newSummaryCommand() *cobra.Command {
 	cmd.Flags().MarkHidden("include-locations")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		b, diags := prepareBundleForSummary(cmd, forcePull, includeLocations)
 		var err error
+		ctx := logdiag.InitContext(cmd.Context())
+		cmd.SetContext(ctx)
+		logdiag.SetSeverity(ctx, diag.Warning)
 
-		if root.OutputType(cmd) == flags.OutputText {
-			err = render.RenderDiagnostics(cmd.OutOrStdout(), b, diags, render.RenderOptions{RenderSummaryTable: false})
-		} else {
-			err = render.RenderDiagnostics(cmd.OutOrStderr(), b, diags, render.RenderOptions{RenderSummaryTable: false})
-		}
-		if err != nil {
-			return err
-		}
+		b := prepareBundleForSummary(cmd, forcePull, includeLocations)
 
 		if b != nil {
 			if root.OutputType(cmd) == flags.OutputText {
-				err = render.RenderSummary(cmd.Context(), cmd.OutOrStdout(), b)
+				err = render.RenderSummary(ctx, cmd.OutOrStdout(), b)
 				if err != nil {
 					return err
 				}
@@ -59,7 +55,7 @@ func newSummaryCommand() *cobra.Command {
 			}
 		}
 
-		if diags.HasError() {
+		if logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}
 
@@ -69,56 +65,59 @@ func newSummaryCommand() *cobra.Command {
 	return cmd
 }
 
-func prepareBundleForSummary(cmd *cobra.Command, forcePull, includeLocations bool) (*bundle.Bundle, diag.Diagnostics) {
+func prepareBundleForSummary(cmd *cobra.Command, forcePull, includeLocations bool) *bundle.Bundle {
+	b := utils.ConfigureBundleWithVariables(cmd)
 	ctx := cmd.Context()
-	b, diags := utils.ConfigureBundleWithVariables(cmd)
-	if err := diags.Error(); err != nil {
-		return nil, diags
+	if b == nil || logdiag.HasError(ctx) {
+		return nil
 	}
 
-	diags = diags.Extend(phases.Initialize(ctx, b))
-	if err := diags.Error(); err != nil {
-		return nil, diags
+	phases.Initialize(ctx, b)
+	if logdiag.HasError(ctx) {
+		return nil
 	}
 
 	cacheDir, err := terraform.Dir(ctx, b)
 	if err != nil {
-		return nil, diags
+		logdiag.LogError(ctx, err)
+		return nil
 	}
 	_, stateFileErr := os.Stat(filepath.Join(cacheDir, b.StateFilename()))
 	_, configFileErr := os.Stat(filepath.Join(cacheDir, terraform.TerraformConfigFileName))
 	noCache := errors.Is(stateFileErr, os.ErrNotExist) || errors.Is(configFileErr, os.ErrNotExist)
 
 	if forcePull || noCache {
-		diags = diags.Extend(bundle.Apply(ctx, b, statemgmt.StatePull()))
-		if err := diags.Error(); err != nil {
-			return nil, diags
+		bundle.ApplyContext(ctx, b, statemgmt.StatePull())
+
+		if logdiag.HasError(ctx) {
+			return nil
 		}
 
 		if !b.DirectDeployment {
-			diags = diags.Extend(bundle.ApplySeq(ctx, b,
+			bundle.ApplySeqContext(ctx, b,
 				terraform.Interpolate(),
 				terraform.Write(),
-			))
-			if err := diags.Error(); err != nil {
-				return nil, diags
-			}
+			)
+		}
+
+		if logdiag.HasError(ctx) {
+			return nil
 		}
 	}
 
-	diags = diags.Extend(bundle.ApplySeq(ctx, b,
+	bundle.ApplySeqContext(ctx, b,
 		statemgmt.Load(),
 		mutator.InitializeURLs(),
-	))
+	)
 
 	// Include location information in the output if the flag is set.
 	if includeLocations {
-		diags = diags.Extend(bundle.Apply(ctx, b, mutator.PopulateLocations()))
+		bundle.ApplyContext(ctx, b, mutator.PopulateLocations())
 	}
 
-	if err := diags.Error(); err != nil {
-		return nil, diags
+	if logdiag.HasError(ctx) {
+		return nil
 	}
 
-	return b, diags
+	return b
 }
