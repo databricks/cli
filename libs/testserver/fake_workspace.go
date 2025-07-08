@@ -187,6 +187,7 @@ func (s *FakeWorkspace) WorkspaceFilesImportFile(filePath string, body []byte) {
 	// header comment. We omit support non-python extensions for now for simplicity.
 	extension := filepath.Ext(filePath)
 	if extension == ".py" && strings.HasPrefix(string(body), "# Databricks notebook source") {
+		// Notebooks are stripped of their extension by the workspace import API.
 		workspacePath = strings.TrimSuffix(filePath, extension)
 		s.files[workspacePath] = FileEntry{
 			Info: workspace.ObjectInfo{

@@ -131,7 +131,7 @@ func addDefaultHandlers(server *testserver.Server) {
 			}
 		}
 
-		// The /workspace/import endpoint returns the content as base64 encoded string.
+		// The /workspace/import endpoint expects the content as base64 encoded string.
 		// We need to decode it to get the actual content.
 		decoded, err := base64.StdEncoding.DecodeString(request.Content)
 		if err != nil {
