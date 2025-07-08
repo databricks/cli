@@ -8,7 +8,3 @@ EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["terraform"] # uses 'experiments' resourc
 Ignore = [
     "config.json"
 ]
-
-[[Repls]]
-Old = '\\'
-New = '/'

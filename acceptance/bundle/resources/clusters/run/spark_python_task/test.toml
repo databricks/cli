@@ -15,7 +15,3 @@ New = "[NUMID]"
 [[Repls]]
 Old = '\\\\'
 New = '/'
-
-[[Repls]]
-Old = '\\'
-New = '/'

@@ -4,7 +4,3 @@ RecordRequests = true
 Ignore = [
     ".databricks"
 ]
-
-[[Repls]]
-Old = '\\'
-New = '/'
