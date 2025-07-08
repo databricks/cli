@@ -1,3 +1,4 @@
+// Copied to cmd/pipelines/destroy.go and adapted for pipelines use.
 package bundle
 
 import (
