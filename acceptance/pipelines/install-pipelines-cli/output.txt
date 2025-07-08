@@ -15,7 +15,6 @@ Available Commands:
   deploy      Deploy pipelines
   help        Help about any command
   init        Initialize a new pipelines project
-  run         Run a pipeline
 
 Flags:
       --debug            enable debug logging
@@ -54,7 +53,6 @@ Available Commands:
   deploy      Deploy pipelines
   help        Help about any command
   init        Initialize a new pipelines project
-  run         Run a pipeline
 
 Flags:
       --debug            enable debug logging
