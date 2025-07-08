@@ -15,10 +15,9 @@ type keyType int
 
 const key = keyType(0)
 
-// Global mutex is used because we write to stderr.
-var Mu sync.Mutex
-
 type LogDiagData struct {
+	mu *sync.Mutex
+
 	// How many diagnostics if each type were seen
 	Errors          int
 	Warnings        int
@@ -44,15 +43,13 @@ func IsSetup(ctx context.Context) bool {
 }
 
 func InitContext(ctx context.Context) context.Context {
-	Mu.Lock()
-	defer Mu.Unlock()
-
 	_, ok := ctx.Value(key).(*LogDiagData)
 	if ok {
 		panic("internal error: must not call InitContext() twice")
 	}
 	val := LogDiagData{
 		TargetSeverity: 255,
+		mu:             &sync.Mutex{},
 	}
 	return context.WithValue(ctx, key, &val)
 }
@@ -66,55 +63,59 @@ func read(ctx context.Context) *LogDiagData {
 }
 
 func Copy(ctx context.Context) LogDiagData {
-	Mu.Lock()
-	defer Mu.Unlock()
-
-	return *read(ctx)
+	val := read(ctx)
+	val.mu.Lock()
+	defer val.mu.Unlock()
+	return *val
 }
 
 func HasError(ctx context.Context) bool {
-	Mu.Lock()
-	defer Mu.Unlock()
+	val := read(ctx)
+	val.mu.Lock()
+	defer val.mu.Unlock()
 
-	return read(ctx).Errors > 0
+	return val.Errors > 0
 }
 
 func SetSeverity(ctx context.Context, target diag.Severity) {
-	Mu.Lock()
-	defer Mu.Unlock()
+	val := read(ctx)
+	val.mu.Lock()
+	defer val.mu.Unlock()
 
 	read(ctx).TargetSeverity = target
 }
 
 func SetRoot(ctx context.Context, root string) {
-	Mu.Lock()
-	defer Mu.Unlock()
+	val := read(ctx)
+	val.mu.Lock()
+	defer val.mu.Unlock()
 
 	read(ctx).Root = root
 }
 
 func SetCollect(ctx context.Context, collect bool) {
-	Mu.Lock()
-	defer Mu.Unlock()
+	val := read(ctx)
+	val.mu.Lock()
+	defer val.mu.Unlock()
 
 	read(ctx).Collect = collect
 }
 
 func FlushCollected(ctx context.Context) diag.Diagnostics {
-	Mu.Lock()
-	defer Mu.Unlock()
-
 	val := read(ctx)
+	val.mu.Lock()
+	defer val.mu.Unlock()
+
 	result := val.Collected
 	val.Collected = nil
 	return result
 }
 
 func LogDiag(ctx context.Context, d diag.Diagnostic) {
-	Mu.Lock()
-	defer Mu.Unlock()
-
 	val := read(ctx)
+	val.mu.Lock()
+	defer val.mu.Unlock()
+
 	switch d.Severity {
 	case diag.Error:
 		val.Errors += 1
