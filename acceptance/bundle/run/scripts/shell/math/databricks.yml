@@ -3,5 +3,5 @@ bundle:
 
 scripts:
   add:
-    content: |
+    content: |-
       echo $(( $ARG1 + $ARG2 ))

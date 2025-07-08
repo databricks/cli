@@ -9,5 +9,5 @@ scripts:
     content: |
       python3 -c "import sys; print('hello from stdout')"
   stderr:
-    content: |
+    content: |-
       python3 -c "import sys; print('hello from stderr', file=sys.stderr)"

@@ -3,5 +3,5 @@ bundle:
 
 scripts:
   foo:
-    content: |
+    content: |-
       echo $foo $bar

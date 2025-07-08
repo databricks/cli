@@ -1,4 +1,4 @@
 scripts:
   foo:
-    content: |
+    content: |-
       echo "Bye, world!"
