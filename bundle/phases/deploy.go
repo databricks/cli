@@ -145,19 +145,8 @@ func deployCore(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		return diags
 	}
 
-	if b.DirectDeployment {
-		// TODO: terraform.Load alternative
-	} else {
-		newDiags := bundle.Apply(ctx, b,
-			terraform.Load(),
-		)
-		diags = diags.Extend(newDiags)
-		if newDiags.HasError() {
-			return diags
-		}
-	}
-
 	diags = diags.Extend(bundle.ApplySeq(ctx, b,
+		statemgmt.Load(),
 		apps.InterpolateVariables(),
 		apps.UploadConfig(),
 		metadata.Compute(),
@@ -192,8 +181,6 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		diags = diags.Extend(bundle.Apply(ctx, b, lock.Release(lock.GoalDeploy)))
 	}()
 
-	// TODO: StatePull and OpenResourceDatabase both parse resources.json; we should do it only once
-
 	diags = diags.Extend(bundle.ApplySeq(ctx, b,
 		statemgmt.StatePull(),
 		terraform.CheckDashboardsModifiedRemotely(),
@@ -222,13 +209,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return diags
 	}
 
-	if b.DirectDeployment {
-		err := b.OpenResourceDatabase(ctx)
-		if err != nil {
-			diags = diags.Extend(diag.FromErr(err))
-			return diags
-		}
-	} else {
+	if !b.DirectDeployment {
 		diags = diags.Extend(bundle.ApplySeq(ctx, b,
 			terraform.Interpolate(),
 			terraform.Write(),

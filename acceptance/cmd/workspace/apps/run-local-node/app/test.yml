@@ -1,0 +1,4 @@
+command:
+  - node
+  - -e
+  - "console.log('Hello, world')"
