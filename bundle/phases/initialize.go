@@ -18,25 +18,26 @@ import (
 	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/bundle/scripts"
 	"github.com/databricks/cli/bundle/trampoline"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/logdiag"
 )
 
 // The initialize phase fills in defaults and connects to the workspace.
 // Interpolation of fields referring to the "bundle" and "workspace" keys
 // happens upon completion of this phase.
-func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func Initialize(ctx context.Context, b *bundle.Bundle) {
 	var err error
 
 	log.Info(ctx, "Phase: initialize")
 
 	b.DirectDeployment, err = IsDirectDeployment(ctx)
 	if err != nil {
-		return diag.FromErr(err)
+		logdiag.LogError(ctx, err)
+		return
 	}
 
-	diags := bundle.ApplySeq(ctx, b,
+	bundle.ApplySeqContext(ctx, b,
 		// Reads (dynamic): resource.*.*
 		// Checks that none of resources.<type>.<key> is nil. Raises error otherwise.
 		validate.AllResourcesHaveValues(),
@@ -197,8 +198,8 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		metadata.AnnotatePipelines(),
 	)
 
-	if diags.HasError() {
-		return diags
+	if logdiag.HasError(ctx) {
+		return
 	}
 
 	if !b.DirectDeployment {
@@ -207,16 +208,16 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Updates (typed): b.Terraform (initializes Terraform executor with proper environment variables and paths)
 		// Initializes Terraform with the correct binary, working directory, and environment variables for authentication
 
-		diags = diags.Extend(bundle.Apply(ctx, b, terraform.Initialize()))
+		bundle.ApplyContext(ctx, b, terraform.Initialize())
 	}
 
-	if diags.HasError() {
-		return diags
+	if logdiag.HasError(ctx) {
+		return
 	}
 
 	// Reads (typed): b.Config.Experimental.Scripts["post_init"] (checks if script is defined)
 	// Executes the post_init script hook defined in the bundle configuration
-	return diags.Extend(bundle.Apply(ctx, b, scripts.Execute(config.ScriptPostInit)))
+	bundle.ApplyContext(ctx, b, scripts.Execute(config.ScriptPostInit))
 }
 
 func IsDirectDeployment(ctx context.Context) (bool, error) {
