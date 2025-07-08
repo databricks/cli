@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/require"
@@ -232,9 +231,7 @@ func BundleV(b *testing.B, numJobs int) dyn.Value {
 	}
 
 	// Apply noop mutator to initialize the bundle value.
-	bundle.ApplyFunc(context.Background(), &myBundle, func(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-		return nil
-	})
+	bundle.ApplyFuncContext(context.Background(), &myBundle, func(ctx context.Context, b *bundle.Bundle) {})
 
 	return myBundle.Config.Value()
 }
