@@ -45,25 +45,14 @@ func newValidateCommand() *cobra.Command {
 		ctx := logdiag.InitContext(cmd.Context())
 		cmd.SetContext(ctx)
 
-		b := utils.ConfigureBundleWithVariables(cmd)
+		b := prepareBundleForValidate(cmd, includeLocations)
 
 		if b == nil {
-			if !logdiag.HasError(ctx) {
+			if logdiag.HasError(ctx) {
+				return root.ErrAlreadyPrinted
+			} else {
 				return errors.New("invariant failed: returned bundle is nil")
 			}
-		}
-
-		if !logdiag.HasError(ctx) {
-			phases.Initialize(ctx, b)
-		}
-
-		if !logdiag.HasError(ctx) {
-			validate.Validate(ctx, b)
-		}
-
-		// Include location information in the output if the flag is set.
-		if includeLocations {
-			bundle.ApplyContext(ctx, b, mutator.PopulateLocations())
 		}
 
 		if root.OutputType(cmd) == flags.OutputText {
@@ -72,6 +61,7 @@ func newValidateCommand() *cobra.Command {
 				return err
 			}
 		}
+
 		if root.OutputType(cmd) == flags.OutputJSON {
 			err := renderJsonOutput(cmd, b)
 			if err != nil {
@@ -87,4 +77,32 @@ func newValidateCommand() *cobra.Command {
 	}
 
 	return cmd
+}
+
+func prepareBundleForValidate(cmd *cobra.Command, includeLocations bool) *bundle.Bundle {
+	b := utils.ConfigureBundleWithVariables(cmd)
+	ctx := cmd.Context()
+
+	if b == nil || logdiag.HasError(ctx) {
+		return b
+	}
+
+	phases.Initialize(ctx, b)
+
+	if logdiag.HasError(ctx) {
+		return b
+	}
+
+	validate.Validate(ctx, b)
+
+	if logdiag.HasError(ctx) {
+		return b
+	}
+
+	// Include location information in the output if the flag is set.
+	if includeLocations {
+		bundle.ApplyContext(ctx, b, mutator.PopulateLocations())
+	}
+
+	return b
 }
