@@ -26,8 +26,8 @@ func getExecutionTimes(b *bundle.Bundle) []protos.IntMapEntry {
 	// reasonable in size. This should be unnecessary in most cases but is
 	// done out of caution since the number of mutators depends upon user input.
 	// Eg: every pattern in `includes:` triggers a new mutator.
-	if len(executionTimes) > 1000 {
-		executionTimes = executionTimes[:1000]
+	if len(executionTimes) > 250 {
+		executionTimes = executionTimes[:250]
 	}
 
 	return executionTimes
