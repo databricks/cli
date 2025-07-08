@@ -124,7 +124,6 @@ func (s *syncTest) waitForCompletionMarker() {
 
 func (a *syncTest) remoteDirContent(ctx context.Context, relativeDir string, expectedFiles []string) {
 	remoteDir := path.Join(a.remoteRoot, relativeDir)
-
 	a.c.Eventually(func() bool {
 		objects, err := a.w.Workspace.ListAll(ctx, workspace.ListWorkspaceRequest{
 			Path: remoteDir,
