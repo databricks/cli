@@ -29,7 +29,7 @@ func (m *build) Name() string {
 }
 
 func (m *build) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	cacheDir, err := b.CacheDir(ctx)
+	cacheDir, err := b.LocalStateDir(ctx)
 	if err != nil {
 		logdiag.LogDiag(ctx, diag.Diagnostic{
 			Severity: diag.Warning,
