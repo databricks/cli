@@ -1,5 +1,5 @@
 title "Test basic pipelines destroy"
-trace $CLI bundle deploy
+trace $PIPELINES deploy
 PIPELINE_ID=$($CLI bundle summary -o json | jq -r '.resources.pipelines.my_pipeline.id')
 trace $PIPELINES destroy --auto-approve
 
