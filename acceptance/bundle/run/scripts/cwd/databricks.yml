@@ -1,6 +1,5 @@
 bundle:
   name: cheetah
 
-scripts:
-  foo:
-    content: python3 -c 'import os; print(os.getcwd())'
+include:
+  - scripts/*.yml
