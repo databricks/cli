@@ -69,7 +69,7 @@ func prepareJobSettingsForUpdate(js *jobs.JobSettings) {
 			ModifyRequestOnInstancePool(task.NewCluster)
 		}
 	}
-	for ind, _ := range js.JobClusters {
+	for ind := range js.JobClusters {
 		ModifyRequestOnInstancePool(&js.JobClusters[ind].NewCluster)
 	}
 }
