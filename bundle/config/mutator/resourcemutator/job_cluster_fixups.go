@@ -12,7 +12,7 @@ import (
 type jobClustersFixups struct{}
 
 func JobClustersFixups() bundle.Mutator {
-	return &applyTargetMode{}
+	return &jobClustersFixups{}
 }
 
 func (m *jobClustersFixups) Name() string {
