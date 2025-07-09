@@ -47,12 +47,13 @@ type FakeWorkspace struct {
 	Jobs         map[int64]jobs.Job
 	JobRuns      map[int64]jobs.Run
 
-	Pipelines  map[string]pipelines.GetPipelineResponse
-	Monitors   map[string]catalog.MonitorInfo
-	Apps       map[string]apps.App
-	Schemas    map[string]catalog.SchemaInfo
-	Volumes    map[string]catalog.VolumeInfo
-	Dashboards map[string]dashboards.Dashboard
+	Pipelines       map[string]pipelines.GetPipelineResponse
+	PipelineUpdates map[string]bool
+	Monitors        map[string]catalog.MonitorInfo
+	Apps            map[string]apps.App
+	Schemas         map[string]catalog.SchemaInfo
+	Volumes         map[string]catalog.VolumeInfo
+	Dashboards      map[string]dashboards.Dashboard
 }
 
 func (w *FakeWorkspace) LockUnlock() func() {
@@ -117,17 +118,18 @@ func NewFakeWorkspace(url string) *FakeWorkspace {
 		directories: map[string]bool{
 			"/Workspace": true,
 		},
-		files:        make(map[string]FileEntry),
-		Jobs:         map[int64]jobs.Job{},
-		JobRuns:      map[int64]jobs.Run{},
-		nextJobId:    TestJobID,
-		nextJobRunId: TestRunID,
-		Pipelines:    map[string]pipelines.GetPipelineResponse{},
-		Monitors:     map[string]catalog.MonitorInfo{},
-		Apps:         map[string]apps.App{},
-		Schemas:      map[string]catalog.SchemaInfo{},
-		Volumes:      map[string]catalog.VolumeInfo{},
-		Dashboards:   map[string]dashboards.Dashboard{},
+		files:           make(map[string]FileEntry),
+		Jobs:            map[int64]jobs.Job{},
+		JobRuns:         map[int64]jobs.Run{},
+		nextJobId:       TestJobID,
+		nextJobRunId:    TestRunID,
+		Pipelines:       map[string]pipelines.GetPipelineResponse{},
+		PipelineUpdates: map[string]bool{},
+		Monitors:        map[string]catalog.MonitorInfo{},
+		Apps:            map[string]apps.App{},
+		Schemas:         map[string]catalog.SchemaInfo{},
+		Volumes:         map[string]catalog.VolumeInfo{},
+		Dashboards:      map[string]dashboards.Dashboard{},
 	}
 }
 
