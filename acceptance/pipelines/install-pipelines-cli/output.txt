@@ -14,6 +14,7 @@ Available Commands:
   completion  Generate the autocompletion script for the specified shell
   deploy      Deploy pipelines
   destroy     Destroy a pipelines project
+  dry-run     Validate correctness of the pipeline's graph
   help        Help about any command
   init        Initialize a new pipelines project
   run         Run a pipeline
@@ -54,6 +55,7 @@ Available Commands:
   completion  Generate the autocompletion script for the specified shell
   deploy      Deploy pipelines
   destroy     Destroy a pipelines project
+  dry-run     Validate correctness of the pipeline's graph
   help        Help about any command
   init        Initialize a new pipelines project
   run         Run a pipeline

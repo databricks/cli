@@ -15,34 +15,19 @@ import (
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/libs/cmdgroup"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/maps"
 )
 
-func runCommand() *cobra.Command {
+func dryRunCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "run [flags] [KEY]",
-		Short: "Run a pipeline",
-		Long: `Run the pipeline identified by KEY.
+		Use:   "dry-run [KEY]",
+		Short: "Validate correctness of the pipeline's graph",
+		Long: `Validates correctness of the pipeline's graph, identified by KEY. Does not materialize or publish any datasets.
 The KEY is the unique identifier of the pipeline to run.`,
 	}
-
-	var refreshAll bool
-	var refresh []string
-	var fullRefreshAll bool
-	var fullRefresh []string
-
-	pipelineGroup := cmdgroup.NewFlagGroup("Pipeline Run")
-	pipelineGroup.FlagSet().BoolVar(&refreshAll, "refresh-all", false, "Perform a full graph run.")
-	pipelineGroup.FlagSet().StringSliceVar(&refresh, "refresh", nil, "List of tables to run.")
-	pipelineGroup.FlagSet().BoolVar(&fullRefreshAll, "full-refresh-all", false, "Perform a full graph reset and recompute.")
-	pipelineGroup.FlagSet().StringSliceVar(&fullRefresh, "full-refresh", nil, "List of tables to reset and recompute.")
-
-	wrappedCmd := cmdgroup.NewCommandWithGroupFlag(cmd)
-	wrappedCmd.AddFlagGroup(pipelineGroup)
 
 	var noWait bool
 	var restart bool
@@ -91,12 +76,10 @@ The KEY is the unique identifier of the pipeline to run.`,
 			return err
 		}
 
+		// For dry-run, we only validate the graph without materializing
 		runOptions := run.Options{
 			Pipeline: run.PipelineOptions{
-				RefreshAll:     refreshAll,
-				Refresh:        refresh,
-				FullRefreshAll: fullRefreshAll,
-				FullRefresh:    fullRefresh,
+				ValidateOnly: true,
 			},
 			NoWait: noWait,
 		}
