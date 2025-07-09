@@ -38,10 +38,10 @@ func (w SqlWarehouse) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(w)
 }
 
-func (sw *SqlWarehouse) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {
-	_, err := w.Warehouses.GetByName(ctx, name)
+func (sw *SqlWarehouse) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {
+	_, err := w.Warehouses.GetById(ctx, id)
 	if err != nil {
-		log.Debugf(ctx, "sql warehouse %s does not exist", name)
+		log.Debugf(ctx, "sql warehouse %s does not exist", id)
 		return false, err
 	}
 	return true, nil
@@ -57,10 +57,10 @@ func (*SqlWarehouse) ResourceDescription() ResourceDescription {
 }
 
 func (sw *SqlWarehouse) InitializeURL(baseURL url.URL) {
-	if sw.ModifiedStatus == "" || sw.ModifiedStatus == ModifiedStatusCreated {
+	if sw.ID == "" {
 		return
 	}
-	baseURL.Path = "apps/" + sw.GetName()
+	baseURL.Path = "sql/warehouses/" + sw.ID
 	sw.URL = baseURL.String()
 }
 

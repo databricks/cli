@@ -4,7 +4,7 @@ bundle:
 resources:
   sql_warehouses:
     test_sql_warehouse:
-      name: test_sql_warehouse
+      name: sql_warehouse_name
       cluster_size: X-Large
       enable_serverless_compute: true
       max_num_clusters: 1

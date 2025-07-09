@@ -132,3 +132,21 @@ app resource 'rname' is missing required source_code_path field
     }
   }
 }
+
+=== resources.sql_warehouses.rname ===
+{
+  "sql_warehouses": {
+    "rname": {
+      "permissions": []
+    }
+  }
+}
+
+=== resources.secret_scopes.rname ===
+{
+  "secret_scopes": {
+    "rname": {
+      "permissions": []
+    }
+  }
+}

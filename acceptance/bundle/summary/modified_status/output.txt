@@ -29,6 +29,15 @@
       "modified_status": "created",
       "name": "test-schema"
     }
+  },
+  "sql_warehouses": {
+    "my_sql_warehouse": {
+      "cluster_size": "X-Large",
+      "enable_serverless_compute": true,
+      "modified_status": "created",
+      "name": "test-sql-warehouse",
+      "permissions": []
+    }
   }
 }
 
@@ -70,6 +79,16 @@ Deployment complete!
       "name": "test-schema",
       "url": "[DATABRICKS_URL]/explore/data/main/test-schema?o=[NUMID]"
     }
+  },
+  "sql_warehouses": {
+    "my_sql_warehouse": {
+      "cluster_size": "X-Large",
+      "enable_serverless_compute": true,
+      "id": "[UUID]",
+      "name": "test-sql-warehouse",
+      "permissions": [],
+      "url": "[DATABRICKS_URL]/sql/warehouses/[UUID]?o=[NUMID]"
+    }
   }
 }
 
@@ -89,6 +108,13 @@ Deployment complete!
       "modified_status": "deleted",
       "url": "[DATABRICKS_URL]/explore/data/main/test-schema?o=[NUMID]"
     }
+  },
+  "sql_warehouses": {
+    "my_sql_warehouse": {
+      "id": "[UUID]",
+      "modified_status": "deleted",
+      "url": "[DATABRICKS_URL]/sql/warehouses/[UUID]?o=[NUMID]"
+    }
   }
 }
 
@@ -96,6 +122,7 @@ Deployment complete!
 The following resources will be deleted:
   delete pipeline my_pipeline
   delete schema my_schema
+  delete sql_warehouse my_sql_warehouse
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 

@@ -54,30 +54,12 @@ func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, oldID string) (stri
 }
 
 func (r *ResourceSqlWarehouse) WaitAfterCreate(ctx context.Context) error {
-	if r.createWaiter == nil {
-		return nil
-	}
-
-	_, err := r.createWaiter.Get()
-	if err != nil {
-		return err
-	}
-
-	r.createWaiter = nil
+	// No need to wait for sql warehouse to be ready after creation similar to clusters
 	return nil
 }
 
 func (r *ResourceSqlWarehouse) WaitAfterUpdate(ctx context.Context) error {
-	if r.updateWaiter == nil {
-		return nil
-	}
-
-	_, err := r.updateWaiter.Get()
-	if err != nil {
-		return err
-	}
-
-	r.updateWaiter = nil
+	// No need to wait for sql warehouse to be ready after update similar to clusters
 	return nil
 }
 

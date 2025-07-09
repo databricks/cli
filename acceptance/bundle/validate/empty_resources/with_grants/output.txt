@@ -151,3 +151,29 @@ app resource 'rname' is missing required source_code_path field
     }
   }
 }
+
+=== resources.sql_warehouses.rname ===
+Warning: unknown field: grants
+  at resources.sql_warehouses.rname
+  in databricks.yml:7:7
+
+{
+  "sql_warehouses": {
+    "rname": {
+      "permissions": []
+    }
+  }
+}
+
+=== resources.secret_scopes.rname ===
+Warning: unknown field: grants
+  at resources.secret_scopes.rname
+  in databricks.yml:7:7
+
+{
+  "secret_scopes": {
+    "rname": {
+      "permissions": []
+    }
+  }
+}
