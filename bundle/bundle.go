@@ -26,6 +26,7 @@ import (
 	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/locker"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/logdiag"
 	libsync "github.com/databricks/cli/libs/sync"
 	"github.com/databricks/cli/libs/tags"
 	"github.com/databricks/cli/libs/telemetry/protos"
@@ -52,6 +53,7 @@ type Metrics struct {
 	BoolValues                  []protos.BoolMapEntry
 	PythonAddedResourcesCount   int64
 	PythonUpdatedResourcesCount int64
+	ExecutionTimes              []protos.IntMapEntry
 }
 
 func (m *Metrics) AddBoolValue(key string, value bool) {
@@ -144,31 +146,47 @@ func Load(ctx context.Context, path string) (*Bundle, error) {
 }
 
 // MustLoad returns a bundle configuration.
-// It returns an error if a bundle was not found or could not be loaded.
-func MustLoad(ctx context.Context) (*Bundle, error) {
+// The errors are recorded by logdiag, check with logdiag.HasError().
+func MustLoad(ctx context.Context) *Bundle {
 	root, err := mustGetRoot(ctx)
 	if err != nil {
-		return nil, err
+		logdiag.LogError(ctx, err)
+		return nil
 	}
 
-	return Load(ctx, root)
+	logdiag.SetRoot(ctx, root)
+
+	b, err := Load(ctx, root)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return nil
+	}
+	return b
 }
 
 // TryLoad returns a bundle configuration if there is one, but doesn't fail if there isn't one.
-// It returns an error if a bundle was found but could not be loaded.
+// The errors are recorded by logdiag, check with logdiag.HasError().
 // It returns a `nil` bundle if a bundle was not found.
-func TryLoad(ctx context.Context) (*Bundle, error) {
+func TryLoad(ctx context.Context) *Bundle {
 	root, err := tryGetRoot(ctx)
 	if err != nil {
-		return nil, err
+		logdiag.LogError(ctx, err)
+		return nil
 	}
 
 	// No root is fine in this function.
 	if root == "" {
-		return nil, nil
+		return nil
 	}
 
-	return Load(ctx, root)
+	logdiag.SetRoot(ctx, root)
+
+	b, err := Load(ctx, root)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return nil
+	}
+	return b
 }
 
 func (b *Bundle) WorkspaceClientE() (*databricks.WorkspaceClient, error) {
@@ -199,9 +217,9 @@ func (b *Bundle) SetWorkpaceClient(w *databricks.WorkspaceClient) {
 	b.client = w
 }
 
-// CacheDir returns directory to use for temporary files for this bundle.
+// LocalStateDir returns directory to use for temporary files for this bundle.
 // Scoped to the bundle's target.
-func (b *Bundle) CacheDir(ctx context.Context, paths ...string) (string, error) {
+func (b *Bundle) LocalStateDir(ctx context.Context, paths ...string) (string, error) {
 	if b.Config.Bundle.Target == "" {
 		panic("target not set")
 	}
@@ -241,7 +259,7 @@ func (b *Bundle) CacheDir(ctx context.Context, paths ...string) (string, error) 
 // This directory is used to store and automaticaly sync internal bundle files, such as, f.e
 // notebook trampoline files for Python wheel and etc.
 func (b *Bundle) InternalDir(ctx context.Context) (string, error) {
-	cacheDir, err := b.CacheDir(ctx)
+	cacheDir, err := b.LocalStateDir(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -328,13 +346,13 @@ func (b *Bundle) StateFilename() string {
 
 func (b *Bundle) StateLocalPath(ctx context.Context) (string, error) {
 	if b.DirectDeployment {
-		cacheDir, err := b.CacheDir(ctx)
+		cacheDir, err := b.LocalStateDir(ctx)
 		if err != nil {
 			return "", err
 		}
 		return filepath.Join(cacheDir, resourcesFilename), nil
 	} else {
-		cacheDir, err := b.CacheDir(ctx, "terraform")
+		cacheDir, err := b.LocalStateDir(ctx, "terraform")
 		if err != nil {
 			return "", err
 		}

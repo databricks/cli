@@ -21,7 +21,7 @@ func identityFiler(f filer.Filer) deploy.FilerFactory {
 }
 
 func localStateFile(t *testing.T, ctx context.Context, b *bundle.Bundle) string {
-	dir, err := b.CacheDir(ctx, "terraform")
+	dir, err := b.LocalStateDir(ctx, "terraform")
 	require.NoError(t, err)
 	return filepath.Join(dir, b.StateFilename())
 }

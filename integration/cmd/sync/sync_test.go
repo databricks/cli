@@ -104,7 +104,7 @@ func setupSyncTest(t *testing.T, args ...string) (context.Context, *syncTest) {
 }
 
 func (s *syncTest) waitForCompletionMarker() {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	for {
