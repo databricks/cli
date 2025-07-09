@@ -378,7 +378,21 @@ func addDefaultHandlers(server *testserver.Server) {
 		return testserver.MapDelete(req.Workspace, req.Workspace.Schemas, req.Vars["full_name"])
 	})
 
+	// Volumes:
+
+	server.Handle("GET", "/api/2.1/unity-catalog/volumes/{full_name}", func(req testserver.Request) any {
+		return testserver.MapGet(req.Workspace, req.Workspace.Volumes, req.Vars["full_name"])
+	})
+
 	server.Handle("POST", "/api/2.1/unity-catalog/volumes", func(req testserver.Request) any {
 		return req.Workspace.VolumesCreate(req)
+	})
+
+	server.Handle("PATCH", "/api/2.1/unity-catalog/volumes/{full_name}", func(req testserver.Request) any {
+		return req.Workspace.VolumesUpdate(req, req.Vars["full_name"])
+	})
+
+	server.Handle("DELETE", "/api/2.1/unity-catalog/volumes/{full_name}", func(req testserver.Request) any {
+		return testserver.MapDelete(req.Workspace, req.Workspace.Volumes, req.Vars["full_name"])
 	})
 }

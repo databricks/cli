@@ -1,0 +1,112 @@
+
+=== Initial summary for resource, before the deployment
+>>> [CLI] bundle summary -o json
+{
+  "catalog_name": "main",
+  "comment": "COMMENT1",
+  "modified_status": "created",
+  "name": "myvolume",
+  "schema_name": "myschema",
+  "volume_type": "MANAGED"
+}
+
+=== Verify volume does not exist
+>>> musterr [CLI] volumes read main.myschema.myvolume
+Error: Resource catalog.VolumeInfo not found: main.myschema.myvolume
+
+Exit code (musterr): 1
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests
+{
+  "method": "POST",
+  "path": "/api/2.1/unity-catalog/volumes",
+  "body": {
+    "catalog_name": "main",
+    "comment": "COMMENT1",
+    "name": "myvolume",
+    "schema_name": "myschema",
+    "volume_type": "MANAGED"
+  }
+}
+
+=== Summary should now show id and url
+"main.myschema.myvolume"
+"[DATABRICKS_URL]/explore/data/volumes/main/myschema/myvolume?o=[NUMID]"
+
+=== Verify deployment
+>>> [CLI] volumes read main.myschema.myvolume
+{
+  "catalog_name":"main",
+  "comment":"COMMENT1",
+  "full_name":"main.myschema.myvolume",
+  "name":"myvolume",
+  "schema_name":"myschema",
+  "volume_type":"MANAGED"
+}
+
+=== Update comment
+>>> update_file.py databricks.yml COMMENT1 COMMENT2
+
+=== Summary should show modified_status=modified and show the same id
+{
+  "catalog_name": "main",
+  "comment": "COMMENT2",
+  "id": "main.myschema.myvolume",
+  "name": "myvolume",
+  "schema_name": "myschema",
+  "url": "[DATABRICKS_URL]/explore/data/volumes/main/myschema/myvolume?o=[NUMID]",
+  "volume_type": "MANAGED"
+}
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/volumes/main.myschema.myvolume",
+  "body": {
+    "comment": "COMMENT2"
+  }
+}
+
+=== Verify updated deployment: should show new comment
+>>> [CLI] volumes read main.myschema.myvolume
+"COMMENT2"
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete volume volume1
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Deleting files...
+Destroy complete!
+
+>>> print_requests
+{
+  "method": "DELETE",
+  "path": "/api/2.1/unity-catalog/volumes/main.myschema.myvolume"
+}
+
+>>> musterr [CLI] volumes read main.myschema.myvolume
+Error: Resource catalog.VolumeInfo not found: main.myschema.myvolume
+
+Exit code (musterr): 1
+{
+  "catalog_name": "main",
+  "comment": "COMMENT2",
+  "modified_status": "created",
+  "name": "myvolume",
+  "schema_name": "myschema",
+  "volume_type": "MANAGED"
+}
