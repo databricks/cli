@@ -7,8 +7,9 @@ import (
 )
 
 type elementsByKey struct {
-	key     string
-	keyFunc func(dyn.Value) string
+	key      string
+	keyFunc  func(dyn.Value) string
+	sortKeys bool
 }
 
 func (e elementsByKey) doMap(_ dyn.Path, v dyn.Value, mergeFunc func(a, b dyn.Value) (dyn.Value, error)) (dyn.Value, error) {
@@ -46,11 +47,9 @@ func (e elementsByKey) doMap(_ dyn.Path, v dyn.Value, mergeFunc func(a, b dyn.Va
 		seen[key] = nv
 	}
 
-	// Sorting since it'll be sorted by TF anyway
-	// https://github.com/databricks/terraform-provider-databricks/blob/0a932c2/jobs/resource_job.go#L343
-	// However, if we don't sort we have a difference between direct and TF and between configs in
-	// "bundle validate" and configs sent to backend.
-	sort.Strings(keys)
+	if e.sortKeys {
+		sort.Strings(keys)
+	}
 
 	// Gather resulting elements in natural order.
 	out := make([]dyn.Value, 0, len(keys))
@@ -93,9 +92,13 @@ func (e elementsByKey) MapWithOverride(p dyn.Path, v dyn.Value) (dyn.Value, erro
 // a parameter. The resulting elements get their key field overwritten
 // with the value as returned by the key function.
 func ElementsByKey(key string, keyFunc func(dyn.Value) string) dyn.MapFunc {
-	return elementsByKey{key, keyFunc}.Map
+	return elementsByKey{key, keyFunc, false}.Map
+}
+
+func ElementsBySortedKey(key string, keyFunc func(dyn.Value) string) dyn.MapFunc {
+	return elementsByKey{key, keyFunc, true}.Map
 }
 
 func ElementsByKeyWithOverride(key string, keyFunc func(dyn.Value) string) dyn.MapFunc {
-	return elementsByKey{key, keyFunc}.MapWithOverride
+	return elementsByKey{key, keyFunc, false}.MapWithOverride
 }
