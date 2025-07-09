@@ -70,6 +70,7 @@ func MapGet[T any](w *FakeWorkspace, collection map[string]T, key string) Respon
 	if !ok {
 		return Response{
 			StatusCode: 404,
+			Body:       map[string]string{"message": fmt.Sprintf("Resource %T not found: %v", value, key)},
 		}
 	}
 	return Response{
