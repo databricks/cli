@@ -3,10 +3,10 @@ print_requests() {
     rm out.requests.txt
 }
 
-trace $CLI bundle deploy
+trace $PIPELINES deploy
 rm out.requests.txt
 
 title "Running pipeline with --restart flag"
 # Should stop the current pipeline and start a new update
-trace errcode $PIPELINES run my_pipeline --restart
+trace $PIPELINES run my_pipeline --restart
 trace print_requests

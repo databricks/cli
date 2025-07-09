@@ -1,12 +1,12 @@
 
->>> [CLI] bundle deploy
+>>> [PIPELINES] deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
 
 === Running pipeline with --refresh-all flag
->>> errcode [PIPELINES] run my_pipeline --refresh-all
+>>> [PIPELINES] run my_pipeline --refresh-all
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
 
@@ -18,7 +18,7 @@ Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 }
 
 === Running pipeline with --refresh flag and specific tables
->>> errcode [PIPELINES] run my_pipeline --refresh table1,table2
+>>> [PIPELINES] run my_pipeline --refresh table1,table2
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
 
@@ -35,7 +35,7 @@ Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 }
 
 === Running pipeline with --full-refresh-all flag
->>> errcode [PIPELINES] run my_pipeline --full-refresh-all
+>>> [PIPELINES] run my_pipeline --full-refresh-all
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
 
@@ -49,7 +49,7 @@ Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 }
 
 === Running pipeline with --full-refresh flag and specific tables
->>> errcode [PIPELINES] run my_pipeline --full-refresh table1,table2
+>>> [PIPELINES] run my_pipeline --full-refresh table1,table2
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
 
