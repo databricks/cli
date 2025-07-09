@@ -75,7 +75,6 @@ func newCreate() *cobra.Command {
 	createReq.Dashboard = dashboards.Dashboard{}
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.Dashboard.DisplayName, "display-name", createReq.Dashboard.DisplayName, `The display name of the dashboard.`)
@@ -148,7 +147,6 @@ func newCreateSchedule() *cobra.Command {
 	createScheduleReq.Schedule = dashboards.Schedule{}
 	var createScheduleJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createScheduleJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createScheduleReq.Schedule.DisplayName, "display-name", createScheduleReq.Schedule.DisplayName, `The display name for schedule.`)
@@ -225,7 +223,6 @@ func newCreateSubscription() *cobra.Command {
 	createSubscriptionReq.Subscription = dashboards.Subscription{}
 	var createSubscriptionJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createSubscriptionJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "create-subscription DASHBOARD_ID SCHEDULE_ID"
@@ -298,8 +295,6 @@ func newDeleteSchedule() *cobra.Command {
 
 	var deleteScheduleReq dashboards.DeleteScheduleRequest
 
-	// TODO: short flags
-
 	cmd.Flags().StringVar(&deleteScheduleReq.Etag, "etag", deleteScheduleReq.Etag, `The etag for the schedule.`)
 
 	cmd.Use = "delete-schedule DASHBOARD_ID SCHEDULE_ID"
@@ -357,8 +352,6 @@ func newDeleteSubscription() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var deleteSubscriptionReq dashboards.DeleteSubscriptionRequest
-
-	// TODO: short flags
 
 	cmd.Flags().StringVar(&deleteSubscriptionReq.Etag, "etag", deleteSubscriptionReq.Etag, `The etag for the subscription.`)
 
@@ -420,8 +413,6 @@ func newGet() *cobra.Command {
 
 	var getReq dashboards.GetDashboardRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get DASHBOARD_ID"
 	cmd.Short = `Get dashboard.`
 	cmd.Long = `Get dashboard.
@@ -477,8 +468,6 @@ func newGetPublished() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getPublishedReq dashboards.GetPublishedDashboardRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get-published DASHBOARD_ID"
 	cmd.Short = `Get published dashboard.`
@@ -536,8 +525,6 @@ func newGetSchedule() *cobra.Command {
 
 	var getScheduleReq dashboards.GetScheduleRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get-schedule DASHBOARD_ID SCHEDULE_ID"
 	cmd.Short = `Get dashboard schedule.`
 	cmd.Long = `Get dashboard schedule.
@@ -593,8 +580,6 @@ func newGetSubscription() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getSubscriptionReq dashboards.GetSubscriptionRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get-subscription DASHBOARD_ID SCHEDULE_ID SUBSCRIPTION_ID"
 	cmd.Short = `Get schedule subscription.`
@@ -654,8 +639,6 @@ func newList() *cobra.Command {
 
 	var listReq dashboards.ListDashboardsRequest
 
-	// TODO: short flags
-
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `The number of dashboards to return per page.`)
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `A page token, received from a previous ListDashboards call.`)
 	cmd.Flags().BoolVar(&listReq.ShowTrashed, "show-trashed", listReq.ShowTrashed, `The flag to include dashboards located in the trash.`)
@@ -706,8 +689,6 @@ func newListSchedules() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listSchedulesReq dashboards.ListSchedulesRequest
-
-	// TODO: short flags
 
 	cmd.Flags().IntVar(&listSchedulesReq.PageSize, "page-size", listSchedulesReq.PageSize, `The number of schedules to return per page.`)
 	cmd.Flags().StringVar(&listSchedulesReq.PageToken, "page-token", listSchedulesReq.PageToken, `A page token, received from a previous ListSchedules call.`)
@@ -762,8 +743,6 @@ func newListSubscriptions() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listSubscriptionsReq dashboards.ListSubscriptionsRequest
-
-	// TODO: short flags
 
 	cmd.Flags().IntVar(&listSubscriptionsReq.PageSize, "page-size", listSubscriptionsReq.PageSize, `The number of subscriptions to return per page.`)
 	cmd.Flags().StringVar(&listSubscriptionsReq.PageToken, "page-token", listSubscriptionsReq.PageToken, `A page token, received from a previous ListSubscriptions call.`)
@@ -822,7 +801,6 @@ func newMigrate() *cobra.Command {
 	var migrateReq dashboards.MigrateDashboardRequest
 	var migrateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&migrateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&migrateReq.DisplayName, "display-name", migrateReq.DisplayName, `Display name for the new Lakeview dashboard.`)
@@ -907,7 +885,6 @@ func newPublish() *cobra.Command {
 	var publishReq dashboards.PublishRequest
 	var publishJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&publishJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().BoolVar(&publishReq.EmbedCredentials, "embed-credentials", publishReq.EmbedCredentials, `Flag to indicate if the publisher's credentials should be embedded in the published dashboard.`)
@@ -981,8 +958,6 @@ func newTrash() *cobra.Command {
 
 	var trashReq dashboards.TrashDashboardRequest
 
-	// TODO: short flags
-
 	cmd.Use = "trash DASHBOARD_ID"
 	cmd.Short = `Trash dashboard.`
 	cmd.Long = `Trash dashboard.
@@ -1038,8 +1013,6 @@ func newUnpublish() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var unpublishReq dashboards.UnpublishDashboardRequest
-
-	// TODO: short flags
 
 	cmd.Use = "unpublish DASHBOARD_ID"
 	cmd.Short = `Unpublish dashboard.`
@@ -1099,7 +1072,6 @@ func newUpdate() *cobra.Command {
 	updateReq.Dashboard = dashboards.Dashboard{}
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateReq.Dashboard.DisplayName, "display-name", updateReq.Dashboard.DisplayName, `The display name of the dashboard.`)
@@ -1176,7 +1148,6 @@ func newUpdateSchedule() *cobra.Command {
 	updateScheduleReq.Schedule = dashboards.Schedule{}
 	var updateScheduleJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateScheduleJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateScheduleReq.Schedule.DisplayName, "display-name", updateScheduleReq.Schedule.DisplayName, `The display name for schedule.`)

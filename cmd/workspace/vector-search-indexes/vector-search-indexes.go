@@ -72,7 +72,6 @@ func newCreateIndex() *cobra.Command {
 	var createIndexReq vectorsearch.CreateVectorIndexRequest
 	var createIndexJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createIndexJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: delta_sync_index_spec
@@ -177,7 +176,6 @@ func newDeleteDataVectorIndex() *cobra.Command {
 	var deleteDataVectorIndexReq vectorsearch.DeleteDataVectorIndexRequest
 	var deleteDataVectorIndexJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&deleteDataVectorIndexJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "delete-data-vector-index INDEX_NAME"
@@ -251,13 +249,9 @@ func newDeleteIndex() *cobra.Command {
 
 	var deleteIndexReq vectorsearch.DeleteIndexRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete-index INDEX_NAME"
 	cmd.Short = `Delete an index.`
 	cmd.Long = `Delete an index.
-  
-  Delete an index.
 
   Arguments:
     INDEX_NAME: Name of the index`
@@ -309,13 +303,9 @@ func newGetIndex() *cobra.Command {
 
 	var getIndexReq vectorsearch.GetIndexRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get-index INDEX_NAME"
 	cmd.Short = `Get an index.`
 	cmd.Long = `Get an index.
-  
-  Get an index.
 
   Arguments:
     INDEX_NAME: Name of the index`
@@ -366,8 +356,6 @@ func newListIndexes() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listIndexesReq vectorsearch.ListIndexesRequest
-
-	// TODO: short flags
 
 	cmd.Flags().StringVar(&listIndexesReq.PageToken, "page-token", listIndexesReq.PageToken, `Token for pagination.`)
 
@@ -425,7 +413,6 @@ func newQueryIndex() *cobra.Command {
 	var queryIndexReq vectorsearch.QueryVectorIndexRequest
 	var queryIndexJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&queryIndexJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: columns_to_rerank
@@ -507,7 +494,6 @@ func newQueryNextPage() *cobra.Command {
 	var queryNextPageReq vectorsearch.QueryVectorIndexNextPageRequest
 	var queryNextPageJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&queryNextPageJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&queryNextPageReq.EndpointName, "endpoint-name", queryNextPageReq.EndpointName, `Name of the endpoint.`)
@@ -583,7 +569,6 @@ func newScanIndex() *cobra.Command {
 	var scanIndexReq vectorsearch.ScanVectorIndexRequest
 	var scanIndexJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&scanIndexJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&scanIndexReq.LastPrimaryKey, "last-primary-key", scanIndexReq.LastPrimaryKey, `Primary key of the last entry returned in the previous scan.`)
@@ -658,8 +643,6 @@ func newSyncIndex() *cobra.Command {
 
 	var syncIndexReq vectorsearch.SyncIndexRequest
 
-	// TODO: short flags
-
 	cmd.Use = "sync-index INDEX_NAME"
 	cmd.Short = `Synchronize an index.`
 	cmd.Long = `Synchronize an index.
@@ -717,7 +700,6 @@ func newUpsertDataVectorIndex() *cobra.Command {
 	var upsertDataVectorIndexReq vectorsearch.UpsertDataVectorIndexRequest
 	var upsertDataVectorIndexJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&upsertDataVectorIndexJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "upsert-data-vector-index INDEX_NAME INPUTS_JSON"

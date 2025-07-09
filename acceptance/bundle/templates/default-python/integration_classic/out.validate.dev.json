@@ -1,7 +1,8 @@
 {
   "artifacts": {
     "python_artifact": {
-      "build": "python3 setup.py bdist_wheel",
+      "build": "uv build --wheel",
+      "dynamic_version": true,
       "files": [
         {
           "source": "[TEST_TMP_DIR]/project_name_[UNIQUE_NAME]/dist/*.whl"
@@ -24,7 +25,6 @@
     "mode": "development",
     "name": "project_name_[UNIQUE_NAME]",
     "target": "dev",
-    "terraform": {},
     "uuid": "[UUID]"
   },
   "include": [
@@ -32,6 +32,7 @@
     "resources/project_name_[UNIQUE_NAME].pipeline.yml"
   ],
   "presets": {
+    "artifacts_dynamic_version": true,
     "jobs_max_concurrent_runs": 4,
     "name_prefix": "[dev [USERNAME]] ",
     "pipelines_development": true,

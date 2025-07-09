@@ -20,24 +20,35 @@ import (
 	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/bundle/scripts"
 	"github.com/databricks/cli/bundle/statemgmt"
+	"github.com/databricks/cli/bundle/terranova"
 	"github.com/databricks/cli/bundle/trampoline"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/sync"
 )
 
 func approvalForDeploy(ctx context.Context, b *bundle.Bundle) (bool, error) {
-	tf := b.Terraform
-	if tf == nil {
-		return false, errors.New("terraform not initialized")
+	var actions []deployplan.Action
+	var err error
+
+	if b.DirectDeployment {
+		actions, err = terranova.CalculateDeployActions(ctx, b)
+		if err != nil {
+			return false, err
+		}
+	} else {
+		tf := b.Terraform
+		if tf == nil {
+			return false, errors.New("terraform not initialized")
+		}
+		actions, err = terraform.ShowPlanFile(ctx, tf, b.Plan.TerraformPlanPath)
+		if err != nil {
+			return false, err
+		}
 	}
 
-	// read plan file
-	actions, err := terraform.ShowPlanFile(ctx, tf, b.Plan.Path)
-	if err != nil {
-		return false, err
-	}
+	b.Plan.Actions = actions
 
 	types := []deployplan.ActionType{deployplan.ActionTypeRecreate, deployplan.ActionTypeDelete}
 	schemaActions := deployplan.FilterGroup(actions, "schemas", types...)
@@ -112,52 +123,60 @@ This will result in changed IDs and permanent URLs of the dashboards that will b
 	return approved, nil
 }
 
-func deployCore(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func deployCore(ctx context.Context, b *bundle.Bundle) {
 	// Core mutators that CRUD resources and modify deployment state. These
 	// mutators need informed consent if they are potentially destructive.
 	cmdio.LogString(ctx, "Deploying resources...")
-	diags := bundle.Apply(ctx, b, terraform.Apply())
 
-	// following original logic, continuing with sequence below even if terraform had errors
+	if b.DirectDeployment {
+		bundle.ApplyContext(ctx, b, terranova.TerranovaApply())
+	} else {
+		bundle.ApplyContext(ctx, b, terraform.Apply())
+	}
 
-	diags = diags.Extend(bundle.ApplySeq(ctx, b,
+	// Even if deployment failed, there might be updates in states that we need to upload
+	bundle.ApplyContext(ctx, b,
 		statemgmt.StatePush(),
-		terraform.Load(),
+	)
+	if logdiag.HasError(ctx) {
+		return
+	}
+
+	bundle.ApplySeqContext(ctx, b,
+		statemgmt.Load(),
 		apps.InterpolateVariables(),
 		apps.UploadConfig(),
 		metadata.Compute(),
 		metadata.Upload(),
-	))
+	)
 
-	if !diags.HasError() {
+	if !logdiag.HasError(ctx) {
 		cmdio.LogString(ctx, "Deployment complete!")
 	}
-
-	return diags
 }
 
 // The deploy phase deploys artifacts and resources.
-func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHandler) (diags diag.Diagnostics) {
+func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHandler) {
 	log.Info(ctx, "Phase: deploy")
 
 	// Core mutators that CRUD resources and modify deployment state. These
 	// mutators need informed consent if they are potentially destructive.
-	diags = bundle.ApplySeq(ctx, b,
+	bundle.ApplySeqContext(ctx, b,
 		scripts.Execute(config.ScriptPreDeploy),
 		lock.Acquire(),
 	)
 
-	if diags.HasError() {
+	if logdiag.HasError(ctx) {
 		// lock is not acquired here
-		return diags
+		return
 	}
 
 	// lock is acquired here
 	defer func() {
-		diags = diags.Extend(bundle.Apply(ctx, b, lock.Release(lock.GoalDeploy)))
+		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDeploy))
 	}()
 
-	diags = bundle.ApplySeq(ctx, b,
+	bundle.ApplySeqContext(ctx, b,
 		statemgmt.StatePull(),
 		terraform.CheckDashboardsModifiedRemotely(),
 		deploy.StatePull(),
@@ -178,34 +197,43 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		deploy.StateUpdate(),
 		deploy.StatePush(),
 		permissions.ApplyWorkspaceRootPermissions(),
-		terraform.Interpolate(),
-		terraform.Write(),
-		terraform.Plan(terraform.PlanGoal("deploy")),
 		metrics.TrackUsedCompute(),
 	)
 
-	if diags.HasError() {
-		return diags
+	if logdiag.HasError(ctx) {
+		return
+	}
+
+	if !b.DirectDeployment {
+		bundle.ApplySeqContext(ctx, b,
+			terraform.Interpolate(),
+			terraform.Write(),
+			terraform.Plan(terraform.PlanGoal("deploy")),
+		)
+	}
+
+	if logdiag.HasError(ctx) {
+		return
 	}
 
 	haveApproval, err := approvalForDeploy(ctx, b)
 	if err != nil {
-		diags = diags.Extend(diag.FromErr(err))
-		return diags
+		logdiag.LogError(ctx, err)
+		return
 	}
 
 	if haveApproval {
-		diags = diags.Extend(deployCore(ctx, b))
+		deployCore(ctx, b)
 	} else {
 		cmdio.LogString(ctx, "Deployment cancelled!")
 	}
 
-	if diags.HasError() {
-		return diags
+	if logdiag.HasError(ctx) {
+		return
 	}
 
 	logDeployTelemetry(ctx, b)
-	return diags.Extend(bundle.Apply(ctx, b, scripts.Execute(config.ScriptPostDeploy)))
+	bundle.ApplyContext(ctx, b, scripts.Execute(config.ScriptPostDeploy))
 }
 
 // If there are more than 1 thousand of a resource type, do not

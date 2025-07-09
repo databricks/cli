@@ -10,7 +10,6 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/ml"
@@ -22,13 +21,12 @@ func TestRunAsForAllowed(t *testing.T) {
 	b := load(t, "./run_as/allowed")
 
 	ctx := context.Background()
-	bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	bundle.ApplyFuncContext(ctx, b, func(ctx context.Context, b *bundle.Bundle) {
 		b.Config.Workspace.CurrentUser = &config.User{
 			User: &iam.User{
 				UserName: "jane@doe.com",
 			},
 		}
-		return nil
 	})
 
 	diags := bundle.Apply(ctx, b, resourcemutator.SetRunAs())
@@ -61,13 +59,12 @@ func TestRunAsForAllowedWithTargetOverride(t *testing.T) {
 	b := loadTarget(t, "./run_as/allowed", "development")
 
 	ctx := context.Background()
-	bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	bundle.ApplyFuncContext(ctx, b, func(ctx context.Context, b *bundle.Bundle) {
 		b.Config.Workspace.CurrentUser = &config.User{
 			User: &iam.User{
 				UserName: "jane@doe.com",
 			},
 		}
-		return nil
 	})
 
 	diags := bundle.Apply(ctx, b, resourcemutator.SetRunAs())
@@ -101,13 +98,12 @@ func TestRunAsErrorForPipelines(t *testing.T) {
 	b := load(t, "./run_as/not_allowed/pipelines")
 
 	ctx := context.Background()
-	bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	bundle.ApplyFuncContext(ctx, b, func(ctx context.Context, b *bundle.Bundle) {
 		b.Config.Workspace.CurrentUser = &config.User{
 			User: &iam.User{
 				UserName: "jane@doe.com",
 			},
 		}
-		return nil
 	})
 
 	diags := bundle.Apply(ctx, b, resourcemutator.SetRunAs())
@@ -124,13 +120,12 @@ func TestRunAsNoErrorForPipelines(t *testing.T) {
 	// We should not error because the pipeline is being deployed with the same
 	// identity as the bundle run_as identity.
 	ctx := context.Background()
-	bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	bundle.ApplyFuncContext(ctx, b, func(ctx context.Context, b *bundle.Bundle) {
 		b.Config.Workspace.CurrentUser = &config.User{
 			User: &iam.User{
 				UserName: "my_service_principal",
 			},
 		}
-		return nil
 	})
 
 	diags := bundle.Apply(ctx, b, resourcemutator.SetRunAs())
@@ -141,13 +136,12 @@ func TestRunAsErrorForModelServing(t *testing.T) {
 	b := load(t, "./run_as/not_allowed/model_serving")
 
 	ctx := context.Background()
-	bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	bundle.ApplyFuncContext(ctx, b, func(ctx context.Context, b *bundle.Bundle) {
 		b.Config.Workspace.CurrentUser = &config.User{
 			User: &iam.User{
 				UserName: "jane@doe.com",
 			},
 		}
-		return nil
 	})
 
 	diags := bundle.Apply(ctx, b, resourcemutator.SetRunAs())
@@ -164,13 +158,12 @@ func TestRunAsNoErrorForModelServingEndpoints(t *testing.T) {
 	// We should not error because the model serving endpoint is being deployed
 	// with the same identity as the bundle run_as identity.
 	ctx := context.Background()
-	bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	bundle.ApplyFuncContext(ctx, b, func(ctx context.Context, b *bundle.Bundle) {
 		b.Config.Workspace.CurrentUser = &config.User{
 			User: &iam.User{
 				UserName: "my_service_principal",
 			},
 		}
-		return nil
 	})
 
 	diags := bundle.Apply(ctx, b, resourcemutator.SetRunAs())
@@ -181,13 +174,12 @@ func TestRunAsErrorWhenBothUserAndSpSpecified(t *testing.T) {
 	b := load(t, "./run_as/not_allowed/both_sp_and_user")
 
 	ctx := context.Background()
-	bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	bundle.ApplyFuncContext(ctx, b, func(ctx context.Context, b *bundle.Bundle) {
 		b.Config.Workspace.CurrentUser = &config.User{
 			User: &iam.User{
 				UserName: "my_service_principal",
 			},
 		}
-		return nil
 	})
 
 	diags := bundle.Apply(ctx, b, resourcemutator.SetRunAs())
@@ -225,13 +217,12 @@ func TestRunAsErrorNeitherUserOrSpSpecified(t *testing.T) {
 			b := load(t, bundlePath)
 
 			ctx := context.Background()
-			bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+			bundle.ApplyFuncContext(ctx, b, func(ctx context.Context, b *bundle.Bundle) {
 				b.Config.Workspace.CurrentUser = &config.User{
 					User: &iam.User{
 						UserName: "my_service_principal",
 					},
 				}
-				return nil
 			})
 
 			diags := bundle.Apply(ctx, b, resourcemutator.SetRunAs())
@@ -245,13 +236,12 @@ func TestRunAsErrorNeitherUserOrSpSpecifiedAtTargetOverride(t *testing.T) {
 	b := loadTarget(t, "./run_as/not_allowed/neither_sp_nor_user/override", "development")
 
 	ctx := context.Background()
-	bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	bundle.ApplyFuncContext(ctx, b, func(ctx context.Context, b *bundle.Bundle) {
 		b.Config.Workspace.CurrentUser = &config.User{
 			User: &iam.User{
 				UserName: "my_service_principal",
 			},
 		}
-		return nil
 	})
 
 	diags := bundle.Apply(ctx, b, resourcemutator.SetRunAs())
@@ -264,13 +254,12 @@ func TestLegacyRunAs(t *testing.T) {
 	b := load(t, "./run_as/legacy")
 
 	ctx := context.Background()
-	bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	bundle.ApplyFuncContext(ctx, b, func(ctx context.Context, b *bundle.Bundle) {
 		b.Config.Workspace.CurrentUser = &config.User{
 			User: &iam.User{
 				UserName: "jane@doe.com",
 			},
 		}
-		return nil
 	})
 
 	diags := bundle.Apply(ctx, b, resourcemutator.SetRunAs())

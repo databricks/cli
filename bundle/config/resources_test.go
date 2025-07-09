@@ -15,7 +15,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
-	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -146,9 +145,7 @@ func TestResourcesBindSupport(t *testing.T) {
 			"my_cluster": {},
 		},
 		Dashboards: map[string]*resources.Dashboard{
-			"my_dashboard": {
-				Dashboard: dashboards.Dashboard{},
-			},
+			"my_dashboard": {},
 		},
 		Volumes: map[string]*resources.Volume{
 			"my_volume": {

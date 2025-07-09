@@ -51,7 +51,11 @@ type DataSources struct {
 	Notebook                        map[string]any `json:"databricks_notebook,omitempty"`
 	NotebookPaths                   map[string]any `json:"databricks_notebook_paths,omitempty"`
 	NotificationDestinations        map[string]any `json:"databricks_notification_destinations,omitempty"`
+	OnlineStore                     map[string]any `json:"databricks_online_store,omitempty"`
+	OnlineStores                    map[string]any `json:"databricks_online_stores,omitempty"`
 	Pipelines                       map[string]any `json:"databricks_pipelines,omitempty"`
+	QualityMonitorV2                map[string]any `json:"databricks_quality_monitor_v2,omitempty"`
+	QualityMonitorsV2               map[string]any `json:"databricks_quality_monitors_v2,omitempty"`
 	RecipientFederationPolicies     map[string]any `json:"databricks_recipient_federation_policies,omitempty"`
 	RecipientFederationPolicy       map[string]any `json:"databricks_recipient_federation_policy,omitempty"`
 	RegisteredModel                 map[string]any `json:"databricks_registered_model,omitempty"`
@@ -128,7 +132,11 @@ func NewDataSources() *DataSources {
 		Notebook:                        make(map[string]any),
 		NotebookPaths:                   make(map[string]any),
 		NotificationDestinations:        make(map[string]any),
+		OnlineStore:                     make(map[string]any),
+		OnlineStores:                    make(map[string]any),
 		Pipelines:                       make(map[string]any),
+		QualityMonitorV2:                make(map[string]any),
+		QualityMonitorsV2:               make(map[string]any),
 		RecipientFederationPolicies:     make(map[string]any),
 		RecipientFederationPolicy:       make(map[string]any),
 		RegisteredModel:                 make(map[string]any),

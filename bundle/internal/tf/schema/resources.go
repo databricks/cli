@@ -76,12 +76,14 @@ type Resources struct {
 	Notebook                                     map[string]any `json:"databricks_notebook,omitempty"`
 	NotificationDestination                      map[string]any `json:"databricks_notification_destination,omitempty"`
 	OboToken                                     map[string]any `json:"databricks_obo_token,omitempty"`
+	OnlineStore                                  map[string]any `json:"databricks_online_store,omitempty"`
 	OnlineTable                                  map[string]any `json:"databricks_online_table,omitempty"`
 	PermissionAssignment                         map[string]any `json:"databricks_permission_assignment,omitempty"`
 	Permissions                                  map[string]any `json:"databricks_permissions,omitempty"`
 	Pipeline                                     map[string]any `json:"databricks_pipeline,omitempty"`
 	Provider                                     map[string]any `json:"databricks_provider,omitempty"`
 	QualityMonitor                               map[string]any `json:"databricks_quality_monitor,omitempty"`
+	QualityMonitorV2                             map[string]any `json:"databricks_quality_monitor_v2,omitempty"`
 	Query                                        map[string]any `json:"databricks_query,omitempty"`
 	Recipient                                    map[string]any `json:"databricks_recipient,omitempty"`
 	RecipientFederationPolicy                    map[string]any `json:"databricks_recipient_federation_policy,omitempty"`
@@ -196,12 +198,14 @@ func NewResources() *Resources {
 		Notebook:                          make(map[string]any),
 		NotificationDestination:           make(map[string]any),
 		OboToken:                          make(map[string]any),
+		OnlineStore:                       make(map[string]any),
 		OnlineTable:                       make(map[string]any),
 		PermissionAssignment:              make(map[string]any),
 		Permissions:                       make(map[string]any),
 		Pipeline:                          make(map[string]any),
 		Provider:                          make(map[string]any),
 		QualityMonitor:                    make(map[string]any),
+		QualityMonitorV2:                  make(map[string]any),
 		Query:                             make(map[string]any),
 		Recipient:                         make(map[string]any),
 		RecipientFederationPolicy:         make(map[string]any),

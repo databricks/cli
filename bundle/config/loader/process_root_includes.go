@@ -132,5 +132,6 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.
 	// to account for the root databricks.yaml file.
 	b.Metrics.ConfigurationFileCount = int64(len(files)) + 1
 
-	return bundle.ApplySeq(ctx, b, out...)
+	bundle.ApplySeqContext(ctx, b, out...)
+	return nil
 }

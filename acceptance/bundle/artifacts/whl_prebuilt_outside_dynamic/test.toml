@@ -1,5 +1,2 @@
 BundleConfig.default_name = ""
-
-[[Repls]]
-Old = '\\'
-New = '/'
+EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["terraform"]  # need to sort tasks by key

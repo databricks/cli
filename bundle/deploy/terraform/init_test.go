@@ -250,26 +250,6 @@ func TestSetProxyEnvVars(t *testing.T) {
 	assert.ElementsMatch(t, []string{"HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY"}, maps.Keys(env))
 }
 
-func TestSetUserAgentExtra_PyDABs(t *testing.T) {
-	b := &bundle.Bundle{
-		BundleRootPath: t.TempDir(),
-		Config: config.Root{
-			Experimental: &config.Experimental{
-				PyDABs: config.PyDABs{
-					Enabled: true,
-				},
-			},
-		},
-	}
-
-	env := make(map[string]string, 0)
-	err := setUserAgentExtraEnvVar(env, b)
-	require.NoError(t, err)
-	assert.Equal(t, map[string]string{
-		"DATABRICKS_USER_AGENT_EXTRA": "cli/0.0.0-dev databricks-pydabs/0.0.0",
-	}, env)
-}
-
 func TestSetUserAgentExtra_Python(t *testing.T) {
 	b := &bundle.Bundle{
 		BundleRootPath: t.TempDir(),
@@ -305,6 +285,29 @@ func TestInheritEnvVars(t *testing.T) {
 		assert.Equal(t, "/tmp/config.tfrc", env["TF_CLI_CONFIG_FILE"])
 		assert.Equal(t, "/tmp/foo/bar", env["AZURE_CONFIG_DIR"])
 	}
+}
+
+func TestInheritOIDCTokenEnvCustom(t *testing.T) {
+	t.Setenv("DATABRICKS_OIDC_TOKEN_ENV", "custom_DATABRICKS_OIDC_TOKEN")
+	t.Setenv("custom_DATABRICKS_OIDC_TOKEN", "foobar")
+
+	ctx := context.Background()
+	env := map[string]string{}
+	err := inheritEnvVars(ctx, env)
+	require.NoError(t, err)
+	assert.Equal(t, "foobar", env["custom_DATABRICKS_OIDC_TOKEN"])
+	assert.Equal(t, "custom_DATABRICKS_OIDC_TOKEN", env["DATABRICKS_OIDC_TOKEN_ENV"])
+}
+
+func TestInheritOIDCTokenEnv(t *testing.T) {
+	t.Setenv("DATABRICKS_OIDC_TOKEN", "foobar")
+
+	ctx := context.Background()
+	env := map[string]string{}
+	err := inheritEnvVars(ctx, env)
+	require.NoError(t, err)
+	assert.Equal(t, "foobar", env["DATABRICKS_OIDC_TOKEN"])
+	assert.Equal(t, "", env["DATABRICKS_OIDC_TOKEN_ENV"])
 }
 
 func TestSetUserProfileFromInheritEnvVars(t *testing.T) {

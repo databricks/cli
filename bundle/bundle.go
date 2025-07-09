@@ -8,20 +8,25 @@ package bundle
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sync"
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/metadata"
+	"github.com/databricks/cli/bundle/terranova/tnstate"
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/locker"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/logdiag"
 	libsync "github.com/databricks/cli/libs/sync"
 	"github.com/databricks/cli/libs/tags"
 	"github.com/databricks/cli/libs/telemetry/protos"
@@ -33,6 +38,12 @@ import (
 
 const internalFolder = ".internal"
 
+// Filename where resources are stored for DATABRICKS_CLI_DEPLOYMENT=direct
+const resourcesFilename = "resources.json"
+
+// Filename where resources are stored for DATABRICKS_CLI_DEPLOYMENT=terraform
+const terraformStateFilename = "terraform.tfstate"
+
 // This struct is used as a communication channel to collect metrics
 // from all over the bundle codebase to finally be emitted as telemetry.
 type Metrics struct {
@@ -42,6 +53,7 @@ type Metrics struct {
 	BoolValues                  []protos.BoolMapEntry
 	PythonAddedResourcesCount   int64
 	PythonUpdatedResourcesCount int64
+	ExecutionTimes              []protos.IntMapEntry
 }
 
 func (m *Metrics) AddBoolValue(key string, value bool) {
@@ -101,7 +113,7 @@ type Bundle struct {
 	// Stores the locker responsible for acquiring/releasing a deployment lock.
 	Locker *locker.Locker
 
-	Plan *deployplan.Plan
+	Plan deployplan.Plan
 
 	// if true, we skip approval checks for deploy, destroy resources and delete
 	// files
@@ -112,6 +124,12 @@ type Bundle struct {
 	Tagging tags.Cloud
 
 	Metrics Metrics
+
+	// If true, don't use terraform. Set by DATABRICKS_CLI_DEPLOYMENT=direct
+	DirectDeployment bool
+
+	// State file access for direct deployment (only initialized if DirectDeployment = true)
+	ResourceDatabase tnstate.TerranovaState
 }
 
 func Load(ctx context.Context, path string) (*Bundle, error) {
@@ -128,31 +146,47 @@ func Load(ctx context.Context, path string) (*Bundle, error) {
 }
 
 // MustLoad returns a bundle configuration.
-// It returns an error if a bundle was not found or could not be loaded.
-func MustLoad(ctx context.Context) (*Bundle, error) {
+// The errors are recorded by logdiag, check with logdiag.HasError().
+func MustLoad(ctx context.Context) *Bundle {
 	root, err := mustGetRoot(ctx)
 	if err != nil {
-		return nil, err
+		logdiag.LogError(ctx, err)
+		return nil
 	}
 
-	return Load(ctx, root)
+	logdiag.SetRoot(ctx, root)
+
+	b, err := Load(ctx, root)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return nil
+	}
+	return b
 }
 
 // TryLoad returns a bundle configuration if there is one, but doesn't fail if there isn't one.
-// It returns an error if a bundle was found but could not be loaded.
+// The errors are recorded by logdiag, check with logdiag.HasError().
 // It returns a `nil` bundle if a bundle was not found.
-func TryLoad(ctx context.Context) (*Bundle, error) {
+func TryLoad(ctx context.Context) *Bundle {
 	root, err := tryGetRoot(ctx)
 	if err != nil {
-		return nil, err
+		logdiag.LogError(ctx, err)
+		return nil
 	}
 
 	// No root is fine in this function.
 	if root == "" {
-		return nil, nil
+		return nil
 	}
 
-	return Load(ctx, root)
+	logdiag.SetRoot(ctx, root)
+
+	b, err := Load(ctx, root)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return nil
+	}
+	return b
 }
 
 func (b *Bundle) WorkspaceClientE() (*databricks.WorkspaceClient, error) {
@@ -267,4 +301,79 @@ func (b *Bundle) AuthEnv() (map[string]string, error) {
 
 	cfg := b.client.Config
 	return auth.Env(cfg), nil
+}
+
+// GetResourceConfig returns the configuration object for a given resource group/name pair.
+// The returned value is a pointer to the concrete struct that represents that resource type.
+// When the group or name is not found the second return value is false.
+func (b *Bundle) GetResourceConfig(group, name string) (any, bool) {
+	// Resolve the Go type that represents a single resource in this group.
+	typ, ok := config.ResourcesTypes[group]
+	if !ok {
+		return nil, false
+	}
+
+	// Fetch the raw value from the dynamic representation of the bundle config.
+	v, err := dyn.GetByPath(
+		b.Config.Value(),
+		dyn.NewPath(dyn.Key("resources"), dyn.Key(group), dyn.Key(name)),
+	)
+	if err != nil {
+		return nil, false
+	}
+
+	// json-round-trip into a value of the concrete resource type to ensure proper handling of ForceSendFields
+	bytes, err := json.Marshal(v.AsAny())
+	if err != nil {
+		return nil, false
+	}
+
+	typedConfigPtr := reflect.New(typ)
+	if err := json.Unmarshal(bytes, typedConfigPtr.Interface()); err != nil {
+		return nil, false
+	}
+
+	return typedConfigPtr.Interface(), true
+}
+
+func (b *Bundle) StateFilename() string {
+	if b.DirectDeployment {
+		return resourcesFilename
+	} else {
+		return terraformStateFilename
+	}
+}
+
+func (b *Bundle) StateLocalPath(ctx context.Context) (string, error) {
+	if b.DirectDeployment {
+		cacheDir, err := b.CacheDir(ctx)
+		if err != nil {
+			return "", err
+		}
+		return filepath.Join(cacheDir, resourcesFilename), nil
+	} else {
+		cacheDir, err := b.CacheDir(ctx, "terraform")
+		if err != nil {
+			return "", err
+		}
+		return filepath.Join(cacheDir, terraformStateFilename), nil
+	}
+}
+
+func (b *Bundle) OpenResourceDatabase(ctx context.Context) error {
+	if !b.DirectDeployment {
+		panic("internal error: OpenResourceDatabase must be called with DirectDeployment")
+	}
+
+	statePath, err := b.StateLocalPath(ctx)
+	if err != nil {
+		return err
+	}
+
+	err = b.ResourceDatabase.Open(statePath)
+	if err != nil {
+		return fmt.Errorf("Failed to open/create resoruce database in %s: %s", statePath, err)
+	}
+
+	return nil
 }

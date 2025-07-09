@@ -1,0 +1,13 @@
+title "no run key specified"
+errcode trace $CLI bundle open
+
+title "not deployed yet"
+errcode trace $CLI bundle open foo
+
+errcode trace $CLI bundle deploy
+
+title "Modify PATH so that real open is not run"
+export PATH=.:$PATH
+
+title "open after deployment. This will fail to open browser and complain, that's ok, we only want the message"
+musterr trace $CLI bundle open foo

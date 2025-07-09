@@ -57,7 +57,6 @@ func newCreate() *cobra.Command {
 	var createReq catalog.AccountsCreateStorageCredential
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: credential_info
@@ -136,8 +135,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq catalog.DeleteAccountStorageCredentialRequest
 
-	// TODO: short flags
-
 	cmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `Force deletion even if the Storage Credential is not empty.`)
 
 	cmd.Use = "delete METASTORE_ID STORAGE_CREDENTIAL_NAME"
@@ -199,8 +196,6 @@ func newGet() *cobra.Command {
 
 	var getReq catalog.GetAccountStorageCredentialRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get METASTORE_ID STORAGE_CREDENTIAL_NAME"
 	cmd.Short = `Gets the named storage credential.`
 	cmd.Long = `Gets the named storage credential.
@@ -261,8 +256,6 @@ func newList() *cobra.Command {
 
 	var listReq catalog.ListAccountStorageCredentialsRequest
 
-	// TODO: short flags
-
 	cmd.Use = "list METASTORE_ID"
 	cmd.Short = `Get all storage credentials assigned to a metastore.`
 	cmd.Long = `Get all storage credentials assigned to a metastore.
@@ -318,7 +311,6 @@ func newUpdate() *cobra.Command {
 	var updateReq catalog.AccountsUpdateStorageCredential
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: credential_info

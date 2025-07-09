@@ -1,0 +1,7 @@
+{
+    "project_name": "my_sql_project",
+    "default_catalog": "main",
+    "personal_schemas": "no",
+    "shared_schema": "shared_dev",
+    "language": "sql"
+}

@@ -68,7 +68,6 @@ func newGenerateTemporaryTableCredentials() *cobra.Command {
 	var generateTemporaryTableCredentialsReq catalog.GenerateTemporaryTableCredentialRequest
 	var generateTemporaryTableCredentialsJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&generateTemporaryTableCredentialsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().Var(&generateTemporaryTableCredentialsReq.Operation, "operation", `The operation performed against the table data, either READ or READ_WRITE. Supported values: [READ, READ_WRITE]`)

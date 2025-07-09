@@ -1,0 +1,21 @@
+# This test is using a workspace import API to load a notebook file.
+# This API has a logic on how to accept notebook files and distinguishes them from regular python files.
+# To succeed locally we would need to replicate this logic in the fake_workspace
+Local = false
+Cloud = true
+
+Ignore = [
+    "databricks.yml",
+    "resources/*",
+    "src/*"
+]
+
+[Env]
+# MSYS2 automatically converts absolute paths like /Users/$username/$UNIQUE_NAME to
+# C:/Program Files/Git/Users/$username/UNIQUE_NAME before passing it to the CLI
+# Setting this environment variable prevents that conversion on windows.
+MSYS_NO_PATHCONV = "1"
+
+[[Repls]]
+Old = '\\'
+New = '/'

@@ -22,7 +22,7 @@ Response.Body = '{}'
 [[Repls]]
 # for some reason leading number is lost converting "%H%M%S" 061234 to 61234
 Old = '\d{5,}'
-New = '[NUMBER]'
+New = '[NUMID]'
 
 [[Repls]]
 Old = 'Standard_D3_v2'
@@ -39,7 +39,7 @@ New = "python3 setup.py bdist_wheel"
 
 [[Repls]]
 # clean up ?o=<num> suffix after URL since not all workspaces have that
-Old = '\?o=\[(NUMBER|NUMID)\]'
+Old = '\?o=\[NUMID\]'
 New = ''
 Order = 1000
 

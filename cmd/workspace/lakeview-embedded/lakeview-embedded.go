@@ -51,8 +51,6 @@ func newGetPublishedDashboardTokenInfo() *cobra.Command {
 
 	var getPublishedDashboardTokenInfoReq dashboards.GetPublishedDashboardTokenInfoRequest
 
-	// TODO: short flags
-
 	cmd.Flags().StringVar(&getPublishedDashboardTokenInfoReq.ExternalValue, "external-value", getPublishedDashboardTokenInfoReq.ExternalValue, `Provided external value to be included in the custom claim.`)
 	cmd.Flags().StringVar(&getPublishedDashboardTokenInfoReq.ExternalViewerId, "external-viewer-id", getPublishedDashboardTokenInfoReq.ExternalViewerId, `Provided external viewer id to be included in the custom claim.`)
 

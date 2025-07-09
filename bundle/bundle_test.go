@@ -7,11 +7,36 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// Test wrapper functions to make MustLoad/TryLoad tests more readable
+
+// mustLoad calls MustLoad and returns the bundle and collected diagnostics
+func mustLoad(t *testing.T) (*Bundle, []diag.Diagnostic) {
+	ctx := logdiag.InitContext(context.Background())
+	logdiag.SetCollect(ctx, true)
+	b := MustLoad(ctx)
+	diags := logdiag.FlushCollected(ctx)
+	return b, diags
+}
+
+// tryLoad calls TryLoad and returns the bundle and collected diagnostics
+func tryLoad(t *testing.T) (*Bundle, []diag.Diagnostic) {
+	ctx := logdiag.InitContext(context.Background())
+	logdiag.SetCollect(ctx, true)
+	b := TryLoad(ctx)
+	diags := logdiag.FlushCollected(ctx)
+	return b, diags
+}
 
 func TestLoadNotExists(t *testing.T) {
 	b, err := Load(context.Background(), "/doesntexist")
@@ -76,39 +101,81 @@ func TestBundleCacheDirOverride(t *testing.T) {
 
 func TestBundleMustLoadSuccess(t *testing.T) {
 	t.Setenv(env.RootVariable, "./tests/basic")
-	b, err := MustLoad(context.Background())
-	require.NoError(t, err)
+	b, diags := mustLoad(t)
+	require.NotNil(t, b)
+	assert.Empty(t, diags, "expected no diagnostics")
 	assert.Equal(t, "tests/basic", filepath.ToSlash(b.BundleRootPath))
 }
 
 func TestBundleMustLoadFailureWithEnv(t *testing.T) {
 	t.Setenv(env.RootVariable, "./tests/doesntexist")
-	_, err := MustLoad(context.Background())
-	require.Error(t, err, "not a directory")
+	b, diags := mustLoad(t)
+	require.Nil(t, b)
+	require.Len(t, diags, 1, "expected diagnostics")
+	assert.Contains(t, diags[0].Summary, "invalid bundle root")
+	assert.Equal(t, diag.Error, diags[0].Severity)
 }
 
 func TestBundleMustLoadFailureIfNotFound(t *testing.T) {
 	testutil.Chdir(t, t.TempDir())
-	_, err := MustLoad(context.Background())
-	require.Error(t, err, "unable to find bundle root")
+	b, diags := mustLoad(t)
+	require.Nil(t, b)
+	require.Len(t, diags, 1, "expected diagnostics")
+	assert.Contains(t, diags[0].Summary, "unable to locate bundle root")
+	assert.Equal(t, diag.Error, diags[0].Severity)
 }
 
 func TestBundleTryLoadSuccess(t *testing.T) {
 	t.Setenv(env.RootVariable, "./tests/basic")
-	b, err := TryLoad(context.Background())
-	require.NoError(t, err)
+	b, diags := tryLoad(t)
+	require.NotNil(t, b)
+	assert.Empty(t, diags, "expected no diagnostics")
 	assert.Equal(t, "tests/basic", filepath.ToSlash(b.BundleRootPath))
 }
 
 func TestBundleTryLoadFailureWithEnv(t *testing.T) {
 	t.Setenv(env.RootVariable, "./tests/doesntexist")
-	_, err := TryLoad(context.Background())
-	require.Error(t, err, "not a directory")
+	b, diags := tryLoad(t)
+	require.Nil(t, b)
+	require.Len(t, diags, 1, "expected diagnostics")
+	assert.Contains(t, diags[0].Summary, "invalid bundle root")
+	assert.Equal(t, diag.Error, diags[0].Severity)
 }
 
 func TestBundleTryLoadOkIfNotFound(t *testing.T) {
 	testutil.Chdir(t, t.TempDir())
-	b, err := TryLoad(context.Background())
-	assert.NoError(t, err)
+	b, diags := tryLoad(t)
 	assert.Nil(t, b)
+	assert.Empty(t, diags, "expected no diagnostics")
+}
+
+func TestBundleGetResourceConfigJobsPointer(t *testing.T) {
+	rootCfg := config.Root{
+		Resources: config.Resources{
+			Jobs: map[string]*resources.Job{
+				"my_job": {
+					// Empty job config is sufficient for this test.
+				},
+			},
+		},
+	}
+
+	// Initialize the dynamic representation so GetResourceConfig can query it.
+	require.NoError(t, rootCfg.Mutate(func(v dyn.Value) (dyn.Value, error) { return v, nil }))
+
+	b := &Bundle{Config: rootCfg}
+
+	res, ok := b.GetResourceConfig("jobs", "my_job")
+	require.True(t, ok, "expected to find jobs.my_job in config")
+
+	_, isJob := res.(*resources.Job)
+	assert.True(t, isJob, "expected *resources.Job, got %T", res)
+
+	res, ok = b.GetResourceConfig("jobs", "not_found")
+	require.False(t, ok)
+	require.Nil(t, res)
+
+	res, ok = b.GetResourceConfig("not_found", "my_job")
+	require.False(t, ok)
+	require.Nil(t, res)
 }

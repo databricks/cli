@@ -2,6 +2,7 @@ package phases
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
 
@@ -17,17 +18,26 @@ import (
 	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/bundle/scripts"
 	"github.com/databricks/cli/bundle/trampoline"
-	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/logdiag"
 )
 
 // The initialize phase fills in defaults and connects to the workspace.
 // Interpolation of fields referring to the "bundle" and "workspace" keys
 // happens upon completion of this phase.
-func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func Initialize(ctx context.Context, b *bundle.Bundle) {
+	var err error
+
 	log.Info(ctx, "Phase: initialize")
 
-	return bundle.ApplySeq(ctx, b,
+	b.DirectDeployment, err = IsDirectDeployment(ctx)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return
+	}
+
+	bundle.ApplySeqContext(ctx, b,
 		// Reads (dynamic): resource.*.*
 		// Checks that none of resources.<type>.<key> is nil. Raises error otherwise.
 		validate.AllResourcesHaveValues(),
@@ -130,8 +140,6 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Static resources (e.g. YAML) are already loaded, we initialize and normalize them before Python
 		resourcemutator.ProcessStaticResources(),
 
-		pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseLoad),
-		pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseInit),
 		pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseLoadResources),
 		pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseApplyMutators),
 		// This is the last mutator that can change bundle resources.
@@ -187,15 +195,40 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Updates (typed): b.Config.Resources.Pipelines[].CreatePipeline.Deployment (sets deployment metadata for bundle deployments)
 		// Annotates pipelines with bundle deployment metadata
 		metadata.AnnotatePipelines(),
+	)
 
+	if logdiag.HasError(ctx) {
+		return
+	}
+
+	if !b.DirectDeployment {
 		// Reads (typed): b.Config.Bundle.Terraform (checks terraform configuration)
 		// Updates (typed): b.Config.Bundle.Terraform (sets default values if not already set)
 		// Updates (typed): b.Terraform (initializes Terraform executor with proper environment variables and paths)
 		// Initializes Terraform with the correct binary, working directory, and environment variables for authentication
-		terraform.Initialize(),
 
-		// Reads (typed): b.Config.Experimental.Scripts["post_init"] (checks if script is defined)
-		// Executes the post_init script hook defined in the bundle configuration
-		scripts.Execute(config.ScriptPostInit),
-	)
+		bundle.ApplyContext(ctx, b, terraform.Initialize())
+	}
+
+	if logdiag.HasError(ctx) {
+		return
+	}
+
+	// Reads (typed): b.Config.Experimental.Scripts["post_init"] (checks if script is defined)
+	// Executes the post_init script hook defined in the bundle configuration
+	bundle.ApplyContext(ctx, b, scripts.Execute(config.ScriptPostInit))
+}
+
+func IsDirectDeployment(ctx context.Context) (bool, error) {
+	deployment := env.Get(ctx, "DATABRICKS_CLI_DEPLOYMENT")
+	// We use "direct-exp" while direct backend is not suitable for end users.
+	// Once we consider it usable we'll change the value to "direct".
+	// This is to prevent accidentally running direct backend with older CLI versions where it was still considered experimental.
+	if deployment == "direct-exp" {
+		return true, nil
+	} else if deployment == "terraform" || deployment == "" {
+		return false, nil
+	} else {
+		return false, fmt.Errorf("Unexpected setting for DATABRICKS_CLI_DEPLOYMENT=%#v (expected 'terraform' or 'direct-exp' or absent/empty which means 'terraform')", deployment)
+	}
 }

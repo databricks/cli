@@ -26,10 +26,7 @@ func New() *cobra.Command {
 		Annotations: map[string]string{
 			"package": "database",
 		},
-
-		// This service is being previewed; hide from help output.
-		Hidden: true,
-		RunE:   root.ReportUnknownSubcommand,
+		RunE: root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -74,7 +71,6 @@ func newCreateDatabaseCatalog() *cobra.Command {
 	createDatabaseCatalogReq.Catalog = database.DatabaseCatalog{}
 	var createDatabaseCatalogJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createDatabaseCatalogJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().BoolVar(&createDatabaseCatalogReq.Catalog.CreateDatabaseIfNotExists, "create-database-if-not-exists", createDatabaseCatalogReq.Catalog.CreateDatabaseIfNotExists, ``)
@@ -164,7 +160,6 @@ func newCreateDatabaseInstance() *cobra.Command {
 	createDatabaseInstanceReq.DatabaseInstance = database.DatabaseInstance{}
 	var createDatabaseInstanceJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createDatabaseInstanceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createDatabaseInstanceReq.DatabaseInstance.Capacity, "capacity", createDatabaseInstanceReq.DatabaseInstance.Capacity, `The sku of the instance.`)
@@ -247,7 +242,6 @@ func newCreateDatabaseTable() *cobra.Command {
 	createDatabaseTableReq.Table = database.DatabaseTable{}
 	var createDatabaseTableJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createDatabaseTableJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createDatabaseTableReq.Table.DatabaseInstanceName, "database-instance-name", createDatabaseTableReq.Table.DatabaseInstanceName, `Name of the target database instance.`)
@@ -330,7 +324,6 @@ func newCreateSyncedDatabaseTable() *cobra.Command {
 	createSyncedDatabaseTableReq.SyncedTable = database.SyncedDatabaseTable{}
 	var createSyncedDatabaseTableJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createSyncedDatabaseTableJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: data_synchronization_status
@@ -413,8 +406,6 @@ func newDeleteDatabaseCatalog() *cobra.Command {
 
 	var deleteDatabaseCatalogReq database.DeleteDatabaseCatalogRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete-database-catalog NAME"
 	cmd.Short = `Delete a Database Catalog.`
 	cmd.Long = `Delete a Database Catalog.`
@@ -466,10 +457,8 @@ func newDeleteDatabaseInstance() *cobra.Command {
 
 	var deleteDatabaseInstanceReq database.DeleteDatabaseInstanceRequest
 
-	// TODO: short flags
-
 	cmd.Flags().BoolVar(&deleteDatabaseInstanceReq.Force, "force", deleteDatabaseInstanceReq.Force, `By default, a instance cannot be deleted if it has descendant instances created via PITR.`)
-	cmd.Flags().BoolVar(&deleteDatabaseInstanceReq.Purge, "purge", deleteDatabaseInstanceReq.Purge, `If false, the database instance is soft deleted.`)
+	cmd.Flags().BoolVar(&deleteDatabaseInstanceReq.Purge, "purge", deleteDatabaseInstanceReq.Purge, `Note purge=false is in development.`)
 
 	cmd.Use = "delete-database-instance NAME"
 	cmd.Short = `Delete a Database Instance.`
@@ -525,8 +514,6 @@ func newDeleteDatabaseTable() *cobra.Command {
 
 	var deleteDatabaseTableReq database.DeleteDatabaseTableRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete-database-table NAME"
 	cmd.Short = `Delete a Database Table.`
 	cmd.Long = `Delete a Database Table.`
@@ -578,8 +565,6 @@ func newDeleteSyncedDatabaseTable() *cobra.Command {
 
 	var deleteSyncedDatabaseTableReq database.DeleteSyncedDatabaseTableRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete-synced-database-table NAME"
 	cmd.Short = `Delete a Synced Database Table.`
 	cmd.Long = `Delete a Synced Database Table.`
@@ -630,8 +615,6 @@ func newFindDatabaseInstanceByUid() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var findDatabaseInstanceByUidReq database.FindDatabaseInstanceByUidRequest
-
-	// TODO: short flags
 
 	cmd.Flags().StringVar(&findDatabaseInstanceByUidReq.Uid, "uid", findDatabaseInstanceByUidReq.Uid, `UID of the cluster to get.`)
 
@@ -685,7 +668,6 @@ func newGenerateDatabaseCredential() *cobra.Command {
 	var generateDatabaseCredentialReq database.GenerateDatabaseCredentialRequest
 	var generateDatabaseCredentialJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&generateDatabaseCredentialJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: instance_names
@@ -753,8 +735,6 @@ func newGetDatabaseCatalog() *cobra.Command {
 
 	var getDatabaseCatalogReq database.GetDatabaseCatalogRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get-database-catalog NAME"
 	cmd.Short = `Get a Database Catalog.`
 	cmd.Long = `Get a Database Catalog.`
@@ -805,8 +785,6 @@ func newGetDatabaseInstance() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getDatabaseInstanceReq database.GetDatabaseInstanceRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get-database-instance NAME"
 	cmd.Short = `Get a Database Instance.`
@@ -862,8 +840,6 @@ func newGetDatabaseTable() *cobra.Command {
 
 	var getDatabaseTableReq database.GetDatabaseTableRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get-database-table NAME"
 	cmd.Short = `Get a Database Table.`
 	cmd.Long = `Get a Database Table.`
@@ -914,8 +890,6 @@ func newGetSyncedDatabaseTable() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getSyncedDatabaseTableReq database.GetSyncedDatabaseTableRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get-synced-database-table NAME"
 	cmd.Short = `Get a Synced Database Table.`
@@ -968,8 +942,6 @@ func newListDatabaseInstances() *cobra.Command {
 
 	var listDatabaseInstancesReq database.ListDatabaseInstancesRequest
 
-	// TODO: short flags
-
 	cmd.Flags().IntVar(&listDatabaseInstancesReq.PageSize, "page-size", listDatabaseInstancesReq.PageSize, `Upper bound for items returned.`)
 	cmd.Flags().StringVar(&listDatabaseInstancesReq.PageToken, "page-token", listDatabaseInstancesReq.PageToken, `Pagination token to go to the next page of Database Instances.`)
 
@@ -1021,7 +993,6 @@ func newUpdateDatabaseInstance() *cobra.Command {
 	updateDatabaseInstanceReq.DatabaseInstance = database.DatabaseInstance{}
 	var updateDatabaseInstanceJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateDatabaseInstanceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateDatabaseInstanceReq.DatabaseInstance.Capacity, "capacity", updateDatabaseInstanceReq.DatabaseInstance.Capacity, `The sku of the instance.`)

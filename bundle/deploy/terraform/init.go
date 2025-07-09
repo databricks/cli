@@ -158,6 +158,20 @@ func inheritEnvVars(ctx context.Context, environ map[string]string) error {
 		}
 	}
 
+	// If there's a DATABRICKS_OIDC_TOKEN_ENV set, we need to pass the value of the environment variable defined in DATABRICKS_OIDC_TOKEN_ENV to Terraform.
+	// This is necessary to ensure that Terraform can use the same OIDC token as the CLI.
+	oidcTokenEnv, ok := env.Lookup(ctx, "DATABRICKS_OIDC_TOKEN_ENV")
+	if ok {
+		environ["DATABRICKS_OIDC_TOKEN_ENV"] = oidcTokenEnv
+	} else {
+		oidcTokenEnv = "DATABRICKS_OIDC_TOKEN"
+	}
+
+	oidcToken, ok := env.Lookup(ctx, oidcTokenEnv)
+	if ok {
+		environ[oidcTokenEnv] = oidcToken
+	}
+
 	// Map $DATABRICKS_TF_CLI_CONFIG_FILE to $TF_CLI_CONFIG_FILE
 	// VSCode extension provides a file with the "provider_installation.filesystem_mirror" configuration.
 	// We only use it if the provider version matches the currently used version,
@@ -269,8 +283,6 @@ func setUserAgentExtraEnvVar(environ map[string]string, b *bundle.Bundle) error 
 
 		if hasPython {
 			products = append(products, "databricks-pydabs/0.7.0")
-		} else if experimental.PyDABs.Enabled {
-			products = append(products, "databricks-pydabs/0.0.0")
 		}
 	}
 

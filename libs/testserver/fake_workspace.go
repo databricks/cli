@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"path"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -28,13 +29,18 @@ const (
 	TestRunID = 2305843009213693969
 )
 
+type FileEntry struct {
+	Info workspace.ObjectInfo
+	Data []byte
+}
+
 // FakeWorkspace holds a state of a workspace for acceptance tests.
 type FakeWorkspace struct {
 	mu  sync.Mutex
 	url string
 
 	directories map[string]bool
-	files       map[string][]byte
+	files       map[string]FileEntry
 	// normally, ids are not sequential, but we make them sequential for deterministic diff
 	nextJobId    int64
 	nextJobRunId int64
@@ -109,7 +115,7 @@ func NewFakeWorkspace(url string) *FakeWorkspace {
 		directories: map[string]bool{
 			"/Workspace": true,
 		},
-		files:        map[string][]byte{},
+		files:        make(map[string]FileEntry),
 		Jobs:         map[int64]jobs.Job{},
 		JobRuns:      map[int64]jobs.Run{},
 		nextJobId:    TestJobID,
@@ -132,13 +138,9 @@ func (s *FakeWorkspace) WorkspaceGetStatus(path string) Response {
 				Path:       path,
 			},
 		}
-	} else if _, ok := s.files[path]; ok {
+	} else if entry, ok := s.files[path]; ok {
 		return Response{
-			Body: &workspace.ObjectInfo{
-				ObjectType: "FILE",
-				Path:       path,
-				Language:   "SCALA",
-			},
+			Body: entry.Info,
 		}
 	} else {
 		return Response{
@@ -155,17 +157,17 @@ func (s *FakeWorkspace) WorkspaceMkdirs(request workspace.Mkdirs) {
 
 func (s *FakeWorkspace) WorkspaceExport(path string) []byte {
 	defer s.LockUnlock()()
-	return s.files[path]
+	return s.files[path].Data
 }
 
 func (s *FakeWorkspace) WorkspaceDelete(path string, recursive bool) {
 	defer s.LockUnlock()()
 	if !recursive {
-		s.files[path] = nil
+		delete(s.files, path)
 	} else {
 		for key := range s.files {
 			if strings.HasPrefix(key, path) {
-				s.files[key] = nil
+				delete(s.files, key)
 			}
 		}
 	}
@@ -178,10 +180,38 @@ func (s *FakeWorkspace) WorkspaceFilesImportFile(filePath string, body []byte) {
 
 	defer s.LockUnlock()()
 
-	s.files[filePath] = body
+	workspacePath := filePath
+
+	// Note: Files with .py, .scala, .r or .sql extension can
+	// be notebooks if they contain a magical "Databricks notebook source"
+	// header comment. We omit support non-python extensions for now for simplicity.
+	extension := filepath.Ext(filePath)
+	if extension == ".py" && strings.HasPrefix(string(body), "# Databricks notebook source") {
+		// Notebooks are stripped of their extension by the workspace import API.
+		workspacePath = strings.TrimSuffix(filePath, extension)
+		s.files[workspacePath] = FileEntry{
+			Info: workspace.ObjectInfo{
+				ObjectType: "NOTEBOOK",
+				Path:       workspacePath,
+				Language:   "PYTHON",
+			},
+			Data: body,
+		}
+	} else {
+		// The endpoint does not set language for files, so we omit that
+		// here as well.
+		// ref: https://docs.databricks.com/api/workspace/workspace/getstatus#language
+		s.files[workspacePath] = FileEntry{
+			Info: workspace.ObjectInfo{
+				ObjectType: "FILE",
+				Path:       workspacePath,
+			},
+			Data: body,
+		}
+	}
 
 	// Add all directories in the path to the directories map
-	for dir := path.Dir(filePath); dir != "/"; dir = path.Dir(dir) {
+	for dir := path.Dir(workspacePath); dir != "/"; dir = path.Dir(dir) {
 		s.directories[dir] = true
 	}
 }
@@ -193,7 +223,7 @@ func (s *FakeWorkspace) WorkspaceFilesExportFile(path string) []byte {
 
 	defer s.LockUnlock()()
 
-	return s.files[path]
+	return s.files[path].Data
 }
 
 func (s *FakeWorkspace) JobsCreate(request jobs.CreateJob) Response {
