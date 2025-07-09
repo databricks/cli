@@ -1,0 +1,123 @@
+#!/bin/bash
+
+# Helper functions
+wait_for_sync_complete() {
+    local sync_pid=$1
+    local timeout=30
+    local count=0
+
+    echo "Waiting for sync to complete..."
+    while [ $count -lt $timeout ]; do
+        if kill -0 $sync_pid 2>/dev/null; then
+            sleep 1
+            count=$((count + 1))
+        else
+            echo "Sync process completed"
+            return 0
+        fi
+    done
+
+    echo "Timeout waiting for sync to complete"
+    kill $sync_pid 2>/dev/null
+    return 1
+}
+
+check_remote_file_exists() {
+    local file_path="$1"
+    local remote_path="/Users/$CURRENT_USER_NAME/sync-test-full/$file_path"
+
+    $CLI workspace get-status "$remote_path" >/dev/null 2>&1
+    return $?
+}
+
+check_remote_file_content() {
+    local file_path="$1"
+    local expected_content="$2"
+    local remote_path="/Users/$CURRENT_USER_NAME/sync-test-full/$file_path"
+
+    local actual_content=$($CLI workspace export "$remote_path" --format SOURCE 2>/dev/null)
+    if [ "$actual_content" = "$expected_content" ]; then
+        return 0
+    else
+        echo "Content mismatch for $file_path"
+        echo "Expected: $expected_content"
+        echo "Actual: $actual_content"
+        return 1
+    fi
+}
+
+# Setup
+mkdir -p local-sync-test
+cd local-sync-test
+remote_path="/Users/$CURRENT_USER_NAME/sync-test-full"
+
+# Start sync in background
+echo "Starting full file sync..."
+$CLI sync . "$remote_path" --full --watch --output json > sync_output.log 2>&1 &
+sync_pid=$!
+
+# Wait a bit for sync to initialize
+sleep 5
+
+# Test 1: Create a new file
+echo "Creating foo.txt..."
+echo "" > foo.txt
+sleep 3
+
+# Verify file exists remotely
+if check_remote_file_exists "foo.txt"; then
+    echo "✓ Remote file foo.txt exists"
+else
+    echo "✗ Remote file foo.txt does not exist"
+    exit 1
+fi
+
+# Test 2: Write content to file
+echo "Writing content to foo.txt..."
+echo '{"statement": "Mi Gente"}' > foo.txt
+sleep 3
+
+# Verify remote content
+if check_remote_file_content "foo.txt" '{"statement": "Mi Gente"}'; then
+    echo "✓ Remote file content matches"
+else
+    echo "✗ Remote file content does not match"
+    exit 1
+fi
+
+# Test 3: Modify file content
+echo "Modifying foo.txt content..."
+echo '{"statement": "Young Dumb & Broke"}' > foo.txt
+sleep 3
+
+# Verify updated remote content
+if check_remote_file_content "foo.txt" '{"statement": "Young Dumb & Broke"}'; then
+    echo "✓ Remote file content updated correctly"
+else
+    echo "✗ Remote file content update failed"
+    exit 1
+fi
+
+# Test 4: Delete file
+echo "Deleting foo.txt..."
+rm foo.txt
+sleep 3
+
+# Verify file is deleted remotely
+if check_remote_file_exists "foo.txt"; then
+    echo "✗ Remote file foo.txt still exists after deletion"
+    exit 1
+else
+    echo "✓ Remote file foo.txt deleted successfully"
+fi
+
+# Cleanup
+echo "Cleaning up..."
+kill $sync_pid 2>/dev/null
+cd ..
+rm -rf local-sync-test
+
+# Clean up remote directory
+$CLI workspace delete "$remote_path" --recursive 2>/dev/null || true
+
+echo "Full file sync test completed successfully!"

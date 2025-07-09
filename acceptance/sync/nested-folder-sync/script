@@ -1,0 +1,152 @@
+#!/bin/bash
+
+# Helper functions
+check_remote_file_exists() {
+    local file_path="$1"
+    local remote_path="/Users/$CURRENT_USER_NAME/sync-test-nested/$file_path"
+
+    $CLI workspace get-status "$remote_path" >/dev/null 2>&1
+    return $?
+}
+
+check_remote_dir_exists() {
+    local dir_path="$1"
+    local remote_path="/Users/$CURRENT_USER_NAME/sync-test-nested/$dir_path"
+
+    local status=$($CLI workspace get-status "$remote_path" 2>/dev/null)
+    if echo "$status" | grep -q '"object_type":"DIRECTORY"'; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+list_remote_dir() {
+    local dir_path="$1"
+    local remote_path="/Users/$CURRENT_USER_NAME/sync-test-nested/$dir_path"
+
+    $CLI workspace list "$remote_path" --output json 2>/dev/null | jq -r '.[].path' | sort
+}
+
+# Setup
+mkdir -p local-sync-test-nested
+cd local-sync-test-nested
+remote_path="/Users/$CURRENT_USER_NAME/sync-test-nested"
+
+# Start sync in background
+echo "Starting nested folder sync..."
+$CLI sync . "$remote_path" --watch --output json > sync_output.log 2>&1 &
+sync_pid=$!
+
+# Wait a bit for sync to initialize
+sleep 5
+
+# Test 1: Create deeply nested file structure
+echo "Creating nested directory structure..."
+mkdir -p dir1/dir2/dir3
+echo "test content" > dir1/dir2/dir3/foo.txt
+sleep 3
+
+# Verify nested directories exist remotely
+if check_remote_dir_exists "dir1"; then
+    echo "✓ Remote directory dir1 exists"
+else
+    echo "✗ Remote directory dir1 does not exist"
+    exit 1
+fi
+
+if check_remote_dir_exists "dir1/dir2"; then
+    echo "✓ Remote directory dir1/dir2 exists"
+else
+    echo "✗ Remote directory dir1/dir2 does not exist"
+    exit 1
+fi
+
+if check_remote_dir_exists "dir1/dir2/dir3"; then
+    echo "✓ Remote directory dir1/dir2/dir3 exists"
+else
+    echo "✗ Remote directory dir1/dir2/dir3 does not exist"
+    exit 1
+fi
+
+# Verify file exists in nested directory
+if check_remote_file_exists "dir1/dir2/dir3/foo.txt"; then
+    echo "✓ Remote file dir1/dir2/dir3/foo.txt exists"
+else
+    echo "✗ Remote file dir1/dir2/dir3/foo.txt does not exist"
+    exit 1
+fi
+
+# Test 2: Test directory listing
+echo "Testing directory listings..."
+remote_files=$(list_remote_dir "dir1")
+if echo "$remote_files" | grep -q "dir2"; then
+    echo "✓ dir2 found in dir1 listing"
+else
+    echo "✗ dir2 not found in dir1 listing"
+    exit 1
+fi
+
+remote_files=$(list_remote_dir "dir1/dir2")
+if echo "$remote_files" | grep -q "dir3"; then
+    echo "✓ dir3 found in dir1/dir2 listing"
+else
+    echo "✗ dir3 not found in dir1/dir2 listing"
+    exit 1
+fi
+
+remote_files=$(list_remote_dir "dir1/dir2/dir3")
+if echo "$remote_files" | grep -q "foo.txt"; then
+    echo "✓ foo.txt found in dir1/dir2/dir3 listing"
+else
+    echo "✗ foo.txt not found in dir1/dir2/dir3 listing"
+    exit 1
+fi
+
+# Test 3: Delete file (should trigger cleanup of empty directories)
+echo "Deleting nested file..."
+rm dir1/dir2/dir3/foo.txt
+sleep 3
+
+# Verify file is deleted
+if check_remote_file_exists "dir1/dir2/dir3/foo.txt"; then
+    echo "✗ Remote file dir1/dir2/dir3/foo.txt still exists after deletion"
+    exit 1
+else
+    echo "✓ Remote file dir1/dir2/dir3/foo.txt deleted successfully"
+fi
+
+# Test 4: Verify empty directories are cleaned up
+sleep 2
+
+if check_remote_dir_exists "dir1/dir2/dir3"; then
+    echo "✗ Empty directory dir1/dir2/dir3 still exists"
+    exit 1
+else
+    echo "✓ Empty directory dir1/dir2/dir3 cleaned up"
+fi
+
+if check_remote_dir_exists "dir1/dir2"; then
+    echo "✗ Empty directory dir1/dir2 still exists"
+    exit 1
+else
+    echo "✓ Empty directory dir1/dir2 cleaned up"
+fi
+
+if check_remote_dir_exists "dir1"; then
+    echo "✗ Empty directory dir1 still exists"
+    exit 1
+else
+    echo "✓ Empty directory dir1 cleaned up"
+fi
+
+# Cleanup
+echo "Cleaning up..."
+kill $sync_pid 2>/dev/null
+cd ..
+rm -rf local-sync-test-nested
+
+# Clean up remote directory
+$CLI workspace delete "$remote_path" --recursive 2>/dev/null || true
+
+echo "Nested folder sync test completed successfully!"

@@ -1,0 +1,153 @@
+#!/bin/bash
+
+# Helper functions
+check_remote_file_exists() {
+    local file_path="$1"
+    local remote_path="/Users/$CURRENT_USER_NAME/sync-test-incremental/$file_path"
+
+    $CLI workspace get-status "$remote_path" >/dev/null 2>&1
+    return $?
+}
+
+check_remote_file_content() {
+    local file_path="$1"
+    local expected_content="$2"
+    local remote_path="/Users/$CURRENT_USER_NAME/sync-test-incremental/$file_path"
+
+    local actual_content=$($CLI workspace export "$remote_path" --format SOURCE 2>/dev/null)
+    if [ "$actual_content" = "$expected_content" ]; then
+        return 0
+    else
+        echo "Content mismatch for $file_path"
+        echo "Expected: $expected_content"
+        echo "Actual: $actual_content"
+        return 1
+    fi
+}
+
+check_snapshot_exists() {
+    local snapshot_dir=".databricks/sync-snapshots"
+    if [ -d "$snapshot_dir" ] && [ -n "$(ls -A "$snapshot_dir" 2>/dev/null)" ]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+check_snapshot_contains_file() {
+    local file_path="$1"
+    local snapshot_dir=".databricks/sync-snapshots"
+    local snapshot_file=$(ls "$snapshot_dir"/*.json 2>/dev/null | head -1)
+
+    if [ -z "$snapshot_file" ]; then
+        echo "No snapshot file found"
+        return 1
+    fi
+
+    if grep -q "\"$file_path\"" "$snapshot_file"; then
+        return 0
+    else
+        echo "File $file_path not found in snapshot"
+        return 1
+    fi
+}
+
+# Setup
+mkdir -p local-sync-test-incremental
+cd local-sync-test-incremental
+remote_path="/Users/$CURRENT_USER_NAME/sync-test-incremental"
+
+# Start incremental sync in background
+echo "Starting incremental sync..."
+$CLI sync . "$remote_path" --watch --output json > sync_output.log 2>&1 &
+sync_pid=$!
+
+# Wait a bit for sync to initialize
+sleep 5
+
+# Test 1: Create a new file
+echo "Creating foo.txt..."
+echo "" > foo.txt
+sleep 3
+
+# Verify file exists remotely
+if check_remote_file_exists "foo.txt"; then
+    echo "✓ Remote file foo.txt exists"
+else
+    echo "✗ Remote file foo.txt does not exist"
+    exit 1
+fi
+
+# Test 2: Check snapshot is created
+if check_snapshot_exists; then
+    echo "✓ Snapshot directory created"
+else
+    echo "✗ Snapshot directory not created"
+    exit 1
+fi
+
+# Test 3: Check snapshot contains the file
+if check_snapshot_contains_file "foo.txt"; then
+    echo "✓ Snapshot contains foo.txt"
+else
+    echo "✗ Snapshot does not contain foo.txt"
+    exit 1
+fi
+
+# Test 4: Write content to file
+echo "Writing content to foo.txt..."
+echo '{"statement": "Mi Gente"}' > foo.txt
+sleep 3
+
+# Verify remote content
+if check_remote_file_content "foo.txt" '{"statement": "Mi Gente"}'; then
+    echo "✓ Remote file content matches"
+else
+    echo "✗ Remote file content does not match"
+    exit 1
+fi
+
+# Test 5: Modify file content
+echo "Modifying foo.txt content..."
+echo '{"statement": "Young Dumb & Broke"}' > foo.txt
+sleep 3
+
+# Verify updated remote content
+if check_remote_file_content "foo.txt" '{"statement": "Young Dumb & Broke"}'; then
+    echo "✓ Remote file content updated correctly"
+else
+    echo "✗ Remote file content update failed"
+    exit 1
+fi
+
+# Test 6: Delete file
+echo "Deleting foo.txt..."
+rm foo.txt
+sleep 3
+
+# Verify file is deleted remotely
+if check_remote_file_exists "foo.txt"; then
+    echo "✗ Remote file foo.txt still exists after deletion"
+    exit 1
+else
+    echo "✓ Remote file foo.txt deleted successfully"
+fi
+
+# Test 7: Check snapshot is updated (should not contain deleted file)
+if check_snapshot_contains_file "foo.txt"; then
+    echo "✗ Snapshot still contains deleted file foo.txt"
+    exit 1
+else
+    echo "✓ Snapshot updated correctly after file deletion"
+fi
+
+# Cleanup
+echo "Cleaning up..."
+kill $sync_pid 2>/dev/null
+cd ..
+rm -rf local-sync-test-incremental
+
+# Clean up remote directory
+$CLI workspace delete "$remote_path" --recursive 2>/dev/null || true
+
+echo "Incremental sync test completed successfully!"

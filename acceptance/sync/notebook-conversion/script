@@ -1,0 +1,196 @@
+#!/bin/bash
+
+# Helper functions
+check_remote_object_type() {
+    local file_path="$1"
+    local expected_type="$2"
+    local remote_path="/Users/$CURRENT_USER_NAME/sync-test-notebook/$file_path"
+
+    local status=$($CLI workspace get-status "$remote_path" 2>/dev/null)
+    if echo "$status" | grep -q "\"object_type\":\"$expected_type\""; then
+        return 0
+    else
+        echo "Object type mismatch for $file_path"
+        echo "Expected: $expected_type"
+        echo "Actual status: $status"
+        return 1
+    fi
+}
+
+check_remote_language() {
+    local file_path="$1"
+    local expected_language="$2"
+    local remote_path="/Users/$CURRENT_USER_NAME/sync-test-notebook/$file_path"
+
+    local status=$($CLI workspace get-status "$remote_path" 2>/dev/null)
+    if echo "$status" | grep -q "\"language\":\"$expected_language\""; then
+        return 0
+    else
+        echo "Language mismatch for $file_path"
+        echo "Expected: $expected_language"
+        echo "Actual status: $status"
+        return 1
+    fi
+}
+
+check_remote_file_exists() {
+    local file_path="$1"
+    local remote_path="/Users/$CURRENT_USER_NAME/sync-test-notebook/$file_path"
+
+    $CLI workspace get-status "$remote_path" >/dev/null 2>&1
+    return $?
+}
+
+# Setup
+mkdir -p local-sync-test-notebook
+cd local-sync-test-notebook
+remote_path="/Users/$CURRENT_USER_NAME/sync-test-notebook"
+
+# Start sync in background
+echo "Starting notebook conversion sync..."
+$CLI sync . "$remote_path" --watch --output json > sync_output.log 2>&1 &
+sync_pid=$!
+
+# Wait a bit for sync to initialize
+sleep 5
+
+# Test 1: Create Python notebook
+echo "Creating Python notebook..."
+echo "# Databricks notebook source" > foo.py
+sleep 3
+
+# Verify it's uploaded as a notebook (without .py extension)
+if check_remote_object_type "foo" "NOTEBOOK"; then
+    echo "✓ Python file uploaded as notebook"
+else
+    echo "✗ Python file not uploaded as notebook"
+    exit 1
+fi
+
+if check_remote_language "foo" "PYTHON"; then
+    echo "✓ Notebook language is Python"
+else
+    echo "✗ Notebook language is not Python"
+    exit 1
+fi
+
+# Test 2: Convert notebook to regular file
+echo "Converting notebook to regular file..."
+echo "# No longer a python notebook" > foo.py
+sleep 3
+
+# Verify it's now a regular file (with .py extension)
+if check_remote_object_type "foo.py" "FILE"; then
+    echo "✓ Notebook converted to regular file"
+else
+    echo "✗ Notebook not converted to regular file"
+    exit 1
+fi
+
+# The old notebook should no longer exist
+if check_remote_file_exists "foo"; then
+    echo "✗ Old notebook still exists"
+    exit 1
+else
+    echo "✓ Old notebook removed"
+fi
+
+# Test 3: Convert regular file back to notebook
+echo "Converting regular file back to notebook..."
+echo "# Databricks notebook source" > foo.py
+sleep 3
+
+# Verify it's converted back to notebook (without .py extension)
+if check_remote_object_type "foo" "NOTEBOOK"; then
+    echo "✓ Regular file converted back to notebook"
+else
+    echo "✗ Regular file not converted back to notebook"
+    exit 1
+fi
+
+if check_remote_language "foo" "PYTHON"; then
+    echo "✓ Converted notebook language is Python"
+else
+    echo "✗ Converted notebook language is not Python"
+    exit 1
+fi
+
+# The regular file should no longer exist
+if check_remote_file_exists "foo.py"; then
+    echo "✗ Old regular file still exists"
+    exit 1
+else
+    echo "✓ Old regular file removed"
+fi
+
+# Test 4: Delete notebook
+echo "Deleting notebook..."
+rm foo.py
+sleep 3
+
+# Verify notebook is deleted
+if check_remote_file_exists "foo"; then
+    echo "✗ Notebook still exists after deletion"
+    exit 1
+else
+    echo "✓ Notebook deleted successfully"
+fi
+
+# Test 5: Test with SQL notebook
+echo "Testing SQL notebook..."
+echo "-- Databricks notebook source" > bar.sql
+sleep 3
+
+# Verify it's uploaded as a SQL notebook
+if check_remote_object_type "bar" "NOTEBOOK"; then
+    echo "✓ SQL file uploaded as notebook"
+else
+    echo "✗ SQL file not uploaded as notebook"
+    exit 1
+fi
+
+if check_remote_language "bar" "SQL"; then
+    echo "✓ Notebook language is SQL"
+else
+    echo "✗ Notebook language is not SQL"
+    exit 1
+fi
+
+# Clean up SQL notebook
+rm bar.sql
+sleep 3
+
+# Test 6: Test with Scala notebook
+echo "Testing Scala notebook..."
+echo "// Databricks notebook source" > baz.scala
+sleep 3
+
+# Verify it's uploaded as a Scala notebook
+if check_remote_object_type "baz" "NOTEBOOK"; then
+    echo "✓ Scala file uploaded as notebook"
+else
+    echo "✗ Scala file not uploaded as notebook"
+    exit 1
+fi
+
+if check_remote_language "baz" "SCALA"; then
+    echo "✓ Notebook language is Scala"
+else
+    echo "✗ Notebook language is not Scala"
+    exit 1
+fi
+
+# Clean up Scala notebook
+rm baz.scala
+sleep 3
+
+# Cleanup
+echo "Cleaning up..."
+kill $sync_pid 2>/dev/null
+cd ..
+rm -rf local-sync-test-notebook
+
+# Clean up remote directory
+$CLI workspace delete "$remote_path" --recursive 2>/dev/null || true
+
+echo "Notebook conversion test completed successfully!"
