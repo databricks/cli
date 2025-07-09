@@ -1,4 +1,4 @@
-package connect
+package psql
 
 import (
 	"errors"
@@ -9,26 +9,18 @@ import (
 )
 
 func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:     "connect",
-		Short:   "Connect allows you to connect to your databases in your Databricks Workspace.",
-		Long:    "Connect allows you to connect to your databases in your Databricks Workspace. You can connect to Lakebase database instances.",
-		GroupID: "development",
-	}
-
-	cmd.AddCommand(newLakebaseConnectCommand())
-
-	return cmd
+	return newLakebaseConnectCommand()
 }
 
 func newLakebaseConnectCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "lakebase [DATABASE_INSTANCE_NAME]",
-		Short: "Connect to the specified Lakebase database instance",
-		Args:  root.MaximumNArgs(1),
-		Long: `Connect to the specified Lakebase database instance.
+		Use:     "psql [DATABASE_INSTANCE_NAMES]",
+		Short:   "Connect to the specified Database Instance",
+		Args:    root.MaximumNArgs(1),
+		GroupID: "database",
+		Long: `Connect to the specified Database Instance.
 
-You need to have psql client installed on your machine for this connection to work.
+This command requires a psql client to be installed on your machine for the connection to work.
 `,
 	}
 
@@ -46,7 +38,7 @@ You need to have psql client installed on your machine for this connection to wo
 		}
 
 		if databaseInstanceName == "" {
-			return errors.New("please specify a database instance name: databricks connect lakebase [DATABASE_INSTANCE_NAME]")
+			return errors.New("please specify a database instance name: databricks connect [DATABASE_INSTANCE_NAME]")
 		}
 
 		return lakebase.Connect(cmd.Context(), databaseInstanceName)
