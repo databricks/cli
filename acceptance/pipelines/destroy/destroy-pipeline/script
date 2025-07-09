@@ -1,6 +1,7 @@
 title "Test basic pipelines destroy"
 trace $PIPELINES deploy
 PIPELINE_ID=$($CLI bundle summary -o json | jq -r '.resources.pipelines.my_pipeline.id')
+# --auto-approve is required because the test environment cannot provide interactive confirmation
 trace $PIPELINES destroy --auto-approve
 
 title "Assert pipeline is deleted"

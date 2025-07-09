@@ -1,4 +1,5 @@
 // Copied from cmd/bundle/destroy.go and adapted for pipelines use.
+// Consider if changes made there should be made to the pipelines counterpart as well.
 package pipelines
 
 import (
