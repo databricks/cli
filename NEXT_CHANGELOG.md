@@ -3,6 +3,8 @@
 ## Release v0.259.0
 
 ### Notable Changes
+* Add support for arbitrary scripts in DABs. Users can now define scripts in their bundle configuration. These scripts automatically inherit the bundle's credentials for authentication. They can be invoked with the `bundle run` command. ([#2813](https://github.com/databricks/cli/pull/2813))
+* Error when the absolute path to `databricks.yml` contains a glob character. These are: `*`, `?`, `[`, `]` and `^`. If the path to the `databricks.yml` file on your local filesystem contains one of these characters, that could lead to incorrect computation of glob patterns for the `includes` block and might cause resources to be deleted. After this patch users will not be at risk for unexpected deletions due to this issue. ([#3096](https://github.com/databricks/cli/pull/3096))
 * Diagnostics messages are no longer buffered to be printed at the end of command, flushed after every mutator ([#3175](https://github.com/databricks/cli/pull/3175))
 * Diagnostics are now always rendered with forward slashes in file paths, even on Windows ([#3175](https://github.com/databricks/cli/pull/3175))
 * "bundle summary" now prints diagnostics to stderr instead of stdout in text output mode ([#3175](https://github.com/databricks/cli/pull/3175))
