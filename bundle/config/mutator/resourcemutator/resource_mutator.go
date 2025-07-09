@@ -158,6 +158,9 @@ func applyNormalizeMutators(ctx context.Context, b *bundle.Bundle) {
 		// Updates (dynamic): resources.dashboards.*.serialized_dashboard
 		// Drops (dynamic): resources.dashboards.*.file_path
 		ConfigureDashboardSerializedDashboard(),
+
+		// Reads and updates (typed): resources.jobs.*.**
+		JobClustersFixups(),
 	)
 }
 
