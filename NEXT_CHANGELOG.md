@@ -14,5 +14,6 @@
 
 ### Bundles
 * Fix default search location for whl artifacts ([#3184](https://github.com/databricks/cli/pull/3184)). This was a regression introduced in 0.255.0.
+* The job tasks are now sorted by task key in "bundle validate/summary" output ([#3212](https://github.com/databricks/cli/pull/3212))
 
 ### API Changes
