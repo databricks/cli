@@ -1,0 +1,7 @@
+bundle:
+  name: monkey
+
+scripts:
+  foo:
+    content: |-
+      echo $foo $bar

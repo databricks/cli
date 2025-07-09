@@ -23,14 +23,14 @@ func TestValidateUniqueResourceIdentifiers(t *testing.T) {
 			diagnostics: diag.Diagnostics{
 				{
 					Severity: diag.Error,
-					Summary:  "multiple resources have been defined with the same key: foo",
+					Summary:  "multiple resources or scripts have been defined with the same key: foo",
 					Locations: []dyn.Location{
 						{File: "validate/duplicate_resource_names_in_root_job_and_pipeline/databricks.yml", Line: 10, Column: 7},
 						{File: "validate/duplicate_resource_names_in_root_job_and_pipeline/databricks.yml", Line: 13, Column: 7},
 					},
 					Paths: []dyn.Path{
-						dyn.MustPathFromString("jobs.foo"),
-						dyn.MustPathFromString("pipelines.foo"),
+						dyn.MustPathFromString("resources.jobs.foo"),
+						dyn.MustPathFromString("resources.pipelines.foo"),
 					},
 				},
 			},
@@ -40,14 +40,14 @@ func TestValidateUniqueResourceIdentifiers(t *testing.T) {
 			diagnostics: diag.Diagnostics{
 				{
 					Severity: diag.Error,
-					Summary:  "multiple resources have been defined with the same key: foo",
+					Summary:  "multiple resources or scripts have been defined with the same key: foo",
 					Locations: []dyn.Location{
 						{File: "validate/duplicate_resource_names_in_root_job_and_experiment/databricks.yml", Line: 10, Column: 7},
 						{File: "validate/duplicate_resource_names_in_root_job_and_experiment/databricks.yml", Line: 18, Column: 7},
 					},
 					Paths: []dyn.Path{
-						dyn.MustPathFromString("experiments.foo"),
-						dyn.MustPathFromString("jobs.foo"),
+						dyn.MustPathFromString("resources.experiments.foo"),
+						dyn.MustPathFromString("resources.jobs.foo"),
 					},
 				},
 			},
@@ -57,14 +57,14 @@ func TestValidateUniqueResourceIdentifiers(t *testing.T) {
 			diagnostics: diag.Diagnostics{
 				{
 					Severity: diag.Error,
-					Summary:  "multiple resources have been defined with the same key: foo",
+					Summary:  "multiple resources or scripts have been defined with the same key: foo",
 					Locations: []dyn.Location{
 						{File: "validate/duplicate_resource_name_in_subconfiguration/databricks.yml", Line: 13, Column: 7},
 						{File: "validate/duplicate_resource_name_in_subconfiguration/resources.yml", Line: 4, Column: 7},
 					},
 					Paths: []dyn.Path{
-						dyn.MustPathFromString("jobs.foo"),
-						dyn.MustPathFromString("pipelines.foo"),
+						dyn.MustPathFromString("resources.jobs.foo"),
+						dyn.MustPathFromString("resources.pipelines.foo"),
 					},
 				},
 			},
@@ -74,13 +74,13 @@ func TestValidateUniqueResourceIdentifiers(t *testing.T) {
 			diagnostics: diag.Diagnostics{
 				{
 					Severity: diag.Error,
-					Summary:  "multiple resources have been defined with the same key: foo",
+					Summary:  "multiple resources or scripts have been defined with the same key: foo",
 					Locations: []dyn.Location{
 						{File: "validate/duplicate_resource_name_in_subconfiguration_job_and_job/databricks.yml", Line: 13, Column: 7},
 						{File: "validate/duplicate_resource_name_in_subconfiguration_job_and_job/resources.yml", Line: 4, Column: 7},
 					},
 					Paths: []dyn.Path{
-						dyn.MustPathFromString("jobs.foo"),
+						dyn.MustPathFromString("resources.jobs.foo"),
 					},
 				},
 			},
@@ -90,14 +90,14 @@ func TestValidateUniqueResourceIdentifiers(t *testing.T) {
 			diagnostics: diag.Diagnostics{
 				{
 					Severity: diag.Error,
-					Summary:  "multiple resources have been defined with the same key: foo",
+					Summary:  "multiple resources or scripts have been defined with the same key: foo",
 					Locations: []dyn.Location{
 						{File: "validate/duplicate_resource_names_in_different_subconfiguations/resources1.yml", Line: 4, Column: 7},
 						{File: "validate/duplicate_resource_names_in_different_subconfiguations/resources2.yml", Line: 4, Column: 7},
 					},
 					Paths: []dyn.Path{
-						dyn.MustPathFromString("jobs.foo"),
-						dyn.MustPathFromString("pipelines.foo"),
+						dyn.MustPathFromString("resources.jobs.foo"),
+						dyn.MustPathFromString("resources.pipelines.foo"),
 					},
 				},
 			},
@@ -107,7 +107,7 @@ func TestValidateUniqueResourceIdentifiers(t *testing.T) {
 			diagnostics: diag.Diagnostics{
 				{
 					Severity: diag.Error,
-					Summary:  "multiple resources have been defined with the same key: foo",
+					Summary:  "multiple resources or scripts have been defined with the same key: foo",
 					Locations: []dyn.Location{
 						{File: "validate/duplicate_resource_name_in_multiple_locations/databricks.yml", Line: 13, Column: 7},
 						{File: "validate/duplicate_resource_name_in_multiple_locations/resources1.yml", Line: 4, Column: 7},
@@ -116,9 +116,9 @@ func TestValidateUniqueResourceIdentifiers(t *testing.T) {
 						{File: "validate/duplicate_resource_name_in_multiple_locations/resources2.yml", Line: 8, Column: 7},
 					},
 					Paths: []dyn.Path{
-						dyn.MustPathFromString("experiments.foo"),
-						dyn.MustPathFromString("jobs.foo"),
-						dyn.MustPathFromString("pipelines.foo"),
+						dyn.MustPathFromString("resources.experiments.foo"),
+						dyn.MustPathFromString("resources.jobs.foo"),
+						dyn.MustPathFromString("resources.pipelines.foo"),
 					},
 				},
 			},
