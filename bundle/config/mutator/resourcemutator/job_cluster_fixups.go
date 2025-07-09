@@ -32,7 +32,7 @@ func (m *jobClustersFixups) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 
 // Copied from
 // https://github.com/databricks/terraform-provider-databricks/blob/a8c92bb/clusters/resource_cluster.go
-// https://github.com/databricks/terraform-provider-databricks/blob/a8c92bb130def431b3fadd9fd533c463e8d4813b/clusters/clusters_api.go#L440
+// https://github.com/databricks/terraform-provider-databricks/blob/a8c92bb/clusters/clusters_api.go#L440
 func ModifyRequestOnInstancePool(c *compute.ClusterSpec) {
 	// Instance profile id does not exist or not set
 	if c.InstancePoolId == "" {
