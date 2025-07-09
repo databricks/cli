@@ -55,12 +55,15 @@ func Connect(ctx context.Context, databaseInstanceName string, extraArgs ...stri
 		return err
 	}
 
-	// Check if database name is already specified in extra arguments
+	// Check if database name and port are already specified in extra arguments
 	hasDbName := false
+	hasPort := false
 	for _, arg := range extraArgs {
 		if arg == "-d" || strings.HasPrefix(arg, "--dbname=") {
 			hasDbName = true
-			break
+		}
+		if arg == "-p" || strings.HasPrefix(arg, "--port=") {
+			hasPort = true
 		}
 	}
 
@@ -69,7 +72,11 @@ func Connect(ctx context.Context, databaseInstanceName string, extraArgs ...stri
 		"psql",
 		"--host=" + db.ReadWriteDns,
 		"--username=" + user.UserName,
-		"--port=5432",
+	}
+
+	// Add default port only if not specified in extra arguments
+	if !hasPort {
+		args = append(args, "--port=5432")
 	}
 
 	// Add default database name only if not specified in extra arguments
