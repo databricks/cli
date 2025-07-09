@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	pathlib "path"
 	"path/filepath"
 	"reflect"
 	"regexp"
@@ -129,13 +130,16 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	cwd, err := os.Getwd()
 	require.NoError(t, err)
 
+	// All paths should use forward slashes.
+	cwd = filepath.ToSlash(cwd)
+
 	// Consistent behavior of locale-dependent tools, such as 'sort'
 	t.Setenv("LC_ALL", "C")
 
-	buildDir := filepath.Join(cwd, "build", fmt.Sprintf("%s_%s", runtime.GOOS, runtime.GOARCH))
+	buildDir := pathlib.Join(cwd, "build", fmt.Sprintf("%s_%s", runtime.GOOS, runtime.GOARCH))
 
 	// Download terraform and provider and create config; this also creates build directory.
-	RunCommand(t, []string{"python3", filepath.Join(cwd, "install_terraform.py"), "--targetdir", buildDir}, ".")
+	RunCommand(t, []string{"python3", pathlib.Join(cwd, "install_terraform.py"), "--targetdir", buildDir}, ".")
 
 	wheelPath := buildDatabricksBundlesWheel(t, buildDir)
 	if wheelPath != "" {
@@ -148,6 +152,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	if coverDir != "" {
 		require.NoError(t, os.MkdirAll(coverDir, os.ModePerm))
 		coverDir, err = filepath.Abs(coverDir)
+		coverDir = filepath.ToSlash(coverDir)
 		require.NoError(t, err)
 		t.Logf("Writing coverage to %s", coverDir)
 	}
@@ -157,7 +162,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	if inprocessMode {
 		cmdServer := internal.StartCmdServer(t)
 		t.Setenv("CMD_SERVER_URL", cmdServer.URL)
-		execPath = filepath.Join(cwd, "bin", "callserver.py")
+		execPath = pathlib.Join(cwd, "bin", "callserver.py")
 	} else {
 		execPath = BuildCLI(t, buildDir, coverDir)
 	}
@@ -167,7 +172,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	t.Setenv("CLI", execPath)
 	repls.SetPath(execPath, "[CLI]")
 
-	pipelinesPath := filepath.Join(buildDir, "pipelines") + exeSuffix
+	pipelinesPath := pathlib.Join(buildDir, "pipelines") + exeSuffix
 	err = copyFile(execPath, pipelinesPath)
 	require.NoError(t, err)
 	t.Setenv("PIPELINES", pipelinesPath)
@@ -175,10 +180,10 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 
 	paths := []string{
 		// Make helper scripts available
-		filepath.Join(cwd, "bin"),
+		pathlib.Join(cwd, "bin"),
 
 		// Make <ROOT>/tools/ available (e.g. yamlfmt)
-		filepath.Join(cwd, "..", "tools"),
+		pathlib.Join(cwd, "..", "tools"),
 
 		os.Getenv("PATH"),
 	}
@@ -190,7 +195,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 
 	// UV_CACHE_DIR only applies to packages but not Python installations.
 	// UV_PYTHON_INSTALL_DIR ensures we cache Python downloads as well
-	uvInstall := filepath.Join(uvCache, "python_installs")
+	uvInstall := pathlib.Join(uvCache, "python_installs")
 	t.Setenv("UV_PYTHON_INSTALL_DIR", uvInstall)
 
 	cloudEnv := os.Getenv("CLOUD_ENV")
@@ -207,12 +212,12 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		repls.Set(testDefaultWarehouseId, "[TEST_DEFAULT_WAREHOUSE_ID]")
 	}
 
-	terraformrcPath := filepath.Join(buildDir, ".terraformrc")
+	terraformrcPath := pathlib.Join(buildDir, ".terraformrc")
 	t.Setenv("TF_CLI_CONFIG_FILE", terraformrcPath)
 	t.Setenv("DATABRICKS_TF_CLI_CONFIG_FILE", terraformrcPath)
 	repls.SetPath(terraformrcPath, "[DATABRICKS_TF_CLI_CONFIG_FILE]")
 
-	terraformExecPath := filepath.Join(buildDir, "terraform") + exeSuffix
+	terraformExecPath := pathlib.Join(buildDir, "terraform") + exeSuffix
 	t.Setenv("DATABRICKS_TF_EXEC_PATH", terraformExecPath)
 	t.Setenv("TERRAFORM", terraformExecPath)
 	repls.SetPath(terraformExecPath, "[TERRAFORM]")
@@ -452,7 +457,7 @@ func runTest(t *testing.T,
 	var tmpDir string
 	var err error
 	if KeepTmp {
-		tempDirBase := filepath.Join(os.TempDir(), "acceptance")
+		tempDirBase := pathlib.Join(os.TempDir(), "acceptance")
 		_ = os.Mkdir(tempDirBase, 0o755)
 		tmpDir, err = os.MkdirTemp(tempDirBase, "")
 		require.NoError(t, err)
@@ -464,12 +469,12 @@ func runTest(t *testing.T,
 	repls.SetPathWithParents(tmpDir, "[TEST_TMP_DIR]")
 
 	scriptContents := readMergedScriptContents(t, dir)
-	testutil.WriteFile(t, filepath.Join(tmpDir, EntryPointScript), scriptContents)
+	testutil.WriteFile(t, pathlib.Join(tmpDir, EntryPointScript), scriptContents)
 
 	// Generate materialized config for this test
 	materializedConfig, err := internal.GenerateMaterializedConfig(config)
 	require.NoError(t, err)
-	testutil.WriteFile(t, filepath.Join(tmpDir, internal.MaterializedConfigFile), materializedConfig)
+	testutil.WriteFile(t, pathlib.Join(tmpDir, internal.MaterializedConfigFile), materializedConfig)
 
 	inputs := make(map[string]bool, 2)
 	outputs := make(map[string]bool, 2)
@@ -534,14 +539,14 @@ func runTest(t *testing.T,
 	// Save replacements to temp test directory so that it can be read by diff.py
 	replsJson, err := json.MarshalIndent(repls.Repls, "", "  ")
 	require.NoError(t, err)
-	testutil.WriteFile(t, filepath.Join(tmpDir, ReplsFile), string(replsJson))
+	testutil.WriteFile(t, pathlib.Join(tmpDir, ReplsFile), string(replsJson))
 
 	if coverDir != "" {
 		// Creating individual coverage directory for each test, because writing to the same one
 		// results in sporadic failures like this one (only if tests are running in parallel):
 		// +error: coverage meta-data emit failed: writing ... rename .../tmp.covmeta.b3f... .../covmeta.b3f2c...: no such file or directory
 		// Note: should not use dir, because single dir can generate multiple tests via EnvMatrix
-		coverDir = filepath.Join(coverDir, strings.ReplaceAll(dir, string(os.PathSeparator), "--"))
+		coverDir = pathlib.Join(coverDir, strings.ReplaceAll(dir, string(os.PathSeparator), "--"))
 		if variant != 0 {
 			coverDir += strconv.Itoa(variant)
 		}
@@ -586,12 +591,13 @@ func runTest(t *testing.T,
 
 	absDir, err := filepath.Abs(dir)
 	require.NoError(t, err)
+	absDir = filepath.ToSlash(absDir)
 	cmd.Env = append(cmd.Env, "TESTDIR="+absDir)
 	cmd.Env = append(cmd.Env, "CLOUD_ENV="+cloudEnv)
 	cmd.Env = append(cmd.Env, "CURRENT_USER_NAME="+user.UserName)
 	cmd.Dir = tmpDir
 
-	outputPath := filepath.Join(tmpDir, "output.txt")
+	outputPath := pathlib.Join(tmpDir, "output.txt")
 	out, err := os.Create(outputPath)
 	require.NoError(t, err)
 	defer out.Close()
@@ -677,8 +683,8 @@ func addEnvVar(t *testing.T, env []string, repls *testdiff.ReplacementsContext, 
 }
 
 func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirNew, relPath string, printedRepls *bool, skipRepls bool) {
-	pathRef := filepath.Join(dirRef, relPath)
-	pathNew := filepath.Join(dirNew, relPath)
+	pathRef := pathlib.Join(dirRef, relPath)
+	pathNew := pathlib.Join(dirNew, relPath)
 	bufRef, okRef := tryReading(t, pathRef)
 	bufNew, okNew := tryReading(t, pathNew)
 	if !okRef && !okNew {
@@ -752,7 +758,7 @@ func shouldShowDiff(pathNew, valueNew string) bool {
 // Returns combined script.prepare (root) + script.prepare (parent) + ... + script + ... + script.cleanup (parent) + ...
 // Note, cleanups are not executed if main script fails; that's not a huge issue, since it runs it temp dir.
 func readMergedScriptContents(t *testing.T, dir string) string {
-	scriptContents := testutil.ReadFile(t, filepath.Join(dir, EntryPointScript))
+	scriptContents := testutil.ReadFile(t, pathlib.Join(dir, EntryPointScript))
 
 	// Wrap script contents in a subshell such that changing the working
 	// directory only affects the main script and not cleanup.
@@ -762,12 +768,12 @@ func readMergedScriptContents(t *testing.T, dir string) string {
 	var cleanups []string
 
 	for {
-		x, ok := tryReading(t, filepath.Join(dir, CleanupScript))
+		x, ok := tryReading(t, pathlib.Join(dir, CleanupScript))
 		if ok {
 			cleanups = append(cleanups, x)
 		}
 
-		x, ok = tryReading(t, filepath.Join(dir, PrepareScript))
+		x, ok = tryReading(t, pathlib.Join(dir, PrepareScript))
 		if ok {
 			prepares = append(prepares, x)
 		}
@@ -787,7 +793,7 @@ func readMergedScriptContents(t *testing.T, dir string) string {
 }
 
 func BuildCLI(t *testing.T, buildDir, coverDir string) string {
-	execPath := filepath.Join(buildDir, "databricks")
+	execPath := pathlib.Join(buildDir, "databricks")
 	if runtime.GOOS == "windows" {
 		execPath += ".exe"
 	}
@@ -902,7 +908,7 @@ func CopyDir(src, dst string, inputs, outputs map[string]bool) error {
 			return nil
 		}
 
-		destPath := filepath.Join(dst, relPath)
+		destPath := pathlib.Join(dst, relPath)
 
 		if info.IsDir() {
 			return os.MkdirAll(destPath, info.Mode())
@@ -1107,7 +1113,7 @@ func prepareWheelBuildDirectory(t *testing.T, dir string) string {
 		if strings.HasPrefix(name, "databricks_bundles-") && strings.HasSuffix(name, ".whl") {
 			info, err := file.Info()
 			require.NoError(t, err)
-			name = filepath.Join(dir, name)
+			name = pathlib.Join(dir, name)
 			wheels = append(wheels, name)
 			if info.ModTime().After(latestTime) {
 				latestWheel = name
@@ -1154,7 +1160,7 @@ func applyBundleConfig(t *testing.T, tmpDir string, bundleConfig map[string]any,
 		return false
 	}
 
-	configPath := filepath.Join(tmpDir, bundleConfigTarget)
+	configPath := pathlib.Join(tmpDir, bundleConfigTarget)
 	configData, configExists := tryReading(t, configPath)
 
 	newConfigData := configData
