@@ -1,0 +1,2 @@
+# Test that bundle generate dashboard fails when the existing path is not found
+exec $CLI bundle generate dashboard --existing-path /path/to/nonexistent/dashboard

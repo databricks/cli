@@ -50,7 +50,7 @@ func TestLoadExists(t *testing.T) {
 	assert.NotNil(t, b)
 }
 
-func TestBundleCacheDir(t *testing.T) {
+func TestBundleLocalStateDir(t *testing.T) {
 	ctx := context.Background()
 	projectDir := t.TempDir()
 	f1, err := os.Create(filepath.Join(projectDir, "databricks.yml"))
@@ -67,14 +67,14 @@ func TestBundleCacheDir(t *testing.T) {
 	// unset env variable in case it's set
 	t.Setenv("DATABRICKS_BUNDLE_TMP", "")
 
-	cacheDir, err := bundle.CacheDir(ctx)
+	cacheDir, err := bundle.LocalStateDir(ctx)
 
 	// format is <CWD>/.databricks/bundle/<target>
 	assert.NoError(t, err)
 	assert.Equal(t, filepath.Join(projectDir, ".databricks", "bundle", "default"), cacheDir)
 }
 
-func TestBundleCacheDirOverride(t *testing.T) {
+func TestBundleLocalStateDirOverride(t *testing.T) {
 	ctx := context.Background()
 	projectDir := t.TempDir()
 	bundleTmpDir := t.TempDir()
@@ -92,7 +92,7 @@ func TestBundleCacheDirOverride(t *testing.T) {
 	// now we expect to use 'bundleTmpDir' instead of CWD/.databricks/bundle
 	t.Setenv("DATABRICKS_BUNDLE_TMP", bundleTmpDir)
 
-	cacheDir, err := bundle.CacheDir(ctx)
+	cacheDir, err := bundle.LocalStateDir(ctx)
 
 	// format is <DATABRICKS_BUNDLE_TMP>/<target>
 	assert.NoError(t, err)
