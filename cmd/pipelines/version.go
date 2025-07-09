@@ -1,3 +1,5 @@
+// Copied from cmd/version/version.go and adapted for pipelines use.
+// Consider if changes made here should be made to the bundle counterpart as well.
 package pipelines
 
 import (
