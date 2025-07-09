@@ -76,24 +76,6 @@
         },
         "tasks": [
           {
-            "job_cluster_key": "job_cluster",
-            "notebook_task": {
-              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/notebook"
-            },
-            "task_key": "notebook_task"
-          },
-          {
-            "depends_on": [
-              {
-                "task_key": "notebook_task"
-              }
-            ],
-            "pipeline_task": {
-              "pipeline_id": "${resources.pipelines.project_name_[UNIQUE_NAME]_pipeline.id}"
-            },
-            "task_key": "refresh_pipeline"
-          },
-          {
             "depends_on": [
               {
                 "task_key": "refresh_pipeline"
@@ -110,6 +92,24 @@
               "package_name": "project_name_[UNIQUE_NAME]"
             },
             "task_key": "main_task"
+          },
+          {
+            "job_cluster_key": "job_cluster",
+            "notebook_task": {
+              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/notebook"
+            },
+            "task_key": "notebook_task"
+          },
+          {
+            "depends_on": [
+              {
+                "task_key": "notebook_task"
+              }
+            ],
+            "pipeline_task": {
+              "pipeline_id": "${resources.pipelines.project_name_[UNIQUE_NAME]_pipeline.id}"
+            },
+            "task_key": "refresh_pipeline"
           }
         ],
         "trigger": {
