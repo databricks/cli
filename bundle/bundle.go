@@ -217,9 +217,9 @@ func (b *Bundle) SetWorkpaceClient(w *databricks.WorkspaceClient) {
 	b.client = w
 }
 
-// CacheDir returns directory to use for temporary files for this bundle.
+// LocalStateDir returns directory to use for temporary files for this bundle.
 // Scoped to the bundle's target.
-func (b *Bundle) CacheDir(ctx context.Context, paths ...string) (string, error) {
+func (b *Bundle) LocalStateDir(ctx context.Context, paths ...string) (string, error) {
 	if b.Config.Bundle.Target == "" {
 		panic("target not set")
 	}
@@ -259,7 +259,7 @@ func (b *Bundle) CacheDir(ctx context.Context, paths ...string) (string, error) 
 // This directory is used to store and automaticaly sync internal bundle files, such as, f.e
 // notebook trampoline files for Python wheel and etc.
 func (b *Bundle) InternalDir(ctx context.Context) (string, error) {
-	cacheDir, err := b.CacheDir(ctx)
+	cacheDir, err := b.LocalStateDir(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -346,13 +346,13 @@ func (b *Bundle) StateFilename() string {
 
 func (b *Bundle) StateLocalPath(ctx context.Context) (string, error) {
 	if b.DirectDeployment {
-		cacheDir, err := b.CacheDir(ctx)
+		cacheDir, err := b.LocalStateDir(ctx)
 		if err != nil {
 			return "", err
 		}
 		return filepath.Join(cacheDir, resourcesFilename), nil
 	} else {
-		cacheDir, err := b.CacheDir(ctx, "terraform")
+		cacheDir, err := b.LocalStateDir(ctx, "terraform")
 		if err != nil {
 			return "", err
 		}

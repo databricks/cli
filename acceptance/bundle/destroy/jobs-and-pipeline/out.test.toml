@@ -2,4 +2,4 @@ Local = false
 Cloud = true
 
 [EnvMatrix]
-  DATABRICKS_CLI_DEPLOYMENT = ["terraform"]
+  DATABRICKS_CLI_DEPLOYMENT = ["terraform", "direct-exp"]
