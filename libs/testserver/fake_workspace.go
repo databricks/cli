@@ -51,6 +51,7 @@ type FakeWorkspace struct {
 	Monitors   map[string]catalog.MonitorInfo
 	Apps       map[string]apps.App
 	Schemas    map[string]catalog.SchemaInfo
+	Volumes    map[string]catalog.VolumeInfo
 	Dashboards map[string]dashboards.Dashboard
 }
 
@@ -125,6 +126,7 @@ func NewFakeWorkspace(url string) *FakeWorkspace {
 		Monitors:     map[string]catalog.MonitorInfo{},
 		Apps:         map[string]apps.App{},
 		Schemas:      map[string]catalog.SchemaInfo{},
+		Volumes:      map[string]catalog.VolumeInfo{},
 		Dashboards:   map[string]dashboards.Dashboard{},
 	}
 }
