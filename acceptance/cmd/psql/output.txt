@@ -1,4 +1,10 @@
 
+=== Test should use a fake psql command:
+>>> psql --version
+echo-arguments.sh was called with the following arguments: --version
+PGPASSWORD=
+PGSSLMODE=
+
 === Command should use default db name if it is not specified:
 >>> [CLI] psql my-database
 Connecting to Databricks Database Instance my-database ...

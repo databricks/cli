@@ -8,6 +8,9 @@ trap cleanup EXIT
 
 export PATH="$PATH:$(pwd)"
 
+title "Test should use a fake psql command:"
+trace psql --version
+
 title "Command should use default db name if it is not specified:"
 trace $CLI psql my-database
 
