@@ -95,7 +95,7 @@ func (s *FakeWorkspace) PipelineUpdate(req Request, pipelineId string) Response 
 	}
 }
 
-func (s *FakeWorkspace) PipelineStartUpdate(req Request, pipelineId string) Response {
+func (s *FakeWorkspace) PipelineStartUpdate(pipelineId string) Response {
 	defer s.LockUnlock()()
 
 	_, exists := s.Pipelines[pipelineId]
@@ -106,19 +106,6 @@ func (s *FakeWorkspace) PipelineStartUpdate(req Request, pipelineId string) Resp
 		}
 	}
 
-	// Parse the request body to extract flags
-	var startUpdate pipelines.StartUpdate
-	if len(req.Body) > 0 {
-		err := json.Unmarshal(req.Body, &startUpdate)
-		if err != nil {
-			return Response{
-				Body:       fmt.Sprintf("cannot unmarshal request body: %s", err),
-				StatusCode: 400,
-			}
-		}
-	}
-
-	startUpdate.PipelineId = pipelineId
 	updateId := uuid.New().String()
 	s.PipelineUpdates[updateId] = true
 

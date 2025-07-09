@@ -25,28 +25,10 @@ func createTestPipeline(t *testing.T, workspace *FakeWorkspace) string {
 	return createPipelineResponse.PipelineId
 }
 
-func TestPipelineStartUpdate_HandlesInvalidJSON(t *testing.T) {
-	workspace := NewFakeWorkspace("http://test")
-
-	pipelineId := createTestPipeline(t, workspace)
-
-	req := Request{
-		Body: []byte(`{invalid json`),
-	}
-
-	response := workspace.PipelineStartUpdate(req, pipelineId)
-	assert.Equal(t, 400, response.StatusCode)
-	assert.Contains(t, response.Body.(string), "cannot unmarshal request body")
-}
-
 func TestPipelineStartUpdate_HandlesNonExistentPipeline(t *testing.T) {
 	workspace := NewFakeWorkspace("http://test")
 
-	req := Request{
-		Body: []byte(`{}`),
-	}
-
-	response := workspace.PipelineStartUpdate(req, "non-existent-pipeline")
+	response := workspace.PipelineStartUpdate("non-existent-pipeline")
 	assert.Equal(t, 404, response.StatusCode)
 	assert.Contains(t, response.Body.(map[string]string)["message"], "The specified pipeline non-existent-pipeline was not found")
 }
@@ -69,8 +51,7 @@ func TestPipelineStop_AfterUpdate(t *testing.T) {
 
 	pipelineId := createTestPipeline(t, workspace)
 
-	startReq := Request{Body: []byte(`{}`)}
-	startResponse := workspace.PipelineStartUpdate(startReq, pipelineId)
+	startResponse := workspace.PipelineStartUpdate(pipelineId)
 	assert.Equal(t, 0, startResponse.StatusCode)
 
 	stopResponse := workspace.PipelineStop(pipelineId)
