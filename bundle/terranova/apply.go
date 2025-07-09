@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/libs/dagrun"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/structdiff"
 	"github.com/databricks/databricks-sdk-go"
 )
@@ -46,14 +47,13 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 	}
 
 	client := b.WorkspaceClient()
-	var diags diag.SafeDiagnostics
 
 	err := g.Run(defaultParallelism, func(node deployplan.Action) {
 		// TODO: if a given node fails, all downstream nodes should not be run. We should report those nodes.
 		// TODO: ensure that config for this node is fully resolved at this point.
 
 		if node.ActionType == deployplan.ActionTypeUnset {
-			diags.AppendErrorf("internal error, no action set %#v", node)
+			logdiag.LogError(ctx, fmt.Errorf("internal error, no action set %#v", node))
 			return
 		}
 
@@ -63,7 +63,7 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 			var ok bool
 			config, ok = b.GetResourceConfig(node.Group, node.Name)
 			if !ok {
-				diags.AppendErrorf("internal error: cannot get config for group=%v name=%v", node.Group, node.Name)
+				logdiag.LogError(ctx, fmt.Errorf("internal error: cannot get config for group=%v name=%v", node.Group, node.Name))
 				return
 			}
 		}
@@ -78,20 +78,20 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 		// TODO: pass node.ActionType and respect it. Do not change Update to Recreate or Delete for example.
 		err := d.Deploy(ctx, config, node.ActionType)
 		if err != nil {
-			diags.AppendError(err)
+			logdiag.LogError(ctx, err)
 			return
 		}
 	})
 	if err != nil {
-		diags.AppendError(err)
+		logdiag.LogError(ctx, err)
 	}
 
 	err = b.ResourceDatabase.Finalize()
 	if err != nil {
-		diags.AppendError(err)
+		logdiag.LogError(ctx, err)
 	}
 
-	return diags.Diags
+	return nil
 }
 
 type Deployer struct {

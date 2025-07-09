@@ -194,8 +194,8 @@ func TestSetTempDirEnvVarsForWindowsWithoutAnyTempDirEnvVarsSet(t *testing.T) {
 	err := setTempDirEnvVars(context.Background(), env, b)
 	require.NoError(t, err)
 
-	// assert TMP is set to b.CacheDir("tmp")
-	tmpDir, err := b.CacheDir(context.Background(), "tmp")
+	// assert TMP is set to b.LocalStateDir("tmp")
+	tmpDir, err := b.LocalStateDir(context.Background(), "tmp")
 	require.NoError(t, err)
 	assert.Equal(t, map[string]string{
 		"TMP": tmpDir,
@@ -456,7 +456,7 @@ func TestFindExecPath_UseExistingBinary(t *testing.T) {
 	}
 
 	// Create a pre-existing Terraform binary to avoid downloading it
-	cacheDir, _ := b.CacheDir(ctx, "bin")
+	cacheDir, _ := b.LocalStateDir(ctx, "bin")
 	createFakeTerraformBinary(t, cacheDir, "1.2.3")
 
 	// Verify that the pre-existing Terraform binary is used.
