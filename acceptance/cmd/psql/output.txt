@@ -1,0 +1,26 @@
+
+>>> musterr [CLI] psql my-database
+Connecting to Databricks Database Instance my-database ...
+Database status:  RUNNING
+Database postgres version:  14
+Successfully fetched database credentials
+Launching psql with connection to my-database.my-host.com...
+Error: looking up "psql" failed: exec: "psql": executable file not found in $PATH
+
+Exit code (musterr): 1
+
+>>> [CLI] psql my-database
+Connecting to Databricks Database Instance my-database ...
+Database status:  RUNNING
+Database postgres version:  14
+Successfully fetched database credentials
+Launching psql with connection to my-database.my-host.com...
+echo-arguments.sh was called with the following arguments: --host=my-database.my-host.com --username=[USERNAME] --dbname=databricks_postgres --port=5432
+
+>>> [CLI] psql my-database -- -c SELECT * FROM my_table --echo-all -d my-db
+Connecting to Databricks Database Instance my-database ...
+Database status:  RUNNING
+Database postgres version:  14
+Successfully fetched database credentials
+Launching psql with connection to my-database.my-host.com...
+echo-arguments.sh was called with the following arguments: --host=my-database.my-host.com --username=[USERNAME] --dbname=databricks_postgres --port=5432 -c SELECT * FROM my_table --echo-all -d my-db

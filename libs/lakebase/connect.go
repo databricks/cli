@@ -4,14 +4,14 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
 
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/exec"
 	"github.com/databricks/databricks-sdk-go/service/database"
 	"github.com/google/uuid"
 )
 
-func Connect(ctx context.Context, databaseInstanceName string) error {
+func Connect(ctx context.Context, databaseInstanceName string, extraArgs ...string) error {
 	fmt.Printf("Connecting to Databricks Database Instance %s ...\n", databaseInstanceName)
 
 	w := cmdctx.WorkspaceClient(ctx)
@@ -47,34 +47,37 @@ func Connect(ctx context.Context, databaseInstanceName string) error {
 	}
 	fmt.Println("Successfully fetched database credentials")
 
-	// Prepare psql command with connection parameters
-	cmd := exec.CommandContext(ctx, "psql",
-		"--host="+db.ReadWriteDns,
-		"--username="+user.UserName,
+	// Get current working directory
+	dir, err := os.Getwd()
+	if err != nil {
+		fmt.Printf("Error getting working directory: %v\n", err)
+		return err
+	}
+
+	// Prepare command arguments
+	args := []string{
+		"psql",
+		"--host=" + db.ReadWriteDns,
+		"--username=" + user.UserName,
 		"--dbname=databricks_postgres",
 		"--port=5432",
-	)
+	}
+
+	// Append any extra arguments passed through
+	args = append(args, extraArgs...)
 
 	// Set environment variables for psql
-	cmd.Env = append(os.Environ(),
+	cmdEnv := append(os.Environ(),
 		"PGPASSWORD="+cred.Token,
 		"PGSSLMODE=require",
 	)
 
-	// Connect stdin, stdout, and stderr to enable interactive session
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
 	fmt.Printf("Launching psql with connection to %s...\n", db.ReadWriteDns)
 
-	// Execute psql command
-	err = cmd.Run()
-	if err != nil {
-		fmt.Printf("Error running psql: %v\n", err)
-		fmt.Println("Do you have `psql` installed in your path?")
-		return err
-	}
-
-	return nil
+	// Execute psql command inline
+	return exec.Execv(exec.ExecvOptions{
+		Args: args,
+		Env:  cmdEnv,
+		Dir:  dir,
+	})
 }
