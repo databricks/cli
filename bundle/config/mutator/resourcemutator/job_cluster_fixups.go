@@ -24,6 +24,9 @@ func (m *jobClustersFixups) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 		if job == nil {
 			continue
 		}
+		// TODO: we should raise a warning when user specify both InstancePoolId and NodeTypeId since it's illegal.
+		// Once we remove TF backend and had warning for some time, we can remove this transformation, the backend
+		// will reject such configs.
 		prepareJobSettingsForUpdate(&job.JobSettings)
 	}
 
