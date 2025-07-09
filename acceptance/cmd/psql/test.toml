@@ -1,0 +1,17 @@
+[[Server]]
+Pattern = "GET /api/2.0/database/instances/my-database"
+Response.Body = '''
+{
+    "state": "RUNNING",
+    "pg_version": "14",
+    "read_write_dns": "my-database.my-host.com"
+}
+'''
+
+[[Server]]
+Pattern = "POST /api/2.0/database/credentials"
+Response.Body = '''
+{
+    "token": "my-secret-token"
+}
+'''
