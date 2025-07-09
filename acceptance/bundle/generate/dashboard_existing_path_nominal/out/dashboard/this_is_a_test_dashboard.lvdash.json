@@ -3,8 +3,7 @@
     {
       "displayName": "New Page",
       "layout": [],
-      "name": "[NUMID]",
-      "pageType": "PAGE_TYPE_CANVAS"
+      "name": "[NUMID]"
     }
   ]
 }
