@@ -1,4 +1,5 @@
 
+=== The command errors out if psql is not found in path:
 >>> musterr [CLI] psql my-database
 Connecting to Databricks Database Instance my-database ...
 Database status:  RUNNING
@@ -9,18 +10,37 @@ Error: looking up "psql" failed: exec: "psql": executable file not found in $PAT
 
 Exit code (musterr): 1
 
+=== Command should use default db name if it is not specified:
 >>> [CLI] psql my-database
 Connecting to Databricks Database Instance my-database ...
 Database status:  RUNNING
 Database postgres version:  14
 Successfully fetched database credentials
 Launching psql with connection to my-database.my-host.com...
-echo-arguments.sh was called with the following arguments: --host=my-database.my-host.com --username=[USERNAME] --dbname=databricks_postgres --port=5432
+echo-arguments.sh was called with the following arguments: --host=my-database.my-host.com --username=[USERNAME] --port=5432 --dbname=databricks_postgres
 
->>> [CLI] psql my-database -- -c SELECT * FROM my_table --echo-all -d my-db
+=== Command should by-pass extra arguments to psql:
+>>> [CLI] psql my-database -- -c SELECT * FROM my_table --echo-all
 Connecting to Databricks Database Instance my-database ...
 Database status:  RUNNING
 Database postgres version:  14
 Successfully fetched database credentials
 Launching psql with connection to my-database.my-host.com...
-echo-arguments.sh was called with the following arguments: --host=my-database.my-host.com --username=[USERNAME] --dbname=databricks_postgres --port=5432 -c SELECT * FROM my_table --echo-all -d my-db
+echo-arguments.sh was called with the following arguments: --host=my-database.my-host.com --username=[USERNAME] --port=5432 --dbname=databricks_postgres -c SELECT * FROM my_table --echo-all
+
+=== Command should use the db name from extra arguments when specified:
+>>> [CLI] psql my-database -- --dbname=db1
+Connecting to Databricks Database Instance my-database ...
+Database status:  RUNNING
+Database postgres version:  14
+Successfully fetched database credentials
+Launching psql with connection to my-database.my-host.com...
+echo-arguments.sh was called with the following arguments: --host=my-database.my-host.com --username=[USERNAME] --port=5432 --dbname=db1
+
+>>> [CLI] psql my-database -- -d db2
+Connecting to Databricks Database Instance my-database ...
+Database status:  RUNNING
+Database postgres version:  14
+Successfully fetched database credentials
+Launching psql with connection to my-database.my-host.com...
+echo-arguments.sh was called with the following arguments: --host=my-database.my-host.com --username=[USERNAME] --port=5432 -d db2
