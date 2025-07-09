@@ -32,11 +32,15 @@
   },
   "sql_warehouses": {
     "my_sql_warehouse": {
+      "auto_stop_mins": 120,
       "cluster_size": "X-Large",
+      "enable_photon": true,
       "enable_serverless_compute": true,
+      "max_num_clusters": 1,
       "modified_status": "created",
       "name": "test-sql-warehouse",
-      "permissions": []
+      "permissions": [],
+      "spot_instance_policy": "COST_OPTIMIZED"
     }
   }
 }
@@ -82,11 +86,15 @@ Deployment complete!
   },
   "sql_warehouses": {
     "my_sql_warehouse": {
+      "auto_stop_mins": 120,
       "cluster_size": "X-Large",
+      "enable_photon": true,
       "enable_serverless_compute": true,
       "id": "[UUID]",
+      "max_num_clusters": 1,
       "name": "test-sql-warehouse",
       "permissions": [],
+      "spot_instance_policy": "COST_OPTIMIZED",
       "url": "[DATABRICKS_URL]/sql/warehouses/[UUID]?o=[NUMID]"
     }
   }
