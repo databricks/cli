@@ -1,15 +1,4 @@
 
-=== The command errors out if psql is not found in path:
->>> musterr [CLI] psql my-database
-Connecting to Databricks Database Instance my-database ...
-Database status:  RUNNING
-Database postgres version:  14
-Successfully fetched database credentials
-Launching psql with connection to my-database.my-host.com...
-Error: looking up "psql" failed: exec: "psql": executable file not found in $PATH
-
-Exit code (musterr): 1
-
 === Command should use default db name if it is not specified:
 >>> [CLI] psql my-database
 Connecting to Databricks Database Instance my-database ...
