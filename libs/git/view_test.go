@@ -209,7 +209,7 @@ func TestViewABInTempDir(t *testing.T) {
 	assert.False(t, tv.Ignore("newfile"))
 }
 
-func TestViewAlwaysIgnoresCacheDir(t *testing.T) {
+func TestViewAlwaysIgnoresLocalStateDir(t *testing.T) {
 	repoPath := createFakeRepo(t, "testdata")
 
 	v, err := NewViewAtRoot(vfs.MustNew(repoPath))

@@ -51,6 +51,7 @@ type FakeWorkspace struct {
 	Monitors   map[string]catalog.MonitorInfo
 	Apps       map[string]apps.App
 	Schemas    map[string]catalog.SchemaInfo
+	Volumes    map[string]catalog.VolumeInfo
 	Dashboards map[string]dashboards.Dashboard
 }
 
@@ -70,6 +71,7 @@ func MapGet[T any](w *FakeWorkspace, collection map[string]T, key string) Respon
 	if !ok {
 		return Response{
 			StatusCode: 404,
+			Body:       map[string]string{"message": fmt.Sprintf("Resource %T not found: %v", value, key)},
 		}
 	}
 	return Response{
@@ -124,6 +126,7 @@ func NewFakeWorkspace(url string) *FakeWorkspace {
 		Monitors:     map[string]catalog.MonitorInfo{},
 		Apps:         map[string]apps.App{},
 		Schemas:      map[string]catalog.SchemaInfo{},
+		Volumes:      map[string]catalog.VolumeInfo{},
 		Dashboards:   map[string]dashboards.Dashboard{},
 	}
 }

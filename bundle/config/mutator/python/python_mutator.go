@@ -241,9 +241,9 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 }
 
 func createCacheDir(ctx context.Context) (string, error) {
-	// b.CacheDir doesn't work because target isn't yet selected
+	// b.LocalStateDir doesn't work because target isn't yet selected
 
-	// support the same env variable as in b.CacheDir
+	// support the same env variable as in b.LocalStateDir
 	if tempDir, exists := env.TempDir(ctx); exists {
 		// use 'default' as target name
 		cacheDir := filepath.Join(tempDir, "default", "python")

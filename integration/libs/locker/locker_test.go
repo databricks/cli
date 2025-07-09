@@ -3,7 +3,6 @@ package locker_test
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"io/fs"
 	"math/rand"
@@ -12,43 +11,16 @@ import (
 	"time"
 
 	"github.com/databricks/cli/integration/internal/acc"
-	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/filer"
 	lockpkg "github.com/databricks/cli/libs/locker"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-// TODO: create a utility function to create an empty test repo for tests and refactor sync_test integration test
-
-const EmptyRepoUrl = "https://github.com/shreyas-goenka/empty-repo.git"
-
-func createRemoteTestProject(t *testing.T, projectNamePrefix string, wsc *databricks.WorkspaceClient) string {
-	ctx := context.TODO()
-	me, err := wsc.CurrentUser.Me(ctx)
-	assert.NoError(t, err)
-
-	remoteProjectRoot := fmt.Sprintf("/Repos/%s/%s", me.UserName, testutil.RandomName(projectNamePrefix))
-	repoInfo, err := wsc.Repos.Create(ctx, workspace.CreateRepoRequest{
-		Path:     remoteProjectRoot,
-		Url:      EmptyRepoUrl,
-		Provider: "gitHub",
-	})
-	assert.NoError(t, err)
-	t.Cleanup(func() {
-		err := wsc.Repos.DeleteByRepoId(ctx, repoInfo.Id)
-		assert.NoError(t, err)
-	})
-
-	return remoteProjectRoot
-}
-
 func TestLock(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 	wsc := wt.W
-	remoteProjectRoot := createRemoteTestProject(t, "lock-acc-", wsc)
+	remoteProjectRoot := acc.TemporaryWorkspaceDir(wt, "lock-acc-")
 
 	// 5 lockers try to acquire a lock at the same time
 	numConcurrentLocks := 5

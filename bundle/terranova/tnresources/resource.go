@@ -15,6 +15,7 @@ const (
 	_jobs      = "jobs"
 	_pipelines = "pipelines"
 	_schemas   = "schemas"
+	_volumes   = "volumes"
 	_apps      = "apps"
 )
 
@@ -22,6 +23,7 @@ var supportedResources = map[string]reflect.Value{
 	_jobs:      reflect.ValueOf(NewResourceJob),
 	_pipelines: reflect.ValueOf(NewResourcePipeline),
 	_schemas:   reflect.ValueOf(NewResourceSchema),
+	_volumes:   reflect.ValueOf(NewResourceVolume),
 	_apps:      reflect.ValueOf(NewResourceApp),
 }
 
@@ -30,6 +32,7 @@ var supportedResourcesTypes = map[string]reflect.Type{
 	_jobs:      reflect.TypeOf(ResourceJob{}.config),
 	_pipelines: reflect.TypeOf(ResourcePipeline{}.config),
 	_schemas:   reflect.TypeOf(ResourceSchema{}.config),
+	_volumes:   reflect.TypeOf(ResourceVolume{}.config),
 	_apps:      reflect.TypeOf(ResourceApp{}.config),
 }
 
@@ -39,6 +42,7 @@ var deletableResources = map[string]DeleteResourceFN{
 	_jobs:      DeleteJob,
 	_pipelines: DeletePipeline,
 	_schemas:   DeleteSchema,
+	_volumes:   DeleteVolume,
 	_apps:      DeleteApp,
 }
 
