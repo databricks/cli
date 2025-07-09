@@ -13,11 +13,13 @@ Validation OK!
   "test_sql_warehouse": {
     "auto_stop_mins": 120,
     "cluster_size": "X-Large",
+    "enable_photon": true,
     "enable_serverless_compute": true,
     "max_num_clusters": 1,
     "min_num_clusters": 1,
     "name": "sql_warehouse_name",
-    "permissions": []
+    "permissions": [],
+    "spot_instance_policy": "COST_OPTIMIZED"
   }
 }
 

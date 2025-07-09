@@ -44,6 +44,7 @@ func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, oldID string) (stri
 	if err != nil {
 		return "", err
 	}
+	request.Id = oldID
 
 	waiter, err := r.client.Warehouses.Edit(ctx, request)
 	if err != nil {
