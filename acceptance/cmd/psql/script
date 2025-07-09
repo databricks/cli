@@ -1,0 +1,13 @@
+mv echo-arguments.sh psql
+chmod +x psql
+
+cleanup() {
+  rm psql
+}
+trap cleanup EXIT
+
+trace musterr $CLI psql my-database
+
+export PATH="$PATH:$(pwd)"
+trace $CLI psql my-database
+trace $CLI psql my-database -- -c "SELECT * FROM my_table" --echo-all -d "my-db"
