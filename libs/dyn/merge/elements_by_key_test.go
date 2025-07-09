@@ -12,12 +12,12 @@ import (
 func TestElementByKey(t *testing.T) {
 	vin := dyn.V([]dyn.Value{
 		dyn.V(map[string]dyn.Value{
-			"key":   dyn.V("bar"),
-			"value": dyn.V(43),
-		}),
-		dyn.V(map[string]dyn.Value{
 			"key":   dyn.V("foo"),
 			"value": dyn.V(42),
+		}),
+		dyn.V(map[string]dyn.Value{
+			"key":   dyn.V("bar"),
+			"value": dyn.V(43),
 		}),
 		dyn.V(map[string]dyn.Value{
 			// Use upper case key to test that the resulting element has its
@@ -36,14 +36,14 @@ func TestElementByKey(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, vout.MustSequence(), 2)
 	assert.Equal(t,
-		vout.Index(1).AsAny(),
+		vout.Index(0).AsAny(),
 		map[string]any{
 			"key":   "foo",
 			"value": 44,
 		},
 	)
 	assert.Equal(t,
-		vout.Index(0).AsAny(),
+		vout.Index(1).AsAny(),
 		map[string]any{
 			"key":   "bar",
 			"value": 43,
@@ -54,12 +54,12 @@ func TestElementByKey(t *testing.T) {
 func TestElementByKeyWithOverride(t *testing.T) {
 	vin := dyn.V([]dyn.Value{
 		dyn.V(map[string]dyn.Value{
-			"key":   dyn.V("bar"),
-			"value": dyn.V(43),
-		}),
-		dyn.V(map[string]dyn.Value{
 			"key":   dyn.V("foo"),
 			"value": dyn.V(42),
+		}),
+		dyn.V(map[string]dyn.Value{
+			"key":   dyn.V("bar"),
+			"value": dyn.V(43),
 		}),
 		dyn.V(map[string]dyn.Value{
 			"key":        dyn.V("foo"),
@@ -75,14 +75,14 @@ func TestElementByKeyWithOverride(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, vout.MustSequence(), 2)
 	assert.Equal(t,
-		vout.Index(1).AsAny(),
+		vout.Index(0).AsAny(),
 		map[string]any{
 			"key":        "foo",
 			"othervalue": 44,
 		},
 	)
 	assert.Equal(t,
-		vout.Index(0).AsAny(),
+		vout.Index(1).AsAny(),
 		map[string]any{
 			"key":   "bar",
 			"value": 43,
