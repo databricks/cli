@@ -1,0 +1,6 @@
+bundle:
+  name: test-pipeline-destroy
+resources:
+  pipelines:
+    my_pipeline:
+      name: test-pipeline

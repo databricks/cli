@@ -1,6 +1,6 @@
-// Copied to cmd/pipelines/destroy.go and adapted for pipelines use.
-// Consider if changes made here should be made to the pipelines counterpart as well.
-package bundle
+// Copied from cmd/bundle/destroy.go and adapted for pipelines use.
+// Consider if changes made here should be made to the bundle counterpart as well.
+package pipelines
 
 import (
 	"context"
@@ -20,16 +20,16 @@ import (
 	"golang.org/x/term"
 )
 
-func newDestroyCommand() *cobra.Command {
+func destroyCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "destroy",
-		Short: "Destroy deployed bundle resources",
-		Args:  root.NoArgs,
+		Short: "Destroy a pipelines project",
+		Args:  cobra.NoArgs,
 	}
 
 	var autoApprove bool
 	var forceDestroy bool
-	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip interactive approvals for deleting resources and files")
+	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip interactive approvals for deleting pipelines")
 	cmd.Flags().BoolVar(&forceDestroy, "force-lock", false, "Force acquisition of deployment lock.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
