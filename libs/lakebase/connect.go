@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/exec"
@@ -54,13 +55,26 @@ func Connect(ctx context.Context, databaseInstanceName string, extraArgs ...stri
 		return err
 	}
 
+	// Check if database name is already specified in extra arguments
+	hasDbName := false
+	for _, arg := range extraArgs {
+		if arg == "-d" || strings.HasPrefix(arg, "--dbname=") {
+			hasDbName = true
+			break
+		}
+	}
+
 	// Prepare command arguments
 	args := []string{
 		"psql",
 		"--host=" + db.ReadWriteDns,
 		"--username=" + user.UserName,
-		"--dbname=databricks_postgres",
 		"--port=5432",
+	}
+
+	// Add default database name only if not specified in extra arguments
+	if !hasDbName {
+		args = append(args, "--dbname=databricks_postgres")
 	}
 
 	// Append any extra arguments passed through

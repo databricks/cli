@@ -6,8 +6,17 @@ cleanup() {
 }
 trap cleanup EXIT
 
+title "The command errors out if psql is not found in path:"
 trace musterr $CLI psql my-database
 
 export PATH="$PATH:$(pwd)"
+
+title "Command should use default db name if it is not specified:"
 trace $CLI psql my-database
-trace $CLI psql my-database -- -c "SELECT * FROM my_table" --echo-all -d "my-db"
+
+title "Command should by-pass extra arguments to psql:"
+trace $CLI psql my-database -- -c "SELECT * FROM my_table" --echo-all
+
+title "Command should use the db name from extra arguments when specified:"
+trace $CLI psql my-database -- --dbname=db1
+trace $CLI psql my-database -- -d db2
