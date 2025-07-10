@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"reflect"
 	"slices"
-	"strings"
 
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
@@ -131,9 +130,8 @@ func fromTypedStruct(src reflect.Value, ref dyn.Value, options ...fromTypedOptio
 
 		// Either if the key was set in the reference or the field is not zero-valued, we include it.
 		if ok || nv.Kind() != dyn.KindNil {
-			// XXX strings.ToLower() is a quick hack -- need to map Golang name to json name
-			kk := strings.ToUpper(k[0:1]) + k[1:]
-			if v.IsZero() && !info.ForceEmpty[k] && !slices.Contains(forceSendFields, kk) {
+			goName := info.GolangNames[k]
+			if v.IsZero() && !info.ForceEmpty[k] && !slices.Contains(forceSendFields, goName) {
 				continue
 			}
 			out.SetLoc(k, refloc, nv)

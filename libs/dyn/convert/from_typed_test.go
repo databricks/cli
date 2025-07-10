@@ -131,23 +131,23 @@ func TestFromTypedStructZeroFieldsIntoExistingFields(t *testing.T) {
 	type Tmp struct {
 		Foo             string   `json:"foo"`
 		Bar             string   `json:"bar,omitempty"`
-		Baz             string   `json:"baz,omitempty"`
+		BazBugz         string   `json:"baz_bugs,omitempty"`
 		ForceSendFields []string `json:"-"`
 	}
 
-	src := Tmp{ForceSendFields: []string{"Baz"}}
+	src := Tmp{ForceSendFields: []string{"BazBugz"}}
 
 	ref := dyn.V(map[string]dyn.Value{
-		"foo": dyn.V("foo_old"),
-		"bar": dyn.V("bar_old"),
-		"baz": dyn.V("baz_old"),
+		"foo":      dyn.V("foo_old"),
+		"bar":      dyn.V("bar_old"),
+		"baz_bugs": dyn.V("baz_old"),
 	})
 
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
 	assert.Equal(t, dyn.V(map[string]dyn.Value{
-		"foo": dyn.V(""),
-		"baz": dyn.V(""),
+		"foo":      dyn.V(""),
+		"baz_bugs": dyn.V(""),
 	}), nv)
 }
 
