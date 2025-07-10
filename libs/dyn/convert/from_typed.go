@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"slices"
+	"strings"
 
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
@@ -102,7 +103,11 @@ func fromTypedStruct(src reflect.Value, ref dyn.Value, options ...fromTypedOptio
 	refm, _ := ref.AsMap()
 	out := dyn.NewMapping()
 	info := getStructInfo(src.Type())
-	for k, v := range info.FieldValues(src) {
+	forceSendFields := getForceSendFields(src)
+
+	for _, fieldval := range info.FieldValues(src) {
+		k := fieldval.Key
+		v := fieldval.Value
 		pair, ok := refm.GetPairByString(k)
 		refloc := pair.Key.Locations()
 		refv := pair.Value
@@ -126,6 +131,11 @@ func fromTypedStruct(src reflect.Value, ref dyn.Value, options ...fromTypedOptio
 
 		// Either if the key was set in the reference or the field is not zero-valued, we include it.
 		if ok || nv.Kind() != dyn.KindNil {
+			// XXX strings.ToLower() is a quick hack -- need to map Golang name to json name
+			kk := strings.ToUpper(k[0:1]) + k[1:]
+			if v.IsZero() && !info.ForceEmpty[k] && !slices.Contains(forceSendFields, kk) {
+				continue
+			}
 			out.SetLoc(k, refloc, nv)
 		}
 	}
@@ -324,4 +334,19 @@ func fromTypedFloat(src reflect.Value, ref dyn.Value, options ...fromTypedOption
 	}
 
 	return dyn.InvalidValue, fmt.Errorf("unhandled type: %s", ref.Kind())
+}
+
+func getForceSendFields(v reflect.Value) []string {
+	if !v.IsValid() || v.Kind() != reflect.Struct {
+		return nil
+	}
+	fsField := v.FieldByName("ForceSendFields")
+	if !fsField.IsValid() || fsField.Kind() != reflect.Slice {
+		return nil
+	}
+	result, ok := fsField.Interface().([]string)
+	if ok {
+		return result
+	}
+	return nil
 }

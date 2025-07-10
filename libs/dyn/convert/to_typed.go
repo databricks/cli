@@ -2,6 +2,7 @@ package convert
 
 import (
 	"fmt"
+	"os"
 	"reflect"
 	"strconv"
 
@@ -66,12 +67,17 @@ func toTypedStruct(dst reflect.Value, src dyn.Value) error {
 		// that aren't present in [src] are cleared.
 		dst.SetZero()
 
+		var forceSendFields []string
+
 		info := getStructInfo(dst.Type())
+		fmt.Fprintf(os.Stderr, "info=%#v\n", info)
+
 		for _, pair := range src.MustMap().Pairs() {
 			pk := pair.Key
 			pv := pair.Value
+			jsonKey := pk.MustString()
 
-			index, ok := info.Fields[pk.MustString()]
+			index, ok := info.Fields[jsonKey]
 			if !ok {
 				// Ignore unknown fields.
 				// A warning will be printed later. See PR #904.
@@ -95,8 +101,20 @@ func toTypedStruct(dst reflect.Value, src dyn.Value) error {
 
 			err := ToTyped(f.Addr().Interface(), pv)
 			if err != nil {
+				fmt.Fprintf(os.Stderr, "err? %#v\n", err)
 				return err
 			}
+
+			fmt.Fprintf(os.Stderr, "APPEND? isZero=%v v=%#v\n", pv.IsZero(), pv)
+
+			if info.ForceSendFieldsIndex != nil && pv.IsZero() {
+				forceSendFields = append(forceSendFields, info.GolangNames[jsonKey])
+				fmt.Fprintf(os.Stderr, "APPENDED %#v\n", forceSendFields)
+			}
+		}
+
+		if info.ForceSendFieldsIndex != nil && forceSendFields != nil {
+			dst.FieldByIndex(info.ForceSendFieldsIndex).Set(reflect.ValueOf(forceSendFields))
 		}
 
 		// Populate field(s) for [dyn.Value], if any.
