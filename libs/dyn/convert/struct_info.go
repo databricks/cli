@@ -23,9 +23,6 @@ type structInfo struct {
 
 	// Maps JSON-name of the field to Golang struct name
 	GolangNames map[string]string
-
-	// Index of ForceSendFields field
-	ForceSendFieldsIndex []int
 }
 
 // structInfoCache caches type information.
@@ -78,11 +75,6 @@ func buildStructInfo(typ reflect.Type) structInfo {
 		nf := styp.NumField()
 		for j := range nf {
 			sf := styp.Field(j)
-
-			if sf.Name == "ForceSendFields" {
-				out.ForceSendFieldsIndex = sf.Index
-				continue
-			}
 
 			// Recurse into anonymous fields.
 			if sf.Anonymous {

@@ -70,7 +70,7 @@ func toTypedStruct(dst reflect.Value, src dyn.Value) error {
 		var forceSendFields []string
 
 		info := getStructInfo(dst.Type())
-		fmt.Fprintf(os.Stderr, "info=%#v\n", info)
+		// fmt.Fprintf(os.Stderr, "info=%#v\n", info)
 
 		for _, pair := range src.MustMap().Pairs() {
 			pk := pair.Key
@@ -105,16 +105,21 @@ func toTypedStruct(dst reflect.Value, src dyn.Value) error {
 				return err
 			}
 
-			fmt.Fprintf(os.Stderr, "APPEND? isZero=%v v=%#v\n", pv.IsZero(), pv)
+			// fmt.Fprintf(os.Stderr, "APPEND? isZero=%v v=%#v\n", pv.IsZero(), pv)
 
-			if info.ForceSendFieldsIndex != nil && pv.IsZero() {
+			if pv.IsZero() {
 				forceSendFields = append(forceSendFields, info.GolangNames[jsonKey])
-				fmt.Fprintf(os.Stderr, "APPENDED %#v\n", forceSendFields)
+				// fmt.Fprintf(os.Stderr, "APPENDED %#v\n", forceSendFields)
 			}
 		}
 
-		if info.ForceSendFieldsIndex != nil && forceSendFields != nil {
-			dst.FieldByIndex(info.ForceSendFieldsIndex).Set(reflect.ValueOf(forceSendFields))
+		if forceSendFields != nil {
+			// fmt.Fprintf(os.Stderr, "\ninfo=%#v\n\n\ndst=#%v  \n\n\ndst type =%#v \n", info, dst, dst.Type().Name())
+			f := dst.FieldByName("ForceSendFields")
+			if f.IsValid() {
+				f.Set(reflect.ValueOf(forceSendFields))
+			}
+			// fmt.Fprintf(os.Stderr, "---\n")
 		}
 
 		// Populate field(s) for [dyn.Value], if any.
