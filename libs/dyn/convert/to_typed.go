@@ -2,7 +2,6 @@ package convert
 
 import (
 	"fmt"
-	"os"
 	"reflect"
 	"strconv"
 
@@ -101,15 +100,15 @@ func toTypedStruct(dst reflect.Value, src dyn.Value) error {
 
 			err := ToTyped(f.Addr().Interface(), pv)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "err? %#v\n", err)
+				///fmt.Fprintf(os.Stderr, "err? %#v\n", err)
 				return err
 			}
 
-			// fmt.Fprintf(os.Stderr, "APPEND? isZero=%v v=%#v\n", pv.IsZero(), pv)
+			//fmt.Fprintf(os.Stderr, "APPEND? isZero=%v v=%#v\n", pv.IsZero(), pv)
 
 			if pv.IsZero() {
 				forceSendFields = append(forceSendFields, info.GolangNames[jsonKey])
-				// fmt.Fprintf(os.Stderr, "APPENDED %#v\n", forceSendFields)
+				//fmt.Fprintf(os.Stderr, "APPENDED %#v\n", forceSendFields)
 			}
 		}
 

@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/dyn"
-	assert "github.com/databricks/cli/libs/dyn/dynassert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestStructInfoPlain(t *testing.T) {
@@ -104,9 +104,9 @@ func TestStructInfoFieldValues(t *testing.T) {
 	fv := si.FieldValues(reflect.ValueOf(src))
 	assert.Len(t, fv, 2)
 	assert.Equal(t, "foo", fv[0].Key)
-	assert.Equal(t, reflect.ValueOf("foo"), fv[0].Value)
+	assert.True(t, reflect.ValueOf("foo").Equal(fv[0].Value))
 	assert.Equal(t, "bar", fv[1].Key)
-	assert.Equal(t, reflect.ValueOf("foo"), fv[0].Value)
+	assert.True(t, reflect.ValueOf("bar").Equal(fv[1].Value))
 }
 
 func TestStructInfoFieldValuesAnonymousByValue(t *testing.T) {

@@ -11,6 +11,9 @@ import (
 // structInfo holds the type information we need to efficiently
 // convert data from a [dyn.Value] to a Go struct.
 type structInfo struct {
+	// FieldNames is ordered list of fields
+	FieldNames []string
+
 	// Fields maps the JSON-name of the field to the field's index for use with [FieldByIndex].
 	Fields map[string][]int
 
@@ -103,6 +106,7 @@ func buildStructInfo(typ reflect.Type) structInfo {
 				continue
 			}
 
+			out.FieldNames = append(out.FieldNames, name)
 			out.Fields[name] = append(prefix, sf.Index...)
 			if !jtag.OmitEmpty() && !jtag.OmitZero() {
 				out.ForceEmpty[name] = true
@@ -122,7 +126,8 @@ type FieldValue struct {
 func (s *structInfo) FieldValues(v reflect.Value) []FieldValue {
 	out := make([]FieldValue, 0, len(s.Fields))
 
-	for k, index := range s.Fields {
+	for _, k := range s.FieldNames {
+		index := s.Fields[k]
 		fv := v
 
 		// Locate value in struct (it could be an embedded type).

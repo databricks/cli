@@ -140,10 +140,10 @@ func TestToTypedStructZeroFieldsForceSend(t *testing.T) {
 	}
 
 	// Value is an empty map.
-	v := dyn.V(map[string]dyn.Value{
-		"foo": dyn.V(""),
-		"bar": dyn.V(""),
-	})
+	m := dyn.Mapping{}
+	m.SetLoc("foo", nil, dyn.V(""))
+	m.SetLoc("bar", nil, dyn.V(""))
+	v := dyn.V(m)
 
 	// The previously set fields should be cleared.
 	err := ToTyped(&out, v)
