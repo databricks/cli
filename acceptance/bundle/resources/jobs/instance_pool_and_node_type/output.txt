@@ -1,63 +1,5 @@
 
 >>> [CLI] bundle validate -o json
-Warn: Processing job! some_other_job &compute.ClusterSpec{ApplyPolicyDefaultValues:false, Autoscale:(*compute.AutoScale)(nil), AutoterminationMinutes:0, AwsAttributes:(*compute.AwsAttributes)(nil), AzureAttributes:(*compute.AzureAttributes)(nil), ClusterLogConf:(*compute.ClusterLogConf)(nil), ClusterName:"", CustomTags:map[string]string(nil), DataSecurityMode:"USER_ISOLATION", DockerImage:(*compute.DockerImage)(nil), DriverInstancePoolId:"", DriverNodeTypeId:"", EnableElasticDisk:false, EnableLocalDiskEncryption:false, GcpAttributes:(*compute.GcpAttributes)(nil), InitScripts:[]compute.InitScriptInfo(nil), InstancePoolId:"$TEST_INSTANCE_POOL_ID", IsSingleNode:false, Kind:"", NodeTypeId:"$NODE_TYPE_ID", NumWorkers:1, PolicyId:"", RemoteDiskThroughput:0, RuntimeEngine:"", SingleUserName:"", SparkConf:map[string]string(nil), SparkEnvVars:map[string]string(nil), SparkVersion:"$DEFAULT_SPARK_VERSION", SshPublicKeys:[]string(nil), TotalInitialRemoteDiskSize:0, UseMlRuntime:false, WorkloadType:(*compute.WorkloadType)(nil), ForceSendFields:[]string(nil)}
-Warn: Processed job!  some_other_job &compute.ClusterSpec{ApplyPolicyDefaultValues:false, Autoscale:(*compute.AutoScale)(nil), AutoterminationMinutes:0, AwsAttributes:(*compute.AwsAttributes)(nil), AzureAttributes:(*compute.AzureAttributes)(nil), ClusterLogConf:(*compute.ClusterLogConf)(nil), ClusterName:"", CustomTags:map[string]string(nil), DataSecurityMode:"USER_ISOLATION", DockerImage:(*compute.DockerImage)(nil), DriverInstancePoolId:"", DriverNodeTypeId:"", EnableElasticDisk:false, EnableLocalDiskEncryption:false, GcpAttributes:(*compute.GcpAttributes)(nil), InitScripts:[]compute.InitScriptInfo(nil), InstancePoolId:"$TEST_INSTANCE_POOL_ID", IsSingleNode:false, Kind:"", NodeTypeId:"", NumWorkers:1, PolicyId:"", RemoteDiskThroughput:0, RuntimeEngine:"", SingleUserName:"", SparkConf:map[string]string(nil), SparkEnvVars:map[string]string(nil), SparkVersion:"$DEFAULT_SPARK_VERSION", SshPublicKeys:[]string(nil), TotalInitialRemoteDiskSize:0, UseMlRuntime:false, WorkloadType:(*compute.WorkloadType)(nil), ForceSendFields:[]string(nil)}
-Warn: READING job! some_other_job &compute.ClusterSpec{ApplyPolicyDefaultValues:false, Autoscale:(*compute.AutoScale)(nil), AutoterminationMinutes:0, AwsAttributes:(*compute.AwsAttributes)(nil), AzureAttributes:(*compute.AzureAttributes)(nil), ClusterLogConf:(*compute.ClusterLogConf)(nil), ClusterName:"", CustomTags:map[string]string(nil), DataSecurityMode:"USER_ISOLATION", DockerImage:(*compute.DockerImage)(nil), DriverInstancePoolId:"", DriverNodeTypeId:"", EnableElasticDisk:false, EnableLocalDiskEncryption:false, GcpAttributes:(*compute.GcpAttributes)(nil), InitScripts:[]compute.InitScriptInfo(nil), InstancePoolId:"$TEST_INSTANCE_POOL_ID", IsSingleNode:false, Kind:"", NodeTypeId:"", NumWorkers:1, PolicyId:"", RemoteDiskThroughput:0, RuntimeEngine:"", SingleUserName:"", SparkConf:map[string]string(nil), SparkEnvVars:map[string]string(nil), SparkVersion:"$DEFAULT_SPARK_VERSION", SshPublicKeys:[]string(nil), TotalInitialRemoteDiskSize:0, UseMlRuntime:false, WorkloadType:(*compute.WorkloadType)(nil), ForceSendFields:[]string(nil)}
-Warn: BUNDLE {
-  "bundle": {
-    "environment": "default",
-    "git": {
-      "bundle_root_path": "."
-    },
-    "name": "test-bundle",
-    "target": "default"
-  },
-  "resources": {
-    "jobs": {
-      "some_other_job": {
-        "name": "[default] Test Wheel Job $UNIQUE_NAME",
-        "tasks": [
-          {
-            "new_cluster": {
-              "data_security_mode": "USER_ISOLATION",
-              "instance_pool_id": "$TEST_INSTANCE_POOL_ID",
-              "node_type_id": "$NODE_TYPE_ID",
-              "num_workers": 1,
-              "spark_version": "$DEFAULT_SPARK_VERSION"
-            },
-            "python_wheel_task": {
-              "entry_point": "run",
-              "package_name": "my_test_code",
-              "parameters": [
-                "one",
-                "two"
-              ]
-            },
-            "task_key": "TestTask"
-          }
-        ]
-      }
-    }
-  },
-  "sync": {
-    "paths": [
-      "."
-    ]
-  },
-  "targets": null,
-  "workspace": {
-    "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts",
-    "current_user": {
-      "id": "[USERID]",
-      "short_name": "[USERNAME]",
-      "userName": "[USERNAME]"
-    },
-    "file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files",
-    "resource_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/resources",
-    "root_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default",
-    "state_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state"
-  }
-}
 [
   {
     "new_cluster": {
@@ -80,64 +22,6 @@ Warn: BUNDLE {
 ]
 
 >>> [CLI] bundle summary -o json
-Warn: Processing job! some_other_job &compute.ClusterSpec{ApplyPolicyDefaultValues:false, Autoscale:(*compute.AutoScale)(nil), AutoterminationMinutes:0, AwsAttributes:(*compute.AwsAttributes)(nil), AzureAttributes:(*compute.AzureAttributes)(nil), ClusterLogConf:(*compute.ClusterLogConf)(nil), ClusterName:"", CustomTags:map[string]string(nil), DataSecurityMode:"USER_ISOLATION", DockerImage:(*compute.DockerImage)(nil), DriverInstancePoolId:"", DriverNodeTypeId:"", EnableElasticDisk:false, EnableLocalDiskEncryption:false, GcpAttributes:(*compute.GcpAttributes)(nil), InitScripts:[]compute.InitScriptInfo(nil), InstancePoolId:"$TEST_INSTANCE_POOL_ID", IsSingleNode:false, Kind:"", NodeTypeId:"$NODE_TYPE_ID", NumWorkers:1, PolicyId:"", RemoteDiskThroughput:0, RuntimeEngine:"", SingleUserName:"", SparkConf:map[string]string(nil), SparkEnvVars:map[string]string(nil), SparkVersion:"$DEFAULT_SPARK_VERSION", SshPublicKeys:[]string(nil), TotalInitialRemoteDiskSize:0, UseMlRuntime:false, WorkloadType:(*compute.WorkloadType)(nil), ForceSendFields:[]string(nil)}
-Warn: Processed job!  some_other_job &compute.ClusterSpec{ApplyPolicyDefaultValues:false, Autoscale:(*compute.AutoScale)(nil), AutoterminationMinutes:0, AwsAttributes:(*compute.AwsAttributes)(nil), AzureAttributes:(*compute.AzureAttributes)(nil), ClusterLogConf:(*compute.ClusterLogConf)(nil), ClusterName:"", CustomTags:map[string]string(nil), DataSecurityMode:"USER_ISOLATION", DockerImage:(*compute.DockerImage)(nil), DriverInstancePoolId:"", DriverNodeTypeId:"", EnableElasticDisk:false, EnableLocalDiskEncryption:false, GcpAttributes:(*compute.GcpAttributes)(nil), InitScripts:[]compute.InitScriptInfo(nil), InstancePoolId:"$TEST_INSTANCE_POOL_ID", IsSingleNode:false, Kind:"", NodeTypeId:"", NumWorkers:1, PolicyId:"", RemoteDiskThroughput:0, RuntimeEngine:"", SingleUserName:"", SparkConf:map[string]string(nil), SparkEnvVars:map[string]string(nil), SparkVersion:"$DEFAULT_SPARK_VERSION", SshPublicKeys:[]string(nil), TotalInitialRemoteDiskSize:0, UseMlRuntime:false, WorkloadType:(*compute.WorkloadType)(nil), ForceSendFields:[]string(nil)}
-Warn: READING job! some_other_job &compute.ClusterSpec{ApplyPolicyDefaultValues:false, Autoscale:(*compute.AutoScale)(nil), AutoterminationMinutes:0, AwsAttributes:(*compute.AwsAttributes)(nil), AzureAttributes:(*compute.AzureAttributes)(nil), ClusterLogConf:(*compute.ClusterLogConf)(nil), ClusterName:"", CustomTags:map[string]string(nil), DataSecurityMode:"USER_ISOLATION", DockerImage:(*compute.DockerImage)(nil), DriverInstancePoolId:"", DriverNodeTypeId:"", EnableElasticDisk:false, EnableLocalDiskEncryption:false, GcpAttributes:(*compute.GcpAttributes)(nil), InitScripts:[]compute.InitScriptInfo(nil), InstancePoolId:"$TEST_INSTANCE_POOL_ID", IsSingleNode:false, Kind:"", NodeTypeId:"", NumWorkers:1, PolicyId:"", RemoteDiskThroughput:0, RuntimeEngine:"", SingleUserName:"", SparkConf:map[string]string(nil), SparkEnvVars:map[string]string(nil), SparkVersion:"$DEFAULT_SPARK_VERSION", SshPublicKeys:[]string(nil), TotalInitialRemoteDiskSize:0, UseMlRuntime:false, WorkloadType:(*compute.WorkloadType)(nil), ForceSendFields:[]string(nil)}
-Warn: BUNDLE {
-  "bundle": {
-    "environment": "default",
-    "git": {
-      "bundle_root_path": "."
-    },
-    "name": "test-bundle",
-    "target": "default"
-  },
-  "resources": {
-    "jobs": {
-      "some_other_job": {
-        "name": "[default] Test Wheel Job $UNIQUE_NAME",
-        "tasks": [
-          {
-            "new_cluster": {
-              "data_security_mode": "USER_ISOLATION",
-              "instance_pool_id": "$TEST_INSTANCE_POOL_ID",
-              "node_type_id": "$NODE_TYPE_ID",
-              "num_workers": 1,
-              "spark_version": "$DEFAULT_SPARK_VERSION"
-            },
-            "python_wheel_task": {
-              "entry_point": "run",
-              "package_name": "my_test_code",
-              "parameters": [
-                "one",
-                "two"
-              ]
-            },
-            "task_key": "TestTask"
-          }
-        ]
-      }
-    }
-  },
-  "sync": {
-    "paths": [
-      "."
-    ]
-  },
-  "targets": null,
-  "workspace": {
-    "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts",
-    "current_user": {
-      "id": "[USERID]",
-      "short_name": "[USERNAME]",
-      "userName": "[USERNAME]"
-    },
-    "file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files",
-    "resource_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/resources",
-    "root_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default",
-    "state_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state"
-  }
-}
 [
   {
     "new_cluster": {
@@ -160,64 +44,6 @@ Warn: BUNDLE {
 ]
 
 >>> [CLI] bundle deploy
-Warn: Processing job! some_other_job &compute.ClusterSpec{ApplyPolicyDefaultValues:false, Autoscale:(*compute.AutoScale)(nil), AutoterminationMinutes:0, AwsAttributes:(*compute.AwsAttributes)(nil), AzureAttributes:(*compute.AzureAttributes)(nil), ClusterLogConf:(*compute.ClusterLogConf)(nil), ClusterName:"", CustomTags:map[string]string(nil), DataSecurityMode:"USER_ISOLATION", DockerImage:(*compute.DockerImage)(nil), DriverInstancePoolId:"", DriverNodeTypeId:"", EnableElasticDisk:false, EnableLocalDiskEncryption:false, GcpAttributes:(*compute.GcpAttributes)(nil), InitScripts:[]compute.InitScriptInfo(nil), InstancePoolId:"$TEST_INSTANCE_POOL_ID", IsSingleNode:false, Kind:"", NodeTypeId:"$NODE_TYPE_ID", NumWorkers:1, PolicyId:"", RemoteDiskThroughput:0, RuntimeEngine:"", SingleUserName:"", SparkConf:map[string]string(nil), SparkEnvVars:map[string]string(nil), SparkVersion:"$DEFAULT_SPARK_VERSION", SshPublicKeys:[]string(nil), TotalInitialRemoteDiskSize:0, UseMlRuntime:false, WorkloadType:(*compute.WorkloadType)(nil), ForceSendFields:[]string(nil)}
-Warn: Processed job!  some_other_job &compute.ClusterSpec{ApplyPolicyDefaultValues:false, Autoscale:(*compute.AutoScale)(nil), AutoterminationMinutes:0, AwsAttributes:(*compute.AwsAttributes)(nil), AzureAttributes:(*compute.AzureAttributes)(nil), ClusterLogConf:(*compute.ClusterLogConf)(nil), ClusterName:"", CustomTags:map[string]string(nil), DataSecurityMode:"USER_ISOLATION", DockerImage:(*compute.DockerImage)(nil), DriverInstancePoolId:"", DriverNodeTypeId:"", EnableElasticDisk:false, EnableLocalDiskEncryption:false, GcpAttributes:(*compute.GcpAttributes)(nil), InitScripts:[]compute.InitScriptInfo(nil), InstancePoolId:"$TEST_INSTANCE_POOL_ID", IsSingleNode:false, Kind:"", NodeTypeId:"", NumWorkers:1, PolicyId:"", RemoteDiskThroughput:0, RuntimeEngine:"", SingleUserName:"", SparkConf:map[string]string(nil), SparkEnvVars:map[string]string(nil), SparkVersion:"$DEFAULT_SPARK_VERSION", SshPublicKeys:[]string(nil), TotalInitialRemoteDiskSize:0, UseMlRuntime:false, WorkloadType:(*compute.WorkloadType)(nil), ForceSendFields:[]string(nil)}
-Warn: READING job! some_other_job &compute.ClusterSpec{ApplyPolicyDefaultValues:false, Autoscale:(*compute.AutoScale)(nil), AutoterminationMinutes:0, AwsAttributes:(*compute.AwsAttributes)(nil), AzureAttributes:(*compute.AzureAttributes)(nil), ClusterLogConf:(*compute.ClusterLogConf)(nil), ClusterName:"", CustomTags:map[string]string(nil), DataSecurityMode:"USER_ISOLATION", DockerImage:(*compute.DockerImage)(nil), DriverInstancePoolId:"", DriverNodeTypeId:"", EnableElasticDisk:false, EnableLocalDiskEncryption:false, GcpAttributes:(*compute.GcpAttributes)(nil), InitScripts:[]compute.InitScriptInfo(nil), InstancePoolId:"$TEST_INSTANCE_POOL_ID", IsSingleNode:false, Kind:"", NodeTypeId:"", NumWorkers:1, PolicyId:"", RemoteDiskThroughput:0, RuntimeEngine:"", SingleUserName:"", SparkConf:map[string]string(nil), SparkEnvVars:map[string]string(nil), SparkVersion:"$DEFAULT_SPARK_VERSION", SshPublicKeys:[]string(nil), TotalInitialRemoteDiskSize:0, UseMlRuntime:false, WorkloadType:(*compute.WorkloadType)(nil), ForceSendFields:[]string(nil)}
-Warn: BUNDLE {
-  "bundle": {
-    "environment": "default",
-    "git": {
-      "bundle_root_path": "."
-    },
-    "name": "test-bundle",
-    "target": "default"
-  },
-  "resources": {
-    "jobs": {
-      "some_other_job": {
-        "name": "[default] Test Wheel Job $UNIQUE_NAME",
-        "tasks": [
-          {
-            "new_cluster": {
-              "data_security_mode": "USER_ISOLATION",
-              "instance_pool_id": "$TEST_INSTANCE_POOL_ID",
-              "node_type_id": "$NODE_TYPE_ID",
-              "num_workers": 1,
-              "spark_version": "$DEFAULT_SPARK_VERSION"
-            },
-            "python_wheel_task": {
-              "entry_point": "run",
-              "package_name": "my_test_code",
-              "parameters": [
-                "one",
-                "two"
-              ]
-            },
-            "task_key": "TestTask"
-          }
-        ]
-      }
-    }
-  },
-  "sync": {
-    "paths": [
-      "."
-    ]
-  },
-  "targets": null,
-  "workspace": {
-    "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts",
-    "current_user": {
-      "id": "[USERID]",
-      "short_name": "[USERNAME]",
-      "userName": "[USERNAME]"
-    },
-    "file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files",
-    "resource_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/resources",
-    "root_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default",
-    "state_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state"
-  }
-}
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
 Updating deployment state...
