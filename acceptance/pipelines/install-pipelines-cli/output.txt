@@ -16,6 +16,7 @@ Available Commands:
   destroy     Destroy a pipelines project
   help        Help about any command
   init        Initialize a new pipelines project
+  run         Run a pipeline
 
 Flags:
       --debug            enable debug logging
@@ -55,6 +56,7 @@ Available Commands:
   destroy     Destroy a pipelines project
   help        Help about any command
   init        Initialize a new pipelines project
+  run         Run a pipeline
 
 Flags:
       --debug            enable debug logging
