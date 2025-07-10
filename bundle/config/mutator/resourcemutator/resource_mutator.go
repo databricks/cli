@@ -80,6 +80,13 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 		// https://github.com/databricks/terraform-provider-databricks/blob/v1.75.0/pipelines/resource_pipeline.go#L253
 		{"resources.pipelines.*.edition", "ADVANCED"},
 		{"resources.pipelines.*.channel", "CURRENT"},
+
+		// SqlWarehouses (same as terraform)
+		// https://github.com/databricks/terraform-provider-databricks/blob/v1.75.0/sql/resource_sql_endpoint.go#L59
+		{"resources.sql_warehouses.*.auto_stop_mins", 120},
+		{"resources.sql_warehouses.*.enable_photon", true},
+		{"resources.sql_warehouses.*.max_num_clusters", 1},
+		{"resources.sql_warehouses.*.spot_instance_policy", "COST_OPTIMIZED"},
 	}
 
 	for _, defaultDef := range defaults {

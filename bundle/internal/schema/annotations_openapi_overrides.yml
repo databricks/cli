@@ -129,6 +129,36 @@ github.com/databricks/cli/bundle/config/resources.Dashboard:
   "permissions":
     "description": |-
       PLACEHOLDER
+  "create_time":
+    "description": |-
+      PLACEHOLDER
+  "dashboard_id":
+    "description": |-
+      PLACEHOLDER
+  "display_name":
+    "description": |-
+      PLACEHOLDER
+  "etag":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle_state":
+    "description": |-
+      PLACEHOLDER
+  "parent_path":
+    "description": |-
+      PLACEHOLDER
+  "path":
+    "description": |-
+      PLACEHOLDER
+  "serialized_dashboard":
+    "description": |-
+      PLACEHOLDER
+  "update_time":
+    "description": |-
+      PLACEHOLDER
+  "warehouse_id":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.DashboardPermissionLevel:
   "_":
     "enum":
@@ -429,6 +459,27 @@ github.com/databricks/cli/bundle/config/resources.SecretScopePermissionLevel:
         WRITE
       - |-
         MANAGE
+github.com/databricks/cli/bundle/config/resources.SqlWarehouse:
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+  "spot_instance_policy":
+    "description": |-
+      PLACEHOLDER
+  "warehouse_type":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.SqlWarehousePermissionLevel:
+  "_":
+    "enum":
+      - |-
+        CAN_MANAGE
+      - |-
+        CAN_USE
+      - |-
+        CAN_MONITOR
+      - |-
+        CAN_VIEW
 github.com/databricks/cli/bundle/config/resources.Volume:
   "_":
     "markdown_description": |-
@@ -709,5 +760,23 @@ github.com/databricks/databricks-sdk-go/service/serving.ServedModelInput:
     "description": |-
       PLACEHOLDER
   "model_version":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/sql.Channel:
+  "dbsql_version":
+    "description": |-
+      PLACEHOLDER
+  "name":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/sql.EndpointTagPair:
+  "key":
+    "description": |-
+      PLACEHOLDER
+  "value":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/sql.EndpointTags:
+  "custom_tags":
     "description": |-
       PLACEHOLDER

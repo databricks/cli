@@ -21,6 +21,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/databricks/databricks-sdk-go/service/serving"
+	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -159,6 +160,13 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						Name: "secretScope1",
 					},
 				},
+				SqlWarehouses: map[string]*resources.SqlWarehouse{
+					"sql_warehouse1": {
+						CreateWarehouseRequest: sql.CreateWarehouseRequest{
+							Name: "sql_warehouse1",
+						},
+					},
+				},
 			},
 		},
 		SyncRoot: vfs.MustNew("/Users/lennart.kats@databricks.com"),
@@ -281,6 +289,7 @@ func TestProcessTargetModeDefault(t *testing.T) {
 	assert.Equal(t, "schema1", b.Config.Resources.Schemas["schema1"].Name)
 	assert.Equal(t, "volume1", b.Config.Resources.Volumes["volume1"].Name)
 	assert.Equal(t, "cluster1", b.Config.Resources.Clusters["cluster1"].ClusterName)
+	assert.Equal(t, "sql_warehouse1", b.Config.Resources.SqlWarehouses["sql_warehouse1"].Name)
 }
 
 // Make sure that we have test coverage for all resource types
@@ -294,7 +303,7 @@ func TestAllResourcesMocked(t *testing.T) {
 			assert.True(
 				t,
 				!field.IsNil() && field.Len() > 0,
-				"process_target_mode should support '%s' (please add it to process_target_mode.go and extend the test suite)",
+				"apply_target_mode should support '%s' (please add it to apply_target_mode.go and extend the test suite)",
 				resources.Type().Field(i).Name,
 			)
 		}

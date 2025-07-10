@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
@@ -54,6 +55,7 @@ type FakeWorkspace struct {
 	Schemas         map[string]catalog.SchemaInfo
 	Volumes         map[string]catalog.VolumeInfo
 	Dashboards      map[string]dashboards.Dashboard
+	SqlWarehouses   map[string]sql.GetWarehouseResponse
 }
 
 func (w *FakeWorkspace) LockUnlock() func() {
@@ -130,6 +132,7 @@ func NewFakeWorkspace(url string) *FakeWorkspace {
 		Schemas:         map[string]catalog.SchemaInfo{},
 		Volumes:         map[string]catalog.VolumeInfo{},
 		Dashboards:      map[string]dashboards.Dashboard{},
+		SqlWarehouses:   map[string]sql.GetWarehouseResponse{},
 	}
 }
 
