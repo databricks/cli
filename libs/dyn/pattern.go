@@ -18,7 +18,7 @@ func (p Pattern) String() string {
 	first := true
 
 	for _, c := range p {
-		switch c.(type) {
+		switch c := c.(type) {
 		case anyKeyComponent:
 			if !first {
 				buf.WriteString(".")
@@ -27,14 +27,13 @@ func (p Pattern) String() string {
 		case anyIndexComponent:
 			buf.WriteString("[*]")
 		case pathComponent:
-			v := c.(pathComponent)
-			if v.isKey() {
+			if c.isKey() {
 				if !first {
 					buf.WriteString(".")
 				}
-				buf.WriteString(v.Key())
+				buf.WriteString(c.Key())
 			} else {
-				buf.WriteString(fmt.Sprintf("[%d]", v.Index()))
+				buf.WriteString(fmt.Sprintf("[%d]", c.Index()))
 			}
 		default:
 			buf.WriteString("???")
