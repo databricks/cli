@@ -35,6 +35,12 @@ func promptRunArgument(ctx context.Context, b *bundle.Bundle) (string, error) {
 		inv[title] = k
 	}
 
+	// Include scripts in the prompt options
+	for k := range b.Config.Scripts {
+		title := "Script: " + k
+		inv[title] = k
+	}
+
 	key, err := cmdio.Select(ctx, inv, "Resource to run")
 	if err != nil {
 		return "", err
@@ -152,6 +158,16 @@ Example usage:
 			return err
 		}
 
+		if _, ok := b.Config.Scripts[key]; ok {
+			if len(args) > 0 {
+				return fmt.Errorf("additional arguments are not supported for scripts. Got: %v. We recommend using environment variables to pass runtime arguments to a script. For example: FOO=bar databricks bundle run my_script.", args)
+			}
+
+			content := b.Config.Scripts[key].Content
+			return executeScript(content, cmd, b)
+		}
+
+		// Load resource IDs from terraform state.
 		if !b.DirectDeployment {
 			bundle.ApplySeqContext(ctx, b,
 				terraform.Interpolate(),
@@ -248,14 +264,14 @@ Example usage:
 	return cmd
 }
 
-func executeInline(cmd *cobra.Command, args []string, b *bundle.Bundle) error {
-	cmdEnv := auth.ProcessEnv(cmdctx.ConfigUsed(cmd.Context()))
+func scriptEnv(cmd *cobra.Command, b *bundle.Bundle) []string {
+	out := auth.ProcessEnv(cmdctx.ConfigUsed(cmd.Context()))
 
 	// If user has specified a target, pass it to the child command.
 	//
 	// This is only useful for when the Databricks CLI is the child command.
 	if b.Config.Bundle.Target != "" {
-		cmdEnv = append(cmdEnv, env.TargetVariable+"="+b.Config.Bundle.Target)
+		out = append(out, env.TargetVariable+"="+b.Config.Bundle.Target)
 	}
 
 	// If the bundle has a profile configured, explicitly pass it to the child command.
@@ -264,9 +280,17 @@ func executeInline(cmd *cobra.Command, args []string, b *bundle.Bundle) error {
 	// since if we do not explicitly pass the profile, the CLI will use the
 	// auth configured in the bundle YAML configuration (if any).
 	if b.Config.Workspace.Profile != "" {
-		cmdEnv = append(cmdEnv, "DATABRICKS_CONFIG_PROFILE="+b.Config.Workspace.Profile)
+		out = append(out, "DATABRICKS_CONFIG_PROFILE="+b.Config.Workspace.Profile)
 	}
 
+	return out
+}
+
+func executeScript(content string, cmd *cobra.Command, b *bundle.Bundle) error {
+	return exec.ShellExecv(content, b.BundleRootPath, scriptEnv(cmd, b))
+}
+
+func executeInline(cmd *cobra.Command, args []string, b *bundle.Bundle) error {
 	dir, err := os.Getwd()
 	if err != nil {
 		return err
@@ -274,7 +298,7 @@ func executeInline(cmd *cobra.Command, args []string, b *bundle.Bundle) error {
 
 	return exec.Execv(exec.ExecvOptions{
 		Args: args,
-		Env:  cmdEnv,
+		Env:  scriptEnv(cmd, b),
 		Dir:  dir,
 	})
 }

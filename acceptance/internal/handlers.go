@@ -324,6 +324,22 @@ func addDefaultHandlers(server *testserver.Server) {
 		return testserver.MapDelete(req.Workspace, req.Workspace.Pipelines, req.Vars["pipeline_id"])
 	})
 
+	server.Handle("POST", "/api/2.0/pipelines/{pipeline_id}/updates", func(req testserver.Request) any {
+		return req.Workspace.PipelineStartUpdate(req.Vars["pipeline_id"])
+	})
+
+	server.Handle("GET", "/api/2.0/pipelines/{pipeline_id}/events", func(req testserver.Request) any {
+		return req.Workspace.PipelineEvents(req.Vars["pipeline_id"])
+	})
+
+	server.Handle("GET", "/api/2.0/pipelines/{pipeline_id}/updates/{update_id}", func(req testserver.Request) any {
+		return req.Workspace.PipelineGetUpdate(req.Vars["pipeline_id"], req.Vars["update_id"])
+	})
+
+	server.Handle("POST", "/api/2.0/pipelines/{pipeline_id}/stop", func(req testserver.Request) any {
+		return req.Workspace.PipelineStop(req.Vars["pipeline_id"])
+	})
+
 	// Quality monitors:
 
 	server.Handle("GET", "/api/2.1/unity-catalog/tables/{table_name}/monitor", func(req testserver.Request) any {
@@ -378,6 +394,12 @@ func addDefaultHandlers(server *testserver.Server) {
 		return testserver.MapDelete(req.Workspace, req.Workspace.Schemas, req.Vars["full_name"])
 	})
 
+	// Volumes:
+
+	server.Handle("GET", "/api/2.1/unity-catalog/volumes/{full_name}", func(req testserver.Request) any {
+		return testserver.MapGet(req.Workspace, req.Workspace.Volumes, req.Vars["full_name"])
+	})
+
 	server.Handle("POST", "/api/2.1/unity-catalog/volumes", func(req testserver.Request) any {
 		return req.Workspace.VolumesCreate(req)
 	})
@@ -396,5 +418,13 @@ func addDefaultHandlers(server *testserver.Server) {
 
 	server.Handle("DELETE", "/api/2.0/repos/{repo_id}", func(req testserver.Request) any {
 		return req.Workspace.ReposDelete(req)
+	})
+
+	server.Handle("PATCH", "/api/2.1/unity-catalog/volumes/{full_name}", func(req testserver.Request) any {
+		return req.Workspace.VolumesUpdate(req, req.Vars["full_name"])
+	})
+
+	server.Handle("DELETE", "/api/2.1/unity-catalog/volumes/{full_name}", func(req testserver.Request) any {
+		return testserver.MapDelete(req.Workspace, req.Workspace.Volumes, req.Vars["full_name"])
 	})
 }

@@ -91,7 +91,7 @@ func (m *initialize) findExecPath(ctx context.Context, b *bundle.Bundle, tf *con
 		return tf.ExecPath, nil
 	}
 
-	binDir, err := b.CacheDir(ctx, "bin")
+	binDir, err := b.LocalStateDir(ctx, "bin")
 	if err != nil {
 		return "", err
 	}
@@ -243,7 +243,7 @@ func setTempDirEnvVars(ctx context.Context, environ map[string]string, b *bundle
 		} else if v, ok := env.Lookup(ctx, "TEMP"); ok {
 			environ["TEMP"] = v
 		} else {
-			tmpDir, err := b.CacheDir(ctx, "tmp")
+			tmpDir, err := b.LocalStateDir(ctx, "tmp")
 			if err != nil {
 				return err
 			}
