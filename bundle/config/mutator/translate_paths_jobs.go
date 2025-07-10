@@ -2,13 +2,15 @@ package mutator
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 	"slices"
 
 	"github.com/databricks/cli/bundle/config/mutator/paths"
 
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/logdiag"
 )
 
 func (t *translateContext) applyJobTranslations(ctx context.Context, v dyn.Value) (dyn.Value, error) {
@@ -66,8 +68,11 @@ func (t *translateContext) applyJobTranslations(ctx context.Context, v dyn.Value
 			originalValue := dyn.NewValue(originalPath, v.Locations())
 			nv, nerr := t.rewriteValue(ctx, p, originalValue, fallback[key], opts)
 			if nerr == nil {
-				t.b.Metrics.AddBoolValue("is_job_path_fallback", true)
-				log.Warnf(ctx, "path %s is defined relative to the %s directory (%s). Please update the path to be relative to the file where it is defined. The current value will no longer be valid in the next release.", originalPath, fallback[key], v.Location())
+				logdiag.LogDiag(ctx, diag.Diagnostic{
+					Severity:  diag.Error,
+					Summary:   fmt.Sprintf("path %s is defined relative to the %s directory (%s). Please update the path to be relative to the file where it is defined. The current value will no longer be valid in the next release.", originalPath, fallback[key], v.Location()),
+					Locations: v.Locations(),
+				})
 				return nv, nil
 			}
 		}
