@@ -96,7 +96,7 @@ integration:
 	$(INTEGRATION)
 
 integration-short:
-	VERBOSE_TEST=1 $(INTEGRATION)
+	VERBOSE_TEST=1 $(INTEGRATION) -short
 
 generate:
 	genkit update-sdk
