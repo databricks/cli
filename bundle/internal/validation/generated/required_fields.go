@@ -43,7 +43,6 @@ var RequiredFields = map[string][]string{
 
 	"resources.jobs.*.deployment": {"kind"},
 	"resources.jobs.*.environments[*]": {"environment_key"},
-	"resources.jobs.*.environments[*].spec": {"client"},
 	"resources.jobs.*.git_source": {"git_provider", "git_url"},
 	"resources.jobs.*.git_source.job_source": {"import_from_git_branch", "job_config_path"},
 	"resources.jobs.*.health.rules[*]": {"metric", "op", "value"},
@@ -203,4 +202,6 @@ var RequiredFields = map[string][]string{
 
 	"resources.volumes.*": {"catalog_name", "name", "schema_name", "volume_type"},
 	"resources.volumes.*.grants[*]": {"privileges", "principal"},
+
+	"scripts.*": {"content"},
 }
