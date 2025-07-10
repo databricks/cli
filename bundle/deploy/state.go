@@ -101,7 +101,7 @@ func (e *entry) Info() (fs.FileInfo, error) {
 	return e.info, nil
 }
 
-func FromSlice(files []fileset.File) (Filelist, error) {
+func fromSlice(files []fileset.File) (Filelist, error) {
 	var f Filelist
 	for k := range files {
 		file := &files[k]
@@ -117,7 +117,7 @@ func FromSlice(files []fileset.File) (Filelist, error) {
 	return f, nil
 }
 
-func (f Filelist) ToSlice(root vfs.Path) []fileset.File {
+func (f Filelist) toSlice(root vfs.Path) []fileset.File {
 	var files []fileset.File
 	for _, file := range f {
 		entry := newEntry(root, filepath.ToSlash(file.LocalPath))
@@ -178,7 +178,7 @@ func loadState(r io.Reader) (*DeploymentState, error) {
 }
 
 func getPathToStateFile(ctx context.Context, b *bundle.Bundle) (string, error) {
-	cacheDir, err := b.CacheDir(ctx)
+	cacheDir, err := b.LocalStateDir(ctx)
 	if err != nil {
 		return "", fmt.Errorf("cannot get bundle cache directory: %w", err)
 	}

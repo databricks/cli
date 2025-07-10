@@ -1,0 +1,3 @@
+Cloud = false # test leaves deployed job
+Ignore = [".databricks"]
+Timeout = '40s' # python can be slow in CI likely due to caching problems

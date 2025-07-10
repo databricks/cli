@@ -97,7 +97,6 @@ func newApproveTransitionRequest() *cobra.Command {
 	var approveTransitionRequestReq ml.ApproveTransitionRequest
 	var approveTransitionRequestJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&approveTransitionRequestJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&approveTransitionRequestReq.Comment, "comment", approveTransitionRequestReq.Comment, `User-provided comment on the action.`)
@@ -208,7 +207,6 @@ func newCreateComment() *cobra.Command {
 	var createCommentReq ml.CreateComment
 	var createCommentJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createCommentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "create-comment NAME VERSION COMMENT"
@@ -299,7 +297,6 @@ func newCreateModel() *cobra.Command {
 	var createModelReq ml.CreateModelRequest
 	var createModelJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createModelJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createModelReq.Description, "description", createModelReq.Description, `Optional description for registered model.`)
@@ -386,7 +383,6 @@ func newCreateModelVersion() *cobra.Command {
 	var createModelVersionReq ml.CreateModelVersionRequest
 	var createModelVersionJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createModelVersionJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createModelVersionReq.Description, "description", createModelVersionReq.Description, `Optional description for model version.`)
@@ -476,7 +472,6 @@ func newCreateTransitionRequest() *cobra.Command {
 	var createTransitionRequestReq ml.CreateTransitionRequest
 	var createTransitionRequestJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createTransitionRequestJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createTransitionRequestReq.Comment, "comment", createTransitionRequestReq.Comment, `User-provided comment on the action.`)
@@ -579,13 +574,12 @@ func newCreateWebhook() *cobra.Command {
 	var createWebhookReq ml.CreateRegistryWebhook
 	var createWebhookJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createWebhookJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createWebhookReq.Description, "description", createWebhookReq.Description, `User-specified description for the webhook.`)
 	// TODO: complex arg: http_url_spec
 	// TODO: complex arg: job_spec
-	cmd.Flags().StringVar(&createWebhookReq.ModelName, "model-name", createWebhookReq.ModelName, `Name of the model whose events would trigger this webhook.`)
+	cmd.Flags().StringVar(&createWebhookReq.ModelName, "model-name", createWebhookReq.ModelName, `If model name is not specified, a registry-wide webhook is created that listens for the specified events across all versions of all registered models.`)
 	cmd.Flags().Var(&createWebhookReq.Status, "status", `Enable or disable triggering the webhook, or put the webhook into test mode. Supported values: [ACTIVE, DISABLED, TEST_MODE]`)
 
 	cmd.Use = "create-webhook"
@@ -651,13 +645,14 @@ func newDeleteComment() *cobra.Command {
 
 	var deleteCommentReq ml.DeleteCommentRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete-comment ID"
 	cmd.Short = `Delete a comment.`
 	cmd.Long = `Delete a comment.
   
-  Deletes a comment on a model version.`
+  Deletes a comment on a model version.
+
+  Arguments:
+    ID: Unique identifier of an activity`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -705,8 +700,6 @@ func newDeleteModel() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var deleteModelReq ml.DeleteModelRequest
-
-	// TODO: short flags
 
 	cmd.Use = "delete-model NAME"
 	cmd.Short = `Delete a model.`
@@ -763,8 +756,6 @@ func newDeleteModelTag() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var deleteModelTagReq ml.DeleteModelTagRequest
-
-	// TODO: short flags
 
 	cmd.Use = "delete-model-tag NAME KEY"
 	cmd.Short = `Delete a model tag.`
@@ -825,8 +816,6 @@ func newDeleteModelVersion() *cobra.Command {
 
 	var deleteModelVersionReq ml.DeleteModelVersionRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete-model-version NAME VERSION"
 	cmd.Short = `Delete a model version.`
 	cmd.Long = `Delete a model version.
@@ -884,8 +873,6 @@ func newDeleteModelVersionTag() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var deleteModelVersionTagReq ml.DeleteModelVersionTagRequest
-
-	// TODO: short flags
 
 	cmd.Use = "delete-model-version-tag NAME VERSION KEY"
 	cmd.Short = `Delete a model version tag.`
@@ -947,8 +934,6 @@ func newDeleteTransitionRequest() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var deleteTransitionRequestReq ml.DeleteTransitionRequestRequest
-
-	// TODO: short flags
 
 	cmd.Flags().StringVar(&deleteTransitionRequestReq.Comment, "comment", deleteTransitionRequestReq.Comment, `User-provided comment on the action.`)
 
@@ -1028,8 +1013,6 @@ func newDeleteWebhook() *cobra.Command {
 
 	var deleteWebhookReq ml.DeleteWebhookRequest
 
-	// TODO: short flags
-
 	cmd.Flags().StringVar(&deleteWebhookReq.Id, "id", deleteWebhookReq.Id, `Webhook ID required to delete a registry webhook.`)
 
 	cmd.Use = "delete-webhook"
@@ -1086,7 +1069,6 @@ func newGetLatestVersions() *cobra.Command {
 	var getLatestVersionsReq ml.GetLatestVersionsRequest
 	var getLatestVersionsJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&getLatestVersionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: stages
@@ -1165,8 +1147,6 @@ func newGetModel() *cobra.Command {
 
 	var getModelReq ml.GetModelRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get-model NAME"
 	cmd.Short = `Get model.`
 	cmd.Long = `Get model.
@@ -1227,8 +1207,6 @@ func newGetModelVersion() *cobra.Command {
 
 	var getModelVersionReq ml.GetModelVersionRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get-model-version NAME VERSION"
 	cmd.Short = `Get a model version.`
 	cmd.Long = `Get a model version.
@@ -1286,8 +1264,6 @@ func newGetModelVersionDownloadUri() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getModelVersionDownloadUriReq ml.GetModelVersionDownloadUriRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get-model-version-download-uri NAME VERSION"
 	cmd.Short = `Get a model version URI.`
@@ -1347,8 +1323,6 @@ func newGetPermissionLevels() *cobra.Command {
 
 	var getPermissionLevelsReq ml.GetRegisteredModelPermissionLevelsRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get-permission-levels REGISTERED_MODEL_ID"
 	cmd.Short = `Get registered model permission levels.`
 	cmd.Long = `Get registered model permission levels.
@@ -1404,8 +1378,6 @@ func newGetPermissions() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getPermissionsReq ml.GetRegisteredModelPermissionsRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get-permissions REGISTERED_MODEL_ID"
 	cmd.Short = `Get registered model permissions.`
@@ -1464,8 +1436,6 @@ func newListModels() *cobra.Command {
 
 	var listModelsReq ml.ListModelsRequest
 
-	// TODO: short flags
-
 	cmd.Flags().IntVar(&listModelsReq.MaxResults, "max-results", listModelsReq.MaxResults, `Maximum number of registered models desired.`)
 	cmd.Flags().StringVar(&listModelsReq.PageToken, "page-token", listModelsReq.PageToken, `Pagination token to go to the next page based on a previous query.`)
 
@@ -1517,8 +1487,6 @@ func newListTransitionRequests() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listTransitionRequestsReq ml.ListTransitionRequestsRequest
-
-	// TODO: short flags
 
 	cmd.Use = "list-transition-requests NAME VERSION"
 	cmd.Short = `List transition requests.`
@@ -1575,8 +1543,6 @@ func newListWebhooks() *cobra.Command {
 
 	var listWebhooksReq ml.ListWebhooksRequest
 
-	// TODO: short flags
-
 	// TODO: array: events
 	cmd.Flags().StringVar(&listWebhooksReq.ModelName, "model-name", listWebhooksReq.ModelName, `If not specified, all webhooks associated with the specified events are listed, regardless of their associated model.`)
 	cmd.Flags().StringVar(&listWebhooksReq.PageToken, "page-token", listWebhooksReq.PageToken, `Token indicating the page of artifact results to fetch.`)
@@ -1632,7 +1598,6 @@ func newRejectTransitionRequest() *cobra.Command {
 	var rejectTransitionRequestReq ml.RejectTransitionRequest
 	var rejectTransitionRequestJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&rejectTransitionRequestJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&rejectTransitionRequestReq.Comment, "comment", rejectTransitionRequestReq.Comment, `User-provided comment on the action.`)
@@ -1735,7 +1700,6 @@ func newRenameModel() *cobra.Command {
 	var renameModelReq ml.RenameModelRequest
 	var renameModelJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&renameModelJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&renameModelReq.NewName, "new-name", renameModelReq.NewName, `If provided, updates the name for this registered_model.`)
@@ -1817,8 +1781,6 @@ func newSearchModelVersions() *cobra.Command {
 
 	var searchModelVersionsReq ml.SearchModelVersionsRequest
 
-	// TODO: short flags
-
 	cmd.Flags().StringVar(&searchModelVersionsReq.Filter, "filter", searchModelVersionsReq.Filter, `String filter condition, like "name='my-model-name'".`)
 	cmd.Flags().IntVar(&searchModelVersionsReq.MaxResults, "max-results", searchModelVersionsReq.MaxResults, `Maximum number of models desired.`)
 	// TODO: array: order_by
@@ -1871,8 +1833,6 @@ func newSearchModels() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var searchModelsReq ml.SearchModelsRequest
-
-	// TODO: short flags
 
 	cmd.Flags().StringVar(&searchModelsReq.Filter, "filter", searchModelsReq.Filter, `String filter condition, like "name LIKE 'my-model-name'".`)
 	cmd.Flags().IntVar(&searchModelsReq.MaxResults, "max-results", searchModelsReq.MaxResults, `Maximum number of models desired.`)
@@ -1928,7 +1888,6 @@ func newSetModelTag() *cobra.Command {
 	var setModelTagReq ml.SetModelTagRequest
 	var setModelTagJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&setModelTagJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "set-model-tag NAME KEY VALUE"
@@ -2022,7 +1981,6 @@ func newSetModelVersionTag() *cobra.Command {
 	var setModelVersionTagReq ml.SetModelVersionTagRequest
 	var setModelVersionTagJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&setModelVersionTagJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "set-model-version-tag NAME VERSION KEY VALUE"
@@ -2120,7 +2078,6 @@ func newSetPermissions() *cobra.Command {
 	var setPermissionsReq ml.RegisteredModelPermissionsRequest
 	var setPermissionsJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&setPermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: access_control_list
@@ -2196,7 +2153,6 @@ func newTestRegistryWebhook() *cobra.Command {
 	var testRegistryWebhookReq ml.TestRegistryWebhookRequest
 	var testRegistryWebhookJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&testRegistryWebhookJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().Var(&testRegistryWebhookReq.Event, "event", `If event is specified, the test trigger uses the specified event. Supported values: [
@@ -2294,7 +2250,6 @@ func newTransitionStage() *cobra.Command {
 	var transitionStageReq ml.TransitionModelVersionStageDatabricks
 	var transitionStageJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&transitionStageJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&transitionStageReq.Comment, "comment", transitionStageReq.Comment, `User-provided comment on the action.`)
@@ -2409,7 +2364,6 @@ func newUpdateComment() *cobra.Command {
 	var updateCommentReq ml.UpdateComment
 	var updateCommentJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateCommentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "update-comment ID COMMENT"
@@ -2494,7 +2448,6 @@ func newUpdateModel() *cobra.Command {
 	var updateModelReq ml.UpdateModelRequest
 	var updateModelJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateModelJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateModelReq.Description, "description", updateModelReq.Description, `If provided, updates the description for this registered_model.`)
@@ -2577,7 +2530,6 @@ func newUpdateModelVersion() *cobra.Command {
 	var updateModelVersionReq ml.UpdateModelVersionRequest
 	var updateModelVersionJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateModelVersionJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateModelVersionReq.Description, "description", updateModelVersionReq.Description, `If provided, updates the description for this registered_model.`)
@@ -2664,7 +2616,6 @@ func newUpdatePermissions() *cobra.Command {
 	var updatePermissionsReq ml.RegisteredModelPermissionsRequest
 	var updatePermissionsJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updatePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: access_control_list
@@ -2739,7 +2690,6 @@ func newUpdateWebhook() *cobra.Command {
 	var updateWebhookReq ml.UpdateRegistryWebhook
 	var updateWebhookJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateWebhookJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateWebhookReq.Description, "description", updateWebhookReq.Description, `User-specified description for the webhook.`)

@@ -1,0 +1,29 @@
+{
+  "method": "POST",
+  "path": "/api/2.0/repos",
+  "body": {
+    "path": "/Repos/me@databricks.com/test-repo",
+    "provider": "gitHub",
+    "url": "https://github.com/databricks/databricks-empty-ide-project.git"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/repos/1"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status"
+}
+{
+  "method": "DELETE",
+  "path": "/api/2.0/repos/1"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status"
+}

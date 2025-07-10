@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
@@ -22,8 +21,6 @@ func (m *interpolateMutator) Name() string {
 }
 
 func (m *interpolateMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	supportedResources := config.SupportedResources()
-
 	err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
 		prefix := dyn.MustPathFromString("resources")
 
@@ -44,14 +41,14 @@ func (m *interpolateMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 			//   ${databricks_pipeline.my_pipeline.id}
 			//
 			resourceType := path[1].Key()
-			resourceDescription, ok := supportedResources[resourceType]
+			tfResourceName, ok := GroupToTerraformName[resourceType]
 			if !ok {
 				// Trigger "key not found" for unknown resource types.
 				return dyn.GetByPath(root, path)
 			}
 
 			// Replace the resource type with the Terraform resource name.
-			path = dyn.NewPath(dyn.Key(resourceDescription.TerraformResourceName)).Append(path[2:]...)
+			path = dyn.NewPath(dyn.Key(tfResourceName)).Append(path[2:]...)
 			return dyn.V(fmt.Sprintf("${%s}", path.String())), nil
 		})
 	})

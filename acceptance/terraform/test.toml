@@ -1,6 +1,8 @@
 Local = true
 Cloud = true
 
+EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["terraform"]  # only relevant for terraform
+
 [[Repls]]
 Old = 'Read complete after [^\s]+'
 New = 'Read complete after (redacted)'

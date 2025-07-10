@@ -45,6 +45,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(newGetMessageQueryResult())
 	cmd.AddCommand(newGetMessageQueryResultByAttachment())
 	cmd.AddCommand(newGetSpace())
+	cmd.AddCommand(newListSpaces())
 	cmd.AddCommand(newStartConversation())
 
 	// Apply optional overrides to this command.
@@ -75,7 +76,7 @@ func newCreateMessage() *cobra.Command {
 
 	cmd.Flags().BoolVar(&createMessageSkipWait, "no-wait", createMessageSkipWait, `do not wait to reach COMPLETED state`)
 	cmd.Flags().DurationVar(&createMessageTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach COMPLETED state`)
-	// TODO: short flags
+
 	cmd.Flags().Var(&createMessageJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "create-message SPACE_ID CONVERSATION_ID CONTENT"
@@ -174,8 +175,6 @@ func newExecuteMessageAttachmentQuery() *cobra.Command {
 
 	var executeMessageAttachmentQueryReq dashboards.GenieExecuteMessageAttachmentQueryRequest
 
-	// TODO: short flags
-
 	cmd.Use = "execute-message-attachment-query SPACE_ID CONVERSATION_ID MESSAGE_ID ATTACHMENT_ID"
 	cmd.Short = `Execute message attachment SQL query.`
 	cmd.Long = `Execute message attachment SQL query.
@@ -239,8 +238,6 @@ func newExecuteMessageQuery() *cobra.Command {
 
 	var executeMessageQueryReq dashboards.GenieExecuteMessageQueryRequest
 
-	// TODO: short flags
-
 	cmd.Use = "execute-message-query SPACE_ID CONVERSATION_ID MESSAGE_ID"
 	cmd.Short = `[Deprecated] Execute SQL query in a conversation message.`
 	cmd.Long = `[Deprecated] Execute SQL query in a conversation message.
@@ -303,8 +300,6 @@ func newGenerateDownloadFullQueryResult() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var generateDownloadFullQueryResultReq dashboards.GenieGenerateDownloadFullQueryResultRequest
-
-	// TODO: short flags
 
 	cmd.Use = "generate-download-full-query-result SPACE_ID CONVERSATION_ID MESSAGE_ID ATTACHMENT_ID"
 	cmd.Short = `Generate full query result download.`
@@ -376,8 +371,6 @@ func newGetDownloadFullQueryResult() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getDownloadFullQueryResultReq dashboards.GenieGetDownloadFullQueryResultRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get-download-full-query-result SPACE_ID CONVERSATION_ID MESSAGE_ID ATTACHMENT_ID DOWNLOAD_ID"
 	cmd.Short = `Get download full query result.`
@@ -456,8 +449,6 @@ func newGetMessage() *cobra.Command {
 
 	var getMessageReq dashboards.GenieGetConversationMessageRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get-message SPACE_ID CONVERSATION_ID MESSAGE_ID"
 	cmd.Short = `Get conversation message.`
 	cmd.Long = `Get conversation message.
@@ -519,8 +510,6 @@ func newGetMessageAttachmentQueryResult() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getMessageAttachmentQueryResultReq dashboards.GenieGetMessageAttachmentQueryResultRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get-message-attachment-query-result SPACE_ID CONVERSATION_ID MESSAGE_ID ATTACHMENT_ID"
 	cmd.Short = `Get message attachment SQL query result.`
@@ -586,8 +575,6 @@ func newGetMessageQueryResult() *cobra.Command {
 
 	var getMessageQueryResultReq dashboards.GenieGetMessageQueryResultRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get-message-query-result SPACE_ID CONVERSATION_ID MESSAGE_ID"
 	cmd.Short = `[Deprecated] Get conversation message SQL query result.`
 	cmd.Long = `[Deprecated] Get conversation message SQL query result.
@@ -652,8 +639,6 @@ func newGetMessageQueryResultByAttachment() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getMessageQueryResultByAttachmentReq dashboards.GenieGetQueryResultByAttachmentRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get-message-query-result-by-attachment SPACE_ID CONVERSATION_ID MESSAGE_ID ATTACHMENT_ID"
 	cmd.Short = `[Deprecated] Get conversation message SQL query result.`
@@ -722,8 +707,6 @@ func newGetSpace() *cobra.Command {
 
 	var getSpaceReq dashboards.GenieGetSpaceRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get-space SPACE_ID"
 	cmd.Short = `Get Genie Space.`
 	cmd.Long = `Get Genie Space.
@@ -766,6 +749,63 @@ func newGetSpace() *cobra.Command {
 	return cmd
 }
 
+// start list-spaces command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listSpacesOverrides []func(
+	*cobra.Command,
+	*dashboards.GenieListSpacesRequest,
+)
+
+func newListSpaces() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listSpacesReq dashboards.GenieListSpacesRequest
+
+	cmd.Flags().IntVar(&listSpacesReq.PageSize, "page-size", listSpacesReq.PageSize, `Maximum number of spaces to return per page.`)
+	cmd.Flags().StringVar(&listSpacesReq.PageToken, "page-token", listSpacesReq.PageToken, `Pagination token for getting the next page of results.`)
+
+	cmd.Use = "list-spaces"
+	cmd.Short = `List Genie spaces.`
+	cmd.Long = `List Genie spaces.
+  
+  Get list of Genie Spaces.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		response, err := w.Genie.ListSpaces(ctx, listSpacesReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listSpacesOverrides {
+		fn(cmd, &listSpacesReq)
+	}
+
+	return cmd
+}
+
 // start start-conversation command
 
 // Slice with functions to override default command behavior.
@@ -786,7 +826,7 @@ func newStartConversation() *cobra.Command {
 
 	cmd.Flags().BoolVar(&startConversationSkipWait, "no-wait", startConversationSkipWait, `do not wait to reach COMPLETED state`)
 	cmd.Flags().DurationVar(&startConversationTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach COMPLETED state`)
-	// TODO: short flags
+
 	cmd.Flags().Var(&startConversationJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "start-conversation SPACE_ID CONTENT"

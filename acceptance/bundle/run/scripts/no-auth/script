@@ -1,0 +1,7 @@
+unset DATABRICKS_HOST
+unset DATABRICKS_TOKEN
+
+# Without authentication, commands defined in a script section fail even if the script
+# itself does not require authentication. This is because loading a bundle makes a
+# /scim/me call which requires authentication.
+trace $CLI bundle run abcd

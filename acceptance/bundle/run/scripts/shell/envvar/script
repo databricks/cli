@@ -1,0 +1,4 @@
+export foo="hello"
+export bar="world"
+
+trace $CLI bundle run foo

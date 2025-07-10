@@ -1,0 +1,6 @@
+Local = true
+Cloud = true
+
+[EnvMatrix]
+  DATABRICKS_CLI_DEPLOYMENT = ["terraform", "direct-exp"]
+  UV_PYTHON = ["3.9", "3.10", "3.11", "3.12", "3.13"]

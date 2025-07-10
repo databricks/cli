@@ -77,7 +77,6 @@ func newCreate() *cobra.Command {
 	var createReq sharing.CreateRecipient
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `Description about the recipient.`)
@@ -99,7 +98,7 @@ func newCreate() *cobra.Command {
   Arguments:
     NAME: Name of Recipient.
     AUTHENTICATION_TYPE: The delta sharing authentication type. 
-      Supported values: [DATABRICKS, OAUTH_CLIENT_CREDENTIALS, TOKEN]`
+      Supported values: [DATABRICKS, OAUTH_CLIENT_CREDENTIALS, OIDC_FEDERATION, TOKEN]`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -175,8 +174,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq sharing.DeleteRecipientRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete NAME"
 	cmd.Short = `Delete a share recipient.`
 	cmd.Long = `Delete a share recipient.
@@ -233,8 +230,6 @@ func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getReq sharing.GetRecipientRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get NAME"
 	cmd.Short = `Get a share recipient.`
@@ -294,8 +289,6 @@ func newList() *cobra.Command {
 
 	var listReq sharing.ListRecipientsRequest
 
-	// TODO: short flags
-
 	cmd.Flags().StringVar(&listReq.DataRecipientGlobalMetastoreId, "data-recipient-global-metastore-id", listReq.DataRecipientGlobalMetastoreId, `If not provided, all recipients will be returned.`)
 	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of recipients to return.`)
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
@@ -352,7 +345,6 @@ func newRotateToken() *cobra.Command {
 	var rotateTokenReq sharing.RotateRecipientToken
 	var rotateTokenJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&rotateTokenJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "rotate-token NAME EXISTING_TOKEN_EXPIRE_IN_SECONDS"
@@ -441,8 +433,6 @@ func newSharePermissions() *cobra.Command {
 
 	var sharePermissionsReq sharing.SharePermissionsRequest
 
-	// TODO: short flags
-
 	cmd.Flags().IntVar(&sharePermissionsReq.MaxResults, "max-results", sharePermissionsReq.MaxResults, `Maximum number of permissions to return.`)
 	cmd.Flags().StringVar(&sharePermissionsReq.PageToken, "page-token", sharePermissionsReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
 
@@ -504,7 +494,6 @@ func newUpdate() *cobra.Command {
 	var updateReq sharing.UpdateRecipient
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `Description about the recipient.`)

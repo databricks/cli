@@ -140,8 +140,10 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 				},
 				Dashboards: map[string]*resources.Dashboard{
 					"dashboard1": {
-						Dashboard: dashboards.Dashboard{
-							DisplayName: "dashboard1",
+						DashboardConfig: resources.DashboardConfig{
+							Dashboard: dashboards.Dashboard{
+								DisplayName: "dashboard1",
+							},
 						},
 					},
 				},

@@ -59,8 +59,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq settings.DeleteDisableLegacyFeaturesRequest
 
-	// TODO: short flags
-
 	cmd.Flags().StringVar(&deleteReq.Etag, "etag", deleteReq.Etag, `etag used for versioning.`)
 
 	cmd.Use = "delete"
@@ -113,8 +111,6 @@ func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getReq settings.GetDisableLegacyFeaturesRequest
-
-	// TODO: short flags
 
 	cmd.Flags().StringVar(&getReq.Etag, "etag", getReq.Etag, `etag used for versioning.`)
 
@@ -170,7 +166,6 @@ func newUpdate() *cobra.Command {
 	var updateReq settings.UpdateDisableLegacyFeaturesRequest
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "update"

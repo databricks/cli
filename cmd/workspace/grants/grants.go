@@ -3,8 +3,6 @@
 package grants
 
 import (
-	"fmt"
-
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -66,38 +64,18 @@ func newGet() *cobra.Command {
 
 	var getReq catalog.GetGrantRequest
 
-	// TODO: short flags
-
+	cmd.Flags().IntVar(&getReq.MaxResults, "max-results", getReq.MaxResults, `Specifies the maximum number of privileges to return (page length).`)
+	cmd.Flags().StringVar(&getReq.PageToken, "page-token", getReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
 	cmd.Flags().StringVar(&getReq.Principal, "principal", getReq.Principal, `If provided, only the permissions for the specified principal (user or group) are returned.`)
 
 	cmd.Use = "get SECURABLE_TYPE FULL_NAME"
 	cmd.Short = `Get permissions.`
 	cmd.Long = `Get permissions.
   
-  Gets the permissions for a securable.
+  Gets the permissions for a securable. Does not include inherited permissions.
 
   Arguments:
-    SECURABLE_TYPE: Type of securable. 
-      Supported values: [
-        CATALOG,
-        CLEAN_ROOM,
-        CONNECTION,
-        CREDENTIAL,
-        EXTERNAL_LOCATION,
-        EXTERNAL_METADATA,
-        FUNCTION,
-        METASTORE,
-        PIPELINE,
-        PROVIDER,
-        RECIPIENT,
-        SCHEMA,
-        SHARE,
-        STAGING_TABLE,
-        STORAGE_CREDENTIAL,
-        TABLE,
-        UNKNOWN_SECURABLE_TYPE,
-        VOLUME,
-      ]
+    SECURABLE_TYPE: Type of securable.
     FULL_NAME: Full name of securable.`
 
 	cmd.Annotations = make(map[string]string)
@@ -112,10 +90,7 @@ func newGet() *cobra.Command {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
-		_, err = fmt.Sscan(args[0], &getReq.SecurableType)
-		if err != nil {
-			return fmt.Errorf("invalid SECURABLE_TYPE: %s", args[0])
-		}
+		getReq.SecurableType = args[0]
 		getReq.FullName = args[1]
 
 		response, err := w.Grants.Get(ctx, getReq)
@@ -151,38 +126,19 @@ func newGetEffective() *cobra.Command {
 
 	var getEffectiveReq catalog.GetEffectiveRequest
 
-	// TODO: short flags
-
+	cmd.Flags().IntVar(&getEffectiveReq.MaxResults, "max-results", getEffectiveReq.MaxResults, `Specifies the maximum number of privileges to return (page length).`)
+	cmd.Flags().StringVar(&getEffectiveReq.PageToken, "page-token", getEffectiveReq.PageToken, `Opaque token for the next page of results (pagination).`)
 	cmd.Flags().StringVar(&getEffectiveReq.Principal, "principal", getEffectiveReq.Principal, `If provided, only the effective permissions for the specified principal (user or group) are returned.`)
 
 	cmd.Use = "get-effective SECURABLE_TYPE FULL_NAME"
 	cmd.Short = `Get effective permissions.`
 	cmd.Long = `Get effective permissions.
   
-  Gets the effective permissions for a securable.
+  Gets the effective permissions for a securable. Includes inherited permissions
+  from any parent securables.
 
   Arguments:
-    SECURABLE_TYPE: Type of securable. 
-      Supported values: [
-        CATALOG,
-        CLEAN_ROOM,
-        CONNECTION,
-        CREDENTIAL,
-        EXTERNAL_LOCATION,
-        EXTERNAL_METADATA,
-        FUNCTION,
-        METASTORE,
-        PIPELINE,
-        PROVIDER,
-        RECIPIENT,
-        SCHEMA,
-        SHARE,
-        STAGING_TABLE,
-        STORAGE_CREDENTIAL,
-        TABLE,
-        UNKNOWN_SECURABLE_TYPE,
-        VOLUME,
-      ]
+    SECURABLE_TYPE: Type of securable.
     FULL_NAME: Full name of securable.`
 
 	cmd.Annotations = make(map[string]string)
@@ -197,10 +153,7 @@ func newGetEffective() *cobra.Command {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
-		_, err = fmt.Sscan(args[0], &getEffectiveReq.SecurableType)
-		if err != nil {
-			return fmt.Errorf("invalid SECURABLE_TYPE: %s", args[0])
-		}
+		getEffectiveReq.SecurableType = args[0]
 		getEffectiveReq.FullName = args[1]
 
 		response, err := w.Grants.GetEffective(ctx, getEffectiveReq)
@@ -237,7 +190,6 @@ func newUpdate() *cobra.Command {
 	var updateReq catalog.UpdatePermissions
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: changes
@@ -249,27 +201,7 @@ func newUpdate() *cobra.Command {
   Updates the permissions for a securable.
 
   Arguments:
-    SECURABLE_TYPE: Type of securable. 
-      Supported values: [
-        CATALOG,
-        CLEAN_ROOM,
-        CONNECTION,
-        CREDENTIAL,
-        EXTERNAL_LOCATION,
-        EXTERNAL_METADATA,
-        FUNCTION,
-        METASTORE,
-        PIPELINE,
-        PROVIDER,
-        RECIPIENT,
-        SCHEMA,
-        SHARE,
-        STAGING_TABLE,
-        STORAGE_CREDENTIAL,
-        TABLE,
-        UNKNOWN_SECURABLE_TYPE,
-        VOLUME,
-      ]
+    SECURABLE_TYPE: Type of securable.
     FULL_NAME: Full name of securable.`
 
 	cmd.Annotations = make(map[string]string)
@@ -296,10 +228,7 @@ func newUpdate() *cobra.Command {
 				}
 			}
 		}
-		_, err = fmt.Sscan(args[0], &updateReq.SecurableType)
-		if err != nil {
-			return fmt.Errorf("invalid SECURABLE_TYPE: %s", args[0])
-		}
+		updateReq.SecurableType = args[0]
 		updateReq.FullName = args[1]
 
 		response, err := w.Grants.Update(ctx, updateReq)

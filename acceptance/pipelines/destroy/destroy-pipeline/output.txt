@@ -1,0 +1,22 @@
+
+=== Test basic pipelines destroy
+>>> [PIPELINES] deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-destroy/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [PIPELINES] destroy --auto-approve
+The following resources will be deleted:
+  delete pipeline my_pipeline
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-pipeline-destroy/default
+
+Deleting files...
+Destroy complete!
+
+=== Assert pipeline is deleted
+>>> errcode [CLI] pipelines get [UUID]
+Error: The specified pipeline [UUID] was not found.
+
+Exit code: 1
