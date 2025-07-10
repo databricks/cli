@@ -1,0 +1,6 @@
+title "Test auto-approve pipelines destroy"
+trace $PIPELINES deploy
+# Should fail without auto-approve
+trace errcode $PIPELINES destroy
+# Should succeed with auto-approve
+trace $PIPELINES destroy --auto-approve

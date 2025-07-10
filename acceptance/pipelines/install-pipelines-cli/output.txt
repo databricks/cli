@@ -13,8 +13,10 @@ Available Commands:
   auth        Authentication related commands
   completion  Generate the autocompletion script for the specified shell
   deploy      Deploy pipelines
+  destroy     Destroy a pipelines project
   help        Help about any command
   init        Initialize a new pipelines project
+  run         Run a pipeline
 
 Flags:
       --debug            enable debug logging
@@ -51,8 +53,10 @@ Available Commands:
   auth        Authentication related commands
   completion  Generate the autocompletion script for the specified shell
   deploy      Deploy pipelines
+  destroy     Destroy a pipelines project
   help        Help about any command
   init        Initialize a new pipelines project
+  run         Run a pipeline
 
 Flags:
       --debug            enable debug logging

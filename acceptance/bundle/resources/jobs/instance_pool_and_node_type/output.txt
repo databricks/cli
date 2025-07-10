@@ -1,0 +1,71 @@
+
+>>> [CLI] bundle validate -o json
+[
+  {
+    "new_cluster": {
+      "data_security_mode": "USER_ISOLATION",
+      "instance_pool_id": "$TEST_INSTANCE_POOL_ID",
+      "node_type_id": "",
+      "num_workers": 1,
+      "spark_version": "$DEFAULT_SPARK_VERSION"
+    },
+    "python_wheel_task": {
+      "entry_point": "run",
+      "package_name": "my_test_code",
+      "parameters": [
+        "one",
+        "two"
+      ]
+    },
+    "task_key": "TestTask"
+  }
+]
+
+>>> [CLI] bundle summary -o json
+[
+  {
+    "new_cluster": {
+      "data_security_mode": "USER_ISOLATION",
+      "instance_pool_id": "$TEST_INSTANCE_POOL_ID",
+      "node_type_id": "",
+      "num_workers": 1,
+      "spark_version": "$DEFAULT_SPARK_VERSION"
+    },
+    "python_wheel_task": {
+      "entry_point": "run",
+      "package_name": "my_test_code",
+      "parameters": [
+        "one",
+        "two"
+      ]
+    },
+    "task_key": "TestTask"
+  }
+]
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | .body.tasks out.requests.txt
+[
+  {
+    "new_cluster": {
+      "data_security_mode": "USER_ISOLATION",
+      "instance_pool_id": "$TEST_INSTANCE_POOL_ID",
+      "num_workers": 1,
+      "spark_version": "$DEFAULT_SPARK_VERSION"
+    },
+    "python_wheel_task": {
+      "entry_point": "run",
+      "package_name": "my_test_code",
+      "parameters": [
+        "one",
+        "two"
+      ]
+    },
+    "task_key": "TestTask"
+  }
+]

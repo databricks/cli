@@ -404,6 +404,22 @@ func addDefaultHandlers(server *testserver.Server) {
 		return req.Workspace.VolumesCreate(req)
 	})
 
+	server.Handle("POST", "/api/2.0/repos", func(req testserver.Request) any {
+		return req.Workspace.ReposCreate(req)
+	})
+
+	server.Handle("GET", "/api/2.0/repos/{repo_id}", func(req testserver.Request) any {
+		return testserver.MapGet(req.Workspace, req.Workspace.Repos, req.Vars["repo_id"])
+	})
+
+	server.Handle("PATCH", "/api/2.0/repos/{repo_id}", func(req testserver.Request) any {
+		return req.Workspace.ReposUpdate(req)
+	})
+
+	server.Handle("DELETE", "/api/2.0/repos/{repo_id}", func(req testserver.Request) any {
+		return req.Workspace.ReposDelete(req)
+	})
+
 	server.Handle("PATCH", "/api/2.1/unity-catalog/volumes/{full_name}", func(req testserver.Request) any {
 		return req.Workspace.VolumesUpdate(req, req.Vars["full_name"])
 	})

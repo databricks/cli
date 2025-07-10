@@ -241,8 +241,20 @@ func (r *Runner) Eventually(condition func() bool, waitFor, tick time.Duration, 
 	ticker := time.NewTicker(tick)
 	defer ticker.Stop()
 
+	// Ensure all the goroutines created by this function are cleaned up.
+	// If we do not have this check it is possible that multiple goroutines are created,
+	// one of them returns and the test terminates. In that scenario if any of the other
+	// goroutines use the *testing.T interface, the resulting panic will bring down the
+	// entire test runner.
+	var wg sync.WaitGroup
+	defer wg.Wait()
+
 	// Kick off condition check immediately.
-	go func() { ch <- condition() }()
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		ch <- condition()
+	}()
 
 	for tick := ticker.C; ; {
 		select {
@@ -254,7 +266,11 @@ func (r *Runner) Eventually(condition func() bool, waitFor, tick time.Duration, 
 			return
 		case <-tick:
 			tick = nil
-			go func() { ch <- condition() }()
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				ch <- condition()
+			}()
 		case v := <-ch:
 			if v {
 				return

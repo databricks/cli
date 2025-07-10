@@ -1,0 +1,18 @@
+RecordRequests = true
+
+# Fails on direct with
+#    --- FAIL: TestAccept/bundle/resources/jobs/instance_pool_and_node_type (0.00s)
+#        --- FAIL: TestAccept/bundle/resources/jobs/instance_pool_and_node_type/DATABRICKS_CLI_DEPLOYMENT=direct-exp (1.60s)
+#            acceptance_test.go:1178: Writing updated bundle config to databricks.yml. BundleConfig sections: default_name
+#            acceptance_test.go:722: Diff:
+#                --- bundle/resources/jobs/instance_pool_and_node_type/output.txt
+#                +++ /var/folders/5y/9kkdnjw91p11vsqwk0cvmk200000gp/T/TestAcceptbundleresourcesjobsinstance_pool_and_node_typeDATABRICKS_CLI_DEPLOYMENT=direct-exp3221363519/001/output.txt
+#                @@ -55,6 +55,7 @@
+#                     "new_cluster": {
+#                       "data_security_mode": "USER_ISOLATION",
+#                       "instance_pool_id": "$TEST_INSTANCE_POOL_ID",
+#                +      "node_type_id": "",
+#                       "num_workers": 1,
+#                       "spark_version": "$DEFAULT_SPARK_VERSION"
+#                     },
+EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["terraform"]
