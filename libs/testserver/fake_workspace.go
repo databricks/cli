@@ -39,8 +39,10 @@ type FakeWorkspace struct {
 	mu  sync.Mutex
 	url string
 
-	directories map[string]bool
-	files       map[string]FileEntry
+	directories  map[string]bool
+	files        map[string]FileEntry
+	repoIdByPath map[string]int64
+
 	// normally, ids are not sequential, but we make them sequential for deterministic diff
 	nextJobId    int64
 	nextJobRunId int64
@@ -54,6 +56,9 @@ type FakeWorkspace struct {
 	Schemas         map[string]catalog.SchemaInfo
 	Volumes         map[string]catalog.VolumeInfo
 	Dashboards      map[string]dashboards.Dashboard
+
+	nextRepoId int64
+	Repos      map[string]workspace.RepoInfo
 }
 
 func (w *FakeWorkspace) LockUnlock() func() {
@@ -118,7 +123,9 @@ func NewFakeWorkspace(url string) *FakeWorkspace {
 		directories: map[string]bool{
 			"/Workspace": true,
 		},
-		files:           make(map[string]FileEntry),
+		files:        make(map[string]FileEntry),
+		repoIdByPath: make(map[string]int64),
+
 		Jobs:            map[int64]jobs.Job{},
 		JobRuns:         map[int64]jobs.Run{},
 		nextJobId:       TestJobID,
@@ -130,6 +137,7 @@ func NewFakeWorkspace(url string) *FakeWorkspace {
 		Schemas:         map[string]catalog.SchemaInfo{},
 		Volumes:         map[string]catalog.VolumeInfo{},
 		Dashboards:      map[string]dashboards.Dashboard{},
+		Repos:           map[string]workspace.RepoInfo{},
 	}
 }
 
@@ -146,6 +154,14 @@ func (s *FakeWorkspace) WorkspaceGetStatus(path string) Response {
 	} else if entry, ok := s.files[path]; ok {
 		return Response{
 			Body: entry.Info,
+		}
+	} else if repoId, ok := s.repoIdByPath[path]; ok {
+		return Response{
+			Body: workspace.ObjectInfo{
+				ObjectType: "REPO",
+				Path:       path,
+				ObjectId:   repoId,
+			},
 		}
 	} else {
 		return Response{

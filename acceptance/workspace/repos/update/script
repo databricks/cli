@@ -1,0 +1,13 @@
+url=https://github.com/databricks/databricks-empty-ide-project.git
+provider=gitHub
+path=/Repos/me@databricks.com/test-repo
+
+repo_id=$(trace $CLI repos create $url $provider --path $path | jq .id -r)
+
+trace $CLI repos update $repo_id --branch update-by-id
+
+trace $CLI repos get $repo_id -o json
+
+trace $CLI repos update $path --branch update-by-path
+
+trace $CLI repos get $repo_id -o json
