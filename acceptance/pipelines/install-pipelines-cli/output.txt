@@ -17,6 +17,7 @@ Available Commands:
   help        Help about any command
   init        Initialize a new pipelines project
   open        Open a pipeline in the browser
+  run         Run a pipeline
 
 Flags:
       --debug            enable debug logging
@@ -57,6 +58,7 @@ Available Commands:
   help        Help about any command
   init        Initialize a new pipelines project
   open        Open a pipeline in the browser
+  run         Run a pipeline
 
 Flags:
       --debug            enable debug logging
