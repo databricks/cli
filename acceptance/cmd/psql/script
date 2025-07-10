@@ -1,8 +1,9 @@
 mv echo-arguments.sh psql
 chmod +x psql
+mv echo-arguments.bat psql.bat
 
 cleanup() {
-  rm psql
+  rm psql psql.bat
 }
 trap cleanup EXIT
 
