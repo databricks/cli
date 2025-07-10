@@ -131,7 +131,8 @@ func fromTypedStruct(src reflect.Value, ref dyn.Value, options ...fromTypedOptio
 		// Either if the key was set in the reference or the field is not zero-valued, we include it.
 		if ok || nv.Kind() != dyn.KindNil {
 			goName := info.GolangNames[k]
-			if v.IsZero() && !info.ForceEmpty[k] && !slices.Contains(forceSendFields, goName) {
+			// If v isZero, it could be because it's a variable reference; so we check that nv is zero as well
+			if v.IsZero() && nv.IsZero() && !info.ForceEmpty[k] && !slices.Contains(forceSendFields, goName) {
 				continue
 			}
 			out.SetLoc(k, refloc, nv)

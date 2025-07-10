@@ -104,11 +104,11 @@ func toTypedStruct(dst reflect.Value, src dyn.Value) error {
 				return err
 			}
 
-			//fmt.Fprintf(os.Stderr, "APPEND? isZero=%v v=%#v\n", pv.IsZero(), pv)
+			// fmt.Fprintf(os.Stderr, "APPEND? isZero=%v v=%#v\n", pv.IsZero(), pv)
 
 			if pv.IsZero() {
 				forceSendFields = append(forceSendFields, info.GolangNames[jsonKey])
-				//fmt.Fprintf(os.Stderr, "APPENDED %#v\n", forceSendFields)
+				// fmt.Fprintf(os.Stderr, "APPENDED %#v\n", forceSendFields)
 			}
 		}
 
