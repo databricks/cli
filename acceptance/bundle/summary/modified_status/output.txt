@@ -103,4 +103,4 @@ Deleting files...
 Destroy complete!
 
 >>> [CLI] bundle summary -o json
-{}
+null
