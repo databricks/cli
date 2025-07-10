@@ -383,11 +383,9 @@ func getSkipReason(config *internal.TestConfig, configPath string) string {
 
 		if isTruePtr(config.CloudSlow) {
 			config.Cloud = config.CloudSlow
-			// Not running this tests on PRs makes it easy to miss test failures (and real bugs).
-			// Debugging these in nightly is not as pleasant as ensuring the PRs go in do not break it.
-			//if testing.Short() {
-			//	return fmt.Sprintf("Disabled via CloudSlow setting in %s (CLOUD_ENV=%s, Short=%v)", configPath, cloudEnv, testing.Short())
-			//}
+			if testing.Short() {
+				return fmt.Sprintf("Disabled via CloudSlow setting in %s (CLOUD_ENV=%s, Short=%v)", configPath, cloudEnv, testing.Short())
+			}
 		}
 
 		isCloudEnabled := isTruePtr(config.Cloud) || isTruePtr(config.CloudSlow)
