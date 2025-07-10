@@ -2,7 +2,6 @@
 === Test should use a fake psql command:
 >>> psql --version
 echo-arguments.sh was called with the following arguments: --version
-PGPASSWORD=
 PGSSLMODE=
 
 === Command should require instance name:
@@ -25,7 +24,6 @@ Database postgres version:  14
 Successfully fetched database credentials
 Launching psql with connection to my-database.my-host.com...
 echo-arguments.sh was called with the following arguments: --host=my-database.my-host.com --username=[USERNAME] --port=5432 --dbname=databricks_postgres
-PGPASSWORD=my-secret-token
 PGSSLMODE=require
 
 === Command should by-pass extra arguments to psql:
@@ -36,7 +34,6 @@ Database postgres version:  14
 Successfully fetched database credentials
 Launching psql with connection to my-database.my-host.com...
 echo-arguments.sh was called with the following arguments: --host=my-database.my-host.com --username=[USERNAME] --port=5432 --dbname=databricks_postgres -c SELECT * FROM my_table --echo-all
-PGPASSWORD=my-secret-token
 PGSSLMODE=require
 
 === Command should use the db name from extra arguments when specified:
@@ -47,7 +44,6 @@ Database postgres version:  14
 Successfully fetched database credentials
 Launching psql with connection to my-database.my-host.com...
 echo-arguments.sh was called with the following arguments: --host=my-database.my-host.com --username=[USERNAME] --port=5432 --dbname=db1
-PGPASSWORD=my-secret-token
 PGSSLMODE=require
 
 >>> [CLI] psql my-database -- -d db2
@@ -57,7 +53,6 @@ Database postgres version:  14
 Successfully fetched database credentials
 Launching psql with connection to my-database.my-host.com...
 echo-arguments.sh was called with the following arguments: --host=my-database.my-host.com --username=[USERNAME] --port=5432 -d db2
-PGPASSWORD=my-secret-token
 PGSSLMODE=require
 
 === Command should use the port from extra arguments when specified:
@@ -68,7 +63,6 @@ Database postgres version:  14
 Successfully fetched database credentials
 Launching psql with connection to my-database.my-host.com...
 echo-arguments.sh was called with the following arguments: --host=my-database.my-host.com --username=[USERNAME] --dbname=db1 -p 3000
-PGPASSWORD=my-secret-token
 PGSSLMODE=require
 
 >>> [CLI] psql my-database -- -d db2 --port=3001
@@ -78,5 +72,4 @@ Database postgres version:  14
 Successfully fetched database credentials
 Launching psql with connection to my-database.my-host.com...
 echo-arguments.sh was called with the following arguments: --host=my-database.my-host.com --username=[USERNAME] -d db2 --port=3001
-PGPASSWORD=my-secret-token
 PGSSLMODE=require
