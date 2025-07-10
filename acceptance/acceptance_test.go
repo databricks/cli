@@ -382,6 +382,7 @@ func getSkipReason(config *internal.TestConfig, configPath string) string {
 		}
 
 		if isTruePtr(config.CloudSlow) {
+			config.Cloud = config.CloudSlow
 			if testing.Short() {
 				return fmt.Sprintf("Disabled via CloudSlow setting in %s (CLOUD_ENV=%s, Short=%v)", configPath, cloudEnv, testing.Short())
 			}
