@@ -25,9 +25,9 @@ func benchmarkWalkReadOnlyBaseline(b *testing.B, numJobs int) {
 	myBundle := Bundle(b, numJobs)
 
 	for b.Loop() {
-		paths := []dyn.Path{}
+		var paths []dyn.Path
 		bundle.ApplyFuncContext(context.Background(), myBundle, func(ctx context.Context, b *bundle.Bundle) {
-			dyn.WalkReadOnly(b.Config.Value(), func(p dyn.Path, v dyn.Value) error {
+			_ = dyn.WalkReadOnly(b.Config.Value(), func(p dyn.Path, v dyn.Value) error {
 				paths = append(paths, p)
 				return nil
 			})
@@ -39,9 +39,7 @@ func benchmarkNoopBaseline(b *testing.B, numJobs int) {
 	myBundle := Bundle(b, numJobs)
 
 	for b.Loop() {
-		bundle.ApplyFuncContext(context.Background(), myBundle, func(ctx context.Context, b *bundle.Bundle) {
-			return
-		})
+		bundle.ApplyFuncContext(context.Background(), myBundle, func(ctx context.Context, b *bundle.Bundle) {})
 	}
 }
 

@@ -39,7 +39,7 @@ func (f *required) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 		}
 	}
 
-	dyn.WalkReadOnly(b.Config.Value(), func(p dyn.Path, v dyn.Value) error {
+	err := dyn.WalkReadOnly(b.Config.Value(), func(p dyn.Path, v dyn.Value) error {
 		// If the path is not preset in the prefix tree, we do not need to validate any required
 		// fields in it.
 		pattern, ok := trie.SearchPath(p)
@@ -63,6 +63,9 @@ func (f *required) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 		}
 		return nil
 	})
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	// Sort diagnostics to make them deterministic
 	sort.Slice(diags, func(i, j int) bool {
