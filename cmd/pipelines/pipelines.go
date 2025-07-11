@@ -15,5 +15,6 @@ func New(ctx context.Context) *cobra.Command {
 	cli.AddCommand(runCommand())
 	cli.AddCommand(authCommand())
 	cli.AddCommand(destroyCommand())
+	cli.AddCommand(versionCommand())
 	return cli
 }
