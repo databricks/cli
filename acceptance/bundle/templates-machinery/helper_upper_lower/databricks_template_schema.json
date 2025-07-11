@@ -3,7 +3,7 @@
         "s": {
             "type": "string",
             "description": "An input string",
-            "default": "AbCd0123"
+            "default": "AbCd0123😀"
         }
     }
 }

@@ -3,5 +3,5 @@
 ✨ Successfully initialized template
 
 >>> cat hello.txt
-abcd0123
-ABCD0123
+abcd0123😀
+ABCD0123😀
