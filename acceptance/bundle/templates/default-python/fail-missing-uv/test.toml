@@ -9,9 +9,5 @@ Ignore = [
 
 # Replace the uv not found error for portability
 [[Repls]]
-Old = 'exec: "uv": executable file not found.*'
-New = 'exec: "uv": executable file not found in PATH'
-
-[[Repls]]
-Old = 'no such file or directory'
-New = 'exec: "uv": executable file not found in PATH'
+Old = '/(usr|bin)/bash(: line 1:)? uv: command not found'
+New = 'bash: uv: command not found'
