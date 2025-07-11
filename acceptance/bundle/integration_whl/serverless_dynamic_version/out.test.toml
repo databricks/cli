@@ -1,5 +1,5 @@
 Local = false
-Cloud = false
+Cloud = true
 CloudSlow = true
 RequiresUnityCatalog = true
 

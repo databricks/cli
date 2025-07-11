@@ -47,13 +47,6 @@ Warning: Ignoring Databricks CLI version constraint for development build. Requi
       },
       "tasks": [
         {
-          "job_cluster_key": "job_cluster",
-          "notebook_task": {
-            "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/my_jobs_as_code/dev/files/src/notebook"
-          },
-          "task_key": "notebook_task"
-        },
-        {
           "depends_on": [
             {
               "task_key": "notebook_task"
@@ -70,6 +63,13 @@ Warning: Ignoring Databricks CLI version constraint for development build. Requi
             "package_name": "my_jobs_as_code"
           },
           "task_key": "main_task"
+        },
+        {
+          "job_cluster_key": "job_cluster",
+          "notebook_task": {
+            "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/my_jobs_as_code/dev/files/src/notebook"
+          },
+          "task_key": "notebook_task"
         }
       ],
       "trigger": {
