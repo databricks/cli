@@ -177,7 +177,7 @@ Validation OK!
 -          "dev": "[USERNAME]"
          },
          "tasks": [
-@@ -79,5 +66,5 @@
+@@ -97,5 +84,5 @@
              "job_cluster_key": "job_cluster",
              "notebook_task": {
 -              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/notebook"
@@ -335,7 +335,7 @@ Resources:
 -          "dev": "[USERNAME]"
          },
          "tasks": [
-@@ -80,5 +67,5 @@
+@@ -98,5 +85,5 @@
              "job_cluster_key": "job_cluster",
              "notebook_task": {
 -              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/notebook"
