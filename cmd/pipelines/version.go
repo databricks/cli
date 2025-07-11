@@ -1,6 +1,6 @@
-// Copied to cmd/pipelines/version.go and adapted for pipelines use.
-// Consider if changes made here should be made to the pipelines counterpart as well.
-package version
+// Copied from cmd/version/version.go and adapted for pipelines use.
+// Consider if changes made here should be made to the bundle counterpart as well.
+package pipelines
 
 import (
 	"github.com/databricks/cli/cmd/root"
@@ -9,13 +9,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func New() *cobra.Command {
+func versionCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "version",
 		Args:  root.NoArgs,
-		Short: "Retrieve information about the current version of this CLI",
+		Short: "Retrieve information about the current version of the Pipelines CLI",
 		Annotations: map[string]string{
-			"template": "Databricks CLI v{{.Version}}\n",
+			"template": "Pipelines CLI v{{.Version}} (based on Databricks CLI v{{.Version}})\n",
 		},
 	}
 
