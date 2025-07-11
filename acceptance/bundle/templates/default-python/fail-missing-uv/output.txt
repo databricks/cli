@@ -21,7 +21,7 @@ Validation OK!
 
 >>> [CLI] bundle deploy
 Building python_artifact...
-Error: build failed python_artifact, error: exit status 127, output: /bin/bash: uv: command not found
+Error: build failed python_artifact, error: exit status 127, output: bash: uv: command not found
 
 
 

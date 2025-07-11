@@ -9,5 +9,5 @@ Ignore = [
 
 # Replace the uv not found error for portability
 [[Repls]]
-Old = '/(usr|bin)/bash(: line 1:)? uv: command not found'
+Old = '(/usr)?(/bin)?/bash(: line 1)?: uv: command not found'
 New = 'bash: uv: command not found'
