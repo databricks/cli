@@ -18,6 +18,10 @@ func TestPatternString(t *testing.T) {
 		"foo.*.bar",
 		"foo[*].bar",
 		"",
+		"foo",
+		"[1]",
+		"[*]",
+		"*",
 	}
 
 	for _, p := range patterns {

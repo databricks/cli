@@ -17,6 +17,7 @@ Available Commands:
   help        Help about any command
   init        Initialize a new pipelines project
   run         Run a pipeline
+  version     Retrieve information about the current version of the Pipelines CLI
 
 Flags:
       --debug            enable debug logging
@@ -57,6 +58,7 @@ Available Commands:
   help        Help about any command
   init        Initialize a new pipelines project
   run         Run a pipeline
+  version     Retrieve information about the current version of the Pipelines CLI
 
 Flags:
       --debug            enable debug logging
