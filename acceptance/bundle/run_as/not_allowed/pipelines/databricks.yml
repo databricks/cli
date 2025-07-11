@@ -1,0 +1,28 @@
+bundle:
+  name: "run_as"
+
+targets:
+  t_user_name:
+    run_as:
+      user_name: "tester@databricks.com"
+  t_service_principal_name:
+    run_as:
+      service_principal_name: "my_service_principal"
+  t_user_name_different:
+    run_as:
+      user_name: "different@databricks.com"
+
+resources:
+  pipelines:
+    nyc_taxi_pipeline:
+      name: "nyc taxi loader"
+
+      permissions:
+        - level: CAN_VIEW
+          service_principal_name: my_service_principal
+        - level: CAN_VIEW
+          user_name: different@databricks.com
+
+      libraries:
+        - notebook:
+            path: ./dlt/nyc_taxi_loader.py

@@ -1,0 +1,5 @@
+trace $CLI bundle validate -t t_user_name
+trace musterr $CLI bundle validate -t t_user_name_different
+trace musterr $CLI bundle validate -t t_service_principal_name
+
+# Note: we should also test when current user is service principal, need to add this option acceptance test runner.

@@ -1,0 +1,41 @@
+
+>>> [CLI] bundle validate -t t_user_name
+Name: run_as
+Target: t_user_name
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/run_as/t_user_name
+
+Validation OK!
+
+>>> musterr [CLI] bundle validate -t t_user_name_different
+Error: pipelines do not support a setting a run_as user that is different from the owner.
+Current identity: [USERNAME]. Run as identity: different@databricks.com.
+See https://docs.databricks.com/dev-tools/bundles/run-as.html to learn more about the run_as property.
+  in databricks.yml:17:5
+
+Name: run_as
+Target: t_user_name_different
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/run_as/t_user_name_different
+
+Found 1 error
+
+Exit code (musterr): 1
+
+>>> musterr [CLI] bundle validate -t t_service_principal_name
+Error: pipelines do not support a setting a run_as user that is different from the owner.
+Current identity: [USERNAME]. Run as identity: my_service_principal.
+See https://docs.databricks.com/dev-tools/bundles/run-as.html to learn more about the run_as property.
+  in databricks.yml:17:5
+
+Name: run_as
+Target: t_service_principal_name
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/run_as/t_service_principal_name
+
+Found 1 error
+
+Exit code (musterr): 1

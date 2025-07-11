@@ -94,44 +94,6 @@ func TestRunAsForAllowedWithTargetOverride(t *testing.T) {
 	assert.Equal(t, ml.Experiment{Name: "experiment_one"}, b.Config.Resources.Experiments["experiment_one"].Experiment)
 }
 
-func TestRunAsErrorForPipelines(t *testing.T) {
-	b := load(t, "./run_as/not_allowed/pipelines")
-
-	ctx := context.Background()
-	bundle.ApplyFuncContext(ctx, b, func(ctx context.Context, b *bundle.Bundle) {
-		b.Config.Workspace.CurrentUser = &config.User{
-			User: &iam.User{
-				UserName: "jane@doe.com",
-			},
-		}
-	})
-
-	diags := bundle.Apply(ctx, b, resourcemutator.SetRunAs())
-	err := diags.Error()
-
-	assert.ErrorContains(t, err, "pipelines do not support a setting a run_as user that is different from the owner.\n"+
-		"Current identity: jane@doe.com. Run as identity: my_service_principal.\n"+
-		"See https://docs")
-}
-
-func TestRunAsNoErrorForPipelines(t *testing.T) {
-	b := load(t, "./run_as/not_allowed/pipelines")
-
-	// We should not error because the pipeline is being deployed with the same
-	// identity as the bundle run_as identity.
-	ctx := context.Background()
-	bundle.ApplyFuncContext(ctx, b, func(ctx context.Context, b *bundle.Bundle) {
-		b.Config.Workspace.CurrentUser = &config.User{
-			User: &iam.User{
-				UserName: "my_service_principal",
-			},
-		}
-	})
-
-	diags := bundle.Apply(ctx, b, resourcemutator.SetRunAs())
-	assert.NoError(t, diags.Error())
-}
-
 func TestRunAsErrorForModelServing(t *testing.T) {
 	b := load(t, "./run_as/not_allowed/model_serving")
 

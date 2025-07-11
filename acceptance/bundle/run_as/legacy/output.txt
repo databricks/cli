@@ -1,0 +1,7 @@
+Warning: You are using the legacy mode of run_as. The support for this mode is experimental and might be removed in a future release of the CLI. In order to run the DLT pipelines in your DAB as the run_as user this mode changes the owners of the pipelines to the run_as identity, which requires the user deploying the bundle to be a workspace admin, and also a Metastore admin if the pipeline target is in UC.
+  at experimental.use_legacy_run_as
+  in databricks.yml:8:22
+
+{
+  "service_principal_name": "my_service_principal"
+}

@@ -1,0 +1,14 @@
+Error: model_serving_endpoints do not support a setting a run_as user that is different from the owner.
+Current identity: [USERNAME]. Run as identity: my_user_name.
+See https://docs.databricks.com/dev-tools/bundles/run-as.html to learn more about the run_as property.
+  in databricks.yml:14:5
+
+Name: run_as
+Target: development
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/run_as/development
+
+Found 1 error
+
+Exit code (musterr): 1

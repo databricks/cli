@@ -1,0 +1,4 @@
+{
+  "service_principal_name": "",
+  "user_name": ""
+}
