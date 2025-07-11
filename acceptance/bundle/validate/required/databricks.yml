@@ -8,6 +8,10 @@ resources:
     foo:
       description: "hello"
 
+    # Empty string should not trigger a warning.
+    bar:
+      name: ""
+
   volumes:
     baz:
       name: "baz"
