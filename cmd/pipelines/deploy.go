@@ -1,9 +1,9 @@
 // Copied from cmd/bundle/deploy.go and adapted for pipelines use.
+// Consider if changes made here should be made to the bundle counterpart as well.
 package pipelines
 
 import (
 	"context"
-	"time"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/validate"
@@ -12,7 +12,6 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/sync"
-	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/spf13/cobra"
 )
 
@@ -59,45 +58,25 @@ func deployCommand() *cobra.Command {
 			}
 		}
 
-		t0 := time.Now()
 		phases.Initialize(ctx, b)
-		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
-			Key:   "phases.Initialize",
-			Value: time.Since(t0).Milliseconds(),
-		})
 
 		if logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}
 
-		t1 := time.Now()
 		bundle.ApplyContext(ctx, b, validate.FastValidate())
-		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
-			Key:   "validate.FastValidate",
-			Value: time.Since(t1).Milliseconds(),
-		})
 
 		if logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}
 
-		t2 := time.Now()
 		phases.Build(ctx, b)
-		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
-			Key:   "phases.Build",
-			Value: time.Since(t2).Milliseconds(),
-		})
 
 		if logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}
 
-		t3 := time.Now()
 		phases.Deploy(ctx, b, outputHandler)
-		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
-			Key:   "phases.Deploy",
-			Value: time.Since(t3).Milliseconds(),
-		})
 
 		if logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
