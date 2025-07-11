@@ -1,0 +1,6 @@
+bundle:
+  name: test-pipeline-run-flags
+resources:
+  pipelines:
+    my_pipeline:
+      name: test-pipeline-flags
