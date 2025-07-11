@@ -1,7 +1,7 @@
 
 >>> [CLI] bundle validate -t development -o json
 Warning: required field "entry_point" is not set
-  at resources.jobs.my_job.tasks[2].task_key
+  at resources.jobs.my_job.tasks[2].python_wheel_task
   in resources/my_job.yml:33:13
      override_job.yml:29:17
 
@@ -16,7 +16,7 @@ Warn: path ../src/file2.py is defined relative to the [TEST_TMP_DIR]/resources d
 
 >>> [CLI] bundle validate -t error
 Warning: required field "entry_point" is not set
-  at resources.jobs.my_job.tasks[2].job_cluster_key
+  at resources.jobs.my_job.tasks[2].python_wheel_task
   in resources/my_job.yml:33:13
 
 Error: notebook "resources/this value is overridden" not found. Local notebook references are expected

@@ -3,6 +3,7 @@ package validate
 import (
 	"context"
 	"fmt"
+	"slices"
 	"sort"
 
 	"github.com/databricks/cli/bundle"
@@ -46,6 +47,8 @@ func (f *required) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 			return nil
 		}
 
+		cloneP := slices.Clone(p)
+
 		fields := generated.RequiredFields[pattern.String()]
 		for _, field := range fields {
 			vv := v.Get(field)
@@ -54,7 +57,7 @@ func (f *required) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 					Severity:  diag.Warning,
 					Summary:   fmt.Sprintf("required field %q is not set", field),
 					Locations: v.Locations(),
-					Paths:     []dyn.Path{p},
+					Paths:     []dyn.Path{cloneP},
 				})
 			}
 		}
@@ -68,7 +71,7 @@ func (f *required) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 			return diags[i].Summary < diags[j].Summary
 		}
 
-		// Then sort by locations as a tie breaker if summaries are the same.
+		// Finally sort by locations as a tie breaker if summaries are the same.
 		iLocs := fmt.Sprintf("%v", diags[i].Locations)
 		jLocs := fmt.Sprintf("%v", diags[j].Locations)
 		return iLocs < jLocs
