@@ -142,6 +142,7 @@ func (r *ReplacementsContext) SetPathNoEval(old, new string) {
 func (r *ReplacementsContext) SetPathWithParents(old, new string) {
 	r.SetPath(old, new)
 	r.SetPath(filepath.Dir(old), new+"_PARENT")
+	r.SetPath(filepath.Dir(filepath.Dir(old)), new+"_GPARENT")
 }
 
 func PrepareReplacementsWorkspaceConfig(t testutil.TestingT, r *ReplacementsContext, cfg *config.Config) {
