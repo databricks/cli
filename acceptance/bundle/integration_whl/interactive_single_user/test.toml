@@ -1,0 +1,1 @@
+EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["terraform"]  # clusters resource; Message="The field 'node_type_id' cannot be supplied when an instance pool ID is provided."

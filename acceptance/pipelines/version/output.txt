@@ -1,0 +1,8 @@
+
+=== Testing pipelines --version
+>>> [PIPELINES] --version
+Pipelines CLI v[DEV_VERSION] (based on Databricks CLI v[DEV_VERSION])
+
+=== Testing pipelines version command
+>>> [PIPELINES] version
+Pipelines CLI v[DEV_VERSION] (based on Databricks CLI v[DEV_VERSION])
