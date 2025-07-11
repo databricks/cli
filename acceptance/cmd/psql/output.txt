@@ -1,4 +1,3 @@
-.COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC;.PY;.PYW;.CPL;.BAT
 
 === Test should use a fake psql command:
 >>> psql --version

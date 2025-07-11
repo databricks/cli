@@ -7,8 +7,6 @@ cleanup() {
 trap cleanup EXIT
 
 export PATH="$(pwd):$PATH"
-export PATHEXT="${PATHEXT};.BAT"
-echo $PATHEXT
 
 title "Test should use a fake psql command:"
 trace psql --version
