@@ -20,8 +20,7 @@ func Connect(ctx context.Context, databaseInstanceName string, extraArgs ...stri
 	// get user:
 	user, err := w.CurrentUser.Me(ctx)
 	if err != nil {
-		fmt.Println("Error getting current user: ", err)
-		return err
+		return fmt.Errorf("error getting current user: %w", err)
 	}
 
 	// get database:
@@ -29,9 +28,7 @@ func Connect(ctx context.Context, databaseInstanceName string, extraArgs ...stri
 		Name: databaseInstanceName,
 	})
 	if err != nil {
-		fmt.Println("Error getting Database Instance: ", err)
-		fmt.Println("Does the database instance exist?")
-		return err
+		return fmt.Errorf("error getting Database Instance. Please confirm that database instance %s exists: %w", databaseInstanceName, err)
 	}
 
 	fmt.Println("Database status: ", db.State)
