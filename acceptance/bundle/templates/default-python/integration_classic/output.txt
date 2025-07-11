@@ -219,8 +219,8 @@ Validation OK!
 +        "schema": "project_name_[UNIQUE_NAME]_prod"
        }
      }
-@@ -154,10 +140,10 @@
-   "targets": null,
+@@ -153,10 +139,10 @@
+   },
    "workspace": {
 -    "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/artifacts",
 -    "file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files",
@@ -378,8 +378,8 @@ Resources:
 +        "schema": "project_name_[UNIQUE_NAME]_prod",
          "url": "[DATABRICKS_URL]/pipelines/[UUID]"
        }
-@@ -158,10 +144,10 @@
-   "targets": null,
+@@ -157,10 +143,10 @@
+   },
    "workspace": {
 -    "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/artifacts",
 -    "file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files",
