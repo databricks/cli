@@ -1,0 +1,17 @@
+Badness = "The error message is not ideal: it reports a generic build failure or 'command not found' instead of a clear message that 'uv' is missing from the environment."
+
+Local = true
+Cloud = false
+
+Ignore = [
+    'output/fail_missing_uv',
+]
+
+# Replace the uv not found error for portability
+[[Repls]]
+Old = 'exec: "uv": executable file not found.*'
+New = 'exec: "uv": executable file not found in PATH'
+
+[[Repls]]
+Old = 'no such file or directory'
+New = 'exec: "uv": executable file not found in PATH'
