@@ -60,7 +60,7 @@ func BenchmarkValidateRequired10000(b *testing.B) {
 	benchmarkRequiredMutator(b, 10000)
 }
 
-// This benchmark took 98ms to run on 10th July 2025.l
+// This benchmark took 98ms to run on 10th July 2025.
 func BenchmarkValidateRequired1000(b *testing.B) {
 	benchmarkRequiredMutator(b, 1000)
 }
