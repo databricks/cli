@@ -1,5 +1,8 @@
 mv echo-arguments.sh psql
 chmod +x psql
+cp psql psql.sh
+chmod +x psql.sh
+chmod +x psql.bat
 
 cleanup() {
   rm psql
