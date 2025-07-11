@@ -1,0 +1,4 @@
+trace $CLI bundle init .
+
+trace cat hello.txt
+rm hello.txt
