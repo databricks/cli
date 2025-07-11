@@ -5,6 +5,18 @@ echo-arguments.sh was called with the following arguments: --version
 PGPASSWORD=
 PGSSLMODE=
 
+=== Command should require instance name:
+>>> musterr [CLI] psql
+Error: please specify exactly one database instance name: databricks psql [DATABASE_INSTANCE_NAME]
+
+Exit code (musterr): 1
+
+=== Command should require instance name even if extra arguments are provided:
+>>> musterr [CLI] psql -- --dbname=my-database
+Error: please specify exactly one database instance name: databricks psql [DATABASE_INSTANCE_NAME]
+
+Exit code (musterr): 1
+
 === Command should use default db name if it is not specified:
 >>> [CLI] psql my-database
 Connecting to Databricks Database Instance my-database ...

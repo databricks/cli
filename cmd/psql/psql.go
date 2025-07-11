@@ -36,8 +36,18 @@ You can pass additional arguments to psql after a double-dash (--):
 
 	cmd.PreRunE = mustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		if len(args) == 0 {
-			return errors.New("please specify a database instance name: databricks psql [DATABASE_INSTANCE_NAME]")
+		argsLenAtDash := cmd.ArgsLenAtDash()
+
+		// If -- was used, only count args before the dash
+		var argsBeforeDash int
+		if argsLenAtDash >= 0 {
+			argsBeforeDash = argsLenAtDash
+		} else {
+			argsBeforeDash = len(args)
+		}
+
+		if argsBeforeDash != 1 {
+			return errors.New("please specify exactly one database instance name: databricks psql [DATABASE_INSTANCE_NAME]")
 		}
 
 		databaseInstanceName := args[0]
