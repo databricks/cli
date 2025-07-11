@@ -10,6 +10,12 @@ export PATH="$(pwd):$PATH"
 title "Test should use a fake psql command:"
 trace psql --version
 
+title "Command should require instance name:"
+trace musterr $CLI psql
+
+title "Command should require instance name even if extra arguments are provided:"
+trace musterr $CLI psql -- --dbname=my-database
+
 title "Command should use default db name if it is not specified:"
 trace $CLI psql my-database
 
