@@ -1,5 +1,5 @@
 Warning: required field "entry_point" is not set
-  at resources.jobs.job1.tasks[0].job_cluster_key
+  at resources.jobs.job1.tasks[0].python_wheel_task
   in src/job1/databricks_job/resources/job1.yaml:16:17
 
 Building wheels...

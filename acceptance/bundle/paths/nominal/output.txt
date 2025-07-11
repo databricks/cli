@@ -1,38 +1,38 @@
 
 >>> [CLI] bundle validate -t development -o json
 Warning: required field "entry_point" is not set
-  at resources.jobs.my_job.tasks[4].task_key
+  at resources.jobs.my_job.tasks[4].python_wheel_task
   in resources/my_job.yml:33:13
      override_job.yml:29:17
 
 Warning: required field "inputs" is not set
-  at resources.jobs.my_job.tasks[1].for_each_task
+  at resources.jobs.my_job.tasks[1].job_cluster_key
   in resources/my_job.yml:47:13
      override_job.yml:45:17
 
 Warning: required field "inputs" is not set
-  at resources.jobs.my_job.tasks[2].for_each_task
+  at resources.jobs.my_job.tasks[2].task_key
   in resources/my_job.yml:53:13
      override_job.yml:51:17
 
 Warning: required field "task_key" is not set
-  at resources.jobs.my_job.tasks[1].for_each_task.task
+  at resources.jobs.my_job.tasks[1].job_cluster_key.task
   in resources/my_job.yml:48:15
      override_job.yml:46:19
 
 Warning: required field "task_key" is not set
-  at resources.jobs.my_job.tasks[2].for_each_task.task
+  at resources.jobs.my_job.tasks[2].task_key.task
   in resources/my_job.yml:54:15
      override_job.yml:52:19
 
 
 >>> [CLI] bundle validate -t error
 Warning: required field "entry_point" is not set
-  at resources.jobs.my_job.tasks[4].task_key
+  at resources.jobs.my_job.tasks[4].libraries
   in resources/my_job.yml:33:13
 
 Warning: required field "inputs" is not set
-  at resources.jobs.my_job.tasks[1].task_key
+  at resources.jobs.my_job.tasks[1].job_cluster_key
   in resources/my_job.yml:47:13
 
 Warning: required field "inputs" is not set
@@ -40,7 +40,7 @@ Warning: required field "inputs" is not set
   in resources/my_job.yml:53:13
 
 Warning: required field "task_key" is not set
-  at resources.jobs.my_job.tasks[1].task_key.task
+  at resources.jobs.my_job.tasks[1].job_cluster_key.task
   in resources/my_job.yml:48:15
 
 Warning: required field "task_key" is not set
