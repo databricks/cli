@@ -6,5 +6,5 @@ print_requests() {
 trace $PIPELINES deploy
 rm out.requests.txt
 title "Dry running pipeline, should have validate_only set to true"
-trace $PIPELINES dry-run my_pipeline
+trace $PIPELINES dry-run
 print_requests

@@ -7,5 +7,5 @@ trace $PIPELINES deploy
 rm out.requests.txt
 
 title "Dry running pipeline with --restart flag, should stop the current pipeline and start a new run"
-trace $PIPELINES dry-run my_pipeline --restart
+trace $PIPELINES dry-run --restart
 trace print_requests

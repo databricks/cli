@@ -1,5 +1,5 @@
 trace $PIPELINES deploy
 title "run pipeline"
-trace $PIPELINES run my_pipeline
+trace $PIPELINES run
 # This printf is here to fix the whitespace linter error (ensures exactly one newline at end)
 printf "<EOL>\n"
