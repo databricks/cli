@@ -1,4 +1,5 @@
 // Copied from cmd/bundle/deploy.go and adapted for pipelines use.
+// Consider if changes made here should be made to the bundle counterpart as well.
 package pipelines
 
 import (
@@ -22,9 +23,11 @@ func deployCommand() *cobra.Command {
 	}
 
 	var forceLock bool
+	var failOnActiveRuns bool
 	var autoApprove bool
 	var verbose bool
 	cmd.Flags().BoolVar(&forceLock, "force-lock", false, "Force acquisition of deployment lock.")
+	cmd.Flags().BoolVar(&failOnActiveRuns, "fail-on-active-runs", false, "Fail if there are running pipelines in the deployment.")
 	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip interactive approvals that might be required for deployment.")
 	cmd.Flags().BoolVar(&verbose, "verbose", false, "Enable verbose output.")
 	// Verbose flag currently only affects file sync output, it's used by the vscode extension
@@ -33,15 +36,19 @@ func deployCommand() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := logdiag.InitContext(cmd.Context())
 		cmd.SetContext(ctx)
-		b := utils.ConfigureBundleWithVariables(cmd)
 
-		if logdiag.HasError(ctx) {
+		b := utils.ConfigureBundleWithVariables(cmd)
+		if b == nil || logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}
 
 		bundle.ApplyFuncContext(ctx, b, func(context.Context, *bundle.Bundle) {
 			b.Config.Bundle.Deployment.Lock.Force = forceLock
 			b.AutoApprove = autoApprove
+
+			if cmd.Flag("fail-on-active-runs").Changed {
+				b.Config.Bundle.Deployment.FailOnActiveRuns = failOnActiveRuns
+			}
 		})
 
 		var outputHandler sync.OutputHandler
