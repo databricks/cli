@@ -1,13 +1,15 @@
 mv echo-arguments.sh psql
 chmod +x psql
-mv echo-arguments.bat psql.bat
+cp psql psql.sh
+chmod +x psql.sh
+chmod +x psql.bat
 
 cleanup() {
-  rm psql psql.bat
+  rm psql
 }
 trap cleanup EXIT
 
-#export PATH="$(pwd):$PATH"
+export PATH="$(pwd):$PATH"
 
 title "Test should use a fake psql command:"
 trace psql --version
