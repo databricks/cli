@@ -8,5 +8,5 @@ rm out.requests.txt
 
 title "Running pipeline with --restart flag"
 # Should stop the current pipeline and start a new update
-trace $PIPELINES run my_pipeline --restart
+trace $PIPELINES run --restart
 trace print_requests

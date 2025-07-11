@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
+	configresources "github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/run"
 	"github.com/databricks/cli/libs/cmdio"
@@ -32,14 +33,27 @@ func promptRunArgument(ctx context.Context, b *bundle.Bundle) (string, error) {
 // resolveRunArgument resolves the resource key to run.
 // It returns the remaining arguments to pass to the runner, if applicable.
 // Copied from cmd/bundle/run.go
+// When there is only one pipeline and no arguments, modified to auto-select the pipeline
 func resolveRunArgument(ctx context.Context, b *bundle.Bundle, args []string) (string, []string, error) {
-	// If no arguments are specified, prompt the user to select something to run.
-	if len(args) == 0 && cmdio.IsPromptSupported(ctx) {
-		key, err := promptRunArgument(ctx, b)
-		if err != nil {
-			return "", nil, err
+	// If no arguments are specified, check if we should auto-select (when only one pipeline) or prompt the user to select a resource to run.
+	if len(args) == 0 {
+		completions := resources.Completions(b, run.IsRunnable)
+
+		if len(completions) == 1 {
+			for key, ref := range completions {
+				if _, ok := ref.Resource.(*configresources.Pipeline); ok {
+					return key, args, nil
+				}
+			}
 		}
-		return key, args, nil
+
+		if cmdio.IsPromptSupported(ctx) {
+			key, err := promptRunArgument(ctx, b)
+			if err != nil {
+				return "", nil, err
+			}
+			return key, args, nil
+		}
 	}
 
 	if len(args) < 1 {
