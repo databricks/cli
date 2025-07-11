@@ -1,5 +1,10 @@
 
 >>> [CLI] bundle validate -t development -o json
+Warning: required field "entry_point" is not set
+  at resources.jobs.my_job.tasks[2].python_wheel_task
+  in resources/my_job.yml:33:13
+     override_job.yml:29:17
+
 Warn: path ../src/notebook.py is defined relative to the [TEST_TMP_DIR]/resources directory ([TEST_TMP_DIR]/override_job.yml:9:32). Please update the path to be relative to the file where it is defined. The current value will no longer be valid in the next release.
 Warn: path ../src/file.py is defined relative to the [TEST_TMP_DIR]/resources directory ([TEST_TMP_DIR]/override_job.yml:13:30). Please update the path to be relative to the file where it is defined. The current value will no longer be valid in the next release.
 Warn: path ../src/dbt_project is defined relative to the [TEST_TMP_DIR]/resources directory ([TEST_TMP_DIR]/override_job.yml:17:36). Please update the path to be relative to the file where it is defined. The current value will no longer be valid in the next release.
@@ -10,6 +15,10 @@ Warn: path ../src/notebook2.py is defined relative to the [TEST_TMP_DIR]/resourc
 Warn: path ../src/file2.py is defined relative to the [TEST_TMP_DIR]/resources directory ([TEST_TMP_DIR]/override_pipeline.yml:10:23). Please update the path to be relative to the file where it is defined. The current value will no longer be valid in the next release.
 
 >>> [CLI] bundle validate -t error
+Warning: required field "entry_point" is not set
+  at resources.jobs.my_job.tasks[2].python_wheel_task
+  in resources/my_job.yml:33:13
+
 Error: notebook "resources/this value is overridden" not found. Local notebook references are expected
 to contain one of the following file extensions: [.py, .r, .scala, .sql, .ipynb]
 
@@ -19,6 +28,6 @@ Workspace:
   User: [USERNAME]
   Path: /Workspace/Users/[USERNAME]/.bundle/fallback/error
 
-Found 1 error
+Found 1 error and 1 warning
 
 Exit code: 1
