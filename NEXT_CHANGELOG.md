@@ -7,6 +7,7 @@
 ### Dependency updates
 
 ### CLI
+* Added `databricks psql` command to connect to OLTP Databases ([#3128](https://github.com/databricks/cli/pull/3128))
 
 ### Bundles
 
