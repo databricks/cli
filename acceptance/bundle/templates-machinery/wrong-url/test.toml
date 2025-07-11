@@ -5,3 +5,11 @@ New = '/'
 [[Repls]]
 Old = '/world-[0-9]+'
 New = '/world-123456'
+
+[[Repls]]
+Old = '''Cloning into '[^']+''''
+New = '''Cloning into '(redacted)''''
+
+[[Repls]]
+Old = '''git clone https://invalid-domain-123.databricks.com/hello/world [^ ]+'''
+New = '''git clone https://invalid-domain-123.databricks.com/hello/world (redacted)'''

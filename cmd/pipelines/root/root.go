@@ -80,6 +80,7 @@ func New(ctx context.Context) *cobra.Command {
 	}
 
 	cmd.SetFlagErrorFunc(flagErrorFunc)
+	cmd.SetVersionTemplate("Pipelines CLI v{{.Version}} (based on Databricks CLI v{{.Version}})\n")
 	return cmd
 }
 
