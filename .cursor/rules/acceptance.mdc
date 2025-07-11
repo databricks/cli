@@ -1,6 +1,5 @@
 ---
 description: How to write, interpret, and run acceptance tests
-globs:
 alwaysApply: false
 ---
 All acceptance tests are in the `acceptance` directory.

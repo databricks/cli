@@ -1,7 +1,0 @@
-cd this_dab
-
-trace errcode $CLI bundle deploy 2>&1
-
-cd ..
-
-rm out.requests.txt

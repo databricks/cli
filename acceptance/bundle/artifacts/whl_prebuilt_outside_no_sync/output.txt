@@ -1,6 +1,0 @@
-
->>> errcode [CLI] bundle deploy
-Error: path [TEST_TMP_DIR]/other_dab/dist/*.whl is not contained in sync root path
-
-
-Exit code: 1
