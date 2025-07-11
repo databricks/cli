@@ -40,7 +40,7 @@ func (f *required) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 	}
 
 	err := dyn.WalkReadOnly(b.Config.Value(), func(p dyn.Path, v dyn.Value) error {
-		// If the path is not preset in the prefix tree, we do not need to validate any required
+		// If the path is not found in the prefix tree, we do not need to validate any required
 		// fields in it.
 		pattern, ok := trie.SearchPath(p)
 		if !ok {
