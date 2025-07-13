@@ -110,10 +110,9 @@ This will result in changed IDs and permanent URLs of the dashboards that will b
 		return true, nil
 	}
 
-	// TODO: debug only.
-	// if !cmdio.IsPromptSupported(ctx) {
-	return false, errors.New("the deployment requires destructive actions, but current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed")
-	// }
+	if !cmdio.IsPromptSupported(ctx) {
+		return false, errors.New("the deployment requires destructive actions, but current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed")
+	}
 
 	cmdio.LogString(ctx, "")
 	approved, err := cmdio.AskYesOrNo(ctx, "Would you like to proceed?")
@@ -213,7 +212,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	}
 
 	haveApproval, err := approvalForDeploy(ctx, b)
- 	if err != nil {
+	if err != nil {
 		logdiag.LogError(ctx, err)
 		return
 	}
