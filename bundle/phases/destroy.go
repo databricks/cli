@@ -13,8 +13,8 @@ import (
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/bundle/terranova"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
@@ -84,75 +84,80 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	return approved, nil
 }
 
-func destroyCore(ctx context.Context, b *bundle.Bundle) {
+func destroyCore(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	var diags diag.Diagnostics
+
 	if b.DirectDeployment {
-		bundle.ApplyContext(ctx, b, terranova.TerranovaApply())
+		diags = bundle.Apply(ctx, b, terranova.TerranovaApply())
 	} else {
 		// Core destructive mutators for destroy. These require informed user consent.
-		bundle.ApplyContext(ctx, b, terraform.Apply())
+		diags = bundle.Apply(ctx, b, terraform.Apply())
 	}
 
-	if logdiag.HasError(ctx) {
-		return
+	if diags.HasError() {
+		return diags
 	}
 
-	bundle.ApplyContext(ctx, b, files.Delete())
+	diags = diags.Extend(bundle.Apply(ctx, b, files.Delete()))
 
-	if !logdiag.HasError(ctx) {
+	if !diags.HasError() {
 		cmdio.LogString(ctx, "Destroy complete!")
 	}
+
+	return diags
 }
 
 // The destroy phase deletes artifacts and resources.
-func Destroy(ctx context.Context, b *bundle.Bundle) {
+func Destroy(ctx context.Context, b *bundle.Bundle) (diags diag.Diagnostics) {
 	log.Info(ctx, "Phase: destroy")
 
 	ok, err := assertRootPathExists(ctx, b)
 	if err != nil {
-		logdiag.LogError(ctx, err)
-		return
+		return diag.FromErr(err)
 	}
 
 	if !ok {
 		cmdio.LogString(ctx, "No active deployment found to destroy!")
-		return
+		return diags
 	}
 
-	bundle.ApplyContext(ctx, b, lock.Acquire())
-	if logdiag.HasError(ctx) {
-		return
+	diags = diags.Extend(bundle.Apply(ctx, b, lock.Acquire()))
+	if diags.HasError() {
+		return diags
 	}
 
 	defer func() {
-		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDestroy))
+		diags = diags.Extend(bundle.Apply(ctx, b, lock.Release(lock.GoalDestroy)))
 	}()
 
-	bundle.ApplyContext(ctx, b, statemgmt.StatePull())
-	if logdiag.HasError(ctx) {
-		return
+	diags = diags.Extend(bundle.Apply(ctx, b, statemgmt.StatePull()))
+	if diags.HasError() {
+		return diags
 	}
 
 	if !b.DirectDeployment {
-		bundle.ApplySeqContext(ctx, b,
+		diags = diags.Extend(bundle.ApplySeq(ctx, b,
 			terraform.Interpolate(),
 			terraform.Write(),
-			terraform.Plan(terraform.PlanGoal("destroy")),
-		)
+			terraform.PlanForDestroy(),
+		))
 	}
 
-	if logdiag.HasError(ctx) {
-		return
+	if diags.HasError() {
+		return diags
 	}
 
 	hasApproval, err := approvalForDestroy(ctx, b)
 	if err != nil {
-		logdiag.LogError(ctx, err)
-		return
+		diags = diags.Extend(diag.FromErr(err))
+		return diags
 	}
 
 	if hasApproval {
-		destroyCore(ctx, b)
+		diags = diags.Extend(destroyCore(ctx, b))
 	} else {
 		cmdio.LogString(ctx, "Destroy cancelled!")
 	}
+
+	return diags
 }

@@ -10,13 +10,13 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/deploy"
-	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deploy/metadata"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/metrics"
+	"github.com/databricks/cli/bundle/parallel"
 	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/bundle/scripts"
 	"github.com/databricks/cli/bundle/statemgmt"
@@ -110,9 +110,10 @@ This will result in changed IDs and permanent URLs of the dashboards that will b
 		return true, nil
 	}
 
-	if !cmdio.IsPromptSupported(ctx) {
-		return false, errors.New("the deployment requires destructive actions, but current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed")
-	}
+	// TODO: debug only.
+	// if !cmdio.IsPromptSupported(ctx) {
+	return false, errors.New("the deployment requires destructive actions, but current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed")
+	// }
 
 	cmdio.LogString(ctx, "")
 	approved, err := cmdio.AskYesOrNo(ctx, "Would you like to proceed?")
@@ -193,10 +194,6 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		libraries.SwitchToPatchedWheels(),
 		libraries.Upload(),
 		trampoline.TransformWheelTask(),
-		files.Upload(outputHandler),
-		deploy.StateUpdate(),
-		deploy.StatePush(),
-		permissions.ApplyWorkspaceRootPermissions(),
 		metrics.TrackUsedCompute(),
 	)
 
@@ -204,20 +201,19 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
-	if !b.DirectDeployment {
-		bundle.ApplySeqContext(ctx, b,
-			terraform.Interpolate(),
-			terraform.Write(),
-			terraform.Plan(terraform.PlanGoal("deploy")),
-		)
-	}
+	bundle.ApplySeqContext(ctx, b,
+		parallel.UploadAndPlan(outputHandler),
+		deploy.StateUpdate(),
+		deploy.StatePush(),
+		permissions.ApplyWorkspaceRootPermissions(),
+	)
 
 	if logdiag.HasError(ctx) {
 		return
 	}
 
 	haveApproval, err := approvalForDeploy(ctx, b)
-	if err != nil {
+ 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return
 	}
