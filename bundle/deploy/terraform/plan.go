@@ -2,6 +2,7 @@ package terraform
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 
@@ -48,12 +49,12 @@ func Plan(
 	goal PlanGoal,
 ) (deployplan.Plan, error) {
 	if tf == nil {
-		return deployplan.Plan{}, fmt.Errorf("terraform not initialized")
+		return deployplan.Plan{}, errors.New("terraform not initialized")
 	}
 
 	err := tf.Init(ctx, tfexec.Upgrade(true))
 	if err != nil {
-		return deployplan.Plan{}, fmt.Errorf("terraform init: %v", err)
+		return deployplan.Plan{}, fmt.Errorf("terraform init: %w", err)
 	}
 
 	planPath := filepath.Join(tfDir, "plan")
@@ -61,7 +62,7 @@ func Plan(
 
 	notEmpty, err := tf.Plan(ctx, tfexec.Destroy(destroy), tfexec.Out(planPath))
 	if err != nil {
-		return deployplan.Plan{}, fmt.Errorf("terraform plan: %v", err)
+		return deployplan.Plan{}, fmt.Errorf("terraform plan: %w", err)
 	}
 
 	log.Debugf(ctx, "Planning complete and persisted at %s\n", planPath)
