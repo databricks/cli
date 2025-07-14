@@ -2075,6 +2075,26 @@
                 }
               ]
             },
+            "config.Script": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "content": {
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "content"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "config.Sync": {
               "oneOf": [
                 {
@@ -8255,6 +8275,20 @@
                   }
                 ]
               },
+              "config.Script": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": {
+                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Script"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "config.Target": {
                 "oneOf": [
                   {
@@ -8955,6 +8989,9 @@
       "description": "The identity to use when running Databricks Asset Bundles workflows.",
       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobRunAs",
       "markdownDescription": "The identity to use when running Databricks Asset Bundles workflows. See [link](https://docs.databricks.com/dev-tools/bundles/run-as.html)."
+    },
+    "scripts": {
+      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.Script"
     },
     "sync": {
       "description": "The files and file paths to include or exclude in the bundle.",

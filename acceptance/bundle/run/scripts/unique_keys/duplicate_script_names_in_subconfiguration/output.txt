@@ -1,0 +1,21 @@
+
+>>> [CLI] bundle validate
+Error: multiple resources or scripts have been defined with the same key: foo
+  at scripts.foo
+  in script1.yml:3:5
+     script2.yml:3:5
+
+Name: test
+
+Found 1 error
+
+Exit code: 1
+
+>>> [CLI] bundle run foo
+Error: multiple resources or scripts have been defined with the same key: foo
+  at scripts.foo
+  in script1.yml:3:5
+     script2.yml:3:5
+
+
+Exit code: 1

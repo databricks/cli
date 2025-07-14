@@ -1,0 +1,9 @@
+{
+    "properties": {
+        "s": {
+            "type": "string",
+            "description": "An input string",
+            "default": "AbCd0123😀"
+        }
+    }
+}

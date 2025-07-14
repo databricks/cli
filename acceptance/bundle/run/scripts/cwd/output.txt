@@ -1,0 +1,5 @@
+
+>>> cd a/b/c
+
+>>> [CLI] bundle run foo
+[TEST_TMP_DIR]

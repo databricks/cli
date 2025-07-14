@@ -1,0 +1,25 @@
+
+>>> [CLI] repos create https://github.com/databricks/databricks-empty-ide-project.git gitHub --path /Repos/me@databricks.com/test-repo
+
+=== Get by id should work
+>>> [CLI] repos get 1 -o json
+{
+  "branch":"main",
+  "id":1,
+  "path":"/Repos/me@databricks.com/test-repo",
+  "provider":"gitHub",
+  "url":"https://github.com/databricks/databricks-empty-ide-project.git"
+}
+
+=== Get by path should work
+>>> [CLI] repos get /Repos/me@databricks.com/test-repo -o json
+{
+  "branch":"main",
+  "id":1,
+  "path":"/Repos/me@databricks.com/test-repo",
+  "provider":"gitHub",
+  "url":"https://github.com/databricks/databricks-empty-ide-project.git"
+}
+
+=== Delete by id should work
+>>> [CLI] repos delete 1
