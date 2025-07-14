@@ -11,10 +11,8 @@ import (
 )
 
 type ResourceSqlWarehouse struct {
-	client       *databricks.WorkspaceClient
-	config       sql.CreateWarehouseRequest
-	createWaiter *sql.WaitGetWarehouseRunning[sql.CreateWarehouseResponse]
-	updateWaiter *sql.WaitGetWarehouseRunning[struct{}]
+	client *databricks.WorkspaceClient
+	config sql.CreateWarehouseRequest
 }
 
 func NewResourceSqlWarehouse(client *databricks.WorkspaceClient, resource *resources.SqlWarehouse) (*ResourceSqlWarehouse, error) {
@@ -34,7 +32,6 @@ func (r *ResourceSqlWarehouse) DoCreate(ctx context.Context) (string, error) {
 		return "", SDKError{Method: "Warehouses.Create", Err: err}
 	}
 
-	r.createWaiter = waiter
 	return waiter.Id, nil
 }
 
@@ -50,7 +47,6 @@ func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, oldID string) (stri
 	if err != nil {
 		return "", SDKError{Method: "Warehouses.Edit", Err: err}
 	}
-	r.updateWaiter = waiter
 	return waiter.Id, nil
 }
 

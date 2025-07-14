@@ -10,7 +10,7 @@ Workspace:
   User: [USERNAME]
   Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle-$UNIQUE_NAME/default
 Resources:
-  Sql Warehouses:
+  SQL Warehouses:
     sql_warehouse1:
       Name: DEFAULT Test SQL Warehouse
       URL:  [DATABRICKS_URL]/sql/warehouses/[SQL-WAREHOUSE-ID]?o=[NUMID]
@@ -25,7 +25,7 @@ Workspace:
   User: [USERNAME]
   Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle-$UNIQUE_NAME/default
 Resources:
-  Sql Warehouses:
+  SQL Warehouses:
     sql_warehouse1:
       Name: DEFAULT Test SQL Warehouse
       URL:  (not deployed)

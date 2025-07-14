@@ -30,7 +30,7 @@ Workspace:
   User: [USERNAME]
   Path: /Workspace/Users/[USERNAME]/.bundle/test_sql_warehouse/default
 Resources:
-  Sql Warehouses:
+  SQL Warehouses:
     test_sql_warehouse:
       Name: sql_warehouse_name
       URL:  (not deployed)
@@ -65,7 +65,7 @@ Workspace:
   User: [USERNAME]
   Path: /Workspace/Users/[USERNAME]/.bundle/test_sql_warehouse/default
 Resources:
-  Sql Warehouses:
+  SQL Warehouses:
     test_sql_warehouse:
       Name: sql_warehouse_name
       URL:  [DATABRICKS_URL]/sql/warehouses/[UUID]?o=[NUMID]
@@ -103,7 +103,7 @@ Workspace:
   User: [USERNAME]
   Path: /Workspace/Users/[USERNAME]/.bundle/test_sql_warehouse/default
 Resources:
-  Sql Warehouses:
+  SQL Warehouses:
     test_sql_warehouse:
       Name: sql_warehouse_name_2
       URL:  [DATABRICKS_URL]/sql/warehouses/[UUID]?o=[NUMID]
@@ -132,7 +132,7 @@ Workspace:
   User: [USERNAME]
   Path: /Workspace/Users/[USERNAME]/.bundle/test_sql_warehouse/default
 Resources:
-  Sql Warehouses:
+  SQL Warehouses:
     test_sql_warehouse:
       Name: sql_warehouse_name_2
       URL:  (not deployed)

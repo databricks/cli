@@ -52,7 +52,7 @@ func (*SqlWarehouse) ResourceDescription() ResourceDescription {
 		SingularName:  "sql_warehouse",
 		PluralName:    "sql_warehouses",
 		SingularTitle: "Sql Warehouse",
-		PluralTitle:   "Sql Warehouses",
+		PluralTitle:   "SQL Warehouses",
 	}
 }
 

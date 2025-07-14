@@ -120,15 +120,6 @@ github.com/databricks/cli/bundle/config/resources.Dashboard:
       If you use the UI to modify the dashboard, modifications made through the UI are not applied to the dashboard JSON file in the local bundle unless you explicitly update it using `bundle generate`. You can use the `--watch` option to continuously poll and retrieve changes to the dashboard. See [_](/dev-tools/cli/bundle-commands.md#generate).
 
       In addition, if you attempt to deploy a bundle that contains a dashboard JSON file that is different than the one in the remote workspace, an error will occur. To force the deploy and overwrite the dashboard in the remote workspace with the local one, use the `--force` option. See [_](/dev-tools/cli/bundle-commands.md#deploy).
-  "embed_credentials":
-    "description": |-
-      PLACEHOLDER
-  "file_path":
-    "description": |-
-      PLACEHOLDER
-  "permissions":
-    "description": |-
-      PLACEHOLDER
   "create_time":
     "description": |-
       PLACEHOLDER
@@ -138,7 +129,13 @@ github.com/databricks/cli/bundle/config/resources.Dashboard:
   "display_name":
     "description": |-
       PLACEHOLDER
+  "embed_credentials":
+    "description": |-
+      PLACEHOLDER
   "etag":
+    "description": |-
+      PLACEHOLDER
+  "file_path":
     "description": |-
       PLACEHOLDER
   "lifecycle_state":
@@ -148,6 +145,9 @@ github.com/databricks/cli/bundle/config/resources.Dashboard:
     "description": |-
       PLACEHOLDER
   "path":
+    "description": |-
+      PLACEHOLDER
+  "permissions":
     "description": |-
       PLACEHOLDER
   "serialized_dashboard":

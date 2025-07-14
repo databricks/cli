@@ -228,7 +228,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 
 	// Apps: No presets
 
-	// Sql Warehouses: Prefix, Tags
+	// SQL Warehouses: Prefix, Tags
 	for _, w := range r.SqlWarehouses {
 		if w == nil {
 			continue

@@ -412,7 +412,7 @@ func addDefaultHandlers(server *testserver.Server) {
 		return testserver.MapDelete(req.Workspace, req.Workspace.Volumes, req.Vars["full_name"])
 	})
 
-	// Sql Warehouses:
+	// SQL Warehouses:
 	server.Handle("GET", "/api/2.0/sql/warehouses/{warehouse_id}", func(req testserver.Request) any {
 		return testserver.MapGet(req.Workspace, req.Workspace.SqlWarehouses, req.Vars["warehouse_id"])
 	})
