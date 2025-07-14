@@ -7,7 +7,7 @@
 ### Dependency updates
 
 ### CLI
-* Added `databricks psql` command, that allows to connect to OLTP Databases with a single command ([#3128](https://github.com/databricks/cli/pull/3128))
+* Add `databricks psql` command to connect to Lakebase with a single command ([#3128](https://github.com/databricks/cli/pull/3128))
 
 ### Bundles
 
