@@ -7,7 +7,7 @@
 ### Dependency updates
 
 ### CLI
-* Show "DEFAULT" as the default profile for `databricks auth login` [#3251](https://github.com/databricks/cli/pull/3251)
+* Show "DEFAULT" as the default profile for `databricks auth login` [#3252](https://github.com/databricks/cli/pull/3252)
 
 ### Bundles
 
