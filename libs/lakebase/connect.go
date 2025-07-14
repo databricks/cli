@@ -40,16 +40,14 @@ func Connect(ctx context.Context, databaseInstanceName string, extraArgs ...stri
 		RequestId:     uuid.NewString(),
 	})
 	if err != nil {
-		fmt.Println("Error getting database credentials: ", err)
-		return err
+		return fmt.Errorf("error getting database credentials: %w", err)
 	}
 	fmt.Println("Successfully fetched database credentials")
 
 	// Get current working directory
 	dir, err := os.Getwd()
 	if err != nil {
-		fmt.Printf("Error getting working directory: %v\n", err)
-		return err
+		return fmt.Errorf("error getting working directory: %w", err)
 	}
 
 	// Check if database name and port are already specified in extra arguments
