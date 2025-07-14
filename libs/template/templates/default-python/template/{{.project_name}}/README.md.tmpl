@@ -25,7 +25,7 @@ Dependencies for this project should be installed using UV:
 *  Run `uv sync --dev` to install the project's dependencies.
 {{- end}}
 
-# Using this project with the Databricks CLI
+# Using this project using the CLI
 
 The Databricks workspace and IDE extensions provide a graphical interface for working
 with this project. It's also possible to interact with it directly using the CLI:
@@ -60,4 +60,9 @@ with this project. It's also possible to interact with it directly using the CLI
 4. To run a job or pipeline, use the "run" command:
    ```
    $ databricks bundle run
+   ```
+
+5. Finally, to run tests locally, use `pytest`:
+   ```
+   $ uv run pytest
    ```
