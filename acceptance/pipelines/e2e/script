@@ -10,6 +10,16 @@ trace $PIPELINES deploy
 title "Run pipeline"
 trace $PIPELINES run my_project_pipeline
 
+title "Edit project by creating and running a new second pipeline"
+cat <<EOF > my_project_pipeline/my_project_pipeline_2.pipeline.yml
+resources:
+  pipelines:
+    my_project_pipeline_2:
+      name: my_project_pipeline_2
+EOF
+trace $PIPELINES deploy
+trace $PIPELINES run my_project_pipeline_2
+
 title "Destroy pipeline"
 trace $PIPELINES destroy --auto-approve
 

@@ -22,10 +22,22 @@ Deployment complete!
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
 
+=== Edit project by creating and running a new second pipeline
+>>> [PIPELINES] deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_project/dev/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [PIPELINES] run my_project_pipeline_2
+Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
+
+
 === Destroy pipeline
 >>> [PIPELINES] destroy --auto-approve
 The following resources will be deleted:
   delete pipeline my_project_pipeline
+  delete pipeline my_project_pipeline_2
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/my_project/dev
 
