@@ -33,9 +33,9 @@
     "sys.path.append(\"../src\")\n",
     "from {{.project_name}} import main\n",
     "\n",
-    "main.get_taxis(spark).show(10)"
+    "main.get_taxis().show(10)"
    {{else}}
-    "spark.range(10)"
+    "spark.read.table(\"samples.nyctaxi.trips\")"
    {{end -}}
    ]
   }
