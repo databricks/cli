@@ -1,12 +1,13 @@
-from utilities import utils
 from databricks.sdk.runtime import spark
+from pyspark.sql import DataFrame
 
 
-# This sample module is executed using a job as defined in resources/{{.project_name}}.job.yml.
+def find_all_taxis() -> DataFrame:
+    return spark.read.table("samples.nyctaxi.trips")
 
 
 def main():
-    utils.find_all_taxis().show(5)
+    find_all_taxis().show(5)
 
 
 if __name__ == "__main__":
