@@ -1,8 +1,18 @@
 
 === Debug: run psql.bat as is:
+>>> echo /tmp/TestAcceptLocalcmdpsql[NUMID]/001
+/tmp/TestAcceptLocalcmdpsql[NUMID]/001
+
 >>> ./psql.bat --dbname=test --echo-all
-echo-arguments.sh was called with the following arguments: --dbname=test --echo-all
-PGSSLMODE=
+
+[TEST_TMP_DIR]>echo "Hello, World!" 
+"Hello, World!"
+
+[TEST_TMP_DIR]>REM This script runs psql command bypassing all its arguments to it and exits 
+
+[TEST_TMP_DIR]>REM Test script renames this file to psql.bat in order to capture the arguments that the CLI passes to psql command on Windows 
+
+[TEST_TMP_DIR]>REM bash "./psql.sh" --dbname=test --echo-all 
 
 === Test should use a fake psql command:
 >>> psql --version
@@ -28,8 +38,15 @@ Database status:  RUNNING
 Database postgres version:  14
 Successfully fetched database credentials
 Launching psql with connection to my-database.my-host.com...
-echo-arguments.sh was called with the following arguments: --host=my-database.my-host.com --username=[USERNAME] --port=5432 --dbname=databricks_postgres
-PGSSLMODE=require
+
+[TEST_TMP_DIR]>echo "Hello, World!" 
+"Hello, World!"
+
+[TEST_TMP_DIR]>REM This script runs psql command bypassing all its arguments to it and exits 
+
+[TEST_TMP_DIR]>REM Test script renames this file to psql.bat in order to capture the arguments that the CLI passes to psql command on Windows 
+
+[TEST_TMP_DIR]>REM bash "./psql.sh" --host=my-database.my-host.com --username=[USERNAME] --port=5432 --dbname=databricks_postgres 
 
 === Command should by-pass extra arguments to psql:
 >>> [CLI] psql my-database -- -c SELECT * FROM my_table --echo-all
@@ -38,8 +55,15 @@ Database status:  RUNNING
 Database postgres version:  14
 Successfully fetched database credentials
 Launching psql with connection to my-database.my-host.com...
-echo-arguments.sh was called with the following arguments: --host=my-database.my-host.com --username=[USERNAME] --port=5432 --dbname=databricks_postgres -c SELECT * FROM my_table --echo-all
-PGSSLMODE=require
+
+[TEST_TMP_DIR]>echo "Hello, World!" 
+"Hello, World!"
+
+[TEST_TMP_DIR]>REM This script runs psql command bypassing all its arguments to it and exits 
+
+[TEST_TMP_DIR]>REM Test script renames this file to psql.bat in order to capture the arguments that the CLI passes to psql command on Windows 
+
+[TEST_TMP_DIR]>REM bash "./psql.sh" --host=my-database.my-host.com --username=[USERNAME] --port=5432 --dbname=databricks_postgres -c "SELECT * FROM my_table" --echo-all 
 
 === Command should use the db name from extra arguments when specified:
 >>> [CLI] psql my-database -- --dbname=db1
@@ -48,8 +72,15 @@ Database status:  RUNNING
 Database postgres version:  14
 Successfully fetched database credentials
 Launching psql with connection to my-database.my-host.com...
-echo-arguments.sh was called with the following arguments: --host=my-database.my-host.com --username=[USERNAME] --port=5432 --dbname=db1
-PGSSLMODE=require
+
+[TEST_TMP_DIR]>echo "Hello, World!" 
+"Hello, World!"
+
+[TEST_TMP_DIR]>REM This script runs psql command bypassing all its arguments to it and exits 
+
+[TEST_TMP_DIR]>REM Test script renames this file to psql.bat in order to capture the arguments that the CLI passes to psql command on Windows 
+
+[TEST_TMP_DIR]>REM bash "./psql.sh" --host=my-database.my-host.com --username=[USERNAME] --port=5432 --dbname=db1 
 
 >>> [CLI] psql my-database -- -d db2
 Connecting to Databricks Database Instance my-database ...
@@ -57,8 +88,15 @@ Database status:  RUNNING
 Database postgres version:  14
 Successfully fetched database credentials
 Launching psql with connection to my-database.my-host.com...
-echo-arguments.sh was called with the following arguments: --host=my-database.my-host.com --username=[USERNAME] --port=5432 -d db2
-PGSSLMODE=require
+
+[TEST_TMP_DIR]>echo "Hello, World!" 
+"Hello, World!"
+
+[TEST_TMP_DIR]>REM This script runs psql command bypassing all its arguments to it and exits 
+
+[TEST_TMP_DIR]>REM Test script renames this file to psql.bat in order to capture the arguments that the CLI passes to psql command on Windows 
+
+[TEST_TMP_DIR]>REM bash "./psql.sh" --host=my-database.my-host.com --username=[USERNAME] --port=5432 -d db2 
 
 === Command should use the port from extra arguments when specified:
 >>> [CLI] psql my-database -- --dbname=db1 -p 3000
@@ -67,8 +105,15 @@ Database status:  RUNNING
 Database postgres version:  14
 Successfully fetched database credentials
 Launching psql with connection to my-database.my-host.com...
-echo-arguments.sh was called with the following arguments: --host=my-database.my-host.com --username=[USERNAME] --dbname=db1 -p 3000
-PGSSLMODE=require
+
+[TEST_TMP_DIR]>echo "Hello, World!" 
+"Hello, World!"
+
+[TEST_TMP_DIR]>REM This script runs psql command bypassing all its arguments to it and exits 
+
+[TEST_TMP_DIR]>REM Test script renames this file to psql.bat in order to capture the arguments that the CLI passes to psql command on Windows 
+
+[TEST_TMP_DIR]>REM bash "./psql.sh" --host=my-database.my-host.com --username=[USERNAME] --dbname=db1 -p 3000 
 
 >>> [CLI] psql my-database -- -d db2 --port=3001
 Connecting to Databricks Database Instance my-database ...
@@ -76,5 +121,12 @@ Database status:  RUNNING
 Database postgres version:  14
 Successfully fetched database credentials
 Launching psql with connection to my-database.my-host.com...
-echo-arguments.sh was called with the following arguments: --host=my-database.my-host.com --username=[USERNAME] -d db2 --port=3001
-PGSSLMODE=require
+
+[TEST_TMP_DIR]>echo "Hello, World!" 
+"Hello, World!"
+
+[TEST_TMP_DIR]>REM This script runs psql command bypassing all its arguments to it and exits 
+
+[TEST_TMP_DIR]>REM Test script renames this file to psql.bat in order to capture the arguments that the CLI passes to psql command on Windows 
+
+[TEST_TMP_DIR]>REM bash "./psql.sh" --host=my-database.my-host.com --username=[USERNAME] -d db2 --port=3001 

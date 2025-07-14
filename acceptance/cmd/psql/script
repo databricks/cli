@@ -9,6 +9,7 @@ trap cleanup EXIT
 export PATH="$(pwd):$PATH"
 
 title "Debug: run psql.bat as is:"
+trace echo $(pwd)
 trace ./psql.bat --dbname=test --echo-all
 
 title "Test should use a fake psql command:"
