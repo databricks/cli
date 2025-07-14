@@ -1,4 +1,5 @@
 export username=$($CLI current-user me | jq -r .userName)
+export MSYS_NO_PATHCONV=1
 title "upload lock file"
 trace $CLI workspace import /Workspace/Users/$username/.bundle/test-pipeline-force-lock/default/state/deploy.lock --format AUTO --file ./deploy.lock
 
