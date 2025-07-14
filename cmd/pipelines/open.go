@@ -1,6 +1,6 @@
-// Copied to cmd/pipelines/open.go and adapted for pipelines use.
-// Consider if changes made here should be made to the pipelines counterpart as well.
-package bundle
+// Copied from cmd/bundle/open.go and adapted for pipelines use.
+// Consider if changes made here should be made to the bundle counterpart as well.
+package pipelines
 
 import (
 	"context"
@@ -33,7 +33,7 @@ func promptOpenArgument(ctx context.Context, b *bundle.Bundle) (string, error) {
 		inv[title] = k
 	}
 
-	key, err := cmdio.Select(ctx, inv, "Resource to open")
+	key, err := cmdio.Select(ctx, inv, "Pipeline to open")
 	if err != nil {
 		return "", err
 	}
@@ -48,16 +48,16 @@ func resolveOpenArgument(ctx context.Context, b *bundle.Bundle, args []string) (
 	}
 
 	if len(args) < 1 {
-		return "", errors.New("expected a KEY of the resource to open")
+		return "", errors.New("expected a KEY of the pipeline to open")
 	}
 
 	return args[0], nil
 }
 
-func newOpenCommand() *cobra.Command {
+func openCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "open",
-		Short: "Open a resource in the browser",
+		Short: "Open a pipeline in the browser",
 		Args:  root.MaximumNArgs(1),
 	}
 
@@ -126,7 +126,7 @@ func newOpenCommand() *cobra.Command {
 		// Confirm that the resource has a URL.
 		url := ref.Resource.GetURL()
 		if url == "" {
-			return errors.New("resource does not have a URL associated with it (has it been deployed?)")
+			return errors.New("pipeline does not have a URL associated with it (has it been deployed?)")
 		}
 
 		cmdio.LogString(ctx, "Opening browser at "+url)
