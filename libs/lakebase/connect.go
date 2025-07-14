@@ -32,8 +32,8 @@ func Connect(ctx context.Context, databaseInstanceName string, extraArgs ...stri
 		return fmt.Errorf("error getting Database Instance. Please confirm that database instance %s exists: %w", databaseInstanceName, err)
 	}
 
-	cmdio.LogString(ctx, fmt.Sprintf("Database status: %s", db.State))
-	cmdio.LogString(ctx, fmt.Sprintf("Database postgres version: %s", db.PgVersion))
+	cmdio.LogString(ctx, fmt.Sprintf("Database instance status: %s", db.State))
+	cmdio.LogString(ctx, fmt.Sprintf("Postgres version: %s", db.PgVersion))
 
 	// get credentials:
 	cred, err := w.Database.GenerateDatabaseCredential(ctx, database.GenerateDatabaseCredentialRequest{
