@@ -1,4 +1,9 @@
 
+=== Debug: run psql.bat as is:
+>>> ./psql.bat --dbname=test --echo-all
+echo-arguments.sh was called with the following arguments: --dbname=test --echo-all
+PGSSLMODE=
+
 === Test should use a fake psql command:
 >>> psql --version
 echo-arguments.sh was called with the following arguments: --version

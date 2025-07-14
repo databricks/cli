@@ -2,7 +2,9 @@ Local = true
 Cloud = false
 
 [GOOS]
-  windows = false
+  darwin = false
+  linux = false
+  windows = true
 
 [EnvMatrix]
   DATABRICKS_CLI_DEPLOYMENT = ["terraform", "direct-exp"]

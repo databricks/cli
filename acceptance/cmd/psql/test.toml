@@ -1,9 +1,8 @@
-# This acceptance test is disabled on Windows runners because
-# the current argument capturing method does not work on windows-latest GitHub Runner.
-#
-# See PR #3228 for documented attempts to fix this issue:
-# https://github.com/databricks/cli/pull/3228
-GOOS.windows = false
+# This is a branch that only runs windows tests
+# TODO: If this PR fixes the issue, this flags need to be removed before merging to main
+GOOS.windows = true
+GOOS.linux = false
+GOOS.darwin = false
 
 [[Server]]
 Pattern = "GET /api/2.0/database/instances/my-database"

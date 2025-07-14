@@ -1,12 +1,15 @@
 mv echo-arguments.sh psql
-chmod +x psql
+cp psql psql.sh
 
 cleanup() {
-  rm psql
+  rm psql psql.sh
 }
 trap cleanup EXIT
 
 export PATH="$(pwd):$PATH"
+
+title "Debug: run psql.bat as is:"
+trace ./psql.bat --dbname=test --echo-all
 
 title "Test should use a fake psql command:"
 trace psql --version
