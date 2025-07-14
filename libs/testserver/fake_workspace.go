@@ -194,7 +194,7 @@ func (s *FakeWorkspace) WorkspaceDelete(path string, recursive bool) {
 	}
 }
 
-func (s *FakeWorkspace) WorkspaceFilesImportFile(filePath string, body []byte) {
+func (s *FakeWorkspace) WorkspaceFilesImportFile(filePath string, body []byte, overwrite bool) Response {
 	if !strings.HasPrefix(filePath, "/") {
 		filePath = "/" + filePath
 	}
@@ -202,6 +202,15 @@ func (s *FakeWorkspace) WorkspaceFilesImportFile(filePath string, body []byte) {
 	defer s.LockUnlock()()
 
 	workspacePath := filePath
+
+	if !overwrite {
+		if _, exists := s.files[workspacePath]; exists {
+			return Response{
+				StatusCode: 409,
+				Body:       map[string]string{"message": fmt.Sprintf("Path (%s) already exists.", workspacePath)},
+			}
+		}
+	}
 
 	// Note: Files with .py, .scala, .r or .sql extension can
 	// be notebooks if they contain a magical "Databricks notebook source"
@@ -235,6 +244,8 @@ func (s *FakeWorkspace) WorkspaceFilesImportFile(filePath string, body []byte) {
 	for dir := path.Dir(workspacePath); dir != "/"; dir = path.Dir(dir) {
 		s.directories[dir] = true
 	}
+
+	return Response{}
 }
 
 func (s *FakeWorkspace) WorkspaceFilesExportFile(path string) []byte {
