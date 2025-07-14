@@ -1,0 +1,17 @@
+title "E2E Test: Complete pipeline lifecycle (init, deploy, run, destroy)"
+
+title "Initialize pipeline project"
+trace $PIPELINES init --output-dir output
+
+title "Deploy pipeline"
+cd output/my_project
+trace $PIPELINES deploy
+
+title "Run pipeline"
+trace $PIPELINES run my_project_pipeline
+
+title "Destroy pipeline"
+trace $PIPELINES destroy --auto-approve
+
+# Do not affect this repository's git behaviour
+mv .gitignore out.gitignore

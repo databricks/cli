@@ -1,0 +1,33 @@
+
+=== E2E Test: Complete pipeline lifecycle (init, deploy, run, destroy)
+=== Initialize pipeline project
+>>> [PIPELINES] init --output-dir output
+
+Welcome to the template for pipelines!
+
+
+Your new project has been created in the 'my_project' directory!
+
+Refer to the README.md file for "getting started" instructions!
+
+=== Deploy pipeline
+>>> [PIPELINES] deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_project/dev/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Run pipeline
+>>> [PIPELINES] run my_project_pipeline
+Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
+
+
+=== Destroy pipeline
+>>> [PIPELINES] destroy --auto-approve
+The following resources will be deleted:
+  delete pipeline my_project_pipeline
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/my_project/dev
+
+Deleting files...
+Destroy complete!
