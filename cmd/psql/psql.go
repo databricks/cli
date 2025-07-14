@@ -16,7 +16,6 @@ func newLakebaseConnectCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "psql [DATABASE_INSTANCE_NAME] [-- PSQL_ARGS...]",
 		Short:   "Connect to the specified Database Instance",
-		Args:    cobra.MinimumNArgs(0),
 		GroupID: "database",
 		Long: `Connect to the specified Database Instance.
 
