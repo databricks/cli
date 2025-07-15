@@ -32,13 +32,7 @@ You can pass additional arguments to psql after a double-dash (--):
 `,
 	}
 
-	// Wrapper for [root.MustWorkspaceClient] that disables loading authentication configuration from a bundle.
-	mustWorkspaceClient := func(cmd *cobra.Command, args []string) error {
-		cmd.SetContext(root.SkipLoadBundle(cmd.Context()))
-		return root.MustWorkspaceClient(cmd, args)
-	}
-
-	cmd.PreRunE = mustWorkspaceClient
+	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
@@ -81,6 +75,27 @@ You can pass additional arguments to psql after a double-dash (--):
 		extraArgs := args[1:]
 
 		return lakebase.Connect(cmd.Context(), databaseInstanceName, extraArgs...)
+	}
+
+	cmd.ValidArgsFunction = func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		err := root.MustWorkspaceClient(cmd, args)
+		if err != nil {
+			return nil, cobra.ShellCompDirectiveError
+		}
+
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+		instances, err := w.Database.ListDatabaseInstancesAll(ctx, database.ListDatabaseInstancesRequest{})
+		if err != nil {
+			return nil, cobra.ShellCompDirectiveError
+		}
+
+		var names []string
+		for _, instance := range instances {
+			names = append(names, instance.Name)
+		}
+
+		return names, cobra.ShellCompDirectiveNoFileComp
 	}
 
 	return cmd
