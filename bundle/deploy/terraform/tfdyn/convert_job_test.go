@@ -149,3 +149,94 @@ func TestConvertJob(t *testing.T) {
 		},
 	}, out.Permissions["job_my_job"])
 }
+
+func TestConvertJobApplyPolicyDefaultValues(t *testing.T) {
+	src := resources.Job{
+		JobSettings: jobs.JobSettings{
+			Name: "my job",
+			JobClusters: []jobs.JobCluster{
+				{
+					JobClusterKey: "key",
+					NewCluster: compute.ClusterSpec{
+						ApplyPolicyDefaultValues: true,
+						PolicyId:                 "policy_id",
+						GcpAttributes: &compute.GcpAttributes{
+							Availability:  "SPOT",
+							LocalSsdCount: 2,
+						},
+					},
+				},
+				{
+					JobClusterKey: "key2",
+					NewCluster: compute.ClusterSpec{
+						ApplyPolicyDefaultValues: true,
+						PolicyId:                 "policy_id2",
+						CustomTags: map[string]string{
+							"key": "value",
+						},
+						SparkConf: map[string]string{
+							"key": "value",
+						},
+						SparkEnvVars: map[string]string{
+							"key": "value",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	vin, err := convert.FromTyped(src, dyn.NilValue)
+	require.NoError(t, err)
+
+	ctx := context.Background()
+	out := schema.NewResources()
+	err = jobConverter{}.Convert(ctx, "my_job", vin, out)
+	require.NoError(t, err)
+
+	assert.Equal(t, map[string]any{
+		"name": "my job",
+		"job_cluster": []any{
+			map[string]any{
+				"job_cluster_key": "key",
+				"new_cluster": map[string]any{
+					"__apply_policy_default_values_allow_list": []any{
+						"apply_policy_default_values",
+						"gcp_attributes.availability",
+						"gcp_attributes.local_ssd_count",
+						"policy_id",
+					},
+					"apply_policy_default_values": true,
+					"policy_id":                   "policy_id",
+					"gcp_attributes": map[string]any{
+						"availability":    "SPOT",
+						"local_ssd_count": int64(2),
+					},
+				},
+			},
+			map[string]any{
+				"job_cluster_key": "key2",
+				"new_cluster": map[string]any{
+					"__apply_policy_default_values_allow_list": []any{
+						"apply_policy_default_values",
+						"custom_tags",
+						"policy_id",
+						"spark_conf",
+						"spark_env_vars",
+					},
+					"apply_policy_default_values": true,
+					"policy_id":                   "policy_id2",
+					"custom_tags": map[string]any{
+						"key": "value",
+					},
+					"spark_conf": map[string]any{
+						"key": "value",
+					},
+					"spark_env_vars": map[string]any{
+						"key": "value",
+					},
+				},
+			},
+		},
+	}, out.Job["my_job"])
+}
