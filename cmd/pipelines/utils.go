@@ -12,8 +12,8 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 )
 
-// promptRunArgument prompts the user to select a resource to run.
 // Copied from cmd/bundle/run.go
+// promptRunArgument prompts the user to select a resource to run.
 func promptRunArgument(ctx context.Context, b *bundle.Bundle) (string, error) {
 	// Compute map of "Human readable name of resource" -> "resource key".
 	inv := make(map[string]string)
@@ -30,6 +30,7 @@ func promptRunArgument(ctx context.Context, b *bundle.Bundle) (string, error) {
 	return key, nil
 }
 
+// Copied from cmd/bundle/run.go
 // resolveRunArgument resolves the resource key to run.
 // It returns the remaining arguments to pass to the runner, if applicable.
 // Copied from cmd/bundle/run.go
@@ -63,8 +64,8 @@ func resolveRunArgument(ctx context.Context, b *bundle.Bundle, args []string) (s
 	return args[0], args[1:], nil
 }
 
-// keyToRunner converts a resource key to a runner.
 // Copied from cmd/bundle/run.go
+// keyToRunner converts a resource key to a runner.
 func keyToRunner(b *bundle.Bundle, arg string) (run.Runner, error) {
 	// Locate the resource to run.
 	ref, err := resources.Lookup(b, arg, run.IsRunnable)
