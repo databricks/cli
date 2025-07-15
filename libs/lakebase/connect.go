@@ -33,7 +33,7 @@ func Connect(ctx context.Context, databaseInstanceName string, extraArgs ...stri
 	}
 
 	cmdio.LogString(ctx, fmt.Sprintf("Database instance status: %s", db.State))
-	cmdio.LogString(ctx, fmt.Sprintf("Postgres version: %s", db.PgVersion))
+	cmdio.LogString(ctx, "Postgres version: "+db.PgVersion)
 
 	// get credentials:
 	cred, err := w.Database.GenerateDatabaseCredential(ctx, database.GenerateDatabaseCredentialRequest{
