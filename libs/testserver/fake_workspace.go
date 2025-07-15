@@ -207,7 +207,7 @@ func (s *FakeWorkspace) WorkspaceFilesImportFile(filePath string, body []byte, o
 		if _, exists := s.files[workspacePath]; exists {
 			return Response{
 				StatusCode: 409,
-				Body:       map[string]string{"message": fmt.Sprintf("Path (%s) already exists.", workspacePath)},
+				Body:       map[string]string{"message": fmt.Sprintf("File already exists at (%s).", workspacePath)},
 			}
 		}
 	}
