@@ -22,7 +22,7 @@ func promptRunArgument(ctx context.Context, b *bundle.Bundle) (string, error) {
 		inv[title] = k
 	}
 
-	key, err := cmdio.Select(ctx, inv, "Resource to run")
+	key, err := cmdio.Select(ctx, inv, "Pipeline to run")
 	if err != nil {
 		return "", err
 	}
