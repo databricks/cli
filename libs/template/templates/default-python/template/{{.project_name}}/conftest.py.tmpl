@@ -14,9 +14,7 @@ try:
     from pyspark.sql import SparkSession
     import pytest
 except ImportError:
-    raise ImportError(
-        "Test dependencies not found.\n\nRun tests using 'uv run pytest'. See http://docs.astral.sh/uv to learn move about uv."
-    )
+    raise ImportError("Test dependencies not found.\n\nRun tests using 'uv run pytest'. See http://docs.astral.sh/uv to learn more about uv.")
 
 
 def add_all_resources_to_sys_path():
@@ -29,9 +27,7 @@ def add_all_resources_to_sys_path():
         for py in resource.rglob("*.py"):
             mod = ".".join(py.relative_to(resource).with_suffix("").parts)
             if mod in seen:
-                raise ImportError(
-                    f"Duplicate module '{mod}' found:\n  {seen[mod]}\n  {py}"
-                )
+                raise ImportError(f"Duplicate module '{mod}' found:\n  {seen[mod]}\n  {py}")
             seen[mod] = py
 
 
