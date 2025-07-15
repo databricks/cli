@@ -5,8 +5,13 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== run pipeline
+=== Run pipeline
 >>> [PIPELINES] run
+Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
+
+
+=== Run pipeline with KEY, expect same output as without KEY
+>>> [PIPELINES] run my_pipeline
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
 <EOL>
