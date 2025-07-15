@@ -1,6 +1,5 @@
-from my_default_python.main import get_taxis, get_spark
+from my_default_python import main
 
-
-def test_main():
-    taxis = get_taxis(get_spark())
+def test_find_all_taxis():
+    taxis = main.find_all_taxis()
     assert taxis.count() > 5
