@@ -182,6 +182,13 @@ func TestConvertJobApplyPolicyDefaultValues(t *testing.T) {
 						},
 					},
 				},
+				{
+					JobClusterKey: "key3",
+					NewCluster: compute.ClusterSpec{
+						ApplyPolicyDefaultValues: true,
+						SparkVersion:             "16.4.x-scala2.12",
+					},
+				},
 			},
 		},
 	}
@@ -235,6 +242,13 @@ func TestConvertJobApplyPolicyDefaultValues(t *testing.T) {
 					"spark_env_vars": map[string]any{
 						"key": "value",
 					},
+				},
+			},
+			map[string]any{
+				"job_cluster_key": "key3",
+				"new_cluster": map[string]any{
+					"apply_policy_default_values": true,
+					"spark_version":               "16.4.x-scala2.12",
 				},
 			},
 		},

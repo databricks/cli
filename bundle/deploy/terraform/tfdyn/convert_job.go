@@ -15,7 +15,13 @@ import (
 )
 
 func patchApplyPolicyDefaultValues(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
+	// If the field "apply_policy_default_values" is not set, do nothing.
 	if b, ok := v.Get("apply_policy_default_values").AsBool(); !ok || !b {
+		return v, nil
+	}
+
+	// If the field "policy_id" is not set, do nothing.
+	if _, ok := v.Get("policy_id").AsString(); !ok {
 		return v, nil
 	}
 
