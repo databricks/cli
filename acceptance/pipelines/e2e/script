@@ -18,9 +18,14 @@ resources:
       name: my_project_pipeline_2
 EOF
 trace $PIPELINES deploy
+
+title "Assert the second pipeline is created"
+PIPELINE_ID=$($CLI bundle summary -o json | jq -r '.resources.pipelines.my_project_pipeline_2.id')
+trace $CLI pipelines get "${PIPELINE_ID}"
+
 trace $PIPELINES run my_project_pipeline_2
 
-title "Destroy pipeline"
+title "Destroy project"
 trace $PIPELINES destroy --auto-approve
 
 # Do not affect this repository's git behaviour

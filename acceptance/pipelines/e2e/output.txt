@@ -29,11 +29,34 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
+=== Assert the second pipeline is created
+>>> [CLI] pipelines get [UUID]
+{
+  "creator_user_name":"[USERNAME]",
+  "last_modified":[UNIX_TIME_MILLIS],
+  "name":"[dev [USERNAME]] my_project_pipeline_2",
+  "pipeline_id":"[UUID]",
+  "run_as_user_name":"[USERNAME]",
+  "spec": {
+    "channel":"CURRENT",
+    "deployment": {
+      "kind":"BUNDLE",
+      "metadata_file_path":"/Workspace/Users/[USERNAME]/.bundle/my_project/dev/state/metadata.json"
+    },
+    "development":true,
+    "edition":"ADVANCED",
+    "id":"[UUID]",
+    "name":"[dev [USERNAME]] my_project_pipeline_2",
+    "storage":"dbfs:/pipelines/[UUID]"
+  },
+  "state":"IDLE"
+}
+
 >>> [PIPELINES] run my_project_pipeline_2
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
 
-=== Destroy pipeline
+=== Destroy project
 >>> [PIPELINES] destroy --auto-approve
 The following resources will be deleted:
   delete pipeline my_project_pipeline
