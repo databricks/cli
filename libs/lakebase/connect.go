@@ -92,9 +92,15 @@ func Connect(ctx context.Context, databaseInstanceName string, extraArgs ...stri
 	cmdio.LogString(ctx, fmt.Sprintf("Launching psql with connection to %s...", db.ReadWriteDns))
 
 	// Execute psql command inline
-	return exec.Execv(exec.ExecvOptions{
+	err = exec.Execv(exec.ExecvOptions{
 		Args: args,
 		Env:  cmdEnv,
 		Dir:  dir,
 	})
+	if err != nil {
+		fmt.Printf("Error running psql: %v\n", err)
+		return err
+	}
+
+	return nil
 }
