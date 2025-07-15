@@ -2,7 +2,6 @@ package tnresources
 
 import (
 	"context"
-	"reflect"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
@@ -55,7 +54,7 @@ func (r *ResourceApp) DoUpdate(ctx context.Context, id string) (string, error) {
 	return response.Name, nil
 }
 
-func (r *ResourceApp) DoDelete(ctx context.Context, id string) error {
+func DeleteApp(ctx context.Context, client *databricks.WorkspaceClient, id string) error {
 	// TODO: implement app deletion
 	return nil
 }
@@ -73,10 +72,4 @@ func (r *ResourceApp) WaitAfterUpdate(ctx context.Context) error {
 func (r *ResourceApp) ClassifyChanges(changes []structdiff.Change) deployplan.ActionType {
 	// TODO: changing name is recreation
 	return deployplan.ActionTypeUpdate
-}
-
-var appType = reflect.TypeOf(ResourceApp{}.config)
-
-func (r *ResourceApp) GetType() reflect.Type {
-	return appType
 }

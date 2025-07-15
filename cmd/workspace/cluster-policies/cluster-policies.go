@@ -85,7 +85,6 @@ func newCreate() *cobra.Command {
 	var createReq compute.CreatePolicy
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.Definition, "definition", createReq.Definition, `Policy definition document expressed in [Databricks Cluster Policy Definition Language](https://docs.databricks.com/administration-guide/clusters/policy-definition.html).`)
@@ -161,7 +160,6 @@ func newDelete() *cobra.Command {
 	var deleteReq compute.DeletePolicy
 	var deleteJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "delete POLICY_ID"
@@ -258,7 +256,6 @@ func newEdit() *cobra.Command {
 	var editReq compute.EditPolicy
 	var editJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&editJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&editReq.Definition, "definition", editReq.Definition, `Policy definition document expressed in [Databricks Cluster Policy Definition Language](https://docs.databricks.com/administration-guide/clusters/policy-definition.html).`)
@@ -362,8 +359,6 @@ func newGet() *cobra.Command {
 
 	var getReq compute.GetClusterPolicyRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get POLICY_ID"
 	cmd.Short = `Get a cluster policy.`
 	cmd.Long = `Get a cluster policy.
@@ -432,8 +427,6 @@ func newGetPermissionLevels() *cobra.Command {
 
 	var getPermissionLevelsReq compute.GetClusterPolicyPermissionLevelsRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get-permission-levels CLUSTER_POLICY_ID"
 	cmd.Short = `Get cluster policy permission levels.`
 	cmd.Long = `Get cluster policy permission levels.
@@ -501,8 +494,6 @@ func newGetPermissions() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getPermissionsReq compute.GetClusterPolicyPermissionsRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get-permissions CLUSTER_POLICY_ID"
 	cmd.Short = `Get cluster policy permissions.`
@@ -573,8 +564,6 @@ func newList() *cobra.Command {
 
 	var listReq compute.ListClusterPoliciesRequest
 
-	// TODO: short flags
-
 	cmd.Flags().Var(&listReq.SortColumn, "sort-column", `The cluster policy attribute to sort by. Supported values: [POLICY_CREATION_TIME, POLICY_NAME]`)
 	cmd.Flags().Var(&listReq.SortOrder, "sort-order", `The order in which the policies get listed. Supported values: [ASC, DESC]`)
 
@@ -627,7 +616,6 @@ func newSetPermissions() *cobra.Command {
 	var setPermissionsReq compute.ClusterPolicyPermissionsRequest
 	var setPermissionsJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&setPermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: access_control_list
@@ -715,7 +703,6 @@ func newUpdatePermissions() *cobra.Command {
 	var updatePermissionsReq compute.ClusterPolicyPermissionsRequest
 	var updatePermissionsJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updatePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: access_control_list

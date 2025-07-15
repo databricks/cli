@@ -63,7 +63,6 @@ func newCreate() *cobra.Command {
 	var createReq sql.CreateAlertRequest
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: alert
@@ -133,8 +132,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq sql.TrashAlertRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete ID"
 	cmd.Short = `Delete an alert.`
 	cmd.Long = `Delete an alert.
@@ -202,8 +199,6 @@ func newGet() *cobra.Command {
 
 	var getReq sql.GetAlertRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get ID"
 	cmd.Short = `Get an alert.`
 	cmd.Long = `Get an alert.
@@ -269,8 +264,6 @@ func newList() *cobra.Command {
 
 	var listReq sql.ListAlertsRequest
 
-	// TODO: short flags
-
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)
 
@@ -325,7 +318,6 @@ func newUpdate() *cobra.Command {
 	var updateReq sql.UpdateAlertRequest
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: alert

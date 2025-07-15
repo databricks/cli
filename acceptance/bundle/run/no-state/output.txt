@@ -1,0 +1,4 @@
+Error: no deployment state. Did you forget to run 'databricks bundle deploy'?
+
+
+Exit code (musterr): 1

@@ -1,0 +1,47 @@
+cd app
+
+# We first run the command with different entry point which starts unblocking script
+# so we don't need to start it in background. It will install the dependencies as part of the command
+trace $CLI apps run-local --prepare-environment --entry-point test.yml 2>&1 | grep -w "Hello, world"
+
+# Get 3 unique ports sequentially to avoid conflicts
+PORTS=$(allocate_ports.py 3 | tr -d '\r')
+
+# Read ports into array
+PORTS_ARR=($(echo "$PORTS"))
+PORT="${PORTS_ARR[0]}"
+DEBUG_PORT="${PORTS_ARR[1]}"
+PROXY_PORT="${PORTS_ARR[2]}"
+
+title "Starting the app in background..."
+trace $CLI apps run-local --prepare-environment --debug --port "$PROXY_PORT" --debug-port "$DEBUG_PORT" --app-port "$PORT" > ../out.run.txt 2>&1 &
+PID=$!
+# Ensure background process is killed on script exit
+trap '(kill $PID >/dev/null 2>&1) 2>/dev/null || true' EXIT
+cd ..
+
+title Waiting for the app to start...
+# Use a loop to check for the startup message instead of tail/sed which can be unreliable on Windows
+# due to file locking, buffering issues, and different text processing behavior across Windows versions.
+# A simple grep loop is more robust across platforms.
+while [ -z "$(grep -o "Server is running on port " out.run.txt 2>/dev/null)" ]; do
+    sleep 1
+done
+
+title "Checking app is running..."
+trace curl -s -o - http://127.0.0.1:$PROXY_PORT | grep -w "Hello From App"
+
+title "Sending shutdown request..."
+trace curl -s -o /dev/null  http://127.0.0.1:$PROXY_PORT/shutdown || true
+
+# We need to wait for the app to shutdown before we can exit the test meaning wait until the
+# server is closed. We need to poll because the server is closed asynchronously.
+while [ -z "$(grep -o "Server closed" out.run.txt 2>/dev/null)" ]; do
+    sleep 1
+done
+
+# Wait for the background process to actually terminate
+wait $PID 2>/dev/null || true
+echo "Process terminated"
+
+rm out.run.txt

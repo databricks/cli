@@ -1,0 +1,23 @@
+[[Repls]]
+Old = '\\\\'
+New = '/'
+
+[[Server]]
+Pattern = "GET /api/2.0/workspace/get-status"
+Response.Body = '''
+{
+  "object_type": "DASHBOARD",
+  "resource_id": "f00dcafe"
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.0/lakeview/dashboards/f00dcafe"
+Response.Body = '''
+{
+  "dashboard_id": "f00dcafe",
+  "display_name": "This is a test dashboard",
+  "warehouse_id": "w4r3h0us3",
+  "serialized_dashboard": "{\"pages\":[{\"displayName\":\"New Page\",\"layout\":[],\"name\":\"12345678\"}]}"
+}
+'''

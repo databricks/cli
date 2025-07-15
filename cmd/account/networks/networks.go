@@ -59,7 +59,6 @@ func newCreate() *cobra.Command {
 	var createReq provisioning.CreateNetworkRequest
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: gcp_network_info
@@ -147,8 +146,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq provisioning.DeleteNetworkRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete NETWORK_ID"
 	cmd.Short = `Delete a network configuration.`
 	cmd.Long = `Delete a network configuration.
@@ -221,8 +218,6 @@ func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getReq provisioning.GetNetworkRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get NETWORK_ID"
 	cmd.Short = `Get a network configuration.`

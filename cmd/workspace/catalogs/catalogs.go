@@ -66,7 +66,6 @@ func newCreate() *cobra.Command {
 	var createReq catalog.CreateCatalog
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided free-form text description.`)
@@ -155,8 +154,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq catalog.DeleteCatalogRequest
 
-	// TODO: short flags
-
 	cmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `Force deletion even if the catalog is not empty.`)
 
 	cmd.Use = "delete NAME"
@@ -215,8 +212,6 @@ func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getReq catalog.GetCatalogRequest
-
-	// TODO: short flags
 
 	cmd.Flags().BoolVar(&getReq.IncludeBrowse, "include-browse", getReq.IncludeBrowse, `Whether to include catalogs in the response for which the principal can only access selective metadata for.`)
 
@@ -278,8 +273,6 @@ func newList() *cobra.Command {
 
 	var listReq catalog.ListCatalogsRequest
 
-	// TODO: short flags
-
 	cmd.Flags().BoolVar(&listReq.IncludeBrowse, "include-browse", listReq.IncludeBrowse, `Whether to include catalogs in the response for which the principal can only access selective metadata for.`)
 	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of catalogs to return.`)
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
@@ -337,7 +330,6 @@ func newUpdate() *cobra.Command {
 	var updateReq catalog.UpdateCatalog
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `User-provided free-form text description.`)

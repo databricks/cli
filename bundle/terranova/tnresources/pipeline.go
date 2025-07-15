@@ -2,7 +2,6 @@ package tnresources
 
 import (
 	"context"
-	"reflect"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
@@ -50,8 +49,8 @@ func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string) (string, err
 	return id, nil
 }
 
-func (r *ResourcePipeline) DoDelete(ctx context.Context, id string) error {
-	err := r.client.Pipelines.DeleteByPipelineId(ctx, id)
+func DeletePipeline(ctx context.Context, client *databricks.WorkspaceClient, id string) error {
+	err := client.Pipelines.DeleteByPipelineId(ctx, id)
 	if err != nil {
 		return SDKError{Method: "Pipelines.DeleteByPipelineId", Err: err}
 	}
@@ -73,10 +72,4 @@ func (r *ResourcePipeline) WaitAfterUpdate(ctx context.Context) error {
 
 func (r *ResourcePipeline) ClassifyChanges(changes []structdiff.Change) deployplan.ActionType {
 	return deployplan.ActionTypeUpdate
-}
-
-var pipelineType = reflect.TypeOf(ResourcePipeline{}.config)
-
-func (r *ResourcePipeline) GetType() reflect.Type {
-	return pipelineType
 }

@@ -67,7 +67,6 @@ func newCreate() *cobra.Command {
 	var createReq sql.CreateQueryVisualizationsLegacyRequest
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "create"
@@ -136,8 +135,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq sql.DeleteQueryVisualizationsLegacyRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete ID"
 	cmd.Short = `Remove visualization.`
 	cmd.Long = `Remove visualization.
@@ -200,7 +197,6 @@ func newUpdate() *cobra.Command {
 	var updateReq sql.LegacyVisualization
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "update ID"

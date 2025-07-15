@@ -88,8 +88,10 @@ func TestInitializeURLs(t *testing.T) {
 				Dashboards: map[string]*resources.Dashboard{
 					"dashboard1": {
 						ID: "01ef8d56871e1d50ae30ce7375e42478",
-						Dashboard: dashboards.Dashboard{
-							DisplayName: "My special dashboard",
+						DashboardConfig: resources.DashboardConfig{
+							Dashboard: dashboards.Dashboard{
+								DisplayName: "My special dashboard",
+							},
 						},
 					},
 				},

@@ -68,7 +68,6 @@ func newCreate() *cobra.Command {
 	var createReq sql.QueryPostContent
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "create"
@@ -145,8 +144,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq sql.DeleteQueriesLegacyRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete QUERY_ID"
 	cmd.Short = `Delete a query.`
 	cmd.Long = `Delete a query.
@@ -219,8 +216,6 @@ func newGet() *cobra.Command {
 
 	var getReq sql.GetQueriesLegacyRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get QUERY_ID"
 	cmd.Short = `Get a query definition.`
 	cmd.Long = `Get a query definition.
@@ -292,8 +287,6 @@ func newList() *cobra.Command {
 
 	var listReq sql.ListQueriesLegacyRequest
 
-	// TODO: short flags
-
 	cmd.Flags().StringVar(&listReq.Order, "order", listReq.Order, `Name of query attribute to order by.`)
 	cmd.Flags().IntVar(&listReq.Page, "page", listReq.Page, `Page number to retrieve.`)
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Number of queries to return per page.`)
@@ -355,8 +348,6 @@ func newRestore() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var restoreReq sql.RestoreQueriesLegacyRequest
-
-	// TODO: short flags
 
 	cmd.Use = "restore QUERY_ID"
 	cmd.Short = `Restore a query.`
@@ -430,7 +421,6 @@ func newUpdate() *cobra.Command {
 	var updateReq sql.QueryEditContent
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateReq.DataSourceId, "data-source-id", updateReq.DataSourceId, `Data source ID maps to the ID of the data source used by the resource and is distinct from the warehouse ID.`)

@@ -1,0 +1,16 @@
+envsubst < $TESTDIR/../input.json.tmpl > input.json
+trace $CLI bundle init default-python --config-file ./input.json
+
+cd ./X*
+trace yamlcheck.py
+trace $CLI bundle validate -t dev
+trace $CLI bundle validate -t prod
+
+trace $TESTDIR/../check_output.py $CLI bundle deploy -t dev
+trace $CLI bundle destroy -t dev --auto-approve 2>&1 | tail -n 2
+
+trace $TESTDIR/../check_output.py $CLI bundle deploy -t prod
+trace $CLI bundle destroy -t prod --auto-approve 2>&1 | tail -n 2
+
+cd ..
+rm -fr X*

@@ -194,8 +194,8 @@ func TestSetTempDirEnvVarsForWindowsWithoutAnyTempDirEnvVarsSet(t *testing.T) {
 	err := setTempDirEnvVars(context.Background(), env, b)
 	require.NoError(t, err)
 
-	// assert TMP is set to b.CacheDir("tmp")
-	tmpDir, err := b.CacheDir(context.Background(), "tmp")
+	// assert TMP is set to b.LocalStateDir("tmp")
+	tmpDir, err := b.LocalStateDir(context.Background(), "tmp")
 	require.NoError(t, err)
 	assert.Equal(t, map[string]string{
 		"TMP": tmpDir,
@@ -285,6 +285,29 @@ func TestInheritEnvVars(t *testing.T) {
 		assert.Equal(t, "/tmp/config.tfrc", env["TF_CLI_CONFIG_FILE"])
 		assert.Equal(t, "/tmp/foo/bar", env["AZURE_CONFIG_DIR"])
 	}
+}
+
+func TestInheritOIDCTokenEnvCustom(t *testing.T) {
+	t.Setenv("DATABRICKS_OIDC_TOKEN_ENV", "custom_DATABRICKS_OIDC_TOKEN")
+	t.Setenv("custom_DATABRICKS_OIDC_TOKEN", "foobar")
+
+	ctx := context.Background()
+	env := map[string]string{}
+	err := inheritEnvVars(ctx, env)
+	require.NoError(t, err)
+	assert.Equal(t, "foobar", env["custom_DATABRICKS_OIDC_TOKEN"])
+	assert.Equal(t, "custom_DATABRICKS_OIDC_TOKEN", env["DATABRICKS_OIDC_TOKEN_ENV"])
+}
+
+func TestInheritOIDCTokenEnv(t *testing.T) {
+	t.Setenv("DATABRICKS_OIDC_TOKEN", "foobar")
+
+	ctx := context.Background()
+	env := map[string]string{}
+	err := inheritEnvVars(ctx, env)
+	require.NoError(t, err)
+	assert.Equal(t, "foobar", env["DATABRICKS_OIDC_TOKEN"])
+	assert.Equal(t, "", env["DATABRICKS_OIDC_TOKEN_ENV"])
 }
 
 func TestSetUserProfileFromInheritEnvVars(t *testing.T) {
@@ -433,7 +456,7 @@ func TestFindExecPath_UseExistingBinary(t *testing.T) {
 	}
 
 	// Create a pre-existing Terraform binary to avoid downloading it
-	cacheDir, _ := b.CacheDir(ctx, "bin")
+	cacheDir, _ := b.LocalStateDir(ctx, "bin")
 	createFakeTerraformBinary(t, cacheDir, "1.2.3")
 
 	// Verify that the pre-existing Terraform binary is used.

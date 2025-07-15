@@ -31,6 +31,6 @@ trace $CLI bundle deploy
 
 trace $CLI bundle summary -o json | jq -r '{experiment_id: .resources.experiments.experiment.id, model_id: .resources.models.model.id, inference_job_id: .resources.jobs.batch_inference_job.id, training_job_id: .resources.jobs.model_training_job.id}'
 
-title "Assert the batch inference job actually exists"
+title "Assert the batch inference job actually exists\n"
 JOB_ID=$($CLI bundle summary -o json | jq -r '.resources.jobs.batch_inference_job.id')
 $CLI jobs get "${JOB_ID}" | jq '{name: .settings.name}'

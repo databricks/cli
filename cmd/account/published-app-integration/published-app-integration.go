@@ -59,7 +59,6 @@ func newCreate() *cobra.Command {
 	var createReq oauth2.CreatePublishedAppIntegration
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.AppId, "app-id", createReq.AppId, `App id of the OAuth published app integration.`)
@@ -132,8 +131,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq oauth2.DeletePublishedAppIntegrationRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete INTEGRATION_ID"
 	cmd.Short = `Delete Published OAuth App Integration.`
 	cmd.Long = `Delete Published OAuth App Integration.
@@ -188,8 +185,6 @@ func newGet() *cobra.Command {
 
 	var getReq oauth2.GetPublishedAppIntegrationRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get INTEGRATION_ID"
 	cmd.Short = `Get OAuth Published App Integration.`
 	cmd.Long = `Get OAuth Published App Integration.
@@ -242,8 +237,6 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq oauth2.ListPublishedAppIntegrationsRequest
-
-	// TODO: short flags
 
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)
@@ -298,7 +291,6 @@ func newUpdate() *cobra.Command {
 	var updateReq oauth2.UpdatePublishedAppIntegration
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: token_access_policy

@@ -1,0 +1,8 @@
+Local = true
+Cloud = true
+
+[EnvMatrix]
+  DATABRICKS_CLI_DEPLOYMENT = ["terraform", "direct-exp"]
+  DLT = ["yes", "no"]
+  NBOOK = ["yes", "no"]
+  PY = ["yes", "no"]

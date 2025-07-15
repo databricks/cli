@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/cli/libs/logdiag"
 	"golang.org/x/sync/errgroup"
 
 	"gopkg.in/yaml.v3"
@@ -22,7 +23,6 @@ type uploadConfig struct {
 }
 
 func (u *uploadConfig) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	var diags diag.SafeDiagnostics
 	errGroup, ctx := errgroup.WithContext(ctx)
 
 	for key, app := range b.Config.Resources.Apps {
@@ -45,7 +45,7 @@ func (u *uploadConfig) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 			errGroup.Go(func() error {
 				err := f.Write(ctx, path.Join(appPath, "app.yml"), buf, filer.OverwriteIfExists)
 				if err != nil {
-					diags.Append(diag.Diagnostic{
+					logdiag.LogDiag(ctx, diag.Diagnostic{
 						Severity:  diag.Error,
 						Summary:   "Failed to save config",
 						Detail:    fmt.Sprintf("Failed to write %s file: %s", path.Join(app.SourceCodePath, "app.yml"), err),
@@ -58,10 +58,10 @@ func (u *uploadConfig) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	}
 
 	if err := errGroup.Wait(); err != nil {
-		diags.AppendError(err)
+		logdiag.LogError(ctx, err)
 	}
 
-	return diags.Diags
+	return nil
 }
 
 // Name implements bundle.Mutator.

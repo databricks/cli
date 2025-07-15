@@ -65,7 +65,7 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().BoolVar(&createSkipWait, "no-wait", createSkipWait, `do not wait to reach ACTIVE state`)
 	cmd.Flags().DurationVar(&createTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach ACTIVE state`)
-	// TODO: short flags
+
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.Table.Name, "name", createReq.Table.Name, `Full three-part (catalog, schema, table) name of the table.`)
@@ -149,8 +149,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq catalog.DeleteOnlineTableRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete NAME"
 	cmd.Short = `Delete an Online Table.`
 	cmd.Long = `Delete an Online Table.
@@ -208,8 +206,6 @@ func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getReq catalog.GetOnlineTableRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get NAME"
 	cmd.Short = `Get an Online Table.`

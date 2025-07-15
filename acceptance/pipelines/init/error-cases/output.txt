@@ -1,0 +1,22 @@
+
+=== Test with missing config file
+>>> errcode [PIPELINES] init --output-dir output
+
+Welcome to the template for pipelines!
+
+
+Your new project has been created in the 'my_project' directory!
+
+Refer to the README.md file for "getting started" instructions!
+
+=== Test with invalid project name (contains uppercase letters)
+>>> errcode [PIPELINES] init --config-file ./invalid_input.json --output-dir invalid-output
+Error: failed to load config from file ./invalid_input.json: invalid value for project_name: "InvalidProjectName". Name must consist of lower case letters, numbers, and underscores.
+
+Exit code: 1
+
+=== Test with non-existent config file
+>>> errcode [PIPELINES] init --config-file ./nonexistent.json --output-dir invalid-output-2
+Error: failed to load config from file ./nonexistent.json: open ./nonexistent.json: no such file or directory
+
+Exit code: 1

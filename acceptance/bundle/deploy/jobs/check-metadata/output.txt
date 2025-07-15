@@ -1,9 +1,74 @@
 
+=== First summary, should not have id and modified_status should be created
+>>> [CLI] bundle summary -o json
+{
+  "deployment": {
+    "kind": "BUNDLE",
+    "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/state/metadata.json"
+  },
+  "edit_mode": "UI_LOCKED",
+  "format": "MULTI_TASK",
+  "max_concurrent_runs": 1,
+  "modified_status": "created",
+  "name": "test-job-metadata-1-[UNIQUE_NAME]",
+  "permissions": [],
+  "queue": {
+    "enabled": true
+  },
+  "tasks": [
+    {
+      "new_cluster": {
+        "node_type_id": "[NODE_TYPE_ID]",
+        "num_workers": 1,
+        "spark_version": "13.3.x-snapshot-scala2.12"
+      },
+      "notebook_task": {
+        "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/foo"
+      },
+      "task_key": "my_notebook_task"
+    }
+  ]
+}
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
+
+=== Second summary, should have id and modified status should be absent
+>>> [CLI] bundle summary -o json
+
+>>> cat out.summary.json
+{
+  "deployment": {
+    "kind": "BUNDLE",
+    "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/state/metadata.json"
+  },
+  "edit_mode": "UI_LOCKED",
+  "format": "MULTI_TASK",
+  "id": "[NUMID]",
+  "max_concurrent_runs": 1,
+  "name": "test-job-metadata-1-[UNIQUE_NAME]",
+  "permissions": [],
+  "queue": {
+    "enabled": true
+  },
+  "tasks": [
+    {
+      "new_cluster": {
+        "node_type_id": "[NODE_TYPE_ID]",
+        "num_workers": 1,
+        "spark_version": "13.3.x-snapshot-scala2.12"
+      },
+      "notebook_task": {
+        "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/foo"
+      },
+      "task_key": "my_notebook_task"
+    }
+  ],
+  "url": "[DATABRICKS_URL]/jobs/[NUMID]"
+}
 
 === Assert job 1 is created
 {

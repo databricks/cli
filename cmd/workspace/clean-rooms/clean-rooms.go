@@ -61,7 +61,6 @@ func newCreate() *cobra.Command {
 	createReq.CleanRoom = cleanrooms.CleanRoom{}
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.CleanRoom.Comment, "comment", createReq.CleanRoom.Comment, ``)
@@ -144,7 +143,6 @@ func newCreateOutputCatalog() *cobra.Command {
 	createOutputCatalogReq.OutputCatalog = cleanrooms.CleanRoomOutputCatalog{}
 	var createOutputCatalogJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createOutputCatalogJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createOutputCatalogReq.OutputCatalog.CatalogName, "catalog-name", createOutputCatalogReq.OutputCatalog.CatalogName, `The name of the output catalog in UC.`)
@@ -217,8 +215,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq cleanrooms.DeleteCleanRoomRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete NAME"
 	cmd.Short = `Delete a clean room.`
 	cmd.Long = `Delete a clean room.
@@ -278,8 +274,6 @@ func newGet() *cobra.Command {
 
 	var getReq cleanrooms.GetCleanRoomRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get NAME"
 	cmd.Short = `Get a clean room.`
 	cmd.Long = `Get a clean room.
@@ -332,8 +326,6 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq cleanrooms.ListCleanRoomsRequest
-
-	// TODO: short flags
 
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Maximum number of clean rooms to return (i.e., the page length).`)
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
@@ -388,7 +380,6 @@ func newUpdate() *cobra.Command {
 	var updateReq cleanrooms.UpdateCleanRoomRequest
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: clean_room

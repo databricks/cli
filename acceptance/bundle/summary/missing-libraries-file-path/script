@@ -1,0 +1,2 @@
+title "Initial view of resources without id and modified_status=created"
+trace $CLI bundle summary -o json

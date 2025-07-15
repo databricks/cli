@@ -59,8 +59,6 @@ func newGetQuota() *cobra.Command {
 
 	var getQuotaReq catalog.GetQuotaRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get-quota PARENT_SECURABLE_TYPE PARENT_FULL_NAME QUOTA_NAME"
 	cmd.Short = `Get information for a single resource quota.`
 	cmd.Long = `Get information for a single resource quota.
@@ -125,8 +123,6 @@ func newListQuotas() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listQuotasReq catalog.ListQuotasRequest
-
-	// TODO: short flags
 
 	cmd.Flags().IntVar(&listQuotasReq.MaxResults, "max-results", listQuotasReq.MaxResults, `The number of quotas to return.`)
 	cmd.Flags().StringVar(&listQuotasReq.PageToken, "page-token", listQuotasReq.PageToken, `Opaque token for the next page of results.`)

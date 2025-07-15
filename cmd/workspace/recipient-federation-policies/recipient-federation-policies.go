@@ -85,7 +85,6 @@ func newCreate() *cobra.Command {
 	createReq.Policy = sharing.FederationPolicy{}
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.Policy.Comment, "comment", createReq.Policy.Comment, `Description of the policy.`)
@@ -186,8 +185,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq sharing.DeleteFederationPolicyRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete RECIPIENT_NAME NAME"
 	cmd.Short = `Delete recipient federation policy.`
 	cmd.Long = `Delete recipient federation policy.
@@ -247,8 +244,6 @@ func newGetFederationPolicy() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getFederationPolicyReq sharing.GetFederationPolicyRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get-federation-policy RECIPIENT_NAME NAME"
 	cmd.Short = `Get recipient federation policy.`
@@ -311,8 +306,6 @@ func newList() *cobra.Command {
 
 	var listReq sharing.ListFederationPoliciesRequest
 
-	// TODO: short flags
-
 	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, ``)
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)
 
@@ -374,7 +367,6 @@ func newUpdate() *cobra.Command {
 	updateReq.Policy = sharing.FederationPolicy{}
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateReq.UpdateMask, "update-mask", updateReq.UpdateMask, `The field mask specifies which fields of the policy to update.`)

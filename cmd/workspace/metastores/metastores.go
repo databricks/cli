@@ -76,7 +76,6 @@ func newAssign() *cobra.Command {
 	var assignReq catalog.CreateMetastoreAssignment
 	var assignJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&assignJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "assign WORKSPACE_ID METASTORE_ID DEFAULT_CATALOG_NAME"
@@ -170,7 +169,6 @@ func newCreate() *cobra.Command {
 	var createReq catalog.CreateMetastore
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.Region, "region", createReq.Region, `Cloud region which the metastore serves (e.g., us-west-2, westus).`)
@@ -299,8 +297,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq catalog.DeleteMetastoreRequest
 
-	// TODO: short flags
-
 	cmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `Force deletion even if the metastore is not empty.`)
 
 	cmd.Use = "delete ID"
@@ -359,8 +355,6 @@ func newGet() *cobra.Command {
 
 	var getReq catalog.GetMetastoreRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get ID"
 	cmd.Short = `Get a metastore.`
 	cmd.Long = `Get a metastore.
@@ -417,8 +411,6 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq catalog.ListMetastoresRequest
-
-	// TODO: short flags
 
 	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of metastores to return.`)
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
@@ -516,8 +508,6 @@ func newUnassign() *cobra.Command {
 
 	var unassignReq catalog.UnassignRequest
 
-	// TODO: short flags
-
 	cmd.Use = "unassign WORKSPACE_ID METASTORE_ID"
 	cmd.Short = `Delete an assignment.`
 	cmd.Long = `Delete an assignment.
@@ -580,7 +570,6 @@ func newUpdate() *cobra.Command {
 	var updateReq catalog.UpdateMetastore
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateReq.DeltaSharingOrganizationName, "delta-sharing-organization-name", updateReq.DeltaSharingOrganizationName, `The organization name of a Delta Sharing entity, to be used in Databricks-to-Databricks Delta Sharing as the official name.`)
@@ -662,7 +651,6 @@ func newUpdateAssignment() *cobra.Command {
 	var updateAssignmentReq catalog.UpdateMetastoreAssignment
 	var updateAssignmentJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateAssignmentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateAssignmentReq.DefaultCatalogName, "default-catalog-name", updateAssignmentReq.DefaultCatalogName, `The name of the default catalog in the metastore.`)

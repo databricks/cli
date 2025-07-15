@@ -135,6 +135,10 @@ type ResourcePipelineDeployment struct {
 	MetadataFilePath string `json:"metadata_file_path,omitempty"`
 }
 
+type ResourcePipelineEnvironment struct {
+	Dependencies []string `json:"dependencies,omitempty"`
+}
+
 type ResourcePipelineEventLog struct {
 	Catalog string `json:"catalog,omitempty"`
 	Name    string `json:"name"`
@@ -321,6 +325,7 @@ type ResourcePipeline struct {
 	Url                  string                               `json:"url,omitempty"`
 	Cluster              []ResourcePipelineCluster            `json:"cluster,omitempty"`
 	Deployment           *ResourcePipelineDeployment          `json:"deployment,omitempty"`
+	Environment          *ResourcePipelineEnvironment         `json:"environment,omitempty"`
 	EventLog             *ResourcePipelineEventLog            `json:"event_log,omitempty"`
 	Filters              *ResourcePipelineFilters             `json:"filters,omitempty"`
 	GatewayDefinition    *ResourcePipelineGatewayDefinition   `json:"gateway_definition,omitempty"`

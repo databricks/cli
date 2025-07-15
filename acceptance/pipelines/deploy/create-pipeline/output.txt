@@ -1,0 +1,28 @@
+
+>>> [PIPELINES] deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-create-pipeline/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] pipelines get [UUID]
+{
+  "spec": {
+    "channel": "CURRENT",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-create-pipeline/default/state/metadata.json"
+    },
+    "edition": "ADVANCED",
+    "id": "[UUID]",
+    "libraries": [
+      {
+        "notebook": {
+          "path": "/Workspace/Users/[USERNAME]/.bundle/test-create-pipeline/default/files/nb"
+        }
+      }
+    ],
+    "name": "test-pipeline",
+    "storage": "dbfs:/pipelines/[UUID]"
+  }
+}

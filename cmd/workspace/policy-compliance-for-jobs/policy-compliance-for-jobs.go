@@ -69,7 +69,6 @@ func newEnforceCompliance() *cobra.Command {
 	var enforceComplianceReq jobs.EnforcePolicyComplianceRequest
 	var enforceComplianceJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&enforceComplianceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().BoolVar(&enforceComplianceReq.ValidateOnly, "validate-only", enforceComplianceReq.ValidateOnly, `If set, previews changes made to the job to comply with its policy, but does not update the job.`)
@@ -157,8 +156,6 @@ func newGetCompliance() *cobra.Command {
 
 	var getComplianceReq jobs.GetPolicyComplianceRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get-compliance JOB_ID"
 	cmd.Short = `Get job policy compliance.`
 	cmd.Long = `Get job policy compliance.
@@ -219,8 +216,6 @@ func newListCompliance() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listComplianceReq jobs.ListJobComplianceRequest
-
-	// TODO: short flags
 
 	cmd.Flags().IntVar(&listComplianceReq.PageSize, "page-size", listComplianceReq.PageSize, `Use this field to specify the maximum number of results to be returned by the server.`)
 	cmd.Flags().StringVar(&listComplianceReq.PageToken, "page-token", listComplianceReq.PageToken, `A page token that can be used to navigate to the next page or previous page as returned by next_page_token or prev_page_token.`)

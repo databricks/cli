@@ -68,7 +68,6 @@ func newCreate() *cobra.Command {
 	var createReq sql.CreateAlert
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.Parent, "parent", createReq.Parent, `The identifier of the workspace folder containing the object.`)
@@ -142,8 +141,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq sql.DeleteAlertsLegacyRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete ALERT_ID"
 	cmd.Short = `Delete an alert.`
 	cmd.Long = `Delete an alert.
@@ -215,8 +212,6 @@ func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getReq sql.GetAlertsLegacyRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get ALERT_ID"
 	cmd.Short = `Get an alert.`
@@ -336,7 +331,6 @@ func newUpdate() *cobra.Command {
 	var updateReq sql.EditAlert
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().IntVar(&updateReq.Rearm, "rearm", updateReq.Rearm, `Number of seconds after being triggered before the alert rearms itself and can be triggered again.`)

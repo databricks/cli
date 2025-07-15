@@ -4,6 +4,7 @@ PACKAGES=./acceptance/... ./libs/... ./internal/... ./cmd/... ./bundle/... .
 
 GOTESTSUM_FORMAT ?= pkgname-and-test-fails
 GOTESTSUM_CMD ?= go tool gotestsum --format ${GOTESTSUM_FORMAT} --no-summary=skipped --jsonfile test-output.json
+LOCAL_TIMEOUT ?= 30m
 
 
 lintfull:
@@ -46,13 +47,13 @@ links:
 checks: tidy ws links
 
 test:
-	${GOTESTSUM_CMD} -- ${PACKAGES}
+	${GOTESTSUM_CMD} -- ${PACKAGES} -timeout=${LOCAL_TIMEOUT}
 
 # Updates acceptance test output (local tests)
 test-update:
-	-go test ./acceptance -run '^TestAccept$$' -update
+	-go test ./acceptance -run '^TestAccept$$' -update -timeout=${LOCAL_TIMEOUT}
 	@# at the moment second pass is required because some tests show diff against output of another test for easier review
-	-go test ./acceptance -run '^TestAccept$$' -update
+	-go test ./acceptance -run '^TestAccept$$' -update -timeout=${LOCAL_TIMEOUT}
 
 # Updates acceptance test output (integration tests, requires access)
 test-update-aws:
@@ -65,7 +66,7 @@ slowest:
 
 cover:
 	rm -fr ./acceptance/build/cover/
-	VERBOSE_TEST=1 CLI_GOCOVERDIR=build/cover ${GOTESTSUM_CMD} -- -coverprofile=coverage.txt ${PACKAGES}
+	VERBOSE_TEST=1 CLI_GOCOVERDIR=build/cover ${GOTESTSUM_CMD} -- -coverprofile=coverage.txt ${PACKAGES} -timeout=${LOCAL_TIMEOUT}
 	rm -fr ./acceptance/build/cover-merged/
 	mkdir -p acceptance/build/cover-merged/
 	go tool covdata merge -i $$(printf '%s,' acceptance/build/cover/* | sed 's/,$$//') -o acceptance/build/cover-merged/
@@ -97,6 +98,9 @@ integration:
 integration-short:
 	VERBOSE_TEST=1 $(INTEGRATION) -short
 
+generate-validation:
+	go run ./bundle/internal/validation/.
+
 generate:
 	genkit update-sdk
 	[ ! -f tagging.py ] || mv tagging.py internal/genkit/tagging.py
@@ -106,4 +110,4 @@ generate:
 	[ ! -f .github/workflows/next-changelog.yml ] || rm .github/workflows/next-changelog.yml
 	pushd experimental/python && make codegen
 
-.PHONY: lint lintfull tidy lintcheck fmt fmtfull test cover showcover build snapshot schema integration integration-short acc-cover acc-showcover docs ws links checks test-update test-update-aws test-update-all
+.PHONY: lint lintfull tidy lintcheck fmt fmtfull test cover showcover build snapshot schema integration integration-short acc-cover acc-showcover docs ws links checks test-update test-update-aws test-update-all generate-validation

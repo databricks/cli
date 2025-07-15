@@ -63,8 +63,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq settings.DeleteRestrictWorkspaceAdminsSettingRequest
 
-	// TODO: short flags
-
 	cmd.Flags().StringVar(&deleteReq.Etag, "etag", deleteReq.Etag, `etag used for versioning.`)
 
 	cmd.Use = "delete"
@@ -122,8 +120,6 @@ func newGet() *cobra.Command {
 
 	var getReq settings.GetRestrictWorkspaceAdminsSettingRequest
 
-	// TODO: short flags
-
 	cmd.Flags().StringVar(&getReq.Etag, "etag", getReq.Etag, `etag used for versioning.`)
 
 	cmd.Use = "get"
@@ -178,7 +174,6 @@ func newUpdate() *cobra.Command {
 	var updateReq settings.UpdateRestrictWorkspaceAdminsSettingRequest
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "update"

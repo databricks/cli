@@ -65,7 +65,6 @@ func newCreate() *cobra.Command {
 	var createReq sql.DashboardPostContent
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "create"
@@ -126,8 +125,6 @@ func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var deleteReq sql.DeleteDashboardRequest
-
-	// TODO: short flags
 
 	cmd.Use = "delete DASHBOARD_ID"
 	cmd.Short = `Remove a dashboard.`
@@ -195,8 +192,6 @@ func newGet() *cobra.Command {
 
 	var getReq sql.GetDashboardRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get DASHBOARD_ID"
 	cmd.Short = `Retrieve a definition.`
 	cmd.Long = `Retrieve a definition.
@@ -263,8 +258,6 @@ func newList() *cobra.Command {
 
 	var listReq sql.ListDashboardsRequest
 
-	// TODO: short flags
-
 	cmd.Flags().Var(&listReq.Order, "order", `Name of dashboard attribute to order by. Supported values: [created_at, name]`)
 	cmd.Flags().IntVar(&listReq.Page, "page", listReq.Page, `Page number to retrieve.`)
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Number of dashboards to return per page.`)
@@ -320,8 +313,6 @@ func newRestore() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var restoreReq sql.RestoreDashboardRequest
-
-	// TODO: short flags
 
 	cmd.Use = "restore DASHBOARD_ID"
 	cmd.Short = `Restore a dashboard.`
@@ -389,7 +380,6 @@ func newUpdate() *cobra.Command {
 	var updateReq sql.DashboardEditContent
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `The title of this dashboard that appears in list views and at the top of the dashboard page.`)

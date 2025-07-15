@@ -51,3 +51,16 @@ Workspace:
 Found 1 error and 1 warning
 
 Exit code: 1
+
+>>> errcode [CLI] bundle summary
+Warning: Variable interpolation is not supported for fields that configure authentication
+  at workspace.host
+  in databricks.yml:10:9
+
+Interpolation is not supported for the field workspace.host. Please set
+the DATABRICKS_HOST environment variable if you wish to configure this field at runtime.
+
+Error: failed during request visitor: parse "https://${var.host}": invalid character "{" in host name
+
+
+Exit code: 1

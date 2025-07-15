@@ -10,7 +10,7 @@ rm input.json
 cd project_name_${UNIQUE_NAME}
 
 export JQ_DELETE='
-  .bundle.terraform.exec_path,
+  .bundle.terraform,
   .workspace.current_user
 '
 

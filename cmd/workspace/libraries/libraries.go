@@ -112,8 +112,6 @@ func newClusterStatus() *cobra.Command {
 
 	var clusterStatusReq compute.ClusterStatus
 
-	// TODO: short flags
-
 	cmd.Use = "cluster-status CLUSTER_ID"
 	cmd.Short = `Get status.`
 	cmd.Long = `Get status.
@@ -174,7 +172,6 @@ func newInstall() *cobra.Command {
 	var installReq compute.InstallLibraries
 	var installJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&installJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "install"
@@ -240,7 +237,6 @@ func newUninstall() *cobra.Command {
 	var uninstallReq compute.UninstallLibraries
 	var uninstallJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&uninstallJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "uninstall"

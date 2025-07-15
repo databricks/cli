@@ -1,0 +1,12 @@
+resources:
+  pipelines:
+    my_project_pipeline:
+      name: my_project_pipeline
+      serverless: true
+      channel: "PREVIEW"
+      catalog: ${var.catalog}
+      schema: ${var.schema}
+      root_path: "."
+      libraries:
+        - glob:
+            include: transformations/**

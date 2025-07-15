@@ -94,3 +94,91 @@ func (s *FakeWorkspace) PipelineUpdate(req Request, pipelineId string) Response 
 		Body: pipelines.EditPipelineResponse{},
 	}
 }
+
+func (s *FakeWorkspace) PipelineStartUpdate(pipelineId string) Response {
+	defer s.LockUnlock()()
+
+	_, exists := s.Pipelines[pipelineId]
+	if !exists {
+		return Response{
+			StatusCode: 404,
+			Body:       map[string]string{"message": fmt.Sprintf("The specified pipeline %s was not found.", pipelineId)},
+		}
+	}
+
+	updateId := uuid.New().String()
+	s.PipelineUpdates[updateId] = true
+
+	return Response{
+		Body: pipelines.StartUpdateResponse{
+			UpdateId: updateId,
+		},
+	}
+}
+
+func (s *FakeWorkspace) PipelineEvents(pipelineId string) Response {
+	defer s.LockUnlock()()
+
+	_, exists := s.Pipelines[pipelineId]
+	if !exists {
+		return Response{
+			StatusCode: 404,
+			Body:       map[string]string{"message": fmt.Sprintf("The specified pipeline %s was not found.", pipelineId)},
+		}
+	}
+
+	return Response{
+		Body: map[string]any{
+			"events": []pipelines.PipelineEvent{},
+		},
+	}
+}
+
+func (s *FakeWorkspace) PipelineGetUpdate(pipelineId, updateId string) Response {
+	defer s.LockUnlock()()
+
+	_, exists := s.Pipelines[pipelineId]
+	if !exists {
+		return Response{
+			StatusCode: 404,
+			Body:       map[string]string{"message": fmt.Sprintf("The specified pipeline %s was not found.", pipelineId)},
+		}
+	}
+
+	// Check if the update exists
+	_, updateExists := s.PipelineUpdates[updateId]
+	if !updateExists {
+		return Response{
+			StatusCode: 404,
+			Body:       map[string]string{"message": fmt.Sprintf("The specified update %s was not found.", updateId)},
+		}
+	}
+
+	return Response{
+		Body: pipelines.GetUpdateResponse{
+			Update: &pipelines.UpdateInfo{
+				UpdateId: updateId,
+				State:    pipelines.UpdateInfoStateCompleted,
+			},
+		},
+	}
+}
+
+func (s *FakeWorkspace) PipelineStop(pipelineId string) Response {
+	defer s.LockUnlock()()
+
+	_, exists := s.Pipelines[pipelineId]
+	if !exists {
+		return Response{
+			StatusCode: 404,
+			Body:       map[string]string{"message": fmt.Sprintf("The specified pipeline %s was not found.", pipelineId)},
+		}
+	}
+
+	return Response{
+		Body: pipelines.GetPipelineResponse{
+			PipelineId: pipelineId,
+			State:      pipelines.PipelineStateIdle,
+		},
+	}
+}

@@ -1,0 +1,16 @@
+# Preamble
+
+This file only contains template directives; it is skipped for the actual output.
+
+{{skip "__preamble"}}
+
+{{$isSQL := eq .language "sql"}}
+
+{{if $isSQL}}
+  {{skip "{{.project_name}}/{{.project_name}}_pipeline/utilities/utils.py"}}
+  {{skip "{{.project_name}}/{{.project_name}}_pipeline/transformations/sample_zones_{{.project_name}}.py"}}
+  {{skip "{{.project_name}}/{{.project_name}}_pipeline/transformations/sample_trips_{{.project_name}}.py"}}
+{{else}}
+  {{skip "{{.project_name}}/{{.project_name}}_pipeline/transformations/sample_zones_{{.project_name}}.sql"}}
+  {{skip "{{.project_name}}/{{.project_name}}_pipeline/transformations/sample_trips_{{.project_name}}.sql"}}
+{{end}}

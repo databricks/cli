@@ -1,0 +1,13 @@
+Badness = "The error message is not ideal: it reports a generic build failure or 'command not found' instead of a clear message that 'uv' is missing from the environment."
+
+Local = true
+Cloud = false
+
+Ignore = [
+    'output/fail_missing_uv',
+]
+
+# Replace the uv not found error for portability
+[[Repls]]
+Old = '(/usr)?(/bin)?/bash(: line 1)?: uv: command not found'
+New = 'bash: uv: command not found'

@@ -1,0 +1,14 @@
+
+=== Test --var flag usage
+>>> [PIPELINES] deploy --var=catalog=custom_catalog --var=schema=custom_schema --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-var-flag/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Verify: Check that variables were substituted correctly
+>>> [CLI] pipelines get [UUID]
+{
+  "catalog": "custom_catalog",
+  "target": "custom_schema"
+}

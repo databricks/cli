@@ -113,7 +113,6 @@ func newCreate() *cobra.Command {
 	createReq.Policy = oauth2.FederationPolicy{}
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.PolicyId, "policy-id", createReq.PolicyId, `The identifier for the federation policy.`)
@@ -192,8 +191,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq oauth2.DeleteServicePrincipalFederationPolicyRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete SERVICE_PRINCIPAL_ID POLICY_ID"
 	cmd.Short = `Delete service principal federation policy.`
 	cmd.Long = `Delete service principal federation policy.
@@ -254,8 +251,6 @@ func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getReq oauth2.GetServicePrincipalFederationPolicyRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get SERVICE_PRINCIPAL_ID POLICY_ID"
 	cmd.Short = `Get service principal federation policy.`
@@ -318,8 +313,6 @@ func newList() *cobra.Command {
 
 	var listReq oauth2.ListServicePrincipalFederationPoliciesRequest
 
-	// TODO: short flags
-
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)
 
@@ -381,7 +374,6 @@ func newUpdate() *cobra.Command {
 	updateReq.Policy = oauth2.FederationPolicy{}
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateReq.UpdateMask, "update-mask", updateReq.UpdateMask, `The field mask specifies which fields of the policy to update.`)

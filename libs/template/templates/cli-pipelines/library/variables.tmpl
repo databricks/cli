@@ -1,0 +1,33 @@
+{{- define `pipeline_name` -}}
+    {{ .project_name }}_pipeline
+{{- end }}
+
+{{- define `job_name` -}}
+    {{ .project_name }}_job
+{{- end }}
+
+{{- define `static_dev_schema` -}}
+    {{- if (regexp "^yes").MatchString .personal_schemas -}}
+        {{ short_name }}
+    {{- else -}}
+        {{ .shared_schema }}
+    {{- end}}
+{{- end }}
+
+
+{{- define `dev_schema` -}}
+    {{- if (regexp "^yes").MatchString .personal_schemas -}}
+        ${workspace.current_user.short_name}
+    {{- else -}}
+        {{ .shared_schema }}
+    {{- end}}
+{{- end }}
+
+
+{{- define `prod_schema` -}}
+    {{- if (regexp "^yes").MatchString .personal_schemas -}}
+        default
+    {{- else -}}
+        {{ .shared_schema }}
+    {{- end}}
+{{- end }}

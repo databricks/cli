@@ -1,8 +1,6 @@
 Local = true
 Cloud = true
 
-EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["terraform"]  # requires "bundle summary"
-
 Ignore = [
     "databricks.yml"
 ]

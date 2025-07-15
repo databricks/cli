@@ -61,8 +61,6 @@ func newGetActivationUrlInfo() *cobra.Command {
 
 	var getActivationUrlInfoReq sharing.GetActivationUrlInfoRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get-activation-url-info ACTIVATION_URL"
 	cmd.Short = `Get a share activation URL.`
 	cmd.Long = `Get a share activation URL.
@@ -118,8 +116,6 @@ func newRetrieveToken() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var retrieveTokenReq sharing.RetrieveTokenRequest
-
-	// TODO: short flags
 
 	cmd.Use = "retrieve-token ACTIVATION_URL"
 	cmd.Short = `Get an access token.`

@@ -6,10 +6,16 @@ cleanup() {
 }
 trap cleanup EXIT
 
+title "First summary, should not have id and modified_status should be created"
+trace $CLI bundle summary -o json | jq '.resources.jobs.foo'
 trace $CLI bundle deploy
 
+title "Second summary, should have id and modified status should be absent"
+trace $CLI bundle summary -o json | jq '.resources.jobs.foo' > out.summary.json
+trace cat out.summary.json
+JOB_1_ID=$(jq -r '.id' out.summary.json)
+rm out.summary.json
 title "Assert job 1 is created\n"
-JOB_1_ID=$($CLI bundle summary -o json | jq -r '.resources.jobs.foo.id')
 $CLI jobs get "${JOB_1_ID}" | jq '{name: .settings.name}'
 
 title "Assert job 2 is created\n"

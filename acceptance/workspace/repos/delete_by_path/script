@@ -1,0 +1,11 @@
+url=https://github.com/databricks/databricks-empty-ide-project.git
+provider=gitHub
+path=/Repos/me@databricks.com/test-repo
+
+trace $CLI repos create $url $provider --path $path | jq .id -r
+
+trace $CLI repos get $path -o json
+
+trace $CLI repos delete $path
+
+trace $CLI repos get $path -o json

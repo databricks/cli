@@ -3,7 +3,6 @@ package diag
 import (
 	"errors"
 	"fmt"
-	"sync"
 
 	"github.com/databricks/cli/libs/dyn"
 )
@@ -146,31 +145,4 @@ func (ds Diagnostics) Filter(severity Severity) Diagnostics {
 		}
 	}
 	return out
-}
-
-type SafeDiagnostics struct {
-	Mutex sync.Mutex
-	Diags Diagnostics
-}
-
-func (t *SafeDiagnostics) Append(d Diagnostic) {
-	t.Mutex.Lock()
-	defer t.Mutex.Unlock()
-
-	t.Diags = t.Diags.Append(d)
-}
-
-func (t *SafeDiagnostics) Extend(other Diagnostics) {
-	t.Mutex.Lock()
-	defer t.Mutex.Unlock()
-
-	t.Diags = t.Diags.Extend(other)
-}
-
-func (t *SafeDiagnostics) AppendErrorf(msg string, args ...any) {
-	t.Extend(FromErr(fmt.Errorf(msg, args...)))
-}
-
-func (t *SafeDiagnostics) AppendError(err error) {
-	t.Extend(FromErr(err))
 }

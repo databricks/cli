@@ -1,0 +1,2 @@
+# Test that bundle generate dashboard fails when the existing ID is not found
+exec $CLI bundle generate dashboard --existing-id f00dcafe

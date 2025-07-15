@@ -15,7 +15,15 @@ Deployment complete!
   "lifecycle_state": "ACTIVE",
   "path": "/Users/[USERNAME]/test dashboard [UUID].lvdash.json",
   "parent_path": "/Users/[USERNAME]",
-  "serialized_dashboard": "{\"pages\":[{\"name\":\"02724bf2\",\"displayName\":\"Page One\",\"pageType\":\"PAGE_TYPE_CANVAS\"}]}"
+  "serialized_dashboard": {
+    "pages": [
+      {
+        "name": "02724bf2",
+        "displayName": "Page One",
+        "pageType": "PAGE_TYPE_CANVAS"
+      }
+    ]
+  }
 }
 
 >>> [CLI] bundle deployment unbind dashboard1
@@ -33,5 +41,13 @@ Destroy complete!
   "lifecycle_state": "ACTIVE",
   "path": "/Users/[USERNAME]/test dashboard [UUID].lvdash.json",
   "parent_path": "/Users/[USERNAME]",
-  "serialized_dashboard": "{\"pages\":[{\"name\":\"02724bf2\",\"displayName\":\"Page One\",\"pageType\":\"PAGE_TYPE_CANVAS\"}]}"
+  "serialized_dashboard": {
+    "pages": [
+      {
+        "name": "02724bf2",
+        "displayName": "Page One",
+        "pageType": "PAGE_TYPE_CANVAS"
+      }
+    ]
+  }
 }

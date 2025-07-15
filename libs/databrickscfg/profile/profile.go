@@ -13,6 +13,7 @@ type Profile struct {
 	Name      string
 	Host      string
 	AccountID string
+	ClusterID string
 }
 
 func (p Profile) Cloud() string {

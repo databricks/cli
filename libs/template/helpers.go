@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"regexp"
+	"strings"
 	"text/template"
 
 	"github.com/databricks/cli/libs/cmdctx"
@@ -166,6 +167,12 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 			result := iamutil.IsServicePrincipal(cachedUser)
 			cachedIsServicePrincipal = &result
 			return result, nil
+		},
+		"lower": func(s string) string {
+			return strings.ToLower(s)
+		},
+		"upper": func(s string) string {
+			return strings.ToUpper(s)
 		},
 	}
 }

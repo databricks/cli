@@ -1,0 +1,11 @@
+
+>>> [PIPELINES] deploy
+Warning: unknown field: unknown_property
+  at resources.pipelines.test-pipeline
+  in databricks.yml:8:7
+
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/render-diagnostics-warning-pipeline/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+<EOL>

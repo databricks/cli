@@ -1,0 +1,7 @@
+title "Test --var flag usage"
+trace $PIPELINES deploy --var="catalog=custom_catalog" --var="schema=custom_schema" --auto-approve
+
+title "Verify: Check that variables were substituted correctly"
+PIPELINE_ID=$($CLI bundle summary -o json | jq -r '.resources.pipelines.foo.id')
+trace $CLI pipelines get "${PIPELINE_ID}" | jq '.spec | {catalog: .catalog, target: .target}'
+# Expected: catalog should be "custom_catalog" and target should contain "custom_schema"

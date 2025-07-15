@@ -75,7 +75,6 @@ func newCreateScope() *cobra.Command {
 	var createScopeReq workspace.CreateScope
 	var createScopeJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createScopeJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: backend_azure_keyvault
@@ -161,7 +160,6 @@ func newDeleteAcl() *cobra.Command {
 	var deleteAclReq workspace.DeleteAcl
 	var deleteAclJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&deleteAclJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "delete-acl SCOPE PRINCIPAL"
@@ -251,7 +249,6 @@ func newDeleteScope() *cobra.Command {
 	var deleteScopeReq workspace.DeleteScope
 	var deleteScopeJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&deleteScopeJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "delete-scope SCOPE"
@@ -336,7 +333,6 @@ func newDeleteSecret() *cobra.Command {
 	var deleteSecretReq workspace.DeleteSecret
 	var deleteSecretJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&deleteSecretJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "delete-secret SCOPE KEY"
@@ -425,8 +421,6 @@ func newGetAcl() *cobra.Command {
 
 	var getAclReq workspace.GetAclRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get-acl SCOPE PRINCIPAL"
 	cmd.Short = `Get secret ACL details.`
 	cmd.Long = `Get secret ACL details.
@@ -489,8 +483,6 @@ func newGetSecret() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getSecretReq workspace.GetSecretRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get-secret SCOPE KEY"
 	cmd.Short = `Get a secret.`
@@ -560,8 +552,6 @@ func newListAcls() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listAclsReq workspace.ListAclsRequest
-
-	// TODO: short flags
 
 	cmd.Use = "list-acls SCOPE"
 	cmd.Short = `Lists ACLs.`
@@ -663,8 +653,6 @@ func newListSecrets() *cobra.Command {
 
 	var listSecretsReq workspace.ListSecretsRequest
 
-	// TODO: short flags
-
 	cmd.Use = "list-secrets SCOPE"
 	cmd.Short = `List secret keys.`
 	cmd.Long = `List secret keys.
@@ -726,7 +714,6 @@ func newPutAcl() *cobra.Command {
 	var putAclReq workspace.PutAcl
 	var putAclJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&putAclJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "put-acl SCOPE PRINCIPAL PERMISSION"

@@ -1,0 +1,4 @@
+title "Test basic pipelines init with configuration file"
+trace $PIPELINES init --config-file ./input.json --output-dir output
+
+mv output/my_python_project/.gitignore output/my_python_project/out.gitignore

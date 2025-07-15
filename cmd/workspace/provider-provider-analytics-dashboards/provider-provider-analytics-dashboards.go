@@ -179,7 +179,6 @@ func newUpdate() *cobra.Command {
 	var updateReq marketplace.UpdateProviderAnalyticsDashboardRequest
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().Int64Var(&updateReq.Version, "version", updateReq.Version, `this is the version of the dashboard template we want to update our user to current expectation is that it should be equal to latest version of the dashboard template.`)

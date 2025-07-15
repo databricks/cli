@@ -85,8 +85,6 @@ func newGet() *cobra.Command {
 
 	var getReq iam.GetPermissionRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get REQUEST_OBJECT_TYPE REQUEST_OBJECT_ID"
 	cmd.Short = `Get object permissions.`
 	cmd.Long = `Get object permissions.
@@ -149,8 +147,6 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getPermissionLevelsReq iam.GetPermissionLevelsRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get-permission-levels REQUEST_OBJECT_TYPE REQUEST_OBJECT_ID"
 	cmd.Short = `Get object permission levels.`
@@ -215,7 +211,6 @@ func newSet() *cobra.Command {
 	var setReq iam.SetObjectPermissions
 	var setJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&setJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: access_control_list
@@ -297,7 +292,6 @@ func newUpdate() *cobra.Command {
 	var updateReq iam.UpdateObjectPermissions
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: access_control_list

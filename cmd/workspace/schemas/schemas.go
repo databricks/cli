@@ -63,7 +63,6 @@ func newCreate() *cobra.Command {
 	var createReq catalog.CreateSchema
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided free-form text description.`)
@@ -153,8 +152,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq catalog.DeleteSchemaRequest
 
-	// TODO: short flags
-
 	cmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `Force deletion even if the schema is not empty.`)
 
 	cmd.Use = "delete FULL_NAME"
@@ -213,8 +210,6 @@ func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getReq catalog.GetSchemaRequest
-
-	// TODO: short flags
 
 	cmd.Flags().BoolVar(&getReq.IncludeBrowse, "include-browse", getReq.IncludeBrowse, `Whether to include schemas in the response for which the principal can only access selective metadata for.`)
 
@@ -275,8 +270,6 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq catalog.ListSchemasRequest
-
-	// TODO: short flags
 
 	cmd.Flags().BoolVar(&listReq.IncludeBrowse, "include-browse", listReq.IncludeBrowse, `Whether to include schemas in the response for which the principal can only access selective metadata for.`)
 	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of schemas to return.`)
@@ -340,7 +333,6 @@ func newUpdate() *cobra.Command {
 	var updateReq catalog.UpdateSchema
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `User-provided free-form text description.`)

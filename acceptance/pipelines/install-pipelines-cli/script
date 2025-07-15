@@ -3,11 +3,11 @@ pipelines="$tmpdir/pipelines"
 mkdir -p $tmpdir
 
 title "install pipelines cli"
-trace errcode $CLI install-pipelines-cli -d $tmpdir
-trace errcode $pipelines
+trace $CLI install-pipelines-cli -d $tmpdir
+trace $pipelines
 
 title "pipelines already installed"
-trace errcode $CLI install-pipelines-cli -d $tmpdir
+trace $CLI install-pipelines-cli -d $tmpdir
 rm -f $pipelines
 
 title "pipelines file exists, should not overwrite"
@@ -17,9 +17,7 @@ rm -f $pipelines
 
 title "databricks executable called with alias"
 cp $CLI $tmpdir/notdatabricks
-trace errcode $tmpdir/notdatabricks install-pipelines-cli -d $tmpdir
-trace errcode $pipelines
+trace $tmpdir/notdatabricks install-pipelines-cli -d $tmpdir
+trace $pipelines
 
-# Cleanup
-rm -f $tmpdir/notdatabricks $pipelines
-rm -rf $tmpdir
+rm -rf $tmpdir/notdatabricks $pipelines $tmpdir

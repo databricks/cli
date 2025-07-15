@@ -1,0 +1,14 @@
+title "Initial view of resources without id and modified_status=created"
+trace $CLI bundle summary -o json | jq .resources
+
+trace $CLI bundle deploy
+
+title "Post-deployment view of resources with id and without modified_status"
+trace $CLI bundle summary -o json | jq .resources
+mv $VARIANT databricks.yml
+
+title "Expecting all resources to have modified_status=deleted"
+trace $CLI bundle summary -o json | jq .resources
+
+trace $CLI bundle destroy --auto-approve
+trace $CLI bundle summary -o json | jq .resources

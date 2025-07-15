@@ -82,11 +82,13 @@ func (transformWheelTask) Apply(ctx context.Context, b *bundle.Bundle) diag.Diag
 		return nil
 	}
 
-	return bundle.Apply(ctx, b, NewTrampoline(
+	bundle.ApplyContext(ctx, b, NewTrampoline(
 		"python_wheel",
 		&pythonTrampoline{},
 		NOTEBOOK_TEMPLATE,
 	))
+
+	return nil
 }
 
 type pythonTrampoline struct{}

@@ -82,7 +82,6 @@ func newCreate() *cobra.Command {
 	var createReq pipelines.CreatePipeline
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "create"
@@ -146,8 +145,6 @@ func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var deleteReq pipelines.DeletePipelineRequest
-
-	// TODO: short flags
 
 	cmd.Use = "delete PIPELINE_ID"
 	cmd.Short = `Delete a pipeline.`
@@ -215,8 +212,6 @@ func newGet() *cobra.Command {
 
 	var getReq pipelines.GetPipelineRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get PIPELINE_ID"
 	cmd.Short = `Get a pipeline.`
 	cmd.Long = `Get a pipeline.`
@@ -279,8 +274,6 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getPermissionLevelsReq pipelines.GetPipelinePermissionLevelsRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get-permission-levels PIPELINE_ID"
 	cmd.Short = `Get pipeline permission levels.`
@@ -349,8 +342,6 @@ func newGetPermissions() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getPermissionsReq pipelines.GetPipelinePermissionsRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get-permissions PIPELINE_ID"
 	cmd.Short = `Get pipeline permissions.`
@@ -421,8 +412,6 @@ func newGetUpdate() *cobra.Command {
 
 	var getUpdateReq pipelines.GetUpdateRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get-update PIPELINE_ID UPDATE_ID"
 	cmd.Short = `Get a pipeline update.`
 	cmd.Long = `Get a pipeline update.
@@ -480,8 +469,6 @@ func newListPipelineEvents() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listPipelineEventsReq pipelines.ListPipelineEventsRequest
-
-	// TODO: short flags
 
 	cmd.Flags().StringVar(&listPipelineEventsReq.Filter, "filter", listPipelineEventsReq.Filter, `Criteria to select a subset of results, expressed using a SQL-like syntax.`)
 	cmd.Flags().IntVar(&listPipelineEventsReq.MaxResults, "max-results", listPipelineEventsReq.MaxResults, `Max number of entries to return in a single page.`)
@@ -553,8 +540,6 @@ func newListPipelines() *cobra.Command {
 
 	var listPipelinesReq pipelines.ListPipelinesRequest
 
-	// TODO: short flags
-
 	cmd.Flags().StringVar(&listPipelinesReq.Filter, "filter", listPipelinesReq.Filter, `Select a subset of results based on the specified criteria.`)
 	cmd.Flags().IntVar(&listPipelinesReq.MaxResults, "max-results", listPipelinesReq.MaxResults, `The maximum number of entries to return in a single page.`)
 	// TODO: array: order_by
@@ -607,8 +592,6 @@ func newListUpdates() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listUpdatesReq pipelines.ListUpdatesRequest
-
-	// TODO: short flags
 
 	cmd.Flags().IntVar(&listUpdatesReq.MaxResults, "max-results", listUpdatesReq.MaxResults, `Max number of entries to return in a single page.`)
 	cmd.Flags().StringVar(&listUpdatesReq.PageToken, "page-token", listUpdatesReq.PageToken, `Page token returned by previous call.`)
@@ -683,7 +666,6 @@ func newSetPermissions() *cobra.Command {
 	var setPermissionsReq pipelines.PipelinePermissionsRequest
 	var setPermissionsJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&setPermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: access_control_list
@@ -771,7 +753,6 @@ func newStartUpdate() *cobra.Command {
 	var startUpdateReq pipelines.StartUpdate
 	var startUpdateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&startUpdateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().Var(&startUpdateReq.Cause, "cause", `What triggered this update. Supported values: [
@@ -871,7 +852,6 @@ func newStop() *cobra.Command {
 
 	cmd.Flags().BoolVar(&stopSkipWait, "no-wait", stopSkipWait, `do not wait to reach IDLE state`)
 	cmd.Flags().DurationVar(&stopTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach IDLE state`)
-	// TODO: short flags
 
 	cmd.Use = "stop PIPELINE_ID"
 	cmd.Short = `Stop a pipeline.`
@@ -952,7 +932,6 @@ func newUpdate() *cobra.Command {
 	var updateReq pipelines.EditPipeline
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().BoolVar(&updateReq.AllowDuplicateNames, "allow-duplicate-names", updateReq.AllowDuplicateNames, `If false, deployment will fail if name has changed and conflicts the name of another pipeline.`)
@@ -1067,7 +1046,6 @@ func newUpdatePermissions() *cobra.Command {
 	var updatePermissionsReq pipelines.PipelinePermissionsRequest
 	var updatePermissionsJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updatePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: access_control_list

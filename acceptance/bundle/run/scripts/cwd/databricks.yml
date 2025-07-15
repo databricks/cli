@@ -1,0 +1,5 @@
+bundle:
+  name: cheetah
+
+include:
+  - scripts/*.yml

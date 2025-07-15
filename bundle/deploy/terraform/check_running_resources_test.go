@@ -14,22 +14,15 @@ import (
 
 func TestIsAnyResourceRunningWithEmptyState(t *testing.T) {
 	mock := mocks.NewMockWorkspaceClient(t)
-	err := checkAnyResourceRunning(context.Background(), mock.WorkspaceClient, &resourcesState{})
+	err := checkAnyResourceRunning(context.Background(), mock.WorkspaceClient, nil)
 	require.NoError(t, err)
 }
 
 func TestIsAnyResourceRunningWithJob(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
-	resources := &resourcesState{
-		Resources: []stateResource{
-			{
-				Type: "databricks_job",
-				Mode: "managed",
-				Name: "job1",
-				Instances: []stateResourceInstance{
-					{Attributes: stateInstanceAttributes{ID: "123"}},
-				},
-			},
+	resources := ExportedResourcesMap{
+		"jobs": map[string]ResourceState{
+			"job1": {ID: "123"},
 		},
 	}
 
@@ -55,16 +48,9 @@ func TestIsAnyResourceRunningWithJob(t *testing.T) {
 
 func TestIsAnyResourceRunningWithPipeline(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
-	resources := &resourcesState{
-		Resources: []stateResource{
-			{
-				Type: "databricks_pipeline",
-				Mode: "managed",
-				Name: "pipeline1",
-				Instances: []stateResourceInstance{
-					{Attributes: stateInstanceAttributes{ID: "123"}},
-				},
-			},
+	resources := ExportedResourcesMap{
+		"pipelines": map[string]ResourceState{
+			"pipeline1": {ID: "123"},
 		},
 	}
 
@@ -91,16 +77,10 @@ func TestIsAnyResourceRunningWithPipeline(t *testing.T) {
 
 func TestIsAnyResourceRunningWithAPIFailure(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
-	resources := &resourcesState{
-		Resources: []stateResource{
-			{
-				Type: "databricks_pipeline",
-				Mode: "managed",
-				Name: "pipeline1",
-				Instances: []stateResourceInstance{
-					{Attributes: stateInstanceAttributes{ID: "123"}},
-				},
-			},
+
+	resources := ExportedResourcesMap{
+		"pipelines": map[string]ResourceState{
+			"pipeline1": {ID: "123"},
 		},
 	}
 

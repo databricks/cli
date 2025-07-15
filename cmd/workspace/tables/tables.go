@@ -67,8 +67,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq catalog.DeleteTableRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete FULL_NAME"
 	cmd.Short = `Delete a table.`
 	cmd.Long = `Delete a table.
@@ -140,8 +138,6 @@ func newExists() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var existsReq catalog.ExistsRequest
-
-	// TODO: short flags
 
 	cmd.Use = "exists FULL_NAME"
 	cmd.Short = `Get boolean reflecting if table exists.`
@@ -217,8 +213,6 @@ func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getReq catalog.GetTableRequest
-
-	// TODO: short flags
 
 	cmd.Flags().BoolVar(&getReq.IncludeBrowse, "include-browse", getReq.IncludeBrowse, `Whether to include tables in the response for which the principal can only access selective metadata for.`)
 	cmd.Flags().BoolVar(&getReq.IncludeDeltaMetadata, "include-delta-metadata", getReq.IncludeDeltaMetadata, `Whether delta metadata should be included in the response.`)
@@ -298,8 +292,6 @@ func newList() *cobra.Command {
 
 	var listReq catalog.ListTablesRequest
 
-	// TODO: short flags
-
 	cmd.Flags().BoolVar(&listReq.IncludeBrowse, "include-browse", listReq.IncludeBrowse, `Whether to include tables in the response for which the principal can only access selective metadata for.`)
 	cmd.Flags().BoolVar(&listReq.IncludeDeltaMetadata, "include-delta-metadata", listReq.IncludeDeltaMetadata, `Whether delta metadata should be included in the response.`)
 	cmd.Flags().BoolVar(&listReq.IncludeManifestCapabilities, "include-manifest-capabilities", listReq.IncludeManifestCapabilities, `Whether to include a manifest containing capabilities the table has.`)
@@ -368,8 +360,6 @@ func newListSummaries() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listSummariesReq catalog.ListSummariesRequest
-
-	// TODO: short flags
 
 	cmd.Flags().BoolVar(&listSummariesReq.IncludeManifestCapabilities, "include-manifest-capabilities", listSummariesReq.IncludeManifestCapabilities, `Whether to include a manifest containing capabilities the table has.`)
 	cmd.Flags().IntVar(&listSummariesReq.MaxResults, "max-results", listSummariesReq.MaxResults, `Maximum number of summaries for tables to return.`)
@@ -453,7 +443,6 @@ func newUpdate() *cobra.Command {
 	var updateReq catalog.UpdateTableRequest
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, ``)

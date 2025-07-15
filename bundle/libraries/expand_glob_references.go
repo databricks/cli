@@ -165,6 +165,14 @@ var envDepsPattern = dyn.NewPattern(
 	dyn.Key("dependencies"),
 )
 
+var pipelineEnvDepsPattern = dyn.NewPattern(
+	dyn.Key("resources"),
+	dyn.Key("pipelines"),
+	dyn.AnyKey(),
+	dyn.Key("environment"),
+	dyn.Key("dependencies"),
+)
+
 func (e *expand) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	expanders := []expandPattern{
 		{
@@ -177,6 +185,10 @@ func (e *expand) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		},
 		{
 			pattern: envDepsPattern,
+			fn:      expandEnvironmentDeps,
+		},
+		{
+			pattern: pipelineEnvDepsPattern,
 			fn:      expandEnvironmentDeps,
 		},
 	}

@@ -68,7 +68,6 @@ func newDelete() *cobra.Command {
 	var deleteReq workspace.Delete
 	var deleteJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().BoolVar(&deleteReq.Recursive, "recursive", deleteReq.Recursive, `The flag that specifies whether to delete the object recursively.`)
@@ -172,8 +171,6 @@ func newExport() *cobra.Command {
 
 	var exportReq workspace.ExportRequest
 
-	// TODO: short flags
-
 	cmd.Flags().Var(&exportReq.Format, "format", `This specifies the format of the exported file. Supported values: [
   AUTO,
   DBC,
@@ -260,8 +257,6 @@ func newGetPermissionLevels() *cobra.Command {
 
 	var getPermissionLevelsReq workspace.GetWorkspaceObjectPermissionLevelsRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get-permission-levels WORKSPACE_OBJECT_TYPE WORKSPACE_OBJECT_ID"
 	cmd.Short = `Get workspace object permission levels.`
 	cmd.Long = `Get workspace object permission levels.
@@ -319,8 +314,6 @@ func newGetPermissions() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getPermissionsReq workspace.GetWorkspaceObjectPermissionsRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get-permissions WORKSPACE_OBJECT_TYPE WORKSPACE_OBJECT_ID"
 	cmd.Short = `Get workspace object permissions.`
@@ -381,8 +374,6 @@ func newGetStatus() *cobra.Command {
 
 	var getStatusReq workspace.GetStatusRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get-status PATH"
 	cmd.Short = `Get status.`
 	cmd.Long = `Get status.
@@ -441,7 +432,6 @@ func newImport() *cobra.Command {
 	var importReq workspace.Import
 	var importJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&importJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&importReq.Content, "content", importReq.Content, `The base64-encoded content.`)
@@ -540,8 +530,6 @@ func newList() *cobra.Command {
 
 	var listReq workspace.ListWorkspaceRequest
 
-	// TODO: short flags
-
 	cmd.Flags().Int64Var(&listReq.NotebooksModifiedAfter, "notebooks-modified-after", listReq.NotebooksModifiedAfter, `UTC timestamp in milliseconds.`)
 
 	cmd.Use = "list PATH"
@@ -600,7 +588,6 @@ func newMkdirs() *cobra.Command {
 	var mkdirsReq workspace.Mkdirs
 	var mkdirsJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&mkdirsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "mkdirs PATH"
@@ -703,7 +690,6 @@ func newSetPermissions() *cobra.Command {
 	var setPermissionsReq workspace.WorkspaceObjectPermissionsRequest
 	var setPermissionsJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&setPermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: access_control_list
@@ -781,7 +767,6 @@ func newUpdatePermissions() *cobra.Command {
 	var updatePermissionsReq workspace.WorkspaceObjectPermissionsRequest
 	var updatePermissionsJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updatePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: access_control_list

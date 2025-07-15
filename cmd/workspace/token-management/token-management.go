@@ -64,7 +64,6 @@ func newCreateOboToken() *cobra.Command {
 	var createOboTokenReq settings.CreateOboTokenRequest
 	var createOboTokenJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createOboTokenJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createOboTokenReq.Comment, "comment", createOboTokenReq.Comment, `Comment that describes the purpose of the token.`)
@@ -162,8 +161,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq settings.DeleteTokenManagementRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete TOKEN_ID"
 	cmd.Short = `Delete a token.`
 	cmd.Long = `Delete a token.
@@ -231,8 +228,6 @@ func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getReq settings.GetTokenManagementRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get TOKEN_ID"
 	cmd.Short = `Get token info.`
@@ -387,8 +382,6 @@ func newList() *cobra.Command {
 
 	var listReq settings.ListTokenManagementRequest
 
-	// TODO: short flags
-
 	cmd.Flags().Int64Var(&listReq.CreatedById, "created-by-id", listReq.CreatedById, `User ID of the user that created the token.`)
 	cmd.Flags().StringVar(&listReq.CreatedByUsername, "created-by-username", listReq.CreatedByUsername, `Username of the user that created the token.`)
 
@@ -441,7 +434,6 @@ func newSetPermissions() *cobra.Command {
 	var setPermissionsReq settings.TokenPermissionsRequest
 	var setPermissionsJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&setPermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: access_control_list
@@ -513,7 +505,6 @@ func newUpdatePermissions() *cobra.Command {
 	var updatePermissionsReq settings.TokenPermissionsRequest
 	var updatePermissionsJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updatePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: access_control_list

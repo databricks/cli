@@ -72,7 +72,7 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().BoolVar(&createSkipWait, "no-wait", createSkipWait, `do not wait to reach RUNNING state`)
 	cmd.Flags().DurationVar(&createTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
-	// TODO: short flags
+
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.AwsRegion, "aws-region", createReq.AwsRegion, `The AWS region of the workspace's data plane.`)
@@ -196,8 +196,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq provisioning.DeleteWorkspaceRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete WORKSPACE_ID"
 	cmd.Short = `Delete a workspace.`
 	cmd.Long = `Delete a workspace.
@@ -275,8 +273,6 @@ func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getReq provisioning.GetWorkspaceRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get WORKSPACE_ID"
 	cmd.Short = `Get a workspace.`
@@ -414,7 +410,7 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().BoolVar(&updateSkipWait, "no-wait", updateSkipWait, `do not wait to reach RUNNING state`)
 	cmd.Flags().DurationVar(&updateTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
-	// TODO: short flags
+
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateReq.AwsRegion, "aws-region", updateReq.AwsRegion, `The AWS region of the workspace's data plane (for example, us-west-2).`)

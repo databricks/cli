@@ -26,7 +26,7 @@ Validation OK!
 
 >>> [CLI] bundle deploy -t dev
 Building python_artifact...
-Uploading dist/project_name_[UNIQUE_NAME]-0.0.1+[NUMBER].[NUMBER]-py3-none-any.whl...
+Uploading .databricks/bundle/dev/patched_wheels/python_artifact_project_name_[UNIQUE_NAME]/project_name_[UNIQUE_NAME]-0.0.1+[NUMID]-py3-none-any.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files...
 Deploying resources...
 Updating deployment state...
@@ -43,7 +43,7 @@ Resources:
   Jobs:
     project_name_[UNIQUE_NAME]_job:
       Name: [dev [USERNAME]] project_name_[UNIQUE_NAME]_job
-      URL:  [DATABRICKS_URL]/jobs/[NUMBER]
+      URL:  [DATABRICKS_URL]/jobs/[NUMID]
   Pipelines:
     project_name_[UNIQUE_NAME]_pipeline:
       Name: [dev [USERNAME]] project_name_[UNIQUE_NAME]_pipeline
@@ -54,13 +54,13 @@ Resources:
 >>> diff.py ../out.validate.dev.json ../out.summary.dev.json
 --- ../out.validate.dev.json
 +++ ../out.summary.dev.json
-@@ -50,4 +50,5 @@
+@@ -51,4 +51,5 @@
          "edit_mode": "UI_LOCKED",
          "format": "MULTI_TASK",
 +        "id": "[NUMID]",
          "job_clusters": [
            {
-@@ -118,5 +119,6 @@
+@@ -119,5 +120,6 @@
              "unit": "DAYS"
            }
 -        }
@@ -68,13 +68,13 @@ Resources:
 +        "url": "[DATABRICKS_URL]/jobs/[NUMID]"
        }
      },
-@@ -133,4 +135,5 @@
+@@ -134,4 +136,5 @@
          "development": true,
          "edition": "ADVANCED",
 +        "id": "[UUID]",
          "libraries": [
            {
-@@ -142,5 +145,6 @@
+@@ -143,5 +146,6 @@
          "name": "[dev [USERNAME]] project_name_[UNIQUE_NAME]_pipeline",
          "permissions": [],
 -        "schema": "project_name_[UNIQUE_NAME]_dev"
@@ -108,7 +108,13 @@ Validation OK!
 >>> diff.py ../out.validate.dev.json ../out.validate.prod.json
 --- ../out.validate.dev.json
 +++ ../out.validate.prod.json
-@@ -13,16 +13,11 @@
+@@ -3,5 +3,4 @@
+     "python_artifact": {
+       "build": "uv build --wheel",
+-      "dynamic_version": true,
+       "files": [
+         {
+@@ -14,16 +13,11 @@
    },
    "bundle": {
 -    "deployment": {
@@ -126,12 +132,13 @@ Validation OK!
      "name": "project_name_[UNIQUE_NAME]",
 -    "target": "dev",
 +    "target": "prod",
-     "terraform": {},
      "uuid": "[UUID]"
-@@ -32,13 +27,10 @@
+   },
+@@ -32,14 +26,10 @@
      "resources/project_name_[UNIQUE_NAME].pipeline.yml"
    ],
 -  "presets": {
+-    "artifacts_dynamic_version": true,
 -    "jobs_max_concurrent_runs": 4,
 -    "name_prefix": "[dev [USERNAME]] ",
 -    "pipelines_development": true,
@@ -148,14 +155,14 @@ Validation OK!
 +  ],
    "resources": {
      "jobs": {
-@@ -46,5 +38,5 @@
+@@ -47,5 +37,5 @@
          "deployment": {
            "kind": "BUNDLE",
 -          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/state/metadata.json"
 +          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/state/metadata.json"
          },
          "edit_mode": "UI_LOCKED",
-@@ -65,12 +57,9 @@
+@@ -66,12 +56,9 @@
            }
          ],
 -        "max_concurrent_runs": 4,
@@ -170,21 +177,21 @@ Validation OK!
 -          "dev": "[USERNAME]"
          },
          "tasks": [
-@@ -78,5 +67,5 @@
+@@ -97,5 +84,5 @@
              "job_cluster_key": "job_cluster",
              "notebook_task": {
 -              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/notebook"
 +              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/files/src/notebook"
              },
              "task_key": "notebook_task"
-@@ -113,5 +102,5 @@
+@@ -114,5 +101,5 @@
          ],
          "trigger": {
 -          "pause_status": "PAUSED",
 +          "pause_status": "UNPAUSED",
            "periodic": {
              "interval": 1,
-@@ -125,22 +114,21 @@
+@@ -126,22 +113,21 @@
          "channel": "CURRENT",
          "configuration": {
 -          "bundle.sourcePath": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src"
@@ -212,7 +219,7 @@ Validation OK!
 +        "schema": "project_name_[UNIQUE_NAME]_prod"
        }
      }
-@@ -153,10 +141,10 @@
+@@ -154,10 +140,10 @@
    "targets": null,
    "workspace": {
 -    "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/artifacts",
@@ -231,7 +238,7 @@ Validation OK!
 
 >>> [CLI] bundle deploy -t prod
 Building python_artifact...
-Uploading dist/project_name_[UNIQUE_NAME]-0.0.1+[NUMBER].[NUMBER]-py3-none-any.whl...
+Uploading dist/project_name_[UNIQUE_NAME]-0.0.1-py3-none-any.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/files...
 Deploying resources...
 Updating deployment state...
@@ -248,7 +255,7 @@ Resources:
   Jobs:
     project_name_[UNIQUE_NAME]_job:
       Name: project_name_[UNIQUE_NAME]_job
-      URL:  [DATABRICKS_URL]/jobs/[NUMBER]
+      URL:  [DATABRICKS_URL]/jobs/[NUMID]
   Pipelines:
     project_name_[UNIQUE_NAME]_pipeline:
       Name: project_name_[UNIQUE_NAME]_pipeline
@@ -259,7 +266,13 @@ Resources:
 >>> diff.py ../out.summary.dev.json ../out.summary.prod.json
 --- ../out.summary.dev.json
 +++ ../out.summary.prod.json
-@@ -13,16 +13,11 @@
+@@ -3,5 +3,4 @@
+     "python_artifact": {
+       "build": "uv build --wheel",
+-      "dynamic_version": true,
+       "files": [
+         {
+@@ -14,16 +13,11 @@
    },
    "bundle": {
 -    "deployment": {
@@ -277,12 +290,13 @@ Resources:
      "name": "project_name_[UNIQUE_NAME]",
 -    "target": "dev",
 +    "target": "prod",
-     "terraform": {},
      "uuid": "[UUID]"
-@@ -32,13 +27,10 @@
+   },
+@@ -32,14 +26,10 @@
      "resources/project_name_[UNIQUE_NAME].pipeline.yml"
    ],
 -  "presets": {
+-    "artifacts_dynamic_version": true,
 -    "jobs_max_concurrent_runs": 4,
 -    "name_prefix": "[dev [USERNAME]] ",
 -    "pipelines_development": true,
@@ -299,14 +313,14 @@ Resources:
 +  ],
    "resources": {
      "jobs": {
-@@ -46,5 +38,5 @@
+@@ -47,5 +37,5 @@
          "deployment": {
            "kind": "BUNDLE",
 -          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/state/metadata.json"
 +          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/state/metadata.json"
          },
          "edit_mode": "UI_LOCKED",
-@@ -66,12 +58,9 @@
+@@ -67,12 +57,9 @@
            }
          ],
 -        "max_concurrent_runs": 4,
@@ -321,21 +335,21 @@ Resources:
 -          "dev": "[USERNAME]"
          },
          "tasks": [
-@@ -79,5 +68,5 @@
+@@ -98,5 +85,5 @@
              "job_cluster_key": "job_cluster",
              "notebook_task": {
 -              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/notebook"
 +              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/files/src/notebook"
              },
              "task_key": "notebook_task"
-@@ -114,5 +103,5 @@
+@@ -115,5 +102,5 @@
          ],
          "trigger": {
 -          "pause_status": "PAUSED",
 +          "pause_status": "UNPAUSED",
            "periodic": {
              "interval": 1,
-@@ -127,11 +116,10 @@
+@@ -128,11 +115,10 @@
          "channel": "CURRENT",
          "configuration": {
 -          "bundle.sourcePath": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src"
@@ -349,7 +363,7 @@ Resources:
 -        "development": true,
          "edition": "ADVANCED",
          "id": "[UUID]",
-@@ -139,11 +127,11 @@
+@@ -140,11 +126,11 @@
            {
              "notebook": {
 -              "path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/dlt_pipeline"
@@ -364,7 +378,7 @@ Resources:
 +        "schema": "project_name_[UNIQUE_NAME]_prod",
          "url": "[DATABRICKS_URL]/pipelines/[UUID]"
        }
-@@ -157,10 +145,10 @@
+@@ -158,10 +144,10 @@
    "targets": null,
    "workspace": {
 -    "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/artifacts",
