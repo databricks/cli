@@ -2,6 +2,11 @@ package psql
 
 import (
 	"errors"
+	"fmt"
+
+	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/databricks-sdk-go/service/database"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/lakebase"
@@ -35,6 +40,8 @@ You can pass additional arguments to psql after a double-dash (--):
 
 	cmd.PreRunE = mustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
 		argsLenAtDash := cmd.ArgsLenAtDash()
 
 		// If -- was used, only count args before the dash
@@ -46,7 +53,28 @@ You can pass additional arguments to psql after a double-dash (--):
 		}
 
 		if argsBeforeDash != 1 {
-			return errors.New("please specify exactly one database instance name: databricks psql [DATABASE_INSTANCE_NAME]")
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No DATABASE_INSTANCE_NAME argument specified. Loading names for Database instances drop-down."
+			instances, err := w.Database.ListDatabaseInstancesAll(ctx, database.ListDatabaseInstancesRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Database instances drop-down. Please manually specify required argument: DATABASE_INSTANCE_NAME. Original error: %w", err)
+			}
+			if len(instances) == 0 {
+				return errors.New("could not find any Database instances in the workspace. Please manually specify required argument: DATABASE_INSTANCE_NAME")
+			}
+
+			names := make(map[string]string)
+			for _, instance := range instances {
+				names[instance.Name] = instance.Name
+			}
+
+			name, err := cmdio.Select(ctx, names, "")
+			if err != nil {
+				return err
+			}
+
+			args = append([]string{name}, args...)
 		}
 
 		databaseInstanceName := args[0]
