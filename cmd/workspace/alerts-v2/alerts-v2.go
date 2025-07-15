@@ -68,6 +68,7 @@ func newCreateAlert() *cobra.Command {
 	// TODO: complex arg: evaluation
 	cmd.Flags().StringVar(&createAlertReq.Alert.ParentPath, "parent-path", createAlertReq.Alert.ParentPath, `The workspace path of the folder containing the alert.`)
 	cmd.Flags().StringVar(&createAlertReq.Alert.QueryText, "query-text", createAlertReq.Alert.QueryText, `Text of the query to be run.`)
+	cmd.Flags().StringVar(&createAlertReq.Alert.RunAsUserName, "run-as-user-name", createAlertReq.Alert.RunAsUserName, `The run as username or application ID of service principal.`)
 	// TODO: complex arg: schedule
 	cmd.Flags().StringVar(&createAlertReq.Alert.WarehouseId, "warehouse-id", createAlertReq.Alert.WarehouseId, `ID of the SQL warehouse attached to the alert.`)
 
@@ -328,6 +329,7 @@ func newUpdateAlert() *cobra.Command {
 	// TODO: complex arg: evaluation
 	cmd.Flags().StringVar(&updateAlertReq.Alert.ParentPath, "parent-path", updateAlertReq.Alert.ParentPath, `The workspace path of the folder containing the alert.`)
 	cmd.Flags().StringVar(&updateAlertReq.Alert.QueryText, "query-text", updateAlertReq.Alert.QueryText, `Text of the query to be run.`)
+	cmd.Flags().StringVar(&updateAlertReq.Alert.RunAsUserName, "run-as-user-name", updateAlertReq.Alert.RunAsUserName, `The run as username or application ID of service principal.`)
 	// TODO: complex arg: schedule
 	cmd.Flags().StringVar(&updateAlertReq.Alert.WarehouseId, "warehouse-id", updateAlertReq.Alert.WarehouseId, `ID of the SQL warehouse attached to the alert.`)
 

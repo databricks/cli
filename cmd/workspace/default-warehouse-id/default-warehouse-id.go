@@ -1,6 +1,6 @@
 // Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
 
-package dashboard_widgets
+package default_warehouse_id
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/sql"
+	"github.com/databricks/databricks-sdk-go/service/settings"
 	"github.com/spf13/cobra"
 )
 
@@ -19,15 +19,10 @@ var cmdOverrides []func(*cobra.Command)
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "dashboard-widgets",
-		Short: `This is an evolving API that facilitates the addition and removal of widgets from existing dashboards within the Databricks Workspace.`,
-		Long: `This is an evolving API that facilitates the addition and removal of widgets
-  from existing dashboards within the Databricks Workspace. Data structures may
-  change over time.`,
-		GroupID: "sql",
-		Annotations: map[string]string{
-			"package": "sql",
-		},
+		Use:   "default-warehouse-id",
+		Short: `Warehouse to be selected by default for users in this workspace.`,
+		Long: `Warehouse to be selected by default for users in this workspace. Covers SQL
+  workloads only and can be overridden by users.`,
 
 		// This service is being previewed; hide from help output.
 		Hidden: true,
@@ -35,80 +30,13 @@ func New() *cobra.Command {
 	}
 
 	// Add methods
-	cmd.AddCommand(newCreate())
 	cmd.AddCommand(newDelete())
+	cmd.AddCommand(newGet())
 	cmd.AddCommand(newUpdate())
 
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
-	}
-
-	return cmd
-}
-
-// start create command
-
-// Slice with functions to override default command behavior.
-// Functions can be added from the `init()` function in manually curated files in this directory.
-var createOverrides []func(
-	*cobra.Command,
-	*sql.CreateWidget,
-)
-
-func newCreate() *cobra.Command {
-	cmd := &cobra.Command{}
-
-	var createReq sql.CreateWidget
-	var createJson flags.JsonFlag
-
-	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
-
-	cmd.Flags().StringVar(&createReq.Text, "text", createReq.Text, `If this is a textbox widget, the application displays this text.`)
-	cmd.Flags().StringVar(&createReq.VisualizationId, "visualization-id", createReq.VisualizationId, `Query Vizualization ID returned by :method:queryvisualizations/create.`)
-
-	cmd.Use = "create"
-	cmd.Short = `Add widget to a dashboard.`
-	cmd.Long = `Add widget to a dashboard.
-  
-  Adds a widget to a dashboard`
-
-	cmd.Annotations = make(map[string]string)
-
-	cmd.PreRunE = root.MustWorkspaceClient
-	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
-		ctx := cmd.Context()
-		w := cmdctx.WorkspaceClient(ctx)
-
-		if cmd.Flags().Changed("json") {
-			diags := createJson.Unmarshal(&createReq)
-			if diags.HasError() {
-				return diags.Error()
-			}
-			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
-				if err != nil {
-					return err
-				}
-			}
-		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
-		}
-
-		response, err := w.DashboardWidgets.Create(ctx, createReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
-	}
-
-	// Disable completions since they are not applicable.
-	// Can be overridden by manual implementation in `override.go`.
-	cmd.ValidArgsFunction = cobra.NoFileCompletions
-
-	// Apply optional overrides to this command.
-	for _, fn := range createOverrides {
-		fn(cmd, &createReq)
 	}
 
 	return cmd
@@ -120,27 +48,26 @@ func newCreate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*sql.DeleteDashboardWidgetRequest,
+	*settings.DeleteDefaultWarehouseIdRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var deleteReq sql.DeleteDashboardWidgetRequest
+	var deleteReq settings.DeleteDefaultWarehouseIdRequest
 
-	cmd.Use = "delete ID"
-	cmd.Short = `Remove widget.`
-	cmd.Long = `Remove widget.
+	cmd.Flags().StringVar(&deleteReq.Etag, "etag", deleteReq.Etag, `etag used for versioning.`)
+
+	cmd.Use = "delete"
+	cmd.Short = `Delete the Default Warehouse Id setting.`
+	cmd.Long = `Delete the Default Warehouse Id setting.
   
-  Removes a widget from a dashboard
-
-  Arguments:
-    ID: Widget ID returned by :method:dashboardwidgets/create`
+  Reverts the Default Warehouse Id setting to its default value.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(1)
+		check := root.ExactArgs(0)
 		return check(cmd, args)
 	}
 
@@ -149,13 +76,11 @@ func newDelete() *cobra.Command {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
-		deleteReq.Id = args[0]
-
-		err = w.DashboardWidgets.Delete(ctx, deleteReq)
+		response, err := w.Settings.DefaultWarehouseId().Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -170,41 +95,83 @@ func newDelete() *cobra.Command {
 	return cmd
 }
 
+// start get command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getOverrides []func(
+	*cobra.Command,
+	*settings.GetDefaultWarehouseIdRequest,
+)
+
+func newGet() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getReq settings.GetDefaultWarehouseIdRequest
+
+	cmd.Flags().StringVar(&getReq.Etag, "etag", getReq.Etag, `etag used for versioning.`)
+
+	cmd.Use = "get"
+	cmd.Short = `Get the Default Warehouse Id setting.`
+	cmd.Long = `Get the Default Warehouse Id setting.
+  
+  Gets the Default Warehouse Id setting.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		response, err := w.Settings.DefaultWarehouseId().Get(ctx, getReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getOverrides {
+		fn(cmd, &getReq)
+	}
+
+	return cmd
+}
+
 // start update command
 
 // Slice with functions to override default command behavior.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*sql.UpdateWidgetRequest,
+	*settings.UpdateDefaultWarehouseIdRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var updateReq sql.UpdateWidgetRequest
+	var updateReq settings.UpdateDefaultWarehouseIdRequest
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.Text, "text", updateReq.Text, `If this is a textbox widget, the application displays this text.`)
-	cmd.Flags().StringVar(&updateReq.VisualizationId, "visualization-id", updateReq.VisualizationId, `Query Vizualization ID returned by :method:queryvisualizations/create.`)
-
-	cmd.Use = "update ID"
-	cmd.Short = `Update existing widget.`
-	cmd.Long = `Update existing widget.
+	cmd.Use = "update"
+	cmd.Short = `Update the Default Warehouse Id setting.`
+	cmd.Long = `Update the Default Warehouse Id setting.
   
-  Updates an existing widget
-
-  Arguments:
-    ID: Widget ID returned by :method:dashboardwidgets/create`
+  Updates the Default Warehouse Id setting.`
 
 	cmd.Annotations = make(map[string]string)
-
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(1)
-		return check(cmd, args)
-	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -225,9 +192,8 @@ func newUpdate() *cobra.Command {
 		} else {
 			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
-		updateReq.Id = args[0]
 
-		response, err := w.DashboardWidgets.Update(ctx, updateReq)
+		response, err := w.Settings.DefaultWarehouseId().Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}
@@ -246,4 +212,4 @@ func newUpdate() *cobra.Command {
 	return cmd
 }
 
-// end service DashboardWidgets
+// end service DefaultWarehouseId

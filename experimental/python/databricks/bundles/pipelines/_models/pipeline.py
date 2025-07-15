@@ -103,8 +103,6 @@ class Pipeline(Resource):
 
     environment: VariableOrOptional[PipelinesEnvironment] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
     Environment specification for this pipeline used to install dependencies.
     """
 
@@ -166,8 +164,6 @@ class Pipeline(Resource):
 
     root_path: VariableOrOptional[str] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
     Root path for this pipeline.
     This is used as the root directory when editing the pipeline in the Databricks user interface and it is
     added to sys.path when executing Python sources during pipeline execution.
@@ -260,8 +256,6 @@ class PipelineDict(TypedDict, total=False):
 
     environment: VariableOrOptional[PipelinesEnvironmentParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
     Environment specification for this pipeline used to install dependencies.
     """
 
@@ -323,8 +317,6 @@ class PipelineDict(TypedDict, total=False):
 
     root_path: VariableOrOptional[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
     Root path for this pipeline.
     This is used as the root directory when editing the pipeline in the Databricks user interface and it is
     added to sys.path when executing Python sources during pipeline execution.

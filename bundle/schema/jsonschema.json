@@ -870,6 +870,9 @@
                         "description": "The core config of the serving endpoint.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.EndpointCoreConfigInput"
                       },
+                      "description": {
+                        "$ref": "#/$defs/string"
+                      },
                       "name": {
                         "description": "The name of the serving endpoint. This field is required and must be unique across a Databricks workspace.\nAn endpoint name can consist of alphanumeric characters, dashes, and underscores.",
                         "$ref": "#/$defs/string"
@@ -1023,9 +1026,7 @@
                       },
                       "environment": {
                         "description": "Environment specification for this pipeline used to install dependencies.",
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.PipelinesEnvironment",
-                        "x-databricks-preview": "PRIVATE",
-                        "doNotSuggest": true
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.PipelinesEnvironment"
                       },
                       "event_log": {
                         "description": "Event log configuration for this pipeline",
@@ -1076,9 +1077,7 @@
                       },
                       "root_path": {
                         "description": "Root path for this pipeline.\nThis is used as the root directory when editing the pipeline in the Databricks user interface and it is\nadded to sys.path when executing Python sources during pipeline execution.",
-                        "$ref": "#/$defs/string",
-                        "x-databricks-preview": "PRIVATE",
-                        "doNotSuggest": true
+                        "$ref": "#/$defs/string"
                       },
                       "run_as": {
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.RunAs",
@@ -2286,6 +2285,9 @@
                 {
                   "type": "object",
                   "properties": {
+                    "database": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceDatabase"
+                    },
                     "description": {
                       "description": "Description of the App Resource.",
                       "$ref": "#/$defs/string"
@@ -2313,6 +2315,48 @@
                   "additionalProperties": false,
                   "required": [
                     "name"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "apps.AppResourceDatabase": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "database_name": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "instance_name": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "permission": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceDatabaseDatabasePermission"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "database_name",
+                    "instance_name",
+                    "permission"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "apps.AppResourceDatabaseDatabasePermission": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "CAN_CONNECT_AND_CREATE"
                   ]
                 },
                 {
@@ -5822,6 +5866,7 @@
               "oneOf": [
                 {
                   "type": "object",
+                  "description": "Tag for a registered model",
                   "properties": {
                     "key": {
                       "description": "The tag key.",
@@ -6073,6 +6118,7 @@
                     "POSTGRESQL",
                     "SQLSERVER",
                     "SALESFORCE",
+                    "BIGQUERY",
                     "NETSUITE",
                     "WORKDAY_RAAS",
                     "GA4_RAW_DATA",
@@ -6081,7 +6127,8 @@
                     "ORACLE",
                     "TERADATA",
                     "SHAREPOINT",
-                    "DYNAMICS365"
+                    "DYNAMICS365",
+                    "CONFLUENCE"
                   ]
                 },
                 {
@@ -6332,9 +6379,7 @@
                     },
                     "glob": {
                       "description": "The unified field to include source codes.\nEach entry can be a notebook path, a file path, or a folder path that ends `/**`.\nThis field cannot be used together with `notebook` or `file`.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.PathPattern",
-                      "x-databricks-preview": "PRIVATE",
-                      "doNotSuggest": true
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.PathPattern"
                     },
                     "jar": {
                       "description": "URI of the jar to be installed. Currently only DBFS is supported.",
@@ -6632,7 +6677,8 @@
                   "description": "The SCD type to use to ingest the table.",
                   "enum": [
                     "SCD_TYPE_1",
-                    "SCD_TYPE_2"
+                    "SCD_TYPE_2",
+                    "APPEND_ONLY"
                   ]
                 },
                 {
@@ -6704,7 +6750,9 @@
                   "properties": {
                     "invalid_keywords": {
                       "description": "List of invalid keywords.\nAI guardrail uses keyword or string matching to decide if the keyword exists in the request or response content.",
-                      "$ref": "#/$defs/slice/string"
+                      "$ref": "#/$defs/slice/string",
+                      "deprecationMessage": "This field is deprecated",
+                      "deprecated": true
                     },
                     "pii": {
                       "description": "Configuration for guardrail PII filter.",
@@ -6716,7 +6764,9 @@
                     },
                     "valid_topics": {
                       "description": "The list of allowed topics.\nGiven a chat request, this guardrail flags the request if its topic is not in the allowed topics.",
-                      "$ref": "#/$defs/slice/string"
+                      "$ref": "#/$defs/slice/string",
+                      "deprecationMessage": "This field is deprecated",
+                      "deprecated": true
                     }
                   },
                   "additionalProperties": false
@@ -6822,8 +6872,12 @@
                       "$ref": "#/$defs/int64"
                     },
                     "key": {
-                      "description": "Key field for a rate limit. Currently, only 'user' and 'endpoint' are supported,\nwith 'endpoint' being the default if not specified.",
+                      "description": "Key field for a rate limit. Currently, 'user', 'user_group, 'service_principal', and 'endpoint' are supported,\nwith 'endpoint' being the default if not specified.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.AiGatewayRateLimitKey"
+                    },
+                    "principal": {
+                      "description": "Principal field for a user, user group, or service principal to apply rate limiting to. Accepts a user email, group name, or service principal application ID.",
+                      "$ref": "#/$defs/string"
                     },
                     "renewal_period": {
                       "description": "Renewal period field for a rate limit. Currently, only 'minute' is supported.",
@@ -6832,7 +6886,6 @@
                   },
                   "additionalProperties": false,
                   "required": [
-                    "calls",
                     "renewal_period"
                   ]
                 },
@@ -6848,7 +6901,9 @@
                   "type": "string",
                   "enum": [
                     "user",
-                    "endpoint"
+                    "endpoint",
+                    "user_group",
+                    "service_principal"
                   ]
                 },
                 {
@@ -7484,6 +7539,9 @@
                 {
                   "type": "object",
                   "properties": {
+                    "served_entity_name": {
+                      "$ref": "#/$defs/string"
+                    },
                     "served_model_name": {
                       "description": "The name of the served model this route configures traffic for.",
                       "$ref": "#/$defs/string"
@@ -7495,7 +7553,6 @@
                   },
                   "additionalProperties": false,
                   "required": [
-                    "served_model_name",
                     "traffic_percentage"
                   ]
                 },
@@ -7703,6 +7760,7 @@
               "oneOf": [
                 {
                   "type": "object",
+                  "description": "The metadata of the Azure KeyVault for a secret scope of type `AZURE_KEYVAULT`",
                   "properties": {
                     "dns_name": {
                       "description": "The DNS of the KeyVault",
@@ -7729,6 +7787,7 @@
               "oneOf": [
                 {
                   "type": "string",
+                  "description": "The types of secret scope backends in the Secret Manager. Azure KeyVault backed secret scopes\nwill be supported in a later release.",
                   "enum": [
                     "DATABRICKS",
                     "AZURE_KEYVAULT"

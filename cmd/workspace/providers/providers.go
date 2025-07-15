@@ -77,7 +77,7 @@ func newCreate() *cobra.Command {
 
   Arguments:
     NAME: The name of the Provider.
-    AUTHENTICATION_TYPE: The delta sharing authentication type. 
+    AUTHENTICATION_TYPE:  
       Supported values: [DATABRICKS, OAUTH_CLIENT_CREDENTIALS, OIDC_FEDERATION, TOKEN]`
 
 	cmd.Annotations = make(map[string]string)

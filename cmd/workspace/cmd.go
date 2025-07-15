@@ -30,7 +30,9 @@ import (
 	data_sources "github.com/databricks/cli/cmd/workspace/data-sources"
 	database "github.com/databricks/cli/cmd/workspace/database"
 	experiments "github.com/databricks/cli/cmd/workspace/experiments"
+	external_lineage "github.com/databricks/cli/cmd/workspace/external-lineage"
 	external_locations "github.com/databricks/cli/cmd/workspace/external-locations"
+	external_metadata "github.com/databricks/cli/cmd/workspace/external-metadata"
 	feature_store "github.com/databricks/cli/cmd/workspace/feature-store"
 	forecasting "github.com/databricks/cli/cmd/workspace/forecasting"
 	functions "github.com/databricks/cli/cmd/workspace/functions"
@@ -46,6 +48,7 @@ import (
 	lakeview "github.com/databricks/cli/cmd/workspace/lakeview"
 	lakeview_embedded "github.com/databricks/cli/cmd/workspace/lakeview-embedded"
 	libraries "github.com/databricks/cli/cmd/workspace/libraries"
+	materialized_features "github.com/databricks/cli/cmd/workspace/materialized-features"
 	metastores "github.com/databricks/cli/cmd/workspace/metastores"
 	model_registry "github.com/databricks/cli/cmd/workspace/model-registry"
 	model_versions "github.com/databricks/cli/cmd/workspace/model-versions"
@@ -81,6 +84,7 @@ import (
 	resource_quotas "github.com/databricks/cli/cmd/workspace/resource-quotas"
 	schemas "github.com/databricks/cli/cmd/workspace/schemas"
 	secrets "github.com/databricks/cli/cmd/workspace/secrets"
+	service_principal_secrets_proxy "github.com/databricks/cli/cmd/workspace/service-principal-secrets-proxy"
 	service_principals "github.com/databricks/cli/cmd/workspace/service-principals"
 	serving_endpoints "github.com/databricks/cli/cmd/workspace/serving-endpoints"
 	settings "github.com/databricks/cli/cmd/workspace/settings"
@@ -133,7 +137,9 @@ func All() []*cobra.Command {
 	out = append(out, data_sources.New())
 	out = append(out, database.New())
 	out = append(out, experiments.New())
+	out = append(out, external_lineage.New())
 	out = append(out, external_locations.New())
+	out = append(out, external_metadata.New())
 	out = append(out, feature_store.New())
 	out = append(out, functions.New())
 	out = append(out, genie.New())
@@ -148,6 +154,7 @@ func All() []*cobra.Command {
 	out = append(out, lakeview.New())
 	out = append(out, lakeview_embedded.New())
 	out = append(out, libraries.New())
+	out = append(out, materialized_features.New())
 	out = append(out, metastores.New())
 	out = append(out, model_registry.New())
 	out = append(out, model_versions.New())
@@ -183,6 +190,7 @@ func All() []*cobra.Command {
 	out = append(out, resource_quotas.New())
 	out = append(out, schemas.New())
 	out = append(out, secrets.New())
+	out = append(out, service_principal_secrets_proxy.New())
 	out = append(out, service_principals.New())
 	out = append(out, serving_endpoints.New())
 	out = append(out, settings.New())

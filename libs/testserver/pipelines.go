@@ -90,9 +90,7 @@ func (s *FakeWorkspace) PipelineUpdate(req Request, pipelineId string) Response 
 	setSpecDefaults(&spec, pipelineId)
 	s.Pipelines[pipelineId] = item
 
-	return Response{
-		Body: pipelines.EditPipelineResponse{},
-	}
+	return Response{}
 }
 
 func (s *FakeWorkspace) PipelineStartUpdate(pipelineId string) Response {
