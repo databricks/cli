@@ -72,7 +72,7 @@ func walk(v Value, p Path, fn func(p Path, v Value) (Value, error)) (Value, erro
 func CollectLeafPaths(v Value) []string {
 	var paths []string
 
-	Walk(v, func(p Path, v Value) (Value, error) {
+	Walk(v, func(p Path, v Value) (Value, error) { //nolint:errcheck
 		if len(p) == 0 {
 			return v, nil
 		}
