@@ -22,6 +22,7 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/maps"
 
+	configresources "github.com/databricks/cli/bundle/config/resources"
 	"github.com/pkg/browser"
 )
 
@@ -42,9 +43,21 @@ func promptOpenArgument(ctx context.Context, b *bundle.Bundle) (string, error) {
 }
 
 func resolveOpenArgument(ctx context.Context, b *bundle.Bundle, args []string) (string, error) {
-	// If no arguments are specified, prompt the user to select the resource to open.
-	if len(args) == 0 && cmdio.IsPromptSupported(ctx) {
-		return promptOpenArgument(ctx, b)
+	// If no arguments are specified, check if we should auto-select (when only one pipeline) or prompt the user to select the pipeline to open.
+	if len(args) == 0 {
+		completions := resources.Completions(b)
+
+		if len(completions) == 1 {
+			for key, ref := range completions {
+				if _, ok := ref.Resource.(*configresources.Pipeline); ok {
+					return key, nil
+				}
+			}
+		}
+
+		if cmdio.IsPromptSupported(ctx) {
+			return promptOpenArgument(ctx, b)
+		}
 	}
 
 	if len(args) < 1 {
