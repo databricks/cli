@@ -65,13 +65,16 @@ def pytest_configure(config: pytest.Config):
         add_all_resources_to_sys_path()
         enable_fallback_compute()
 
+        # Initialize Spark session eagerly, so it is available even when
+        # SparkSession.builder.getOrCreate() is used. For DB Connect 15+,
+        # we validate version compatibility with the remote cluster.
+        if hasattr(DatabricksSession.builder, "validateSession"):
+            DatabricksSession.builder.validateSession().getOrCreate()
+        else:
+            DatabricksSession.builder.getOrCreate()
 
-@pytest.fixture(scope="session", autouse=True)
+
+@pytest.fixture(scope="session")
 def spark() -> SparkSession:
     """Provide a SparkSession fixture for tests."""
-    if hasattr(DatabricksSession.builder, "validateSession"):
-       {{/* This is relevant as long as DB Connect 15 is in use.
-          * DB Connect >16 automaticaly does this validation! */}}
-        # For DB Connect 15+, validate that the version is compatible with the remote cluster
-        return DatabricksSession.builder.validateSession().getOrCreate()
     return DatabricksSession.builder.getOrCreate()
