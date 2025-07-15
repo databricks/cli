@@ -230,3 +230,11 @@ import "github.com/databricks/cli/libs/cmdio"
 
 cmdio.LogString(ctx, "...")
 ```
+
+# Changelogs
+
+Make sure that notable changes always come with an update of NEXT_CHANGELOG.md, with one line per pull request. Examples:
+
+* Fix table of content by removing not required top-level item ([#366](https://github.com/databricks/cli/pull/366)).
+* Fix printing the tasks in job output in DAG execution order ([#377](https://github.com/databricks/cli/pull/377)).
+* Improved error message when 'bricks bundle run' is executed before 'bricks bundle deploy' ([#378](https://github.com/databricks/cli/pull/378)).
