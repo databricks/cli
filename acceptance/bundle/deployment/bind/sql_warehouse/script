@@ -1,0 +1,6 @@
+SQL_WAREHOUSE_ID="0123-456789-warehouse0"
+trace $CLI bundle deployment bind sql_warehouse1 "${SQL_WAREHOUSE_ID}" --auto-approve
+trace $CLI bundle summary
+
+trace $CLI bundle deployment unbind sql_warehouse1
+trace $CLI bundle summary
