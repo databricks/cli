@@ -365,9 +365,9 @@ github.com/databricks/cli/bundle/config/resources.Job:
       The queue settings of the job.
   "run_as":
     "description": |-
-      Write-only setting. Specifies the user or service principal that the job runs as. If not specified, the job runs as the user who created the job.
-
-      Either `user_name` or `service_principal_name` should be specified. If not, an error is thrown.
+      The user or service principal that the job runs as, if specified in the request.
+      This field indicates the explicit configuration of `run_as` for the job.
+      To find the value in all cases, explicit or implicit, use `run_as_user_name`.
   "schedule":
     "description": |-
       An optional periodic schedule for this job. The default behavior is that the job only runs when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.
@@ -434,6 +434,7 @@ github.com/databricks/cli/bundle/config/resources.ModelServingEndpoint:
   "config":
     "description": |-
       The core config of the serving endpoint.
+  "description": {}
   "name":
     "description": |-
       The name of the serving endpoint. This field is required and must be unique across a Databricks workspace.
@@ -486,8 +487,6 @@ github.com/databricks/cli/bundle/config/resources.Pipeline:
   "environment":
     "description": |-
       Environment specification for this pipeline used to install dependencies.
-    "x-databricks-preview": |-
-      PRIVATE
   "event_log":
     "description": |-
       Event log configuration for this pipeline
@@ -527,8 +526,6 @@ github.com/databricks/cli/bundle/config/resources.Pipeline:
       Root path for this pipeline.
       This is used as the root directory when editing the pipeline in the Databricks user interface and it is
       added to sys.path when executing Python sources during pipeline execution.
-    "x-databricks-preview": |-
-      PRIVATE
   "run_as":
     "description": |-
       Write-only setting, available only in Create/Update calls. Specifies the user or service principal that the pipeline runs as. If not specified, the pipeline runs as the user who created the pipeline.
@@ -718,6 +715,7 @@ github.com/databricks/databricks-sdk-go/service/apps.AppDeploymentStatus:
     "description": |-
       State of the deployment.
 github.com/databricks/databricks-sdk-go/service/apps.AppResource:
+  "database": {}
   "description":
     "description": |-
       Description of the App Resource.
@@ -729,6 +727,15 @@ github.com/databricks/databricks-sdk-go/service/apps.AppResource:
   "serving_endpoint": {}
   "sql_warehouse": {}
   "uc_securable": {}
+github.com/databricks/databricks-sdk-go/service/apps.AppResourceDatabase:
+  "database_name": {}
+  "instance_name": {}
+  "permission": {}
+github.com/databricks/databricks-sdk-go/service/apps.AppResourceDatabaseDatabasePermission:
+  "_":
+    "enum":
+      - |-
+        CAN_CONNECT_AND_CREATE
 github.com/databricks/databricks-sdk-go/service/apps.AppResourceJob:
   "id":
     "description": |-
@@ -2790,6 +2797,9 @@ github.com/databricks/databricks-sdk-go/service/ml.ExperimentTag:
     "description": |-
       The tag value.
 github.com/databricks/databricks-sdk-go/service/ml.ModelTag:
+  "_":
+    "description": |-
+      Tag for a registered model
   "key":
     "description": |-
       The tag key.
@@ -2911,6 +2921,8 @@ github.com/databricks/databricks-sdk-go/service/pipelines.IngestionSourceType:
       - |-
         SALESFORCE
       - |-
+        BIGQUERY
+      - |-
         NETSUITE
       - |-
         WORKDAY_RAAS
@@ -2928,6 +2940,8 @@ github.com/databricks/databricks-sdk-go/service/pipelines.IngestionSourceType:
         SHAREPOINT
       - |-
         DYNAMICS365
+      - |-
+        CONFLUENCE
 github.com/databricks/databricks-sdk-go/service/pipelines.ManualTrigger: {}
 github.com/databricks/databricks-sdk-go/service/pipelines.NotebookLibrary:
   "path":
@@ -3092,8 +3106,6 @@ github.com/databricks/databricks-sdk-go/service/pipelines.PipelineLibrary:
       The unified field to include source codes.
       Each entry can be a notebook path, a file path, or a folder path that ends `/**`.
       This field cannot be used together with `notebook` or `file`.
-    "x-databricks-preview": |-
-      PRIVATE
   "jar":
     "description": |-
       URI of the jar to be installed. Currently only DBFS is supported.
@@ -3243,6 +3255,8 @@ github.com/databricks/databricks-sdk-go/service/pipelines.TableSpecificConfigScd
         SCD_TYPE_1
       - |-
         SCD_TYPE_2
+      - |-
+        APPEND_ONLY
 github.com/databricks/databricks-sdk-go/service/serving.Ai21LabsConfig:
   "ai21labs_api_key":
     "description": |-
@@ -3280,6 +3294,8 @@ github.com/databricks/databricks-sdk-go/service/serving.AiGatewayGuardrailParame
     "description": |-
       List of invalid keywords.
       AI guardrail uses keyword or string matching to decide if the keyword exists in the request or response content.
+    "deprecation_message": |-
+      This field is deprecated
   "pii":
     "description": |-
       Configuration for guardrail PII filter.
@@ -3290,6 +3306,8 @@ github.com/databricks/databricks-sdk-go/service/serving.AiGatewayGuardrailParame
     "description": |-
       The list of allowed topics.
       Given a chat request, this guardrail flags the request if its topic is not in the allowed topics.
+    "deprecation_message": |-
+      This field is deprecated
 github.com/databricks/databricks-sdk-go/service/serving.AiGatewayGuardrailPiiBehavior:
   "behavior":
     "description": |-
@@ -3330,8 +3348,11 @@ github.com/databricks/databricks-sdk-go/service/serving.AiGatewayRateLimit:
       Used to specify how many calls are allowed for a key within the renewal_period.
   "key":
     "description": |-
-      Key field for a rate limit. Currently, only 'user' and 'endpoint' are supported,
+      Key field for a rate limit. Currently, 'user', 'user_group, 'service_principal', and 'endpoint' are supported,
       with 'endpoint' being the default if not specified.
+  "principal":
+    "description": |-
+      Principal field for a user, user group, or service principal to apply rate limiting to. Accepts a user email, group name, or service principal application ID.
   "renewal_period":
     "description": |-
       Renewal period field for a rate limit. Currently, only 'minute' is supported.
@@ -3342,6 +3363,10 @@ github.com/databricks/databricks-sdk-go/service/serving.AiGatewayRateLimitKey:
         user
       - |-
         endpoint
+      - |-
+        user_group
+      - |-
+        service_principal
 github.com/databricks/databricks-sdk-go/service/serving.AiGatewayRateLimitRenewalPeriod:
   "_":
     "enum":
@@ -3728,6 +3753,7 @@ github.com/databricks/databricks-sdk-go/service/serving.RateLimitRenewalPeriod:
       - |-
         minute
 github.com/databricks/databricks-sdk-go/service/serving.Route:
+  "served_entity_name": {}
   "served_model_name":
     "description": |-
       The name of the served model this route configures traffic for.
@@ -3846,6 +3872,9 @@ github.com/databricks/databricks-sdk-go/service/serving.TrafficConfig:
     "description": |-
       The list of routes that define traffic to each served entity.
 github.com/databricks/databricks-sdk-go/service/workspace.AzureKeyVaultSecretScopeMetadata:
+  "_":
+    "description": |-
+      The metadata of the Azure KeyVault for a secret scope of type `AZURE_KEYVAULT`
   "dns_name":
     "description": |-
       The DNS of the KeyVault
@@ -3854,6 +3883,9 @@ github.com/databricks/databricks-sdk-go/service/workspace.AzureKeyVaultSecretSco
       The resource id of the azure KeyVault that user wants to associate the scope with.
 github.com/databricks/databricks-sdk-go/service/workspace.ScopeBackendType:
   "_":
+    "description": |-
+      The types of secret scope backends in the Secret Manager. Azure KeyVault backed secret scopes
+      will be supported in a later release.
     "enum":
       - |-
         DATABRICKS

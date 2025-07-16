@@ -254,6 +254,9 @@ github.com/databricks/cli/bundle/config/resources.ModelServingEndpoint:
             - key: "team"
               value: "data science"
       ```
+  "description":
+    "description": |-
+      PLACEHOLDER
   "permissions":
     "description": |-
       PLACEHOLDER
@@ -493,6 +496,9 @@ github.com/databricks/databricks-sdk-go/service/apps.AppDeploymentStatus:
     "description": |-
       PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/apps.AppResource:
+  "database":
+    "description": |-
+      PLACEHOLDER
   "job":
     "description": |-
       PLACEHOLDER
@@ -506,6 +512,16 @@ github.com/databricks/databricks-sdk-go/service/apps.AppResource:
     "description": |-
       PLACEHOLDER
   "uc_securable":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/apps.AppResourceDatabase:
+  "database_name":
+    "description": |-
+      PLACEHOLDER
+  "instance_name":
+    "description": |-
+      PLACEHOLDER
+  "permission":
     "description": |-
       PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/apps.AppResourceJob:
@@ -698,6 +714,10 @@ github.com/databricks/databricks-sdk-go/service/pipelines.PipelineTrigger:
     "description": |-
       PLACEHOLDER
   "manual":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/serving.Route:
+  "served_entity_name":
     "description": |-
       PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/serving.ServedEntityInput:
