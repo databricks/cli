@@ -456,4 +456,25 @@ func addDefaultHandlers(server *testserver.Server) {
 	server.Handle("GET", "/api/2.0/preview/sql/data_sources", func(req testserver.Request) any {
 		return req.Workspace.SqlDataSourcesList(req)
 	})
+
+	// Alerts v2:
+	server.Handle("GET", "/api/2.0/alerts/{id}", func(req testserver.Request) any {
+		return testserver.MapGet(req.Workspace, req.Workspace.Alerts, req.Vars["id"])
+	})
+
+	server.Handle("GET", "/api/2.0/alerts", func(req testserver.Request) any {
+		return req.Workspace.AlertsList(req)
+	})
+
+	server.Handle("POST", "/api/2.0/alerts", func(req testserver.Request) any {
+		return req.Workspace.AlertsUpsert(req, "")
+	})
+
+	server.Handle("PATCH", "/api/2.0/alerts/{id}", func(req testserver.Request) any {
+		return req.Workspace.AlertsUpsert(req, req.Vars["id"])
+	})
+
+	server.Handle("DELETE", "/api/2.0/alerts/{id}", func(req testserver.Request) any {
+		return testserver.MapDelete(req.Workspace, req.Workspace.Alerts, req.Vars["id"])
+	})
 }
