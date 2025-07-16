@@ -132,6 +132,9 @@ Database
 Quality Monitor v2
   quality-monitor-v2                     Manage data quality of UC objects (currently support schema).
 
+OAuth
+  service-principal-secrets-proxy        These APIs enable administrators to manage service principal secrets at the workspace level.
+
 Additional Commands:
   account                                Databricks Account Commands
   api                                    Perform Databricks API call
@@ -140,7 +143,6 @@ Additional Commands:
   configure                              Configure authentication
   help                                   Help about any command
   labs                                   Manage Databricks Labs installations
-  service-principal-secrets-proxy        These APIs enable administrators to manage service principal secrets at the workspace level.
   version                                Retrieve information about the current version of this CLI
 
 Flags:
