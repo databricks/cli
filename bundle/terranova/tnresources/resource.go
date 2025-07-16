@@ -18,6 +18,7 @@ const (
 	_volumes        = "volumes"
 	_apps           = "apps"
 	_sql_warehouses = "sql_warehouses"
+	_alerts         = "alerts"
 )
 
 var supportedResources = map[string]reflect.Value{
@@ -27,6 +28,7 @@ var supportedResources = map[string]reflect.Value{
 	_volumes:        reflect.ValueOf(NewResourceVolume),
 	_apps:           reflect.ValueOf(NewResourceApp),
 	_sql_warehouses: reflect.ValueOf(NewResourceSqlWarehouse),
+	_alerts:         reflect.ValueOf(NewResourceAlert),
 }
 
 // This types matches what Config() returns and should match 'config' field in the resource struct
@@ -37,6 +39,7 @@ var supportedResourcesTypes = map[string]reflect.Type{
 	_volumes:        reflect.TypeOf(ResourceVolume{}.config),
 	_apps:           reflect.TypeOf(ResourceApp{}.config),
 	_sql_warehouses: reflect.TypeOf(ResourceSqlWarehouse{}.config),
+	_alerts:         reflect.TypeOf(ResourceAlert{}.config),
 }
 
 type DeleteResourceFN = func(ctx context.Context, client *databricks.WorkspaceClient, oldID string) error
@@ -48,6 +51,7 @@ var deletableResources = map[string]DeleteResourceFN{
 	_volumes:        DeleteVolume,
 	_apps:           DeleteApp,
 	_sql_warehouses: DeleteSqlWarehouse,
+	_alerts:         DeleteAlert,
 }
 
 type IResource interface {

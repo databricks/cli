@@ -49,11 +49,10 @@ func (a *Alert) Exists(ctx context.Context, w *databricks.WorkspaceClient, id st
 
 func (a *Alert) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
-		SingularName:          "alert",
-		PluralName:            "alerts",
-		SingularTitle:         "Alert",
-		PluralTitle:           "Alerts",
-		TerraformResourceName: "databricks_alert_v2",
+		SingularName:  "alert",
+		PluralName:    "alerts",
+		SingularTitle: "Alert",
+		PluralTitle:   "Alerts",
 	}
 }
 

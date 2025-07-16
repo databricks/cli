@@ -33,9 +33,13 @@ func (alertConverter) Convert(ctx context.Context, key string, vin dyn.Value, ou
 
 	// Configure permissions for this resource.
 	if permissions := convertPermissionsResource(ctx, vin); permissions != nil {
-		permissions.AlertId = fmt.Sprintf("${databricks_alert_v2.%s.id}", key)
+		permissions.AlertV2Id = fmt.Sprintf("${databricks_alert_v2.%s.id}", key)
 		out.Permissions["alert_"+key] = permissions
 	}
 
 	return nil
+}
+
+func init() {
+	registerConverter("alerts", alertConverter{})
 }

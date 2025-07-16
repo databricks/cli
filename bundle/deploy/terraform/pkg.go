@@ -115,6 +115,7 @@ var GroupToTerraformName = map[string]string{
 	"volumes":                 "databricks_volume",
 	"apps":                    "databricks_app",
 	"secret_scopes":           "databricks_secret_scope",
+	"alerts":                  "databricks_alert_v2",
 	"sql_warehouses":          "databricks_sql_endpoint",
 }
 
