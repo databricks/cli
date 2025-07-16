@@ -405,42 +405,52 @@
                     "type": "object",
                     "properties": {
                       "create_time": {
+                        "description": "The timestamp of when the dashboard was created.",
                         "$ref": "#/$defs/string"
                       },
                       "dashboard_id": {
+                        "description": "UUID identifying the dashboard.",
                         "$ref": "#/$defs/string"
                       },
                       "display_name": {
+                        "description": "The display name of the dashboard.",
                         "$ref": "#/$defs/string"
                       },
                       "embed_credentials": {
                         "$ref": "#/$defs/bool"
                       },
                       "etag": {
+                        "description": "The etag for the dashboard. Can be optionally provided on updates to ensure that the dashboard\nhas not been modified since the last read.\nThis field is excluded in List Dashboards responses.",
                         "$ref": "#/$defs/string"
                       },
                       "file_path": {
                         "$ref": "#/$defs/string"
                       },
                       "lifecycle_state": {
+                        "description": "The state of the dashboard resource. Used for tracking trashed status.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/dashboards.LifecycleState"
                       },
                       "parent_path": {
+                        "description": "The workspace path of the folder containing the dashboard. Includes leading slash and no\ntrailing slash.\nThis field is excluded in List Dashboards responses.",
                         "$ref": "#/$defs/string"
                       },
                       "path": {
+                        "description": "The workspace path of the dashboard asset, including the file name.\nExported dashboards always have the file extension `.lvdash.json`.\nThis field is excluded in List Dashboards responses.",
                         "$ref": "#/$defs/string"
                       },
                       "permissions": {
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.DashboardPermission"
                       },
                       "serialized_dashboard": {
+                        "description": "The contents of the dashboard in serialized string form.\nThis field is excluded in List Dashboards responses.\nUse the [get dashboard API](https://docs.databricks.com/api/workspace/lakeview/get)\nto retrieve an example response, which includes the `serialized_dashboard` field.\nThis field provides the structure of the JSON string that represents the dashboard's\nlayout and components.",
                         "$ref": "#/$defs/interface"
                       },
                       "update_time": {
+                        "description": "The timestamp of when the dashboard was last updated by the user.\nThis field is excluded in List Dashboards responses.",
                         "$ref": "#/$defs/string"
                       },
                       "warehouse_id": {
+                        "description": "The warehouse ID used to run the dashboard.",
                         "$ref": "#/$defs/string"
                       }
                     },

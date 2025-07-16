@@ -122,43 +122,55 @@ github.com/databricks/cli/bundle/config/resources.Dashboard:
       In addition, if you attempt to deploy a bundle that contains a dashboard JSON file that is different than the one in the remote workspace, an error will occur. To force the deploy and overwrite the dashboard in the remote workspace with the local one, use the `--force` option. See [_](/dev-tools/cli/bundle-commands.md#deploy).
   "create_time":
     "description": |-
-      PLACEHOLDER
+      The timestamp of when the dashboard was created.
   "dashboard_id":
     "description": |-
-      PLACEHOLDER
+      UUID identifying the dashboard.
   "display_name":
     "description": |-
-      PLACEHOLDER
+      The display name of the dashboard.
   "embed_credentials":
     "description": |-
       PLACEHOLDER
   "etag":
     "description": |-
-      PLACEHOLDER
+      The etag for the dashboard. Can be optionally provided on updates to ensure that the dashboard
+      has not been modified since the last read.
+      This field is excluded in List Dashboards responses.
   "file_path":
     "description": |-
       PLACEHOLDER
   "lifecycle_state":
     "description": |-
-      PLACEHOLDER
+      The state of the dashboard resource. Used for tracking trashed status.
   "parent_path":
     "description": |-
-      PLACEHOLDER
+      The workspace path of the folder containing the dashboard. Includes leading slash and no
+      trailing slash.
+      This field is excluded in List Dashboards responses.
   "path":
     "description": |-
-      PLACEHOLDER
+      The workspace path of the dashboard asset, including the file name.
+      Exported dashboards always have the file extension `.lvdash.json`.
+      This field is excluded in List Dashboards responses.
   "permissions":
     "description": |-
       PLACEHOLDER
   "serialized_dashboard":
     "description": |-
-      PLACEHOLDER
+      The contents of the dashboard in serialized string form.
+      This field is excluded in List Dashboards responses.
+      Use the [get dashboard API](https://docs.databricks.com/api/workspace/lakeview/get)
+      to retrieve an example response, which includes the `serialized_dashboard` field.
+      This field provides the structure of the JSON string that represents the dashboard's
+      layout and components.
   "update_time":
     "description": |-
-      PLACEHOLDER
+      The timestamp of when the dashboard was last updated by the user.
+      This field is excluded in List Dashboards responses.
   "warehouse_id":
     "description": |-
-      PLACEHOLDER
+      The warehouse ID used to run the dashboard.
 github.com/databricks/cli/bundle/config/resources.DashboardPermissionLevel:
   "_":
     "enum":
