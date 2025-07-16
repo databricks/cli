@@ -1,0 +1,18 @@
+
+=== upload lock file
+>>> [CLI] workspace import /Workspace/Users/[USERNAME]/.bundle/test-pipeline-force-lock/default/state/deploy.lock --format AUTO --file ./deploy.lock
+
+=== test deployment without force-lock (should fail)
+>>> errcode [PIPELINES] deploy
+Error: Failed to acquire deployment lock: deploy lock acquired by user-with-lock@databricks.com at [TIMESTAMP] +0000 UTC. Use --force-lock to override
+Error: deploy lock acquired by user-with-lock@databricks.com at [TIMESTAMP] +0000 UTC. Use --force-lock to override
+
+
+Exit code: 1
+
+=== test deployment with force-lock (should succeed)
+>>> [PIPELINES] deploy --force-lock
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-force-lock/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!

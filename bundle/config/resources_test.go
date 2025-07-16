@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 
 	"github.com/databricks/databricks-sdk-go/service/serving"
@@ -172,6 +173,11 @@ func TestResourcesBindSupport(t *testing.T) {
 				Name: "0",
 			},
 		},
+		SqlWarehouses: map[string]*resources.SqlWarehouse{
+			"my_sql_warehouse": {
+				CreateWarehouseRequest: sql.CreateWarehouseRequest{},
+			},
+		},
 	}
 	unbindableResources := map[string]bool{"model": true}
 
@@ -191,6 +197,7 @@ func TestResourcesBindSupport(t *testing.T) {
 	m.GetMockSecretsAPI().EXPECT().ListScopesAll(mock.Anything).Return([]workspace.SecretScope{
 		{Name: "0"},
 	}, nil)
+	m.GetMockWarehousesAPI().EXPECT().GetById(mock.Anything, mock.Anything).Return(nil, nil)
 
 	allResources := supportedResources.AllResources()
 	for _, group := range allResources {

@@ -211,7 +211,14 @@ github.com/databricks/cli/bundle/config.Resources:
       The schema definitions for the bundle, where each key is the name of the schema. See [\_](/dev-tools/bundles/resources.md#schemas).
   "secret_scopes":
     "description": |-
-      PLACEHOLDER
+      The secret scope definitions for the bundle, where each key is the name of the secret scope.
+    "markdown_description": |-
+      The secret scope definitions for the bundle, where each key is the name of the secret scope. See [\_](/dev-tools/bundles/resources.md#secret_scopes).
+  "sql_warehouses":
+    "description": |-
+      The SQL warehouse definitions for the bundle, where each key is the name of the warehouse.
+    "markdown_description": |-
+      The SQL warehouse definitions for the bundle, where each key is the name of the warehouse. See [\_](/dev-tools/bundles/resources.md#sql_warehouses).
   "volumes":
     "description": |-
       The volume definitions for the bundle, where each key is the name of the volume.
@@ -578,6 +585,19 @@ github.com/databricks/cli/bundle/config/resources.SecretScopePermission:
   "user_name":
     "description": |-
       The name of the user that has the permission set in level. This field translates to a `principal` field in secret scope ACL.
+github.com/databricks/cli/bundle/config/resources.SqlWarehousePermission:
+  "group_name":
+    "description": |-
+      PLACEHOLDER
+  "level":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "user_name":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/variable.Lookup:
   "alert":
     "description": |-

@@ -18,10 +18,10 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "clean-rooms",
-		Short: `A clean room uses Delta Sharing and serverless compute to provide a secure and privacy-protecting environment where multiple parties can work together on sensitive enterprise data without direct access to each other’s data.`,
+		Short: `A clean room uses Delta Sharing and serverless compute to provide a secure and privacy-protecting environment where multiple parties can work together on sensitive enterprise data without direct access to each other's data.`,
 		Long: `A clean room uses Delta Sharing and serverless compute to provide a secure and
   privacy-protecting environment where multiple parties can work together on
-  sensitive enterprise data without direct access to each other’s data.`,
+  sensitive enterprise data without direct access to each other's data.`,
 		GroupID: "cleanrooms",
 		Annotations: map[string]string{
 			"package": "cleanrooms",
