@@ -469,6 +469,11 @@ github.com/databricks/cli/bundle/config/resources.SqlWarehouse:
   "warehouse_type":
     "description": |-
       PLACEHOLDER
+  "enable_photon":
+    "description": |-
+      Configures whether the warehouse should use Photon optimized clusters.
+
+      Defaults to true.
 github.com/databricks/cli/bundle/config/resources.SqlWarehousePermissionLevel:
   "_":
     "enum":

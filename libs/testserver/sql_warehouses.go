@@ -42,28 +42,6 @@ func (s *FakeWorkspace) SqlWarehousesUpsert(req Request, warehouseId string) Res
 	}
 }
 
-func (s *FakeWorkspace) SqlWarehousesDelete(req Request, warehouseId string) Response {
-	delete(s.SqlWarehouses, warehouseId)
-
-	return Response{
-		StatusCode: 200,
-	}
-}
-
-func (s *FakeWorkspace) SqlWarehousesGet(req Request, warehouseId string) Response {
-	warehouse, ok := s.SqlWarehouses[warehouseId]
-	if !ok {
-		return Response{
-			StatusCode: 404,
-		}
-	}
-
-	return Response{
-		StatusCode: 200,
-		Body:       warehouse,
-	}
-}
-
 func (s *FakeWorkspace) SqlWarehousesList(req Request) Response {
 	var warehouses []sql.EndpointInfo
 	for _, warehouse := range s.SqlWarehouses {

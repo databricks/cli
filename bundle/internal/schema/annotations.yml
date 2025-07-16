@@ -211,10 +211,14 @@ github.com/databricks/cli/bundle/config.Resources:
       The schema definitions for the bundle, where each key is the name of the schema. See [\_](/dev-tools/bundles/resources.md#schemas).
   "secret_scopes":
     "description": |-
-      PLACEHOLDER
+      The secret scope definitions for the bundle, where each key is the name of the secret scope.
+    "markdown_description": |-
+      The secret scope definitions for the bundle, where each key is the name of the secret scope. See [\_](/dev-tools/bundles/resources.md#secret_scopes).
   "sql_warehouses":
     "description": |-
-      PLACEHOLDER
+      The SQL warehouse definitions for the bundle, where each key is the name of the warehouse.
+    "markdown_description": |-
+      The SQL warehouse definitions for the bundle, where each key is the name of the warehouse. See [\_](/dev-tools/bundles/resources.md#sql_warehouses).
   "volumes":
     "description": |-
       The volume definitions for the bundle, where each key is the name of the volume.
