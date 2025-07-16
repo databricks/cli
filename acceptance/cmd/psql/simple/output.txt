@@ -1,0 +1,82 @@
+
+=== Test should use a fake psql command:
+>>> psql --version
+echo-arguments.sh was called with the following arguments: --version
+PGPASSWORD=
+PGSSLMODE=
+
+=== Command should require instance name:
+>>> musterr [CLI] psql
+Error: could not find any Database instances in the workspace. Please manually specify required argument: DATABASE_INSTANCE_NAME
+
+Exit code (musterr): 1
+
+=== Command should require instance name even if extra arguments are provided:
+>>> musterr [CLI] psql -- --dbname=my-database
+Error: could not find any Database instances in the workspace. Please manually specify required argument: DATABASE_INSTANCE_NAME
+
+Exit code (musterr): 1
+
+=== Command should use default db name if it is not specified:
+>>> [CLI] psql my-database
+Connecting to Databricks Database Instance my-database ...
+Postgres version: 14
+Database instance status: AVAILABLE
+Successfully fetched database credentials
+Launching psql with connection to my-database.my-host.com...
+echo-arguments.sh was called with the following arguments: --host=my-database.my-host.com --username=[USERNAME] --port=5432 --dbname=databricks_postgres
+PGPASSWORD=my-secret-token
+PGSSLMODE=require
+
+=== Command should by-pass extra arguments to psql:
+>>> [CLI] psql my-database -- -c SELECT * FROM my_table --echo-all
+Connecting to Databricks Database Instance my-database ...
+Postgres version: 14
+Database instance status: AVAILABLE
+Successfully fetched database credentials
+Launching psql with connection to my-database.my-host.com...
+echo-arguments.sh was called with the following arguments: --host=my-database.my-host.com --username=[USERNAME] --port=5432 --dbname=databricks_postgres -c SELECT * FROM my_table --echo-all
+PGPASSWORD=my-secret-token
+PGSSLMODE=require
+
+=== Command should use the db name from extra arguments when specified:
+>>> [CLI] psql my-database -- --dbname=db1
+Connecting to Databricks Database Instance my-database ...
+Postgres version: 14
+Database instance status: AVAILABLE
+Successfully fetched database credentials
+Launching psql with connection to my-database.my-host.com...
+echo-arguments.sh was called with the following arguments: --host=my-database.my-host.com --username=[USERNAME] --port=5432 --dbname=db1
+PGPASSWORD=my-secret-token
+PGSSLMODE=require
+
+>>> [CLI] psql my-database -- -d db2
+Connecting to Databricks Database Instance my-database ...
+Postgres version: 14
+Database instance status: AVAILABLE
+Successfully fetched database credentials
+Launching psql with connection to my-database.my-host.com...
+echo-arguments.sh was called with the following arguments: --host=my-database.my-host.com --username=[USERNAME] --port=5432 -d db2
+PGPASSWORD=my-secret-token
+PGSSLMODE=require
+
+=== Command should use the port from extra arguments when specified:
+>>> [CLI] psql my-database -- --dbname=db1 -p 3000
+Connecting to Databricks Database Instance my-database ...
+Postgres version: 14
+Database instance status: AVAILABLE
+Successfully fetched database credentials
+Launching psql with connection to my-database.my-host.com...
+echo-arguments.sh was called with the following arguments: --host=my-database.my-host.com --username=[USERNAME] --dbname=db1 -p 3000
+PGPASSWORD=my-secret-token
+PGSSLMODE=require
+
+>>> [CLI] psql my-database -- -d db2 --port=3001
+Connecting to Databricks Database Instance my-database ...
+Postgres version: 14
+Database instance status: AVAILABLE
+Successfully fetched database credentials
+Launching psql with connection to my-database.my-host.com...
+echo-arguments.sh was called with the following arguments: --host=my-database.my-host.com --username=[USERNAME] -d db2 --port=3001
+PGPASSWORD=my-secret-token
+PGSSLMODE=require

@@ -128,6 +128,7 @@ Clean Rooms
 
 Database
   database                               Database Instances provide access to a database via REST API or direct SQL.
+  psql                                   Connect to the specified Database Instance
 
 Quality Monitor v2
   quality-monitor-v2                     Manage data quality of UC objects (currently support schema).
