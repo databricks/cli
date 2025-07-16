@@ -158,6 +158,11 @@ func TestResourcesBindSupport(t *testing.T) {
 				App: apps.App{},
 			},
 		},
+		Alerts: map[string]*resources.Alert{
+			"my_alert": {
+				AlertV2: sql.AlertV2{},
+			},
+		},
 		QualityMonitors: map[string]*resources.QualityMonitor{
 			"my_quality_monitor": {
 				CreateMonitor: catalog.CreateMonitor{},
@@ -192,6 +197,7 @@ func TestResourcesBindSupport(t *testing.T) {
 	m.GetMockLakeviewAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockVolumesAPI().EXPECT().Read(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockAppsAPI().EXPECT().GetByName(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockAlertsV2API().EXPECT().GetAlertById(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockQualityMonitorsAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockServingEndpointsAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockSecretsAPI().EXPECT().ListScopesAll(mock.Anything).Return([]workspace.SecretScope{

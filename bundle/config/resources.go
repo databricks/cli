@@ -89,6 +89,7 @@ func (r *Resources) AllResources() []ResourceGroup {
 		collectResourceMap(descriptions["dashboards"], r.Dashboards),
 		collectResourceMap(descriptions["volumes"], r.Volumes),
 		collectResourceMap(descriptions["apps"], r.Apps),
+		collectResourceMap(descriptions["alerts"], r.Alerts),
 		collectResourceMap(descriptions["secret_scopes"], r.SecretScopes),
 		collectResourceMap(descriptions["sql_warehouses"], r.SqlWarehouses),
 	}
