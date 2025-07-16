@@ -57,7 +57,9 @@ Unity Catalog
   catalogs                               A catalog is the first layer of Unity Catalog’s three-level namespace.
   connections                            Connections allow for creating a connection to an external data source.
   credentials                            A credential represents an authentication and authorization mechanism for accessing services on your cloud tenant.
+  external-lineage                       External Lineage APIs enable defining and managing lineage relationships between Databricks objects and external systems.
   external-locations                     An external location is an object that combines a cloud storage path with a storage credential that authorizes access to the cloud storage path.
+  external-metadata                      External Metadata objects enable customers to register and manage metadata about external systems within Unity Catalog.
   functions                              Functions implement User-Defined Functions (UDFs) in Unity Catalog.
   grants                                 In Unity Catalog, data is secure by default.
   metastores                             A metastore is the top-level container of objects in Unity Catalog.
@@ -122,7 +124,7 @@ Apps
 Clean Rooms
   clean-room-assets                      Clean room assets are data and code objects — Tables, volumes, and notebooks that are shared with the clean room.
   clean-room-task-runs                   Clean room task runs are the executions of notebooks in a clean room.
-  clean-rooms                            A clean room uses Delta Sharing and serverless compute to provide a secure and privacy-protecting environment where multiple parties can work together on sensitive enterprise data without direct access to each other’s data.
+  clean-rooms                            A clean room uses Delta Sharing and serverless compute to provide a secure and privacy-protecting environment where multiple parties can work together on sensitive enterprise data without direct access to each other's data.
 
 Database
   database                               Database Instances provide access to a database via REST API or direct SQL.
@@ -138,6 +140,7 @@ Additional Commands:
   configure                              Configure authentication
   help                                   Help about any command
   labs                                   Manage Databricks Labs installations
+  service-principal-secrets-proxy        These APIs enable administrators to manage service principal secrets at the workspace level.
   version                                Retrieve information about the current version of this CLI
 
 Flags:

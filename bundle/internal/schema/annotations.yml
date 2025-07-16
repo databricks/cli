@@ -436,10 +436,6 @@ github.com/databricks/cli/bundle/config/resources.AppPermission:
   "user_name":
     "description": |-
       PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.Cluster:
-  "runtime_engine":
-    "description": |-
-      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.ClusterPermission:
   "group_name":
     "description": |-
@@ -451,10 +447,6 @@ github.com/databricks/cli/bundle/config/resources.ClusterPermission:
     "description": |-
       PLACEHOLDER
   "user_name":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.Dashboard:
-  "lifecycle_state":
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.DashboardPermission:
