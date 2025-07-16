@@ -431,4 +431,29 @@ func addDefaultHandlers(server *testserver.Server) {
 	server.Handle("DELETE", "/api/2.1/unity-catalog/volumes/{full_name}", func(req testserver.Request) any {
 		return testserver.MapDelete(req.Workspace, req.Workspace.Volumes, req.Vars["full_name"])
 	})
+
+	// SQL Warehouses:
+	server.Handle("GET", "/api/2.0/sql/warehouses/{warehouse_id}", func(req testserver.Request) any {
+		return testserver.MapGet(req.Workspace, req.Workspace.SqlWarehouses, req.Vars["warehouse_id"])
+	})
+
+	server.Handle("GET", "/api/2.0/sql/warehouses", func(req testserver.Request) any {
+		return req.Workspace.SqlWarehousesList(req)
+	})
+
+	server.Handle("POST", "/api/2.0/sql/warehouses", func(req testserver.Request) any {
+		return req.Workspace.SqlWarehousesUpsert(req, "")
+	})
+
+	server.Handle("POST", "/api/2.0/sql/warehouses/{warehouse_id}/edit", func(req testserver.Request) any {
+		return req.Workspace.SqlWarehousesUpsert(req, req.Vars["warehouse_id"])
+	})
+
+	server.Handle("DELETE", "/api/2.0/sql/warehouses/{warehouse_id}", func(req testserver.Request) any {
+		return testserver.MapDelete(req.Workspace, req.Workspace.SqlWarehouses, req.Vars["warehouse_id"])
+	})
+
+	server.Handle("GET", "/api/2.0/preview/sql/data_sources", func(req testserver.Request) any {
+		return req.Workspace.SqlDataSourcesList(req)
+	})
 }

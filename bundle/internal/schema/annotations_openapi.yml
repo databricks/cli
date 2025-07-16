@@ -246,49 +246,6 @@ github.com/databricks/cli/bundle/config/resources.Cluster:
   "workload_type":
     "description": |-
       Cluster Attributes showing for clusters workload types.
-github.com/databricks/cli/bundle/config/resources.Dashboard:
-  "create_time":
-    "description": |-
-      The timestamp of when the dashboard was created.
-  "dashboard_id":
-    "description": |-
-      UUID identifying the dashboard.
-  "display_name":
-    "description": |-
-      The display name of the dashboard.
-  "etag":
-    "description": |-
-      The etag for the dashboard. Can be optionally provided on updates to ensure that the dashboard
-      has not been modified since the last read.
-      This field is excluded in List Dashboards responses.
-  "lifecycle_state":
-    "description": |-
-      The state of the dashboard resource. Used for tracking trashed status.
-  "parent_path":
-    "description": |-
-      The workspace path of the folder containing the dashboard. Includes leading slash and no
-      trailing slash.
-      This field is excluded in List Dashboards responses.
-  "path":
-    "description": |-
-      The workspace path of the dashboard asset, including the file name.
-      Exported dashboards always have the file extension `.lvdash.json`.
-      This field is excluded in List Dashboards responses.
-  "serialized_dashboard":
-    "description": |-
-      The contents of the dashboard in serialized string form.
-      This field is excluded in List Dashboards responses.
-      Use the [get dashboard API](https://docs.databricks.com/api/workspace/lakeview/get)
-      to retrieve an example response, which includes the `serialized_dashboard` field.
-      This field provides the structure of the JSON string that represents the dashboard's
-      layout and components.
-  "update_time":
-    "description": |-
-      The timestamp of when the dashboard was last updated by the user.
-      This field is excluded in List Dashboards responses.
-  "warehouse_id":
-    "description": |-
-      The warehouse ID used to run the dashboard.
 github.com/databricks/cli/bundle/config/resources.Job:
   "budget_policy_id":
     "description": |-
@@ -638,6 +595,93 @@ github.com/databricks/cli/bundle/config/resources.Schema:
   "storage_root":
     "description": |-
       Storage root URL for managed tables within schema.
+github.com/databricks/cli/bundle/config/resources.SqlWarehouse:
+  "auto_stop_mins":
+    "description": |-
+      The amount of time in minutes that a SQL warehouse must be idle (i.e., no RUNNING queries) before
+      it is automatically stopped.
+
+      Supported values:
+        - Must be >= 0 mins for serverless warehouses
+        - Must be == 0 or >= 10 mins for non-serverless warehouses
+       - 0 indicates no autostop.
+
+      Defaults to 120 mins
+  "channel":
+    "description": |-
+      Channel Details
+  "cluster_size":
+    "description": |
+      Size of the clusters allocated for this warehouse.
+      Increasing the size of a spark cluster allows you to run larger queries on it.
+      If you want to increase the number of concurrent queries, please tune max_num_clusters.
+
+      Supported values:
+        - 2X-Small
+        - X-Small
+        - Small
+        - Medium
+        - Large
+        - X-Large
+        - 2X-Large
+        - 3X-Large
+        - 4X-Large
+  "creator_name":
+    "description": |-
+      warehouse creator name
+  "enable_photon":
+    "description": |-
+      Configures whether the warehouse should use Photon optimized clusters.
+
+      Defaults to false.
+  "enable_serverless_compute":
+    "description": |-
+      Configures whether the warehouse should use serverless compute
+  "instance_profile_arn":
+    "description": |-
+      Deprecated. Instance profile used to pass IAM role to the cluster
+    "deprecation_message": |-
+      This field is deprecated
+  "max_num_clusters":
+    "description": |-
+      Maximum number of clusters that the autoscaler will create to handle concurrent queries.
+
+      Supported values:
+        - Must be >= min_num_clusters
+        - Must be <= 30.
+
+      Defaults to min_clusters if unset.
+  "min_num_clusters":
+    "description": |-
+      Minimum number of available clusters that will be maintained for this SQL warehouse.
+      Increasing this will ensure that a larger number of clusters are always running and therefore may reduce
+      the cold start time for new queries. This is similar to reserved vs. revocable cores in a resource manager.
+
+      Supported values:
+        - Must be > 0
+        - Must be <= min(max_num_clusters, 30)
+
+      Defaults to 1
+  "name":
+    "description": |-
+      Logical name for the cluster.
+
+      Supported values:
+        - Must be unique within an org.
+        - Must be less than 100 characters.
+  "spot_instance_policy":
+    "description": |-
+      Configurations whether the warehouse should use spot instances.
+  "tags":
+    "description": |-
+      A set of key-value pairs that will be tagged on all resources (e.g., AWS instances and EBS volumes) associated
+      with this SQL warehouse.
+
+      Supported values:
+        - Number of tags < 45.
+  "warehouse_type":
+    "description": |-
+      Warehouse type: `PRO` or `CLASSIC`. If you want to use serverless compute, you must set to `PRO` and also set the field `enable_serverless_compute` to `true`.
 github.com/databricks/cli/bundle/config/resources.Volume:
   "catalog_name":
     "description": |-
@@ -3871,6 +3915,50 @@ github.com/databricks/databricks-sdk-go/service/serving.TrafficConfig:
   "routes":
     "description": |-
       The list of routes that define traffic to each served entity.
+github.com/databricks/databricks-sdk-go/service/sql.Channel:
+  "_":
+    "description": |-
+      Configures the channel name and DBSQL version of the warehouse. CHANNEL_NAME_CUSTOM should be chosen only when `dbsql_version` is specified.
+  "dbsql_version": {}
+  "name": {}
+github.com/databricks/databricks-sdk-go/service/sql.ChannelName:
+  "_":
+    "enum":
+      - |-
+        CHANNEL_NAME_PREVIEW
+      - |-
+        CHANNEL_NAME_CURRENT
+      - |-
+        CHANNEL_NAME_PREVIOUS
+      - |-
+        CHANNEL_NAME_CUSTOM
+github.com/databricks/databricks-sdk-go/service/sql.CreateWarehouseRequestWarehouseType:
+  "_":
+    "description": |-
+      Warehouse type: `PRO` or `CLASSIC`. If you want to use serverless compute, you must set to `PRO` and also set the field `enable_serverless_compute` to `true`.
+    "enum":
+      - |-
+        TYPE_UNSPECIFIED
+      - |-
+        CLASSIC
+      - |-
+        PRO
+github.com/databricks/databricks-sdk-go/service/sql.EndpointTagPair:
+  "key": {}
+  "value": {}
+github.com/databricks/databricks-sdk-go/service/sql.EndpointTags:
+  "custom_tags": {}
+github.com/databricks/databricks-sdk-go/service/sql.SpotInstancePolicy:
+  "_":
+    "description": |-
+      Configurations whether the warehouse should use spot instances.
+    "enum":
+      - |-
+        POLICY_UNSPECIFIED
+      - |-
+        COST_OPTIMIZED
+      - |-
+        RELIABILITY_OPTIMIZED
 github.com/databricks/databricks-sdk-go/service/workspace.AzureKeyVaultSecretScopeMetadata:
   "_":
     "description": |-

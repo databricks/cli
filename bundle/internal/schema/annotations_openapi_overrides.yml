@@ -120,15 +120,57 @@ github.com/databricks/cli/bundle/config/resources.Dashboard:
       If you use the UI to modify the dashboard, modifications made through the UI are not applied to the dashboard JSON file in the local bundle unless you explicitly update it using `bundle generate`. You can use the `--watch` option to continuously poll and retrieve changes to the dashboard. See [_](/dev-tools/cli/bundle-commands.md#generate).
 
       In addition, if you attempt to deploy a bundle that contains a dashboard JSON file that is different than the one in the remote workspace, an error will occur. To force the deploy and overwrite the dashboard in the remote workspace with the local one, use the `--force` option. See [_](/dev-tools/cli/bundle-commands.md#deploy).
+  "create_time":
+    "description": |-
+      The timestamp of when the dashboard was created.
+  "dashboard_id":
+    "description": |-
+      UUID identifying the dashboard.
+  "display_name":
+    "description": |-
+      The display name of the dashboard.
   "embed_credentials":
     "description": |-
       PLACEHOLDER
+  "etag":
+    "description": |-
+      The etag for the dashboard. Can be optionally provided on updates to ensure that the dashboard
+      has not been modified since the last read.
+      This field is excluded in List Dashboards responses.
   "file_path":
     "description": |-
       PLACEHOLDER
+  "lifecycle_state":
+    "description": |-
+      The state of the dashboard resource. Used for tracking trashed status.
+  "parent_path":
+    "description": |-
+      The workspace path of the folder containing the dashboard. Includes leading slash and no
+      trailing slash.
+      This field is excluded in List Dashboards responses.
+  "path":
+    "description": |-
+      The workspace path of the dashboard asset, including the file name.
+      Exported dashboards always have the file extension `.lvdash.json`.
+      This field is excluded in List Dashboards responses.
   "permissions":
     "description": |-
       PLACEHOLDER
+  "serialized_dashboard":
+    "description": |-
+      The contents of the dashboard in serialized string form.
+      This field is excluded in List Dashboards responses.
+      Use the [get dashboard API](https://docs.databricks.com/api/workspace/lakeview/get)
+      to retrieve an example response, which includes the `serialized_dashboard` field.
+      This field provides the structure of the JSON string that represents the dashboard's
+      layout and components.
+  "update_time":
+    "description": |-
+      The timestamp of when the dashboard was last updated by the user.
+      This field is excluded in List Dashboards responses.
+  "warehouse_id":
+    "description": |-
+      The warehouse ID used to run the dashboard.
 github.com/databricks/cli/bundle/config/resources.DashboardPermissionLevel:
   "_":
     "enum":
@@ -432,6 +474,32 @@ github.com/databricks/cli/bundle/config/resources.SecretScopePermissionLevel:
         WRITE
       - |-
         MANAGE
+github.com/databricks/cli/bundle/config/resources.SqlWarehouse:
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+  "spot_instance_policy":
+    "description": |-
+      PLACEHOLDER
+  "warehouse_type":
+    "description": |-
+      PLACEHOLDER
+  "enable_photon":
+    "description": |-
+      Configures whether the warehouse should use Photon optimized clusters.
+
+      Defaults to true.
+github.com/databricks/cli/bundle/config/resources.SqlWarehousePermissionLevel:
+  "_":
+    "enum":
+      - |-
+        CAN_MANAGE
+      - |-
+        CAN_USE
+      - |-
+        CAN_MONITOR
+      - |-
+        CAN_VIEW
 github.com/databricks/cli/bundle/config/resources.Volume:
   "_":
     "markdown_description": |-
@@ -729,5 +797,23 @@ github.com/databricks/databricks-sdk-go/service/serving.ServedModelInput:
     "description": |-
       PLACEHOLDER
   "model_version":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/sql.Channel:
+  "dbsql_version":
+    "description": |-
+      PLACEHOLDER
+  "name":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/sql.EndpointTagPair:
+  "key":
+    "description": |-
+      PLACEHOLDER
+  "value":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/sql.EndpointTags:
+  "custom_tags":
     "description": |-
       PLACEHOLDER
