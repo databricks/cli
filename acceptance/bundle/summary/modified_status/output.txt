@@ -2,6 +2,18 @@
 === Initial view of resources without id and modified_status=created
 >>> [CLI] bundle summary -o json
 {
+  "alerts": {
+    "my_alert": {
+      "custom_description": "test-alert-description",
+      "custom_summary": "test-alert-summary",
+      "display_name": "test-alert",
+      "modified_status": "created",
+      "parent_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/resources",
+      "permissions": [],
+      "query_text": "SELECT 1",
+      "warehouse_id": "test-sql-warehouse"
+    }
+  },
   "pipelines": {
     "my_pipeline": {
       "channel": "CURRENT",
@@ -54,6 +66,18 @@ Deployment complete!
 === Post-deployment view of resources with id and without modified_status
 >>> [CLI] bundle summary -o json
 {
+  "alerts": {
+    "my_alert": {
+      "custom_description": "test-alert-description",
+      "custom_summary": "test-alert-summary",
+      "display_name": "test-alert",
+      "id": "[UUID]",
+      "parent_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/resources",
+      "permissions": [],
+      "query_text": "SELECT 1",
+      "warehouse_id": "test-sql-warehouse"
+    }
+  },
   "pipelines": {
     "my_pipeline": {
       "channel": "CURRENT",
@@ -103,6 +127,12 @@ Deployment complete!
 === Expecting all resources to have modified_status=deleted
 >>> [CLI] bundle summary -o json
 {
+  "alerts": {
+    "my_alert": {
+      "id": "[UUID]",
+      "modified_status": "deleted"
+    }
+  },
   "pipelines": {
     "my_pipeline": {
       "id": "[UUID]",
@@ -128,6 +158,7 @@ Deployment complete!
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
+  delete alert my_alert
   delete pipeline my_pipeline
   delete schema my_schema
   delete sql_warehouse my_sql_warehouse

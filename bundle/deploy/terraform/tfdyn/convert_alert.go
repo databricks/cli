@@ -29,7 +29,7 @@ func (alertConverter) Convert(ctx context.Context, key string, vin dyn.Value, ou
 	}
 
 	// Add the converted resource to the output.
-	out.Alert[key] = vout.AsAny()
+	out.AlertV2[key] = vout.AsAny()
 
 	// Configure permissions for this resource.
 	if permissions := convertPermissionsResource(ctx, vin); permissions != nil {

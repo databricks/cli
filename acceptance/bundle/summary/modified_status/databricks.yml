@@ -17,3 +17,11 @@ resources:
       name: test-sql-warehouse
       cluster_size: X-Large
       enable_serverless_compute: true
+
+  alerts:
+    my_alert:
+      display_name: test-alert
+      query_text: "SELECT 1"
+      warehouse_id: "test-sql-warehouse"
+      custom_summary: "test-alert-summary"
+      custom_description: "test-alert-description"
