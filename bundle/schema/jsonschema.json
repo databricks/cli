@@ -1422,7 +1422,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "enable_photon": {
-                        "description": "Configures whether the warehouse should use Photon optimized clusters.\n\nDefaults to false.",
+                        "description": "Configures whether the warehouse should use Photon optimized clusters.\n\nDefaults to true.",
                         "$ref": "#/$defs/bool"
                       },
                       "enable_serverless_compute": {
@@ -2056,10 +2056,14 @@
                       "markdownDescription": "The schema definitions for the bundle, where each key is the name of the schema. See [schemas](https://docs.databricks.com/dev-tools/bundles/resources.html#schemas)."
                     },
                     "secret_scopes": {
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.SecretScope"
+                      "description": "The secret scope definitions for the bundle, where each key is the name of the secret scope.",
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.SecretScope",
+                      "markdownDescription": "The secret scope definitions for the bundle, where each key is the name of the secret scope. See [secret_scopes](https://docs.databricks.com/dev-tools/bundles/resources.html#secret_scopes)."
                     },
                     "sql_warehouses": {
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.SqlWarehouse"
+                      "description": "The SQL warehouse definitions for the bundle, where each key is the name of the warehouse.",
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.SqlWarehouse",
+                      "markdownDescription": "The SQL warehouse definitions for the bundle, where each key is the name of the warehouse. See [sql_warehouses](https://docs.databricks.com/dev-tools/bundles/resources.html#sql_warehouses)."
                     },
                     "volumes": {
                       "description": "The volume definitions for the bundle, where each key is the name of the volume.",
