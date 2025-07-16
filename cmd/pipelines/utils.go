@@ -47,9 +47,9 @@ func autoSelectSinglePipeline(b *bundle.Bundle) string {
 // Copied from cmd/bundle/run.go
 // resolveRunArgument resolves the resource key to run
 // Returns the remaining arguments to pass to the runner, if applicable.
+// When no arguments are specified, auto-selects a pipeline if there's exactly one,
+// otherwise prompts the user to select a pipeline.
 func resolveRunArgument(ctx context.Context, b *bundle.Bundle, args []string) (string, []string, error) {
-	// When no arguments are specified, auto-selects a pipeline if there's exactly one.
-	// Otherwise, prompts the user to select a pipeline.
 	if len(args) == 0 {
 		if key := autoSelectSinglePipeline(b); key != "" {
 			return key, args, nil
