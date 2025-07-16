@@ -2,6 +2,7 @@ package lakebase
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -32,8 +33,15 @@ func Connect(ctx context.Context, databaseInstanceName string, extraArgs ...stri
 		return fmt.Errorf("error getting Database Instance. Please confirm that database instance %s exists: %w", databaseInstanceName, err)
 	}
 
-	cmdio.LogString(ctx, fmt.Sprintf("Database instance status: %s", db.State))
 	cmdio.LogString(ctx, "Postgres version: "+db.PgVersion)
+	cmdio.LogString(ctx, fmt.Sprintf("Database instance status: %s", db.State))
+
+	if db.State != database.DatabaseInstanceStateAvailable {
+		if db.State == database.DatabaseInstanceStateStarting || db.State == database.DatabaseInstanceStateUpdating || db.State == database.DatabaseInstanceStateFailingOver {
+			cmdio.LogString(ctx, "Please retry when the instance becomes available")
+		}
+		return errors.New("database instance is not ready for accepting connections")
+	}
 
 	// get credentials:
 	cred, err := w.Database.GenerateDatabaseCredential(ctx, database.GenerateDatabaseCredentialRequest{

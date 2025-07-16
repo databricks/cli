@@ -9,7 +9,7 @@ GOOS.windows = false
 Pattern = "GET /api/2.0/database/instances/my-database"
 Response.Body = '''
 {
-    "state": "RUNNING",
+    "state": "AVAILABLE",
     "pg_version": "14",
     "read_write_dns": "my-database.my-host.com"
 }
