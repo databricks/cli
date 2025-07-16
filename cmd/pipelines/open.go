@@ -41,9 +41,9 @@ func promptOpenArgument(ctx context.Context, b *bundle.Bundle) (string, error) {
 	return key, nil
 }
 
+// When no arguments are specified, auto-selects a pipeline if there's exactly one,
+// otherwise prompts the user to select a pipeline to open.
 func resolveOpenArgument(ctx context.Context, b *bundle.Bundle, args []string) (string, error) {
-	// When no arguments are specified, auto-selects a pipeline if there's exactly one.
-	// Otherwise, prompts the user to select a pipeline to open.
 	if len(args) == 0 {
 		if key := autoSelectSinglePipeline(b); key != "" {
 			return key, nil
