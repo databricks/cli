@@ -3,9 +3,9 @@ resources:
     test_job:
       name: "[${bundle.target}] My Wheel Job"
       tasks:
-      - task_key: TestTask
-        existing_cluster_id: "0717-aaaaa-bbbbbb"
-        notebook_task:
-          notebook_path: "/notebook.py"
-        libraries:
-        - whl: ./dist/*.whl
+        - task_key: TestTask
+          existing_cluster_id: "0717-aaaaa-bbbbbb"
+          notebook_task:
+            notebook_path: "/notebook.py"
+          libraries:
+            - whl: ./dist/*.whl

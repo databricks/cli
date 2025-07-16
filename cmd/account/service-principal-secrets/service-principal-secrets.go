@@ -3,8 +3,6 @@
 package service_principal_secrets
 
 import (
-	"fmt"
-
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -26,7 +24,7 @@ func New() *cobra.Command {
   You can use the generated secrets to obtain OAuth access tokens for a service
   principal, which can then be used to access Databricks Accounts and Workspace
   APIs. For more information, see [Authentication using OAuth tokens for service
-  principals],
+  principals].
   
   In addition, the generated secrets can be used to configure the Databricks
   Terraform Provider to authenticate with the service principal. For more
@@ -69,7 +67,6 @@ func newCreate() *cobra.Command {
 	var createReq oauth2.CreateServicePrincipalSecretRequest
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.Lifetime, "lifetime", createReq.Lifetime, `The lifetime of the secret in seconds.`)
@@ -107,10 +104,7 @@ func newCreate() *cobra.Command {
 				}
 			}
 		}
-		_, err = fmt.Sscan(args[0], &createReq.ServicePrincipalId)
-		if err != nil {
-			return fmt.Errorf("invalid SERVICE_PRINCIPAL_ID: %s", args[0])
-		}
+		createReq.ServicePrincipalId = args[0]
 
 		response, err := a.ServicePrincipalSecrets.Create(ctx, createReq)
 		if err != nil {
@@ -145,8 +139,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq oauth2.DeleteServicePrincipalSecretRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete SERVICE_PRINCIPAL_ID SECRET_ID"
 	cmd.Short = `Delete service principal secret.`
 	cmd.Long = `Delete service principal secret.
@@ -169,10 +161,7 @@ func newDelete() *cobra.Command {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
 
-		_, err = fmt.Sscan(args[0], &deleteReq.ServicePrincipalId)
-		if err != nil {
-			return fmt.Errorf("invalid SERVICE_PRINCIPAL_ID: %s", args[0])
-		}
+		deleteReq.ServicePrincipalId = args[0]
 		deleteReq.SecretId = args[1]
 
 		err = a.ServicePrincipalSecrets.Delete(ctx, deleteReq)
@@ -208,8 +197,7 @@ func newList() *cobra.Command {
 
 	var listReq oauth2.ListServicePrincipalSecretsRequest
 
-	// TODO: short flags
-
+	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `An opaque page token which was the next_page_token in the response of the previous request to list the secrets for this service principal.`)
 
 	cmd.Use = "list SERVICE_PRINCIPAL_ID"
@@ -235,10 +223,7 @@ func newList() *cobra.Command {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
 
-		_, err = fmt.Sscan(args[0], &listReq.ServicePrincipalId)
-		if err != nil {
-			return fmt.Errorf("invalid SERVICE_PRINCIPAL_ID: %s", args[0])
-		}
+		listReq.ServicePrincipalId = args[0]
 
 		response := a.ServicePrincipalSecrets.List(ctx, listReq)
 		return cmdio.RenderIterator(ctx, response)

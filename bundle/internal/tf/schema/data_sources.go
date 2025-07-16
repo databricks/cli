@@ -18,6 +18,8 @@ type DataSources struct {
 	BudgetPolicy                    map[string]any `json:"databricks_budget_policy,omitempty"`
 	Catalog                         map[string]any `json:"databricks_catalog,omitempty"`
 	Catalogs                        map[string]any `json:"databricks_catalogs,omitempty"`
+	CleanRoomsCleanRoom             map[string]any `json:"databricks_clean_rooms_clean_room,omitempty"`
+	CleanRoomsCleanRooms            map[string]any `json:"databricks_clean_rooms_clean_rooms,omitempty"`
 	Cluster                         map[string]any `json:"databricks_cluster,omitempty"`
 	ClusterPolicy                   map[string]any `json:"databricks_cluster_policy,omitempty"`
 	Clusters                        map[string]any `json:"databricks_clusters,omitempty"`
@@ -32,12 +34,16 @@ type DataSources struct {
 	Directory                       map[string]any `json:"databricks_directory,omitempty"`
 	ExternalLocation                map[string]any `json:"databricks_external_location,omitempty"`
 	ExternalLocations               map[string]any `json:"databricks_external_locations,omitempty"`
+	ExternalMetadata                map[string]any `json:"databricks_external_metadata,omitempty"`
+	ExternalMetadatas               map[string]any `json:"databricks_external_metadatas,omitempty"`
 	Functions                       map[string]any `json:"databricks_functions,omitempty"`
 	Group                           map[string]any `json:"databricks_group,omitempty"`
 	InstancePool                    map[string]any `json:"databricks_instance_pool,omitempty"`
 	InstanceProfiles                map[string]any `json:"databricks_instance_profiles,omitempty"`
 	Job                             map[string]any `json:"databricks_job,omitempty"`
 	Jobs                            map[string]any `json:"databricks_jobs,omitempty"`
+	MaterializedFeaturesFeatureTag  map[string]any `json:"databricks_materialized_features_feature_tag,omitempty"`
+	MaterializedFeaturesFeatureTags map[string]any `json:"databricks_materialized_features_feature_tags,omitempty"`
 	Metastore                       map[string]any `json:"databricks_metastore,omitempty"`
 	Metastores                      map[string]any `json:"databricks_metastores,omitempty"`
 	MlflowExperiment                map[string]any `json:"databricks_mlflow_experiment,omitempty"`
@@ -51,7 +57,11 @@ type DataSources struct {
 	Notebook                        map[string]any `json:"databricks_notebook,omitempty"`
 	NotebookPaths                   map[string]any `json:"databricks_notebook_paths,omitempty"`
 	NotificationDestinations        map[string]any `json:"databricks_notification_destinations,omitempty"`
+	OnlineStore                     map[string]any `json:"databricks_online_store,omitempty"`
+	OnlineStores                    map[string]any `json:"databricks_online_stores,omitempty"`
 	Pipelines                       map[string]any `json:"databricks_pipelines,omitempty"`
+	QualityMonitorV2                map[string]any `json:"databricks_quality_monitor_v2,omitempty"`
+	QualityMonitorsV2               map[string]any `json:"databricks_quality_monitors_v2,omitempty"`
 	RecipientFederationPolicies     map[string]any `json:"databricks_recipient_federation_policies,omitempty"`
 	RecipientFederationPolicy       map[string]any `json:"databricks_recipient_federation_policy,omitempty"`
 	RegisteredModel                 map[string]any `json:"databricks_registered_model,omitempty"`
@@ -95,6 +105,8 @@ func NewDataSources() *DataSources {
 		BudgetPolicy:                    make(map[string]any),
 		Catalog:                         make(map[string]any),
 		Catalogs:                        make(map[string]any),
+		CleanRoomsCleanRoom:             make(map[string]any),
+		CleanRoomsCleanRooms:            make(map[string]any),
 		Cluster:                         make(map[string]any),
 		ClusterPolicy:                   make(map[string]any),
 		Clusters:                        make(map[string]any),
@@ -109,12 +121,16 @@ func NewDataSources() *DataSources {
 		Directory:                       make(map[string]any),
 		ExternalLocation:                make(map[string]any),
 		ExternalLocations:               make(map[string]any),
+		ExternalMetadata:                make(map[string]any),
+		ExternalMetadatas:               make(map[string]any),
 		Functions:                       make(map[string]any),
 		Group:                           make(map[string]any),
 		InstancePool:                    make(map[string]any),
 		InstanceProfiles:                make(map[string]any),
 		Job:                             make(map[string]any),
 		Jobs:                            make(map[string]any),
+		MaterializedFeaturesFeatureTag:  make(map[string]any),
+		MaterializedFeaturesFeatureTags: make(map[string]any),
 		Metastore:                       make(map[string]any),
 		Metastores:                      make(map[string]any),
 		MlflowExperiment:                make(map[string]any),
@@ -128,7 +144,11 @@ func NewDataSources() *DataSources {
 		Notebook:                        make(map[string]any),
 		NotebookPaths:                   make(map[string]any),
 		NotificationDestinations:        make(map[string]any),
+		OnlineStore:                     make(map[string]any),
+		OnlineStores:                    make(map[string]any),
 		Pipelines:                       make(map[string]any),
+		QualityMonitorV2:                make(map[string]any),
+		QualityMonitorsV2:               make(map[string]any),
 		RecipientFederationPolicies:     make(map[string]any),
 		RecipientFederationPolicy:       make(map[string]any),
 		RegisteredModel:                 make(map[string]any),

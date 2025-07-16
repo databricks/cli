@@ -1,0 +1,21 @@
+
+=== Test auto-approve pipelines destroy
+>>> [PIPELINES] deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-destroy/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> errcode [PIPELINES] destroy
+Error: please specify --auto-approve to skip interactive confirmation checks for non tty consoles
+
+Exit code: 1
+
+>>> [PIPELINES] destroy --auto-approve
+The following resources will be deleted:
+  delete pipeline my_pipeline
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-pipeline-destroy/default
+
+Deleting files...
+Destroy complete!

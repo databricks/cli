@@ -1,0 +1,15 @@
+title "Test with missing config file"
+trace errcode $PIPELINES init --output-dir output
+
+title "Test with invalid project name (contains uppercase letters)"
+echo '{"project_name": "InvalidProjectName"}' > invalid_input.json
+trace errcode $PIPELINES init --config-file ./invalid_input.json --output-dir invalid-output
+
+title "Test with non-existent config file"
+trace errcode $PIPELINES init --config-file ./nonexistent.json --output-dir invalid-output-2
+
+# Do not affect this repository's git behaviour
+mv output/my_project/.gitignore output/my_project/out.gitignore
+
+# Clean up
+rm -f invalid_input.json

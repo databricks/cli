@@ -113,7 +113,7 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var {{.CamelName}}Overrides []func(
 	*cobra.Command,
-	{{- if .Request }}
+	{{- if not .IsLegacyEmptyRequest }}
 	*{{.Service.Package.Name}}.{{.Request.PascalName}},
 	{{- end }}
 )
@@ -124,7 +124,7 @@ func new{{.PascalName}}() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	{{- $canUseJson := and .CanUseJson (not (in $excludeFromJson .KebabName )) -}}
-	{{- if .Request}}
+	{{- if not .IsLegacyEmptyRequest}}
 
 	var {{.CamelName}}Req {{.Service.Package.Name}}.{{.Request.PascalName}}
 	{{- if .RequestBodyField }}
@@ -146,7 +146,7 @@ func new{{.PascalName}}() *cobra.Command {
 	{{- if .RequestBodyField -}}
 	{{- $request = .RequestBodyField.Entity -}}
 	{{- end -}}
-    {{if $request }}// TODO: short flags
+    {{if $request }}
 	{{- if $canUseJson}}
 	cmd.Flags().Var(&{{.CamelName}}Json, "json", `either inline JSON string or @path/to/file.json with request body`)
 	{{- end}}
@@ -161,7 +161,7 @@ func new{{.PascalName}}() *cobra.Command {
 			{{else if .Entity.IsEmpty }}// TODO: output-only field
 			{{else if .IsComputed -}}
 			{{else if .IsOutputOnly -}}
-			{{else if .Entity.Enum }}cmd.Flags().Var(&{{- template "request-body-obj" (dict "Method" $method "Field" .)}}, "{{.KebabName}}", `{{.Summary | without "`" | trimSuffix "."}}. Supported values: {{template "printArray" .Entity.Enum}}`)
+			{{else if .Entity.Enum }}cmd.Flags().Var(&{{- template "request-body-obj" (dict "Method" $method "Field" .)}}, "{{.KebabName}}", `{{.Summary | without "`" | trimSuffix "."}}{{if .Summary}}. {{end}}Supported values: {{template "printArray" .Entity.Enum}}`)
 			{{else}}cmd.Flags().{{template "arg-type" .Entity}}(&{{- template "request-body-obj" (dict "Method" $method "Field" .)}}, "{{.KebabName}}", {{- template "request-body-obj" (dict "Method" $method "Field" .)}}, `{{.Summary | without "`"}}`)
 			{{end}}
 		{{- end -}}
@@ -188,7 +188,7 @@ func new{{.PascalName}}() *cobra.Command {
 	{{- $wait := and .Wait (and (not .IsCrudRead) (not (eq .SnakeName "get_run"))) -}}
 	{{- $hasRequiredArgs :=  and (not $hasIdPrompt) $hasPosArgs -}}
 	{{- $hasSingleRequiredRequestBodyFieldWithPrompt := and (and $hasIdPrompt $request) (eq 1 (len $request.RequiredRequestBodyFields))  -}}
-	{{- $onlyPathArgsRequiredAsPositionalArguments := and .Request (eq (len .RequiredPositionalArguments) (len .Request.RequiredPathFields)) -}}
+	{{- $onlyPathArgsRequiredAsPositionalArguments := and (not .IsLegacyEmptyRequest) (eq (len .RequiredPositionalArguments) (len .Request.RequiredPathFields)) -}}
 	{{- $hasDifferentArgsWithJsonFlag := and (not $onlyPathArgsRequiredAsPositionalArguments) (and $canUseJson (or $request.HasRequiredRequestBodyFields )) -}}
 	{{- $hasCustomArgHandler := or $hasRequiredArgs $hasDifferentArgsWithJsonFlag -}}
 
@@ -203,9 +203,9 @@ func new{{.PascalName}}() *cobra.Command {
 	{{- end -}}
 
 	cmd.Use = "{{.KebabName}}{{if $hasPosArgs}}{{range .RequiredPositionalArguments}} {{.ConstantName}}{{end}}{{end}}"
-	{{- if .Description }}
+	{{- if .CliComment  "  " 80 }}
 	cmd.Short = `{{.Summary | without "`"}}`
-	cmd.Long = `{{.Comment  "  " 80 | without "`"}}
+	cmd.Long = `{{.CliComment  "  " 80 | without "`"}}
 	{{- if $atleastOneArgumentWithDescription }}
 
   Arguments:
@@ -250,7 +250,7 @@ func new{{.PascalName}}() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		{{if .Service.IsAccounts}}a := cmdctx.AccountClient(ctx){{else}}w := cmdctx.WorkspaceClient(ctx){{end}}
-		{{- if .Request }}
+		{{- if not .IsLegacyEmptyRequest }}
 			{{ if $canUseJson }}
 			if cmd.Flags().Changed("json") {
 					diags := {{.CamelName}}Json.Unmarshal(&{{.CamelName}}Req{{ if .RequestBodyField }}.{{.RequestBodyField.PascalName}}{{ end }})
@@ -273,7 +273,7 @@ func new{{.PascalName}}() *cobra.Command {
 				if len(args) == 0 {
 					promptSpinner := cmdio.Spinner(ctx)
 					promptSpinner <- "No{{range $request.RequiredFields}} {{.ConstantName}}{{end}} argument specified. Loading names for {{.Service.TitleName}} drop-down."
-					names, err := {{if .Service.IsAccounts}}a{{else}}w{{end}}.{{(.Service.TrimPrefix "account").PascalName}}.{{.Service.List.NamedIdMap.PascalName}}(ctx{{if .Service.List.Request}}, {{.Service.Package.Name}}.{{.Service.List.Request.PascalName}}{}{{end}})
+					names, err := {{if .Service.IsAccounts}}a{{else}}w{{end}}.{{(.Service.TrimPrefix "account").PascalName}}.{{.Service.List.NamedIdMap.PascalName}}(ctx{{if not .Service.List.IsLegacyEmptyRequest}}, {{.Service.Package.Name}}.{{.Service.List.Request.PascalName}}{}{{end}})
 					close(promptSpinner)
 					if err != nil {
 						return fmt.Errorf("failed to load names for {{.Service.TitleName}} drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -300,12 +300,12 @@ func new{{.PascalName}}() *cobra.Command {
 			{{- end}}
 		{{end}}
 		{{if $wait -}}
-		wait, err := {{if .Service.IsAccounts}}a{{else}}w{{end}}.{{.Service.PascalName}}.{{.PascalName}}(ctx{{if .Request}}, {{.CamelName}}Req{{end}})
+		wait, err := {{if .Service.IsAccounts}}a{{else}}w{{end}}.{{.Service.PascalName}}.{{.PascalName}}(ctx{{if not .IsLegacyEmptyRequest}}, {{.CamelName}}Req{{end}})
 		if err != nil {
 			return err
 		}
 		if {{.CamelName}}SkipWait {
-			{{if not .Response.IsEmpty -}}
+			{{if not ( or .Response.IsGoogleEmpty .Response.IsLegacyEmptyResponse) -}}
 			return cmdio.Render(ctx, wait.Response)
 			{{- else -}}
 			return nil
@@ -348,7 +348,7 @@ func new{{.PascalName}}() *cobra.Command {
 
 	// Apply optional overrides to this command.
 	for _, fn := range {{.CamelName}}Overrides {
-		fn(cmd{{if .Request}}, &{{.CamelName}}Req{{end}})
+		fn(cmd{{if not .IsLegacyEmptyRequest}}, &{{.CamelName}}Req{{end}})
 	}
 
 	return cmd
@@ -358,7 +358,7 @@ func new{{.PascalName}}() *cobra.Command {
 // end service {{.Name}}{{end}}
 
 {{- define "method-call" -}}
-		{{if not .Response.IsEmpty -}}
+		{{if not ( or .Response.IsGoogleEmpty .Response.IsLegacyEmptyResponse) -}}
 		  response{{ if not .Pagination}}, err{{end}} :=
 		{{- else -}}
 		  err =
@@ -370,13 +370,13 @@ func new{{.PascalName}}() *cobra.Command {
 		{{- else}}
 			{{- (.Service.TrimPrefix "account").PascalName}}.
 		{{- end}}
-		{{- .PascalName}}(ctx{{if .Request}}, {{.CamelName}}Req{{end}})
+		{{- .PascalName}}(ctx{{if not .IsLegacyEmptyRequest}}, {{.CamelName}}Req{{end}})
 		{{- if not (and .Response .Pagination) }}
 		if err != nil {
 			return err
 		}
 		{{- end}}
-		{{ if not .Response.IsEmpty -}}
+		{{ if not ( or .Response.IsGoogleEmpty .Response.IsLegacyEmptyResponse) -}}
 			{{- if .IsResponseByteStream -}}
 			defer response.{{.ResponseBodyField.PascalName}}.Close()
 			return cmdio.Render{{ if .Pagination}}Iterator{{end}}(ctx, response.{{.ResponseBodyField.PascalName}})
@@ -412,7 +412,7 @@ func new{{.PascalName}}() *cobra.Command {
 	{{- if $optionalIfJsonIsUsed  }}
 	if !cmd.Flags().Changed("json") {
 	{{- end }}
-	{{if and (not $field.Entity.IsString) (not $field.Entity.IsFieldMask) (not $field.Entity.IsTimestamp) (not $field.Entity.IsDuration) -}} {{/* TODO: add support for well known types */}}
+	{{if and (not $field.Entity.IsString) (not $field.Entity.IsFieldMask) (not $field.Entity.IsTimestamp) (not $field.Entity.IsDuration) -}} {{/* TODO: add support for well known types */ -}}
 	_, err = fmt.Sscan(args[{{$arg}}], &{{- template "request-body-obj" (dict "Method" $method "Field" $field)}})
 	if err != nil {
 		return fmt.Errorf("invalid {{$field.ConstantName}}: %s", args[{{$arg}}])

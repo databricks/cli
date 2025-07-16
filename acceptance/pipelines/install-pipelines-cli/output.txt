@@ -1,0 +1,76 @@
+
+=== install pipelines cli
+>>> [CLI] install-pipelines-cli -d ./subdir
+pipelines successfully installed in directory "./subdir"
+
+>>> ./subdir/pipelines
+Pipelines CLI
+
+Usage:
+  pipelines [command]
+
+Available Commands:
+  auth        Authentication related commands
+  completion  Generate the autocompletion script for the specified shell
+  deploy      Deploy pipelines
+  destroy     Destroy a pipelines project
+  dry-run     Validate correctness of the pipeline's graph
+  help        Help about any command
+  init        Initialize a new pipelines project
+  open        Open a pipeline in the browser
+  run         Run a pipeline
+  version     Retrieve information about the current version of the Pipelines CLI
+
+Flags:
+      --debug            enable debug logging
+  -h, --help             help for pipelines
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    project target to use (if applicable)
+      --var strings      set values for variables defined in project config. Example: --var="foo=bar"
+  -v, --version          version for pipelines
+
+Use "pipelines [command] --help" for more information about a command.
+
+=== pipelines already installed
+>>> [CLI] install-pipelines-cli -d ./subdir
+pipelines already installed in directory "./subdir"
+
+=== pipelines file exists, should not overwrite
+>>> errcode [CLI] install-pipelines-cli -d ./subdir
+Error: cannot install pipelines CLI: "subdir/pipelines" already exists
+
+Exit code: 1
+
+=== databricks executable called with alias
+>>> ./subdir/notdatabricks install-pipelines-cli -d ./subdir
+pipelines successfully installed in directory "./subdir"
+
+>>> ./subdir/pipelines
+Pipelines CLI
+
+Usage:
+  pipelines [command]
+
+Available Commands:
+  auth        Authentication related commands
+  completion  Generate the autocompletion script for the specified shell
+  deploy      Deploy pipelines
+  destroy     Destroy a pipelines project
+  dry-run     Validate correctness of the pipeline's graph
+  help        Help about any command
+  init        Initialize a new pipelines project
+  open        Open a pipeline in the browser
+  run         Run a pipeline
+  version     Retrieve information about the current version of the Pipelines CLI
+
+Flags:
+      --debug            enable debug logging
+  -h, --help             help for pipelines
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    project target to use (if applicable)
+      --var strings      set values for variables defined in project config. Example: --var="foo=bar"
+  -v, --version          version for pipelines
+
+Use "pipelines [command] --help" for more information about a command.

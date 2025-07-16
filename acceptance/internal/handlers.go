@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -101,16 +102,51 @@ func addDefaultHandlers(server *testserver.Server) {
 	})
 
 	server.Handle("POST", "/api/2.0/workspace/delete", func(req testserver.Request) any {
-		path := req.URL.Query().Get("path")
-		recursive := req.URL.Query().Get("recursive") == "true"
-		req.Workspace.WorkspaceDelete(path, recursive)
+		var request workspace.Delete
+		if err := json.Unmarshal(req.Body, &request); err != nil {
+			return testserver.Response{
+				Body:       fmt.Sprintf("internal error: %s", err),
+				StatusCode: 500,
+			}
+		}
+		req.Workspace.WorkspaceDelete(request.Path, request.Recursive)
 		return ""
 	})
 
 	server.Handle("POST", "/api/2.0/workspace-files/import-file/{path:.*}", func(req testserver.Request) any {
 		path := req.Vars["path"]
-		req.Workspace.WorkspaceFilesImportFile(path, req.Body)
-		return ""
+		overwrite := req.URL.Query().Get("overwrite") == "true"
+		return req.Workspace.WorkspaceFilesImportFile(path, req.Body, overwrite)
+	})
+
+	server.Handle("POST", "/api/2.0/workspace/import", func(req testserver.Request) any {
+		var request workspace.Import
+		err := json.Unmarshal(req.Body, &request)
+		if err != nil {
+			return testserver.Response{
+				Body:       fmt.Sprintf("internal error: %s", err),
+				StatusCode: http.StatusInternalServerError,
+			}
+		}
+
+		if request.Format != workspace.ImportFormatAuto {
+			return testserver.Response{
+				Body:       "internal error: The test server only supports auto format.",
+				StatusCode: http.StatusInternalServerError,
+			}
+		}
+
+		// The /workspace/import endpoint expects the content as base64 encoded string.
+		// We need to decode it to get the actual content.
+		decoded, err := base64.StdEncoding.DecodeString(request.Content)
+		if err != nil {
+			return testserver.Response{
+				Body:       fmt.Sprintf("internal error: %s", err),
+				StatusCode: http.StatusInternalServerError,
+			}
+		}
+
+		return req.Workspace.WorkspaceFilesImportFile(request.Path, decoded, request.Overwrite)
 	})
 
 	server.Handle("GET", "/api/2.0/workspace-files/{path:.*}", func(req testserver.Request) any {
@@ -126,8 +162,8 @@ func addDefaultHandlers(server *testserver.Server) {
 
 	server.Handle("PUT", "/api/2.0/fs/files/{path:.*}", func(req testserver.Request) any {
 		path := req.Vars["path"]
-		req.Workspace.WorkspaceFilesImportFile(path, req.Body)
-		return ""
+		overwrite := req.URL.Query().Get("overwrite") == "true"
+		return req.Workspace.WorkspaceFilesImportFile(path, req.Body, overwrite)
 	})
 
 	server.Handle("GET", "/api/2.1/unity-catalog/current-metastore-assignment", func(req testserver.Request) any {
@@ -185,6 +221,11 @@ func addDefaultHandlers(server *testserver.Server) {
 		}
 
 		return req.Workspace.JobsReset(request)
+	})
+
+	server.Handle("GET", "/api/2.0/jobs/get", func(req testserver.Request) any {
+		jobId := req.URL.Query().Get("job_id")
+		return req.Workspace.JobsGet(jobId)
 	})
 
 	server.Handle("GET", "/api/2.2/jobs/get", func(req testserver.Request) any {
@@ -252,6 +293,23 @@ func addDefaultHandlers(server *testserver.Server) {
 		}
 	})
 
+	// Dashboards:
+	server.Handle("GET", "/api/2.0/lakeview/dashboards/{dashboard_id}", func(req testserver.Request) any {
+		return testserver.MapGet(req.Workspace, req.Workspace.Dashboards, req.Vars["dashboard_id"])
+	})
+	server.Handle("POST", "/api/2.0/lakeview/dashboards", func(req testserver.Request) any {
+		return req.Workspace.DashboardCreate(req)
+	})
+	server.Handle("POST", "/api/2.0/lakeview/dashboards/{dashboard_id}/published", func(req testserver.Request) any {
+		return req.Workspace.DashboardPublish(req)
+	})
+	server.Handle("PATCH", "/api/2.0/lakeview/dashboards/{dashboard_id}", func(req testserver.Request) any {
+		return req.Workspace.DashboardUpdate(req)
+	})
+	server.Handle("DELETE", "/api/2.0/lakeview/dashboards/{dashboard_id}", func(req testserver.Request) any {
+		return testserver.MapDelete(req.Workspace, req.Workspace.Dashboards, req.Vars["dashboard_id"])
+	})
+
 	// Pipelines:
 
 	server.Handle("GET", "/api/2.0/pipelines/{pipeline_id}", func(req testserver.Request) any {
@@ -268,6 +326,22 @@ func addDefaultHandlers(server *testserver.Server) {
 
 	server.Handle("DELETE", "/api/2.0/pipelines/{pipeline_id}", func(req testserver.Request) any {
 		return testserver.MapDelete(req.Workspace, req.Workspace.Pipelines, req.Vars["pipeline_id"])
+	})
+
+	server.Handle("POST", "/api/2.0/pipelines/{pipeline_id}/updates", func(req testserver.Request) any {
+		return req.Workspace.PipelineStartUpdate(req.Vars["pipeline_id"])
+	})
+
+	server.Handle("GET", "/api/2.0/pipelines/{pipeline_id}/events", func(req testserver.Request) any {
+		return req.Workspace.PipelineEvents(req.Vars["pipeline_id"])
+	})
+
+	server.Handle("GET", "/api/2.0/pipelines/{pipeline_id}/updates/{update_id}", func(req testserver.Request) any {
+		return req.Workspace.PipelineGetUpdate(req.Vars["pipeline_id"], req.Vars["update_id"])
+	})
+
+	server.Handle("POST", "/api/2.0/pipelines/{pipeline_id}/stop", func(req testserver.Request) any {
+		return req.Workspace.PipelineStop(req.Vars["pipeline_id"])
 	})
 
 	// Quality monitors:
@@ -324,7 +398,62 @@ func addDefaultHandlers(server *testserver.Server) {
 		return testserver.MapDelete(req.Workspace, req.Workspace.Schemas, req.Vars["full_name"])
 	})
 
+	// Volumes:
+
+	server.Handle("GET", "/api/2.1/unity-catalog/volumes/{full_name}", func(req testserver.Request) any {
+		return testserver.MapGet(req.Workspace, req.Workspace.Volumes, req.Vars["full_name"])
+	})
+
 	server.Handle("POST", "/api/2.1/unity-catalog/volumes", func(req testserver.Request) any {
 		return req.Workspace.VolumesCreate(req)
+	})
+
+	server.Handle("POST", "/api/2.0/repos", func(req testserver.Request) any {
+		return req.Workspace.ReposCreate(req)
+	})
+
+	server.Handle("GET", "/api/2.0/repos/{repo_id}", func(req testserver.Request) any {
+		return testserver.MapGet(req.Workspace, req.Workspace.Repos, req.Vars["repo_id"])
+	})
+
+	server.Handle("PATCH", "/api/2.0/repos/{repo_id}", func(req testserver.Request) any {
+		return req.Workspace.ReposUpdate(req)
+	})
+
+	server.Handle("DELETE", "/api/2.0/repos/{repo_id}", func(req testserver.Request) any {
+		return req.Workspace.ReposDelete(req)
+	})
+
+	server.Handle("PATCH", "/api/2.1/unity-catalog/volumes/{full_name}", func(req testserver.Request) any {
+		return req.Workspace.VolumesUpdate(req, req.Vars["full_name"])
+	})
+
+	server.Handle("DELETE", "/api/2.1/unity-catalog/volumes/{full_name}", func(req testserver.Request) any {
+		return testserver.MapDelete(req.Workspace, req.Workspace.Volumes, req.Vars["full_name"])
+	})
+
+	// SQL Warehouses:
+	server.Handle("GET", "/api/2.0/sql/warehouses/{warehouse_id}", func(req testserver.Request) any {
+		return testserver.MapGet(req.Workspace, req.Workspace.SqlWarehouses, req.Vars["warehouse_id"])
+	})
+
+	server.Handle("GET", "/api/2.0/sql/warehouses", func(req testserver.Request) any {
+		return req.Workspace.SqlWarehousesList(req)
+	})
+
+	server.Handle("POST", "/api/2.0/sql/warehouses", func(req testserver.Request) any {
+		return req.Workspace.SqlWarehousesUpsert(req, "")
+	})
+
+	server.Handle("POST", "/api/2.0/sql/warehouses/{warehouse_id}/edit", func(req testserver.Request) any {
+		return req.Workspace.SqlWarehousesUpsert(req, req.Vars["warehouse_id"])
+	})
+
+	server.Handle("DELETE", "/api/2.0/sql/warehouses/{warehouse_id}", func(req testserver.Request) any {
+		return testserver.MapDelete(req.Workspace, req.Workspace.SqlWarehouses, req.Vars["warehouse_id"])
+	})
+
+	server.Handle("GET", "/api/2.0/preview/sql/data_sources", func(req testserver.Request) any {
+		return req.Workspace.SqlDataSourcesList(req)
 	})
 }

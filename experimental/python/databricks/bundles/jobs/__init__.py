@@ -53,6 +53,9 @@ __all__ = [
     "DbfsStorageInfo",
     "DbfsStorageInfoDict",
     "DbfsStorageInfoParam",
+    "DbtPlatformTask",
+    "DbtPlatformTaskDict",
+    "DbtPlatformTaskParam",
     "DbtTask",
     "DbtTaskDict",
     "DbtTaskParam",
@@ -444,6 +447,11 @@ from databricks.bundles.jobs._models.dashboard_task import (
     DashboardTask,
     DashboardTaskDict,
     DashboardTaskParam,
+)
+from databricks.bundles.jobs._models.dbt_platform_task import (
+    DbtPlatformTask,
+    DbtPlatformTaskDict,
+    DbtPlatformTaskParam,
 )
 from databricks.bundles.jobs._models.dbt_task import DbtTask, DbtTaskDict, DbtTaskParam
 from databricks.bundles.jobs._models.file_arrival_trigger_configuration import (

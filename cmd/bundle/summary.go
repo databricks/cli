@@ -1,9 +1,7 @@
 package bundle
 
 import (
-	"encoding/json"
 	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 
@@ -12,9 +10,12 @@ import (
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/render"
+	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
 )
 
@@ -32,66 +33,91 @@ func newSummaryCommand() *cobra.Command {
 	cmd.Flags().MarkHidden("include-locations")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		ctx := cmd.Context()
-		b, diags := utils.ConfigureBundleWithVariables(cmd)
-		if err := diags.Error(); err != nil {
-			return diags.Error()
-		}
+		var err error
+		ctx := logdiag.InitContext(cmd.Context())
+		cmd.SetContext(ctx)
+		logdiag.SetSeverity(ctx, diag.Warning)
 
-		diags = phases.Initialize(ctx, b)
-		if err := diags.Error(); err != nil {
-			return err
-		}
+		b := prepareBundleForSummary(cmd, forcePull, includeLocations)
 
-		cacheDir, err := terraform.Dir(ctx, b)
-		if err != nil {
-			return err
-		}
-		_, stateFileErr := os.Stat(filepath.Join(cacheDir, terraform.TerraformStateFileName))
-		_, configFileErr := os.Stat(filepath.Join(cacheDir, terraform.TerraformConfigFileName))
-		noCache := errors.Is(stateFileErr, os.ErrNotExist) || errors.Is(configFileErr, os.ErrNotExist)
-
-		if forcePull || noCache {
-			diags = bundle.ApplySeq(ctx, b,
-				terraform.StatePull(),
-				terraform.Interpolate(),
-				terraform.Write(),
-			)
-			if err := diags.Error(); err != nil {
-				return err
+		if b != nil {
+			if root.OutputType(cmd) == flags.OutputText {
+				err = render.RenderSummary(ctx, cmd.OutOrStdout(), b)
+				if err != nil {
+					return err
+				}
+			}
+			if root.OutputType(cmd) == flags.OutputJSON {
+				err = renderJsonOutput(cmd, b)
+				if err != nil {
+					return err
+				}
 			}
 		}
 
-		diags = bundle.ApplySeq(ctx, b,
-			terraform.Load(),
-			mutator.InitializeURLs(),
-		)
-
-		// Include location information in the output if the flag is set.
-		if includeLocations {
-			diags = diags.Extend(bundle.Apply(ctx, b, mutator.PopulateLocations()))
-		}
-
-		if err := diags.Error(); err != nil {
-			return err
-		}
-
-		switch root.OutputType(cmd) {
-		case flags.OutputText:
-			return render.RenderSummary(ctx, cmd.OutOrStdout(), b)
-		case flags.OutputJSON:
-			buf, err := json.MarshalIndent(b.Config.Value().AsAny(), "", "  ")
-			if err != nil {
-				return err
-			}
-			_, _ = cmd.OutOrStdout().Write(buf)
-			_, _ = cmd.OutOrStdout().Write([]byte{'\n'})
-		default:
-			return fmt.Errorf("unknown output type %s", root.OutputType(cmd))
+		if logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
 		}
 
 		return nil
 	}
 
 	return cmd
+}
+
+func prepareBundleForSummary(cmd *cobra.Command, forcePull, includeLocations bool) *bundle.Bundle {
+	b := utils.ConfigureBundleWithVariables(cmd)
+	ctx := cmd.Context()
+	if b == nil || logdiag.HasError(ctx) {
+		return nil
+	}
+
+	phases.Initialize(ctx, b)
+	if logdiag.HasError(ctx) {
+		return nil
+	}
+
+	cacheDir, err := terraform.Dir(ctx, b)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return nil
+	}
+	_, stateFileErr := os.Stat(filepath.Join(cacheDir, b.StateFilename()))
+	_, configFileErr := os.Stat(filepath.Join(cacheDir, terraform.TerraformConfigFileName))
+	noCache := errors.Is(stateFileErr, os.ErrNotExist) || errors.Is(configFileErr, os.ErrNotExist)
+
+	if forcePull || noCache {
+		bundle.ApplyContext(ctx, b, statemgmt.StatePull())
+
+		if logdiag.HasError(ctx) {
+			return nil
+		}
+
+		if !b.DirectDeployment {
+			bundle.ApplySeqContext(ctx, b,
+				terraform.Interpolate(),
+				terraform.Write(),
+			)
+		}
+
+		if logdiag.HasError(ctx) {
+			return nil
+		}
+	}
+
+	bundle.ApplySeqContext(ctx, b,
+		statemgmt.Load(),
+		mutator.InitializeURLs(),
+	)
+
+	// Include location information in the output if the flag is set.
+	if includeLocations {
+		bundle.ApplyContext(ctx, b, mutator.PopulateLocations())
+	}
+
+	if logdiag.HasError(ctx) {
+		return nil
+	}
+
+	return b
 }

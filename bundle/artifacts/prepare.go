@@ -2,6 +2,7 @@ package artifacts
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 
@@ -10,7 +11,9 @@ import (
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/python"
 	"github.com/databricks/cli/libs/utils"
 )
@@ -26,8 +29,6 @@ func (m *prepare) Name() string {
 }
 
 func (m *prepare) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	var diags diag.Diagnostics
-
 	err := InsertPythonArtifact(ctx, b)
 	if err != nil {
 		return diag.FromErr(err)
@@ -35,23 +36,18 @@ func (m *prepare) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 
 	for _, artifactName := range utils.SortedKeys(b.Config.Artifacts) {
 		artifact := b.Config.Artifacts[artifactName]
+		if artifact == nil {
+			l := b.Config.GetLocation("artifacts." + artifactName)
+			logdiag.LogDiag(ctx, diag.Diagnostic{
+				Severity:  diag.Error,
+				Summary:   "Artifact not properly configured",
+				Detail:    "please specify artifact properties",
+				Locations: []dyn.Location{l},
+			})
+			continue
+		}
 		b.Metrics.AddBoolValue(metrics.ArtifactBuildCommandIsSet, artifact.BuildCommand != "")
 		b.Metrics.AddBoolValue(metrics.ArtifactFilesIsSet, len(artifact.Files) != 0)
-
-		if artifact.Type == "whl" {
-			if artifact.BuildCommand == "" && len(artifact.Files) == 0 {
-				artifact.BuildCommand = python.GetExecutable() + " setup.py bdist_wheel"
-			}
-
-			// Wheel builds write to `./dist`. Pick up all wheel files by default if nothing is specified.
-			if len(artifact.Files) == 0 {
-				artifact.Files = []config.ArtifactFile{
-					{
-						Source: filepath.Join(artifact.Path, "dist", "*.whl"),
-					},
-				}
-			}
-		}
 
 		l := b.Config.GetLocation("artifacts." + artifactName)
 		dirPath := filepath.Dir(l.File)
@@ -68,28 +64,39 @@ func (m *prepare) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 			artifact.Path = b.BundleRootPath
 		}
 
+		if artifact.Type == "whl" {
+			if artifact.BuildCommand == "" && len(artifact.Files) == 0 {
+				artifact.BuildCommand = python.GetExecutable() + " setup.py bdist_wheel"
+			}
+
+			// Wheel builds write to `./dist`. Pick up all wheel files by default if nothing is specified.
+			if len(artifact.Files) == 0 {
+				artifact.Files = []config.ArtifactFile{
+					{
+						Source: filepath.Join(artifact.Path, "dist", "*.whl"),
+					},
+				}
+			}
+		}
+
 		if !filepath.IsAbs(artifact.Path) {
 			artifact.Path = filepath.Join(dirPath, artifact.Path)
 		}
 
 		if artifact.BuildCommand == "" && len(artifact.Files) == 0 {
-			diags = diags.Extend(diag.Errorf("misconfigured artifact: please specify 'build' or 'files' property"))
+			logdiag.LogError(ctx, errors.New("misconfigured artifact: please specify 'build' or 'files' property"))
 		}
 
 		if len(artifact.Files) > 0 && artifact.BuildCommand == "" {
-			diags = diags.Extend(bundle.Apply(ctx, b, expandGlobs{name: artifactName}))
+			bundle.ApplyContext(ctx, b, expandGlobs{name: artifactName})
 		}
 
-		if diags.HasError() {
+		if logdiag.HasError(ctx) {
 			break
 		}
 	}
 
-	if diags.HasError() {
-		return diags
-	}
-
-	return diags
+	return nil
 }
 
 func InsertPythonArtifact(ctx context.Context, b *bundle.Bundle) error {

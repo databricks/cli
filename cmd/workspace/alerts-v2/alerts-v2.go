@@ -20,16 +20,13 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "alerts-v2",
-		Short:   `TODO: Add description.`,
-		Long:    `TODO: Add description`,
+		Short:   `New version of SQL Alerts.`,
+		Long:    `New version of SQL Alerts`,
 		GroupID: "sql",
 		Annotations: map[string]string{
 			"package": "sql",
 		},
-
-		// This service is being previewed; hide from help output.
-		Hidden: true,
-		RunE:   root.ReportUnknownSubcommand,
+		RunE: root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -63,7 +60,6 @@ func newCreateAlert() *cobra.Command {
 	createAlertReq.Alert = sql.AlertV2{}
 	var createAlertJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createAlertJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createAlertReq.Alert.CustomDescription, "custom-description", createAlertReq.Alert.CustomDescription, `Custom description for the alert.`)
@@ -72,6 +68,7 @@ func newCreateAlert() *cobra.Command {
 	// TODO: complex arg: evaluation
 	cmd.Flags().StringVar(&createAlertReq.Alert.ParentPath, "parent-path", createAlertReq.Alert.ParentPath, `The workspace path of the folder containing the alert.`)
 	cmd.Flags().StringVar(&createAlertReq.Alert.QueryText, "query-text", createAlertReq.Alert.QueryText, `Text of the query to be run.`)
+	cmd.Flags().StringVar(&createAlertReq.Alert.RunAsUserName, "run-as-user-name", createAlertReq.Alert.RunAsUserName, `The run as username or application ID of service principal.`)
 	// TODO: complex arg: schedule
 	cmd.Flags().StringVar(&createAlertReq.Alert.WarehouseId, "warehouse-id", createAlertReq.Alert.WarehouseId, `ID of the SQL warehouse attached to the alert.`)
 
@@ -139,8 +136,6 @@ func newGetAlert() *cobra.Command {
 
 	var getAlertReq sql.GetAlertV2Request
 
-	// TODO: short flags
-
 	cmd.Use = "get-alert ID"
 	cmd.Short = `Get an alert.`
 	cmd.Long = `Get an alert.
@@ -206,8 +201,6 @@ func newListAlerts() *cobra.Command {
 
 	var listAlertsReq sql.ListAlertsV2Request
 
-	// TODO: short flags
-
 	cmd.Flags().IntVar(&listAlertsReq.PageSize, "page-size", listAlertsReq.PageSize, ``)
 	cmd.Flags().StringVar(&listAlertsReq.PageToken, "page-token", listAlertsReq.PageToken, ``)
 
@@ -258,8 +251,6 @@ func newTrashAlert() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var trashAlertReq sql.TrashAlertV2Request
-
-	// TODO: short flags
 
 	cmd.Use = "trash-alert ID"
 	cmd.Short = `Delete an alert.`
@@ -330,7 +321,6 @@ func newUpdateAlert() *cobra.Command {
 	updateAlertReq.Alert = sql.AlertV2{}
 	var updateAlertJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateAlertJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateAlertReq.Alert.CustomDescription, "custom-description", updateAlertReq.Alert.CustomDescription, `Custom description for the alert.`)
@@ -339,6 +329,7 @@ func newUpdateAlert() *cobra.Command {
 	// TODO: complex arg: evaluation
 	cmd.Flags().StringVar(&updateAlertReq.Alert.ParentPath, "parent-path", updateAlertReq.Alert.ParentPath, `The workspace path of the folder containing the alert.`)
 	cmd.Flags().StringVar(&updateAlertReq.Alert.QueryText, "query-text", updateAlertReq.Alert.QueryText, `Text of the query to be run.`)
+	cmd.Flags().StringVar(&updateAlertReq.Alert.RunAsUserName, "run-as-user-name", updateAlertReq.Alert.RunAsUserName, `The run as username or application ID of service principal.`)
 	// TODO: complex arg: schedule
 	cmd.Flags().StringVar(&updateAlertReq.Alert.WarehouseId, "warehouse-id", updateAlertReq.Alert.WarehouseId, `ID of the SQL warehouse attached to the alert.`)
 

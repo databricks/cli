@@ -11,5 +11,5 @@ type DataSourceServicePrincipal struct {
 	Home           string `json:"home,omitempty"`
 	Id             string `json:"id,omitempty"`
 	Repos          string `json:"repos,omitempty"`
-	SpId           string `json:"sp_id,omitempty"`
+	ScimId         string `json:"scim_id,omitempty"`
 }

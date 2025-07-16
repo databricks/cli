@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"path"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -12,8 +13,10 @@ import (
 
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
+	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
@@ -27,23 +30,37 @@ const (
 	TestRunID = 2305843009213693969
 )
 
+type FileEntry struct {
+	Info workspace.ObjectInfo
+	Data []byte
+}
+
 // FakeWorkspace holds a state of a workspace for acceptance tests.
 type FakeWorkspace struct {
 	mu  sync.Mutex
 	url string
 
-	directories map[string]bool
-	files       map[string][]byte
+	directories  map[string]bool
+	files        map[string]FileEntry
+	repoIdByPath map[string]int64
+
 	// normally, ids are not sequential, but we make them sequential for deterministic diff
 	nextJobId    int64
 	nextJobRunId int64
 	Jobs         map[int64]jobs.Job
 	JobRuns      map[int64]jobs.Run
 
-	Pipelines map[string]pipelines.GetPipelineResponse
-	Monitors  map[string]catalog.MonitorInfo
-	Apps      map[string]apps.App
-	Schemas   map[string]catalog.SchemaInfo
+	Pipelines       map[string]pipelines.GetPipelineResponse
+	PipelineUpdates map[string]bool
+	Monitors        map[string]catalog.MonitorInfo
+	Apps            map[string]apps.App
+	Schemas         map[string]catalog.SchemaInfo
+	Volumes         map[string]catalog.VolumeInfo
+	Dashboards      map[string]dashboards.Dashboard
+	SqlWarehouses   map[string]sql.GetWarehouseResponse
+
+	nextRepoId int64
+	Repos      map[string]workspace.RepoInfo
 }
 
 func (w *FakeWorkspace) LockUnlock() func() {
@@ -62,6 +79,7 @@ func MapGet[T any](w *FakeWorkspace, collection map[string]T, key string) Respon
 	if !ok {
 		return Response{
 			StatusCode: 404,
+			Body:       map[string]string{"message": fmt.Sprintf("Resource %T not found: %v", value, key)},
 		}
 	}
 	return Response{
@@ -107,15 +125,22 @@ func NewFakeWorkspace(url string) *FakeWorkspace {
 		directories: map[string]bool{
 			"/Workspace": true,
 		},
-		files:        map[string][]byte{},
-		Jobs:         map[int64]jobs.Job{},
-		JobRuns:      map[int64]jobs.Run{},
-		nextJobId:    TestJobID,
-		nextJobRunId: TestRunID,
-		Pipelines:    map[string]pipelines.GetPipelineResponse{},
-		Monitors:     map[string]catalog.MonitorInfo{},
-		Apps:         map[string]apps.App{},
-		Schemas:      map[string]catalog.SchemaInfo{},
+		files:        make(map[string]FileEntry),
+		repoIdByPath: make(map[string]int64),
+
+		Jobs:            map[int64]jobs.Job{},
+		JobRuns:         map[int64]jobs.Run{},
+		nextJobId:       TestJobID,
+		nextJobRunId:    TestRunID,
+		Pipelines:       map[string]pipelines.GetPipelineResponse{},
+		PipelineUpdates: map[string]bool{},
+		Monitors:        map[string]catalog.MonitorInfo{},
+		Apps:            map[string]apps.App{},
+		Schemas:         map[string]catalog.SchemaInfo{},
+		Volumes:         map[string]catalog.VolumeInfo{},
+		Dashboards:      map[string]dashboards.Dashboard{},
+		SqlWarehouses:   map[string]sql.GetWarehouseResponse{},
+		Repos:           map[string]workspace.RepoInfo{},
 	}
 }
 
@@ -129,12 +154,16 @@ func (s *FakeWorkspace) WorkspaceGetStatus(path string) Response {
 				Path:       path,
 			},
 		}
-	} else if _, ok := s.files[path]; ok {
+	} else if entry, ok := s.files[path]; ok {
 		return Response{
-			Body: &workspace.ObjectInfo{
-				ObjectType: "FILE",
+			Body: entry.Info,
+		}
+	} else if repoId, ok := s.repoIdByPath[path]; ok {
+		return Response{
+			Body: workspace.ObjectInfo{
+				ObjectType: "REPO",
 				Path:       path,
-				Language:   "SCALA",
+				ObjectId:   repoId,
 			},
 		}
 	} else {
@@ -152,35 +181,74 @@ func (s *FakeWorkspace) WorkspaceMkdirs(request workspace.Mkdirs) {
 
 func (s *FakeWorkspace) WorkspaceExport(path string) []byte {
 	defer s.LockUnlock()()
-	return s.files[path]
+	return s.files[path].Data
 }
 
 func (s *FakeWorkspace) WorkspaceDelete(path string, recursive bool) {
 	defer s.LockUnlock()()
 	if !recursive {
-		s.files[path] = nil
+		delete(s.files, path)
 	} else {
 		for key := range s.files {
 			if strings.HasPrefix(key, path) {
-				s.files[key] = nil
+				delete(s.files, key)
 			}
 		}
 	}
 }
 
-func (s *FakeWorkspace) WorkspaceFilesImportFile(filePath string, body []byte) {
+func (s *FakeWorkspace) WorkspaceFilesImportFile(filePath string, body []byte, overwrite bool) Response {
 	if !strings.HasPrefix(filePath, "/") {
 		filePath = "/" + filePath
 	}
 
 	defer s.LockUnlock()()
 
-	s.files[filePath] = body
+	workspacePath := filePath
+
+	if !overwrite {
+		if _, exists := s.files[workspacePath]; exists {
+			return Response{
+				StatusCode: 409,
+				Body:       map[string]string{"message": fmt.Sprintf("File already exists at (%s).", workspacePath)},
+			}
+		}
+	}
+
+	// Note: Files with .py, .scala, .r or .sql extension can
+	// be notebooks if they contain a magical "Databricks notebook source"
+	// header comment. We omit support non-python extensions for now for simplicity.
+	extension := filepath.Ext(filePath)
+	if extension == ".py" && strings.HasPrefix(string(body), "# Databricks notebook source") {
+		// Notebooks are stripped of their extension by the workspace import API.
+		workspacePath = strings.TrimSuffix(filePath, extension)
+		s.files[workspacePath] = FileEntry{
+			Info: workspace.ObjectInfo{
+				ObjectType: "NOTEBOOK",
+				Path:       workspacePath,
+				Language:   "PYTHON",
+			},
+			Data: body,
+		}
+	} else {
+		// The endpoint does not set language for files, so we omit that
+		// here as well.
+		// ref: https://docs.databricks.com/api/workspace/workspace/getstatus#language
+		s.files[workspacePath] = FileEntry{
+			Info: workspace.ObjectInfo{
+				ObjectType: "FILE",
+				Path:       workspacePath,
+			},
+			Data: body,
+		}
+	}
 
 	// Add all directories in the path to the directories map
-	for dir := path.Dir(filePath); dir != "/"; dir = path.Dir(dir) {
+	for dir := path.Dir(workspacePath); dir != "/"; dir = path.Dir(dir) {
 		s.directories[dir] = true
 	}
+
+	return Response{}
 }
 
 func (s *FakeWorkspace) WorkspaceFilesExportFile(path string) []byte {
@@ -190,7 +258,7 @@ func (s *FakeWorkspace) WorkspaceFilesExportFile(path string) []byte {
 
 	defer s.LockUnlock()()
 
-	return s.files[path]
+	return s.files[path].Data
 }
 
 func (s *FakeWorkspace) JobsCreate(request jobs.CreateJob) Response {

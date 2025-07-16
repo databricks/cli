@@ -1,0 +1,46 @@
+
+>>> [CLI] bundle init default-python --config-file ./input.json
+
+Welcome to the default Python template for Databricks Asset Bundles!
+Workspace to use (auto-detected, edit in 'X[UNIQUE_NAME]/databricks.yml'): [DATABRICKS_URL]
+
+✨ Your new project has been created in the 'X[UNIQUE_NAME]' directory!
+
+Please refer to the README.md file for "getting started" instructions.
+See also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
+
+>>> yamlcheck.py
+
+>>> [CLI] bundle validate -t dev
+Name: X[UNIQUE_NAME]
+Target: dev
+Workspace:
+  Host: [DATABRICKS_URL]
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/X[UNIQUE_NAME]/dev
+
+Validation OK!
+
+>>> [CLI] bundle validate -t prod
+Name: X[UNIQUE_NAME]
+Target: prod
+Workspace:
+  Host: [DATABRICKS_URL]
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/X[UNIQUE_NAME]/prod
+
+Validation OK!
+
+>>> [TESTROOT]/bundle/templates/default-python/combinations/serverless/../check_output.py [CLI] bundle deploy -t dev
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/X[UNIQUE_NAME]/dev/files...
+Deploying resources...
+Deployment complete!
+Deleting files...
+Destroy complete!
+
+>>> [TESTROOT]/bundle/templates/default-python/combinations/serverless/../check_output.py [CLI] bundle deploy -t prod
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/X[UNIQUE_NAME]/prod/files...
+Deploying resources...
+Deployment complete!
+Deleting files...
+Destroy complete!

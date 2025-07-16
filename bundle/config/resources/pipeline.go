@@ -52,11 +52,10 @@ func (p *Pipeline) Exists(ctx context.Context, w *databricks.WorkspaceClient, id
 
 func (j *Pipeline) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
-		SingularName:          "pipeline",
-		PluralName:            "pipelines",
-		SingularTitle:         "Pipeline",
-		PluralTitle:           "Pipelines",
-		TerraformResourceName: "databricks_pipeline",
+		SingularName:  "pipeline",
+		PluralName:    "pipelines",
+		SingularTitle: "Pipeline",
+		PluralTitle:   "Pipelines",
 	}
 }
 

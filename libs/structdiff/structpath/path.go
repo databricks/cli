@@ -2,9 +2,10 @@ package structpath
 
 import (
 	"fmt"
+	"reflect"
 	"strconv"
 
-	"github.com/databricks/cli/libs/structdiff/jsontag"
+	"github.com/databricks/cli/libs/structdiff/structtag"
 )
 
 const (
@@ -18,16 +19,21 @@ const (
 // PathNode represents a node in a path for struct diffing.
 // It can represent struct fields, map keys, or array/slice indices.
 type PathNode struct {
-	prev    *PathNode
-	jsonTag jsontag.JSONTag // For lazy JSON key resolution
-	key     string          // Computed key (JSON key for structs, string key for maps, or Go field name for fallback)
+	prev      *PathNode
+	jsonTag   structtag.JSONTag // For lazy JSON key resolution
+	bundleTag structtag.BundleTag
+	key       string // Computed key (JSON key for structs, string key for maps, or Go field name for fallback)
 	// If index >= 0, the node specifies a slice/array index in index.
 	// If index < 0, this describes the type of node (see tagStruct and other consts above)
 	index int
 }
 
-func (p *PathNode) JSONTag() jsontag.JSONTag {
+func (p *PathNode) JSONTag() structtag.JSONTag {
 	return p.jsonTag
+}
+
+func (p *PathNode) BundleTag() structtag.BundleTag {
+	return p.bundleTag
 }
 
 func (p *PathNode) IsRoot() bool {
@@ -91,6 +97,13 @@ func (p *PathNode) Field() (string, bool) {
 	return "", false
 }
 
+func (p *PathNode) Parent() *PathNode {
+	if p == nil {
+		return nil
+	}
+	return p.prev
+}
+
 // NewIndex creates a new PathNode for an array/slice index.
 func NewIndex(prev *PathNode, index int) *PathNode {
 	if index < 0 {
@@ -113,12 +126,16 @@ func NewMapKey(prev *PathNode, key string) *PathNode {
 
 // NewStructField creates a new PathNode for a struct field.
 // The jsonTag is used for lazy JSON key resolution, and fieldName is used as fallback.
-func NewStructField(prev *PathNode, jsonTag jsontag.JSONTag, fieldName string) *PathNode {
+func NewStructField(prev *PathNode, tag reflect.StructTag, fieldName string) *PathNode {
+	jsonTag := structtag.JSONTag(tag.Get("json"))
+	bundleTag := structtag.BundleTag(tag.Get("bundle"))
+
 	return &PathNode{
-		prev:    prev,
-		jsonTag: jsonTag,
-		key:     fieldName,
-		index:   tagUnresolvedStruct,
+		prev:      prev,
+		jsonTag:   jsonTag,
+		bundleTag: bundleTag,
+		key:       fieldName,
+		index:     tagUnresolvedStruct,
 	}
 }
 

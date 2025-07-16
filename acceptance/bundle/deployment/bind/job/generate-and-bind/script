@@ -1,0 +1,53 @@
+title "Create a pre-defined job:\n"
+
+PYTHON_NOTEBOOK_DIR="/Workspace/Users/${CURRENT_USER_NAME}/python-${UNIQUE_NAME}"
+PYTHON_NOTEBOOK="${PYTHON_NOTEBOOK_DIR}/test"
+
+JOB_ID=$($CLI jobs create --json '
+{
+  "name": "generate-job-'${UNIQUE_NAME}'",
+  "tasks": [
+    {
+      "task_key": "test",
+      "new_cluster": {
+        "spark_version": "'${DEFAULT_SPARK_VERSION}'",
+        "node_type_id": "'${NODE_TYPE_ID}'",
+        "num_workers": 1,
+        "spark_conf": {
+						"spark.databricks.enableWsfs": true,
+						"spark.databricks.hive.metastore.glueCatalog.enabled": true,
+						"spark.databricks.pip.ignoreSSL": true
+					}
+      },
+      "notebook_task": {
+        "notebook_path": "'${PYTHON_NOTEBOOK}'"
+      }
+    }
+  ]
+}' | jq -r '.job_id')
+
+echo "Created job with ID: $JOB_ID"
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    title "Delete the tmp folder:"
+    trace $CLI workspace delete ${PYTHON_NOTEBOOK}
+    trace $CLI workspace delete ${PYTHON_NOTEBOOK_DIR}
+}
+trap cleanup EXIT
+
+trace $CLI workspace mkdirs "${PYTHON_NOTEBOOK_DIR}"
+trace $CLI workspace import "${PYTHON_NOTEBOOK}" --file test.py --language PYTHON
+
+trace $CLI bundle generate job --key test_job_key --existing-job-id $JOB_ID --config-dir resources --source-dir src
+trace ls src/
+trace cat resources/test_job_key.job.yml | grep "name: generate-job-${UNIQUE_NAME}"
+
+trace $CLI bundle deployment bind test_job_key $JOB_ID --auto-approve
+trace $CLI bundle deploy
+
+trace $CLI bundle destroy --auto-approve
+
+title "Check that job is bound and does not exist after bundle is destroyed:"
+trace errcode $CLI jobs get "${JOB_ID}" --output json

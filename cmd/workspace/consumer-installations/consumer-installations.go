@@ -60,12 +60,11 @@ func newCreate() *cobra.Command {
 	var createReq marketplace.CreateInstallationRequest
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: accepted_consumer_terms
 	cmd.Flags().StringVar(&createReq.CatalogName, "catalog-name", createReq.CatalogName, ``)
-	cmd.Flags().Var(&createReq.RecipientType, "recipient-type", `. Supported values: [DELTA_SHARING_RECIPIENT_TYPE_DATABRICKS, DELTA_SHARING_RECIPIENT_TYPE_OPEN]`)
+	cmd.Flags().Var(&createReq.RecipientType, "recipient-type", `Supported values: [DELTA_SHARING_RECIPIENT_TYPE_DATABRICKS, DELTA_SHARING_RECIPIENT_TYPE_OPEN]`)
 	// TODO: complex arg: repo_detail
 	cmd.Flags().StringVar(&createReq.ShareName, "share-name", createReq.ShareName, ``)
 
@@ -134,8 +133,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq marketplace.DeleteInstallationRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete LISTING_ID INSTALLATION_ID"
 	cmd.Short = `Uninstall from a listing.`
 	cmd.Long = `Uninstall from a listing.
@@ -190,8 +187,6 @@ func newList() *cobra.Command {
 
 	var listReq marketplace.ListAllInstallationsRequest
 
-	// TODO: short flags
-
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)
 
@@ -242,8 +237,6 @@ func newListListingInstallations() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listListingInstallationsReq marketplace.ListInstallationsRequest
-
-	// TODO: short flags
 
 	cmd.Flags().IntVar(&listListingInstallationsReq.PageSize, "page-size", listListingInstallationsReq.PageSize, ``)
 	cmd.Flags().StringVar(&listListingInstallationsReq.PageToken, "page-token", listListingInstallationsReq.PageToken, ``)
@@ -299,7 +292,6 @@ func newUpdate() *cobra.Command {
 	var updateReq marketplace.UpdateInstallationRequest
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().BoolVar(&updateReq.RotateToken, "rotate-token", updateReq.RotateToken, ``)

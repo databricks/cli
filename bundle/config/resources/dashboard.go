@@ -23,12 +23,7 @@ type DashboardPermission struct {
 	GroupName            string `json:"group_name,omitempty"`
 }
 
-type Dashboard struct {
-	ID             string                `json:"id,omitempty" bundle:"readonly"`
-	Permissions    []DashboardPermission `json:"permissions,omitempty"`
-	ModifiedStatus ModifiedStatus        `json:"modified_status,omitempty" bundle:"internal"`
-	URL            string                `json:"url,omitempty" bundle:"internal"`
-
+type DashboardConfig struct {
 	dashboards.Dashboard
 
 	// =========================
@@ -47,8 +42,20 @@ type Dashboard struct {
 	//
 	// Defaults to false if not set.
 	EmbedCredentials bool `json:"embed_credentials,omitempty"`
+}
+
+type Dashboard struct {
+	ID             string                `json:"id,omitempty" bundle:"readonly"`
+	Permissions    []DashboardPermission `json:"permissions,omitempty"`
+	ModifiedStatus ModifiedStatus        `json:"modified_status,omitempty" bundle:"internal"`
+	URL            string                `json:"url,omitempty" bundle:"internal"`
+
+	DashboardConfig
 
 	// FilePath points to the local `.lvdash.json` file containing the dashboard definition.
+	// This is inlined into serialized_dashboard during deployment. The file_path is kept around
+	// as metadata which is needed for `databricks bundle generate dashboard --resource <dashboard_key>` to work.
+	// This is not part of DashboardConfig because we don't need to store this in the resource state.
 	FilePath string `json:"file_path,omitempty"`
 }
 
@@ -73,11 +80,10 @@ func (*Dashboard) Exists(ctx context.Context, w *databricks.WorkspaceClient, id 
 
 func (*Dashboard) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
-		SingularName:          "dashboard",
-		PluralName:            "dashboards",
-		SingularTitle:         "Dashboard",
-		PluralTitle:           "Dashboards",
-		TerraformResourceName: "databricks_dashboard",
+		SingularName:  "dashboard",
+		PluralName:    "dashboards",
+		SingularTitle: "Dashboard",
+		PluralTitle:   "Dashboards",
 	}
 }
 

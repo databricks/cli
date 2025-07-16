@@ -4,8 +4,14 @@ bundle:
   name: my_default_python
   uuid: [UUID]
 
+artifacts:
+  python_artifact:
+    type: whl
+    build: uv build --wheel
+
 include:
   - resources/*.yml
+  - resources/*/*.yml
 
 targets:
   dev:

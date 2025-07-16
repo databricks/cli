@@ -28,7 +28,8 @@ func (m *selectDefaultTarget) Apply(ctx context.Context, b *bundle.Bundle) diag.
 	// One target means there's only one default.
 	names := maps.Keys(b.Config.Targets)
 	if len(names) == 1 {
-		return bundle.Apply(ctx, b, SelectTarget(names[0]))
+		bundle.ApplyContext(ctx, b, SelectTarget(names[0]))
+		return nil
 	}
 
 	// Multiple targets means we look for the `default` flag.
@@ -50,5 +51,6 @@ func (m *selectDefaultTarget) Apply(ctx context.Context, b *bundle.Bundle) diag.
 	}
 
 	// One default remaining.
-	return bundle.Apply(ctx, b, SelectTarget(defaults[0]))
+	bundle.ApplyContext(ctx, b, SelectTarget(defaults[0]))
+	return nil
 }

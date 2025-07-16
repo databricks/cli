@@ -80,7 +80,6 @@ func newCreate() *cobra.Command {
 	var createReq settings.CreateIpAccessList
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: ip_addresses
@@ -108,12 +107,7 @@ func newCreate() *cobra.Command {
 
   Arguments:
     LABEL: Label for the IP access list. This **cannot** be empty.
-    LIST_TYPE: Type of IP access list. Valid values are as follows and are
-      case-sensitive:
-      
-      * ALLOW: An allow list. Include this IP or range. * BLOCK: A block
-      list. Exclude this IP or range. IP addresses in the block list are
-      excluded even if they are included in an allow list. 
+    LIST_TYPE:  
       Supported values: [ALLOW, BLOCK]`
 
 	cmd.Annotations = make(map[string]string)
@@ -190,8 +184,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq settings.DeleteIpAccessListRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete IP_ACCESS_LIST_ID"
 	cmd.Short = `Delete access list.`
 	cmd.Long = `Delete access list.
@@ -259,8 +251,6 @@ func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getReq settings.GetIpAccessListRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get IP_ACCESS_LIST_ID"
 	cmd.Short = `Get access list.`
@@ -370,7 +360,6 @@ func newReplace() *cobra.Command {
 	var replaceReq settings.ReplaceIpAccessList
 	var replaceJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&replaceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: ip_addresses
@@ -395,12 +384,7 @@ func newReplace() *cobra.Command {
   Arguments:
     IP_ACCESS_LIST_ID: The ID for the corresponding IP access list
     LABEL: Label for the IP access list. This **cannot** be empty.
-    LIST_TYPE: Type of IP access list. Valid values are as follows and are
-      case-sensitive:
-      
-      * ALLOW: An allow list. Include this IP or range. * BLOCK: A block
-      list. Exclude this IP or range. IP addresses in the block list are
-      excluded even if they are included in an allow list. 
+    LIST_TYPE:  
       Supported values: [ALLOW, BLOCK]
     ENABLED: Specifies whether this IP access list is enabled.`
 
@@ -486,13 +470,12 @@ func newUpdate() *cobra.Command {
 	var updateReq settings.UpdateIpAccessList
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().BoolVar(&updateReq.Enabled, "enabled", updateReq.Enabled, `Specifies whether this IP access list is enabled.`)
 	// TODO: array: ip_addresses
 	cmd.Flags().StringVar(&updateReq.Label, "label", updateReq.Label, `Label for the IP access list.`)
-	cmd.Flags().Var(&updateReq.ListType, "list-type", `Type of IP access list. Supported values: [ALLOW, BLOCK]`)
+	cmd.Flags().Var(&updateReq.ListType, "list-type", `Supported values: [ALLOW, BLOCK]`)
 
 	cmd.Use = "update IP_ACCESS_LIST_ID"
 	cmd.Short = `Update access list.`

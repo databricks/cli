@@ -4,10 +4,11 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
 )
 
@@ -22,10 +23,17 @@ func newUnbindCommand() *cobra.Command {
 	cmd.Flags().BoolVar(&forceLock, "force-lock", false, "Force acquisition of deployment lock.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		ctx := cmd.Context()
-		b, diags := utils.ConfigureBundleWithVariables(cmd)
-		if err := diags.Error(); err != nil {
-			return diags.Error()
+		ctx := logdiag.InitContext(cmd.Context())
+		cmd.SetContext(ctx)
+
+		b := utils.ConfigureBundleWithVariables(cmd)
+		if b == nil || logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
+		}
+
+		phases.Initialize(ctx, b)
+		if logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
 		}
 
 		resource, err := b.Config.Resources.FindResourceByConfigKey(args[0])
@@ -33,17 +41,14 @@ func newUnbindCommand() *cobra.Command {
 			return err
 		}
 
-		bundle.ApplyFunc(ctx, b, func(context.Context, *bundle.Bundle) diag.Diagnostics {
+		bundle.ApplyFuncContext(ctx, b, func(context.Context, *bundle.Bundle) {
 			b.Config.Bundle.Deployment.Lock.Force = forceLock
-			return nil
 		})
 
-		diags = phases.Initialize(ctx, b)
-		if !diags.HasError() {
-			diags = diags.Extend(phases.Unbind(ctx, b, resource.ResourceDescription().TerraformResourceName, args[0]))
-		}
-		if err := diags.Error(); err != nil {
-			return err
+		tfName := terraform.GroupToTerraformName[resource.ResourceDescription().PluralName]
+		phases.Unbind(ctx, b, tfName, args[0])
+		if logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
 		}
 		return nil
 	}

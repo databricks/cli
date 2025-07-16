@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/logdiag"
 )
 
 type processStaticResources struct{}
@@ -37,7 +38,7 @@ func (p processStaticResources) Apply(ctx context.Context, b *bundle.Bundle) dia
 	// we need to resolve variables because they can change path values:
 	// - variable can be used a prefix
 	// - path can be part of a complex variable value
-	diags := bundle.ApplySeq(
+	bundle.ApplySeqContext(
 		ctx,
 		b,
 		// Reads (dynamic): * (strings) (searches for variable references in string values)
@@ -49,12 +50,19 @@ func (p processStaticResources) Apply(ctx context.Context, b *bundle.Bundle) dia
 			"variables",
 		),
 		mutator.NormalizePaths(),
+
+		// Translate dashboard paths into paths in the workspace file system
+		// This must occur after NormalizePaths but before NormalizeAndInitializeResources,
+		// since the latter reads dashboard files and requires fully resolved paths.
+		mutator.TranslatePathsDashboards(),
 	)
-	if diags.HasError() {
-		return diags
+
+	if logdiag.HasError(ctx) {
+		return nil
 	}
 
-	return NormalizeAndInitializeResources(ctx, b, addedResources)
+	NormalizeAndInitializeResources(ctx, b, addedResources)
+	return nil
 }
 
 func getAllResources(b *bundle.Bundle) (ResourceKeySet, error) {

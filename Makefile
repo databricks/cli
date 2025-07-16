@@ -4,10 +4,14 @@ PACKAGES=./acceptance/... ./libs/... ./internal/... ./cmd/... ./bundle/... .
 
 GOTESTSUM_FORMAT ?= pkgname-and-test-fails
 GOTESTSUM_CMD ?= go tool gotestsum --format ${GOTESTSUM_FORMAT} --no-summary=skipped --jsonfile test-output.json
+LOCAL_TIMEOUT ?= 30m
 
+
+lintfull:
+	golangci-lint run --fix
 
 lint:
-	golangci-lint run --fix
+	./tools/lintdiff.py run --fix
 
 tidy:
 	@# not part of golangci-lint, apparently
@@ -16,9 +20,22 @@ tidy:
 lintcheck:
 	golangci-lint run ./...
 
-fmt:
-	ruff format -qn
+fmtfull: tools/yamlfmt
+	ruff format -n
 	golangci-lint fmt
+	./tools/yamlfmt .
+
+fmt: tools/yamlfmt
+	ruff format -n
+	./tools/lintdiff.py fmt
+	./tools/yamlfmt .
+
+# pre-building yamlfmt because I also want to call it from tests
+tools/yamlfmt: go.mod
+	go build -o tools/yamlfmt github.com/google/yamlfmt/cmd/yamlfmt
+
+tools/yamlfmt.exe: go.mod
+	go build -o tools/yamlfmt.exe github.com/google/yamlfmt/cmd/yamlfmt
 
 ws:
 	./tools/validate_whitespace.py
@@ -30,14 +47,26 @@ links:
 checks: tidy ws links
 
 test:
-	${GOTESTSUM_CMD} -- ${PACKAGES}
+	${GOTESTSUM_CMD} -- ${PACKAGES} -timeout=${LOCAL_TIMEOUT}
+
+# Updates acceptance test output (local tests)
+test-update:
+	-go test ./acceptance -run '^TestAccept$$' -update -timeout=${LOCAL_TIMEOUT}
+	@# at the moment second pass is required because some tests show diff against output of another test for easier review
+	-go test ./acceptance -run '^TestAccept$$' -update -timeout=${LOCAL_TIMEOUT}
+
+# Updates acceptance test output (integration tests, requires access)
+test-update-aws:
+	deco env run -i -n aws-prod-ucws -- go test ./acceptance -run ^TestAccept$$ -update -timeout=1h -skiplocal -v
+
+test-update-all: test-update test-update-aws
 
 slowest:
 	go tool gotestsum tool slowest --jsonfile test-output.json --threshold 1s --num 50
 
 cover:
 	rm -fr ./acceptance/build/cover/
-	VERBOSE_TEST=1 CLI_GOCOVERDIR=build/cover ${GOTESTSUM_CMD} -- -coverprofile=coverage.txt ${PACKAGES}
+	VERBOSE_TEST=1 CLI_GOCOVERDIR=build/cover ${GOTESTSUM_CMD} -- -coverprofile=coverage.txt ${PACKAGES} -timeout=${LOCAL_TIMEOUT}
 	rm -fr ./acceptance/build/cover-merged/
 	mkdir -p acceptance/build/cover-merged/
 	go tool covdata merge -i $$(printf '%s,' acceptance/build/cover/* | sed 's/,$$//') -o acceptance/build/cover-merged/
@@ -69,6 +98,9 @@ integration:
 integration-short:
 	VERBOSE_TEST=1 $(INTEGRATION) -short
 
+generate-validation:
+	go run ./bundle/internal/validation/.
+
 generate:
 	genkit update-sdk
 	[ ! -f tagging.py ] || mv tagging.py internal/genkit/tagging.py
@@ -78,4 +110,4 @@ generate:
 	[ ! -f .github/workflows/next-changelog.yml ] || rm .github/workflows/next-changelog.yml
 	pushd experimental/python && make codegen
 
-.PHONY: lint tidy lintcheck fmt test cover showcover build snapshot schema integration integration-short acc-cover acc-showcover docs ws links checks
+.PHONY: lint lintfull tidy lintcheck fmt fmtfull test cover showcover build snapshot schema integration integration-short acc-cover acc-showcover docs ws links checks test-update test-update-aws test-update-all generate-validation

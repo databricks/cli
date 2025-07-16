@@ -3,8 +3,6 @@
 package queries_legacy
 
 import (
-	"fmt"
-
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -68,8 +66,16 @@ func newCreate() *cobra.Command {
 	var createReq sql.QueryPostContent
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&createReq.DataSourceId, "data-source-id", createReq.DataSourceId, `Data source ID maps to the ID of the data source used by the resource and is distinct from the warehouse ID.`)
+	cmd.Flags().StringVar(&createReq.Description, "description", createReq.Description, `General description that conveys additional information about this query such as usage notes.`)
+	cmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `The title of this query that appears in list views, widget headings, and on the query page.`)
+	// TODO: any: options
+	cmd.Flags().StringVar(&createReq.Parent, "parent", createReq.Parent, `The identifier of the workspace folder containing the object.`)
+	cmd.Flags().StringVar(&createReq.Query, "query", createReq.Query, `The text of the query to be run.`)
+	cmd.Flags().Var(&createReq.RunAsRole, "run-as-role", `Sets the **Run as** role for the object. Supported values: [owner, viewer]`)
+	// TODO: array: tags
 
 	cmd.Use = "create"
 	cmd.Short = `Create a new query definition.`
@@ -92,6 +98,11 @@ func newCreate() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -108,8 +119,6 @@ func newCreate() *cobra.Command {
 					return err
 				}
 			}
-		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response, err := w.QueriesLegacy.Create(ctx, createReq)
@@ -145,8 +154,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq sql.DeleteQueriesLegacyRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete QUERY_ID"
 	cmd.Short = `Delete a query.`
 	cmd.Long = `Delete a query.
@@ -162,28 +169,16 @@ func newDelete() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No QUERY_ID argument specified. Loading names for Queries Legacy drop-down."
-			names, err := w.QueriesLegacy.LegacyQueryNameToIdMap(ctx, sql.ListQueriesLegacyRequest{})
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Queries Legacy drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
-		}
 		deleteReq.QueryId = args[0]
 
 		err = w.QueriesLegacy.Delete(ctx, deleteReq)
@@ -219,8 +214,6 @@ func newGet() *cobra.Command {
 
 	var getReq sql.GetQueriesLegacyRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get QUERY_ID"
 	cmd.Short = `Get a query definition.`
 	cmd.Long = `Get a query definition.
@@ -235,28 +228,16 @@ func newGet() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No QUERY_ID argument specified. Loading names for Queries Legacy drop-down."
-			names, err := w.QueriesLegacy.LegacyQueryNameToIdMap(ctx, sql.ListQueriesLegacyRequest{})
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Queries Legacy drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
-		}
 		getReq.QueryId = args[0]
 
 		response, err := w.QueriesLegacy.Get(ctx, getReq)
@@ -291,8 +272,6 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq sql.ListQueriesLegacyRequest
-
-	// TODO: short flags
 
 	cmd.Flags().StringVar(&listReq.Order, "order", listReq.Order, `Name of query attribute to order by.`)
 	cmd.Flags().IntVar(&listReq.Page, "page", listReq.Page, `Page number to retrieve.`)
@@ -356,8 +335,6 @@ func newRestore() *cobra.Command {
 
 	var restoreReq sql.RestoreQueriesLegacyRequest
 
-	// TODO: short flags
-
 	cmd.Use = "restore QUERY_ID"
 	cmd.Short = `Restore a query.`
 	cmd.Long = `Restore a query.
@@ -372,28 +349,16 @@ func newRestore() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No QUERY_ID argument specified. Loading names for Queries Legacy drop-down."
-			names, err := w.QueriesLegacy.LegacyQueryNameToIdMap(ctx, sql.ListQueriesLegacyRequest{})
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Queries Legacy drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
-		}
 		restoreReq.QueryId = args[0]
 
 		err = w.QueriesLegacy.Restore(ctx, restoreReq)
@@ -430,7 +395,6 @@ func newUpdate() *cobra.Command {
 	var updateReq sql.QueryEditContent
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateReq.DataSourceId, "data-source-id", updateReq.DataSourceId, `Data source ID maps to the ID of the data source used by the resource and is distinct from the warehouse ID.`)
@@ -456,6 +420,11 @@ func newUpdate() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -472,23 +441,6 @@ func newUpdate() *cobra.Command {
 					return err
 				}
 			}
-		}
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No QUERY_ID argument specified. Loading names for Queries Legacy drop-down."
-			names, err := w.QueriesLegacy.LegacyQueryNameToIdMap(ctx, sql.ListQueriesLegacyRequest{})
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Queries Legacy drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
 		}
 		updateReq.QueryId = args[0]
 

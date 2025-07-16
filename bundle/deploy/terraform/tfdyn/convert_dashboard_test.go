@@ -15,13 +15,14 @@ import (
 
 func TestConvertDashboard(t *testing.T) {
 	src := resources.Dashboard{
-		Dashboard: dashboards.Dashboard{
-			DisplayName: "my dashboard",
-			WarehouseId: "f00dcafe",
-			ParentPath:  "/some/path",
+		DashboardConfig: resources.DashboardConfig{
+			Dashboard: dashboards.Dashboard{
+				DisplayName: "my dashboard",
+				WarehouseId: "f00dcafe",
+				ParentPath:  "/some/path",
+			},
+			EmbedCredentials: true,
 		},
-
-		EmbedCredentials: true,
 
 		Permissions: []resources.DashboardPermission{
 			{
@@ -61,7 +62,9 @@ func TestConvertDashboard(t *testing.T) {
 
 func TestConvertDashboardSerializedDashboardString(t *testing.T) {
 	src := resources.Dashboard{
-		SerializedDashboard: `{ "json": true }`,
+		DashboardConfig: resources.DashboardConfig{
+			SerializedDashboard: `{ "json": true }`,
+		},
 	}
 
 	vin, err := convert.FromTyped(src, dyn.NilValue)
@@ -80,14 +83,17 @@ func TestConvertDashboardSerializedDashboardString(t *testing.T) {
 
 func TestConvertDashboardSerializedDashboardAny(t *testing.T) {
 	src := resources.Dashboard{
-		SerializedDashboard: map[string]any{
-			"pages": []map[string]any{
-				{
-					"displayName": "New Page",
-					"layout":      []map[string]any{},
+		DashboardConfig: resources.DashboardConfig{
+			SerializedDashboard: map[string]any{
+				"pages": []map[string]any{
+					{
+						"displayName": "New Page",
+						"layout":      []map[string]any{},
+					},
 				},
 			},
 		},
+		FilePath: "some/path/to/dashboard.lvdash.json",
 	}
 
 	vin, err := convert.FromTyped(src, dyn.NilValue)
@@ -102,4 +108,7 @@ func TestConvertDashboardSerializedDashboardAny(t *testing.T) {
 	assert.Subset(t, out.Dashboard["my_dashboard"], map[string]any{
 		"serialized_dashboard": `{"pages":[{"displayName":"New Page","layout":[]}]}`,
 	})
+
+	// Assert that the "file_path" is dropped.
+	assert.NotContains(t, out.Dashboard["my_dashboard"], "file_path")
 }

@@ -20,22 +20,19 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "workspace-network-configuration",
-		Short: `These APIs allow configuration of network settings for Databricks workspaces.`,
-		Long: `These APIs allow configuration of network settings for Databricks workspaces.
-  Each workspace is always associated with exactly one network policy that
-  controls which network destinations can be accessed from the Databricks
-  environment. By default, workspaces are associated with the 'default-policy'
-  network policy. You cannot create or delete a workspace's network
-  configuration, only update it to associate the workspace with a different
-  policy.`,
+		Short: `These APIs allow configuration of network settings for Databricks workspaces by selecting which network policy to associate with the workspace.`,
+		Long: `These APIs allow configuration of network settings for Databricks workspaces
+  by selecting which network policy to associate with the workspace. Each
+  workspace is always associated with exactly one network policy that controls
+  which network destinations can be accessed from the Databricks environment. By
+  default, workspaces are associated with the 'default-policy' network policy.
+  You cannot create or delete a workspace's network option, only update it to
+  associate the workspace with a different policy`,
 		GroupID: "settings",
 		Annotations: map[string]string{
 			"package": "settings",
 		},
-
-		// This service is being previewed; hide from help output.
-		Hidden: true,
-		RunE:   root.ReportUnknownSubcommand,
+		RunE: root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -64,15 +61,13 @@ func newGetWorkspaceNetworkOptionRpc() *cobra.Command {
 
 	var getWorkspaceNetworkOptionRpcReq settings.GetWorkspaceNetworkOptionRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get-workspace-network-option-rpc WORKSPACE_ID"
-	cmd.Short = `Get workspace network configuration.`
-	cmd.Long = `Get workspace network configuration.
+	cmd.Short = `Get workspace network option.`
+	cmd.Long = `Get workspace network option.
   
-  Gets the network configuration for a workspace. Every workspace has exactly
-  one network policy binding, with 'default-policy' used if no explicit
-  assignment exists.
+  Gets the network option for a workspace. Every workspace has exactly one
+  network policy binding, with 'default-policy' used if no explicit assignment
+  exists.
 
   Arguments:
     WORKSPACE_ID: The workspace ID.`
@@ -129,19 +124,18 @@ func newUpdateWorkspaceNetworkOptionRpc() *cobra.Command {
 	updateWorkspaceNetworkOptionRpcReq.WorkspaceNetworkOption = settings.WorkspaceNetworkOption{}
 	var updateWorkspaceNetworkOptionRpcJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateWorkspaceNetworkOptionRpcJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateWorkspaceNetworkOptionRpcReq.WorkspaceNetworkOption.NetworkPolicyId, "network-policy-id", updateWorkspaceNetworkOptionRpcReq.WorkspaceNetworkOption.NetworkPolicyId, `The network policy ID to apply to the workspace.`)
 	cmd.Flags().Int64Var(&updateWorkspaceNetworkOptionRpcReq.WorkspaceNetworkOption.WorkspaceId, "workspace-id", updateWorkspaceNetworkOptionRpcReq.WorkspaceNetworkOption.WorkspaceId, `The workspace ID.`)
 
 	cmd.Use = "update-workspace-network-option-rpc WORKSPACE_ID"
-	cmd.Short = `Update workspace network configuration.`
-	cmd.Long = `Update workspace network configuration.
+	cmd.Short = `Update workspace network option.`
+	cmd.Long = `Update workspace network option.
   
-  Updates the network configuration for a workspace. This operation associates
-  the workspace with the specified network policy. To revert to the default
-  policy, specify 'default-policy' as the network_policy_id.
+  Updates the network option for a workspace. This operation associates the
+  workspace with the specified network policy. To revert to the default policy,
+  specify 'default-policy' as the network_policy_id.
 
   Arguments:
     WORKSPACE_ID: The workspace ID.`
