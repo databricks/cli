@@ -30,22 +30,29 @@ func promptRunArgument(ctx context.Context, b *bundle.Bundle) (string, error) {
 	return key, nil
 }
 
-// Copied from cmd/bundle/run.go
-// resolveRunArgument resolves the resource key to run.
-// It returns the remaining arguments to pass to the runner, if applicable.
-// Copied from cmd/bundle/run.go
-// When there is only one pipeline and no arguments, modified to auto-select the pipeline
-func resolveRunArgument(ctx context.Context, b *bundle.Bundle, args []string) (string, []string, error) {
-	// If no arguments are specified, check if we should auto-select (when only one pipeline) or prompt the user to select a resource to run.
-	if len(args) == 0 {
-		completions := resources.Completions(b, run.IsRunnable)
-
-		if len(completions) == 1 {
-			for key, ref := range completions {
-				if _, ok := ref.Resource.(*configresources.Pipeline); ok {
-					return key, args, nil
-				}
+// autoSelectSinglePipeline checks if there's exactly one pipeline resource in the bundle and returns its key.
+// Returns empty string if there's not exactly one pipeline.
+func autoSelectSinglePipeline(b *bundle.Bundle) string {
+	completions := resources.Completions(b, run.IsRunnable)
+	if len(completions) == 1 {
+		for key, ref := range completions {
+			if _, ok := ref.Resource.(*configresources.Pipeline); ok {
+				return key
 			}
+		}
+	}
+	return ""
+}
+
+// Copied from cmd/bundle/run.go
+// resolveRunArgument resolves the resource key to run
+// Returns the remaining arguments to pass to the runner, if applicable.
+func resolveRunArgument(ctx context.Context, b *bundle.Bundle, args []string) (string, []string, error) {
+	// When no arguments are specified, auto-selects a pipeline if there's exactly one.
+	// Otherwise, prompts the user to select a pipeline.
+	if len(args) == 0 {
+		if key := autoSelectSinglePipeline(b); key != "" {
+			return key, args, nil
 		}
 
 		if cmdio.IsPromptSupported(ctx) {
