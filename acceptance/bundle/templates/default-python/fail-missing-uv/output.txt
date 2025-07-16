@@ -1,0 +1,28 @@
+
+>>> [CLI] bundle init default-python --config-file ./input.json --output-dir output
+
+Welcome to the default Python template for Databricks Asset Bundles!
+Workspace to use (auto-detected, edit in 'fail_missing_uv/databricks.yml'): [DATABRICKS_URL]
+
+✨ Your new project has been created in the 'fail_missing_uv' directory!
+
+Please refer to the README.md file for "getting started" instructions.
+See also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
+
+>>> [CLI] bundle validate
+Name: fail_missing_uv
+Target: dev
+Workspace:
+  Host: [DATABRICKS_URL]
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/fail_missing_uv/dev
+
+Validation OK!
+
+>>> [CLI] bundle deploy
+Building python_artifact...
+Error: build failed python_artifact, error: exit status 127, output: bash: uv: command not found
+
+
+
+Exit code: 1

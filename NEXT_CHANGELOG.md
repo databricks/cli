@@ -6,8 +6,10 @@
 * Added support for creating SQL warehouses in DABs ([#3129](https://github.com/databricks/cli/pull/3129))
 
 ### Dependency updates
+* Upgrade Go SDK to 0.75.0 ([#3256](https://github.com/databricks/cli/pull/3256))
 
 ### CLI
+* Add `databricks psql` command to connect to Lakebase with a single command ([#3128](https://github.com/databricks/cli/pull/3128))
 
 ### Bundles
 

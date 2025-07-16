@@ -1,0 +1,27 @@
+
+>>> errcode [PIPELINES] deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-force-lock/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== upload lock file
+>>> [CLI] workspace import /Workspace/Users/[USERNAME]/.bundle/test-pipeline-force-lock/default/state/deploy.lock --format AUTO --file ./deploy.lock
+
+=== test deployment without force-lock (should fail)
+>>> errcode [PIPELINES] destroy --auto-approve
+Error: Failed to acquire deployment lock: deploy lock acquired by user-with-lock@databricks.com at [TIMESTAMP] +0000 UTC. Use --force-lock to override
+Error: deploy lock acquired by user-with-lock@databricks.com at [TIMESTAMP] +0000 UTC. Use --force-lock to override
+
+
+Exit code: 1
+
+=== test deployment with force-lock (should succeed)
+>>> [PIPELINES] destroy --force-lock --auto-approve
+The following resources will be deleted:
+  delete pipeline foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-pipeline-force-lock/default
+
+Deleting files...
+Destroy complete!
