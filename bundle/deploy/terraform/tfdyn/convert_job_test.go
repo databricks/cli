@@ -174,11 +174,26 @@ func TestConvertJobApplyPolicyDefaultValues(t *testing.T) {
 						CustomTags: map[string]string{
 							"key": "value",
 						},
+						InitScripts: []compute.InitScriptInfo{
+							{
+								Workspace: &compute.WorkspaceStorageInfo{
+									Destination: "/Workspace/path/to/init_script1",
+								},
+							},
+							{
+								Workspace: &compute.WorkspaceStorageInfo{
+									Destination: "/Workspace/path/to/init_script2",
+								},
+							},
+						},
 						SparkConf: map[string]string{
 							"key": "value",
 						},
 						SparkEnvVars: map[string]string{
 							"key": "value",
+						},
+						SshPublicKeys: []string{
+							"ssh-rsa 1234",
 						},
 					},
 				},
@@ -227,20 +242,37 @@ func TestConvertJobApplyPolicyDefaultValues(t *testing.T) {
 					"__apply_policy_default_values_allow_list": []any{
 						"apply_policy_default_values",
 						"custom_tags",
+						"init_scripts",
 						"policy_id",
 						"spark_conf",
 						"spark_env_vars",
+						"ssh_public_keys",
 					},
 					"apply_policy_default_values": true,
 					"policy_id":                   "policy_id2",
 					"custom_tags": map[string]any{
 						"key": "value",
 					},
+					"init_scripts": []any{
+						map[string]any{
+							"workspace": map[string]any{
+								"destination": "/Workspace/path/to/init_script1",
+							},
+						},
+						map[string]any{
+							"workspace": map[string]any{
+								"destination": "/Workspace/path/to/init_script2",
+							},
+						},
+					},
 					"spark_conf": map[string]any{
 						"key": "value",
 					},
 					"spark_env_vars": map[string]any{
 						"key": "value",
+					},
+					"ssh_public_keys": []any{
+						"ssh-rsa 1234",
 					},
 				},
 			},

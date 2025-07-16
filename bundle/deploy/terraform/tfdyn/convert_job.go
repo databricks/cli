@@ -35,19 +35,21 @@ func patchApplyPolicyDefaultValues(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
 	//
 	paths := dyn.CollectLeafPaths(v)
 
-	// If any of the map fields are set, always include them entirely instead of traversing the map.
-	for _, mapField := range []string{
+	// If any of the map or sequence fields are set, always include them entirely instead of traversing the them.
+	for _, field := range []string{
 		"custom_tags",
+		"init_scripts",
 		"spark_conf",
 		"spark_env_vars",
+		"ssh_public_keys",
 	} {
-		if _, ok := v.Get(mapField).AsMap(); ok {
-			// Remove all paths that start with the map field.
+		if vv := v.Get(field); vv.IsValid() {
+			// Remove all paths that start with the field.
 			paths = slices.DeleteFunc(paths, func(p string) bool {
-				return strings.HasPrefix(p, mapField+".")
+				return strings.HasPrefix(p, field+".") || strings.HasPrefix(p, field+"[")
 			})
-			// Add the map field to the paths.
-			paths = append(paths, mapField)
+			// Add the field to the paths.
+			paths = append(paths, field)
 		}
 	}
 
