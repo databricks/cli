@@ -1,4 +1,43 @@
 # This file is auto-generated. DO NOT EDIT.
+github.com/databricks/cli/bundle/config/resources.Alert:
+  "create_time":
+    "description": |-
+      The timestamp indicating when the alert was created.
+  "custom_description":
+    "description": |-
+      Custom description for the alert. support mustache template.
+  "custom_summary":
+    "description": |-
+      Custom summary for the alert. support mustache template.
+  "display_name":
+    "description": |-
+      The display name of the alert.
+  "evaluation": {}
+  "id":
+    "description": |-
+      UUID identifying the alert.
+  "lifecycle_state":
+    "description": |-
+      Indicates whether the query is trashed.
+  "owner_user_name":
+    "description": |-
+      The owner's username. This field is set to "Unavailable" if the user has been deleted.
+  "parent_path":
+    "description": |-
+      The workspace path of the folder containing the alert. Can only be set on create, and cannot be updated.
+  "query_text":
+    "description": |-
+      Text of the query to be run.
+  "run_as_user_name":
+    "description": |-
+      The run as username. This field is set to "Unavailable" if the user has been deleted.
+  "schedule": {}
+  "update_time":
+    "description": |-
+      The timestamp indicating when the alert was updated.
+  "warehouse_id":
+    "description": |-
+      ID of the SQL warehouse attached to the alert.
 github.com/databricks/cli/bundle/config/resources.App:
   "active_deployment":
     "description": |-
@@ -322,9 +361,9 @@ github.com/databricks/cli/bundle/config/resources.Job:
       The queue settings of the job.
   "run_as":
     "description": |-
-      The user or service principal that the job runs as, if specified in the request.
-      This field indicates the explicit configuration of `run_as` for the job.
-      To find the value in all cases, explicit or implicit, use `run_as_user_name`.
+      Write-only setting. Specifies the user or service principal that the job runs as. If not specified, the job runs as the user who created the job.
+
+      Either `user_name` or `service_principal_name` should be specified. If not, an error is thrown.
   "schedule":
     "description": |-
       An optional periodic schedule for this job. The default behavior is that the job only runs when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.
@@ -391,7 +430,6 @@ github.com/databricks/cli/bundle/config/resources.ModelServingEndpoint:
   "config":
     "description": |-
       The core config of the serving endpoint.
-  "description": {}
   "name":
     "description": |-
       The name of the serving endpoint. This field is required and must be unique across a Databricks workspace.
@@ -444,6 +482,8 @@ github.com/databricks/cli/bundle/config/resources.Pipeline:
   "environment":
     "description": |-
       Environment specification for this pipeline used to install dependencies.
+    "x-databricks-preview": |-
+      PRIVATE
   "event_log":
     "description": |-
       Event log configuration for this pipeline
@@ -483,6 +523,8 @@ github.com/databricks/cli/bundle/config/resources.Pipeline:
       Root path for this pipeline.
       This is used as the root directory when editing the pipeline in the Databricks user interface and it is
       added to sys.path when executing Python sources during pipeline execution.
+    "x-databricks-preview": |-
+      PRIVATE
   "run_as":
     "description": |-
       Write-only setting, available only in Create/Update calls. Specifies the user or service principal that the pipeline runs as. If not specified, the pipeline runs as the user who created the pipeline.
@@ -759,7 +801,6 @@ github.com/databricks/databricks-sdk-go/service/apps.AppDeploymentStatus:
     "description": |-
       State of the deployment.
 github.com/databricks/databricks-sdk-go/service/apps.AppResource:
-  "database": {}
   "description":
     "description": |-
       Description of the App Resource.
@@ -771,15 +812,6 @@ github.com/databricks/databricks-sdk-go/service/apps.AppResource:
   "serving_endpoint": {}
   "sql_warehouse": {}
   "uc_securable": {}
-github.com/databricks/databricks-sdk-go/service/apps.AppResourceDatabase:
-  "database_name": {}
-  "instance_name": {}
-  "permission": {}
-github.com/databricks/databricks-sdk-go/service/apps.AppResourceDatabaseDatabasePermission:
-  "_":
-    "enum":
-      - |-
-        CAN_CONNECT_AND_CREATE
 github.com/databricks/databricks-sdk-go/service/apps.AppResourceJob:
   "id":
     "description": |-
@@ -2841,9 +2873,6 @@ github.com/databricks/databricks-sdk-go/service/ml.ExperimentTag:
     "description": |-
       The tag value.
 github.com/databricks/databricks-sdk-go/service/ml.ModelTag:
-  "_":
-    "description": |-
-      Tag for a registered model
   "key":
     "description": |-
       The tag key.
@@ -2965,8 +2994,6 @@ github.com/databricks/databricks-sdk-go/service/pipelines.IngestionSourceType:
       - |-
         SALESFORCE
       - |-
-        BIGQUERY
-      - |-
         NETSUITE
       - |-
         WORKDAY_RAAS
@@ -2984,8 +3011,6 @@ github.com/databricks/databricks-sdk-go/service/pipelines.IngestionSourceType:
         SHAREPOINT
       - |-
         DYNAMICS365
-      - |-
-        CONFLUENCE
 github.com/databricks/databricks-sdk-go/service/pipelines.ManualTrigger: {}
 github.com/databricks/databricks-sdk-go/service/pipelines.NotebookLibrary:
   "path":
@@ -3150,6 +3175,8 @@ github.com/databricks/databricks-sdk-go/service/pipelines.PipelineLibrary:
       The unified field to include source codes.
       Each entry can be a notebook path, a file path, or a folder path that ends `/**`.
       This field cannot be used together with `notebook` or `file`.
+    "x-databricks-preview": |-
+      PRIVATE
   "jar":
     "description": |-
       URI of the jar to be installed. Currently only DBFS is supported.
@@ -3299,8 +3326,6 @@ github.com/databricks/databricks-sdk-go/service/pipelines.TableSpecificConfigScd
         SCD_TYPE_1
       - |-
         SCD_TYPE_2
-      - |-
-        APPEND_ONLY
 github.com/databricks/databricks-sdk-go/service/serving.Ai21LabsConfig:
   "ai21labs_api_key":
     "description": |-
@@ -3338,8 +3363,6 @@ github.com/databricks/databricks-sdk-go/service/serving.AiGatewayGuardrailParame
     "description": |-
       List of invalid keywords.
       AI guardrail uses keyword or string matching to decide if the keyword exists in the request or response content.
-    "deprecation_message": |-
-      This field is deprecated
   "pii":
     "description": |-
       Configuration for guardrail PII filter.
@@ -3350,8 +3373,6 @@ github.com/databricks/databricks-sdk-go/service/serving.AiGatewayGuardrailParame
     "description": |-
       The list of allowed topics.
       Given a chat request, this guardrail flags the request if its topic is not in the allowed topics.
-    "deprecation_message": |-
-      This field is deprecated
 github.com/databricks/databricks-sdk-go/service/serving.AiGatewayGuardrailPiiBehavior:
   "behavior":
     "description": |-
@@ -3392,11 +3413,8 @@ github.com/databricks/databricks-sdk-go/service/serving.AiGatewayRateLimit:
       Used to specify how many calls are allowed for a key within the renewal_period.
   "key":
     "description": |-
-      Key field for a rate limit. Currently, 'user', 'user_group, 'service_principal', and 'endpoint' are supported,
+      Key field for a rate limit. Currently, only 'user' and 'endpoint' are supported,
       with 'endpoint' being the default if not specified.
-  "principal":
-    "description": |-
-      Principal field for a user, user group, or service principal to apply rate limiting to. Accepts a user email, group name, or service principal application ID.
   "renewal_period":
     "description": |-
       Renewal period field for a rate limit. Currently, only 'minute' is supported.
@@ -3407,10 +3425,6 @@ github.com/databricks/databricks-sdk-go/service/serving.AiGatewayRateLimitKey:
         user
       - |-
         endpoint
-      - |-
-        user_group
-      - |-
-        service_principal
 github.com/databricks/databricks-sdk-go/service/serving.AiGatewayRateLimitRenewalPeriod:
   "_":
     "enum":
@@ -3797,7 +3811,6 @@ github.com/databricks/databricks-sdk-go/service/serving.RateLimitRenewalPeriod:
       - |-
         minute
 github.com/databricks/databricks-sdk-go/service/serving.Route:
-  "served_entity_name": {}
   "served_model_name":
     "description": |-
       The name of the served model this route configures traffic for.
@@ -3915,6 +3928,86 @@ github.com/databricks/databricks-sdk-go/service/serving.TrafficConfig:
   "routes":
     "description": |-
       The list of routes that define traffic to each served entity.
+github.com/databricks/databricks-sdk-go/service/sql.Aggregation:
+  "_":
+    "enum":
+      - |-
+        SUM
+      - |-
+        COUNT
+      - |-
+        COUNT_DISTINCT
+      - |-
+        AVG
+      - |-
+        MEDIAN
+      - |-
+        MIN
+      - |-
+        MAX
+      - |-
+        STDDEV
+github.com/databricks/databricks-sdk-go/service/sql.AlertEvaluationState:
+  "_":
+    "description": |-
+      UNSPECIFIED - default unspecify value for proto enum, do not use it in the code
+      UNKNOWN - alert not yet evaluated
+      TRIGGERED - alert is triggered
+      OK - alert is not triggered
+      ERROR - alert evaluation failed
+    "enum":
+      - |-
+        UNKNOWN
+      - |-
+        TRIGGERED
+      - |-
+        OK
+      - |-
+        ERROR
+github.com/databricks/databricks-sdk-go/service/sql.AlertV2Evaluation:
+  "comparison_operator":
+    "description": |-
+      Operator used for comparison in alert evaluation.
+  "empty_result_state":
+    "description": |-
+      Alert state if result is empty.
+  "last_evaluated_at":
+    "description": |-
+      Timestamp of the last evaluation.
+  "notification":
+    "description": |-
+      User or Notification Destination to notify when alert is triggered.
+  "source":
+    "description": |-
+      Source column from result to use to evaluate alert
+  "state":
+    "description": |-
+      Latest state of alert evaluation.
+  "threshold":
+    "description": |-
+      Threshold to user for alert evaluation, can be a column or a value.
+github.com/databricks/databricks-sdk-go/service/sql.AlertV2Notification:
+  "notify_on_ok":
+    "description": |-
+      Whether to notify alert subscribers when alert returns back to normal.
+  "retrigger_seconds":
+    "description": |-
+      Number of seconds an alert must wait after being triggered to rearm itself. After rearming, it can be triggered again. If 0 or not specified, the alert will not be triggered again.
+  "subscriptions": {}
+github.com/databricks/databricks-sdk-go/service/sql.AlertV2Operand:
+  "column": {}
+  "value": {}
+github.com/databricks/databricks-sdk-go/service/sql.AlertV2OperandColumn:
+  "aggregation": {}
+  "display": {}
+  "name": {}
+github.com/databricks/databricks-sdk-go/service/sql.AlertV2OperandValue:
+  "bool_value": {}
+  "double_value": {}
+  "string_value": {}
+github.com/databricks/databricks-sdk-go/service/sql.AlertV2Subscription:
+  "destination_id": {}
+  "user_email": {}
 github.com/databricks/databricks-sdk-go/service/sql.Channel:
   "_":
     "description": |-
@@ -3932,6 +4025,25 @@ github.com/databricks/databricks-sdk-go/service/sql.ChannelName:
         CHANNEL_NAME_PREVIOUS
       - |-
         CHANNEL_NAME_CUSTOM
+github.com/databricks/databricks-sdk-go/service/sql.ComparisonOperator:
+  "_":
+    "enum":
+      - |-
+        LESS_THAN
+      - |-
+        GREATER_THAN
+      - |-
+        EQUAL
+      - |-
+        NOT_EQUAL
+      - |-
+        GREATER_THAN_OR_EQUAL
+      - |-
+        LESS_THAN_OR_EQUAL
+      - |-
+        IS_NULL
+      - |-
+        IS_NOT_NULL
 github.com/databricks/databricks-sdk-go/service/sql.CreateWarehouseRequestWarehouseType:
   "_":
     "description": |-
@@ -3943,11 +4055,38 @@ github.com/databricks/databricks-sdk-go/service/sql.CreateWarehouseRequestWareho
         CLASSIC
       - |-
         PRO
+github.com/databricks/databricks-sdk-go/service/sql.CronSchedule:
+  "pause_status":
+    "description": |-
+      Indicate whether this schedule is paused or not.
+  "quartz_cron_schedule":
+    "description": |-
+      A cron expression using quartz syntax that specifies the schedule for this pipeline.
+      Should use the quartz format described here: http://www.quartz-scheduler.org/documentation/quartz-2.1.7/tutorials/tutorial-lesson-06.html
+  "timezone_id":
+    "description": |-
+      A Java timezone id. The schedule will be resolved using this timezone.
+      This will be combined with the quartz_cron_schedule to determine the schedule.
+      See https://docs.databricks.com/sql/language-manual/sql-ref-syntax-aux-conf-mgmt-set-timezone.html for details.
 github.com/databricks/databricks-sdk-go/service/sql.EndpointTagPair:
   "key": {}
   "value": {}
 github.com/databricks/databricks-sdk-go/service/sql.EndpointTags:
   "custom_tags": {}
+github.com/databricks/databricks-sdk-go/service/sql.LifecycleState:
+  "_":
+    "enum":
+      - |-
+        ACTIVE
+      - |-
+        TRASHED
+github.com/databricks/databricks-sdk-go/service/sql.SchedulePauseStatus:
+  "_":
+    "enum":
+      - |-
+        UNPAUSED
+      - |-
+        PAUSED
 github.com/databricks/databricks-sdk-go/service/sql.SpotInstancePolicy:
   "_":
     "description": |-
@@ -3960,9 +4099,6 @@ github.com/databricks/databricks-sdk-go/service/sql.SpotInstancePolicy:
       - |-
         RELIABILITY_OPTIMIZED
 github.com/databricks/databricks-sdk-go/service/workspace.AzureKeyVaultSecretScopeMetadata:
-  "_":
-    "description": |-
-      The metadata of the Azure KeyVault for a secret scope of type `AZURE_KEYVAULT`
   "dns_name":
     "description": |-
       The DNS of the KeyVault
@@ -3971,9 +4107,6 @@ github.com/databricks/databricks-sdk-go/service/workspace.AzureKeyVaultSecretSco
       The resource id of the azure KeyVault that user wants to associate the scope with.
 github.com/databricks/databricks-sdk-go/service/workspace.ScopeBackendType:
   "_":
-    "description": |-
-      The types of secret scope backends in the Secret Manager. Azure KeyVault backed secret scopes
-      will be supported in a later release.
     "enum":
       - |-
         DATABRICKS

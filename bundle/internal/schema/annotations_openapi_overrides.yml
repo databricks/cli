@@ -1,3 +1,13 @@
+github.com/databricks/cli/bundle/config/resources.Alert:
+  "evaluation":
+    "description": |-
+      PLACEHOLDER
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+  "schedule":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.App:
   "app_status":
     "description": |-
@@ -475,6 +485,11 @@ github.com/databricks/cli/bundle/config/resources.SecretScopePermissionLevel:
       - |-
         MANAGE
 github.com/databricks/cli/bundle/config/resources.SqlWarehouse:
+  "enable_photon":
+    "description": |-
+      Configures whether the warehouse should use Photon optimized clusters.
+
+      Defaults to true.
   "permissions":
     "description": |-
       PLACEHOLDER
@@ -484,11 +499,6 @@ github.com/databricks/cli/bundle/config/resources.SqlWarehouse:
   "warehouse_type":
     "description": |-
       PLACEHOLDER
-  "enable_photon":
-    "description": |-
-      Configures whether the warehouse should use Photon optimized clusters.
-
-      Defaults to true.
 github.com/databricks/cli/bundle/config/resources.SqlWarehousePermissionLevel:
   "_":
     "enum":
@@ -784,6 +794,10 @@ github.com/databricks/databricks-sdk-go/service/pipelines.PipelineTrigger:
   "manual":
     "description": |-
       PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/serving.AiGatewayRateLimit:
+  "principal":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/serving.Route:
   "served_entity_name":
     "description": |-
@@ -797,6 +811,44 @@ github.com/databricks/databricks-sdk-go/service/serving.ServedModelInput:
     "description": |-
       PLACEHOLDER
   "model_version":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/sql.AlertV2Notification:
+  "subscriptions":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/sql.AlertV2Operand:
+  "column":
+    "description": |-
+      PLACEHOLDER
+  "value":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/sql.AlertV2OperandColumn:
+  "aggregation":
+    "description": |-
+      PLACEHOLDER
+  "display":
+    "description": |-
+      PLACEHOLDER
+  "name":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/sql.AlertV2OperandValue:
+  "bool_value":
+    "description": |-
+      PLACEHOLDER
+  "double_value":
+    "description": |-
+      PLACEHOLDER
+  "string_value":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/sql.AlertV2Subscription:
+  "destination_id":
+    "description": |-
+      PLACEHOLDER
+  "user_email":
     "description": |-
       PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/sql.Channel:
