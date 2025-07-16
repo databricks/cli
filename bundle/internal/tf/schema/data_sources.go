@@ -18,6 +18,8 @@ type DataSources struct {
 	BudgetPolicy                    map[string]any `json:"databricks_budget_policy,omitempty"`
 	Catalog                         map[string]any `json:"databricks_catalog,omitempty"`
 	Catalogs                        map[string]any `json:"databricks_catalogs,omitempty"`
+	CleanRoomsCleanRoom             map[string]any `json:"databricks_clean_rooms_clean_room,omitempty"`
+	CleanRoomsCleanRooms            map[string]any `json:"databricks_clean_rooms_clean_rooms,omitempty"`
 	Cluster                         map[string]any `json:"databricks_cluster,omitempty"`
 	ClusterPolicy                   map[string]any `json:"databricks_cluster_policy,omitempty"`
 	Clusters                        map[string]any `json:"databricks_clusters,omitempty"`
@@ -32,12 +34,16 @@ type DataSources struct {
 	Directory                       map[string]any `json:"databricks_directory,omitempty"`
 	ExternalLocation                map[string]any `json:"databricks_external_location,omitempty"`
 	ExternalLocations               map[string]any `json:"databricks_external_locations,omitempty"`
+	ExternalMetadata                map[string]any `json:"databricks_external_metadata,omitempty"`
+	ExternalMetadatas               map[string]any `json:"databricks_external_metadatas,omitempty"`
 	Functions                       map[string]any `json:"databricks_functions,omitempty"`
 	Group                           map[string]any `json:"databricks_group,omitempty"`
 	InstancePool                    map[string]any `json:"databricks_instance_pool,omitempty"`
 	InstanceProfiles                map[string]any `json:"databricks_instance_profiles,omitempty"`
 	Job                             map[string]any `json:"databricks_job,omitempty"`
 	Jobs                            map[string]any `json:"databricks_jobs,omitempty"`
+	MaterializedFeaturesFeatureTag  map[string]any `json:"databricks_materialized_features_feature_tag,omitempty"`
+	MaterializedFeaturesFeatureTags map[string]any `json:"databricks_materialized_features_feature_tags,omitempty"`
 	Metastore                       map[string]any `json:"databricks_metastore,omitempty"`
 	Metastores                      map[string]any `json:"databricks_metastores,omitempty"`
 	MlflowExperiment                map[string]any `json:"databricks_mlflow_experiment,omitempty"`
@@ -99,6 +105,8 @@ func NewDataSources() *DataSources {
 		BudgetPolicy:                    make(map[string]any),
 		Catalog:                         make(map[string]any),
 		Catalogs:                        make(map[string]any),
+		CleanRoomsCleanRoom:             make(map[string]any),
+		CleanRoomsCleanRooms:            make(map[string]any),
 		Cluster:                         make(map[string]any),
 		ClusterPolicy:                   make(map[string]any),
 		Clusters:                        make(map[string]any),
@@ -113,12 +121,16 @@ func NewDataSources() *DataSources {
 		Directory:                       make(map[string]any),
 		ExternalLocation:                make(map[string]any),
 		ExternalLocations:               make(map[string]any),
+		ExternalMetadata:                make(map[string]any),
+		ExternalMetadatas:               make(map[string]any),
 		Functions:                       make(map[string]any),
 		Group:                           make(map[string]any),
 		InstancePool:                    make(map[string]any),
 		InstanceProfiles:                make(map[string]any),
 		Job:                             make(map[string]any),
 		Jobs:                            make(map[string]any),
+		MaterializedFeaturesFeatureTag:  make(map[string]any),
+		MaterializedFeaturesFeatureTags: make(map[string]any),
 		Metastore:                       make(map[string]any),
 		Metastores:                      make(map[string]any),
 		MlflowExperiment:                make(map[string]any),
