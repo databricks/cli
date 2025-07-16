@@ -181,3 +181,17 @@ Warning: unknown field: grants
     }
   }
 }
+
+=== resources.alerts.rname ===
+Warning: unknown field: grants
+  at resources.alerts.rname
+  in databricks.yml:7:7
+
+{
+  "alerts": {
+    "rname": {
+      "parent_path": "/Workspace/Users/[USERNAME]/.bundle/BUNDLE/default/resources",
+      "permissions": []
+    }
+  }
+}

@@ -14,6 +14,7 @@ SECTIONS = [
     "apps",
     "sql_warehouses",
     "secret_scopes",
+    "alerts",
 ]
 
 CLI = os.environ["CLI"]

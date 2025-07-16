@@ -136,3 +136,13 @@ app resource 'rname' is missing required source_code_path field
     }
   }
 }
+
+=== resources.alerts.rname ===
+{
+  "alerts": {
+    "rname": {
+      "parent_path": "/Workspace/Users/[USERNAME]/.bundle/BUNDLE/default/resources",
+      "permissions": []
+    }
+  }
+}
