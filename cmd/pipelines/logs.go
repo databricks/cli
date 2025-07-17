@@ -1,0 +1,114 @@
+package pipelines
+
+import (
+	"errors"
+	"fmt"
+	"strings"
+
+	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/spf13/cobra"
+)
+
+// buildInFilter creates a filter condition for a field with multiple possible values
+func buildInFilter(field string, values []string) string {
+	if len(values) == 0 {
+		return ""
+	}
+	if len(values) == 1 {
+		return fmt.Sprintf("%s = '%s'", field, values[0])
+	}
+	// For multiple values, use "field in ('value1', 'value2')" syntax
+	quotedValues := make([]string, len(values))
+	for i, value := range values {
+		quotedValues[i] = fmt.Sprintf("'%s'", value)
+	}
+	return fmt.Sprintf("%s in (%s)", field, strings.Join(quotedValues, ", "))
+}
+
+func logsCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "logs [flags] PIPELINE_ID",
+		Short: "Retrieve events for a pipeline",
+		Long: `Retrieve events for the pipeline identified by PIPELINE_ID.
+
+Examples:
+  # Get all events for a pipeline
+    pipelines logs pipeline-123
+
+  # Get only error events
+    pipelines logs pipeline-123 --level ERROR
+
+  # Get multiple log levels (ERROR and METRIC)
+    pipelines logs pipeline-123 --level ERROR --level METRIC
+
+  # Get events for a specific update
+    pipelines logs pipeline-123 --update-id update-123
+
+  # Get specific event types
+    pipelines logs pipeline-123 --event-type update_progress
+
+  # Get multiple event types
+    pipelines logs pipeline-123 --event-type update_progress --event-type flow_progress
+
+  # Combine filters
+    pipelines logs pipeline-123 --level ERROR --level METRIC --event-type flow_progress`,
+	}
+
+	var updateId string
+	var levels []string
+	var eventTypes []string
+	var maxResults int
+
+	cmd.Flags().StringVar(&updateId, "update-id", "", "Filter events by specific update ID")
+	cmd.Flags().StringSliceVar(&levels, "level", nil, "Filter events by log level (INFO, WARN, ERROR, METRIC, DEBUG). Can be specified multiple times.")
+	cmd.Flags().StringSliceVar(&eventTypes, "event-type", nil, "Filter events by event type. Can be specified multiple times.")
+	cmd.Flags().IntVar(&maxResults, "max-results", 100, "Max number of entries to return in a single page (<= 1000)")
+
+	cmd.PreRunE = root.MustWorkspaceClient
+
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		ctx := cmd.Context()
+		if len(args) == 0 {
+			return errors.New("Provide a PIPELINE_ID.")
+		}
+
+		if len(args) > 1 {
+			return fmt.Errorf("Expected one PIPELINE_ID, got %d.", len(args))
+		}
+		w := cmdctx.WorkspaceClient(ctx)
+
+		pipelineId := args[0]
+
+		var filterParts []string
+		if updateId != "" {
+			filterParts = append(filterParts, fmt.Sprintf("update_id = '%s'", updateId))
+		}
+
+		if levelFilter := buildInFilter("level", levels); levelFilter != "" {
+			filterParts = append(filterParts, levelFilter)
+		}
+
+		if typeFilter := buildInFilter("event_type", eventTypes); typeFilter != "" {
+			filterParts = append(filterParts, typeFilter)
+		}
+
+		var filter string
+		if len(filterParts) > 0 {
+			filter = strings.Join(filterParts, " AND ")
+		}
+
+		req := pipelines.ListPipelineEventsRequest{
+			PipelineId: pipelineId,
+			Filter:     filter,
+			MaxResults: maxResults,
+		}
+
+		response := w.Pipelines.ListPipelineEvents(ctx, req)
+		return cmdio.RenderIterator(ctx, response)
+	}
+
+	return cmd
+}
