@@ -141,8 +141,9 @@ depends on the existing profiles you have set in your configuration file
 			AuthType:  "databricks-cli",
 			ClusterID: clusterID,
 		}
-		if os.Getenv("DATABRICKS_CONFIG_FILE") != "" {
-			cfg.ConfigFile = os.Getenv("DATABRICKS_CONFIG_FILE")
+		databricksCfgFile := os.Getenv("DATABRICKS_CONFIG_FILE")
+		if databricksCfgFile != "" {
+			cfg.ConfigFile = databricksCfgFile
 		}
 
 		ctx, cancel := context.WithTimeout(ctx, loginTimeout)
