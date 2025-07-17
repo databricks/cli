@@ -17,6 +17,7 @@ Available Commands:
   dry-run     Validate correctness of the pipeline's graph
   help        Help about any command
   init        Initialize a new pipelines project
+  logs        Retrieve events for a pipeline
   open        Open a pipeline in the browser
   run         Run a pipeline
   stop        Stop a pipeline
@@ -61,6 +62,7 @@ Available Commands:
   dry-run     Validate correctness of the pipeline's graph
   help        Help about any command
   init        Initialize a new pipelines project
+  logs        Retrieve events for a pipeline
   open        Open a pipeline in the browser
   run         Run a pipeline
   stop        Stop a pipeline
