@@ -6,6 +6,9 @@ print_requests() {
 trace $PIPELINES deploy
 rm out.requests.txt
 
+title "Calling logs without PIPELINE_ID should return an error"
+trace errcode $PIPELINES logs
+
 PIPELINE_ID=$($CLI bundle summary -o json | jq -r '.resources.pipelines["test-logs"].id')
 title "Test pipelines logs, will be empty but shows the request to get events"
 trace $PIPELINES logs "${PIPELINE_ID}"
