@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"runtime"
 	"strings"
 	"time"
@@ -140,6 +141,9 @@ depends on the existing profiles you have set in your configuration file
 			AuthType:  "databricks-cli",
 			ClusterID: clusterID,
 		}
+		if os.Getenv("DATABRICKS_CONFIG_FILE") != "" {
+			cfg.ConfigFile = os.Getenv("DATABRICKS_CONFIG_FILE")
+		}
 
 		ctx, cancel := context.WithTimeout(ctx, loginTimeout)
 		defer cancel()
@@ -164,11 +168,12 @@ depends on the existing profiles you have set in your configuration file
 
 		if profileName != "" {
 			err = databrickscfg.SaveToProfile(ctx, &config.Config{
-				Profile:   profileName,
-				Host:      cfg.Host,
-				AuthType:  cfg.AuthType,
-				AccountID: cfg.AccountID,
-				ClusterID: cfg.ClusterID,
+				Profile:    profileName,
+				Host:       cfg.Host,
+				AuthType:   cfg.AuthType,
+				AccountID:  cfg.AccountID,
+				ClusterID:  cfg.ClusterID,
+				ConfigFile: cfg.ConfigFile,
 			})
 			if err != nil {
 				return err
