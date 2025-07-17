@@ -1,0 +1,12 @@
+print_requests() {
+    jq --sort-keys 'select((.path | contains("/events")) and (.path | contains("/pipelines")))' < out.requests.txt
+    rm out.requests.txt
+}
+
+trace $PIPELINES deploy
+rm out.requests.txt
+
+PIPELINE_ID=$($CLI bundle summary -o json | jq -r '.resources.pipelines["test-logs"].id')
+title "Test pipelines logs, will be empty but shows the request to get events"
+trace $PIPELINES logs "${PIPELINE_ID}"
+print_requests
