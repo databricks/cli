@@ -96,6 +96,15 @@ func (ir iteratorRenderer[T]) getBufferSize() int {
 }
 
 func (ir iteratorRenderer[T]) renderJson(ctx context.Context, w writeFlusher) error {
+	if !ir.t.HasNext(ctx) {
+		// No items, just write empty array to prevent a line of whitespace that errors with linter
+		_, err := w.Write([]byte("[]\n"))
+		if err != nil {
+			return err
+		}
+		return w.Flush()
+	}
+
 	// Iterators are always rendered as a list of resources in JSON.
 	_, err := w.Write([]byte("[\n  "))
 	if err != nil {
