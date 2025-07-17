@@ -63,10 +63,10 @@ Examples:
 	var eventTypes []string
 	var maxResults int
 
-	cmd.Flags().StringVar(&updateId, "update-id", "", "Filter events by specific update ID")
+	cmd.Flags().StringVar(&updateId, "update-id", "", "Filter events by update ID.")
 	cmd.Flags().StringSliceVar(&levels, "level", nil, "Filter events by log level (INFO, WARN, ERROR, METRIC, DEBUG). Can be specified multiple times.")
 	cmd.Flags().StringSliceVar(&eventTypes, "event-type", nil, "Filter events by event type. Can be specified multiple times.")
-	cmd.Flags().IntVar(&maxResults, "max-results", 100, "Max number of entries to return in a single page (<= 1000)")
+	cmd.Flags().IntVar(&maxResults, "max-results", 100, "Max number of entries to return in a single page (<= 1000).")
 
 	cmd.PreRunE = root.MustWorkspaceClient
 
