@@ -36,26 +36,11 @@ func logsCommand() *cobra.Command {
 		Long: `Retrieve events for the pipeline identified by PIPELINE_ID.
 
 Examples:
-  # Get all events for a pipeline
-    pipelines logs pipeline-123
-
-  # Get only error events
-    pipelines logs pipeline-123 --level ERROR
-
-  # Get multiple log levels (ERROR and METRIC)
-    pipelines logs pipeline-123 --level ERROR --level METRIC
-
-  # Get events for a specific update
+  # Get all events for a pipeline and specific update ID
     pipelines logs pipeline-123 --update-id update-123
 
-  # Get specific event types
-    pipelines logs pipeline-123 --event-type update_progress
-
-  # Get multiple event types
-    pipelines logs pipeline-123 --event-type update_progress --event-type flow_progress
-
-  # Combine filters
-    pipelines logs pipeline-123 --level ERROR --level METRIC --event-type flow_progress`,
+  # Get multiple log levels (ERROR and METRIC) for a specific event type (update_progress)
+    pipelines logs pipeline-123 --level ERROR --level METRIC --event-type update_progress`,
 	}
 
 	var updateId string
