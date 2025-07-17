@@ -63,9 +63,12 @@ func resolveOpenArgument(ctx context.Context, b *bundle.Bundle, args []string) (
 
 func openCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "open",
+		Use:   "open [KEY]",
 		Short: "Open a pipeline in the browser",
-		Args:  root.MaximumNArgs(1),
+		Long: `Open a pipeline in the browser, identified by KEY.
+The KEY is the pipeline resource name in the .pipelines.yml file of the pipeline to open.
+If there is only one pipeline in the project, KEY is optional and the pipeline will be auto-selected.`,
+		Args: root.MaximumNArgs(1),
 	}
 
 	var forcePull bool
