@@ -12,20 +12,21 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// buildInFilter creates a filter condition for a field with multiple possible values
-func buildInFilter(field string, values []string) string {
+// buildFieldFilter creates a SQL filter condition for a field with multiple possible values.
+// It generates either "field = 'value'" for single values or "field in ('value1', 'value2')" for multiple values.
+// This is used to build filter strings for the Databricks Pipelines API.
+func buildFieldFilter(field string, values []string) string {
 	if len(values) == 0 {
 		return ""
 	}
 	if len(values) == 1 {
 		return fmt.Sprintf("%s = '%s'", field, values[0])
 	}
-	// For multiple values, use "field in ('value1', 'value2')" syntax
-	quotedValues := make([]string, len(values))
+	valuesWithQuotes := make([]string, len(values))
 	for i, value := range values {
-		quotedValues[i] = fmt.Sprintf("'%s'", value)
+		valuesWithQuotes[i] = fmt.Sprintf("'%s'", value)
 	}
-	return fmt.Sprintf("%s in (%s)", field, strings.Join(quotedValues, ", "))
+	return fmt.Sprintf("%s in (%s)", field, strings.Join(valuesWithQuotes, ", "))
 }
 
 func logsCommand() *cobra.Command {
@@ -87,11 +88,11 @@ Examples:
 			filterParts = append(filterParts, fmt.Sprintf("update_id = '%s'", updateId))
 		}
 
-		if levelFilter := buildInFilter("level", levels); levelFilter != "" {
+		if levelFilter := buildFieldFilter("level", levels); levelFilter != "" {
 			filterParts = append(filterParts, levelFilter)
 		}
 
-		if typeFilter := buildInFilter("event_type", eventTypes); typeFilter != "" {
+		if typeFilter := buildFieldFilter("event_type", eventTypes); typeFilter != "" {
 			filterParts = append(filterParts, typeFilter)
 		}
 
