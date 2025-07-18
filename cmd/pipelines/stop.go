@@ -112,7 +112,7 @@ If there is only one pipeline in the project, KEY is optional and the pipeline w
 			return err
 		}
 
-		cmdio.LogString(ctx, fmt.Sprintf("%s stopped successfully.", key))
+		cmdio.LogString(ctx, key+" stopped successfully.")
 		return nil
 	}
 
