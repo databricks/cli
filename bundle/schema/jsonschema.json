@@ -990,6 +990,10 @@
                   {
                     "type": "object",
                     "properties": {
+                      "allow_duplicate_names": {
+                        "description": "If false, deployment will fail if name conflicts with that of another pipeline.",
+                        "$ref": "#/$defs/bool"
+                      },
                       "budget_policy_id": {
                         "description": "Budget policy of this pipeline.",
                         "$ref": "#/$defs/string",

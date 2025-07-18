@@ -53,12 +53,6 @@ func Connect(ctx context.Context, databaseInstanceName string, extraArgs ...stri
 	}
 	cmdio.LogString(ctx, "Successfully fetched database credentials")
 
-	// Get current working directory
-	dir, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("error getting working directory: %w", err)
-	}
-
 	// Check if database name and port are already specified in extra arguments
 	hasDbName := false
 	hasPort := false
@@ -103,6 +97,5 @@ func Connect(ctx context.Context, databaseInstanceName string, extraArgs ...stri
 	return exec.Execv(exec.ExecvOptions{
 		Args: args,
 		Env:  cmdEnv,
-		Dir:  dir,
 	})
 }

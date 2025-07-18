@@ -1,0 +1,11 @@
+bundle:
+  name: acc-bundle-deploy-pipeline-duplicate-names-$UNIQUE_NAME
+
+resources:
+  pipelines:
+    pipeline_one:
+      name: test-pipeline-same-name-$UNIQUE_NAME
+      allow_duplicate_names: true
+      libraries:
+        - file:
+            path: "./foo.py"
