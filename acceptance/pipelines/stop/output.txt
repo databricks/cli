@@ -1,0 +1,28 @@
+
+>>> [PIPELINES] deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-stop/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [PIPELINES] run
+Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
+
+
+=== Stopping pipeline
+>>> [PIPELINES] stop
+Stopping my_pipeline...
+my_pipeline stopped successfully.
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/stop"
+}
+
+=== Stopping pipeline with KEY, expect same output as without KEY
+>>> [PIPELINES] stop my_pipeline
+Stopping my_pipeline...
+my_pipeline stopped successfully.
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/stop"
+}
