@@ -75,6 +75,7 @@ Deployment complete!
       "parent_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/resources",
       "permissions": [],
       "query_text": "SELECT 1",
+      "url": "[DATABRICKS_URL]/sql/alerts-v2/[UUID]?o=[NUMID]",
       "warehouse_id": "test-sql-warehouse"
     }
   },
@@ -130,7 +131,8 @@ Deployment complete!
   "alerts": {
     "my_alert": {
       "id": "[UUID]",
-      "modified_status": "deleted"
+      "modified_status": "deleted",
+      "url": "[DATABRICKS_URL]/sql/alerts-v2/[UUID]?o=[NUMID]"
     }
   },
   "pipelines": {
