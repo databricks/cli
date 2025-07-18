@@ -10,9 +10,11 @@ import (
 )
 
 func execv(opts ExecvOptions) error {
-	err := os.Chdir(opts.Dir)
-	if err != nil {
-		return fmt.Errorf("changing directory to %s failed: %w", opts.Dir, err)
+	if opts.Dir != "" {
+		err := os.Chdir(opts.Dir)
+		if err != nil {
+			return fmt.Errorf("changing directory to %s failed: %w", opts.Dir, err)
+		}
 	}
 
 	// execve syscall does not perform PATH lookup. Thus we need to query path

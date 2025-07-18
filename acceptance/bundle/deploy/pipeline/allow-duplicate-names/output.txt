@@ -1,0 +1,54 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/acc-bundle-deploy-pipeline-duplicate-names-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests
+{
+  "body": {
+    "libraries": [
+      {
+        "file": {
+          "path": "/some-script.py"
+        }
+      }
+    ],
+    "name": "test-pipeline-same-name-[UNIQUE_NAME]"
+  },
+  "method": "POST",
+  "path": "/api/2.0/pipelines"
+}
+{
+  "body": {
+    "allow_duplicate_names": true,
+    "channel": "CURRENT",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/acc-bundle-deploy-pipeline-duplicate-names-[UNIQUE_NAME]/default/state/metadata.json"
+    },
+    "edition": "ADVANCED",
+    "libraries": [
+      {
+        "file": {
+          "path": "/Workspace/Users/[USERNAME]/.bundle/acc-bundle-deploy-pipeline-duplicate-names-[UNIQUE_NAME]/default/files/foo.py"
+        }
+      }
+    ],
+    "name": "test-pipeline-same-name-[UNIQUE_NAME]"
+  },
+  "method": "POST",
+  "path": "/api/2.0/pipelines"
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete pipeline pipeline_one
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/acc-bundle-deploy-pipeline-duplicate-names-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
+
+>>> [CLI] pipelines delete [UUID]
