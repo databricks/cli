@@ -35,6 +35,10 @@
 }
 
 === resources.models.rname ===
+Warning: required field "name" is not set
+  at resources.models.rname
+  in databricks.yml:6:12
+
 {
   "models": {
     "rname": {
@@ -54,6 +58,18 @@
 }
 
 === resources.registered_models.rname ===
+Warning: required field "catalog_name" is not set
+  at resources.registered_models.rname
+  in databricks.yml:6:12
+
+Warning: required field "name" is not set
+  at resources.registered_models.rname
+  in databricks.yml:6:12
+
+Warning: required field "schema_name" is not set
+  at resources.registered_models.rname
+  in databricks.yml:6:12
+
 {
   "registered_models": {
     "rname": {}
@@ -61,6 +77,18 @@
 }
 
 === resources.quality_monitors.rname ===
+Warning: required field "assets_dir" is not set
+  at resources.quality_monitors.rname
+  in databricks.yml:6:12
+
+Warning: required field "output_schema_name" is not set
+  at resources.quality_monitors.rname
+  in databricks.yml:6:12
+
+Warning: required field "table_name" is not set
+  at resources.quality_monitors.rname
+  in databricks.yml:6:12
+
 {
   "quality_monitors": {
     "rname": {}
@@ -68,6 +96,14 @@
 }
 
 === resources.schemas.rname ===
+Warning: required field "catalog_name" is not set
+  at resources.schemas.rname
+  in databricks.yml:6:12
+
+Warning: required field "name" is not set
+  at resources.schemas.rname
+  in databricks.yml:6:12
+
 {
   "schemas": {
     "rname": {}
@@ -75,6 +111,18 @@
 }
 
 === resources.volumes.rname ===
+Warning: required field "catalog_name" is not set
+  at resources.volumes.rname
+  in databricks.yml:6:12
+
+Warning: required field "name" is not set
+  at resources.volumes.rname
+  in databricks.yml:6:12
+
+Warning: required field "schema_name" is not set
+  at resources.volumes.rname
+  in databricks.yml:6:12
+
 {
   "volumes": {
     "rname": {
@@ -102,6 +150,14 @@
 }
 
 === resources.apps.rname ===
+Warning: required field "name" is not set
+  at resources.apps.rname
+  in databricks.yml:6:12
+
+Warning: required field "source_code_path" is not set
+  at resources.apps.rname
+  in databricks.yml:6:12
+
 Error: Missing app source code path
   in databricks.yml:6:12
 
@@ -129,6 +185,10 @@ app resource 'rname' is missing required source_code_path field
 }
 
 === resources.secret_scopes.rname ===
+Warning: required field "name" is not set
+  at resources.secret_scopes.rname
+  in databricks.yml:6:12
+
 {
   "secret_scopes": {
     "rname": {

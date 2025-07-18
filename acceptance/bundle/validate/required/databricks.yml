@@ -1,0 +1,32 @@
+artifacts:
+  my_artifact:
+    files:
+      - {}
+
+resources:
+  # Required field name is missing.
+  models:
+    my_model_1:
+      description: "hello"
+
+    # Empty string should not trigger a warning.
+    my_model_2:
+      name: ""
+
+  jobs:
+    my_job_1:
+      tasks:
+        # job_id being 0 should not trigger a warning.
+        - task_key: "task_key1"
+          run_job_task:
+            job_id: 0
+
+        # job_id not being set should trigger a warning.
+        - task_key: "task_key2"
+          run_job_task:
+
+  # Catalog name and schema name are required.
+  # but are not set.
+  volumes:
+    my_volume:
+      name: "baz"
