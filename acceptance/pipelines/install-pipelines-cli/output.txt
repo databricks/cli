@@ -19,6 +19,7 @@ Available Commands:
   init        Initialize a new pipelines project
   open        Open a pipeline in the browser
   run         Run a pipeline
+  stop        Stop a pipeline
   version     Retrieve information about the current version of the Pipelines CLI
 
 Flags:
@@ -62,6 +63,7 @@ Available Commands:
   init        Initialize a new pipelines project
   open        Open a pipeline in the browser
   run         Run a pipeline
+  stop        Stop a pipeline
   version     Retrieve information about the current version of the Pipelines CLI
 
 Flags:
