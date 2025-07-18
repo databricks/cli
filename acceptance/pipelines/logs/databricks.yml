@@ -1,0 +1,7 @@
+bundle:
+  name: pipelines-logs
+
+resources:
+  pipelines:
+    test-logs:
+      name: test-logs
