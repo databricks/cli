@@ -26,7 +26,7 @@ func dryRunCommand() *cobra.Command {
 		Use:   "dry-run [flags] [KEY]",
 		Short: "Validate correctness of the pipeline's graph",
 		Long: `Validates correctness of the pipeline's graph, identified by KEY. Does not materialize or publish any datasets.
-The KEY is the unique identifier of the pipeline to run.
+KEY is the unique name of the pipeline to dry run, based on the pipeline YAML configuration.
 If there is only one pipeline in the project, KEY is optional and the pipeline will be auto-selected.`,
 	}
 

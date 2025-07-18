@@ -66,7 +66,7 @@ func openCommand() *cobra.Command {
 		Use:   "open [KEY]",
 		Short: "Open a pipeline in the browser",
 		Long: `Open a pipeline in the browser, identified by KEY.
-The KEY is the pipeline resource name in the .pipelines.yml file of the pipeline to open.
+KEY is the unique name of the pipeline to open, based on the pipeline YAML configuration.
 If there is only one pipeline in the project, KEY is optional and the pipeline will be auto-selected.`,
 		Args: root.MaximumNArgs(1),
 	}
