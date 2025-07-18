@@ -1,0 +1,18 @@
+
+=== Check that file does not exist
+>>> errcode cat .customcfg
+cat: .customcfg: No such file or directory
+
+Exit code: 1
+
+>>> [CLI] auth login --host [DATABRICKS_URL] --profile custom-profile
+Profile custom-profile was successfully saved
+
+=== Check that the profile is saved in the custom path
+>>> cat .customcfg
+; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.
+[DEFAULT]
+
+[custom-profile]
+host      = [DATABRICKS_URL]
+auth_type = databricks-cli
