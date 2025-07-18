@@ -61,6 +61,6 @@ func InstallPipelinesCLI() *cobra.Command {
 			return installPipelinesSymlink(cmd.Context(), directory)
 		},
 	}
-	cmd.Flags().StringVarP(&directory, "directory", "d", "", "Directory in which to install pipelines CLI (defaults to databricks CLI's directory)")
+	cmd.Flags().StringVarP(&directory, "directory", "d", "", "Directory in which to install Pipelines CLI (defaults to Databricks CLI's directory).")
 	return cmd
 }
