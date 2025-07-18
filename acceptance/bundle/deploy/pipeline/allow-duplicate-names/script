@@ -5,6 +5,7 @@ touch foo.py
 cleanup() {
   trace $CLI bundle destroy --auto-approve
   trace $CLI pipelines delete ${PIPELINE_ID}
+  rm out.requests.txt
 }
 trap cleanup EXIT
 
@@ -14,3 +15,8 @@ export PIPELINE_ID
 
 # Deploy the bundle that has a pipeline with the same name:
 trace $CLI bundle deploy
+
+print_requests() {
+    jq --sort-keys 'select(.method != "GET" and (.path | contains("/pipelines")))' < out.requests.txt
+}
+trace print_requests

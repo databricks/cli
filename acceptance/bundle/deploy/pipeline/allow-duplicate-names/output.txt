@@ -5,6 +5,43 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
+>>> print_requests
+{
+  "body": {
+    "libraries": [
+      {
+        "file": {
+          "path": "/some-script.py"
+        }
+      }
+    ],
+    "name": "test-pipeline-same-name-[UNIQUE_NAME]"
+  },
+  "method": "POST",
+  "path": "/api/2.0/pipelines"
+}
+{
+  "body": {
+    "allow_duplicate_names": true,
+    "channel": "CURRENT",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/acc-bundle-deploy-pipeline-duplicate-names-[UNIQUE_NAME]/default/state/metadata.json"
+    },
+    "edition": "ADVANCED",
+    "libraries": [
+      {
+        "file": {
+          "path": "/Workspace/Users/[USERNAME]/.bundle/acc-bundle-deploy-pipeline-duplicate-names-[UNIQUE_NAME]/default/files/foo.py"
+        }
+      }
+    ],
+    "name": "test-pipeline-same-name-[UNIQUE_NAME]"
+  },
+  "method": "POST",
+  "path": "/api/2.0/pipelines"
+}
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete pipeline pipeline_one
