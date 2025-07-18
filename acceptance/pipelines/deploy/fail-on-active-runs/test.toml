@@ -1,0 +1,14 @@
+# Deploy relies on terraform.CheckRunningResource()
+EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["terraform"]
+
+# Cycling between states not implemented yet
+# spec to avoid "pipeline spec is nil" error
+
+[[Server]]
+Pattern = "GET /api/2.0/pipelines/{pipeline_id}"
+Response.Body = '''
+{
+  "state": "RUNNING",
+  "spec": {}
+}
+'''

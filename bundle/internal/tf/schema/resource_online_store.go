@@ -3,9 +3,10 @@
 package schema
 
 type ResourceOnlineStore struct {
-	Capacity     string `json:"capacity,omitempty"`
-	CreationTime string `json:"creation_time,omitempty"`
-	Creator      string `json:"creator,omitempty"`
-	Name         string `json:"name"`
-	State        string `json:"state,omitempty"`
+	Capacity         string `json:"capacity"`
+	CreationTime     string `json:"creation_time,omitempty"`
+	Creator          string `json:"creator,omitempty"`
+	Name             string `json:"name"`
+	ReadReplicaCount int    `json:"read_replica_count,omitempty"`
+	State            string `json:"state,omitempty"`
 }

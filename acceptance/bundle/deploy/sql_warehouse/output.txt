@@ -1,0 +1,144 @@
+
+>>> [CLI] bundle validate
+Name: test_sql_warehouse
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test_sql_warehouse/default
+
+Validation OK!
+
+>>> [CLI] bundle validate -o json
+{
+  "test_sql_warehouse": {
+    "auto_stop_mins": 120,
+    "cluster_size": "X-Large",
+    "enable_photon": true,
+    "enable_serverless_compute": true,
+    "max_num_clusters": 1,
+    "min_num_clusters": 1,
+    "name": "sql_warehouse_name",
+    "permissions": [],
+    "spot_instance_policy": "COST_OPTIMIZED"
+  }
+}
+
+>>> [CLI] bundle summary
+Name: test_sql_warehouse
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test_sql_warehouse/default
+Resources:
+  SQL Warehouses:
+    test_sql_warehouse:
+      Name: sql_warehouse_name
+      URL:  (not deployed)
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test_sql_warehouse/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Verify the create request
+>>> jq select(.method == "POST" and (.path | contains("/sql/warehouses"))) out.requests.txt
+{
+  "method": "POST",
+  "path": "/api/2.0/sql/warehouses",
+  "body": {
+    "auto_stop_mins": 120,
+    "cluster_size": "X-Large",
+    "enable_photon": true,
+    "enable_serverless_compute": true,
+    "max_num_clusters": 1,
+    "min_num_clusters": 1,
+    "name": "sql_warehouse_name",
+    "spot_instance_policy": "COST_OPTIMIZED"
+  }
+}
+
+>>> [CLI] bundle summary
+Name: test_sql_warehouse
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test_sql_warehouse/default
+Resources:
+  SQL Warehouses:
+    test_sql_warehouse:
+      Name: sql_warehouse_name
+      URL:  [DATABRICKS_URL]/sql/warehouses/[UUID]?o=[NUMID]
+
+=== Update the warehouse name
+>>> update_file.py databricks.yml sql_warehouse_name sql_warehouse_name_2
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test_sql_warehouse/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Verify the update request
+>>> jq select(.method == "POST" and (.path | contains("/sql/warehouses")) and (.body."name" == "sql_warehouse_name_2")) out.requests.txt
+{
+  "method": "POST",
+  "path": "/api/2.0/sql/warehouses/[UUID]/edit",
+  "body": {
+    "auto_stop_mins": 120,
+    "cluster_size": "X-Large",
+    "enable_photon": true,
+    "enable_serverless_compute": true,
+    "max_num_clusters": 1,
+    "min_num_clusters": 1,
+    "name": "sql_warehouse_name_2",
+    "spot_instance_policy": "COST_OPTIMIZED"
+  }
+}
+
+>>> [CLI] bundle summary
+Name: test_sql_warehouse
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test_sql_warehouse/default
+Resources:
+  SQL Warehouses:
+    test_sql_warehouse:
+      Name: sql_warehouse_name_2
+      URL:  [DATABRICKS_URL]/sql/warehouses/[UUID]?o=[NUMID]
+
+=== Destroy the warehouse
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete sql_warehouse test_sql_warehouse
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test_sql_warehouse/default
+
+Deleting files...
+Destroy complete!
+
+=== Verify the destroy request
+>>> jq select(.method == "DELETE" and (.path | contains("/sql/warehouses"))) out.requests.txt
+{
+  "method": "DELETE",
+  "path": "/api/2.0/sql/warehouses/[UUID]"
+}
+
+>>> [CLI] bundle summary
+Name: test_sql_warehouse
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test_sql_warehouse/default
+Resources:
+  SQL Warehouses:
+    test_sql_warehouse:
+      Name: sql_warehouse_name_2
+      URL:  (not deployed)
+
+>>> [CLI] bundle destroy --auto-approve
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test_sql_warehouse/default
+
+Deleting files...
+Destroy complete!

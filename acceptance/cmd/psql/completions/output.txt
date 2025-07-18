@@ -1,0 +1,6 @@
+
+=== Command should show instances names in autocomplete:
+my-database
+another-database
+:4
+Completion ended with directive: ShellCompDirectiveNoFileComp

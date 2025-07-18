@@ -106,12 +106,7 @@ func newCreate() *cobra.Command {
 
   Arguments:
     LABEL: Label for the IP access list. This **cannot** be empty.
-    LIST_TYPE: Type of IP access list. Valid values are as follows and are
-      case-sensitive:
-      
-      * ALLOW: An allow list. Include this IP or range. * BLOCK: A block
-      list. Exclude this IP or range. IP addresses in the block list are
-      excluded even if they are included in an allow list. 
+    LIST_TYPE:  
       Supported values: [ALLOW, BLOCK]`
 
 	cmd.Annotations = make(map[string]string)
@@ -386,12 +381,7 @@ func newReplace() *cobra.Command {
   Arguments:
     IP_ACCESS_LIST_ID: The ID for the corresponding IP access list
     LABEL: Label for the IP access list. This **cannot** be empty.
-    LIST_TYPE: Type of IP access list. Valid values are as follows and are
-      case-sensitive:
-      
-      * ALLOW: An allow list. Include this IP or range. * BLOCK: A block
-      list. Exclude this IP or range. IP addresses in the block list are
-      excluded even if they are included in an allow list. 
+    LIST_TYPE:  
       Supported values: [ALLOW, BLOCK]
     ENABLED: Specifies whether this IP access list is enabled.`
 
@@ -482,7 +472,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().BoolVar(&updateReq.Enabled, "enabled", updateReq.Enabled, `Specifies whether this IP access list is enabled.`)
 	// TODO: array: ip_addresses
 	cmd.Flags().StringVar(&updateReq.Label, "label", updateReq.Label, `Label for the IP access list.`)
-	cmd.Flags().Var(&updateReq.ListType, "list-type", `Type of IP access list. Supported values: [ALLOW, BLOCK]`)
+	cmd.Flags().Var(&updateReq.ListType, "list-type", `Supported values: [ALLOW, BLOCK]`)
 
 	cmd.Use = "update IP_ACCESS_LIST_ID"
 	cmd.Short = `Update access list.`

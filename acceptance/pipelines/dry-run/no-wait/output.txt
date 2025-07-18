@@ -1,0 +1,12 @@
+
+>>> [PIPELINES] deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Dry running pipeline with --no-wait flag
+>>> [PIPELINES] dry-run --no-wait
+Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
+
+<EOL>
