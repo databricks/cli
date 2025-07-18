@@ -1,0 +1,16 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+envsubst < pipeline.json.tmpl > pipeline.json
+touch foo.py
+
+cleanup() {
+  trace $CLI bundle destroy --auto-approve
+  trace $CLI pipelines delete ${PIPELINE_ID}
+}
+trap cleanup EXIT
+
+# Create a pre-existing pipeline:
+PIPELINE_ID=$($CLI pipelines create --json @pipeline.json | jq -r .pipeline_id)
+export PIPELINE_ID
+
+# Deploy the bundle that has a pipeline with the same name:
+trace $CLI bundle deploy
