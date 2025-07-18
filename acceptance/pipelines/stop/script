@@ -1,0 +1,16 @@
+print_requests() {
+    jq --sort-keys 'select(.method != "GET" and (.path | contains("/pipelines")))' < out.requests.txt
+    rm out.requests.txt
+}
+
+trace $PIPELINES deploy
+trace $PIPELINES run
+rm out.requests.txt
+
+title "Stopping pipeline"
+trace $PIPELINES stop
+print_requests
+
+title "Stopping pipeline with KEY, expect same output as without KEY"
+trace $PIPELINES stop my_pipeline
+print_requests
