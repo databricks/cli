@@ -185,6 +185,10 @@ app resource 'rname' is missing required source_code_path field
 }
 
 === resources.secret_scopes.rname ===
+Warning: required field "name" is not set
+  at resources.secret_scopes.rname
+  in databricks.yml:6:12
+
 {
   "secret_scopes": {
     "rname": {

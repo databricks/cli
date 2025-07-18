@@ -230,6 +230,10 @@ Warning: unknown field: grants
   at resources.secret_scopes.rname
   in databricks.yml:7:7
 
+Warning: required field "name" is not set
+  at resources.secret_scopes.rname
+  in databricks.yml:7:7
+
 {
   "secret_scopes": {
     "rname": {
