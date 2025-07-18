@@ -2,24 +2,16 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/acc-bundle-deploy-pipeline-duplicate-names-[UNIQUE_NAME]/default/files...
 Deploying resources...
-Error: terraform apply: exit status 1
-
-Error: cannot create pipeline: The pipeline name 'test-pipeline-same-name-[UNIQUE_NAME]' is already used by another pipeline. This check can be skipped by setting `allow_duplicate_names = true` in the request.
-
-  with databricks_pipeline.pipeline_one,
-  on bundle.tf.json line 30, in resource.databricks_pipeline.pipeline_one:
-  30:       }
-
-
-
 Updating deployment state...
+Deployment complete!
 
 >>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete pipeline pipeline_one
+
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/acc-bundle-deploy-pipeline-duplicate-names-[UNIQUE_NAME]/default
 
 Deleting files...
 Destroy complete!
 
 >>> [CLI] pipelines delete [UUID]
-
-Exit code: 1

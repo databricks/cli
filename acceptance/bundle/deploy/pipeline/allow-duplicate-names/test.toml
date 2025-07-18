@@ -1,3 +1,2 @@
-Badness = "allow_duplicate_names field does not allow to create a pipeline with a duplicate name"
 Cloud = true
 Ignore = ["foo.py","pipeline.json"]
