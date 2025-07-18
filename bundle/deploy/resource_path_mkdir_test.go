@@ -122,7 +122,7 @@ func TestResourcePathMkdir_GetStatusError_NonNotFound(t *testing.T) {
 
 	diags := bundle.Apply(context.Background(), b, ResourcePathMkdir())
 	require.Len(t, diags, 1)
-	require.Equal(t, diags[0].Summary, "Could not get status")
+	require.Equal(t, "Could not get status", diags[0].Summary)
 }
 
 func TestResourcePathMkdir_MkdirsFails(t *testing.T) {
@@ -160,5 +160,5 @@ func TestResourcePathMkdir_MkdirsFails(t *testing.T) {
 
 	diags := bundle.Apply(context.Background(), b, ResourcePathMkdir())
 	require.Len(t, diags, 1)
-	require.Equal(t, diags[0].Summary, "Could not create directory")
+	require.Equal(t, "Could not create directory", diags[0].Summary)
 }
