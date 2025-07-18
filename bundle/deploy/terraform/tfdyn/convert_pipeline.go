@@ -21,7 +21,7 @@ func convertPipelineResource(ctx context.Context, vin dyn.Value) (dyn.Value, err
 		return dyn.InvalidValue, err
 	}
 
-	vout, err = dyn.DropKeys(vout, []string{"allow_duplicate_names", "dry_run"})
+	vout, err = dyn.DropKeys(vout, []string{"dry_run"})
 	if err != nil {
 		return dyn.InvalidValue, err
 	}
