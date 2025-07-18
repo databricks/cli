@@ -23,7 +23,6 @@ Warning: required field "timezone_id" is not set
         "timestamp_col": "timestamp"
       },
       "output_schema_name": "main.dev",
-      "schedule": null,
       "table_name": "main.test.dev"
     }
   }
