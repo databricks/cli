@@ -34,6 +34,14 @@ Warning: required field "schema_name" is not set
   at resources.volumes.v2
   in databricks.yml:8:7
 
+Warning: invalid value "" for enum field. Expected one of: [EXTERNAL MANAGED]
+  at resources.volumes.v1.volume_type
+  in databricks.yml:6:20
+
+Warning: invalid value "already-set" for enum field. Expected one of: [EXTERNAL MANAGED]
+  at resources.volumes.v2.volume_type
+  in databricks.yml:8:20
+
 {
   "v1": {
     "volume_type": ""
