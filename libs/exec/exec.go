@@ -16,6 +16,15 @@ const (
 	CmdExecutable  ExecutableType = `cmd`
 )
 
+// Values returns all valid ExecutableType values
+func (ExecutableType) Values() []ExecutableType {
+	return []ExecutableType{
+		BashExecutable,
+		ShExecutable,
+		CmdExecutable,
+	}
+}
+
 var finders map[ExecutableType](func() (shell, error)) = map[ExecutableType](func() (shell, error)){
 	BashExecutable: newBashShell,
 	ShExecutable:   newShShell,

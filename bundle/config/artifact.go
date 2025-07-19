@@ -10,6 +10,13 @@ type ArtifactType string
 
 const ArtifactPythonWheel ArtifactType = `whl`
 
+// Values returns all valid ArtifactType values
+func (ArtifactType) Values() []ArtifactType {
+	return []ArtifactType{
+		ArtifactPythonWheel,
+	}
+}
+
 type ArtifactFile struct {
 	Source string `json:"source"`
 
