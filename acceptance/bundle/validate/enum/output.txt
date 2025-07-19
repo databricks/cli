@@ -1,0 +1,17 @@
+
+>>> [CLI] bundle validate
+Warning: invalid value "invalid_shell" for enum field. Expected one of: [bash sh cmd]
+  at artifacts.my_artifact.executable
+  in databricks.yml:3:17
+
+Warning: invalid value "invalid_type" for enum field. Expected one of: [whl]
+  at artifacts.my_artifact.type
+  in databricks.yml:6:11
+
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Found 2 warnings

@@ -1,0 +1,14 @@
+artifacts:
+  my_artifact:
+    # Invalid type - should be "whl"
+    type: "invalid_type"
+    # Invalid executable - should be "bash", "sh", or "cmd"
+    executable: "invalid_shell"
+    files:
+      - source: "."
+
+  valid_artifact:
+    type: "whl"
+    executable: "bash"
+    files:
+      - source: "."

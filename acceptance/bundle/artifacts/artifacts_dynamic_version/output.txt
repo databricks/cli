@@ -1,3 +1,7 @@
+Warning: invalid value "jar" for enum field. Expected one of: [whl]
+  at artifacts.second_wheel.type
+  in databricks.yml:7:11
+
 {
   "first_wheel": {
     "build": "uv build --wheel",
