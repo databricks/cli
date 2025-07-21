@@ -2,3 +2,7 @@ Local = true
 Cloud = true
 
 RecordRequests = false
+
+Ignore = [
+    "databricks.yml",
+]
