@@ -2,9 +2,10 @@ package resources
 
 import (
 	"context"
+	"net/url"
+
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/database"
-	"net/url"
 )
 
 type DatabaseInstance struct {
@@ -14,7 +15,7 @@ type DatabaseInstance struct {
 }
 
 func (d *DatabaseInstance) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me: Exists")
 }
 
