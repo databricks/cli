@@ -8,7 +8,7 @@ import (
 )
 
 // RequiredFields maps [dyn.Pattern] to required fields they should have.
-var RequiredFields = map[strving][]string{
+var RequiredFields = map[string][]string{
 	"artifacts.*.files[*]": {"source"},
 
 	"bundle": {"name"},
