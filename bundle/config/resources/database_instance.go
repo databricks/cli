@@ -13,12 +13,12 @@ type DatabaseInstance struct {
 	database.DatabaseInstance
 }
 
-func (d DatabaseInstance) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {
+func (d *DatabaseInstance) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {
 	//TODO implement me
 	panic("implement me: Exists")
 }
 
-func (d DatabaseInstance) ResourceDescription() ResourceDescription {
+func (d *DatabaseInstance) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "database instance",
 		PluralName:    "database instances",
@@ -27,15 +27,15 @@ func (d DatabaseInstance) ResourceDescription() ResourceDescription {
 	}
 }
 
-func (d DatabaseInstance) GetName() string {
+func (d *DatabaseInstance) GetName() string {
 	return d.Name
 }
 
-func (d DatabaseInstance) GetURL() string {
+func (d *DatabaseInstance) GetURL() string {
 	return d.URL
 }
 
-func (d DatabaseInstance) InitializeURL(baseURL url.URL) {
+func (d *DatabaseInstance) InitializeURL(baseURL url.URL) {
 	if d.Name == "" {
 		return
 	}
