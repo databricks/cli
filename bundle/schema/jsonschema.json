@@ -509,6 +509,80 @@
                   }
                 ]
               },
+              "resources.DatabaseInstance": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "capacity": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "child_instance_refs": {
+                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/database.DatabaseInstanceRef"
+                      },
+                      "creation_time": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "creator": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "effective_enable_readable_secondaries": {
+                        "$ref": "#/$defs/bool"
+                      },
+                      "effective_node_count": {
+                        "$ref": "#/$defs/int"
+                      },
+                      "effective_retention_window_in_days": {
+                        "$ref": "#/$defs/int"
+                      },
+                      "effective_stopped": {
+                        "$ref": "#/$defs/bool"
+                      },
+                      "enable_readable_secondaries": {
+                        "$ref": "#/$defs/bool"
+                      },
+                      "name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "node_count": {
+                        "$ref": "#/$defs/int"
+                      },
+                      "parent_instance_ref": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.DatabaseInstanceRef"
+                      },
+                      "pg_version": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "read_only_dns": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "read_write_dns": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "retention_window_in_days": {
+                        "$ref": "#/$defs/int"
+                      },
+                      "state": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.DatabaseInstanceState"
+                      },
+                      "stopped": {
+                        "$ref": "#/$defs/bool"
+                      },
+                      "uid": {
+                        "$ref": "#/$defs/string"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "name"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "resources.Grant": {
                 "oneOf": [
                   {
@@ -2027,6 +2101,9 @@
                       "description": "The dashboard definitions for the bundle, where each key is the name of the dashboard.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Dashboard",
                       "markdownDescription": "The dashboard definitions for the bundle, where each key is the name of the dashboard. See [dashboards](https://docs.databricks.com/dev-tools/bundles/resources.html#dashboards)."
+                    },
+                    "database_instances": {
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.DatabaseInstance"
                     },
                     "experiments": {
                       "description": "The experiment definitions for the bundle, where each key is the name of the experiment.",
@@ -4000,6 +4077,38 @@
                   "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
                 }
               ]
+            },
+            "database.DatabaseInstanceRef": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "branch_time": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "effective_lsn": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "lsn": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "name": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "uid": {
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "database.DatabaseInstanceState": {
+              "type": "string"
             },
             "jobs.AuthenticationMethod": {
               "oneOf": [
@@ -8141,6 +8250,20 @@
                     }
                   ]
                 },
+                "resources.DatabaseInstance": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.DatabaseInstance"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
                 "resources.Job": {
                   "oneOf": [
                     {
@@ -8654,6 +8777,20 @@
                     "type": "array",
                     "items": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.Library"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "database.DatabaseInstanceRef": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.DatabaseInstanceRef"
                     }
                   },
                   {
