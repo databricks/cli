@@ -169,6 +169,9 @@ github.com/databricks/cli/bundle/config.Resources:
       The dashboard definitions for the bundle, where each key is the name of the dashboard.
     "markdown_description": |-
       The dashboard definitions for the bundle, where each key is the name of the dashboard. See [\_](/dev-tools/bundles/resources.md#dashboards).
+  "database_instances":
+    "description": |-
+      PLACEHOLDER
   "experiments":
     "description": |-
       The experiment definitions for the bundle, where each key is the name of the experiment.
@@ -467,6 +470,64 @@ github.com/databricks/cli/bundle/config/resources.DashboardPermission:
     "description": |-
       PLACEHOLDER
   "user_name":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.DatabaseInstance:
+  "capacity":
+    "description": |-
+      PLACEHOLDER
+  "child_instance_refs":
+    "description": |-
+      PLACEHOLDER
+  "creation_time":
+    "description": |-
+      PLACEHOLDER
+  "creator":
+    "description": |-
+      PLACEHOLDER
+  "effective_enable_readable_secondaries":
+    "description": |-
+      PLACEHOLDER
+  "effective_node_count":
+    "description": |-
+      PLACEHOLDER
+  "effective_retention_window_in_days":
+    "description": |-
+      PLACEHOLDER
+  "effective_stopped":
+    "description": |-
+      PLACEHOLDER
+  "enable_readable_secondaries":
+    "description": |-
+      PLACEHOLDER
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "node_count":
+    "description": |-
+      PLACEHOLDER
+  "parent_instance_ref":
+    "description": |-
+      PLACEHOLDER
+  "pg_version":
+    "description": |-
+      PLACEHOLDER
+  "read_only_dns":
+    "description": |-
+      PLACEHOLDER
+  "read_write_dns":
+    "description": |-
+      PLACEHOLDER
+  "retention_window_in_days":
+    "description": |-
+      PLACEHOLDER
+  "state":
+    "description": |-
+      PLACEHOLDER
+  "stopped":
+    "description": |-
+      PLACEHOLDER
+  "uid":
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.Grant:
