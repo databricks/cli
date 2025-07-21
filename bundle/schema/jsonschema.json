@@ -10,7 +10,7 @@
           "pattern": "\\$\\{(resources(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
         },
         {
-          "type": "string",
+          "t ype": "string",
           "pattern": "\\$\\{(bundle(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
         },
         {
