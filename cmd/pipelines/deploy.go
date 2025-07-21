@@ -20,7 +20,7 @@ func deployCommand() *cobra.Command {
 		Use:   "deploy",
 		Short: "Deploy pipelines",
 		Long: `Deploy all files defined in the project to the target workspace.
-This command will create or edit pipelines in the workspace based on the pipeline YAML configuration.`,
+This command will create or edit pipelines in the workspace.`,
 		Args: root.NoArgs,
 	}
 
