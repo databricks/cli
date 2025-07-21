@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/databricks/databricks-sdk-go/service/database"
 	"path"
 	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/databricks/databricks-sdk-go/service/database"
 
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -147,19 +148,19 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		files:        make(map[string]FileEntry),
 		repoIdByPath: make(map[string]int64),
 
-		Jobs:            map[int64]jobs.Job{},
-		JobRuns:         map[int64]jobs.Run{},
-		nextJobId:       TestJobID,
-		nextJobRunId:    TestRunID,
-		Pipelines:       map[string]pipelines.GetPipelineResponse{},
-		PipelineUpdates: map[string]bool{},
-		Monitors:        map[string]catalog.MonitorInfo{},
-		Apps:            map[string]apps.App{},
-		Schemas:         map[string]catalog.SchemaInfo{},
-		Volumes:         map[string]catalog.VolumeInfo{},
-		Dashboards:      map[string]dashboards.Dashboard{},
-		SqlWarehouses:   map[string]sql.GetWarehouseResponse{},
-		Repos:           map[string]workspace.RepoInfo{},
+		Jobs:              map[int64]jobs.Job{},
+		JobRuns:           map[int64]jobs.Run{},
+		nextJobId:         TestJobID,
+		nextJobRunId:      TestRunID,
+		Pipelines:         map[string]pipelines.GetPipelineResponse{},
+		PipelineUpdates:   map[string]bool{},
+		Monitors:          map[string]catalog.MonitorInfo{},
+		Apps:              map[string]apps.App{},
+		Schemas:           map[string]catalog.SchemaInfo{},
+		Volumes:           map[string]catalog.VolumeInfo{},
+		Dashboards:        map[string]dashboards.Dashboard{},
+		SqlWarehouses:     map[string]sql.GetWarehouseResponse{},
+		Repos:             map[string]workspace.RepoInfo{},
 		DatabaseInstances: map[string]database.DatabaseInstance{},
 	}
 }
