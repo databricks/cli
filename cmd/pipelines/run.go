@@ -27,7 +27,7 @@ func runCommand() *cobra.Command {
 		Use:   "run [flags] [KEY]",
 		Short: "Run a pipeline",
 		Long: `Run the pipeline identified by KEY.
-KEY is the unique name of the pipeline to run, based on the pipeline YAML configuration.
+KEY is the unique name of the pipeline to run, as defined in its YAML file.
 If there is only one pipeline in the project, KEY is optional and the pipeline will be auto-selected.`,
 	}
 
