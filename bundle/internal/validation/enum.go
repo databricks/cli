@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -102,17 +103,17 @@ func getEnumValues(typ reflect.Type) ([]string, error) {
 
 	results := valuesMethod.Call(nil)
 	if len(results) != 1 {
-		return nil, fmt.Errorf("Values() method should return exactly one value")
+		return nil, errors.New("Values() method should return exactly one value")
 	}
 
 	valuesSlice := results[0]
 	if valuesSlice.Kind() != reflect.Slice {
-		return nil, fmt.Errorf("Values() method should return a slice")
+		return nil, errors.New("Values() method should return a slice")
 	}
 
 	// Extract string values from the slice
 	var enumStrings []string
-	for i := 0; i < valuesSlice.Len(); i++ {
+	for i := range valuesSlice.Len() {
 		value := valuesSlice.Index(i)
 		enumStrings = append(enumStrings, value.String())
 	}
