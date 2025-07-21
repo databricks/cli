@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgroup"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/spf13/cobra"
@@ -33,7 +34,7 @@ func logsCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "logs [flags] PIPELINE_ID",
 		Short: "Retrieve events for a pipeline",
-		Long: `Retrieve events for the pipeline identified by PIPELINE_ID.
+		Long: `Retrieve events for the pipeline identified by PIPELINE_ID, a unique identifier for the pipeline.
 
 Examples:
   # Get all events for a pipeline and specific update ID
@@ -48,10 +49,14 @@ Examples:
 	var eventTypes []string
 	var maxResults int
 
-	cmd.Flags().StringVar(&updateId, "update-id", "", "Filter events by update ID.")
-	cmd.Flags().StringSliceVar(&levels, "level", nil, "Filter events by log level (INFO, WARN, ERROR, METRIC, DEBUG). Can be specified multiple times.")
-	cmd.Flags().StringSliceVar(&eventTypes, "event-type", nil, "Filter events by event type. Can be specified multiple times.")
-	cmd.Flags().IntVar(&maxResults, "max-results", 100, "Max number of entries to return in a single page (<= 1000).")
+	filterGroup := cmdgroup.NewFlagGroup("Event Filter")
+	filterGroup.FlagSet().StringVar(&updateId, "update-id", "", "Filter events by update ID.")
+	filterGroup.FlagSet().StringSliceVar(&levels, "level", nil, "Filter events by log level (INFO, WARN, ERROR, METRIC, DEBUG). Can be specified multiple times.")
+	filterGroup.FlagSet().StringSliceVar(&eventTypes, "event-type", nil, "Filter events by event type. Can be specified multiple times.")
+	filterGroup.FlagSet().IntVar(&maxResults, "max-results", 100, "Max number of entries to return in a single page (<= 1000).")
+
+	wrappedCmd := cmdgroup.NewCommandWithGroupFlag(cmd)
+	wrappedCmd.AddFlagGroup(filterGroup)
 
 	cmd.PreRunE = root.MustWorkspaceClient
 
