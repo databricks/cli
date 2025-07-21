@@ -6,3 +6,35 @@ RecordRequests = true
 Ignore = [
     "databricks.yml",
 ]
+
+[[Server]]
+Pattern = "PUT /api/2.0/permissions/sql/warehouses/{warehouse_id}"
+Response.Body = """
+{}
+"""
+
+[[Server]]
+Pattern = "GET /api/2.0/permissions/sql/warehouses/{warehouse_id}"
+Response.Body = """
+{
+  "access_control_list": [
+    {
+      "all_permissions": [
+        {
+          "permission_level": "CAN_USE"
+        }
+      ],
+      "group_name": "users"
+    },
+    {
+      "all_permissions": [
+        {
+          "permission_level": "CAN_VIEW"
+        }
+      ],
+      "group_name": "viewers"
+    }
+  ],
+  "object_type": "warehouses"
+}
+"""
