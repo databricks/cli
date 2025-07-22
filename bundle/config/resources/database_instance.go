@@ -21,8 +21,8 @@ func (d *DatabaseInstance) Exists(ctx context.Context, w *databricks.WorkspaceCl
 
 func (d *DatabaseInstance) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
-		SingularName:  "database instance",
-		PluralName:    "database instances",
+		SingularName:  "database_instance",
+		PluralName:    "database_instances",
 		SingularTitle: "Database instance",
 		PluralTitle:   "Database instances",
 	}
