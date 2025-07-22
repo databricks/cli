@@ -2,12 +2,12 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
 	"sort"
-	"strings"
 	"text/template"
 
 	"github.com/databricks/cli/bundle/config"
@@ -23,21 +23,6 @@ type EnumPatternInfo struct {
 	// List of valid enum values for the pattern. This field will be a string of the
 	// form `{value1, value2, ...}` representing a Go slice literal.
 	Values string
-}
-
-// formatEnumValues formats a list of enum values into string of the form `{value1, value2, ...}`
-// representing a Go slice literal.
-func formatEnumValues(values []string) string {
-	if len(values) == 0 {
-		return "{}"
-	}
-
-	var quoted []string
-	for _, value := range values {
-		quoted = append(quoted, fmt.Sprintf("%q", value))
-	}
-
-	return "{" + strings.Join(quoted, ", ") + "}"
 }
 
 // isEnumType checks if a type is an enum (string type with a Values() method)
@@ -102,17 +87,17 @@ func getEnumValues(typ reflect.Type) ([]string, error) {
 
 	results := valuesMethod.Call(nil)
 	if len(results) != 1 {
-		return nil, fmt.Errorf("Values() method should return exactly one value")
+		return nil, errors.New("Values() method should return exactly one value")
 	}
 
 	valuesSlice := results[0]
 	if valuesSlice.Kind() != reflect.Slice {
-		return nil, fmt.Errorf("Values() method should return a slice")
+		return nil, errors.New("Values() method should return a slice")
 	}
 
 	// Extract string values from the slice
 	var enumStrings []string
-	for i := 0; i < valuesSlice.Len(); i++ {
+	for i := range valuesSlice.Len() {
 		value := valuesSlice.Index(i)
 		enumStrings = append(enumStrings, value.String())
 	}
@@ -160,24 +145,11 @@ func buildEnumPatternInfos(fieldsByPattern map[string][]string) []EnumPatternInf
 	for pattern, values := range fieldsByPattern {
 		patterns = append(patterns, EnumPatternInfo{
 			Pattern: pattern,
-			Values:  formatEnumValues(values),
+			Values:  formatSliceToString(values),
 		})
 	}
 
 	return patterns
-}
-
-// getGroupingKey determines the grouping key for organizing patterns
-func getGroupingKeyEnum(pattern string) string {
-	parts := strings.Split(pattern, ".")
-
-	// Group resources by their resource type (e.g., "resources.jobs")
-	if parts[0] == "resources" && len(parts) > 1 {
-		return parts[0] + "." + parts[1]
-	}
-
-	// Use the top level key for other fields
-	return parts[0]
 }
 
 // groupPatternsByKey groups patterns by their logical grouping key
@@ -185,7 +157,7 @@ func groupPatternsByKeyEnum(patterns []EnumPatternInfo) map[string][]EnumPattern
 	groupedPatterns := make(map[string][]EnumPatternInfo)
 
 	for _, pattern := range patterns {
-		key := getGroupingKeyEnum(pattern.Pattern)
+		key := getGroupingKey(pattern.Pattern)
 		groupedPatterns[key] = append(groupedPatterns[key], pattern)
 	}
 
