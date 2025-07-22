@@ -72,7 +72,9 @@ Resources:
     "database_instances": {
       "my_database": {
         "capacity": "CU_1",
+        "modified_status": "created",
         "name": "test-database-instance-[UNIQUE_NAME]",
+        "permissions": [],
         "url": "[DATABRICKS_URL]/compute/database-instances/test-database-instance-[UNIQUE_NAME]?o=[NUMID]"
       }
     }
