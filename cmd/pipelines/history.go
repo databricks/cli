@@ -26,9 +26,6 @@ func historyCommand() *cobra.Command {
 	wrappedCmd := cmdgroup.NewCommandWithGroupFlag(cmd)
 	wrappedCmd.AddFlagGroup(historyGroup)
 
-	var jsonOutput bool
-	cmd.Flags().BoolVar(&jsonOutput, "json", false, "Output as JSON response.")
-
 	cmd.PreRunE = root.MustWorkspaceClient
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
@@ -54,16 +51,10 @@ func historyCommand() *cobra.Command {
 			return err
 		}
 
-		if jsonOutput {
-			return cmdio.Render(ctx, response)
-		}
-
-		return cmdio.RenderWithTemplate(ctx, response, "Updates Summary (run with --json to see full response)", `{{range .Updates}}Update ID: {{.UpdateId}}
+		return cmdio.RenderWithTemplate(ctx, response, "Updates Summary (run with --output json to see full response)", `{{range .Updates}}Update ID: {{.UpdateId}}
    State: {{.State}}
-   {{if .Cause}}Cause: {{.Cause}}
-   {{end}}
-   {{if .FullRefresh}}Full Refresh: {{.FullRefresh}}
-   {{end}}
+   {{if .Cause}}Cause: {{.Cause}}{{end}}
+   {{if .CreationTime}}Creation Time: {{.CreationTime}}{{end}}
 {{end}}`)
 	}
 
