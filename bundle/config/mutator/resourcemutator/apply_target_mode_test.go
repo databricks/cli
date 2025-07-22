@@ -335,7 +335,7 @@ func TestAllNonUcResourcesAreRenamed(t *testing.T) {
 				resourceType := resources.Type().Field(i).Name
 
 				// Skip resources that are not renamed
-				if resourceType == "Apps" || resourceType == "SecretScopes" {
+				if resourceType == "Apps" || resourceType == "SecretScopes" || resourceType == "DatabaseInstances" {
 					continue
 				}
 
