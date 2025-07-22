@@ -51,10 +51,14 @@ func historyCommand() *cobra.Command {
 			return err
 		}
 
-		return cmdio.RenderWithTemplate(ctx, response, "Updates Summary (run with --output json to see full response)", `{{range .Updates}}Update ID: {{.UpdateId}}
-   State: {{.State}}
-   {{if .Cause}}Cause: {{.Cause}}{{end}}
-   {{if .CreationTime}}Creation Time: {{.CreationTime}}{{end}}
+		return cmdio.RenderWithTemplate(ctx, response, fmt.Sprintf("Updates summary for pipeline %s", pipelineId),
+			`{{range .Updates}}Update ID: {{.UpdateId}}
+     State: {{.State}}
+     Cause: {{.Cause}}
+     Creation Time: {{.CreationTime}}
+     Full Refresh: {{.FullRefresh}}
+     Validate Only: {{.ValidateOnly}}
+	 
 {{end}}`)
 	}
 
