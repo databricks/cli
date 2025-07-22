@@ -2,6 +2,7 @@ package resources
 
 import (
 	"context"
+	"github.com/databricks/cli/libs/log"
 	"net/url"
 
 	"github.com/databricks/databricks-sdk-go"
@@ -14,9 +15,13 @@ type DatabaseInstance struct {
 	database.DatabaseInstance
 }
 
-func (d *DatabaseInstance) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {
-	// TODO implement me
-	panic("implement me: Exists")
+func (d *DatabaseInstance) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {
+	_, err := w.Database.GetDatabaseInstance(ctx, database.GetDatabaseInstanceRequest{Name: name})
+	if err != nil {
+		log.Debugf(ctx, "database instance %s does not exist", name)
+		return false, err
+	}
+	return true, nil
 }
 
 func (d *DatabaseInstance) ResourceDescription() ResourceDescription {
