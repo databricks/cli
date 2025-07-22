@@ -23,8 +23,10 @@ type DatabaseInstancePermission struct {
 }
 
 type DatabaseInstance struct {
-	URL         string                       `json:"url,omitempty" bundle:"internal"`
-	Permissions []DatabaseInstancePermission `json:"permissions,omitempty"`
+	ID             string                       `json:"id,omitempty" bundle:"readonly"`
+	URL            string                       `json:"url,omitempty" bundle:"internal"`
+	Permissions    []DatabaseInstancePermission `json:"permissions,omitempty"`
+	ModifiedStatus ModifiedStatus               `json:"modified_status,omitempty" bundle:"internal"`
 
 	database.DatabaseInstance
 }
