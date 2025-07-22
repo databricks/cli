@@ -9,6 +9,9 @@ import (
 
 // EnumFields maps [dyn.Pattern] to valid enum values they should have.
 var EnumFields = map[string][]string{
+	"artifacts.*.executable": {"bash", "sh", "cmd"},
+	"artifacts.*.type": {"whl"},
+
 	"resources.apps.*.active_deployment.mode": {"AUTO_SYNC", "SNAPSHOT"},
 	"resources.apps.*.active_deployment.status.state": {"CANCELLED", "FAILED", "IN_PROGRESS", "SUCCEEDED"},
 	"resources.apps.*.app_status.state": {"CRASHED", "DEPLOYING", "RUNNING", "UNAVAILABLE"},
@@ -128,4 +131,6 @@ var EnumFields = map[string][]string{
 	"resources.sql_warehouses.*.warehouse_type": {"CLASSIC", "PRO", "TYPE_UNSPECIFIED"},
 
 	"resources.volumes.*.volume_type": {"EXTERNAL", "MANAGED"},
+
+	"variables.*.type": {"complex"},
 }
