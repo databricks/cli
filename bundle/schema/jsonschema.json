@@ -616,7 +616,20 @@
                 ]
               },
               "resources.DatabaseInstancePermissionLevel": {
-                "type": "string"
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "CAN_CREATE",
+                      "CAN_USE",
+                      "CAN_MANAGE"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
               },
               "resources.Grant": {
                 "oneOf": [
