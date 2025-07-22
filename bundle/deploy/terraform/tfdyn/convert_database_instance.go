@@ -2,6 +2,7 @@ package tfdyn
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/databricks/cli/bundle/internal/tf/schema"
 	"github.com/databricks/cli/libs/dyn"
@@ -19,6 +20,12 @@ func (d databaseInstanceConverter) Convert(ctx context.Context, key string, vin 
 		log.Debugf(ctx, "database instance normalization diagnostic: %s", diag.Summary)
 	}
 	out.DatabaseInstance[key] = vout.AsAny()
+
+	// Configure permissions for this resource.
+	if permissions := convertPermissionsResource(ctx, vin); permissions != nil {
+		permissions.DatabaseInstanceName = fmt.Sprintf("${databricks_database_instance.%s.name}", key)
+		out.Permissions["database_instance_"+key] = permissions
+	}
 
 	return nil
 }
