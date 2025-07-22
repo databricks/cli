@@ -326,6 +326,11 @@ var renderFuncMap = template.FuncMap{
 	"pretty_date": func(t time.Time) string {
 		return t.Format("2006-01-02T15:04:05Z")
 	},
+	"pretty_date_from_millis": func(millis int64) string {
+		// Convert milliseconds since epoch to time.Time
+		t := time.Unix(0, millis*int64(time.Millisecond))
+		return t.Format("2006-01-02T15:04:05Z")
+	},
 	"b64_encode": func(in string) (string, error) {
 		var out bytes.Buffer
 		enc := base64.NewEncoder(base64.StdEncoding, &out)
