@@ -2,10 +2,11 @@ package resourcemutator
 
 import (
 	"context"
-	"github.com/databricks/databricks-sdk-go/service/database"
 	"reflect"
 	"slices"
 	"testing"
+
+	"github.com/databricks/databricks-sdk-go/service/database"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
