@@ -509,6 +509,9 @@ github.com/databricks/cli/bundle/config/resources.DatabaseInstance:
   "parent_instance_ref":
     "description": |-
       PLACEHOLDER
+  "permissions":
+    "description": |-
+      PLACEHOLDER
   "pg_version":
     "description": |-
       PLACEHOLDER
@@ -528,6 +531,19 @@ github.com/databricks/cli/bundle/config/resources.DatabaseInstance:
     "description": |-
       PLACEHOLDER
   "uid":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.DatabaseInstancePermission:
+  "group_name":
+    "description": |-
+      PLACEHOLDER
+  "level":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "user_name":
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.Grant:
