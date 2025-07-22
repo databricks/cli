@@ -3,6 +3,7 @@ package config
 import (
 	"context"
 	"encoding/json"
+	"github.com/databricks/databricks-sdk-go/service/database"
 	"reflect"
 	"strings"
 	"testing"
@@ -178,6 +179,11 @@ func TestResourcesBindSupport(t *testing.T) {
 				CreateWarehouseRequest: sql.CreateWarehouseRequest{},
 			},
 		},
+		DatabaseInstances: map[string]*resources.DatabaseInstance{
+			"my_database_instance": {
+				DatabaseInstance: database.DatabaseInstance{},
+			},
+		},
 	}
 	unbindableResources := map[string]bool{"model": true}
 
@@ -198,6 +204,7 @@ func TestResourcesBindSupport(t *testing.T) {
 		{Name: "0"},
 	}, nil)
 	m.GetMockWarehousesAPI().EXPECT().GetById(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockDatabaseAPI().EXPECT().GetDatabaseInstance(mock.Anything, mock.Anything).Return(nil, nil)
 
 	allResources := supportedResources.AllResources()
 	for _, group := range allResources {
