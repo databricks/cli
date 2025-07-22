@@ -2,15 +2,29 @@ package resources
 
 import (
 	"context"
-	"github.com/databricks/cli/libs/log"
 	"net/url"
+
+	"github.com/databricks/cli/libs/log"
 
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/database"
 )
 
+type DatabaseInstancePermissionLevel string
+
+// DatabaseInstancePermission holds the permission level setting for a single principal.
+// Multiple of these can be defined on any database instance.
+type DatabaseInstancePermission struct {
+	Level DatabaseInstancePermissionLevel `json:"level"`
+
+	UserName             string `json:"user_name,omitempty"`
+	ServicePrincipalName string `json:"service_principal_name,omitempty"`
+	GroupName            string `json:"group_name,omitempty"`
+}
+
 type DatabaseInstance struct {
-	URL string `json:"url,omitempty" bundle:"internal"`
+	URL         string                       `json:"url,omitempty" bundle:"internal"`
+	Permissions []DatabaseInstancePermission `json:"permissions,omitempty"`
 
 	database.DatabaseInstance
 }
