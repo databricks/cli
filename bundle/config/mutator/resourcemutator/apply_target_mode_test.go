@@ -2,6 +2,7 @@ package resourcemutator
 
 import (
 	"context"
+	"github.com/databricks/databricks-sdk-go/service/database"
 	"reflect"
 	"slices"
 	"testing"
@@ -164,6 +165,13 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 					"sql_warehouse1": {
 						CreateWarehouseRequest: sql.CreateWarehouseRequest{
 							Name: "sql_warehouse1",
+						},
+					},
+				},
+				DatabaseInstances: map[string]*resources.DatabaseInstance{
+					"database_instance1": {
+						DatabaseInstance: database.DatabaseInstance{
+							Name: "database_instance1",
 						},
 					},
 				},
