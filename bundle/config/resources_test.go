@@ -3,10 +3,11 @@ package config
 import (
 	"context"
 	"encoding/json"
-	"github.com/databricks/databricks-sdk-go/service/database"
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/databricks/databricks-sdk-go/service/database"
 
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
