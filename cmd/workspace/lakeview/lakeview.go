@@ -153,17 +153,26 @@ func newCreateSchedule() *cobra.Command {
 	cmd.Flags().Var(&createScheduleReq.Schedule.PauseStatus, "pause-status", `The status indicates whether this schedule is paused or not. Supported values: [PAUSED, UNPAUSED]`)
 	cmd.Flags().StringVar(&createScheduleReq.Schedule.WarehouseId, "warehouse-id", createScheduleReq.Schedule.WarehouseId, `The warehouse id to run the dashboard with for the schedule.`)
 
-	cmd.Use = "create-schedule DASHBOARD_ID"
+	cmd.Use = "create-schedule DASHBOARD_ID CRON_SCHEDULE"
 	cmd.Short = `Create dashboard schedule.`
 	cmd.Long = `Create dashboard schedule.
 
   Arguments:
-    DASHBOARD_ID: UUID identifying the dashboard to which the schedule belongs.`
+    DASHBOARD_ID: UUID identifying the dashboard to which the schedule belongs.
+    CRON_SCHEDULE: The cron expression describing the frequency of the periodic refresh for
+      this schedule.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(1)
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(1)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, provide only DASHBOARD_ID as positional arguments. Provide 'cron_schedule' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(2)
 		return check(cmd, args)
 	}
 
@@ -183,10 +192,14 @@ func newCreateSchedule() *cobra.Command {
 					return err
 				}
 			}
-		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 		createScheduleReq.DashboardId = args[0]
+		if !cmd.Flags().Changed("json") {
+			_, err = fmt.Sscan(args[1], &createScheduleReq.Schedule.CronSchedule)
+			if err != nil {
+				return fmt.Errorf("invalid CRON_SCHEDULE: %s", args[1])
+			}
+		}
 
 		response, err := w.Lakeview.CreateSchedule(ctx, createScheduleReq)
 		if err != nil {
@@ -225,18 +238,27 @@ func newCreateSubscription() *cobra.Command {
 
 	cmd.Flags().Var(&createSubscriptionJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Use = "create-subscription DASHBOARD_ID SCHEDULE_ID"
+	cmd.Use = "create-subscription DASHBOARD_ID SCHEDULE_ID SUBSCRIBER"
 	cmd.Short = `Create schedule subscription.`
 	cmd.Long = `Create schedule subscription.
 
   Arguments:
     DASHBOARD_ID: UUID identifying the dashboard to which the subscription belongs.
-    SCHEDULE_ID: UUID identifying the schedule to which the subscription belongs.`
+    SCHEDULE_ID: UUID identifying the schedule to which the subscription belongs.
+    SUBSCRIBER: Subscriber details for users and destinations to be added as subscribers
+      to the schedule.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(2)
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(2)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, provide only DASHBOARD_ID, SCHEDULE_ID as positional arguments. Provide 'subscriber' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(3)
 		return check(cmd, args)
 	}
 
@@ -256,11 +278,15 @@ func newCreateSubscription() *cobra.Command {
 					return err
 				}
 			}
-		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 		createSubscriptionReq.DashboardId = args[0]
 		createSubscriptionReq.ScheduleId = args[1]
+		if !cmd.Flags().Changed("json") {
+			_, err = fmt.Sscan(args[2], &createSubscriptionReq.Subscription.Subscriber)
+			if err != nil {
+				return fmt.Errorf("invalid SUBSCRIBER: %s", args[2])
+			}
+		}
 
 		response, err := w.Lakeview.CreateSubscription(ctx, createSubscriptionReq)
 		if err != nil {
@@ -1154,18 +1180,27 @@ func newUpdateSchedule() *cobra.Command {
 	cmd.Flags().Var(&updateScheduleReq.Schedule.PauseStatus, "pause-status", `The status indicates whether this schedule is paused or not. Supported values: [PAUSED, UNPAUSED]`)
 	cmd.Flags().StringVar(&updateScheduleReq.Schedule.WarehouseId, "warehouse-id", updateScheduleReq.Schedule.WarehouseId, `The warehouse id to run the dashboard with for the schedule.`)
 
-	cmd.Use = "update-schedule DASHBOARD_ID SCHEDULE_ID"
+	cmd.Use = "update-schedule DASHBOARD_ID SCHEDULE_ID CRON_SCHEDULE"
 	cmd.Short = `Update dashboard schedule.`
 	cmd.Long = `Update dashboard schedule.
 
   Arguments:
     DASHBOARD_ID: UUID identifying the dashboard to which the schedule belongs.
-    SCHEDULE_ID: UUID identifying the schedule.`
+    SCHEDULE_ID: UUID identifying the schedule.
+    CRON_SCHEDULE: The cron expression describing the frequency of the periodic refresh for
+      this schedule.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(2)
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(2)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, provide only DASHBOARD_ID, SCHEDULE_ID as positional arguments. Provide 'cron_schedule' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(3)
 		return check(cmd, args)
 	}
 
@@ -1185,11 +1220,15 @@ func newUpdateSchedule() *cobra.Command {
 					return err
 				}
 			}
-		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 		updateScheduleReq.DashboardId = args[0]
 		updateScheduleReq.ScheduleId = args[1]
+		if !cmd.Flags().Changed("json") {
+			_, err = fmt.Sscan(args[2], &updateScheduleReq.Schedule.CronSchedule)
+			if err != nil {
+				return fmt.Errorf("invalid CRON_SCHEDULE: %s", args[2])
+			}
+		}
 
 		response, err := w.Lakeview.UpdateSchedule(ctx, updateScheduleReq)
 		if err != nil {
