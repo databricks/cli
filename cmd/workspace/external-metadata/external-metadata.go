@@ -363,7 +363,7 @@ func newUpdateExternalMetadata() *cobra.Command {
 	// TODO: map via StringToStringVar: properties
 	cmd.Flags().StringVar(&updateExternalMetadataReq.ExternalMetadata.Url, "url", updateExternalMetadataReq.ExternalMetadata.Url, `URL associated with the external metadata object.`)
 
-	cmd.Use = "update-external-metadata NAME SYSTEM_TYPE ENTITY_TYPE"
+	cmd.Use = "update-external-metadata NAME UPDATE_MASK SYSTEM_TYPE ENTITY_TYPE"
 	cmd.Short = `Update an external metadata object.`
 	cmd.Long = `Update an external metadata object.
   
@@ -375,6 +375,17 @@ func newUpdateExternalMetadata() *cobra.Command {
 
   Arguments:
     NAME: Name of the external metadata object.
+    UPDATE_MASK: The field mask must be a single string, with multiple fields separated by
+      commas (no spaces). The field path is relative to the resource object,
+      using a dot (.) to navigate sub-fields (e.g., author.given_name).
+      Specification of elements in sequence or map fields is not allowed, as
+      only the entire collection field can be specified. Field names must
+      exactly match the resource field names.
+      
+      A field mask of * indicates full replacement. It’s recommended to
+      always explicitly list the fields being updated and avoid using *
+      wildcards, as it can lead to unintended results if the API changes in the
+      future.
     SYSTEM_TYPE: Type of external system. 
       Supported values: [
         AMAZON_REDSHIFT,
@@ -412,7 +423,7 @@ func newUpdateExternalMetadata() *cobra.Command {
 			}
 			return nil
 		}
-		check := root.ExactArgs(3)
+		check := root.ExactArgs(4)
 		return check(cmd, args)
 	}
 
@@ -434,14 +445,15 @@ func newUpdateExternalMetadata() *cobra.Command {
 			}
 		}
 		updateExternalMetadataReq.Name = args[0]
+		updateExternalMetadataReq.UpdateMask = args[1]
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[1], &updateExternalMetadataReq.ExternalMetadata.SystemType)
+			_, err = fmt.Sscan(args[2], &updateExternalMetadataReq.ExternalMetadata.SystemType)
 			if err != nil {
-				return fmt.Errorf("invalid SYSTEM_TYPE: %s", args[1])
+				return fmt.Errorf("invalid SYSTEM_TYPE: %s", args[2])
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			updateExternalMetadataReq.ExternalMetadata.EntityType = args[2]
+			updateExternalMetadataReq.ExternalMetadata.EntityType = args[3]
 		}
 
 		response, err := w.ExternalMetadata.UpdateExternalMetadata(ctx, updateExternalMetadataReq)

@@ -70,14 +70,30 @@ func newCreateExternalLineageRelationship() *cobra.Command {
 	// TODO: array: columns
 	// TODO: map via StringToStringVar: properties
 
-	cmd.Use = "create-external-lineage-relationship"
+	cmd.Use = "create-external-lineage-relationship SOURCE TARGET"
 	cmd.Short = `Create an external lineage relationship.`
 	cmd.Long = `Create an external lineage relationship.
   
   Creates an external lineage relationship between a Databricks or external
-  metadata object and another external metadata object.`
+  metadata object and another external metadata object.
+
+  Arguments:
+    SOURCE: Source object of the external lineage relationship.
+    TARGET: Target object of the external lineage relationship.`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'source', 'target' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -95,8 +111,18 @@ func newCreateExternalLineageRelationship() *cobra.Command {
 					return err
 				}
 			}
-		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+		}
+		if !cmd.Flags().Changed("json") {
+			_, err = fmt.Sscan(args[0], &createExternalLineageRelationshipReq.ExternalLineageRelationship.Source)
+			if err != nil {
+				return fmt.Errorf("invalid SOURCE: %s", args[0])
+			}
+		}
+		if !cmd.Flags().Changed("json") {
+			_, err = fmt.Sscan(args[1], &createExternalLineageRelationshipReq.ExternalLineageRelationship.Target)
+			if err != nil {
+				return fmt.Errorf("invalid TARGET: %s", args[1])
+			}
 		}
 
 		response, err := w.ExternalLineage.CreateExternalLineageRelationship(ctx, createExternalLineageRelationshipReq)
@@ -269,14 +295,41 @@ func newUpdateExternalLineageRelationship() *cobra.Command {
 	// TODO: array: columns
 	// TODO: map via StringToStringVar: properties
 
-	cmd.Use = "update-external-lineage-relationship"
+	cmd.Use = "update-external-lineage-relationship UPDATE_MASK SOURCE TARGET"
 	cmd.Short = `Update an external lineage relationship.`
 	cmd.Long = `Update an external lineage relationship.
   
   Updates an external lineage relationship between a Databricks or external
-  metadata object and another external metadata object.`
+  metadata object and another external metadata object.
+
+  Arguments:
+    UPDATE_MASK: The field mask must be a single string, with multiple fields separated by
+      commas (no spaces). The field path is relative to the resource object,
+      using a dot (.) to navigate sub-fields (e.g., author.given_name).
+      Specification of elements in sequence or map fields is not allowed, as
+      only the entire collection field can be specified. Field names must
+      exactly match the resource field names.
+      
+      A field mask of * indicates full replacement. It’s recommended to
+      always explicitly list the fields being updated and avoid using *
+      wildcards, as it can lead to unintended results if the API changes in the
+      future.
+    SOURCE: Source object of the external lineage relationship.
+    TARGET: Target object of the external lineage relationship.`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'source', 'target' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(3)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -294,8 +347,19 @@ func newUpdateExternalLineageRelationship() *cobra.Command {
 					return err
 				}
 			}
-		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+		}
+		updateExternalLineageRelationshipReq.UpdateMask = args[0]
+		if !cmd.Flags().Changed("json") {
+			_, err = fmt.Sscan(args[1], &updateExternalLineageRelationshipReq.ExternalLineageRelationship.Source)
+			if err != nil {
+				return fmt.Errorf("invalid SOURCE: %s", args[1])
+			}
+		}
+		if !cmd.Flags().Changed("json") {
+			_, err = fmt.Sscan(args[2], &updateExternalLineageRelationshipReq.ExternalLineageRelationship.Target)
+			if err != nil {
+				return fmt.Errorf("invalid TARGET: %s", args[2])
+			}
 		}
 
 		response, err := w.ExternalLineage.UpdateExternalLineageRelationship(ctx, updateExternalLineageRelationshipReq)
