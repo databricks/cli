@@ -1,0 +1,39 @@
+
+>>> [CLI] bundle validate
+Name: deploy-lakebase-catalog-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-catalog-[UNIQUE_NAME]/default
+
+Validation OK!
+
+>>> [CLI] bundle summary
+Name: deploy-lakebase-catalog-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-catalog-[UNIQUE_NAME]/default
+Resources:
+  Database catalogs:
+    my_catalog:
+      Name: my_catalog_[UNIQUE_NAME]
+  Database instances:
+    my_instance:
+      Name: test-database-instance-[UNIQUE_NAME]
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-catalog-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Creating catalog with name=my_catalog_[UNIQUE_NAME]Error: deploying database_catalogs.my_catalog: creating: Method=Database.CreateDatabaseCatalog *retries.Err *apierr.APIError StatusCode=400 ErrorCode="BAD_REQUEST" Message="Database instance is not found."
+
+Updating deployment state...
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-catalog-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Creating catalog with name=my_catalog_[UNIQUE_NAME]Error: deploying database_catalogs.my_catalog: creating: Method=Database.CreateDatabaseCatalog *retries.Err *apierr.APIError StatusCode=400 ErrorCode="BAD_REQUEST" Message="Database instance is not found."
+
+Updating deployment state...
+
+Exit code: 1
