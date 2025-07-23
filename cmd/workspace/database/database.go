@@ -1265,17 +1265,25 @@ func newUpdateDatabaseInstance() *cobra.Command {
 	cmd.Flags().IntVar(&updateDatabaseInstanceReq.DatabaseInstance.RetentionWindowInDays, "retention-window-in-days", updateDatabaseInstanceReq.DatabaseInstance.RetentionWindowInDays, `The retention window for the instance.`)
 	cmd.Flags().BoolVar(&updateDatabaseInstanceReq.DatabaseInstance.Stopped, "stopped", updateDatabaseInstanceReq.DatabaseInstance.Stopped, `Whether the instance is stopped.`)
 
-	cmd.Use = "update-database-instance NAME"
+	cmd.Use = "update-database-instance NAME UPDATE_MASK"
 	cmd.Short = `Update a Database Instance.`
 	cmd.Long = `Update a Database Instance.
 
   Arguments:
-    NAME: The name of the instance. This is the unique identifier for the instance.`
+    NAME: The name of the instance. This is the unique identifier for the instance.
+    UPDATE_MASK: The list of fields to update.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(1)
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(1)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, provide only NAME as positional arguments. Provide 'name' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(2)
 		return check(cmd, args)
 	}
 
@@ -1297,6 +1305,7 @@ func newUpdateDatabaseInstance() *cobra.Command {
 			}
 		}
 		updateDatabaseInstanceReq.Name = args[0]
+		updateDatabaseInstanceReq.UpdateMask = args[1]
 
 		response, err := w.Database.UpdateDatabaseInstance(ctx, updateDatabaseInstanceReq)
 		if err != nil {
