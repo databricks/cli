@@ -2,6 +2,7 @@ package tnresources
 
 import (
 	"context"
+
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/structdiff"
