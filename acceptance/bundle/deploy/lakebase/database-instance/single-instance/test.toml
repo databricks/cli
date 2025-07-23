@@ -8,3 +8,5 @@ CloudEnvs.gcp = false # lakebase is not available in GCP as of July 2025
 Ignore = [
     "databricks.yml",
 ]
+
+EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["direct-exp"]
