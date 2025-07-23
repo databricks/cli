@@ -3,7 +3,17 @@
 ## Release v0.261.0
 
 ### Notable Changes
-Some of CLI commands such as "update-alert" and etc. now have a required positional argument "UPDATE_MASK"
+The following CLI commands now have a required positional argument "UPDATE_MASK":
+* `alerts update` - Update an alert
+* `alerts-v2 update-alert` - Update an alert (v2)
+* `clusters update` - Update a cluster
+* `database update-database-instance` - Update a database instance
+* `external-lineage update-external-lineage-relationship` - Update an external lineage relationship
+* `external-metadata update-external-metadata` - Update external metadata
+* `feature-store update-online-store` - Update an online store
+* `network-connectivity update-private-endpoint-rule` - Update a private endpoint rule
+* `queries update` - Update a query
+* `query-visualizations update` - Update a query visualization
 
 ### Dependency updates
 
