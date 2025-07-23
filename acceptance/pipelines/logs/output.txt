@@ -5,6 +5,12 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
+=== Calling logs without PIPELINE_ID should return an error
+>>> errcode [PIPELINES] logs
+Error: Provide a PIPELINE_ID.
+
+Exit code: 1
+
 === Test pipelines logs, will be empty but shows the request to get events
 >>> [PIPELINES] logs [UUID]
 []
