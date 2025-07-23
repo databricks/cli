@@ -22,5 +22,6 @@ The following CLI commands now have additional required positional arguments:
 
 ### Bundles
 * Fixed an issue where `allow_duplicate_names` field on the pipeline definition was ignored by the bundle ([#3274](https://github.com/databricks/cli/pull/3274))
+* Add warning for when required bundle fields are not set ([#3044](https://github.com/databricks/cli/pull/3044))
 
 ### API Changes
