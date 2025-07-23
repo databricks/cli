@@ -1,6 +1,7 @@
 Local = false
 Cloud = true
 
+RequiresUnityCatalog = true
 RecordRequests = false
 
 Ignore = [

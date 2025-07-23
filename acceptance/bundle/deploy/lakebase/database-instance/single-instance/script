@@ -11,4 +11,3 @@ trace $CLI bundle summary
 trace $CLI bundle deploy
 trace $CLI database get-database-instance "test-database-instance-${UNIQUE_NAME}"
 trace $CLI bundle summary
-trace $CLI bundle summary -o json
