@@ -13,21 +13,38 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// buildFieldFilter creates a SQL filter condition for a field with multiple possible values.
-// It generates either "field = 'value'" for single values or "field in ('value1', 'value2')" for multiple values.
-// This is used to build filter strings for the Databricks Pipelines API.
+// buildFieldFilter creates a SQL filter condition for a field with multiple possible values,
+// generating "field in ('value1')" for a single value or "field in ('value1', 'value2')" for multiple values.
 func buildFieldFilter(field string, values []string) string {
 	if len(values) == 0 {
 		return ""
 	}
-	if len(values) == 1 {
-		return fmt.Sprintf("%s = '%s'", field, values[0])
+
+	quotedValues := "'" + strings.Join(values, "', '") + "'"
+	return fmt.Sprintf("%s in (%s)", field, quotedValues)
+}
+
+// buildPipelineEventFilter constructs a SQL filter string for pipeline events based on the provided parameters.
+func buildPipelineEventFilter(updateId string, levels, eventTypes []string) string {
+	var filterParts []string
+
+	if updateId != "" {
+		filterParts = append(filterParts, fmt.Sprintf("update_id = '%s'", updateId))
 	}
-	valuesWithQuotes := make([]string, len(values))
-	for i, value := range values {
-		valuesWithQuotes[i] = fmt.Sprintf("'%s'", value)
+
+	if levelFilter := buildFieldFilter("level", levels); levelFilter != "" {
+		filterParts = append(filterParts, levelFilter)
 	}
-	return fmt.Sprintf("%s in (%s)", field, strings.Join(valuesWithQuotes, ", "))
+
+	if typeFilter := buildFieldFilter("event_type", eventTypes); typeFilter != "" {
+		filterParts = append(filterParts, typeFilter)
+	}
+
+	if len(filterParts) > 0 {
+		return strings.Join(filterParts, " AND ")
+	}
+
+	return ""
 }
 
 func logsCommand() *cobra.Command {
@@ -37,8 +54,8 @@ func logsCommand() *cobra.Command {
 		Long: `Retrieve events for the pipeline identified by PIPELINE_ID, a unique identifier for the pipeline.
 
 Example usage:
-  1. pipelines logs pipeline-123 --update-id update-123
-  2. pipelines logs pipeline-123 --level ERROR --level METRIC --event-type update_progress`,
+  1. pipelines logs my-pipeline --update-id update-1
+  2. pipelines logs my-pipeline --level ERROR,METRICS --event-type update_progress`,
 	}
 
 	var updateId string
@@ -48,8 +65,8 @@ Example usage:
 
 	filterGroup := cmdgroup.NewFlagGroup("Event Filter")
 	filterGroup.FlagSet().StringVar(&updateId, "update-id", "", "Filter events by update ID.")
-	filterGroup.FlagSet().StringSliceVar(&levels, "level", nil, "Filter events by log level (INFO, WARN, ERROR, METRIC). Can be specified multiple times.")
-	filterGroup.FlagSet().StringSliceVar(&eventTypes, "event-type", nil, "Filter events by event type. Can be specified multiple times.")
+	filterGroup.FlagSet().StringSliceVar(&levels, "level", nil, "Filter events by list of log levels (INFO, WARN, ERROR, METRICS). ")
+	filterGroup.FlagSet().StringSliceVar(&eventTypes, "event-type", nil, "Filter events by list of event types.")
 	filterGroup.FlagSet().IntVar(&maxResults, "max-results", 100, "Max number of events to return.")
 
 	wrappedCmd := cmdgroup.NewCommandWithGroupFlag(cmd)
@@ -70,23 +87,7 @@ Example usage:
 
 		pipelineId := args[0]
 
-		var filterParts []string
-		if updateId != "" {
-			filterParts = append(filterParts, fmt.Sprintf("update_id = '%s'", updateId))
-		}
-
-		if levelFilter := buildFieldFilter("level", levels); levelFilter != "" {
-			filterParts = append(filterParts, levelFilter)
-		}
-
-		if typeFilter := buildFieldFilter("event_type", eventTypes); typeFilter != "" {
-			filterParts = append(filterParts, typeFilter)
-		}
-
-		var filter string
-		if len(filterParts) > 0 {
-			filter = strings.Join(filterParts, " AND ")
-		}
+		filter := buildPipelineEventFilter(updateId, levels, eventTypes)
 
 		req := pipelines.ListPipelineEventsRequest{
 			PipelineId: pipelineId,
@@ -94,7 +95,7 @@ Example usage:
 			MaxResults: maxResults,
 		}
 
-		// TODO: look into getting events with a different, unpaginated function to support OrderBy parameter
+		// TODO: change function to one that is unpaginated, so it supports the OrderBy parameter
 		response := w.Pipelines.ListPipelineEvents(ctx, req)
 		return cmdio.RenderIterator(ctx, response)
 	}
