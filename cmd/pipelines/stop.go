@@ -59,7 +59,7 @@ func stopCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "stop [KEY]",
 		Short: "Stop a pipeline",
-		Long: `Stop the pipeline in the middle of a run identified by KEY.
+		Long: `Stop the pipeline if it's running, identified by KEY.
 KEY is the unique name of the pipeline to stop, as defined in its YAML file.
 If there is only one pipeline in the project, KEY is optional and the pipeline will be auto-selected.`,
 	}
