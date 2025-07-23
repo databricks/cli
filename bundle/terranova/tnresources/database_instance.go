@@ -57,9 +57,8 @@ func (d ResourceDatabaseInstance) WaitAfterCreate(ctx context.Context) error {
 		cmdio.LogString(ctx, fmt.Sprintf("Database instance status: %s", resp.State))
 
 		if resp.State == database.DatabaseInstanceStateAvailable {
-
-	return nil
-}
+			return nil
+		}
 
 		time.Sleep(1 * time.Second)
 	}
