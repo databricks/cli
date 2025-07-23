@@ -7,7 +7,10 @@ cleanup() {
 trap cleanup EXIT
 
 trace $CLI bundle validate
-trace $CLI bundle summary
+
+# URL is excluded because some cloud envs add an ?0= query param and some don't
+trace $CLI bundle summary | grep -v "URL"
 trace $CLI bundle deploy
-trace $CLI database get-database-instance "test-database-instance-${UNIQUE_NAME}"
-trace $CLI bundle summary
+# _dns fields are excluded since they differ between cloud envs
+trace $CLI database get-database-instance "test-database-instance-${UNIQUE_NAME}" | jq 'del(.read_only_dns, .read_write_dns)'
+trace $CLI bundle summary | grep -v "URL"
