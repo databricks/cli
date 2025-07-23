@@ -39,6 +39,11 @@ type TestConfig struct {
 	// If true, run this test when running with cloud env configured
 	Cloud *bool
 
+	// If true, run this test on a Databricks serverless repl.
+	// This helps test DABs in the workspace features like source linked deployments
+	// or reading git metadata using the repos API.
+	RunOnDBR *bool
+
 	// If true, run this test when running with cloud env configured and -short is not passed
 	// This also sets -tail when -v is passed.
 	CloudSlow *bool

@@ -1,0 +1,3 @@
+>>> Testing DbrRunner functionality
+Environment test: [UNIQUE_NAME]
+Test completed successfully

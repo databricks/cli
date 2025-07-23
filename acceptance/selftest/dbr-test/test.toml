@@ -1,0 +1,8 @@
+Local = false
+Cloud = true
+RunOnDBR = true
+RequiresCluster = false
+RequiresWarehouse = false
+
+[Env]
+DATABRICKS_CLI_DEPLOYMENT = "direct-exp"

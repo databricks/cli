@@ -1,0 +1,5 @@
+#!/bin/bash
+
+echo ">>> Testing DbrRunner functionality"
+echo "Environment test: $UNIQUE_NAME"
+echo "Test completed successfully"

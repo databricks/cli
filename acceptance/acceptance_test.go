@@ -32,6 +32,7 @@ import (
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/testdiff"
 	"github.com/databricks/cli/libs/utils"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/stretchr/testify/require"
 )
 
@@ -511,19 +512,55 @@ func runTest(t *testing.T,
 	ctx, cancelFunc := context.WithTimeout(context.Background(), timeout)
 	defer cancelFunc()
 	args := []string{"bash", "-euo", "pipefail", EntryPointScript}
-	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
 
-	cfg, user := internal.PrepareServerAndClient(t, config, LogRequests, tmpDir)
-	testdiff.PrepareReplacementsUser(t, &repls, user)
-	testdiff.PrepareReplacementsWorkspaceConfig(t, &repls, cfg)
+	// Check if we should use DbrRunner instead of LocalRunner
+	var runner internal.CmdRunner
+	if isTruePtr(config.RunOnDBR) {
+		cfg, user := internal.PrepareServerAndClient(t, config, LogRequests, tmpDir)
+		testdiff.PrepareReplacementsUser(t, &repls, user)
+		testdiff.PrepareReplacementsWorkspaceConfig(t, &repls, cfg)
 
-	cmd.Env = auth.ProcessEnv(cfg)
-	cmd.Env = append(cmd.Env, "UNIQUE_NAME="+uniqueName)
-	cmd.Env = append(cmd.Env, "TEST_TMP_DIR="+tmpDir)
+		w, err := databricks.NewWorkspaceClient(&databricks.Config{
+			Host:  cfg.Host,
+			Token: cfg.Token,
+		})
+		require.NoError(t, err)
+
+		runner = internal.NewDbrRunner(w)
+	} else {
+		runner = internal.NewLocalRunner(ctx)
+	}
+
+	runner.SetArgs(args)
+
+	// Only setup client if not already done for DbrRunner
+	if !isTruePtr(config.RunOnDBR) {
+		cfg, user := internal.PrepareServerAndClient(t, config, LogRequests, tmpDir)
+		testdiff.PrepareReplacementsUser(t, &repls, user)
+		testdiff.PrepareReplacementsWorkspaceConfig(t, &repls, cfg)
+	}
+
+	var env []string
+	cfg, _ := internal.PrepareServerAndClient(t, config, LogRequests, tmpDir)
+	if !isTruePtr(config.RunOnDBR) {
+		// For LocalRunner, inherit the non-auth environment variables.
+		env = auth.ProcessEnv(cfg)
+	} else {
+		// For DbrRunner, inherit only the auth environment variables. Since
+		// DBR has its own set of environment variables set, the variables we
+		// add here should be purely additive.
+		m := auth.Env(cfg)
+		for k, v := range m {
+			env = append(env, k+"="+v)
+		}
+	}
+
+	env = append(env, "UNIQUE_NAME="+uniqueName)
+	env = append(env, "TEST_TMP_DIR="+tmpDir)
 
 	// populate CLOUD_ENV_BASE
 	envBase := getCloudEnvBase(cloudEnv)
-	cmd.Env = append(cmd.Env, "CLOUD_ENV_BASE="+envBase)
+	env = append(env, "CLOUD_ENV_BASE="+envBase)
 	repls.Set(envBase, "[CLOUD_ENV_BASE]")
 
 	// Must be added PrepareReplacementsUser, otherwise conflicts with [USERNAME]
@@ -548,16 +585,16 @@ func runTest(t *testing.T,
 		}
 		err := os.MkdirAll(coverDir, os.ModePerm)
 		require.NoError(t, err)
-		cmd.Env = append(cmd.Env, "GOCOVERDIR="+coverDir)
+		env = append(env, "GOCOVERDIR="+coverDir)
 	}
 
 	for _, key := range utils.SortedKeys(config.Env) {
 		if hasKey(customEnv, key) {
 			// We want EnvMatrix to take precedence.
-			// Skip rather than relying on cmd.Env order, because this might interfere with replacements and substitutions.
+			// Skip rather than relying on env order, because this might interfere with replacements and substitutions.
 			continue
 		}
-		cmd.Env = addEnvVar(t, cmd.Env, &repls, key, config.Env[key], config.EnvRepl, false)
+		env = addEnvVar(t, env, &repls, key, config.Env[key], config.EnvRepl, false)
 	}
 
 	for _, keyvalue := range customEnv {
@@ -567,14 +604,14 @@ func runTest(t *testing.T,
 		value := items[1]
 		// Only add replacement by default if value is part of EnvMatrix with more than 1 option and length is 4 or more chars
 		// (to avoid matching "yes" and "no" values from template input parameters)
-		cmd.Env = addEnvVar(t, cmd.Env, &repls, key, value, config.EnvRepl, len(config.EnvMatrix[key]) > 1 && len(value) >= 4)
+		env = addEnvVar(t, env, &repls, key, value, config.EnvRepl, len(config.EnvMatrix[key]) > 1 && len(value) >= 4)
 	}
 
 	for filterInd, filterEnv := range envFilters {
 		filterEnvKey := strings.Split(filterEnv, "=")[0]
-		for ind := range cmd.Env {
+		for ind := range env {
 			// Search backwards, because the latest settings is what is actually applicable.
-			envPair := cmd.Env[len(cmd.Env)-1-ind]
+			envPair := env[len(env)-1-ind]
 			if strings.Split(envPair, "=")[0] == filterEnvKey {
 				if envPair == filterEnv {
 					break
@@ -587,24 +624,67 @@ func runTest(t *testing.T,
 
 	absDir, err := filepath.Abs(dir)
 	require.NoError(t, err)
-	cmd.Env = append(cmd.Env, "TESTDIR="+absDir)
-	cmd.Env = append(cmd.Env, "CLOUD_ENV="+cloudEnv)
-	cmd.Env = append(cmd.Env, "CURRENT_USER_NAME="+user.UserName)
-	cmd.Dir = tmpDir
+	env = append(env, "TESTDIR="+absDir)
+	env = append(env, "CLOUD_ENV="+cloudEnv)
+	if !isTruePtr(config.RunOnDBR) {
+		// Only add current user name for LocalRunner since DbrRunner handles this differently
+		_, user := internal.PrepareServerAndClient(t, config, LogRequests, tmpDir)
+		env = append(env, "CURRENT_USER_NAME="+user.UserName)
+	}
+
+	runner.SetEnv(env)
+	runner.SetDir(tmpDir)
 
 	outputPath := filepath.Join(tmpDir, "output.txt")
 	out, err := os.Create(outputPath)
 	require.NoError(t, err)
 	defer out.Close()
 
-	skipReason, err := runWithLog(t, cmd, out, tailOutput)
+	var skipReason string
+	var runErr error
+
+	if isTruePtr(config.RunOnDBR) {
+		// Run the test on DBR.
+		runErr = runner.Run()
+
+		// Fetch the output from the script execution.
+		if outputReader := runner.Output(); outputReader != nil {
+			_, copyErr := io.Copy(out, outputReader)
+			if copyErr != nil {
+				t.Logf("Error copying output: %v", copyErr)
+			}
+			outputReader.Close()
+		}
+
+		// Check for skip reasons in the output (simplified for DbrRunner)
+		if runErr == nil {
+			// Read the output file to check for skip reasons
+			if content, readErr := os.ReadFile(outputPath); readErr == nil {
+				lines := strings.Split(string(content), "\n")
+				for _, line := range lines {
+					if strings.HasPrefix(line, "SKIP_TEST") {
+						skipReason = line
+						break
+					}
+				}
+			}
+		}
+	} else {
+		// For LocalRunner, use the streaming output logic
+		skipReason, runErr = runWithLogRunner(t, ctx, runner.(*internal.LocalRunner), out, tailOutput)
+	}
 
 	if skipReason != "" {
 		t.Skip("Skipping based on output: " + skipReason)
 	}
 
-	// Include exit code in output (if non-zero)
-	formatOutput(out, err)
+	// Include exit code in output (if non-zero), following same logic as formatOutput
+	exitCode := runner.GetExitCode()
+	if exitCode != 0 {
+		fmt.Fprintf(out, "\nExit code: %d\n", exitCode)
+	} else if runErr != nil {
+		fmt.Fprintf(out, "\nError: %s\n", runErr)
+	}
 	require.NoError(t, out.Close())
 
 	printedRepls := false
@@ -979,6 +1059,72 @@ type LoggedRequest struct {
 
 func isTruePtr(value *bool) bool {
 	return value != nil && *value
+}
+
+func runWithLogRunner(t *testing.T, ctx context.Context, runner *internal.LocalRunner, out *os.File, tail bool) (string, error) {
+	processErrCh := make(chan error, 1)
+
+	start := time.Now()
+	err := runner.Start()
+	if err != nil {
+		return "", err
+	}
+
+	// Set up cancellation after Start() so we can access the actual process
+	cancelFunc := func() error {
+		processErrCh <- errors.New("Test script killed due to a timeout")
+		// Kill the process and close the writer, similar to original runWithLog
+		if process := runner.GetProcess(); process != nil {
+			_ = process.Kill()
+		}
+		if writer := runner.GetWriter(); writer != nil {
+			_ = writer.Close()
+		}
+		return nil
+	}
+	runner.SetCancelFunc(cancelFunc)
+
+	// Watch for context cancellation and trigger manual cancel
+	go func() {
+		<-ctx.Done()
+		cancelFunc()
+	}()
+
+	// Wait for completion in a goroutine, just like runWithLog
+	go func() {
+		processErrCh <- runner.Wait()
+	}()
+
+	mostRecentLine := ""
+	reader := bufio.NewReader(runner.Output())
+
+	for {
+		line, err := reader.ReadString('\n')
+		if tail {
+			msg := strings.TrimRight(line, "\n")
+			if len(msg) > 0 {
+				d := time.Since(start)
+				t.Logf("%2d.%03d %s", d/time.Second, (d%time.Second)/time.Millisecond, msg)
+			}
+		}
+		if len(line) > 0 {
+			mostRecentLine = line
+			_, err = out.WriteString(line)
+			require.NoError(t, err)
+		}
+		if err == io.EOF {
+			break
+		}
+		require.NoError(t, err)
+	}
+
+	mostRecentLine = strings.TrimRight(mostRecentLine, "\n")
+	skipReason := ""
+	if strings.HasPrefix(mostRecentLine, "SKIP_TEST") {
+		skipReason = mostRecentLine
+	}
+
+	return skipReason, <-processErrCh
 }
 
 func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool) (string, error) {
