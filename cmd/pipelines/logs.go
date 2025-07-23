@@ -36,12 +36,9 @@ func logsCommand() *cobra.Command {
 		Short: "Retrieve events for a pipeline",
 		Long: `Retrieve events for the pipeline identified by PIPELINE_ID, a unique identifier for the pipeline.
 
-Examples:
-  # Get all events for a pipeline and specific update ID
-    pipelines logs pipeline-123 --update-id update-123
-
-  # Get multiple log levels (ERROR and METRIC) for a specific event type (update_progress)
-    pipelines logs pipeline-123 --level ERROR --level METRIC --event-type update_progress`,
+Example usage:
+  1. pipelines logs pipeline-123 --update-id update-123
+  2. pipelines logs pipeline-123 --level ERROR --level METRIC --event-type update_progress`,
 	}
 
 	var updateId string
@@ -51,9 +48,9 @@ Examples:
 
 	filterGroup := cmdgroup.NewFlagGroup("Event Filter")
 	filterGroup.FlagSet().StringVar(&updateId, "update-id", "", "Filter events by update ID.")
-	filterGroup.FlagSet().StringSliceVar(&levels, "level", nil, "Filter events by log level (INFO, WARN, ERROR, METRIC, DEBUG). Can be specified multiple times.")
+	filterGroup.FlagSet().StringSliceVar(&levels, "level", nil, "Filter events by log level (INFO, WARN, ERROR, METRIC). Can be specified multiple times.")
 	filterGroup.FlagSet().StringSliceVar(&eventTypes, "event-type", nil, "Filter events by event type. Can be specified multiple times.")
-	filterGroup.FlagSet().IntVar(&maxResults, "max-results", 100, "Max number of entries to return in a single page (<= 1000).")
+	filterGroup.FlagSet().IntVar(&maxResults, "max-results", 100, "Max number of events to return.")
 
 	wrappedCmd := cmdgroup.NewCommandWithGroupFlag(cmd)
 	wrappedCmd.AddFlagGroup(filterGroup)
@@ -97,6 +94,7 @@ Examples:
 			MaxResults: maxResults,
 		}
 
+		// TODO: look into getting events with a different, unpaginated function to support OrderBy parameter
 		response := w.Pipelines.ListPipelineEvents(ctx, req)
 		return cmdio.RenderIterator(ctx, response)
 	}
