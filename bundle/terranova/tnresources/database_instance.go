@@ -2,9 +2,12 @@ package tnresources
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/structdiff"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/database"
@@ -43,7 +46,22 @@ func (d ResourceDatabaseInstance) DoUpdate(ctx context.Context, oldID string) (s
 }
 
 func (d ResourceDatabaseInstance) WaitAfterCreate(ctx context.Context) error {
-	return nil
+	for {
+		resp, err := d.client.Database.GetDatabaseInstance(ctx, database.GetDatabaseInstanceRequest{
+			Name: d.config.Name,
+		})
+		if err != nil {
+			return SDKError{Method: "Database.GetDatabaseInstance", Err: err}
+		}
+
+		cmdio.LogString(ctx, fmt.Sprintf("Database instance status: %s", resp.State))
+
+		if resp.State == database.DatabaseInstanceStateAvailable {
+			return nil
+		}
+
+		time.Sleep(1 * time.Second)
+	}
 }
 
 func (d ResourceDatabaseInstance) WaitAfterUpdate(ctx context.Context) error {
