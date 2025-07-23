@@ -12,31 +12,34 @@ import (
 )
 
 const (
-	_jobs           = "jobs"
-	_pipelines      = "pipelines"
-	_schemas        = "schemas"
-	_volumes        = "volumes"
-	_apps           = "apps"
-	_sql_warehouses = "sql_warehouses"
+	_jobs               = "jobs"
+	_pipelines          = "pipelines"
+	_schemas            = "schemas"
+	_volumes            = "volumes"
+	_apps               = "apps"
+	_sql_warehouses     = "sql_warehouses"
+	_database_instances = "database_instances"
 )
 
 var supportedResources = map[string]reflect.Value{
-	_jobs:           reflect.ValueOf(NewResourceJob),
-	_pipelines:      reflect.ValueOf(NewResourcePipeline),
-	_schemas:        reflect.ValueOf(NewResourceSchema),
-	_volumes:        reflect.ValueOf(NewResourceVolume),
-	_apps:           reflect.ValueOf(NewResourceApp),
-	_sql_warehouses: reflect.ValueOf(NewResourceSqlWarehouse),
+	_jobs:               reflect.ValueOf(NewResourceJob),
+	_pipelines:          reflect.ValueOf(NewResourcePipeline),
+	_schemas:            reflect.ValueOf(NewResourceSchema),
+	_volumes:            reflect.ValueOf(NewResourceVolume),
+	_apps:               reflect.ValueOf(NewResourceApp),
+	_sql_warehouses:     reflect.ValueOf(NewResourceSqlWarehouse),
+	_database_instances: reflect.ValueOf(NewResourceDatabaseInstance),
 }
 
 // This types matches what Config() returns and should match 'config' field in the resource struct
 var supportedResourcesTypes = map[string]reflect.Type{
-	_jobs:           reflect.TypeOf(ResourceJob{}.config),
-	_pipelines:      reflect.TypeOf(ResourcePipeline{}.config),
-	_schemas:        reflect.TypeOf(ResourceSchema{}.config),
-	_volumes:        reflect.TypeOf(ResourceVolume{}.config),
-	_apps:           reflect.TypeOf(ResourceApp{}.config),
-	_sql_warehouses: reflect.TypeOf(ResourceSqlWarehouse{}.config),
+	_jobs:               reflect.TypeOf(ResourceJob{}.config),
+	_pipelines:          reflect.TypeOf(ResourcePipeline{}.config),
+	_schemas:            reflect.TypeOf(ResourceSchema{}.config),
+	_volumes:            reflect.TypeOf(ResourceVolume{}.config),
+	_apps:               reflect.TypeOf(ResourceApp{}.config),
+	_sql_warehouses:     reflect.TypeOf(ResourceSqlWarehouse{}.config),
+	_database_instances: reflect.TypeOf(DatabaseInstance{}.config),
 }
 
 type DeleteResourceFN = func(ctx context.Context, client *databricks.WorkspaceClient, oldID string) error
