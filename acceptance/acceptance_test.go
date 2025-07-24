@@ -285,7 +285,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 				if len(expanded[0]) > 0 {
 					t.Logf("Running test with env %v", expanded[0])
 				}
-				runTest(t, dir, 0, coverDir, repls.Clone(), config, configPath, expanded[0], inprocessMode, envFilters)
+				runTest(t, dir, 0, coverDir, repls.Clone(), config, expanded[0], envFilters)
 			} else {
 				for ind, envset := range expanded {
 					envname := strings.Join(envset, "/")
@@ -293,7 +293,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 						if !inprocessMode {
 							t.Parallel()
 						}
-						runTest(t, dir, ind, coverDir, repls.Clone(), config, configPath, envset, inprocessMode, envFilters)
+						runTest(t, dir, ind, coverDir, repls.Clone(), config, envset, envFilters)
 					})
 				}
 			}
@@ -426,9 +426,7 @@ func runTest(t *testing.T,
 	coverDir string,
 	repls testdiff.ReplacementsContext,
 	config internal.TestConfig,
-	configPath string,
 	customEnv []string,
-	inprocessMode bool,
 	envFilters []string,
 ) {
 	if LogConfig {
