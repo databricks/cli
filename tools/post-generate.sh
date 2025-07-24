@@ -15,7 +15,13 @@ rm .github/workflows/next-changelog.yml
 mv tagging.py internal/genkit/tagging.py
 
 # Update the tagging.yml workflow to use the new tagging.py file location.
-sed -i 's|python tagging.py|python internal/genkit/tagging.py|g' .github/workflows/tagging.yml
+if [[ "$(uname)" == "Darwin" ]]; then
+    # macOS (BSD sed) requires empty string after -i
+    sed -i '' 's|python tagging.py|python internal/genkit/tagging.py|g' .github/workflows/tagging.yml
+else
+    # Linux (GNU sed)
+    sed -i 's|python tagging.py|python internal/genkit/tagging.py|g' .github/workflows/tagging.yml
+fi
 ./tools/yamlfmt .github/workflows/tagging.yml
 
 # Generate PyDABs code.
