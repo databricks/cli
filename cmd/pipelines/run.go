@@ -28,7 +28,8 @@ func runCommand() *cobra.Command {
 		Short: "Run a pipeline",
 		Long: `Run the pipeline identified by KEY.
 KEY is the unique name of the pipeline to run, as defined in its YAML file.
-If there is only one pipeline in the project, KEY is optional and the pipeline will be auto-selected.`,
+If there is only one pipeline in the project, KEY is optional and the pipeline will be auto-selected.
+Refreshes all tables in the pipeline unless otherwise specified.`,
 	}
 
 	var refresh []string
