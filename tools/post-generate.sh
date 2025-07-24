@@ -1,4 +1,4 @@
-# Ensure the SDK version is consistent with the OpenAPI SHA the CLI is generate from.
+# Ensure the SDK version is consistent with the OpenAPI SHA the CLI is generated from.
 go test -timeout 240s -run TestConsistentDatabricksSdkVersion github.com/databricks/cli/internal/build
 
 # Generate the bundle JSON schema.
