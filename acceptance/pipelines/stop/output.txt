@@ -12,7 +12,7 @@ Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 === Stopping pipeline
 >>> [PIPELINES] stop
 Stopping my_pipeline...
-my_pipeline stopped successfully.
+my_pipeline has been stopped.
 {
   "method": "POST",
   "path": "/api/2.0/pipelines/[UUID]/stop"
@@ -21,7 +21,7 @@ my_pipeline stopped successfully.
 === Stopping pipeline with KEY, expect same output as without KEY
 >>> [PIPELINES] stop my_pipeline
 Stopping my_pipeline...
-my_pipeline stopped successfully.
+my_pipeline has been stopped.
 {
   "method": "POST",
   "path": "/api/2.0/pipelines/[UUID]/stop"
