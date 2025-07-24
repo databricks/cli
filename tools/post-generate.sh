@@ -16,9 +16,7 @@ mv tagging.py internal/genkit/tagging.py
 
 # Update the tagging.yml workflow to use the new tagging.py file.
 sed -i 's|python tagging.py|python internal/genkit/tagging.py|g' .github/workflows/tagging.yml
+./tools/yamlfmt .github/workflows/tagging.yml
 
 # Generate PyDABs code.
 make -C experimental/python codegen
-
-# Format the newly generated code.
-make fmt
