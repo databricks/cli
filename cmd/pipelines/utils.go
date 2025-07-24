@@ -13,8 +13,8 @@ import (
 )
 
 // Copied from cmd/bundle/run.go
-// promptRunArgument prompts the user to select a runnable pipeline.
-func promptRunArgument(ctx context.Context, b *bundle.Bundle) (string, error) {
+// promptRunnablePipeline prompts the user to select a runnable pipeline.
+func promptRunnablePipeline(ctx context.Context, b *bundle.Bundle) (string, error) {
 	// Compute map of "Human readable name of resource" -> "resource key".
 	inv := make(map[string]string)
 	for k, ref := range resources.Completions(b, run.IsRunnable) {
@@ -56,7 +56,7 @@ func resolveRunArgument(ctx context.Context, b *bundle.Bundle, args []string) (s
 		}
 
 		if cmdio.IsPromptSupported(ctx) {
-			key, err := promptRunArgument(ctx, b)
+			key, err := promptRunnablePipeline(ctx, b)
 			if err != nil {
 				return "", nil, err
 			}

@@ -32,7 +32,7 @@ func resolveStopArgument(ctx context.Context, b *bundle.Bundle, args []string) (
 	}
 
 	if cmdio.IsPromptSupported(ctx) {
-		return promptRunArgument(ctx, b)
+		return promptRunnablePipeline(ctx, b)
 	}
 
 	return "", errors.New("expected a KEY of the pipeline to stop")
@@ -96,7 +96,7 @@ If there is only one pipeline in the project, KEY is optional and the pipeline w
 			return err
 		}
 
-		cmdio.LogString(ctx, key+" stopped successfully.")
+		cmdio.LogString(ctx, key+" has been stopped.")
 		return nil
 	}
 
