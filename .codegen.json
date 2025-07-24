@@ -21,9 +21,7 @@
             "go"
         ],
         "post_generate": [
-            "go test -timeout 240s -run TestConsistentDatabricksSdkVersion github.com/databricks/cli/internal/build",
-            "make schema",
-            "make generate-validation"
+            "./tools/post-generate.sh"
         ]
     }
 }

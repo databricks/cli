@@ -101,13 +101,12 @@ integration-short:
 generate-validation:
 	go run ./bundle/internal/validation/.
 
+# Please run this rule from Arca. Configure both universe and the CLI
+# repo to be at $HOME. Please checkout the latest version of universe
+# master before running this rule.
 generate:
-	genkit update-sdk
-	[ ! -f tagging.py ] || mv tagging.py internal/genkit/tagging.py
-# tagging.yml is automatically synced by update-sdk command and contains a reference to tagging.py in root
-# since we move tagging.py to different folder, we need to update this reference here as well
-	[ ! -f .github/workflows/tagging.yml ] || sed -i '' 's/python tagging.py/python internal\/genkit\/tagging.py/g' .github/workflows/tagging.yml
-	[ ! -f .github/workflows/next-changelog.yml ] || rm .github/workflows/next-changelog.yml
-	pushd experimental/python && make codegen
+	cd ~/universe && bazel build //openapi/genkit
+	~/universe/bazel-bin/openapi/genkit/genkit_/genkit update-sdk
+
 
 .PHONY: lint lintfull tidy lintcheck fmt fmtfull test cover showcover build snapshot schema integration integration-short acc-cover acc-showcover docs ws links checks test-update test-update-aws test-update-all generate-validation
