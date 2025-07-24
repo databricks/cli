@@ -102,7 +102,8 @@ generate-validation:
 	go run ./bundle/internal/validation/.
 
 # Rule to generate the CLI from a new version of the OpenAPI spec.
-# I recommend running this rule from Arca, but it should also work
+# I recommend running this rule from Arca because of faster build times
+# because of better caching and beefier machines, but it should also work
 # fine from your local mac.
 #
 # By default, this rule will use the universe directory in your home
