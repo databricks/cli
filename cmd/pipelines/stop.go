@@ -23,21 +23,19 @@ import (
 // If there is only one pipeline in the project, KEY is optional and the pipeline will be auto-selected.
 // Otherwise, the user will be prompted to select a pipeline.
 func resolveStopArgument(ctx context.Context, b *bundle.Bundle, args []string) (string, error) {
-	if len(args) == 0 {
-		if key := autoSelectSinglePipeline(b); key != "" {
-			return key, nil
-		}
-
-		if cmdio.IsPromptSupported(ctx) {
-			return promptRunArgument(ctx, b)
-		}
+	if len(args) == 1 {
+		return args[0], nil
 	}
 
-	if len(args) < 1 {
-		return "", errors.New("expected a KEY of the pipeline to stop")
+	if key := autoSelectSinglePipeline(b); key != "" {
+		return key, nil
 	}
 
-	return args[0], nil
+	if cmdio.IsPromptSupported(ctx) {
+		return promptRunArgument(ctx, b)
+	}
+
+	return "", errors.New("expected a KEY of the pipeline to stop")
 }
 
 func stopCommand() *cobra.Command {
@@ -47,6 +45,7 @@ func stopCommand() *cobra.Command {
 		Long: `Stop the pipeline if it's running, identified by KEY.
 KEY is the unique name of the pipeline to stop, as defined in its YAML file.
 If there is only one pipeline in the project, KEY is optional and the pipeline will be auto-selected.`,
+		Args: root.MaximumNArgs(1),
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
