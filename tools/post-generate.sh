@@ -14,7 +14,7 @@ rm .github/workflows/next-changelog.yml
 # cluttering the root directory.
 mv tagging.py internal/genkit/tagging.py
 
-# Update the tagging.yml workflow to use the new tagging.py file.
+# Update the tagging.yml workflow to use the new tagging.py file location.
 sed -i 's|python tagging.py|python internal/genkit/tagging.py|g' .github/workflows/tagging.yml
 ./tools/yamlfmt .github/workflows/tagging.yml
 
