@@ -19,6 +19,7 @@ func deployCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "deploy",
 		Short: "Deploy pipelines",
+		Long:  `Deploy pipelines by uploading all files defined in the project to the target workspace, and creating or updating the pipelines defined in the workspace.`,
 		Args:  root.NoArgs,
 	}
 
