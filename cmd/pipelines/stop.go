@@ -19,24 +19,9 @@ import (
 	"golang.org/x/exp/maps"
 )
 
-func promptStopArgument(ctx context.Context, b *bundle.Bundle) (string, error) {
-	// Compute map of "Human readable name of resource" -> "resource key".
-	inv := make(map[string]string)
-	for k, ref := range resources.Completions(b) {
-		title := fmt.Sprintf("%s: %s", ref.Description.SingularTitle, ref.Resource.GetName())
-		inv[title] = k
-	}
-
-	key, err := cmdio.Select(ctx, inv, "Pipeline to stop")
-	if err != nil {
-		return "", err
-	}
-
-	return key, nil
-}
-
-// When no arguments are specified, auto-selects a pipeline if there's exactly one,
-// otherwise prompts the user to select a pipeline to stop.
+// resolveStopArgument resolves the pipeline key to stop
+// If there is only one pipeline in the project, KEY is optional and the pipeline will be auto-selected.
+// Otherwise, the user will be prompted to select a pipeline.
 func resolveStopArgument(ctx context.Context, b *bundle.Bundle, args []string) (string, error) {
 	if len(args) == 0 {
 		if key := autoSelectSinglePipeline(b); key != "" {
@@ -44,7 +29,7 @@ func resolveStopArgument(ctx context.Context, b *bundle.Bundle, args []string) (
 		}
 
 		if cmdio.IsPromptSupported(ctx) {
-			return promptStopArgument(ctx, b)
+			return promptRunArgument(ctx, b)
 		}
 	}
 
@@ -116,6 +101,7 @@ If there is only one pipeline in the project, KEY is optional and the pipeline w
 		return nil
 	}
 
+	// TODO: This autocomplete functionality was copied from cmd/bundle/run.go and is not working properly.
 	cmd.ValidArgsFunction = func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		b := root.MustConfigureBundle(cmd)
 		if logdiag.HasError(cmd.Context()) {
