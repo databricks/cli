@@ -1,0 +1,10 @@
+bundle:
+  name: test-pipeline-stop
+
+resources:
+  pipelines:
+    my_pipeline:
+      name: test-pipeline-stop
+      libraries:
+        - file:
+            path: pipeline_file.py
