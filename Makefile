@@ -101,13 +101,27 @@ integration-short:
 generate-validation:
 	go run ./bundle/internal/validation/.
 
+# Rule to generate the CLI from a new version of the OpenAPI spec.
+# I recommend running this rule from Arca because of faster build times
+# because of better caching and beefier machines, but it should also work
+# fine from your local mac.
+#
+# By default, this rule will use the universe directory in your home
+# directory. You can override this by setting the UNIVERSE_DIR
+# environment variable.
+#
+# Example:
+# UNIVERSE_DIR=/Users/shreyas.goenka/universe make generate
+UNIVERSE_DIR ?= $(HOME)/universe
+GENKIT_BINARY := $(UNIVERSE_DIR)/bazel-bin/openapi/genkit/genkit_/genkit
+
 generate:
-	genkit update-sdk
-	[ ! -f tagging.py ] || mv tagging.py internal/genkit/tagging.py
-# tagging.yml is automatically synced by update-sdk command and contains a reference to tagging.py in root
-# since we move tagging.py to different folder, we need to update this reference here as well
-	[ ! -f .github/workflows/tagging.yml ] || sed -i '' 's/python tagging.py/python internal\/genkit\/tagging.py/g' .github/workflows/tagging.yml
-	[ ! -f .github/workflows/next-changelog.yml ] || rm .github/workflows/next-changelog.yml
-	pushd experimental/python && make codegen
+	@echo "Checking out universe at SHA: $$(cat .codegen/_openapi_sha)"
+	cd $(UNIVERSE_DIR) && git checkout $$(cat $(PWD)/.codegen/_openapi_sha)
+	@echo "Building genkit..."
+	cd $(UNIVERSE_DIR) && bazel build //openapi/genkit
+	@echo "Generating CLI code..."
+	$(GENKIT_BINARY) update-sdk
+
 
 .PHONY: lint lintfull tidy lintcheck fmt fmtfull test cover showcover build snapshot schema integration integration-short acc-cover acc-showcover docs ws links checks test-update test-update-aws test-update-all generate-validation
