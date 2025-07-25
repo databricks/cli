@@ -27,16 +27,16 @@ func runCommand() *cobra.Command {
 		Use:   "run [flags] [KEY]",
 		Short: "Run a pipeline",
 		Long: `Run the pipeline identified by KEY.
-The KEY is the unique identifier of the pipeline to run.`,
+KEY is the unique name of the pipeline to run, as defined in its YAML file.
+If there is only one pipeline in the project, KEY is optional and the pipeline will be auto-selected.
+Refreshes all tables in the pipeline unless otherwise specified.`,
 	}
 
-	var refreshAll bool
 	var refresh []string
 	var fullRefreshAll bool
 	var fullRefresh []string
 
 	pipelineGroup := cmdgroup.NewFlagGroup("Pipeline Run")
-	pipelineGroup.FlagSet().BoolVar(&refreshAll, "refresh-all", false, "Perform a full graph run.")
 	pipelineGroup.FlagSet().StringSliceVar(&refresh, "refresh", nil, "List of tables to run.")
 	pipelineGroup.FlagSet().BoolVar(&fullRefreshAll, "full-refresh-all", false, "Perform a full graph reset and recompute.")
 	pipelineGroup.FlagSet().StringSliceVar(&fullRefresh, "full-refresh", nil, "List of tables to reset and recompute.")
@@ -93,7 +93,6 @@ The KEY is the unique identifier of the pipeline to run.`,
 
 		runOptions := run.Options{
 			Pipeline: run.PipelineOptions{
-				RefreshAll:     refreshAll,
 				Refresh:        refresh,
 				FullRefreshAll: fullRefreshAll,
 				FullRefresh:    fullRefresh,

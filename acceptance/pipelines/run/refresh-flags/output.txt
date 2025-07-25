@@ -5,18 +5,6 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== Running pipeline with --refresh-all flag
->>> [PIPELINES] run --refresh-all
-Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
-
-
->>> print_requests
-{
-  "body": {},
-  "method": "POST",
-  "path": "/api/2.0/pipelines/[UUID]/updates"
-}
-
 === Running pipeline with --refresh flag and specific tables
 >>> [PIPELINES] run --refresh table1,table2
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]

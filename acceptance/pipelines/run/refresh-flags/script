@@ -6,11 +6,6 @@ print_requests() {
 trace $PIPELINES deploy
 rm out.requests.txt
 
-title "Running pipeline with --refresh-all flag"
-# Should perform a full graph update (empty refresh_selection and full_refresh_selection implies refresh_all)
-trace $PIPELINES run --refresh-all
-trace print_requests
-
 title "Running pipeline with --refresh flag and specific tables"
 # Should refresh only the specified tables
 trace $PIPELINES run --refresh table1,table2
