@@ -25,10 +25,15 @@ func promptForProfile(ctx context.Context, defaultValue string) (string, error) 
 	}
 
 	prompt := cmdio.Prompt(ctx)
-	prompt.Label = "Databricks profile name"
-	prompt.Default = defaultValue
+	prompt.Label = "Databricks profile name [" + defaultValue + "]"
 	prompt.AllowEdit = true
-	return prompt.Run()
+	result, err := prompt.Run()
+	if result == "" {
+		// Manually return the default value. We could use the prompt.Default
+		// field, but be inconsistent with other prompts in the CLI.
+		return defaultValue, err
+	}
+	return result, err
 }
 
 const (
@@ -100,7 +105,11 @@ depends on the existing profiles you have set in your configuration file
 		// If the user has not specified a profile name, prompt for one.
 		if profileName == "" {
 			var err error
-			profileName, err = promptForProfile(ctx, getProfileName(authArguments))
+			profileName = getProfileName(authArguments)
+			if profileName == "" {
+				profileName = "DEFAULT"
+			}
+			profileName, err = promptForProfile(ctx, profileName)
 			if err != nil {
 				return err
 			}
