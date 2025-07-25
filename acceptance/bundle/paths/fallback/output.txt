@@ -1,5 +1,10 @@
 
 >>> [CLI] bundle validate -t development -o json
+Warning: required field "entry_point" is not set
+  at resources.jobs.my_job.tasks[2].python_wheel_task
+  in resources/my_job.yml:33:13
+     override_job.yml:29:17
+
 Error: path ../src/notebook.py is defined relative to the [TEST_TMP_DIR]/resources directory ([TEST_TMP_DIR]/override_job.yml:9:32). Please update the path to be relative to the file where it is defined.
   in override_job.yml:9:32
      resources/my_job.yml:9:28
