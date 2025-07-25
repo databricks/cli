@@ -3,6 +3,10 @@
 ## Release v0.262.0
 
 ### Notable Changes
+* Breaking change: DABs now returns an error when paths are incorrectly defined relative to the job or 
+pipeline definition location instead of the configuration file location. Previously, the CLI would show a 
+warning and fallback to resolving the path relative to the resource location. Users must update their bundle 
+configurations to define all relative paths relative to the configuration file where the path is specified.
 
 ### Dependency updates
 
@@ -10,5 +14,6 @@
 * Fixed auth login ignoring DATABRICKS_CONFIG_FILE environmental variable when saving profile ([#3266](https://github.com/databricks/cli/pull/3266))
 
 ### Bundles
+* [Breaking Change] Convert warning about using fallback paths to error ([#3225](https://github.com/databricks/cli/pull/3225))
 
 ### API Changes
