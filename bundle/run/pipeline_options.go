@@ -52,7 +52,7 @@ func (o *PipelineOptions) Validate(pipeline *resources.Pipeline) error {
 	if len(mutuallyExclusiveFlags) > 1 {
 		return fmt.Errorf("%s pipeline run flags are mutually exclusive", strings.Join(mutuallyExclusiveFlags, ", "))
 	} else if len(mutuallyExclusiveFlags) == 1 && (len(o.Refresh) > 0 || len(o.FullRefresh) > 0) {
-		return fmt.Errorf("cannot use --refresh or --full-refresh together with %s: these flags are mutually exclusive", strings.Join(mutuallyExclusiveFlags, ""))
+		return fmt.Errorf("cannot use --refresh or --full-refresh together with %s, these flags are mutually exclusive", strings.Join(mutuallyExclusiveFlags, ""))
 	}
 
 	return nil
