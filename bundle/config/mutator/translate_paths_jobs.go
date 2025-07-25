@@ -47,8 +47,7 @@ func (t *translateContext) applyJobTranslations(ctx context.Context, v dyn.Value
 			return nv, nil
 		}
 
-		// If we failed to rewrite the path, try to rewrite it relative to the fallback directory.
-		// We only do this for jobs and pipelines because of the comment in [gatherFallbackPaths].
+		// If we failed to rewrite the path, it uses an old path format which relied on fallback.
 		if fallback[key] != "" {
 			dir, nerr := locationDirectory(v.Location())
 			if nerr != nil {
@@ -70,7 +69,7 @@ func (t *translateContext) applyJobTranslations(ctx context.Context, v dyn.Value
 			if nerr == nil {
 				logdiag.LogDiag(ctx, diag.Diagnostic{
 					Severity:  diag.Error,
-					Summary:   fmt.Sprintf("path %s is defined relative to the %s directory (%s). Please update the path to be relative to the file where it is defined. The current value will no longer be valid in the next release.", originalPath, fallback[key], v.Location()),
+					Summary:   fmt.Sprintf("path %s is defined relative to the %s directory (%s). Please update the path to be relative to the file where it is defined.", originalPath, fallback[key], v.Location()),
 					Locations: v.Locations(),
 				})
 				return nv, nil
