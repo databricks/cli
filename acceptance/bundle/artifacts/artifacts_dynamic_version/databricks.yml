@@ -6,5 +6,4 @@ artifacts:
     type: whl
     build: uv build --wheel
   second_wheel:
-    type: jar
     build: true

@@ -12,7 +12,6 @@
   },
   "second_wheel": {
     "build": "true",
-    "path": "[TEST_TMP_DIR]",
-    "type": "jar"
+    "path": "[TEST_TMP_DIR]"
   }
 }

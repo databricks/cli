@@ -1,5 +1,9 @@
 
 >>> [CLI] bundle deploy
+Warning: invalid value "invalid" for enum field. Valid values are [bash sh cmd]
+  at artifacts.my_artifact.executable
+  in databricks.yml:6:17
+
 Building my_artifact...
 Error: invalid is not supported as an artifact executable, options are: bash, sh or cmd
 
