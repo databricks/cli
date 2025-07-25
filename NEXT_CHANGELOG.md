@@ -10,5 +10,6 @@
 * Fixed auth login ignoring DATABRICKS_CONFIG_FILE environmental variable when saving profile ([#3266](https://github.com/databricks/cli/pull/3266))
 
 ### Bundles
+* Add warning when invalid value is specified for enum field ([#3050](https://github.com/databricks/cli/pull/3050))
 
 ### API Changes
