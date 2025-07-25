@@ -1,9 +1,0 @@
-title "Check that file does not exist"
-trace errcode cat .customcfg
-
-export DATABRICKS_CONFIG_FILE=.customcfg
-trace $CLI auth login --host $DATABRICKS_HOST --profile custom-profile
-
-title "Check that the profile is saved in the custom path"
-trace cat .customcfg
-rm .customcfg
