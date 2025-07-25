@@ -3,6 +3,7 @@ package validate
 import (
 	"context"
 	"fmt"
+	"slices"
 	"sort"
 
 	"github.com/databricks/cli/bundle"
@@ -24,51 +25,66 @@ func (f *enum) Name() string {
 func (f *enum) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
-	for k, validValues := range generated.EnumFields {
+	// Generate prefix tree for all enum fields.
+	trie := &dyn.TrieNode{}
+	for k := range generated.EnumFields {
 		pattern, err := dyn.NewPatternFromString(k)
 		if err != nil {
 			return diag.FromErr(fmt.Errorf("invalid pattern %q for enum field validation: %w", k, err))
 		}
 
-		_, err = dyn.MapByPattern(b.Config.Value(), pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-			// Skip validation if the value is not set
-			if v.Kind() == dyn.KindInvalid || v.Kind() == dyn.KindNil {
-				return v, nil
-			}
-
-			// Get the string value for comparison
-			strValue, ok := v.AsString()
-			if !ok {
-				return v, nil
-			}
-
-			// Check if the value is in the list of valid enum values
-			validValue := false
-			for _, valid := range validValues {
-				if strValue == valid {
-					validValue = true
-					break
-				}
-			}
-
-			if !validValue {
-				diags = diags.Append(diag.Diagnostic{
-					Severity:  diag.Warning,
-					Summary:   fmt.Sprintf("invalid value %q for enum field. Valid values are %v", strValue, validValues),
-					Locations: v.Locations(),
-					Paths:     []dyn.Path{p},
-				})
-			}
-
-			return v, nil
-		})
-		if dyn.IsExpectedMapError(err) || dyn.IsExpectedSequenceError(err) || dyn.IsExpectedMapToIndexError(err) || dyn.IsExpectedSequenceToIndexError(err) {
-			// No map or sequence value is set at this pattern, so we ignore it.
-			continue
-		}
+		err = trie.Insert(pattern)
 		if err != nil {
-			return diag.FromErr(err)
+			return diag.FromErr(fmt.Errorf("failed to insert pattern %q into trie: %w", k, err))
 		}
+	}
+
+	err := dyn.WalkReadOnly(b.Config.Value(), func(p dyn.Path, v dyn.Value) error {
+		// If the path is not found in the prefix tree, we do not need to validate any enum
+		// fields in it.
+		pattern, ok := trie.SearchPath(p)
+		if !ok {
+			return nil
+		}
+
+		// Skip validation if the value is not set
+		if v.Kind() == dyn.KindInvalid || v.Kind() == dyn.KindNil {
+			return nil
+		}
+
+		// Get the string value for comparison
+		strValue, ok := v.AsString()
+		if !ok {
+			return nil
+		}
+
+		cloneP := slices.Clone(p)
+
+		// Get valid values for this pattern
+		validValues := generated.EnumFields[pattern.String()]
+
+		// Check if the value is in the list of valid enum values
+		validValue := false
+		for _, valid := range validValues {
+			if strValue == valid {
+				validValue = true
+				break
+			}
+		}
+
+		if !validValue {
+			diags = diags.Append(diag.Diagnostic{
+				Severity:  diag.Warning,
+				Summary:   fmt.Sprintf("invalid value %q for enum field. Valid values are %v", strValue, validValues),
+				Locations: v.Locations(),
+				Paths:     []dyn.Path{cloneP},
+			})
+		}
+
+		return nil
+	})
+	if err != nil {
+		return diag.FromErr(err)
 	}
 
 	// Sort diagnostics to make them deterministic
