@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdgroup"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/databricks-sdk-go/listing"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/spf13/cobra"
 )
@@ -92,12 +93,18 @@ Example usage:
 		req := pipelines.ListPipelineEventsRequest{
 			PipelineId: pipelineId,
 			Filter:     filter,
-			MaxResults: maxResults,
 		}
 
-		// TODO: change function to one that is unpaginated, so it supports the OrderBy parameter
-		response := w.Pipelines.ListPipelineEvents(ctx, req)
-		return cmdio.RenderIterator(ctx, response)
+		// TODO: change function to one that is unpaginated, so it supports the OrderBy parameter.
+		// By default, events are returned in descending order by timestamp.
+		iterator := w.Pipelines.ListPipelineEvents(ctx, req)
+
+		limitedEvents, err := listing.ToSliceN(ctx, iterator, maxResults)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, limitedEvents)
 	}
 
 	return cmd
