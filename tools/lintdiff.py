@@ -30,9 +30,13 @@ def main():
     if args.head:
         args.ref = "HEAD"
 
+    # All paths are relative to repo root, so we need to ensure we're in the right directory.
     gitroot = parse_lines(["git", "rev-parse", "--show-toplevel"])[0]
     os.chdir(gitroot)
 
+    # Get list of changed files relative to repo root.
+    # Note: Paths are always relative to repo root, even when running from subdirectories.
+    # Example: Running from tools/ returns 'tools/lintdiff.py' rather than just 'lintdiff.py'.
     changed = parse_lines(["git", "diff", "--name-only", args.ref, "--", "."])
 
     # We need to pass packages to golangci-lint, not individual files.
@@ -44,10 +48,10 @@ def main():
             d = os.path.dirname(filename)
             dirs.add(d)
 
+    dirs = ["./" + d for d in sorted(dirs) if os.path.exists(d)]
+
     if not dirs:
         sys.exit(0)
-
-    dirs = ["./" + d for d in sorted(dirs)]
 
     cmd = ["golangci-lint"] + args.args + dirs
     print("+ " + " ".join(cmd), file=sys.stderr, flush=True)

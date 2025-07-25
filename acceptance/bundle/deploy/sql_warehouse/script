@@ -1,0 +1,35 @@
+trace $CLI bundle validate
+trace $CLI bundle validate -o json | jq ".resources.sql_warehouses"
+
+trace $CLI bundle summary
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm out.requests.txt
+}
+trap cleanup EXIT
+trace $CLI bundle deploy
+
+title "Verify the create request"
+trace jq 'select(.method == "POST" and (.path | contains("/sql/warehouses")))' out.requests.txt
+
+trace $CLI bundle summary
+
+title "Update the warehouse name"
+trace update_file.py databricks.yml sql_warehouse_name sql_warehouse_name_2
+trace $CLI bundle deploy
+
+title "Verify the update request"
+trace jq 'select(.method == "POST" and (.path | contains("/sql/warehouses")) and (.body."name" == "sql_warehouse_name_2"))' out.requests.txt
+
+trace $CLI bundle summary
+
+title "Destroy the warehouse"
+trace $CLI bundle destroy --auto-approve
+
+title "Verify the destroy request"
+trace jq 'select(.method == "DELETE" and (.path | contains("/sql/warehouses")))' out.requests.txt
+
+trace $CLI bundle summary
+
+rm out.requests.txt

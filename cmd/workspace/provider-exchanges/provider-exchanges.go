@@ -64,7 +64,6 @@ func newAddListingToExchange() *cobra.Command {
 	var addListingToExchangeReq marketplace.AddExchangeForListingRequest
 	var addListingToExchangeJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&addListingToExchangeJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "add-listing-to-exchange LISTING_ID EXCHANGE_ID"
@@ -145,7 +144,6 @@ func newCreate() *cobra.Command {
 	var createReq marketplace.CreateExchangeRequest
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "create"
@@ -209,8 +207,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq marketplace.DeleteExchangeRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete ID"
 	cmd.Short = `Delete an exchange.`
 	cmd.Long = `Delete an exchange.
@@ -263,8 +259,6 @@ func newDeleteListingFromExchange() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var deleteListingFromExchangeReq marketplace.RemoveExchangeForListingRequest
-
-	// TODO: short flags
 
 	cmd.Use = "delete-listing-from-exchange ID"
 	cmd.Short = `Remove an exchange for listing.`
@@ -319,13 +313,9 @@ func newGet() *cobra.Command {
 
 	var getReq marketplace.GetExchangeRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get ID"
 	cmd.Short = `Get an exchange.`
-	cmd.Long = `Get an exchange.
-  
-  Get an exchange.`
+	cmd.Long = `Get an exchange.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -373,8 +363,6 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq marketplace.ListExchangesRequest
-
-	// TODO: short flags
 
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)
@@ -426,8 +414,6 @@ func newListExchangesForListing() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listExchangesForListingReq marketplace.ListExchangesForListingRequest
-
-	// TODO: short flags
 
 	cmd.Flags().IntVar(&listExchangesForListingReq.PageSize, "page-size", listExchangesForListingReq.PageSize, ``)
 	cmd.Flags().StringVar(&listExchangesForListingReq.PageToken, "page-token", listExchangesForListingReq.PageToken, ``)
@@ -481,8 +467,6 @@ func newListListingsForExchange() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listListingsForExchangeReq marketplace.ListListingsForExchangeRequest
-
-	// TODO: short flags
 
 	cmd.Flags().IntVar(&listListingsForExchangeReq.PageSize, "page-size", listListingsForExchangeReq.PageSize, ``)
 	cmd.Flags().StringVar(&listListingsForExchangeReq.PageToken, "page-token", listListingsForExchangeReq.PageToken, ``)
@@ -538,7 +522,6 @@ func newUpdate() *cobra.Command {
 	var updateReq marketplace.UpdateExchangeRequest
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "update ID"

@@ -1,0 +1,2 @@
+export VOLUME_NAME=my_volume
+source $TESTDIR/../common_script.sh

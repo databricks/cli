@@ -40,6 +40,14 @@ type DataSourceFunctionsFunctionsReturnParams struct {
 	Parameters []DataSourceFunctionsFunctionsReturnParamsParameters `json:"parameters,omitempty"`
 }
 
+type DataSourceFunctionsFunctionsRoutineDependenciesDependenciesConnection struct {
+	ConnectionName string `json:"connection_name,omitempty"`
+}
+
+type DataSourceFunctionsFunctionsRoutineDependenciesDependenciesCredential struct {
+	CredentialName string `json:"credential_name,omitempty"`
+}
+
 type DataSourceFunctionsFunctionsRoutineDependenciesDependenciesFunction struct {
 	FunctionFullName string `json:"function_full_name"`
 }
@@ -49,8 +57,10 @@ type DataSourceFunctionsFunctionsRoutineDependenciesDependenciesTable struct {
 }
 
 type DataSourceFunctionsFunctionsRoutineDependenciesDependencies struct {
-	Function []DataSourceFunctionsFunctionsRoutineDependenciesDependenciesFunction `json:"function,omitempty"`
-	Table    []DataSourceFunctionsFunctionsRoutineDependenciesDependenciesTable    `json:"table,omitempty"`
+	Connection []DataSourceFunctionsFunctionsRoutineDependenciesDependenciesConnection `json:"connection,omitempty"`
+	Credential []DataSourceFunctionsFunctionsRoutineDependenciesDependenciesCredential `json:"credential,omitempty"`
+	Function   []DataSourceFunctionsFunctionsRoutineDependenciesDependenciesFunction   `json:"function,omitempty"`
+	Table      []DataSourceFunctionsFunctionsRoutineDependenciesDependenciesTable      `json:"table,omitempty"`
 }
 
 type DataSourceFunctionsFunctionsRoutineDependencies struct {

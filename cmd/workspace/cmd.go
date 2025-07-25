@@ -4,6 +4,7 @@ package workspace
 
 import (
 	access_control "github.com/databricks/cli/cmd/workspace/access-control"
+	ai_builder "github.com/databricks/cli/cmd/workspace/ai-builder"
 	alerts "github.com/databricks/cli/cmd/workspace/alerts"
 	alerts_legacy "github.com/databricks/cli/cmd/workspace/alerts-legacy"
 	alerts_v2 "github.com/databricks/cli/cmd/workspace/alerts-v2"
@@ -27,9 +28,12 @@ import (
 	dashboard_widgets "github.com/databricks/cli/cmd/workspace/dashboard-widgets"
 	dashboards "github.com/databricks/cli/cmd/workspace/dashboards"
 	data_sources "github.com/databricks/cli/cmd/workspace/data-sources"
-	database_instances "github.com/databricks/cli/cmd/workspace/database-instances"
+	database "github.com/databricks/cli/cmd/workspace/database"
 	experiments "github.com/databricks/cli/cmd/workspace/experiments"
+	external_lineage "github.com/databricks/cli/cmd/workspace/external-lineage"
 	external_locations "github.com/databricks/cli/cmd/workspace/external-locations"
+	external_metadata "github.com/databricks/cli/cmd/workspace/external-metadata"
+	feature_store "github.com/databricks/cli/cmd/workspace/feature-store"
 	forecasting "github.com/databricks/cli/cmd/workspace/forecasting"
 	functions "github.com/databricks/cli/cmd/workspace/functions"
 	genie "github.com/databricks/cli/cmd/workspace/genie"
@@ -44,6 +48,7 @@ import (
 	lakeview "github.com/databricks/cli/cmd/workspace/lakeview"
 	lakeview_embedded "github.com/databricks/cli/cmd/workspace/lakeview-embedded"
 	libraries "github.com/databricks/cli/cmd/workspace/libraries"
+	materialized_features "github.com/databricks/cli/cmd/workspace/materialized-features"
 	metastores "github.com/databricks/cli/cmd/workspace/metastores"
 	model_registry "github.com/databricks/cli/cmd/workspace/model-registry"
 	model_versions "github.com/databricks/cli/cmd/workspace/model-versions"
@@ -63,10 +68,10 @@ import (
 	provider_provider_analytics_dashboards "github.com/databricks/cli/cmd/workspace/provider-provider-analytics-dashboards"
 	provider_providers "github.com/databricks/cli/cmd/workspace/provider-providers"
 	providers "github.com/databricks/cli/cmd/workspace/providers"
+	quality_monitor_v2 "github.com/databricks/cli/cmd/workspace/quality-monitor-v2"
 	quality_monitors "github.com/databricks/cli/cmd/workspace/quality-monitors"
 	queries "github.com/databricks/cli/cmd/workspace/queries"
 	queries_legacy "github.com/databricks/cli/cmd/workspace/queries-legacy"
-	query_execution "github.com/databricks/cli/cmd/workspace/query-execution"
 	query_history "github.com/databricks/cli/cmd/workspace/query-history"
 	query_visualizations "github.com/databricks/cli/cmd/workspace/query-visualizations"
 	query_visualizations_legacy "github.com/databricks/cli/cmd/workspace/query-visualizations-legacy"
@@ -79,6 +84,7 @@ import (
 	resource_quotas "github.com/databricks/cli/cmd/workspace/resource-quotas"
 	schemas "github.com/databricks/cli/cmd/workspace/schemas"
 	secrets "github.com/databricks/cli/cmd/workspace/secrets"
+	service_principal_secrets_proxy "github.com/databricks/cli/cmd/workspace/service-principal-secrets-proxy"
 	service_principals "github.com/databricks/cli/cmd/workspace/service-principals"
 	serving_endpoints "github.com/databricks/cli/cmd/workspace/serving-endpoints"
 	settings "github.com/databricks/cli/cmd/workspace/settings"
@@ -105,6 +111,7 @@ func All() []*cobra.Command {
 	var out []*cobra.Command
 
 	out = append(out, access_control.New())
+	out = append(out, ai_builder.New())
 	out = append(out, alerts.New())
 	out = append(out, alerts_legacy.New())
 	out = append(out, alerts_v2.New())
@@ -128,9 +135,12 @@ func All() []*cobra.Command {
 	out = append(out, dashboard_widgets.New())
 	out = append(out, dashboards.New())
 	out = append(out, data_sources.New())
-	out = append(out, database_instances.New())
+	out = append(out, database.New())
 	out = append(out, experiments.New())
+	out = append(out, external_lineage.New())
 	out = append(out, external_locations.New())
+	out = append(out, external_metadata.New())
+	out = append(out, feature_store.New())
 	out = append(out, functions.New())
 	out = append(out, genie.New())
 	out = append(out, git_credentials.New())
@@ -144,6 +154,7 @@ func All() []*cobra.Command {
 	out = append(out, lakeview.New())
 	out = append(out, lakeview_embedded.New())
 	out = append(out, libraries.New())
+	out = append(out, materialized_features.New())
 	out = append(out, metastores.New())
 	out = append(out, model_registry.New())
 	out = append(out, model_versions.New())
@@ -163,10 +174,10 @@ func All() []*cobra.Command {
 	out = append(out, provider_provider_analytics_dashboards.New())
 	out = append(out, provider_providers.New())
 	out = append(out, providers.New())
+	out = append(out, quality_monitor_v2.New())
 	out = append(out, quality_monitors.New())
 	out = append(out, queries.New())
 	out = append(out, queries_legacy.New())
-	out = append(out, query_execution.New())
 	out = append(out, query_history.New())
 	out = append(out, query_visualizations.New())
 	out = append(out, query_visualizations_legacy.New())
@@ -179,6 +190,7 @@ func All() []*cobra.Command {
 	out = append(out, resource_quotas.New())
 	out = append(out, schemas.New())
 	out = append(out, secrets.New())
+	out = append(out, service_principal_secrets_proxy.New())
 	out = append(out, service_principals.New())
 	out = append(out, serving_endpoints.New())
 	out = append(out, settings.New())

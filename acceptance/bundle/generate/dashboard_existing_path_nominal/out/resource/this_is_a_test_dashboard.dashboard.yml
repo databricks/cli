@@ -1,0 +1,6 @@
+resources:
+  dashboards:
+    this_is_a_test_dashboard:
+      display_name: "This is a test dashboard"
+      warehouse_id: w4r3h0us3
+      file_path: ../dashboard/this_is_a_test_dashboard.lvdash.json

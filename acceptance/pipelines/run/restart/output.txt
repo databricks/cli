@@ -1,0 +1,22 @@
+
+>>> [PIPELINES] deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Running pipeline with --restart flag
+>>> [PIPELINES] run --restart
+Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
+
+
+>>> print_requests
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/stop"
+}
+{
+  "body": {},
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates"
+}

@@ -16,6 +16,15 @@ const (
 	CmdExecutable  ExecutableType = `cmd`
 )
 
+// Values returns all valid ExecutableType values
+func (ExecutableType) Values() []ExecutableType {
+	return []ExecutableType{
+		BashExecutable,
+		ShExecutable,
+		CmdExecutable,
+	}
+}
+
 var finders map[ExecutableType](func() (shell, error)) = map[ExecutableType](func() (shell, error)){
 	BashExecutable: newBashShell,
 	ShExecutable:   newShShell,
@@ -42,7 +51,7 @@ type command struct {
 
 func (c *command) Wait() error {
 	// After the command has finished (cmd.Wait call), remove the temporary script file
-	defer os.Remove(c.execContext.scriptFile)
+	defer c.execContext.cleanup()
 
 	err := c.cmd.Wait()
 	if err != nil {
@@ -140,7 +149,7 @@ func (e *Executor) Exec(ctx context.Context, command string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer os.Remove(ec.scriptFile)
+	defer ec.cleanup()
 	return cmd.CombinedOutput()
 }
 

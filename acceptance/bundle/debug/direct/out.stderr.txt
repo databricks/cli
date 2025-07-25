@@ -1,0 +1,93 @@
+
+>>> [CLI] bundle validate --debug
+10:07:59 Info: start pid=12345 version=[DEV_VERSION] args="[CLI], bundle, validate, --debug"
+10:07:59 Debug: Found bundle root at [TEST_TMP_DIR] (file [TEST_TMP_DIR]/databricks.yml) pid=12345
+10:07:59 Info: Phase: load pid=12345
+10:07:59 Debug: Apply pid=12345 mutator=EntryPoint
+10:07:59 Debug: Apply pid=12345 mutator=scripts.preinit
+10:07:59 Debug: No script defined for preinit, skipping pid=12345 mutator=scripts.preinit
+10:07:59 Debug: Apply pid=12345 mutator=ProcessRootIncludes
+10:07:59 Debug: Apply pid=12345 mutator=VerifyCliVersion
+10:07:59 Debug: Apply pid=12345 mutator=EnvironmentsToTargets
+10:07:59 Debug: Apply pid=12345 mutator=ComputeIdToClusterId
+10:07:59 Debug: Apply pid=12345 mutator=InitializeVariables
+10:07:59 Debug: Apply pid=12345 mutator=DefineDefaultTarget(default)
+10:07:59 Debug: Apply pid=12345 mutator=validate:unique_resource_keys
+10:07:59 Debug: Apply pid=12345 mutator=SelectDefaultTarget
+10:07:59 Debug: Apply pid=12345 mutator=SelectDefaultTarget mutator=SelectTarget(default)
+10:07:59 Debug: Apply pid=12345 mutator=<func>
+10:07:59 Info: Phase: initialize pid=12345
+10:07:59 Debug: Apply pid=12345 mutator=validate:AllResourcesHaveValues
+10:07:59 Debug: Apply pid=12345 mutator=validate:interpolation_in_auth_config
+10:07:59 Debug: Apply pid=12345 mutator=validate:scripts
+10:07:59 Debug: Apply pid=12345 mutator=RewriteSyncPaths
+10:07:59 Debug: Apply pid=12345 mutator=SyncDefaultPath
+10:07:59 Debug: Apply pid=12345 mutator=SyncInferRoot
+10:07:59 Debug: Apply pid=12345 mutator=PopulateCurrentUser
+10:07:59 Debug: GET /api/2.0/preview/scim/v2/Me
+< HTTP/1.1 200 OK
+< {
+<   "id": "[USERID]",
+<   "userName": "[USERNAME]"
+< } pid=12345 mutator=PopulateCurrentUser sdk=true
+10:07:59 Debug: Apply pid=12345 mutator=LoadGitDetails
+10:07:59 Debug: Apply pid=12345 mutator=ApplySourceLinkedDeploymentPreset
+10:07:59 Debug: Apply pid=12345 mutator=DefineDefaultWorkspaceRoot
+10:07:59 Debug: Apply pid=12345 mutator=ExpandWorkspaceRoot
+10:07:59 Debug: Apply pid=12345 mutator=DefaultWorkspacePaths
+10:07:59 Debug: Apply pid=12345 mutator=PrependWorkspacePrefix
+10:07:59 Debug: Apply pid=12345 mutator=RewriteWorkspacePrefix
+10:07:59 Debug: Apply pid=12345 mutator=SetVariables
+10:07:59 Debug: Apply pid=12345 mutator=ResolveVariableReferences
+10:07:59 Debug: Apply pid=12345 mutator=ResolveResourceReferences
+10:07:59 Debug: Apply pid=12345 mutator=ResolveVariableReferences
+10:07:59 Debug: Apply pid=12345 mutator=validate:volume-path
+10:07:59 Debug: Apply pid=12345 mutator=ApplyTargetMode
+10:07:59 Debug: Apply pid=12345 mutator=ConfigureWSFS
+10:07:59 Debug: Apply pid=12345 mutator=ProcessStaticResources
+10:07:59 Debug: Apply pid=12345 mutator=ProcessStaticResources mutator=ResolveVariableReferences(resources)
+10:07:59 Debug: Apply pid=12345 mutator=ProcessStaticResources mutator=NormalizePaths
+10:07:59 Debug: Apply pid=12345 mutator=ProcessStaticResources mutator=TranslatePathsDashboards
+10:07:59 Debug: Apply pid=12345 mutator=PythonMutator(load_resources)
+10:07:59 Debug: Apply pid=12345 mutator=PythonMutator(apply_mutators)
+10:07:59 Debug: Apply pid=12345 mutator=validate:required
+10:07:59 Debug: Apply pid=12345 mutator=CheckPermissions
+10:07:59 Debug: Apply pid=12345 mutator=TranslatePaths
+10:07:59 Debug: Apply pid=12345 mutator=PythonWrapperWarning
+10:07:59 Debug: Apply pid=12345 mutator=ApplyArtifactsDynamicVersion
+10:07:59 Debug: Apply pid=12345 mutator=artifacts.Prepare
+10:07:59 Info: No local tasks in databricks.yml config, skipping auto detect pid=12345 mutator=artifacts.Prepare
+10:07:59 Debug: Apply pid=12345 mutator=apps.Validate
+10:07:59 Debug: Apply pid=12345 mutator=ValidateTargetMode
+10:07:59 Debug: Apply pid=12345 mutator=ValidateSharedRootPermissions
+10:07:59 Debug: Apply pid=12345 mutator=metadata.AnnotateJobs
+10:07:59 Debug: Apply pid=12345 mutator=metadata.AnnotatePipelines
+10:07:59 Debug: Apply pid=12345 mutator=scripts.postinit
+10:07:59 Debug: No script defined for postinit, skipping pid=12345 mutator=scripts.postinit
+10:07:59 Debug: ApplyParallel pid=12345 mutator=fast_validate(readonly)
+10:07:59 Debug: ApplyParallel pid=12345 mutator=validate:files_to_sync
+10:07:59 Debug: ApplyParallel pid=12345 mutator=validate:folder_permissions
+10:07:59 Debug: ApplyParallel pid=12345 mutator=validate:validate_sync_patterns
+10:07:59 Debug: ApplyParallel pid=12345 mutator=fast_validate(readonly) mutator=validate:job_cluster_key_defined
+10:07:59 Debug: ApplyParallel pid=12345 mutator=fast_validate(readonly) mutator=validate:job_task_cluster_spec
+10:07:59 Debug: ApplyParallel pid=12345 mutator=fast_validate(readonly) mutator=validate:artifact_paths
+10:07:59 Debug: GET /api/2.0/workspace/get-status?path=/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files
+< HTTP/1.1 404 Not Found
+< {
+<   "message": "Workspace path not found"
+< } pid=12345 mutator=validate:files_to_sync sdk=true
+10:07:59 Debug: non-retriable error: Workspace path not found pid=12345 mutator=validate:files_to_sync sdk=true
+10:07:59 Debug: POST /api/2.0/workspace/mkdirs
+> {
+>   "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files"
+> }
+< HTTP/1.1 200 OK pid=12345 mutator=validate:files_to_sync sdk=true
+10:07:59 Debug: GET /api/2.0/workspace/get-status?path=/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files
+< HTTP/1.1 200 OK
+< {
+<   "object_type": "DIRECTORY",
+<   "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files"
+< } pid=12345 mutator=validate:files_to_sync sdk=true
+10:07:59 Debug: Path /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files has type directory (ID: 0) pid=12345 mutator=validate:files_to_sync
+10:07:59 Info: completed execution pid=12345 exit_code=0
+10:07:59 Debug: no telemetry logs to upload pid=12345

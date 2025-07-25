@@ -46,7 +46,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(newGetPrivateEndpointRule())
 	cmd.AddCommand(newListNetworkConnectivityConfigurations())
 	cmd.AddCommand(newListPrivateEndpointRules())
-	cmd.AddCommand(newUpdateNccAzurePrivateEndpointRulePublic())
+	cmd.AddCommand(newUpdatePrivateEndpointRule())
 
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
@@ -72,7 +72,6 @@ func newCreateNetworkConnectivityConfiguration() *cobra.Command {
 	createNetworkConnectivityConfigurationReq.NetworkConnectivityConfig = settings.CreateNetworkConnectivityConfiguration{}
 	var createNetworkConnectivityConfigurationJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createNetworkConnectivityConfigurationJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "create-network-connectivity-configuration NAME REGION"
@@ -174,13 +173,15 @@ func newCreatePrivateEndpointRule() *cobra.Command {
 	createPrivateEndpointRuleReq.PrivateEndpointRule = settings.CreatePrivateEndpointRule{}
 	var createPrivateEndpointRuleJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createPrivateEndpointRuleJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: domain_names
-	cmd.Flags().StringVar(&createPrivateEndpointRuleReq.PrivateEndpointRule.GroupId, "group-id", createPrivateEndpointRuleReq.PrivateEndpointRule.GroupId, `Only used by private endpoints to Azure first-party services.`)
+	cmd.Flags().StringVar(&createPrivateEndpointRuleReq.PrivateEndpointRule.EndpointService, "endpoint-service", createPrivateEndpointRuleReq.PrivateEndpointRule.EndpointService, `The full target AWS endpoint service name that connects to the destination resources of the private endpoint.`)
+	cmd.Flags().StringVar(&createPrivateEndpointRuleReq.PrivateEndpointRule.GroupId, "group-id", createPrivateEndpointRuleReq.PrivateEndpointRule.GroupId, `Not used by customer-managed private endpoint services.`)
+	cmd.Flags().StringVar(&createPrivateEndpointRuleReq.PrivateEndpointRule.ResourceId, "resource-id", createPrivateEndpointRuleReq.PrivateEndpointRule.ResourceId, `The Azure resource ID of the target resource.`)
+	// TODO: array: resource_names
 
-	cmd.Use = "create-private-endpoint-rule NETWORK_CONNECTIVITY_CONFIG_ID RESOURCE_ID"
+	cmd.Use = "create-private-endpoint-rule NETWORK_CONNECTIVITY_CONFIG_ID"
 	cmd.Short = `Create a private endpoint rule.`
 	cmd.Long = `Create a private endpoint rule.
   
@@ -196,20 +197,12 @@ func newCreatePrivateEndpointRule() *cobra.Command {
   [serverless private link]: https://learn.microsoft.com/azure/databricks/security/network/serverless-network-security/serverless-private-link
 
   Arguments:
-    NETWORK_CONNECTIVITY_CONFIG_ID: Your Network Connectivity Configuration ID.
-    RESOURCE_ID: The Azure resource ID of the target resource.`
+    NETWORK_CONNECTIVITY_CONFIG_ID: Your Network Connectivity Configuration ID.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		if cmd.Flags().Changed("json") {
-			err := root.ExactArgs(1)(cmd, args)
-			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only NETWORK_CONNECTIVITY_CONFIG_ID as positional arguments. Provide 'resource_id' in your JSON input")
-			}
-			return nil
-		}
-		check := root.ExactArgs(2)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -231,9 +224,6 @@ func newCreatePrivateEndpointRule() *cobra.Command {
 			}
 		}
 		createPrivateEndpointRuleReq.NetworkConnectivityConfigId = args[0]
-		if !cmd.Flags().Changed("json") {
-			createPrivateEndpointRuleReq.PrivateEndpointRule.ResourceId = args[1]
-		}
 
 		response, err := a.NetworkConnectivity.CreatePrivateEndpointRule(ctx, createPrivateEndpointRuleReq)
 		if err != nil {
@@ -267,8 +257,6 @@ func newDeleteNetworkConnectivityConfiguration() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var deleteNetworkConnectivityConfigurationReq settings.DeleteNetworkConnectivityConfigurationRequest
-
-	// TODO: short flags
 
 	cmd.Use = "delete-network-connectivity-configuration NETWORK_CONNECTIVITY_CONFIG_ID"
 	cmd.Short = `Delete a network connectivity configuration.`
@@ -325,8 +313,6 @@ func newDeletePrivateEndpointRule() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var deletePrivateEndpointRuleReq settings.DeletePrivateEndpointRuleRequest
-
-	// TODO: short flags
 
 	cmd.Use = "delete-private-endpoint-rule NETWORK_CONNECTIVITY_CONFIG_ID PRIVATE_ENDPOINT_RULE_ID"
 	cmd.Short = `Delete a private endpoint rule.`
@@ -391,8 +377,6 @@ func newGetNetworkConnectivityConfiguration() *cobra.Command {
 
 	var getNetworkConnectivityConfigurationReq settings.GetNetworkConnectivityConfigurationRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get-network-connectivity-configuration NETWORK_CONNECTIVITY_CONFIG_ID"
 	cmd.Short = `Get a network connectivity configuration.`
 	cmd.Long = `Get a network connectivity configuration.
@@ -448,8 +432,6 @@ func newGetPrivateEndpointRule() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getPrivateEndpointRuleReq settings.GetPrivateEndpointRuleRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get-private-endpoint-rule NETWORK_CONNECTIVITY_CONFIG_ID PRIVATE_ENDPOINT_RULE_ID"
 	cmd.Short = `Gets a private endpoint rule.`
@@ -509,8 +491,6 @@ func newListNetworkConnectivityConfigurations() *cobra.Command {
 
 	var listNetworkConnectivityConfigurationsReq settings.ListNetworkConnectivityConfigurationsRequest
 
-	// TODO: short flags
-
 	cmd.Flags().StringVar(&listNetworkConnectivityConfigurationsReq.PageToken, "page-token", listNetworkConnectivityConfigurationsReq.PageToken, `Pagination token to go to next page based on previous query.`)
 
 	cmd.Use = "list-network-connectivity-configurations"
@@ -561,8 +541,6 @@ func newListPrivateEndpointRules() *cobra.Command {
 
 	var listPrivateEndpointRulesReq settings.ListPrivateEndpointRulesRequest
 
-	// TODO: short flags
-
 	cmd.Flags().StringVar(&listPrivateEndpointRulesReq.PageToken, "page-token", listPrivateEndpointRulesReq.PageToken, `Pagination token to go to next page based on previous query.`)
 
 	cmd.Use = "list-private-endpoint-rules NETWORK_CONNECTIVITY_CONFIG_ID"
@@ -604,28 +582,29 @@ func newListPrivateEndpointRules() *cobra.Command {
 	return cmd
 }
 
-// start update-ncc-azure-private-endpoint-rule-public command
+// start update-private-endpoint-rule command
 
 // Slice with functions to override default command behavior.
 // Functions can be added from the `init()` function in manually curated files in this directory.
-var updateNccAzurePrivateEndpointRulePublicOverrides []func(
+var updatePrivateEndpointRuleOverrides []func(
 	*cobra.Command,
-	*settings.UpdateNccAzurePrivateEndpointRulePublicRequest,
+	*settings.UpdateNccPrivateEndpointRuleRequest,
 )
 
-func newUpdateNccAzurePrivateEndpointRulePublic() *cobra.Command {
+func newUpdatePrivateEndpointRule() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var updateNccAzurePrivateEndpointRulePublicReq settings.UpdateNccAzurePrivateEndpointRulePublicRequest
-	updateNccAzurePrivateEndpointRulePublicReq.PrivateEndpointRule = settings.UpdatePrivateEndpointRule{}
-	var updateNccAzurePrivateEndpointRulePublicJson flags.JsonFlag
+	var updatePrivateEndpointRuleReq settings.UpdateNccPrivateEndpointRuleRequest
+	updatePrivateEndpointRuleReq.PrivateEndpointRule = settings.UpdatePrivateEndpointRule{}
+	var updatePrivateEndpointRuleJson flags.JsonFlag
 
-	// TODO: short flags
-	cmd.Flags().Var(&updateNccAzurePrivateEndpointRulePublicJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&updatePrivateEndpointRuleJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: domain_names
+	cmd.Flags().BoolVar(&updatePrivateEndpointRuleReq.PrivateEndpointRule.Enabled, "enabled", updatePrivateEndpointRuleReq.PrivateEndpointRule.Enabled, `Only used by private endpoints towards an AWS S3 service.`)
+	// TODO: array: resource_names
 
-	cmd.Use = "update-ncc-azure-private-endpoint-rule-public NETWORK_CONNECTIVITY_CONFIG_ID PRIVATE_ENDPOINT_RULE_ID"
+	cmd.Use = "update-private-endpoint-rule NETWORK_CONNECTIVITY_CONFIG_ID PRIVATE_ENDPOINT_RULE_ID UPDATE_MASK"
 	cmd.Short = `Update a private endpoint rule.`
 	cmd.Long = `Update a private endpoint rule.
   
@@ -633,16 +612,20 @@ func newUpdateNccAzurePrivateEndpointRulePublic() *cobra.Command {
   customer-managed resources is allowed to be updated.
 
   Arguments:
-    NETWORK_CONNECTIVITY_CONFIG_ID: Your Network Connectivity Configuration ID.
-    PRIVATE_ENDPOINT_RULE_ID: Your private endpoint rule ID.`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
+    NETWORK_CONNECTIVITY_CONFIG_ID: The ID of a network connectivity configuration, which is the parent
+      resource of this private endpoint rule object.
+    PRIVATE_ENDPOINT_RULE_ID: Your private endpoint rule ID.
+    UPDATE_MASK: The field mask must be a single string, with multiple fields separated by
+      commas (no spaces). The field path is relative to the resource object,
+      using a dot (.) to navigate sub-fields (e.g., author.given_name).
+      Specification of elements in sequence or map fields is not allowed, as
+      only the entire collection field can be specified. Field names must
+      exactly match the resource field names.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(2)
+		check := root.ExactArgs(3)
 		return check(cmd, args)
 	}
 
@@ -652,7 +635,7 @@ func newUpdateNccAzurePrivateEndpointRulePublic() *cobra.Command {
 		a := cmdctx.AccountClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			diags := updateNccAzurePrivateEndpointRulePublicJson.Unmarshal(&updateNccAzurePrivateEndpointRulePublicReq.PrivateEndpointRule)
+			diags := updatePrivateEndpointRuleJson.Unmarshal(&updatePrivateEndpointRuleReq.PrivateEndpointRule)
 			if diags.HasError() {
 				return diags.Error()
 			}
@@ -663,10 +646,11 @@ func newUpdateNccAzurePrivateEndpointRulePublic() *cobra.Command {
 				}
 			}
 		}
-		updateNccAzurePrivateEndpointRulePublicReq.NetworkConnectivityConfigId = args[0]
-		updateNccAzurePrivateEndpointRulePublicReq.PrivateEndpointRuleId = args[1]
+		updatePrivateEndpointRuleReq.NetworkConnectivityConfigId = args[0]
+		updatePrivateEndpointRuleReq.PrivateEndpointRuleId = args[1]
+		updatePrivateEndpointRuleReq.UpdateMask = args[2]
 
-		response, err := a.NetworkConnectivity.UpdateNccAzurePrivateEndpointRulePublic(ctx, updateNccAzurePrivateEndpointRulePublicReq)
+		response, err := a.NetworkConnectivity.UpdatePrivateEndpointRule(ctx, updatePrivateEndpointRuleReq)
 		if err != nil {
 			return err
 		}
@@ -678,8 +662,8 @@ func newUpdateNccAzurePrivateEndpointRulePublic() *cobra.Command {
 	cmd.ValidArgsFunction = cobra.NoFileCompletions
 
 	// Apply optional overrides to this command.
-	for _, fn := range updateNccAzurePrivateEndpointRulePublicOverrides {
-		fn(cmd, &updateNccAzurePrivateEndpointRulePublicReq)
+	for _, fn := range updatePrivateEndpointRuleOverrides {
+		fn(cmd, &updatePrivateEndpointRuleReq)
 	}
 
 	return cmd

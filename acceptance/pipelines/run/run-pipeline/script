@@ -1,0 +1,8 @@
+trace $PIPELINES deploy
+title "Run pipeline"
+trace $PIPELINES run
+
+title "Run pipeline with KEY, expect same output as without KEY"
+trace $PIPELINES run my_pipeline
+# This printf is here to fix the whitespace linter error (ensures exactly one newline at end)
+printf "<EOL>\n"

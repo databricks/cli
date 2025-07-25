@@ -41,6 +41,10 @@ from databricks.bundles.pipelines._models.pipeline_permission import (
     PipelinePermission,
     PipelinePermissionParam,
 )
+from databricks.bundles.pipelines._models.pipelines_environment import (
+    PipelinesEnvironment,
+    PipelinesEnvironmentParam,
+)
 from databricks.bundles.pipelines._models.restart_window import (
     RestartWindow,
     RestartWindowParam,
@@ -54,6 +58,11 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class Pipeline(Resource):
     """"""
+
+    allow_duplicate_names: VariableOrOptional[bool] = None
+    """
+    If false, deployment will fail if name conflicts with that of another pipeline.
+    """
 
     budget_policy_id: VariableOrOptional[str] = None
     """
@@ -95,6 +104,11 @@ class Pipeline(Resource):
     edition: VariableOrOptional[str] = None
     """
     Pipeline product edition.
+    """
+
+    environment: VariableOrOptional[PipelinesEnvironment] = None
+    """
+    Environment specification for this pipeline used to install dependencies.
     """
 
     event_log: VariableOrOptional[EventLogSpec] = None
@@ -155,8 +169,6 @@ class Pipeline(Resource):
 
     root_path: VariableOrOptional[str] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
     Root path for this pipeline.
     This is used as the root directory when editing the pipeline in the Databricks user interface and it is
     added to sys.path when executing Python sources during pipeline execution.
@@ -182,6 +194,13 @@ class Pipeline(Resource):
     DBFS root directory for storing checkpoints and tables.
     """
 
+    tags: VariableOrDict[str] = field(default_factory=dict)
+    """
+    A map of tags associated with the pipeline.
+    These are forwarded to the cluster as cluster tags, and are therefore subject to the same limitations.
+    A maximum of 25 tags can be added to the pipeline.
+    """
+
     target: VariableOrOptional[str] = None
     """
     Target schema (database) to add tables in this pipeline to. Exactly one of `schema` or `target` must be specified. To publish to Unity Catalog, also specify `catalog`. This legacy field is deprecated for pipeline creation in favor of the `schema` field.
@@ -197,6 +216,11 @@ class Pipeline(Resource):
 
 class PipelineDict(TypedDict, total=False):
     """"""
+
+    allow_duplicate_names: VariableOrOptional[bool]
+    """
+    If false, deployment will fail if name conflicts with that of another pipeline.
+    """
 
     budget_policy_id: VariableOrOptional[str]
     """
@@ -238,6 +262,11 @@ class PipelineDict(TypedDict, total=False):
     edition: VariableOrOptional[str]
     """
     Pipeline product edition.
+    """
+
+    environment: VariableOrOptional[PipelinesEnvironmentParam]
+    """
+    Environment specification for this pipeline used to install dependencies.
     """
 
     event_log: VariableOrOptional[EventLogSpecParam]
@@ -298,8 +327,6 @@ class PipelineDict(TypedDict, total=False):
 
     root_path: VariableOrOptional[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
     Root path for this pipeline.
     This is used as the root directory when editing the pipeline in the Databricks user interface and it is
     added to sys.path when executing Python sources during pipeline execution.
@@ -323,6 +350,13 @@ class PipelineDict(TypedDict, total=False):
     storage: VariableOrOptional[str]
     """
     DBFS root directory for storing checkpoints and tables.
+    """
+
+    tags: VariableOrDict[str]
+    """
+    A map of tags associated with the pipeline.
+    These are forwarded to the cluster as cluster tags, and are therefore subject to the same limitations.
+    A maximum of 25 tags can be added to the pipeline.
     """
 
     target: VariableOrOptional[str]

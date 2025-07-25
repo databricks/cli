@@ -1,18 +1,19 @@
+// Copied to cmd/pipelines/deploy.go and adapted for pipelines use.
+// Consider if changes made here should be made to the pipelines counterpart as well.
 package bundle
 
 import (
 	"context"
-	"fmt"
-	"io"
+	"time"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/validate"
 	"github.com/databricks/cli/bundle/phases"
-	"github.com/databricks/cli/bundle/render"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/sync"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/spf13/cobra"
 )
 
@@ -41,65 +42,84 @@ func newDeployCommand() *cobra.Command {
 	cmd.Flags().MarkHidden("verbose")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		ctx := cmd.Context()
-		b, diags := utils.ConfigureBundleWithVariables(cmd)
+		ctx := logdiag.InitContext(cmd.Context())
+		cmd.SetContext(ctx)
 
-		if !diags.HasError() {
-			bundle.ApplyFunc(ctx, b, func(context.Context, *bundle.Bundle) diag.Diagnostics {
-				b.Config.Bundle.Force = force
-				b.Config.Bundle.Deployment.Lock.Force = forceLock
-				b.AutoApprove = autoApprove
+		b := utils.ConfigureBundleWithVariables(cmd)
+		if b == nil || logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
+		}
 
-				if cmd.Flag("compute-id").Changed {
-					b.Config.Bundle.ClusterId = clusterId
-				}
-				if cmd.Flag("cluster-id").Changed {
-					b.Config.Bundle.ClusterId = clusterId
-				}
-				if cmd.Flag("fail-on-active-runs").Changed {
-					b.Config.Bundle.Deployment.FailOnActiveRuns = failOnActiveRuns
-				}
+		bundle.ApplyFuncContext(ctx, b, func(context.Context, *bundle.Bundle) {
+			b.Config.Bundle.Force = force
+			b.Config.Bundle.Deployment.Lock.Force = forceLock
+			b.AutoApprove = autoApprove
 
-				return nil
-			})
-
-			var outputHandler sync.OutputHandler
-			if verbose {
-				outputHandler = func(ctx context.Context, c <-chan sync.Event) {
-					sync.TextOutput(ctx, c, cmd.OutOrStdout())
-				}
+			if cmd.Flag("compute-id").Changed {
+				b.Config.Bundle.ClusterId = clusterId
 			}
 
-			diags = diags.Extend(phases.Initialize(ctx, b))
-
-			if !diags.HasError() {
-				diags = diags.Extend(bundle.Apply(ctx, b, validate.FastValidate()))
+			if cmd.Flag("cluster-id").Changed {
+				b.Config.Bundle.ClusterId = clusterId
 			}
-
-			if !diags.HasError() {
-				diags = diags.Extend(phases.Build(ctx, b))
+			if cmd.Flag("fail-on-active-runs").Changed {
+				b.Config.Bundle.Deployment.FailOnActiveRuns = failOnActiveRuns
 			}
+		})
 
-			if !diags.HasError() {
-				diags = diags.Extend(phases.Deploy(ctx, b, outputHandler))
+		var outputHandler sync.OutputHandler
+		if verbose {
+			outputHandler = func(ctx context.Context, c <-chan sync.Event) {
+				sync.TextOutput(ctx, c, cmd.OutOrStdout())
 			}
 		}
 
-		return renderDiagnostics(cmd.OutOrStdout(), b, diags)
+		t0 := time.Now()
+		phases.Initialize(ctx, b)
+		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
+			Key:   "phases.Initialize",
+			Value: time.Since(t0).Milliseconds(),
+		})
+
+		if logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
+		}
+
+		t1 := time.Now()
+		bundle.ApplyContext(ctx, b, validate.FastValidate())
+		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
+			Key:   "validate.FastValidate",
+			Value: time.Since(t1).Milliseconds(),
+		})
+
+		if logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
+		}
+
+		t2 := time.Now()
+		phases.Build(ctx, b)
+		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
+			Key:   "phases.Build",
+			Value: time.Since(t2).Milliseconds(),
+		})
+
+		if logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
+		}
+
+		t3 := time.Now()
+		phases.Deploy(ctx, b, outputHandler)
+		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
+			Key:   "phases.Deploy",
+			Value: time.Since(t3).Milliseconds(),
+		})
+
+		if logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
+		}
+
+		return nil
 	}
+
 	return cmd
-}
-
-func renderDiagnostics(w io.Writer, b *bundle.Bundle, diags diag.Diagnostics) error {
-	renderOpts := render.RenderOptions{RenderSummaryTable: false}
-	err := render.RenderDiagnostics(w, b, diags, renderOpts)
-	if err != nil {
-		return fmt.Errorf("failed to render output: %w", err)
-	}
-
-	if diags.HasError() {
-		return root.ErrAlreadyPrinted
-	}
-
-	return nil
 }

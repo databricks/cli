@@ -1,5 +1,105 @@
 # Version changelog
 
+## Release v0.261.0
+
+### Notable Changes
+The following CLI commands now have additional required positional arguments:
+* `alerts-v2 update-alert ID UPDATE_MASK` - Update an alert (v2)
+* `database update-database-instance NAME UPDATE_MASK` - Update a database instance
+* `external-lineage create-external-lineage-relationship SOURCE TARGET` - Create an external lineage relationship
+* `external-lineage update-external-lineage-relationship UPDATE_MASK SOURCE TARGET` - Update an external lineage relationship
+* `external-metadata update-external-metadata NAME UPDATE_MASK SYSTEM_TYPE ENTITY_TYPE` - Update external metadata
+* `feature-store update-online-store NAME UPDATE_MASK CAPACITY` - Update an online store
+* `lakeview create-schedule DASHBOARD_ID CRON_SCHEDULE` - Create a schedule
+* `lakeview create-subscription DASHBOARD_ID SCHEDULE_ID SUBSCRIBER` - Create a subscription
+* `lakeview update-schedule DASHBOARD_ID SCHEDULE_ID CRON_SCHEDULE` - Update a schedule
+* `network-connectivity update-private-endpoint-rule NETWORK_CONNECTIVITY_CONFIG_ID PRIVATE_ENDPOINT_RULE_ID UPDATE_MASK` - Update a private endpoint rule
+
+### CLI
+* Add required query parameters as positional arguments in CLI commands ([#3289](https://github.com/databricks/cli/pull/3289))
+
+### Bundles
+* Fixed an issue where `allow_duplicate_names` field on the pipeline definition was ignored by the bundle ([#3274](https://github.com/databricks/cli/pull/3274))
+* Add warning for when required bundle fields are not set ([#3044](https://github.com/databricks/cli/pull/3044))
+
+
+## Release v0.260.0
+
+### Notable Changes
+* Added support for creating SQL warehouses in DABs ([#3129](https://github.com/databricks/cli/pull/3129))
+
+### Dependency updates
+* Upgrade Go SDK to 0.75.0 ([#3256](https://github.com/databricks/cli/pull/3256))
+
+### CLI
+* Add `databricks psql` command to connect to Lakebase with a single command ([#3128](https://github.com/databricks/cli/pull/3128))
+
+### Bundles
+
+ * Jobs that use cluster policy default values for their cluster configuration now correctly update those defaults on every deployment ([#3255](https://github.com/databricks/cli/pull/3255)).
+ * Add upper and lower helper methods for bundle templates ([#3242](https://github.com/databricks/cli/pull/3242))
+
+
+## Release v0.259.0
+
+### Notable Changes
+* Add support for arbitrary scripts in DABs. Users can now define scripts in their bundle configuration. These scripts automatically inherit the bundle's credentials for authentication. They can be invoked with the `bundle run` command. ([#2813](https://github.com/databricks/cli/pull/2813))
+* Error when the absolute path to `databricks.yml` contains a glob character. These are: `*`, `?`, `[`, `]` and `^`. If the path to the `databricks.yml` file on your local filesystem contains one of these characters, that could lead to incorrect computation of glob patterns for the `includes` block and might cause resources to be deleted. After this patch users will not be at risk for unexpected deletions due to this issue. ([#3096](https://github.com/databricks/cli/pull/3096))
+* Diagnostics messages are no longer buffered to be printed at the end of command, flushed after every mutator ([#3175](https://github.com/databricks/cli/pull/3175))
+* Diagnostics are now always rendered with forward slashes in file paths, even on Windows ([#3175](https://github.com/databricks/cli/pull/3175))
+* "bundle summary" now prints diagnostics to stderr instead of stdout in text output mode ([#3175](https://github.com/databricks/cli/pull/3175))
+* "bundle summary" no longer prints recommendations, it will only prints warnings and errors ([#3175](https://github.com/databricks/cli/pull/3175))
+
+### Bundles
+* Fix default search location for whl artifacts ([#3184](https://github.com/databricks/cli/pull/3184)). This was a regression introduced in 0.255.0.
+* The job tasks are now sorted by task key in "bundle validate/summary" output ([#3212](https://github.com/databricks/cli/pull/3212))
+
+
+## Release v0.258.0
+
+### Notable Changes
+* Switch default-python template to use pyproject.toml + dynamic\_version in dev target. uv is now required. ([#3042](https://github.com/databricks/cli/pull/3042))
+
+### Dependency updates
+* Upgraded TF provider to 1.84.0 ([#3151](https://github.com/databricks/cli/pull/3151))
+
+### CLI
+* Fixed an issue where running `databricks auth login` would remove the `cluster_id` field from profiles in `.databrickscfg`. The login process now preserves the `cluster_id` field. ([#2988](https://github.com/databricks/cli/pull/2988))
+
+### Bundles
+* Added support for pipeline environment field ([#3153](https://github.com/databricks/cli/pull/3153))
+* "bundle summary" now prints diagnostic warnings to stderr ([#3123](https://github.com/databricks/cli/pull/3123))
+* "bundle open" will print the URL before opening the browser ([#3168](https://github.com/databricks/cli/pull/3168))
+
+
+## Release v0.257.0
+
+### Bundles
+* Improve error message for host mismatch between bundle and profile used ([#3100](https://github.com/databricks/cli/pull/3100))
+* Remove support for deprecated `experimental/pydabs` config, use `experimental/python` instead. See [Configuration in Python
+](https://docs.databricks.com/dev-tools/bundles/python). ([#3102](https://github.com/databricks/cli/pull/3102))
+* Pass through OIDC token env variable to Terraform ([#3113](https://github.com/databricks/cli/pull/3113))
+
+* The `default-python` template now prompts if you want to use serverless compute (default to `yes`) ([#3051](https://github.com/databricks/cli/pull/3051)).
+
+### API Changes
+* Removed `databricks custom-llms` command group.
+* Added `databricks ai-builder` command group.
+* Added `databricks feature-store` command group.
+
+
+## Release v0.256.0
+
+### Bundles
+* When building Python artifacts as part of "bundle deploy" we no longer delete `dist`, `build`, `*egg-info` and `__pycache__` directories ([#2982](https://github.com/databricks/cli/pull/2982))
+* When glob for wheels is used, like "\*.whl", it will filter out different version of the same package and will only take the most recent version ([#2982](https://github.com/databricks/cli/pull/2982))
+* Add preset `presets.artifacts_dynamic_version` that automatically enables `dynamic_version: true` on all "whl" artifacts ([#3074](https://github.com/databricks/cli/pull/3074))
+* Update client version to "2" for the serverless variation of the default-python template ([#3083](https://github.com/databricks/cli/pull/3083))
+* Fix reading dashboard contents when the sync root is different than the bundle root ([#3006](https://github.com/databricks/cli/pull/3006))
+* Fix variable resolution for lookup variables with other references ([#3054](https://github.com/databricks/cli/pull/3054))
+* Allow users to override the Terraform version to use by setting the `DATABRICKS_TF_VERSION` environment variable ([#3069](https://github.com/databricks/cli/pull/3069))
+
+
 ## Release v0.255.0
 
 ### Notable Changes

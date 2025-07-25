@@ -92,7 +92,6 @@ func newCancelAllRuns() *cobra.Command {
 	var cancelAllRunsReq jobs.CancelAllRuns
 	var cancelAllRunsJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&cancelAllRunsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().BoolVar(&cancelAllRunsReq.AllQueuedRuns, "all-queued-runs", cancelAllRunsReq.AllQueuedRuns, `Optional boolean parameter to cancel all queued runs.`)
@@ -169,7 +168,7 @@ func newCancelRun() *cobra.Command {
 
 	cmd.Flags().BoolVar(&cancelRunSkipWait, "no-wait", cancelRunSkipWait, `do not wait to reach TERMINATED or SKIPPED state`)
 	cmd.Flags().DurationVar(&cancelRunTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach TERMINATED or SKIPPED state`)
-	// TODO: short flags
+
 	cmd.Flags().Var(&cancelRunJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "cancel-run RUN_ID"
@@ -288,14 +287,11 @@ func newCreate() *cobra.Command {
 	var createReq jobs.CreateJob
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "create"
 	cmd.Short = `Create a new job.`
-	cmd.Long = `Create a new job.
-  
-  Create a new job.`
+	cmd.Long = `Create a new job.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -353,7 +349,6 @@ func newDelete() *cobra.Command {
 	var deleteReq jobs.DeleteJob
 	var deleteJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "delete JOB_ID"
@@ -452,7 +447,6 @@ func newDeleteRun() *cobra.Command {
 	var deleteRunReq jobs.DeleteRun
 	var deleteRunJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&deleteRunJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "delete-run RUN_ID"
@@ -550,8 +544,6 @@ func newExportRun() *cobra.Command {
 
 	var exportRunReq jobs.ExportRunRequest
 
-	// TODO: short flags
-
 	cmd.Flags().Var(&exportRunReq.ViewsToExport, "views-to-export", `Which views to export (CODE, DASHBOARDS, or ALL). Supported values: [ALL, CODE, DASHBOARDS]`)
 
 	cmd.Use = "export-run RUN_ID"
@@ -624,8 +616,6 @@ func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getReq jobs.GetJobRequest
-
-	// TODO: short flags
 
 	cmd.Flags().StringVar(&getReq.PageToken, "page-token", getReq.PageToken, `Use next_page_token returned from the previous GetJob response to request the next page of the job's array properties.`)
 
@@ -710,8 +700,6 @@ func newGetPermissionLevels() *cobra.Command {
 
 	var getPermissionLevelsReq jobs.GetJobPermissionLevelsRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get-permission-levels JOB_ID"
 	cmd.Short = `Get job permission levels.`
 	cmd.Long = `Get job permission levels.
@@ -779,8 +767,6 @@ func newGetPermissions() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getPermissionsReq jobs.GetJobPermissionsRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get-permissions JOB_ID"
 	cmd.Short = `Get job permissions.`
@@ -850,8 +836,6 @@ func newGetRun() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getRunReq jobs.GetRunRequest
-
-	// TODO: short flags
 
 	cmd.Flags().BoolVar(&getRunReq.IncludeHistory, "include-history", getRunReq.IncludeHistory, `Whether to include the repair history in the response.`)
 	cmd.Flags().BoolVar(&getRunReq.IncludeResolvedValues, "include-resolved-values", getRunReq.IncludeResolvedValues, `Whether to include resolved parameter values in the response.`)
@@ -938,8 +922,6 @@ func newGetRunOutput() *cobra.Command {
 
 	var getRunOutputReq jobs.GetRunOutputRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get-run-output RUN_ID"
 	cmd.Short = `Get the output for a single run.`
 	cmd.Long = `Get the output for a single run.
@@ -1020,8 +1002,6 @@ func newList() *cobra.Command {
 
 	var listReq jobs.ListJobsRequest
 
-	// TODO: short flags
-
 	cmd.Flags().BoolVar(&listReq.ExpandTasks, "expand-tasks", listReq.ExpandTasks, `Whether to include task and cluster details in the response.`)
 	cmd.Flags().IntVar(&listReq.Limit, "limit", listReq.Limit, `The number of jobs to return.`)
 	cmd.Flags().StringVar(&listReq.Name, "name", listReq.Name, `A filter on the list based on the exact (case insensitive) job name.`)
@@ -1075,8 +1055,6 @@ func newListRuns() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listRunsReq jobs.ListRunsRequest
-
-	// TODO: short flags
 
 	cmd.Flags().BoolVar(&listRunsReq.ActiveOnly, "active-only", listRunsReq.ActiveOnly, `If active_only is true, only active runs are included in the results; otherwise, lists both active and completed runs.`)
 	cmd.Flags().BoolVar(&listRunsReq.CompletedOnly, "completed-only", listRunsReq.CompletedOnly, `If completed_only is true, only completed runs are included in the results; otherwise, lists both active and completed runs.`)
@@ -1143,7 +1121,7 @@ func newRepairRun() *cobra.Command {
 
 	cmd.Flags().BoolVar(&repairRunSkipWait, "no-wait", repairRunSkipWait, `do not wait to reach TERMINATED or SKIPPED state`)
 	cmd.Flags().DurationVar(&repairRunTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach TERMINATED or SKIPPED state`)
-	// TODO: short flags
+
 	cmd.Flags().Var(&repairRunJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: dbt_commands
@@ -1278,7 +1256,6 @@ func newReset() *cobra.Command {
 	var resetReq jobs.ResetJob
 	var resetJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&resetJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "reset"
@@ -1349,7 +1326,7 @@ func newRunNow() *cobra.Command {
 
 	cmd.Flags().BoolVar(&runNowSkipWait, "no-wait", runNowSkipWait, `do not wait to reach TERMINATED or SKIPPED state`)
 	cmd.Flags().DurationVar(&runNowTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach TERMINATED or SKIPPED state`)
-	// TODO: short flags
+
 	cmd.Flags().Var(&runNowJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: dbt_commands
@@ -1481,7 +1458,6 @@ func newSetPermissions() *cobra.Command {
 	var setPermissionsReq jobs.JobPermissionsRequest
 	var setPermissionsJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&setPermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: access_control_list
@@ -1574,7 +1550,7 @@ func newSubmit() *cobra.Command {
 
 	cmd.Flags().BoolVar(&submitSkipWait, "no-wait", submitSkipWait, `do not wait to reach TERMINATED or SKIPPED state`)
 	cmd.Flags().DurationVar(&submitTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach TERMINATED or SKIPPED state`)
-	// TODO: short flags
+
 	cmd.Flags().Var(&submitJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: access_control_list
@@ -1679,7 +1655,6 @@ func newUpdate() *cobra.Command {
 	var updateReq jobs.UpdateJob
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: fields_to_remove
@@ -1782,7 +1757,6 @@ func newUpdatePermissions() *cobra.Command {
 	var updatePermissionsReq jobs.JobPermissionsRequest
 	var updatePermissionsJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updatePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: access_control_list

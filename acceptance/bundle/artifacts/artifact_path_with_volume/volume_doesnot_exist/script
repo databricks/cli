@@ -1,0 +1,2 @@
+export VOLUME_NAME=doesnotexist
+source $TESTDIR/../common_script.sh

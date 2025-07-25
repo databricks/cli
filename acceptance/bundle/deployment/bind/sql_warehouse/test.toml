@@ -1,0 +1,49 @@
+Local = true
+Cloud = false
+BundleConfigTarget = "databricks.yml"
+
+Ignore = [
+    ".databricks"
+]
+
+[[Repls]]
+Old = "[0-9]{4}-[0-9]{6}-[0-9a-z]{10}"
+New = "[SQL-WAREHOUSE-ID]"
+
+[[Server]]
+Pattern = "GET /api/2.0/sql/warehouses"
+Response.Body = '''
+{
+  "warehouses": [
+    {
+      "id": "0123-456789-warehouse0",
+      "name": "Test SQL Warehouse"
+    }
+  ]
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.0/sql/warehouses/{warehouse_id}"
+Response.Body = '''
+{
+  "warehouses": [
+    {
+      "id": "0123-456789-warehouse0",
+      "name": "Test SQL Warehouse"
+    }
+  ]
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.0/preview/sql/data_sources"
+Response.Body = '''
+[
+    {
+      "id": "0123-456789-datasource0",
+      "name": "Test Data Source",
+      "warehouse_id": "0123-456789-warehouse0"
+    }
+]
+'''

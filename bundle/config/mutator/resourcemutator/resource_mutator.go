@@ -3,14 +3,15 @@ package resourcemutator
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/validate"
 
 	"github.com/databricks/cli/libs/dyn/merge"
+	"github.com/databricks/cli/libs/logdiag"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 )
 
@@ -18,8 +19,8 @@ import (
 // settings and defaults to it. Initialization is applied only once.
 //
 // If bundle is modified outside of 'resources' section, these changes are discarded.
-func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	diags := bundle.ApplySeq(
+func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
+	bundle.ApplySeqContext(
 		ctx,
 		b,
 		// Reads (typed): b.Config.RunAs, b.Config.Workspace.CurrentUser (validates run_as configuration)
@@ -43,8 +44,8 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		validate.SingleNodeCluster(),
 	)
 
-	if diags.HasError() {
-		return diags
+	if logdiag.HasError(ctx) {
+		return
 	}
 
 	defaults := []struct {
@@ -79,16 +80,23 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		// https://github.com/databricks/terraform-provider-databricks/blob/v1.75.0/pipelines/resource_pipeline.go#L253
 		{"resources.pipelines.*.edition", "ADVANCED"},
 		{"resources.pipelines.*.channel", "CURRENT"},
+
+		// SqlWarehouses (same as terraform)
+		// https://github.com/databricks/terraform-provider-databricks/blob/v1.75.0/sql/resource_sql_endpoint.go#L59
+		{"resources.sql_warehouses.*.auto_stop_mins", 120},
+		{"resources.sql_warehouses.*.enable_photon", true},
+		{"resources.sql_warehouses.*.max_num_clusters", 1},
+		{"resources.sql_warehouses.*.spot_instance_policy", "COST_OPTIMIZED"},
 	}
 
 	for _, defaultDef := range defaults {
-		diags = diags.Extend(bundle.SetDefault(ctx, b, defaultDef.pattern, defaultDef.value))
-		if diags.HasError() {
-			return diags
+		bundle.SetDefault(ctx, b, defaultDef.pattern, defaultDef.value)
+		if logdiag.HasError(ctx) {
+			return
 		}
 	}
 
-	diags = diags.Extend(bundle.ApplySeq(ctx, b,
+	bundle.ApplySeqContext(ctx, b,
 		// Reads (typed): b.Config.Resources.Jobs (checks job configurations)
 		// Updates (typed): b.Config.Resources.Jobs[].Queue (sets Queue.Enabled to true for jobs without queue settings)
 		// Enable queueing for jobs by default, following the behavior from API 2.2+.
@@ -104,16 +112,14 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		// Updates (dynamic): resources.*.*.permissions (removes permissions entries where user_name or service_principal_name matches current user)
 		// Removes the current user from all resource permissions as the Terraform provider implicitly grants ownership
 		FilterCurrentUser(),
-	))
-
-	return diags
+	)
 }
 
 // Normalization is applied multiple times if resource is modified during initialization
 //
 // If bundle is modified outside of 'resources' section, these changes are discarded.
-func applyNormalizeMutators(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	return bundle.ApplySeq(
+func applyNormalizeMutators(ctx context.Context, b *bundle.Bundle) {
+	bundle.ApplySeqContext(
 		ctx,
 		b,
 		// Reads (dynamic): * (strings) (searches for variable references in string values)
@@ -159,6 +165,9 @@ func applyNormalizeMutators(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 		// Updates (dynamic): resources.dashboards.*.serialized_dashboard
 		// Drops (dynamic): resources.dashboards.*.file_path
 		ConfigureDashboardSerializedDashboard(),
+
+		// Reads and updates (typed): resources.jobs.*.**
+		JobClustersFixups(),
 	)
 }
 
@@ -168,12 +177,11 @@ func NormalizeAndInitializeResources(
 	ctx context.Context,
 	b *bundle.Bundle,
 	addedResources ResourceKeySet,
-) diag.Diagnostics {
+) {
 	if addedResources.IsEmpty() {
-		return nil
+		return
 	}
 
-	var diags diag.Diagnostics
 	var snapshot dyn.Value
 
 	err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
@@ -182,17 +190,18 @@ func NormalizeAndInitializeResources(
 		return selectResources(root, addedResources)
 	})
 	if err != nil {
-		return diags.Extend(diag.Errorf("failed to select resources: %s", err))
+		logdiag.LogError(ctx, fmt.Errorf("failed to select resources: %s", err))
+		return
 	}
 
-	diags = diags.Extend(applyNormalizeMutators(ctx, b))
-	if diags.HasError() {
-		return diags
+	applyNormalizeMutators(ctx, b)
+	if logdiag.HasError(ctx) {
+		return
 	}
 
-	diags = diags.Extend(applyInitializeMutators(ctx, b))
-	if diags.HasError() {
-		return diags
+	applyInitializeMutators(ctx, b)
+	if logdiag.HasError(ctx) {
+		return
 	}
 
 	// after mutators, we merge updated resources back to snapshot to preserve non-selected resources
@@ -200,10 +209,8 @@ func NormalizeAndInitializeResources(
 		return mergeResources(root, snapshot)
 	})
 	if err != nil {
-		return diags.Extend(diag.Errorf("failed to merge resources: %s", err))
+		logdiag.LogError(ctx, fmt.Errorf("failed to merge resources: %s", err))
 	}
-
-	return diags
 }
 
 // NormalizeResources normalizes resources specified resources,
@@ -212,12 +219,11 @@ func NormalizeResources(
 	ctx context.Context,
 	b *bundle.Bundle,
 	updatedResources ResourceKeySet,
-) diag.Diagnostics {
+) {
 	if updatedResources.IsEmpty() {
-		return nil
+		return
 	}
 
-	var diags diag.Diagnostics
 	var snapshot dyn.Value
 
 	err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
@@ -226,12 +232,13 @@ func NormalizeResources(
 		return selectResources(root, updatedResources)
 	})
 	if err != nil {
-		return diags.Extend(diag.Errorf("failed to select resources: %s", err))
+		logdiag.LogError(ctx, fmt.Errorf("failed to select resources: %s", err))
+		return
 	}
 
-	diags = diags.Extend(applyNormalizeMutators(ctx, b))
-	if diags.HasError() {
-		return diags
+	applyNormalizeMutators(ctx, b)
+	if logdiag.HasError(ctx) {
+		return
 	}
 
 	// after mutators, we merge updated resources back to snapshot to preserve non-selected resources
@@ -239,10 +246,8 @@ func NormalizeResources(
 		return mergeResources(root, snapshot)
 	})
 	if err != nil {
-		return diags.Extend(diag.Errorf("failed to merge resources: %s", err))
+		logdiag.LogError(ctx, fmt.Errorf("failed to merge resources: %s", err))
 	}
-
-	return diags
 }
 
 // selectResources returns bundle configuration with resources only present in resourcePaths.

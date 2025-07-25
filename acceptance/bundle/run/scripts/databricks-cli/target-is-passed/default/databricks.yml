@@ -1,0 +1,16 @@
+bundle:
+  name: foobar
+
+targets:
+  pat:
+    default: true
+    workspace:
+      profile: pat-profile
+
+  oauth:
+    workspace:
+      profile: oauth-profile
+
+scripts:
+  validate:
+    content: $CLI bundle validate -o json

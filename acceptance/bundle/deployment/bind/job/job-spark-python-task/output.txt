@@ -1,0 +1,68 @@
+
+=== Create a pre-defined job:
+Created job with ID: [NUMID]
+
+=== Bind job:
+>>> [CLI] bundle deployment bind foo [NUMID] --auto-approve
+Updating deployment state...
+Successfully bound job with an id '[NUMID]'. Run 'bundle deploy' to deploy changes to your workspace
+
+=== Remove .databricks directory to simulate fresh deployment:
+>>> rm -rf .databricks
+
+=== Deploy bundle:
+>>> [CLI] bundle deploy --force-lock --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-job-[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Read the pre-defined job:
+>>> [CLI] jobs get [NUMID]
+{
+  "job_id": [NUMID],
+  "settings": {
+    "name": "test-job-basic-[UNIQUE_NAME]",
+    "tasks": [
+      {
+        "task_key": "my_notebook_task",
+        "spark_python_task": {
+          "python_file": "/Workspace/Users/[USERNAME]/.bundle/test-bind-job-[UNIQUE_NAME]/files/hello_world.py"
+        }
+      }
+    ]
+  }
+}
+
+=== Unbind the job:
+>>> [CLI] bundle deployment unbind foo
+Updating deployment state...
+
+=== Remove .databricks directory to simulate fresh deployment:
+>>> rm -rf .databricks
+
+=== Destroy the bundle:
+>>> [CLI] bundle destroy --auto-approve
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bind-job-[UNIQUE_NAME]
+
+Deleting files...
+Destroy complete!
+
+=== Read the pre-defined job again (expecting it still exists):
+>>> [CLI] jobs get [NUMID]
+{
+  "job_id": [NUMID],
+  "settings": {
+    "name": "test-job-basic-[UNIQUE_NAME]",
+    "tasks": [
+      {
+        "task_key": "my_notebook_task",
+        "spark_python_task": {
+          "python_file": "/Workspace/Users/[USERNAME]/.bundle/test-bind-job-[UNIQUE_NAME]/files/hello_world.py"
+        }
+      }
+    ]
+  }
+}
+
+=== Delete the pre-defined job [NUMID]:0

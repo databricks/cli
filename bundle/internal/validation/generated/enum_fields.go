@@ -9,12 +9,16 @@ import (
 
 // EnumFields maps [dyn.Pattern] to valid enum values they should have.
 var EnumFields = map[string][]string{
+	"artifacts.*.executable": {"bash", "sh", "cmd"},
+	"artifacts.*.type": {"whl"},
+
 	"resources.apps.*.active_deployment.mode": {"AUTO_SYNC", "SNAPSHOT"},
 	"resources.apps.*.active_deployment.status.state": {"CANCELLED", "FAILED", "IN_PROGRESS", "SUCCEEDED"},
 	"resources.apps.*.app_status.state": {"CRASHED", "DEPLOYING", "RUNNING", "UNAVAILABLE"},
 	"resources.apps.*.compute_status.state": {"ACTIVE", "DELETING", "ERROR", "STARTING", "STOPPED", "STOPPING", "UPDATING"},
 	"resources.apps.*.pending_deployment.mode": {"AUTO_SYNC", "SNAPSHOT"},
 	"resources.apps.*.pending_deployment.status.state": {"CANCELLED", "FAILED", "IN_PROGRESS", "SUCCEEDED"},
+	"resources.apps.*.resources[*].database.permission": {"CAN_CONNECT_AND_CREATE"},
 	"resources.apps.*.resources[*].job.permission": {"CAN_MANAGE", "CAN_MANAGE_RUN", "CAN_VIEW", "IS_OWNER"},
 	"resources.apps.*.resources[*].secret.permission": {"MANAGE", "READ", "WRITE"},
 	"resources.apps.*.resources[*].serving_endpoint.permission": {"CAN_MANAGE", "CAN_QUERY", "CAN_VIEW"},
@@ -94,7 +98,7 @@ var EnumFields = map[string][]string{
 
 	"resources.model_serving_endpoints.*.ai_gateway.guardrails.input.pii.behavior": {"BLOCK", "NONE"},
 	"resources.model_serving_endpoints.*.ai_gateway.guardrails.output.pii.behavior": {"BLOCK", "NONE"},
-	"resources.model_serving_endpoints.*.ai_gateway.rate_limits[*].key": {"endpoint", "user"},
+	"resources.model_serving_endpoints.*.ai_gateway.rate_limits[*].key": {"endpoint", "service_principal", "user", "user_group"},
 	"resources.model_serving_endpoints.*.ai_gateway.rate_limits[*].renewal_period": {"minute"},
 	"resources.model_serving_endpoints.*.config.served_entities[*].external_model.amazon_bedrock_config.bedrock_provider": {"ai21labs", "amazon", "anthropic", "cohere"},
 	"resources.model_serving_endpoints.*.config.served_entities[*].external_model.provider": {"ai21labs", "amazon-bedrock", "anthropic", "cohere", "custom", "databricks-model-serving", "google-cloud-vertex-ai", "openai", "palm"},
@@ -109,11 +113,11 @@ var EnumFields = map[string][]string{
 	"resources.pipelines.*.clusters[*].azure_attributes.availability": {"ON_DEMAND_AZURE", "SPOT_AZURE", "SPOT_WITH_FALLBACK_AZURE"},
 	"resources.pipelines.*.clusters[*].gcp_attributes.availability": {"ON_DEMAND_GCP", "PREEMPTIBLE_GCP", "PREEMPTIBLE_WITH_FALLBACK_GCP"},
 	"resources.pipelines.*.deployment.kind": {"BUNDLE"},
-	"resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.scd_type": {"SCD_TYPE_1", "SCD_TYPE_2"},
-	"resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.scd_type": {"SCD_TYPE_1", "SCD_TYPE_2"},
-	"resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.scd_type": {"SCD_TYPE_1", "SCD_TYPE_2"},
-	"resources.pipelines.*.ingestion_definition.source_type": {"DYNAMICS365", "GA4_RAW_DATA", "MANAGED_POSTGRESQL", "MYSQL", "NETSUITE", "ORACLE", "POSTGRESQL", "SALESFORCE", "SERVICENOW", "SHAREPOINT", "SQLSERVER", "TERADATA", "WORKDAY_RAAS"},
-	"resources.pipelines.*.ingestion_definition.table_configuration.scd_type": {"SCD_TYPE_1", "SCD_TYPE_2"},
+	"resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.scd_type": {"APPEND_ONLY", "SCD_TYPE_1", "SCD_TYPE_2"},
+	"resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.scd_type": {"APPEND_ONLY", "SCD_TYPE_1", "SCD_TYPE_2"},
+	"resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.scd_type": {"APPEND_ONLY", "SCD_TYPE_1", "SCD_TYPE_2"},
+	"resources.pipelines.*.ingestion_definition.source_type": {"BIGQUERY", "CONFLUENCE", "DYNAMICS365", "GA4_RAW_DATA", "MANAGED_POSTGRESQL", "MYSQL", "NETSUITE", "ORACLE", "POSTGRESQL", "SALESFORCE", "SERVICENOW", "SHAREPOINT", "SQLSERVER", "TERADATA", "WORKDAY_RAAS"},
+	"resources.pipelines.*.ingestion_definition.table_configuration.scd_type": {"APPEND_ONLY", "SCD_TYPE_1", "SCD_TYPE_2"},
 	"resources.pipelines.*.restart_window.days_of_week[*]": {"FRIDAY", "MONDAY", "SATURDAY", "SUNDAY", "THURSDAY", "TUESDAY", "WEDNESDAY"},
 
 	"resources.quality_monitors.*.custom_metrics[*].type": {"CUSTOM_METRIC_TYPE_AGGREGATE", "CUSTOM_METRIC_TYPE_DERIVED", "CUSTOM_METRIC_TYPE_DRIFT"},
@@ -122,5 +126,11 @@ var EnumFields = map[string][]string{
 
 	"resources.secret_scopes.*.backend_type": {"AZURE_KEYVAULT", "DATABRICKS"},
 
+	"resources.sql_warehouses.*.channel.name": {"CHANNEL_NAME_CURRENT", "CHANNEL_NAME_CUSTOM", "CHANNEL_NAME_PREVIEW", "CHANNEL_NAME_PREVIOUS"},
+	"resources.sql_warehouses.*.spot_instance_policy": {"COST_OPTIMIZED", "POLICY_UNSPECIFIED", "RELIABILITY_OPTIMIZED"},
+	"resources.sql_warehouses.*.warehouse_type": {"CLASSIC", "PRO", "TYPE_UNSPECIFIED"},
+
 	"resources.volumes.*.volume_type": {"EXTERNAL", "MANAGED"},
+
+	"variables.*.type": {"complex"},
 }

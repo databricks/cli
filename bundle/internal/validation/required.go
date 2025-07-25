@@ -26,8 +26,9 @@ type RequiredPatternInfo struct {
 	RequiredFields string
 }
 
-// formatValues formats a list of strings into a Go slice literal string of the form `{value1, value2, ...}`
-func formatValues(values []string) string {
+// formatSliceToString formats a list of values into string of the form `{value1, value2, ...}`
+// representing a Go slice literal.
+func formatSliceToString(values []string) string {
 	if len(values) == 0 {
 		return "{}"
 	}
@@ -80,16 +81,16 @@ func buildPatternInfos(fieldsByPattern map[string][]string) []RequiredPatternInf
 	for parentPath, fields := range fieldsByPattern {
 		patterns = append(patterns, RequiredPatternInfo{
 			Parent:         parentPath,
-			RequiredFields: formatValues(fields),
+			RequiredFields: formatSliceToString(fields),
 		})
 	}
 
 	return patterns
 }
 
-// getPatternGroupingKey determines the grouping key for organizing patterns
-func getPatternGroupingKey(patternPath string) string {
-	parts := strings.Split(patternPath, ".")
+// getGroupingKey determines the grouping key for organizing patterns
+func getGroupingKey(pattern string) string {
+	parts := strings.Split(pattern, ".")
 
 	// Group resources by their resource type (e.g., "resources.jobs")
 	if parts[0] == "resources" && len(parts) > 1 {
@@ -105,7 +106,7 @@ func groupPatternsByKey(patterns []RequiredPatternInfo) map[string][]RequiredPat
 	groupedPatterns := make(map[string][]RequiredPatternInfo)
 
 	for _, pattern := range patterns {
-		key := getPatternGroupingKey(pattern.Parent)
+		key := getGroupingKey(pattern.Parent)
 		groupedPatterns[key] = append(groupedPatterns[key], pattern)
 	}
 

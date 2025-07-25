@@ -5,7 +5,7 @@ Only in out_dir_b: only_in_b
 --- out_dir_a/output.txt
 +++ out_dir_b/output.txt
 @@ -1,5 +1,5 @@
- Hello!
+ Hello! 🚀
  {
 -    "id": "[USERID]",
 +    "id": "[UUID]",
@@ -18,7 +18,7 @@ Only in ../out_dir_b: only_in_b
 --- output.txt
 +++ ../out_dir_b/output.txt
 @@ -1,5 +1,5 @@
- Hello!
+ Hello! 🚀
  {
 -    "id": "[USERID]",
 +    "id": "[UUID]",
@@ -29,7 +29,7 @@ Only in ../out_dir_b: only_in_b
 --- out_dir_a/output.txt
 +++ out_dir_b/output.txt
 @@ -1,5 +1,5 @@
- Hello!
+ Hello! 🚀
  {
 -    "id": "[USERID]",
 +    "id": "[UUID]",

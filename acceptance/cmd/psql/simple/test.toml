@@ -1,0 +1,32 @@
+# This acceptance test is disabled on Windows runners because
+# the current argument capturing method does not work on windows-latest GitHub Runner.
+#
+# See PR #3228 for documented attempts to fix this issue:
+# https://github.com/databricks/cli/pull/3228
+GOOS.windows = false
+
+[[Server]]
+Pattern = "GET /api/2.0/database/instances/my-database"
+Response.Body = '''
+{
+    "state": "AVAILABLE",
+    "pg_version": "14",
+    "read_write_dns": "my-database.my-host.com"
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.0/database/instances"
+Response.Body = '''
+{
+    "database_instances": []
+}
+'''
+
+[[Server]]
+Pattern = "POST /api/2.0/database/credentials"
+Response.Body = '''
+{
+    "token": "my-secret-token"
+}
+'''

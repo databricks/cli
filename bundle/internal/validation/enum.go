@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -15,77 +16,98 @@ import (
 )
 
 type EnumPatternInfo struct {
-	// The full pattern for which the enum values are applicable.
+	// The pattern for which the enum values in Values are applicable.
 	// This is a string representation of [dyn.Pattern].
 	Pattern string
 
-	// List of valid enum values for this pattern. This field will be a string of the
-	// form `{value1, value2, ...}`.
-	EnumValues string
+	// List of valid enum values for the pattern. This field will be a string of the
+	// form `{value1, value2, ...}` representing a Go slice literal.
+	Values string
 }
 
-// hasValuesMethod checks if the pointer to a type has a Values() method
-func hasValuesMethod(typ reflect.Type) bool {
-	// Check if the pointer to the type has a Values() method
-	ptrType := reflect.PointerTo(typ)
-	return checkValuesMethodSignature(ptrType)
-}
-
-// checkValuesMethodSignature verifies that a type has a Values() method with correct signature
-func checkValuesMethodSignature(typ reflect.Type) bool {
-	method, exists := typ.MethodByName("Values")
-	if !exists {
+// isEnumType checks if a type is an enum (string type with a Values() method)
+func isEnumType(typ reflect.Type) bool {
+	// Must be a string type
+	if typ.Kind() != reflect.String {
 		return false
 	}
 
-	// Verify the method signature: func() []string
-	methodType := method.Type
+	// Check for Values() method on both the type and its pointer type
+	var valuesMethod reflect.Method
+	var hasValues bool
+
+	// First check on the type itself
+	valuesMethod, hasValues = typ.MethodByName("Values")
+	if !hasValues {
+		// Then check on the pointer type
+		ptrType := reflect.PointerTo(typ)
+		valuesMethod, hasValues = ptrType.MethodByName("Values")
+	}
+
+	if !hasValues {
+		return false
+	}
+
+	// Check method signature: func (T) Values() []T or func (*T) Values() []T
+	methodType := valuesMethod.Type
 	if methodType.NumIn() != 1 || methodType.NumOut() != 1 {
 		return false
 	}
 
-	// Check return type is []string
+	// Check return type is slice of the enum type
 	returnType := methodType.Out(0)
-	if returnType.Kind() != reflect.Slice || returnType.Elem().Kind() != reflect.String {
+	if returnType.Kind() != reflect.Slice {
 		return false
 	}
 
-	return true
+	elementType := returnType.Elem()
+	return elementType == typ
 }
 
-// getEnumValues calls the Values() method on a pointer to the type to get valid enum values
+// getEnumValues extracts enum values by calling the Values() method
 func getEnumValues(typ reflect.Type) ([]string, error) {
-	// Create a pointer to zero value of the type and call Values() on it
-	zeroValue := reflect.Zero(typ)
-	ptrValue := reflect.New(typ)
-	ptrValue.Elem().Set(zeroValue)
-	method := ptrValue.MethodByName("Values")
-
-	if !method.IsValid() {
-		return nil, fmt.Errorf("Values method not found on pointer to type %s", typ.Name())
+	if !isEnumType(typ) {
+		return nil, fmt.Errorf("type %s is not an enum type", typ.Name())
 	}
 
-	result := method.Call(nil)
-	if len(result) != 1 {
-		return nil, fmt.Errorf("Values method should return exactly one value")
+	// Create a zero value of the type
+	enumValue := reflect.Zero(typ)
+
+	// Check if the method is on the type or pointer type
+	valuesMethod := enumValue.MethodByName("Values")
+	if !valuesMethod.IsValid() {
+		// Try on pointer type
+		enumPtr := reflect.New(typ)
+		enumPtr.Elem().Set(enumValue)
+		valuesMethod = enumPtr.MethodByName("Values")
+		if !valuesMethod.IsValid() {
+			return nil, fmt.Errorf("Values() method not found on type %s", typ.Name())
+		}
 	}
 
-	enumSlice := result[0]
-	if enumSlice.Kind() != reflect.Slice {
-		return nil, fmt.Errorf("Values method should return a slice")
+	results := valuesMethod.Call(nil)
+	if len(results) != 1 {
+		return nil, errors.New("Values() method should return exactly one value")
 	}
 
-	values := make([]string, enumSlice.Len())
-	for i := 0; i < enumSlice.Len(); i++ {
-		values[i] = enumSlice.Index(i).String()
+	valuesSlice := results[0]
+	if valuesSlice.Kind() != reflect.Slice {
+		return nil, errors.New("Values() method should return a slice")
 	}
 
-	return values, nil
+	// Extract string values from the slice
+	var enumStrings []string
+	for i := range valuesSlice.Len() {
+		value := valuesSlice.Index(i)
+		enumStrings = append(enumStrings, value.String())
+	}
+
+	return enumStrings, nil
 }
 
 // extractEnumFields walks through a struct type and extracts enum field patterns
 func extractEnumFields(typ reflect.Type) ([]EnumPatternInfo, error) {
-	var patterns []EnumPatternInfo
+	fieldsByPattern := make(map[string][]string)
 
 	err := structwalk.WalkType(typ, func(path *structpath.PathNode, fieldType reflect.Type) bool {
 		if path == nil {
@@ -98,47 +120,51 @@ func extractEnumFields(typ reflect.Type) ([]EnumPatternInfo, error) {
 			return false
 		}
 
-		// Check if this type has a Values() method on its pointer
-		if !hasValuesMethod(fieldType) {
-			return true
+		// Check if this field type is an enum
+		if isEnumType(fieldType) {
+			// Get enum values
+			enumValues, err := getEnumValues(fieldType)
+			if err != nil {
+				// Skip this field if we can't get enum values
+				return true
+			}
+
+			fieldPath := path.DynPath()
+			fieldsByPattern[fieldPath] = enumValues
 		}
-
-		// Get the enum values
-		enumValues, err := getEnumValues(fieldType)
-		if err != nil {
-			// Skip if we can't get enum values
-			return true
-		}
-
-		// Store the full pattern path (not parent path)
-		fullPattern := path.DynPath()
-		patterns = append(patterns, EnumPatternInfo{
-			Pattern:    fullPattern,
-			EnumValues: formatValues(enumValues),
-		})
-
 		return true
 	})
-	if err != nil {
-		return nil, err
-	}
 
-	return patterns, nil
+	return buildEnumPatternInfos(fieldsByPattern), err
 }
 
-// groupEnumPatternsByKey groups patterns by their logical grouping key
-func groupEnumPatternsByKey(patterns []EnumPatternInfo) map[string][]EnumPatternInfo {
+// buildEnumPatternInfos converts the field map to EnumPatternInfo slice
+func buildEnumPatternInfos(fieldsByPattern map[string][]string) []EnumPatternInfo {
+	patterns := make([]EnumPatternInfo, 0, len(fieldsByPattern))
+
+	for pattern, values := range fieldsByPattern {
+		patterns = append(patterns, EnumPatternInfo{
+			Pattern: pattern,
+			Values:  formatSliceToString(values),
+		})
+	}
+
+	return patterns
+}
+
+// groupPatternsByKey groups patterns by their logical grouping key
+func groupPatternsByKeyEnum(patterns []EnumPatternInfo) map[string][]EnumPatternInfo {
 	groupedPatterns := make(map[string][]EnumPatternInfo)
 
 	for _, pattern := range patterns {
-		key := getPatternGroupingKey(pattern.Pattern)
+		key := getGroupingKey(pattern.Pattern)
 		groupedPatterns[key] = append(groupedPatterns[key], pattern)
 	}
 
 	return groupedPatterns
 }
 
-func filterEnumTargetsAndEnvironments(patterns map[string][]EnumPatternInfo) map[string][]EnumPatternInfo {
+func filterTargetsAndEnvironmentsEnum(patterns map[string][]EnumPatternInfo) map[string][]EnumPatternInfo {
 	filtered := make(map[string][]EnumPatternInfo)
 	for key, patterns := range patterns {
 		if key == "targets" || key == "environments" {
@@ -149,8 +175,8 @@ func filterEnumTargetsAndEnvironments(patterns map[string][]EnumPatternInfo) map
 	return filtered
 }
 
-// sortGroupedEnumPatterns sorts patterns within each group and returns them as a sorted slice
-func sortGroupedEnumPatterns(groupedPatterns map[string][]EnumPatternInfo) [][]EnumPatternInfo {
+// sortGroupedPatterns sorts patterns within each group and returns them as a sorted slice
+func sortGroupedPatternsEnum(groupedPatterns map[string][]EnumPatternInfo) [][]EnumPatternInfo {
 	// Get sorted group keys
 	groupKeys := make([]string, 0, len(groupedPatterns))
 	for key := range groupedPatterns {
@@ -163,7 +189,7 @@ func sortGroupedEnumPatterns(groupedPatterns map[string][]EnumPatternInfo) [][]E
 	for _, key := range groupKeys {
 		patterns := groupedPatterns[key]
 
-		// Sort patterns within each group by pattern path
+		// Sort patterns within each group by pattern
 		sort.Slice(patterns, func(i, j int) bool {
 			return patterns[i].Pattern < patterns[j].Pattern
 		})
@@ -180,9 +206,9 @@ func enumFields() ([][]EnumPatternInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	groupedPatterns := groupEnumPatternsByKey(patterns)
-	filteredPatterns := filterEnumTargetsAndEnvironments(groupedPatterns)
-	return sortGroupedEnumPatterns(filteredPatterns), nil
+	groupedPatterns := groupPatternsByKeyEnum(patterns)
+	filteredPatterns := filterTargetsAndEnvironmentsEnum(groupedPatterns)
+	return sortGroupedPatternsEnum(filteredPatterns), nil
 }
 
 // Generate creates a Go source file with enum field validation rules
@@ -231,7 +257,7 @@ import (
 var EnumFields = map[string][]string{
 {{- range . }}
 {{- range . }}
-	"{{ .Pattern }}": {{ .EnumValues }},
+	"{{ .Pattern }}": {{ .Values }},
 {{- end }}
 {{ end -}}
 }

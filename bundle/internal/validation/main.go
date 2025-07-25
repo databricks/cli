@@ -8,11 +8,11 @@ import (
 func main() {
 	err := generateRequiredFields("bundle/internal/validation/generated")
 	if err != nil {
-		log.Fatalf("Error generating code: %v", err)
+		log.Fatalf("Error generating required fields: %v", err)
 	}
 
 	err = generateEnumFields("bundle/internal/validation/generated")
 	if err != nil {
-		log.Fatalf("Error generating code: %v", err)
+		log.Fatalf("Error generating enum fields: %v", err)
 	}
 }

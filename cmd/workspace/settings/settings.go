@@ -10,7 +10,9 @@ import (
 	aibi_dashboard_embedding_approved_domains "github.com/databricks/cli/cmd/workspace/aibi-dashboard-embedding-approved-domains"
 	automatic_cluster_update "github.com/databricks/cli/cmd/workspace/automatic-cluster-update"
 	compliance_security_profile "github.com/databricks/cli/cmd/workspace/compliance-security-profile"
+	dashboard_email_subscriptions "github.com/databricks/cli/cmd/workspace/dashboard-email-subscriptions"
 	default_namespace "github.com/databricks/cli/cmd/workspace/default-namespace"
+	default_warehouse_id "github.com/databricks/cli/cmd/workspace/default-warehouse-id"
 	disable_legacy_access "github.com/databricks/cli/cmd/workspace/disable-legacy-access"
 	disable_legacy_dbfs "github.com/databricks/cli/cmd/workspace/disable-legacy-dbfs"
 	enable_export_notebook "github.com/databricks/cli/cmd/workspace/enable-export-notebook"
@@ -19,6 +21,7 @@ import (
 	enhanced_security_monitoring "github.com/databricks/cli/cmd/workspace/enhanced-security-monitoring"
 	llm_proxy_partner_powered_workspace "github.com/databricks/cli/cmd/workspace/llm-proxy-partner-powered-workspace"
 	restrict_workspace_admins "github.com/databricks/cli/cmd/workspace/restrict-workspace-admins"
+	sql_results_download "github.com/databricks/cli/cmd/workspace/sql-results-download"
 )
 
 // Slice with functions to override default command behavior.
@@ -42,7 +45,9 @@ func New() *cobra.Command {
 	cmd.AddCommand(aibi_dashboard_embedding_approved_domains.New())
 	cmd.AddCommand(automatic_cluster_update.New())
 	cmd.AddCommand(compliance_security_profile.New())
+	cmd.AddCommand(dashboard_email_subscriptions.New())
 	cmd.AddCommand(default_namespace.New())
+	cmd.AddCommand(default_warehouse_id.New())
 	cmd.AddCommand(disable_legacy_access.New())
 	cmd.AddCommand(disable_legacy_dbfs.New())
 	cmd.AddCommand(enable_export_notebook.New())
@@ -51,6 +56,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(enhanced_security_monitoring.New())
 	cmd.AddCommand(llm_proxy_partner_powered_workspace.New())
 	cmd.AddCommand(restrict_workspace_admins.New())
+	cmd.AddCommand(sql_results_download.New())
 
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {

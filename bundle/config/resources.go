@@ -25,6 +25,7 @@ type Resources struct {
 	Dashboards            map[string]*resources.Dashboard            `json:"dashboards,omitempty"`
 	Apps                  map[string]*resources.App                  `json:"apps,omitempty"`
 	SecretScopes          map[string]*resources.SecretScope          `json:"secret_scopes,omitempty"`
+	SqlWarehouses         map[string]*resources.SqlWarehouse         `json:"sql_warehouses,omitempty"`
 }
 
 type ConfigResource interface {
@@ -57,6 +58,10 @@ func collectResourceMap[T ConfigResource](
 	description resources.ResourceDescription,
 	input map[string]T,
 ) ResourceGroup {
+	if description.PluralName == "" {
+		panic("description of a resource group cannot be empty")
+	}
+
 	r := make(map[string]ConfigResource)
 	for key, resource := range input {
 		r[key] = resource
@@ -84,6 +89,7 @@ func (r *Resources) AllResources() []ResourceGroup {
 		collectResourceMap(descriptions["volumes"], r.Volumes),
 		collectResourceMap(descriptions["apps"], r.Apps),
 		collectResourceMap(descriptions["secret_scopes"], r.SecretScopes),
+		collectResourceMap(descriptions["sql_warehouses"], r.SqlWarehouses),
 	}
 }
 
@@ -161,6 +167,12 @@ func (r *Resources) FindResourceByConfigKey(key string) (ConfigResource, error) 
 		}
 	}
 
+	for k := range r.SqlWarehouses {
+		if k == key {
+			found = append(found, r.SqlWarehouses[k])
+		}
+	}
+
 	if len(found) == 0 {
 		return nil, fmt.Errorf("no such resource: %s", key)
 	}
@@ -168,7 +180,7 @@ func (r *Resources) FindResourceByConfigKey(key string) (ConfigResource, error) 
 	if len(found) > 1 {
 		keys := make([]string, 0, len(found))
 		for _, r := range found {
-			keys = append(keys, fmt.Sprintf("%s:%s", r.ResourceDescription().TerraformResourceName, key))
+			keys = append(keys, fmt.Sprintf("%s.%s", r.ResourceDescription().PluralName, key))
 		}
 		return nil, fmt.Errorf("ambiguous: %s (can resolve to all of %s)", key, keys)
 	}
@@ -192,5 +204,6 @@ func SupportedResources() map[string]resources.ResourceDescription {
 		"volumes":                 (&resources.Volume{}).ResourceDescription(),
 		"apps":                    (&resources.App{}).ResourceDescription(),
 		"secret_scopes":           (&resources.SecretScope{}).ResourceDescription(),
+		"sql_warehouses":          (&resources.SqlWarehouse{}).ResourceDescription(),
 	}
 }

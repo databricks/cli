@@ -1,0 +1,9 @@
+Local = false
+Cloud = true
+CloudSlow = true
+
+[CloudEnvs]
+  gcp = false
+
+[EnvMatrix]
+  DATABRICKS_CLI_DEPLOYMENT = ["terraform"]

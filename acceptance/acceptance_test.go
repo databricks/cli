@@ -43,15 +43,13 @@ var (
 	Forcerun    bool
 	LogRequests bool
 	LogConfig   bool
+	SkipLocal   bool
 )
 
 // In order to debug CLI running under acceptance test, search for TestInprocessMode and update
 // the test name there, e.g. "bundle/variables/empty".
 // Then install your breakpoints and click "debug test" near TestInprocessMode in VSCODE.
 //
-// To debug integration tests you can run the "deco env flip workspace" command to configure a workspace
-// and then click on "debug test" near TestInprocessMode.
-
 // If enabled, instead of compiling and running CLI externally, we'll start in-process server that accepts and runs
 // CLI commands. The $CLI in test scripts is a helper that just forwards command-line arguments to this server (see bin/callserver.py).
 // Also disables parallelism in tests.
@@ -65,6 +63,7 @@ func init() {
 	flag.BoolVar(&Forcerun, "forcerun", false, "Force running the specified tests, ignore all reasons to skip")
 	flag.BoolVar(&LogRequests, "logrequests", false, "Log request and responses from testserver")
 	flag.BoolVar(&LogConfig, "logconfig", false, "Log merged for each test case")
+	flag.BoolVar(&SkipLocal, "skiplocal", false, "Skip tests that are enabled to run on Local")
 }
 
 const (
@@ -74,12 +73,19 @@ const (
 	MaxFileSize      = 100_000
 	// Filename to save replacements to (used by diff.py)
 	ReplsFile = "repls.json"
+	// Filename for materialized config (used as golden file)
+	MaterializedConfigFile = "out.test.toml"
 
 	// ENVFILTER allows filtering subtests matching certain env var.
 	// e.g. ENVFILTER=SERVERLESS=yes will run all tests that run SERVERLESS to "yes"
 	// The tests the don't set SERVERLESS variable or set to empty string will also be run.
 	EnvFilterVar = "ENVFILTER"
 )
+
+// On CI, we want to increase timeout, to account for slower environment
+const CITimeoutMultiplier = 2
+
+var ApplyCITimeoutMultipler = os.Getenv("GITHUB_WORKFLOW") != ""
 
 var exeSuffix = func() string {
 	if runtime.GOOS == "windows" {
@@ -106,16 +112,19 @@ func TestInprocessMode(t *testing.T) {
 	if InprocessMode && !Forcerun {
 		t.Skip("Already tested by TestAccept")
 	}
+	if os.Getenv("CLOUD_ENV") != "" {
+		t.Skip("No need to run this as integration test.")
+	}
+
+	// Uncomment to load  ~/.databricks/debug-env.json to debug integration tests
+	// testutil.LoadDebugEnvIfRunFromIDE(t, "workspace")
+	// Run the "deco env flip workspace" command to configure a workspace.
+
 	require.Equal(t, 1, testAccept(t, true, "selftest/basic"))
 	require.Equal(t, 1, testAccept(t, true, "selftest/server"))
 }
 
 func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
-	// Load debug environment when debugging a single test run from an IDE.
-	if singleTest != "" && inprocessMode {
-		testutil.LoadDebugEnvIfRunFromIDE(t, "workspace")
-	}
-
 	repls := testdiff.ReplacementsContext{}
 	cwd, err := os.Getwd()
 	require.NoError(t, err)
@@ -158,6 +167,12 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	t.Setenv("CLI", execPath)
 	repls.SetPath(execPath, "[CLI]")
 
+	pipelinesPath := filepath.Join(buildDir, "pipelines") + exeSuffix
+	err = copyFile(execPath, pipelinesPath)
+	require.NoError(t, err)
+	t.Setenv("PIPELINES", pipelinesPath)
+	repls.SetPath(pipelinesPath, "[PIPELINES]")
+
 	paths := []string{
 		// Make helper scripts available
 		filepath.Join(cwd, "bin"),
@@ -168,10 +183,6 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		os.Getenv("PATH"),
 	}
 	t.Setenv("PATH", strings.Join(paths, string(os.PathListSeparator)))
-
-	tempHomeDir := t.TempDir()
-	repls.SetPath(tempHomeDir, "[TMPHOME]")
-	t.Logf("$TMPHOME=%v", tempHomeDir)
 
 	// Make use of uv cache; since we set HomeEnvVar to temporary directory, it is not picked up automatically
 	uvCache := getUVDefaultCacheDir(t)
@@ -186,6 +197,14 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 
 	if cloudEnv == "" {
 		internal.StartDefaultServer(t)
+		if os.Getenv("TEST_DEFAULT_WAREHOUSE_ID") == "" {
+			t.Setenv("TEST_DEFAULT_WAREHOUSE_ID", "8ec9edc1-db0c-40df-af8d-7580020fe61e")
+		}
+	}
+
+	testDefaultWarehouseId := os.Getenv("TEST_DEFAULT_WAREHOUSE_ID")
+	if testDefaultWarehouseId != "" {
+		repls.Set(testDefaultWarehouseId, "[TEST_DEFAULT_WAREHOUSE_ID]")
 	}
 
 	terraformrcPath := filepath.Join(buildDir, ".terraformrc")
@@ -266,7 +285,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 				if len(expanded[0]) > 0 {
 					t.Logf("Running test with env %v", expanded[0])
 				}
-				runTest(t, dir, 0, coverDir, repls.Clone(), config, configPath, expanded[0], inprocessMode, envFilters)
+				runTest(t, dir, 0, coverDir, repls.Clone(), config, expanded[0], envFilters)
 			} else {
 				for ind, envset := range expanded {
 					envname := strings.Join(envset, "/")
@@ -274,7 +293,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 						if !inprocessMode {
 							t.Parallel()
 						}
-						runTest(t, dir, ind, coverDir, repls.Clone(), config, configPath, envset, inprocessMode, envFilters)
+						runTest(t, dir, ind, coverDir, repls.Clone(), config, envset, envFilters)
 					})
 				}
 			}
@@ -283,7 +302,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 
 	t.Logf("Summary (dirs): %d/%d/%d run/selected/total, %d skipped", selectedDirs-skippedDirs, selectedDirs, totalDirs, skippedDirs)
 
-	return len(testDirs)
+	return selectedDirs - skippedDirs
 }
 
 func getEnvFilters(t *testing.T) []string {
@@ -293,6 +312,7 @@ func getEnvFilters(t *testing.T) []string {
 	}
 
 	filters := strings.Split(envFilterValue, ",")
+	outFilters := make([]string, len(filters))
 
 	for _, filter := range filters {
 		items := strings.Split(filter, "=")
@@ -302,9 +322,17 @@ func getEnvFilters(t *testing.T) []string {
 		key := items[0]
 		// Clear it just to be sure, since it's going to be part of os.Environ() and we're going to add different value based on settings.
 		os.Unsetenv(key)
+
+		if key == "DATABRICKS_CLI_DEPLOYMENT" && items[1] == "direct" {
+			// CLI only recognizes "direct-exp" at the moment, but in the future will recognize "direct" as well.
+			// On CI we set "direct". To avoid renaming jobs in CI on the future, we correct direct -> direct-exp here
+			items[1] = "direct-exp"
+		}
+
+		outFilters = append(outFilters, key+"="+items[1])
 	}
 
-	return filters
+	return outFilters
 }
 
 func getTests(t *testing.T) []string {
@@ -330,6 +358,10 @@ func getTests(t *testing.T) []string {
 
 // Return a reason to skip the test. Empty string means "don't skip".
 func getSkipReason(config *internal.TestConfig, configPath string) string {
+	if SkipLocal && isTruePtr(config.Local) {
+		return "Disabled via SkipLocal setting in " + configPath
+	}
+
 	if Forcerun {
 		return ""
 	}
@@ -350,6 +382,7 @@ func getSkipReason(config *internal.TestConfig, configPath string) string {
 		}
 
 		if isTruePtr(config.CloudSlow) {
+			config.Cloud = config.CloudSlow
 			if testing.Short() {
 				return fmt.Sprintf("Disabled via CloudSlow setting in %s (CLOUD_ENV=%s, Short=%v)", configPath, cloudEnv, testing.Short())
 			}
@@ -393,9 +426,7 @@ func runTest(t *testing.T,
 	coverDir string,
 	repls testdiff.ReplacementsContext,
 	config internal.TestConfig,
-	configPath string,
 	customEnv []string,
-	inprocessMode bool,
 	envFilters []string,
 ) {
 	if LogConfig {
@@ -434,10 +465,18 @@ func runTest(t *testing.T,
 	scriptContents := readMergedScriptContents(t, dir)
 	testutil.WriteFile(t, filepath.Join(tmpDir, EntryPointScript), scriptContents)
 
+	// Generate materialized config for this test
+	materializedConfig, err := internal.GenerateMaterializedConfig(config)
+	require.NoError(t, err)
+	testutil.WriteFile(t, filepath.Join(tmpDir, internal.MaterializedConfigFile), materializedConfig)
+
 	inputs := make(map[string]bool, 2)
 	outputs := make(map[string]bool, 2)
 	err = CopyDir(dir, tmpDir, inputs, outputs)
 	require.NoError(t, err)
+
+	// Add materialized config to outputs for comparison
+	outputs[internal.MaterializedConfigFile] = true
 
 	bundleConfigTarget := "databricks.yml"
 	if config.BundleConfigTarget != nil {
@@ -462,6 +501,11 @@ func runTest(t *testing.T,
 	} else if isRunningOnCloud {
 		timeout = max(timeout, config.TimeoutCloud)
 	}
+
+	if ApplyCITimeoutMultipler {
+		timeout *= CITimeoutMultiplier
+	}
+
 	ctx, cancelFunc := context.WithTimeout(context.Background(), timeout)
 	defer cancelFunc()
 	args := []string{"bash", "-euo", "pipefail", EntryPointScript}
@@ -565,7 +609,11 @@ func runTest(t *testing.T,
 
 	// Compare expected outputs
 	for relPath := range outputs {
-		doComparison(t, repls, dir, tmpDir, relPath, &printedRepls)
+		skipRepls := false
+		if relPath == internal.MaterializedConfigFile {
+			skipRepls = true
+		}
+		doComparison(t, repls, dir, tmpDir, relPath, &printedRepls, skipRepls)
 	}
 
 	// Make sure there are not unaccounted for new files
@@ -588,7 +636,7 @@ func runTest(t *testing.T,
 		if strings.HasPrefix(relPath, "out") {
 			// We have a new file starting with "out"
 			// Show the contents & support overwrite mode for it:
-			doComparison(t, repls, dir, tmpDir, relPath, &printedRepls)
+			doComparison(t, repls, dir, tmpDir, relPath, &printedRepls, false)
 		}
 	}
 
@@ -627,7 +675,7 @@ func addEnvVar(t *testing.T, env []string, repls *testdiff.ReplacementsContext, 
 	return append(env, key+"="+newValue)
 }
 
-func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirNew, relPath string, printedRepls *bool) {
+func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirNew, relPath string, printedRepls *bool, skipRepls bool) {
 	pathRef := filepath.Join(dirRef, relPath)
 	pathNew := filepath.Join(dirNew, relPath)
 	bufRef, okRef := tryReading(t, pathRef)
@@ -642,7 +690,7 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirN
 
 	// Apply replacements to the new value only.
 	// The reference value is stored after applying replacements.
-	if !NoRepl {
+	if !NoRepl && !skipRepls {
 		valueNew = repls.Replace(valueNew)
 	}
 

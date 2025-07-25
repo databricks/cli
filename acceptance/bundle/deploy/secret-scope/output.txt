@@ -1,14 +1,33 @@
 
+=== Print summary before deploy; it should have modified_status=created and no id
+>>> [CLI] bundle summary --output json
+{
+  "backend_type": "DATABRICKS",
+  "modified_status": "created",
+  "name": "my-secrets-[UUID]",
+  "permissions": [
+    {
+      "level": "WRITE",
+      "user_name": "admins"
+    },
+    {
+      "level": "READ",
+      "user_name": "users"
+    }
+  ]
+}
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-secret-scope-test-[UNIQUE_NAME]/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
 
+=== Print summary after deploy; it should have id and no modified_status
 >>> [CLI] bundle summary --output json
 {
   "backend_type": "DATABRICKS",
-  "modified_status": "created",
+  "id": "my-secrets-[UUID]",
   "name": "my-secrets-[UUID]",
   "permissions": [
     {
@@ -43,8 +62,6 @@ Deployment complete!
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete secret_acl secret_acl_secret_scope1_0
-  delete secret_acl secret_acl_secret_scope1_1
   delete secret_scope secret_scope1
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-secret-scope-test-[UNIQUE_NAME]/default
