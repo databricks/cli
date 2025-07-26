@@ -5,6 +5,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-dest
 Deploying resources...
 Updating deployment state...
 Deployment complete!
+View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
 
 >>> errcode [PIPELINES] destroy
 Error: please specify --auto-approve to skip interactive confirmation checks for non tty consoles

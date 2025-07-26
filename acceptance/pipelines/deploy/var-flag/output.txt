@@ -5,6 +5,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-var-
 Deploying resources...
 Updating deployment state...
 Deployment complete!
+View your pipeline foo here: [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
 
 === Verify: Check that variables were substituted correctly
 >>> [CLI] pipelines get [UUID]
