@@ -37,24 +37,25 @@ func (o *PipelineOptions) Define(fs *flag.FlagSet) {
 
 // Validate returns if the combination of options is valid.
 func (o *PipelineOptions) Validate(pipeline *resources.Pipeline) error {
-	var mutuallyExclusiveFlags []string
-
+	var set []string
 	if o.RefreshAll {
-		mutuallyExclusiveFlags = append(mutuallyExclusiveFlags, "--refresh-all")
+		set = append(set, "--refresh-all")
+	}
+	if len(o.Refresh) > 0 {
+		set = append(set, "--refresh")
 	}
 	if o.FullRefreshAll {
-		mutuallyExclusiveFlags = append(mutuallyExclusiveFlags, "--full-refresh-all")
+		set = append(set, "--full-refresh-all")
+	}
+	if len(o.FullRefresh) > 0 {
+		set = append(set, "--full-refresh")
 	}
 	if o.ValidateOnly {
-		mutuallyExclusiveFlags = append(mutuallyExclusiveFlags, "--validate-only")
+		set = append(set, "--validate-only")
 	}
-
-	if len(mutuallyExclusiveFlags) > 1 {
-		return fmt.Errorf("%s pipeline run flags are mutually exclusive", strings.Join(mutuallyExclusiveFlags, ", "))
-	} else if len(mutuallyExclusiveFlags) == 1 && (len(o.Refresh) > 0 || len(o.FullRefresh) > 0) {
-		return fmt.Errorf("cannot use --refresh or --full-refresh together with %s: these flags are mutually exclusive", strings.Join(mutuallyExclusiveFlags, ""))
+	if len(set) > 1 {
+		return fmt.Errorf("pipeline run arguments are mutually exclusive (got %s)", strings.Join(set, ", "))
 	}
-
 	return nil
 }
 
