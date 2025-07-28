@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/dynassert"
+	"github.com/stretchr/testify/assert"
 )
 
 type overrideTestCase struct {
@@ -362,9 +362,9 @@ func TestOverride_Primitive(t *testing.T) {
 			s, visitor := createVisitor(visitorOpts{})
 			out, err := override(dyn.NewPath(dyn.Key("root")), tc.left, tc.right, visitor)
 
-			dynassert.NoError(t, err)
-			dynassert.Equal(t, tc.state, *s)
-			dynassert.Equal(t, tc.expected, out)
+			assert.NoError(t, err)
+			assert.Equal(t, tc.state, *s)
+			assert.Equal(t, tc.expected, out)
 		})
 
 		modified := len(tc.state.removed)+len(tc.state.added)+len(tc.state.updated) > 0
@@ -376,7 +376,7 @@ func TestOverride_Primitive(t *testing.T) {
 				_, visitor := createVisitor(visitorOpts{error: errors.New("unexpected change in test")})
 				_, err := override(dyn.EmptyPath, tc.left, tc.right, visitor)
 
-				dynassert.EqualError(t, err, "unexpected change in test")
+				assert.EqualError(t, err, "unexpected change in test")
 			})
 
 			t.Run(tc.name+" - visitor overrides value", func(t *testing.T) {
@@ -384,20 +384,20 @@ func TestOverride_Primitive(t *testing.T) {
 				s, visitor := createVisitor(visitorOpts{returnValue: &expected})
 				out, err := override(dyn.EmptyPath, tc.left, tc.right, visitor)
 
-				dynassert.NoError(t, err)
+				assert.NoError(t, err)
 
 				for _, added := range s.added {
 					actual, err := dyn.GetByPath(out, dyn.MustPathFromString(added))
 
-					dynassert.NoError(t, err)
-					dynassert.Equal(t, expected, actual)
+					assert.NoError(t, err)
+					assert.Equal(t, expected, actual)
 				}
 
 				for _, updated := range s.updated {
 					actual, err := dyn.GetByPath(out, dyn.MustPathFromString(updated))
 
-					dynassert.NoError(t, err)
-					dynassert.Equal(t, expected, actual)
+					assert.NoError(t, err)
+					assert.Equal(t, expected, actual)
 				}
 			})
 
@@ -413,8 +413,8 @@ func TestOverride_Primitive(t *testing.T) {
 
 						actual, err := dyn.GetByPath(out, dyn.MustPathFromString(removed))
 
-						dynassert.NoError(t, err)
-						dynassert.Equal(t, expected, actual)
+						assert.NoError(t, err)
+						assert.Equal(t, expected, actual)
 					}
 				})
 			}
@@ -446,23 +446,23 @@ func TestOverride_PreserveMappingKeys(t *testing.T) {
 		visitor,
 	)
 
-	dynassert.NoError(t, err)
+	assert.NoError(t, err)
 
 	if err != nil {
 		outPairs := out.MustMap().Pairs()
 
-		dynassert.Equal(t, visitorState{updated: []string{"a"}}, state)
-		dynassert.Equal(t, 1, len(outPairs))
+		assert.Equal(t, visitorState{updated: []string{"a"}}, state)
+		assert.Equal(t, 1, len(outPairs))
 
 		// mapping was first defined in left, so it should keep its location
-		dynassert.Equal(t, leftLocation, out.Location())
+		assert.Equal(t, leftLocation, out.Location())
 
 		// if there is a validation error for key value, it should point
 		// to where it was initially defined
-		dynassert.Equal(t, leftKeyLocation, outPairs[0].Key.Location())
+		assert.Equal(t, leftKeyLocation, outPairs[0].Key.Location())
 
 		// the value should have updated location, because it has changed
-		dynassert.Equal(t, rightValueLocation, outPairs[0].Value.Location())
+		assert.Equal(t, rightValueLocation, outPairs[0].Value.Location())
 	}
 }
 

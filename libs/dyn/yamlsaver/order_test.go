@@ -3,22 +3,22 @@ package yamlsaver
 import (
 	"testing"
 
-	"github.com/databricks/cli/libs/dyn/dynassert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestOrderReturnsIncreasingIndex(t *testing.T) {
 	o := NewOrder([]string{})
-	dynassert.Equal(t, 1, o.Get("a"))
-	dynassert.Equal(t, 2, o.Get("b"))
-	dynassert.Equal(t, 3, o.Get("c"))
+	assert.Equal(t, 1, o.Get("a"))
+	assert.Equal(t, 2, o.Get("b"))
+	assert.Equal(t, 3, o.Get("c"))
 }
 
 func TestOrderReturnsNegativeIndexForPredefinedKeys(t *testing.T) {
 	o := NewOrder([]string{"a", "b", "c"})
-	dynassert.Equal(t, -3, o.Get("a"))
-	dynassert.Equal(t, -2, o.Get("b"))
-	dynassert.Equal(t, -1, o.Get("c"))
-	dynassert.Equal(t, 1, o.Get("d"))
-	dynassert.Equal(t, 2, o.Get("e"))
-	dynassert.Equal(t, 3, o.Get("f"))
+	assert.Equal(t, -3, o.Get("a"))
+	assert.Equal(t, -2, o.Get("b"))
+	assert.Equal(t, -1, o.Get("c"))
+	assert.Equal(t, 1, o.Get("d"))
+	assert.Equal(t, 2, o.Get("e"))
+	assert.Equal(t, 3, o.Get("f"))
 }

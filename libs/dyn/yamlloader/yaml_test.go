@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynassert"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 )
@@ -22,10 +23,10 @@ func loadYAML(t *testing.T, path string) dyn.Value {
 
 	self, err := yamlloader.LoadYAML(path, bytes.NewBuffer(input))
 	require.NoError(t, err)
-	dynassert.NotNil(t, self)
+	assert.NotNil(t, self)
 
 	// Deep-equal the two values to ensure that the loader is producing
-	dynassert.EqualValues(t, ref, self.AsAny())
+	assert.EqualValues(t, ref, self.AsAny())
 	return self
 }
 

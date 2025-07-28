@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynassert"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -266,7 +267,7 @@ func TestYAMLSpecExample_2_11(t *testing.T) {
 
 	// Note: non-string mapping keys are not supported by "gopkg.in/yaml.v3".
 	_, err = yamlloader.LoadYAML(file, bytes.NewBuffer(input))
-	dynassert.ErrorContains(t, err, `: key is not a scalar`)
+	assert.ErrorContains(t, err, `: key is not a scalar`)
 }
 
 func TestYAMLSpecExample_2_12(t *testing.T) {
@@ -550,7 +551,7 @@ func TestYAMLSpecExample_2_23(t *testing.T) {
 	// Note: the !!binary tag is not supported by us.
 
 	_, err = yamlloader.LoadYAML(file, bytes.NewBuffer(input))
-	dynassert.ErrorContains(t, err, `: unknown tag: !!binary`)
+	assert.ErrorContains(t, err, `: unknown tag: !!binary`)
 }
 
 func TestYAMLSpecExample_2_24(t *testing.T) {

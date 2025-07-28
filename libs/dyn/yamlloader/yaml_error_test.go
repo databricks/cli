@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/databricks/cli/libs/dyn/dynassert"
+	"github.com/stretchr/testify/assert"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
@@ -24,12 +24,12 @@ func TestYAMLErrorMapMerge(t *testing.T) {
 			t.Run("reference", func(t *testing.T) {
 				var ref any
 				err = yaml.Unmarshal(input, &ref)
-				dynassert.ErrorContains(t, err, "map merge requires map or sequence of maps as the value")
+				assert.ErrorContains(t, err, "map merge requires map or sequence of maps as the value")
 			})
 
 			t.Run("self", func(t *testing.T) {
 				_, err := yamlloader.LoadYAML(file, bytes.NewBuffer(input))
-				dynassert.ErrorContains(t, err, "map merge requires map or sequence of maps as the value")
+				assert.ErrorContains(t, err, "map merge requires map or sequence of maps as the value")
 			})
 		})
 	}

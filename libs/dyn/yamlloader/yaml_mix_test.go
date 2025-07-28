@@ -4,23 +4,23 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/dynassert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestYAMLMix01(t *testing.T) {
 	file := "testdata/mix_01.yml"
 	self := loadYAML(t, file)
-	dynassert.NotEqual(t, dyn.NilValue, self)
+	assert.NotEqual(t, dyn.NilValue, self)
 
-	dynassert.True(t, self.Get("base_address").IsAnchor())
-	dynassert.False(t, self.Get("office_address").IsAnchor())
+	assert.True(t, self.Get("base_address").IsAnchor())
+	assert.False(t, self.Get("office_address").IsAnchor())
 }
 
 func TestYAMLMix02(t *testing.T) {
 	file := "testdata/mix_02.yml"
 	self := loadYAML(t, file)
-	dynassert.NotEqual(t, dyn.NilValue, self)
+	assert.NotEqual(t, dyn.NilValue, self)
 
-	dynassert.True(t, self.Get("base_colors").IsAnchor())
-	dynassert.False(t, self.Get("theme").IsAnchor())
+	assert.True(t, self.Get("base_colors").IsAnchor())
+	assert.False(t, self.Get("theme").IsAnchor())
 }

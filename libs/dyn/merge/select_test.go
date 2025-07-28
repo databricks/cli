@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/dynassert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSelect(t *testing.T) {
@@ -26,8 +26,8 @@ func TestSelect(t *testing.T) {
 
 	actual, err := Select(input, included)
 
-	dynassert.NoError(t, err)
-	dynassert.Equal(t, expected, actual)
+	assert.NoError(t, err)
+	assert.Equal(t, expected, actual)
 }
 
 func TestAntiSelect(t *testing.T) {
@@ -49,6 +49,6 @@ func TestAntiSelect(t *testing.T) {
 
 	actual, err := AntiSelect(input, excluded)
 
-	dynassert.NoError(t, err)
-	dynassert.Equal(t, expected, actual)
+	assert.NoError(t, err)
+	assert.Equal(t, expected, actual)
 }
