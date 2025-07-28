@@ -44,10 +44,6 @@ func NewFileCache(cachePath string) *FileCache {
 
 // Read retrieves cached content for the given fingerprint.
 func (fc *FileCache) Read(ctx context.Context, fingerprint string) ([]byte, bool) {
-	if err := fc.ensureCacheDir(); err != nil {
-		return nil, false
-	}
-
 	filePath := fc.getFilePath(fingerprint)
 	data, err := os.ReadFile(filePath)
 	if err != nil {
@@ -59,10 +55,6 @@ func (fc *FileCache) Read(ctx context.Context, fingerprint string) ([]byte, bool
 
 // Store saves content to the cache with the given fingerprint.
 func (fc *FileCache) Store(ctx context.Context, fingerprint string, content []byte) error {
-	if err := fc.ensureCacheDir(); err != nil {
-		return fmt.Errorf("failed to create cache directory: %w", err)
-	}
-
 	filePath := fc.getFilePath(fingerprint)
 	if err := os.WriteFile(filePath, content, 0o600); err != nil {
 		return fmt.Errorf("failed to write cache file: %w", err)
@@ -87,11 +79,6 @@ func (fc *FileCache) ClearFingerprint(ctx context.Context, fingerprint string) e
 		return fmt.Errorf("failed to remove cache file: %w", err)
 	}
 	return nil
-}
-
-// ensureCacheDir creates the cache directory if it doesn't exist.
-func (fc *FileCache) ensureCacheDir() error {
-	return os.MkdirAll(fc.cachePath, 0o700)
 }
 
 // getFilePath returns the full file path for a given fingerprint.
