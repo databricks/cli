@@ -128,7 +128,7 @@ func TestValueUnderlyingFloat(t *testing.T) {
 	assert.False(t, ok)
 
 	vv2 := v.MustFloat()
-	assert.Equal(t, vv1, vv2)
+	assert.Zero(t, vv1-vv2)
 
 	// Test panic.
 	assert.PanicsWithValue(t, "expected kind float, got invalid", func() {
@@ -139,7 +139,7 @@ func TestValueUnderlyingFloat(t *testing.T) {
 	v = dyn.V(float64(1.0))
 	vv1, ok = v.AsFloat()
 	assert.True(t, ok)
-	assert.Equal(t, float64(1.0), vv1)
+	assert.Zero(t, 1.0-vv1)
 }
 
 func TestValueUnderlyingTime(t *testing.T) {

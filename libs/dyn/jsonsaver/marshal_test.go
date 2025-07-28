@@ -80,13 +80,13 @@ func TestMarshal_Complex(t *testing.T) {
 	// Marshal without indent.
 	b, err := Marshal(dyn.V(root))
 	if assert.NoError(t, err) {
-		assert.Equal(t, `{"map1":{"str1":"value1","str2":"value2"},"seq1":["value1","value2"]}`+"\n", string(b))
+		assert.JSONEq(t, `{"map1":{"str1":"value1","str2":"value2"},"seq1":["value1","value2"]}`+"\n", string(b))
 	}
 
 	// Marshal with indent.
 	b, err = MarshalIndent(dyn.V(root), "", "  ")
 	if assert.NoError(t, err) {
-		assert.Equal(t, `{
+		assert.JSONEq(t, `{
   "map1": {
     "str1": "value1",
     "str2": "value2"

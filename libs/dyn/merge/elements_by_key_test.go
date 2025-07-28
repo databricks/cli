@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/dyn"
-	assert "github.com/databricks/cli/libs/dyn/dynassert"
+	"github.com/databricks/cli/libs/dyn/dynassert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -34,15 +34,15 @@ func TestElementByKey(t *testing.T) {
 
 	vout, err := dyn.MapByPath(vin, dyn.EmptyPath, ElementsByKey("key", keyFunc))
 	require.NoError(t, err)
-	assert.Len(t, vout.MustSequence(), 2)
-	assert.Equal(t,
+	dynassert.Len(t, vout.MustSequence(), 2)
+	dynassert.Equal(t,
 		vout.Index(0).AsAny(),
 		map[string]any{
 			"key":   "foo",
 			"value": 44,
 		},
 	)
-	assert.Equal(t,
+	dynassert.Equal(t,
 		vout.Index(1).AsAny(),
 		map[string]any{
 			"key":   "bar",
@@ -73,15 +73,15 @@ func TestElementByKeyWithOverride(t *testing.T) {
 
 	vout, err := dyn.MapByPath(vin, dyn.EmptyPath, ElementsByKeyWithOverride("key", keyFunc))
 	require.NoError(t, err)
-	assert.Len(t, vout.MustSequence(), 2)
-	assert.Equal(t,
+	dynassert.Len(t, vout.MustSequence(), 2)
+	dynassert.Equal(t,
 		vout.Index(0).AsAny(),
 		map[string]any{
 			"key":        "foo",
 			"othervalue": 44,
 		},
 	)
-	assert.Equal(t,
+	dynassert.Equal(t,
 		vout.Index(1).AsAny(),
 		map[string]any{
 			"key":   "bar",

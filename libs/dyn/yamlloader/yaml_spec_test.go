@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/dyn"
-	assert "github.com/databricks/cli/libs/dyn/dynassert"
+	"github.com/databricks/cli/libs/dyn/dynassert"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/stretchr/testify/require"
 )
@@ -26,7 +26,7 @@ func TestYAMLSpecExample_2_1(t *testing.T) {
 	file := "testdata/spec_example_2.1.yml"
 	self := loadExample(t, file)
 
-	assert.Equal(t, dyn.NewValue(
+	dynassert.Equal(t, dyn.NewValue(
 		[]dyn.Value{
 			dyn.NewValue("Mark McGwire", []dyn.Location{{File: file, Line: 3, Column: 3}}),
 			dyn.NewValue("Sammy Sosa", []dyn.Location{{File: file, Line: 4, Column: 3}}),
@@ -40,7 +40,7 @@ func TestYAMLSpecExample_2_2(t *testing.T) {
 	file := "testdata/spec_example_2.2.yml"
 	self := loadExample(t, file)
 
-	assert.Equal(t, dyn.NewValue(
+	dynassert.Equal(t, dyn.NewValue(
 		map[string]dyn.Value{
 			"hr":  dyn.NewValue(65, []dyn.Location{{File: file, Line: 3, Column: 6}}),
 			"avg": dyn.NewValue(0.278, []dyn.Location{{File: file, Line: 4, Column: 6}}),
@@ -54,7 +54,7 @@ func TestYAMLSpecExample_2_3(t *testing.T) {
 	file := "testdata/spec_example_2.3.yml"
 	self := loadExample(t, file)
 
-	assert.Equal(t, dyn.NewValue(
+	dynassert.Equal(t, dyn.NewValue(
 		map[string]dyn.Value{
 			"american": dyn.NewValue(
 				[]dyn.Value{
@@ -81,7 +81,7 @@ func TestYAMLSpecExample_2_4(t *testing.T) {
 	file := "testdata/spec_example_2.4.yml"
 	self := loadExample(t, file)
 
-	assert.Equal(t, dyn.NewValue(
+	dynassert.Equal(t, dyn.NewValue(
 		[]dyn.Value{
 			dyn.NewValue(
 				map[string]dyn.Value{
@@ -108,7 +108,7 @@ func TestYAMLSpecExample_2_5(t *testing.T) {
 	file := "testdata/spec_example_2.5.yml"
 	self := loadExample(t, file)
 
-	assert.Equal(t, dyn.NewValue(
+	dynassert.Equal(t, dyn.NewValue(
 		[]dyn.Value{
 			dyn.NewValue(
 				[]dyn.Value{
@@ -143,7 +143,7 @@ func TestYAMLSpecExample_2_6(t *testing.T) {
 	file := "testdata/spec_example_2.6.yml"
 	self := loadExample(t, file)
 
-	assert.Equal(t, dyn.NewValue(
+	dynassert.Equal(t, dyn.NewValue(
 		map[string]dyn.Value{
 			"Mark McGwire": dyn.NewValue(
 				map[string]dyn.Value{
@@ -170,7 +170,7 @@ func TestYAMLSpecExample_2_7(t *testing.T) {
 
 	// Note: we do not support multiple documents in a single YAML file.
 
-	assert.Equal(t, dyn.NewValue(
+	dynassert.Equal(t, dyn.NewValue(
 		[]dyn.Value{
 			dyn.NewValue(
 				"Mark McGwire",
@@ -195,7 +195,7 @@ func TestYAMLSpecExample_2_8(t *testing.T) {
 
 	// Note: we do not support multiple documents in a single YAML file.
 
-	assert.Equal(t, dyn.NewValue(
+	dynassert.Equal(t, dyn.NewValue(
 		map[string]dyn.Value{
 			"time":   dyn.NewValue("20:03:20", []dyn.Location{{File: file, Line: 4, Column: 7}}),
 			"player": dyn.NewValue("Sammy Sosa", []dyn.Location{{File: file, Line: 5, Column: 9}}),
@@ -211,7 +211,7 @@ func TestYAMLSpecExample_2_9(t *testing.T) {
 
 	// Note: we do not support multiple documents in a single YAML file.
 
-	assert.Equal(t, dyn.NewValue(
+	dynassert.Equal(t, dyn.NewValue(
 		map[string]dyn.Value{
 			"hr": dyn.NewValue(
 				[]dyn.Value{
@@ -236,7 +236,7 @@ func TestYAMLSpecExample_2_10(t *testing.T) {
 	file := "testdata/spec_example_2.10.yml"
 	self := loadExample(t, file)
 
-	assert.Equal(t, dyn.NewValue(
+	dynassert.Equal(t, dyn.NewValue(
 		map[string]dyn.Value{
 			"hr": dyn.NewValue(
 				[]dyn.Value{
@@ -266,14 +266,14 @@ func TestYAMLSpecExample_2_11(t *testing.T) {
 
 	// Note: non-string mapping keys are not supported by "gopkg.in/yaml.v3".
 	_, err = yamlloader.LoadYAML(file, bytes.NewBuffer(input))
-	assert.ErrorContains(t, err, `: key is not a scalar`)
+	dynassert.ErrorContains(t, err, `: key is not a scalar`)
 }
 
 func TestYAMLSpecExample_2_12(t *testing.T) {
 	file := "testdata/spec_example_2.12.yml"
 	self := loadExample(t, file)
 
-	assert.Equal(t, dyn.NewValue(
+	dynassert.Equal(t, dyn.NewValue(
 		[]dyn.Value{
 			dyn.NewValue(
 				map[string]dyn.Value{
@@ -305,7 +305,7 @@ func TestYAMLSpecExample_2_13(t *testing.T) {
 	file := "testdata/spec_example_2.13.yml"
 	self := loadExample(t, file)
 
-	assert.Equal(t, dyn.NewValue(
+	dynassert.Equal(t, dyn.NewValue(
 		``+
 			`\//||\/||`+NL+
 			"// ||  ||__"+NL,
@@ -317,7 +317,7 @@ func TestYAMLSpecExample_2_14(t *testing.T) {
 	file := "testdata/spec_example_2.14.yml"
 	self := loadExample(t, file)
 
-	assert.Equal(t, dyn.NewValue(
+	dynassert.Equal(t, dyn.NewValue(
 		`Mark McGwire's year was crippled by a knee injury.`+NL,
 		[]dyn.Location{{File: file, Line: 3, Column: 5}},
 	), self)
@@ -327,7 +327,7 @@ func TestYAMLSpecExample_2_15(t *testing.T) {
 	file := "testdata/spec_example_2.15.yml"
 	self := loadExample(t, file)
 
-	assert.Equal(t, dyn.NewValue(
+	dynassert.Equal(t, dyn.NewValue(
 		``+
 			`Sammy Sosa completed another fine season with great stats.`+NL+
 			NL+
@@ -343,7 +343,7 @@ func TestYAMLSpecExample_2_16(t *testing.T) {
 	file := "testdata/spec_example_2.16.yml"
 	self := loadExample(t, file)
 
-	assert.Equal(t, dyn.NewValue(
+	dynassert.Equal(t, dyn.NewValue(
 		map[string]dyn.Value{
 			"name": dyn.NewValue(
 				"Mark McGwire",
@@ -368,7 +368,7 @@ func TestYAMLSpecExample_2_17(t *testing.T) {
 	file := "testdata/spec_example_2.17.yml"
 	self := loadExample(t, file)
 
-	assert.Equal(t, dyn.NewValue(
+	dynassert.Equal(t, dyn.NewValue(
 		map[string]dyn.Value{
 			"unicode": dyn.NewValue(
 				`Sosa did fine.`+"\u263A",
@@ -403,7 +403,7 @@ func TestYAMLSpecExample_2_18(t *testing.T) {
 	file := "testdata/spec_example_2.18.yml"
 	self := loadExample(t, file)
 
-	assert.Equal(t, dyn.NewValue(
+	dynassert.Equal(t, dyn.NewValue(
 		map[string]dyn.Value{
 			"plain": dyn.NewValue(
 				`This unquoted scalar spans many lines.`,
@@ -422,7 +422,7 @@ func TestYAMLSpecExample_2_19(t *testing.T) {
 	file := "testdata/spec_example_2.19.yml"
 	self := loadExample(t, file)
 
-	assert.Equal(t, dyn.NewValue(
+	dynassert.Equal(t, dyn.NewValue(
 		map[string]dyn.Value{
 			"canonical": dyn.NewValue(
 				12345,
@@ -464,7 +464,7 @@ func TestYAMLSpecExample_2_20(t *testing.T) {
 		return v, nil
 	})
 
-	assert.Equal(t, dyn.NewValue(
+	dynassert.Equal(t, dyn.NewValue(
 		map[string]dyn.Value{
 			"canonical": dyn.NewValue(
 				1230.15,
@@ -491,7 +491,7 @@ func TestYAMLSpecExample_2_21(t *testing.T) {
 	file := "testdata/spec_example_2.21.yml"
 	self := loadExample(t, file)
 
-	assert.Equal(t, dyn.NewValue(
+	dynassert.Equal(t, dyn.NewValue(
 		map[string]dyn.Value{
 			"null": dyn.NewValue(
 				nil,
@@ -517,7 +517,7 @@ func TestYAMLSpecExample_2_22(t *testing.T) {
 	file := "testdata/spec_example_2.22.yml"
 	self := loadExample(t, file)
 
-	assert.Equal(t, dyn.NewValue(
+	dynassert.Equal(t, dyn.NewValue(
 		map[string]dyn.Value{
 			"canonical": dyn.NewValue(
 				dyn.MustTime("2001-12-15T02:59:43.1Z"),
@@ -550,14 +550,14 @@ func TestYAMLSpecExample_2_23(t *testing.T) {
 	// Note: the !!binary tag is not supported by us.
 
 	_, err = yamlloader.LoadYAML(file, bytes.NewBuffer(input))
-	assert.ErrorContains(t, err, `: unknown tag: !!binary`)
+	dynassert.ErrorContains(t, err, `: unknown tag: !!binary`)
 }
 
 func TestYAMLSpecExample_2_24(t *testing.T) {
 	file := "testdata/spec_example_2.24.yml"
 	self := loadExample(t, file)
 
-	assert.Equal(t, dyn.NewValue(
+	dynassert.Equal(t, dyn.NewValue(
 		[]dyn.Value{
 			dyn.NewValue(
 				map[string]dyn.Value{
@@ -614,7 +614,7 @@ func TestYAMLSpecExample_2_25(t *testing.T) {
 	file := "testdata/spec_example_2.25.yml"
 	self := loadExample(t, file)
 
-	assert.Equal(t, dyn.NewValue(
+	dynassert.Equal(t, dyn.NewValue(
 		map[string]dyn.Value{
 			"Mark McGwire": dyn.NewValue(nil, []dyn.Location{{File: file, Line: 8, Column: 1}}),
 			"Sammy Sosa":   dyn.NewValue(nil, []dyn.Location{{File: file, Line: 9, Column: 1}}),
@@ -628,7 +628,7 @@ func TestYAMLSpecExample_2_26(t *testing.T) {
 	file := "testdata/spec_example_2.26.yml"
 	self := loadExample(t, file)
 
-	assert.Equal(t, dyn.NewValue(
+	dynassert.Equal(t, dyn.NewValue(
 		[]dyn.Value{
 			dyn.NewValue(
 				map[string]dyn.Value{
@@ -657,7 +657,7 @@ func TestYAMLSpecExample_2_27(t *testing.T) {
 	file := "testdata/spec_example_2.27.yml"
 	self := loadExample(t, file)
 
-	assert.Equal(t, dyn.NewValue(
+	dynassert.Equal(t, dyn.NewValue(
 		map[string]dyn.Value{
 			"invoice": dyn.NewValue(
 				34843,
@@ -802,7 +802,7 @@ func TestYAMLSpecExample_2_28(t *testing.T) {
 	file := "testdata/spec_example_2.28.yml"
 	self := loadExample(t, file)
 
-	assert.Equal(t, dyn.NewValue(
+	dynassert.Equal(t, dyn.NewValue(
 		map[string]dyn.Value{
 			"Time": dyn.NewValue(
 				"2001-11-23 15:01:42 -5",

@@ -138,14 +138,14 @@ func TestResolveWithTypeRetention(t *testing.T) {
 	assert.EqualValues(t, 1, getByPath(t, out, "int").MustInt())
 	assert.EqualValues(t, 1, getByPath(t, out, "int_var").MustInt())
 
-	assert.EqualValues(t, true, getByPath(t, out, "bool_true").MustBool())
-	assert.EqualValues(t, true, getByPath(t, out, "bool_true_var").MustBool())
+	assert.True(t, getByPath(t, out, "bool_true").MustBool())
+	assert.True(t, getByPath(t, out, "bool_true_var").MustBool())
 
-	assert.EqualValues(t, false, getByPath(t, out, "bool_false").MustBool())
-	assert.EqualValues(t, false, getByPath(t, out, "bool_false_var").MustBool())
+	assert.False(t, getByPath(t, out, "bool_false").MustBool())
+	assert.False(t, getByPath(t, out, "bool_false_var").MustBool())
 
-	assert.EqualValues(t, 1.0, getByPath(t, out, "float").MustFloat())
-	assert.EqualValues(t, 1.0, getByPath(t, out, "float_var").MustFloat())
+	assert.Zero(t, 1.0-getByPath(t, out, "float").MustFloat())
+	assert.Zero(t, 1.0-getByPath(t, out, "float_var").MustFloat())
 
 	assert.EqualValues(t, "a", getByPath(t, out, "string").MustString())
 	assert.EqualValues(t, "a", getByPath(t, out, "string_var").MustString())

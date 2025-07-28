@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/dyn"
-	assert "github.com/databricks/cli/libs/dyn/dynassert"
+	"github.com/databricks/cli/libs/dyn/dynassert"
 )
 
 func TestMergeMaps(t *testing.T) {
@@ -23,57 +23,57 @@ func TestMergeMaps(t *testing.T) {
 	// Merge v2 into v1.
 	{
 		out, err := Merge(v1, v2)
-		assert.NoError(t, err)
-		assert.Equal(t, map[string]any{
+		dynassert.NoError(t, err)
+		dynassert.Equal(t, map[string]any{
 			"foo": "bar",
 			"bar": "qux",
 			"qux": "foo",
 		}, out.AsAny())
 
 		// Locations of both values should be preserved.
-		assert.Equal(t, []dyn.Location{l1, l2}, out.Locations())
-		assert.Equal(t, []dyn.Location{l2, l1}, out.Get("bar").Locations())
-		assert.Equal(t, []dyn.Location{l1}, out.Get("foo").Locations())
-		assert.Equal(t, []dyn.Location{l2}, out.Get("qux").Locations())
+		dynassert.Equal(t, []dyn.Location{l1, l2}, out.Locations())
+		dynassert.Equal(t, []dyn.Location{l2, l1}, out.Get("bar").Locations())
+		dynassert.Equal(t, []dyn.Location{l1}, out.Get("foo").Locations())
+		dynassert.Equal(t, []dyn.Location{l2}, out.Get("qux").Locations())
 
 		// Location of the merged value should be the location of v1.
-		assert.Equal(t, l1, out.Location())
+		dynassert.Equal(t, l1, out.Location())
 
 		// Value of bar is "qux" which comes from v2. This .Location() should
 		// return the location of v2.
-		assert.Equal(t, l2, out.Get("bar").Location())
+		dynassert.Equal(t, l2, out.Get("bar").Location())
 
 		// Original locations of keys that were not overwritten should be preserved.
-		assert.Equal(t, l1, out.Get("foo").Location())
-		assert.Equal(t, l2, out.Get("qux").Location())
+		dynassert.Equal(t, l1, out.Get("foo").Location())
+		dynassert.Equal(t, l2, out.Get("qux").Location())
 	}
 
 	// Merge v1 into v2.
 	{
 		out, err := Merge(v2, v1)
-		assert.NoError(t, err)
-		assert.Equal(t, map[string]any{
+		dynassert.NoError(t, err)
+		dynassert.Equal(t, map[string]any{
 			"foo": "bar",
 			"bar": "baz",
 			"qux": "foo",
 		}, out.AsAny())
 
 		// Locations of both values should be preserved.
-		assert.Equal(t, []dyn.Location{l2, l1}, out.Locations())
-		assert.Equal(t, []dyn.Location{l1, l2}, out.Get("bar").Locations())
-		assert.Equal(t, []dyn.Location{l1}, out.Get("foo").Locations())
-		assert.Equal(t, []dyn.Location{l2}, out.Get("qux").Locations())
+		dynassert.Equal(t, []dyn.Location{l2, l1}, out.Locations())
+		dynassert.Equal(t, []dyn.Location{l1, l2}, out.Get("bar").Locations())
+		dynassert.Equal(t, []dyn.Location{l1}, out.Get("foo").Locations())
+		dynassert.Equal(t, []dyn.Location{l2}, out.Get("qux").Locations())
 
 		// Location of the merged value should be the location of v2.
-		assert.Equal(t, l2, out.Location())
+		dynassert.Equal(t, l2, out.Location())
 
 		// Value of bar is "baz" which comes from v1. This .Location() should
 		// return the location of v1.
-		assert.Equal(t, l1, out.Get("bar").Location())
+		dynassert.Equal(t, l1, out.Get("bar").Location())
 
 		// Original locations of keys that were not overwritten should be preserved.
-		assert.Equal(t, l1, out.Get("foo").Location())
-		assert.Equal(t, l2, out.Get("qux").Location())
+		dynassert.Equal(t, l1, out.Get("foo").Location())
+		dynassert.Equal(t, l2, out.Get("qux").Location())
 	}
 }
 
@@ -89,31 +89,31 @@ func TestMergeMapsNil(t *testing.T) {
 	// Merge nil into v.
 	{
 		out, err := Merge(v, nilV)
-		assert.NoError(t, err)
-		assert.Equal(t, map[string]any{
+		dynassert.NoError(t, err)
+		dynassert.Equal(t, map[string]any{
 			"foo": "bar",
 		}, out.AsAny())
 
 		// Locations of both values should be preserved.
-		assert.Equal(t, []dyn.Location{l, nilL}, out.Locations())
+		dynassert.Equal(t, []dyn.Location{l, nilL}, out.Locations())
 
 		// Location of the non-nil value should be returned by .Location().
-		assert.Equal(t, l, out.Location())
+		dynassert.Equal(t, l, out.Location())
 	}
 
 	// Merge v into nil.
 	{
 		out, err := Merge(nilV, v)
-		assert.NoError(t, err)
-		assert.Equal(t, map[string]any{
+		dynassert.NoError(t, err)
+		dynassert.Equal(t, map[string]any{
 			"foo": "bar",
 		}, out.AsAny())
 
 		// Locations of both values should be preserved.
-		assert.Equal(t, []dyn.Location{l, nilL}, out.Locations())
+		dynassert.Equal(t, []dyn.Location{l, nilL}, out.Locations())
 
 		// Location of the non-nil value should be returned by .Location().
-		assert.Equal(t, l, out.Location())
+		dynassert.Equal(t, l, out.Location())
 	}
 }
 
@@ -127,8 +127,8 @@ func TestMergeMapsError(t *testing.T) {
 	// Merge a string into v.
 	{
 		out, err := Merge(v, other)
-		assert.EqualError(t, err, "cannot merge map with string")
-		assert.Equal(t, dyn.InvalidValue, out)
+		dynassert.EqualError(t, err, "cannot merge map with string")
+		dynassert.Equal(t, dyn.InvalidValue, out)
 	}
 }
 
@@ -149,8 +149,8 @@ func TestMergeSequences(t *testing.T) {
 	// Merge v2 into v1.
 	{
 		out, err := Merge(v1, v2)
-		assert.NoError(t, err)
-		assert.Equal(t, []any{
+		dynassert.NoError(t, err)
+		dynassert.Equal(t, []any{
 			"bar",
 			"baz",
 			"qux",
@@ -158,23 +158,23 @@ func TestMergeSequences(t *testing.T) {
 		}, out.AsAny())
 
 		// Locations of both values should be preserved.
-		assert.Equal(t, []dyn.Location{l1, l2, l3}, out.Locations())
+		dynassert.Equal(t, []dyn.Location{l1, l2, l3}, out.Locations())
 
 		// Location of the merged value should be the location of v1.
-		assert.Equal(t, l1, out.Location())
+		dynassert.Equal(t, l1, out.Location())
 
 		// Location of the individual values should be preserved.
-		assert.Equal(t, l1, out.Index(0).Location()) // "bar"
-		assert.Equal(t, l1, out.Index(1).Location()) // "baz"
-		assert.Equal(t, l2, out.Index(2).Location()) // "qux"
-		assert.Equal(t, l3, out.Index(3).Location()) // "foo"
+		dynassert.Equal(t, l1, out.Index(0).Location()) // "bar"
+		dynassert.Equal(t, l1, out.Index(1).Location()) // "baz"
+		dynassert.Equal(t, l2, out.Index(2).Location()) // "qux"
+		dynassert.Equal(t, l3, out.Index(3).Location()) // "foo"
 	}
 
 	// Merge v1 into v2.
 	{
 		out, err := Merge(v2, v1)
-		assert.NoError(t, err)
-		assert.Equal(t, []any{
+		dynassert.NoError(t, err)
+		dynassert.Equal(t, []any{
 			"qux",
 			"foo",
 			"bar",
@@ -182,16 +182,16 @@ func TestMergeSequences(t *testing.T) {
 		}, out.AsAny())
 
 		// Locations of both values should be preserved.
-		assert.Equal(t, []dyn.Location{l2, l3, l1}, out.Locations())
+		dynassert.Equal(t, []dyn.Location{l2, l3, l1}, out.Locations())
 
 		// Location of the merged value should be the location of v2.
-		assert.Equal(t, l2, out.Location())
+		dynassert.Equal(t, l2, out.Location())
 
 		// Location of the individual values should be preserved.
-		assert.Equal(t, l2, out.Index(0).Location()) // "qux"
-		assert.Equal(t, l3, out.Index(1).Location()) // "foo"
-		assert.Equal(t, l1, out.Index(2).Location()) // "bar"
-		assert.Equal(t, l1, out.Index(3).Location()) // "baz"
+		dynassert.Equal(t, l2, out.Index(0).Location()) // "qux"
+		dynassert.Equal(t, l3, out.Index(1).Location()) // "foo"
+		dynassert.Equal(t, l1, out.Index(2).Location()) // "bar"
+		dynassert.Equal(t, l1, out.Index(3).Location()) // "baz"
 	}
 }
 
@@ -203,8 +203,8 @@ func TestMergeSequencesNil(t *testing.T) {
 	// Merge nil into v.
 	{
 		out, err := Merge(v, dyn.NilValue)
-		assert.NoError(t, err)
-		assert.Equal(t, []any{
+		dynassert.NoError(t, err)
+		dynassert.Equal(t, []any{
 			"bar",
 		}, out.AsAny())
 	}
@@ -212,8 +212,8 @@ func TestMergeSequencesNil(t *testing.T) {
 	// Merge v into nil.
 	{
 		out, err := Merge(dyn.NilValue, v)
-		assert.NoError(t, err)
-		assert.Equal(t, []any{
+		dynassert.NoError(t, err)
+		dynassert.Equal(t, []any{
 			"bar",
 		}, out.AsAny())
 	}
@@ -229,8 +229,8 @@ func TestMergeSequencesError(t *testing.T) {
 	// Merge a string into v.
 	{
 		out, err := Merge(v, other)
-		assert.EqualError(t, err, "cannot merge sequence with string")
-		assert.Equal(t, dyn.InvalidValue, out)
+		dynassert.EqualError(t, err, "cannot merge sequence with string")
+		dynassert.Equal(t, dyn.InvalidValue, out)
 	}
 }
 
@@ -243,27 +243,27 @@ func TestMergePrimitives(t *testing.T) {
 	// Merge v2 into v1.
 	{
 		out, err := Merge(v1, v2)
-		assert.NoError(t, err)
-		assert.Equal(t, "baz", out.AsAny())
+		dynassert.NoError(t, err)
+		dynassert.Equal(t, "baz", out.AsAny())
 
 		// Locations of both values should be preserved.
-		assert.Equal(t, []dyn.Location{l2, l1}, out.Locations())
+		dynassert.Equal(t, []dyn.Location{l2, l1}, out.Locations())
 
 		// Location of the merged value should be the location of v2, the second value.
-		assert.Equal(t, l2, out.Location())
+		dynassert.Equal(t, l2, out.Location())
 	}
 
 	// Merge v1 into v2.
 	{
 		out, err := Merge(v2, v1)
-		assert.NoError(t, err)
-		assert.Equal(t, "bar", out.AsAny())
+		dynassert.NoError(t, err)
+		dynassert.Equal(t, "bar", out.AsAny())
 
 		// Locations of both values should be preserved.
-		assert.Equal(t, []dyn.Location{l1, l2}, out.Locations())
+		dynassert.Equal(t, []dyn.Location{l1, l2}, out.Locations())
 
 		// Location of the merged value should be the location of v1, the second value.
-		assert.Equal(t, l1, out.Location())
+		dynassert.Equal(t, l1, out.Location())
 	}
 }
 
@@ -273,15 +273,15 @@ func TestMergePrimitivesNil(t *testing.T) {
 	// Merge nil into v.
 	{
 		out, err := Merge(v, dyn.NilValue)
-		assert.NoError(t, err)
-		assert.Equal(t, "bar", out.AsAny())
+		dynassert.NoError(t, err)
+		dynassert.Equal(t, "bar", out.AsAny())
 	}
 
 	// Merge v into nil.
 	{
 		out, err := Merge(dyn.NilValue, v)
-		assert.NoError(t, err)
-		assert.Equal(t, "bar", out.AsAny())
+		dynassert.NoError(t, err)
+		dynassert.Equal(t, "bar", out.AsAny())
 	}
 }
 
@@ -294,7 +294,7 @@ func TestMergePrimitivesError(t *testing.T) {
 	// Merge a map into v.
 	{
 		out, err := Merge(v, other)
-		assert.EqualError(t, err, "cannot merge string with map")
-		assert.Equal(t, dyn.InvalidValue, out)
+		dynassert.EqualError(t, err, "cannot merge string with map")
+		dynassert.Equal(t, dyn.InvalidValue, out)
 	}
 }
