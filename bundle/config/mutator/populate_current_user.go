@@ -2,6 +2,7 @@ package mutator
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"reflect"
 	"unsafe"
@@ -19,11 +20,49 @@ import (
 
 type populateCurrentUser struct {
 	lastKnownAuthorizationHeader string
+	cache                        bundle.Cache
 }
 
 // PopulateCurrentUser sets the `current_user` property on the workspace.
 func PopulateCurrentUser() bundle.Mutator {
 	return &populateCurrentUser{}
+}
+
+// initializeCache sets up the cache for authorization headers if not already initialized
+func (m *populateCurrentUser) initializeCache(ctx context.Context, b *bundle.Bundle) error {
+	if m.cache != nil {
+		return nil
+	}
+
+	cacheDir, err := b.BundleLevelCacheDir(ctx, "auth")
+	if err != nil {
+		return err
+	}
+
+	m.cache = bundle.NewFileCache(cacheDir)
+
+	fmt.Printf("New cache dir initialized: %s\n", cacheDir)
+
+	return nil
+}
+
+// getCachedAuthorizationHeader retrieves the cached authorization header for a given host
+func (m *populateCurrentUser) getCachedAuthorizationHeader(ctx context.Context, host string) (string, bool) {
+	if m.cache == nil {
+		return "", false
+	}
+
+	fingerprint, err := bundle.GenerateFingerprint("auth_header", host)
+	if err != nil {
+		return "", false
+	}
+
+	data, found := m.cache.Read(ctx, fingerprint)
+	if !found {
+		return "", false
+	}
+
+	return string(data), true
 }
 
 func (m *populateCurrentUser) Name() string {
@@ -35,8 +74,16 @@ func (m *populateCurrentUser) Apply(ctx context.Context, b *bundle.Bundle) diag.
 		return nil
 	}
 
+	// Initialize cache for authorization headers
+	if err := m.initializeCache(ctx, b); err != nil {
+		return diag.FromErr(err)
+	}
+
 	w := b.WorkspaceClient()
 	d := getDatabricksClient(w)
+
+	fmt.Printf("populateCurrentUser - getting user auth")
+
 	me, err := m.getCurrentUserWithAuthTracking(ctx, d)
 	if err != nil {
 		return diag.FromErr(err)
@@ -69,6 +116,15 @@ func (m *populateCurrentUser) getCurrentUserWithAuthTracking(ctx context.Context
 			}
 			for _, value := range values {
 				m.lastKnownAuthorizationHeader = value
+				// Store authorization header in cache
+				fmt.Printf("got lastKnownAuthorizationHeader: %s\n", value)
+				if m.cache != nil {
+					fingerprint, err := bundle.GenerateFingerprint("auth_header", req.URL.Host)
+					if err == nil {
+						fmt.Printf("storing cached auth header: %s\n", fingerprint)
+						_ = m.cache.Store(ctx, fingerprint, []byte(value))
+					}
+				}
 			}
 		}
 		return nil
