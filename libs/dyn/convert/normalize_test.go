@@ -630,7 +630,7 @@ func TestNormalizeBoolFromString(t *testing.T) {
 		vin := dyn.V(c.Input)
 		vout, err := Normalize(&typ, vin)
 		assert.Empty(t, err)
-		dynassert.Equal(t, dyn.V(c.Output), vout)
+		assert.Equal(t, dyn.V(c.Output), vout)
 	}
 }
 
@@ -780,7 +780,7 @@ func TestNormalizeFloatFromInt(t *testing.T) {
 	vin := dyn.V(int64(9007199254740992))
 	vout, err := Normalize(&typ, vin)
 	assert.Empty(t, err)
-	dynassert.Equal(t, dyn.V(float64(9007199254740992)), vout)
+	assert.Equal(t, dyn.V(float64(9007199254740992)), vout)
 }
 
 func TestNormalizeFloatFromIntError(t *testing.T) {
