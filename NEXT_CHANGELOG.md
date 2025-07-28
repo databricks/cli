@@ -3,11 +3,10 @@
 ## Release v0.266.0
 
 ### Notable Changes
-* Breaking change: if the relative paths to the bundle resources are defined relatively to where the job or pipeline
-is defined rather than the configuration file where this path is defined, DABs will return an error.
-Previously, it would fallback to older path resolution. This fallback path resolution is deprecated now.
-Please update the path to be relative to the configuration file where this path is defined.
-* Add support volumes in Python support ([#3383])(https://github.com/databricks/cli/pull/3383))
+* Breaking change: DABs now returns an error when paths are incorrectly defined relative to the job or
+pipeline definition location instead of the configuration file location. Previously, the CLI would show a
+warning and fallback to resolving the path relative to the resource location. Users must update their bundle
+configurations to define all relative paths relative to the configuration file where the path is specified.
 
 ### Dependency updates
 
