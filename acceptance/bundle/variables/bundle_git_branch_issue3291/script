@@ -1,2 +1,2 @@
-trace databricks bundle deploy --var branch=my_branch
-trace databricks bundle validate -o json --var branch=my_branch | jq .variables
+trace $CLI bundle deploy --var branch=my_branch
+trace $CLI bundle validate -o json --var branch=my_branch | jq .variables

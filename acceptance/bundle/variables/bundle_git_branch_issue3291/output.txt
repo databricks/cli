@@ -1,10 +1,10 @@
 
->>> databricks bundle deploy --var branch=my_branch
+>>> [CLI] bundle deploy --var branch=my_branch
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
 Deployment complete!
 
->>> databricks bundle validate -o json --var branch=my_branch
+>>> [CLI] bundle validate -o json --var branch=my_branch
 {
   "branch": {
     "default": "",
