@@ -278,10 +278,6 @@ func (b *Bundle) InternalDir(ctx context.Context) (string, error) {
 
 // BundleLevelCacheDir is used to cache components needed for the bundle that are target-independent
 func (b *Bundle) BundleLevelCacheDir(ctx context.Context, cacheComponentName string) (string, error) {
-	if b.Config.Bundle.Target == "" {
-		panic("target not set")
-	}
-
 	cacheDirName, exists := env.TempDir(ctx)
 	if !exists || cacheDirName == "" {
 		cacheDirName = filepath.Join(
