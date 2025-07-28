@@ -37,11 +37,10 @@ func TestElementByKey(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, vout.MustSequence(), 2)
 	assert.Equal(t,
-		vout.Index(0).AsAny(),
 		map[string]any{
 			"key":   "foo",
 			"value": 44,
-		},
+		}, vout.Index(0).AsAny(),
 	)
 	dynassert.Equal(t,
 		vout.Index(1).AsAny(),
@@ -76,17 +75,15 @@ func TestElementByKeyWithOverride(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, vout.MustSequence(), 2)
 	assert.Equal(t,
-		vout.Index(0).AsAny(),
 		map[string]any{
 			"key":        "foo",
 			"othervalue": 44,
-		},
+		}, vout.Index(0).AsAny(),
 	)
 	assert.Equal(t,
-		vout.Index(1).AsAny(),
 		map[string]any{
 			"key":   "bar",
 			"value": 43,
-		},
+		}, vout.Index(1).AsAny(),
 	)
 }
