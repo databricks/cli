@@ -92,8 +92,8 @@ func deployCommand() *cobra.Command {
 		}
 
 		for _, group := range b.Config.Resources.AllResources() {
-			for k, ref := range group.Resources {
-				cmdio.LogString(ctx, fmt.Sprintf("View your %s %s here: %s", ref.ResourceDescription().SingularName, k, ref.GetURL()))
+			for resourceKey, resource := range group.Resources {
+				cmdio.LogString(ctx, fmt.Sprintf("View your %s %s here: %s", resource.ResourceDescription().SingularName, resourceKey, resource.GetURL()))
 			}
 		}
 
