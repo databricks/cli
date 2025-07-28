@@ -1,12 +1,12 @@
 
->>> [PIPELINES] deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/default/files...
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-run-flags/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
 
 === Running pipeline with --refresh flag and specific tables
->>> [PIPELINES] run --refresh table1,table2
+>>> [CLI] bundle run my_pipeline --refresh table1,table2
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
 
@@ -23,7 +23,7 @@ Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 }
 
 === Running pipeline with --full-refresh-all flag
->>> [PIPELINES] run --full-refresh-all
+>>> [CLI] bundle run my_pipeline --full-refresh-all
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
 
@@ -37,7 +37,7 @@ Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 }
 
 === Running pipeline with --full-refresh flag and specific tables
->>> [PIPELINES] run --full-refresh table1,table2
+>>> [CLI] bundle run my_pipeline --full-refresh table1,table2
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
 
@@ -54,7 +54,7 @@ Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 }
 
 === Running pipeline with --full-refresh flag and --refresh flag
->>> [PIPELINES] run --full-refresh table1,table2 --refresh table3,table4
+>>> [CLI] bundle run my_pipeline --full-refresh table1,table2 --refresh table3,table4
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
 
