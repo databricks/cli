@@ -54,7 +54,7 @@ func (t *translateContext) applyPipelineTranslations(ctx context.Context, v dyn.
 			if nerr == nil {
 				logdiag.LogDiag(ctx, diag.Diagnostic{
 					Severity:  diag.Error,
-					Summary:   fmt.Sprintf("path %s is defined relative to the %s directory (%s). Please update the path to be relative to the file where it is defined.", originalPath, fallback[key], v.Location()),
+					Summary:   fmt.Sprintf("path %s is defined relative to the %s directory (%s). Please update the path to be relative to the file where it is defined or use earlier version of CLI (0.261.0 or earlier).", originalPath, fallback[key], v.Location()),
 					Locations: v.Locations(),
 				})
 				return nv, nil
