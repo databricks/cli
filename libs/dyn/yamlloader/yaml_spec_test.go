@@ -27,7 +27,7 @@ func TestYAMLSpecExample_2_1(t *testing.T) {
 	file := "testdata/spec_example_2.1.yml"
 	self := loadExample(t, file)
 
-	dynassert.Equal(t, dyn.NewValue(
+	assert.Equal(t, dyn.NewValue(
 		[]dyn.Value{
 			dyn.NewValue("Mark McGwire", []dyn.Location{{File: file, Line: 3, Column: 3}}),
 			dyn.NewValue("Sammy Sosa", []dyn.Location{{File: file, Line: 4, Column: 3}}),
