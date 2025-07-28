@@ -2,3 +2,7 @@ variables:
   branch:
     description: The git branch name
     default: ${bundle.git.branch}
+
+  other:
+    description: Other variable
+    default: ${var.branch}

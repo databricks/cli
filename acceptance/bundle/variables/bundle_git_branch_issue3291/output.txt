@@ -1,3 +1,19 @@
+
+>>> databricks bundle deploy --var branch=my_branch
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
 Deployment complete!
+
+>>> databricks bundle validate -o json --var branch=my_branch
+{
+  "branch": {
+    "default": "",
+    "description": "The git branch name",
+    "value": "my_branch"
+  },
+  "other": {
+    "default": "my_branch",
+    "description": "Other variable",
+    "value": "my_branch"
+  }
+}
