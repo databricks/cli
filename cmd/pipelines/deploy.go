@@ -10,7 +10,6 @@ import (
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/validate"
 	"github.com/databricks/cli/bundle/phases"
-	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
@@ -92,8 +91,10 @@ func deployCommand() *cobra.Command {
 			return root.ErrAlreadyPrinted
 		}
 
-		for k, ref := range resources.Completions(b) {
-			cmdio.LogString(ctx, fmt.Sprintf("View your %s %s here: %s", ref.Resource.ResourceDescription().SingularName, k, ref.Resource.GetURL()))
+		for _, group := range b.Config.Resources.AllResources() {
+			for k, ref := range group.Resources {
+				cmdio.LogString(ctx, fmt.Sprintf("View your %s %s here: %s", ref.ResourceDescription().SingularName, k, ref.GetURL()))
+			}
 		}
 
 		return nil
