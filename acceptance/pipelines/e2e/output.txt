@@ -1,5 +1,5 @@
 
-=== E2E Test: Complete pipeline lifecycle (init, deploy, run, destroy)
+=== E2E Test: Complete pipeline lifecycle (init, deploy, run, stop, destroy)
 === Initialize pipeline project
 >>> [PIPELINES] init --output-dir output
 
@@ -18,7 +18,7 @@ Updating deployment state...
 Deployment complete!
 
 === Run pipeline
->>> [PIPELINES] run my_project_pipeline
+>>> [PIPELINES] run
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
 
@@ -55,6 +55,15 @@ Deployment complete!
 >>> [PIPELINES] run my_project_pipeline_2
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
+
+=== Stop both pipelines before destroy
+>>> [PIPELINES] stop my_project_pipeline
+Stopping my_project_pipeline...
+my_project_pipeline has been stopped.
+
+>>> [PIPELINES] stop my_project_pipeline_2
+Stopping my_project_pipeline_2...
+my_project_pipeline_2 has been stopped.
 
 === Destroy project
 >>> [PIPELINES] destroy --auto-approve
