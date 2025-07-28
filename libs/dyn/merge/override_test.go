@@ -5,10 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/dynassert"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type overrideTestCase struct {
@@ -364,7 +364,7 @@ func TestOverride_Primitive(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, tc.state, *s)
-			assert.Equal(t, tc.expected, out)
+			dynassert.Equal(t, tc.expected, out)
 		})
 
 		modified := len(tc.state.removed)+len(tc.state.added)+len(tc.state.updated) > 0
