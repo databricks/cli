@@ -125,7 +125,7 @@ func TestFromTypedStructSetFieldsRetainLocation(t *testing.T) {
 
 	// Assert foo and bar have retained their location.
 	assert.Equal(t, dyn.NewValue("bar", []dyn.Location{{File: "foo"}}), nv.Get("foo"))
-	dynassert.Equal(t, dyn.NewValue("qux", []dyn.Location{{File: "bar"}}), nv.Get("bar"))
+	assert.Equal(t, dyn.NewValue("qux", []dyn.Location{{File: "bar"}}), nv.Get("bar"))
 }
 
 func TestFromTypedStringMapWithZeroValue(t *testing.T) {
@@ -369,7 +369,7 @@ func TestFromTypedMapNonEmptyRetainLocation(t *testing.T) {
 
 	// Assert foo and bar have retained their locations.
 	assert.Equal(t, dyn.NewValue("bar", []dyn.Location{{File: "foo"}}), nv.Get("foo"))
-	dynassert.Equal(t, dyn.NewValue("qux", []dyn.Location{{File: "bar"}}), nv.Get("bar"))
+	assert.Equal(t, dyn.NewValue("qux", []dyn.Location{{File: "bar"}}), nv.Get("bar"))
 }
 
 func TestFromTypedMapFieldWithZeroValue(t *testing.T) {

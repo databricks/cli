@@ -434,7 +434,7 @@ func TestNormalizeSliceElementDiagnostic(t *testing.T) {
 	}, err[0])
 
 	// Elements that encounter an error during normalization are dropped.
-	dynassert.Equal(t, []any{"foo", "bar"}, vout.AsAny())
+	assert.Equal(t, []any{"foo", "bar"}, vout.AsAny())
 }
 
 func TestNormalizeSliceNil(t *testing.T) {
