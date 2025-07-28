@@ -1,0 +1,3 @@
+trace $CLI bundle validate -o json -t no_run_as | jq -r '.resources | to_entries[] | .key as $resource_type | .value | to_entries[] | "\($resource_type).\(.key): \(.value.run_as)"'
+trace $CLI bundle validate -o json -t with_user_run_as | jq -r '.resources | to_entries[] | .key as $resource_type | .value | to_entries[] | "\($resource_type).\(.key): \(.value.run_as)"'
+trace $CLI bundle validate -o json -t with_sp_run_as | jq -r '.resources | to_entries[] | .key as $resource_type | .value | to_entries[] | "\($resource_type).\(.key): \(.value.run_as)"'

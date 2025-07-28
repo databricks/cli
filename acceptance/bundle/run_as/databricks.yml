@@ -1,0 +1,40 @@
+resources:
+  jobs:
+    job_one:
+      name: Job 1
+
+    job_two:
+      name: Job 2
+      run_as:
+        service_principal_name: "sp_override"
+
+    job_three:
+      name: Job 3
+      run_as:
+        user_name: "user_override"
+
+  pipelines:
+    pipeline_one:
+      name: Pipeline 1
+
+    pipeline_two:
+      name: Pipeline 2
+      run_as:
+        service_principal_name: "sp_override"
+
+    pipeline_three:
+      name: Pipeline 3
+      run_as:
+        user_name: "user_override"
+
+targets:
+  no_run_as:
+    default: true
+
+  with_user_run_as:
+    run_as:
+      user_name: "user_base"
+
+  with_sp_run_as:
+    run_as:
+      service_principal_name: "sp_base"
