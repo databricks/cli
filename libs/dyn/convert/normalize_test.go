@@ -40,7 +40,7 @@ func TestNormalizeStructElementDiagnostic(t *testing.T) {
 
 	vout, diags := Normalize(typ, vin)
 	assert.Len(t, diags, 1)
-	dynassert.Equal(t, diag.Diagnostic{
+	assert.Equal(t, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   `expected string, found map`,
 		Locations: []dyn.Location{{}},
@@ -73,7 +73,7 @@ func TestNormalizeStructUnknownField(t *testing.T) {
 
 	vout, diags := Normalize(typ, vin)
 	assert.Len(t, diags, 1)
-	dynassert.Equal(t, diag.Diagnostic{
+	assert.Equal(t, diag.Diagnostic{
 		Severity: diag.Warning,
 		Summary:  `unknown field: bar`,
 		// Assert location of the unknown field is included in the diagnostic.
@@ -111,7 +111,7 @@ func TestNormalizeStructError(t *testing.T) {
 	vin := dyn.V("string")
 	_, err := Normalize(typ, vin)
 	assert.Len(t, err, 1)
-	dynassert.Equal(t, diag.Diagnostic{
+	assert.Equal(t, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   `expected map, found string`,
 		Locations: []dyn.Location{vin.Get("foo").Location()},
@@ -256,7 +256,7 @@ func TestNormalizeStructRandomStringError(t *testing.T) {
 	vin := dyn.NewValue("var foo", []dyn.Location{{File: "file", Line: 1, Column: 1}})
 	_, err := Normalize(typ, vin)
 	assert.Len(t, err, 1)
-	dynassert.Equal(t, diag.Diagnostic{
+	assert.Equal(t, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   `expected map, found string`,
 		Locations: []dyn.Location{vin.Location()},
@@ -273,7 +273,7 @@ func TestNormalizeStructIntError(t *testing.T) {
 	vin := dyn.NewValue(1, []dyn.Location{{File: "file", Line: 1, Column: 1}})
 	_, err := Normalize(typ, vin)
 	assert.Len(t, err, 1)
-	dynassert.Equal(t, diag.Diagnostic{
+	assert.Equal(t, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   `expected map, found int`,
 		Locations: []dyn.Location{vin.Location()},
@@ -302,7 +302,7 @@ func TestNormalizeMapElementDiagnostic(t *testing.T) {
 
 	vout, err := Normalize(typ, vin)
 	assert.Len(t, err, 1)
-	dynassert.Equal(t, diag.Diagnostic{
+	assert.Equal(t, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   `expected string, found map`,
 		Locations: []dyn.Location{{}},
@@ -328,7 +328,7 @@ func TestNormalizeMapError(t *testing.T) {
 	vin := dyn.V("string")
 	_, err := Normalize(typ, vin)
 	assert.Len(t, err, 1)
-	dynassert.Equal(t, diag.Diagnostic{
+	assert.Equal(t, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   `expected map, found string`,
 		Locations: []dyn.Location{vin.Location()},
@@ -383,7 +383,7 @@ func TestNormalizeMapRandomStringError(t *testing.T) {
 	vin := dyn.NewValue("var foo", []dyn.Location{{File: "file", Line: 1, Column: 1}})
 	_, err := Normalize(typ, vin)
 	assert.Len(t, err, 1)
-	dynassert.Equal(t, diag.Diagnostic{
+	assert.Equal(t, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   `expected map, found string`,
 		Locations: []dyn.Location{vin.Location()},
@@ -396,7 +396,7 @@ func TestNormalizeMapIntError(t *testing.T) {
 	vin := dyn.NewValue(1, []dyn.Location{{File: "file", Line: 1, Column: 1}})
 	_, err := Normalize(typ, vin)
 	assert.Len(t, err, 1)
-	dynassert.Equal(t, diag.Diagnostic{
+	assert.Equal(t, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   `expected map, found int`,
 		Locations: []dyn.Location{vin.Location()},
@@ -426,7 +426,7 @@ func TestNormalizeSliceElementDiagnostic(t *testing.T) {
 
 	vout, err := Normalize(typ, vin)
 	assert.Len(t, err, 1)
-	dynassert.Equal(t, diag.Diagnostic{
+	assert.Equal(t, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   `expected string, found map`,
 		Locations: []dyn.Location{{}},
@@ -450,7 +450,7 @@ func TestNormalizeSliceError(t *testing.T) {
 	vin := dyn.V("string")
 	_, err := Normalize(typ, vin)
 	assert.Len(t, err, 1)
-	dynassert.Equal(t, diag.Diagnostic{
+	assert.Equal(t, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   `expected sequence, found string`,
 		Locations: []dyn.Location{vin.Location()},
@@ -505,7 +505,7 @@ func TestNormalizeSliceRandomStringError(t *testing.T) {
 	vin := dyn.NewValue("var foo", []dyn.Location{{File: "file", Line: 1, Column: 1}})
 	_, err := Normalize(typ, vin)
 	assert.Len(t, err, 1)
-	dynassert.Equal(t, diag.Diagnostic{
+	assert.Equal(t, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   `expected sequence, found string`,
 		Locations: []dyn.Location{vin.Location()},
@@ -518,7 +518,7 @@ func TestNormalizeSliceIntError(t *testing.T) {
 	vin := dyn.NewValue(1, []dyn.Location{{File: "file", Line: 1, Column: 1}})
 	_, err := Normalize(typ, vin)
 	assert.Len(t, err, 1)
-	dynassert.Equal(t, diag.Diagnostic{
+	assert.Equal(t, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   `expected sequence, found int`,
 		Locations: []dyn.Location{vin.Location()},
@@ -539,7 +539,7 @@ func TestNormalizeStringNil(t *testing.T) {
 	vin := dyn.NewValue(nil, []dyn.Location{{File: "file", Line: 1, Column: 1}})
 	_, err := Normalize(&typ, vin)
 	assert.Len(t, err, 1)
-	dynassert.Equal(t, diag.Diagnostic{
+	assert.Equal(t, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   `expected a string value, found null`,
 		Locations: []dyn.Location{vin.Location()},
@@ -584,7 +584,7 @@ func TestNormalizeStringError(t *testing.T) {
 	vin := dyn.V(map[string]dyn.Value{"an": dyn.V("error")})
 	_, err := Normalize(&typ, vin)
 	assert.Len(t, err, 1)
-	dynassert.Equal(t, diag.Diagnostic{
+	assert.Equal(t, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   `expected string, found map`,
 		Locations: []dyn.Location{{}},
@@ -605,7 +605,7 @@ func TestNormalizeBoolNil(t *testing.T) {
 	vin := dyn.NewValue(nil, []dyn.Location{{File: "file", Line: 1, Column: 1}})
 	_, err := Normalize(&typ, vin)
 	assert.Len(t, err, 1)
-	dynassert.Equal(t, diag.Diagnostic{
+	assert.Equal(t, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   `expected a bool value, found null`,
 		Locations: []dyn.Location{vin.Location()},
@@ -647,7 +647,7 @@ func TestNormalizeBoolFromStringError(t *testing.T) {
 	vin := dyn.V("abc")
 	_, err := Normalize(&typ, vin)
 	assert.Len(t, err, 1)
-	dynassert.Equal(t, diag.Diagnostic{
+	assert.Equal(t, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   `expected bool, found string`,
 		Locations: []dyn.Location{vin.Location()},
@@ -660,7 +660,7 @@ func TestNormalizeBoolError(t *testing.T) {
 	vin := dyn.V(map[string]dyn.Value{"an": dyn.V("error")})
 	_, err := Normalize(&typ, vin)
 	assert.Len(t, err, 1)
-	dynassert.Equal(t, diag.Diagnostic{
+	assert.Equal(t, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   `expected bool, found map`,
 		Locations: []dyn.Location{{}},
@@ -681,7 +681,7 @@ func TestNormalizeIntNil(t *testing.T) {
 	vin := dyn.NewValue(nil, []dyn.Location{{File: "file", Line: 1, Column: 1}})
 	_, err := Normalize(&typ, vin)
 	assert.Len(t, err, 1)
-	dynassert.Equal(t, diag.Diagnostic{
+	assert.Equal(t, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   `expected a int value, found null`,
 		Locations: []dyn.Location{vin.Location()},
@@ -702,7 +702,7 @@ func TestNormalizeIntFromFloatError(t *testing.T) {
 	vin := dyn.V(1.5)
 	_, err := Normalize(&typ, vin)
 	assert.Len(t, err, 1)
-	dynassert.Equal(t, diag.Diagnostic{
+	assert.Equal(t, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   `cannot accurately represent "1.5" as integer due to precision loss`,
 		Locations: []dyn.Location{vin.Location()},
@@ -731,7 +731,7 @@ func TestNormalizeIntFromStringError(t *testing.T) {
 	vin := dyn.V("abc")
 	_, err := Normalize(&typ, vin)
 	assert.Len(t, err, 1)
-	dynassert.Equal(t, diag.Diagnostic{
+	assert.Equal(t, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   `cannot parse "abc" as an integer`,
 		Locations: []dyn.Location{vin.Location()},
@@ -744,7 +744,7 @@ func TestNormalizeIntError(t *testing.T) {
 	vin := dyn.V(map[string]dyn.Value{"an": dyn.V("error")})
 	_, err := Normalize(&typ, vin)
 	assert.Len(t, err, 1)
-	dynassert.Equal(t, diag.Diagnostic{
+	assert.Equal(t, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   `expected int, found map`,
 		Locations: []dyn.Location{{}},
@@ -765,7 +765,7 @@ func TestNormalizeFloatNil(t *testing.T) {
 	vin := dyn.NewValue(nil, []dyn.Location{{File: "file", Line: 1, Column: 1}})
 	_, err := Normalize(&typ, vin)
 	assert.Len(t, err, 1)
-	dynassert.Equal(t, diag.Diagnostic{
+	assert.Equal(t, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   `expected a float value, found null`,
 		Locations: []dyn.Location{vin.Location()},
@@ -790,7 +790,7 @@ func TestNormalizeFloatFromIntError(t *testing.T) {
 	vin := dyn.V(9007199254740992 + 1)
 	_, err := Normalize(&typ, vin)
 	assert.Len(t, err, 1)
-	dynassert.Equal(t, diag.Diagnostic{
+	assert.Equal(t, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   `cannot accurately represent "9007199254740993" as floating point number due to precision loss`,
 		Locations: []dyn.Location{vin.Location()},
@@ -819,7 +819,7 @@ func TestNormalizeFloatFromStringError(t *testing.T) {
 	vin := dyn.V("abc")
 	_, err := Normalize(&typ, vin)
 	assert.Len(t, err, 1)
-	dynassert.Equal(t, diag.Diagnostic{
+	assert.Equal(t, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   `cannot parse "abc" as a floating point number`,
 		Locations: []dyn.Location{vin.Location()},
@@ -832,7 +832,7 @@ func TestNormalizeFloatError(t *testing.T) {
 	vin := dyn.V(map[string]dyn.Value{"an": dyn.V("error")})
 	_, err := Normalize(&typ, vin)
 	assert.Len(t, err, 1)
-	dynassert.Equal(t, diag.Diagnostic{
+	assert.Equal(t, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   `expected float, found map`,
 		Locations: []dyn.Location{{}},
