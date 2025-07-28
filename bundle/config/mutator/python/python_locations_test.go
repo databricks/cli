@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/dynassert"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -52,7 +53,7 @@ func TestMergeLocations(t *testing.T) {
 	actual, err := mergePythonLocations(input, locations)
 
 	assert.NoError(t, err)
-	assert.Equal(t, expected, actual)
+	dynassert.Equal(t, expected, actual)
 }
 
 func TestFindLocation(t *testing.T) {
