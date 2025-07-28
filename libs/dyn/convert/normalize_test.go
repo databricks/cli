@@ -23,7 +23,7 @@ func TestNormalizeStruct(t *testing.T) {
 
 	vout, diags := Normalize(typ, vin)
 	assert.Empty(t, diags)
-	dynassert.Equal(t, vin, vout)
+	assert.Equal(t, vin, vout)
 }
 
 func TestNormalizeStructElementDiagnostic(t *testing.T) {
@@ -99,7 +99,7 @@ func TestNormalizeStructNil(t *testing.T) {
 	vin := dyn.NilValue
 	vout, err := Normalize(typ, vin)
 	assert.Empty(t, err)
-	dynassert.Equal(t, vin, vout)
+	assert.Equal(t, vin, vout)
 }
 
 func TestNormalizeStructError(t *testing.T) {
@@ -244,7 +244,7 @@ func TestNormalizeStructVariableReference(t *testing.T) {
 	vin := dyn.NewValue("${var.foo}", []dyn.Location{{File: "file", Line: 1, Column: 1}})
 	vout, err := Normalize(typ, vin)
 	assert.Empty(t, err)
-	dynassert.Equal(t, vin, vout)
+	assert.Equal(t, vin, vout)
 }
 
 func TestNormalizeStructRandomStringError(t *testing.T) {
@@ -290,7 +290,7 @@ func TestNormalizeMap(t *testing.T) {
 
 	vout, err := Normalize(typ, vin)
 	assert.Empty(t, err)
-	dynassert.Equal(t, vin, vout)
+	assert.Equal(t, vin, vout)
 }
 
 func TestNormalizeMapElementDiagnostic(t *testing.T) {
@@ -320,7 +320,7 @@ func TestNormalizeMapNil(t *testing.T) {
 	vin := dyn.NilValue
 	vout, err := Normalize(typ, vin)
 	assert.Empty(t, err)
-	dynassert.Equal(t, vin, vout)
+	assert.Equal(t, vin, vout)
 }
 
 func TestNormalizeMapError(t *testing.T) {
@@ -375,7 +375,7 @@ func TestNormalizeMapVariableReference(t *testing.T) {
 	vin := dyn.NewValue("${var.foo}", []dyn.Location{{File: "file", Line: 1, Column: 1}})
 	vout, err := Normalize(typ, vin)
 	assert.Empty(t, err)
-	dynassert.Equal(t, vin, vout)
+	assert.Equal(t, vin, vout)
 }
 
 func TestNormalizeMapRandomStringError(t *testing.T) {
@@ -413,7 +413,7 @@ func TestNormalizeSlice(t *testing.T) {
 
 	vout, err := Normalize(typ, vin)
 	assert.Empty(t, err)
-	dynassert.Equal(t, vin, vout)
+	assert.Equal(t, vin, vout)
 }
 
 func TestNormalizeSliceElementDiagnostic(t *testing.T) {
@@ -442,7 +442,7 @@ func TestNormalizeSliceNil(t *testing.T) {
 	vin := dyn.NilValue
 	vout, err := Normalize(typ, vin)
 	assert.Empty(t, err)
-	dynassert.Equal(t, vin, vout)
+	assert.Equal(t, vin, vout)
 }
 
 func TestNormalizeSliceError(t *testing.T) {
@@ -497,7 +497,7 @@ func TestNormalizeSliceVariableReference(t *testing.T) {
 	vin := dyn.NewValue("${var.foo}", []dyn.Location{{File: "file", Line: 1, Column: 1}})
 	vout, err := Normalize(typ, vin)
 	assert.Empty(t, err)
-	dynassert.Equal(t, vin, vout)
+	assert.Equal(t, vin, vout)
 }
 
 func TestNormalizeSliceRandomStringError(t *testing.T) {
@@ -531,7 +531,7 @@ func TestNormalizeString(t *testing.T) {
 	vin := dyn.V("string")
 	vout, err := Normalize(&typ, vin)
 	assert.Empty(t, err)
-	dynassert.Equal(t, vin, vout)
+	assert.Equal(t, vin, vout)
 }
 
 func TestNormalizeStringNil(t *testing.T) {
@@ -597,7 +597,7 @@ func TestNormalizeBool(t *testing.T) {
 	vin := dyn.V(true)
 	vout, err := Normalize(&typ, vin)
 	assert.Empty(t, err)
-	dynassert.Equal(t, dyn.V(true), vout)
+	assert.Equal(t, dyn.V(true), vout)
 }
 
 func TestNormalizeBoolNil(t *testing.T) {
@@ -639,7 +639,7 @@ func TestNormalizeBoolFromStringVariableReference(t *testing.T) {
 	vin := dyn.V("${var.foo}")
 	vout, err := Normalize(&typ, vin)
 	assert.Empty(t, err)
-	dynassert.Equal(t, vin, vout)
+	assert.Equal(t, vin, vout)
 }
 
 func TestNormalizeBoolFromStringError(t *testing.T) {
@@ -723,7 +723,7 @@ func TestNormalizeIntFromStringVariableReference(t *testing.T) {
 	vin := dyn.V("${var.foo}")
 	vout, err := Normalize(&typ, vin)
 	assert.Empty(t, err)
-	dynassert.Equal(t, vin, vout)
+	assert.Equal(t, vin, vout)
 }
 
 func TestNormalizeIntFromStringError(t *testing.T) {
@@ -811,7 +811,7 @@ func TestNormalizeFloatFromStringVariableReference(t *testing.T) {
 	vin := dyn.V("${var.foo}")
 	vout, err := Normalize(&typ, vin)
 	assert.Empty(t, err)
-	dynassert.Equal(t, vin, vout)
+	assert.Equal(t, vin, vout)
 }
 
 func TestNormalizeFloatFromStringError(t *testing.T) {

@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/dynassert"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -32,5 +31,5 @@ func loadYAML(t *testing.T, path string) dyn.Value {
 
 func TestYAMLEmpty(t *testing.T) {
 	self := loadYAML(t, "testdata/empty.yml")
-	dynassert.Equal(t, dyn.NilValue, self)
+	assert.Equal(t, dyn.NilValue, self)
 }

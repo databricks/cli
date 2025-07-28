@@ -5,6 +5,7 @@ import (
 
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynassert"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -19,12 +20,12 @@ func TestFromTypedStructZeroFields(t *testing.T) {
 	// For an empty struct with a nil reference we expect a nil.
 	nv, err := FromTyped(src, dyn.NilValue)
 	require.NoError(t, err)
-	dynassert.Equal(t, dyn.NilValue, nv)
+	assert.Equal(t, dyn.NilValue, nv)
 
 	// For an empty struct with a non-nil reference we expect an empty map.
 	nv, err = FromTyped(src, dyn.V(map[string]dyn.Value{}))
 	require.NoError(t, err)
-	dynassert.Equal(t, dyn.V(map[string]dyn.Value{}), nv)
+	assert.Equal(t, dyn.V(map[string]dyn.Value{}), nv)
 }
 
 func TestFromTypedStructPointerZeroFields(t *testing.T) {
@@ -41,25 +42,25 @@ func TestFromTypedStructPointerZeroFields(t *testing.T) {
 	src = nil
 	nv, err = FromTyped(src, dyn.NilValue)
 	require.NoError(t, err)
-	dynassert.Equal(t, dyn.NilValue, nv)
+	assert.Equal(t, dyn.NilValue, nv)
 
 	// For a nil pointer with a non-nil reference we expect a nil.
 	src = nil
 	nv, err = FromTyped(src, dyn.V(map[string]dyn.Value{}))
 	require.NoError(t, err)
-	dynassert.Equal(t, dyn.NilValue, nv)
+	assert.Equal(t, dyn.NilValue, nv)
 
 	// For an initialized pointer with a nil reference we expect an empty map.
 	src = &Tmp{}
 	nv, err = FromTyped(src, dyn.NilValue)
 	require.NoError(t, err)
-	dynassert.Equal(t, dyn.V(map[string]dyn.Value{}), nv)
+	assert.Equal(t, dyn.V(map[string]dyn.Value{}), nv)
 
 	// For an initialized pointer with a non-nil reference we expect an empty map.
 	src = &Tmp{}
 	nv, err = FromTyped(src, dyn.V(map[string]dyn.Value{}))
 	require.NoError(t, err)
-	dynassert.Equal(t, dyn.V(map[string]dyn.Value{}), nv)
+	assert.Equal(t, dyn.V(map[string]dyn.Value{}), nv)
 }
 
 func TestFromTypedStructNilFields(t *testing.T) {
@@ -321,7 +322,7 @@ func TestFromTypedMapNil(t *testing.T) {
 
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
-	dynassert.Equal(t, dyn.NilValue, nv)
+	assert.Equal(t, dyn.NilValue, nv)
 }
 
 func TestFromTypedMapEmpty(t *testing.T) {
@@ -394,7 +395,7 @@ func TestFromTypedSliceNil(t *testing.T) {
 
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
-	dynassert.Equal(t, dyn.NilValue, nv)
+	assert.Equal(t, dyn.NilValue, nv)
 }
 
 func TestFromTypedSliceEmpty(t *testing.T) {
@@ -450,7 +451,7 @@ func TestFromTypedStringEmpty(t *testing.T) {
 	ref := dyn.NilValue
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
-	dynassert.Equal(t, dyn.NilValue, nv)
+	assert.Equal(t, dyn.NilValue, nv)
 }
 
 func TestFromTypedStringEmptyOverwrite(t *testing.T) {
@@ -458,7 +459,7 @@ func TestFromTypedStringEmptyOverwrite(t *testing.T) {
 	ref := dyn.V("old")
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
-	dynassert.Equal(t, dyn.V(""), nv)
+	assert.Equal(t, dyn.V(""), nv)
 }
 
 func TestFromTypedStringNonEmpty(t *testing.T) {
@@ -505,7 +506,7 @@ func TestFromTypedBoolEmpty(t *testing.T) {
 	ref := dyn.NilValue
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
-	dynassert.Equal(t, dyn.NilValue, nv)
+	assert.Equal(t, dyn.NilValue, nv)
 }
 
 func TestFromTypedBoolEmptyOverwrite(t *testing.T) {
@@ -513,7 +514,7 @@ func TestFromTypedBoolEmptyOverwrite(t *testing.T) {
 	ref := dyn.V(true)
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
-	dynassert.Equal(t, dyn.V(false), nv)
+	assert.Equal(t, dyn.V(false), nv)
 }
 
 func TestFromTypedBoolNonEmpty(t *testing.T) {
@@ -521,7 +522,7 @@ func TestFromTypedBoolNonEmpty(t *testing.T) {
 	ref := dyn.NilValue
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
-	dynassert.Equal(t, dyn.V(true), nv)
+	assert.Equal(t, dyn.V(true), nv)
 }
 
 func TestFromTypedBoolNonEmptyOverwrite(t *testing.T) {
@@ -529,7 +530,7 @@ func TestFromTypedBoolNonEmptyOverwrite(t *testing.T) {
 	ref := dyn.V(false)
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
-	dynassert.Equal(t, dyn.V(true), nv)
+	assert.Equal(t, dyn.V(true), nv)
 }
 
 func TestFromTypedBoolRetainsLocations(t *testing.T) {
@@ -568,7 +569,7 @@ func TestFromTypedIntEmpty(t *testing.T) {
 	ref := dyn.NilValue
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
-	dynassert.Equal(t, dyn.NilValue, nv)
+	assert.Equal(t, dyn.NilValue, nv)
 }
 
 func TestFromTypedIntEmptyOverwrite(t *testing.T) {
@@ -576,7 +577,7 @@ func TestFromTypedIntEmptyOverwrite(t *testing.T) {
 	ref := dyn.V(1234)
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
-	dynassert.Equal(t, dyn.V(int64(0)), nv)
+	assert.Equal(t, dyn.V(int64(0)), nv)
 }
 
 func TestFromTypedIntNonEmpty(t *testing.T) {
@@ -584,7 +585,7 @@ func TestFromTypedIntNonEmpty(t *testing.T) {
 	ref := dyn.NilValue
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
-	dynassert.Equal(t, dyn.V(int64(1234)), nv)
+	assert.Equal(t, dyn.V(int64(1234)), nv)
 }
 
 func TestFromTypedIntNonEmptyOverwrite(t *testing.T) {
@@ -592,7 +593,7 @@ func TestFromTypedIntNonEmptyOverwrite(t *testing.T) {
 	ref := dyn.V(1233)
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
-	dynassert.Equal(t, dyn.V(int64(1234)), nv)
+	assert.Equal(t, dyn.V(int64(1234)), nv)
 }
 
 func TestFromTypedIntRetainsLocations(t *testing.T) {
@@ -631,7 +632,7 @@ func TestFromTypedFloatEmpty(t *testing.T) {
 	ref := dyn.NilValue
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
-	dynassert.Equal(t, dyn.NilValue, nv)
+	assert.Equal(t, dyn.NilValue, nv)
 }
 
 func TestFromTypedFloatEmptyOverwrite(t *testing.T) {
@@ -639,7 +640,7 @@ func TestFromTypedFloatEmptyOverwrite(t *testing.T) {
 	ref := dyn.V(1.23)
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
-	dynassert.Equal(t, dyn.V(0.0), nv)
+	assert.Equal(t, dyn.V(0.0), nv)
 }
 
 func TestFromTypedFloatNonEmpty(t *testing.T) {
@@ -647,7 +648,7 @@ func TestFromTypedFloatNonEmpty(t *testing.T) {
 	ref := dyn.NilValue
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
-	dynassert.Equal(t, dyn.V(1.23), nv)
+	assert.Equal(t, dyn.V(1.23), nv)
 }
 
 func TestFromTypedFloatNonEmptyOverwrite(t *testing.T) {
@@ -655,7 +656,7 @@ func TestFromTypedFloatNonEmptyOverwrite(t *testing.T) {
 	ref := dyn.V(1.24)
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
-	dynassert.Equal(t, dyn.V(1.23), nv)
+	assert.Equal(t, dyn.V(1.23), nv)
 }
 
 func TestFromTypedFloatRetainsLocations(t *testing.T) {
@@ -731,7 +732,7 @@ func TestFromTypedAnyNil(t *testing.T) {
 	ref := dyn.NilValue
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
-	dynassert.Equal(t, dyn.NilValue, nv)
+	assert.Equal(t, dyn.NilValue, nv)
 }
 
 func TestFromTypedNilPointerRetainsLocations(t *testing.T) {
