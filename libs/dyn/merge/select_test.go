@@ -3,9 +3,8 @@ package merge
 import (
 	"testing"
 
-	assert "github.com/databricks/cli/libs/dyn/dynassert"
-
 	"github.com/databricks/cli/libs/dyn"
+	assert "github.com/databricks/cli/libs/dyn/dynassert"
 )
 
 func TestSelect(t *testing.T) {

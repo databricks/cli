@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/dyn/convert"
-	"github.com/databricks/cli/libs/dyn/dynassert"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/stretchr/testify/assert"
 )
 
 const jsonData = `
@@ -45,11 +45,11 @@ const jsonData = `
 
 func TestJsonLoader(t *testing.T) {
 	v, err := LoadJSON([]byte(jsonData), "(inline)")
-	dynassert.NoError(t, err)
+	assert.NoError(t, err)
 
 	var r jobs.ResetJob
 	err = convert.ToTyped(&r, v)
-	dynassert.NoError(t, err)
+	assert.NoError(t, err)
 }
 
 const malformedMap = `
@@ -64,7 +64,7 @@ const malformedMap = `
 
 func TestJsonLoaderMalformedMap(t *testing.T) {
 	_, err := LoadJSON([]byte(malformedMap), "(inline)")
-	dynassert.ErrorContains(t, err, "error decoding JSON at (inline):6:16: invalid character ',' after object key")
+	assert.ErrorContains(t, err, "error decoding JSON at (inline):6:16: invalid character ',' after object key")
 }
 
 const malformedArray = `
@@ -78,7 +78,7 @@ const malformedArray = `
 
 func TestJsonLoaderMalformedArray(t *testing.T) {
 	_, err := LoadJSON([]byte(malformedArray), "path/to/file.json")
-	dynassert.ErrorContains(t, err, "error decoding JSON at path/to/file.json:6:28: invalid character ']' looking for beginning of value")
+	assert.ErrorContains(t, err, "error decoding JSON at path/to/file.json:6:28: invalid character ']' looking for beginning of value")
 }
 
 const eofData = `
@@ -89,5 +89,5 @@ const eofData = `
 
 func TestJsonLoaderEOF(t *testing.T) {
 	_, err := LoadJSON([]byte(eofData), "path/to/file.json")
-	dynassert.ErrorContains(t, err, "unexpected end of JSON input")
+	assert.ErrorContains(t, err, "unexpected end of JSON input")
 }
