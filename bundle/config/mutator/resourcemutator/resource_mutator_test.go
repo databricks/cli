@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/dynassert"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -52,7 +51,7 @@ func TestMergeResources(t *testing.T) {
 			actual, err := mergeResources(tc.src, tc.dst)
 
 			assert.NoError(t, err)
-			dynassert.Equal(t, tc.expected, actual)
+			assert.Equal(t, tc.expected, actual)
 		})
 	}
 }

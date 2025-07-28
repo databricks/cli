@@ -48,7 +48,7 @@ func TestNormalizeStructElementDiagnostic(t *testing.T) {
 	}, diags[0])
 
 	// Elements that encounter an error during normalization are dropped.
-	dynassert.Equal(t, map[string]any{
+	assert.Equal(t, map[string]any{
 		"foo": "bar",
 	}, vout.AsAny())
 }
@@ -85,7 +85,7 @@ func TestNormalizeStructUnknownField(t *testing.T) {
 	}, diags[0])
 
 	// The field that can be mapped to the struct field is retained.
-	dynassert.Equal(t, map[string]any{
+	assert.Equal(t, map[string]any{
 		"foo": "val-foo",
 	}, vout.AsAny())
 }
@@ -310,7 +310,7 @@ func TestNormalizeMapElementDiagnostic(t *testing.T) {
 	}, err[0])
 
 	// Elements that encounter an error during normalization are dropped.
-	dynassert.Equal(t, map[string]any{
+	assert.Equal(t, map[string]any{
 		"foo": "bar",
 	}, vout.AsAny())
 }
@@ -855,7 +855,7 @@ func TestNormalizeAnchors(t *testing.T) {
 	assert.Len(t, err, 0)
 
 	// The field that can be mapped to the struct field is retained.
-	dynassert.Equal(t, map[string]any{
+	assert.Equal(t, map[string]any{
 		"foo": "bar",
 	}, vout.AsAny())
 }
@@ -867,7 +867,7 @@ func TestNormalizeAnyFromSlice(t *testing.T) {
 	vin := dyn.NewValue([]dyn.Value{v1, v2}, []dyn.Location{{File: "file", Line: 1, Column: 1}})
 	vout, err := Normalize(&typ, vin)
 	assert.Len(t, err, 0)
-	dynassert.Equal(t, dyn.NewValue([]dyn.Value{v1, v2}, []dyn.Location{{File: "file", Line: 1, Column: 1}}), vout)
+	assert.Equal(t, dyn.NewValue([]dyn.Value{v1, v2}, []dyn.Location{{File: "file", Line: 1, Column: 1}}), vout)
 }
 
 func TestNormalizeAnyFromString(t *testing.T) {

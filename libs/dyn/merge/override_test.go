@@ -363,7 +363,7 @@ func TestOverride_Primitive(t *testing.T) {
 			out, err := override(dyn.NewPath(dyn.Key("root")), tc.left, tc.right, visitor)
 
 			assert.NoError(t, err)
-			assert.Equal(t, tc.state, *s)
+			dynassert.Equal(t, tc.state, *s)
 			dynassert.Equal(t, tc.expected, out)
 		})
 
@@ -390,14 +390,14 @@ func TestOverride_Primitive(t *testing.T) {
 					actual, err := dyn.GetByPath(out, dyn.MustPathFromString(added))
 
 					assert.NoError(t, err)
-					assert.Equal(t, expected, actual)
+					dynassert.Equal(t, expected, actual)
 				}
 
 				for _, updated := range s.updated {
 					actual, err := dyn.GetByPath(out, dyn.MustPathFromString(updated))
 
 					assert.NoError(t, err)
-					assert.Equal(t, expected, actual)
+					dynassert.Equal(t, expected, actual)
 				}
 			})
 
@@ -414,7 +414,7 @@ func TestOverride_Primitive(t *testing.T) {
 						actual, err := dyn.GetByPath(out, dyn.MustPathFromString(removed))
 
 						assert.NoError(t, err)
-						assert.Equal(t, expected, actual)
+						dynassert.Equal(t, expected, actual)
 					}
 				})
 			}

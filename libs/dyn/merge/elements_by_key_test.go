@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/dynassert"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -42,12 +41,11 @@ func TestElementByKey(t *testing.T) {
 			"value": 44,
 		}, vout.Index(0).AsAny(),
 	)
-	dynassert.Equal(t,
-		vout.Index(1).AsAny(),
+	assert.Equal(t,
 		map[string]any{
 			"key":   "bar",
 			"value": 43,
-		},
+		}, vout.Index(1).AsAny(),
 	)
 }
 
