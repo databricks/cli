@@ -2,6 +2,9 @@ package mutator
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http"
 	"reflect"
 	"unsafe"
@@ -17,13 +20,41 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
+// cacheHitError is returned when a cached user is found to skip HTTP request
+type cacheHitError struct {
+	user *iam.User
+}
+
+func (e *cacheHitError) Error() string {
+	return "user found in cache"
+}
+
 type populateCurrentUser struct {
 	lastKnownAuthorizationHeader string
+	cache                        bundle.Cache
 }
 
 // PopulateCurrentUser sets the `current_user` property on the workspace.
 func PopulateCurrentUser() bundle.Mutator {
 	return &populateCurrentUser{}
+}
+
+// initializeCache sets up the cache for authorization headers if not already initialized
+func (m *populateCurrentUser) initializeCache(ctx context.Context, b *bundle.Bundle) error {
+	if m.cache != nil {
+		return nil
+	}
+
+	cacheDir, err := b.BundleLevelCacheDir(ctx, "auth")
+	if err != nil {
+		return err
+	}
+
+	m.cache = bundle.NewFileCache(cacheDir)
+
+	fmt.Printf("New cache dir initialized: %s\n", cacheDir)
+
+	return nil
 }
 
 func (m *populateCurrentUser) Name() string {
@@ -35,8 +66,14 @@ func (m *populateCurrentUser) Apply(ctx context.Context, b *bundle.Bundle) diag.
 		return nil
 	}
 
+	// Initialize cache for authorization headers
+	if err := m.initializeCache(ctx, b); err != nil {
+		return diag.FromErr(err)
+	}
+
 	w := b.WorkspaceClient()
 	d := getDatabricksClient(w)
+
 	me, err := m.getCurrentUserWithAuthTracking(ctx, d)
 	if err != nil {
 		return diag.FromErr(err)
@@ -68,6 +105,19 @@ func (m *populateCurrentUser) getCurrentUserWithAuthTracking(ctx context.Context
 				continue
 			}
 			for _, value := range values {
+				if m.cache != nil {
+					fingerprint, err := bundle.GenerateFingerprint("auth_header", value)
+					if err != nil {
+						panic(err)
+					}
+					cachedUserBytes, isCacheHit := m.cache.Read(ctx, fingerprint)
+					if isCacheHit {
+						var cachedUser iam.User
+						if err := json.Unmarshal(cachedUserBytes, &cachedUser); err == nil {
+							return &cacheHitError{user: &cachedUser}
+						}
+					}
+				}
 				m.lastKnownAuthorizationHeader = value
 			}
 		}
@@ -75,6 +125,31 @@ func (m *populateCurrentUser) getCurrentUserWithAuthTracking(ctx context.Context
 	}
 
 	err := client.Do(ctx, http.MethodGet, path, headers, nil, nil, &user, headerInspector)
+
+	// Check if we got a cache hit error
+	var cacheHit *cacheHitError
+	if err != nil && errors.As(err, &cacheHit) {
+		return cacheHit.user, nil
+	}
+
+	// Store authorization header in cache
+	if m.cache != nil && m.lastKnownAuthorizationHeader != "" {
+		fingerprint, err := bundle.GenerateFingerprint("auth_header", m.lastKnownAuthorizationHeader)
+		if err != nil {
+			panic(err)
+		}
+
+		userBytes, err := json.Marshal(&user)
+		if err != nil {
+			return nil, err
+		}
+
+		err = m.cache.Store(ctx, fingerprint, userBytes)
+		if err != nil {
+			fmt.Printf("cache store error: %s\n", err)
+		}
+	}
+
 	return &user, err
 }
 
