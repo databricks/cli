@@ -36,7 +36,10 @@ import (
 	"github.com/hashicorp/terraform-exec/tfexec"
 )
 
-const internalFolder = ".internal"
+const (
+	internalFolder = ".internal"
+	cacheFolder    = ".cache"
+)
 
 // Filename where resources are stored for DATABRICKS_CLI_DEPLOYMENT=direct
 const resourcesFilename = "resources.json"
@@ -270,6 +273,40 @@ func (b *Bundle) InternalDir(ctx context.Context) (string, error) {
 		return dir, err
 	}
 
+	return dir, nil
+}
+
+// BundleLevelCacheDir is used to cache components needed for the bundle that are target-independent
+func (b *Bundle) BundleLevelCacheDir(ctx context.Context, cacheComponentName string) (string, error) {
+	if b.Config.Bundle.Target == "" {
+		panic("target not set")
+	}
+
+	cacheDirName, exists := env.TempDir(ctx)
+	if !exists || cacheDirName == "" {
+		cacheDirName = filepath.Join(
+			// Anchor at bundle root directory.
+			b.BundleRootPath,
+			// Static cache directory.
+			".databricks",
+		)
+	}
+
+	// Fixed components of the result path.
+	parts := []string{
+		cacheDirName,
+		cacheFolder,
+		cacheComponentName,
+	}
+
+	// Make directory if it doesn't exist yet.
+	dir := filepath.Join(parts...)
+	err := os.MkdirAll(dir, 0o700)
+	if err != nil {
+		return "", err
+	}
+
+	libsync.WriteGitIgnore(ctx, b.BundleRootPath)
 	return dir, nil
 }
 
