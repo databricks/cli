@@ -4,16 +4,46 @@ package pipelines
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/validate"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/sync"
 	"github.com/spf13/cobra"
 )
+
+func formatOSSTemplateWarningMessage(d diag.Diagnostic) string {
+	fileName := "a pipeline YAML file"
+	if len(d.Locations) > 0 && d.Locations[0].File != "" {
+		fileName = d.Locations[0].File
+	}
+
+	return fmt.Sprintf(`Detected %s is formatted for OSS Spark pipelines.
+The "definitions" field is not supported in the Pipelines CLI.
+
+Use the Databricks Lakeflow Declarative Pipelines format instead.
+For more information, see: https://docs.databricks.com/aws/en/dlt
+
+Example of a Pipelines CLI supported format for a pipeline YAML file:
+resources:
+  pipelines:
+    my_project_pipeline:
+      name: my_project_pipeline
+      serverless: true
+      catalog: ${var.catalog}
+      schema: ${var.schema}
+      root_path: "."
+      libraries:
+        - glob:
+            include: transformations/**`, fileName)
+}
 
 func deployCommand() *cobra.Command {
 	cmd := &cobra.Command{
@@ -38,9 +68,19 @@ func deployCommand() *cobra.Command {
 		ctx := logdiag.InitContext(cmd.Context())
 		cmd.SetContext(ctx)
 
+		// Enable collection of diagnostics to check for OSS template warning in ConfigureBundleWithVariables
+		logdiag.SetCollect(ctx, true)
+
 		b := utils.ConfigureBundleWithVariables(cmd)
 		if b == nil || logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
+		}
+
+		diags := logdiag.FlushCollected(ctx)
+		for _, d := range diags {
+			if d.Severity == diag.Warning && strings.Contains(d.Summary, "unknown field: definitions") {
+				return errors.New(formatOSSTemplateWarningMessage(d))
+			}
 		}
 
 		bundle.ApplyFuncContext(ctx, b, func(context.Context, *bundle.Bundle) {
