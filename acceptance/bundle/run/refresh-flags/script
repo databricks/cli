@@ -3,21 +3,21 @@ print_requests() {
     rm out.requests.txt
 }
 
-trace $PIPELINES deploy
+trace $CLI bundle deploy
 rm out.requests.txt
 
 title "Running pipeline with --refresh flag and specific tables"
-trace $PIPELINES run --refresh table1,table2
+trace $CLI bundle run my_pipeline --refresh table1,table2
 trace print_requests
 
 title "Running pipeline with --full-refresh-all flag"
-trace $PIPELINES run --full-refresh-all
+trace $CLI bundle run my_pipeline --full-refresh-all
 trace print_requests
 
 title "Running pipeline with --full-refresh flag and specific tables"
-trace $PIPELINES run --full-refresh table1,table2
+trace $CLI bundle run my_pipeline --full-refresh table1,table2
 trace print_requests
 
 title "Running pipeline with --full-refresh flag and --refresh flag"
-trace $PIPELINES run --full-refresh table1,table2 --refresh table3,table4
+trace $CLI bundle run my_pipeline --full-refresh table1,table2 --refresh table3,table4
 trace print_requests
