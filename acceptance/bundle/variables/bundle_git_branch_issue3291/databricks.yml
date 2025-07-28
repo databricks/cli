@@ -1,0 +1,4 @@
+variables:
+  branch:
+    description: The git branch name
+    default: ${bundle.git.branch}
