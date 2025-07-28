@@ -124,7 +124,7 @@ func TestFromTypedStructSetFieldsRetainLocation(t *testing.T) {
 	require.NoError(t, err)
 
 	// Assert foo and bar have retained their location.
-	dynassert.Equal(t, dyn.NewValue("bar", []dyn.Location{{File: "foo"}}), nv.Get("foo"))
+	assert.Equal(t, dyn.NewValue("bar", []dyn.Location{{File: "foo"}}), nv.Get("foo"))
 	dynassert.Equal(t, dyn.NewValue("qux", []dyn.Location{{File: "bar"}}), nv.Get("bar"))
 }
 
@@ -335,7 +335,7 @@ func TestFromTypedMapEmpty(t *testing.T) {
 
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
-	dynassert.Equal(t, dyn.V(map[string]dyn.Value{}), nv)
+	assert.Equal(t, dyn.V(map[string]dyn.Value{}), nv)
 }
 
 func TestFromTypedMapNonEmpty(t *testing.T) {
@@ -368,7 +368,7 @@ func TestFromTypedMapNonEmptyRetainLocation(t *testing.T) {
 	require.NoError(t, err)
 
 	// Assert foo and bar have retained their locations.
-	dynassert.Equal(t, dyn.NewValue("bar", []dyn.Location{{File: "foo"}}), nv.Get("foo"))
+	assert.Equal(t, dyn.NewValue("bar", []dyn.Location{{File: "foo"}}), nv.Get("foo"))
 	dynassert.Equal(t, dyn.NewValue("qux", []dyn.Location{{File: "bar"}}), nv.Get("bar"))
 }
 
@@ -409,7 +409,7 @@ func TestFromTypedSliceEmpty(t *testing.T) {
 
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
-	dynassert.Equal(t, dyn.V([]dyn.Value{}), nv)
+	assert.Equal(t, dyn.V([]dyn.Value{}), nv)
 }
 
 func TestFromTypedSliceNonEmpty(t *testing.T) {
@@ -442,8 +442,8 @@ func TestFromTypedSliceNonEmptyRetainLocation(t *testing.T) {
 	require.NoError(t, err)
 
 	// Assert foo and bar have retained their locations.
-	dynassert.Equal(t, dyn.NewValue("foo", []dyn.Location{{File: "foo"}}), nv.Index(0))
-	dynassert.Equal(t, dyn.NewValue("bar", []dyn.Location{{File: "bar"}}), nv.Index(1))
+	assert.Equal(t, dyn.NewValue("foo", []dyn.Location{{File: "foo"}}), nv.Index(0))
+	assert.Equal(t, dyn.NewValue("bar", []dyn.Location{{File: "bar"}}), nv.Index(1))
 }
 
 func TestFromTypedStringEmpty(t *testing.T) {
@@ -485,13 +485,13 @@ func TestFromTypedStringRetainsLocations(t *testing.T) {
 	var src string = "foo"
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
-	dynassert.Equal(t, dyn.NewValue("foo", []dyn.Location{{File: "foo"}}), nv)
+	assert.Equal(t, dyn.NewValue("foo", []dyn.Location{{File: "foo"}}), nv)
 
 	// case: value has been changed
 	src = "bar"
 	nv, err = FromTyped(src, ref)
 	require.NoError(t, err)
-	dynassert.Equal(t, dyn.NewValue("bar", []dyn.Location{{File: "foo"}}), nv)
+	assert.Equal(t, dyn.NewValue("bar", []dyn.Location{{File: "foo"}}), nv)
 }
 
 func TestFromTypedStringTypeError(t *testing.T) {
@@ -540,13 +540,13 @@ func TestFromTypedBoolRetainsLocations(t *testing.T) {
 	var src bool = true
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
-	dynassert.Equal(t, dyn.NewValue(true, []dyn.Location{{File: "foo"}}), nv)
+	assert.Equal(t, dyn.NewValue(true, []dyn.Location{{File: "foo"}}), nv)
 
 	// case: value has been changed
 	src = false
 	nv, err = FromTyped(src, ref)
 	require.NoError(t, err)
-	dynassert.Equal(t, dyn.NewValue(false, []dyn.Location{{File: "foo"}}), nv)
+	assert.Equal(t, dyn.NewValue(false, []dyn.Location{{File: "foo"}}), nv)
 }
 
 func TestFromTypedBoolVariableReference(t *testing.T) {
@@ -603,13 +603,13 @@ func TestFromTypedIntRetainsLocations(t *testing.T) {
 	var src int = 1234
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
-	dynassert.Equal(t, dyn.NewValue(1234, []dyn.Location{{File: "foo"}}), nv)
+	assert.Equal(t, dyn.NewValue(1234, []dyn.Location{{File: "foo"}}), nv)
 
 	// case: value has been changed
 	src = 1235
 	nv, err = FromTyped(src, ref)
 	require.NoError(t, err)
-	dynassert.Equal(t, dyn.NewValue(int64(1235), []dyn.Location{{File: "foo"}}), nv)
+	assert.Equal(t, dyn.NewValue(int64(1235), []dyn.Location{{File: "foo"}}), nv)
 }
 
 func TestFromTypedIntVariableReference(t *testing.T) {
@@ -667,13 +667,13 @@ func TestFromTypedFloatRetainsLocations(t *testing.T) {
 	src = 1.23
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
-	dynassert.Equal(t, dyn.NewValue(1.23, []dyn.Location{{File: "foo"}}), nv)
+	assert.Equal(t, dyn.NewValue(1.23, []dyn.Location{{File: "foo"}}), nv)
 
 	// case: value has been changed
 	src = 1.24
 	nv, err = FromTyped(src, ref)
 	require.NoError(t, err)
-	dynassert.Equal(t, dyn.NewValue(1.24, []dyn.Location{{File: "foo"}}), nv)
+	assert.Equal(t, dyn.NewValue(1.24, []dyn.Location{{File: "foo"}}), nv)
 }
 
 func TestFromTypedFloatVariableReference(t *testing.T) {
@@ -746,7 +746,7 @@ func TestFromTypedNilPointerRetainsLocations(t *testing.T) {
 
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
-	dynassert.Equal(t, dyn.NewValue(nil, []dyn.Location{{File: "foobar"}}), nv)
+	assert.Equal(t, dyn.NewValue(nil, []dyn.Location{{File: "foobar"}}), nv)
 }
 
 func TestFromTypedNilMapRetainsLocation(t *testing.T) {
@@ -755,7 +755,7 @@ func TestFromTypedNilMapRetainsLocation(t *testing.T) {
 
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
-	dynassert.Equal(t, dyn.NewValue(nil, []dyn.Location{{File: "foobar"}}), nv)
+	assert.Equal(t, dyn.NewValue(nil, []dyn.Location{{File: "foobar"}}), nv)
 }
 
 func TestFromTypedNilSliceRetainsLocation(t *testing.T) {
@@ -764,5 +764,5 @@ func TestFromTypedNilSliceRetainsLocation(t *testing.T) {
 
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
-	dynassert.Equal(t, dyn.NewValue(nil, []dyn.Location{{File: "foobar"}}), nv)
+	assert.Equal(t, dyn.NewValue(nil, []dyn.Location{{File: "foobar"}}), nv)
 }

@@ -552,7 +552,7 @@ func TestNormalizeStringFromBool(t *testing.T) {
 	vin := dyn.NewValue(true, []dyn.Location{{File: "file", Line: 1, Column: 1}})
 	vout, err := Normalize(&typ, vin)
 	assert.Empty(t, err)
-	dynassert.Equal(t, dyn.NewValue("true", vin.Locations()), vout)
+	assert.Equal(t, dyn.NewValue("true", vin.Locations()), vout)
 }
 
 func TestNormalizeStringFromInt(t *testing.T) {
@@ -560,7 +560,7 @@ func TestNormalizeStringFromInt(t *testing.T) {
 	vin := dyn.NewValue(123, []dyn.Location{{File: "file", Line: 1, Column: 1}})
 	vout, err := Normalize(&typ, vin)
 	assert.Empty(t, err)
-	dynassert.Equal(t, dyn.NewValue("123", vin.Locations()), vout)
+	assert.Equal(t, dyn.NewValue("123", vin.Locations()), vout)
 }
 
 func TestNormalizeStringFromFloat(t *testing.T) {
@@ -568,7 +568,7 @@ func TestNormalizeStringFromFloat(t *testing.T) {
 	vin := dyn.NewValue(1.20, []dyn.Location{{File: "file", Line: 1, Column: 1}})
 	vout, err := Normalize(&typ, vin)
 	assert.Empty(t, err)
-	dynassert.Equal(t, dyn.NewValue("1.2", vin.Locations()), vout)
+	assert.Equal(t, dyn.NewValue("1.2", vin.Locations()), vout)
 }
 
 func TestNormalizeStringFromTime(t *testing.T) {
@@ -576,7 +576,7 @@ func TestNormalizeStringFromTime(t *testing.T) {
 	vin := dyn.NewValue(dyn.MustTime("2024-08-29"), []dyn.Location{{File: "file", Line: 1, Column: 1}})
 	vout, err := Normalize(&typ, vin)
 	assert.Empty(t, err)
-	dynassert.Equal(t, dyn.NewValue("2024-08-29", vin.Locations()), vout)
+	assert.Equal(t, dyn.NewValue("2024-08-29", vin.Locations()), vout)
 }
 
 func TestNormalizeStringError(t *testing.T) {
@@ -673,7 +673,7 @@ func TestNormalizeInt(t *testing.T) {
 	vin := dyn.V(123)
 	vout, err := Normalize(&typ, vin)
 	assert.Empty(t, err)
-	dynassert.Equal(t, dyn.V(int64(123)), vout)
+	assert.Equal(t, dyn.V(int64(123)), vout)
 }
 
 func TestNormalizeIntNil(t *testing.T) {
@@ -694,7 +694,7 @@ func TestNormalizeIntFromFloat(t *testing.T) {
 	vin := dyn.V(float64(1.0))
 	vout, err := Normalize(&typ, vin)
 	assert.Empty(t, err)
-	dynassert.Equal(t, dyn.V(int64(1)), vout)
+	assert.Equal(t, dyn.V(int64(1)), vout)
 }
 
 func TestNormalizeIntFromFloatError(t *testing.T) {
@@ -715,7 +715,7 @@ func TestNormalizeIntFromString(t *testing.T) {
 	vin := dyn.V("123")
 	vout, err := Normalize(&typ, vin)
 	assert.Empty(t, err)
-	dynassert.Equal(t, dyn.V(int64(123)), vout)
+	assert.Equal(t, dyn.V(int64(123)), vout)
 }
 
 func TestNormalizeIntFromStringVariableReference(t *testing.T) {
@@ -757,7 +757,7 @@ func TestNormalizeFloat(t *testing.T) {
 	vin := dyn.V(1.2)
 	vout, err := Normalize(&typ, vin)
 	assert.Empty(t, err)
-	dynassert.Equal(t, dyn.V(1.2), vout)
+	assert.Equal(t, dyn.V(1.2), vout)
 }
 
 func TestNormalizeFloatNil(t *testing.T) {
@@ -803,7 +803,7 @@ func TestNormalizeFloatFromString(t *testing.T) {
 	vin := dyn.V("1.2")
 	vout, err := Normalize(&typ, vin)
 	assert.Empty(t, err)
-	dynassert.Equal(t, dyn.V(1.2), vout)
+	assert.Equal(t, dyn.V(1.2), vout)
 }
 
 func TestNormalizeFloatFromStringVariableReference(t *testing.T) {
@@ -875,7 +875,7 @@ func TestNormalizeAnyFromString(t *testing.T) {
 	vin := dyn.NewValue("string", []dyn.Location{{File: "file", Line: 1, Column: 1}})
 	vout, err := Normalize(&typ, vin)
 	assert.Len(t, err, 0)
-	dynassert.Equal(t, dyn.NewValue("string", []dyn.Location{{File: "file", Line: 1, Column: 1}}), vout)
+	assert.Equal(t, dyn.NewValue("string", []dyn.Location{{File: "file", Line: 1, Column: 1}}), vout)
 }
 
 func TestNormalizeAnyFromBool(t *testing.T) {
@@ -883,7 +883,7 @@ func TestNormalizeAnyFromBool(t *testing.T) {
 	vin := dyn.NewValue(false, []dyn.Location{{File: "file", Line: 1, Column: 1}})
 	vout, err := Normalize(&typ, vin)
 	assert.Len(t, err, 0)
-	dynassert.Equal(t, dyn.NewValue(false, []dyn.Location{{File: "file", Line: 1, Column: 1}}), vout)
+	assert.Equal(t, dyn.NewValue(false, []dyn.Location{{File: "file", Line: 1, Column: 1}}), vout)
 }
 
 func TestNormalizeAnyFromInt(t *testing.T) {
@@ -891,7 +891,7 @@ func TestNormalizeAnyFromInt(t *testing.T) {
 	vin := dyn.NewValue(10, []dyn.Location{{File: "file", Line: 1, Column: 1}})
 	vout, err := Normalize(&typ, vin)
 	assert.Len(t, err, 0)
-	dynassert.Equal(t, dyn.NewValue(10, []dyn.Location{{File: "file", Line: 1, Column: 1}}), vout)
+	assert.Equal(t, dyn.NewValue(10, []dyn.Location{{File: "file", Line: 1, Column: 1}}), vout)
 }
 
 func TestNormalizeAnyFromTime(t *testing.T) {
@@ -899,5 +899,5 @@ func TestNormalizeAnyFromTime(t *testing.T) {
 	vin := dyn.NewValue(dyn.MustTime("2024-08-29"), []dyn.Location{{File: "file", Line: 1, Column: 1}})
 	vout, err := Normalize(&typ, vin)
 	assert.Empty(t, err)
-	dynassert.Equal(t, dyn.NewValue("2024-08-29", vin.Locations()), vout)
+	assert.Equal(t, dyn.NewValue("2024-08-29", vin.Locations()), vout)
 }
