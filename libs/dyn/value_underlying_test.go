@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/dyn"
-	assert "github.com/databricks/cli/libs/dyn/dynassert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestValueUnderlyingMap(t *testing.T) {
