@@ -27,10 +27,10 @@ Error: path ../dist/wheel2.whl is defined relative to the [TEST_TMP_DIR]/resourc
 Error: path ../target/jar2.jar is defined relative to the [TEST_TMP_DIR]/resources directory ([TEST_TMP_DIR]/override_job.yml:41:24). Please update the path to be relative to the file where it is defined or use earlier version of CLI (0.261.0 or earlier).
   in override_job.yml:41:24
 
-Error: path ../src/notebook2.py is defined relative to the [TEST_TMP_DIR]/resources directory ([TEST_TMP_DIR]/override_pipeline.yml:13:23). Please update the path to be relative to the file where it is defined.
+Error: path ../src/notebook2.py is defined relative to the [TEST_TMP_DIR]/resources directory ([TEST_TMP_DIR]/override_pipeline.yml:13:23). Please update the path to be relative to the file where it is defined or use earlier version of CLI (0.261.0 or earlier).
   in override_pipeline.yml:13:23
 
-Error: path ../src/file2.py is defined relative to the [TEST_TMP_DIR]/resources directory ([TEST_TMP_DIR]/override_pipeline.yml:10:23). Please update the path to be relative to the file where it is defined.
+Error: path ../src/file2.py is defined relative to the [TEST_TMP_DIR]/resources directory ([TEST_TMP_DIR]/override_pipeline.yml:10:23). Please update the path to be relative to the file where it is defined or use earlier version of CLI (0.261.0 or earlier).
   in override_pipeline.yml:10:23
 
 
