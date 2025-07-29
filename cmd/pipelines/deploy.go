@@ -20,18 +20,18 @@ import (
 )
 
 func formatOSSTemplateWarningMessage(d diag.Diagnostic) string {
-	fileName := "a pipeline YAML file"
+	fileName := "a pipeline YAML"
 	if len(d.Locations) > 0 && d.Locations[0].File != "" {
 		fileName = d.Locations[0].File
 	}
 
-	return fmt.Sprintf(`Detected %s is formatted for OSS Spark pipelines.
+	return fmt.Sprintf(`Detected %s file is formatted for OSS Spark pipelines.
 The "definitions" field is not supported in the Pipelines CLI.
 
 Use the Databricks Lakeflow Declarative Pipelines format instead.
 For more information, see: https://docs.databricks.com/aws/en/dlt
 
-Example of a Pipelines CLI supported format for a pipeline YAML file:
+Example of a supported pipeline YAML file for the Pipelines CLI:
 resources:
   pipelines:
     my_project_pipeline:
@@ -75,12 +75,14 @@ func deployCommand() *cobra.Command {
 		if b == nil || logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}
+		logdiag.SetCollect(ctx, false)
 
 		diags := logdiag.FlushCollected(ctx)
 		for _, d := range diags {
 			if d.Severity == diag.Warning && strings.Contains(d.Summary, "unknown field: definitions") {
 				return errors.New(formatOSSTemplateWarningMessage(d))
 			}
+			logdiag.LogDiag(ctx, d)
 		}
 
 		bundle.ApplyFuncContext(ctx, b, func(context.Context, *bundle.Bundle) {
