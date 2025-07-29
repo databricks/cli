@@ -39,7 +39,7 @@
             "default": "default",
             "pattern": "^\\w+$",
             "pattern_match_failure_message": "Invalid schema name.",
-            "description": "\nInitial schema during development:\ndefault_schema",
+            "description": "\nInitial schema during development:\nNote: This schema name will be automatically suffixed with '.dev' for development and '.prod' for production environments.\ndefault_schema",
             "order": 5
         },
         "language": {
