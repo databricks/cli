@@ -1,0 +1,6 @@
+git-repo-init
+git checkout -b feature/test-variable-override
+
+$CLI bundle deploy --target feature --var branch=feature_test-variable-override
+trace jq 'select(.method != "GET")' out.requests.txt | jq 'select(.path | contains("files"))' | jq .path
+rm -fr .git out.requests.txt

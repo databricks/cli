@@ -1,0 +1,20 @@
+Switched to a new branch 'feature/test-variable-override'
+Warning: the bundle root path /Workspace/Shared/databricks_bundle_feature_test-variable-override is writable by all workspace users
+
+The bundle is configured to use /Workspace/Shared, which will give read/write access to all users. If this is intentional, add CAN_MANAGE for 'group_name: users' permission to your bundle configuration. If the deployment should be restricted, move it to a restricted folder such as /Workspace/Users/<username or principal name>.
+
+Uploading bundle files to /Workspace/Shared/databricks_bundle_feature_test-variable-override/files...
+Deploying resources...
+Deployment complete!
+
+>>> jq select(.method != "GET") out.requests.txt
+"/api/2.0/workspace-files/import-file/Workspace/Shared/databricks_bundle_feature_test-variable-override/state/deploy.lock"
+"/api/2.0/workspace-files/import-file/Workspace/Shared/databricks_bundle_feature_test-variable-override/files/out.test.toml"
+"/api/2.0/workspace-files/import-file/Workspace/Shared/databricks_bundle_feature_test-variable-override/files/databricks.yml"
+"/api/2.0/workspace-files/import-file/Workspace/Shared/databricks_bundle_feature_test-variable-override/files/script"
+"/api/2.0/workspace-files/import-file/Workspace/Shared/databricks_bundle_feature_test-variable-override/files/output.txt"
+"/api/2.0/workspace-files/import-file/Workspace/Shared/databricks_bundle_feature_test-variable-override/files/test.toml"
+"/api/2.0/workspace-files/import-file/Workspace/Shared/databricks_bundle_feature_test-variable-override/files/out.requests.txt"
+"/api/2.0/workspace-files/import-file/Workspace/Shared/databricks_bundle_feature_test-variable-override/files/repls.json"
+"/api/2.0/workspace-files/import-file/Workspace/Shared/databricks_bundle_feature_test-variable-override/state/deployment.json"
+"/api/2.0/workspace-files/import-file/Workspace/Shared/databricks_bundle_feature_test-variable-override/state/metadata.json"
