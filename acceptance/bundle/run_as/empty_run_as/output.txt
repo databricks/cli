@@ -1,7 +1,1 @@
-Name: abc
-Target: default
-Workspace:
-  User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/abc/default
-
-Validation OK!
+  "run_as": null,
