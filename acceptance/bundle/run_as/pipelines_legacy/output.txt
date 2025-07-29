@@ -1,0 +1,65 @@
+
+>>> [CLI] bundle validate -o json
+Warning: You are using the legacy mode of run_as. The support for this mode is experimental and might be removed in a future release of the CLI. In order to run the DLT pipelines in your DAB as the run_as user this mode changes the owners of the pipelines to the run_as identity, which requires the user deploying the bundle to be a workspace admin, and also a Metastore admin if the pipeline target is in UC.
+  at experimental.use_legacy_run_as
+  in databricks.yml:8:22
+
+Warning: required field "catalog_name" is not set
+  at resources.registered_models.model_two
+  in databricks.yml:59:7
+
+Warning: required field "schema_name" is not set
+  at resources.registered_models.model_two
+  in databricks.yml:59:7
+
+
+>>> jq .run_as
+{
+  "service_principal_name": "my_service_principal"
+}
+
+=== Jobs one and two run_as is updated to bundle-level setting (service_principal_name)
+>>> jq .resources.jobs.job_one.run_as
+{
+  "service_principal_name": "my_service_principal"
+}
+
+>>> jq .resources.jobs.job_two.run_as
+{
+  "service_principal_name": "my_service_principal"
+}
+
+=== Pipeline's CAN_VIEW permissions for my_service_principal is upgraded to IS_OWNER
+>>> jq .resources.pipelines.nyc_taxi_pipeline.permissions
+[
+  {
+    "level": "CAN_VIEW",
+    "user_name": "my_user_name"
+  },
+  {
+    "level": "IS_OWNER",
+    "service_principal_name": "my_service_principal"
+  }
+]
+
+=== Other resources are not affected
+>>> jq .resources.jobs.job_three.run_as
+{
+  "service_principal_name": "my_service_principal_for_job"
+}
+
+>>> jq .resources.experiments
+{
+  "experiment_one": {
+    "name": "experiment_one",
+    "permissions": []
+  }
+}
+
+>>> jq .resources.models
+{
+  "model_one": {
+    "name": "skynet",
+    "permissions": []
+  }
+}

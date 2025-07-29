@@ -6,8 +6,8 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/dyn"
-	assert "github.com/databricks/cli/libs/dyn/dynassert"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestVisitPipelinePaths(t *testing.T) {

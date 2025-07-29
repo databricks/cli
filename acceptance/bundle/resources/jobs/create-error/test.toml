@@ -1,0 +1,26 @@
+RecordRequests = false
+
+# Uncomment and run the test to check that the error response is realistic
+#    deco env run -i -n aws-prod-ucws -- go test ../../../.. -run ^TestAccept$/^bundle$/^resources$/^jobs$/^create-error$ -timeout=1h
+# Cloud = true
+
+# The error on terraform looks different, it does not pass the validation there:
+# Warning: required field "new_cluster" is not set
+#   at resources.jobs.foo.job_clusters[0]
+#   in databricks.yml:7:11
+#
+# Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+# Error: exit status 1
+#
+# Error: Insufficient new_cluster blocks
+#
+#   on bundle.tf.json line 25, in resource.databricks_job.foo.job_cluster[0]:
+#   25:           }
+#
+# At least 1 "new_cluster" blocks are required.
+EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["direct-exp"]
+
+[[Server]]
+Pattern = "POST /api/2.2/jobs/create"
+Response.StatusCode = 400
+Response.Body = '{"error_code": "INVALID_PARAMETER_VALUE", "message": "Shared job cluster feature is only supported in multi-task jobs."}'

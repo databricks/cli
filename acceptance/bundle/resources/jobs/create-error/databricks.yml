@@ -1,0 +1,12 @@
+resources:
+  jobs:
+    foo:
+      name: foo
+
+      trigger:
+        periodic:
+          interval: 1
+          unit: DAYS
+
+      job_clusters:
+        - job_cluster_key: key
