@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/sync"
+	libsutils "github.com/databricks/cli/libs/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -92,7 +93,8 @@ func deployCommand() *cobra.Command {
 		}
 
 		for _, group := range b.Config.Resources.AllResources() {
-			for resourceKey, resource := range group.Resources {
+			for _, resourceKey := range libsutils.SortedKeys(group.Resources) {
+				resource := group.Resources[resourceKey]
 				cmdio.LogString(ctx, fmt.Sprintf("View your %s %s here: %s", resource.ResourceDescription().SingularName, resourceKey, resource.GetURL()))
 			}
 		}
