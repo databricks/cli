@@ -4,11 +4,6 @@ bundle:
 run_as:
   service_principal_name: "my_service_principal"
 
-targets:
-  development:
-    run_as:
-      user_name: "my_user_name"
-
 resources:
   model_serving_endpoints:
     foo:
