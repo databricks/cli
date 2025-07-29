@@ -19,7 +19,7 @@
     {{- if (regexp "^yes").MatchString .personal_schemas -}}
         ${workspace.current_user.short_name}
     {{- else -}}
-        {{ .shared_schema }}.dev
+        {{ .shared_schema }}_dev
     {{- end}}
 {{- end }}
 
@@ -28,6 +28,6 @@
     {{- if (regexp "^yes").MatchString .personal_schemas -}}
         default
     {{- else -}}
-        {{ .shared_schema }}.prod
+        {{ .shared_schema }}_prod
     {{- end}}
 {{- end }}

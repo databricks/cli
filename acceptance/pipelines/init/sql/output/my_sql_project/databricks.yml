@@ -28,7 +28,7 @@ targets:
       host: [DATABRICKS_URL]
     variables:
       catalog: main
-      schema: shared.dev
+      schema: shared_dev
       notifications: []
 
   prod:
@@ -42,5 +42,5 @@ targets:
         level: CAN_MANAGE
     variables:
       catalog: main
-      schema: shared.prod
+      schema: shared_prod
       notifications: [[USERNAME]]
