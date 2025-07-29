@@ -1,2 +1,2 @@
-File successfully saved to src/notebook.py
+File successfully saved to notebook.py
 Job configuration successfully saved to out.job.yml
