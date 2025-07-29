@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/dyn"
-	assert "github.com/databricks/cli/libs/dyn/dynassert"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -327,14 +327,14 @@ func TestToTypedBool(t *testing.T) {
 	var out bool
 	err := ToTyped(&out, dyn.V(true))
 	require.NoError(t, err)
-	assert.Equal(t, true, out)
+	assert.True(t, out)
 }
 
 func TestToTypedBoolOverwrite(t *testing.T) {
 	var out bool = true
 	err := ToTyped(&out, dyn.V(false))
 	require.NoError(t, err)
-	assert.Equal(t, false, out)
+	assert.False(t, out)
 }
 
 func TestToTypedBoolFromString(t *testing.T) {
@@ -344,14 +344,14 @@ func TestToTypedBoolFromString(t *testing.T) {
 	for _, v := range []string{"y", "yes", "on", "true"} {
 		err := ToTyped(&out, dyn.V(v))
 		require.NoError(t, err)
-		assert.Equal(t, true, out)
+		assert.True(t, out)
 	}
 
 	// False-ish
 	for _, v := range []string{"n", "no", "off", "false"} {
 		err := ToTyped(&out, dyn.V(v))
 		require.NoError(t, err)
-		assert.Equal(t, false, out)
+		assert.False(t, out)
 	}
 
 	// Other
@@ -363,7 +363,7 @@ func TestToTypedBoolFromStringVariableReference(t *testing.T) {
 	var out bool = true
 	err := ToTyped(&out, dyn.V("${var.foo}"))
 	require.NoError(t, err)
-	assert.Equal(t, false, out)
+	assert.False(t, out)
 }
 
 func TestToTypedInt(t *testing.T) {
@@ -445,28 +445,28 @@ func TestToTypedFloat32(t *testing.T) {
 	var out float32
 	err := ToTyped(&out, dyn.V(float32(1.0)))
 	require.NoError(t, err)
-	assert.Equal(t, float32(1.0), out)
+	assert.Zero(t, 1.0-out)
 }
 
 func TestToTypedFloat64(t *testing.T) {
 	var out float64
 	err := ToTyped(&out, dyn.V(float64(1.0)))
 	require.NoError(t, err)
-	assert.Equal(t, float64(1.0), out)
+	assert.Zero(t, 1.0-out)
 }
 
 func TestToTypedFloat32Overwrite(t *testing.T) {
 	var out float32 = 1.0
 	err := ToTyped(&out, dyn.V(float32(2.0)))
 	require.NoError(t, err)
-	assert.Equal(t, float32(2.0), out)
+	assert.Zero(t, 2.0-out)
 }
 
 func TestToTypedFloat64Overwrite(t *testing.T) {
 	var out float64 = 1.0
 	err := ToTyped(&out, dyn.V(float64(2.0)))
 	require.NoError(t, err)
-	assert.Equal(t, float64(2.0), out)
+	assert.Zero(t, 2.0-out)
 }
 
 func TestToTypedFloat32FromStringError(t *testing.T) {
@@ -485,28 +485,28 @@ func TestToTypedFloat32FromString(t *testing.T) {
 	var out float32
 	err := ToTyped(&out, dyn.V("1.2"))
 	require.NoError(t, err)
-	assert.Equal(t, float32(1.2), out)
+	assert.Zero(t, 1.2-out)
 }
 
 func TestToTypedFloat64FromString(t *testing.T) {
 	var out float64
 	err := ToTyped(&out, dyn.V("1.2"))
 	require.NoError(t, err)
-	assert.Equal(t, float64(1.2), out)
+	assert.Zero(t, 1.2-out)
 }
 
 func TestToTypedFloat32FromStringVariableReference(t *testing.T) {
 	var out float32 = 1.0
 	err := ToTyped(&out, dyn.V("${var.foo}"))
 	require.NoError(t, err)
-	assert.Equal(t, float32(0.0), out)
+	assert.Zero(t, out)
 }
 
 func TestToTypedFloat64FromStringVariableReference(t *testing.T) {
 	var out float64 = 1.0
 	err := ToTyped(&out, dyn.V("${var.foo}"))
 	require.NoError(t, err)
-	assert.Equal(t, float64(0.0), out)
+	assert.Zero(t, out)
 }
 
 func TestToTypedWithAliasKeyType(t *testing.T) {
@@ -551,5 +551,5 @@ func TestToTypedAnyWithNil(t *testing.T) {
 	var out any
 	err := ToTyped(&out, dyn.NilValue)
 	require.NoError(t, err)
-	assert.Equal(t, nil, out)
+	assert.Nil(t, out)
 }

@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/databricks/databricks-sdk-go/service/sql"
@@ -26,9 +27,22 @@ import (
 // (encoding/json without options parses numbers into float64)
 // These are also easier to spot / replace in test output compared to numbers with one or few digits.
 const (
-	TestJobID = 4611686018427387911
-	TestRunID = 2305843009213693969
+	TestJobID                   = 4611686018427387911
+	TestRunID                   = 2305843009213693969
+	UserNameTokenPrefix         = "dbapi0"
+	ServicePrincipalTokenPrefix = "dbapi1"
+	UserID                      = "1000012345"
 )
+
+var TestUser = iam.User{
+	Id:       UserID,
+	UserName: "tester@databricks.com",
+}
+
+var TestUserSP = iam.User{
+	Id:       UserID,
+	UserName: "aaaaaaaa-bbbb-4ccc-dddd-eeeeeeeeeeee",
+}
 
 type FileEntry struct {
 	Info workspace.ObjectInfo
@@ -37,8 +51,9 @@ type FileEntry struct {
 
 // FakeWorkspace holds a state of a workspace for acceptance tests.
 type FakeWorkspace struct {
-	mu  sync.Mutex
-	url string
+	mu                 sync.Mutex
+	url                string
+	isServicePrincipal bool
 
 	directories  map[string]bool
 	files        map[string]FileEntry
@@ -119,9 +134,10 @@ func MapDelete[K comparable, V any](w *FakeWorkspace, collection map[K]V, key K)
 	return Response{}
 }
 
-func NewFakeWorkspace(url string) *FakeWorkspace {
+func NewFakeWorkspace(url, token string) *FakeWorkspace {
 	return &FakeWorkspace{
-		url: url,
+		url:                url,
+		isServicePrincipal: strings.HasPrefix(token, ServicePrincipalTokenPrefix),
 		directories: map[string]bool{
 			"/Workspace": true,
 		},
@@ -141,6 +157,14 @@ func NewFakeWorkspace(url string) *FakeWorkspace {
 		Dashboards:      map[string]dashboards.Dashboard{},
 		SqlWarehouses:   map[string]sql.GetWarehouseResponse{},
 		Repos:           map[string]workspace.RepoInfo{},
+	}
+}
+
+func (s *FakeWorkspace) CurrentUser() iam.User {
+	if s != nil && s.isServicePrincipal {
+		return TestUserSP
+	} else {
+		return TestUser
 	}
 }
 

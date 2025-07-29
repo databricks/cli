@@ -1,0 +1,77 @@
+
+=== E2E Test: Complete pipeline lifecycle (init, deploy, run, stop, destroy)
+=== Initialize pipeline project
+>>> [PIPELINES] init --output-dir output
+
+Welcome to the template for pipelines!
+
+
+Your new project has been created in the 'my_project' directory!
+
+Refer to the README.md file for "getting started" instructions!
+
+=== Deploy pipeline
+>>> [PIPELINES] deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_project/dev/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Run pipeline
+>>> [PIPELINES] run
+Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
+
+
+=== Edit project by creating and running a new second pipeline
+>>> [PIPELINES] deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_project/dev/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Assert the second pipeline is created
+>>> [CLI] pipelines get [UUID]
+{
+  "creator_user_name":"[USERNAME]",
+  "last_modified":[UNIX_TIME_MILLIS],
+  "name":"[dev [USERNAME]] my_project_pipeline_2",
+  "pipeline_id":"[UUID]",
+  "run_as_user_name":"[USERNAME]",
+  "spec": {
+    "channel":"CURRENT",
+    "deployment": {
+      "kind":"BUNDLE",
+      "metadata_file_path":"/Workspace/Users/[USERNAME]/.bundle/my_project/dev/state/metadata.json"
+    },
+    "development":true,
+    "edition":"ADVANCED",
+    "id":"[UUID]",
+    "name":"[dev [USERNAME]] my_project_pipeline_2",
+    "storage":"dbfs:/pipelines/[UUID]"
+  },
+  "state":"IDLE"
+}
+
+>>> [PIPELINES] run my_project_pipeline_2
+Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
+
+
+=== Stop both pipelines before destroy
+>>> [PIPELINES] stop my_project_pipeline
+Stopping my_project_pipeline...
+my_project_pipeline has been stopped.
+
+>>> [PIPELINES] stop my_project_pipeline_2
+Stopping my_project_pipeline_2...
+my_project_pipeline_2 has been stopped.
+
+=== Destroy project
+>>> [PIPELINES] destroy --auto-approve
+The following resources will be deleted:
+  delete pipeline my_project_pipeline
+  delete pipeline my_project_pipeline_2
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/my_project/dev
+
+Deleting files...
+Destroy complete!

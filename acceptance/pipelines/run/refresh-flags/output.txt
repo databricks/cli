@@ -52,3 +52,24 @@ Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
   "method": "POST",
   "path": "/api/2.0/pipelines/[UUID]/updates"
 }
+
+=== Running pipeline with --full-refresh flag and --refresh flag
+>>> [PIPELINES] run --full-refresh table1,table2 --refresh table3,table4
+Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
+
+
+>>> print_requests
+{
+  "body": {
+    "full_refresh_selection": [
+      "table1",
+      "table2"
+    ],
+    "refresh_selection": [
+      "table3",
+      "table4"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates"
+}
