@@ -7,10 +7,14 @@ targets:
       user_name: "tester@databricks.com"
   t_service_principal_name:
     run_as:
-      service_principal_name: "my_service_principal"
+      service_principal_name: "aaaaaaaa-bbbb-4ccc-dddd-eeeeeeeeeeee"
   t_user_name_different:
     run_as:
       user_name: "different@databricks.com"
+  t_service_principal_name_different:
+    run_as:
+      user_name: "e2ca0d0a-0a26-4be7-aa87-2d4011c85f39"
+
 
 resources:
   pipelines:
