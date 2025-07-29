@@ -5,6 +5,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// Equal is a variant of assert.Equal that first converts dyn.Value to any. The practical consequence is that maps are compared
+// without order. Another difference here is that locations are compared via Location() function, which drops all
+// but first and get rids of nils.
 func Equal(t assert.TestingT, expected, actual any, msgAndArgs ...any) bool {
 	ev, eok := expected.(dyn.Value)
 	av, aok := actual.(dyn.Value)
