@@ -4,16 +4,11 @@ import (
 	"context"
 	"testing"
 
-	"github.com/databricks/cli/bundle/config/resources"
-
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/iam"
-	"github.com/databricks/databricks-sdk-go/service/ml"
-	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -133,57 +128,4 @@ func TestRunAsErrorNeitherUserOrSpSpecifiedAtTargetOverride(t *testing.T) {
 	err := diags.Error()
 
 	assert.EqualError(t, err, "run_as section must specify exactly one identity. Neither service_principal_name nor user_name is specified")
-}
-
-func TestLegacyRunAs(t *testing.T) {
-	b := load(t, "./run_as/legacy")
-
-	ctx := context.Background()
-	bundle.ApplyFuncContext(ctx, b, func(ctx context.Context, b *bundle.Bundle) {
-		b.Config.Workspace.CurrentUser = &config.User{
-			User: &iam.User{
-				UserName: "jane@doe.com",
-			},
-		}
-	})
-
-	diags := bundle.Apply(ctx, b, resourcemutator.SetRunAs())
-	assert.NoError(t, diags.Error())
-
-	assert.Len(t, b.Config.Resources.Jobs, 3)
-	jobs := b.Config.Resources.Jobs
-
-	// job_one and job_two should have the same run_as identity as the bundle.
-	assert.NotNil(t, jobs["job_one"].RunAs)
-	assert.Equal(t, "my_service_principal", jobs["job_one"].RunAs.ServicePrincipalName)
-	assert.Equal(t, "", jobs["job_one"].RunAs.UserName)
-
-	assert.NotNil(t, jobs["job_two"].RunAs)
-	assert.Equal(t, "my_service_principal", jobs["job_two"].RunAs.ServicePrincipalName)
-	assert.Equal(t, "", jobs["job_two"].RunAs.UserName)
-
-	// job_three should retain it's run_as identity.
-	assert.NotNil(t, jobs["job_three"].RunAs)
-	assert.Equal(t, "my_service_principal_for_job", jobs["job_three"].RunAs.ServicePrincipalName)
-	assert.Equal(t, "", jobs["job_three"].RunAs.UserName)
-
-	// Assert owner permissions for pipelines are set.
-	pipelines := b.Config.Resources.Pipelines
-	assert.Len(t, pipelines["nyc_taxi_pipeline"].Permissions, 2)
-
-	assert.Equal(t, resources.PipelinePermission{
-		Level:    "CAN_VIEW",
-		UserName: "my_user_name",
-	}, pipelines["nyc_taxi_pipeline"].Permissions[0])
-
-	assert.Equal(t, resources.PipelinePermission{
-		Level:                "IS_OWNER",
-		ServicePrincipalName: "my_service_principal",
-	}, pipelines["nyc_taxi_pipeline"].Permissions[1])
-
-	// Assert other resources are not affected.
-	assert.Equal(t, ml.CreateModelRequest{Name: "skynet"}, b.Config.Resources.Models["model_one"].CreateModelRequest)
-	assert.Equal(t, catalog.CreateRegisteredModelRequest{Name: "skynet (in UC)"}, b.Config.Resources.RegisteredModels["model_two"].CreateRegisteredModelRequest)
-	assert.Equal(t, ml.Experiment{Name: "experiment_one"}, b.Config.Resources.Experiments["experiment_one"].Experiment)
-	assert.Equal(t, serving.CreateServingEndpoint{Name: "skynet"}, b.Config.Resources.ModelServingEndpoints["model_serving_one"].CreateServingEndpoint)
 }

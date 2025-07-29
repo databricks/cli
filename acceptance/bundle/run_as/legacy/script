@@ -1,1 +1,19 @@
-$CLI bundle validate -o json | jq .run_as
+other_resources () {
+  title "Other resources are not affected"
+  trace jq .resources.jobs.job_three.run_as < tmp
+  trace jq .resources.experiments < tmp
+  trace jq .resources.models < tmp
+}
+
+trace $CLI bundle validate -o json > tmp
+trace jq .run_as < tmp
+
+title "Jobs one and two run_as is updated to bundle-level setting (service_principal_name)"
+trace jq .resources.jobs.job_one.run_as < tmp
+trace jq .resources.jobs.job_two.run_as < tmp
+
+title "Pipeline's CAN_VIEW permissions for my_service_principal_for_job is upgraded to IS_OWNER"
+trace jq .resources.pipelines.nyc_taxi_pipeline.permissions < tmp
+
+other_resources
+rm tmp
