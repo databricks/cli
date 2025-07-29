@@ -47,7 +47,16 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 	// Use a unique token for each test. This allows us to maintain
 	// separate state for each test in fake workspaces.
 	tokenSuffix := strings.ReplaceAll(uuid.NewString(), "-", "")
-	token := "dbapi" + tokenSuffix
+
+	var token string
+	var testUser iam.User
+	if isTruePtr(config.IsServicePrincipal) {
+		token = testserver.ServicePrincipalTokenPrefix + tokenSuffix
+		testUser = testserver.TestUserSP
+	} else {
+		token = testserver.UserNameTokenPrefix + tokenSuffix
+		testUser = testserver.TestUser
+	}
 
 	if cloudEnv != "" {
 		w, err := databricks.NewWorkspaceClient()
@@ -79,7 +88,7 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 			Token: token,
 		}
 
-		return cfg, TestUser
+		return cfg, testUser
 	}
 
 	// Default case. Start a dedicated local server for the test with the server stubs configured
@@ -92,7 +101,7 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 
 	// For the purposes of replacements, use testUser for local runs.
 	// Note, users might have overriden /api/2.0/preview/scim/v2/Me but that should not affect the replacement:
-	return cfg, TestUser
+	return cfg, testUser
 }
 
 func recordRequestsCallback(t *testing.T, includeHeaders []string, outputDir string) func(request *testserver.Request) {

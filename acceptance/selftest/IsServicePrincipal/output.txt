@@ -1,0 +1,6 @@
+
+>>> [CLI] current-user me
+{
+  "id":"[USERID]",
+  "userName":"X649126d-dc78-4e80-9c8d-86e6b3d2ffb3"
+}

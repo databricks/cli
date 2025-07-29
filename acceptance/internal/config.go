@@ -52,6 +52,9 @@ type TestConfig struct {
 	// If true and Cloud=true, run this test only if a default warehouse is available in the cloud environment
 	RequiresWarehouse *bool
 
+	// If current user is service principal (default is false)
+	IsServicePrincipal *bool
+
 	// List of additional replacements to apply on this test.
 	// Old is a regexp, New is a replacement expression.
 	Repls []testdiff.Replacement

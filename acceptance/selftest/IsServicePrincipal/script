@@ -1,0 +1,1 @@
+trace $CLI current-user me | sed 's/e649126d/X649126d/'
