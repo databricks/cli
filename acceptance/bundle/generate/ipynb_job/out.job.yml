@@ -1,0 +1,11 @@
+resources:
+  jobs:
+    out:
+      name: gitjob
+      tasks:
+        - task_key: test_task
+          notebook_task:
+            notebook_path: src/notebook.py
+        - task_key: test_task_2
+          notebook_task:
+            notebook_path: src/notebook.py

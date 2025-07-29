@@ -108,7 +108,14 @@ func (n *Downloader) markNotebookForDownload(ctx context.Context, notebookPath *
 		return err
 	}
 
-	relPath := n.relativePath(*notebookPath) + notebook.GetExtensionByLanguage(info)
+	relPath := n.relativePath(*notebookPath)
+	// If the path has any extension, strip it
+	ext := path.Ext(relPath)
+	if ext != "" {
+		relPath = strings.TrimSuffix(relPath, ext)
+	}
+
+	relPath = relPath + notebook.GetExtensionByLanguage(info)
 	targetPath := filepath.Join(n.sourceDir, relPath)
 
 	n.files[targetPath] = *notebookPath
@@ -161,7 +168,7 @@ func (n *Downloader) FlushToDisk(ctx context.Context, force bool) error {
 			return err
 		}
 		errs.Go(func() error {
-			reader, err := n.w.Workspace.Download(errCtx, filePath)
+			reader, err := n.w.Workspace.Download(errCtx, filePath, workspace.DownloadFormat(workspace.ExportFormatSource))
 			if err != nil {
 				return err
 			}
