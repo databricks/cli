@@ -3,7 +3,7 @@ package resourcemutator
 import (
 	"testing"
 
-	assert "github.com/databricks/cli/libs/dyn/dynassert"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/databricks/cli/libs/dyn"
 )
