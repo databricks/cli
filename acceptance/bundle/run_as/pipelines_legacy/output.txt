@@ -29,7 +29,7 @@ Warning: required field "schema_name" is not set
   "service_principal_name": "my_service_principal"
 }
 
-=== Pipeline's CAN_VIEW permissions for my_service_principal_for_job is upgraded to IS_OWNER
+=== Pipeline's CAN_VIEW permissions for my_service_principal is upgraded to IS_OWNER
 >>> jq .resources.pipelines.nyc_taxi_pipeline.permissions
 [
   {

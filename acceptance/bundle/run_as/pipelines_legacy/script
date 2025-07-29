@@ -12,7 +12,7 @@ title "Jobs one and two run_as is updated to bundle-level setting (service_princ
 trace jq .resources.jobs.job_one.run_as < tmp
 trace jq .resources.jobs.job_two.run_as < tmp
 
-title "Pipeline's CAN_VIEW permissions for my_service_principal_for_job is upgraded to IS_OWNER"
+title "Pipeline's CAN_VIEW permissions for my_service_principal is upgraded to IS_OWNER"
 trace jq .resources.pipelines.nyc_taxi_pipeline.permissions < tmp
 
 other_resources
