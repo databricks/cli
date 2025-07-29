@@ -4,7 +4,7 @@
 Error: pipelines do not support a setting a run_as user that is different from the owner.
 Current identity: [USERNAME]. Run as identity: tester@databricks.com.
 See https://docs.databricks.com/dev-tools/bundles/run-as.html to learn more about the run_as property.
-  in databricks.yml:21:5
+  in databricks.yml:20:5
 
 Name: run_as
 Target: t_user_name
@@ -20,7 +20,7 @@ Exit code: 1
 Error: pipelines do not support a setting a run_as user that is different from the owner.
 Current identity: [USERNAME]. Run as identity: different@databricks.com.
 See https://docs.databricks.com/dev-tools/bundles/run-as.html to learn more about the run_as property.
-  in databricks.yml:21:5
+  in databricks.yml:20:5
 
 Name: run_as
 Target: t_user_name_different
@@ -45,7 +45,7 @@ Validation OK!
 Error: pipelines do not support a setting a run_as user that is different from the owner.
 Current identity: [USERNAME]. Run as identity: [UUID].
 See https://docs.databricks.com/dev-tools/bundles/run-as.html to learn more about the run_as property.
-  in databricks.yml:21:5
+  in databricks.yml:20:5
 
 Name: run_as
 Target: t_service_principal_name_different
