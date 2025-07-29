@@ -44,6 +44,11 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 	cloudEnv := os.Getenv("CLOUD_ENV")
 	recordRequests := isTruePtr(config.RecordRequests)
 
+	// Use a unique token for each test. This allows us to maintain
+	// separate state for each test in fake workspaces.
+	tokenSuffix := strings.ReplaceAll(uuid.NewString(), "-", "")
+	token := "dbapi" + tokenSuffix
+
 	if cloudEnv != "" {
 		w, err := databricks.NewWorkspaceClient()
 		require.NoError(t, err)
@@ -56,7 +61,7 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 		// If we are running in a cloud environment AND we are recording requests,
 		// start a dedicated server to act as a reverse proxy to a real Databricks workspace.
 		if recordRequests {
-			host, token := startProxyServer(t, logRequests, config.IncludeRequestHeaders, outputDir)
+			host := startProxyServer(t, logRequests, config.IncludeRequestHeaders, outputDir)
 			cfg = &sdkconfig.Config{
 				Host:  host,
 				Token: token,
@@ -69,11 +74,6 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 	// If we are not recording requests, and no custom server stubs are configured,
 	// use the default shared server.
 	if len(config.Server) == 0 && !recordRequests {
-		// Use a unique token for each test. This allows us to maintain
-		// separate state for each test in fake workspaces.
-		tokenSuffix := strings.ReplaceAll(uuid.NewString(), "-", "")
-		token := "dbapi" + tokenSuffix
-
 		cfg := &sdkconfig.Config{
 			Host:  os.Getenv("DATABRICKS_DEFAULT_HOST"),
 			Token: token,
@@ -84,7 +84,7 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 
 	// Default case. Start a dedicated local server for the test with the server stubs configured
 	// as overrides.
-	host, token := startLocalServer(t, config.Server, recordRequests, logRequests, config.IncludeRequestHeaders, outputDir)
+	host := startLocalServer(t, config.Server, recordRequests, logRequests, config.IncludeRequestHeaders, outputDir)
 	cfg := &sdkconfig.Config{
 		Host:  host,
 		Token: token,
@@ -137,7 +137,7 @@ func startLocalServer(t *testing.T,
 	logRequests bool,
 	includeHeaders []string,
 	outputDir string,
-) (string, string) {
+) string {
 	s := testserver.New(t)
 
 	// Record API requests in out.requests.txt if RecordRequests is true
@@ -166,14 +166,14 @@ func startLocalServer(t *testing.T,
 
 	// The earliest handlers take precedence, add default handlers last
 	addDefaultHandlers(s)
-	return s.URL, "dbapi123"
+	return s.URL
 }
 
 func startProxyServer(t *testing.T,
 	logRequests bool,
 	includeHeaders []string,
 	outputDir string,
-) (string, string) {
+) string {
 	s := testproxy.New(t)
 
 	// Always record requests for a proxy server.
@@ -184,7 +184,7 @@ func startProxyServer(t *testing.T,
 		s.ResponseCallback = logResponseCallback(t)
 	}
 
-	return s.URL, "dbapi1234"
+	return s.URL
 }
 
 type LoggedRequest struct {
