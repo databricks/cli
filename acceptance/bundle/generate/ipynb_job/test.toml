@@ -38,3 +38,7 @@ Pattern = "GET /api/2.0/workspace/export"
 Response.Body = '''
 print("Hello, World!")
 '''
+
+[[Repls]]
+Old = '\\\\'
+New = '/'
