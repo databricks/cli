@@ -16,6 +16,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_project/dev/fil
 Deploying resources...
 Updating deployment state...
 Deployment complete!
+View your pipeline my_project_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
 
 === Run pipeline
 >>> [PIPELINES] run
@@ -28,6 +29,8 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_project/dev/fil
 Deploying resources...
 Updating deployment state...
 Deployment complete!
+View your pipeline my_project_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
+View your pipeline my_project_pipeline_2 here: [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
 
 === Assert the second pipeline is created
 >>> [CLI] pipelines get [UUID]
