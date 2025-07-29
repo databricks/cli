@@ -2,7 +2,6 @@
 === Fail to deploy OSS Spark pipelines-formatted YAML file
 >>> musterr [PIPELINES] deploy
 Warning: unknown field: definitions
-  at 
   in oss-pipeline.yml:1:1
 
 Error: Detected oss-pipeline.yml file is formatted for OSS Spark pipelines.
