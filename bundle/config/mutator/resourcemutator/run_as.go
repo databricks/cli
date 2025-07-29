@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/databricks-sdk-go/service/pipelines"
 )
 
 type setRunAs struct{}
@@ -79,16 +80,6 @@ func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
 		return diags
 	}
 
-	// DLT pipelines do not support run_as in the API.
-	if len(b.Config.Resources.Pipelines) > 0 {
-		diags = diags.Extend(reportRunAsNotSupported(
-			"pipelines",
-			b.Config.GetLocation("resources.pipelines"),
-			b.Config.Workspace.CurrentUser.UserName,
-			identity,
-		))
-	}
-
 	// Model serving endpoints do not support run_as in the API.
 	if len(b.Config.Resources.ModelServingEndpoints) > 0 {
 		diags = diags.Extend(reportRunAsNotSupported(
@@ -150,6 +141,24 @@ func setRunAsForJobs(b *bundle.Bundle) {
 	}
 }
 
+func setRunAsForPipelines(b *bundle.Bundle) {
+	runAs := b.Config.RunAs
+	if runAs == nil {
+		return
+	}
+
+	for i := range b.Config.Resources.Pipelines {
+		pipeline := b.Config.Resources.Pipelines[i]
+		if pipeline.RunAs != nil {
+			continue
+		}
+		pipeline.RunAs = &pipelines.RunAs{
+			ServicePrincipalName: runAs.ServicePrincipalName,
+			UserName:             runAs.UserName,
+		}
+	}
+}
+
 // Legacy behavior of run_as for DLT pipelines. Available under the experimental.use_run_as_legacy flag.
 // Only available to unblock customers stuck due to breaking changes in https://github.com/databricks/cli/pull/1233
 func setPipelineOwnersToRunAsIdentity(b *bundle.Bundle) {
@@ -186,6 +195,8 @@ func (m *setRunAs) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 		return nil
 	}
 
+	// User has opted to use the legacy behavior of run_as with the
+	// experimental.use_legacy_run_as flag.
 	if b.Config.Experimental != nil && b.Config.Experimental.UseLegacyRunAs {
 		setPipelineOwnersToRunAsIdentity(b)
 		setRunAsForJobs(b)
@@ -206,5 +217,6 @@ func (m *setRunAs) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	}
 
 	setRunAsForJobs(b)
+	setRunAsForPipelines(b)
 	return nil
 }
