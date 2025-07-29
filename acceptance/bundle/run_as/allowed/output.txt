@@ -1,3 +1,108 @@
+
+>>> [CLI] bundle validate -o json
+Warning: required field "catalog_name" is not set
+  at resources.registered_models.model_two
+  in databricks.yml:50:7
+
+Warning: required field "schema_name" is not set
+  at resources.registered_models.model_two
+  in databricks.yml:50:7
+
+
+>>> jq .run_as
+{
+  "service_principal_name": "my_service_principal"
+}
+
+=== Jobs one and two run_as is updated to bundle-level setting (service_principal_name)
+>>> jq .resources.jobs.job_one.run_as
+{
+  "service_principal_name": "my_service_principal"
+}
+
+>>> jq .resources.jobs.job_two.run_as
+{
+  "service_principal_name": "my_service_principal"
+}
+
+=== Other resources are not affected
+>>> jq .resources.jobs.job_three.run_as
+{
+  "service_principal_name": "my_service_principal_for_job"
+}
+
+>>> jq .resources.experiments
+{
+  "experiment_one": {
+    "name": "experiment_one",
+    "permissions": []
+  }
+}
+
+>>> jq .resources.models
+{
+  "model_one": {
+    "name": "skynet",
+    "permissions": []
+  }
+}
+
+>>> [CLI] bundle validate -o json -t development
+Warning: required field "catalog_name" is not set
+  at resources.registered_models.model_two
+  in databricks.yml:50:7
+
+Warning: required field "schema_name" is not set
+  at resources.registered_models.model_two
+  in databricks.yml:50:7
+
+
+>>> jq .run_as
 {
   "user_name": "my_user_name"
+}
+
+=== Jobs one and two run_as is updated to target-level setting (user_name)
+>>> jq .resources.jobs.job_one.run_as
+{
+  "user_name": "my_user_name"
+}
+
+>>> jq .resources.jobs.job_two.run_as
+{
+  "user_name": "my_user_name"
+}
+
+=== Other resources are not affected
+>>> jq .resources.jobs.job_three.run_as
+{
+  "service_principal_name": "my_service_principal_for_job"
+}
+
+>>> jq .resources.experiments
+{
+  "experiment_one": {
+    "name": "[dev [USERNAME]] experiment_one",
+    "permissions": [],
+    "tags": [
+      {
+        "key": "dev",
+        "value": "[USERNAME]"
+      }
+    ]
+  }
+}
+
+>>> jq .resources.models
+{
+  "model_one": {
+    "name": "[dev [USERNAME]] skynet",
+    "permissions": [],
+    "tags": [
+      {
+        "key": "dev",
+        "value": "[USERNAME]"
+      }
+    ]
+  }
 }

@@ -5,6 +5,8 @@ run_as:
   service_principal_name: "my_service_principal"
 
 targets:
+  default:
+    default: true
   development:
     mode: development
     run_as:
