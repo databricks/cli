@@ -11,5 +11,6 @@
 
 ### Bundles
 * Modified run flag validation to allow `--refresh` and `--full-refresh` flags to be used together ([#3300](https://github.com/databricks/cli/pull/3300))
+* Always download notebooks as Python source files on bundle generate ([#3316](https://github.com/databricks/cli/pull/3316))
 
 ### API Changes
