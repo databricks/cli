@@ -1,0 +1,3 @@
+cp -r $TESTDIR/../{databricks.yml,dlt} .
+title "t_service_principal_name must succeed, the rest must fail"
+source $TESTDIR/../_script
