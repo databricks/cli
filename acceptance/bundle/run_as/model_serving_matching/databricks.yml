@@ -1,0 +1,10 @@
+bundle:
+  name: "run_as"
+
+run_as:
+  service_principal_name: "e649126d-dc78-4e80-9c8d-86e6b3d2ffb3"
+
+resources:
+  model_serving_endpoints:
+    foo:
+      name: "skynet"
