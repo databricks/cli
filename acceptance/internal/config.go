@@ -52,7 +52,7 @@ type TestConfig struct {
 	// If true and Cloud=true, run this test only if a default warehouse is available in the cloud environment
 	RequiresWarehouse *bool
 
-	// If current user is service principal (default is false)
+	// If set, current user will be set to a service principal-like UUID instead of email (default is false)
 	IsServicePrincipal *bool
 
 	// List of additional replacements to apply on this test.
