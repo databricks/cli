@@ -80,6 +80,7 @@ type FakeWorkspace struct {
 	Repos      map[string]workspace.RepoInfo
 
 	DatabaseInstances map[string]database.DatabaseInstance
+	DatabaseCatalogs  map[string]database.DatabaseCatalog
 }
 
 func (w *FakeWorkspace) LockUnlock() func() {
@@ -162,6 +163,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		SqlWarehouses:     map[string]sql.GetWarehouseResponse{},
 		Repos:             map[string]workspace.RepoInfo{},
 		DatabaseInstances: map[string]database.DatabaseInstance{},
+		DatabaseCatalogs:  map[string]database.DatabaseCatalog{},
 	}
 }
 

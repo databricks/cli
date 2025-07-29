@@ -25,15 +25,38 @@ Resources:
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-catalog-[UNIQUE_NAME]/default/files...
 Deploying resources...
-Creating catalog with name=my_catalog_[UNIQUE_NAME]Error: deploying database_catalogs.my_catalog: creating: Method=Database.CreateDatabaseCatalog *retries.Err *apierr.APIError StatusCode=400 ErrorCode="BAD_REQUEST" Message="Database instance is not found."
-
+Creating catalog with name=my_catalog_[UNIQUE_NAME]Database instance status: AVAILABLE
 Updating deployment state...
+Deployment complete!
 
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-catalog-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Creating catalog with name=my_catalog_[UNIQUE_NAME]Error: deploying database_catalogs.my_catalog: creating: Method=Database.CreateDatabaseCatalog *retries.Err *apierr.APIError StatusCode=400 ErrorCode="BAD_REQUEST" Message="Database instance is not found."
+>>> [CLI] database get-database-instance test-database-instance-[UNIQUE_NAME]
+{
+  "capacity": "CU_1",
+  "name": "test-database-instance-[UNIQUE_NAME]",
+  "state": "AVAILABLE",
+  "uid": "[UUID]"
+}
 
-Updating deployment state...
+>>> [CLI] bundle summary
+Name: deploy-lakebase-catalog-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-catalog-[UNIQUE_NAME]/default
+Resources:
+  Database catalogs:
+    my_catalog:
+      Name: my_catalog_[UNIQUE_NAME]
+  Database instances:
+    my_instance:
+      Name: test-database-instance-[UNIQUE_NAME]
 
-Exit code: 1
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete database_catalog my_catalog
+  delete database_instance my_instance
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-catalog-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

@@ -28,7 +28,7 @@ func (d DatabaseCatalog) DoCreate(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", SDKError{Method: "Database.CreateDatabaseCatalog", Err: err}
 	}
-	return response.Uid, nil
+	return response.Name, nil
 }
 
 func (d DatabaseCatalog) DoUpdate(ctx context.Context, oldID string) (string, error) {
@@ -52,4 +52,14 @@ func NewResourceDatabaseCatalog(client *databricks.WorkspaceClient, resource *re
 		client: client,
 		config: resource.DatabaseCatalog,
 	}, nil
+}
+
+func DeleteDatabaseCatalog(ctx context.Context, client *databricks.WorkspaceClient, oldName string) error {
+	err := client.Database.DeleteDatabaseCatalog(ctx, database.DeleteDatabaseCatalogRequest{
+		Name: oldName,
+	})
+	if err != nil {
+		return SDKError{Method: "Database.DeleteDatabaseCatalog", Err: err}
+	}
+	return nil
 }

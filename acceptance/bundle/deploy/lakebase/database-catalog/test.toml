@@ -1,1 +1,2 @@
+Local = true
 EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["direct-exp"]
