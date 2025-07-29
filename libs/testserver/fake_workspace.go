@@ -161,7 +161,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 }
 
 func (s *FakeWorkspace) CurrentUser() iam.User {
-	if s.isServicePrincipal {
+	if s != nil && s.isServicePrincipal {
 		return TestUserSP
 	} else {
 		return TestUser
