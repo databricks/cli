@@ -1,3 +1,8 @@
+Error: run_as section must specify exactly one identity. Neither service_principal_name nor user_name is specified
+  in databricks.yml:5:3
+
+
+Exit code (musterr): 1
 {
   "user_name": ""
 }

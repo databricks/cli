@@ -2,3 +2,8 @@ bundle:
   name: "abc"
 
 run_as:
+
+resources:
+  jobs:
+    foo:
+      name: foo

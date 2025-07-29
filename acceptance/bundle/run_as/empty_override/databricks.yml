@@ -6,3 +6,8 @@ run_as:
 
 include:
   - ./override.yml
+
+resources:
+  jobs:
+    foo:
+      name: foo

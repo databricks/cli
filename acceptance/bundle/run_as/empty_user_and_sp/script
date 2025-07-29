@@ -1,1 +1,1 @@
-$CLI bundle validate -o json | jq .run_as
+musterr $CLI bundle validate -o json | jq .run_as

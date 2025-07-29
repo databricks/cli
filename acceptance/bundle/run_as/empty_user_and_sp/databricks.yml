@@ -4,3 +4,8 @@ bundle:
 run_as:
   service_principal_name: ""
   user_name: ""
+
+resources:
+  jobs:
+    foo:
+      name: foo

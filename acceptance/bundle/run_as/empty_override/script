@@ -1,3 +1,1 @@
-# Note: this works differently than TestRunAsErrorNeitherUserOrSpSpecifiedAtTargetOverride expected:
-# null run_as value from target overrides then one from databricks.yml and then skipped completely (as if it's not set).
-$CLI bundle validate -o json | grep run_as
+musterr $CLI bundle validate -o json | grep run_as
