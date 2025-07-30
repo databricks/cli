@@ -12,5 +12,6 @@
 ### Bundles
 * Modified run flag validation to allow `--refresh` and `--full-refresh` flags to be used together ([#3300](https://github.com/databricks/cli/pull/3300))
 * Fixed bundle generate for not yet deployed apps ([#3319](https://github.com/databricks/cli/pull/3319))
+* Respect export format for notebooks on bundle generate ([#3316](https://github.com/databricks/cli/pull/3316))
 
 ### API Changes

@@ -258,6 +258,10 @@ func (d *Deployer) Update(ctx context.Context, resource tnresources.IResource, o
 		return fmt.Errorf("saving state id=%s: %w", oldID, err)
 	}
 
+	if oldID != newID && !tnresources.UpdateableIDResource[d.group] {
+		return fmt.Errorf("internal error, unexpected change of ID from %#v to %#v", oldID, newID)
+	}
+
 	err = resource.WaitAfterUpdate(ctx)
 	if err != nil {
 		return fmt.Errorf("waiting after updating id=%s: %w", newID, err)

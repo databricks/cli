@@ -41,7 +41,7 @@ var TestUser = iam.User{
 
 var TestUserSP = iam.User{
 	Id:       UserID,
-	UserName: "e649126d-dc78-4e80-9c8d-86e6b3d2ffb3",
+	UserName: "aaaaaaaa-bbbb-4ccc-dddd-eeeeeeeeeeee",
 }
 
 type FileEntry struct {

@@ -8,7 +8,6 @@ import (
 	"os"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/resources"
@@ -165,17 +164,6 @@ Example usage:
 
 			content := b.Config.Scripts[key].Content
 			return executeScript(content, cmd, b)
-		}
-
-		// Load resource IDs from terraform state.
-		if !b.DirectDeployment {
-			bundle.ApplySeqContext(ctx, b,
-				terraform.Interpolate(),
-				terraform.Write(),
-			)
-			if logdiag.HasError(ctx) {
-				return root.ErrAlreadyPrinted
-			}
 		}
 
 		bundle.ApplySeqContext(ctx, b,

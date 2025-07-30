@@ -1,0 +1,12 @@
+Error: run_as section cannot specify both user_name and service_principal_name
+  in databricks.yml:6:3
+
+Name: run_as
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/run_as/default
+
+Found 1 error
+
+Exit code (musterr): 1
