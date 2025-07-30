@@ -1237,6 +1237,6 @@ func loadUserReplacements(t *testing.T, repls *testdiff.ReplacementsContext, tmp
 		}
 		repl := items[len(items)-1]
 		old := line[:len(line)-len(repl)-1]
-		repls.Set(old, "["+repl+"]")
+		repls.SetWithOrder(old, "["+repl+"]", -100)
 	}
 }
