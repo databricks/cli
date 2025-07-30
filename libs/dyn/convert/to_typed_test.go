@@ -80,6 +80,77 @@ func TestToTypedStructClearFields(t *testing.T) {
 	assert.Equal(t, Tmp{}, out)
 }
 
+func TestToTypedStructClearFieldsForceSend(t *testing.T) {
+	type Tmp struct {
+		Foo             string   `json:"foo"`
+		Bar             string   `json:"bar,omitempty"`
+		ForceSendFields []string `json:"-"`
+	}
+
+	// Struct value with non-empty fields.
+	out := Tmp{
+		Foo: "baz",
+		Bar: "qux",
+	}
+
+	// Value is an empty map.
+	v := dyn.V(map[string]dyn.Value{})
+
+	// The previously set fields should be cleared.
+	err := ToTyped(&out, v)
+	require.NoError(t, err)
+	assert.Equal(t, Tmp{}, out)
+}
+
+func TestToTypedStructZeroFields(t *testing.T) {
+	type Tmp struct {
+		Foo string `json:"foo"`
+		Bar string `json:"bar,omitempty"`
+	}
+
+	// Struct value with non-empty fields.
+	out := Tmp{
+		Foo: "baz",
+		Bar: "qux",
+	}
+
+	// Value is an empty map.
+	v := dyn.V(map[string]dyn.Value{
+		"foo": dyn.V(""),
+		"bar": dyn.V(""),
+	})
+
+	// The previously set fields should be cleared.
+	err := ToTyped(&out, v)
+	require.NoError(t, err)
+	assert.Equal(t, Tmp{}, out)
+}
+
+func TestToTypedStructZeroFieldsForceSend(t *testing.T) {
+	type Tmp struct {
+		Foo             string   `json:"foo"`
+		Bar             string   `json:"bar,omitempty"`
+		ForceSendFields []string `json:"-"`
+	}
+
+	// Struct value with non-empty fields.
+	out := Tmp{
+		Foo: "baz",
+		Bar: "qux",
+	}
+
+	// Value is an empty map.
+	m := dyn.Mapping{}
+	m.SetLoc("foo", nil, dyn.V(""))
+	m.SetLoc("bar", nil, dyn.V(""))
+	v := dyn.V(m)
+
+	// The previously set fields should be cleared.
+	err := ToTyped(&out, v)
+	require.NoError(t, err)
+	assert.Equal(t, Tmp{ForceSendFields: []string{"Foo", "Bar"}}, out)
+}
+
 func TestToTypedStructAnonymousByValue(t *testing.T) {
 	type Bar struct {
 		Bar string `json:"bar"`
