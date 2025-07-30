@@ -117,8 +117,9 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 	)
 
 	// Remained in state are resources that no longer present in the config
-	for group, groupState := range state {
-		for name := range groupState {
+	for _, group := range utils.SortedKeys(state) {
+		groupData := state[group]
+		for _, name := range utils.SortedKeys(groupData) {
 			actions = append(actions, deployplan.Action{
 				Group:      group,
 				Name:       name,
