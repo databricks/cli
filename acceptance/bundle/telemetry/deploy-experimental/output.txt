@@ -1,6 +1,10 @@
 
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/custom-prefix/default/files...
+Warning: You are using the legacy mode of run_as. The support for this mode is experimental and might be removed in a future release of the CLI. In order to run the DLT pipelines in your DAB as the run_as user this mode changes the owners of the pipelines to the run_as identity, which requires the user deploying the bundle to be a workspace admin, and also a Metastore admin if the pipeline target is in UC.
+  at experimental.use_legacy_run_as
+  in databricks.yml:4:22
+
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
@@ -10,11 +14,11 @@ Deployment complete!
   "bool_values": [
     {
       "key": "experimental.use_legacy_run_as",
-      "value": false
+      "value": true
     },
     {
       "key": "presets_name_prefix_is_set",
-      "value": true
+      "value": false
     },
     {
       "key": "skip_artifact_cleanup",
@@ -34,7 +38,7 @@ Deployment complete!
     },
     {
       "key": "has_classic_interactive_compute",
-      "value": false
+      "value": true
     }
   ]
 }
