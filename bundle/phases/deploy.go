@@ -155,6 +155,27 @@ func deployCore(ctx context.Context, b *bundle.Bundle) {
 	}
 }
 
+// This function updates bundle config but does not change the remote.
+// It is extracted so that it can be used by "bundle diff".
+func deployPrepare(ctx context.Context, b *bundle.Bundle) {
+	bundle.ApplySeqContext(ctx, b,
+		statemgmt.StatePull(),
+		terraform.CheckDashboardsModifiedRemotely(),
+		deploy.StatePull(),
+		mutator.ValidateGitDetails(),
+		terraform.CheckRunningResource(),
+		// libraries.CheckForSameNameLibraries() needs to be run after we expand glob references so we
+		// know what are the actual library paths.
+		// libraries.ExpandGlobReferences() has to be run after the libraries are built and thus this
+		// mutator is part of the deploy step rather than validate.
+		libraries.ExpandGlobReferences(),
+		libraries.CheckForSameNameLibraries(),
+		// SwitchToPatchedWheels must be run after ExpandGlobReferences and after build phase because it Artifact.Source and Artifact.Patched populated
+		libraries.SwitchToPatchedWheels(),
+		trampoline.TransformWheelTask(),
+	)
+}
+
 // The deploy phase deploys artifacts and resources.
 func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHandler) {
 	log.Info(ctx, "Phase: deploy")
@@ -176,23 +197,14 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDeploy))
 	}()
 
+	deployPrepare(ctx, b)
+	if logdiag.HasError(ctx) {
+		return
+	}
+
 	bundle.ApplySeqContext(ctx, b,
-		statemgmt.StatePull(),
-		terraform.CheckDashboardsModifiedRemotely(),
-		deploy.StatePull(),
-		mutator.ValidateGitDetails(),
-		terraform.CheckRunningResource(),
 		artifacts.CleanUp(),
-		// libraries.CheckForSameNameLibraries() needs to be run after we expand glob references so we
-		// know what are the actual library paths.
-		// libraries.ExpandGlobReferences() has to be run after the libraries are built and thus this
-		// mutator is part of the deploy step rather than validate.
-		libraries.ExpandGlobReferences(),
-		libraries.CheckForSameNameLibraries(),
-		// SwitchToPatchedWheels must be run after ExpandGlobReferences and after build phase because it Artifact.Source and Artifact.Patched populated
-		libraries.SwitchToPatchedWheels(),
 		libraries.Upload(),
-		trampoline.TransformWheelTask(),
 		files.Upload(outputHandler),
 		deploy.StateUpdate(),
 		deploy.StatePush(),
