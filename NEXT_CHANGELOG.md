@@ -9,5 +9,6 @@
 ### CLI
 
 ### Bundles
+* Add warning when an invalid value is specified for enum field ([#3050](https://github.com/databricks/cli/pull/3050))
 
 ### API Changes

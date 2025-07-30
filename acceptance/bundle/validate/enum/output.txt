@@ -1,0 +1,41 @@
+
+>>> [CLI] bundle validate
+Warning: invalid value "" for enum field. Valid values are [complex]
+  at variables.my_variable_type_empty.type
+  in databricks.yml:45:11
+
+Warning: invalid value "INVALID_AVAILABILITY" for enum field. Valid values are [ON_DEMAND SPOT SPOT_WITH_FALLBACK]
+  at resources.jobs.my_job_invalid.tasks[0].new_cluster.aws_attributes.availability
+  in databricks.yml:9:29
+
+Warning: invalid value "INVALID_CONDITION" for enum field. Valid values are [ALL_DONE ALL_FAILED ALL_SUCCESS AT_LEAST_ONE_FAILED AT_LEAST_ONE_SUCCESS NONE_FAILED]
+  at resources.jobs.my_job_invalid.tasks[0].run_if
+  in databricks.yml:18:19
+
+Warning: invalid value "INVALID_ENGINE" for enum field. Valid values are [NULL PHOTON STANDARD]
+  at resources.jobs.my_job_invalid.tasks[0].new_cluster.runtime_engine
+  in databricks.yml:14:29
+
+Warning: invalid value "INVALID_MODE" for enum field. Valid values are [DATA_SECURITY_MODE_AUTO DATA_SECURITY_MODE_DEDICATED DATA_SECURITY_MODE_STANDARD LEGACY_PASSTHROUGH LEGACY_SINGLE_USER LEGACY_SINGLE_USER_STANDARD LEGACY_TABLE_ACL NONE SINGLE_USER USER_ISOLATION]
+  at resources.jobs.my_job_invalid.tasks[0].new_cluster.data_security_mode
+  in databricks.yml:11:33
+
+Warning: invalid value "INVALID_SOURCE" for enum field. Valid values are [GIT WORKSPACE]
+  at resources.jobs.my_job_invalid.tasks[0].notebook_task.source
+  in databricks.yml:17:21
+
+Warning: invalid value "INVALID_TYPE" for enum field. Valid values are [complex]
+  at variables.my_variable_invalid.type
+  in databricks.yml:42:11
+
+Warning: invalid value "INVALID_VOLUME_TYPE" for enum field. Valid values are [GENERAL_PURPOSE_SSD THROUGHPUT_OPTIMIZED_HDD]
+  at resources.jobs.my_job_invalid.tasks[0].new_cluster.aws_attributes.ebs_volume_type
+  in databricks.yml:10:32
+
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Found 8 warnings
