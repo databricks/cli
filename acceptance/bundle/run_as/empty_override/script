@@ -1,1 +1,1 @@
-musterr $CLI bundle validate -o json | grep run_as
+$CLI bundle validate -o json | grep run_as

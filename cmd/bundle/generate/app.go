@@ -52,9 +52,13 @@ func NewGenerateAppCommand() *cobra.Command {
 		downloader := generate.NewDownloader(w, sourceDir, configDir)
 
 		sourceCodePath := app.DefaultSourceCodePath
-		err = downloader.MarkDirectoryForDownload(ctx, &sourceCodePath)
-		if err != nil {
-			return err
+		// If the source code path is not set, we don't need to download anything.
+		// This is the case for apps that are not yet deployed.
+		if sourceCodePath != "" {
+			err = downloader.MarkDirectoryForDownload(ctx, &sourceCodePath)
+			if err != nil {
+				return err
+			}
 		}
 
 		// Making sure the source code path is relative to the config directory.

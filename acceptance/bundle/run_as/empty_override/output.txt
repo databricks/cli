@@ -1,6 +1,2 @@
-Error: run_as section must specify exactly one identity. Neither service_principal_name nor user_name is specified
-  in override.yml:4:12
-
-
-Exit code (musterr): 1
-  "run_as": null,
+        "run_as": {
+  "run_as": {

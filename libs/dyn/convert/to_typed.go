@@ -66,12 +66,16 @@ func toTypedStruct(dst reflect.Value, src dyn.Value) error {
 		// that aren't present in [src] are cleared.
 		dst.SetZero()
 
+		var forceSendFields []string
+
 		info := getStructInfo(dst.Type())
+
 		for _, pair := range src.MustMap().Pairs() {
 			pk := pair.Key
 			pv := pair.Value
+			jsonKey := pk.MustString()
 
-			index, ok := info.Fields[pk.MustString()]
+			index, ok := info.Fields[jsonKey]
 			if !ok {
 				// Ignore unknown fields.
 				// A warning will be printed later. See PR #904.
@@ -96,6 +100,17 @@ func toTypedStruct(dst reflect.Value, src dyn.Value) error {
 			err := ToTyped(f.Addr().Interface(), pv)
 			if err != nil {
 				return err
+			}
+
+			if pv.IsZero() {
+				forceSendFields = append(forceSendFields, info.GolangNames[jsonKey])
+			}
+		}
+
+		if forceSendFields != nil {
+			f := dst.FieldByName("ForceSendFields")
+			if f.IsValid() {
+				f.Set(reflect.ValueOf(forceSendFields))
 			}
 		}
 
