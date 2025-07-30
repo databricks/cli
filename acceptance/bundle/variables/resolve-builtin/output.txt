@@ -1,7 +1,7 @@
 {
-  "artifact_path": "TestResolveVariableReferences/bar/artifacts",
-  "file_path": "TestResolveVariableReferences/bar/baz",
-  "resource_path": "TestResolveVariableReferences/bar/resources",
-  "root_path": "TestResolveVariableReferences/bar",
-  "state_path": "TestResolveVariableReferences/bar/state"
+  "artifact_path": "/Workspace/TestResolveVariableReferences/bar/artifacts",
+  "file_path": "/Workspace/TestResolveVariableReferences/bar/baz",
+  "resource_path": "/Workspace/TestResolveVariableReferences/bar/resources",
+  "root_path": "/Workspace/TestResolveVariableReferences/bar",
+  "state_path": "/Workspace/TestResolveVariableReferences/bar/state"
 }
