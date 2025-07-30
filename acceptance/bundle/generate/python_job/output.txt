@@ -1,2 +1,2 @@
-File successfully saved to outnotebook.ipynb
+File successfully saved to outnotebook.py
 Job configuration successfully saved to out.job.yml
