@@ -3,6 +3,7 @@
 package schema
 
 type ResourceQualityMonitorV2AnomalyDetectionConfig struct {
+	JobType         string `json:"job_type,omitempty"`
 	LastRunId       string `json:"last_run_id,omitempty"`
 	LatestRunStatus string `json:"latest_run_status,omitempty"`
 }
