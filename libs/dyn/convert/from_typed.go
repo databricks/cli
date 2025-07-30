@@ -102,7 +102,9 @@ func fromTypedStruct(src reflect.Value, ref dyn.Value, options ...fromTypedOptio
 	refm, _ := ref.AsMap()
 	out := dyn.NewMapping()
 	info := getStructInfo(src.Type())
-	for k, v := range info.FieldValues(src) {
+	for _, fieldval := range info.FieldValues(src) {
+		k := fieldval.Key
+		v := fieldval.Value
 		pair, ok := refm.GetPairByString(k)
 		refloc := pair.Key.Locations()
 		refv := pair.Value
