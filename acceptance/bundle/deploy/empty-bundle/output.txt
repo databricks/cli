@@ -1,5 +1,5 @@
 
->>> [CLI] bundle deploy --force-lock
+>>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Deploying resources...
 Deployment complete!

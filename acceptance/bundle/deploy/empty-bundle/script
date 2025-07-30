@@ -4,4 +4,4 @@ cleanup() {
 }
 trap cleanup EXIT
 
-trace $CLI bundle deploy --force-lock
+trace $CLI bundle deploy
