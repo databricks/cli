@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/sync"
 	"github.com/spf13/cobra"
@@ -67,7 +68,7 @@ func deployCommand() *cobra.Command {
 		var ossWarning *diag.Diagnostic
 
 		for _, d := range diags {
-			if d.Severity == diag.Warning && strings.Contains(d.Summary, "unknown field: definitions") {
+			if d.Severity == diag.Warning && strings.Contains(d.Summary, "unknown field: definitions") && len(d.Paths) == 1 && d.Paths[0].Equal(dyn.EmptyPath) {
 				ossWarning = &d
 			}
 			logdiag.LogDiag(ctx, d)

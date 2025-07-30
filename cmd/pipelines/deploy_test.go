@@ -12,6 +12,7 @@ func TestFormatOSSTemplateWarningMessage(t *testing.T) {
 	d := diag.Diagnostic{
 		Severity: diag.Warning,
 		Summary:  "unknown field: definitions",
+		Paths:    []dyn.Path{dyn.EmptyPath},
 		Locations: []dyn.Location{
 			{File: "test-pipeline.yml"},
 		},
