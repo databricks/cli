@@ -2,7 +2,7 @@ bundle:
   name: TestResolveVariableReferencesToBundleVariables
 
 workspace:
-  root_path: "/${bundle.name}/${var.foo}"
+  root_path: "${bundle.name}/${var.foo}"
 
 variables:
   foo:

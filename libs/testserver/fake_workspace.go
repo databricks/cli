@@ -170,12 +170,6 @@ func (s *FakeWorkspace) CurrentUser() iam.User {
 
 func (s *FakeWorkspace) WorkspaceGetStatus(path string) Response {
 	defer s.LockUnlock()()
-	if !strings.HasPrefix(path, "/") {
-		return Response{
-			StatusCode: 500,
-			Body:       map[string]string{"message": fmt.Sprintf("Path (%s) doesn't start with '/'", path)},
-		}
-	}
 
 	if s.directories[path] {
 		return Response{

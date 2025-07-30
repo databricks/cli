@@ -1,7 +1,7 @@
 {
-  "artifact_path": "/Workspace/TestResolveVariableReferencesToBundleVariables/bar/artifacts",
-  "file_path": "/Workspace/TestResolveVariableReferencesToBundleVariables/bar/files",
-  "resource_path": "/Workspace/TestResolveVariableReferencesToBundleVariables/bar/resources",
-  "root_path": "/Workspace/TestResolveVariableReferencesToBundleVariables/bar",
-  "state_path": "/Workspace/TestResolveVariableReferencesToBundleVariables/bar/state"
+  "artifact_path": "TestResolveVariableReferencesToBundleVariables/bar/artifacts",
+  "file_path": "TestResolveVariableReferencesToBundleVariables/bar/files",
+  "resource_path": "TestResolveVariableReferencesToBundleVariables/bar/resources",
+  "root_path": "TestResolveVariableReferencesToBundleVariables/bar",
+  "state_path": "TestResolveVariableReferencesToBundleVariables/bar/state"
 }

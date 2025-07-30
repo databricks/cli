@@ -2,5 +2,5 @@ bundle:
   name: TestResolveVariableReferences
 
 workspace:
-  root_path: "/${bundle.name}/bar"
+  root_path: "${bundle.name}/bar"
   file_path: "${workspace.root_path}/baz"
