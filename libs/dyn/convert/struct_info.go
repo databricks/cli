@@ -2,10 +2,10 @@ package convert
 
 import (
 	"reflect"
-	"strings"
 	"sync"
 
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structdiff/structtag"
 )
 
 // structInfo holds the type information we need to efficiently
@@ -20,6 +20,12 @@ type structInfo struct {
 	// ValueField maps to the field with a [dyn.Value].
 	// The underlying type is expected to only have one of these.
 	ValueField []int
+
+	// Tracks which fields do not have omitempty annotation
+	ForceEmpty map[string]bool
+
+	// Maps JSON-name of the field to Golang struct name
+	GolangNames map[string]string
 }
 
 // structInfoCache caches type information.
@@ -47,7 +53,9 @@ func getStructInfo(typ reflect.Type) structInfo {
 // buildStructInfo populates a new [structInfo] for the given type.
 func buildStructInfo(typ reflect.Type) structInfo {
 	out := structInfo{
-		Fields: make(map[string][]int),
+		Fields:      make(map[string][]int),
+		ForceEmpty:  make(map[string]bool),
+		GolangNames: make(map[string]string),
 	}
 
 	// Queue holds the indexes of the structs to visit.
@@ -86,7 +94,8 @@ func buildStructInfo(typ reflect.Type) structInfo {
 				continue
 			}
 
-			name, _, _ := strings.Cut(sf.Tag.Get("json"), ",")
+			jtag := structtag.JSONTag(sf.Tag.Get("json"))
+			name := jtag.Name()
 			if name == "" || name == "-" {
 				continue
 			}
@@ -99,6 +108,10 @@ func buildStructInfo(typ reflect.Type) structInfo {
 
 			out.FieldNames = append(out.FieldNames, name)
 			out.Fields[name] = append(prefix, sf.Index...)
+			if !jtag.OmitEmpty() && !jtag.OmitZero() {
+				out.ForceEmpty[name] = true
+			}
+			out.GolangNames[name] = sf.Name
 		}
 	}
 
