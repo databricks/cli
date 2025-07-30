@@ -1,5 +1,7 @@
 echo "*" > .gitignore
+trace $CLI bundle plan
 trace $CLI bundle deploy
+trace $CLI bundle plan
 
 print_requests() {
     jq --sort-keys 'select(.method != "GET" and (.path | contains("/jobs")))' < out.requests.txt
@@ -11,7 +13,9 @@ trace print_requests
 
 title "Update trigger.periodic.unit and re-deploy"
 trace update_file.py databricks.yml DAYS HOURS
+trace $CLI bundle plan
 trace $CLI bundle deploy
+trace $CLI bundle plan
 trace print_requests
 
 title "Fetch job ID and verify remote state"

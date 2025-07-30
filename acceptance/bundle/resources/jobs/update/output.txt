@@ -1,9 +1,14 @@
 
+>>> [CLI] bundle plan
+create jobs.foo
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
+
+>>> [CLI] bundle plan
 
 >>> print_requests
 {
@@ -44,11 +49,16 @@ jobs foo id='[NUMID]' name='foo'
 === Update trigger.periodic.unit and re-deploy
 >>> update_file.py databricks.yml DAYS HOURS
 
+>>> [CLI] bundle plan
+update jobs.foo
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
+
+>>> [CLI] bundle plan
 
 >>> print_requests
 {
