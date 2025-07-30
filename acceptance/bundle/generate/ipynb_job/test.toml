@@ -50,7 +50,7 @@ Response.Body = '''
    "source": [
     "%python\n",
     "\n",
-    "print('Hello, World!')"
+    "print(\"Hello, World!\")"
    ]
   }
  ],
