@@ -138,6 +138,9 @@ func (n *Downloader) markNotebookForDownload(ctx context.Context, notebookPath *
 		},
 		&stat,
 	)
+	if err != nil {
+		return err
+	}
 
 	relPath := n.relativePath(*notebookPath)
 	// If the path has any extension, strip it
