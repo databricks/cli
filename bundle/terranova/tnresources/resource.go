@@ -11,52 +11,59 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 )
 
-const (
-	_jobs           = "jobs"
-	_pipelines      = "pipelines"
-	_schemas        = "schemas"
-	_volumes        = "volumes"
-	_apps           = "apps"
-	_sql_warehouses = "sql_warehouses"
-)
-
-var supportedResources = map[string]reflect.Value{
-	_jobs:           reflect.ValueOf(NewResourceJob),
-	_pipelines:      reflect.ValueOf(NewResourcePipeline),
-	_schemas:        reflect.ValueOf(NewResourceSchema),
-	_volumes:        reflect.ValueOf(NewResourceVolume),
-	_apps:           reflect.ValueOf(NewResourceApp),
-	_sql_warehouses: reflect.ValueOf(NewResourceSqlWarehouse),
-}
-
-// This types matches what Config() returns and should match 'config' field in the resource struct
-var supportedResourcesTypes = map[string]reflect.Type{
-	_jobs:           reflect.TypeOf(ResourceJob{}.config),
-	_pipelines:      reflect.TypeOf(ResourcePipeline{}.config),
-	_schemas:        reflect.TypeOf(ResourceSchema{}.config),
-	_volumes:        reflect.TypeOf(ResourceVolume{}.config),
-	_apps:           reflect.TypeOf(ResourceApp{}.config),
-	_sql_warehouses: reflect.TypeOf(ResourceSqlWarehouse{}.config),
-}
-
 type DeleteResourceFN = func(ctx context.Context, client *databricks.WorkspaceClient, oldID string) error
 
-var deletableResources = map[string]DeleteResourceFN{
-	_jobs:           DeleteJob,
-	_pipelines:      DeletePipeline,
-	_schemas:        DeleteSchema,
-	_volumes:        DeleteVolume,
-	_apps:           DeleteApp,
-	_sql_warehouses: DeleteSqlWarehouse,
+type ResourceSettings struct {
+	// Method to call to create new resource
+	New reflect.Value
+
+	// Type of the store config state
+	ConfigType reflect.Type
+
+	// Function to delete a resource of this type
+	DeleteFN DeleteResourceFN
+
+	// true if Update() method can return a different ID than that was passed in
+	UpdateUpdatesID bool
 }
 
-// UpdateableIDResource configures whether the resource is allowed to change ID in Update operation. Default is false.
-// If ID changes during Update and it is not allowed, deployment of that resource will fail with internal error.
-// This allows to make assumptions about references stability (${resources.jobs.foo.id}) when we see that
-// operation is going to be "update" & ID is guarantee not to change.
-var UpdateableIDResource = map[string]bool{
-	_schemas: true,
-	_volumes: true,
+var SupportedResources = map[string]ResourceSettings{
+	"jobs": {
+		New:             reflect.ValueOf(NewResourceJob),
+		ConfigType:      reflect.TypeOf(ResourceJob{}.config),
+		DeleteFN:        DeleteJob,
+		UpdateUpdatesID: false,
+	},
+	"pipelines": {
+		New:             reflect.ValueOf(NewResourcePipeline),
+		ConfigType:      reflect.TypeOf(ResourcePipeline{}.config),
+		DeleteFN:        DeletePipeline,
+		UpdateUpdatesID: false,
+	},
+	"schemas": {
+		New:             reflect.ValueOf(NewResourceSchema),
+		ConfigType:      reflect.TypeOf(ResourceSchema{}.config),
+		DeleteFN:        DeleteSchema,
+		UpdateUpdatesID: true,
+	},
+	"volumes": {
+		New:             reflect.ValueOf(NewResourceVolume),
+		ConfigType:      reflect.TypeOf(ResourceVolume{}.config),
+		DeleteFN:        DeleteVolume,
+		UpdateUpdatesID: true,
+	},
+	"apps": {
+		New:             reflect.ValueOf(NewResourceApp),
+		ConfigType:      reflect.TypeOf(ResourceApp{}.config),
+		DeleteFN:        DeleteApp,
+		UpdateUpdatesID: false,
+	},
+	"sql_warehouses": {
+		New:             reflect.ValueOf(NewResourceSqlWarehouse),
+		ConfigType:      reflect.TypeOf(ResourceSqlWarehouse{}.config),
+		DeleteFN:        DeleteSqlWarehouse,
+		UpdateUpdatesID: false,
+	},
 }
 
 type IResource interface {
@@ -67,7 +74,7 @@ type IResource interface {
 
 	// Update the resource. Returns id of the resource.
 	// Usually returns the same id as oldId but can also return a different one (e.g. schemas and volumes when certain fields are changed)
-	// Note, UpdateableIDResource[group] must be true for this group if ID can be changed. Otherwise function must return the same ID.
+	// Note, SupportedResources[group].UpdateUpdatesID must be true for this group if ID can be changed. Otherwise function must return the same ID.
 	DoUpdate(ctx context.Context, oldID string) (string, error)
 
 	WaitAfterCreate(ctx context.Context) error
@@ -114,12 +121,7 @@ func invokeConstructor(ctor reflect.Value, client *databricks.WorkspaceClient, c
 }
 
 func New(client *databricks.WorkspaceClient, group, name string, config any) (IResource, reflect.Type, error) {
-	ctor, ok := supportedResources[group]
-	if !ok {
-		return nil, nil, fmt.Errorf("unsupported resource type: %s", group)
-	}
-
-	cfgType, ok := supportedResourcesTypes[group]
+	settings, ok := SupportedResources[group]
 	if !ok {
 		return nil, nil, fmt.Errorf("unsupported resource type: %s", group)
 	}
@@ -139,18 +141,18 @@ func New(client *databricks.WorkspaceClient, group, name string, config any) (IR
 		}
 	}
 
-	result, err := invokeConstructor(ctor, client, config)
+	result, err := invokeConstructor(settings.New, client, config)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return result, cfgType, nil
+	return result, settings.ConfigType, nil
 }
 
 func DeleteResource(ctx context.Context, client *databricks.WorkspaceClient, group, id string) error {
-	fn, ok := deletableResources[group]
+	settings, ok := SupportedResources[group]
 	if !ok {
 		return fmt.Errorf("cannot delete %s", group)
 	}
-	return fn(ctx, client, id)
+	return settings.DeleteFN(ctx, client, id)
 }
