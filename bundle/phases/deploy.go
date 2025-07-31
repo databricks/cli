@@ -155,12 +155,12 @@ func deployCore(ctx context.Context, b *bundle.Bundle) {
 	}
 }
 
-// This function updates bundle config but does not change the remote.
-// It is extracted so that it can be used by "bundle diff".
+// deployPrepare is common set of mutators between "bundle plan" and "bundle deploy".
+// Ideally it should not modify the remote, only in-memory bundle config.
 // TODO: currently it does affect remote, via artifacts.CleanUp() and libraries.Upload().
 // We should refactor deployment so that it consists of two stages:
 // 1. Preparation: only local config is changed. This will be used by both "bundle deploy" and "bundle plan"
-// 2. Deployment: this does all the uploads. Only used by "deploy", not "plan.
+// 2. Deployment: this does all the uploads. Only used by "deploy", not "plan".
 func deployPrepare(ctx context.Context, b *bundle.Bundle) {
 	bundle.ApplySeqContext(ctx, b,
 		statemgmt.StatePull(),
