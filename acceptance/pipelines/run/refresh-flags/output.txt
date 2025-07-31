@@ -9,6 +9,7 @@ Deployment complete!
 >>> [PIPELINES] run --refresh table1,table2
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
+Update ID: [UUID]
 
 >>> print_requests
 {
@@ -26,6 +27,7 @@ Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 >>> [PIPELINES] run --full-refresh-all
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
+Update ID: [UUID]
 
 >>> print_requests
 {
@@ -40,6 +42,7 @@ Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 >>> [PIPELINES] run --full-refresh table1,table2
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
+Update ID: [UUID]
 
 >>> print_requests
 {
@@ -57,6 +60,7 @@ Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 >>> [PIPELINES] run --full-refresh table1,table2 --refresh table3,table4
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
+Update ID: [UUID]
 
 >>> print_requests
 {

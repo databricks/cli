@@ -9,4 +9,5 @@ Deployment complete!
 >>> [PIPELINES] dry-run --no-wait
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
+Update ID: [UUID]
 <EOL>

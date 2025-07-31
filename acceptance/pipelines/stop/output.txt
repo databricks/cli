@@ -8,6 +8,7 @@ Deployment complete!
 >>> [PIPELINES] run
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
+Update ID: [UUID]
 
 === Stopping pipeline
 >>> [PIPELINES] stop
