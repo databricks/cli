@@ -17,6 +17,7 @@ trace print_requests
 title "Fetch job ID and verify remote state"
 
 ppid=`read_id.py jobs foo`
+echo "$ppid:JOB_ID" >> ACC_REPLS
 
 trace $CLI jobs get $ppid
 rm out.requests.txt

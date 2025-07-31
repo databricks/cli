@@ -39,7 +39,7 @@ Deployment complete!
   "method": "POST",
   "path": "/api/2.2/jobs/create"
 }
-jobs foo id='[NUMID]' name='foo'
+jobs foo id='[JOB_ID]' name='foo'
 
 === Update trigger.periodic.unit and re-deploy
 >>> update_file.py databricks.yml DAYS HOURS
@@ -53,7 +53,7 @@ Deployment complete!
 >>> print_requests
 {
   "body": {
-    "job_id": [NUMID],
+    "job_id": [JOB_ID],
     "new_settings": {
       "deployment": {
         "kind": "BUNDLE",
@@ -87,12 +87,12 @@ Deployment complete!
   "method": "POST",
   "path": "/api/2.2/jobs/reset"
 }
-jobs foo id='[NUMID]' name='foo'
+jobs foo id='[JOB_ID]' name='foo'
 
 === Fetch job ID and verify remote state
->>> [CLI] jobs get [NUMID]
+>>> [CLI] jobs get [JOB_ID]
 {
-  "job_id":[NUMID],
+  "job_id":[JOB_ID],
   "settings": {
     "deployment": {
       "kind":"BUNDLE",
@@ -137,14 +137,14 @@ Destroy complete!
 >>> print_requests
 {
   "body": {
-    "job_id": [NUMID]
+    "job_id": [JOB_ID]
   },
   "method": "POST",
   "path": "/api/2.2/jobs/delete"
 }
 State not found for jobs.foo
 
->>> musterr [CLI] jobs get [NUMID]
+>>> musterr [CLI] jobs get [JOB_ID]
 Error: Not Found
 
 Exit code (musterr): 1
