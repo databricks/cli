@@ -21,6 +21,8 @@ func newPlanCommand() *cobra.Command {
 		Args:  root.NoArgs,
 
 		// Output format may change without notice; main use case is in acceptance tests.
+		// Today, this command also uploads libraries, which is not the intent here. We need to refactor
+		// libraries.Upload() mutator to separate config mutation with actual upload.
 		Hidden: true,
 	}
 
