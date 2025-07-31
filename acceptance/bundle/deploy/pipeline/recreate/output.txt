@@ -30,6 +30,10 @@ Deployment complete!
   }
 }
 
+>>> [CLI] bundle plan --var=catalog=another_catalog
+recreate pipelines.foo
+recreate schemas.bar
+
 === Try to redeploy the bundle, pointing the DLT pipeline to a different UC catalog
 >>> errcode [CLI] bundle deploy --force-lock --var=catalog=another_catalog
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...

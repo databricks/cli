@@ -28,26 +28,27 @@ import (
 	"github.com/databricks/cli/libs/sync"
 )
 
-func approvalForDeploy(ctx context.Context, b *bundle.Bundle) (bool, error) {
+func getActions(ctx context.Context, b *bundle.Bundle) ([]deployplan.Action, error) {
 	var actions []deployplan.Action
 	var err error
 
 	if b.DirectDeployment {
-		actions, err = terranova.CalculateDeployActions(ctx, b)
-		if err != nil {
-			return false, err
-		}
+		return terranova.CalculateDeployActions(ctx, b)
 	} else {
 		tf := b.Terraform
 		if tf == nil {
-			return false, errors.New("terraform not initialized")
+			return nil, errors.New("terraform not initialized")
 		}
 		actions, err = terraform.ShowPlanFile(ctx, tf, b.Plan.TerraformPlanPath)
-		if err != nil {
-			return false, err
-		}
+		return actions, err
 	}
+}
 
+func approvalForDeploy(ctx context.Context, b *bundle.Bundle) (bool, error) {
+	actions, err := getActions(ctx, b)
+	if err != nil {
+		return false, err
+	}
 	b.Plan.Actions = actions
 
 	types := []deployplan.ActionType{deployplan.ActionTypeRecreate, deployplan.ActionTypeDelete}
@@ -256,6 +257,32 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 
 	logDeployTelemetry(ctx, b)
 	bundle.ApplyContext(ctx, b, scripts.Execute(config.ScriptPostDeploy))
+}
+
+func Diff(ctx context.Context, b *bundle.Bundle) []deployplan.Action {
+	deployPrepare(ctx, b)
+	if logdiag.HasError(ctx) {
+		return nil
+	}
+
+	if !b.DirectDeployment {
+		bundle.ApplySeqContext(ctx, b,
+			terraform.Interpolate(),
+			terraform.Write(),
+			terraform.Plan(terraform.PlanGoal("deploy")),
+		)
+	}
+
+	if logdiag.HasError(ctx) {
+		return nil
+	}
+
+	actions, err := getActions(ctx, b)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+	}
+
+	return actions
 }
 
 // If there are more than 1 thousand of a resource type, do not
