@@ -34,16 +34,14 @@ type ResourceSettings struct {
 
 var SupportedResources = map[string]ResourceSettings{
 	"jobs": {
-		New:             reflect.ValueOf(NewResourceJob),
-		ConfigType:      reflect.TypeOf(ResourceJob{}.config),
-		DeleteFN:        DeleteJob,
-		UpdateUpdatesID: false,
+		New:        reflect.ValueOf(NewResourceJob),
+		ConfigType: reflect.TypeOf(ResourceJob{}.config),
+		DeleteFN:   DeleteJob,
 	},
 	"pipelines": {
-		New:             reflect.ValueOf(NewResourcePipeline),
-		ConfigType:      reflect.TypeOf(ResourcePipeline{}.config),
-		DeleteFN:        DeletePipeline,
-		UpdateUpdatesID: false,
+		New:        reflect.ValueOf(NewResourcePipeline),
+		ConfigType: reflect.TypeOf(ResourcePipeline{}.config),
+		DeleteFN:   DeletePipeline,
 	},
 	"schemas": {
 		New:             reflect.ValueOf(NewResourceSchema),
@@ -58,16 +56,14 @@ var SupportedResources = map[string]ResourceSettings{
 		UpdateUpdatesID: true,
 	},
 	"apps": {
-		New:             reflect.ValueOf(NewResourceApp),
-		ConfigType:      reflect.TypeOf(ResourceApp{}.config),
-		DeleteFN:        DeleteApp,
-		UpdateUpdatesID: false,
+		New:        reflect.ValueOf(NewResourceApp),
+		ConfigType: reflect.TypeOf(ResourceApp{}.config),
+		DeleteFN:   DeleteApp,
 	},
 	"sql_warehouses": {
-		New:             reflect.ValueOf(NewResourceSqlWarehouse),
-		ConfigType:      reflect.TypeOf(ResourceSqlWarehouse{}.config),
-		DeleteFN:        DeleteSqlWarehouse,
-		UpdateUpdatesID: false,
+		New:        reflect.ValueOf(NewResourceSqlWarehouse),
+		ConfigType: reflect.TypeOf(ResourceSqlWarehouse{}.config),
+		DeleteFN:   DeleteSqlWarehouse,
 	},
 }
 
