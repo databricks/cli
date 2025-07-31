@@ -8,7 +8,6 @@ import (
 	"strconv"
 
 	"github.com/databricks/databricks-sdk-go/service/catalog"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -17,11 +16,6 @@ import (
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
-
-var TestUser = iam.User{
-	Id:       "1000012345",
-	UserName: "tester@databricks.com",
-}
 
 var TestMetastore = catalog.MetastoreAssignment{
 	DefaultCatalogName: "hive_metastore",
@@ -74,7 +68,7 @@ func addDefaultHandlers(server *testserver.Server) {
 	server.Handle("GET", "/api/2.0/preview/scim/v2/Me", func(req testserver.Request) any {
 		return testserver.Response{
 			Headers: map[string][]string{"X-Databricks-Org-Id": {"900800700600"}},
-			Body:    TestUser,
+			Body:    req.Workspace.CurrentUser(),
 		}
 	})
 

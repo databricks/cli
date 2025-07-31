@@ -4,7 +4,8 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/dyn"
-	assert "github.com/databricks/cli/libs/dyn/dynassert"
+	"github.com/databricks/cli/libs/dyn/dynassert"
+	"github.com/stretchr/testify/assert"
 )
 
 type mergeResourcesTestCase struct {
@@ -51,7 +52,7 @@ func TestMergeResources(t *testing.T) {
 			actual, err := mergeResources(tc.src, tc.dst)
 
 			assert.NoError(t, err)
-			assert.Equal(t, tc.expected, actual)
+			dynassert.Equal(t, tc.expected, actual)
 		})
 	}
 }

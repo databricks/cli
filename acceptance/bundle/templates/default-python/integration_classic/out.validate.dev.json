@@ -151,7 +151,6 @@
       "."
     ]
   },
-  "targets": null,
   "workspace": {
     "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/artifacts",
     "file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files",

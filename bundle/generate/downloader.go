@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path"
 	"path/filepath"
@@ -16,10 +17,17 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"golang.org/x/sync/errgroup"
+
+	"github.com/databricks/databricks-sdk-go/client"
 )
 
+type exportFile struct {
+	path   string
+	format workspace.ExportFormat
+}
+
 type Downloader struct {
-	files     map[string]string
+	files     map[string]exportFile
 	w         *databricks.WorkspaceClient
 	sourceDir string
 	configDir string
@@ -55,7 +63,10 @@ func (n *Downloader) markFileForDownload(ctx context.Context, filePath *string) 
 	relPath := n.relativePath(*filePath)
 	targetPath := filepath.Join(n.sourceDir, relPath)
 
-	n.files[targetPath] = *filePath
+	n.files[targetPath] = exportFile{
+		path:   *filePath,
+		format: workspace.ExportFormatSource,
+	}
 
 	rel, err := filepath.Rel(n.configDir, targetPath)
 	if err != nil {
@@ -102,16 +113,58 @@ func (n *Downloader) MarkDirectoryForDownload(ctx context.Context, dirPath *stri
 	return nil
 }
 
+type workspaceStatus struct {
+	Language     workspace.Language     `json:"language,omitempty"`
+	ObjectType   workspace.ObjectType   `json:"object_type,omitempty"`
+	ExportFormat workspace.ExportFormat `json:"repos_export_format,omitempty"`
+}
+
 func (n *Downloader) markNotebookForDownload(ctx context.Context, notebookPath *string) error {
-	info, err := n.w.Workspace.GetStatusByPath(ctx, *notebookPath)
+	apiClient, err := client.New(n.w.Config)
 	if err != nil {
 		return err
 	}
 
-	relPath := n.relativePath(*notebookPath) + notebook.GetExtensionByLanguage(info)
+	var stat workspaceStatus
+	err = apiClient.Do(
+		ctx,
+		http.MethodGet,
+		"/api/2.0/workspace/get-status",
+		nil,
+		nil,
+		map[string]string{
+			"path":               *notebookPath,
+			"return_export_info": "true",
+		},
+		&stat,
+	)
+	if err != nil {
+		return err
+	}
+
+	relPath := n.relativePath(*notebookPath)
+	// If the path has any extension, strip it
+	ext := path.Ext(relPath)
+	if ext != "" {
+		relPath = strings.TrimSuffix(relPath, ext)
+	}
+
+	ext = notebook.GetExtensionByLanguage(&workspace.ObjectInfo{
+		Language:   stat.Language,
+		ObjectType: stat.ObjectType,
+	})
+
+	if stat.ExportFormat == workspace.ExportFormatJupyter {
+		ext = ".ipynb"
+	}
+
+	relPath = relPath + ext
 	targetPath := filepath.Join(n.sourceDir, relPath)
 
-	n.files[targetPath] = *notebookPath
+	n.files[targetPath] = exportFile{
+		path:   *notebookPath,
+		format: stat.ExportFormat,
+	}
 
 	// Update the notebook path to be relative to the config dir
 	rel, err := filepath.Rel(n.configDir, targetPath)
@@ -153,7 +206,7 @@ func (n *Downloader) FlushToDisk(ctx context.Context, force bool) error {
 	}
 
 	errs, errCtx := errgroup.WithContext(ctx)
-	for targetPath, filePath := range n.files {
+	for targetPath, exportFile := range n.files {
 		// Create parent directories if they don't exist
 		dir := filepath.Dir(targetPath)
 		err := os.MkdirAll(dir, 0o755)
@@ -161,7 +214,7 @@ func (n *Downloader) FlushToDisk(ctx context.Context, force bool) error {
 			return err
 		}
 		errs.Go(func() error {
-			reader, err := n.w.Workspace.Download(errCtx, filePath)
+			reader, err := n.w.Workspace.Download(errCtx, exportFile.path, workspace.DownloadFormat(exportFile.format))
 			if err != nil {
 				return err
 			}
@@ -187,7 +240,7 @@ func (n *Downloader) FlushToDisk(ctx context.Context, force bool) error {
 
 func NewDownloader(w *databricks.WorkspaceClient, sourceDir, configDir string) *Downloader {
 	return &Downloader{
-		files:     make(map[string]string),
+		files:     make(map[string]exportFile),
 		w:         w,
 		sourceDir: sourceDir,
 		configDir: configDir,

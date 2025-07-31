@@ -50,6 +50,15 @@ var deletableResources = map[string]DeleteResourceFN{
 	_sql_warehouses: DeleteSqlWarehouse,
 }
 
+// UpdateableIDResource configures whether the resource is allowed to change ID in Update operation. Default is false.
+// If ID changes during Update and it is not allowed, deployment of that resource will fail with internal error.
+// This allows to make assumptions about references stability (${resources.jobs.foo.id}) when we see that
+// operation is going to be "update" & ID is guarantee not to change.
+var UpdateableIDResource = map[string]bool{
+	_schemas: true,
+	_volumes: true,
+}
+
 type IResource interface {
 	Config() any
 
@@ -58,6 +67,7 @@ type IResource interface {
 
 	// Update the resource. Returns id of the resource.
 	// Usually returns the same id as oldId but can also return a different one (e.g. schemas and volumes when certain fields are changed)
+	// Note, UpdateableIDResource[group] must be true for this group if ID can be changed. Otherwise function must return the same ID.
 	DoUpdate(ctx context.Context, oldID string) (string, error)
 
 	WaitAfterCreate(ctx context.Context) error
