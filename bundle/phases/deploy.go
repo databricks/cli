@@ -155,6 +155,39 @@ func deployCore(ctx context.Context, b *bundle.Bundle) {
 	}
 }
 
+// deployPrepare is common set of mutators between "bundle plan" and "bundle deploy".
+// Ideally it should not modify the remote, only in-memory bundle config.
+// TODO: currently it does affect remote, via artifacts.CleanUp() and libraries.Upload().
+// We should refactor deployment so that it consists of two stages:
+// 1. Preparation: only local config is changed. This will be used by both "bundle deploy" and "bundle plan"
+// 2. Deployment: this does all the uploads. Only used by "deploy", not "plan".
+func deployPrepare(ctx context.Context, b *bundle.Bundle) {
+	bundle.ApplySeqContext(ctx, b,
+		statemgmt.StatePull(),
+		terraform.CheckDashboardsModifiedRemotely(),
+		deploy.StatePull(),
+		mutator.ValidateGitDetails(),
+		terraform.CheckRunningResource(),
+
+		// artifacts.CleanUp() is there because I'm not sure if it's safe to move to later stage.
+		artifacts.CleanUp(),
+
+		// libraries.CheckForSameNameLibraries() needs to be run after we expand glob references so we
+		// know what are the actual library paths.
+		// libraries.ExpandGlobReferences() has to be run after the libraries are built and thus this
+		// mutator is part of the deploy step rather than validate.
+		libraries.ExpandGlobReferences(),
+		libraries.CheckForSameNameLibraries(),
+		// SwitchToPatchedWheels must be run after ExpandGlobReferences and after build phase because it Artifact.Source and Artifact.Patched populated
+		libraries.SwitchToPatchedWheels(),
+
+		// libraries.Upload() not just uploads but also replaces local paths with remote paths.
+		// TransformWheelTask depends on it and planning also depends on it.
+		libraries.Upload(),
+		trampoline.TransformWheelTask(),
+	)
+}
+
 // The deploy phase deploys artifacts and resources.
 func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHandler) {
 	log.Info(ctx, "Phase: deploy")
@@ -176,23 +209,12 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDeploy))
 	}()
 
+	deployPrepare(ctx, b)
+	if logdiag.HasError(ctx) {
+		return
+	}
+
 	bundle.ApplySeqContext(ctx, b,
-		statemgmt.StatePull(),
-		terraform.CheckDashboardsModifiedRemotely(),
-		deploy.StatePull(),
-		mutator.ValidateGitDetails(),
-		terraform.CheckRunningResource(),
-		artifacts.CleanUp(),
-		// libraries.CheckForSameNameLibraries() needs to be run after we expand glob references so we
-		// know what are the actual library paths.
-		// libraries.ExpandGlobReferences() has to be run after the libraries are built and thus this
-		// mutator is part of the deploy step rather than validate.
-		libraries.ExpandGlobReferences(),
-		libraries.CheckForSameNameLibraries(),
-		// SwitchToPatchedWheels must be run after ExpandGlobReferences and after build phase because it Artifact.Source and Artifact.Patched populated
-		libraries.SwitchToPatchedWheels(),
-		libraries.Upload(),
-		trampoline.TransformWheelTask(),
 		files.Upload(outputHandler),
 		deploy.StateUpdate(),
 		deploy.StatePush(),
