@@ -157,6 +157,10 @@ func deployCore(ctx context.Context, b *bundle.Bundle) {
 
 // This function updates bundle config but does not change the remote.
 // It is extracted so that it can be used by "bundle diff".
+// TODO: currently it does affect remote, via artifacts.CleanUp() and libraries.Upload().
+// We should refactor deployment so that it consists of two stages:
+// 1. Preparation: only local config is changed. This will be used by both "bundle deploy" and "bundle plan"
+// 2. Deployment: this does all the uploads. Only used by "deploy", not "plan.
 func deployPrepare(ctx context.Context, b *bundle.Bundle) {
 	bundle.ApplySeqContext(ctx, b,
 		statemgmt.StatePull(),
@@ -164,6 +168,10 @@ func deployPrepare(ctx context.Context, b *bundle.Bundle) {
 		deploy.StatePull(),
 		mutator.ValidateGitDetails(),
 		terraform.CheckRunningResource(),
+
+		// artifacts.CleanUp() is there because I'm not sure if it's safe to move to later stage.
+		artifacts.CleanUp(),
+
 		// libraries.CheckForSameNameLibraries() needs to be run after we expand glob references so we
 		// know what are the actual library paths.
 		// libraries.ExpandGlobReferences() has to be run after the libraries are built and thus this
@@ -172,6 +180,10 @@ func deployPrepare(ctx context.Context, b *bundle.Bundle) {
 		libraries.CheckForSameNameLibraries(),
 		// SwitchToPatchedWheels must be run after ExpandGlobReferences and after build phase because it Artifact.Source and Artifact.Patched populated
 		libraries.SwitchToPatchedWheels(),
+
+		// libraries.Upload() not just uploads but also replaces local paths with remote paths.
+		// TransformWheelTask depends on it and planning also depends on it.
+		libraries.Upload(),
 		trampoline.TransformWheelTask(),
 	)
 }
@@ -203,8 +215,6 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	}
 
 	bundle.ApplySeqContext(ctx, b,
-		artifacts.CleanUp(),
-		libraries.Upload(),
 		files.Upload(outputHandler),
 		deploy.StateUpdate(),
 		deploy.StatePush(),
