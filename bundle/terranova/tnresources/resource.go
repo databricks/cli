@@ -15,15 +15,20 @@ type DeleteResourceFN = func(ctx context.Context, client *databricks.WorkspaceCl
 
 type ResourceSettings struct {
 	// Method to call to create new resource
+	// First argument must be client* databricks.Workspace and second argument is *resource.<Resource> from bundle config
+	// where Resource is appropriate resource e.g. resource.Job.
 	New reflect.Value
 
-	// Type of the store config state
+	// Type of the stored config state
 	ConfigType reflect.Type
 
 	// Function to delete a resource of this type
 	DeleteFN DeleteResourceFN
 
 	// true if Update() method can return a different ID than that was passed in
+	// If ID changes during Update and UpdateUpdatesID is false, deployment of that resource will fail with internal error.
+	// This allows to make assumptions about references stability (${resources.jobs.foo.id}) when we see that
+	// operation is going to be "update" & ID is guarantee not to change.
 	UpdateUpdatesID bool
 }
 
