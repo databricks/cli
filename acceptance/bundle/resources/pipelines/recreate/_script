@@ -1,0 +1,36 @@
+trace cat databricks.yml
+touch foo.py
+touch bar.py
+trace $CLI bundle plan  # should show 'create'
+trace $CLI bundle deploy
+
+ppid1=`read_id.py pipelines my`
+echo "$ppid1:PIPELINE_ID_1" >> ACC_REPLS
+
+print_requests() {
+    jq --sort-keys 'select(.method != "GET" and (.path | contains("/pipelines")))' < out.requests.txt
+    rm -f out.requests.txt
+}
+
+trace print_requests
+
+trace update_file.py databricks.yml $CONFIG_UPDATE
+trace $CLI bundle plan  # should show 'recreate'
+trace $CLI bundle deploy --auto-approve
+trace print_requests
+
+title "Fetch pipeline ID and verify remote state"
+
+ppid2=`read_id.py pipelines my`
+echo "$ppid2:PIPELINE_ID_2" >> ACC_REPLS
+trace $CLI pipelines get $ppid2
+
+title "Verify that original pipeline is gone"
+trace musterr $CLI pipelines get $ppid1
+
+title "Destroy the pipeline and verify that it's removed from the state and from remote"
+trace $CLI bundle destroy --auto-approve
+
+trace print_requests
+trace musterr $CLI pipelines get $ppid2
+rm out.requests.txt

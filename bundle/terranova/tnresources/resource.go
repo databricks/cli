@@ -30,6 +30,33 @@ type ResourceSettings struct {
 	// This allows to make assumptions about references stability (${resources.jobs.foo.id}) when we see that
 	// operation is going to be "update" & ID is guarantee not to change.
 	UpdateUpdatesID bool
+
+	// true if ClassifyChanges() method can return a different ActionTypeRecreate
+	// If RecreateAllowed is false and RecreateFields is empty, the resource id is stable.
+	RecreateAllowed bool
+
+	// If any of these fields are changed, recreation (Delete + Create) is triggered.
+	// This overrides ClassifyChanges() function (so you don't need to implement that one).
+	// Fields are in structdiff.Change.String() format.
+	// A couple limitations:
+	// - Patterns like hello.*.world and hello[*].world are not supported
+	// - We do not validate this setting. We could write a test that does it since we have ConfigType.
+	RecreateFields map[string]struct{}
+
+	// If resource does not set RecreateFields, RecreateAllowed, UpdateUpdatesID then
+	// it's ${resources.<group>.<name>.id} will considered stable for the purposes of concurrent deployment.
+}
+
+func (s *ResourceSettings) MustRecreate(changes []structdiff.Change) bool {
+	if len(s.RecreateFields) == 0 {
+		return false
+	}
+	for _, change := range changes {
+		if _, ok := s.RecreateFields[change.Path.String()]; ok {
+			return true
+		}
+	}
+	return false
 }
 
 var SupportedResources = map[string]ResourceSettings{
@@ -42,18 +69,26 @@ var SupportedResources = map[string]ResourceSettings{
 		New:        reflect.ValueOf(NewResourcePipeline),
 		ConfigType: reflect.TypeOf(ResourcePipeline{}.config),
 		DeleteFN:   DeletePipeline,
+		// See TF's ForceNew fields:
+		// https://github.com/databricks/terraform-provider-databricks/blob/8ae24ac/pipelines/resource_pipeline.go#L207
+		RecreateFields: mkMap(
+			".storage",
+			".catalog",
+			".ingestion_definition.connection_name",
+			".ingestion_definition.ingestion_gateway_id",
+		),
 	},
 	"schemas": {
-		New:             reflect.ValueOf(NewResourceSchema),
-		ConfigType:      reflect.TypeOf(ResourceSchema{}.config),
-		DeleteFN:        DeleteSchema,
-		UpdateUpdatesID: true,
+		New:        reflect.ValueOf(NewResourceSchema),
+		ConfigType: reflect.TypeOf(ResourceSchema{}.config),
+		DeleteFN:   DeleteSchema,
+		// RecreateFields: TODO
 	},
 	"volumes": {
-		New:             reflect.ValueOf(NewResourceVolume),
-		ConfigType:      reflect.TypeOf(ResourceVolume{}.config),
-		DeleteFN:        DeleteVolume,
-		UpdateUpdatesID: true,
+		New:        reflect.ValueOf(NewResourceVolume),
+		ConfigType: reflect.TypeOf(ResourceVolume{}.config),
+		DeleteFN:   DeleteVolume,
+		// RecreateFields: TODO
 	},
 	"apps": {
 		New:        reflect.ValueOf(NewResourceApp),
@@ -156,4 +191,12 @@ func DeleteResource(ctx context.Context, client *databricks.WorkspaceClient, gro
 		return fmt.Errorf("cannot delete %s", group)
 	}
 	return settings.DeleteFN(ctx, client, id)
+}
+
+func mkMap(names ...string) map[string]struct{} {
+	result := make(map[string]struct{}, len(names))
+	for _, name := range names {
+		result[name] = struct{}{}
+	}
+	return result
 }

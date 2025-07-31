@@ -10,7 +10,6 @@ import (
 	"github.com/databricks/cli/bundle/terranova/tnresources"
 	"github.com/databricks/cli/bundle/terranova/tnstate"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/structdiff"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 )
@@ -20,6 +19,7 @@ type Planner struct {
 	db           *tnstate.TerranovaState
 	group        string
 	resourceName string
+	settings     tnresources.ResourceSettings
 }
 
 func (d *Planner) Plan(ctx context.Context, inputConfig any) (deployplan.ActionType, error) {
@@ -50,16 +50,7 @@ func (d *Planner) Plan(ctx context.Context, inputConfig any) (deployplan.ActionT
 	// unresolved variables (so it needs additional support for dyn.Value storage).
 	// In some cases, it should introduce "update or recreate" action, since it does not know whether
 	// field is going to be changed.
-	localDiff, err := structdiff.GetStructDiff(savedState, config)
-	if err != nil {
-		return "", fmt.Errorf("comparing state and config: %w", err)
-	}
-
-	if len(localDiff) == 0 {
-		return deployplan.ActionTypeNoop, nil
-	}
-
-	return resource.ClassifyChanges(localDiff), nil
+	return calcDiff(d.settings, resource, savedState, config)
 }
 
 func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan.Action, error) {
@@ -84,6 +75,11 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 			group := p[1].Key()
 			name := p[2].Key()
 
+			settings, ok := tnresources.SupportedResources[group]
+			if !ok {
+				return v, nil
+			}
+
 			groupState := state[group]
 			delete(groupState, name)
 
@@ -97,6 +93,7 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 				db:           &b.ResourceDatabase,
 				group:        group,
 				resourceName: name,
+				settings:     settings,
 			}
 
 			actionType, err := pl.Plan(ctx, config)

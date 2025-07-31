@@ -1,0 +1,9 @@
+# This test works on Cloud, but disabling to save time, since important part here is match between direct and terraform.
+#Cloud = true
+Ignore = ["bar.py", "foo.py", ".databricks"]
+
+
+# All keys are disable by default and will be enabled by subtests
+Env.CATALOG_KEY = "#catalog"
+Env.STORAGE_KEY = "#storage"
+Env.ING_KEY = "#ingestion_definition"
