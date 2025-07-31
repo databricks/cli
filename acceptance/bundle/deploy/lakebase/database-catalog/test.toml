@@ -1,2 +1,2 @@
 Local = true
-EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["direct-exp"]
+EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["terraform"]
