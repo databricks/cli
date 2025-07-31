@@ -27,9 +27,7 @@ func newPlanCommand() *cobra.Command {
 	}
 
 	var force bool
-	var forceLock bool
 	var clusterId string
-	var autoApprove bool
 	cmd.Flags().BoolVar(&force, "force", false, "Force-override Git branch validation.")
 	cmd.Flags().StringVar(&clusterId, "compute-id", "", "Override cluster in the deployment with the given compute ID.")
 	cmd.Flags().StringVarP(&clusterId, "cluster-id", "c", "", "Override cluster in the deployment with the given cluster ID.")
@@ -46,8 +44,6 @@ func newPlanCommand() *cobra.Command {
 
 		bundle.ApplyFuncContext(ctx, b, func(context.Context, *bundle.Bundle) {
 			b.Config.Bundle.Force = force
-			b.Config.Bundle.Deployment.Lock.Force = forceLock
-			b.AutoApprove = autoApprove
 
 			if cmd.Flag("compute-id").Changed {
 				b.Config.Bundle.ClusterId = clusterId
