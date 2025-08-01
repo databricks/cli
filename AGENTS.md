@@ -51,34 +51,6 @@ When writing Python scripts, we bias for conciseness. We think of Python in this
  - After done, format you code with "ruff format -n <path>"
  - Use "#!/usr/bin/env python3" shebang.
 
-# Diagnostics
-
-Diagnostic warnings should be aggregated and returned at the end of a function as follows:
-
-func someFunc() diag.Diagnostics {
-	var diags diag.Diagnostics
-	if ... {
-		diags = diags.Extend(diags.Warningf(...))
-	}
-	...
-	return diags
-}
-
-It's common to use diags.Warningf or diags.Errorf to return warnings and errors. But sometimes we want to use the long form to add a location or other details:
-
-diags.Extend(diag.Diagnostics{{
-	Summary:  "...",
-	Severity: diag.Warning,
-	Locations: b.Config.GetLocations("resources.jobs." + key),
-}})
-
-Please note that the Summary and Severity argument are mandatory. And if it's at all possible, diagnostics should always have locations.
-
-The severity can be one of the following:
-- diag.Warning
-- diag.Error
-- diag.Recommendation - this should be preferred when something is just a recommendation and not really a warning or error.
-
 # Mutators
 
 Mutators should have a structure as follows:
