@@ -3,8 +3,11 @@
 package pipelines
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 =======
@@ -13,8 +16,13 @@ import (
 >>>>>>> ebb295ce3 (working default case)
 =======
 >>>>>>> 2a26d8c0d (success template)
+=======
+	"strings"
+	"time"
+>>>>>>> a44303fd9 (removed templates)
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/phases"
 	bundleresources "github.com/databricks/cli/bundle/resources"
@@ -22,15 +30,22 @@ import (
 	bundlerunoutput "github.com/databricks/cli/bundle/run/output"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/bundle/utils"
+<<<<<<< HEAD
 	pipelineoutput "github.com/databricks/cli/cmd/pipelines/output"
+=======
+>>>>>>> a44303fd9 (removed templates)
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdgroup"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/maps"
+	"golang.org/x/exp/slices"
 )
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 =======
@@ -41,6 +56,16 @@ Update {{ .Update.UpdateId }} for pipeline {{ .Update.Config.Name }} {{ .Update.
 {{- else }}
 Update {{ .Update.UpdateId }} for pipeline {{ .Update.Config.Name }} {{ .Update.Config.Id }} completed successfully.
 {{- end }}
+=======
+type PipelineUpdateData struct {
+	PipelineId          string
+	Update              pipelines.UpdateInfo
+	RefreshSelectionStr string
+	LastEventTime       string
+}
+
+const pipelineUpdateTemplate = `Update {{ .Update.UpdateId }} for pipeline {{- if .Update.Config }}{{ .Update.Config.Name }}{{ end }} {{- if .Update.Config }}{{ .Update.Config.Id }}{{ end }} completed successfully.
+>>>>>>> a44303fd9 (removed templates)
 {{- if .Update.Cause }}
 Cause: {{ .Update.Cause }}
 {{- end }}
@@ -50,7 +75,11 @@ Creation Time: {{ .Update.CreationTime | pretty_UTC_date_from_millis }}
 {{- if .LastEventTime }}
 End Time: {{ .LastEventTime }}
 {{- end }}
+<<<<<<< HEAD
 {{- if or .Update.Config.Serverless .Update.ClusterId }}
+=======
+{{- if or (and .Update.Config .Update.Config.Serverless) .Update.ClusterId }}
+>>>>>>> a44303fd9 (removed templates)
 Compute: {{ if .Update.Config.Serverless }} serverless {{ else }}{{ .Update.ClusterId }}{{ end }}
 {{- end }}
 Refresh: {{ .RefreshSelectionStr }}
@@ -71,6 +100,7 @@ Environment: {{ .Update.Config.Environment }}
 Catalog & Schema: {{ .Update.Config.Catalog }}{{ if and .Update.Config.Catalog .Update.Config.Schema }}.{{ end }}{{ .Update.Config.Schema }}
 {{- end }}
 {{- end }}
+<<<<<<< HEAD
 
 {{- if .ProgressEvents }}
 {{- printf "%-50s %-7s\n" "Run Phase" "Duration" }}
@@ -101,6 +131,10 @@ type ProgressEventWithDuration struct {
 }
 
 // getRefreshSelectionString returns a formatted string describing the refresh selection
+=======
+`
+
+>>>>>>> a44303fd9 (removed templates)
 func getRefreshSelectionString(update pipelines.UpdateInfo) string {
 	if update.FullRefresh {
 		return "full-refresh-all"
@@ -121,6 +155,7 @@ func getRefreshSelectionString(update pipelines.UpdateInfo) string {
 	return "default refresh-all"
 }
 
+<<<<<<< HEAD
 // getLastEventTime returns the timestamp of the last progress event
 func getLastEventTime(events []ProgressEventWithDuration) string {
 	if len(events) == 0 {
@@ -143,6 +178,95 @@ func getLatestErrorEvent(events []ProgressEventWithDuration) *pipelines.Pipeline
 >>>>>>> ebb295ce3 (working default case)
 =======
 >>>>>>> 2a26d8c0d (success template)
+=======
+func fetchUpdateProgressEventsForUpdateAscending(ctx context.Context, bundle *bundle.Bundle, pipelineId, updateId string) ([]pipelines.PipelineEvent, error) {
+	w := bundle.WorkspaceClient()
+
+	req := pipelines.ListPipelineEventsRequest{
+		PipelineId: pipelineId,
+		Filter:     fmt.Sprintf("update_id='%s' AND event_type='update_progress'", updateId),
+		// OrderBy:    []string{"timestamp asc"}, TODO: Add this back in when the API is fixed
+	}
+
+	iterator := w.Pipelines.ListPipelineEvents(ctx, req)
+	var events []pipelines.PipelineEvent
+
+	for iterator.HasNext(ctx) {
+		event, err := iterator.Next(ctx)
+		if err != nil {
+			return nil, err
+		}
+		events = append(events, event)
+	}
+	slices.Reverse(events)
+
+	return events, nil
+}
+
+func fetchAndDisplayPipelineUpdate(ctx context.Context, bundle *bundle.Bundle, ref bundleresources.Reference, updateId string) error {
+	w := bundle.WorkspaceClient()
+
+	pipelineResource := ref.Resource.(*resources.Pipeline)
+	pipelineID := pipelineResource.ID
+	if pipelineID == "" {
+		return errors.New("unable to get pipeline ID from pipeline")
+	}
+
+	getUpdateResponse, err := w.Pipelines.GetUpdate(ctx, pipelines.GetUpdateRequest{
+		PipelineId: pipelineID,
+		UpdateId:   updateId,
+	})
+	if err != nil {
+		return err
+	}
+
+	if getUpdateResponse.Update == nil {
+		return err
+	}
+
+	latestUpdate := *getUpdateResponse.Update
+
+	if latestUpdate.State == pipelines.UpdateInfoStateCompleted {
+		events, err := fetchUpdateProgressEventsForUpdateAscending(ctx, bundle, pipelineID, updateId)
+		if err != nil {
+			return err
+		}
+
+		err = displayPipelineUpdate(ctx, latestUpdate, pipelineID, events)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// getLastEventTime returns the timestamp of the last progress event
+func getLastEventTime(events []pipelines.PipelineEvent) string {
+	if len(events) == 0 {
+		return ""
+	}
+	lastEvent := events[len(events)-1]
+	parsedTime, err := time.Parse(time.RFC3339Nano, lastEvent.Timestamp)
+	if err != nil {
+		return ""
+	}
+	return parsedTime.Format("2006-01-02T15:04:05Z")
+}
+
+// displayPipelineUpdate displays pipeline update information
+func displayPipelineUpdate(ctx context.Context, update pipelines.UpdateInfo, pipelineID string, events []pipelines.PipelineEvent) error {
+	data := PipelineUpdateData{
+		PipelineId:          pipelineID,
+		Update:              update,
+		RefreshSelectionStr: getRefreshSelectionString(update),
+		LastEventTime:       getLastEventTime(events),
+	}
+
+	return cmdio.RenderWithTemplate(ctx, data, "", pipelineUpdateTemplate)
+}
+
+>>>>>>> a44303fd9 (removed templates)
 func runCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "run [flags] [KEY]",
@@ -268,7 +392,11 @@ Refreshes all tables in the pipeline unless otherwise specified.`,
 		}
 		if ref.Description.SingularName == "pipeline" && runOutput != nil {
 			if pipelineOutput, ok := runOutput.(*bundlerunoutput.PipelineOutput); ok && pipelineOutput.UpdateId != "" {
+<<<<<<< HEAD
 				err = pipelineoutput.FetchAndDisplayPipelineUpdate(ctx, b, ref, pipelineOutput.UpdateId)
+=======
+				err = fetchAndDisplayPipelineUpdate(ctx, b, ref, pipelineOutput.UpdateId)
+>>>>>>> a44303fd9 (removed templates)
 				if err != nil {
 					return err
 				}
