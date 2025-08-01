@@ -4,14 +4,18 @@ package pipelines
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/validate"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/sync"
+	libsutils "github.com/databricks/cli/libs/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -91,6 +95,18 @@ func deployCommand() *cobra.Command {
 
 		if logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
+		}
+
+		bundle.ApplyContext(ctx, b, mutator.InitializeURLs())
+		if logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
+		}
+
+		for _, group := range b.Config.Resources.AllResources() {
+			for _, resourceKey := range libsutils.SortedKeys(group.Resources) {
+				resource := group.Resources[resourceKey]
+				cmdio.LogString(ctx, fmt.Sprintf("View your %s %s here: %s", resource.ResourceDescription().SingularName, resourceKey, resource.GetURL()))
+			}
 		}
 
 		return nil

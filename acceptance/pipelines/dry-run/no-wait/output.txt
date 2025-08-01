@@ -4,9 +4,10 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-
 Deploying resources...
 Updating deployment state...
 Deployment complete!
+View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
 
 === Dry running pipeline with --no-wait flag
 >>> [PIPELINES] dry-run --no-wait
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
-<EOL>
+Update ID: [UUID]

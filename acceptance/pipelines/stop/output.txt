@@ -4,10 +4,12 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-stop
 Deploying resources...
 Updating deployment state...
 Deployment complete!
+View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
 
 >>> [PIPELINES] run
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
+Update ID: [UUID]
 
 === Stopping pipeline
 >>> [PIPELINES] stop

@@ -115,7 +115,9 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (output.RunOutp
 	progressLogger.Log(progress.NewPipelineUpdateUrlEvent(w.Config.Host, updateID, pipelineID))
 
 	if opts.NoWait {
-		return nil, nil
+		return &output.PipelineOutput{
+			UpdateId: updateID,
+		}, nil
 	}
 
 	// Poll update for completion and post status.
@@ -157,7 +159,9 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (output.RunOutp
 		}
 		if state == pipelines.UpdateInfoStateCompleted {
 			log.Infof(ctx, "Update has completed successfully!")
-			return nil, nil
+			return &output.PipelineOutput{
+				UpdateId: updateID,
+			}, nil
 		}
 
 		time.Sleep(time.Second)

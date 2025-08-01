@@ -10,6 +10,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/pipelines-open/def
 Deploying resources...
 Updating deployment state...
 Deployment complete!
+View your pipeline test-pipelines-open here: [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
 
 === Modify PATH so that real open is not run
 === open after deployment. This will fail to open browser and complain, that's ok, we only want the message
