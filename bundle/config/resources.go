@@ -27,6 +27,7 @@ type Resources struct {
 	SecretScopes          map[string]*resources.SecretScope          `json:"secret_scopes,omitempty"`
 	SqlWarehouses         map[string]*resources.SqlWarehouse         `json:"sql_warehouses,omitempty"`
 	DatabaseInstances     map[string]*resources.DatabaseInstance     `json:"database_instances,omitempty"`
+	DatabaseCatalogs      map[string]*resources.DatabaseCatalog      `json:"database_catalogs,omitempty"`
 }
 
 type ConfigResource interface {
@@ -92,6 +93,7 @@ func (r *Resources) AllResources() []ResourceGroup {
 		collectResourceMap(descriptions["secret_scopes"], r.SecretScopes),
 		collectResourceMap(descriptions["sql_warehouses"], r.SqlWarehouses),
 		collectResourceMap(descriptions["database_instances"], r.DatabaseInstances),
+		collectResourceMap(descriptions["database_catalogs"], r.DatabaseCatalogs),
 	}
 }
 
@@ -181,6 +183,12 @@ func (r *Resources) FindResourceByConfigKey(key string) (ConfigResource, error) 
 		}
 	}
 
+	for k := range r.DatabaseCatalogs {
+		if k == key {
+			found = append(found, r.DatabaseCatalogs[k])
+		}
+	}
+
 	if len(found) == 0 {
 		return nil, fmt.Errorf("no such resource: %s", key)
 	}
@@ -214,5 +222,6 @@ func SupportedResources() map[string]resources.ResourceDescription {
 		"secret_scopes":           (&resources.SecretScope{}).ResourceDescription(),
 		"sql_warehouses":          (&resources.SqlWarehouse{}).ResourceDescription(),
 		"database_instances":      (&resources.DatabaseInstance{}).ResourceDescription(),
+		"database_catalogs":       (&resources.DatabaseCatalog{}).ResourceDescription(),
 	}
 }

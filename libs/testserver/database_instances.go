@@ -21,6 +21,7 @@ func (s *FakeWorkspace) DatabaseInstanceCreate(req Request) Response {
 	}
 
 	databaseInstance.Uid = uuid.New().String()
+	databaseInstance.State = database.DatabaseInstanceStateAvailable
 	s.DatabaseInstances[databaseInstance.Name] = databaseInstance
 
 	return Response{
