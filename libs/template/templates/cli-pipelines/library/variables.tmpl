@@ -10,7 +10,7 @@
     {{- if (regexp "^yes").MatchString .personal_schemas -}}
         {{ short_name }}
     {{- else -}}
-        {{ .shared_schema }}
+        {{ .shared_schema }}_dev
     {{- end}}
 {{- end }}
 
@@ -28,6 +28,6 @@
     {{- if (regexp "^yes").MatchString .personal_schemas -}}
         default
     {{- else -}}
-        {{ .shared_schema }}_prod
+        {{ .shared_schema }}
     {{- end}}
 {{- end }}
