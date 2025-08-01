@@ -10,4 +10,3 @@ Deployment complete!
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
 Update ID: [UUID]
-<EOL>
