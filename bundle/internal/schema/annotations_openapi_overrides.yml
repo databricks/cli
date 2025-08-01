@@ -182,6 +182,16 @@ github.com/databricks/cli/bundle/config/resources.DashboardPermissionLevel:
         CAN_EDIT
       - |-
         CAN_MANAGE
+
+github.com/databricks/cli/bundle/config/resources.DatabaseInstancePermissionLevel:
+  "_":
+    "enum":
+      - |-
+        CAN_CREATE
+      - |-
+        CAN_USE
+      - |-
+        CAN_MANAGE
 github.com/databricks/cli/bundle/config/resources.Job:
   "_":
     "markdown_description": |-

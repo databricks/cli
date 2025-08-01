@@ -450,4 +450,12 @@ func addDefaultHandlers(server *testserver.Server) {
 	server.Handle("GET", "/api/2.0/preview/sql/data_sources", func(req testserver.Request) any {
 		return req.Workspace.SqlDataSourcesList(req)
 	})
+
+	server.Handle("POST", "/api/2.0/database/instances", func(req testserver.Request) any {
+		return req.Workspace.DatabaseInstanceCreate(req)
+	})
+
+	server.Handle("GET", "/api/2.0/database/instances/{name}", func(req testserver.Request) any {
+		return testserver.MapGet(req.Workspace, req.Workspace.DatabaseInstances, req.Vars["name"])
+	})
 }
