@@ -14,6 +14,7 @@ Update ID: [UUID]
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 Update for pipeline completed successfully.
 Pipeline configurations for this update:
 • All tables are refreshed
@@ -30,3 +31,7 @@ Full Refresh: NO
 Validate Only: NO
 Pipeline Spec: (No config available)
 >>>>>>> 17a9a6908 (rebase)
+=======
+Update [UUID] for pipeline completed successfully.
+Refresh: default refresh-all
+>>>>>>> 2a26d8c0d (success template)
