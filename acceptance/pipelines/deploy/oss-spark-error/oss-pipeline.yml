@@ -1,0 +1,5 @@
+definitions:
+  - glob:
+      include: transformations/**/*.py
+  - glob:
+      include: transformations/**/*.sql
