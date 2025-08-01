@@ -11,7 +11,7 @@ trace $CLI bundle summary -o json | jq .resources.schemas
 
 title "Update catalog_name and re-deploy"
 trace update_file.py databricks.yml "catalog_name: main" "catalog_name: newmain"
-trace $CLI bundle plan
+trace $CLI bundle plan 2>&1 | contains recreate
 trace $CLI bundle deploy --auto-approve
 trace print_requests
 
