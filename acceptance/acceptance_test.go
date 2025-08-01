@@ -115,6 +115,10 @@ func TestAccept(t *testing.T) {
 	testAccept(t, InprocessMode, "")
 }
 
+func TestAcceptLocal(t *testing.T) {
+	testAccept(t, InprocessMode, "bundle/deploy/lakebase/database-catalog")
+}
+
 func TestInprocessMode(t *testing.T) {
 	if InprocessMode && !Forcerun {
 		t.Skip("Already tested by TestAccept")

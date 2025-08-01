@@ -25,7 +25,6 @@ Resources:
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-catalog-[UNIQUE_NAME]/default/files...
 Deploying resources...
-Creating catalog with name=my_catalog_[UNIQUE_NAME]Database instance status: AVAILABLE
 Updating deployment state...
 Deployment complete!
 
@@ -52,10 +51,6 @@ Resources:
       Name: test-database-instance-[UNIQUE_NAME]
 
 >>> [CLI] bundle destroy --auto-approve
-The following resources will be deleted:
-  delete database_catalog my_catalog
-  delete database_instance my_instance
-
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-catalog-[UNIQUE_NAME]/default
 
 Deleting files...

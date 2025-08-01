@@ -29,6 +29,7 @@ type Resources struct {
 	CustomAppIntegration                         map[string]any `json:"databricks_custom_app_integration,omitempty"`
 	Dashboard                                    map[string]any `json:"databricks_dashboard,omitempty"`
 	DatabaseInstance                             map[string]any `json:"databricks_database_instance,omitempty"`
+	DatabaseDatabaseCatalog                      map[string]any `json:"databricks_database_database_catalog,omitempty"`
 	DbfsFile                                     map[string]any `json:"databricks_dbfs_file,omitempty"`
 	DefaultNamespaceSetting                      map[string]any `json:"databricks_default_namespace_setting,omitempty"`
 	Directory                                    map[string]any `json:"databricks_directory,omitempty"`
@@ -154,6 +155,7 @@ func NewResources() *Resources {
 		CustomAppIntegration:         make(map[string]any),
 		Dashboard:                    make(map[string]any),
 		DatabaseInstance:             make(map[string]any),
+		DatabaseDatabaseCatalog:      make(map[string]any),
 		DbfsFile:                     make(map[string]any),
 		DefaultNamespaceSetting:      make(map[string]any),
 		Directory:                    make(map[string]any),
