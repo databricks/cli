@@ -29,6 +29,103 @@ import (
 	"golang.org/x/exp/maps"
 )
 
+// ProgressEventWithDuration adds duration information to a progress event
+type ProgressEventWithDuration struct {
+	Event    pipelines.PipelineEvent
+	Duration string
+	Phase    string
+}
+
+// ProgressEventsData holds the data for rendering progress events
+type ProgressEventsData struct {
+	ProgressEvents []ProgressEventWithDuration
+}
+
+// ProgressEventsTemplate is the template for displaying progress events
+const ProgressEventsTemplate = `{{- if .ProgressEvents }}
+{{- printf "%-25s %-7s\n" "Run Phase" "Duration" }}
+{{- printf "%-25s %-7s\n" "---------" "--------" }}
+{{- range $index, $event := .ProgressEvents }}
+{{- if ne $index (sub (len $.ProgressEvents) 1) }}
+{{- printf "%-25s %-7s\n" $event.Phase $event.Duration }}
+{{- end }}
+{{- end }}
+{{- end }}`
+
+// extractPhaseFromMessage extracts the last word from a message and removes the last character (a period)
+// Example: "Update 6fc8a8 is WAITING_FOR_RESOURCES." -> "WAITING_FOR_RESOURCES"
+func extractPhaseFromMessage(message string) string {
+	words := strings.Fields(message)
+	if len(words) > 0 {
+		phase := words[len(words)-1]
+		if len(phase) > 0 {
+			phase = phase[:len(phase)-1]
+		}
+		return phase
+	}
+	return ""
+}
+
+// enrichEvents adds duration information and phase name to a progress event
+func enrichEvents(events []pipelines.PipelineEvent) ([]ProgressEventWithDuration, error) {
+	var progressEventsWithDuration []ProgressEventWithDuration
+	for j := range events {
+		event := events[j]
+		duration := ""
+
+		if j < len(events)-1 {
+			currTime, err := time.Parse(time.RFC3339Nano, event.Timestamp)
+			if err != nil {
+				return nil, err
+			}
+			nextTime, err := time.Parse(time.RFC3339Nano, events[j+1].Timestamp)
+			if err != nil {
+				return nil, err
+			}
+
+			diff := nextTime.Sub(currTime)
+
+			if diff > 0 {
+				if diff < time.Minute {
+					duration = fmt.Sprintf("%.1fs", diff.Seconds())
+				} else if diff < time.Hour {
+					minutes := int(diff.Minutes())
+					seconds := int(diff.Seconds()) % 60
+					duration = fmt.Sprintf("%dm %ds", minutes, seconds)
+				} else {
+					hours := int(diff.Hours())
+					minutes := int(diff.Minutes()) % 60
+					duration = fmt.Sprintf("%dh %dm", hours, minutes)
+				}
+			} else {
+				duration = "0s"
+			}
+		}
+
+		progressEventsWithDuration = append(progressEventsWithDuration, ProgressEventWithDuration{
+			Event:    event,
+			Duration: duration,
+			Phase:    extractPhaseFromMessage(event.Message),
+		})
+	}
+
+	return progressEventsWithDuration, nil
+}
+
+func displayProgressEvents(ctx context.Context, events []pipelines.PipelineEvent) error {
+	progressEvents, err := enrichEvents(events)
+	if err != nil {
+		return fmt.Errorf("failed to calculate progress events: %w", err)
+	}
+
+	data := ProgressEventsData{
+		ProgressEvents: progressEvents,
+	}
+
+	return cmdio.RenderWithTemplate(ctx, data, "", ProgressEventsTemplate)
+}
+
+
 type PipelineUpdateData struct {
 	PipelineId    string
 	Update        pipelines.UpdateInfo
@@ -181,6 +278,11 @@ func fetchAndDisplayPipelineUpdate(ctx context.Context, bundle *bundle.Bundle, r
 	if latestUpdate.State == pipelines.UpdateInfoStateCompleted {
 >>>>>>> ee0f99139 (endpoint)
 		err = displayPipelineUpdate(ctx, latestUpdate, pipelineID, events)
+		if err != nil {
+			return err
+		}
+
+		err = displayProgressEvents(ctx, events)
 		if err != nil {
 			return err
 		}
