@@ -4,12 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	configresources "github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/run"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/logdiag"
 )
 
 // Copied from cmd/bundle/run.go
@@ -87,4 +91,36 @@ func keyToRunner(b *bundle.Bundle, arg string) (run.Runner, error) {
 	}
 
 	return runner, nil
+}
+
+// formatOSSTemplateWarningMessage formats the warning message for OSS template pipeline YAML files.
+func formatOSSTemplateWarningMessage(d diag.Diagnostic) string {
+	fileName := "pipeline YAML"
+	if len(d.Locations) > 0 && d.Locations[0].File != "" {
+		fileName = d.Locations[0].File
+	}
+
+	return fmt.Sprintf(`Detected %s file is formatted for OSS Spark pipelines.
+The "definitions" field is not supported in the Pipelines CLI.
+To create a new Pipelines CLI project with a supported pipeline YAML file, run:
+  pipelines init`, fileName)
+}
+
+// CheckForOSSTemplateWarning checks for a warning in the logs about an OSS template pipeline YAML file and returns an error if found.
+// Logs all collected diagnostics to expose them.
+func CheckForOSSTemplateWarning(ctx context.Context, diags diag.Diagnostics) error {
+	var ossWarning *diag.Diagnostic
+
+	for _, d := range diags {
+		if d.Severity == diag.Warning && strings.Contains(d.Summary, "unknown field: definitions") && len(d.Paths) == 1 && d.Paths[0].Equal(dyn.EmptyPath) {
+			ossWarning = &d
+		}
+		logdiag.LogDiag(ctx, d)
+	}
+
+	if ossWarning != nil {
+		return errors.New(formatOSSTemplateWarningMessage(*ossWarning))
+	}
+
+	return nil
 }

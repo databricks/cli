@@ -4,33 +4,16 @@ package pipelines
 
 import (
 	"context"
-	"errors"
-	"fmt"
-	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/validate"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/sync"
 	"github.com/spf13/cobra"
 )
-
-func formatOSSTemplateWarningMessage(d diag.Diagnostic) string {
-	fileName := "a pipeline YAML"
-	if len(d.Locations) > 0 && d.Locations[0].File != "" {
-		fileName = d.Locations[0].File
-	}
-
-	return fmt.Sprintf(`Detected %s file is formatted for OSS Spark pipelines.
-The "definitions" field is not supported in the Pipelines CLI.
-To create a new Pipelines CLI project with a supported pipeline YAML file, run:
-  pipelines init`, fileName)
-}
 
 func deployCommand() *cobra.Command {
 	cmd := &cobra.Command{
@@ -65,17 +48,9 @@ func deployCommand() *cobra.Command {
 		logdiag.SetCollect(ctx, false)
 
 		diags := logdiag.FlushCollected(ctx)
-		var ossWarning *diag.Diagnostic
-
-		for _, d := range diags {
-			if d.Severity == diag.Warning && strings.Contains(d.Summary, "unknown field: definitions") && len(d.Paths) == 1 && d.Paths[0].Equal(dyn.EmptyPath) {
-				ossWarning = &d
-			}
-			logdiag.LogDiag(ctx, d)
-		}
-
-		if ossWarning != nil {
-			return errors.New(formatOSSTemplateWarningMessage(*ossWarning))
+		// Prevent deploying OSS Spark pipeline YAML files with the Pipelines CLI.
+		if err := CheckForOSSTemplateWarning(ctx, diags); err != nil {
+			return err
 		}
 
 		bundle.ApplyFuncContext(ctx, b, func(context.Context, *bundle.Bundle) {
