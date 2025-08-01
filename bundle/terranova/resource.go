@@ -106,6 +106,11 @@ var SupportedResources = map[string]ResourceSettings{
 		ConfigType: TypeOfConfig(&tnresources.ResourceSqlWarehouse{}),
 		DeleteFN:   tnresources.DeleteSqlWarehouse,
 	},
+	"database_instances": {
+		New:        reflect.ValueOf(NewResourceDatabaseInstance),
+		ConfigType: reflect.TypeOf(ResourceDatabaseInstance{}.config),
+		DeleteFN:   DeleteDatabaseInstance,
+	},
 }
 
 type IResource interface {
