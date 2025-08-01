@@ -22,6 +22,7 @@ View your pipeline my_project_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?o
 >>> [PIPELINES] run
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
+Update ID: [UUID]
 
 === Edit project by creating and running a new second pipeline
 >>> [PIPELINES] deploy
@@ -58,6 +59,7 @@ View your pipeline my_project_pipeline_2 here: [DATABRICKS_URL]/pipelines/[UUID]
 >>> [PIPELINES] run my_project_pipeline_2
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
+Update ID: [UUID]
 
 === Stop both pipelines before destroy
 >>> [PIPELINES] stop my_project_pipeline

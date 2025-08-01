@@ -10,6 +10,7 @@ View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
 >>> [PIPELINES] dry-run
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
+Update ID: [UUID]
 {
   "body": {
     "validate_only": true
@@ -22,6 +23,7 @@ Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 >>> [PIPELINES] dry-run my_pipeline
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
+Update ID: [UUID]
 {
   "body": {
     "validate_only": true

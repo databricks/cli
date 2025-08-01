@@ -10,4 +10,4 @@ View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
 >>> [PIPELINES] run --no-wait
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
-<EOL>
+Update ID: [UUID]
