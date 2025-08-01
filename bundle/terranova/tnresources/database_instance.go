@@ -10,16 +10,16 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/database"
 )
 
-type DatabaseInstance struct {
+type ResourceDatabaseInstance struct {
 	client *databricks.WorkspaceClient
 	config database.DatabaseInstance
 }
 
-func (d DatabaseInstance) Config() any {
+func (d ResourceDatabaseInstance) Config() any {
 	return d.config
 }
 
-func (d DatabaseInstance) DoCreate(ctx context.Context) (string, error) {
+func (d ResourceDatabaseInstance) DoCreate(ctx context.Context) (string, error) {
 	response, err := d.client.Database.CreateDatabaseInstance(ctx, database.CreateDatabaseInstanceRequest{
 		DatabaseInstance: d.config,
 	})
@@ -29,7 +29,7 @@ func (d DatabaseInstance) DoCreate(ctx context.Context) (string, error) {
 	return response.Uid, nil
 }
 
-func (d DatabaseInstance) DoUpdate(ctx context.Context, oldID string) (string, error) {
+func (d ResourceDatabaseInstance) DoUpdate(ctx context.Context, oldID string) (string, error) {
 	request := database.UpdateDatabaseInstanceRequest{
 		DatabaseInstance: d.config,
 	}
@@ -42,21 +42,29 @@ func (d DatabaseInstance) DoUpdate(ctx context.Context, oldID string) (string, e
 	return response.Uid, nil
 }
 
-func (d DatabaseInstance) WaitAfterCreate(ctx context.Context) error {
+func (d ResourceDatabaseInstance) WaitAfterCreate(ctx context.Context) error {
 	return nil
 }
 
-func (d DatabaseInstance) WaitAfterUpdate(ctx context.Context) error {
+func (d ResourceDatabaseInstance) WaitAfterUpdate(ctx context.Context) error {
 	return nil
 }
 
-func (d DatabaseInstance) ClassifyChanges(changes []structdiff.Change) deployplan.ActionType {
+func (d ResourceDatabaseInstance) ClassifyChanges(changes []structdiff.Change) deployplan.ActionType {
 	return deployplan.ActionTypeUpdate
 }
 
-func NewResourceDatabaseInstance(client *databricks.WorkspaceClient, resource *resources.DatabaseInstance) (*DatabaseInstance, error) {
-	return &DatabaseInstance{
+func NewResourceDatabaseInstance(client *databricks.WorkspaceClient, resource *resources.DatabaseInstance) (*ResourceDatabaseInstance, error) {
+	return &ResourceDatabaseInstance{
 		client: client,
 		config: resource.DatabaseInstance,
 	}, nil
+}
+
+func DeleteDatabaseInstance(ctx context.Context, client *databricks.WorkspaceClient, oldID string) error {
+	err := client.Database.DeleteDatabaseInstanceByName(ctx, oldID)
+	if err != nil {
+		return SDKError{Method: "Database.DeleteDatabaseInstanceByName", Err: err}
+	}
+	return nil
 }
