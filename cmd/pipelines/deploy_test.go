@@ -19,5 +19,5 @@ func TestFormatOSSTemplateWarningMessage(t *testing.T) {
 	}
 
 	message := formatOSSTemplateWarningMessage(d)
-	assert.Contains(t, message, "Detected test-pipeline.yml file is formatted for OSS Spark pipelines")
+	assert.Contains(t, message, "test-pipeline.yml seems to be formatted for open-source Spark Declarative Pipelines.")
 }

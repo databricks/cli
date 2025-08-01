@@ -48,8 +48,8 @@ func deployCommand() *cobra.Command {
 		logdiag.SetCollect(ctx, false)
 
 		diags := logdiag.FlushCollected(ctx)
-		// Prevent deploying OSS Spark pipeline YAML files with the Pipelines CLI.
-		if err := CheckForOSSTemplateWarning(ctx, diags); err != nil {
+		// Prevent deploying open-source Spark Declarative Pipelines YAML files with the Pipelines CLI.
+		if err := checkForOSSTemplateWarning(ctx, diags); err != nil {
 			return err
 		}
 

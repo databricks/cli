@@ -95,23 +95,25 @@ func keyToRunner(b *bundle.Bundle, arg string) (run.Runner, error) {
 
 // formatOSSTemplateWarningMessage formats the warning message for OSS template pipeline YAML files.
 func formatOSSTemplateWarningMessage(d diag.Diagnostic) string {
-	fileName := "pipeline YAML"
+	fileName := "A pipeline YAML file"
 	if len(d.Locations) > 0 && d.Locations[0].File != "" {
 		fileName = d.Locations[0].File
 	}
 
-	return fmt.Sprintf(`Detected %s file is formatted for OSS Spark pipelines.
-The "definitions" field is not supported in the Pipelines CLI.
-To create a new Pipelines CLI project with a supported pipeline YAML file, run:
-  pipelines init`, fileName)
+	return fileName + ` seems to be formatted for open-source Spark Declarative Pipelines.
+Pipelines CLI currently only supports Lakeflow Declarative Pipelines development.
+To see an example of a supported pipelines template, create a new Pipelines CLI project with "pipelines init".`
 }
 
-// CheckForOSSTemplateWarning checks for a warning in the logs about an OSS template pipeline YAML file and returns an error if found.
+// checkForOSSTemplateWarning checks for a warning in the logs that suggests a pipelines YAML file
+// is formatted for open-source Spark Declarative Pipelines and returns an error if found.
+// For the Spark Declarative Pipelines template, see: https://github.com/apache/spark/blob/master/python/pyspark/pipelines/init_cli.py
 // Logs all collected diagnostics to expose them.
-func CheckForOSSTemplateWarning(ctx context.Context, diags diag.Diagnostics) error {
+func checkForOSSTemplateWarning(ctx context.Context, diags diag.Diagnostics) error {
 	var ossWarning *diag.Diagnostic
 
 	for _, d := range diags {
+		// The "definitions" field in the root is expected in OSS Spark Declarative Pipelines templates but is not supported in the Pipelines CLI.
 		if d.Severity == diag.Warning && strings.Contains(d.Summary, "unknown field: definitions") && len(d.Paths) == 1 && d.Paths[0].Equal(dyn.EmptyPath) {
 			ossWarning = &d
 		}
