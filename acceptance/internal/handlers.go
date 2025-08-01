@@ -470,5 +470,4 @@ func addDefaultHandlers(server *testserver.Server) {
 	server.Handle("DELETE", "/api/2.0/database/catalogs/{name}", func(req testserver.Request) any {
 		return testserver.MapDelete(req.Workspace, req.Workspace.DatabaseCatalogs, req.Vars["name"])
 	})
-
 }

@@ -11,16 +11,16 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/database"
 )
 
-type DatabaseCatalog struct {
+type ResourceDatabaseCatalog struct {
 	client *databricks.WorkspaceClient
 	config database.DatabaseCatalog
 }
 
-func (d DatabaseCatalog) Config() any {
+func (d ResourceDatabaseCatalog) Config() any {
 	return d.config
 }
 
-func (d DatabaseCatalog) DoCreate(ctx context.Context) (string, error) {
+func (d ResourceDatabaseCatalog) DoCreate(ctx context.Context) (string, error) {
 	fmt.Printf("Creating catalog with name=%s", d.config.Name)
 	response, err := d.client.Database.CreateDatabaseCatalog(ctx, database.CreateDatabaseCatalogRequest{
 		Catalog: d.config,
@@ -31,24 +31,24 @@ func (d DatabaseCatalog) DoCreate(ctx context.Context) (string, error) {
 	return response.Name, nil
 }
 
-func (d DatabaseCatalog) DoUpdate(ctx context.Context, oldID string) (string, error) {
+func (d ResourceDatabaseCatalog) DoUpdate(ctx context.Context, oldID string) (string, error) {
 	panic("updating a database catalog is not yet supported")
 }
 
-func (d DatabaseCatalog) WaitAfterCreate(ctx context.Context) error {
+func (d ResourceDatabaseCatalog) WaitAfterCreate(ctx context.Context) error {
 	return nil
 }
 
-func (d DatabaseCatalog) WaitAfterUpdate(ctx context.Context) error {
+func (d ResourceDatabaseCatalog) WaitAfterUpdate(ctx context.Context) error {
 	return nil
 }
 
-func (d DatabaseCatalog) ClassifyChanges(changes []structdiff.Change) deployplan.ActionType {
+func (d ResourceDatabaseCatalog) ClassifyChanges(changes []structdiff.Change) deployplan.ActionType {
 	return deployplan.ActionTypeUpdate
 }
 
-func NewResourceDatabaseCatalog(client *databricks.WorkspaceClient, resource *resources.DatabaseCatalog) (*DatabaseCatalog, error) {
-	return &DatabaseCatalog{
+func NewResourceDatabaseCatalog(client *databricks.WorkspaceClient, resource *resources.DatabaseCatalog) (*ResourceDatabaseCatalog, error) {
+	return &ResourceDatabaseCatalog{
 		client: client,
 		config: resource.DatabaseCatalog,
 	}, nil
