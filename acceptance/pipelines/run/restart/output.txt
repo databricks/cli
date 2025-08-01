@@ -12,11 +12,21 @@ Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
 Update ID: [UUID]
 <<<<<<< HEAD
+<<<<<<< HEAD
 Update for pipeline completed successfully.
 Pipeline configurations for this update:
 • All tables are refreshed
 =======
 >>>>>>> b4830c3a6 (print update it)
+=======
+Warn: Failed to fetch events for update [UUID]: failed to get next event: The specified pipeline events was not found.
+State: COMPLETED
+Creation Time: 1970-01-01T00:00:00Z
+Full Refresh: NO
+Validate Only: NO
+Pipeline Spec: (No config available)
+
+>>>>>>> 17a9a6908 (rebase)
 
 >>> print_requests
 {
