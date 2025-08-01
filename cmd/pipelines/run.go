@@ -7,8 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
-	"time"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/resources"
@@ -23,177 +21,12 @@ import (
 	"github.com/databricks/cli/libs/cmdgroup"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/maps"
 )
-
-type PipelineUpdateData struct {
-	PipelineId    string
-	Update        pipelines.UpdateInfo
-	LastEventTime string
-}
-
-type ProgressEventWithDuration struct {
-	Event    pipelines.PipelineEvent
-	Duration string
-	Phase    string
-}
-
-type ProgressEventsData struct {
-	ProgressEvents []ProgressEventWithDuration
-}
-
-// extractPhaseFromMessage extracts the last word from a message and removes the last character (a period)
-// Example: "Update 6fc8a8 is WAITING_FOR_RESOURCES." -> "WAITING_FOR_RESOURCES"
-func extractPhaseFromMessage(message string) string {
-	words := strings.Fields(message)
-	if len(words) > 0 {
-		phase := words[len(words)-1]
-		if len(phase) > 0 {
-			phase = phase[:len(phase)-1]
-		}
-		return phase
-	}
-	return ""
-}
-
-// enrichEvents adds duration information and phase name to a progress event
-// Expects that the events are already sorted by timestamp in ascending order.
-func enrichEvents(events []pipelines.PipelineEvent) ([]ProgressEventWithDuration, error) {
-	var progressEventsWithDuration []ProgressEventWithDuration
-	for j := range events {
-		event := events[j]
-		duration := ""
-
-		if j < len(events)-1 {
-			currTime, err := time.Parse(time.RFC3339Nano, event.Timestamp)
-			if err != nil {
-				return nil, err
-			}
-			nextTime, err := time.Parse(time.RFC3339Nano, events[j+1].Timestamp)
-			if err != nil {
-				return nil, err
-			}
-
-			diff := nextTime.Sub(currTime)
-
-			if diff > 0 {
-				if diff < time.Second {
-					milliseconds := int(diff.Milliseconds())
-					duration = fmt.Sprintf("%dms", milliseconds)
-				} else if diff < time.Minute {
-					duration = fmt.Sprintf("%.1fs", diff.Seconds())
-				} else if diff < time.Hour {
-					minutes := int(diff.Minutes())
-					seconds := int(diff.Seconds()) % 60
-					duration = fmt.Sprintf("%dm %ds", minutes, seconds)
-				} else {
-					hours := int(diff.Hours())
-					minutes := int(diff.Minutes()) % 60
-					duration = fmt.Sprintf("%dh %dm", hours, minutes)
-				}
-			} else {
-				duration = "0s"
-			}
-		}
-
-		progressEventsWithDuration = append(progressEventsWithDuration, ProgressEventWithDuration{
-			Event:    event,
-			Duration: duration,
-			Phase:    extractPhaseFromMessage(event.Message),
-		})
-	}
-
-	return progressEventsWithDuration, nil
-}
-
-func displayProgressEvents(ctx context.Context, events []pipelines.PipelineEvent) error {
-	progressEvents, err := enrichEvents(events)
-	if err != nil {
-		return fmt.Errorf("failed to calculate progress events: %w", err)
-	}
-
-	data := ProgressEventsData{
-		ProgressEvents: progressEvents,
-	}
-
-	return cmdio.RenderWithTemplate(ctx, data, "", progressEventsTemplate)
-}
-
-// fetchAndDisplayPipelineUpdate displays the update and the update's associated update_progress events' durations.
-func fetchAndDisplayPipelineUpdate(ctx context.Context, bundle *bundle.Bundle, ref bundleresources.Reference, updateId string) error {
-	w := bundle.WorkspaceClient()
-
-	pipelineResource := ref.Resource.(*resources.Pipeline)
-	pipelineID := pipelineResource.ID
-	if pipelineID == "" {
-		return errors.New("unable to get pipeline ID from pipeline")
-	}
-
-	getUpdateResponse, err := w.Pipelines.GetUpdate(ctx, pipelines.GetUpdateRequest{
-		PipelineId: pipelineID,
-		UpdateId:   updateId,
-	})
-	if err != nil {
-		return err
-	}
-
-	if getUpdateResponse.Update == nil {
-		return fmt.Errorf("no update found with id %s for pipeline %s", updateId, pipelineID)
-	}
-
-	latestUpdate := *getUpdateResponse.Update
-
-	params := &PipelineEventsQueryParams{
-		Filter:  fmt.Sprintf("update_id='%s' AND event_type='update_progress'", updateId),
-		OrderBy: "timestamp asc",
-	}
-
-	events, err := fetchAllPipelineEvents(ctx, w, pipelineID, params)
-	if err != nil {
-		return err
-	}
-
-	if latestUpdate.State == pipelines.UpdateInfoStateCompleted {
-		err = displayPipelineUpdate(ctx, latestUpdate, pipelineID, events)
-		if err != nil {
-			return err
-		}
-	}
-
-	err = displayProgressEvents(ctx, events)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// getLastEventTime returns the timestamp of the last progress event.
-// Expects that the events are already sorted by timestamp in ascending order.
-func getLastEventTime(events []pipelines.PipelineEvent) string {
-	if len(events) == 0 {
-		return ""
-	}
-	lastEvent := events[len(events)-1]
-	parsedTime, err := time.Parse(time.RFC3339Nano, lastEvent.Timestamp)
-	if err != nil {
-		return ""
-	}
-	return parsedTime.Format("2006-01-02T15:04:05Z")
-}
-
-func displayPipelineUpdate(ctx context.Context, update pipelines.UpdateInfo, pipelineID string, events []pipelines.PipelineEvent) error {
-	data := PipelineUpdateData{
-		PipelineId:    pipelineID,
-		Update:        update,
-		LastEventTime: getLastEventTime(events),
-	}
-
-	return cmdio.RenderWithTemplate(ctx, data, "", pipelineUpdateTemplate)
-}
 
 func runCommand() *cobra.Command {
 	cmd := &cobra.Command{
@@ -273,7 +106,7 @@ Refreshes all tables in the pipeline unless otherwise specified.`,
 			NoWait: noWait,
 		}
 
-		var runOutput bundlerunoutput.RunOutput
+		var output output.RunOutput
 		if restart {
 			runOutput, err = runner.Restart(ctx, &runOptions)
 		} else {
@@ -308,18 +141,6 @@ Refreshes all tables in the pipeline unless otherwise specified.`,
 				return fmt.Errorf("unknown output type %s", root.OutputType(cmd))
 			}
 		}
-		ref, err := bundleresources.Lookup(b, key, run.IsRunnable)
-		if err != nil {
-			return err
-		}
-		if ref.Description.SingularName == "pipeline" && runOutput != nil {
-			if pipelineOutput, ok := runOutput.(*bundlerunoutput.PipelineOutput); ok && pipelineOutput.UpdateId != "" {
-				err = fetchAndDisplayPipelineUpdate(ctx, b, ref, pipelineOutput.UpdateId)
-				if err != nil {
-					return err
-				}
-			}
-		}
 		return nil
 	}
 
@@ -349,4 +170,117 @@ Refreshes all tables in the pipeline unless otherwise specified.`,
 	}
 
 	return cmd
+}
+
+func fetchUpdateProgressEventsForUpdate(ctx context.Context, bundle *bundle.Bundle, pipelineId, updateId string) ([]pipelines.PipelineEvent, error) {
+	w := bundle.WorkspaceClient()
+
+	req := pipelines.ListPipelineEventsRequest{
+		PipelineId: pipelineId,
+		Filter:     fmt.Sprintf("update_id='%s' AND event_type='update_progress'", updateId),
+	}
+
+	iterator := w.Pipelines.ListPipelineEvents(ctx, req)
+	var events []pipelines.PipelineEvent
+
+	for iterator.HasNext(ctx) {
+		event, err := iterator.Next(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get next event: %w", err)
+		}
+		events = append(events, event)
+	}
+
+	return events, nil
+}
+
+func calculateProgressEventsForUpdate(ctx context.Context, bundle *bundle.Bundle, update pipelines.UpdateInfo) ([]ProgressEventWithDuration, error) {
+	events, err := fetchUpdateProgressEventsForUpdate(ctx, bundle, update.PipelineId, update.UpdateId)
+	if err != nil {
+		log.Warnf(ctx, "Failed to fetch events for update %s: %v", update.UpdateId, err)
+		events = []pipelines.PipelineEvent{} // Use empty slice on error
+	}
+
+	var progressEventsWithDuration []ProgressEventWithDuration
+	for j, event := range events {
+		duration := ""
+		if j > 0 {
+			currTime, err := time.Parse(time.RFC3339Nano, event.Timestamp)
+			if err != nil {
+				return nil, err
+			}
+			prevTime, err := time.Parse(time.RFC3339Nano, events[j-1].Timestamp)
+			if err != nil {
+				return nil, err
+			}
+
+			diff := prevTime.Sub(currTime)
+
+			if diff > 0 {
+				if diff < time.Minute {
+					duration = fmt.Sprintf("%.1fs", diff.Seconds())
+				} else if diff < time.Hour {
+					minutes := int(diff.Minutes())
+					seconds := int(diff.Seconds()) % 60
+					duration = fmt.Sprintf("%dm %ds", minutes, seconds)
+				} else {
+					hours := int(diff.Hours())
+					minutes := int(diff.Minutes()) % 60
+					duration = fmt.Sprintf("%dh %dm", hours, minutes)
+				}
+			} else {
+				duration = "0s"
+			}
+		}
+
+		parsedTime, err := time.Parse(time.RFC3339Nano, event.Timestamp)
+		if err != nil {
+			return nil, err
+		}
+
+		progressEventsWithDuration = append(progressEventsWithDuration, ProgressEventWithDuration{
+			Event:                 event,
+			DurationSincePrevious: duration,
+			ParsedTime:            parsedTime,
+		})
+	}
+
+	return progressEventsWithDuration, nil
+}
+
+func fetchAndDisplayPipelineUpdate(ctx context.Context, bundle *bundle.Bundle, ref bundleresources.Reference, updateId string) error {
+	w := bundle.WorkspaceClient()
+
+	pipelineResource := ref.Resource.(*resources.Pipeline)
+	pipelineID := pipelineResource.ID
+	if pipelineID == "" {
+		return errors.New("unable to get pipeline ID from pipeline")
+	}
+
+	getUpdateResponse, err := w.Pipelines.GetUpdate(ctx, pipelines.GetUpdateRequest{
+		PipelineId: pipelineID,
+		UpdateId:   updateId,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to fetch update %s: %w", updateId, err)
+	}
+
+	if getUpdateResponse.Update == nil {
+		return fmt.Errorf("no update found with id %s", updateId)
+	}
+
+	latestUpdate := *getUpdateResponse.Update
+
+	progressEvents, err := calculateProgressEventsForUpdate(ctx, bundle, latestUpdate)
+	if err != nil {
+		return fmt.Errorf("failed to calculate progress events: %w", err)
+	}
+
+	data := PipelineUpdateData{
+		PipelineId:     pipelineID,
+		Update:         latestUpdate,
+		ProgressEvents: progressEvents,
+	}
+
+	return cmdio.RenderWithTemplate(ctx, data, "", pipelineUpdateTemplate)
 }
