@@ -15,7 +15,6 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-// PipelineUpdateData holds the data for rendering a single pipeline update
 type PipelineUpdateData struct {
 	PipelineId          string
 	Update              pipelines.UpdateInfo
@@ -56,7 +55,6 @@ Catalog & Schema: {{ .Update.Config.Catalog }}{{ if and .Update.Config.Catalog .
 {{- end }}
 `
 
-// getRefreshSelectionString returns a formatted string describing the refresh selection
 func getRefreshSelectionString(update pipelines.UpdateInfo) string {
 	if update.FullRefresh {
 		return "full-refresh-all"
@@ -92,7 +90,7 @@ func fetchUpdateProgressEventsForUpdateAscending(ctx context.Context, bundle *bu
 	for iterator.HasNext(ctx) {
 		event, err := iterator.Next(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get next event: %w", err)
+			return nil, err
 		}
 		events = append(events, event)
 	}
@@ -101,7 +99,6 @@ func fetchUpdateProgressEventsForUpdateAscending(ctx context.Context, bundle *bu
 	return events, nil
 }
 
-// FetchAndDisplayPipelineUpdate fetches and displays pipeline update information
 func FetchAndDisplayPipelineUpdate(ctx context.Context, bundle *bundle.Bundle, ref bundleresources.Reference, updateId string) error {
 	w := bundle.WorkspaceClient()
 
@@ -116,11 +113,11 @@ func FetchAndDisplayPipelineUpdate(ctx context.Context, bundle *bundle.Bundle, r
 		UpdateId:   updateId,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to fetch update %s: %w", updateId, err)
+		return err
 	}
 
 	if getUpdateResponse.Update == nil {
-		return fmt.Errorf("no update found with id %s", updateId)
+		return err
 	}
 
 	latestUpdate := *getUpdateResponse.Update
