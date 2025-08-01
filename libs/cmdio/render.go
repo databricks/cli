@@ -305,6 +305,9 @@ var renderFuncMap = template.FuncMap{
 	},
 	"replace": strings.ReplaceAll,
 	"join":    strings.Join,
+	"sub": func(a, b int) int {
+		return a - b
+	},
 	"bool": func(v bool) string {
 		if v {
 			return color.GreenString("YES")
