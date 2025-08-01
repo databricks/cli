@@ -1,4 +1,4 @@
-package tnresources
+package terranova
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"reflect"
 
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/terranova/tnresources"
 	"github.com/databricks/cli/libs/structdiff"
 	"github.com/databricks/databricks-sdk-go"
 )
@@ -57,16 +58,21 @@ func (s *ResourceSettings) MustRecreate(changes []structdiff.Change) bool {
 	return false
 }
 
+// TypeOfConfig returns the reflect.Type of the configuration returned by the resource's Config() method.
+func TypeOfConfig(resource IResource) reflect.Type {
+	return reflect.TypeOf(resource.Config())
+}
+
 var SupportedResources = map[string]ResourceSettings{
 	"jobs": {
-		New:        reflect.ValueOf(NewResourceJob),
-		ConfigType: reflect.TypeOf(ResourceJob{}.config),
-		DeleteFN:   DeleteJob,
+		New:        reflect.ValueOf(tnresources.NewResourceJob),
+		ConfigType: TypeOfConfig(&tnresources.ResourceJob{}),
+		DeleteFN:   tnresources.DeleteJob,
 	},
 	"pipelines": {
-		New:        reflect.ValueOf(NewResourcePipeline),
-		ConfigType: reflect.TypeOf(ResourcePipeline{}.config),
-		DeleteFN:   DeletePipeline,
+		New:        reflect.ValueOf(tnresources.NewResourcePipeline),
+		ConfigType: TypeOfConfig(&tnresources.ResourcePipeline{}),
+		DeleteFN:   tnresources.DeletePipeline,
 		// See TF's ForceNew fields:
 		// https://github.com/databricks/terraform-provider-databricks/blob/8ae24ac/pipelines/resource_pipeline.go#L207
 		RecreateFields: mkMap(
@@ -77,9 +83,9 @@ var SupportedResources = map[string]ResourceSettings{
 		),
 	},
 	"schemas": {
-		New:        reflect.ValueOf(NewResourceSchema),
-		ConfigType: reflect.TypeOf(ResourceSchema{}.config),
-		DeleteFN:   DeleteSchema,
+		New:        reflect.ValueOf(tnresources.NewResourceSchema),
+		ConfigType: TypeOfConfig(&tnresources.ResourceSchema{}),
+		DeleteFN:   tnresources.DeleteSchema,
 		// TF: https://github.com/databricks/terraform-provider-databricks/blob/03a2515/catalog/resource_schema.go#L14
 		RecreateFields: mkMap(
 			".name",
@@ -88,9 +94,9 @@ var SupportedResources = map[string]ResourceSettings{
 		),
 	},
 	"volumes": {
-		New:        reflect.ValueOf(NewResourceVolume),
-		ConfigType: reflect.TypeOf(ResourceVolume{}.config),
-		DeleteFN:   DeleteVolume,
+		New:        reflect.ValueOf(tnresources.NewResourceVolume),
+		ConfigType: TypeOfConfig(&tnresources.ResourceVolume{}),
+		DeleteFN:   tnresources.DeleteVolume,
 		// TF: https://github.com/databricks/terraform-provider-databricks/blob/f5fce0f/catalog/resource_volume.go#L19
 		RecreateFields: mkMap(
 			".catalog_name",
@@ -100,14 +106,14 @@ var SupportedResources = map[string]ResourceSettings{
 		),
 	},
 	"apps": {
-		New:        reflect.ValueOf(NewResourceApp),
-		ConfigType: reflect.TypeOf(ResourceApp{}.config),
-		DeleteFN:   DeleteApp,
+		New:        reflect.ValueOf(tnresources.NewResourceApp),
+		ConfigType: TypeOfConfig(&tnresources.ResourceApp{}),
+		DeleteFN:   tnresources.DeleteApp,
 	},
 	"sql_warehouses": {
-		New:        reflect.ValueOf(NewResourceSqlWarehouse),
-		ConfigType: reflect.TypeOf(ResourceSqlWarehouse{}.config),
-		DeleteFN:   DeleteSqlWarehouse,
+		New:        reflect.ValueOf(tnresources.NewResourceSqlWarehouse),
+		ConfigType: TypeOfConfig(&tnresources.ResourceSqlWarehouse{}),
+		DeleteFN:   tnresources.DeleteSqlWarehouse,
 	},
 }
 

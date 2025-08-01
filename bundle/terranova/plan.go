@@ -7,7 +7,6 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/bundle/terranova/tnresources"
 	"github.com/databricks/cli/bundle/terranova/tnstate"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/utils"
@@ -19,13 +18,13 @@ type Planner struct {
 	db           *tnstate.TerranovaState
 	group        string
 	resourceName string
-	settings     tnresources.ResourceSettings
+	settings     ResourceSettings
 }
 
 func (d *Planner) Plan(ctx context.Context, inputConfig any) (deployplan.ActionType, error) {
 	entry, hasEntry := d.db.GetResourceEntry(d.group, d.resourceName)
 
-	resource, cfgType, err := tnresources.New(d.client, d.group, d.resourceName, inputConfig)
+	resource, cfgType, err := New(d.client, d.group, d.resourceName, inputConfig)
 	if err != nil {
 		return "", err
 	}
@@ -75,7 +74,7 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 			group := p[1].Key()
 			name := p[2].Key()
 
-			settings, ok := tnresources.SupportedResources[group]
+			settings, ok := SupportedResources[group]
 			if !ok {
 				return v, nil
 			}
