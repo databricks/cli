@@ -23,13 +23,8 @@ View your pipeline my_project_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?o
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
 Update ID: [UUID]
-Warn: Failed to fetch events for update [UUID]: failed to get next event: The specified pipeline events was not found.
-State: COMPLETED
-Creation Time: 1970-01-01T00:00:00Z
-Full Refresh: NO
-Validate Only: NO
-Pipeline Spec: (No config available)
-
+Update [UUID] for pipeline completed successfully.
+Refresh: default refresh-all
 
 === Edit project by creating and running a new second pipeline
 >>> [PIPELINES] deploy
@@ -67,13 +62,8 @@ View your pipeline my_project_pipeline_2 here: [DATABRICKS_URL]/pipelines/[UUID]
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
 Update ID: [UUID]
-Warn: Failed to fetch events for update [UUID]: failed to get next event: The specified pipeline events was not found.
-State: COMPLETED
-Creation Time: 1970-01-01T00:00:00Z
-Full Refresh: NO
-Validate Only: NO
-Pipeline Spec: (No config available)
-
+Update [UUID] for pipeline completed successfully.
+Refresh: default refresh-all
 
 === Stop both pipelines before destroy
 >>> [PIPELINES] stop my_project_pipeline
