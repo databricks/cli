@@ -14,7 +14,7 @@ import (
 	bundlerunoutput "github.com/databricks/cli/bundle/run/output"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/bundle/utils"
-	pipelineoutput "github.com/databricks/cli/cmd/pipelines/output"
+	pipelinetemplates "github.com/databricks/cli/cmd/pipelines/templates"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdgroup"
 	"github.com/databricks/cli/libs/flags"
@@ -297,7 +297,7 @@ Refreshes all tables in the pipeline unless otherwise specified.`,
 		}
 		if ref.Description.SingularName == "pipeline" && runOutput != nil {
 			if pipelineOutput, ok := runOutput.(*bundlerunoutput.PipelineOutput); ok && pipelineOutput.UpdateId != "" {
-				err = pipelineoutput.FetchAndDisplayPipelineUpdate(ctx, b, ref, pipelineOutput.UpdateId)
+				err = pipelinetemplates.FetchAndDisplayPipelineUpdate(ctx, b, ref, pipelineOutput.UpdateId)
 				if err != nil {
 					return err
 				}
