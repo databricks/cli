@@ -4,9 +4,8 @@
 Warning: unknown field: definitions
   in oss-pipeline.yml:1:1
 
-Error: Detected oss-pipeline.yml file is formatted for OSS Spark pipelines.
-The "definitions" field is not supported in the Pipelines CLI.
-To create a new Pipelines CLI project with a supported pipeline YAML file, run:
-  pipelines init
+Error: oss-pipeline.yml seems to be formatted for open-source Spark Declarative Pipelines.
+Pipelines CLI currently only supports Lakeflow Declarative Pipelines development.
+To see an example of a supported pipelines template, create a new Pipelines CLI project with "pipelines init".
 
 Exit code (musterr): 1
