@@ -3,7 +3,8 @@ package phases
 // Messages for bundle deploy.
 const (
 	deleteOrRecreateSchemaMessage = `
-	This action will result in the deletion or recreation of the following UC schemas. Any underlying data may be lost:`
+This action will result in the deletion or recreation of the following UC schemas. Any underlying data may be lost:`
+
 	deleteOrRecreateDltMessage = `
 This action will result in the deletion or recreation of the following DLT Pipelines along with the
 Streaming Tables (STs) and Materialized Views (MVs) managed by them. Recreating the Pipelines will

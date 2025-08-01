@@ -38,7 +38,7 @@ recreate schemas.bar
 >>> errcode [CLI] bundle deploy --force-lock --var=catalog=another_catalog
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 
-	This action will result in the deletion or recreation of the following UC schemas. Any underlying data may be lost:
+This action will result in the deletion or recreation of the following UC schemas. Any underlying data may be lost:
   recreate schema bar
 
 This action will result in the deletion or recreation of the following DLT Pipelines along with the
