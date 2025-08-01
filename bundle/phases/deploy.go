@@ -28,26 +28,27 @@ import (
 	"github.com/databricks/cli/libs/sync"
 )
 
-func approvalForDeploy(ctx context.Context, b *bundle.Bundle) (bool, error) {
+func getActions(ctx context.Context, b *bundle.Bundle) ([]deployplan.Action, error) {
 	var actions []deployplan.Action
 	var err error
 
 	if b.DirectDeployment {
-		actions, err = terranova.CalculateDeployActions(ctx, b)
-		if err != nil {
-			return false, err
-		}
+		return terranova.CalculateDeployActions(ctx, b)
 	} else {
 		tf := b.Terraform
 		if tf == nil {
-			return false, errors.New("terraform not initialized")
+			return nil, errors.New("terraform not initialized")
 		}
 		actions, err = terraform.ShowPlanFile(ctx, tf, b.Plan.TerraformPlanPath)
-		if err != nil {
-			return false, err
-		}
+		return actions, err
 	}
+}
 
+func approvalForDeploy(ctx context.Context, b *bundle.Bundle) (bool, error) {
+	actions, err := getActions(ctx, b)
+	if err != nil {
+		return false, err
+	}
 	b.Plan.Actions = actions
 
 	types := []deployplan.ActionType{deployplan.ActionTypeRecreate, deployplan.ActionTypeDelete}
@@ -155,6 +156,39 @@ func deployCore(ctx context.Context, b *bundle.Bundle) {
 	}
 }
 
+// deployPrepare is common set of mutators between "bundle plan" and "bundle deploy".
+// Ideally it should not modify the remote, only in-memory bundle config.
+// TODO: currently it does affect remote, via artifacts.CleanUp() and libraries.Upload().
+// We should refactor deployment so that it consists of two stages:
+// 1. Preparation: only local config is changed. This will be used by both "bundle deploy" and "bundle plan"
+// 2. Deployment: this does all the uploads. Only used by "deploy", not "plan".
+func deployPrepare(ctx context.Context, b *bundle.Bundle) {
+	bundle.ApplySeqContext(ctx, b,
+		statemgmt.StatePull(),
+		terraform.CheckDashboardsModifiedRemotely(),
+		deploy.StatePull(),
+		mutator.ValidateGitDetails(),
+		terraform.CheckRunningResource(),
+
+		// artifacts.CleanUp() is there because I'm not sure if it's safe to move to later stage.
+		artifacts.CleanUp(),
+
+		// libraries.CheckForSameNameLibraries() needs to be run after we expand glob references so we
+		// know what are the actual library paths.
+		// libraries.ExpandGlobReferences() has to be run after the libraries are built and thus this
+		// mutator is part of the deploy step rather than validate.
+		libraries.ExpandGlobReferences(),
+		libraries.CheckForSameNameLibraries(),
+		// SwitchToPatchedWheels must be run after ExpandGlobReferences and after build phase because it Artifact.Source and Artifact.Patched populated
+		libraries.SwitchToPatchedWheels(),
+
+		// libraries.Upload() not just uploads but also replaces local paths with remote paths.
+		// TransformWheelTask depends on it and planning also depends on it.
+		libraries.Upload(),
+		trampoline.TransformWheelTask(),
+	)
+}
+
 // The deploy phase deploys artifacts and resources.
 func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHandler) {
 	log.Info(ctx, "Phase: deploy")
@@ -176,23 +210,12 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDeploy))
 	}()
 
+	deployPrepare(ctx, b)
+	if logdiag.HasError(ctx) {
+		return
+	}
+
 	bundle.ApplySeqContext(ctx, b,
-		statemgmt.StatePull(),
-		terraform.CheckDashboardsModifiedRemotely(),
-		deploy.StatePull(),
-		mutator.ValidateGitDetails(),
-		terraform.CheckRunningResource(),
-		artifacts.CleanUp(),
-		// libraries.CheckForSameNameLibraries() needs to be run after we expand glob references so we
-		// know what are the actual library paths.
-		// libraries.ExpandGlobReferences() has to be run after the libraries are built and thus this
-		// mutator is part of the deploy step rather than validate.
-		libraries.ExpandGlobReferences(),
-		libraries.CheckForSameNameLibraries(),
-		// SwitchToPatchedWheels must be run after ExpandGlobReferences and after build phase because it Artifact.Source and Artifact.Patched populated
-		libraries.SwitchToPatchedWheels(),
-		libraries.Upload(),
-		trampoline.TransformWheelTask(),
 		files.Upload(outputHandler),
 		deploy.StateUpdate(),
 		deploy.StatePush(),
@@ -234,6 +257,32 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 
 	logDeployTelemetry(ctx, b)
 	bundle.ApplyContext(ctx, b, scripts.Execute(config.ScriptPostDeploy))
+}
+
+func Diff(ctx context.Context, b *bundle.Bundle) []deployplan.Action {
+	deployPrepare(ctx, b)
+	if logdiag.HasError(ctx) {
+		return nil
+	}
+
+	if !b.DirectDeployment {
+		bundle.ApplySeqContext(ctx, b,
+			terraform.Interpolate(),
+			terraform.Write(),
+			terraform.Plan(terraform.PlanGoal("deploy")),
+		)
+	}
+
+	if logdiag.HasError(ctx) {
+		return nil
+	}
+
+	actions, err := getActions(ctx, b)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+	}
+
+	return actions
 }
 
 // If there are more than 1 thousand of a resource type, do not

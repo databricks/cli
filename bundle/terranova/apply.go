@@ -258,7 +258,7 @@ func (d *Deployer) Update(ctx context.Context, resource tnresources.IResource, o
 		return fmt.Errorf("saving state id=%s: %w", oldID, err)
 	}
 
-	if oldID != newID && !tnresources.UpdateableIDResource[d.group] {
+	if oldID != newID && !tnresources.SupportedResources[d.group].UpdateUpdatesID {
 		return fmt.Errorf("internal error, unexpected change of ID from %#v to %#v", oldID, newID)
 	}
 

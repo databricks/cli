@@ -35,6 +35,10 @@ Deployment complete!
 === Remove resources from configuration.
 >>> rm resources.yml
 
+>>> [CLI] bundle plan
+delete jobs.foo
+delete pipelines.bar
+
 === Try to redeploy the bundle - should fail without --auto-approve
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
