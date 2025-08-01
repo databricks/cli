@@ -91,7 +91,13 @@ var SupportedResources = map[string]ResourceSettings{
 		New:        reflect.ValueOf(NewResourceVolume),
 		ConfigType: reflect.TypeOf(ResourceVolume{}.config),
 		DeleteFN:   DeleteVolume,
-		// RecreateFields: TODO
+		// TF: https://github.com/databricks/terraform-provider-databricks/blob/f5fce0f/catalog/resource_volume.go#L19
+		RecreateFields: mkMap(
+			".catalog_name",
+			".schema_name",
+			".storage_location",
+			".volume_type",
+		),
 	},
 	"apps": {
 		New:        reflect.ValueOf(NewResourceApp),
