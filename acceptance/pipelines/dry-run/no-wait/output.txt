@@ -12,6 +12,9 @@ Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
 Update ID: [UUID]
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 <EOL>
 >>>>>>> b4830c3a6 (print update it)
+=======
+>>>>>>> 083acc78b (remove eol)
