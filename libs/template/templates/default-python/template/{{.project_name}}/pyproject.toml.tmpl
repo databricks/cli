@@ -2,7 +2,7 @@
 name = "{{.project_name}}"
 version = "0.0.1"
 authors = [{ name = "{{user_name}}" }]
-requires-python = ">= 3.11"
+requires-python = "{{template "conservative_db_connect_python_version_spec"}}"
 
 [dependency-groups]
 dev = [

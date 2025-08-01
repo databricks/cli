@@ -2,7 +2,7 @@
 name = "my_default_python"
 version = "0.0.1"
 authors = [{ name = "[USERNAME]" }]
-requires-python = ">= 3.11"
+requires-python = ">=3.10,<=3.13"
 
 [dependency-groups]
 dev = [
