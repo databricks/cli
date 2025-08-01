@@ -18,7 +18,7 @@ Choose how you want to work on this project:
 (c) With command line tools, see https://docs.databricks.com/dev-tools/cli/databricks-cli.html
 
 
-Dependencies for this project should be installed using UV:
+Dependencies for this project should be installed using uv:
 
 *  Make sure you have the UV package manager installed.
    It's an alternative to tools like pip: https://docs.astral.sh/uv/getting-started/installation/.
