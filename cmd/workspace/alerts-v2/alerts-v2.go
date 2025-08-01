@@ -68,6 +68,7 @@ func newCreateAlert() *cobra.Command {
 	// TODO: complex arg: evaluation
 	cmd.Flags().StringVar(&createAlertReq.Alert.ParentPath, "parent-path", createAlertReq.Alert.ParentPath, `The workspace path of the folder containing the alert.`)
 	cmd.Flags().StringVar(&createAlertReq.Alert.QueryText, "query-text", createAlertReq.Alert.QueryText, `Text of the query to be run.`)
+	cmd.Flags().StringVar(&createAlertReq.Alert.RunAsUserName, "run-as-user-name", createAlertReq.Alert.RunAsUserName, `The run as username or application ID of service principal.`)
 	// TODO: complex arg: schedule
 	cmd.Flags().StringVar(&createAlertReq.Alert.WarehouseId, "warehouse-id", createAlertReq.Alert.WarehouseId, `ID of the SQL warehouse attached to the alert.`)
 
@@ -328,22 +329,34 @@ func newUpdateAlert() *cobra.Command {
 	// TODO: complex arg: evaluation
 	cmd.Flags().StringVar(&updateAlertReq.Alert.ParentPath, "parent-path", updateAlertReq.Alert.ParentPath, `The workspace path of the folder containing the alert.`)
 	cmd.Flags().StringVar(&updateAlertReq.Alert.QueryText, "query-text", updateAlertReq.Alert.QueryText, `Text of the query to be run.`)
+	cmd.Flags().StringVar(&updateAlertReq.Alert.RunAsUserName, "run-as-user-name", updateAlertReq.Alert.RunAsUserName, `The run as username or application ID of service principal.`)
 	// TODO: complex arg: schedule
 	cmd.Flags().StringVar(&updateAlertReq.Alert.WarehouseId, "warehouse-id", updateAlertReq.Alert.WarehouseId, `ID of the SQL warehouse attached to the alert.`)
 
-	cmd.Use = "update-alert ID"
+	cmd.Use = "update-alert ID UPDATE_MASK"
 	cmd.Short = `Update an alert.`
 	cmd.Long = `Update an alert.
   
   Update alert
 
   Arguments:
-    ID: UUID identifying the alert.`
+    ID: UUID identifying the alert.
+    UPDATE_MASK: The field mask must be a single string, with multiple fields separated by
+      commas (no spaces). The field path is relative to the resource object,
+      using a dot (.) to navigate sub-fields (e.g., author.given_name).
+      Specification of elements in sequence or map fields is not allowed, as
+      only the entire collection field can be specified. Field names must
+      exactly match the resource field names.
+      
+      A field mask of * indicates full replacement. It’s recommended to
+      always explicitly list the fields being updated and avoid using *
+      wildcards, as it can lead to unintended results if the API changes in the
+      future.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(1)
+		check := root.ExactArgs(2)
 		return check(cmd, args)
 	}
 
@@ -365,6 +378,7 @@ func newUpdateAlert() *cobra.Command {
 			}
 		}
 		updateAlertReq.Id = args[0]
+		updateAlertReq.UpdateMask = args[1]
 
 		response, err := w.AlertsV2.UpdateAlert(ctx, updateAlertReq)
 		if err != nil {

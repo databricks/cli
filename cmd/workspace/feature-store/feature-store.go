@@ -72,15 +72,17 @@ func newCreateOnlineStore() *cobra.Command {
 
 	cmd.Flags().Var(&createOnlineStoreJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createOnlineStoreReq.OnlineStore.Capacity, "capacity", createOnlineStoreReq.OnlineStore.Capacity, `The capacity of the online store.`)
+	cmd.Flags().IntVar(&createOnlineStoreReq.OnlineStore.ReadReplicaCount, "read-replica-count", createOnlineStoreReq.OnlineStore.ReadReplicaCount, `The number of read replicas for the online store.`)
 
-	cmd.Use = "create-online-store NAME"
+	cmd.Use = "create-online-store NAME CAPACITY"
 	cmd.Short = `Create an Online Feature Store.`
 	cmd.Long = `Create an Online Feature Store.
 
   Arguments:
     NAME: The name of the online store. This is the unique identifier for the online
-      store.`
+      store.
+    CAPACITY: The capacity of the online store. Valid values are "CU_1", "CU_2", "CU_4",
+      "CU_8".`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -88,11 +90,11 @@ func newCreateOnlineStore() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'capacity' in your JSON input")
 			}
 			return nil
 		}
-		check := root.ExactArgs(1)
+		check := root.ExactArgs(2)
 		return check(cmd, args)
 	}
 
@@ -115,6 +117,9 @@ func newCreateOnlineStore() *cobra.Command {
 		}
 		if !cmd.Flags().Changed("json") {
 			createOnlineStoreReq.OnlineStore.Name = args[0]
+		}
+		if !cmd.Flags().Changed("json") {
+			createOnlineStoreReq.OnlineStore.Capacity = args[1]
 		}
 
 		response, err := w.FeatureStore.CreateOnlineStore(ctx, createOnlineStoreReq)
@@ -382,20 +387,30 @@ func newUpdateOnlineStore() *cobra.Command {
 
 	cmd.Flags().Var(&updateOnlineStoreJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateOnlineStoreReq.OnlineStore.Capacity, "capacity", updateOnlineStoreReq.OnlineStore.Capacity, `The capacity of the online store.`)
+	cmd.Flags().IntVar(&updateOnlineStoreReq.OnlineStore.ReadReplicaCount, "read-replica-count", updateOnlineStoreReq.OnlineStore.ReadReplicaCount, `The number of read replicas for the online store.`)
 
-	cmd.Use = "update-online-store NAME"
+	cmd.Use = "update-online-store NAME UPDATE_MASK CAPACITY"
 	cmd.Short = `Update an Online Feature Store.`
 	cmd.Long = `Update an Online Feature Store.
 
   Arguments:
     NAME: The name of the online store. This is the unique identifier for the online
-      store.`
+      store.
+    UPDATE_MASK: The list of fields to update.
+    CAPACITY: The capacity of the online store. Valid values are "CU_1", "CU_2", "CU_4",
+      "CU_8".`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(1)
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(1)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, provide only NAME as positional arguments. Provide 'name', 'capacity' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(3)
 		return check(cmd, args)
 	}
 
@@ -417,6 +432,10 @@ func newUpdateOnlineStore() *cobra.Command {
 			}
 		}
 		updateOnlineStoreReq.Name = args[0]
+		updateOnlineStoreReq.UpdateMask = args[1]
+		if !cmd.Flags().Changed("json") {
+			updateOnlineStoreReq.OnlineStore.Capacity = args[2]
+		}
 
 		response, err := w.FeatureStore.UpdateOnlineStore(ctx, updateOnlineStoreReq)
 		if err != nil {

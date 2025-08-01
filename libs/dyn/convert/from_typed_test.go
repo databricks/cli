@@ -4,7 +4,8 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/dyn"
-	assert "github.com/databricks/cli/libs/dyn/dynassert"
+	"github.com/databricks/cli/libs/dyn/dynassert"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -77,7 +78,7 @@ func TestFromTypedStructNilFields(t *testing.T) {
 
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
-	assert.Equal(t, dyn.V(map[string]dyn.Value{
+	dynassert.Equal(t, dyn.V(map[string]dyn.Value{
 		"foo": dyn.NilValue,
 		"bar": dyn.NilValue,
 	}), nv)
@@ -97,9 +98,57 @@ func TestFromTypedStructSetFields(t *testing.T) {
 	ref := dyn.NilValue
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
-	assert.Equal(t, dyn.V(map[string]dyn.Value{
+	dynassert.Equal(t, dyn.V(map[string]dyn.Value{
 		"foo": dyn.V("foo"),
 		"bar": dyn.V("bar"),
+	}), nv)
+}
+
+func TestFromTypedStructSetFieldsIntoExistingFields(t *testing.T) {
+	type Tmp struct {
+		Foo string `json:"foo"`
+		Bar string `json:"bar"`
+	}
+
+	src := Tmp{
+		Foo: "foo",
+		Bar: "bar",
+	}
+
+	ref := dyn.V(map[string]dyn.Value{
+		"foo": dyn.V("foo_old"),
+		"bar": dyn.V("bar_old"),
+	})
+
+	nv, err := FromTyped(src, ref)
+	require.NoError(t, err)
+	dynassert.Equal(t, dyn.V(map[string]dyn.Value{
+		"foo": dyn.V("foo"),
+		"bar": dyn.V("bar"),
+	}), nv)
+}
+
+func TestFromTypedStructZeroFieldsIntoExistingFields(t *testing.T) {
+	type Tmp struct {
+		Foo             string   `json:"foo"`
+		Bar             string   `json:"bar,omitempty"`
+		BazBugz         string   `json:"baz_bugs,omitempty"`
+		ForceSendFields []string `json:"-"`
+	}
+
+	src := Tmp{ForceSendFields: []string{"BazBugz"}}
+
+	ref := dyn.V(map[string]dyn.Value{
+		"foo":      dyn.V("foo_old"),
+		"bar":      dyn.V("bar_old"),
+		"baz_bugs": dyn.V("baz_old"),
+	})
+
+	nv, err := FromTyped(src, ref)
+	require.NoError(t, err)
+	dynassert.Equal(t, dyn.V(map[string]dyn.Value{
+		"foo":      dyn.V(""),
+		"baz_bugs": dyn.V(""),
 	}), nv)
 }
 
@@ -136,7 +185,7 @@ func TestFromTypedStringMapWithZeroValue(t *testing.T) {
 
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
-	assert.Equal(t, dyn.V(map[string]dyn.Value{
+	dynassert.Equal(t, dyn.V(map[string]dyn.Value{
 		"foo": dyn.V(""),
 		"bar": dyn.V("fuzz"),
 	}), nv)
@@ -182,7 +231,7 @@ func TestFromTypedBoolMapWithZeroValue(t *testing.T) {
 
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
-	assert.Equal(t, dyn.V(map[string]dyn.Value{
+	dynassert.Equal(t, dyn.V(map[string]dyn.Value{
 		"foo": dyn.V(false),
 		"bar": dyn.V(true),
 	}), nv)
@@ -228,7 +277,7 @@ func TestFromTypedIntMapWithZeroValue(t *testing.T) {
 
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
-	assert.Equal(t, dyn.V(map[string]dyn.Value{
+	dynassert.Equal(t, dyn.V(map[string]dyn.Value{
 		"foo": dyn.V(int64(0)),
 		"bar": dyn.V(int64(1)),
 	}), nv)
@@ -274,7 +323,7 @@ func TestFromTypedFloatMapWithZeroValue(t *testing.T) {
 
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
-	assert.Equal(t, dyn.V(map[string]dyn.Value{
+	dynassert.Equal(t, dyn.V(map[string]dyn.Value{
 		"foo": dyn.V(0.0),
 		"bar": dyn.V(1.0),
 	}), nv)
@@ -346,7 +395,7 @@ func TestFromTypedMapNonEmpty(t *testing.T) {
 	ref := dyn.NilValue
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
-	assert.Equal(t, dyn.V(map[string]dyn.Value{
+	dynassert.Equal(t, dyn.V(map[string]dyn.Value{
 		"foo": dyn.V("foo"),
 		"bar": dyn.V("bar"),
 	}), nv)
@@ -713,7 +762,7 @@ func TestFromTypedAny(t *testing.T) {
 	ref := dyn.NilValue
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
-	assert.Equal(t, dyn.V(map[string]dyn.Value{
+	dynassert.Equal(t, dyn.V(map[string]dyn.Value{
 		"foo": dyn.V("foo"),
 		"bar": dyn.V(false),
 		"foz": dyn.V(int64(0)),

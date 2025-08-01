@@ -4,6 +4,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-create-pipeli
 Deploying resources...
 Updating deployment state...
 Deployment complete!
+View your pipeline foo here: [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
 
 >>> [CLI] pipelines get [UUID]
 {

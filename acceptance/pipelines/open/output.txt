@@ -1,12 +1,6 @@
 
-=== no run key specified
->>> [PIPELINES] open
-Error: expected a KEY of the pipeline to open
-
-Exit code: 1
-
 === not deployed yet
->>> [PIPELINES] open test-pipelines-open
+>>> [PIPELINES] open
 Error: pipeline does not have a URL associated with it (has it been deployed?)
 
 Exit code: 1
@@ -16,9 +10,17 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/pipelines-open/def
 Deploying resources...
 Updating deployment state...
 Deployment complete!
+View your pipeline test-pipelines-open here: [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
 
 === Modify PATH so that real open is not run
 === open after deployment. This will fail to open browser and complain, that's ok, we only want the message
+>>> [PIPELINES] open
+Opening browser at [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
+Error: exec: "open": cannot run executable found relative to current directory
+
+Exit code (musterr): 1
+
+=== open with KEY, expect same output as opening without KEY
 >>> [PIPELINES] open test-pipelines-open
 Opening browser at [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
 Error: exec: "open": cannot run executable found relative to current directory

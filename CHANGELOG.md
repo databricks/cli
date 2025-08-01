@@ -1,5 +1,56 @@
 # Version changelog
 
+## Release v0.262.0
+
+### CLI
+* Fixed auth login ignoring DATABRICKS_CONFIG_FILE environmental variable when saving profile ([#3266](https://github.com/databricks/cli/pull/3266))
+
+### Bundles
+* Modified run flag validation to allow `--refresh` and `--full-refresh` flags to be used together ([#3300](https://github.com/databricks/cli/pull/3300))
+* Fixed bundle generate for not yet deployed apps ([#3319](https://github.com/databricks/cli/pull/3319))
+* Respect export format for notebooks on bundle generate ([#3316](https://github.com/databricks/cli/pull/3316))
+
+
+## Release v0.261.0
+
+### Notable Changes
+The following CLI commands now have additional required positional arguments:
+* `alerts-v2 update-alert ID UPDATE_MASK` - Update an alert (v2)
+* `database update-database-instance NAME UPDATE_MASK` - Update a database instance
+* `external-lineage create-external-lineage-relationship SOURCE TARGET` - Create an external lineage relationship
+* `external-lineage update-external-lineage-relationship UPDATE_MASK SOURCE TARGET` - Update an external lineage relationship
+* `external-metadata update-external-metadata NAME UPDATE_MASK SYSTEM_TYPE ENTITY_TYPE` - Update external metadata
+* `feature-store update-online-store NAME UPDATE_MASK CAPACITY` - Update an online store
+* `lakeview create-schedule DASHBOARD_ID CRON_SCHEDULE` - Create a schedule
+* `lakeview create-subscription DASHBOARD_ID SCHEDULE_ID SUBSCRIBER` - Create a subscription
+* `lakeview update-schedule DASHBOARD_ID SCHEDULE_ID CRON_SCHEDULE` - Update a schedule
+* `network-connectivity update-private-endpoint-rule NETWORK_CONNECTIVITY_CONFIG_ID PRIVATE_ENDPOINT_RULE_ID UPDATE_MASK` - Update a private endpoint rule
+
+### CLI
+* Add required query parameters as positional arguments in CLI commands ([#3289](https://github.com/databricks/cli/pull/3289))
+
+### Bundles
+* Fixed an issue where `allow_duplicate_names` field on the pipeline definition was ignored by the bundle ([#3274](https://github.com/databricks/cli/pull/3274))
+* Add warning for when required bundle fields are not set ([#3044](https://github.com/databricks/cli/pull/3044))
+
+
+## Release v0.260.0
+
+### Notable Changes
+* Added support for creating SQL warehouses in DABs ([#3129](https://github.com/databricks/cli/pull/3129))
+
+### Dependency updates
+* Upgrade Go SDK to 0.75.0 ([#3256](https://github.com/databricks/cli/pull/3256))
+
+### CLI
+* Add `databricks psql` command to connect to Lakebase with a single command ([#3128](https://github.com/databricks/cli/pull/3128))
+
+### Bundles
+
+ * Jobs that use cluster policy default values for their cluster configuration now correctly update those defaults on every deployment ([#3255](https://github.com/databricks/cli/pull/3255)).
+ * Add upper and lower helper methods for bundle templates ([#3242](https://github.com/databricks/cli/pull/3242))
+
+
 ## Release v0.259.0
 
 ### Notable Changes

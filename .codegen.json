@@ -1,14 +1,7 @@
 {
-    "mode": "cli_legacy",
+    "mode": "cli_v0",
     "api_changelog": true,
     "formatter": "go run golang.org/x/tools/cmd/goimports@latest -w $FILENAMES && go fmt ./...",
-    "services": {
-        ".codegen/service.go.tmpl": "cmd/{{if .IsAccounts}}account{{else}}workspace{{end}}/{{(.TrimPrefix \"account\").KebabName}}/{{(.TrimPrefix \"account\").KebabName}}.go"
-    },
-    "batch": {
-        ".codegen/cmds-workspace.go.tmpl": "cmd/workspace/cmd.go",
-        ".codegen/cmds-account.go.tmpl": "cmd/account/cmd.go"
-    },
     "version": {
         "experimental/python/README.md": "version $VERSION or above",
         "experimental/python/databricks/bundles/version.py": "__version__ = \"$VERSION\"",
@@ -21,13 +14,7 @@
             "go"
         ],
         "post_generate": [
-            "go test -timeout 240s -run TestConsistentDatabricksSdkVersion github.com/databricks/cli/internal/build",
-            "make schema",
-            "make generate-validation",
-            "echo 'bundle/internal/tf/schema/\\*.go linguist-generated=true' >> ./.gitattributes",
-            "echo 'go.sum linguist-generated=true' >> ./.gitattributes",
-            "echo 'bundle/schema/jsonschema.json linguist-generated=true' >> ./.gitattributes",
-            "echo 'bundle/internal/validation/generated/required_fields.go linguist-generated=true' >> ./.gitattributes"
+            "./tools/post-generate.sh"
         ]
     }
 }

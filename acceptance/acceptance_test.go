@@ -80,6 +80,12 @@ const (
 	// e.g. ENVFILTER=SERVERLESS=yes will run all tests that run SERVERLESS to "yes"
 	// The tests the don't set SERVERLESS variable or set to empty string will also be run.
 	EnvFilterVar = "ENVFILTER"
+
+	// File where scripts can output custom replacements
+	// export $job_id=100200300
+	// $ echo "$job_id:MY_JOB" >> ACC_REPLS  # This will replace 100200300 with [MY_JOB] in the output
+	// TODO: this should be merged with repls.json functionality, currently these replacements are not parsed by diff.py
+	userReplacementsFilename = "ACC_REPLS"
 )
 
 // On CI, we want to increase timeout, to account for slower environment
@@ -101,7 +107,8 @@ var Scripts = map[string]bool{
 }
 
 var Ignored = map[string]bool{
-	ReplsFile: true,
+	ReplsFile:                true,
+	userReplacementsFilename: true,
 }
 
 func TestAccept(t *testing.T) {
@@ -285,7 +292,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 				if len(expanded[0]) > 0 {
 					t.Logf("Running test with env %v", expanded[0])
 				}
-				runTest(t, dir, 0, coverDir, repls.Clone(), config, configPath, expanded[0], inprocessMode, envFilters)
+				runTest(t, dir, 0, coverDir, repls.Clone(), config, expanded[0], envFilters)
 			} else {
 				for ind, envset := range expanded {
 					envname := strings.Join(envset, "/")
@@ -293,7 +300,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 						if !inprocessMode {
 							t.Parallel()
 						}
-						runTest(t, dir, ind, coverDir, repls.Clone(), config, configPath, envset, inprocessMode, envFilters)
+						runTest(t, dir, ind, coverDir, repls.Clone(), config, envset, envFilters)
 					})
 				}
 			}
@@ -426,9 +433,7 @@ func runTest(t *testing.T,
 	coverDir string,
 	repls testdiff.ReplacementsContext,
 	config internal.TestConfig,
-	configPath string,
 	customEnv []string,
-	inprocessMode bool,
 	envFilters []string,
 ) {
 	if LogConfig {
@@ -606,6 +611,8 @@ func runTest(t *testing.T,
 	// Include exit code in output (if non-zero)
 	formatOutput(out, err)
 	require.NoError(t, out.Close())
+
+	loadUserReplacements(t, &repls, tmpDir)
 
 	printedRepls := false
 
@@ -1209,4 +1216,27 @@ func BuildYamlfmt(t *testing.T) {
 		"make", "-s", "tools/yamlfmt" + exeSuffix,
 	}
 	RunCommand(t, args, "..")
+}
+
+func loadUserReplacements(t *testing.T, repls *testdiff.ReplacementsContext, tmpDir string) {
+	b, err := os.ReadFile(filepath.Join(tmpDir, userReplacementsFilename))
+	if os.IsNotExist(err) {
+		return
+	}
+	require.NoError(t, err)
+	lines := strings.Split(string(b), "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if len(line) == 0 {
+			continue
+		}
+		items := strings.Split(line, ":")
+		if len(items) <= 1 {
+			t.Errorf("Error parsing %s: %#v", userReplacementsFilename, line)
+			continue
+		}
+		repl := items[len(items)-1]
+		old := line[:len(line)-len(repl)-1]
+		repls.SetWithOrder(old, "["+repl+"]", -100)
+	}
 }

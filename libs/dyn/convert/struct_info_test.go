@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/dyn"
-	assert "github.com/databricks/cli/libs/dyn/dynassert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestStructInfoPlain(t *testing.T) {
@@ -103,8 +103,10 @@ func TestStructInfoFieldValues(t *testing.T) {
 	si := getStructInfo(reflect.TypeOf(Tmp{}))
 	fv := si.FieldValues(reflect.ValueOf(src))
 	assert.Len(t, fv, 2)
-	assert.Equal(t, "foo", fv["foo"].String())
-	assert.Equal(t, "bar", fv["bar"].String())
+	assert.Equal(t, "foo", fv[0].Key)
+	assert.True(t, reflect.ValueOf("foo").Equal(fv[0].Value))
+	assert.Equal(t, "bar", fv[1].Key)
+	assert.True(t, reflect.ValueOf("bar").Equal(fv[1].Value))
 }
 
 func TestStructInfoFieldValuesAnonymousByValue(t *testing.T) {
@@ -133,8 +135,8 @@ func TestStructInfoFieldValuesAnonymousByValue(t *testing.T) {
 	si := getStructInfo(reflect.TypeOf(Tmp{}))
 	fv := si.FieldValues(reflect.ValueOf(src))
 	assert.Len(t, fv, 2)
-	assert.Equal(t, "foo", fv["foo"].String())
-	assert.Equal(t, "bar", fv["bar"].String())
+	assert.Equal(t, "foo", fv[0].Key)
+	assert.Equal(t, "bar", fv[1].Key)
 }
 
 func TestStructInfoFieldValuesAnonymousByPointer(t *testing.T) {
@@ -165,8 +167,8 @@ func TestStructInfoFieldValuesAnonymousByPointer(t *testing.T) {
 		si := getStructInfo(reflect.TypeOf(Tmp{}))
 		fv := si.FieldValues(reflect.ValueOf(src))
 		assert.Len(t, fv, 2)
-		assert.Equal(t, "foo", fv["foo"].String())
-		assert.Equal(t, "bar", fv["bar"].String())
+		assert.Equal(t, "foo", fv[0].Key)
+		assert.Equal(t, "bar", fv[1].Key)
 	})
 
 	// Test that fields of embedded types are skipped if the embedded type is nil.
@@ -181,7 +183,7 @@ func TestStructInfoFieldValuesAnonymousByPointer(t *testing.T) {
 		si := getStructInfo(reflect.TypeOf(Tmp{}))
 		fv := si.FieldValues(reflect.ValueOf(src))
 		assert.Len(t, fv, 1)
-		assert.Equal(t, "foo", fv["foo"].String())
+		assert.Equal(t, "foo", fv[0].Key)
 	})
 
 	// Test that fields of embedded types are skipped if the embedded type is nil.

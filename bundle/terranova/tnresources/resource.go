@@ -11,39 +11,60 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 )
 
-const (
-	_jobs      = "jobs"
-	_pipelines = "pipelines"
-	_schemas   = "schemas"
-	_volumes   = "volumes"
-	_apps      = "apps"
-)
-
-var supportedResources = map[string]reflect.Value{
-	_jobs:      reflect.ValueOf(NewResourceJob),
-	_pipelines: reflect.ValueOf(NewResourcePipeline),
-	_schemas:   reflect.ValueOf(NewResourceSchema),
-	_volumes:   reflect.ValueOf(NewResourceVolume),
-	_apps:      reflect.ValueOf(NewResourceApp),
-}
-
-// This types matches what Config() returns and should match 'config' field in the resource struct
-var supportedResourcesTypes = map[string]reflect.Type{
-	_jobs:      reflect.TypeOf(ResourceJob{}.config),
-	_pipelines: reflect.TypeOf(ResourcePipeline{}.config),
-	_schemas:   reflect.TypeOf(ResourceSchema{}.config),
-	_volumes:   reflect.TypeOf(ResourceVolume{}.config),
-	_apps:      reflect.TypeOf(ResourceApp{}.config),
-}
-
 type DeleteResourceFN = func(ctx context.Context, client *databricks.WorkspaceClient, oldID string) error
 
-var deletableResources = map[string]DeleteResourceFN{
-	_jobs:      DeleteJob,
-	_pipelines: DeletePipeline,
-	_schemas:   DeleteSchema,
-	_volumes:   DeleteVolume,
-	_apps:      DeleteApp,
+type ResourceSettings struct {
+	// Method to call to create new resource
+	// First argument must be client* databricks.Workspace and second argument is *resource.<Resource> from bundle config
+	// where Resource is appropriate resource e.g. resource.Job.
+	New reflect.Value
+
+	// Type of the stored config state
+	ConfigType reflect.Type
+
+	// Function to delete a resource of this type
+	DeleteFN DeleteResourceFN
+
+	// true if Update() method can return a different ID than that was passed in
+	// If ID changes during Update and UpdateUpdatesID is false, deployment of that resource will fail with internal error.
+	// This allows to make assumptions about references stability (${resources.jobs.foo.id}) when we see that
+	// operation is going to be "update" & ID is guarantee not to change.
+	UpdateUpdatesID bool
+}
+
+var SupportedResources = map[string]ResourceSettings{
+	"jobs": {
+		New:        reflect.ValueOf(NewResourceJob),
+		ConfigType: reflect.TypeOf(ResourceJob{}.config),
+		DeleteFN:   DeleteJob,
+	},
+	"pipelines": {
+		New:        reflect.ValueOf(NewResourcePipeline),
+		ConfigType: reflect.TypeOf(ResourcePipeline{}.config),
+		DeleteFN:   DeletePipeline,
+	},
+	"schemas": {
+		New:             reflect.ValueOf(NewResourceSchema),
+		ConfigType:      reflect.TypeOf(ResourceSchema{}.config),
+		DeleteFN:        DeleteSchema,
+		UpdateUpdatesID: true,
+	},
+	"volumes": {
+		New:             reflect.ValueOf(NewResourceVolume),
+		ConfigType:      reflect.TypeOf(ResourceVolume{}.config),
+		DeleteFN:        DeleteVolume,
+		UpdateUpdatesID: true,
+	},
+	"apps": {
+		New:        reflect.ValueOf(NewResourceApp),
+		ConfigType: reflect.TypeOf(ResourceApp{}.config),
+		DeleteFN:   DeleteApp,
+	},
+	"sql_warehouses": {
+		New:        reflect.ValueOf(NewResourceSqlWarehouse),
+		ConfigType: reflect.TypeOf(ResourceSqlWarehouse{}.config),
+		DeleteFN:   DeleteSqlWarehouse,
+	},
 }
 
 type IResource interface {
@@ -54,6 +75,7 @@ type IResource interface {
 
 	// Update the resource. Returns id of the resource.
 	// Usually returns the same id as oldId but can also return a different one (e.g. schemas and volumes when certain fields are changed)
+	// Note, SupportedResources[group].UpdateUpdatesID must be true for this group if ID can be changed. Otherwise function must return the same ID.
 	DoUpdate(ctx context.Context, oldID string) (string, error)
 
 	WaitAfterCreate(ctx context.Context) error
@@ -100,12 +122,7 @@ func invokeConstructor(ctor reflect.Value, client *databricks.WorkspaceClient, c
 }
 
 func New(client *databricks.WorkspaceClient, group, name string, config any) (IResource, reflect.Type, error) {
-	ctor, ok := supportedResources[group]
-	if !ok {
-		return nil, nil, fmt.Errorf("unsupported resource type: %s", group)
-	}
-
-	cfgType, ok := supportedResourcesTypes[group]
+	settings, ok := SupportedResources[group]
 	if !ok {
 		return nil, nil, fmt.Errorf("unsupported resource type: %s", group)
 	}
@@ -125,18 +142,18 @@ func New(client *databricks.WorkspaceClient, group, name string, config any) (IR
 		}
 	}
 
-	result, err := invokeConstructor(ctor, client, config)
+	result, err := invokeConstructor(settings.New, client, config)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return result, cfgType, nil
+	return result, settings.ConfigType, nil
 }
 
 func DeleteResource(ctx context.Context, client *databricks.WorkspaceClient, group, id string) error {
-	fn, ok := deletableResources[group]
+	settings, ok := SupportedResources[group]
 	if !ok {
 		return fmt.Errorf("cannot delete %s", group)
 	}
-	return fn(ctx, client, id)
+	return settings.DeleteFN(ctx, client, id)
 }

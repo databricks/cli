@@ -14,8 +14,10 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
@@ -25,9 +27,22 @@ import (
 // (encoding/json without options parses numbers into float64)
 // These are also easier to spot / replace in test output compared to numbers with one or few digits.
 const (
-	TestJobID = 4611686018427387911
-	TestRunID = 2305843009213693969
+	TestJobID                   = 4611686018427387911
+	TestRunID                   = 2305843009213693969
+	UserNameTokenPrefix         = "dbapi0"
+	ServicePrincipalTokenPrefix = "dbapi1"
+	UserID                      = "1000012345"
 )
+
+var TestUser = iam.User{
+	Id:       UserID,
+	UserName: "tester@databricks.com",
+}
+
+var TestUserSP = iam.User{
+	Id:       UserID,
+	UserName: "aaaaaaaa-bbbb-4ccc-dddd-eeeeeeeeeeee",
+}
 
 type FileEntry struct {
 	Info workspace.ObjectInfo
@@ -36,8 +51,9 @@ type FileEntry struct {
 
 // FakeWorkspace holds a state of a workspace for acceptance tests.
 type FakeWorkspace struct {
-	mu  sync.Mutex
-	url string
+	mu                 sync.Mutex
+	url                string
+	isServicePrincipal bool
 
 	directories  map[string]bool
 	files        map[string]FileEntry
@@ -56,6 +72,7 @@ type FakeWorkspace struct {
 	Schemas         map[string]catalog.SchemaInfo
 	Volumes         map[string]catalog.VolumeInfo
 	Dashboards      map[string]dashboards.Dashboard
+	SqlWarehouses   map[string]sql.GetWarehouseResponse
 
 	nextRepoId int64
 	Repos      map[string]workspace.RepoInfo
@@ -117,9 +134,10 @@ func MapDelete[K comparable, V any](w *FakeWorkspace, collection map[K]V, key K)
 	return Response{}
 }
 
-func NewFakeWorkspace(url string) *FakeWorkspace {
+func NewFakeWorkspace(url, token string) *FakeWorkspace {
 	return &FakeWorkspace{
-		url: url,
+		url:                url,
+		isServicePrincipal: strings.HasPrefix(token, ServicePrincipalTokenPrefix),
 		directories: map[string]bool{
 			"/Workspace": true,
 		},
@@ -137,7 +155,16 @@ func NewFakeWorkspace(url string) *FakeWorkspace {
 		Schemas:         map[string]catalog.SchemaInfo{},
 		Volumes:         map[string]catalog.VolumeInfo{},
 		Dashboards:      map[string]dashboards.Dashboard{},
+		SqlWarehouses:   map[string]sql.GetWarehouseResponse{},
 		Repos:           map[string]workspace.RepoInfo{},
+	}
+}
+
+func (s *FakeWorkspace) CurrentUser() iam.User {
+	if s != nil && s.isServicePrincipal {
+		return TestUserSP
+	} else {
+		return TestUser
 	}
 }
 
@@ -194,7 +221,7 @@ func (s *FakeWorkspace) WorkspaceDelete(path string, recursive bool) {
 	}
 }
 
-func (s *FakeWorkspace) WorkspaceFilesImportFile(filePath string, body []byte) {
+func (s *FakeWorkspace) WorkspaceFilesImportFile(filePath string, body []byte, overwrite bool) Response {
 	if !strings.HasPrefix(filePath, "/") {
 		filePath = "/" + filePath
 	}
@@ -202,6 +229,15 @@ func (s *FakeWorkspace) WorkspaceFilesImportFile(filePath string, body []byte) {
 	defer s.LockUnlock()()
 
 	workspacePath := filePath
+
+	if !overwrite {
+		if _, exists := s.files[workspacePath]; exists {
+			return Response{
+				StatusCode: 409,
+				Body:       map[string]string{"message": fmt.Sprintf("File already exists at (%s).", workspacePath)},
+			}
+		}
+	}
 
 	// Note: Files with .py, .scala, .r or .sql extension can
 	// be notebooks if they contain a magical "Databricks notebook source"
@@ -235,6 +271,8 @@ func (s *FakeWorkspace) WorkspaceFilesImportFile(filePath string, body []byte) {
 	for dir := path.Dir(workspacePath); dir != "/"; dir = path.Dir(dir) {
 		s.directories[dir] = true
 	}
+
+	return Response{}
 }
 
 func (s *FakeWorkspace) WorkspaceFilesExportFile(path string) []byte {

@@ -41,24 +41,31 @@ func promptOpenArgument(ctx context.Context, b *bundle.Bundle) (string, error) {
 	return key, nil
 }
 
+// When no arguments are specified, auto-selects a pipeline if there's exactly one,
+// otherwise prompts the user to select a pipeline to open.
 func resolveOpenArgument(ctx context.Context, b *bundle.Bundle, args []string) (string, error) {
-	// If no arguments are specified, prompt the user to select the resource to open.
-	if len(args) == 0 && cmdio.IsPromptSupported(ctx) {
+	if len(args) == 1 {
+		return args[0], nil
+	}
+
+	if key := autoSelectSinglePipeline(b); key != "" {
+		return key, nil
+	}
+
+	if cmdio.IsPromptSupported(ctx) {
 		return promptOpenArgument(ctx, b)
 	}
-
-	if len(args) < 1 {
-		return "", errors.New("expected a KEY of the pipeline to open")
-	}
-
-	return args[0], nil
+	return "", errors.New("expected a KEY of the pipeline to open")
 }
 
 func openCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "open",
+		Use:   "open [flags] [KEY]",
 		Short: "Open a pipeline in the browser",
-		Args:  root.MaximumNArgs(1),
+		Long: `Open a pipeline in the browser, identified by KEY.
+KEY is the unique name of the pipeline to open, as defined in its YAML file.
+If there is only one pipeline in the project, KEY is optional and the pipeline will be auto-selected.`,
+		Args: root.MaximumNArgs(1),
 	}
 
 	var forcePull bool
