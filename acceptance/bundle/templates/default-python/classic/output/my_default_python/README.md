@@ -17,6 +17,7 @@ Choose how you want to work on this project:
 
 (c) With command line tools, see https://docs.databricks.com/dev-tools/cli/databricks-cli.html
 
+
 Dependencies for this project should be installed using UV:
 
 *  Make sure you have the UV package manager installed.
