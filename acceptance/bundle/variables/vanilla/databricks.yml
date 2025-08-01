@@ -7,4 +7,9 @@ variables:
     description: required variable
 
 bundle:
-  name: ${var.a} ${var.b}
+  name: foobar
+
+resources:
+  jobs:
+    one:
+      name: ${var.a} ${var.b}
