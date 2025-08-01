@@ -13,7 +13,7 @@ $CLI bundle summary -o json | jq .resources
 title "Update name"
 trace update_file.py databricks.yml myschema mynewschema
 
-trace $CLI bundle plan  # should show "recreate"
+trace $CLI bundle plan 2>&1 | contains recreate
 trace $CLI bundle deploy --auto-approve
 trace print_requests
 
