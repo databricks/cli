@@ -1,0 +1,8 @@
+resources:
+  schemas:
+    schema1:
+      name: myschema
+      catalog_name: main
+      comment: COMMENT1
+      # Note, uncommenting causes different requests sent between TF and direct
+      #storage_root: ""
