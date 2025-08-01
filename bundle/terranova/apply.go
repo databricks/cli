@@ -52,6 +52,11 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 		// TODO: if a given node fails, all downstream nodes should not be run. We should report those nodes.
 		// TODO: ensure that config for this node is fully resolved at this point.
 
+		settings, ok := tnresources.SupportedResources[node.Group]
+		if !ok {
+			return
+		}
+
 		if node.ActionType == deployplan.ActionTypeUnset {
 			logdiag.LogError(ctx, fmt.Errorf("internal error, no action set %#v", node))
 			return
@@ -73,6 +78,7 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 			db:           &b.ResourceDatabase,
 			group:        node.Group,
 			resourceName: node.Name,
+			settings:     settings,
 		}
 
 		// TODO: pass node.ActionType and respect it. Do not change Update to Recreate or Delete for example.
@@ -99,6 +105,7 @@ type Deployer struct {
 	db           *tnstate.TerranovaState
 	group        string
 	resourceName string
+	settings     tnresources.ResourceSettings
 }
 
 func (d *Deployer) Deploy(ctx context.Context, inputConfig any, actionType deployplan.ActionType) error {
@@ -160,15 +167,9 @@ func (d *Deployer) deploy(ctx context.Context, inputConfig any, actionType deplo
 		return fmt.Errorf("interpreting state: %w", err)
 	}
 
-	localDiff, err := structdiff.GetStructDiff(savedState, config)
+	localDiffType, err := calcDiff(d.settings, resource, savedState, config)
 	if err != nil {
 		return fmt.Errorf("comparing state and config: %w", err)
-	}
-
-	localDiffType := deployplan.ActionTypeNoop
-
-	if len(localDiff) > 0 {
-		localDiffType = resource.ClassifyChanges(localDiff)
 	}
 
 	if localDiffType == deployplan.ActionTypeRecreate {
@@ -206,7 +207,7 @@ func (d *Deployer) Create(ctx context.Context, resource tnresources.IResource, c
 	return nil
 }
 
-func (d *Deployer) Recreate(ctx context.Context, oldResource tnresources.IResource, oldID string, config any) error {
+func (d *Deployer) Recreate(ctx context.Context, resource tnresources.IResource, oldID string, config any) error {
 	err := tnresources.DeleteResource(ctx, d.client, d.group, oldID)
 	if err != nil {
 		return fmt.Errorf("deleting old id=%s: %w", oldID, err)
@@ -217,23 +218,20 @@ func (d *Deployer) Recreate(ctx context.Context, oldResource tnresources.IResour
 		return fmt.Errorf("deleting state: %w", err)
 	}
 
-	newResource, _, err := tnresources.New(d.client, d.group, d.resourceName, config)
-	if err != nil {
-		return fmt.Errorf("initializing: %w", err)
-	}
-
-	newID, err := newResource.DoCreate(ctx)
+	newID, err := resource.DoCreate(ctx)
 	if err != nil {
 		return fmt.Errorf("re-creating: %w", err)
 	}
 
-	log.Warnf(ctx, "Re-created %s.%s id=%#v (previously %#v)", d.group, d.resourceName, newID, oldID)
+	// TODO: This should be at notice level (info < notice < warn) and it should be visible by default,
+	// but to match terraform output today, we hide it.
+	log.Infof(ctx, "Recreated %s.%s id=%#v (previously %#v)", d.group, d.resourceName, newID, oldID)
 	err = d.db.SaveState(d.group, d.resourceName, newID, config)
 	if err != nil {
 		return fmt.Errorf("saving state for id=%s: %w", newID, err)
 	}
 
-	err = newResource.WaitAfterCreate(ctx)
+	err = resource.WaitAfterCreate(ctx)
 	if err != nil {
 		return fmt.Errorf("waiting after re-creating id=%s: %w", newID, err)
 	}
@@ -258,7 +256,7 @@ func (d *Deployer) Update(ctx context.Context, resource tnresources.IResource, o
 		return fmt.Errorf("saving state id=%s: %w", oldID, err)
 	}
 
-	if oldID != newID && !tnresources.SupportedResources[d.group].UpdateUpdatesID {
+	if oldID != newID && !d.settings.UpdateUpdatesID {
 		return fmt.Errorf("internal error, unexpected change of ID from %#v to %#v", oldID, newID)
 	}
 
@@ -298,4 +296,23 @@ func typeConvert(destType reflect.Type, src any) (any, error) {
 	}
 
 	return reflect.ValueOf(destPtr).Elem().Interface(), nil
+}
+
+func calcDiff(settings tnresources.ResourceSettings, resource tnresources.IResource, savedState, config any) (deployplan.ActionType, error) {
+	localDiff, err := structdiff.GetStructDiff(savedState, config)
+	if err != nil {
+		return "", err
+	}
+
+	if settings.MustRecreate(localDiff) {
+		return deployplan.ActionTypeRecreate, nil
+	} else if len(localDiff) > 0 {
+		result := resource.ClassifyChanges(localDiff)
+		if result == deployplan.ActionTypeRecreate && !settings.RecreateAllowed {
+			return "", errors.New("internal error: ClassifyChanges returned 'recreate' unexpectedly")
+		}
+		return result, nil
+	}
+
+	return deployplan.ActionTypeNoop, nil
 }
