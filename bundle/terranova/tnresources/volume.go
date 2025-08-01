@@ -2,6 +2,8 @@ package tnresources
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
@@ -35,13 +37,20 @@ func (r *ResourceVolume) DoCreate(ctx context.Context) (string, error) {
 }
 
 func (r *ResourceVolume) DoUpdate(ctx context.Context, id string) (string, error) {
-	updateRequest := catalog.UpdateVolumeRequestContent{}
-	err := copyViaJSON(&updateRequest, r.config)
-	if err != nil {
-		return "", err
+	updateRequest := catalog.UpdateVolumeRequestContent{
+		Comment: r.config.Comment,
+		Name:    id,
 	}
 
-	updateRequest.Name = id
+	items := strings.Split(id, ".")
+	if len(items) == 0 {
+		return "", fmt.Errorf("unexpected id=%#v", id)
+	}
+	nameFromID := items[len(items)-1]
+
+	if r.config.Name != nameFromID {
+		updateRequest.NewName = r.config.Name
+	}
 
 	response, err := r.client.Volumes.Update(ctx, updateRequest)
 	if err != nil {
