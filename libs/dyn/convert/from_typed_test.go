@@ -104,6 +104,54 @@ func TestFromTypedStructSetFields(t *testing.T) {
 	}), nv)
 }
 
+func TestFromTypedStructSetFieldsIntoExistingFields(t *testing.T) {
+	type Tmp struct {
+		Foo string `json:"foo"`
+		Bar string `json:"bar"`
+	}
+
+	src := Tmp{
+		Foo: "foo",
+		Bar: "bar",
+	}
+
+	ref := dyn.V(map[string]dyn.Value{
+		"foo": dyn.V("foo_old"),
+		"bar": dyn.V("bar_old"),
+	})
+
+	nv, err := FromTyped(src, ref)
+	require.NoError(t, err)
+	dynassert.Equal(t, dyn.V(map[string]dyn.Value{
+		"foo": dyn.V("foo"),
+		"bar": dyn.V("bar"),
+	}), nv)
+}
+
+func TestFromTypedStructZeroFieldsIntoExistingFields(t *testing.T) {
+	type Tmp struct {
+		Foo             string   `json:"foo"`
+		Bar             string   `json:"bar,omitempty"`
+		BazBugz         string   `json:"baz_bugs,omitempty"`
+		ForceSendFields []string `json:"-"`
+	}
+
+	src := Tmp{ForceSendFields: []string{"BazBugz"}}
+
+	ref := dyn.V(map[string]dyn.Value{
+		"foo":      dyn.V("foo_old"),
+		"bar":      dyn.V("bar_old"),
+		"baz_bugs": dyn.V("baz_old"),
+	})
+
+	nv, err := FromTyped(src, ref)
+	require.NoError(t, err)
+	dynassert.Equal(t, dyn.V(map[string]dyn.Value{
+		"foo":      dyn.V(""),
+		"baz_bugs": dyn.V(""),
+	}), nv)
+}
+
 func TestFromTypedStructSetFieldsRetainLocation(t *testing.T) {
 	type Tmp struct {
 		Foo string `json:"foo"`
