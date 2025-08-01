@@ -10,7 +10,6 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/bundle/terranova/tnresources"
 	"github.com/databricks/cli/bundle/terranova/tnstate"
 	"github.com/databricks/cli/libs/dagrun"
 	"github.com/databricks/cli/libs/diag"
@@ -52,7 +51,7 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 		// TODO: if a given node fails, all downstream nodes should not be run. We should report those nodes.
 		// TODO: ensure that config for this node is fully resolved at this point.
 
-		settings, ok := tnresources.SupportedResources[node.Group]
+		settings, ok := SupportedResources[node.Group]
 		if !ok {
 			return
 		}
@@ -105,7 +104,7 @@ type Deployer struct {
 	db           *tnstate.TerranovaState
 	group        string
 	resourceName string
-	settings     tnresources.ResourceSettings
+	settings     ResourceSettings
 }
 
 func (d *Deployer) Deploy(ctx context.Context, inputConfig any, actionType deployplan.ActionType) error {
@@ -146,7 +145,7 @@ func (d *Deployer) destroy(ctx context.Context, inputConfig any) error {
 func (d *Deployer) deploy(ctx context.Context, inputConfig any, actionType deployplan.ActionType) error {
 	entry, hasEntry := d.db.GetResourceEntry(d.group, d.resourceName)
 
-	resource, cfgType, err := tnresources.New(d.client, d.group, d.resourceName, inputConfig)
+	resource, cfgType, err := New(d.client, d.group, d.resourceName, inputConfig)
 	if err != nil {
 		return err
 	}
@@ -186,7 +185,7 @@ func (d *Deployer) deploy(ctx context.Context, inputConfig any, actionType deplo
 	return nil
 }
 
-func (d *Deployer) Create(ctx context.Context, resource tnresources.IResource, config any) error {
+func (d *Deployer) Create(ctx context.Context, resource IResource, config any) error {
 	newID, err := resource.DoCreate(ctx)
 	if err != nil {
 		return fmt.Errorf("creating: %w", err)
@@ -207,8 +206,8 @@ func (d *Deployer) Create(ctx context.Context, resource tnresources.IResource, c
 	return nil
 }
 
-func (d *Deployer) Recreate(ctx context.Context, resource tnresources.IResource, oldID string, config any) error {
-	err := tnresources.DeleteResource(ctx, d.client, d.group, oldID)
+func (d *Deployer) Recreate(ctx context.Context, resource IResource, oldID string, config any) error {
+	err := DeleteResource(ctx, d.client, d.group, oldID)
 	if err != nil {
 		return fmt.Errorf("deleting old id=%s: %w", oldID, err)
 	}
@@ -239,7 +238,7 @@ func (d *Deployer) Recreate(ctx context.Context, resource tnresources.IResource,
 	return nil
 }
 
-func (d *Deployer) Update(ctx context.Context, resource tnresources.IResource, oldID string, config any) error {
+func (d *Deployer) Update(ctx context.Context, resource IResource, oldID string, config any) error {
 	newID, err := resource.DoUpdate(ctx, oldID)
 	if err != nil {
 		return fmt.Errorf("updating id=%s: %w", oldID, err)
@@ -269,7 +268,7 @@ func (d *Deployer) Update(ctx context.Context, resource tnresources.IResource, o
 
 func (d *Deployer) Delete(ctx context.Context, oldID string) error {
 	// TODO: recognize 404 and 403 as "deleted" and proceed to removing state
-	err := tnresources.DeleteResource(ctx, d.client, d.group, oldID)
+	err := DeleteResource(ctx, d.client, d.group, oldID)
 	if err != nil {
 		return fmt.Errorf("deleting id=%s: %w", oldID, err)
 	}
@@ -298,7 +297,7 @@ func typeConvert(destType reflect.Type, src any) (any, error) {
 	return reflect.ValueOf(destPtr).Elem().Interface(), nil
 }
 
-func calcDiff(settings tnresources.ResourceSettings, resource tnresources.IResource, savedState, config any) (deployplan.ActionType, error) {
+func calcDiff(settings ResourceSettings, resource IResource, savedState, config any) (deployplan.ActionType, error) {
 	localDiff, err := structdiff.GetStructDiff(savedState, config)
 	if err != nil {
 		return "", err
