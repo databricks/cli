@@ -38,9 +38,7 @@ type ResourceSettings struct {
 	// If any of these fields are changed, recreation (Delete + Create) is triggered.
 	// This overrides ClassifyChanges() function (so you don't need to implement that one).
 	// Fields are in structdiff.Change.String() format.
-	// A couple limitations:
-	// - Patterns like hello.*.world and hello[*].world are not supported
-	// - We do not validate this setting. We could write a test that does it since we have ConfigType.
+	// Limitation: patterns like hello.*.world and hello[*].world are not supported
 	RecreateFields map[string]struct{}
 
 	// If resource does not set RecreateFields, RecreateAllowed, UpdateUpdatesID then
