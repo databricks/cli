@@ -4,6 +4,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-run/
 Deploying resources...
 Updating deployment state...
 Deployment complete!
+View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
 
 === Run pipeline
 >>> [PIPELINES] run

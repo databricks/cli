@@ -4,6 +4,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-forc
 Deploying resources...
 Updating deployment state...
 Deployment complete!
+View your pipeline foo here: [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
 
 === upload lock file
 >>> [CLI] workspace import /Workspace/Users/[USERNAME]/.bundle/test-pipeline-force-lock/default/state/deploy.lock --format AUTO --file ./deploy.lock
