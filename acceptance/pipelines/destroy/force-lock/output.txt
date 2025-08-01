@@ -22,6 +22,10 @@ Exit code: 1
 The following resources will be deleted:
   delete pipeline foo
 
+This action will result in the deletion of the following DLT Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them:
+  delete pipeline foo
+
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-pipeline-force-lock/default
 
 Deleting files...

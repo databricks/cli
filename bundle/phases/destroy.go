@@ -69,6 +69,34 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 
 	}
 
+	schemaActions := deployplan.FilterGroup(deleteActions, "schemas", deployplan.ActionTypeDelete)
+	dltActions := deployplan.FilterGroup(deleteActions, "pipelines", deployplan.ActionTypeDelete)
+	volumeActions := deployplan.FilterGroup(deleteActions, "volumes", deployplan.ActionTypeDelete)
+
+	if len(schemaActions) > 0 {
+		cmdio.LogString(ctx, deleteSchemaMessage)
+		for _, a := range schemaActions {
+			cmdio.Log(ctx, a)
+		}
+		cmdio.LogString(ctx, "")
+	}
+
+	if len(dltActions) > 0 {
+		cmdio.LogString(ctx, deleteDltMessage)
+		for _, a := range dltActions {
+			cmdio.Log(ctx, a)
+		}
+		cmdio.LogString(ctx, "")
+	}
+
+	if len(volumeActions) > 0 {
+		cmdio.LogString(ctx, deleteVolumeMessage)
+		for _, a := range volumeActions {
+			cmdio.Log(ctx, a)
+		}
+		cmdio.LogString(ctx, "")
+	}
+
 	cmdio.LogString(ctx, "All files and directories at the following location will be deleted: "+b.Config.Workspace.RootPath)
 	cmdio.LogString(ctx, "")
 
