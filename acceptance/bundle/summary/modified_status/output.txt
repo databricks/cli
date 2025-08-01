@@ -132,6 +132,13 @@ The following resources will be deleted:
   delete schema my_schema
   delete sql_warehouse my_sql_warehouse
 
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete schema my_schema
+
+This action will result in the deletion of the following DLT Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them:
+  delete pipeline my_pipeline
+
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
 Deleting files...
