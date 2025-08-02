@@ -42,7 +42,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
 )
 
 <<<<<<< HEAD
@@ -64,8 +63,12 @@ type PipelineUpdateData struct {
 	LastEventTime       string
 }
 
+<<<<<<< HEAD
 const pipelineUpdateTemplate = `Update {{ .Update.UpdateId }} for pipeline {{- if .Update.Config }}{{ .Update.Config.Name }}{{ end }} {{- if .Update.Config }}{{ .Update.Config.Id }}{{ end }} completed successfully.
 >>>>>>> a44303fd9 (removed templates)
+=======
+const pipelineUpdateTemplate = `Update {{ .Update.UpdateId }} for pipeline {{- if .Update.Config }} {{ .Update.Config.Name }}{{ end }} {{- if .Update.Config }} {{ .Update.Config.Id }}{{ end }} completed successfully.
+>>>>>>> ee0f99139 (endpoint)
 {{- if .Update.Cause }}
 Cause: {{ .Update.Cause }}
 {{- end }}
@@ -156,6 +159,7 @@ func getRefreshSelectionString(update pipelines.UpdateInfo) string {
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 // getLastEventTime returns the timestamp of the last progress event
 func getLastEventTime(events []ProgressEventWithDuration) string {
 	if len(events) == 0 {
@@ -203,6 +207,8 @@ func fetchUpdateProgressEventsForUpdateAscending(ctx context.Context, bundle *bu
 	return events, nil
 }
 
+=======
+>>>>>>> ee0f99139 (endpoint)
 func fetchAndDisplayPipelineUpdate(ctx context.Context, bundle *bundle.Bundle, ref bundleresources.Reference, updateId string) error {
 	w := bundle.WorkspaceClient()
 
@@ -226,12 +232,17 @@ func fetchAndDisplayPipelineUpdate(ctx context.Context, bundle *bundle.Bundle, r
 
 	latestUpdate := *getUpdateResponse.Update
 
-	if latestUpdate.State == pipelines.UpdateInfoStateCompleted {
-		events, err := fetchUpdateProgressEventsForUpdateAscending(ctx, bundle, pipelineID, updateId)
-		if err != nil {
-			return err
-		}
+	params := &PipelineEventsQueryParams{
+		Filter:  fmt.Sprintf("update_id='%s' AND event_type='update_progress'", updateId),
+		OrderBy: "timestamp asc",
+	}
 
+	events, err := fetchAllPipelineEvents(ctx, w, pipelineID, params)
+	if err != nil {
+		return err
+	}
+
+	if latestUpdate.State == pipelines.UpdateInfoStateCompleted {
 		err = displayPipelineUpdate(ctx, latestUpdate, pipelineID, events)
 		if err != nil {
 			return err
@@ -254,7 +265,6 @@ func getLastEventTime(events []pipelines.PipelineEvent) string {
 	return parsedTime.Format("2006-01-02T15:04:05Z")
 }
 
-// displayPipelineUpdate displays pipeline update information
 func displayPipelineUpdate(ctx context.Context, update pipelines.UpdateInfo, pipelineID string, events []pipelines.PipelineEvent) error {
 	data := PipelineUpdateData{
 		PipelineId:          pipelineID,

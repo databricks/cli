@@ -12,9 +12,12 @@ import (
 	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/run"
 	"github.com/databricks/cli/libs/cmdio"
+<<<<<<< HEAD
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/logdiag"
+=======
+>>>>>>> ee0f99139 (endpoint)
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -97,6 +100,7 @@ func keyToRunner(b *bundle.Bundle, arg string) (run.Runner, error) {
 	return runner, nil
 }
 
+<<<<<<< HEAD
 // formatOSSTemplateWarningMessage formats the warning message for OSS template pipeline YAML files.
 func formatOSSTemplateWarningMessage(d diag.Diagnostic) string {
 	fileName := "A pipeline YAML file"
@@ -131,6 +135,8 @@ func checkForOSSTemplateWarning(ctx context.Context, diags diag.Diagnostics) err
 	return nil
 }
 
+=======
+>>>>>>> ee0f99139 (endpoint)
 type PipelineEventsResponse struct {
 	Events        []pipelines.PipelineEvent `json:"events"`
 	NextPageToken string                    `json:"next_page_token,omitempty"`
@@ -143,8 +149,11 @@ type PipelineEventsQueryParams struct {
 	OrderBy    string `json:"order_by,omitempty"`
 }
 
+<<<<<<< HEAD
 // fetchAllPipelineEvents retrieves pipeline events with optional SQL filtering and ordering.
 // Necessary as current Go SDK endpoints don't support OrderBy parameter.
+=======
+>>>>>>> ee0f99139 (endpoint)
 func fetchAllPipelineEvents(ctx context.Context, w *databricks.WorkspaceClient, pipelineID string, params *PipelineEventsQueryParams) ([]pipelines.PipelineEvent, error) {
 	apiClient, err := client.New(w.Config)
 	if err != nil {
@@ -158,7 +167,11 @@ func fetchAllPipelineEvents(ctx context.Context, w *databricks.WorkspaceClient, 
 		queryParams["filter"] = params.Filter
 	}
 	if params.MaxResults > 0 {
+<<<<<<< HEAD
 		queryParams["max_results"] = strconv.Itoa(params.MaxResults)
+=======
+		queryParams["max_results"] = fmt.Sprintf("%d", params.MaxResults)
+>>>>>>> ee0f99139 (endpoint)
 	}
 
 	if params.OrderBy != "" {
