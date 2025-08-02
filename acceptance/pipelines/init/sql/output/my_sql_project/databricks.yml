@@ -42,5 +42,5 @@ targets:
         level: CAN_MANAGE
     variables:
       catalog: main
-      schema: shared_dev
+      schema: shared
       notifications: [[USERNAME]]
