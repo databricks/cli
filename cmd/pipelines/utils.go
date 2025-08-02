@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -125,4 +126,53 @@ func checkForOSSTemplateWarning(ctx context.Context, diags diag.Diagnostics) err
 	}
 
 	return nil
+}
+
+type PipelineEventsResponse struct {
+	Events        []pipelines.PipelineEvent `json:"events"`
+	NextPageToken string                    `json:"next_page_token,omitempty"`
+}
+
+type PipelineEventsQueryParams struct {
+	Filter     string `json:"filter,omitempty"`
+	MaxResults int    `json:"max_results,omitempty"`
+	PageToken  string `json:"page_token,omitempty"`
+	OrderBy    string `json:"order_by,omitempty"`
+}
+
+func fetchAllPipelineEvents(ctx context.Context, w *databricks.WorkspaceClient, pipelineID string, params *PipelineEventsQueryParams) ([]pipelines.PipelineEvent, error) {
+	apiClient, err := client.New(w.Config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create API client: %w", err)
+	}
+
+	path := fmt.Sprintf("/api/2.0/pipelines/%s/events", pipelineID)
+
+	queryParams := map[string]string{}
+	if params.Filter != "" {
+		queryParams["filter"] = params.Filter
+	}
+	if params.MaxResults > 0 {
+		queryParams["max_results"] = strconv.Itoa(params.MaxResults)
+	}
+
+	if params.OrderBy != "" {
+		queryParams["order_by"] = params.OrderBy
+	}
+
+	var response PipelineEventsResponse
+	err = apiClient.Do(
+		ctx,
+		"GET",
+		path,
+		nil,
+		nil,
+		queryParams,
+		&response,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch pipeline events: %w", err)
+	}
+
+	return response.Events, nil
 }
