@@ -1,0 +1,15 @@
+bundle:
+  name: databricks_bundle_${var.branch}
+
+variables:
+  branch:
+    default: ${bundle.git.branch}
+
+targets:
+  feature:
+    presets:
+      name_prefix: "[${var.branch}]"
+      tags:
+        branch: "${var.branch}"
+    workspace:
+      root_path: /Shared/${bundle.name}
