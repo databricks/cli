@@ -125,7 +125,6 @@ func displayProgressEvents(ctx context.Context, events []pipelines.PipelineEvent
 	return cmdio.RenderWithTemplate(ctx, data, "", ProgressEventsTemplate)
 }
 
-
 type PipelineUpdateData struct {
 	PipelineId    string
 	Update        pipelines.UpdateInfo
@@ -281,11 +280,11 @@ func fetchAndDisplayPipelineUpdate(ctx context.Context, bundle *bundle.Bundle, r
 		if err != nil {
 			return err
 		}
+	}
 
-		err = displayProgressEvents(ctx, events)
-		if err != nil {
-			return err
-		}
+	err = displayProgressEvents(ctx, events)
+	if err != nil {
+		return err
 	}
 
 	return nil
