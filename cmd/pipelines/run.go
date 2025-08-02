@@ -224,11 +224,11 @@ func fetchAndDisplayPipelineUpdate(ctx context.Context, bundle *bundle.Bundle, r
 		if err != nil {
 			return err
 		}
+	}
 
-		err = displayProgressEvents(ctx, events)
-		if err != nil {
-			return err
-		}
+	err = displayProgressEvents(ctx, events)
+	if err != nil {
+		return err
 	}
 
 	return nil
