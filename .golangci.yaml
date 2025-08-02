@@ -65,6 +65,7 @@ linters:
         - empty
         - len
         - equal-values
+        - encoded-compare # Always replaces Equal() with JSONEq, but sometimes exact string match is wanted for JSON
   exclusions:
     generated: lax
     presets:

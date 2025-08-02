@@ -43,6 +43,10 @@
           "target_count": 1,
           "bool_values": [
             {
+              "key": "experimental.use_legacy_run_as",
+              "value": false
+            },
+            {
               "key": "presets_name_prefix_is_set",
               "value": false
             },

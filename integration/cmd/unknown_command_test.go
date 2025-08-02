@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/internal/testcli"
-	assert "github.com/databricks/cli/libs/dyn/dynassert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestUnknownCommand(t *testing.T) {

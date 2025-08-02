@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"runtime"
 	"strings"
 	"time"
@@ -25,10 +26,15 @@ func promptForProfile(ctx context.Context, defaultValue string) (string, error) 
 	}
 
 	prompt := cmdio.Prompt(ctx)
-	prompt.Label = "Databricks profile name"
-	prompt.Default = defaultValue
+	prompt.Label = "Databricks profile name [" + defaultValue + "]"
 	prompt.AllowEdit = true
-	return prompt.Run()
+	result, err := prompt.Run()
+	if result == "" {
+		// Manually return the default value. We could use the prompt.Default
+		// field, but be inconsistent with other prompts in the CLI.
+		return defaultValue, err
+	}
+	return result, err
 }
 
 const (
@@ -100,7 +106,11 @@ depends on the existing profiles you have set in your configuration file
 		// If the user has not specified a profile name, prompt for one.
 		if profileName == "" {
 			var err error
-			profileName, err = promptForProfile(ctx, getProfileName(authArguments))
+			profileName = getProfileName(authArguments)
+			if profileName == "" {
+				profileName = "DEFAULT"
+			}
+			profileName, err = promptForProfile(ctx, profileName)
 			if err != nil {
 				return err
 			}
@@ -140,6 +150,10 @@ depends on the existing profiles you have set in your configuration file
 			AuthType:  "databricks-cli",
 			ClusterID: clusterID,
 		}
+		databricksCfgFile := os.Getenv("DATABRICKS_CONFIG_FILE")
+		if databricksCfgFile != "" {
+			cfg.ConfigFile = databricksCfgFile
+		}
 
 		ctx, cancel := context.WithTimeout(ctx, loginTimeout)
 		defer cancel()
@@ -164,11 +178,12 @@ depends on the existing profiles you have set in your configuration file
 
 		if profileName != "" {
 			err = databrickscfg.SaveToProfile(ctx, &config.Config{
-				Profile:   profileName,
-				Host:      cfg.Host,
-				AuthType:  cfg.AuthType,
-				AccountID: cfg.AccountID,
-				ClusterID: cfg.ClusterID,
+				Profile:    profileName,
+				Host:       cfg.Host,
+				AuthType:   cfg.AuthType,
+				AccountID:  cfg.AccountID,
+				ClusterID:  cfg.ClusterID,
+				ConfigFile: cfg.ConfigFile,
 			})
 			if err != nil {
 				return err

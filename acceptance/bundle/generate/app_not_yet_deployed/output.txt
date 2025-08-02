@@ -1,0 +1,19 @@
+
+>>> [CLI] apps create my-app
+{
+  "app_status": {
+    "message":"Application is running.",
+    "state":"RUNNING"
+  },
+  "compute_status": {
+    "message":"App compute is active.",
+    "state":"ACTIVE"
+  },
+  "id":"1000",
+  "name":"my-app",
+  "url":"my-app-123.cloud.databricksapps.com"
+}
+
+>>> [CLI] bundle generate app --existing-app-name my-app --config-dir . --key out
+Loading app 'my-app' configuration
+App configuration successfully saved to out.app.yml

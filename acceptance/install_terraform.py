@@ -103,12 +103,22 @@ def main():
     terraformrc_path = target / ".terraformrc"
     if not terraformrc_path.exists():
         path = json.dumps(str(tfplugins_path.absolute()))
+
+        # Check for dev override environment variable
+        dev_override_path = os.environ.get("DATABRICKS_TF_PROVIDER_DEV_OVERRIDE")
+        dev_overrides_section = ""
+        if dev_override_path:
+            dev_overrides_section = f"""    dev_overrides {{
+        "databricks/databricks" = "{dev_override_path}"
+    }}
+"""
+
         text = f"""# Set these env variables before running databricks cli:
 # export DATABRICKS_TF_CLI_CONFIG_FILE={terraformrc_path.absolute()}
 # export DATABRICKS_TF_EXEC_PATH={terraform_path.absolute()}
 
 provider_installation {{
-    filesystem_mirror {{
+{dev_overrides_section}    filesystem_mirror {{
         path = {path}
         include = ["registry.terraform.io/databricks/databricks"]
     }}

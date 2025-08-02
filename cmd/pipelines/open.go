@@ -44,21 +44,18 @@ func promptOpenArgument(ctx context.Context, b *bundle.Bundle) (string, error) {
 // When no arguments are specified, auto-selects a pipeline if there's exactly one,
 // otherwise prompts the user to select a pipeline to open.
 func resolveOpenArgument(ctx context.Context, b *bundle.Bundle, args []string) (string, error) {
-	if len(args) == 0 {
-		if key := autoSelectSinglePipeline(b); key != "" {
-			return key, nil
-		}
-
-		if cmdio.IsPromptSupported(ctx) {
-			return promptOpenArgument(ctx, b)
-		}
+	if len(args) == 1 {
+		return args[0], nil
 	}
 
-	if len(args) < 1 {
-		return "", errors.New("expected a KEY of the pipeline to open")
+	if key := autoSelectSinglePipeline(b); key != "" {
+		return key, nil
 	}
 
-	return args[0], nil
+	if cmdio.IsPromptSupported(ctx) {
+		return promptOpenArgument(ctx, b)
+	}
+	return "", errors.New("expected a KEY of the pipeline to open")
 }
 
 func openCommand() *cobra.Command {

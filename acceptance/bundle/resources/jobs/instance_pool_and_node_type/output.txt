@@ -5,7 +5,6 @@
     "new_cluster": {
       "data_security_mode": "USER_ISOLATION",
       "instance_pool_id": "$TEST_INSTANCE_POOL_ID",
-      "node_type_id": "",
       "num_workers": 1,
       "spark_version": "$DEFAULT_SPARK_VERSION"
     },
@@ -27,7 +26,6 @@
     "new_cluster": {
       "data_security_mode": "USER_ISOLATION",
       "instance_pool_id": "$TEST_INSTANCE_POOL_ID",
-      "node_type_id": "",
       "num_workers": 1,
       "spark_version": "$DEFAULT_SPARK_VERSION"
     },

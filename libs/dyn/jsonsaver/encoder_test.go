@@ -3,7 +3,7 @@ package jsonsaver
 import (
 	"testing"
 
-	assert "github.com/databricks/cli/libs/dyn/dynassert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestEncoder_MarshalNoEscape(t *testing.T) {

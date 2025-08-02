@@ -1,0 +1,4 @@
+Ignore = [
+    "tmp.summary.txt",
+    ".databricks",
+]

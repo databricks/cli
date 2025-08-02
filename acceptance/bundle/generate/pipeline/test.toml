@@ -1,0 +1,46 @@
+[[Server]]
+Pattern = "GET /api/2.0/pipelines/1234"
+Response.Body = '''
+{
+    "pipeline_id": 1234,
+    "spec": {
+        "name": "generate-pipeline",
+        "clusters": [
+            {
+                "custom_tags": {
+                    "Tag1": "24X7-1234"
+                }
+            },
+            {
+                "spark_conf": {
+                    "spark.databricks.delta.preview.enabled": "true"
+                }
+            }
+        ],
+        "libraries": [
+            {
+                "notebook": {
+                    "path": "/Workspace/Users/tester@databricks.com/outnotebook"
+                }
+            }
+        ]
+    }
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.0/workspace/get-status"
+Response.Body = '''
+{
+    "path": "/Workspace/Users/tester@databricks.com/outnotebook",
+    "object_type": "NOTEBOOK",
+    "language": "PYTHON",
+    "repos_export_format": "SOURCE"
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.0/workspace/export"
+Response.Body = '''
+print("Hello, World!")
+'''

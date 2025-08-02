@@ -1,0 +1,10 @@
+bundle:
+  name: "abc"
+
+run_as:
+  service_principal_name: ""
+
+resources:
+  jobs:
+    foo:
+      name: foo

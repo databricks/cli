@@ -112,10 +112,10 @@ func TestSyncPathsNoRoot(t *testing.T) {
 	assert.Equal(t, filepath.FromSlash("sync/paths_no_root"), b.SyncRootPath)
 	assert.Equal(t, []string{"."}, b.Config.Sync.Paths)
 
-	// If set to nil, it won't sync anything.
+	// If set to nil, it's the same as not set, defaults to "."
 	b = loadTarget(t, "./sync/paths_no_root", "nil")
 	assert.Equal(t, filepath.FromSlash("sync/paths_no_root"), b.SyncRootPath)
-	assert.Empty(t, b.Config.Sync.Paths)
+	assert.Equal(t, []string{"."}, b.Config.Sync.Paths)
 
 	// If set to an empty sequence, it won't sync anything.
 	b = loadTarget(t, "./sync/paths_no_root", "empty")

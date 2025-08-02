@@ -5,7 +5,7 @@
     },
     "go.lintTool": "golangci-lint",
     "go.lintFlags": [
-        "--fast"
+        "--fast-only"
     ],
     "go.useLanguageServer": true,
     "gopls": {

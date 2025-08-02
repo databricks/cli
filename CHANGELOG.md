@@ -1,5 +1,16 @@
 # Version changelog
 
+## Release v0.262.0
+
+### CLI
+* Fixed auth login ignoring DATABRICKS_CONFIG_FILE environmental variable when saving profile ([#3266](https://github.com/databricks/cli/pull/3266))
+
+### Bundles
+* Modified run flag validation to allow `--refresh` and `--full-refresh` flags to be used together ([#3300](https://github.com/databricks/cli/pull/3300))
+* Fixed bundle generate for not yet deployed apps ([#3319](https://github.com/databricks/cli/pull/3319))
+* Respect export format for notebooks on bundle generate ([#3316](https://github.com/databricks/cli/pull/3316))
+
+
 ## Release v0.261.0
 
 ### Notable Changes

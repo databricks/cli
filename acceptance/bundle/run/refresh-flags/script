@@ -1,0 +1,23 @@
+print_requests() {
+    jq --sort-keys 'select(.method != "GET" and (.path | contains("/pipelines")))' < out.requests.txt
+    rm out.requests.txt
+}
+
+trace $CLI bundle deploy
+rm out.requests.txt
+
+title "Running pipeline with --refresh flag and specific tables"
+trace $CLI bundle run my_pipeline --refresh table1,table2
+trace print_requests
+
+title "Running pipeline with --full-refresh-all flag"
+trace $CLI bundle run my_pipeline --full-refresh-all
+trace print_requests
+
+title "Running pipeline with --full-refresh flag and specific tables"
+trace $CLI bundle run my_pipeline --full-refresh table1,table2
+trace print_requests
+
+title "Running pipeline with --full-refresh flag and --refresh flag"
+trace $CLI bundle run my_pipeline --full-refresh table1,table2 --refresh table3,table4
+trace print_requests

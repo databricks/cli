@@ -20,6 +20,7 @@ Available Commands:
   logs        Retrieve events for a pipeline
   open        Open a pipeline in the browser
   run         Run a pipeline
+  stop        Stop a pipeline
   version     Retrieve information about the current version of the Pipelines CLI
 
 Flags:
@@ -64,6 +65,7 @@ Available Commands:
   logs        Retrieve events for a pipeline
   open        Open a pipeline in the browser
   run         Run a pipeline
+  stop        Stop a pipeline
   version     Retrieve information about the current version of the Pipelines CLI
 
 Flags:

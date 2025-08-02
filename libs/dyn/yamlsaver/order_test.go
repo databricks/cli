@@ -3,7 +3,7 @@ package yamlsaver
 import (
 	"testing"
 
-	assert "github.com/databricks/cli/libs/dyn/dynassert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestOrderReturnsIncreasingIndex(t *testing.T) {

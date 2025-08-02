@@ -135,6 +135,34 @@ func (v Value) AsAny() any {
 	}
 }
 
+func (v Value) IsZero() bool {
+	switch v.k {
+	case KindInvalid:
+		return true
+	case KindMap:
+		m := v.v.(Mapping)
+		return m.Len() == 0
+	case KindSequence:
+		vv := v.v.([]Value)
+		return len(vv) == 0
+	case KindNil:
+		return true
+	case KindString:
+		return v.v == ""
+	case KindBool:
+		return v.v == false
+	case KindInt:
+		return v.v == 0
+	case KindFloat:
+		return v.v == 0
+	case KindTime:
+		t := v.v.(Time)
+		return t.IsZero()
+	default:
+		return false
+	}
+}
+
 func (v Value) Get(key string) Value {
 	m, ok := v.AsMap()
 	if !ok {
