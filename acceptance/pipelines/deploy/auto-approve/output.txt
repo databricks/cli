@@ -4,6 +4,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-auto
 Deploying resources...
 Updating deployment state...
 Deployment complete!
+View your pipeline foo here: [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
 
 === Remove resources from configuration to test auto-approve
 >>> rm resources.yml

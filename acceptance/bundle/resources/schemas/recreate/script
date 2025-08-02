@@ -1,0 +1,20 @@
+echo "*" > .gitignore
+trace $CLI bundle deploy
+
+print_requests() {
+    jq 'select(.method != "GET" and (.path | contains("/unity")))' < out.requests.txt
+    rm out.requests.txt
+}
+
+trace print_requests
+trace $CLI bundle summary -o json | jq .resources.schemas
+
+title "Update catalog_name and re-deploy"
+trace update_file.py databricks.yml "catalog_name: main" "catalog_name: newmain"
+trace $CLI bundle plan
+trace $CLI bundle deploy --auto-approve
+trace print_requests
+
+trace musterr $CLI schemas get main.myschema
+trace $CLI schemas get newmain.myschema
+rm out.requests.txt

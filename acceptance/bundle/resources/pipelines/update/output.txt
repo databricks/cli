@@ -26,7 +26,7 @@ Deployment complete!
   "method": "POST",
   "path": "/api/2.0/pipelines"
 }
-pipelines my id='[UUID]' name='test-pipeline-[UNIQUE_NAME]'
+pipelines my id='[PIPELINE_ID]' name='test-pipeline-[UNIQUE_NAME]'
 
 >>> update_file.py databricks.yml foo.py bar.py
 
@@ -37,12 +37,12 @@ Updating deployment state...
 Deployment complete!
 
 === Fetch pipeline ID and verify remote state
->>> [CLI] pipelines get [UUID]
+>>> [CLI] pipelines get [PIPELINE_ID]
 {
   "creator_user_name":"[USERNAME]",
   "last_modified":[UNIX_TIME_MILLIS],
   "name":"test-pipeline-[UNIQUE_NAME]",
-  "pipeline_id":"[UUID]",
+  "pipeline_id":"[PIPELINE_ID]",
   "run_as_user_name":"[USERNAME]",
   "spec": {
     "channel":"CURRENT",
@@ -51,7 +51,7 @@ Deployment complete!
       "metadata_file_path":"/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/state/metadata.json"
     },
     "edition":"ADVANCED",
-    "id":"[UUID]",
+    "id":"[PIPELINE_ID]",
     "libraries": [
       {
         "file": {
@@ -60,7 +60,7 @@ Deployment complete!
       }
     ],
     "name":"test-pipeline-[UNIQUE_NAME]",
-    "storage":"dbfs:/pipelines/[UUID]"
+    "storage":"dbfs:/pipelines/[PIPELINE_ID]"
   },
   "state":"IDLE"
 }
@@ -78,11 +78,11 @@ Destroy complete!
 >>> print_requests
 {
   "method": "DELETE",
-  "path": "/api/2.0/pipelines/[UUID]"
+  "path": "/api/2.0/pipelines/[PIPELINE_ID]"
 }
 State not found for pipelines.my
 
->>> musterr [CLI] pipelines get [UUID]
-Error: The specified pipeline [UUID] was not found.
+>>> musterr [CLI] pipelines get [PIPELINE_ID]
+Error: The specified pipeline [PIPELINE_ID] was not found.
 
 Exit code (musterr): 1

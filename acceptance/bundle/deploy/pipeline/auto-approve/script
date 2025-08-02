@@ -19,5 +19,7 @@ $CLI jobs get "${JOB_ID}" | jq '{name: .settings.name}'
 title "Remove resources from configuration."
 trace rm resources.yml
 
+trace $CLI bundle plan
+
 title "Try to redeploy the bundle - should fail without --auto-approve"
 trace errcode $CLI bundle deploy

@@ -52,7 +52,10 @@ func (r *ResourceSchema) DoUpdate(ctx context.Context, id string) (string, error
 }
 
 func DeleteSchema(ctx context.Context, client *databricks.WorkspaceClient, id string) error {
-	// TODO: implement schema deletion
+	err := client.Schemas.Delete(ctx, catalog.DeleteSchemaRequest{FullName: id, Force: true})
+	if err != nil {
+		return SDKError{Method: "Schemas.Delete", Err: err}
+	}
 	return nil
 }
 
