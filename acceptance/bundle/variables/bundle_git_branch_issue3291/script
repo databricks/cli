@@ -1,0 +1,2 @@
+trace $CLI bundle deploy --var branch=my_branch
+trace $CLI bundle validate -o json --var branch=my_branch | jq .variables
