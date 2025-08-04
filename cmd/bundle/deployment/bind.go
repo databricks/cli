@@ -20,9 +20,8 @@ func newBindCommand() *cobra.Command {
 		Short: "Bind bundle-defined resources to existing resources",
 		Long: `Bind a resource in your bundle to an existing resource in the workspace.
 
-This command links a bundle resource to its corresponding workspace resource,
-ensuring they stay synchronized. After binding, the workspace resource will be
-updated based on the bundle configuration on the next deployment.
+This command binds a workspace resource to a corresponding bundle resource definition.
+After binding, the workspace resource will be updated based on the bundle configuration on the next deployment.
 
 ARGUMENTS:
   KEY         - The resource key defined in your bundle configuration
