@@ -4,9 +4,7 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/structdiff"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 )
@@ -72,9 +70,4 @@ func (r *ResourceApp) WaitAfterCreate(ctx context.Context) error {
 func (r *ResourceApp) WaitAfterUpdate(ctx context.Context) error {
 	// Intentional no-op
 	return nil
-}
-
-func (r *ResourceApp) ClassifyChanges(changes []structdiff.Change) deployplan.ActionType {
-	// TODO: changing name is recreation
-	return deployplan.ActionTypeUpdate
 }

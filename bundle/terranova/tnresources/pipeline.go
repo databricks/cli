@@ -4,8 +4,6 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/libs/structdiff"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 )
@@ -68,8 +66,4 @@ func (r *ResourcePipeline) WaitAfterCreate(ctx context.Context) error {
 func (r *ResourcePipeline) WaitAfterUpdate(ctx context.Context) error {
 	// TODO: investigate if we need to mimic waiting behaviour in TF or can rely on Update status code.
 	return nil
-}
-
-func (r *ResourcePipeline) ClassifyChanges(changes []structdiff.Change) deployplan.ActionType {
-	return deployplan.ActionTypeUpdate
 }

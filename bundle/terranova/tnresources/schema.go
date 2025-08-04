@@ -4,9 +4,7 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/structdiff"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
@@ -72,8 +70,4 @@ func (r *ResourceSchema) WaitAfterCreate(ctx context.Context) error {
 func (r *ResourceSchema) WaitAfterUpdate(ctx context.Context) error {
 	// Intentional no-op
 	return nil
-}
-
-func (r *ResourceSchema) ClassifyChanges(changes []structdiff.Change) deployplan.ActionType {
-	return deployplan.ActionTypeUpdate
 }
