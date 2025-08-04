@@ -175,6 +175,9 @@ Catalog & Schema: {{ .Update.Config.Catalog }}{{ if and .Update.Config.Catalog .
 {{- end }}
 `
 
+const pipelineCanceledTemplate = `Update {{ .Update.UpdateId }} for pipeline{{- if .Update.Config }} {{ .Update.Config.Name }}{{ end }}{{- if .Update.Config }} {{ .Update.Config.Id }}{{ end }} was canceled.
+`
+
 func getRefreshSelectionString(update pipelines.UpdateInfo) string {
 	if update.FullRefresh {
 		return "full-refresh-all"
@@ -280,6 +283,13 @@ func fetchAndDisplayPipelineUpdate(ctx context.Context, bundle *bundle.Bundle, r
 	if latestUpdate.State == pipelines.UpdateInfoStateCompleted {
 >>>>>>> ee0f99139 (endpoint)
 		err = displayPipelineUpdate(ctx, latestUpdate, pipelineID, events)
+		if err != nil {
+			return err
+		}
+	}
+
+	if latestUpdate.State == pipelines.UpdateInfoStateCanceled {
+		err = displayCanceled(ctx, latestUpdate, pipelineID)
 		if err != nil {
 			return err
 		}
@@ -409,7 +419,19 @@ func displayPipelineUpdate(ctx context.Context, update pipelines.UpdateInfo, pip
 	return cmdio.RenderWithTemplate(ctx, data, "", pipelineUpdateTemplate)
 }
 
+<<<<<<< HEAD
 >>>>>>> a44303fd9 (removed templates)
+=======
+func displayCanceled(ctx context.Context, update pipelines.UpdateInfo, pipelineID string) error {
+	data := PipelineUpdateData{
+		PipelineId: pipelineID,
+		Update:     update,
+	}
+
+	return cmdio.RenderWithTemplate(ctx, data, "", pipelineCanceledTemplate)
+}
+
+>>>>>>> 9c319f800 (event cancelled)
 func runCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "run [flags] [KEY]",

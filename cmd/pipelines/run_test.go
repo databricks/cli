@@ -146,6 +146,58 @@ Pipeline configurations for this update:
 	}
 }
 
+func TestDisplayPipelineCanceled(t *testing.T) {
+	tests := []struct {
+		name       string
+		update     pipelines.UpdateInfo
+		pipelineID string
+		expected   string
+		wantErr    bool
+	}{
+		{
+			name: "pipeline canceled with name and id",
+			update: pipelines.UpdateInfo{
+				UpdateId: "update-canceled",
+				Config: &pipelines.PipelineSpec{
+					Name: "test-pipeline",
+					Id:   "pipeline-123",
+				},
+			},
+			pipelineID: "pipeline-123",
+			expected: `Update update-canceled for pipeline test-pipeline pipeline-123 was canceled.
+`,
+		},
+		{
+			name: "pipeline canceled without config",
+			update: pipelines.UpdateInfo{
+				UpdateId: "update-canceled-2",
+			},
+			pipelineID: "pipeline-456",
+			expected: `Update update-canceled-2 for pipeline was canceled.
+`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var buf bytes.Buffer
+
+			ctx := context.Background()
+			cmdIO := cmdio.NewIO(ctx, flags.OutputText, nil, &buf, &buf, "", "")
+			ctx = cmdio.InContext(ctx, cmdIO)
+
+			err := displayCanceled(ctx, tt.update, tt.pipelineID)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expected, buf.String())
+			}
+		})
+	}
+}
+
 func TestDisplayProgressEvents(t *testing.T) {
 	tests := []struct {
 		name     string
