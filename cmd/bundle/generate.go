@@ -16,6 +16,13 @@ func newGenerateCommand() *cobra.Command {
 Common patterns:
   databricks bundle generate job --existing-job-id 123 --key my_job
   databricks bundle generate dashboard --existing-path /my-dashboard --key sales_dash
+  databricks bundle generate dashboard --resource my_dashboard --watch --force  # Keep local copy in sync. Useful for development.
+  databricks bundle generate dashboard --resource my_dashboard --force # Do a one-time sync.
+
+Complete migration workflow:
+  1. Generate: databricks bundle generate job --existing-job-id 123 --key my_job
+  2. Bind: databricks bundle deployment bind my_job 123
+  3. Deploy: databricks bundle deploy
 
 Use --key to specify the resource name in your bundle configuration.`,
 	}
