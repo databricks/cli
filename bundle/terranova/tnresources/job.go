@@ -5,8 +5,6 @@ import (
 	"strconv"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/libs/structdiff"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
@@ -40,16 +38,16 @@ func (r *ResourceJob) DoCreate(ctx context.Context) (string, error) {
 	return strconv.FormatInt(response.JobId, 10), nil
 }
 
-func (r *ResourceJob) DoUpdate(ctx context.Context, id string) (string, error) {
+func (r *ResourceJob) DoUpdate(ctx context.Context, id string) error {
 	request, err := makeResetJob(r.config, id)
 	if err != nil {
-		return "", err
+		return err
 	}
 	err = r.client.Jobs.Reset(ctx, request)
 	if err != nil {
-		return "", SDKError{Method: "Jobs.Reset", Err: err}
+		return SDKError{Method: "Jobs.Reset", Err: err}
 	}
-	return id, nil
+	return nil
 }
 
 func DeleteJob(ctx context.Context, client *databricks.WorkspaceClient, id string) error {
@@ -72,10 +70,6 @@ func (r *ResourceJob) WaitAfterCreate(ctx context.Context) error {
 func (r *ResourceJob) WaitAfterUpdate(ctx context.Context) error {
 	// Intentional no-op
 	return nil
-}
-
-func (r *ResourceJob) ClassifyChanges(changes []structdiff.Change) deployplan.ActionType {
-	return deployplan.ActionTypeUpdate
 }
 
 func makeCreateJob(config jobs.JobSettings) (jobs.CreateJob, error) {

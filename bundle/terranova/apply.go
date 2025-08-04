@@ -143,17 +143,20 @@ func (d *Deployer) destroy(ctx context.Context, inputConfig any) error {
 }
 
 func (d *Deployer) deploy(ctx context.Context, inputConfig any, actionType deployplan.ActionType) error {
-	entry, hasEntry := d.db.GetResourceEntry(d.group, d.resourceName)
-
-	resource, cfgType, err := New(d.client, d.group, d.resourceName, inputConfig)
+	resource, _, err := New(d.client, d.group, d.resourceName, inputConfig)
 	if err != nil {
 		return err
 	}
 
 	config := resource.Config()
 
-	if !hasEntry {
+	if actionType == deployplan.ActionTypeCreate {
 		return d.Create(ctx, resource, config)
+	}
+
+	entry, hasEntry := d.db.GetResourceEntry(d.group, d.resourceName)
+	if !hasEntry {
+		return errors.New("state entry not found")
 	}
 
 	oldID := entry.ID
@@ -161,28 +164,20 @@ func (d *Deployer) deploy(ctx context.Context, inputConfig any, actionType deplo
 		return errors.New("invalid state: empty id")
 	}
 
-	savedState, err := typeConvert(cfgType, entry.State)
-	if err != nil {
-		return fmt.Errorf("interpreting state: %w", err)
-	}
-
-	localDiffType, err := calcDiff(d.settings, resource, savedState, config)
-	if err != nil {
-		return fmt.Errorf("comparing state and config: %w", err)
-	}
-
-	if localDiffType == deployplan.ActionTypeRecreate {
+	switch actionType {
+	case deployplan.ActionTypeRecreate:
 		return d.Recreate(ctx, resource, oldID, config)
-	}
-
-	if localDiffType == deployplan.ActionTypeUpdate {
+	case deployplan.ActionTypeUpdate:
 		return d.Update(ctx, resource, oldID, config)
+	case deployplan.ActionTypeUpdateWithID:
+		updater, hasUpdater := resource.(IResourceUpdatesID)
+		if !hasUpdater {
+			return errors.New("internal error: plan is update_with_id but resource does not implement UpdateWithID")
+		}
+		return d.UpdateWithID(ctx, resource, updater, oldID, config)
+	default:
+		return fmt.Errorf("internal error: unexpected plan: %#v", actionType)
 	}
-
-	// localDiffType is either None or Partial: we should proceed to fetching remote state and calculate local+remote diff
-
-	log.Debugf(ctx, "Unchanged %s.%s id=%#v", d.group, d.resourceName, oldID)
-	return nil
 }
 
 func (d *Deployer) Create(ctx context.Context, resource IResource, config any) error {
@@ -238,8 +233,27 @@ func (d *Deployer) Recreate(ctx context.Context, resource IResource, oldID strin
 	return nil
 }
 
-func (d *Deployer) Update(ctx context.Context, resource IResource, oldID string, config any) error {
-	newID, err := resource.DoUpdate(ctx, oldID)
+func (d *Deployer) Update(ctx context.Context, resource IResource, id string, config any) error {
+	err := resource.DoUpdate(ctx, id)
+	if err != nil {
+		return fmt.Errorf("updating id=%s: %w", id, err)
+	}
+
+	err = d.db.SaveState(d.group, d.resourceName, id, config)
+	if err != nil {
+		return fmt.Errorf("saving state id=%s: %w", id, err)
+	}
+
+	err = resource.WaitAfterUpdate(ctx)
+	if err != nil {
+		return fmt.Errorf("waiting after updating id=%s: %w", id, err)
+	}
+
+	return nil
+}
+
+func (d *Deployer) UpdateWithID(ctx context.Context, resource IResource, updater IResourceUpdatesID, oldID string, config any) error {
+	newID, err := updater.DoUpdateWithID(ctx, oldID)
 	if err != nil {
 		return fmt.Errorf("updating id=%s: %w", oldID, err)
 	}
@@ -255,14 +269,11 @@ func (d *Deployer) Update(ctx context.Context, resource IResource, oldID string,
 		return fmt.Errorf("saving state id=%s: %w", oldID, err)
 	}
 
-	if oldID != newID && !d.settings.UpdateUpdatesID {
-		return fmt.Errorf("internal error, unexpected change of ID from %#v to %#v", oldID, newID)
-	}
-
 	err = resource.WaitAfterUpdate(ctx)
 	if err != nil {
 		return fmt.Errorf("waiting after updating id=%s: %w", newID, err)
 	}
+
 	return nil
 }
 
@@ -303,14 +314,20 @@ func calcDiff(settings ResourceSettings, resource IResource, savedState, config 
 		return "", err
 	}
 
+	customClassify, hasCustomClassify := resource.(IResourceCustomClassify)
+
 	if settings.MustRecreate(localDiff) {
 		return deployplan.ActionTypeRecreate, nil
 	} else if len(localDiff) > 0 {
-		result := resource.ClassifyChanges(localDiff)
-		if result == deployplan.ActionTypeRecreate && !settings.RecreateAllowed {
-			return "", errors.New("internal error: ClassifyChanges returned 'recreate' unexpectedly")
+		if hasCustomClassify {
+			result := customClassify.ClassifyChanges(localDiff)
+			if result == deployplan.ActionTypeRecreate && !settings.RecreateAllowed {
+				return "", errors.New("internal error: ClassifyChanges returned 'recreate' unexpectedly")
+			}
+			return result, nil
+		} else {
+			return deployplan.ActionTypeUpdate, nil
 		}
-		return result, nil
 	}
 
 	return deployplan.ActionTypeNoop, nil

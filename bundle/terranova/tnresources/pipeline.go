@@ -34,19 +34,19 @@ func (r *ResourcePipeline) DoCreate(ctx context.Context) (string, error) {
 	return response.PipelineId, nil
 }
 
-func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string) (string, error) {
+func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string) error {
 	request := pipelines.EditPipeline{}
 	err := copyViaJSON(&request, r.config)
 	if err != nil {
-		return "", err
+		return err
 	}
 	request.PipelineId = id
 
 	err = r.client.Pipelines.Update(ctx, request)
 	if err != nil {
-		return "", SDKError{Method: "Pipelines.Update", Err: err}
+		return SDKError{Method: "Pipelines.Update", Err: err}
 	}
-	return id, nil
+	return nil
 }
 
 func DeletePipeline(ctx context.Context, client *databricks.WorkspaceClient, id string) error {

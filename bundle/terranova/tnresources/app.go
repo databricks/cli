@@ -5,6 +5,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structdiff"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/apps"
@@ -41,17 +42,21 @@ func (r *ResourceApp) DoCreate(ctx context.Context) (string, error) {
 	return waiter.Response.Name, nil
 }
 
-func (r *ResourceApp) DoUpdate(ctx context.Context, id string) (string, error) {
+func (r *ResourceApp) DoUpdate(ctx context.Context, id string) error {
 	request := apps.UpdateAppRequest{
 		App:  r.config,
 		Name: id,
 	}
 	response, err := r.client.Apps.Update(ctx, request)
 	if err != nil {
-		return "", SDKError{Method: "Apps.Update", Err: err}
+		return SDKError{Method: "Apps.Update", Err: err}
 	}
 
-	return response.Name, nil
+	if response.Name != id {
+		log.Warnf(ctx, "apps: response contains unexpected name=%#v (expected %#v)", response.Name, id)
+	}
+
+	return nil
 }
 
 func DeleteApp(ctx context.Context, client *databricks.WorkspaceClient, id string) error {

@@ -5,6 +5,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structdiff"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/sql"
@@ -35,19 +36,24 @@ func (r *ResourceSqlWarehouse) DoCreate(ctx context.Context) (string, error) {
 	return waiter.Id, nil
 }
 
-func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, oldID string) (string, error) {
+func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, id string) error {
 	request := sql.EditWarehouseRequest{}
 	err := copyViaJSON(&request, r.config)
 	if err != nil {
-		return "", err
+		return err
 	}
-	request.Id = oldID
+	request.Id = id
 
 	waiter, err := r.client.Warehouses.Edit(ctx, request)
 	if err != nil {
-		return "", SDKError{Method: "Warehouses.Edit", Err: err}
+		return SDKError{Method: "Warehouses.Edit", Err: err}
 	}
-	return waiter.Id, nil
+
+	if waiter.Id != id {
+		log.Warnf(ctx, "sql_warehouses: response contains unexpected id=%#v (expected %#v)", waiter.Id, id)
+	}
+
+	return nil
 }
 
 func (r *ResourceSqlWarehouse) WaitAfterCreate(ctx context.Context) error {
