@@ -192,4 +192,10 @@ func TestValidateDevelopmentMode(t *testing.T) {
 	b.Config.Workspace.ResourcePath = "/Users/lennart@company.com/.bundle/x/y/resources"
 	diags = validateDevelopmentMode(b)
 	require.NoError(t, diags.Error())
+
+	// Test with development mode with root path inside a home folder:
+	b = mockBundle(config.Development)
+	b.Config.Workspace.RootPath = "~/Workspace/my_project/${var.global_branch_name}/${bundle.name}/${bundle.target}"
+	diags = validateDevelopmentMode(b)
+	require.NoError(t, diags.Error())
 }

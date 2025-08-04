@@ -89,7 +89,7 @@ func findNonUserPath(b *bundle.Bundle) string {
 	containsName := func(path string) bool {
 		username := b.Config.Workspace.CurrentUser.UserName
 		shortname := b.Config.Workspace.CurrentUser.ShortName
-		return strings.Contains(path, username) || strings.Contains(path, shortname)
+		return strings.HasPrefix(path, "~/") || strings.Contains(path, username) || strings.Contains(path, shortname)
 	}
 
 	if b.Config.Workspace.RootPath != "" && !containsName(b.Config.Workspace.RootPath) {
