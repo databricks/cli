@@ -36,7 +36,7 @@ type PipelineUpdateData struct {
 	LastEventTime       string
 }
 
-const pipelineUpdateTemplate = `Update {{ .Update.UpdateId }} for pipeline {{- if .Update.Config }} {{ .Update.Config.Name }}{{ end }} {{- if .Update.Config }} {{ .Update.Config.Id }}{{ end }} completed successfully.
+const pipelineUpdateTemplate = `Update {{ .Update.UpdateId }} for pipeline{{- if .Update.Config }} {{ .Update.Config.Name }}{{ end }}{{- if .Update.Config }} {{ .Update.Config.Id }}{{ end }} completed successfully.
 {{- if .Update.Cause }}
 Cause: {{ .Update.Cause }}
 {{- end }}
@@ -47,7 +47,7 @@ Creation Time: {{ .Update.CreationTime | pretty_UTC_date_from_millis }}
 End Time: {{ .LastEventTime }}
 {{- end }}
 {{- if or (and .Update.Config .Update.Config.Serverless) .Update.ClusterId }}
-Compute: {{ if .Update.Config.Serverless }} serverless {{ else }}{{ .Update.ClusterId }}{{ end }}
+Compute: {{ if .Update.Config.Serverless }}serverless{{ else }}{{ .Update.ClusterId }}{{ end }}
 {{- end }}
 Refresh: {{ .RefreshSelectionStr }}
 {{- if .Update.Config }}
@@ -59,9 +59,6 @@ Continuous: {{ .Update.Config.Continuous }}
 {{- end }}
 {{- if .Update.Config.Development }}
 Development mode: {{ if .Update.Config.Development }}Dev{{ else }}Prod{{ end }}
-{{- end }}
-{{- if .Update.Config.Environment }}
-Environment: {{ .Update.Config.Environment }}
 {{- end }}
 {{- if or .Update.Config.Catalog .Update.Config.Schema }}
 Catalog & Schema: {{ .Update.Config.Catalog }}{{ if and .Update.Config.Catalog .Update.Config.Schema }}.{{ end }}{{ .Update.Config.Schema }}
