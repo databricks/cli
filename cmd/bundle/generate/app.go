@@ -42,12 +42,6 @@ WHAT GETS GENERATED:
 - App source files downloaded to the specified source directory
 - Updated bundle configuration to reference the new app resource
 
-SUPPORTED APP TYPES:
-- Streamlit apps for interactive data visualization
-- Dash apps for data analytics dashboards
-- Flask apps for custom web applications
-- Panel apps for data science workflows
-
 After generation, you can deploy the app to different environments and modify
 settings like compute resources, environment variables, and access permissions
 per target environment.`,
