@@ -16,7 +16,6 @@ EXAMPLES:
 WHAT GETS GENERATED:
 - Job configuration YAML file in the resources directory
 - Any associated notebook or Python files in the source directory
-- Updated bundle configuration to reference the new resource
 
 After generation, you can deploy this job to other targets using:
   databricks bundle deploy --target staging

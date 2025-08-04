@@ -442,9 +442,8 @@ EXAMPLES:
   databricks bundle generate dashboard --resource my_dashboard --watch --force
 
 WHAT GETS GENERATED:
-- Dashboard configuration YAML file with metadata and settings
+- Dashboard configuration YAML file with settings and a reference to the dashboard definition
 - Dashboard definition (.lvdash.json) file with layout and queries
-- Updated bundle configuration to reference the new dashboard resource
 
 SYNC WORKFLOW FOR DASHBOARD DEVELOPMENT:
 When developing dashboards, you can modify them in the Databricks UI and sync

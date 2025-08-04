@@ -23,7 +23,7 @@ TEMPLATE_PATH optionally specifies which template to use. It can be one of the f
 - a Git repository URL, e.g. https://github.com/my/repository
 
 Examples:
-  databricks bundle init                    # Choose from built-in templates
+  databricks bundle init                   # Choose from built-in templates
   databricks bundle init default-python    # Python jobs and notebooks
   databricks bundle init dbt-sql           # dbt + SQL warehouse project
   databricks bundle init --output-dir ./my-project

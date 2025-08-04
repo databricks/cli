@@ -45,7 +45,6 @@ EXAMPLES:
 WHAT GETS GENERATED:
 - Pipeline configuration YAML file with settings and libraries
 - Pipeline notebooks downloaded to the source directory
-- Updated bundle configuration to reference the new pipeline resource
 
 After generation, you can deploy to other environments and modify settings
 like catalogs, schemas, and compute configurations per target.`,
