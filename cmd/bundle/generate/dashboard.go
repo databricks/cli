@@ -238,17 +238,19 @@ func (d *dashboard) saveConfiguration(ctx context.Context, b *bundle.Bundle, das
 	return nil
 }
 
-func waitForChanges(ctx context.Context, w *databricks.WorkspaceClient, dashboard *dashboards.Dashboard) diag.Diagnostics {
+func waitForChanges(ctx context.Context, w *databricks.WorkspaceClient, dashboard *dashboards.Dashboard) {
 	// Compute [time.Time] for the most recent update.
 	tref, err := time.Parse(time.RFC3339, dashboard.UpdateTime)
 	if err != nil {
-		return diag.FromErr(err)
+		logdiag.LogError(ctx, err)
+		return
 	}
 
 	for {
 		obj, err := w.Workspace.GetStatusByPath(ctx, dashboard.Path)
 		if err != nil {
-			return diag.FromErr(err)
+			logdiag.LogError(ctx, err)
+			return
 		}
 
 		// Compute [time.Time] from timestamp in millis since epoch.
@@ -260,17 +262,19 @@ func waitForChanges(ctx context.Context, w *databricks.WorkspaceClient, dashboar
 		time.Sleep(1 * time.Second)
 	}
 
-	return nil
+	return
 }
 
-func (d *dashboard) updateDashboardForResource(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (d *dashboard) updateDashboardForResource(ctx context.Context, b *bundle.Bundle) {
 	resource, ok := b.Config.Resources.Dashboards[d.resource]
 	if !ok {
-		return diag.Errorf("dashboard resource %q is not defined", d.resource)
+		logdiag.LogError(ctx, fmt.Errorf("dashboard resource %q is not defined", d.resource))
+		return
 	}
 
 	if resource.FilePath == "" {
-		return diag.Errorf("dashboard resource %q has no file path defined", d.resource)
+		logdiag.LogError(ctx, fmt.Errorf("dashboard resource %q has no file path defined", d.resource))
+		return
 	}
 
 	// Resolve the dashboard ID from the resource.
@@ -286,19 +290,19 @@ func (d *dashboard) updateDashboardForResource(ctx context.Context, b *bundle.Bu
 	for {
 		dashboard, err := w.Lakeview.GetByDashboardId(ctx, dashboardID)
 		if err != nil {
-			return diag.FromErr(err)
+			logdiag.LogError(ctx, err)
 		}
 
 		if etag != dashboard.Etag {
 			err = d.saveSerializedDashboard(ctx, b, dashboard, dashboardPath)
 			if err != nil {
-				return diag.FromErr(err)
+				logdiag.LogError(ctx, err)
 			}
 		}
 
 		// Abort if we are not watching for changes.
 		if !d.watch {
-			return nil
+			return
 		}
 
 		// Update the etag for the next iteration.
