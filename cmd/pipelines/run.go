@@ -42,12 +42,12 @@ type ProgressEventsData struct {
 }
 
 // ProgressEventsTemplate is the template for displaying progress events
-const ProgressEventsTemplate = `{{- if .ProgressEvents }}
-{{- printf "%-25s %-7s\n" "Run Phase" "Duration" }}
-{{- printf "%-25s %-7s\n" "---------" "--------" }}
+const ProgressEventsTemplate = `{{- if and .ProgressEvents (ne (sub (len .ProgressEvents) 1) 0) }}
+{{- printf "%-25s %s\n" "Run Phase" "Duration" }}
+{{- printf "%-25s %s\n" "---------" "--------" }}
 {{- range $index, $event := .ProgressEvents }}
 {{- if ne $index (sub (len $.ProgressEvents) 1) }}
-{{- printf "%-25s %-7s\n" $event.Phase $event.Duration }}
+{{- printf "%-25s %s\n" $event.Phase $event.Duration }}
 {{- end }}
 {{- end }}
 {{- end }}`
@@ -86,7 +86,10 @@ func enrichEvents(events []pipelines.PipelineEvent) ([]ProgressEventWithDuration
 			diff := nextTime.Sub(currTime)
 
 			if diff > 0 {
-				if diff < time.Minute {
+				if diff < time.Second {
+					milliseconds := int(diff.Milliseconds())
+					duration = fmt.Sprintf("%dms", milliseconds)
+				} else if diff < time.Minute {
 					duration = fmt.Sprintf("%.1fs", diff.Seconds())
 				} else if diff < time.Hour {
 					minutes := int(diff.Minutes())

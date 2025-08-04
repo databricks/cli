@@ -145,3 +145,93 @@ Pipeline configurations for this update:
 		})
 	}
 }
+
+func TestDisplayProgressEvents(t *testing.T) {
+	tests := []struct {
+		name     string
+		events   []pipelines.PipelineEvent
+		expected string
+		wantErr  bool
+	}{
+		{
+			name: "pipeline completed with multiple phases and different duration formats",
+			events: []pipelines.PipelineEvent{
+				{
+					Timestamp: "2022-01-01T00:00:00.000Z",
+					EventType: "update_progress",
+					Message:   "Update test-update-123 is WAITING_FOR_RESOURCES.",
+				},
+				{
+					Timestamp: "2022-01-01T00:00:01.500Z",
+					EventType: "update_progress",
+					Message:   "Update test-update-123 is RUNNING.",
+				},
+				{
+					Timestamp: "2022-01-01T00:01:30Z",
+					EventType: "update_progress",
+					Message:   "Update test-update-123 is COMPLETED.",
+				},
+			},
+			expected: `Run Phase                 Duration
+---------                 --------
+WAITING_FOR_RESOURCES     1.5s
+RUNNING                   1m 28s
+`,
+		},
+		{
+			name: "pipeline with millisecond and decimal second durations",
+			events: []pipelines.PipelineEvent{
+				{
+					Timestamp: "2022-01-01T00:00:00.000Z",
+					EventType: "update_progress",
+					Message:   "Update test-update-ms is WAITING_FOR_RESOURCES.",
+				},
+				{
+					Timestamp: "2022-01-01T00:00:00.500Z",
+					EventType: "update_progress",
+					Message:   "Update test-update-ms is RUNNING.",
+				},
+				{
+					Timestamp: "2022-01-01T00:00:01.250Z",
+					EventType: "update_progress",
+					Message:   "Update test-update-ms is COMPLETED.",
+				},
+			},
+			expected: `Run Phase                 Duration
+---------                 --------
+WAITING_FOR_RESOURCES     500ms
+RUNNING                   750ms
+`,
+		},
+		{
+			name: "edge cases - empty events and single event",
+			events: []pipelines.PipelineEvent{
+				{
+					Timestamp: "2022-01-01T00:00:00Z",
+					EventType: "update_progress",
+					Message:   "Update test-update-single is COMPLETED.",
+				},
+			},
+			expected: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var buf bytes.Buffer
+
+			ctx := context.Background()
+			cmdIO := cmdio.NewIO(ctx, flags.OutputText, nil, &buf, &buf, "", "")
+			ctx = cmdio.InContext(ctx, cmdIO)
+
+			err := displayProgressEvents(ctx, tt.events)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expected, buf.String())
+			}
+		})
+	}
+}
