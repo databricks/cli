@@ -289,12 +289,14 @@ func (d *dashboard) updateDashboardForResource(ctx context.Context, b *bundle.Bu
 		dashboard, err := w.Lakeview.GetByDashboardId(ctx, dashboardID)
 		if err != nil {
 			logdiag.LogError(ctx, err)
+			return
 		}
 
 		if etag != dashboard.Etag {
 			err = d.saveSerializedDashboard(ctx, b, dashboard, dashboardPath)
 			if err != nil {
 				logdiag.LogError(ctx, err)
+				return
 			}
 		}
 
