@@ -15,7 +15,6 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
-	"github.com/databricks/cli/libs/structdiff"
 	"github.com/databricks/databricks-sdk-go"
 )
 
@@ -306,29 +305,4 @@ func typeConvert(destType reflect.Type, src any) (any, error) {
 	}
 
 	return reflect.ValueOf(destPtr).Elem().Interface(), nil
-}
-
-func calcDiff(settings ResourceSettings, resource IResource, savedState, config any) (deployplan.ActionType, error) {
-	localDiff, err := structdiff.GetStructDiff(savedState, config)
-	if err != nil {
-		return "", err
-	}
-
-	customClassify, hasCustomClassify := resource.(IResourceCustomClassify)
-
-	if settings.MustRecreate(localDiff) {
-		return deployplan.ActionTypeRecreate, nil
-	} else if len(localDiff) > 0 {
-		if hasCustomClassify {
-			result := customClassify.ClassifyChanges(localDiff)
-			if result == deployplan.ActionTypeRecreate && !settings.RecreateAllowed {
-				return "", errors.New("internal error: ClassifyChanges returned 'recreate' unexpectedly")
-			}
-			return result, nil
-		} else {
-			return deployplan.ActionTypeUpdate, nil
-		}
-	}
-
-	return deployplan.ActionTypeNoop, nil
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/terranova/tnstate"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structdiff"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 )
@@ -22,6 +23,7 @@ type Planner struct {
 }
 
 func (d *Planner) Plan(ctx context.Context, inputConfig any) (deployplan.ActionType, error) {
+	// TODO: wrap errors with prefix "planning <group>.<name>:"
 	entry, hasEntry := d.db.GetResourceEntry(d.group, d.resourceName)
 
 	resource, cfgType, err := New(d.client, d.group, d.resourceName, inputConfig)
@@ -157,4 +159,38 @@ func CalculateDestroyActions(ctx context.Context, b *bundle.Bundle) ([]deploypla
 	}
 
 	return actions, nil
+}
+
+func calcDiff(settings ResourceSettings, resource IResource, savedState, config any) (deployplan.ActionType, error) {
+	localDiff, err := structdiff.GetStructDiff(savedState, config)
+	if err != nil {
+		return "", err
+	}
+
+	if len(localDiff) == 0 {
+		return deployplan.ActionTypeNoop, nil
+	}
+
+	if settings.MustRecreate(localDiff) {
+		return deployplan.ActionTypeRecreate, nil
+	}
+
+	customClassify, hasCustomClassify := resource.(IResourceCustomClassify)
+
+	if hasCustomClassify {
+		_, hasUpdateWithID := resource.(IResourceUpdatesID)
+
+		result := customClassify.ClassifyChanges(localDiff)
+		if result == deployplan.ActionTypeRecreate && !settings.RecreateAllowed {
+			return "", errors.New("internal error: unexpected plan='recreate'")
+		}
+
+		if result == deployplan.ActionTypeUpdateWithID && !hasUpdateWithID {
+			return "", errors.New("internal error: unexpected plan='update_with_id'")
+		}
+
+		return result, nil
+	}
+
+	return deployplan.ActionTypeUpdate, nil
 }
