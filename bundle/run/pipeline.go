@@ -147,9 +147,7 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (output.RunOutp
 
 		if state == pipelines.UpdateInfoStateCanceled {
 			log.Infof(ctx, "Update was cancelled!")
-			return &output.PipelineOutput{
-				UpdateId: updateID,
-			}, errors.New("update cancelled")
+			return nil, errors.New("update cancelled")
 		}
 		if state == pipelines.UpdateInfoStateFailed {
 			log.Infof(ctx, "Update has failed!")
@@ -157,9 +155,7 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (output.RunOutp
 			if err != nil {
 				return nil, err
 			}
-			return &output.PipelineOutput{
-				UpdateId: updateID,
-			}, errors.New("update failed")
+			return nil, errors.New("update failed")
 		}
 		if state == pipelines.UpdateInfoStateCompleted {
 			log.Infof(ctx, "Update has completed successfully!")
