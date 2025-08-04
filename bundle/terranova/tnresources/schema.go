@@ -34,13 +34,15 @@ func (r *ResourceSchema) DoCreate(ctx context.Context) (string, error) {
 }
 
 func (r *ResourceSchema) DoUpdate(ctx context.Context, id string) error {
-	updateRequest := catalog.UpdateSchema{}
-	err := copyViaJSON(&updateRequest, r.config)
-	if err != nil {
-		return err
+	updateRequest := catalog.UpdateSchema{
+		Comment:                      r.config.Comment,
+		EnablePredictiveOptimization: "", // Not suppotred by DABs
+		FullName:                     id,
+		NewName:                      "", // We recreate schemas on name change intentionally.
+		Owner:                        "", // Not supported by DABs
+		Properties:                   r.config.Properties,
+		ForceSendFields:              filterForceSendFields[catalog.UpdateSchema](r.config.ForceSendFields),
 	}
-
-	updateRequest.FullName = id
 
 	response, err := r.client.Schemas.Update(ctx, updateRequest)
 	if err != nil {
@@ -55,7 +57,11 @@ func (r *ResourceSchema) DoUpdate(ctx context.Context, id string) error {
 }
 
 func DeleteSchema(ctx context.Context, client *databricks.WorkspaceClient, id string) error {
-	err := client.Schemas.Delete(ctx, catalog.DeleteSchemaRequest{FullName: id, Force: true})
+	err := client.Schemas.Delete(ctx, catalog.DeleteSchemaRequest{
+		FullName:        id,
+		Force:           true,
+		ForceSendFields: nil, // Zero value for slice
+	})
 	if err != nil {
 		return SDKError{Method: "Schemas.Delete", Err: err}
 	}

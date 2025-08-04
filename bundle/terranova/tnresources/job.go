@@ -73,11 +73,39 @@ func (r *ResourceJob) WaitAfterUpdate(ctx context.Context) error {
 }
 
 func makeCreateJob(config jobs.JobSettings) (jobs.CreateJob, error) {
-	result := jobs.CreateJob{}
+	result := jobs.CreateJob{
+		AccessControlList:    nil, // Not supported by DABs
+		BudgetPolicyId:       config.BudgetPolicyId,
+		Continuous:           config.Continuous,
+		Deployment:           config.Deployment,
+		Description:          config.Description,
+		EditMode:             config.EditMode,
+		EmailNotifications:   config.EmailNotifications,
+		Environments:         config.Environments,
+		Format:               config.Format,
+		GitSource:            config.GitSource,
+		Health:               config.Health,
+		JobClusters:          config.JobClusters,
+		MaxConcurrentRuns:    config.MaxConcurrentRuns,
+		Name:                 config.Name,
+		NotificationSettings: config.NotificationSettings,
+		Parameters:           config.Parameters,
+		PerformanceTarget:    config.PerformanceTarget,
+		Queue:                config.Queue,
+		RunAs:                config.RunAs,
+		Schedule:             config.Schedule,
+		Tags:                 config.Tags,
+		Tasks:                config.Tasks,
+		TimeoutSeconds:       config.TimeoutSeconds,
+		Trigger:              config.Trigger,
+		WebhookNotifications: config.WebhookNotifications,
+
+		ForceSendFields: filterForceSendFields[jobs.CreateJob](config.ForceSendFields),
+	}
+
 	// TODO: Validate copy - all fields must be initialized or explicitly allowed to be empty
 	// Unset AccessControlList
-	err := copyViaJSON(&result, config)
-	return result, err
+	return result, nil
 }
 
 func makeResetJob(config jobs.JobSettings, id string) (jobs.ResetJob, error) {

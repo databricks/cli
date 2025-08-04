@@ -1,24 +1,20 @@
 package tnresources
 
 import (
-	"encoding/json"
-	"errors"
-	"fmt"
+	"reflect"
 )
 
-// Utility to copy from one type to another based on intermediate JSON transformation
-// (e.g. to copy from JobSettings to CreateJob)
-func copyViaJSON[T1, T2 any](dest *T1, src T2) error {
-	if dest == nil {
-		return errors.New("internal error: unexpected nil")
+// filterForceSendFields creates a new slice with fields present only in the provided type.
+// We must use that when copying structs because JSON marshaller in SDK crashes if it sees unknown field.
+func filterForceSendFields[T any](fields []string) []string {
+	var result []string
+	typeOfT := reflect.TypeOf((*T)(nil)).Elem()
+
+	for _, field := range fields {
+		if _, ok := typeOfT.FieldByName(field); ok {
+			result = append(result, field)
+		}
 	}
-	data, err := json.Marshal(src)
-	if err != nil {
-		return fmt.Errorf("Failed to serialize %T: %w", src, err)
-	}
-	err = json.Unmarshal(data, dest)
-	if err != nil {
-		return fmt.Errorf("Failed JSON roundtrip from %T to %T: %w", src, dest, err)
-	}
-	return nil
+
+	return result
 }

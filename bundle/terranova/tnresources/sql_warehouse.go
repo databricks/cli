@@ -35,12 +35,23 @@ func (r *ResourceSqlWarehouse) DoCreate(ctx context.Context) (string, error) {
 }
 
 func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, id string) error {
-	request := sql.EditWarehouseRequest{}
-	err := copyViaJSON(&request, r.config)
-	if err != nil {
-		return err
+	request := sql.EditWarehouseRequest{
+		AutoStopMins:            r.config.AutoStopMins,
+		Channel:                 r.config.Channel,
+		ClusterSize:             r.config.ClusterSize,
+		CreatorName:             r.config.CreatorName,
+		EnablePhoton:            r.config.EnablePhoton,
+		EnableServerlessCompute: r.config.EnableServerlessCompute,
+		Id:                      id,
+		InstanceProfileArn:      r.config.InstanceProfileArn,
+		MaxNumClusters:          r.config.MaxNumClusters,
+		MinNumClusters:          r.config.MinNumClusters,
+		Name:                    r.config.Name,
+		SpotInstancePolicy:      r.config.SpotInstancePolicy,
+		Tags:                    r.config.Tags,
+		WarehouseType:           sql.EditWarehouseRequestWarehouseType(r.config.WarehouseType),
+		ForceSendFields:         r.config.ForceSendFields,
 	}
-	request.Id = id
 
 	waiter, err := r.client.Warehouses.Edit(ctx, request)
 	if err != nil {
