@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strconv"
-	"strings"
 
 	"github.com/databricks/cli/bundle"
 	configresources "github.com/databricks/cli/bundle/config/resources"
@@ -156,6 +154,7 @@ func fetchAllPipelineEvents(ctx context.Context, w *databricks.WorkspaceClient, 
 		queryParams["filter"] = params.Filter
 	}
 	if params.MaxResults > 0 {
+		queryParams["max_results"] = strconv.Itoa(params.MaxResults)
 		queryParams["max_results"] = strconv.Itoa(params.MaxResults)
 	}
 
