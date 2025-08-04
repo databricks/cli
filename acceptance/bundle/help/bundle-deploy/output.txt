@@ -3,13 +3,9 @@
 Deploy bundle resources to Databricks workspace.
 
 Common patterns:
-  databricks bundle deploy                   # Deploy to default target (dev)
+  databricks bundle deploy                  # Deploy to default target (dev)
   databricks bundle deploy --target dev     # Deploy to development
   databricks bundle deploy --target prod    # Deploy to production
-
-Recommended flags for CI/CD:
-  --auto-approve      # Skip confirmation prompts
-  --fail-on-active-runs # Fail if resources are currently running. Helps avoid inconsistencies results for active runs.
 
 See https://docs.databricks.com/en/dev-tools/bundles/index.html for more information.
 

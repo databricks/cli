@@ -19,7 +19,7 @@ Common workflows:
 
 Import existing resources:
   databricks bundle generate job --existing-job-id 123 --key my_job # Generate job configuration
-  databricks bundle deployment bind my_job 123                      # Link to an
+  databricks bundle deployment bind my_job 123                      # Link to an existing job
 
 Online documentation: https://docs.databricks.com/en/dev-tools/bundles/index.html`,
 		GroupID: "development",
