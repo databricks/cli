@@ -261,8 +261,6 @@ func waitForChanges(ctx context.Context, w *databricks.WorkspaceClient, dashboar
 
 		time.Sleep(1 * time.Second)
 	}
-
-	return
 }
 
 func (d *dashboard) updateDashboardForResource(ctx context.Context, b *bundle.Bundle) {
