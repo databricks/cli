@@ -16,7 +16,36 @@ func newUnbindCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "unbind KEY",
 		Short: "Unbind bundle-defined resources from its managed remote resource",
-		Args:  root.ExactArgs(1),
+		Long: `Unbind a bundle resource from its linked workspace resource.
+
+This command removes the link between a bundle resource and its corresponding
+workspace resource. After unbinding, the workspace resource will no longer be
+managed by the bundle and can be modified independently.
+
+ARGUMENTS:
+  KEY - The resource key defined in your bundle configuration to unbind
+
+EXAMPLES:
+  # Unbind a job resource
+  databricks bundle deployment unbind my_etl_job
+
+  # Unbind a pipeline resource
+  databricks bundle deployment unbind data_pipeline
+
+WHEN TO UNBIND:
+- You want to stop managing a resource through the bundle
+- You need to transfer resource ownership to manual management
+- You're restructuring your bundle organization
+
+AFTER UNBINDING:
+- The workspace resource continues to exist and function normally
+- Future bundle deployments will not affect the unbound resource
+- You can manually modify the resource in the workspace UI
+- The resource configuration remains in your bundle but becomes inactive
+
+To re-bind the resource later, use:
+  databricks bundle deployment bind <KEY> <RESOURCE_ID>`,
+		Args: root.ExactArgs(1),
 	}
 
 	var forceLock bool

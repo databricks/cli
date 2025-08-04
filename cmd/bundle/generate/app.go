@@ -24,6 +24,33 @@ func NewGenerateAppCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "app",
 		Short: "Generate bundle configuration for a Databricks app",
+		Long: `Generate bundle configuration for an existing Databricks app.
+
+This command downloads an existing Databricks app and creates bundle files
+that you can use to deploy the app to other environments or manage it as code.
+
+EXAMPLES:
+  # Import a Streamlit app
+  databricks bundle generate app --existing-app-name my-streamlit-app --key analytics_app
+
+  # Import with custom directory structure
+  databricks bundle generate app --existing-app-name data-viewer \
+    --key data_app --config-dir resources --source-dir src/apps
+
+WHAT GETS GENERATED:
+- App configuration YAML file with app settings and dependencies
+- App source files downloaded to the specified source directory
+- Updated bundle configuration to reference the new app resource
+
+SUPPORTED APP TYPES:
+- Streamlit apps for interactive data visualization
+- Dash apps for data analytics dashboards
+- Flask apps for custom web applications
+- Panel apps for data science workflows
+
+After generation, you can deploy the app to different environments and modify
+settings like compute resources, environment variables, and access permissions
+per target environment.`,
 	}
 
 	cmd.Flags().StringVar(&appName, "existing-app-name", "", `App name to generate config for`)

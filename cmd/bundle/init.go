@@ -15,12 +15,21 @@ func newInitCommand() *cobra.Command {
 		Use:   "init [TEMPLATE_PATH]",
 		Short: "Initialize using a bundle template",
 		Args:  root.MaximumNArgs(1),
-		Long: fmt.Sprintf(`Initialize using a bundle template.
+		Long: fmt.Sprintf(`Initialize using a bundle template to get started quickly.
 
 TEMPLATE_PATH optionally specifies which template to use. It can be one of the following:
 %s
 - a local file system path with a template directory
 - a Git repository URL, e.g. https://github.com/my/repository
+
+Examples:
+  databricks bundle init                    # Choose from built-in templates
+  databricks bundle init default-python    # Python jobs and notebooks
+  databricks bundle init dbt-sql           # dbt + SQL warehouse project
+  databricks bundle init --output-dir ./my-project
+
+After initialization:
+  databricks bundle deploy --target dev
 
 See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more information on templates.`, template.HelpDescriptions()),
 	}

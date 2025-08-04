@@ -34,7 +34,16 @@ func newValidateCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "validate",
 		Short: "Validate configuration",
-		Args:  root.NoArgs,
+		Long: `Validate bundle configuration for errors, warnings and recommendations.
+
+Run validate before deploy to catch configuration issues early:
+  databricks bundle validate              # Validate default target
+  databricks bundle validate --target prod    # Validate specific target
+
+Validation checks the configuration syntax and schema, permissions etc.
+
+Please run this command before deploying to ensure configuration quality.`,
+		Args: root.NoArgs,
 	}
 
 	var includeLocations bool

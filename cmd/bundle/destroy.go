@@ -24,7 +24,19 @@ func newDestroyCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "destroy",
 		Short: "Destroy deployed bundle resources",
-		Args:  root.NoArgs,
+		Long: `Destroy all resources deployed by this bundle from the workspace.
+
+This command removes all Databricks resources that were created by deploying
+this bundle.
+
+EXAMPLES:
+  databricks bundle destroy                 # Destroy resources in default target
+  databricks bundle destroy --target prod   # Destroy resources in production target
+
+TYPICAL USE CASES:
+- Cleaning up development or testing targets
+- Removing resources during environment decommissioning`,
+		Args: root.NoArgs,
 	}
 
 	var autoApprove bool
