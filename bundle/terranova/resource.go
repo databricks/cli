@@ -94,9 +94,10 @@ var SupportedResources = map[string]ResourceSettings{
 		),
 	},
 	"volumes": {
-		New:        reflect.ValueOf(tnresources.NewResourceVolume),
-		ConfigType: TypeOfConfig(&tnresources.ResourceVolume{}),
-		DeleteFN:   tnresources.DeleteVolume,
+		New:             reflect.ValueOf(tnresources.NewResourceVolume),
+		ConfigType:      TypeOfConfig(&tnresources.ResourceVolume{}),
+		DeleteFN:        tnresources.DeleteVolume,
+		UpdateUpdatesID: true,
 		// TF: https://github.com/databricks/terraform-provider-databricks/blob/f5fce0f/catalog/resource_volume.go#L19
 		RecreateFields: mkMap(
 			".catalog_name",
