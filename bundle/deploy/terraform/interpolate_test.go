@@ -79,7 +79,7 @@ func TestInterpolate(t *testing.T) {
 	assert.Equal(t, "${databricks_sql_endpoint.other_sql_warehouse.id}", j.Tags["other_sql_warehouse"])
 
 	m := b.Config.Resources.Models["my_model"]
-	assert.Equal(t, "my_model", m.CreateModelRequest.Name)
+	assert.Equal(t, "my_model", m.Name)
 }
 
 func TestInterpolateUnknownResourceType(t *testing.T) {

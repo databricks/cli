@@ -159,7 +159,7 @@ Example usage:
 
 		if _, ok := b.Config.Scripts[key]; ok {
 			if len(args) > 0 {
-				return fmt.Errorf("additional arguments are not supported for scripts. Got: %v. We recommend using environment variables to pass runtime arguments to a script. For example: FOO=bar databricks bundle run my_script.", args)
+				return fmt.Errorf("additional arguments are not supported for scripts. Got: %v. We recommend using environment variables to pass runtime arguments to a script. For example: FOO=bar databricks bundle run my_script", args)
 			}
 
 			content := b.Config.Scripts[key].Content

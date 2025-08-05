@@ -60,7 +60,7 @@ func buildStructInfo(typ reflect.Type) structInfo {
 
 	// Queue holds the indexes of the structs to visit.
 	// It is initialized with a single empty slice to visit the top level struct.
-	var queue [][]int = [][]int{{}}
+	queue := [][]int{{}}
 	for i := 0; i < len(queue); i++ {
 		prefix := queue[i]
 
