@@ -11,5 +11,9 @@ trap cleanup EXIT
 
 dashboard_id=$($CLI bundle summary -o json | jq .resources.dashboards.already_exists.id -r)
 
+trace $CLI lakeview get $dashboard_id
+
+trace $CLI lakeview update $dashboard_id --display-name "Updated dashboard"
+
 # This should error.
 errcode trace $CLI bundle generate dashboard --resource already_exists
