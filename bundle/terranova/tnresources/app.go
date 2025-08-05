@@ -27,8 +27,9 @@ func (r *ResourceApp) Config() any {
 
 func (r *ResourceApp) DoCreate(ctx context.Context) (string, error) {
 	request := apps.CreateAppRequest{
-		App:       r.config,
-		NoCompute: true,
+		App:             r.config,
+		NoCompute:       true,
+		ForceSendFields: nil,
 	}
 	waiter, err := r.client.Apps.Create(ctx, request)
 	if err != nil {

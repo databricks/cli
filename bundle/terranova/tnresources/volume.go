@@ -41,6 +41,10 @@ func (r *ResourceVolume) DoUpdate(ctx context.Context, id string) error {
 	updateRequest := catalog.UpdateVolumeRequestContent{
 		Comment: r.config.Comment,
 		Name:    id,
+		NewName: "", // Not supported by Update(). Needs DoUpdateWithID()
+		Owner:   "", // Not supported by DABs
+
+		ForceSendFields: nil,
 	}
 
 	nameFromID, err := getNameFromID(id)
@@ -68,6 +72,11 @@ func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string) (string,
 	updateRequest := catalog.UpdateVolumeRequestContent{
 		Comment: r.config.Comment,
 		Name:    id,
+
+		NewName: "", // Initialized below if needed
+		Owner:   "", // Not supported by DABs
+
+		ForceSendFields: nil,
 	}
 
 	items := strings.Split(id, ".")
