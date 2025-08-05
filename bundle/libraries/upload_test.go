@@ -99,8 +99,8 @@ func TestArtifactUploadForWorkspace(t *testing.T) {
 	// Test that libraries path is updated
 	require.Equal(t, "/Workspace/foo/bar/artifacts/.internal/source.whl", b.Config.Resources.Jobs["job"].JobSettings.Tasks[0].Libraries[0].Whl)
 	require.Equal(t, "/Workspace/Users/foo@bar.com/mywheel.whl", b.Config.Resources.Jobs["job"].JobSettings.Tasks[0].Libraries[1].Whl)
-	require.Equal(t, "/Workspace/foo/bar/artifacts/.internal/source.whl", b.Config.Resources.Jobs["job"].JobSettings.Environments[0].Spec.Dependencies[0])
-	require.Equal(t, "/Workspace/Users/foo@bar.com/mywheel.whl", b.Config.Resources.Jobs["job"].JobSettings.Environments[0].Spec.Dependencies[1])
+	require.Equal(t, "/Workspace/foo/bar/artifacts/.internal/source.whl", b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies[0])
+	require.Equal(t, "/Workspace/Users/foo@bar.com/mywheel.whl", b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies[1])
 	require.Equal(t, "/Workspace/foo/bar/artifacts/.internal/source.whl", b.Config.Resources.Jobs["job"].JobSettings.Tasks[1].ForEachTask.Task.Libraries[0].Whl)
 	require.Equal(t, "/Workspace/Users/foo@bar.com/mywheel.whl", b.Config.Resources.Jobs["job"].JobSettings.Tasks[1].ForEachTask.Task.Libraries[1].Whl)
 }
@@ -187,8 +187,8 @@ func TestArtifactUploadForVolumes(t *testing.T) {
 	// Test that libraries path is updated
 	require.Equal(t, "/Volumes/foo/bar/artifacts/.internal/source.whl", b.Config.Resources.Jobs["job"].JobSettings.Tasks[0].Libraries[0].Whl)
 	require.Equal(t, "/Volumes/some/path/mywheel.whl", b.Config.Resources.Jobs["job"].JobSettings.Tasks[0].Libraries[1].Whl)
-	require.Equal(t, "/Volumes/foo/bar/artifacts/.internal/source.whl", b.Config.Resources.Jobs["job"].JobSettings.Environments[0].Spec.Dependencies[0])
-	require.Equal(t, "/Volumes/some/path/mywheel.whl", b.Config.Resources.Jobs["job"].JobSettings.Environments[0].Spec.Dependencies[1])
+	require.Equal(t, "/Volumes/foo/bar/artifacts/.internal/source.whl", b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies[0])
+	require.Equal(t, "/Volumes/some/path/mywheel.whl", b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies[1])
 	require.Equal(t, "/Volumes/foo/bar/artifacts/.internal/source.whl", b.Config.Resources.Jobs["job"].JobSettings.Tasks[1].ForEachTask.Task.Libraries[0].Whl)
 	require.Equal(t, "/Volumes/some/path/mywheel.whl", b.Config.Resources.Jobs["job"].JobSettings.Tasks[1].ForEachTask.Task.Libraries[1].Whl)
 }
@@ -322,10 +322,10 @@ func TestUploadMultipleLibraries(t *testing.T) {
 	require.Contains(t, b.Config.Resources.Jobs["job"].JobSettings.Tasks[0].Libraries, compute.Library{Whl: "/Workspace/foo/bar/artifacts/.internal/source4.whl"})
 	require.Contains(t, b.Config.Resources.Jobs["job"].JobSettings.Tasks[0].Libraries, compute.Library{Whl: "/Workspace/Users/foo@bar.com/mywheel.whl"})
 
-	require.Len(t, b.Config.Resources.Jobs["job"].JobSettings.Environments[0].Spec.Dependencies, 5)
-	require.Contains(t, b.Config.Resources.Jobs["job"].JobSettings.Environments[0].Spec.Dependencies, "/Workspace/foo/bar/artifacts/.internal/source1.whl")
-	require.Contains(t, b.Config.Resources.Jobs["job"].JobSettings.Environments[0].Spec.Dependencies, "/Workspace/foo/bar/artifacts/.internal/source2.whl")
-	require.Contains(t, b.Config.Resources.Jobs["job"].JobSettings.Environments[0].Spec.Dependencies, "/Workspace/foo/bar/artifacts/.internal/source3.whl")
-	require.Contains(t, b.Config.Resources.Jobs["job"].JobSettings.Environments[0].Spec.Dependencies, "/Workspace/foo/bar/artifacts/.internal/source4.whl")
-	require.Contains(t, b.Config.Resources.Jobs["job"].JobSettings.Environments[0].Spec.Dependencies, "/Workspace/Users/foo@bar.com/mywheel.whl")
+	require.Len(t, b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies, 5)
+	require.Contains(t, b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies, "/Workspace/foo/bar/artifacts/.internal/source1.whl")
+	require.Contains(t, b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies, "/Workspace/foo/bar/artifacts/.internal/source2.whl")
+	require.Contains(t, b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies, "/Workspace/foo/bar/artifacts/.internal/source3.whl")
+	require.Contains(t, b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies, "/Workspace/foo/bar/artifacts/.internal/source4.whl")
+	require.Contains(t, b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies, "/Workspace/Users/foo@bar.com/mywheel.whl")
 }

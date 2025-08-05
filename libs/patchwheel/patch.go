@@ -213,19 +213,20 @@ func PatchWheel(path, outputDir string) (string, bool, error) {
 			return "", false, err
 		}
 
-		if f.Name == metadataFile.Name {
+		switch f.Name {
+		case metadataFile.Name:
 			_, err = writer.Write(newMetadata)
 			if err != nil {
 				return "", false, err
 			}
 			metadataUpdated += 1
-		} else if f.Name == recordFile.Name {
+		case recordFile.Name:
 			_, err = writer.Write(newRecord)
 			if err != nil {
 				return "", false, err
 			}
 			recordUpdated += 1
-		} else {
+		default:
 			rc, err := f.Open()
 			if err != nil {
 				return "", false, err

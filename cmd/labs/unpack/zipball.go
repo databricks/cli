@@ -26,7 +26,7 @@ func (v GitHubZipball) UnpackTo(libTarget string) error {
 		return fmt.Errorf("zip: %w", err)
 	}
 	// GitHub packages entire repo contents into a top-level folder, e.g. databrickslabs-ucx-2800c6b
-	rootDirInZIP := zipReader.File[0].FileHeader.Name
+	rootDirInZIP := zipReader.File[0].Name
 	for _, zf := range zipReader.File {
 		if zf.Name == rootDirInZIP {
 			continue
