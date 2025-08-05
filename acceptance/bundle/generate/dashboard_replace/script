@@ -1,0 +1,15 @@
+envsubst < databricks.yml > databricks.yml.subst
+mv databricks.yml.subst databricks.yml
+
+# Deploy bundle once to create the dashboard.
+trace $CLI bundle deploy
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+dashboard_id=$($CLI bundle summary -o json | jq .resources.dashboards.already_exists.id -r)
+
+# This should error.
+errcode trace $CLI bundle generate dashboard --resource already_exists

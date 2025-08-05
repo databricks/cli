@@ -1,0 +1,21 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dashboard-replace-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle generate dashboard --resource already_exists
+Error: dashboard.lvdash.json already exists. Use --force to overwrite
+
+
+Exit code: 1
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete dashboard already_exists
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dashboard-replace-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
