@@ -23,7 +23,7 @@ func newBindCommand() *cobra.Command {
 This command binds a workspace resource to a corresponding bundle resource definition.
 After binding, the workspace resource will be updated based on the bundle configuration on the next deployment.
 
-ARGUMENTS:
+Arguments:
   KEY         - The resource key defined in your bundle configuration
   RESOURCE_ID - The ID of the existing resource in the workspace
 
@@ -37,7 +37,7 @@ Examples:
   # Bind with automatic approval (useful for CI/CD)
   databricks bundle deployment bind my_job 123 --auto-approve
 
-WORKFLOW:
+Common workflow:
 1. First, generate bundle configuration from an existing resource:
    databricks bundle generate job --existing-job-id 6565621249 --key my_etl_job
 

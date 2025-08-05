@@ -22,7 +22,7 @@ This command removes the link between a bundle definition and its corresponding
 workspace resource. After unbinding, the workspace resource will no longer be
 managed by the bundle and can be modified independently.
 
-ARGUMENTS:
+Arguments:
   KEY - The resource key defined in your bundle configuration to unbind
 
 Examples:
@@ -32,12 +32,12 @@ Examples:
   # Unbind a pipeline resource
   databricks bundle deployment unbind data_pipeline
 
-WHEN TO UNBIND:
+When to unbind:
 - You want to stop managing a resource through the bundle
 - You need to transfer resource ownership to manual management
 - You're moving your resource to a different bundle or target
 
-AFTER UNBINDING:
+After unbinding:
 - The workspace resource continues to exist and function normally
 - Future bundle deployments will not affect the unbound resource
 - You can manually modify the resource in the workspace UI
