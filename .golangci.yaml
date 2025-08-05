@@ -51,7 +51,6 @@ linters:
         - -ST1003
         - -ST1016
         - -ST1005
-        - -ST1023
     testifylint:
       enable-all: true
       disable:
