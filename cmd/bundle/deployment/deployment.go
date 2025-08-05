@@ -10,9 +10,9 @@ func NewDeploymentCommand() *cobra.Command {
 		Short: "Deployment related commands",
 		Long: `Deployment related commands for managing bundle resource bindings.
 
-Use these commands to link / unlink bundle definitions to existing workspace resources.
+Use these commands to bind / unbind bundle definitions to existing workspace resources.
 
-COMMON WORKFLOW:
+Common workflow:
 1. Generate configuration from existing resource:
    databricks bundle generate job --existing-job-id 12345 --key my_job
 

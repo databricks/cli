@@ -1,6 +1,6 @@
 
 >>> [CLI] bundle deploy --help
-Deploy bundle resources to Databricks workspace.
+Deploy bundle.
 
 Common patterns:
   databricks bundle deploy                  # Deploy to default target (dev)

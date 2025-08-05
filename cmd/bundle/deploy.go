@@ -21,7 +21,7 @@ func newDeployCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "deploy",
 		Short: "Deploy bundle",
-		Long: `Deploy bundle resources to Databricks workspace.
+		Long: `Deploy bundle.
 
 Common patterns:
   databricks bundle deploy                  # Deploy to default target (dev)
