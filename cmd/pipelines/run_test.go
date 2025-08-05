@@ -50,16 +50,17 @@ func TestDisplayPipelineUpdate(t *testing.T) {
 					EventType: "update_progress",
 				},
 			},
-			expected: `Update update-123 for pipeline test-pipeline pipeline-789 completed successfully.
-Cause: Manual trigger
-Creation Time: 2022-01-01T00:00:00Z
-End Time: 2022-01-01T01:00:00Z
-Compute: serverless
-Refresh: full-refresh-all
-Channel: CURRENT
-Continuous: true
-Development mode: Dev
-Catalog & Schema: test_catalog.test_schema
+			expected: `Pipeline test-pipeline pipeline-789 completed successfully.
+Started at 2022-01-01T00:00:00Z and completed at 2022-01-01T01:00:00Z.
+Pipeline configurations for this update:
+• All tables are fully refreshed
+• Cause: Manual trigger
+• Serverless compute
+• Channel: CURRENT
+• Continuous
+• Development mode
+• Catalog: test_catalog
+• Schema: test_schema
 `,
 		},
 		{
@@ -69,8 +70,9 @@ Catalog & Schema: test_catalog.test_schema
 			},
 			pipelineID: "pipeline-789",
 			events:     []pipelines.PipelineEvent{},
-			expected: `Update update-456 for pipeline completed successfully.
-Refresh: default refresh-all
+			expected: `Pipeline completed successfully.
+Pipeline configurations for this update:
+• All tables are refreshed
 `,
 		},
 		{
@@ -87,9 +89,10 @@ Refresh: default refresh-all
 					EventType: "update_progress",
 				},
 			},
-			expected: `Update update-789 for pipeline completed successfully.
-End Time: 2022-01-01T02:00:00Z
-Refresh: refreshed [table1, table2] | full-refreshed [table3]
+			expected: `Pipeline completed successfully.
+Pipeline configurations for this update:
+• Refreshed [table1, table2]
+• Full refreshed [table3]
 `,
 		},
 	}

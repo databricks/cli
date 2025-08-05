@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/databricks/cli/bundle"
@@ -30,60 +29,9 @@ import (
 )
 
 type PipelineUpdateData struct {
-	PipelineId          string
-	Update              pipelines.UpdateInfo
-	RefreshSelectionStr string
-	LastEventTime       string
-}
-
-const pipelineUpdateTemplate = `Update {{ .Update.UpdateId }} for pipeline{{- if .Update.Config }} {{ .Update.Config.Name }}{{ end }}{{- if .Update.Config }} {{ .Update.Config.Id }}{{ end }} completed successfully.
-{{- if .Update.Cause }}
-Cause: {{ .Update.Cause }}
-{{- end }}
-{{- if .Update.CreationTime }}
-Creation Time: {{ .Update.CreationTime | pretty_UTC_date_from_millis }}
-{{- end }}
-{{- if .LastEventTime }}
-End Time: {{ .LastEventTime }}
-{{- end }}
-{{- if or (and .Update.Config .Update.Config.Serverless) .Update.ClusterId }}
-Compute: {{ if .Update.Config.Serverless }}serverless{{ else }}{{ .Update.ClusterId }}{{ end }}
-{{- end }}
-Refresh: {{ .RefreshSelectionStr }}
-{{- if .Update.Config }}
-{{- if .Update.Config.Channel }}
-Channel: {{ .Update.Config.Channel }}
-{{- end }}
-{{- if .Update.Config.Continuous }}
-Continuous: {{ .Update.Config.Continuous }}
-{{- end }}
-{{- if .Update.Config.Development }}
-Development mode: {{ if .Update.Config.Development }}Dev{{ else }}Prod{{ end }}
-{{- end }}
-{{- if or .Update.Config.Catalog .Update.Config.Schema }}
-Catalog & Schema: {{ .Update.Config.Catalog }}{{ if and .Update.Config.Catalog .Update.Config.Schema }}.{{ end }}{{ .Update.Config.Schema }}
-{{- end }}
-{{- end }}
-`
-
-func getRefreshSelectionString(update pipelines.UpdateInfo) string {
-	if update.FullRefresh {
-		return "full-refresh-all"
-	}
-
-	var parts []string
-	if len(update.RefreshSelection) > 0 {
-		parts = append(parts, fmt.Sprintf("refreshed [%s]", strings.Join(update.RefreshSelection, ", ")))
-	}
-	if len(update.FullRefreshSelection) > 0 {
-		parts = append(parts, fmt.Sprintf("full-refreshed [%s]", strings.Join(update.FullRefreshSelection, ", ")))
-	}
-
-	if len(parts) > 0 {
-		return strings.Join(parts, " | ")
-	}
-
-	return "default refresh-all"
+	PipelineId    string
+	Update        pipelines.UpdateInfo
+	LastEventTime string
 }
 
 func fetchAndDisplayPipelineUpdate(ctx context.Context, bundle *bundle.Bundle, ref bundleresources.Reference, updateId string) error {
@@ -144,10 +92,9 @@ func getLastEventTime(events []pipelines.PipelineEvent) string {
 
 func displayPipelineUpdate(ctx context.Context, update pipelines.UpdateInfo, pipelineID string, events []pipelines.PipelineEvent) error {
 	data := PipelineUpdateData{
-		PipelineId:          pipelineID,
-		Update:              update,
-		RefreshSelectionStr: getRefreshSelectionString(update),
-		LastEventTime:       getLastEventTime(events),
+		PipelineId:    pipelineID,
+		Update:        update,
+		LastEventTime: getLastEventTime(events),
 	}
 
 	return cmdio.RenderWithTemplate(ctx, data, "", pipelineUpdateTemplate)
