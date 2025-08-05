@@ -2,7 +2,7 @@ envsubst < databricks.yml > databricks.yml.subst
 mv databricks.yml.subst databricks.yml
 
 # Deploy bundle once to create the dashboard.
-trace $CLI bundle deploy --debug
+trace $CLI bundle deploy
 
 cleanup() {
     trace $CLI bundle destroy --auto-approve
@@ -10,7 +10,7 @@ cleanup() {
 trap cleanup EXIT
 
 # debug only, to figure out why the test is failing on CI.
-trace $CLI bundle summary -o json --debug
+trace $CLI bundle summary -o json
 
 dashboard_id=$($CLI bundle summary -o json | jq .resources.dashboards.already_exists.id -r)
 
