@@ -4,8 +4,6 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/libs/structdiff"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 )
@@ -34,19 +32,19 @@ func (r *ResourcePipeline) DoCreate(ctx context.Context) (string, error) {
 	return response.PipelineId, nil
 }
 
-func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string) (string, error) {
+func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string) error {
 	request := pipelines.EditPipeline{}
 	err := copyViaJSON(&request, r.config)
 	if err != nil {
-		return "", err
+		return err
 	}
 	request.PipelineId = id
 
 	err = r.client.Pipelines.Update(ctx, request)
 	if err != nil {
-		return "", SDKError{Method: "Pipelines.Update", Err: err}
+		return SDKError{Method: "Pipelines.Update", Err: err}
 	}
-	return id, nil
+	return nil
 }
 
 func DeletePipeline(ctx context.Context, client *databricks.WorkspaceClient, id string) error {
@@ -68,8 +66,4 @@ func (r *ResourcePipeline) WaitAfterCreate(ctx context.Context) error {
 func (r *ResourcePipeline) WaitAfterUpdate(ctx context.Context) error {
 	// TODO: investigate if we need to mimic waiting behaviour in TF or can rely on Update status code.
 	return nil
-}
-
-func (r *ResourcePipeline) ClassifyChanges(changes []structdiff.Change) deployplan.ActionType {
-	return deployplan.ActionTypeUpdate
 }

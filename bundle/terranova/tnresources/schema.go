@@ -4,8 +4,7 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/libs/structdiff"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
@@ -34,21 +33,25 @@ func (r *ResourceSchema) DoCreate(ctx context.Context) (string, error) {
 	return response.FullName, nil
 }
 
-func (r *ResourceSchema) DoUpdate(ctx context.Context, id string) (string, error) {
+func (r *ResourceSchema) DoUpdate(ctx context.Context, id string) error {
 	updateRequest := catalog.UpdateSchema{}
 	err := copyViaJSON(&updateRequest, r.config)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	updateRequest.FullName = id
 
 	response, err := r.client.Schemas.Update(ctx, updateRequest)
 	if err != nil {
-		return "", SDKError{Method: "Schemas.Update", Err: err}
+		return SDKError{Method: "Schemas.Update", Err: err}
 	}
 
-	return response.FullName, nil
+	if response.FullName != id {
+		log.Warnf(ctx, "schemas: response contains unexpected full_name=%#v (expected %#v)", response.FullName, id)
+	}
+
+	return nil
 }
 
 func DeleteSchema(ctx context.Context, client *databricks.WorkspaceClient, id string) error {
@@ -67,8 +70,4 @@ func (r *ResourceSchema) WaitAfterCreate(ctx context.Context) error {
 func (r *ResourceSchema) WaitAfterUpdate(ctx context.Context) error {
 	// Intentional no-op
 	return nil
-}
-
-func (r *ResourceSchema) ClassifyChanges(changes []structdiff.Change) deployplan.ActionType {
-	return deployplan.ActionTypeUpdate
 }
