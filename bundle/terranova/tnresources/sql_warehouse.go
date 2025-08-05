@@ -50,7 +50,7 @@ func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, id string) error {
 		SpotInstancePolicy:      r.config.SpotInstancePolicy,
 		Tags:                    r.config.Tags,
 		WarehouseType:           sql.EditWarehouseRequestWarehouseType(r.config.WarehouseType),
-		ForceSendFields:         r.config.ForceSendFields,
+		ForceSendFields:         filterFields[sql.EditWarehouseRequest](r.config.ForceSendFields),
 	}
 
 	waiter, err := r.client.Warehouses.Edit(ctx, request)
