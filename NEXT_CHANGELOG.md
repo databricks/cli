@@ -11,5 +11,6 @@
 
 ### Bundles
 * Always set default value for source field for tasks if not explicitly set already ([#3359](https://github.com/databricks/cli/pull/3359))
+* Fix panic in auto competion handler for bundler run/open. Regression introduced in 0.259.0.
 
 ### API Changes
