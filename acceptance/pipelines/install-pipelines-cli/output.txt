@@ -1,7 +1,7 @@
 
 === install pipelines cli
 >>> [CLI] install-pipelines-cli -d ./subdir
-pipelines successfully installed in directory "./subdir"
+found existing pipelines installation at subdir/pipelines. Pipelines is successfully reinstalled in directory "./subdir"
 
 >>> ./subdir/pipelines
 Pipelines CLI
@@ -45,7 +45,7 @@ Exit code: 1
 
 === databricks executable called with alias
 >>> ./subdir/notdatabricks install-pipelines-cli -d ./subdir
-pipelines successfully installed in directory "./subdir"
+found existing pipelines installation at subdir/pipelines. Pipelines is successfully reinstalled in directory "./subdir"
 
 >>> ./subdir/pipelines
 Pipelines CLI
@@ -79,7 +79,7 @@ Use "pipelines [command] --help" for more information about a command.
 
 === overwrites broken symlink pointing to databricks
 >>> ./subdir/olddatabricks install-pipelines-cli -d ./subdir
-pipelines successfully installed in directory "./subdir"
+found existing pipelines installation at subdir/pipelines. Pipelines is successfully reinstalled in directory "./subdir"
 
 >>> [CLI] install-pipelines-cli -d ./subdir
 pipelines successfully installed in directory "./subdir"
