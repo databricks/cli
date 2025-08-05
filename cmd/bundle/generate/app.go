@@ -29,7 +29,7 @@ func NewGenerateAppCommand() *cobra.Command {
 This command downloads an existing Databricks app and creates bundle files
 that you can use to deploy the app to other environments or manage it as code.
 
-EXAMPLES:
+Examples:
   # Import a Streamlit app
   databricks bundle generate app --existing-app-name my-streamlit-app --key analytics_app
 
@@ -37,7 +37,7 @@ EXAMPLES:
   databricks bundle generate app --existing-app-name data-viewer \
     --key data_app --config-dir resources --source-dir src/apps
 
-WHAT GETS GENERATED:
+What gets generated:
 - App configuration YAML file with app settings and dependencies
 - App source files downloaded to the specified source directory
 - Updated bundle configuration to reference the new app resource

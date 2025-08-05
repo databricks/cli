@@ -15,7 +15,7 @@ func newSchemaCommand() *cobra.Command {
 This command outputs the JSON Schema that describes the structure and validation
 rules for Databricks Asset Bundle configuration files.
 
-COMMON USE CASES:
+Common use cases:
 - Configure IDE/editor validation for databricks.yml files
 - Set up autocomplete and IntelliSense for bundle configuration`,
 		Args: root.NoArgs,

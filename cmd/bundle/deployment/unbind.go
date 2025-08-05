@@ -25,7 +25,7 @@ managed by the bundle and can be modified independently.
 ARGUMENTS:
   KEY - The resource key defined in your bundle configuration to unbind
 
-EXAMPLES:
+Examples:
   # Unbind a job resource
   databricks bundle deployment unbind my_etl_job
 

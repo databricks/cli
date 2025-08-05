@@ -29,11 +29,11 @@ func newDestroyCommand() *cobra.Command {
 This command removes all Databricks resources that were created by deploying
 this bundle.
 
-EXAMPLES:
+Examples:
   databricks bundle destroy                 # Destroy resources in default target
   databricks bundle destroy --target prod   # Destroy resources in production target
 
-TYPICAL USE CASES:
+Typical use cases:
 - Cleaning up development or testing targets
 - Removing resources during environment decommissioning`,
 		Args: root.NoArgs,

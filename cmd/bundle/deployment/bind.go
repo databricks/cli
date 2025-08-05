@@ -27,7 +27,7 @@ ARGUMENTS:
   KEY         - The resource key defined in your bundle configuration
   RESOURCE_ID - The ID of the existing resource in the workspace
 
-EXAMPLES:
+Examples:
   # Bind a job resource to existing workspace job
   databricks bundle deployment bind my_etl_job 6565621249
 

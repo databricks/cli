@@ -34,7 +34,7 @@ This command downloads an existing DLT pipeline's configuration and any associat
 notebooks, creating bundle files that you can use to deploy the pipeline to other
 environments or manage it as code.
 
-EXAMPLES:
+Examples:
   # Import a production DLT pipeline
   databricks bundle generate pipeline --existing-pipeline-id abc123 --key etl_pipeline
 
@@ -42,7 +42,7 @@ EXAMPLES:
   databricks bundle generate pipeline --existing-pipeline-id def456 \
     --key data_transformation --config-dir resources --source-dir src
 
-WHAT GETS GENERATED:
+What gets generated:
 - Pipeline configuration YAML file with settings and libraries
 - Pipeline notebooks downloaded to the source directory
 

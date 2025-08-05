@@ -430,7 +430,7 @@ func NewGenerateDashboardCommand() *cobra.Command {
 This command downloads an existing AI/BI dashboard and creates bundle files
 that you can use to deploy the dashboard to other environments or manage it as code.
 
-EXAMPLES:
+Examples:
   # Import dashboard by workspace path
   databricks bundle generate dashboard --existing-path /Users/me/sales-dashboard \
     --key sales_dash
@@ -441,11 +441,11 @@ EXAMPLES:
   # Watch for changes to keep bundle in sync with UI modifications
   databricks bundle generate dashboard --resource my_dashboard --watch --force
 
-WHAT GETS GENERATED:
+What gets generated:
 - Dashboard configuration YAML file with settings and a reference to the dashboard definition
 - Dashboard definition (.lvdash.json) file with layout and queries
 
-SYNC WORKFLOW FOR DASHBOARD DEVELOPMENT:
+Sync workflow for dashboard development:
 When developing dashboards, you can modify them in the Databricks UI and sync
 changes back to your bundle:
 

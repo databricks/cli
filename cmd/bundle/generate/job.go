@@ -33,7 +33,7 @@ func NewGenerateJobCommand() *cobra.Command {
 This command downloads an existing job's configuration and creates bundle files
 that you can use to deploy the job to other environments or manage it as code.
 
-EXAMPLES:
+Examples:
   # Import a production job for version control
   databricks bundle generate job --existing-job-id 12345 --key my_etl_job
 
@@ -41,7 +41,7 @@ EXAMPLES:
   databricks bundle generate job --existing-job-id 67890 \
     --key data_pipeline --config-dir resources --source-dir src
 
-WHAT GETS GENERATED:
+What gets generated:
 - Job configuration YAML file in the resources directory
 - Any associated notebook or Python files in the source directory
 
