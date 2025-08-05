@@ -1,6 +1,13 @@
 
 >>> [CLI] bundle open --help
-Open a resource in the browser
+Open a deployed bundle resource in the Databricks workspace.
+
+Examples:
+  databricks bundle open                    # Prompts to select a resource to open
+  databricks bundle open my_job             # Open specific job in Workflows UI
+  databricks bundle open my_dashboard       # Open dashboard in browser
+
+Use after deployment to quickly navigate to your resources in the workspace.
 
 Usage:
   databricks bundle open [flags]

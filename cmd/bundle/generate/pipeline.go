@@ -28,6 +28,26 @@ func NewGeneratePipelineCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "pipeline",
 		Short: "Generate bundle configuration for a pipeline",
+		Long: `Generate bundle configuration for an existing Delta Live Tables pipeline.
+
+This command downloads an existing DLT pipeline's configuration and any associated
+notebooks, creating bundle files that you can use to deploy the pipeline to other
+environments or manage it as code.
+
+Examples:
+  # Import a production DLT pipeline
+  databricks bundle generate pipeline --existing-pipeline-id abc123 --key etl_pipeline
+
+  # Organize files in custom directories
+  databricks bundle generate pipeline --existing-pipeline-id def456 \
+    --key data_transformation --config-dir resources --source-dir src
+
+What gets generated:
+- Pipeline configuration YAML file with settings and libraries
+- Pipeline notebooks downloaded to the source directory
+
+After generation, you can deploy to other environments and modify settings
+like catalogs, schemas, and compute configurations per target.`,
 	}
 
 	cmd.Flags().StringVar(&pipelineId, "existing-pipeline-id", "", `ID of the pipeline to generate config for`)
