@@ -10,38 +10,38 @@ resources:
         git_provider: github
 
       tasks:
-      - task_key: test_task_no_source
-        notebook_task:
-          notebook_path: ./notebook
-      - task_key: test_task_source_workspace
-        notebook_task:
-          notebook_path: ./notebook.py
-          source: WORKSPACE
-      - task_key: test_task_foreach_no_source
-        for_each_task:
-          inputs: "[1]"
-          task:
-            task_key: test_task_foreach_no_source
-            notebook_task:
-              notebook_path: ./notebook.py
-      - task_key: test_task_foreach_workspace
-        for_each_task:
-          inputs: "[1]"
-          task:
-            task_key: test_task_foreach_workspace
-            notebook_task:
-              notebook_path: ./notebook.py
-              source: WORKSPACE
+        - task_key: test_task_no_source
+          notebook_task:
+            notebook_path: ./notebook
+        - task_key: test_task_source_workspace
+          notebook_task:
+            notebook_path: ./notebook.py
+            source: WORKSPACE
+        - task_key: test_task_foreach_no_source
+          for_each_task:
+            inputs: "[1]"
+            task:
+              task_key: test_task_foreach_no_source
+              notebook_task:
+                notebook_path: ./notebook.py
+        - task_key: test_task_foreach_workspace
+          for_each_task:
+            inputs: "[1]"
+            task:
+              task_key: test_task_foreach_workspace
+              notebook_task:
+                notebook_path: ./notebook.py
+                source: WORKSPACE
 
     workspace_job:
       tasks:
-      - task_key: test_task_no_source
-        notebook_task:
-          notebook_path: ./notebook.py
-      - task_key: test_task_foreach
-        for_each_task:
-          inputs: "[1]"
-          task:
-            task_key: test_task_foreach_no_source
-            notebook_task:
-              notebook_path: ./notebook.py
+        - task_key: test_task_no_source
+          notebook_task:
+            notebook_path: ./notebook.py
+        - task_key: test_task_foreach
+          for_each_task:
+            inputs: "[1]"
+            task:
+              task_key: test_task_foreach_no_source
+              notebook_task:
+                notebook_path: ./notebook.py
