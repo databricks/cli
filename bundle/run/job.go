@@ -34,7 +34,7 @@ func (r *jobRunner) Name() string {
 	if r.job == nil {
 		return ""
 	}
-	return r.job.JobSettings.Name
+	return r.job.Name
 }
 
 func isFailed(task jobs.RunTask) bool {
@@ -324,7 +324,7 @@ func (r *jobRunner) Restart(ctx context.Context, opts *Options) (output.RunOutpu
 	// /jobs/run-now will not cancel existing runs if the job is continuous and paused.
 	// New job runs will be queued instead and will wait for existing runs to finish.
 	// In this case, we need to cancel the existing runs before starting a new one.
-	continuous := r.job.JobSettings.Continuous
+	continuous := r.job.Continuous
 	if continuous != nil && continuous.PauseStatus == jobs.PauseStatusUnpaused {
 		return r.Run(ctx, opts)
 	}

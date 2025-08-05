@@ -205,10 +205,7 @@ func (w *DbfsClient) Delete(ctx context.Context, name string, mode ...DeleteMode
 		return err
 	}
 
-	recursive := false
-	if slices.Contains(mode, DeleteRecursively) {
-		recursive = true
-	}
+	recursive := slices.Contains(mode, DeleteRecursively)
 
 	err = w.workspaceClient.Dbfs.Delete(ctx, files.Delete{
 		Path:      absPath,

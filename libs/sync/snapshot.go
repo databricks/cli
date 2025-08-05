@@ -176,7 +176,7 @@ func loadOrNewSnapshot(ctx context.Context, opts *SyncOptions) (*Snapshot, error
 	// Ensure that all paths are slash-separated upon loading
 	// an existing snapshot file. If it was created by an older
 	// CLI version (<= v0.220.0), it may contain backslashes.
-	snapshot.SnapshotState = snapshot.SnapshotState.ToSlash()
+	snapshot.SnapshotState = snapshot.ToSlash()
 
 	snapshot.New = false
 	return snapshot, nil

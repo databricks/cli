@@ -82,7 +82,7 @@ func (f *ignoreFile) load() error {
 
 	// If the underlying file has not been modified
 	// it does not need to be reloaded.
-	if stat.ModTime() == f.modTime {
+	if stat.ModTime().Equal(f.modTime) {
 		return nil
 	}
 
