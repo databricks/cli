@@ -1,4 +1,4 @@
-package tnresources
+package terranova
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"reflect"
 
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/terranova/tnresources"
 	"github.com/databricks/cli/libs/structdiff"
 	"github.com/databricks/databricks-sdk-go"
 )
@@ -25,12 +26,6 @@ type ResourceSettings struct {
 	// Function to delete a resource of this type
 	DeleteFN DeleteResourceFN
 
-	// true if Update() method can return a different ID than that was passed in
-	// If ID changes during Update and UpdateUpdatesID is false, deployment of that resource will fail with internal error.
-	// This allows to make assumptions about references stability (${resources.jobs.foo.id}) when we see that
-	// operation is going to be "update" & ID is guarantee not to change.
-	UpdateUpdatesID bool
-
 	// true if ClassifyChanges() method can return a different ActionTypeRecreate
 	// If RecreateAllowed is false and RecreateFields is empty, the resource id is stable.
 	RecreateAllowed bool
@@ -40,9 +35,6 @@ type ResourceSettings struct {
 	// Fields are in structdiff.Change.String() format.
 	// Limitation: patterns like hello.*.world and hello[*].world are not supported
 	RecreateFields map[string]struct{}
-
-	// If resource does not set RecreateFields, RecreateAllowed, UpdateUpdatesID then
-	// it's ${resources.<group>.<name>.id} will considered stable for the purposes of concurrent deployment.
 }
 
 func (s *ResourceSettings) MustRecreate(changes []structdiff.Change) bool {
@@ -57,16 +49,21 @@ func (s *ResourceSettings) MustRecreate(changes []structdiff.Change) bool {
 	return false
 }
 
+// TypeOfConfig returns the reflect.Type of the configuration returned by the resource's Config() method.
+func TypeOfConfig(resource IResource) reflect.Type {
+	return reflect.TypeOf(resource.Config())
+}
+
 var SupportedResources = map[string]ResourceSettings{
 	"jobs": {
-		New:        reflect.ValueOf(NewResourceJob),
-		ConfigType: reflect.TypeOf(ResourceJob{}.config),
-		DeleteFN:   DeleteJob,
+		New:        reflect.ValueOf(tnresources.NewResourceJob),
+		ConfigType: TypeOfConfig(&tnresources.ResourceJob{}),
+		DeleteFN:   tnresources.DeleteJob,
 	},
 	"pipelines": {
-		New:        reflect.ValueOf(NewResourcePipeline),
-		ConfigType: reflect.TypeOf(ResourcePipeline{}.config),
-		DeleteFN:   DeletePipeline,
+		New:        reflect.ValueOf(tnresources.NewResourcePipeline),
+		ConfigType: TypeOfConfig(&tnresources.ResourcePipeline{}),
+		DeleteFN:   tnresources.DeletePipeline,
 		// See TF's ForceNew fields:
 		// https://github.com/databricks/terraform-provider-databricks/blob/8ae24ac/pipelines/resource_pipeline.go#L207
 		RecreateFields: mkMap(
@@ -77,9 +74,9 @@ var SupportedResources = map[string]ResourceSettings{
 		),
 	},
 	"schemas": {
-		New:        reflect.ValueOf(NewResourceSchema),
-		ConfigType: reflect.TypeOf(ResourceSchema{}.config),
-		DeleteFN:   DeleteSchema,
+		New:        reflect.ValueOf(tnresources.NewResourceSchema),
+		ConfigType: TypeOfConfig(&tnresources.ResourceSchema{}),
+		DeleteFN:   tnresources.DeleteSchema,
 		// TF: https://github.com/databricks/terraform-provider-databricks/blob/03a2515/catalog/resource_schema.go#L14
 		RecreateFields: mkMap(
 			".name",
@@ -88,20 +85,26 @@ var SupportedResources = map[string]ResourceSettings{
 		),
 	},
 	"volumes": {
-		New:        reflect.ValueOf(NewResourceVolume),
-		ConfigType: reflect.TypeOf(ResourceVolume{}.config),
-		DeleteFN:   DeleteVolume,
-		// RecreateFields: TODO
+		New:        reflect.ValueOf(tnresources.NewResourceVolume),
+		ConfigType: TypeOfConfig(&tnresources.ResourceVolume{}),
+		DeleteFN:   tnresources.DeleteVolume,
+		// TF: https://github.com/databricks/terraform-provider-databricks/blob/f5fce0f/catalog/resource_volume.go#L19
+		RecreateFields: mkMap(
+			".catalog_name",
+			".schema_name",
+			".storage_location",
+			".volume_type",
+		),
 	},
 	"apps": {
-		New:        reflect.ValueOf(NewResourceApp),
-		ConfigType: reflect.TypeOf(ResourceApp{}.config),
-		DeleteFN:   DeleteApp,
+		New:        reflect.ValueOf(tnresources.NewResourceApp),
+		ConfigType: TypeOfConfig(&tnresources.ResourceApp{}),
+		DeleteFN:   tnresources.DeleteApp,
 	},
 	"sql_warehouses": {
-		New:        reflect.ValueOf(NewResourceSqlWarehouse),
-		ConfigType: reflect.TypeOf(ResourceSqlWarehouse{}.config),
-		DeleteFN:   DeleteSqlWarehouse,
+		New:        reflect.ValueOf(tnresources.NewResourceSqlWarehouse),
+		ConfigType: TypeOfConfig(&tnresources.ResourceSqlWarehouse{}),
+		DeleteFN:   tnresources.DeleteSqlWarehouse,
 	},
 }
 
@@ -111,15 +114,24 @@ type IResource interface {
 	// Create the resource. Returns id of the resource.
 	DoCreate(ctx context.Context) (string, error)
 
-	// Update the resource. Returns id of the resource.
-	// Usually returns the same id as oldId but can also return a different one (e.g. schemas and volumes when certain fields are changed)
-	// Note, SupportedResources[group].UpdateUpdatesID must be true for this group if ID can be changed. Otherwise function must return the same ID.
-	DoUpdate(ctx context.Context, oldID string) (string, error)
+	// Update the resource. ID must not change.
+	DoUpdate(ctx context.Context, id string) error
 
 	WaitAfterCreate(ctx context.Context) error
 	WaitAfterUpdate(ctx context.Context) error
+}
 
+// Optional method for non-default change classification.
+// Default is to consider any change "an update" (RecreateFields handled separately).
+type IResourceCustomClassify interface {
 	ClassifyChanges(changes []structdiff.Change) deployplan.ActionType
+}
+
+// Optional method for resources that may update ID as part of update operation.
+type IResourceUpdatesID interface {
+	// Update the resource. Returns new id of the resource, which may be different from the old one.
+	// This will only be called if actiontype is ActionTypeUpdateWithID, so ClassifyChanges must be implemented as well.
+	DoUpdateWithID(ctx context.Context, oldID string) (string, error)
 }
 
 // invokeConstructor converts cfg to the parameter type expected by ctor and

@@ -11,3 +11,6 @@ export PATH=.:$PATH
 
 title "open after deployment. This will fail to open browser and complain, that's ok, we only want the message"
 musterr trace $CLI bundle open foo
+
+title "test auto-completion handler"
+trace $CLI __complete bundle open ,
