@@ -65,7 +65,7 @@ func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string) error {
 		Target:               r.config.Target,
 		Trigger:              r.config.Trigger,
 		PipelineId:           id,
-		ForceSendFields:      filterForceSendFields[pipelines.EditPipeline](r.config.ForceSendFields),
+		ForceSendFields:      filterFields[pipelines.EditPipeline](r.config.ForceSendFields),
 	}
 
 	err := r.client.Pipelines.Update(ctx, request)

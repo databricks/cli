@@ -41,7 +41,7 @@ func (r *ResourceSchema) DoUpdate(ctx context.Context, id string) error {
 		NewName:                      "", // We recreate schemas on name change intentionally.
 		Owner:                        "", // Not supported by DABs
 		Properties:                   r.config.Properties,
-		ForceSendFields:              filterForceSendFields[catalog.UpdateSchema](r.config.ForceSendFields),
+		ForceSendFields:              filterFields[catalog.UpdateSchema](r.config.ForceSendFields),
 	}
 
 	response, err := r.client.Schemas.Update(ctx, updateRequest)

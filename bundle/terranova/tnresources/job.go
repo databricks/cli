@@ -100,7 +100,7 @@ func makeCreateJob(config jobs.JobSettings) (jobs.CreateJob, error) {
 		Trigger:              config.Trigger,
 		WebhookNotifications: config.WebhookNotifications,
 
-		ForceSendFields: filterForceSendFields[jobs.CreateJob](config.ForceSendFields),
+		ForceSendFields: filterFields[jobs.CreateJob](config.ForceSendFields),
 	}
 
 	// TODO: Validate copy - all fields must be initialized or explicitly allowed to be empty
