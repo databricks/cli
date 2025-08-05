@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
-	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/spf13/cobra"
@@ -38,25 +36,12 @@ func installPipelinesSymlink(ctx context.Context, directory string) error {
 		if err != nil {
 			return err
 		}
-		cmdio.LogString(ctx, fmt.Sprintf("found existing pipelines installation at %s. Pipelines is successfully reinstalled in directory %q", pipelinesPath, dir))
+		cmdio.LogString(ctx, fmt.Sprintf("pipelines successfully installed in directory %q", dir))
 		return nil
 	}
 
 	target, err := filepath.EvalSymlinks(pipelinesPath)
 	if err != nil {
-		if strings.Contains(err.Error(), "databricks") &&
-			(strings.Contains(err.Error(), "no such file or directory") || (runtime.GOOS == "windows" && strings.Contains(err.Error(), "The system cannot find the file specified"))) {
-			err = os.Remove(pipelinesPath)
-			if err != nil {
-				return err
-			}
-			err = os.Symlink(realPath, pipelinesPath)
-			if err != nil {
-				return err
-			}
-			cmdio.LogString(ctx, fmt.Sprintf("pipelines successfully installed in directory %q", dir))
-			return nil
-		}
 		return err
 	}
 	if realPath == target {

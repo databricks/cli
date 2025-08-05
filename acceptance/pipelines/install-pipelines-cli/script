@@ -19,13 +19,5 @@ title "databricks executable called with alias"
 cp $CLI $tmpdir/notdatabricks
 trace $tmpdir/notdatabricks install-pipelines-cli -d $tmpdir
 trace $pipelines
-rm -f $pipelines
-
-title "overwrites broken symlink pointing to databricks"
-cp -L $CLI $tmpdir/olddatabricks
-trace $tmpdir/olddatabricks install-pipelines-cli -d $tmpdir
-rm -f $tmpdir/olddatabricks
-trace $CLI install-pipelines-cli -d $tmpdir
-trace $pipelines
 
 rm -rf $tmpdir/notdatabricks $pipelines $tmpdir
