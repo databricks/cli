@@ -35,7 +35,8 @@ recreate schemas.schema1
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-The following UC schemas will be deleted or recreated. Any underlying data may be lost:
+
+This action will result in the deletion or recreation of the following UC schemas. Any underlying data may be lost:
   recreate schema schema1
 Deploying resources...
 Updating deployment state...
