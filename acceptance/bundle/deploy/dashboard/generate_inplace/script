@@ -19,3 +19,10 @@ $CLI lakeview update $dashboard_id --display-name "Updated dashboard" | jq .seri
 
 # This should error.
 errcode trace $CLI bundle generate dashboard --resource already_exists
+
+trace cat dashboard.lvdash.json
+
+# this should successfully update the dashboard.
+trace $CLI bundle generate dashboard --resource already_exists --force
+
+trace cat dashboard.lvdash.json

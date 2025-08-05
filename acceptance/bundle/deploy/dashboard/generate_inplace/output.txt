@@ -17,6 +17,21 @@ Error: dashboard.lvdash.json already exists. Use --force to overwrite
 
 Exit code: 1
 
+>>> cat dashboard.lvdash.json
+{
+  "uiSettings": {
+    "theme": {
+      "widgetHeaderAlignment": "ALIGNMENT_UNSPECIFIED"
+    }
+  }
+}
+
+>>> [CLI] bundle generate dashboard --resource already_exists --force
+Writing dashboard to "dashboard.lvdash.json"
+
+>>> cat dashboard.lvdash.json
+{}
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete dashboard already_exists
