@@ -2,7 +2,7 @@ envsubst < databricks.yml > databricks.yml.subst
 mv databricks.yml.subst databricks.yml
 
 # Deploy bundle once to create the dashboard.
-trace $CLI bundle deploy
+trace $CLI bundle deploy --debug
 
 cleanup() {
     trace $CLI bundle destroy --auto-approve
