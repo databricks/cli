@@ -9,6 +9,9 @@ cleanup() {
 }
 trap cleanup EXIT
 
+# debug only, to figure out why the test is failing on CI.
+trace $CLI bundle summary -o json --debug
+
 dashboard_id=$($CLI bundle summary -o json | jq .resources.dashboards.already_exists.id -r)
 
 title "Get current dashboard\n"
