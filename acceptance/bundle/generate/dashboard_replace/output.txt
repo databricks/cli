@@ -5,33 +5,11 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> [CLI] lakeview get 01f071eb06dc1f5ea86c168482b443e7
-{
-  "create_time":"[TIMESTAMP]",
-  "dashboard_id":"01f071eb06dc1f5ea86c168482b443e7",
-  "display_name":"Already Exists",
-  "etag":"-[NUMID]",
-  "lifecycle_state":"ACTIVE",
-  "parent_path":"/Users/[USERNAME]/.bundle/dashboard-replace-[UNIQUE_NAME]/default/resources",
-  "path":"/Users/[USERNAME]/.bundle/dashboard-replace-[UNIQUE_NAME]/default/resources/Already Exists.lvdash.json",
-  "serialized_dashboard":"{\n  \"uiSettings\": {\n    \"theme\": {\n      \"widgetHeaderAlignment\": \"ALIGNMENT_UNSPECIFIED\"\n    }\n  }\n}\n",
-  "update_time":"[TIMESTAMP]",
-  "warehouse_id":"[TEST_DEFAULT_WAREHOUSE_ID]"
-}
+=== Get current dashboard
+"{\n  \"uiSettings\": {\n    \"theme\": {\n      \"widgetHeaderAlignment\": \"ALIGNMENT_UNSPECIFIED\"\n    }\n  }\n}\n"
 
->>> [CLI] lakeview update 01f071eb06dc1f5ea86c168482b443e7 --display-name Updated dashboard
-{
-  "create_time":"[TIMESTAMP]",
-  "dashboard_id":"01f071eb06dc1f5ea86c168482b443e7",
-  "display_name":"Updated dashboard",
-  "etag":"[NUMID]",
-  "lifecycle_state":"ACTIVE",
-  "parent_path":"/Users/[USERNAME]/.bundle/dashboard-replace-[UNIQUE_NAME]/default/resources",
-  "path":"/Users/[USERNAME]/.bundle/dashboard-replace-[UNIQUE_NAME]/default/resources/Updated dashboard.lvdash.json",
-  "serialized_dashboard":"{}\n",
-  "update_time":"[TIMESTAMP]",
-  "warehouse_id":"[TEST_DEFAULT_WAREHOUSE_ID]"
-}
+=== Update dashboard
+"{}\n"
 
 >>> [CLI] bundle generate dashboard --resource already_exists
 Error: dashboard.lvdash.json already exists. Use --force to overwrite
