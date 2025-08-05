@@ -29,7 +29,7 @@ type wsfsDirEntry struct {
 }
 
 func (entry wsfsDirEntry) Type() fs.FileMode {
-	return entry.wsfsFileInfo.Mode()
+	return entry.Mode()
 }
 
 func (entry wsfsDirEntry) Info() (fs.FileInfo, error) {
@@ -56,7 +56,7 @@ type wsfsFileInfo struct {
 }
 
 func (info wsfsFileInfo) Name() string {
-	return path.Base(info.ObjectInfo.Path)
+	return path.Base(info.Path)
 }
 
 func (info wsfsFileInfo) Size() int64 {
@@ -64,7 +64,7 @@ func (info wsfsFileInfo) Size() int64 {
 }
 
 func (info wsfsFileInfo) Mode() fs.FileMode {
-	switch info.ObjectInfo.ObjectType {
+	switch info.ObjectType {
 	case workspace.ObjectTypeDirectory, workspace.ObjectTypeRepo:
 		return fs.ModeDir
 	default:
@@ -73,7 +73,7 @@ func (info wsfsFileInfo) Mode() fs.FileMode {
 }
 
 func (info wsfsFileInfo) ModTime() time.Time {
-	return time.UnixMilli(info.ObjectInfo.ModifiedAt)
+	return time.UnixMilli(info.ModifiedAt)
 }
 
 func (info wsfsFileInfo) IsDir() bool {
@@ -249,10 +249,7 @@ func (w *WorkspaceFilesClient) Delete(ctx context.Context, name string, mode ...
 		return CannotDeleteRootError{}
 	}
 
-	recursive := false
-	if slices.Contains(mode, DeleteRecursively) {
-		recursive = true
-	}
+	recursive := slices.Contains(mode, DeleteRecursively)
 
 	err = w.workspaceClient.Workspace.Delete(ctx, workspace.Delete{
 		Path:      absPath,
