@@ -17,6 +17,7 @@
 10:07:59 Info: Phase: initialize pid=12345
 10:07:59 Debug: Apply pid=12345 mutator=validate:AllResourcesHaveValues
 10:07:59 Debug: Apply pid=12345 mutator=validate:interpolation_in_auth_config
+10:07:59 Debug: Apply pid=12345 mutator=validate:no_interpolation_in_bundle_name
 10:07:59 Debug: Apply pid=12345 mutator=validate:scripts
 10:07:59 Debug: Apply pid=12345 mutator=RewriteSyncPaths
 10:07:59 Debug: Apply pid=12345 mutator=SyncDefaultPath
