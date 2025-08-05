@@ -54,8 +54,8 @@ func ReadAppSpecFile(config *Config) (*AppSpec, error) {
 	return spec, nil
 }
 
-func (spec *AppSpec) LoadEnvVars(ctx context.Context, customEnv []string) ([]string, error) {
-	for _, envVar := range spec.EnvVars {
+func (a *AppSpec) LoadEnvVars(ctx context.Context, customEnv []string) ([]string, error) {
+	for _, envVar := range a.EnvVars {
 		if envVar.Value != nil {
 			customEnv = append(customEnv, envVar.Name+"="+*envVar.Value)
 		}
@@ -74,7 +74,7 @@ func (spec *AppSpec) LoadEnvVars(ctx context.Context, customEnv []string) ([]str
 			}
 			if !found {
 				return customEnv, fmt.Errorf("%s defined in %s with valueFrom property and can't be resolved locally. "+
-					"Please set %s environment variable in your terminal or using --env flag", envVar.Name, spec.fileName, envVar.Name)
+					"Please set %s environment variable in your terminal or using --env flag", envVar.Name, a.fileName, envVar.Name)
 			}
 		}
 	}

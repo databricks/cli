@@ -235,6 +235,6 @@ func IsDirectDeployment(ctx context.Context) (bool, error) {
 	case "terraform", "":
 		return false, nil
 	default:
-		return false, fmt.Errorf("Unexpected setting for DATABRICKS_CLI_DEPLOYMENT=%#v (expected 'terraform' or 'direct-exp' or absent/empty which means 'terraform')", deployment)
+		return false, fmt.Errorf("unexpected setting for DATABRICKS_CLI_DEPLOYMENT=%#v (expected 'terraform' or 'direct-exp' or absent/empty which means 'terraform')", deployment)
 	}
 }

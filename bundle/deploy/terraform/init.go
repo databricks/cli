@@ -64,7 +64,7 @@ func (m *initialize) findExecPath(ctx context.Context, b *bundle.Bundle, tf *con
 		if !actualVersion.Equal(expectedVersion) {
 			if isDefault {
 				return "", fmt.Errorf(
-					"Terraform binary at %s (from $%s) is %s but expected version is %s. Set %s to %s to continue.",
+					"terraform binary at %s (from $%s) is %s but expected version is %s. Set %s to %s to continue",
 					execPathValue,
 					TerraformExecPathEnv,
 					actualVersion.String(),
@@ -74,7 +74,7 @@ func (m *initialize) findExecPath(ctx context.Context, b *bundle.Bundle, tf *con
 				)
 			} else {
 				return "", fmt.Errorf(
-					"Terraform binary at %s (from $%s) is %s but expected version is %s (from $%s). Update $%s and $%s so that versions match.",
+					"terraform binary at %s (from $%s) is %s but expected version is %s (from $%s). Update $%s and $%s so that versions match",
 					execPathValue,
 					TerraformExecPathEnv,
 					actualVersion.String(),
