@@ -20,4 +20,9 @@ cp $CLI $tmpdir/notdatabricks
 trace $tmpdir/notdatabricks install-pipelines-cli -d $tmpdir
 trace $pipelines
 
+title "overwrites broken symlink pointing to databricks"
+ln -sf /databricks/broken-symlink $pipelines
+trace $CLI install-pipelines-cli -d $tmpdir
+trace $pipelines
+
 rm -rf $tmpdir/notdatabricks $pipelines $tmpdir
