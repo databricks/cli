@@ -26,12 +26,6 @@ type ResourceSettings struct {
 	// Function to delete a resource of this type
 	DeleteFN DeleteResourceFN
 
-	// true if Update() method can return a different ID than that was passed in
-	// If ID changes during Update and UpdateUpdatesID is false, deployment of that resource will fail with internal error.
-	// This allows to make assumptions about references stability (${resources.jobs.foo.id}) when we see that
-	// operation is going to be "update" & ID is guarantee not to change.
-	UpdateUpdatesID bool
-
 	// true if ClassifyChanges() method can return a different ActionTypeRecreate
 	// If RecreateAllowed is false and RecreateFields is empty, the resource id is stable.
 	RecreateAllowed bool
@@ -41,9 +35,6 @@ type ResourceSettings struct {
 	// Fields are in structdiff.Change.String() format.
 	// Limitation: patterns like hello.*.world and hello[*].world are not supported
 	RecreateFields map[string]struct{}
-
-	// If resource does not set RecreateFields, RecreateAllowed, UpdateUpdatesID then
-	// it's ${resources.<group>.<name>.id} will considered stable for the purposes of concurrent deployment.
 }
 
 func (s *ResourceSettings) MustRecreate(changes []structdiff.Change) bool {
@@ -123,15 +114,24 @@ type IResource interface {
 	// Create the resource. Returns id of the resource.
 	DoCreate(ctx context.Context) (string, error)
 
-	// Update the resource. Returns id of the resource.
-	// Usually returns the same id as oldId but can also return a different one (e.g. schemas and volumes when certain fields are changed)
-	// Note, SupportedResources[group].UpdateUpdatesID must be true for this group if ID can be changed. Otherwise function must return the same ID.
-	DoUpdate(ctx context.Context, oldID string) (string, error)
+	// Update the resource. ID must not change.
+	DoUpdate(ctx context.Context, id string) error
 
 	WaitAfterCreate(ctx context.Context) error
 	WaitAfterUpdate(ctx context.Context) error
+}
 
+// Optional method for non-default change classification.
+// Default is to consider any change "an update" (RecreateFields handled separately).
+type IResourceCustomClassify interface {
 	ClassifyChanges(changes []structdiff.Change) deployplan.ActionType
+}
+
+// Optional method for resources that may update ID as part of update operation.
+type IResourceUpdatesID interface {
+	// Update the resource. Returns new id of the resource, which may be different from the old one.
+	// This will only be called if actiontype is ActionTypeUpdateWithID, so ClassifyChanges must be implemented as well.
+	DoUpdateWithID(ctx context.Context, oldID string) (string, error)
 }
 
 // invokeConstructor converts cfg to the parameter type expected by ctor and

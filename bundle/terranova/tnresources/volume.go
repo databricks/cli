@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structdiff"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -36,10 +37,46 @@ func (r *ResourceVolume) DoCreate(ctx context.Context) (string, error) {
 	return response.FullName, nil
 }
 
-func (r *ResourceVolume) DoUpdate(ctx context.Context, id string) (string, error) {
+func (r *ResourceVolume) DoUpdate(ctx context.Context, id string) error {
 	updateRequest := catalog.UpdateVolumeRequestContent{
 		Comment: r.config.Comment,
 		Name:    id,
+		NewName: "", // Not supported by Update(). Needs DoUpdateWithID()
+		Owner:   "", // Not supported by DABs
+
+		ForceSendFields: nil,
+	}
+
+	nameFromID, err := getNameFromID(id)
+	if err != nil {
+		return err
+	}
+
+	if r.config.Name != nameFromID {
+		return fmt.Errorf("internal error: unexpected change of name from %#v to %#v", nameFromID, r.config.Name)
+	}
+
+	response, err := r.client.Volumes.Update(ctx, updateRequest)
+	if err != nil {
+		return SDKError{Method: "Volumes.Update", Err: err}
+	}
+
+	if id != response.FullName {
+		log.Warnf(ctx, "volumes: response contains unexpected full_name=%#v (expected %#v)", response.FullName, id)
+	}
+
+	return nil
+}
+
+func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string) (string, error) {
+	updateRequest := catalog.UpdateVolumeRequestContent{
+		Comment: r.config.Comment,
+		Name:    id,
+
+		NewName: "", // Initialized below if needed
+		Owner:   "", // Not supported by DABs
+
+		ForceSendFields: nil,
 	}
 
 	items := strings.Split(id, ".")
@@ -79,6 +116,18 @@ func (r *ResourceVolume) WaitAfterUpdate(ctx context.Context) error {
 }
 
 func (r *ResourceVolume) ClassifyChanges(changes []structdiff.Change) deployplan.ActionType {
-	// TODO: Name, SchemaName changes should result in re-create
+	for _, change := range changes {
+		if change.Path.String() == ".name" {
+			return deployplan.ActionTypeUpdateWithID
+		}
+	}
 	return deployplan.ActionTypeUpdate
+}
+
+func getNameFromID(id string) (string, error) {
+	items := strings.Split(id, ".")
+	if len(items) == 0 {
+		return "", fmt.Errorf("unexpected id=%#v", id)
+	}
+	return items[len(items)-1], nil
 }
