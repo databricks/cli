@@ -10,8 +10,11 @@ View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
 >>> [PIPELINES] run
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/test-update-123
 
-[TIMESTAMP]Z update_progress  ""
-[TIMESTAMP]Z update_progress  ""
+[TIMESTAMP] update_progress  "Update test-update-123 is COMPLETED."
+[TIMESTAMP] update_progress  "Update test-update-123 is COMPLETING."
+[TIMESTAMP] update_progress  "Update test-update-123 is RUNNING."
+[TIMESTAMP] update_progress  "Update test-update-123 is STARTING."
+[TIMESTAMP] update_progress  "Update test-update-123 is WAITING_FOR_RESOURCES."
 Update ID: test-update-123
 Update test-update-123 for pipeline test-pipeline test-pipeline-789 completed successfully.
 Cause: Manual trigger
@@ -25,14 +28,20 @@ Development mode: Dev
 Catalog & Schema: test_catalog.test_schema
 Run Phase                 Duration
 ---------                 --------
-                          1h 0m  
+WAITING_FOR_RESOURCES     0.5s   
+STARTING                  0.7s   
+RUNNING                   4.6s   
+COMPLETING                4.7s   
 
 === Run pipeline with KEY, expect same output as without KEY
 >>> [PIPELINES] run my_pipeline
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/test-update-123
 
-[TIMESTAMP]Z update_progress  ""
-[TIMESTAMP]Z update_progress  ""
+[TIMESTAMP] update_progress  "Update test-update-123 is COMPLETED."
+[TIMESTAMP] update_progress  "Update test-update-123 is COMPLETING."
+[TIMESTAMP] update_progress  "Update test-update-123 is RUNNING."
+[TIMESTAMP] update_progress  "Update test-update-123 is STARTING."
+[TIMESTAMP] update_progress  "Update test-update-123 is WAITING_FOR_RESOURCES."
 Update ID: test-update-123
 Update test-update-123 for pipeline test-pipeline test-pipeline-789 completed successfully.
 Cause: Manual trigger
@@ -46,4 +55,7 @@ Development mode: Dev
 Catalog & Schema: test_catalog.test_schema
 Run Phase                 Duration
 ---------                 --------
-                          1h 0m  
+WAITING_FOR_RESOURCES     0.5s   
+STARTING                  0.7s   
+RUNNING                   4.6s   
+COMPLETING                4.7s   

@@ -32,12 +32,29 @@ Response.Body = '''
 {
   "events": [
     {
-      "timestamp": "2022-01-01T00:00:00Z",
-      "event_type": "update_progress"
+      "timestamp": "2022-01-01T00:00:10.500Z",
+      "event_type": "update_progress",
+      "message": "Update test-update-123 is COMPLETED."
     },
     {
-      "timestamp": "2022-01-01T01:00:00Z",
-      "event_type": "update_progress"
+      "timestamp": "2022-01-01T00:00:05.800Z",
+      "event_type": "update_progress",
+      "message": "Update test-update-123 is COMPLETING."
+    },
+    {
+      "timestamp": "2022-01-01T00:00:01.200Z",
+      "event_type": "update_progress",
+      "message": "Update test-update-123 is RUNNING."
+    },
+    {
+      "timestamp": "2022-01-01T00:00:00.500Z",
+      "event_type": "update_progress",
+      "message": "Update test-update-123 is STARTING."
+    },
+    {
+      "timestamp": "2022-01-01T00:00:00.000Z",
+      "event_type": "update_progress",
+      "message": "Update test-update-123 is WAITING_FOR_RESOURCES."
     }
   ]
 }
