@@ -1,0 +1,5 @@
+trace $CLI bundle deploy
+
+trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | .body' out.requests.txt
+
+rm out.requests.txt
