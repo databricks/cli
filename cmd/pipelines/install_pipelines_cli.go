@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
@@ -43,7 +44,8 @@ func installPipelinesSymlink(ctx context.Context, directory string) error {
 
 	target, err := filepath.EvalSymlinks(pipelinesPath)
 	if err != nil {
-		if strings.Contains(err.Error(), "databricks") && strings.Contains(err.Error(), "no such file or directory") {
+		if strings.Contains(err.Error(), "databricks") &&
+			(strings.Contains(err.Error(), "no such file or directory") || (runtime.GOOS == "windows" && strings.Contains(err.Error(), "The system cannot find the file specified"))) {
 			err = os.Remove(pipelinesPath)
 			if err != nil {
 				return err

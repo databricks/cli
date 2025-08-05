@@ -78,6 +78,9 @@ Flags:
 Use "pipelines [command] --help" for more information about a command.
 
 === overwrites broken symlink pointing to databricks
+>>> ./subdir/olddatabricks install-pipelines-cli -d ./subdir
+pipelines successfully installed in directory "./subdir"
+
 >>> [CLI] install-pipelines-cli -d ./subdir
 pipelines successfully installed in directory "./subdir"
 
