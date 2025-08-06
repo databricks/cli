@@ -47,7 +47,6 @@ type resolveVariableReferences struct {
 	prefixes    []string
 	pattern     dyn.Pattern
 	lookupFn    func(dyn.Value, dyn.Path, *bundle.Bundle) (dyn.Value, error)
-	skipFn      func(dyn.Value) bool
 	extraRounds int
 
 	// includeResources allows resolving variables in 'resources', otherwise, they are excluded.
@@ -216,10 +215,6 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn
 				// Perform resolution only if the path starts with one of the specified prefixes.
 				for _, prefix := range prefixes {
 					if path.HasPrefix(prefix) {
-						// Skip resolution if there is a skip function and it returns true.
-						if m.skipFn != nil && m.skipFn(v) {
-							return dyn.InvalidValue, dynvar.ErrSkipResolution
-						}
 						hasUpdates = true
 						return m.lookupFn(normalized, path, b)
 					}
