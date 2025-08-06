@@ -32,6 +32,8 @@ func (d ResourceDatabaseInstance) DoCreate(ctx context.Context) (string, error) 
 func (d ResourceDatabaseInstance) DoUpdate(ctx context.Context, oldID string) (string, error) {
 	request := database.UpdateDatabaseInstanceRequest{
 		DatabaseInstance: d.config,
+		Name:             d.config.Name,
+		UpdateMask:       "",
 	}
 	request.DatabaseInstance.Uid = oldID
 
