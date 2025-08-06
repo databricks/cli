@@ -33,6 +33,16 @@ rounds           time
 */
 const maxResolutionRounds = 11
 
+// List of prefixes to be used by default in ResolveVariableReferencesOnlyResources/ResolveVariableReferencesWithoutResources
+// Prefixes specify which references are resolves, e.g. ${bundle...} and so on.
+// This list does not include "artifacts" because this section will be modified in build phase and variable resolution happens in initialize phase.
+// This list does not include "resources" because some of those references are known after resource is deployed.
+var defaultPrefixes = []string{
+	"bundle",
+	"workspace",
+	"variables",
+}
+
 type resolveVariableReferences struct {
 	prefixes    []string
 	pattern     dyn.Pattern
@@ -48,6 +58,9 @@ type resolveVariableReferences struct {
 }
 
 func ResolveVariableReferencesOnlyResources(prefixes ...string) bundle.Mutator {
+	if len(prefixes) == 0 {
+		prefixes = defaultPrefixes
+	}
 	return &resolveVariableReferences{
 		prefixes:         prefixes,
 		lookupFn:         lookup,
@@ -58,6 +71,9 @@ func ResolveVariableReferencesOnlyResources(prefixes ...string) bundle.Mutator {
 }
 
 func ResolveVariableReferencesWithoutResources(prefixes ...string) bundle.Mutator {
+	if len(prefixes) == 0 {
+		prefixes = defaultPrefixes
+	}
 	return &resolveVariableReferences{
 		prefixes:    prefixes,
 		lookupFn:    lookup,
@@ -67,11 +83,7 @@ func ResolveVariableReferencesWithoutResources(prefixes ...string) bundle.Mutato
 
 func ResolveVariableReferencesInLookup() bundle.Mutator {
 	return &resolveVariableReferences{
-		prefixes: []string{
-			"bundle",
-			"workspace",
-			"variables",
-		},
+		prefixes:    defaultPrefixes,
 		pattern:     dyn.NewPattern(dyn.Key("variables"), dyn.AnyKey(), dyn.Key("lookup")),
 		lookupFn:    lookupForVariables,
 		extraRounds: maxResolutionRounds - 1,
