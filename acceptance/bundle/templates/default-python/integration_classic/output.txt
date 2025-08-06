@@ -60,7 +60,7 @@ Resources:
 +        "id": "[NUMID]",
          "job_clusters": [
            {
-@@ -119,5 +120,6 @@
+@@ -120,5 +121,6 @@
              "unit": "DAYS"
            }
 -        }
@@ -68,13 +68,13 @@ Resources:
 +        "url": "[DATABRICKS_URL]/jobs/[NUMID]"
        }
      },
-@@ -134,4 +136,5 @@
+@@ -135,4 +137,5 @@
          "development": true,
          "edition": "ADVANCED",
 +        "id": "[UUID]",
          "libraries": [
            {
-@@ -143,5 +146,6 @@
+@@ -144,5 +147,6 @@
          "name": "[dev [USERNAME]] project_name_[UNIQUE_NAME]_pipeline",
          "permissions": [],
 -        "schema": "project_name_[UNIQUE_NAME]_dev"
@@ -184,18 +184,18 @@ Validation OK!
 @@ -97,5 +84,5 @@
              "job_cluster_key": "job_cluster",
              "notebook_task": {
--              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/notebook"
-+              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/files/src/notebook"
+-              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/notebook",
++              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/files/src/notebook",
+               "source": "WORKSPACE"
              },
-             "task_key": "notebook_task"
-@@ -114,5 +101,5 @@
+@@ -115,5 +102,5 @@
          ],
          "trigger": {
 -          "pause_status": "PAUSED",
 +          "pause_status": "UNPAUSED",
            "periodic": {
              "interval": 1,
-@@ -126,22 +113,21 @@
+@@ -127,22 +114,21 @@
          "channel": "CURRENT",
          "configuration": {
 -          "bundle.sourcePath": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src"
@@ -223,7 +223,7 @@ Validation OK!
 +        "schema": "project_name_[UNIQUE_NAME]_prod"
        }
      }
-@@ -153,10 +139,10 @@
+@@ -154,10 +140,10 @@
    },
    "workspace": {
 -    "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/artifacts",
@@ -342,18 +342,18 @@ Resources:
 @@ -98,5 +85,5 @@
              "job_cluster_key": "job_cluster",
              "notebook_task": {
--              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/notebook"
-+              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/files/src/notebook"
+-              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/notebook",
++              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/files/src/notebook",
+               "source": "WORKSPACE"
              },
-             "task_key": "notebook_task"
-@@ -115,5 +102,5 @@
+@@ -116,5 +103,5 @@
          ],
          "trigger": {
 -          "pause_status": "PAUSED",
 +          "pause_status": "UNPAUSED",
            "periodic": {
              "interval": 1,
-@@ -128,11 +115,10 @@
+@@ -129,11 +116,10 @@
          "channel": "CURRENT",
          "configuration": {
 -          "bundle.sourcePath": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src"
@@ -367,7 +367,7 @@ Resources:
 -        "development": true,
          "edition": "ADVANCED",
          "id": "[UUID]",
-@@ -140,11 +126,11 @@
+@@ -141,11 +127,11 @@
            {
              "notebook": {
 -              "path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/dlt_pipeline"
@@ -382,7 +382,7 @@ Resources:
 +        "schema": "project_name_[UNIQUE_NAME]_prod",
          "url": "[DATABRICKS_URL]/pipelines/[UUID]"
        }
-@@ -157,10 +143,10 @@
+@@ -158,10 +144,10 @@
    },
    "workspace": {
 -    "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/artifacts",
