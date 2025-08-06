@@ -1,0 +1,2 @@
+Env.CONFIG_UPDATE = "pipelines/custom pipelines/newcustom"
+Env.STORAGE_KEY = "storage"

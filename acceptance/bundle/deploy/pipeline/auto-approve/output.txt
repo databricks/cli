@@ -35,6 +35,10 @@ Deployment complete!
 === Remove resources from configuration.
 >>> rm resources.yml
 
+>>> [CLI] bundle plan
+delete jobs.foo
+delete pipelines.bar
+
 === Try to redeploy the bundle - should fail without --auto-approve
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
@@ -52,6 +56,10 @@ Exit code: 1
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete job foo
+  delete pipeline bar
+
+This action will result in the deletion of the following DLT Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them:
   delete pipeline bar
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]

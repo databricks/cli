@@ -76,9 +76,9 @@ func TestNoWorkspacePrefixUsed(t *testing.T) {
 		delete(expectedErrors, d.Summary)
 	}
 
-	require.Equal(t, "${workspace.root_path}/file1.py", b.Config.Resources.Jobs["test_job"].JobSettings.Tasks[0].SparkPythonTask.PythonFile)
-	require.Equal(t, "${workspace.file_path}/notebook1", b.Config.Resources.Jobs["test_job"].JobSettings.Tasks[1].NotebookTask.NotebookPath)
+	require.Equal(t, "${workspace.root_path}/file1.py", b.Config.Resources.Jobs["test_job"].Tasks[0].SparkPythonTask.PythonFile)
+	require.Equal(t, "${workspace.file_path}/notebook1", b.Config.Resources.Jobs["test_job"].Tasks[1].NotebookTask.NotebookPath)
 	require.Equal(t, "${workspace.artifact_path}/jar1.jar", b.Config.Resources.Jobs["test_job"].JobSettings.Tasks[1].Libraries[0].Jar)
-	require.Equal(t, "${workspace.file_path}/notebook2", b.Config.Resources.Jobs["test_job"].JobSettings.Tasks[2].NotebookTask.NotebookPath)
+	require.Equal(t, "${workspace.file_path}/notebook2", b.Config.Resources.Jobs["test_job"].Tasks[2].NotebookTask.NotebookPath)
 	require.Equal(t, "${workspace.artifact_path}/jar2.jar", b.Config.Resources.Jobs["test_job"].JobSettings.Tasks[2].Libraries[0].Jar)
 }

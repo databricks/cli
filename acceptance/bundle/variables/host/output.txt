@@ -20,7 +20,6 @@ Error: failed during request visitor: parse "https://${var.host}": invalid chara
       "."
     ]
   },
-  "targets": null,
   "variables": {
     "host": {
       "default": "https://nonexistent123.staging.cloud.databricks.com"

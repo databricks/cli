@@ -7,7 +7,6 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/bundle/terranova/tnresources"
 	"github.com/databricks/cli/bundle/terranova/tnstate"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/structdiff"
@@ -20,12 +19,14 @@ type Planner struct {
 	db           *tnstate.TerranovaState
 	group        string
 	resourceName string
+	settings     ResourceSettings
 }
 
 func (d *Planner) Plan(ctx context.Context, inputConfig any) (deployplan.ActionType, error) {
+	// TODO: wrap errors with prefix "planning <group>.<name>:"
 	entry, hasEntry := d.db.GetResourceEntry(d.group, d.resourceName)
 
-	resource, cfgType, err := tnresources.New(d.client, d.group, d.resourceName, inputConfig)
+	resource, cfgType, err := New(d.client, d.group, d.resourceName, inputConfig)
 	if err != nil {
 		return "", err
 	}
@@ -50,16 +51,7 @@ func (d *Planner) Plan(ctx context.Context, inputConfig any) (deployplan.ActionT
 	// unresolved variables (so it needs additional support for dyn.Value storage).
 	// In some cases, it should introduce "update or recreate" action, since it does not know whether
 	// field is going to be changed.
-	localDiff, err := structdiff.GetStructDiff(savedState, config)
-	if err != nil {
-		return "", fmt.Errorf("comparing state and config: %w", err)
-	}
-
-	if len(localDiff) == 0 {
-		return deployplan.ActionTypeNoop, nil
-	}
-
-	return resource.ClassifyChanges(localDiff), nil
+	return calcDiff(d.settings, resource, savedState, config)
 }
 
 func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan.Action, error) {
@@ -84,6 +76,11 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 			group := p[1].Key()
 			name := p[2].Key()
 
+			settings, ok := SupportedResources[group]
+			if !ok {
+				return v, nil
+			}
+
 			groupState := state[group]
 			delete(groupState, name)
 
@@ -97,6 +94,7 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 				db:           &b.ResourceDatabase,
 				group:        group,
 				resourceName: name,
+				settings:     settings,
 			}
 
 			actionType, err := pl.Plan(ctx, config)
@@ -117,8 +115,9 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 	)
 
 	// Remained in state are resources that no longer present in the config
-	for group, groupState := range state {
-		for name := range groupState {
+	for _, group := range utils.SortedKeys(state) {
+		groupData := state[group]
+		for _, name := range utils.SortedKeys(groupData) {
 			actions = append(actions, deployplan.Action{
 				Group:      group,
 				Name:       name,
@@ -160,4 +159,38 @@ func CalculateDestroyActions(ctx context.Context, b *bundle.Bundle) ([]deploypla
 	}
 
 	return actions, nil
+}
+
+func calcDiff(settings ResourceSettings, resource IResource, savedState, config any) (deployplan.ActionType, error) {
+	localDiff, err := structdiff.GetStructDiff(savedState, config)
+	if err != nil {
+		return "", err
+	}
+
+	if len(localDiff) == 0 {
+		return deployplan.ActionTypeNoop, nil
+	}
+
+	if settings.MustRecreate(localDiff) {
+		return deployplan.ActionTypeRecreate, nil
+	}
+
+	customClassify, hasCustomClassify := resource.(IResourceCustomClassify)
+
+	if hasCustomClassify {
+		_, hasUpdateWithID := resource.(IResourceUpdatesID)
+
+		result := customClassify.ClassifyChanges(localDiff)
+		if result == deployplan.ActionTypeRecreate && !settings.RecreateAllowed {
+			return "", errors.New("internal error: unexpected plan='recreate'")
+		}
+
+		if result == deployplan.ActionTypeUpdateWithID && !hasUpdateWithID {
+			return "", errors.New("internal error: unexpected plan='update_with_id'")
+		}
+
+		return result, nil
+	}
+
+	return deployplan.ActionTypeUpdate, nil
 }

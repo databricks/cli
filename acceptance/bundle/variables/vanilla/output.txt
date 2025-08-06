@@ -5,11 +5,11 @@
 >>> errcode [CLI] bundle validate
 Error: no value assigned to required variable b. Assignment can be done using "--var", by setting the BUNDLE_VAR_b environment variable, or in .databricks/bundle/<target>/variable-overrides.json file
 
-Name: ${var.a} ${var.b}
+Name: foobar
 Target: default
 Workspace:
   User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/${var.a} ${var.b}/default
+  Path: /Workspace/Users/[USERNAME]/.bundle/foobar/default
 
 Found 1 error
 

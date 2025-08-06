@@ -42,6 +42,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Checks that none of resources.<type>.<key> is nil. Raises error otherwise.
 		validate.AllResourcesHaveValues(),
 		validate.NoInterpolationInAuthConfig(),
+		validate.NoInterpolationInBundleName(),
 		validate.Scripts(),
 
 		// Updates (dynamic): sync.{paths,include,exclude} (makes them relative to bundle root rather than to definition file)
@@ -232,11 +233,12 @@ func IsDirectDeployment(ctx context.Context) (bool, error) {
 	// We use "direct-exp" while direct backend is not suitable for end users.
 	// Once we consider it usable we'll change the value to "direct".
 	// This is to prevent accidentally running direct backend with older CLI versions where it was still considered experimental.
-	if deployment == "direct-exp" {
+	switch deployment {
+	case "direct-exp":
 		return true, nil
-	} else if deployment == "terraform" || deployment == "" {
+	case "terraform", "":
 		return false, nil
-	} else {
-		return false, fmt.Errorf("Unexpected setting for DATABRICKS_CLI_DEPLOYMENT=%#v (expected 'terraform' or 'direct-exp' or absent/empty which means 'terraform')", deployment)
+	default:
+		return false, fmt.Errorf("unexpected setting for DATABRICKS_CLI_DEPLOYMENT=%#v (expected 'terraform' or 'direct-exp' or absent/empty which means 'terraform')", deployment)
 	}
 }

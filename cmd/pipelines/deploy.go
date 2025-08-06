@@ -4,14 +4,18 @@ package pipelines
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/validate"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/sync"
+	libsutils "github.com/databricks/cli/libs/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -38,9 +42,19 @@ func deployCommand() *cobra.Command {
 		ctx := logdiag.InitContext(cmd.Context())
 		cmd.SetContext(ctx)
 
+		// Enable collection of diagnostics to check for OSS template warning in ConfigureBundleWithVariables
+		logdiag.SetCollect(ctx, true)
+
 		b := utils.ConfigureBundleWithVariables(cmd)
 		if b == nil || logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
+		}
+		logdiag.SetCollect(ctx, false)
+
+		diags := logdiag.FlushCollected(ctx)
+		// Prevent deploying open-source Spark Declarative Pipelines YAML files with the Pipelines CLI.
+		if err := checkForOSSTemplateWarning(ctx, diags); err != nil {
+			return err
 		}
 
 		bundle.ApplyFuncContext(ctx, b, func(context.Context, *bundle.Bundle) {
@@ -81,6 +95,18 @@ func deployCommand() *cobra.Command {
 
 		if logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
+		}
+
+		bundle.ApplyContext(ctx, b, mutator.InitializeURLs())
+		if logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
+		}
+
+		for _, group := range b.Config.Resources.AllResources() {
+			for _, resourceKey := range libsutils.SortedKeys(group.Resources) {
+				resource := group.Resources[resourceKey]
+				cmdio.LogString(ctx, fmt.Sprintf("View your %s %s here: %s", resource.ResourceDescription().SingularName, resourceKey, resource.GetURL()))
+			}
 		}
 
 		return nil

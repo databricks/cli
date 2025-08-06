@@ -1,0 +1,5 @@
+bundle:
+  name: test-oss-warning
+
+include:
+  - ./*.yml

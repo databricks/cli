@@ -1,0 +1,34 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+touch foo.py
+touch bar.py
+trace $CLI bundle deploy
+
+print_requests() {
+    jq --sort-keys 'select(.method != "GET" and (.path | contains("/pipelines")))' < out.requests.txt
+    rm out.requests.txt
+    read_state.py pipelines my id name
+}
+
+trace print_requests
+
+trace update_file.py databricks.yml foo.py bar.py
+trace $CLI bundle deploy
+# Update requests are different between terraform and direct, because terraform also re-sends
+# fields that it previously received from the backend.
+# The get call below verifies that it does not matter -- the pipeline is the same in the end.
+#trace print_requests
+rm out.requests.txt
+
+title "Fetch pipeline ID and verify remote state"
+
+ppid=`read_id.py pipelines my`
+echo "$ppid:PIPELINE_ID" >> ACC_REPLS
+trace $CLI pipelines get $ppid
+rm out.requests.txt
+
+title "Destroy the pipeline and verify that it's removed from the state and from remote"
+trace $CLI bundle destroy --auto-approve
+
+trace print_requests
+trace musterr $CLI pipelines get $ppid
+rm out.requests.txt

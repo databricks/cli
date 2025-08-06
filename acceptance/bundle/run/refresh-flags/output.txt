@@ -1,0 +1,79 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-run-flags/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Running pipeline with --refresh flag and specific tables
+>>> [CLI] bundle run my_pipeline --refresh table1,table2
+Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
+
+Update ID: [UUID]
+
+>>> print_requests
+{
+  "body": {
+    "refresh_selection": [
+      "table1",
+      "table2"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates"
+}
+
+=== Running pipeline with --full-refresh-all flag
+>>> [CLI] bundle run my_pipeline --full-refresh-all
+Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
+
+Update ID: [UUID]
+
+>>> print_requests
+{
+  "body": {
+    "full_refresh": true
+  },
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates"
+}
+
+=== Running pipeline with --full-refresh flag and specific tables
+>>> [CLI] bundle run my_pipeline --full-refresh table1,table2
+Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
+
+Update ID: [UUID]
+
+>>> print_requests
+{
+  "body": {
+    "full_refresh_selection": [
+      "table1",
+      "table2"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates"
+}
+
+=== Running pipeline with --full-refresh flag and --refresh flag
+>>> [CLI] bundle run my_pipeline --full-refresh table1,table2 --refresh table3,table4
+Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
+
+Update ID: [UUID]
+
+>>> print_requests
+{
+  "body": {
+    "full_refresh_selection": [
+      "table1",
+      "table2"
+    ],
+    "refresh_selection": [
+      "table3",
+      "table4"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates"
+}

@@ -103,18 +103,18 @@ func setupSyncTest(t *testing.T, args ...string) (context.Context, *syncTest) {
 	}
 }
 
-func (s *syncTest) waitForCompletionMarker() {
+func (a *syncTest) waitForCompletionMarker() {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	for {
 		select {
 		case <-ctx.Done():
-			s.t.Fatal("timed out waiting for sync to complete")
-		case line := <-s.c.StdoutLines:
+			a.t.Fatal("timed out waiting for sync to complete")
+		case line := <-a.c.StdoutLines:
 			var event sync.EventBase
 			err := json.Unmarshal([]byte(line), &event)
-			require.NoError(s.t, err)
+			require.NoError(a.t, err)
 			if event.Type == sync.EventTypeComplete {
 				return
 			}
