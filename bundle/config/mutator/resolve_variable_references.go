@@ -178,21 +178,6 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn
 	var diags diag.Diagnostics
 	hasUpdates := false
 	err := m.selectivelyMutate(b, func(root dyn.Value) (dyn.Value, error) {
-		// Synthesize a copy of the root that has all fields that are present in the type
-		// but not set in the dynamic value set to their corresponding empty value.
-		// This enables users to interpolate variable references to fields that haven't
-		// been explicitly set in the dynamic value.
-		//
-		// For example: ${bundle.git.origin_url} should resolve to an empty string
-		// if a bundle isn't located in a Git repository (yet).
-		//
-		// This is consistent with the behavior prior to using the dynamic value system.
-		//
-		// We can ignore the diagnostics return value because we know that the dynamic value
-		// has already been normalized when it was first loaded from the configuration file.
-		//
-		normalized, _ := convert.Normalize(b.Config, root, convert.IncludeMissingFields)
-
 		// If the pattern is nil, we resolve references in the entire configuration.
 		root, err := dyn.MapByPattern(root, m.pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 			// Resolve variable references in all values.
@@ -216,7 +201,7 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn
 				for _, prefix := range prefixes {
 					if path.HasPrefix(prefix) {
 						hasUpdates = true
-						return m.lookupFn(normalized, path, b)
+						return m.lookupFn(root, path, b)
 					}
 				}
 
