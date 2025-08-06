@@ -10,7 +10,7 @@
 * Show "DEFAULT" as the default profile for `databricks auth login` [#3252](https://github.com/databricks/cli/pull/3252)
 
 ### Bundles
-* Add warning when an invalid value is specified for enum field ([#3050](https://github.com/databricks/cli/pull/3050))
+* Add warning for when an invalid value is specified for an enum field ([#3050](https://github.com/databricks/cli/pull/3050))
 * Fix panic in auto completion handler for bundler run/open. Regression introduced in 0.259.0. [#3358](https://github.com/databricks/cli/pull/3358)
 * Fix error propagation in the `bundle generate dashboard` command. Regression introduced in 0.259.0. [#3354](https://github.com/databricks/cli/pull/3354)
 
