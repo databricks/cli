@@ -1,0 +1,23 @@
+bundle:
+  name: deploy-artifacts-variables
+
+artifacts:
+  test_artifact:
+    type: whl
+    path: .
+    build: "echo 'Building...'"
+    files:
+      - source: ./databricks.yml
+
+resources:
+  jobs:
+    test-job:
+      name: test-job
+
+targets:
+  dev: {}
+  prod:
+    resources:
+      jobs:
+        test-job:
+          name: "test-job that does ${artifacts.test_artifact.build}"
