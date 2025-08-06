@@ -159,7 +159,7 @@ func (p *Project) Register(parent *cobra.Command) {
 	parent.AddCommand(group)
 	for _, cp := range p.Commands {
 		cp.register(group)
-		cp.Entrypoint.Project = p
+		cp.Project = p
 	}
 }
 

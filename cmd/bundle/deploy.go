@@ -21,7 +21,15 @@ func newDeployCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "deploy",
 		Short: "Deploy bundle",
-		Args:  root.NoArgs,
+		Long: `Deploy bundle.
+
+Common patterns:
+  databricks bundle deploy                  # Deploy to default target (dev)
+  databricks bundle deploy --target dev     # Deploy to development
+  databricks bundle deploy --target prod    # Deploy to production
+
+See https://docs.databricks.com/en/dev-tools/bundles/index.html for more information.`,
+		Args: root.NoArgs,
 	}
 
 	var force bool
