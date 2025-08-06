@@ -35,14 +35,12 @@ type PipelineUpdateData struct {
 	LastEventTime string
 }
 
-// ProgressEventWithDuration adds duration information to a progress event
 type ProgressEventWithDuration struct {
 	Event    pipelines.PipelineEvent
 	Duration string
 	Phase    string
 }
 
-// ProgressEventsData holds the data for rendering progress events
 type ProgressEventsData struct {
 	ProgressEvents []ProgressEventWithDuration
 }
@@ -62,6 +60,7 @@ func extractPhaseFromMessage(message string) string {
 }
 
 // enrichEvents adds duration information and phase name to a progress event
+// Expects that the events are already sorted by timestamp in ascending order.
 func enrichEvents(events []pipelines.PipelineEvent) ([]ProgressEventWithDuration, error) {
 	var progressEventsWithDuration []ProgressEventWithDuration
 	for j := range events {
@@ -123,7 +122,7 @@ func displayProgressEvents(ctx context.Context, events []pipelines.PipelineEvent
 	return cmdio.RenderWithTemplate(ctx, data, "", progressEventsTemplate)
 }
 
-// fetchAndDisplayPipelineUpdate fetches the latest update for a pipeline and displays information about it.
+// fetchAndDisplayPipelineUpdate displays the update and the update's associated update_progress events' durations.
 func fetchAndDisplayPipelineUpdate(ctx context.Context, bundle *bundle.Bundle, ref bundleresources.Reference, updateId string) error {
 	w := bundle.WorkspaceClient()
 
@@ -142,7 +141,7 @@ func fetchAndDisplayPipelineUpdate(ctx context.Context, bundle *bundle.Bundle, r
 	}
 
 	if getUpdateResponse.Update == nil {
-		return err
+		return fmt.Errorf("no update found with id %s for pipeline %s", updateId, pipelineID)
 	}
 
 	latestUpdate := *getUpdateResponse.Update
