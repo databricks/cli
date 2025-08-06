@@ -1,9 +1,5 @@
 
 >>> [CLI] bundle validate
-Warning: invalid value "" for enum field. Valid values are [complex]
-  at variables.my_variable_type_empty.type
-  in databricks.yml:45:11
-
 Warning: invalid value "INVALID_AVAILABILITY" for enum field. Valid values are [ON_DEMAND SPOT SPOT_WITH_FALLBACK]
   at resources.jobs.my_job_invalid.tasks[0].new_cluster.aws_attributes.availability
   in databricks.yml:9:29
@@ -38,4 +34,4 @@ Workspace:
   User: [USERNAME]
   Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
-Found 8 warnings
+Found 7 warnings
