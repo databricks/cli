@@ -53,3 +53,14 @@ Pipeline configurations for this update:
 {{- end }}
 {{- end }}
 `
+
+// ProgressEventsTemplate is the template for displaying progress events
+const progressEventsTemplate = `{{- if and .ProgressEvents (ne (sub (len .ProgressEvents) 1) 0) }}
+{{- printf "%-25s %s\n" "Run Phase" "Duration" }}
+{{- printf "%-25s %s\n" "---------" "--------" }}
+{{- range $index, $event := .ProgressEvents }}
+{{- if ne $index (sub (len $.ProgressEvents) 1) }}
+{{- printf "%-25s %s\n" $event.Phase $event.Duration }}
+{{- end }}
+{{- end }}
+{{- end }}`

@@ -225,13 +225,8 @@ RUNNING                   750ms
 			ctx = cmdio.InContext(ctx, cmdIO)
 
 			err := displayProgressEvents(ctx, tt.events)
-
-			if tt.wantErr {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, tt.expected, buf.String())
-			}
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expected, buf.String())
 		})
 	}
 }
