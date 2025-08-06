@@ -1,0 +1,71 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests
+{
+  "method": "POST",
+  "path": "/api/2.1/unity-catalog/volumes",
+  "body": {
+    "catalog_name": "main",
+    "comment": "COMMENT1",
+    "name": "myvolume",
+    "schema_name": "myschema",
+    "volume_type": "MANAGED"
+  }
+}
+
+=== Summary should now show id and url
+{
+  "volumes": {
+    "volume1": {
+      "catalog_name": "main",
+      "comment": "COMMENT1",
+      "id": "main.myschema.myvolume",
+      "name": "myvolume",
+      "schema_name": "myschema",
+      "url": "[DATABRICKS_URL]/explore/data/volumes/main/myschema/myvolume?o=[NUMID]",
+      "volume_type": "MANAGED"
+    }
+  }
+}
+
+=== Update name
+>>> update_file.py databricks.yml myvolume mynewvolume
+
+>>> [CLI] bundle plan
+update volumes.volume1
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/volumes/main.myschema.myvolume",
+  "body": {
+    "comment": "COMMENT1",
+    "new_name": "mynewvolume"
+  }
+}
+
+>>> [CLI] volumes read main.myschema.mynewvolume
+{
+  "catalog_name":"main",
+  "comment":"COMMENT1",
+  "full_name":"main.myschema.mynewvolume",
+  "name":"mynewvolume",
+  "schema_name":"myschema",
+  "volume_type":"MANAGED"
+}
+
+>>> musterr [CLI] volumes read main.myschema.myvolume
+Error: Resource catalog.VolumeInfo not found: main.myschema.myvolume
+
+Exit code (musterr): 1

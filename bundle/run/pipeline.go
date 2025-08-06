@@ -82,7 +82,7 @@ func (r *pipelineRunner) Name() string {
 	if r.pipeline == nil {
 		return ""
 	}
-	return r.pipeline.CreatePipeline.Name
+	return r.pipeline.Name
 }
 
 func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, error) {

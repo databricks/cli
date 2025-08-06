@@ -372,7 +372,7 @@ func (b *Bundle) OpenResourceDatabase(ctx context.Context) error {
 
 	err = b.ResourceDatabase.Open(statePath)
 	if err != nil {
-		return fmt.Errorf("Failed to open/create resoruce database in %s: %s", statePath, err)
+		return fmt.Errorf("failed to open/create resoruce database in %s: %s", statePath, err)
 	}
 
 	return nil

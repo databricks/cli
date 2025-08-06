@@ -78,12 +78,12 @@ type FakeWorkspace struct {
 	Repos      map[string]workspace.RepoInfo
 }
 
-func (w *FakeWorkspace) LockUnlock() func() {
-	if w == nil {
+func (s *FakeWorkspace) LockUnlock() func() {
+	if s == nil {
 		panic("LockUnlock called on nil FakeWorkspace")
 	}
-	w.mu.Lock()
-	return func() { w.mu.Unlock() }
+	s.mu.Lock()
+	return func() { s.mu.Unlock() }
 }
 
 // Generic functions to handle map operations

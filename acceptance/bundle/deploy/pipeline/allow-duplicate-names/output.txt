@@ -46,6 +46,10 @@ Deployment complete!
 The following resources will be deleted:
   delete pipeline pipeline_one
 
+This action will result in the deletion of the following DLT Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them:
+  delete pipeline pipeline_one
+
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/acc-bundle-deploy-pipeline-duplicate-names-[UNIQUE_NAME]/default
 
 Deleting files...

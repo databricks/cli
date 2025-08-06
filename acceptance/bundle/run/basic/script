@@ -14,3 +14,6 @@ errcode trace $CLI bundle run foo -- arg1 arg2
 
 title "inline script"
 errcode trace $CLI bundle run -- echo "hello"
+
+title "completion handler"
+trace $CLI __complete bundle run ,

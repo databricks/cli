@@ -31,12 +31,12 @@ type Pipeline struct {
 	pipelines.CreatePipeline
 }
 
-func (s *Pipeline) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, s)
+func (p *Pipeline) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, p)
 }
 
-func (s Pipeline) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(s)
+func (p Pipeline) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(p)
 }
 
 func (p *Pipeline) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {
@@ -50,7 +50,7 @@ func (p *Pipeline) Exists(ctx context.Context, w *databricks.WorkspaceClient, id
 	return true, nil
 }
 
-func (j *Pipeline) ResourceDescription() ResourceDescription {
+func (p *Pipeline) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "pipeline",
 		PluralName:    "pipelines",
@@ -71,6 +71,6 @@ func (p *Pipeline) GetName() string {
 	return p.Name
 }
 
-func (s *Pipeline) GetURL() string {
-	return s.URL
+func (p *Pipeline) GetURL() string {
+	return p.URL
 }

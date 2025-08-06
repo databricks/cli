@@ -58,7 +58,15 @@ func newOpenCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "open",
 		Short: "Open a resource in the browser",
-		Args:  root.MaximumNArgs(1),
+		Long: `Open a deployed bundle resource in the Databricks workspace.
+
+Examples:
+  databricks bundle open                    # Prompts to select a resource to open
+  databricks bundle open my_job             # Open specific job in Workflows UI
+  databricks bundle open my_dashboard       # Open dashboard in browser
+
+Use after deployment to quickly navigate to your resources in the workspace.`,
+		Args: root.MaximumNArgs(1),
 	}
 
 	var forcePull bool
@@ -134,6 +142,9 @@ func newOpenCommand() *cobra.Command {
 	}
 
 	cmd.ValidArgsFunction = func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		ctx := logdiag.InitContext(cmd.Context())
+		cmd.SetContext(ctx)
+
 		b := root.MustConfigureBundle(cmd)
 		if logdiag.HasError(cmd.Context()) {
 			return nil, cobra.ShellCompDirectiveError

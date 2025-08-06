@@ -30,12 +30,12 @@ type SqlWarehouse struct {
 	sql.CreateWarehouseRequest
 }
 
-func (w *SqlWarehouse) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, w)
+func (sw *SqlWarehouse) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, sw)
 }
 
-func (w SqlWarehouse) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(w)
+func (sw SqlWarehouse) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(sw)
 }
 
 func (sw *SqlWarehouse) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {

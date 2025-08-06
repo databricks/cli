@@ -43,7 +43,7 @@ func TestAnnotateJobsMutator(t *testing.T) {
 			Kind:             jobs.JobDeploymentKindBundle,
 			MetadataFilePath: "/a/b/c/metadata.json",
 		},
-		b.Config.Resources.Jobs["my-job-1"].JobSettings.Deployment)
+		b.Config.Resources.Jobs["my-job-1"].Deployment)
 	assert.Equal(t, jobs.JobEditModeUiLocked, b.Config.Resources.Jobs["my-job-1"].EditMode)
 	assert.Equal(t, jobs.FormatMultiTask, b.Config.Resources.Jobs["my-job-1"].Format)
 
@@ -52,7 +52,7 @@ func TestAnnotateJobsMutator(t *testing.T) {
 			Kind:             jobs.JobDeploymentKindBundle,
 			MetadataFilePath: "/a/b/c/metadata.json",
 		},
-		b.Config.Resources.Jobs["my-job-2"].JobSettings.Deployment)
+		b.Config.Resources.Jobs["my-job-2"].Deployment)
 	assert.Equal(t, jobs.JobEditModeUiLocked, b.Config.Resources.Jobs["my-job-2"].EditMode)
 	assert.Equal(t, jobs.FormatMultiTask, b.Config.Resources.Jobs["my-job-2"].Format)
 }

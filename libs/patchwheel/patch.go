@@ -35,7 +35,7 @@ func patchMetadata(r io.Reader, oldVersion, newVersion string) ([]byte, error) {
 		if versionValue, ok := bytes.CutPrefix(line, versionKey); ok {
 			foundVersion := string(bytes.TrimSpace(versionValue))
 			if foundVersion != oldVersion {
-				return nil, fmt.Errorf("Unexpected version in METADATA: %s (expected %s)", strings.TrimSpace(string(line)), oldVersion)
+				return nil, fmt.Errorf("unexpected version in METADATA: %s (expected %s)", strings.TrimSpace(string(line)), oldVersion)
 			}
 			buf.WriteString(string(versionKey) + " " + newVersion + "\n")
 		} else {
@@ -213,19 +213,20 @@ func PatchWheel(path, outputDir string) (string, bool, error) {
 			return "", false, err
 		}
 
-		if f.Name == metadataFile.Name {
+		switch f.Name {
+		case metadataFile.Name:
 			_, err = writer.Write(newMetadata)
 			if err != nil {
 				return "", false, err
 			}
 			metadataUpdated += 1
-		} else if f.Name == recordFile.Name {
+		case recordFile.Name:
 			_, err = writer.Write(newRecord)
 			if err != nil {
 				return "", false, err
 			}
 			recordUpdated += 1
-		} else {
+		default:
 			rc, err := f.Open()
 			if err != nil {
 				return "", false, err
@@ -248,11 +249,11 @@ func PatchWheel(path, outputDir string) (string, bool, error) {
 	outFile.Close()
 
 	if metadataUpdated != 1 {
-		return "", false, errors.New("Could not update METADATA")
+		return "", false, errors.New("could not update METADATA")
 	}
 
 	if recordUpdated != 1 {
-		return "", false, errors.New("Could not update RECORD")
+		return "", false, errors.New("could not update RECORD")
 	}
 
 	if err := os.Rename(tmpFilename, outpath); err != nil {

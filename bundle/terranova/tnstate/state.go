@@ -87,7 +87,7 @@ func (db *TerranovaState) Open(path string) error {
 		if db.Path == path {
 			return nil
 		}
-		return fmt.Errorf("Already read state %v, cannot open %v", db.Path, path)
+		return fmt.Errorf("already read state %v, cannot open %v", db.Path, path)
 	}
 
 	data, err := os.ReadFile(path)

@@ -23,7 +23,9 @@ func newSummaryCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "summary",
 		Short: "Summarize resources deployed by this bundle",
-		Args:  root.NoArgs,
+		Long: `Summarize resources deployed by this bundle with their workspace URLs.
+Useful after deployment to see what was created and where to find it.`,
+		Args: root.NoArgs,
 	}
 
 	var forcePull bool

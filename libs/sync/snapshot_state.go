@@ -122,7 +122,7 @@ func (fs *SnapshotState) validate() error {
 
 // ToSlash ensures all local paths in the snapshot state
 // are slash-separated. Returns a new snapshot state.
-func (old SnapshotState) ToSlash() *SnapshotState {
+func (fs SnapshotState) ToSlash() *SnapshotState {
 	new := SnapshotState{
 		LastModifiedTimes:  make(map[string]time.Time),
 		LocalToRemoteNames: make(map[string]string),
@@ -130,17 +130,17 @@ func (old SnapshotState) ToSlash() *SnapshotState {
 	}
 
 	// Keys are local paths.
-	for k, v := range old.LastModifiedTimes {
+	for k, v := range fs.LastModifiedTimes {
 		new.LastModifiedTimes[filepath.ToSlash(k)] = v
 	}
 
 	// Keys are local paths.
-	for k, v := range old.LocalToRemoteNames {
+	for k, v := range fs.LocalToRemoteNames {
 		new.LocalToRemoteNames[filepath.ToSlash(k)] = v
 	}
 
 	// Values are remote paths.
-	for k, v := range old.RemoteToLocalNames {
+	for k, v := range fs.RemoteToLocalNames {
 		new.RemoteToLocalNames[k] = filepath.ToSlash(v)
 	}
 

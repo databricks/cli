@@ -174,7 +174,7 @@ func TestToTypedStructAnonymousByValue(t *testing.T) {
 	err := ToTyped(&out, v)
 	require.NoError(t, err)
 	assert.Equal(t, "bar", out.Foo.Foo)
-	assert.Equal(t, "baz", out.Foo.Bar.Bar)
+	assert.Equal(t, "baz", out.Bar.Bar)
 }
 
 func TestToTypedStructAnonymousByPointer(t *testing.T) {
@@ -200,7 +200,7 @@ func TestToTypedStructAnonymousByPointer(t *testing.T) {
 	err := ToTyped(&out, v)
 	require.NoError(t, err)
 	assert.Equal(t, "bar", out.Foo.Foo)
-	assert.Equal(t, "baz", out.Foo.Bar.Bar)
+	assert.Equal(t, "baz", out.Bar.Bar)
 }
 
 func TestToTypedStructNil(t *testing.T) {
@@ -367,7 +367,7 @@ func TestToTypedString(t *testing.T) {
 }
 
 func TestToTypedStringOverwrite(t *testing.T) {
-	var out string = "bar"
+	out := "bar"
 	err := ToTyped(&out, dyn.V("foo"))
 	require.NoError(t, err)
 	assert.Equal(t, "foo", out)
@@ -402,7 +402,7 @@ func TestToTypedBool(t *testing.T) {
 }
 
 func TestToTypedBoolOverwrite(t *testing.T) {
-	var out bool = true
+	out := true
 	err := ToTyped(&out, dyn.V(false))
 	require.NoError(t, err)
 	assert.False(t, out)
@@ -431,7 +431,7 @@ func TestToTypedBoolFromString(t *testing.T) {
 }
 
 func TestToTypedBoolFromStringVariableReference(t *testing.T) {
-	var out bool = true
+	out := true
 	err := ToTyped(&out, dyn.V("${var.foo}"))
 	require.NoError(t, err)
 	assert.False(t, out)
@@ -459,7 +459,7 @@ func TestToTypedInt64(t *testing.T) {
 }
 
 func TestToTypedIntOverwrite(t *testing.T) {
-	var out int = 123
+	out := 123
 	err := ToTyped(&out, dyn.V(1234))
 	require.NoError(t, err)
 	assert.Equal(t, int(1234), out)
@@ -493,7 +493,7 @@ func TestToTypedIntFromStringInt(t *testing.T) {
 }
 
 func TestToTypedIntFromStringVariableReference(t *testing.T) {
-	var out int = 123
+	out := 123
 	err := ToTyped(&out, dyn.V("${var.foo}"))
 	require.NoError(t, err)
 	assert.Equal(t, int(0), out)
@@ -534,7 +534,7 @@ func TestToTypedFloat32Overwrite(t *testing.T) {
 }
 
 func TestToTypedFloat64Overwrite(t *testing.T) {
-	var out float64 = 1.0
+	out := 1.0
 	err := ToTyped(&out, dyn.V(float64(2.0)))
 	require.NoError(t, err)
 	assert.Zero(t, 2.0-out)
@@ -574,7 +574,7 @@ func TestToTypedFloat32FromStringVariableReference(t *testing.T) {
 }
 
 func TestToTypedFloat64FromStringVariableReference(t *testing.T) {
-	var out float64 = 1.0
+	out := 1.0
 	err := ToTyped(&out, dyn.V("${var.foo}"))
 	require.NoError(t, err)
 	assert.Zero(t, out)

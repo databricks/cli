@@ -1,6 +1,14 @@
 
 >>> [CLI] bundle validate --help
-Validate configuration
+Validate bundle configuration for errors, warnings and recommendations.
+
+Run validate before deploy to catch configuration issues early:
+  databricks bundle validate                  # Validate default target
+  databricks bundle validate --target prod    # Validate specific target
+
+Validation checks the configuration syntax and schema, permissions etc.
+
+Please run this command before deploying to ensure configuration quality.
 
 Usage:
   databricks bundle validate [flags]

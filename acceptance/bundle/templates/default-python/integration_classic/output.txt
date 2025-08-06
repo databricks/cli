@@ -88,6 +88,10 @@ The following resources will be deleted:
   delete job project_name_[UNIQUE_NAME]_job
   delete pipeline project_name_[UNIQUE_NAME]_pipeline
 
+This action will result in the deletion of the following DLT Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them:
+  delete pipeline project_name_[UNIQUE_NAME]_pipeline
+
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev
 
 Deleting files...
@@ -398,6 +402,10 @@ Resources:
 >>> [CLI] bundle destroy -t prod --auto-approve
 The following resources will be deleted:
   delete job project_name_[UNIQUE_NAME]_job
+  delete pipeline project_name_[UNIQUE_NAME]_pipeline
+
+This action will result in the deletion of the following DLT Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them:
   delete pipeline project_name_[UNIQUE_NAME]_pipeline
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod
