@@ -10,12 +10,13 @@ type ArtifactType string
 
 const ArtifactPythonWheel ArtifactType = `whl`
 
-const ArtifactPythonWheelDynamicVersion = "jar"
+const ArtifactJar ArtifactType = `jar`
 
 // Values returns all valid ArtifactType values
 func (ArtifactType) Values() []ArtifactType {
 	return []ArtifactType{
 		ArtifactPythonWheel,
+		ArtifactJar,
 	}
 }
 
