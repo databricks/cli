@@ -47,11 +47,6 @@ func (f *enum) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 			return nil
 		}
 
-		// Skip validation if the value is not set
-		if v.Kind() == dyn.KindInvalid || v.Kind() == dyn.KindNil {
-			return nil
-		}
-
 		// Get the string value for comparison
 		strValue, ok := v.AsString()
 		if !ok {
