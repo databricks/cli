@@ -82,16 +82,19 @@ Typical use cases:
 			return root.ErrAlreadyPrinted
 		}
 
-		bundle.ApplySeqContext(ctx, b,
-			// We need to resolve artifact variable (how we do it in build phase)
-			// because some of the to-be-destroyed resource might use this variable.
-			// Not resolving might lead to terraform "Reference to undeclared resource" error
-			mutator.ResolveVariableReferencesWithoutResources("artifacts"),
-			mutator.ResolveVariableReferencesOnlyResources("artifacts"),
-		)
+		// not applicable to direct deployment, we don't need resource configuration there
+		if !b.DirectDeployment {
+			bundle.ApplySeqContext(ctx, b,
+				// We need to resolve artifact variable (how we do it in build phase)
+				// because some of the to-be-destroyed resource might use this variable.
+				// Not resolving might lead to terraform "Reference to undeclared resource" error
+				mutator.ResolveVariableReferencesWithoutResources("artifacts"),
+				mutator.ResolveVariableReferencesOnlyResources("artifacts"),
+			)
 
-		if logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
+			if logdiag.HasError(ctx) {
+				return root.ErrAlreadyPrinted
+			}
 		}
 
 		phases.Destroy(ctx, b)
