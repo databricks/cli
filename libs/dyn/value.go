@@ -154,7 +154,7 @@ func (v Value) IsZero() bool {
 	case KindInt:
 		return v.v == 0
 	case KindFloat:
-		return v.v == 0
+		return v.v == 0.0
 	case KindTime:
 		t := v.v.(Time)
 		return t.IsZero()
