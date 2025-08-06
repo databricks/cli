@@ -18,7 +18,6 @@ func TestDisplayPipelineUpdate(t *testing.T) {
 		pipelineID string
 		events     []pipelines.PipelineEvent
 		expected   string
-		wantErr    bool
 	}{
 		{
 			name: "comprehensive pipeline update with all fields",
@@ -50,14 +49,14 @@ func TestDisplayPipelineUpdate(t *testing.T) {
 					EventType: "update_progress",
 				},
 			},
-			expected: `Pipeline test-pipeline pipeline-789 completed successfully.
+			expected: `Update for pipeline test-pipeline completed successfully. Pipeline ID: pipeline-789
 Started at 2022-01-01T00:00:00Z and completed at 2022-01-01T01:00:00Z.
 Pipeline configurations for this update:
 • All tables are fully refreshed
-• Cause: Manual trigger
+• Update cause: Manual trigger
 • Serverless compute
 • Channel: CURRENT
-• Continuous
+• Continuous pipeline
 • Development mode
 • Catalog: test_catalog
 • Schema: test_schema
@@ -70,7 +69,7 @@ Pipeline configurations for this update:
 			},
 			pipelineID: "pipeline-789",
 			events:     []pipelines.PipelineEvent{},
-			expected: `Pipeline completed successfully.
+			expected: `Update for pipeline completed successfully.
 Pipeline configurations for this update:
 • All tables are refreshed
 `,
@@ -89,10 +88,42 @@ Pipeline configurations for this update:
 					EventType: "update_progress",
 				},
 			},
-			expected: `Pipeline completed successfully.
+			expected: `Update for pipeline completed successfully.
 Pipeline configurations for this update:
 • Refreshed [table1, table2]
 • Full refreshed [table3]
+`,
+		},
+		{
+			name: "pipeline update with storage instead of catalog/schema",
+			update: pipelines.UpdateInfo{
+				UpdateId: "update-storage",
+				Config: &pipelines.PipelineSpec{
+					Name:    "test-pipeline",
+					Id:      "pipeline-789",
+					Storage: "test_storage",
+				},
+			},
+			pipelineID: "pipeline-456",
+			events:     []pipelines.PipelineEvent{},
+			expected: `Update for pipeline test-pipeline completed successfully. Pipeline ID: pipeline-789
+Pipeline configurations for this update:
+• All tables are refreshed
+• Storage: test_storage
+`,
+		},
+		{
+			name: "pipeline update with classic compute and no config",
+			update: pipelines.UpdateInfo{
+				UpdateId:  "update-classic",
+				ClusterId: "cluster-123",
+			},
+			pipelineID: "pipeline-456",
+			events:     []pipelines.PipelineEvent{},
+			expected: `Update for pipeline completed successfully.
+Pipeline configurations for this update:
+• All tables are refreshed
+• Classic compute: cluster-123
 `,
 		},
 	}
@@ -106,13 +137,8 @@ Pipeline configurations for this update:
 			ctx = cmdio.InContext(ctx, cmdIO)
 
 			err := displayPipelineUpdate(ctx, tt.update, tt.pipelineID, tt.events)
-
-			if tt.wantErr {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, tt.expected, buf.String())
-			}
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expected, buf.String())
 		})
 	}
 }

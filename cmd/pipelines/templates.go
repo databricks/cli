@@ -1,6 +1,6 @@
 package pipelines
 
-const pipelineUpdateTemplate = `Pipeline{{- if .Update.Config }} {{ .Update.Config.Name }}{{ end }}{{- if .Update.Config }} {{ .Update.Config.Id }}{{ end }} completed successfully.
+const pipelineUpdateTemplate = `Update for pipeline {{- if .Update.Config }} {{ .Update.Config.Name }}{{ end }} completed successfully.{{- if .Update.Config }} Pipeline ID: {{ .Update.Config.Id }}{{ end }}
 {{- if and .Update.CreationTime .LastEventTime }}
 Started at {{ .Update.CreationTime | pretty_UTC_date_from_millis }} and completed at {{ .LastEventTime }}.
 {{- end }}
@@ -18,12 +18,12 @@ Pipeline configurations for this update:
 {{- end }}
 {{- end }}
 {{- if .Update.Cause }}
-• Cause: {{ .Update.Cause }}
+• Update cause: {{ .Update.Cause }}
 {{- end }}
 {{- if .Update.Config }}
 {{- if .Update.Config.Serverless }}
 • Serverless compute
-{{- else }}
+{{- else if .Update.ClusterId }}
 • Classic compute: {{ .Update.ClusterId }}
 {{- end }}
 {{- else if .Update.ClusterId }}
@@ -34,16 +34,18 @@ Pipeline configurations for this update:
 • Channel: {{ .Update.Config.Channel }}
 {{- end }}
 {{- if .Update.Config.Continuous }}
-• {{ if .Update.Config.Continuous }}Continuous{{ else }}Triggered{{ end }}
+• {{ if .Update.Config.Continuous }}Continuous{{ else }}Triggered{{ end }} pipeline
 {{- end }}
 {{- if .Update.Config.Development }}
 • {{ if .Update.Config.Development }}Development{{ else }}Production{{ end }} mode
 {{- end }}
 {{- if .Update.Config.Catalog }}
 • Catalog: {{ .Update.Config.Catalog }}
-{{- end }}
 {{- if .Update.Config.Schema }}
 • Schema: {{ .Update.Config.Schema }}
+{{- end }}
+{{- else if .Update.Config.Storage }}
+• Storage: {{ .Update.Config.Storage }}
 {{- end }}
 {{- end }}
 `
