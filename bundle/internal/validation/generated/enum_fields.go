@@ -10,7 +10,7 @@ import (
 // EnumFields maps [dyn.Pattern] to valid enum values they should have.
 var EnumFields = map[string][]string{
 	"artifacts.*.executable": {"bash", "sh", "cmd"},
-	"artifacts.*.type": {"whl"},
+	"artifacts.*.type": {"whl", "jar"},
 
 	"resources.apps.*.active_deployment.mode": {"AUTO_SYNC", "SNAPSHOT"},
 	"resources.apps.*.active_deployment.status.state": {"CANCELLED", "FAILED", "IN_PROGRESS", "SUCCEEDED"},
