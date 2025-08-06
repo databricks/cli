@@ -49,8 +49,10 @@ func TestDisplayPipelineUpdate(t *testing.T) {
 					EventType: "update_progress",
 				},
 			},
-			expected: `Update for pipeline test-pipeline completed successfully. Pipeline ID: pipeline-789
-Started at 2022-01-01T00:00:00Z and completed at 2022-01-01T01:00:00Z.
+			expected: `Update for pipeline test-pipeline completed successfully.
+Pipeline ID: pipeline-789
+Update start time: 2022-01-01T00:00:00Z
+Update end time: 2022-01-01T01:00:00Z.
 Pipeline configurations for this update:
 • All tables are fully refreshed
 • Update cause: Manual trigger
@@ -106,7 +108,8 @@ Pipeline configurations for this update:
 			},
 			pipelineID: "pipeline-456",
 			events:     []pipelines.PipelineEvent{},
-			expected: `Update for pipeline test-pipeline completed successfully. Pipeline ID: pipeline-789
+			expected: `Update for pipeline test-pipeline completed successfully.
+Pipeline ID: pipeline-789
 Pipeline configurations for this update:
 • All tables are refreshed
 • Storage: test_storage

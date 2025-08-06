@@ -34,6 +34,7 @@ type PipelineUpdateData struct {
 	LastEventTime string
 }
 
+// fetchAndDisplayPipelineUpdate fetches the latest update for a pipeline and displays information about it.
 func fetchAndDisplayPipelineUpdate(ctx context.Context, bundle *bundle.Bundle, ref bundleresources.Reference, updateId string) error {
 	w := bundle.WorkspaceClient()
 
