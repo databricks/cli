@@ -82,7 +82,7 @@ Use "pipelines [command] --help" for more information about a command.
 pipelines successfully installed in directory "./subdir"
 
 >>> [CLI] install-pipelines-cli -d ./subdir
-found existing pipelines installation at subdir/pipelines. Pipelines is successfully reinstalled in directory "./subdir"
+found existing pipelines installation at subdir/pipelines. Pipelines CLI is successfully reinstalled in directory "./subdir"
 
 >>> ./subdir/pipelines
 Pipelines CLI
