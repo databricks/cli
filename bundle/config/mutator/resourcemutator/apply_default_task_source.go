@@ -14,23 +14,23 @@ func ApplyDefaultTaskSource() bundle.Mutator {
 	return &applyDefaultTaskSource{}
 }
 
+var pattern = dyn.NewPattern(
+	dyn.Key("resources"),
+	dyn.Key("jobs"),
+	dyn.AnyKey(),
+)
+
+var taskPattern = dyn.NewPattern(
+	dyn.Key("tasks"),
+	dyn.AnyIndex(),
+)
+
+var foreachTaskPattern = dyn.NewPattern(
+	dyn.Key("for_each_task"),
+	dyn.Key("task"),
+)
+
 func (a *applyDefaultTaskSource) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	pattern := dyn.NewPattern(
-		dyn.Key("resources"),
-		dyn.Key("jobs"),
-		dyn.AnyKey(),
-	)
-
-	taskPattern := dyn.NewPattern(
-		dyn.Key("tasks"),
-		dyn.AnyIndex(),
-	)
-
-	foreachTaskPattern := dyn.NewPattern(
-		dyn.Key("for_each_task"),
-		dyn.Key("task"),
-	)
-
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		return dyn.MapByPattern(v, pattern, func(p dyn.Path, job dyn.Value) (dyn.Value, error) {
 			defaultSource := "WORKSPACE"
