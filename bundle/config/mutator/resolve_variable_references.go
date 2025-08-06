@@ -41,6 +41,14 @@ var defaultPrefixes = []string{
 	"bundle",
 	"workspace",
 	"variables",
+	"resources",
+}
+
+var optionalResolution = map[string]bool{
+	// Enables different mode for resolution:
+	//  - normalization is not done, if field is not set by user it's missing
+	//  - if field is missing (either it's a valid field but not set or invalid field), it remains unresolved, no error
+	"resources": true,
 }
 
 var artifactPath = dyn.MustPathFromString("artifacts")
@@ -229,8 +237,19 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn
 				// Perform resolution only if the path starts with one of the specified prefixes.
 				for _, prefix := range prefixes {
 					if path.HasPrefix(prefix) {
-						hasUpdates = true
-						return m.lookupFn(normalized, path, b)
+						isOpt := optionalResolution[prefix[0].Key()]
+						lookupSource := normalized
+						if isOpt {
+							// We don't want injected zero value when resolving $resources.
+							// We only want entries that are explicitly provided by users.
+							lookupSource = root
+						}
+						value, err := m.lookupFn(lookupSource, path, b)
+						if !value.IsValid() && isOpt {
+							return dyn.InvalidValue, dynvar.ErrSkipResolution
+						}
+						hasUpdates = hasUpdates || (err == nil && value.IsValid())
+						return value, err
 					}
 				}
 
