@@ -67,7 +67,8 @@ Warning: Ignoring Databricks CLI version constraint for development build. Requi
         {
           "job_cluster_key": "job_cluster",
           "notebook_task": {
-            "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/my_jobs_as_code/dev/files/src/notebook"
+            "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/my_jobs_as_code/dev/files/src/notebook",
+            "source": "WORKSPACE"
           },
           "task_key": "notebook_task"
         }

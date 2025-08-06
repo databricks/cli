@@ -82,6 +82,11 @@ The following resources will be deleted:
   delete pipeline my_project_pipeline
   delete pipeline my_project_pipeline_2
 
+This action will result in the deletion of the following DLT Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them:
+  delete pipeline my_project_pipeline
+  delete pipeline my_project_pipeline_2
+
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/my_project/dev
 
 Deleting files...

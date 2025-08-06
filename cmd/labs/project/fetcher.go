@@ -145,17 +145,17 @@ func (f *fetcher) checkReleasedVersions(cmd *cobra.Command, version string, offl
 	return version, nil
 }
 
-func (i *fetcher) loadRemoteProjectDefinition(cmd *cobra.Command, version string, offlineInstall bool) (*Project, error) {
+func (f *fetcher) loadRemoteProjectDefinition(cmd *cobra.Command, version string, offlineInstall bool) (*Project, error) {
 	ctx := cmd.Context()
 	var raw []byte
 	var err error
 	if !offlineInstall {
-		raw, err = github.ReadFileFromRef(ctx, "databrickslabs", i.name, version, "labs.yml")
+		raw, err = github.ReadFileFromRef(ctx, "databrickslabs", f.name, version, "labs.yml")
 		if err != nil {
 			return nil, fmt.Errorf("read labs.yml from GitHub: %w", err)
 		}
 	} else {
-		libDir, _ := PathInLabs(ctx, i.name, "lib")
+		libDir, _ := PathInLabs(ctx, f.name, "lib")
 		fileName := filepath.Join(libDir, "labs.yml")
 		raw, err = os.ReadFile(fileName)
 		if err != nil {

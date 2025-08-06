@@ -56,6 +56,20 @@ type Metrics struct {
 	ExecutionTimes              []protos.IntMapEntry
 }
 
+// SetBoolValue sets the value of a boolean metric.
+// If the metric does not exist, it is created.
+// If the metric exists, it is updated.
+// Ensures that the metric is unique
+func (m *Metrics) SetBoolValue(key string, value bool) {
+	for i, v := range m.BoolValues {
+		if v.Key == key {
+			m.BoolValues[i].Value = value
+			return
+		}
+	}
+	m.BoolValues = append(m.BoolValues, protos.BoolMapEntry{Key: key, Value: value})
+}
+
 func (m *Metrics) AddBoolValue(key string, value bool) {
 	m.BoolValues = append(m.BoolValues, protos.BoolMapEntry{Key: key, Value: value})
 }
@@ -372,7 +386,7 @@ func (b *Bundle) OpenResourceDatabase(ctx context.Context) error {
 
 	err = b.ResourceDatabase.Open(statePath)
 	if err != nil {
-		return fmt.Errorf("Failed to open/create resoruce database in %s: %s", statePath, err)
+		return fmt.Errorf("failed to open/create resoruce database in %s: %s", statePath, err)
 	}
 
 	return nil
