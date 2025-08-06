@@ -43,6 +43,8 @@ var defaultPrefixes = []string{
 	"variables",
 }
 
+var artifactPath = dyn.MustPathFromString("artifacts")
+
 type resolveVariableReferences struct {
 	prefixes    []string
 	pattern     dyn.Pattern
@@ -55,6 +57,8 @@ type resolveVariableReferences struct {
 	// includeResources can be used with appropriate pattern to avoid resolving variables
 	// outside of 'resources'.
 	includeResources bool
+
+	artifactsReferenceUsed bool
 }
 
 func ResolveVariableReferencesOnlyResources(prefixes ...string) bundle.Mutator {
@@ -172,6 +176,11 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 			break
 		}
 	}
+
+	if m.artifactsReferenceUsed {
+		b.Metrics.SetBoolValue("artifacts_reference_used", true)
+	}
+
 	return diags
 }
 
@@ -214,8 +223,8 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn
 				}
 
 				// If the path starts with "artifacts", we need to add a metric to track if this reference is used.
-				if path.HasPrefix(dyn.MustPathFromString("artifacts")) {
-					b.Metrics.SetBoolValue("artifacts_reference_used", true)
+				if path.HasPrefix(artifactPath) {
+					m.artifactsReferenceUsed = true
 				}
 
 				// Perform resolution only if the path starts with one of the specified prefixes.
