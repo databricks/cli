@@ -213,12 +213,13 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn
 					path = newPath
 				}
 
+				// If the path starts with "artifacts", we need to add a metric to track if this reference is used.
+				if path.HasPrefix(dyn.MustPathFromString("artifacts")) {
+					b.Metrics.SetBoolValue("artifacts_reference_used", true)
+				}
+
 				// Perform resolution only if the path starts with one of the specified prefixes.
 				for _, prefix := range prefixes {
-					// If the path starts with "artifacts", we need to add a metric to track if this reference is used.
-					if path.HasPrefix(dyn.MustPathFromString("artifacts")) {
-						b.Metrics.SetBoolValue("artifacts_reference_used", true)
-					}
 					if path.HasPrefix(prefix) {
 						// Skip resolution if there is a skip function and it returns true.
 						if m.skipFn != nil && m.skipFn(v) {
