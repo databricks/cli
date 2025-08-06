@@ -119,11 +119,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Updates (dynamic): * (except 'resources') (strings) (resolves variable references to their actual values)
 		// Resolves variable references in configuration (except resources) using bundle, workspace,
 		// and variables prefixes
-		mutator.ResolveVariableReferencesWithoutResources(
-			"bundle",
-			"workspace",
-			"variables",
-		),
+		mutator.ResolveVariableReferencesWithoutResources(),
 
 		// Check for invalid use of /Volumes in workspace paths
 		validate.ValidateVolumePath(),
