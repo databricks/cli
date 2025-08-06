@@ -77,7 +77,8 @@ func fetchAndDisplayPipelineUpdate(ctx context.Context, bundle *bundle.Bundle, r
 	return nil
 }
 
-// getLastEventTime returns the timestamp of the last progress event
+// getLastEventTime returns the timestamp of the last progress event.
+// Expects that the events are already sorted by timestamp in ascending order.
 func getLastEventTime(events []pipelines.PipelineEvent) string {
 	if len(events) == 0 {
 		return ""
