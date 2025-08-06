@@ -1,0 +1,45 @@
+[[Server]]
+Pattern = "GET /api/2.0/pipelines/1234"
+Response.Body = '''
+{
+    "pipeline_id": 1234,
+    "spec": {
+        "name": "generate-pipeline",
+        "clusters": [
+            {
+                "custom_tags": {
+                    "Tag1": "24X7-1234"
+                }
+            },
+            {
+                "spark_conf": {
+                    "spark.databricks.delta.preview.enabled": "true"
+                }
+            }
+        ],
+        "libraries": [
+            {
+                "file": {
+                    "path": "/Workspace/Users/tester@databricks.com/outsql.sql"
+                }
+            }
+        ]
+    }
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.0/workspace/get-status"
+Response.Body = '''
+{
+    "path": "/Workspace/Users/tester@databricks.com/outsql.sql",
+    "object_type": "FILE",
+    "language": "SQL"
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.0/workspace/export"
+Response.Body = '''
+SELECT * FROM test
+'''
