@@ -23,7 +23,8 @@
         "spark_version": "13.3.x-snapshot-scala2.12"
       },
       "notebook_task": {
-        "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/foo"
+        "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/foo",
+        "source": "WORKSPACE"
       },
       "task_key": "my_notebook_task"
     }
@@ -62,7 +63,8 @@ Deployment complete!
         "spark_version": "13.3.x-snapshot-scala2.12"
       },
       "notebook_task": {
-        "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/foo"
+        "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/foo",
+        "source": "WORKSPACE"
       },
       "task_key": "my_notebook_task"
     }
