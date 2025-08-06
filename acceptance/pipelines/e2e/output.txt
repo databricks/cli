@@ -23,8 +23,9 @@ View your pipeline my_project_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?o
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
 Update ID: [UUID]
-Update [UUID] for pipeline completed successfully.
-Refresh: default refresh-all
+Update for pipeline completed successfully.
+Pipeline configurations for this update:
+• All tables are refreshed
 
 === Edit project by creating and running a new second pipeline
 >>> [PIPELINES] deploy
@@ -62,8 +63,9 @@ View your pipeline my_project_pipeline_2 here: [DATABRICKS_URL]/pipelines/[UUID]
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
 Update ID: [UUID]
-Update [UUID] for pipeline completed successfully.
-Refresh: default refresh-all
+Update for pipeline completed successfully.
+Pipeline configurations for this update:
+• All tables are refreshed
 
 === Stop both pipelines before destroy
 >>> [PIPELINES] stop my_project_pipeline

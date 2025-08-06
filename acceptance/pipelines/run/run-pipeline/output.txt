@@ -11,13 +11,15 @@ View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
 Update ID: [UUID]
-Update [UUID] for pipeline completed successfully.
-Refresh: default refresh-all
+Update for pipeline completed successfully.
+Pipeline configurations for this update:
+• All tables are refreshed
 
 === Run pipeline with KEY, expect same output as without KEY
 >>> [PIPELINES] run my_pipeline
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
 Update ID: [UUID]
-Update [UUID] for pipeline completed successfully.
-Refresh: default refresh-all
+Update for pipeline completed successfully.
+Pipeline configurations for this update:
+• All tables are refreshed
