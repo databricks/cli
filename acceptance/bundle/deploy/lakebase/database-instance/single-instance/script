@@ -1,6 +1,7 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
+  # trace $CLI bundle destroy --auto-approve
   # bundle destroy does not work yet for database instances
   trace $CLI database delete-database-instance "test-database-instance-${UNIQUE_NAME}" --purge=true
 }
