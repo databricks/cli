@@ -204,7 +204,7 @@ RUNNING                   750ms
 `,
 		},
 		{
-			name: "edge cases - empty events and single event",
+			name: "edge cases - single event",
 			events: []pipelines.PipelineEvent{
 				{
 					Timestamp: "2022-01-01T00:00:00Z",
@@ -212,6 +212,11 @@ RUNNING                   750ms
 					Message:   "Update test-update-single is COMPLETED.",
 				},
 			},
+			expected: "",
+		},
+		{
+			name:     "edge cases - empty event",
+			events:   []pipelines.PipelineEvent{},
 			expected: "",
 		},
 	}
