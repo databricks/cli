@@ -54,7 +54,10 @@ View your pipeline my_project_pipeline_2 here: [DATABRICKS_URL]/pipelines/[UUID]
     "edition":"ADVANCED",
     "id":"[UUID]",
     "name":"[dev [USERNAME]] my_project_pipeline_2",
-    "storage":"dbfs:/pipelines/[UUID]"
+    "storage":"dbfs:/pipelines/[UUID]",
+    "tags": {
+      "dev":"[USERNAME]"
+    }
   },
   "state":"IDLE"
 }
