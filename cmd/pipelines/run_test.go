@@ -154,28 +154,52 @@ func TestDisplayProgressEvents(t *testing.T) {
 		wantErr  bool
 	}{
 		{
-			name: "pipeline completed with multiple phases and different duration formats",
+			name: "pipeline completed with all phases",
 			events: []pipelines.PipelineEvent{
 				{
 					Timestamp: "2022-01-01T00:00:00.000Z",
 					EventType: "update_progress",
+					Message:   "Update test-update-123 is QUEUED.",
+				},
+				{
+					Timestamp: "2022-01-01T00:00:01.000Z",
+					EventType: "update_progress",
+					Message:   "Update test-update-123 is CREATED.",
+				},
+				{
+					Timestamp: "2022-01-01T00:00:02.000Z",
+					EventType: "update_progress",
 					Message:   "Update test-update-123 is WAITING_FOR_RESOURCES.",
 				},
 				{
-					Timestamp: "2022-01-01T00:00:01.500Z",
+					Timestamp: "2022-01-01T00:00:03.000Z",
+					EventType: "update_progress",
+					Message:   "Update test-update-123 is INITIALIZING.",
+				},
+				{
+					Timestamp: "2022-01-01T00:00:04.000Z",
+					EventType: "update_progress",
+					Message:   "Update test-update-123 is SETTING_UP_TABLES.",
+				},
+				{
+					Timestamp: "2022-01-01T00:00:05.000Z",
 					EventType: "update_progress",
 					Message:   "Update test-update-123 is RUNNING.",
 				},
 				{
-					Timestamp: "2022-01-01T00:01:30Z",
+					Timestamp: "2022-01-01T00:01:30.000Z",
 					EventType: "update_progress",
 					Message:   "Update test-update-123 is COMPLETED.",
 				},
 			},
 			expected: `Run Phase                 Duration
 ---------                 --------
-WAITING_FOR_RESOURCES     1.5s
-RUNNING                   1m 28s
+QUEUED                    1.0s
+CREATED                   1.0s
+WAITING_FOR_RESOURCES     1.0s
+INITIALIZING              1.0s
+SETTING_UP_TABLES         1.0s
+RUNNING                   1m 25s
 `,
 		},
 		{
