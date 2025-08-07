@@ -23,7 +23,14 @@ type Planner struct {
 }
 
 func (d *Planner) Plan(ctx context.Context, inputConfig any) (deployplan.ActionType, error) {
-	// TODO: wrap errors with prefix "planning <group>.<name>:"
+	result, err := d.plan(ctx, inputConfig)
+	if err != nil {
+		return deployplan.ActionTypeNoop, fmt.Errorf("planning: %s.%s: %w", d.group, d.resourceName, err)
+	}
+	return result, err
+}
+
+func (d *Planner) plan(_ context.Context, inputConfig any) (deployplan.ActionType, error) {
 	entry, hasEntry := d.db.GetResourceEntry(d.group, d.resourceName)
 
 	resource, cfgType, err := New(d.client, d.group, d.resourceName, inputConfig)
@@ -97,6 +104,7 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 				settings:     settings,
 			}
 
+			// This currently does not do API calls, so we can run this sequentially. Once we have remote diffs, we need to run a in threadpool.
 			actionType, err := pl.Plan(ctx, config)
 			if err != nil {
 				return dyn.InvalidValue, err
