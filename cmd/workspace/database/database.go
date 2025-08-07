@@ -4,6 +4,7 @@ package database
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -164,6 +165,12 @@ func newCreateDatabaseInstance() *cobra.Command {
 	createDatabaseInstanceReq.DatabaseInstance = database.DatabaseInstance{}
 	var createDatabaseInstanceJson flags.JsonFlag
 
+	var createDatabaseInstanceSkipWait bool
+	var createDatabaseInstanceTimeout time.Duration
+
+	cmd.Flags().BoolVar(&createDatabaseInstanceSkipWait, "no-wait", createDatabaseInstanceSkipWait, `do not wait to reach AVAILABLE state`)
+	cmd.Flags().DurationVar(&createDatabaseInstanceTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach AVAILABLE state`)
+
 	cmd.Flags().Var(&createDatabaseInstanceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createDatabaseInstanceReq.DatabaseInstance.Capacity, "capacity", createDatabaseInstanceReq.DatabaseInstance.Capacity, `The sku of the instance.`)
@@ -216,11 +223,24 @@ func newCreateDatabaseInstance() *cobra.Command {
 			createDatabaseInstanceReq.DatabaseInstance.Name = args[0]
 		}
 
-		response, err := w.Database.CreateDatabaseInstance(ctx, createDatabaseInstanceReq)
+		wait, err := w.Database.CreateDatabaseInstance(ctx, createDatabaseInstanceReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		if createDatabaseInstanceSkipWait {
+			return cmdio.Render(ctx, wait.Response)
+		}
+		spinner := cmdio.Spinner(ctx)
+		info, err := wait.OnProgress(func(i *database.DatabaseInstance) {
+			status := i.State
+			statusMessage := fmt.Sprintf("current status: %s", status)
+			spinner <- statusMessage
+		}).GetWithTimeout(createDatabaseInstanceTimeout)
+		close(spinner)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, info)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1271,7 +1291,8 @@ func newUpdateDatabaseInstance() *cobra.Command {
 
   Arguments:
     NAME: The name of the instance. This is the unique identifier for the instance.
-    UPDATE_MASK: The list of fields to update.`
+    UPDATE_MASK: The list of fields to update. This field is not yet supported, and is
+      ignored by the server.`
 
 	cmd.Annotations = make(map[string]string)
 

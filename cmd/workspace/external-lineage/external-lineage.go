@@ -226,8 +226,8 @@ func newListExternalLineageRelationships() *cobra.Command {
 
 	cmd.Flags().Var(&listExternalLineageRelationshipsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().IntVar(&listExternalLineageRelationshipsReq.PageSize, "page-size", listExternalLineageRelationshipsReq.PageSize, ``)
-	cmd.Flags().StringVar(&listExternalLineageRelationshipsReq.PageToken, "page-token", listExternalLineageRelationshipsReq.PageToken, ``)
+	cmd.Flags().IntVar(&listExternalLineageRelationshipsReq.PageSize, "page-size", listExternalLineageRelationshipsReq.PageSize, `Specifies the maximum number of external lineage relationships to return in a single response.`)
+	cmd.Flags().StringVar(&listExternalLineageRelationshipsReq.PageToken, "page-token", listExternalLineageRelationshipsReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
 
 	cmd.Use = "list-external-lineage-relationships"
 	cmd.Short = `List external lineage relationships.`

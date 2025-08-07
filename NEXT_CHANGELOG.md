@@ -5,6 +5,7 @@
 ### Notable Changes
 
 ### Dependency updates
+* Update Go SDK to 0.79.0 ([#3376](https://github.com/databricks/cli/pull/3376))
 
 ### CLI
 
