@@ -3,40 +3,120 @@
 package pipelines
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"time"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/phases"
-	"github.com/databricks/cli/bundle/resources"
+	bundleresources "github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/run"
-	"github.com/databricks/cli/bundle/run/output"
+	bundlerunoutput "github.com/databricks/cli/bundle/run/output"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdgroup"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/maps"
 )
+
+type PipelineUpdateData struct {
+	PipelineId    string
+	Update        pipelines.UpdateInfo
+	LastEventTime string
+}
+
+// fetchAndDisplayPipelineUpdate fetches the latest update for a pipeline and displays information about it.
+func fetchAndDisplayPipelineUpdate(ctx context.Context, bundle *bundle.Bundle, ref bundleresources.Reference, updateId string) error {
+	w := bundle.WorkspaceClient()
+
+	pipelineResource := ref.Resource.(*resources.Pipeline)
+	pipelineID := pipelineResource.ID
+	if pipelineID == "" {
+		return errors.New("unable to get pipeline ID from pipeline")
+	}
+
+	getUpdateResponse, err := w.Pipelines.GetUpdate(ctx, pipelines.GetUpdateRequest{
+		PipelineId: pipelineID,
+		UpdateId:   updateId,
+	})
+	if err != nil {
+		return err
+	}
+
+	if getUpdateResponse.Update == nil {
+		return err
+	}
+
+	latestUpdate := *getUpdateResponse.Update
+
+	params := &PipelineEventsQueryParams{
+		Filter:  fmt.Sprintf("update_id='%s' AND event_type='update_progress'", updateId),
+		OrderBy: "timestamp asc",
+	}
+
+	events, err := fetchAllPipelineEvents(ctx, w, pipelineID, params)
+	if err != nil {
+		return err
+	}
+
+	if latestUpdate.State == pipelines.UpdateInfoStateCompleted {
+		err = displayPipelineUpdate(ctx, latestUpdate, pipelineID, events)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// getLastEventTime returns the timestamp of the last progress event.
+// Expects that the events are already sorted by timestamp in ascending order.
+func getLastEventTime(events []pipelines.PipelineEvent) string {
+	if len(events) == 0 {
+		return ""
+	}
+	lastEvent := events[len(events)-1]
+	parsedTime, err := time.Parse(time.RFC3339Nano, lastEvent.Timestamp)
+	if err != nil {
+		return ""
+	}
+	return parsedTime.Format("2006-01-02T15:04:05Z")
+}
+
+func displayPipelineUpdate(ctx context.Context, update pipelines.UpdateInfo, pipelineID string, events []pipelines.PipelineEvent) error {
+	data := PipelineUpdateData{
+		PipelineId:    pipelineID,
+		Update:        update,
+		LastEventTime: getLastEventTime(events),
+	}
+
+	return cmdio.RenderWithTemplate(ctx, data, "", pipelineUpdateTemplate)
+}
 
 func runCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "run [flags] [KEY]",
 		Short: "Run a pipeline",
 		Long: `Run the pipeline identified by KEY.
-The KEY is the unique identifier of the pipeline to run.`,
+KEY is the unique name of the pipeline to run, as defined in its YAML file.
+If there is only one pipeline in the project, KEY is optional and the pipeline will be auto-selected.
+Refreshes all tables in the pipeline unless otherwise specified.`,
 	}
 
-	var refreshAll bool
 	var refresh []string
 	var fullRefreshAll bool
 	var fullRefresh []string
 
 	pipelineGroup := cmdgroup.NewFlagGroup("Pipeline Run")
-	pipelineGroup.FlagSet().BoolVar(&refreshAll, "refresh-all", false, "Perform a full graph run.")
 	pipelineGroup.FlagSet().StringSliceVar(&refresh, "refresh", nil, "List of tables to run.")
 	pipelineGroup.FlagSet().BoolVar(&fullRefreshAll, "full-refresh-all", false, "Perform a full graph reset and recompute.")
 	pipelineGroup.FlagSet().StringSliceVar(&fullRefresh, "full-refresh", nil, "List of tables to reset and recompute.")
@@ -93,7 +173,6 @@ The KEY is the unique identifier of the pipeline to run.`,
 
 		runOptions := run.Options{
 			Pipeline: run.PipelineOptions{
-				RefreshAll:     refreshAll,
 				Refresh:        refresh,
 				FullRefreshAll: fullRefreshAll,
 				FullRefresh:    fullRefresh,
@@ -101,20 +180,20 @@ The KEY is the unique identifier of the pipeline to run.`,
 			NoWait: noWait,
 		}
 
-		var output output.RunOutput
+		var runOutput bundlerunoutput.RunOutput
 		if restart {
-			output, err = runner.Restart(ctx, &runOptions)
+			runOutput, err = runner.Restart(ctx, &runOptions)
 		} else {
-			output, err = runner.Run(ctx, &runOptions)
+			runOutput, err = runner.Run(ctx, &runOptions)
 		}
 		if err != nil {
 			return err
 		}
 
-		if output != nil {
+		if runOutput != nil {
 			switch root.OutputType(cmd) {
 			case flags.OutputText:
-				resultString, err := output.String()
+				resultString, err := runOutput.String()
 				if err != nil {
 					return err
 				}
@@ -123,7 +202,7 @@ The KEY is the unique identifier of the pipeline to run.`,
 					return err
 				}
 			case flags.OutputJSON:
-				b, err := json.MarshalIndent(output, "", "  ")
+				b, err := json.MarshalIndent(runOutput, "", "  ")
 				if err != nil {
 					return err
 				}
@@ -134,6 +213,18 @@ The KEY is the unique identifier of the pipeline to run.`,
 				_, _ = cmd.OutOrStdout().Write([]byte{'\n'})
 			default:
 				return fmt.Errorf("unknown output type %s", root.OutputType(cmd))
+			}
+		}
+		ref, err := bundleresources.Lookup(b, key, run.IsRunnable)
+		if err != nil {
+			return err
+		}
+		if ref.Description.SingularName == "pipeline" && runOutput != nil {
+			if pipelineOutput, ok := runOutput.(*bundlerunoutput.PipelineOutput); ok && pipelineOutput.UpdateId != "" {
+				err = fetchAndDisplayPipelineUpdate(ctx, b, ref, pipelineOutput.UpdateId)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		return nil
@@ -152,7 +243,7 @@ The KEY is the unique identifier of the pipeline to run.`,
 		}
 
 		if len(args) == 0 {
-			completions := resources.Completions(b, run.IsRunnable)
+			completions := bundleresources.Completions(b, run.IsRunnable)
 			return maps.Keys(completions), cobra.ShellCompDirectiveNoFileComp
 		} else {
 			// If we know the resource to run, we can complete additional positional arguments.

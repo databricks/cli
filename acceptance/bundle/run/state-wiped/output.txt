@@ -1,0 +1,25 @@
+
+>>> musterr [CLI] bundle run foo
+Error: no deployment state. Did you forget to run 'databricks bundle deploy'?
+
+
+Exit code (musterr): 1
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/caterpillar/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle run foo
+Run URL: [DATABRICKS_URL]/job/run/[NUMID]
+
+[TIMESTAMP] "run-name" TERMINATED
+
+=== Testing that clean state that affect run command -- it'll fetch the state
+>>> rm -fr .databricks
+
+>>> [CLI] bundle run foo
+Run URL: [DATABRICKS_URL]/job/run/[NUMID]
+
+[TIMESTAMP] "run-name" TERMINATED

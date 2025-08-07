@@ -1,0 +1,36 @@
+title "E2E Test: Complete pipeline lifecycle (init, deploy, run, stop, destroy)"
+
+title "Initialize pipeline project"
+trace $PIPELINES init --output-dir output
+
+title "Deploy pipeline"
+cd output/my_project
+trace $PIPELINES deploy
+
+title "Run pipeline"
+trace $PIPELINES run
+
+title "Edit project by creating and running a new second pipeline"
+cat <<EOF > my_project_pipeline_2.pipeline.yml
+resources:
+  pipelines:
+    my_project_pipeline_2:
+      name: my_project_pipeline_2
+EOF
+trace $PIPELINES deploy
+
+title "Assert the second pipeline is created"
+PIPELINE_ID=$($CLI bundle summary -o json | jq -r '.resources.pipelines.my_project_pipeline_2.id')
+trace $CLI pipelines get "${PIPELINE_ID}"
+
+trace $PIPELINES run my_project_pipeline_2
+
+title "Stop both pipelines before destroy"
+trace $PIPELINES stop my_project_pipeline
+trace $PIPELINES stop my_project_pipeline_2
+
+title "Destroy project"
+trace $PIPELINES destroy --auto-approve
+
+# Do not affect this repository's git behaviour
+mv .gitignore out.gitignore

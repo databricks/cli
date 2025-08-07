@@ -29,7 +29,7 @@ func destroyCommand() *cobra.Command {
 
 	var autoApprove bool
 	var forceDestroy bool
-	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip interactive approvals for deleting pipelines")
+	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip interactive approvals for deleting pipelines.")
 	cmd.Flags().BoolVar(&forceDestroy, "force-lock", false, "Force acquisition of deployment lock.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {

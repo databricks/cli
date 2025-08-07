@@ -1,0 +1,11 @@
+Local = true
+Cloud = false
+
+[[Server]]
+Pattern = "PATCH /api/2.0/database/instances/test-db"
+Response.Body = '''
+{
+  "name": "test-db",
+  "stopped": true
+}
+'''

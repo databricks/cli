@@ -1,0 +1,8 @@
+.databricks/
+build/
+dist/
+__pycache__/
+*.egg-info
+.venv/
+**/explorations/**
+**/!explorations/README.md

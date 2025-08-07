@@ -159,6 +159,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().StringVar(&createReq.BudgetPolicyId, "budget-policy-id", createReq.BudgetPolicyId, `The budget policy to be applied to the serving endpoint.`)
 	// TODO: complex arg: config
 	cmd.Flags().StringVar(&createReq.Description, "description", createReq.Description, ``)
+	// TODO: complex arg: email_notifications
 	// TODO: array: rate_limits
 	cmd.Flags().BoolVar(&createReq.RouteOptimized, "route-optimized", createReq.RouteOptimized, `Enable route optimization for the serving endpoint.`)
 	// TODO: array: tags
@@ -264,6 +265,7 @@ func newCreateProvisionedThroughputEndpoint() *cobra.Command {
 
 	// TODO: complex arg: ai_gateway
 	cmd.Flags().StringVar(&createProvisionedThroughputEndpointReq.BudgetPolicyId, "budget-policy-id", createProvisionedThroughputEndpointReq.BudgetPolicyId, `The budget policy associated with the endpoint.`)
+	// TODO: complex arg: email_notifications
 	// TODO: array: tags
 
 	cmd.Use = "create-provisioned-throughput-endpoint"
@@ -1095,9 +1097,12 @@ func newQuery() *cobra.Command {
 	cmd.Use = "query NAME"
 	cmd.Short = `Query a serving endpoint.`
 	cmd.Long = `Query a serving endpoint.
+  
+  Query a serving endpoint
 
   Arguments:
-    NAME: The name of the serving endpoint. This field is required.`
+    NAME: The name of the serving endpoint. This field is required and is provided
+      via the path parameter.`
 
 	cmd.Annotations = make(map[string]string)
 

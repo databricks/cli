@@ -14,7 +14,8 @@
     "for_each_task": {
       "task": {
         "notebook_task": {
-          "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/nominal/development/files/src/notebook"
+          "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/nominal/development/files/src/notebook",
+          "source": "WORKSPACE"
         }
       }
     },
@@ -26,7 +27,8 @@
       "task": {
         "job_cluster_key": "default",
         "spark_python_task": {
-          "python_file": "/Workspace/Users/[USERNAME]/.bundle/nominal/development/files/src/file.py"
+          "python_file": "/Workspace/Users/[USERNAME]/.bundle/nominal/development/files/src/file.py",
+          "source": "WORKSPACE"
         }
       }
     },
@@ -35,7 +37,8 @@
   {
     "job_cluster_key": "default",
     "notebook_task": {
-      "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/nominal/development/files/src/notebook"
+      "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/nominal/development/files/src/notebook",
+      "source": "WORKSPACE"
     },
     "task_key": "notebook_example"
   },
@@ -72,7 +75,8 @@
   {
     "job_cluster_key": "default",
     "spark_python_task": {
-      "python_file": "/Workspace/Users/[USERNAME]/.bundle/nominal/development/files/src/file.py"
+      "python_file": "/Workspace/Users/[USERNAME]/.bundle/nominal/development/files/src/file.py",
+      "source": "WORKSPACE"
     },
     "task_key": "spark_python_example"
   },

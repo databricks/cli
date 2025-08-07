@@ -1,0 +1,9 @@
+trace musterr $CLI bundle run foo
+trace $CLI bundle deploy
+
+trace $CLI bundle run foo
+
+title "Testing that clean state that affect run command -- it'll fetch the state"
+trace rm -fr .databricks
+
+trace $CLI bundle run foo

@@ -1,0 +1,28 @@
+envsubst < databricks.yml > databricks.yml.subst
+mv databricks.yml.subst databricks.yml
+
+# Deploy bundle once to create the dashboard.
+trace $CLI bundle deploy
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+dashboard_id=$($CLI bundle summary -o json | jq .resources.dashboards.already_exists.id -r)
+
+title "Get current dashboard\n"
+$CLI lakeview get $dashboard_id | jq .serialized_dashboard
+
+title "Update dashboard\n"
+$CLI lakeview update $dashboard_id --display-name "Updated dashboard" | jq .serialized_dashboard
+
+# This should error.
+errcode trace $CLI bundle generate dashboard --resource already_exists
+
+trace cat dashboard.lvdash.json
+
+# this should successfully update the dashboard.
+trace $CLI bundle generate dashboard --resource already_exists --force
+
+trace cat dashboard.lvdash.json

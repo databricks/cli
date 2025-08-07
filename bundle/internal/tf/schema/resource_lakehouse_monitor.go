@@ -58,7 +58,7 @@ type ResourceLakehouseMonitor struct {
 	DriftMetricsTableName    string                                            `json:"drift_metrics_table_name,omitempty"`
 	Id                       string                                            `json:"id,omitempty"`
 	LatestMonitorFailureMsg  string                                            `json:"latest_monitor_failure_msg,omitempty"`
-	MonitorVersion           string                                            `json:"monitor_version,omitempty"`
+	MonitorVersion           int                                               `json:"monitor_version,omitempty"`
 	OutputSchemaName         string                                            `json:"output_schema_name"`
 	ProfileMetricsTableName  string                                            `json:"profile_metrics_table_name,omitempty"`
 	SkipBuiltinDashboard     bool                                              `json:"skip_builtin_dashboard,omitempty"`

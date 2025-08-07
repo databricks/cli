@@ -80,11 +80,11 @@ func TestCaptureSchemaDependencyForVolume(t *testing.T) {
 	d := bundle.Apply(context.Background(), b, CaptureSchemaDependency())
 	require.Nil(t, d)
 
-	assert.Equal(t, "${resources.schemas.schema1.name}", b.Config.Resources.Volumes["volume1"].CreateVolumeRequestContent.SchemaName)
-	assert.Equal(t, "${resources.schemas.schema2.name}", b.Config.Resources.Volumes["volume2"].CreateVolumeRequestContent.SchemaName)
-	assert.Equal(t, "${resources.schemas.schema3.name}", b.Config.Resources.Volumes["volume3"].CreateVolumeRequestContent.SchemaName)
-	assert.Equal(t, "foobar", b.Config.Resources.Volumes["volume4"].CreateVolumeRequestContent.SchemaName)
-	assert.Equal(t, "schemaX", b.Config.Resources.Volumes["volume5"].CreateVolumeRequestContent.SchemaName)
+	assert.Equal(t, "${resources.schemas.schema1.name}", b.Config.Resources.Volumes["volume1"].SchemaName)
+	assert.Equal(t, "${resources.schemas.schema2.name}", b.Config.Resources.Volumes["volume2"].SchemaName)
+	assert.Equal(t, "${resources.schemas.schema3.name}", b.Config.Resources.Volumes["volume3"].SchemaName)
+	assert.Equal(t, "foobar", b.Config.Resources.Volumes["volume4"].SchemaName)
+	assert.Equal(t, "schemaX", b.Config.Resources.Volumes["volume5"].SchemaName)
 
 	assert.Nil(t, b.Config.Resources.Volumes["nilVolume"])
 	// assert.Nil(t, b.Config.Resources.Volumes["emptyVolume"].CreateVolumeRequestContent)
@@ -179,7 +179,7 @@ func TestCaptureSchemaDependencyForPipelinesWithTarget(t *testing.T) {
 	assert.Equal(t, "", b.Config.Resources.Pipelines["pipeline7"].Schema)
 
 	assert.Nil(t, b.Config.Resources.Pipelines["nilPipeline"])
-	assert.Empty(t, b.Config.Resources.Pipelines["emptyPipeline"].CreatePipeline.Catalog)
+	assert.Empty(t, b.Config.Resources.Pipelines["emptyPipeline"].Catalog)
 
 	for _, k := range []string{"pipeline1", "pipeline2", "pipeline3", "pipeline4", "pipeline5", "pipeline6", "pipeline7"} {
 		assert.Empty(t, b.Config.Resources.Pipelines[k].Target)

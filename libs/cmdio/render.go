@@ -305,6 +305,9 @@ var renderFuncMap = template.FuncMap{
 	},
 	"replace": strings.ReplaceAll,
 	"join":    strings.Join,
+	"sub": func(a, b int) int {
+		return a - b
+	},
 	"bool": func(v bool) string {
 		if v {
 			return color.GreenString("YES")
@@ -399,8 +402,10 @@ func fancyJSON(v any) ([]byte, error) {
 }
 
 const errorTemplate = `{{ "Error" | red }}: {{ .Summary }}
+{{- if and .Paths (ne (index .Paths 0).String "") }}
 {{- range $index, $element := .Paths }}
   {{ if eq $index 0 }}at {{else}}   {{ end}}{{ $element.String | green }}
+{{- end }}
 {{- end }}
 {{- range $index, $element := .Locations }}
   {{ if eq $index 0 }}in {{else}}   {{ end}}{{ $element.String | cyan }}
@@ -413,8 +418,10 @@ const errorTemplate = `{{ "Error" | red }}: {{ .Summary }}
 `
 
 const warningTemplate = `{{ "Warning" | yellow }}: {{ .Summary }}
+{{- if and .Paths (ne (index .Paths 0).String "") }}
 {{- range $index, $element := .Paths }}
   {{ if eq $index 0 }}at {{else}}   {{ end}}{{ $element.String | green }}
+{{- end }}
 {{- end }}
 {{- range $index, $element := .Locations }}
   {{ if eq $index 0 }}in {{else}}   {{ end}}{{ $element.String | cyan }}
@@ -427,8 +434,10 @@ const warningTemplate = `{{ "Warning" | yellow }}: {{ .Summary }}
 `
 
 const recommendationTemplate = `{{ "Recommendation" | blue }}: {{ .Summary }}
+{{- if and .Paths (ne (index .Paths 0).String "") }}
 {{- range $index, $element := .Paths }}
   {{ if eq $index 0 }}at {{else}}   {{ end}}{{ $element.String | green }}
+{{- end }}
 {{- end }}
 {{- range $index, $element := .Locations }}
   {{ if eq $index 0 }}in {{else}}   {{ end}}{{ $element.String | cyan }}

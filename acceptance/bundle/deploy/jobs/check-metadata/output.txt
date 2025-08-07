@@ -23,7 +23,8 @@
         "spark_version": "13.3.x-snapshot-scala2.12"
       },
       "notebook_task": {
-        "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/foo"
+        "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/foo",
+        "source": "WORKSPACE"
       },
       "task_key": "my_notebook_task"
     }
@@ -47,7 +48,7 @@ Deployment complete!
   },
   "edit_mode": "UI_LOCKED",
   "format": "MULTI_TASK",
-  "id": "[NUMID]",
+  "id": "[JOB_1_ID]",
   "max_concurrent_runs": 1,
   "name": "test-job-metadata-1-[UNIQUE_NAME]",
   "permissions": [],
@@ -62,12 +63,13 @@ Deployment complete!
         "spark_version": "13.3.x-snapshot-scala2.12"
       },
       "notebook_task": {
-        "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/foo"
+        "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/foo",
+        "source": "WORKSPACE"
       },
       "task_key": "my_notebook_task"
     }
   ],
-  "url": "[DATABRICKS_URL]/jobs/[NUMID]"
+  "url": "[DATABRICKS_URL]/jobs/[JOB_1_ID]"
 }
 
 === Assert job 1 is created
@@ -98,11 +100,11 @@ Deployment complete!
     "resources": {
       "jobs": {
         "bar": {
-          "id": "[NUMID]",
+          "id": "[JOB_2_ID]",
           "relative_path": "a/b/resources.yml"
         },
         "foo": {
-          "id": "[NUMID]",
+          "id": "[JOB_1_ID]",
           "relative_path": "databricks.yml"
         }
       }
@@ -111,10 +113,10 @@ Deployment complete!
 }
 === Check that metadata contains created job ids
 >>> cat metadata.json
-          "id": "[NUMID]",
+          "id": "[JOB_1_ID]",
 
 >>> cat metadata.json
-          "id": "[NUMID]",
+          "id": "[JOB_2_ID]",
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

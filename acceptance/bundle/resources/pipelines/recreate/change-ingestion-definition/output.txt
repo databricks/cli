@@ -1,0 +1,167 @@
+
+>>> cat databricks.yml
+bundle:
+  name: acc-[UNIQUE_NAME]
+
+resources:
+  pipelines:
+    my:
+      name: test-pipeline-[UNIQUE_NAME]
+      #storage: dbfs:/pipelines/custom
+      #catalog: mycatalog1
+      ingestion_definition: {"connection_name": "my_connection", "objects": [{}]}
+      libraries:
+        - file:
+            path: "./foo.py"
+
+>>> [CLI] bundle plan
+create pipelines.my
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests
+{
+  "body": {
+    "channel": "CURRENT",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/state/metadata.json"
+    },
+    "edition": "ADVANCED",
+    "ingestion_definition": {
+      "connection_name": "my_connection",
+      "objects": [
+        {}
+      ]
+    },
+    "libraries": [
+      {
+        "file": {
+          "path": "/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files/foo.py"
+        }
+      }
+    ],
+    "name": "test-pipeline-[UNIQUE_NAME]"
+  },
+  "method": "POST",
+  "path": "/api/2.0/pipelines"
+}
+
+>>> update_file.py databricks.yml my_connection my_new_connection
+
+>>> [CLI] bundle plan
+recreate pipelines.my
+
+>>> [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files...
+
+This action will result in the deletion or recreation of the following DLT Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them. Recreating the Pipelines will
+restore the defined STs and MVs through full refresh. Note that recreation is necessary when pipeline
+properties such as the 'catalog' or 'storage' are changed:
+  recreate pipeline my
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests
+{
+  "method": "DELETE",
+  "path": "/api/2.0/pipelines/[PIPELINE_ID_1]"
+}
+{
+  "body": {
+    "channel": "CURRENT",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/state/metadata.json"
+    },
+    "edition": "ADVANCED",
+    "ingestion_definition": {
+      "connection_name": "my_new_connection",
+      "objects": [
+        {}
+      ]
+    },
+    "libraries": [
+      {
+        "file": {
+          "path": "/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files/foo.py"
+        }
+      }
+    ],
+    "name": "test-pipeline-[UNIQUE_NAME]"
+  },
+  "method": "POST",
+  "path": "/api/2.0/pipelines"
+}
+
+=== Fetch pipeline ID and verify remote state
+>>> [CLI] pipelines get [PIPELINE_ID_2]
+{
+  "creator_user_name":"[USERNAME]",
+  "last_modified":[UNIX_TIME_MILLIS],
+  "name":"test-pipeline-[UNIQUE_NAME]",
+  "pipeline_id":"[PIPELINE_ID_2]",
+  "run_as_user_name":"[USERNAME]",
+  "spec": {
+    "channel":"CURRENT",
+    "deployment": {
+      "kind":"BUNDLE",
+      "metadata_file_path":"/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/state/metadata.json"
+    },
+    "edition":"ADVANCED",
+    "id":"[PIPELINE_ID_2]",
+    "ingestion_definition": {
+      "connection_name":"my_new_connection",
+      "objects": [
+        {}
+      ]
+    },
+    "libraries": [
+      {
+        "file": {
+          "path":"/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files/foo.py"
+        }
+      }
+    ],
+    "name":"test-pipeline-[UNIQUE_NAME]",
+    "storage":"dbfs:/pipelines/[PIPELINE_ID_2]"
+  },
+  "state":"IDLE"
+}
+
+=== Verify that original pipeline is gone
+>>> musterr [CLI] pipelines get [PIPELINE_ID_1]
+Error: The specified pipeline [PIPELINE_ID_1] was not found.
+
+Exit code (musterr): 1
+
+=== Destroy the pipeline and verify that it's removed from the state and from remote
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete pipeline my
+
+This action will result in the deletion of the following DLT Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them:
+  delete pipeline my
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
+
+>>> print_requests
+{
+  "method": "DELETE",
+  "path": "/api/2.0/pipelines/[PIPELINE_ID_2]"
+}
+
+>>> musterr [CLI] pipelines get [PIPELINE_ID_2]
+Error: The specified pipeline [PIPELINE_ID_2] was not found.
+
+Exit code (musterr): 1

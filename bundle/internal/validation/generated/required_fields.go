@@ -18,6 +18,7 @@ var RequiredFields = map[string][]string{
 	"resources.apps.*": {"source_code_path", "name"},
 	"resources.apps.*.permissions[*]": {"level"},
 	"resources.apps.*.resources[*]": {"name"},
+	"resources.apps.*.resources[*].database": {"database_name", "instance_name", "permission"},
 	"resources.apps.*.resources[*].job": {"id", "permission"},
 	"resources.apps.*.resources[*].secret": {"key", "permission", "scope"},
 	"resources.apps.*.resources[*].serving_endpoint": {"name", "permission"},
@@ -148,7 +149,7 @@ var RequiredFields = map[string][]string{
 
 	"resources.model_serving_endpoints.*": {"name"},
 	"resources.model_serving_endpoints.*.ai_gateway.fallback_config": {"enabled"},
-	"resources.model_serving_endpoints.*.ai_gateway.rate_limits[*]": {"calls", "renewal_period"},
+	"resources.model_serving_endpoints.*.ai_gateway.rate_limits[*]": {"renewal_period"},
 	"resources.model_serving_endpoints.*.config.served_entities[*].external_model": {"name", "provider", "task"},
 	"resources.model_serving_endpoints.*.config.served_entities[*].external_model.amazon_bedrock_config": {"aws_region", "bedrock_provider"},
 	"resources.model_serving_endpoints.*.config.served_entities[*].external_model.custom_provider_config": {"custom_provider_url"},
@@ -156,7 +157,7 @@ var RequiredFields = map[string][]string{
 	"resources.model_serving_endpoints.*.config.served_entities[*].external_model.databricks_model_serving_config": {"databricks_workspace_url"},
 	"resources.model_serving_endpoints.*.config.served_entities[*].external_model.google_cloud_vertex_ai_config": {"project_id", "region"},
 	"resources.model_serving_endpoints.*.config.served_models[*]": {"model_name", "model_version", "scale_to_zero_enabled"},
-	"resources.model_serving_endpoints.*.config.traffic_config.routes[*]": {"served_model_name", "traffic_percentage"},
+	"resources.model_serving_endpoints.*.config.traffic_config.routes[*]": {"traffic_percentage"},
 	"resources.model_serving_endpoints.*.permissions[*]": {"level"},
 	"resources.model_serving_endpoints.*.rate_limits[*]": {"calls", "renewal_period"},
 	"resources.model_serving_endpoints.*.tags[*]": {"key"},
@@ -199,6 +200,8 @@ var RequiredFields = map[string][]string{
 	"resources.secret_scopes.*": {"name"},
 	"resources.secret_scopes.*.keyvault_metadata": {"dns_name", "resource_id"},
 	"resources.secret_scopes.*.permissions[*]": {"level"},
+
+	"resources.sql_warehouses.*.permissions[*]": {"level"},
 
 	"resources.volumes.*": {"catalog_name", "name", "schema_name", "volume_type"},
 	"resources.volumes.*.grants[*]": {"privileges", "principal"},

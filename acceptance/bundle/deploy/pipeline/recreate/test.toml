@@ -2,7 +2,7 @@ Local = true
 Cloud = true
 RequiresUnityCatalog = true
 
-EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["terraform"]  # pipeline recreation and ${resources}
+EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["terraform"]  # ${resources} support
 
 Ignore = [
     "databricks.yml"

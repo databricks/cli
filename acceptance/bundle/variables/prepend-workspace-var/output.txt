@@ -52,7 +52,6 @@ Warning: required field "package_name" is not set
       "."
     ]
   },
-  "targets": null,
   "variables": {
     "workspace_root": {
       "default": "/Users/[USERNAME]",

@@ -298,8 +298,8 @@ func newListExternalMetadata() *cobra.Command {
 
 	var listExternalMetadataReq catalog.ListExternalMetadataRequest
 
-	cmd.Flags().IntVar(&listExternalMetadataReq.PageSize, "page-size", listExternalMetadataReq.PageSize, ``)
-	cmd.Flags().StringVar(&listExternalMetadataReq.PageToken, "page-token", listExternalMetadataReq.PageToken, ``)
+	cmd.Flags().IntVar(&listExternalMetadataReq.PageSize, "page-size", listExternalMetadataReq.PageSize, `Specifies the maximum number of external metadata objects to return in a single response.`)
+	cmd.Flags().StringVar(&listExternalMetadataReq.PageToken, "page-token", listExternalMetadataReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
 
 	cmd.Use = "list-external-metadata"
 	cmd.Short = `List external metadata objects.`
@@ -363,7 +363,7 @@ func newUpdateExternalMetadata() *cobra.Command {
 	// TODO: map via StringToStringVar: properties
 	cmd.Flags().StringVar(&updateExternalMetadataReq.ExternalMetadata.Url, "url", updateExternalMetadataReq.ExternalMetadata.Url, `URL associated with the external metadata object.`)
 
-	cmd.Use = "update-external-metadata NAME SYSTEM_TYPE ENTITY_TYPE"
+	cmd.Use = "update-external-metadata NAME UPDATE_MASK SYSTEM_TYPE ENTITY_TYPE"
 	cmd.Short = `Update an external metadata object.`
 	cmd.Long = `Update an external metadata object.
   
@@ -375,6 +375,17 @@ func newUpdateExternalMetadata() *cobra.Command {
 
   Arguments:
     NAME: Name of the external metadata object.
+    UPDATE_MASK: The field mask must be a single string, with multiple fields separated by
+      commas (no spaces). The field path is relative to the resource object,
+      using a dot (.) to navigate sub-fields (e.g., author.given_name).
+      Specification of elements in sequence or map fields is not allowed, as
+      only the entire collection field can be specified. Field names must
+      exactly match the resource field names.
+      
+      A field mask of * indicates full replacement. It’s recommended to
+      always explicitly list the fields being updated and avoid using *
+      wildcards, as it can lead to unintended results if the API changes in the
+      future.
     SYSTEM_TYPE: Type of external system. 
       Supported values: [
         AMAZON_REDSHIFT,
@@ -406,13 +417,13 @@ func newUpdateExternalMetadata() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := root.ExactArgs(1)(cmd, args)
+			err := root.ExactArgs(2)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only NAME as positional arguments. Provide 'name', 'system_type', 'entity_type' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, provide only NAME, UPDATE_MASK as positional arguments. Provide 'name', 'system_type', 'entity_type' in your JSON input")
 			}
 			return nil
 		}
-		check := root.ExactArgs(3)
+		check := root.ExactArgs(4)
 		return check(cmd, args)
 	}
 
@@ -434,14 +445,15 @@ func newUpdateExternalMetadata() *cobra.Command {
 			}
 		}
 		updateExternalMetadataReq.Name = args[0]
+		updateExternalMetadataReq.UpdateMask = args[1]
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[1], &updateExternalMetadataReq.ExternalMetadata.SystemType)
+			_, err = fmt.Sscan(args[2], &updateExternalMetadataReq.ExternalMetadata.SystemType)
 			if err != nil {
-				return fmt.Errorf("invalid SYSTEM_TYPE: %s", args[1])
+				return fmt.Errorf("invalid SYSTEM_TYPE: %s", args[2])
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			updateExternalMetadataReq.ExternalMetadata.EntityType = args[2]
+			updateExternalMetadataReq.ExternalMetadata.EntityType = args[3]
 		}
 
 		response, err := w.ExternalMetadata.UpdateExternalMetadata(ctx, updateExternalMetadataReq)

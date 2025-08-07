@@ -197,16 +197,16 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 	// Pipeline 1
 	assert.Equal(t, "[dev lennart] pipeline1", b.Config.Resources.Pipelines["pipeline1"].Name)
 	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].Continuous)
-	assert.True(t, b.Config.Resources.Pipelines["pipeline1"].CreatePipeline.Development)
+	assert.True(t, b.Config.Resources.Pipelines["pipeline1"].Development)
 
 	// Experiment 1
 	assert.Equal(t, "/Users/lennart.kats@databricks.com/[dev lennart] experiment1", b.Config.Resources.Experiments["experiment1"].Name)
-	assert.Contains(t, b.Config.Resources.Experiments["experiment1"].Experiment.Tags, ml.ExperimentTag{Key: "dev", Value: "lennart"})
+	assert.Contains(t, b.Config.Resources.Experiments["experiment1"].Tags, ml.ExperimentTag{Key: "dev", Value: "lennart"})
 	assert.Equal(t, "dev", b.Config.Resources.Experiments["experiment1"].Experiment.Tags[0].Key)
 
 	// Experiment 2
 	assert.Equal(t, "[dev lennart] experiment2", b.Config.Resources.Experiments["experiment2"].Name)
-	assert.Contains(t, b.Config.Resources.Experiments["experiment2"].Experiment.Tags, ml.ExperimentTag{Key: "dev", Value: "lennart"})
+	assert.Contains(t, b.Config.Resources.Experiments["experiment2"].Tags, ml.ExperimentTag{Key: "dev", Value: "lennart"})
 
 	// Model 1
 	assert.Equal(t, "[dev lennart] model1", b.Config.Resources.Models["model1"].Name)
@@ -282,7 +282,7 @@ func TestProcessTargetModeDefault(t *testing.T) {
 	require.NoError(t, diags.Error())
 	assert.Equal(t, "job1", b.Config.Resources.Jobs["job1"].Name)
 	assert.Equal(t, "pipeline1", b.Config.Resources.Pipelines["pipeline1"].Name)
-	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].CreatePipeline.Development)
+	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].Development)
 	assert.Equal(t, "servingendpoint1", b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
 	assert.Equal(t, "registeredmodel1", b.Config.Resources.RegisteredModels["registeredmodel1"].Name)
 	assert.Equal(t, "qualityMonitor1", b.Config.Resources.QualityMonitors["qualityMonitor1"].TableName)
@@ -446,5 +446,5 @@ func TestPipelinesDevelopmentDisabled(t *testing.T) {
 	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
-	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].CreatePipeline.Development)
+	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].Development)
 }

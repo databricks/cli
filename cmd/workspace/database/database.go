@@ -4,6 +4,7 @@ package database
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -164,6 +165,12 @@ func newCreateDatabaseInstance() *cobra.Command {
 	createDatabaseInstanceReq.DatabaseInstance = database.DatabaseInstance{}
 	var createDatabaseInstanceJson flags.JsonFlag
 
+	var createDatabaseInstanceSkipWait bool
+	var createDatabaseInstanceTimeout time.Duration
+
+	cmd.Flags().BoolVar(&createDatabaseInstanceSkipWait, "no-wait", createDatabaseInstanceSkipWait, `do not wait to reach AVAILABLE state`)
+	cmd.Flags().DurationVar(&createDatabaseInstanceTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach AVAILABLE state`)
+
 	cmd.Flags().Var(&createDatabaseInstanceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createDatabaseInstanceReq.DatabaseInstance.Capacity, "capacity", createDatabaseInstanceReq.DatabaseInstance.Capacity, `The sku of the instance.`)
@@ -216,11 +223,24 @@ func newCreateDatabaseInstance() *cobra.Command {
 			createDatabaseInstanceReq.DatabaseInstance.Name = args[0]
 		}
 
-		response, err := w.Database.CreateDatabaseInstance(ctx, createDatabaseInstanceReq)
+		wait, err := w.Database.CreateDatabaseInstance(ctx, createDatabaseInstanceReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		if createDatabaseInstanceSkipWait {
+			return cmdio.Render(ctx, wait.Response)
+		}
+		spinner := cmdio.Spinner(ctx)
+		info, err := wait.OnProgress(func(i *database.DatabaseInstance) {
+			status := i.State
+			statusMessage := fmt.Sprintf("current status: %s", status)
+			spinner <- statusMessage
+		}).GetWithTimeout(createDatabaseInstanceTimeout)
+		close(spinner)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, info)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1265,17 +1285,19 @@ func newUpdateDatabaseInstance() *cobra.Command {
 	cmd.Flags().IntVar(&updateDatabaseInstanceReq.DatabaseInstance.RetentionWindowInDays, "retention-window-in-days", updateDatabaseInstanceReq.DatabaseInstance.RetentionWindowInDays, `The retention window for the instance.`)
 	cmd.Flags().BoolVar(&updateDatabaseInstanceReq.DatabaseInstance.Stopped, "stopped", updateDatabaseInstanceReq.DatabaseInstance.Stopped, `Whether the instance is stopped.`)
 
-	cmd.Use = "update-database-instance NAME"
+	cmd.Use = "update-database-instance NAME UPDATE_MASK"
 	cmd.Short = `Update a Database Instance.`
 	cmd.Long = `Update a Database Instance.
 
   Arguments:
-    NAME: The name of the instance. This is the unique identifier for the instance.`
+    NAME: The name of the instance. This is the unique identifier for the instance.
+    UPDATE_MASK: The list of fields to update. This field is not yet supported, and is
+      ignored by the server.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(1)
+		check := root.ExactArgs(2)
 		return check(cmd, args)
 	}
 
@@ -1297,6 +1319,7 @@ func newUpdateDatabaseInstance() *cobra.Command {
 			}
 		}
 		updateDatabaseInstanceReq.Name = args[0]
+		updateDatabaseInstanceReq.UpdateMask = args[1]
 
 		response, err := w.Database.UpdateDatabaseInstance(ctx, updateDatabaseInstanceReq)
 		if err != nil {
