@@ -68,7 +68,6 @@ func newCreateCredential() *cobra.Command {
 	var createCredentialReq catalog.CreateCredentialRequest
 	var createCredentialJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createCredentialJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: aws_iam_role
@@ -163,8 +162,6 @@ func newDeleteCredential() *cobra.Command {
 
 	var deleteCredentialReq catalog.DeleteCredentialRequest
 
-	// TODO: short flags
-
 	cmd.Flags().BoolVar(&deleteCredentialReq.Force, "force", deleteCredentialReq.Force, `Force an update even if there are dependent services (when purpose is **SERVICE**) or dependent external locations and external tables (when purpose is **STORAGE**).`)
 
 	cmd.Use = "delete-credential NAME_ARG"
@@ -225,7 +222,6 @@ func newGenerateTemporaryServiceCredential() *cobra.Command {
 	var generateTemporaryServiceCredentialReq catalog.GenerateTemporaryServiceCredentialRequest
 	var generateTemporaryServiceCredentialJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&generateTemporaryServiceCredentialJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: azure_options
@@ -310,8 +306,6 @@ func newGetCredential() *cobra.Command {
 
 	var getCredentialReq catalog.GetCredentialRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get-credential NAME_ARG"
 	cmd.Short = `Get a credential.`
 	cmd.Long = `Get a credential.
@@ -369,8 +363,6 @@ func newListCredentials() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listCredentialsReq catalog.ListCredentialsRequest
-
-	// TODO: short flags
 
 	cmd.Flags().IntVar(&listCredentialsReq.MaxResults, "max-results", listCredentialsReq.MaxResults, `Maximum number of credentials to return.`)
 	cmd.Flags().StringVar(&listCredentialsReq.PageToken, "page-token", listCredentialsReq.PageToken, `Opaque token to retrieve the next page of results.`)
@@ -430,7 +422,6 @@ func newUpdateCredential() *cobra.Command {
 	var updateCredentialReq catalog.UpdateCredentialRequest
 	var updateCredentialJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateCredentialJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: aws_iam_role
@@ -518,7 +509,6 @@ func newValidateCredential() *cobra.Command {
 	var validateCredentialReq catalog.ValidateCredentialRequest
 	var validateCredentialJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&validateCredentialJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: aws_iam_role

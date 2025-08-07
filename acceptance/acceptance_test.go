@@ -73,12 +73,25 @@ const (
 	MaxFileSize      = 100_000
 	// Filename to save replacements to (used by diff.py)
 	ReplsFile = "repls.json"
+	// Filename for materialized config (used as golden file)
+	MaterializedConfigFile = "out.test.toml"
 
 	// ENVFILTER allows filtering subtests matching certain env var.
 	// e.g. ENVFILTER=SERVERLESS=yes will run all tests that run SERVERLESS to "yes"
 	// The tests the don't set SERVERLESS variable or set to empty string will also be run.
 	EnvFilterVar = "ENVFILTER"
+
+	// File where scripts can output custom replacements
+	// export $job_id=100200300
+	// $ echo "$job_id:MY_JOB" >> ACC_REPLS  # This will replace 100200300 with [MY_JOB] in the output
+	// TODO: this should be merged with repls.json functionality, currently these replacements are not parsed by diff.py
+	userReplacementsFilename = "ACC_REPLS"
 )
+
+// On CI, we want to increase timeout, to account for slower environment
+const CITimeoutMultiplier = 2
+
+var ApplyCITimeoutMultipler = os.Getenv("GITHUB_WORKFLOW") != ""
 
 var exeSuffix = func() string {
 	if runtime.GOOS == "windows" {
@@ -94,7 +107,8 @@ var Scripts = map[string]bool{
 }
 
 var Ignored = map[string]bool{
-	ReplsFile: true,
+	ReplsFile:                true,
+	userReplacementsFilename: true,
 }
 
 func TestAccept(t *testing.T) {
@@ -160,6 +174,12 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	t.Setenv("CLI", execPath)
 	repls.SetPath(execPath, "[CLI]")
 
+	pipelinesPath := filepath.Join(buildDir, "pipelines") + exeSuffix
+	err = copyFile(execPath, pipelinesPath)
+	require.NoError(t, err)
+	t.Setenv("PIPELINES", pipelinesPath)
+	repls.SetPath(pipelinesPath, "[PIPELINES]")
+
 	paths := []string{
 		// Make helper scripts available
 		filepath.Join(cwd, "bin"),
@@ -184,6 +204,14 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 
 	if cloudEnv == "" {
 		internal.StartDefaultServer(t)
+		if os.Getenv("TEST_DEFAULT_WAREHOUSE_ID") == "" {
+			t.Setenv("TEST_DEFAULT_WAREHOUSE_ID", "8ec9edc1-db0c-40df-af8d-7580020fe61e")
+		}
+	}
+
+	testDefaultWarehouseId := os.Getenv("TEST_DEFAULT_WAREHOUSE_ID")
+	if testDefaultWarehouseId != "" {
+		repls.Set(testDefaultWarehouseId, "[TEST_DEFAULT_WAREHOUSE_ID]")
 	}
 
 	terraformrcPath := filepath.Join(buildDir, ".terraformrc")
@@ -264,7 +292,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 				if len(expanded[0]) > 0 {
 					t.Logf("Running test with env %v", expanded[0])
 				}
-				runTest(t, dir, 0, coverDir, repls.Clone(), config, configPath, expanded[0], inprocessMode, envFilters)
+				runTest(t, dir, 0, coverDir, repls.Clone(), config, expanded[0], envFilters)
 			} else {
 				for ind, envset := range expanded {
 					envname := strings.Join(envset, "/")
@@ -272,7 +300,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 						if !inprocessMode {
 							t.Parallel()
 						}
-						runTest(t, dir, ind, coverDir, repls.Clone(), config, configPath, envset, inprocessMode, envFilters)
+						runTest(t, dir, ind, coverDir, repls.Clone(), config, envset, envFilters)
 					})
 				}
 			}
@@ -291,6 +319,7 @@ func getEnvFilters(t *testing.T) []string {
 	}
 
 	filters := strings.Split(envFilterValue, ",")
+	outFilters := make([]string, len(filters))
 
 	for _, filter := range filters {
 		items := strings.Split(filter, "=")
@@ -300,9 +329,17 @@ func getEnvFilters(t *testing.T) []string {
 		key := items[0]
 		// Clear it just to be sure, since it's going to be part of os.Environ() and we're going to add different value based on settings.
 		os.Unsetenv(key)
+
+		if key == "DATABRICKS_CLI_DEPLOYMENT" && items[1] == "direct" {
+			// CLI only recognizes "direct-exp" at the moment, but in the future will recognize "direct" as well.
+			// On CI we set "direct". To avoid renaming jobs in CI on the future, we correct direct -> direct-exp here
+			items[1] = "direct-exp"
+		}
+
+		outFilters = append(outFilters, key+"="+items[1])
 	}
 
-	return filters
+	return outFilters
 }
 
 func getTests(t *testing.T) []string {
@@ -352,6 +389,7 @@ func getSkipReason(config *internal.TestConfig, configPath string) string {
 		}
 
 		if isTruePtr(config.CloudSlow) {
+			config.Cloud = config.CloudSlow
 			if testing.Short() {
 				return fmt.Sprintf("Disabled via CloudSlow setting in %s (CLOUD_ENV=%s, Short=%v)", configPath, cloudEnv, testing.Short())
 			}
@@ -395,9 +433,7 @@ func runTest(t *testing.T,
 	coverDir string,
 	repls testdiff.ReplacementsContext,
 	config internal.TestConfig,
-	configPath string,
 	customEnv []string,
-	inprocessMode bool,
 	envFilters []string,
 ) {
 	if LogConfig {
@@ -436,10 +472,18 @@ func runTest(t *testing.T,
 	scriptContents := readMergedScriptContents(t, dir)
 	testutil.WriteFile(t, filepath.Join(tmpDir, EntryPointScript), scriptContents)
 
+	// Generate materialized config for this test
+	materializedConfig, err := internal.GenerateMaterializedConfig(config)
+	require.NoError(t, err)
+	testutil.WriteFile(t, filepath.Join(tmpDir, internal.MaterializedConfigFile), materializedConfig)
+
 	inputs := make(map[string]bool, 2)
 	outputs := make(map[string]bool, 2)
 	err = CopyDir(dir, tmpDir, inputs, outputs)
 	require.NoError(t, err)
+
+	// Add materialized config to outputs for comparison
+	outputs[internal.MaterializedConfigFile] = true
 
 	bundleConfigTarget := "databricks.yml"
 	if config.BundleConfigTarget != nil {
@@ -464,6 +508,11 @@ func runTest(t *testing.T,
 	} else if isRunningOnCloud {
 		timeout = max(timeout, config.TimeoutCloud)
 	}
+
+	if ApplyCITimeoutMultipler {
+		timeout *= CITimeoutMultiplier
+	}
+
 	ctx, cancelFunc := context.WithTimeout(context.Background(), timeout)
 	defer cancelFunc()
 	args := []string{"bash", "-euo", "pipefail", EntryPointScript}
@@ -563,11 +612,17 @@ func runTest(t *testing.T,
 	formatOutput(out, err)
 	require.NoError(t, out.Close())
 
+	loadUserReplacements(t, &repls, tmpDir)
+
 	printedRepls := false
 
 	// Compare expected outputs
 	for relPath := range outputs {
-		doComparison(t, repls, dir, tmpDir, relPath, &printedRepls)
+		skipRepls := false
+		if relPath == internal.MaterializedConfigFile {
+			skipRepls = true
+		}
+		doComparison(t, repls, dir, tmpDir, relPath, &printedRepls, skipRepls)
 	}
 
 	// Make sure there are not unaccounted for new files
@@ -590,7 +645,7 @@ func runTest(t *testing.T,
 		if strings.HasPrefix(relPath, "out") {
 			// We have a new file starting with "out"
 			// Show the contents & support overwrite mode for it:
-			doComparison(t, repls, dir, tmpDir, relPath, &printedRepls)
+			doComparison(t, repls, dir, tmpDir, relPath, &printedRepls, false)
 		}
 	}
 
@@ -629,7 +684,7 @@ func addEnvVar(t *testing.T, env []string, repls *testdiff.ReplacementsContext, 
 	return append(env, key+"="+newValue)
 }
 
-func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirNew, relPath string, printedRepls *bool) {
+func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirNew, relPath string, printedRepls *bool, skipRepls bool) {
 	pathRef := filepath.Join(dirRef, relPath)
 	pathNew := filepath.Join(dirNew, relPath)
 	bufRef, okRef := tryReading(t, pathRef)
@@ -644,7 +699,7 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirN
 
 	// Apply replacements to the new value only.
 	// The reference value is stored after applying replacements.
-	if !NoRepl {
+	if !NoRepl && !skipRepls {
 		valueNew = repls.Replace(valueNew)
 	}
 
@@ -1161,4 +1216,27 @@ func BuildYamlfmt(t *testing.T) {
 		"make", "-s", "tools/yamlfmt" + exeSuffix,
 	}
 	RunCommand(t, args, "..")
+}
+
+func loadUserReplacements(t *testing.T, repls *testdiff.ReplacementsContext, tmpDir string) {
+	b, err := os.ReadFile(filepath.Join(tmpDir, userReplacementsFilename))
+	if os.IsNotExist(err) {
+		return
+	}
+	require.NoError(t, err)
+	lines := strings.Split(string(b), "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if len(line) == 0 {
+			continue
+		}
+		items := strings.Split(line, ":")
+		if len(items) <= 1 {
+			t.Errorf("Error parsing %s: %#v", userReplacementsFilename, line)
+			continue
+		}
+		repl := items[len(items)-1]
+		old := line[:len(line)-len(repl)-1]
+		repls.SetWithOrder(old, "["+repl+"]", -100)
+	}
 }

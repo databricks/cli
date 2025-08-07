@@ -64,10 +64,11 @@ func newCreate() *cobra.Command {
 	var createReq workspace.CreateCredentialsRequest
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.GitUsername, "git-username", createReq.GitUsername, `The username or email provided with your Git provider account, depending on which provider you are using.`)
+	cmd.Flags().BoolVar(&createReq.IsDefaultForProvider, "is-default-for-provider", createReq.IsDefaultForProvider, `if the credential is the default for the given provider.`)
+	cmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `the name of the git credential, used for identification and ease of lookup.`)
 	cmd.Flags().StringVar(&createReq.PersonalAccessToken, "personal-access-token", createReq.PersonalAccessToken, `The personal access token used to authenticate to the corresponding Git provider.`)
 
 	cmd.Use = "create GIT_PROVIDER"
@@ -153,8 +154,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq workspace.DeleteCredentialsRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete CREDENTIAL_ID"
 	cmd.Short = `Delete a credential.`
 	cmd.Long = `Delete a credential.
@@ -225,8 +224,6 @@ func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getReq workspace.GetCredentialsRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get CREDENTIAL_ID"
 	cmd.Short = `Get a credential entry.`
@@ -340,10 +337,11 @@ func newUpdate() *cobra.Command {
 	var updateReq workspace.UpdateCredentialsRequest
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateReq.GitUsername, "git-username", updateReq.GitUsername, `The username or email provided with your Git provider account, depending on which provider you are using.`)
+	cmd.Flags().BoolVar(&updateReq.IsDefaultForProvider, "is-default-for-provider", updateReq.IsDefaultForProvider, `if the credential is the default for the given provider.`)
+	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `the name of the git credential, used for identification and ease of lookup.`)
 	cmd.Flags().StringVar(&updateReq.PersonalAccessToken, "personal-access-token", updateReq.PersonalAccessToken, `The personal access token used to authenticate to the corresponding Git provider.`)
 
 	cmd.Use = "update CREDENTIAL_ID GIT_PROVIDER"

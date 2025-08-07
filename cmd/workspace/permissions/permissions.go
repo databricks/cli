@@ -85,8 +85,6 @@ func newGet() *cobra.Command {
 
 	var getReq iam.GetPermissionRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get REQUEST_OBJECT_TYPE REQUEST_OBJECT_ID"
 	cmd.Short = `Get object permissions.`
 	cmd.Long = `Get object permissions.
@@ -96,10 +94,10 @@ func newGet() *cobra.Command {
 
   Arguments:
     REQUEST_OBJECT_TYPE: The type of the request object. Can be one of the following: alerts,
-      authorization, clusters, cluster-policies, dashboards, dbsql-dashboards,
-      directories, experiments, files, instance-pools, jobs, notebooks,
-      pipelines, queries, registered-models, repos, serving-endpoints, or
-      warehouses.
+      alertsv2, authorization, clusters, cluster-policies, dashboards,
+      dbsql-dashboards, directories, experiments, files, instance-pools, jobs,
+      notebooks, pipelines, queries, registered-models, repos,
+      serving-endpoints, or warehouses.
     REQUEST_OBJECT_ID: The id of the request object.`
 
 	cmd.Annotations = make(map[string]string)
@@ -150,8 +148,6 @@ func newGetPermissionLevels() *cobra.Command {
 
 	var getPermissionLevelsReq iam.GetPermissionLevelsRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get-permission-levels REQUEST_OBJECT_TYPE REQUEST_OBJECT_ID"
 	cmd.Short = `Get object permission levels.`
 	cmd.Long = `Get object permission levels.
@@ -160,10 +156,10 @@ func newGetPermissionLevels() *cobra.Command {
 
   Arguments:
     REQUEST_OBJECT_TYPE: The type of the request object. Can be one of the following: alerts,
-      authorization, clusters, cluster-policies, dashboards, dbsql-dashboards,
-      directories, experiments, files, instance-pools, jobs, notebooks,
-      pipelines, queries, registered-models, repos, serving-endpoints, or
-      warehouses.
+      alertsv2, authorization, clusters, cluster-policies, dashboards,
+      dbsql-dashboards, directories, experiments, files, instance-pools, jobs,
+      notebooks, pipelines, queries, registered-models, repos,
+      serving-endpoints, or warehouses.
     REQUEST_OBJECT_ID: `
 
 	cmd.Annotations = make(map[string]string)
@@ -215,7 +211,6 @@ func newSet() *cobra.Command {
 	var setReq iam.SetObjectPermissions
 	var setJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&setJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: access_control_list
@@ -230,10 +225,10 @@ func newSet() *cobra.Command {
 
   Arguments:
     REQUEST_OBJECT_TYPE: The type of the request object. Can be one of the following: alerts,
-      authorization, clusters, cluster-policies, dashboards, dbsql-dashboards,
-      directories, experiments, files, instance-pools, jobs, notebooks,
-      pipelines, queries, registered-models, repos, serving-endpoints, or
-      warehouses.
+      alertsv2, authorization, clusters, cluster-policies, dashboards,
+      dbsql-dashboards, directories, experiments, files, instance-pools, jobs,
+      notebooks, pipelines, queries, registered-models, repos,
+      serving-endpoints, or warehouses.
     REQUEST_OBJECT_ID: The id of the request object.`
 
 	cmd.Annotations = make(map[string]string)
@@ -297,7 +292,6 @@ func newUpdate() *cobra.Command {
 	var updateReq iam.UpdateObjectPermissions
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: access_control_list
@@ -311,10 +305,10 @@ func newUpdate() *cobra.Command {
 
   Arguments:
     REQUEST_OBJECT_TYPE: The type of the request object. Can be one of the following: alerts,
-      authorization, clusters, cluster-policies, dashboards, dbsql-dashboards,
-      directories, experiments, files, instance-pools, jobs, notebooks,
-      pipelines, queries, registered-models, repos, serving-endpoints, or
-      warehouses.
+      alertsv2, authorization, clusters, cluster-policies, dashboards,
+      dbsql-dashboards, directories, experiments, files, instance-pools, jobs,
+      notebooks, pipelines, queries, registered-models, repos,
+      serving-endpoints, or warehouses.
     REQUEST_OBJECT_ID: The id of the request object.`
 
 	cmd.Annotations = make(map[string]string)

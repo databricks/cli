@@ -61,8 +61,6 @@ func newGetWorkspaceNetworkOptionRpc() *cobra.Command {
 
 	var getWorkspaceNetworkOptionRpcReq settings.GetWorkspaceNetworkOptionRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get-workspace-network-option-rpc WORKSPACE_ID"
 	cmd.Short = `Get workspace network option.`
 	cmd.Long = `Get workspace network option.
@@ -126,7 +124,6 @@ func newUpdateWorkspaceNetworkOptionRpc() *cobra.Command {
 	updateWorkspaceNetworkOptionRpcReq.WorkspaceNetworkOption = settings.WorkspaceNetworkOption{}
 	var updateWorkspaceNetworkOptionRpcJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateWorkspaceNetworkOptionRpcJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateWorkspaceNetworkOptionRpcReq.WorkspaceNetworkOption.NetworkPolicyId, "network-policy-id", updateWorkspaceNetworkOptionRpcReq.WorkspaceNetworkOption.NetworkPolicyId, `The network policy ID to apply to the workspace.`)

@@ -80,11 +80,11 @@ func (l *statePull) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 	}
 
 	// Case: Remote state file does not exist. In this case we fallback to using the
-	// local Terraform state. This allows users to change the "root_path" their bundle is
+	// local resources state. This allows users to change the "root_path" their bundle is
 	// configured with.
 	remoteState, remoteContent, err := l.remoteState(ctx, b)
 	if errors.Is(err, fs.ErrNotExist) {
-		log.Infof(ctx, "Remote state file does not exist. Using local Terraform state.")
+		log.Infof(ctx, "Remote state file does not exist. Using local resources state.")
 		return nil
 	}
 	if err != nil {
@@ -100,7 +100,7 @@ func (l *statePull) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 	// Case: Local state file does not exist. In this case we should rely on the remote state file.
 	localState, err := l.localState(ctx, b)
 	if errors.Is(err, fs.ErrNotExist) {
-		log.Infof(ctx, "Local state file does not exist. Using remote Terraform state.")
+		log.Infof(ctx, "Local state file does not exist. Using remote resources state.")
 		err := os.WriteFile(localStatePath, remoteContent, 0o600)
 		return diag.FromErr(err)
 	}
@@ -108,16 +108,16 @@ func (l *statePull) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 		return diag.Errorf("failed to read local state file: %v", err)
 	}
 
-	// If the lineage does not match, the Terraform state files do not correspond to the same deployment.
+	// If the lineage does not match, the resources state files do not correspond to the same deployment.
 	if localState.Lineage != remoteState.Lineage {
-		log.Warnf(ctx, "Remote and local state lineages do not match (remote: %#v, local: %#v). Using remote Terraform state. Invalidating local Terraform state.", remoteState.Lineage, localState.Lineage)
+		log.Warnf(ctx, "Remote and local state lineages do not match (remote: %#v, local: %#v). Using remote resources state. Invalidating local resources state.", remoteState.Lineage, localState.Lineage)
 		err := os.WriteFile(localStatePath, remoteContent, 0o600)
 		return diag.FromErr(err)
 	}
 
 	// If the remote state is newer than the local state, we should use the remote state.
 	if remoteState.Serial > localState.Serial {
-		log.Infof(ctx, "Remote state is newer than local state (remote: %d, local: %d). Using remote Terraform state.", remoteState.Serial, localState.Serial)
+		log.Infof(ctx, "Remote state is newer than local state (remote: %d, local: %d). Using remote resources state.", remoteState.Serial, localState.Serial)
 		err := os.WriteFile(localStatePath, remoteContent, 0o600)
 		return diag.FromErr(err)
 	}

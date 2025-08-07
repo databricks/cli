@@ -1,0 +1,22 @@
+trace $CLI bundle deploy
+
+print_requests() {
+    jq 'select(.method != "GET" and (.path | contains("/unity")))' < out.requests.txt
+    rm out.requests.txt
+}
+
+trace print_requests
+
+title "Summary should now show id and url\n"
+$CLI bundle summary -o json | jq .resources
+
+title "Update name"
+trace update_file.py databricks.yml myschema mynewschema
+
+trace $CLI bundle plan  # should show "recreate"
+trace $CLI bundle deploy --auto-approve
+trace print_requests
+
+trace musterr $CLI volumes read main.myschema.myvolume
+trace $CLI volumes read main.myschema.mynewvolume
+rm out.requests.txt

@@ -2,7 +2,7 @@
 """
 Print selected attributes from terraform state.
 
-Usage: <section> <name> [attr...]
+Usage: <group> <name> [attr...]
 """
 
 import sys
@@ -10,8 +10,8 @@ import os
 import json
 
 
-def print_resource_terraform(section, name):
-    resource_type = "databricks_" + section[:-1]
+def print_resource_terraform(group, name):
+    resource_type = "databricks_" + group[:-1]
     filename = ".databricks/bundle/default/terraform/terraform.tfstate"
     raw = open(filename).read()
     data = json.loads(raw)
@@ -29,14 +29,14 @@ def print_resource_terraform(section, name):
             return
 
 
-def print_resource_terranova(section, name):
+def print_resource_terranova(group, name):
     filename = ".databricks/bundle/default/resources.json"
     raw = open(filename).read()
     data = json.loads(raw)
-    resources = data["resources"].get(section, {})
+    resources = data["resources"].get(group, {})
     result = resources.get(name)
     if result is None:
-        print(f"Resource {section=} {name=} not found. Available: {raw}")
+        print(f"Resource {group=} {name=} not found. Available: {raw}")
         return
     print(result.get("__id__"))
 

@@ -41,12 +41,12 @@ type processStub struct {
 }
 
 func (s *processStub) WithStdout(output string) *processStub {
-	s.reponseStub.stdout = output
+	s.stdout = output
 	return s
 }
 
 func (s *processStub) WithFailure(err error) *processStub {
-	s.reponseStub.err = err
+	s.err = err
 	return s
 }
 
@@ -168,9 +168,9 @@ func (s *processStub) run(cmd *exec.Cmd) error {
 	if s.reponseStub == zeroStub {
 		return errors.New("no default process stub")
 	}
-	err := s.reponseStub.err
-	if s.reponseStub.stdout != "" {
-		_, err1 := cmd.Stdout.Write([]byte(s.reponseStub.stdout))
+	err := s.err
+	if s.stdout != "" {
+		_, err1 := cmd.Stdout.Write([]byte(s.stdout))
 		if err == nil {
 			err = err1
 		}

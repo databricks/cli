@@ -59,7 +59,6 @@ func newCreate() *cobra.Command {
 	var createReq catalog.AccountsCreateMetastoreAssignment
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: metastore_assignment
@@ -137,8 +136,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq catalog.DeleteAccountMetastoreAssignmentRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete WORKSPACE_ID METASTORE_ID"
 	cmd.Short = `Delete a metastore assignment.`
 	cmd.Long = `Delete a metastore assignment.
@@ -200,8 +197,6 @@ func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getReq catalog.GetAccountMetastoreAssignmentRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get WORKSPACE_ID"
 	cmd.Short = `Gets the metastore assignment for a workspace.`
@@ -265,8 +260,6 @@ func newList() *cobra.Command {
 
 	var listReq catalog.ListAccountMetastoreAssignmentsRequest
 
-	// TODO: short flags
-
 	cmd.Use = "list METASTORE_ID"
 	cmd.Short = `Get all workspaces assigned to a metastore.`
 	cmd.Long = `Get all workspaces assigned to a metastore.
@@ -322,7 +315,6 @@ func newUpdate() *cobra.Command {
 	var updateReq catalog.AccountsUpdateMetastoreAssignment
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: metastore_assignment

@@ -1,0 +1,14 @@
+bundle:
+  name: test-pipeline-var-flag
+
+variables:
+  catalog:
+    default: main
+  schema:
+    default: test_schema
+
+resources:
+  pipelines:
+    foo:
+      catalog: ${var.catalog}
+      target: ${var.schema}

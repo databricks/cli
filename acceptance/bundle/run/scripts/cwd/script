@@ -1,0 +1,4 @@
+trace cd a/b/c
+
+# Scripts defined in the scripts section should run from the bundle root.
+trace $CLI bundle run foo

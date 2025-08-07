@@ -1,0 +1,7 @@
+bundle:
+  name: penguin
+
+scripts:
+  foo:
+    content: |-
+      exit 42

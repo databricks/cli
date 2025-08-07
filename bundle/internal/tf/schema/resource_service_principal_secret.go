@@ -11,5 +11,6 @@ type ResourceServicePrincipalSecret struct {
 	SecretHash         string `json:"secret_hash,omitempty"`
 	ServicePrincipalId string `json:"service_principal_id"`
 	Status             string `json:"status,omitempty"`
+	TimeRotating       string `json:"time_rotating,omitempty"`
 	UpdateTime         string `json:"update_time,omitempty"`
 }

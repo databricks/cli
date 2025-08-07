@@ -59,6 +59,7 @@ func collectLocalLibraries(b *bundle.Bundle) (map[string][]configLocation, error
 		forEachTaskLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("whl")),
 		forEachTaskLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("jar")),
 		envDepsPattern.Append(dyn.AnyIndex()),
+		pipelineEnvDepsPattern.Append(dyn.AnyIndex()),
 	}
 
 	for _, pattern := range patterns {

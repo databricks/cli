@@ -20,8 +20,8 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
-	assert "github.com/databricks/cli/libs/dyn/dynassert"
 	"github.com/databricks/cli/libs/process"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestPythonMutator_Name_loadResources(t *testing.T) {

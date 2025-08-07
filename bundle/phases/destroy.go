@@ -13,8 +13,8 @@ import (
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/bundle/terranova"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
@@ -69,6 +69,34 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 
 	}
 
+	schemaActions := deployplan.FilterGroup(deleteActions, "schemas", deployplan.ActionTypeDelete)
+	dltActions := deployplan.FilterGroup(deleteActions, "pipelines", deployplan.ActionTypeDelete)
+	volumeActions := deployplan.FilterGroup(deleteActions, "volumes", deployplan.ActionTypeDelete)
+
+	if len(schemaActions) > 0 {
+		cmdio.LogString(ctx, deleteSchemaMessage)
+		for _, a := range schemaActions {
+			cmdio.Log(ctx, a)
+		}
+		cmdio.LogString(ctx, "")
+	}
+
+	if len(dltActions) > 0 {
+		cmdio.LogString(ctx, deleteDltMessage)
+		for _, a := range dltActions {
+			cmdio.Log(ctx, a)
+		}
+		cmdio.LogString(ctx, "")
+	}
+
+	if len(volumeActions) > 0 {
+		cmdio.LogString(ctx, deleteVolumeMessage)
+		for _, a := range volumeActions {
+			cmdio.Log(ctx, a)
+		}
+		cmdio.LogString(ctx, "")
+	}
+
 	cmdio.LogString(ctx, "All files and directories at the following location will be deleted: "+b.Config.Workspace.RootPath)
 	cmdio.LogString(ctx, "")
 
@@ -84,86 +112,75 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	return approved, nil
 }
 
-func destroyCore(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	var diags diag.Diagnostics
-
+func destroyCore(ctx context.Context, b *bundle.Bundle) {
 	if b.DirectDeployment {
-		diags = bundle.Apply(ctx, b, terranova.TerranovaApply())
+		bundle.ApplyContext(ctx, b, terranova.TerranovaApply())
 	} else {
 		// Core destructive mutators for destroy. These require informed user consent.
-		diags = bundle.Apply(ctx, b, terraform.Apply())
+		bundle.ApplyContext(ctx, b, terraform.Apply())
 	}
 
-	if diags.HasError() {
-		return diags
+	if logdiag.HasError(ctx) {
+		return
 	}
 
-	diags = diags.Extend(bundle.Apply(ctx, b, files.Delete()))
+	bundle.ApplyContext(ctx, b, files.Delete())
 
-	if !diags.HasError() {
+	if !logdiag.HasError(ctx) {
 		cmdio.LogString(ctx, "Destroy complete!")
 	}
-
-	return diags
 }
 
 // The destroy phase deletes artifacts and resources.
-func Destroy(ctx context.Context, b *bundle.Bundle) (diags diag.Diagnostics) {
+func Destroy(ctx context.Context, b *bundle.Bundle) {
 	log.Info(ctx, "Phase: destroy")
 
 	ok, err := assertRootPathExists(ctx, b)
 	if err != nil {
-		return diag.FromErr(err)
+		logdiag.LogError(ctx, err)
+		return
 	}
 
 	if !ok {
 		cmdio.LogString(ctx, "No active deployment found to destroy!")
-		return diags
+		return
 	}
 
-	diags = diags.Extend(bundle.Apply(ctx, b, lock.Acquire()))
-	if diags.HasError() {
-		return diags
+	bundle.ApplyContext(ctx, b, lock.Acquire())
+	if logdiag.HasError(ctx) {
+		return
 	}
 
 	defer func() {
-		diags = diags.Extend(bundle.Apply(ctx, b, lock.Release(lock.GoalDestroy)))
+		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDestroy))
 	}()
 
-	diags = diags.Extend(bundle.Apply(ctx, b, statemgmt.StatePull()))
-	if diags.HasError() {
-		return diags
+	bundle.ApplyContext(ctx, b, statemgmt.StatePull())
+	if logdiag.HasError(ctx) {
+		return
 	}
 
-	if b.DirectDeployment {
-		err := b.OpenResourceDatabase(ctx)
-		if err != nil {
-			diags = diags.Extend(diag.FromErr(err))
-			return diags
-		}
-	} else {
-		diags = diags.Extend(bundle.ApplySeq(ctx, b,
+	if !b.DirectDeployment {
+		bundle.ApplySeqContext(ctx, b,
 			terraform.Interpolate(),
 			terraform.Write(),
 			terraform.Plan(terraform.PlanGoal("destroy")),
-		))
+		)
 	}
 
-	if diags.HasError() {
-		return diags
+	if logdiag.HasError(ctx) {
+		return
 	}
 
 	hasApproval, err := approvalForDestroy(ctx, b)
 	if err != nil {
-		diags = diags.Extend(diag.FromErr(err))
-		return diags
+		logdiag.LogError(ctx, err)
+		return
 	}
 
 	if hasApproval {
-		diags = diags.Extend(destroyCore(ctx, b))
+		destroyCore(ctx, b)
 	} else {
 		cmdio.LogString(ctx, "Destroy cancelled!")
 	}
-
-	return diags
 }

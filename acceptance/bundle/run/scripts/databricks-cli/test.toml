@@ -1,0 +1,8 @@
+RecordRequests = true
+IncludeRequestHeaders = ["Authorization"]
+
+# "client_id:client_secret" in base64 is Y2xpZW50X2lkOmNsaWVudF9zZWNyZXQ=, expect to
+# see this in Authorization header
+[[Repls]]
+Old = "Y2xpZW50X2lkOmNsaWVudF9zZWNyZXQ="
+New = "[ENCODED_AUTH]"

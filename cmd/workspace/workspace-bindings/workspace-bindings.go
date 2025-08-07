@@ -73,8 +73,6 @@ func newGet() *cobra.Command {
 
 	var getReq catalog.GetWorkspaceBindingRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get NAME"
 	cmd.Short = `Get catalog workspace bindings.`
 	cmd.Long = `Get catalog workspace bindings.
@@ -131,8 +129,6 @@ func newGetBindings() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getBindingsReq catalog.GetBindingsRequest
-
-	// TODO: short flags
 
 	cmd.Flags().IntVar(&getBindingsReq.MaxResults, "max-results", getBindingsReq.MaxResults, `Maximum number of workspace bindings to return.`)
 	cmd.Flags().StringVar(&getBindingsReq.PageToken, "page-token", getBindingsReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
@@ -195,7 +191,6 @@ func newUpdate() *cobra.Command {
 	var updateReq catalog.UpdateWorkspaceBindings
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: assign_workspaces
@@ -271,7 +266,6 @@ func newUpdateBindings() *cobra.Command {
 	var updateBindingsReq catalog.UpdateWorkspaceBindingsParameters
 	var updateBindingsJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateBindingsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: add

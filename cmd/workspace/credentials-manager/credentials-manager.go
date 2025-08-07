@@ -59,7 +59,6 @@ func newExchangeToken() *cobra.Command {
 	var exchangeTokenReq settings.ExchangeTokenRequest
 	var exchangeTokenJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&exchangeTokenJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "exchange-token"

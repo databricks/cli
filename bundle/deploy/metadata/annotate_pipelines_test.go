@@ -43,14 +43,14 @@ func TestAnnotatePipelinesMutator(t *testing.T) {
 			Kind:             pipelines.DeploymentKindBundle,
 			MetadataFilePath: "/a/b/c/metadata.json",
 		},
-		b.Config.Resources.Pipelines["my-pipeline-1"].CreatePipeline.Deployment)
+		b.Config.Resources.Pipelines["my-pipeline-1"].Deployment)
 
 	assert.Equal(t,
 		&pipelines.PipelineDeployment{
 			Kind:             pipelines.DeploymentKindBundle,
 			MetadataFilePath: "/a/b/c/metadata.json",
 		},
-		b.Config.Resources.Pipelines["my-pipeline-2"].CreatePipeline.Deployment)
+		b.Config.Resources.Pipelines["my-pipeline-2"].Deployment)
 }
 
 func TestAnnotatePipelinesMutatorPipelineWithoutASpec(t *testing.T) {

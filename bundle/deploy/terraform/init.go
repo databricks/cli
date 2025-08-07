@@ -64,7 +64,7 @@ func (m *initialize) findExecPath(ctx context.Context, b *bundle.Bundle, tf *con
 		if !actualVersion.Equal(expectedVersion) {
 			if isDefault {
 				return "", fmt.Errorf(
-					"Terraform binary at %s (from $%s) is %s but expected version is %s. Set %s to %s to continue.",
+					"terraform binary at %s (from $%s) is %s but expected version is %s. Set %s to %s to continue",
 					execPathValue,
 					TerraformExecPathEnv,
 					actualVersion.String(),
@@ -74,7 +74,7 @@ func (m *initialize) findExecPath(ctx context.Context, b *bundle.Bundle, tf *con
 				)
 			} else {
 				return "", fmt.Errorf(
-					"Terraform binary at %s (from $%s) is %s but expected version is %s (from $%s). Update $%s and $%s so that versions match.",
+					"terraform binary at %s (from $%s) is %s but expected version is %s (from $%s). Update $%s and $%s so that versions match",
 					execPathValue,
 					TerraformExecPathEnv,
 					actualVersion.String(),
@@ -91,7 +91,7 @@ func (m *initialize) findExecPath(ctx context.Context, b *bundle.Bundle, tf *con
 		return tf.ExecPath, nil
 	}
 
-	binDir, err := b.CacheDir(ctx, "bin")
+	binDir, err := b.LocalStateDir(ctx, "bin")
 	if err != nil {
 		return "", err
 	}
@@ -156,6 +156,20 @@ func inheritEnvVars(ctx context.Context, environ map[string]string) error {
 		if ok {
 			environ[key] = value
 		}
+	}
+
+	// If there's a DATABRICKS_OIDC_TOKEN_ENV set, we need to pass the value of the environment variable defined in DATABRICKS_OIDC_TOKEN_ENV to Terraform.
+	// This is necessary to ensure that Terraform can use the same OIDC token as the CLI.
+	oidcTokenEnv, ok := env.Lookup(ctx, "DATABRICKS_OIDC_TOKEN_ENV")
+	if ok {
+		environ["DATABRICKS_OIDC_TOKEN_ENV"] = oidcTokenEnv
+	} else {
+		oidcTokenEnv = "DATABRICKS_OIDC_TOKEN"
+	}
+
+	oidcToken, ok := env.Lookup(ctx, oidcTokenEnv)
+	if ok {
+		environ[oidcTokenEnv] = oidcToken
 	}
 
 	// Map $DATABRICKS_TF_CLI_CONFIG_FILE to $TF_CLI_CONFIG_FILE
@@ -229,7 +243,7 @@ func setTempDirEnvVars(ctx context.Context, environ map[string]string, b *bundle
 		} else if v, ok := env.Lookup(ctx, "TEMP"); ok {
 			environ["TEMP"] = v
 		} else {
-			tmpDir, err := b.CacheDir(ctx, "tmp")
+			tmpDir, err := b.LocalStateDir(ctx, "tmp")
 			if err != nil {
 				return err
 			}

@@ -7,9 +7,21 @@ import (
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "bundle",
-		Short:   "Databricks Asset Bundles let you express data/AI/analytics projects as code.",
-		Long:    "Databricks Asset Bundles let you express data/AI/analytics projects as code.\n\nOnline documentation: https://docs.databricks.com/en/dev-tools/bundles/index.html",
+		Use:   "bundle",
+		Short: "Databricks Asset Bundles let you express data/AI/analytics projects as code.",
+		Long: `Databricks Asset Bundles let you express data/AI/analytics projects as code.
+
+Common workflows:
+  databricks bundle init default-python      # Initialize new project
+  databricks bundle deploy --target dev      # Deploy to development
+  databricks bundle run my_job               # Run jobs/pipelines
+  databricks bundle deploy --target prod     # Deploy to production
+
+Import existing resources:
+  databricks bundle generate job --existing-job-id 123 --key my_job # Generate job configuration
+  databricks bundle deployment bind my_job 123                      # Link to an existing job
+
+Online documentation: https://docs.databricks.com/en/dev-tools/bundles/index.html`,
 		GroupID: "development",
 	}
 
@@ -28,5 +40,6 @@ func New() *cobra.Command {
 	cmd.AddCommand(newDebugCommand())
 	cmd.AddCommand(deployment.NewDeploymentCommand())
 	cmd.AddCommand(newOpenCommand())
+	cmd.AddCommand(newPlanCommand())
 	return cmd
 }

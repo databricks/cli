@@ -10,7 +10,6 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
-	tfjson "github.com/hashicorp/terraform-json"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -51,50 +50,45 @@ func CheckRunningResource() *checkRunningResources {
 	return &checkRunningResources{}
 }
 
-func checkAnyResourceRunning(ctx context.Context, w *databricks.WorkspaceClient, state *resourcesState) error {
-	if state == nil {
-		return nil
-	}
-
+func checkAnyResourceRunning(ctx context.Context, w *databricks.WorkspaceClient, state ExportedResourcesMap) error {
 	errs, errCtx := errgroup.WithContext(ctx)
 
-	for _, resource := range state.Resources {
-		if resource.Mode != tfjson.ManagedResourceMode {
+	for _, jobAttrs := range state["jobs"] {
+		id := jobAttrs.ID
+		if id == "" {
 			continue
 		}
-		for _, instance := range resource.Instances {
-			id := instance.Attributes.ID
-			if id == "" {
-				continue
-			}
 
-			switch resource.Type {
-			case "databricks_job":
-				errs.Go(func() error {
-					isRunning, err := IsJobRunning(errCtx, w, id)
-					// If there's an error retrieving the job, we assume it's not running
-					if err != nil {
-						return err
-					}
-					if isRunning {
-						return &ErrResourceIsRunning{resourceType: "job", resourceId: id}
-					}
-					return nil
-				})
-			case "databricks_pipeline":
-				errs.Go(func() error {
-					isRunning, err := IsPipelineRunning(errCtx, w, id)
-					// If there's an error retrieving the pipeline, we assume it's not running
-					if err != nil {
-						return nil
-					}
-					if isRunning {
-						return &ErrResourceIsRunning{resourceType: "pipeline", resourceId: id}
-					}
-					return nil
-				})
+		errs.Go(func() error {
+			isRunning, err := IsJobRunning(errCtx, w, id)
+			// If there's an error retrieving the job, we assume it's not running
+			if err != nil {
+				return err
 			}
+			if isRunning {
+				return &ErrResourceIsRunning{resourceType: "job", resourceId: id}
+			}
+			return nil
+		})
+	}
+
+	for _, pipelineAttrs := range state["pipelines"] {
+		id := pipelineAttrs.ID
+		if id == "" {
+			continue
 		}
+
+		errs.Go(func() error {
+			isRunning, err := IsPipelineRunning(errCtx, w, id)
+			// If there's an error retrieving the pipeline, we assume it's not running
+			if err != nil {
+				return nil
+			}
+			if isRunning {
+				return &ErrResourceIsRunning{resourceType: "pipeline", resourceId: id}
+			}
+			return nil
+		})
 	}
 
 	return errs.Wait()

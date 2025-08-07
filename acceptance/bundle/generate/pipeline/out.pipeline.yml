@@ -1,0 +1,12 @@
+resources:
+  pipelines:
+    out:
+      name: generate-pipeline
+      clusters:
+        - custom_tags:
+            "Tag1": "24X7-1234"
+        - spark_conf:
+            "spark.databricks.delta.preview.enabled": "true"
+      libraries:
+        - notebook:
+            path: outnotebook.py

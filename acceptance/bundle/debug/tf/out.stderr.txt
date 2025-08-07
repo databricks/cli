@@ -17,6 +17,8 @@
 10:07:59 Info: Phase: initialize pid=12345
 10:07:59 Debug: Apply pid=12345 mutator=validate:AllResourcesHaveValues
 10:07:59 Debug: Apply pid=12345 mutator=validate:interpolation_in_auth_config
+10:07:59 Debug: Apply pid=12345 mutator=validate:no_interpolation_in_bundle_name
+10:07:59 Debug: Apply pid=12345 mutator=validate:scripts
 10:07:59 Debug: Apply pid=12345 mutator=RewriteSyncPaths
 10:07:59 Debug: Apply pid=12345 mutator=SyncDefaultPath
 10:07:59 Debug: Apply pid=12345 mutator=SyncInferRoot
@@ -36,7 +38,7 @@
 10:07:59 Debug: Apply pid=12345 mutator=RewriteWorkspacePrefix
 10:07:59 Debug: Apply pid=12345 mutator=SetVariables
 10:07:59 Debug: Apply pid=12345 mutator=ResolveVariableReferences
-10:07:59 Debug: Apply pid=12345 mutator=ResolveResourceReferences
+10:07:59 Debug: Apply pid=12345 mutator=ResolveLookupVariables
 10:07:59 Debug: Apply pid=12345 mutator=ResolveVariableReferences
 10:07:59 Debug: Apply pid=12345 mutator=validate:volume-path
 10:07:59 Debug: Apply pid=12345 mutator=ApplyTargetMode
@@ -47,6 +49,7 @@
 10:07:59 Debug: Apply pid=12345 mutator=ProcessStaticResources mutator=TranslatePathsDashboards
 10:07:59 Debug: Apply pid=12345 mutator=PythonMutator(load_resources)
 10:07:59 Debug: Apply pid=12345 mutator=PythonMutator(apply_mutators)
+10:07:59 Debug: Apply pid=12345 mutator=validate:required
 10:07:59 Debug: Apply pid=12345 mutator=CheckPermissions
 10:07:59 Debug: Apply pid=12345 mutator=TranslatePaths
 10:07:59 Debug: Apply pid=12345 mutator=PythonWrapperWarning

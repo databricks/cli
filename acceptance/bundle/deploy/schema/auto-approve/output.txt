@@ -54,7 +54,8 @@ test-file-[UNIQUE_NAME].txt -> dbfs:/Volumes/main/test-schema-[UNIQUE_NAME]/test
 === Try to redeploy the bundle - should fail without --auto-approve
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-The following UC schemas will be deleted or recreated. Any underlying data may be lost:
+
+This action will result in the deletion or recreation of the following UC schemas. Any underlying data may be lost:
   delete schema bar
 
 This action will result in the deletion or recreation of the following DLT Pipelines along with the
@@ -70,6 +71,13 @@ Error: the deployment requires destructive actions, but current console does not
 The following resources will be deleted:
   delete pipeline foo
   delete schema bar
+
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete schema bar
+
+This action will result in the deletion of the following DLT Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them:
+  delete pipeline foo
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 

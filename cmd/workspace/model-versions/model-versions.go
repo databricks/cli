@@ -64,8 +64,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq catalog.DeleteModelVersionRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete FULL_NAME VERSION"
 	cmd.Short = `Delete a Model Version.`
 	cmd.Long = `Delete a Model Version.
@@ -132,8 +130,6 @@ func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getReq catalog.GetModelVersionRequest
-
-	// TODO: short flags
 
 	cmd.Flags().BoolVar(&getReq.IncludeAliases, "include-aliases", getReq.IncludeAliases, `Whether to include aliases associated with the model version in the response.`)
 	cmd.Flags().BoolVar(&getReq.IncludeBrowse, "include-browse", getReq.IncludeBrowse, `Whether to include model versions in the response for which the principal can only access selective metadata for.`)
@@ -204,8 +200,6 @@ func newGetByAlias() *cobra.Command {
 
 	var getByAliasReq catalog.GetByAliasRequest
 
-	// TODO: short flags
-
 	cmd.Flags().BoolVar(&getByAliasReq.IncludeAliases, "include-aliases", getByAliasReq.IncludeAliases, `Whether to include aliases associated with the model version in the response.`)
 
 	cmd.Use = "get-by-alias FULL_NAME ALIAS"
@@ -270,8 +264,6 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq catalog.ListModelVersionsRequest
-
-	// TODO: short flags
 
 	cmd.Flags().BoolVar(&listReq.IncludeBrowse, "include-browse", listReq.IncludeBrowse, `Whether to include model versions in the response for which the principal can only access selective metadata for.`)
 	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of model versions to return.`)
@@ -344,7 +336,6 @@ func newUpdate() *cobra.Command {
 	var updateReq catalog.UpdateModelVersionRequest
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `The comment attached to the model version.`)

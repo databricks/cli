@@ -50,7 +50,7 @@ func (s *MlflowExperiment) Exists(ctx context.Context, w *databricks.WorkspaceCl
 	return true, nil
 }
 
-func (j *MlflowExperiment) ResourceDescription() ResourceDescription {
+func (s *MlflowExperiment) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "experiment",
 		PluralName:    "experiments",

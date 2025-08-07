@@ -1,0 +1,7 @@
+Local = false
+Cloud = true
+CloudSlow = true
+
+[EnvMatrix]
+  DATABRICKS_CLI_DEPLOYMENT = ["terraform"]
+  DATA_SECURITY_MODE = ["USER_ISOLATION", "SINGLE_USER"]

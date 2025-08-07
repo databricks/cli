@@ -58,8 +58,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq iam.DeleteWorkspaceAssignmentRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete WORKSPACE_ID PRINCIPAL_ID"
 	cmd.Short = `Delete permissions assignment.`
 	cmd.Long = `Delete permissions assignment.
@@ -125,8 +123,6 @@ func newGet() *cobra.Command {
 
 	var getReq iam.GetWorkspaceAssignmentRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get WORKSPACE_ID"
 	cmd.Short = `List workspace permissions.`
 	cmd.Long = `List workspace permissions.
@@ -186,8 +182,6 @@ func newList() *cobra.Command {
 
 	var listReq iam.ListWorkspaceAssignmentRequest
 
-	// TODO: short flags
-
 	cmd.Use = "list WORKSPACE_ID"
 	cmd.Short = `Get permission assignments.`
 	cmd.Long = `Get permission assignments.
@@ -246,7 +240,6 @@ func newUpdate() *cobra.Command {
 	var updateReq iam.UpdateWorkspaceAssignments
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: permissions

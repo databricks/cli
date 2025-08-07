@@ -56,8 +56,6 @@ func newList() *cobra.Command {
 
 	var listReq marketplace.ListAllPersonalizationRequestsRequest
 
-	// TODO: short flags
-
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)
 
@@ -111,7 +109,6 @@ func newUpdate() *cobra.Command {
 	var updateReq marketplace.UpdatePersonalizationRequestRequest
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateReq.Reason, "reason", updateReq.Reason, ``)

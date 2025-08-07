@@ -68,7 +68,6 @@ func newCreate() *cobra.Command {
 	var createReq sql.CreateAlert
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.Parent, "parent", createReq.Parent, `The identifier of the workspace folder containing the object.`)
@@ -142,8 +141,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq sql.DeleteAlertsLegacyRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete ALERT_ID"
 	cmd.Short = `Delete an alert.`
 	cmd.Long = `Delete an alert.
@@ -159,28 +156,16 @@ func newDelete() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No ALERT_ID argument specified. Loading names for Alerts Legacy drop-down."
-			names, err := w.AlertsLegacy.LegacyAlertNameToIdMap(ctx)
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Alerts Legacy drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
-		}
 		deleteReq.AlertId = args[0]
 
 		err = w.AlertsLegacy.Delete(ctx, deleteReq)
@@ -216,8 +201,6 @@ func newGet() *cobra.Command {
 
 	var getReq sql.GetAlertsLegacyRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get ALERT_ID"
 	cmd.Short = `Get an alert.`
 	cmd.Long = `Get an alert.
@@ -231,28 +214,16 @@ func newGet() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No ALERT_ID argument specified. Loading names for Alerts Legacy drop-down."
-			names, err := w.AlertsLegacy.LegacyAlertNameToIdMap(ctx)
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Alerts Legacy drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
-		}
 		getReq.AlertId = args[0]
 
 		response, err := w.AlertsLegacy.Get(ctx, getReq)
@@ -336,7 +307,6 @@ func newUpdate() *cobra.Command {
 	var updateReq sql.EditAlert
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().IntVar(&updateReq.Rearm, "rearm", updateReq.Rearm, `Number of seconds after being triggered before the alert rearms itself and can be triggered again.`)

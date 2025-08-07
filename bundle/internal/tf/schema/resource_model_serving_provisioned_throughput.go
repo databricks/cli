@@ -41,8 +41,9 @@ type ResourceModelServingProvisionedThroughputAiGatewayInferenceTableConfig stru
 }
 
 type ResourceModelServingProvisionedThroughputAiGatewayRateLimits struct {
-	Calls         int    `json:"calls"`
+	Calls         int    `json:"calls,omitempty"`
 	Key           string `json:"key,omitempty"`
+	Principal     string `json:"principal,omitempty"`
 	RenewalPeriod string `json:"renewal_period"`
 }
 
@@ -66,7 +67,8 @@ type ResourceModelServingProvisionedThroughputConfigServedEntities struct {
 }
 
 type ResourceModelServingProvisionedThroughputConfigTrafficConfigRoutes struct {
-	ServedModelName   string `json:"served_model_name"`
+	ServedEntityName  string `json:"served_entity_name,omitempty"`
+	ServedModelName   string `json:"served_model_name,omitempty"`
 	TrafficPercentage int    `json:"traffic_percentage"`
 }
 

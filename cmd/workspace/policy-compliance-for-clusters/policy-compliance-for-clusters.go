@@ -66,7 +66,6 @@ func newEnforceCompliance() *cobra.Command {
 	var enforceComplianceReq compute.EnforceClusterComplianceRequest
 	var enforceComplianceJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&enforceComplianceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().BoolVar(&enforceComplianceReq.ValidateOnly, "validate-only", enforceComplianceReq.ValidateOnly, `If set, previews the changes that would be made to a cluster to enforce compliance but does not update the cluster.`)
@@ -160,8 +159,6 @@ func newGetCompliance() *cobra.Command {
 
 	var getComplianceReq compute.GetClusterComplianceRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get-compliance CLUSTER_ID"
 	cmd.Short = `Get cluster policy compliance.`
 	cmd.Long = `Get cluster policy compliance.
@@ -218,8 +215,6 @@ func newListCompliance() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listComplianceReq compute.ListClusterCompliancesRequest
-
-	// TODO: short flags
 
 	cmd.Flags().IntVar(&listComplianceReq.PageSize, "page-size", listComplianceReq.PageSize, `Use this field to specify the maximum number of results to be returned by the server.`)
 	cmd.Flags().StringVar(&listComplianceReq.PageToken, "page-token", listComplianceReq.PageToken, `A page token that can be used to navigate to the next page or previous page as returned by next_page_token or prev_page_token.`)

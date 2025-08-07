@@ -101,7 +101,6 @@ func newCreateExperiment() *cobra.Command {
 	var createExperimentReq ml.CreateExperiment
 	var createExperimentJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createExperimentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createExperimentReq.ArtifactLocation, "artifact-location", createExperimentReq.ArtifactLocation, `Location where all artifacts for the experiment are stored.`)
@@ -190,7 +189,6 @@ func newCreateLoggedModel() *cobra.Command {
 	var createLoggedModelReq ml.CreateLoggedModelRequest
 	var createLoggedModelJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createLoggedModelJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createLoggedModelReq.ModelType, "model-type", createLoggedModelReq.ModelType, `The type of the model, such as "Agent", "Classifier", "LLM".`)
@@ -275,7 +273,6 @@ func newCreateRun() *cobra.Command {
 	var createRunReq ml.CreateRun
 	var createRunJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createRunJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createRunReq.ExperimentId, "experiment-id", createRunReq.ExperimentId, `ID of the associated experiment.`)
@@ -352,7 +349,6 @@ func newDeleteExperiment() *cobra.Command {
 	var deleteExperimentReq ml.DeleteExperiment
 	var deleteExperimentJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&deleteExperimentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "delete-experiment EXPERIMENT_ID"
@@ -434,8 +430,6 @@ func newDeleteLoggedModel() *cobra.Command {
 
 	var deleteLoggedModelReq ml.DeleteLoggedModelRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete-logged-model MODEL_ID"
 	cmd.Short = `Delete a logged model.`
 	cmd.Long = `Delete a logged model.
@@ -489,8 +483,6 @@ func newDeleteLoggedModelTag() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var deleteLoggedModelTagReq ml.DeleteLoggedModelTagRequest
-
-	// TODO: short flags
 
 	cmd.Use = "delete-logged-model-tag MODEL_ID TAG_KEY"
 	cmd.Short = `Delete a tag on a logged model.`
@@ -549,7 +541,6 @@ func newDeleteRun() *cobra.Command {
 	var deleteRunReq ml.DeleteRun
 	var deleteRunJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&deleteRunJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "delete-run RUN_ID"
@@ -630,7 +621,6 @@ func newDeleteRuns() *cobra.Command {
 	var deleteRunsReq ml.DeleteRuns
 	var deleteRunsJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&deleteRunsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().IntVar(&deleteRunsReq.MaxRuns, "max-runs", deleteRunsReq.MaxRuns, `An optional positive integer indicating the maximum number of runs to delete.`)
@@ -724,7 +714,6 @@ func newDeleteTag() *cobra.Command {
 	var deleteTagReq ml.DeleteTag
 	var deleteTagJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&deleteTagJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "delete-tag RUN_ID KEY"
@@ -810,7 +799,6 @@ func newFinalizeLoggedModel() *cobra.Command {
 	var finalizeLoggedModelReq ml.FinalizeLoggedModelRequest
 	var finalizeLoggedModelJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&finalizeLoggedModelJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "finalize-logged-model MODEL_ID STATUS"
@@ -896,8 +884,6 @@ func newGetByName() *cobra.Command {
 
 	var getByNameReq ml.GetByNameRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get-by-name EXPERIMENT_NAME"
 	cmd.Short = `Get an experiment by name.`
 	cmd.Long = `Get an experiment by name.
@@ -962,8 +948,6 @@ func newGetExperiment() *cobra.Command {
 
 	var getExperimentReq ml.GetExperimentRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get-experiment EXPERIMENT_ID"
 	cmd.Short = `Get an experiment.`
 	cmd.Long = `Get an experiment.
@@ -1019,8 +1003,6 @@ func newGetHistory() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getHistoryReq ml.GetHistoryRequest
-
-	// TODO: short flags
 
 	cmd.Flags().IntVar(&getHistoryReq.MaxResults, "max-results", getHistoryReq.MaxResults, `Maximum number of Metric records to return per paginated request.`)
 	cmd.Flags().StringVar(&getHistoryReq.PageToken, "page-token", getHistoryReq.PageToken, `Token indicating the page of metric histories to fetch.`)
@@ -1080,8 +1062,6 @@ func newGetLoggedModel() *cobra.Command {
 
 	var getLoggedModelReq ml.GetLoggedModelRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get-logged-model MODEL_ID"
 	cmd.Short = `Get a logged model.`
 	cmd.Long = `Get a logged model.
@@ -1135,8 +1115,6 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getPermissionLevelsReq ml.GetExperimentPermissionLevelsRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get-permission-levels EXPERIMENT_ID"
 	cmd.Short = `Get experiment permission levels.`
@@ -1194,8 +1172,6 @@ func newGetPermissions() *cobra.Command {
 
 	var getPermissionsReq ml.GetExperimentPermissionsRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get-permissions EXPERIMENT_ID"
 	cmd.Short = `Get experiment permissions.`
 	cmd.Long = `Get experiment permissions.
@@ -1252,8 +1228,6 @@ func newGetRun() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getRunReq ml.GetRunRequest
-
-	// TODO: short flags
 
 	cmd.Flags().StringVar(&getRunReq.RunUuid, "run-uuid", getRunReq.RunUuid, `[Deprecated, use run_id instead] ID of the run to fetch.`)
 
@@ -1318,8 +1292,6 @@ func newListArtifacts() *cobra.Command {
 
 	var listArtifactsReq ml.ListArtifactsRequest
 
-	// TODO: short flags
-
 	cmd.Flags().StringVar(&listArtifactsReq.PageToken, "page-token", listArtifactsReq.PageToken, `The token indicating the page of artifact results to fetch.`)
 	cmd.Flags().StringVar(&listArtifactsReq.Path, "path", listArtifactsReq.Path, `Filter artifacts matching this path (a relative path from the root artifact directory).`)
 	cmd.Flags().StringVar(&listArtifactsReq.RunId, "run-id", listArtifactsReq.RunId, `ID of the run whose artifacts to list.`)
@@ -1378,8 +1350,6 @@ func newListExperiments() *cobra.Command {
 
 	var listExperimentsReq ml.ListExperimentsRequest
 
-	// TODO: short flags
-
 	cmd.Flags().Int64Var(&listExperimentsReq.MaxResults, "max-results", listExperimentsReq.MaxResults, `Maximum number of experiments desired.`)
 	cmd.Flags().StringVar(&listExperimentsReq.PageToken, "page-token", listExperimentsReq.PageToken, `Token indicating the page of experiments to fetch.`)
 	cmd.Flags().Var(&listExperimentsReq.ViewType, "view-type", `Qualifier for type of experiments to be returned. Supported values: [ACTIVE_ONLY, ALL, DELETED_ONLY]`)
@@ -1433,7 +1403,6 @@ func newLogBatch() *cobra.Command {
 	var logBatchReq ml.LogBatch
 	var logBatchJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&logBatchJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: metrics
@@ -1548,7 +1517,6 @@ func newLogInputs() *cobra.Command {
 	var logInputsReq ml.LogInputs
 	var logInputsJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&logInputsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: datasets
@@ -1632,7 +1600,6 @@ func newLogLoggedModelParams() *cobra.Command {
 	var logLoggedModelParamsReq ml.LogLoggedModelParamsRequest
 	var logLoggedModelParamsJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&logLoggedModelParamsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: params
@@ -1709,7 +1676,6 @@ func newLogMetric() *cobra.Command {
 	var logMetricReq ml.LogMetric
 	var logMetricJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&logMetricJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&logMetricReq.DatasetDigest, "dataset-digest", logMetricReq.DatasetDigest, `Dataset digest of the dataset associated with the metric, e.g.`)
@@ -1813,7 +1779,6 @@ func newLogModel() *cobra.Command {
 	var logModelReq ml.LogModel
 	var logModelJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&logModelJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&logModelReq.ModelJson, "model-json", logModelReq.ModelJson, `MLmodel file in json format.`)
@@ -1888,7 +1853,6 @@ func newLogOutputs() *cobra.Command {
 	var logOutputsReq ml.LogOutputsRequest
 	var logOutputsJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&logOutputsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: models
@@ -1971,7 +1935,6 @@ func newLogParam() *cobra.Command {
 	var logParamReq ml.LogParam
 	var logParamJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&logParamJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&logParamReq.RunId, "run-id", logParamReq.RunId, `ID of the run under which to log the param.`)
@@ -2062,7 +2025,6 @@ func newRestoreExperiment() *cobra.Command {
 	var restoreExperimentReq ml.RestoreExperiment
 	var restoreExperimentJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&restoreExperimentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "restore-experiment EXPERIMENT_ID"
@@ -2148,7 +2110,6 @@ func newRestoreRun() *cobra.Command {
 	var restoreRunReq ml.RestoreRun
 	var restoreRunJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&restoreRunJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "restore-run RUN_ID"
@@ -2233,7 +2194,6 @@ func newRestoreRuns() *cobra.Command {
 	var restoreRunsReq ml.RestoreRuns
 	var restoreRunsJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&restoreRunsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().IntVar(&restoreRunsReq.MaxRuns, "max-runs", restoreRunsReq.MaxRuns, `An optional positive integer indicating the maximum number of runs to restore.`)
@@ -2327,7 +2287,6 @@ func newSearchExperiments() *cobra.Command {
 	var searchExperimentsReq ml.SearchExperiments
 	var searchExperimentsJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&searchExperimentsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&searchExperimentsReq.Filter, "filter", searchExperimentsReq.Filter, `String representing a SQL filter condition (e.g.`)
@@ -2398,7 +2357,6 @@ func newSearchLoggedModels() *cobra.Command {
 	var searchLoggedModelsReq ml.SearchLoggedModelsRequest
 	var searchLoggedModelsJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&searchLoggedModelsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: datasets
@@ -2473,7 +2431,6 @@ func newSearchRuns() *cobra.Command {
 	var searchRunsReq ml.SearchRuns
 	var searchRunsJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&searchRunsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: experiment_ids
@@ -2547,7 +2504,6 @@ func newSetExperimentTag() *cobra.Command {
 	var setExperimentTagReq ml.SetExperimentTag
 	var setExperimentTagJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&setExperimentTagJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "set-experiment-tag EXPERIMENT_ID KEY VALUE"
@@ -2637,7 +2593,6 @@ func newSetLoggedModelTags() *cobra.Command {
 	var setLoggedModelTagsReq ml.SetLoggedModelTagsRequest
 	var setLoggedModelTagsJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&setLoggedModelTagsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: tags
@@ -2709,7 +2664,6 @@ func newSetPermissions() *cobra.Command {
 	var setPermissionsReq ml.ExperimentPermissionsRequest
 	var setPermissionsJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&setPermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: access_control_list
@@ -2785,7 +2739,6 @@ func newSetTag() *cobra.Command {
 	var setTagReq ml.SetTag
 	var setTagJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&setTagJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&setTagReq.RunId, "run-id", setTagReq.RunId, `ID of the run under which to log the tag.`)
@@ -2875,7 +2828,6 @@ func newUpdateExperiment() *cobra.Command {
 	var updateExperimentReq ml.UpdateExperiment
 	var updateExperimentJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateExperimentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateExperimentReq.NewName, "new-name", updateExperimentReq.NewName, `If provided, the experiment's name is changed to the new name.`)
@@ -2958,7 +2910,6 @@ func newUpdatePermissions() *cobra.Command {
 	var updatePermissionsReq ml.ExperimentPermissionsRequest
 	var updatePermissionsJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updatePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: access_control_list
@@ -3033,7 +2984,6 @@ func newUpdateRun() *cobra.Command {
 	var updateRunReq ml.UpdateRun
 	var updateRunJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateRunJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().Int64Var(&updateRunReq.EndTime, "end-time", updateRunReq.EndTime, `Unix timestamp in milliseconds of when the run ended.`)

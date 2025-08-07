@@ -1,0 +1,48 @@
+{
+  "headers": {
+    "Authorization": [
+      "Bearer [DATABRICKS_TOKEN]"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/preview/scim/v2/Me"
+}
+{
+  "headers": {
+    "Authorization": [
+      "Bearer [DATABRICKS_TOKEN]"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/preview/scim/v2/Me"
+}
+{
+  "headers": {
+    "Authorization": [
+      "Bearer [DATABRICKS_TOKEN]"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status"
+}
+{
+  "headers": {
+    "Authorization": [
+      "Bearer [DATABRICKS_TOKEN]"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace/mkdirs",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/foobar/pat/files"
+  }
+}
+{
+  "headers": {
+    "Authorization": [
+      "Bearer [DATABRICKS_TOKEN]"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status"
+}

@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/dyn"
-	assert "github.com/databricks/cli/libs/dyn/dynassert"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -80,6 +80,77 @@ func TestToTypedStructClearFields(t *testing.T) {
 	assert.Equal(t, Tmp{}, out)
 }
 
+func TestToTypedStructClearFieldsForceSend(t *testing.T) {
+	type Tmp struct {
+		Foo             string   `json:"foo"`
+		Bar             string   `json:"bar,omitempty"`
+		ForceSendFields []string `json:"-"`
+	}
+
+	// Struct value with non-empty fields.
+	out := Tmp{
+		Foo: "baz",
+		Bar: "qux",
+	}
+
+	// Value is an empty map.
+	v := dyn.V(map[string]dyn.Value{})
+
+	// The previously set fields should be cleared.
+	err := ToTyped(&out, v)
+	require.NoError(t, err)
+	assert.Equal(t, Tmp{}, out)
+}
+
+func TestToTypedStructZeroFields(t *testing.T) {
+	type Tmp struct {
+		Foo string `json:"foo"`
+		Bar string `json:"bar,omitempty"`
+	}
+
+	// Struct value with non-empty fields.
+	out := Tmp{
+		Foo: "baz",
+		Bar: "qux",
+	}
+
+	// Value is an empty map.
+	v := dyn.V(map[string]dyn.Value{
+		"foo": dyn.V(""),
+		"bar": dyn.V(""),
+	})
+
+	// The previously set fields should be cleared.
+	err := ToTyped(&out, v)
+	require.NoError(t, err)
+	assert.Equal(t, Tmp{}, out)
+}
+
+func TestToTypedStructZeroFieldsForceSend(t *testing.T) {
+	type Tmp struct {
+		Foo             string   `json:"foo"`
+		Bar             string   `json:"bar,omitempty"`
+		ForceSendFields []string `json:"-"`
+	}
+
+	// Struct value with non-empty fields.
+	out := Tmp{
+		Foo: "baz",
+		Bar: "qux",
+	}
+
+	// Value is an empty map.
+	m := dyn.Mapping{}
+	m.SetLoc("foo", nil, dyn.V(""))
+	m.SetLoc("bar", nil, dyn.V(""))
+	v := dyn.V(m)
+
+	// The previously set fields should be cleared.
+	err := ToTyped(&out, v)
+	require.NoError(t, err)
+	assert.Equal(t, Tmp{ForceSendFields: []string{"Foo", "Bar"}}, out)
+}
+
 func TestToTypedStructAnonymousByValue(t *testing.T) {
 	type Bar struct {
 		Bar string `json:"bar"`
@@ -103,7 +174,7 @@ func TestToTypedStructAnonymousByValue(t *testing.T) {
 	err := ToTyped(&out, v)
 	require.NoError(t, err)
 	assert.Equal(t, "bar", out.Foo.Foo)
-	assert.Equal(t, "baz", out.Foo.Bar.Bar)
+	assert.Equal(t, "baz", out.Bar.Bar)
 }
 
 func TestToTypedStructAnonymousByPointer(t *testing.T) {
@@ -129,7 +200,7 @@ func TestToTypedStructAnonymousByPointer(t *testing.T) {
 	err := ToTyped(&out, v)
 	require.NoError(t, err)
 	assert.Equal(t, "bar", out.Foo.Foo)
-	assert.Equal(t, "baz", out.Foo.Bar.Bar)
+	assert.Equal(t, "baz", out.Bar.Bar)
 }
 
 func TestToTypedStructNil(t *testing.T) {
@@ -296,7 +367,7 @@ func TestToTypedString(t *testing.T) {
 }
 
 func TestToTypedStringOverwrite(t *testing.T) {
-	var out string = "bar"
+	out := "bar"
 	err := ToTyped(&out, dyn.V("foo"))
 	require.NoError(t, err)
 	assert.Equal(t, "foo", out)
@@ -327,14 +398,14 @@ func TestToTypedBool(t *testing.T) {
 	var out bool
 	err := ToTyped(&out, dyn.V(true))
 	require.NoError(t, err)
-	assert.Equal(t, true, out)
+	assert.True(t, out)
 }
 
 func TestToTypedBoolOverwrite(t *testing.T) {
-	var out bool = true
+	out := true
 	err := ToTyped(&out, dyn.V(false))
 	require.NoError(t, err)
-	assert.Equal(t, false, out)
+	assert.False(t, out)
 }
 
 func TestToTypedBoolFromString(t *testing.T) {
@@ -344,14 +415,14 @@ func TestToTypedBoolFromString(t *testing.T) {
 	for _, v := range []string{"y", "yes", "on", "true"} {
 		err := ToTyped(&out, dyn.V(v))
 		require.NoError(t, err)
-		assert.Equal(t, true, out)
+		assert.True(t, out)
 	}
 
 	// False-ish
 	for _, v := range []string{"n", "no", "off", "false"} {
 		err := ToTyped(&out, dyn.V(v))
 		require.NoError(t, err)
-		assert.Equal(t, false, out)
+		assert.False(t, out)
 	}
 
 	// Other
@@ -360,10 +431,10 @@ func TestToTypedBoolFromString(t *testing.T) {
 }
 
 func TestToTypedBoolFromStringVariableReference(t *testing.T) {
-	var out bool = true
+	out := true
 	err := ToTyped(&out, dyn.V("${var.foo}"))
 	require.NoError(t, err)
-	assert.Equal(t, false, out)
+	assert.False(t, out)
 }
 
 func TestToTypedInt(t *testing.T) {
@@ -388,7 +459,7 @@ func TestToTypedInt64(t *testing.T) {
 }
 
 func TestToTypedIntOverwrite(t *testing.T) {
-	var out int = 123
+	out := 123
 	err := ToTyped(&out, dyn.V(1234))
 	require.NoError(t, err)
 	assert.Equal(t, int(1234), out)
@@ -422,7 +493,7 @@ func TestToTypedIntFromStringInt(t *testing.T) {
 }
 
 func TestToTypedIntFromStringVariableReference(t *testing.T) {
-	var out int = 123
+	out := 123
 	err := ToTyped(&out, dyn.V("${var.foo}"))
 	require.NoError(t, err)
 	assert.Equal(t, int(0), out)
@@ -445,28 +516,28 @@ func TestToTypedFloat32(t *testing.T) {
 	var out float32
 	err := ToTyped(&out, dyn.V(float32(1.0)))
 	require.NoError(t, err)
-	assert.Equal(t, float32(1.0), out)
+	assert.Zero(t, 1.0-out)
 }
 
 func TestToTypedFloat64(t *testing.T) {
 	var out float64
 	err := ToTyped(&out, dyn.V(float64(1.0)))
 	require.NoError(t, err)
-	assert.Equal(t, float64(1.0), out)
+	assert.Zero(t, 1.0-out)
 }
 
 func TestToTypedFloat32Overwrite(t *testing.T) {
 	var out float32 = 1.0
 	err := ToTyped(&out, dyn.V(float32(2.0)))
 	require.NoError(t, err)
-	assert.Equal(t, float32(2.0), out)
+	assert.Zero(t, 2.0-out)
 }
 
 func TestToTypedFloat64Overwrite(t *testing.T) {
-	var out float64 = 1.0
+	out := 1.0
 	err := ToTyped(&out, dyn.V(float64(2.0)))
 	require.NoError(t, err)
-	assert.Equal(t, float64(2.0), out)
+	assert.Zero(t, 2.0-out)
 }
 
 func TestToTypedFloat32FromStringError(t *testing.T) {
@@ -485,28 +556,28 @@ func TestToTypedFloat32FromString(t *testing.T) {
 	var out float32
 	err := ToTyped(&out, dyn.V("1.2"))
 	require.NoError(t, err)
-	assert.Equal(t, float32(1.2), out)
+	assert.Zero(t, 1.2-out)
 }
 
 func TestToTypedFloat64FromString(t *testing.T) {
 	var out float64
 	err := ToTyped(&out, dyn.V("1.2"))
 	require.NoError(t, err)
-	assert.Equal(t, float64(1.2), out)
+	assert.Zero(t, 1.2-out)
 }
 
 func TestToTypedFloat32FromStringVariableReference(t *testing.T) {
 	var out float32 = 1.0
 	err := ToTyped(&out, dyn.V("${var.foo}"))
 	require.NoError(t, err)
-	assert.Equal(t, float32(0.0), out)
+	assert.Zero(t, out)
 }
 
 func TestToTypedFloat64FromStringVariableReference(t *testing.T) {
-	var out float64 = 1.0
+	out := 1.0
 	err := ToTyped(&out, dyn.V("${var.foo}"))
 	require.NoError(t, err)
-	assert.Equal(t, float64(0.0), out)
+	assert.Zero(t, out)
 }
 
 func TestToTypedWithAliasKeyType(t *testing.T) {
@@ -551,5 +622,5 @@ func TestToTypedAnyWithNil(t *testing.T) {
 	var out any
 	err := ToTyped(&out, dyn.NilValue)
 	require.NoError(t, err)
-	assert.Equal(t, nil, out)
+	assert.Nil(t, out)
 }

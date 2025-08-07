@@ -1,0 +1,17 @@
+bundle:
+  name: caterpillar
+
+resources:
+  jobs:
+    foo:
+      name: foo
+      tasks:
+        - task_key: task
+          spark_python_task:
+            python_file: ./foo.py
+          environment_key: default
+
+      environments:
+        - environment_key: default
+          spec:
+            client: "2"

@@ -1,0 +1,31 @@
+mv echo-arguments.sh psql
+
+cleanup() {
+  rm psql
+}
+trap cleanup EXIT
+
+export PATH="$(pwd):$PATH"
+
+title "Test should use a fake psql command:"
+trace psql --version
+
+title "Command should require instance name:"
+trace musterr $CLI psql
+
+title "Command should require instance name even if extra arguments are provided:"
+trace musterr $CLI psql -- --dbname=my-database
+
+title "Command should use default db name if it is not specified:"
+trace $CLI psql my-database
+
+title "Command should by-pass extra arguments to psql:"
+trace $CLI psql my-database -- -c "SELECT * FROM my_table" --echo-all
+
+title "Command should use the db name from extra arguments when specified:"
+trace $CLI psql my-database -- --dbname=db1
+trace $CLI psql my-database -- -d db2
+
+title "Command should use the port from extra arguments when specified:"
+trace $CLI psql my-database -- --dbname=db1 -p 3000
+trace $CLI psql my-database -- -d db2 --port=3001

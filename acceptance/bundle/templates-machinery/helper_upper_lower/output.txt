@@ -1,0 +1,7 @@
+
+>>> [CLI] bundle init .
+✨ Successfully initialized template
+
+>>> cat hello.txt
+abcd0123😀
+ABCD0123😀

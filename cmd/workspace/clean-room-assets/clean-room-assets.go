@@ -61,7 +61,6 @@ func newCreate() *cobra.Command {
 	createReq.Asset = cleanrooms.CleanRoomAsset{}
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().Var(&createReq.Asset.AssetType, "asset-type", `The type of the asset. Supported values: [FOREIGN_TABLE, NOTEBOOK_FILE, TABLE, VIEW, VOLUME]`)
@@ -147,8 +146,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq cleanrooms.DeleteCleanRoomAssetRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete CLEAN_ROOM_NAME ASSET_TYPE NAME"
 	cmd.Short = `Delete an asset.`
 	cmd.Long = `Delete an asset.
@@ -213,8 +210,6 @@ func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getReq cleanrooms.GetCleanRoomAssetRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get CLEAN_ROOM_NAME ASSET_TYPE NAME"
 	cmd.Short = `Get an asset.`
@@ -281,8 +276,6 @@ func newList() *cobra.Command {
 
 	var listReq cleanrooms.ListCleanRoomAssetsRequest
 
-	// TODO: short flags
-
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
 
 	cmd.Use = "list CLEAN_ROOM_NAME"
@@ -338,7 +331,6 @@ func newUpdate() *cobra.Command {
 	updateReq.Asset = cleanrooms.CleanRoomAsset{}
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().Var(&updateReq.Asset.AssetType, "asset-type", `The type of the asset. Supported values: [FOREIGN_TABLE, NOTEBOOK_FILE, TABLE, VIEW, VOLUME]`)

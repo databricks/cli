@@ -36,8 +36,6 @@ class PipelineLibrary:
 
     glob: VariableOrOptional[PathPattern] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
     The unified field to include source codes.
     Each entry can be a notebook path, a file path, or a folder path that ends `/**`.
     This field cannot be used together with `notebook` or `file`.
@@ -80,8 +78,6 @@ class PipelineLibraryDict(TypedDict, total=False):
 
     glob: VariableOrOptional[PathPatternParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
     The unified field to include source codes.
     Each entry can be a notebook path, a file path, or a folder path that ends `/**`.
     This field cannot be used together with `notebook` or `file`.

@@ -101,7 +101,6 @@ func newChangeOwner() *cobra.Command {
 	var changeOwnerReq compute.ChangeClusterOwner
 	var changeOwnerJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&changeOwnerJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "change-owner CLUSTER_ID OWNER_USERNAME"
@@ -193,7 +192,7 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().BoolVar(&createSkipWait, "no-wait", createSkipWait, `do not wait to reach RUNNING state`)
 	cmd.Flags().DurationVar(&createTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
-	// TODO: short flags
+
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().BoolVar(&createReq.ApplyPolicyDefaultValues, "apply-policy-default-values", createReq.ApplyPolicyDefaultValues, `When set to true, fixed and default values from the policy will be used for fields that are omitted.`)
@@ -205,7 +204,7 @@ func newCreate() *cobra.Command {
 	// TODO: complex arg: cluster_log_conf
 	cmd.Flags().StringVar(&createReq.ClusterName, "cluster-name", createReq.ClusterName, `Cluster name requested by the user.`)
 	// TODO: map via StringToStringVar: custom_tags
-	cmd.Flags().Var(&createReq.DataSecurityMode, "data-security-mode", `Data security mode decides what data governance model to use when accessing data from a cluster. Supported values: [
+	cmd.Flags().Var(&createReq.DataSecurityMode, "data-security-mode", `Supported values: [
   DATA_SECURITY_MODE_AUTO,
   DATA_SECURITY_MODE_DEDICATED,
   DATA_SECURITY_MODE_STANDARD,
@@ -226,7 +225,7 @@ func newCreate() *cobra.Command {
 	// TODO: array: init_scripts
 	cmd.Flags().StringVar(&createReq.InstancePoolId, "instance-pool-id", createReq.InstancePoolId, `The optional ID of the instance pool to which the cluster belongs.`)
 	cmd.Flags().BoolVar(&createReq.IsSingleNode, "is-single-node", createReq.IsSingleNode, `This field can only be used when kind = CLASSIC_PREVIEW.`)
-	cmd.Flags().Var(&createReq.Kind, "kind", `The kind of compute described by this compute specification. Supported values: [CLASSIC_PREVIEW]`)
+	cmd.Flags().Var(&createReq.Kind, "kind", `Supported values: [CLASSIC_PREVIEW]`)
 	cmd.Flags().StringVar(&createReq.NodeTypeId, "node-type-id", createReq.NodeTypeId, `This field encodes, through a single value, the resources available to each of the Spark nodes in this cluster.`)
 	cmd.Flags().IntVar(&createReq.NumWorkers, "num-workers", createReq.NumWorkers, `Number of worker nodes that this cluster should have.`)
 	cmd.Flags().StringVar(&createReq.PolicyId, "policy-id", createReq.PolicyId, `The ID of the cluster policy used to create the cluster if applicable.`)
@@ -353,7 +352,7 @@ func newDelete() *cobra.Command {
 
 	cmd.Flags().BoolVar(&deleteSkipWait, "no-wait", deleteSkipWait, `do not wait to reach TERMINATED state`)
 	cmd.Flags().DurationVar(&deleteTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach TERMINATED state`)
-	// TODO: short flags
+
 	cmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "delete CLUSTER_ID"
@@ -469,7 +468,7 @@ func newEdit() *cobra.Command {
 
 	cmd.Flags().BoolVar(&editSkipWait, "no-wait", editSkipWait, `do not wait to reach RUNNING state`)
 	cmd.Flags().DurationVar(&editTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
-	// TODO: short flags
+
 	cmd.Flags().Var(&editJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().BoolVar(&editReq.ApplyPolicyDefaultValues, "apply-policy-default-values", editReq.ApplyPolicyDefaultValues, `When set to true, fixed and default values from the policy will be used for fields that are omitted.`)
@@ -480,7 +479,7 @@ func newEdit() *cobra.Command {
 	// TODO: complex arg: cluster_log_conf
 	cmd.Flags().StringVar(&editReq.ClusterName, "cluster-name", editReq.ClusterName, `Cluster name requested by the user.`)
 	// TODO: map via StringToStringVar: custom_tags
-	cmd.Flags().Var(&editReq.DataSecurityMode, "data-security-mode", `Data security mode decides what data governance model to use when accessing data from a cluster. Supported values: [
+	cmd.Flags().Var(&editReq.DataSecurityMode, "data-security-mode", `Supported values: [
   DATA_SECURITY_MODE_AUTO,
   DATA_SECURITY_MODE_DEDICATED,
   DATA_SECURITY_MODE_STANDARD,
@@ -501,7 +500,7 @@ func newEdit() *cobra.Command {
 	// TODO: array: init_scripts
 	cmd.Flags().StringVar(&editReq.InstancePoolId, "instance-pool-id", editReq.InstancePoolId, `The optional ID of the instance pool to which the cluster belongs.`)
 	cmd.Flags().BoolVar(&editReq.IsSingleNode, "is-single-node", editReq.IsSingleNode, `This field can only be used when kind = CLASSIC_PREVIEW.`)
-	cmd.Flags().Var(&editReq.Kind, "kind", `The kind of compute described by this compute specification. Supported values: [CLASSIC_PREVIEW]`)
+	cmd.Flags().Var(&editReq.Kind, "kind", `Supported values: [CLASSIC_PREVIEW]`)
 	cmd.Flags().StringVar(&editReq.NodeTypeId, "node-type-id", editReq.NodeTypeId, `This field encodes, through a single value, the resources available to each of the Spark nodes in this cluster.`)
 	cmd.Flags().IntVar(&editReq.NumWorkers, "num-workers", editReq.NumWorkers, `Number of worker nodes that this cluster should have.`)
 	cmd.Flags().StringVar(&editReq.PolicyId, "policy-id", editReq.PolicyId, `The ID of the cluster policy used to create the cluster if applicable.`)
@@ -622,7 +621,6 @@ func newEvents() *cobra.Command {
 	var eventsReq compute.GetEvents
 	var eventsJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&eventsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().Int64Var(&eventsReq.EndTime, "end-time", eventsReq.EndTime, `The end time in epoch milliseconds.`)
@@ -725,8 +723,6 @@ func newGet() *cobra.Command {
 
 	var getReq compute.GetClusterRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get CLUSTER_ID"
 	cmd.Short = `Get cluster info.`
 	cmd.Long = `Get cluster info.
@@ -796,8 +792,6 @@ func newGetPermissionLevels() *cobra.Command {
 
 	var getPermissionLevelsReq compute.GetClusterPermissionLevelsRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get-permission-levels CLUSTER_ID"
 	cmd.Short = `Get cluster permission levels.`
 	cmd.Long = `Get cluster permission levels.
@@ -865,8 +859,6 @@ func newGetPermissions() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getPermissionsReq compute.GetClusterPermissionsRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get-permissions CLUSTER_ID"
 	cmd.Short = `Get cluster permissions.`
@@ -936,8 +928,6 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq compute.ListClustersRequest
-
-	// TODO: short flags
 
 	// TODO: complex arg: filter_by
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Use this field to specify the maximum number of results to be returned by the server.`)
@@ -1081,7 +1071,6 @@ func newPermanentDelete() *cobra.Command {
 	var permanentDeleteReq compute.PermanentDeleteCluster
 	var permanentDeleteJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&permanentDeleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "permanent-delete CLUSTER_ID"
@@ -1182,7 +1171,6 @@ func newPin() *cobra.Command {
 	var pinReq compute.PinCluster
 	var pinJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&pinJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "pin CLUSTER_ID"
@@ -1282,7 +1270,7 @@ func newResize() *cobra.Command {
 
 	cmd.Flags().BoolVar(&resizeSkipWait, "no-wait", resizeSkipWait, `do not wait to reach RUNNING state`)
 	cmd.Flags().DurationVar(&resizeTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
-	// TODO: short flags
+
 	cmd.Flags().Var(&resizeJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: autoscale
@@ -1399,7 +1387,7 @@ func newRestart() *cobra.Command {
 
 	cmd.Flags().BoolVar(&restartSkipWait, "no-wait", restartSkipWait, `do not wait to reach RUNNING state`)
 	cmd.Flags().DurationVar(&restartTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
-	// TODO: short flags
+
 	cmd.Flags().Var(&restartJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&restartReq.RestartUser, "restart-user", restartReq.RestartUser, ``)
@@ -1510,7 +1498,6 @@ func newSetPermissions() *cobra.Command {
 	var setPermissionsReq compute.ClusterPermissionsRequest
 	var setPermissionsJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&setPermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: access_control_list
@@ -1646,7 +1633,7 @@ func newStart() *cobra.Command {
 
 	cmd.Flags().BoolVar(&startSkipWait, "no-wait", startSkipWait, `do not wait to reach RUNNING state`)
 	cmd.Flags().DurationVar(&startTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
-	// TODO: short flags
+
 	cmd.Flags().Var(&startJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "start CLUSTER_ID"
@@ -1760,7 +1747,6 @@ func newUnpin() *cobra.Command {
 	var unpinReq compute.UnpinCluster
 	var unpinJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&unpinJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "unpin CLUSTER_ID"
@@ -1860,7 +1846,7 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().BoolVar(&updateSkipWait, "no-wait", updateSkipWait, `do not wait to reach RUNNING state`)
 	cmd.Flags().DurationVar(&updateTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
-	// TODO: short flags
+
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: cluster
@@ -1981,7 +1967,6 @@ func newUpdatePermissions() *cobra.Command {
 	var updatePermissionsReq compute.ClusterPermissionsRequest
 	var updatePermissionsJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updatePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: access_control_list

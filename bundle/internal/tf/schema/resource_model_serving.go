@@ -41,8 +41,9 @@ type ResourceModelServingAiGatewayInferenceTableConfig struct {
 }
 
 type ResourceModelServingAiGatewayRateLimits struct {
-	Calls         int    `json:"calls"`
+	Calls         int    `json:"calls,omitempty"`
 	Key           string `json:"key,omitempty"`
+	Principal     string `json:"principal,omitempty"`
 	RenewalPeriod string `json:"renewal_period"`
 }
 
@@ -189,7 +190,8 @@ type ResourceModelServingConfigServedModels struct {
 }
 
 type ResourceModelServingConfigTrafficConfigRoutes struct {
-	ServedModelName   string `json:"served_model_name"`
+	ServedEntityName  string `json:"served_entity_name,omitempty"`
+	ServedModelName   string `json:"served_model_name,omitempty"`
 	TrafficPercentage int    `json:"traffic_percentage"`
 }
 
@@ -217,6 +219,7 @@ type ResourceModelServingTags struct {
 
 type ResourceModelServing struct {
 	BudgetPolicyId    string                           `json:"budget_policy_id,omitempty"`
+	Description       string                           `json:"description,omitempty"`
 	Id                string                           `json:"id,omitempty"`
 	Name              string                           `json:"name"`
 	RouteOptimized    bool                             `json:"route_optimized,omitempty"`

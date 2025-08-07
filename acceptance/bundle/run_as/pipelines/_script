@@ -1,0 +1,4 @@
+trace errcode $CLI bundle validate -t t_user_name
+trace musterr $CLI bundle validate -t t_user_name_different
+trace errcode $CLI bundle validate -t t_service_principal_name
+trace musterr $CLI bundle validate -t t_service_principal_name_different

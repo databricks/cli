@@ -11,8 +11,9 @@ class TableSpecificConfigScdType(Enum):
 
     SCD_TYPE_1 = "SCD_TYPE_1"
     SCD_TYPE_2 = "SCD_TYPE_2"
+    APPEND_ONLY = "APPEND_ONLY"
 
 
 TableSpecificConfigScdTypeParam = (
-    Literal["SCD_TYPE_1", "SCD_TYPE_2"] | TableSpecificConfigScdType
+    Literal["SCD_TYPE_1", "SCD_TYPE_2", "APPEND_ONLY"] | TableSpecificConfigScdType
 )

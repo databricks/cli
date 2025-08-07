@@ -69,8 +69,6 @@ func newCancelRefresh() *cobra.Command {
 
 	var cancelRefreshReq catalog.CancelRefreshRequest
 
-	// TODO: short flags
-
 	cmd.Use = "cancel-refresh TABLE_NAME REFRESH_ID"
 	cmd.Short = `Cancel refresh.`
 	cmd.Long = `Cancel refresh.
@@ -142,7 +140,6 @@ func newCreate() *cobra.Command {
 	var createReq catalog.CreateMonitor
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.BaselineTableName, "baseline-table-name", createReq.BaselineTableName, `Name of the baseline table from which drift metrics are computed from.`)
@@ -250,8 +247,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq catalog.DeleteQualityMonitorRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete TABLE_NAME"
 	cmd.Short = `Delete a table monitor.`
 	cmd.Long = `Delete a table monitor.
@@ -320,8 +315,6 @@ func newGet() *cobra.Command {
 
 	var getReq catalog.GetQualityMonitorRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get TABLE_NAME"
 	cmd.Short = `Get a table monitor.`
 	cmd.Long = `Get a table monitor.
@@ -388,8 +381,6 @@ func newGetRefresh() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getRefreshReq catalog.GetRefreshRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get-refresh TABLE_NAME REFRESH_ID"
 	cmd.Short = `Get refresh.`
@@ -458,8 +449,6 @@ func newListRefreshes() *cobra.Command {
 
 	var listRefreshesReq catalog.ListRefreshesRequest
 
-	// TODO: short flags
-
 	cmd.Use = "list-refreshes TABLE_NAME"
 	cmd.Short = `List refreshes.`
 	cmd.Long = `List refreshes.
@@ -527,7 +516,6 @@ func newRegenerateDashboard() *cobra.Command {
 	var regenerateDashboardReq catalog.RegenerateDashboardRequest
 	var regenerateDashboardJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&regenerateDashboardJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&regenerateDashboardReq.WarehouseId, "warehouse-id", regenerateDashboardReq.WarehouseId, `Optional argument to specify the warehouse for dashboard regeneration.`)
@@ -613,8 +601,6 @@ func newRunRefresh() *cobra.Command {
 
 	var runRefreshReq catalog.RunRefreshRequest
 
-	// TODO: short flags
-
 	cmd.Use = "run-refresh TABLE_NAME"
 	cmd.Short = `Queue a metric refresh for a monitor.`
 	cmd.Long = `Queue a metric refresh for a monitor.
@@ -682,7 +668,6 @@ func newUpdate() *cobra.Command {
 	var updateReq catalog.UpdateMonitor
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateReq.BaselineTableName, "baseline-table-name", updateReq.BaselineTableName, `Name of the baseline table from which drift metrics are computed from.`)
