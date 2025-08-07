@@ -386,6 +386,9 @@ github.com/databricks/cli/bundle/config/resources.QualityMonitor:
               quartz_cron_expression: 0 0 8 * * ? # Run Every day at 8am
               timezone_id: UTC
       ```
+  "inference_log":
+    "description": |-
+      PLACEHOLDER
   "table_name":
     "description": |-
       PLACEHOLDER
@@ -475,6 +478,11 @@ github.com/databricks/cli/bundle/config/resources.SecretScopePermissionLevel:
       - |-
         MANAGE
 github.com/databricks/cli/bundle/config/resources.SqlWarehouse:
+  "enable_photon":
+    "description": |-
+      Configures whether the warehouse should use Photon optimized clusters.
+
+      Defaults to true.
   "permissions":
     "description": |-
       PLACEHOLDER
@@ -484,11 +492,6 @@ github.com/databricks/cli/bundle/config/resources.SqlWarehouse:
   "warehouse_type":
     "description": |-
       PLACEHOLDER
-  "enable_photon":
-    "description": |-
-      Configures whether the warehouse should use Photon optimized clusters.
-
-      Defaults to true.
 github.com/databricks/cli/bundle/config/resources.SqlWarehousePermissionLevel:
   "_":
     "enum":
