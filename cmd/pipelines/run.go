@@ -130,7 +130,7 @@ func displayProgressEvents(ctx context.Context, events []pipelines.PipelineEvent
 	return cmdio.RenderWithTemplate(ctx, data, "", progressEventsTemplate)
 }
 
-// fetchAndDisplayPipelineUpdate displays the update and the update's associated update_progress events' durations.
+// Displays the update and the update's associated update_progress events' durations.
 func fetchAndDisplayPipelineUpdate(ctx context.Context, bundle *bundle.Bundle, ref bundleresources.Reference, updateId string) error {
 	w := bundle.WorkspaceClient()
 
@@ -179,7 +179,7 @@ func fetchAndDisplayPipelineUpdate(ctx context.Context, bundle *bundle.Bundle, r
 	return nil
 }
 
-// getLastEventTime returns the timestamp of the last progress event.
+// Returns the timestamp of the last progress event.
 // Expects that the events are already sorted by timestamp in ascending order.
 func getLastEventTime(events []pipelines.PipelineEvent) string {
 	if len(events) == 0 {
