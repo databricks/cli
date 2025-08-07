@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"testing"
+	"time"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
@@ -142,6 +143,154 @@ Pipeline configurations for this update:
 			err := displayPipelineUpdate(ctx, tt.update, tt.pipelineID, tt.events)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, buf.String())
+		})
+	}
+}
+
+func TestEventTimeDifference(t *testing.T) {
+	tests := []struct {
+		name           string
+		earlierEvent   pipelines.PipelineEvent
+		laterEvent     pipelines.PipelineEvent
+		expectedResult time.Duration
+		expectedError  string
+	}{
+		{
+			name: "normal time difference - seconds",
+			earlierEvent: pipelines.PipelineEvent{
+				Timestamp: "2022-01-01T00:00:00.000Z",
+			},
+			laterEvent: pipelines.PipelineEvent{
+				Timestamp: "2022-01-01T00:00:05.000Z",
+			},
+			expectedResult: 5 * time.Second,
+			expectedError:  "",
+		},
+		{
+			name: "normal time difference - minutes and seconds",
+			earlierEvent: pipelines.PipelineEvent{
+				Timestamp: "2022-01-01T00:00:00.000Z",
+			},
+			laterEvent: pipelines.PipelineEvent{
+				Timestamp: "2022-01-01T00:01:30.000Z",
+			},
+			expectedResult: 90 * time.Second,
+			expectedError:  "",
+		},
+		{
+			name: "millisecond precision",
+			earlierEvent: pipelines.PipelineEvent{
+				Timestamp: "2022-01-01T00:00:00.000Z",
+			},
+			laterEvent: pipelines.PipelineEvent{
+				Timestamp: "2022-01-01T00:00:00.500Z",
+			},
+			expectedResult: 500 * time.Millisecond,
+			expectedError:  "",
+		},
+		{
+			name: "edge case - same timestamp",
+			earlierEvent: pipelines.PipelineEvent{
+				Timestamp: "2022-01-01T00:00:00.000Z",
+			},
+			laterEvent: pipelines.PipelineEvent{
+				Timestamp: "2022-01-01T00:00:00.000Z",
+			},
+			expectedResult: 0,
+			expectedError:  "",
+		},
+		{
+			name: "edge case - invalid timestamp format",
+			earlierEvent: pipelines.PipelineEvent{
+				Timestamp: "invalid-timestamp",
+			},
+			laterEvent: pipelines.PipelineEvent{
+				Timestamp: "2022-01-01T00:00:00.000Z",
+			},
+			expectedResult: 0,
+			expectedError:  "parsing time \"invalid-timestamp\" as \"2006-01-02T15:04:05.999999999Z07:00\": cannot parse \"invalid-timestamp\" as \"2006\"",
+		},
+		{
+			name: "edge case - later event before earlier event",
+			earlierEvent: pipelines.PipelineEvent{
+				Timestamp: "2022-01-01T00:00:05.000Z",
+			},
+			laterEvent: pipelines.PipelineEvent{
+				Timestamp: "2022-01-01T00:00:00.000Z",
+			},
+			expectedResult: 0,
+			expectedError:  "second event timestamp must be after first event timestamp",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := eventTimeDifference(tt.earlierEvent, tt.laterEvent)
+
+			if tt.expectedError != "" {
+				assert.Error(t, err)
+				assert.Equal(t, tt.expectedError, err.Error())
+				t.Skip()
+			}
+
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expectedResult, result)
+		})
+	}
+}
+
+func TestReadableDuration(t *testing.T) {
+	tests := []struct {
+		name     string
+		duration time.Duration
+		expected string
+	}{
+		{
+			name:     "milliseconds",
+			duration: 500 * time.Millisecond,
+			expected: "500ms",
+		},
+		{
+			name:     "seconds with decimal",
+			duration: 2*time.Second + 500*time.Millisecond,
+			expected: "2.5s",
+		},
+		{
+			name:     "minutes and seconds",
+			duration: 2*time.Minute + 30*time.Second,
+			expected: "2m 30s",
+		},
+		{
+			name:     "hours and minutes",
+			duration: 3*time.Hour + 45*time.Minute,
+			expected: "3h 45m",
+		},
+		{
+			name:     "edge case - zero duration",
+			duration: 0,
+			expected: "0ms",
+		},
+		{
+			name:     "edge case - sub-millisecond",
+			duration: 100 * time.Microsecond,
+			expected: "0ms",
+		},
+		{
+			name:     "edge case - exact minute",
+			duration: 2 * time.Minute,
+			expected: "2m 0s",
+		},
+		{
+			name:     "edge case - exact hour",
+			duration: 2 * time.Hour,
+			expected: "2h 0m",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := readableDuration(tt.duration)
+			assert.Equal(t, tt.expected, result)
 		})
 	}
 }
