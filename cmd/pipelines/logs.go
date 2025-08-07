@@ -60,14 +60,14 @@ Example usage:
 	var updateId string
 	var levels []string
 	var eventTypes []string
-	var maxResults int
+	var number int
 	var reverse bool
 
 	filterGroup := cmdgroup.NewFlagGroup("Event Filter")
 	filterGroup.FlagSet().StringVar(&updateId, "update-id", "", "Filter events by update ID.")
 	filterGroup.FlagSet().StringSliceVar(&levels, "level", nil, "Filter events by list of log levels (INFO, WARN, ERROR, METRICS). ")
 	filterGroup.FlagSet().StringSliceVar(&eventTypes, "event-type", nil, "Filter events by list of event types.")
-	filterGroup.FlagSet().IntVar(&maxResults, "max-results", 100, "Max number of events to return.")
+	filterGroup.FlagSet().IntVarP(&number, "number", "n", 0, "Number of events to return.")
 	filterGroup.FlagSet().BoolVar(&reverse, "r", false, "Reverse the order of results. By default, events are returned in descending order by timestamp.")
 
 	wrappedCmd := cmdgroup.NewCommandWithGroupFlag(cmd)
@@ -96,18 +96,18 @@ Example usage:
 		}
 
 		params := &PipelineEventsQueryParams{
-			Filter:     filter,
-			MaxResults: 1000, // Use maximum page size
-			OrderBy:    orderBy,
+			Filter:  filter,
+			OrderBy: orderBy,
+		}
+
+		// Only set MaxResults if the flag was provided, avoiding setting to the default value.
+		if cmd.Flags().Changed("number") {
+			params.MaxResults = number
 		}
 
 		events, err := fetchAllPipelineEvents(ctx, w, pipelineId, params)
 		if err != nil {
 			return err
-		}
-
-		if len(events) > maxResults {
-			events = events[:maxResults]
 		}
 
 		return cmdio.Render(ctx, events)
