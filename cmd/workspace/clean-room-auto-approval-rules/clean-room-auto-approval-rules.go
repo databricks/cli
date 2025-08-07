@@ -1,13 +1,15 @@
 // Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
 
-package dashboards
+package clean_room_auto_approval_rules
 
 import (
+	"fmt"
+
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/sql"
+	"github.com/databricks/databricks-sdk-go/service/cleanrooms"
 	"github.com/spf13/cobra"
 )
 
@@ -17,26 +19,23 @@ var cmdOverrides []func(*cobra.Command)
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "dashboards",
-		Short: `In general, there is little need to modify dashboards using the API.`,
-		Long: `In general, there is little need to modify dashboards using the API. However,
-  it can be useful to use dashboard objects to look-up a collection of related
-  query IDs. The API can also be used to duplicate multiple dashboards at once
-  since you can get a dashboard definition with a GET request and then POST it
-  to create a new one. Dashboards can be scheduled using the sql_task type of
-  the Jobs API, e.g. :method:jobs/create.`,
-		GroupID: "sql",
+		Use:   "clean-room-auto-approval-rules",
+		Short: `Clean room auto-approval rules automatically create an approval on your behalf when an asset (e.g.`,
+		Long: `Clean room auto-approval rules automatically create an approval on your behalf
+  when an asset (e.g. notebook) meeting specific criteria is shared in a clean
+  room.`,
+		GroupID: "cleanrooms",
 		Annotations: map[string]string{
-			"package": "sql",
+			"package": "cleanrooms",
 		},
 		RunE: root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
+	cmd.AddCommand(newCreate())
 	cmd.AddCommand(newDelete())
 	cmd.AddCommand(newGet())
 	cmd.AddCommand(newList())
-	cmd.AddCommand(newRestore())
 	cmd.AddCommand(newUpdate())
 
 	// Apply optional overrides to this command.
@@ -47,26 +46,31 @@ func New() *cobra.Command {
 	return cmd
 }
 
-// start delete command
+// start create command
 
 // Slice with functions to override default command behavior.
 // Functions can be added from the `init()` function in manually curated files in this directory.
-var deleteOverrides []func(
+var createOverrides []func(
 	*cobra.Command,
-	*sql.DeleteDashboardRequest,
+	*cleanrooms.CreateCleanRoomAutoApprovalRuleRequest,
 )
 
-func newDelete() *cobra.Command {
+func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var deleteReq sql.DeleteDashboardRequest
+	var createReq cleanrooms.CreateCleanRoomAutoApprovalRuleRequest
+	var createJson flags.JsonFlag
 
-	cmd.Use = "delete DASHBOARD_ID"
-	cmd.Short = `Remove a dashboard.`
-	cmd.Long = `Remove a dashboard.
+	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Use = "create CLEAN_ROOM_NAME"
+	cmd.Short = `Create an auto-approval rule.`
+	cmd.Long = `Create an auto-approval rule.
   
-  Moves a dashboard to the trash. Trashed dashboards do not appear in list views
-  or searches, and cannot be shared.`
+  Create an auto-approval rule
+
+  Arguments:
+    CLEAN_ROOM_NAME: The name of the clean room this auto-approval rule belongs to.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -80,9 +84,77 @@ func newDelete() *cobra.Command {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
-		deleteReq.DashboardId = args[0]
+		if cmd.Flags().Changed("json") {
+			diags := createJson.Unmarshal(&createReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		} else {
+			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+		}
+		createReq.CleanRoomName = args[0]
 
-		err = w.Dashboards.Delete(ctx, deleteReq)
+		response, err := w.CleanRoomAutoApprovalRules.Create(ctx, createReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createOverrides {
+		fn(cmd, &createReq)
+	}
+
+	return cmd
+}
+
+// start delete command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteOverrides []func(
+	*cobra.Command,
+	*cleanrooms.DeleteCleanRoomAutoApprovalRuleRequest,
+)
+
+func newDelete() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteReq cleanrooms.DeleteCleanRoomAutoApprovalRuleRequest
+
+	cmd.Use = "delete CLEAN_ROOM_NAME RULE_ID"
+	cmd.Short = `Delete an auto-approval rule.`
+	cmd.Long = `Delete an auto-approval rule.
+  
+  Delete a auto-approval rule by rule ID`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		deleteReq.CleanRoomName = args[0]
+		deleteReq.RuleId = args[1]
+
+		err = w.CleanRoomAutoApprovalRules.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
@@ -107,25 +179,24 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*sql.GetDashboardRequest,
+	*cleanrooms.GetCleanRoomAutoApprovalRuleRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var getReq sql.GetDashboardRequest
+	var getReq cleanrooms.GetCleanRoomAutoApprovalRuleRequest
 
-	cmd.Use = "get DASHBOARD_ID"
-	cmd.Short = `Retrieve a definition.`
-	cmd.Long = `Retrieve a definition.
+	cmd.Use = "get CLEAN_ROOM_NAME RULE_ID"
+	cmd.Short = `Get an auto-approval rule.`
+	cmd.Long = `Get an auto-approval rule.
   
-  Returns a JSON representation of a dashboard object, including its
-  visualization and query objects.`
+  Get a auto-approval rule by rule ID`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(1)
+		check := root.ExactArgs(2)
 		return check(cmd, args)
 	}
 
@@ -134,9 +205,10 @@ func newGet() *cobra.Command {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
-		getReq.DashboardId = args[0]
+		getReq.CleanRoomName = args[0]
+		getReq.RuleId = args[1]
 
-		response, err := w.Dashboards.Get(ctx, getReq)
+		response, err := w.CleanRoomAutoApprovalRules.Get(ctx, getReq)
 		if err != nil {
 			return err
 		}
@@ -161,32 +233,27 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
-	*sql.ListDashboardsRequest,
+	*cleanrooms.ListCleanRoomAutoApprovalRulesRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var listReq sql.ListDashboardsRequest
+	var listReq cleanrooms.ListCleanRoomAutoApprovalRulesRequest
 
-	cmd.Flags().Var(&listReq.Order, "order", `Name of dashboard attribute to order by. Supported values: [created_at, name]`)
-	cmd.Flags().IntVar(&listReq.Page, "page", listReq.Page, `Page number to retrieve.`)
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Number of dashboards to return per page.`)
-	cmd.Flags().StringVar(&listReq.Q, "q", listReq.Q, `Full text search term.`)
+	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Maximum number of auto-approval rules to return.`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
 
-	cmd.Use = "list"
-	cmd.Short = `Get dashboard objects.`
-	cmd.Long = `Get dashboard objects.
+	cmd.Use = "list CLEAN_ROOM_NAME"
+	cmd.Short = `List auto-approval rules.`
+	cmd.Long = `List auto-approval rules.
   
-  Fetch a paginated list of dashboard objects.
-  
-  **Warning**: Calling this API concurrently 10 or more times could result in
-  throttling, service degradation, or a temporary ban.`
+  List all auto-approval rules for the caller`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(0)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -195,7 +262,9 @@ func newList() *cobra.Command {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
-		response := w.Dashboards.List(ctx, listReq)
+		listReq.CleanRoomName = args[0]
+
+		response := w.CleanRoomAutoApprovalRules.List(ctx, listReq)
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -211,93 +280,43 @@ func newList() *cobra.Command {
 	return cmd
 }
 
-// start restore command
-
-// Slice with functions to override default command behavior.
-// Functions can be added from the `init()` function in manually curated files in this directory.
-var restoreOverrides []func(
-	*cobra.Command,
-	*sql.RestoreDashboardRequest,
-)
-
-func newRestore() *cobra.Command {
-	cmd := &cobra.Command{}
-
-	var restoreReq sql.RestoreDashboardRequest
-
-	cmd.Use = "restore DASHBOARD_ID"
-	cmd.Short = `Restore a dashboard.`
-	cmd.Long = `Restore a dashboard.
-  
-  A restored dashboard appears in list views and searches and can be shared.`
-
-	cmd.Annotations = make(map[string]string)
-
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(1)
-		return check(cmd, args)
-	}
-
-	cmd.PreRunE = root.MustWorkspaceClient
-	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
-		ctx := cmd.Context()
-		w := cmdctx.WorkspaceClient(ctx)
-
-		restoreReq.DashboardId = args[0]
-
-		err = w.Dashboards.Restore(ctx, restoreReq)
-		if err != nil {
-			return err
-		}
-		return nil
-	}
-
-	// Disable completions since they are not applicable.
-	// Can be overridden by manual implementation in `override.go`.
-	cmd.ValidArgsFunction = cobra.NoFileCompletions
-
-	// Apply optional overrides to this command.
-	for _, fn := range restoreOverrides {
-		fn(cmd, &restoreReq)
-	}
-
-	return cmd
-}
-
 // start update command
 
 // Slice with functions to override default command behavior.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*sql.DashboardEditContent,
+	*cleanrooms.UpdateCleanRoomAutoApprovalRuleRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var updateReq sql.DashboardEditContent
+	var updateReq cleanrooms.UpdateCleanRoomAutoApprovalRuleRequest
+	updateReq.AutoApprovalRule = cleanrooms.CleanRoomAutoApprovalRule{}
 	var updateJson flags.JsonFlag
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `The title of this dashboard that appears in list views and at the top of the dashboard page.`)
-	cmd.Flags().Var(&updateReq.RunAsRole, "run-as-role", `Sets the **Run as** role for the object. Supported values: [owner, viewer]`)
-	// TODO: array: tags
+	cmd.Flags().StringVar(&updateReq.AutoApprovalRule.AuthorCollaboratorAlias, "author-collaborator-alias", updateReq.AutoApprovalRule.AuthorCollaboratorAlias, ``)
+	cmd.Flags().Var(&updateReq.AutoApprovalRule.AuthorScope, "author-scope", `Supported values: [ANY_AUTHOR]`)
+	cmd.Flags().StringVar(&updateReq.AutoApprovalRule.CleanRoomName, "clean-room-name", updateReq.AutoApprovalRule.CleanRoomName, `The name of the clean room this auto-approval rule belongs to.`)
+	cmd.Flags().StringVar(&updateReq.AutoApprovalRule.RunnerCollaboratorAlias, "runner-collaborator-alias", updateReq.AutoApprovalRule.RunnerCollaboratorAlias, ``)
 
-	cmd.Use = "update DASHBOARD_ID"
-	cmd.Short = `Change a dashboard definition.`
-	cmd.Long = `Change a dashboard definition.
+	cmd.Use = "update CLEAN_ROOM_NAME RULE_ID"
+	cmd.Short = `Update an auto-approval rule.`
+	cmd.Long = `Update an auto-approval rule.
   
-  Modify this dashboard definition. This operation only affects attributes of
-  the dashboard object. It does not add, modify, or remove widgets.
-  
-  **Note**: You cannot undo this operation.`
+  Update a auto-approval rule by rule ID
+
+  Arguments:
+    CLEAN_ROOM_NAME: The name of the clean room this auto-approval rule belongs to.
+    RULE_ID: A generated UUID identifying the rule.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(1)
+		check := root.ExactArgs(2)
 		return check(cmd, args)
 	}
 
@@ -307,7 +326,7 @@ func newUpdate() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			diags := updateJson.Unmarshal(&updateReq)
+			diags := updateJson.Unmarshal(&updateReq.AutoApprovalRule)
 			if diags.HasError() {
 				return diags.Error()
 			}
@@ -318,9 +337,10 @@ func newUpdate() *cobra.Command {
 				}
 			}
 		}
-		updateReq.DashboardId = args[0]
+		updateReq.CleanRoomName = args[0]
+		updateReq.RuleId = args[1]
 
-		response, err := w.Dashboards.Update(ctx, updateReq)
+		response, err := w.CleanRoomAutoApprovalRules.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}
@@ -339,4 +359,4 @@ func newUpdate() *cobra.Command {
 	return cmd
 }
 
-// end service Dashboards
+// end service CleanRoomAutoApprovalRules
