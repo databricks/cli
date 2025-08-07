@@ -54,8 +54,8 @@ recreate pipelines.my
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files...
 
-This action will result in the deletion or recreation of the following DLT Pipelines along with the
-Streaming Tables (STs) and Materialized Views (MVs) managed by them. Recreating the Pipelines will
+This action will result in the deletion or recreation of the following Lakeflow Declarative Pipelines along with the
+streaming tables (STs) and materialized views (MVs) managed by them. Recreating the pipelines will
 restore the defined STs and MVs through full refresh. Note that recreation is necessary when pipeline
 properties such as the 'catalog' or 'storage' are changed:
   recreate pipeline my
@@ -130,8 +130,8 @@ Exit code (musterr): 1
 The following resources will be deleted:
   delete pipeline my
 
-This action will result in the deletion of the following DLT Pipelines along with the
-Streaming Tables (STs) and Materialized Views (MVs) managed by them:
+This action will result in the deletion of the following Lakeflow Declarative Pipelines along with the
+streaming tables (STs) and materialized views (MVs) managed by them:
   delete pipeline my
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default
