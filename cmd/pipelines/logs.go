@@ -78,11 +78,11 @@ Example usage:
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		if len(args) == 0 {
-			return errors.New("Provide a PIPELINE_ID.")
+			return errors.New("provide a PIPELINE_ID")
 		}
 
 		if len(args) > 1 {
-			return fmt.Errorf("Expected one PIPELINE_ID, got %d.", len(args))
+			return fmt.Errorf("expected one PIPELINE_ID, got %d", len(args))
 		}
 		w := cmdctx.WorkspaceClient(ctx)
 
