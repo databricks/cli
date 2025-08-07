@@ -9,8 +9,6 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdgroup"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go/listing"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/spf13/cobra"
 )
 
@@ -63,12 +61,14 @@ Example usage:
 	var levels []string
 	var eventTypes []string
 	var maxResults int
+	var reverse bool
 
 	filterGroup := cmdgroup.NewFlagGroup("Event Filter")
 	filterGroup.FlagSet().StringVar(&updateId, "update-id", "", "Filter events by update ID.")
 	filterGroup.FlagSet().StringSliceVar(&levels, "level", nil, "Filter events by list of log levels (INFO, WARN, ERROR, METRICS). ")
 	filterGroup.FlagSet().StringSliceVar(&eventTypes, "event-type", nil, "Filter events by list of event types.")
 	filterGroup.FlagSet().IntVar(&maxResults, "max-results", 100, "Max number of events to return.")
+	filterGroup.FlagSet().BoolVar(&reverse, "r", false, "Reverse the order of results. By default, events are returned in descending order by timestamp.")
 
 	wrappedCmd := cmdgroup.NewCommandWithGroupFlag(cmd)
 	wrappedCmd.AddFlagGroup(filterGroup)
@@ -90,21 +90,27 @@ Example usage:
 
 		filter := buildPipelineEventFilter(updateId, levels, eventTypes)
 
-		req := pipelines.ListPipelineEventsRequest{
-			PipelineId: pipelineId,
-			Filter:     filter,
+		orderBy := "timestamp desc"
+		if reverse {
+			orderBy = "timestamp asc"
 		}
 
-		// TODO: change function to one that is unpaginated, so it supports the OrderBy parameter.
-		// By default, events are returned in descending order by timestamp.
-		iterator := w.Pipelines.ListPipelineEvents(ctx, req)
+		params := &PipelineEventsQueryParams{
+			Filter:     filter,
+			MaxResults: 1000, // Use maximum page size
+			OrderBy:    orderBy,
+		}
 
-		limitedEvents, err := listing.ToSliceN(ctx, iterator, maxResults)
+		events, err := fetchAllPipelineEvents(ctx, w, pipelineId, params)
 		if err != nil {
 			return err
 		}
 
-		return cmdio.Render(ctx, limitedEvents)
+		if len(events) > maxResults {
+			events = events[:maxResults]
+		}
+
+		return cmdio.Render(ctx, events)
 	}
 
 	return cmd
