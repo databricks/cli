@@ -74,6 +74,8 @@ type FakeWorkspace struct {
 	Dashboards      map[string]dashboards.Dashboard
 	SqlWarehouses   map[string]sql.GetWarehouseResponse
 
+	Acls map[string][]workspace.AclItem
+
 	nextRepoId int64
 	Repos      map[string]workspace.RepoInfo
 }
@@ -157,6 +159,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		Dashboards:      map[string]dashboards.Dashboard{},
 		SqlWarehouses:   map[string]sql.GetWarehouseResponse{},
 		Repos:           map[string]workspace.RepoInfo{},
+		Acls:            map[string][]workspace.AclItem{},
 	}
 }
 

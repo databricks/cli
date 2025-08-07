@@ -32,6 +32,7 @@ type ResourceDatabaseInstance struct {
 	NodeCount                          int                                         `json:"node_count,omitempty"`
 	ParentInstanceRef                  *ResourceDatabaseInstanceParentInstanceRef  `json:"parent_instance_ref,omitempty"`
 	PgVersion                          string                                      `json:"pg_version,omitempty"`
+	PurgeOnDelete                      bool                                        `json:"purge_on_delete,omitempty"`
 	ReadOnlyDns                        string                                      `json:"read_only_dns,omitempty"`
 	ReadWriteDns                       string                                      `json:"read_write_dns,omitempty"`
 	RetentionWindowInDays              int                                         `json:"retention_window_in_days,omitempty"`

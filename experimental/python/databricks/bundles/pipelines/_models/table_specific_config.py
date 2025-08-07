@@ -4,6 +4,10 @@ from typing import TYPE_CHECKING, TypedDict
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import VariableOrList, VariableOrOptional
+from databricks.bundles.pipelines._models.ingestion_pipeline_definition_table_specific_config_query_based_connector_config import (
+    IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig,
+    IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfigParam,
+)
 from databricks.bundles.pipelines._models.table_specific_config_scd_type import (
     TableSpecificConfigScdType,
     TableSpecificConfigScdTypeParam,
@@ -37,6 +41,15 @@ class TableSpecificConfig:
     primary_keys: VariableOrList[str] = field(default_factory=list)
     """
     The primary key of the table used to apply changes.
+    """
+
+    query_based_connector_config: VariableOrOptional[
+        IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig
+    ] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    Configurations that are only applicable for query-based ingestion connectors.
     """
 
     salesforce_include_formula_fields: VariableOrOptional[bool] = None
@@ -89,6 +102,15 @@ class TableSpecificConfigDict(TypedDict, total=False):
     primary_keys: VariableOrList[str]
     """
     The primary key of the table used to apply changes.
+    """
+
+    query_based_connector_config: VariableOrOptional[
+        IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfigParam
+    ]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    Configurations that are only applicable for query-based ingestion connectors.
     """
 
     salesforce_include_formula_fields: VariableOrOptional[bool]
