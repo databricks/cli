@@ -81,6 +81,24 @@ func readableDuration(diff time.Duration) string {
 	return fmt.Sprintf("%dh %dm", hours, minutes)
 }
 
+// Returns the time difference between two events.
+func eventTimeDifference(earlierEvent, laterEvent pipelines.PipelineEvent) (time.Duration, error) {
+	currTime, err := time.Parse(time.RFC3339Nano, earlierEvent.Timestamp)
+	if err != nil {
+		return 0, err
+	}
+	nextTime, err := time.Parse(time.RFC3339Nano, laterEvent.Timestamp)
+	if err != nil {
+		return 0, err
+	}
+
+	timeDifference := nextTime.Sub(currTime)
+	if timeDifference < 0 {
+		return 0, errors.New("second event timestamp must be after first event timestamp")
+	}
+	return timeDifference, nil
+}
+
 // Adds duration information and phase name to a progress event
 // Expects that the events are already sorted by timestamp in ascending order.
 func enrichEvents(events []pipelines.PipelineEvent) ([]ProgressEventWithDuration, error) {
@@ -90,18 +108,9 @@ func enrichEvents(events []pipelines.PipelineEvent) ([]ProgressEventWithDuration
 		duration := ""
 
 		if j < len(events)-1 {
-			currTime, err := time.Parse(time.RFC3339Nano, event.Timestamp)
+			timeDifference, err := eventTimeDifference(event, events[j+1])
 			if err != nil {
 				return nil, err
-			}
-			nextTime, err := time.Parse(time.RFC3339Nano, events[j+1].Timestamp)
-			if err != nil {
-				return nil, err
-			}
-
-			timeDifference := nextTime.Sub(currTime)
-			if timeDifference < 0 {
-				return nil, errors.New("events are not sorted by timestamp in ascending order")
 			}
 
 			duration = readableDuration(timeDifference)
