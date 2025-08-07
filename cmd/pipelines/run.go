@@ -45,10 +45,10 @@ type ProgressEventsData struct {
 	ProgressEvents []ProgressEventWithDuration
 }
 
-// extractPhaseFromMessage extracts the last word from a message and removes the last character (a period)
+// Extracts the last word from an event message and removes the last character (a period)
 // Example: "Update 6fc8a8 is WAITING_FOR_RESOURCES." -> "WAITING_FOR_RESOURCES"
-func extractPhaseFromMessage(message string) string {
-	words := strings.Fields(message)
+func phaseFromUpdateProgress(eventMessage string) string {
+	words := strings.Fields(eventMessage)
 	if len(words) > 0 {
 		phase := words[len(words)-1]
 		if len(phase) > 0 {
@@ -59,7 +59,29 @@ func extractPhaseFromMessage(message string) string {
 	return ""
 }
 
-// enrichEvents adds duration information and phase name to a progress event
+// Returns a readable duration string for a given duration.
+func readableDuration(diff time.Duration) string {
+	if diff < time.Second {
+		milliseconds := int(diff.Milliseconds())
+		return fmt.Sprintf("%dms", milliseconds)
+	}
+
+	if diff < time.Minute {
+		return fmt.Sprintf("%.1fs", diff.Seconds())
+	}
+
+	if diff < time.Hour {
+		minutes := int(diff.Minutes())
+		seconds := int(diff.Seconds()) % 60
+		return fmt.Sprintf("%dm %ds", minutes, seconds)
+	}
+
+	hours := int(diff.Hours())
+	minutes := int(diff.Minutes()) % 60
+	return fmt.Sprintf("%dh %dm", hours, minutes)
+}
+
+// Adds duration information and phase name to a progress event
 // Expects that the events are already sorted by timestamp in ascending order.
 func enrichEvents(events []pipelines.PipelineEvent) ([]ProgressEventWithDuration, error) {
 	var progressEventsWithDuration []ProgressEventWithDuration
@@ -77,32 +99,18 @@ func enrichEvents(events []pipelines.PipelineEvent) ([]ProgressEventWithDuration
 				return nil, err
 			}
 
-			diff := nextTime.Sub(currTime)
-
-			if diff > 0 {
-				if diff < time.Second {
-					milliseconds := int(diff.Milliseconds())
-					duration = fmt.Sprintf("%dms", milliseconds)
-				} else if diff < time.Minute {
-					duration = fmt.Sprintf("%.1fs", diff.Seconds())
-				} else if diff < time.Hour {
-					minutes := int(diff.Minutes())
-					seconds := int(diff.Seconds()) % 60
-					duration = fmt.Sprintf("%dm %ds", minutes, seconds)
-				} else {
-					hours := int(diff.Hours())
-					minutes := int(diff.Minutes()) % 60
-					duration = fmt.Sprintf("%dh %dm", hours, minutes)
-				}
-			} else {
-				duration = "0s"
+			timeDifference := nextTime.Sub(currTime)
+			if timeDifference < 0 {
+				return nil, errors.New("events are not sorted by timestamp in ascending order")
 			}
+
+			duration = readableDuration(timeDifference)
 		}
 
 		progressEventsWithDuration = append(progressEventsWithDuration, ProgressEventWithDuration{
 			Event:    event,
 			Duration: duration,
-			Phase:    extractPhaseFromMessage(event.Message),
+			Phase:    phaseFromUpdateProgress(event.Message),
 		})
 	}
 
