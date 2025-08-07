@@ -30,10 +30,7 @@ func New() *cobra.Command {
   are imposed on Databricks Runtime versions. This setting can take up to 20
   minutes to take effect and requires a manual restart of all-purpose compute
   clusters and SQL warehouses.`,
-
-		// This service is being previewed; hide from help output.
-		Hidden: true,
-		RunE:   root.ReportUnknownSubcommand,
+		RunE: root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

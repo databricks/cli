@@ -117,7 +117,7 @@ GENKIT_BINARY := $(UNIVERSE_DIR)/bazel-bin/openapi/genkit/genkit_/genkit
 
 generate:
 	@echo "Checking out universe at SHA: $$(cat .codegen/_openapi_sha)"
-	cd $(UNIVERSE_DIR) && git checkout $$(cat $(PWD)/.codegen/_openapi_sha)
+	cd $(UNIVERSE_DIR) && git fetch origin master && git checkout $$(cat $(PWD)/.codegen/_openapi_sha)
 	@echo "Building genkit..."
 	cd $(UNIVERSE_DIR) && bazel build //openapi/genkit
 	@echo "Generating CLI code..."

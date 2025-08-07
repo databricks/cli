@@ -50,13 +50,13 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*provisioning.UpsertPrivateAccessSettingsRequest,
+	*provisioning.CreatePrivateAccessSettingsRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var createReq provisioning.UpsertPrivateAccessSettingsRequest
+	var createReq provisioning.CreatePrivateAccessSettingsRequest
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -346,13 +346,13 @@ func newList() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var replaceOverrides []func(
 	*cobra.Command,
-	*provisioning.UpsertPrivateAccessSettingsRequest,
+	*provisioning.ReplacePrivateAccessSettingsRequest,
 )
 
 func newReplace() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var replaceReq provisioning.UpsertPrivateAccessSettingsRequest
+	var replaceReq provisioning.ReplacePrivateAccessSettingsRequest
 	var replaceJson flags.JsonFlag
 
 	cmd.Flags().Var(&replaceJson, "json", `either inline JSON string or @path/to/file.json with request body`)

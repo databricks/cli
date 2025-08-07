@@ -20,6 +20,8 @@ type Resources struct {
 	BudgetPolicy                                 map[string]any `json:"databricks_budget_policy,omitempty"`
 	Catalog                                      map[string]any `json:"databricks_catalog,omitempty"`
 	CatalogWorkspaceBinding                      map[string]any `json:"databricks_catalog_workspace_binding,omitempty"`
+	CleanRoomAsset                               map[string]any `json:"databricks_clean_room_asset,omitempty"`
+	CleanRoomAutoApprovalRule                    map[string]any `json:"databricks_clean_room_auto_approval_rule,omitempty"`
 	CleanRoomsCleanRoom                          map[string]any `json:"databricks_clean_rooms_clean_room,omitempty"`
 	Cluster                                      map[string]any `json:"databricks_cluster,omitempty"`
 	ClusterPolicy                                map[string]any `json:"databricks_cluster_policy,omitempty"`
@@ -145,6 +147,8 @@ func NewResources() *Resources {
 		BudgetPolicy:                           make(map[string]any),
 		Catalog:                                make(map[string]any),
 		CatalogWorkspaceBinding:                make(map[string]any),
+		CleanRoomAsset:                         make(map[string]any),
+		CleanRoomAutoApprovalRule:              make(map[string]any),
 		CleanRoomsCleanRoom:                    make(map[string]any),
 		Cluster:                                make(map[string]any),
 		ClusterPolicy:                          make(map[string]any),

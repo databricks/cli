@@ -3,8 +3,6 @@
 package dashboards
 
 import (
-	"fmt"
-
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -35,7 +33,6 @@ func New() *cobra.Command {
 	}
 
 	// Add methods
-	cmd.AddCommand(newCreate())
 	cmd.AddCommand(newDelete())
 	cmd.AddCommand(newGet())
 	cmd.AddCommand(newList())
@@ -45,96 +42,6 @@ func New() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
-	}
-
-	return cmd
-}
-
-// start create command
-
-// Slice with functions to override default command behavior.
-// Functions can be added from the `init()` function in manually curated files in this directory.
-var createOverrides []func(
-	*cobra.Command,
-	*sql.DashboardPostContent,
-)
-
-func newCreate() *cobra.Command {
-	cmd := &cobra.Command{}
-
-	var createReq sql.DashboardPostContent
-	var createJson flags.JsonFlag
-
-	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
-
-	cmd.Flags().BoolVar(&createReq.DashboardFiltersEnabled, "dashboard-filters-enabled", createReq.DashboardFiltersEnabled, `Indicates whether the dashboard filters are enabled.`)
-	cmd.Flags().BoolVar(&createReq.IsFavorite, "is-favorite", createReq.IsFavorite, `Indicates whether this dashboard object should appear in the current user's favorites list.`)
-	cmd.Flags().StringVar(&createReq.Parent, "parent", createReq.Parent, `The identifier of the workspace folder containing the object.`)
-	cmd.Flags().Var(&createReq.RunAsRole, "run-as-role", `Sets the **Run as** role for the object. Supported values: [owner, viewer]`)
-	// TODO: array: tags
-
-	cmd.Use = "create NAME"
-	cmd.Short = `Create a dashboard object.`
-	cmd.Long = `Create a dashboard object.
-  
-  Creates a new dashboard object. Only the name parameter is required in the
-  POST request JSON body. Other fields can be included when duplicating
-  dashboards with this API. Databricks does not recommend designing dashboards
-  exclusively using this API.',
-
-  Arguments:
-    NAME: The title of this dashboard that appears in list views and at the top of
-      the dashboard page.`
-
-	cmd.Annotations = make(map[string]string)
-
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		if cmd.Flags().Changed("json") {
-			err := root.ExactArgs(0)(cmd, args)
-			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name' in your JSON input")
-			}
-			return nil
-		}
-		check := root.ExactArgs(1)
-		return check(cmd, args)
-	}
-
-	cmd.PreRunE = root.MustWorkspaceClient
-	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
-		ctx := cmd.Context()
-		w := cmdctx.WorkspaceClient(ctx)
-
-		if cmd.Flags().Changed("json") {
-			diags := createJson.Unmarshal(&createReq)
-			if diags.HasError() {
-				return diags.Error()
-			}
-			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
-				if err != nil {
-					return err
-				}
-			}
-		}
-		if !cmd.Flags().Changed("json") {
-			createReq.Name = args[0]
-		}
-
-		response, err := w.Dashboards.Create(ctx, createReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
-	}
-
-	// Disable completions since they are not applicable.
-	// Can be overridden by manual implementation in `override.go`.
-	cmd.ValidArgsFunction = cobra.NoFileCompletions
-
-	// Apply optional overrides to this command.
-	for _, fn := range createOverrides {
-		fn(cmd, &createReq)
 	}
 
 	return cmd

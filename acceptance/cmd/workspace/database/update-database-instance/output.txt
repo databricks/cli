@@ -1,0 +1,30 @@
+
+>>> errcode [CLI] database update-database-instance test-db --json {"stopped": true}
+Error: accepts 2 arg(s), received 1
+
+Usage:
+  databricks database update-database-instance NAME UPDATE_MASK [flags]
+
+Flags:
+      --capacity string                The sku of the instance.
+      --enable-readable-secondaries    Whether to enable secondaries to serve read-only traffic.
+  -h, --help                           help for update-database-instance
+      --json JSON                      either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --node-count int                 The number of nodes in the instance, composed of 1 primary and 0 or more secondaries.
+      --retention-window-in-days int   The retention window for the instance.
+      --stopped                        Whether the instance is stopped.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+
+Exit code: 1
+
+>>> [CLI] database update-database-instance test-db * --json {"stopped": true}
+{
+  "name":"test-db",
+  "stopped":true
+}

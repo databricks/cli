@@ -873,6 +873,10 @@
                       "description": {
                         "$ref": "#/$defs/string"
                       },
+                      "email_notifications": {
+                        "description": "Email notification settings.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.EmailNotifications"
+                      },
                       "name": {
                         "description": "The name of the serving endpoint. This field is required and must be unique across a Databricks workspace.\nAn endpoint name can consist of alphanumeric characters, dashes, and underscores.",
                         "$ref": "#/$defs/string"
@@ -1176,37 +1180,40 @@
                     "type": "object",
                     "properties": {
                       "assets_dir": {
-                        "description": "The directory to store monitoring assets (e.g. dashboard, metric tables).",
+                        "description": "[Create:REQ Update:IGN] Field for specifying the absolute path to a custom directory to store data-monitoring\nassets. Normally prepopulated to a default user location via UI and Python APIs.",
                         "$ref": "#/$defs/string"
                       },
                       "baseline_table_name": {
-                        "description": "Name of the baseline table from which drift metrics are computed from.\nColumns in the monitored table should also be present in the baseline table.\n",
+                        "description": "[Create:OPT Update:OPT] Baseline table name.\nBaseline data is used to compute drift from the data in the monitored `table_name`.\nThe baseline table and the monitored table shall have the same schema.",
                         "$ref": "#/$defs/string"
                       },
                       "custom_metrics": {
-                        "description": "Custom metrics to compute on the monitored table. These can be aggregate metrics, derived\nmetrics (from already computed aggregate metrics), or drift metrics (comparing metrics across time\nwindows).\n",
+                        "description": "[Create:OPT Update:OPT] Custom metrics.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.MonitorMetric"
                       },
                       "data_classification_config": {
-                        "description": "The data classification config for the monitor.",
+                        "description": "[Create:OPT Update:OPT] Data classification related config.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.MonitorDataClassificationConfig",
                         "x-databricks-preview": "PRIVATE",
                         "doNotSuggest": true
                       },
                       "inference_log": {
-                        "description": "Configuration for monitoring inference logs.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.MonitorInferenceLog"
                       },
+                      "latest_monitor_failure_msg": {
+                        "description": "[Create:ERR Update:IGN] The latest error message for a monitor failure.",
+                        "$ref": "#/$defs/string"
+                      },
                       "notifications": {
-                        "description": "The notification settings for the monitor.",
+                        "description": "[Create:OPT Update:OPT] Field for specifying notification settings.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.MonitorNotifications"
                       },
                       "output_schema_name": {
-                        "description": "Schema where output metric tables are created.",
+                        "description": "[Create:REQ Update:REQ] Schema where output tables are created. Needs to be in 2-level format {catalog}.{schema}",
                         "$ref": "#/$defs/string"
                       },
                       "schedule": {
-                        "description": "The schedule for automatically updating and refreshing metric tables.",
+                        "description": "[Create:OPT Update:OPT] The monitor schedule.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.MonitorCronSchedule"
                       },
                       "skip_builtin_dashboard": {
@@ -1214,7 +1221,7 @@
                         "$ref": "#/$defs/bool"
                       },
                       "slicing_exprs": {
-                        "description": "List of column expressions to slice data with for targeted analysis. The data is grouped by\neach expression independently, resulting in a separate slice for each predicate and its\ncomplements. For high-cardinality columns, only the top 100 unique values by frequency will\ngenerate slices.\n",
+                        "description": "[Create:OPT Update:OPT] List of column expressions to slice data with for targeted analysis. The data is grouped by\neach expression independently, resulting in a separate slice for each predicate and its\ncomplements. For example `slicing_exprs=[“col_1”, “col_2 \u003e 10”]` will generate the following\nslices: two slices for `col_2 \u003e 10` (True and False), and one slice per unique value in\n`col1`. For high-cardinality columns, only the top 100 unique values by frequency will\ngenerate slices.",
                         "$ref": "#/$defs/slice/string"
                       },
                       "snapshot": {
@@ -1229,7 +1236,7 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.MonitorTimeSeries"
                       },
                       "warehouse_id": {
-                        "description": "Optional argument to specify the warehouse for dashboard creation. If not specified, the first running\nwarehouse will be used.\n",
+                        "description": "Optional argument to specify the warehouse for dashboard creation. If not specified, the first running\nwarehouse will be used.",
                         "$ref": "#/$defs/string"
                       }
                     },
@@ -2802,11 +2809,11 @@
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.MonitorCronSchedulePauseStatus"
                     },
                     "quartz_cron_expression": {
-                      "description": "The expression that determines when to run the monitor. See [examples](https://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html).\n",
+                      "description": "The expression that determines when to run the monitor. See [examples](https://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html).",
                       "$ref": "#/$defs/string"
                     },
                     "timezone_id": {
-                      "description": "The timezone id (e.g., ``\"PST\"``) in which to evaluate the quartz expression.\n",
+                      "description": "The timezone id (e.g., ``PST``) in which to evaluate the quartz expression.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -2826,8 +2833,9 @@
               "oneOf": [
                 {
                   "type": "string",
-                  "description": "Read only field that indicates whether a schedule is paused or not.",
+                  "description": "Source link: https://src.dev.databricks.com/databricks/universe/-/blob/elastic-spark-common/api/messages/schedule.proto\nMonitoring workflow schedule pause status.",
                   "enum": [
+                    "UNSPECIFIED",
                     "UNPAUSED",
                     "PAUSED"
                   ]
@@ -2842,15 +2850,14 @@
               "oneOf": [
                 {
                   "type": "object",
+                  "description": "Data classification related configuration.",
                   "properties": {
                     "enabled": {
-                      "description": "Whether data classification is enabled.",
+                      "description": "Whether to enable data classification.",
                       "$ref": "#/$defs/bool"
                     }
                   },
-                  "additionalProperties": false,
-                  "x-databricks-preview": "PRIVATE",
-                  "doNotSuggest": true
+                  "additionalProperties": false
                 },
                 {
                   "type": "string",
@@ -2886,27 +2893,27 @@
                       "$ref": "#/$defs/slice/string"
                     },
                     "label_col": {
-                      "description": "Optional column that contains the ground truth for the prediction.",
+                      "description": "Column for the label.",
                       "$ref": "#/$defs/string"
                     },
                     "model_id_col": {
-                      "description": "Column that contains the id of the model generating the predictions. Metrics will be computed per model id by\ndefault, and also across all model ids.\n",
+                      "description": "Column for the model identifier.",
                       "$ref": "#/$defs/string"
                     },
                     "prediction_col": {
-                      "description": "Column that contains the output/prediction from the model.",
+                      "description": "Column for the prediction.",
                       "$ref": "#/$defs/string"
                     },
                     "prediction_proba_col": {
-                      "description": "Optional column that contains the prediction probabilities for each class in a classification problem type.\nThe values in this column should be a map, mapping each class label to the prediction probability for a given\nsample. The map should be of PySpark MapType().\n",
+                      "description": "Column for prediction probabilities",
                       "$ref": "#/$defs/string"
                     },
                     "problem_type": {
-                      "description": "Problem type the model aims to solve. Determines the type of model-quality metrics that will be computed.",
+                      "description": "Problem type the model aims to solve.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.MonitorInferenceLogProblemType"
                     },
                     "timestamp_col": {
-                      "description": "Column that contains the timestamps of requests. The column must be one of the following:\n- A ``TimestampType`` column\n- A column whose values can be converted to timestamps through the pyspark\n  ``to_timestamp`` [function](https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.functions.to_timestamp.html).\n",
+                      "description": "Column for the timestamp.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -2929,7 +2936,6 @@
               "oneOf": [
                 {
                   "type": "string",
-                  "description": "Problem type the model aims to solve. Determines the type of model-quality metrics that will be computed.",
                   "enum": [
                     "PROBLEM_TYPE_CLASSIFICATION",
                     "PROBLEM_TYPE_REGRESSION"
@@ -2945,13 +2951,14 @@
               "oneOf": [
                 {
                   "type": "object",
+                  "description": "Custom metric definition.",
                   "properties": {
                     "definition": {
                       "description": "Jinja template for a SQL expression that specifies how to compute the metric. See [create metric definition](https://docs.databricks.com/en/lakehouse-monitoring/custom-metrics.html#create-definition).",
                       "$ref": "#/$defs/string"
                     },
                     "input_columns": {
-                      "description": "A list of column names in the input table the metric should be computed for.\nCan use ``\":table\"`` to indicate that the metric needs information from multiple columns.\n",
+                      "description": "A list of column names in the input table the metric should be computed for.\nCan use ``\":table\"`` to indicate that the metric needs information from multiple columns.",
                       "$ref": "#/$defs/slice/string"
                     },
                     "name": {
@@ -2963,7 +2970,7 @@
                       "$ref": "#/$defs/string"
                     },
                     "type": {
-                      "description": "Can only be one of ``\"CUSTOM_METRIC_TYPE_AGGREGATE\"``, ``\"CUSTOM_METRIC_TYPE_DERIVED\"``, or ``\"CUSTOM_METRIC_TYPE_DRIFT\"``.\nThe ``\"CUSTOM_METRIC_TYPE_AGGREGATE\"`` and ``\"CUSTOM_METRIC_TYPE_DERIVED\"`` metrics\nare computed on a single table, whereas the ``\"CUSTOM_METRIC_TYPE_DRIFT\"`` compare metrics across\nbaseline and input table, or across the two consecutive time windows.\n- CUSTOM_METRIC_TYPE_AGGREGATE: only depend on the existing columns in your table\n- CUSTOM_METRIC_TYPE_DERIVED: depend on previously computed aggregate metrics\n- CUSTOM_METRIC_TYPE_DRIFT:  depend on previously computed aggregate or derived metrics\n",
+                      "description": "Can only be one of ``\"CUSTOM_METRIC_TYPE_AGGREGATE\"``, ``\"CUSTOM_METRIC_TYPE_DERIVED\"``, or ``\"CUSTOM_METRIC_TYPE_DRIFT\"``.\nThe ``\"CUSTOM_METRIC_TYPE_AGGREGATE\"`` and ``\"CUSTOM_METRIC_TYPE_DERIVED\"`` metrics\nare computed on a single table, whereas the ``\"CUSTOM_METRIC_TYPE_DRIFT\"`` compare metrics across\nbaseline and input table, or across the two consecutive time windows.\n- CUSTOM_METRIC_TYPE_AGGREGATE: only depend on the existing columns in your table\n- CUSTOM_METRIC_TYPE_DERIVED: depend on previously computed aggregate metrics\n- CUSTOM_METRIC_TYPE_DRIFT:  depend on previously computed aggregate or derived metrics",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.MonitorMetricType"
                     }
                   },
@@ -2986,7 +2993,7 @@
               "oneOf": [
                 {
                   "type": "string",
-                  "description": "Can only be one of ``\"CUSTOM_METRIC_TYPE_AGGREGATE\"``, ``\"CUSTOM_METRIC_TYPE_DERIVED\"``, or ``\"CUSTOM_METRIC_TYPE_DRIFT\"``.\nThe ``\"CUSTOM_METRIC_TYPE_AGGREGATE\"`` and ``\"CUSTOM_METRIC_TYPE_DERIVED\"`` metrics\nare computed on a single table, whereas the ``\"CUSTOM_METRIC_TYPE_DRIFT\"`` compare metrics across\nbaseline and input table, or across the two consecutive time windows.\n- CUSTOM_METRIC_TYPE_AGGREGATE: only depend on the existing columns in your table\n- CUSTOM_METRIC_TYPE_DERIVED: depend on previously computed aggregate metrics\n- CUSTOM_METRIC_TYPE_DRIFT:  depend on previously computed aggregate or derived metrics\n",
+                  "description": "Can only be one of ``\\\"CUSTOM_METRIC_TYPE_AGGREGATE\\\"``, ``\\\"CUSTOM_METRIC_TYPE_DERIVED\\\"``, or ``\\\"CUSTOM_METRIC_TYPE_DRIFT\\\"``.\nThe ``\\\"CUSTOM_METRIC_TYPE_AGGREGATE\\\"`` and ``\\\"CUSTOM_METRIC_TYPE_DERIVED\\\"`` metrics\nare computed on a single table, whereas the ``\\\"CUSTOM_METRIC_TYPE_DRIFT\\\"`` compare metrics across\nbaseline and input table, or across the two consecutive time windows.\n- CUSTOM_METRIC_TYPE_AGGREGATE: only depend on the existing columns in your table\n- CUSTOM_METRIC_TYPE_DERIVED: depend on previously computed aggregate metrics\n- CUSTOM_METRIC_TYPE_DRIFT:  depend on previously computed aggregate or derived metrics",
                   "enum": [
                     "CUSTOM_METRIC_TYPE_AGGREGATE",
                     "CUSTOM_METRIC_TYPE_DERIVED",
@@ -3005,11 +3012,11 @@
                   "type": "object",
                   "properties": {
                     "on_failure": {
-                      "description": "Who to send notifications to on monitor failure.",
+                      "description": "Destinations to send notifications on failure/timeout.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.MonitorDestination"
                     },
                     "on_new_classification_tag_detected": {
-                      "description": "Who to send notifications to when new data classification tags are detected.",
+                      "description": "Destinations to send notifications on new classification tag detected.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.MonitorDestination",
                       "x-databricks-preview": "PRIVATE",
                       "doNotSuggest": true
@@ -3027,6 +3034,7 @@
               "oneOf": [
                 {
                   "type": "object",
+                  "description": "Snapshot analysis configuration",
                   "additionalProperties": false
                 },
                 {
@@ -3039,13 +3047,14 @@
               "oneOf": [
                 {
                   "type": "object",
+                  "description": "Time series analysis configuration.",
                   "properties": {
                     "granularities": {
                       "description": "Granularities for aggregating data into time windows based on their timestamp. Valid values are 5 minutes, 30 minutes, 1 hour, 1 day, n weeks, 1 month, or 1 year.",
                       "$ref": "#/$defs/slice/string"
                     },
                     "timestamp_col": {
-                      "description": "Column that contains the timestamps of requests. The column must be one of the following:\n- A ``TimestampType`` column\n- A column whose values can be converted to timestamps through the pyspark\n  ``to_timestamp`` [function](https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.functions.to_timestamp.html).\n",
+                      "description": "Column for the timestamp.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -6235,6 +6244,39 @@
                 }
               ]
             },
+            "pipelines.IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Configurations that are only applicable for query-based ingestion connectors.",
+                  "properties": {
+                    "cursor_columns": {
+                      "description": "The names of the monotonically increasing columns in the source table that are used to enable\nthe table to be read and ingested incrementally through structured streaming.\nThe columns are allowed to have repeated values but have to be non-decreasing.\nIf the source data is merged into the destination (e.g., using SCD Type 1 or Type 2), these\ncolumns will implicitly define the `sequence_by` behavior. You can still explicitly set\n`sequence_by` to override this default.",
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-preview": "PRIVATE",
+                      "doNotSuggest": true
+                    },
+                    "deletion_condition": {
+                      "description": "Specifies a SQL WHERE condition that specifies that the source row has been deleted.\nThis is sometimes referred to as \"soft-deletes\".\nFor example: \"Operation = 'DELETE'\" or \"is_deleted = true\".\nThis field is orthogonal to `hard_deletion_sync_interval_in_seconds`,\none for soft-deletes and the other for hard-deletes.\nSee also the hard_deletion_sync_min_interval_in_seconds field for\nhandling of \"hard deletes\" where the source rows are physically removed from the table.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-preview": "PRIVATE",
+                      "doNotSuggest": true
+                    },
+                    "hard_deletion_sync_min_interval_in_seconds": {
+                      "description": "Specifies the minimum interval (in seconds) between snapshots on primary keys\nfor detecting and synchronizing hard deletions—i.e., rows that have been\nphysically removed from the source table.\nThis interval acts as a lower bound. If ingestion runs less frequently than\nthis value, hard deletion synchronization will align with the actual ingestion\nfrequency instead of happening more often.\nIf not set, hard deletion synchronization via snapshots is disabled.\nThis field is mutable and can be updated without triggering a full snapshot.",
+                      "$ref": "#/$defs/int64",
+                      "x-databricks-preview": "PRIVATE",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "pipelines.IngestionSourceType": {
               "oneOf": [
                 {
@@ -6242,6 +6284,8 @@
                   "enum": [
                     "MYSQL",
                     "POSTGRESQL",
+                    "REDSHIFT",
+                    "SQLDW",
                     "SQLSERVER",
                     "SALESFORCE",
                     "BIGQUERY",
@@ -6254,7 +6298,8 @@
                     "TERADATA",
                     "SHAREPOINT",
                     "DYNAMICS365",
-                    "CONFLUENCE"
+                    "CONFLUENCE",
+                    "META_MARKETING"
                   ]
                 },
                 {
@@ -6771,6 +6816,12 @@
                       "description": "The primary key of the table used to apply changes.",
                       "$ref": "#/$defs/slice/string"
                     },
+                    "query_based_connector_config": {
+                      "description": "Configurations that are only applicable for query-based ingestion connectors.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig",
+                      "x-databricks-preview": "PRIVATE",
+                      "doNotSuggest": true
+                    },
                     "salesforce_include_formula_fields": {
                       "description": "If true, formula fields defined in the table are included in the ingestion. This setting is only valid for the Salesforce connector",
                       "$ref": "#/$defs/bool",
@@ -6927,7 +6978,8 @@
                   "type": "string",
                   "enum": [
                     "NONE",
-                    "BLOCK"
+                    "BLOCK",
+                    "MASK"
                   ]
                 },
                 {
@@ -7314,6 +7366,28 @@
                   "required": [
                     "databricks_workspace_url"
                   ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "serving.EmailNotifications": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "on_update_failure": {
+                      "description": "A list of email addresses to be notified when an endpoint fails to update its configuration or state.",
+                      "$ref": "#/$defs/slice/string"
+                    },
+                    "on_update_success": {
+                      "description": "A list of email addresses to be notified when an endpoint successfully updates its configuration or state.",
+                      "$ref": "#/$defs/slice/string"
+                    }
+                  },
+                  "additionalProperties": false
                 },
                 {
                   "type": "string",

@@ -1,0 +1,11 @@
+trace $CLI bundle deploy -t dev
+
+title "No artifact metrics expected"
+trace cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_deploy_event.experimental.bool_values[] | select(.key == "artifacts_reference_used")'
+
+trace $CLI bundle deploy -t prod
+
+title "Artifact metrics expected"
+trace cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_deploy_event.experimental.bool_values[] | select(.key == "artifacts_reference_used")'
+
+rm out.requests.txt

@@ -26,10 +26,7 @@ func New() *cobra.Command {
   For newly created workspaces: 1. Disables the use of DBFS root and mounts. 2.
   Hive Metastore will not be provisioned. 3. Disables the use of ‘No-isolation
   clusters’. 4. Disables Databricks Runtime versions prior to 13.3LTS.`,
-
-		// This service is being previewed; hide from help output.
-		Hidden: true,
-		RunE:   root.ReportUnknownSubcommand,
+		RunE: root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

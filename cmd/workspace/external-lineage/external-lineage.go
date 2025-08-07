@@ -226,8 +226,8 @@ func newListExternalLineageRelationships() *cobra.Command {
 
 	cmd.Flags().Var(&listExternalLineageRelationshipsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().IntVar(&listExternalLineageRelationshipsReq.PageSize, "page-size", listExternalLineageRelationshipsReq.PageSize, ``)
-	cmd.Flags().StringVar(&listExternalLineageRelationshipsReq.PageToken, "page-token", listExternalLineageRelationshipsReq.PageToken, ``)
+	cmd.Flags().IntVar(&listExternalLineageRelationshipsReq.PageSize, "page-size", listExternalLineageRelationshipsReq.PageSize, `Specifies the maximum number of external lineage relationships to return in a single response.`)
+	cmd.Flags().StringVar(&listExternalLineageRelationshipsReq.PageToken, "page-token", listExternalLineageRelationshipsReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
 
 	cmd.Use = "list-external-lineage-relationships"
 	cmd.Short = `List external lineage relationships.`
@@ -321,9 +321,9 @@ func newUpdateExternalLineageRelationship() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := root.ExactArgs(0)(cmd, args)
+			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'source', 'target' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, provide only UPDATE_MASK as positional arguments. Provide 'source', 'target' in your JSON input")
 			}
 			return nil
 		}

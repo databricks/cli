@@ -1,0 +1,40 @@
+
+>>> [CLI] bundle validate -o json -t target_x
+{
+  "final": {
+    "default": "hello from foo x",
+    "value": "hello from foo x"
+  },
+  "foo_x": {
+    "default": "hello from foo x",
+    "value": "hello from foo x"
+  },
+  "foo_y": {
+    "default": "hi from foo y",
+    "value": "hi from foo y"
+  },
+  "tail": {
+    "default": "x",
+    "value": "x"
+  }
+}
+
+>>> [CLI] bundle validate -o json -t target_y
+{
+  "final": {
+    "default": "hi from foo y",
+    "value": "hi from foo y"
+  },
+  "foo_x": {
+    "default": "hello from foo x",
+    "value": "hello from foo x"
+  },
+  "foo_y": {
+    "default": "hi from foo y",
+    "value": "hi from foo y"
+  },
+  "tail": {
+    "default": "y",
+    "value": "y"
+  }
+}

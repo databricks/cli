@@ -10,13 +10,13 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-type resolveResourceReferences struct{}
+type resolveLookupVariables struct{}
 
-func ResolveResourceReferences() bundle.Mutator {
-	return &resolveResourceReferences{}
+func ResolveLookupVariables() bundle.Mutator {
+	return &resolveLookupVariables{}
 }
 
-func (m *resolveResourceReferences) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *resolveLookupVariables) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	errs, errCtx := errgroup.WithContext(ctx)
 
 	for k := range b.Config.Variables {
@@ -44,6 +44,6 @@ func (m *resolveResourceReferences) Apply(ctx context.Context, b *bundle.Bundle)
 	return diag.FromErr(errs.Wait())
 }
 
-func (*resolveResourceReferences) Name() string {
-	return "ResolveResourceReferences"
+func (*resolveLookupVariables) Name() string {
+	return "ResolveLookupVariables"
 }

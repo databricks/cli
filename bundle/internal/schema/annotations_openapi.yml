@@ -5,7 +5,10 @@ github.com/databricks/cli/bundle/config/resources.App:
       The active deployment of the app. A deployment is considered active when it has been deployed
       to the app compute.
   "app_status": {}
-  "budget_policy_id": {}
+  "budget_policy_id":
+    "description": |-
+      TODO: Deprecate this field after serverless entitlements are released to all prod stages
+      and the new usage_policy_id is properly populated and used.
   "compute_status": {}
   "create_time":
     "description": |-
@@ -20,7 +23,10 @@ github.com/databricks/cli/bundle/config/resources.App:
   "description":
     "description": |-
       The description of the app.
-  "effective_budget_policy_id": {}
+  "effective_budget_policy_id":
+    "description": |-
+      TODO: Deprecate this field after serverless entitlements are released to all prod stages
+      and the new usage_policy_id is properly populated and used.
   "effective_user_api_scopes":
     "description": |-
       The effective api scopes granted to the user access token.
@@ -392,6 +398,9 @@ github.com/databricks/cli/bundle/config/resources.ModelServingEndpoint:
     "description": |-
       The core config of the serving endpoint.
   "description": {}
+  "email_notifications":
+    "description": |-
+      Email notification settings.
   "name":
     "description": |-
       The name of the serving endpoint. This field is required and must be unique across a Databricks workspace.
@@ -517,41 +526,44 @@ github.com/databricks/cli/bundle/config/resources.Pipeline:
 github.com/databricks/cli/bundle/config/resources.QualityMonitor:
   "assets_dir":
     "description": |-
-      The directory to store monitoring assets (e.g. dashboard, metric tables).
+      [Create:REQ Update:IGN] Field for specifying the absolute path to a custom directory to store data-monitoring
+      assets. Normally prepopulated to a default user location via UI and Python APIs.
   "baseline_table_name":
-    "description": |
-      Name of the baseline table from which drift metrics are computed from.
-      Columns in the monitored table should also be present in the baseline table.
+    "description": |-
+      [Create:OPT Update:OPT] Baseline table name.
+      Baseline data is used to compute drift from the data in the monitored `table_name`.
+      The baseline table and the monitored table shall have the same schema.
   "custom_metrics":
-    "description": |
-      Custom metrics to compute on the monitored table. These can be aggregate metrics, derived
-      metrics (from already computed aggregate metrics), or drift metrics (comparing metrics across time
-      windows).
+    "description": |-
+      [Create:OPT Update:OPT] Custom metrics.
   "data_classification_config":
     "description": |-
-      The data classification config for the monitor.
+      [Create:OPT Update:OPT] Data classification related config.
     "x-databricks-preview": |-
       PRIVATE
-  "inference_log":
+  "inference_log": {}
+  "latest_monitor_failure_msg":
     "description": |-
-      Configuration for monitoring inference logs.
+      [Create:ERR Update:IGN] The latest error message for a monitor failure.
   "notifications":
     "description": |-
-      The notification settings for the monitor.
+      [Create:OPT Update:OPT] Field for specifying notification settings.
   "output_schema_name":
     "description": |-
-      Schema where output metric tables are created.
+      [Create:REQ Update:REQ] Schema where output tables are created. Needs to be in 2-level format {catalog}.{schema}
   "schedule":
     "description": |-
-      The schedule for automatically updating and refreshing metric tables.
+      [Create:OPT Update:OPT] The monitor schedule.
   "skip_builtin_dashboard":
     "description": |-
       Whether to skip creating a default dashboard summarizing data quality metrics.
   "slicing_exprs":
-    "description": |
-      List of column expressions to slice data with for targeted analysis. The data is grouped by
+    "description": |-
+      [Create:OPT Update:OPT] List of column expressions to slice data with for targeted analysis. The data is grouped by
       each expression independently, resulting in a separate slice for each predicate and its
-      complements. For high-cardinality columns, only the top 100 unique values by frequency will
+      complements. For example `slicing_exprs=[“col_1”, “col_2 > 10”]` will generate the following
+      slices: two slices for `col_2 > 10` (True and False), and one slice per unique value in
+      `col1`. For high-cardinality columns, only the top 100 unique values by frequency will
       generate slices.
   "snapshot":
     "description": |-
@@ -560,7 +572,7 @@ github.com/databricks/cli/bundle/config/resources.QualityMonitor:
     "description": |-
       Configuration for monitoring time series tables.
   "warehouse_id":
-    "description": |
+    "description": |-
       Optional argument to specify the warehouse for dashboard creation. If not specified, the first running
       warehouse will be used.
 github.com/databricks/cli/bundle/config/resources.RegisteredModel:
@@ -914,76 +926,72 @@ github.com/databricks/databricks-sdk-go/service/catalog.MonitorCronSchedule:
     "description": |-
       Read only field that indicates whether a schedule is paused or not.
   "quartz_cron_expression":
-    "description": |
+    "description": |-
       The expression that determines when to run the monitor. See [examples](https://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html).
   "timezone_id":
-    "description": |
-      The timezone id (e.g., ``"PST"``) in which to evaluate the quartz expression.
+    "description": |-
+      The timezone id (e.g., ``PST``) in which to evaluate the quartz expression.
 github.com/databricks/databricks-sdk-go/service/catalog.MonitorCronSchedulePauseStatus:
   "_":
     "description": |-
-      Read only field that indicates whether a schedule is paused or not.
+      Source link: https://src.dev.databricks.com/databricks/universe/-/blob/elastic-spark-common/api/messages/schedule.proto
+      Monitoring workflow schedule pause status.
     "enum":
+      - |-
+        UNSPECIFIED
       - |-
         UNPAUSED
       - |-
         PAUSED
 github.com/databricks/databricks-sdk-go/service/catalog.MonitorDataClassificationConfig:
   "_":
-    "x-databricks-preview": |-
-      PRIVATE
+    "description": |-
+      Data classification related configuration.
   "enabled":
     "description": |-
-      Whether data classification is enabled.
+      Whether to enable data classification.
 github.com/databricks/databricks-sdk-go/service/catalog.MonitorDestination:
   "email_addresses":
     "description": |-
       The list of email addresses to send the notification to. A maximum of 5 email addresses is supported.
 github.com/databricks/databricks-sdk-go/service/catalog.MonitorInferenceLog:
   "granularities":
-    "description": |
-      Granularities for aggregating data into time windows based on their timestamp. Currently the following static
-      granularities are supported:
-      {``"5 minutes"``, ``"30 minutes"``, ``"1 hour"``, ``"1 day"``, ``"<n> week(s)"``, ``"1 month"``, ``"1 year"``}.
+    "description": |-
+      List of granularities to use when aggregating data into time windows based on their timestamp.
   "label_col":
     "description": |-
-      Optional column that contains the ground truth for the prediction.
+      Column for the label.
   "model_id_col":
-    "description": |
-      Column that contains the id of the model generating the predictions. Metrics will be computed per model id by
-      default, and also across all model ids.
+    "description": |-
+      Column for the model identifier.
   "prediction_col":
     "description": |-
-      Column that contains the output/prediction from the model.
+      Column for the prediction.
   "prediction_proba_col":
-    "description": |
-      Optional column that contains the prediction probabilities for each class in a classification problem type.
-      The values in this column should be a map, mapping each class label to the prediction probability for a given
-      sample. The map should be of PySpark MapType().
+    "description": |-
+      Column for prediction probabilities
   "problem_type":
     "description": |-
-      Problem type the model aims to solve. Determines the type of model-quality metrics that will be computed.
+      Problem type the model aims to solve.
   "timestamp_col":
-    "description": |
-      Column that contains the timestamps of requests. The column must be one of the following:
-      - A ``TimestampType`` column
-      - A column whose values can be converted to timestamps through the pyspark
-        ``to_timestamp`` [function](https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.functions.to_timestamp.html).
+    "description": |-
+      Column for the timestamp.
 github.com/databricks/databricks-sdk-go/service/catalog.MonitorInferenceLogProblemType:
   "_":
-    "description": |-
-      Problem type the model aims to solve. Determines the type of model-quality metrics that will be computed.
     "enum":
       - |-
         PROBLEM_TYPE_CLASSIFICATION
       - |-
         PROBLEM_TYPE_REGRESSION
 github.com/databricks/databricks-sdk-go/service/catalog.MonitorMetric:
+  "_":
+    "description": |-
+      Custom metric definition.
   "definition":
     "description": |-
       Jinja template for a SQL expression that specifies how to compute the metric. See [create metric definition](https://docs.databricks.com/en/lakehouse-monitoring/custom-metrics.html#create-definition).
   "input_columns":
-    "description": |
+    "description": |-
       A list of column names in the input table the metric should be computed for.
       Can use ``":table"`` to indicate that the metric needs information from multiple columns.
   "name":
@@ -993,7 +1001,7 @@ github.com/databricks/databricks-sdk-go/service/catalog.MonitorMetric:
     "description": |-
       The output type of the custom metric.
   "type":
-    "description": |
+    "description": |-
       Can only be one of ``"CUSTOM_METRIC_TYPE_AGGREGATE"``, ``"CUSTOM_METRIC_TYPE_DERIVED"``, or ``"CUSTOM_METRIC_TYPE_DRIFT"``.
       The ``"CUSTOM_METRIC_TYPE_AGGREGATE"`` and ``"CUSTOM_METRIC_TYPE_DERIVED"`` metrics
       are computed on a single table, whereas the ``"CUSTOM_METRIC_TYPE_DRIFT"`` compare metrics across
@@ -1003,10 +1011,10 @@ github.com/databricks/databricks-sdk-go/service/catalog.MonitorMetric:
       - CUSTOM_METRIC_TYPE_DRIFT:  depend on previously computed aggregate or derived metrics
 github.com/databricks/databricks-sdk-go/service/catalog.MonitorMetricType:
   "_":
-    "description": |
-      Can only be one of ``"CUSTOM_METRIC_TYPE_AGGREGATE"``, ``"CUSTOM_METRIC_TYPE_DERIVED"``, or ``"CUSTOM_METRIC_TYPE_DRIFT"``.
-      The ``"CUSTOM_METRIC_TYPE_AGGREGATE"`` and ``"CUSTOM_METRIC_TYPE_DERIVED"`` metrics
-      are computed on a single table, whereas the ``"CUSTOM_METRIC_TYPE_DRIFT"`` compare metrics across
+    "description": |-
+      Can only be one of ``\"CUSTOM_METRIC_TYPE_AGGREGATE\"``, ``\"CUSTOM_METRIC_TYPE_DERIVED\"``, or ``\"CUSTOM_METRIC_TYPE_DRIFT\"``.
+      The ``\"CUSTOM_METRIC_TYPE_AGGREGATE\"`` and ``\"CUSTOM_METRIC_TYPE_DERIVED\"`` metrics
+      are computed on a single table, whereas the ``\"CUSTOM_METRIC_TYPE_DRIFT\"`` compare metrics across
       baseline and input table, or across the two consecutive time windows.
       - CUSTOM_METRIC_TYPE_AGGREGATE: only depend on the existing columns in your table
       - CUSTOM_METRIC_TYPE_DERIVED: depend on previously computed aggregate metrics
@@ -1021,25 +1029,28 @@ github.com/databricks/databricks-sdk-go/service/catalog.MonitorMetricType:
 github.com/databricks/databricks-sdk-go/service/catalog.MonitorNotifications:
   "on_failure":
     "description": |-
-      Who to send notifications to on monitor failure.
+      Destinations to send notifications on failure/timeout.
   "on_new_classification_tag_detected":
     "description": |-
-      Who to send notifications to when new data classification tags are detected.
+      Destinations to send notifications on new classification tag detected.
     "x-databricks-preview": |-
       PRIVATE
-github.com/databricks/databricks-sdk-go/service/catalog.MonitorSnapshot: {}
+github.com/databricks/databricks-sdk-go/service/catalog.MonitorSnapshot:
+  "_":
+    "description": |-
+      Snapshot analysis configuration
 github.com/databricks/databricks-sdk-go/service/catalog.MonitorTimeSeries:
+  "_":
+    "description": |-
+      Time series analysis configuration.
   "granularities":
-    "description": |
+    "description": |-
       Granularities for aggregating data into time windows based on their timestamp. Currently the following static
       granularities are supported:
-      {``"5 minutes"``, ``"30 minutes"``, ``"1 hour"``, ``"1 day"``, ``"<n> week(s)"``, ``"1 month"``, ``"1 year"``}.
+      {``\"5 minutes\"``, ``\"30 minutes\"``, ``\"1 hour\"``, ``\"1 day\"``, ``\"\u003cn\u003e week(s)\"``, ``\"1 month\"``, ``\"1 year\"``}.
   "timestamp_col":
-    "description": |
-      Column that contains the timestamps of requests. The column must be one of the following:
-      - A ``TimestampType`` column
-      - A column whose values can be converted to timestamps through the pyspark
-        ``to_timestamp`` [function](https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.functions.to_timestamp.html).
+    "description": |-
+      Column for the timestamp.
 github.com/databricks/databricks-sdk-go/service/catalog.VolumeType:
   "_":
     "description": |-
@@ -2953,6 +2964,43 @@ github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefin
   "table_configuration":
     "description": |-
       Configuration settings to control the ingestion of tables. These settings are applied to all tables in the pipeline.
+? github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig
+: "_":
+    "description": |-
+      Configurations that are only applicable for query-based ingestion connectors.
+  "cursor_columns":
+    "description": |-
+      The names of the monotonically increasing columns in the source table that are used to enable
+      the table to be read and ingested incrementally through structured streaming.
+      The columns are allowed to have repeated values but have to be non-decreasing.
+      If the source data is merged into the destination (e.g., using SCD Type 1 or Type 2), these
+      columns will implicitly define the `sequence_by` behavior. You can still explicitly set
+      `sequence_by` to override this default.
+    "x-databricks-preview": |-
+      PRIVATE
+  "deletion_condition":
+    "description": |-
+      Specifies a SQL WHERE condition that specifies that the source row has been deleted.
+      This is sometimes referred to as "soft-deletes".
+      For example: "Operation = 'DELETE'" or "is_deleted = true".
+      This field is orthogonal to `hard_deletion_sync_interval_in_seconds`,
+      one for soft-deletes and the other for hard-deletes.
+      See also the hard_deletion_sync_min_interval_in_seconds field for
+      handling of "hard deletes" where the source rows are physically removed from the table.
+    "x-databricks-preview": |-
+      PRIVATE
+  "hard_deletion_sync_min_interval_in_seconds":
+    "description": |-
+      Specifies the minimum interval (in seconds) between snapshots on primary keys
+      for detecting and synchronizing hard deletions—i.e., rows that have been
+      physically removed from the source table.
+      This interval acts as a lower bound. If ingestion runs less frequently than
+      this value, hard deletion synchronization will align with the actual ingestion
+      frequency instead of happening more often.
+      If not set, hard deletion synchronization via snapshots is disabled.
+      This field is mutable and can be updated without triggering a full snapshot.
+    "x-databricks-preview": |-
+      PRIVATE
 github.com/databricks/databricks-sdk-go/service/pipelines.IngestionSourceType:
   "_":
     "enum":
@@ -2960,6 +3008,10 @@ github.com/databricks/databricks-sdk-go/service/pipelines.IngestionSourceType:
         MYSQL
       - |-
         POSTGRESQL
+      - |-
+        REDSHIFT
+      - |-
+        SQLDW
       - |-
         SQLSERVER
       - |-
@@ -2986,6 +3038,8 @@ github.com/databricks/databricks-sdk-go/service/pipelines.IngestionSourceType:
         DYNAMICS365
       - |-
         CONFLUENCE
+      - |-
+        META_MARKETING
 github.com/databricks/databricks-sdk-go/service/pipelines.ManualTrigger: {}
 github.com/databricks/databricks-sdk-go/service/pipelines.NotebookLibrary:
   "path":
@@ -3277,6 +3331,11 @@ github.com/databricks/databricks-sdk-go/service/pipelines.TableSpecificConfig:
   "primary_keys":
     "description": |-
       The primary key of the table used to apply changes.
+  "query_based_connector_config":
+    "description": |-
+      Configurations that are only applicable for query-based ingestion connectors.
+    "x-databricks-preview": |-
+      PRIVATE
   "salesforce_include_formula_fields":
     "description": |-
       If true, formula fields defined in the table are included in the ingestion. This setting is only valid for the Salesforce connector
@@ -3363,6 +3422,8 @@ github.com/databricks/databricks-sdk-go/service/serving.AiGatewayGuardrailPiiBeh
         NONE
       - |-
         BLOCK
+      - |-
+        MASK
 github.com/databricks/databricks-sdk-go/service/serving.AiGatewayGuardrails:
   "input":
     "description": |-
@@ -3575,6 +3636,13 @@ github.com/databricks/databricks-sdk-go/service/serving.DatabricksModelServingCo
     "description": |-
       The URL of the Databricks workspace containing the model serving endpoint
       pointed to by this external model.
+github.com/databricks/databricks-sdk-go/service/serving.EmailNotifications:
+  "on_update_failure":
+    "description": |-
+      A list of email addresses to be notified when an endpoint fails to update its configuration or state.
+  "on_update_success":
+    "description": |-
+      A list of email addresses to be notified when an endpoint successfully updates its configuration or state.
 github.com/databricks/databricks-sdk-go/service/serving.EndpointCoreConfigInput:
   "auto_capture_config":
     "description": |-

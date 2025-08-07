@@ -206,6 +206,11 @@ type ResourceModelServingConfig struct {
 	TrafficConfig     *ResourceModelServingConfigTrafficConfig     `json:"traffic_config,omitempty"`
 }
 
+type ResourceModelServingEmailNotifications struct {
+	OnUpdateFailure []string `json:"on_update_failure,omitempty"`
+	OnUpdateSuccess []string `json:"on_update_success,omitempty"`
+}
+
 type ResourceModelServingRateLimits struct {
 	Calls         int    `json:"calls"`
 	Key           string `json:"key,omitempty"`
@@ -218,14 +223,16 @@ type ResourceModelServingTags struct {
 }
 
 type ResourceModelServing struct {
-	BudgetPolicyId    string                           `json:"budget_policy_id,omitempty"`
-	Description       string                           `json:"description,omitempty"`
-	Id                string                           `json:"id,omitempty"`
-	Name              string                           `json:"name"`
-	RouteOptimized    bool                             `json:"route_optimized,omitempty"`
-	ServingEndpointId string                           `json:"serving_endpoint_id,omitempty"`
-	AiGateway         *ResourceModelServingAiGateway   `json:"ai_gateway,omitempty"`
-	Config            *ResourceModelServingConfig      `json:"config,omitempty"`
-	RateLimits        []ResourceModelServingRateLimits `json:"rate_limits,omitempty"`
-	Tags              []ResourceModelServingTags       `json:"tags,omitempty"`
+	BudgetPolicyId     string                                  `json:"budget_policy_id,omitempty"`
+	Description        string                                  `json:"description,omitempty"`
+	EndpointUrl        string                                  `json:"endpoint_url,omitempty"`
+	Id                 string                                  `json:"id,omitempty"`
+	Name               string                                  `json:"name"`
+	RouteOptimized     bool                                    `json:"route_optimized,omitempty"`
+	ServingEndpointId  string                                  `json:"serving_endpoint_id,omitempty"`
+	AiGateway          *ResourceModelServingAiGateway          `json:"ai_gateway,omitempty"`
+	Config             *ResourceModelServingConfig             `json:"config,omitempty"`
+	EmailNotifications *ResourceModelServingEmailNotifications `json:"email_notifications,omitempty"`
+	RateLimits         []ResourceModelServingRateLimits        `json:"rate_limits,omitempty"`
+	Tags               []ResourceModelServingTags              `json:"tags,omitempty"`
 }

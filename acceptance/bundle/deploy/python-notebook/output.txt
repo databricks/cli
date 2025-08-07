@@ -24,7 +24,8 @@ Deployment complete!
       "tasks": [
         {
           "notebook_task": {
-            "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/my_notebook"
+            "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/my_notebook",
+            "source": "WORKSPACE"
           },
           "task_key": "my_notebook"
         }

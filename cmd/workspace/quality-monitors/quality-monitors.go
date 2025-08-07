@@ -23,12 +23,11 @@ func New() *cobra.Command {
 		Short: `A monitor computes and monitors data or model quality metrics for a table over time.`,
 		Long: `A monitor computes and monitors data or model quality metrics for a table over
   time. It generates metrics tables and a dashboard that you can use to monitor
-  table health and set alerts.
-  
-  Most write operations require the user to be the owner of the table (or its
-  parent schema or parent catalog). Viewing the dashboard, computed metrics, or
-  monitor configuration only requires the user to have **SELECT** privileges on
-  the table (along with **USE_SCHEMA** and **USE_CATALOG**).`,
+  table health and set alerts. Most write operations require the user to be the
+  owner of the table (or its parent schema or parent catalog). Viewing the
+  dashboard, computed metrics, or monitor configuration only requires the user
+  to have **SELECT** privileges on the table (along with **USE_SCHEMA** and
+  **USE_CATALOG**).`,
 		GroupID: "catalog",
 		Annotations: map[string]string{
 			"package": "catalog",
@@ -73,20 +72,12 @@ func newCancelRefresh() *cobra.Command {
 	cmd.Short = `Cancel refresh.`
 	cmd.Long = `Cancel refresh.
   
-  Cancel an active monitor refresh for the given refresh ID.
-  
-  The caller must either: 1. be an owner of the table's parent catalog 2. have
-  **USE_CATALOG** on the table's parent catalog and be an owner of the table's
-  parent schema 3. have the following permissions: - **USE_CATALOG** on the
-  table's parent catalog - **USE_SCHEMA** on the table's parent schema - be an
-  owner of the table
-  
-  Additionally, the call must be made from the workspace where the monitor was
-  created.
+  Cancels an already-initiated refresh job.
 
   Arguments:
-    TABLE_NAME: Full name of the table.
-    REFRESH_ID: ID of the refresh.`
+    TABLE_NAME: UC table name in format catalog.schema.table_name. table_name is case
+      insensitive and spaces are disallowed.
+    REFRESH_ID: `
 
 	// This command is being previewed; hide from help output.
 	cmd.Hidden = true
@@ -104,7 +95,10 @@ func newCancelRefresh() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		cancelRefreshReq.TableName = args[0]
-		cancelRefreshReq.RefreshId = args[1]
+		_, err = fmt.Sscan(args[1], &cancelRefreshReq.RefreshId)
+		if err != nil {
+			return fmt.Errorf("invalid REFRESH_ID: %s", args[1])
+		}
 
 		err = w.QualityMonitors.CancelRefresh(ctx, cancelRefreshReq)
 		if err != nil {
@@ -142,10 +136,11 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.BaselineTableName, "baseline-table-name", createReq.BaselineTableName, `Name of the baseline table from which drift metrics are computed from.`)
+	cmd.Flags().StringVar(&createReq.BaselineTableName, "baseline-table-name", createReq.BaselineTableName, `[Create:OPT Update:OPT] Baseline table name.`)
 	// TODO: array: custom_metrics
 	// TODO: complex arg: data_classification_config
 	// TODO: complex arg: inference_log
+	cmd.Flags().StringVar(&createReq.LatestMonitorFailureMsg, "latest-monitor-failure-msg", createReq.LatestMonitorFailureMsg, `[Create:ERR Update:IGN] The latest error message for a monitor failure.`)
 	// TODO: complex arg: notifications
 	// TODO: complex arg: schedule
 	cmd.Flags().BoolVar(&createReq.SkipBuiltinDashboard, "skip-builtin-dashboard", createReq.SkipBuiltinDashboard, `Whether to skip creating a default dashboard summarizing data quality metrics.`)
@@ -154,7 +149,7 @@ func newCreate() *cobra.Command {
 	// TODO: complex arg: time_series
 	cmd.Flags().StringVar(&createReq.WarehouseId, "warehouse-id", createReq.WarehouseId, `Optional argument to specify the warehouse for dashboard creation.`)
 
-	cmd.Use = "create TABLE_NAME ASSETS_DIR OUTPUT_SCHEMA_NAME"
+	cmd.Use = "create TABLE_NAME OUTPUT_SCHEMA_NAME ASSETS_DIR"
 	cmd.Short = `Create a table monitor.`
 	cmd.Long = `Create a table monitor.
   
@@ -171,9 +166,13 @@ func newCreate() *cobra.Command {
   where this call was made.
 
   Arguments:
-    TABLE_NAME: Full name of the table.
-    ASSETS_DIR: The directory to store monitoring assets (e.g. dashboard, metric tables).
-    OUTPUT_SCHEMA_NAME: Schema where output metric tables are created.`
+    TABLE_NAME: UC table name in format catalog.schema.table_name. This field
+      corresponds to the {full_table_name_arg} arg in the endpoint path.
+    OUTPUT_SCHEMA_NAME: [Create:REQ Update:REQ] Schema where output tables are created. Needs to
+      be in 2-level format {catalog}.{schema}
+    ASSETS_DIR: [Create:REQ Update:IGN] Field for specifying the absolute path to a custom
+      directory to store data-monitoring assets. Normally prepopulated to a
+      default user location via UI and Python APIs.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -181,7 +180,7 @@ func newCreate() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only TABLE_NAME as positional arguments. Provide 'assets_dir', 'output_schema_name' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, provide only TABLE_NAME as positional arguments. Provide 'output_schema_name', 'assets_dir' in your JSON input")
 			}
 			return nil
 		}
@@ -208,10 +207,10 @@ func newCreate() *cobra.Command {
 		}
 		createReq.TableName = args[0]
 		if !cmd.Flags().Changed("json") {
-			createReq.AssetsDir = args[1]
+			createReq.OutputSchemaName = args[1]
 		}
 		if !cmd.Flags().Changed("json") {
-			createReq.OutputSchemaName = args[2]
+			createReq.AssetsDir = args[2]
 		}
 
 		response, err := w.QualityMonitors.Create(ctx, createReq)
@@ -266,7 +265,8 @@ func newDelete() *cobra.Command {
   call; those assets must be manually cleaned up (if desired).
 
   Arguments:
-    TABLE_NAME: Full name of the table.`
+    TABLE_NAME: UC table name in format catalog.schema.table_name. This field
+      corresponds to the {full_table_name_arg} arg in the endpoint path.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -282,11 +282,11 @@ func newDelete() *cobra.Command {
 
 		deleteReq.TableName = args[0]
 
-		err = w.QualityMonitors.Delete(ctx, deleteReq)
+		response, err := w.QualityMonitors.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -333,7 +333,8 @@ func newGet() *cobra.Command {
   was created.
 
   Arguments:
-    TABLE_NAME: Full name of the table.`
+    TABLE_NAME: UC table name in format catalog.schema.table_name. This field
+      corresponds to the {full_table_name_arg} arg in the endpoint path.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -414,7 +415,10 @@ func newGetRefresh() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		getRefreshReq.TableName = args[0]
-		getRefreshReq.RefreshId = args[1]
+		_, err = fmt.Sscan(args[1], &getRefreshReq.RefreshId)
+		if err != nil {
+			return fmt.Errorf("invalid REFRESH_ID: %s", args[1])
+		}
 
 		response, err := w.QualityMonitors.GetRefresh(ctx, getRefreshReq)
 		if err != nil {
@@ -466,7 +470,8 @@ func newListRefreshes() *cobra.Command {
   created.
 
   Arguments:
-    TABLE_NAME: Full name of the table.`
+    TABLE_NAME: UC table name in format catalog.schema.table_name. table_name is case
+      insensitive and spaces are disallowed.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -537,7 +542,8 @@ func newRegenerateDashboard() *cobra.Command {
   the monitor was created.
 
   Arguments:
-    TABLE_NAME: Full name of the table.`
+    TABLE_NAME: UC table name in format catalog.schema.table_name. This field
+      corresponds to the {full_table_name_arg} arg in the endpoint path.`
 
 	// This command is being previewed; hide from help output.
 	cmd.Hidden = true
@@ -602,8 +608,8 @@ func newRunRefresh() *cobra.Command {
 	var runRefreshReq catalog.RunRefreshRequest
 
 	cmd.Use = "run-refresh TABLE_NAME"
-	cmd.Short = `Queue a metric refresh for a monitor.`
-	cmd.Long = `Queue a metric refresh for a monitor.
+	cmd.Short = `Run refresh.`
+	cmd.Long = `Run refresh.
   
   Queues a metric refresh on the monitor for the specified table. The refresh
   will execute in the background.
@@ -618,7 +624,8 @@ func newRunRefresh() *cobra.Command {
   created.
 
   Arguments:
-    TABLE_NAME: Full name of the table.`
+    TABLE_NAME: UC table name in format catalog.schema.table_name. table_name is case
+      insensitive and spaces are disallowed.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -670,11 +677,12 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.BaselineTableName, "baseline-table-name", updateReq.BaselineTableName, `Name of the baseline table from which drift metrics are computed from.`)
+	cmd.Flags().StringVar(&updateReq.BaselineTableName, "baseline-table-name", updateReq.BaselineTableName, `[Create:OPT Update:OPT] Baseline table name.`)
 	// TODO: array: custom_metrics
-	cmd.Flags().StringVar(&updateReq.DashboardId, "dashboard-id", updateReq.DashboardId, `Id of dashboard that visualizes the computed metrics.`)
+	cmd.Flags().StringVar(&updateReq.DashboardId, "dashboard-id", updateReq.DashboardId, `[Create:ERR Update:OPT] Id of dashboard that visualizes the computed metrics.`)
 	// TODO: complex arg: data_classification_config
 	// TODO: complex arg: inference_log
+	cmd.Flags().StringVar(&updateReq.LatestMonitorFailureMsg, "latest-monitor-failure-msg", updateReq.LatestMonitorFailureMsg, `[Create:ERR Update:IGN] The latest error message for a monitor failure.`)
 	// TODO: complex arg: notifications
 	// TODO: complex arg: schedule
 	// TODO: array: slicing_exprs
@@ -700,8 +708,10 @@ func newUpdate() *cobra.Command {
   updated.
 
   Arguments:
-    TABLE_NAME: Full name of the table.
-    OUTPUT_SCHEMA_NAME: Schema where output metric tables are created.`
+    TABLE_NAME: UC table name in format catalog.schema.table_name. This field
+      corresponds to the {full_table_name_arg} arg in the endpoint path.
+    OUTPUT_SCHEMA_NAME: [Create:REQ Update:REQ] Schema where output tables are created. Needs to
+      be in 2-level format {catalog}.{schema}`
 
 	cmd.Annotations = make(map[string]string)
 
