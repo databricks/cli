@@ -1,3 +1,6 @@
+bundle:
+  name: test-bundle
+
 variables:
   foo_x:
     default: hello from foo x
