@@ -136,7 +136,7 @@ This action will result in the deletion of the following UC schemas. Any underly
   delete schema my_schema
 
 This action will result in the deletion of the following Lakeflow Declarative Pipelines along with the
-streaming tables (STs) and materialized views (MVs) managed by them:
+Streaming Tables (STs) and Materialized Views (MVs) managed by them:
   delete pipeline my_pipeline
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
