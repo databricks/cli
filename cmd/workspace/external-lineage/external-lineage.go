@@ -321,9 +321,9 @@ func newUpdateExternalLineageRelationship() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := root.ExactArgs(0)(cmd, args)
+			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'source', 'target' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, provide only UPDATE_MASK as positional arguments. Provide 'source', 'target' in your JSON input")
 			}
 			return nil
 		}
