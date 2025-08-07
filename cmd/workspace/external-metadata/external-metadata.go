@@ -298,8 +298,8 @@ func newListExternalMetadata() *cobra.Command {
 
 	var listExternalMetadataReq catalog.ListExternalMetadataRequest
 
-	cmd.Flags().IntVar(&listExternalMetadataReq.PageSize, "page-size", listExternalMetadataReq.PageSize, ``)
-	cmd.Flags().StringVar(&listExternalMetadataReq.PageToken, "page-token", listExternalMetadataReq.PageToken, ``)
+	cmd.Flags().IntVar(&listExternalMetadataReq.PageSize, "page-size", listExternalMetadataReq.PageSize, `Specifies the maximum number of external metadata objects to return in a single response.`)
+	cmd.Flags().StringVar(&listExternalMetadataReq.PageToken, "page-token", listExternalMetadataReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
 
 	cmd.Use = "list-external-metadata"
 	cmd.Short = `List external metadata objects.`
