@@ -9,7 +9,7 @@ variables:
   tail:
     default: x
   final:
-    # This works but it's not officially supported, please do not rely on it.\
+    # This works but it's not officially supported, please do not rely on it.
     # We might start to reject this config in the future.
     default: ${var.foo_${var.tail}}
 
