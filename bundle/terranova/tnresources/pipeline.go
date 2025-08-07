@@ -27,7 +27,7 @@ func (r *ResourcePipeline) Config() any {
 func (r *ResourcePipeline) DoCreate(ctx context.Context) (string, error) {
 	response, err := r.client.Pipelines.Create(ctx, r.config)
 	if err != nil {
-		return "", SDKError{Method: "Pipelines.Create", Err: err}
+		return "", err
 	}
 	return response.PipelineId, nil
 }
@@ -68,19 +68,11 @@ func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string) error {
 		ForceSendFields:      filterFields[pipelines.EditPipeline](r.config.ForceSendFields),
 	}
 
-	err := r.client.Pipelines.Update(ctx, request)
-	if err != nil {
-		return SDKError{Method: "Pipelines.Update", Err: err}
-	}
-	return nil
+	return r.client.Pipelines.Update(ctx, request)
 }
 
 func DeletePipeline(ctx context.Context, client *databricks.WorkspaceClient, id string) error {
-	err := client.Pipelines.DeleteByPipelineId(ctx, id)
-	if err != nil {
-		return SDKError{Method: "Pipelines.DeleteByPipelineId", Err: err}
-	}
-	return nil
+	return client.Pipelines.DeleteByPipelineId(ctx, id)
 }
 
 func (r *ResourcePipeline) WaitAfterCreate(ctx context.Context) error {
