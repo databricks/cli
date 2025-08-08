@@ -1,7 +1,17 @@
+{{/* The latest LTS DBR version; this should be updated a few months after each LTS.
+   */}}
 {{define "latest_lts_dbr_version" -}}
   15.4.x-scala2.12
 {{- end}}
 
-{{define "latest_lts_db_connect_version_spec" -}}
+{{/* A safe version of DB Connect that is compatible with at least half the
+   * clusters running in production.
+   *
+   * We need to be very conservative in updating this, since a newer version can
+   * only connect to compute of that same version and higher. If the version is
+   * deemed too old, customers can update the version themselves after initializing
+   * the template.
+   */}}
+{{define "conservative_db_connect_version_spec" -}}
   >=15.4,<15.5
 {{- end}}
