@@ -16,6 +16,7 @@ class Property:
     ref: str
     description: Optional[str] = None
     deprecated: Optional[bool] = None
+    keep_deprecated: Optional[bool] = None
     stage: Optional[str] = None
 
 
@@ -101,6 +102,7 @@ def _parse_schema(schema: dict) -> Schema:
             ref=v["$ref"],
             description=v.get("description"),
             deprecated=_parse_bool(v.get("deprecated")),
+            keep_deprecated=_parse_bool(v.get("x-databricks-python-keep-deprecated")),
             stage=v.get("x-databricks-preview"),
         )
 

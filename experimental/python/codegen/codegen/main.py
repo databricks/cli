@@ -83,7 +83,7 @@ def _remove_deprecated_fields(
         if schema.type == openapi.SchemaType.OBJECT:
             new_properties = {}
             for field_name, field in schema.properties.items():
-                if field.deprecated:
+                if field.deprecated and not field.keep_deprecated:
                     continue
 
                 new_properties[field_name] = field
@@ -243,7 +243,13 @@ def _collect_reachable_schemas(
                     if not include_private and field.stage == openapi.Stage.PRIVATE:
                         continue
 
-                    if not include_deprecated and field.deprecated:
+                    if (
+                        not include_deprecated
+                        and field.deprecated
+                        # we don't remove keep_deprecated fields so they should be considered
+                        # reachable
+                        and not field.keep_deprecated
+                    ):
                         continue
 
                     if name not in reachable:
