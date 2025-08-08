@@ -145,10 +145,7 @@ type PipelineEventsQueryParams struct {
 
 // fetchAllPipelineEvents retrieves pipeline events with optional SQL filtering and ordering.
 // Necessary as current Go SDK endpoints don't support OrderBy parameter.
-// Returns at most 250 events without pagination.
 func fetchAllPipelineEvents(ctx context.Context, w *databricks.WorkspaceClient, pipelineID string, params *PipelineEventsQueryParams) ([]pipelines.PipelineEvent, error) {
-	const maxEventsLimit = 250
-
 	apiClient, err := client.New(w.Config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create API client: %w", err)
@@ -162,10 +159,6 @@ func fetchAllPipelineEvents(ctx context.Context, w *databricks.WorkspaceClient, 
 	}
 
 	if params.MaxResults > 0 {
-		if params.MaxResults > maxEventsLimit {
-			cmdio.LogString(ctx, fmt.Sprintf("Note: You can only get up to %d events. Requested %d, limiting to %d.", maxEventsLimit, params.MaxResults, maxEventsLimit))
-			params.MaxResults = maxEventsLimit
-		}
 		queryParams["max_results"] = strconv.Itoa(params.MaxResults)
 	}
 
