@@ -9,25 +9,9 @@ import (
 	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
-func findApiErr(e error) *apierr.APIError {
-	for {
-		cast, ok := e.(*apierr.APIError)
-		if ok {
-			return cast
-		}
-
-		inner := errors.Unwrap(e)
-		if inner == nil {
-			break
-		}
-		e = inner
-	}
-	return nil
-}
-
 func FormatAPIErrorSummary(e error) string {
-	apiErr := findApiErr(e)
-	if apiErr == nil {
+	var apiErr *apierr.APIError
+	if !errors.As(e, &apiErr) {
 		return e.Error()
 	}
 	extra := strings.TrimSpace(fmt.Sprintf("%d %s", apiErr.StatusCode, apiErr.ErrorCode))
@@ -35,10 +19,11 @@ func FormatAPIErrorSummary(e error) string {
 }
 
 func FormatAPIErrorDetails(e error) string {
-	apiErr := findApiErr(e)
-	if apiErr == nil {
+	var apiErr *apierr.APIError
+	if !errors.As(e, &apiErr) {
 		return ""
 	}
+
 	endpoint := "n/a"
 	httpStatus := ""
 	w := apiErr.ResponseWrapper
