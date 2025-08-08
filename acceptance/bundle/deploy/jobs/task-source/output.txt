@@ -1,5 +1,9 @@
 
 >>> [CLI] bundle deploy
+Warning: invalid value "github" for enum field. Valid values are [awsCodeCommit azureDevOpsServices bitbucketCloud bitbucketServer gitHub gitHubEnterprise gitLab gitLabEnterpriseEdition]
+  at resources.jobs.git_job.git_source.git_provider
+  in databricks.yml:11:23
+
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/task-source/default/files...
 Deploying resources...
 Updating deployment state...

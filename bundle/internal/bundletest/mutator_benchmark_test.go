@@ -21,6 +21,16 @@ func benchmarkRequiredMutator(b *testing.B, numJobs int) {
 	assert.NotEmpty(b, diags)
 }
 
+func benchmarkEnumMutator(b *testing.B, numJobs int) {
+	myBundle := Bundle(b, numJobs)
+
+	var diags diag.Diagnostics
+	for b.Loop() {
+		diags = bundle.Apply(context.Background(), myBundle, validate.Enum())
+	}
+	assert.NotEmpty(b, diags)
+}
+
 func benchmarkWalkReadOnlyBaseline(b *testing.B, numJobs int) {
 	myBundle := Bundle(b, numJobs)
 
@@ -71,4 +81,14 @@ func BenchmarkValidateRequired100(b *testing.B) {
 // This benchmark took 1.1ms to run on 10th July 2025.
 func BenchmarkValidateRequired10(b *testing.B) {
 	benchmarkRequiredMutator(b, 10)
+}
+
+// This benchmark took 840ms to run on 6th Aug 2025.
+func BenchmarkValidateEnum10000(b *testing.B) {
+	benchmarkEnumMutator(b, 10000)
+}
+
+// This benchmark took 84ms to run on 6th Aug 2025.
+func BenchmarkValidateEnum1000(b *testing.B) {
+	benchmarkEnumMutator(b, 1000)
 }
