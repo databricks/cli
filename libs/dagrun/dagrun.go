@@ -31,14 +31,10 @@ func (g *Graph[N]) AddNode(n N) {
 	}
 }
 
-func (g *Graph[N]) AddDirectedEdge(from, to N, label string) error {
-	if from == to {
-		return fmt.Errorf("self-loop %v", from)
-	}
+func (g *Graph[N]) AddDirectedEdge(from, to N, label string) {
 	g.AddNode(from)
 	g.AddNode(to)
 	g.adj[from] = append(g.adj[from], adjEdge[N]{to: to, label: label})
-	return nil
 }
 
 type CycleError[N comparable] struct {
