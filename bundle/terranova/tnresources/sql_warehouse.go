@@ -28,7 +28,7 @@ func (r *ResourceSqlWarehouse) Config() any {
 func (r *ResourceSqlWarehouse) DoCreate(ctx context.Context) (string, error) {
 	waiter, err := r.client.Warehouses.Create(ctx, r.config)
 	if err != nil {
-		return "", SDKError{Method: "Warehouses.Create", Err: err}
+		return "", err
 	}
 
 	return waiter.Id, nil
@@ -55,7 +55,7 @@ func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, id string) error {
 
 	waiter, err := r.client.Warehouses.Edit(ctx, request)
 	if err != nil {
-		return SDKError{Method: "Warehouses.Edit", Err: err}
+		return err
 	}
 
 	if waiter.Id != id {
@@ -76,9 +76,5 @@ func (r *ResourceSqlWarehouse) WaitAfterUpdate(ctx context.Context) error {
 }
 
 func DeleteSqlWarehouse(ctx context.Context, client *databricks.WorkspaceClient, oldID string) error {
-	err := client.Warehouses.DeleteById(ctx, oldID)
-	if err != nil {
-		return SDKError{Method: "Warehouses.DeleteById", Err: err}
-	}
-	return nil
+	return client.Warehouses.DeleteById(ctx, oldID)
 }

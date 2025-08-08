@@ -28,7 +28,7 @@ func (r *ResourceSchema) Config() any {
 func (r *ResourceSchema) DoCreate(ctx context.Context) (string, error) {
 	response, err := r.client.Schemas.Create(ctx, r.config)
 	if err != nil {
-		return "", SDKError{Method: "Schemas.Create", Err: err}
+		return "", err
 	}
 	return response.FullName, nil
 }
@@ -46,7 +46,7 @@ func (r *ResourceSchema) DoUpdate(ctx context.Context, id string) error {
 
 	response, err := r.client.Schemas.Update(ctx, updateRequest)
 	if err != nil {
-		return SDKError{Method: "Schemas.Update", Err: err}
+		return err
 	}
 
 	if response.FullName != id {
@@ -57,15 +57,11 @@ func (r *ResourceSchema) DoUpdate(ctx context.Context, id string) error {
 }
 
 func DeleteSchema(ctx context.Context, client *databricks.WorkspaceClient, id string) error {
-	err := client.Schemas.Delete(ctx, catalog.DeleteSchemaRequest{
+	return client.Schemas.Delete(ctx, catalog.DeleteSchemaRequest{
 		FullName:        id,
 		Force:           true,
 		ForceSendFields: nil,
 	})
-	if err != nil {
-		return SDKError{Method: "Schemas.Delete", Err: err}
-	}
-	return nil
 }
 
 func (r *ResourceSchema) WaitAfterCreate(ctx context.Context) error {
