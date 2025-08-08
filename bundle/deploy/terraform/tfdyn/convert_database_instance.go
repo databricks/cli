@@ -19,6 +19,20 @@ func (d databaseInstanceConverter) Convert(ctx context.Context, key string, vin 
 	for _, diag := range diags {
 		log.Debugf(ctx, "database instance normalization diagnostic: %s", diag.Summary)
 	}
+
+	// Set purge_on_delete if it is present in the input
+	var purgeOnDelete dyn.Value
+	if purgeOnDeleteValue := vin.Get("purge_on_delete"); purgeOnDeleteValue.IsValid() {
+		purgeOnDelete = purgeOnDeleteValue
+	}
+	if purgeOnDelete.IsValid() {
+		var err error
+		vout, err = dyn.Set(vout, "purge_on_delete", purgeOnDelete)
+		if err != nil {
+			return err
+		}
+	}
+
 	out.DatabaseInstance[key] = vout.AsAny()
 
 	// Configure permissions for this resource.

@@ -1,9 +1,7 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
-  # trace $CLI bundle destroy --auto-approve
-  # bundle destroy does not work yet for database instances
-  trace $CLI database delete-database-instance "test-database-instance-${UNIQUE_NAME}" --purge=true
+   trace $CLI bundle destroy --auto-approve
 }
 trap cleanup EXIT
 
@@ -11,6 +9,7 @@ trace $CLI bundle validate
 
 # URL is excluded because some cloud envs add an ?0= query param and some don't
 trace $CLI bundle summary | grep -v "URL"
+
 trace $CLI bundle deploy
 # _dns fields are excluded since they differ between cloud envs
 trace $CLI database get-database-instance "test-database-instance-${UNIQUE_NAME}" | jq 'del(.read_only_dns, .read_write_dns)'
