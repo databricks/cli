@@ -157,6 +157,7 @@ func fetchAllPipelineEvents(ctx context.Context, w *databricks.WorkspaceClient, 
 	if params.Filter != "" {
 		queryParams["filter"] = params.Filter
 	}
+
 	if params.MaxResults > 0 {
 		queryParams["max_results"] = strconv.Itoa(params.MaxResults)
 	}
