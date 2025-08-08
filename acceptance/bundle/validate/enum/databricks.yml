@@ -1,0 +1,56 @@
+variables:
+  my_variable:
+    type: "complex"
+    default:
+      key: "value"
+
+  my_variable_invalid:
+    type: "INVALID_TYPE"
+    default: "value"
+
+  my_variable_type_missing:
+    default: "value"
+
+  my_variable_type_empty:
+    type: ""
+    default: "value"
+
+resources:
+  jobs:
+    my_job_valid:
+      tasks:
+        - task_key: "task1"
+          # Valid enum value
+          run_if: "ALL_SUCCESS"
+          notebook_task:
+            # Valid enum value
+            source: "GIT"
+            notebook_path: "/path/to/notebook"
+          new_cluster:
+            # Valid enum values
+            runtime_engine: "PHOTON"
+            data_security_mode: "SINGLE_USER"
+            aws_attributes:
+              availability: "ON_DEMAND"
+              ebs_volume_type: "GENERAL_PURPOSE_SSD"
+            node_type_id: "i3.xlarge"
+            num_workers: 1
+
+    my_job_invalid:
+      tasks:
+        - task_key: "task2"
+          # Invalid enum value - should trigger warning
+          run_if: "INVALID_CONDITION"
+          notebook_task:
+            # Invalid enum value - should trigger warning
+            source: "INVALID_SOURCE"
+            notebook_path: "/path/to/notebook"
+          new_cluster:
+            # Invalid enum values - should trigger warnings
+            runtime_engine: "INVALID_ENGINE"
+            data_security_mode: "INVALID_MODE"
+            aws_attributes:
+              availability: "INVALID_AVAILABILITY"
+              ebs_volume_type: "INVALID_VOLUME_TYPE"
+            node_type_id: "i3.xlarge"
+            num_workers: 1

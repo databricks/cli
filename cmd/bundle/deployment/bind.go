@@ -31,7 +31,7 @@ Examples:
   # Bind a job resource to existing workspace job
   databricks bundle deployment bind my_etl_job 6565621249
 
-  # Bind a pipeline to existing DLT pipeline
+  # Bind a pipeline to existing Lakeflow Declarative Pipeline
   databricks bundle deployment bind data_pipeline 9876543210
 
   # Bind with automatic approval (useful for CI/CD)

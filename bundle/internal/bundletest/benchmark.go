@@ -250,6 +250,11 @@ func Bundle(b *testing.B, numJobs int) *bundle.Bundle {
 
 	myBundle := bundle.Bundle{
 		Config: config.Root{
+			Artifacts: config.Artifacts{
+				"artifact.whl": {
+					Type: "unsupported_type",
+				},
+			},
 			Resources: config.Resources{
 				Jobs: allJobs,
 			},
