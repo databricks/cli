@@ -305,6 +305,9 @@ var renderFuncMap = template.FuncMap{
 	},
 	"replace": strings.ReplaceAll,
 	"join":    strings.Join,
+	"sub": func(a, b int) int {
+		return a - b
+	},
 	"bool": func(v bool) string {
 		if v {
 			return color.GreenString("YES")
@@ -324,6 +327,10 @@ var renderFuncMap = template.FuncMap{
 		return string(b), nil
 	},
 	"pretty_date": func(t time.Time) string {
+		return t.Format("2006-01-02T15:04:05Z")
+	},
+	"pretty_UTC_date_from_millis": func(millis int64) string {
+		t := time.UnixMilli(millis).UTC()
 		return t.Format("2006-01-02T15:04:05Z")
 	},
 	"b64_encode": func(in string) (string, error) {

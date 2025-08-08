@@ -13,7 +13,7 @@ type inMemoryTokenCache struct {
 func (i *inMemoryTokenCache) Lookup(key string) (*oauth2.Token, error) {
 	token, ok := i.Tokens[key]
 	if !ok {
-		return nil, cache.ErrNotConfigured
+		return nil, cache.ErrNotFound
 	}
 	return token, nil
 }

@@ -152,6 +152,30 @@ func TestFromTypedStructZeroFieldsIntoExistingFields(t *testing.T) {
 	}), nv)
 }
 
+func TestFromTypedStructZeroFieldsIntoExistingFieldsFloat64(t *testing.T) {
+	type Tmp struct {
+		Foo             float64  `json:"foo"`
+		Bar             float64  `json:"bar,omitempty"`
+		BazBugz         float64  `json:"baz_bugs,omitempty"`
+		ForceSendFields []string `json:"-"`
+	}
+
+	src := Tmp{ForceSendFields: []string{"BazBugz"}}
+
+	ref := dyn.V(map[string]dyn.Value{
+		"foo":      dyn.V(1.2),
+		"bar":      dyn.V(1.2),
+		"baz_bugs": dyn.V(1.2),
+	})
+
+	nv, err := FromTyped(src, ref)
+	require.NoError(t, err)
+	dynassert.Equal(t, dyn.V(map[string]dyn.Value{
+		"foo":      dyn.V(0.0),
+		"baz_bugs": dyn.V(0.0),
+	}), nv)
+}
+
 func TestFromTypedStructSetFieldsRetainLocation(t *testing.T) {
 	type Tmp struct {
 		Foo string `json:"foo"`

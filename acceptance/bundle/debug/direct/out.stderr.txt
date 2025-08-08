@@ -40,7 +40,7 @@
 10:07:59 Debug: Apply pid=12345 mutator=RewriteWorkspacePrefix
 10:07:59 Debug: Apply pid=12345 mutator=SetVariables
 10:07:59 Debug: Apply pid=12345 mutator=ResolveVariableReferences
-10:07:59 Debug: Apply pid=12345 mutator=ResolveResourceReferences
+10:07:59 Debug: Apply pid=12345 mutator=ResolveLookupVariables
 10:07:59 Debug: Apply pid=12345 mutator=ResolveVariableReferences
 10:07:59 Debug: Apply pid=12345 mutator=validate:volume-path
 10:07:59 Debug: Apply pid=12345 mutator=ApplyTargetMode

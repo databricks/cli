@@ -12,4 +12,5 @@ type DataSourceServicePrincipal struct {
 	Id             string `json:"id,omitempty"`
 	Repos          string `json:"repos,omitempty"`
 	ScimId         string `json:"scim_id,omitempty"`
+	SpId           string `json:"sp_id,omitempty"`
 }
