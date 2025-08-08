@@ -56,6 +56,19 @@ var ShortName = map[ActionType]ActionType{
 	ActionTypeUpdateWithID: ActionTypeUpdate,
 }
 
+func (a ActionType) KeepsID() bool {
+	switch a {
+	case ActionTypeCreate:
+		return false
+	case ActionTypeUpdateWithID:
+		return false
+	case ActionTypeRecreate:
+		return false
+	default:
+		return true
+	}
+}
+
 func (a ActionType) String() string {
 	shortAction := ShortName[a]
 	if shortAction != "" {
