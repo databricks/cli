@@ -6,6 +6,8 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/databricks/databricks-sdk-go/service/database"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
@@ -164,6 +166,13 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 					"sql_warehouse1": {
 						CreateWarehouseRequest: sql.CreateWarehouseRequest{
 							Name: "sql_warehouse1",
+						},
+					},
+				},
+				DatabaseInstances: map[string]*resources.DatabaseInstance{
+					"database_instance1": {
+						DatabaseInstance: database.DatabaseInstance{
+							Name: "database_instance1",
 						},
 					},
 				},
@@ -335,7 +344,7 @@ func TestAllNonUcResourcesAreRenamed(t *testing.T) {
 				resourceType := resources.Type().Field(i).Name
 
 				// Skip resources that are not renamed
-				if resourceType == "Apps" || resourceType == "SecretScopes" {
+				if resourceType == "Apps" || resourceType == "SecretScopes" || resourceType == "DatabaseInstances" {
 					continue
 				}
 
