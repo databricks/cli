@@ -515,6 +515,9 @@ github.com/databricks/cli/bundle/config/resources.DatabaseInstance:
   "pg_version":
     "description": |-
       PLACEHOLDER
+  "purge_on_delete":
+    "description": |-
+      PLACEHOLDER
   "read_only_dns":
     "description": |-
       PLACEHOLDER
