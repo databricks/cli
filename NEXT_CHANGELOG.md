@@ -9,6 +9,7 @@
 * Update Go SDK to 0.79.0 ([#3376](https://github.com/databricks/cli/pull/3376))
 
 ### CLI
+* Add rule files for coding agents working on the CLI code base ([#3245](https://github.com/databricks/cli/pull/3245))
 
 ### Bundles
 * Changed logic for resolving `${resources...}` references. Previously this would be done by terraform at deploy time. Now if it references a field that is present in the config, it will be done by DABs during bundle loading ([#3370](https://github.com/databricks/cli/pull/3370))
