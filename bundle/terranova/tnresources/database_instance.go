@@ -26,7 +26,7 @@ func (d ResourceDatabaseInstance) DoCreate(ctx context.Context) (string, error) 
 	if err != nil {
 		return "", SDKError{Method: "Database.CreateDatabaseInstance", Err: err}
 	}
-	return response.Uid, nil
+	return response.Name, nil
 }
 
 func (d ResourceDatabaseInstance) DoUpdate(ctx context.Context, oldID string) (string, error) {
