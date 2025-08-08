@@ -18,4 +18,5 @@ def test_generate_enum():
         values={"MY_ENUM_VALUE": "myEnumValue"},
         description="enum description",
         experimental=False,
+        deprecated=False,
     )
