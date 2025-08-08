@@ -88,7 +88,7 @@ The following resources will be deleted:
   delete job project_name_[UNIQUE_NAME]_job
   delete pipeline project_name_[UNIQUE_NAME]_pipeline
 
-This action will result in the deletion of the following DLT Pipelines along with the
+This action will result in the deletion of the following Lakeflow Declarative Pipelines along with the
 Streaming Tables (STs) and Materialized Views (MVs) managed by them:
   delete pipeline project_name_[UNIQUE_NAME]_pipeline
 
@@ -410,7 +410,7 @@ The following resources will be deleted:
   delete job project_name_[UNIQUE_NAME]_job
   delete pipeline project_name_[UNIQUE_NAME]_pipeline
 
-This action will result in the deletion of the following DLT Pipelines along with the
+This action will result in the deletion of the following Lakeflow Declarative Pipelines along with the
 Streaming Tables (STs) and Materialized Views (MVs) managed by them:
   delete pipeline project_name_[UNIQUE_NAME]_pipeline
 
