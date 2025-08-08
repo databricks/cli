@@ -84,7 +84,7 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 					g.AddNode(stringWrapper{n})
 				}
 				for _, e := range tc.edges {
-					_ = g.AddDirectedEdge(stringWrapper{e.from}, stringWrapper{e.to}, e.name)
+					g.AddDirectedEdge(stringWrapper{e.from}, stringWrapper{e.to}, e.name)
 				}
 
 				var mu sync.Mutex

@@ -11,7 +11,6 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/terranova/tnstate"
-	"github.com/databricks/cli/libs/dagrun"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
@@ -37,53 +36,100 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 		return nil
 	}
 
-	g := dagrun.NewGraph[deployplan.Action]()
+	// if true, then this node has references to its "id" field
+	IDIsReferenced := map[nodeKey]bool{}
+
+	// Maps node to all references within this node that need resolution
+	fieldRefsMap := map[nodeKey][]fieldRef{}
+
+	// Maps node key to originally planned action
+	plannedActionsMap := map[nodeKey]deployplan.ActionType{}
 
 	for _, action := range b.Plan.Actions {
-		g.AddNode(action)
-		// TODO: Scan v for references and use g.AddDirectedEdge to add dependency
+		plannedActionsMap[nodeKey{action.Group, action.Name}] = action.ActionType
+	}
+
+	state := b.ResourceDatabase.ExportState(ctx)
+	g, err := makeResourceGraph(ctx, b, state, fieldRefsMap)
+
+	for _, fieldRefs := range fieldRefsMap {
+		for _, fieldRef := range fieldRefs {
+			for _, referencedNode := range fieldRef.referencedNodes {
+				IDIsReferenced[referencedNode] = true
+			}
+		}
 	}
 
 	client := b.WorkspaceClient()
 
-	err := g.Run(defaultParallelism, func(node deployplan.Action) {
+	err = g.Run(defaultParallelism, func(node nodeKey) {
 		// TODO: if a given node fails, all downstream nodes should not be run. We should report those nodes.
 		// TODO: ensure that config for this node is fully resolved at this point.
 
-		settings, ok := SupportedResources[node.Group]
+		settings, ok := SupportedResources[node.group]
 		if !ok {
 			return
 		}
 
-		if node.ActionType == deployplan.ActionTypeUnset {
-			logdiag.LogError(ctx, fmt.Errorf("internal error, no action set %#v", node))
+		actionType := plannedActionsMap[node]
+
+		if actionType == deployplan.ActionTypeUnset {
 			return
-		}
-
-		var config any
-
-		if node.ActionType != deployplan.ActionTypeDelete {
-			var ok bool
-			config, ok = b.GetResourceConfig(node.Group, node.Name)
-			if !ok {
-				logdiag.LogError(ctx, fmt.Errorf("internal error: cannot get config for group=%v name=%v", node.Group, node.Name))
-				return
-			}
+			// TODO: ensure dependencies are not in the plan as well
 		}
 
 		d := Deployer{
 			client:       client,
 			db:           &b.ResourceDatabase,
-			group:        node.Group,
-			resourceName: node.Name,
+			group:        node.group,
+			resourceName: node.key,
 			settings:     settings,
 		}
 
-		// TODO: pass node.ActionType and respect it. Do not change Update to Recreate or Delete for example.
-		err := d.Deploy(ctx, config, node.ActionType)
+		if actionType == deployplan.ActionTypeDelete {
+			err = d.destroy(ctx)
+			if err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("destroying %s.%s: %w", d.group, d.resourceName, err))
+			}
+			return
+		}
+
+		config, ok := b.GetResourceConfig(node.group, node.key)
+		if !ok {
+			logdiag.LogError(ctx, fmt.Errorf("internal error when reading config for %s.%s", node.group, node.key))
+			return
+		}
+
+		// Extract unresolved references from a given node only.
+		// We need to this here and not rely on fieldRefsMap because the config might have been updated with more resolutions.
+		myReferences, err := extractReferences(b.Config.Value(), node)
+		// log.Warnf(ctx, "extract myReferences=%v", myReferences)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return
+		}
+
+		// At this point it's an error to have unresolved deps
+		if len(myReferences) > 0 {
+			// TODO: include the deps themselves in the message
+			logdiag.LogError(ctx, fmt.Errorf("cannot deploy %s.%s due to unresolved deps\n%s", node.group, node.key, myReferences))
+			return
+		}
+
+		// TODO: redo plan to downgrade planned action if possible (?)
+
+		err = d.Deploy(ctx, config, actionType)
+		if err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
+
+		if IDIsReferenced[node] {
+			err = resolveIDReference(ctx, b, d.group, d.resourceName)
+			if err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("failed to replace ref to resources.%s.%s.id: %w", d.group, d.resourceName, err))
+				return
+			}
 		}
 	})
 	if err != nil {
@@ -107,14 +153,6 @@ type Deployer struct {
 }
 
 func (d *Deployer) Deploy(ctx context.Context, inputConfig any, actionType deployplan.ActionType) error {
-	if actionType == deployplan.ActionTypeDelete {
-		err := d.destroy(ctx, inputConfig)
-		if err != nil {
-			return fmt.Errorf("destroying %s.%s: %w", d.group, d.resourceName, err)
-		}
-		return nil
-	}
-
 	err := d.deploy(ctx, inputConfig, actionType)
 	if err != nil {
 		return fmt.Errorf("deploying %s.%s: %w", d.group, d.resourceName, err)
@@ -122,7 +160,7 @@ func (d *Deployer) Deploy(ctx context.Context, inputConfig any, actionType deplo
 	return nil
 }
 
-func (d *Deployer) destroy(ctx context.Context, inputConfig any) error {
+func (d *Deployer) destroy(ctx context.Context) error {
 	entry, hasEntry := d.db.GetResourceEntry(d.group, d.resourceName)
 	if !hasEntry {
 		log.Infof(ctx, "%s.%s: Cannot delete, missing from state", d.group, d.resourceName)

@@ -8,7 +8,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/terranova/tnstate"
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/structdiff"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
@@ -22,7 +22,14 @@ type Planner struct {
 	settings     ResourceSettings
 }
 
-func (d *Planner) Plan(ctx context.Context, inputConfig any) (deployplan.ActionType, error) {
+// additional data to attach to node in the graph
+type nodeValue struct {
+	settings ResourceSettings
+	config   any
+}
+
+func (d *Planner) Plan(ctx context.Context, inputConfig any, fieldRefs []fieldRef) (deployplan.ActionType, error) {
+	_ = fieldRefs
 	result, err := d.plan(ctx, inputConfig)
 	if err != nil {
 		return deployplan.ActionTypeNoop, fmt.Errorf("planning: %s.%s: %w", d.group, d.resourceName, err)
@@ -66,61 +73,36 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 		panic("direct deployment required")
 	}
 
+	// if true, then this node has references to its "id" field
+	IDIsReferenced := map[nodeKey]bool{}
+
+	// Maps node to all references within this node that need resolution
+	fieldRefsMap := map[nodeKey][]fieldRef{}
+
+	// final result: collected actions per node
+	var actions []deployplan.Action
+
 	err := b.OpenResourceDatabase(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	client := b.WorkspaceClient()
-	var actions []deployplan.Action
 
 	state := b.ResourceDatabase.ExportState(ctx)
 
-	_, err = dyn.MapByPattern(
-		b.Config.Value(),
-		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()),
-		func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-			group := p[1].Key()
-			name := p[2].Key()
+	g, err := makeResourceGraph(ctx, b, state, fieldRefsMap)
+	if err != nil {
+		return nil, fmt.Errorf("reading config: %w", err)
+	}
 
-			settings, ok := SupportedResources[group]
-			if !ok {
-				return v, nil
+	for _, fieldRefs := range fieldRefsMap {
+		for _, fieldRef := range fieldRefs {
+			for _, referencedNode := range fieldRef.referencedNodes {
+				IDIsReferenced[referencedNode] = true
 			}
-
-			groupState := state[group]
-			delete(groupState, name)
-
-			config, ok := b.GetResourceConfig(group, name)
-			if !ok {
-				return dyn.InvalidValue, fmt.Errorf("internal error: cannot get config for %s.%s", group, name)
-			}
-
-			pl := Planner{
-				client:       client,
-				db:           &b.ResourceDatabase,
-				group:        group,
-				resourceName: name,
-				settings:     settings,
-			}
-
-			// This currently does not do API calls, so we can run this sequentially. Once we have remote diffs, we need to run a in threadpool.
-			actionType, err := pl.Plan(ctx, config)
-			if err != nil {
-				return dyn.InvalidValue, err
-			}
-
-			if actionType != deployplan.ActionTypeNoop {
-				actions = append(actions, deployplan.Action{
-					Group:      group,
-					Name:       name,
-					ActionType: actionType,
-				})
-			}
-
-			return v, nil
-		},
-	)
+		}
+	}
 
 	// Remained in state are resources that no longer present in the config
 	for _, group := range utils.SortedKeys(state) {
@@ -134,6 +116,69 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 		}
 	}
 
+	// We're processing resources in DAG order, because we're trying to get rid of all references like $resources.jobs.foo.id
+	// if jobs.foo is not going to be (re)created. This means by the time we get to resource depending on $resources.jobs.foo.id
+	// we might have already got rid of this reference, thus potentially downgrading actionType
+
+	// parallelism is set to 1, so there is no multi-threaded access there.
+	err = g.Run(1, func(node nodeKey) {
+		settings, ok := SupportedResources[node.group]
+		if !ok {
+			// TODO: return an error
+			panic("resource not supported")
+		}
+
+		pl := Planner{
+			client:       client,
+			db:           &b.ResourceDatabase,
+			group:        node.group,
+			resourceName: node.key,
+			settings:     settings,
+		}
+
+		config, ok := b.GetResourceConfig(pl.group, pl.resourceName)
+		if !ok {
+			logdiag.LogError(ctx, fmt.Errorf("internal error: cannot get config for %s.%s", pl.group, pl.resourceName))
+			return // TODOD return an error to abort dependencies
+		}
+
+		// Extract unreslved references from a given node only.
+		// We need to this here and not rely on fieldRefsMap because the config might have been updated with more resolutions.
+		myReferences, err := extractReferences(b.Config.Value(), node)
+		// log.Warnf(ctx, "extract myReferences=%v", myReferences)
+		if err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
+
+		// This currently does not do API calls, so we can run this sequentially. Once we have remote diffs, we need to run a in threadpool.
+		actionType, err := pl.Plan(ctx, config, myReferences)
+		if err != nil {
+			logdiag.LogError(ctx, err)
+			// TODO: return error to abort this branch
+			return
+		}
+
+		if IDIsReferenced[node] && actionType.KeepsID() {
+			err = resolveIDReference(ctx, b, pl.group, pl.resourceName)
+			if err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("failed to replace ref to resources.%s.%s.id: %w", pl.group, pl.resourceName, err))
+				return
+			}
+		}
+
+		if actionType == deployplan.ActionTypeNoop {
+			return
+		}
+
+		actions = append(actions, deployplan.Action{
+			Group:      node.group,
+			Name:       node.key,
+			ActionType: actionType,
+		})
+	})
+	// bbb, _ := json.Marshal(b.Config.Value().AsAny())
+	// fmt.Fprintf(os.Stderr, "bundle: "+string(bbb)+"\n")
 	if err != nil {
 		return nil, fmt.Errorf("while reading resources config: %w", err)
 	}
