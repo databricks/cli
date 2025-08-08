@@ -26,14 +26,12 @@ func findApiErr(e error) *apierr.APIError {
 }
 
 func FormatAPIErrorSummary(e error) string {
-	extra := ""
 	apiErr := findApiErr(e)
-	if apiErr != nil {
-		extra = strings.TrimSpace(fmt.Sprintf("%d %s", apiErr.StatusCode, apiErr.ErrorCode))
-		extra = " (" + extra + ")"
+	if apiErr == nil {
+		return e.Error()
 	}
-
-	return e.Error() + extra
+	extra := strings.TrimSpace(fmt.Sprintf("%d %s", apiErr.StatusCode, apiErr.ErrorCode))
+	return e.Error() + " (" + extra + ")"
 }
 
 func FormatAPIErrorDetails(e error) string {
