@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/databricks/cli/bundle"
@@ -34,7 +35,105 @@ type PipelineUpdateData struct {
 	LastEventTime string
 }
 
-// fetchAndDisplayPipelineUpdate fetches the latest update for a pipeline and displays information about it.
+type ProgressEventWithDuration struct {
+	Event    pipelines.PipelineEvent
+	Duration string
+	Phase    string
+}
+
+type ProgressEventsData struct {
+	ProgressEvents []ProgressEventWithDuration
+}
+
+// Extracts the last word from an event message and removes the last character (a period)
+// Example: "Update 6fc8a8 is WAITING_FOR_RESOURCES." -> "WAITING_FOR_RESOURCES"
+func phaseFromUpdateProgress(eventMessage string) string {
+	words := strings.Fields(eventMessage)
+	if len(words) > 0 {
+		phase := words[len(words)-1]
+		if len(phase) > 0 {
+			phase = phase[:len(phase)-1]
+		}
+		return phase
+	}
+	return ""
+}
+
+// Returns a readable duration string for a given duration.
+func readableDuration(diff time.Duration) string {
+	if diff < time.Second {
+		milliseconds := int(diff.Milliseconds())
+		return fmt.Sprintf("%dms", milliseconds)
+	}
+
+	if diff < time.Minute {
+		return fmt.Sprintf("%.1fs", diff.Seconds())
+	}
+
+	if diff < time.Hour {
+		minutes := int(diff.Minutes())
+		seconds := int(diff.Seconds()) % 60
+		return fmt.Sprintf("%dm %ds", minutes, seconds)
+	}
+
+	hours := int(diff.Hours())
+	minutes := int(diff.Minutes()) % 60
+	return fmt.Sprintf("%dh %dm", hours, minutes)
+}
+
+// Returns the time difference between two events.
+func eventTimeDifference(earlierEvent, laterEvent pipelines.PipelineEvent) (time.Duration, error) {
+	currTime, err := time.Parse(time.RFC3339Nano, earlierEvent.Timestamp)
+	if err != nil {
+		return 0, err
+	}
+	nextTime, err := time.Parse(time.RFC3339Nano, laterEvent.Timestamp)
+	if err != nil {
+		return 0, err
+	}
+
+	timeDifference := nextTime.Sub(currTime)
+	if timeDifference < 0 {
+		return 0, errors.New("second event timestamp must be after first event timestamp")
+	}
+	return timeDifference, nil
+}
+
+// Adds duration information and phase name to a progress event
+// Expects that the events are already sorted by timestamp in ascending order.
+func enrichEvents(events []pipelines.PipelineEvent) ([]ProgressEventWithDuration, error) {
+	var progressEventsWithDuration []ProgressEventWithDuration
+	for j := 0; j < len(events)-1; j++ {
+		event := events[j]
+		nextEvent := events[j+1]
+		timeDifference, err := eventTimeDifference(event, nextEvent)
+		if err != nil {
+			return nil, err
+		}
+		progressEventsWithDuration = append(progressEventsWithDuration, ProgressEventWithDuration{
+			Event:    event,
+			Duration: readableDuration(timeDifference),
+			Phase:    phaseFromUpdateProgress(event.Message),
+		})
+	}
+
+	return progressEventsWithDuration, nil
+}
+
+func displayProgressEvents(ctx context.Context, events []pipelines.PipelineEvent) error {
+	progressEvents, err := enrichEvents(events)
+	if err != nil {
+		return fmt.Errorf("failed to calculate progress events: %w", err)
+	}
+
+	data := ProgressEventsData{
+		ProgressEvents: progressEvents,
+	}
+
+	return cmdio.RenderWithTemplate(ctx, data, "", progressEventsTemplate)
+}
+
+// Displays the update and the update's associated update_progress events' durations.
 func fetchAndDisplayPipelineUpdate(ctx context.Context, bundle *bundle.Bundle, ref bundleresources.Reference, updateId string) error {
 	w := bundle.WorkspaceClient()
 
@@ -53,7 +152,7 @@ func fetchAndDisplayPipelineUpdate(ctx context.Context, bundle *bundle.Bundle, r
 	}
 
 	if getUpdateResponse.Update == nil {
-		return err
+		return fmt.Errorf("no update found with id %s for pipeline %s", updateId, pipelineID)
 	}
 
 	latestUpdate := *getUpdateResponse.Update
@@ -75,10 +174,15 @@ func fetchAndDisplayPipelineUpdate(ctx context.Context, bundle *bundle.Bundle, r
 		}
 	}
 
+	err = displayProgressEvents(ctx, events)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
-// getLastEventTime returns the timestamp of the last progress event.
+// Returns the timestamp of the last progress event.
 // Expects that the events are already sorted by timestamp in ascending order.
 func getLastEventTime(events []pipelines.PipelineEvent) string {
 	if len(events) == 0 {
