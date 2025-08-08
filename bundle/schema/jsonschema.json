@@ -556,6 +556,9 @@
                       "pg_version": {
                         "$ref": "#/$defs/string"
                       },
+                      "purge_on_delete": {
+                        "$ref": "#/$defs/string"
+                      },
                       "read_only_dns": {
                         "$ref": "#/$defs/string"
                       },
