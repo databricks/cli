@@ -74,9 +74,10 @@ func buildPipelineEventFilter(updateId string, levels, eventTypes []string) stri
 func logsCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "logs [flags] PIPELINE_ID",
+		Args:  root.ExactArgs(1),
 		Short: "Retrieve events for a pipeline",
-		Long: `Retrieve events for the pipeline identified by PIPELINE_ID, a unique identifier for the pipeline.
-By default, show events for the pipeline's most recent update.
+		Long: `Retrieve events for the pipeline identified by PIPELINE_ID.
+Show events for the pipeline's most recent update by default.
 
 Example usage:
   1. pipelines logs my-pipeline --update-id update-1
@@ -101,13 +102,6 @@ Example usage:
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		if len(args) == 0 {
-			return errors.New("provide a PIPELINE_ID")
-		}
-
-		if len(args) > 1 {
-			return fmt.Errorf("expected one PIPELINE_ID, got %d", len(args))
-		}
 		w := cmdctx.WorkspaceClient(ctx)
 
 		pipelineId := args[0]
