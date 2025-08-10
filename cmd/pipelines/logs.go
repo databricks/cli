@@ -9,10 +9,35 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdgroup"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/spf13/cobra"
 )
 
-// buildFieldFilter creates a SQL filter condition for a field with multiple possible values,
+// Finds the update with the most recent CreationTime from a list of updates.
+func getMostRecentUpdateId(updates []pipelines.UpdateInfo) (string, error) {
+	if len(updates) == 0 {
+		return "", errors.New("no updates provided")
+	}
+
+	var mostRecentUpdate *pipelines.UpdateInfo
+	var mostRecentTime int64 = 0
+
+	for i := range updates {
+		update := &updates[i]
+		if update.CreationTime > mostRecentTime {
+			mostRecentTime = update.CreationTime
+			mostRecentUpdate = update
+		}
+	}
+
+	if mostRecentUpdate == nil {
+		return "", errors.New("no valid updates found")
+	}
+
+	return mostRecentUpdate.UpdateId, nil
+}
+
+// Creates a SQL filter condition for a field with multiple possible values,
 // generating "field in ('value1')" for a single value or "field in ('value1', 'value2')" for multiple values.
 func buildFieldFilter(field string, values []string) string {
 	if len(values) == 0 {
@@ -23,7 +48,7 @@ func buildFieldFilter(field string, values []string) string {
 	return fmt.Sprintf("%s in (%s)", field, quotedValues)
 }
 
-// buildPipelineEventFilter constructs a SQL filter string for pipeline events based on the provided parameters.
+// Cconstructs a SQL filter string for pipeline events based on the provided parameters.
 func buildPipelineEventFilter(updateId string, levels, eventTypes []string) string {
 	var filterParts []string
 
@@ -51,6 +76,7 @@ func logsCommand() *cobra.Command {
 		Use:   "logs [flags] PIPELINE_ID",
 		Short: "Retrieve events for a pipeline",
 		Long: `Retrieve events for the pipeline identified by PIPELINE_ID, a unique identifier for the pipeline.
+By default, show events for the pipeline's most recent update.
 
 Example usage:
   1. pipelines logs my-pipeline --update-id update-1
@@ -61,14 +87,12 @@ Example usage:
 	var levels []string
 	var eventTypes []string
 	var number int
-	var reverse bool
 
 	filterGroup := cmdgroup.NewFlagGroup("Event Filter")
-	filterGroup.FlagSet().StringVar(&updateId, "update-id", "", "Filter events by update ID.")
+	filterGroup.FlagSet().StringVar(&updateId, "update-id", "", "Filter events by update ID. If not provided, uses the most recent update ID.")
 	filterGroup.FlagSet().StringSliceVar(&levels, "level", nil, "Filter events by list of log levels (INFO, WARN, ERROR, METRICS). ")
 	filterGroup.FlagSet().StringSliceVar(&eventTypes, "event-type", nil, "Filter events by list of event types.")
 	filterGroup.FlagSet().IntVarP(&number, "number", "n", 0, "Number of events to return.")
-	filterGroup.FlagSet().BoolVar(&reverse, "r", false, "Reverse the order of results. By default, events are returned in descending order by timestamp.")
 
 	wrappedCmd := cmdgroup.NewCommandWithGroupFlag(cmd)
 	wrappedCmd.AddFlagGroup(filterGroup)
@@ -88,16 +112,23 @@ Example usage:
 
 		pipelineId := args[0]
 
-		filter := buildPipelineEventFilter(updateId, levels, eventTypes)
+		if updateId == "" {
+			allUpdates, err := fetchAllUpdates(ctx, w, pipelineId)
+			if err != nil {
+				return err
+			}
 
-		orderBy := "timestamp desc"
-		if reverse {
-			orderBy = "timestamp asc"
+			updateId, err = getMostRecentUpdateId(allUpdates)
+			if err != nil {
+				return err
+			}
 		}
+
+		filter := buildPipelineEventFilter(updateId, levels, eventTypes)
 
 		params := &PipelineEventsQueryParams{
 			Filter:  filter,
-			OrderBy: orderBy,
+			OrderBy: "timestamp desc",
 		}
 
 		// Only set MaxResults if the flag was provided, avoiding setting to the default value.
