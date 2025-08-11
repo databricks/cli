@@ -171,8 +171,6 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 			ActionType: actionType,
 		})
 	})
-	// bbb, _ := json.Marshal(b.Config.Value().AsAny())
-	// fmt.Fprintf(os.Stderr, "bundle: "+string(bbb)+"\n")
 	if err != nil {
 		return nil, fmt.Errorf("while reading resources config: %w", err)
 	}
