@@ -104,7 +104,7 @@ func eventTimeDifference(earlierEvent, laterEvent pipelines.PipelineEvent) (time
 // Expects that the events are already sorted by timestamp in ascending order.
 func enrichEvents(events []pipelines.PipelineEvent) ([]ProgressEventWithDuration, error) {
 	var progressEventsWithDuration []ProgressEventWithDuration
-	for j := 0; j < len(events)-1; j++ {
+	for j := range len(events) - 1 {
 		event := events[j]
 		nextEvent := events[j+1]
 		timeDifference, err := eventTimeDifference(event, nextEvent)
