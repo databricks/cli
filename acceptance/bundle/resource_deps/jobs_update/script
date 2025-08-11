@@ -21,9 +21,9 @@ echo "$foo_id:FOO_ID" >> ACC_REPLS
 bar_id=`read_id.py jobs bar`
 echo "$bar_id:BAR_ID" >> ACC_REPLS
 
-trace $CLI bundle plan
+trace $CLI bundle plan  # empty
 
-title "Update trigger.periodic.unit and re-deploy"
+title "Update trigger.periodic.unit and re-deploy; jobs.bar is unchanged"
 trace update_file.py databricks.yml DAYS HOURS
 trace $CLI bundle plan
 trace $CLI bundle deploy
@@ -36,10 +36,8 @@ trace $CLI jobs get $foo_id
 trace $CLI jobs get $bar_id
 rm out.requests.txt
 
-title "Destroy the job and verify that it's removed from the state and from remote"
 trace $CLI bundle destroy --auto-approve
-# TF deletes bar first, direct deletes everything in parallel
-# If Terraform's order due to it reverting deployment order, we need to implement that as well.
+# Sort, because the order of requests is different. TODO: remember deps in order to delete in reverse deployment order.
 trace print_sorted_requests
 
 trace musterr $CLI jobs get $foo_id
