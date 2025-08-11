@@ -8,9 +8,9 @@ def main():
 
     # TODO: Have better organization for these binaries.
     cli_dir = home / "cli"
-    go_bin = home / "cli" / "downloads" / "amd64" / "go" / "bin"
-    uv_bin = home / "cli" / "downloads" / "x86_64" / "uv-x86_64-unknown-linux-gnu"
-    jq_bin = home / "cli" / "downloads" / "amd64"
+    go_bin = home / "cli" / "testdata" / "amd64" / "go" / "bin"
+    uv_bin = home / "cli" / "testdata" / "x86_64" / "uv-x86_64-unknown-linux-gnu"
+    jq_bin = home / "cli" / "testdata" / "amd64"
 
     # Ensure the directories exist (optional checks)
     for p in [cli_dir, go_bin, uv_bin]:

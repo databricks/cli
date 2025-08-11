@@ -14,7 +14,7 @@ type UVDownloader struct {
 // NewUVDownloader creates a new UV downloader
 func NewUVDownloader() *UVDownloader {
 	return &UVDownloader{
-		downloadDir: "./downloads",
+		downloadDir: "./testdata",
 	}
 }
 
@@ -79,10 +79,4 @@ func (u *UVDownloader) Download(arch string) error {
 	fmt.Printf("🚀 Add to PATH: export PATH=$PWD/%s:$PATH\n", downloadDir)
 
 	return nil
-}
-
-// downloadUV is a convenience function for backward compatibility
-func downloadUV(arch string) error {
-	downloader := NewUVDownloader()
-	return downloader.Download(arch)
 }

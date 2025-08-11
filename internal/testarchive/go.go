@@ -34,7 +34,7 @@ type GoDownloader struct {
 // NewGoDownloader creates a new Go downloader
 func NewGoDownloader() *GoDownloader {
 	return &GoDownloader{
-		downloadDir: "./downloads",
+		downloadDir: "./testdata",
 	}
 }
 
@@ -215,10 +215,4 @@ func (g *GoDownloader) Download(arch string) error {
 	fmt.Printf("🚀 Add to PATH: export PATH=$PWD/%s/go/bin:$PATH\n", downloadDir)
 
 	return nil
-}
-
-// downloadGoForLinux is a convenience function for backward compatibility
-func downloadGoForLinux(arch string) error {
-	downloader := NewGoDownloader()
-	return downloader.Download(arch)
 }

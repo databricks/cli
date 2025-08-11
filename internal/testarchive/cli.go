@@ -15,7 +15,7 @@ import (
 // createGitArchive creates a tar.gz archive of all git-tracked files plus downloaded tools
 func createGitArchive(outputPath string) error {
 	repoRoot := filepath.Join("..", "..")
-	downloadsDir := "./downloads"
+	testdataDir := "./testdata"
 
 	fmt.Printf("🔧 Preparing development environment...\n")
 
@@ -93,29 +93,29 @@ func createGitArchive(outputPath string) error {
 
 	// Get downloaded tools if they exist
 	var downloadedFiles []string
-	if _, err := os.Stat(downloadsDir); err == nil {
-		err := filepath.WalkDir(downloadsDir, func(path string, d os.DirEntry, err error) error {
+	if _, err := os.Stat(testdataDir); err == nil {
+		err := filepath.WalkDir(testdataDir, func(path string, d os.DirEntry, err error) error {
 			if err != nil {
 				return err
 			}
 
-			// Skip the downloads directory itself
-			if path == downloadsDir {
+			// Skip the testdata directory itself
+			if path == testdataDir {
 				return nil
 			}
 
-			// Get relative path from downloads directory
-			relPath, err := filepath.Rel(downloadsDir, path)
+			// Get relative path from testdata directory
+			relPath, err := filepath.Rel(testdataDir, path)
 			if err != nil {
 				return err
 			}
 
-			// Add with downloads/ prefix to maintain structure in archive
-			downloadedFiles = append(downloadedFiles, filepath.Join("downloads", relPath))
+			// Add with testdata/ prefix to maintain structure in archive
+			downloadedFiles = append(downloadedFiles, filepath.Join("testdata", relPath))
 			return nil
 		})
 		if err != nil {
-			fmt.Printf("Warning: failed to scan downloads directory: %v\n", err)
+			fmt.Printf("Warning: failed to scan testdata directory: %v\n", err)
 		}
 	}
 
@@ -168,9 +168,9 @@ func createGitArchive(outputPath string) error {
 			fmt.Printf("Progress: %d/%d files processed\n", processedCount, totalFiles)
 		}
 
-		// Remove "downloads/" prefix to get actual file path
-		actualPath := strings.TrimPrefix(file, "downloads/")
-		fullPath := filepath.Join(downloadsDir, actualPath)
+		// Remove "testdata/" prefix to get actual file path
+		actualPath := strings.TrimPrefix(file, "testdata/")
+		fullPath := filepath.Join(testdataDir, actualPath)
 
 		if err := addFileToArchive(tarWriter, fullPath, file); err != nil {
 			fmt.Printf("Warning: failed to add downloaded file %s: %v\n", file, err)

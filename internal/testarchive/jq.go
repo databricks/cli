@@ -12,9 +12,12 @@ type JqDownloader struct {
 }
 
 // NewJqDownloader creates a new jq downloader
+// TODO: Use _cache instead of testdata. directories with _ are ignored by go.
+// TODO: Mount the binaries to an appropriate directory in the archive. Instead of top level.
+// Perhaps _bin is a much better name for this? Or no, keep cache and hte same paths.
 func NewJqDownloader() *JqDownloader {
 	return &JqDownloader{
-		downloadDir: "./downloads",
+		downloadDir: "./testdata",
 	}
 }
 
@@ -76,10 +79,4 @@ func (j *JqDownloader) Download(arch string) error {
 	fmt.Printf("🚀 Add to PATH: export PATH=$PWD/%s:$PATH\n", downloadDir)
 
 	return nil
-}
-
-// downloadJq is a convenience function for backward compatibility
-func downloadJq(arch string) error {
-	downloader := NewJqDownloader()
-	return downloader.Download(arch)
 }
