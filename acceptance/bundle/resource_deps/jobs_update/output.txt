@@ -64,7 +64,7 @@ Deployment complete!
 
 >>> [CLI] bundle plan
 
-=== Update trigger.periodic.unit and re-deploy
+=== Update trigger.periodic.unit and re-deploy; jobs.bar is unchanged
 >>> update_file.py databricks.yml DAYS HOURS
 
 >>> [CLI] bundle plan
@@ -170,7 +170,6 @@ Deployment complete!
   }
 }
 
-=== Destroy the job and verify that it's removed from the state and from remote
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete job bar
