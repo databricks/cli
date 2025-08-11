@@ -15,21 +15,21 @@ var (
 	re         = regexp.MustCompile(fmt.Sprintf(`\$\{(%s(\.%s(\[[0-9]+\])*)*(\[[0-9]+\])*)\}`, baseVarDef, baseVarDef))
 )
 
-// ref represents a variable reference.
+// Ref represents a variable reference.
 // It is a string [dyn.Value] contained in a larger [dyn.Value].
 // Its path within the containing [dyn.Value] is also stored.
-type ref struct {
+type Ref struct {
 	// Original value.
-	value dyn.Value
+	Value dyn.Value
 
 	// String value in the original [dyn.Value].
-	str string
+	Str string
 
 	// Matches of the variable reference in the string.
-	matches [][]string
+	Matches [][]string
 }
 
-// newRef returns a new ref if the given [dyn.Value] contains a string
+// NewRef returns a new Ref if the given [dyn.Value] contains a string
 // with one or more variable references. It returns false if the given
 // [dyn.Value] does not contain variable references.
 //
@@ -38,39 +38,39 @@ type ref struct {
 //   - "${a.b.c}"
 //   - "${a.b[0].c}"
 //   - "${a} ${b} ${c}"
-func newRef(v dyn.Value) (ref, bool) {
+func NewRef(v dyn.Value) (Ref, bool) {
 	s, ok := v.AsString()
 	if !ok {
-		return ref{}, false
+		return Ref{}, false
 	}
 
 	// Check if the string contains any variable references.
 	m := re.FindAllStringSubmatch(s, -1)
 	if len(m) == 0 {
-		return ref{}, false
+		return Ref{}, false
 	}
 
-	return ref{
-		value:   v,
-		str:     s,
-		matches: m,
+	return Ref{
+		Value:   v,
+		Str:     s,
+		Matches: m,
 	}, true
 }
 
-// isPure returns true if the variable reference contains a single
+// IsPure returns true if the variable reference contains a single
 // variable reference and nothing more. We need this so we can
 // interpolate values of non-string types (i.e. it can be substituted).
-func (v ref) isPure() bool {
+func (v Ref) IsPure() bool {
 	// Need single match, equal to the incoming string.
-	if len(v.matches) == 0 || len(v.matches[0]) == 0 {
+	if len(v.Matches) == 0 || len(v.Matches[0]) == 0 {
 		panic("invalid variable reference; expect at least one match")
 	}
-	return v.matches[0][0] == v.str
+	return v.Matches[0][0] == v.Str
 }
 
-func (v ref) references() []string {
+func (v Ref) References() []string {
 	var out []string
-	for _, m := range v.matches {
+	for _, m := range v.Matches {
 		out = append(out, m[1])
 	}
 	return out
@@ -87,16 +87,16 @@ func ContainsVariableReference(s string) bool {
 // If s is a pure variable reference, this function returns the corresponding
 // dyn.Path. Otherwise, it returns false.
 func PureReferenceToPath(s string) (dyn.Path, bool) {
-	ref, ok := newRef(dyn.V(s))
+	ref, ok := NewRef(dyn.V(s))
 	if !ok {
 		return nil, false
 	}
 
-	if !ref.isPure() {
+	if !ref.IsPure() {
 		return nil, false
 	}
 
-	p, err := dyn.NewPathFromString(ref.references()[0])
+	p, err := dyn.NewPathFromString(ref.References()[0])
 	if err != nil {
 		return nil, false
 	}
