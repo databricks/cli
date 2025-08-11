@@ -1,14 +1,16 @@
+# Databricks notebook source
+
 import os
 import subprocess
 import sys
 import tarfile
 from pathlib import Path
+from dbruntime.databricks_repl_context import get_context
 
 def extract_cli_archive():
-    # Read from DATABRICKS_DBR_CLI_ARCHIVE
-    src = os.environ.get("DATABRICKS_DBR_CLI_ARCHIVE")
+    src = dbutils.widgets.get("cli_archive")
     if not src:
-        print("Error: DATABRICKS_DBR_CLI_ARCHIVE is not set", file=sys.stderr)
+        print("Error: cli_archive is not set", file=sys.stderr)
         sys.exit(1)
 
     home = Path.home()
@@ -22,6 +24,8 @@ def extract_cli_archive():
     print(f"Extracted {src} to {dst}")
 
 def main():
+    extract_cli_archive()
+
     home = Path.home()
 
     # TODO: Have better organization for these binaries.
@@ -43,7 +47,11 @@ def main():
 
     # TODO: pass cloudenv as a job parameter. We can pass through the existing local env var from
     # the runner.
+    # TODO: This runner only does integration tests right now. Also run local tests via this runner. Or a separate one.
     env["CLOUD_ENV"] = "dbr"
+
+    ctx = get_context()
+    workspace_url = spark.conf.get("spark.databricks.workspaceUrl")
 
     # Configure auth for the workspace:
     env["DATABRICKS_TOKEN"] = ctx.apiToken

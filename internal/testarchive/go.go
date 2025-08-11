@@ -39,6 +39,8 @@ func NewGoDownloader() *GoDownloader {
 }
 
 // readGoVersionFromMod reads the Go version from go.mod file
+// TODO: Should I also include the go dependencies in the archive?
+// It'll make the runs much faster.
 func (g *GoDownloader) readGoVersionFromMod() (string, error) {
 	goModPath := filepath.Join("..", "..", "go.mod")
 
