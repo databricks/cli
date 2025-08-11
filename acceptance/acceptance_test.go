@@ -32,6 +32,7 @@ import (
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/testdiff"
 	"github.com/databricks/cli/libs/utils"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/stretchr/testify/require"
 )
 
@@ -44,6 +45,7 @@ var (
 	LogRequests bool
 	LogConfig   bool
 	SkipLocal   bool
+	Dbr         bool
 )
 
 // In order to debug CLI running under acceptance test, search for TestInprocessMode and update
@@ -64,6 +66,7 @@ func init() {
 	flag.BoolVar(&LogRequests, "logrequests", false, "Log request and responses from testserver")
 	flag.BoolVar(&LogConfig, "logconfig", false, "Log merged for each test case")
 	flag.BoolVar(&SkipLocal, "skiplocal", false, "Skip tests that are enabled to run on Local")
+	flag.BoolVar(&Dbr, "dbr", false, "The tests are running on DBR.")
 }
 
 const (
@@ -455,6 +458,25 @@ func runTest(t *testing.T,
 	uniqueName := strings.ToLower(strings.Trim(base32.StdEncoding.EncodeToString(id[:]), "="))
 	repls.Set(uniqueName, "[UNIQUE_NAME]")
 
+	timeout := config.Timeout
+
+	if runtime.GOOS == "windows" {
+		if isRunningOnCloud {
+			timeout = max(timeout, config.TimeoutWindows, config.TimeoutCloud)
+		} else {
+			timeout = max(timeout, config.TimeoutWindows)
+		}
+	} else if isRunningOnCloud {
+		timeout = max(timeout, config.TimeoutCloud)
+	}
+
+	if ApplyCITimeoutMultipler {
+		timeout *= CITimeoutMultiplier
+	}
+
+	ctx, cancelFunc := context.WithTimeout(context.Background(), timeout)
+	defer cancelFunc()
+
 	var tmpDir string
 	var err error
 	if KeepTmp {
@@ -463,6 +485,16 @@ func runTest(t *testing.T,
 		tmpDir, err = os.MkdirTemp(tempDirBase, "")
 		require.NoError(t, err)
 		t.Logf("Created directory: %s", tmpDir)
+	} else if Dbr {
+		// If the test is being run on DBR, the auth is already configured
+		// by DATABRICKS_TOKEN and DATABRICKS_HOST environment variables.
+		w, err := databricks.NewWorkspaceClient()
+		currentUser, err := w.CurrentUser.Me(ctx)
+		require.NoError(t, err)
+
+		// Run DBR tests on the workspace file system to mimic usage from
+		// DABs in the workspace.
+		tmpDir = "/Workspace/Users/" + currentUser.UserName + "/acceptance/" + uuid.New().String()
 	} else {
 		tmpDir = t.TempDir()
 	}
@@ -497,24 +529,6 @@ func runTest(t *testing.T,
 		}
 	}
 
-	timeout := config.Timeout
-
-	if runtime.GOOS == "windows" {
-		if isRunningOnCloud {
-			timeout = max(timeout, config.TimeoutWindows, config.TimeoutCloud)
-		} else {
-			timeout = max(timeout, config.TimeoutWindows)
-		}
-	} else if isRunningOnCloud {
-		timeout = max(timeout, config.TimeoutCloud)
-	}
-
-	if ApplyCITimeoutMultipler {
-		timeout *= CITimeoutMultiplier
-	}
-
-	ctx, cancelFunc := context.WithTimeout(context.Background(), timeout)
-	defer cancelFunc()
 	args := []string{"bash", "-euo", "pipefail", EntryPointScript}
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
 
