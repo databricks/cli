@@ -1,0 +1,6 @@
+RecordRequests = true
+
+Ignore = [
+    ".databricks",
+    ".gitignore",
+]
