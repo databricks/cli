@@ -54,12 +54,12 @@ Run URL: [DATABRICKS_URL]/job/run/[NUMID]
   "path": "/api/2.2/jobs/run-now"
 }
 
->>> errcode [CLI] bundle run my_job --tasks non_existent_task
+>>> musterr [CLI] bundle run my_job --tasks non_existent_task
 Error: task non_existent_task not found in job my_job
 
-Exit code: 1
+Exit code (musterr): 1
 
->>> errcode [CLI] bundle run my_job --tasks non_existent_task,task_1
+>>> musterr [CLI] bundle run my_job --tasks non_existent_task,task_1
 Error: task non_existent_task not found in job my_job
 
-Exit code: 1
+Exit code (musterr): 1

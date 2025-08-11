@@ -15,9 +15,9 @@ trace $CLI bundle run my_job
 trace print_requests
 
 # We expect an error because the task does not exist
-trace errcode $CLI bundle run my_job --tasks non_existent_task
+trace musterr $CLI bundle run my_job --tasks non_existent_task
 
 # We expect an error because one of the tasks does not exist
-trace errcode $CLI bundle run my_job --tasks non_existent_task,task_1
+trace musterr $CLI bundle run my_job --tasks non_existent_task,task_1
 
 rm out.requests.txt
