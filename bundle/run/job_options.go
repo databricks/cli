@@ -78,17 +78,17 @@ func (o *JobOptions) Validate(job *resources.Job) error {
 	}
 
 	if len(o.tasks) > 0 {
-		found := false
 		for _, task := range o.tasks {
+			found := false
 			for _, t := range job.Tasks {
 				if t.TaskKey == task {
 					found = true
 					break
 				}
 			}
-		}
-		if !found {
-			return fmt.Errorf("task %s not found in job %s", o.tasks, job.Name)
+			if !found {
+				return fmt.Errorf("task %s not found in job %s", task, job.Name)
+			}
 		}
 	}
 
@@ -141,10 +141,7 @@ func (o *JobOptions) toPayload(job *resources.Job, jobID int64) (*jobs.RunNow, e
 		SqlParams:         o.sqlParams,
 
 		JobParameters: o.jobParams,
-	}
-
-	if len(o.tasks) > 0 {
-		payload.Only = o.tasks
+		Only:          o.tasks,
 	}
 
 	return payload, nil

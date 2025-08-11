@@ -10,47 +10,56 @@ Run URL: [DATABRICKS_URL]/job/run/[NUMID]
 
 [TIMESTAMP] "run-name" TERMINATED
 
->>> [CLI] bundle run my_job --tasks task_1,task_2
-Run URL: [DATABRICKS_URL]/job/run/[NUMID]
-
-[TIMESTAMP] "run-name" TERMINATED
-
->>> [CLI] bundle run my_job
-Run URL: [DATABRICKS_URL]/job/run/[NUMID]
-
-[TIMESTAMP] "run-name" TERMINATED
-
->>> jq -s .[] | select(.path=="/api/2.2/jobs/run-now") out.requests.txt
+>>> print_requests
 {
-  "method": "POST",
-  "path": "/api/2.2/jobs/run-now",
   "body": {
     "job_id": [NUMID],
     "only": [
       "task_1"
     ]
-  }
-}
-{
+  },
   "method": "POST",
-  "path": "/api/2.2/jobs/run-now",
+  "path": "/api/2.2/jobs/run-now"
+}
+
+>>> [CLI] bundle run my_job --tasks task_1,task_2
+Run URL: [DATABRICKS_URL]/job/run/[NUMID]
+
+[TIMESTAMP] "run-name" TERMINATED
+
+>>> print_requests
+{
   "body": {
     "job_id": [NUMID],
     "only": [
       "task_1",
       "task_2"
     ]
-  }
-}
-{
+  },
   "method": "POST",
-  "path": "/api/2.2/jobs/run-now",
+  "path": "/api/2.2/jobs/run-now"
+}
+
+>>> [CLI] bundle run my_job
+Run URL: [DATABRICKS_URL]/job/run/[NUMID]
+
+[TIMESTAMP] "run-name" TERMINATED
+
+>>> print_requests
+{
   "body": {
     "job_id": [NUMID]
-  }
+  },
+  "method": "POST",
+  "path": "/api/2.2/jobs/run-now"
 }
 
 >>> errcode [CLI] bundle run my_job --tasks non_existent_task
-Error: task [non_existent_task] not found in job my_job
+Error: task non_existent_task not found in job my_job
+
+Exit code: 1
+
+>>> errcode [CLI] bundle run my_job --tasks non_existent_task,task_1
+Error: task non_existent_task not found in job my_job
 
 Exit code: 1
