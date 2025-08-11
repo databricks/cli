@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// Finds the update with the most recent CreationTime from a list of updates.
+// getMostRecentUpdateId finds the update with the most recent CreationTime from a list of updates.
 func getMostRecentUpdateId(updates []pipelines.UpdateInfo) (string, error) {
 	if len(updates) == 0 {
 		return "", errors.New("no updates provided")
@@ -37,7 +37,7 @@ func getMostRecentUpdateId(updates []pipelines.UpdateInfo) (string, error) {
 	return mostRecentUpdate.UpdateId, nil
 }
 
-// Creates a SQL filter condition for a field with multiple possible values,
+// buildFieldFilter creates a SQL filter condition for a field with multiple possible values,
 // generating "field in ('value1')" for a single value or "field in ('value1', 'value2')" for multiple values.
 func buildFieldFilter(field string, values []string) string {
 	if len(values) == 0 {
@@ -48,7 +48,7 @@ func buildFieldFilter(field string, values []string) string {
 	return fmt.Sprintf("%s in (%s)", field, quotedValues)
 }
 
-// Cconstructs a SQL filter string for pipeline events based on the provided parameters.
+// buildPipelineEventFilter constructs a SQL filter string for pipeline events based on the provided parameters.
 func buildPipelineEventFilter(updateId string, levels, eventTypes []string) string {
 	var filterParts []string
 

@@ -143,7 +143,7 @@ type PipelineEventsQueryParams struct {
 	OrderBy    string `json:"order_by,omitempty"`
 }
 
-// Retrieves pipeline events with optional SQL filtering and ordering.
+// fetchAllPipelineEvents retrieves pipeline events with optional SQL filtering and ordering.
 // Necessary as current Go SDK endpoints don't support OrderBy parameter.
 // Retrieves only one page of results, so the number of results is bound by the API's limit of results per page.
 func fetchAllPipelineEvents(ctx context.Context, w *databricks.WorkspaceClient, pipelineID string, params *PipelineEventsQueryParams) ([]pipelines.PipelineEvent, error) {
@@ -189,7 +189,7 @@ func fetchAllPipelineEvents(ctx context.Context, w *databricks.WorkspaceClient, 
 	return response.Events, nil
 }
 
-// Retrieves all updates for a given pipeline using pagination.
+// fetchAllUpdates retrieves all updates for a given pipeline using pagination.
 func fetchAllUpdates(ctx context.Context, w *databricks.WorkspaceClient, pipelineID string) ([]pipelines.UpdateInfo, error) {
 	var allUpdates []pipelines.UpdateInfo
 	var pageToken string
