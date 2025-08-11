@@ -46,7 +46,7 @@ type ProgressEventsData struct {
 	ProgressEvents []ProgressEventWithDuration
 }
 
-// Extracts the last word from an event message and removes the last character (a period)
+// phaseFromUpdateProgress extracts the last word from an event message and removes the last character (a period)
 // Example: "Update 6fc8a8 is WAITING_FOR_RESOURCES." -> "WAITING_FOR_RESOURCES"
 func phaseFromUpdateProgress(eventMessage string) string {
 	words := strings.Fields(eventMessage)
@@ -60,7 +60,7 @@ func phaseFromUpdateProgress(eventMessage string) string {
 	return ""
 }
 
-// Returns a readable duration string for a given duration.
+// readableDuration returns a readable duration string for a given duration.
 func readableDuration(diff time.Duration) string {
 	if diff < time.Second {
 		milliseconds := int(diff.Milliseconds())
@@ -82,7 +82,7 @@ func readableDuration(diff time.Duration) string {
 	return fmt.Sprintf("%dh %dm", hours, minutes)
 }
 
-// Returns the time difference between two events.
+// eventTimeDifference returns the time difference between two events.
 func eventTimeDifference(earlierEvent, laterEvent pipelines.PipelineEvent) (time.Duration, error) {
 	currTime, err := time.Parse(time.RFC3339Nano, earlierEvent.Timestamp)
 	if err != nil {
@@ -100,7 +100,7 @@ func eventTimeDifference(earlierEvent, laterEvent pipelines.PipelineEvent) (time
 	return timeDifference, nil
 }
 
-// Adds duration information and phase name to a progress event
+// enrichEvents adds duration information and phase name to a progress event
 // Expects that the events are already sorted by timestamp in ascending order.
 func enrichEvents(events []pipelines.PipelineEvent) ([]ProgressEventWithDuration, error) {
 	var progressEventsWithDuration []ProgressEventWithDuration
@@ -134,7 +134,7 @@ func displayProgressEvents(ctx context.Context, events []pipelines.PipelineEvent
 	return cmdio.RenderWithTemplate(ctx, data, "", progressEventsTemplate)
 }
 
-// Displays the update and the update's associated update_progress events' durations.
+// fetchAndDisplayPipelineUpdate fetches the update and the update's associated update_progress events' durations.
 func fetchAndDisplayPipelineUpdate(ctx context.Context, w *databricks.WorkspaceClient, ref bundleresources.Reference, updateId string) error {
 	pipelineResource := ref.Resource.(*resources.Pipeline)
 	pipelineID := pipelineResource.ID
@@ -181,7 +181,7 @@ func fetchAndDisplayPipelineUpdate(ctx context.Context, w *databricks.WorkspaceC
 	return nil
 }
 
-// Returns the timestamp of the last progress event.
+// getLastEventTime returns the timestamp of the last progress event.
 // Expects that the events are already sorted by timestamp in ascending order.
 func getLastEventTime(events []pipelines.PipelineEvent) string {
 	if len(events) == 0 {
