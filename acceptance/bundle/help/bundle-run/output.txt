@@ -39,6 +39,7 @@ Usage:
 
 Job Flags:
       --params stringToString   comma separated k=v pairs for job parameters (default [])
+      --tasks strings           comma separated list of task keys to run
 
 Job Task Flags:
   Note: please prefer use of job-level parameters (--param) over task-level parameters.
