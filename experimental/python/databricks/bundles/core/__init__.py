@@ -13,11 +13,12 @@ __all__ = [
     "VariableOrList",
     "VariableOrOptional",
     "job_mutator",
+    "pipeline_mutator",
+    "schema_mutator",
     "load_resources_from_current_package_module",
     "load_resources_from_module",
     "load_resources_from_modules",
     "load_resources_from_package_module",
-    "pipeline_mutator",
     "variables",
     "volume_mutator",
 ]
@@ -40,6 +41,7 @@ from databricks.bundles.core._resource_mutator import (
     ResourceMutator,
     job_mutator,
     pipeline_mutator,
+    schema_mutator,
     volume_mutator,
 )
 from databricks.bundles.core._resources import Resources
