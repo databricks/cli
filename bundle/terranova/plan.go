@@ -22,12 +22,6 @@ type Planner struct {
 	settings     ResourceSettings
 }
 
-// additional data to attach to node in the graph
-type nodeValue struct {
-	settings ResourceSettings
-	config   any
-}
-
 func (d *Planner) Plan(ctx context.Context, inputConfig any, fieldRefs []fieldRef) (deployplan.ActionType, error) {
 	_ = fieldRefs
 	result, err := d.plan(ctx, inputConfig)

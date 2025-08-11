@@ -112,7 +112,7 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 		// At this point it's an error to have unresolved deps
 		if len(myReferences) > 0 {
 			// TODO: include the deps themselves in the message
-			logdiag.LogError(ctx, fmt.Errorf("cannot deploy %s.%s due to unresolved deps\n%s", node.group, node.key, myReferences))
+			logdiag.LogError(ctx, fmt.Errorf("cannot deploy %s.%s due to unresolved deps", node.group, node.key))
 			return
 		}
 
