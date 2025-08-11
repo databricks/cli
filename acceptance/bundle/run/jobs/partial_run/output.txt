@@ -55,11 +55,11 @@ Run URL: [DATABRICKS_URL]/job/run/[NUMID]
 }
 
 >>> musterr [CLI] bundle run my_job --only non_existent_task
-Error: task non_existent_task not found in job my_job
+Error: task "non_existent_task" not found in job "my_job"
 
 Exit code (musterr): 1
 
 >>> musterr [CLI] bundle run my_job --only non_existent_task,task_1
-Error: task non_existent_task not found in job my_job
+Error: task "non_existent_task" not found in job "my_job"
 
 Exit code (musterr): 1

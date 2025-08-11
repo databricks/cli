@@ -87,7 +87,7 @@ func (o *JobOptions) Validate(job *resources.Job) error {
 				}
 			}
 			if !found {
-				return fmt.Errorf("task %v not found in job %v", task, job.Name)
+				return fmt.Errorf("task %#v not found in job %#v", task, job.Name)
 			}
 		}
 	}
