@@ -109,12 +109,12 @@ Example usage:
 		if updateId == "" {
 			allUpdates, err := fetchAllUpdates(ctx, w, pipelineId)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to fetch updates for pipeline %s: %w", pipelineId, err)
 			}
 
 			updateId, err = getMostRecentUpdateId(allUpdates)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to get most recent update ID: %w", err)
 			}
 		}
 
@@ -132,7 +132,7 @@ Example usage:
 
 		events, err := fetchAllPipelineEvents(ctx, w, pipelineId, params)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to fetch updates for pipeline %s: %w", pipelineId, err)
 		}
 
 		return cmdio.Render(ctx, events)
