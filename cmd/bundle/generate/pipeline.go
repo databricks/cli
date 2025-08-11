@@ -30,12 +30,12 @@ func NewGeneratePipelineCommand() *cobra.Command {
 		Short: "Generate bundle configuration for a pipeline",
 		Long: `Generate bundle configuration for an existing Delta Live Tables pipeline.
 
-This command downloads an existing DLT pipeline's configuration and any associated
+This command downloads an existing Lakeflow Declarative Pipeline's configuration and any associated
 notebooks, creating bundle files that you can use to deploy the pipeline to other
 environments or manage it as code.
 
 Examples:
-  # Import a production DLT pipeline
+  # Import a production Lakeflow Declarative Pipeline
   databricks bundle generate pipeline --existing-pipeline-id abc123 --key etl_pipeline
 
   # Organize files in custom directories
