@@ -4,6 +4,7 @@ from typing import Callable
 import pytest
 
 from databricks.bundles.core import Location, Resources, Severity
+from databricks.bundles.core._bundle import Bundle
 from databricks.bundles.core._resource import Resource
 from databricks.bundles.core._resource_mutator import (
     ResourceMutator,
@@ -201,8 +202,21 @@ def test_mutator(tc: TestCase, tpe: _ResourceType):
     def my_func(bundle, resource):
         return resource
 
+    bundle = Bundle(target="default")
+
     assert isinstance(my_func, ResourceMutator)
+    assert tc.mutator.__name__ == tpe.singular_name + "_mutator"
     assert my_func.resource_type == tpe.resource_type
+    assert my_func.function(bundle, tc.dataclass_example) is tc.dataclass_example
+
+
+@pytest.mark.parametrize("tc,tpe", test_cases, ids=test_case_ids)
+def test_mutator_export(tc: TestCase, tpe: _ResourceType):
+    import databricks.bundles.core
+
+    assert tc.mutator.__name__ in databricks.bundles.core.__all__, (
+        "mutator is not in databricks.bundles.core.__all__"
+    )
 
 
 @pytest.mark.parametrize("tc,tpe", test_cases, ids=test_case_ids)
