@@ -1,0 +1,16 @@
+trace $CLI bundle deploy
+
+trace $CLI bundle run my_job --tasks task_1
+trace $CLI bundle run my_job --tasks task_1,task_2
+trace $CLI bundle run my_job
+
+# We expect 3 requests:
+# 1. Run the job with all tasks
+# 2. Run the job with task_1
+# 3. Run the job with task_1 and task_2
+trace jq -s '.[] | select(.path=="/api/2.2/jobs/run-now")' out.requests.txt
+
+# We expect an error because the task does not exist
+trace errcode $CLI bundle run my_job --tasks non_existent_task
+
+rm out.requests.txt

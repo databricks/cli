@@ -2,6 +2,7 @@ package run
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -25,10 +26,14 @@ type JobOptions struct {
 	// If a job uses job parameters, it cannot use task parameters.
 	// Also see https://docs.databricks.com/en/workflows/jobs/settings.html#add-parameters-for-all-job-tasks.
 	jobParams map[string]string
+
+	// tasks is a list of task keys to run. If not specified, all tasks are run.
+	tasks []string
 }
 
 func (o *JobOptions) DefineJobOptions(fs *flag.FlagSet) {
 	fs.StringToStringVar(&o.jobParams, "params", nil, "comma separated k=v pairs for job parameters")
+	fs.StringSliceVar(&o.tasks, "tasks", nil, "comma separated list of task keys to run")
 }
 
 func (o *JobOptions) DefineTaskOptions(fs *flag.FlagSet) {
@@ -70,6 +75,21 @@ func (o *JobOptions) Validate(job *resources.Job) error {
 	}
 	if !hasJobParams && o.hasJobParametersConfigured() {
 		return errors.New("the job to run does not define job parameters; specifying job parameters is not allowed")
+	}
+
+	if len(o.tasks) > 0 {
+		found := false
+		for _, task := range o.tasks {
+			for _, t := range job.Tasks {
+				if t.TaskKey == task {
+					found = true
+					break
+				}
+			}
+		}
+		if !found {
+			return fmt.Errorf("task %s not found in job %s", o.tasks, job.Name)
+		}
 	}
 
 	return nil
@@ -121,6 +141,10 @@ func (o *JobOptions) toPayload(job *resources.Job, jobID int64) (*jobs.RunNow, e
 		SqlParams:         o.sqlParams,
 
 		JobParameters: o.jobParams,
+	}
+
+	if len(o.tasks) > 0 {
+		payload.Only = o.tasks
 	}
 
 	return payload, nil

@@ -1,0 +1,56 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/partial_run/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle run my_job --tasks task_1
+Run URL: [DATABRICKS_URL]/job/run/[NUMID]
+
+[TIMESTAMP] "run-name" TERMINATED
+
+>>> [CLI] bundle run my_job --tasks task_1,task_2
+Run URL: [DATABRICKS_URL]/job/run/[NUMID]
+
+[TIMESTAMP] "run-name" TERMINATED
+
+>>> [CLI] bundle run my_job
+Run URL: [DATABRICKS_URL]/job/run/[NUMID]
+
+[TIMESTAMP] "run-name" TERMINATED
+
+>>> jq -s .[] | select(.path=="/api/2.2/jobs/run-now") out.requests.txt
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/run-now",
+  "body": {
+    "job_id": [NUMID],
+    "only": [
+      "task_1"
+    ]
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/run-now",
+  "body": {
+    "job_id": [NUMID],
+    "only": [
+      "task_1",
+      "task_2"
+    ]
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/run-now",
+  "body": {
+    "job_id": [NUMID]
+  }
+}
+
+>>> errcode [CLI] bundle run my_job --tasks non_existent_task
+Error: task [non_existent_task] not found in job my_job
+
+Exit code: 1
