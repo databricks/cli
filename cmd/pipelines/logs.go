@@ -40,7 +40,7 @@ func promptPipelineArgument(ctx context.Context, b *bundle.Bundle) (string, erro
 }
 
 // resolveLogsArgument auto-selects a pipeline if there's exactly one and no arguments are specified,
-// otherwise prompts the user to select a pipeline to open.
+// otherwise prompts the user to select a pipeline.
 func resolveLogsArgument(ctx context.Context, b *bundle.Bundle, args []string) (string, error) {
 	if len(args) == 1 {
 		return args[0], nil
@@ -59,7 +59,7 @@ func resolveLogsArgument(ctx context.Context, b *bundle.Bundle, args []string) (
 // getMostRecentUpdateId finds the update with the most recent CreationTime from a list of updates.
 func getMostRecentUpdateId(updates []pipelines.UpdateInfo) (string, error) {
 	if len(updates) == 0 {
-		return "", errors.New("no updates provided")
+		return "", errors.New("no updates")
 	}
 
 	var mostRecentUpdate *pipelines.UpdateInfo
