@@ -205,7 +205,7 @@ func fetchAllUpdates(ctx context.Context, w *databricks.WorkspaceClient, pipelin
 
 		response, err := w.Pipelines.ListUpdates(ctx, request)
 		if err != nil {
-			return nil, fmt.Errorf("failed to fetch updates for pipeline %s: %w", pipelineID, err)
+			return nil, err
 		}
 
 		allUpdates = append(allUpdates, response.Updates...)
