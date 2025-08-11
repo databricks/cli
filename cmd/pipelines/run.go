@@ -24,6 +24,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/maps"
@@ -134,9 +135,7 @@ func displayProgressEvents(ctx context.Context, events []pipelines.PipelineEvent
 }
 
 // Displays the update and the update's associated update_progress events' durations.
-func fetchAndDisplayPipelineUpdate(ctx context.Context, bundle *bundle.Bundle, ref bundleresources.Reference, updateId string) error {
-	w := bundle.WorkspaceClient()
-
+func fetchAndDisplayPipelineUpdate(ctx context.Context, w *databricks.WorkspaceClient, ref bundleresources.Reference, updateId string) error {
 	pipelineResource := ref.Resource.(*resources.Pipeline)
 	pipelineID := pipelineResource.ID
 	if pipelineID == "" {
@@ -325,7 +324,8 @@ Refreshes all tables in the pipeline unless otherwise specified.`,
 		}
 		if ref.Description.SingularName == "pipeline" && runOutput != nil {
 			if pipelineOutput, ok := runOutput.(*bundlerunoutput.PipelineOutput); ok && pipelineOutput.UpdateId != "" {
-				err = fetchAndDisplayPipelineUpdate(ctx, b, ref, pipelineOutput.UpdateId)
+				w := b.WorkspaceClient()
+				err = fetchAndDisplayPipelineUpdate(ctx, w, ref, pipelineOutput.UpdateId)
 				if err != nil {
 					return err
 				}
