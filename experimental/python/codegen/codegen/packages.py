@@ -8,12 +8,15 @@ RESOURCE_NAMESPACE_OVERRIDE = {
     "resources.JobPermissionLevel": "jobs",
     "resources.PipelinePermission": "pipelines",
     "resources.PipelinePermissionLevel": "pipelines",
+    "resources.Schema": "catalog",
+    "resources.Grant": "catalog",
 }
 
 # All supported resource types
 RESOURCE_TYPES = [
     "resources.Job",
     "resources.Pipeline",
+    "resources.Schema",
 ]
 
 # Namespaces to load from OpenAPI spec.
@@ -24,6 +27,7 @@ LOADED_NAMESPACES = [
     "jobs",
     "pipelines",
     "resources",
+    "catalog",
 ]
 
 RENAMES = {
