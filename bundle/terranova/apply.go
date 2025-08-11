@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 )
 
@@ -57,6 +58,16 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 			for _, referencedNode := range fieldRef.referencedNodes {
 				IDIsReferenced[referencedNode] = true
 			}
+		}
+	}
+
+	// Remained in state are resources that no longer present in the config
+	for _, group := range utils.SortedKeys(state) {
+		groupData := state[group]
+		for _, name := range utils.SortedKeys(groupData) {
+			n := nodeKey{group, name}
+			g.AddNode(n)
+			plannedActionsMap[n] = deployplan.ActionTypeDelete
 		}
 	}
 
