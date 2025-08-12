@@ -53,8 +53,8 @@ func DatabaseInstanceMapGet(w *FakeWorkspace, collection map[string]database.Dat
 
 	// Convert to map[string]interface{} to ensure all fields are included
 	jsonBytes, _ := json.Marshal(value)
-	var result map[string]interface{}
-	json.Unmarshal(jsonBytes, &result)
+	var result map[string]any
+	_ = json.Unmarshal(jsonBytes, &result)
 
 	// Explicitly set boolean fields that should always be present
 	result["effective_enable_readable_secondaries"] = value.EffectiveEnableReadableSecondaries
