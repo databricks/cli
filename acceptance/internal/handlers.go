@@ -504,7 +504,15 @@ func addDefaultHandlers(server *testserver.Server) {
 		return req.Workspace.DatabaseInstanceCreate(req)
 	})
 
+	server.Handle("GET", "/api/2.0/database/instances/", func(req testserver.Request) any {
+		return testserver.MapList(req.Workspace, req.Workspace.DatabaseInstances, "database_instances")
+	})
+
 	server.Handle("GET", "/api/2.0/database/instances/{name}", func(req testserver.Request) any {
-		return testserver.MapGet(req.Workspace, req.Workspace.DatabaseInstances, req.Vars["name"])
+		return testserver.DatabaseInstanceMapGet(req.Workspace, req.Workspace.DatabaseInstances, req.Vars["name"])
+	})
+
+	server.Handle("DELETE", "/api/2.0/database/instances/{name}", func(req testserver.Request) any {
+		return testserver.MapDelete(req.Workspace, req.Workspace.DatabaseInstances, req.Vars["name"])
 	})
 }
