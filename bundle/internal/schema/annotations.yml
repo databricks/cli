@@ -661,6 +661,13 @@ github.com/databricks/cli/bundle/config/resources.PipelinePermission:
   "user_name":
     "description": |-
       PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.SchemaGrant:
+  "principal":
+    "description": |-
+      PLACEHOLDER
+  "privileges":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.SecretScope:
   "backend_type":
     "description": |-
