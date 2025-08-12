@@ -188,33 +188,3 @@ func fetchAllPipelineEvents(ctx context.Context, w *databricks.WorkspaceClient, 
 
 	return response.Events, nil
 }
-
-// fetchAllUpdates retrieves all updates for a given pipeline using pagination.
-func fetchAllUpdates(ctx context.Context, w *databricks.WorkspaceClient, pipelineID string) ([]pipelines.UpdateInfo, error) {
-	var allUpdates []pipelines.UpdateInfo
-	var pageToken string
-
-	for {
-		request := pipelines.ListUpdatesRequest{
-			PipelineId: pipelineID,
-		}
-
-		if pageToken != "" {
-			request.PageToken = pageToken
-		}
-
-		response, err := w.Pipelines.ListUpdates(ctx, request)
-		if err != nil {
-			return nil, err
-		}
-
-		allUpdates = append(allUpdates, response.Updates...)
-
-		if response.NextPageToken == "" {
-			break
-		}
-		pageToken = response.NextPageToken
-	}
-
-	return allUpdates, nil
-}

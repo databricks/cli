@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/cli/libs/cmdgroup"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/spf13/cobra"
 )
@@ -56,28 +57,24 @@ func resolveLogsArgument(ctx context.Context, b *bundle.Bundle, args []string) (
 	return "", errors.New("expected a KEY of the pipeline")
 }
 
-// getMostRecentUpdateId finds the update with the most recent CreationTime from a list of updates.
-func getMostRecentUpdateId(updates []pipelines.UpdateInfo) (string, error) {
+// getMostRecentUpdateId fetches one page of updates for a given pipeline and returns the first update ID.
+// Expects to receive updates in decreasing timestamp order, so the first update is the most recent.
+func getMostRecentUpdateId(ctx context.Context, w *databricks.WorkspaceClient, pipelineID string) (string, error) {
+	request := pipelines.ListUpdatesRequest{
+		PipelineId: pipelineID,
+	}
+
+	response, err := w.Pipelines.ListUpdates(ctx, request)
+	if err != nil {
+		return "", err
+	}
+
+	updates := response.Updates
 	if len(updates) == 0 {
 		return "", errors.New("no updates")
 	}
 
-	var mostRecentUpdate *pipelines.UpdateInfo
-	var mostRecentTime int64 = 0
-
-	for i := range updates {
-		update := &updates[i]
-		if update.CreationTime > mostRecentTime {
-			mostRecentTime = update.CreationTime
-			mostRecentUpdate = update
-		}
-	}
-
-	if mostRecentUpdate == nil {
-		return "", errors.New("no valid updates found")
-	}
-
-	return mostRecentUpdate.UpdateId, nil
+	return updates[0].UpdateId, nil
 }
 
 // buildFieldFilter creates a SQL filter condition for a field with multiple possible values,
@@ -183,12 +180,7 @@ Example usage:
 
 		w := b.WorkspaceClient()
 		if updateId == "" {
-			allUpdates, err := fetchAllUpdates(ctx, w, pipelineId)
-			if err != nil {
-				return fmt.Errorf("failed to fetch updates for pipeline %s: %w", pipelineId, err)
-			}
-
-			updateId, err = getMostRecentUpdateId(allUpdates)
+			updateId, err = getMostRecentUpdateId(ctx, w, pipelineId)
 			if err != nil {
 				return fmt.Errorf("failed to get most recent update ID: %w", err)
 			}
