@@ -116,7 +116,7 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 
 	// parallelism is set to 1, so there is no multi-threaded access there.
 	err = g.Run(1, func(node nodeKey) {
-		settings, ok := SupportedResources[node.group]
+		settings, ok := SupportedResources[node.Group]
 		if !ok {
 			// TODO: return an error
 			panic("resource not supported")
@@ -125,8 +125,8 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 		pl := Planner{
 			client:       client,
 			db:           &b.ResourceDatabase,
-			group:        node.group,
-			resourceName: node.key,
+			group:        node.Group,
+			resourceName: node.Name,
 			settings:     settings,
 		}
 
@@ -166,8 +166,8 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 		}
 
 		actions = append(actions, deployplan.Action{
-			Group:      node.group,
-			Name:       node.key,
+			Group:      node.Group,
+			Name:       node.Name,
 			ActionType: actionType,
 		})
 	})
