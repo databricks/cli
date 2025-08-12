@@ -18,8 +18,10 @@ import (
 
 // represents node in the graph, each node is a resource
 type nodeKey struct {
-	group string
-	key   string
+	Group string
+	Name  string
+	// Field names match deployplan.Action.
+	// TODO: Here and in other places Name is ambiguous and should be replaced with ResourceKey
 }
 
 type fieldRef struct {
@@ -59,7 +61,7 @@ func makeResourceGraph(ctx context.Context, b *bundle.Bundle, state resourcestat
 
 			for _, fieldRef := range fieldRefs {
 				for _, referencedNode := range fieldRef.referencedNodes {
-					label := fmt.Sprintf("%s.%s -> %s.%s", referencedNode.group, referencedNode.key, n.group, n.key)
+					label := fmt.Sprintf("%s.%s -> %s.%s", referencedNode.Group, referencedNode.Name, n.Group, n.Name)
 					log.Debugf(ctx, "Adding resource edge: %s (via %#v)", label, fieldRef.ref.Str)
 					g.AddDirectedEdge(
 						referencedNode,
@@ -81,7 +83,7 @@ func makeResourceGraph(ctx context.Context, b *bundle.Bundle, state resourcestat
 func extractReferences(root dyn.Value, node nodeKey) ([]fieldRef, error) {
 	var result []fieldRef
 
-	val, err := dyn.GetByPath(root, dyn.NewPath(dyn.Key("resources"), dyn.Key(node.group), dyn.Key(node.key)))
+	val, err := dyn.GetByPath(root, dyn.NewPath(dyn.Key("resources"), dyn.Key(node.Group), dyn.Key(node.Name)))
 	if err != nil {
 		return nil, err
 	}

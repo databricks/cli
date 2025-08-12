@@ -77,7 +77,7 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 		// TODO: if a given node fails, all downstream nodes should not be run. We should report those nodes.
 		// TODO: ensure that config for this node is fully resolved at this point.
 
-		settings, ok := SupportedResources[node.group]
+		settings, ok := SupportedResources[node.Group]
 		if !ok {
 			return
 		}
@@ -92,8 +92,8 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 		d := Deployer{
 			client:       client,
 			db:           &b.ResourceDatabase,
-			group:        node.group,
-			resourceName: node.key,
+			group:        node.Group,
+			resourceName: node.Name,
 			settings:     settings,
 		}
 
@@ -105,9 +105,9 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 			return
 		}
 
-		config, ok := b.GetResourceConfig(node.group, node.key)
+		config, ok := b.GetResourceConfig(node.Group, node.Name)
 		if !ok {
-			logdiag.LogError(ctx, fmt.Errorf("internal error when reading config for %s.%s", node.group, node.key))
+			logdiag.LogError(ctx, fmt.Errorf("internal error when reading config for %s.%s", node.Group, node.Name))
 			return
 		}
 
@@ -123,7 +123,7 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 		// At this point it's an error to have unresolved deps
 		if len(myReferences) > 0 {
 			// TODO: include the deps themselves in the message
-			logdiag.LogError(ctx, fmt.Errorf("cannot deploy %s.%s due to unresolved deps", node.group, node.key))
+			logdiag.LogError(ctx, fmt.Errorf("cannot deploy %s.%s due to unresolved deps", node.Group, node.Name))
 			return
 		}
 
