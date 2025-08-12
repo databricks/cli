@@ -1,0 +1,2 @@
+# Temporarily disabling due to DBR release breakage.
+CloudEnvs.gcp = false
