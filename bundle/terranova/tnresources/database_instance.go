@@ -4,8 +4,6 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/libs/structdiff"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/database"
 )
@@ -13,6 +11,21 @@ import (
 type ResourceDatabaseInstance struct {
 	client *databricks.WorkspaceClient
 	config database.DatabaseInstance
+}
+
+func (d ResourceDatabaseInstance) DoUpdate(ctx context.Context, id string) error {
+	request := database.UpdateDatabaseInstanceRequest{
+		DatabaseInstance: d.config,
+		Name:             d.config.Name,
+		UpdateMask:       "",
+	}
+	request.DatabaseInstance.Uid = id
+
+	_, err := d.client.Database.UpdateDatabaseInstance(ctx, request)
+	if err != nil {
+		return SDKError{Method: "Database.UpdateDatabaseInstance", Err: err}
+	}
+	return nil
 }
 
 func (d ResourceDatabaseInstance) Config() any {
@@ -29,31 +42,12 @@ func (d ResourceDatabaseInstance) DoCreate(ctx context.Context) (string, error) 
 	return response.Name, nil
 }
 
-func (d ResourceDatabaseInstance) DoUpdate(ctx context.Context, oldID string) (string, error) {
-	request := database.UpdateDatabaseInstanceRequest{
-		DatabaseInstance: d.config,
-		Name:             d.config.Name,
-		UpdateMask:       "",
-	}
-	request.DatabaseInstance.Uid = oldID
-
-	response, err := d.client.Database.UpdateDatabaseInstance(ctx, request)
-	if err != nil {
-		return "", SDKError{Method: "Database.UpdateDatabaseInstance", Err: err}
-	}
-	return response.Uid, nil
-}
-
 func (d ResourceDatabaseInstance) WaitAfterCreate(ctx context.Context) error {
 	return nil
 }
 
 func (d ResourceDatabaseInstance) WaitAfterUpdate(ctx context.Context) error {
 	return nil
-}
-
-func (d ResourceDatabaseInstance) ClassifyChanges(changes []structdiff.Change) deployplan.ActionType {
-	return deployplan.ActionTypeUpdate
 }
 
 func NewResourceDatabaseInstance(client *databricks.WorkspaceClient, resource *resources.DatabaseInstance) (*ResourceDatabaseInstance, error) {
