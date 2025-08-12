@@ -46,17 +46,18 @@ type ProgressEventsData struct {
 	ProgressEvents []ProgressEventWithDuration
 }
 
-// phaseFromUpdateProgress extracts the last word from an event message and removes the last character (a period)
+// phaseFromUpdateProgress extracts the phase name from an event message by checking if it contains any of the UpdateInfoState values
 // Example: "Update 6fc8a8 is WAITING_FOR_RESOURCES." -> "WAITING_FOR_RESOURCES"
 func phaseFromUpdateProgress(eventMessage string) string {
-	words := strings.Fields(eventMessage)
-	if len(words) > 0 {
-		phase := words[len(words)-1]
-		if len(phase) > 0 {
-			phase = phase[:len(phase)-1]
+	var updateInfoState pipelines.UpdateInfoState
+	updateInfoStates := updateInfoState.Values()
+
+	for _, state := range updateInfoStates {
+		if strings.Contains(eventMessage, string(state)) {
+			return string(state)
 		}
-		return phase
 	}
+
 	return ""
 }
 
@@ -84,16 +85,16 @@ func readableDuration(diff time.Duration) string {
 
 // eventTimeDifference returns the time difference between two events.
 func eventTimeDifference(earlierEvent, laterEvent pipelines.PipelineEvent) (time.Duration, error) {
-	currTime, err := time.Parse(time.RFC3339Nano, earlierEvent.Timestamp)
+	earlierTime, err := time.Parse(time.RFC3339Nano, earlierEvent.Timestamp)
 	if err != nil {
 		return 0, err
 	}
-	nextTime, err := time.Parse(time.RFC3339Nano, laterEvent.Timestamp)
+	laterTime, err := time.Parse(time.RFC3339Nano, laterEvent.Timestamp)
 	if err != nil {
 		return 0, err
 	}
 
-	timeDifference := nextTime.Sub(currTime)
+	timeDifference := laterTime.Sub(earlierTime)
 	if timeDifference < 0 {
 		return 0, errors.New("second event timestamp must be after first event timestamp")
 	}
@@ -124,7 +125,7 @@ func enrichEvents(events []pipelines.PipelineEvent) ([]ProgressEventWithDuration
 func displayProgressEvents(ctx context.Context, events []pipelines.PipelineEvent) error {
 	progressEvents, err := enrichEvents(events)
 	if err != nil {
-		return fmt.Errorf("failed to calculate progress events: %w", err)
+		return fmt.Errorf("failed to enrich progress events: %w", err)
 	}
 
 	data := ProgressEventsData{
@@ -135,29 +136,30 @@ func displayProgressEvents(ctx context.Context, events []pipelines.PipelineEvent
 }
 
 // fetchAndDisplayPipelineUpdate fetches the update and the update's associated update_progress events' durations.
-func fetchAndDisplayPipelineUpdate(ctx context.Context, w *databricks.WorkspaceClient, ref bundleresources.Reference, updateId string) error {
-	pipelineResource := ref.Resource.(*resources.Pipeline)
-	pipelineID := pipelineResource.ID
+func fetchAndDisplayPipelineUpdate(ctx context.Context, w *databricks.WorkspaceClient, pipelineID, updateID string) error {
 	if pipelineID == "" {
-		return errors.New("unable to get pipeline ID from pipeline")
+		return errors.New("no pipeline ID provided")
+	}
+	if updateID == "" {
+		return errors.New("no update ID provided")
 	}
 
 	getUpdateResponse, err := w.Pipelines.GetUpdate(ctx, pipelines.GetUpdateRequest{
 		PipelineId: pipelineID,
-		UpdateId:   updateId,
+		UpdateId:   updateID,
 	})
 	if err != nil {
 		return err
 	}
 
 	if getUpdateResponse.Update == nil {
-		return fmt.Errorf("no update found with id %s for pipeline %s", updateId, pipelineID)
+		return fmt.Errorf("no update found with id %s for pipeline %s", updateID, pipelineID)
 	}
 
 	latestUpdate := *getUpdateResponse.Update
 
 	params := &PipelineEventsQueryParams{
-		Filter:  fmt.Sprintf("update_id='%s' AND event_type='update_progress'", updateId),
+		Filter:  fmt.Sprintf("update_id='%s' AND event_type='update_progress'", updateID),
 		OrderBy: "timestamp asc",
 	}
 
@@ -325,9 +327,9 @@ Refreshes all tables in the pipeline unless otherwise specified.`,
 		if ref.Description.SingularName == "pipeline" && runOutput != nil {
 			if pipelineOutput, ok := runOutput.(*bundlerunoutput.PipelineOutput); ok && pipelineOutput.UpdateId != "" {
 				w := b.WorkspaceClient()
-				err = fetchAndDisplayPipelineUpdate(ctx, w, ref, pipelineOutput.UpdateId)
+				err = fetchAndDisplayPipelineUpdate(ctx, w, ref.Resource.(*resources.Pipeline).ID, pipelineOutput.UpdateId)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to fetch and display pipeline update: %w", err)
 				}
 			}
 		}
