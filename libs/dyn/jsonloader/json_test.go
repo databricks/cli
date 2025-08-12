@@ -91,3 +91,23 @@ func TestJsonLoaderEOF(t *testing.T) {
 	_, err := LoadJSON([]byte(eofData), "path/to/file.json")
 	assert.ErrorContains(t, err, "unexpected end of JSON input")
 }
+
+const mapWithNoBraces = `
+"job_id": 123,
+"new_settings": {
+    "name": "xxx",
+    "wrong": "xxx",
+}
+`
+
+func TestJsonMapWithoutBraces(t *testing.T) {
+	_, err := LoadJSON([]byte(mapWithNoBraces), "path/to/file.json")
+	assert.ErrorContains(t, err, "error decoding JSON at")
+}
+
+const validInline = `["job_id", 123]`
+
+func TestJsonValidInline(t *testing.T) {
+	_, err := LoadJSON([]byte(validInline), "path/to/file.json")
+	assert.NoError(t, err)
+}

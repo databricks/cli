@@ -9,6 +9,7 @@
 * Update Go SDK to 0.79.0 ([#3376](https://github.com/databricks/cli/pull/3376))
 
 ### CLI
+* Fixed panic when providing a CLI command with an incorrect JSON input ([#3398](https://github.com/databricks/cli/pull/3398))
 
 ### Bundles
 * Changed logic for resolving `${resources...}` references. Previously this would be done by terraform at deploy time. Now if it references a field that is present in the config, it will be done by DABs during bundle loading ([#3370](https://github.com/databricks/cli/pull/3370))
