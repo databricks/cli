@@ -905,8 +905,7 @@ func CopyDir(src, dst string, inputs, outputs map[string]bool) error {
 			return err
 		}
 
-		_, isInput := inputs[relPath]
-		if strings.HasPrefix(relPath, "out") && !isInput {
+		if strings.HasPrefix(relPath, "out") {
 			if !info.IsDir() {
 				outputs[relPath] = true
 			}
