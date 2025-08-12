@@ -31,7 +31,7 @@ while [ -z "$(grep -o "Python Flask app has started with" out.run.txt 2>/dev/nul
 done
 
 title "Checking app is running..."
-trace curl -s -o - http://localhost:$PROXY_PORT 2>/dev/null | jq
+trace curl -s -o - http://localhost:$PROXY_PORT | jq
 
 title "Sending shutdown request..."
 trace curl -s -o /dev/null  http://localhost:$PROXY_PORT/shutdown || true

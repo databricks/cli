@@ -8,7 +8,9 @@ Hello, world
 
 === Starting the app in background...
 === Waiting
-=== Checking app is running...{
+=== Checking app is running...
+>>> curl -s -o - http://localhost:$(port)
+{
   "Accept": "*/*",
   "Accept-Encoding": "gzip",
   "Host": "127.0.0.1:$(port)",
