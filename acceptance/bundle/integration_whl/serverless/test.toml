@@ -1,3 +1,4 @@
+CloudSlow = true
 Local = false
 
 # serverless is only enabled if UC is enabled
