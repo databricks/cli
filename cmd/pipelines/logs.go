@@ -84,7 +84,7 @@ func parseAndFormatTimestamp(timestamp string) (string, error) {
 		return "", nil
 	}
 
-	t, err := time.Parse(time.RFC3339, timestamp)
+	t, err := time.Parse(time.RFC3339Nano, timestamp)
 	if err != nil {
 		return "", err
 	}
