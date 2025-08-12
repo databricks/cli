@@ -5,21 +5,10 @@ resources:
   jobs:
     my_job:
       name: my_job
-      job_clusters:
-        - job_cluster_key: job_cluster
-          new_cluster:
-            num_workers: 2
-            autoscale:
-              min_workers: 1
-              max_workers: 2
-            spark_version: "13.3.x-scala2.12"
-            node_type_id: "Standard_DS3_v2"
       tasks:
         - task_key: task_1
-          job_cluster_key: job_cluster
           notebook_task:
             notebook_path: "./notebook1.py"
         - task_key: task_2
-          job_cluster_key: job_cluster
           notebook_task:
             notebook_path: "./notebook2.py"

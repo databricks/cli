@@ -1,5 +1,5 @@
 print_requests() {
-    jq --sort-keys 'select(.path=="/api/2.2/jobs/run-now")' < out.requests.txt
+    jq --sort-keys 'select(.path | contains("/jobs/run-now"))' < out.requests.txt
     rm out.requests.txt
 }
 
