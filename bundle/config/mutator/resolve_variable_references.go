@@ -33,11 +33,30 @@ rounds           time
 */
 const maxResolutionRounds = 11
 
+// List of prefixes to be used by default in ResolveVariableReferencesOnlyResources/ResolveVariableReferencesWithoutResources
+// Prefixes specify which references are resolves, e.g. ${bundle...} and so on.
+// This list does not include "artifacts" because this section will be modified in build phase and variable resolution happens in initialize phase.
+// This list does not include "resources" because some of those references are known after resource is deployed.
+var defaultPrefixes = []string{
+	"bundle",
+	"workspace",
+	"variables",
+	"resources",
+}
+
+var optionalResolution = map[string]bool{
+	// Enables different mode for resolution:
+	//  - normalization is not done, if field is not set by user it's missing
+	//  - if field is missing (either it's a valid field but not set or invalid field), it remains unresolved, no error
+	"resources": true,
+}
+
+var artifactPath = dyn.MustPathFromString("artifacts")
+
 type resolveVariableReferences struct {
 	prefixes    []string
 	pattern     dyn.Pattern
 	lookupFn    func(dyn.Value, dyn.Path, *bundle.Bundle) (dyn.Value, error)
-	skipFn      func(dyn.Value) bool
 	extraRounds int
 
 	// includeResources allows resolving variables in 'resources', otherwise, they are excluded.
@@ -45,9 +64,14 @@ type resolveVariableReferences struct {
 	// includeResources can be used with appropriate pattern to avoid resolving variables
 	// outside of 'resources'.
 	includeResources bool
+
+	artifactsReferenceUsed bool
 }
 
 func ResolveVariableReferencesOnlyResources(prefixes ...string) bundle.Mutator {
+	if len(prefixes) == 0 {
+		prefixes = defaultPrefixes
+	}
 	return &resolveVariableReferences{
 		prefixes:         prefixes,
 		lookupFn:         lookup,
@@ -58,6 +82,9 @@ func ResolveVariableReferencesOnlyResources(prefixes ...string) bundle.Mutator {
 }
 
 func ResolveVariableReferencesWithoutResources(prefixes ...string) bundle.Mutator {
+	if len(prefixes) == 0 {
+		prefixes = defaultPrefixes
+	}
 	return &resolveVariableReferences{
 		prefixes:    prefixes,
 		lookupFn:    lookup,
@@ -67,11 +94,7 @@ func ResolveVariableReferencesWithoutResources(prefixes ...string) bundle.Mutato
 
 func ResolveVariableReferencesInLookup() bundle.Mutator {
 	return &resolveVariableReferences{
-		prefixes: []string{
-			"bundle",
-			"workspace",
-			"variables",
-		},
+		prefixes:    defaultPrefixes,
 		pattern:     dyn.NewPattern(dyn.Key("variables"), dyn.AnyKey(), dyn.Key("lookup")),
 		lookupFn:    lookupForVariables,
 		extraRounds: maxResolutionRounds - 1,
@@ -160,6 +183,11 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 			break
 		}
 	}
+
+	if m.artifactsReferenceUsed {
+		b.Metrics.SetBoolValue("artifacts_reference_used", true)
+	}
+
 	return diags
 }
 
@@ -201,15 +229,32 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn
 					path = newPath
 				}
 
+				// If the path starts with "artifacts", we need to add a metric to track if this reference is used.
+				if path.HasPrefix(artifactPath) {
+					m.artifactsReferenceUsed = true
+				}
+
 				// Perform resolution only if the path starts with one of the specified prefixes.
 				for _, prefix := range prefixes {
 					if path.HasPrefix(prefix) {
-						// Skip resolution if there is a skip function and it returns true.
-						if m.skipFn != nil && m.skipFn(v) {
-							return dyn.InvalidValue, dynvar.ErrSkipResolution
+						isOpt := optionalResolution[prefix[0].Key()]
+						var value dyn.Value
+						var err error
+						if isOpt {
+							// We don't want injected zero value when resolving $resources.
+							// We only want entries that are explicitly provided by users, so we're using root not normalized here.
+							value, err = m.lookupFn(root, path, b)
+							if !value.IsValid() {
+								// Not having a value is not an error in this case, it might be resolved at deploy time.
+								// TODO: we still could check whether it's part of the schema or not. If latter, we can reject it right away.
+								// TODO: This might be better done after we got rid of TF.
+								return dyn.InvalidValue, dynvar.ErrSkipResolution
+							}
+						} else {
+							value, err = m.lookupFn(normalized, path, b)
 						}
-						hasUpdates = true
-						return m.lookupFn(normalized, path, b)
+						hasUpdates = hasUpdates || (err == nil && value.IsValid())
+						return value, err
 					}
 				}
 

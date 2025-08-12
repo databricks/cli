@@ -114,11 +114,11 @@ func visit(v Value, prefix Path, suffix Pattern, opts visitOptions) (Value, erro
 	return component.visit(v, prefix, suffix, opts)
 }
 
-func (component pathComponent) visit(v Value, prefix Path, suffix Pattern, opts visitOptions) (Value, error) {
-	path := append(prefix, component)
+func (c pathComponent) visit(v Value, prefix Path, suffix Pattern, opts visitOptions) (Value, error) {
+	path := append(prefix, c)
 
 	switch {
-	case component.isKey():
+	case c.isKey():
 		// Expect a map to be set if this is a key.
 		switch v.Kind() {
 		case KindMap:
@@ -132,7 +132,7 @@ func (component pathComponent) visit(v Value, prefix Path, suffix Pattern, opts 
 		m := v.MustMap()
 
 		// Lookup current value in the map.
-		ev, ok := m.GetByString(component.key)
+		ev, ok := m.GetByString(c.key)
 		if !ok {
 			return InvalidValue, noSuchKeyError{path}
 		}
@@ -150,14 +150,14 @@ func (component pathComponent) visit(v Value, prefix Path, suffix Pattern, opts 
 
 		// Return an updated map value.
 		m = m.Clone()
-		m.SetLoc(component.key, nil, nv)
+		m.SetLoc(c.key, nil, nv)
 		return Value{
 			v: m,
 			k: KindMap,
 			l: v.l,
 		}, nil
 
-	case component.isIndex():
+	case c.isIndex():
 		// Expect a sequence to be set if this is an index.
 		switch v.Kind() {
 		case KindSequence:
@@ -171,12 +171,12 @@ func (component pathComponent) visit(v Value, prefix Path, suffix Pattern, opts 
 		s := v.MustSequence()
 
 		// Lookup current value in the sequence.
-		if component.index < 0 || component.index >= len(s) {
+		if c.index < 0 || c.index >= len(s) {
 			return InvalidValue, indexOutOfBoundsError{path}
 		}
 
 		// Recursively transform the value.
-		ev := s[component.index]
+		ev := s[c.index]
 		nv, err := visit(ev, path, suffix, opts)
 		if err != nil {
 			return InvalidValue, err
@@ -189,7 +189,7 @@ func (component pathComponent) visit(v Value, prefix Path, suffix Pattern, opts 
 
 		// Return an updated sequence value.
 		s = slices.Clone(s)
-		s[component.index] = nv
+		s[c.index] = nv
 		return Value{
 			v: s,
 			k: KindSequence,

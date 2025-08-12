@@ -57,6 +57,27 @@ func (j *JsonFlag) Unmarshal(v any) diag.Diagnostics {
 		return diags
 	}
 
+	if !nv.IsValid() {
+		kind := reflect.TypeOf(v).Kind()
+		if kind == reflect.Ptr {
+			kind = reflect.TypeOf(v).Elem().Kind()
+		}
+
+		expectedJsonType := "string"
+		switch kind {
+		case reflect.Struct, reflect.Map:
+			expectedJsonType = "object"
+		case reflect.Slice:
+			expectedJsonType = "array"
+		}
+
+		return diags.Append(diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "Invalid command input",
+			Detail:   fmt.Sprintf("expected JSON %s, received %s", expectedJsonType, dv.Kind()),
+		})
+	}
+
 	// Then marshal the normalized data to the output.
 	// It will serialize all set data with the correct types.
 	data, err := json.Marshal(nv.AsAny())

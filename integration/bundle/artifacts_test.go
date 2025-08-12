@@ -149,7 +149,7 @@ func TestUploadArtifactFileToCorrectRemotePathWithEnvironments(t *testing.T) {
 	// The job environment deps path should have been updated to the remote path.
 	require.Regexp(t,
 		path.Join("/Workspace", regexp.QuoteMeta(wsDir), `.internal/test\.whl`),
-		b.Config.Resources.Jobs["test"].JobSettings.Environments[0].Spec.Dependencies[0],
+		b.Config.Resources.Jobs["test"].Environments[0].Spec.Dependencies[0],
 	)
 }
 

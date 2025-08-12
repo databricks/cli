@@ -4,17 +4,25 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	configresources "github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/run"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/client"
+	"github.com/databricks/databricks-sdk-go/service/pipelines"
 )
 
 // Copied from cmd/bundle/run.go
-// promptRunArgument prompts the user to select a resource to run.
-func promptRunArgument(ctx context.Context, b *bundle.Bundle) (string, error) {
+// promptRunnablePipeline prompts the user to select a runnable pipeline.
+func promptRunnablePipeline(ctx context.Context, b *bundle.Bundle) (string, error) {
 	// Compute map of "Human readable name of resource" -> "resource key".
 	inv := make(map[string]string)
 	for k, ref := range resources.Completions(b, run.IsRunnable) {
@@ -22,7 +30,7 @@ func promptRunArgument(ctx context.Context, b *bundle.Bundle) (string, error) {
 		inv[title] = k
 	}
 
-	key, err := cmdio.Select(ctx, inv, "Pipeline to run")
+	key, err := cmdio.Select(ctx, inv, "Select a pipeline")
 	if err != nil {
 		return "", err
 	}
@@ -56,7 +64,7 @@ func resolveRunArgument(ctx context.Context, b *bundle.Bundle, args []string) (s
 		}
 
 		if cmdio.IsPromptSupported(ctx) {
-			key, err := promptRunArgument(ctx, b)
+			key, err := promptRunnablePipeline(ctx, b)
 			if err != nil {
 				return "", nil, err
 			}
@@ -87,4 +95,96 @@ func keyToRunner(b *bundle.Bundle, arg string) (run.Runner, error) {
 	}
 
 	return runner, nil
+}
+
+// formatOSSTemplateWarningMessage formats the warning message for OSS template pipeline YAML files.
+func formatOSSTemplateWarningMessage(d diag.Diagnostic) string {
+	fileName := "A pipeline YAML file"
+	if len(d.Locations) > 0 && d.Locations[0].File != "" {
+		fileName = d.Locations[0].File
+	}
+
+	return fileName + ` seems to be formatted for open-source Spark Declarative Pipelines.
+Pipelines CLI currently only supports Lakeflow Declarative Pipelines development.
+To see an example of a supported pipelines template, create a new Pipelines CLI project with "pipelines init".`
+}
+
+// checkForOSSTemplateWarning checks for a warning in the logs that suggests a pipelines YAML file
+// is formatted for open-source Spark Declarative Pipelines and returns an error if found.
+// For the Spark Declarative Pipelines template, see: https://github.com/apache/spark/blob/master/python/pyspark/pipelines/init_cli.py
+// Logs all collected diagnostics to expose them.
+func checkForOSSTemplateWarning(ctx context.Context, diags diag.Diagnostics) error {
+	var ossWarning *diag.Diagnostic
+
+	for _, d := range diags {
+		// The "definitions" field in the root is expected in OSS Spark Declarative Pipelines templates but is not supported in the Pipelines CLI.
+		if d.Severity == diag.Warning && strings.Contains(d.Summary, "unknown field: definitions") && len(d.Paths) == 1 && d.Paths[0].Equal(dyn.EmptyPath) {
+			ossWarning = &d
+		}
+		logdiag.LogDiag(ctx, d)
+	}
+
+	if ossWarning != nil {
+		return errors.New(formatOSSTemplateWarningMessage(*ossWarning))
+	}
+
+	return nil
+}
+
+type PipelineEventsResponse struct {
+	Events        []pipelines.PipelineEvent `json:"events"`
+	NextPageToken string                    `json:"next_page_token,omitempty"`
+}
+
+type PipelineEventsQueryParams struct {
+	Filter     string `json:"filter,omitempty"`
+	MaxResults int    `json:"max_results,omitempty"`
+	PageToken  string `json:"page_token,omitempty"`
+	OrderBy    string `json:"order_by,omitempty"`
+}
+
+// fetchAllPipelineEvents retrieves pipeline events with optional SQL filtering and ordering.
+// Necessary as current Go SDK endpoints don't support OrderBy parameter.
+// Retrieves only one page of results, so the number of results is bound by the API's limit of results per page.
+func fetchAllPipelineEvents(ctx context.Context, w *databricks.WorkspaceClient, pipelineID string, params *PipelineEventsQueryParams) ([]pipelines.PipelineEvent, error) {
+	maxResultsPerPage := 250
+	if params.MaxResults > maxResultsPerPage {
+		return nil, fmt.Errorf("number of results must be %d or less", maxResultsPerPage)
+	}
+
+	apiClient, err := client.New(w.Config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create API client: %w", err)
+	}
+
+	path := fmt.Sprintf("/api/2.0/pipelines/%s/events", pipelineID)
+
+	queryParams := map[string]string{}
+	if params.Filter != "" {
+		queryParams["filter"] = params.Filter
+	}
+
+	if params.MaxResults > 0 {
+		queryParams["max_results"] = strconv.Itoa(params.MaxResults)
+	}
+
+	if params.OrderBy != "" {
+		queryParams["order_by"] = params.OrderBy
+	}
+
+	var response PipelineEventsResponse
+	err = apiClient.Do(
+		ctx,
+		"GET",
+		path,
+		nil,
+		nil,
+		queryParams,
+		&response,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch pipeline events: %w", err)
+	}
+
+	return response.Events, nil
 }

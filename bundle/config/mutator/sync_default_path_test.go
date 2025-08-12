@@ -34,7 +34,7 @@ func TestSyncDefaultPath_SkipIfSet(t *testing.T) {
 		{
 			name:   "nil",
 			paths:  dyn.V(nil),
-			expect: nil,
+			expect: []string{"."},
 		},
 		{
 			name:   "empty sequence",

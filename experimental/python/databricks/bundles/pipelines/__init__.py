@@ -48,6 +48,9 @@ __all__ = [
     "IngestionPipelineDefinition",
     "IngestionPipelineDefinitionDict",
     "IngestionPipelineDefinitionParam",
+    "IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig",
+    "IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfigDict",
+    "IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfigParam",
     "IngestionSourceType",
     "IngestionSourceTypeParam",
     "InitScriptInfo",
@@ -241,6 +244,11 @@ from databricks.bundles.pipelines._models.ingestion_pipeline_definition import (
     IngestionPipelineDefinition,
     IngestionPipelineDefinitionDict,
     IngestionPipelineDefinitionParam,
+)
+from databricks.bundles.pipelines._models.ingestion_pipeline_definition_table_specific_config_query_based_connector_config import (
+    IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig,
+    IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfigDict,
+    IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfigParam,
 )
 from databricks.bundles.pipelines._models.ingestion_source_type import (
     IngestionSourceType,

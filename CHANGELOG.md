@@ -1,5 +1,50 @@
 # Version changelog
 
+## Release v0.263.0
+
+### CLI
+* Show "DEFAULT" as the default profile for `databricks auth login` [#3252](https://github.com/databricks/cli/pull/3252)
+
+### Bundles
+* Always set default value for source field for tasks if not explicitly set already ([#3359](https://github.com/databricks/cli/pull/3359))
+* Fix panic in auto completion handler for bundler run/open. Regression introduced in 0.259.0. [#3358](https://github.com/databricks/cli/pull/3358)
+* Fix error propagation in the `bundle generate dashboard` command. Regression introduced in 0.259.0. [#3354](https://github.com/databricks/cli/pull/3354)
+
+
+## Release v0.262.0
+
+### CLI
+* Fixed auth login ignoring DATABRICKS_CONFIG_FILE environmental variable when saving profile ([#3266](https://github.com/databricks/cli/pull/3266))
+
+### Bundles
+* Modified run flag validation to allow `--refresh` and `--full-refresh` flags to be used together ([#3300](https://github.com/databricks/cli/pull/3300))
+* Fixed bundle generate for not yet deployed apps ([#3319](https://github.com/databricks/cli/pull/3319))
+* Respect export format for notebooks on bundle generate ([#3316](https://github.com/databricks/cli/pull/3316))
+
+
+## Release v0.261.0
+
+### Notable Changes
+The following CLI commands now have additional required positional arguments:
+* `alerts-v2 update-alert ID UPDATE_MASK` - Update an alert (v2)
+* `database update-database-instance NAME UPDATE_MASK` - Update a database instance
+* `external-lineage create-external-lineage-relationship SOURCE TARGET` - Create an external lineage relationship
+* `external-lineage update-external-lineage-relationship UPDATE_MASK SOURCE TARGET` - Update an external lineage relationship
+* `external-metadata update-external-metadata NAME UPDATE_MASK SYSTEM_TYPE ENTITY_TYPE` - Update external metadata
+* `feature-store update-online-store NAME UPDATE_MASK CAPACITY` - Update an online store
+* `lakeview create-schedule DASHBOARD_ID CRON_SCHEDULE` - Create a schedule
+* `lakeview create-subscription DASHBOARD_ID SCHEDULE_ID SUBSCRIBER` - Create a subscription
+* `lakeview update-schedule DASHBOARD_ID SCHEDULE_ID CRON_SCHEDULE` - Update a schedule
+* `network-connectivity update-private-endpoint-rule NETWORK_CONNECTIVITY_CONFIG_ID PRIVATE_ENDPOINT_RULE_ID UPDATE_MASK` - Update a private endpoint rule
+
+### CLI
+* Add required query parameters as positional arguments in CLI commands ([#3289](https://github.com/databricks/cli/pull/3289))
+
+### Bundles
+* Fixed an issue where `allow_duplicate_names` field on the pipeline definition was ignored by the bundle ([#3274](https://github.com/databricks/cli/pull/3274))
+* Add warning for when required bundle fields are not set ([#3044](https://github.com/databricks/cli/pull/3044))
+
+
 ## Release v0.260.0
 
 ### Notable Changes

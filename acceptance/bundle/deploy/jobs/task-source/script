@@ -1,0 +1,6 @@
+trace $CLI bundle deploy
+
+trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | select(.body.name=="git_job") | .body' out.requests.txt | jq --sort-keys
+trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | select(.body.name=="workspace_job") | .body' out.requests.txt | jq --sort-keys
+
+rm out.requests.txt

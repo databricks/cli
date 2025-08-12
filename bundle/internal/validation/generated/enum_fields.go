@@ -9,6 +9,9 @@ import (
 
 // EnumFields maps [dyn.Pattern] to valid enum values they should have.
 var EnumFields = map[string][]string{
+	"artifacts.*.executable": {"bash", "sh", "cmd"},
+	"artifacts.*.type": {"whl", "jar"},
+
 	"resources.apps.*.active_deployment.mode": {"AUTO_SYNC", "SNAPSHOT"},
 	"resources.apps.*.active_deployment.status.state": {"CANCELLED", "FAILED", "IN_PROGRESS", "SUCCEEDED"},
 	"resources.apps.*.app_status.state": {"CRASHED", "DEPLOYING", "RUNNING", "UNAVAILABLE"},
@@ -93,8 +96,8 @@ var EnumFields = map[string][]string{
 	"resources.jobs.*.trigger.table.condition": {"ALL_UPDATED", "ANY_UPDATED"},
 	"resources.jobs.*.trigger.table_update.condition": {"ALL_UPDATED", "ANY_UPDATED"},
 
-	"resources.model_serving_endpoints.*.ai_gateway.guardrails.input.pii.behavior": {"BLOCK", "NONE"},
-	"resources.model_serving_endpoints.*.ai_gateway.guardrails.output.pii.behavior": {"BLOCK", "NONE"},
+	"resources.model_serving_endpoints.*.ai_gateway.guardrails.input.pii.behavior": {"BLOCK", "MASK", "NONE"},
+	"resources.model_serving_endpoints.*.ai_gateway.guardrails.output.pii.behavior": {"BLOCK", "MASK", "NONE"},
 	"resources.model_serving_endpoints.*.ai_gateway.rate_limits[*].key": {"endpoint", "service_principal", "user", "user_group"},
 	"resources.model_serving_endpoints.*.ai_gateway.rate_limits[*].renewal_period": {"minute"},
 	"resources.model_serving_endpoints.*.config.served_entities[*].external_model.amazon_bedrock_config.bedrock_provider": {"ai21labs", "amazon", "anthropic", "cohere"},
@@ -113,13 +116,13 @@ var EnumFields = map[string][]string{
 	"resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.scd_type": {"APPEND_ONLY", "SCD_TYPE_1", "SCD_TYPE_2"},
 	"resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.scd_type": {"APPEND_ONLY", "SCD_TYPE_1", "SCD_TYPE_2"},
 	"resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.scd_type": {"APPEND_ONLY", "SCD_TYPE_1", "SCD_TYPE_2"},
-	"resources.pipelines.*.ingestion_definition.source_type": {"BIGQUERY", "CONFLUENCE", "DYNAMICS365", "GA4_RAW_DATA", "MANAGED_POSTGRESQL", "MYSQL", "NETSUITE", "ORACLE", "POSTGRESQL", "SALESFORCE", "SERVICENOW", "SHAREPOINT", "SQLSERVER", "TERADATA", "WORKDAY_RAAS"},
+	"resources.pipelines.*.ingestion_definition.source_type": {"BIGQUERY", "CONFLUENCE", "DYNAMICS365", "GA4_RAW_DATA", "MANAGED_POSTGRESQL", "META_MARKETING", "MYSQL", "NETSUITE", "ORACLE", "POSTGRESQL", "REDSHIFT", "SALESFORCE", "SERVICENOW", "SHAREPOINT", "SQLDW", "SQLSERVER", "TERADATA", "WORKDAY_RAAS"},
 	"resources.pipelines.*.ingestion_definition.table_configuration.scd_type": {"APPEND_ONLY", "SCD_TYPE_1", "SCD_TYPE_2"},
 	"resources.pipelines.*.restart_window.days_of_week[*]": {"FRIDAY", "MONDAY", "SATURDAY", "SUNDAY", "THURSDAY", "TUESDAY", "WEDNESDAY"},
 
 	"resources.quality_monitors.*.custom_metrics[*].type": {"CUSTOM_METRIC_TYPE_AGGREGATE", "CUSTOM_METRIC_TYPE_DERIVED", "CUSTOM_METRIC_TYPE_DRIFT"},
 	"resources.quality_monitors.*.inference_log.problem_type": {"PROBLEM_TYPE_CLASSIFICATION", "PROBLEM_TYPE_REGRESSION"},
-	"resources.quality_monitors.*.schedule.pause_status": {"PAUSED", "UNPAUSED"},
+	"resources.quality_monitors.*.schedule.pause_status": {"PAUSED", "UNPAUSED", "UNSPECIFIED"},
 
 	"resources.secret_scopes.*.backend_type": {"AZURE_KEYVAULT", "DATABRICKS"},
 
@@ -128,4 +131,6 @@ var EnumFields = map[string][]string{
 	"resources.sql_warehouses.*.warehouse_type": {"CLASSIC", "PRO", "TYPE_UNSPECIFIED"},
 
 	"resources.volumes.*.volume_type": {"EXTERNAL", "MANAGED"},
+
+	"variables.*.type": {"complex"},
 }

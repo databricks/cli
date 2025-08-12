@@ -14,12 +14,14 @@ title "Second summary, should have id and modified status should be absent"
 trace $CLI bundle summary -o json | jq '.resources.jobs.foo' > out.summary.json
 trace cat out.summary.json
 JOB_1_ID=$(jq -r '.id' out.summary.json)
+echo "$JOB_1_ID:JOB_1_ID" >> ACC_REPLS
 rm out.summary.json
 title "Assert job 1 is created\n"
 $CLI jobs get "${JOB_1_ID}" | jq '{name: .settings.name}'
 
 title "Assert job 2 is created\n"
 JOB_2_ID=$($CLI bundle summary -o json | jq -r '.resources.jobs.bar.id')
+echo "$JOB_2_ID:JOB_2_ID" >> ACC_REPLS
 $CLI jobs get "${JOB_2_ID}" | jq '{name: .settings.name}'
 
 title "Read metadata object from the workspace"
