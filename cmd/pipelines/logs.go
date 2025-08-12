@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/databricks/cli/bundle"
 	configresources "github.com/databricks/cli/bundle/config/resources"
@@ -77,6 +78,20 @@ func getMostRecentUpdateId(ctx context.Context, w *databricks.WorkspaceClient, p
 	return updates[0].UpdateId, nil
 }
 
+// parseAndFormatTimestamp parses a timestamp string and formats it to the Databricks-compatible format.
+func parseAndFormatTimestamp(timestamp string) (string, error) {
+	if timestamp == "" {
+		return "", nil
+	}
+
+	t, err := time.Parse(time.RFC3339, timestamp)
+	if err != nil {
+		return "", err
+	}
+
+	return t.Format("2006-01-02T15:04:05.000Z"), nil
+}
+
 // buildFieldFilter creates a SQL filter condition for a field with multiple possible values,
 // generating "field in ('value1')" for a single value or "field in ('value1', 'value2')" for multiple values.
 func buildFieldFilter(field string, values []string) string {
@@ -89,7 +104,7 @@ func buildFieldFilter(field string, values []string) string {
 }
 
 // buildPipelineEventFilter constructs a SQL filter string for pipeline events based on the provided parameters.
-func buildPipelineEventFilter(updateId string, levels, eventTypes []string) string {
+func buildPipelineEventFilter(updateId string, levels, eventTypes []string, startTime, endTime string) string {
 	var filterParts []string
 
 	if updateId != "" {
@@ -102,6 +117,14 @@ func buildPipelineEventFilter(updateId string, levels, eventTypes []string) stri
 
 	if typeFilter := buildFieldFilter("event_type", eventTypes); typeFilter != "" {
 		filterParts = append(filterParts, typeFilter)
+	}
+
+	if startTime != "" {
+		filterParts = append(filterParts, fmt.Sprintf("timestamp >= '%s'", startTime))
+	}
+
+	if endTime != "" {
+		filterParts = append(filterParts, fmt.Sprintf("timestamp <= '%s'", endTime))
 	}
 
 	return strings.Join(filterParts, " AND ")
@@ -117,20 +140,24 @@ KEY is the unique name of the pipeline, as defined in its YAML file.
 By default, show the events of the pipeline's most recent update.
 
 Example usage:
-  1. pipelines logs my-pipeline --update-id update-1
-  2. pipelines logs my-pipeline --level ERROR,METRICS --event-type update_progress`,
+  1. pipelines logs pipeline-name --update-id update-1 -n 10
+  2. pipelines logs pipeline-name --level ERROR,METRICS --event-type update_progress --start-time 2025-01-15T10:30:00Z`,
 	}
 
 	var updateId string
 	var levels []string
 	var eventTypes []string
 	var number int
+	var startTime string
+	var endTime string
 
 	filterGroup := cmdgroup.NewFlagGroup("Event Filter")
 	filterGroup.FlagSet().StringVar(&updateId, "update-id", "", "Filter events by update ID. If not provided, uses the most recent update ID.")
 	filterGroup.FlagSet().StringSliceVar(&levels, "level", nil, "Filter events by list of log levels (INFO, WARN, ERROR, METRICS). ")
 	filterGroup.FlagSet().StringSliceVar(&eventTypes, "event-type", nil, "Filter events by list of event types.")
 	filterGroup.FlagSet().IntVarP(&number, "number", "n", 0, "Number of events to return.")
+	filterGroup.FlagSet().StringVar(&startTime, "start-time", "", "Filter for events that are after this start time (format: 2025-01-15T10:30:00Z)")
+	filterGroup.FlagSet().StringVar(&endTime, "end-time", "", "Filter for events that are before this end time (format: 2025-01-15T10:30:00Z)")
 
 	wrappedCmd := cmdgroup.NewCommandWithGroupFlag(cmd)
 	wrappedCmd.AddFlagGroup(filterGroup)
@@ -149,7 +176,7 @@ Example usage:
 			return root.ErrAlreadyPrinted
 		}
 
-		// Load the deployment state to get pipeline IDs
+		// Load the deployment state to get pipeline IDs from resource
 		bundle.ApplySeqContext(ctx, b,
 			statemgmt.StatePull(),
 			statemgmt.Load(),
@@ -186,7 +213,22 @@ Example usage:
 			}
 		}
 
-		filter := buildPipelineEventFilter(updateId, levels, eventTypes)
+		// Parse and validate timestamp formats, then convert to Databricks-compatible format
+		if startTime != "" {
+			startTime, err = parseAndFormatTimestamp(startTime)
+			if err != nil {
+				return fmt.Errorf("invalid start time format: %w", err)
+			}
+		}
+
+		if endTime != "" {
+			endTime, err = parseAndFormatTimestamp(endTime)
+			if err != nil {
+				return fmt.Errorf("invalid end time format: %w", err)
+			}
+		}
+
+		filter := buildPipelineEventFilter(updateId, levels, eventTypes, startTime, endTime)
 
 		params := &PipelineEventsQueryParams{
 			Filter:  filter,

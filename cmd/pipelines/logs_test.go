@@ -2,8 +2,6 @@ package pipelines
 
 import (
 	"testing"
-
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
 )
 
 func TestBuildFieldFilter(t *testing.T) {
@@ -55,21 +53,18 @@ func TestBuildPipelineEventFilter(t *testing.T) {
 		updateId   string
 		levels     []string
 		eventTypes []string
+		startTime  string
+		endTime    string
 		expected   string
 	}{
 		{
-			name:       "no filters",
-			updateId:   "",
-			levels:     []string{},
-			eventTypes: []string{},
-			expected:   "",
+			name:     "no filters",
+			expected: "",
 		},
 		{
-			name:       "update id only",
-			updateId:   "update-1",
-			levels:     []string{},
-			eventTypes: []string{},
-			expected:   "update_id = 'update-1'",
+			name:     "update id only",
+			updateId: "update-1",
+			expected: "update_id = 'update-1'",
 		},
 		{
 			name:       "multiple filters",
@@ -85,120 +80,61 @@ func TestBuildPipelineEventFilter(t *testing.T) {
 			eventTypes: []string{"update_progress", "flow_progress"},
 			expected:   "update_id = 'update-2' AND level in ('INFO') AND event_type in ('update_progress', 'flow_progress')",
 		},
+		{
+			name:       "start time only",
+			updateId:   "",
+			levels:     []string{},
+			eventTypes: []string{},
+			startTime:  "2025-01-15T10:30:00Z",
+			expected:   "timestamp >= '2025-01-15T10:30:00Z'",
+		},
+		{
+			name:       "start time and end time",
+			updateId:   "update-3",
+			levels:     []string{"ERROR"},
+			eventTypes: []string{},
+			startTime:  "2025-01-15T10:30:00Z",
+			endTime:    "2025-01-15T11:30:00Z",
+			expected:   "update_id = 'update-3' AND level in ('ERROR') AND timestamp >= '2025-01-15T10:30:00Z' AND timestamp <= '2025-01-15T11:30:00Z'",
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := buildPipelineEventFilter(tt.updateId, tt.levels, tt.eventTypes)
+			result := buildPipelineEventFilter(tt.updateId, tt.levels, tt.eventTypes, tt.startTime, tt.endTime)
 			if result != tt.expected {
-				t.Errorf("buildPipelineEventFilter(%q, %v, %v) = %q, want %q", tt.updateId, tt.levels, tt.eventTypes, result, tt.expected)
+				t.Errorf("buildPipelineEventFilter(%q, %v, %v, %q, %q) = %q, want %q", tt.updateId, tt.levels, tt.eventTypes, tt.startTime, tt.endTime, result, tt.expected)
 			}
 		})
 	}
 }
 
-func TestGetMostRecentUpdateId(t *testing.T) {
+func TestParseAndFormatTimestamp(t *testing.T) {
 	tests := []struct {
-		name        string
-		updates     []pipelines.UpdateInfo
-		expectedID  string
-		expectError bool
+		name     string
+		input    string
+		expected string
 	}{
 		{
-			name: "single update",
-			updates: []pipelines.UpdateInfo{
-				{
-					UpdateId:     "update-1",
-					CreationTime: 1640995200000, // 2022-01-01T00:00:00Z
-				},
-			},
-			expectedID:  "update-1",
-			expectError: false,
+			name:     "valid timestamp",
+			input:    "2025-08-11T21:46:14Z",
+			expected: "2025-08-11T21:46:14.000Z",
 		},
 		{
-			name: "multiple updates, first is most recent",
-			updates: []pipelines.UpdateInfo{
-				{
-					UpdateId:     "update-3",
-					CreationTime: 1640995200000, // 2022-01-01T00:00:00Z
-				},
-				{
-					UpdateId:     "update-2",
-					CreationTime: 1640991600000, // 2022-01-01T00:00:00Z - 1 hour earlier
-				},
-				{
-					UpdateId:     "update-1",
-					CreationTime: 1640988000000, // 2022-01-01T00:00:00Z - 2 hours earlier
-				},
-			},
-			expectedID:  "update-3",
-			expectError: false,
-		},
-		{
-			name: "multiple updates, last is most recent",
-			updates: []pipelines.UpdateInfo{
-				{
-					UpdateId:     "update-1",
-					CreationTime: 1640988000000, // 2022-01-01T00:00:00Z - 2 hours earlier
-				},
-				{
-					UpdateId:     "update-2",
-					CreationTime: 1640991600000, // 2022-01-01T00:00:00Z - 1 hour earlier
-				},
-				{
-					UpdateId:     "update-3",
-					CreationTime: 1640995200000, // 2022-01-01T00:00:00Z
-				},
-			},
-			expectedID:  "update-3",
-			expectError: false,
-		},
-		{
-			name: "multiple updates, middle is most recent",
-			updates: []pipelines.UpdateInfo{
-				{
-					UpdateId:     "update-1",
-					CreationTime: 1640988000000, // 2022-01-01T00:00:00Z - 2 hours earlier
-				},
-				{
-					UpdateId:     "update-3",
-					CreationTime: 1640995200000, // 2022-01-01T00:00:00Z
-				},
-				{
-					UpdateId:     "update-2",
-					CreationTime: 1640991600000, // 2022-01-01T00:00:00Z - 1 hour earlier
-				},
-			},
-			expectedID:  "update-3",
-			expectError: false,
-		},
-		{
-			name:        "empty updates list",
-			updates:     []pipelines.UpdateInfo{},
-			expectedID:  "",
-			expectError: true,
+			name:     "empty string",
+			input:    "",
+			expected: "",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := getMostRecentUpdateId(tt.updates)
-
-			if tt.expectError {
-				if err == nil {
-					t.Errorf("expected error but got none")
-				}
-				if result != "" {
-					t.Errorf("expected empty result but got %q", result)
-				}
-				t.Skip()
-			}
-
+			result, err := parseAndFormatTimestamp(tt.input)
 			if err != nil {
 				t.Errorf("unexpected error: %v", err)
 			}
-			if result != tt.expectedID {
-				t.Errorf("getMostRecentUpdateId() = %q, want %q", result, tt.expectedID)
+			if result != tt.expected {
+				t.Errorf("parseAndFormatTimestamp(%q) = %q, want %q", tt.input, result, tt.expected)
 			}
 		})
 	}
