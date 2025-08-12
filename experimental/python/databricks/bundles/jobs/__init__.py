@@ -1,3 +1,4 @@
+# Code generated from jsonschema.json. DO NOT EDIT.
 __all__ = [
     "Adlsgen2Info",
     "Adlsgen2InfoDict",

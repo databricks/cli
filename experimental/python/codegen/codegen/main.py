@@ -15,6 +15,8 @@ from codegen.code_builder import CodeBuilder
 from codegen.generated_dataclass import GeneratedDataclass, GeneratedType
 from codegen.generated_enum import GeneratedEnum
 
+HEADER = "# Code generated from jsonschema.json. DO NOT EDIT.\n"
+
 
 def main(output: str):
     schemas = openapi.get_schemas()
@@ -140,6 +142,7 @@ def _write_exports(
     exports.sort()
 
     b = CodeBuilder()
+    b.append(HEADER)
 
     b.append("__all__ = [\n")
     for export in exports:
@@ -292,7 +295,8 @@ def _write_code(
         package_code[package] += "\n" + code
 
     package_code = {
-        package: generated_imports.get_code(
+        package: HEADER
+        + generated_imports.get_code(
             dataclasses,
             enums,
             # don't import package from itself
