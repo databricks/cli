@@ -8,9 +8,7 @@ Hello, world
 
 === Starting the app in background...
 === Waiting
-=== Checking app is running...
->>> cat _curl_output
-{
+=== Checking app is running...{
   "Accept": "*/*",
   "Accept-Encoding": "gzip",
   "Host": "127.0.0.1:$(port)",
@@ -24,7 +22,7 @@ Hello, world
 }
 
 === Sending shutdown request...
->>> curl -s -o /dev/null http://127.0.0.1:$(port)/shutdown
+>>> curl -s -o /dev/null http://localhost:$(port)/shutdown
 
 === Checking CLI command output...
 >>> grep To debug your app, attach a debugger to port ./out.run.txt
