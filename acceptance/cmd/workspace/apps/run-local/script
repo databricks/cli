@@ -31,7 +31,24 @@ while [ -z "$(grep -o "Python Flask app has started with" out.run.txt 2>/dev/nul
 done
 
 title "Checking app is running..."
-trace curl -s -o - http://127.0.0.1:$PROXY_PORT
+# Add timeout and retry logic to make curl more resilient to timeouts or any other issues.
+MAX_RETRIES=5
+TIMEOUT=5
+
+for i in $(seq 1 $MAX_RETRIES); do
+    if curl -s --max-time $TIMEOUT --connect-timeout $TIMEOUT -o _curl_output http://127.0.0.1:$PROXY_PORT 2>/dev/null; then
+        # Success - now run jq on the output
+        trace cat _curl_output | jq
+        rm -f _curl_output
+        break
+    else
+        if [ $i -eq $MAX_RETRIES ]; then
+            echo "Failed to connect after $MAX_RETRIES attempts"
+            rm -f _curl_output
+            exit 1
+        fi
+    fi
+done
 
 title "Sending shutdown request..."
 trace curl -s -o /dev/null  http://127.0.0.1:$PROXY_PORT/shutdown || true
