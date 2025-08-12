@@ -78,7 +78,7 @@ func getMostRecentUpdateId(ctx context.Context, w *databricks.WorkspaceClient, p
 	return updates[0].UpdateId, nil
 }
 
-// parseAndFormatTimestamp parses a timestamp string and formats it to the Databricks-compatible format.
+// parseAndFormatTimestamp parses a timestamp string and formats it to the pipeline events API format.
 func parseAndFormatTimestamp(timestamp string) (string, error) {
 	if timestamp == "" {
 		return "", nil
@@ -213,7 +213,6 @@ Example usage:
 			}
 		}
 
-		// Parse and validate timestamp formats, then convert to Databricks-compatible format
 		if startTime != "" {
 			startTime, err = parseAndFormatTimestamp(startTime)
 			if err != nil {
