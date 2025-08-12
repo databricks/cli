@@ -1,0 +1,23 @@
+
+>>> musterr [CLI] secrets create-scope --scope-backend-type AZURE_KEYVAULT --json 
+"scope": "xxxxxxxx-xxx",
+"scope_backend_type": "AZURE_KEYVAULT",
+"keyvault_metadata": {
+  "dns_name": "test",
+  "resource_id": "123456"
+}
+Error: expected input of type *workspace.CreateScope, received string
+
+Exit code (musterr): 1
+
+>>> [CLI] secrets create-scope --scope-backend-type AZURE_KEYVAULT --json {
+"scope": "xxxxxxxx-xxx",
+"scope_backend_type": "AZURE_KEYVAULT",
+"keyvault_metadata": {
+  "dns_name": "test",
+  "resource_id": "123456"
+}
+}
+Warning: unknown field: keyvault_metadata
+  in (inline):4:2
+
