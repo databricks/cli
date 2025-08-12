@@ -40,6 +40,7 @@ func TestConvertDatabaseInstance(t *testing.T) {
 		"node_count":                  int64(2),
 		"enable_readable_secondaries": true,
 		"retention_window_in_days":    int64(14),
+		"purge_on_delete":             true,
 	}, databaseInstance)
 }
 
@@ -61,8 +62,9 @@ func TestConvertDatabaseInstanceWithMinimalConfig(t *testing.T) {
 
 	databaseInstance := out.DatabaseInstance["minimal_database_instance"]
 	assert.Equal(t, map[string]any{
-		"name":     "minimal-db-instance",
-		"capacity": "CU_1",
+		"name":            "minimal-db-instance",
+		"capacity":        "CU_1",
+		"purge_on_delete": true,
 	}, databaseInstance)
 }
 
@@ -95,8 +97,9 @@ func TestConvertDatabaseInstanceWithPermissions(t *testing.T) {
 
 	databaseInstance := out.DatabaseInstance["db_with_permissions"]
 	assert.Equal(t, map[string]any{
-		"name":     "db-instance-with-permissions",
-		"capacity": "CU_2",
+		"name":            "db-instance-with-permissions",
+		"purge_on_delete": true,
+		"capacity":        "CU_2",
 	}, databaseInstance)
 
 	// Assert permissions were created

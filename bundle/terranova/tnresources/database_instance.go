@@ -57,8 +57,13 @@ func NewResourceDatabaseInstance(client *databricks.WorkspaceClient, resource *r
 	}, nil
 }
 
-func DeleteDatabaseInstance(ctx context.Context, client *databricks.WorkspaceClient, oldID string) error {
-	err := client.Database.DeleteDatabaseInstanceByName(ctx, oldID)
+func DeleteDatabaseInstance(ctx context.Context, client *databricks.WorkspaceClient, name string) error {
+	err := client.Database.DeleteDatabaseInstance(ctx, database.DeleteDatabaseInstanceRequest{
+		Name:            name,
+		Purge:           true,
+		Force:           true,
+		ForceSendFields: nil,
+	})
 	if err != nil {
 		return SDKError{Method: "Database.DeleteDatabaseInstanceByName", Err: err}
 	}
