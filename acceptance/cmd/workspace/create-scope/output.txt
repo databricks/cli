@@ -15,3 +15,8 @@ Exit code (musterr): 1
 Warning: unknown field: keyvault_metadata
   in (inline):4:4
 
+
+>>> [CLI] secrets create-scope --scope-backend-type AZURE_KEYVAULT --json {
+  "scope": "xxxxxxxx-xxx",
+  "scope_backend_type": "AZURE_KEYVAULT"
+}
