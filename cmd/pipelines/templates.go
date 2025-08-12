@@ -54,7 +54,7 @@ Pipeline configurations for this update:
 {{- end }}
 `
 
-// ProgressEventsTemplate is the template for displaying progress events
+// progressEventsTemplate is the template for displaying progress events
 const progressEventsTemplate = `{{- if .ProgressEvents }}
 {{- printf "%-25s %s\n" "Run Phase" "Duration" }}
 {{- printf "%-25s %s\n" "---------" "--------" }}
