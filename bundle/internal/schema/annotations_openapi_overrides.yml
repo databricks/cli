@@ -503,6 +503,17 @@ github.com/databricks/cli/bundle/config/resources.SqlWarehousePermissionLevel:
         CAN_MONITOR
       - |-
         CAN_VIEW
+github.com/databricks/cli/bundle/config/resources.VolumeGrantPrivilege:
+  "_":
+    "enum":
+      - |-
+        ALL_PRIVILEGES
+      - |-
+        MANAGE
+      - |-
+        READ_VOLUME
+      - |-
+        WRITE_VOLUME
 github.com/databricks/cli/bundle/config/resources.Volume:
   "_":
     "markdown_description": |-
