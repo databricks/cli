@@ -27,7 +27,7 @@ type JobOptions struct {
 	// Also see https://docs.databricks.com/en/workflows/jobs/settings.html#add-parameters-for-all-job-tasks.
 	jobParams map[string]string
 
-	// only is a list of task keys to run. If not specified, all only are run.
+	// only is a list of task keys to run. If not specified, the full job is run.
 	only []string
 }
 
