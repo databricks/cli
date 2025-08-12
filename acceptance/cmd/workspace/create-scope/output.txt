@@ -5,7 +5,7 @@ Error: error decoding JSON at (inline):1:8: unexpected additional content
 Exit code (musterr): 1
 
 >>> musterr [CLI] secrets create-scope --scope-backend-type AZURE_KEYVAULT --json ["scope"]
-Error: expected JSON input of type *workspace.CreateScope, received sequence
+Error: expected JSON object, received sequence
 
 Exit code (musterr): 1
 

@@ -58,10 +58,23 @@ func (j *JsonFlag) Unmarshal(v any) diag.Diagnostics {
 	}
 
 	if !nv.IsValid() {
+		kind := reflect.TypeOf(v).Kind()
+		if kind == reflect.Ptr {
+			kind = reflect.TypeOf(v).Elem().Kind()
+		}
+
+		expectedJsonType := "string"
+		switch kind {
+		case reflect.Struct, reflect.Map:
+			expectedJsonType = "object"
+		case reflect.Slice:
+			expectedJsonType = "array"
+		}
+
 		return diags.Append(diag.Diagnostic{
 			Severity: diag.Error,
 			Summary:  "Invalid command input",
-			Detail:   fmt.Sprintf("expected JSON input of type %s, received %s", reflect.TypeOf(v), dv.Kind()),
+			Detail:   fmt.Sprintf("expected JSON %s, received %s", expectedJsonType, dv.Kind()),
 		})
 	}
 
