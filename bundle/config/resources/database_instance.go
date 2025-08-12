@@ -29,10 +29,6 @@ type DatabaseInstance struct {
 	ModifiedStatus ModifiedStatus               `json:"modified_status,omitempty" bundle:"internal"`
 
 	database.DatabaseInstance
-
-	// PurgeOnDelete is present in Terraform resource, but not in the model
-	// When set to true it allows to delete the instance with `bundle destroy`
-	PurgeOnDelete string `json:"purge_on_delete,omitempty"`
 }
 
 func (d *DatabaseInstance) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {
