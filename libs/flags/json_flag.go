@@ -61,7 +61,7 @@ func (j *JsonFlag) Unmarshal(v any) diag.Diagnostics {
 		return diags.Append(diag.Diagnostic{
 			Severity: diag.Error,
 			Summary:  "Invalid command input",
-			Detail:   fmt.Sprintf("expected input of type %s, received %s", reflect.TypeOf(v), dv.Kind()),
+			Detail:   fmt.Sprintf("expected JSON input of type %s, received %s", reflect.TypeOf(v), dv.Kind()),
 		})
 	}
 
