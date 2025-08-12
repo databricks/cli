@@ -270,6 +270,14 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 			config, configPath := internal.LoadConfig(t, dir)
 			skipReason := getSkipReason(&config, configPath)
 
+			if testdiff.OverwriteMode {
+				// Generate materialized config for this test
+				// We do this before skipping the test, so the configs are generated for all tests.
+				materializedConfig, err := internal.GenerateMaterializedConfig(config)
+				require.NoError(t, err)
+				testutil.WriteFile(t, filepath.Join(dir, internal.MaterializedConfigFile), materializedConfig)
+			}
+
 			if skipReason != "" {
 				skippedDirs += 1
 				t.Skip(skipReason)
