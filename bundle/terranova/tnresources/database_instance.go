@@ -13,21 +13,6 @@ type ResourceDatabaseInstance struct {
 	config database.DatabaseInstance
 }
 
-func (d ResourceDatabaseInstance) DoUpdate(ctx context.Context, id string) error {
-	request := database.UpdateDatabaseInstanceRequest{
-		DatabaseInstance: d.config,
-		Name:             d.config.Name,
-		UpdateMask:       "",
-	}
-	request.DatabaseInstance.Uid = id
-
-	_, err := d.client.Database.UpdateDatabaseInstance(ctx, request)
-	if err != nil {
-		return SDKError{Method: "Database.UpdateDatabaseInstance", Err: err}
-	}
-	return nil
-}
-
 func (d ResourceDatabaseInstance) Config() any {
 	return d.config
 }
@@ -40,6 +25,21 @@ func (d ResourceDatabaseInstance) DoCreate(ctx context.Context) (string, error) 
 		return "", SDKError{Method: "Database.CreateDatabaseInstance", Err: err}
 	}
 	return response.Name, nil
+}
+
+func (d ResourceDatabaseInstance) DoUpdate(ctx context.Context, id string) error {
+	request := database.UpdateDatabaseInstanceRequest{
+		DatabaseInstance: d.config,
+		Name:             d.config.Name,
+		UpdateMask:       "*",
+	}
+	request.DatabaseInstance.Uid = id
+
+	_, err := d.client.Database.UpdateDatabaseInstance(ctx, request)
+	if err != nil {
+		return SDKError{Method: "Database.UpdateDatabaseInstance", Err: err}
+	}
+	return nil
 }
 
 func (d ResourceDatabaseInstance) WaitAfterCreate(ctx context.Context) error {
