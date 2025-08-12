@@ -108,7 +108,7 @@ var SupportedResources = map[string]ResourceSettings{
 	},
 	"database_instances": {
 		New:        reflect.ValueOf(tnresources.NewResourceDatabaseInstance),
-		ConfigType: reflect.TypeOf(&tnresources.ResourceDatabaseInstance{}),
+		ConfigType: TypeOfConfig(&tnresources.ResourceDatabaseInstance{}),
 		DeleteFN:   tnresources.DeleteDatabaseInstance,
 	},
 }
