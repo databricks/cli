@@ -8,7 +8,6 @@ import (
 	"strconv"
 
 	"github.com/databricks/databricks-sdk-go/service/catalog"
-
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 
@@ -513,6 +512,6 @@ func addDefaultHandlers(server *testserver.Server) {
 	})
 
 	server.Handle("DELETE", "/api/2.0/database/instances/{name}", func(req testserver.Request) any {
-		return testserver.MapDelete(req.Workspace, req.Workspace.DatabaseInstances, req.Vars["name"])
+		return testserver.DatabaseInstanceMapDelete(req)
 	})
 }

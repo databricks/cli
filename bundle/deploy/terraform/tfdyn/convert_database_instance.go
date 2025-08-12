@@ -3,12 +3,12 @@ package tfdyn
 import (
 	"context"
 	"fmt"
+	"github.com/databricks/databricks-sdk-go/service/database"
 
 	"github.com/databricks/cli/bundle/internal/tf/schema"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go/service/database"
 )
 
 type databaseInstanceConverter struct{}
@@ -20,17 +20,10 @@ func (d databaseInstanceConverter) Convert(ctx context.Context, key string, vin 
 		log.Debugf(ctx, "database instance normalization diagnostic: %s", diag.Summary)
 	}
 
-	// Set purge_on_delete if it is present in the input
-	var purgeOnDelete dyn.Value
-	if purgeOnDeleteValue := vin.Get("purge_on_delete"); purgeOnDeleteValue.IsValid() {
-		purgeOnDelete = purgeOnDeleteValue
-	}
-	if purgeOnDelete.IsValid() {
-		var err error
-		vout, err = dyn.Set(vout, "purge_on_delete", purgeOnDelete)
-		if err != nil {
-			return err
-		}
+	// Always set purge_on_delete to true
+	vout, err := dyn.Set(vout, "purge_on_delete", dyn.V(true))
+	if err != nil {
+		return err
 	}
 
 	out.DatabaseInstance[key] = vout.AsAny()

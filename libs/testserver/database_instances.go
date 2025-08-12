@@ -64,3 +64,16 @@ func DatabaseInstanceMapGet(w *FakeWorkspace, collection map[string]database.Dat
 		Body: result,
 	}
 }
+
+func DatabaseInstanceMapDelete(req Request) Response {
+	// Check if purge parameter is set to true in query parameters
+	purge := req.URL.Query().Get("purge") == "true"
+	if !purge {
+		return Response{
+			Body:       map[string]string{"message": "DELETE request must have purge=true parameter"},
+			StatusCode: 400,
+		}
+	}
+
+	return MapDelete(req.Workspace, req.Workspace.DatabaseInstances, req.Vars["name"])
+}
