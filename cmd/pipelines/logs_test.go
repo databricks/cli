@@ -111,25 +111,40 @@ func TestBuildPipelineEventFilter(t *testing.T) {
 
 func TestParseAndFormatTimestamp(t *testing.T) {
 	tests := []struct {
-		name     string
-		input    string
-		expected string
+		name        string
+		input       string
+		expected    string
+		expectError bool
 	}{
 		{
-			name:     "valid timestamp",
-			input:    "2025-08-11T21:46:14Z",
-			expected: "2025-08-11T21:46:14.000Z",
+			name:        "valid timestamp",
+			input:       "2025-08-11T21:46:14Z",
+			expected:    "2025-08-11T21:46:14.000Z",
+			expectError: false,
 		},
 		{
-			name:     "empty string",
-			input:    "",
-			expected: "",
+			name:        "empty string",
+			input:       "",
+			expected:    "",
+			expectError: false,
+		},
+		{
+			name:        "invalid timestamp",
+			input:       "invalid-timestamp",
+			expected:    "",
+			expectError: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result, err := parseAndFormatTimestamp(tt.input)
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("expected error for invalid timestamp %q, but got none", tt.input)
+				}
+				t.Skip()
+			}
 			if err != nil {
 				t.Errorf("unexpected error: %v", err)
 			}

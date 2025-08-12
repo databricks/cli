@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/databricks/cli/bundle"
 	configresources "github.com/databricks/cli/bundle/config/resources"
@@ -17,29 +16,9 @@ import (
 	"github.com/databricks/cli/libs/cmdgroup"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/logdiag"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
+
 	"github.com/spf13/cobra"
 )
-
-// promptPipelineArgument prompts the user to select a pipeline to get logs for.
-func promptPipelineArgument(ctx context.Context, b *bundle.Bundle) (string, error) {
-	// Compute map of "Human readable name of resource" -> "resource key".
-	inv := make(map[string]string)
-	for k, ref := range resources.Completions(b) {
-		if _, ok := ref.Resource.(*configresources.Pipeline); ok {
-			title := fmt.Sprintf("%s: %s", ref.Description.SingularTitle, ref.Resource.GetName())
-			inv[title] = k
-		}
-	}
-
-	key, err := cmdio.Select(ctx, inv, "Pipeline to get logs for")
-	if err != nil {
-		return "", err
-	}
-
-	return key, nil
-}
 
 // resolveLogsArgument auto-selects a pipeline if there's exactly one and no arguments are specified,
 // otherwise prompts the user to select a pipeline.
@@ -53,43 +32,9 @@ func resolveLogsArgument(ctx context.Context, b *bundle.Bundle, args []string) (
 	}
 
 	if cmdio.IsPromptSupported(ctx) {
-		return promptPipelineArgument(ctx, b)
+		return promptRunnablePipeline(ctx, b, true)
 	}
 	return "", errors.New("expected a KEY of the pipeline")
-}
-
-// getMostRecentUpdateId fetches one page of updates for a given pipeline and returns the first update ID.
-// Expects to receive updates in decreasing timestamp order, so the first update is the most recent.
-func getMostRecentUpdateId(ctx context.Context, w *databricks.WorkspaceClient, pipelineID string) (string, error) {
-	request := pipelines.ListUpdatesRequest{
-		PipelineId: pipelineID,
-	}
-
-	response, err := w.Pipelines.ListUpdates(ctx, request)
-	if err != nil {
-		return "", err
-	}
-
-	updates := response.Updates
-	if len(updates) == 0 {
-		return "", errors.New("no updates")
-	}
-
-	return updates[0].UpdateId, nil
-}
-
-// parseAndFormatTimestamp parses a timestamp string and formats it to the pipeline events API format.
-func parseAndFormatTimestamp(timestamp string) (string, error) {
-	if timestamp == "" {
-		return "", nil
-	}
-
-	t, err := time.Parse(time.RFC3339Nano, timestamp)
-	if err != nil {
-		return "", err
-	}
-
-	return t.Format("2006-01-02T15:04:05.000Z"), nil
 }
 
 // buildFieldFilter creates a SQL filter condition for a field with multiple possible values,
