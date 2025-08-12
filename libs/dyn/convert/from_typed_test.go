@@ -838,3 +838,21 @@ func TestFromTypedNilSliceRetainsLocation(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, dyn.NewValue(nil, []dyn.Location{{File: "foobar"}}), nv)
 }
+
+func TestStringChangedToInt(t *testing.T) {
+	type MyStruct struct {
+		JobIDReq int `json:"job_id_req"`
+		JobIDOpt int `json:"job_id_opt,omitempty"`
+	}
+
+	src := MyStruct{JobIDReq: -1234, JobIDOpt: 789}
+	ref := dyn.V(map[string]dyn.Value{"job_id_req": dyn.V("-1234"), "job_id_opt": dyn.V("789")})
+
+	expected := dyn.Mapping{}
+	expected.SetLoc("job_id_req", nil, dyn.V(int64(-1234)))
+	expected.SetLoc("job_id_opt", nil, dyn.V(int64(789)))
+
+	nv, err := FromTyped(src, ref)
+	require.NoError(t, err)
+	assert.Equal(t, dyn.V(expected), nv)
+}

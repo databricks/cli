@@ -624,3 +624,17 @@ func TestToTypedAnyWithNil(t *testing.T) {
 	require.NoError(t, err)
 	assert.Nil(t, out)
 }
+
+func TestStringCoercedToInt(t *testing.T) {
+	type MyStruct struct {
+		JobIDReq int `json:"job_id_req"`
+		JobIDOpt int `json:"job_id_opt,omitempty"`
+	}
+
+	typed := MyStruct{}
+	dynamic := dyn.V(map[string]dyn.Value{"job_id_req": dyn.V("12345"), "job_id_opt": dyn.V("-500")})
+
+	err := ToTyped(&typed, dynamic)
+	require.NoError(t, err)
+	require.Equal(t, MyStruct{JobIDReq: 12345, JobIDOpt: -500}, typed)
+}

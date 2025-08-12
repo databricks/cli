@@ -165,6 +165,8 @@ func resolveIDReference(ctx context.Context, b *bundle.Bundle, group, resourceNa
 		}
 	})
 
+	bundle.ApplyFuncContext(ctx, b, func(ctx context.Context, b *bundle.Bundle) {})
+
 	if logdiag.HasError(ctx) {
 		return errors.New("failed to update bundle config")
 	}
