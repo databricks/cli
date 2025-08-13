@@ -305,18 +305,6 @@ func fromTypedInt(src reflect.Value, ref dyn.Value, options ...fromTypedOptions)
 		if dynvar.IsPureVariableReference(ref.MustString()) {
 			return ref, nil
 		}
-
-		// The typed struct type is integer and dynamic type is string because it was a reference before.
-		// Now that we've replaced reference with actual id we have type mismatch even though both encode the same integer.
-		// We thus convert dynamic value to integer here.
-		srcValue := src.Int()
-		refValue, ok := ref.AsString()
-		if ok && fmt.Sprint(srcValue) == refValue {
-			if srcValue == 0 {
-				panic("unexpected 456")
-			}
-			return dyn.V(srcValue), nil
-		}
 	}
 
 	return dyn.InvalidValue, fmt.Errorf("cannot convert int field to dynamic type %#v: src=%#v ref=%#v", ref.Kind().String(), src, ref.AsAny())
