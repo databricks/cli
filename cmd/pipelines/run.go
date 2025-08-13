@@ -62,25 +62,29 @@ func phaseFromUpdateProgress(eventMessage string) string {
 }
 
 // readableDuration returns a readable duration string for a given duration.
-func readableDuration(diff time.Duration) string {
+func readableDuration(diff time.Duration) (string, error) {
+	if diff < 0 {
+		return "", fmt.Errorf("duration cannot be negative: %v", diff)
+	}
+
 	if diff < time.Second {
 		milliseconds := int(diff.Milliseconds())
-		return fmt.Sprintf("%dms", milliseconds)
+		return fmt.Sprintf("%dms", milliseconds), nil
 	}
 
 	if diff < time.Minute {
-		return fmt.Sprintf("%.1fs", diff.Seconds())
+		return fmt.Sprintf("%.1fs", diff.Seconds()), nil
 	}
 
 	if diff < time.Hour {
 		minutes := int(diff.Minutes())
 		seconds := int(diff.Seconds()) % 60
-		return fmt.Sprintf("%dm %ds", minutes, seconds)
+		return fmt.Sprintf("%dm %ds", minutes, seconds), nil
 	}
 
 	hours := int(diff.Hours())
 	minutes := int(diff.Minutes()) % 60
-	return fmt.Sprintf("%dh %dm", hours, minutes)
+	return fmt.Sprintf("%dh %dm", hours, minutes), nil
 }
 
 // eventTimeDifference returns the time difference between two events.
@@ -112,9 +116,13 @@ func enrichEvents(events []pipelines.PipelineEvent) ([]ProgressEventWithDuration
 		if err != nil {
 			return nil, err
 		}
+		readableDuration, err := readableDuration(timeDifference)
+		if err != nil {
+			return nil, err
+		}
 		progressEventsWithDuration = append(progressEventsWithDuration, ProgressEventWithDuration{
 			Event:    event,
-			Duration: readableDuration(timeDifference),
+			Duration: readableDuration,
 			Phase:    phaseFromUpdateProgress(event.Message),
 		})
 	}

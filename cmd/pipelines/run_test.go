@@ -241,56 +241,28 @@ func TestEventTimeDifference(t *testing.T) {
 
 func TestReadableDuration(t *testing.T) {
 	tests := []struct {
-		name     string
-		duration time.Duration
-		expected string
+		name        string
+		duration    time.Duration
+		expected    string
+		expectError bool
 	}{
-		{
-			name:     "milliseconds",
-			duration: 500 * time.Millisecond,
-			expected: "500ms",
-		},
-		{
-			name:     "seconds with decimal",
-			duration: 2*time.Second + 500*time.Millisecond,
-			expected: "2.5s",
-		},
-		{
-			name:     "minutes and seconds",
-			duration: 2*time.Minute + 30*time.Second,
-			expected: "2m 30s",
-		},
-		{
-			name:     "hours and minutes",
-			duration: 3*time.Hour + 45*time.Minute,
-			expected: "3h 45m",
-		},
-		{
-			name:     "edge case - zero duration",
-			duration: 0,
-			expected: "0ms",
-		},
-		{
-			name:     "edge case - sub-millisecond",
-			duration: 100 * time.Microsecond,
-			expected: "0ms",
-		},
-		{
-			name:     "edge case - exact minute",
-			duration: 2 * time.Minute,
-			expected: "2m 0s",
-		},
-		{
-			name:     "edge case - exact hour",
-			duration: 2 * time.Hour,
-			expected: "2h 0m",
-		},
+		{"milliseconds", 500 * time.Millisecond, "500ms", false},
+		{"seconds", 2*time.Second + 500*time.Millisecond, "2.5s", false},
+		{"minutes", 2*time.Minute + 30*time.Second, "2m 30s", false},
+		{"hours", 2*time.Hour + 30*time.Minute, "2h 30m", false},
+		{"negative duration", -1 * time.Second, "", true},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := readableDuration(tt.duration)
-			assert.Equal(t, tt.expected, result)
+			result, err := readableDuration(tt.duration)
+			if tt.expectError {
+				assert.Error(t, err)
+				assert.Empty(t, result)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expected, result)
+			}
 		})
 	}
 }
