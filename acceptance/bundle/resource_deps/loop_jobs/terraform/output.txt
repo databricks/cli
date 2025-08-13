@@ -1,6 +1,4 @@
 
->>> cp [TESTROOT]/bundle/resource_deps/loop_jobs/terraform/../databricks.yml .
-
 === Badness: validate could detect this and fail as well
 >>> [CLI] bundle validate
 Name: test-bundle

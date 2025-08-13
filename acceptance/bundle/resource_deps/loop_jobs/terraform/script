@@ -1,2 +1,2 @@
-trace cp $TESTDIR/../databricks.yml .
+cp $TESTDIR/../databricks.yml .
 source $TESTDIR/../_script
