@@ -22,8 +22,7 @@ type Planner struct {
 	settings     ResourceSettings
 }
 
-func (d *Planner) Plan(ctx context.Context, inputConfig any, fieldRefs []fieldRef) (deployplan.ActionType, error) {
-	_ = fieldRefs
+func (d *Planner) Plan(ctx context.Context, inputConfig any) (deployplan.ActionType, error) {
 	result, err := d.plan(ctx, inputConfig)
 	if err != nil {
 		return deployplan.ActionTypeNoop, fmt.Errorf("planning: %s.%s: %w", d.group, d.resourceName, err)
@@ -140,17 +139,8 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 			// TODO: return an error so that the whole process is aborted.
 		}
 
-		// Extract unreslved references from a given node only.
-		// We need to this here and not rely on fieldRefsMap because the config might have been updated with more resolutions.
-		myReferences, err := extractReferences(b.Config.Value(), node)
-		// log.Warnf(ctx, "extract myReferences=%v", myReferences)
-		if err != nil {
-			logdiag.LogError(ctx, err)
-			return
-		}
-
 		// This currently does not do API calls, so we can run this sequentially. Once we have remote diffs, we need to run a in threadpool.
-		actionType, err := pl.Plan(ctx, config, myReferences)
+		actionType, err := pl.Plan(ctx, config)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			// TODO: return error to abort this branch
