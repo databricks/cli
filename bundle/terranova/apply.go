@@ -38,12 +38,6 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 		return nil
 	}
 
-	// if true, then this node has references to its "id" field
-	IDIsReferenced := map[nodeKey]bool{}
-
-	// Maps node to all references within this node that need resolution
-	fieldRefsMap := map[nodeKey][]fieldRef{}
-
 	// Maps node key to originally planned action
 	plannedActionsMap := map[nodeKey]deployplan.ActionType{}
 
@@ -52,15 +46,7 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 	}
 
 	state := b.ResourceDatabase.ExportState(ctx)
-	g, err := makeResourceGraph(ctx, b, state, fieldRefsMap)
-
-	for _, fieldRefs := range fieldRefsMap {
-		for _, fieldRef := range fieldRefs {
-			for _, referencedNode := range fieldRef.referencedNodes {
-				IDIsReferenced[referencedNode] = true
-			}
-		}
-	}
+	g, isReferenced, err := makeResourceGraph(ctx, b, state)
 
 	// Remained in state are resources that no longer present in the config
 	for _, group := range utils.SortedKeys(state) {
@@ -116,7 +102,7 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 		}
 
 		// Extract unresolved references from a given node only.
-		// We need to this here and not rely on fieldRefsMap because the config might have been updated with more resolutions.
+		// We need to do it here because we're constantly resolving references, so that's where we have latest version.
 		myReferences, err := extractReferences(b.Config.Value(), node)
 		// log.Warnf(ctx, "extract myReferences=%v", myReferences)
 		if err != nil {
@@ -139,7 +125,7 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 			return
 		}
 
-		if IDIsReferenced[node] {
+		if isReferenced[node] {
 			err = resolveIDReference(ctx, b, d.group, d.resourceName)
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("failed to replace ref to resources.%s.%s.id: %w", d.group, d.resourceName, err))
