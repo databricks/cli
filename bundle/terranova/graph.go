@@ -191,6 +191,10 @@ func resolveIDReference(ctx context.Context, b *bundle.Bundle, group, resourceNa
 			if err != nil {
 				return root, err
 			}
+			// Following resolve_variable_references.go, normalize after variable substitution.
+			// This fixes the following case: ${resources.jobs.foo.id} is replaced by string "12345"
+			// This string corresponds to job_id integer field. Normalization converts "12345" to 12345.
+			// Without normalization there will be an error when converting dynamic value to typed.
 			root, diags := convert.Normalize(b.Config, root)
 			for _, d := range diags {
 				logdiag.LogDiag(ctx, d)
