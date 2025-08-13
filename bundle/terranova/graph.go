@@ -147,7 +147,6 @@ func resolveIDReference(ctx context.Context, b *bundle.Bundle, group, resourceNa
 		dyn.Key("id"),
 	)
 
-	// log.Warnf(ctx, "resolving references node=%v IDIsReferenced=%v actionType=%v", node, IDIsReferenced, actionType)
 	entry, hasEntry := b.ResourceDatabase.GetResourceEntry(group, resourceName)
 	idValue := entry.ID
 	if !hasEntry || idValue == "" {
