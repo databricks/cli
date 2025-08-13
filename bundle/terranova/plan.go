@@ -55,10 +55,12 @@ func (d *Planner) plan(_ context.Context, inputConfig any) (deployplan.ActionTyp
 		return "", fmt.Errorf("interpreting state: %w", err)
 	}
 
-	// TODO: GetStructDiff should deal with cases where it comes across
-	// unresolved variables (so it needs additional support for dyn.Value storage).
-	// In some cases, it should introduce "update or recreate" action, since it does not know whether
-	// field is going to be changed.
+	// Note, currently we're diffing static structs, not dynamic value.
+	// This means for fields that contain references like ${resources.group.foo.id} we do one of the following:
+	// for strings: comparing unresolved string like "${resoures.group.foo.id}" with actual object id. As long as IDs do not have ${...} format we're good.
+	// for integers: compare 0 with actual object ID. As long as real object IDs are never 0 we're good.
+	// Once we add non-id fields or add per-field details to "bundle plan", we must read dynamic data and deal with references as first class citizen.
+	// This means distinguishing between 0 that are actually object ids and 0 that are there because typed struct integer cannot contain ${...} string.
 	return calcDiff(d.settings, resource, savedState, config)
 }
 
@@ -118,8 +120,9 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 	err = g.Run(1, func(node nodeKey) {
 		settings, ok := SupportedResources[node.Group]
 		if !ok {
-			// TODO: return an error
-			panic("resource not supported")
+			logdiag.LogError(ctx, fmt.Errorf("resource not supported on direct backend: %s", node.Group))
+			// TODO: return an error so that the whole process is aborted.
+			return
 		}
 
 		pl := Planner{
@@ -133,7 +136,8 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 		config, ok := b.GetResourceConfig(pl.group, pl.resourceName)
 		if !ok {
 			logdiag.LogError(ctx, fmt.Errorf("internal error: cannot get config for %s.%s", pl.group, pl.resourceName))
-			return // TODOD return an error to abort dependencies
+			return
+			// TODO: return an error so that the whole process is aborted.
 		}
 
 		// Extract unreslved references from a given node only.
@@ -173,6 +177,10 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 	})
 	if err != nil {
 		return nil, fmt.Errorf("while reading resources config: %w", err)
+	}
+
+	if logdiag.HasError(ctx) {
+		return nil, errors.New("planning failed")
 	}
 
 	return actions, nil
