@@ -10,6 +10,7 @@ import (
 	configresources "github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/resources"
+
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
@@ -32,7 +33,7 @@ func resolveLogsArgument(ctx context.Context, b *bundle.Bundle, args []string) (
 	}
 
 	if cmdio.IsPromptSupported(ctx) {
-		return promptRunnablePipeline(ctx, b, true)
+		return promptResource(ctx, b, isRunnablePipeline)
 	}
 	return "", errors.New("expected a KEY of the pipeline")
 }
