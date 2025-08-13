@@ -50,7 +50,8 @@ func TestDisplayPipelineUpdate(t *testing.T) {
 					EventType: "update_progress",
 				},
 			},
-			expected: `Update for pipeline test-pipeline completed successfully.
+			expected: `
+Update for pipeline test-pipeline completed successfully.
 Pipeline ID: pipeline-789
 Update start time: 2022-01-01T00:00:00Z
 Update end time: 2022-01-01T01:00:00Z.
@@ -72,7 +73,8 @@ Pipeline configurations for this update:
 			},
 			pipelineID: "pipeline-789",
 			events:     []pipelines.PipelineEvent{},
-			expected: `Update for pipeline completed successfully.
+			expected: `
+Update for pipeline completed successfully.
 Pipeline configurations for this update:
 • All tables are refreshed
 `,
@@ -91,7 +93,8 @@ Pipeline configurations for this update:
 					EventType: "update_progress",
 				},
 			},
-			expected: `Update for pipeline completed successfully.
+			expected: `
+Update for pipeline completed successfully.
 Pipeline configurations for this update:
 • Refreshed [table1, table2]
 • Full refreshed [table3]
@@ -109,7 +112,8 @@ Pipeline configurations for this update:
 			},
 			pipelineID: "pipeline-456",
 			events:     []pipelines.PipelineEvent{},
-			expected: `Update for pipeline test-pipeline completed successfully.
+			expected: `
+Update for pipeline test-pipeline completed successfully.
 Pipeline ID: pipeline-789
 Pipeline configurations for this update:
 • All tables are refreshed
@@ -124,7 +128,8 @@ Pipeline configurations for this update:
 			},
 			pipelineID: "pipeline-456",
 			events:     []pipelines.PipelineEvent{},
-			expected: `Update for pipeline completed successfully.
+			expected: `
+Update for pipeline completed successfully.
 Pipeline configurations for this update:
 • All tables are refreshed
 • Classic compute: cluster-123
@@ -267,7 +272,7 @@ func TestReadableDuration(t *testing.T) {
 	}
 }
 
-func TestDisplayProgressEvents(t *testing.T) {
+func TestDisplayProgressEventsDurations(t *testing.T) {
 	tests := []struct {
 		name     string
 		events   []pipelines.PipelineEvent
@@ -342,21 +347,24 @@ WAITING_FOR_RESOURCES     500ms
 RUNNING                   750ms
 `,
 		},
+
+		{
+			name:     "edge cases - empty event",
+			events:   []pipelines.PipelineEvent{},
+			expected: "",
+			wantErr:  true,
+		},
 		{
 			name: "edge cases - single event",
 			events: []pipelines.PipelineEvent{
 				{
 					Timestamp: "2022-01-01T00:00:00Z",
 					EventType: "update_progress",
-					Message:   "Update test-update-single is COMPLETED.",
+					Message:   "Update test-update-single is RUNNING.",
 				},
 			},
 			expected: "",
-		},
-		{
-			name:     "edge cases - empty event",
-			events:   []pipelines.PipelineEvent{},
-			expected: "",
+			wantErr:  true,
 		},
 	}
 
@@ -368,9 +376,13 @@ RUNNING                   750ms
 			cmdIO := cmdio.NewIO(ctx, flags.OutputText, nil, &buf, &buf, "", "")
 			ctx = cmdio.InContext(ctx, cmdIO)
 
-			err := displayProgressEvents(ctx, tt.events)
-			assert.NoError(t, err)
-			assert.Equal(t, tt.expected, buf.String())
+			err := displayProgressEventsDurations(ctx, tt.events)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expected, buf.String())
+			}
 		})
 	}
 }

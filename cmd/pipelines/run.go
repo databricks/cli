@@ -105,13 +105,19 @@ func eventTimeDifference(earlierEvent, laterEvent pipelines.PipelineEvent) (time
 	return timeDifference, nil
 }
 
-// enrichEvents adds duration information and phase name to a progress event
+// enrichEvents adds duration information and phase name to each progress event.
 // Expects that the events are already sorted by timestamp in ascending order.
-func enrichEvents(events []pipelines.PipelineEvent) ([]ProgressEventWithDuration, error) {
+// For the last event, duration is calculated using endTime.
+func enrichEvents(events []pipelines.PipelineEvent, endTime string) ([]ProgressEventWithDuration, error) {
 	var progressEventsWithDuration []ProgressEventWithDuration
-	for j := range len(events) - 1 {
+	for j := range len(events) {
+		var nextEvent pipelines.PipelineEvent
 		event := events[j]
-		nextEvent := events[j+1]
+		if j == len(events)-1 {
+			nextEvent = pipelines.PipelineEvent{Timestamp: endTime}
+		} else {
+			nextEvent = events[j+1]
+		}
 		timeDifference, err := eventTimeDifference(event, nextEvent)
 		if err != nil {
 			return nil, err
@@ -130,8 +136,13 @@ func enrichEvents(events []pipelines.PipelineEvent) ([]ProgressEventWithDuration
 	return progressEventsWithDuration, nil
 }
 
-func displayProgressEvents(ctx context.Context, events []pipelines.PipelineEvent) error {
-	progressEvents, err := enrichEvents(events)
+// displayProgressEventsDurations displays the progress events with duration and phase name.
+// Omits displaying the time of the last event.
+func displayProgressEventsDurations(ctx context.Context, events []pipelines.PipelineEvent) error {
+	if len(events) <= 1 {
+		return fmt.Errorf("no progress events to display")
+	}
+	progressEvents, err := enrichEvents(events[:len(events)-1], getLastEventTime(events))
 	if err != nil {
 		return fmt.Errorf("failed to enrich progress events: %w", err)
 	}
@@ -176,14 +187,12 @@ func fetchAndDisplayPipelineUpdate(ctx context.Context, w *databricks.WorkspaceC
 		return err
 	}
 
-	if latestUpdate.State == pipelines.UpdateInfoStateCompleted {
-		err = displayPipelineUpdate(ctx, latestUpdate, pipelineId, events)
-		if err != nil {
-			return err
-		}
+	err = displayPipelineUpdate(ctx, latestUpdate, pipelineId, events)
+	if err != nil {
+		return err
 	}
 
-	err = displayProgressEvents(ctx, events)
+	err = displayProgressEventsDurations(ctx, events)
 	if err != nil {
 		return err
 	}
@@ -202,7 +211,7 @@ func getLastEventTime(events []pipelines.PipelineEvent) string {
 	if err != nil {
 		return ""
 	}
-	return parsedTime.Format("2006-01-02T15:04:05Z")
+	return parsedTime.Format(time.RFC3339Nano)
 }
 
 func displayPipelineUpdate(ctx context.Context, update pipelines.UpdateInfo, pipelineId string, events []pipelines.PipelineEvent) error {
@@ -328,10 +337,13 @@ Refreshes all tables in the pipeline unless otherwise specified.`,
 				return fmt.Errorf("unknown output type %s", root.OutputType(cmd))
 			}
 		}
+
 		ref, err := bundleresources.Lookup(b, key, run.IsRunnable)
 		if err != nil {
 			return err
 		}
+		// Only displays the following pipeline run summary if the pipeline completes successfully,
+		// as runner.Run() returns an error if the pipeline doesn't complete successfully.
 		if ref.Description.SingularName == "pipeline" && runOutput != nil {
 			if pipelineOutput, ok := runOutput.(*bundlerunoutput.PipelineOutput); ok && pipelineOutput.UpdateId != "" {
 				w := b.WorkspaceClient()

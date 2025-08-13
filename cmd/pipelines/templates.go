@@ -1,6 +1,7 @@
 package pipelines
 
-const pipelineUpdateTemplate = `Update for pipeline {{- if .Update.Config }} {{ .Update.Config.Name }}{{ end }} completed successfully.
+const pipelineUpdateTemplate = `
+Update for pipeline {{- if .Update.Config }} {{ .Update.Config.Name }}{{ end }} completed successfully.
 {{- if .Update.Config }}
 Pipeline ID: {{ .Update.Config.Id }}
 {{- end }}
