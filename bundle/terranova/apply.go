@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"sort"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deployplan"
@@ -72,7 +71,6 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 		}
 
 		actionType := plannedActionsMap[node]
-		delete(plannedActionsMap, node)
 
 		if actionType == deployplan.ActionTypeUnset {
 			return
@@ -142,16 +140,7 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 		logdiag.LogError(ctx, err)
 	}
 
-	if len(plannedActionsMap) > 0 {
-		var undone []string
-		for n, act := range plannedActionsMap {
-			undone = append(undone, fmt.Sprintf("Not done: %s %s.%s", act, n.Group, n.Name))
-		}
-		sort.Strings(undone)
-		for _, msg := range undone {
-			log.Warn(ctx, msg)
-		}
-	}
+	// TODO: check if all planned actions were performed
 
 	return nil
 }
