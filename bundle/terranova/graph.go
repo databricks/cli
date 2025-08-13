@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/databricks/cli/libs/dagrun"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
@@ -155,12 +156,20 @@ func resolveIDReference(ctx context.Context, b *bundle.Bundle, group, resourceNa
 
 	bundle.ApplyFuncContext(ctx, b, func(ctx context.Context, b *bundle.Bundle) {
 		err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
-			return dynvar.Resolve(root, func(path dyn.Path) (dyn.Value, error) {
+			root, err := dynvar.Resolve(root, func(path dyn.Path) (dyn.Value, error) {
 				if slices.Equal(path, mypath) {
 					return dyn.V(idValue), nil
 				}
 				return dyn.InvalidValue, dynvar.ErrSkipResolution
 			})
+			if err != nil {
+				return root, err
+			}
+			root, diags := convert.Normalize(b.Config, root)
+			for _, d := range diags {
+				logdiag.LogDiag(ctx, d)
+			}
+			return root, nil
 		})
 		if err != nil {
 			logdiag.LogError(ctx, err)
