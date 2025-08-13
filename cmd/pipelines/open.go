@@ -5,15 +5,16 @@ package pipelines
 import (
 	"context"
 	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/mutator"
+
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/resources"
+
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
@@ -24,22 +25,6 @@ import (
 
 	"github.com/pkg/browser"
 )
-
-func promptOpenArgument(ctx context.Context, b *bundle.Bundle) (string, error) {
-	// Compute map of "Human readable name of resource" -> "resource key".
-	inv := make(map[string]string)
-	for k, ref := range resources.Completions(b) {
-		title := fmt.Sprintf("%s: %s", ref.Description.SingularTitle, ref.Resource.GetName())
-		inv[title] = k
-	}
-
-	key, err := cmdio.Select(ctx, inv, "Pipeline to open")
-	if err != nil {
-		return "", err
-	}
-
-	return key, nil
-}
 
 // When no arguments are specified, auto-selects a pipeline if there's exactly one,
 // otherwise prompts the user to select a pipeline to open.
@@ -53,7 +38,7 @@ func resolveOpenArgument(ctx context.Context, b *bundle.Bundle, args []string) (
 	}
 
 	if cmdio.IsPromptSupported(ctx) {
-		return promptOpenArgument(ctx, b)
+		return promptResource(ctx, b)
 	}
 	return "", errors.New("expected a KEY of the pipeline to open")
 }
@@ -141,6 +126,9 @@ If there is only one pipeline in the project, KEY is optional and the pipeline w
 	}
 
 	cmd.ValidArgsFunction = func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		ctx := logdiag.InitContext(cmd.Context())
+		cmd.SetContext(ctx)
+
 		b := root.MustConfigureBundle(cmd)
 		if logdiag.HasError(cmd.Context()) {
 			return nil, cobra.ShellCompDirectiveError
