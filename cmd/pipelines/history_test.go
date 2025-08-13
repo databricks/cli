@@ -117,7 +117,7 @@ func TestUpdatesAfter(t *testing.T) {
 }
 
 func TestUpdatesEmptySlice(t *testing.T) {
-	updates := []pipelines.UpdateInfo{}
+	var updates []pipelines.UpdateInfo
 
 	tests := []struct {
 		name     string
@@ -136,8 +136,8 @@ func TestUpdatesEmptySlice(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := tt.function(updates, 100)
-			if result != nil {
-				t.Errorf("%s(empty slice) = %v, want nil", tt.name, result)
+			if len(result) != 0 {
+				t.Errorf("%s(empty slice) returned %d items, want empty array", tt.name, len(result))
 			}
 		})
 	}

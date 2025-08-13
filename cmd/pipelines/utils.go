@@ -272,10 +272,6 @@ func parseAndFormatTimestamp(timestamp string) (string, error) {
 // updatesBefore returns all updates with CreationTime <= ts
 // Assumes updates are sorted in descending order (newest first)
 func updatesBefore(updates []pipelines.UpdateInfo, ts int64) []pipelines.UpdateInfo {
-	if len(updates) == 0 {
-		return nil
-	}
-
 	// Binary search for index with CreationTime <= ts
 	idx, _ := slices.BinarySearchFunc(updates, ts, func(u pipelines.UpdateInfo, target int64) int {
 		if u.CreationTime <= target {
@@ -290,10 +286,6 @@ func updatesBefore(updates []pipelines.UpdateInfo, ts int64) []pipelines.UpdateI
 // updatesAfter returns all updates with CreationTime >= ts
 // Assumes updates are sorted in descending order (newest first)
 func updatesAfter(updates []pipelines.UpdateInfo, ts int64) []pipelines.UpdateInfo {
-	if len(updates) == 0 {
-		return nil
-	}
-
 	// Binary search for index with CreationTime < ts
 	idx, _ := slices.BinarySearchFunc(updates, ts, func(u pipelines.UpdateInfo, target int64) int {
 		if u.CreationTime < target {

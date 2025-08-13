@@ -1,10 +1,16 @@
 package pipelines
 
-const pipelineHistoryTemplate = `Past runs for pipeline {{.Key}}:
+const pipelineHistoryTemplate = `Updates Summary for pipeline {{.Key}}:
 {{if .Updates}}{{range .Updates}}Update ID: {{.UpdateId}}
+{{- if .State }}
    State: {{.State}}
+{{- end}}
+{{- if .Cause }}
    Cause: {{.Cause}}
+{{- end}}
+{{- if .CreationTime }}
    Creation Time: {{.CreationTime | pretty_UTC_date_from_millis}}
+{{- end}}
    Full Refresh: {{.FullRefresh}}
    Validate Only: {{.ValidateOnly}}
 {{end}}{{else}}No updates found.{{end}}`

@@ -34,7 +34,7 @@ func historyCommand() *cobra.Command {
 	}
 
 	historyGroup := cmdgroup.NewFlagGroup("Filter")
-	historyGroup.FlagSet().IntVarP(&number, "number", "n", 100, "Number of entries in output.")
+	historyGroup.FlagSet().IntVarP(&number, "number", "n", 0, "Number of entries in output.")
 	historyGroup.FlagSet().StringVar(&startTimeStr, "start-time", "", "Filter updates after this time (format: 2025-01-15T10:30:00Z)")
 	historyGroup.FlagSet().StringVar(&endTimeStr, "end-time", "", "Filter updates before this time (format: 2025-01-15T10:30:00Z)")
 	wrappedCmd := cmdgroup.NewCommandWithGroupFlag(cmd)

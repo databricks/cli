@@ -101,6 +101,7 @@ Available Commands:
   destroy     Destroy a pipelines project
   dry-run     Validate correctness of the pipeline's graph
   help        Help about any command
+  history     Retrieve past runs for a pipeline
   init        Initialize a new pipelines project
   logs        Retrieve events for a pipeline
   open        Open a pipeline in the browser
