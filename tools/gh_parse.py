@@ -335,7 +335,9 @@ def main():
     parser.add_argument("--markdown", help="Output in GitHub-flavored markdown format", action="store_true")
     parser.add_argument("--omit-repl", help="Omit lines starting with 'REPL' and containing 'Available replacements:'", action="store_true")
     args = parser.parse_args()
-    print_report(args.filenames, filter=args.filter, filter_env=args.filter_env, show_output=args.output, markdown=args.markdown, omit_repl=args.omit_repl)
+    print_report(
+        args.filenames, filter=args.filter, filter_env=args.filter_env, show_output=args.output, markdown=args.markdown, omit_repl=args.omit_repl
+    )
 
 
 if __name__ == "__main__":
