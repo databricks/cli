@@ -852,17 +852,13 @@ func DownloadCLI(t *testing.T, buildDir, version string) string {
 	url := fmt.Sprintf("https://github.com/databricks/cli/releases/download/v%s/%s", version, archiveName)
 	zipPath := filepath.Join(versionDir, archiveName)
 
-	// Download archive
 	downloadToFile(t, url, zipPath)
-
-	// Extract only the executable from the archive
 	extractFileFromZip(t, zipPath, execName, versionDir)
 
 	return execPath
 }
 
 // downloadToFile downloads contents from url into the given destination path
-// and fails the test on error.
 func downloadToFile(t *testing.T, url, destPath string) {
 	require.NoError(t, os.MkdirAll(filepath.Dir(destPath), 0o755))
 	out, err := os.Create(destPath)
