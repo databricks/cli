@@ -136,6 +136,7 @@ def main():
     parser.add_argument("--filter-env", help="Filter results by env name (substring match)")
     parser.add_argument("--output", help="Show output for failing tests", action="store_true")
     parser.add_argument("--markdown", help="Output in GitHub-flavored markdown format", action="store_true")
+    parser.add_argument("--omit-repl", help="Omit lines starting with 'REPL' and containing 'Available replacements:'", action="store_true")
 
     # This does not work because we don't store artifacts for unit tests. We could download logs instead but that requires different parsing method:
     # ~/work/cli % gh api -H "Accept: application/vnd.github+json" /repos/databricks/cli/actions/runs/15827411452/logs  > logs.zip
@@ -172,6 +173,8 @@ def main():
         cmd.append("--output")
     if args.markdown:
         cmd.append("--markdown")
+    if args.omit_repl:
+        cmd.append("--omit-repl")
     cmd.append(f"{target_dir}")
     run(cmd, shell=True)
 
