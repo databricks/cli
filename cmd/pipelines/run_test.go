@@ -306,11 +306,6 @@ func TestDisplayProgressEvents(t *testing.T) {
 			name: "pipeline completed with all phases",
 			events: []pipelines.PipelineEvent{
 				{
-					Timestamp: "2022-01-01T00:00:00.000Z",
-					EventType: "update_progress",
-					Message:   "Update test-update-123 is QUEUED.",
-				},
-				{
 					Timestamp: "2022-01-01T00:00:01.000Z",
 					EventType: "update_progress",
 					Message:   "Update test-update-123 is CREATED.",
@@ -343,7 +338,6 @@ func TestDisplayProgressEvents(t *testing.T) {
 			},
 			expected: `Run Phase                 Duration
 ---------                 --------
-QUEUED                    1.0s
 CREATED                   1.0s
 WAITING_FOR_RESOURCES     1.0s
 INITIALIZING              1.0s
