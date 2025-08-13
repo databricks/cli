@@ -3,6 +3,7 @@ package run
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"strconv"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -62,6 +63,8 @@ func (o *JobOptions) hasJobParametersConfigured() bool {
 	return len(o.jobParams) > 0
 }
 
+var taskKeyRegex = regexp.MustCompile(`^[\w\-\_]+$`)
+
 // Validate returns if the combination of options is valid.
 func (o *JobOptions) Validate(job *resources.Job) error {
 	if job == nil {
@@ -79,6 +82,11 @@ func (o *JobOptions) Validate(job *resources.Job) error {
 
 	if len(o.only) > 0 {
 		for _, task := range o.only {
+			// Skip if did not match the regex. It can mean that the more complex syntax like "task1.table1" is used.
+			if !taskKeyRegex.MatchString(task) {
+				continue
+			}
+
 			found := false
 			for _, t := range job.Tasks {
 				if t.TaskKey == task {

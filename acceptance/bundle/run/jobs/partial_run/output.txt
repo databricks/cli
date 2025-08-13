@@ -63,3 +63,22 @@ Exit code (musterr): 1
 Error: task "non_existent_task" not found in job "my_job"
 
 Exit code (musterr): 1
+
+>>> [CLI] bundle run my_job --only task1.table1,task2>,task3>table3
+Run URL: [DATABRICKS_URL]/job/run/[NUMID]
+
+[TIMESTAMP] "run-name" TERMINATED
+
+>>> print_requests
+{
+  "body": {
+    "job_id": [NUMID],
+    "only": [
+      "task1.table1",
+      "task2>",
+      "task3>table3"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.2/jobs/run-now"
+}
