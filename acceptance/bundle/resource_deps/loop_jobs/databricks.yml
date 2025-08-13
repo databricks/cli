@@ -7,4 +7,3 @@ resources:
       name: ${resources.jobs.bar.id}
     bar:
       name: ${resources.jobs.foo.id}
-
