@@ -20,7 +20,7 @@ const (
 )
 
 func kindOf(v any) Kind {
-	switch x := v.(type) {
+	switch v.(type) {
 	case Mapping:
 		return KindMap
 	case []Value:
@@ -38,7 +38,7 @@ func kindOf(v any) Kind {
 	case nil:
 		return KindNil
 	default:
-		panic(fmt.Sprintf("Unexpected type: %T", x))
+		panic("not handled")
 	}
 }
 
