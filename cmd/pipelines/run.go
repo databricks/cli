@@ -110,7 +110,7 @@ func eventTimeDifference(earlierEvent, laterEvent pipelines.PipelineEvent) (time
 // For the last event, duration is calculated using endTime.
 func enrichEvents(events []pipelines.PipelineEvent, endTime string) ([]ProgressEventWithDuration, error) {
 	var progressEventsWithDuration []ProgressEventWithDuration
-	for j := range len(events) {
+	for j := range events {
 		var nextEvent pipelines.PipelineEvent
 		event := events[j]
 		if j == len(events)-1 {
@@ -140,7 +140,7 @@ func enrichEvents(events []pipelines.PipelineEvent, endTime string) ([]ProgressE
 // Omits displaying the time of the last event.
 func displayProgressEventsDurations(ctx context.Context, events []pipelines.PipelineEvent) error {
 	if len(events) <= 1 {
-		return fmt.Errorf("no progress events to display")
+		return errors.New("no progress events to display")
 	}
 	progressEvents, err := enrichEvents(events[:len(events)-1], getLastEventTime(events))
 	if err != nil {
@@ -357,6 +357,9 @@ Refreshes all tables in the pipeline unless otherwise specified.`,
 	}
 
 	cmd.ValidArgsFunction = func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		ctx := logdiag.InitContext(cmd.Context())
+		cmd.SetContext(ctx)
+
 		b := root.MustConfigureBundle(cmd)
 		if logdiag.HasError(cmd.Context()) {
 			return nil, cobra.ShellCompDirectiveError

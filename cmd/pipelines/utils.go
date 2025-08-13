@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/databricks/cli/bundle"
 	configresources "github.com/databricks/cli/bundle/config/resources"
@@ -21,11 +22,14 @@ import (
 )
 
 // Copied from cmd/bundle/run.go
-// promptRunnablePipeline prompts the user to select a runnable pipeline.
-func promptRunnablePipeline(ctx context.Context, b *bundle.Bundle) (string, error) {
+// promptResource prompts the user to select a pipeline.
+// If filter is provided, only resources that pass the filter will be included.
+func promptResource(ctx context.Context, b *bundle.Bundle, filters ...resources.Filter) (string, error) {
 	// Compute map of "Human readable name of resource" -> "resource key".
 	inv := make(map[string]string)
-	for k, ref := range resources.Completions(b, run.IsRunnable) {
+	completions := resources.Completions(b, filters...)
+
+	for k, ref := range completions {
 		title := fmt.Sprintf("%s: %s", ref.Description.SingularTitle, ref.Resource.GetName())
 		inv[title] = k
 	}
@@ -64,7 +68,7 @@ func resolveRunArgument(ctx context.Context, b *bundle.Bundle, args []string) (s
 		}
 
 		if cmdio.IsPromptSupported(ctx) {
-			key, err := promptRunnablePipeline(ctx, b)
+			key, err := promptResource(ctx, b, run.IsRunnable)
 			if err != nil {
 				return "", nil, err
 			}
@@ -145,7 +149,13 @@ type PipelineEventsQueryParams struct {
 
 // fetchAllPipelineEvents retrieves pipeline events with optional SQL filtering and ordering.
 // Necessary as current Go SDK endpoints don't support OrderBy parameter.
+// Retrieves only one page of results, so the number of results is bound by the API's limit of results per page.
 func fetchAllPipelineEvents(ctx context.Context, w *databricks.WorkspaceClient, pipelineID string, params *PipelineEventsQueryParams) ([]pipelines.PipelineEvent, error) {
+	maxResultsPerPage := 250
+	if params.MaxResults > maxResultsPerPage {
+		return nil, fmt.Errorf("number of results must be %d or less", maxResultsPerPage)
+	}
+
 	apiClient, err := client.New(w.Config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create API client: %w", err)
@@ -157,6 +167,7 @@ func fetchAllPipelineEvents(ctx context.Context, w *databricks.WorkspaceClient, 
 	if params.Filter != "" {
 		queryParams["filter"] = params.Filter
 	}
+
 	if params.MaxResults > 0 {
 		queryParams["max_results"] = strconv.Itoa(params.MaxResults)
 	}
@@ -180,4 +191,38 @@ func fetchAllPipelineEvents(ctx context.Context, w *databricks.WorkspaceClient, 
 	}
 
 	return response.Events, nil
+}
+
+// getMostRecentUpdateId fetches one page of updates for a given pipeline and returns the first update ID.
+// Expects to receive updates in decreasing timestamp order, so the first update is the most recent.
+func getMostRecentUpdateId(ctx context.Context, w *databricks.WorkspaceClient, pipelineID string) (string, error) {
+	request := pipelines.ListUpdatesRequest{
+		PipelineId: pipelineID,
+	}
+
+	response, err := w.Pipelines.ListUpdates(ctx, request)
+	if err != nil {
+		return "", err
+	}
+
+	updates := response.Updates
+	if len(updates) == 0 {
+		return "", errors.New("no updates")
+	}
+
+	return updates[0].UpdateId, nil
+}
+
+// parseAndFormatTimestamp parses a timestamp string and formats it to the pipeline events API format.
+func parseAndFormatTimestamp(timestamp string) (string, error) {
+	if timestamp == "" {
+		return "", nil
+	}
+
+	t, err := time.Parse(time.RFC3339Nano, timestamp)
+	if err != nil {
+		return "", err
+	}
+
+	return t.Format("2006-01-02T15:04:05.000Z"), nil
 }

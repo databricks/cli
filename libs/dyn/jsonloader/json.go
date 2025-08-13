@@ -23,8 +23,19 @@ func LoadJSON(data []byte, source string) (dyn.Value, error) {
 		if err == io.EOF {
 			err = errors.New("unexpected end of JSON input")
 		}
-		return dyn.InvalidValue, fmt.Errorf("error decoding JSON at %s: %v", value.Location(), err)
+		// Get the current offset for error reporting
+		errorOffset := decoder.InputOffset()
+		errorLocation := offset.GetPosition(errorOffset)
+		return dyn.InvalidValue, fmt.Errorf("error decoding JSON at %s: %v", errorLocation, err)
 	}
+
+	// Check if there are any remaining tokens (should not be valid JSON)
+	if decoder.More() {
+		errorOffset := decoder.InputOffset()
+		errorLocation := offset.GetPosition(errorOffset)
+		return dyn.InvalidValue, fmt.Errorf("error decoding JSON at %s: unexpected additional content", errorLocation)
+	}
+
 	return value, nil
 }
 
