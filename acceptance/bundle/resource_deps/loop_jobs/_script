@@ -1,0 +1,4 @@
+title "Badness: validate could detect this and fail as well"
+trace $CLI bundle validate
+trace musterr $CLI bundle plan
+trace musterr $CLI bundle deploy

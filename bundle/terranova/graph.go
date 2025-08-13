@@ -25,10 +25,19 @@ type nodeKey struct {
 	// TODO: Here and in other places Name is ambiguous and should be replaced with ResourceKey
 }
 
+func (n nodeKey) String() string {
+	return n.Group + "." + n.Name
+}
+
 type fieldRef struct {
 	field           dyn.Path // path to field within resource that contains the references, e.g. "description"
 	ref             dynvar.Ref
-	referencedNodes []nodeKey
+	referencedNodes []referencedNode
+}
+
+type referencedNode struct {
+	nodeKey
+	fullRef string
 }
 
 // makeResourceGraph creates node graph based on ${resources.group.name.id} references.
@@ -37,7 +46,9 @@ func makeResourceGraph(ctx context.Context, b *bundle.Bundle, state resourcestat
 	isReferenced := make(map[nodeKey]bool)
 	g := dagrun.NewGraph[nodeKey]()
 
-	// TODO: don't need a copy there
+	// Collect and sort nodes first, because MapByPatter gives them in randomized order
+	var nodes []nodeKey
+
 	_, err := dyn.MapByPattern(
 		b.Config.Value(),
 		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()),
@@ -50,34 +61,45 @@ func makeResourceGraph(ctx context.Context, b *bundle.Bundle, state resourcestat
 				return v, fmt.Errorf("unsupported resource: %s", group)
 			}
 
-			groupState := state[group]
-			delete(groupState, name)
-
-			n := nodeKey{group, name}
-			g.AddNode(n)
-
-			fieldRefs, err := extractReferences(b.Config.Value(), n)
-			if err != nil {
-				return dyn.InvalidValue, fmt.Errorf("failed to read references from config: %w", err)
-			}
-
-			for _, fieldRef := range fieldRefs {
-				for _, referencedNode := range fieldRef.referencedNodes {
-					label := fmt.Sprintf("%s.%s -> %s.%s", referencedNode.Group, referencedNode.Name, n.Group, n.Name)
-					log.Debugf(ctx, "Adding resource edge: %s (via %#v)", label, fieldRef.ref.Str)
-					g.AddDirectedEdge(
-						referencedNode,
-						n,
-						label,
-					)
-					isReferenced[referencedNode] = true
-				}
-			}
+			nodes = append(nodes, nodeKey{group, name})
 			return dyn.InvalidValue, nil
 		},
 	)
 	if err != nil {
 		return nil, nil, fmt.Errorf("reading config: %w", err)
+	}
+
+	slices.SortFunc(nodes, func(a, b nodeKey) int {
+		if a.Group == b.Group {
+			return strings.Compare(a.Name, b.Name)
+		}
+		return strings.Compare(a.Group, b.Group)
+	})
+
+	for _, node := range nodes {
+		groupState := state[node.Group]
+		delete(groupState, node.Name)
+
+		n := nodeKey{node.Group, node.Name}
+		g.AddNode(node)
+
+		fieldRefs, err := extractReferences(b.Config.Value(), n)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to read references from config for %s: %w", node.String(), err)
+		}
+
+		for _, fieldRef := range fieldRefs {
+			for _, referencedNode := range fieldRef.referencedNodes {
+				label := "${" + referencedNode.fullRef + "}"
+				log.Debugf(ctx, "Adding resource edge: %s (via %#v)", label, fieldRef.ref.Str)
+				g.AddDirectedEdge(
+					referencedNode.nodeKey,
+					node,
+					label,
+				)
+				isReferenced[referencedNode.nodeKey] = true
+			}
+		}
 	}
 
 	return g, isReferenced, nil
@@ -127,15 +149,18 @@ func validateRef(root dyn.Value, ref string) (string, string, error) {
 	return items[1], items[2], nil
 }
 
-func nodeFromRef(root dyn.Value, ref dynvar.Ref) ([]nodeKey, error) {
-	var referencedNodes []nodeKey
+func nodeFromRef(root dyn.Value, ref dynvar.Ref) ([]referencedNode, error) {
+	var referencedNodes []referencedNode
 	for _, r := range ref.References() {
 		// validateRef will check resource exists in the config; this will reject references to deleted resources, no need to handle that case separately.
 		refGroup, refKey, err := validateRef(root, r)
 		if err != nil {
 			return nil, fmt.Errorf("cannot process reference %s: %w", r, err)
 		}
-		referencedNode := nodeKey{refGroup, refKey}
+		referencedNode := referencedNode{
+			nodeKey: nodeKey{refGroup, refKey},
+			fullRef: r,
+		}
 		referencedNodes = append(referencedNodes, referencedNode)
 	}
 	return referencedNodes, nil
