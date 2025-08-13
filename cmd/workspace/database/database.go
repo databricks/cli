@@ -48,9 +48,13 @@ func New() *cobra.Command {
 	cmd.AddCommand(newGetDatabaseInstanceRole())
 	cmd.AddCommand(newGetDatabaseTable())
 	cmd.AddCommand(newGetSyncedDatabaseTable())
+	cmd.AddCommand(newListDatabaseCatalogs())
 	cmd.AddCommand(newListDatabaseInstanceRoles())
 	cmd.AddCommand(newListDatabaseInstances())
+	cmd.AddCommand(newListSyncedDatabaseTables())
+	cmd.AddCommand(newUpdateDatabaseCatalog())
 	cmd.AddCommand(newUpdateDatabaseInstance())
+	cmd.AddCommand(newUpdateSyncedDatabaseTable())
 
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
@@ -1154,6 +1158,65 @@ func newGetSyncedDatabaseTable() *cobra.Command {
 	return cmd
 }
 
+// start list-database-catalogs command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listDatabaseCatalogsOverrides []func(
+	*cobra.Command,
+	*database.ListDatabaseCatalogsRequest,
+)
+
+func newListDatabaseCatalogs() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listDatabaseCatalogsReq database.ListDatabaseCatalogsRequest
+
+	cmd.Flags().IntVar(&listDatabaseCatalogsReq.PageSize, "page-size", listDatabaseCatalogsReq.PageSize, `Upper bound for items returned.`)
+	cmd.Flags().StringVar(&listDatabaseCatalogsReq.PageToken, "page-token", listDatabaseCatalogsReq.PageToken, `Pagination token to go to the next page of synced database tables.`)
+
+	cmd.Use = "list-database-catalogs INSTANCE_NAME"
+	cmd.Short = `List all Database Catalogs in a Database Instance.`
+	cmd.Long = `List all Database Catalogs in a Database Instance.
+  
+  This API is currently unimplemented, but exposed for Terraform support.
+
+  Arguments:
+    INSTANCE_NAME: Name of the instance to get database catalogs for.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		listDatabaseCatalogsReq.InstanceName = args[0]
+
+		response := w.Database.ListDatabaseCatalogs(ctx, listDatabaseCatalogsReq)
+		return cmdio.RenderIterator(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listDatabaseCatalogsOverrides {
+		fn(cmd, &listDatabaseCatalogsReq)
+	}
+
+	return cmd
+}
+
 // start list-database-instance-roles command
 
 // Slice with functions to override default command behavior.
@@ -1175,7 +1238,11 @@ func newListDatabaseInstanceRoles() *cobra.Command {
 	cmd.Short = `List roles for a Database Instance.`
 	cmd.Long = `List roles for a Database Instance.
   
-  START OF PG ROLE APIs Section`
+  START OF PG ROLE APIs Section These APIs are marked a PUBLIC with stage <
+  PUBLIC_PREVIEW. With more recent Lakebase V2 plans, we don't plan to ever
+  advance these to PUBLIC_PREVIEW. These APIs will remain effectively
+  undocumented/UI-only and we'll aim for a new public roles API as part of V2
+  PuPr.`
 
 	// This command is being previewed; hide from help output.
 	cmd.Hidden = true
@@ -1259,6 +1326,159 @@ func newListDatabaseInstances() *cobra.Command {
 	return cmd
 }
 
+// start list-synced-database-tables command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listSyncedDatabaseTablesOverrides []func(
+	*cobra.Command,
+	*database.ListSyncedDatabaseTablesRequest,
+)
+
+func newListSyncedDatabaseTables() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listSyncedDatabaseTablesReq database.ListSyncedDatabaseTablesRequest
+
+	cmd.Flags().IntVar(&listSyncedDatabaseTablesReq.PageSize, "page-size", listSyncedDatabaseTablesReq.PageSize, `Upper bound for items returned.`)
+	cmd.Flags().StringVar(&listSyncedDatabaseTablesReq.PageToken, "page-token", listSyncedDatabaseTablesReq.PageToken, `Pagination token to go to the next page of synced database tables.`)
+
+	cmd.Use = "list-synced-database-tables INSTANCE_NAME"
+	cmd.Short = `List all synced database tables in a Database Instance.`
+	cmd.Long = `List all synced database tables in a Database Instance.
+  
+  This API is currently unimplemented, but exposed for Terraform support.
+
+  Arguments:
+    INSTANCE_NAME: Name of the instance to get synced tables for.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		listSyncedDatabaseTablesReq.InstanceName = args[0]
+
+		response := w.Database.ListSyncedDatabaseTables(ctx, listSyncedDatabaseTablesReq)
+		return cmdio.RenderIterator(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listSyncedDatabaseTablesOverrides {
+		fn(cmd, &listSyncedDatabaseTablesReq)
+	}
+
+	return cmd
+}
+
+// start update-database-catalog command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateDatabaseCatalogOverrides []func(
+	*cobra.Command,
+	*database.UpdateDatabaseCatalogRequest,
+)
+
+func newUpdateDatabaseCatalog() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateDatabaseCatalogReq database.UpdateDatabaseCatalogRequest
+	updateDatabaseCatalogReq.DatabaseCatalog = database.DatabaseCatalog{}
+	var updateDatabaseCatalogJson flags.JsonFlag
+
+	cmd.Flags().Var(&updateDatabaseCatalogJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().BoolVar(&updateDatabaseCatalogReq.DatabaseCatalog.CreateDatabaseIfNotExists, "create-database-if-not-exists", updateDatabaseCatalogReq.DatabaseCatalog.CreateDatabaseIfNotExists, ``)
+
+	cmd.Use = "update-database-catalog NAME UPDATE_MASK DATABASE_INSTANCE_NAME DATABASE_NAME"
+	cmd.Short = `Update a Database Catalog.`
+	cmd.Long = `Update a Database Catalog.
+  
+  This API is currently unimplemented, but exposed for Terraform support.
+
+  Arguments:
+    NAME: The name of the catalog in UC.
+    UPDATE_MASK: The list of fields to update. Setting this field is not yet supported.
+    DATABASE_INSTANCE_NAME: The name of the DatabaseInstance housing the database.
+    DATABASE_NAME: The name of the database (in a instance) associated with the catalog.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(2)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, provide only NAME, UPDATE_MASK as positional arguments. Provide 'name', 'database_instance_name', 'database_name' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(4)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := updateDatabaseCatalogJson.Unmarshal(&updateDatabaseCatalogReq.DatabaseCatalog)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		updateDatabaseCatalogReq.Name = args[0]
+		updateDatabaseCatalogReq.UpdateMask = args[1]
+		if !cmd.Flags().Changed("json") {
+			updateDatabaseCatalogReq.DatabaseCatalog.DatabaseInstanceName = args[2]
+		}
+		if !cmd.Flags().Changed("json") {
+			updateDatabaseCatalogReq.DatabaseCatalog.DatabaseName = args[3]
+		}
+
+		response, err := w.Database.UpdateDatabaseCatalog(ctx, updateDatabaseCatalogReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateDatabaseCatalogOverrides {
+		fn(cmd, &updateDatabaseCatalogReq)
+	}
+
+	return cmd
+}
+
 // start update-database-instance command
 
 // Slice with functions to override default command behavior.
@@ -1291,8 +1511,9 @@ func newUpdateDatabaseInstance() *cobra.Command {
 
   Arguments:
     NAME: The name of the instance. This is the unique identifier for the instance.
-    UPDATE_MASK: The list of fields to update. This field is not yet supported, and is
-      ignored by the server.`
+    UPDATE_MASK: The list of fields to update. If unspecified, all fields will be updated
+      when possible. To wipe out custom_tags, specify custom_tags in the
+      update_mask with an empty custom_tags map.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1335,6 +1556,88 @@ func newUpdateDatabaseInstance() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range updateDatabaseInstanceOverrides {
 		fn(cmd, &updateDatabaseInstanceReq)
+	}
+
+	return cmd
+}
+
+// start update-synced-database-table command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateSyncedDatabaseTableOverrides []func(
+	*cobra.Command,
+	*database.UpdateSyncedDatabaseTableRequest,
+)
+
+func newUpdateSyncedDatabaseTable() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateSyncedDatabaseTableReq database.UpdateSyncedDatabaseTableRequest
+	updateSyncedDatabaseTableReq.SyncedTable = database.SyncedDatabaseTable{}
+	var updateSyncedDatabaseTableJson flags.JsonFlag
+
+	cmd.Flags().Var(&updateSyncedDatabaseTableJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: complex arg: data_synchronization_status
+	cmd.Flags().StringVar(&updateSyncedDatabaseTableReq.SyncedTable.DatabaseInstanceName, "database-instance-name", updateSyncedDatabaseTableReq.SyncedTable.DatabaseInstanceName, `Name of the target database instance.`)
+	cmd.Flags().StringVar(&updateSyncedDatabaseTableReq.SyncedTable.LogicalDatabaseName, "logical-database-name", updateSyncedDatabaseTableReq.SyncedTable.LogicalDatabaseName, `Target Postgres database object (logical database) name for this table.`)
+	// TODO: complex arg: spec
+
+	cmd.Use = "update-synced-database-table NAME UPDATE_MASK"
+	cmd.Short = `Update a Synced Database Table.`
+	cmd.Long = `Update a Synced Database Table.
+  
+  This API is currently unimplemented, but exposed for Terraform support.
+
+  Arguments:
+    NAME: Full three-part (catalog, schema, table) name of the table.
+    UPDATE_MASK: The list of fields to update. Setting this field is not yet supported.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := updateSyncedDatabaseTableJson.Unmarshal(&updateSyncedDatabaseTableReq.SyncedTable)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		updateSyncedDatabaseTableReq.Name = args[0]
+		updateSyncedDatabaseTableReq.UpdateMask = args[1]
+
+		response, err := w.Database.UpdateSyncedDatabaseTable(ctx, updateSyncedDatabaseTableReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateSyncedDatabaseTableOverrides {
+		fn(cmd, &updateSyncedDatabaseTableReq)
 	}
 
 	return cmd
