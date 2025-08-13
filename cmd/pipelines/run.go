@@ -136,40 +136,40 @@ func displayProgressEvents(ctx context.Context, events []pipelines.PipelineEvent
 }
 
 // fetchAndDisplayPipelineUpdate fetches the update and the update's associated update_progress events' durations.
-func fetchAndDisplayPipelineUpdate(ctx context.Context, w *databricks.WorkspaceClient, pipelineID, updateID string) error {
-	if pipelineID == "" {
+func fetchAndDisplayPipelineUpdate(ctx context.Context, w *databricks.WorkspaceClient, pipelineId, updateId string) error {
+	if pipelineId == "" {
 		return errors.New("no pipeline ID provided")
 	}
-	if updateID == "" {
+	if updateId == "" {
 		return errors.New("no update ID provided")
 	}
 
 	getUpdateResponse, err := w.Pipelines.GetUpdate(ctx, pipelines.GetUpdateRequest{
-		PipelineId: pipelineID,
-		UpdateId:   updateID,
+		PipelineId: pipelineId,
+		UpdateId:   updateId,
 	})
 	if err != nil {
 		return err
 	}
 
 	if getUpdateResponse.Update == nil {
-		return fmt.Errorf("no update found with id %s for pipeline %s", updateID, pipelineID)
+		return fmt.Errorf("no update found with id %s for pipeline %s", updateId, pipelineId)
 	}
 
 	latestUpdate := *getUpdateResponse.Update
 
 	params := &PipelineEventsQueryParams{
-		Filter:  fmt.Sprintf("update_id='%s' AND event_type='update_progress'", updateID),
+		Filter:  fmt.Sprintf("update_id='%s' AND event_type='update_progress'", updateId),
 		OrderBy: "timestamp asc",
 	}
 
-	events, err := fetchAllPipelineEvents(ctx, w, pipelineID, params)
+	events, err := fetchAllPipelineEvents(ctx, w, pipelineId, params)
 	if err != nil {
 		return err
 	}
 
 	if latestUpdate.State == pipelines.UpdateInfoStateCompleted {
-		err = displayPipelineUpdate(ctx, latestUpdate, pipelineID, events)
+		err = displayPipelineUpdate(ctx, latestUpdate, pipelineId, events)
 		if err != nil {
 			return err
 		}
@@ -197,9 +197,9 @@ func getLastEventTime(events []pipelines.PipelineEvent) string {
 	return parsedTime.Format("2006-01-02T15:04:05Z")
 }
 
-func displayPipelineUpdate(ctx context.Context, update pipelines.UpdateInfo, pipelineID string, events []pipelines.PipelineEvent) error {
+func displayPipelineUpdate(ctx context.Context, update pipelines.UpdateInfo, pipelineId string, events []pipelines.PipelineEvent) error {
 	data := PipelineUpdateData{
-		PipelineId:    pipelineID,
+		PipelineId:    pipelineId,
 		Update:        update,
 		LastEventTime: getLastEventTime(events),
 	}
