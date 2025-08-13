@@ -24,13 +24,10 @@ import (
 // Copied from cmd/bundle/run.go
 // promptResource prompts the user to select a pipeline.
 // If filter is provided, only resources that pass the filter will be included.
-func promptResource(ctx context.Context, b *bundle.Bundle, filter resources.Filter) (string, error) {
+func promptResource(ctx context.Context, b *bundle.Bundle, filters ...resources.Filter) (string, error) {
 	// Compute map of "Human readable name of resource" -> "resource key".
 	inv := make(map[string]string)
-	completions := resources.Completions(b)
-	if filter != nil {
-		completions = resources.Completions(b, filter)
-	}
+	completions := resources.Completions(b, filters...)
 
 	for k, ref := range completions {
 		title := fmt.Sprintf("%s: %s", ref.Description.SingularTitle, ref.Resource.GetName())
@@ -228,13 +225,4 @@ func parseAndFormatTimestamp(timestamp string) (string, error) {
 	}
 
 	return t.Format("2006-01-02T15:04:05.000Z"), nil
-}
-
-// isRunnablePipeline is a filter that returns true if a resource is both runnable and a pipeline.
-func isRunnablePipeline(ref resources.Reference) bool {
-	if !run.IsRunnable(ref) {
-		return false
-	}
-	_, ok := ref.Resource.(*configresources.Pipeline)
-	return ok
 }

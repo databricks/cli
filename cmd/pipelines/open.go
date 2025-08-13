@@ -38,7 +38,7 @@ func resolveOpenArgument(ctx context.Context, b *bundle.Bundle, args []string) (
 	}
 
 	if cmdio.IsPromptSupported(ctx) {
-		return promptResource(ctx, b, nil)
+		return promptResource(ctx, b)
 	}
 	return "", errors.New("expected a KEY of the pipeline to open")
 }
