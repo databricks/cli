@@ -2,8 +2,6 @@ package tnresources
 
 import (
 	"context"
-	"time"
-
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/database"
@@ -12,20 +10,22 @@ import (
 type ResourceDatabaseInstance struct {
 	client *databricks.WorkspaceClient
 	config database.DatabaseInstance
+	waiter *database.WaitGetDatabaseInstanceDatabaseAvailable[database.DatabaseInstance]
 }
 
 func (d ResourceDatabaseInstance) Config() any {
 	return d.config
 }
 
-func (d ResourceDatabaseInstance) DoCreate(ctx context.Context) (string, error) {
-	response, err := d.client.Database.CreateDatabaseInstance(ctx, database.CreateDatabaseInstanceRequest{
+func (d *ResourceDatabaseInstance) DoCreate(ctx context.Context) (string, error) {
+	waiter, err := d.client.Database.CreateDatabaseInstance(ctx, database.CreateDatabaseInstanceRequest{
 		DatabaseInstance: d.config,
 	})
 	if err != nil {
 		return "", SDKError{Method: "Database.CreateDatabaseInstance", Err: err}
 	}
-	return response.Name, nil
+	d.waiter = waiter
+	return waiter.Response.Name, nil
 }
 
 func (d ResourceDatabaseInstance) DoUpdate(ctx context.Context, id string) error {
@@ -43,33 +43,15 @@ func (d ResourceDatabaseInstance) DoUpdate(ctx context.Context, id string) error
 	return nil
 }
 
-func (d ResourceDatabaseInstance) WaitAfterCreate(ctx context.Context) error {
-	timeout := 10 * time.Minute
-	interval := 10 * time.Second
-
-	ctx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
-
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
-
-	for {
-		instance, err := d.client.Database.GetDatabaseInstanceByName(ctx, d.config.Name)
-		if err != nil {
-			return SDKError{Method: "Database.GetDatabaseInstanceByName", Err: err}
-		}
-
-		if instance.State == database.DatabaseInstanceStateAvailable {
-			return nil
-		}
-
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-ticker.C:
-			continue
-		}
+func (d *ResourceDatabaseInstance) WaitAfterCreate(ctx context.Context) error {
+	if d.waiter == nil {
+		return nil
 	}
+	_, err := d.waiter.Get()
+	if err != nil {
+		return SDKError{Method: "WaitGetDatabaseInstanceDatabaseAvailable.Get", Err: err}
+	}
+	return nil
 }
 
 func (d ResourceDatabaseInstance) WaitAfterUpdate(ctx context.Context) error {

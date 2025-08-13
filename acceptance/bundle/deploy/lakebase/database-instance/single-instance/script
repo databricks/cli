@@ -12,8 +12,8 @@ trace $CLI bundle summary | grep -v "URL"
 
 trace $CLI bundle deploy
 
-# Poll for database instance to become available (max 30 attempts, 1s between attempts)
-for i in {1..30}; do
+# Poll for database instance to become available (max 10 attempts, 5s between attempts)
+for i in {1..10}; do
   state=$($CLI database get-database-instance "test-database-instance-${UNIQUE_NAME}" --output json 2>/dev/null | jq -r '.state')
   if [ "$state" = "AVAILABLE" ]; then
     break
@@ -22,7 +22,7 @@ for i in {1..30}; do
     echo "Database instance did not become AVAILABLE. Last polled state: ${state}"
     exit 1
   fi
-  sleep 1
+  sleep 5
 done
 
 # _dns fields are excluded since they differ between cloud envs
