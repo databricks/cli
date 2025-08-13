@@ -1,0 +1,3 @@
+trace cp $TESTDIR/../databricks.yml .
+trace cat databricks.yml
+source $TESTDIR/../_script
