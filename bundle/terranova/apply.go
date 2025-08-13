@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"sort"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deployplan"
@@ -67,7 +68,9 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 		for _, name := range utils.SortedKeys(groupData) {
 			n := nodeKey{group, name}
 			g.AddNode(n)
-			plannedActionsMap[n] = deployplan.ActionTypeDelete
+			if plannedActionsMap[n] != deployplan.ActionTypeDelete {
+				logdiag.LogError(ctx, fmt.Errorf("internal error, resources %s.%s is missing from state but action is not delete but %v", group, name, plannedActionsMap[n]))
+			}
 		}
 	}
 
@@ -83,6 +86,7 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 		}
 
 		actionType := plannedActionsMap[node]
+		delete(plannedActionsMap, node)
 
 		if actionType == deployplan.ActionTypeUnset {
 			return
@@ -150,6 +154,17 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 	err = b.ResourceDatabase.Finalize()
 	if err != nil {
 		logdiag.LogError(ctx, err)
+	}
+
+	if len(plannedActionsMap) > 0 {
+		var undone []string
+		for n, act := range plannedActionsMap {
+			undone = append(undone, fmt.Sprintf("Not done: %s %s.%s", act, n.Group, n.Name))
+		}
+		sort.Strings(undone)
+		for _, msg := range undone {
+			log.Warn(ctx, msg)
+		}
 	}
 
 	return nil
