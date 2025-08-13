@@ -61,7 +61,7 @@ func DeleteDatabaseInstance(ctx context.Context, client *databricks.WorkspaceCli
 	err := client.Database.DeleteDatabaseInstance(ctx, database.DeleteDatabaseInstanceRequest{
 		Name:            name,
 		Purge:           true,
-		Force:           true,
+		Force:           false,
 		ForceSendFields: nil,
 	})
 	if err != nil {
