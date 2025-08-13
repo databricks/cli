@@ -1,5 +1,3 @@
-Cloud = false
-Local = false
 RecordRequests = false
 Timeout = '2m'
 TimeoutWindows = '10m'
