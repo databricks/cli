@@ -31,7 +31,10 @@ type fieldRef struct {
 	referencedNodes []nodeKey
 }
 
-func makeResourceGraph(ctx context.Context, b *bundle.Bundle, state resourcestate.ExportedResourcesMap, fieldRefsMap map[nodeKey][]fieldRef) (*dagrun.Graph[nodeKey], error) {
+// makeResourceGraph creates node graph based on ${resources.group.name.id} references.
+// Returns a graph and a map of all references that have references to them
+func makeResourceGraph(ctx context.Context, b *bundle.Bundle, state resourcestate.ExportedResourcesMap) (*dagrun.Graph[nodeKey], map[nodeKey]bool, error) {
+	isReferenced := make(map[nodeKey]bool)
 	g := dagrun.NewGraph[nodeKey]()
 
 	// TODO: don't need a copy there
@@ -58,8 +61,6 @@ func makeResourceGraph(ctx context.Context, b *bundle.Bundle, state resourcestat
 				return dyn.InvalidValue, fmt.Errorf("failed to read references from config: %w", err)
 			}
 
-			fieldRefsMap[n] = fieldRefs
-
 			for _, fieldRef := range fieldRefs {
 				for _, referencedNode := range fieldRef.referencedNodes {
 					label := fmt.Sprintf("%s.%s -> %s.%s", referencedNode.Group, referencedNode.Name, n.Group, n.Name)
@@ -69,16 +70,17 @@ func makeResourceGraph(ctx context.Context, b *bundle.Bundle, state resourcestat
 						n,
 						label,
 					)
+					isReferenced[referencedNode] = true
 				}
 			}
 			return dyn.InvalidValue, nil
 		},
 	)
 	if err != nil {
-		return nil, fmt.Errorf("reading config: %w", err)
+		return nil, nil, fmt.Errorf("reading config: %w", err)
 	}
 
-	return g, nil
+	return g, isReferenced, nil
 }
 
 func extractReferences(root dyn.Value, node nodeKey) ([]fieldRef, error) {

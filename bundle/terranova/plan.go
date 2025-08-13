@@ -68,12 +68,6 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 		panic("direct deployment required")
 	}
 
-	// if true, then this node has references to its "id" field
-	IDIsReferenced := map[nodeKey]bool{}
-
-	// Maps node to all references within this node that need resolution
-	fieldRefsMap := map[nodeKey][]fieldRef{}
-
 	// final result: collected actions per node
 	var actions []deployplan.Action
 
@@ -86,17 +80,9 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 
 	state := b.ResourceDatabase.ExportState(ctx)
 
-	g, err := makeResourceGraph(ctx, b, state, fieldRefsMap)
+	g, isReferenced, err := makeResourceGraph(ctx, b, state)
 	if err != nil {
 		return nil, fmt.Errorf("reading config: %w", err)
-	}
-
-	for _, fieldRefs := range fieldRefsMap {
-		for _, fieldRef := range fieldRefs {
-			for _, referencedNode := range fieldRef.referencedNodes {
-				IDIsReferenced[referencedNode] = true
-			}
-		}
 	}
 
 	// Remained in state are resources that no longer present in the config
@@ -147,7 +133,7 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 			return
 		}
 
-		if IDIsReferenced[node] && actionType.KeepsID() {
+		if isReferenced[node] && actionType.KeepsID() {
 			err = resolveIDReference(ctx, b, pl.group, pl.resourceName)
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("failed to replace ref to resources.%s.%s.id: %w", pl.group, pl.resourceName, err))
