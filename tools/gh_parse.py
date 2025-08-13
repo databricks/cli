@@ -116,7 +116,7 @@ def parse_file(path, filter):
     return results, outputs
 
 
-def print_report(filenames, filter, filter_env, show_output, markdown=False):
+def print_report(filenames, filter, filter_env, show_output, markdown=False, omit_repl=False):
     outputs = {}  # testname -> env -> [output]
     per_test_per_env_stats = {}  # testname -> env -> action -> count
     all_testnames = set()
@@ -256,7 +256,11 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False):
             for env, action in stats.items():
                 if action not in INTERESTING_ACTIONS:
                     continue
-                out = "\n".join(outputs.get(testname, {}).get(env, []))
+                output_lines = outputs.get(testname, {}).get(env, [])
+                if omit_repl:
+                    output_lines = [line for line in output_lines if not line.strip().startswith("REPL") and "Available replacements:" not in line]
+                out = "\n".join(output_lines)
+
                 if markdown:
                     print(f"### {env} {testname} {action}\n```\n{out}\n```")
                 else:
@@ -329,8 +333,9 @@ def main():
     parser.add_argument("--filter-env", help="Filter results by env name (substring match)")
     parser.add_argument("--output", help="Show output for failed tests", action="store_true")
     parser.add_argument("--markdown", help="Output in GitHub-flavored markdown format", action="store_true")
+    parser.add_argument("--omit-repl", help="Omit lines starting with 'REPL' and containing 'Available replacements:'", action="store_true")
     args = parser.parse_args()
-    print_report(args.filenames, filter=args.filter, filter_env=args.filter_env, show_output=args.output, markdown=args.markdown)
+    print_report(args.filenames, filter=args.filter, filter_env=args.filter_env, show_output=args.output, markdown=args.markdown, omit_repl=args.omit_repl)
 
 
 if __name__ == "__main__":
