@@ -12,6 +12,7 @@ import (
 )
 
 // GoVersion represents a Go release version from the API
+// TODO: Add caching for go / uv or libraries so that they are not redownloaded constantly.
 type GoVersion struct {
 	Version string `json:"version"`
 	Stable  bool   `json:"stable"`
