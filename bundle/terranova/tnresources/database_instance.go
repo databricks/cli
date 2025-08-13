@@ -2,6 +2,7 @@ package tnresources
 
 import (
 	"context"
+	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go"
@@ -43,7 +44,32 @@ func (d ResourceDatabaseInstance) DoUpdate(ctx context.Context, id string) error
 }
 
 func (d ResourceDatabaseInstance) WaitAfterCreate(ctx context.Context) error {
-	return nil
+	timeout := 10 * time.Minute
+	interval := 10 * time.Second
+
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	for {
+		instance, err := d.client.Database.GetDatabaseInstanceByName(ctx, d.config.Name)
+		if err != nil {
+			return SDKError{Method: "Database.GetDatabaseInstanceByName", Err: err}
+		}
+
+		if instance.State == database.DatabaseInstanceStateAvailable {
+			return nil
+		}
+
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-ticker.C:
+			continue
+		}
+	}
 }
 
 func (d ResourceDatabaseInstance) WaitAfterUpdate(ctx context.Context) error {

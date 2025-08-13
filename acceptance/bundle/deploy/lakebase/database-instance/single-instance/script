@@ -19,6 +19,7 @@ for i in {1..30}; do
     break
   fi
   if [ $i -eq 30 ]; then
+    echo "Database instance did not become AVAILABLE. Last polled state: ${state}"
     exit 1
   fi
   sleep 1
