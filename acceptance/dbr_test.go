@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
@@ -70,7 +71,7 @@ func uploadRunner(ctx context.Context, t *testing.T, f filer.Filer, testDir stri
 	return "dbr_runner"
 }
 
-func runTests(ctx context.Context, t *testing.T, w *databricks.WorkspaceClient, runnerPath string, archivePath string) {
+func runDbrTests(ctx context.Context, t *testing.T, w *databricks.WorkspaceClient, runnerPath string, archivePath string) {
 	t.Logf("Submitting test runner job...")
 	job, err := w.Jobs.Submit(ctx, jobs.SubmitRun{
 		Tasks: []jobs.SubmitTask{
@@ -94,19 +95,19 @@ func runTests(ctx context.Context, t *testing.T, w *databricks.WorkspaceClient, 
 	t.Logf("The test runner job finished with status: %s. Run URL: %s", run.State.LifeCycleState, run.RunPageUrl)
 }
 
-func TestAcceptDbr(t *testing.T) {
+func TestDbrAcceptance(t *testing.T) {
 	ctx := context.Background()
-	// uniqueId := uuid.New().String()
-	uniqueId := "4cb897a0-3f31-4f45-85fc-6936c4bf22ea"
+	uniqueId := uuid.New().String()
 
 	w, f, testDir := setupTest(ctx, t, uniqueId)
+
+	t.Logf("Test directory for the DBR runner: %s", testDir)
 
 	// We compile and upload an archive of the entire repo to the workspace.
 	// Only files tracked by git and binaries required by acceptance tests like
 	// go, uv, jq, etc. are included.
-	// archiveName := buildAndUploadArchive(ctx, t, f, testDir)
-	archiveName := "cli.tar.gz"
+	archiveName := buildAndUploadArchive(ctx, t, f)
 	runnerName := uploadRunner(ctx, t, f, testDir)
 
-	runTests(ctx, t, w, path.Join(testDir, runnerName), path.Join(testDir, archiveName))
+	runDbrTests(ctx, t, w, path.Join(testDir, runnerName), path.Join(testDir, archiveName))
 }

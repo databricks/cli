@@ -95,13 +95,10 @@ func (g *GoDownloader) findCompatibleVersion(versions []GoVersion, targetVersion
 		fmt.Sprintf("go%s", strings.TrimSuffix(targetVersion, ".0")), // go1.24
 	}
 
-	fmt.Printf("Looking for versions: %v\n", possibleVersions)
-
 	// First try exact match
 	for i := range versions {
 		for _, possibleVersion := range possibleVersions {
 			if versions[i].Version == possibleVersion {
-				fmt.Printf("Found exact matching version: %s\n", versions[i].Version)
 				return &versions[i], nil
 			}
 		}
@@ -116,22 +113,10 @@ func (g *GoDownloader) findCompatibleVersion(versions []GoVersion, targetVersion
 		}
 	}
 
-	fmt.Printf("Looking for latest version in %s series...\n", majorMinor)
-
 	for i := range versions {
 		if strings.HasPrefix(versions[i].Version, "go"+majorMinor+".") && versions[i].Stable {
-			fmt.Printf("Found compatible version: %s\n", versions[i].Version)
 			return &versions[i], nil
 		}
-	}
-
-	// Debug: show available versions
-	fmt.Printf("Available versions (first 10):\n")
-	for i, v := range versions {
-		if i >= 10 {
-			break
-		}
-		fmt.Printf("  %s (stable: %t)\n", v.Version, v.Stable)
 	}
 
 	return nil, fmt.Errorf("Go version matching %s not found in available releases", targetVersion)
@@ -149,8 +134,6 @@ func (g *GoDownloader) Download(arch string) error {
 	if err != nil {
 		return fmt.Errorf("failed to read Go version from go.mod: %w", err)
 	}
-
-	fmt.Printf("Found Go version %s in go.mod\n", goVersion)
 
 	// Fetch available versions
 	versions, err := g.fetchGoVersions()
@@ -198,9 +181,6 @@ func (g *GoDownloader) Download(arch string) error {
 	downloadURL := fmt.Sprintf("https://go.dev/dl/%s", targetFile.Filename)
 	tempFile := filepath.Join(downloadDir, targetFile.Filename)
 
-	fmt.Printf("Downloading Go %s for Linux %s...\n", targetVersion.Version, arch)
-	fmt.Printf("File: %s (%.1f MB)\n", targetFile.Filename, float64(targetFile.Size)/(1024*1024))
-
 	if err := downloadFile(downloadURL, tempFile); err != nil {
 		return err
 	}
@@ -212,10 +192,5 @@ func (g *GoDownloader) Download(arch string) error {
 
 	// Remove the downloaded archive using shared utility
 	cleanupTempFile(tempFile)
-
-	fmt.Printf("✅ Successfully downloaded and extracted Go %s for Linux %s\n", targetVersion.Version, arch)
-	fmt.Printf("📁 Extracted to: %s/go/\n", downloadDir)
-	fmt.Printf("🚀 Add to PATH: export PATH=$PWD/%s/go/bin:$PATH\n", downloadDir)
-
 	return nil
 }

@@ -17,57 +17,32 @@ func createGitArchive(outputPath string) error {
 	repoRoot := filepath.Join("..", "..")
 	testdataDir := "./testdata"
 
-	fmt.Printf("🔧 Preparing development environment...\n")
-
 	// Download Go for both architectures
-	fmt.Printf("📥 Downloading Go tools...\n")
 	goDownloader := NewGoDownloader()
-
 	if err := goDownloader.Download("amd64"); err != nil {
-		fmt.Printf("Warning: failed to download Go amd64: %v\n", err)
-	} else {
-		fmt.Printf("✅ Downloaded Go amd64\n")
+		return fmt.Errorf("failed to download Go amd64: %w", err)
 	}
-
 	if err := goDownloader.Download("arm64"); err != nil {
-		fmt.Printf("Warning: failed to download Go arm64: %v\n", err)
-	} else {
-		fmt.Printf("✅ Downloaded Go arm64\n")
+		return fmt.Errorf("failed to download Go arm64: %w", err)
 	}
 
 	// Download UV for both architectures
-	fmt.Printf("📥 Downloading UV tools...\n")
 	uvDownloader := NewUVDownloader()
-
 	if err := uvDownloader.Download("amd64"); err != nil {
-		fmt.Printf("Warning: failed to download UV amd64: %v\n", err)
-	} else {
-		fmt.Printf("✅ Downloaded UV amd64\n")
+		return fmt.Errorf("failed to download UV amd64: %w", err)
 	}
-
 	if err := uvDownloader.Download("arm64"); err != nil {
-		fmt.Printf("Warning: failed to download UV arm64: %v\n", err)
-	} else {
-		fmt.Printf("✅ Downloaded UV arm64\n")
+		return fmt.Errorf("failed to download UV arm64: %w", err)
 	}
 
 	// Download jq for both architectures
-	fmt.Printf("📥 Downloading jq tools...\n")
 	jqDownloader := NewJqDownloader()
-
 	if err := jqDownloader.Download("amd64"); err != nil {
-		fmt.Printf("Warning: failed to download jq amd64: %v\n", err)
-	} else {
-		fmt.Printf("✅ Downloaded jq amd64\n")
+		return fmt.Errorf("failed to download jq amd64: %w", err)
 	}
-
 	if err := jqDownloader.Download("arm64"); err != nil {
-		fmt.Printf("Warning: failed to download jq arm64: %v\n", err)
-	} else {
-		fmt.Printf("✅ Downloaded jq arm64\n")
+		return fmt.Errorf("failed to download jq arm64: %w", err)
 	}
-
-	fmt.Printf("🗂️  Collecting files for archive...\n")
 
 	// Get list of git-tracked files
 	cmd := exec.Command("git", "ls-files")
@@ -144,14 +119,14 @@ func createGitArchive(outputPath string) error {
 	tarWriter := tar.NewWriter(gzWriter)
 	defer tarWriter.Close()
 
-	fmt.Printf("📦 Creating comprehensive archive: %s\n", outputPath)
+	fmt.Printf("Creating archive %s...\n", outputPath)
 
 	processedCount := 0
 
 	// Add git-tracked files to the archive
 	for _, file := range gitFiles {
-		if processedCount%100 == 0 {
-			fmt.Printf("Progress: %d/%d files processed\n", processedCount, totalFiles)
+		if processedCount%1000 == 0 {
+			fmt.Printf("Progress: %d/%d Git files processed\n", processedCount, totalFiles)
 		}
 
 		fullPath := filepath.Join(repoRoot, file)
@@ -164,8 +139,8 @@ func createGitArchive(outputPath string) error {
 
 	// Add downloaded files to the archive
 	for _, file := range downloadedFiles {
-		if processedCount%100 == 0 {
-			fmt.Printf("Progress: %d/%d files processed\n", processedCount, totalFiles)
+		if processedCount%10000 == 0 {
+			fmt.Printf("Progress: %d/%d downloaded files processed\n", processedCount, totalFiles)
 		}
 
 		// Remove "testdata/" prefix to get actual file path

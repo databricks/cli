@@ -14,8 +14,6 @@ import (
 
 // downloadFile downloads a file from URL to the specified path
 func downloadFile(url, outputPath string) error {
-	fmt.Printf("Downloading from: %s\n", url)
-
 	resp, err := http.Get(url)
 	if err != nil {
 		return fmt.Errorf("failed to download: %w", err)
@@ -32,7 +30,7 @@ func downloadFile(url, outputPath string) error {
 	}
 	defer outFile.Close()
 
-	fmt.Printf("Downloading to: %s\n", outputPath)
+	fmt.Printf("Downloading %s to %s\n", url, outputPath)
 	_, err = io.Copy(outFile, resp.Body)
 	if err != nil {
 		return fmt.Errorf("failed to save file: %w", err)

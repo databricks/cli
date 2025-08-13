@@ -54,29 +54,21 @@ func (j *JqDownloader) Download(arch string) error {
 	// Create target filename
 	targetFile := filepath.Join(downloadDir, "jq")
 
-	fmt.Printf("Downloading jq for Linux %s...\n", arch)
-
 	// Download the binary using shared utility
 	if err := downloadFile(url, targetFile); err != nil {
 		return err
 	}
 
 	// Get file size for confirmation
-	fileInfo, err := os.Stat(targetFile)
+	_, err = os.Stat(targetFile)
 	if err != nil {
 		return fmt.Errorf("failed to get file info: %w", err)
 	}
-
-	fmt.Printf("Downloaded %s (%.2f MB)\n", targetFile, float64(fileInfo.Size())/1024/1024)
 
 	// Make the binary executable
 	if err := os.Chmod(targetFile, 0o755); err != nil {
 		return fmt.Errorf("failed to make jq executable: %w", err)
 	}
-
-	fmt.Printf("✅ Successfully downloaded jq for Linux %s\n", arch)
-	fmt.Printf("📁 Downloaded to: %s\n", targetFile)
-	fmt.Printf("🚀 Add to PATH: export PATH=$PWD/%s:$PATH\n", downloadDir)
 
 	return nil
 }

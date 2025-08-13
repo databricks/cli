@@ -51,20 +51,16 @@ func (u *UVDownloader) Download(arch string) error {
 	// Create temporary filename
 	tempFile := filepath.Join(downloadDir, "uv.tar.gz")
 
-	fmt.Printf("Downloading uv for Linux %s...\n", arch)
-
 	// Download the file using shared utility
 	if err := downloadFile(url, tempFile); err != nil {
 		return err
 	}
 
 	// Get file size for confirmation
-	fileInfo, err := os.Stat(tempFile)
+	_, err = os.Stat(tempFile)
 	if err != nil {
 		return fmt.Errorf("failed to get file info: %w", err)
 	}
-
-	fmt.Printf("Downloaded %s (%.2f MB)\n", tempFile, float64(fileInfo.Size())/1024/1024)
 
 	// Extract the archive using shared utility
 	if err := extractTarGz(tempFile, downloadDir); err != nil {
@@ -73,10 +69,5 @@ func (u *UVDownloader) Download(arch string) error {
 
 	// Remove the downloaded archive using shared utility
 	cleanupTempFile(tempFile)
-
-	fmt.Printf("✅ Successfully downloaded and extracted uv for Linux %s\n", arch)
-	fmt.Printf("📁 Extracted to: %s/\n", downloadDir)
-	fmt.Printf("🚀 Add to PATH: export PATH=$PWD/%s:$PATH\n", downloadDir)
-
 	return nil
 }

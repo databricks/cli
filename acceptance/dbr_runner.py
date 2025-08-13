@@ -67,12 +67,12 @@ def main():
 
     # TODO: Make the output format compatible with gotestsum. The gh_report and parse scripts
     # should work with the output from these.
+    # TODO: Run all tests here.
     cmd = [
         "go", "test",
         "-timeout", "300s",
-        "-run", r"^TestAccept/selftest/record_cloud/basic", "github.com/databricks/cli/acceptance",
-        "-dbr",
-        "github.com/databricks/cli/acceptance",
+        "-run", r"^TestAccept/selftest/record_cloud/basic",
+        "github.com/databricks/cli/acceptance"
     ]
 
     # Run and stream output
