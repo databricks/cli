@@ -63,6 +63,7 @@ func (o *JobOptions) hasJobParametersConfigured() bool {
 	return len(o.jobParams) > 0
 }
 
+// regex to match valid task keys as defined in https://docs.databricks.com/api/workspace/jobs/create#tasks-task_key
 var taskKeyRegex = regexp.MustCompile(`^[\w\-\_]+$`)
 
 // Validate returns if the combination of options is valid.

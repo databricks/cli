@@ -14,6 +14,6 @@
 * Changed logic for resolving `${resources...}` references. Previously this would be done by terraform at deploy time. Now if it references a field that is present in the config, it will be done by DABs during bundle loading ([#3370](https://github.com/databricks/cli/pull/3370))
 * Add support for tagging pipelines ([#3086](https://github.com/databricks/cli/pull/3086))
 * Add warning for when an invalid value is specified for an enum field ([#3050](https://github.com/databricks/cli/pull/3050))
-* Added support for running specified job tasks instead of all job tasks ([#3388](https://github.com/databricks/cli/pull/3388))
+* Add support for running specified job tasks instead of all job tasks ([#3388](https://github.com/databricks/cli/pull/3388))
 
 ### API Changes
