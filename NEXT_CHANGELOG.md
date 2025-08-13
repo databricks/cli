@@ -9,5 +9,6 @@
 ### CLI
 
 ### Bundles
+* Add supported enum values to JSON schema for volume grant privileges ([#3395](https://github.com/databricks/cli/pull/3395))
 
 ### API Changes

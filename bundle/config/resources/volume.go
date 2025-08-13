@@ -17,6 +17,7 @@ type VolumeGrantPrivilege string
 
 const (
 	VolumeGrantPrivilegeAllPrivileges VolumeGrantPrivilege = "ALL_PRIVILEGES"
+	VolumeGrantPrivilegeApplyTag      VolumeGrantPrivilege = "APPLY_TAG"
 	VolumeGrantPrivilegeManage        VolumeGrantPrivilege = "MANAGE"
 	VolumeGrantPrivilegeReadVolume    VolumeGrantPrivilege = "READ_VOLUME"
 	VolumeGrantPrivilegeWriteVolume   VolumeGrantPrivilege = "WRITE_VOLUME"

@@ -509,6 +509,8 @@ github.com/databricks/cli/bundle/config/resources.VolumeGrantPrivilege:
       - |-
         ALL_PRIVILEGES
       - |-
+        APPLY_TAG
+      - |-
         MANAGE
       - |-
         READ_VOLUME
