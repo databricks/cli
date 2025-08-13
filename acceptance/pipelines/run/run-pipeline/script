@@ -4,3 +4,6 @@ trace $PIPELINES run
 
 title "Run pipeline with KEY, expect same output as without KEY"
 trace $PIPELINES run my_pipeline
+
+title "completion handler"
+trace $PIPELINES __complete run ,
