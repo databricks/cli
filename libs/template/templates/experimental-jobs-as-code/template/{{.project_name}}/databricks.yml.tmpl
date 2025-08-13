@@ -14,7 +14,7 @@ experimental:
     resources:
       - "resources:load_resources"
 
-{{ if .include_python -}}
+{{- if (eq .include_python "yes") -}}
 artifacts:
   default:
     type: whl
