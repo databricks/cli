@@ -76,7 +76,7 @@ func fromTyped(src any, ref dyn.Value, options ...fromTypedOptions) (dyn.Value, 
 		// If the value is untyped and not set (e.g. any type with nil value), we return nil.
 		v, err = dyn.NilValue, nil
 	default:
-		return dyn.InvalidValue, fmt.Errorf("cannot convert %s field to dynamic type %#v: src=%#v ref=%#v", srcv.Kind(), ref.Kind().String(), src, ref.AsAny())
+		return dyn.InvalidValue, fmt.Errorf("unsupported type: %s", srcv.Kind())
 	}
 
 	// Ensure the location metadata is retained.
