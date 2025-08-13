@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -81,6 +82,47 @@ func resolveRunArgument(ctx context.Context, b *bundle.Bundle, args []string) (s
 	}
 
 	return args[0], args[1:], nil
+}
+
+// resolvePipelineArgument auto-selects a pipeline if there's exactly one and no arguments are specified,
+// otherwise prompts the user to select a pipeline.
+func resolvePipelineArgument(ctx context.Context, b *bundle.Bundle, args []string) (string, error) {
+	if len(args) == 1 {
+		return args[0], nil
+	}
+
+	if key := autoSelectSinglePipeline(b); key != "" {
+		return key, nil
+	}
+
+	if cmdio.IsPromptSupported(ctx) {
+		return promptResource(ctx, b, run.IsRunnable, func(ref resources.Reference) bool {
+			_, ok := ref.Resource.(*configresources.Pipeline)
+			return ok
+		})
+	}
+	return "", errors.New("expected a KEY of the pipeline")
+}
+
+// resolvePipelineIdFromKey resolves a pipeline KEY to its actual pipeline ID.
+// This function handles the bundle initialization, resource lookup, and pipeline ID extraction.
+func resolvePipelineIdFromKey(ctx context.Context, b *bundle.Bundle, key string) (string, error) {
+	ref, err := resources.Lookup(b, key)
+	if err != nil {
+		return "", err
+	}
+
+	pipeline, ok := ref.Resource.(*configresources.Pipeline)
+	if !ok {
+		return "", fmt.Errorf("resource %s is not a pipeline", key)
+	}
+
+	pipelineId := pipeline.ID
+	if pipelineId == "" {
+		return "", fmt.Errorf("pipeline ID for pipeline %s is not found", ref.Key)
+	}
+
+	return pipelineId, nil
 }
 
 // Copied from cmd/bundle/run.go
@@ -225,4 +267,40 @@ func parseAndFormatTimestamp(timestamp string) (string, error) {
 	}
 
 	return t.Format("2006-01-02T15:04:05.000Z"), nil
+}
+
+// updatesBefore returns all updates with CreationTime <= ts
+// Assumes updates are sorted in descending order (newest first)
+func updatesBefore(updates []pipelines.UpdateInfo, ts int64) []pipelines.UpdateInfo {
+	if len(updates) == 0 {
+		return nil
+	}
+
+	// Binary search for index with CreationTime <= ts
+	idx, _ := slices.BinarySearchFunc(updates, ts, func(u pipelines.UpdateInfo, target int64) int {
+		if u.CreationTime <= target {
+			return 1
+		}
+		return -1
+	})
+
+	return updates[idx:]
+}
+
+// updatesAfter returns all updates with CreationTime >= ts
+// Assumes updates are sorted in descending order (newest first)
+func updatesAfter(updates []pipelines.UpdateInfo, ts int64) []pipelines.UpdateInfo {
+	if len(updates) == 0 {
+		return nil
+	}
+
+	// Binary search for index with CreationTime < ts
+	idx, _ := slices.BinarySearchFunc(updates, ts, func(u pipelines.UpdateInfo, target int64) int {
+		if u.CreationTime < target {
+			return 1
+		}
+		return -1
+	})
+
+	return updates[:idx]
 }

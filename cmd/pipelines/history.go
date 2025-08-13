@@ -1,53 +1,87 @@
 package pipelines
 
 import (
-	"errors"
 	"fmt"
-	"sort"
 	"time"
 
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/phases"
+	"github.com/databricks/cli/bundle/statemgmt"
+	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdgroup"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/spf13/cobra"
 )
 
 func historyCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "history [flags] PIPELINE_ID",
+		Use:   "history [flags] [KEY]",
+		Args:  root.MaximumNArgs(1),
 		Short: "Retrieve past runs for a pipeline",
-		Long:  `Retrieve past runs for a pipeline identified by PIPELINE_ID, a unique identifier for a pipeline.`,
+		Long:  `Retrieve past runs for a pipeline identified by KEY, the unique name of the pipeline as defined in its YAML file.`,
 	}
 
-	var maxResults int
+	var number int
 	var startTimeStr string
+	var endTimeStr string
+
+	type pipelineHistoryData struct {
+		Key     string
+		Updates []pipelines.UpdateInfo
+	}
 
 	historyGroup := cmdgroup.NewFlagGroup("Filter")
-	historyGroup.FlagSet().IntVar(&maxResults, "max-results", 100, "Max number of entries in output.")
+	historyGroup.FlagSet().IntVarP(&number, "number", "n", 100, "Number of entries in output.")
 	historyGroup.FlagSet().StringVar(&startTimeStr, "start-time", "", "Filter updates after this time (format: 2025-01-15T10:30:00Z)")
+	historyGroup.FlagSet().StringVar(&endTimeStr, "end-time", "", "Filter updates before this time (format: 2025-01-15T10:30:00Z)")
 	wrappedCmd := cmdgroup.NewCommandWithGroupFlag(cmd)
 	wrappedCmd.AddFlagGroup(historyGroup)
 
-	cmd.PreRunE = root.MustWorkspaceClient
-
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		ctx := cmd.Context()
-		if len(args) == 0 {
-			return errors.New("Provide a PIPELINE_ID.")
+		ctx := logdiag.InitContext(cmd.Context())
+		cmd.SetContext(ctx)
+
+		b := utils.ConfigureBundleWithVariables(cmd)
+		if b == nil || logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
 		}
 
-		if len(args) > 1 {
-			return fmt.Errorf("Expected one PIPELINE_ID, got %d.", len(args))
+		phases.Initialize(ctx, b)
+		if logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
 		}
-		w := cmdctx.WorkspaceClient(ctx)
 
-		pipelineId := args[0]
+		// Load the deployment state to get pipeline IDs from resource
+		bundle.ApplySeqContext(ctx, b,
+			statemgmt.StatePull(),
+			statemgmt.Load(),
+		)
+		if logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
+		}
+
+		key, err := resolvePipelineArgument(ctx, b, args)
+		if err != nil {
+			return err
+		}
+
+		pipelineId, err := resolvePipelineIdFromKey(ctx, b, key)
+		if err != nil {
+			return err
+		}
+
+		w := b.WorkspaceClient()
 
 		req := pipelines.ListUpdatesRequest{
 			PipelineId: pipelineId,
-			MaxResults: maxResults,
+		}
+
+		// Only set MaxResults if the flag was provided, avoiding setting to the default value.
+		if cmd.Flags().Changed("number") {
+			req.MaxResults = number
 		}
 
 		response, err := w.Pipelines.ListUpdates(ctx, req)
@@ -55,40 +89,30 @@ func historyCommand() *cobra.Command {
 			return err
 		}
 
-		var filteredUpdates []pipelines.UpdateInfo
+		filteredUpdates := response.Updates
 		if startTimeStr != "" {
-			startTime, err := time.Parse("2006-01-02T15:04:05Z", startTimeStr)
+			startTime, err := time.Parse(time.RFC3339Nano, startTimeStr)
 			if err != nil {
 				return fmt.Errorf("invalid start-time format. Expected format: 2025-01-15T10:30:00Z (YYYY-MM-DDTHH:MM:SSZ), got: %s", startTimeStr)
 			}
 			startTimeMs := startTime.UnixMilli()
-			// Binary search for the split point
-			idx := sort.Search(len(response.Updates), func(i int) bool {
-				// stop when CreationTime <= cutoff (i.e., no longer after)
-				return response.Updates[i].CreationTime <= startTimeMs
-			})
-			// Check if startTimeMs cutoff is present in the response.Updates
-			if idx < len(response.Updates) && response.Updates[idx].CreationTime == startTimeMs {
-				filteredUpdates = response.Updates[:idx+1]
-			} else {
-				filteredUpdates = response.Updates[:idx]
+			filteredUpdates = updatesAfter(filteredUpdates, startTimeMs)
+		}
+
+		if endTimeStr != "" {
+			endTime, err := time.Parse(time.RFC3339Nano, endTimeStr)
+			if err != nil {
+				return fmt.Errorf("invalid end-time format. Expected format: 2025-01-15T10:30:00Z (YYYY-MM-DDTHH:MM:SSZ), got: %s", endTimeStr)
 			}
-		} else {
-			filteredUpdates = response.Updates
+			endTimeMs := endTime.UnixMilli()
+			filteredUpdates = updatesBefore(filteredUpdates, endTimeMs)
 		}
 
-		if len(filteredUpdates) == 0 {
-			return cmdio.RenderWithTemplate(ctx, nil, "Updates summary for pipeline "+pipelineId, `No updates found.`)
+		data := pipelineHistoryData{
+			Key:     key,
+			Updates: filteredUpdates,
 		}
-
-		return cmdio.RenderWithTemplate(ctx, filteredUpdates, "Updates summary for pipeline "+pipelineId,
-			`{{range .}}Update ID: {{.UpdateId}}
-   State: {{.State}}
-   Cause: {{.Cause}}
-   Creation Time: {{.CreationTime | pretty_UTC_date_from_millis}}
-   Full Refresh: {{.FullRefresh}}
-   Validate Only: {{.ValidateOnly}}
-{{end}}`)
+		return cmdio.RenderWithTemplate(ctx, data, "", pipelineHistoryTemplate)
 	}
 
 	return cmd

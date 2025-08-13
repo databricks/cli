@@ -1,17 +1,11 @@
 package pipelines
 
 import (
-	"context"
-	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
-	configresources "github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/phases"
-	"github.com/databricks/cli/bundle/resources"
-	"github.com/databricks/cli/bundle/run"
-
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
@@ -21,26 +15,6 @@ import (
 
 	"github.com/spf13/cobra"
 )
-
-// resolveLogsArgument auto-selects a pipeline if there's exactly one and no arguments are specified,
-// otherwise prompts the user to select a pipeline.
-func resolveLogsArgument(ctx context.Context, b *bundle.Bundle, args []string) (string, error) {
-	if len(args) == 1 {
-		return args[0], nil
-	}
-
-	if key := autoSelectSinglePipeline(b); key != "" {
-		return key, nil
-	}
-
-	if cmdio.IsPromptSupported(ctx) {
-		return promptResource(ctx, b, run.IsRunnable, func(ref resources.Reference) bool {
-			_, ok := ref.Resource.(*configresources.Pipeline)
-			return ok
-		})
-	}
-	return "", errors.New("expected a KEY of the pipeline")
-}
 
 // buildFieldFilter creates a SQL filter condition for a field with multiple possible values,
 // generating "field in ('value1')" for a single value or "field in ('value1', 'value2')" for multiple values.
@@ -135,24 +109,14 @@ Example usage:
 			return root.ErrAlreadyPrinted
 		}
 
-		arg, err := resolveLogsArgument(ctx, b, args)
+		key, err := resolvePipelineArgument(ctx, b, args)
 		if err != nil {
 			return err
 		}
 
-		ref, err := resources.Lookup(b, arg)
+		pipelineId, err := resolvePipelineIdFromKey(ctx, b, key)
 		if err != nil {
 			return err
-		}
-
-		pipeline, ok := ref.Resource.(*configresources.Pipeline)
-		if !ok {
-			return fmt.Errorf("resource %s is not a pipeline", arg)
-		}
-
-		pipelineId := pipeline.ID
-		if pipelineId == "" {
-			return fmt.Errorf("pipeline ID for pipeline %s is not found", ref.Key)
 		}
 
 		w := b.WorkspaceClient()

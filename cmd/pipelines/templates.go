@@ -1,5 +1,14 @@
 package pipelines
 
+const pipelineHistoryTemplate = `Past runs for pipeline {{.Key}}:
+{{if .Updates}}{{range .Updates}}Update ID: {{.UpdateId}}
+   State: {{.State}}
+   Cause: {{.Cause}}
+   Creation Time: {{.CreationTime | pretty_UTC_date_from_millis}}
+   Full Refresh: {{.FullRefresh}}
+   Validate Only: {{.ValidateOnly}}
+{{end}}{{else}}No updates found.{{end}}`
+
 const pipelineUpdateTemplate = `Update for pipeline {{- if .Update.Config }} {{ .Update.Config.Name }}{{ end }} completed successfully.
 {{- if .Update.Config }}
 Pipeline ID: {{ .Update.Config.Id }}
