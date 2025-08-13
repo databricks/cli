@@ -43,7 +43,7 @@ Deployment complete!
     "tasks": [
       {
         "run_job_task": {
-          "job_id": [NUMID]
+          "job_id": [BAR_ID]
         },
         "task_key": "job_task"
       }
@@ -66,14 +66,14 @@ Destroy complete!
 >>> print_sorted_requests
 {
   "body": {
-    "job_id": [NUMID]
+    "job_id": [BAR_ID]
   },
   "method": "POST",
   "path": "/api/2.2/jobs/delete"
 }
 {
   "body": {
-    "job_id": [NUMID]
+    "job_id": [FOO_ID]
   },
   "method": "POST",
   "path": "/api/2.2/jobs/delete"
