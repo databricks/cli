@@ -1,0 +1,64 @@
+
+>>> cp [TESTROOT]/bundle/resource_deps/loop_self/terraform/../databricks.yml .
+
+>>> cat databricks.yml
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    foo:
+      name: ${resources.jobs.foo.id}
+
+=== Badness: validate could detect this and fail as well
+>>> [CLI] bundle validate
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Validation OK!
+
+>>> musterr [CLI] bundle plan
+Error: exit status 1
+
+Error: Self-referential block
+
+  on bundle.tf.json line 23, in resource.databricks_job.foo:
+  23:         "name": "${databricks_job.foo.id}",
+
+Configuration for databricks_job.foo may not refer to itself.
+
+Error: Self-referential block
+
+  on bundle.tf.json line 23, in resource.databricks_job.foo:
+  23:         "name": "${databricks_job.foo.id}",
+
+Configuration for databricks_job.foo may not refer to itself.
+
+
+
+Exit code (musterr): 1
+
+>>> musterr [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Error: exit status 1
+
+Error: Self-referential block
+
+  on bundle.tf.json line 23, in resource.databricks_job.foo:
+  23:         "name": "${databricks_job.foo.id}",
+
+Configuration for databricks_job.foo may not refer to itself.
+
+Error: Self-referential block
+
+  on bundle.tf.json line 23, in resource.databricks_job.foo:
+  23:         "name": "${databricks_job.foo.id}",
+
+Configuration for databricks_job.foo may not refer to itself.
+
+
+
+Exit code (musterr): 1

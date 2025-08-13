@@ -57,6 +57,14 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 			seen: []string{"A", "B", "C"},
 		},
 		{
+			name: "one-node cycle",
+			edges: []edge{
+				{"A", "A", "${A.id}"},
+			},
+			cycle: true,
+			msg:   "cycle detected: A refers to itself via ${A.id}",
+		},
+		{
 			name: "two-node cycle",
 			edges: []edge{
 				{"A", "B", "${A.id}"},
