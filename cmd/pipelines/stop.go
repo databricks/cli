@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
+
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/resources"
@@ -21,7 +22,7 @@ import (
 
 // resolveStopArgument resolves the pipeline key to stop
 // If there is only one pipeline in the project, KEY is optional and the pipeline will be auto-selected.
-// Otherwise, the user will be prompted to select a pipeline.
+// Otherwise, the user will be prompted to select a runnable resource.
 func resolveStopArgument(ctx context.Context, b *bundle.Bundle, args []string) (string, error) {
 	if len(args) == 1 {
 		return args[0], nil
@@ -32,7 +33,7 @@ func resolveStopArgument(ctx context.Context, b *bundle.Bundle, args []string) (
 	}
 
 	if cmdio.IsPromptSupported(ctx) {
-		return promptRunnablePipeline(ctx, b)
+		return promptResource(ctx, b, run.IsRunnable)
 	}
 
 	return "", errors.New("expected a KEY of the pipeline to stop")
