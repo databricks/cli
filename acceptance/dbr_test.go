@@ -74,6 +74,7 @@ func uploadRunner(ctx context.Context, t *testing.T, f filer.Filer, testDir stri
 func runDbrTests(ctx context.Context, t *testing.T, w *databricks.WorkspaceClient, runnerPath string, archivePath string) {
 	t.Logf("Submitting test runner job...")
 	job, err := w.Jobs.Submit(ctx, jobs.SubmitRun{
+		RunName: "DBR Acceptance Tests",
 		Tasks: []jobs.SubmitTask{
 			{
 				TaskKey: "dbr_runner",
