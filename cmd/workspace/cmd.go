@@ -42,7 +42,7 @@ import (
 	git_credentials "github.com/databricks/cli/cmd/workspace/git-credentials"
 	global_init_scripts "github.com/databricks/cli/cmd/workspace/global-init-scripts"
 	grants "github.com/databricks/cli/cmd/workspace/grants"
-	groups "github.com/databricks/cli/cmd/workspace/groups"
+	groups_v2 "github.com/databricks/cli/cmd/workspace/groups-v2"
 	instance_pools "github.com/databricks/cli/cmd/workspace/instance-pools"
 	instance_profiles "github.com/databricks/cli/cmd/workspace/instance-profiles"
 	ip_access_lists "github.com/databricks/cli/cmd/workspace/ip-access-lists"
@@ -89,7 +89,7 @@ import (
 	schemas "github.com/databricks/cli/cmd/workspace/schemas"
 	secrets "github.com/databricks/cli/cmd/workspace/secrets"
 	service_principal_secrets_proxy "github.com/databricks/cli/cmd/workspace/service-principal-secrets-proxy"
-	service_principals "github.com/databricks/cli/cmd/workspace/service-principals"
+	service_principals_v2 "github.com/databricks/cli/cmd/workspace/service-principals-v2"
 	serving_endpoints "github.com/databricks/cli/cmd/workspace/serving-endpoints"
 	settings "github.com/databricks/cli/cmd/workspace/settings"
 	shares "github.com/databricks/cli/cmd/workspace/shares"
@@ -101,7 +101,7 @@ import (
 	temporary_table_credentials "github.com/databricks/cli/cmd/workspace/temporary-table-credentials"
 	token_management "github.com/databricks/cli/cmd/workspace/token-management"
 	tokens "github.com/databricks/cli/cmd/workspace/tokens"
-	users "github.com/databricks/cli/cmd/workspace/users"
+	users_v2 "github.com/databricks/cli/cmd/workspace/users-v2"
 	vector_search_endpoints "github.com/databricks/cli/cmd/workspace/vector-search-endpoints"
 	vector_search_indexes "github.com/databricks/cli/cmd/workspace/vector-search-indexes"
 	volumes "github.com/databricks/cli/cmd/workspace/volumes"
@@ -153,7 +153,7 @@ func All() []*cobra.Command {
 	out = append(out, git_credentials.New())
 	out = append(out, global_init_scripts.New())
 	out = append(out, grants.New())
-	out = append(out, groups.New())
+	out = append(out, groups_v2.New())
 	out = append(out, instance_pools.New())
 	out = append(out, instance_profiles.New())
 	out = append(out, ip_access_lists.New())
@@ -200,7 +200,7 @@ func All() []*cobra.Command {
 	out = append(out, schemas.New())
 	out = append(out, secrets.New())
 	out = append(out, service_principal_secrets_proxy.New())
-	out = append(out, service_principals.New())
+	out = append(out, service_principals_v2.New())
 	out = append(out, serving_endpoints.New())
 	out = append(out, settings.New())
 	out = append(out, shares.New())
@@ -212,7 +212,7 @@ func All() []*cobra.Command {
 	out = append(out, temporary_table_credentials.New())
 	out = append(out, token_management.New())
 	out = append(out, tokens.New())
-	out = append(out, users.New())
+	out = append(out, users_v2.New())
 	out = append(out, vector_search_endpoints.New())
 	out = append(out, vector_search_indexes.New())
 	out = append(out, volumes.New())
