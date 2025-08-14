@@ -2,6 +2,7 @@ package tnresources
 
 import (
 	"context"
+
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/database"
@@ -62,6 +63,7 @@ func NewResourceDatabaseInstance(client *databricks.WorkspaceClient, resource *r
 	return &ResourceDatabaseInstance{
 		client: client,
 		config: resource.DatabaseInstance,
+		waiter: nil,
 	}, nil
 }
 
