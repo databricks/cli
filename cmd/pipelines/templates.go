@@ -1,12 +1,13 @@
 package pipelines
 
-const pipelineUpdateTemplate = `Update for pipeline {{- if .Update.Config }} {{ .Update.Config.Name }}{{ end }} completed successfully.
+const pipelineUpdateTemplate = `
+Update for pipeline {{- if .Update.Config }} {{ .Update.Config.Name }}{{ end }} completed successfully.
 {{- if .Update.Config }}
 Pipeline ID: {{ .Update.Config.Id }}
 {{- end }}
 {{- if and .Update.CreationTime .LastEventTime }}
 Update start time: {{ .Update.CreationTime | pretty_UTC_date_from_millis }}
-Update end time: {{ .LastEventTime }}.
+Update end time: {{ .LastEventTime }}
 {{- end }}
 Pipeline configurations for this update:
 {{- if .Update.FullRefresh }}
@@ -53,3 +54,12 @@ Pipeline configurations for this update:
 {{- end }}
 {{- end }}
 `
+
+// progressEventsTemplate is the template for displaying progress events
+const progressEventsTemplate = `{{- if .ProgressEvents }}
+{{- printf "%-25s %s\n" "Run Phase" "Duration" }}
+{{- printf "%-25s %s\n" "---------" "--------" }}
+{{- range .ProgressEvents }}
+{{- printf "%-25s %s\n" .Phase .Duration }}
+{{- end }}
+{{- end }}`

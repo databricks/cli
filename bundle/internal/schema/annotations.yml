@@ -598,6 +598,13 @@ github.com/databricks/cli/bundle/config/resources.SqlWarehousePermission:
   "user_name":
     "description": |-
       PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.VolumeGrant:
+  "principal":
+    "description": |-
+      PLACEHOLDER
+  "privileges":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/variable.Lookup:
   "alert":
     "description": |-
