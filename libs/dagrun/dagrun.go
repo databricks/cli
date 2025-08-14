@@ -63,7 +63,7 @@ func (e *CycleError[N]) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"cycle detected: %s which refers to %v via %s.",
+		"cycle detected: %s which refers to %v via %s",
 		strings.Join(parts, " "),
 		e.Nodes[0],
 		e.Edges[len(e.Edges)-1],
