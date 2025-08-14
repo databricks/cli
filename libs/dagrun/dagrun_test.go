@@ -29,8 +29,7 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 		seen        []string
 		seen_sorted []string
 		edges       []edge
-		cycle       bool
-		msg         string
+		cycle       string
 	}{
 		// disconnected graphs
 		{
@@ -61,8 +60,7 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 			edges: []edge{
 				{"A", "A", "${A.id}"},
 			},
-			cycle: true,
-			msg:   "cycle detected: A refers to itself via ${A.id}",
+			cycle: "cycle detected: A refers to itself via ${A.id}",
 		},
 		{
 			name: "two-node cycle",
@@ -70,8 +68,7 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 				{"A", "B", "${A.id}"},
 				{"B", "A", "${B.id}"},
 			},
-			cycle: true,
-			msg:   "cycle detected: A refers to B via ${A.id} which refers to A via ${B.id}",
+			cycle: "cycle detected: A refers to B via ${A.id} which refers to A via ${B.id}",
 		},
 		{
 			name: "three-node cycle",
@@ -80,7 +77,7 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 				{"Y", "Z", "e2"},
 				{"Z", "X", "e3"},
 			},
-			cycle: true,
+			cycle: "cycle detected: X refers to Y via e1 Y refers to Z via e2 which refers to X via e3",
 		},
 	}
 
@@ -95,24 +92,28 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 					g.AddDirectedEdge(stringWrapper{e.from}, stringWrapper{e.to}, e.name)
 				}
 
+				err := g.DetectCycle()
+				if tc.cycle != "" {
+					require.Error(t, err, "expected cycle, got none")
+					require.Equal(t, tc.cycle, err.Error())
+					innerCalled := 0
+					require.Panics(t, func() {
+						g.Run(p, func(n stringWrapper) {
+							innerCalled += 1
+						})
+					})
+					require.Zero(t, innerCalled)
+					return
+				}
+				require.NoError(t, err)
+
 				var mu sync.Mutex
 				var seen []string
-				err := g.Run(p, func(n stringWrapper) {
+				g.Run(p, func(n stringWrapper) {
 					mu.Lock()
 					seen = append(seen, n.Value)
 					mu.Unlock()
 				})
-
-				if tc.cycle {
-					if err == nil {
-						t.Fatalf("expected cycle, got none")
-					}
-					if tc.msg != "" && err.Error() != tc.msg {
-						t.Fatalf("wrong msg:\n got %q\nwant %q", err, tc.msg)
-					}
-				} else {
-					require.NoError(t, err)
-				}
 
 				if tc.seen != nil {
 					assert.Equal(t, tc.seen, seen)
