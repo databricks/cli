@@ -27,7 +27,7 @@ func (s *FakeWorkspace) DatabaseInstanceCreate(req Request) Response {
 	databaseInstance.PgVersion = "PG_VERSION_16"
 	databaseInstance.EffectiveNodeCount = 1
 	databaseInstance.EffectiveRetentionWindowInDays = 7
-	databaseInstance.Creator = "tester@databricks.com"
+	databaseInstance.Creator = req.Workspace.CurrentUser().UserName
 	databaseInstance.CreationTime = time.Now().UTC().Format(time.RFC3339)
 	databaseInstance.EffectiveEnableReadableSecondaries = false
 	databaseInstance.EffectiveStopped = false
