@@ -41,7 +41,6 @@ var defaultPrefixes = []string{
 	"bundle",
 	"workspace",
 	"variables",
-	"resources",
 }
 
 var optionalResolution = map[string]bool{
