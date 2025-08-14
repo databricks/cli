@@ -19,13 +19,13 @@
   "schemas": {
     "bar": {
       "catalog_name": "main",
-      "comment": "var.b=this is var.b unresolved? apps.baz.id=\"${resources.apps.baz.id}\" apps.baz.url=\"${resources.apps.baz.url}\" schemas.bar.name=unresolved? apps.baz.id=\"${resources.apps.baz.id}\" apps.baz.url=\"${resources.apps.baz.url}\" schemas.foo.name=unresolved? apps.baz.id=\"${resources.apps.baz.id}\" apps.baz.url=\"${resources.apps.baz.url}\"",
+      "comment": "var.b=this is var.b ${resources.schemas.foo.name} schemas.bar.name=${resources.schemas.bar.name} schemas.foo.name=${resources.schemas.foo.name}",
       "name": "unresolved? apps.baz.id=\"${resources.apps.baz.id}\" apps.baz.url=\"${resources.apps.baz.url}\""
     },
     "foo": {
       "catalog_name": "main",
       "comment": "unresolved? schemas.bar.non_existing:\"${resources.schemas.bar.non_existing}\"  schemas.bar.id:\"${resources.schemas.bar.id}\"",
-      "name": "unresolved? apps.baz.id=\"${resources.apps.baz.id}\" apps.baz.url=\"${resources.apps.baz.url}\""
+      "name": "${resources.schemas.bar.name}"
     }
   }
 }
