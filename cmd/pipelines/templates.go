@@ -7,7 +7,7 @@ Pipeline ID: {{ .Update.Config.Id }}
 {{- end }}
 {{- if and .Update.CreationTime .LastEventTime }}
 Update start time: {{ .Update.CreationTime | pretty_UTC_date_from_millis }}
-Update end time: {{ .LastEventTime }}.
+Update end time: {{ .LastEventTime }}
 {{- end }}
 Pipeline configurations for this update:
 {{- if .Update.FullRefresh }}

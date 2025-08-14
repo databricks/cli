@@ -54,7 +54,7 @@ func TestDisplayPipelineUpdate(t *testing.T) {
 Update for pipeline test-pipeline completed successfully.
 Pipeline ID: pipeline-789
 Update start time: 2022-01-01T00:00:00Z
-Update end time: 2022-01-01T01:00:00Z.
+Update end time: 2022-01-01T01:00:00Z
 Pipeline configurations for this update:
 • All tables are fully refreshed
 • Update cause: Manual trigger
