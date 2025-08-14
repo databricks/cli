@@ -46,7 +46,7 @@ func makeResourceGraph(ctx context.Context, b *bundle.Bundle, state resourcestat
 	isReferenced := make(map[nodeKey]bool)
 	g := dagrun.NewGraph[nodeKey]()
 
-	// Collect and sort nodes first, because MapByPatter gives them in randomized order
+	// Collect and sort nodes first, because MapByPattern gives them in randomized order
 	var nodes []nodeKey
 
 	_, err := dyn.MapByPattern(
