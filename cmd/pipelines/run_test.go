@@ -277,7 +277,6 @@ func TestDisplayProgressEventsDurations(t *testing.T) {
 		name     string
 		events   []pipelines.PipelineEvent
 		expected string
-		wantErr  bool
 	}{
 		{
 			name: "pipeline completed with all phases",
@@ -352,7 +351,6 @@ RUNNING                   750ms
 			name:     "edge cases - empty event",
 			events:   []pipelines.PipelineEvent{},
 			expected: "",
-			wantErr:  true,
 		},
 		{
 			name: "edge cases - single event",
@@ -364,7 +362,6 @@ RUNNING                   750ms
 				},
 			},
 			expected: "",
-			wantErr:  true,
 		},
 	}
 
@@ -377,12 +374,8 @@ RUNNING                   750ms
 			ctx = cmdio.InContext(ctx, cmdIO)
 
 			err := displayProgressEventsDurations(ctx, tt.events)
-			if tt.wantErr {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, tt.expected, buf.String())
-			}
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expected, buf.String())
 		})
 	}
 }
