@@ -29,12 +29,13 @@ def substitute_variables(text):
     Returns:
         Text with variables substituted
     """
+
     def replace_var(match):
         var_name = match.group(1) or match.group(2)
-        return os.environ.get(var_name, '')
+        return os.environ.get(var_name, "")
 
     # Match both $VAR and ${VAR} formats
-    pattern = r'\$\{([^}]+)\}|\$([A-Za-z_][A-Za-z0-9_]*)'
+    pattern = r"\$\{([^}]+)\}|\$([A-Za-z_][A-Za-z0-9_]*)"
     return re.sub(pattern, replace_var, text)
 
 
