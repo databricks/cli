@@ -1,8 +1,9 @@
 # NEXT CHANGELOG
 
-## Release v0.265.0
+## Release v0.264.1
 
 ### Notable Changes
+* Fixed regression in databricks auth login for OAuth redirect URL ([#3417](https://github.com/databricks/cli/pull/3417))
 
 ### Dependency updates
 
