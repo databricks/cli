@@ -5,6 +5,7 @@
 ### Notable Changes
 
 ### Dependency updates
+* Upgrade TF provider to 1.87.0 ([#3419](https://github.com/databricks/cli/pull/3419))
 
 ### CLI
 
