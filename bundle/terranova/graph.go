@@ -33,12 +33,7 @@ func (n nodeKey) String() string {
 type fieldRef struct {
 	field           dyn.Path // path to field within resource that contains the references, e.g. "description"
 	ref             dynvar.Ref
-	referencedNodes []referencedNode
-}
-
-type referencedNode struct {
-	nodeKey
-	fullRef string
+	referencedNodes []nodeKey
 }
 
 // makeResourceGraph creates node graph based on ${resources.group.name.id} references.
@@ -91,14 +86,16 @@ func makeResourceGraph(ctx context.Context, b *bundle.Bundle, state resourcestat
 
 		for _, fieldRef := range fieldRefs {
 			for _, referencedNode := range fieldRef.referencedNodes {
-				label := "${" + referencedNode.fullRef + "}"
+				// We're only supporting "id" field at the moment, so label is unambigous
+				label := "${resources." + referencedNode.Group + "." + referencedNode.Name + ".id}"
 				log.Debugf(ctx, "Adding resource edge: %s (via %#v)", label, fieldRef.ref.Str)
+				// TODO: this may add duplicate edges. Investigate if we need to prevent that
 				g.AddDirectedEdge(
-					referencedNode.nodeKey,
+					referencedNode,
 					node,
 					label,
 				)
-				isReferenced[referencedNode.nodeKey] = true
+				isReferenced[referencedNode] = true
 			}
 		}
 	}
@@ -150,18 +147,15 @@ func validateRef(root dyn.Value, ref string) (string, string, error) {
 	return items[1], items[2], nil
 }
 
-func nodeFromRef(root dyn.Value, ref dynvar.Ref) ([]referencedNode, error) {
-	var referencedNodes []referencedNode
+func nodeFromRef(root dyn.Value, ref dynvar.Ref) ([]nodeKey, error) {
+	var referencedNodes []nodeKey
 	for _, r := range ref.References() {
 		// validateRef will check resource exists in the config; this will reject references to deleted resources, no need to handle that case separately.
 		refGroup, refKey, err := validateRef(root, r)
 		if err != nil {
 			return nil, fmt.Errorf("cannot process reference %s: %w", r, err)
 		}
-		referencedNode := referencedNode{
-			nodeKey: nodeKey{refGroup, refKey},
-			fullRef: r,
-		}
+		referencedNode := nodeKey{refGroup, refKey}
 		referencedNodes = append(referencedNodes, referencedNode)
 	}
 	return referencedNodes, nil
