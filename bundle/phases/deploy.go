@@ -173,6 +173,13 @@ func deployPrepare(ctx context.Context, b *bundle.Bundle) {
 		// TransformWheelTask depends on it and planning also depends on it.
 		libraries.Upload(),
 		trampoline.TransformWheelTask(),
+
+		mutator.ResolveVariableReferencesWithoutResources(
+			"resources",
+		),
+		mutator.ResolveVariableReferencesOnlyResources(
+			"resources",
+		),
 	)
 }
 
