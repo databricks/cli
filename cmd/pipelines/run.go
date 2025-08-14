@@ -144,7 +144,7 @@ func enrichEvents(events []pipelines.PipelineEvent, endTime string) ([]ProgressE
 // Omits displaying the time of the last event.
 func displayProgressEventsDurations(ctx context.Context, events []pipelines.PipelineEvent) error {
 	if len(events) <= 1 {
-		return errors.New("no progress events to display")
+		return nil
 	}
 	progressEvents, err := enrichEvents(events[:len(events)-1], getLastEventTime(events))
 	if err != nil {
