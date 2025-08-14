@@ -10,14 +10,14 @@ Workspace:
 Validation OK!
 
 >>> musterr [CLI] bundle plan
-Error: while reading resources config: cycle detected: jobs.bar refers to jobs.foo via ${resources.jobs.bar.id} which refers to jobs.bar via ${resources.jobs.foo.id}.
+Error: while reading resources config: cycle detected: jobs.bar refers to jobs.foo via ${resources.jobs.bar.id} which refers to jobs.bar via ${resources.jobs.foo.id}
 
 
 Exit code (musterr): 1
 
 >>> musterr [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Error: while reading resources config: cycle detected: jobs.bar refers to jobs.foo via ${resources.jobs.bar.id} which refers to jobs.bar via ${resources.jobs.foo.id}.
+Error: while reading resources config: cycle detected: jobs.bar refers to jobs.foo via ${resources.jobs.bar.id} which refers to jobs.bar via ${resources.jobs.foo.id}
 
 
 Exit code (musterr): 1

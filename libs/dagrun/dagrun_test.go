@@ -71,7 +71,7 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 				{"B", "A", "${B.id}"},
 			},
 			cycle: true,
-			msg:   "cycle detected: A refers to B via ${A.id} which refers to A via ${B.id}.",
+			msg:   "cycle detected: A refers to B via ${A.id} which refers to A via ${B.id}",
 		},
 		{
 			name: "three-node cycle",
