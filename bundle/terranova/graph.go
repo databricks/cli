@@ -25,6 +25,7 @@ type nodeKey struct {
 	// TODO: Here and in other places Name is ambiguous and should be replaced with ResourceKey
 }
 
+// String() implements StringerComparable
 func (n nodeKey) String() string {
 	return n.Group + "." + n.Name
 }
@@ -42,6 +43,7 @@ type referencedNode struct {
 
 // makeResourceGraph creates node graph based on ${resources.group.name.id} references.
 // Returns a graph and a map of all references that have references to them
+// Modifies 'state' in place: all the resources found in the config are removed from state
 func makeResourceGraph(ctx context.Context, b *bundle.Bundle, state resourcestate.ExportedResourcesMap) (*dagrun.Graph[nodeKey], map[nodeKey]bool, error) {
 	isReferenced := make(map[nodeKey]bool)
 	g := dagrun.NewGraph[nodeKey]()
@@ -80,10 +82,9 @@ func makeResourceGraph(ctx context.Context, b *bundle.Bundle, state resourcestat
 		groupState := state[node.Group]
 		delete(groupState, node.Name)
 
-		n := nodeKey{node.Group, node.Name}
 		g.AddNode(node)
 
-		fieldRefs, err := extractReferences(b.Config.Value(), n)
+		fieldRefs, err := extractReferences(b.Config.Value(), node)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to read references from config for %s: %w", node.String(), err)
 		}
