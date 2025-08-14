@@ -102,7 +102,6 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 		// Extract unresolved references from a given node only.
 		// We need to do it here because we're constantly resolving references, so that's where we have latest version.
 		myReferences, err := extractReferences(b.Config.Value(), node)
-		// log.Warnf(ctx, "extract myReferences=%v", myReferences)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return
