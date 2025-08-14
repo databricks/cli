@@ -1,6 +1,7 @@
 package dagrun
 
 import (
+	"errors"
 	"fmt"
 	"sort"
 	"sync"
@@ -23,12 +24,21 @@ func (s stringWrapper) String() string {
 func TestRun_VariousGraphsAndPools(t *testing.T) {
 	pools := []int{1, 2, 3, 4}
 
+	// Define shared error instances for consistent comparison
+	stopBErr := errors.New("stopB")
+	r1Err := errors.New("r1")
+	r2Err := errors.New("r2")
+	haltErr := errors.New("halt")
+
 	tests := []struct {
 		name       string
 		nodes      []string
 		seen       []string
 		seenSorted []string
 		edges      []edge
+		errors     map[error][]stringWrapper
+		stops      map[string]error // node -> error to return
+		pools      []int            // optional override of pools to run
 		cycle      string
 	}{
 		// disconnected graphs
@@ -82,10 +92,36 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 			},
 			cycle: "cycle detected: X refers to Y via e1 Y refers to Z via e2 which refers to X via e3",
 		},
+		{
+			name:   "skip downstream on reason",
+			edges:  []edge{{"A", "B", "A->B"}, {"B", "C", "B->C"}},
+			seen:   []string{"A", "B"},
+			stops:  map[string]error{"B": stopBErr},
+			errors: map[error][]stringWrapper{stopBErr: {stringWrapper{"C"}}},
+		},
+		{
+			name:       "multiple reasons propagate to same node",
+			edges:      []edge{{"A", "D", "A->D"}, {"B", "D", "B->D"}},
+			seenSorted: []string{"A", "B"},
+			stops:      map[string]error{"A": r1Err, "B": r2Err},
+			pools:      []int{1},
+			errors:     map[error][]stringWrapper{r1Err: {stringWrapper{"D"}}},
+		},
+		{
+			name:       "same reason from multiple parents has no duplicates",
+			edges:      []edge{{"A", "C", "A->C"}, {"B", "C", "B->C"}},
+			seenSorted: []string{"A", "B"},
+			stops:      map[string]error{"A": haltErr, "B": haltErr},
+			errors:     map[error][]stringWrapper{haltErr: {stringWrapper{"C"}}},
+		},
 	}
 
 	for _, tc := range tests {
-		for _, p := range pools {
+		poolsToRun := pools
+		if len(tc.pools) > 0 {
+			poolsToRun = tc.pools
+		}
+		for _, p := range poolsToRun {
 			t.Run(tc.name+fmt.Sprintf(" pool=%d", p), func(t *testing.T) {
 				g := NewGraph[stringWrapper]()
 				for _, n := range tc.nodes {
@@ -101,8 +137,9 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 					require.Equal(t, tc.cycle, err.Error())
 					innerCalled := 0
 					require.Panics(t, func() {
-						g.Run(p, func(n stringWrapper) {
+						g.Run(p, func(n stringWrapper) error {
 							innerCalled += 1
+							return nil
 						})
 					})
 					require.Zero(t, innerCalled)
@@ -112,11 +149,14 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 
 				var mu sync.Mutex
 				var seen []string
-				g.Run(p, func(n stringWrapper) {
+				errorResults := g.Run(p, func(n stringWrapper) error {
 					mu.Lock()
 					seen = append(seen, n.Value)
 					mu.Unlock()
+					return tc.stops[n.Value]
 				})
+
+				assert.Equal(t, tc.errors, errorResults)
 
 				if tc.seen != nil {
 					assert.Equal(t, tc.seen, seen)

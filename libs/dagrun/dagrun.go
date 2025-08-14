@@ -155,7 +155,11 @@ func (g *Graph[N]) DetectCycle() error {
 	return nil
 }
 
-func (g *Graph[N]) Run(pool int, runUnit func(N)) {
+// Run executes the DAG with up to pool concurrent workers. The runUnit callback
+// may return a non-nil error indicating that all dependent nodes must
+// be skipped. The function returns a map from error to the list of nodes
+// that were not executed because of that error.
+func (g *Graph[N]) Run(pool int, runUnit func(N) error) map[error][]N {
 	if pool <= 0 || pool > len(g.adj) {
 		pool = len(g.adj)
 	}
@@ -175,19 +179,19 @@ func (g *Graph[N]) Run(pool int, runUnit func(N)) {
 		panic("dagrun: no entry points")
 	}
 
+	// nodeToError stores the first error that caused a node to be skipped.
+	nodeToError := make(map[N]error, len(in))
+	// finalized marks nodes whose outcome (executed or skipped) is already decided
+	// so we decrement the remaining counter exactly once per node.
+	finalized := make(map[N]bool, len(in))
+
 	ready := make(chan N, len(in))
-	done := make(chan N, len(in))
+	done := make(chan doneResult[N], len(in))
 
 	var wg sync.WaitGroup
 	wg.Add(pool)
 	for range pool {
-		go func() {
-			defer wg.Done()
-			for n := range ready {
-				runUnit(n)
-				done <- n
-			}
-		}()
+		go runWorkerLoop[N](&wg, ready, done, runUnit)
 	}
 
 	for _, n := range initial {
@@ -195,14 +199,75 @@ func (g *Graph[N]) Run(pool int, runUnit func(N)) {
 	}
 
 	for remaining := len(in); remaining > 0; {
-		n := <-done
-		remaining--
-		for _, e := range g.adj[n] {
+		res := <-done
+		if res.err != nil {
+			propagateCancelFrom[N](g, res.n, res.err, &remaining, finalized, nodeToError)
+		}
+		for _, e := range g.adj[res.n] {
 			if in[e.to]--; in[e.to] == 0 {
-				ready <- e.to
+				if _, blocked := nodeToError[e.to]; !blocked {
+					ready <- e.to
+				}
 			}
+		}
+		if !finalized[res.n] {
+			finalized[res.n] = true
+			remaining--
 		}
 	}
 	close(ready)
 	wg.Wait()
+
+	// Build result by grouping nodes by their recorded error in insertion order
+	var result map[error][]N
+	for _, n := range g.nodes {
+		if r, ok := nodeToError[n]; ok && r != nil {
+			if result == nil {
+				result = make(map[error][]N)
+			}
+			result[r] = append(result[r], n)
+		}
+	}
+	return result
+}
+
+type doneResult[N StringerComparable] struct {
+	n   N
+	err error
+}
+
+func runWorkerLoop[N StringerComparable](wg *sync.WaitGroup, ready <-chan N, done chan<- doneResult[N], runUnit func(N) error) {
+	defer wg.Done()
+	for n := range ready {
+		err := runUnit(n)
+		done <- doneResult[N]{n: n, err: err}
+	}
+}
+
+func propagateCancelFrom[N StringerComparable](g *Graph[N], src N, err error, remaining *int, finalized map[N]bool, nodeToError map[N]error) {
+	var queue []N
+	for _, e := range g.adj[src] {
+		if _, exists := nodeToError[e.to]; !exists {
+			nodeToError[e.to] = err
+			if !finalized[e.to] {
+				finalized[e.to] = true
+				*remaining--
+			}
+			queue = append(queue, e.to)
+		}
+	}
+	for len(queue) > 0 {
+		n := queue[0]
+		queue = queue[1:]
+		for _, e := range g.adj[n] {
+			if _, exists := nodeToError[e.to]; !exists {
+				nodeToError[e.to] = err
+				if !finalized[e.to] {
+					finalized[e.to] = true
+					*remaining--
+				}
+				queue = append(queue, e.to)
+			}
+		}
+	}
 }
