@@ -18,6 +18,7 @@ Resources:
   Database instances:
     my_database:
       Name: test-database-instance-[UNIQUE_NAME]
+      URL:  (not deployed)
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-single-instance-[UNIQUE_NAME]/default/files...

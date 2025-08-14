@@ -7,8 +7,7 @@ trap cleanup EXIT
 
 trace $CLI bundle validate
 
-# URL is excluded because some cloud envs add an ?0= query param and some don't
-trace $CLI bundle summary | grep -v "URL"
+trace $CLI bundle summary
 
 trace $CLI bundle deploy
 
