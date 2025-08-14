@@ -1,0 +1,35 @@
+
+>>> [PIPELINES] deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-run/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
+
+=== Run pipeline
+>>> [PIPELINES] run
+Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/test-update-123
+
+[TIMESTAMP] update_progress  "Update test-update-123 is WAITING_FOR_RESOURCES."
+[TIMESTAMP] update_progress  "Update test-update-123 is STARTING."
+[TIMESTAMP] update_progress  "Update test-update-123 is RUNNING."
+[TIMESTAMP] update_progress  "Update test-update-123 is COMPLETING."
+[TIMESTAMP] update_progress  "Update test-update-123 is COMPLETED."
+Update ID: test-update-123
+
+Update for pipeline test-pipeline completed successfully.
+Pipeline ID: test-pipeline-789
+Update start time: [TIMESTAMP]Z
+Update end time: [TIMESTAMP]Z
+Pipeline configurations for this update:
+• All tables are fully refreshed
+• Update cause: Manual trigger
+• Serverless compute
+• Channel: CURRENT
+• Continuous pipeline
+• Development mode
+• Catalog: test_catalog
+• Schema: test_schema
+Error: failed to fetch and display pipeline update: failed to enrich progress events: second event timestamp must be after first event timestamp
+
+Exit code: 1
