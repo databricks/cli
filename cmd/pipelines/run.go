@@ -48,17 +48,17 @@ type ProgressEventsData struct {
 
 // phaseFromUpdateProgress extracts the phase name from an event message by checking if it contains any of the UpdateInfoState values
 // Example: "Update 6fc8a8 is WAITING_FOR_RESOURCES." -> "WAITING_FOR_RESOURCES"
-func phaseFromUpdateProgress(eventMessage string) string {
+func phaseFromUpdateProgress(eventMessage string) (string, error) {
 	var updateInfoState pipelines.UpdateInfoState
 	updateInfoStates := updateInfoState.Values()
 
 	for _, state := range updateInfoStates {
 		if strings.Contains(eventMessage, string(state)) {
-			return string(state)
+			return string(state), nil
 		}
 	}
 
-	return ""
+	return "", fmt.Errorf("no phase found in message: %s", eventMessage)
 }
 
 // readableDuration returns a readable duration string for a given duration.
@@ -126,10 +126,14 @@ func enrichEvents(events []pipelines.PipelineEvent, endTime string) ([]ProgressE
 		if err != nil {
 			return nil, err
 		}
+		phase, err := phaseFromUpdateProgress(event.Message)
+		if err != nil {
+			return nil, err
+		}
 		progressEventsWithDuration = append(progressEventsWithDuration, ProgressEventWithDuration{
 			Event:    event,
 			Duration: readableDuration,
-			Phase:    phaseFromUpdateProgress(event.Message),
+			Phase:    phase,
 		})
 	}
 
