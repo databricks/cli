@@ -23,6 +23,17 @@ const (
 	VolumeGrantPrivilegeWriteVolume   VolumeGrantPrivilege = "WRITE_VOLUME"
 )
 
+// Values returns all valid VolumeGrantPrivilege values
+func (VolumeGrantPrivilege) Values() []VolumeGrantPrivilege {
+	return []VolumeGrantPrivilege{
+		VolumeGrantPrivilegeAllPrivileges,
+		VolumeGrantPrivilegeApplyTag,
+		VolumeGrantPrivilegeManage,
+		VolumeGrantPrivilegeReadVolume,
+		VolumeGrantPrivilegeWriteVolume,
+	}
+}
+
 type VolumeGrant struct {
 	Privileges []VolumeGrantPrivilege `json:"privileges"`
 
