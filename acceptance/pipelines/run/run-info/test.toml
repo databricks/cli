@@ -32,29 +32,34 @@ Response.Body = '''
 {
   "events": [
     {
-      "timestamp": "2022-01-01T00:00:10.500Z",
+      "timestamp": "2022-01-01T00:00:01.000Z",
       "event_type": "update_progress",
-      "message": "Update test-update-123 is COMPLETED."
+      "message": "Update test-update-123 is CREATED."
     },
     {
-      "timestamp": "2022-01-01T00:00:05.800Z",
+      "timestamp": "2022-01-01T00:00:02.000Z",
       "event_type": "update_progress",
-      "message": "Update test-update-123 is COMPLETING."
+      "message": "Update test-update-123 is WAITING_FOR_RESOURCES."
     },
     {
-      "timestamp": "2022-01-01T00:00:01.200Z",
+      "timestamp": "2022-01-01T00:00:03.000Z",
+      "event_type": "update_progress",
+      "message": "Update test-update-123 is INITIALIZING."
+    },
+    {
+      "timestamp": "2022-01-01T00:00:04.000Z",
+      "event_type": "update_progress",
+      "message": "Update test-update-123 is SETTING_UP_TABLES."
+    },
+    {
+      "timestamp": "2022-01-01T00:00:05.000Z",
       "event_type": "update_progress",
       "message": "Update test-update-123 is RUNNING."
     },
     {
-      "timestamp": "2022-01-01T00:00:00.500Z",
+      "timestamp": "2022-01-01T00:01:30.000Z",
       "event_type": "update_progress",
-      "message": "Update test-update-123 is STARTING."
-    },
-    {
-      "timestamp": "2022-01-01T00:00:00.000Z",
-      "event_type": "update_progress",
-      "message": "Update test-update-123 is WAITING_FOR_RESOURCES."
+      "message": "Update test-update-123 is COMPLETED."
     }
   ]
 }
