@@ -5,7 +5,7 @@ if [ -z "$CLOUD_ENV" ]; then
 fi
 
 export DASHBOARD_DISPLAY_NAME
-envsubst < databricks.yml.tmpl > databricks.yml
+envsubst.py < databricks.yml.tmpl > databricks.yml
 
 # Create a pre-defined dashboard:
 DASHBOARD_ID=$($CLI lakeview create --display-name "${DASHBOARD_DISPLAY_NAME}" --warehouse-id "${TEST_DEFAULT_WAREHOUSE_ID}" --serialized-dashboard '{"pages":[{"name":"02724bf2","displayName":"Untitled page"}]}' | jq -r '.dashboard_id')

@@ -1,5 +1,5 @@
-envsubst < databricks.yml.tmpl > databricks.yml
-envsubst < pipeline.json.tmpl > pipeline.json
+envsubst.py < databricks.yml.tmpl > databricks.yml
+envsubst.py < pipeline.json.tmpl > pipeline.json
 touch foo.py
 
 cleanup() {

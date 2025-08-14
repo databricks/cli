@@ -22,7 +22,7 @@ assert os.path.exists(TEMPLATE), TEMPLATE
 
 for section in SECTIONS:
     os.environ["SECTION"] = section
-    os.system(f"envsubst < {TEMPLATE} > databricks.yml")
+    os.system(f"envsubst.py < {TEMPLATE} > databricks.yml")
     print(f"\n=== resources.{section}.rname ===", flush=True)
 
     ret = os.system(CLI + " bundle validate -o json | jq .resources")

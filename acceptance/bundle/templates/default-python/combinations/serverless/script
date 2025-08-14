@@ -1,4 +1,4 @@
-envsubst < $TESTDIR/../input.json.tmpl > input.json
+envsubst.py < $TESTDIR/../input.json.tmpl > input.json
 trace $CLI bundle init default-python --config-file ./input.json
 
 cd ./X*

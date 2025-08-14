@@ -5,7 +5,7 @@
 # Because of deploy (2), the locally cached state of bundle instance A should be stale.
 # Then for deploy (3), it must use the remote state over the stale local state.
 
-envsubst < databricks.yml.tmpl > databricks.yml
+envsubst.py < databricks.yml.tmpl > databricks.yml
 
 # Create two separate bundle directories to simulate two bundle instances
 BUNDLE_A_DIR="$TEST_TMP_DIR/bundle_a"
