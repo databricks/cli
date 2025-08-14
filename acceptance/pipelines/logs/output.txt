@@ -4,17 +4,10 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/pipelines-logs/def
 Deploying resources...
 Updating deployment state...
 Deployment complete!
+View your pipeline test-logs here: [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
 
-=== Calling logs without PIPELINE_ID should return an error
+=== Calling logs
 >>> errcode [PIPELINES] logs
-Error: Provide a PIPELINE_ID.
+Error: failed to get most recent update ID: No stub found for pattern: GET /api/2.0/pipelines/[UUID]/updates
 
 Exit code: 1
-
-=== Test pipelines logs, will be empty but shows the request to get events
->>> [PIPELINES] logs [UUID]
-[]
-{
-  "method": "GET",
-  "path": "/api/2.0/pipelines/[UUID]/events"
-}

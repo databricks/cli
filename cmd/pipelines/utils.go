@@ -22,17 +22,14 @@ import (
 )
 
 // Copied from cmd/bundle/run.go
-// promptRunnablePipeline prompts the user to select a runnable pipeline.
-// If pipelinesOnly is true, only include pipeline resources.
-func promptRunnablePipeline(ctx context.Context, b *bundle.Bundle, pipelinesOnly bool) (string, error) {
+// promptResource prompts the user to select a pipeline.
+// If filter is provided, only resources that pass the filter will be included.
+func promptResource(ctx context.Context, b *bundle.Bundle, filters ...resources.Filter) (string, error) {
 	// Compute map of "Human readable name of resource" -> "resource key".
 	inv := make(map[string]string)
-	for k, ref := range resources.Completions(b, run.IsRunnable) {
-		if pipelinesOnly {
-			if _, ok := ref.Resource.(*configresources.Pipeline); !ok {
-				continue
-			}
-		}
+	completions := resources.Completions(b, filters...)
+
+	for k, ref := range completions {
 		title := fmt.Sprintf("%s: %s", ref.Description.SingularTitle, ref.Resource.GetName())
 		inv[title] = k
 	}
@@ -71,7 +68,7 @@ func resolveRunArgument(ctx context.Context, b *bundle.Bundle, args []string) (s
 		}
 
 		if cmdio.IsPromptSupported(ctx) {
-			key, err := promptRunnablePipeline(ctx, b, false)
+			key, err := promptResource(ctx, b, run.IsRunnable)
 			if err != nil {
 				return "", nil, err
 			}
