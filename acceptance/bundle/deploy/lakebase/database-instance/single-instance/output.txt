@@ -51,7 +51,7 @@ Resources:
   Database instances:
     my_database:
       Name: test-database-instance-[UNIQUE_NAME]
-      URL:  [DATABRICKS_URL]/compute/database-instances/test-databsase-instance-[UNIQUE_NAME]
+      URL:  [DATABRICKS_URL]/compute/database-instances/test-database-instance-[UNIQUE_NAME]
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
