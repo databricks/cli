@@ -1,5 +1,11 @@
 # Version changelog
 
+## Release v0.264.2
+
+### Notable Changes
+* Revert ([#3370](https://github.com/databricks/cli/pull/3370)) "Resolve $resources as regular variables if set by user". This breaks deployments due to swapping the order of resolution and preset application.
+
+
 ## Release v0.264.1
 
 ### Notable Changes
