@@ -180,31 +180,29 @@ func resolveIDReference(ctx context.Context, b *bundle.Bundle, group, resourceNa
 		return errors.New("internal error: no db entry")
 	}
 
-	bundle.ApplyFuncContext(ctx, b, func(ctx context.Context, b *bundle.Bundle) {
-		err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
-			root, err := dynvar.Resolve(root, func(path dyn.Path) (dyn.Value, error) {
-				if slices.Equal(path, mypath) {
-					return dyn.V(idValue), nil
-				}
-				return dyn.InvalidValue, dynvar.ErrSkipResolution
-			})
-			if err != nil {
-				return root, err
+	err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
+		root, err := dynvar.Resolve(root, func(path dyn.Path) (dyn.Value, error) {
+			if slices.Equal(path, mypath) {
+				return dyn.V(idValue), nil
 			}
-			// Following resolve_variable_references.go, normalize after variable substitution.
-			// This fixes the following case: ${resources.jobs.foo.id} is replaced by string "12345"
-			// This string corresponds to job_id integer field. Normalization converts "12345" to 12345.
-			// Without normalization there will be an error when converting dynamic value to typed.
-			root, diags := convert.Normalize(b.Config, root)
-			for _, d := range diags {
-				logdiag.LogDiag(ctx, d)
-			}
-			return root, nil
+			return dyn.InvalidValue, dynvar.ErrSkipResolution
 		})
 		if err != nil {
-			logdiag.LogError(ctx, err)
+			return root, err
 		}
+		// Following resolve_variable_references.go, normalize after variable substitution.
+		// This fixes the following case: ${resources.jobs.foo.id} is replaced by string "12345"
+		// This string corresponds to job_id integer field. Normalization converts "12345" to 12345.
+		// Without normalization there will be an error when converting dynamic value to typed.
+		root, diags := convert.Normalize(b.Config, root)
+		for _, d := range diags {
+			logdiag.LogDiag(ctx, d)
+		}
+		return root, nil
 	})
+	if err != nil {
+		logdiag.LogError(ctx, err)
+	}
 
 	if logdiag.HasError(ctx) {
 		return errors.New("failed to update bundle config")
