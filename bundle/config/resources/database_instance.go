@@ -58,7 +58,7 @@ func (d *DatabaseInstance) GetURL() string {
 }
 
 func (d *DatabaseInstance) InitializeURL(baseURL url.URL) {
-	if d.ModifiedStatus == "" || d.ModifiedStatus == ModifiedStatusCreated {
+	if d.ModifiedStatus == ModifiedStatusCreated {
 		return
 	}
 	if d.Name == "" {
