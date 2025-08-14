@@ -150,15 +150,26 @@ func (g *Graph[N]) DetectCycle() error {
 	return nil
 }
 
-func (g *Graph[N]) Run(pool int, runUnit func(N)) error {
-	if err := g.DetectCycle(); err != nil {
-		return err
-	}
+func (g *Graph[N]) Run(pool int, runUnit func(N)) {
 	if pool <= 0 || pool > len(g.adj) {
 		pool = len(g.adj)
 	}
 
 	in := g.indegrees()
+
+	// Prepare initial ready nodes in stable insertion order
+	var initial []N
+	for _, n := range g.nodes {
+		if in[n] == 0 {
+			initial = append(initial, n)
+		}
+	}
+
+	// If there are nodes but no entry points, the run cannot start
+	if len(in) > 0 && len(initial) == 0 {
+		panic("dagrun: no entry points")
+	}
+
 	ready := make(chan N, len(in))
 	done := make(chan N, len(in))
 
@@ -174,11 +185,8 @@ func (g *Graph[N]) Run(pool int, runUnit func(N)) error {
 		}()
 	}
 
-	// stable initial-ready order based on insertion order
-	for _, n := range g.nodes {
-		if in[n] == 0 {
-			ready <- n
-		}
+	for _, n := range initial {
+		ready <- n
 	}
 
 	for remaining := len(in); remaining > 0; {
@@ -192,5 +200,4 @@ func (g *Graph[N]) Run(pool int, runUnit func(N)) error {
 	}
 	close(ready)
 	wg.Wait()
-	return nil
 }
