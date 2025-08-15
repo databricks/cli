@@ -175,9 +175,6 @@ func deployPrepare(ctx context.Context, b *bundle.Bundle) {
 		libraries.Upload(),
 		trampoline.TransformWheelTask(),
 
-		mutator.ResolveVariableReferencesWithoutResources(
-			"resources",
-		),
 		mutator.ResolveVariableReferencesOnlyResources(
 			"resources",
 		),
