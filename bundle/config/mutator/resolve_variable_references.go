@@ -43,13 +43,6 @@ var defaultPrefixes = []string{
 	"variables",
 }
 
-var optionalResolution = map[string]bool{
-	// Enables different mode for resolution:
-	//  - normalization is not done, if field is not set by user it's missing
-	//  - if field is missing (either it's a valid field but not set or invalid field), it remains unresolved, no error
-	"resources": true,
-}
-
 var artifactPath = dyn.MustPathFromString("artifacts")
 
 type resolveVariableReferences struct {
@@ -236,7 +229,7 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn
 				// Perform resolution only if the path starts with one of the specified prefixes.
 				for _, prefix := range prefixes {
 					if path.HasPrefix(prefix) {
-						isOpt := optionalResolution[prefix[0].Key()]
+						isOpt := prefix[0].Key() == "resources"
 						var value dyn.Value
 						var err error
 						if isOpt {
