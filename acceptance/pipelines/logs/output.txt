@@ -6,8 +6,168 @@ Updating deployment state...
 Deployment complete!
 View your pipeline test-logs here: [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
 
+>>> [PIPELINES] run
+Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
+
+[TIMESTAMP] flow_progress   INFO "Flow 'main.sample_flow' has COMPLETED."
+[TIMESTAMP] update_progress INFO "Update test-update-123 is COMPLETED."
+Update ID: [UUID]
+Update for pipeline completed successfully.
+Pipeline configurations for this update:
+• All tables are refreshed
+
 === Calling logs
 >>> errcode [PIPELINES] logs
-Error: failed to get most recent update ID: No stub found for pattern: GET /api/2.0/pipelines/[UUID]/updates
+[
+  {
+    "event_type":"update_progress",
+    "id":"[UUID]",
+    "level":"INFO",
+    "maturity_level":"STABLE",
+    "message":"Update test-update-123 is COMPLETED.",
+    "origin": {
+      "cloud":"AWS",
+      "cluster_id":"0814-205739-12ocjw2e-v2n",
+      "org_id":[NUMID],
+      "pipeline_id":"{pipeline_id}",
+      "pipeline_name":"[dev] test_pipeline",
+      "region":"us-west-2",
+      "request_id":"test-request-123",
+      "update_id":"test-update-123"
+    },
+    "sequence": {
+      "control_plane_seq_no":[NUMID],
+      "data_plane_id": {
+        "instance":"execution",
+        "seq_no":[NUMID]
+      }
+    },
+    "timestamp":"[TIMESTAMP]"
+  },
+  {
+    "event_type":"flow_progress",
+    "id":"[UUID]",
+    "level":"INFO",
+    "maturity_level":"STABLE",
+    "message":"Flow 'main.sample_flow' has COMPLETED.",
+    "origin": {
+      "batch_id":0,
+      "cloud":"AWS",
+      "cluster_id":"0814-205739-12ocjw2e-v2n",
+      "flow_id":"[UUID]",
+      "flow_name":"main.sample_flow",
+      "org_id":[NUMID],
+      "pipeline_id":"{pipeline_id}",
+      "pipeline_name":"[dev] test_pipeline",
+      "region":"us-west-2",
+      "request_id":"test-request-123",
+      "update_id":"test-update-123"
+    },
+    "sequence": {
+      "control_plane_seq_no":[NUMID],
+      "data_plane_id": {
+        "instance":"execution",
+        "seq_no":[NUMID]
+      }
+    },
+    "timestamp":"[TIMESTAMP]"
+  },
+  {
+    "event_type":"create_update",
+    "id":"[UUID]",
+    "level":"INFO",
+    "maturity_level":"STABLE",
+    "message":"Update test-update-123 started by API_CALL.",
+    "origin": {
+      "cloud":"AWS",
+      "org_id":[NUMID],
+      "pipeline_id":"{pipeline_id}",
+      "pipeline_name":"[dev] test_pipeline",
+      "region":"us-west-2",
+      "request_id":"test-request-123",
+      "update_id":"test-update-123"
+    },
+    "sequence": {
+      "control_plane_seq_no":[NUMID]
+    },
+    "timestamp":"[TIMESTAMP]"
+  }
+]
 
-Exit code: 1
+=== Calling logs with pipeline name
+>>> errcode [PIPELINES] logs test-logs
+[
+  {
+    "event_type":"update_progress",
+    "id":"[UUID]",
+    "level":"INFO",
+    "maturity_level":"STABLE",
+    "message":"Update test-update-123 is COMPLETED.",
+    "origin": {
+      "cloud":"AWS",
+      "cluster_id":"0814-205739-12ocjw2e-v2n",
+      "org_id":[NUMID],
+      "pipeline_id":"{pipeline_id}",
+      "pipeline_name":"[dev] test_pipeline",
+      "region":"us-west-2",
+      "request_id":"test-request-123",
+      "update_id":"test-update-123"
+    },
+    "sequence": {
+      "control_plane_seq_no":[NUMID],
+      "data_plane_id": {
+        "instance":"execution",
+        "seq_no":[NUMID]
+      }
+    },
+    "timestamp":"[TIMESTAMP]"
+  },
+  {
+    "event_type":"flow_progress",
+    "id":"[UUID]",
+    "level":"INFO",
+    "maturity_level":"STABLE",
+    "message":"Flow 'main.sample_flow' has COMPLETED.",
+    "origin": {
+      "batch_id":0,
+      "cloud":"AWS",
+      "cluster_id":"0814-205739-12ocjw2e-v2n",
+      "flow_id":"[UUID]",
+      "flow_name":"main.sample_flow",
+      "org_id":[NUMID],
+      "pipeline_id":"{pipeline_id}",
+      "pipeline_name":"[dev] test_pipeline",
+      "region":"us-west-2",
+      "request_id":"test-request-123",
+      "update_id":"test-update-123"
+    },
+    "sequence": {
+      "control_plane_seq_no":[NUMID],
+      "data_plane_id": {
+        "instance":"execution",
+        "seq_no":[NUMID]
+      }
+    },
+    "timestamp":"[TIMESTAMP]"
+  },
+  {
+    "event_type":"create_update",
+    "id":"[UUID]",
+    "level":"INFO",
+    "maturity_level":"STABLE",
+    "message":"Update test-update-123 started by API_CALL.",
+    "origin": {
+      "cloud":"AWS",
+      "org_id":[NUMID],
+      "pipeline_id":"{pipeline_id}",
+      "pipeline_name":"[dev] test_pipeline",
+      "region":"us-west-2",
+      "request_id":"test-request-123",
+      "update_id":"test-update-123"
+    },
+    "sequence": {
+      "control_plane_seq_no":[NUMID]
+    },
+    "timestamp":"[TIMESTAMP]"
+  }
+]

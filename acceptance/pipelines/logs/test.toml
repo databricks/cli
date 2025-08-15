@@ -1,1 +1,83 @@
 RecordRequests = true
+
+[[Server]]
+Pattern = "GET /api/2.0/pipelines/{pipeline_id}/events"
+Response.Body = '''
+{
+  "events": [
+    {
+      "event_type": "update_progress",
+      "id": "ceb9cb80-7951-11f0-9021-062ab6491f5e",
+      "level": "INFO",
+      "maturity_level": "STABLE",
+      "message": "Update test-update-123 is COMPLETED.",
+      "origin": {
+        "cloud": "AWS",
+        "cluster_id": "0814-205739-12ocjw2e-v2n",
+        "org_id": 6051921418418893,
+        "pipeline_id": "{pipeline_id}",
+        "pipeline_name": "[dev] test_pipeline",
+        "region": "us-west-2",
+        "request_id": "test-request-123",
+        "update_id": "test-update-123"
+      },
+      "sequence": {
+        "control_plane_seq_no": 1755205271893001,
+        "data_plane_id": {
+          "instance": "execution",
+          "seq_no": 1755205211111035
+        }
+      },
+      "timestamp": "2025-08-14T21:01:11.608Z"
+    },
+    {
+      "event_type": "flow_progress",
+      "id": "cda32b60-7951-11f0-9021-062ab6491f5e",
+      "level": "INFO",
+      "maturity_level": "STABLE",
+      "message": "Flow 'main.sample_flow' has COMPLETED.",
+      "origin": {
+        "batch_id": 0,
+        "cloud": "AWS",
+        "cluster_id": "0814-205739-12ocjw2e-v2n",
+        "flow_id": "c1e4a47a-d541-422a-9e6f-55a43401616e",
+        "flow_name": "main.sample_flow",
+        "org_id": 6051921418418893,
+        "pipeline_id": "{pipeline_id}",
+        "pipeline_name": "[dev] test_pipeline",
+        "region": "us-west-2",
+        "request_id": "test-request-123",
+        "update_id": "test-update-123"
+      },
+      "sequence": {
+        "control_plane_seq_no": 1755205271889001,
+        "data_plane_id": {
+          "instance": "execution",
+          "seq_no": 1755205211111029
+        }
+      },
+      "timestamp": "2025-08-14T21:01:09.782Z"
+    },
+    {
+      "event_type": "create_update",
+      "id": "50600fb0-7951-11f0-b444-2aadc8af799d",
+      "level": "INFO",
+      "maturity_level": "STABLE",
+      "message": "Update test-update-123 started by API_CALL.",
+      "origin": {
+        "cloud": "AWS",
+        "org_id": 6051921418418893,
+        "pipeline_id": "{pipeline_id}",
+        "pipeline_name": "[dev] test_pipeline",
+        "region": "us-west-2",
+        "request_id": "test-request-123",
+        "update_id": "test-update-123"
+      },
+      "sequence": {
+        "control_plane_seq_no": 1755205059628001
+      },
+      "timestamp": "2025-08-14T20:57:39.627Z"
+    }
+  ]
+}
+'''

@@ -1,11 +1,8 @@
-print_requests() {
-    jq --sort-keys 'select((.path | contains("/events")) and (.path | contains("/pipelines")))' < out.requests.txt
-    rm out.requests.txt
-}
-
 trace $PIPELINES deploy
-rm out.requests.txt
+trace $PIPELINES run
 
 title "Calling logs"
 trace errcode $PIPELINES logs
-print_requests
+
+title "Calling logs with pipeline name"
+trace errcode $PIPELINES logs test-logs
