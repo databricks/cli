@@ -315,7 +315,7 @@ func updatesAfter(updates []pipelines.UpdateInfo, ts int64) []pipelines.UpdateIn
 // assuming updates are in descending order, largest CreationTime first.
 // Time is in milliseconds since epoch. If time is nil, it is ignored.
 func filterUpdates(updates []pipelines.UpdateInfo, startTime, endTime *int64) ([]pipelines.UpdateInfo, error) {
-	if (startTime == nil && endTime == nil) || (updates[0].CreationTime <= *endTime && updates[len(updates)-1].CreationTime >= *startTime) {
+	if (endTime == nil || updates[0].CreationTime <= *endTime) && (startTime == nil || updates[len(updates)-1].CreationTime >= *startTime) {
 		return updates, nil
 	}
 
