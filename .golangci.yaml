@@ -15,6 +15,7 @@ linters:
     - unconvert
     - unused
     - exhaustruct
+    - copyloopvar
   settings:
     copyloopvar:
       check-alias: true

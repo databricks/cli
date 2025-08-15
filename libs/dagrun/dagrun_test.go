@@ -77,7 +77,6 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		tc := tc
 		for _, p := range pools {
 			t.Run(tc.name+fmt.Sprintf(" pool=%d", p), func(t *testing.T) {
 				g := NewGraph[stringWrapper]()
