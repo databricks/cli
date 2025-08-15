@@ -270,16 +270,17 @@ func parseAndFormatTimestamp(timestamp string) (string, error) {
 }
 
 // parseTimeToUnixMillis parses a time string and returns the number of milliseconds since epoch in UTC.
-func parseTimeToUnixMillis(timeStr string) (int64, error) {
+func parseTimeToUnixMillis(timeStr string) (*int64, error) {
 	if timeStr == "" {
-		return 0, nil
+		return nil, nil
 	}
 
 	t, err := time.Parse(time.RFC3339Nano, timeStr)
 	if err != nil {
-		return 0, fmt.Errorf("invalid time format. Expected format: 2025-01-15T10:30:00Z (YYYY-MM-DDTHH:MM:SSZ), got: %s", timeStr)
+		return nil, fmt.Errorf("invalid time format. Expected format: 2025-01-15T10:30:00Z (YYYY-MM-DDTHH:MM:SSZ), got: %s", timeStr)
 	}
-	return t.UnixMilli(), nil
+	unixMillis := t.UnixMilli()
+	return &unixMillis, nil
 }
 
 // updatesBefore returns all updates with CreationTime <= ts
@@ -312,40 +313,38 @@ func updatesAfter(updates []pipelines.UpdateInfo, ts int64) []pipelines.UpdateIn
 
 // filterUpdates filters for updates within the startTime and endTime,
 // assuming updates are in descending order, largest CreationTime first.
-// Time is in milliseconds since epoch. If time is 0, it is ignored.
-func filterUpdates(updates []pipelines.UpdateInfo, startTime, endTime int64) ([]pipelines.UpdateInfo, error) {
-	if (startTime == 0 && endTime == 0) || (updates[0].CreationTime <= endTime && updates[len(updates)-1].CreationTime >= startTime) {
+// Time is in milliseconds since epoch. If time is nil, it is ignored.
+func filterUpdates(updates []pipelines.UpdateInfo, startTime, endTime *int64) ([]pipelines.UpdateInfo, error) {
+	if (startTime == nil && endTime == nil) || (updates[0].CreationTime <= *endTime && updates[len(updates)-1].CreationTime >= *startTime) {
 		return updates, nil
 	}
 
-	if startTime > 0 && updates[0].CreationTime < startTime {
+	if startTime != nil && updates[0].CreationTime < *startTime {
 		return nil, nil
 	}
 
-	if endTime > 0 && updates[len(updates)-1].CreationTime > endTime {
+	if endTime != nil && updates[len(updates)-1].CreationTime > *endTime {
 		return nil, nil
 	}
 
-	if startTime > 0 {
-		updates = updatesAfter(updates, startTime)
+	if startTime != nil {
+		updates = updatesAfter(updates, *startTime)
 	}
 
-	if endTime > 0 {
-		updates = updatesBefore(updates, endTime)
+	if endTime != nil {
+		updates = updatesBefore(updates, *endTime)
 	}
 
 	return updates, nil
 }
 
 // fetchPipelineUpdates fetches pipeline updates with optional filtering by time.
-// Time is in milliseconds since epoch. If time is 0, it is ignored.
-// If number is 0, all updates are fetched.
-// Otherwise, keeps fetching until at most number updates are fetched or there are no more updates.
-func fetchPipelineUpdates(ctx context.Context, w *databricks.WorkspaceClient, number int, startTime, endTime int64, pipelineId string) ([]pipelines.UpdateInfo, error) {
+// Time is in milliseconds since epoch. If time is nil, it is ignored.
+func fetchPipelineUpdates(ctx context.Context, w *databricks.WorkspaceClient, startTime, endTime *int64, pipelineId string) ([]pipelines.UpdateInfo, error) {
 	var updates []pipelines.UpdateInfo
 	var pageToken string
 
-	for len(updates) < number || number == 0 {
+	for {
 		request := pipelines.ListUpdatesRequest{
 			PipelineId: pipelineId,
 		}
@@ -371,8 +370,5 @@ func fetchPipelineUpdates(ctx context.Context, w *databricks.WorkspaceClient, nu
 		pageToken = response.NextPageToken
 	}
 
-	if len(updates) > number && number > 0 {
-		updates = updates[:number]
-	}
 	return updates, nil
 }

@@ -23,7 +23,6 @@ func historyCommand() *cobra.Command {
 		Long:  `Retrieve past runs for a pipeline identified by KEY, the unique name of the pipeline as defined in its YAML file.`,
 	}
 
-	var number int
 	var startTimeStr string
 	var endTimeStr string
 
@@ -33,7 +32,6 @@ func historyCommand() *cobra.Command {
 	}
 
 	historyGroup := cmdgroup.NewFlagGroup("Filter")
-	historyGroup.FlagSet().IntVarP(&number, "number", "n", 25, "Number of entries in output.")
 	historyGroup.FlagSet().StringVar(&startTimeStr, "start-time", "", "Filter updates after this time (format: 2025-01-15T10:30:00Z)")
 	historyGroup.FlagSet().StringVar(&endTimeStr, "end-time", "", "Filter updates before this time (format: 2025-01-15T10:30:00Z)")
 	wrappedCmd := cmdgroup.NewCommandWithGroupFlag(cmd)
@@ -74,17 +72,17 @@ func historyCommand() *cobra.Command {
 
 		w := b.WorkspaceClient()
 
-		startTimeMs, err := parseTimeToUnixMillis(startTimeStr)
+		startTimePtr, err := parseTimeToUnixMillis(startTimeStr)
 		if err != nil {
 			return err
 		}
 
-		endTimeMs, err := parseTimeToUnixMillis(endTimeStr)
+		endTimePtr, err := parseTimeToUnixMillis(endTimeStr)
 		if err != nil {
 			return err
 		}
 
-		updates, err := fetchPipelineUpdates(ctx, w, number, startTimeMs, endTimeMs, pipelineId)
+		updates, err := fetchPipelineUpdates(ctx, w, startTimePtr, endTimePtr, pipelineId)
 		if err != nil {
 			return fmt.Errorf("failed to fetch pipeline updates: %w", err)
 		}

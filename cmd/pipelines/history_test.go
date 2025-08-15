@@ -18,31 +18,31 @@ func TestUpdatesBefore(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		timestamp     int64
+		timestamp     *int64
 		expectedCount int
 		expectedFirst int64
 	}{
 		{
 			name:          "before 700",
-			timestamp:     700,
+			timestamp:     int64Ptr(700),
 			expectedCount: 3,
 			expectedFirst: 600,
 		},
 		{
 			name:          "before 1000",
-			timestamp:     1000,
+			timestamp:     int64Ptr(1000),
 			expectedCount: 5,
 			expectedFirst: 1000,
 		},
 		{
 			name:          "before 200",
-			timestamp:     200,
+			timestamp:     int64Ptr(200),
 			expectedCount: 1,
 			expectedFirst: 200,
 		},
 		{
 			name:          "before 100",
-			timestamp:     100,
+			timestamp:     int64Ptr(100),
 			expectedCount: 0,
 			expectedFirst: 0,
 		},
@@ -50,12 +50,12 @@ func TestUpdatesBefore(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := updatesBefore(updates, tt.timestamp)
+			result := updatesBefore(updates, *tt.timestamp)
 			if len(result) != tt.expectedCount {
-				t.Errorf("updatesBefore(updates, %d) returned %d updates, want %d", tt.timestamp, len(result), tt.expectedCount)
+				t.Errorf("updatesBefore(updates, %d) returned %d updates, want %d", *tt.timestamp, len(result), tt.expectedCount)
 			}
 			if tt.expectedCount > 0 && result[0].CreationTime != tt.expectedFirst {
-				t.Errorf("updatesBefore(updates, %d) first update = %d, want %d", tt.timestamp, result[0].CreationTime, tt.expectedFirst)
+				t.Errorf("updatesBefore(updates, %d) first update = %d, want %d", *tt.timestamp, result[0].CreationTime, tt.expectedFirst)
 			}
 		})
 	}
@@ -73,31 +73,31 @@ func TestUpdatesAfter(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		timestamp     int64
+		timestamp     *int64
 		expectedCount int
 		expectedFirst int64
 	}{
 		{
 			name:          "after 500",
-			timestamp:     500,
+			timestamp:     int64Ptr(500),
 			expectedCount: 3,
 			expectedFirst: 1000,
 		},
 		{
 			name:          "after 200",
-			timestamp:     200,
+			timestamp:     int64Ptr(200),
 			expectedCount: 5,
 			expectedFirst: 1000,
 		},
 		{
 			name:          "after 1000",
-			timestamp:     1000,
+			timestamp:     int64Ptr(1000),
 			expectedCount: 1,
 			expectedFirst: 1000,
 		},
 		{
 			name:          "after 1200",
-			timestamp:     1200,
+			timestamp:     int64Ptr(1200),
 			expectedCount: 0,
 			expectedFirst: 0,
 		},
@@ -105,12 +105,12 @@ func TestUpdatesAfter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := updatesAfter(updates, tt.timestamp)
+			result := updatesAfter(updates, *tt.timestamp)
 			if len(result) != tt.expectedCount {
-				t.Errorf("updatesAfter(updates, %d) returned %d updates, want %d", tt.timestamp, len(result), tt.expectedCount)
+				t.Errorf("updatesAfter(updates, %d) returned %d updates, want %d", *tt.timestamp, len(result), tt.expectedCount)
 			}
 			if tt.expectedCount > 0 && result[0].CreationTime != tt.expectedFirst {
-				t.Errorf("updatesAfter(updates, %d) first update = %d, want %d", tt.timestamp, result[0].CreationTime, tt.expectedFirst)
+				t.Errorf("updatesAfter(updates, %d) first update = %d, want %d", *tt.timestamp, result[0].CreationTime, tt.expectedFirst)
 			}
 		})
 	}
@@ -155,80 +155,80 @@ func TestFilterUpdates(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		startTime     int64
-		endTime       int64
+		startTime     *int64
+		endTime       *int64
 		expectedCount int
 		expectedFirst int64
 		expectedLast  int64
 	}{
 		{
-			name:          "both times zero - return all",
-			startTime:     0,
-			endTime:       0,
+			name:          "both times nil - return all",
+			startTime:     nil,
+			endTime:       nil,
 			expectedCount: 5,
 			expectedFirst: 1000,
 			expectedLast:  200,
 		},
 		{
-			name:          "start time zero, end time set",
-			startTime:     0,
-			endTime:       700,
+			name:          "start time nil, end time set",
+			startTime:     nil,
+			endTime:       int64Ptr(700),
 			expectedCount: 3,
 			expectedFirst: 600,
 			expectedLast:  200,
 		},
 		{
-			name:          "start time set, end time zero",
-			startTime:     500,
-			endTime:       0,
+			name:          "start time set, end time nil",
+			startTime:     int64Ptr(500),
+			endTime:       nil,
 			expectedCount: 3,
 			expectedFirst: 1000,
 			expectedLast:  600,
 		},
 		{
 			name:          "both times set within range",
-			startTime:     300,
-			endTime:       900,
+			startTime:     int64Ptr(300),
+			endTime:       int64Ptr(900),
 			expectedCount: 3,
 			expectedFirst: 800,
 			expectedLast:  400,
 		},
 		{
 			name:          "both times set, no overlap",
-			startTime:     1200,
-			endTime:       1500,
+			startTime:     int64Ptr(1200),
+			endTime:       int64Ptr(1500),
 			expectedCount: 0,
 			expectedFirst: 0,
 			expectedLast:  0,
 		},
 		{
 			name:          "start time after all updates",
-			startTime:     1200,
-			endTime:       0,
+			startTime:     int64Ptr(1200),
+			endTime:       nil,
 			expectedCount: 0,
 			expectedFirst: 0,
 			expectedLast:  0,
 		},
 		{
 			name:          "end time before all updates",
-			startTime:     0,
-			endTime:       100,
+			startTime:     nil,
+			endTime:       int64Ptr(100),
 			expectedCount: 0,
 			expectedFirst: 0,
 			expectedLast:  0,
 		},
 		{
 			name:          "start time after end time but within range",
-			startTime:     700,
-			endTime:       500,
+			startTime:     int64Ptr(700),
+			endTime:       int64Ptr(500),
 			expectedCount: 0,
 			expectedFirst: 0,
 			expectedLast:  0,
 		},
 		{
 			name:          "start and end time match exact values in list",
-			startTime:     400,
-			endTime:       800,
+			startTime:     int64Ptr(400),
+			endTime:       int64Ptr(800),
 			expectedCount: 3,
 			expectedFirst: 800,
 			expectedLast:  400,
@@ -255,3 +255,6 @@ func TestFilterUpdates(t *testing.T) {
 		})
 	}
 }
+
+// Helper function to create int64 pointers
+func int64Ptr(v int64) *int64 { return &v }
