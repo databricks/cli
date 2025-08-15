@@ -153,8 +153,15 @@ func TestFilterUpdates(t *testing.T) {
 		{CreationTime: 200}, // oldest
 	}
 
+	var noUpdates []pipelines.UpdateInfo
+
+	oneUpdate := []pipelines.UpdateInfo{
+		{CreationTime: 500},
+	}
+
 	tests := []struct {
 		name          string
+		updates       []pipelines.UpdateInfo
 		startTime     *int64
 		endTime       *int64
 		expectedCount int
@@ -163,6 +170,7 @@ func TestFilterUpdates(t *testing.T) {
 	}{
 		{
 			name:          "both times nil - return all",
+			updates:       updates,
 			startTime:     nil,
 			endTime:       nil,
 			expectedCount: 5,
@@ -171,6 +179,7 @@ func TestFilterUpdates(t *testing.T) {
 		},
 		{
 			name:          "start time nil, end time set",
+			updates:       updates,
 			startTime:     nil,
 			endTime:       int64Ptr(700),
 			expectedCount: 3,
@@ -179,6 +188,7 @@ func TestFilterUpdates(t *testing.T) {
 		},
 		{
 			name:          "start time set, end time nil",
+			updates:       updates,
 			startTime:     int64Ptr(500),
 			endTime:       nil,
 			expectedCount: 3,
@@ -187,6 +197,7 @@ func TestFilterUpdates(t *testing.T) {
 		},
 		{
 			name:          "both times set within range",
+			updates:       updates,
 			startTime:     int64Ptr(300),
 			endTime:       int64Ptr(900),
 			expectedCount: 3,
@@ -195,6 +206,7 @@ func TestFilterUpdates(t *testing.T) {
 		},
 		{
 			name:          "both times set, no overlap",
+			updates:       updates,
 			startTime:     int64Ptr(1200),
 			endTime:       int64Ptr(1500),
 			expectedCount: 0,
@@ -203,6 +215,7 @@ func TestFilterUpdates(t *testing.T) {
 		},
 		{
 			name:          "start time after all updates",
+			updates:       updates,
 			startTime:     int64Ptr(1200),
 			endTime:       nil,
 			expectedCount: 0,
@@ -211,6 +224,7 @@ func TestFilterUpdates(t *testing.T) {
 		},
 		{
 			name:          "end time before all updates",
+			updates:       updates,
 			startTime:     nil,
 			endTime:       int64Ptr(100),
 			expectedCount: 0,
@@ -219,6 +233,7 @@ func TestFilterUpdates(t *testing.T) {
 		},
 		{
 			name:          "start time after end time but within range",
+			updates:       updates,
 			startTime:     int64Ptr(700),
 			endTime:       int64Ptr(500),
 			expectedCount: 0,
@@ -227,17 +242,36 @@ func TestFilterUpdates(t *testing.T) {
 		},
 		{
 			name:          "start and end time match exact values in list",
+			updates:       updates,
 			startTime:     int64Ptr(400),
 			endTime:       int64Ptr(800),
 			expectedCount: 3,
 			expectedFirst: 800,
 			expectedLast:  400,
 		},
+		{
+			name:          "no updates - empty slice",
+			updates:       noUpdates,
+			startTime:     nil,
+			endTime:       nil,
+			expectedCount: 0,
+			expectedFirst: 0,
+			expectedLast:  0,
+		},
+		{
+			name:          "one update - both times nil",
+			updates:       oneUpdate,
+			startTime:     nil,
+			endTime:       nil,
+			expectedCount: 1,
+			expectedFirst: 500,
+			expectedLast:  500,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := filterUpdates(updates, tt.startTime, tt.endTime)
+			result, err := filterUpdates(tt.updates, tt.startTime, tt.endTime)
 			if err != nil {
 				t.Errorf("filterUpdates(updates, %d, %d) returned error: %v", tt.startTime, tt.endTime, err)
 			}
