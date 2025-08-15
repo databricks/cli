@@ -3,6 +3,8 @@
 package tables
 
 import (
+	"fmt"
+
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -36,6 +38,7 @@ func New() *cobra.Command {
 	}
 
 	// Add methods
+	cmd.AddCommand(newCreate())
 	cmd.AddCommand(newDelete())
 	cmd.AddCommand(newExists())
 	cmd.AddCommand(newGet())
@@ -46,6 +49,181 @@ func New() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
+	}
+
+	return cmd
+}
+
+// start create command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createOverrides []func(
+	*cobra.Command,
+	*catalog.CreateTableRequest,
+)
+
+func newCreate() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createReq catalog.CreateTableRequest
+	var createJson flags.JsonFlag
+
+	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: array: columns
+	// TODO: map via StringToStringVar: properties
+
+	cmd.Use = "create NAME CATALOG_NAME SCHEMA_NAME TABLE_TYPE DATA_SOURCE_FORMAT STORAGE_LOCATION"
+	cmd.Short = `Create a table.`
+	cmd.Long = `Create a table.
+  
+  Creates a new table in the specified catalog and schema.
+  
+  To create an external delta table, the caller must have the
+  **EXTERNAL_USE_SCHEMA** privilege on the parent schema and the
+  **EXTERNAL_USE_LOCATION** privilege on the external location. These privileges
+  must always be granted explicitly, and cannot be inherited through ownership
+  or **ALL_PRIVILEGES**.
+  
+  Standard UC permissions needed to create tables still apply: **USE_CATALOG**
+  on the parent catalog (or ownership of the parent catalog), **CREATE_TABLE**
+  and **USE_SCHEMA** on the parent schema (or ownership of the parent schema),
+  and **CREATE_EXTERNAL_TABLE** on external location.
+  
+  The **columns** field needs to be in a Spark compatible format, so we
+  recommend you use Spark to create these tables. The API itself does not
+  validate the correctness of the column spec. If the spec is not Spark
+  compatible, the tables may not be readable by Databricks Runtime.
+  
+  NOTE: The Create Table API for external clients only supports creating
+  **external delta tables**. The values shown in the respective enums are all
+  values supported by Databricks, however for this specific Create Table API,
+  only **table_type** **EXTERNAL** and **data_source_format** **DELTA** are
+  supported. Additionally, column masks are not supported when creating tables
+  through this API.
+
+  Arguments:
+    NAME: Name of table, relative to parent schema.
+    CATALOG_NAME: Name of parent catalog.
+    SCHEMA_NAME: Name of parent schema relative to its parent catalog.
+    TABLE_TYPE:  
+      Supported values: [
+        EXTERNAL,
+        EXTERNAL_SHALLOW_CLONE,
+        FOREIGN,
+        MANAGED,
+        MANAGED_SHALLOW_CLONE,
+        MATERIALIZED_VIEW,
+        METRIC_VIEW,
+        STREAMING_TABLE,
+        VIEW,
+      ]
+    DATA_SOURCE_FORMAT:  
+      Supported values: [
+        AVRO,
+        BIGQUERY_FORMAT,
+        CSV,
+        DATABRICKS_FORMAT,
+        DATABRICKS_ROW_STORE_FORMAT,
+        DELTA,
+        DELTASHARING,
+        DELTA_UNIFORM_HUDI,
+        DELTA_UNIFORM_ICEBERG,
+        HIVE,
+        ICEBERG,
+        JSON,
+        MONGODB_FORMAT,
+        MYSQL_FORMAT,
+        NETSUITE_FORMAT,
+        ORACLE_FORMAT,
+        ORC,
+        PARQUET,
+        POSTGRESQL_FORMAT,
+        REDSHIFT_FORMAT,
+        SALESFORCE_DATA_CLOUD_FORMAT,
+        SALESFORCE_FORMAT,
+        SNOWFLAKE_FORMAT,
+        SQLDW_FORMAT,
+        SQLSERVER_FORMAT,
+        TERADATA_FORMAT,
+        TEXT,
+        UNITY_CATALOG,
+        VECTOR_INDEX_FORMAT,
+        WORKDAY_RAAS_FORMAT,
+      ]
+    STORAGE_LOCATION: Storage root URL for table (for **MANAGED**, **EXTERNAL** tables).`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'catalog_name', 'schema_name', 'table_type', 'data_source_format', 'storage_location' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(6)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := createJson.Unmarshal(&createReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		if !cmd.Flags().Changed("json") {
+			createReq.Name = args[0]
+		}
+		if !cmd.Flags().Changed("json") {
+			createReq.CatalogName = args[1]
+		}
+		if !cmd.Flags().Changed("json") {
+			createReq.SchemaName = args[2]
+		}
+		if !cmd.Flags().Changed("json") {
+			_, err = fmt.Sscan(args[3], &createReq.TableType)
+			if err != nil {
+				return fmt.Errorf("invalid TABLE_TYPE: %s", args[3])
+			}
+		}
+		if !cmd.Flags().Changed("json") {
+			_, err = fmt.Sscan(args[4], &createReq.DataSourceFormat)
+			if err != nil {
+				return fmt.Errorf("invalid DATA_SOURCE_FORMAT: %s", args[4])
+			}
+		}
+		if !cmd.Flags().Changed("json") {
+			createReq.StorageLocation = args[5]
+		}
+
+		response, err := w.Tables.Create(ctx, createReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createOverrides {
+		fn(cmd, &createReq)
 	}
 
 	return cmd
@@ -132,11 +310,11 @@ func newExists() *cobra.Command {
   Gets if a table exists in the metastore for a specific catalog and schema. The
   caller must satisfy one of the following requirements: * Be a metastore admin
   * Be the owner of the parent catalog * Be the owner of the parent schema and
-  have the USE_CATALOG privilege on the parent catalog * Have the
+  have the **USE_CATALOG** privilege on the parent catalog * Have the
   **USE_CATALOG** privilege on the parent catalog and the **USE_SCHEMA**
   privilege on the parent schema, and either be the table owner or have the
-  SELECT privilege on the table. * Have BROWSE privilege on the parent catalog *
-  Have BROWSE privilege on the parent schema.
+  **SELECT** privilege on the table. * Have **BROWSE** privilege on the parent
+  catalog * Have **BROWSE** privilege on the parent schema
 
   Arguments:
     FULL_NAME: Full name of the table.`
@@ -199,9 +377,9 @@ func newGet() *cobra.Command {
   Gets a table from the metastore for a specific catalog and schema. The caller
   must satisfy one of the following requirements: * Be a metastore admin * Be
   the owner of the parent catalog * Be the owner of the parent schema and have
-  the USE_CATALOG privilege on the parent catalog * Have the **USE_CATALOG**
+  the **USE_CATALOG** privilege on the parent catalog * Have the **USE_CATALOG**
   privilege on the parent catalog and the **USE_SCHEMA** privilege on the parent
-  schema, and either be the table owner or have the SELECT privilege on the
+  schema, and either be the table owner or have the **SELECT** privilege on the
   table.
 
   Arguments:

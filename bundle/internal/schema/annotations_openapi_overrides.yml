@@ -182,7 +182,10 @@ github.com/databricks/cli/bundle/config/resources.DashboardPermissionLevel:
         CAN_EDIT
       - |-
         CAN_MANAGE
-
+github.com/databricks/cli/bundle/config/resources.DatabaseInstance:
+  "permissions":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.DatabaseInstancePermissionLevel:
   "_":
     "enum":
@@ -513,19 +516,6 @@ github.com/databricks/cli/bundle/config/resources.SqlWarehousePermissionLevel:
         CAN_MONITOR
       - |-
         CAN_VIEW
-github.com/databricks/cli/bundle/config/resources.VolumeGrantPrivilege:
-  "_":
-    "enum":
-      - |-
-        ALL_PRIVILEGES
-      - |-
-        APPLY_TAG
-      - |-
-        MANAGE
-      - |-
-        READ_VOLUME
-      - |-
-        WRITE_VOLUME
 github.com/databricks/cli/bundle/config/resources.Volume:
   "_":
     "markdown_description": |-
@@ -553,6 +543,19 @@ github.com/databricks/cli/bundle/config/resources.Volume:
   "volume_type":
     "description": |-
       PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.VolumeGrantPrivilege:
+  "_":
+    "enum":
+      - |-
+        ALL_PRIVILEGES
+      - |-
+        APPLY_TAG
+      - |-
+        MANAGE
+      - |-
+        READ_VOLUME
+      - |-
+        WRITE_VOLUME
 github.com/databricks/databricks-sdk-go/service/apps.AppDeployment:
   "create_time":
     "description": |-
