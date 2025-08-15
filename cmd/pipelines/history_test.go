@@ -142,3 +142,116 @@ func TestUpdatesEmptySlice(t *testing.T) {
 		})
 	}
 }
+
+func TestFilterUpdates(t *testing.T) {
+	// Test data: updates sorted in descending order (newest first)
+	updates := []pipelines.UpdateInfo{
+		{CreationTime: 1000}, // newest
+		{CreationTime: 800},
+		{CreationTime: 600},
+		{CreationTime: 400},
+		{CreationTime: 200}, // oldest
+	}
+
+	tests := []struct {
+		name          string
+		startTime     int64
+		endTime       int64
+		expectedCount int
+		expectedFirst int64
+		expectedLast  int64
+	}{
+		{
+			name:          "both times zero - return all",
+			startTime:     0,
+			endTime:       0,
+			expectedCount: 5,
+			expectedFirst: 1000,
+			expectedLast:  200,
+		},
+		{
+			name:          "start time zero, end time set",
+			startTime:     0,
+			endTime:       700,
+			expectedCount: 3,
+			expectedFirst: 600,
+			expectedLast:  200,
+		},
+		{
+			name:          "start time set, end time zero",
+			startTime:     500,
+			endTime:       0,
+			expectedCount: 3,
+			expectedFirst: 1000,
+			expectedLast:  600,
+		},
+		{
+			name:          "both times set within range",
+			startTime:     300,
+			endTime:       900,
+			expectedCount: 3,
+			expectedFirst: 800,
+			expectedLast:  400,
+		},
+		{
+			name:          "both times set, no overlap",
+			startTime:     1200,
+			endTime:       1500,
+			expectedCount: 0,
+			expectedFirst: 0,
+			expectedLast:  0,
+		},
+		{
+			name:          "start time after all updates",
+			startTime:     1200,
+			endTime:       0,
+			expectedCount: 0,
+			expectedFirst: 0,
+			expectedLast:  0,
+		},
+		{
+			name:          "end time before all updates",
+			startTime:     0,
+			endTime:       100,
+			expectedCount: 0,
+			expectedFirst: 0,
+			expectedLast:  0,
+		},
+		{
+			name:          "start time after end time but within range",
+			startTime:     700,
+			endTime:       500,
+			expectedCount: 0,
+			expectedFirst: 0,
+			expectedLast:  0,
+		},
+		{
+			name:          "start and end time match exact values in list",
+			startTime:     400,
+			endTime:       800,
+			expectedCount: 3,
+			expectedFirst: 800,
+			expectedLast:  400,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := filterUpdates(updates, tt.startTime, tt.endTime)
+			if err != nil {
+				t.Errorf("filterUpdates(updates, %d, %d) returned error: %v", tt.startTime, tt.endTime, err)
+			}
+			if len(result) != tt.expectedCount {
+				t.Errorf("filterUpdates(updates, %d, %d) returned %d updates, want %d", tt.startTime, tt.endTime, len(result), tt.expectedCount)
+			}
+			if tt.expectedCount > 0 {
+				if result[0].CreationTime != tt.expectedFirst {
+					t.Errorf("filterUpdates(updates, %d, %d) first update = %d, want %d", tt.startTime, tt.endTime, result[0].CreationTime, tt.expectedFirst)
+				}
+				if result[len(result)-1].CreationTime != tt.expectedLast {
+					t.Errorf("filterUpdates(updates, %d, %d) last update = %d, want %d", tt.startTime, tt.endTime, result[len(result)-1].CreationTime, tt.expectedLast)
+				}
+			}
+		})
+	}
+}

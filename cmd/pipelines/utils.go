@@ -17,7 +17,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/logdiag"
-	"github.com/databricks/databricks-sdk-go"
+	databricks "github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 )
@@ -269,8 +269,21 @@ func parseAndFormatTimestamp(timestamp string) (string, error) {
 	return t.Format("2006-01-02T15:04:05.000Z"), nil
 }
 
+// parseTimeToUnixMillis parses a time string and returns the number of milliseconds since epoch in UTC.
+func parseTimeToUnixMillis(timeStr string) (int64, error) {
+	if timeStr == "" {
+		return 0, nil
+	}
+
+	t, err := time.Parse(time.RFC3339Nano, timeStr)
+	if err != nil {
+		return 0, fmt.Errorf("invalid time format. Expected format: 2025-01-15T10:30:00Z (YYYY-MM-DDTHH:MM:SSZ), got: %s", timeStr)
+	}
+	return t.UnixMilli(), nil
+}
+
 // updatesBefore returns all updates with CreationTime <= ts
-// Assumes updates are sorted in descending order (newest first)
+// Assumes updates are sorted in descending order, largest CreationTime first.
 func updatesBefore(updates []pipelines.UpdateInfo, ts int64) []pipelines.UpdateInfo {
 	// Binary search for index with CreationTime <= ts
 	idx, _ := slices.BinarySearchFunc(updates, ts, func(u pipelines.UpdateInfo, target int64) int {
@@ -284,7 +297,7 @@ func updatesBefore(updates []pipelines.UpdateInfo, ts int64) []pipelines.UpdateI
 }
 
 // updatesAfter returns all updates with CreationTime >= ts
-// Assumes updates are sorted in descending order (newest first)
+// Assumes updates are sorted in descending order, largest CreationTime first.
 func updatesAfter(updates []pipelines.UpdateInfo, ts int64) []pipelines.UpdateInfo {
 	// Binary search for index with CreationTime < ts
 	idx, _ := slices.BinarySearchFunc(updates, ts, func(u pipelines.UpdateInfo, target int64) int {
@@ -295,4 +308,71 @@ func updatesAfter(updates []pipelines.UpdateInfo, ts int64) []pipelines.UpdateIn
 	})
 
 	return updates[:idx]
+}
+
+// filterUpdates filters for updates within the startTime and endTime,
+// assuming updates are in descending order, largest CreationTime first.
+// Time is in milliseconds since epoch. If time is 0, it is ignored.
+func filterUpdates(updates []pipelines.UpdateInfo, startTime, endTime int64) ([]pipelines.UpdateInfo, error) {
+	if (startTime == 0 && endTime == 0) || (updates[0].CreationTime <= endTime && updates[len(updates)-1].CreationTime >= startTime) {
+		return updates, nil
+	}
+
+	if startTime > 0 && updates[0].CreationTime < startTime {
+		return nil, nil
+	}
+
+	if endTime > 0 && updates[len(updates)-1].CreationTime > endTime {
+		return nil, nil
+	}
+
+	if startTime > 0 {
+		updates = updatesAfter(updates, startTime)
+	}
+
+	if endTime > 0 {
+		updates = updatesBefore(updates, endTime)
+	}
+
+	return updates, nil
+}
+
+// fetchPipelineUpdates fetches pipeline updates with optional filtering by time.
+// Time is in milliseconds since epoch. If time is 0, it is ignored.
+// If number is 0, all updates are fetched.
+// Otherwise, keeps fetching until at most number updates are fetched or there are no more updates.
+func fetchPipelineUpdates(ctx context.Context, w *databricks.WorkspaceClient, number int, startTime, endTime int64, pipelineId string) ([]pipelines.UpdateInfo, error) {
+	var updates []pipelines.UpdateInfo
+	var pageToken string
+
+	for len(updates) < number || number == 0 {
+		request := pipelines.ListUpdatesRequest{
+			PipelineId: pipelineId,
+		}
+
+		if pageToken != "" {
+			request.PageToken = pageToken
+		}
+
+		response, err := w.Pipelines.ListUpdates(ctx, request)
+		if err != nil {
+			return nil, err
+		}
+
+		filteredUpdates, err := filterUpdates(response.Updates, startTime, endTime)
+		if err != nil {
+			return nil, err
+		}
+		updates = append(updates, filteredUpdates...)
+
+		if response.NextPageToken == "" {
+			break
+		}
+		pageToken = response.NextPageToken
+	}
+
+	if len(updates) > number && number > 0 {
+		updates = updates[:number]
+	}
+	return updates, nil
 }

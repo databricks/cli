@@ -2,7 +2,6 @@ package pipelines
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/phases"
@@ -34,7 +33,7 @@ func historyCommand() *cobra.Command {
 	}
 
 	historyGroup := cmdgroup.NewFlagGroup("Filter")
-	historyGroup.FlagSet().IntVarP(&number, "number", "n", 0, "Number of entries in output.")
+	historyGroup.FlagSet().IntVarP(&number, "number", "n", 25, "Number of entries in output.")
 	historyGroup.FlagSet().StringVar(&startTimeStr, "start-time", "", "Filter updates after this time (format: 2025-01-15T10:30:00Z)")
 	historyGroup.FlagSet().StringVar(&endTimeStr, "end-time", "", "Filter updates before this time (format: 2025-01-15T10:30:00Z)")
 	wrappedCmd := cmdgroup.NewCommandWithGroupFlag(cmd)
@@ -75,42 +74,24 @@ func historyCommand() *cobra.Command {
 
 		w := b.WorkspaceClient()
 
-		req := pipelines.ListUpdatesRequest{
-			PipelineId: pipelineId,
-		}
-
-		// Only set MaxResults if the flag was provided, avoiding setting to the default value.
-		if cmd.Flags().Changed("number") {
-			req.MaxResults = number
-		}
-
-		response, err := w.Pipelines.ListUpdates(ctx, req)
+		startTimeMs, err := parseTimeToUnixMillis(startTimeStr)
 		if err != nil {
 			return err
 		}
 
-		filteredUpdates := response.Updates
-		if startTimeStr != "" {
-			startTime, err := time.Parse(time.RFC3339Nano, startTimeStr)
-			if err != nil {
-				return fmt.Errorf("invalid start-time format. Expected format: 2025-01-15T10:30:00Z (YYYY-MM-DDTHH:MM:SSZ), got: %s", startTimeStr)
-			}
-			startTimeMs := startTime.UnixMilli()
-			filteredUpdates = updatesAfter(filteredUpdates, startTimeMs)
+		endTimeMs, err := parseTimeToUnixMillis(endTimeStr)
+		if err != nil {
+			return err
 		}
 
-		if endTimeStr != "" {
-			endTime, err := time.Parse(time.RFC3339Nano, endTimeStr)
-			if err != nil {
-				return fmt.Errorf("invalid end-time format. Expected format: 2025-01-15T10:30:00Z (YYYY-MM-DDTHH:MM:SSZ), got: %s", endTimeStr)
-			}
-			endTimeMs := endTime.UnixMilli()
-			filteredUpdates = updatesBefore(filteredUpdates, endTimeMs)
+		updates, err := fetchPipelineUpdates(ctx, w, number, startTimeMs, endTimeMs, pipelineId)
+		if err != nil {
+			return fmt.Errorf("failed to fetch pipeline updates: %w", err)
 		}
 
 		data := pipelineHistoryData{
 			Key:     key,
-			Updates: filteredUpdates,
+			Updates: updates,
 		}
 		return cmdio.RenderWithTemplate(ctx, data, "", pipelineHistoryTemplate)
 	}
