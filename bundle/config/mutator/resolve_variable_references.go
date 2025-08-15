@@ -244,7 +244,7 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn
 							// We only want entries that are explicitly provided by users, so we're using root not normalized here.
 							value, err = m.lookupFn(root, path, b)
 							if !value.IsValid() {
-								// Not having a value is not an error in this case, it might be resolved at deploy time.
+								// Not having a value is not an error in this case, it might be resolved at deploy time. For example, output only fields.
 								// TODO: we still could check whether it's part of the schema or not. If latter, we can reject it right away.
 								// TODO: This might be better done after we got rid of TF.
 								return dyn.InvalidValue, dynvar.ErrSkipResolution
