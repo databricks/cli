@@ -11,9 +11,9 @@ def append_enum_imports(
     enums: dict[str, GeneratedEnum],
     exclude_packages: list[str],
 ) -> None:
-    for schema_name in enums.keys():
-        package = packages.get_package(schema_name)
-        class_name = packages.get_class_name(schema_name)
+    for generated in enums.values():
+        package = generated.package
+        class_name = generated.class_name
 
         if package in exclude_packages:
             continue
@@ -26,9 +26,9 @@ def append_dataclass_imports(
     dataclasses: dict[str, GeneratedDataclass],
     exclude_packages: list[str],
 ) -> None:
-    for schema_name in dataclasses.keys():
-        package = packages.get_package(schema_name)
-        class_name = packages.get_class_name(schema_name)
+    for generated in dataclasses.values():
+        package = generated.package
+        class_name = generated.class_name
 
         if package in exclude_packages:
             continue

@@ -28,20 +28,21 @@ def main(output: str):
     schemas = _remove_deprecated_fields(schemas)
     schemas = _remove_unused_schemas(packages.RESOURCE_TYPES, schemas)
 
-    dataclasses, enums = _generate_code(schemas)
-
-    generated_dataclass_patch.reorder_required_fields(dataclasses)
-    generated_dataclass_patch.quote_recursive_references(dataclasses)
-
-    _write_code(dataclasses, enums, output)
-
-    for resource in packages.RESOURCE_TYPES:
+    # each resource has own namespace and is generated separately so
+    # that there are no dependencies between namespaces as in Databricks SDK v1
+    for resource, namespace in packages.RESOURCE_NAMESPACE.items():
+        # only generate code for schemas used directly or transitively by resource
         reachable = _collect_reachable_schemas([resource], schemas)
+        reachable_schemas = {k: v for k, v in schemas.items() if k in reachable}
 
-        resource_dataclasses = {k: v for k, v in dataclasses.items() if k in reachable}
-        resource_enums = {k: v for k, v in enums.items() if k in reachable}
+        dataclasses, enums = _generate_code(namespace, reachable_schemas)
 
-        _write_exports(resource, resource_dataclasses, resource_enums, output)
+        generated_dataclass_patch.reorder_required_fields(dataclasses)
+        generated_dataclass_patch.quote_recursive_references(dataclasses)
+
+        _write_code(dataclasses, enums, output)
+
+        _write_exports(namespace, dataclasses, enums, output)
 
 
 def _transitively_mark_deprecated_and_private(
@@ -95,6 +96,7 @@ def _remove_deprecated_fields(
 
 
 def _generate_code(
+    namespace: str,
     schemas: dict[str, openapi.Schema],
 ) -> tuple[dict[str, GeneratedDataclass], dict[str, GeneratedEnum]]:
     dataclasses = {}
@@ -102,11 +104,13 @@ def _generate_code(
 
     for schema_name, schema in schemas.items():
         if schema.type == openapi.SchemaType.OBJECT:
-            generated = generated_dataclass.generate_dataclass(schema_name, schema)
+            generated = generated_dataclass.generate_dataclass(
+                namespace, schema_name, schema
+            )
 
             dataclasses[schema_name] = generated
         elif schema.type == openapi.SchemaType.STRING:
-            generated = generated_enum.generate_enum(schema_name, schema)
+            generated = generated_enum.generate_enum(namespace, schema_name, schema)
 
             enums[schema_name] = generated
         else:
@@ -116,7 +120,7 @@ def _generate_code(
 
 
 def _write_exports(
-    root: str,
+    namespace: str,
     dataclasses: dict[str, GeneratedDataclass],
     enums: dict[str, GeneratedEnum],
     output: str,
@@ -148,14 +152,11 @@ def _write_exports(
     generated_imports.append_enum_imports(b, enums, exclude_packages=[])
 
     # FIXME should be better generalized
-    if root == "resources.Job":
+    if namespace == "jobs":
         _append_resolve_recursive_imports(b)
 
-    root_package = packages.get_package(root)
-    assert root_package
-
-    # transform databricks.bundles.jobs._models.job -> databricks/bundles/jobs
-    package_path = Path(root_package.replace(".", "/")).parent.parent
+    root_package = packages.get_root_package(namespace)
+    package_path = Path(root_package.replace(".", "/"))
 
     source_path = Path(output) / package_path / "__init__.py"
     source_path.parent.mkdir(exist_ok=True, parents=True)

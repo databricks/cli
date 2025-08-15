@@ -134,12 +134,13 @@ class GeneratedDataclass:
 
 
 def generate_field(
+    namespace: str,
     field_name: str,
     prop: Property,
     is_required: bool,
 ) -> GeneratedField:
-    field_type = generate_type(prop.ref, is_param=False)
-    param_type = generate_type(prop.ref, is_param=True)
+    field_type = generate_type(namespace, prop.ref, is_param=False)
+    param_type = generate_type(namespace, prop.ref, is_param=True)
 
     field_type = variable_or_type(field_type, is_required=is_required)
     param_type = variable_or_type(param_type, is_required=is_required)
@@ -255,10 +256,11 @@ def variable_or_dict_type(element_type: GeneratedType) -> GeneratedType:
     )
 
 
-def generate_type(ref: str, is_param: bool) -> GeneratedType:
+def generate_type(namespace: str, ref: str, is_param: bool) -> GeneratedType:
     if ref.startswith("#/$defs/slice/"):
         element_ref = ref.replace("#/$defs/slice/", "#/$defs/")
         element_type = generate_type(
+            namespace=namespace,
             ref=element_ref,
             is_param=is_param,
         )
@@ -273,7 +275,7 @@ def generate_type(ref: str, is_param: bool) -> GeneratedType:
         return dict_type()
 
     class_name = packages.get_class_name(ref)
-    package = packages.get_package(ref)
+    package = packages.get_package(namespace, ref)
 
     if is_param and package:
         class_name += "Param"
@@ -293,7 +295,11 @@ def resource_type() -> GeneratedType:
     )
 
 
-def generate_dataclass(schema_name: str, schema: Schema) -> GeneratedDataclass:
+def generate_dataclass(
+    namespace: str,
+    schema_name: str,
+    schema: Schema,
+) -> GeneratedDataclass:
     print(f"Generating dataclass for {schema_name}")
 
     fields = list[GeneratedField]()
@@ -301,12 +307,12 @@ def generate_dataclass(schema_name: str, schema: Schema) -> GeneratedDataclass:
 
     for name, prop in schema.properties.items():
         is_required = name in schema.required
-        field = generate_field(name, prop, is_required=is_required)
+        field = generate_field(namespace, name, prop, is_required=is_required)
 
         fields.append(field)
 
     extends = []
-    package = packages.get_package(schema_name)
+    package = packages.get_package(namespace, schema_name)
 
     assert package
 

@@ -14,7 +14,8 @@ from codegen.jsonschema import Property, Schema, SchemaType
 
 def test_generate_type_string():
     generated_type = generate_type(
-        "#/$defs/string",
+        namespace="jobs",
+        ref="#/$defs/string",
         is_param=False,
     )
 
@@ -27,7 +28,8 @@ def test_generate_type_string():
 
 def test_generate_type_dict():
     generated_type = generate_type(
-        "#/$defs/map/string",
+        namespace="jobs",
+        ref="#/$defs/map/string",
         is_param=False,
     )
 
@@ -36,6 +38,7 @@ def test_generate_type_dict():
 
 def test_generate_dataclass():
     generated = generate_dataclass(
+        namespace="bananas",
         schema_name="jobs.Task",
         schema=Schema(
             type=SchemaType.OBJECT,
@@ -52,7 +55,7 @@ def test_generate_dataclass():
 
     assert generated == GeneratedDataclass(
         class_name="Task",
-        package="databricks.bundles.jobs._models.task",
+        package="databricks.bundles.bananas._models.task",
         description="task description",
         extends=[],
         fields=[

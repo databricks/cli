@@ -37,10 +37,11 @@ def quote_recursive_references(models: dict[str, GeneratedDataclass]):
 
     # see also _append_resolve_recursive_imports
 
-    models["jobs.ForEachTask"] = _quote_recursive_references_for_model(
-        models["jobs.ForEachTask"],
-        references={"Task", "TaskParam"},
-    )
+    if "jobs.ForEachTask" in models:
+        models["jobs.ForEachTask"] = _quote_recursive_references_for_model(
+            models["jobs.ForEachTask"],
+            references={"Task", "TaskParam"},
+        )
 
 
 def _quote_recursive_references_for_model(
