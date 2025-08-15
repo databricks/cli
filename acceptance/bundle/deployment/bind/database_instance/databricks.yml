@@ -1,0 +1,4 @@
+resources:
+  database_instances:
+    database_instance1:
+      name: "test-instance-02"
