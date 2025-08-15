@@ -1,33 +1,33 @@
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, TypedDict
 
-from databricks.bundles.compute._models.adlsgen2_info import (
-    Adlsgen2Info,
-    Adlsgen2InfoParam,
-)
-from databricks.bundles.compute._models.gcs_storage_info import (
-    GcsStorageInfo,
-    GcsStorageInfoParam,
-)
-from databricks.bundles.compute._models.local_file_info import (
-    LocalFileInfo,
-    LocalFileInfoParam,
-)
-from databricks.bundles.compute._models.s3_storage_info import (
-    S3StorageInfo,
-    S3StorageInfoParam,
-)
-from databricks.bundles.compute._models.volumes_storage_info import (
-    VolumesStorageInfo,
-    VolumesStorageInfoParam,
-)
-from databricks.bundles.compute._models.workspace_storage_info import (
-    WorkspaceStorageInfo,
-    WorkspaceStorageInfoParam,
-)
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import VariableOrOptional
+from databricks.bundles.jobs._models.adlsgen2_info import (
+    Adlsgen2Info,
+    Adlsgen2InfoParam,
+)
+from databricks.bundles.jobs._models.gcs_storage_info import (
+    GcsStorageInfo,
+    GcsStorageInfoParam,
+)
+from databricks.bundles.jobs._models.local_file_info import (
+    LocalFileInfo,
+    LocalFileInfoParam,
+)
+from databricks.bundles.jobs._models.s3_storage_info import (
+    S3StorageInfo,
+    S3StorageInfoParam,
+)
+from databricks.bundles.jobs._models.volumes_storage_info import (
+    VolumesStorageInfo,
+    VolumesStorageInfoParam,
+)
+from databricks.bundles.jobs._models.workspace_storage_info import (
+    WorkspaceStorageInfo,
+    WorkspaceStorageInfoParam,
+)
 
 if TYPE_CHECKING:
     from typing_extensions import Self

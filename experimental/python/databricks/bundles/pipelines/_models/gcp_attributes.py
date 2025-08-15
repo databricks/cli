@@ -1,13 +1,13 @@
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, TypedDict
 
-from databricks.bundles.compute._models.gcp_availability import (
-    GcpAvailability,
-    GcpAvailabilityParam,
-)
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import VariableOrOptional
+from databricks.bundles.pipelines._models.gcp_availability import (
+    GcpAvailability,
+    GcpAvailabilityParam,
+)
 
 if TYPE_CHECKING:
     from typing_extensions import Self
@@ -24,17 +24,6 @@ class GcpAttributes:
     boot_disk_size: VariableOrOptional[int] = None
     """
     Boot disk size in GB
-    """
-
-    first_on_demand: VariableOrOptional[int] = None
-    """
-    The first `first_on_demand` nodes of the cluster will be placed on on-demand instances.
-    This value should be greater than 0, to make sure the cluster driver node is placed on an
-    on-demand instance. If this value is greater than or equal to the current cluster size, all
-    nodes will be placed on on-demand instances. If this value is less than the current cluster
-    size, `first_on_demand` nodes will be placed on on-demand instances and the remainder will
-    be placed on `availability` instances. Note that this value does not affect
-    cluster size and cannot currently be mutated over the lifetime of a cluster.
     """
 
     google_service_account: VariableOrOptional[str] = None
@@ -79,17 +68,6 @@ class GcpAttributesDict(TypedDict, total=False):
     boot_disk_size: VariableOrOptional[int]
     """
     Boot disk size in GB
-    """
-
-    first_on_demand: VariableOrOptional[int]
-    """
-    The first `first_on_demand` nodes of the cluster will be placed on on-demand instances.
-    This value should be greater than 0, to make sure the cluster driver node is placed on an
-    on-demand instance. If this value is greater than or equal to the current cluster size, all
-    nodes will be placed on on-demand instances. If this value is less than the current cluster
-    size, `first_on_demand` nodes will be placed on on-demand instances and the remainder will
-    be placed on `availability` instances. Note that this value does not affect
-    cluster size and cannot currently be mutated over the lifetime of a cluster.
     """
 
     google_service_account: VariableOrOptional[str]
