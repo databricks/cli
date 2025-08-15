@@ -182,10 +182,6 @@ github.com/databricks/cli/bundle/config/resources.DashboardPermissionLevel:
         CAN_EDIT
       - |-
         CAN_MANAGE
-github.com/databricks/cli/bundle/config/resources.DatabaseInstance:
-  "permissions":
-    "description": |-
-      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.DatabaseInstancePermissionLevel:
   "_":
     "enum":
