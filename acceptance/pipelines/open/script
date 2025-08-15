@@ -11,3 +11,6 @@ musterr trace $PIPELINES open
 
 title "open with KEY, expect same output as opening without KEY"
 musterr trace $PIPELINES open test-pipelines-open
+
+title "test auto-completion handler"
+trace $PIPELINES __complete open ,

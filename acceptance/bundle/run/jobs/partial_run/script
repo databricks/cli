@@ -1,0 +1,25 @@
+print_requests() {
+    jq --sort-keys 'select(.path | contains("/jobs/run-now"))' < out.requests.txt
+    rm out.requests.txt
+}
+
+trace $CLI bundle deploy
+
+trace $CLI bundle run my_job --only task_1
+trace print_requests
+
+trace $CLI bundle run my_job --only task_1,task_2
+trace print_requests
+
+trace $CLI bundle run my_job
+trace print_requests
+
+# We expect an error because the task does not exist
+trace musterr $CLI bundle run my_job --only non_existent_task
+
+# We expect an error because one of the tasks does not exist
+trace musterr $CLI bundle run my_job --only non_existent_task,task_1
+
+# We expect these values to be send through
+trace $CLI bundle run my_job --only "task1.table1,task2>,task3>table3"
+trace print_requests
