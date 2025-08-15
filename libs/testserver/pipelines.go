@@ -93,6 +93,8 @@ func (s *FakeWorkspace) PipelineUpdate(req Request, pipelineId string) Response 
 	return Response{}
 }
 
+// PipelineStartUpdate starts a new update for a pipeline.
+// It adds a new update ID to the PipelineUpdates slice and the PipelineUpdatesMap map.
 func (s *FakeWorkspace) PipelineStartUpdate(pipelineId string) Response {
 	defer s.LockUnlock()()
 
@@ -105,7 +107,8 @@ func (s *FakeWorkspace) PipelineStartUpdate(pipelineId string) Response {
 	}
 
 	updateId := uuid.New().String()
-	s.PipelineUpdates[updateId] = true
+	s.PipelineUpdates = append(s.PipelineUpdates, updateId)
+	s.PipelineUpdatesMap[updateId] = true
 
 	return Response{
 		Body: pipelines.StartUpdateResponse{
@@ -132,6 +135,34 @@ func (s *FakeWorkspace) PipelineEvents(pipelineId string) Response {
 	}
 }
 
+func (s *FakeWorkspace) PipelineListUpdates(pipelineId string) Response {
+	defer s.LockUnlock()()
+
+	_, exists := s.Pipelines[pipelineId]
+	if !exists {
+		return Response{
+			StatusCode: 404,
+			Body:       map[string]string{"message": fmt.Sprintf("The specified pipeline %s was not found.", pipelineId)},
+		}
+	}
+
+	var updates []pipelines.UpdateInfo
+	// Iterate in reverse order to get most recent updates first
+	for i := len(s.PipelineUpdates) - 1; i >= 0; i-- {
+		updateId := s.PipelineUpdates[i]
+		updates = append(updates, pipelines.UpdateInfo{
+			UpdateId: updateId,
+			State:    pipelines.UpdateInfoStateCompleted,
+		})
+	}
+
+	return Response{
+		Body: pipelines.ListUpdatesResponse{
+			Updates: updates,
+		},
+	}
+}
+
 func (s *FakeWorkspace) PipelineGetUpdate(pipelineId, updateId string) Response {
 	defer s.LockUnlock()()
 
@@ -143,8 +174,7 @@ func (s *FakeWorkspace) PipelineGetUpdate(pipelineId, updateId string) Response 
 		}
 	}
 
-	// Check if the update exists
-	_, updateExists := s.PipelineUpdates[updateId]
+	_, updateExists := s.PipelineUpdatesMap[updateId]
 	if !updateExists {
 		return Response{
 			StatusCode: 404,
