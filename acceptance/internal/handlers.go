@@ -8,7 +8,6 @@ import (
 	"strconv"
 
 	"github.com/databricks/databricks-sdk-go/service/catalog"
-
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 
@@ -498,5 +497,21 @@ func addDefaultHandlers(server *testserver.Server) {
 			}
 		}
 		return testserver.Response{StatusCode: 404}
+	})
+
+	server.Handle("POST", "/api/2.0/database/instances", func(req testserver.Request) any {
+		return req.Workspace.DatabaseInstanceCreate(req)
+	})
+
+	server.Handle("GET", "/api/2.0/database/instances/", func(req testserver.Request) any {
+		return testserver.MapList(req.Workspace, req.Workspace.DatabaseInstances, "database_instances")
+	})
+
+	server.Handle("GET", "/api/2.0/database/instances/{name}", func(req testserver.Request) any {
+		return testserver.DatabaseInstanceMapGet(req.Workspace, req.Workspace.DatabaseInstances, req.Vars["name"])
+	})
+
+	server.Handle("DELETE", "/api/2.0/database/instances/{name}", func(req testserver.Request) any {
+		return testserver.DatabaseInstanceMapDelete(req)
 	})
 }
