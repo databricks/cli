@@ -52,9 +52,11 @@ func TestDisplayPipelineUpdate(t *testing.T) {
 			},
 			expected: `
 Update for pipeline test-pipeline completed successfully.
+
 Pipeline ID: pipeline-789
 Update start time: 2022-01-01T00:00:00Z
 Update end time: 2022-01-01T01:00:00Z
+
 Pipeline configurations for this update:
 • All tables are fully refreshed
 • Update cause: Manual trigger
@@ -75,6 +77,7 @@ Pipeline configurations for this update:
 			events:     []pipelines.PipelineEvent{},
 			expected: `
 Update for pipeline completed successfully.
+
 Pipeline configurations for this update:
 • All tables are refreshed
 `,
@@ -95,6 +98,7 @@ Pipeline configurations for this update:
 			},
 			expected: `
 Update for pipeline completed successfully.
+
 Pipeline configurations for this update:
 • Refreshed [table1, table2]
 • Full refreshed [table3]
@@ -114,7 +118,9 @@ Pipeline configurations for this update:
 			events:     []pipelines.PipelineEvent{},
 			expected: `
 Update for pipeline test-pipeline completed successfully.
+
 Pipeline ID: pipeline-789
+
 Pipeline configurations for this update:
 • All tables are refreshed
 • Storage: test_storage
@@ -130,6 +136,7 @@ Pipeline configurations for this update:
 			events:     []pipelines.PipelineEvent{},
 			expected: `
 Update for pipeline completed successfully.
+
 Pipeline configurations for this update:
 • All tables are refreshed
 • Classic compute: cluster-123
@@ -312,7 +319,8 @@ func TestDisplayProgressEventsDurations(t *testing.T) {
 					Message:   "Update test-update-123 is COMPLETED.",
 				},
 			},
-			expected: `Run Phase                 Duration
+			expected: `
+Run Phase                 Duration
 ---------                 --------
 CREATED                   1.0s
 WAITING_FOR_RESOURCES     1.0s
@@ -340,7 +348,8 @@ RUNNING                   1m 25s
 					Message:   "Update test-update-ms is COMPLETED.",
 				},
 			},
-			expected: `Run Phase                 Duration
+			expected: `
+Run Phase                 Duration
 ---------                 --------
 WAITING_FOR_RESOURCES     500ms
 RUNNING                   750ms
