@@ -1,14 +1,6 @@
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, TypedDict
 
-from databricks.bundles.compute._models.cluster_spec import (
-    ClusterSpec,
-    ClusterSpecParam,
-)
-from databricks.bundles.compute._models.library import (
-    Library,
-    LibraryParam,
-)
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import (
@@ -20,6 +12,7 @@ from databricks.bundles.jobs._models.clean_rooms_notebook_task import (
     CleanRoomsNotebookTask,
     CleanRoomsNotebookTaskParam,
 )
+from databricks.bundles.jobs._models.cluster_spec import ClusterSpec, ClusterSpecParam
 from databricks.bundles.jobs._models.condition_task import (
     ConditionTask,
     ConditionTaskParam,
@@ -45,6 +38,7 @@ from databricks.bundles.jobs._models.jobs_health_rules import (
     JobsHealthRules,
     JobsHealthRulesParam,
 )
+from databricks.bundles.jobs._models.library import Library, LibraryParam
 from databricks.bundles.jobs._models.notebook_task import (
     NotebookTask,
     NotebookTaskParam,

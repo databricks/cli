@@ -1,52 +1,49 @@
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, TypedDict
 
-from databricks.bundles.compute._models.auto_scale import (
-    AutoScale,
-    AutoScaleParam,
-)
-from databricks.bundles.compute._models.aws_attributes import (
-    AwsAttributes,
-    AwsAttributesParam,
-)
-from databricks.bundles.compute._models.azure_attributes import (
-    AzureAttributes,
-    AzureAttributesParam,
-)
-from databricks.bundles.compute._models.cluster_log_conf import (
-    ClusterLogConf,
-    ClusterLogConfParam,
-)
-from databricks.bundles.compute._models.data_security_mode import (
-    DataSecurityMode,
-    DataSecurityModeParam,
-)
-from databricks.bundles.compute._models.docker_image import (
-    DockerImage,
-    DockerImageParam,
-)
-from databricks.bundles.compute._models.gcp_attributes import (
-    GcpAttributes,
-    GcpAttributesParam,
-)
-from databricks.bundles.compute._models.init_script_info import (
-    InitScriptInfo,
-    InitScriptInfoParam,
-)
-from databricks.bundles.compute._models.runtime_engine import (
-    RuntimeEngine,
-    RuntimeEngineParam,
-)
-from databricks.bundles.compute._models.workload_type import (
-    WorkloadType,
-    WorkloadTypeParam,
-)
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import (
     VariableOrDict,
     VariableOrList,
     VariableOrOptional,
+)
+from databricks.bundles.jobs._models.auto_scale import (
+    AutoScale,
+    AutoScaleParam,
+)
+from databricks.bundles.jobs._models.aws_attributes import (
+    AwsAttributes,
+    AwsAttributesParam,
+)
+from databricks.bundles.jobs._models.azure_attributes import (
+    AzureAttributes,
+    AzureAttributesParam,
+)
+from databricks.bundles.jobs._models.cluster_log_conf import (
+    ClusterLogConf,
+    ClusterLogConfParam,
+)
+from databricks.bundles.jobs._models.data_security_mode import (
+    DataSecurityMode,
+    DataSecurityModeParam,
+)
+from databricks.bundles.jobs._models.docker_image import DockerImage, DockerImageParam
+from databricks.bundles.jobs._models.gcp_attributes import (
+    GcpAttributes,
+    GcpAttributesParam,
+)
+from databricks.bundles.jobs._models.init_script_info import (
+    InitScriptInfo,
+    InitScriptInfoParam,
+)
+from databricks.bundles.jobs._models.runtime_engine import (
+    RuntimeEngine,
+    RuntimeEngineParam,
+)
+from databricks.bundles.jobs._models.workload_type import (
+    WorkloadType,
+    WorkloadTypeParam,
 )
 
 if TYPE_CHECKING:
