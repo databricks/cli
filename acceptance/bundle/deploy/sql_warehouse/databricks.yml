@@ -10,3 +10,8 @@ resources:
       max_num_clusters: 1
       min_num_clusters: 1
       auto_stop_mins: 120
+      permissions:
+        - group_name: "users"
+          level: "CAN_USE"
+        - group_name: "viewers"
+          level: "CAN_VIEW"

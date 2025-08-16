@@ -13,6 +13,9 @@ trace $CLI bundle deploy
 title "Verify the create request"
 trace jq 'select(.method == "POST" and (.path | contains("/sql/warehouses")))' out.requests.txt
 
+title "Verify the permissions request"
+trace jq 'select(.method == "PUT" and (.path | contains("permissions/sql/warehouses")))' out.requests.txt
+
 trace $CLI bundle summary
 
 title "Update the warehouse name"
