@@ -93,7 +93,8 @@ func newCreate() *cobra.Command {
       For UC securable assets (tables, volumes, etc.), the format is
       *shared_catalog*.*shared_schema*.*asset_name*
       
-      For notebooks, the name is the notebook file name.
+      For notebooks, the name is the notebook file name. For jar analyses, the
+      name is the jar analysis name.
     ASSET_TYPE: The type of the asset. 
       Supported values: [FOREIGN_TABLE, NOTEBOOK_FILE, TABLE, VIEW, VOLUME]`
 
@@ -179,11 +180,11 @@ func newCreateCleanRoomAssetReview() *cobra.Command {
 	cmd.Short = `Create a review (e.g. approval) for an asset.`
 	cmd.Long = `Create a review (e.g. approval) for an asset.
   
-  submit an asset review
+  Submit an asset review
 
   Arguments:
     CLEAN_ROOM_NAME: Name of the clean room
-    ASSET_TYPE: can only be NOTEBOOK_FILE for now 
+    ASSET_TYPE: Asset type. Can only be NOTEBOOK_FILE. 
       Supported values: [FOREIGN_TABLE, NOTEBOOK_FILE, TABLE, VIEW, VOLUME]
     NAME: Name of the asset`
 
@@ -467,7 +468,8 @@ func newUpdate() *cobra.Command {
       For UC securable assets (tables, volumes, etc.), the format is
       *shared_catalog*.*shared_schema*.*asset_name*
       
-      For notebooks, the name is the notebook file name.`
+      For notebooks, the name is the notebook file name. For jar analyses, the
+      name is the jar analysis name.`
 
 	cmd.Annotations = make(map[string]string)
 

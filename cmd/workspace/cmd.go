@@ -59,6 +59,7 @@ import (
 	permission_migration "github.com/databricks/cli/cmd/workspace/permission-migration"
 	permissions "github.com/databricks/cli/cmd/workspace/permissions"
 	pipelines "github.com/databricks/cli/cmd/workspace/pipelines"
+	policies "github.com/databricks/cli/cmd/workspace/policies"
 	policy_compliance_for_clusters "github.com/databricks/cli/cmd/workspace/policy-compliance-for-clusters"
 	policy_compliance_for_jobs "github.com/databricks/cli/cmd/workspace/policy-compliance-for-jobs"
 	policy_families "github.com/databricks/cli/cmd/workspace/policy-families"
@@ -95,6 +96,7 @@ import (
 	system_schemas "github.com/databricks/cli/cmd/workspace/system-schemas"
 	table_constraints "github.com/databricks/cli/cmd/workspace/table-constraints"
 	tables "github.com/databricks/cli/cmd/workspace/tables"
+	temporary_path_credentials "github.com/databricks/cli/cmd/workspace/temporary-path-credentials"
 	temporary_table_credentials "github.com/databricks/cli/cmd/workspace/temporary-table-credentials"
 	token_management "github.com/databricks/cli/cmd/workspace/token-management"
 	tokens "github.com/databricks/cli/cmd/workspace/tokens"
@@ -167,6 +169,7 @@ func All() []*cobra.Command {
 	out = append(out, permission_migration.New())
 	out = append(out, permissions.New())
 	out = append(out, pipelines.New())
+	out = append(out, policies.New())
 	out = append(out, policy_compliance_for_clusters.New())
 	out = append(out, policy_compliance_for_jobs.New())
 	out = append(out, policy_families.New())
@@ -203,6 +206,7 @@ func All() []*cobra.Command {
 	out = append(out, system_schemas.New())
 	out = append(out, table_constraints.New())
 	out = append(out, tables.New())
+	out = append(out, temporary_path_credentials.New())
 	out = append(out, temporary_table_credentials.New())
 	out = append(out, token_management.New())
 	out = append(out, tokens.New())

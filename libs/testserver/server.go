@@ -14,7 +14,6 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/databricks/cli/internal/testutil"
-	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
 type Server struct {
@@ -213,8 +212,8 @@ Response.Body = '<response body here>'
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNotImplemented)
 
-		resp := apierr.APIError{
-			Message: "No stub found for pattern: " + pattern,
+		resp := map[string]string{
+			"message": "No stub found for pattern: " + pattern,
 		}
 
 		respBytes, err := json.Marshal(resp)

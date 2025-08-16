@@ -5,10 +5,7 @@ github.com/databricks/cli/bundle/config/resources.App:
       The active deployment of the app. A deployment is considered active when it has been deployed
       to the app compute.
   "app_status": {}
-  "budget_policy_id":
-    "description": |-
-      TODO: Deprecate this field after serverless entitlements are released to all prod stages
-      and the new usage_policy_id is properly populated and used.
+  "budget_policy_id": {}
   "compute_status": {}
   "create_time":
     "description": |-
@@ -23,10 +20,7 @@ github.com/databricks/cli/bundle/config/resources.App:
   "description":
     "description": |-
       The description of the app.
-  "effective_budget_policy_id":
-    "description": |-
-      TODO: Deprecate this field after serverless entitlements are released to all prod stages
-      and the new usage_policy_id is properly populated and used.
+  "effective_budget_policy_id": {}
   "effective_user_api_scopes":
     "description": |-
       The effective api scopes granted to the user access token.
@@ -252,6 +246,83 @@ github.com/databricks/cli/bundle/config/resources.Cluster:
   "workload_type":
     "description": |-
       Cluster Attributes showing for clusters workload types.
+github.com/databricks/cli/bundle/config/resources.DatabaseInstance:
+  "_":
+    "description": |-
+      A DatabaseInstance represents a logical Postgres instance, comprised of both compute and storage.
+  "capacity":
+    "description": |-
+      The sku of the instance. Valid values are "CU_1", "CU_2", "CU_4", "CU_8".
+  "child_instance_refs":
+    "description": |-
+      The refs of the child instances. This is only available if the instance is
+      parent instance.
+  "creation_time":
+    "description": |-
+      The timestamp when the instance was created.
+  "creator":
+    "description": |-
+      The email of the creator of the instance.
+  "effective_enable_readable_secondaries":
+    "description": |-
+      xref AIP-129. `enable_readable_secondaries` is owned by the client, while `effective_enable_readable_secondaries` is owned by the server.
+      `enable_readable_secondaries` will only be set in Create/Update response messages if and only if the user provides the field via the request.
+      `effective_enable_readable_secondaries` on the other hand will always bet set in all response messages (Create/Update/Get/List).
+  "effective_node_count":
+    "description": |-
+      xref AIP-129. `node_count` is owned by the client, while `effective_node_count` is owned by the server.
+      `node_count` will only be set in Create/Update response messages if and only if the user provides the field via the request.
+      `effective_node_count` on the other hand will always bet set in all response messages (Create/Update/Get/List).
+  "effective_retention_window_in_days":
+    "description": |-
+      xref AIP-129. `retention_window_in_days` is owned by the client, while `effective_retention_window_in_days` is owned by the server.
+      `retention_window_in_days` will only be set in Create/Update response messages if and only if the user provides the field via the request.
+      `effective_retention_window_in_days` on the other hand will always bet set in all response messages (Create/Update/Get/List).
+  "effective_stopped":
+    "description": |-
+      xref AIP-129. `stopped` is owned by the client, while `effective_stopped` is owned by the server.
+      `stopped` will only be set in Create/Update response messages if and only if the user provides the field via the request.
+      `effective_stopped` on the other hand will always bet set in all response messages (Create/Update/Get/List).
+  "enable_readable_secondaries":
+    "description": |-
+      Whether to enable secondaries to serve read-only traffic. Defaults to false.
+  "name":
+    "description": |-
+      The name of the instance. This is the unique identifier for the instance.
+  "node_count":
+    "description": |-
+      The number of nodes in the instance, composed of 1 primary and 0 or more secondaries. Defaults to
+      1 primary and 0 secondaries.
+  "parent_instance_ref":
+    "description": |-
+      The ref of the parent instance. This is only available if the instance is
+      child instance.
+      Input: For specifying the parent instance to create a child instance. Optional.
+      Output: Only populated if provided as input to create a child instance.
+  "pg_version":
+    "description": |-
+      The version of Postgres running on the instance.
+  "read_only_dns":
+    "description": |-
+      The DNS endpoint to connect to the instance for read only access. This is only available if
+      enable_readable_secondaries is true.
+  "read_write_dns":
+    "description": |-
+      The DNS endpoint to connect to the instance for read+write access.
+  "retention_window_in_days":
+    "description": |-
+      The retention window for the instance. This is the time window in days
+      for which the historical data is retained. The default value is 7 days.
+      Valid values are 2 to 35 days.
+  "state":
+    "description": |-
+      The current state of the instance.
+  "stopped":
+    "description": |-
+      Whether the instance is stopped.
+  "uid":
+    "description": |-
+      An immutable UUID identifier for the instance.
 github.com/databricks/cli/bundle/config/resources.Job:
   "budget_policy_id":
     "description": |-
@@ -348,6 +419,13 @@ github.com/databricks/cli/bundle/config/resources.Job:
   "trigger":
     "description": |-
       A configuration to trigger a run when certain conditions are met. The default behavior is that the job runs only when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.
+  "usage_policy_id":
+    "description": |-
+      The id of the user specified usage policy to use for this job.
+      If not specified, a default usage policy may be applied when creating or modifying the job.
+      See `effective_budget_policy_id` for the budget policy used by this workload.
+    "x-databricks-preview": |-
+      PRIVATE
   "webhook_notifications":
     "description": |-
       A collection of system notification IDs to notify when runs of this job begin or complete.
@@ -1538,6 +1616,15 @@ github.com/databricks/databricks-sdk-go/service/compute.GcpAttributes:
   "boot_disk_size":
     "description": |-
       Boot disk size in GB
+  "first_on_demand":
+    "description": |-
+      The first `first_on_demand` nodes of the cluster will be placed on on-demand instances.
+      This value should be greater than 0, to make sure the cluster driver node is placed on an
+      on-demand instance. If this value is greater than or equal to the current cluster size, all
+      nodes will be placed on on-demand instances. If this value is less than the current cluster
+      size, `first_on_demand` nodes will be placed on on-demand instances and the remainder will
+      be placed on `availability` instances. Note that this value does not affect
+      cluster size and cannot currently be mutated over the lifetime of a cluster.
   "google_service_account":
     "description": |-
       If provided, the cluster will impersonate the google service account when accessing
@@ -1767,6 +1854,62 @@ github.com/databricks/databricks-sdk-go/service/dashboards.LifecycleState:
         ACTIVE
       - |-
         TRASHED
+github.com/databricks/databricks-sdk-go/service/database.DatabaseInstanceRef:
+  "_":
+    "description": |-
+      DatabaseInstanceRef is a reference to a database instance. It is used in the
+      DatabaseInstance object to refer to the parent instance of an instance and
+      to refer the child instances of an instance.
+      To specify as a parent instance during creation of an instance,
+      the lsn and branch_time fields are optional. If not specified, the child
+      instance will be created from the latest lsn of the parent.
+      If both lsn and branch_time are specified, the lsn will be used to create
+      the child instance.
+  "branch_time":
+    "description": |-
+      Branch time of the ref database instance.
+      For a parent ref instance, this is the point in time on the parent instance from which the
+      instance was created.
+      For a child ref instance, this is the point in time on the instance from which the child
+      instance was created.
+      Input: For specifying the point in time to create a child instance. Optional.
+      Output: Only populated if provided as input to create a child instance.
+  "effective_lsn":
+    "description": |-
+      xref AIP-129. `lsn` is owned by the client, while `effective_lsn` is owned by the server.
+      `lsn` will only be set in Create/Update response messages if and only if the user provides the field via the request.
+      `effective_lsn` on the other hand will always bet set in all response messages (Create/Update/Get/List).
+      For a parent ref instance, this is the LSN on the parent instance from which the
+      instance was created.
+      For a child ref instance, this is the LSN on the instance from which the child instance
+      was created.
+  "lsn":
+    "description": |-
+      User-specified WAL LSN of the ref database instance.
+
+      Input: For specifying the WAL LSN to create a child instance. Optional.
+      Output: Only populated if provided as input to create a child instance.
+  "name":
+    "description": |-
+      Name of the ref database instance.
+  "uid":
+    "description": |-
+      Id of the ref database instance.
+github.com/databricks/databricks-sdk-go/service/database.DatabaseInstanceState:
+  "_":
+    "enum":
+      - |-
+        STARTING
+      - |-
+        AVAILABLE
+      - |-
+        DELETING
+      - |-
+        STOPPED
+      - |-
+        UPDATING
+      - |-
+        FAILING_OVER
 github.com/databricks/databricks-sdk-go/service/jobs.AuthenticationMethod:
   "_":
     "enum":
