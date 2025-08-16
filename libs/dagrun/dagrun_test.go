@@ -57,13 +57,21 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 			seen: []string{"A", "B", "C"},
 		},
 		{
+			name: "one-node cycle",
+			edges: []edge{
+				{"A", "A", "${A.id}"},
+			},
+			cycle: true,
+			msg:   "cycle detected: A refers to itself via ${A.id}",
+		},
+		{
 			name: "two-node cycle",
 			edges: []edge{
 				{"A", "B", "${A.id}"},
 				{"B", "A", "${B.id}"},
 			},
 			cycle: true,
-			msg:   "cycle detected: A refers to B via ${A.id} which refers to A via ${B.id}.",
+			msg:   "cycle detected: A refers to B via ${A.id} which refers to A via ${B.id}",
 		},
 		{
 			name: "three-node cycle",
@@ -84,7 +92,7 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 					g.AddNode(stringWrapper{n})
 				}
 				for _, e := range tc.edges {
-					_ = g.AddDirectedEdge(stringWrapper{e.from}, stringWrapper{e.to}, e.name)
+					g.AddDirectedEdge(stringWrapper{e.from}, stringWrapper{e.to}, e.name)
 				}
 
 				var mu sync.Mutex

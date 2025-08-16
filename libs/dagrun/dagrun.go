@@ -6,17 +6,22 @@ import (
 	"sync"
 )
 
-type adjEdge[N comparable] struct {
+type StringerComparable interface {
+	fmt.Stringer
+	comparable
+}
+
+type adjEdge[N StringerComparable] struct {
 	to    N
 	label string
 }
 
-type Graph[N comparable] struct {
+type Graph[N StringerComparable] struct {
 	adj   map[N][]adjEdge[N]
 	nodes []N // maintains insertion order of added nodes
 }
 
-func NewGraph[N comparable]() *Graph[N] {
+func NewGraph[N StringerComparable]() *Graph[N] {
 	return &Graph[N]{adj: make(map[N][]adjEdge[N])}
 }
 
@@ -31,14 +36,10 @@ func (g *Graph[N]) AddNode(n N) {
 	}
 }
 
-func (g *Graph[N]) AddDirectedEdge(from, to N, label string) error {
-	if from == to {
-		return fmt.Errorf("self-loop %v", from)
-	}
+func (g *Graph[N]) AddDirectedEdge(from, to N, label string) {
 	g.AddNode(from)
 	g.AddNode(to)
 	g.adj[from] = append(g.adj[from], adjEdge[N]{to: to, label: label})
-	return nil
 }
 
 type CycleError[N comparable] struct {
@@ -51,6 +52,10 @@ func (e *CycleError[N]) Error() string {
 		return "cycle detected"
 	}
 
+	if len(e.Nodes) == 1 {
+		return fmt.Sprintf("cycle detected: %v refers to itself via %s", e.Nodes[0], e.Edges[0])
+	}
+
 	// Build "A refers to B via E1" pieces for every edge except the closing one.
 	var parts []string
 	for i := 1; i < len(e.Nodes); i++ {
@@ -58,7 +63,7 @@ func (e *CycleError[N]) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"cycle detected: %s which refers to %v via %s.",
+		"cycle detected: %s which refers to %v via %s",
 		strings.Join(parts, " "),
 		e.Nodes[0],
 		e.Edges[len(e.Edges)-1],
