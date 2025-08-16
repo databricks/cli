@@ -36,3 +36,5 @@ tools/yamlfmt.exe
 
 # Cache for tools/gh_report.py
 .gh-logs
+
+vendor/

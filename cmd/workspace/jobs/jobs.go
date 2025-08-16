@@ -1566,6 +1566,7 @@ func newSubmit() *cobra.Command {
 	cmd.Flags().StringVar(&submitReq.RunName, "run-name", submitReq.RunName, `An optional name for the run.`)
 	// TODO: array: tasks
 	cmd.Flags().IntVar(&submitReq.TimeoutSeconds, "timeout-seconds", submitReq.TimeoutSeconds, `An optional timeout applied to each run of this job.`)
+	cmd.Flags().StringVar(&submitReq.UsagePolicyId, "usage-policy-id", submitReq.UsagePolicyId, `The user specified id of the usage policy to use for this one-time run.`)
 	// TODO: complex arg: webhook_notifications
 
 	cmd.Use = "submit"
