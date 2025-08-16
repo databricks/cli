@@ -1,5 +1,5 @@
-envsubst < databricks.yml.tmpl > databricks.yml
-envsubst < schema.yml.tmpl > schema.yml
+envsubst.py < databricks.yml.tmpl > databricks.yml
+envsubst.py < schema.yml.tmpl > schema.yml
 
 CATALOG_NAME="main"
 SCHEMA_NAME="test-schema-${UNIQUE_NAME}"

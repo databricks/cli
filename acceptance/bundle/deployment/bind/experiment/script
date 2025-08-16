@@ -8,7 +8,7 @@ if [ -z "$CLOUD_ENV" ]; then
     EXPERIMENT_NAME="//Workspace/Users/${CURRENT_USER_NAME}/test-experiment6260d50f-e8ff-4905-8f28-812345678903"   # use hard-coded uuid when running locally
 fi
 export EXPERIMENT_NAME
-envsubst < databricks.yml > out.yml && mv out.yml databricks.yml
+envsubst.py < databricks.yml > out.yml && mv out.yml databricks.yml
 
 title "Create a pre-defined experiment"
 EXPERIMENT_ID=$($CLI experiments create-experiment "${EXPERIMENT_NAME}" | jq -r '.experiment_id')

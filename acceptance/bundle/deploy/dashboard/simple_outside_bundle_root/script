@@ -5,7 +5,7 @@ fi
 cp $TESTDIR/../simple/sample-dashboard.lvdash.json ../.
 
 export DASHBOARD_DISPLAY_NAME
-envsubst < databricks.yml.tmpl > databricks.yml
+envsubst.py < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
     trace $CLI bundle destroy --auto-approve

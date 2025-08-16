@@ -1,5 +1,5 @@
-envsubst < databricks.yml.tmpl > databricks.yml
-envsubst < resources.yml.tmpl > resources.yml
+envsubst.py < databricks.yml.tmpl > databricks.yml
+envsubst.py < resources.yml.tmpl > resources.yml
 
 cleanup() {
   trace $CLI bundle destroy --auto-approve

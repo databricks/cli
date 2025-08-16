@@ -1,5 +1,5 @@
 export DATA_SECURITY_MODE=USER_ISOLATION
-envsubst < databricks.yml.tmpl > databricks.yml
+envsubst.py < databricks.yml.tmpl > databricks.yml
 trace cat databricks.yml
 trap "errcode trace '$CLI' bundle destroy --auto-approve" EXIT
 trace $CLI bundle deploy

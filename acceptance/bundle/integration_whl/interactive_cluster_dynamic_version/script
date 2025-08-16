@@ -1,4 +1,4 @@
-envsubst < databricks.yml.tmpl > databricks.yml
+envsubst.py < databricks.yml.tmpl > databricks.yml
 cp -r $TESTDIR/../interactive_cluster/{setup.py,my_test_code} .
 trap "errcode trace '$CLI' bundle destroy --auto-approve" EXIT
 trace $CLI bundle deploy

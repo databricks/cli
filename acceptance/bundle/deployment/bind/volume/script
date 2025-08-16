@@ -7,7 +7,7 @@ fi
 export VOLUME_NAME
 export SCHEMA_NAME
 export CATALOG_NAME="main"
-envsubst < databricks.yml.tmpl > databricks.yml
+envsubst.py < databricks.yml.tmpl > databricks.yml
 
 VOLUME_TYPE="MANAGED"
 

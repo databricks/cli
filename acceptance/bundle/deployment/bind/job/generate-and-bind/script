@@ -28,7 +28,7 @@ JOB_ID=$($CLI jobs create --json '
 
 echo "Created job with ID: $JOB_ID"
 
-envsubst < databricks.yml.tmpl > databricks.yml
+envsubst.py < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
     title "Delete the tmp folder:"
