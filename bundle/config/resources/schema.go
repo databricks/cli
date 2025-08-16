@@ -14,9 +14,35 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
+type SchemaGrantPrivilege string
+
+const (
+	SchemaGrantPrivilegeAllPrivileges  SchemaGrantPrivilege = "ALL_PRIVILEGES"
+	SchemaGrantPrivilegeApplyTag       SchemaGrantPrivilege = "APPLY_TAG"
+	SchemaGrantPrivilegeCreateFunction SchemaGrantPrivilege = "CREATE_FUNCTION"
+	SchemaGrantPrivilegeCreateTable    SchemaGrantPrivilege = "CREATE_TABLE"
+	SchemaGrantPrivilegeCreateVolume   SchemaGrantPrivilege = "CREATE_VOLUME"
+	SchemaGrantPrivilegeManage         SchemaGrantPrivilege = "MANAGE"
+	SchemaGrantPrivilegeUseSchema      SchemaGrantPrivilege = "USE_SCHEMA"
+	SchemaGrantPrivilegeExecute        SchemaGrantPrivilege = "EXECUTE"
+	SchemaGrantPrivilegeModify         SchemaGrantPrivilege = "MODIFY"
+	SchemaGrantPrivilegeRefresh        SchemaGrantPrivilege = "REFRESH"
+	SchemaGrantPrivilegeSelect         SchemaGrantPrivilege = "SELECT"
+	SchemaGrantPrivilegeReadVolume     SchemaGrantPrivilege = "READ_VOLUME"
+	SchemaGrantPrivilegeWriteVolume    SchemaGrantPrivilege = "WRITE_VOLUME"
+)
+
+// SchemaGrant holds the grant level settings for a single principal in Unity Catalog.
+// Multiple of these can be defined on any schema.
+type SchemaGrant struct {
+	Privileges []SchemaGrantPrivilege `json:"privileges"`
+
+	Principal string `json:"principal"`
+}
+
 type Schema struct {
 	// List of grants to apply on this schema.
-	Grants []Grant `json:"grants,omitempty"`
+	Grants []SchemaGrant `json:"grants,omitempty"`
 
 	// Full name of the schema (catalog_name.schema_name). This value is read from
 	// the terraform state after deployment succeeds.
