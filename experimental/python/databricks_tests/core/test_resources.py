@@ -10,8 +10,10 @@ from databricks.bundles.core._resource_mutator import (
     ResourceMutator,
     job_mutator,
     pipeline_mutator,
+    schema_mutator,
 )
 from databricks.bundles.core._resource_type import _ResourceType
+from databricks.bundles.catalog._models.schema import Schema
 from databricks.bundles.jobs._models.job import Job
 from databricks.bundles.pipelines._models.pipeline import Pipeline
 
@@ -43,6 +45,15 @@ test_cases = [
             mutator=pipeline_mutator,
         ),
         resource_types[Pipeline],
+    ),
+    (
+        TestCase(
+            add_resource=Resources.add_schema,
+            dict_example={"catalog_name": "my_catalog", "name": "my_schema"},
+            dataclass_example=Schema(catalog_name="my_catalog", name="my_schema"),
+            mutator=schema_mutator,
+        ),
+        resource_types[Schema],
     ),
 ]
 test_case_ids = [tpe.plural_name for _, tpe in test_cases]
