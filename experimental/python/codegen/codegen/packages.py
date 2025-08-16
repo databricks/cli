@@ -4,16 +4,19 @@ from typing import Optional
 RESOURCE_NAMESPACE_OVERRIDE = {
     "resources.Job": "jobs",
     "resources.Pipeline": "pipelines",
+    "resources.Volume": "catalog",
     "resources.JobPermission": "jobs",
     "resources.JobPermissionLevel": "jobs",
     "resources.PipelinePermission": "pipelines",
     "resources.PipelinePermissionLevel": "pipelines",
+    "resources.Grant": "catalog",
 }
 
 # All supported resource types
 RESOURCE_TYPES = [
     "resources.Job",
     "resources.Pipeline",
+    "resources.Volume",
 ]
 
 # Namespaces to load from OpenAPI spec.
@@ -24,6 +27,7 @@ LOADED_NAMESPACES = [
     "jobs",
     "pipelines",
     "resources",
+    "catalog",
 ]
 
 RENAMES = {
