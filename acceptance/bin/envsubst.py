@@ -32,7 +32,11 @@ def substitute_variables(text):
 
     def replace_var(match):
         var_name = match.group(1) or match.group(2)
-        return os.environ.get(var_name, "")
+        if var_name in os.environ:
+            return os.environ[var_name]
+        else:
+            # Return the original match if variable is not set
+            return match.group(0)
 
     # Match both $VAR and ${VAR} formats
     pattern = r"\$\{([^}]+)\}|\$([A-Za-z_][A-Za-z0-9_]*)"
