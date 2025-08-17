@@ -32,6 +32,8 @@ def substitute_variables(text):
 
     def replace_var(match):
         var_name = match.group(1) or match.group(2)
+
+        # If the environment variable is not set, replace with an empty string.
         return os.environ.get(var_name, "")
 
     # Match both $VAR and ${VAR} formats
