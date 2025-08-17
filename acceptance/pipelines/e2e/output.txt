@@ -25,6 +25,7 @@ Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 Update ID: [UUID]
 
 Update for pipeline completed successfully.
+
 Pipeline configurations for this update:
 • All tables are refreshed
 
@@ -69,6 +70,7 @@ Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 Update ID: [UUID]
 
 Update for pipeline completed successfully.
+
 Pipeline configurations for this update:
 • All tables are refreshed
 
