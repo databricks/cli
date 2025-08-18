@@ -509,6 +509,75 @@
                   }
                 ]
               },
+              "resources.DatabaseCatalog": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "create_database_if_not_exists": {
+                        "$ref": "#/$defs/bool"
+                      },
+                      "database_instance_name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "database_name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "permissions": {
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.DatabaseCatalogPermission"
+                      },
+                      "uid": {
+                        "$ref": "#/$defs/string"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "database_instance_name",
+                      "database_name",
+                      "name"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.DatabaseCatalogPermission": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "group_name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "level": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.DatabaseCatalogPermissionLevel"
+                      },
+                      "service_principal_name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "user_name": {
+                        "$ref": "#/$defs/string"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "level"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.DatabaseCatalogPermissionLevel": {
+                "type": "string"
+              },
               "resources.DatabaseInstance": {
                 "oneOf": [
                   {
@@ -2205,6 +2274,9 @@
                       "description": "The dashboard definitions for the bundle, where each key is the name of the dashboard.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Dashboard",
                       "markdownDescription": "The dashboard definitions for the bundle, where each key is the name of the dashboard. See [dashboards](https://docs.databricks.com/dev-tools/bundles/resources.html#dashboards)."
+                    },
+                    "database_catalogs": {
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.DatabaseCatalog"
                     },
                     "database_instances": {
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.DatabaseInstance"
@@ -8447,6 +8519,20 @@
                     }
                   ]
                 },
+                "resources.DatabaseCatalog": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.DatabaseCatalog"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
                 "resources.DatabaseInstance": {
                   "oneOf": [
                     {
@@ -8773,6 +8859,20 @@
                       "type": "array",
                       "items": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.DashboardPermission"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.DatabaseCatalogPermission": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.DatabaseCatalogPermission"
                       }
                     },
                     {

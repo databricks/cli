@@ -169,6 +169,9 @@ github.com/databricks/cli/bundle/config.Resources:
       The dashboard definitions for the bundle, where each key is the name of the dashboard.
     "markdown_description": |-
       The dashboard definitions for the bundle, where each key is the name of the dashboard. See [\_](/dev-tools/bundles/resources.md#dashboards).
+  "database_catalogs":
+    "description": |-
+      PLACEHOLDER
   "database_instances":
     "description": |-
       PLACEHOLDER
@@ -460,6 +463,38 @@ github.com/databricks/cli/bundle/config/resources.ClusterPermission:
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.DashboardPermission:
+  "group_name":
+    "description": |-
+      PLACEHOLDER
+  "level":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "user_name":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.DatabaseCatalog:
+  "create_database_if_not_exists":
+    "description": |-
+      PLACEHOLDER
+  "database_instance_name":
+    "description": |-
+      PLACEHOLDER
+  "database_name":
+    "description": |-
+      PLACEHOLDER
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+  "uid":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.DatabaseCatalogPermission:
   "group_name":
     "description": |-
       PLACEHOLDER
