@@ -46,6 +46,9 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 
 	state := b.ResourceDatabase.ExportState(ctx)
 	g, isReferenced, err := makeResourceGraph(ctx, b, state)
+	if err != nil {
+		logdiag.LogError(ctx, fmt.Errorf("error while reading config: %w", err))
+	}
 
 	// Remained in state are resources that no longer present in the config
 	for _, group := range utils.SortedKeys(state) {
@@ -55,6 +58,7 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 			g.AddNode(n)
 			if plannedActionsMap[n] != deployplan.ActionTypeDelete {
 				logdiag.LogError(ctx, fmt.Errorf("internal error, resources %s.%s is missing from state but action is not delete but %v", group, name, plannedActionsMap[n]))
+				return nil
 			}
 		}
 	}
@@ -73,6 +77,7 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 		actionType := plannedActionsMap[node]
 
 		if actionType == deployplan.ActionTypeUnset {
+			logdiag.LogError(ctx, fmt.Errorf("internal error, no action set %s", node))
 			return
 			// TODO: ensure dependencies are not in the plan as well
 		}
