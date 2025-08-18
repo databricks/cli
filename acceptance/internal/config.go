@@ -100,6 +100,11 @@ type TestConfig struct {
 	// List of keys for which to do string replacement value -> [KEY]. If not set, defaults to true.
 	EnvRepl map[string]bool
 
+	// Name of EnvMatrix key that determines variant-specific output file names.
+	// If set and present in EnvMatrix, update mode will run all variants for this key,
+	// and comparison will only consider files containing the current variant value.
+	EnvOutput *string
+
 	// Maximum amount of time the test is allowed to run, will be killed after that.
 	Timeout time.Duration
 

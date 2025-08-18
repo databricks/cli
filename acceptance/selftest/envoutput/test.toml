@@ -1,0 +1,4 @@
+EnvOutput = "DATABRICKS_CLI_DEPLOYMENT"
+
+[EnvMatrix]
+DATABRICKS_CLI_DEPLOYMENT = ["terraform", "direct-exp"]
