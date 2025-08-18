@@ -2,6 +2,8 @@ package dagrun
 
 import (
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 	"sync"
 )
@@ -189,10 +191,9 @@ func (g *Graph[N]) Run(pool int, runUnit func(N) bool) RunResult[N] {
 		panic("dagrun: no entry points")
 	}
 
-	// Track execution outcomes
-	successful := make([]N, 0, len(in)) // assume all succeed
-	failed := make([]N, 0, len(in)/4)   // assume few failures
-	notRun := make(map[N]bool, len(in))
+	successful := make([]N, 0, len(in))
+	var failed []N
+	notRun := make(map[N]bool)
 	// finalized marks nodes whose outcome is already decided
 	// so we decrement the remaining counter exactly once per node.
 	finalized := make(map[N]bool, len(in))
@@ -203,7 +204,7 @@ func (g *Graph[N]) Run(pool int, runUnit func(N) bool) RunResult[N] {
 	var wg sync.WaitGroup
 	wg.Add(pool)
 	for range pool {
-		go runWorkerLoop[N](&wg, ready, done, runUnit)
+		go runWorkerLoop(&wg, ready, done, runUnit)
 	}
 
 	for _, n := range initial {
@@ -221,7 +222,7 @@ func (g *Graph[N]) Run(pool int, runUnit func(N) bool) RunResult[N] {
 
 		if !res.success {
 			failed = append(failed, res.n)
-			propagateCancelFrom[N](g, res.n, &remaining, finalized, notRun)
+			propagateCancelFrom(g, res.n, &remaining, finalized, notRun)
 		} else {
 			successful = append(successful, res.n)
 		}
@@ -241,12 +242,7 @@ func (g *Graph[N]) Run(pool int, runUnit func(N) bool) RunResult[N] {
 	var result RunResult[N]
 	result.Successful = successful
 	result.Failed = failed
-	result.NotRun = make([]N, 0, len(in)/4) // assume few not run
-	for _, n := range g.nodes {
-		if notRun[n] {
-			result.NotRun = append(result.NotRun, n)
-		}
-	}
+	result.NotRun = slices.Collect(maps.Keys(notRun))
 	return result
 }
 

@@ -39,8 +39,6 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 			name: "empty graph",
 			result: RunResult[stringWrapper]{
 				Successful: []stringWrapper{},
-				Failed:     []stringWrapper{},
-				NotRun:     []stringWrapper{},
 			},
 		},
 		{
@@ -49,8 +47,6 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 			seen:  []string{"A"},
 			result: RunResult[stringWrapper]{
 				Successful: []stringWrapper{{"A"}},
-				Failed:     []stringWrapper{},
-				NotRun:     []stringWrapper{},
 			},
 		},
 		{
@@ -59,8 +55,6 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 			seenSorted: []string{"A", "B"},
 			result: RunResult[stringWrapper]{
 				Successful: []stringWrapper{{"A"}, {"B"}},
-				Failed:     []stringWrapper{},
-				NotRun:     []stringWrapper{},
 			},
 		},
 		{
@@ -69,8 +63,6 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 			seenSorted: []string{"A", "B", "C"},
 			result: RunResult[stringWrapper]{
 				Successful: []stringWrapper{{"A"}, {"B"}, {"C"}},
-				Failed:     []stringWrapper{},
-				NotRun:     []stringWrapper{},
 			},
 		},
 		{
@@ -82,8 +74,6 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 			seen: []string{"A", "B", "C"},
 			result: RunResult[stringWrapper]{
 				Successful: []stringWrapper{{"A"}, {"B"}, {"C"}},
-				Failed:     []stringWrapper{},
-				NotRun:     []stringWrapper{},
 			},
 		},
 		{
