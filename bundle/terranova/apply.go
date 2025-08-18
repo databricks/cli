@@ -69,7 +69,7 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 
 	client := b.WorkspaceClient()
 
-	_ = g.Run(defaultParallelism, func(node nodeKey) bool {
+	result := g.Run(defaultParallelism, func(node nodeKey) bool {
 		// TODO: if a given node fails, all downstream nodes should not be run. We should report those nodes.
 		// TODO: ensure that config for this node is fully resolved at this point.
 
@@ -147,6 +147,14 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 	err = b.ResourceDatabase.Finalize()
 	if err != nil {
 		logdiag.LogError(ctx, err)
+	}
+
+	for _, node := range result.Successful {
+		_, exists := plannedActionsMap[node]
+		if !exists {
+			logdiag.LogError(ctx, fmt.Errorf("internal error: unexpected deployment: %s.%s", node.Group, node.Name))
+		}
+		delete(plannedActionsMap, node)
 	}
 
 	// TODO: check if all planned actions were performed
