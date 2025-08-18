@@ -1,1 +1,4 @@
 RecordRequests = true
+
+EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["terraform"]   # direct does not support non-id references yet
+# Error: reading config: failed to read references from config for volumes.foo: parsing refs: cannot process reference resources.schemas.bar.name: ${resources...} can only refer to field in the config or 'id'
