@@ -1,5 +1,8 @@
-envsubst.py < databricks.yml.tmpl > databricks.yml
-envsubst.py < a/b/resources.yml.tmpl > a/b/resources.yml
+# We need to disable MSYS_NO_PATHCONV when running the python script.
+# This is because the python interpreter is otherwise unable to find the python script
+# when MSYS_NO_PATHCONV is enabled.
+(unset MSYS_NO_PATHCONV; envsubst.py < databricks.yml.tmpl > databricks.yml)
+(unset MSYS_NO_PATHCONV; envsubst.py < a/b/resources.yml.tmpl > a/b/resources.yml)
 
 cleanup() {
     trace $CLI bundle destroy --auto-approve
