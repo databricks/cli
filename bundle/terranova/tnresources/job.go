@@ -33,7 +33,7 @@ func (r *ResourceJob) DoCreate(ctx context.Context) (string, error) {
 	}
 	response, err := r.client.Jobs.Create(ctx, request)
 	if err != nil {
-		return "", SDKError{Method: "Jobs.Create", Err: err}
+		return "", err
 	}
 	return strconv.FormatInt(response.JobId, 10), nil
 }
@@ -43,11 +43,7 @@ func (r *ResourceJob) DoUpdate(ctx context.Context, id string) error {
 	if err != nil {
 		return err
 	}
-	err = r.client.Jobs.Reset(ctx, request)
-	if err != nil {
-		return SDKError{Method: "Jobs.Reset", Err: err}
-	}
-	return nil
+	return r.client.Jobs.Reset(ctx, request)
 }
 
 func DeleteJob(ctx context.Context, client *databricks.WorkspaceClient, id string) error {
@@ -55,11 +51,7 @@ func DeleteJob(ctx context.Context, client *databricks.WorkspaceClient, id strin
 	if err != nil {
 		return err
 	}
-	err = client.Jobs.DeleteByJobId(ctx, idInt)
-	if err != nil {
-		return SDKError{Method: "Jobs.DeleteByJobId", Err: err}
-	}
-	return nil
+	return client.Jobs.DeleteByJobId(ctx, idInt)
 }
 
 func (r *ResourceJob) WaitAfterCreate(ctx context.Context) error {
