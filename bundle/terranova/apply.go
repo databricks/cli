@@ -11,10 +11,10 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/terranova/tnstate"
-	"github.com/databricks/cli/libs/dagrun"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 )
 
@@ -37,16 +37,35 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 		return nil
 	}
 
-	g := dagrun.NewGraph[deployplan.Action]()
+	// Maps node key to originally planned action
+	plannedActionsMap := map[nodeKey]deployplan.ActionType{}
 
 	for _, action := range b.Plan.Actions {
-		g.AddNode(action)
-		// TODO: Scan v for references and use g.AddDirectedEdge to add dependency
+		plannedActionsMap[nodeKey{action.Group, action.Name}] = action.ActionType
+	}
+
+	state := b.ResourceDatabase.ExportState(ctx)
+	g, isReferenced, err := makeResourceGraph(ctx, b, state)
+	if err != nil {
+		logdiag.LogError(ctx, fmt.Errorf("error while reading config: %w", err))
+	}
+
+	// Remained in state are resources that no longer present in the config
+	for _, group := range utils.SortedKeys(state) {
+		groupData := state[group]
+		for _, name := range utils.SortedKeys(groupData) {
+			n := nodeKey{group, name}
+			g.AddNode(n)
+			if plannedActionsMap[n] != deployplan.ActionTypeDelete {
+				logdiag.LogError(ctx, fmt.Errorf("internal error, resources %s.%s is missing from state but action is not delete but %v", group, name, plannedActionsMap[n]))
+				return nil
+			}
+		}
 	}
 
 	client := b.WorkspaceClient()
 
-	err := g.Run(defaultParallelism, func(node deployplan.Action) {
+	err = g.Run(defaultParallelism, func(node nodeKey) {
 		// TODO: if a given node fails, all downstream nodes should not be run. We should report those nodes.
 		// TODO: ensure that config for this node is fully resolved at this point.
 
@@ -55,20 +74,12 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 			return
 		}
 
-		if node.ActionType == deployplan.ActionTypeUnset {
-			logdiag.LogError(ctx, fmt.Errorf("internal error, no action set %#v", node))
+		actionType := plannedActionsMap[node]
+
+		// The way plan currently works, is that it does not add resources with Noop action, turning them into Unset.
+		// So we skip both, although at this point we will not see Noop here.
+		if actionType == deployplan.ActionTypeUnset || actionType == deployplan.ActionTypeNoop {
 			return
-		}
-
-		var config any
-
-		if node.ActionType != deployplan.ActionTypeDelete {
-			var ok bool
-			config, ok = b.GetResourceConfig(node.Group, node.Name)
-			if !ok {
-				logdiag.LogError(ctx, fmt.Errorf("internal error: cannot get config for group=%v name=%v", node.Group, node.Name))
-				return
-			}
 		}
 
 		d := Deployer{
@@ -79,11 +90,48 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 			settings:     settings,
 		}
 
-		// TODO: pass node.ActionType and respect it. Do not change Update to Recreate or Delete for example.
-		err := d.Deploy(ctx, config, node.ActionType)
+		if actionType == deployplan.ActionTypeDelete {
+			err = d.destroy(ctx)
+			if err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("destroying %s.%s: %w", d.group, d.resourceName, err))
+			}
+			return
+		}
+
+		config, ok := b.GetResourceConfig(node.Group, node.Name)
+		if !ok {
+			logdiag.LogError(ctx, fmt.Errorf("internal error when reading config for %s.%s", node.Group, node.Name))
+			return
+		}
+
+		// Fetch the references to ensure all are resolved
+		myReferences, err := extractReferences(b.Config.Value(), node)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return
+		}
+
+		// At this point it's an error to have unresolved deps
+		if len(myReferences) > 0 {
+			// TODO: include the deps themselves in the message
+			logdiag.LogError(ctx, fmt.Errorf("cannot deploy %s.%s due to unresolved deps", node.Group, node.Name))
+			return
+		}
+
+		// TODO: redo plan to downgrade planned action if possible (?)
+
+		err = d.Deploy(ctx, config, actionType)
+		if err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
+
+		if isReferenced[node] {
+			err = resolveIDReference(ctx, b, d.group, d.resourceName)
+			if err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("failed to replace ref to resources.%s.%s.id: %w", d.group, d.resourceName, err))
+				return
+			}
 		}
 	})
 	if err != nil {
@@ -94,6 +142,8 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 	if err != nil {
 		logdiag.LogError(ctx, err)
 	}
+
+	// TODO: check if all planned actions were performed
 
 	return nil
 }
@@ -107,14 +157,6 @@ type Deployer struct {
 }
 
 func (d *Deployer) Deploy(ctx context.Context, inputConfig any, actionType deployplan.ActionType) error {
-	if actionType == deployplan.ActionTypeDelete {
-		err := d.destroy(ctx, inputConfig)
-		if err != nil {
-			return fmt.Errorf("destroying %s.%s: %w", d.group, d.resourceName, err)
-		}
-		return nil
-	}
-
 	err := d.deploy(ctx, inputConfig, actionType)
 	if err != nil {
 		return fmt.Errorf("deploying %s.%s: %w", d.group, d.resourceName, err)
@@ -122,7 +164,7 @@ func (d *Deployer) Deploy(ctx context.Context, inputConfig any, actionType deplo
 	return nil
 }
 
-func (d *Deployer) destroy(ctx context.Context, inputConfig any) error {
+func (d *Deployer) destroy(ctx context.Context) error {
 	entry, hasEntry := d.db.GetResourceEntry(d.group, d.resourceName)
 	if !hasEntry {
 		log.Infof(ctx, "%s.%s: Cannot delete, missing from state", d.group, d.resourceName)
