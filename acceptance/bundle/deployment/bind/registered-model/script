@@ -6,7 +6,7 @@ if [ -z "$CLOUD_ENV" ]; then
 fi
 CATALOG_NAME=main
 export SCHEMA_NAME MODEL_NAME CATALOG_NAME
-envsubst.py < databricks.yml.tmpl > databricks.yml
+envsubst < databricks.yml.tmpl > databricks.yml
 cat databricks.yml
 
 # Create a pre-defined schema:

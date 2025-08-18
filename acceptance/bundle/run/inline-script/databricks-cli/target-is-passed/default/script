@@ -1,5 +1,5 @@
 # Replace placeholder with an actual host URL and token
-envsubst.py < .databrickscfg > out && mv out .databrickscfg
+envsubst < .databrickscfg > out && mv out .databrickscfg
 export DATABRICKS_CONFIG_FILE=.databrickscfg
 
 # Credentials will be picked up from .databrickscfg. Unset existing credentials.

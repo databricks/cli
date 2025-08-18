@@ -24,7 +24,7 @@ JOB_ID=$($CLI jobs create --json '
 
 echo "Created job with ID: $JOB_ID"
 
-envsubst.py < databricks.yml.tmpl > databricks.yml
+envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
     title "Delete the pre-defined job $JOB_ID:"

@@ -4,7 +4,7 @@
 # Hence this is to test that python wheel tasks in DABs are working for older DBRs
 export DEFAULT_SPARK_VERSION=12.2.x-scala2.12
 export EXTRA_CONFIG=python_wheel_wrapper.yml
-envsubst.py < $TESTDIR/../base/databricks.yml.tmpl > databricks.yml
+envsubst < $TESTDIR/../base/databricks.yml.tmpl > databricks.yml
 cp -r $TESTDIR/../base/{$EXTRA_CONFIG,setup.py,my_test_code} .
 trace cat databricks.yml
 trap "errcode trace '$CLI' bundle destroy --auto-approve" EXIT

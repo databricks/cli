@@ -1,4 +1,4 @@
-envsubst.py < databricks.yml.tmpl > databricks.yml
+envsubst < databricks.yml.tmpl > databricks.yml
 touch foo.py
 touch bar.py
 trace $CLI bundle deploy

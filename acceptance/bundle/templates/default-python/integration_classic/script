@@ -3,7 +3,7 @@ venv_activate
 trace python -c 'import sys; print("%s.%s" % sys.version_info[:2])'
 uv pip install -q setuptools
 
-envsubst.py < input.json.tmpl > input.json
+envsubst < input.json.tmpl > input.json
 trace $CLI bundle init default-python --config-file ./input.json --output-dir .
 rm input.json
 

@@ -4,8 +4,8 @@ if [ -z "$CLOUD_ENV" ]; then
 fi
 
 export DASHBOARD_DISPLAY_NAME
-envsubst.py < databricks.yml.tmpl > databricks.yml
-envsubst.py < resources/dashboards.yml.tmpl > resources/dashboards.yml
+envsubst < databricks.yml.tmpl > databricks.yml
+envsubst < resources/dashboards.yml.tmpl > resources/dashboards.yml
 
 cleanup() {
     trace $CLI bundle destroy --auto-approve

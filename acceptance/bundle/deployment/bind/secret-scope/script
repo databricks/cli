@@ -3,7 +3,7 @@ if [ -z "$CLOUD_ENV" ]; then
     SECRET_SCOPE_NAME="test-secret-scope-6260d50f-e8ff-4905-8f28-812345678903" # use hard-coded uuid when running locally
 fi
 export SECRET_SCOPE_NAME
-envsubst.py < databricks.yml.tmpl > databricks.yml
+envsubst < databricks.yml.tmpl > databricks.yml
 
 # Create a pre-defined volume:
 trace $CLI secrets create-scope "${SECRET_SCOPE_NAME}"

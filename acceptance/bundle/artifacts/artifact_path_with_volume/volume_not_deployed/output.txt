@@ -1,5 +1,5 @@
 
->>> envsubst.py
+>>> envsubst
 
 >>> [CLI] schemas create schema-[UNIQUE_NAME] main
 {

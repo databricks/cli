@@ -1,4 +1,4 @@
-envsubst.py < databricks.yml > databricks.yml.subst
+envsubst < databricks.yml > databricks.yml.subst
 mv databricks.yml.subst databricks.yml
 
 # Deploy bundle once to create the dashboard.

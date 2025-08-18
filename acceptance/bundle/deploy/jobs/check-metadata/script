@@ -1,5 +1,5 @@
-pyexec envsubst.py < databricks.yml.tmpl > databricks.yml
-pyexec envsubst.py < a/b/resources.yml.tmpl > a/b/resources.yml
+envsubst < databricks.yml.tmpl > databricks.yml
+envsubst < a/b/resources.yml.tmpl > a/b/resources.yml
 
 cleanup() {
     trace $CLI bundle destroy --auto-approve

@@ -4,7 +4,7 @@ if [ -z "$CLOUD_ENV" ]; then
 fi
 export SECRET_SCOPE_NAME
 
-envsubst.py < databricks.yml.tmpl > databricks.yml
+envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
     trace $CLI bundle destroy --auto-approve

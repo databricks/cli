@@ -1,6 +1,6 @@
 # Replace placeholder with an actual host URL
-envsubst.py < databricks.yml > out.yml && mv out.yml databricks.yml
-envsubst.py < .databrickscfg > out && mv out .databrickscfg
+envsubst < databricks.yml > out.yml && mv out.yml databricks.yml
+envsubst < .databrickscfg > out && mv out .databrickscfg
 export DATABRICKS_CONFIG_FILE=.databrickscfg
 
 host=$DATABRICKS_HOST
