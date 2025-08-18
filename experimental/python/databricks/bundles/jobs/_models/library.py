@@ -1,21 +1,21 @@
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, TypedDict
 
-from databricks.bundles.compute._models.maven_library import (
-    MavenLibrary,
-    MavenLibraryParam,
-)
-from databricks.bundles.compute._models.python_py_pi_library import (
-    PythonPyPiLibrary,
-    PythonPyPiLibraryParam,
-)
-from databricks.bundles.compute._models.r_cran_library import (
-    RCranLibrary,
-    RCranLibraryParam,
-)
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import VariableOrOptional
+from databricks.bundles.jobs._models.maven_library import (
+    MavenLibrary,
+    MavenLibraryParam,
+)
+from databricks.bundles.jobs._models.python_py_pi_library import (
+    PythonPyPiLibrary,
+    PythonPyPiLibraryParam,
+)
+from databricks.bundles.jobs._models.r_cran_library import (
+    RCranLibrary,
+    RCranLibraryParam,
+)
 
 if TYPE_CHECKING:
     from typing_extensions import Self
