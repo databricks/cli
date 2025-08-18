@@ -183,6 +183,7 @@ func deployPrepare(ctx context.Context, b *bundle.Bundle) {
 		// Updates (typed): resources.pipelines.*.{schema,target}, resources.volumes.*.schema_name (converts implicit schema references to explicit ${resources.schemas.<schema_key>.name} syntax)
 		// Translates implicit schema references in DLT pipelines or UC Volumes to explicit syntax to capture dependencies
 		// Needs to be run after ${resources} resolution since otherwise that undoes the change here.
+		// TODO: one we have depends_on support we should leverage that here and move this back to initialize phase.
 		resourcemutator.CaptureSchemaDependency(),
 	)
 }
