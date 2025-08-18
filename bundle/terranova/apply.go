@@ -6,11 +6,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"reflect"
+	"slices"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/terranova/tnstate"
+	"github.com/databricks/cli/libs/dagrun"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
@@ -113,6 +117,7 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 		myReferences, err := extractReferences(b.Config.Value(), node)
 		if err != nil {
 			logdiag.LogError(ctx, err)
+
 			return false
 		}
 
@@ -149,17 +154,56 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 		logdiag.LogError(ctx, err)
 	}
 
-	for _, node := range result.Successful {
+	logStats(ctx, result, plannedActionsMap)
+	return nil
+}
+
+func logStats(ctx context.Context, result dagrun.RunResult[nodeKey], plannedActionsMap map[nodeKey]deployplan.ActionType) {
+	deleteKeys(result.Successful, plannedActionsMap)
+	deleteKeys(result.Failed, plannedActionsMap)
+	deleteKeys(result.NotRun, plannedActionsMap)
+
+	total := len(result.Successful) + len(result.Failed) + len(result.NotRun)
+
+	if len(result.Failed) > 0 {
+		names := strings.Join(toStrings(result.Failed), ", ")
+		logdiag.LogError(ctx, fmt.Errorf("%d out of %d resources failed to deploy: %s", len(result.Failed), total, names))
+	}
+
+	if len(result.NotRun) > 0 {
+		names := strings.Join(toStrings(result.NotRun), ", ")
+		logdiag.LogError(ctx, fmt.Errorf("%d out of %d resources not deployed because of failed dependency: %s", len(result.NotRun), total, names))
+	}
+
+	if len(plannedActionsMap) > 0 {
+		names := strings.Join(toStrings(slices.Collect(maps.Keys(plannedActionsMap))), ", ")
+		logdiag.LogError(ctx, fmt.Errorf("%d resources present in plan but not processed: %s", len(plannedActionsMap), names))
+	}
+}
+
+func toStrings(nodes []nodeKey) []string {
+	result := make([]string, len(nodes))
+	for i, node := range nodes {
+		result[i] = node.String()
+	}
+	return result
+}
+
+func checkPresenceAndDelete(ctx context.Context, nodes []nodeKey, plannedActionsMap map[nodeKey]deployplan.ActionType) {
+	// XXX swap arguments
+	for _, node := range nodes {
 		_, exists := plannedActionsMap[node]
 		if !exists {
 			logdiag.LogError(ctx, fmt.Errorf("internal error: unexpected deployment: %s.%s", node.Group, node.Name))
 		}
 		delete(plannedActionsMap, node)
 	}
+}
 
-	// TODO: check if all planned actions were performed
-
-	return nil
+func deleteKeys(nodes []nodeKey, plannedActionsMap map[nodeKey]deployplan.ActionType) {
+	for _, node := range nodes {
+		delete(plannedActionsMap, node)
+	}
 }
 
 type Deployer struct {
