@@ -1,0 +1,19 @@
+# this tests $resources resolution without additional complications (no implict deps, no presets)
+resources:
+  volumes:
+    bar:
+      catalog_name: mycatalog
+      schema_name: myschema
+      name: barname
+    foo:
+      catalog_name: ${resources.volumes.bar.catalog_name}
+      schema_name: ${resources.volumes.bar.schema_name}
+      name: myname
+  pipelines:
+    mypipeline:
+      # When creating the pipeline we should see dev prefix in schema_name here
+      name: pipeline for ${resources.volumes.foo.catalog_name}.${resources.volumes.foo.schema_name}.${resources.volumes.foo.name}
+
+targets:
+  dev:
+    mode: development

@@ -1,3 +1,6 @@
+# this tests resolution of $resources in presence of complicating factors:
+#  - presets that modify schema name
+#  - implicit dependencies between schema and volume which inject $resource references
 resources:
   schemas:
     bar:
