@@ -380,6 +380,11 @@ func getTests(t *testing.T) []string {
 
 // Return a reason to skip the test. Empty string means "don't skip".
 func getSkipReason(config *internal.TestConfig, configPath string) string {
+	// Apply default first, so that it's visible in out.test.toml
+	if isTruePtr(config.CloudSlow) {
+		config.Cloud = config.CloudSlow
+	}
+
 	if SkipLocal && isTruePtr(config.Local) {
 		return "Disabled via SkipLocal setting in " + configPath
 	}
@@ -404,7 +409,6 @@ func getSkipReason(config *internal.TestConfig, configPath string) string {
 		}
 
 		if isTruePtr(config.CloudSlow) {
-			config.Cloud = config.CloudSlow
 			if testing.Short() {
 				return fmt.Sprintf("Disabled via CloudSlow setting in %s (CLOUD_ENV=%s, Short=%v)", configPath, cloudEnv, testing.Short())
 			}
