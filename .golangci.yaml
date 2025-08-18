@@ -16,6 +16,7 @@ linters:
     - unused
     - exhaustruct
     - copyloopvar
+    - gosec
   settings:
     copyloopvar:
       check-alias: true
@@ -25,6 +26,20 @@ linters:
         - (*github.com/spf13/cobra.Command).MarkFlagRequired
         - (*github.com/spf13/pflag.FlagSet).MarkDeprecated
         - (*github.com/spf13/pflag.FlagSet).MarkHidden
+    gosec:
+      # Only exclude rules that currently fire in this repository
+      excludes:
+        - G101 # Hardcoded credentials
+        - G107 # Url provided to HTTP request as taint input
+        - G110 # Potential DoS vulnerability via decompression bomb
+        - G112 # Potential Slowloris attack
+        - G115 # Potential integer overflow when converting between integer types
+        - G204 # Audit use of command execution
+        - G306 # Poor file permissions used when writing to a new file
+        - G401 # Use of weak cryptographic primitive (MD5/SHA1)
+        - G404 # Insecure random number source (rand)
+        - G501 # Import blocklist: crypto/md5
+        - G602 # Slice access out of bounds
     gocritic:
       disable-all: true
       enabled-checks:
