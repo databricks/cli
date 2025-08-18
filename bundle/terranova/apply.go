@@ -69,13 +69,13 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 
 	client := b.WorkspaceClient()
 
-	_ = g.Run(defaultParallelism, func(node nodeKey) error {
+	_ = g.Run(defaultParallelism, func(node nodeKey) bool {
 		// TODO: if a given node fails, all downstream nodes should not be run. We should report those nodes.
 		// TODO: ensure that config for this node is fully resolved at this point.
 
 		settings, ok := SupportedResources[node.Group]
 		if !ok {
-			return nil
+			return false
 		}
 
 		actionType := plannedActionsMap[node]
@@ -83,7 +83,7 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 		// The way plan currently works, is that it does not add resources with Noop action, turning them into Unset.
 		// So we skip both, although at this point we will not see Noop here.
 		if actionType == deployplan.ActionTypeUnset || actionType == deployplan.ActionTypeNoop {
-			return nil
+			return true
 		}
 
 		d := Deployer{
@@ -98,28 +98,29 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 			err = d.destroy(ctx)
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("destroying %s.%s: %w", d.group, d.resourceName, err))
+				return false
 			}
-			return nil
+			return true
 		}
 
 		config, ok := b.GetResourceConfig(node.Group, node.Name)
 		if !ok {
 			logdiag.LogError(ctx, fmt.Errorf("internal error when reading config for %s.%s", node.Group, node.Name))
-			return nil
+			return false
 		}
 
 		// Fetch the references to ensure all are resolved
 		myReferences, err := extractReferences(b.Config.Value(), node)
 		if err != nil {
 			logdiag.LogError(ctx, err)
-			return nil
+			return false
 		}
 
 		// At this point it's an error to have unresolved deps
 		if len(myReferences) > 0 {
 			// TODO: include the deps themselves in the message
 			logdiag.LogError(ctx, fmt.Errorf("cannot deploy %s.%s due to unresolved deps", node.Group, node.Name))
-			return nil
+			return false
 		}
 
 		// TODO: redo plan to downgrade planned action if possible (?)
@@ -127,7 +128,7 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 		err = d.Deploy(ctx, config, actionType)
 		if err != nil {
 			logdiag.LogError(ctx, err)
-			return nil
+			return false
 		}
 
 		// Update resources.id after successful deploy so that future ${resources...id} refs are replaced
@@ -135,11 +136,11 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 			err = resolveIDReference(ctx, b, node.Group, node.Name)
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("failed to replace ref to resources.%s.%s.id: %w", node.Group, node.Name, err))
-				return nil
+				return false
 			}
 		}
 
-		return nil
+		return true
 	})
 
 	// This must run even if deploy failed:

@@ -111,12 +111,12 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 	// we might have already got rid of this reference, thus potentially downgrading actionType
 
 	// parallelism is set to 1, so there is no multi-threaded access there.
-	_ = g.Run(1, func(node nodeKey) error {
+	_ = g.Run(1, func(node nodeKey) bool {
 		settings, ok := SupportedResources[node.Group]
 		if !ok {
 			logdiag.LogError(ctx, fmt.Errorf("resource not supported on direct backend: %s", node.Group))
 			// TODO: return an error so that the whole process is aborted.
-			return nil
+			return false
 		}
 
 		pl := Planner{
@@ -130,7 +130,7 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 		config, ok := b.GetResourceConfig(pl.group, pl.resourceName)
 		if !ok {
 			logdiag.LogError(ctx, fmt.Errorf("internal error: cannot get config for %s.%s", pl.group, pl.resourceName))
-			return nil
+			return false
 			// TODO: return an error so that the whole process is aborted.
 		}
 
@@ -139,19 +139,19 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			// TODO: return error to abort this branch
-			return nil
+			return false
 		}
 
 		if isReferenced[node] && actionType.KeepsID() {
 			err = resolveIDReference(ctx, b, pl.group, pl.resourceName)
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("failed to replace ref to resources.%s.%s.id: %w", pl.group, pl.resourceName, err))
-				return nil
+				return false
 			}
 		}
 
 		if actionType == deployplan.ActionTypeNoop {
-			return nil
+			return true
 		}
 
 		actions = append(actions, deployplan.Action{
@@ -159,7 +159,7 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 			Name:       node.Name,
 			ActionType: actionType,
 		})
-		return nil
+		return true
 	})
 
 	if logdiag.HasError(ctx) {

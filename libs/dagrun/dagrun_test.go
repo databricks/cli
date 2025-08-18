@@ -1,7 +1,6 @@
 package dagrun
 
 import (
-	"errors"
 	"fmt"
 	"sort"
 	"sync"
@@ -24,41 +23,55 @@ func (s stringWrapper) String() string {
 func TestRun_VariousGraphsAndPools(t *testing.T) {
 	pools := []int{1, 2, 3, 4}
 
-	// Define shared error instances for consistent comparison
-	stopBErr := errors.New("stopB")
-	r1Err := errors.New("r1")
-	r2Err := errors.New("r2")
-	haltErr := errors.New("halt")
-
 	tests := []struct {
 		name       string
 		nodes      []string
 		seen       []string
 		seenSorted []string
 		edges      []edge
-		errors     map[error][]stringWrapper
-		stops      map[string]error // node -> error to return
-		pools      []int            // optional override of pools to run
+		result     RunResult[stringWrapper]
+		stops      map[string]bool // node -> false to indicate failure
+		pools      []int           // optional override of pools to run
 		cycle      string
 	}{
 		// disconnected graphs
 		{
 			name: "empty graph",
+			result: RunResult[stringWrapper]{
+				Successful: []stringWrapper{},
+				Failed:     []stringWrapper{},
+				NotRun:     []stringWrapper{},
+			},
 		},
 		{
 			name:  "one node",
 			nodes: []string{"A"},
 			seen:  []string{"A"},
+			result: RunResult[stringWrapper]{
+				Successful: []stringWrapper{{"A"}},
+				Failed:     []stringWrapper{},
+				NotRun:     []stringWrapper{},
+			},
 		},
 		{
 			name:       "two nodes",
 			nodes:      []string{"A", "B"},
 			seenSorted: []string{"A", "B"},
+			result: RunResult[stringWrapper]{
+				Successful: []stringWrapper{{"A"}, {"B"}},
+				Failed:     []stringWrapper{},
+				NotRun:     []stringWrapper{},
+			},
 		},
 		{
 			name:       "three nodes",
 			nodes:      []string{"A", "B", "C"},
 			seenSorted: []string{"A", "B", "C"},
+			result: RunResult[stringWrapper]{
+				Successful: []stringWrapper{{"A"}, {"B"}, {"C"}},
+				Failed:     []stringWrapper{},
+				NotRun:     []stringWrapper{},
+			},
 		},
 		{
 			name: "simple DAG",
@@ -67,6 +80,11 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 				{"B", "C", "B->C"},
 			},
 			seen: []string{"A", "B", "C"},
+			result: RunResult[stringWrapper]{
+				Successful: []stringWrapper{{"A"}, {"B"}, {"C"}},
+				Failed:     []stringWrapper{},
+				NotRun:     []stringWrapper{},
+			},
 		},
 		{
 			name: "one-node cycle",
@@ -93,26 +111,38 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 			cycle: "cycle detected: X refers to Y via e1 Y refers to Z via e2 which refers to X via e3",
 		},
 		{
-			name:   "skip downstream on reason",
-			edges:  []edge{{"A", "B", "A->B"}, {"B", "C", "B->C"}},
-			seen:   []string{"A", "B"},
-			stops:  map[string]error{"B": stopBErr},
-			errors: map[error][]stringWrapper{stopBErr: {stringWrapper{"C"}}},
+			name:  "skip downstream on failure",
+			edges: []edge{{"A", "B", "A->B"}, {"B", "C", "B->C"}},
+			seen:  []string{"A", "B"},
+			stops: map[string]bool{"B": false},
+			result: RunResult[stringWrapper]{
+				Successful: []stringWrapper{{"A"}},
+				Failed:     []stringWrapper{{"B"}},
+				NotRun:     []stringWrapper{{"C"}},
+			},
 		},
 		{
-			name:       "multiple reasons propagate to same node",
+			name:       "multiple failures propagate to same node",
 			edges:      []edge{{"A", "D", "A->D"}, {"B", "D", "B->D"}},
 			seenSorted: []string{"A", "B"},
-			stops:      map[string]error{"A": r1Err, "B": r2Err},
+			stops:      map[string]bool{"A": false, "B": false},
 			pools:      []int{1},
-			errors:     map[error][]stringWrapper{r1Err: {stringWrapper{"D"}}},
+			result: RunResult[stringWrapper]{
+				Successful: []stringWrapper{},
+				Failed:     []stringWrapper{{"A"}, {"B"}},
+				NotRun:     []stringWrapper{{"D"}},
+			},
 		},
 		{
-			name:       "same reason from multiple parents has no duplicates",
+			name:       "multiple failures to same dependency",
 			edges:      []edge{{"A", "C", "A->C"}, {"B", "C", "B->C"}},
 			seenSorted: []string{"A", "B"},
-			stops:      map[string]error{"A": haltErr, "B": haltErr},
-			errors:     map[error][]stringWrapper{haltErr: {stringWrapper{"C"}}},
+			stops:      map[string]bool{"A": false, "B": false},
+			result: RunResult[stringWrapper]{
+				Successful: []stringWrapper{},
+				Failed:     []stringWrapper{{"A"}, {"B"}},
+				NotRun:     []stringWrapper{{"C"}},
+			},
 		},
 	}
 
@@ -137,9 +167,9 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 					require.Equal(t, tc.cycle, err.Error())
 					innerCalled := 0
 					require.Panics(t, func() {
-						g.Run(p, func(n stringWrapper) error {
+						g.Run(p, func(n stringWrapper) bool {
 							innerCalled += 1
-							return nil
+							return true
 						})
 					})
 					require.Zero(t, innerCalled)
@@ -149,14 +179,17 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 
 				var mu sync.Mutex
 				var seen []string
-				errorResults := g.Run(p, func(n stringWrapper) error {
+				result := g.Run(p, func(n stringWrapper) bool {
 					mu.Lock()
 					seen = append(seen, n.Value)
 					mu.Unlock()
-					return tc.stops[n.Value]
+					if stop, exists := tc.stops[n.Value]; exists {
+						return stop
+					}
+					return true // success by default
 				})
 
-				assert.Equal(t, tc.errors, errorResults)
+				assert.Equal(t, tc.result, result)
 
 				if tc.seen != nil {
 					assert.Equal(t, tc.seen, seen)
