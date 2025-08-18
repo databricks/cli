@@ -1,0 +1,7 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    foo:
+      name: ${resources.jobs.foo.id}

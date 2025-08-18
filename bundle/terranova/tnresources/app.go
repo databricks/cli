@@ -33,7 +33,7 @@ func (r *ResourceApp) DoCreate(ctx context.Context) (string, error) {
 	}
 	waiter, err := r.client.Apps.Create(ctx, request)
 	if err != nil {
-		return "", SDKError{Method: "Apps.Create", Err: err}
+		return "", err
 	}
 
 	// TODO: Store waiter for Wait method
@@ -48,7 +48,7 @@ func (r *ResourceApp) DoUpdate(ctx context.Context, id string) error {
 	}
 	response, err := r.client.Apps.Update(ctx, request)
 	if err != nil {
-		return SDKError{Method: "Apps.Update", Err: err}
+		return err
 	}
 
 	if response.Name != id {

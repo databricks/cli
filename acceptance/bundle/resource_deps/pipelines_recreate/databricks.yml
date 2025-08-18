@@ -1,0 +1,9 @@
+resources:
+  pipelines:
+    foo:
+      name: pipeline foo
+      catalog: mycatalog
+  jobs:
+    bar:
+      name: job bar
+      description: depends on foo id ${resources.pipelines.foo.id}
