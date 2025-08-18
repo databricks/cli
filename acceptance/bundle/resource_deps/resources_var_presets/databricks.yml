@@ -1,0 +1,17 @@
+# this tests presets that modify schema are visible in $resources references
+resources:
+  schemas:
+    bar:
+      catalog_name: mycatalog
+      name: myschema
+    foo:
+      catalog_name: ${resources.schemas.bar.catalog_name}
+      name: ${resources.schemas.bar.name}
+  pipelines:
+    mypipeline:
+      # When creating the pipeline we should see dev prefix in schema_name here
+      name: pipeline for ${resources.schemas.foo.catalog_name}.${resources.schemas.foo.name}
+
+targets:
+  dev:
+    mode: development
