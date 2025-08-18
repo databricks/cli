@@ -42,13 +42,8 @@ def substitute_variables(text):
 
 
 def main():
-    # Read from stdin
     input_text = sys.stdin.read()
-
-    # Substitute variables
     output_text = substitute_variables(input_text)
-
-    # Write to stdout
     sys.stdout.write(output_text)
 
 
