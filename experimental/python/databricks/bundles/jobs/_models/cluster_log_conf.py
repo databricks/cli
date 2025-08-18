@@ -1,21 +1,21 @@
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, TypedDict
 
-from databricks.bundles.compute._models.dbfs_storage_info import (
-    DbfsStorageInfo,
-    DbfsStorageInfoParam,
-)
-from databricks.bundles.compute._models.s3_storage_info import (
-    S3StorageInfo,
-    S3StorageInfoParam,
-)
-from databricks.bundles.compute._models.volumes_storage_info import (
-    VolumesStorageInfo,
-    VolumesStorageInfoParam,
-)
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import VariableOrOptional
+from databricks.bundles.jobs._models.dbfs_storage_info import (
+    DbfsStorageInfo,
+    DbfsStorageInfoParam,
+)
+from databricks.bundles.jobs._models.s3_storage_info import (
+    S3StorageInfo,
+    S3StorageInfoParam,
+)
+from databricks.bundles.jobs._models.volumes_storage_info import (
+    VolumesStorageInfo,
+    VolumesStorageInfoParam,
+)
 
 if TYPE_CHECKING:
     from typing_extensions import Self

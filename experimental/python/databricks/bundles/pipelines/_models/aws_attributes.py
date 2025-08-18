@@ -1,17 +1,17 @@
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, TypedDict
 
-from databricks.bundles.compute._models.aws_availability import (
-    AwsAvailability,
-    AwsAvailabilityParam,
-)
-from databricks.bundles.compute._models.ebs_volume_type import (
-    EbsVolumeType,
-    EbsVolumeTypeParam,
-)
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import VariableOrOptional
+from databricks.bundles.pipelines._models.aws_availability import (
+    AwsAvailability,
+    AwsAvailabilityParam,
+)
+from databricks.bundles.pipelines._models.ebs_volume_type import (
+    EbsVolumeType,
+    EbsVolumeTypeParam,
+)
 
 if TYPE_CHECKING:
     from typing_extensions import Self
