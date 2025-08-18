@@ -1,0 +1,30 @@
+print_requests() {
+    jq --sort-keys 'select(.method != "GET" and (.path | contains("/jobs")))' < out.requests.txt
+    rm out.requests.txt
+}
+
+print_sorted_requests() {
+    jq -c < out.requests.txt | sort | jq --sort-keys 'select(.method != "GET" and (.path | contains("/jobs")))'
+    rm out.requests.txt
+}
+
+echo "*" > .gitignore
+# In direct, plan is sorted by deployment order. In TF it comes back sorted alphabetically.
+# I think deployment order is better, sorting here to remove the mismatch
+trace $CLI bundle plan 2>&1 | sort
+trace musterr $CLI bundle deploy
+trace print_sorted_requests
+
+trace $CLI bundle summary
+
+ind_id=`read_id.py jobs independent`
+echo "$ind_id:IND_ID" >> ACC_REPLS
+
+trace $CLI bundle plan  # still wants to deploy foo and bar
+
+rm out.requests.txt
+trace musterr $CLI bundle deploy
+print_requests
+
+trace $CLI bundle destroy --auto-approve
+trace print_requests
