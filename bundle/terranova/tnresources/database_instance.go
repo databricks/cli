@@ -23,7 +23,7 @@ func (d *ResourceDatabaseInstance) DoCreate(ctx context.Context) (string, error)
 		DatabaseInstance: d.config,
 	})
 	if err != nil {
-		return "", SDKError{Method: "Database.CreateDatabaseInstance", Err: err}
+		return "", err
 	}
 	d.waiter = waiter
 	return waiter.Response.Name, nil
@@ -38,10 +38,7 @@ func (d ResourceDatabaseInstance) DoUpdate(ctx context.Context, id string) error
 	request.DatabaseInstance.Uid = id
 
 	_, err := d.client.Database.UpdateDatabaseInstance(ctx, request)
-	if err != nil {
-		return SDKError{Method: "Database.UpdateDatabaseInstance", Err: err}
-	}
-	return nil
+	return err
 }
 
 func (d *ResourceDatabaseInstance) WaitAfterCreate(ctx context.Context) error {
@@ -49,10 +46,7 @@ func (d *ResourceDatabaseInstance) WaitAfterCreate(ctx context.Context) error {
 		return nil
 	}
 	_, err := d.waiter.Get()
-	if err != nil {
-		return SDKError{Method: "WaitGetDatabaseInstanceDatabaseAvailable.Get", Err: err}
-	}
-	return nil
+	return err
 }
 
 func (d ResourceDatabaseInstance) WaitAfterUpdate(ctx context.Context) error {
@@ -68,14 +62,10 @@ func NewResourceDatabaseInstance(client *databricks.WorkspaceClient, resource *r
 }
 
 func DeleteDatabaseInstance(ctx context.Context, client *databricks.WorkspaceClient, name string) error {
-	err := client.Database.DeleteDatabaseInstance(ctx, database.DeleteDatabaseInstanceRequest{
+	return client.Database.DeleteDatabaseInstance(ctx, database.DeleteDatabaseInstanceRequest{
 		Name:            name,
 		Purge:           true,
 		Force:           false,
 		ForceSendFields: nil,
 	})
-	if err != nil {
-		return SDKError{Method: "Database.DeleteDatabaseInstanceByName", Err: err}
-	}
-	return nil
 }

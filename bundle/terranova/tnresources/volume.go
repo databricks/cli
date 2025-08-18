@@ -32,7 +32,7 @@ func (r *ResourceVolume) Config() any {
 func (r *ResourceVolume) DoCreate(ctx context.Context) (string, error) {
 	response, err := r.client.Volumes.Create(ctx, r.config)
 	if err != nil {
-		return "", SDKError{Method: "Volumes.Create", Err: err}
+		return "", err
 	}
 	return response.FullName, nil
 }
@@ -58,7 +58,7 @@ func (r *ResourceVolume) DoUpdate(ctx context.Context, id string) error {
 
 	response, err := r.client.Volumes.Update(ctx, updateRequest)
 	if err != nil {
-		return SDKError{Method: "Volumes.Update", Err: err}
+		return err
 	}
 
 	if id != response.FullName {
@@ -91,7 +91,7 @@ func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string) (string,
 
 	response, err := r.client.Volumes.Update(ctx, updateRequest)
 	if err != nil {
-		return "", SDKError{Method: "Volumes.Update", Err: err}
+		return "", err
 	}
 
 	return response.FullName, nil
@@ -100,7 +100,7 @@ func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string) (string,
 func DeleteVolume(ctx context.Context, client *databricks.WorkspaceClient, id string) error {
 	err := client.Volumes.DeleteByName(ctx, id)
 	if err != nil {
-		return SDKError{Method: "Volumes.Delete", Err: err}
+		return err
 	}
 	return nil
 }
