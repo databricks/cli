@@ -73,7 +73,7 @@ func newCreate() *cobra.Command {
 	cmd.Short = `Create a schema.`
 	cmd.Long = `Create a schema.
   
-  Creates a new schema for catalog in the Metatastore. The caller must be a
+  Creates a new schema for catalog in the Metastore. The caller must be a
   metastore admin, or have the **CREATE_SCHEMA** privilege in the parent
   catalog.
 

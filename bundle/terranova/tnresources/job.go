@@ -98,6 +98,7 @@ func makeCreateJob(config jobs.JobSettings) (jobs.CreateJob, error) {
 		Tasks:                config.Tasks,
 		TimeoutSeconds:       config.TimeoutSeconds,
 		Trigger:              config.Trigger,
+		UsagePolicyId:        config.UsagePolicyId,
 		WebhookNotifications: config.WebhookNotifications,
 
 		ForceSendFields: filterFields[jobs.CreateJob](config.ForceSendFields),

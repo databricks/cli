@@ -513,6 +513,7 @@
                 "oneOf": [
                   {
                     "type": "object",
+                    "description": "A DatabaseInstance represents a logical Postgres instance, comprised of both compute and storage.",
                     "properties": {
                       "capacity": {
                         "$ref": "#/$defs/string"
@@ -742,6 +743,12 @@
                       "trigger": {
                         "description": "A configuration to trigger a run when certain conditions are met. The default behavior is that the job runs only when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.TriggerSettings"
+                      },
+                      "usage_policy_id": {
+                        "description": "The id of the user specified usage policy to use for this job.\nIf not specified, a default usage policy may be applied when creating or modifying the job.\nSee `effective_budget_policy_id` for the budget policy used by this workload.",
+                        "$ref": "#/$defs/string",
+                        "x-databricks-preview": "PRIVATE",
+                        "doNotSuggest": true
                       },
                       "webhook_notifications": {
                         "description": "A collection of system notification IDs to notify when runs of this job begin or complete.",
@@ -3754,6 +3761,10 @@
                       "description": "Boot disk size in GB",
                       "$ref": "#/$defs/int"
                     },
+                    "first_on_demand": {
+                      "description": "The first `first_on_demand` nodes of the cluster will be placed on on-demand instances.\nThis value should be greater than 0, to make sure the cluster driver node is placed on an\non-demand instance. If this value is greater than or equal to the current cluster size, all\nnodes will be placed on on-demand instances. If this value is less than the current cluster\nsize, `first_on_demand` nodes will be placed on on-demand instances and the remainder will\nbe placed on `availability` instances. Note that this value does not affect\ncluster size and cannot currently be mutated over the lifetime of a cluster.",
+                      "$ref": "#/$defs/int"
+                    },
                     "google_service_account": {
                       "description": "If provided, the cluster will impersonate the google service account when accessing\ngcloud services (like GCS). The google service account\nmust have previously been added to the Databricks environment by an account\nadministrator.",
                       "$ref": "#/$defs/string"
@@ -4181,20 +4192,26 @@
               "oneOf": [
                 {
                   "type": "object",
+                  "description": "DatabaseInstanceRef is a reference to a database instance. It is used in the\nDatabaseInstance object to refer to the parent instance of an instance and\nto refer the child instances of an instance.\nTo specify as a parent instance during creation of an instance,\nthe lsn and branch_time fields are optional. If not specified, the child\ninstance will be created from the latest lsn of the parent.\nIf both lsn and branch_time are specified, the lsn will be used to create\nthe child instance.",
                   "properties": {
                     "branch_time": {
+                      "description": "Branch time of the ref database instance.\nFor a parent ref instance, this is the point in time on the parent instance from which the\ninstance was created.\nFor a child ref instance, this is the point in time on the instance from which the child\ninstance was created.\nInput: For specifying the point in time to create a child instance. Optional.\nOutput: Only populated if provided as input to create a child instance.",
                       "$ref": "#/$defs/string"
                     },
                     "effective_lsn": {
+                      "description": "xref AIP-129. `lsn` is owned by the client, while `effective_lsn` is owned by the server.\n`lsn` will only be set in Create/Update response messages if and only if the user provides the field via the request.\n`effective_lsn` on the other hand will always bet set in all response messages (Create/Update/Get/List).\nFor a parent ref instance, this is the LSN on the parent instance from which the\ninstance was created.\nFor a child ref instance, this is the LSN on the instance from which the child instance\nwas created.",
                       "$ref": "#/$defs/string"
                     },
                     "lsn": {
+                      "description": "User-specified WAL LSN of the ref database instance.\n\nInput: For specifying the WAL LSN to create a child instance. Optional.\nOutput: Only populated if provided as input to create a child instance.",
                       "$ref": "#/$defs/string"
                     },
                     "name": {
+                      "description": "Name of the ref database instance.",
                       "$ref": "#/$defs/string"
                     },
                     "uid": {
+                      "description": "Id of the ref database instance.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -4207,7 +4224,23 @@
               ]
             },
             "database.DatabaseInstanceState": {
-              "type": "string"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "STARTING",
+                    "AVAILABLE",
+                    "DELETING",
+                    "STOPPED",
+                    "UPDATING",
+                    "FAILING_OVER"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
             },
             "jobs.AuthenticationMethod": {
               "oneOf": [
