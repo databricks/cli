@@ -1,6 +1,7 @@
 package testserver
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -261,8 +262,17 @@ func (s *Server) Handle(method, path string, handler HandlerFunc) {
 			s.RequestCallback(&request)
 		}
 
-		respAny := handler(request)
-		resp := normalizeResponse(s.t, respAny)
+		var resp EncodedResponse
+
+		if bytes.Contains(request.Body, []byte("INJECT_ERROR")) {
+			resp = EncodedResponse{
+				StatusCode: 500,
+				Body:       []byte("INJECTED"),
+			}
+		} else {
+			respAny := handler(request)
+			resp = normalizeResponse(s.t, respAny)
+		}
 
 		for k, v := range resp.Headers {
 			w.Header()[k] = v
