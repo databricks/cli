@@ -76,10 +76,10 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 
 		actionType := plannedActionsMap[node]
 
-		if actionType == deployplan.ActionTypeUnset {
-			logdiag.LogError(ctx, fmt.Errorf("internal error, no action set %s", node))
+		// The way plan currently works, is that it does not add resources with Noop action, turning them into Unset.
+		// So we skip both, although at this point we will not see Noop here.
+		if actionType == deployplan.ActionTypeUnset || actionType == deployplan.ActionTypeNoop {
 			return
-			// TODO: ensure dependencies are not in the plan as well
 		}
 
 		d := Deployer{
