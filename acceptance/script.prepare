@@ -86,3 +86,11 @@ venv_activate() {
         source .venv/bin/activate
     fi
 }
+
+# run a python script which is in $PATH
+pyexec() {
+    # We need to disable MSYS_NO_PATHCONV when running the python script.
+    # This is because the python interpreter is otherwise unable to find the python script
+    # when MSYS_NO_PATHCONV is enabled.
+    env -u MSYS_NO_PATHCONV $@
+}
