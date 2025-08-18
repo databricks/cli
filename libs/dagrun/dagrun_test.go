@@ -24,28 +24,31 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 	pools := []int{1, 2, 3, 4}
 
 	tests := []struct {
-		name        string
-		nodes       []string
-		seen        []string
-		seen_sorted []string
-		edges       []edge
-		cycle       string
+		name       string
+		nodes      []string
+		seen       []string
+		seenSorted []string
+		edges      []edge
+		cycle      string
 	}{
 		// disconnected graphs
+		{
+			name: "empty graph",
+		},
 		{
 			name:  "one node",
 			nodes: []string{"A"},
 			seen:  []string{"A"},
 		},
 		{
-			name:        "two nodes",
-			nodes:       []string{"A", "B"},
-			seen_sorted: []string{"A", "B"},
+			name:       "two nodes",
+			nodes:      []string{"A", "B"},
+			seenSorted: []string{"A", "B"},
 		},
 		{
-			name:        "three nodes",
-			nodes:       []string{"A", "B", "C"},
-			seen_sorted: []string{"A", "B", "C"},
+			name:       "three nodes",
+			nodes:      []string{"A", "B", "C"},
+			seenSorted: []string{"A", "B", "C"},
 		},
 		{
 			name: "simple DAG",
@@ -117,9 +120,9 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 
 				if tc.seen != nil {
 					assert.Equal(t, tc.seen, seen)
-				} else if tc.seen_sorted != nil {
+				} else if tc.seenSorted != nil {
 					sort.Strings(seen)
-					assert.Equal(t, tc.seen_sorted, seen)
+					assert.Equal(t, tc.seenSorted, seen)
 				} else {
 					assert.Empty(t, seen)
 				}
