@@ -26,7 +26,7 @@ trace $CLI bundle plan  2>&1 | sort
 rm out.requests.txt
 musterr $CLI bundle deploy &> out.deploy2.$DATABRICKS_CLI_DEPLOYMENT.txt
 title "Expecting no difference in the output between first and second deploy"
-trace diff.py out.deploy.$DATABRICKS_CLI_DEPLOYMENT.txt out.deploy2.$DATABRICKS_CLI_DEPLOYMENT.txt
+diff.py out.deploy.$DATABRICKS_CLI_DEPLOYMENT.txt out.deploy2.$DATABRICKS_CLI_DEPLOYMENT.txt
 rm out.deploy2.$DATABRICKS_CLI_DEPLOYMENT.txt
 trace print_requests
 

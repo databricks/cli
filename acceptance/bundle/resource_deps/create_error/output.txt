@@ -66,8 +66,6 @@ create jobs.bar
 create jobs.foo
 
 === Expecting no difference in the output between first and second deploy
->>> diff.py out.deploy.terraform.txt out.deploy2.terraform.txt
-
 >>> print_requests
 {
   "body": {

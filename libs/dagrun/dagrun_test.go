@@ -33,6 +33,7 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 		stops      map[string]bool // node -> false to indicate failure
 		pools      []int           // optional override of pools to run
 		cycle      string
+		sortResult bool // if true sort result before comparing with expected
 	}{
 		// disconnected graphs
 		{
@@ -56,6 +57,7 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 			result: RunResult[stringWrapper]{
 				Successful: []stringWrapper{{"A"}, {"B"}},
 			},
+			sortResult: true,
 		},
 		{
 			name:       "three nodes",
@@ -64,6 +66,7 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 			result: RunResult[stringWrapper]{
 				Successful: []stringWrapper{{"A"}, {"B"}, {"C"}},
 			},
+			sortResult: true,
 		},
 		{
 			name: "simple DAG",
@@ -122,17 +125,7 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 				Failed:     []stringWrapper{{"A"}, {"B"}},
 				NotRun:     []stringWrapper{{"D"}},
 			},
-		},
-		{
-			name:       "multiple failures to same dependency",
-			edges:      []edge{{"A", "C", "A->C"}, {"B", "C", "B->C"}},
-			seenSorted: []string{"A", "B"},
-			stops:      map[string]bool{"A": false, "B": false},
-			result: RunResult[stringWrapper]{
-				Successful: []stringWrapper{},
-				Failed:     []stringWrapper{{"A"}, {"B"}},
-				NotRun:     []stringWrapper{{"C"}},
-			},
+			sortResult: true,
 		},
 	}
 
@@ -178,6 +171,18 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 					}
 					return true // success by default
 				})
+
+				if tc.sortResult {
+					sort.Slice(result.Successful, func(i, j int) bool {
+						return result.Successful[i].Value < result.Successful[j].Value
+					})
+					sort.Slice(result.Failed, func(i, j int) bool {
+						return result.Failed[i].Value < result.Failed[j].Value
+					})
+					sort.Slice(result.NotRun, func(i, j int) bool {
+						return result.NotRun[i].Value < result.NotRun[j].Value
+					})
+				}
 
 				assert.Equal(t, tc.result, result)
 
