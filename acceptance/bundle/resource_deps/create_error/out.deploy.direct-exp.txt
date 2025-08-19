@@ -7,7 +7,7 @@ HTTP Status: 500 Internal Server Error
 API error_code: UNKNOWN
 API message: INJECTED
 
-Error: cannot apply jobs.bar: dependency failed: jobs.foo
+Error: cannot create jobs.bar: dependency failed: jobs.foo
 
 Updating deployment state...
 

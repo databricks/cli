@@ -46,7 +46,7 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 
 	for _, action := range b.Plan.Actions {
 		node := nodeKey{action.Group, action.Name}
-		plannedActionsMap[nodeKey{action.Group, action.Name}] = action.ActionType
+		plannedActionsMap[node] = action.ActionType
 		if !g.HasNode(node) {
 			if action.ActionType == deployplan.ActionTypeDelete {
 				// it is expected that this node is not seen by makeResourceGraph
@@ -70,9 +70,13 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 	client := b.WorkspaceClient()
 
 	g.Run(defaultParallelism, func(node nodeKey, failedDependency *nodeKey) bool {
+		actionType := plannedActionsMap[node]
+
+		actionInfo := actionType.String() + " " + node.Group + "." + node.Name
+
 		// If a dependency failed, report and skip execution for this node by returning false
 		if failedDependency != nil {
-			logdiag.LogError(ctx, fmt.Errorf("cannot apply %s.%s: dependency failed: %s", node.Group, node.Name, failedDependency.String()))
+			logdiag.LogError(ctx, fmt.Errorf("cannot %s: dependency failed: %s", actionInfo, failedDependency.String()))
 			return false
 		}
 
@@ -80,10 +84,9 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 
 		settings, ok := SupportedResources[node.Group]
 		if !ok {
+			// Unexpected, this should be filtered at plan.
 			return false
 		}
-
-		actionType := plannedActionsMap[node]
 
 		// The way plan currently works, is that it does not add resources with Noop action, turning them into Unset.
 		// So we skip both, although at this point we will not see Noop here.
@@ -102,7 +105,7 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 		if actionType == deployplan.ActionTypeDelete {
 			err = d.destroy(ctx)
 			if err != nil {
-				logdiag.LogError(ctx, fmt.Errorf("destroying %s.%s: %w", d.group, d.resourceName, err))
+				logdiag.LogError(ctx, fmt.Errorf("cannot %s: %w", actionInfo, err))
 				return false
 			}
 			return true
@@ -110,26 +113,25 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 
 		config, ok := b.GetResourceConfig(node.Group, node.Name)
 		if !ok {
-			logdiag.LogError(ctx, fmt.Errorf("internal error when reading config for %s.%s", node.Group, node.Name))
+			logdiag.LogError(ctx, fmt.Errorf("cannot %s: internal error when reading config", actionInfo))
 			return false
 		}
 
 		// Fetch the references to ensure all are resolved
 		myReferences, err := extractReferences(b.Config.Value(), node)
 		if err != nil {
-			logdiag.LogError(ctx, err)
-
+			logdiag.LogError(ctx, "cannot %s: reading references from config: %w", actionInfo, err)
 			return false
 		}
 
 		// At this point it's an error to have unresolved deps
 		if len(myReferences) > 0 {
 			// TODO: include the deps themselves in the message
-			logdiag.LogError(ctx, fmt.Errorf("cannot deploy %s.%s due to unresolved deps", node.Group, node.Name))
+			logdiag.LogError(ctx, fmt.Errorf("cannot %s %s.%s due to unresolved deps", actionType, node.Group, node.Name))
 			return false
 		}
 
-		// TODO: redo plan to downgrade planned action if possible (?)
+		// TODO: redo calcDiff to downgrade planned action if possible (?)
 
 		err = d.Deploy(ctx, config, actionType)
 		if err != nil {

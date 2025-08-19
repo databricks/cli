@@ -119,7 +119,6 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 		settings, ok := SupportedResources[node.Group]
 		if !ok {
 			logdiag.LogError(ctx, fmt.Errorf("resource not supported on direct backend: %s", node.Group))
-			// TODO: return an error so that the whole process is aborted.
 			return false
 		}
 
@@ -135,14 +134,12 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 		if !ok {
 			logdiag.LogError(ctx, fmt.Errorf("internal error: cannot get config for %s.%s", pl.group, pl.resourceName))
 			return false
-			// TODO: return an error so that the whole process is aborted.
 		}
 
 		// This currently does not do API calls, so we can run this sequentially. Once we have remote diffs, we need to run a in threadpool.
 		actionType, err := pl.Plan(ctx, config)
 		if err != nil {
 			logdiag.LogError(ctx, err)
-			// TODO: return error to abort this branch
 			return false
 		}
 
@@ -163,6 +160,7 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 			Name:       node.Name,
 			ActionType: actionType,
 		})
+
 		return true
 	})
 
