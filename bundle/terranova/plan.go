@@ -111,7 +111,11 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 	// we might have already got rid of this reference, thus potentially downgrading actionType
 
 	// parallelism is set to 1, so there is no multi-threaded access there.
-	_ = g.Run(1, func(node nodeKey) bool {
+	g.Run(1, func(node nodeKey, failedNode *nodeKey) bool {
+		if failedNode != nil {
+			logdiag.LogError(ctx, fmt.Errorf("cannot plan %s.%s: dependency failed: %s", node.Group, node.Name, failedNode.String()))
+			return false
+		}
 		settings, ok := SupportedResources[node.Group]
 		if !ok {
 			logdiag.LogError(ctx, fmt.Errorf("resource not supported on direct backend: %s", node.Group))

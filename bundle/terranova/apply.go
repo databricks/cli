@@ -6,15 +6,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"maps"
 	"reflect"
-	"slices"
-	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/terranova/tnstate"
-	"github.com/databricks/cli/libs/dagrun"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
@@ -73,8 +69,13 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 
 	client := b.WorkspaceClient()
 
-	result := g.Run(defaultParallelism, func(node nodeKey) bool {
-		// TODO: if a given node fails, all downstream nodes should not be run. We should report those nodes.
+	g.Run(defaultParallelism, func(node nodeKey, failedNode *nodeKey) bool {
+		// If a dependency failed, report and skip execution for this node by returning false
+		if failedNode != nil {
+			logdiag.LogError(ctx, fmt.Errorf("cannot apply %s.%s: dependency failed: %s", node.Group, node.Name, failedNode.String()))
+			return false
+		}
+
 		// TODO: ensure that config for this node is fully resolved at this point.
 
 		settings, ok := SupportedResources[node.Group]
@@ -154,43 +155,7 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 		logdiag.LogError(ctx, err)
 	}
 
-	logStats(ctx, result, plannedActionsMap)
 	return nil
-}
-
-func logStats(ctx context.Context, result dagrun.RunResult[nodeKey], plannedActionsMap map[nodeKey]deployplan.ActionType) {
-	if len(result.Failed) > 0 {
-		names := strings.Join(toStrings(result.Failed), ", ")
-		logdiag.LogError(ctx, fmt.Errorf("%d resources failed to apply: %s", len(result.Failed), names))
-	}
-
-	if len(result.NotRun) > 0 {
-		names := strings.Join(toStrings(result.NotRun), ", ")
-		logdiag.LogError(ctx, fmt.Errorf("%d resources not applied: %s", len(result.NotRun), names))
-	}
-
-	deleteKeys(plannedActionsMap, result.Successful)
-	deleteKeys(plannedActionsMap, result.Failed)
-	deleteKeys(plannedActionsMap, result.NotRun)
-
-	if len(plannedActionsMap) > 0 {
-		names := strings.Join(toStrings(slices.Collect(maps.Keys(plannedActionsMap))), ", ")
-		logdiag.LogError(ctx, fmt.Errorf("%d resources present in plan but not processed: %s", len(plannedActionsMap), names))
-	}
-}
-
-func toStrings(nodes []nodeKey) []string {
-	result := make([]string, len(nodes))
-	for i, node := range nodes {
-		result[i] = node.String()
-	}
-	return result
-}
-
-func deleteKeys(plannedActionsMap map[nodeKey]deployplan.ActionType, nodes []nodeKey) {
-	for _, node := range nodes {
-		delete(plannedActionsMap, node)
-	}
 }
 
 type Deployer struct {

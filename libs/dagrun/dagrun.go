@@ -2,8 +2,6 @@ package dagrun
 
 import (
 	"fmt"
-	"maps"
-	"slices"
 	"strings"
 	"sync"
 )
@@ -157,21 +155,12 @@ func (g *Graph[N]) DetectCycle() error {
 	return nil
 }
 
-// RunResult contains the categorized results of a DAG execution.
-type RunResult[N StringerComparable] struct {
-	// Successful contains nodes that executed successfully.
-	Successful []N
-	// Failed contains nodes that failed to execute.
-	Failed []N
-	// NotRun contains nodes that were not executed because their dependencies failed.
-	NotRun []N
-}
-
 // Run executes the DAG with up to pool concurrent workers. The runUnit callback
-// returns true for success (dependencies will be processed) or false for failure
-// (dependencies will be skipped). The function returns a RunResult with nodes
-// categorized by their execution outcome.
-func (g *Graph[N]) Run(pool int, runUnit func(N) bool) RunResult[N] {
+// receives the node and an optional failed dependency node pointer. If failedNode
+// is non-nil, it indicates that at least one direct dependency of the node failed.
+// The callback should return true on success or false on failure. Nodes are not
+// skipped when dependencies fail; instead, they are executed with failedNode set.
+func (g *Graph[N]) Run(pool int, runUnit func(N, *N) bool) {
 	if pool <= 0 || pool > len(g.adj) {
 		pool = len(g.adj)
 	}
@@ -191,14 +180,10 @@ func (g *Graph[N]) Run(pool int, runUnit func(N) bool) RunResult[N] {
 		panic("dagrun: no entry points")
 	}
 
-	successful := make([]N, 0, len(in))
-	var failed []N
-	notRun := make(map[N]bool)
-	// finalized marks nodes whose outcome is already decided
-	// so we decrement the remaining counter exactly once per node.
-	finalized := make(map[N]bool, len(in))
+	// For each node, remember a failed direct dependency (any one) if present.
+	failedCause := make(map[N]*N, len(in))
 
-	ready := make(chan N, len(in))
+	ready := make(chan task[N], len(in))
 	done := make(chan doneResult[N], len(in))
 
 	var wg sync.WaitGroup
@@ -208,42 +193,31 @@ func (g *Graph[N]) Run(pool int, runUnit func(N) bool) RunResult[N] {
 	}
 
 	for _, n := range initial {
-		ready <- n
+		ready <- task[N]{n: n, failedFrom: nil}
 	}
 
-	for remaining := len(in); remaining > 0; {
+	for remaining := len(in); remaining > 0; remaining-- {
 		res := <-done
 
-		// Mark the current node as finalized first
-		if !finalized[res.n] {
-			finalized[res.n] = true
-			remaining--
-		}
-
 		if !res.success {
-			failed = append(failed, res.n)
-			propagateCancelFrom(g, res.n, &remaining, finalized, notRun)
-		} else {
-			successful = append(successful, res.n)
+			// Record a failed direct dependency for children, if not set yet
+			for _, e := range g.adj[res.n] {
+				if _, exists := failedCause[e.to]; !exists {
+					parent := res.n
+					failedCause[e.to] = &parent
+				}
+			}
 		}
 
+		// Decrement indegrees and enqueue children that become ready
 		for _, e := range g.adj[res.n] {
 			if in[e.to]--; in[e.to] == 0 {
-				if !notRun[e.to] {
-					ready <- e.to
-				}
+				ready <- task[N]{n: e.to, failedFrom: failedCause[e.to]}
 			}
 		}
 	}
 	close(ready)
 	wg.Wait()
-
-	// Build result slices in insertion order
-	var result RunResult[N]
-	result.Successful = successful
-	result.Failed = failed
-	result.NotRun = slices.Collect(maps.Keys(notRun))
-	return result
 }
 
 type doneResult[N StringerComparable] struct {
@@ -251,34 +225,15 @@ type doneResult[N StringerComparable] struct {
 	success bool
 }
 
-func runWorkerLoop[N StringerComparable](wg *sync.WaitGroup, ready <-chan N, done chan<- doneResult[N], runUnit func(N) bool) {
-	defer wg.Done()
-	for n := range ready {
-		success := runUnit(n)
-		done <- doneResult[N]{n: n, success: success}
-	}
+type task[T StringerComparable] struct {
+	n          T
+	failedFrom *T
 }
 
-func propagateCancelFrom[N StringerComparable](g *Graph[N], src N, remaining *int, finalized, notRun map[N]bool) {
-	var queue []N
-	for _, e := range g.adj[src] {
-		if !finalized[e.to] {
-			notRun[e.to] = true
-			finalized[e.to] = true
-			*remaining--
-			queue = append(queue, e.to)
-		}
-	}
-	for len(queue) > 0 {
-		n := queue[0]
-		queue = queue[1:]
-		for _, e := range g.adj[n] {
-			if !finalized[e.to] {
-				notRun[e.to] = true
-				finalized[e.to] = true
-				*remaining--
-				queue = append(queue, e.to)
-			}
-		}
+func runWorkerLoop[N StringerComparable](wg *sync.WaitGroup, ready <-chan task[N], done chan<- doneResult[N], runUnit func(N, *N) bool) {
+	defer wg.Done()
+	for t := range ready {
+		success := runUnit(t.n, t.failedFrom)
+		done <- doneResult[N]{n: t.n, success: success}
 	}
 }

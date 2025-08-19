@@ -24,49 +24,35 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 	pools := []int{1, 2, 3, 4}
 
 	tests := []struct {
-		name       string
-		nodes      []string
-		seen       []string
-		seenSorted []string
-		edges      []edge
-		result     RunResult[stringWrapper]
-		stops      map[string]bool // node -> false to indicate failure
-		pools      []int           // optional override of pools to run
-		cycle      string
-		sortResult bool // if true sort result before comparing with expected
+		name            string
+		nodes           []string
+		seen            []string
+		seenSorted      []string
+		edges           []edge
+		stops           map[string]bool // node -> false to indicate failure
+		pools           []int           // optional override of pools to run
+		cycle           string
+		failedFrom      map[string]string   // node -> expected failedFrom
+		failedFromOneOf map[string][]string // node -> any of these failedFrom values acceptable
 	}{
 		// disconnected graphs
 		{
 			name: "empty graph",
-			result: RunResult[stringWrapper]{
-				Successful: []stringWrapper{},
-			},
 		},
 		{
 			name:  "one node",
 			nodes: []string{"A"},
 			seen:  []string{"A"},
-			result: RunResult[stringWrapper]{
-				Successful: []stringWrapper{{"A"}},
-			},
 		},
 		{
 			name:       "two nodes",
 			nodes:      []string{"A", "B"},
 			seenSorted: []string{"A", "B"},
-			result: RunResult[stringWrapper]{
-				Successful: []stringWrapper{{"A"}, {"B"}},
-			},
-			sortResult: true,
 		},
 		{
 			name:       "three nodes",
 			nodes:      []string{"A", "B", "C"},
 			seenSorted: []string{"A", "B", "C"},
-			result: RunResult[stringWrapper]{
-				Successful: []stringWrapper{{"A"}, {"B"}, {"C"}},
-			},
-			sortResult: true,
 		},
 		{
 			name: "simple DAG",
@@ -75,9 +61,6 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 				{"B", "C", "B->C"},
 			},
 			seen: []string{"A", "B", "C"},
-			result: RunResult[stringWrapper]{
-				Successful: []stringWrapper{{"A"}, {"B"}, {"C"}},
-			},
 		},
 		{
 			name: "one-node cycle",
@@ -104,28 +87,23 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 			cycle: "cycle detected: X refers to Y via e1 Y refers to Z via e2 which refers to X via e3",
 		},
 		{
-			name:  "skip downstream on failure",
+			name:  "downstream runs with failed dependency",
 			edges: []edge{{"A", "B", "A->B"}, {"B", "C", "B->C"}},
-			seen:  []string{"A", "B"},
+			seen:  []string{"A", "B", "C"},
 			stops: map[string]bool{"B": false},
-			result: RunResult[stringWrapper]{
-				Successful: []stringWrapper{{"A"}},
-				Failed:     []stringWrapper{{"B"}},
-				NotRun:     []stringWrapper{{"C"}},
+			failedFrom: map[string]string{
+				"C": "B",
 			},
 		},
 		{
-			name:       "multiple failures propagate to same node",
+			name:       "multiple failures propagate to same node (any one reported)",
 			edges:      []edge{{"A", "D", "A->D"}, {"B", "D", "B->D"}},
-			seenSorted: []string{"A", "B"},
+			seenSorted: []string{"A", "B", "D"},
 			stops:      map[string]bool{"A": false, "B": false},
 			pools:      []int{1},
-			result: RunResult[stringWrapper]{
-				Successful: []stringWrapper{},
-				Failed:     []stringWrapper{{"A"}, {"B"}},
-				NotRun:     []stringWrapper{{"D"}},
+			failedFromOneOf: map[string][]string{
+				"D": {"A", "B"},
 			},
-			sortResult: true,
 		},
 	}
 
@@ -150,7 +128,7 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 					require.Equal(t, tc.cycle, err.Error())
 					innerCalled := 0
 					require.Panics(t, func() {
-						g.Run(p, func(n stringWrapper) bool {
+						g.Run(p, func(n stringWrapper, failed *stringWrapper) bool {
 							innerCalled += 1
 							return true
 						})
@@ -162,29 +140,22 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 
 				var mu sync.Mutex
 				var seen []string
-				result := g.Run(p, func(n stringWrapper) bool {
+				failedFrom := map[string]*string{}
+				g.Run(p, func(n stringWrapper, failed *stringWrapper) bool {
 					mu.Lock()
 					seen = append(seen, n.Value)
+					if failed != nil {
+						v := failed.Value
+						failedFrom[n.Value] = &v
+					} else {
+						failedFrom[n.Value] = nil
+					}
 					mu.Unlock()
 					if stop, exists := tc.stops[n.Value]; exists {
 						return stop
 					}
 					return true // success by default
 				})
-
-				if tc.sortResult {
-					sort.Slice(result.Successful, func(i, j int) bool {
-						return result.Successful[i].Value < result.Successful[j].Value
-					})
-					sort.Slice(result.Failed, func(i, j int) bool {
-						return result.Failed[i].Value < result.Failed[j].Value
-					})
-					sort.Slice(result.NotRun, func(i, j int) bool {
-						return result.NotRun[i].Value < result.NotRun[j].Value
-					})
-				}
-
-				assert.Equal(t, tc.result, result)
 
 				if tc.seen != nil {
 					assert.Equal(t, tc.seen, seen)
@@ -193,6 +164,26 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 					assert.Equal(t, tc.seenSorted, seen)
 				} else {
 					assert.Empty(t, seen)
+				}
+
+				for node, want := range tc.failedFrom {
+					gotPtr := failedFrom[node]
+					if assert.NotNil(t, gotPtr, "expected failedFrom for %s", node) {
+						assert.Equal(t, want, *gotPtr)
+					}
+				}
+				for node, oneOf := range tc.failedFromOneOf {
+					gotPtr := failedFrom[node]
+					if assert.NotNil(t, gotPtr, "expected failedFrom for %s", node) {
+						found := false
+						for _, candidate := range oneOf {
+							if *gotPtr == candidate {
+								found = true
+								break
+							}
+						}
+						assert.True(t, found, "failedFrom for %s not in %v, got %v", node, oneOf, *gotPtr)
+					}
 				}
 			})
 		}

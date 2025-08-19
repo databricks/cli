@@ -7,9 +7,7 @@ HTTP Status: 500 Internal Server Error
 API error_code: UNKNOWN
 API message: INJECTED
 
-Error: 1 out of 3 resources failed to deploy: jobs.foo
-
-Error: 1 out of 3 resources not deployed because of failed dependency: jobs.bar
+Error: cannot apply jobs.bar: dependency failed: jobs.foo
 
 Updating deployment state...
 
