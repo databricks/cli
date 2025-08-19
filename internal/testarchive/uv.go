@@ -1,4 +1,4 @@
-package testarchive
+package main
 
 import (
 	"fmt"
@@ -6,16 +6,16 @@ import (
 	"path/filepath"
 )
 
-// UvDownloader handles downloading and extracting UV releases
-type UvDownloader struct {
-	BinDir string
-	Arch   string
+// uvDownloader handles downloading and extracting UV releases
+type uvDownloader struct {
+	binDir string
+	arch   string
 }
 
 // uvDownloader creates a new UV downloader
 
 // mapArchitecture maps our architecture names to UV's naming convention
-func (u UvDownloader) mapArchitecture(arch string) (string, error) {
+func (u uvDownloader) mapArchitecture(arch string) (string, error) {
 	switch arch {
 	case "arm64":
 		return "aarch64", nil
@@ -27,15 +27,15 @@ func (u UvDownloader) mapArchitecture(arch string) (string, error) {
 }
 
 // Download downloads and extracts UV for Linux
-func (u UvDownloader) Download() error {
+func (u uvDownloader) Download() error {
 	// Map architecture names to UV's naming convention
-	uvArch, err := u.mapArchitecture(u.Arch)
+	uvArch, err := u.mapArchitecture(u.arch)
 	if err != nil {
 		return err
 	}
 
 	// create the directory for the download if it doesn't exist
-	dir := filepath.Join(u.BinDir, u.Arch)
+	dir := filepath.Join(u.binDir, u.arch)
 	err = os.MkdirAll(dir, 0o755)
 	if err != nil {
 		return err
@@ -52,7 +52,7 @@ func (u UvDownloader) Download() error {
 	}
 
 	// Extract the archive to the directory
-	if err := ExtractTarGz(tempFile, dir); err != nil {
+	if err := extractTarGz(tempFile, dir); err != nil {
 		return err
 	}
 
