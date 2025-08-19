@@ -120,7 +120,7 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 		// Fetch the references to ensure all are resolved
 		myReferences, err := extractReferences(b.Config.Value(), node)
 		if err != nil {
-			logdiag.LogError(ctx, "cannot %s: reading references from config: %w", actionInfo, err)
+			logdiag.LogError(ctx, fmt.Errorf("cannot %s: reading references from config: %w", actionInfo, err))
 			return false
 		}
 
