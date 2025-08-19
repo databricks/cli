@@ -229,7 +229,8 @@ func (d *Deployer) Deploy(ctx context.Context, inputConfig any, actionType deplo
 func (d *Deployer) Create(ctx context.Context, resource IResource, config any) error {
 	newID, err := resource.DoCreate(ctx)
 	if err != nil {
-		return fmt.Errorf("creating: %w", err)
+		// No need to prefix error, there is no ambiguity (only one operation - DoCreate) and no additional context (like id)
+		return err
 	}
 
 	log.Infof(ctx, "Created %s.%s id=%#v", d.group, d.resourceName, newID)
