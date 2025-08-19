@@ -156,10 +156,10 @@ func (g *Graph[N]) DetectCycle() error {
 }
 
 // Run executes the DAG with up to pool concurrent workers. The runUnit callback
-// receives the node and an optional failed dependency node pointer. If failedNode
+// receives the node and an optional failed dependency node pointer. If failedDependency
 // is non-nil, it indicates that at least one direct dependency of the node failed.
 // The callback should return true on success or false on failure. Nodes are not
-// skipped when dependencies fail; instead, they are executed with failedNode set.
+// skipped when dependencies fail; instead, they are executed with failedDependency set.
 func (g *Graph[N]) Run(pool int, runUnit func(N, *N) bool) {
 	if pool <= 0 || pool > len(g.adj) {
 		pool = len(g.adj)

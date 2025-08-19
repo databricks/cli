@@ -69,10 +69,10 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 
 	client := b.WorkspaceClient()
 
-	g.Run(defaultParallelism, func(node nodeKey, failedNode *nodeKey) bool {
+	g.Run(defaultParallelism, func(node nodeKey, failedDependency *nodeKey) bool {
 		// If a dependency failed, report and skip execution for this node by returning false
-		if failedNode != nil {
-			logdiag.LogError(ctx, fmt.Errorf("cannot apply %s.%s: dependency failed: %s", node.Group, node.Name, failedNode.String()))
+		if failedDependency != nil {
+			logdiag.LogError(ctx, fmt.Errorf("cannot apply %s.%s: dependency failed: %s", node.Group, node.Name, failedDependency.String()))
 			return false
 		}
 
