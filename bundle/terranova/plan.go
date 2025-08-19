@@ -112,13 +112,15 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 
 	// parallelism is set to 1, so there is no multi-threaded access there.
 	g.Run(1, func(node nodeKey, failedDependency *nodeKey) bool {
+		errorPrefix := fmt.Sprintf("cannot plan %s.%s", node.Group, node.Name)
+
 		if failedDependency != nil {
-			logdiag.LogError(ctx, fmt.Errorf("cannot plan %s.%s: dependency failed: %s", node.Group, node.Name, failedDependency.String()))
+			logdiag.LogError(ctx, fmt.Errorf("%s: dependency failed: %s", errorPrefix, failedDependency.String()))
 			return false
 		}
 		settings, ok := SupportedResources[node.Group]
 		if !ok {
-			logdiag.LogError(ctx, fmt.Errorf("resource not supported on direct backend: %s", node.Group))
+			logdiag.LogError(ctx, fmt.Errorf("%s: resource type not supported on direct backend", errorPrefix))
 			return false
 		}
 
@@ -132,7 +134,7 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 
 		config, ok := b.GetResourceConfig(pl.group, pl.resourceName)
 		if !ok {
-			logdiag.LogError(ctx, fmt.Errorf("internal error: cannot get config for %s.%s", pl.group, pl.resourceName))
+			logdiag.LogError(ctx, fmt.Errorf("%s: internal error: cannot read config", errorPrefix))
 			return false
 		}
 

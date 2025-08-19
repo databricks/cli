@@ -72,11 +72,11 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 	g.Run(defaultParallelism, func(node nodeKey, failedDependency *nodeKey) bool {
 		actionType := plannedActionsMap[node]
 
-		actionInfo := actionType.String() + " " + node.Group + "." + node.Name
+		errorPrefix := fmt.Sprintf("cannot %s %s.%s", actionType.String(), node.Group, node.Name)
 
 		// If a dependency failed, report and skip execution for this node by returning false
 		if failedDependency != nil {
-			logdiag.LogError(ctx, fmt.Errorf("cannot %s: dependency failed: %s", actionInfo, failedDependency.String()))
+			logdiag.LogError(ctx, fmt.Errorf("%s: dependency failed: %s", errorPrefix, failedDependency.String()))
 			return false
 		}
 
@@ -105,7 +105,7 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 		if actionType == deployplan.ActionTypeDelete {
 			err = d.destroy(ctx)
 			if err != nil {
-				logdiag.LogError(ctx, fmt.Errorf("cannot %s: %w", actionInfo, err))
+				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
 			}
 			return true
@@ -113,21 +113,21 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 
 		config, ok := b.GetResourceConfig(node.Group, node.Name)
 		if !ok {
-			logdiag.LogError(ctx, fmt.Errorf("cannot %s: internal error when reading config", actionInfo))
+			logdiag.LogError(ctx, fmt.Errorf("%s: internal error when reading config", errorPrefix))
 			return false
 		}
 
 		// Fetch the references to ensure all are resolved
 		myReferences, err := extractReferences(b.Config.Value(), node)
 		if err != nil {
-			logdiag.LogError(ctx, fmt.Errorf("cannot %s: reading references from config: %w", actionInfo, err))
+			logdiag.LogError(ctx, fmt.Errorf("%s: reading references from config: %w", errorPrefix, err))
 			return false
 		}
 
 		// At this point it's an error to have unresolved deps
 		if len(myReferences) > 0 {
 			// TODO: include the deps themselves in the message
-			logdiag.LogError(ctx, fmt.Errorf("cannot %s %s.%s due to unresolved deps", actionType, node.Group, node.Name))
+			logdiag.LogError(ctx, fmt.Errorf("%s: unresolved deps", errorPrefix))
 			return false
 		}
 
@@ -135,7 +135,7 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 
 		err = d.Deploy(ctx, config, actionType)
 		if err != nil {
-			logdiag.LogError(ctx, err)
+			logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 			return false
 		}
 
@@ -143,6 +143,7 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 		if isReferenced[node] {
 			err = resolveIDReference(ctx, b, node.Group, node.Name)
 			if err != nil {
+				// not using errorPrefix because resource was deployed
 				logdiag.LogError(ctx, fmt.Errorf("failed to replace ref to resources.%s.%s.id: %w", node.Group, node.Name, err))
 				return false
 			}
@@ -168,18 +169,10 @@ type Deployer struct {
 	settings     ResourceSettings
 }
 
-func (d *Deployer) Deploy(ctx context.Context, inputConfig any, actionType deployplan.ActionType) error {
-	err := d.deploy(ctx, inputConfig, actionType)
-	if err != nil {
-		return fmt.Errorf("deploying %s.%s: %w", d.group, d.resourceName, err)
-	}
-	return nil
-}
-
 func (d *Deployer) destroy(ctx context.Context) error {
 	entry, hasEntry := d.db.GetResourceEntry(d.group, d.resourceName)
 	if !hasEntry {
-		log.Infof(ctx, "%s.%s: Cannot delete, missing from state", d.group, d.resourceName)
+		log.Infof(ctx, "Cannot delete %s.%s: missing from state", d.group, d.resourceName)
 		return nil
 	}
 
@@ -195,7 +188,7 @@ func (d *Deployer) destroy(ctx context.Context) error {
 	return nil
 }
 
-func (d *Deployer) deploy(ctx context.Context, inputConfig any, actionType deployplan.ActionType) error {
+func (d *Deployer) Deploy(ctx context.Context, inputConfig any, actionType deployplan.ActionType) error {
 	resource, _, err := New(d.client, d.group, d.resourceName, inputConfig)
 	if err != nil {
 		return err
@@ -229,7 +222,7 @@ func (d *Deployer) deploy(ctx context.Context, inputConfig any, actionType deplo
 		}
 		return d.UpdateWithID(ctx, resource, updater, oldID, config)
 	default:
-		return fmt.Errorf("internal error: unexpected plan: %#v", actionType)
+		return fmt.Errorf("internal error: unexpected actionType: %#v", actionType)
 	}
 }
 
@@ -271,7 +264,7 @@ func (d *Deployer) Recreate(ctx context.Context, resource IResource, oldID strin
 	}
 
 	// TODO: This should be at notice level (info < notice < warn) and it should be visible by default,
-	// but to match terraform output today, we hide it.
+	// but to match terraform output today, we hide it (and also we don't have notice level)
 	log.Infof(ctx, "Recreated %s.%s id=%#v (previously %#v)", d.group, d.resourceName, newID, oldID)
 	err = d.db.SaveState(d.group, d.resourceName, newID, config)
 	if err != nil {
