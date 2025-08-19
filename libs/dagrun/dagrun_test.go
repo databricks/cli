@@ -2,6 +2,7 @@ package dagrun
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 	"sync"
 	"testing"
@@ -210,14 +211,7 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 				for node, oneOf := range tc.failedFromOneOf {
 					gotPtr := failedFrom[node]
 					if assert.NotNil(t, gotPtr, "expected failedFrom for %s", node) {
-						found := false
-						for _, candidate := range oneOf {
-							if *gotPtr == candidate {
-								found = true
-								break
-							}
-						}
-						assert.True(t, found, "failedFrom for %s not in %v, got %v", node, oneOf, *gotPtr)
+						assert.True(t, slices.Contains(oneOf, *gotPtr), "failedFrom for %s not in %v, got %v", node, oneOf, *gotPtr)
 					}
 				}
 			})
