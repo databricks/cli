@@ -1,2 +1,0 @@
-cp $TESTDIR/../databricks.yml .
-source $TESTDIR/../_script

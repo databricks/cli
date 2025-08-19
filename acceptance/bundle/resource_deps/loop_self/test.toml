@@ -1,1 +1,2 @@
+Badness = "Dont upload files if there is a loop; validate should fail"
 RecordRequests = false
