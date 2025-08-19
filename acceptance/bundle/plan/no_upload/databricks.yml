@@ -1,0 +1,20 @@
+bundle:
+  name: plan-no-upload
+
+resources:
+  jobs:
+    my_job:
+      name: my-job
+      tasks:
+        - task_key: task1
+          spark_python_task:
+            python_file: "./my_script.py"
+          new_cluster:
+            num_workers: 1
+            spark_version: 13.3.x-scala2.12
+            node_type_id: i3.xlarge
+            driver_node_type_id: i3.xlarge
+            custom_tags:
+              "ResourceClass": "SingleNode"
+          libraries:
+            - whl: "*.whl"
