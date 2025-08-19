@@ -299,9 +299,9 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 			if testdiff.OverwriteMode && len(expanded) > 1 {
 				// All variants of the test are producing the same output,
 				// there is no need to run the concurrently when updating.
-				// Exception: if EnvOutput is configured with multiple values, we must
+				// Exception: if EnvVaryOutput is configured with multiple values, we must
 				// run all variants to record variant-specific outputs.
-				if config.EnvOutput == nil || len(config.EnvMatrix[*config.EnvOutput]) <= 1 {
+				if config.EnvVaryOutput == nil || len(config.EnvMatrix[*config.EnvVaryOutput]) <= 1 {
 					expanded = expanded[0:1]
 				}
 			}
@@ -1349,17 +1349,17 @@ func loadUserReplacements(t *testing.T, repls *testdiff.ReplacementsContext, tmp
 
 type pathFilter struct {
 	// contains substrings from the variants other than current.
-	// E.g. if EnvOutput is DATABRICKS_CLI_DEPLOYMENT and current test running DATABRICKS_CLI_DEPLOYMENT="terraform" then
+	// E.g. if EnvVaryOutput is DATABRICKS_CLI_DEPLOYMENT and current test running DATABRICKS_CLI_DEPLOYMENT="terraform" then
 	// notSelected contains ".direct-exp." meaning if filename contains that (e.g. out.deploy.direct-exp.txt) then we ignore it here.
 	notSelected []string
 }
 
-// preparePathFilter builds filter based on EnvOutput and current variant env.
+// preparePathFilter builds filter based on EnvVaryOutput and current variant env.
 func preparePathFilter(config internal.TestConfig, customEnv []string) pathFilter {
-	if config.EnvOutput == nil {
+	if config.EnvVaryOutput == nil {
 		return pathFilter{}
 	}
-	key := *config.EnvOutput
+	key := *config.EnvVaryOutput
 	vals := config.EnvMatrix[key]
 	if len(vals) <= 1 {
 		return pathFilter{}

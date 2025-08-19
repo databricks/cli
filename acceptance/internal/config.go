@@ -103,7 +103,7 @@ type TestConfig struct {
 	// Name of EnvMatrix key that determines variant-specific output file names.
 	// If set and present in EnvMatrix, update mode will run all variants for this key,
 	// and comparison will only consider files containing the current variant value.
-	EnvOutput *string
+	EnvVaryOutput *string
 
 	// Maximum amount of time the test is allowed to run, will be killed after that.
 	Timeout time.Duration
