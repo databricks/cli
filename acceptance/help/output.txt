@@ -73,7 +73,8 @@ Unity Catalog
   system-schemas                         A system schema is a schema that lives within the system catalog.
   table-constraints                      Primary key and foreign key constraints encode relationships between fields in tables.
   tables                                 A table resides in the third layer of Unity Catalog’s three-level namespace.
-  temporary-table-credentials            Temporary Table Credentials refer to short-lived, downscoped credentials used to access cloud storage locationswhere table data is stored in Databricks.
+  temporary-path-credentials             Temporary Path Credentials refer to short-lived, downscoped credentials used to access external cloud storage locations registered in Databricks.
+  temporary-table-credentials            Temporary Table Credentials refer to short-lived, downscoped credentials used to access cloud storage locations where table data is stored in Databricks.
   volumes                                Volumes are a Unity Catalog (UC) capability for accessing, storing, governing, organizing and processing files.
   workspace-bindings                     A securable in Databricks can be configured as __OPEN__ or __ISOLATED__.
 

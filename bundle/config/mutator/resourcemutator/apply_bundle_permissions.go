@@ -60,6 +60,10 @@ var (
 			permissions.CAN_VIEW:   "CAN_VIEW",
 			permissions.CAN_RUN:    "CAN_MONITOR",
 		},
+		"database_instances": {
+			permissions.CAN_MANAGE: "CAN_MANAGE",
+			permissions.CAN_VIEW:   "CAN_USE",
+		},
 	}
 )
 

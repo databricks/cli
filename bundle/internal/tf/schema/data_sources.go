@@ -33,8 +33,12 @@ type DataSources struct {
 	CurrentMetastore                       map[string]any `json:"databricks_current_metastore,omitempty"`
 	CurrentUser                            map[string]any `json:"databricks_current_user,omitempty"`
 	Dashboards                             map[string]any `json:"databricks_dashboards,omitempty"`
+	DatabaseDatabaseCatalog                map[string]any `json:"databricks_database_database_catalog,omitempty"`
+	DatabaseDatabaseCatalogs               map[string]any `json:"databricks_database_database_catalogs,omitempty"`
 	DatabaseInstance                       map[string]any `json:"databricks_database_instance,omitempty"`
 	DatabaseInstances                      map[string]any `json:"databricks_database_instances,omitempty"`
+	DatabaseSyncedDatabaseTable            map[string]any `json:"databricks_database_synced_database_table,omitempty"`
+	DatabaseSyncedDatabaseTables           map[string]any `json:"databricks_database_synced_database_tables,omitempty"`
 	DbfsFile                               map[string]any `json:"databricks_dbfs_file,omitempty"`
 	DbfsFilePaths                          map[string]any `json:"databricks_dbfs_file_paths,omitempty"`
 	Directory                              map[string]any `json:"databricks_directory,omitempty"`
@@ -66,6 +70,8 @@ type DataSources struct {
 	OnlineStore                            map[string]any `json:"databricks_online_store,omitempty"`
 	OnlineStores                           map[string]any `json:"databricks_online_stores,omitempty"`
 	Pipelines                              map[string]any `json:"databricks_pipelines,omitempty"`
+	PolicyInfo                             map[string]any `json:"databricks_policy_info,omitempty"`
+	PolicyInfos                            map[string]any `json:"databricks_policy_infos,omitempty"`
 	QualityMonitorV2                       map[string]any `json:"databricks_quality_monitor_v2,omitempty"`
 	QualityMonitorsV2                      map[string]any `json:"databricks_quality_monitors_v2,omitempty"`
 	RecipientFederationPolicies            map[string]any `json:"databricks_recipient_federation_policies,omitempty"`
@@ -126,8 +132,12 @@ func NewDataSources() *DataSources {
 		CurrentMetastore:                       make(map[string]any),
 		CurrentUser:                            make(map[string]any),
 		Dashboards:                             make(map[string]any),
+		DatabaseDatabaseCatalog:                make(map[string]any),
+		DatabaseDatabaseCatalogs:               make(map[string]any),
 		DatabaseInstance:                       make(map[string]any),
 		DatabaseInstances:                      make(map[string]any),
+		DatabaseSyncedDatabaseTable:            make(map[string]any),
+		DatabaseSyncedDatabaseTables:           make(map[string]any),
 		DbfsFile:                               make(map[string]any),
 		DbfsFilePaths:                          make(map[string]any),
 		Directory:                              make(map[string]any),
@@ -159,6 +169,8 @@ func NewDataSources() *DataSources {
 		OnlineStore:                            make(map[string]any),
 		OnlineStores:                           make(map[string]any),
 		Pipelines:                              make(map[string]any),
+		PolicyInfo:                             make(map[string]any),
+		PolicyInfos:                            make(map[string]any),
 		QualityMonitorV2:                       make(map[string]any),
 		QualityMonitorsV2:                      make(map[string]any),
 		RecipientFederationPolicies:            make(map[string]any),

@@ -1,0 +1,16 @@
+Local = true
+Cloud = true
+
+RecordRequests = false
+RequiresUnityCatalog = true
+CloudEnvs.gcp = false # lakebase is not available in GCP as of August 2025
+
+Ignore = [
+    "databricks.yml",
+]
+
+[[Repls]]
+# clean up ?o=<num> suffix after URL since not all workspaces have that
+Old = '\?o=\[(NUMID|ALPHANUMID)\]'
+New = ''
+Order = 1000

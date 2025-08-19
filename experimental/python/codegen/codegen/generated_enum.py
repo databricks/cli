@@ -17,11 +17,11 @@ class GeneratedEnum:
     experimental: bool
 
 
-def generate_enum(schema_name: str, schema: Schema) -> GeneratedEnum:
+def generate_enum(namespace: str, schema_name: str, schema: Schema) -> GeneratedEnum:
     assert schema.enum
 
     class_name = packages.get_class_name(schema_name)
-    package = packages.get_package(schema_name)
+    package = packages.get_package(namespace, schema_name)
     values = {}
 
     assert package

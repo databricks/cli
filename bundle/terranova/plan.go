@@ -8,7 +8,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/terranova/tnstate"
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/structdiff"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
@@ -54,10 +54,12 @@ func (d *Planner) plan(_ context.Context, inputConfig any) (deployplan.ActionTyp
 		return "", fmt.Errorf("interpreting state: %w", err)
 	}
 
-	// TODO: GetStructDiff should deal with cases where it comes across
-	// unresolved variables (so it needs additional support for dyn.Value storage).
-	// In some cases, it should introduce "update or recreate" action, since it does not know whether
-	// field is going to be changed.
+	// Note, currently we're diffing static structs, not dynamic value.
+	// This means for fields that contain references like ${resources.group.foo.id} we do one of the following:
+	// for strings: comparing unresolved string like "${resoures.group.foo.id}" with actual object id. As long as IDs do not have ${...} format we're good.
+	// for integers: compare 0 with actual object ID. As long as real object IDs are never 0 we're good.
+	// Once we add non-id fields or add per-field details to "bundle plan", we must read dynamic data and deal with references as first class citizen.
+	// This means distinguishing between 0 that are actually object ids and 0 that are there because typed struct integer cannot contain ${...} string.
 	return calcDiff(d.settings, resource, savedState, config)
 }
 
@@ -66,61 +68,27 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 		panic("direct deployment required")
 	}
 
+	// final result: collected actions per node
+	var actions []deployplan.Action
+
 	err := b.OpenResourceDatabase(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	client := b.WorkspaceClient()
-	var actions []deployplan.Action
 
 	state := b.ResourceDatabase.ExportState(ctx)
 
-	_, err = dyn.MapByPattern(
-		b.Config.Value(),
-		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()),
-		func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-			group := p[1].Key()
-			name := p[2].Key()
+	g, isReferenced, err := makeResourceGraph(ctx, b, state)
+	if err != nil {
+		return nil, fmt.Errorf("reading config: %w", err)
+	}
 
-			settings, ok := SupportedResources[group]
-			if !ok {
-				return v, nil
-			}
-
-			groupState := state[group]
-			delete(groupState, name)
-
-			config, ok := b.GetResourceConfig(group, name)
-			if !ok {
-				return dyn.InvalidValue, fmt.Errorf("internal error: cannot get config for %s.%s", group, name)
-			}
-
-			pl := Planner{
-				client:       client,
-				db:           &b.ResourceDatabase,
-				group:        group,
-				resourceName: name,
-				settings:     settings,
-			}
-
-			// This currently does not do API calls, so we can run this sequentially. Once we have remote diffs, we need to run a in threadpool.
-			actionType, err := pl.Plan(ctx, config)
-			if err != nil {
-				return dyn.InvalidValue, err
-			}
-
-			if actionType != deployplan.ActionTypeNoop {
-				actions = append(actions, deployplan.Action{
-					Group:      group,
-					Name:       name,
-					ActionType: actionType,
-				})
-			}
-
-			return v, nil
-		},
-	)
+	err = g.DetectCycle()
+	if err != nil {
+		return nil, err
+	}
 
 	// Remained in state are resources that no longer present in the config
 	for _, group := range utils.SortedKeys(state) {
@@ -134,8 +102,63 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 		}
 	}
 
-	if err != nil {
-		return nil, fmt.Errorf("while reading resources config: %w", err)
+	// We're processing resources in DAG order, because we're trying to get rid of all references like $resources.jobs.foo.id
+	// if jobs.foo is not going to be (re)created. This means by the time we get to resource depending on $resources.jobs.foo.id
+	// we might have already got rid of this reference, thus potentially downgrading actionType
+
+	// parallelism is set to 1, so there is no multi-threaded access there.
+	g.Run(1, func(node nodeKey) {
+		settings, ok := SupportedResources[node.Group]
+		if !ok {
+			logdiag.LogError(ctx, fmt.Errorf("resource not supported on direct backend: %s", node.Group))
+			// TODO: return an error so that the whole process is aborted.
+			return
+		}
+
+		pl := Planner{
+			client:       client,
+			db:           &b.ResourceDatabase,
+			group:        node.Group,
+			resourceName: node.Name,
+			settings:     settings,
+		}
+
+		config, ok := b.GetResourceConfig(pl.group, pl.resourceName)
+		if !ok {
+			logdiag.LogError(ctx, fmt.Errorf("internal error: cannot get config for %s.%s", pl.group, pl.resourceName))
+			return
+			// TODO: return an error so that the whole process is aborted.
+		}
+
+		// This currently does not do API calls, so we can run this sequentially. Once we have remote diffs, we need to run a in threadpool.
+		actionType, err := pl.Plan(ctx, config)
+		if err != nil {
+			logdiag.LogError(ctx, err)
+			// TODO: return error to abort this branch
+			return
+		}
+
+		if isReferenced[node] && actionType.KeepsID() {
+			err = resolveIDReference(ctx, b, pl.group, pl.resourceName)
+			if err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("failed to replace ref to resources.%s.%s.id: %w", pl.group, pl.resourceName, err))
+				return
+			}
+		}
+
+		if actionType == deployplan.ActionTypeNoop {
+			return
+		}
+
+		actions = append(actions, deployplan.Action{
+			Group:      node.Group,
+			Name:       node.Name,
+			ActionType: actionType,
+		})
+	})
+
+	if logdiag.HasError(ctx) {
+		return nil, errors.New("planning failed")
 	}
 
 	return actions, nil

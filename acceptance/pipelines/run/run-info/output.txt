@@ -1,0 +1,43 @@
+
+>>> [PIPELINES] deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-run/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
+
+=== Run pipeline and display pipeline configuration summary and events durations
+>>> [PIPELINES] run
+Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/test-update-123
+
+[TIMESTAMP] update_progress  "Update test-update-123 is COMPLETED."
+[TIMESTAMP] update_progress  "Update test-update-123 is RUNNING."
+[TIMESTAMP] update_progress  "Update test-update-123 is SETTING_UP_TABLES."
+[TIMESTAMP] update_progress  "Update test-update-123 is INITIALIZING."
+[TIMESTAMP] update_progress  "Update test-update-123 is WAITING_FOR_RESOURCES."
+[TIMESTAMP] update_progress  "Update test-update-123 is CREATED."
+Update ID: test-update-123
+
+Update for pipeline test-pipeline completed successfully.
+
+Pipeline ID: test-pipeline-789
+Update start time: [TIMESTAMP]Z
+Update end time: [TIMESTAMP]Z
+
+Pipeline configurations for this update:
+• All tables are fully refreshed
+• Update cause: Manual trigger
+• Serverless compute
+• Channel: CURRENT
+• Continuous pipeline
+• Development mode
+• Catalog: test_catalog
+• Schema: test_schema
+
+Run Phase                 Duration
+---------                 --------
+CREATED                   1.0s
+WAITING_FOR_RESOURCES     1.0s
+INITIALIZING              1.0s
+SETTING_UP_TABLES         1.0s
+RUNNING                   1m 25s

@@ -41,14 +41,6 @@ var defaultPrefixes = []string{
 	"bundle",
 	"workspace",
 	"variables",
-	"resources",
-}
-
-var optionalResolution = map[string]bool{
-	// Enables different mode for resolution:
-	//  - normalization is not done, if field is not set by user it's missing
-	//  - if field is missing (either it's a valid field but not set or invalid field), it remains unresolved, no error
-	"resources": true,
 }
 
 var artifactPath = dyn.MustPathFromString("artifacts")
@@ -237,7 +229,7 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn
 				// Perform resolution only if the path starts with one of the specified prefixes.
 				for _, prefix := range prefixes {
 					if path.HasPrefix(prefix) {
-						isOpt := optionalResolution[prefix[0].Key()]
+						isOpt := prefix[0].Key() == "resources"
 						var value dyn.Value
 						var err error
 						if isOpt {
@@ -245,7 +237,7 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn
 							// We only want entries that are explicitly provided by users, so we're using root not normalized here.
 							value, err = m.lookupFn(root, path, b)
 							if !value.IsValid() {
-								// Not having a value is not an error in this case, it might be resolved at deploy time.
+								// Not having a value is not an error in this case, it might be resolved at deploy time. For example, output only fields.
 								// TODO: we still could check whether it's part of the schema or not. If latter, we can reject it right away.
 								// TODO: This might be better done after we got rid of TF.
 								return dyn.InvalidValue, dynvar.ErrSkipResolution

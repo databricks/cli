@@ -6,17 +6,22 @@ import (
 	"sync"
 )
 
-type adjEdge[N comparable] struct {
+type StringerComparable interface {
+	fmt.Stringer
+	comparable
+}
+
+type adjEdge[N StringerComparable] struct {
 	to    N
 	label string
 }
 
-type Graph[N comparable] struct {
+type Graph[N StringerComparable] struct {
 	adj   map[N][]adjEdge[N]
 	nodes []N // maintains insertion order of added nodes
 }
 
-func NewGraph[N comparable]() *Graph[N] {
+func NewGraph[N StringerComparable]() *Graph[N] {
 	return &Graph[N]{adj: make(map[N][]adjEdge[N])}
 }
 
@@ -31,14 +36,10 @@ func (g *Graph[N]) AddNode(n N) {
 	}
 }
 
-func (g *Graph[N]) AddDirectedEdge(from, to N, label string) error {
-	if from == to {
-		return fmt.Errorf("self-loop %v", from)
-	}
+func (g *Graph[N]) AddDirectedEdge(from, to N, label string) {
 	g.AddNode(from)
 	g.AddNode(to)
 	g.adj[from] = append(g.adj[from], adjEdge[N]{to: to, label: label})
-	return nil
 }
 
 type CycleError[N comparable] struct {
@@ -51,6 +52,10 @@ func (e *CycleError[N]) Error() string {
 		return "cycle detected"
 	}
 
+	if len(e.Nodes) == 1 {
+		return fmt.Sprintf("cycle detected: %v refers to itself via %s", e.Nodes[0], e.Edges[0])
+	}
+
 	// Build "A refers to B via E1" pieces for every edge except the closing one.
 	var parts []string
 	for i := 1; i < len(e.Nodes); i++ {
@@ -58,7 +63,7 @@ func (e *CycleError[N]) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"cycle detected: %s which refers to %v via %s.",
+		"cycle detected: %s which refers to %v via %s",
 		strings.Join(parts, " "),
 		e.Nodes[0],
 		e.Edges[len(e.Edges)-1],
@@ -145,15 +150,26 @@ func (g *Graph[N]) DetectCycle() error {
 	return nil
 }
 
-func (g *Graph[N]) Run(pool int, runUnit func(N)) error {
-	if err := g.DetectCycle(); err != nil {
-		return err
-	}
+func (g *Graph[N]) Run(pool int, runUnit func(N)) {
 	if pool <= 0 || pool > len(g.adj) {
 		pool = len(g.adj)
 	}
 
 	in := g.indegrees()
+
+	// Prepare initial ready nodes in stable insertion order
+	var initial []N
+	for _, n := range g.nodes {
+		if in[n] == 0 {
+			initial = append(initial, n)
+		}
+	}
+
+	// If there are nodes but no entry points, the run cannot start
+	if len(in) > 0 && len(initial) == 0 {
+		panic("dagrun: no entry points")
+	}
+
 	ready := make(chan N, len(in))
 	done := make(chan N, len(in))
 
@@ -169,11 +185,8 @@ func (g *Graph[N]) Run(pool int, runUnit func(N)) error {
 		}()
 	}
 
-	// stable initial-ready order based on insertion order
-	for _, n := range g.nodes {
-		if in[n] == 0 {
-			ready <- n
-		}
+	for _, n := range initial {
+		ready <- n
 	}
 
 	for remaining := len(in); remaining > 0; {
@@ -187,5 +200,4 @@ func (g *Graph[N]) Run(pool int, runUnit func(N)) error {
 	}
 	close(ready)
 	wg.Wait()
-	return nil
 }

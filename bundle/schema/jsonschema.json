@@ -509,6 +509,129 @@
                   }
                 ]
               },
+              "resources.DatabaseInstance": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "description": "A DatabaseInstance represents a logical Postgres instance, comprised of both compute and storage.",
+                    "properties": {
+                      "capacity": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "child_instance_refs": {
+                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/database.DatabaseInstanceRef"
+                      },
+                      "creation_time": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "creator": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "effective_enable_readable_secondaries": {
+                        "$ref": "#/$defs/bool"
+                      },
+                      "effective_node_count": {
+                        "$ref": "#/$defs/int"
+                      },
+                      "effective_retention_window_in_days": {
+                        "$ref": "#/$defs/int"
+                      },
+                      "effective_stopped": {
+                        "$ref": "#/$defs/bool"
+                      },
+                      "enable_readable_secondaries": {
+                        "$ref": "#/$defs/bool"
+                      },
+                      "name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "node_count": {
+                        "$ref": "#/$defs/int"
+                      },
+                      "parent_instance_ref": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.DatabaseInstanceRef"
+                      },
+                      "permissions": {
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.DatabaseInstancePermission"
+                      },
+                      "pg_version": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "read_only_dns": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "read_write_dns": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "retention_window_in_days": {
+                        "$ref": "#/$defs/int"
+                      },
+                      "state": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.DatabaseInstanceState"
+                      },
+                      "stopped": {
+                        "$ref": "#/$defs/bool"
+                      },
+                      "uid": {
+                        "$ref": "#/$defs/string"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "name"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.DatabaseInstancePermission": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "group_name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "level": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.DatabaseInstancePermissionLevel"
+                      },
+                      "service_principal_name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "user_name": {
+                        "$ref": "#/$defs/string"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "level"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.DatabaseInstancePermissionLevel": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "CAN_CREATE",
+                      "CAN_USE",
+                      "CAN_MANAGE"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "resources.Grant": {
                 "oneOf": [
                   {
@@ -620,6 +743,12 @@
                       "trigger": {
                         "description": "A configuration to trigger a run when certain conditions are met. The default behavior is that the job runs only when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.TriggerSettings"
+                      },
+                      "usage_policy_id": {
+                        "description": "The id of the user specified usage policy to use for this job.\nIf not specified, a default usage policy may be applied when creating or modifying the job.\nSee `effective_budget_policy_id` for the budget policy used by this workload.",
+                        "$ref": "#/$defs/string",
+                        "x-databricks-preview": "PRIVATE",
+                        "doNotSuggest": true
                       },
                       "webhook_notifications": {
                         "description": "A collection of system notification IDs to notify when runs of this job begin or complete.",
@@ -1549,7 +1678,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "grants": {
-                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Grant"
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.VolumeGrant"
                       },
                       "name": {
                         "description": "The name of the volume",
@@ -1574,6 +1703,48 @@
                       "schema_name"
                     ],
                     "markdownDescription": "The volume resource type allows you to define and create Unity Catalog [volumes](https://docs.databricks.com/api/workspace/volumes/create) as part of a bundle. When deploying a bundle with a volume defined, note that:\n\n- A volume cannot be referenced in the `artifact_path` for the bundle until it exists in the workspace. Hence, if you want to use Databricks Asset Bundles to create the volume, you must first define the volume in the bundle, deploy it to create the volume, then reference it in the `artifact_path` in subsequent deployments.\n\n- Volumes in the bundle are not prepended with the `dev_${workspace.current_user.short_name}` prefix when the deployment target has `mode: development` configured. However, you can manually configure this prefix. See [custom-presets](https://docs.databricks.com/dev-tools/bundles/deployment-modes.html#custom-presets)."
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.VolumeGrant": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "principal": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "privileges": {
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.VolumeGrantPrivilege"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "privileges",
+                      "principal"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.VolumeGrantPrivilege": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "ALL_PRIVILEGES",
+                      "APPLY_TAG",
+                      "MANAGE",
+                      "READ_VOLUME",
+                      "WRITE_VOLUME"
+                    ]
                   },
                   {
                     "type": "string",
@@ -2034,6 +2205,9 @@
                       "description": "The dashboard definitions for the bundle, where each key is the name of the dashboard.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Dashboard",
                       "markdownDescription": "The dashboard definitions for the bundle, where each key is the name of the dashboard. See [dashboards](https://docs.databricks.com/dev-tools/bundles/resources.html#dashboards)."
+                    },
+                    "database_instances": {
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.DatabaseInstance"
                     },
                     "experiments": {
                       "description": "The experiment definitions for the bundle, where each key is the name of the experiment.",
@@ -3587,6 +3761,10 @@
                       "description": "Boot disk size in GB",
                       "$ref": "#/$defs/int"
                     },
+                    "first_on_demand": {
+                      "description": "The first `first_on_demand` nodes of the cluster will be placed on on-demand instances.\nThis value should be greater than 0, to make sure the cluster driver node is placed on an\non-demand instance. If this value is greater than or equal to the current cluster size, all\nnodes will be placed on on-demand instances. If this value is less than the current cluster\nsize, `first_on_demand` nodes will be placed on on-demand instances and the remainder will\nbe placed on `availability` instances. Note that this value does not affect\ncluster size and cannot currently be mutated over the lifetime of a cluster.",
+                      "$ref": "#/$defs/int"
+                    },
                     "google_service_account": {
                       "description": "If provided, the cluster will impersonate the google service account when accessing\ngcloud services (like GCS). The google service account\nmust have previously been added to the Databricks environment by an account\nadministrator.",
                       "$ref": "#/$defs/string"
@@ -4002,6 +4180,60 @@
                   "enum": [
                     "ACTIVE",
                     "TRASHED"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "database.DatabaseInstanceRef": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "DatabaseInstanceRef is a reference to a database instance. It is used in the\nDatabaseInstance object to refer to the parent instance of an instance and\nto refer the child instances of an instance.\nTo specify as a parent instance during creation of an instance,\nthe lsn and branch_time fields are optional. If not specified, the child\ninstance will be created from the latest lsn of the parent.\nIf both lsn and branch_time are specified, the lsn will be used to create\nthe child instance.",
+                  "properties": {
+                    "branch_time": {
+                      "description": "Branch time of the ref database instance.\nFor a parent ref instance, this is the point in time on the parent instance from which the\ninstance was created.\nFor a child ref instance, this is the point in time on the instance from which the child\ninstance was created.\nInput: For specifying the point in time to create a child instance. Optional.\nOutput: Only populated if provided as input to create a child instance.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "effective_lsn": {
+                      "description": "xref AIP-129. `lsn` is owned by the client, while `effective_lsn` is owned by the server.\n`lsn` will only be set in Create/Update response messages if and only if the user provides the field via the request.\n`effective_lsn` on the other hand will always bet set in all response messages (Create/Update/Get/List).\nFor a parent ref instance, this is the LSN on the parent instance from which the\ninstance was created.\nFor a child ref instance, this is the LSN on the instance from which the child instance\nwas created.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "lsn": {
+                      "description": "User-specified WAL LSN of the ref database instance.\n\nInput: For specifying the WAL LSN to create a child instance. Optional.\nOutput: Only populated if provided as input to create a child instance.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "name": {
+                      "description": "Name of the ref database instance.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "uid": {
+                      "description": "Id of the ref database instance.",
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "database.DatabaseInstanceState": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "STARTING",
+                    "AVAILABLE",
+                    "DELETING",
+                    "STOPPED",
+                    "UPDATING",
+                    "FAILING_OVER"
                   ]
                 },
                 {
@@ -8215,6 +8447,20 @@
                     }
                   ]
                 },
+                "resources.DatabaseInstance": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.DatabaseInstance"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
                 "resources.Job": {
                   "oneOf": [
                     {
@@ -8535,6 +8781,20 @@
                     }
                   ]
                 },
+                "resources.DatabaseInstancePermission": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.DatabaseInstancePermission"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
                 "resources.Grant": {
                   "oneOf": [
                     {
@@ -8660,6 +8920,34 @@
                       "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
                     }
                   ]
+                },
+                "resources.VolumeGrant": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.VolumeGrant"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.VolumeGrantPrivilege": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.VolumeGrantPrivilege"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
                 }
               },
               "config.ArtifactFile": {
@@ -8728,6 +9016,20 @@
                     "type": "array",
                     "items": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.Library"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "database.DatabaseInstanceRef": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.DatabaseInstanceRef"
                     }
                   },
                   {

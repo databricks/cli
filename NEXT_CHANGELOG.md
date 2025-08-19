@@ -1,17 +1,17 @@
 # NEXT CHANGELOG
 
-## Release v0.264.0
+## Release v0.265.0
 
 ### Notable Changes
+* Separate generated classes between jobs and pipelines in Python support ([#3428](https://github.com/databricks/cli/pull/3428))
 
 ### Dependency updates
-* Upgrade TF provider to 1.86.0 ([#3374](https://github.com/databricks/cli/pull/3374))
-* Update Go SDK to 0.79.0 ([#3376](https://github.com/databricks/cli/pull/3376))
+* Upgrade TF provider to 1.87.0 ([#3430](https://github.com/databricks/cli/pull/3430))
 
 ### CLI
 
 ### Bundles
-* Changed logic for resolving `${resources...}` references. Previously this would be done by terraform at deploy time. Now if it references a field that is present in the config, it will be done by DABs during bundle loading ([#3370](https://github.com/databricks/cli/pull/3370))
-* Add support for tagging pipelines ([#3086](https://github.com/databricks/cli/pull/3086))
+* Add support for Lakebase database instances in DABs ([#3283](https://github.com/databricks/cli/pull/3283))
+* Improve error message for SDK/API errors ([#3379](https://github.com/databricks/cli/pull/3379))
 
 ### API Changes
