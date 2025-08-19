@@ -10,9 +10,6 @@ import (
 	"path/filepath"
 )
 
-// Common utility functions
-
-// downloadFile downloads a file from URL to the specified path
 func downloadFile(url, outputPath string) error {
 	resp, err := http.Get(url)
 	if err != nil {
@@ -97,16 +94,4 @@ func extractTarGz(archivePath, destDir string) error {
 	}
 
 	return nil
-}
-
-// cleanupTempFile removes a temporary file and logs any errors
-func cleanupTempFile(filepath string) {
-	if err := os.Remove(filepath); err != nil {
-		fmt.Printf("Warning: failed to remove temporary file %s: %v\n", filepath, err)
-	}
-}
-
-// ensureBinDir creates the bin directory if it doesn't exist
-func ensureBinDir(binDir string) error {
-	return os.MkdirAll(binDir, 0o755)
 }
