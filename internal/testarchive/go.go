@@ -11,6 +11,7 @@ import (
 )
 
 // Initialize these to prevent linter from complaining about unused types.
+// This can be removed once we actually use these downloaders.
 var (
 	_ = goDownloader{}
 	_ = uvDownloader{}
@@ -67,7 +68,7 @@ func (g goDownloader) Download() error {
 
 	// Download the tar archive.
 	fileName := fmt.Sprintf("go%s.linux-%s.tar.gz", goVersion, g.arch)
-	url := fmt.Sprintf("https://go.dev/dl/%s", fileName)
+	url := "https://go.dev/dl/" + fileName
 
 	tempFile := filepath.Join(dir, fileName)
 	err = downloadFile(url, tempFile)

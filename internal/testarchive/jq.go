@@ -22,7 +22,7 @@ func (j jqDownloader) Download() error {
 	}
 
 	// Construct the download URL for the latest release
-	url := fmt.Sprintf("https://github.com/jqlang/jq/releases/latest/download/jq-linux-%s", j.arch)
+	url := "https://github.com/jqlang/jq/releases/latest/download/jq-linux-" + j.arch
 
 	binaryPath := filepath.Join(dir, "jq")
 	if err := downloadFile(url, binaryPath); err != nil {
