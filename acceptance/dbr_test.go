@@ -73,6 +73,8 @@ func uploadRunner(ctx context.Context, t *testing.T, f filer.Filer, testDir stri
 
 func runDbrTests(ctx context.Context, t *testing.T, w *databricks.WorkspaceClient, runnerPath string, archivePath string) {
 	t.Logf("Submitting test runner job...")
+
+	cloudenv := os.Getenv("CLOUD_ENV")
 	job, err := w.Jobs.Submit(ctx, jobs.SubmitRun{
 		RunName: "DBR Acceptance Tests",
 		Tasks: []jobs.SubmitTask{
@@ -82,6 +84,7 @@ func runDbrTests(ctx context.Context, t *testing.T, w *databricks.WorkspaceClien
 					NotebookPath: runnerPath,
 					BaseParameters: map[string]string{
 						"cli_archive": archivePath,
+						"cloud_env":   cloudenv,
 					},
 				},
 			},
@@ -90,6 +93,7 @@ func runDbrTests(ctx context.Context, t *testing.T, w *databricks.WorkspaceClien
 	require.NoError(t, err)
 
 	t.Logf("Waiting for test runner job to finish...")
+	// TODO: increase timeout for this wait step here.
 	run, err := job.Get()
 	require.NoError(t, err)
 

@@ -6,6 +6,7 @@ import sys
 import tarfile
 from pathlib import Path
 from dbruntime.databricks_repl_context import get_context
+import shutil
 
 def extract_cli_archive():
     src = dbutils.widgets.get("cli_archive")
@@ -45,10 +46,11 @@ def main():
     # Prepend to PATH so these are found first
     env["PATH"] = os.pathsep.join([str(go_bin), str(uv_bin), str(jq_bin), env.get("PATH", "")])
 
-    # TODO: pass cloudenv as a job parameter. We can pass through the existing local env var from
-    # the runner.
     # TODO: This runner only does integration tests right now. Also run local tests via this runner. Or a separate one.
-    env["CLOUD_ENV"] = "dbr"
+    env["CLOUD_ENV"] = dbutils.widgets.get("cloud_env")
+    if not env["CLOUD_ENV"]:
+        print("Error: CLOUD_ENV is not set", file=sys.stderr)
+        sys.exit(1)
 
     ctx = get_context()
     workspace_url = spark.conf.get("spark.databricks.workspaceUrl")
@@ -70,8 +72,8 @@ def main():
     # TODO: Run all tests here.
     cmd = [
         "go", "test",
-        "-timeout", "300s",
-        "-run", r"^TestAccept/selftest/record_cloud/basic",
+        "-timeout", "7200s",
+        "-run", r"^TestAccept",
         "github.com/databricks/cli/acceptance"
     ]
 
