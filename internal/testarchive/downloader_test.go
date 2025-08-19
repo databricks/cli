@@ -1,3 +1,5 @@
+//go:build dbr_only
+
 package main
 
 import (
@@ -9,8 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TODO: Turn these tests off by default and add comment.
-// Only run tests tests on a DBR environment CI job.
 func TestUvDownloader(t *testing.T) {
 	tmpDir := t.TempDir()
 
@@ -38,5 +38,25 @@ func TestJqDownloader(t *testing.T) {
 
 		assert.Equal(t, 1, len(files))
 		assert.Equal(t, "jq", files[0].Name())
+	}
+}
+
+func TestGoDownloader(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	for _, arch := range []string{"arm64", "amd64"} {
+		err := goDownloader{arch: arch, binDir: tmpDir}.Download()
+		require.NoError(t, err)
+
+		entries, err := os.ReadDir(filepath.Join(tmpDir, arch))
+		require.NoError(t, err)
+
+		assert.Equal(t, 1, len(entries))
+		assert.Equal(t, "go", entries[0].Name())
+		assert.True(t, entries[0].IsDir())
+
+		binaryPath := filepath.Join(tmpDir, arch, "go", "bin", "go")
+		_, err = os.Stat(binaryPath)
+		require.NoError(t, err)
 	}
 }

@@ -18,16 +18,17 @@ func createGitArchive(outputPath string) error {
 	downloadsDir := "./_bin"
 
 	// Download Go for both architectures
-	goDownloader := NewGoDownloader()
-	if err := goDownloader.Download("amd64"); err != nil {
+	err := goDownloader{arch: "amd64", binDir: downloadsDir}.Download()
+	if err != nil {
 		return fmt.Errorf("failed to download Go amd64: %w", err)
 	}
-	if err := goDownloader.Download("arm64"); err != nil {
+	err = goDownloader{arch: "arm64", binDir: downloadsDir}.Download()
+	if err != nil {
 		return fmt.Errorf("failed to download Go arm64: %w", err)
 	}
 
 	// Download UV for both architectures
-	err := uvDownloader{arch: "amd64", binDir: downloadsDir}.Download()
+	err = uvDownloader{arch: "amd64", binDir: downloadsDir}.Download()
 	if err != nil {
 		return err
 	}
