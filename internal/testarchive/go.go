@@ -10,6 +10,13 @@ import (
 	"strings"
 )
 
+// Initialize these to prevent linter from complaining about unused types.
+var (
+	_ = goDownloader{}
+	_ = uvDownloader{}
+	_ = jqDownloader{}
+)
+
 type goDownloader struct {
 	binDir string
 	arch   string
