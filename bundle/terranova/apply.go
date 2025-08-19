@@ -159,21 +159,19 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 }
 
 func logStats(ctx context.Context, result dagrun.RunResult[nodeKey], plannedActionsMap map[nodeKey]deployplan.ActionType) {
-	deleteKeys(result.Successful, plannedActionsMap)
-	deleteKeys(result.Failed, plannedActionsMap)
-	deleteKeys(result.NotRun, plannedActionsMap)
-
-	total := len(result.Successful) + len(result.Failed) + len(result.NotRun)
-
 	if len(result.Failed) > 0 {
 		names := strings.Join(toStrings(result.Failed), ", ")
-		logdiag.LogError(ctx, fmt.Errorf("%d out of %d resources failed to deploy: %s", len(result.Failed), total, names))
+		logdiag.LogError(ctx, fmt.Errorf("%d resources failed to apply: %s", len(result.Failed), names))
 	}
 
 	if len(result.NotRun) > 0 {
 		names := strings.Join(toStrings(result.NotRun), ", ")
-		logdiag.LogError(ctx, fmt.Errorf("%d out of %d resources not deployed because of failed dependency: %s", len(result.NotRun), total, names))
+		logdiag.LogError(ctx, fmt.Errorf("%d resources not applied: %s", len(result.NotRun), names))
 	}
+
+	deleteKeys(plannedActionsMap, result.Successful)
+	deleteKeys(plannedActionsMap, result.Failed)
+	deleteKeys(plannedActionsMap, result.NotRun)
 
 	if len(plannedActionsMap) > 0 {
 		names := strings.Join(toStrings(slices.Collect(maps.Keys(plannedActionsMap))), ", ")
@@ -189,18 +187,7 @@ func toStrings(nodes []nodeKey) []string {
 	return result
 }
 
-func checkPresenceAndDelete(ctx context.Context, nodes []nodeKey, plannedActionsMap map[nodeKey]deployplan.ActionType) {
-	// XXX swap arguments
-	for _, node := range nodes {
-		_, exists := plannedActionsMap[node]
-		if !exists {
-			logdiag.LogError(ctx, fmt.Errorf("internal error: unexpected deployment: %s.%s", node.Group, node.Name))
-		}
-		delete(plannedActionsMap, node)
-	}
-}
-
-func deleteKeys(nodes []nodeKey, plannedActionsMap map[nodeKey]deployplan.ActionType) {
+func deleteKeys(plannedActionsMap map[nodeKey]deployplan.ActionType, nodes []nodeKey) {
 	for _, node := range nodes {
 		delete(plannedActionsMap, node)
 	}
