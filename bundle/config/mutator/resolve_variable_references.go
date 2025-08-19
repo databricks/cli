@@ -229,22 +229,7 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn
 				// Perform resolution only if the path starts with one of the specified prefixes.
 				for _, prefix := range prefixes {
 					if path.HasPrefix(prefix) {
-						isOpt := prefix[0].Key() == "resources"
-						var value dyn.Value
-						var err error
-						if isOpt {
-							// We don't want injected zero value when resolving $resources.
-							// We only want entries that are explicitly provided by users, so we're using root not normalized here.
-							value, err = m.lookupFn(root, path, b)
-							if !value.IsValid() {
-								// Not having a value is not an error in this case, it might be resolved at deploy time. For example, output only fields.
-								// TODO: we still could check whether it's part of the schema or not. If latter, we can reject it right away.
-								// TODO: This might be better done after we got rid of TF.
-								return dyn.InvalidValue, dynvar.ErrSkipResolution
-							}
-						} else {
-							value, err = m.lookupFn(normalized, path, b)
-						}
+						value, err := m.lookupFn(normalized, path, b)
 						hasUpdates = hasUpdates || (err == nil && value.IsValid())
 						return value, err
 					}
