@@ -29,7 +29,7 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 		seen            []string
 		seenSorted      []string
 		edges           []edge
-		stops           map[string]bool // node -> false to indicate failure
+		returnValues    map[string]bool // node -> false to indicate failure
 		pools           []int           // optional override of pools to run
 		cycle           string
 		failedFrom      map[string]string   // node -> expected failedFrom
@@ -87,20 +87,20 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 			cycle: "cycle detected: X refers to Y via e1 Y refers to Z via e2 which refers to X via e3",
 		},
 		{
-			name:  "downstream runs with failed dependency",
-			edges: []edge{{"A", "B", "A->B"}, {"B", "C", "B->C"}},
-			seen:  []string{"A", "B", "C"},
-			stops: map[string]bool{"B": false},
+			name:         "downstream runs with failed dependency",
+			edges:        []edge{{"A", "B", "A->B"}, {"B", "C", "B->C"}},
+			seen:         []string{"A", "B", "C"},
+			returnValues: map[string]bool{"B": false},
 			failedFrom: map[string]string{
 				"C": "B",
 			},
 		},
 		{
-			name:       "multiple failures propagate to same node (any one reported)",
-			edges:      []edge{{"A", "D", "A->D"}, {"B", "D", "B->D"}},
-			seenSorted: []string{"A", "B", "D"},
-			stops:      map[string]bool{"A": false, "B": false},
-			pools:      []int{1},
+			name:         "multiple failures propagate to same node (any one reported)",
+			edges:        []edge{{"A", "D", "A->D"}, {"B", "D", "B->D"}},
+			seenSorted:   []string{"A", "B", "D"},
+			returnValues: map[string]bool{"A": false, "B": false},
+			pools:        []int{1},
 			failedFromOneOf: map[string][]string{
 				"D": {"A", "B"},
 			},
@@ -117,7 +117,7 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 				{"F", "G", "F->G"},
 			},
 			seen: []string{"A", "B", "C", "D", "E", "F", "G"},
-			stops: map[string]bool{
+			returnValues: map[string]bool{
 				"B": false,
 				// It does not matter what node returns if failedDependency was set; here we return a mix of true and false
 				"E": false,
@@ -131,11 +131,11 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 			},
 		},
 		{
-			name:  "callback true is ignored on failed dependency",
-			nodes: []string{"A", "B", "C"},
-			edges: []edge{{"A", "B", "A->B"}, {"B", "C", "B->C"}},
-			seen:  []string{"A", "B", "C"},
-			stops: map[string]bool{"B": false},
+			name:         "callback true is ignored on failed dependency",
+			nodes:        []string{"A", "B", "C"},
+			edges:        []edge{{"A", "B", "A->B"}, {"B", "C", "B->C"}},
+			seen:         []string{"A", "B", "C"},
+			returnValues: map[string]bool{"B": false},
 			failedFrom: map[string]string{
 				"C": "B",
 			},
@@ -186,7 +186,7 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 						failedFrom[n.Value] = nil
 					}
 					mu.Unlock()
-					if stop, exists := tc.stops[n.Value]; exists {
+					if stop, exists := tc.returnValues[n.Value]; exists {
 						return stop
 					}
 					return true // success by default
