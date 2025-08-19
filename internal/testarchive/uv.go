@@ -6,20 +6,16 @@ import (
 	"path/filepath"
 )
 
-// UVDownloader handles downloading and extracting UV releases
-type UVDownloader struct {
-	downloadDir string
+// uvDownloader handles downloading and extracting UV releases
+type uvDownloader struct {
+	binDir string
+	arch   string
 }
 
-// NewUVDownloader creates a new UV downloader
-func NewUVDownloader() *UVDownloader {
-	return &UVDownloader{
-		downloadDir: "./testdata",
-	}
-}
+// uvDownloader creates a new UV downloader
 
 // mapArchitecture maps our architecture names to UV's naming convention
-func (u *UVDownloader) mapArchitecture(arch string) (string, error) {
+func (u uvDownloader) mapArchitecture(arch string) (string, error) {
 	switch arch {
 	case "arm64":
 		return "aarch64", nil
@@ -31,43 +27,50 @@ func (u *UVDownloader) mapArchitecture(arch string) (string, error) {
 }
 
 // Download downloads and extracts UV for Linux
-func (u *UVDownloader) Download(arch string) error {
+func (u uvDownloader) Download() error {
 	// Map architecture names to UV's naming convention
-	uvArch, err := u.mapArchitecture(arch)
+	uvArch, err := u.mapArchitecture(u.arch)
 	if err != nil {
 		return err
 	}
 
-	downloadDir := filepath.Join(u.downloadDir, uvArch)
-
-	// Construct the download URL for the latest release
-	url := fmt.Sprintf("https://github.com/astral-sh/uv/releases/latest/download/uv-%s-unknown-linux-gnu.tar.gz", uvArch)
-
-	// Create bin directory using shared utility
-	if err := ensureBinDir(downloadDir); err != nil {
-		return fmt.Errorf("failed to create bin directory: %w", err)
+	// create the directory for the download if it doesn't exist
+	dir := filepath.Join(u.binDir, u.arch)
+	err = os.MkdirAll(dir, 0o755)
+	if err != nil {
+		return err
 	}
 
-	// Create temporary filename
-	tempFile := filepath.Join(downloadDir, "uv.tar.gz")
+	// Construct the download URL for the latest release
+	uvTarName := fmt.Sprintf("uv-%s-unknown-linux-gnu", uvArch)
+	url := fmt.Sprintf("https://github.com/astral-sh/uv/releases/latest/download/%s.tar.gz", uvTarName)
 
 	// Download the file using shared utility
+	tempFile := filepath.Join(dir, "uv.tar.gz")
 	if err := downloadFile(url, tempFile); err != nil {
 		return err
 	}
 
-	// Get file size for confirmation
-	_, err = os.Stat(tempFile)
+	// Extract the archive to the directory
+	if err := extractTarGz(tempFile, dir); err != nil {
+		return err
+	}
+
+	err = os.Remove(tempFile)
 	if err != nil {
-		return fmt.Errorf("failed to get file info: %w", err)
+		return err
 	}
 
-	// Extract the archive using shared utility
-	if err := extractTarGz(tempFile, downloadDir); err != nil {
-		return fmt.Errorf("failed to extract archive: %w", err)
+	// The uv binary is extracted into a directory called something like
+	// uv-aarch64-unknown-linux-gnu. We remove that additional directory here
+	// and move the uv binary one level above to keep the directory structure clean.
+	err = os.Rename(filepath.Join(dir, uvTarName, "uv"), filepath.Join(dir, "uv"))
+	if err != nil {
+		return err
 	}
-
-	// Remove the downloaded archive using shared utility
-	cleanupTempFile(tempFile)
+	err = os.RemoveAll(filepath.Join(dir, uvTarName))
+	if err != nil {
+		return err
+	}
 	return nil
 }

@@ -32,7 +32,7 @@ def main():
     # TODO: Have better organization for these binaries.
     cli_dir = home / "cli"
     go_bin = home / "cli" / "testdata" / "amd64" / "go" / "bin"
-    uv_bin = home / "cli" / "testdata" / "x86_64" / "uv-x86_64-unknown-linux-gnu"
+    uv_bin = home / "cli" / "bin" / "amd64"
     jq_bin = home / "cli" / "testdata" / "amd64"
 
     # Ensure the directories exist (optional checks)

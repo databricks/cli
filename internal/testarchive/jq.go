@@ -6,67 +6,31 @@ import (
 	"path/filepath"
 )
 
-// JqDownloader handles downloading and extracting jq releases
-type JqDownloader struct {
-	downloadDir string
-}
-
-// NewJqDownloader creates a new jq downloader
-// TODO: Use _cache instead of testdata. directories with _ are ignored by go.
-// TODO: Mount the binaries to an appropriate directory in the archive. Instead of top level.
-// Perhaps _bin is a much better name for this? Or no, keep cache and hte same paths.
-func NewJqDownloader() *JqDownloader {
-	return &JqDownloader{
-		downloadDir: "./testdata",
-	}
-}
-
-// mapArchitecture maps our architecture names to jq's naming convention
-func (j *JqDownloader) mapArchitecture(arch string) (string, error) {
-	switch arch {
-	case "arm64":
-		return "arm64", nil
-	case "amd64":
-		return "amd64", nil
-	default:
-		return "", fmt.Errorf("unsupported architecture: %s (supported: arm64, amd64)", arch)
-	}
+// jqDownloader handles downloading and extracting jq releases
+type jqDownloader struct {
+	binDir string
+	arch   string
 }
 
 // Download downloads and extracts jq for Linux
-func (j *JqDownloader) Download(arch string) error {
-	// Map architecture names to jq's naming convention
-	jqArch, err := j.mapArchitecture(arch)
+func (j jqDownloader) Download() error {
+	// create the directory for the download if it doesn't exist
+	dir := filepath.Join(j.binDir, j.arch)
+	err := os.MkdirAll(dir, 0o755)
 	if err != nil {
 		return err
 	}
-
-	downloadDir := filepath.Join(j.downloadDir, jqArch)
 
 	// Construct the download URL for the latest release
-	url := fmt.Sprintf("https://github.com/jqlang/jq/releases/latest/download/jq-linux-%s", jqArch)
+	url := fmt.Sprintf("https://github.com/jqlang/jq/releases/latest/download/jq-linux-%s", j.arch)
 
-	// Create bin directory using shared utility
-	if err := ensureBinDir(downloadDir); err != nil {
-		return fmt.Errorf("failed to create bin directory: %w", err)
-	}
-
-	// Create target filename
-	targetFile := filepath.Join(downloadDir, "jq")
-
-	// Download the binary using shared utility
-	if err := downloadFile(url, targetFile); err != nil {
+	binaryPath := filepath.Join(dir, "jq")
+	if err := downloadFile(url, binaryPath); err != nil {
 		return err
-	}
-
-	// Get file size for confirmation
-	_, err = os.Stat(targetFile)
-	if err != nil {
-		return fmt.Errorf("failed to get file info: %w", err)
 	}
 
 	// Make the binary executable
-	if err := os.Chmod(targetFile, 0o755); err != nil {
+	if err := os.Chmod(binaryPath, 0o755); err != nil {
 		return fmt.Errorf("failed to make jq executable: %w", err)
 	}
 

@@ -35,7 +35,7 @@ type GoDownloader struct {
 // NewGoDownloader creates a new Go downloader
 func NewGoDownloader() *GoDownloader {
 	return &GoDownloader{
-		downloadDir: "./testdata",
+		downloadDir: "./_downloads",
 	}
 }
 

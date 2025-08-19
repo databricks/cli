@@ -15,7 +15,7 @@ import (
 // createGitArchive creates a tar.gz archive of all git-tracked files plus downloaded tools
 func createGitArchive(outputPath string) error {
 	repoRoot := filepath.Join("..", "..")
-	testdataDir := "./testdata"
+	downloadsDir := "./_bin"
 
 	// Download Go for both architectures
 	goDownloader := NewGoDownloader()
@@ -27,21 +27,23 @@ func createGitArchive(outputPath string) error {
 	}
 
 	// Download UV for both architectures
-	uvDownloader := NewUVDownloader()
-	if err := uvDownloader.Download("amd64"); err != nil {
-		return fmt.Errorf("failed to download UV amd64: %w", err)
+	err := uvDownloader{arch: "amd64", binDir: downloadsDir}.Download()
+	if err != nil {
+		return err
 	}
-	if err := uvDownloader.Download("arm64"); err != nil {
-		return fmt.Errorf("failed to download UV arm64: %w", err)
+	err = uvDownloader{arch: "arm64", binDir: downloadsDir}.Download()
+	if err != nil {
+		return err
 	}
 
 	// Download jq for both architectures
-	jqDownloader := NewJqDownloader()
-	if err := jqDownloader.Download("amd64"); err != nil {
-		return fmt.Errorf("failed to download jq amd64: %w", err)
+	err = jqDownloader{arch: "amd64", binDir: downloadsDir}.Download()
+	if err != nil {
+		return err
 	}
-	if err := jqDownloader.Download("arm64"); err != nil {
-		return fmt.Errorf("failed to download jq arm64: %w", err)
+	err = jqDownloader{arch: "arm64", binDir: downloadsDir}.Download()
+	if err != nil {
+		return err
 	}
 
 	// Get list of git-tracked files
@@ -68,29 +70,29 @@ func createGitArchive(outputPath string) error {
 
 	// Get downloaded tools if they exist
 	var downloadedFiles []string
-	if _, err := os.Stat(testdataDir); err == nil {
-		err := filepath.WalkDir(testdataDir, func(path string, d os.DirEntry, err error) error {
+	if _, err := os.Stat(downloadsDir); err == nil {
+		err := filepath.WalkDir(downloadsDir, func(path string, d os.DirEntry, err error) error {
 			if err != nil {
 				return err
 			}
 
-			// Skip the testdata directory itself
-			if path == testdataDir {
+			// Skip the _downloads directory itself
+			if path == downloadsDir {
 				return nil
 			}
 
-			// Get relative path from testdata directory
-			relPath, err := filepath.Rel(testdataDir, path)
+			// Get relative path from _downloads directory
+			relPath, err := filepath.Rel(downloadsDir, path)
 			if err != nil {
 				return err
 			}
 
-			// Add with testdata/ prefix to maintain structure in archive
-			downloadedFiles = append(downloadedFiles, filepath.Join("testdata", relPath))
+			// Add with _downloads/ prefix to maintain structure in archive
+			downloadedFiles = append(downloadedFiles, filepath.Join("_downloads", relPath))
 			return nil
 		})
 		if err != nil {
-			fmt.Printf("Warning: failed to scan testdata directory: %v\n", err)
+			fmt.Printf("Warning: failed to scan _downloads directory: %v\n", err)
 		}
 	}
 
@@ -143,9 +145,9 @@ func createGitArchive(outputPath string) error {
 			fmt.Printf("Progress: %d/%d downloaded files processed\n", processedCount, totalFiles)
 		}
 
-		// Remove "testdata/" prefix to get actual file path
-		actualPath := strings.TrimPrefix(file, "testdata/")
-		fullPath := filepath.Join(testdataDir, actualPath)
+		// Remove "_downloads/" prefix to get actual file path
+		actualPath := strings.TrimPrefix(file, "_downloads/")
+		fullPath := filepath.Join(downloadsDir, actualPath)
 
 		if err := addFileToArchive(tarWriter, fullPath, file); err != nil {
 			fmt.Printf("Warning: failed to add downloaded file %s: %v\n", file, err)
