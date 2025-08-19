@@ -200,11 +200,18 @@ func (g *Graph[N]) Run(pool int, runUnit func(N, *N) bool) {
 		res := <-done
 
 		if !res.success {
-			// Record a failed direct dependency for children, if not set yet
+			// Determine the originating failure cause to propagate
+			var cause *N
+			if existing, ok := failedCause[res.n]; ok && existing != nil {
+				cause = existing
+			} else {
+				parent := res.n
+				cause = &parent
+			}
+			// Record a failed dependency cause for children, if not set yet
 			for _, e := range g.adj[res.n] {
 				if _, exists := failedCause[e.to]; !exists {
-					parent := res.n
-					failedCause[e.to] = &parent
+					failedCause[e.to] = cause
 				}
 			}
 		}
@@ -234,6 +241,10 @@ func runWorkerLoop[N StringerComparable](wg *sync.WaitGroup, ready <-chan task[N
 	defer wg.Done()
 	for t := range ready {
 		success := runUnit(t.n, t.failedFrom)
+		if t.failedFrom != nil {
+			// Enforce failure status when a dependency has failed
+			success = false
+		}
 		done <- doneResult[N]{n: t.n, success: success}
 	}
 }

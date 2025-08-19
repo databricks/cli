@@ -105,6 +105,41 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 				"D": {"A", "B"},
 			},
 		},
+		{
+			name:  "chain failure propagates same source",
+			nodes: []string{"A", "B", "C", "D", "E", "F", "G"},
+			edges: []edge{
+				{"A", "B", "A->B"},
+				{"B", "C", "B->C"},
+				{"C", "D", "C->D"},
+				{"D", "E", "D->E"},
+				{"E", "F", "E->F"},
+				{"F", "G", "F->G"},
+			},
+			seen: []string{"A", "B", "C", "D", "E", "F", "G"},
+			stops: map[string]bool{
+				"B": false,
+				// It does not matter what node returns if failedDependency was set; here we return a mix of true and false
+				"E": false,
+			},
+			failedFrom: map[string]string{
+				"C": "B",
+				"D": "B",
+				"E": "B",
+				"F": "B",
+				"G": "B",
+			},
+		},
+		{
+			name:  "callback true is ignored on failed dependency",
+			nodes: []string{"A", "B", "C"},
+			edges: []edge{{"A", "B", "A->B"}, {"B", "C", "B->C"}},
+			seen:  []string{"A", "B", "C"},
+			stops: map[string]bool{"B": false},
+			failedFrom: map[string]string{
+				"C": "B",
+			},
+		},
 	}
 
 	for _, tc := range tests {
