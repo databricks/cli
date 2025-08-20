@@ -1,10 +1,6 @@
 Local = true
 Cloud = true
 
-RecordRequests = false
-RequiresUnityCatalog = true
-CloudEnvs.gcp = false # lakebase is not available in GCP as of August 2025
-
 Ignore = [
     "databricks.yml",
 ]
