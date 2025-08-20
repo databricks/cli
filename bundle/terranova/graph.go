@@ -142,7 +142,7 @@ func validateRef(root dyn.Value, ref string) (string, string, error) {
 		return "", "", err
 	}
 	if len(items) > 4 || items[3] != "id" {
-		return "", "", errors.New("${resources...} can only refer to field in the config or 'id'")
+		return "", "", errors.New("only ${resources.<group>.<key>.id} references are supported")
 	}
 	return items[1], items[2], nil
 }

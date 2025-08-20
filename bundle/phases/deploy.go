@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/cli/bundle/artifacts"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
-	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
 	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/bundle/deploy/lock"
@@ -210,16 +209,6 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	}
 
 	bundle.ApplySeqContext(ctx, b,
-		mutator.ResolveVariableReferencesOnlyResources(
-			"resources",
-		),
-
-		// Reads (typed): resources.pipelines.*.{catalog,schema,target}, resources.volumes.*.{catalog_name,schema_name} (checks for schema references)
-		// Updates (typed): resources.pipelines.*.{schema,target}, resources.volumes.*.schema_name (converts implicit schema references to explicit ${resources.schemas.<schema_key>.name} syntax)
-		// Translates implicit schema references in DLT pipelines or UC Volumes to explicit syntax to capture dependencies
-		// Needs to be run after ${resources} resolution since otherwise that undoes the change here.
-		// TODO: one we have depends_on support we should leverage that here and move this back to initialize phase.
-		resourcemutator.CaptureSchemaDependency(),
 		files.Upload(outputHandler),
 		deploy.StateUpdate(),
 		deploy.StatePush(),
