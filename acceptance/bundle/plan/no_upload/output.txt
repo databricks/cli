@@ -2,6 +2,6 @@
 >>> [CLI] bundle plan
 create jobs.my_job
 
->>> jq -s .[] | select(.path=="/api/2.0/workspace/delete") | select(.body.path | test(".*/artifacts/.internal")) out.requests.txt
+>>> jq -s .[] | select(.path | contains("api/2.0/workspace")) | select(.method != "GET") out.requests.txt
 
 >>> jq -s .[] | select(.path | contains("/api/2.0/workspace-files/import-file")) out.requests.txt
