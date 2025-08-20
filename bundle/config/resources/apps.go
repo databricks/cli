@@ -42,6 +42,7 @@ type App struct {
 	URL            string          `json:"url,omitempty" bundle:"internal"`
 
 	apps.App
+	Lifecycle Lifecycle `json:"lifecycle"`
 }
 
 func (a *App) UnmarshalJSON(b []byte) error {

@@ -49,6 +49,7 @@ type Volume struct {
 	ID string `json:"id,omitempty" bundle:"readonly"`
 
 	catalog.CreateVolumeRequestContent
+	Lifecycle Lifecycle `json:"lifecycle"`
 
 	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"internal"`
 	URL            string         `json:"url,omitempty" bundle:"internal"`

@@ -117,3 +117,33 @@ func TestConvertDatabaseInstanceWithPermissions(t *testing.T) {
 		},
 	}, out.Permissions["database_instance_db_with_permissions"])
 }
+
+func TestConvertDatabaseInstanceWithLifecycle(t *testing.T) {
+	src := resources.DatabaseInstance{
+		DatabaseInstance: database.DatabaseInstance{
+			Name:     "test-db-instance",
+			Capacity: "CU_4",
+		},
+		Lifecycle: resources.Lifecycle{
+			PreventDestroy: true,
+		},
+	}
+
+	vin, err := convert.FromTyped(src, dyn.NilValue)
+	require.NoError(t, err)
+
+	ctx := context.Background()
+	out := schema.NewResources()
+	err = databaseInstanceConverter{}.Convert(ctx, "my_database_instance", vin, out)
+	require.NoError(t, err)
+
+	// Assert equality on the database instance
+	assert.Equal(t, map[string]any{
+		"name":            "test-db-instance",
+		"capacity":        "CU_4",
+		"purge_on_delete": true,
+		"lifecycle": map[string]any{
+			"prevent_destroy": true,
+		},
+	}, out.DatabaseInstance["my_database_instance"])
+}

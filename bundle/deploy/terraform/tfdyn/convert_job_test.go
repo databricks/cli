@@ -286,3 +286,30 @@ func TestConvertJobApplyPolicyDefaultValues(t *testing.T) {
 		},
 	}, out.Job["my_job"])
 }
+
+func TestConvertJobWithLifecycle(t *testing.T) {
+	src := resources.Job{
+		JobSettings: jobs.JobSettings{
+			Name: "my job",
+		},
+		Lifecycle: resources.Lifecycle{
+			PreventDestroy: true,
+		},
+	}
+
+	vin, err := convert.FromTyped(src, dyn.NilValue)
+	require.NoError(t, err)
+
+	ctx := context.Background()
+	out := schema.NewResources()
+	err = jobConverter{}.Convert(ctx, "my_job", vin, out)
+	require.NoError(t, err)
+
+	// Assert equality on the job
+	assert.Equal(t, map[string]any{
+		"name": "my job",
+		"lifecycle": map[string]any{
+			"prevent_destroy": true,
+		},
+	}, out.Job["my_job"])
+}

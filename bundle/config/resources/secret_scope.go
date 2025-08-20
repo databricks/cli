@@ -43,6 +43,8 @@ type SecretScope struct {
 	BackendType workspace.ScopeBackendType `json:"backend_type,omitempty"`
 	// The metadata for the secret scope if the type is `AZURE_KEYVAULT`
 	KeyvaultMetadata *workspace.AzureKeyVaultSecretScopeMetadata `json:"keyvault_metadata,omitempty"`
+
+	Lifecycle Lifecycle `json:"lifecycle"`
 }
 
 func (s *SecretScope) UnmarshalJSON(b []byte) error {

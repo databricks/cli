@@ -21,6 +21,7 @@ type QualityMonitor struct {
 
 	// This struct defines the creation payload for a monitor.
 	catalog.CreateMonitor
+	Lifecycle Lifecycle `json:"lifecycle"`
 }
 
 func (s *QualityMonitor) UnmarshalJSON(b []byte) error {

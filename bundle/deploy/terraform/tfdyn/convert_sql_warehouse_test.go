@@ -65,3 +65,30 @@ func TestConvertSqlWarehouse(t *testing.T) {
 		"min_num_clusters":          int64(1),
 	}, sqlWarehouse)
 }
+
+func TestConvertSqlWarehouseWithLifecycle(t *testing.T) {
+	src := resources.SqlWarehouse{
+		CreateWarehouseRequest: sql.CreateWarehouseRequest{
+			Name: "test_sql_warehouse",
+		},
+		Lifecycle: resources.Lifecycle{
+			PreventDestroy: true,
+		},
+	}
+
+	vin, err := convert.FromTyped(src, dyn.NilValue)
+	require.NoError(t, err)
+
+	ctx := context.Background()
+	out := schema.NewResources()
+	err = sqlWarehouseConverter{}.Convert(ctx, "test_sql_warehouse", vin, out)
+	require.NoError(t, err)
+
+	// Assert equality on the SQL warehouse
+	assert.Equal(t, map[string]any{
+		"name": "test_sql_warehouse",
+		"lifecycle": map[string]any{
+			"prevent_destroy": true,
+		},
+	}, out.SqlEndpoint["test_sql_warehouse"])
+}

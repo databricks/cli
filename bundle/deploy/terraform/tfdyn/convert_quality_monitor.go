@@ -26,6 +26,11 @@ func (qualityMonitorConverter) Convert(ctx context.Context, key string, vin dyn.
 		return err
 	}
 
+	vout, err = convertLifecycle(ctx, vout, vin.Get("lifecycle"))
+	if err != nil {
+		return err
+	}
+
 	// Add the converted resource to the output.
 	out.QualityMonitor[key] = vout.AsAny()
 
