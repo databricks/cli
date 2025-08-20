@@ -160,7 +160,7 @@ func (g *Graph[N]) DetectCycle() error {
 // is non-nil, it indicates that at least one direct dependency of the node failed.
 // The callback should return true on success or false on failure. Nodes are not
 // skipped when dependencies fail; instead, they are executed with failedDependency set.
-func (g *Graph[N]) Run(pool int, runUnit func(N, *N) bool) {
+func (g *Graph[N]) Run(pool int, runUnit func(node N, failedDependency *N) bool) {
 	if pool <= 0 || pool > len(g.adj) {
 		pool = len(g.adj)
 	}
