@@ -2,6 +2,7 @@ package dagrun
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 	"sync"
 	"testing"
@@ -21,15 +22,18 @@ func (s stringWrapper) String() string {
 }
 
 func TestRun_VariousGraphsAndPools(t *testing.T) {
-	pools := []int{1, 2, 3, 4}
+	poolsToRun := []int{1, 2, 3, 4}
 
 	tests := []struct {
-		name       string
-		nodes      []string
-		seen       []string
-		seenSorted []string
-		edges      []edge
-		cycle      string
+		name            string
+		nodes           []string
+		seen            []string
+		seenSorted      []string
+		edges           []edge
+		returnValues    map[string]bool // node -> false to indicate failure
+		cycle           string
+		failedFrom      map[string]string   // node -> expected failedFrom
+		failedFromOneOf map[string][]string // node -> any of these failedFrom values acceptable
 	}{
 		// disconnected graphs
 		{
@@ -82,10 +86,63 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 			},
 			cycle: "cycle detected: X refers to Y via e1 Y refers to Z via e2 which refers to X via e3",
 		},
+		{
+			name:         "downstream runs with failed dependency",
+			edges:        []edge{{"A", "B", "A->B"}, {"B", "C", "B->C"}},
+			seen:         []string{"A", "B", "C"},
+			returnValues: map[string]bool{"B": false},
+			failedFrom: map[string]string{
+				"C": "B",
+			},
+		},
+		{
+			name:         "multiple failures propagate to same node (any one reported)",
+			edges:        []edge{{"A", "D", "A->D"}, {"B", "D", "B->D"}},
+			seenSorted:   []string{"A", "B", "D"},
+			returnValues: map[string]bool{"A": false, "B": false},
+			failedFromOneOf: map[string][]string{
+				"D": {"A", "B"},
+			},
+		},
+		{
+			name:  "chain failure propagates same source",
+			nodes: []string{"A", "B", "C", "D", "E", "F", "G"},
+			edges: []edge{
+				{"A", "B", "A->B"},
+				{"B", "C", "B->C"},
+				{"C", "D", "C->D"},
+				{"D", "E", "D->E"},
+				{"E", "F", "E->F"},
+				{"F", "G", "F->G"},
+			},
+			seen: []string{"A", "B", "C", "D", "E", "F", "G"},
+			returnValues: map[string]bool{
+				"B": false,
+				// It does not matter what node returns if failedDependency was set; here we return a mix of true and false
+				"E": false,
+			},
+			failedFrom: map[string]string{
+				"C": "B",
+				"D": "B",
+				"E": "B",
+				"F": "B",
+				"G": "B",
+			},
+		},
+		{
+			name:         "callback true is ignored on failed dependency",
+			nodes:        []string{"A", "B", "C"},
+			edges:        []edge{{"A", "B", "A->B"}, {"B", "C", "B->C"}},
+			seen:         []string{"A", "B", "C"},
+			returnValues: map[string]bool{"B": false},
+			failedFrom: map[string]string{
+				"C": "B",
+			},
+		},
 	}
 
 	for _, tc := range tests {
-		for _, p := range pools {
+		for _, p := range poolsToRun {
 			t.Run(tc.name+fmt.Sprintf(" pool=%d", p), func(t *testing.T) {
 				g := NewGraph[stringWrapper]()
 				for _, n := range tc.nodes {
@@ -101,8 +158,9 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 					require.Equal(t, tc.cycle, err.Error())
 					innerCalled := 0
 					require.Panics(t, func() {
-						g.Run(p, func(n stringWrapper) {
+						g.Run(p, func(n stringWrapper, failed *stringWrapper) bool {
 							innerCalled += 1
+							return true
 						})
 					})
 					require.Zero(t, innerCalled)
@@ -112,10 +170,21 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 
 				var mu sync.Mutex
 				var seen []string
-				g.Run(p, func(n stringWrapper) {
+				failedFrom := map[string]*string{}
+				g.Run(p, func(n stringWrapper, failed *stringWrapper) bool {
 					mu.Lock()
 					seen = append(seen, n.Value)
+					if failed != nil {
+						v := failed.Value
+						failedFrom[n.Value] = &v
+					} else {
+						failedFrom[n.Value] = nil
+					}
 					mu.Unlock()
+					if stop, exists := tc.returnValues[n.Value]; exists {
+						return stop
+					}
+					return true // success by default
 				})
 
 				if tc.seen != nil {
@@ -125,6 +194,19 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 					assert.Equal(t, tc.seenSorted, seen)
 				} else {
 					assert.Empty(t, seen)
+				}
+
+				for node, want := range tc.failedFrom {
+					gotPtr := failedFrom[node]
+					if assert.NotNil(t, gotPtr, "expected failedFrom for %s", node) {
+						assert.Equal(t, want, *gotPtr)
+					}
+				}
+				for node, oneOf := range tc.failedFromOneOf {
+					gotPtr := failedFrom[node]
+					if assert.NotNil(t, gotPtr, "expected failedFrom for %s", node) {
+						assert.True(t, slices.Contains(oneOf, *gotPtr), "failedFrom for %s not in %v, got %v", node, oneOf, *gotPtr)
+					}
 				}
 			})
 		}
