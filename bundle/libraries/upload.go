@@ -5,9 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
-	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/cmdio"
@@ -135,7 +133,7 @@ func collectLocalLibraries(b *bundle.Bundle) (map[string][]configLocation, error
 }
 
 func (u *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	client, uploadPath, diags := GetFilerForLibraries(ctx, b)
+	client, _, diags := GetFilerForLibraries(ctx, b)
 	if diags.HasError() {
 		return diags
 	}
@@ -171,30 +169,6 @@ func (u *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 
 	if err := errs.Wait(); err != nil {
 		return diag.FromErr(err)
-	}
-
-	// Update all the config paths to point to the uploaded location
-	for _, source := range sources {
-		locations := libs[source]
-		err = b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-			remotePath := path.Join(uploadPath, filepath.Base(source))
-
-			// If the remote path does not start with /Workspace or /Volumes, prepend /Workspace
-			if !strings.HasPrefix(remotePath, "/Workspace") && !strings.HasPrefix(remotePath, "/Volumes") {
-				remotePath = "/Workspace" + remotePath
-			}
-			for _, location := range locations {
-				v, err = dyn.SetByPath(v, location.configPath, dyn.NewValue(remotePath, []dyn.Location{location.location}))
-				if err != nil {
-					return v, err
-				}
-			}
-
-			return v, nil
-		})
-		if err != nil {
-			diags = diags.Extend(diag.FromErr(err))
-		}
 	}
 
 	return diags

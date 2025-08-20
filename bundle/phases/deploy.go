@@ -146,14 +146,10 @@ func deployCore(ctx context.Context, b *bundle.Bundle) {
 // uploadLibraries uploads libraries to the workspace.
 // It also cleans up the artifacts directory and transforms wheel tasks.
 // It is called by only "bundle deploy".
-// Not having TransformWheelTask in plan phase might lead to jobs using these feature not
-// being reported in plan as being updated. This is acceptable since TransformWheelTask is
-// an experimental feature.
 func uploadLibraries(ctx context.Context, b *bundle.Bundle) {
 	bundle.ApplySeqContext(ctx, b,
 		artifacts.CleanUp(),
 		libraries.Upload(),
-		trampoline.TransformWheelTask(),
 	)
 }
 
@@ -174,6 +170,10 @@ func deployPrepare(ctx context.Context, b *bundle.Bundle) {
 		libraries.CheckForSameNameLibraries(),
 		// SwitchToPatchedWheels must be run after ExpandGlobReferences and after build phase because it Artifact.Source and Artifact.Patched populated
 		libraries.SwitchToPatchedWheels(),
+		libraries.ReplaceWithRemotePath(),
+		// TransformWheelTask must be run after ReplaceWithRemotePath so we can use correct remote path in the
+		// transformed notebook
+		trampoline.TransformWheelTask(),
 	)
 }
 
