@@ -22,7 +22,7 @@ func (s stringWrapper) String() string {
 }
 
 func TestRun_VariousGraphsAndPools(t *testing.T) {
-	pools := []int{1, 2, 3, 4}
+	poolsToRun := []int{1, 2, 3, 4}
 
 	tests := []struct {
 		name            string
@@ -31,7 +31,6 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 		seenSorted      []string
 		edges           []edge
 		returnValues    map[string]bool // node -> false to indicate failure
-		pools           []int           // optional override of pools to run
 		cycle           string
 		failedFrom      map[string]string   // node -> expected failedFrom
 		failedFromOneOf map[string][]string // node -> any of these failedFrom values acceptable
@@ -101,7 +100,6 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 			edges:        []edge{{"A", "D", "A->D"}, {"B", "D", "B->D"}},
 			seenSorted:   []string{"A", "B", "D"},
 			returnValues: map[string]bool{"A": false, "B": false},
-			pools:        []int{1},
 			failedFromOneOf: map[string][]string{
 				"D": {"A", "B"},
 			},
@@ -144,10 +142,6 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		poolsToRun := pools
-		if len(tc.pools) > 0 {
-			poolsToRun = tc.pools
-		}
 		for _, p := range poolsToRun {
 			t.Run(tc.name+fmt.Sprintf(" pool=%d", p), func(t *testing.T) {
 				g := NewGraph[stringWrapper]()
