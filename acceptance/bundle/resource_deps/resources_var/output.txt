@@ -1,0 +1,34 @@
+
+>>> [CLI] bundle validate -t dev -o json
+{
+  "pipelines": {
+    "mypipeline": {
+      "channel": "CURRENT",
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/dev/state/metadata.json"
+      },
+      "development": true,
+      "edition": "ADVANCED",
+      "name": "[dev [USERNAME]] pipeline for ${resources.volumes.foo.catalog_name}.${resources.volumes.foo.schema_name}.${resources.volumes.foo.name}",
+      "permissions": [],
+      "tags": {
+        "dev": "[USERNAME]"
+      }
+    }
+  },
+  "volumes": {
+    "bar": {
+      "catalog_name": "mycatalog",
+      "name": "barname",
+      "schema_name": "myschema",
+      "volume_type": "MANAGED"
+    },
+    "foo": {
+      "catalog_name": "${resources.volumes.bar.catalog_name}",
+      "name": "myname",
+      "schema_name": "${resources.volumes.bar.schema_name}",
+      "volume_type": "MANAGED"
+    }
+  }
+}

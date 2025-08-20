@@ -24,29 +24,31 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 	pools := []int{1, 2, 3, 4}
 
 	tests := []struct {
-		name        string
-		nodes       []string
-		seen        []string
-		seen_sorted []string
-		edges       []edge
-		cycle       bool
-		msg         string
+		name       string
+		nodes      []string
+		seen       []string
+		seenSorted []string
+		edges      []edge
+		cycle      string
 	}{
 		// disconnected graphs
+		{
+			name: "empty graph",
+		},
 		{
 			name:  "one node",
 			nodes: []string{"A"},
 			seen:  []string{"A"},
 		},
 		{
-			name:        "two nodes",
-			nodes:       []string{"A", "B"},
-			seen_sorted: []string{"A", "B"},
+			name:       "two nodes",
+			nodes:      []string{"A", "B"},
+			seenSorted: []string{"A", "B"},
 		},
 		{
-			name:        "three nodes",
-			nodes:       []string{"A", "B", "C"},
-			seen_sorted: []string{"A", "B", "C"},
+			name:       "three nodes",
+			nodes:      []string{"A", "B", "C"},
+			seenSorted: []string{"A", "B", "C"},
 		},
 		{
 			name: "simple DAG",
@@ -61,8 +63,7 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 			edges: []edge{
 				{"A", "A", "${A.id}"},
 			},
-			cycle: true,
-			msg:   "cycle detected: A refers to itself via ${A.id}",
+			cycle: "cycle detected: A refers to itself via ${A.id}",
 		},
 		{
 			name: "two-node cycle",
@@ -70,8 +71,7 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 				{"A", "B", "${A.id}"},
 				{"B", "A", "${B.id}"},
 			},
-			cycle: true,
-			msg:   "cycle detected: A refers to B via ${A.id} which refers to A via ${B.id}",
+			cycle: "cycle detected: A refers to B via ${A.id} which refers to A via ${B.id}",
 		},
 		{
 			name: "three-node cycle",
@@ -80,7 +80,7 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 				{"Y", "Z", "e2"},
 				{"Z", "X", "e3"},
 			},
-			cycle: true,
+			cycle: "cycle detected: X refers to Y via e1 Y refers to Z via e2 which refers to X via e3",
 		},
 	}
 
@@ -95,30 +95,34 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 					g.AddDirectedEdge(stringWrapper{e.from}, stringWrapper{e.to}, e.name)
 				}
 
+				err := g.DetectCycle()
+				if tc.cycle != "" {
+					require.Error(t, err, "expected cycle, got none")
+					require.Equal(t, tc.cycle, err.Error())
+					innerCalled := 0
+					require.Panics(t, func() {
+						g.Run(p, func(n stringWrapper) {
+							innerCalled += 1
+						})
+					})
+					require.Zero(t, innerCalled)
+					return
+				}
+				require.NoError(t, err)
+
 				var mu sync.Mutex
 				var seen []string
-				err := g.Run(p, func(n stringWrapper) {
+				g.Run(p, func(n stringWrapper) {
 					mu.Lock()
 					seen = append(seen, n.Value)
 					mu.Unlock()
 				})
 
-				if tc.cycle {
-					if err == nil {
-						t.Fatalf("expected cycle, got none")
-					}
-					if tc.msg != "" && err.Error() != tc.msg {
-						t.Fatalf("wrong msg:\n got %q\nwant %q", err, tc.msg)
-					}
-				} else {
-					require.NoError(t, err)
-				}
-
 				if tc.seen != nil {
 					assert.Equal(t, tc.seen, seen)
-				} else if tc.seen_sorted != nil {
+				} else if tc.seenSorted != nil {
 					sort.Strings(seen)
-					assert.Equal(t, tc.seen_sorted, seen)
+					assert.Equal(t, tc.seenSorted, seen)
 				} else {
 					assert.Empty(t, seen)
 				}

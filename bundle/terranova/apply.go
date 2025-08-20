@@ -63,9 +63,14 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 		}
 	}
 
+	err = g.DetectCycle()
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
 	client := b.WorkspaceClient()
 
-	err = g.Run(defaultParallelism, func(node nodeKey) {
+	g.Run(defaultParallelism, func(node nodeKey) {
 		// TODO: if a given node fails, all downstream nodes should not be run. We should report those nodes.
 		// TODO: ensure that config for this node is fully resolved at this point.
 
@@ -134,9 +139,6 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 			}
 		}
 	})
-	if err != nil {
-		logdiag.LogError(ctx, err)
-	}
 
 	err = b.ResourceDatabase.Finalize()
 	if err != nil {

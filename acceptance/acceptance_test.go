@@ -299,7 +299,11 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 			if testdiff.OverwriteMode && len(expanded) > 1 {
 				// All variants of the test are producing the same output,
 				// there is no need to run the concurrently when updating.
-				expanded = expanded[0:1]
+				// Exception: if EnvVaryOutput is configured with multiple values, we must
+				// run all variants to record variant-specific outputs.
+				if config.EnvVaryOutput == nil || len(config.EnvMatrix[*config.EnvVaryOutput]) <= 1 {
+					expanded = expanded[0:1]
+				}
 			}
 
 			if len(expanded) == 1 {
@@ -635,8 +639,14 @@ func runTest(t *testing.T,
 
 	printedRepls := false
 
+	pathFilter := preparePathFilter(config, customEnv)
+
 	// Compare expected outputs
 	for relPath := range outputs {
+		if shouldSkip(pathFilter, relPath) {
+			continue
+		}
+
 		skipRepls := false
 		if relPath == internal.MaterializedConfigFile {
 			skipRepls = true
@@ -1335,4 +1345,54 @@ func loadUserReplacements(t *testing.T, repls *testdiff.ReplacementsContext, tmp
 		old := line[:len(line)-len(repl)-1]
 		repls.SetWithOrder(old, "["+repl+"]", -100)
 	}
+}
+
+type pathFilter struct {
+	// contains substrings from the variants other than current.
+	// E.g. if EnvVaryOutput is DATABRICKS_CLI_DEPLOYMENT and current test running DATABRICKS_CLI_DEPLOYMENT="terraform" then
+	// notSelected contains ".direct-exp." meaning if filename contains that (e.g. out.deploy.direct-exp.txt) then we ignore it here.
+	notSelected []string
+}
+
+// preparePathFilter builds filter based on EnvVaryOutput and current variant env.
+func preparePathFilter(config internal.TestConfig, customEnv []string) pathFilter {
+	if config.EnvVaryOutput == nil {
+		return pathFilter{}
+	}
+	key := *config.EnvVaryOutput
+	vals := config.EnvMatrix[key]
+	if len(vals) <= 1 {
+		return pathFilter{}
+	}
+	selected := ""
+	for _, kv := range customEnv {
+		items := strings.SplitN(kv, "=", 2)
+		if len(items) == 2 && items[0] == key {
+			selected = items[1]
+			break
+		}
+	}
+	if selected == "" {
+		return pathFilter{}
+	}
+	var others []string
+	for _, v := range vals {
+		if v == selected {
+			continue
+		}
+		others = append(others, "."+v+".")
+	}
+	return pathFilter{
+		notSelected: others,
+	}
+}
+
+// shouldSkip returns true if the given file belongs to a non-selected variant.
+func shouldSkip(filter pathFilter, relPath string) bool {
+	for _, infix := range filter.notSelected {
+		if strings.Contains(relPath, infix) {
+			return true
+		}
+	}
+	return false
 }

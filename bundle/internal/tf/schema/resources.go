@@ -30,7 +30,9 @@ type Resources struct {
 	Credential                                   map[string]any `json:"databricks_credential,omitempty"`
 	CustomAppIntegration                         map[string]any `json:"databricks_custom_app_integration,omitempty"`
 	Dashboard                                    map[string]any `json:"databricks_dashboard,omitempty"`
+	DatabaseDatabaseCatalog                      map[string]any `json:"databricks_database_database_catalog,omitempty"`
 	DatabaseInstance                             map[string]any `json:"databricks_database_instance,omitempty"`
+	DatabaseSyncedDatabaseTable                  map[string]any `json:"databricks_database_synced_database_table,omitempty"`
 	DbfsFile                                     map[string]any `json:"databricks_dbfs_file,omitempty"`
 	DefaultNamespaceSetting                      map[string]any `json:"databricks_default_namespace_setting,omitempty"`
 	Directory                                    map[string]any `json:"databricks_directory,omitempty"`
@@ -86,6 +88,7 @@ type Resources struct {
 	PermissionAssignment                         map[string]any `json:"databricks_permission_assignment,omitempty"`
 	Permissions                                  map[string]any `json:"databricks_permissions,omitempty"`
 	Pipeline                                     map[string]any `json:"databricks_pipeline,omitempty"`
+	PolicyInfo                                   map[string]any `json:"databricks_policy_info,omitempty"`
 	Provider                                     map[string]any `json:"databricks_provider,omitempty"`
 	QualityMonitor                               map[string]any `json:"databricks_quality_monitor,omitempty"`
 	QualityMonitorV2                             map[string]any `json:"databricks_quality_monitor_v2,omitempty"`
@@ -157,7 +160,9 @@ func NewResources() *Resources {
 		Credential:                   make(map[string]any),
 		CustomAppIntegration:         make(map[string]any),
 		Dashboard:                    make(map[string]any),
+		DatabaseDatabaseCatalog:      make(map[string]any),
 		DatabaseInstance:             make(map[string]any),
+		DatabaseSyncedDatabaseTable:  make(map[string]any),
 		DbfsFile:                     make(map[string]any),
 		DefaultNamespaceSetting:      make(map[string]any),
 		Directory:                    make(map[string]any),
@@ -213,6 +218,7 @@ func NewResources() *Resources {
 		PermissionAssignment:              make(map[string]any),
 		Permissions:                       make(map[string]any),
 		Pipeline:                          make(map[string]any),
+		PolicyInfo:                        make(map[string]any),
 		Provider:                          make(map[string]any),
 		QualityMonitor:                    make(map[string]any),
 		QualityMonitorV2:                  make(map[string]any),

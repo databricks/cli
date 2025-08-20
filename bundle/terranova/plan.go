@@ -85,6 +85,11 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 		return nil, fmt.Errorf("reading config: %w", err)
 	}
 
+	err = g.DetectCycle()
+	if err != nil {
+		return nil, err
+	}
+
 	// Remained in state are resources that no longer present in the config
 	for _, group := range utils.SortedKeys(state) {
 		groupData := state[group]
@@ -102,7 +107,7 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 	// we might have already got rid of this reference, thus potentially downgrading actionType
 
 	// parallelism is set to 1, so there is no multi-threaded access there.
-	err = g.Run(1, func(node nodeKey) {
+	g.Run(1, func(node nodeKey) {
 		settings, ok := SupportedResources[node.Group]
 		if !ok {
 			logdiag.LogError(ctx, fmt.Errorf("resource not supported on direct backend: %s", node.Group))
@@ -151,9 +156,6 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 			ActionType: actionType,
 		})
 	})
-	if err != nil {
-		return nil, fmt.Errorf("while reading resources config: %w", err)
-	}
 
 	if logdiag.HasError(ctx) {
 		return nil, errors.New("planning failed")

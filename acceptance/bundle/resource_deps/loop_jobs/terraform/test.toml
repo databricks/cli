@@ -1,5 +1,0 @@
-EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["terraform"]
-
-[[Repls]]
-Old = 'Cycle: databricks_job.bar, databricks_job.foo'
-New = 'Cycle: databricks_job.foo, databricks_job.bar'

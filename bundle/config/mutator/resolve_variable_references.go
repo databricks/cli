@@ -229,8 +229,9 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn
 				// Perform resolution only if the path starts with one of the specified prefixes.
 				for _, prefix := range prefixes {
 					if path.HasPrefix(prefix) {
-						hasUpdates = true
-						return m.lookupFn(normalized, path, b)
+						value, err := m.lookupFn(normalized, path, b)
+						hasUpdates = hasUpdates || (err == nil && value.IsValid())
+						return value, err
 					}
 				}
 
