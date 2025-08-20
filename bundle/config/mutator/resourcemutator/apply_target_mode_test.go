@@ -176,6 +176,13 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						},
 					},
 				},
+				DatabaseCatalogs: map[string]*resources.DatabaseCatalog{
+					"database_catalog1": {
+						DatabaseCatalog: database.DatabaseCatalog{
+							Name: "database_catalog1",
+						},
+					},
+				},
 			},
 		},
 		SyncRoot: vfs.MustNew("/Users/lennart.kats@databricks.com"),
@@ -344,7 +351,7 @@ func TestAllNonUcResourcesAreRenamed(t *testing.T) {
 				resourceType := resources.Type().Field(i).Name
 
 				// Skip resources that are not renamed
-				if resourceType == "Apps" || resourceType == "SecretScopes" || resourceType == "DatabaseInstances" {
+				if resourceType == "Apps" || resourceType == "SecretScopes" || resourceType == "DatabaseInstances" || resourceType == "DatabaseCatalogs" {
 					continue
 				}
 
