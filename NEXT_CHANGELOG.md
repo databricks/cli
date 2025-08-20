@@ -10,6 +10,8 @@
 
 ### CLI
 
+* Fix "cache: token not found" for auth token command ([#3447](https://github.com/databricks/cli/pull/3447))
+
 ### Bundles
 * Add support for Lakebase database instances in DABs ([#3283](https://github.com/databricks/cli/pull/3283))
 * Add support for Lakebase database catalogs in DABs ([#3436](https://github.com/databricks/cli/pull/3436))
