@@ -33,10 +33,7 @@ func New() *cobra.Command {
 		Annotations: map[string]string{
 			"package": "catalog",
 		},
-
-		// This service is being previewed; hide from help output.
-		Hidden: true,
-		RunE:   root.ReportUnknownSubcommand,
+		RunE: root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -110,7 +107,7 @@ func newCreatePolicy() *cobra.Command {
   Arguments:
     TO_PRINCIPALS: List of user or group names that the policy applies to. Required on create
       and optional on update.
-    FOR_SECURABLE_TYPE: Type of securables that the policy should take effect on. Only table is
+    FOR_SECURABLE_TYPE: Type of securables that the policy should take effect on. Only TABLE is
       supported at this moment. Required on create and optional on update. 
       Supported values: [
         CATALOG,
@@ -444,7 +441,7 @@ func newUpdatePolicy() *cobra.Command {
     NAME: Required. The name of the policy to update.
     TO_PRINCIPALS: List of user or group names that the policy applies to. Required on create
       and optional on update.
-    FOR_SECURABLE_TYPE: Type of securables that the policy should take effect on. Only table is
+    FOR_SECURABLE_TYPE: Type of securables that the policy should take effect on. Only TABLE is
       supported at this moment. Required on create and optional on update. 
       Supported values: [
         CATALOG,

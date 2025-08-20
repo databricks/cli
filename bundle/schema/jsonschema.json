@@ -779,7 +779,7 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.TriggerSettings"
                       },
                       "usage_policy_id": {
-                        "description": "The id of the user specified usage policy to use for this job.\nIf not specified, a default usage policy may be applied when creating or modifying the job.\nSee `effective_budget_policy_id` for the budget policy used by this workload.",
+                        "description": "The id of the user specified usage policy to use for this job.\nIf not specified, a default usage policy may be applied when creating or modifying the job.\nSee `effective_usage_policy_id` for the usage policy used by this workload.",
                         "$ref": "#/$defs/string",
                         "x-databricks-preview": "PRIVATE",
                         "doNotSuggest": true
@@ -7329,6 +7329,10 @@
                     "renewal_period": {
                       "description": "Renewal period field for a rate limit. Currently, only 'minute' is supported.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.AiGatewayRateLimitRenewalPeriod"
+                    },
+                    "tokens": {
+                      "description": "Used to specify how many tokens are allowed for a key within the renewal_period.",
+                      "$ref": "#/$defs/int64"
                     }
                   },
                   "additionalProperties": false,

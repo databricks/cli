@@ -28,6 +28,7 @@ import (
 	service_principal_secrets "github.com/databricks/cli/cmd/account/service-principal-secrets"
 	account_service_principals "github.com/databricks/cli/cmd/account/service-principals"
 	account_settings "github.com/databricks/cli/cmd/account/settings"
+	account_settings_v2 "github.com/databricks/cli/cmd/account/settings-v2"
 	storage "github.com/databricks/cli/cmd/account/storage"
 	account_storage_credentials "github.com/databricks/cli/cmd/account/storage-credentials"
 	usage_dashboards "github.com/databricks/cli/cmd/account/usage-dashboards"
@@ -66,6 +67,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(service_principal_secrets.New())
 	cmd.AddCommand(account_service_principals.New())
 	cmd.AddCommand(account_settings.New())
+	cmd.AddCommand(account_settings_v2.New())
 	cmd.AddCommand(storage.New())
 	cmd.AddCommand(account_storage_credentials.New())
 	cmd.AddCommand(usage_dashboards.New())

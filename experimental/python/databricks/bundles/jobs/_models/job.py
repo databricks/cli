@@ -191,7 +191,7 @@ class Job(Resource):
     
     The id of the user specified usage policy to use for this job.
     If not specified, a default usage policy may be applied when creating or modifying the job.
-    See `effective_budget_policy_id` for the budget policy used by this workload.
+    See `effective_usage_policy_id` for the usage policy used by this workload.
     """
 
     webhook_notifications: VariableOrOptional[WebhookNotifications] = None
@@ -331,7 +331,7 @@ class JobDict(TypedDict, total=False):
     
     The id of the user specified usage policy to use for this job.
     If not specified, a default usage policy may be applied when creating or modifying the job.
-    See `effective_budget_policy_id` for the budget policy used by this workload.
+    See `effective_usage_policy_id` for the usage policy used by this workload.
     """
 
     webhook_notifications: VariableOrOptional[WebhookNotificationsParam]
