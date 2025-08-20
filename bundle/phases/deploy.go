@@ -146,15 +146,15 @@ func deployCore(ctx context.Context, b *bundle.Bundle) {
 // uploadLibraries uploads libraries to the workspace.
 // It also cleans up the artifacts directory and transforms wheel tasks.
 // It is called by only "bundle deploy".
-func uploadLibraries(ctx context.Context, b *bundle.Bundle) {
+func uploadLibraries(ctx context.Context, b *bundle.Bundle, libs map[string][]libraries.ConfigLocation) {
 	bundle.ApplySeqContext(ctx, b,
 		artifacts.CleanUp(),
-		libraries.Upload(),
+		libraries.Upload(libs),
 	)
 }
 
 // deployPrepare is common set of mutators between "bundle plan" and "bundle deploy".
-func deployPrepare(ctx context.Context, b *bundle.Bundle) {
+func deployPrepare(ctx context.Context, b *bundle.Bundle) map[string][]libraries.ConfigLocation {
 	bundle.ApplySeqContext(ctx, b,
 		statemgmt.StatePull(),
 		terraform.CheckDashboardsModifiedRemotely(),
@@ -170,11 +170,20 @@ func deployPrepare(ctx context.Context, b *bundle.Bundle) {
 		libraries.CheckForSameNameLibraries(),
 		// SwitchToPatchedWheels must be run after ExpandGlobReferences and after build phase because it Artifact.Source and Artifact.Patched populated
 		libraries.SwitchToPatchedWheels(),
-		libraries.ReplaceWithRemotePath(),
+	)
+
+	libs, diags := libraries.ReplaceWithRemotePath(ctx, b)
+	for _, diag := range diags {
+		logdiag.LogDiag(ctx, diag)
+	}
+
+	bundle.ApplySeqContext(ctx, b,
 		// TransformWheelTask must be run after ReplaceWithRemotePath so we can use correct remote path in the
 		// transformed notebook
 		trampoline.TransformWheelTask(),
 	)
+
+	return libs
 }
 
 // The deploy phase deploys artifacts and resources.
@@ -198,12 +207,12 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDeploy))
 	}()
 
-	deployPrepare(ctx, b)
+	libs := deployPrepare(ctx, b)
 	if logdiag.HasError(ctx) {
 		return
 	}
 
-	uploadLibraries(ctx, b)
+	uploadLibraries(ctx, b, libs)
 	if logdiag.HasError(ctx) {
 		return
 	}
