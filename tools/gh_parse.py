@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.12"
+# ///
 """
 Analyze downloaded GH logs and print a report. Use gh_report.py instead of this script directly.
 """
