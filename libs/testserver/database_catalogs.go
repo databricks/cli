@@ -7,8 +7,8 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/database"
 )
 
-func (w *FakeWorkspace) DatabaseCatalogCreate(req Request) Response {
-	defer w.LockUnlock()()
+func (s *FakeWorkspace) DatabaseCatalogCreate(req Request) Response {
+	defer s.LockUnlock()()
 
 	databaseCatalog := database.DatabaseCatalog{}
 	err := json.Unmarshal(req.Body, &databaseCatalog)
@@ -21,7 +21,7 @@ func (w *FakeWorkspace) DatabaseCatalogCreate(req Request) Response {
 
 	// check that the instance exists:
 	found := false
-	for _, instance := range w.DatabaseInstances {
+	for _, instance := range s.DatabaseInstances {
 		if instance.Name == databaseCatalog.DatabaseInstanceName {
 			fmt.Printf("Found database instance: %s\n", instance.Name)
 			found = true
@@ -35,7 +35,7 @@ func (w *FakeWorkspace) DatabaseCatalogCreate(req Request) Response {
 		}
 	}
 
-	w.DatabaseCatalogs[databaseCatalog.Name] = databaseCatalog
+	s.DatabaseCatalogs[databaseCatalog.Name] = databaseCatalog
 
 	return Response{
 		Body: databaseCatalog,
