@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/databricks/cli/libs/dagrun"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
@@ -38,8 +37,7 @@ type fieldRef struct {
 
 // makeResourceGraph creates node graph based on ${resources.group.name.id} references.
 // Returns a graph and a map of all references that have references to them
-// Modifies 'state' in place: all the resources found in the config are removed from state
-func makeResourceGraph(ctx context.Context, b *bundle.Bundle, state resourcestate.ExportedResourcesMap) (*dagrun.Graph[nodeKey], map[nodeKey]bool, error) {
+func makeResourceGraph(ctx context.Context, b *bundle.Bundle) (*dagrun.Graph[nodeKey], map[nodeKey]bool, error) {
 	isReferenced := make(map[nodeKey]bool)
 	g := dagrun.NewGraph[nodeKey]()
 
@@ -74,9 +72,6 @@ func makeResourceGraph(ctx context.Context, b *bundle.Bundle, state resourcestat
 	})
 
 	for _, node := range nodes {
-		groupState := state[node.Group]
-		delete(groupState, node.Name)
-
 		g.AddNode(node)
 
 		fieldRefs, err := extractReferences(b.Config.Value(), node)
