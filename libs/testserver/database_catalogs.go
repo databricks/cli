@@ -7,19 +7,35 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/database"
 )
 
-func (s *FakeWorkspace) DatabaseCatalogCreate(req Request) Response {
-	defer s.LockUnlock()()
+func (w *FakeWorkspace) DatabaseCatalogCreate(req Request) Response {
+	defer w.LockUnlock()()
 
 	databaseCatalog := database.DatabaseCatalog{}
 	err := json.Unmarshal(req.Body, &databaseCatalog)
 	if err != nil {
 		return Response{
-			Body:       fmt.Sprintf("cannot unmarshal request body: %s", err),
+			Body:       fmt.Sprintf("cannot unmarshal request body: %w", err),
 			StatusCode: 400,
 		}
 	}
 
-	s.DatabaseCatalogs[databaseCatalog.Name] = databaseCatalog
+	// check that the instance exists:
+	found := false
+	for _, instance := range w.DatabaseInstances {
+		if instance.Name == databaseCatalog.DatabaseInstanceName {
+			fmt.Printf("Found database instance: %s\n", instance.Name)
+			found = true
+			break
+		}
+	}
+	if !found {
+		return Response{
+			Body:       fmt.Sprintf("database instance with name '%s' not found", databaseCatalog.DatabaseInstanceName),
+			StatusCode: 404,
+		}
+	}
+
+	w.DatabaseCatalogs[databaseCatalog.Name] = databaseCatalog
 
 	return Response{
 		Body: databaseCatalog,
