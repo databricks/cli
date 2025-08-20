@@ -14,7 +14,7 @@ func (w *FakeWorkspace) DatabaseCatalogCreate(req Request) Response {
 	err := json.Unmarshal(req.Body, &databaseCatalog)
 	if err != nil {
 		return Response{
-			Body:       fmt.Sprintf("cannot unmarshal request body: %w", err),
+			Body:       fmt.Sprintf("cannot unmarshal request body: %v", err),
 			StatusCode: 400,
 		}
 	}
