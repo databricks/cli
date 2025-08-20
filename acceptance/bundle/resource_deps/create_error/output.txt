@@ -1,6 +1,7 @@
 
 >>> [CLI] bundle plan
 create jobs.bar
+create jobs.baz
 create jobs.foo
 create jobs.independent
 
@@ -53,6 +54,9 @@ Resources:
     bar:
       Name: bar
       URL:  (not deployed)
+    baz:
+      Name: baz
+      URL:  (not deployed)
     foo:
       Name: foo
       URL:  (not deployed)
@@ -63,6 +67,7 @@ Resources:
 === Plan should still contain foo and bar
 >>> [CLI] bundle plan
 create jobs.bar
+create jobs.baz
 create jobs.foo
 
 === Expecting no difference in the output between first and second deploy

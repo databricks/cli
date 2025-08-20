@@ -9,6 +9,8 @@ API message: INJECTED
 
 Error: cannot create jobs.bar: dependency failed: jobs.foo
 
+Error: cannot create jobs.baz: dependency failed: jobs.foo
+
 Updating deployment state...
 
 Exit code (musterr): 1

@@ -5,8 +5,8 @@ Error: terraform apply: exit status 1
 Error: cannot create job: INJECTED
 
   with databricks_job.foo,
-  on bundle.tf.json line 42, in resource.databricks_job.foo:
-  42:       },
+  on bundle.tf.json line 56, in resource.databricks_job.foo:
+  56:       },
 
 
 
