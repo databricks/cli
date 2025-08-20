@@ -3,6 +3,7 @@
 package account
 
 import (
+	"github.com/databricks/cli/libs/cmdgroup"
 	"github.com/spf13/cobra"
 
 	account_access_control "github.com/databricks/cli/cmd/account/access-control"
@@ -78,10 +79,12 @@ func New() *cobra.Command {
 	cmd.AddCommand(workspaces.New())
 	cmd.AddCommand(budgets.New())
 
-	// Register all groups with the parent command.
-	groups := Groups()
-	for i := range groups {
-		cmd.AddGroup(&groups[i])
+	// Add account command groups, filtering out empty groups or groups with only hidden commands.
+	allGroups := Groups()
+	allCommands := cmd.Commands()
+	filteredGroups := cmdgroup.FilterGroups(allGroups, allCommands)
+	for i := range filteredGroups {
+		cmd.AddGroup(&filteredGroups[i])
 	}
 
 	return cmd
