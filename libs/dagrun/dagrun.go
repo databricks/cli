@@ -36,6 +36,11 @@ func (g *Graph[N]) AddNode(n N) {
 	}
 }
 
+func (g *Graph[N]) HasNode(n N) bool {
+	_, ok := g.adj[n]
+	return ok
+}
+
 func (g *Graph[N]) AddDirectedEdge(from, to N, label string) {
 	g.AddNode(from)
 	g.AddNode(to)

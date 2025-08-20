@@ -78,9 +78,7 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 
 	client := b.WorkspaceClient()
 
-	state := b.ResourceDatabase.ExportState(ctx)
-
-	g, isReferenced, err := makeResourceGraph(ctx, b, state)
+	g, isReferenced, err := makeResourceGraph(ctx, b)
 	if err != nil {
 		return nil, fmt.Errorf("reading config: %w", err)
 	}
@@ -90,13 +88,19 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 		return nil, err
 	}
 
+	state := b.ResourceDatabase.ExportState(ctx)
+
 	// Remained in state are resources that no longer present in the config
 	for _, group := range utils.SortedKeys(state) {
 		groupData := state[group]
-		for _, name := range utils.SortedKeys(groupData) {
+		for _, key := range utils.SortedKeys(groupData) {
+			if g.HasNode(nodeKey{group, key}) {
+				// alive resources are processed by makeResourceGraph
+				continue
+			}
 			actions = append(actions, deployplan.Action{
 				Group:      group,
-				Name:       name,
+				Name:       key,
 				ActionType: deployplan.ActionTypeDelete,
 			})
 		}

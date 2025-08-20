@@ -14,7 +14,6 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
-	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 )
 
@@ -37,30 +36,30 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 		return nil
 	}
 
-	// Maps node key to originally planned action
-	plannedActionsMap := map[nodeKey]deployplan.ActionType{}
-
-	for _, action := range b.Plan.Actions {
-		plannedActionsMap[nodeKey{action.Group, action.Name}] = action.ActionType
-	}
-
-	state := b.ResourceDatabase.ExportState(ctx)
-	g, isReferenced, err := makeResourceGraph(ctx, b, state)
+	g, isReferenced, err := makeResourceGraph(ctx, b)
 	if err != nil {
 		logdiag.LogError(ctx, fmt.Errorf("error while reading config: %w", err))
 	}
 
-	// Remained in state are resources that no longer present in the config
-	for _, group := range utils.SortedKeys(state) {
-		groupData := state[group]
-		for _, name := range utils.SortedKeys(groupData) {
-			n := nodeKey{group, name}
-			g.AddNode(n)
-			if plannedActionsMap[n] != deployplan.ActionTypeDelete {
-				logdiag.LogError(ctx, fmt.Errorf("internal error, resources %s.%s is missing from state but action is not delete but %v", group, name, plannedActionsMap[n]))
-				return nil
+	// Maps node key to originally planned action
+	plannedActionsMap := map[nodeKey]deployplan.ActionType{}
+
+	for _, action := range b.Plan.Actions {
+		node := nodeKey{action.Group, action.Name}
+		plannedActionsMap[nodeKey{action.Group, action.Name}] = action.ActionType
+		if !g.HasNode(node) {
+			if action.ActionType == deployplan.ActionTypeDelete {
+				// it is expected that this node is not seen by makeResourceGraph
+				g.AddNode(node)
+			} else {
+				// it's internal error today because plan cannot be outdated. In the future when we load serialized plan, this will become user error
+				logdiag.LogError(ctx, fmt.Errorf("cannot %s %s.%s: internal error, plan is outdated", action.ActionType, action.Group, action.Name))
 			}
 		}
+	}
+
+	if logdiag.HasError(ctx) {
+		return nil
 	}
 
 	err = g.DetectCycle()
