@@ -505,25 +505,6 @@ func runTest(t *testing.T,
 	uniqueName := strings.ToLower(strings.Trim(base32.StdEncoding.EncodeToString(id[:]), "="))
 	repls.Set(uniqueName, "[UNIQUE_NAME]")
 
-	timeout := config.Timeout
-
-	if runtime.GOOS == "windows" {
-		if isRunningOnCloud {
-			timeout = max(timeout, config.TimeoutWindows, config.TimeoutCloud)
-		} else {
-			timeout = max(timeout, config.TimeoutWindows)
-		}
-	} else if isRunningOnCloud {
-		timeout = max(timeout, config.TimeoutCloud)
-	}
-
-	if ApplyCITimeoutMultipler {
-		timeout *= CITimeoutMultiplier
-	}
-
-	ctx, cancelFunc := context.WithTimeout(context.Background(), timeout)
-	defer cancelFunc()
-
 	var tmpDir string
 	var err error
 	if KeepTmp {
@@ -538,7 +519,7 @@ func runTest(t *testing.T,
 		w, err := databricks.NewWorkspaceClient()
 		require.NoError(t, err)
 
-		currentUser, err := w.CurrentUser.Me(ctx)
+		currentUser, err := w.CurrentUser.Me(t.Context())
 		require.NoError(t, err)
 
 		// Run DBR tests on the workspace file system to mimic usage from
@@ -578,6 +559,25 @@ func runTest(t *testing.T,
 			inputs[bundleConfigTarget] = true
 		}
 	}
+
+	timeout := config.Timeout
+
+	if runtime.GOOS == "windows" {
+		if isRunningOnCloud {
+			timeout = max(timeout, config.TimeoutWindows, config.TimeoutCloud)
+		} else {
+			timeout = max(timeout, config.TimeoutWindows)
+		}
+	} else if isRunningOnCloud {
+		timeout = max(timeout, config.TimeoutCloud)
+	}
+
+	if ApplyCITimeoutMultipler {
+		timeout *= CITimeoutMultiplier
+	}
+
+	ctx, cancelFunc := context.WithTimeout(context.Background(), timeout)
+	defer cancelFunc()
 
 	args := []string{"bash", "-euo", "pipefail", EntryPointScript}
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
