@@ -1,13 +1,16 @@
 package terranova
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/terranova/tnstate"
+	"github.com/databricks/cli/libs/dagrun"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/structdiff"
 	"github.com/databricks/cli/libs/utils"
@@ -63,56 +66,58 @@ func (d *Planner) plan(_ context.Context, inputConfig any) (deployplan.ActionTyp
 	return calcDiff(d.settings, resource, savedState, config)
 }
 
-func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan.Action, error) {
+func GetDeployActions(ctx context.Context, b *bundle.Bundle) []deployplan.Action {
+	actions := make([]deployplan.Action, 0, len(b.PlannedActions))
+	for node, actionType := range b.PlannedActions {
+		actions = append(actions, deployplan.Action{
+			ResourceNode: node,
+			ActionType:   actionType,
+		})
+	}
+
+	// TODO: topological sort would be more informative; once we removed terraform
+
+	slices.SortFunc(actions, func(x, y deployplan.Action) int {
+		if c := cmp.Compare(x.Group, y.Group); c != 0 {
+			return c
+		}
+		return cmp.Compare(x.Key, y.Key)
+	})
+
+	return actions
+}
+
+func CalculatePlanForDeploy(ctx context.Context, b *bundle.Bundle) error {
 	if !b.DirectDeployment {
 		panic("direct deployment required")
 	}
 
-	// final result: collected actions per node
-	var actions []deployplan.Action
-
 	err := b.OpenResourceDatabase(ctx)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	client := b.WorkspaceClient()
 
-	g, isReferenced, err := makeResourceGraph(ctx, b)
+	b.Graph, b.IsReferenced, err = makeResourceGraph(ctx, b)
 	if err != nil {
-		return nil, fmt.Errorf("reading config: %w", err)
+		return fmt.Errorf("reading config: %w", err)
 	}
 
-	err = g.DetectCycle()
+	err = b.Graph.DetectCycle()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	state := b.ResourceDatabase.ExportState(ctx)
-
-	// Remained in state are resources that no longer present in the config
-	for _, group := range utils.SortedKeys(state) {
-		groupData := state[group]
-		for _, key := range utils.SortedKeys(groupData) {
-			if g.HasNode(nodeKey{group, key}) {
-				// alive resources are processed by makeResourceGraph
-				continue
-			}
-			actions = append(actions, deployplan.Action{
-				Group:      group,
-				Name:       key,
-				ActionType: deployplan.ActionTypeDelete,
-			})
-		}
-	}
+	b.PlannedActions = make(map[deployplan.ResourceNode]deployplan.ActionType)
 
 	// We're processing resources in DAG order, because we're trying to get rid of all references like $resources.jobs.foo.id
 	// if jobs.foo is not going to be (re)created. This means by the time we get to resource depending on $resources.jobs.foo.id
 	// we might have already got rid of this reference, thus potentially downgrading actionType
 
 	// parallelism is set to 1, so there is no multi-threaded access there.
-	g.Run(1, func(node nodeKey, failedDependency *nodeKey) bool {
-		errorPrefix := fmt.Sprintf("cannot plan %s.%s", node.Group, node.Name)
+	b.Graph.Run(1, func(node deployplan.ResourceNode, failedDependency *deployplan.ResourceNode) bool {
+		errorPrefix := fmt.Sprintf("cannot plan %s.%s", node.Group, node.Key)
 
 		if failedDependency != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: dependency failed: %s", errorPrefix, failedDependency.String()))
@@ -128,7 +133,7 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 			client:       client,
 			db:           &b.ResourceDatabase,
 			group:        node.Group,
-			resourceName: node.Name,
+			resourceName: node.Key,
 			settings:     settings,
 		}
 
@@ -145,7 +150,7 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 			return false
 		}
 
-		if isReferenced[node] && actionType.KeepsID() {
+		if b.IsReferenced[node] && actionType.KeepsID() {
 			err = resolveIDReference(ctx, b, pl.group, pl.resourceName)
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("failed to replace ref to resources.%s.%s.id: %w", pl.group, pl.resourceName, err))
@@ -153,52 +158,59 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 			}
 		}
 
-		if actionType == deployplan.ActionTypeNoop {
-			return true
+		if actionType != deployplan.ActionTypeNoop {
+			b.PlannedActions[node] = actionType
 		}
-
-		actions = append(actions, deployplan.Action{
-			Group:      node.Group,
-			Name:       node.Name,
-			ActionType: actionType,
-		})
-
 		return true
 	})
 
 	if logdiag.HasError(ctx) {
-		return nil, errors.New("planning failed")
+		return errors.New("planning failed")
 	}
 
-	return actions, nil
+	state := b.ResourceDatabase.ExportState(ctx)
+
+	// Remained in state are resources that no longer present in the config
+	for _, group := range utils.SortedKeys(state) {
+		groupData := state[group]
+		for _, key := range utils.SortedKeys(groupData) {
+			n := deployplan.ResourceNode{Group: group, Key: key}
+			if b.Graph.HasNode(n) {
+				// action was already added by Run() above
+				continue
+			}
+			b.PlannedActions[n] = deployplan.ActionTypeDelete
+		}
+	}
+
+	return nil
 }
 
-func CalculateDestroyActions(ctx context.Context, b *bundle.Bundle) ([]deployplan.Action, error) {
+func CalculatePlanForDestroy(ctx context.Context, b *bundle.Bundle) error {
 	if !b.DirectDeployment {
 		panic("direct deployment required")
 	}
 
 	err := b.OpenResourceDatabase(ctx)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	db := &b.ResourceDatabase
 	db.AssertOpened()
-	var actions []deployplan.Action
 
-	for _, group := range utils.SortedKeys(db.Data.Resources) {
-		groupData := db.Data.Resources[group]
-		for _, name := range utils.SortedKeys(groupData) {
-			actions = append(actions, deployplan.Action{
-				Group:      group,
-				Name:       name,
-				ActionType: deployplan.ActionTypeDelete,
-			})
+	b.PlannedActions = make(map[deployplan.ResourceNode]deployplan.ActionType)
+	b.Graph = dagrun.NewGraph[deployplan.ResourceNode]()
+
+	for group, groupData := range db.Data.Resources {
+		for key := range groupData {
+			node := deployplan.ResourceNode{Group: group, Key: key}
+			b.PlannedActions[node] = deployplan.ActionTypeDelete
+			b.Graph.AddNode(node)
 		}
 	}
 
-	return actions, nil
+	return nil
 }
 
 func calcDiff(settings ResourceSettings, resource IResource, savedState, config any) (deployplan.ActionType, error) {
