@@ -1,4 +1,4 @@
-// //go:build dbr_only
+//go:build dbr_only
 
 package acceptance_test
 

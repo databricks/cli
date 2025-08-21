@@ -536,6 +536,8 @@ func runTest(t *testing.T,
 		// If the test is being run on DBR, the auth is already configured
 		// by DATABRICKS_TOKEN and DATABRICKS_HOST environment variables.
 		w, err := databricks.NewWorkspaceClient()
+		require.NoError(t, err)
+
 		currentUser, err := w.CurrentUser.Me(ctx)
 		require.NoError(t, err)
 
