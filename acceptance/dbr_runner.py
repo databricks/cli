@@ -53,7 +53,8 @@ def main():
     cmd = [
         "go", "test",
         "-timeout", "7200s",
-        "-run", r"^TestAccept/workspace/jobs/create",
+        "-run", r"^TestAccept",
+        "-test.v",
         "github.com/databricks/cli/acceptance"
     ]
 
