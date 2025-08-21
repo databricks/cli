@@ -37,6 +37,7 @@ func New() *cobra.Command {
 	// Add methods
 	cmd.AddCommand(newCreateMessage())
 	cmd.AddCommand(newDeleteConversation())
+	cmd.AddCommand(newDeleteConversationMessage())
 	cmd.AddCommand(newExecuteMessageAttachmentQuery())
 	cmd.AddCommand(newExecuteMessageQuery())
 	cmd.AddCommand(newGetMessage())
@@ -44,8 +45,10 @@ func New() *cobra.Command {
 	cmd.AddCommand(newGetMessageQueryResult())
 	cmd.AddCommand(newGetMessageQueryResultByAttachment())
 	cmd.AddCommand(newGetSpace())
+	cmd.AddCommand(newListConversationMessages())
 	cmd.AddCommand(newListConversations())
 	cmd.AddCommand(newListSpaces())
+	cmd.AddCommand(newSendMessageFeedback())
 	cmd.AddCommand(newStartConversation())
 	cmd.AddCommand(newTrashSpace())
 
@@ -220,6 +223,69 @@ func newDeleteConversation() *cobra.Command {
 	return cmd
 }
 
+// start delete-conversation-message command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteConversationMessageOverrides []func(
+	*cobra.Command,
+	*dashboards.GenieDeleteConversationMessageRequest,
+)
+
+func newDeleteConversationMessage() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteConversationMessageReq dashboards.GenieDeleteConversationMessageRequest
+
+	cmd.Use = "delete-conversation-message SPACE_ID CONVERSATION_ID MESSAGE_ID"
+	cmd.Short = `Delete conversation message.`
+	cmd.Long = `Delete conversation message.
+  
+  Delete a conversation message.
+
+  Arguments:
+    SPACE_ID: The ID associated with the Genie space where the message is located.
+    CONVERSATION_ID: The ID associated with the conversation.
+    MESSAGE_ID: The ID associated with the message to delete.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(3)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		deleteConversationMessageReq.SpaceId = args[0]
+		deleteConversationMessageReq.ConversationId = args[1]
+		deleteConversationMessageReq.MessageId = args[2]
+
+		err = w.Genie.DeleteConversationMessage(ctx, deleteConversationMessageReq)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteConversationMessageOverrides {
+		fn(cmd, &deleteConversationMessageReq)
+	}
+
+	return cmd
+}
+
 // start execute-message-attachment-query command
 
 // Slice with functions to override default command behavior.
@@ -301,7 +367,8 @@ func newExecuteMessageQuery() *cobra.Command {
 	cmd.Short = `[Deprecated] Execute SQL query in a conversation message.`
 	cmd.Long = `[Deprecated] Execute SQL query in a conversation message.
   
-  Execute the SQL query in the message.
+  DEPRECATED: Use [Execute Message Attachment
+  Query](:method:genie/executemessageattachmentquery) instead.
 
   Arguments:
     SPACE_ID: Genie space ID
@@ -490,9 +557,8 @@ func newGetMessageQueryResult() *cobra.Command {
 	cmd.Short = `[Deprecated] Get conversation message SQL query result.`
 	cmd.Long = `[Deprecated] Get conversation message SQL query result.
   
-  Get the result of SQL query if the message has a query attachment. This is
-  only available if a message has a query attachment and the message status is
-  EXECUTING_QUERY.
+  DEPRECATED: Use [Get Message Attachment Query
+  Result](:method:genie/getmessageattachmentqueryresult) instead.
 
   Arguments:
     SPACE_ID: Genie space ID
@@ -555,9 +621,8 @@ func newGetMessageQueryResultByAttachment() *cobra.Command {
 	cmd.Short = `[Deprecated] Get conversation message SQL query result.`
 	cmd.Long = `[Deprecated] Get conversation message SQL query result.
   
-  Get the result of SQL query if the message has a query attachment. This is
-  only available if a message has a query attachment and the message status is
-  EXECUTING_QUERY OR COMPLETED.
+  DEPRECATED: Use [Get Message Attachment Query
+  Result](:method:genie/getmessageattachmentqueryresult) instead.
 
   Arguments:
     SPACE_ID: Genie space ID
@@ -660,6 +725,70 @@ func newGetSpace() *cobra.Command {
 	return cmd
 }
 
+// start list-conversation-messages command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listConversationMessagesOverrides []func(
+	*cobra.Command,
+	*dashboards.GenieListConversationMessagesRequest,
+)
+
+func newListConversationMessages() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listConversationMessagesReq dashboards.GenieListConversationMessagesRequest
+
+	cmd.Flags().IntVar(&listConversationMessagesReq.PageSize, "page-size", listConversationMessagesReq.PageSize, `Maximum number of messages to return per page.`)
+	cmd.Flags().StringVar(&listConversationMessagesReq.PageToken, "page-token", listConversationMessagesReq.PageToken, `Token to get the next page of results.`)
+
+	cmd.Use = "list-conversation-messages SPACE_ID CONVERSATION_ID"
+	cmd.Short = `List conversation messages.`
+	cmd.Long = `List conversation messages.
+  
+  List messages in a conversation
+
+  Arguments:
+    SPACE_ID: The ID associated with the Genie space where the conversation is located
+    CONVERSATION_ID: The ID of the conversation to list messages from`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		listConversationMessagesReq.SpaceId = args[0]
+		listConversationMessagesReq.ConversationId = args[1]
+
+		response, err := w.Genie.ListConversationMessages(ctx, listConversationMessagesReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listConversationMessagesOverrides {
+		fn(cmd, &listConversationMessagesReq)
+	}
+
+	return cmd
+}
+
 // start list-conversations command
 
 // Slice with functions to override default command behavior.
@@ -674,6 +803,7 @@ func newListConversations() *cobra.Command {
 
 	var listConversationsReq dashboards.GenieListConversationsRequest
 
+	cmd.Flags().BoolVar(&listConversationsReq.IncludeAll, "include-all", listConversationsReq.IncludeAll, `Include all conversations in the space across all users.`)
 	cmd.Flags().IntVar(&listConversationsReq.PageSize, "page-size", listConversationsReq.PageSize, `Maximum number of conversations to return per page.`)
 	cmd.Flags().StringVar(&listConversationsReq.PageToken, "page-token", listConversationsReq.PageToken, `Token to get the next page of results.`)
 
@@ -768,6 +898,101 @@ func newListSpaces() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range listSpacesOverrides {
 		fn(cmd, &listSpacesReq)
+	}
+
+	return cmd
+}
+
+// start send-message-feedback command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var sendMessageFeedbackOverrides []func(
+	*cobra.Command,
+	*dashboards.GenieSendMessageFeedbackRequest,
+)
+
+func newSendMessageFeedback() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var sendMessageFeedbackReq dashboards.GenieSendMessageFeedbackRequest
+	var sendMessageFeedbackJson flags.JsonFlag
+
+	cmd.Flags().Var(&sendMessageFeedbackJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&sendMessageFeedbackReq.FeedbackText, "feedback-text", sendMessageFeedbackReq.FeedbackText, `Optional text feedback that will be stored as a comment.`)
+
+	cmd.Use = "send-message-feedback SPACE_ID CONVERSATION_ID MESSAGE_ID FEEDBACK_RATING"
+	cmd.Short = `Send message feedback.`
+	cmd.Long = `Send message feedback.
+  
+  Send feedback for a message.
+
+  Arguments:
+    SPACE_ID: The ID associated with the Genie space where the message is located.
+    CONVERSATION_ID: The ID associated with the conversation.
+    MESSAGE_ID: The ID associated with the message to provide feedback for.
+    FEEDBACK_RATING: The rating (POSITIVE, NEGATIVE, or NONE). 
+      Supported values: [NEGATIVE, NONE, POSITIVE]`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(3)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, provide only SPACE_ID, CONVERSATION_ID, MESSAGE_ID as positional arguments. Provide 'feedback_rating' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(4)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := sendMessageFeedbackJson.Unmarshal(&sendMessageFeedbackReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		sendMessageFeedbackReq.SpaceId = args[0]
+		sendMessageFeedbackReq.ConversationId = args[1]
+		sendMessageFeedbackReq.MessageId = args[2]
+		if !cmd.Flags().Changed("json") {
+			_, err = fmt.Sscan(args[3], &sendMessageFeedbackReq.FeedbackRating)
+			if err != nil {
+				return fmt.Errorf("invalid FEEDBACK_RATING: %s", args[3])
+			}
+		}
+
+		err = w.Genie.SendMessageFeedback(ctx, sendMessageFeedbackReq)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range sendMessageFeedbackOverrides {
+		fn(cmd, &sendMessageFeedbackReq)
 	}
 
 	return cmd

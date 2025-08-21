@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.12"
+# ///
 """
 Download integration logs artifacts for a given run id (--run RUNID) or commit (--commit) and call gh_parse.py on those to print the report.
 

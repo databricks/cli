@@ -78,9 +78,7 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 
 	client := b.WorkspaceClient()
 
-	state := b.ResourceDatabase.ExportState(ctx)
-
-	g, isReferenced, err := makeResourceGraph(ctx, b, state)
+	g, isReferenced, err := makeResourceGraph(ctx, b)
 	if err != nil {
 		return nil, fmt.Errorf("reading config: %w", err)
 	}
@@ -90,13 +88,19 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 		return nil, err
 	}
 
+	state := b.ResourceDatabase.ExportState(ctx)
+
 	// Remained in state are resources that no longer present in the config
 	for _, group := range utils.SortedKeys(state) {
 		groupData := state[group]
-		for _, name := range utils.SortedKeys(groupData) {
+		for _, key := range utils.SortedKeys(groupData) {
+			if g.HasNode(nodeKey{group, key}) {
+				// alive resources are processed by makeResourceGraph
+				continue
+			}
 			actions = append(actions, deployplan.Action{
 				Group:      group,
-				Name:       name,
+				Name:       key,
 				ActionType: deployplan.ActionTypeDelete,
 			})
 		}
@@ -107,12 +111,17 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 	// we might have already got rid of this reference, thus potentially downgrading actionType
 
 	// parallelism is set to 1, so there is no multi-threaded access there.
-	g.Run(1, func(node nodeKey) {
+	g.Run(1, func(node nodeKey, failedDependency *nodeKey) bool {
+		errorPrefix := fmt.Sprintf("cannot plan %s.%s", node.Group, node.Name)
+
+		if failedDependency != nil {
+			logdiag.LogError(ctx, fmt.Errorf("%s: dependency failed: %s", errorPrefix, failedDependency.String()))
+			return false
+		}
 		settings, ok := SupportedResources[node.Group]
 		if !ok {
-			logdiag.LogError(ctx, fmt.Errorf("resource not supported on direct backend: %s", node.Group))
-			// TODO: return an error so that the whole process is aborted.
-			return
+			logdiag.LogError(ctx, fmt.Errorf("%s: resource type not supported on direct backend", errorPrefix))
+			return false
 		}
 
 		pl := Planner{
@@ -125,29 +134,27 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 
 		config, ok := b.GetResourceConfig(pl.group, pl.resourceName)
 		if !ok {
-			logdiag.LogError(ctx, fmt.Errorf("internal error: cannot get config for %s.%s", pl.group, pl.resourceName))
-			return
-			// TODO: return an error so that the whole process is aborted.
+			logdiag.LogError(ctx, fmt.Errorf("%s: internal error: cannot read config", errorPrefix))
+			return false
 		}
 
 		// This currently does not do API calls, so we can run this sequentially. Once we have remote diffs, we need to run a in threadpool.
 		actionType, err := pl.Plan(ctx, config)
 		if err != nil {
 			logdiag.LogError(ctx, err)
-			// TODO: return error to abort this branch
-			return
+			return false
 		}
 
 		if isReferenced[node] && actionType.KeepsID() {
 			err = resolveIDReference(ctx, b, pl.group, pl.resourceName)
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("failed to replace ref to resources.%s.%s.id: %w", pl.group, pl.resourceName, err))
-				return
+				return false
 			}
 		}
 
 		if actionType == deployplan.ActionTypeNoop {
-			return
+			return true
 		}
 
 		actions = append(actions, deployplan.Action{
@@ -155,6 +162,8 @@ func CalculateDeployActions(ctx context.Context, b *bundle.Bundle) ([]deployplan
 			Name:       node.Name,
 			ActionType: actionType,
 		})
+
+		return true
 	})
 
 	if logdiag.HasError(ctx) {

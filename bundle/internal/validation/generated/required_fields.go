@@ -40,6 +40,8 @@ var RequiredFields = map[string][]string{
 
 	"resources.dashboards.*.permissions[*]": {"level"},
 
+	"resources.database_catalogs.*": {"database_instance_name", "database_name", "name"},
+
 	"resources.database_instances.*":                {"name"},
 	"resources.database_instances.*.permissions[*]": {"level"},
 
