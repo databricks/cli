@@ -37,9 +37,19 @@ def main():
     bin_dir = archive_dir / "bin" / "amd64"
     env["PATH"] = os.pathsep.join([str(go_bin_dir), str(bin_dir), env.get("PATH", "")])
 
-    # Read the cloud environment from the job parameters.
-    env["CLOUD_ENV"] = dbutils.widgets.get("cloud_env")
-    assert env["CLOUD_ENV"] in ["aws", "azure", "gcp"]
+    # Env vars used by the acceptance tests. These need to
+    # be provided by the job parameters to the test runner here.
+    envvars = [
+        "CLOUD_ENV",
+        "TEST_DEFAULT_CLUSTER_ID",
+        "TEST_DEFAULT_WAREHOUSE_ID",
+        "TEST_INSTANCE_POOL_ID",
+        "TEST_METASTORE_ID",
+    ]
+
+    for envvar in envvars:
+        env[envvar] = dbutils.widgets.get(envvar)
+        assert env[envvar] is not None, f"Error: {envvar} is not set"
 
     ctx = get_context()
     workspace_url = spark.conf.get("spark.databricks.workspaceUrl")
@@ -54,14 +64,13 @@ def main():
         "go", "test",
         "-timeout", "7200s",
         "-run", r"^TestAccept",
-        "-test.v",
         "github.com/databricks/cli/acceptance"
     ]
 
     print("Running acceptance tests...")
     result = subprocess.run(cmd, env=env, check=False)
-    print(result.stdout)
-    print(result.stderr)
+    print(result.stdout, flush=True)
+    print(result.stderr, flush=True)
     assert result.returncode == 0, "Acceptance tests failed"
 
 if __name__ == "__main__":
