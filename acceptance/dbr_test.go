@@ -66,7 +66,7 @@ func uploadRunner(ctx context.Context, t *testing.T, f filer.Filer) string {
 	return "dbr_runner"
 }
 
-func runDbrTests(ctx context.Context, t *testing.T, w *databricks.WorkspaceClient, runnerPath string, archivePath string) {
+func runDbrTests(ctx context.Context, t *testing.T, w *databricks.WorkspaceClient, runnerPath, archivePath string) {
 	t.Logf("Submitting test runner job...")
 
 	envvars := []string{
