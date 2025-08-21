@@ -68,9 +68,19 @@ func uploadRunner(ctx context.Context, t *testing.T, f filer.Filer) string {
 func runDbrTests(ctx context.Context, t *testing.T, w *databricks.WorkspaceClient, runnerPath string, archivePath string) {
 	t.Logf("Submitting test runner job...")
 
-	cloudenv := os.Getenv("CLOUD_ENV")
-	if cloudenv == "" {
-		t.Fatalf("CLOUD_ENV is not set. Please only run DBR tests from an CI environment.")
+	envvars := []string{
+		"CLOUD_ENV",
+		"TEST_DEFAULT_CLUSTER_ID",
+		"TEST_DEFAULT_WAREHOUSE_ID",
+		"TEST_INSTANCE_POOL_ID",
+		"TEST_METASTORE_ID",
+	}
+
+	baseParams := map[string]string{
+		"archive_path": archivePath,
+	}
+	for _, envvar := range envvars {
+		baseParams[envvar] = os.Getenv(envvar)
 	}
 
 	job, err := w.Jobs.Submit(ctx, jobs.SubmitRun{
@@ -79,11 +89,8 @@ func runDbrTests(ctx context.Context, t *testing.T, w *databricks.WorkspaceClien
 			{
 				TaskKey: "dbr_runner",
 				NotebookTask: &jobs.NotebookTask{
-					NotebookPath: runnerPath,
-					BaseParameters: map[string]string{
-						"archive_path": archivePath,
-						"cloud_env":    cloudenv,
-					},
+					NotebookPath:   runnerPath,
+					BaseParameters: baseParams,
 				},
 			},
 		},
