@@ -31,7 +31,7 @@ def main():
     env = os.environ.copy()
 
     # Today all serverless instances are AMD. There are plans to also
-    # have arm based instances in Q4. For now we can keep using the AMD
+    # have ARM based instances in Q4 FY26 but for now we can keep using the AMD
     # binaries without checking for the architecture.
     go_bin_dir = archive_dir  / "bin" / "amd64" / "go" / "bin"
     bin_dir = archive_dir / "bin" / "amd64"
