@@ -98,7 +98,7 @@ func addFileToArchive(tarWriter *tar.Writer, src, dst string) error {
 }
 
 // createArchive creates a tar.gz archive of all git-tracked files plus downloaded tools
-func createArchive(archiveDir string, binDir string, repoRoot string) error {
+func createArchive(archiveDir, binDir, repoRoot string) error {
 	archivePath := filepath.Join(archiveDir, "archive.tar.gz")
 
 	// Download tools for both arm and amd64 architectures.
