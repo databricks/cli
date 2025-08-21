@@ -6,11 +6,7 @@ import (
 )
 
 type Action struct {
-	// Resource group in the config, e.g. "jobs", "pipelines" etc
-	Group string
-
-	// Key of the resource the config
-	Key string
+	ResourceNode
 
 	ActionType ActionType
 }

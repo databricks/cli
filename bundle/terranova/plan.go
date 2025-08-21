@@ -70,9 +70,8 @@ func GetDeployActions(ctx context.Context, b *bundle.Bundle) []deployplan.Action
 	actions := make([]deployplan.Action, 0, len(b.PlannedActions))
 	for node, actionType := range b.PlannedActions {
 		actions = append(actions, deployplan.Action{
-			Group:      node.Group,
-			Key:        node.Key,
-			ActionType: actionType,
+			ResourceNode: node,
+			ActionType:   actionType,
 		})
 	}
 
