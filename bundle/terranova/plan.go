@@ -150,7 +150,7 @@ func CalculatePlanForDeploy(ctx context.Context, b *bundle.Bundle) error {
 			return false
 		}
 
-		if b.Graph.IsReferenced(node) && actionType.KeepsID() {
+		if b.Graph.HasOutgoingEdges(node) && actionType.KeepsID() {
 			err = resolveIDReference(ctx, b, pl.group, pl.resourceName)
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("failed to replace ref to resources.%s.%s.id: %w", pl.group, pl.resourceName, err))
