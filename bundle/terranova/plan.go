@@ -99,7 +99,7 @@ func CalculatePlanForDeploy(ctx context.Context, b *bundle.Bundle) error {
 
 	client := b.WorkspaceClient()
 
-	b.Graph, b.IsReferenced, err = makeResourceGraph(ctx, b)
+	b.Graph, err = makeResourceGraph(ctx, b)
 	if err != nil {
 		return fmt.Errorf("reading config: %w", err)
 	}
@@ -150,7 +150,7 @@ func CalculatePlanForDeploy(ctx context.Context, b *bundle.Bundle) error {
 			return false
 		}
 
-		if b.IsReferenced[node] && actionType.KeepsID() {
+		if b.Graph.IsReferenced(node) && actionType.KeepsID() {
 			err = resolveIDReference(ctx, b, pl.group, pl.resourceName)
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("failed to replace ref to resources.%s.%s.id: %w", pl.group, pl.resourceName, err))

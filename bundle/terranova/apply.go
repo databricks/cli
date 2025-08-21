@@ -127,7 +127,7 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 		}
 
 		// Update resources.id after successful deploy so that future ${resources...id} refs are replaced
-		if b.IsReferenced[node] {
+		if b.Graph.IsReferenced(node) {
 			err = resolveIDReference(ctx, b, node.Group, node.Key)
 			if err != nil {
 				// not using errorPrefix because resource was deployed

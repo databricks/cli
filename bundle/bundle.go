@@ -140,10 +140,6 @@ type Bundle struct {
 	// (direct only) planned action for each resource
 	PlannedActions map[deployplan.ResourceNode]deployplan.ActionType
 
-	// (direct only) flag that tells if a given node has references to it
-	// TODO: move this inside Graph
-	IsReferenced map[deployplan.ResourceNode]bool
-
 	// if true, we skip approval checks for deploy, destroy resources and delete
 	// files
 	AutoApprove bool
