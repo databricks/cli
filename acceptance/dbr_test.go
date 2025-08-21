@@ -6,6 +6,7 @@ import (
 	"context"
 	"os"
 	"path"
+	"strconv"
 	"testing"
 	"time"
 
@@ -78,6 +79,7 @@ func runDbrTests(ctx context.Context, t *testing.T, w *databricks.WorkspaceClien
 
 	baseParams := map[string]string{
 		"archive_path": archivePath,
+		"short":        strconv.FormatBool(testing.Short()),
 	}
 	for _, envvar := range envvars {
 		baseParams[envvar] = os.Getenv(envvar)
