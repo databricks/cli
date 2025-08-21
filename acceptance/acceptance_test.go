@@ -514,7 +514,7 @@ func runTest(t *testing.T,
 		require.NoError(t, err)
 		t.Logf("Created directory: %s", tmpDir)
 	} else if Dbr {
-		// If the test is being run on DBR, the auth is already configured
+		// If the test is being run on DBR, auth is already configured
 		// by the dbr_runner notebook by reading a token from the notebook context and
 		// setting DATABRICKS_TOKEN and DATABRICKS_HOST environment variables.
 		w, err := databricks.NewWorkspaceClient()
