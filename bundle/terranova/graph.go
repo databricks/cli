@@ -44,7 +44,7 @@ func makeResourceGraph(ctx context.Context, b *bundle.Bundle) (*dagrun.Graph[dep
 				return v, fmt.Errorf("unsupported resource: %s", group)
 			}
 
-			nodes = append(nodes, deployplan.ResourceNode{group, name})
+			nodes = append(nodes, deployplan.ResourceNode{Group: group, Key: name})
 			return dyn.InvalidValue, nil
 		},
 	)

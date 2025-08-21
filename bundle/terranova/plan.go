@@ -204,7 +204,7 @@ func CalculatePlanForDestroy(ctx context.Context, b *bundle.Bundle) error {
 
 	for group, groupData := range db.Data.Resources {
 		for key := range groupData {
-			node := deployplan.ResourceNode{group, key}
+			node := deployplan.ResourceNode{Group: group, Key: key}
 			b.PlannedActions[node] = deployplan.ActionTypeDelete
 			b.Graph.AddNode(node)
 		}

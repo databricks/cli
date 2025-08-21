@@ -16,4 +16,3 @@ resources:
     e:
       name: ee
       description: prefix ${resources.jobs.d.id}
-
