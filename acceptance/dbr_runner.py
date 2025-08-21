@@ -67,6 +67,9 @@ def main():
         "github.com/databricks/cli/acceptance"
     ]
 
+    if dbutils.widgets.get("short") == "true":
+        cmd.append("-short")
+
     print("Running acceptance tests...")
     result = subprocess.run(cmd, env=env, check=False)
     print(result.stdout, flush=True)
