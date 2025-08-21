@@ -102,7 +102,7 @@ func createArchive(archiveDir string, binDir string, repoRoot string) error {
 	archivePath := filepath.Join(archiveDir, "archive.tar.gz")
 
 	// Download tools for both arm and amd64 architectures.
-	// The right architecture to use is decided runtime on the serverless driver.
+	// The right architecture to use is decided at runtime on the serverless driver.
 	// The Databricks platform explicitly does not provide any guarantees around
 	// the CPU architecture to keep the door open for future optimizations.
 	downloaders := []downloader{
@@ -151,7 +151,7 @@ func createArchive(archiveDir string, binDir string, repoRoot string) error {
 	gzWriter := gzip.NewWriter(outFile)
 	defer gzWriter.Close()
 
-	// Create tar writer
+	// Create tar.gz writer
 	tarWriter := tar.NewWriter(gzWriter)
 	defer tarWriter.Close()
 
