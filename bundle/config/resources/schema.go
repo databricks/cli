@@ -32,6 +32,25 @@ const (
 	SchemaGrantPrivilegeWriteVolume    SchemaGrantPrivilege = "WRITE_VOLUME"
 )
 
+// Values returns all valid SchemaGrantPrivilege values
+func (SchemaGrantPrivilege) Values() []SchemaGrantPrivilege {
+	return []SchemaGrantPrivilege{
+		SchemaGrantPrivilegeAllPrivileges,
+		SchemaGrantPrivilegeApplyTag,
+		SchemaGrantPrivilegeCreateFunction,
+		SchemaGrantPrivilegeCreateTable,
+		SchemaGrantPrivilegeCreateVolume,
+		SchemaGrantPrivilegeManage,
+		SchemaGrantPrivilegeUseSchema,
+		SchemaGrantPrivilegeExecute,
+		SchemaGrantPrivilegeModify,
+		SchemaGrantPrivilegeRefresh,
+		SchemaGrantPrivilegeSelect,
+		SchemaGrantPrivilegeReadVolume,
+		SchemaGrantPrivilegeWriteVolume,
+	}
+}
+
 // SchemaGrant holds the grant level settings for a single principal in Unity Catalog.
 // Multiple of these can be defined on any schema.
 type SchemaGrant struct {
