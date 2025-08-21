@@ -1,0 +1,19 @@
+
+resources:
+  jobs:
+    a:
+      name: aa
+      description: aa_desc
+    b:
+      name: bb
+      description: prefix ${resources.jobs.a.id}
+    c:
+      name: cc
+      description: prefix ${resources.jobs.b.id}
+    d:
+      name: dd
+      description: prefix ${resources.jobs.c.id}
+    e:
+      name: ee
+      description: prefix ${resources.jobs.d.id}
+
