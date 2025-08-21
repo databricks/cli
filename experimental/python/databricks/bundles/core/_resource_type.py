@@ -33,6 +33,7 @@ class _ResourceType:
 
         from databricks.bundles.jobs._models.job import Job
         from databricks.bundles.pipelines._models.pipeline import Pipeline
+        from databricks.bundles.schemas._models.schema import Schema
 
         return (
             _ResourceType(
@@ -44,5 +45,10 @@ class _ResourceType:
                 resource_type=Pipeline,
                 plural_name="pipelines",
                 singular_name="pipeline",
+            ),
+            _ResourceType(
+                resource_type=Schema,
+                plural_name="schemas",
+                singular_name="schema",
             ),
         )
