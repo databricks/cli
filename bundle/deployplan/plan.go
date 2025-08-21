@@ -5,17 +5,6 @@ import (
 	"strings"
 )
 
-type Plan struct {
-	// TerraformPlanPath is the path to the plan from the terraform CLI
-	TerraformPlanPath string
-
-	// If true, the plan is empty and applying it will not do anything
-	TerraformIsEmpty bool
-
-	// List of actions to apply (direct deployment)
-	Actions []Action
-}
-
 type Action struct {
 	// Resource group in the config, e.g. "jobs", "pipelines" etc
 	Group string

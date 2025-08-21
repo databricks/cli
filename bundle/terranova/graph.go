@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/dagrun"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
@@ -16,33 +17,20 @@ import (
 	"github.com/databricks/cli/libs/logdiag"
 )
 
-// represents node in the graph, each node is a resource
-type nodeKey struct {
-	Group string
-	Name  string
-	// Field names match deployplan.Action.
-	// TODO: Here and in other places Name is ambiguous and should be replaced with ResourceKey
-}
-
-// String() implements StringerComparable
-func (n nodeKey) String() string {
-	return n.Group + "." + n.Name
-}
-
 type fieldRef struct {
 	field           dyn.Path // path to field within resource that contains the references, e.g. "description"
 	ref             dynvar.Ref
-	referencedNodes []nodeKey
+	referencedNodes []deployplan.ResourceNode
 }
 
 // makeResourceGraph creates node graph based on ${resources.group.name.id} references.
 // Returns a graph and a map of all references that have references to them
-func makeResourceGraph(ctx context.Context, b *bundle.Bundle) (*dagrun.Graph[nodeKey], map[nodeKey]bool, error) {
-	isReferenced := make(map[nodeKey]bool)
-	g := dagrun.NewGraph[nodeKey]()
+func makeResourceGraph(ctx context.Context, b *bundle.Bundle) (*dagrun.Graph[deployplan.ResourceNode], map[deployplan.ResourceNode]bool, error) {
+	isReferenced := make(map[deployplan.ResourceNode]bool)
+	g := dagrun.NewGraph[deployplan.ResourceNode]()
 
 	// Collect and sort nodes first, because MapByPattern gives them in randomized order
-	var nodes []nodeKey
+	var nodes []deployplan.ResourceNode
 
 	_, err := dyn.MapByPattern(
 		b.Config.Value(),
@@ -56,7 +44,7 @@ func makeResourceGraph(ctx context.Context, b *bundle.Bundle) (*dagrun.Graph[nod
 				return v, fmt.Errorf("unsupported resource: %s", group)
 			}
 
-			nodes = append(nodes, nodeKey{group, name})
+			nodes = append(nodes, deployplan.ResourceNode{group, name})
 			return dyn.InvalidValue, nil
 		},
 	)
@@ -64,9 +52,9 @@ func makeResourceGraph(ctx context.Context, b *bundle.Bundle) (*dagrun.Graph[nod
 		return nil, nil, fmt.Errorf("reading config: %w", err)
 	}
 
-	slices.SortFunc(nodes, func(a, b nodeKey) int {
+	slices.SortFunc(nodes, func(a, b deployplan.ResourceNode) int {
 		if a.Group == b.Group {
-			return strings.Compare(a.Name, b.Name)
+			return strings.Compare(a.Key, b.Key)
 		}
 		return strings.Compare(a.Group, b.Group)
 	})
@@ -82,7 +70,7 @@ func makeResourceGraph(ctx context.Context, b *bundle.Bundle) (*dagrun.Graph[nod
 		for _, fieldRef := range fieldRefs {
 			for _, referencedNode := range fieldRef.referencedNodes {
 				// We're only supporting "id" field at the moment, so label is unambigous
-				label := "${resources." + referencedNode.Group + "." + referencedNode.Name + ".id}"
+				label := "${resources." + referencedNode.Group + "." + referencedNode.Key + ".id}"
 				log.Debugf(ctx, "Adding resource edge: %s (via %#v)", label, fieldRef.ref.Str)
 				// TODO: this may add duplicate edges. Investigate if we need to prevent that
 				g.AddDirectedEdge(
@@ -98,10 +86,10 @@ func makeResourceGraph(ctx context.Context, b *bundle.Bundle) (*dagrun.Graph[nod
 	return g, isReferenced, nil
 }
 
-func extractReferences(root dyn.Value, node nodeKey) ([]fieldRef, error) {
+func extractReferences(root dyn.Value, node deployplan.ResourceNode) ([]fieldRef, error) {
 	var result []fieldRef
 
-	val, err := dyn.GetByPath(root, dyn.NewPath(dyn.Key("resources"), dyn.Key(node.Group), dyn.Key(node.Name)))
+	val, err := dyn.GetByPath(root, dyn.NewPath(dyn.Key("resources"), dyn.Key(node.Group), dyn.Key(node.Key)))
 	if err != nil {
 		return nil, err
 	}
@@ -142,15 +130,18 @@ func validateRef(root dyn.Value, ref string) (string, string, error) {
 	return items[1], items[2], nil
 }
 
-func nodeFromRef(root dyn.Value, ref dynvar.Ref) ([]nodeKey, error) {
-	var referencedNodes []nodeKey
+func nodeFromRef(root dyn.Value, ref dynvar.Ref) ([]deployplan.ResourceNode, error) {
+	var referencedNodes []deployplan.ResourceNode
 	for _, r := range ref.References() {
 		// validateRef will check resource exists in the config; this will reject references to deleted resources, no need to handle that case separately.
 		refGroup, refKey, err := validateRef(root, r)
 		if err != nil {
 			return nil, fmt.Errorf("cannot process reference %s: %w", r, err)
 		}
-		referencedNode := nodeKey{refGroup, refKey}
+		referencedNode := deployplan.ResourceNode{
+			Group: refGroup,
+			Key:   refKey,
+		}
 		referencedNodes = append(referencedNodes, referencedNode)
 	}
 	return referencedNodes, nil
