@@ -42,7 +42,7 @@ func GetActions(changes []*tfjson.ResourceChange) []deployplan.Action {
 		result = append(result, deployplan.Action{
 			ActionType: actionType,
 			Group:      group,
-			Name:       rc.Name,
+			Key:        rc.Name,
 		})
 	}
 

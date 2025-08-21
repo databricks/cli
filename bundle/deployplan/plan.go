@@ -10,14 +10,14 @@ type Action struct {
 	Group string
 
 	// Key of the resource the config
-	Name string
+	Key string
 
 	ActionType ActionType
 }
 
 func (a Action) String() string {
 	typ, _ := strings.CutSuffix(a.Group, "s")
-	return fmt.Sprintf("  %s %s %s", a.ActionType, typ, a.Name)
+	return fmt.Sprintf("  %s %s %s", a.ActionType, typ, a.Key)
 }
 
 // Implements cmdio.Event for cmdio.Log

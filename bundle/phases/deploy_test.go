@@ -48,12 +48,12 @@ func TestParseTerraformActions(t *testing.T) {
 		{
 			ActionType: deployplan.ActionTypeDelete,
 			Group:      "pipelines",
-			Name:       "delete pipeline",
+			Key:        "delete pipeline",
 		},
 		{
 			ActionType: deployplan.ActionTypeRecreate,
 			Group:      "pipelines",
-			Name:       "recreate pipeline",
+			Key:        "recreate pipeline",
 		},
 	}, res)
 }

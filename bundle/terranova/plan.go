@@ -71,7 +71,7 @@ func GetDeployActions(ctx context.Context, b *bundle.Bundle) []deployplan.Action
 	for node, actionType := range b.PlannedActions {
 		actions = append(actions, deployplan.Action{
 			Group:      node.Group,
-			Name:       node.Key,
+			Key:        node.Key,
 			ActionType: actionType,
 		})
 	}
@@ -82,7 +82,7 @@ func GetDeployActions(ctx context.Context, b *bundle.Bundle) []deployplan.Action
 		if c := cmp.Compare(x.Group, y.Group); c != 0 {
 			return c
 		}
-		return cmp.Compare(x.Name, y.Name)
+		return cmp.Compare(x.Key, y.Key)
 	})
 
 	return actions
