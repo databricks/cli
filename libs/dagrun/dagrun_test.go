@@ -21,20 +21,22 @@ func (s stringWrapper) String() string {
 	return s.Value
 }
 
+type testCase struct {
+	name            string
+	nodes           []string
+	seen            []string
+	seenSorted      []string
+	edges           []edge
+	returnValues    map[string]bool // node -> false to indicate failure
+	cycle           string
+	failedFrom      map[string]string   // node -> expected failedFrom
+	failedFromOneOf map[string][]string // node -> any of these failedFrom values acceptable
+}
+
 func TestRun_VariousGraphsAndPools(t *testing.T) {
 	poolsToRun := []int{1, 2, 3, 4}
 
-	tests := []struct {
-		name            string
-		nodes           []string
-		seen            []string
-		seenSorted      []string
-		edges           []edge
-		returnValues    map[string]bool // node -> false to indicate failure
-		cycle           string
-		failedFrom      map[string]string   // node -> expected failedFrom
-		failedFromOneOf map[string][]string // node -> any of these failedFrom values acceptable
-	}{
+	tests := []testCase{
 		// disconnected graphs
 		{
 			name: "empty graph",
@@ -152,63 +154,70 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 					g.AddDirectedEdge(stringWrapper{e.from}, stringWrapper{e.to}, e.name)
 				}
 
-				err := g.DetectCycle()
-				if tc.cycle != "" {
-					require.Error(t, err, "expected cycle, got none")
-					require.Equal(t, tc.cycle, err.Error())
-					innerCalled := 0
-					require.Panics(t, func() {
-						g.Run(p, func(n stringWrapper, failed *stringWrapper) bool {
-							innerCalled += 1
-							return true
-						})
-					})
-					require.Zero(t, innerCalled)
-					return
-				}
-				require.NoError(t, err)
+				runTestCase(t, tc, g, p)
 
-				var mu sync.Mutex
-				var seen []string
-				failedFrom := map[string]*string{}
-				g.Run(p, func(n stringWrapper, failed *stringWrapper) bool {
-					mu.Lock()
-					seen = append(seen, n.Value)
-					if failed != nil {
-						v := failed.Value
-						failedFrom[n.Value] = &v
-					} else {
-						failedFrom[n.Value] = nil
-					}
-					mu.Unlock()
-					if stop, exists := tc.returnValues[n.Value]; exists {
-						return stop
-					}
-					return true // success by default
-				})
-
-				if tc.seen != nil {
-					assert.Equal(t, tc.seen, seen)
-				} else if tc.seenSorted != nil {
-					sort.Strings(seen)
-					assert.Equal(t, tc.seenSorted, seen)
-				} else {
-					assert.Empty(t, seen)
-				}
-
-				for node, want := range tc.failedFrom {
-					gotPtr := failedFrom[node]
-					if assert.NotNil(t, gotPtr, "expected failedFrom for %s", node) {
-						assert.Equal(t, want, *gotPtr)
-					}
-				}
-				for node, oneOf := range tc.failedFromOneOf {
-					gotPtr := failedFrom[node]
-					if assert.NotNil(t, gotPtr, "expected failedFrom for %s", node) {
-						assert.True(t, slices.Contains(oneOf, *gotPtr), "failedFrom for %s not in %v, got %v", node, oneOf, *gotPtr)
-					}
-				}
+				// graph should be usable for multiple runs:
+				runTestCase(t, tc, g, p)
 			})
+		}
+	}
+}
+
+func runTestCase(t *testing.T, tc testCase, g *Graph[stringWrapper], p int) {
+	err := g.DetectCycle()
+	if tc.cycle != "" {
+		require.Error(t, err, "expected cycle, got none")
+		require.Equal(t, tc.cycle, err.Error())
+		innerCalled := 0
+		require.Panics(t, func() {
+			g.Run(p, func(n stringWrapper, failed *stringWrapper) bool {
+				innerCalled += 1
+				return true
+			})
+		})
+		require.Zero(t, innerCalled)
+		return
+	}
+	require.NoError(t, err)
+
+	var mu sync.Mutex
+	var seen []string
+	failedFrom := map[string]*string{}
+	g.Run(p, func(n stringWrapper, failed *stringWrapper) bool {
+		mu.Lock()
+		seen = append(seen, n.Value)
+		if failed != nil {
+			v := failed.Value
+			failedFrom[n.Value] = &v
+		} else {
+			failedFrom[n.Value] = nil
+		}
+		mu.Unlock()
+		if stop, exists := tc.returnValues[n.Value]; exists {
+			return stop
+		}
+		return true // success by default
+	})
+
+	if tc.seen != nil {
+		assert.Equal(t, tc.seen, seen)
+	} else if tc.seenSorted != nil {
+		sort.Strings(seen)
+		assert.Equal(t, tc.seenSorted, seen)
+	} else {
+		assert.Empty(t, seen)
+	}
+
+	for node, want := range tc.failedFrom {
+		gotPtr := failedFrom[node]
+		if assert.NotNil(t, gotPtr, "expected failedFrom for %s", node) {
+			assert.Equal(t, want, *gotPtr)
+		}
+	}
+	for node, oneOf := range tc.failedFromOneOf {
+		gotPtr := failedFrom[node]
+		if assert.NotNil(t, gotPtr, "expected failedFrom for %s", node) {
+			assert.True(t, slices.Contains(oneOf, *gotPtr), "failedFrom for %s not in %v, got %v", node, oneOf, *gotPtr)
 		}
 	}
 }
