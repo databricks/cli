@@ -7,6 +7,7 @@ import tarfile
 from pathlib import Path
 from dbruntime.databricks_repl_context import get_context
 
+
 def extract_cli_archive():
     src = dbutils.widgets.get("archive_path")
     if not src:
@@ -26,6 +27,7 @@ def extract_cli_archive():
     print(f"Extracted {src} to {dst}")
     return dst
 
+
 def main():
     archive_dir = extract_cli_archive()
     env = os.environ.copy()
@@ -33,7 +35,7 @@ def main():
     # Today all serverless instances are AMD. There are plans to also
     # have ARM based instances in Q4 FY26 but for now we can keep using the AMD
     # binaries without checking for the architecture.
-    go_bin_dir = archive_dir  / "bin" / "amd64" / "go" / "bin"
+    go_bin_dir = archive_dir / "bin" / "amd64" / "go" / "bin"
     bin_dir = archive_dir / "bin" / "amd64"
     env["PATH"] = os.pathsep.join([str(go_bin_dir), str(bin_dir), env.get("PATH", "")])
 
@@ -60,12 +62,7 @@ def main():
 
     # Change working directory to the root of the CLI repo.
     os.chdir(archive_dir / "cli")
-    cmd = [
-        "go", "test",
-        "-timeout", "7200s",
-        "-run", r"^TestAccept",
-        "github.com/databricks/cli/acceptance"
-    ]
+    cmd = ["go", "test", "-timeout", "7200s", "-run", r"^TestAccept", "github.com/databricks/cli/acceptance"]
 
     if dbutils.widgets.get("short") == "true":
         cmd.append("-short")
@@ -75,6 +72,7 @@ def main():
     print(result.stdout, flush=True)
     print(result.stderr, flush=True)
     assert result.returncode == 0, "Acceptance tests failed"
+
 
 if __name__ == "__main__":
     main()
