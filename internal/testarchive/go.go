@@ -18,13 +18,10 @@ var (
 	_ = jqDownloader{}
 )
 
-<<<<<<< HEAD
 type downloader interface {
 	Download() error
 }
 
-=======
->>>>>>> origin
 type goDownloader struct {
 	binDir string
 	arch   string
