@@ -1,0 +1,66 @@
+
+>>> [CLI] bundle validate
+Name: deploy-lakebase-synced-table-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-synced-table-[UNIQUE_NAME]/default
+
+Validation OK!
+
+>>> [CLI] bundle summary
+Name: deploy-lakebase-synced-table-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-synced-table-[UNIQUE_NAME]/default
+Resources:
+  Database catalogs:
+    my_catalog:
+      Name: my_catalog_[UNIQUE_NAME]
+      URL:  [DATABRICKS_URL]/explore/data/my_catalog_[UNIQUE_NAME]?o=[NUMID]
+  Database instances:
+    my_instance:
+      Name: test-database-instance-[UNIQUE_NAME]
+      URL:  (not deployed)
+  Synced database tables:
+    my_synced_table:
+      Name: my_catalog_[UNIQUE_NAME].my_database.my_synced_table
+      URL:  [DATABRICKS_URL]/explore/data/my_catalog_[UNIQUE_NAME].my_database.my_synced_table?o=[NUMID]
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-synced-table-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle summary
+Name: deploy-lakebase-synced-table-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-synced-table-[UNIQUE_NAME]/default
+Resources:
+  Database catalogs:
+    my_catalog:
+      Name: my_catalog_[UNIQUE_NAME]
+      URL:  [DATABRICKS_URL]/explore/data/my_catalog_[UNIQUE_NAME]?o=[NUMID]
+  Database instances:
+    my_instance:
+      Name: test-database-instance-[UNIQUE_NAME]
+      URL:  [DATABRICKS_URL]/compute/database-instances/test-database-instance-[UNIQUE_NAME]?o=[NUMID]
+  Synced database tables:
+    my_synced_table:
+      Name: my_catalog_[UNIQUE_NAME].my_database.my_synced_table
+      URL:  [DATABRICKS_URL]/explore/data/my_catalog_[UNIQUE_NAME].my_database.my_synced_table?o=[NUMID]
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete database_catalog my_catalog
+  delete database_instance my_instance
+  delete synced_database_table my_synced_table
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-synced-table-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

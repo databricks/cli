@@ -18,5 +18,5 @@ resources:
       database_instance_name: ${resources.database_instances.my_instance.name}
       logical_database_name: "my_database"
       spec:
-        source_table_name: "samples.nyctaxi.trips"
+        source_table_full_name: "samples.nyctaxi.trips"
         create_database_objects_if_missing: true

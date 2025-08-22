@@ -81,8 +81,9 @@ type FakeWorkspace struct {
 	nextRepoId int64
 	Repos      map[string]workspace.RepoInfo
 
-	DatabaseInstances map[string]database.DatabaseInstance
-	DatabaseCatalogs  map[string]database.DatabaseCatalog
+	DatabaseInstances     map[string]database.DatabaseInstance
+	DatabaseCatalogs      map[string]database.DatabaseCatalog
+	SyncedDatabaseTables  map[string]database.SyncedDatabaseTable
 }
 
 func (s *FakeWorkspace) LockUnlock() func() {
@@ -165,8 +166,9 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		SqlWarehouses:     map[string]sql.GetWarehouseResponse{},
 		Repos:             map[string]workspace.RepoInfo{},
 		Acls:              map[string][]workspace.AclItem{},
-		DatabaseInstances: map[string]database.DatabaseInstance{},
-		DatabaseCatalogs:  map[string]database.DatabaseCatalog{},
+		DatabaseInstances:    map[string]database.DatabaseInstance{},
+		DatabaseCatalogs:     map[string]database.DatabaseCatalog{},
+		SyncedDatabaseTables: map[string]database.SyncedDatabaseTable{},
 	}
 }
 
