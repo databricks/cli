@@ -8,6 +8,7 @@ from databricks.bundles.core._transform import _transform
 if TYPE_CHECKING:
     from databricks.bundles.jobs._models.job import Job, JobParam
     from databricks.bundles.pipelines._models.pipeline import Pipeline, PipelineParam
+    from databricks.bundles.volumes._models.volume import Volume, VolumeParam
 
 __all__ = ["Resources"]
 
@@ -57,6 +58,7 @@ class Resources:
     def __init__(self):
         self._jobs = dict[str, "Job"]()
         self._pipelines = dict[str, "Pipeline"]()
+        self._volumes = dict[str, "Volume"]()
         self._locations = dict[tuple[str, ...], Location]()
         self._diagnostics = Diagnostics()
 
@@ -67,6 +69,10 @@ class Resources:
     @property
     def pipelines(self) -> dict[str, "Pipeline"]:
         return self._pipelines
+
+    @property
+    def volumes(self) -> dict[str, "Volume"]:
+        return self._volumes
 
     @property
     def diagnostics(self) -> Diagnostics:
@@ -93,6 +99,7 @@ class Resources:
 
         from databricks.bundles.jobs import Job
         from databricks.bundles.pipelines import Pipeline
+        from databricks.bundles.volumes import Volume
 
         location = location or Location.from_stack_frame(depth=1)
 
@@ -101,6 +108,8 @@ class Resources:
                 self.add_job(resource_name, resource, location=location)
             case Pipeline():
                 self.add_pipeline(resource_name, resource, location=location)
+            case Volume():
+                self.add_volume(resource_name, resource, location=location)
             case _:
                 raise ValueError(f"Unsupported resource type: {type(resource)}")
 
@@ -167,6 +176,38 @@ class Resources:
                 self.add_location(path, location)
 
             self._pipelines[resource_name] = pipeline
+
+    def add_volume(
+        self,
+        resource_name: str,
+        volume: "VolumeParam",
+        *,
+        location: Optional[Location] = None,
+    ) -> None:
+        """
+        Adds a volume to the collection of resources. Resource name must be unique across all volumes.
+
+        :param resource_name: unique identifier for the volume
+        :param volume: the volume to add, can be Volume or dict
+        :param location: optional location of the volume in the source code
+        """
+        from databricks.bundles.volumes import Volume
+
+        volume = _transform(Volume, volume)
+        path = ("resources", "volumes", resource_name)
+        location = location or Location.from_stack_frame(depth=1)
+
+        if self._volumes.get(resource_name):
+            self.add_diagnostic_error(
+                msg=f"Duplicate resource name '{resource_name}' for a volume. Resource names must be unique.",
+                location=location,
+                path=path,
+            )
+        else:
+            if location:
+                self.add_location(path, location)
+
+            self._volumes[resource_name] = volume
 
     def add_location(self, path: tuple[str, ...], location: Location) -> None:
         """
@@ -243,6 +284,9 @@ class Resources:
 
         for name, pipeline in other.pipelines.items():
             self.add_pipeline(name, pipeline)
+
+        for name, volume in other.volumes.items():
+            self.add_volume(name, volume)
 
         for path, location in other._locations.items():
             self.add_location(path, location)

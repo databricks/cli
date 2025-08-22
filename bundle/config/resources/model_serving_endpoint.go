@@ -58,7 +58,7 @@ func (s *ModelServingEndpoint) Exists(ctx context.Context, w *databricks.Workspa
 	return true, nil
 }
 
-func (j *ModelServingEndpoint) ResourceDescription() ResourceDescription {
+func (s *ModelServingEndpoint) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "model_serving_endpoint",
 		PluralName:    "model_serving_endpoints",

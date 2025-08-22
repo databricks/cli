@@ -13,6 +13,7 @@ TimeoutCloud = '25m'
 
 Env.PYTHONDONTWRITEBYTECODE = "1"
 Env.PYTHONUNBUFFERED = "1"
+Env.PYTHONUTF8 = "1"
 
 EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["terraform", "direct-exp"]
 EnvRepl.DATABRICKS_CLI_DEPLOYMENT = false

@@ -50,19 +50,19 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*provisioning.UpsertPrivateAccessSettingsRequest,
+	*provisioning.CreatePrivateAccessSettingsRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var createReq provisioning.UpsertPrivateAccessSettingsRequest
+	var createReq provisioning.CreatePrivateAccessSettingsRequest
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: allowed_vpc_endpoint_ids
-	cmd.Flags().Var(&createReq.PrivateAccessLevel, "private-access-level", `The private access level controls which VPC endpoints can connect to the UI or API of any workspace that attaches this private access settings object. Supported values: [ACCOUNT, ENDPOINT]`)
+	cmd.Flags().Var(&createReq.PrivateAccessLevel, "private-access-level", `Supported values: [ACCOUNT, ENDPOINT]`)
 	cmd.Flags().BoolVar(&createReq.PublicAccessEnabled, "public-access-enabled", createReq.PublicAccessEnabled, `Determines if the workspace can be accessed over public internet.`)
 
 	cmd.Use = "create PRIVATE_ACCESS_SETTINGS_NAME REGION"
@@ -346,19 +346,19 @@ func newList() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var replaceOverrides []func(
 	*cobra.Command,
-	*provisioning.UpsertPrivateAccessSettingsRequest,
+	*provisioning.ReplacePrivateAccessSettingsRequest,
 )
 
 func newReplace() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var replaceReq provisioning.UpsertPrivateAccessSettingsRequest
+	var replaceReq provisioning.ReplacePrivateAccessSettingsRequest
 	var replaceJson flags.JsonFlag
 
 	cmd.Flags().Var(&replaceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: allowed_vpc_endpoint_ids
-	cmd.Flags().Var(&replaceReq.PrivateAccessLevel, "private-access-level", `The private access level controls which VPC endpoints can connect to the UI or API of any workspace that attaches this private access settings object. Supported values: [ACCOUNT, ENDPOINT]`)
+	cmd.Flags().Var(&replaceReq.PrivateAccessLevel, "private-access-level", `Supported values: [ACCOUNT, ENDPOINT]`)
 	cmd.Flags().BoolVar(&replaceReq.PublicAccessEnabled, "public-access-enabled", replaceReq.PublicAccessEnabled, `Determines if the workspace can be accessed over public internet.`)
 
 	cmd.Use = "replace PRIVATE_ACCESS_SETTINGS_ID PRIVATE_ACCESS_SETTINGS_NAME REGION"

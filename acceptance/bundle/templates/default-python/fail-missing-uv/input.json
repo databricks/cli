@@ -1,0 +1,7 @@
+{
+    "project_name": "fail_missing_uv",
+    "include_notebook": "no",
+    "include_dlt": "no",
+    "include_python": "yes",
+    "serverless": "no"
+}

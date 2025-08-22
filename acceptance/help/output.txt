@@ -57,21 +57,27 @@ Unity Catalog
   catalogs                               A catalog is the first layer of Unity Catalog’s three-level namespace.
   connections                            Connections allow for creating a connection to an external data source.
   credentials                            A credential represents an authentication and authorization mechanism for accessing services on your cloud tenant.
+  entity-tag-assignments                 Tags are attributes that include keys and optional values that you can use to organize and categorize entities in Unity Catalog.
+  external-lineage                       External Lineage APIs enable defining and managing lineage relationships between Databricks objects and external systems.
   external-locations                     An external location is an object that combines a cloud storage path with a storage credential that authorizes access to the cloud storage path.
+  external-metadata                      External Metadata objects enable customers to register and manage metadata about external systems within Unity Catalog.
   functions                              Functions implement User-Defined Functions (UDFs) in Unity Catalog.
   grants                                 In Unity Catalog, data is secure by default.
   metastores                             A metastore is the top-level container of objects in Unity Catalog.
   model-versions                         Databricks provides a hosted version of MLflow Model Registry in Unity Catalog.
   online-tables                          Online tables provide lower latency and higher QPS access to data from Delta tables.
+  policies                               Attribute-Based Access Control (ABAC) provides high leverage governance for enforcing compliance policies in Unity Catalog.
   quality-monitors                       A monitor computes and monitors data or model quality metrics for a table over time.
   registered-models                      Databricks provides a hosted version of MLflow Model Registry in Unity Catalog.
   resource-quotas                        Unity Catalog enforces resource quotas on all securable objects, which limits the number of resources that can be created.
+  rfa                                    Request for Access enables customers to request access to and manage access request destinations for Unity Catalog securables.
   schemas                                A schema (also called a database) is the second layer of Unity Catalog’s three-level namespace.
   storage-credentials                    A storage credential represents an authentication and authorization mechanism for accessing data stored on your cloud tenant.
   system-schemas                         A system schema is a schema that lives within the system catalog.
   table-constraints                      Primary key and foreign key constraints encode relationships between fields in tables.
   tables                                 A table resides in the third layer of Unity Catalog’s three-level namespace.
-  temporary-table-credentials            Temporary Table Credentials refer to short-lived, downscoped credentials used to access cloud storage locationswhere table data is stored in Databricks.
+  temporary-path-credentials             Temporary Path Credentials refer to short-lived, downscoped credentials used to access external cloud storage locations registered in Databricks.
+  temporary-table-credentials            Temporary Table Credentials refer to short-lived, downscoped credentials used to access cloud storage locations where table data is stored in Databricks.
   volumes                                Volumes are a Unity Catalog (UC) capability for accessing, storing, governing, organizing and processing files.
   workspace-bindings                     A securable in Databricks can be configured as __OPEN__ or __ISOLATED__.
 
@@ -120,15 +126,21 @@ Apps
   apps                                   Apps run directly on a customer’s Databricks instance, integrate with their data, use and extend Databricks services, and enable users to interact through single sign-on.
 
 Clean Rooms
+  clean-room-asset-revisions             Clean Room Asset Revisions denote new versions of uploaded assets (e.g.
   clean-room-assets                      Clean room assets are data and code objects — Tables, volumes, and notebooks that are shared with the clean room.
+  clean-room-auto-approval-rules         Clean room auto-approval rules automatically create an approval on your behalf when an asset (e.g.
   clean-room-task-runs                   Clean room task runs are the executions of notebooks in a clean room.
-  clean-rooms                            A clean room uses Delta Sharing and serverless compute to provide a secure and privacy-protecting environment where multiple parties can work together on sensitive enterprise data without direct access to each other’s data.
+  clean-rooms                            A clean room uses Delta Sharing and serverless compute to provide a secure and privacy-protecting environment where multiple parties can work together on sensitive enterprise data without direct access to each other's data.
 
 Database
   database                               Database Instances provide access to a database via REST API or direct SQL.
+  psql                                   Connect to the specified Database Instance
 
 Quality Monitor v2
   quality-monitor-v2                     Manage data quality of UC objects (currently support schema).
+
+OAuth
+  service-principal-secrets-proxy        These APIs enable administrators to manage service principal secrets at the workspace level.
 
 Additional Commands:
   account                                Databricks Account Commands

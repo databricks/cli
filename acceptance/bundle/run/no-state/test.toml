@@ -1,0 +1,1 @@
+Badness = "This complains about deployment state, but more important issue is that here is no bundle config at all, it should complain about that."

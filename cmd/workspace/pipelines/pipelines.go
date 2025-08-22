@@ -755,7 +755,7 @@ func newStartUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&startUpdateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().Var(&startUpdateReq.Cause, "cause", `What triggered this update. Supported values: [
+	cmd.Flags().Var(&startUpdateReq.Cause, "cause", `Supported values: [
   API_CALL,
   INFRASTRUCTURE_MAINTENANCE,
   JOB_TASK,

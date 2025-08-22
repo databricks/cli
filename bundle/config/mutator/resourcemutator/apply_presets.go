@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
+	"github.com/databricks/databricks-sdk-go/service/sql"
 )
 
 type applyPresets struct{}
@@ -104,7 +105,18 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		if t.TriggerPauseStatus == config.Paused {
 			p.Continuous = false
 		}
-		// As of 2024-06, pipelines don't yet support tags
+
+		if len(tags) > 0 {
+			if p.Tags == nil {
+				// Note: only create this map if tags is not empty, to avoid inserting "tags: {}" entry in the config
+				p.Tags = make(map[string]string, len(tags))
+			}
+			for _, tag := range tags {
+				if p.Tags[tag.Key] == "" {
+					p.Tags[tag.Key] = tag.Value
+				}
+			}
+		}
 	}
 
 	// Models presets: Prefix, Tags
@@ -226,6 +238,39 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	}
 
 	// Apps: No presets
+
+	// SQL Warehouses: Prefix, Tags
+	for _, w := range r.SqlWarehouses {
+		if w == nil {
+			continue
+		}
+		w.Name = prefix + w.Name
+		if len(tags) > 0 {
+			if w.Tags == nil {
+				w.Tags = &sql.EndpointTags{}
+			}
+			for _, tag := range tags {
+				normalisedKey := b.Tagging.NormalizeKey(tag.Key)
+				normalisedValue := b.Tagging.NormalizeValue(tag.Value)
+
+				// Check if the tag already exists
+				exists := false
+				for _, t := range w.Tags.CustomTags {
+					if t.Key == normalisedKey {
+						exists = true
+						break
+					}
+				}
+
+				if !exists {
+					w.Tags.CustomTags = append(w.Tags.CustomTags, sql.EndpointTagPair{
+						Key:   normalisedKey,
+						Value: normalisedValue,
+					})
+				}
+			}
+		}
+	}
 
 	return diags
 }

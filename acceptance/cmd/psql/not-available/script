@@ -1,0 +1,6 @@
+title "Command should exit if the instance is not available"
+trace musterr $CLI psql database-starting
+trace musterr $CLI psql database-updating
+trace musterr $CLI psql database-stopped
+trace musterr $CLI psql database-failing-over
+trace musterr $CLI psql database-deleting

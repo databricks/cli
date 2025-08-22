@@ -33,7 +33,11 @@ func assertRootPathExists(ctx context.Context, b *bundle.Bundle) (bool, error) {
 
 func getDeleteActions(ctx context.Context, b *bundle.Bundle) ([]deployplan.Action, error) {
 	if b.DirectDeployment {
-		return terranova.CalculateDestroyActions(ctx, b)
+		err := terranova.CalculatePlanForDestroy(ctx, b)
+		if err != nil {
+			return nil, err
+		}
+		return terranova.GetDeployActions(ctx, b), nil
 	}
 
 	tf := b.Terraform
@@ -42,7 +46,7 @@ func getDeleteActions(ctx context.Context, b *bundle.Bundle) ([]deployplan.Actio
 		return nil, errors.New("terraform not initialized")
 	}
 
-	actions, err := terraform.ShowPlanFile(ctx, tf, b.Plan.TerraformPlanPath)
+	actions, err := terraform.ShowPlanFile(ctx, tf, b.TerraformPlanPath)
 	if err != nil {
 		return nil, err
 	}
@@ -58,8 +62,6 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 		return false, err
 	}
 
-	b.Plan.Actions = deleteActions
-
 	if len(deleteActions) > 0 {
 		cmdio.LogString(ctx, "The following resources will be deleted:")
 		for _, a := range deleteActions {
@@ -67,6 +69,34 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 		}
 		cmdio.LogString(ctx, "")
 
+	}
+
+	schemaActions := deployplan.FilterGroup(deleteActions, "schemas", deployplan.ActionTypeDelete)
+	dltActions := deployplan.FilterGroup(deleteActions, "pipelines", deployplan.ActionTypeDelete)
+	volumeActions := deployplan.FilterGroup(deleteActions, "volumes", deployplan.ActionTypeDelete)
+
+	if len(schemaActions) > 0 {
+		cmdio.LogString(ctx, deleteSchemaMessage)
+		for _, a := range schemaActions {
+			cmdio.Log(ctx, a)
+		}
+		cmdio.LogString(ctx, "")
+	}
+
+	if len(dltActions) > 0 {
+		cmdio.LogString(ctx, deleteDltMessage)
+		for _, a := range dltActions {
+			cmdio.Log(ctx, a)
+		}
+		cmdio.LogString(ctx, "")
+	}
+
+	if len(volumeActions) > 0 {
+		cmdio.LogString(ctx, deleteVolumeMessage)
+		for _, a := range volumeActions {
+			cmdio.Log(ctx, a)
+		}
+		cmdio.LogString(ctx, "")
 	}
 
 	cmdio.LogString(ctx, "All files and directories at the following location will be deleted: "+b.Config.Workspace.RootPath)

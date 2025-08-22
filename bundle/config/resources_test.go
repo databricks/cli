@@ -7,6 +7,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/databricks/databricks-sdk-go/service/database"
+
+	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 
 	"github.com/databricks/databricks-sdk-go/service/serving"
@@ -172,6 +175,21 @@ func TestResourcesBindSupport(t *testing.T) {
 				Name: "0",
 			},
 		},
+		SqlWarehouses: map[string]*resources.SqlWarehouse{
+			"my_sql_warehouse": {
+				CreateWarehouseRequest: sql.CreateWarehouseRequest{},
+			},
+		},
+		DatabaseInstances: map[string]*resources.DatabaseInstance{
+			"my_database_instance": {
+				DatabaseInstance: database.DatabaseInstance{},
+			},
+		},
+		DatabaseCatalogs: map[string]*resources.DatabaseCatalog{
+			"my_database_catalog": {
+				DatabaseCatalog: database.DatabaseCatalog{},
+			},
+		},
 	}
 	unbindableResources := map[string]bool{"model": true}
 
@@ -191,6 +209,9 @@ func TestResourcesBindSupport(t *testing.T) {
 	m.GetMockSecretsAPI().EXPECT().ListScopesAll(mock.Anything).Return([]workspace.SecretScope{
 		{Name: "0"},
 	}, nil)
+	m.GetMockWarehousesAPI().EXPECT().GetById(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockDatabaseAPI().EXPECT().GetDatabaseInstance(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockDatabaseAPI().EXPECT().GetDatabaseCatalog(mock.Anything, mock.Anything).Return(nil, nil)
 
 	allResources := supportedResources.AllResources()
 	for _, group := range allResources {

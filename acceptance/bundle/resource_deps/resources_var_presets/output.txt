@@ -1,0 +1,39 @@
+
+>>> [CLI] bundle validate -t dev -o json
+{
+  "pipelines": {
+    "mypipeline": {
+      "channel": "CURRENT",
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/dev/state/metadata.json"
+      },
+      "development": true,
+      "edition": "ADVANCED",
+      "name": "[dev [USERNAME]] pipeline for ${resources.schemas.foo.catalog_name}.${resources.schemas.foo.name}",
+      "permissions": [],
+      "tags": {
+        "dev": "[USERNAME]"
+      }
+    }
+  },
+  "schemas": {
+    "bar": {
+      "catalog_name": "mycatalog",
+      "name": "dev_[USERNAME]_myschema"
+    },
+    "foo": {
+      "catalog_name": "${resources.schemas.bar.catalog_name}",
+      "name": "dev_[USERNAME]_${resources.schemas.bar.name}"
+    }
+  }
+}
+
+>>> [CLI] bundle deploy -t dev
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/dev/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> jq -s .[] | select(.path=="/api/2.0/pipelines") | .body.name out.requests.txt
+"[dev [USERNAME]] pipeline for mycatalog.dev_[USERNAME]_dev_[USERNAME]_myschema"

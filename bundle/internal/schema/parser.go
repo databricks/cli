@@ -174,13 +174,26 @@ func (p *openapiParser) extractAnnotations(typ reflect.Type, outputPath, overrid
 						refProp.DeprecationMessage = "This field is deprecated"
 					}
 
+					description := refProp.Description
+
+					// If the field doesn't have a description, try to find the referenced type
+					// and use its description. This handles cases where the field references
+					// a type that has a description but the field itself doesn't.
+					if description == "" && refProp.Reference != nil {
+						refPath := *refProp.Reference
+						refTypeName := strings.TrimPrefix(refPath, "#/components/schemas/")
+						if refType, ok := p.ref[refTypeName]; ok {
+							description = refType.Description
+						}
+					}
+
 					pkg[k] = annotation.Descriptor{
-						Description:        refProp.Description,
+						Description:        description,
 						Enum:               refProp.Enum,
 						Preview:            preview,
 						DeprecationMessage: refProp.DeprecationMessage,
 					}
-					if refProp.Description == "" {
+					if description == "" {
 						addEmptyOverride(k, basePath, overrides)
 					}
 				} else {

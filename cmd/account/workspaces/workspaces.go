@@ -87,7 +87,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().StringVar(&createReq.Location, "location", createReq.Location, `The Google Cloud region of the workspace data plane in your Google account.`)
 	cmd.Flags().StringVar(&createReq.ManagedServicesCustomerManagedKeyId, "managed-services-customer-managed-key-id", createReq.ManagedServicesCustomerManagedKeyId, `The ID of the workspace's managed services encryption key configuration object.`)
 	cmd.Flags().StringVar(&createReq.NetworkId, "network-id", createReq.NetworkId, ``)
-	cmd.Flags().Var(&createReq.PricingTier, "pricing-tier", `The pricing tier of the workspace. Supported values: [
+	cmd.Flags().Var(&createReq.PricingTier, "pricing-tier", `Supported values: [
   COMMUNITY_EDITION,
   DEDICATED,
   ENTERPRISE,

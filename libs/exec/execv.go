@@ -10,7 +10,9 @@ type ExecvOptions struct {
 	// Env is set the environment variables to set in the child process.
 	Env []string
 
-	// Dir is the working directory of the child process.
+	// Dir specifies the working directory of the command.
+	// If Dir is an empty string, Execv runs the command in the
+	// calling process's current directory.
 	Dir string
 
 	// It is not possible to execute a cmd.exe script inlined as a argument

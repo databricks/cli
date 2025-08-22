@@ -169,6 +169,12 @@ github.com/databricks/cli/bundle/config.Resources:
       The dashboard definitions for the bundle, where each key is the name of the dashboard.
     "markdown_description": |-
       The dashboard definitions for the bundle, where each key is the name of the dashboard. See [\_](/dev-tools/bundles/resources.md#dashboards).
+  "database_catalogs":
+    "description": |-
+      PLACEHOLDER
+  "database_instances":
+    "description": |-
+      PLACEHOLDER
   "experiments":
     "description": |-
       The experiment definitions for the bundle, where each key is the name of the experiment.
@@ -211,7 +217,14 @@ github.com/databricks/cli/bundle/config.Resources:
       The schema definitions for the bundle, where each key is the name of the schema. See [\_](/dev-tools/bundles/resources.md#schemas).
   "secret_scopes":
     "description": |-
-      PLACEHOLDER
+      The secret scope definitions for the bundle, where each key is the name of the secret scope.
+    "markdown_description": |-
+      The secret scope definitions for the bundle, where each key is the name of the secret scope. See [\_](/dev-tools/bundles/resources.md#secret_scopes).
+  "sql_warehouses":
+    "description": |-
+      The SQL warehouse definitions for the bundle, where each key is the name of the warehouse.
+    "markdown_description": |-
+      The SQL warehouse definitions for the bundle, where each key is the name of the warehouse. See [\_](/dev-tools/bundles/resources.md#sql_warehouses).
   "volumes":
     "description": |-
       The volume definitions for the bundle, where each key is the name of the volume.
@@ -462,6 +475,102 @@ github.com/databricks/cli/bundle/config/resources.DashboardPermission:
   "user_name":
     "description": |-
       PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.DatabaseCatalog:
+  "create_database_if_not_exists":
+    "description": |-
+      PLACEHOLDER
+  "database_instance_name":
+    "description": |-
+      PLACEHOLDER
+  "database_name":
+    "description": |-
+      PLACEHOLDER
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+  "uid":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.DatabaseInstance:
+  "capacity":
+    "description": |-
+      PLACEHOLDER
+  "child_instance_refs":
+    "description": |-
+      PLACEHOLDER
+  "creation_time":
+    "description": |-
+      PLACEHOLDER
+  "creator":
+    "description": |-
+      PLACEHOLDER
+  "effective_enable_readable_secondaries":
+    "description": |-
+      PLACEHOLDER
+  "effective_node_count":
+    "description": |-
+      PLACEHOLDER
+  "effective_retention_window_in_days":
+    "description": |-
+      PLACEHOLDER
+  "effective_stopped":
+    "description": |-
+      PLACEHOLDER
+  "enable_readable_secondaries":
+    "description": |-
+      PLACEHOLDER
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "node_count":
+    "description": |-
+      PLACEHOLDER
+  "parent_instance_ref":
+    "description": |-
+      PLACEHOLDER
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+  "pg_version":
+    "description": |-
+      PLACEHOLDER
+  "purge_on_delete":
+    "description": |-
+      PLACEHOLDER
+  "read_only_dns":
+    "description": |-
+      PLACEHOLDER
+  "read_write_dns":
+    "description": |-
+      PLACEHOLDER
+  "retention_window_in_days":
+    "description": |-
+      PLACEHOLDER
+  "state":
+    "description": |-
+      PLACEHOLDER
+  "stopped":
+    "description": |-
+      PLACEHOLDER
+  "uid":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.DatabaseInstancePermission:
+  "group_name":
+    "description": |-
+      PLACEHOLDER
+  "level":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "user_name":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.Grant:
   "principal":
     "description": |-
@@ -578,6 +687,26 @@ github.com/databricks/cli/bundle/config/resources.SecretScopePermission:
   "user_name":
     "description": |-
       The name of the user that has the permission set in level. This field translates to a `principal` field in secret scope ACL.
+github.com/databricks/cli/bundle/config/resources.SqlWarehousePermission:
+  "group_name":
+    "description": |-
+      PLACEHOLDER
+  "level":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "user_name":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.VolumeGrant:
+  "principal":
+    "description": |-
+      PLACEHOLDER
+  "privileges":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/variable.Lookup:
   "alert":
     "description": |-

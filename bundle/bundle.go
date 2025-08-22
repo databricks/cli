@@ -22,6 +22,7 @@ import (
 	"github.com/databricks/cli/bundle/metadata"
 	"github.com/databricks/cli/bundle/terranova/tnstate"
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/dagrun"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/locker"
@@ -54,6 +55,20 @@ type Metrics struct {
 	PythonAddedResourcesCount   int64
 	PythonUpdatedResourcesCount int64
 	ExecutionTimes              []protos.IntMapEntry
+}
+
+// SetBoolValue sets the value of a boolean metric.
+// If the metric does not exist, it is created.
+// If the metric exists, it is updated.
+// Ensures that the metric is unique
+func (m *Metrics) SetBoolValue(key string, value bool) {
+	for i, v := range m.BoolValues {
+		if v.Key == key {
+			m.BoolValues[i].Value = value
+			return
+		}
+	}
+	m.BoolValues = append(m.BoolValues, protos.BoolMapEntry{Key: key, Value: value})
 }
 
 func (m *Metrics) AddBoolValue(key string, value bool) {
@@ -113,7 +128,17 @@ type Bundle struct {
 	// Stores the locker responsible for acquiring/releasing a deployment lock.
 	Locker *locker.Locker
 
-	Plan deployplan.Plan
+	// TerraformPlanPath is the path to the plan from the terraform CLI
+	TerraformPlanPath string
+
+	// If true, the plan is empty and applying it will not do anything
+	TerraformPlanIsEmpty bool
+
+	// (direct only) graph of dependencies between resources
+	Graph *dagrun.Graph[deployplan.ResourceNode]
+
+	// (direct only) planned action for each resource
+	PlannedActions map[deployplan.ResourceNode]deployplan.ActionType
 
 	// if true, we skip approval checks for deploy, destroy resources and delete
 	// files
@@ -372,7 +397,7 @@ func (b *Bundle) OpenResourceDatabase(ctx context.Context) error {
 
 	err = b.ResourceDatabase.Open(statePath)
 	if err != nil {
-		return fmt.Errorf("Failed to open/create resoruce database in %s: %s", statePath, err)
+		return fmt.Errorf("failed to open/create resoruce database in %s: %s", statePath, err)
 	}
 
 	return nil

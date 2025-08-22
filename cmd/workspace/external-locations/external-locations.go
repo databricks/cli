@@ -74,7 +74,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided free-form text description.`)
-	cmd.Flags().BoolVar(&createReq.EnableFileEvents, "enable-file-events", createReq.EnableFileEvents, `[Create:OPT Update:OPT] Whether to enable file events on this external location.`)
+	cmd.Flags().BoolVar(&createReq.EnableFileEvents, "enable-file-events", createReq.EnableFileEvents, `Whether to enable file events on this external location.`)
 	// TODO: complex arg: encryption_details
 	cmd.Flags().BoolVar(&createReq.Fallback, "fallback", createReq.Fallback, `Indicates whether fallback mode is enabled for this external location.`)
 	// TODO: complex arg: file_event_queue
@@ -347,12 +347,12 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `User-provided free-form text description.`)
 	cmd.Flags().StringVar(&updateReq.CredentialName, "credential-name", updateReq.CredentialName, `Name of the storage credential used with this location.`)
-	cmd.Flags().BoolVar(&updateReq.EnableFileEvents, "enable-file-events", updateReq.EnableFileEvents, `[Create:OPT Update:OPT] Whether to enable file events on this external location.`)
+	cmd.Flags().BoolVar(&updateReq.EnableFileEvents, "enable-file-events", updateReq.EnableFileEvents, `Whether to enable file events on this external location.`)
 	// TODO: complex arg: encryption_details
 	cmd.Flags().BoolVar(&updateReq.Fallback, "fallback", updateReq.Fallback, `Indicates whether fallback mode is enabled for this external location.`)
 	// TODO: complex arg: file_event_queue
 	cmd.Flags().BoolVar(&updateReq.Force, "force", updateReq.Force, `Force update even if changing url invalidates dependent external tables or mounts.`)
-	cmd.Flags().Var(&updateReq.IsolationMode, "isolation-mode", `. Supported values: [ISOLATION_MODE_ISOLATED, ISOLATION_MODE_OPEN]`)
+	cmd.Flags().Var(&updateReq.IsolationMode, "isolation-mode", `Supported values: [ISOLATION_MODE_ISOLATED, ISOLATION_MODE_OPEN]`)
 	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the external location.`)
 	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `The owner of the external location.`)
 	cmd.Flags().BoolVar(&updateReq.ReadOnly, "read-only", updateReq.ReadOnly, `Indicates whether the external location is read-only.`)

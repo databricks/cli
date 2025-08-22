@@ -1,3 +1,5 @@
+// Copied to cmd/pipelines/deploy.go and adapted for pipelines use.
+// Consider if changes made here should be made to the pipelines counterpart as well.
 package bundle
 
 import (
@@ -19,7 +21,15 @@ func newDeployCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "deploy",
 		Short: "Deploy bundle",
-		Args:  root.NoArgs,
+		Long: `Deploy bundle.
+
+Common patterns:
+  databricks bundle deploy                  # Deploy to default target (dev)
+  databricks bundle deploy --target dev     # Deploy to development
+  databricks bundle deploy --target prod    # Deploy to production
+
+See https://docs.databricks.com/en/dev-tools/bundles/index.html for more information.`,
+		Args: root.NoArgs,
 	}
 
 	var force bool

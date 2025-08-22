@@ -11,3 +11,9 @@ resources:
       name: test-schema
       catalog_name: main
       comment: COMMENT1
+
+  sql_warehouses:
+    my_sql_warehouse:
+      name: test-sql-warehouse
+      cluster_size: X-Large
+      enable_serverless_compute: true

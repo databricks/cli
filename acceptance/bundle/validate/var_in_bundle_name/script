@@ -1,0 +1,3 @@
+trace $CLI bundle validate
+
+trace $CLI bundle validate --target two

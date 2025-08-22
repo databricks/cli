@@ -80,6 +80,13 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 		// https://github.com/databricks/terraform-provider-databricks/blob/v1.75.0/pipelines/resource_pipeline.go#L253
 		{"resources.pipelines.*.edition", "ADVANCED"},
 		{"resources.pipelines.*.channel", "CURRENT"},
+
+		// SqlWarehouses (same as terraform)
+		// https://github.com/databricks/terraform-provider-databricks/blob/v1.75.0/sql/resource_sql_endpoint.go#L59
+		{"resources.sql_warehouses.*.auto_stop_mins", 120},
+		{"resources.sql_warehouses.*.enable_photon", true},
+		{"resources.sql_warehouses.*.max_num_clusters", 1},
+		{"resources.sql_warehouses.*.spot_instance_policy", "COST_OPTIMIZED"},
 	}
 
 	for _, defaultDef := range defaults {
@@ -105,6 +112,8 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 		// Updates (dynamic): resources.*.*.permissions (removes permissions entries where user_name or service_principal_name matches current user)
 		// Removes the current user from all resource permissions as the Terraform provider implicitly grants ownership
 		FilterCurrentUser(),
+
+		ApplyDefaultTaskSource(),
 	)
 }
 
@@ -118,11 +127,7 @@ func applyNormalizeMutators(ctx context.Context, b *bundle.Bundle) {
 		// Reads (dynamic): * (strings) (searches for variable references in string values)
 		// Updates (dynamic): resources.* (strings) (resolves variable references to their actual values)
 		// Resolves variable references in 'resources' using bundle, workspace, and variables prefixes
-		mutator.ResolveVariableReferencesOnlyResources(
-			"bundle",
-			"workspace",
-			"variables",
-		),
+		mutator.ResolveVariableReferencesOnlyResources(),
 
 		// Reads (dynamic): resources.pipelines.*.libraries (checks for notebook.path and file.path fields)
 		// Updates (dynamic): resources.pipelines.*.libraries (expands glob patterns in path fields to multiple library entries)
