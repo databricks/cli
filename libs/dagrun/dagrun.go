@@ -63,7 +63,7 @@ func (e *CycleError[N]) Error() string {
 
 	// Build cycle path: "A -> B -> ... -> A"
 	var pathParts []string
-	for i := 0; i < len(e.Nodes); i++ {
+	for i := range len(e.Nodes) {
 		pathParts = append(pathParts, fmt.Sprintf("%v", e.Nodes[i]))
 	}
 	// close back to the first node
@@ -72,7 +72,7 @@ func (e *CycleError[N]) Error() string {
 
 	// Build labels list: '"l1", "l2", ...'
 	var labelParts []string
-	for i := 0; i < len(e.Edges); i++ {
+	for i := range len(e.Edges) {
 		labelParts = append(labelParts, fmt.Sprintf("%q", e.Edges[i]))
 	}
 
