@@ -1,7 +1,0 @@
-
->>> errcode [CLI] bundle deploy -t dev
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/dev/files...
-Error: reading config: failed to read references from config for pipelines.mypipeline: parsing refs: cannot process reference resources.volumes.foo.catalog_name: only ${resources.<group>.<key>.id} references are supported
-
-
-Exit code: 1
