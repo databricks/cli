@@ -62,17 +62,17 @@ func (e *CycleError[N]) Error() string {
 	}
 
 	if len(e.Nodes) == 1 {
-		return fmt.Sprintf("cycle detected: %v refers to itself via %s", e.Nodes[0], e.Edges[0])
+		return fmt.Sprintf("cycle detected: %v refers to itself via %q", e.Nodes[0], e.Edges[0])
 	}
 
 	// Build "A refers to B via E1" pieces for every edge except the closing one.
 	var parts []string
 	for i := 1; i < len(e.Nodes); i++ {
-		parts = append(parts, fmt.Sprintf("%v refers to %v via %s", e.Nodes[i-1], e.Nodes[i], e.Edges[i-1]))
+		parts = append(parts, fmt.Sprintf("%v refers to %v via %q", e.Nodes[i-1], e.Nodes[i], e.Edges[i-1]))
 	}
 
 	return fmt.Sprintf(
-		"cycle detected: %s which refers to %v via %s",
+		"cycle detected: %s which refers to %v via %q",
 		strings.Join(parts, " "),
 		e.Nodes[0],
 		e.Edges[len(e.Edges)-1],
