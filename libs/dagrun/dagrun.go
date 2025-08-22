@@ -61,22 +61,22 @@ func (e *CycleError[N]) Error() string {
 		return "cycle detected"
 	}
 
-	if len(e.Nodes) == 1 {
-		return fmt.Sprintf("cycle detected: %v refers to itself via %q", e.Nodes[0], e.Edges[0])
+	// Build cycle path: "A -> B -> ... -> A"
+	var pathParts []string
+	for i := 0; i < len(e.Nodes); i++ {
+		pathParts = append(pathParts, fmt.Sprintf("%v", e.Nodes[i]))
+	}
+	// close back to the first node
+	pathParts = append(pathParts, fmt.Sprintf("%v", e.Nodes[0]))
+	path := strings.Join(pathParts, " -> ")
+
+	// Build labels list: '"l1", "l2", ...'
+	var labelParts []string
+	for i := 0; i < len(e.Edges); i++ {
+		labelParts = append(labelParts, fmt.Sprintf("%q", e.Edges[i]))
 	}
 
-	// Build "A refers to B via E1" pieces for every edge except the closing one.
-	var parts []string
-	for i := 1; i < len(e.Nodes); i++ {
-		parts = append(parts, fmt.Sprintf("%v refers to %v via %q", e.Nodes[i-1], e.Nodes[i], e.Edges[i-1]))
-	}
-
-	return fmt.Sprintf(
-		"cycle detected: %s which refers to %v via %q",
-		strings.Join(parts, " "),
-		e.Nodes[0],
-		e.Edges[len(e.Edges)-1],
-	)
+	return fmt.Sprintf("cycle detected: %s (via %s)", path, strings.Join(labelParts, ", "))
 }
 
 func (g *Graph[N]) indegrees() map[N]int {
