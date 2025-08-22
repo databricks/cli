@@ -11,7 +11,7 @@ import (
 
 func isSilentlyUpdated(resourceType string) bool {
 	// These types are automatically created by DABs, no need to show them in the plan
-	var silentlyUpdatedResources = []string{
+	silentlyUpdatedResources := []string{
 		"databricks_grant",
 		"databricks_permissions",
 		"databricks_secret_acl",
