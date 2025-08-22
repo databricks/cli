@@ -41,6 +41,10 @@ func (g *Graph[N]) HasNode(n N) bool {
 	return ok
 }
 
+// HasOutgoingEdges reports whether this node has at least one outgoing edge.
+// In this graph, an outgoing edge from X->Y means Y references X.
+func (g *Graph[N]) HasOutgoingEdges(n N) bool { return len(g.adj[n]) > 0 }
+
 func (g *Graph[N]) AddDirectedEdge(from, to N, label string) {
 	g.AddNode(from)
 	g.AddNode(to)

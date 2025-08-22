@@ -98,11 +98,7 @@ func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string) (string,
 }
 
 func DeleteVolume(ctx context.Context, client *databricks.WorkspaceClient, id string) error {
-	err := client.Volumes.DeleteByName(ctx, id)
-	if err != nil {
-		return err
-	}
-	return nil
+	return client.Volumes.DeleteByName(ctx, id)
 }
 
 func (r *ResourceVolume) WaitAfterCreate(ctx context.Context) error {
