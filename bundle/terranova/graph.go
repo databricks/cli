@@ -24,9 +24,7 @@ type fieldRef struct {
 }
 
 // makeResourceGraph creates node graph based on ${resources.group.name.id} references.
-// Returns a graph and a map of all references that have references to them
-func makeResourceGraph(ctx context.Context, b *bundle.Bundle) (*dagrun.Graph[deployplan.ResourceNode], map[deployplan.ResourceNode]bool, error) {
-	isReferenced := make(map[deployplan.ResourceNode]bool)
+func makeResourceGraph(ctx context.Context, b *bundle.Bundle) (*dagrun.Graph[deployplan.ResourceNode], error) {
 	g := dagrun.NewGraph[deployplan.ResourceNode]()
 
 	// Collect and sort nodes first, because MapByPattern gives them in randomized order
@@ -49,7 +47,7 @@ func makeResourceGraph(ctx context.Context, b *bundle.Bundle) (*dagrun.Graph[dep
 		},
 	)
 	if err != nil {
-		return nil, nil, fmt.Errorf("reading config: %w", err)
+		return nil, fmt.Errorf("reading config: %w", err)
 	}
 
 	slices.SortFunc(nodes, func(a, b deployplan.ResourceNode) int {
@@ -64,7 +62,7 @@ func makeResourceGraph(ctx context.Context, b *bundle.Bundle) (*dagrun.Graph[dep
 
 		fieldRefs, err := extractReferences(b.Config.Value(), node)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to read references from config for %s: %w", node.String(), err)
+			return nil, fmt.Errorf("failed to read references from config for %s: %w", node.String(), err)
 		}
 
 		for _, fieldRef := range fieldRefs {
@@ -78,12 +76,11 @@ func makeResourceGraph(ctx context.Context, b *bundle.Bundle) (*dagrun.Graph[dep
 					node,
 					label,
 				)
-				isReferenced[referencedNode] = true
 			}
 		}
 	}
 
-	return g, isReferenced, nil
+	return g, nil
 }
 
 func extractReferences(root dyn.Value, node deployplan.ResourceNode) ([]fieldRef, error) {
