@@ -9,20 +9,12 @@ import (
 	tfjson "github.com/hashicorp/terraform-json"
 )
 
-func isSilentlyUpdated(resourceType string) bool {
-	// These types are automatically created by DABs, no need to show them in the plan
-	silentlyUpdatedResources := []string{
-		"databricks_grant",
-		"databricks_permissions",
-		"databricks_secret_acl",
-	}
-
-	for _, s := range silentlyUpdatedResources {
-		if s == resourceType {
-			return true
-		}
-	}
-	return false
+// silentlyUpdatedResources contains resource types that are automatically created by DABs,
+// no need to show them in the plan
+var silentlyUpdatedResources = map[string]bool{
+	"databricks_grants":      true,
+	"databricks_permissions": true,
+	"databricks_secret_acl":  true,
 }
 
 // GetActions converts Terraform resource changes into deployplan.Action values.
@@ -51,7 +43,7 @@ func GetActions(ctx context.Context, changes []*tfjson.ResourceChange) []deployp
 
 		group, ok := TerraformToGroupName[rc.Type]
 		if !ok {
-			if !isSilentlyUpdated(rc.Type) {
+			if !silentlyUpdatedResources[rc.Type] {
 				log.Warnf(ctx, "unknown resource type '%s'", rc.Type)
 			}
 			continue
