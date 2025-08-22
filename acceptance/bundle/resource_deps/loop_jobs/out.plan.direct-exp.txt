@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 Error: cycle detected: jobs.bar refers to jobs.foo via ${resources.jobs.bar.id} which refers to jobs.bar via ${resources.jobs.foo.id}
+=======
+Error: cycle detected: jobs.bar refers to jobs.foo via "id" which refers to jobs.bar via "id"
+>>>>>>> f5d1333e7 (update tests wrt label in quotes)
 
 
 Exit code (musterr): 1
