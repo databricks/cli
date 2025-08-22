@@ -1,4 +1,4 @@
-Error: cycle detected: jobs.bar refers to jobs.foo via "id" which refers to jobs.bar via "id"
+Error: cycle detected: jobs.bar -> jobs.foo -> jobs.bar (via "id", "id")
 
 
 Exit code (musterr): 1

@@ -1,4 +1,4 @@
-Error: cycle detected: jobs.foo refers to itself via "id"
+Error: cycle detected: jobs.foo -> jobs.foo (via "id")
 
 
 Exit code (musterr): 1
