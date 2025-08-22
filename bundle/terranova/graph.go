@@ -68,7 +68,7 @@ func makeResourceGraph(ctx context.Context, b *bundle.Bundle) (*dagrun.Graph[dep
 		for _, fieldRef := range fieldRefs {
 			for _, referencedNode := range fieldRef.referencedNodes {
 				// We're only supporting "id" field at the moment, so label is unambigous
-				label := "${resources." + referencedNode.Group + "." + referencedNode.Key + ".id}"
+				label := "id"
 				log.Debugf(ctx, "Adding resource edge: %s (via %#v)", label, fieldRef.ref.Str)
 				// TODO: this may add duplicate edges. Investigate if we need to prevent that
 				g.AddDirectedEdge(

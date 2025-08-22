@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-Error: cycle detected: jobs.foo refers to itself via ${resources.jobs.foo.id}
-=======
 Error: cycle detected: jobs.foo refers to itself via "id"
->>>>>>> f5d1333e7 (update tests wrt label in quotes)
 
 
 Exit code (musterr): 1
