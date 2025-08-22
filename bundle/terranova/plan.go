@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/bundle/terranova/tnstate"
 	"github.com/databricks/cli/libs/dagrun"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/structaccess"
 	"github.com/databricks/cli/libs/structdiff"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
@@ -150,12 +151,27 @@ func CalculatePlanForDeploy(ctx context.Context, b *bundle.Bundle) error {
 			return false
 		}
 
-		if b.Graph.HasOutgoingEdges(node) && actionType.KeepsID() {
-			// Now that we know that ID of this node is not going to change, update it
-			// everywhere to actual value to calculate more accurate and more conservative plan.
-			err = resolveIDReference(ctx, b, pl.group, pl.resourceName)
+		for _, label := range b.Graph.OutgoingLabels(node) {
+			if label == "id" {
+				if actionType.KeepsID() {
+					// Now that we know that ID of this node is not going to change, update it
+					// everywhere to actual value to calculate more accurate and more conservative action for dependent nodes.
+					err = resolveIDReference(ctx, b, pl.group, pl.resourceName)
+					if err != nil {
+						logdiag.LogError(ctx, fmt.Errorf("failed to replace ref to resources.%s.%s.id: %w", pl.group, pl.resourceName, err))
+						return false
+					}
+				}
+				continue
+			}
+			value, err := structaccess.Get(config, label)
 			if err != nil {
-				logdiag.LogError(ctx, fmt.Errorf("failed to replace ref to resources.%s.%s.id: %w", pl.group, pl.resourceName, err))
+				logdiag.LogError(ctx, fmt.Errorf("cannot resolve resources.%s.%s.%s: %w", pl.group, pl.resourceName, label, err))
+				return false
+			}
+			err = resolveFieldReference(ctx, b, pl.group, pl.resourceName, label, value)
+			if err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("failed to replace ref to resources.%s.%s.%s: %w", pl.group, pl.resourceName, label, err))
 				return false
 			}
 		}
