@@ -18,15 +18,15 @@ Resources:
   Database catalogs:
     my_catalog:
       Name: my_catalog_[UNIQUE_NAME]
-      URL:  [DATABRICKS_URL]/explore/data/my_catalog_[UNIQUE_NAME]?o=[NUMID]
+      URL:  [DATABRICKS_URL]/explore/data/my_catalog_[UNIQUE_NAME]
   Database instances:
     my_instance:
       Name: test-database-instance-[UNIQUE_NAME]
       URL:  (not deployed)
   Synced database tables:
     my_synced_table:
-      Name: my_catalog_[UNIQUE_NAME].my_database.my_synced_table
-      URL:  [DATABRICKS_URL]/explore/data/my_catalog_[UNIQUE_NAME].my_database.my_synced_table?o=[NUMID]
+      Name: ${databricks_database_database_catalog.my_catalog.name}.${databricks_database_database_catalog.my_catalog.database_name}.my_synced_table
+      URL:  [DATABRICKS_URL]/explore/data/$%7Bdatabricks_database_database_catalog.my_catalog.name%7D.$%7Bdatabricks_database_database_catalog.my_catalog.database_name%7D.my_synced_table
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-synced-table-[UNIQUE_NAME]/default/files...
@@ -44,15 +44,15 @@ Resources:
   Database catalogs:
     my_catalog:
       Name: my_catalog_[UNIQUE_NAME]
-      URL:  [DATABRICKS_URL]/explore/data/my_catalog_[UNIQUE_NAME]?o=[NUMID]
+      URL:  [DATABRICKS_URL]/explore/data/my_catalog_[UNIQUE_NAME]
   Database instances:
     my_instance:
       Name: test-database-instance-[UNIQUE_NAME]
-      URL:  [DATABRICKS_URL]/compute/database-instances/test-database-instance-[UNIQUE_NAME]?o=[NUMID]
+      URL:  [DATABRICKS_URL]/compute/database-instances/test-database-instance-[UNIQUE_NAME]
   Synced database tables:
     my_synced_table:
-      Name: my_catalog_[UNIQUE_NAME].my_database.my_synced_table
-      URL:  [DATABRICKS_URL]/explore/data/my_catalog_[UNIQUE_NAME].my_database.my_synced_table?o=[NUMID]
+      Name: ${resources.database_catalogs.my_catalog.name}.${resources.database_catalogs.my_catalog.database_name}.my_synced_table
+      URL:  [DATABRICKS_URL]/explore/data/$%7Bresources.database_catalogs.my_catalog.name%7D.$%7Bresources.database_catalogs.my_catalog.database_name%7D.my_synced_table
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

@@ -5,3 +5,9 @@ RecordRequests = false
 
 [EnvMatrix]
 DATABRICKS_CLI_DEPLOYMENT = ["terraform"]
+
+[[Repls]]
+# clean up ?o=<num> suffix after URL since not all workspaces have that
+Old = '\?o=\[(NUMID|ALPHANUMID)\]'
+New = ''
+Order = 1000
