@@ -103,7 +103,7 @@ func runDbrTests(ctx context.Context, t *testing.T, w *databricks.WorkspaceClien
 		baseParams[envvar] = os.Getenv(envvar)
 	}
 
-	job, err := w.Jobs.Submit(ctx, jobs.SubmitRun{
+	waiter, err := w.Jobs.Submit(ctx, jobs.SubmitRun{
 		RunName: "DBR Acceptance Tests",
 		Tasks: []jobs.SubmitTask{
 			{
@@ -117,11 +117,27 @@ func runDbrTests(ctx context.Context, t *testing.T, w *databricks.WorkspaceClien
 	})
 	require.NoError(t, err)
 
-	t.Logf("Waiting for test runner job to finish...")
-	run, err := job.GetWithTimeout(2 * time.Hour)
-	require.NoError(t, err)
+	t.Logf("Waiting for test runner job to finish. Run URL: %s", urlForRun(ctx, t, w, waiter.RunId))
 
-	t.Logf("The test runner job finished with status: %s. Run URL: %s", run.State.LifeCycleState, run.RunPageUrl)
+	var run *jobs.Run
+	deadline, ok := t.Deadline()
+	if ok {
+		// If -timeout is configured for the test, wait until that time for the job run results.
+		run, err = waiter.GetWithTimeout(time.Until(deadline))
+		require.NoError(t, err)
+	} else {
+		// Use the default timeout from the SDK otherwise.
+		run, err = waiter.Get()
+		require.NoError(t, err)
+	}
+
+	t.Logf("The test runner job finished with status: %s", run.State.LifeCycleState)
+}
+
+func urlForRun(ctx context.Context, t *testing.T, w *databricks.WorkspaceClient, runId int64) string {
+	run, err := w.Jobs.GetRun(ctx, jobs.GetRunRequest{RunId: runId})
+	require.NoError(t, err)
+	return run.RunPageUrl
 }
 
 func testDbrAcceptance(t *testing.T) {
