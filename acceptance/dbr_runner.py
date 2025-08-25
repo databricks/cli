@@ -11,6 +11,7 @@ import os
 import subprocess
 import sys
 import tarfile
+import tempfile
 from pathlib import Path
 from dbruntime.databricks_repl_context import get_context
 
@@ -21,12 +22,7 @@ def extract_cli_archive():
         print("Error: archive_path is not set", file=sys.stderr)
         sys.exit(1)
 
-    # Every serverless instance gets a unique home directory
-    # mounted on the local file system.
-    home = Path.home()
-    dst = home / "archive"
-
-    os.makedirs(dst, exist_ok=True)
+    dst = Path(tempfile.mkdtemp(prefix="cli_archive"))
 
     with tarfile.open(src, "r:gz") as tar:
         tar.extractall(path=dst)
