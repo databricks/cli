@@ -10,14 +10,6 @@ import (
 	"strings"
 )
 
-// Initialize these to prevent linter from complaining about unused types.
-// This can be removed once we actually use these downloaders.
-var (
-	_ = goDownloader{}
-	_ = uvDownloader{}
-	_ = jqDownloader{}
-)
-
 type downloader interface {
 	Download() error
 }
