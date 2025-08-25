@@ -22,30 +22,32 @@ type inner struct {
 }
 
 type outerNoFSF struct {
-	Conn   *inner            `json:"connection"`
-	Items  []inner           `json:"items"`
-	Labels map[string]string `json:"labels"`
-	B      bool              `json:"b"`
-	I      int               `json:"i"`
-	S      string            `json:"s"`
-	BOmit  bool              `json:"b_omit,omitempty"`
-	IOmit  int               `json:"i_omit,omitempty"`
-	SOmit  string            `json:"s_omit,omitempty"`
+	Conn       *inner            `json:"connection"`
+	ConnNotSet *inner            `json:"connection_not_set"`
+	Items      []inner           `json:"items"`
+	Labels     map[string]string `json:"labels"`
+	B          bool              `json:"b"`
+	I          int               `json:"i"`
+	S          string            `json:"s"`
+	BOmit      bool              `json:"b_omit,omitempty"`
+	IOmit      int               `json:"i_omit,omitempty"`
+	SOmit      string            `json:"s_omit,omitempty"`
 	// Unexported or no-json-tag fields should be ignored
 	GoOnly string // no json tag: should NOT be accessible
 }
 
 type outerWithFSF struct {
-	Conn   *inner            `json:"connection"`
-	Items  []inner           `json:"items"`
-	Labels map[string]string `json:"labels"`
-	B      bool              `json:"b"`
-	I      int               `json:"i"`
-	S      string            `json:"s"`
-	BOmit  bool              `json:"b_omit,omitempty"`
-	IOmit  int               `json:"i_omit,omitempty"`
-	SOmit  string            `json:"s_omit,omitempty"`
-	GoOnly string            // no json tag: should NOT be accessible
+	Conn       *inner            `json:"connection"`
+	ConnNotSet *inner            `json:"connection_not_set"`
+	Items      []inner           `json:"items"`
+	Labels     map[string]string `json:"labels"`
+	B          bool              `json:"b"`
+	I          int               `json:"i"`
+	S          string            `json:"s"`
+	BOmit      bool              `json:"b_omit,omitempty"`
+	IOmit      int               `json:"i_omit,omitempty"`
+	SOmit      string            `json:"s_omit,omitempty"`
+	GoOnly     string            // no json tag: should NOT be accessible
 	// ForceSendFields allows forcing zero-values for specific fields
 	ForceSendFields []string
 }
@@ -165,6 +167,11 @@ func runCommonTests(t *testing.T, obj any) {
 			path:   "items.id",
 			errFmt: "items.id: cannot access key \"id\" on slice",
 		},
+		{
+			name:   "nil pointer access",
+			path:   "connection_not_set.id",
+			errFmt: "connection_not_set: cannot access nil value",
+		},
 	}
 
 	for _, tt := range tests {
@@ -246,20 +253,6 @@ func runOmitEmptyTests(t *testing.T, obj any, wantNil bool) {
 			require.Equal(t, tt.want, got)
 		})
 	}
-}
-
-// Dedicated tests for cases with different outcomes between types
-func TestGet_NoFSF_NilPointer(t *testing.T) {
-	in := outerNoFSF{
-		Items: []inner{
-			{ID: "i0"},
-		},
-		Labels: map[string]string{
-			"env": "dev",
-		},
-	}
-	_, err := Get(in, "connection.id")
-	require.EqualError(t, err, "connection: cannot access nil value")
 }
 
 func TestGet_WithFSF_NilPointerForced(t *testing.T) {
