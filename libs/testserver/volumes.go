@@ -21,10 +21,17 @@ func (s *FakeWorkspace) VolumesCreate(req Request) Response {
 
 	volume.FullName = volume.CatalogName + "." + volume.SchemaName + "." + volume.Name
 
-	if volume.StorageLocation == "" {
-		// QQQ first UUID should be constant per workspace?
-		volume.StorageLocation = fmt.Sprintf("s3://deco-uc-prod-isolated-aws-us-east-1/metastore/%s/volumes/%s", uuid.New().String(), uuid.New().String())
+	if volume.StorageLocation != "" {
+		return Response{
+			StatusCode: 400,
+			Body: map[string]string{
+				"error_code": "INVALID_PARAMETER_VALUE",
+				"message":    "CreateVolume storage_location can not be provided.",
+			},
+		}
 	}
+	// QQQ first UUID should be constant per workspace?
+	volume.StorageLocation = fmt.Sprintf("s3://deco-uc-prod-isolated-aws-us-east-1/metastore/%s/volumes/%s", uuid.New().String(), uuid.New().String())
 
 	defer s.LockUnlock()()
 
