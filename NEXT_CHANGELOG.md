@@ -3,6 +3,7 @@
 ## Release v0.266.0
 
 ### Notable Changes
+* Add support for SQL Alerts in DABs ([#3033](https://github.com/databricks/cli/pull/3033))
 * Breaking change: DABs now return an error when paths are incorrectly defined relative to the job or
 pipeline definition location instead of the configuration file location. Previously, the CLI would show a
 warning and fallback to resolving the path relative to the resource location. Users must update their bundle
