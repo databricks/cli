@@ -24,7 +24,7 @@ func gitFiles(repoRoot string) ([]string, error) {
 	scanner := bufio.NewScanner(strings.NewReader(string(output)))
 	var gitFiles []string
 	for scanner.Scan() {
-		file := strings.TrimSpace(scanner.Text())
+		file := scanner.Text()
 		if file != "" {
 			gitFiles = append(gitFiles, file)
 		}
