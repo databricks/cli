@@ -33,7 +33,6 @@ import (
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/testdiff"
 	"github.com/databricks/cli/libs/utils"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/stretchr/testify/require"
 )
 
@@ -515,27 +514,11 @@ func runTest(t *testing.T,
 		// If the test is being run on DBR, auth is already configured
 		// by the dbr_runner notebook by reading a token from the notebook context and
 		// setting DATABRICKS_TOKEN and DATABRICKS_HOST environment variables.
-		w, err := databricks.NewWorkspaceClient()
-		require.NoError(t, err)
-
-		currentUser, err := w.CurrentUser.Me(t.Context())
-		require.NoError(t, err)
+		_, _, tmpDir := workspaceTmpDir(t.Context(), t)
 
 		// Run DBR tests on the workspace file system to mimic usage from
 		// DABs in the workspace.
-		timestamp := time.Now().Format("2006-01-02T15:04:05Z")
-		tmpDir = fmt.Sprintf(
-			"/Workspace/Users/%s/acceptance/%s/%s",
-			currentUser.UserName,
-			timestamp,
-			uuid.New().String(),
-		)
 		t.Logf("Running DBR tests on %s", tmpDir)
-
-		t.Cleanup(func() {
-			err := os.RemoveAll(tmpDir)
-			require.NoError(t, err)
-		})
 	} else {
 		tmpDir = t.TempDir()
 	}
