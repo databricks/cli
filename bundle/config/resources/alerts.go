@@ -10,10 +10,8 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/sql"
 )
 
-type AlertPermissionLevel string
-
 type AlertPermission struct {
-	Level AlertPermissionLevel `json:"level"`
+	Level string `json:"level"`
 
 	UserName             string `json:"user_name,omitempty"`
 	ServicePrincipalName string `json:"service_principal_name,omitempty"`

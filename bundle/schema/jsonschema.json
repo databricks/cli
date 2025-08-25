@@ -113,8 +113,10 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2RunAs"
                       },
                       "run_as_user_name": {
-                        "description": "The run as username. This field is set to \"Unavailable\" if the user has been deleted.",
-                        "$ref": "#/$defs/string"
+                        "description": "The run as username or application ID of service principal.\nOn Create and Update, this field can be set to application ID of an active service principal. Setting this field requires the servicePrincipal/user role.\nDeprecated: Use `run_as` field instead. This field will be removed in a future release.",
+                        "$ref": "#/$defs/string",
+                        "deprecationMessage": "This field is deprecated",
+                        "deprecated": true
                       },
                       "schedule": {
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.CronSchedule"
@@ -145,7 +147,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "level": {
-                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.AlertPermissionLevel"
+                        "$ref": "#/$defs/string"
                       },
                       "service_principal_name": {
                         "$ref": "#/$defs/string"
@@ -164,9 +166,6 @@
                     "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
                   }
                 ]
-              },
-              "resources.AlertPermissionLevel": {
-                "type": "string"
               },
               "resources.App": {
                 "oneOf": [
@@ -1306,9 +1305,7 @@
                       },
                       "environment": {
                         "description": "Environment specification for this pipeline used to install dependencies.",
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.PipelinesEnvironment",
-                        "x-databricks-preview": "PRIVATE",
-                        "doNotSuggest": true
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.PipelinesEnvironment"
                       },
                       "event_log": {
                         "description": "Event log configuration for this pipeline",
@@ -1359,9 +1356,7 @@
                       },
                       "root_path": {
                         "description": "Root path for this pipeline.\nThis is used as the root directory when editing the pipeline in the Databricks user interface and it is\nadded to sys.path when executing Python sources during pipeline execution.",
-                        "$ref": "#/$defs/string",
-                        "x-databricks-preview": "PRIVATE",
-                        "doNotSuggest": true
+                        "$ref": "#/$defs/string"
                       },
                       "run_as": {
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.RunAs",
@@ -2812,7 +2807,18 @@
               ]
             },
             "apps.AppResourceDatabaseDatabasePermission": {
-              "type": "string"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "CAN_CONNECT_AND_CREATE"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
             },
             "apps.AppResourceJob": {
               "oneOf": [
@@ -6375,6 +6381,7 @@
               "oneOf": [
                 {
                   "type": "object",
+                  "description": "Tag for a registered model",
                   "properties": {
                     "key": {
                       "description": "The tag key.",
@@ -6661,6 +6668,7 @@
                     "SQLDW",
                     "SQLSERVER",
                     "SALESFORCE",
+                    "BIGQUERY",
                     "NETSUITE",
                     "WORKDAY_RAAS",
                     "GA4_RAW_DATA",
@@ -6922,9 +6930,7 @@
                     },
                     "glob": {
                       "description": "The unified field to include source codes.\nEach entry can be a notebook path, a file path, or a folder path that ends `/**`.\nThis field cannot be used together with `notebook` or `file`.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.PathPattern",
-                      "x-databricks-preview": "PRIVATE",
-                      "doNotSuggest": true
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.PathPattern"
                     },
                     "jar": {
                       "description": "URI of the jar to be installed. Currently only DBFS is supported.",
@@ -7228,7 +7234,8 @@
                   "description": "The SCD type to use to ingest the table.",
                   "enum": [
                     "SCD_TYPE_1",
-                    "SCD_TYPE_2"
+                    "SCD_TYPE_2",
+                    "APPEND_ONLY"
                   ]
                 },
                 {
@@ -7300,7 +7307,9 @@
                   "properties": {
                     "invalid_keywords": {
                       "description": "List of invalid keywords.\nAI guardrail uses keyword or string matching to decide if the keyword exists in the request or response content.",
-                      "$ref": "#/$defs/slice/string"
+                      "$ref": "#/$defs/slice/string",
+                      "deprecationMessage": "This field is deprecated",
+                      "deprecated": true
                     },
                     "pii": {
                       "description": "Configuration for guardrail PII filter.",
@@ -7312,7 +7321,9 @@
                     },
                     "valid_topics": {
                       "description": "The list of allowed topics.\nGiven a chat request, this guardrail flags the request if its topic is not in the allowed topics.",
-                      "$ref": "#/$defs/slice/string"
+                      "$ref": "#/$defs/slice/string",
+                      "deprecationMessage": "This field is deprecated",
+                      "deprecated": true
                     }
                   },
                   "additionalProperties": false
@@ -7419,7 +7430,7 @@
                       "$ref": "#/$defs/int64"
                     },
                     "key": {
-                      "description": "Key field for a rate limit. Currently, only 'user' and 'endpoint' are supported,\nwith 'endpoint' being the default if not specified.",
+                      "description": "Key field for a rate limit. Currently, 'user', 'user_group, 'service_principal', and 'endpoint' are supported,\nwith 'endpoint' being the default if not specified.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.AiGatewayRateLimitKey"
                     },
                     "principal": {
@@ -7451,7 +7462,9 @@
                   "type": "string",
                   "enum": [
                     "user",
-                    "endpoint"
+                    "endpoint",
+                    "user_group",
+                    "service_principal"
                   ]
                 },
                 {
@@ -8504,9 +8517,11 @@
                   "type": "object",
                   "properties": {
                     "service_principal_name": {
+                      "description": "Application ID of an active service principal. Setting this field requires the `servicePrincipal/user` role.",
                       "$ref": "#/$defs/string"
                     },
                     "user_name": {
+                      "description": "The email of an active workspace user. Can only set this field to their own email.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -8728,6 +8743,7 @@
               "oneOf": [
                 {
                   "type": "object",
+                  "description": "The metadata of the Azure KeyVault for a secret scope of type `AZURE_KEYVAULT`",
                   "properties": {
                     "dns_name": {
                       "description": "The DNS of the KeyVault",
@@ -8754,6 +8770,7 @@
               "oneOf": [
                 {
                   "type": "string",
+                  "description": "The types of secret scope backends in the Secret Manager. Azure KeyVault backed secret scopes\nwill be supported in a later release.",
                   "enum": [
                     "DATABRICKS",
                     "AZURE_KEYVAULT"
