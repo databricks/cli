@@ -46,7 +46,7 @@ var (
 	LogRequests     bool
 	LogConfig       bool
 	SkipLocal       bool
-	WorksapceTmpDir bool
+	WorkspaceTmpDir bool
 	UseVersion      string
 )
 
@@ -68,7 +68,7 @@ func init() {
 	flag.BoolVar(&LogRequests, "logrequests", false, "Log request and responses from testserver")
 	flag.BoolVar(&LogConfig, "logconfig", false, "Log merged for each test case")
 	flag.BoolVar(&SkipLocal, "skiplocal", false, "Skip tests that are enabled to run on Local")
-	flag.BoolVar(&WorksapceTmpDir, "workspace-tmp-dir", false, "Run tests on the workspace file system (For DBR testing).")
+	flag.BoolVar(&WorkspaceTmpDir, "workspace-tmp-dir", false, "Run tests on the workspace file system (For DBR testing).")
 	flag.StringVar(&UseVersion, "useversion", "", "Download previously released version of CLI and use it to run the tests")
 
 	// DABs in the workspace runs on the workspace file system. This flags does the same for acceptance tests
@@ -513,7 +513,7 @@ func runTest(t *testing.T,
 		tmpDir, err = os.MkdirTemp(tempDirBase, "")
 		require.NoError(t, err)
 		t.Logf("Created directory: %s", tmpDir)
-	} else if WorksapceTmpDir {
+	} else if WorkspaceTmpDir {
 		// If the test is being run on DBR, auth is already configured
 		// by the dbr_runner notebook by reading a token from the notebook context and
 		// setting DATABRICKS_TOKEN and DATABRICKS_HOST environment variables.
