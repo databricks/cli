@@ -42,6 +42,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Checks that none of resources.<type>.<key> is nil. Raises error otherwise.
 		validate.AllResourcesHaveValues(),
 		validate.NoInterpolationInAuthConfig(),
+		validate.NoInterpolationInBundleName(),
 		validate.Scripts(),
 
 		// Updates (dynamic): sync.{paths,include,exclude} (makes them relative to bundle root rather than to definition file)
@@ -112,17 +113,13 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 
 		// Reads (dynamic): variables.*.lookup (checks for variables with lookup fields)
 		// Updates (dynamic): variables.*.value (sets values based on resolved lookups)
-		mutator.ResolveResourceReferences(),
+		mutator.ResolveLookupVariables(),
 
 		// Reads (dynamic): * (strings) (searches for variable references in string values)
 		// Updates (dynamic): * (except 'resources') (strings) (resolves variable references to their actual values)
 		// Resolves variable references in configuration (except resources) using bundle, workspace,
 		// and variables prefixes
-		mutator.ResolveVariableReferencesWithoutResources(
-			"bundle",
-			"workspace",
-			"variables",
-		),
+		mutator.ResolveVariableReferencesWithoutResources(),
 
 		// Check for invalid use of /Volumes in workspace paths
 		validate.ValidateVolumePath(),
@@ -147,6 +144,13 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		//
 		// After PythonMutator, mutators must not change bundle resources, or such changes are not
 		// going to be visible in Python code.
+
+		// Validate all required fields are set. This is run after variable interpolation and PyDABs mutators
+		// since they can also set and modify resources.
+		validate.Required(),
+
+		// Validate that all fields with enum values specified are set to a valid value.
+		validate.Enum(),
 
 		// Reads (typed): b.Config.Permissions (checks if current user or their groups have CAN_MANAGE permissions)
 		// Reads (typed): b.Config.Workspace.CurrentUser (gets current user information)
@@ -225,11 +229,12 @@ func IsDirectDeployment(ctx context.Context) (bool, error) {
 	// We use "direct-exp" while direct backend is not suitable for end users.
 	// Once we consider it usable we'll change the value to "direct".
 	// This is to prevent accidentally running direct backend with older CLI versions where it was still considered experimental.
-	if deployment == "direct-exp" {
+	switch deployment {
+	case "direct-exp":
 		return true, nil
-	} else if deployment == "terraform" || deployment == "" {
+	case "terraform", "":
 		return false, nil
-	} else {
-		return false, fmt.Errorf("Unexpected setting for DATABRICKS_CLI_DEPLOYMENT=%#v (expected 'terraform' or 'direct-exp' or absent/empty which means 'terraform')", deployment)
+	default:
+		return false, fmt.Errorf("unexpected setting for DATABRICKS_CLI_DEPLOYMENT=%#v (expected 'terraform' or 'direct-exp' or absent/empty which means 'terraform')", deployment)
 	}
 }

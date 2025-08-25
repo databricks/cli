@@ -8,8 +8,6 @@ import (
 	"strconv"
 
 	"github.com/databricks/databricks-sdk-go/service/catalog"
-	"github.com/databricks/databricks-sdk-go/service/iam"
-
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 
@@ -17,11 +15,6 @@ import (
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
-
-var TestUser = iam.User{
-	Id:       "1000012345",
-	UserName: "tester@databricks.com",
-}
 
 var TestMetastore = catalog.MetastoreAssignment{
 	DefaultCatalogName: "hive_metastore",
@@ -74,7 +67,7 @@ func addDefaultHandlers(server *testserver.Server) {
 	server.Handle("GET", "/api/2.0/preview/scim/v2/Me", func(req testserver.Request) any {
 		return testserver.Response{
 			Headers: map[string][]string{"X-Databricks-Org-Id": {"900800700600"}},
-			Body:    TestUser,
+			Body:    req.Workspace.CurrentUser(),
 		}
 	})
 
@@ -476,5 +469,82 @@ func addDefaultHandlers(server *testserver.Server) {
 
 	server.Handle("DELETE", "/api/2.0/alerts/{id}", func(req testserver.Request) any {
 		return testserver.MapDelete(req.Workspace, req.Workspace.Alerts, req.Vars["id"])
+	})
+
+	server.Handle("GET", "/api/2.0/secrets/acls/get", func(req testserver.Request) any {
+		scope := req.URL.Query().Get("scope")
+		principal := req.URL.Query().Get("principal")
+		scopeAcls := req.Workspace.Acls[scope]
+		for _, acl := range scopeAcls {
+			if acl.Principal == principal {
+				return acl
+			}
+		}
+		return testserver.Response{StatusCode: 404}
+	})
+
+	server.Handle("GET", "/api/2.0/secrets/acls/list", func(req testserver.Request) any {
+		return testserver.MapGet(req.Workspace, req.Workspace.Acls, req.Vars["scope"])
+	})
+
+	server.Handle("POST", "/api/2.0/secrets/acls/put", func(req testserver.Request) any {
+		var request workspace.PutAcl
+		if err := json.Unmarshal(req.Body, &request); err != nil {
+			return testserver.Response{
+				Body:       fmt.Sprintf("internal error: %s", err),
+				StatusCode: 500,
+			}
+		}
+		req.Workspace.Acls[request.Scope] = append(req.Workspace.Acls[request.Scope], workspace.AclItem{
+			Principal:  request.Principal,
+			Permission: request.Permission,
+		})
+		return ""
+	})
+
+	server.Handle("POST", "/api/2.0/secrets/acls/delete", func(req testserver.Request) any {
+		var request workspace.DeleteAcl
+		if err := json.Unmarshal(req.Body, &request); err != nil {
+			return testserver.Response{
+				Body:       fmt.Sprintf("internal error: %s", err),
+				StatusCode: 500,
+			}
+		}
+		scopeAcls := req.Workspace.Acls[request.Scope]
+		for i, acl := range scopeAcls {
+			if acl.Principal == request.Principal {
+				req.Workspace.Acls[request.Scope] = append(scopeAcls[:i], scopeAcls[i+1:]...)
+				return ""
+			}
+		}
+		return testserver.Response{StatusCode: 404}
+	})
+
+	server.Handle("POST", "/api/2.0/database/instances", func(req testserver.Request) any {
+		return req.Workspace.DatabaseInstanceCreate(req)
+	})
+
+	server.Handle("GET", "/api/2.0/database/instances/", func(req testserver.Request) any {
+		return testserver.MapList(req.Workspace, req.Workspace.DatabaseInstances, "database_instances")
+	})
+
+	server.Handle("GET", "/api/2.0/database/instances/{name}", func(req testserver.Request) any {
+		return testserver.DatabaseInstanceMapGet(req.Workspace, req.Workspace.DatabaseInstances, req.Vars["name"])
+	})
+
+	server.Handle("DELETE", "/api/2.0/database/instances/{name}", func(req testserver.Request) any {
+		return testserver.DatabaseInstanceMapDelete(req)
+	})
+
+	server.Handle("POST", "/api/2.0/database/catalogs", func(req testserver.Request) any {
+		return req.Workspace.DatabaseCatalogCreate(req)
+	})
+
+	server.Handle("GET", "/api/2.0/database/catalogs/{name}", func(req testserver.Request) any {
+		return testserver.MapGet(req.Workspace, req.Workspace.DatabaseCatalogs, req.Vars["name"])
+	})
+
+	server.Handle("DELETE", "/api/2.0/database/catalogs/{name}", func(req testserver.Request) any {
+		return testserver.MapDelete(req.Workspace, req.Workspace.DatabaseCatalogs, req.Vars["name"])
 	})
 }

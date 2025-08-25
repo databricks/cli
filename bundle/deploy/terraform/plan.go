@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 	"github.com/hashicorp/terraform-exec/tfexec"
@@ -51,10 +50,8 @@ func (p *plan) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	}
 
 	// Set plan in main bundle struct for downstream mutators
-	b.Plan = deployplan.Plan{
-		TerraformPlanPath: planPath,
-		TerraformIsEmpty:  !notEmpty,
-	}
+	b.TerraformPlanPath = planPath
+	b.TerraformPlanIsEmpty = !notEmpty
 
 	log.Debugf(ctx, "Planning complete and persisted at %s\n", planPath)
 	return nil

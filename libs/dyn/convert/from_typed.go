@@ -96,13 +96,17 @@ func fromTypedStruct(src reflect.Value, ref dyn.Value, options ...fromTypedOptio
 		}
 	case dyn.KindMap, dyn.KindNil:
 	default:
-		return dyn.InvalidValue, fmt.Errorf("unhandled type: %s", ref.Kind())
+		return dyn.InvalidValue, fmt.Errorf("cannot convert struct field to dynamic type %#v: src=%#v ref=%#v", ref.Kind().String(), src, ref.AsAny())
 	}
 
 	refm, _ := ref.AsMap()
 	out := dyn.NewMapping()
 	info := getStructInfo(src.Type())
-	for k, v := range info.FieldValues(src) {
+	forceSendFields := getForceSendFields(src)
+
+	for _, fieldval := range info.FieldValues(src) {
+		k := fieldval.Key
+		v := fieldval.Value
 		pair, ok := refm.GetPairByString(k)
 		refloc := pair.Key.Locations()
 		refv := pair.Value
@@ -126,6 +130,11 @@ func fromTypedStruct(src reflect.Value, ref dyn.Value, options ...fromTypedOptio
 
 		// Either if the key was set in the reference or the field is not zero-valued, we include it.
 		if ok || nv.Kind() != dyn.KindNil {
+			goName := info.GolangNames[k]
+			// If v isZero, it could be because it's a variable reference; so we check that nv is zero as well
+			if v.Kind() != reflect.Struct && v.IsZero() && nv.IsZero() && !info.ForceEmpty[k] && !slices.Contains(forceSendFields, goName) {
+				continue
+			}
 			out.SetLoc(k, refloc, nv)
 		}
 	}
@@ -152,7 +161,7 @@ func fromTypedMap(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
 		}
 	case dyn.KindMap, dyn.KindNil:
 	default:
-		return dyn.InvalidValue, fmt.Errorf("unhandled type: %s", ref.Kind())
+		return dyn.InvalidValue, fmt.Errorf("cannot convert map field to dynamic type %#v: src=%#v ref=%#v", ref.Kind().String(), src, ref.AsAny())
 	}
 
 	// Return nil if the map is nil.
@@ -200,7 +209,7 @@ func fromTypedSlice(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
 		}
 	case dyn.KindSequence, dyn.KindNil:
 	default:
-		return dyn.InvalidValue, fmt.Errorf("unhandled type: %s", ref.Kind())
+		return dyn.InvalidValue, fmt.Errorf("cannot convert slice field to dynamic type %#v: src=%#v ref=%#v", ref.Kind().String(), src, ref.AsAny())
 	}
 
 	// Return nil if the slice is nil.
@@ -248,7 +257,7 @@ func fromTypedString(src reflect.Value, ref dyn.Value, options ...fromTypedOptio
 		return dyn.V(src.String()), nil
 	}
 
-	return dyn.InvalidValue, fmt.Errorf("unhandled type: %s", ref.Kind())
+	return dyn.InvalidValue, fmt.Errorf("cannot convert string field to dynamic type %#v: src=%#v ref=%#v", ref.Kind().String(), src, ref.AsAny())
 }
 
 func fromTypedBool(src reflect.Value, ref dyn.Value, options ...fromTypedOptions) (dyn.Value, error) {
@@ -273,7 +282,7 @@ func fromTypedBool(src reflect.Value, ref dyn.Value, options ...fromTypedOptions
 		}
 	}
 
-	return dyn.InvalidValue, fmt.Errorf("unhandled type: %s", ref.Kind())
+	return dyn.InvalidValue, fmt.Errorf("cannot convert bool field to dynamic type %#v: src=%#v ref=%#v", ref.Kind().String(), src, ref.AsAny())
 }
 
 func fromTypedInt(src reflect.Value, ref dyn.Value, options ...fromTypedOptions) (dyn.Value, error) {
@@ -298,7 +307,7 @@ func fromTypedInt(src reflect.Value, ref dyn.Value, options ...fromTypedOptions)
 		}
 	}
 
-	return dyn.InvalidValue, fmt.Errorf("unhandled type: %s", ref.Kind())
+	return dyn.InvalidValue, fmt.Errorf("cannot convert int field to dynamic type %#v: src=%#v ref=%#v", ref.Kind().String(), src, ref.AsAny())
 }
 
 func fromTypedFloat(src reflect.Value, ref dyn.Value, options ...fromTypedOptions) (dyn.Value, error) {
@@ -323,5 +332,20 @@ func fromTypedFloat(src reflect.Value, ref dyn.Value, options ...fromTypedOption
 		}
 	}
 
-	return dyn.InvalidValue, fmt.Errorf("unhandled type: %s", ref.Kind())
+	return dyn.InvalidValue, fmt.Errorf("cannot convert float field to dynamic type %#v: src=%#v ref=%#v", ref.Kind().String(), src, ref.AsAny())
+}
+
+func getForceSendFields(v reflect.Value) []string {
+	if !v.IsValid() || v.Kind() != reflect.Struct {
+		return nil
+	}
+	fsField := v.FieldByName("ForceSendFields")
+	if !fsField.IsValid() || fsField.Kind() != reflect.Slice {
+		return nil
+	}
+	result, ok := fsField.Interface().([]string)
+	if ok {
+		return result
+	}
+	return nil
 }

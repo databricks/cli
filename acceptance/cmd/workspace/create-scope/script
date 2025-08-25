@@ -1,0 +1,17 @@
+trace musterr $CLI secrets create-scope --scope-backend-type AZURE_KEYVAULT --json '"scope": "xxxxxxxx-xxx"'
+
+trace musterr $CLI secrets create-scope --scope-backend-type AZURE_KEYVAULT --json '["scope"]'
+
+trace $CLI secrets create-scope --scope-backend-type AZURE_KEYVAULT --json '{
+  "scope": "xxxxxxxx-xxx",
+  "scope_backend_type": "AZURE_KEYVAULT",
+  "keyvault_metadata": {
+    "dns_name": "test",
+    "resource_id": "123456"
+  }
+}'
+
+trace $CLI secrets create-scope --scope-backend-type AZURE_KEYVAULT --json '{
+  "scope": "xxxxxxxx-xxx",
+  "scope_backend_type": "AZURE_KEYVAULT"
+}'

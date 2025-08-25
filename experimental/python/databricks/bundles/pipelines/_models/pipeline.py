@@ -59,6 +59,11 @@ if TYPE_CHECKING:
 class Pipeline(Resource):
     """"""
 
+    allow_duplicate_names: VariableOrOptional[bool] = None
+    """
+    If false, deployment will fail if name conflicts with that of another pipeline.
+    """
+
     budget_policy_id: VariableOrOptional[str] = None
     """
     :meta private: [EXPERIMENTAL]
@@ -211,6 +216,11 @@ class Pipeline(Resource):
 
 class PipelineDict(TypedDict, total=False):
     """"""
+
+    allow_duplicate_names: VariableOrOptional[bool]
+    """
+    If false, deployment will fail if name conflicts with that of another pipeline.
+    """
 
     budget_policy_id: VariableOrOptional[str]
     """

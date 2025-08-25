@@ -26,13 +26,15 @@
         "tasks": [
           {
             "notebook_task": {
-              "notebook_path": "/Workspace/cde"
+              "notebook_path": "/Workspace/cde",
+              "source": "WORKSPACE"
             },
             "task_key": "abc"
           },
           {
             "notebook_task": {
-              "notebook_path": "/Workspace/ghi"
+              "notebook_path": "/Workspace/ghi",
+              "source": "WORKSPACE"
             },
             "task_key": "def"
           }

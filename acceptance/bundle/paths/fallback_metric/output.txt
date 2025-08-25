@@ -15,6 +15,10 @@ Deployment complete!
 >>> cat out.requests.txt
 [
   {
+    "key": "experimental.use_legacy_run_as",
+    "value": false
+  },
+  {
     "key": "presets_name_prefix_is_set",
     "value": false
   },
@@ -40,6 +44,10 @@ Deployment complete!
   }
 ]
 [
+  {
+    "key": "experimental.use_legacy_run_as",
+    "value": false
+  },
   {
     "key": "presets_name_prefix_is_set",
     "value": false

@@ -52,6 +52,9 @@ type TestConfig struct {
 	// If true and Cloud=true, run this test only if a default warehouse is available in the cloud environment
 	RequiresWarehouse *bool
 
+	// If set, current user will be set to a service principal-like UUID instead of email (default is false)
+	IsServicePrincipal *bool
+
 	// List of additional replacements to apply on this test.
 	// Old is a regexp, New is a replacement expression.
 	Repls []testdiff.Replacement
@@ -96,6 +99,11 @@ type TestConfig struct {
 
 	// List of keys for which to do string replacement value -> [KEY]. If not set, defaults to true.
 	EnvRepl map[string]bool
+
+	// Name of EnvMatrix key that determines variant-specific output file names.
+	// If set and present in EnvMatrix, update mode will run all variants for this key,
+	// and comparison will only consider files containing the current variant value.
+	EnvVaryOutput *string
 
 	// Maximum amount of time the test is allowed to run, will be killed after that.
 	Timeout time.Duration

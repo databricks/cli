@@ -5,7 +5,6 @@
     "environment": "prod",
     "git": {
       "actual_branch": "main",
-      "branch": "",
       "bundle_root_path": "."
     },
     "name": "git",
@@ -16,7 +15,6 @@
       "."
     ]
   },
-  "targets": null,
   "variables": {
     "deployment_branch": {
       "default": "",
@@ -58,7 +56,6 @@ Validation OK!
       "."
     ]
   },
-  "targets": null,
   "variables": {
     "deployment_branch": {
       "default": "dev-branch",

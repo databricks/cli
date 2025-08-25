@@ -48,7 +48,8 @@ func FromErr(err error) Diagnostics {
 	return []Diagnostic{
 		{
 			Severity: Error,
-			Summary:  err.Error(),
+			Summary:  FormatAPIErrorSummary(err),
+			Detail:   FormatAPIErrorDetails(err),
 		},
 	}
 }

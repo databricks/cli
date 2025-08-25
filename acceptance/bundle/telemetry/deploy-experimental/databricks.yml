@@ -1,0 +1,14 @@
+experimental:
+  use_legacy_run_as: true
+
+run_as:
+  user_name: abcd
+
+resources:
+  jobs:
+    foo:
+      tasks:
+        - task_key: task1
+          spark_python_task:
+            python_file: /Workspace/test.py
+          existing_cluster_id: hjkl

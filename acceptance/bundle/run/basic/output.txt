@@ -32,3 +32,9 @@ Run URL: [DATABRICKS_URL]/job/run/[NUMID]
 === inline script
 >>> [CLI] bundle run -- echo hello
 hello
+
+=== completion handler
+>>> [CLI] __complete bundle run ,
+foo
+:4
+Completion ended with directive: ShellCompDirectiveNoFileComp

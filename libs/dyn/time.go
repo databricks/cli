@@ -60,3 +60,7 @@ func (t Time) Time() time.Time {
 func (t Time) String() string {
 	return t.s
 }
+
+func (t Time) IsZero() bool {
+	return t.s == "" && t.IsZero()
+}
