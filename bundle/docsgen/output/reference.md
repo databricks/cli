@@ -408,7 +408,7 @@ resources:
   
 - - `alerts`
   - Map
-  - 
+  - See [\_](#resourcesalerts).
   
 - - `apps`
   - Map
@@ -473,6 +473,129 @@ resources:
 - - `volumes`
   - Map
   - The volume definitions for the bundle, where each key is the name of the volume. See [\_](/dev-tools/bundles/resources.md#volumes).
+  
+:::
+  
+  
+### resources.alerts
+  
+**`Type: Map`**
+  
+
+  
+```yaml
+alerts:
+  <alert-name>:
+    <alert-field-name>: <alert-field-value>
+```
+  
+  
+:::list-table
+  
+- - Key
+  - Type
+  - Description
+  
+- - `create_time`
+  - String
+  - 
+  
+- - `custom_description`
+  - String
+  - 
+  
+- - `custom_summary`
+  - String
+  - 
+  
+- - `display_name`
+  - String
+  - 
+  
+- - `effective_run_as`
+  - Map
+  - See [\_](#resourcesalertsnameeffective_run_as).
+  
+- - `evaluation`
+  - Map
+  - See [\_](#resourcesalertsnameevaluation).
+  
+- - `id`
+  - String
+  - 
+  
+- - `lifecycle_state`
+  - String
+  - 
+  
+- - `owner_user_name`
+  - String
+  - 
+  
+- - `parent_path`
+  - String
+  - 
+  
+- - `permissions`
+  - Sequence
+  - See [\_](#resourcesalertsnamepermissions).
+  
+- - `query_text`
+  - String
+  - 
+  
+- - `run_as`
+  - Map
+  - See [\_](#resourcesalertsnamerun_as).
+  
+- - `run_as_user_name`
+  - String
+  - 
+  
+- - `schedule`
+  - Map
+  - See [\_](#resourcesalertsnameschedule).
+  
+- - `update_time`
+  - String
+  - 
+  
+- - `warehouse_id`
+  - String
+  - 
+  
+:::
+  
+  
+### resources.alerts._name_.permissions
+  
+**`Type: Sequence`**
+  
+
+  
+  
+  
+:::list-table
+  
+- - Key
+  - Type
+  - Description
+  
+- - `group_name`
+  - String
+  - 
+  
+- - `level`
+  - String
+  - 
+  
+- - `service_principal_name`
+  - String
+  - 
+  
+- - `user_name`
+  - String
+  - 
   
 :::
   
@@ -1189,7 +1312,7 @@ The resource definitions for the target.
   
 - - `alerts`
   - Map
-  - 
+  - See [\_](#targetsnameresourcesalerts).
   
 - - `apps`
   - Map
@@ -1254,6 +1377,129 @@ The resource definitions for the target.
 - - `volumes`
   - Map
   - The volume definitions for the bundle, where each key is the name of the volume. See [\_](/dev-tools/bundles/resources.md#volumes).
+  
+:::
+  
+  
+### targets._name_.resources.alerts
+  
+**`Type: Map`**
+  
+
+  
+```yaml
+alerts:
+  <alert-name>:
+    <alert-field-name>: <alert-field-value>
+```
+  
+  
+:::list-table
+  
+- - Key
+  - Type
+  - Description
+  
+- - `create_time`
+  - String
+  - 
+  
+- - `custom_description`
+  - String
+  - 
+  
+- - `custom_summary`
+  - String
+  - 
+  
+- - `display_name`
+  - String
+  - 
+  
+- - `effective_run_as`
+  - Map
+  - See [\_](#targetsnameresourcesalertsnameeffective_run_as).
+  
+- - `evaluation`
+  - Map
+  - See [\_](#targetsnameresourcesalertsnameevaluation).
+  
+- - `id`
+  - String
+  - 
+  
+- - `lifecycle_state`
+  - String
+  - 
+  
+- - `owner_user_name`
+  - String
+  - 
+  
+- - `parent_path`
+  - String
+  - 
+  
+- - `permissions`
+  - Sequence
+  - See [\_](#targetsnameresourcesalertsnamepermissions).
+  
+- - `query_text`
+  - String
+  - 
+  
+- - `run_as`
+  - Map
+  - See [\_](#targetsnameresourcesalertsnamerun_as).
+  
+- - `run_as_user_name`
+  - String
+  - 
+  
+- - `schedule`
+  - Map
+  - See [\_](#targetsnameresourcesalertsnameschedule).
+  
+- - `update_time`
+  - String
+  - 
+  
+- - `warehouse_id`
+  - String
+  - 
+  
+:::
+  
+  
+### targets._name_.resources.alerts._name_.permissions
+  
+**`Type: Sequence`**
+  
+
+  
+  
+  
+:::list-table
+  
+- - Key
+  - Type
+  - Description
+  
+- - `group_name`
+  - String
+  - 
+  
+- - `level`
+  - String
+  - 
+  
+- - `service_principal_name`
+  - String
+  - 
+  
+- - `user_name`
+  - String
+  - 
   
 :::
   
