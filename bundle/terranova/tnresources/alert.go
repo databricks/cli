@@ -32,7 +32,7 @@ func (r *ResourceAlert) DoCreate(ctx context.Context) (string, error) {
 	}
 	response, err := r.client.AlertsV2.CreateAlert(ctx, request)
 	if err != nil {
-		return "", SDKError{Method: "AlertsV2.CreateAlert", Err: err}
+		return "", err
 	}
 
 	return response.Id, nil
@@ -46,7 +46,7 @@ func (r *ResourceAlert) DoUpdate(ctx context.Context, oldID string) (string, err
 	}
 	response, err := r.client.AlertsV2.UpdateAlert(ctx, request)
 	if err != nil {
-		return "", SDKError{Method: "AlertsV2.UpdateAlert", Err: err}
+		return "", err
 	}
 	return response.Id, nil
 }
@@ -68,7 +68,7 @@ func (r *ResourceAlert) ClassifyChanges(changes []structdiff.Change) deployplan.
 func DeleteAlert(ctx context.Context, client *databricks.WorkspaceClient, oldID string) error {
 	err := client.AlertsV2.TrashAlertById(ctx, oldID)
 	if err != nil {
-		return SDKError{Method: "AlertsV2.TrashAlertById", Err: err}
+		return err
 	}
 	return nil
 }
