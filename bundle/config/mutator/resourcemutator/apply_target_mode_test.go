@@ -183,6 +183,13 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						},
 					},
 				},
+				SyncedDatabaseTables: map[string]*resources.SyncedDatabaseTable{
+					"synced_database_table1": {
+						SyncedDatabaseTable: database.SyncedDatabaseTable{
+							Name: "synced_database_table1",
+						},
+					},
+				},
 			},
 		},
 		SyncRoot: vfs.MustNew("/Users/lennart.kats@databricks.com"),
@@ -351,7 +358,7 @@ func TestAllNonUcResourcesAreRenamed(t *testing.T) {
 				resourceType := resources.Type().Field(i).Name
 
 				// Skip resources that are not renamed
-				if resourceType == "Apps" || resourceType == "SecretScopes" || resourceType == "DatabaseInstances" || resourceType == "DatabaseCatalogs" {
+				if resourceType == "Apps" || resourceType == "SecretScopes" || resourceType == "DatabaseInstances" || resourceType == "DatabaseCatalogs" || resourceType == "SyncedDatabaseTables" {
 					continue
 				}
 
