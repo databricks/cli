@@ -21,6 +21,8 @@ type inner struct {
 	Name string `json:"name,omitempty"`
 }
 
+type Key string
+
 type outerNoFSF struct {
 	Conn       *inner            `json:"connection"`
 	ConnNotSet *inner            `json:"connection_not_set"`
@@ -32,6 +34,11 @@ type outerNoFSF struct {
 	BOmit      bool              `json:"b_omit,omitempty"`
 	IOmit      int               `json:"i_omit,omitempty"`
 	SOmit      string            `json:"s_omit,omitempty"`
+	POmit      *int              `json:"p_omit,omitempty"`
+	QOmit      *inner            `json:"q_omit,omitempty"`
+	MapInt     map[int]string    `json:"map_int"`
+	AliasMap   map[Key]string    `json:"alias_map"`
+	Ignored    string            `json:"-"`
 	// Unexported or no-json-tag fields should be ignored
 	GoOnly string // no json tag: should NOT be accessible
 }
@@ -47,6 +54,11 @@ type outerWithFSF struct {
 	BOmit      bool              `json:"b_omit,omitempty"`
 	IOmit      int               `json:"i_omit,omitempty"`
 	SOmit      string            `json:"s_omit,omitempty"`
+	POmit      *int              `json:"p_omit,omitempty"`
+	QOmit      *inner            `json:"q_omit,omitempty"`
+	MapInt     map[int]string    `json:"map_int"`
+	AliasMap   map[Key]string    `json:"alias_map"`
+	Ignored    string            `json:"-"`
 	GoOnly     string            // no json tag: should NOT be accessible
 	// ForceSendFields allows forcing zero-values for specific fields
 	ForceSendFields []string
@@ -65,7 +77,10 @@ func makeOuterNoFSF() outerNoFSF {
 		Labels: map[string]string{
 			"env": "dev",
 		},
-		GoOnly: "hidden",
+		MapInt:   map[int]string{1: "a"},
+		AliasMap: map[Key]string{"foo": "bar"},
+		Ignored:  "x",
+		GoOnly:   "hidden",
 	}
 }
 
@@ -82,7 +97,10 @@ func makeOuterWithFSF() outerWithFSF {
 		Labels: map[string]string{
 			"env": "dev",
 		},
-		GoOnly: "hidden",
+		MapInt:   map[int]string{1: "a"},
+		AliasMap: map[Key]string{"foo": "bar"},
+		Ignored:  "x",
+		GoOnly:   "hidden",
 	}
 }
 
@@ -112,6 +130,11 @@ func runCommonTests(t *testing.T, obj any) {
 			name: "map string key",
 			path: "labels.env",
 			want: "dev",
+		},
+		{
+			name: "map alias key",
+			path: "alias_map.foo",
+			want: "bar",
 		},
 		{
 			name: "leading dot allowed",
@@ -177,6 +200,21 @@ func runCommonTests(t *testing.T, obj any) {
 			path:   "connection_not_set.id",
 			errFmt: "connection_not_set: cannot access nil value",
 		},
+		{
+			name:   "map non-string key type",
+			path:   "map_int.any",
+			errFmt: "map_int.any: map key must be string, got int",
+		},
+		{
+			name:   "map missing key",
+			path:   "labels.missing",
+			errFmt: "labels.missing: key \"missing\" not found in map",
+		},
+		{
+			name:   "json dash ignored",
+			path:   "ignored",
+			errFmt: "ignored: field \"ignored\" not found in " + typeName,
+		},
 	}
 
 	for _, tt := range tests {
@@ -203,7 +241,11 @@ func TestGet_Common_NoFSF(t *testing.T) {
 
 func TestGet_Common_WithFSF(t *testing.T) {
 	obj := makeOuterWithFSF()
-	obj.ForceSendFields = []string{"BOmit", "IOmit", "SOmit"}
+	obj.ForceSendFields = []string{"BOmit", "IOmit", "SOmit", "POmit", "QOmit"}
+	// prepare zero pointers for pointer-omitempty fields
+	zi := 0
+	obj.POmit = &zi
+	obj.QOmit = &inner{}
 	runCommonTests(t, obj)
 	runOmitEmptyTests(t, obj, false) // wantNil=false for WithFSF
 }
@@ -249,6 +291,27 @@ func runOmitEmptyTests(t *testing.T, obj any, wantNil bool) {
 				return ""
 			}(),
 		},
+		{
+			name: "pointer int omitempty",
+			path: "p_omit",
+			want: func() any {
+				if wantNil {
+					return nil
+				}
+				v := 0
+				return &v
+			}(),
+		},
+		{
+			name: "pointer struct omitempty",
+			path: "q_omit",
+			want: func() any {
+				if wantNil {
+					return nil
+				}
+				return &inner{}
+			}(),
+		},
 	}
 
 	for _, tt := range tests {
@@ -258,4 +321,36 @@ func runOmitEmptyTests(t *testing.T, obj any, wantNil bool) {
 			require.Equal(t, tt.want, got)
 		})
 	}
+}
+
+func TestGet_Embedded_NilPointerAnonymousNotDescended(t *testing.T) {
+	type embedded struct {
+		Hidden string `json:"hidden"`
+	}
+	type host struct {
+		*embedded
+	}
+	_, err := Get(host{}, "hidden")
+	typeName := reflect.TypeOf(host{}).String()
+	require.EqualError(t, err, "hidden: field \"hidden\" not found in "+typeName)
+}
+
+func TestGet_Embedded_ValueAnonymousResolved(t *testing.T) {
+	type embedded struct {
+		Hidden string `json:"hidden"`
+	}
+	type host struct {
+		embedded
+	}
+	in := host{embedded: embedded{Hidden: "x"}}
+	got, err := Get(in, "hidden")
+	require.NoError(t, err)
+	require.Equal(t, "x", got)
+}
+
+func TestGet_InterfaceRoot_Unwraps(t *testing.T) {
+	v := any(makeOuterNoFSF())
+	got, err := Get(v, "items[0].id")
+	require.NoError(t, err)
+	require.Equal(t, "i0", got)
 }
