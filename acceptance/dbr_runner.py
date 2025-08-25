@@ -65,7 +65,7 @@ def main():
 
     # Change working directory to the root of the CLI repo.
     os.chdir(archive_dir / "cli")
-    cmd = ["go", "test", "-timeout", "7200s", "-workspace-tmp-dir", "-run", r"^TestAccept", "github.com/databricks/cli/acceptance"]
+    cmd = ["go", "test", "-timeout", "7200s", "-run", r"^TestAccept", "github.com/databricks/cli/acceptance",  "-workspace-tmp-dir"]
 
     if dbutils.widgets.get("short") == "true":
         cmd.append("-short")

@@ -18,17 +18,12 @@ import (
 )
 
 func workspaceTmpDir(ctx context.Context, t *testing.T) (*databricks.WorkspaceClient, filer.Filer, string) {
-	// If the test is being run on DBR, auth is already configured
-	// by the dbr_runner notebook by reading a token from the notebook context and
-	// setting DATABRICKS_TOKEN and DATABRICKS_HOST environment variables.
 	w, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
 
 	currentUser, err := w.CurrentUser.Me(ctx)
 	require.NoError(t, err)
 
-	// Run DBR tests on the workspace file system to mimic usage from
-	// DABs in the workspace.
 	timestamp := time.Now().Format("2006-01-02T15:04:05Z")
 	tmpDir := fmt.Sprintf(
 		"/Workspace/Users/%s/acceptance/%s/%s",
