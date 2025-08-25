@@ -2,6 +2,7 @@ package acceptance_test
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path"
 	"strconv"
@@ -15,22 +16,38 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func setupTestDir(ctx context.Context, t *testing.T, uniqueId string) (*databricks.WorkspaceClient, filer.Filer, string) {
+func workspaceTmpDir(ctx context.Context, t *testing.T) (*databricks.WorkspaceClient, filer.Filer, string) {
+	// If the test is being run on DBR, auth is already configured
+	// by the dbr_runner notebook by reading a token from the notebook context and
+	// setting DATABRICKS_TOKEN and DATABRICKS_HOST environment variables.
 	w, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
 
 	currentUser, err := w.CurrentUser.Me(ctx)
 	require.NoError(t, err)
 
-	testDir := path.Join("/Workspace/Users/", currentUser.UserName, "acceptance", uniqueId)
+	// Run DBR tests on the workspace file system to mimic usage from
+	// DABs in the workspace.
+	timestamp := time.Now().Format("2006-01-02T15:04:05Z")
+	tmpDir := fmt.Sprintf(
+		"/Workspace/Users/%s/acceptance/%s/%s",
+		currentUser.UserName,
+		timestamp,
+		uuid.New().String(),
+	)
 
-	err = w.Workspace.MkdirsByPath(ctx, testDir)
+	t.Cleanup(func() {
+		err := os.RemoveAll(tmpDir)
+		require.NoError(t, err)
+	})
+
+	err = w.Workspace.MkdirsByPath(ctx, tmpDir)
 	require.NoError(t, err)
 
-	f, err := filer.NewWorkspaceFilesClient(w, testDir)
+	f, err := filer.NewWorkspaceFilesClient(w, tmpDir)
 	require.NoError(t, err)
 
-	return w, f, testDir
+	return w, f, tmpDir
 }
 
 func buildAndUploadArchive(ctx context.Context, t *testing.T, f filer.Filer) string {
@@ -106,9 +123,8 @@ func runDbrTests(ctx context.Context, t *testing.T, w *databricks.WorkspaceClien
 
 func testDbrAcceptance(t *testing.T) {
 	ctx := context.Background()
-	uniqueId := uuid.New().String()
 
-	w, f, testDir := setupTestDir(ctx, t, uniqueId)
+	w, f, testDir := workspaceTmpDir(ctx, t)
 	t.Logf("Test directory for the DBR runner: %s", testDir)
 
 	// We compile and upload an archive of the entire repo to the workspace.
