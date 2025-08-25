@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 	"strconv"
 	"testing"
 	"time"
@@ -51,10 +52,12 @@ func workspaceTmpDir(ctx context.Context, t *testing.T) (*databricks.WorkspaceCl
 }
 
 func buildAndUploadArchive(ctx context.Context, t *testing.T, f filer.Filer) string {
-	// Build the CLI archives and upload to the workspace.
-	RunCommand(t, []string{"go", "run", "."}, "../internal/testarchive")
+	pkgDir := path.Join("..", "internal", "testarchive")
 
-	archiveReader, err := os.Open("../internal/testarchive/_build/archive.tar.gz")
+	// Build the CLI archives and upload to the workspace.
+	RunCommand(t, []string{"go", "run", ".", "_build", "_bin"}, pkgDir)
+
+	archiveReader, err := os.Open(filepath.Join(pkgDir, "_build", "archive.tar.gz"))
 	require.NoError(t, err)
 
 	t.Logf("Uploading archive...")
