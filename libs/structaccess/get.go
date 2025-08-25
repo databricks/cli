@@ -81,6 +81,11 @@ func Get(v any, path string) (any, error) {
 		return nil, nil
 	}
 
+	// If the final value is a nil pointer or nil interface, return nil.
+	if (cur.Kind() == reflect.Pointer || cur.Kind() == reflect.Interface) && cur.IsNil() {
+		return nil, nil
+	}
+
 	// Return the resulting value as interface{}; do not force dereference of scalars.
 	return cur.Interface(), nil
 }
@@ -96,13 +101,7 @@ func accessKey(v reflect.Value, key, prefix string) (reflect.Value, error) {
 		}
 		// Evaluate ForceSendFields on both the current struct and the declaring owner
 		force := containsForceSendField(v, sf.Name) || containsForceSendField(owner, sf.Name)
-		// ForceSendFields for nil pointer-to-struct: substitute zero struct.
-		if fv.Kind() == reflect.Pointer && fv.IsNil() {
-			et := fv.Type().Elem()
-			if et.Kind() == reflect.Struct && force {
-				return reflect.Zero(et), nil
-			}
-		}
+
 		// Honor omitempty: if present and value is zero and not forced, treat as omitted (nil).
 		jsonTag := structtag.JSONTag(sf.Tag.Get("json"))
 		if jsonTag.OmitEmpty() && !force {

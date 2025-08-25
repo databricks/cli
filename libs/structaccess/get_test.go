@@ -135,6 +135,11 @@ func runCommonTests(t *testing.T, obj any) {
 			path: "s",
 			want: "",
 		},
+		{
+			name: "nil struct",
+			path: "connection_not_set",
+			want: nil,
+		},
 
 		// Errors common to both
 		{
@@ -253,52 +258,4 @@ func runOmitEmptyTests(t *testing.T, obj any, wantNil bool) {
 			require.Equal(t, tt.want, got)
 		})
 	}
-}
-
-func TestGet_WithFSF_NilPointerForced(t *testing.T) {
-	in := outerWithFSF{
-		Conn: nil,
-		Items: []inner{
-			{ID: "i0"},
-		},
-		Labels: map[string]string{
-			"env": "dev",
-		},
-		ForceSendFields: []string{"Conn"},
-	}
-	got, err := Get(in, "connection.id")
-	require.NoError(t, err)
-	require.Equal(t, "", got)
-}
-
-// Additional tests for TODOs
-// Final nil value should be supported and returned as nil when field is omitted due to omitempty
-func TestGet_FinalNil_ReturnsNil(t *testing.T) {
-	type withPtrOmit struct {
-		P *inner `json:"p,omitempty"`
-	}
-	in := withPtrOmit{P: nil}
-	got, err := Get(in, "p")
-	require.NoError(t, err)
-	require.Nil(t, got)
-}
-
-// Embedded anonymous struct with ForceSendFields should allow forcing a nil pointer-to-struct
-// so that deeper fields can be accessed without error.
-func TestGet_EmbeddedWithFSF_ForceNilPointerStruct(t *testing.T) {
-	type embedded struct {
-		P *inner `json:"p,omitempty"`
-	}
-	type outer struct {
-		embedded
-		ForceSendFields []string
-	}
-
-	in := outer{
-		embedded:        embedded{P: nil},
-		ForceSendFields: []string{"P"},
-	}
-	got, err := Get(in, "p.id")
-	require.NoError(t, err)
-	require.Equal(t, "", got)
 }
