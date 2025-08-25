@@ -1,7 +1,6 @@
 package structaccess
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
@@ -13,7 +12,8 @@ import (
 // Get returns the value at the given path inside v.
 //
 // Path grammar (subset of dyn path):
-//   - Keys separated by '.' (e.g., connection.id)
+//   - Struct field names and map keys separated by '.' (e.g., connection.id)
+//   - (Note, this prevents maps keys that are not id-like from being referenced, but this general problem with references today.)
 //   - Numeric indices in brackets for arrays/slices (e.g., items[0].name)
 //   - Leading '.' is allowed (e.g., .connection.id)
 //
@@ -39,46 +39,46 @@ func Get(v any, path string) (any, error) {
 	prefix := ""
 	for _, c := range p {
 		if c.Key() == "*" {
-			return nil, errors.New("wildcard not supported")
+			return nil, fmt.Errorf("%s: wildcard not supported", prefix)
 		}
 
 		// Dereference pointers and interfaces where possible.
 		var ok bool
 		cur, ok = deref(cur)
 		if !ok {
-			loc := prefix
-			if loc == "" {
-				loc = "(root)"
-			}
-			return nil, fmt.Errorf("nil found at %s", loc)
+			// cannot proceed further due to nil encountered at current location
+			return nil, fmt.Errorf("%s: cannot access nil value", prefix)
 		}
 
 		if c.Key() != "" {
 			// Key access: struct field (by json tag) or map key.
-			nv, err := accessKey(cur, c.Key())
+			newPrefix := prefix
+			if newPrefix == "" {
+				newPrefix = c.Key()
+			} else {
+				newPrefix = newPrefix + "." + c.Key()
+			}
+			nv, err := accessKey(cur, c.Key(), newPrefix)
 			if err != nil {
 				return nil, err
 			}
 			cur = nv
-			if prefix == "" {
-				prefix = c.Key()
-			} else {
-				prefix = prefix + "." + c.Key()
-			}
+			prefix = newPrefix
 			continue
 		}
 
 		// Index access: slice/array
 		idx := c.Index()
+		newPrefix := prefix + "[" + strconv.Itoa(idx) + "]"
 		kind := cur.Kind()
 		if kind != reflect.Slice && kind != reflect.Array {
-			return nil, fmt.Errorf("expected slice/array to index [%d], found %s", idx, kind)
+			return nil, fmt.Errorf("%s: cannot index %s", newPrefix, kind)
 		}
 		if idx < 0 || idx >= cur.Len() {
-			return nil, fmt.Errorf("index out of range [%d] with length %d", idx, cur.Len())
+			return nil, fmt.Errorf("%s: index out of range, length is %d", newPrefix, cur.Len())
 		}
 		cur = cur.Index(idx)
-		prefix = prefix + "[" + strconv.Itoa(idx) + "]"
+		prefix = newPrefix
 	}
 
 	// If the current value is invalid (e.g., omitted due to omitempty), return nil.
@@ -92,23 +92,25 @@ func Get(v any, path string) (any, error) {
 
 // accessKey returns the field or map entry value selected by key from v.
 // v must be non-pointer, non-interface reflect.Value.
-func accessKey(v reflect.Value, key string) (reflect.Value, error) {
+func accessKey(v reflect.Value, key string, prefix string) (reflect.Value, error) {
 	switch v.Kind() {
 	case reflect.Struct:
-		fv, sf, ok := findStructFieldByKey(v, key)
+		fv, sf, owner, ok := findStructFieldByKey(v, key)
 		if !ok {
-			return reflect.Value{}, fmt.Errorf("field \"%s\" not found in struct %s", key, v.Type())
+			return reflect.Value{}, fmt.Errorf("%s: field %q not found in %s", prefix, key, v.Type())
 		}
+		// Evaluate ForceSendFields on both the current struct and the declaring owner
+		force := containsForceSendField(v, sf.Name) || containsForceSendField(owner, sf.Name)
 		// ForceSendFields for nil pointer-to-struct: substitute zero struct.
 		if fv.Kind() == reflect.Pointer && fv.IsNil() {
 			et := fv.Type().Elem()
-			if et.Kind() == reflect.Struct && containsForceSendField(v, sf.Name) {
+			if et.Kind() == reflect.Struct && force {
 				return reflect.Zero(et), nil
 			}
 		}
 		// Honor omitempty: if present and value is zero and not forced, treat as omitted (nil).
 		jsonTag := structtag.JSONTag(sf.Tag.Get("json"))
-		if jsonTag.OmitEmpty() && !containsForceSendField(v, sf.Name) {
+		if jsonTag.OmitEmpty() && !force {
 			if fv.Kind() == reflect.Pointer {
 				if fv.IsNil() {
 					return reflect.Value{}, nil
@@ -125,7 +127,7 @@ func accessKey(v reflect.Value, key string) (reflect.Value, error) {
 	case reflect.Map:
 		kt := v.Type().Key()
 		if kt.Kind() != reflect.String {
-			return reflect.Value{}, fmt.Errorf("map key must be string, got %s", kt)
+			return reflect.Value{}, fmt.Errorf("%s: map key must be string, got %s", prefix, kt)
 		}
 		mk := reflect.ValueOf(key)
 		if kt != mk.Type() {
@@ -133,22 +135,22 @@ func accessKey(v reflect.Value, key string) (reflect.Value, error) {
 		}
 		mv := v.MapIndex(mk)
 		if !mv.IsValid() {
-			return reflect.Value{}, fmt.Errorf("key \"%s\" not found in map", key)
+			return reflect.Value{}, fmt.Errorf("%s: key %q not found in map", prefix, key)
 		}
 		return mv, nil
 	default:
-		return reflect.Value{}, fmt.Errorf("key \"%s\" cannot be applied to %s", key, v.Kind())
+		return reflect.Value{}, fmt.Errorf("%s: cannot access key %q on %s", prefix, key, v.Kind())
 	}
 }
 
 // findStructFieldByKey searches exported fields of struct v for a field matching key.
 // It matches json tag name (when present and not "-") only.
 // It also searches embedded anonymous structs (pointer or value) recursively.
-func findStructFieldByKey(v reflect.Value, key string) (reflect.Value, reflect.StructField, bool) {
+func findStructFieldByKey(v reflect.Value, key string) (reflect.Value, reflect.StructField, reflect.Value, bool) {
 	t := v.Type()
 
 	// First pass: direct fields
-	for i := range t.NumField() {
+	for i := 0; i < t.NumField(); i++ {
 		sf := t.Field(i)
 		if sf.PkgPath != "" { // unexported
 			continue
@@ -161,12 +163,12 @@ func findStructFieldByKey(v reflect.Value, key string) (reflect.Value, reflect.S
 		}
 
 		if name != "" && name == key {
-			return v.Field(i), sf, true
+			return v.Field(i), sf, v, true
 		}
 	}
 
 	// Second pass: search embedded anonymous structs recursively (flattening semantics)
-	for i := range t.NumField() {
+	for i := 0; i < t.NumField(); i++ {
 		sf := t.Field(i)
 		if !sf.Anonymous {
 			continue
@@ -183,12 +185,12 @@ func findStructFieldByKey(v reflect.Value, key string) (reflect.Value, reflect.S
 		if fv.Kind() != reflect.Struct {
 			continue
 		}
-		if out, osf, ok := findStructFieldByKey(fv, key); ok {
-			return out, osf, true
+		if out, osf, owner, ok := findStructFieldByKey(fv, key); ok {
+			return out, osf, owner, true
 		}
 	}
 
-	return reflect.Value{}, reflect.StructField{}, false
+	return reflect.Value{}, reflect.StructField{}, reflect.Value{}, false
 }
 
 // containsForceSendField reports whether struct v has a ForceSendFields slice containing goFieldName.
@@ -200,7 +202,7 @@ func containsForceSendField(v reflect.Value, goFieldName string) bool {
 	if !fsField.IsValid() || fsField.Kind() != reflect.Slice {
 		return false
 	}
-	for i := range fsField.Len() {
+	for i := 0; i < fsField.Len(); i++ {
 		el := fsField.Index(i)
 		if el.Kind() == reflect.String && el.String() == goFieldName {
 			return true
