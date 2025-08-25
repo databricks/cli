@@ -10,6 +10,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"golang.org/x/sync/errgroup"
 )
 
 // gitFiles returns a list of all git-tracked files in the repository.
@@ -107,18 +109,24 @@ func createArchive(archiveDir, binDir, repoRoot string) error {
 	// the CPU architecture to keep the door open for future optimizations.
 	downloaders := []downloader{
 		goDownloader{arch: "amd64", binDir: binDir},
-		goDownloader{arch: "arm64", binDir: binDir},
 		uvDownloader{arch: "amd64", binDir: binDir},
-		uvDownloader{arch: "arm64", binDir: binDir},
 		jqDownloader{arch: "amd64", binDir: binDir},
-		jqDownloader{arch: "arm64", binDir: binDir},
+
+		// TODO: Uncomment these when we have arm64 support
+		// in serverless clusters.
+		// goDownloader{arch: "arm64", binDir: binDir},
+		// uvDownloader{arch: "arm64", binDir: binDir},
+		// jqDownloader{arch: "arm64", binDir: binDir},
 	}
 
+	var errgroup errgroup.Group
 	for _, downloader := range downloaders {
-		err := downloader.Download()
-		if err != nil {
-			return fmt.Errorf("failed to download %s: %w", downloader, err)
-		}
+		errgroup.Go(func() error {
+			return downloader.Download()
+		})
+	}
+	if err := errgroup.Wait(); err != nil {
+		return fmt.Errorf("failed to download tools: %w", err)
 	}
 
 	gitFiles, err := gitFiles(repoRoot)
