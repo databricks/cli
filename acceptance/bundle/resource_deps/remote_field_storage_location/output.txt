@@ -42,7 +42,7 @@ When expanding the plan for databricks_volume.foo to include new values
 learned so far during apply, provider
 "registry.terraform.io/databricks/databricks" produced an invalid new value
 for .storage_location: was null, but now
-cty.StringVal("s3://deco-uc-prod-isolated-[CLOUD_ENV_BASE]-us-east-1/metastore/[UUID]/volumes/[UUID]").
+cty.StringVal("s3://deco-uc-prod-isolated-aws-us-east-1/metastore/[UUID]/volumes/[UUID]").
 
 This is a bug in the provider, which should be reported in the provider's own
 issue tracker.
