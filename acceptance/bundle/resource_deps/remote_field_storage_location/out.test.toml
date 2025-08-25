@@ -2,5 +2,9 @@ Local = true
 Cloud = true
 RequiresUnityCatalog = true
 
+[CloudEnvs]
+  azure = false
+  gcp = false
+
 [EnvMatrix]
   DATABRICKS_CLI_DEPLOYMENT = ["terraform"]

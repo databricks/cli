@@ -5,7 +5,7 @@ Cloud = true
 RequiresUnityCatalog = true
 
 # Each cloud has its specific storage url, we record AWS's one in the output (which is also emulated by Local):
-CloudEnv.gcp = false
-CloudEnv.azure = false
+CloudEnvs.gcp = false
+CloudEnvs.azure = false
 
 EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["terraform"]
