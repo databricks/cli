@@ -10,8 +10,6 @@ configurations to define all relative paths relative to the configuration file w
 See more details here: ([#3225](https://github.com/databricks/cli/pull/3225))
 * Add support volumes in Python support ([#3383])(https://github.com/databricks/cli/pull/3383))
 
-### Dependency updates
-
 ### CLI
 
 ### Dependency updates
