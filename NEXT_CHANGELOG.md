@@ -8,6 +8,7 @@ pipeline definition location instead of the configuration file location. Previou
 warning and fallback to resolving the path relative to the resource location. Users must update their bundle
 configurations to define all relative paths relative to the configuration file where the path is specified.
 See more details here: ([#3225](https://github.com/databricks/cli/pull/3225))
+* Add support volumes in Python support ([#3383])(https://github.com/databricks/cli/pull/3383))
 
 ### Dependency updates
 
