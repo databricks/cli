@@ -2,6 +2,7 @@ package ssh
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 
@@ -22,6 +23,22 @@ func createSecretsScope(ctx context.Context, client *databricks.WorkspaceClient,
 		return "", fmt.Errorf("failed to create secrets scope: %w", err)
 	}
 	return secretsScope, nil
+}
+
+func getSecret(ctx context.Context, client *databricks.WorkspaceClient, scope, key string) ([]byte, error) {
+	resp, err := client.Secrets.GetSecret(ctx, workspace.GetSecretRequest{
+		Scope: scope,
+		Key:   key,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get secret %s from scope %s: %w", key, scope, err)
+	}
+
+	value, err := base64.StdEncoding.DecodeString(resp.Value)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode secret key from base64: %w", err)
+	}
+	return value, nil
 }
 
 func putSecret(ctx context.Context, client *databricks.WorkspaceClient, scope, key, value string) error {

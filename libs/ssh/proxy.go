@@ -180,7 +180,7 @@ func (pc *proxyConnection) Close() error {
 	// Keep in mind that pc.sendMessage blocks during handover
 	err := pc.sendMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 	if err != nil {
-		if websocket.IsCloseError(err, websocket.CloseNormalClosure) {
+		if IsNormalClosure(err) {
 			return nil
 		} else {
 			return fmt.Errorf("failed to send close message: %w", err)
