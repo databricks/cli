@@ -39,11 +39,11 @@ def main():
     archive_dir = extract_cli_archive()
     env = os.environ.copy()
 
-    # Today all serverless instances are AMD. There are plans to also
-    # have ARM based instances in Q4 FY26 but for now we can keep using the AMD
+    # Today all serverless instances are amd64. There are plans to also
+    # have ARM based instances in Q4 FY26 but for now we can keep using the amd64
     # binaries without checking for the architecture.
-    go_bin_dir = archive_dir / "bin" / "amd64" / "go" / "bin"
     bin_dir = archive_dir / "bin" / "amd64"
+    go_bin_dir = bin_dir / "go" / "bin"
     env["PATH"] = os.pathsep.join([str(go_bin_dir), str(bin_dir), env.get("PATH", "")])
 
     # Env vars used by the acceptance tests. These need to
