@@ -7,6 +7,7 @@ Deployment complete!
 
 === Expecting wheel to be uploaded
 >>> jq .path
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/whl/source.whl"
 "/api/2.0/workspace-files/import-file/Workspace/foo/bar/artifacts/.internal/source.whl"
 
 === Expecting delete request to artifact_path/.internal folder

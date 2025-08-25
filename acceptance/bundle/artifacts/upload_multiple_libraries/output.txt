@@ -41,6 +41,10 @@ Deployment complete!
 
 === Expecting 4 wheels to be uploaded
 >>> jq .path
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/whl/source1.whl"
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/whl/source2.whl"
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/whl/source3.whl"
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/whl/source4.whl"
 "/api/2.0/workspace-files/import-file/Workspace/foo/bar/artifacts/.internal/source1.whl"
 "/api/2.0/workspace-files/import-file/Workspace/foo/bar/artifacts/.internal/source2.whl"
 "/api/2.0/workspace-files/import-file/Workspace/foo/bar/artifacts/.internal/source3.whl"
