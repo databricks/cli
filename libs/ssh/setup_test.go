@@ -2,6 +2,7 @@ package ssh
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -47,7 +48,7 @@ func TestValidateClusterAccess(t *testing.T) {
 		m := mocks.NewMockWorkspaceClient(t)
 		clustersAPI := m.GetMockClustersAPI()
 
-		clustersAPI.EXPECT().Get(ctx, compute.GetClusterRequest{ClusterId: "nonexistent"}).Return(nil, fmt.Errorf("cluster not found"))
+		clustersAPI.EXPECT().Get(ctx, compute.GetClusterRequest{ClusterId: "nonexistent"}).Return(nil, errors.New("cluster not found"))
 
 		err := validateClusterAccess(ctx, m.WorkspaceClient, "nonexistent")
 		assert.Error(t, err)

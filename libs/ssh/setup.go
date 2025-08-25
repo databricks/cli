@@ -152,7 +152,7 @@ func Setup(ctx context.Context, client *databricks.WorkspaceClient, opts SetupOp
 		return err
 	}
 
-	cmdio.LogString(ctx, fmt.Sprintf("Adding new entry to the SSH config:\n%s", hostConfig))
+	cmdio.LogString(ctx, "Adding new entry to the SSH config:\n"+hostConfig)
 
 	err = ensureSSHConfigExists(configPath)
 	if err != nil {
@@ -173,7 +173,7 @@ func Setup(ctx context.Context, client *databricks.WorkspaceClient, opts SetupOp
 		if err != nil {
 			return err
 		}
-		cmdio.LogString(ctx, fmt.Sprintf("Created backup of existing SSH config at %s", backupPath))
+		cmdio.LogString(ctx, "Created backup of existing SSH config at "+backupPath)
 	}
 
 	err = updateSSHConfigFile(configPath, hostConfig, opts.HostName)
