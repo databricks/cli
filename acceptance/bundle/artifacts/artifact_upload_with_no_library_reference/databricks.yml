@@ -1,0 +1,8 @@
+workspace:
+  artifact_path: /Workspace/foo/bar/artifacts
+
+artifacts:
+  whl:
+    type: whl
+    files:
+      - source: whl/source.whl

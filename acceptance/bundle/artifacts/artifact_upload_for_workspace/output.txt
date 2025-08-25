@@ -1,0 +1,91 @@
+
+>>> [CLI] bundle deploy
+Uploading whl/source.whl...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Expecting 2 wheels in libraries section in /jobs/create
+>>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | .body.tasks out.requests.txt
+[
+  {
+    "existing_cluster_id": "0717-132531-5opeqon1",
+    "libraries": [
+      {
+        "whl": "/Workspace/foo/bar/artifacts/.internal/source.whl"
+      },
+      {
+        "whl": "/Workspace/Users/foo@bar.com/mywheel.whl"
+      }
+    ],
+    "python_wheel_task": {
+      "entry_point": "run",
+      "package_name": "whl"
+    },
+    "task_key": "TestTask1"
+  },
+  {
+    "for_each_task": {
+      "inputs": "[1]",
+      "task": {
+        "existing_cluster_id": "0717-132531-5opeqon1",
+        "libraries": [
+          {
+            "whl": "/Workspace/foo/bar/artifacts/.internal/source.whl"
+          },
+          {
+            "whl": "/Workspace/Users/foo@bar.com/mywheel.whl"
+          }
+        ],
+        "python_wheel_task": {
+          "entry_point": "run",
+          "package_name": "whl"
+        },
+        "task_key": "TestTask2"
+      }
+    },
+    "task_key": "TestTask2"
+  }
+]
+
+=== Expecting wheel to be uploaded
+>>> jq .path
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/whl/source.whl"
+"/api/2.0/workspace-files/import-file/Workspace/foo/bar/artifacts/.internal/source.whl"
+
+=== Expecting environment dependencies to be updated
+>>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | .body.environments out.requests.txt
+[
+  {
+    "environment_key": "test_env",
+    "spec": {
+      "client": "1",
+      "dependencies": [
+        "/Workspace/foo/bar/artifacts/.internal/source.whl",
+        "/Workspace/Users/foo@bar.com/mywheel.whl"
+      ]
+    }
+  }
+]
+
+=== Expecting delete request to artifact_path/.internal folder
+>>> jq -s .[] | select(.path=="/api/2.0/workspace/delete") | select(.body.path | test(".*/artifacts/.internal")) out.requests.txt
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/delete",
+  "body": {
+    "path": "/Workspace/foo/bar/artifacts/.internal",
+    "recursive": true
+  }
+}
+
+=== Expecting mkdirs request to artifact_path/.internal folder
+>>> jq -s .[] | select(.path=="/api/2.0/workspace/mkdirs") | select(.body.path | test(".*/artifacts/.internal")) out.requests.txt
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/mkdirs",
+  "body": {
+    "path": "/Workspace/foo/bar/artifacts/.internal"
+  }
+}

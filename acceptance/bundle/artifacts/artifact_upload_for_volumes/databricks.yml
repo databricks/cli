@@ -1,0 +1,35 @@
+workspace:
+  artifact_path: /Volumes/foo/bar/artifacts
+
+resources:
+  jobs:
+    job:
+      name: "[${bundle.target}] Test Job for Volumes"
+      tasks:
+        - task_key: TestTask1
+          existing_cluster_id: "0717-132531-5opeqon1"
+          python_wheel_task:
+            package_name: "whl"
+            entry_point: "run"
+          libraries:
+            - whl: whl/*.whl
+            - whl: /Volumes/some/path/mywheel.whl
+        - task_key: TestTask2
+          for_each_task:
+            inputs: "[1]"
+            task:
+              task_key: TestTask2
+              existing_cluster_id: "0717-132531-5opeqon1"
+              python_wheel_task:
+                package_name: "whl"
+                entry_point: "run"
+              libraries:
+                - whl: whl/*.whl
+                - whl: /Volumes/some/path/mywheel.whl
+      environments:
+        - environment_key: "test_env"
+          spec:
+            client: "1"
+            dependencies:
+              - whl/*.whl
+              - /Volumes/some/path/mywheel.whl
