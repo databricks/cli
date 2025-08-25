@@ -38,11 +38,6 @@ func Get(v any, path string) (any, error) {
 	cur := reflect.ValueOf(v)
 	prefix := ""
 	for _, c := range p {
-		if c.Key() == "*" {
-			return nil, fmt.Errorf("%s: wildcard not supported", prefix)
-		}
-
-		// Dereference pointers and interfaces where possible.
 		var ok bool
 		cur, ok = deref(cur)
 		if !ok {
@@ -92,7 +87,7 @@ func Get(v any, path string) (any, error) {
 
 // accessKey returns the field or map entry value selected by key from v.
 // v must be non-pointer, non-interface reflect.Value.
-func accessKey(v reflect.Value, key string, prefix string) (reflect.Value, error) {
+func accessKey(v reflect.Value, key, prefix string) (reflect.Value, error) {
 	switch v.Kind() {
 	case reflect.Struct:
 		fv, sf, owner, ok := findStructFieldByKey(v, key)
@@ -150,7 +145,7 @@ func findStructFieldByKey(v reflect.Value, key string) (reflect.Value, reflect.S
 	t := v.Type()
 
 	// First pass: direct fields
-	for i := 0; i < t.NumField(); i++ {
+	for i := range t.NumField() {
 		sf := t.Field(i)
 		if sf.PkgPath != "" { // unexported
 			continue
@@ -168,7 +163,7 @@ func findStructFieldByKey(v reflect.Value, key string) (reflect.Value, reflect.S
 	}
 
 	// Second pass: search embedded anonymous structs recursively (flattening semantics)
-	for i := 0; i < t.NumField(); i++ {
+	for i := range t.NumField() {
 		sf := t.Field(i)
 		if !sf.Anonymous {
 			continue
@@ -202,7 +197,7 @@ func containsForceSendField(v reflect.Value, goFieldName string) bool {
 	if !fsField.IsValid() || fsField.Kind() != reflect.Slice {
 		return false
 	}
-	for i := 0; i < fsField.Len(); i++ {
+	for i := range fsField.Len() {
 		el := fsField.Index(i)
 		if el.Kind() == reflect.String && el.String() == goFieldName {
 			return true
