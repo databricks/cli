@@ -33,7 +33,11 @@ func assertRootPathExists(ctx context.Context, b *bundle.Bundle) (bool, error) {
 
 func getDeleteActions(ctx context.Context, b *bundle.Bundle) ([]deployplan.Action, error) {
 	if b.DirectDeployment {
-		return terranova.CalculateDestroyActions(ctx, b)
+		err := terranova.CalculatePlanForDestroy(ctx, b)
+		if err != nil {
+			return nil, err
+		}
+		return terranova.GetDeployActions(ctx, b), nil
 	}
 
 	tf := b.Terraform
@@ -42,7 +46,7 @@ func getDeleteActions(ctx context.Context, b *bundle.Bundle) ([]deployplan.Actio
 		return nil, errors.New("terraform not initialized")
 	}
 
-	actions, err := terraform.ShowPlanFile(ctx, tf, b.Plan.TerraformPlanPath)
+	actions, err := terraform.ShowPlanFile(ctx, tf, b.TerraformPlanPath)
 	if err != nil {
 		return nil, err
 	}
@@ -57,8 +61,6 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-
-	b.Plan.Actions = deleteActions
 
 	if len(deleteActions) > 0 {
 		cmdio.LogString(ctx, "The following resources will be deleted:")

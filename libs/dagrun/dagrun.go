@@ -41,6 +41,10 @@ func (g *Graph[N]) HasNode(n N) bool {
 	return ok
 }
 
+// HasOutgoingEdges reports whether this node has at least one outgoing edge.
+// In this graph, an outgoing edge from X->Y means Y references X.
+func (g *Graph[N]) HasOutgoingEdges(n N) bool { return len(g.adj[n]) > 0 }
+
 func (g *Graph[N]) AddDirectedEdge(from, to N, label string) {
 	g.AddNode(from)
 	g.AddNode(to)
@@ -61,16 +65,16 @@ func (e *CycleError[N]) Error() string {
 		return fmt.Sprintf("cycle detected: %v refers to itself via %s", e.Nodes[0], e.Edges[0])
 	}
 
-	// Build "A refers to B via E1" pieces for every edge except the closing one.
+	// Build "to refers to from via edge" pieces for every edge except the closing one.
 	var parts []string
 	for i := 1; i < len(e.Nodes); i++ {
-		parts = append(parts, fmt.Sprintf("%v refers to %v via %s", e.Nodes[i-1], e.Nodes[i], e.Edges[i-1]))
+		parts = append(parts, fmt.Sprintf("%v refers to %v via %s", e.Nodes[i], e.Nodes[i-1], e.Edges[i-1]))
 	}
 
 	return fmt.Sprintf(
 		"cycle detected: %s which refers to %v via %s",
 		strings.Join(parts, " "),
-		e.Nodes[0],
+		e.Nodes[len(e.Nodes)-1],
 		e.Edges[len(e.Edges)-1],
 	)
 }

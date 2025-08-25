@@ -1,0 +1,29 @@
+print_all_requests() {
+    jq --sort-keys 'select(.path | contains("/jobs"))' < out.requests.txt
+    rm out.requests.txt
+}
+
+print_requests() {
+    jq --sort-keys 'select(.method != "GET" and (.path | contains("/jobs")))' < out.requests.txt
+    rm out.requests.txt
+}
+
+print_requests_short() {
+    jq --sort-keys 'select(.method != "GET" and (.path | contains("/jobs"))) | (.body.name // .body.new_settings.name // empty)' < out.requests.txt
+    rm out.requests.txt
+}
+
+trace $CLI bundle plan
+trace print_requests
+
+trace $CLI bundle deploy
+trace print_requests_short
+
+trace update_file.py databricks.yml aa_desc aa_new_desc
+trace update_file.py databricks.yml prefix new_prefix
+
+trace $CLI bundle plan
+trace print_requests
+
+trace $CLI bundle deploy
+trace print_requests_short

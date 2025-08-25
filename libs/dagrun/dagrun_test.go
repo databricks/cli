@@ -77,7 +77,7 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 				{"A", "B", "${A.id}"},
 				{"B", "A", "${B.id}"},
 			},
-			cycle: "cycle detected: A refers to B via ${A.id} which refers to A via ${B.id}",
+			cycle: "cycle detected: B refers to A via ${A.id} which refers to B via ${B.id}",
 		},
 		{
 			name: "three-node cycle",
@@ -86,7 +86,7 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 				{"Y", "Z", "e2"},
 				{"Z", "X", "e3"},
 			},
-			cycle: "cycle detected: X refers to Y via e1 Y refers to Z via e2 which refers to X via e3",
+			cycle: "cycle detected: Y refers to X via e1 Z refers to Y via e2 which refers to Z via e3",
 		},
 		{
 			name:         "downstream runs with failed dependency",

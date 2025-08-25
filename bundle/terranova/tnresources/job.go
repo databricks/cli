@@ -17,7 +17,6 @@ type ResourceJob struct {
 func NewResourceJob(client *databricks.WorkspaceClient, job *resources.Job) (*ResourceJob, error) {
 	return &ResourceJob{
 		client: client,
-		// TODO Use Processor with explicit field mapping
 		config: job.JobSettings,
 	}, nil
 }
@@ -65,6 +64,8 @@ func (r *ResourceJob) WaitAfterUpdate(ctx context.Context) error {
 }
 
 func makeCreateJob(config jobs.JobSettings) (jobs.CreateJob, error) {
+	// Note, exhaustruct linter validates that all off CreateJob fields are initialized.
+	// We don't have linter that validates that all of config fields are used.
 	result := jobs.CreateJob{
 		AccessControlList:    nil, // Not supported by DABs
 		BudgetPolicyId:       config.BudgetPolicyId,
@@ -92,12 +93,9 @@ func makeCreateJob(config jobs.JobSettings) (jobs.CreateJob, error) {
 		Trigger:              config.Trigger,
 		UsagePolicyId:        config.UsagePolicyId,
 		WebhookNotifications: config.WebhookNotifications,
-
-		ForceSendFields: filterFields[jobs.CreateJob](config.ForceSendFields),
+		ForceSendFields:      filterFields[jobs.CreateJob](config.ForceSendFields),
 	}
 
-	// TODO: Validate copy - all fields must be initialized or explicitly allowed to be empty
-	// Unset AccessControlList
 	return result, nil
 }
 
@@ -106,7 +104,9 @@ func makeResetJob(config jobs.JobSettings, id string) (jobs.ResetJob, error) {
 	if err != nil {
 		return jobs.ResetJob{}, err
 	}
-	result := jobs.ResetJob{JobId: idInt, NewSettings: config}
-	// TODO: Validate copy - all fields must be initialized or explicitly allowed to be empty
+	result := jobs.ResetJob{
+		JobId:       idInt,
+		NewSettings: config,
+	}
 	return result, err
 }

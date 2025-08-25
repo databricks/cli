@@ -31,29 +31,23 @@ func (m *terranovaApplyMutator) Name() string {
 }
 
 func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	if len(b.Plan.Actions) == 0 {
+	if b.Graph == nil {
+		panic("Planning is not done")
+	}
+
+	if len(b.PlannedActions) == 0 {
 		// Avoid creating state file if nothing to deploy
 		return nil
 	}
 
-	g, isReferenced, err := makeResourceGraph(ctx, b)
-	if err != nil {
-		logdiag.LogError(ctx, fmt.Errorf("error while reading config: %w", err))
-	}
-
-	// Maps node key to originally planned action
-	plannedActionsMap := map[nodeKey]deployplan.ActionType{}
-
-	for _, action := range b.Plan.Actions {
-		node := nodeKey{action.Group, action.Name}
-		plannedActionsMap[node] = action.ActionType
-		if !g.HasNode(node) {
-			if action.ActionType == deployplan.ActionTypeDelete {
-				// it is expected that this node is not seen by makeResourceGraph
-				g.AddNode(node)
+	for node, action := range b.PlannedActions {
+		if !b.Graph.HasNode(node) {
+			if action == deployplan.ActionTypeDelete {
+				// it is expected that this node is not seen by makeResourceGraph because it is not in config
+				b.Graph.AddNode(node)
 			} else {
 				// it's internal error today because plan cannot be outdated. In the future when we load serialized plan, this will become user error
-				logdiag.LogError(ctx, fmt.Errorf("cannot %s %s.%s: internal error, plan is outdated", action.ActionType, action.Group, action.Name))
+				logdiag.LogError(ctx, fmt.Errorf("cannot %s %s.%s: internal error, plan is outdated", action, node.Group, node.Key))
 			}
 		}
 	}
@@ -62,25 +56,18 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 		return nil
 	}
 
-	err = g.DetectCycle()
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
 	client := b.WorkspaceClient()
 
-	g.Run(defaultParallelism, func(node nodeKey, failedDependency *nodeKey) bool {
-		actionType := plannedActionsMap[node]
+	b.Graph.Run(defaultParallelism, func(node deployplan.ResourceNode, failedDependency *deployplan.ResourceNode) bool {
+		actionType := b.PlannedActions[node]
 
-		errorPrefix := fmt.Sprintf("cannot %s %s.%s", actionType.String(), node.Group, node.Name)
+		errorPrefix := fmt.Sprintf("cannot %s %s.%s", actionType.String(), node.Group, node.Key)
 
 		// If a dependency failed, report and skip execution for this node by returning false
 		if failedDependency != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: dependency failed: %s", errorPrefix, failedDependency.String()))
 			return false
 		}
-
-		// TODO: ensure that config for this node is fully resolved at this point.
 
 		settings, ok := SupportedResources[node.Group]
 		if !ok {
@@ -98,23 +85,17 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 			client:       client,
 			db:           &b.ResourceDatabase,
 			group:        node.Group,
-			resourceName: node.Name,
+			resourceName: node.Key,
 			settings:     settings,
 		}
 
 		if actionType == deployplan.ActionTypeDelete {
-			err = d.destroy(ctx)
+			err := d.Destroy(ctx)
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
 			}
 			return true
-		}
-
-		config, ok := b.GetResourceConfig(node.Group, node.Name)
-		if !ok {
-			logdiag.LogError(ctx, fmt.Errorf("%s: internal error when reading config", errorPrefix))
-			return false
 		}
 
 		// Fetch the references to ensure all are resolved
@@ -131,6 +112,12 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 			return false
 		}
 
+		config, ok := b.GetResourceConfig(node.Group, node.Key)
+		if !ok {
+			logdiag.LogError(ctx, fmt.Errorf("%s: internal error when reading config", errorPrefix))
+			return false
+		}
+
 		// TODO: redo calcDiff to downgrade planned action if possible (?)
 
 		err = d.Deploy(ctx, config, actionType)
@@ -140,11 +127,11 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 		}
 
 		// Update resources.id after successful deploy so that future ${resources...id} refs are replaced
-		if isReferenced[node] {
-			err = resolveIDReference(ctx, b, node.Group, node.Name)
+		if b.Graph.HasOutgoingEdges(node) {
+			err = resolveIDReference(ctx, b, node.Group, node.Key)
 			if err != nil {
 				// not using errorPrefix because resource was deployed
-				logdiag.LogError(ctx, fmt.Errorf("failed to replace ref to resources.%s.%s.id: %w", node.Group, node.Name, err))
+				logdiag.LogError(ctx, fmt.Errorf("failed to replace ref to resources.%s.%s.id: %w", node.Group, node.Key, err))
 				return false
 			}
 		}
@@ -153,7 +140,7 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 	})
 
 	// This must run even if deploy failed:
-	err = b.ResourceDatabase.Finalize()
+	err := b.ResourceDatabase.Finalize()
 	if err != nil {
 		logdiag.LogError(ctx, err)
 	}
@@ -169,7 +156,7 @@ type Deployer struct {
 	settings     ResourceSettings
 }
 
-func (d *Deployer) destroy(ctx context.Context) error {
+func (d *Deployer) Destroy(ctx context.Context) error {
 	entry, hasEntry := d.db.GetResourceEntry(d.group, d.resourceName)
 	if !hasEntry {
 		log.Infof(ctx, "Cannot delete %s.%s: missing from state", d.group, d.resourceName)

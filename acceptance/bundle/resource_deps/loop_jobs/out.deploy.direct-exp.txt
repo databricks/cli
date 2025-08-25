@@ -1,5 +1,5 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Error: cycle detected: jobs.bar refers to jobs.foo via ${resources.jobs.bar.id} which refers to jobs.bar via ${resources.jobs.foo.id}
+Error: cycle detected: jobs.foo refers to jobs.bar via ${resources.jobs.bar.id} which refers to jobs.foo via ${resources.jobs.foo.id}
 
 
 Exit code (musterr): 1

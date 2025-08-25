@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import Type
 
 from databricks.bundles.core._resource import Resource
+from databricks.bundles.volumes._models.volume import Volume
 
 
 @dataclass(kw_only=True, frozen=True)
@@ -44,5 +45,10 @@ class _ResourceType:
                 resource_type=Pipeline,
                 plural_name="pipelines",
                 singular_name="pipeline",
+            ),
+            _ResourceType(
+                resource_type=Volume,
+                plural_name="volumes",
+                singular_name="volume",
             ),
         )

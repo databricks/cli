@@ -5,30 +5,15 @@ import (
 	"strings"
 )
 
-type Plan struct {
-	// TerraformPlanPath is the path to the plan from the terraform CLI
-	TerraformPlanPath string
-
-	// If true, the plan is empty and applying it will not do anything
-	TerraformIsEmpty bool
-
-	// List of actions to apply (direct deployment)
-	Actions []Action
-}
-
 type Action struct {
-	// Resource group in the config, e.g. "jobs", "pipelines" etc
-	Group string
-
-	// Key of the resource the config
-	Name string
+	ResourceNode
 
 	ActionType ActionType
 }
 
 func (a Action) String() string {
 	typ, _ := strings.CutSuffix(a.Group, "s")
-	return fmt.Sprintf("  %s %s %s", a.ActionType, typ, a.Name)
+	return fmt.Sprintf("  %s %s %s", a.ActionType, typ, a.Key)
 }
 
 // Implements cmdio.Event for cmdio.Log

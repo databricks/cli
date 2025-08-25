@@ -29,17 +29,18 @@ import (
 )
 
 func getActions(ctx context.Context, b *bundle.Bundle) ([]deployplan.Action, error) {
-	var actions []deployplan.Action
-	var err error
-
 	if b.DirectDeployment {
-		return terranova.CalculateDeployActions(ctx, b)
+		err := terranova.CalculatePlanForDeploy(ctx, b)
+		if err != nil {
+			return nil, err
+		}
+		return terranova.GetDeployActions(ctx, b), nil
 	} else {
 		tf := b.Terraform
 		if tf == nil {
 			return nil, errors.New("terraform not initialized")
 		}
-		actions, err = terraform.ShowPlanFile(ctx, tf, b.Plan.TerraformPlanPath)
+		actions, err := terraform.ShowPlanFile(ctx, tf, b.TerraformPlanPath)
 		return actions, err
 	}
 }
@@ -49,7 +50,6 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	b.Plan.Actions = actions
 
 	types := []deployplan.ActionType{deployplan.ActionTypeRecreate, deployplan.ActionTypeDelete}
 	schemaActions := deployplan.FilterGroup(actions, "schemas", types...)

@@ -17,7 +17,10 @@ lint:
 	uv run ruff format --diff
 
 codegen:
-	find databricks -name _models | xargs rm -rf
+	find databricks/bundles -type d -mindepth 1 -maxdepth 1 \
+	  ! -path databricks/bundles/core \
+	  ! -path databricks/bundles/resources \
+	  -exec rm -rf {} \;
 
 	cd codegen; uv run -m pytest codegen_tests
 	cd codegen; uv run -m codegen.main --output ..

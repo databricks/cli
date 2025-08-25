@@ -41,19 +41,23 @@ func TestParseTerraformActions(t *testing.T) {
 		},
 	}
 
-	actions := terraform.GetActions(changes)
+	actions := terraform.GetActions(t.Context(), changes)
 	res := deployplan.FilterGroup(actions, "pipelines", deployplan.ActionTypeDelete, deployplan.ActionTypeRecreate)
 
 	assert.Equal(t, []deployplan.Action{
 		{
 			ActionType: deployplan.ActionTypeDelete,
-			Group:      "pipelines",
-			Name:       "delete pipeline",
+			ResourceNode: deployplan.ResourceNode{
+				Group: "pipelines",
+				Key:   "delete pipeline",
+			},
 		},
 		{
 			ActionType: deployplan.ActionTypeRecreate,
-			Group:      "pipelines",
-			Name:       "recreate pipeline",
+			ResourceNode: deployplan.ResourceNode{
+				Group: "pipelines",
+				Key:   "recreate pipeline",
+			},
 		},
 	}, res)
 }
