@@ -196,6 +196,11 @@ func (p *openapiParser) extractAnnotations(typ reflect.Type, outputPath, overrid
 					if description == "" {
 						addEmptyOverride(k, basePath, overrides)
 					}
+
+					// if field got deprecated outside of preview it can't be just removed and we keep it
+					if refProp.Deprecated && refProp.Preview != "PRIVATE" {
+						addPythonKeepDeprecatedOverride(k, basePath, overrides)
+					}
 				} else {
 					addEmptyOverride(k, basePath, overrides)
 				}
@@ -241,22 +246,46 @@ func prependCommentToFile(outputPath, comment string) error {
 	return err
 }
 
+// addPythonKeepDeprecatedOverride adds an override with "x-databricks-python-keep-deprecated: true" to
+// annotations_openapi_overrides.yaml unless it already specifies a value for "x-databricks-python-keep-deprecated".
+//
+// This way if field got deprecated, we add an override to keep it in Python code, until we revisit deprecation.
+func addPythonKeepDeprecatedOverride(key, pkg string, overridesFile annotation.File) {
+	if overridesFile[pkg] == nil {
+		overridesFile[pkg] = map[string]annotation.Descriptor{}
+	}
+
+	overrides := overridesFile[pkg]
+
+	a, ok := overrides[key]
+	if !ok {
+		a = annotation.Descriptor{}
+	}
+
+	// if we don't have explicit value, it means that field just got deprecated,
+	// and we should keep it in Python code
+	if a.PythonKeepDeprecated == annotation.PythonKeepDeprecatedUnset {
+		a.PythonKeepDeprecated = annotation.PythonKeepDeprecatedTrue
+	}
+
+	overrides[key] = a
+}
+
 func addEmptyOverride(key, pkg string, overridesFile annotation.File) {
 	if overridesFile[pkg] == nil {
 		overridesFile[pkg] = map[string]annotation.Descriptor{}
 	}
 
 	overrides := overridesFile[pkg]
-	if overrides[key].Description == "" {
-		overrides[key] = annotation.Descriptor{Description: annotation.Placeholder}
-	}
 
 	a, ok := overrides[key]
 	if !ok {
 		a = annotation.Descriptor{}
 	}
+
 	if a.Description == "" {
 		a.Description = annotation.Placeholder
 	}
+
 	overrides[key] = a
 }

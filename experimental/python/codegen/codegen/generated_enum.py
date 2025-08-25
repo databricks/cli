@@ -15,6 +15,7 @@ class GeneratedEnum:
     values: dict[str, str]
     description: Optional[str]
     experimental: bool
+    deprecated: bool
 
 
 def generate_enum(namespace: str, schema_name: str, schema: Schema) -> GeneratedEnum:
@@ -35,6 +36,7 @@ def generate_enum(namespace: str, schema_name: str, schema: Schema) -> Generated
         values=values,
         description=schema.description,
         experimental=schema.stage == Stage.PRIVATE,
+        deprecated=schema.deprecated or False,
     )
 
 
@@ -48,7 +50,12 @@ def get_code(generated: GeneratedEnum) -> str:
     b.append(f"class {generated.class_name}(Enum):")
     b.newline()
 
-    _append_description(b, generated.description, generated.experimental)
+    _append_description(
+        b,
+        generated.description,
+        experimental=generated.experimental,
+        deprecated=generated.deprecated,
+    )
 
     # Example:
     #

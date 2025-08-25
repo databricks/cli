@@ -102,6 +102,11 @@ class GeneratedField:
     be marked as experimental in docstring.
     """
 
+    deprecated: bool
+    """
+    If true, the field is deprecated and should be marked as deprecated in docstring.
+    """
+
     def __post_init__(self):
         if self.default_factory is not None and self.default is not None:
             raise ValueError("Can't have both default and default_factory", self)
@@ -131,6 +136,7 @@ class GeneratedDataclass:
     fields: list[GeneratedField]
     extends: list[GeneratedType]
     experimental: bool
+    deprecated: bool
 
 
 def generate_field(
@@ -156,6 +162,7 @@ def generate_field(
             default_factory="dict",
             create_func_default="None",
             experimental=prop.stage == Stage.PRIVATE,
+            deprecated=prop.deprecated or False,
         )
     elif field_type.name == "VariableOrList":
         return GeneratedField(
@@ -168,6 +175,7 @@ def generate_field(
             default_factory="list",
             create_func_default="None",
             experimental=prop.stage == Stage.PRIVATE,
+            deprecated=prop.deprecated or False,
         )
     elif is_required:
         return GeneratedField(
@@ -180,6 +188,7 @@ def generate_field(
             default_factory=None,
             create_func_default=None,
             experimental=prop.stage == Stage.PRIVATE,
+            deprecated=prop.deprecated or False,
         )
     else:
         return GeneratedField(
@@ -192,6 +201,7 @@ def generate_field(
             default_factory=None,
             create_func_default="None",
             experimental=prop.stage == Stage.PRIVATE,
+            deprecated=prop.deprecated or False,
         )
 
 
@@ -326,6 +336,7 @@ def generate_dataclass(
         fields=fields,
         extends=extends,
         experimental=schema.stage == Stage.PRIVATE,
+        deprecated=schema.deprecated or False,
     )
 
 
@@ -365,10 +376,19 @@ def _append_dataclass(b: CodeBuilder, generated: GeneratedDataclass):
     b.append(":").newline()
 
     # FIXME should contain class docstring
-    if not generated.description and not generated.experimental:
+    if (
+        not generated.description
+        and not generated.experimental
+        and not generated.deprecated
+    ):
         b.indent().append_triple_quote().append_triple_quote().newline().newline()
     else:
-        _append_description(b, generated.description, generated.experimental)
+        _append_description(
+            b,
+            generated.description,
+            experimental=generated.experimental,
+            deprecated=generated.deprecated,
+        )
 
 
 def _append_field(b: CodeBuilder, field: GeneratedField):
@@ -446,7 +466,12 @@ def _append_typed_dict(b: CodeBuilder, generated: GeneratedDataclass):
     b.indent().append_triple_quote().append_triple_quote().newline().newline()
 
 
-def _append_description(b: CodeBuilder, description: Optional[str], experimental: bool):
+def _append_description(
+    b: CodeBuilder, description: Optional[str], *, experimental: bool, deprecated: bool
+):
+    if deprecated:
+        description = "[DEPRECATED] " + (description or "")
+
     if description or experimental:
         b.indent().append_triple_quote().newline()
         if experimental:
@@ -472,7 +497,12 @@ def get_code(generated: GeneratedDataclass) -> str:
 
     for field in generated.fields:
         _append_field(b, field)
-        _append_description(b, field.description, field.experimental)
+        _append_description(
+            b,
+            field.description,
+            experimental=field.experimental,
+            deprecated=field.deprecated,
+        )
 
         b.newline()
 
@@ -485,7 +515,12 @@ def get_code(generated: GeneratedDataclass) -> str:
 
     for field in generated.fields:
         _append_typed_dict_field(b, field)
-        _append_description(b, field.description, field.experimental)
+        _append_description(
+            b,
+            field.description,
+            experimental=field.experimental,
+            deprecated=field.deprecated,
+        )
 
         b.newline()
 

@@ -180,6 +180,7 @@ jobs:
             a.addKeyword('doNotSuggest');
             a.addKeyword('markdownDescription');
             a.addKeyword('x-databricks-preview');
+            a.addKeyword('x-databricks-python-keep-deprecated');
           }" >> keywords.js
 
           for file in ./bundle/internal/schema/testdata/pass/*.yml; do
