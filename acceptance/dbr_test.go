@@ -1,5 +1,3 @@
-//go:build dbr_only
-
 package acceptance_test
 
 import (
@@ -106,7 +104,7 @@ func runDbrTests(ctx context.Context, t *testing.T, w *databricks.WorkspaceClien
 	t.Logf("The test runner job finished with status: %s. Run URL: %s", run.State.LifeCycleState, run.RunPageUrl)
 }
 
-func TestDbrAcceptance(t *testing.T) {
+func testDbrAcceptance(t *testing.T) {
 	ctx := context.Background()
 	uniqueId := uuid.New().String()
 
