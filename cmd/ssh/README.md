@@ -1,7 +1,7 @@
 ## SSH Tunnel for Databricks
-SSH tunnel lets customers connect any IDE to Databricks clusters to run and debug all code - including non-Spark/ML- with environment parity, and simple setup.
+SSH tunnel lets customers connect any IDE to Databricks compute to run and debug all code - including non-Spark/ML- with environment parity, and simple setup.
 
-## Cluster Requirements
+## Compute Requirements
 - Dedicated (single user) access mode if you want to use Remote Development tools in IDEs
 - Dedicated or Standard access mode for terminal ssh connections
 
