@@ -439,6 +439,13 @@ github.com/databricks/cli/bundle/config.Workspace:
   "state_path":
     "description": |-
       The workspace state path
+github.com/databricks/cli/bundle/config/resources.Alert:
+  "effective_run_as":
+    "description": |-
+      PLACEHOLDER
+  "run_as":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.AlertPermission:
   "group_name":
     "description": |-

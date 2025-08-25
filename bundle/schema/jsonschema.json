@@ -80,6 +80,9 @@
                         "description": "The display name of the alert.",
                         "$ref": "#/$defs/string"
                       },
+                      "effective_run_as": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2RunAs"
+                      },
                       "evaluation": {
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2Evaluation"
                       },
@@ -105,6 +108,9 @@
                       "query_text": {
                         "description": "Text of the query to be run.",
                         "$ref": "#/$defs/string"
+                      },
+                      "run_as": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2RunAs"
                       },
                       "run_as_user_name": {
                         "description": "The run as username. This field is set to \"Unavailable\" if the user has been deleted.",
@@ -8481,6 +8487,26 @@
                       "$ref": "#/$defs/float64"
                     },
                     "string_value": {
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "sql.AlertV2RunAs": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "service_principal_name": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "user_name": {
                       "$ref": "#/$defs/string"
                     }
                   },
