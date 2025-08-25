@@ -1,9 +1,6 @@
 trace $CLI bundle plan
 
-# Expect no clean up requests
-trace jq -s '.[] | select(.path | contains("api/2.0/workspace")) | select(.method != "GET")' out.requests.txt
-
-# Expect no upload requests
-trace jq -s '.[] | select(.path | contains("/api/2.0/workspace-files/import-file"))' out.requests.txt
+# Expect no non-GET requests
+trace jq -s '.[] | select(.method != "GET")' out.requests.txt
 
 rm out.requests.txt

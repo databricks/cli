@@ -41,7 +41,7 @@ func ReplaceWithRemotePath(ctx context.Context, b *bundle.Bundle) (map[string][]
 			for _, location := range locations {
 				v, err = dyn.SetByPath(v, location.configPath, dyn.NewValue(remotePath, []dyn.Location{location.location}))
 				if err != nil {
-					return v, err
+					return v, fmt.Errorf("internal error: failed to update path %#v to %#v: %w", source, remotePath, err)
 				}
 			}
 
