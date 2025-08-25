@@ -15,16 +15,16 @@ const disclaimer = `WARNING! This is an experimental feature:
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:    "ssh",
-		Short:  "Connect to Databricks clusters with ssh",
+		Short:  "Connect to Databricks compute with ssh",
 		Hidden: true,
-		Long: `Connect to Databricks clusters with ssh.
+		Long: `Connect to Databricks compute with ssh.
 
-SSH commands let you setup and establish ssh connections to Databricks clusters.
+SSH commands let you setup and establish ssh connections to Databricks compute.
 
 Common workflows:
   databricks ssh connect --cluster=<cluster-id> --profile=<profile-name>  # connect to a cluster without any setup
-  databricks ssh setup --name=my-cluster --cluster=<cluster-id>           # update local ssh config
-  ssh my-cluster                                                          # connect to the cluster using ssh client
+  databricks ssh setup --name=my-compute --cluster=<cluster-id>           # update local ssh config
+  ssh my-compute                                                          # connect to the compute using ssh client
 
 ` + disclaimer,
 	}
