@@ -18,6 +18,5 @@ See more details here: ([#3225](https://github.com/databricks/cli/pull/3225))
 
 ### Bundles
 * [Breaking Change] Remove deprecated path fallback mechanism for jobs and pipelines ([#3225](https://github.com/databricks/cli/pull/3225))
-* Modified run flag validation to allow `--refresh` and `--full-refresh` flags to be used together ([#3300](https://github.com/databricks/cli/pull/3300))
 
 ### API Changes
