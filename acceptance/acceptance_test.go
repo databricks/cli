@@ -1163,7 +1163,7 @@ func getCloudEnvBase(cloudEnv string) string {
 	case "gcp", "gcp-ucws":
 		return "gcp"
 	case "":
-		return ""
+		return "aws"
 	default:
 		return "unknown-cloudEnv-" + cloudEnv
 	}
