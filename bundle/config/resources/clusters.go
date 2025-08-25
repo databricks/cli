@@ -29,6 +29,7 @@ type Cluster struct {
 	URL            string              `json:"url,omitempty" bundle:"internal"`
 
 	compute.ClusterSpec
+	Lifecycle Lifecycle `json:"lifecycle"`
 }
 
 func (s *Cluster) UnmarshalJSON(b []byte) error {

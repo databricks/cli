@@ -70,6 +70,11 @@ func (dashboardConverter) Convert(ctx context.Context, key string, vin dyn.Value
 		return err
 	}
 
+	vout, err = convertLifecycle(ctx, vout, vin.Get("lifecycle"))
+	if err != nil {
+		return err
+	}
+
 	// Add the converted resource to the output.
 	out.Dashboard[key] = vout.AsAny()
 

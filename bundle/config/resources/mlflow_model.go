@@ -29,6 +29,7 @@ type MlflowModel struct {
 	URL            string                  `json:"url,omitempty" bundle:"internal"`
 
 	ml.CreateModelRequest
+	Lifecycle Lifecycle `json:"lifecycle"`
 }
 
 func (s *MlflowModel) UnmarshalJSON(b []byte) error {

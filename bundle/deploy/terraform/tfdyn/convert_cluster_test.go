@@ -94,3 +94,35 @@ func TestConvertCluster(t *testing.T) {
 		},
 	}, out.Permissions["cluster_my_cluster"])
 }
+
+func TestConvertClusterWithLifecycle(t *testing.T) {
+	src := resources.Cluster{
+		ClusterSpec: compute.ClusterSpec{
+			NumWorkers:   3,
+			SparkVersion: "13.3.x-scala2.12",
+			ClusterName:  "cluster",
+		},
+		Lifecycle: resources.Lifecycle{
+			PreventDestroy: true,
+		},
+	}
+
+	vin, err := convert.FromTyped(src, dyn.NilValue)
+	require.NoError(t, err)
+
+	ctx := context.Background()
+	out := schema.NewResources()
+	err = clusterConverter{}.Convert(ctx, "my_cluster", vin, out)
+	require.NoError(t, err)
+
+	// Assert equality on the cluster
+	assert.Equal(t, map[string]any{
+		"num_workers":   int64(3),
+		"spark_version": "13.3.x-scala2.12",
+		"cluster_name":  "cluster",
+		"no_wait":       true,
+		"lifecycle": map[string]any{
+			"prevent_destroy": true,
+		},
+	}, out.Cluster["my_cluster"])
+}

@@ -44,6 +44,11 @@ func (appConverter) Convert(ctx context.Context, key string, vin dyn.Value, out 
 		return err
 	}
 
+	vout, err = convertLifecycle(ctx, vout, vin.Get("lifecycle"))
+	if err != nil {
+		return err
+	}
+
 	// Add the converted resource to the output.
 	out.App[key] = vout.AsAny()
 

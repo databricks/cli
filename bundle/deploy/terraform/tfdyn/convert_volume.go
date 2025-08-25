@@ -28,6 +28,11 @@ func (volumeConverter) Convert(ctx context.Context, key string, vin dyn.Value, o
 		return err
 	}
 
+	vout, err = convertLifecycle(ctx, vout, vin.Get("lifecycle"))
+	if err != nil {
+		return err
+	}
+
 	// Add the converted resource to the output.
 	out.Volume[key] = vout.AsAny()
 

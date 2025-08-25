@@ -29,6 +29,7 @@ type MlflowExperiment struct {
 	URL            string                       `json:"url,omitempty" bundle:"internal"`
 
 	ml.Experiment
+	Lifecycle Lifecycle `json:"lifecycle"`
 }
 
 func (s *MlflowExperiment) UnmarshalJSON(b []byte) error {
