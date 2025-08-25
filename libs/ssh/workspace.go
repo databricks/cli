@@ -59,7 +59,7 @@ func uploadTunnelBinaries(ctx context.Context, client *databricks.WorkspaceClien
 	return uploadReleases(ctx, workspaceFiler, getRelease, version, releasesDir)
 }
 
-func uploadReleases(ctx context.Context, workspaceFiler filer.Filer, getRelease releaseProvider, version string, releasesDir string) error {
+func uploadReleases(ctx context.Context, workspaceFiler filer.Filer, getRelease releaseProvider, version, releasesDir string) error {
 	architectures := []string{"amd64", "arm64"}
 
 	for _, arch := range architectures {
@@ -103,7 +103,7 @@ func getReleaseName(architecture, version string) string {
 }
 
 func getLocalRelease(ctx context.Context, architecture, version, releasesDir string) (io.ReadCloser, error) {
-	cmdio.LogString(ctx, fmt.Sprintf("Looking for CLI releases in directory: %s", releasesDir))
+	cmdio.LogString(ctx, "Looking for CLI releases in directory: "+releasesDir)
 	releaseName := getReleaseName(architecture, version)
 	releasePath := filepath.Join(releasesDir, releaseName)
 	file, err := os.Open(releasePath)

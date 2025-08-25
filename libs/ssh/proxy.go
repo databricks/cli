@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	proxyEOFError                    = fmt.Errorf("proxy EOF error")
+	errProxyEOF                      = errors.New("proxy EOF error")
 	proxyHandoverInitTimeout         = 30 * time.Second
 	proxyHandoverAcceptTimeout       = 25 * time.Second
 	proxyHandoverAckCloseConnTimeout = 15 * time.Second
@@ -64,9 +64,8 @@ func (pc *proxyConnection) createWebsocketConnection(ctx context.Context, client
 	}
 
 	req.URL.Scheme = "wss"
-	dialer := websocket.Dialer{}
-
-	conn, _, err := dialer.Dial(req.URL.String(), req.Header)
+	// websocket connection manages lifecycle of the response object, no need to close the body
+	conn, _, err := websocket.DefaultDialer.Dial(req.URL.String(), req.Header) // nolint:bodyclose
 	if err != nil {
 		return nil, fmt.Errorf("failed to establish websocket connection: %w", err)
 	}
@@ -119,7 +118,7 @@ func (pc *proxyConnection) RunSendingLoop(ctx context.Context, src io.Reader) er
 		}
 		if readErr != nil {
 			if errors.Is(readErr, io.EOF) {
-				return errors.Join(proxyEOFError, readErr)
+				return errors.Join(errProxyEOF, readErr)
 			} else {
 				return fmt.Errorf("failed to read from source: %w", readErr)
 			}
@@ -158,7 +157,7 @@ func (pc *proxyConnection) RunReceivingLoop(ctx context.Context, dst io.Writer) 
 				continue
 			} else {
 				if errors.Is(err, io.EOF) || websocket.IsCloseError(err, websocket.CloseNormalClosure) {
-					return errors.Join(proxyEOFError, err)
+					return errors.Join(errProxyEOF, err)
 				} else {
 					return fmt.Errorf("failed to read from websocket: %w", err)
 				}
@@ -166,7 +165,7 @@ func (pc *proxyConnection) RunReceivingLoop(ctx context.Context, dst io.Writer) 
 		}
 
 		if mt != websocket.BinaryMessage {
-			return fmt.Errorf("received non-binary websocket message")
+			return errors.New("received non-binary websocket message")
 		}
 		if _, err := dst.Write(data); err != nil {
 			return fmt.Errorf("failed to copy to writer: %w", err)
@@ -188,7 +187,7 @@ func (pc *proxyConnection) blockUntilHandoverComplete(conn *websocket.Conn) erro
 	defer pc.handoverMutex.Unlock()
 	// Sanity check to ensure we are not in the middle of a handover - this should not happen.
 	if pc.conn.Load() == conn {
-		return fmt.Errorf("handover mutex acquired while the old connection is still active")
+		return errors.New("handover mutex acquired while the old connection is still active")
 	}
 	return nil
 }

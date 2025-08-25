@@ -33,7 +33,7 @@ type PortMetadata struct {
 //go:embed ssh-server-bootstrap.py
 var sshServerBootstrapScript string
 
-var ServerMetadataError = fmt.Errorf("server metadata error")
+var errServerMetadata = errors.New("server metadata error")
 
 type ClientOptions struct {
 	ClusterID           string
@@ -104,7 +104,7 @@ func RunClient(ctx context.Context, client *databricks.WorkspaceClient, opts Cli
 		}
 	}
 
-	cmdio.LogString(ctx, fmt.Sprintf("Remote user name: %s", userName))
+	cmdio.LogString(ctx, "Remote user name: "+userName)
 	cmdio.LogString(ctx, fmt.Sprintf("Server port: %d", serverPort))
 
 	if opts.ProxyMode {
@@ -143,10 +143,10 @@ func getWorkspaceMetadata(ctx context.Context, client *databricks.WorkspaceClien
 	return metadata.Port, nil
 }
 
-func getServerMetadata(ctx context.Context, client *databricks.WorkspaceClient, clusterID string, version string) (int, string, error) {
+func getServerMetadata(ctx context.Context, client *databricks.WorkspaceClient, clusterID, version string) (int, string, error) {
 	serverPort, err := getWorkspaceMetadata(ctx, client, version, clusterID)
 	if err != nil {
-		return 0, "", errors.Join(ServerMetadataError, err)
+		return 0, "", errors.Join(errServerMetadata, err)
 	}
 	workspaceID, err := client.CurrentWorkspaceID(ctx)
 	if err != nil {
@@ -167,7 +167,7 @@ func getServerMetadata(ctx context.Context, client *databricks.WorkspaceClient, 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return 0, "", errors.Join(ServerMetadataError, fmt.Errorf("server is not ok, status code %d", resp.StatusCode))
+		return 0, "", errors.Join(errServerMetadata, fmt.Errorf("server is not ok, status code %d", resp.StatusCode))
 	}
 
 	bodyBytes, err := io.ReadAll(resp.Body)
@@ -177,7 +177,7 @@ func getServerMetadata(ctx context.Context, client *databricks.WorkspaceClient, 
 	return serverPort, string(bodyBytes), nil
 }
 
-func submitSSHTunnelJob(ctx context.Context, client *databricks.WorkspaceClient, clusterID string, secretsScope string, publicKeySecretName string, version string, shutdownDelay time.Duration, maxClients int) (int64, error) {
+func submitSSHTunnelJob(ctx context.Context, client *databricks.WorkspaceClient, clusterID, secretsScope, publicKeySecretName, version string, shutdownDelay time.Duration, maxClients int) (int64, error) {
 	contentDir, err := getWorkspaceContentDir(ctx, client, version, clusterID)
 	if err != nil {
 		return 0, fmt.Errorf("failed to get workspace content directory: %w", err)
@@ -188,9 +188,9 @@ func submitSSHTunnelJob(ctx context.Context, client *databricks.WorkspaceClient,
 		return 0, fmt.Errorf("failed to create directory in the remote workspace: %w", err)
 	}
 
-	sshTunnelJobName := fmt.Sprintf("ssh-server-bootstrap-%s", clusterID)
+	sshTunnelJobName := "ssh-server-bootstrap-" + clusterID
 	jobNotebookPath := filepath.ToSlash(filepath.Join(contentDir, "ssh-server-bootstrap"))
-	notebookContent := fmt.Sprintf("# Databricks notebook source\n%s", sshServerBootstrapScript)
+	notebookContent := "# Databricks notebook source\n" + sshServerBootstrapScript
 	encodedContent := base64.StdEncoding.EncodeToString([]byte(notebookContent))
 
 	err = client.Workspace.Import(ctx, workspace.Import{
@@ -249,12 +249,12 @@ func spawnSSHClient(ctx context.Context, clusterID, userName, privateKeyPath str
 		"-i", privateKeyPath,
 		"-o", "StrictHostKeyChecking=accept-new",
 		"-o", "ConnectTimeout=360",
-		"-o", fmt.Sprintf("ProxyCommand=%s", proxyCommand),
+		"-o", "ProxyCommand=" + proxyCommand,
 		clusterID,
 	}
 	sshArgs = append(sshArgs, additionalArgs...)
 
-	cmdio.LogString(ctx, fmt.Sprintf("Launching SSH client: ssh %s", strings.Join(sshArgs, " ")))
+	cmdio.LogString(ctx, "Launching SSH client: ssh "+strings.Join(sshArgs, " "))
 
 	sshCmd := exec.CommandContext(ctx, "ssh", sshArgs...)
 
@@ -313,15 +313,15 @@ func startSSHProxy(ctx context.Context, client *databricks.WorkspaceClient, clus
 	return g.Wait()
 }
 
-func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceClient, clusterID string, secretsScope string, publicKeySecretName string, version string, shutdownDelay time.Duration, maxClients int) (string, int, error) {
-	cmdio.LogString(ctx, fmt.Sprintf("Ensuring the cluster is running: %s", clusterID))
+func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceClient, clusterID, secretsScope, publicKeySecretName, version string, shutdownDelay time.Duration, maxClients int) (string, int, error) {
+	cmdio.LogString(ctx, "Ensuring the cluster is running: "+clusterID)
 	err := client.Clusters.EnsureClusterIsRunning(ctx, clusterID)
 	if err != nil {
 		return "", 0, fmt.Errorf("failed to ensure that the cluster is running: %w", err)
 	}
 
 	serverPort, userName, err := getServerMetadata(ctx, client, clusterID, version)
-	if errors.Is(err, ServerMetadataError) {
+	if errors.Is(err, errServerMetadata) {
 		cmdio.LogString(ctx, "SSH server is not running, starting it now...")
 
 		runID, err := submitSSHTunnelJob(ctx, client, clusterID, secretsScope, publicKeySecretName, version, shutdownDelay, maxClients)

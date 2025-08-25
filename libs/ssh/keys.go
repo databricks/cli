@@ -119,7 +119,7 @@ func checkAndGenerateSSHKeyPair(ctx context.Context, keyPath string) (string, st
 		}
 	}
 
-	cmdio.LogString(ctx, fmt.Sprintf("Using SSH key pair at %s", keyPath))
+	cmdio.LogString(ctx, "Using SSH key pair at "+keyPath)
 	publicKeyBytes, err := os.ReadFile(keyPath + ".pub")
 	if err != nil {
 		return "", "", fmt.Errorf("failed to read public key: %w", err)
