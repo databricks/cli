@@ -1,4 +1,11 @@
 # Databricks notebook source
+# This notebook is meant to be run from a job on a Databricks workspace.
+# It is recommended to have the job cluster be a serverless cluster
+# to match DABs in the workspace execution environment.
+# The recommended flow to run this is:
+# run: deco env run -i -n <env-name> -- go test -timeout 7200s -run TestDbrAcceptance github.com/databricks/cli/acceptance
+#    where <env-name> is the name of the environment to run the tests in. Running the TestDbrAcceptance test will automatically
+#    start a job to execute this test on the appropriate cluster.
 
 import os
 import subprocess

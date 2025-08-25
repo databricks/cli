@@ -525,7 +525,13 @@ func runTest(t *testing.T,
 
 		// Run DBR tests on the workspace file system to mimic usage from
 		// DABs in the workspace.
-		tmpDir = "/Workspace/Users/" + currentUser.UserName + "/acceptance/" + uuid.New().String()
+		timestamp := time.Now().Format("2006-01-02T15:04:05Z")
+		tmpDir = fmt.Sprintf(
+			"/Workspace/Users/%s/acceptance/%s/%s",
+			currentUser.UserName,
+			timestamp,
+			uuid.New().String(),
+		)
 		t.Logf("Running DBR tests on %s", tmpDir)
 
 		t.Cleanup(func() {
