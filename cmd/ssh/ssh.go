@@ -30,6 +30,7 @@ Common workflows:
 	}
 
 	cmd.AddCommand(newSetupCommand())
+	cmd.AddCommand(newConnectCommand())
 
 	return cmd
 }
