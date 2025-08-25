@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -9,6 +10,10 @@ import (
 )
 
 func TestArchive(t *testing.T) {
+	if os.Getenv("CLOUD_ENV") == "" {
+		t.Skip("Skipping test in local environment")
+	}
+
 	t.Parallel()
 
 	archiveDir := t.TempDir()

@@ -10,6 +10,10 @@ import (
 )
 
 func TestUvDownloader(t *testing.T) {
+	if os.Getenv("CLOUD_ENV") == "" {
+		t.Skip("Skipping test in local environment")
+	}
+
 	t.Parallel()
 	tmpDir := t.TempDir()
 
@@ -26,6 +30,10 @@ func TestUvDownloader(t *testing.T) {
 }
 
 func TestJqDownloader(t *testing.T) {
+	if os.Getenv("CLOUD_ENV") == "" {
+		t.Skip("Skipping test in local environment")
+	}
+
 	t.Parallel()
 	tmpDir := t.TempDir()
 
@@ -42,6 +50,10 @@ func TestJqDownloader(t *testing.T) {
 }
 
 func TestGoDownloader(t *testing.T) {
+	if os.Getenv("CLOUD_ENV") == "" {
+		t.Skip("Skipping test in local environment")
+	}
+
 	t.Parallel()
 	tmpDir := t.TempDir()
 
