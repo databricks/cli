@@ -16,5 +16,6 @@ See more details here: ([#3225](https://github.com/databricks/cli/pull/3225))
 
 ### Bundles
 * [Breaking Change] Remove deprecated path fallback mechanism for jobs and pipelines ([#3225](https://github.com/databricks/cli/pull/3225))
+* Rename Delta Live Tables to Lakeflow Declarative Pipelines in the default-python template ([#3476](https://github.com/databricks/cli/pull/3476)).
 
 ### API Changes

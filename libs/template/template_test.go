@@ -8,7 +8,7 @@ import (
 )
 
 func TestTemplateHelpDescriptions(t *testing.T) {
-	expected := `- default-python: The default Python template for Notebooks / Delta Live Tables / Workflows
+	expected := `- default-python: The default Python template for Notebooks / Lakeflow Declarative Pipelines / Workflows
 - default-sql: The default SQL template for .sql files that run with Databricks SQL
 - dbt-sql: The dbt SQL template (databricks.com/blog/delivering-cost-effective-data-real-time-dbt-and-databricks)
 - mlops-stacks: The Databricks MLOps Stacks template (github.com/databricks/mlops-stacks)
@@ -18,7 +18,7 @@ func TestTemplateHelpDescriptions(t *testing.T) {
 
 func TestTemplateOptions(t *testing.T) {
 	expected := []cmdio.Tuple{
-		{Name: "default-python", Id: "The default Python template for Notebooks / Delta Live Tables / Workflows"},
+		{Name: "default-python", Id: "The default Python template for Notebooks / Lakeflow Declarative Pipelines / Workflows"},
 		{Name: "default-sql", Id: "The default SQL template for .sql files that run with Databricks SQL"},
 		{Name: "dbt-sql", Id: "The dbt SQL template (databricks.com/blog/delivering-cost-effective-data-real-time-dbt-and-databricks)"},
 		{Name: "mlops-stacks", Id: "The Databricks MLOps Stacks template (github.com/databricks/mlops-stacks)"},

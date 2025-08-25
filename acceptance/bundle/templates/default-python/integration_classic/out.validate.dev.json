@@ -137,7 +137,7 @@
         "libraries": [
           {
             "notebook": {
-              "path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/dlt_pipeline"
+              "path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/pipeline"
             }
           }
         ],
