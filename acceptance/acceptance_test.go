@@ -527,6 +527,11 @@ func runTest(t *testing.T,
 		// DABs in the workspace.
 		tmpDir = "/Workspace/Users/" + currentUser.UserName + "/acceptance/" + uuid.New().String()
 		t.Logf("Running DBR tests on %s", tmpDir)
+
+		t.Cleanup(func() {
+			err := os.RemoveAll(tmpDir)
+			require.NoError(t, err)
+		})
 	} else {
 		tmpDir = t.TempDir()
 	}
