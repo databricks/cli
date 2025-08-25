@@ -1,5 +1,8 @@
 Local = true
 Cloud = true
+RequiresUnityCatalog = true
+CloudEnvs.gcp = false
+CloudEnvs.azure = false
 Ignore = [
     ".databricks",
 ]
