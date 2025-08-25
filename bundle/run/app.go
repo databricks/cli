@@ -37,7 +37,7 @@ func (a *appRunner) Name() string {
 	return a.app.Name
 }
 
-func isAppStopped(app *apps.App) bool {
+func isAppComputeStopped(app *apps.App) bool {
 	return app.ComputeStatus == nil ||
 		(app.ComputeStatus.State == apps.ComputeStateStopped || app.ComputeStatus.State == apps.ComputeStateError)
 }
@@ -70,8 +70,16 @@ func (a *appRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, e
 	// 1. The app is new and was never deployed yet.
 	// 2. The app was stopped (compute not running).
 	// We need to start the app only if the compute is not running.
-	if isAppStopped(createdApp) {
+	if isAppComputeStopped(createdApp) {
 		err := a.start(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// If the app is starting, we need to wait for it to be active before we can deploy it.
+	if isAppComputeStarting(createdApp) {
+		_, err := w.Apps.WaitGetAppActive(ctx, app.Name, 20*time.Minute, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -85,6 +93,10 @@ func (a *appRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, e
 
 	cmdio.LogString(ctx, "You can access the app at "+createdApp.Url)
 	return nil, nil
+}
+
+func isAppComputeStarting(app *apps.App) bool {
+	return app.ComputeStatus != nil && app.ComputeStatus.State == apps.ComputeStateStarting
 }
 
 func (a *appRunner) start(ctx context.Context) error {
