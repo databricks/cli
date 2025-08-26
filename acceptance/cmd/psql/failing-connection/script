@@ -1,0 +1,11 @@
+mv always-fail.sh psql
+
+cleanup() {
+  rm psql
+}
+trap cleanup EXIT
+
+export PATH="$(pwd):$PATH"
+
+title "Command should use default number of retries:"
+trace musterr $CLI psql my-database -- --dbname=db1 -p 3000
