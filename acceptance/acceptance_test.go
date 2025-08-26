@@ -552,7 +552,6 @@ func runTest(t *testing.T,
 	// populate CLOUD_ENV_BASE
 	envBase := getCloudEnvBase(cloudEnv)
 	cmd.Env = append(cmd.Env, "CLOUD_ENV_BASE="+envBase)
-	repls.Set(envBase, "[CLOUD_ENV_BASE]")
 
 	// Must be added PrepareReplacementsUser, otherwise conflicts with [USERNAME]
 	testdiff.PrepareReplacementsUUID(t, &repls)
@@ -1163,7 +1162,7 @@ func getCloudEnvBase(cloudEnv string) string {
 	case "gcp", "gcp-ucws":
 		return "gcp"
 	case "":
-		return ""
+		return "aws"
 	default:
 		return "unknown-cloudEnv-" + cloudEnv
 	}

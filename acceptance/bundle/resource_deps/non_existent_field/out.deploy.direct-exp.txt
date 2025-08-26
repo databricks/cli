@@ -1,0 +1,5 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Error: reading config: failed to read references from config for volumes.foo: parsing refs: cannot process reference resources.volumes.bar.non_existent: only ${resources.<group>.<key>.id} references are supported
+
+
+Exit code (musterr): 1

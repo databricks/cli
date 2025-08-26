@@ -1,0 +1,23 @@
+workspace:
+  artifact_path: /foo/bar/artifacts
+
+resources:
+  jobs:
+    job:
+      name: "[${bundle.target}] Test Job with Multiple Libraries"
+      tasks:
+        - task_key: TestTask
+          existing_cluster_id: "0717-132531-5opeqon1"
+          python_wheel_task:
+            package_name: "test"
+            entry_point: "run"
+          libraries:
+            - whl: whl/*.whl
+            - whl: /Workspace/Users/foo@bar.com/mywheel.whl
+      environments:
+        - environment_key: "test_env"
+          spec:
+            client: "1"
+            dependencies:
+              - whl/*.whl
+              - /Workspace/Users/foo@bar.com/mywheel.whl

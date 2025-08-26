@@ -1,0 +1,69 @@
+
+>>> [CLI] bundle deploy
+Uploading whl/source1.whl...
+Uploading whl/source2.whl...
+Uploading whl/source3.whl...
+Uploading whl/source4.whl...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Expecting 5 wheels in libraries section in /jobs/create
+>>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | .body.tasks out.requests.txt
+[
+  {
+    "existing_cluster_id": "0717-132531-5opeqon1",
+    "libraries": [
+      {
+        "whl": "/Workspace/foo/bar/artifacts/.internal/source1.whl"
+      },
+      {
+        "whl": "/Workspace/foo/bar/artifacts/.internal/source2.whl"
+      },
+      {
+        "whl": "/Workspace/foo/bar/artifacts/.internal/source3.whl"
+      },
+      {
+        "whl": "/Workspace/foo/bar/artifacts/.internal/source4.whl"
+      },
+      {
+        "whl": "/Workspace/Users/foo@bar.com/mywheel.whl"
+      }
+    ],
+    "python_wheel_task": {
+      "entry_point": "run",
+      "package_name": "test"
+    },
+    "task_key": "TestTask"
+  }
+]
+
+=== Expecting 4 wheels to be uploaded
+>>> jq .path
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/whl/source1.whl"
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/whl/source2.whl"
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/whl/source3.whl"
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/whl/source4.whl"
+"/api/2.0/workspace-files/import-file/Workspace/foo/bar/artifacts/.internal/source1.whl"
+"/api/2.0/workspace-files/import-file/Workspace/foo/bar/artifacts/.internal/source2.whl"
+"/api/2.0/workspace-files/import-file/Workspace/foo/bar/artifacts/.internal/source3.whl"
+"/api/2.0/workspace-files/import-file/Workspace/foo/bar/artifacts/.internal/source4.whl"
+
+=== Expecting environment dependencies to be updated
+>>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | .body.environments out.requests.txt
+[
+  {
+    "environment_key": "test_env",
+    "spec": {
+      "client": "1",
+      "dependencies": [
+        "/Workspace/foo/bar/artifacts/.internal/source1.whl",
+        "/Workspace/foo/bar/artifacts/.internal/source2.whl",
+        "/Workspace/foo/bar/artifacts/.internal/source3.whl",
+        "/Workspace/foo/bar/artifacts/.internal/source4.whl",
+        "/Workspace/Users/foo@bar.com/mywheel.whl"
+      ]
+    }
+  }
+]
