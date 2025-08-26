@@ -93,11 +93,11 @@ func extractReferences(root dyn.Value, node deployplan.ResourceNode) ([]fieldRef
 		}
 		for _, r := range ref.References() {
 			// validateRef will check resource exists in the config; this will reject references to deleted resources, no need to handle that case separately.
-			edge, err := validateRef(root, r)
+			item, err := validateRef(root, r)
 			if err != nil {
 				return fmt.Errorf("cannot process reference %s: %w", r, err)
 			}
-			result = append(result, edge)
+			result = append(result, item)
 		}
 		return nil
 	})
