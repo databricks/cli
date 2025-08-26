@@ -16,6 +16,3 @@
     }
   }
 }
-rm: out.: No such file or directory
-
-Exit code: 1
