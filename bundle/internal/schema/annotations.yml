@@ -169,6 +169,9 @@ github.com/databricks/cli/bundle/config.Resources:
       The dashboard definitions for the bundle, where each key is the name of the dashboard.
     "markdown_description": |-
       The dashboard definitions for the bundle, where each key is the name of the dashboard. See [\_](/dev-tools/bundles/resources.md#dashboards).
+  "database_catalogs":
+    "description": |-
+      PLACEHOLDER
   "database_instances":
     "description": |-
       PLACEHOLDER
@@ -222,6 +225,9 @@ github.com/databricks/cli/bundle/config.Resources:
       The SQL warehouse definitions for the bundle, where each key is the name of the warehouse.
     "markdown_description": |-
       The SQL warehouse definitions for the bundle, where each key is the name of the warehouse. See [\_](/dev-tools/bundles/resources.md#sql_warehouses).
+  "synced_database_tables":
+    "description": |-
+      PLACEHOLDER
   "volumes":
     "description": |-
       The volume definitions for the bundle, where each key is the name of the volume.
@@ -472,6 +478,25 @@ github.com/databricks/cli/bundle/config/resources.DashboardPermission:
   "user_name":
     "description": |-
       PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.DatabaseCatalog:
+  "create_database_if_not_exists":
+    "description": |-
+      PLACEHOLDER
+  "database_instance_name":
+    "description": |-
+      PLACEHOLDER
+  "database_name":
+    "description": |-
+      PLACEHOLDER
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+  "uid":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.DatabaseInstance:
   "capacity":
     "description": |-
@@ -676,6 +701,31 @@ github.com/databricks/cli/bundle/config/resources.SqlWarehousePermission:
     "description": |-
       PLACEHOLDER
   "user_name":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.SyncedDatabaseTable:
+  "data_synchronization_status":
+    "description": |-
+      PLACEHOLDER
+  "database_instance_name":
+    "description": |-
+      PLACEHOLDER
+  "effective_database_instance_name":
+    "description": |-
+      PLACEHOLDER
+  "effective_logical_database_name":
+    "description": |-
+      PLACEHOLDER
+  "logical_database_name":
+    "description": |-
+      PLACEHOLDER
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "spec":
+    "description": |-
+      PLACEHOLDER
+  "unity_catalog_provisioning_state":
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.VolumeGrant:

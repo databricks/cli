@@ -509,6 +509,40 @@
                   }
                 ]
               },
+              "resources.DatabaseCatalog": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "create_database_if_not_exists": {
+                        "$ref": "#/$defs/bool"
+                      },
+                      "database_instance_name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "database_name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "uid": {
+                        "$ref": "#/$defs/string"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "database_instance_name",
+                      "database_name",
+                      "name"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "resources.DatabaseInstance": {
                 "oneOf": [
                   {
@@ -745,7 +779,7 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.TriggerSettings"
                       },
                       "usage_policy_id": {
-                        "description": "The id of the user specified usage policy to use for this job.\nIf not specified, a default usage policy may be applied when creating or modifying the job.\nSee `effective_budget_policy_id` for the budget policy used by this workload.",
+                        "description": "The id of the user specified usage policy to use for this job.\nIf not specified, a default usage policy may be applied when creating or modifying the job.\nSee `effective_usage_policy_id` for the usage policy used by this workload.",
                         "$ref": "#/$defs/string",
                         "x-databricks-preview": "PRIVATE",
                         "doNotSuggest": true
@@ -1664,6 +1698,47 @@
                   }
                 ]
               },
+              "resources.SyncedDatabaseTable": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "data_synchronization_status": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTableStatus"
+                      },
+                      "database_instance_name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "effective_database_instance_name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "effective_logical_database_name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "logical_database_name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "spec": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTableSpec"
+                      },
+                      "unity_catalog_provisioning_state": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.ProvisioningInfoState"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "name"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "resources.Volume": {
                 "oneOf": [
                   {
@@ -2206,6 +2281,9 @@
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Dashboard",
                       "markdownDescription": "The dashboard definitions for the bundle, where each key is the name of the dashboard. See [dashboards](https://docs.databricks.com/dev-tools/bundles/resources.html#dashboards)."
                     },
+                    "database_catalogs": {
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.DatabaseCatalog"
+                    },
                     "database_instances": {
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.DatabaseInstance"
                     },
@@ -2258,6 +2336,9 @@
                       "description": "The SQL warehouse definitions for the bundle, where each key is the name of the warehouse.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.SqlWarehouse",
                       "markdownDescription": "The SQL warehouse definitions for the bundle, where each key is the name of the warehouse. See [sql_warehouses](https://docs.databricks.com/dev-tools/bundles/resources.html#sql_warehouses)."
+                    },
+                    "synced_database_tables": {
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.SyncedDatabaseTable"
                     },
                     "volumes": {
                       "description": "The volume definitions for the bundle, where each key is the name of the volume.",
@@ -4235,6 +4316,269 @@
                     "UPDATING",
                     "FAILING_OVER"
                   ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "database.DeltaTableSyncInfo": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "delta_commit_timestamp": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "delta_commit_version": {
+                      "$ref": "#/$defs/int64"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "database.NewPipelineSpec": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "storage_catalog": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "storage_schema": {
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "database.ProvisioningInfoState": {
+              "type": "string"
+            },
+            "database.ProvisioningPhase": {
+              "type": "string"
+            },
+            "database.SyncedTableContinuousUpdateStatus": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "initial_pipeline_sync_progress": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTablePipelineProgress"
+                    },
+                    "last_processed_commit_version": {
+                      "$ref": "#/$defs/int64"
+                    },
+                    "timestamp": {
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "database.SyncedTableFailedStatus": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "last_processed_commit_version": {
+                      "$ref": "#/$defs/int64"
+                    },
+                    "timestamp": {
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "database.SyncedTablePipelineProgress": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "estimated_completion_time_seconds": {
+                      "$ref": "#/$defs/float64"
+                    },
+                    "latest_version_currently_processing": {
+                      "$ref": "#/$defs/int64"
+                    },
+                    "provisioning_phase": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.ProvisioningPhase"
+                    },
+                    "sync_progress_completion": {
+                      "$ref": "#/$defs/float64"
+                    },
+                    "synced_row_count": {
+                      "$ref": "#/$defs/int64"
+                    },
+                    "total_row_count": {
+                      "$ref": "#/$defs/int64"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "database.SyncedTablePosition": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "delta_table_sync_info": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.DeltaTableSyncInfo"
+                    },
+                    "sync_end_timestamp": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "sync_start_timestamp": {
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "database.SyncedTableProvisioningStatus": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "initial_pipeline_sync_progress": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTablePipelineProgress"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "database.SyncedTableSchedulingPolicy": {
+              "type": "string"
+            },
+            "database.SyncedTableSpec": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "create_database_objects_if_missing": {
+                      "$ref": "#/$defs/bool"
+                    },
+                    "existing_pipeline_id": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "new_pipeline_spec": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.NewPipelineSpec"
+                    },
+                    "primary_key_columns": {
+                      "$ref": "#/$defs/slice/string"
+                    },
+                    "scheduling_policy": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTableSchedulingPolicy"
+                    },
+                    "source_table_full_name": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "timeseries_key": {
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "database.SyncedTableState": {
+              "type": "string"
+            },
+            "database.SyncedTableStatus": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "continuous_update_status": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTableContinuousUpdateStatus"
+                    },
+                    "detailed_state": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTableState"
+                    },
+                    "failed_status": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTableFailedStatus"
+                    },
+                    "last_sync": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTablePosition"
+                    },
+                    "message": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "pipeline_id": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "provisioning_status": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTableProvisioningStatus"
+                    },
+                    "triggered_update_status": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTableTriggeredUpdateStatus"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "database.SyncedTableTriggeredUpdateStatus": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "last_processed_commit_version": {
+                      "$ref": "#/$defs/int64"
+                    },
+                    "timestamp": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "triggered_update_progress": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTablePipelineProgress"
+                    }
+                  },
+                  "additionalProperties": false
                 },
                 {
                   "type": "string",
@@ -7292,6 +7636,10 @@
                     "renewal_period": {
                       "description": "Renewal period field for a rate limit. Currently, only 'minute' is supported.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.AiGatewayRateLimitRenewalPeriod"
+                    },
+                    "tokens": {
+                      "description": "Used to specify how many tokens are allowed for a key within the renewal_period.",
+                      "$ref": "#/$defs/int64"
                     }
                   },
                   "additionalProperties": false,
@@ -8447,6 +8795,20 @@
                     }
                   ]
                 },
+                "resources.DatabaseCatalog": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.DatabaseCatalog"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
                 "resources.DatabaseInstance": {
                   "oneOf": [
                     {
@@ -8593,6 +8955,20 @@
                       "type": "object",
                       "additionalProperties": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.SqlWarehouse"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.SyncedDatabaseTable": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.SyncedDatabaseTable"
                       }
                     },
                     {

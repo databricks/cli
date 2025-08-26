@@ -514,4 +514,28 @@ func addDefaultHandlers(server *testserver.Server) {
 	server.Handle("DELETE", "/api/2.0/database/instances/{name}", func(req testserver.Request) any {
 		return testserver.DatabaseInstanceMapDelete(req)
 	})
+
+	server.Handle("POST", "/api/2.0/database/catalogs", func(req testserver.Request) any {
+		return req.Workspace.DatabaseCatalogCreate(req)
+	})
+
+	server.Handle("GET", "/api/2.0/database/catalogs/{name}", func(req testserver.Request) any {
+		return testserver.MapGet(req.Workspace, req.Workspace.DatabaseCatalogs, req.Vars["name"])
+	})
+
+	server.Handle("DELETE", "/api/2.0/database/catalogs/{name}", func(req testserver.Request) any {
+		return testserver.MapDelete(req.Workspace, req.Workspace.DatabaseCatalogs, req.Vars["name"])
+	})
+
+	server.Handle("POST", "/api/2.0/database/synced_tables", func(req testserver.Request) any {
+		return req.Workspace.SyncedDatabaseTableCreate(req)
+	})
+
+	server.Handle("GET", "/api/2.0/database/synced_tables/{name}", func(req testserver.Request) any {
+		return testserver.MapGet(req.Workspace, req.Workspace.SyncedDatabaseTables, req.Vars["name"])
+	})
+
+	server.Handle("DELETE", "/api/2.0/database/synced_tables/{name}", func(req testserver.Request) any {
+		return testserver.MapDelete(req.Workspace, req.Workspace.SyncedDatabaseTables, req.Vars["name"])
+	})
 }

@@ -1,0 +1,13 @@
+mkdir -p home
+export HOME="$PWD/home"
+
+export DATABRICKS_HOST_ORIG="$DATABRICKS_HOST"
+export DATABRICKS_TOKEN_ORIG="$DATABRICKS_TOKEN"
+
+unset DATABRICKS_HOST
+unset DATABRICKS_TOKEN
+
+# This is expected to fail because there is no token cache.
+# We need to assert that the returned error message does not change,
+# because older SDK versions check for a particular substring.
+trace $CLI auth token --host $DATABRICKS_HOST_ORIG

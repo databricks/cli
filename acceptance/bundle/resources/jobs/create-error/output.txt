@@ -6,7 +6,7 @@ Warning: required field "new_cluster" is not set
 
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
-Error: deploying jobs.foo: creating: Shared job cluster feature is only supported in multi-task jobs. (400 INVALID_PARAMETER_VALUE)
+Error: cannot create jobs.foo: Shared job cluster feature is only supported in multi-task jobs. (400 INVALID_PARAMETER_VALUE)
 
 Endpoint: POST [DATABRICKS_URL]/api/2.2/jobs/create
 HTTP Status: 400 Bad Request

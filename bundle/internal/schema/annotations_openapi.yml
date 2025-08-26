@@ -246,6 +246,18 @@ github.com/databricks/cli/bundle/config/resources.Cluster:
   "workload_type":
     "description": |-
       Cluster Attributes showing for clusters workload types.
+github.com/databricks/cli/bundle/config/resources.DatabaseCatalog:
+  "create_database_if_not_exists": {}
+  "database_instance_name":
+    "description": |-
+      The name of the DatabaseInstance housing the database.
+  "database_name":
+    "description": |-
+      The name of the database (in a instance) associated with the catalog.
+  "name":
+    "description": |-
+      The name of the catalog in UC.
+  "uid": {}
 github.com/databricks/cli/bundle/config/resources.DatabaseInstance:
   "_":
     "description": |-
@@ -423,7 +435,7 @@ github.com/databricks/cli/bundle/config/resources.Job:
     "description": |-
       The id of the user specified usage policy to use for this job.
       If not specified, a default usage policy may be applied when creating or modifying the job.
-      See `effective_budget_policy_id` for the budget policy used by this workload.
+      See `effective_usage_policy_id` for the usage policy used by this workload.
     "x-databricks-preview": |-
       PRIVATE
   "webhook_notifications":
@@ -3604,6 +3616,9 @@ github.com/databricks/databricks-sdk-go/service/serving.AiGatewayRateLimit:
   "renewal_period":
     "description": |-
       Renewal period field for a rate limit. Currently, only 'minute' is supported.
+  "tokens":
+    "description": |-
+      Used to specify how many tokens are allowed for a key within the renewal_period.
 github.com/databricks/databricks-sdk-go/service/serving.AiGatewayRateLimitKey:
   "_":
     "enum":
