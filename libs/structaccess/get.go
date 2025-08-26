@@ -11,7 +11,7 @@ import (
 
 // Get returns the value at the given path inside v.
 //
-// Path grammar (subset of dyn path):
+// Path grammar (compatible with dyn path):
 //   - Struct field names and map keys separated by '.' (e.g., connection.id)
 //   - (Note, this prevents maps keys that are not id-like from being referenced, but this general problem with references today.)
 //   - Numeric indices in brackets for arrays/slices (e.g., items[0].name)
@@ -23,8 +23,6 @@ import (
 //   - For maps: a key indexes map[string]T (or string alias key types).
 //   - For slices/arrays: an index [N] selects the N-th element.
 //   - Wildcards ("*" or "[*]") are not supported and return an error.
-//
-// TODO: embedded struct + FSF needs to be tested and supported
 func Get(v any, path string) (any, error) {
 	if path == "" {
 		return v, nil
