@@ -2,10 +2,12 @@ package tnresources
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 )
 
@@ -64,11 +66,51 @@ func DeleteApp(ctx context.Context, client *databricks.WorkspaceClient, id strin
 }
 
 func (r *ResourceApp) WaitAfterCreate(ctx context.Context) error {
-	// Intentional no-op
+	_, err := r.waitForApp(ctx, r.client, r.config.Name)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
 func (r *ResourceApp) WaitAfterUpdate(ctx context.Context) error {
 	// Intentional no-op
 	return nil
+}
+
+// waitForApp waits for the app to reach the target state. The target state is either ACTIVE or STOPPED.
+// Apps with no_compute set to true will reach the STOPPED state, otherwise they will reach the ACTIVE state.
+func (r *ResourceApp) waitForApp(ctx context.Context, w *databricks.WorkspaceClient, name string) (*apps.App, error) {
+	retrier := retries.New[apps.App](retries.WithTimeout(-1), retries.WithRetryFunc(shouldRetry))
+	return retrier.Run(ctx, func(ctx context.Context) (*apps.App, error) {
+		app, err := w.Apps.GetByName(ctx, name)
+		if err != nil {
+			return nil, retries.Halt(err)
+		}
+		status := app.ComputeStatus.State
+		statusMessage := app.ComputeStatus.Message
+		switch status {
+		case apps.ComputeStateActive, apps.ComputeStateStopped:
+			return app, nil
+		case apps.ComputeStateError:
+			err := fmt.Errorf("failed to reach %s or %s, got %s: %s",
+				apps.ComputeStateActive, apps.ComputeStateStopped, status, statusMessage)
+			return nil, retries.Halt(err)
+		default:
+			return nil, retries.Continues(statusMessage)
+		}
+	})
+}
+
+// This is copied from the retries package of the databricks-sdk-go. It should be made public,
+// but for now, I'm copying it here.
+func shouldRetry(err error) bool {
+	if err == nil {
+		return false
+	}
+	e := err.(*retries.Err)
+	if e == nil {
+		return false
+	}
+	return !e.Halt
 }
