@@ -1,0 +1,13 @@
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+Resources:
+  Jobs:
+    bar:
+      Name: Untitled
+      URL:  ${resources.jobs.foo.url}
+    foo:
+      Name: Untitled
+      URL:  my_job_url

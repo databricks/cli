@@ -1,0 +1,5 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Error: reading config: failed to read references from config for jobs.bar: parsing refs: cannot process reference resources.jobs.foo.url: only ${resources.<group>.<key>.id} references are supported
+
+
+Exit code: 1
