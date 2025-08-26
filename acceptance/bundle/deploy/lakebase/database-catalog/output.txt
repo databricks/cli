@@ -24,7 +24,7 @@ Resources:
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-catalog-[UNIQUE_NAME]/default/files...
-Error: reading config: reading config: unsupported resource: database_catalogs
+Error: reading config: failed to read references from config for database_catalogs.my_catalog: parsing refs: cannot process reference resources.database_instances.my_instance.name: only ${resources.<group>.<key>.id} references are supported
 
 
 >>> [CLI] bundle destroy --auto-approve
