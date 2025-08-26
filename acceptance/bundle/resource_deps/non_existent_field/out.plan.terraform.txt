@@ -1,5 +1,3 @@
-
->>> musterr [CLI] bundle plan
 Error: exit status 1
 
 Error: Unsupported attribute
