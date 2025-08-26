@@ -268,11 +268,16 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 
 	envFilters := getEnvFilters(t)
 
+	// Progress tracking variables
+	completedTestCount := 0
+	skippedTestCount := 0
+
 	for _, dir := range testDirs {
 		totalDirs += 1
 
 		t.Run(dir, func(t *testing.T) {
 			selectedDirs += 1
+			startTime := time.Now()
 
 			config, configPath := internal.LoadConfig(t, dir)
 			skipReason := getSkipReason(&config, configPath)
@@ -284,6 +289,26 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 				require.NoError(t, err)
 				testutil.WriteFile(t, filepath.Join(dir, internal.MaterializedConfigFile), materializedConfig)
 			}
+
+			t.Cleanup(func() {
+				if skipReason != "" {
+					skippedTestCount += 1
+					return
+				}
+				completedTestCount += 1
+
+				elapsed := time.Since(startTime)
+				if t.Failed() {
+					t.Logf("[progress] Test %s failed in %s", dir, elapsed.Round(time.Second))
+					return
+				}
+				if elapsed > time.Minute {
+					t.Logf("[progress] Test %s is a long running test. It took %s to complete", dir, elapsed.Round(time.Second))
+				}
+				if completedTestCount%10 == 0 {
+					t.Logf("[progress] Completed %d tests and skipped %d tests out of %d", completedTestCount, skippedTestCount, totalDirs)
+				}
+			})
 
 			if skipReason != "" {
 				skippedDirs += 1
