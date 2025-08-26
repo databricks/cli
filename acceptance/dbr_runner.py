@@ -3,7 +3,7 @@
 # It is recommended to have the job cluster be a serverless cluster
 # to match DABs in the workspace execution environment.
 # The recommended flow to run this is:
-# run: deco env run -i -n <env-name> -- go test -timeout 7200s -run TestAccept github.com/databricks/cli/acceptance -dbr
+# run: deco env run -i -n <env-name> -- go test -run TestAccept github.com/databricks/cli/acceptance -dbr
 #    where <env-name> is the name of the environment to run the tests in. This will automatically
 #    start a job to execute integration acceptance tests on a serverless cluster.
 
@@ -65,7 +65,7 @@ def main():
 
     # Change working directory to the root of the CLI repo.
     os.chdir(archive_dir / "cli")
-    cmd = ["go", "test", "-timeout", "7200s", "-run", r"^TestAccept", "github.com/databricks/cli/acceptance",  "-workspace-tmp-dir"]
+    cmd = ["go", "test", "-timeout", "14400s", "-test.v", "-run", r"^TestAccept", "github.com/databricks/cli/acceptance",  "-workspace-tmp-dir"]
 
     if dbutils.widgets.get("short") == "true":
         cmd.append("-short")
