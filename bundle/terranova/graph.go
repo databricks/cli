@@ -19,7 +19,7 @@ import (
 
 type fieldRef struct {
 	deployplan.ResourceNode
-	Field string // path to field within resource that contains the references, e.g. "description"
+	Reference string // refrence in question e.g. ${resources.jobs.foo.id}
 }
 
 // makeResourceGraph creates node graph based on ${resources.group.name.id} references.
@@ -65,14 +65,12 @@ func makeResourceGraph(ctx context.Context, b *bundle.Bundle) (*dagrun.Graph[dep
 		}
 
 		for _, fieldRef := range fieldRefs {
-			log.Debugf(ctx, "Adding resource edge: %s -> %s via %#v", fieldRef.ResourceNode, node, fieldRef.Field)
-			// Recreating reference since we don't have access to original one
-			reference := fmt.Sprintf("${resources.%s.%s.%s}", fieldRef.Group, fieldRef.Key, fieldRef.Field)
+			log.Debugf(ctx, "Adding resource edge: %s -> %s via %s", fieldRef.ResourceNode, node, fieldRef.Reference)
 			// TODO: this may add duplicate edges. Investigate if we need to prevent that
 			g.AddDirectedEdge(
 				fieldRef.ResourceNode,
 				node,
-				reference,
+				fieldRef.Reference,
 			)
 		}
 	}
@@ -129,7 +127,7 @@ func validateRef(root dyn.Value, ref string) (fieldRef, error) {
 			Group: path[1].Key(),
 			Key:   path[2].Key(),
 		},
-		Field: path[3:].String(),
+		Reference: "${" + ref + "}",
 	}, nil
 }
 
@@ -179,15 +177,10 @@ func resolveIDReference(ctx context.Context, b *bundle.Bundle, group, resourceNa
 	return nil
 }
 
-func resolveFieldReference(ctx context.Context, b *bundle.Bundle, group, resourceName, field string, value any) error {
-	mypath, err := dyn.NewPathFromString(fmt.Sprintf("resources.%s.%s.%s", group, resourceName, field))
-	if err != nil {
-		return err
-	}
-
-	err = b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
+func resolveFieldReference(ctx context.Context, b *bundle.Bundle, targetPath dyn.Path, value any) error {
+	err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
 		root, err := dynvar.Resolve(root, func(path dyn.Path) (dyn.Value, error) {
-			if slices.Equal(path, mypath) {
+			if slices.Equal(path, targetPath) {
 				return dyn.V(value), nil
 			}
 			return dyn.InvalidValue, dynvar.ErrSkipResolution

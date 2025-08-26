@@ -152,10 +152,10 @@ func CalculatePlanForDeploy(ctx context.Context, b *bundle.Bundle) error {
 			return false
 		}
 
-		for _, label := range b.Graph.OutgoingLabels(node) {
-			path, ok := dynvar.PureReferenceToPath(label)
+		for _, reference := range b.Graph.OutgoingLabels(node) {
+			path, ok := dynvar.PureReferenceToPath(reference)
 			if !ok || len(path) <= 3 || path[0].Key() != "resources" || path[1].Key() != node.Group || path[2].Key() != node.Key {
-				logdiag.LogError(ctx, fmt.Errorf("internal error: expected reference to resources.%s.%s, got %q", node.Group, node.Key, label))
+				logdiag.LogError(ctx, fmt.Errorf("internal error: expected reference to resources.%s.%s, got %q", node.Group, node.Key, reference))
 				return false
 			}
 			fieldPath := path[3:].String()
@@ -173,12 +173,12 @@ func CalculatePlanForDeploy(ctx context.Context, b *bundle.Bundle) error {
 			}
 			value, err := structaccess.Get(config, fieldPath)
 			if err != nil {
-				logdiag.LogError(ctx, fmt.Errorf("cannot resolve %s: %w", label, err))
+				logdiag.LogError(ctx, fmt.Errorf("cannot resolve %s: %w", reference, err))
 				return false
 			}
-			err = resolveFieldReference(ctx, b, pl.group, pl.resourceName, fieldPath, value)
+			err = resolveFieldReference(ctx, b, path, value)
 			if err != nil {
-				logdiag.LogError(ctx, fmt.Errorf("failed to replace ref to %s: %w", label, err))
+				logdiag.LogError(ctx, fmt.Errorf("failed to replace ref to %s: %w", reference, err))
 				return false
 			}
 		}
