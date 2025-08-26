@@ -43,7 +43,7 @@ func TestGet_ConfigRoot_JobTagsAccess(t *testing.T) {
 		},
 	}
 
-	// Access a value insid: e the tags map
+	// Access a value inside the tags map
 	v, err := Get(root, "resources.jobs.my_job.tags.env")
 	require.NoError(t, err)
 	require.Equal(t, "dev", v)
