@@ -38,8 +38,6 @@ func (r *ResourceApp) DoCreate(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	// TODO: Store waiter for Wait method
-
 	return waiter.Response.Name, nil
 }
 
@@ -80,6 +78,9 @@ func (r *ResourceApp) WaitAfterUpdate(ctx context.Context) error {
 
 // waitForApp waits for the app to reach the target state. The target state is either ACTIVE or STOPPED.
 // Apps with no_compute set to true will reach the STOPPED state, otherwise they will reach the ACTIVE state.
+// We can't use the default waiter from SDK because it only waits on ACTIVE state but we need also STOPPED state.
+// Ideally this should be done in Go SDK but currently only ACTIVE is marked as terminal state
+// so this would need to be addressed by Apps service team first in their proto.
 func (r *ResourceApp) waitForApp(ctx context.Context, w *databricks.WorkspaceClient, name string) (*apps.App, error) {
 	retrier := retries.New[apps.App](retries.WithTimeout(-1), retries.WithRetryFunc(shouldRetry))
 	return retrier.Run(ctx, func(ctx context.Context) (*apps.App, error) {
