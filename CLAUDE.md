@@ -10,7 +10,7 @@ This is the Databricks CLI, a command-line interface for interacting with Databr
 
 ### Building and Testing
 - `make build` - Build the CLI binary
-- `make test` - Run unit tests for all packages  
+- `make test` - Run unit tests for all packages
 - `go test ./acceptance -run TestAccept/bundle/<path>/<to>/<folder> -tail -test.v` - run a single acceptance test
 - `make integration` - Run integration tests (requires environment variables)
 - `make cover` - Generate test coverage reports
@@ -70,7 +70,7 @@ This is the Databricks CLI, a command-line interface for interacting with Databr
 ### Acceptance Tests
 - Located in `acceptance/` with nested directory structure
 - Each test directory contains `databricks.yml`, `script`, and `output.txt`
-- Run with `go test ./acceptance -run '^TestAccept$$'` 
+- Run with `go test ./acceptance -run TestAccept/bundle/<path>/<to>/<folder> -tail -test.v`
 - Use `-update` flag to regenerate expected output files
 - When you see the test fails because it has an old output, just run it one more time with an `-update` flag instead of changing the `output.txt` directly
 
