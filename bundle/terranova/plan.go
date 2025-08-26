@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/terranova/tnstate"
 	"github.com/databricks/cli/libs/dagrun"
+	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/structaccess"
 	"github.com/databricks/cli/libs/structdiff"
@@ -152,7 +153,13 @@ func CalculatePlanForDeploy(ctx context.Context, b *bundle.Bundle) error {
 		}
 
 		for _, label := range b.Graph.OutgoingLabels(node) {
-			if label == "id" {
+			path, ok := dynvar.PureReferenceToPath(label)
+			if !ok || len(path) <= 3 || path[0].Key() != "resources" || path[1].Key() != node.Group || path[2].Key() != node.Key {
+				logdiag.LogError(ctx, fmt.Errorf("internal error: expected reference to resources.%s.%s, got %q", node.Group, node.Key, label))
+				return false
+			}
+			fieldPath := path[3:].String()
+			if fieldPath == "id" {
 				if actionType.KeepsID() {
 					// Now that we know that ID of this node is not going to change, update it
 					// everywhere to actual value to calculate more accurate and more conservative action for dependent nodes.
@@ -164,14 +171,14 @@ func CalculatePlanForDeploy(ctx context.Context, b *bundle.Bundle) error {
 				}
 				continue
 			}
-			value, err := structaccess.Get(config, label)
+			value, err := structaccess.Get(config, fieldPath)
 			if err != nil {
-				logdiag.LogError(ctx, fmt.Errorf("cannot resolve resources.%s.%s.%s: %w", pl.group, pl.resourceName, label, err))
+				logdiag.LogError(ctx, fmt.Errorf("cannot resolve %s: %w", label, err))
 				return false
 			}
-			err = resolveFieldReference(ctx, b, pl.group, pl.resourceName, label, value)
+			err = resolveFieldReference(ctx, b, pl.group, pl.resourceName, fieldPath, value)
 			if err != nil {
-				logdiag.LogError(ctx, fmt.Errorf("failed to replace ref to resources.%s.%s.%s: %w", pl.group, pl.resourceName, label, err))
+				logdiag.LogError(ctx, fmt.Errorf("failed to replace ref to %s: %w", label, err))
 				return false
 			}
 		}

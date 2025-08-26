@@ -66,11 +66,13 @@ func makeResourceGraph(ctx context.Context, b *bundle.Bundle) (*dagrun.Graph[dep
 
 		for _, fieldRef := range fieldRefs {
 			log.Debugf(ctx, "Adding resource edge: %s -> %s via %#v", fieldRef.ResourceNode, node, fieldRef.Field)
+			// Recreating reference since we don't have access to original one
+			reference := fmt.Sprintf("${resources.%s.%s.%s}", fieldRef.ResourceNode.Group, fieldRef.ResourceNode.Key, fieldRef.Field)
 			// TODO: this may add duplicate edges. Investigate if we need to prevent that
 			g.AddDirectedEdge(
 				fieldRef.ResourceNode,
 				node,
-				fieldRef.Field,
+				reference,
 			)
 		}
 	}
@@ -112,7 +114,7 @@ func validateRef(root dyn.Value, ref string) (fieldRef, error) {
 	if err != nil {
 		return fieldRef{}, err
 	}
-	if len(path) < 3 { // resources.jobs.foo.id
+	if len(path) < 3 { // expecting "resources.jobs.foo.*"
 		return fieldRef{}, errors.New("reference too short")
 	}
 	if path[0].Key() != "resources" {
