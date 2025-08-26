@@ -11,6 +11,7 @@ See more details here: ([#3225](https://github.com/databricks/cli/pull/3225))
 * Add support volumes in Python support ([#3383])(https://github.com/databricks/cli/pull/3383))
 
 ### CLI
+* Introduce retries to `databricks psql` command ([#3492](https://github.com/databricks/cli/pull/3492))
 
 ### Dependency updates
 
