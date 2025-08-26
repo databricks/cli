@@ -8,3 +8,7 @@ EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["terraform"] # uses 'experiments' resourc
 Ignore = [
     "config.json"
 ]
+
+[[Repls]]
+Old = "aws|azure|gcp"
+New = "[CLOUD_ENV_BASE]"
