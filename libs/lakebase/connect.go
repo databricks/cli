@@ -5,16 +5,90 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/exec"
+	execlib "github.com/databricks/cli/libs/exec"
 	"github.com/databricks/databricks-sdk-go/service/database"
 	"github.com/google/uuid"
 )
 
+const (
+	// Default retry configuration
+	defaultMaxRetries    = 3
+	defaultInitialDelay  = 1 * time.Second
+	defaultMaxDelay      = 10 * time.Second
+	defaultBackoffFactor = 2.0
+)
+
+// RetryConfig holds configuration for connection retry behavior
+type RetryConfig struct {
+	MaxRetries    int
+	InitialDelay  time.Duration
+	MaxDelay      time.Duration
+	BackoffFactor float64
+	Enabled       bool
+}
+
+// isRetryableConnectionError checks if the error output indicates a retryable connection issue
+func isRetryableConnectionError(output []byte) bool {
+	outputStr := string(output)
+
+	// Check for specific error patterns that indicate connection issues
+	retryablePatterns := []string{
+		"server closed the connection unexpectedly",
+		"connection to server",
+		"could not connect to server",
+		"Connection timed out",
+		"Connection refused",
+		"External authorization failed",
+		"This could be due to paused instances",
+		"blocked by Databricks IP ACL",
+	}
+
+	for _, pattern := range retryablePatterns {
+		if strings.Contains(outputStr, pattern) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// tryPsqlInteractive launches psql interactively and returns an error if connection fails
+func tryPsqlInteractive(ctx context.Context, args, env []string) error {
+	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
+	cmd.Env = env
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	err := cmd.Run()
+	if err != nil {
+		// Check if the error might be due to connection issues
+		// Since we can't capture stderr when running interactively, we check the exit code
+		var exitError *exec.ExitError
+		if errors.As(err, &exitError) {
+			exitCode := exitError.ExitCode()
+			// psql returns exit code 2 for connection failures
+			if exitCode == 2 {
+				return fmt.Errorf("connection failed (retryable): psql exited with code %d", exitCode)
+			}
+		}
+		return err
+	}
+
+	return nil
+}
+
 func Connect(ctx context.Context, databaseInstanceName string, extraArgs ...string) error {
+	return ConnectWithRetryConfig(ctx, databaseInstanceName, nil, extraArgs...)
+}
+
+func ConnectWithRetryConfig(ctx context.Context, databaseInstanceName string, retryConfig *RetryConfig, extraArgs ...string) error {
 	cmdio.LogString(ctx, fmt.Sprintf("Connecting to Databricks Database Instance %s ...", databaseInstanceName))
 
 	w := cmdctx.WorkspaceClient(ctx)
@@ -91,11 +165,71 @@ func Connect(ctx context.Context, databaseInstanceName string, extraArgs ...stri
 		"PGSSLMODE=require",
 	)
 
-	cmdio.LogString(ctx, fmt.Sprintf("Launching psql with connection to %s...", db.ReadWriteDns))
+	// Use provided retry configuration or defaults
+	if retryConfig == nil {
+		retryConfig = &RetryConfig{
+			MaxRetries:    defaultMaxRetries,
+			InitialDelay:  defaultInitialDelay,
+			MaxDelay:      defaultMaxDelay,
+			BackoffFactor: defaultBackoffFactor,
+			Enabled:       true,
+		}
+	}
 
-	// Execute psql command inline
-	return exec.Execv(exec.ExecvOptions{
-		Args: args,
-		Env:  cmdEnv,
-	})
+	// If retries are disabled, go directly to interactive session
+	if !retryConfig.Enabled {
+		cmdio.LogString(ctx, fmt.Sprintf("Launching psql with connection to %s...", db.ReadWriteDns))
+		return execlib.Execv(execlib.ExecvOptions{
+			Args: args,
+			Env:  cmdEnv,
+		})
+	}
+
+	// Try launching psql with retry logic
+	maxRetries := retryConfig.MaxRetries
+	delay := retryConfig.InitialDelay
+
+	var lastErr error
+	for attempt := 0; attempt <= maxRetries; attempt++ {
+		if attempt > 0 {
+			cmdio.LogString(ctx, fmt.Sprintf("Connection attempt %d/%d failed, retrying in %v...", attempt, maxRetries+1, delay))
+
+			// Wait with context cancellation support
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(delay):
+			}
+
+			// Exponential backoff
+			delay = time.Duration(float64(delay) * retryConfig.BackoffFactor)
+			if delay > retryConfig.MaxDelay {
+				delay = retryConfig.MaxDelay
+			}
+		}
+
+		cmdio.LogString(ctx, fmt.Sprintf("Launching psql session to %s (attempt %d/%d)...", db.ReadWriteDns, attempt+1, maxRetries+1))
+
+		// Try to launch psql and capture the exit status
+		err := tryPsqlInteractive(ctx, args, cmdEnv)
+		if err == nil {
+			// psql exited normally (user quit)
+			return nil
+		}
+
+		lastErr = err
+
+		// Check if this is a retryable error
+		if !strings.Contains(err.Error(), "connection failed (retryable)") {
+			// Non-retryable error, fail immediately
+			return err
+		}
+
+		if attempt < maxRetries {
+			cmdio.LogString(ctx, fmt.Sprintf("Connection failed with retryable error: %v", err))
+		}
+	}
+
+	// All retries exhausted
+	return fmt.Errorf("failed to connect after %d attempts, last error: %w", maxRetries+1, lastErr)
 }
