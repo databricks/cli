@@ -108,8 +108,6 @@ Notice that:
 When writing tests, please don't include an explanation in each
 test case in your responses. I am just interested in the tests.
 
-If you're editing acceptance tests configs test.toml files you need to make sure that you place stuff in the right place. Be aware of how TOML works and config definition in acceptance/internal/config.go. For example, if you incorrectly place Env.BLA="X" after [[Repls]] section, it won't parse correctly because it'll be associated with [[Repls]] block rather than TestConfig struct.
-
 # databricks_template_schema.json
 
 A databricks_template_schema.json file is used to configure bundle templates.
@@ -202,11 +200,3 @@ import "github.com/databricks/cli/libs/cmdio"
 
 cmdio.LogString(ctx, "...")
 ```
-
-# Changelogs
-
-Make sure that notable changes always come with an update of NEXT_CHANGELOG.md, with one line per pull request. Examples:
-
-* Fix table of content by removing not required top-level item ([#366](https://github.com/databricks/cli/pull/366)).
-* Fix printing the tasks in job output in DAG execution order ([#377](https://github.com/databricks/cli/pull/377)).
-* Improved error message when 'bricks bundle run' is executed before 'bricks bundle deploy' ([#378](https://github.com/databricks/cli/pull/378)).
