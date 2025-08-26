@@ -354,3 +354,37 @@ func TestGet_InterfaceRoot_Unwraps(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "i0", got)
 }
+
+func TestGet_BundleTag_SkipsDirect(t *testing.T) {
+	type S struct {
+		A string `json:"a" bundle:"readonly"`
+		B string `json:"b" bundle:"internal"`
+		C string `json:"c"`
+	}
+
+	// Direct readonly/internal fields should be invisible
+	_, err := Get(S{A: "x", B: "y", C: "z"}, "a")
+	typeName := reflect.TypeOf(S{}).String()
+	require.EqualError(t, err, "a: field \"a\" not found in "+typeName)
+
+	_, err = Get(S{}, "b")
+	require.EqualError(t, err, "b: field \"b\" not found in "+typeName)
+
+	// Visible field works
+	v, err := Get(S{C: "z"}, "c")
+	require.NoError(t, err)
+	require.Equal(t, "z", v)
+}
+
+func TestGet_BundleTag_SkipsPromoted(t *testing.T) {
+	type embedded struct {
+		Hidden string `json:"hidden" bundle:"readonly"`
+	}
+	type host struct {
+		embedded
+	}
+	// Promoted readonly field should be invisible
+	_, err := Get(host{embedded: embedded{Hidden: "x"}}, "hidden")
+	typeName := reflect.TypeOf(host{}).String()
+	require.EqualError(t, err, "hidden: field \"hidden\" not found in "+typeName)
+}

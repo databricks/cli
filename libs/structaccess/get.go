@@ -155,6 +155,11 @@ func findStructFieldByKey(v reflect.Value, key string) (reflect.Value, reflect.S
 		}
 
 		if name != "" && name == key {
+			// Skip fields marked as internal or readonly via bundle tag
+			btag := structtag.BundleTag(sf.Tag.Get("bundle"))
+			if btag.Internal() || btag.ReadOnly() {
+				continue
+			}
 			return v.Field(i), sf, v, true
 		}
 	}
@@ -178,6 +183,12 @@ func findStructFieldByKey(v reflect.Value, key string) (reflect.Value, reflect.S
 			continue
 		}
 		if out, osf, owner, ok := findStructFieldByKey(fv, key); ok {
+			// Skip fields marked as internal or readonly via bundle tag
+			btag := structtag.BundleTag(osf.Tag.Get("bundle"))
+			if btag.Internal() || btag.ReadOnly() {
+				// Treat as not found and continue searching other anonymous fields
+				continue
+			}
 			return out, osf, owner, true
 		}
 	}
