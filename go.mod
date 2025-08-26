@@ -17,7 +17,7 @@ require (
 	github.com/hashicorp/go-version v1.7.0 // MPL 2.0
 	github.com/hashicorp/hc-install v0.9.2 // MPL 2.0
 	github.com/hashicorp/terraform-exec v0.23.0 // MPL 2.0
-	github.com/hashicorp/terraform-json v0.24.0 // MPL 2.0
+	github.com/hashicorp/terraform-json v0.26.0 // MPL 2.0
 	github.com/hexops/gotextdiff v1.0.3 // BSD 3-Clause "New" or "Revised" License
 	github.com/manifoldco/promptui v0.9.0 // BSD-3-Clause
 	github.com/mattn/go-isatty v0.0.20 // MIT
@@ -69,7 +69,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
-	github.com/zclconf/go-cty v1.16.2 // indirect
+	github.com/zclconf/go-cty v1.16.3 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.61.0 // indirect
 	go.opentelemetry.io/otel v1.36.0 // indirect
