@@ -100,6 +100,9 @@ var SupportedResources = map[string]ResourceSettings{
 		New:        reflect.ValueOf(tnresources.NewResourceApp),
 		ConfigType: TypeOfConfig(&tnresources.ResourceApp{}),
 		DeleteFN:   tnresources.DeleteApp,
+		RecreateFields: mkMap(
+			".name",
+		),
 	},
 	"sql_warehouses": {
 		New:        reflect.ValueOf(tnresources.NewResourceSqlWarehouse),

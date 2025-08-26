@@ -1,0 +1,18 @@
+RecordRequests = true
+Ignore = [
+    '.venv',
+    'dist',
+    'build',
+    '*egg-info',
+    '.databricks',
+    '*.whl',
+]
+
+[[Server]]
+Pattern = "GET /api/2.1/clusters/get"
+Response.Body = '''
+{
+  "cluster_id": "0717-132531-5opeqon1",
+  "spark_version": "13.3.x-scala2.12"
+}
+'''
