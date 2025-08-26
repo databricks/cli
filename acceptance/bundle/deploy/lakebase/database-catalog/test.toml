@@ -4,4 +4,4 @@ Cloud = true
 RecordRequests = false
 
 [EnvMatrix]
-DATABRICKS_CLI_DEPLOYMENT = ["terraform"]
+DATABRICKS_CLI_DEPLOYMENT = ["direct-exp"]
