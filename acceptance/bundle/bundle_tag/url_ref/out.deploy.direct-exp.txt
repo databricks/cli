@@ -1,5 +1,9 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Error: reading config: failed to read references from config for jobs.bar: parsing refs: cannot process reference resources.jobs.foo.url: only ${resources.<group>.<key>.id} references are supported
+Error: cannot resolve ${resources.jobs.foo.url}: url: field "url" not found in resources.Job
+
+Error: cannot plan jobs.bar: dependency failed: jobs.foo
+
+Error: planning failed
 
 
 Exit code: 1
