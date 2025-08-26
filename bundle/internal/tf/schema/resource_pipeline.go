@@ -59,6 +59,7 @@ type ResourcePipelineClusterClusterLogConf struct {
 
 type ResourcePipelineClusterGcpAttributes struct {
 	Availability         string `json:"availability,omitempty"`
+	FirstOnDemand        int    `json:"first_on_demand,omitempty"`
 	GoogleServiceAccount string `json:"google_service_account,omitempty"`
 	LocalSsdCount        int    `json:"local_ssd_count,omitempty"`
 	ZoneId               string `json:"zone_id,omitempty"`
@@ -158,13 +159,20 @@ type ResourcePipelineGatewayDefinition struct {
 	GatewayStorageSchema  string `json:"gateway_storage_schema"`
 }
 
+type ResourcePipelineIngestionDefinitionObjectsReportTableConfigurationQueryBasedConnectorConfig struct {
+	CursorColumns                        []string `json:"cursor_columns,omitempty"`
+	DeletionCondition                    string   `json:"deletion_condition,omitempty"`
+	HardDeletionSyncMinIntervalInSeconds int      `json:"hard_deletion_sync_min_interval_in_seconds,omitempty"`
+}
+
 type ResourcePipelineIngestionDefinitionObjectsReportTableConfiguration struct {
-	ExcludeColumns                 []string `json:"exclude_columns,omitempty"`
-	IncludeColumns                 []string `json:"include_columns,omitempty"`
-	PrimaryKeys                    []string `json:"primary_keys,omitempty"`
-	SalesforceIncludeFormulaFields bool     `json:"salesforce_include_formula_fields,omitempty"`
-	ScdType                        string   `json:"scd_type,omitempty"`
-	SequenceBy                     []string `json:"sequence_by,omitempty"`
+	ExcludeColumns                 []string                                                                                     `json:"exclude_columns,omitempty"`
+	IncludeColumns                 []string                                                                                     `json:"include_columns,omitempty"`
+	PrimaryKeys                    []string                                                                                     `json:"primary_keys,omitempty"`
+	SalesforceIncludeFormulaFields bool                                                                                         `json:"salesforce_include_formula_fields,omitempty"`
+	ScdType                        string                                                                                       `json:"scd_type,omitempty"`
+	SequenceBy                     []string                                                                                     `json:"sequence_by,omitempty"`
+	QueryBasedConnectorConfig      *ResourcePipelineIngestionDefinitionObjectsReportTableConfigurationQueryBasedConnectorConfig `json:"query_based_connector_config,omitempty"`
 }
 
 type ResourcePipelineIngestionDefinitionObjectsReport struct {
@@ -175,13 +183,20 @@ type ResourcePipelineIngestionDefinitionObjectsReport struct {
 	TableConfiguration *ResourcePipelineIngestionDefinitionObjectsReportTableConfiguration `json:"table_configuration,omitempty"`
 }
 
+type ResourcePipelineIngestionDefinitionObjectsSchemaTableConfigurationQueryBasedConnectorConfig struct {
+	CursorColumns                        []string `json:"cursor_columns,omitempty"`
+	DeletionCondition                    string   `json:"deletion_condition,omitempty"`
+	HardDeletionSyncMinIntervalInSeconds int      `json:"hard_deletion_sync_min_interval_in_seconds,omitempty"`
+}
+
 type ResourcePipelineIngestionDefinitionObjectsSchemaTableConfiguration struct {
-	ExcludeColumns                 []string `json:"exclude_columns,omitempty"`
-	IncludeColumns                 []string `json:"include_columns,omitempty"`
-	PrimaryKeys                    []string `json:"primary_keys,omitempty"`
-	SalesforceIncludeFormulaFields bool     `json:"salesforce_include_formula_fields,omitempty"`
-	ScdType                        string   `json:"scd_type,omitempty"`
-	SequenceBy                     []string `json:"sequence_by,omitempty"`
+	ExcludeColumns                 []string                                                                                     `json:"exclude_columns,omitempty"`
+	IncludeColumns                 []string                                                                                     `json:"include_columns,omitempty"`
+	PrimaryKeys                    []string                                                                                     `json:"primary_keys,omitempty"`
+	SalesforceIncludeFormulaFields bool                                                                                         `json:"salesforce_include_formula_fields,omitempty"`
+	ScdType                        string                                                                                       `json:"scd_type,omitempty"`
+	SequenceBy                     []string                                                                                     `json:"sequence_by,omitempty"`
+	QueryBasedConnectorConfig      *ResourcePipelineIngestionDefinitionObjectsSchemaTableConfigurationQueryBasedConnectorConfig `json:"query_based_connector_config,omitempty"`
 }
 
 type ResourcePipelineIngestionDefinitionObjectsSchema struct {
@@ -192,13 +207,20 @@ type ResourcePipelineIngestionDefinitionObjectsSchema struct {
 	TableConfiguration *ResourcePipelineIngestionDefinitionObjectsSchemaTableConfiguration `json:"table_configuration,omitempty"`
 }
 
+type ResourcePipelineIngestionDefinitionObjectsTableTableConfigurationQueryBasedConnectorConfig struct {
+	CursorColumns                        []string `json:"cursor_columns,omitempty"`
+	DeletionCondition                    string   `json:"deletion_condition,omitempty"`
+	HardDeletionSyncMinIntervalInSeconds int      `json:"hard_deletion_sync_min_interval_in_seconds,omitempty"`
+}
+
 type ResourcePipelineIngestionDefinitionObjectsTableTableConfiguration struct {
-	ExcludeColumns                 []string `json:"exclude_columns,omitempty"`
-	IncludeColumns                 []string `json:"include_columns,omitempty"`
-	PrimaryKeys                    []string `json:"primary_keys,omitempty"`
-	SalesforceIncludeFormulaFields bool     `json:"salesforce_include_formula_fields,omitempty"`
-	ScdType                        string   `json:"scd_type,omitempty"`
-	SequenceBy                     []string `json:"sequence_by,omitempty"`
+	ExcludeColumns                 []string                                                                                    `json:"exclude_columns,omitempty"`
+	IncludeColumns                 []string                                                                                    `json:"include_columns,omitempty"`
+	PrimaryKeys                    []string                                                                                    `json:"primary_keys,omitempty"`
+	SalesforceIncludeFormulaFields bool                                                                                        `json:"salesforce_include_formula_fields,omitempty"`
+	ScdType                        string                                                                                      `json:"scd_type,omitempty"`
+	SequenceBy                     []string                                                                                    `json:"sequence_by,omitempty"`
+	QueryBasedConnectorConfig      *ResourcePipelineIngestionDefinitionObjectsTableTableConfigurationQueryBasedConnectorConfig `json:"query_based_connector_config,omitempty"`
 }
 
 type ResourcePipelineIngestionDefinitionObjectsTable struct {
@@ -217,13 +239,20 @@ type ResourcePipelineIngestionDefinitionObjects struct {
 	Table  *ResourcePipelineIngestionDefinitionObjectsTable  `json:"table,omitempty"`
 }
 
+type ResourcePipelineIngestionDefinitionTableConfigurationQueryBasedConnectorConfig struct {
+	CursorColumns                        []string `json:"cursor_columns,omitempty"`
+	DeletionCondition                    string   `json:"deletion_condition,omitempty"`
+	HardDeletionSyncMinIntervalInSeconds int      `json:"hard_deletion_sync_min_interval_in_seconds,omitempty"`
+}
+
 type ResourcePipelineIngestionDefinitionTableConfiguration struct {
-	ExcludeColumns                 []string `json:"exclude_columns,omitempty"`
-	IncludeColumns                 []string `json:"include_columns,omitempty"`
-	PrimaryKeys                    []string `json:"primary_keys,omitempty"`
-	SalesforceIncludeFormulaFields bool     `json:"salesforce_include_formula_fields,omitempty"`
-	ScdType                        string   `json:"scd_type,omitempty"`
-	SequenceBy                     []string `json:"sequence_by,omitempty"`
+	ExcludeColumns                 []string                                                                        `json:"exclude_columns,omitempty"`
+	IncludeColumns                 []string                                                                        `json:"include_columns,omitempty"`
+	PrimaryKeys                    []string                                                                        `json:"primary_keys,omitempty"`
+	SalesforceIncludeFormulaFields bool                                                                            `json:"salesforce_include_formula_fields,omitempty"`
+	ScdType                        string                                                                          `json:"scd_type,omitempty"`
+	SequenceBy                     []string                                                                        `json:"sequence_by,omitempty"`
+	QueryBasedConnectorConfig      *ResourcePipelineIngestionDefinitionTableConfigurationQueryBasedConnectorConfig `json:"query_based_connector_config,omitempty"`
 }
 
 type ResourcePipelineIngestionDefinition struct {

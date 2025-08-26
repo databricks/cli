@@ -1,6 +1,7 @@
 package acceptance_test
 
 import (
+	"archive/zip"
 	"bufio"
 	"context"
 	"encoding/base32"
@@ -44,6 +45,7 @@ var (
 	LogRequests bool
 	LogConfig   bool
 	SkipLocal   bool
+	UseVersion  string
 )
 
 // In order to debug CLI running under acceptance test, search for TestInprocessMode and update
@@ -64,6 +66,7 @@ func init() {
 	flag.BoolVar(&LogRequests, "logrequests", false, "Log request and responses from testserver")
 	flag.BoolVar(&LogConfig, "logconfig", false, "Log merged for each test case")
 	flag.BoolVar(&SkipLocal, "skiplocal", false, "Skip tests that are enabled to run on Local")
+	flag.StringVar(&UseVersion, "useversion", "", "Download previously released version of CLI and use it to run the tests")
 }
 
 const (
@@ -166,7 +169,11 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		t.Setenv("CMD_SERVER_URL", cmdServer.URL)
 		execPath = filepath.Join(cwd, "bin", "callserver.py")
 	} else {
-		execPath = BuildCLI(t, buildDir, coverDir)
+		if UseVersion != "" {
+			execPath = DownloadCLI(t, buildDir, UseVersion)
+		} else {
+			execPath = BuildCLI(t, buildDir, coverDir)
+		}
 	}
 
 	BuildYamlfmt(t)
@@ -270,6 +277,14 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 			config, configPath := internal.LoadConfig(t, dir)
 			skipReason := getSkipReason(&config, configPath)
 
+			if testdiff.OverwriteMode {
+				// Generate materialized config for this test
+				// We do this before skipping the test, so the configs are generated for all tests.
+				materializedConfig, err := internal.GenerateMaterializedConfig(config)
+				require.NoError(t, err)
+				testutil.WriteFile(t, filepath.Join(dir, internal.MaterializedConfigFile), materializedConfig)
+			}
+
 			if skipReason != "" {
 				skippedDirs += 1
 				t.Skip(skipReason)
@@ -284,7 +299,11 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 			if testdiff.OverwriteMode && len(expanded) > 1 {
 				// All variants of the test are producing the same output,
 				// there is no need to run the concurrently when updating.
-				expanded = expanded[0:1]
+				// Exception: if EnvVaryOutput is configured with multiple values, we must
+				// run all variants to record variant-specific outputs.
+				if config.EnvVaryOutput == nil || len(config.EnvMatrix[*config.EnvVaryOutput]) <= 1 {
+					expanded = expanded[0:1]
+				}
 			}
 
 			if len(expanded) == 1 {
@@ -365,6 +384,11 @@ func getTests(t *testing.T) []string {
 
 // Return a reason to skip the test. Empty string means "don't skip".
 func getSkipReason(config *internal.TestConfig, configPath string) string {
+	// Apply default first, so that it's visible in out.test.toml
+	if isTruePtr(config.CloudSlow) {
+		config.Cloud = config.CloudSlow
+	}
+
 	if SkipLocal && isTruePtr(config.Local) {
 		return "Disabled via SkipLocal setting in " + configPath
 	}
@@ -389,7 +413,6 @@ func getSkipReason(config *internal.TestConfig, configPath string) string {
 		}
 
 		if isTruePtr(config.CloudSlow) {
-			config.Cloud = config.CloudSlow
 			if testing.Short() {
 				return fmt.Sprintf("Disabled via CloudSlow setting in %s (CLOUD_ENV=%s, Short=%v)", configPath, cloudEnv, testing.Short())
 			}
@@ -529,7 +552,6 @@ func runTest(t *testing.T,
 	// populate CLOUD_ENV_BASE
 	envBase := getCloudEnvBase(cloudEnv)
 	cmd.Env = append(cmd.Env, "CLOUD_ENV_BASE="+envBase)
-	repls.Set(envBase, "[CLOUD_ENV_BASE]")
 
 	// Must be added PrepareReplacementsUser, otherwise conflicts with [USERNAME]
 	testdiff.PrepareReplacementsUUID(t, &repls)
@@ -616,8 +638,14 @@ func runTest(t *testing.T,
 
 	printedRepls := false
 
+	pathFilter := preparePathFilter(config, customEnv)
+
 	// Compare expected outputs
 	for relPath := range outputs {
+		if shouldSkip(pathFilter, relPath) {
+			continue
+		}
+
 		skipRepls := false
 		if relPath == internal.MaterializedConfigFile {
 			skipRepls = true
@@ -817,6 +845,83 @@ func BuildCLI(t *testing.T, buildDir, coverDir string) string {
 
 	RunCommand(t, args, "..")
 	return execPath
+}
+
+// DownloadCLI downloads a released CLI binary archive for the given version,
+// extracts the executable, and returns its path.
+func DownloadCLI(t *testing.T, buildDir, version string) string {
+	// Prepare target directory for this version
+	versionDir := filepath.Join(buildDir, version)
+	require.NoError(t, os.MkdirAll(versionDir, 0o755))
+
+	execName := "databricks"
+	if runtime.GOOS == "windows" {
+		execName += ".exe"
+	}
+	execPath := filepath.Join(versionDir, execName)
+
+	// If already downloaded, reuse
+	if _, err := os.Stat(execPath); err == nil {
+		return execPath
+	}
+
+	osName := runtime.GOOS
+	archName := runtime.GOARCH
+
+	// Compose archive name per release naming scheme
+	archiveName := fmt.Sprintf("databricks_cli_%s_%s_%s.zip", version, osName, archName)
+	url := fmt.Sprintf("https://github.com/databricks/cli/releases/download/v%s/%s", version, archiveName)
+	zipPath := filepath.Join(versionDir, archiveName)
+
+	downloadToFile(t, url, zipPath)
+	extractFileFromZip(t, zipPath, execName, versionDir)
+
+	return execPath
+}
+
+// downloadToFile downloads contents from url into the given destination path
+func downloadToFile(t *testing.T, url, destPath string) {
+	require.NoError(t, os.MkdirAll(filepath.Dir(destPath), 0o755))
+	out, err := os.Create(destPath)
+	require.NoError(t, err)
+	defer out.Close()
+
+	resp, err := http.Get(url)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	require.Equal(t, http.StatusOK, resp.StatusCode, "failed to download %s: %s", url, resp.Status)
+
+	_, err = io.Copy(out, resp.Body)
+	require.NoError(t, err)
+}
+
+// extractFileFromZip finds a file by name inside a zip archive and writes it
+// into destDir using the file's base name. Fails the test if not found.
+func extractFileFromZip(t *testing.T, zipPath, fileName, destDir string) {
+	r, err := zip.OpenReader(zipPath)
+	require.NoError(t, err)
+	defer r.Close()
+
+	targetBase := filepath.Base(fileName)
+	destPath := filepath.Join(destDir, targetBase)
+	var found bool
+	for _, f := range r.File {
+		if filepath.Base(f.Name) != targetBase {
+			continue
+		}
+		rc, err := f.Open()
+		require.NoError(t, err)
+		defer rc.Close()
+
+		out, err := os.OpenFile(destPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o755)
+		require.NoError(t, err)
+		_, err = io.Copy(out, rc)
+		_ = out.Close()
+		require.NoError(t, err)
+		found = true
+		break
+	}
+	require.True(t, found, "file %s not found in archive %s", targetBase, zipPath)
 }
 
 func copyFile(src, dst string) error {
@@ -1057,7 +1162,7 @@ func getCloudEnvBase(cloudEnv string) string {
 	case "gcp", "gcp-ucws":
 		return "gcp"
 	case "":
-		return ""
+		return "aws"
 	default:
 		return "unknown-cloudEnv-" + cloudEnv
 	}
@@ -1239,4 +1344,54 @@ func loadUserReplacements(t *testing.T, repls *testdiff.ReplacementsContext, tmp
 		old := line[:len(line)-len(repl)-1]
 		repls.SetWithOrder(old, "["+repl+"]", -100)
 	}
+}
+
+type pathFilter struct {
+	// contains substrings from the variants other than current.
+	// E.g. if EnvVaryOutput is DATABRICKS_CLI_DEPLOYMENT and current test running DATABRICKS_CLI_DEPLOYMENT="terraform" then
+	// notSelected contains ".direct-exp." meaning if filename contains that (e.g. out.deploy.direct-exp.txt) then we ignore it here.
+	notSelected []string
+}
+
+// preparePathFilter builds filter based on EnvVaryOutput and current variant env.
+func preparePathFilter(config internal.TestConfig, customEnv []string) pathFilter {
+	if config.EnvVaryOutput == nil {
+		return pathFilter{}
+	}
+	key := *config.EnvVaryOutput
+	vals := config.EnvMatrix[key]
+	if len(vals) <= 1 {
+		return pathFilter{}
+	}
+	selected := ""
+	for _, kv := range customEnv {
+		items := strings.SplitN(kv, "=", 2)
+		if len(items) == 2 && items[0] == key {
+			selected = items[1]
+			break
+		}
+	}
+	if selected == "" {
+		return pathFilter{}
+	}
+	var others []string
+	for _, v := range vals {
+		if v == selected {
+			continue
+		}
+		others = append(others, "."+v+".")
+	}
+	return pathFilter{
+		notSelected: others,
+	}
+}
+
+// shouldSkip returns true if the given file belongs to a non-selected variant.
+func shouldSkip(filter pathFilter, relPath string) bool {
+	for _, infix := range filter.notSelected {
+		if strings.Contains(relPath, infix) {
+			return true
+		}
+	}
+	return false
 }

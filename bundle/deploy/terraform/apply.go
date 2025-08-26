@@ -18,7 +18,7 @@ func (w *apply) Name() string {
 
 func (w *apply) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// return early if plan is empty
-	if b.Plan.TerraformIsEmpty {
+	if b.TerraformPlanIsEmpty {
 		log.Debugf(ctx, "No changes in plan. Skipping terraform apply.")
 		return nil
 	}
@@ -28,12 +28,12 @@ func (w *apply) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		return diag.Errorf("terraform not initialized")
 	}
 
-	if b.Plan.TerraformPlanPath == "" {
+	if b.TerraformPlanPath == "" {
 		return diag.Errorf("no plan found")
 	}
 
 	// Apply terraform according to the computed plan
-	err := tf.Apply(ctx, tfexec.DirOrPlan(b.Plan.TerraformPlanPath))
+	err := tf.Apply(ctx, tfexec.DirOrPlan(b.TerraformPlanPath))
 	if err != nil {
 		diags := permissions.TryExtendTerraformPermissionError(ctx, b, err)
 		if diags != nil {

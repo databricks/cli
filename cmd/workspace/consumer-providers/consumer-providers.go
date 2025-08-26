@@ -126,7 +126,7 @@ func newGet() *cobra.Command {
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
 			promptSpinner <- "No ID argument specified. Loading names for Consumer Providers drop-down."
-			names, err := w.ConsumerProviders.ProviderInfoNameToIdMap(ctx, marketplace.ListProvidersRequest{})
+			names, err := w.ConsumerProviders.ProviderInfoNameToIdMap(ctx, marketplace.ListConsumerProvidersRequest{})
 			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Consumer Providers drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -167,13 +167,13 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
-	*marketplace.ListProvidersRequest,
+	*marketplace.ListConsumerProvidersRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var listReq marketplace.ListProvidersRequest
+	var listReq marketplace.ListConsumerProvidersRequest
 
 	cmd.Flags().BoolVar(&listReq.IsFeatured, "is-featured", listReq.IsFeatured, ``)
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)

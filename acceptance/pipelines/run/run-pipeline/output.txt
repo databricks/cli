@@ -12,8 +12,24 @@ Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
 Update ID: [UUID]
 
+Update for pipeline completed successfully.
+
+Pipeline configurations for this update:
+• All tables are refreshed
+
 === Run pipeline with KEY, expect same output as without KEY
 >>> [PIPELINES] run my_pipeline
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
 Update ID: [UUID]
+
+Update for pipeline completed successfully.
+
+Pipeline configurations for this update:
+• All tables are refreshed
+
+=== completion handler
+>>> [PIPELINES] __complete run ,
+my_pipeline
+:4
+Completion ended with directive: ShellCompDirectiveNoFileComp

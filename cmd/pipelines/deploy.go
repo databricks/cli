@@ -42,9 +42,19 @@ func deployCommand() *cobra.Command {
 		ctx := logdiag.InitContext(cmd.Context())
 		cmd.SetContext(ctx)
 
+		// Enable collection of diagnostics to check for OSS template warning in ConfigureBundleWithVariables
+		logdiag.SetCollect(ctx, true)
+
 		b := utils.ConfigureBundleWithVariables(cmd)
 		if b == nil || logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
+		}
+		logdiag.SetCollect(ctx, false)
+
+		diags := logdiag.FlushCollected(ctx)
+		// Prevent deploying open-source Spark Declarative Pipelines YAML files with the Pipelines CLI.
+		if err := checkForOSSTemplateWarning(ctx, diags); err != nil {
+			return err
 		}
 
 		bundle.ApplyFuncContext(ctx, b, func(context.Context, *bundle.Bundle) {

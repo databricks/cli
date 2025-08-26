@@ -1,0 +1,11 @@
+Badness = "Terraform says it is a bug in the provider; expected either to reject this config or to evaluate it and pass it to backend which will reject it"
+
+Local = true
+Cloud = true
+RequiresUnityCatalog = true
+
+# Each cloud has its specific storage url, we record AWS's one in the output (which is also emulated by Local):
+CloudEnvs.gcp = false
+CloudEnvs.azure = false
+
+EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["terraform"]

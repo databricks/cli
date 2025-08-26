@@ -1,0 +1,17 @@
+print_requests() {
+    jq --sort-keys 'select(.path | contains("/unity"))' < out.requests.txt
+    rm out.requests.txt
+}
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm out.requests.txt
+}
+
+envsubst < databricks.yml.tmpl > databricks.yml
+trace $CLI bundle validate -o json | jq .resources
+trace $CLI bundle plan
+trace print_requests
+trap cleanup EXIT
+trace $CLI bundle deploy
+trace print_requests

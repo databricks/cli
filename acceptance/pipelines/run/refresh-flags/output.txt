@@ -12,6 +12,11 @@ Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
 Update ID: [UUID]
 
+Update for pipeline completed successfully.
+
+Pipeline configurations for this update:
+• All tables are refreshed
+
 >>> print_requests
 {
   "body": {
@@ -30,6 +35,11 @@ Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
 Update ID: [UUID]
 
+Update for pipeline completed successfully.
+
+Pipeline configurations for this update:
+• All tables are refreshed
+
 >>> print_requests
 {
   "body": {
@@ -44,6 +54,11 @@ Update ID: [UUID]
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
 Update ID: [UUID]
+
+Update for pipeline completed successfully.
+
+Pipeline configurations for this update:
+• All tables are refreshed
 
 >>> print_requests
 {
@@ -62,6 +77,11 @@ Update ID: [UUID]
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
 Update ID: [UUID]
+
+Update for pipeline completed successfully.
+
+Pipeline configurations for this update:
+• All tables are refreshed
 
 >>> print_requests
 {

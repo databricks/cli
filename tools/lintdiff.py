@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.12"
+# ///
 """
 Drop in replacement for golangci-lint that runs it only on changed packages.
 

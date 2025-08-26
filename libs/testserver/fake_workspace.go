@@ -11,6 +11,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/databricks/databricks-sdk-go/service/database"
+
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
@@ -74,16 +76,22 @@ type FakeWorkspace struct {
 	Dashboards      map[string]dashboards.Dashboard
 	SqlWarehouses   map[string]sql.GetWarehouseResponse
 
+	Acls map[string][]workspace.AclItem
+
 	nextRepoId int64
 	Repos      map[string]workspace.RepoInfo
+
+	DatabaseInstances    map[string]database.DatabaseInstance
+	DatabaseCatalogs     map[string]database.DatabaseCatalog
+	SyncedDatabaseTables map[string]database.SyncedDatabaseTable
 }
 
-func (w *FakeWorkspace) LockUnlock() func() {
-	if w == nil {
+func (s *FakeWorkspace) LockUnlock() func() {
+	if s == nil {
 		panic("LockUnlock called on nil FakeWorkspace")
 	}
-	w.mu.Lock()
-	return func() { w.mu.Unlock() }
+	s.mu.Lock()
+	return func() { s.mu.Unlock() }
 }
 
 // Generic functions to handle map operations
@@ -144,19 +152,23 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		files:        make(map[string]FileEntry),
 		repoIdByPath: make(map[string]int64),
 
-		Jobs:            map[int64]jobs.Job{},
-		JobRuns:         map[int64]jobs.Run{},
-		nextJobId:       TestJobID,
-		nextJobRunId:    TestRunID,
-		Pipelines:       map[string]pipelines.GetPipelineResponse{},
-		PipelineUpdates: map[string]bool{},
-		Monitors:        map[string]catalog.MonitorInfo{},
-		Apps:            map[string]apps.App{},
-		Schemas:         map[string]catalog.SchemaInfo{},
-		Volumes:         map[string]catalog.VolumeInfo{},
-		Dashboards:      map[string]dashboards.Dashboard{},
-		SqlWarehouses:   map[string]sql.GetWarehouseResponse{},
-		Repos:           map[string]workspace.RepoInfo{},
+		Jobs:                 map[int64]jobs.Job{},
+		JobRuns:              map[int64]jobs.Run{},
+		nextJobId:            TestJobID,
+		nextJobRunId:         TestRunID,
+		Pipelines:            map[string]pipelines.GetPipelineResponse{},
+		PipelineUpdates:      map[string]bool{},
+		Monitors:             map[string]catalog.MonitorInfo{},
+		Apps:                 map[string]apps.App{},
+		Schemas:              map[string]catalog.SchemaInfo{},
+		Volumes:              map[string]catalog.VolumeInfo{},
+		Dashboards:           map[string]dashboards.Dashboard{},
+		SqlWarehouses:        map[string]sql.GetWarehouseResponse{},
+		Repos:                map[string]workspace.RepoInfo{},
+		Acls:                 map[string][]workspace.AclItem{},
+		DatabaseInstances:    map[string]database.DatabaseInstance{},
+		DatabaseCatalogs:     map[string]database.DatabaseCatalog{},
+		SyncedDatabaseTables: map[string]database.SyncedDatabaseTable{},
 	}
 }
 

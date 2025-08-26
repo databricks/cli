@@ -1,5 +1,63 @@
 # Version changelog
 
+## Release v0.265.0
+
+### CLI
+* Fix "cache: token not found" for auth token command ([#3447](https://github.com/databricks/cli/pull/3447))
+
+### Dependency updates
+* Upgrade TF provider to 1.87.0 ([#3430](https://github.com/databricks/cli/pull/3430))
+* Upgrade Go SDK to 0.81.0 ([#3449](https://github.com/databricks/cli/pull/3449))
+
+### Bundles
+* Add support for Lakebase database instances in DABs ([#3283](https://github.com/databricks/cli/pull/3283))
+* Add support for Lakebase database catalogs in DABs ([#3436](https://github.com/databricks/cli/pull/3436))
+* Improve error message for SDK/API errors ([#3379](https://github.com/databricks/cli/pull/3379))
+* Separate generated classes between jobs and pipelines in Python support ([#3428](https://github.com/databricks/cli/pull/3428))
+
+
+## Release v0.264.2
+
+### Notable Changes
+* Revert ([#3370](https://github.com/databricks/cli/pull/3370)) "Resolve $resources as regular variables if set by user". This breaks deployments due to swapping the order of resolution and preset application.
+
+
+## Release v0.264.1
+
+### Notable Changes
+* Fixed regression in databricks auth login for OAuth redirect URL ([#3417](https://github.com/databricks/cli/pull/3417))
+
+### Bundles
+* Add supported enum values to JSON schema for volume grant privileges ([#3395](https://github.com/databricks/cli/pull/3395))
+
+
+## Release v0.264.0
+
+### Dependency updates
+* Upgrade TF provider to 1.86.0 ([#3374](https://github.com/databricks/cli/pull/3374))
+* Update Go SDK to 0.79.0 ([#3376](https://github.com/databricks/cli/pull/3376))
+
+### CLI
+* Fixed panic when providing a CLI command with an incorrect JSON input ([#3398](https://github.com/databricks/cli/pull/3398))
+
+### Bundles
+* Changed logic for resolving `${resources...}` references. Previously this would be done by terraform at deploy time. Now if it references a field that is present in the config, it will be done by DABs during bundle loading ([#3370](https://github.com/databricks/cli/pull/3370))
+* Add support for tagging pipelines ([#3086](https://github.com/databricks/cli/pull/3086))
+* Add warning for when an invalid value is specified for an enum field ([#3050](https://github.com/databricks/cli/pull/3050))
+* Add support for running specified job tasks instead of all job tasks ([#3388](https://github.com/databricks/cli/pull/3388))
+
+
+## Release v0.263.0
+
+### CLI
+* Show "DEFAULT" as the default profile for `databricks auth login` [#3252](https://github.com/databricks/cli/pull/3252)
+
+### Bundles
+* Always set default value for source field for tasks if not explicitly set already ([#3359](https://github.com/databricks/cli/pull/3359))
+* Fix panic in auto completion handler for bundler run/open. Regression introduced in 0.259.0. [#3358](https://github.com/databricks/cli/pull/3358)
+* Fix error propagation in the `bundle generate dashboard` command. Regression introduced in 0.259.0. [#3354](https://github.com/databricks/cli/pull/3354)
+
+
 ## Release v0.262.0
 
 ### CLI

@@ -23,8 +23,19 @@ func LoadJSON(data []byte, source string) (dyn.Value, error) {
 		if err == io.EOF {
 			err = errors.New("unexpected end of JSON input")
 		}
-		return dyn.InvalidValue, fmt.Errorf("error decoding JSON at %s: %v", value.Location(), err)
+		// Get the current offset for error reporting
+		errorOffset := decoder.InputOffset()
+		errorLocation := offset.GetPosition(errorOffset)
+		return dyn.InvalidValue, fmt.Errorf("error decoding JSON at %s: %v", errorLocation, err)
 	}
+
+	// Check if there are any remaining tokens (should not be valid JSON)
+	if decoder.More() {
+		errorOffset := decoder.InputOffset()
+		errorLocation := offset.GetPosition(errorOffset)
+		return dyn.InvalidValue, fmt.Errorf("error decoding JSON at %s: unexpected additional content", errorLocation)
+	}
+
 	return value, nil
 }
 
@@ -46,7 +57,8 @@ func decodeValue(decoder *json.Decoder, o *Offset) (dyn.Value, error) {
 
 	switch tok := token.(type) {
 	case json.Delim:
-		if tok == '{' {
+		switch tok {
+		case '{':
 			location = o.GetPosition(offset - 1)
 			// Decode JSON object
 			obj := dyn.NewMapping()
@@ -78,7 +90,7 @@ func decodeValue(decoder *json.Decoder, o *Offset) (dyn.Value, error) {
 				return invalidValueWithLocation(decoder, o), err
 			}
 			return dyn.NewValue(obj, []dyn.Location{location}), nil
-		} else if tok == '[' {
+		case '[':
 			location = o.GetPosition(offset - 1)
 			// Decode JSON array
 			var arr []dyn.Value

@@ -152,6 +152,30 @@ func TestFromTypedStructZeroFieldsIntoExistingFields(t *testing.T) {
 	}), nv)
 }
 
+func TestFromTypedStructZeroFieldsIntoExistingFieldsFloat64(t *testing.T) {
+	type Tmp struct {
+		Foo             float64  `json:"foo"`
+		Bar             float64  `json:"bar,omitempty"`
+		BazBugz         float64  `json:"baz_bugs,omitempty"`
+		ForceSendFields []string `json:"-"`
+	}
+
+	src := Tmp{ForceSendFields: []string{"BazBugz"}}
+
+	ref := dyn.V(map[string]dyn.Value{
+		"foo":      dyn.V(1.2),
+		"bar":      dyn.V(1.2),
+		"baz_bugs": dyn.V(1.2),
+	})
+
+	nv, err := FromTyped(src, ref)
+	require.NoError(t, err)
+	dynassert.Equal(t, dyn.V(map[string]dyn.Value{
+		"foo":      dyn.V(0.0),
+		"baz_bugs": dyn.V(0.0),
+	}), nv)
+}
+
 func TestFromTypedStructSetFieldsRetainLocation(t *testing.T) {
 	type Tmp struct {
 		Foo string `json:"foo"`
@@ -511,7 +535,7 @@ func TestFromTypedStringEmptyOverwrite(t *testing.T) {
 }
 
 func TestFromTypedStringNonEmpty(t *testing.T) {
-	var src string = "new"
+	src := "new"
 	ref := dyn.NilValue
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
@@ -519,7 +543,7 @@ func TestFromTypedStringNonEmpty(t *testing.T) {
 }
 
 func TestFromTypedStringNonEmptyOverwrite(t *testing.T) {
-	var src string = "new"
+	src := "new"
 	ref := dyn.V("old")
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
@@ -530,7 +554,7 @@ func TestFromTypedStringRetainsLocations(t *testing.T) {
 	ref := dyn.NewValue("foo", []dyn.Location{{File: "foo"}})
 
 	// case: value has not been changed
-	var src string = "foo"
+	src := "foo"
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
 	assert.Equal(t, dyn.NewValue("foo", []dyn.Location{{File: "foo"}}), nv)
@@ -543,7 +567,7 @@ func TestFromTypedStringRetainsLocations(t *testing.T) {
 }
 
 func TestFromTypedStringTypeError(t *testing.T) {
-	var src string = "foo"
+	src := "foo"
 	ref := dyn.V(1234)
 	_, err := FromTyped(src, ref)
 	require.Error(t, err)
@@ -566,7 +590,7 @@ func TestFromTypedBoolEmptyOverwrite(t *testing.T) {
 }
 
 func TestFromTypedBoolNonEmpty(t *testing.T) {
-	var src bool = true
+	src := true
 	ref := dyn.NilValue
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
@@ -574,7 +598,7 @@ func TestFromTypedBoolNonEmpty(t *testing.T) {
 }
 
 func TestFromTypedBoolNonEmptyOverwrite(t *testing.T) {
-	var src bool = true
+	src := true
 	ref := dyn.V(false)
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
@@ -585,7 +609,7 @@ func TestFromTypedBoolRetainsLocations(t *testing.T) {
 	ref := dyn.NewValue(true, []dyn.Location{{File: "foo"}})
 
 	// case: value has not been changed
-	var src bool = true
+	src := true
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
 	assert.Equal(t, dyn.NewValue(true, []dyn.Location{{File: "foo"}}), nv)
@@ -598,7 +622,7 @@ func TestFromTypedBoolRetainsLocations(t *testing.T) {
 }
 
 func TestFromTypedBoolVariableReference(t *testing.T) {
-	var src bool = true
+	src := true
 	ref := dyn.V("${var.foo}")
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
@@ -606,7 +630,7 @@ func TestFromTypedBoolVariableReference(t *testing.T) {
 }
 
 func TestFromTypedBoolTypeError(t *testing.T) {
-	var src bool = true
+	src := true
 	ref := dyn.V("string")
 	_, err := FromTyped(src, ref)
 	require.Error(t, err)
@@ -629,7 +653,7 @@ func TestFromTypedIntEmptyOverwrite(t *testing.T) {
 }
 
 func TestFromTypedIntNonEmpty(t *testing.T) {
-	var src int = 1234
+	src := 1234
 	ref := dyn.NilValue
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
@@ -637,7 +661,7 @@ func TestFromTypedIntNonEmpty(t *testing.T) {
 }
 
 func TestFromTypedIntNonEmptyOverwrite(t *testing.T) {
-	var src int = 1234
+	src := 1234
 	ref := dyn.V(1233)
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
@@ -648,7 +672,7 @@ func TestFromTypedIntRetainsLocations(t *testing.T) {
 	ref := dyn.NewValue(1234, []dyn.Location{{File: "foo"}})
 
 	// case: value has not been changed
-	var src int = 1234
+	src := 1234
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
 	assert.Equal(t, dyn.NewValue(1234, []dyn.Location{{File: "foo"}}), nv)
@@ -661,7 +685,7 @@ func TestFromTypedIntRetainsLocations(t *testing.T) {
 }
 
 func TestFromTypedIntVariableReference(t *testing.T) {
-	var src int = 1234
+	src := 1234
 	ref := dyn.V("${var.foo}")
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
@@ -669,7 +693,7 @@ func TestFromTypedIntVariableReference(t *testing.T) {
 }
 
 func TestFromTypedIntTypeError(t *testing.T) {
-	var src int = 1234
+	src := 1234
 	ref := dyn.V("string")
 	_, err := FromTyped(src, ref)
 	require.Error(t, err)
@@ -692,7 +716,7 @@ func TestFromTypedFloatEmptyOverwrite(t *testing.T) {
 }
 
 func TestFromTypedFloatNonEmpty(t *testing.T) {
-	var src float64 = 1.23
+	src := 1.23
 	ref := dyn.NilValue
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
@@ -700,7 +724,7 @@ func TestFromTypedFloatNonEmpty(t *testing.T) {
 }
 
 func TestFromTypedFloatNonEmptyOverwrite(t *testing.T) {
-	var src float64 = 1.23
+	src := 1.23
 	ref := dyn.V(1.24)
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
@@ -725,7 +749,7 @@ func TestFromTypedFloatRetainsLocations(t *testing.T) {
 }
 
 func TestFromTypedFloatVariableReference(t *testing.T) {
-	var src float64 = 1.23
+	src := 1.23
 	ref := dyn.V("${var.foo}")
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
@@ -733,7 +757,7 @@ func TestFromTypedFloatVariableReference(t *testing.T) {
 }
 
 func TestFromTypedFloatTypeError(t *testing.T) {
-	var src float64 = 1.23
+	src := 1.23
 	ref := dyn.V("string")
 	_, err := FromTyped(src, ref)
 	require.Error(t, err)

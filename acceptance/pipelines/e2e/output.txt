@@ -24,6 +24,11 @@ Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
 Update ID: [UUID]
 
+Update for pipeline completed successfully.
+
+Pipeline configurations for this update:
+• All tables are refreshed
+
 === Edit project by creating and running a new second pipeline
 >>> [PIPELINES] deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_project/dev/files...
@@ -51,7 +56,10 @@ View your pipeline my_project_pipeline_2 here: [DATABRICKS_URL]/pipelines/[UUID]
     "edition":"ADVANCED",
     "id":"[UUID]",
     "name":"[dev [USERNAME]] my_project_pipeline_2",
-    "storage":"dbfs:/pipelines/[UUID]"
+    "storage":"dbfs:/pipelines/[UUID]",
+    "tags": {
+      "dev":"[USERNAME]"
+    }
   },
   "state":"IDLE"
 }
@@ -60,6 +68,11 @@ View your pipeline my_project_pipeline_2 here: [DATABRICKS_URL]/pipelines/[UUID]
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
 Update ID: [UUID]
+
+Update for pipeline completed successfully.
+
+Pipeline configurations for this update:
+• All tables are refreshed
 
 === Stop both pipelines before destroy
 >>> [PIPELINES] stop my_project_pipeline
@@ -73,6 +86,11 @@ my_project_pipeline_2 has been stopped.
 === Destroy project
 >>> [PIPELINES] destroy --auto-approve
 The following resources will be deleted:
+  delete pipeline my_project_pipeline
+  delete pipeline my_project_pipeline_2
+
+This action will result in the deletion of the following Lakeflow Declarative Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them:
   delete pipeline my_project_pipeline
   delete pipeline my_project_pipeline_2
 

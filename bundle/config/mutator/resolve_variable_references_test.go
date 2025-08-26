@@ -20,7 +20,7 @@ func TestResolveVariableReferencesWithSourceLinkedDeployment(t *testing.T) {
 			true,
 			func(t *testing.T, b *bundle.Bundle) {
 				// Variables that use workspace file path should have SyncRootValue during resolution phase
-				require.Equal(t, "sync/root/path", b.Config.Resources.Pipelines["pipeline1"].CreatePipeline.Configuration["source"])
+				require.Equal(t, "sync/root/path", b.Config.Resources.Pipelines["pipeline1"].Configuration["source"])
 
 				// The file path itself should remain the same
 				require.Equal(t, "file/path", b.Config.Workspace.FilePath)
@@ -29,7 +29,7 @@ func TestResolveVariableReferencesWithSourceLinkedDeployment(t *testing.T) {
 		{
 			false,
 			func(t *testing.T, b *bundle.Bundle) {
-				require.Equal(t, "file/path", b.Config.Resources.Pipelines["pipeline1"].CreatePipeline.Configuration["source"])
+				require.Equal(t, "file/path", b.Config.Resources.Pipelines["pipeline1"].Configuration["source"])
 				require.Equal(t, "file/path", b.Config.Workspace.FilePath)
 			},
 		},

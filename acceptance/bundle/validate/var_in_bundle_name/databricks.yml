@@ -1,0 +1,14 @@
+bundle:
+  name: trees are ${var.color}
+
+variables:
+  color:
+    default: "green"
+
+targets:
+  one:
+    default: true
+
+  two:
+    bundle:
+      name: trees are red

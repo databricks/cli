@@ -19,7 +19,8 @@
         "tasks": [
           {
             "notebook_task": {
-              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/relative_path_outside_root/default/files/src/notebook"
+              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/relative_path_outside_root/default/files/src/notebook",
+              "source": "WORKSPACE"
             },
             "task_key": "task_key"
           }

@@ -46,6 +46,11 @@ For more tutorials and reference material, see https://docs.databricks.com/dlt.
     (Note that "dev" is the default target, so the `--target` parameter
     is optional here.)
 
+    This deploys everything that's defined for this project.
+    For example, the default template would deploy a pipeline called
+    `[dev yourname] my_sql_project_pipeline` to your workspace.
+    You can find that pipeline by opening your workpace and clicking on **Jobs & Pipelines**.
+
 2. Similarly, to deploy a production copy, type:
    ```
    $ pipelines deploy --target prod

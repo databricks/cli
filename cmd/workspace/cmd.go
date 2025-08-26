@@ -4,14 +4,17 @@ package workspace
 
 import (
 	access_control "github.com/databricks/cli/cmd/workspace/access-control"
-	ai_builder "github.com/databricks/cli/cmd/workspace/ai-builder"
+	agent_bricks "github.com/databricks/cli/cmd/workspace/agent-bricks"
 	alerts "github.com/databricks/cli/cmd/workspace/alerts"
 	alerts_legacy "github.com/databricks/cli/cmd/workspace/alerts-legacy"
 	alerts_v2 "github.com/databricks/cli/cmd/workspace/alerts-v2"
 	apps "github.com/databricks/cli/cmd/workspace/apps"
+	apps_settings "github.com/databricks/cli/cmd/workspace/apps-settings"
 	artifact_allowlists "github.com/databricks/cli/cmd/workspace/artifact-allowlists"
 	catalogs "github.com/databricks/cli/cmd/workspace/catalogs"
+	clean_room_asset_revisions "github.com/databricks/cli/cmd/workspace/clean-room-asset-revisions"
 	clean_room_assets "github.com/databricks/cli/cmd/workspace/clean-room-assets"
+	clean_room_auto_approval_rules "github.com/databricks/cli/cmd/workspace/clean-room-auto-approval-rules"
 	clean_room_task_runs "github.com/databricks/cli/cmd/workspace/clean-room-task-runs"
 	clean_rooms "github.com/databricks/cli/cmd/workspace/clean-rooms"
 	cluster_policies "github.com/databricks/cli/cmd/workspace/cluster-policies"
@@ -29,6 +32,7 @@ import (
 	dashboards "github.com/databricks/cli/cmd/workspace/dashboards"
 	data_sources "github.com/databricks/cli/cmd/workspace/data-sources"
 	database "github.com/databricks/cli/cmd/workspace/database"
+	entity_tag_assignments "github.com/databricks/cli/cmd/workspace/entity-tag-assignments"
 	experiments "github.com/databricks/cli/cmd/workspace/experiments"
 	external_lineage "github.com/databricks/cli/cmd/workspace/external-lineage"
 	external_locations "github.com/databricks/cli/cmd/workspace/external-locations"
@@ -57,6 +61,7 @@ import (
 	permission_migration "github.com/databricks/cli/cmd/workspace/permission-migration"
 	permissions "github.com/databricks/cli/cmd/workspace/permissions"
 	pipelines "github.com/databricks/cli/cmd/workspace/pipelines"
+	policies "github.com/databricks/cli/cmd/workspace/policies"
 	policy_compliance_for_clusters "github.com/databricks/cli/cmd/workspace/policy-compliance-for-clusters"
 	policy_compliance_for_jobs "github.com/databricks/cli/cmd/workspace/policy-compliance-for-jobs"
 	policy_families "github.com/databricks/cli/cmd/workspace/policy-families"
@@ -82,6 +87,7 @@ import (
 	registered_models "github.com/databricks/cli/cmd/workspace/registered-models"
 	repos "github.com/databricks/cli/cmd/workspace/repos"
 	resource_quotas "github.com/databricks/cli/cmd/workspace/resource-quotas"
+	rfa "github.com/databricks/cli/cmd/workspace/rfa"
 	schemas "github.com/databricks/cli/cmd/workspace/schemas"
 	secrets "github.com/databricks/cli/cmd/workspace/secrets"
 	service_principal_secrets_proxy "github.com/databricks/cli/cmd/workspace/service-principal-secrets-proxy"
@@ -93,6 +99,8 @@ import (
 	system_schemas "github.com/databricks/cli/cmd/workspace/system-schemas"
 	table_constraints "github.com/databricks/cli/cmd/workspace/table-constraints"
 	tables "github.com/databricks/cli/cmd/workspace/tables"
+	tag_policies "github.com/databricks/cli/cmd/workspace/tag-policies"
+	temporary_path_credentials "github.com/databricks/cli/cmd/workspace/temporary-path-credentials"
 	temporary_table_credentials "github.com/databricks/cli/cmd/workspace/temporary-table-credentials"
 	token_management "github.com/databricks/cli/cmd/workspace/token-management"
 	tokens "github.com/databricks/cli/cmd/workspace/tokens"
@@ -104,6 +112,7 @@ import (
 	workspace "github.com/databricks/cli/cmd/workspace/workspace"
 	workspace_bindings "github.com/databricks/cli/cmd/workspace/workspace-bindings"
 	workspace_conf "github.com/databricks/cli/cmd/workspace/workspace-conf"
+	workspace_settings_v2 "github.com/databricks/cli/cmd/workspace/workspace-settings-v2"
 	"github.com/spf13/cobra"
 )
 
@@ -111,14 +120,17 @@ func All() []*cobra.Command {
 	var out []*cobra.Command
 
 	out = append(out, access_control.New())
-	out = append(out, ai_builder.New())
+	out = append(out, agent_bricks.New())
 	out = append(out, alerts.New())
 	out = append(out, alerts_legacy.New())
 	out = append(out, alerts_v2.New())
 	out = append(out, apps.New())
+	out = append(out, apps_settings.New())
 	out = append(out, artifact_allowlists.New())
 	out = append(out, catalogs.New())
+	out = append(out, clean_room_asset_revisions.New())
 	out = append(out, clean_room_assets.New())
+	out = append(out, clean_room_auto_approval_rules.New())
 	out = append(out, clean_room_task_runs.New())
 	out = append(out, clean_rooms.New())
 	out = append(out, cluster_policies.New())
@@ -136,6 +148,7 @@ func All() []*cobra.Command {
 	out = append(out, dashboards.New())
 	out = append(out, data_sources.New())
 	out = append(out, database.New())
+	out = append(out, entity_tag_assignments.New())
 	out = append(out, experiments.New())
 	out = append(out, external_lineage.New())
 	out = append(out, external_locations.New())
@@ -163,6 +176,7 @@ func All() []*cobra.Command {
 	out = append(out, permission_migration.New())
 	out = append(out, permissions.New())
 	out = append(out, pipelines.New())
+	out = append(out, policies.New())
 	out = append(out, policy_compliance_for_clusters.New())
 	out = append(out, policy_compliance_for_jobs.New())
 	out = append(out, policy_families.New())
@@ -188,6 +202,7 @@ func All() []*cobra.Command {
 	out = append(out, registered_models.New())
 	out = append(out, repos.New())
 	out = append(out, resource_quotas.New())
+	out = append(out, rfa.New())
 	out = append(out, schemas.New())
 	out = append(out, secrets.New())
 	out = append(out, service_principal_secrets_proxy.New())
@@ -199,6 +214,8 @@ func All() []*cobra.Command {
 	out = append(out, system_schemas.New())
 	out = append(out, table_constraints.New())
 	out = append(out, tables.New())
+	out = append(out, tag_policies.New())
+	out = append(out, temporary_path_credentials.New())
 	out = append(out, temporary_table_credentials.New())
 	out = append(out, token_management.New())
 	out = append(out, tokens.New())
@@ -210,6 +227,7 @@ func All() []*cobra.Command {
 	out = append(out, workspace.New())
 	out = append(out, workspace_bindings.New())
 	out = append(out, workspace_conf.New())
+	out = append(out, workspace_settings_v2.New())
 	out = append(out, forecasting.New())
 
 	return out
