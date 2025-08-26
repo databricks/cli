@@ -1,4 +1,7 @@
 
+>>> [CLI] bundle plan
+create apps.myapp
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
@@ -14,10 +17,24 @@ Deployment complete!
   "method": "POST",
   "path": "/api/2.0/apps"
 }
-apps myapp name='myapp' description='my_app_description'
+
+>>> [CLI] bundle summary
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+Resources:
+  Apps:
+    myapp:
+      Name: myapp
+      URL:  (not deployed)
 
 === Update description and re-deploy
 >>> update_file.py databricks.yml my_app_description MY_APP_DESCRIPTION
+
+>>> [CLI] bundle plan
+update apps.myapp
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
@@ -34,4 +51,88 @@ Deployment complete!
   "method": "PATCH",
   "path": "/api/2.0/apps/myapp"
 }
-apps myapp name='myapp' description='MY_APP_DESCRIPTION'
+
+>>> [CLI] bundle summary
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+Resources:
+  Apps:
+    myapp:
+      Name: myapp
+      URL:  (not deployed)
+
+=== Update name and re-deploy
+>>> update_file.py databricks.yml myapp mynewapp
+
+>>> [CLI] bundle plan
+delete apps.myapp
+create apps.mynewapp
+
+>>> [CLI] bundle summary
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+Resources:
+  Apps:
+    myapp:
+      Name: myapp
+      URL:  [DATABRICKS_URL]/apps/myapp?o=[NUMID]
+    mynewapp:
+      Name: mynewapp
+      URL:  (not deployed)
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests
+{
+  "body": {},
+  "method": "DELETE",
+  "path": "/api/2.0/apps/myapp"
+}
+{
+  "body": {
+    "description": "MY_APP_DESCRIPTION",
+    "name": "mynewapp"
+  },
+  "method": "POST",
+  "path": "/api/2.0/apps"
+}
+
+>>> [CLI] bundle plan
+
+>>> [CLI] bundle summary
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+Resources:
+  Apps:
+    mynewapp:
+      Name: mynewapp
+      URL:  (not deployed)
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete app mynewapp
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Deleting files...
+Destroy complete!
+
+>>> print_requests
+{
+  "body": {},
+  "method": "DELETE",
+  "path": "/api/2.0/apps/mynewapp"
+}

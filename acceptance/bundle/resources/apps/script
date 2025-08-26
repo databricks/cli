@@ -4,12 +4,26 @@ print_requests() {
     rm out.requests.txt
 }
 
+trace $CLI bundle plan
 trace $CLI bundle deploy
 trace print_requests
-read_state.py apps myapp name description
+trace $CLI bundle summary
 
 title "Update description and re-deploy"
 trace update_file.py databricks.yml my_app_description MY_APP_DESCRIPTION
+trace $CLI bundle plan
 trace $CLI bundle deploy
 trace print_requests
-read_state.py apps myapp name description
+trace $CLI bundle summary
+
+title "Update name and re-deploy"
+trace update_file.py databricks.yml myapp mynewapp
+trace $CLI bundle plan
+trace $CLI bundle summary
+trace $CLI bundle deploy
+trace print_requests
+
+trace $CLI bundle plan
+trace $CLI bundle summary
+trace $CLI bundle destroy --auto-approve
+trace print_requests
