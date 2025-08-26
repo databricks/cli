@@ -1,6 +1,5 @@
-# Temporarily disabled due to the flakiness like here https://github.com/databricks/cli/actions/runs/17234131593/job/48894892423
 Cloud = false
-Local = false
+Local = true
 RecordRequests = false
 Timeout = '2m'
 TimeoutWindows = '10m'
