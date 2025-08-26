@@ -1,4 +1,8 @@
-Error: reading config: failed to read references from config for volumes.foo: parsing refs: cannot process reference resources.volumes.bar.non_existent: only ${resources.<group>.<key>.id} references are supported
+Error: cannot resolve ${resources.volumes.bar.non_existent}: non_existent: field "non_existent" not found in resources.Volume
+
+Error: cannot plan volumes.foo: dependency failed: volumes.bar
+
+Error: planning failed
 
 
 Exit code (musterr): 1
