@@ -51,32 +51,6 @@ When writing Python scripts, we bias for conciseness. We think of Python in this
  - After done, format you code with "ruff format -n <path>"
  - Use "#!/usr/bin/env python3" shebang.
 
-# Mutators
-
-Mutators should have a structure as follows:
-
-package mutator
-
-type applySomeChange struct{}
-
-// ApplySomeChange applies some change to the bundle.
-func ApplySomeChange() *applySomeChange {
-	return &applySomeChange{}
-}
-
-func (m *applySomeChange) Name() string {
-	return "ApplySomeChange"
-}
-
-func (m *applySomeChange) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	...
-}
-
-In the code above, notice how the mutator name is used in
-a public function, a struct, and the Name() method.
-The mutator name should start with a verb such as Apply
-and should be used consistently in the code.
-
 # Tests
 
 Each file like process_target_mode_test.go should have a corresponding test file
