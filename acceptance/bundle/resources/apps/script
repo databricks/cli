@@ -17,7 +17,7 @@ trace print_requests
 trace $CLI bundle summary
 
 title "Update name and re-deploy"
-trace update_file.py databricks.yml myapp mynewapp
+trace update_file.py databricks.yml myappname mynewappname
 trace $CLI bundle plan
 trace $CLI bundle summary
 trace $CLI bundle deploy
