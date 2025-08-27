@@ -74,21 +74,14 @@ This is the Databricks CLI, a command-line interface for interacting with Databr
 - Use `-update` flag to regenerate expected output files
 - When you see the test fails because it has an old output, just run it one more time with an `-update` flag instead of changing the `output.txt` directly
 
-### Integration Tests
-Require environment variables:
-- `CLOUD_ENV` - Cloud environment (aws/azure/gcp)
-- `DATABRICKS_HOST` - Workspace URL
-- `DATABRICKS_TOKEN` - Authentication token
-
 ## Code Patterns
 
 ### Error Handling
-- Use `diag` package for structured error reporting with locations
 - Bundle operations return diagnostics rather than plain errors
 - Authentication errors should be wrapped with context
 
 ### Configuration
-- Bundle config uses `dyn.Value` for dynamic typing and path tracking
+- Bundle config uses `dyn.Value` for dynamic typing
 - Config loading supports includes, variable interpolation, and target overrides
 - Schema generation is automated from Go struct tags
 
