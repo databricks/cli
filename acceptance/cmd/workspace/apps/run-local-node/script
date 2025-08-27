@@ -4,14 +4,9 @@ cd app
 # so we don't need to start it in background. It will install the dependencies as part of the command
 trace $CLI apps run-local --prepare-environment --entry-point test.yml 2>&1 | grep -w "Hello, world"
 
-# Get 3 unique ports sequentially to avoid conflicts
-PORTS=$(allocate_ports.py 3 | tr -d '\r')
-
-# Read ports into array
-PORTS_ARR=($(echo "$PORTS"))
-PORT="${PORTS_ARR[0]}"
-DEBUG_PORT="${PORTS_ARR[1]}"
-PROXY_PORT="${PORTS_ARR[2]}"
+PORT=8080
+DEBUG_PORT=5252
+PROXY_PORT=8081
 
 title "Starting the app in background..."
 trace $CLI apps run-local --prepare-environment --debug --port "$PROXY_PORT" --debug-port "$DEBUG_PORT" --app-port "$PORT" > ../out.run.txt 2>&1 &
@@ -25,6 +20,11 @@ title Waiting for the app to start...
 # due to file locking, buffering issues, and different text processing behavior across Windows versions.
 # A simple grep loop is more robust across platforms.
 while [ -z "$(grep -o "Server is running on port " out.run.txt 2>/dev/null)" ]; do
+    sleep 1
+done
+
+# Make sure the proxy is ready to serve requests
+while [ -z "$(grep -o "To access your app go to " out.run.txt 2>/dev/null)" ]; do
     sleep 1
 done
 
