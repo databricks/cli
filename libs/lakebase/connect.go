@@ -33,7 +33,6 @@ func attemptConnection(ctx context.Context, args, env []string) error {
 	cmd.Stderr = os.Stderr
 
 	err := cmd.Run()
-
 	if err != nil {
 		// Check if the error might be due to connection issues
 		// Since we can't capture stderr when running interactively, we check the exit code
