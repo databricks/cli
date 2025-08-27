@@ -24,8 +24,8 @@ type RetryConfig struct {
 	BackoffFactor float64
 }
 
-// tryPsqlInteractive launches psql interactively and returns an error if connection fails
-func tryPsqlInteractive(ctx context.Context, args, env []string) error {
+// attemptConnection launches psql interactively and returns an error if connection fails
+func attemptConnection(ctx context.Context, args, env []string) error {
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
 	cmd.Env = env
 	cmd.Stdin = os.Stdin
@@ -164,7 +164,7 @@ func ConnectWithRetryConfig(ctx context.Context, databaseInstanceName string, re
 		cmdio.LogString(ctx, fmt.Sprintf("Launching psql session to %s (attempt %d/%d)...", db.ReadWriteDns, attempt+1, maxRetries+1))
 
 		// Try to launch psql and capture the exit status
-		err := tryPsqlInteractive(ctx, args, cmdEnv)
+		err := attemptConnection(ctx, args, cmdEnv)
 		if err == nil {
 			// psql exited normally (user quit)
 			return nil
