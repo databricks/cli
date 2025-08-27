@@ -9,7 +9,8 @@ import (
 	"github.com/databricks/cli/libs/structdiff/structtag"
 )
 
-// Get returns the value at the given path inside v.
+// GetByString returns the value at the given path inside v.
+// This is a convenience function that parses the path string and calls Get.
 //
 // Path grammar (compatible with dyn path):
 //   - Struct field names and map keys separated by '.' (e.g., connection.id)
@@ -23,6 +24,20 @@ import (
 //   - For maps: a key indexes map[string]T (or string alias key types).
 //   - For slices/arrays: an index [N] selects the N-th element.
 //   - Wildcards ("*" or "[*]") are not supported and return an error.
+func GetByString(v any, path string) (any, error) {
+	if path == "" {
+		return v, nil
+	}
+
+	dynPath, err := dyn.NewPathFromString(path)
+	if err != nil {
+		return nil, err
+	}
+
+	return Get(v, dynPath)
+}
+
+// Get returns the value at the given path inside v.
 func Get(v any, path dyn.Path) (any, error) {
 	if len(path) == 0 {
 		return v, nil
@@ -81,34 +96,6 @@ func Get(v any, path dyn.Path) (any, error) {
 
 	// Return the resulting value as interface{}; do not force dereference of scalars.
 	return cur.Interface(), nil
-}
-
-// GetByString returns the value at the given path inside v.
-// This is a convenience function that parses the path string and calls Get.
-//
-// Path grammar (compatible with dyn path):
-//   - Struct field names and map keys separated by '.' (e.g., connection.id)
-//   - (Note, this prevents maps keys that are not id-like from being referenced, but this general problem with references today.)
-//   - Numeric indices in brackets for arrays/slices (e.g., items[0].name)
-//   - Leading '.' is allowed (e.g., .connection.id)
-//
-// Behavior:
-//   - For structs: a key matches a field by its json tag name (if present and not "-").
-//     Embedded anonymous structs are searched.
-//   - For maps: a key indexes map[string]T (or string alias key types).
-//   - For slices/arrays: an index [N] selects the N-th element.
-//   - Wildcards ("*" or "[*]") are not supported and return an error.
-func GetByString(v any, path string) (any, error) {
-	if path == "" {
-		return v, nil
-	}
-
-	dynPath, err := dyn.NewPathFromString(path)
-	if err != nil {
-		return nil, err
-	}
-
-	return Get(v, dynPath)
 }
 
 // accessKey returns the field or map entry value selected by key from v.
