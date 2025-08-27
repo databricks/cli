@@ -79,14 +79,12 @@ func TestRetryConfigDefaults(t *testing.T) {
 		InitialDelay:  defaultInitialDelay,
 		MaxDelay:      defaultMaxDelay,
 		BackoffFactor: defaultBackoffFactor,
-		Enabled:       true,
 	}
 
 	assert.Equal(t, 3, config.MaxRetries)
 	assert.Equal(t, "1s", config.InitialDelay.String())
 	assert.Equal(t, "10s", config.MaxDelay.String())
 	assert.InEpsilon(t, 2.0, config.BackoffFactor, 0.001)
-	assert.True(t, config.Enabled)
 }
 
 func TestTryPsqlInteractive(t *testing.T) {

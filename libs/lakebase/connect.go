@@ -30,7 +30,6 @@ type RetryConfig struct {
 	InitialDelay  time.Duration
 	MaxDelay      time.Duration
 	BackoffFactor float64
-	Enabled       bool
 }
 
 // isRetryableConnectionError checks if the error output indicates a retryable connection issue
@@ -172,12 +171,11 @@ func ConnectWithRetryConfig(ctx context.Context, databaseInstanceName string, re
 			InitialDelay:  defaultInitialDelay,
 			MaxDelay:      defaultMaxDelay,
 			BackoffFactor: defaultBackoffFactor,
-			Enabled:       true,
 		}
 	}
 
 	// If retries are disabled, go directly to interactive session
-	if !retryConfig.Enabled {
+	if retryConfig.MaxRetries <= 0 {
 		cmdio.LogString(ctx, fmt.Sprintf("Launching psql with connection to %s...", db.ReadWriteDns))
 		return execlib.Execv(execlib.ExecvOptions{
 			Args: args,
