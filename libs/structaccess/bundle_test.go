@@ -44,27 +44,27 @@ func TestGet_ConfigRoot_JobTagsAccess(t *testing.T) {
 	}
 
 	// Access a value inside the tags map
-	v, err := Get(root, "resources.jobs.my_job.tags.env")
+	v, err := GetByString(root, "resources.jobs.my_job.tags.env")
 	require.NoError(t, err)
 	require.Equal(t, "dev", v)
 
 	// Leading dot is allowed
-	v, err = Get(root, ".resources.jobs.my_job.tags.team")
+	v, err = GetByString(root, ".resources.jobs.my_job.tags.team")
 	require.NoError(t, err)
 	require.Equal(t, "platform", v)
 
 	// Access into first task
-	v, err = Get(root, "resources.jobs.my_job.tasks[0].task_key")
+	v, err = GetByString(root, "resources.jobs.my_job.tasks[0].task_key")
 	require.NoError(t, err)
 	require.Equal(t, "t1", v)
 
 	// Test index access
-	v, err = Get(root, "resources.jobs.my_job.tasks[0].notebook_task.notebook_path")
+	v, err = GetByString(root, "resources.jobs.my_job.tasks[0].notebook_task.notebook_path")
 	require.NoError(t, err)
 	require.Equal(t, "/Workspace/Users/user@example.com/nb", v)
 
 	// Test ambiguous field access
-	v, err = Get(root, "resources.apps.my_app.url")
+	v, err = GetByString(root, "resources.apps.my_app.url")
 	require.NoError(t, err)
 	require.Equal(t, "app_inner_url", v)
 }

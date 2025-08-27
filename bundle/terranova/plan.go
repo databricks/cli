@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/terranova/tnstate"
 	"github.com/databricks/cli/libs/dagrun"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/structaccess"
@@ -171,7 +172,12 @@ func CalculatePlanForDeploy(ctx context.Context, b *bundle.Bundle) error {
 				}
 				continue
 			}
-			value, err := structaccess.Get(config, fieldPath)
+			dynPath, err := dyn.NewPathFromString(fieldPath)
+			if err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("cannot parse path %s: %w", fieldPath, err))
+				return false
+			}
+			value, err := structaccess.Get(config, dynPath)
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("cannot resolve %s: %w", reference, err))
 				return false
