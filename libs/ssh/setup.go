@@ -94,17 +94,17 @@ func ensureSSHConfigExists(configPath string) error {
 	return nil
 }
 
-func checkExistingHosts(content []byte, hostName string) error {
+func checkExistingHosts(content []byte, hostName string) (bool, error) {
 	existingContent := string(content)
 	pattern := fmt.Sprintf(`(?m)^\s*Host\s+%s\s*$`, regexp.QuoteMeta(hostName))
 	matched, err := regexp.MatchString(pattern, existingContent)
 	if err != nil {
-		return fmt.Errorf("failed to check for existing host: %w", err)
+		return false, fmt.Errorf("failed to check for existing host: %w", err)
 	}
 	if matched {
-		return fmt.Errorf("host '%s' already exists in the SSH config", hostName)
+		return true, nil
 	}
-	return nil
+	return false, nil
 }
 
 func createBackup(content []byte, configPath string) (string, error) {
@@ -152,8 +152,6 @@ func Setup(ctx context.Context, client *databricks.WorkspaceClient, opts SetupOp
 		return err
 	}
 
-	cmdio.LogString(ctx, "Adding new entry to the SSH config:\n"+hostConfig)
-
 	err = ensureSSHConfigExists(configPath)
 	if err != nil {
 		return err
@@ -165,9 +163,13 @@ func Setup(ctx context.Context, client *databricks.WorkspaceClient, opts SetupOp
 	}
 
 	if len(existingContent) > 0 {
-		err = checkExistingHosts(existingContent, opts.HostName)
+		exists, err := checkExistingHosts(existingContent, opts.HostName)
 		if err != nil {
 			return err
+		}
+		if exists {
+			cmdio.LogString(ctx, fmt.Sprintf("Host '%s' already exists in the SSH config, skipping setup", opts.HostName))
+			return nil
 		}
 		backupPath, err := createBackup(existingContent, configPath)
 		if err != nil {
@@ -175,6 +177,8 @@ func Setup(ctx context.Context, client *databricks.WorkspaceClient, opts SetupOp
 		}
 		cmdio.LogString(ctx, "Created backup of existing SSH config at "+backupPath)
 	}
+
+	cmdio.LogString(ctx, "Adding new entry to the SSH config:\n"+hostConfig)
 
 	err = updateSSHConfigFile(configPath, hostConfig, opts.HostName)
 	if err != nil {

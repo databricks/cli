@@ -158,8 +158,9 @@ func TestCheckExistingHosts(t *testing.T) {
 Host another-host
     User admin
 `)
-		err := checkExistingHosts(content, "test-host")
+		exists, err := checkExistingHosts(content, "test-host")
 		assert.NoError(t, err)
+		assert.False(t, exists)
 	})
 
 	t.Run("host already exists", func(t *testing.T) {
@@ -170,28 +171,30 @@ Host another-host
 Host another-host
     User admin
 `)
-		err := checkExistingHosts(content, "another-host")
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "host 'another-host' already exists in the SSH config")
+		exists, err := checkExistingHosts(content, "another-host")
+		assert.NoError(t, err)
+		assert.True(t, exists)
 	})
 
 	t.Run("empty content", func(t *testing.T) {
 		content := []byte("")
-		err := checkExistingHosts(content, "test-host")
+		exists, err := checkExistingHosts(content, "test-host")
 		assert.NoError(t, err)
+		assert.False(t, exists)
 	})
 
 	t.Run("Host name with whitespaces around it", func(t *testing.T) {
 		content := []byte(` Host  test-host  `)
-		err := checkExistingHosts(content, "test-host")
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "host 'test-host' already exists in the SSH config")
+		exists, err := checkExistingHosts(content, "test-host")
+		assert.NoError(t, err)
+		assert.True(t, exists)
 	})
 
 	t.Run("partial name match", func(t *testing.T) {
 		content := []byte(`Host test-host-long`)
-		err := checkExistingHosts(content, "test-host")
+		exists, err := checkExistingHosts(content, "test-host")
 		assert.NoError(t, err)
+		assert.False(t, exists)
 	})
 }
 
@@ -387,7 +390,7 @@ func TestSetup(t *testing.T) {
 		assert.Equal(t, existingContent, string(backupContent))
 	})
 
-	t.Run("fails when host already exists", func(t *testing.T) {
+	t.Run("doesn't override existing host", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		configPath := filepath.Join(tmpDir, "ssh_config")
 
@@ -412,7 +415,10 @@ func TestSetup(t *testing.T) {
 		}
 
 		err = Setup(ctx, m.WorkspaceClient, opts)
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "host 'duplicate-host' already exists in the SSH config")
+		assert.NoError(t, err)
+
+		content, err := os.ReadFile(configPath)
+		assert.NoError(t, err)
+		assert.Equal(t, string(content), "Host duplicate-host\n    User root\n")
 	})
 }
