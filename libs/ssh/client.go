@@ -23,6 +23,7 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
+	"github.com/gorilla/websocket"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -269,20 +270,14 @@ func startSSHProxy(ctx context.Context, client *databricks.WorkspaceClient, clus
 	g, gCtx := errgroup.WithContext(ctx)
 
 	cmdio.LogString(ctx, "Establishing SSH proxy connection...")
-	proxy := newProxyConnection()
-	if err := proxy.Connect(gCtx, client, clusterID, serverPort); err != nil {
+	proxy := newProxyConnection(func(ctx context.Context, connID string) (*websocket.Conn, error) {
+		return createWebsocketConnection(ctx, client, connID, clusterID, serverPort)
+	})
+	if err := proxy.Connect(gCtx); err != nil {
 		return fmt.Errorf("failed to connect to proxy: %w", err)
 	}
+	defer proxy.Close()
 	cmdio.LogString(ctx, "SSH proxy connection established")
-
-	go func() {
-		<-ctx.Done()
-		cmdio.LogString(ctx, "Closing ssh proxy connection")
-		err := proxy.Close()
-		if err != nil {
-			cmdio.LogError(ctx, err)
-		}
-	}()
 
 	cmdio.LogString(ctx, fmt.Sprintf("Connection handover timeout: %v", handoverTimeout))
 	handoverTicker := time.NewTicker(handoverTimeout)
@@ -294,7 +289,7 @@ func startSSHProxy(ctx context.Context, client *databricks.WorkspaceClient, clus
 			case <-gCtx.Done():
 				return gCtx.Err()
 			case <-handoverTicker.C:
-				err := proxy.InitiateHandover(gCtx, client, clusterID, serverPort)
+				err := proxy.InitiateHandover(gCtx)
 				if err != nil {
 					return err
 				}
@@ -303,11 +298,7 @@ func startSSHProxy(ctx context.Context, client *databricks.WorkspaceClient, clus
 	})
 
 	g.Go(func() error {
-		return proxy.RunReceivingLoop(gCtx, os.Stdout)
-	})
-
-	g.Go(func() error {
-		return proxy.RunSendingLoop(gCtx, os.Stdin)
+		return proxy.Start(gCtx, os.Stdin, os.Stdout)
 	})
 
 	return g.Wait()

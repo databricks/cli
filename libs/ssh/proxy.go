@@ -10,9 +10,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
+	"golang.org/x/sync/errgroup"
 )
 
 var (
@@ -23,67 +23,43 @@ var (
 )
 
 type proxyConnection struct {
-	workspaceID int64
-	connID      string
-	conn        atomic.Value // *websocket.Conn
+	connID                    string
+	conn                      atomic.Value // *websocket.Conn
+	createWebsocketConnection createWebsocketConnectionFunc
 
 	handoverMutex           sync.Mutex
 	isHandover              atomic.Bool
 	currentConnectionClosed chan error
 }
 
-func newProxyConnection() *proxyConnection {
+type createWebsocketConnectionFunc func(ctx context.Context, connID string) (*websocket.Conn, error)
+
+func newProxyConnection(createConn createWebsocketConnectionFunc) *proxyConnection {
 	return &proxyConnection{
-		connID:                  uuid.NewString(),
-		currentConnectionClosed: make(chan error),
+		connID:                    uuid.NewString(),
+		currentConnectionClosed:   make(chan error),
+		createWebsocketConnection: createConn,
 	}
 }
 
-func (pc *proxyConnection) Connect(ctx context.Context, client *databricks.WorkspaceClient, clusterID string, serverPort int) error {
-	conn, err := pc.createWebsocketConnection(ctx, client, clusterID, serverPort)
+func (pc *proxyConnection) Start(ctx context.Context, src io.Reader, dst io.Writer) error {
+	g, gCtx := errgroup.WithContext(ctx)
+	g.Go(func() error {
+		return pc.runSendingLoop(gCtx, src)
+	})
+	g.Go(func() error {
+		return pc.runReceivingLoop(gCtx, dst)
+	})
+	return g.Wait()
+}
+
+func (pc *proxyConnection) Connect(ctx context.Context) error {
+	conn, err := pc.createWebsocketConnection(ctx, pc.connID)
 	if err != nil {
 		return err
 	}
 	pc.conn.Store(conn)
 	return nil
-}
-
-func (pc *proxyConnection) createWebsocketConnection(ctx context.Context, client *databricks.WorkspaceClient, clusterID string, serverPort int) (*websocket.Conn, error) {
-	url, err := pc.getProxyURL(ctx, client, clusterID, serverPort)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get proxy URL: %w", err)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	if err := client.Config.Authenticate(req); err != nil {
-		return nil, fmt.Errorf("failed to authenticate: %w", err)
-	}
-
-	req.URL.Scheme = "wss"
-	// websocket connection manages lifecycle of the response object, no need to close the body
-	conn, _, err := websocket.DefaultDialer.Dial(req.URL.String(), req.Header) // nolint:bodyclose
-	if err != nil {
-		return nil, fmt.Errorf("failed to establish websocket connection: %w", err)
-	}
-
-	return conn, nil
-}
-
-func (pc *proxyConnection) getProxyURL(ctx context.Context, client *databricks.WorkspaceClient, clusterID string, serverPort int) (string, error) {
-	if pc.workspaceID == 0 {
-		workspaceID, err := client.CurrentWorkspaceID(ctx)
-		if err != nil {
-			return "", fmt.Errorf("failed to get current workspace ID: %w", err)
-		}
-		pc.workspaceID = workspaceID
-	}
-	host := client.Config.Host
-	url := fmt.Sprintf("%s/driver-proxy-api/o/%d/%s/%d/ssh?id=%s", host, pc.workspaceID, clusterID, serverPort, pc.connID)
-	return url, nil
 }
 
 func (pc *proxyConnection) Accept(w http.ResponseWriter, r *http.Request) error {
@@ -104,8 +80,11 @@ func (pc *proxyConnection) acceptWebsocketConnection(w http.ResponseWriter, r *h
 	return conn, nil
 }
 
-func (pc *proxyConnection) RunSendingLoop(ctx context.Context, src io.Reader) error {
+func (pc *proxyConnection) runSendingLoop(ctx context.Context, src io.Reader) error {
 	for {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
 		b := make([]byte, 32*1024)
 		n, readErr := src.Read(b)
 		if n > 0 {
@@ -133,8 +112,11 @@ func (pc *proxyConnection) sendMessage(mt int, data []byte) error {
 	return conn.WriteMessage(mt, data)
 }
 
-func (pc *proxyConnection) RunReceivingLoop(ctx context.Context, dst io.Writer) error {
+func (pc *proxyConnection) runReceivingLoop(ctx context.Context, dst io.Writer) error {
 	for {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
 		conn := pc.conn.Load().(*websocket.Conn)
 		mt, data, err := conn.ReadMessage()
 		if err != nil {
@@ -205,7 +187,7 @@ func (pc *proxyConnection) Close() error {
 	return nil
 }
 
-func (pc *proxyConnection) InitiateHandover(ctx context.Context, client *databricks.WorkspaceClient, clusterID string, serverPort int) error {
+func (pc *proxyConnection) InitiateHandover(ctx context.Context) error {
 	// Blocks proxying any outgoing messages during the entire handover
 	pc.handoverMutex.Lock()
 	defer pc.handoverMutex.Unlock()
@@ -220,7 +202,7 @@ func (pc *proxyConnection) InitiateHandover(ctx context.Context, client *databri
 
 	// Create a new websocket connection by sending an /ssh?id=<connID> request to the server.
 	// When server realises it's an ID of an existing connection, it will start AcceptHandover process.
-	newConn, err := pc.createWebsocketConnection(ctx, client, clusterID, serverPort)
+	newConn, err := pc.createWebsocketConnection(ctx, pc.connID)
 	if err != nil {
 		return fmt.Errorf("failed to create new websocket connection: %w", err)
 	}
@@ -286,4 +268,8 @@ func (pc *proxyConnection) AcceptHandover(ctx context.Context, w http.ResponseWr
 	pc.conn.Store(newConn)
 
 	return nil
+}
+
+func IsNormalClosure(err error) bool {
+	return websocket.IsCloseError(err, websocket.CloseNormalClosure) || errors.Is(err, errProxyEOF)
 }
