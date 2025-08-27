@@ -3,6 +3,10 @@
   name_prefix: "prefix-"
 
 >>> [CLI] bundle validate -o json
+Warning: required field "catalog_name" is not set
+  at resources.schemas.schema1
+  in databricks.yml:14:7
+
 {
   "jobs": {
     "job1": {
@@ -39,6 +43,10 @@
   name_prefix: "[prefix]"
 
 >>> [CLI] bundle validate -o json
+Warning: required field "catalog_name" is not set
+  at resources.schemas.schema1
+  in databricks.yml:14:7
+
 {
   "jobs": {
     "job1": {
@@ -75,6 +83,10 @@
   name_prefix: ""
 
 >>> [CLI] bundle validate -o json
+Warning: required field "catalog_name" is not set
+  at resources.schemas.schema1
+  in databricks.yml:14:7
+
 {
   "jobs": {
     "job1": {

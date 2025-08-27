@@ -1,0 +1,71 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests
+{
+  "method": "POST",
+  "path": "/api/2.1/unity-catalog/schemas",
+  "body": {
+    "catalog_name": "main",
+    "comment": "COMMENT1",
+    "name": "myschema"
+  }
+}
+
+>>> [CLI] bundle summary -o json
+{
+  "schema1": {
+    "catalog_name": "main",
+    "comment": "COMMENT1",
+    "id": "main.myschema",
+    "name": "myschema",
+    "url": "[DATABRICKS_URL]/explore/data/main/myschema?o=[NUMID]"
+  }
+}
+
+=== Update catalog_name and re-deploy
+>>> update_file.py databricks.yml catalog_name: main catalog_name: newmain
+
+>>> [CLI] bundle plan
+recreate schemas.schema1
+
+>>> [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+
+This action will result in the deletion or recreation of the following UC schemas. Any underlying data may be lost:
+  recreate schema schema1
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests
+{
+  "method": "DELETE",
+  "path": "/api/2.1/unity-catalog/schemas/main.myschema"
+}
+{
+  "method": "POST",
+  "path": "/api/2.1/unity-catalog/schemas",
+  "body": {
+    "catalog_name": "newmain",
+    "comment": "COMMENT1",
+    "name": "myschema"
+  }
+}
+
+>>> musterr [CLI] schemas get main.myschema
+Error: Resource catalog.SchemaInfo not found: main.myschema
+
+Exit code (musterr): 1
+
+>>> [CLI] schemas get newmain.myschema
+{
+  "catalog_name":"newmain",
+  "comment":"COMMENT1",
+  "full_name":"newmain.myschema",
+  "name":"myschema"
+}

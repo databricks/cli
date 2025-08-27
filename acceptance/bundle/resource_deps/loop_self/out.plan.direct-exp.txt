@@ -1,0 +1,4 @@
+Error: cycle detected: jobs.foo refers to itself via ${resources.jobs.foo.id}
+
+
+Exit code (musterr): 1

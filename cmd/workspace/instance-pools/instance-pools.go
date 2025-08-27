@@ -80,7 +80,6 @@ func newCreate() *cobra.Command {
 	var createReq compute.CreateInstancePool
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: aws_attributes
@@ -184,7 +183,6 @@ func newDelete() *cobra.Command {
 	var deleteReq compute.DeleteInstancePool
 	var deleteJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "delete INSTANCE_POOL_ID"
@@ -281,7 +279,6 @@ func newEdit() *cobra.Command {
 	var editReq compute.EditInstancePool
 	var editJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&editJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: map via StringToStringVar: custom_tags
@@ -381,8 +378,6 @@ func newGet() *cobra.Command {
 
 	var getReq compute.GetInstancePoolRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get INSTANCE_POOL_ID"
 	cmd.Short = `Get instance pool information.`
 	cmd.Long = `Get instance pool information.
@@ -451,8 +446,6 @@ func newGetPermissionLevels() *cobra.Command {
 
 	var getPermissionLevelsReq compute.GetInstancePoolPermissionLevelsRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get-permission-levels INSTANCE_POOL_ID"
 	cmd.Short = `Get instance pool permission levels.`
 	cmd.Long = `Get instance pool permission levels.
@@ -520,8 +513,6 @@ func newGetPermissions() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getPermissionsReq compute.GetInstancePoolPermissionsRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get-permissions INSTANCE_POOL_ID"
 	cmd.Short = `Get instance pool permissions.`
@@ -632,7 +623,6 @@ func newSetPermissions() *cobra.Command {
 	var setPermissionsReq compute.InstancePoolPermissionsRequest
 	var setPermissionsJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&setPermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: access_control_list
@@ -720,7 +710,6 @@ func newUpdatePermissions() *cobra.Command {
 	var updatePermissionsReq compute.InstancePoolPermissionsRequest
 	var updatePermissionsJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updatePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: access_control_list

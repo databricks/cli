@@ -13,6 +13,7 @@ Deployment complete!
 >>> [CLI] lakeview update [DASHBOARD_ID] --serialized-dashboard {"a":"b"}
 {
   "etag":"[UUID]",
+  "lifecycle_state":"ACTIVE",
   "serialized_dashboard":"{\"a\":\"b\"}"
 }
 

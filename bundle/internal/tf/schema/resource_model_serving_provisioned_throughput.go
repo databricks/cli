@@ -41,8 +41,9 @@ type ResourceModelServingProvisionedThroughputAiGatewayInferenceTableConfig stru
 }
 
 type ResourceModelServingProvisionedThroughputAiGatewayRateLimits struct {
-	Calls         int    `json:"calls"`
+	Calls         int    `json:"calls,omitempty"`
 	Key           string `json:"key,omitempty"`
+	Principal     string `json:"principal,omitempty"`
 	RenewalPeriod string `json:"renewal_period"`
 }
 
@@ -66,7 +67,8 @@ type ResourceModelServingProvisionedThroughputConfigServedEntities struct {
 }
 
 type ResourceModelServingProvisionedThroughputConfigTrafficConfigRoutes struct {
-	ServedModelName   string `json:"served_model_name"`
+	ServedEntityName  string `json:"served_entity_name,omitempty"`
+	ServedModelName   string `json:"served_model_name,omitempty"`
 	TrafficPercentage int    `json:"traffic_percentage"`
 }
 
@@ -79,17 +81,23 @@ type ResourceModelServingProvisionedThroughputConfig struct {
 	TrafficConfig  *ResourceModelServingProvisionedThroughputConfigTrafficConfig   `json:"traffic_config,omitempty"`
 }
 
+type ResourceModelServingProvisionedThroughputEmailNotifications struct {
+	OnUpdateFailure []string `json:"on_update_failure,omitempty"`
+	OnUpdateSuccess []string `json:"on_update_success,omitempty"`
+}
+
 type ResourceModelServingProvisionedThroughputTags struct {
 	Key   string `json:"key"`
 	Value string `json:"value,omitempty"`
 }
 
 type ResourceModelServingProvisionedThroughput struct {
-	BudgetPolicyId    string                                              `json:"budget_policy_id,omitempty"`
-	Id                string                                              `json:"id,omitempty"`
-	Name              string                                              `json:"name"`
-	ServingEndpointId string                                              `json:"serving_endpoint_id,omitempty"`
-	AiGateway         *ResourceModelServingProvisionedThroughputAiGateway `json:"ai_gateway,omitempty"`
-	Config            *ResourceModelServingProvisionedThroughputConfig    `json:"config,omitempty"`
-	Tags              []ResourceModelServingProvisionedThroughputTags     `json:"tags,omitempty"`
+	BudgetPolicyId     string                                                       `json:"budget_policy_id,omitempty"`
+	Id                 string                                                       `json:"id,omitempty"`
+	Name               string                                                       `json:"name"`
+	ServingEndpointId  string                                                       `json:"serving_endpoint_id,omitempty"`
+	AiGateway          *ResourceModelServingProvisionedThroughputAiGateway          `json:"ai_gateway,omitempty"`
+	Config             *ResourceModelServingProvisionedThroughputConfig             `json:"config,omitempty"`
+	EmailNotifications *ResourceModelServingProvisionedThroughputEmailNotifications `json:"email_notifications,omitempty"`
+	Tags               []ResourceModelServingProvisionedThroughputTags              `json:"tags,omitempty"`
 }

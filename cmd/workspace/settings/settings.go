@@ -12,6 +12,7 @@ import (
 	compliance_security_profile "github.com/databricks/cli/cmd/workspace/compliance-security-profile"
 	dashboard_email_subscriptions "github.com/databricks/cli/cmd/workspace/dashboard-email-subscriptions"
 	default_namespace "github.com/databricks/cli/cmd/workspace/default-namespace"
+	default_warehouse_id "github.com/databricks/cli/cmd/workspace/default-warehouse-id"
 	disable_legacy_access "github.com/databricks/cli/cmd/workspace/disable-legacy-access"
 	disable_legacy_dbfs "github.com/databricks/cli/cmd/workspace/disable-legacy-dbfs"
 	enable_export_notebook "github.com/databricks/cli/cmd/workspace/enable-export-notebook"
@@ -46,6 +47,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(compliance_security_profile.New())
 	cmd.AddCommand(dashboard_email_subscriptions.New())
 	cmd.AddCommand(default_namespace.New())
+	cmd.AddCommand(default_warehouse_id.New())
 	cmd.AddCommand(disable_legacy_access.New())
 	cmd.AddCommand(disable_legacy_dbfs.New())
 	cmd.AddCommand(enable_export_notebook.New())

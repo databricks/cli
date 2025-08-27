@@ -1,21 +1,22 @@
 # NEXT CHANGELOG
 
-## Release v0.257.0
+## Release v0.266.0
 
 ### Notable Changes
-
-### Dependency updates
+* Breaking change: DABs now return an error when paths are incorrectly defined relative to the job or
+pipeline definition location instead of the configuration file location. Previously, the CLI would show a
+warning and fallback to resolving the path relative to the resource location. Users must update their bundle
+configurations to define all relative paths relative to the configuration file where the path is specified.
+See more details here: ([#3225](https://github.com/databricks/cli/pull/3225))
+* Add support volumes in Python support ([#3383])(https://github.com/databricks/cli/pull/3383))
 
 ### CLI
 
-### Bundles
-* Improve error message for host mismatch between bundle and profile used ([#3100](https://github.com/databricks/cli/pull/3100))
-* Remove support for deprecated `experimental/pydabs` config, use `experimental/python` instead. See [Configuration in Python
-](https://docs.databricks.com/dev-tools/bundles/python). ([#3102](https://github.com/databricks/cli/pull/3102))
+### Dependency updates
 
-* The `default-python` template now prompts if you want to use serverless compute (default to `yes`) ([#3051](https://github.com/databricks/cli/pull/3051)).
+### Bundles
+* [Breaking Change] Remove deprecated path fallback mechanism for jobs and pipelines ([#3225](https://github.com/databricks/cli/pull/3225))
+* Add support for Lakebase synced database tables in DABs ([#3467](https://github.com/databricks/cli/pull/3467))
+* Rename Delta Live Tables to Lakeflow Declarative Pipelines in the default-python template ([#3476](https://github.com/databricks/cli/pull/3476)).
 
 ### API Changes
-* Removed `databricks custom-llms` command group.
-* Added `databricks ai-builder` command group.
-* Added `databricks feature-store` command group.

@@ -1,0 +1,10 @@
+
+=== Test pipelines init with SQL configuration
+>>> [PIPELINES] init --config-file ./input.json --output-dir output
+
+Welcome to the template for pipelines!
+
+
+Your new project has been created in the 'my_sql_project' directory!
+
+Refer to the README.md file for "getting started" instructions!

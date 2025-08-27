@@ -122,7 +122,7 @@ func analyzeBundlePermissions(b *bundle.Bundle) (bool, string) {
 }
 
 func isGroupOfCurrentUser(b *bundle.Bundle, groupName string) bool {
-	currentUserGroups := b.Config.Workspace.CurrentUser.User.Groups
+	currentUserGroups := b.Config.Workspace.CurrentUser.Groups
 
 	for _, g := range currentUserGroups {
 		if g.Display == groupName {

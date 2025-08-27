@@ -27,6 +27,7 @@ const (
 	DefaultPython          TemplateName = "default-python"
 	DefaultSql             TemplateName = "default-sql"
 	LakeflowPipelines      TemplateName = "lakeflow-pipelines"
+	CLIPipelines           TemplateName = "cli-pipelines"
 	DbtSql                 TemplateName = "dbt-sql"
 	MlopsStacks            TemplateName = "mlops-stacks"
 	DefaultPydabs          TemplateName = "default-pydabs"
@@ -37,7 +38,7 @@ const (
 var databricksTemplates = []Template{
 	{
 		name:        DefaultPython,
-		description: "The default Python template for Notebooks / Delta Live Tables / Workflows",
+		description: "The default Python template for Notebooks / Lakeflow Declarative Pipelines / Workflows",
 		Reader:      &builtinReader{name: string(DefaultPython)},
 		Writer:      &writerWithFullTelemetry{defaultWriter: defaultWriter{name: DefaultPython}},
 	},
@@ -53,6 +54,13 @@ var databricksTemplates = []Template{
 		description: "The default template for Lakeflow Declarative Pipelines",
 		Reader:      &builtinReader{name: string(LakeflowPipelines)},
 		Writer:      &writerWithFullTelemetry{defaultWriter: defaultWriter{name: LakeflowPipelines}},
+	},
+	{
+		name:        CLIPipelines,
+		hidden:      true,
+		description: "The default template for CLI pipelines",
+		Reader:      &builtinReader{name: string(CLIPipelines)},
+		Writer:      &writerWithFullTelemetry{defaultWriter: defaultWriter{name: CLIPipelines}},
 	},
 	{
 		name:        DbtSql,

@@ -7,6 +7,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/databricks/databricks-sdk-go/service/database"
+
+	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 
 	"github.com/databricks/databricks-sdk-go/service/serving"
@@ -15,7 +18,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
-	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -146,9 +148,7 @@ func TestResourcesBindSupport(t *testing.T) {
 			"my_cluster": {},
 		},
 		Dashboards: map[string]*resources.Dashboard{
-			"my_dashboard": {
-				Dashboard: dashboards.Dashboard{},
-			},
+			"my_dashboard": {},
 		},
 		Volumes: map[string]*resources.Volume{
 			"my_volume": {
@@ -175,6 +175,26 @@ func TestResourcesBindSupport(t *testing.T) {
 				Name: "0",
 			},
 		},
+		SqlWarehouses: map[string]*resources.SqlWarehouse{
+			"my_sql_warehouse": {
+				CreateWarehouseRequest: sql.CreateWarehouseRequest{},
+			},
+		},
+		DatabaseInstances: map[string]*resources.DatabaseInstance{
+			"my_database_instance": {
+				DatabaseInstance: database.DatabaseInstance{},
+			},
+		},
+		DatabaseCatalogs: map[string]*resources.DatabaseCatalog{
+			"my_database_catalog": {
+				DatabaseCatalog: database.DatabaseCatalog{},
+			},
+		},
+		SyncedDatabaseTables: map[string]*resources.SyncedDatabaseTable{
+			"my_synced_database_table": {
+				SyncedDatabaseTable: database.SyncedDatabaseTable{},
+			},
+		},
 	}
 	unbindableResources := map[string]bool{"model": true}
 
@@ -194,6 +214,10 @@ func TestResourcesBindSupport(t *testing.T) {
 	m.GetMockSecretsAPI().EXPECT().ListScopesAll(mock.Anything).Return([]workspace.SecretScope{
 		{Name: "0"},
 	}, nil)
+	m.GetMockWarehousesAPI().EXPECT().GetById(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockDatabaseAPI().EXPECT().GetDatabaseInstance(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockDatabaseAPI().EXPECT().GetDatabaseCatalog(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockDatabaseAPI().EXPECT().GetSyncedDatabaseTable(mock.Anything, mock.Anything).Return(nil, nil)
 
 	allResources := supportedResources.AllResources()
 	for _, group := range allResources {

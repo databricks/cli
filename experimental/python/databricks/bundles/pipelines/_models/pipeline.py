@@ -59,6 +59,11 @@ if TYPE_CHECKING:
 class Pipeline(Resource):
     """"""
 
+    allow_duplicate_names: VariableOrOptional[bool] = None
+    """
+    If false, deployment will fail if name conflicts with that of another pipeline.
+    """
+
     budget_policy_id: VariableOrOptional[str] = None
     """
     :meta private: [EXPERIMENTAL]
@@ -103,8 +108,6 @@ class Pipeline(Resource):
 
     environment: VariableOrOptional[PipelinesEnvironment] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
     Environment specification for this pipeline used to install dependencies.
     """
 
@@ -166,8 +169,6 @@ class Pipeline(Resource):
 
     root_path: VariableOrOptional[str] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
     Root path for this pipeline.
     This is used as the root directory when editing the pipeline in the Databricks user interface and it is
     added to sys.path when executing Python sources during pipeline execution.
@@ -216,6 +217,11 @@ class Pipeline(Resource):
 class PipelineDict(TypedDict, total=False):
     """"""
 
+    allow_duplicate_names: VariableOrOptional[bool]
+    """
+    If false, deployment will fail if name conflicts with that of another pipeline.
+    """
+
     budget_policy_id: VariableOrOptional[str]
     """
     :meta private: [EXPERIMENTAL]
@@ -260,8 +266,6 @@ class PipelineDict(TypedDict, total=False):
 
     environment: VariableOrOptional[PipelinesEnvironmentParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
     Environment specification for this pipeline used to install dependencies.
     """
 
@@ -323,8 +327,6 @@ class PipelineDict(TypedDict, total=False):
 
     root_path: VariableOrOptional[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
     Root path for this pipeline.
     This is used as the root directory when editing the pipeline in the Databricks user interface and it is
     added to sys.path when executing Python sources during pipeline execution.

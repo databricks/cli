@@ -1,0 +1,6 @@
+Local = true
+Cloud = false
+
+[EnvMatrix]
+  DATABRICKS_CLI_DEPLOYMENT = ["terraform", "direct-exp"]
+  VARIANT = ["empty_resources.yml", "no_resources.yml"]

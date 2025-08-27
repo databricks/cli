@@ -1,0 +1,5 @@
+trace $CLI bundle validate -t dev -o json | jq .resources
+trace errcode $CLI bundle deploy -t dev &> out.deploy.txt
+trace jq -s '.[] | select(.path=="/api/2.0/pipelines") | .body.name' out.requests.txt &> tmp.requests.txt
+rm out.requests.txt
+mv tmp.requests.txt out.requests.txt

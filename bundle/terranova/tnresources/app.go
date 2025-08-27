@@ -2,12 +2,12 @@ package tnresources
 
 import (
 	"context"
-	"reflect"
+	"fmt"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/libs/structdiff"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 )
 
@@ -29,39 +29,45 @@ func (r *ResourceApp) Config() any {
 
 func (r *ResourceApp) DoCreate(ctx context.Context) (string, error) {
 	request := apps.CreateAppRequest{
-		App:       r.config,
-		NoCompute: true,
+		App:             r.config,
+		NoCompute:       true,
+		ForceSendFields: nil,
 	}
 	waiter, err := r.client.Apps.Create(ctx, request)
 	if err != nil {
-		return "", SDKError{Method: "Apps.Create", Err: err}
+		return "", err
 	}
-
-	// TODO: Store waiter for Wait method
 
 	return waiter.Response.Name, nil
 }
 
-func (r *ResourceApp) DoUpdate(ctx context.Context, id string) (string, error) {
+func (r *ResourceApp) DoUpdate(ctx context.Context, id string) error {
 	request := apps.UpdateAppRequest{
 		App:  r.config,
 		Name: id,
 	}
 	response, err := r.client.Apps.Update(ctx, request)
 	if err != nil {
-		return "", SDKError{Method: "Apps.Update", Err: err}
+		return err
 	}
 
-	return response.Name, nil
-}
+	if response.Name != id {
+		log.Warnf(ctx, "apps: response contains unexpected name=%#v (expected %#v)", response.Name, id)
+	}
 
-func (r *ResourceApp) DoDelete(ctx context.Context, id string) error {
-	// TODO: implement app deletion
 	return nil
 }
 
+func DeleteApp(ctx context.Context, client *databricks.WorkspaceClient, id string) error {
+	_, err := client.Apps.DeleteByName(ctx, id)
+	return err
+}
+
 func (r *ResourceApp) WaitAfterCreate(ctx context.Context) error {
-	// Intentional no-op
+	_, err := r.waitForApp(ctx, r.client, r.config.Name)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -70,13 +76,29 @@ func (r *ResourceApp) WaitAfterUpdate(ctx context.Context) error {
 	return nil
 }
 
-func (r *ResourceApp) ClassifyChanges(changes []structdiff.Change) deployplan.ActionType {
-	// TODO: changing name is recreation
-	return deployplan.ActionTypeUpdate
-}
-
-var appType = reflect.TypeOf(ResourceApp{}.config)
-
-func (r *ResourceApp) GetType() reflect.Type {
-	return appType
+// waitForApp waits for the app to reach the target state. The target state is either ACTIVE or STOPPED.
+// Apps with no_compute set to true will reach the STOPPED state, otherwise they will reach the ACTIVE state.
+// We can't use the default waiter from SDK because it only waits on ACTIVE state but we need also STOPPED state.
+// Ideally this should be done in Go SDK but currently only ACTIVE is marked as terminal state
+// so this would need to be addressed by Apps service team first in their proto.
+func (r *ResourceApp) waitForApp(ctx context.Context, w *databricks.WorkspaceClient, name string) (*apps.App, error) {
+	retrier := retries.New[apps.App](retries.WithTimeout(-1), retries.WithRetryFunc(shouldRetry))
+	return retrier.Run(ctx, func(ctx context.Context) (*apps.App, error) {
+		app, err := w.Apps.GetByName(ctx, name)
+		if err != nil {
+			return nil, retries.Halt(err)
+		}
+		status := app.ComputeStatus.State
+		statusMessage := app.ComputeStatus.Message
+		switch status {
+		case apps.ComputeStateActive, apps.ComputeStateStopped:
+			return app, nil
+		case apps.ComputeStateError:
+			err := fmt.Errorf("failed to reach %s or %s, got %s: %s",
+				apps.ComputeStateActive, apps.ComputeStateStopped, status, statusMessage)
+			return nil, retries.Halt(err)
+		default:
+			return nil, retries.Continues(statusMessage)
+		}
+	})
 }

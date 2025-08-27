@@ -121,7 +121,6 @@ func newCreate() *cobra.Command {
 	var createReq billing.WrappedCreateLogDeliveryConfiguration
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "create"
@@ -209,8 +208,6 @@ func newGet() *cobra.Command {
 
 	var getReq billing.GetLogDeliveryRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get LOG_DELIVERY_CONFIGURATION_ID"
 	cmd.Short = `Get log delivery configuration.`
 	cmd.Long = `Get log delivery configuration.
@@ -280,8 +277,6 @@ func newList() *cobra.Command {
 
 	var listReq billing.ListLogDeliveryRequest
 
-	// TODO: short flags
-
 	cmd.Flags().StringVar(&listReq.CredentialsId, "credentials-id", listReq.CredentialsId, `The Credentials id to filter the search results with.`)
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `A page token received from a previous get all budget configurations call.`)
 	cmd.Flags().Var(&listReq.Status, "status", `The log delivery status to filter the search results with. Supported values: [DISABLED, ENABLED]`)
@@ -337,7 +332,6 @@ func newPatchStatus() *cobra.Command {
 	var patchStatusReq billing.UpdateLogDeliveryConfigurationStatusRequest
 	var patchStatusJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&patchStatusJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "patch-status LOG_DELIVERY_CONFIGURATION_ID STATUS"

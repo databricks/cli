@@ -10,10 +10,4 @@ from pyspark.sql.functions import col, sum
 @dlt.table
 def sample_zones_my_lakeflow_pipelines():
     # Read from the "sample_trips" table, then sum all the fares
-    return (
-        spark.read.table("sample_trips_my_lakeflow_pipelines")
-        .groupBy(col("pickup_zip"))
-        .agg(
-            sum("fare_amount").alias("total_fare")
-        )
-    )
+    return spark.read.table("sample_trips_my_lakeflow_pipelines").groupBy(col("pickup_zip")).agg(sum("fare_amount").alias("total_fare"))

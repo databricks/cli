@@ -5,5 +5,10 @@ trace $CLI bundle validate
 
 trace $CLI bundle deploy
 trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | .body.environments' out.requests.txt
+
+trace jq -s '.[] | select(.path=="/api/2.0/pipelines")' out.requests.txt
+
 trace $CLI bundle validate -o json | jq '.resources.jobs.test_job.environments'
+trace $CLI bundle validate -o json | jq '.resources.pipelines.test_pipeline.environment'
+
 rm out.requests.txt

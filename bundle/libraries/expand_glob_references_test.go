@@ -68,7 +68,7 @@ func TestGlobReferencesExpandedForTaskLibraries(t *testing.T) {
 	require.Empty(t, diags)
 
 	job := b.Config.Resources.Jobs["job"]
-	task := job.JobSettings.Tasks[0]
+	task := job.Tasks[0]
 	require.Equal(t, []compute.Library{
 		{
 			Whl: filepath.Join("whl", "my1.whl"),
@@ -153,7 +153,7 @@ func TestGlobReferencesExpandedForForeachTaskLibraries(t *testing.T) {
 	require.Empty(t, diags)
 
 	job := b.Config.Resources.Jobs["job"]
-	task := job.JobSettings.Tasks[0].ForEachTask.Task
+	task := job.Tasks[0].ForEachTask.Task
 	require.Equal(t, []compute.Library{
 		{
 			Whl: filepath.Join("whl", "my1.whl"),
@@ -228,7 +228,7 @@ func TestGlobReferencesExpandedForEnvironmentsDeps(t *testing.T) {
 	require.Empty(t, diags)
 
 	job := b.Config.Resources.Jobs["job"]
-	env := job.JobSettings.Environments[0]
+	env := job.Environments[0]
 	require.Equal(t, []string{
 		filepath.Join("whl", "my1.whl"),
 		filepath.Join("whl", "my2.whl"),

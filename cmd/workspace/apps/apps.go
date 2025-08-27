@@ -77,7 +77,7 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().BoolVar(&createSkipWait, "no-wait", createSkipWait, `do not wait to reach ACTIVE state`)
 	cmd.Flags().DurationVar(&createTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach ACTIVE state`)
-	// TODO: short flags
+
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().BoolVar(&createReq.NoCompute, "no-compute", createReq.NoCompute, `If true, the app will not be started after creation.`)
@@ -188,8 +188,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq apps.DeleteAppRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete NAME"
 	cmd.Short = `Delete an app.`
 	cmd.Long = `Delete an app.
@@ -253,7 +251,7 @@ func newDeploy() *cobra.Command {
 
 	cmd.Flags().BoolVar(&deploySkipWait, "no-wait", deploySkipWait, `do not wait to reach SUCCEEDED state`)
 	cmd.Flags().DurationVar(&deployTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach SUCCEEDED state`)
-	// TODO: short flags
+
 	cmd.Flags().Var(&deployJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: deployment_artifacts
@@ -349,8 +347,6 @@ func newGet() *cobra.Command {
 
 	var getReq apps.GetAppRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get NAME"
 	cmd.Short = `Get an app.`
 	cmd.Long = `Get an app.
@@ -406,8 +402,6 @@ func newGetDeployment() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getDeploymentReq apps.GetAppDeploymentRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get-deployment APP_NAME DEPLOYMENT_ID"
 	cmd.Short = `Get an app deployment.`
@@ -468,8 +462,6 @@ func newGetPermissionLevels() *cobra.Command {
 
 	var getPermissionLevelsReq apps.GetAppPermissionLevelsRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get-permission-levels APP_NAME"
 	cmd.Short = `Get app permission levels.`
 	cmd.Long = `Get app permission levels.
@@ -525,8 +517,6 @@ func newGetPermissions() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getPermissionsReq apps.GetAppPermissionsRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get-permissions APP_NAME"
 	cmd.Short = `Get app permissions.`
@@ -585,8 +575,6 @@ func newList() *cobra.Command {
 
 	var listReq apps.ListAppsRequest
 
-	// TODO: short flags
-
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Upper bound for items returned.`)
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token to go to the next page of apps.`)
 
@@ -637,8 +625,6 @@ func newListDeployments() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listDeploymentsReq apps.ListAppDeploymentsRequest
-
-	// TODO: short flags
 
 	cmd.Flags().IntVar(&listDeploymentsReq.PageSize, "page-size", listDeploymentsReq.PageSize, `Upper bound for items returned.`)
 	cmd.Flags().StringVar(&listDeploymentsReq.PageToken, "page-token", listDeploymentsReq.PageToken, `Pagination token to go to the next page of apps.`)
@@ -697,7 +683,6 @@ func newSetPermissions() *cobra.Command {
 	var setPermissionsReq apps.AppPermissionsRequest
 	var setPermissionsJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&setPermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: access_control_list
@@ -777,7 +762,6 @@ func newStart() *cobra.Command {
 
 	cmd.Flags().BoolVar(&startSkipWait, "no-wait", startSkipWait, `do not wait to reach ACTIVE state`)
 	cmd.Flags().DurationVar(&startTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach ACTIVE state`)
-	// TODO: short flags
 
 	cmd.Use = "start NAME"
 	cmd.Short = `Start an app.`
@@ -859,7 +843,6 @@ func newStop() *cobra.Command {
 
 	cmd.Flags().BoolVar(&stopSkipWait, "no-wait", stopSkipWait, `do not wait to reach STOPPED state`)
 	cmd.Flags().DurationVar(&stopTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach STOPPED state`)
-	// TODO: short flags
 
 	cmd.Use = "stop NAME"
 	cmd.Short = `Stop an app.`
@@ -938,7 +921,6 @@ func newUpdate() *cobra.Command {
 	updateReq.App = apps.App{}
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: active_deployment
@@ -1021,7 +1003,6 @@ func newUpdatePermissions() *cobra.Command {
 	var updatePermissionsReq apps.AppPermissionsRequest
 	var updatePermissionsJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updatePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: access_control_list

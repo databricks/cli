@@ -32,6 +32,7 @@ func New() *cobra.Command {
 
 	// Add methods
 	cmd.AddCommand(newCreate())
+	cmd.AddCommand(newCreateCleanRoomAssetReview())
 	cmd.AddCommand(newDelete())
 	cmd.AddCommand(newGet())
 	cmd.AddCommand(newList())
@@ -61,13 +62,11 @@ func newCreate() *cobra.Command {
 	createReq.Asset = cleanrooms.CleanRoomAsset{}
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().Var(&createReq.Asset.AssetType, "asset-type", `The type of the asset. Supported values: [FOREIGN_TABLE, NOTEBOOK_FILE, TABLE, VIEW, VOLUME]`)
+	cmd.Flags().StringVar(&createReq.Asset.CleanRoomName, "clean-room-name", createReq.Asset.CleanRoomName, `The name of the clean room this asset belongs to.`)
 	// TODO: complex arg: foreign_table
 	// TODO: complex arg: foreign_table_local_details
-	cmd.Flags().StringVar(&createReq.Asset.Name, "name", createReq.Asset.Name, `A fully qualified name that uniquely identifies the asset within the clean room.`)
 	// TODO: complex arg: notebook
 	// TODO: complex arg: table
 	// TODO: complex arg: table_local_details
@@ -75,7 +74,7 @@ func newCreate() *cobra.Command {
 	// TODO: complex arg: view_local_details
 	// TODO: complex arg: volume_local_details
 
-	cmd.Use = "create CLEAN_ROOM_NAME"
+	cmd.Use = "create CLEAN_ROOM_NAME NAME ASSET_TYPE"
 	cmd.Short = `Create an asset.`
 	cmd.Long = `Create an asset.
   
@@ -86,12 +85,30 @@ func newCreate() *cobra.Command {
   access the asset. Typically, you should use a group as the clean room owner.
 
   Arguments:
-    CLEAN_ROOM_NAME: Name of the clean room.`
+    CLEAN_ROOM_NAME: The name of the clean room this asset belongs to. This field is required
+      for create operations and populated by the server for responses.
+    NAME: A fully qualified name that uniquely identifies the asset within the clean
+      room. This is also the name displayed in the clean room UI.
+      
+      For UC securable assets (tables, volumes, etc.), the format is
+      *shared_catalog*.*shared_schema*.*asset_name*
+      
+      For notebooks, the name is the notebook file name. For jar analyses, the
+      name is the jar analysis name.
+    ASSET_TYPE: The type of the asset. 
+      Supported values: [FOREIGN_TABLE, NOTEBOOK_FILE, TABLE, VIEW, VOLUME]`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(1)
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(1)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, provide only CLEAN_ROOM_NAME as positional arguments. Provide 'name', 'asset_type' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(3)
 		return check(cmd, args)
 	}
 
@@ -113,6 +130,15 @@ func newCreate() *cobra.Command {
 			}
 		}
 		createReq.CleanRoomName = args[0]
+		if !cmd.Flags().Changed("json") {
+			createReq.Asset.Name = args[1]
+		}
+		if !cmd.Flags().Changed("json") {
+			_, err = fmt.Sscan(args[2], &createReq.Asset.AssetType)
+			if err != nil {
+				return fmt.Errorf("invalid ASSET_TYPE: %s", args[2])
+			}
+		}
 
 		response, err := w.CleanRoomAssets.Create(ctx, createReq)
 		if err != nil {
@@ -133,6 +159,87 @@ func newCreate() *cobra.Command {
 	return cmd
 }
 
+// start create-clean-room-asset-review command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createCleanRoomAssetReviewOverrides []func(
+	*cobra.Command,
+	*cleanrooms.CreateCleanRoomAssetReviewRequest,
+)
+
+func newCreateCleanRoomAssetReview() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createCleanRoomAssetReviewReq cleanrooms.CreateCleanRoomAssetReviewRequest
+	var createCleanRoomAssetReviewJson flags.JsonFlag
+
+	cmd.Flags().Var(&createCleanRoomAssetReviewJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Use = "create-clean-room-asset-review CLEAN_ROOM_NAME ASSET_TYPE NAME"
+	cmd.Short = `Create a review (e.g. approval) for an asset.`
+	cmd.Long = `Create a review (e.g. approval) for an asset.
+  
+  Submit an asset review
+
+  Arguments:
+    CLEAN_ROOM_NAME: Name of the clean room
+    ASSET_TYPE: Asset type. Can only be NOTEBOOK_FILE. 
+      Supported values: [FOREIGN_TABLE, NOTEBOOK_FILE, TABLE, VIEW, VOLUME]
+    NAME: Name of the asset`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(3)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := createCleanRoomAssetReviewJson.Unmarshal(&createCleanRoomAssetReviewReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		} else {
+			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+		}
+		createCleanRoomAssetReviewReq.CleanRoomName = args[0]
+		_, err = fmt.Sscan(args[1], &createCleanRoomAssetReviewReq.AssetType)
+		if err != nil {
+			return fmt.Errorf("invalid ASSET_TYPE: %s", args[1])
+		}
+		createCleanRoomAssetReviewReq.Name = args[2]
+
+		response, err := w.CleanRoomAssets.CreateCleanRoomAssetReview(ctx, createCleanRoomAssetReviewReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createCleanRoomAssetReviewOverrides {
+		fn(cmd, &createCleanRoomAssetReviewReq)
+	}
+
+	return cmd
+}
+
 // start delete command
 
 // Slice with functions to override default command behavior.
@@ -146,8 +253,6 @@ func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var deleteReq cleanrooms.DeleteCleanRoomAssetRequest
-
-	// TODO: short flags
 
 	cmd.Use = "delete CLEAN_ROOM_NAME ASSET_TYPE NAME"
 	cmd.Short = `Delete an asset.`
@@ -214,8 +319,6 @@ func newGet() *cobra.Command {
 
 	var getReq cleanrooms.GetCleanRoomAssetRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get CLEAN_ROOM_NAME ASSET_TYPE NAME"
 	cmd.Short = `Get an asset.`
 	cmd.Long = `Get an asset.
@@ -281,8 +384,6 @@ func newList() *cobra.Command {
 
 	var listReq cleanrooms.ListCleanRoomAssetsRequest
 
-	// TODO: short flags
-
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
 
 	cmd.Use = "list CLEAN_ROOM_NAME"
@@ -338,13 +439,11 @@ func newUpdate() *cobra.Command {
 	updateReq.Asset = cleanrooms.CleanRoomAsset{}
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().Var(&updateReq.Asset.AssetType, "asset-type", `The type of the asset. Supported values: [FOREIGN_TABLE, NOTEBOOK_FILE, TABLE, VIEW, VOLUME]`)
+	cmd.Flags().StringVar(&updateReq.Asset.CleanRoomName, "clean-room-name", updateReq.Asset.CleanRoomName, `The name of the clean room this asset belongs to.`)
 	// TODO: complex arg: foreign_table
 	// TODO: complex arg: foreign_table_local_details
-	cmd.Flags().StringVar(&updateReq.Asset.Name, "name", updateReq.Asset.Name, `A fully qualified name that uniquely identifies the asset within the clean room.`)
 	// TODO: complex arg: notebook
 	// TODO: complex arg: table
 	// TODO: complex arg: table_local_details
@@ -369,7 +468,8 @@ func newUpdate() *cobra.Command {
       For UC securable assets (tables, volumes, etc.), the format is
       *shared_catalog*.*shared_schema*.*asset_name*
       
-      For notebooks, the name is the notebook file name.`
+      For notebooks, the name is the notebook file name. For jar analyses, the
+      name is the jar analysis name.`
 
 	cmd.Annotations = make(map[string]string)
 

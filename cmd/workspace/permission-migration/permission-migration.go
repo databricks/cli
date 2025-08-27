@@ -59,7 +59,6 @@ func newMigratePermissions() *cobra.Command {
 	var migratePermissionsReq iam.MigratePermissionsRequest
 	var migratePermissionsJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&migratePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().IntVar(&migratePermissionsReq.Size, "size", migratePermissionsReq.Size, `The maximum number of permissions that will be migrated.`)

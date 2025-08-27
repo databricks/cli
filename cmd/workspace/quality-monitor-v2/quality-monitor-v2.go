@@ -60,7 +60,6 @@ func newCreateQualityMonitor() *cobra.Command {
 	createQualityMonitorReq.QualityMonitor = qualitymonitorv2.QualityMonitor{}
 	var createQualityMonitorJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createQualityMonitorJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: anomaly_detection_config
@@ -146,8 +145,6 @@ func newDeleteQualityMonitor() *cobra.Command {
 
 	var deleteQualityMonitorReq qualitymonitorv2.DeleteQualityMonitorRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete-quality-monitor OBJECT_TYPE OBJECT_ID"
 	cmd.Short = `Delete a quality monitor.`
 	cmd.Long = `Delete a quality monitor.
@@ -205,8 +202,6 @@ func newGetQualityMonitor() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getQualityMonitorReq qualitymonitorv2.GetQualityMonitorRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get-quality-monitor OBJECT_TYPE OBJECT_ID"
 	cmd.Short = `Read a quality monitor.`
@@ -266,8 +261,6 @@ func newListQualityMonitor() *cobra.Command {
 
 	var listQualityMonitorReq qualitymonitorv2.ListQualityMonitorRequest
 
-	// TODO: short flags
-
 	cmd.Flags().IntVar(&listQualityMonitorReq.PageSize, "page-size", listQualityMonitorReq.PageSize, ``)
 	cmd.Flags().StringVar(&listQualityMonitorReq.PageToken, "page-token", listQualityMonitorReq.PageToken, ``)
 
@@ -321,7 +314,6 @@ func newUpdateQualityMonitor() *cobra.Command {
 	updateQualityMonitorReq.QualityMonitor = qualitymonitorv2.QualityMonitor{}
 	var updateQualityMonitorJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateQualityMonitorJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: anomaly_detection_config

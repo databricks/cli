@@ -1,0 +1,4 @@
+
+>>> [CLI] bundle run foo
+
+Exit code: 42

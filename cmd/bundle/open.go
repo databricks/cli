@@ -1,3 +1,5 @@
+// Copied to cmd/pipelines/open.go and adapted for pipelines use.
+// Consider if changes made here should be made to the pipelines counterpart as well.
 package bundle
 
 import (
@@ -16,6 +18,7 @@ import (
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/maps"
 
@@ -55,22 +58,32 @@ func newOpenCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "open",
 		Short: "Open a resource in the browser",
-		Args:  root.MaximumNArgs(1),
+		Long: `Open a deployed bundle resource in the Databricks workspace.
+
+Examples:
+  databricks bundle open                    # Prompts to select a resource to open
+  databricks bundle open my_job             # Open specific job in Workflows UI
+  databricks bundle open my_dashboard       # Open dashboard in browser
+
+Use after deployment to quickly navigate to your resources in the workspace.`,
+		Args: root.MaximumNArgs(1),
 	}
 
 	var forcePull bool
 	cmd.Flags().BoolVar(&forcePull, "force-pull", false, "Skip local cache and load the state from the remote workspace")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		ctx := cmd.Context()
-		b, diags := utils.ConfigureBundleWithVariables(cmd)
-		if err := diags.Error(); err != nil {
-			return diags.Error()
+		ctx := logdiag.InitContext(cmd.Context())
+		cmd.SetContext(ctx)
+
+		b := utils.ConfigureBundleWithVariables(cmd)
+		if b == nil || logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
 		}
 
-		diags = phases.Initialize(ctx, b)
-		if err := diags.Error(); err != nil {
-			return err
+		phases.Initialize(ctx, b)
+		if logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
 		}
 
 		arg, err := resolveOpenArgument(ctx, b, args)
@@ -87,22 +100,29 @@ func newOpenCommand() *cobra.Command {
 		noCache := errors.Is(stateFileErr, os.ErrNotExist) || errors.Is(configFileErr, os.ErrNotExist)
 
 		if forcePull || noCache {
-			diags = bundle.ApplySeq(ctx, b,
-				statemgmt.StatePull(),
-				terraform.Interpolate(),
-				terraform.Write(),
-			)
-			if err := diags.Error(); err != nil {
-				return err
+			bundle.ApplyContext(ctx, b, statemgmt.StatePull())
+			if logdiag.HasError(ctx) {
+				return root.ErrAlreadyPrinted
+			}
+
+			if !b.DirectDeployment {
+				bundle.ApplySeqContext(ctx, b,
+					terraform.Interpolate(),
+					terraform.Write(),
+				)
+			}
+
+			if logdiag.HasError(ctx) {
+				return root.ErrAlreadyPrinted
 			}
 		}
 
-		diags = bundle.ApplySeq(ctx, b,
-			terraform.Load(),
+		bundle.ApplySeqContext(ctx, b,
+			statemgmt.Load(),
 			mutator.InitializeURLs(),
 		)
-		if err := diags.Error(); err != nil {
-			return err
+		if logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
 		}
 
 		// Locate resource to open.
@@ -117,13 +137,16 @@ func newOpenCommand() *cobra.Command {
 			return errors.New("resource does not have a URL associated with it (has it been deployed?)")
 		}
 
+		cmdio.LogString(ctx, "Opening browser at "+url)
 		return browser.OpenURL(url)
 	}
 
 	cmd.ValidArgsFunction = func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		b, diags := root.MustConfigureBundle(cmd)
-		if err := diags.Error(); err != nil {
-			cobra.CompErrorln(err.Error())
+		ctx := logdiag.InitContext(cmd.Context())
+		cmd.SetContext(ctx)
+
+		b := root.MustConfigureBundle(cmd)
+		if logdiag.HasError(cmd.Context()) {
 			return nil, cobra.ShellCompDirectiveError
 		}
 

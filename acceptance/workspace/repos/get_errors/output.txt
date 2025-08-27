@@ -1,0 +1,10 @@
+
+>>> [CLI] repos get /Repos/me@databricks.com/doesnotexist -o json
+Error: failed to look up repo by path: Workspace path not found
+
+Exit code: 1
+
+>>> [CLI] repos get /not-a-repo -o json
+Error: object at path "/not-a-repo" is not a repo
+
+Exit code: 1

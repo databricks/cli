@@ -1,7 +1,7 @@
 Cloud = true
 Local = true
 
-EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["terraform"]
+EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["terraform"]  # secret scopes not implemented
 
 Ignore = [
     "databricks.yml",
@@ -38,9 +38,6 @@ Pattern = "POST /api/2.0/secrets/scopes/delete"
 Pattern = "POST /api/2.0/secrets/put"
 
 [[Server]]
-Pattern = "POST /api/2.0/secrets/acls/put"
-
-[[Server]]
 Pattern = "GET /api/2.0/secrets/get"
 Response.Body = '''
 {
@@ -69,9 +66,3 @@ Response.Body = '''
     ]
 }
 '''
-
-[[Server]]
-Pattern = "GET /api/2.0/secrets/acls/get"
-
-[[Server]]
-Pattern = "POST /api/2.0/secrets/acls/delete"

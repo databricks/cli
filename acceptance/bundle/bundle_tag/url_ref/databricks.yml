@@ -1,0 +1,8 @@
+resources:
+  jobs:
+    foo:
+      # This should not be allowed, url is internal field
+      url: my_job_url
+    bar:
+      # This should not be allowed even more
+      url: ${resources.jobs.foo.url}

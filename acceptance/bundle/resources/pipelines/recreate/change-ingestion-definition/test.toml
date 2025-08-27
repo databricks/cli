@@ -1,0 +1,2 @@
+Env.CONFIG_UPDATE = "my_connection my_new_connection"
+Env.ING_KEY = "ingestion_definition"

@@ -46,11 +46,37 @@ type DataSourceTableTableInfoRowFilter struct {
 	InputColumnNames []string `json:"input_column_names"`
 }
 
+type DataSourceTableTableInfoSecurableKindManifestOptions struct {
+	AllowedValues []string `json:"allowed_values,omitempty"`
+	DefaultValue  string   `json:"default_value,omitempty"`
+	Description   string   `json:"description,omitempty"`
+	Hint          string   `json:"hint,omitempty"`
+	IsCopiable    bool     `json:"is_copiable,omitempty"`
+	IsCreatable   bool     `json:"is_creatable,omitempty"`
+	IsHidden      bool     `json:"is_hidden,omitempty"`
+	IsLoggable    bool     `json:"is_loggable,omitempty"`
+	IsRequired    bool     `json:"is_required,omitempty"`
+	IsSecret      bool     `json:"is_secret,omitempty"`
+	IsUpdatable   bool     `json:"is_updatable,omitempty"`
+	Name          string   `json:"name,omitempty"`
+	OauthStage    string   `json:"oauth_stage,omitempty"`
+	Type          string   `json:"type,omitempty"`
+}
+
+type DataSourceTableTableInfoSecurableKindManifest struct {
+	AssignablePrivileges []string                                               `json:"assignable_privileges,omitempty"`
+	Capabilities         []string                                               `json:"capabilities,omitempty"`
+	SecurableKind        string                                                 `json:"securable_kind,omitempty"`
+	SecurableType        string                                                 `json:"securable_type,omitempty"`
+	Options              []DataSourceTableTableInfoSecurableKindManifestOptions `json:"options,omitempty"`
+}
+
 type DataSourceTableTableInfoTableConstraintsForeignKeyConstraint struct {
 	ChildColumns  []string `json:"child_columns"`
 	Name          string   `json:"name"`
 	ParentColumns []string `json:"parent_columns"`
 	ParentTable   string   `json:"parent_table"`
+	Rely          bool     `json:"rely,omitempty"`
 }
 
 type DataSourceTableTableInfoTableConstraintsNamedTableConstraint struct {
@@ -60,6 +86,7 @@ type DataSourceTableTableInfoTableConstraintsNamedTableConstraint struct {
 type DataSourceTableTableInfoTableConstraintsPrimaryKeyConstraint struct {
 	ChildColumns      []string `json:"child_columns"`
 	Name              string   `json:"name"`
+	Rely              bool     `json:"rely,omitempty"`
 	TimeseriesColumns []string `json:"timeseries_columns,omitempty"`
 }
 
@@ -67,6 +94,14 @@ type DataSourceTableTableInfoTableConstraints struct {
 	ForeignKeyConstraint *DataSourceTableTableInfoTableConstraintsForeignKeyConstraint `json:"foreign_key_constraint,omitempty"`
 	NamedTableConstraint *DataSourceTableTableInfoTableConstraintsNamedTableConstraint `json:"named_table_constraint,omitempty"`
 	PrimaryKeyConstraint *DataSourceTableTableInfoTableConstraintsPrimaryKeyConstraint `json:"primary_key_constraint,omitempty"`
+}
+
+type DataSourceTableTableInfoViewDependenciesDependenciesConnection struct {
+	ConnectionName string `json:"connection_name,omitempty"`
+}
+
+type DataSourceTableTableInfoViewDependenciesDependenciesCredential struct {
+	CredentialName string `json:"credential_name,omitempty"`
 }
 
 type DataSourceTableTableInfoViewDependenciesDependenciesFunction struct {
@@ -78,8 +113,10 @@ type DataSourceTableTableInfoViewDependenciesDependenciesTable struct {
 }
 
 type DataSourceTableTableInfoViewDependenciesDependencies struct {
-	Function *DataSourceTableTableInfoViewDependenciesDependenciesFunction `json:"function,omitempty"`
-	Table    *DataSourceTableTableInfoViewDependenciesDependenciesTable    `json:"table,omitempty"`
+	Connection *DataSourceTableTableInfoViewDependenciesDependenciesConnection `json:"connection,omitempty"`
+	Credential *DataSourceTableTableInfoViewDependenciesDependenciesCredential `json:"credential,omitempty"`
+	Function   *DataSourceTableTableInfoViewDependenciesDependenciesFunction   `json:"function,omitempty"`
+	Table      *DataSourceTableTableInfoViewDependenciesDependenciesTable      `json:"table,omitempty"`
 }
 
 type DataSourceTableTableInfoViewDependencies struct {
@@ -117,6 +154,7 @@ type DataSourceTableTableInfo struct {
 	EffectivePredictiveOptimizationFlag *DataSourceTableTableInfoEffectivePredictiveOptimizationFlag `json:"effective_predictive_optimization_flag,omitempty"`
 	EncryptionDetails                   *DataSourceTableTableInfoEncryptionDetails                   `json:"encryption_details,omitempty"`
 	RowFilter                           *DataSourceTableTableInfoRowFilter                           `json:"row_filter,omitempty"`
+	SecurableKindManifest               *DataSourceTableTableInfoSecurableKindManifest               `json:"securable_kind_manifest,omitempty"`
 	TableConstraints                    []DataSourceTableTableInfoTableConstraints                   `json:"table_constraints,omitempty"`
 	ViewDependencies                    *DataSourceTableTableInfoViewDependencies                    `json:"view_dependencies,omitempty"`
 }

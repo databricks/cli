@@ -65,7 +65,6 @@ func newCreate() *cobra.Command {
 	var createReq sharing.CreateShare
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided free-form text description.`)
@@ -150,8 +149,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq sharing.DeleteShareRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete NAME"
 	cmd.Short = `Delete a share.`
 	cmd.Long = `Delete a share.
@@ -208,8 +205,6 @@ func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getReq sharing.GetShareRequest
-
-	// TODO: short flags
 
 	cmd.Flags().BoolVar(&getReq.IncludeSharedData, "include-shared-data", getReq.IncludeSharedData, `Query for data to include in the share.`)
 
@@ -270,8 +265,6 @@ func newList() *cobra.Command {
 
 	var listReq sharing.ListSharesRequest
 
-	// TODO: short flags
-
 	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of shares to return.`)
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
 
@@ -324,8 +317,6 @@ func newSharePermissions() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var sharePermissionsReq sharing.SharePermissionsRequest
-
-	// TODO: short flags
 
 	cmd.Flags().IntVar(&sharePermissionsReq.MaxResults, "max-results", sharePermissionsReq.MaxResults, `Maximum number of permissions to return.`)
 	cmd.Flags().StringVar(&sharePermissionsReq.PageToken, "page-token", sharePermissionsReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
@@ -388,7 +379,6 @@ func newUpdate() *cobra.Command {
 	var updateReq sharing.UpdateShare
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `User-provided free-form text description.`)
@@ -482,7 +472,6 @@ func newUpdatePermissions() *cobra.Command {
 	var updatePermissionsReq sharing.UpdateSharePermissions
 	var updatePermissionsJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updatePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: changes

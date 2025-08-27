@@ -55,8 +55,6 @@ func newGetStatus() *cobra.Command {
 
 	var getStatusReq settings.GetStatusRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get-status KEYS"
 	cmd.Short = `Check configuration status.`
 	cmd.Long = `Check configuration status.
@@ -111,7 +109,6 @@ func newSetStatus() *cobra.Command {
 	var setStatusReq settings.WorkspaceConf
 	var setStatusJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&setStatusJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "set-status"

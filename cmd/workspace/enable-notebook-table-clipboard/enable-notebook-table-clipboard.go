@@ -95,7 +95,6 @@ func newPatchEnableNotebookTableClipboard() *cobra.Command {
 	var patchEnableNotebookTableClipboardReq settings.UpdateEnableNotebookTableClipboardRequest
 	var patchEnableNotebookTableClipboardJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&patchEnableNotebookTableClipboardJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "patch-enable-notebook-table-clipboard"

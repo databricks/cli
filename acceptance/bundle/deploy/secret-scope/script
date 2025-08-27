@@ -11,7 +11,10 @@ cleanup() {
 }
 trap cleanup EXIT
 
+title "Print summary before deploy; it should have modified_status=created and no id"
+trace $CLI bundle summary --output json | jq '.resources.secret_scopes.secret_scope1'
 trace $CLI bundle deploy
+title "Print summary after deploy; it should have id and no modified_status"
 trace $CLI bundle summary --output json | jq '.resources.secret_scopes.secret_scope1'
 trace $CLI secrets list-scopes -o json | jq --arg value ${SECRET_SCOPE_NAME} '.[] | select(.name == $value)'
 

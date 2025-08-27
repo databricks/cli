@@ -1,0 +1,24 @@
+
+>>> [CLI] repos create https://github.com/databricks/databricks-empty-ide-project.git gitHub --path /Repos/me@databricks.com/test-repo
+
+>>> [CLI] repos update 1 --branch update-by-id
+
+>>> [CLI] repos get 1 -o json
+{
+  "branch":"update-by-id",
+  "id":1,
+  "path":"/Repos/me@databricks.com/test-repo",
+  "provider":"gitHub",
+  "url":"https://github.com/databricks/databricks-empty-ide-project.git"
+}
+
+>>> [CLI] repos update /Repos/me@databricks.com/test-repo --branch update-by-path
+
+>>> [CLI] repos get 1 -o json
+{
+  "branch":"update-by-path",
+  "id":1,
+  "path":"/Repos/me@databricks.com/test-repo",
+  "provider":"gitHub",
+  "url":"https://github.com/databricks/databricks-empty-ide-project.git"
+}

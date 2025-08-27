@@ -1,0 +1,5 @@
+resources:
+  sql_warehouses:
+    sql_warehouse1:
+      name: "DEFAULT Test SQL Warehouse"
+      cluster_size: X-Large

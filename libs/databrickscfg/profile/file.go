@@ -82,6 +82,7 @@ func (f FileProfilerImpl) LoadProfiles(ctx context.Context, fn ProfileMatchFunct
 			Name:      v.Name(),
 			Host:      host,
 			AccountID: all["account_id"],
+			ClusterID: all["cluster_id"],
 		}
 		if fn(profile) {
 			profiles = append(profiles, profile)

@@ -95,7 +95,6 @@ func newPatchEnableResultsDownloading() *cobra.Command {
 	var patchEnableResultsDownloadingReq settings.UpdateEnableResultsDownloadingRequest
 	var patchEnableResultsDownloadingJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&patchEnableResultsDownloadingJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "patch-enable-results-downloading"

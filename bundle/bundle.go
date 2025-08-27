@@ -22,10 +22,12 @@ import (
 	"github.com/databricks/cli/bundle/metadata"
 	"github.com/databricks/cli/bundle/terranova/tnstate"
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/dagrun"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/locker"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/logdiag"
 	libsync "github.com/databricks/cli/libs/sync"
 	"github.com/databricks/cli/libs/tags"
 	"github.com/databricks/cli/libs/telemetry/protos"
@@ -52,6 +54,21 @@ type Metrics struct {
 	BoolValues                  []protos.BoolMapEntry
 	PythonAddedResourcesCount   int64
 	PythonUpdatedResourcesCount int64
+	ExecutionTimes              []protos.IntMapEntry
+}
+
+// SetBoolValue sets the value of a boolean metric.
+// If the metric does not exist, it is created.
+// If the metric exists, it is updated.
+// Ensures that the metric is unique
+func (m *Metrics) SetBoolValue(key string, value bool) {
+	for i, v := range m.BoolValues {
+		if v.Key == key {
+			m.BoolValues[i].Value = value
+			return
+		}
+	}
+	m.BoolValues = append(m.BoolValues, protos.BoolMapEntry{Key: key, Value: value})
 }
 
 func (m *Metrics) AddBoolValue(key string, value bool) {
@@ -111,7 +128,17 @@ type Bundle struct {
 	// Stores the locker responsible for acquiring/releasing a deployment lock.
 	Locker *locker.Locker
 
-	Plan deployplan.Plan
+	// TerraformPlanPath is the path to the plan from the terraform CLI
+	TerraformPlanPath string
+
+	// If true, the plan is empty and applying it will not do anything
+	TerraformPlanIsEmpty bool
+
+	// (direct only) graph of dependencies between resources
+	Graph *dagrun.Graph[deployplan.ResourceNode]
+
+	// (direct only) planned action for each resource
+	PlannedActions map[deployplan.ResourceNode]deployplan.ActionType
 
 	// if true, we skip approval checks for deploy, destroy resources and delete
 	// files
@@ -144,31 +171,47 @@ func Load(ctx context.Context, path string) (*Bundle, error) {
 }
 
 // MustLoad returns a bundle configuration.
-// It returns an error if a bundle was not found or could not be loaded.
-func MustLoad(ctx context.Context) (*Bundle, error) {
+// The errors are recorded by logdiag, check with logdiag.HasError().
+func MustLoad(ctx context.Context) *Bundle {
 	root, err := mustGetRoot(ctx)
 	if err != nil {
-		return nil, err
+		logdiag.LogError(ctx, err)
+		return nil
 	}
 
-	return Load(ctx, root)
+	logdiag.SetRoot(ctx, root)
+
+	b, err := Load(ctx, root)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return nil
+	}
+	return b
 }
 
 // TryLoad returns a bundle configuration if there is one, but doesn't fail if there isn't one.
-// It returns an error if a bundle was found but could not be loaded.
+// The errors are recorded by logdiag, check with logdiag.HasError().
 // It returns a `nil` bundle if a bundle was not found.
-func TryLoad(ctx context.Context) (*Bundle, error) {
+func TryLoad(ctx context.Context) *Bundle {
 	root, err := tryGetRoot(ctx)
 	if err != nil {
-		return nil, err
+		logdiag.LogError(ctx, err)
+		return nil
 	}
 
 	// No root is fine in this function.
 	if root == "" {
-		return nil, nil
+		return nil
 	}
 
-	return Load(ctx, root)
+	logdiag.SetRoot(ctx, root)
+
+	b, err := Load(ctx, root)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return nil
+	}
+	return b
 }
 
 func (b *Bundle) WorkspaceClientE() (*databricks.WorkspaceClient, error) {
@@ -199,9 +242,9 @@ func (b *Bundle) SetWorkpaceClient(w *databricks.WorkspaceClient) {
 	b.client = w
 }
 
-// CacheDir returns directory to use for temporary files for this bundle.
+// LocalStateDir returns directory to use for temporary files for this bundle.
 // Scoped to the bundle's target.
-func (b *Bundle) CacheDir(ctx context.Context, paths ...string) (string, error) {
+func (b *Bundle) LocalStateDir(ctx context.Context, paths ...string) (string, error) {
 	if b.Config.Bundle.Target == "" {
 		panic("target not set")
 	}
@@ -241,7 +284,7 @@ func (b *Bundle) CacheDir(ctx context.Context, paths ...string) (string, error) 
 // This directory is used to store and automaticaly sync internal bundle files, such as, f.e
 // notebook trampoline files for Python wheel and etc.
 func (b *Bundle) InternalDir(ctx context.Context) (string, error) {
-	cacheDir, err := b.CacheDir(ctx)
+	cacheDir, err := b.LocalStateDir(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -285,12 +328,12 @@ func (b *Bundle) AuthEnv() (map[string]string, error) {
 	return auth.Env(cfg), nil
 }
 
-// GetResourceConfig returns the configuration object for a given resource section/name pair.
+// GetResourceConfig returns the configuration object for a given resource group/name pair.
 // The returned value is a pointer to the concrete struct that represents that resource type.
-// When the section or name is not found the second return value is false.
-func (b *Bundle) GetResourceConfig(section, name string) (any, bool) {
-	// Resolve the Go type that represents a single resource in this section.
-	typ, ok := config.ResourcesTypes[section]
+// When the group or name is not found the second return value is false.
+func (b *Bundle) GetResourceConfig(group, name string) (any, bool) {
+	// Resolve the Go type that represents a single resource in this group.
+	typ, ok := config.ResourcesTypes[group]
 	if !ok {
 		return nil, false
 	}
@@ -298,7 +341,7 @@ func (b *Bundle) GetResourceConfig(section, name string) (any, bool) {
 	// Fetch the raw value from the dynamic representation of the bundle config.
 	v, err := dyn.GetByPath(
 		b.Config.Value(),
-		dyn.NewPath(dyn.Key("resources"), dyn.Key(section), dyn.Key(name)),
+		dyn.NewPath(dyn.Key("resources"), dyn.Key(group), dyn.Key(name)),
 	)
 	if err != nil {
 		return nil, false
@@ -328,13 +371,13 @@ func (b *Bundle) StateFilename() string {
 
 func (b *Bundle) StateLocalPath(ctx context.Context) (string, error) {
 	if b.DirectDeployment {
-		cacheDir, err := b.CacheDir(ctx)
+		cacheDir, err := b.LocalStateDir(ctx)
 		if err != nil {
 			return "", err
 		}
 		return filepath.Join(cacheDir, resourcesFilename), nil
 	} else {
-		cacheDir, err := b.CacheDir(ctx, "terraform")
+		cacheDir, err := b.LocalStateDir(ctx, "terraform")
 		if err != nil {
 			return "", err
 		}
@@ -354,7 +397,7 @@ func (b *Bundle) OpenResourceDatabase(ctx context.Context) error {
 
 	err = b.ResourceDatabase.Open(statePath)
 	if err != nil {
-		return fmt.Errorf("Failed to open/create resoruce database in %s: %s", statePath, err)
+		return fmt.Errorf("failed to open/create resoruce database in %s: %s", statePath, err)
 	}
 
 	return nil

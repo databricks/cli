@@ -8,7 +8,6 @@ import (
 	"os"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/resources"
@@ -22,6 +21,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/exec"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/maps"
 )
@@ -31,6 +31,12 @@ func promptRunArgument(ctx context.Context, b *bundle.Bundle) (string, error) {
 	inv := make(map[string]string)
 	for k, ref := range resources.Completions(b, run.IsRunnable) {
 		title := fmt.Sprintf("%s: %s", ref.Description.SingularTitle, ref.Resource.GetName())
+		inv[title] = k
+	}
+
+	// Include scripts in the prompt options
+	for k := range b.Config.Scripts {
+		title := "Script: " + k
 		inv[title] = k
 	}
 
@@ -80,8 +86,8 @@ func keyToRunner(b *bundle.Bundle, arg string) (run.Runner, error) {
 func newRunCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "run [flags] [KEY]",
-		Short: "Run a job or pipeline update",
-		Long: `Run the job or pipeline identified by KEY.
+		Short: "Run a job, pipeline update or app",
+		Long: `Run the job, pipeline or app identified by KEY.
 
 The KEY is the unique identifier of the resource to run. In addition to
 customizing the run using any of the available flags, you can also specify
@@ -126,10 +132,12 @@ Example usage:
 	cmd.Flags().BoolVar(&restart, "restart", false, "Restart the run if it is already running.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		ctx := cmd.Context()
-		b, diags := utils.ConfigureBundleWithVariables(cmd)
-		if diags.HasError() {
-			return renderDiagnostics(cmd.OutOrStdout(), b, diags)
+		ctx := logdiag.InitContext(cmd.Context())
+		cmd.SetContext(ctx)
+
+		b := utils.ConfigureBundleWithVariables(cmd)
+		if b == nil || logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
 		}
 
 		// If user runs the bundle run command as:
@@ -139,9 +147,9 @@ Example usage:
 			return executeInline(cmd, args, b)
 		}
 
-		diags = diags.Extend(phases.Initialize(ctx, b))
-		if diags.HasError() {
-			return renderDiagnostics(cmd.OutOrStdout(), b, diags)
+		phases.Initialize(ctx, b)
+		if logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
 		}
 
 		key, args, err := resolveRunArgument(ctx, b, args)
@@ -149,14 +157,21 @@ Example usage:
 			return err
 		}
 
-		diags = diags.Extend(bundle.ApplySeq(ctx, b,
-			terraform.Interpolate(),
-			terraform.Write(),
+		if _, ok := b.Config.Scripts[key]; ok {
+			if len(args) > 0 {
+				return fmt.Errorf("additional arguments are not supported for scripts. Got: %v. We recommend using environment variables to pass runtime arguments to a script. For example: FOO=bar databricks bundle run my_script", args)
+			}
+
+			content := b.Config.Scripts[key].Content
+			return executeScript(content, cmd, b)
+		}
+
+		bundle.ApplySeqContext(ctx, b,
 			statemgmt.StatePull(),
-			terraform.Load(terraform.ErrorOnEmptyState),
-		))
-		if diags.HasError() {
-			return renderDiagnostics(cmd.OutOrStdout(), b, diags)
+			statemgmt.Load(statemgmt.ErrorOnEmptyState),
+		)
+		if logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
 		}
 
 		runner, err := keyToRunner(b, key)
@@ -210,9 +225,11 @@ Example usage:
 	}
 
 	cmd.ValidArgsFunction = func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		b, diags := root.MustConfigureBundle(cmd)
-		if err := diags.Error(); err != nil {
-			cobra.CompErrorln(err.Error())
+		ctx := logdiag.InitContext(cmd.Context())
+		cmd.SetContext(ctx)
+
+		b := root.MustConfigureBundle(cmd)
+		if logdiag.HasError(cmd.Context()) {
 			return nil, cobra.ShellCompDirectiveError
 		}
 
@@ -238,14 +255,14 @@ Example usage:
 	return cmd
 }
 
-func executeInline(cmd *cobra.Command, args []string, b *bundle.Bundle) error {
-	cmdEnv := auth.ProcessEnv(cmdctx.ConfigUsed(cmd.Context()))
+func scriptEnv(cmd *cobra.Command, b *bundle.Bundle) []string {
+	out := auth.ProcessEnv(cmdctx.ConfigUsed(cmd.Context()))
 
 	// If user has specified a target, pass it to the child command.
 	//
 	// This is only useful for when the Databricks CLI is the child command.
 	if b.Config.Bundle.Target != "" {
-		cmdEnv = append(cmdEnv, env.TargetVariable+"="+b.Config.Bundle.Target)
+		out = append(out, env.TargetVariable+"="+b.Config.Bundle.Target)
 	}
 
 	// If the bundle has a profile configured, explicitly pass it to the child command.
@@ -254,9 +271,17 @@ func executeInline(cmd *cobra.Command, args []string, b *bundle.Bundle) error {
 	// since if we do not explicitly pass the profile, the CLI will use the
 	// auth configured in the bundle YAML configuration (if any).
 	if b.Config.Workspace.Profile != "" {
-		cmdEnv = append(cmdEnv, "DATABRICKS_CONFIG_PROFILE="+b.Config.Workspace.Profile)
+		out = append(out, "DATABRICKS_CONFIG_PROFILE="+b.Config.Workspace.Profile)
 	}
 
+	return out
+}
+
+func executeScript(content string, cmd *cobra.Command, b *bundle.Bundle) error {
+	return exec.ShellExecv(content, b.BundleRootPath, scriptEnv(cmd, b))
+}
+
+func executeInline(cmd *cobra.Command, args []string, b *bundle.Bundle) error {
 	dir, err := os.Getwd()
 	if err != nil {
 		return err
@@ -264,7 +289,7 @@ func executeInline(cmd *cobra.Command, args []string, b *bundle.Bundle) error {
 
 	return exec.Execv(exec.ExecvOptions{
 		Args: args,
-		Env:  cmdEnv,
+		Env:  scriptEnv(cmd, b),
 		Dir:  dir,
 	})
 }

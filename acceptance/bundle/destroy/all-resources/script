@@ -1,0 +1,2 @@
+trace $CLI bundle deploy
+trace $CLI bundle destroy --auto-approve

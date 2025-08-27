@@ -1,0 +1,7 @@
+bundle:
+  name: test-pipeline-force-lock
+
+resources:
+  pipelines:
+    foo:
+      name: test-pipeline-force-lock

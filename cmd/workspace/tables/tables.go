@@ -38,6 +38,7 @@ func New() *cobra.Command {
 	}
 
 	// Add methods
+	cmd.AddCommand(newCreate())
 	cmd.AddCommand(newDelete())
 	cmd.AddCommand(newExists())
 	cmd.AddCommand(newGet())
@@ -48,6 +49,181 @@ func New() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
+	}
+
+	return cmd
+}
+
+// start create command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createOverrides []func(
+	*cobra.Command,
+	*catalog.CreateTableRequest,
+)
+
+func newCreate() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createReq catalog.CreateTableRequest
+	var createJson flags.JsonFlag
+
+	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: array: columns
+	// TODO: map via StringToStringVar: properties
+
+	cmd.Use = "create NAME CATALOG_NAME SCHEMA_NAME TABLE_TYPE DATA_SOURCE_FORMAT STORAGE_LOCATION"
+	cmd.Short = `Create a table.`
+	cmd.Long = `Create a table.
+  
+  Creates a new table in the specified catalog and schema.
+  
+  To create an external delta table, the caller must have the
+  **EXTERNAL_USE_SCHEMA** privilege on the parent schema and the
+  **EXTERNAL_USE_LOCATION** privilege on the external location. These privileges
+  must always be granted explicitly, and cannot be inherited through ownership
+  or **ALL_PRIVILEGES**.
+  
+  Standard UC permissions needed to create tables still apply: **USE_CATALOG**
+  on the parent catalog (or ownership of the parent catalog), **CREATE_TABLE**
+  and **USE_SCHEMA** on the parent schema (or ownership of the parent schema),
+  and **CREATE_EXTERNAL_TABLE** on external location.
+  
+  The **columns** field needs to be in a Spark compatible format, so we
+  recommend you use Spark to create these tables. The API itself does not
+  validate the correctness of the column spec. If the spec is not Spark
+  compatible, the tables may not be readable by Databricks Runtime.
+  
+  NOTE: The Create Table API for external clients only supports creating
+  **external delta tables**. The values shown in the respective enums are all
+  values supported by Databricks, however for this specific Create Table API,
+  only **table_type** **EXTERNAL** and **data_source_format** **DELTA** are
+  supported. Additionally, column masks are not supported when creating tables
+  through this API.
+
+  Arguments:
+    NAME: Name of table, relative to parent schema.
+    CATALOG_NAME: Name of parent catalog.
+    SCHEMA_NAME: Name of parent schema relative to its parent catalog.
+    TABLE_TYPE:  
+      Supported values: [
+        EXTERNAL,
+        EXTERNAL_SHALLOW_CLONE,
+        FOREIGN,
+        MANAGED,
+        MANAGED_SHALLOW_CLONE,
+        MATERIALIZED_VIEW,
+        METRIC_VIEW,
+        STREAMING_TABLE,
+        VIEW,
+      ]
+    DATA_SOURCE_FORMAT:  
+      Supported values: [
+        AVRO,
+        BIGQUERY_FORMAT,
+        CSV,
+        DATABRICKS_FORMAT,
+        DATABRICKS_ROW_STORE_FORMAT,
+        DELTA,
+        DELTASHARING,
+        DELTA_UNIFORM_HUDI,
+        DELTA_UNIFORM_ICEBERG,
+        HIVE,
+        ICEBERG,
+        JSON,
+        MONGODB_FORMAT,
+        MYSQL_FORMAT,
+        NETSUITE_FORMAT,
+        ORACLE_FORMAT,
+        ORC,
+        PARQUET,
+        POSTGRESQL_FORMAT,
+        REDSHIFT_FORMAT,
+        SALESFORCE_DATA_CLOUD_FORMAT,
+        SALESFORCE_FORMAT,
+        SNOWFLAKE_FORMAT,
+        SQLDW_FORMAT,
+        SQLSERVER_FORMAT,
+        TERADATA_FORMAT,
+        TEXT,
+        UNITY_CATALOG,
+        VECTOR_INDEX_FORMAT,
+        WORKDAY_RAAS_FORMAT,
+      ]
+    STORAGE_LOCATION: Storage root URL for table (for **MANAGED**, **EXTERNAL** tables).`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'catalog_name', 'schema_name', 'table_type', 'data_source_format', 'storage_location' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(6)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := createJson.Unmarshal(&createReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		if !cmd.Flags().Changed("json") {
+			createReq.Name = args[0]
+		}
+		if !cmd.Flags().Changed("json") {
+			createReq.CatalogName = args[1]
+		}
+		if !cmd.Flags().Changed("json") {
+			createReq.SchemaName = args[2]
+		}
+		if !cmd.Flags().Changed("json") {
+			_, err = fmt.Sscan(args[3], &createReq.TableType)
+			if err != nil {
+				return fmt.Errorf("invalid TABLE_TYPE: %s", args[3])
+			}
+		}
+		if !cmd.Flags().Changed("json") {
+			_, err = fmt.Sscan(args[4], &createReq.DataSourceFormat)
+			if err != nil {
+				return fmt.Errorf("invalid DATA_SOURCE_FORMAT: %s", args[4])
+			}
+		}
+		if !cmd.Flags().Changed("json") {
+			createReq.StorageLocation = args[5]
+		}
+
+		response, err := w.Tables.Create(ctx, createReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createOverrides {
+		fn(cmd, &createReq)
 	}
 
 	return cmd
@@ -67,8 +243,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq catalog.DeleteTableRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete FULL_NAME"
 	cmd.Short = `Delete a table.`
 	cmd.Long = `Delete a table.
@@ -84,28 +258,16 @@ func newDelete() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No FULL_NAME argument specified. Loading names for Tables drop-down."
-			names, err := w.Tables.TableInfoNameToTableIdMap(ctx, catalog.ListTablesRequest{})
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Tables drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "Full name of the table")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have full name of the table")
-		}
 		deleteReq.FullName = args[0]
 
 		err = w.Tables.Delete(ctx, deleteReq)
@@ -141,8 +303,6 @@ func newExists() *cobra.Command {
 
 	var existsReq catalog.ExistsRequest
 
-	// TODO: short flags
-
 	cmd.Use = "exists FULL_NAME"
 	cmd.Short = `Get boolean reflecting if table exists.`
 	cmd.Long = `Get boolean reflecting if table exists.
@@ -150,39 +310,27 @@ func newExists() *cobra.Command {
   Gets if a table exists in the metastore for a specific catalog and schema. The
   caller must satisfy one of the following requirements: * Be a metastore admin
   * Be the owner of the parent catalog * Be the owner of the parent schema and
-  have the USE_CATALOG privilege on the parent catalog * Have the
+  have the **USE_CATALOG** privilege on the parent catalog * Have the
   **USE_CATALOG** privilege on the parent catalog and the **USE_SCHEMA**
   privilege on the parent schema, and either be the table owner or have the
-  SELECT privilege on the table. * Have BROWSE privilege on the parent catalog *
-  Have BROWSE privilege on the parent schema.
+  **SELECT** privilege on the table. * Have **BROWSE** privilege on the parent
+  catalog * Have **BROWSE** privilege on the parent schema
 
   Arguments:
     FULL_NAME: Full name of the table.`
 
 	cmd.Annotations = make(map[string]string)
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No FULL_NAME argument specified. Loading names for Tables drop-down."
-			names, err := w.Tables.TableInfoNameToTableIdMap(ctx, catalog.ListTablesRequest{})
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Tables drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "Full name of the table")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have full name of the table")
-		}
 		existsReq.FullName = args[0]
 
 		response, err := w.Tables.Exists(ctx, existsReq)
@@ -218,11 +366,9 @@ func newGet() *cobra.Command {
 
 	var getReq catalog.GetTableRequest
 
-	// TODO: short flags
-
 	cmd.Flags().BoolVar(&getReq.IncludeBrowse, "include-browse", getReq.IncludeBrowse, `Whether to include tables in the response for which the principal can only access selective metadata for.`)
 	cmd.Flags().BoolVar(&getReq.IncludeDeltaMetadata, "include-delta-metadata", getReq.IncludeDeltaMetadata, `Whether delta metadata should be included in the response.`)
-	cmd.Flags().BoolVar(&getReq.IncludeManifestCapabilities, "include-manifest-capabilities", getReq.IncludeManifestCapabilities, `Whether to include a manifest containing capabilities the table has.`)
+	cmd.Flags().BoolVar(&getReq.IncludeManifestCapabilities, "include-manifest-capabilities", getReq.IncludeManifestCapabilities, `Whether to include a manifest containing table capabilities in the response.`)
 
 	cmd.Use = "get FULL_NAME"
 	cmd.Short = `Get a table.`
@@ -231,9 +377,9 @@ func newGet() *cobra.Command {
   Gets a table from the metastore for a specific catalog and schema. The caller
   must satisfy one of the following requirements: * Be a metastore admin * Be
   the owner of the parent catalog * Be the owner of the parent schema and have
-  the USE_CATALOG privilege on the parent catalog * Have the **USE_CATALOG**
+  the **USE_CATALOG** privilege on the parent catalog * Have the **USE_CATALOG**
   privilege on the parent catalog and the **USE_SCHEMA** privilege on the parent
-  schema, and either be the table owner or have the SELECT privilege on the
+  schema, and either be the table owner or have the **SELECT** privilege on the
   table.
 
   Arguments:
@@ -241,28 +387,16 @@ func newGet() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No FULL_NAME argument specified. Loading names for Tables drop-down."
-			names, err := w.Tables.TableInfoNameToTableIdMap(ctx, catalog.ListTablesRequest{})
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Tables drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "Full name of the table")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have full name of the table")
-		}
 		getReq.FullName = args[0]
 
 		response, err := w.Tables.Get(ctx, getReq)
@@ -298,11 +432,8 @@ func newList() *cobra.Command {
 
 	var listReq catalog.ListTablesRequest
 
-	// TODO: short flags
-
 	cmd.Flags().BoolVar(&listReq.IncludeBrowse, "include-browse", listReq.IncludeBrowse, `Whether to include tables in the response for which the principal can only access selective metadata for.`)
-	cmd.Flags().BoolVar(&listReq.IncludeDeltaMetadata, "include-delta-metadata", listReq.IncludeDeltaMetadata, `Whether delta metadata should be included in the response.`)
-	cmd.Flags().BoolVar(&listReq.IncludeManifestCapabilities, "include-manifest-capabilities", listReq.IncludeManifestCapabilities, `Whether to include a manifest containing capabilities the table has.`)
+	cmd.Flags().BoolVar(&listReq.IncludeManifestCapabilities, "include-manifest-capabilities", listReq.IncludeManifestCapabilities, `Whether to include a manifest containing table capabilities in the response.`)
 	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of tables to return.`)
 	cmd.Flags().BoolVar(&listReq.OmitColumns, "omit-columns", listReq.OmitColumns, `Whether to omit the columns of the table from the response or not.`)
 	cmd.Flags().BoolVar(&listReq.OmitProperties, "omit-properties", listReq.OmitProperties, `Whether to omit the properties of the table from the response or not.`)
@@ -369,9 +500,7 @@ func newListSummaries() *cobra.Command {
 
 	var listSummariesReq catalog.ListSummariesRequest
 
-	// TODO: short flags
-
-	cmd.Flags().BoolVar(&listSummariesReq.IncludeManifestCapabilities, "include-manifest-capabilities", listSummariesReq.IncludeManifestCapabilities, `Whether to include a manifest containing capabilities the table has.`)
+	cmd.Flags().BoolVar(&listSummariesReq.IncludeManifestCapabilities, "include-manifest-capabilities", listSummariesReq.IncludeManifestCapabilities, `Whether to include a manifest containing table capabilities in the response.`)
 	cmd.Flags().IntVar(&listSummariesReq.MaxResults, "max-results", listSummariesReq.MaxResults, `Maximum number of summaries for tables to return.`)
 	cmd.Flags().StringVar(&listSummariesReq.PageToken, "page-token", listSummariesReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
 	cmd.Flags().StringVar(&listSummariesReq.SchemaNamePattern, "schema-name-pattern", listSummariesReq.SchemaNamePattern, `A sql LIKE pattern (% and _) for schema names.`)
@@ -398,28 +527,16 @@ func newListSummaries() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No CATALOG_NAME argument specified. Loading names for Tables drop-down."
-			names, err := w.Tables.TableInfoNameToTableIdMap(ctx, catalog.ListTablesRequest{})
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Tables drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "Name of parent catalog for tables of interest")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have name of parent catalog for tables of interest")
-		}
 		listSummariesReq.CatalogName = args[0]
 
 		response := w.Tables.ListSummaries(ctx, listSummariesReq)
@@ -453,10 +570,9 @@ func newUpdate() *cobra.Command {
 	var updateReq catalog.UpdateTableRequest
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, ``)
+	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of table.`)
 
 	cmd.Use = "update FULL_NAME"
 	cmd.Short = `Update a table owner.`
@@ -476,6 +592,11 @@ func newUpdate() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -492,23 +613,6 @@ func newUpdate() *cobra.Command {
 					return err
 				}
 			}
-		}
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No FULL_NAME argument specified. Loading names for Tables drop-down."
-			names, err := w.Tables.TableInfoNameToTableIdMap(ctx, catalog.ListTablesRequest{})
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Tables drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "Full name of the table")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have full name of the table")
 		}
 		updateReq.FullName = args[0]
 

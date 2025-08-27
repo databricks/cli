@@ -3,6 +3,9 @@
 package clean_rooms
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -18,10 +21,10 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "clean-rooms",
-		Short: `A clean room uses Delta Sharing and serverless compute to provide a secure and privacy-protecting environment where multiple parties can work together on sensitive enterprise data without direct access to each other’s data.`,
+		Short: `A clean room uses Delta Sharing and serverless compute to provide a secure and privacy-protecting environment where multiple parties can work together on sensitive enterprise data without direct access to each other's data.`,
 		Long: `A clean room uses Delta Sharing and serverless compute to provide a secure and
   privacy-protecting environment where multiple parties can work together on
-  sensitive enterprise data without direct access to each other’s data.`,
+  sensitive enterprise data without direct access to each other's data.`,
 		GroupID: "cleanrooms",
 		Annotations: map[string]string{
 			"package": "cleanrooms",
@@ -61,13 +64,18 @@ func newCreate() *cobra.Command {
 	createReq.CleanRoom = cleanrooms.CleanRoom{}
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
+	var createSkipWait bool
+	var createTimeout time.Duration
+
+	cmd.Flags().BoolVar(&createSkipWait, "no-wait", createSkipWait, `do not wait to reach ACTIVE state`)
+	cmd.Flags().DurationVar(&createTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach ACTIVE state`)
+
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.CleanRoom.Comment, "comment", createReq.CleanRoom.Comment, ``)
 	cmd.Flags().StringVar(&createReq.CleanRoom.Name, "name", createReq.CleanRoom.Name, `The name of the clean room.`)
 	// TODO: complex arg: output_catalog
-	cmd.Flags().StringVar(&createReq.CleanRoom.Owner, "owner", createReq.CleanRoom.Owner, `This is Databricks username of the owner of the local clean room securable for permission management.`)
+	cmd.Flags().StringVar(&createReq.CleanRoom.Owner, "owner", createReq.CleanRoom.Owner, `This is the Databricks username of the owner of the local clean room securable for permission management.`)
 	// TODO: complex arg: remote_detailed_info
 
 	cmd.Use = "create"
@@ -109,11 +117,24 @@ func newCreate() *cobra.Command {
 			}
 		}
 
-		response, err := w.CleanRooms.Create(ctx, createReq)
+		wait, err := w.CleanRooms.Create(ctx, createReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		if createSkipWait {
+			return cmdio.Render(ctx, wait.Response)
+		}
+		spinner := cmdio.Spinner(ctx)
+		info, err := wait.OnProgress(func(i *cleanrooms.CleanRoom) {
+			status := i.Status
+			statusMessage := fmt.Sprintf("current status: %s", status)
+			spinner <- statusMessage
+		}).GetWithTimeout(createTimeout)
+		close(spinner)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, info)
 	}
 
 	// Disable completions since they are not applicable.
@@ -144,7 +165,6 @@ func newCreateOutputCatalog() *cobra.Command {
 	createOutputCatalogReq.OutputCatalog = cleanrooms.CleanRoomOutputCatalog{}
 	var createOutputCatalogJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createOutputCatalogJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createOutputCatalogReq.OutputCatalog.CatalogName, "catalog-name", createOutputCatalogReq.OutputCatalog.CatalogName, `The name of the output catalog in UC.`)
@@ -217,8 +237,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq cleanrooms.DeleteCleanRoomRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete NAME"
 	cmd.Short = `Delete a clean room.`
 	cmd.Long = `Delete a clean room.
@@ -278,8 +296,6 @@ func newGet() *cobra.Command {
 
 	var getReq cleanrooms.GetCleanRoomRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get NAME"
 	cmd.Short = `Get a clean room.`
 	cmd.Long = `Get a clean room.
@@ -332,8 +348,6 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq cleanrooms.ListCleanRoomsRequest
-
-	// TODO: short flags
 
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Maximum number of clean rooms to return (i.e., the page length).`)
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
@@ -388,7 +402,6 @@ func newUpdate() *cobra.Command {
 	var updateReq cleanrooms.UpdateCleanRoomRequest
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: clean_room

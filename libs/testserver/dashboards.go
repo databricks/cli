@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
+	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/google/uuid"
 )
 
@@ -48,6 +49,13 @@ func (s *FakeWorkspace) DashboardCreate(req Request) Response {
 	}
 
 	s.Dashboards[dashboard.DashboardId] = dashboard
+	s.files[dashboard.Path] = FileEntry{
+		Info: workspace.ObjectInfo{
+			ObjectType: "DASHBOARD",
+			Path:       dashboard.Path,
+		},
+		Data: []byte(dashboard.SerializedDashboard),
+	}
 
 	return Response{
 		Body: dashboards.Dashboard{
@@ -69,6 +77,9 @@ func (s *FakeWorkspace) DashboardUpdate(req Request) Response {
 
 	// Update the etag for the dashboard.
 	dashboard.Etag = uuid.New().String()
+
+	// All dashboards are active by default:
+	dashboard.LifecycleState = dashboards.LifecycleStateActive
 
 	dashboardId := req.Vars["dashboard_id"]
 	s.Dashboards[dashboardId] = dashboard

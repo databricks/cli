@@ -4,12 +4,12 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/dyn"
-	assert "github.com/databricks/cli/libs/dyn/dynassert"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestNewRefNoString(t *testing.T) {
-	_, ok := newRef(dyn.V(1))
+	_, ok := NewRef(dyn.V(1))
 	require.False(t, ok, "should not match non-string")
 }
 
@@ -23,9 +23,9 @@ func TestNewRefValidPattern(t *testing.T) {
 		"${hello_world.world-_world}": {"hello_world.world-_world"},
 		"${hello_world.world_-world}": {"hello_world.world_-world"},
 	} {
-		ref, ok := newRef(dyn.V(in))
+		ref, ok := NewRef(dyn.V(in))
 		require.True(t, ok, "should match valid pattern: %s", in)
-		assert.Equal(t, refs, ref.references())
+		assert.Equal(t, refs, ref.References())
 	}
 }
 
@@ -42,7 +42,7 @@ func TestNewRefInvalidPattern(t *testing.T) {
 		"${helloworld.9world-world}",    // interpolated second section shouldn't start with number
 	}
 	for _, v := range invalid {
-		_, ok := newRef(dyn.V(v))
+		_, ok := NewRef(dyn.V(v))
 		require.False(t, ok, "should not match invalid pattern: %s", v)
 	}
 }

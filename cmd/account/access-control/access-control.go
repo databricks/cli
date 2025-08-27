@@ -58,8 +58,6 @@ func newGetAssignableRolesForResource() *cobra.Command {
 
 	var getAssignableRolesForResourceReq iam.GetAssignableRolesForResourceRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get-assignable-roles-for-resource RESOURCE"
 	cmd.Short = `Get assignable roles for a resource.`
 	cmd.Long = `Get assignable roles for a resource.
@@ -123,8 +121,6 @@ func newGetRuleSet() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getRuleSetReq iam.GetRuleSetRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get-rule-set NAME ETAG"
 	cmd.Short = `Get a rule set.`
@@ -207,7 +203,6 @@ func newUpdateRuleSet() *cobra.Command {
 	var updateRuleSetReq iam.UpdateRuleSetRequest
 	var updateRuleSetJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateRuleSetJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "update-rule-set"

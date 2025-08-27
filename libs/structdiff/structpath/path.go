@@ -97,6 +97,13 @@ func (p *PathNode) Field() (string, bool) {
 	return "", false
 }
 
+func (p *PathNode) Parent() *PathNode {
+	if p == nil {
+		return nil
+	}
+	return p.prev
+}
+
 // NewIndex creates a new PathNode for an array/slice index.
 func NewIndex(prev *PathNode, index int) *PathNode {
 	if index < 0 {

@@ -4,15 +4,18 @@ from typing import Callable
 import pytest
 
 from databricks.bundles.core import Location, Resources, Severity
+from databricks.bundles.core._bundle import Bundle
 from databricks.bundles.core._resource import Resource
 from databricks.bundles.core._resource_mutator import (
     ResourceMutator,
     job_mutator,
     pipeline_mutator,
+    volume_mutator,
 )
 from databricks.bundles.core._resource_type import _ResourceType
 from databricks.bundles.jobs._models.job import Job
 from databricks.bundles.pipelines._models.pipeline import Pipeline
+from databricks.bundles.volumes._models.volume import Volume
 
 
 @dataclass(kw_only=True)
@@ -42,6 +45,23 @@ test_cases = [
             mutator=pipeline_mutator,
         ),
         resource_types[Pipeline],
+    ),
+    (
+        TestCase(
+            add_resource=Resources.add_volume,
+            dict_example={
+                "name": "My Volume",
+                "catalog_name": "my_catalog",
+                "schema_name": "my_schema",
+            },
+            dataclass_example=Volume(
+                catalog_name="my_catalog",
+                name="My Volume",
+                schema_name="my_schema",
+            ),
+            mutator=volume_mutator,
+        ),
+        resource_types[Volume],
     ),
 ]
 test_case_ids = [tpe.plural_name for _, tpe in test_cases]
@@ -201,8 +221,21 @@ def test_mutator(tc: TestCase, tpe: _ResourceType):
     def my_func(bundle, resource):
         return resource
 
+    bundle = Bundle(target="default")
+
     assert isinstance(my_func, ResourceMutator)
+    assert tc.mutator.__name__ == tpe.singular_name + "_mutator"
     assert my_func.resource_type == tpe.resource_type
+    assert my_func.function(bundle, tc.dataclass_example) is tc.dataclass_example
+
+
+@pytest.mark.parametrize("tc,tpe", test_cases, ids=test_case_ids)
+def test_mutator_export(tc: TestCase, tpe: _ResourceType):
+    import databricks.bundles.core
+
+    assert tc.mutator.__name__ in databricks.bundles.core.__all__, (
+        "mutator is not in databricks.bundles.core.__all__"
+    )
 
 
 @pytest.mark.parametrize("tc,tpe", test_cases, ids=test_case_ids)

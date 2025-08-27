@@ -1,10 +1,15 @@
 package merge
 
-import "github.com/databricks/cli/libs/dyn"
+import (
+	"sort"
+
+	"github.com/databricks/cli/libs/dyn"
+)
 
 type elementsByKey struct {
-	key     string
-	keyFunc func(dyn.Value) string
+	key      string
+	keyFunc  func(dyn.Value) string
+	sortKeys bool
 }
 
 func (e elementsByKey) doMap(_ dyn.Path, v dyn.Value, mergeFunc func(a, b dyn.Value) (dyn.Value, error)) (dyn.Value, error) {
@@ -40,6 +45,10 @@ func (e elementsByKey) doMap(_ dyn.Path, v dyn.Value, mergeFunc func(a, b dyn.Va
 
 		// Overwrite reference.
 		seen[key] = nv
+	}
+
+	if e.sortKeys {
+		sort.Strings(keys)
 	}
 
 	// Gather resulting elements in natural order.
@@ -83,9 +92,13 @@ func (e elementsByKey) MapWithOverride(p dyn.Path, v dyn.Value) (dyn.Value, erro
 // a parameter. The resulting elements get their key field overwritten
 // with the value as returned by the key function.
 func ElementsByKey(key string, keyFunc func(dyn.Value) string) dyn.MapFunc {
-	return elementsByKey{key, keyFunc}.Map
+	return elementsByKey{key, keyFunc, false}.Map
+}
+
+func ElementsBySortedKey(key string, keyFunc func(dyn.Value) string) dyn.MapFunc {
+	return elementsByKey{key, keyFunc, true}.Map
 }
 
 func ElementsByKeyWithOverride(key string, keyFunc func(dyn.Value) string) dyn.MapFunc {
-	return elementsByKey{key, keyFunc}.MapWithOverride
+	return elementsByKey{key, keyFunc, false}.MapWithOverride
 }

@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/sync"
 	"github.com/spf13/cobra"
 )
@@ -56,7 +57,17 @@ func newSyncCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "sync [flags]",
 		Short: "Synchronize bundle tree to the workspace",
-		Args:  root.NoArgs,
+		Long: `Synchronize bundle files to Databricks workspace for development.
+
+Use sync during development to upload local changes without full deployment:
+  databricks bundle sync              # One-time sync of all files
+  databricks bundle sync --watch      # Continuously watch and sync changes
+  databricks bundle sync --full       # Force full sync (vs incremental)
+  databricks bundle sync --dry-run    # Preview what would be synced
+
+Sync is faster than deploy for rapid development but doesn't update job/pipeline definitions.
+Use 'databricks bundle deploy' for full resource deployment.`,
+		Args: root.NoArgs,
 	}
 
 	var f syncFlags
@@ -67,16 +78,18 @@ func newSyncCommand() *cobra.Command {
 	cmd.Flags().BoolVar(&f.dryRun, "dry-run", false, "simulate sync execution without making actual changes")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		ctx := cmd.Context()
-		b, diags := utils.ConfigureBundleWithVariables(cmd)
-		if err := diags.Error(); err != nil {
-			return diags.Error()
+		ctx := logdiag.InitContext(cmd.Context())
+		cmd.SetContext(ctx)
+
+		b := utils.ConfigureBundleWithVariables(cmd)
+		if b == nil || logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
 		}
 
 		// Run initialize phase to make sure paths are set.
-		diags = phases.Initialize(ctx, b)
-		if err := diags.Error(); err != nil {
-			return err
+		phases.Initialize(ctx, b)
+		if logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
 		}
 
 		opts, err := f.syncOptionsFromBundle(cmd, b)
