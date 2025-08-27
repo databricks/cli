@@ -76,10 +76,6 @@ This is the Databricks CLI, a command-line interface for interacting with Databr
 
 ## Code Patterns
 
-### Error Handling
-- Bundle operations return diagnostics rather than plain errors
-- Authentication errors should be wrapped with context
-
 ### Configuration
 - Bundle config uses `dyn.Value` for dynamic typing
 - Config loading supports includes, variable interpolation, and target overrides
