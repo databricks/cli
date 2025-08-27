@@ -33,6 +33,7 @@ func attemptConnection(ctx context.Context, args, env []string) error {
 	cmd.Stderr = os.Stderr
 
 	err := cmd.Run()
+
 	if err != nil {
 		// Check if the error might be due to connection issues
 		// Since we can't capture stderr when running interactively, we check the exit code
@@ -46,10 +47,9 @@ func attemptConnection(ctx context.Context, args, env []string) error {
 				return fmt.Errorf("connection failed (retryable): psql exited with code %d", exitCode)
 			}
 		}
-		return err
 	}
 
-	return nil
+	return err
 }
 
 func ConnectWithRetryConfig(ctx context.Context, databaseInstanceName string, retryConfig RetryConfig, extraArgs ...string) error {
