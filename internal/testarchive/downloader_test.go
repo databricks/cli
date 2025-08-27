@@ -14,6 +14,8 @@ func TestUvDownloader(t *testing.T) {
 		t.Skip("Skipping test in short mode")
 	}
 
+	t.Parallel()
+
 	tmpDir := t.TempDir()
 
 	for _, arch := range []string{"arm64", "amd64"} {
@@ -33,6 +35,8 @@ func TestJqDownloader(t *testing.T) {
 		t.Skip("Skipping test in short mode")
 	}
 
+	t.Parallel()
+
 	tmpDir := t.TempDir()
 
 	for _, arch := range []string{"arm64", "amd64"} {
@@ -51,6 +55,8 @@ func TestGoDownloader(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping test in short mode")
 	}
+
+	t.Parallel()
 
 	tmpDir := t.TempDir()
 

@@ -13,6 +13,8 @@ func TestArchive(t *testing.T) {
 		t.Skip("Skipping test in short mode")
 	}
 
+	t.Parallel()
+
 	archiveDir := t.TempDir()
 	binDir := t.TempDir()
 	repoRoot := "../.."
