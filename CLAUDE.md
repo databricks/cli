@@ -81,10 +81,6 @@ This is the Databricks CLI, a command-line interface for interacting with Databr
 - Config loading supports includes, variable interpolation, and target overrides
 - Schema generation is automated from Go struct tags
 
-### File Operations
-- Always use `vfs.Path` and `filer.Filer` interfaces rather than direct file operations
-- Support for local filesystem, DBFS, and Workspace File System
-
 ## Development Tips
 
 - Run `make checks fmt lint` before committing
