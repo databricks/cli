@@ -97,9 +97,6 @@ const (
 	userReplacementsFilename = "ACC_REPLS"
 )
 
-// TODO: Add to PR decription:
-// DATABRICKS_TF_CLI_CONFIG_FILE=/Users/shreyas.goenka/repos/cli/tfdir/.terraformrc
-// DATABRICKS_TF_EXEC_PATH=/Users/shreyas.goenka/repos/cli/tfdir/terraform
 // On CI, we want to increase timeout, to account for slower environment
 const CITimeoutMultiplier = 2
 
