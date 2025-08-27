@@ -16,14 +16,6 @@ import (
 	"github.com/google/uuid"
 )
 
-const (
-	// Default retry configuration
-	defaultMaxRetries    = 3
-	defaultInitialDelay  = 1 * time.Second
-	defaultMaxDelay      = 10 * time.Second
-	defaultBackoffFactor = 2.0
-)
-
 // RetryConfig holds configuration for connection retry behavior
 type RetryConfig struct {
 	MaxRetries    int
@@ -60,11 +52,7 @@ func tryPsqlInteractive(ctx context.Context, args, env []string) error {
 	return nil
 }
 
-func Connect(ctx context.Context, databaseInstanceName string, extraArgs ...string) error {
-	return ConnectWithRetryConfig(ctx, databaseInstanceName, nil, extraArgs...)
-}
-
-func ConnectWithRetryConfig(ctx context.Context, databaseInstanceName string, retryConfig *RetryConfig, extraArgs ...string) error {
+func ConnectWithRetryConfig(ctx context.Context, databaseInstanceName string, retryConfig RetryConfig, extraArgs ...string) error {
 	cmdio.LogString(ctx, fmt.Sprintf("Connecting to Databricks Database Instance %s ...", databaseInstanceName))
 
 	w := cmdctx.WorkspaceClient(ctx)
@@ -140,16 +128,6 @@ func ConnectWithRetryConfig(ctx context.Context, databaseInstanceName string, re
 		"PGPASSWORD="+cred.Token,
 		"PGSSLMODE=require",
 	)
-
-	// Use provided retry configuration or defaults
-	if retryConfig == nil {
-		retryConfig = &RetryConfig{
-			MaxRetries:    defaultMaxRetries,
-			InitialDelay:  defaultInitialDelay,
-			MaxDelay:      defaultMaxDelay,
-			BackoffFactor: defaultBackoffFactor,
-		}
-	}
 
 	// If retries are disabled, go directly to interactive session
 	if retryConfig.MaxRetries <= 0 {

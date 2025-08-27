@@ -7,20 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestRetryConfigDefaults(t *testing.T) {
-	config := &RetryConfig{
-		MaxRetries:    defaultMaxRetries,
-		InitialDelay:  defaultInitialDelay,
-		MaxDelay:      defaultMaxDelay,
-		BackoffFactor: defaultBackoffFactor,
-	}
-
-	assert.Equal(t, 3, config.MaxRetries)
-	assert.Equal(t, "1s", config.InitialDelay.String())
-	assert.Equal(t, "10s", config.MaxDelay.String())
-	assert.InEpsilon(t, 2.0, config.BackoffFactor, 0.001)
-}
-
 func TestTryPsqlInteractive(t *testing.T) {
 	ctx := context.Background()
 
