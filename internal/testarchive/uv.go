@@ -12,8 +12,6 @@ type uvDownloader struct {
 	arch   string
 }
 
-// uvDownloader creates a new UV downloader
-
 // mapArchitecture maps our architecture names to UV's naming convention
 func (u uvDownloader) mapArchitecture(arch string) (string, error) {
 	switch arch {

@@ -24,7 +24,7 @@ func gitFiles(repoRoot string) ([]string, error) {
 	scanner := bufio.NewScanner(strings.NewReader(string(output)))
 	var gitFiles []string
 	for scanner.Scan() {
-		file := strings.TrimSpace(scanner.Text())
+		file := scanner.Text()
 		if file != "" {
 			gitFiles = append(gitFiles, file)
 		}
@@ -98,8 +98,8 @@ func addFileToArchive(tarWriter *tar.Writer, src, dst string) error {
 }
 
 // createArchive creates a tar.gz archive of all git-tracked files plus downloaded tools
-func createArchive(archiveDir, binDir, repoRoot string) error {
-	archivePath := filepath.Join(archiveDir, "archive.tar.gz")
+func createArchive(archiveDir, binDir, archiveName, repoRoot string) error {
+	archivePath := filepath.Join(archiveDir, archiveName)
 
 	// Download tools for both arm and amd64 architectures.
 	// The right architecture to use is decided at runtime on the serverless driver.
@@ -107,11 +107,14 @@ func createArchive(archiveDir, binDir, repoRoot string) error {
 	// the CPU architecture to keep the door open for future optimizations.
 	downloaders := []downloader{
 		goDownloader{arch: "amd64", binDir: binDir},
-		goDownloader{arch: "arm64", binDir: binDir},
 		uvDownloader{arch: "amd64", binDir: binDir},
-		uvDownloader{arch: "arm64", binDir: binDir},
 		jqDownloader{arch: "amd64", binDir: binDir},
-		jqDownloader{arch: "arm64", binDir: binDir},
+
+		// TODO: Once ARM64 for serverless clusters is available, enable download for
+		// these and add runtime detection to the test runner to choose the right binaries.
+		// uvDownloader{arch: "arm64", binDir: binDir},
+		// goDownloader{arch: "arm64", binDir: binDir},
+		// jqDownloader{arch: "arm64", binDir: binDir},
 	}
 
 	for _, downloader := range downloaders {

@@ -37,15 +37,17 @@ import (
 )
 
 var (
-	KeepTmp     bool
-	NoRepl      bool
-	VerboseTest bool = os.Getenv("VERBOSE_TEST") != ""
-	Tail        bool
-	Forcerun    bool
-	LogRequests bool
-	LogConfig   bool
-	SkipLocal   bool
-	UseVersion  string
+	KeepTmp         bool
+	NoRepl          bool
+	VerboseTest     bool = os.Getenv("VERBOSE_TEST") != ""
+	Tail            bool
+	Forcerun        bool
+	LogRequests     bool
+	LogConfig       bool
+	SkipLocal       bool
+	WorkspaceTmpDir bool
+	UseVersion      string
+	Dbr             bool
 )
 
 // In order to debug CLI running under acceptance test, search for TestInprocessMode and update
@@ -66,7 +68,9 @@ func init() {
 	flag.BoolVar(&LogRequests, "logrequests", false, "Log request and responses from testserver")
 	flag.BoolVar(&LogConfig, "logconfig", false, "Log merged for each test case")
 	flag.BoolVar(&SkipLocal, "skiplocal", false, "Skip tests that are enabled to run on Local")
+	flag.BoolVar(&WorkspaceTmpDir, "workspace-tmp-dir", false, "Run tests on the workspace file system (For DBR testing).")
 	flag.StringVar(&UseVersion, "useversion", "", "Download previously released version of CLI and use it to run the tests")
+	flag.BoolVar(&Dbr, "dbr", false, "Only run the tests on DBR via a Databricks job.")
 }
 
 const (
@@ -115,6 +119,11 @@ var Ignored = map[string]bool{
 }
 
 func TestAccept(t *testing.T) {
+	if Dbr {
+		testDbrAcceptance(t)
+		return
+	}
+
 	testAccept(t, InprocessMode, "")
 }
 
@@ -486,6 +495,15 @@ func runTest(t *testing.T,
 		tmpDir, err = os.MkdirTemp(tempDirBase, "")
 		require.NoError(t, err)
 		t.Logf("Created directory: %s", tmpDir)
+	} else if WorkspaceTmpDir {
+		// If the test is being run on DBR, auth is already configured
+		// by the dbr_runner notebook by reading a token from the notebook context and
+		// setting DATABRICKS_TOKEN and DATABRICKS_HOST environment variables.
+		_, _, tmpDir = workspaceTmpDir(t.Context(), t)
+
+		// Run DBR tests on the workspace file system to mimic usage from
+		// DABs in the workspace.
+		t.Logf("Running DBR tests on %s", tmpDir)
 	} else {
 		tmpDir = t.TempDir()
 	}
