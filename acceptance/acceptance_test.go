@@ -37,15 +37,16 @@ import (
 )
 
 var (
-	KeepTmp     bool
-	NoRepl      bool
-	VerboseTest bool = os.Getenv("VERBOSE_TEST") != ""
-	Tail        bool
-	Forcerun    bool
-	LogRequests bool
-	LogConfig   bool
-	SkipLocal   bool
-	UseVersion  string
+	KeepTmp      bool
+	NoRepl       bool
+	VerboseTest  bool = os.Getenv("VERBOSE_TEST") != ""
+	Tail         bool
+	Forcerun     bool
+	LogRequests  bool
+	LogConfig    bool
+	SkipLocal    bool
+	UseVersion   string
+	TerraformDir string
 )
 
 // In order to debug CLI running under acceptance test, search for TestInprocessMode and update
@@ -67,6 +68,11 @@ func init() {
 	flag.BoolVar(&LogConfig, "logconfig", false, "Log merged for each test case")
 	flag.BoolVar(&SkipLocal, "skiplocal", false, "Skip tests that are enabled to run on Local")
 	flag.StringVar(&UseVersion, "useversion", "", "Download previously released version of CLI and use it to run the tests")
+
+	// Symlinks from workspace file system to local file mount are not supported on DBR. Terraform implicitly
+	// creates these symlinks when a file_mirror is used for a provider (in .terraformrc). This flag
+	// allows us to download the provider to the workspace file system on DBR enabling DBR integration testing.
+	flag.StringVar(&TerraformDir, "terraform-dir", "", "Directory to download the terraform provider to")
 }
 
 const (
@@ -143,9 +149,16 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	t.Setenv("LC_ALL", "C")
 
 	buildDir := filepath.Join(cwd, "build", fmt.Sprintf("%s_%s", runtime.GOOS, runtime.GOARCH))
+	err = os.MkdirAll(buildDir, os.ModePerm)
+	require.NoError(t, err)
+
+	terraformDir := TerraformDir
+	if terraformDir == "" {
+		terraformDir = buildDir
+	}
 
 	// Download terraform and provider and create config; this also creates build directory.
-	RunCommand(t, []string{"python3", filepath.Join(cwd, "install_terraform.py"), "--targetdir", buildDir}, ".")
+	RunCommand(t, []string{"python3", filepath.Join(cwd, "install_terraform.py"), "--targetdir", terraformDir}, ".")
 
 	wheelPath := buildDatabricksBundlesWheel(t, buildDir)
 	if wheelPath != "" {
@@ -221,12 +234,12 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		repls.Set(testDefaultWarehouseId, "[TEST_DEFAULT_WAREHOUSE_ID]")
 	}
 
-	terraformrcPath := filepath.Join(buildDir, ".terraformrc")
+	terraformrcPath := filepath.Join(terraformDir, ".terraformrc")
 	t.Setenv("TF_CLI_CONFIG_FILE", terraformrcPath)
 	t.Setenv("DATABRICKS_TF_CLI_CONFIG_FILE", terraformrcPath)
 	repls.SetPath(terraformrcPath, "[DATABRICKS_TF_CLI_CONFIG_FILE]")
 
-	terraformExecPath := filepath.Join(buildDir, "terraform") + exeSuffix
+	terraformExecPath := filepath.Join(terraformDir, "terraform") + exeSuffix
 	t.Setenv("DATABRICKS_TF_EXEC_PATH", terraformExecPath)
 	t.Setenv("TERRAFORM", terraformExecPath)
 	repls.SetPath(terraformExecPath, "[TERRAFORM]")
