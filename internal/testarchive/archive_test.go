@@ -1,5 +1,3 @@
-//go:build dbr_only
-
 package main
 
 import (
@@ -11,6 +9,10 @@ import (
 )
 
 func TestArchive(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping test in short mode")
+	}
+
 	archiveDir := t.TempDir()
 	binDir := t.TempDir()
 	repoRoot := "../.."
