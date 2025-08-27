@@ -11,17 +11,42 @@ import (
 type ResourcePipeline struct {
 	client *databricks.WorkspaceClient
 	config pipelines.CreatePipeline
+	// TODO: use Pipeline struct similar to terraform
+	remoteState *pipelines.GetPipelineResponse
 }
 
 func NewResourcePipeline(client *databricks.WorkspaceClient, resource *resources.Pipeline) (*ResourcePipeline, error) {
 	return &ResourcePipeline{
-		client: client,
-		config: resource.CreatePipeline,
+		client:      client,
+		config:      resource.CreatePipeline,
+		remoteState: nil,
 	}, nil
 }
 
 func (r *ResourcePipeline) Config() any {
 	return r.config
+}
+
+func (r *ResourcePipeline) RemoteState() any {
+	return r.remoteState
+}
+
+func (r *ResourcePipeline) RemoteStateAsConfig() any {
+	if r.remoteState == nil {
+		return nil
+	}
+	return pipelines.CreatePipeline{
+		// TODO:
+	}
+}
+
+func (r *ResourcePipeline) DoRefresh(ctx context.Context, id string) error {
+	response, err := r.client.Pipelines.GetByPipelineId(ctx, id)
+	if err != nil {
+		return err
+	}
+	r.remoteState = response
+	return nil
 }
 
 func (r *ResourcePipeline) DoCreate(ctx context.Context) (string, error) {
@@ -75,6 +100,7 @@ func DeletePipeline(ctx context.Context, client *databricks.WorkspaceClient, id 
 	return client.Pipelines.DeleteByPipelineId(ctx, id)
 }
 
+/*
 func (r *ResourcePipeline) WaitAfterCreate(ctx context.Context) error {
 	// Note, terraform provider either
 	// a) reads back state at least once and fails create if state is "failed"
@@ -87,3 +113,4 @@ func (r *ResourcePipeline) WaitAfterUpdate(ctx context.Context) error {
 	// TODO: investigate if we need to mimic waiting behaviour in TF or can rely on Update status code.
 	return nil
 }
+*/

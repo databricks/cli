@@ -13,18 +13,46 @@ import (
 
 type ResourceApp struct {
 	client *databricks.WorkspaceClient
+
+	// config is fully resolved snapshot of configuration of the resource; this is what is going to be used for create / update
+	// it is populated once by NewResource*
 	config apps.App
+
+	// remoteState is remote view of the resource, fetched from the backend. It is updated by all *Refresh methods.
+	// It is always a pointer as it's a nil for new resource; it may be different type from config.
+	remoteState *apps.App
 }
 
 func NewResourceApp(client *databricks.WorkspaceClient, config *resources.App) (*ResourceApp, error) {
 	return &ResourceApp{
-		client: client,
-		config: config.App,
+		client:      client,
+		config:      config.App,
+		remoteState: nil,
 	}, nil
 }
 
 func (r *ResourceApp) Config() any {
 	return r.config
+}
+
+func (r *ResourceApp) RemoteState() any {
+	return r.remoteState
+}
+
+func (r *ResourceApp) RemoteStateAsConfig() any {
+	if r.remoteState == nil {
+		return nil
+	}
+	return *r.remoteState
+}
+
+func (r *ResourceApp) DoRefresh(ctx context.Context, id string) error {
+	app, err := r.client.Apps.GetByName(ctx, id)
+	if err != nil {
+		return err
+	}
+	r.remoteState = app
+	return nil
 }
 
 func (r *ResourceApp) DoCreate(ctx context.Context) (string, error) {
@@ -37,7 +65,6 @@ func (r *ResourceApp) DoCreate(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
-
 	return waiter.Response.Name, nil
 }
 
@@ -63,16 +90,12 @@ func DeleteApp(ctx context.Context, client *databricks.WorkspaceClient, id strin
 	return err
 }
 
-func (r *ResourceApp) WaitAfterCreate(ctx context.Context) error {
-	_, err := r.waitForApp(ctx, r.client, r.config.Name)
+func (r *ResourceApp) WaitAfterCreateWithRefresh(ctx context.Context) error {
+	remoteState, err := r.waitForApp(ctx, r.client, r.config.Name)
 	if err != nil {
 		return err
 	}
-	return nil
-}
-
-func (r *ResourceApp) WaitAfterUpdate(ctx context.Context) error {
-	// Intentional no-op
+	r.remoteState = remoteState
 	return nil
 }
 

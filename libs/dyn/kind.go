@@ -2,6 +2,7 @@ package dyn
 
 import (
 	"fmt"
+	"reflect"
 )
 
 type Kind int
@@ -20,7 +21,7 @@ const (
 )
 
 func kindOf(v any) Kind {
-	switch v.(type) {
+	switch t := v.(type) {
 	case Mapping:
 		return KindMap
 	case []Value:
@@ -38,7 +39,11 @@ func kindOf(v any) Kind {
 	case nil:
 		return KindNil
 	default:
-		panic("not handled")
+		// typedefs from GoSDK
+		if reflect.TypeOf(v).Kind() == reflect.String {
+			return KindString
+		}
+		panic(fmt.Sprintf("unsupported type: %v", t))
 	}
 }
 

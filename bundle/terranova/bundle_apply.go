@@ -15,7 +15,7 @@ func (b *BundleDeployer) Apply(ctx context.Context, client *databricks.Workspace
 		panic("Planning is not done")
 	}
 
-	if len(b.PlannedActions) == 0 {
+	if len(b.Resources) == 0 {
 		// Avoid creating state file if nothing to deploy
 		return
 	}
@@ -23,7 +23,12 @@ func (b *BundleDeployer) Apply(ctx context.Context, client *databricks.Workspace
 	b.StateDB.AssertOpened()
 
 	b.Graph.Run(defaultParallelism, func(node deployplan.ResourceNode, failedDependency *deployplan.ResourceNode) bool {
-		actionType := b.PlannedActions[node]
+		deployer, exists := b.Resources[node]
+		if !exists {
+			// Unexpected, this should be filtered at plan.
+			return false
+		}
+		actionType := deployer.ActionType
 
 		errorPrefix := fmt.Sprintf("cannot %s %s.%s", actionType.String(), node.Group, node.Key)
 
@@ -33,7 +38,7 @@ func (b *BundleDeployer) Apply(ctx context.Context, client *databricks.Workspace
 			return false
 		}
 
-		settings, ok := SupportedResources[node.Group]
+		_, ok := SupportedResources[node.Group]
 		if !ok {
 			// Unexpected, this should be filtered at plan.
 			return false
@@ -46,15 +51,12 @@ func (b *BundleDeployer) Apply(ctx context.Context, client *databricks.Workspace
 		}
 
 		d := Deployer{
-			client:       client,
-			db:           &b.StateDB,
-			group:        node.Group,
-			resourceName: node.Key,
-			settings:     settings,
+			Group: node.Group,
+			Key:   node.Key,
 		}
 
 		if actionType == deployplan.ActionTypeDelete {
-			err := d.Destroy(ctx)
+			err := d.Destroy(ctx, client, &b.StateDB)
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
@@ -84,19 +86,27 @@ func (b *BundleDeployer) Apply(ctx context.Context, client *databricks.Workspace
 
 		// TODO: redo calcDiff to downgrade planned action if possible (?)
 
-		err = d.Deploy(ctx, config, actionType)
+		err = d.Deploy(ctx, client, &b.StateDB, config, actionType)
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 			return false
 		}
 
-		// Update resources.id after successful deploy so that future ${resources...id} refs are replaced
+		// After successful deployment, resolve any references that were delayed during planning
+		// This includes ID references and remote state references
 		if b.Graph.HasOutgoingEdges(node) {
-			err = resolveIDReference(ctx, d.db, configRoot, node.Group, node.Key)
-			if err != nil {
-				// not using errorPrefix because resource was deployed
-				logdiag.LogError(ctx, fmt.Errorf("failed to replace ref to resources.%s.%s.id: %w", node.Group, node.Key, err))
-				return false
+			for _, reference := range b.Graph.OutgoingLabels(node) {
+				value, err := deployer.ResolveReferenceRemote(ctx, &b.StateDB, reference)
+				if err != nil {
+					logdiag.LogError(ctx, fmt.Errorf("failed to resolve reference %q for %s.%s after deployment: %w", reference, node.Group, node.Key, err))
+					return false
+				}
+
+				err = replaceReferenceWithValue(ctx, configRoot, reference, value)
+				if err != nil {
+					logdiag.LogError(ctx, fmt.Errorf("failed to replace reference %q with value %v for %s.%s: %w", reference, value, node.Group, node.Key, err))
+					return false
+				}
 			}
 		}
 

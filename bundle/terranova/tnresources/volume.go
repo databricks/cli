@@ -14,19 +14,50 @@ import (
 )
 
 type ResourceVolume struct {
-	client *databricks.WorkspaceClient
-	config catalog.CreateVolumeRequestContent
+	client      *databricks.WorkspaceClient
+	config      catalog.CreateVolumeRequestContent
+	remoteState *catalog.VolumeInfo
 }
 
 func NewResourceVolume(client *databricks.WorkspaceClient, schema *resources.Volume) (*ResourceVolume, error) {
 	return &ResourceVolume{
-		client: client,
-		config: schema.CreateVolumeRequestContent,
+		client:      client,
+		config:      schema.CreateVolumeRequestContent,
+		remoteState: nil,
 	}, nil
 }
 
 func (r *ResourceVolume) Config() any {
 	return r.config
+}
+
+func (r *ResourceVolume) RemoteState() any {
+	return r.remoteState
+}
+
+func (r *ResourceVolume) RemoteStateAsConfig() any {
+	if r.remoteState == nil {
+		return nil
+	}
+
+	return catalog.CreateVolumeRequestContent{
+		CatalogName:     r.remoteState.CatalogName,
+		Comment:         r.remoteState.Comment,
+		Name:            r.remoteState.Name,
+		SchemaName:      r.remoteState.SchemaName,
+		StorageLocation: r.remoteState.StorageLocation,
+		VolumeType:      r.remoteState.VolumeType,
+		ForceSendFields: filterFields[catalog.CreateVolumeRequestContent](r.remoteState.ForceSendFields),
+	}
+}
+
+func (r *ResourceVolume) DoRefresh(ctx context.Context, id string) error {
+	response, err := r.client.Volumes.ReadByName(ctx, id)
+	if err != nil {
+		return err
+	}
+	r.remoteState = response
+	return nil
 }
 
 func (r *ResourceVolume) DoCreate(ctx context.Context) (string, error) {
@@ -99,16 +130,6 @@ func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string) (string,
 
 func DeleteVolume(ctx context.Context, client *databricks.WorkspaceClient, id string) error {
 	return client.Volumes.DeleteByName(ctx, id)
-}
-
-func (r *ResourceVolume) WaitAfterCreate(ctx context.Context) error {
-	// Intentional no-op
-	return nil
-}
-
-func (r *ResourceVolume) WaitAfterUpdate(ctx context.Context) error {
-	// Intentional no-op
-	return nil
 }
 
 func (r *ResourceVolume) ClassifyChanges(changes []structdiff.Change) deployplan.ActionType {

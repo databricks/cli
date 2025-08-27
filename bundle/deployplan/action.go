@@ -41,6 +41,10 @@ var ShortName = map[ActionType]ActionType{
 	ActionTypeUpdateWithID: ActionTypeUpdate,
 }
 
+func (a ActionType) IsNoop() bool {
+	return a == ActionTypeNoop || a == ActionTypeUnset
+}
+
 func (a ActionType) KeepsID() bool {
 	switch a {
 	case ActionTypeCreate:

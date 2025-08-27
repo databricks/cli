@@ -20,8 +20,11 @@ type ResourceSettings struct {
 	// where Resource is appropriate resource e.g. resource.Job.
 	New reflect.Value
 
-	// Type of the stored config state
+	// Type of the config snapshot struct
 	ConfigType reflect.Type
+
+	// Type of the remote state struct
+	RemoteType reflect.Type
 
 	// Function to delete a resource of this type
 	DeleteFN DeleteResourceFN
@@ -54,15 +57,21 @@ func TypeOfConfig(resource IResource) reflect.Type {
 	return reflect.TypeOf(resource.Config())
 }
 
+func TypeOfRemote(resource IResource) reflect.Type {
+	return reflect.TypeOf(resource.RemoteState())
+}
+
 var SupportedResources = map[string]ResourceSettings{
 	"jobs": {
 		New:        reflect.ValueOf(tnresources.NewResourceJob),
 		ConfigType: TypeOfConfig(&tnresources.ResourceJob{}),
+		RemoteType: TypeOfRemote(&tnresources.ResourceJob{}),
 		DeleteFN:   tnresources.DeleteJob,
 	},
 	"pipelines": {
 		New:        reflect.ValueOf(tnresources.NewResourcePipeline),
 		ConfigType: TypeOfConfig(&tnresources.ResourcePipeline{}),
+		RemoteType: TypeOfRemote(&tnresources.ResourcePipeline{}),
 		DeleteFN:   tnresources.DeletePipeline,
 		// See TF's ForceNew fields:
 		// https://github.com/databricks/terraform-provider-databricks/blob/8ae24ac/pipelines/resource_pipeline.go#L207
@@ -76,6 +85,7 @@ var SupportedResources = map[string]ResourceSettings{
 	"schemas": {
 		New:        reflect.ValueOf(tnresources.NewResourceSchema),
 		ConfigType: TypeOfConfig(&tnresources.ResourceSchema{}),
+		RemoteType: TypeOfRemote(&tnresources.ResourceSchema{}),
 		DeleteFN:   tnresources.DeleteSchema,
 		// TF: https://github.com/databricks/terraform-provider-databricks/blob/03a2515/catalog/resource_schema.go#L14
 		RecreateFields: mkMap(
@@ -87,6 +97,7 @@ var SupportedResources = map[string]ResourceSettings{
 	"volumes": {
 		New:        reflect.ValueOf(tnresources.NewResourceVolume),
 		ConfigType: TypeOfConfig(&tnresources.ResourceVolume{}),
+		RemoteType: TypeOfRemote(&tnresources.ResourceVolume{}),
 		DeleteFN:   tnresources.DeleteVolume,
 		// TF: https://github.com/databricks/terraform-provider-databricks/blob/f5fce0f/catalog/resource_volume.go#L19
 		RecreateFields: mkMap(
@@ -99,34 +110,84 @@ var SupportedResources = map[string]ResourceSettings{
 	"apps": {
 		New:        reflect.ValueOf(tnresources.NewResourceApp),
 		ConfigType: TypeOfConfig(&tnresources.ResourceApp{}),
+		RemoteType: TypeOfRemote(&tnresources.ResourceApp{}),
 		DeleteFN:   tnresources.DeleteApp,
 		RecreateFields: mkMap(
 			".name",
 		),
 	},
-	"sql_warehouses": {
-		New:        reflect.ValueOf(tnresources.NewResourceSqlWarehouse),
-		ConfigType: TypeOfConfig(&tnresources.ResourceSqlWarehouse{}),
-		DeleteFN:   tnresources.DeleteSqlWarehouse,
-	},
-	"database_instances": {
-		New:        reflect.ValueOf(tnresources.NewResourceDatabaseInstance),
-		ConfigType: TypeOfConfig(&tnresources.ResourceDatabaseInstance{}),
-		DeleteFN:   tnresources.DeleteDatabaseInstance,
-	},
+	/*
+		"sql_warehouses": {
+			New:        reflect.ValueOf(tnresources.NewResourceSqlWarehouse),
+			ConfigType: TypeOfConfig(&tnresources.ResourceSqlWarehouse{}),
+			RemoteType: TypeOfConfig(&tnresources.ResourceSqlWarehouse{}),
+			DeleteFN:   tnresources.DeleteSqlWarehouse,
+		},
+		"database_instances": {
+			New:        reflect.ValueOf(tnresources.NewResourceDatabaseInstance),
+			ConfigType: TypeOfConfig(&tnresources.ResourceDatabaseInstance{}),
+			DeleteFN:   tnresources.DeleteDatabaseInstance,
+		},
+	*/
 }
 
+// Resource needs to implement IResourceCommon and one of the following:
+// Group 1: no remote state:
+//  1.1. only IResource: basic create/update
+//  1.2. IResource + IResourceWait: basic create/update + extra waiting to bring resource to correct state.
+// Group 2: with remote state:
+//  2.1. IResourceWithRemoteState: create/update return remote state
+//  2.2. IResource + IResourceWithRemoteState: basic create/update + extra waiting that also returns final remote state.
+//
+
 type IResource interface {
+	// Returns stored configuration snapshot. This is the snapshot that was provided to NewResource<Type> method.
+	// The return value is struct of type ConfigType (not a pointer). Never nil.
 	Config() any
 
+	// Returns stored remote state. This state is updated by DoRefresh() or any of the methods that have "Refresh" in their name.
+	// This is a pointer, can be nil if refresh was not called yet and resource was never created.
+	RemoteState() any
+
+	// Returns stored remote transformed into ConfigType, so that it can be compared with config to detect drift.
+	// The type is the same as Config() but can also return nil if remoteState was not initialized.
+	RemoteStateAsConfig() any
+
+	// Reads remote state from the backend. Result is available in RemoteState() and RemoteStateAsConfig().
+	DoRefresh(ctx context.Context, id string) error
+}
+
+type IResourceBasic interface {
 	// Create the resource. Returns id of the resource.
+	// This method must not update stored remote state (this will be checked).
 	DoCreate(ctx context.Context) (string, error)
 
 	// Update the resource. ID must not change.
 	DoUpdate(ctx context.Context, id string) error
+}
 
+type IResourceWithRefresh interface {
+	// Create the resource. Returns id of the resource. Must update remoteState.
+	DoCreateWithRefresh(ctx context.Context) (string, error)
+
+	// Update the resource. ID must not change. Updates remoteState.
+	DoUpdateWithRefresh(ctx context.Context, id string) error
+}
+
+type IResourceWaitCreateBasic interface {
 	WaitAfterCreate(ctx context.Context) error
+}
+
+type IResourceWaitUpdateBasic interface {
 	WaitAfterUpdate(ctx context.Context) error
+}
+
+type IResourceWaitCreateWithRefresh interface {
+	WaitAfterCreateWithRefresh(ctx context.Context) error
+}
+
+type IResourceWaitUpdateWithRefresh interface {
+	WaitAfterUpdateWithRefresh(ctx context.Context) error
 }
 
 // Optional method for non-default change classification.

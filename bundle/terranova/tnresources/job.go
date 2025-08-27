@@ -2,6 +2,7 @@ package tnresources
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -10,19 +11,45 @@ import (
 )
 
 type ResourceJob struct {
-	client *databricks.WorkspaceClient
-	config jobs.JobSettings
+	client      *databricks.WorkspaceClient
+	config      jobs.JobSettings
+	remoteState *jobs.Job
 }
 
-func NewResourceJob(client *databricks.WorkspaceClient, job *resources.Job) (*ResourceJob, error) {
+func NewResourceJob(client *databricks.WorkspaceClient, config *resources.Job) (*ResourceJob, error) {
 	return &ResourceJob{
-		client: client,
-		config: job.JobSettings,
+		client:      client,
+		config:      config.JobSettings,
+		remoteState: nil,
 	}, nil
 }
 
 func (r *ResourceJob) Config() any {
 	return r.config
+}
+
+func (r *ResourceJob) RemoteState() any {
+	return r.remoteState
+}
+
+func (r *ResourceJob) RemoteStateAsConfig() any {
+	if r.remoteState == nil || r.remoteState.Settings == nil {
+		return nil
+	}
+	return *r.remoteState.Settings
+}
+
+func (r *ResourceJob) DoRefresh(ctx context.Context, id string) error {
+	idInt, err := parseJobID(id)
+	if err != nil {
+		return err
+	}
+	resp, err := r.client.Jobs.GetByJobId(ctx, idInt)
+	if err != nil {
+		return err
+	}
+	r.remoteState = resp
+	return nil
 }
 
 func (r *ResourceJob) DoCreate(ctx context.Context) (string, error) {
@@ -46,21 +73,11 @@ func (r *ResourceJob) DoUpdate(ctx context.Context, id string) error {
 }
 
 func DeleteJob(ctx context.Context, client *databricks.WorkspaceClient, id string) error {
-	idInt, err := strconv.ParseInt(id, 10, 64)
+	idInt, err := parseJobID(id)
 	if err != nil {
 		return err
 	}
 	return client.Jobs.DeleteByJobId(ctx, idInt)
-}
-
-func (r *ResourceJob) WaitAfterCreate(ctx context.Context) error {
-	// Intentional no-op
-	return nil
-}
-
-func (r *ResourceJob) WaitAfterUpdate(ctx context.Context) error {
-	// Intentional no-op
-	return nil
 }
 
 func makeCreateJob(config jobs.JobSettings) (jobs.CreateJob, error) {
@@ -100,7 +117,7 @@ func makeCreateJob(config jobs.JobSettings) (jobs.CreateJob, error) {
 }
 
 func makeResetJob(config jobs.JobSettings, id string) (jobs.ResetJob, error) {
-	idInt, err := strconv.ParseInt(id, 10, 64)
+	idInt, err := parseJobID(id)
 	if err != nil {
 		return jobs.ResetJob{}, err
 	}
@@ -109,4 +126,12 @@ func makeResetJob(config jobs.JobSettings, id string) (jobs.ResetJob, error) {
 		NewSettings: config,
 	}
 	return result, err
+}
+
+func parseJobID(id string) (int64, error) {
+	result, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("internal error: job id is not integer: %q: %w", id, err)
+	}
+	return result, nil
 }

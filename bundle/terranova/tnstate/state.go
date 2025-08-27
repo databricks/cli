@@ -28,7 +28,7 @@ type ResourceEntry struct {
 	State any    `json:"state"`
 }
 
-func (db *TerranovaState) SaveState(group, resourceName, newID string, state any) error {
+func (db *TerranovaState) SaveState(group, resourceName, newID string, snapshot any) error {
 	db.AssertOpened()
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -41,7 +41,7 @@ func (db *TerranovaState) SaveState(group, resourceName, newID string, state any
 
 	groupData[resourceName] = ResourceEntry{
 		ID:    newID,
-		State: state,
+		State: snapshot,
 	}
 
 	return nil

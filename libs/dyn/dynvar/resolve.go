@@ -167,10 +167,7 @@ func (r *resolver) resolveRef(ref Ref, seen []string) (dyn.Value, error) {
 		// Try to turn the resolved value into a string.
 		s, ok := resolved[j].AsString()
 		if !ok {
-			return dyn.InvalidValue, fmt.Errorf(
-				"cannot interpolate non-string value: %s",
-				ref.Matches[j][0],
-			)
+			s = fmt.Sprint(resolved[j].AsAny())
 		}
 
 		ref.Str = strings.Replace(ref.Str, ref.Matches[j][0], s, 1)
