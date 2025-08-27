@@ -97,6 +97,9 @@ const (
 	userReplacementsFilename = "ACC_REPLS"
 )
 
+// TODO: Add to PR decription:
+// DATABRICKS_TF_CLI_CONFIG_FILE=/Users/shreyas.goenka/repos/cli/tfdir/.terraformrc
+// DATABRICKS_TF_EXEC_PATH=/Users/shreyas.goenka/repos/cli/tfdir/terraform
 // On CI, we want to increase timeout, to account for slower environment
 const CITimeoutMultiplier = 2
 
@@ -157,7 +160,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		terraformDir = buildDir
 	}
 
-	// Download terraform and provider and create config; this also creates build directory.
+	// Download terraform and provider and create config.
 	RunCommand(t, []string{"python3", filepath.Join(cwd, "install_terraform.py"), "--targetdir", terraformDir}, ".")
 
 	wheelPath := buildDatabricksBundlesWheel(t, buildDir)
