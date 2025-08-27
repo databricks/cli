@@ -81,6 +81,10 @@ acc-showcover:
 build: tidy
 	go build
 
+# builds the binary in a VM environment (such as Parallels Desktop) where your files are mirrored from the host os
+build-vm: tidy
+	go build -buildvcs=false
+
 snapshot:
 	go build -o .databricks/databricks
 
