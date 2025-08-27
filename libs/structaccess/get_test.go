@@ -223,7 +223,7 @@ func runCommonTests(t *testing.T, obj any) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			hasPathError := HasPath(reflect.TypeOf(obj), tt.path)
+			hasPathError := ValidateByString(reflect.TypeOf(obj), tt.path)
 			if tt.errFmt == "" || tt.typeHasPath {
 				require.NoError(t, hasPathError)
 			} else {
@@ -341,7 +341,7 @@ func TestGet_Embedded_NilPointerAnonymousNotDescended(t *testing.T) {
 	type host struct {
 		*embedded
 	}
-	require.NoError(t, HasPath(reflect.TypeOf(host{}), "hidden"))
+	require.NoError(t, ValidateByString(reflect.TypeOf(host{}), "hidden"))
 	_, err := GetByString(host{}, "hidden")
 	typeName := reflect.TypeOf(host{}).String()
 	require.EqualError(t, err, "hidden: field \"hidden\" not found in "+typeName)
@@ -355,7 +355,7 @@ func TestGet_Embedded_ValueAnonymousResolved(t *testing.T) {
 		embedded
 	}
 	in := host{embedded: embedded{Hidden: "x"}}
-	require.NoError(t, HasPath(reflect.TypeOf(in), "hidden"))
+	require.NoError(t, ValidateByString(reflect.TypeOf(in), "hidden"))
 	got, err := GetByString(in, "hidden")
 	require.NoError(t, err)
 	require.Equal(t, "x", got)

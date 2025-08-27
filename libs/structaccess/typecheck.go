@@ -9,9 +9,10 @@ import (
 	"github.com/databricks/cli/libs/structdiff/structtag"
 )
 
-// HasPath reports whether the given path is valid for the provided type.
+// ValidateByString reports whether the given path string is valid for the provided type.
 // It returns nil if the path resolves fully, or an error indicating where resolution failed.
-func HasPath(t reflect.Type, path string) error {
+// This is a convenience function that parses the path string and calls Validate.
+func ValidateByString(t reflect.Type, path string) error {
 	if path == "" {
 		return nil
 	}
@@ -21,9 +22,19 @@ func HasPath(t reflect.Type, path string) error {
 		return err
 	}
 
+	return Validate(t, p)
+}
+
+// Validate reports whether the given path is valid for the provided type.
+// It returns nil if the path resolves fully, or an error indicating where resolution failed.
+func Validate(t reflect.Type, path dyn.Path) error {
+	if len(path) == 0 {
+		return nil
+	}
+
 	cur := t
 	prefix := ""
-	for _, c := range p {
+	for _, c := range path {
 		// Always dereference pointers at the type level.
 		for cur.Kind() == reflect.Pointer {
 			cur = cur.Elem()
