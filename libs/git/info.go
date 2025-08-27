@@ -86,7 +86,7 @@ func fetchRepositoryInfoAPI(ctx context.Context, path string, w *databricks.Work
 		result.CurrentBranch = gi.Branch
 		result.WorktreeRoot = fixedPath
 	} else {
-		log.Debugf(ctx, "Failed to load git info from %s", apiEndpoint)
+		log.Infof(ctx, "Failed to load git info from %s", apiEndpoint)
 	}
 
 	return result, nil
