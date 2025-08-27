@@ -36,7 +36,7 @@ You can pass additional arguments to psql after a double-dash (--):
 	}
 
 	// Add retry configuration flag
-	cmd.Flags().Int("max-retries", 2, "Maximum number of connection retry attempts (set to 0 to disable retries)")
+	cmd.Flags().Int("max-retries", 3, "Maximum number of connection retry attempts (set to 0 to disable retries)")
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {

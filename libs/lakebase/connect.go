@@ -142,9 +142,9 @@ func ConnectWithRetryConfig(ctx context.Context, databaseInstanceName string, re
 	delay := retryConfig.InitialDelay
 
 	var lastErr error
-	for attempt := 0; attempt <= maxRetries; attempt++ {
+	for attempt := range maxRetries {
 		if attempt > 0 {
-			cmdio.LogString(ctx, fmt.Sprintf("Connection attempt %d/%d failed, retrying in %v...", attempt, maxRetries+1, delay))
+			cmdio.LogString(ctx, fmt.Sprintf("Connection attempt %d/%d failed, retrying in %v...", attempt, maxRetries, delay))
 
 			// Wait with context cancellation support
 			select {
@@ -160,7 +160,7 @@ func ConnectWithRetryConfig(ctx context.Context, databaseInstanceName string, re
 			}
 		}
 
-		cmdio.LogString(ctx, fmt.Sprintf("Launching psql session to %s (attempt %d/%d)...", db.ReadWriteDns, attempt+1, maxRetries+1))
+		cmdio.LogString(ctx, fmt.Sprintf("Launching psql session to %s (attempt %d/%d)...", db.ReadWriteDns, attempt+1, maxRetries))
 
 		// Try to launch psql and capture the exit status
 		err := attemptConnection(ctx, args, cmdEnv)
@@ -184,5 +184,5 @@ func ConnectWithRetryConfig(ctx context.Context, databaseInstanceName string, re
 	}
 
 	// All retries exhausted
-	return fmt.Errorf("failed to connect after %d attempts, last error: %w", maxRetries+1, lastErr)
+	return fmt.Errorf("failed to connect after %d attempts, last error: %w", maxRetries, lastErr)
 }

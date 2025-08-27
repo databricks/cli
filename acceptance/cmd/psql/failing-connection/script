@@ -9,3 +9,9 @@ export PATH="$(pwd):$PATH"
 
 title "Command should use default number of retries:"
 trace musterr $CLI psql my-database -- --dbname=db1 -p 3000
+
+title "Command should use custom number of retries:"
+trace musterr $CLI psql my-database --max-retries 5 -- --dbname=db1 -p 3000
+
+title "Command should not use retries:"
+trace musterr $CLI psql my-database --max-retries 0 -- --dbname=db1 -p 3000
