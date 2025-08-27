@@ -419,6 +419,6 @@ func TestSetup(t *testing.T) {
 
 		content, err := os.ReadFile(configPath)
 		assert.NoError(t, err)
-		assert.Equal(t, string(content), "Host duplicate-host\n    User root\n")
+		assert.Equal(t, "Host duplicate-host\n    User root\n", string(content))
 	})
 }
