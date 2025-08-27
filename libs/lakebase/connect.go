@@ -47,6 +47,8 @@ func tryPsqlInteractive(ctx context.Context, args, env []string) error {
 		var exitError *exec.ExitError
 		if errors.As(err, &exitError) {
 			exitCode := exitError.ExitCode()
+
+			// We do not use the Databricks SDK for checking whether the error is retryable because the call in question is not to the API
 			// psql returns exit code 2 for connection failures
 			if exitCode == 2 {
 				return fmt.Errorf("connection failed (retryable): psql exited with code %d", exitCode)
@@ -193,6 +195,7 @@ func ConnectWithRetryConfig(ctx context.Context, databaseInstanceName string, re
 		lastErr = err
 
 		// Check if this is a retryable error
+		// We do not use the Databricks SDK for checking whether the error is retryable because the call in question is not to the API
 		if !strings.Contains(err.Error(), "connection failed (retryable)") {
 			// Non-retryable error, fail immediately
 			return err
