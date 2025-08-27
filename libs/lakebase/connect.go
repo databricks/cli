@@ -32,31 +32,6 @@ type RetryConfig struct {
 	BackoffFactor float64
 }
 
-// isRetryableConnectionError checks if the error output indicates a retryable connection issue
-func isRetryableConnectionError(output []byte) bool {
-	outputStr := string(output)
-
-	// Check for specific error patterns that indicate connection issues
-	retryablePatterns := []string{
-		"server closed the connection unexpectedly",
-		"connection to server",
-		"could not connect to server",
-		"Connection timed out",
-		"Connection refused",
-		"External authorization failed",
-		"This could be due to paused instances",
-		"blocked by Databricks IP ACL",
-	}
-
-	for _, pattern := range retryablePatterns {
-		if strings.Contains(outputStr, pattern) {
-			return true
-		}
-	}
-
-	return false
-}
-
 // tryPsqlInteractive launches psql interactively and returns an error if connection fails
 func tryPsqlInteractive(ctx context.Context, args, env []string) error {
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
