@@ -47,6 +47,7 @@ Deployment complete!
   "full_name":"main.myschema.myvolume",
   "name":"myvolume",
   "schema_name":"myschema",
+  "storage_location":"s3://deco-uc-prod-isolated-aws-us-east-1/metastore/[UUID]/volumes/[UUID]",
   "volume_type":"MANAGED"
 }
 

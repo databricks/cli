@@ -77,7 +77,7 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 				{"A", "B", "${A.id}"},
 				{"B", "A", "${B.id}"},
 			},
-			cycle: "cycle detected: A refers to B via ${A.id} which refers to A via ${B.id}",
+			cycle: "cycle detected: B refers to A via ${A.id} which refers to B via ${B.id}",
 		},
 		{
 			name: "three-node cycle",
@@ -86,7 +86,7 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 				{"Y", "Z", "e2"},
 				{"Z", "X", "e3"},
 			},
-			cycle: "cycle detected: X refers to Y via e1 Y refers to Z via e2 which refers to X via e3",
+			cycle: "cycle detected: Y refers to X via e1 Z refers to Y via e2 which refers to Z via e3",
 		},
 		{
 			name:         "downstream runs with failed dependency",
@@ -220,4 +220,55 @@ func runTestCase(t *testing.T, tc testCase, g *Graph[stringWrapper], p int) {
 			assert.True(t, slices.Contains(oneOf, *gotPtr), "failedFrom for %s not in %v, got %v", node, oneOf, *gotPtr)
 		}
 	}
+}
+
+func TestOutgoingLabels_OrderAndEmpty(t *testing.T) {
+	g := NewGraph[stringWrapper]()
+	a := stringWrapper{"A"}
+	b := stringWrapper{"B"}
+	c := stringWrapper{"C"}
+
+	// no edges yet
+	require.Empty(t, g.OutgoingLabels(a))
+
+	// add edges from A
+	g.AddDirectedEdge(a, b, "A->B #1")
+	g.AddDirectedEdge(a, c, "A->C #1")
+	g.AddDirectedEdge(a, b, "A->B #1")
+
+	// order preserved as added
+	got := g.OutgoingLabels(a)
+	require.Equal(t, []string{"A->B #1", "A->C #1"}, got)
+
+	// B still has no outgoing edges
+	require.Empty(t, g.OutgoingLabels(b))
+}
+
+func TestOutgoingLabels_DuplicateEdgesDifferentLabels(t *testing.T) {
+	g := NewGraph[stringWrapper]()
+	x := stringWrapper{"X"}
+	y := stringWrapper{"Y"}
+
+	// same (from,to) pair with different labels
+	g.AddDirectedEdge(x, y, "e1")
+	g.AddDirectedEdge(x, y, "e2")
+	g.AddDirectedEdge(x, y, "e3")
+
+	labels := g.OutgoingLabels(x)
+	assert.Equal(t, []string{"e1", "e2", "e3"}, labels)
+}
+
+func TestOutgoingLabels_SameLabelDifferentTargets(t *testing.T) {
+	g := NewGraph[stringWrapper]()
+	a := stringWrapper{"A"}
+	b := stringWrapper{"B"}
+	c := stringWrapper{"C"}
+
+	// same label to different targets should be returned once
+	g.AddDirectedEdge(a, b, "dup")
+	g.AddDirectedEdge(a, c, "dup")
+	g.AddDirectedEdge(a, b, "other")
+
+	labels := g.OutgoingLabels(a)
+	assert.Equal(t, []string{"dup", "other"}, labels)
 }

@@ -1,0 +1,2 @@
+create jobs.bar
+create jobs.foo

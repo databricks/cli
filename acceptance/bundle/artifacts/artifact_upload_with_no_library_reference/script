@@ -1,0 +1,16 @@
+# Create test wheel file
+mkdir -p whl
+echo "test wheel content" > whl/source.whl
+
+trace $CLI bundle deploy
+
+title "Expecting wheel to be uploaded"
+trace jq .path < out.requests.txt | grep import | grep whl | sort
+
+title "Expecting delete request to artifact_path/.internal folder"
+trace jq -s '.[] | select(.path=="/api/2.0/workspace/delete") | select(.body.path | test(".*/artifacts/.internal"))' out.requests.txt
+
+title "Expecting mkdirs request to artifact_path/.internal folder"
+trace jq -s '.[] | select(.path=="/api/2.0/workspace/mkdirs") | select(.body.path | test(".*/artifacts/.internal"))' out.requests.txt
+
+rm out.requests.txt
