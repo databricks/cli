@@ -83,7 +83,7 @@ You can pass additional arguments to psql after a double-dash (--):
 		// Read retry configuration from flags
 		maxRetries, _ := cmd.Flags().GetInt("max-retries")
 
-		retryConfig := &lakebase.RetryConfig{
+		retryConfig := lakebase.RetryConfig{
 			MaxRetries:    maxRetries,       // Retries are disables when max-retries is 0
 			InitialDelay:  time.Second,      // Fixed initial delay
 			MaxDelay:      10 * time.Second, // Fixed max delay
