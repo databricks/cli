@@ -1,6 +1,7 @@
 package structaccess
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config"
@@ -47,24 +48,40 @@ func TestGet_ConfigRoot_JobTagsAccess(t *testing.T) {
 	v, err := GetByString(root, "resources.jobs.my_job.tags.env")
 	require.NoError(t, err)
 	require.Equal(t, "dev", v)
+	require.NoError(t, HasPath(reflect.TypeOf(root), "resources.jobs.my_job.tags.env"))
+	require.NoError(t, HasPath(reflect.TypeOf(root), "resources.jobs.my_job.tags.anything"))
+	require.Error(t, HasPath(reflect.TypeOf(root), "resources.jobs.my_job.tags.env.inner"))
+	require.Error(t, HasPath(reflect.TypeOf(root), "resources.jobs.my_job.tags1"))
 
 	// Leading dot is allowed
 	v, err = GetByString(root, ".resources.jobs.my_job.tags.team")
 	require.NoError(t, err)
 	require.Equal(t, "platform", v)
+	require.NoError(t, HasPath(reflect.TypeOf(root), ".resources.jobs.my_job.tags.team"))
+	require.Error(t, HasPath(reflect.TypeOf(root), ".resources.jobs.my_job.tags.team.inner"))
+	require.Error(t, HasPath(reflect.TypeOf(root), ".resources.jobs.my_job.tags1"))
 
-	// Access into first task
+	// Array indexing test (1)
 	v, err = GetByString(root, "resources.jobs.my_job.tasks[0].task_key")
 	require.NoError(t, err)
 	require.Equal(t, "t1", v)
+	require.NoError(t, HasPath(reflect.TypeOf(root), "resources.jobs.my_job.tasks[0].task_key"))
+	require.Error(t, HasPath(reflect.TypeOf(root), "resources.jobs.my_job.tasks[0].task_key.inner"))
+	require.Error(t, HasPath(reflect.TypeOf(root), "resources.jobs.my_job.tasks[0].task_key1"))
 
-	// Test index access
+	// Array indexing test (2)
 	v, err = GetByString(root, "resources.jobs.my_job.tasks[0].notebook_task.notebook_path")
 	require.NoError(t, err)
 	require.Equal(t, "/Workspace/Users/user@example.com/nb", v)
+	require.NoError(t, HasPath(reflect.TypeOf(root), "resources.jobs.my_job.tasks[0].notebook_task.notebook_path"))
+	require.Error(t, HasPath(reflect.TypeOf(root), "resources.jobs.my_job.tasks[0].notebook_task.notebook_path.inner"))
+	require.Error(t, HasPath(reflect.TypeOf(root), "resources.jobs.my_job.tasks[0].notebook_task.notebook_path1"))
 
-	// Test ambiguous field access
+	// Test ambiguous field access: outer is ignored because it has bundle tag
 	v, err = GetByString(root, "resources.apps.my_app.url")
 	require.NoError(t, err)
 	require.Equal(t, "app_inner_url", v)
+	require.NoError(t, HasPath(reflect.TypeOf(root), "resources.apps.my_app.url"))
+	require.Error(t, HasPath(reflect.TypeOf(root), "resources.apps.my_app.url.inner"))
+	require.Error(t, HasPath(reflect.TypeOf(root), "resources.apps.my_app.url1"))
 }
