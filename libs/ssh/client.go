@@ -112,7 +112,7 @@ func RunClient(ctx context.Context, client *databricks.WorkspaceClient, opts Cli
 		return startSSHProxy(ctx, client, opts.ClusterID, serverPort, opts.HandoverTimeout)
 	} else {
 		cmdio.LogString(ctx, fmt.Sprintf("Additional SSH arguments: %v", opts.AdditionalArgs))
-		return spawnSSHClient(ctx, opts.ClusterID, userName, privateKeyPath, serverPort, opts.AdditionalArgs)
+		return spawnSSHClient(ctx, opts.ClusterID, userName, privateKeyPath, serverPort, opts.HandoverTimeout, opts.AdditionalArgs)
 	}
 }
 
@@ -236,14 +236,14 @@ func submitSSHTunnelJob(ctx context.Context, client *databricks.WorkspaceClient,
 	return runResult.Response.RunId, nil
 }
 
-func spawnSSHClient(ctx context.Context, clusterID, userName, privateKeyPath string, serverPort int, additionalArgs []string) error {
+func spawnSSHClient(ctx context.Context, clusterID, userName, privateKeyPath string, serverPort int, handoverTimeout time.Duration, additionalArgs []string) error {
 	executablePath, err := os.Executable()
 	if err != nil {
 		return fmt.Errorf("failed to get current executable path: %w", err)
 	}
 
-	proxyCommand := fmt.Sprintf("%s ssh connect --proxy --cluster=%s --metadata=%s,%d",
-		executablePath, clusterID, userName, serverPort)
+	proxyCommand := fmt.Sprintf("%s ssh connect --proxy --cluster=%s --handover-timeout=%s --metadata=%s,%d",
+		executablePath, clusterID, handoverTimeout.String(), userName, serverPort)
 
 	sshArgs := []string{
 		"-l", userName,
