@@ -9,33 +9,40 @@
             "pattern": "^[A-Za-z0-9_]+$",
             "pattern_match_failure_message": "Name must consist of letters, numbers, and underscores."
         },
-        "include_notebook": {
+        "project_name_short": {
+            "skip_prompt_if": {},
             "type": "string",
-            "default": "yes",
-            "enum": ["yes", "no"],
-            "description": "Include a stub (sample) notebook in '{{.project_name}}{{path_separator}}src'",
+            "default": "{{index ((regexp \"^(.*)_project$\").FindStringSubmatch .project_name) 1}}",
+            "description": "Short name for the project (without _project suffix)",
             "order": 2
         },
-        "include_dlt": {
+        "include_job": {
             "type": "string",
             "default": "yes",
             "enum": ["yes", "no"],
-            "description": "Include a stub (sample) Lakeflow Declarative Pipeline in '{{.project_name}}{{path_separator}}src'",
+            "description": "Include a Lakeflow job that runs a notebook in '{{.project_name}}{{path_separator}}resources'",
             "order": 3
+        },
+        "include_pipeline": {
+            "type": "string",
+            "default": "yes",
+            "enum": ["yes", "no"],
+            "description": "Include a Lakeflow pipeline in '{{.project_name}}{{path_separator}}resources'",
+            "order": 4
         },
         "include_python": {
             "type": "string",
             "default": "yes",
             "enum": ["yes", "no"],
-            "description": "Include a stub (sample) Python package in '{{.project_name}}{{path_separator}}src'",
-            "order": 4
+            "description": "Include a Python package with a build configuration in '{{.project_name}}{{path_separator}}lib'",
+            "order": 5
         },
         "serverless": {
             "type": "string",
             "default": "yes",
             "enum": ["yes", "no"],
             "description": "Use serverless compute",
-            "order": 5
+            "order": 6
         }
     },
     "success_message": "Workspace to use (auto-detected, edit in '{{.project_name}}/databricks.yml'): {{workspace_host}}\n\n✨ Your new project has been created in the '{{.project_name}}' directory!\n\nPlease refer to the README.md file for \"getting started\" instructions.\nSee also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html."

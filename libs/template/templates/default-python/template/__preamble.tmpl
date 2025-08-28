@@ -4,29 +4,22 @@ This file only template directives; it is skipped for the actual output.
 
 {{skip "__preamble"}}
 
-{{$notDLT := not (eq .include_dlt "yes")}}
-{{$notNotebook := not (eq .include_notebook "yes")}}
-{{$notPython := not (eq .include_python "yes")}}
+{{$notPipeline := not (eq .include_pipeline "yes")}}
+{{$notJob := not (eq .include_job "yes")}}
+{{$notPythonPackage := not (eq .include_python "yes")}}
 
-{{if $notPython}}
-  {{skip "{{.project_name}}/src/{{.project_name}}"}}
-  {{skip "{{.project_name}}/tests/main_test.py"}}
-  {{skip "{{.project_name}}/setup.py"}}
-  {{skip "{{.project_name}}/pytest.ini"}}
-  {{skip "{{.project_name}}/requirements-dev.txt"}}
+{{if $notPythonPackage}}
+  {{skip "{{.project_name}}/lib/{{.project_name}}"}}
 {{end}}
 
-{{if $notDLT}}
-  {{skip "{{.project_name}}/src/pipeline.ipynb"}}
-  {{skip "{{.project_name}}/resources/{{.project_name}}.pipeline.yml"}}
+{{if $notPipeline}}
+  {{skip "{{.project_name}}/resources/{{.project_name_short}}_pipeline"}}
 {{end}}
 
-{{if $notNotebook}}
-  {{skip "{{.project_name}}/src/notebook.ipynb"}}
+{{if $notJob}}
+  {{skip "{{.project_name}}/resources/{{.project_name_short}}_job"}}
 {{end}}
 
-{{if (and $notDLT $notNotebook $notPython)}}
-  {{skip "{{.project_name}}/resources/{{.project_name}}.job.yml"}}
-{{else}}
+{{if not (or $notPipeline $notJob)}}
   {{skip "{{.project_name}}/resources/.gitkeep"}}
 {{end}}

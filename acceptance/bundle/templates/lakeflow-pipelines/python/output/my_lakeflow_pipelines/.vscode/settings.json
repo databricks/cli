@@ -1,19 +1,31 @@
 {
-    "python.analysis.stubPath": ".vscode",
-    "databricks.python.envFile": "${workspaceFolder}/.env",
     "jupyter.interactiveWindow.cellMarker.codeRegex": "^# COMMAND ----------|^# Databricks notebook source|^(#\\s*%%|#\\s*\\<codecell\\>|#\\s*In\\[\\d*?\\]|#\\s*In\\[ \\])",
     "jupyter.interactiveWindow.cellMarker.default": "# COMMAND ----------",
     "python.testing.pytestArgs": [
         "."
     ],
-    "python.testing.unittestEnabled": false,
-    "python.testing.pytestEnabled": true,
-    "python.analysis.extraPaths": ["resources/my_lakeflow_pipelines_pipeline"],
     "files.exclude": {
         "**/*.egg-info": true,
         "**/__pycache__": true,
         ".pytest_cache": true,
     },
+
+    // Pylance settings (VS Code)
+    "python.analysis.extraPaths": ["src", "resources"],
+    "python.analysis.typeCheckingMode": "basic",
+    "python.analysis.diagnosticMode": "workspace",
+    "python.analysis.stubPath": ".vscode",
+
+    // Pyright settings (Cursor)
+    "cursorpyright.analysis.extraPaths": ["src", "resources"],
+    "cursorpyright.analysis.typeCheckingMode": "basic",
+    "cursorpyright.analysis.diagnosticMode": "workspace",
+    "cursorpyright.analysis.stubPath": ".vscode",
+
+    // General Python settings
+    "python.defaultInterpreterPath": "./.venv/bin/python",
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true,
     "[python]": {
         "editor.defaultFormatter": "ms-python.black-formatter",
         "editor.formatOnSave": true,

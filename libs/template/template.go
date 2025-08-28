@@ -38,7 +38,7 @@ const (
 var databricksTemplates = []Template{
 	{
 		name:        DefaultPython,
-		description: "The default Python template for Notebooks and Lakeflow",
+		description: "The default Python template, using Python files or notebooks with Lakeflow",
 		Reader:      &builtinReader{name: string(DefaultPython)},
 		Writer:      &writerWithFullTelemetry{defaultWriter: defaultWriter{name: DefaultPython}},
 	},

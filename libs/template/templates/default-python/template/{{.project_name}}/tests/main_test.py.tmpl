@@ -1,6 +1,8 @@
-from {{.project_name}} import main
+from {{.project_name}}.main import find_all_taxis
+from databricks.sdk.runtime import spark
+from pyspark.sql import DataFrame
 
 
 def test_find_all_taxis():
-    taxis = main.find_all_taxis()
+    taxis = find_all_taxis()
     assert taxis.count() > 5

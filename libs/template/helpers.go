@@ -8,9 +8,8 @@ import (
 	"net/url"
 	"os"
 	"regexp"
-	"slices"
-	"strings"
 	"text/template"
+	"time"
 
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/iamutil"
@@ -38,12 +37,6 @@ var (
 	cachedIsServicePrincipal *bool
 	cachedCatalog            *string
 )
-
-var metastoreDisabledErrorCodes = []string{
-	"PERMISSION_DENIED",
-	"METASTORE_DOES_NOT_EXIST", // Default metastore is not assigned to the workspace.
-	"FEATURE_DISABLED",         // Unity Catalog is not available for feature tier STANDARD_TIER.
-}
 
 // UUID that is stable for the duration of the template execution. This can be used
 // to populate the `bundle.uuid` field in databricks.yml by template authors.
@@ -95,6 +88,10 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 				result[p.k] = p.v
 			}
 			return result
+		},
+		"short_date_time": func() string {
+			now := time.Now()
+			return fmt.Sprintf("%s_%02d_%02d%02d", now.Format("jan"), now.Day(), now.Hour(), now.Minute())
 		},
 		// Get smallest node type (follows Terraform's GetSmallestNodeType)
 		"smallest_node_type": func() (string, error) {
@@ -148,7 +145,7 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 				metastore, err := w.Metastores.Current(ctx)
 				if err != nil {
 					var aerr *apierr.APIError
-					if errors.As(err, &aerr) && slices.Contains(metastoreDisabledErrorCodes, aerr.ErrorCode) {
+					if errors.As(err, &aerr) && (aerr.ErrorCode == "PERMISSION_DENIED" || aerr.ErrorCode == "METASTORE_DOES_NOT_EXIST") {
 						// Ignore: access denied or workspace doesn't have a metastore assigned
 						empty_default := ""
 						cachedCatalog = &empty_default
@@ -174,12 +171,6 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 			result := iamutil.IsServicePrincipal(cachedUser)
 			cachedIsServicePrincipal = &result
 			return result, nil
-		},
-		"lower": func(s string) string {
-			return strings.ToLower(s)
-		},
-		"upper": func(s string) string {
-			return strings.ToUpper(s)
 		},
 	}
 }
