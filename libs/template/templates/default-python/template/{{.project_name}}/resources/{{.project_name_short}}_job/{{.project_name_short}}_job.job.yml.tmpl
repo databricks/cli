@@ -1,11 +1,11 @@
-# The main job for {{.project_name}}.
+# A sample job for {{.project_name}}.
 
 {{$with_serverless := (eq .serverless "yes") -}}
 
 resources:
   jobs:
-    {{.project_name_short}}_job:
-      name: {{.project_name_short}}_job
+    sample_job:
+      name: sample_job
 
       trigger:
         # Run this job every day, exactly one day from the last run; see https://docs.databricks.com/api/workspace/jobs/create#trigger
@@ -37,9 +37,8 @@ resources:
           environment_key: default
           {{- else }}
           job_cluster_key: job_cluster{{end}}
-          python_wheel_task:
-            package_name: {{.project_name}}
-            entry_point: main
+          spark_python_task:
+            python_file: sample_python_file.py
           {{- if not $with_serverless }}
           libraries:
             # By default we just include the .whl file generated for the {{.project_name}} package.
