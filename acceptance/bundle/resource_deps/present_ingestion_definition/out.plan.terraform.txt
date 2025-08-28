@@ -1,0 +1,16 @@
+Error: exit status 1
+
+Error: Missing required argument
+
+  with databricks_pipeline.foo,
+  on bundle.tf.json line 31, in resource.databricks_pipeline.foo:
+  31:         "ingestion_definition": {
+  32:           "connection_name": "myconn"
+  33:         },
+
+"ingestion_definition": all of
+`ingestion_definition,ingestion_definition.0.objects` must be specified
+
+
+
+Exit code: 1
