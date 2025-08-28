@@ -1,15 +1,12 @@
 Error: exit status 1
 
-Error: Missing required argument
+Error: Invalid operation
 
-  with databricks_pipeline.foo,
-  on bundle.tf.json line 31, in resource.databricks_pipeline.foo:
-  31:         "ingestion_definition": {
-  32:           "connection_name": "myconn"
-  33:         },
+  on bundle.tf.json line 22, in resource.databricks_pipeline.bar:
+  22:         "name": "pbar ${databricks_pipeline.foo.ingestion_definition.connection_name}"
 
-"ingestion_definition": all of
-`ingestion_definition,ingestion_definition.0.objects` must be specified
+Block type "ingestion_definition" is represented by a list of objects, so it
+must be indexed using a numeric key, like .ingestion_definition[0].
 
 
 
