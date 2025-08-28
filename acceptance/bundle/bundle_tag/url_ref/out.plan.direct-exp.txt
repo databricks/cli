@@ -1,4 +1,4 @@
-Error: cannot resolve ${resources.jobs.foo.url}: url: field "url" not found in resources.Job
+Error: schema mismatch for ${resources.jobs.foo.url}: url: field "url" not found in resources.Job
 
 Error: cannot plan jobs.bar: dependency failed: jobs.foo
 

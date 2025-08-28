@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
 	"slices"
 
 	"github.com/databricks/cli/bundle"
@@ -177,9 +178,14 @@ func CalculatePlanForDeploy(ctx context.Context, b *bundle.Bundle) error {
 				logdiag.LogError(ctx, fmt.Errorf("cannot parse path %s: %w", fieldPath, err))
 				return false
 			}
+			validationErr := structaccess.Validate(reflect.TypeOf(config), dynPath)
+			if validationErr != nil {
+				logdiag.LogError(ctx, fmt.Errorf("schema mismatch for %s: %w", reference, validationErr))
+				return false
+			}
 			value, err := structaccess.Get(config, dynPath)
 			if err != nil {
-				logdiag.LogError(ctx, fmt.Errorf("cannot resolve %s: %w", reference, err))
+				logdiag.LogError(ctx, fmt.Errorf("field not set %s: %w", reference, err))
 				return false
 			}
 			err = resolveFieldReference(ctx, b, path, value)
