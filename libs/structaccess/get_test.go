@@ -219,7 +219,7 @@ func runCommonTests(t *testing.T, obj any) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := Get(obj, tt.path)
+			got, err := GetByString(obj, tt.path)
 			if tt.errFmt != "" {
 				require.EqualError(t, err, tt.errFmt)
 				return
@@ -316,7 +316,7 @@ func runOmitEmptyTests(t *testing.T, obj any, wantNil bool) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := Get(obj, tt.path)
+			got, err := GetByString(obj, tt.path)
 			require.NoError(t, err)
 			require.Equal(t, tt.want, got)
 		})
@@ -330,7 +330,7 @@ func TestGet_Embedded_NilPointerAnonymousNotDescended(t *testing.T) {
 	type host struct {
 		*embedded
 	}
-	_, err := Get(host{}, "hidden")
+	_, err := GetByString(host{}, "hidden")
 	typeName := reflect.TypeOf(host{}).String()
 	require.EqualError(t, err, "hidden: field \"hidden\" not found in "+typeName)
 }
@@ -343,14 +343,14 @@ func TestGet_Embedded_ValueAnonymousResolved(t *testing.T) {
 		embedded
 	}
 	in := host{embedded: embedded{Hidden: "x"}}
-	got, err := Get(in, "hidden")
+	got, err := GetByString(in, "hidden")
 	require.NoError(t, err)
 	require.Equal(t, "x", got)
 }
 
 func TestGet_InterfaceRoot_Unwraps(t *testing.T) {
 	v := any(makeOuterNoFSF())
-	got, err := Get(v, "items[0].id")
+	got, err := GetByString(v, "items[0].id")
 	require.NoError(t, err)
 	require.Equal(t, "i0", got)
 }
@@ -363,15 +363,15 @@ func TestGet_BundleTag_SkipsDirect(t *testing.T) {
 	}
 
 	// Direct readonly/internal fields should be invisible
-	_, err := Get(S{A: "x", B: "y", C: "z"}, "a")
+	_, err := GetByString(S{A: "x", B: "y", C: "z"}, "a")
 	typeName := reflect.TypeOf(S{}).String()
 	require.EqualError(t, err, "a: field \"a\" not found in "+typeName)
 
-	_, err = Get(S{}, "b")
+	_, err = GetByString(S{}, "b")
 	require.EqualError(t, err, "b: field \"b\" not found in "+typeName)
 
 	// Visible field works
-	v, err := Get(S{C: "z"}, "c")
+	v, err := GetByString(S{C: "z"}, "c")
 	require.NoError(t, err)
 	require.Equal(t, "z", v)
 }
@@ -384,7 +384,7 @@ func TestGet_BundleTag_SkipsPromoted(t *testing.T) {
 		embedded
 	}
 	// Promoted readonly field should be invisible
-	_, err := Get(host{embedded: embedded{Hidden: "x"}}, "hidden")
+	_, err := GetByString(host{embedded: embedded{Hidden: "x"}}, "hidden")
 	typeName := reflect.TypeOf(host{}).String()
 	require.EqualError(t, err, "hidden: field \"hidden\" not found in "+typeName)
 }

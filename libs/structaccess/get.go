@@ -9,7 +9,8 @@ import (
 	"github.com/databricks/cli/libs/structdiff/structtag"
 )
 
-// Get returns the value at the given path inside v.
+// GetByString returns the value at the given path inside v.
+// This is a convenience function that parses the path string and calls Get.
 //
 // Path grammar (compatible with dyn path):
 //   - Struct field names and map keys separated by '.' (e.g., connection.id)
@@ -23,19 +24,28 @@ import (
 //   - For maps: a key indexes map[string]T (or string alias key types).
 //   - For slices/arrays: an index [N] selects the N-th element.
 //   - Wildcards ("*" or "[*]") are not supported and return an error.
-func Get(v any, path string) (any, error) {
+func GetByString(v any, path string) (any, error) {
 	if path == "" {
 		return v, nil
 	}
 
-	p, err := dyn.NewPathFromString(path)
+	dynPath, err := dyn.NewPathFromString(path)
 	if err != nil {
 		return nil, err
 	}
 
+	return Get(v, dynPath)
+}
+
+// Get returns the value at the given path inside v.
+func Get(v any, path dyn.Path) (any, error) {
+	if len(path) == 0 {
+		return v, nil
+	}
+
 	cur := reflect.ValueOf(v)
 	prefix := ""
-	for _, c := range p {
+	for _, c := range path {
 		var ok bool
 		cur, ok = deref(cur)
 		if !ok {
