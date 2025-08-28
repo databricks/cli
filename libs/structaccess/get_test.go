@@ -343,8 +343,7 @@ func TestGet_Embedded_NilPointerAnonymousNotDescended(t *testing.T) {
 	}
 	require.NoError(t, ValidateByString(reflect.TypeOf(host{}), "hidden"))
 	_, err := GetByString(host{}, "hidden")
-	typeName := reflect.TypeOf(host{}).String()
-	require.EqualError(t, err, "hidden: field \"hidden\" not found in "+typeName)
+	require.EqualError(t, err, "hidden: field \"hidden\" not found in structaccess.host")
 }
 
 func TestGet_Embedded_ValueAnonymousResolved(t *testing.T) {
@@ -377,16 +376,18 @@ func TestGet_BundleTag_SkipsDirect(t *testing.T) {
 
 	// Direct readonly/internal fields should be invisible
 	_, err := GetByString(S{A: "x", B: "y", C: "z"}, "a")
-	typeName := reflect.TypeOf(S{}).String()
-	require.EqualError(t, err, "a: field \"a\" not found in "+typeName)
+	require.EqualError(t, err, "a: field \"a\" not found in structaccess.S")
+	require.EqualError(t, ValidateByString(reflect.TypeOf(S{}), "a"), "a: field \"a\" not found in structaccess.S")
 
 	_, err = GetByString(S{}, "b")
-	require.EqualError(t, err, "b: field \"b\" not found in "+typeName)
+	require.EqualError(t, err, "b: field \"b\" not found in structaccess.S")
+	require.EqualError(t, ValidateByString(reflect.TypeOf(S{}), "b"), "b: field \"b\" not found in structaccess.S")
 
 	// Visible field works
 	v, err := GetByString(S{C: "z"}, "c")
 	require.NoError(t, err)
 	require.Equal(t, "z", v)
+	require.NoError(t, ValidateByString(reflect.TypeOf(S{}), "c"))
 }
 
 func TestGet_BundleTag_SkipsPromoted(t *testing.T) {
@@ -398,6 +399,6 @@ func TestGet_BundleTag_SkipsPromoted(t *testing.T) {
 	}
 	// Promoted readonly field should be invisible
 	_, err := GetByString(host{embedded: embedded{Hidden: "x"}}, "hidden")
-	typeName := reflect.TypeOf(host{}).String()
-	require.EqualError(t, err, "hidden: field \"hidden\" not found in "+typeName)
+	require.EqualError(t, err, "hidden: field \"hidden\" not found in structaccess.host")
+	require.EqualError(t, ValidateByString(reflect.TypeOf(host{}), "hidden"), "hidden: field \"hidden\" not found in structaccess.host")
 }

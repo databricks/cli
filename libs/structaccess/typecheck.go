@@ -51,15 +51,9 @@ func Validate(t reflect.Type, path dyn.Path) error {
 
 			switch cur.Kind() {
 			case reflect.Struct:
-				sf, owner, ok := findStructFieldByKeyType(cur, c.Key())
+				sf, _, ok := findStructFieldByKeyType(cur, c.Key())
 				if !ok {
 					return fmt.Errorf("%s: field %q not found in %s", newPrefix, c.Key(), cur.String())
-				}
-				// Respect bundle tag on the resolved field and owner as in value-based access.
-				// Fields marked readonly/internal are considered inaccessible.
-				btag := structtag.BundleTag(sf.Tag.Get("bundle"))
-				if btag.Internal() || btag.ReadOnly() {
-					return fmt.Errorf("%s: field %q not found in %s", newPrefix, c.Key(), owner.String())
 				}
 				cur = sf.Type
 			case reflect.Map:
