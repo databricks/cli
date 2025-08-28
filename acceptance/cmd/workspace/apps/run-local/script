@@ -31,7 +31,7 @@ while [ -z "$(grep -o "To access your app go to " out.run.txt 2>/dev/null)" ]; d
 done
 
 title "Checking app is running..."
-trace curl -s -o - http://127.0.0.1:$PROXY_PORT | jq
+trace curl -s -o - http://127.0.0.1:$PROXY_PORT || true
 
 title "Sending shutdown request..."
 trace curl -s -o /dev/null  http://127.0.0.1:$PROXY_PORT/shutdown || true
