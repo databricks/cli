@@ -211,6 +211,7 @@ func CalculatePlanForDeploy(ctx context.Context, b *bundle.Bundle) error {
 				continue
 			}
 			b.PlannedActions[n] = deployplan.ActionTypeDelete
+			b.Graph.AddNode(n)
 		}
 	}
 
