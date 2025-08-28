@@ -95,6 +95,7 @@ import (
 	serving_endpoints "github.com/databricks/cli/cmd/workspace/serving-endpoints"
 	settings "github.com/databricks/cli/cmd/workspace/settings"
 	shares "github.com/databricks/cli/cmd/workspace/shares"
+	statement_execution "github.com/databricks/cli/cmd/workspace/statement-execution"
 	storage_credentials "github.com/databricks/cli/cmd/workspace/storage-credentials"
 	system_schemas "github.com/databricks/cli/cmd/workspace/system-schemas"
 	table_constraints "github.com/databricks/cli/cmd/workspace/table-constraints"
@@ -210,6 +211,7 @@ func All() []*cobra.Command {
 	out = append(out, serving_endpoints.New())
 	out = append(out, settings.New())
 	out = append(out, shares.New())
+	out = append(out, statement_execution.New())
 	out = append(out, storage_credentials.New())
 	out = append(out, system_schemas.New())
 	out = append(out, table_constraints.New())
