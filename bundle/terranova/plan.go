@@ -141,7 +141,7 @@ func CalculatePlanForDeploy(ctx context.Context, b *bundle.Bundle) error {
 			settings:     settings,
 		}
 
-		config, ok := b.GetResourceConfig(pl.group, pl.resourceName)
+		config, ok := b.Config.GetResourceConfig(pl.group, pl.resourceName)
 		if !ok {
 			logdiag.LogError(ctx, fmt.Errorf("%s: internal error: cannot read config", errorPrefix))
 			return false

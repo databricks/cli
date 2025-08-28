@@ -100,7 +100,7 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 			return false
 		}
 
-		config, ok := b.GetResourceConfig(node.Group, node.Key)
+		config, ok := b.Config.GetResourceConfig(node.Group, node.Key)
 		if !ok {
 			logdiag.LogError(ctx, fmt.Errorf("%s: internal error when reading config", errorPrefix))
 			return false
