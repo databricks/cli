@@ -1,0 +1,8 @@
+Error: field not set ${resources.pipelines.foo.ingestion_definition.connection_name}: ingestion_definition.connection_name: cannot access key "connection_name" on invalid
+
+Error: cannot plan pipelines.bar: dependency failed: pipelines.foo
+
+Error: planning failed
+
+
+Exit code (musterr): 1
