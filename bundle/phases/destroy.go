@@ -11,7 +11,6 @@ import (
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/statemgmt"
-	"github.com/databricks/cli/bundle/terranova"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
@@ -33,11 +32,19 @@ func assertRootPathExists(ctx context.Context, b *bundle.Bundle) (bool, error) {
 
 func getDeleteActions(ctx context.Context, b *bundle.Bundle) ([]deployplan.Action, error) {
 	if b.DirectDeployment {
-		err := terranova.CalculatePlanForDestroy(ctx, b)
+		path, err := b.StateLocalPath(ctx)
 		if err != nil {
 			return nil, err
 		}
-		return terranova.GetDeployActions(ctx, b), nil
+		err = b.BundleDeployer.OpenDB(path)
+		if err != nil {
+			return nil, err
+		}
+		err = b.BundleDeployer.CalculatePlanForDestroy(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return b.BundleDeployer.GetActions(ctx), nil
 	}
 
 	tf := b.Terraform
@@ -116,7 +123,7 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 
 func destroyCore(ctx context.Context, b *bundle.Bundle) {
 	if b.DirectDeployment {
-		bundle.ApplyContext(ctx, b, terranova.TerranovaApply())
+		b.BundleDeployer.Deploy(ctx, b.WorkspaceClient(), &b.Config)
 	} else {
 		// Core destructive mutators for destroy. These require informed user consent.
 		bundle.ApplyContext(ctx, b, terraform.Apply())

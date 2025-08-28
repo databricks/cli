@@ -37,11 +37,16 @@ func (l *load) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	var err error
 
 	if b.DirectDeployment {
-		err = b.OpenResourceDatabase(ctx)
+		path, err := b.StateLocalPath(ctx)
 		if err != nil {
 			return diag.FromErr(err)
 		}
-		state = b.ResourceDatabase.ExportState(ctx)
+		err = b.BundleDeployer.OpenDB(path)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+		b.BundleDeployer.StateDB.AssertOpened()
+		state = b.BundleDeployer.StateDB.ExportState(ctx)
 	} else {
 		tf := b.Terraform
 		if tf == nil {
