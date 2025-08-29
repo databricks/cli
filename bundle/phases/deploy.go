@@ -124,7 +124,7 @@ func deployCore(ctx context.Context, b *bundle.Bundle) {
 	cmdio.LogString(ctx, "Deploying resources...")
 
 	if b.DirectDeployment {
-		b.BundleDeployer.Deploy(ctx, b.WorkspaceClient(), &b.Config)
+		b.BundleDeployer.Apply(ctx, b.WorkspaceClient(), &b.Config)
 	} else {
 		bundle.ApplyContext(ctx, b, terraform.Apply())
 	}

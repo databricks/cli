@@ -10,7 +10,7 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 )
 
-func (b *BundleDeployer) Deploy(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root) {
+func (b *BundleDeployer) Apply(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root) {
 	if b.Graph == nil {
 		panic("Planning is not done")
 	}
