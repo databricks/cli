@@ -7,23 +7,20 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structdiff"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
 type ResourceVolume struct {
-	client      *databricks.WorkspaceClient
-	config      catalog.CreateVolumeRequestContent
-	remoteState *catalog.VolumeInfo
+	client *databricks.WorkspaceClient
+	config catalog.CreateVolumeRequestContent
 }
 
 func NewResourceVolume(client *databricks.WorkspaceClient, schema *resources.Volume) (*ResourceVolume, error) {
 	return &ResourceVolume{
-		client:      client,
-		config:      schema.CreateVolumeRequestContent,
-		remoteState: nil,
+		client: client,
+		config: schema.CreateVolumeRequestContent,
 	}, nil
 }
 
@@ -31,28 +28,19 @@ func (r *ResourceVolume) Config() any {
 	return r.config
 }
 
-func (r *ResourceVolume) RemoteState() any {
-	return r.remoteState
+func (r *ResourceVolume) DoRefresh(ctx context.Context, id string) (any, error) {
+	return r.client.Volumes.ReadByName(ctx, id)
 }
 
-func (r *ResourceVolume) DoRefresh(ctx context.Context, id string) error {
-	response, err := r.client.Volumes.ReadByName(ctx, id)
-	if err != nil {
-		return err
-	}
-	r.remoteState = response
-	return nil
-}
-
-func (r *ResourceVolume) DoCreate(ctx context.Context) (string, error) {
+func (r *ResourceVolume) DoCreate(ctx context.Context) (string, any, error) {
 	response, err := r.client.Volumes.Create(ctx, r.config)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
-	return response.FullName, nil
+	return response.FullName, response, nil
 }
 
-func (r *ResourceVolume) DoUpdate(ctx context.Context, id string) error {
+func (r *ResourceVolume) DoUpdate(ctx context.Context, id string) (any, error) {
 	updateRequest := catalog.UpdateVolumeRequestContent{
 		Comment: r.config.Comment,
 		Name:    id,
@@ -64,26 +52,17 @@ func (r *ResourceVolume) DoUpdate(ctx context.Context, id string) error {
 
 	nameFromID, err := getNameFromID(id)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if r.config.Name != nameFromID {
-		return fmt.Errorf("internal error: unexpected change of name from %#v to %#v", nameFromID, r.config.Name)
+		return nil, fmt.Errorf("internal error: unexpected change of name from %#v to %#v", nameFromID, r.config.Name)
 	}
 
-	response, err := r.client.Volumes.Update(ctx, updateRequest)
-	if err != nil {
-		return err
-	}
-
-	if id != response.FullName {
-		log.Warnf(ctx, "volumes: response contains unexpected full_name=%#v (expected %#v)", response.FullName, id)
-	}
-
-	return nil
+	return r.client.Volumes.Update(ctx, updateRequest)
 }
 
-func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string) (string, error) {
+func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string) (string, any, error) {
 	updateRequest := catalog.UpdateVolumeRequestContent{
 		Comment: r.config.Comment,
 		Name:    id,
@@ -96,7 +75,7 @@ func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string) (string,
 
 	items := strings.Split(id, ".")
 	if len(items) == 0 {
-		return "", fmt.Errorf("unexpected id=%#v", id)
+		return "", nil, fmt.Errorf("unexpected id=%#v", id)
 	}
 	nameFromID := items[len(items)-1]
 
@@ -105,11 +84,11 @@ func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string) (string,
 	}
 
 	response, err := r.client.Volumes.Update(ctx, updateRequest)
-	if err != nil {
-		return "", err
+	if err != nil || response == nil {
+		return "", nil, err
 	}
 
-	return response.FullName, nil
+	return response.FullName, response, nil
 }
 
 func DeleteVolume(ctx context.Context, client *databricks.WorkspaceClient, id string) error {
@@ -123,6 +102,16 @@ func (r *ResourceVolume) ClassifyChanges(changes []structdiff.Change) deployplan
 		}
 	}
 	return deployplan.ActionTypeUpdate
+}
+
+func (r *ResourceVolume) WaitAfterCreate(ctx context.Context) (any, error) {
+	// Intentional no-op
+	return nil, nil
+}
+
+func (r *ResourceVolume) WaitAfterUpdate(ctx context.Context) (any, error) {
+	// Intentional no-op
+	return nil, nil
 }
 
 func getNameFromID(id string) (string, error) {

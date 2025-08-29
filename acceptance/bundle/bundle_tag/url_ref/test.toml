@@ -1,1 +1,2 @@
+Badness = "Error message in direct is developer-focussed, includes struct names that were checked; could be made more user friendly and point to the right doc and maybe even give a list of allowed fields"
 RecordRequests = true

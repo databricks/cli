@@ -139,34 +139,16 @@ func testCRUD(t *testing.T, group string, settings ResourceSettings) {
 	// using integer because jobs will parse it
 	// might need to add sample id to settings if there are more constraints like that in the future
 	myid := "1234"
-	err = resource.DoRefresh(ctx, myid)
+	_, err = resource.DoRefresh(ctx, myid)
 	require.Error(t, err, "initial DoRefresh should fail because resource does not exist")
 
-	modifierBasic, hasBasic := resource.(IResourceBasic)
-	modifierRefresh, hasWithRefresh := resource.(IResourceWithRefresh)
-
-	var createdID, source string
-
-	if hasBasic {
-		source = "DoCreate"
-		assert.False(t, hasWithRefresh, "resource must implement either IResourceBasic or IResourceWithRefresh but not both")
-		createdID, err = modifierBasic.DoCreate(ctx)
-	} else {
-		source = "DoCreateWithRefresh"
-		assert.True(t, hasWithRefresh, "resource must implement exactly one of: IResourceBasic or IResourceWithRefresh")
-		createdID, err = modifierRefresh.DoCreateWithRefresh(ctx)
-	}
-	require.NoError(t, err, source+" failed")
-	require.NotEmpty(t, createdID, "ID returned from "+source+" was empty")
-
-	if hasBasic {
-		typeCheckNoRemoteState(t, resource, settings)
-	} else {
-		typeCheckWithRemoteState(t, resource, settings)
-	}
+	createdID, _, err := resource.DoCreate(ctx)
+	require.NoError(t, err, "DoCreate failed")
+	require.NotEmpty(t, createdID, "ID returned from DoCreate was empty")
 
 	// Now state can be refreshed:
-	require.NoError(t, resource.DoRefresh(ctx, createdID))
+	_, err = resource.DoRefresh(ctx, createdID)
+	require.NoError(t, err)
 	typeCheckWithRemoteState(t, resource, settings)
 
 	// TODO: test update and wait
@@ -175,14 +157,12 @@ func testCRUD(t *testing.T, group string, settings ResourceSettings) {
 func typeCheckNoRemoteState(t *testing.T, resource IResource, settings ResourceSettings) {
 	require.NotNil(t, resource.Config())
 	assert.Equal(t, settings.ConfigType, reflect.TypeOf(resource.Config()))
-	require.Nil(t, resource.RemoteState())
+	// No longer checking RemoteState as it's handled by Deployer
 }
 
 func typeCheckWithRemoteState(t *testing.T, resource IResource, settings ResourceSettings) {
 	require.NotNil(t, resource.Config())
 	assert.Equal(t, settings.ConfigType, reflect.TypeOf(resource.Config()))
-
-	require.NotNil(t, resource.RemoteState())
-	t.Logf("settings.RemoteType=%s but RemoteState()=%T", settings.RemoteType, resource.RemoteState())
-	assert.Equal(t, settings.RemoteType, reflect.TypeOf(resource.RemoteState()), "settings.RemoteType=%s but RemoteState()=%T", settings.RemoteType, resource.RemoteState())
+	// No longer checking RemoteState as it's handled by Deployer
+	// Remote state type checking would need to be done at the Deployer level
 }

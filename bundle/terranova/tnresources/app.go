@@ -17,17 +17,12 @@ type ResourceApp struct {
 	// config is fully resolved snapshot of configuration of the resource; this is what is going to be used for create / update
 	// it is populated once by NewResource*
 	config apps.App
-
-	// remoteState is remote view of the resource, fetched from the backend. It is updated by all *Refresh methods.
-	// It is always a pointer as it's a nil for new resource; it may be different type from config.
-	remoteState *apps.App
 }
 
 func NewResourceApp(client *databricks.WorkspaceClient, config *resources.App) (*ResourceApp, error) {
 	return &ResourceApp{
-		client:      client,
-		config:      config.App,
-		remoteState: nil,
+		client: client,
+		config: config.App,
 	}, nil
 }
 
@@ -35,20 +30,11 @@ func (r *ResourceApp) Config() any {
 	return r.config
 }
 
-func (r *ResourceApp) RemoteState() any {
-	return r.remoteState
+func (r *ResourceApp) DoRefresh(ctx context.Context, id string) (any, error) {
+	return r.client.Apps.GetByName(ctx, id)
 }
 
-func (r *ResourceApp) DoRefresh(ctx context.Context, id string) error {
-	app, err := r.client.Apps.GetByName(ctx, id)
-	if err != nil {
-		return err
-	}
-	r.remoteState = app
-	return nil
-}
-
-func (r *ResourceApp) DoCreate(ctx context.Context) (string, error) {
+func (r *ResourceApp) DoCreate(ctx context.Context) (string, any, error) {
 	request := apps.CreateAppRequest{
 		App:             r.config,
 		NoCompute:       true,
@@ -56,26 +42,26 @@ func (r *ResourceApp) DoCreate(ctx context.Context) (string, error) {
 	}
 	waiter, err := r.client.Apps.Create(ctx, request)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
-	return waiter.Response.Name, nil
+	return waiter.Response.Name, waiter.Response, nil
 }
 
-func (r *ResourceApp) DoUpdate(ctx context.Context, id string) error {
+func (r *ResourceApp) DoUpdate(ctx context.Context, id string) (any, error) {
 	request := apps.UpdateAppRequest{
 		App:  r.config,
 		Name: id,
 	}
 	response, err := r.client.Apps.Update(ctx, request)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if response.Name != id {
 		log.Warnf(ctx, "apps: response contains unexpected name=%#v (expected %#v)", response.Name, id)
 	}
 
-	return nil
+	return response, nil
 }
 
 func DeleteApp(ctx context.Context, client *databricks.WorkspaceClient, id string) error {
@@ -83,13 +69,18 @@ func DeleteApp(ctx context.Context, client *databricks.WorkspaceClient, id strin
 	return err
 }
 
+func (r *ResourceApp) WaitAfterCreate(ctx context.Context) (any, error) {
+	return r.waitForApp(ctx, r.client, r.config.Name)
+}
+
+func (r *ResourceApp) WaitAfterUpdate(ctx context.Context) (any, error) {
+	// Intentional no-op for updates
+	return nil, nil
+}
+
 func (r *ResourceApp) WaitAfterCreateWithRefresh(ctx context.Context) error {
-	remoteState, err := r.waitForApp(ctx, r.client, r.config.Name)
-	if err != nil {
-		return err
-	}
-	r.remoteState = remoteState
-	return nil
+	_, err := r.waitForApp(ctx, r.client, r.config.Name)
+	return err
 }
 
 // waitForApp waits for the app to reach the target state. The target state is either ACTIVE or STOPPED.

@@ -10,6 +10,12 @@ import (
 	"github.com/databricks/cli/bundle/terranova/tnresources"
 	"github.com/databricks/cli/libs/structdiff"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/service/apps"
+	"github.com/databricks/databricks-sdk-go/service/catalog"
+	"github.com/databricks/databricks-sdk-go/service/database"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/databricks-sdk-go/service/sql"
 )
 
 type DeleteResourceFN = func(ctx context.Context, client *databricks.WorkspaceClient, oldID string) error
@@ -57,21 +63,17 @@ func TypeOfConfig(resource IResource) reflect.Type {
 	return reflect.TypeOf(resource.Config())
 }
 
-func TypeOfRemote(resource IResource) reflect.Type {
-	return reflect.TypeOf(resource.RemoteState())
-}
-
 var SupportedResources = map[string]ResourceSettings{
 	"jobs": {
 		New:        reflect.ValueOf(tnresources.NewResourceJob),
 		ConfigType: TypeOfConfig(&tnresources.ResourceJob{}),
-		RemoteType: TypeOfRemote(&tnresources.ResourceJob{}),
+		RemoteType: reflect.TypeOf(&jobs.Job{}),
 		DeleteFN:   tnresources.DeleteJob,
 	},
 	"pipelines": {
 		New:        reflect.ValueOf(tnresources.NewResourcePipeline),
 		ConfigType: TypeOfConfig(&tnresources.ResourcePipeline{}),
-		RemoteType: TypeOfRemote(&tnresources.ResourcePipeline{}),
+		RemoteType: reflect.TypeOf(&pipelines.GetPipelineResponse{}),
 		DeleteFN:   tnresources.DeletePipeline,
 		// See TF's ForceNew fields:
 		// https://github.com/databricks/terraform-provider-databricks/blob/8ae24ac/pipelines/resource_pipeline.go#L207
@@ -85,7 +87,7 @@ var SupportedResources = map[string]ResourceSettings{
 	"schemas": {
 		New:        reflect.ValueOf(tnresources.NewResourceSchema),
 		ConfigType: TypeOfConfig(&tnresources.ResourceSchema{}),
-		RemoteType: TypeOfRemote(&tnresources.ResourceSchema{}),
+		RemoteType: reflect.TypeOf(&catalog.SchemaInfo{}),
 		DeleteFN:   tnresources.DeleteSchema,
 		// TF: https://github.com/databricks/terraform-provider-databricks/blob/03a2515/catalog/resource_schema.go#L14
 		RecreateFields: mkMap(
@@ -97,7 +99,7 @@ var SupportedResources = map[string]ResourceSettings{
 	"volumes": {
 		New:        reflect.ValueOf(tnresources.NewResourceVolume),
 		ConfigType: TypeOfConfig(&tnresources.ResourceVolume{}),
-		RemoteType: TypeOfRemote(&tnresources.ResourceVolume{}),
+		RemoteType: reflect.TypeOf(&catalog.VolumeInfo{}),
 		DeleteFN:   tnresources.DeleteVolume,
 		// TF: https://github.com/databricks/terraform-provider-databricks/blob/f5fce0f/catalog/resource_volume.go#L19
 		RecreateFields: mkMap(
@@ -110,7 +112,7 @@ var SupportedResources = map[string]ResourceSettings{
 	"apps": {
 		New:        reflect.ValueOf(tnresources.NewResourceApp),
 		ConfigType: TypeOfConfig(&tnresources.ResourceApp{}),
-		RemoteType: TypeOfRemote(&tnresources.ResourceApp{}),
+		RemoteType: reflect.TypeOf(&apps.App{}),
 		DeleteFN:   tnresources.DeleteApp,
 		RecreateFields: mkMap(
 			".name",
@@ -119,70 +121,34 @@ var SupportedResources = map[string]ResourceSettings{
 	"sql_warehouses": {
 		New:        reflect.ValueOf(tnresources.NewResourceSqlWarehouse),
 		ConfigType: TypeOfConfig(&tnresources.ResourceSqlWarehouse{}),
-		RemoteType: TypeOfRemote(&tnresources.ResourceSqlWarehouse{}),
+		RemoteType: reflect.TypeOf(&sql.GetWarehouseResponse{}),
 		DeleteFN:   tnresources.DeleteSqlWarehouse,
 	},
 	"database_instances": {
 		New:        reflect.ValueOf(tnresources.NewResourceDatabaseInstance),
 		ConfigType: TypeOfConfig(&tnresources.ResourceDatabaseInstance{}),
-		RemoteType: TypeOfRemote(&tnresources.ResourceDatabaseInstance{}),
+		RemoteType: reflect.TypeOf(&database.DatabaseInstance{}),
 		DeleteFN:   tnresources.DeleteDatabaseInstance,
 	},
 }
-
-// Resource needs to implement IResourceCommon and one of the following:
-// Group 1: no remote state:
-//  1.1. only IResource: basic create/update
-//  1.2. IResource + IResourceWait: basic create/update + extra waiting to bring resource to correct state.
-// Group 2: with remote state:
-//  2.1. IResourceWithRemoteState: create/update return remote state
-//  2.2. IResource + IResourceWithRemoteState: basic create/update + extra waiting that also returns final remote state.
-//
 
 type IResource interface {
 	// Returns stored configuration snapshot. This is the snapshot that was provided to NewResource<Type> method.
 	// The return value is struct of type ConfigType (not a pointer). Never nil.
 	Config() any
 
-	// Returns stored remote state. This state is updated by DoRefresh() or any of the methods that have "Refresh" in their name.
-	// This is a pointer, can be nil if refresh was not called yet and resource was never created.
-	RemoteState() any
+	// Reads and returns remote state from the backend. Type must match RemoteType in settings.
+	DoRefresh(ctx context.Context, id string) (any, error)
 
-	// Reads remote state from the backend. Result is available in RemoteState().
-	DoRefresh(ctx context.Context, id string) error
-}
+	// Create the resource. Returns id of the resource and optionally full remote state.
+	DoCreate(ctx context.Context) (string, any, error)
 
-type IResourceBasic interface {
-	// Create the resource. Returns id of the resource.
-	// This method must not update stored remote state (this will be checked).
-	DoCreate(ctx context.Context) (string, error)
+	// Update the resource. ID must not change as a result of this operation. Optionally returns full remote state.
+	DoUpdate(ctx context.Context, id string) (any, error)
 
-	// Update the resource. ID must not change.
-	DoUpdate(ctx context.Context, id string) error
-}
+	WaitAfterCreate(ctx context.Context) (any, error)
 
-type IResourceWithRefresh interface {
-	// Create the resource. Returns id of the resource. Must update remoteState.
-	DoCreateWithRefresh(ctx context.Context) (string, error)
-
-	// Update the resource. ID must not change. Updates remoteState.
-	DoUpdateWithRefresh(ctx context.Context, id string) error
-}
-
-type IResourceWaitCreateBasic interface {
-	WaitAfterCreate(ctx context.Context) error
-}
-
-type IResourceWaitUpdateBasic interface {
-	WaitAfterUpdate(ctx context.Context) error
-}
-
-type IResourceWaitCreateWithRefresh interface {
-	WaitAfterCreateWithRefresh(ctx context.Context) error
-}
-
-type IResourceWaitUpdateWithRefresh interface {
-	WaitAfterUpdateWithRefresh(ctx context.Context) error
+	WaitAfterUpdate(ctx context.Context) (any, error)
 }
 
 // Optional method for non-default change classification.
@@ -195,7 +161,7 @@ type IResourceCustomClassify interface {
 type IResourceUpdatesID interface {
 	// Update the resource. Returns new id of the resource, which may be different from the old one.
 	// This will only be called if actiontype is ActionTypeUpdateWithID, so ClassifyChanges must be implemented as well.
-	DoUpdateWithID(ctx context.Context, oldID string) (string, error)
+	DoUpdateWithID(ctx context.Context, oldID string) (string, any, error)
 }
 
 // invokeConstructor converts cfg to the parameter type expected by ctor and

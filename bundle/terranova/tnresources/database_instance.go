@@ -9,41 +9,31 @@ import (
 )
 
 type ResourceDatabaseInstance struct {
-	client      *databricks.WorkspaceClient
-	config      database.DatabaseInstance
-	remoteState *database.DatabaseInstance
-	waiter      *database.WaitGetDatabaseInstanceDatabaseAvailable[database.DatabaseInstance]
+	client *databricks.WorkspaceClient
+	config database.DatabaseInstance
+	waiter *database.WaitGetDatabaseInstanceDatabaseAvailable[database.DatabaseInstance]
 }
 
 func (d ResourceDatabaseInstance) Config() any {
 	return d.config
 }
 
-func (d ResourceDatabaseInstance) RemoteState() any {
-	return d.remoteState
+func (d *ResourceDatabaseInstance) DoRefresh(ctx context.Context, id string) (any, error) {
+	return d.client.Database.GetDatabaseInstanceByName(ctx, id)
 }
 
-func (d *ResourceDatabaseInstance) DoRefresh(ctx context.Context, id string) error {
-	response, err := d.client.Database.GetDatabaseInstanceByName(ctx, id)
-	if err != nil {
-		return err
-	}
-	d.remoteState = response
-	return nil
-}
-
-func (d *ResourceDatabaseInstance) DoCreate(ctx context.Context) (string, error) {
+func (d *ResourceDatabaseInstance) DoCreate(ctx context.Context) (string, any, error) {
 	waiter, err := d.client.Database.CreateDatabaseInstance(ctx, database.CreateDatabaseInstanceRequest{
 		DatabaseInstance: d.config,
 	})
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 	d.waiter = waiter
-	return waiter.Response.Name, nil
+	return waiter.Response.Name, waiter.Response, nil
 }
 
-func (d ResourceDatabaseInstance) DoUpdate(ctx context.Context, id string) error {
+func (d ResourceDatabaseInstance) DoUpdate(ctx context.Context, id string) (any, error) {
 	request := database.UpdateDatabaseInstanceRequest{
 		DatabaseInstance: d.config,
 		Name:             d.config.Name,
@@ -51,16 +41,21 @@ func (d ResourceDatabaseInstance) DoUpdate(ctx context.Context, id string) error
 	}
 	request.DatabaseInstance.Uid = id
 
-	_, err := d.client.Database.UpdateDatabaseInstance(ctx, request)
-	return err
+	response, err := d.client.Database.UpdateDatabaseInstance(ctx, request)
+	return response, err
 }
 
-func (d *ResourceDatabaseInstance) WaitAfterCreate(ctx context.Context) error {
+func (d *ResourceDatabaseInstance) WaitAfterCreate(ctx context.Context) (any, error) {
 	if d.waiter == nil {
-		return nil
+		return nil, nil
 	}
-	_, err := d.waiter.Get()
-	return err
+	response, err := d.waiter.Get()
+	return response, err
+}
+
+func (d *ResourceDatabaseInstance) WaitAfterUpdate(ctx context.Context) (any, error) {
+	// Intentional no-op
+	return nil, nil
 }
 
 func NewResourceDatabaseInstance(client *databricks.WorkspaceClient, resource *resources.DatabaseInstance) (*ResourceDatabaseInstance, error) {

@@ -72,35 +72,33 @@ func (d *Deployer) Deploy(ctx context.Context, client *databricks.WorkspaceClien
 }
 
 func (d *Deployer) Create(ctx context.Context, client *databricks.WorkspaceClient, db *tnstate.TerranovaState, resource IResource, config any) error {
-	var newID string
-	var err error
-
-	resourceCreator, hasBasic := resource.(IResourceBasic)
-
-	if hasBasic {
-		newID, err = resourceCreator.DoCreate(ctx)
-	} else {
-		// panicking here, resource must implement IResourceBasic or IResourceWithRefresh (see TestCRUD that checks that)
-		resourceCreator := resource.(IResourceWithRefresh)
-		newID, err = resourceCreator.DoCreateWithRefresh(ctx)
-	}
+	newID, remoteState, err := resource.DoCreate(ctx)
 	if err != nil {
 		// No need to prefix error, there is no ambiguity (only one operation - DoCreate) and no additional context (like id)
 		return err
 	}
 
+	// Update remote state if returned and resource supports it
+	if remoteState != nil {
+		d.RemoteState = remoteState
+	}
+
 	log.Infof(ctx, "Created %s.%s id=%#v", d.Group, d.Key, newID)
 
-	// TODO: DoCreateWithRemoteState could return remote state
 	err = db.SaveState(d.Group, d.Key, newID, config)
 	if err != nil {
 		return fmt.Errorf("saving state after creating id=%s: %w", newID, err)
 	}
 
-	//err = resource.WaitAfterCreate(ctx)
-	//if err != nil {
-	//	return fmt.Errorf("waiting after creating id=%s: %w", newID, err)
-	//}
+	waitRemoteState, err := resource.WaitAfterCreate(ctx)
+	if err != nil {
+		return fmt.Errorf("waiting after creating id=%s: %w", newID, err)
+	}
+
+	// Update remote state from wait if returned
+	if waitRemoteState != nil {
+		d.RemoteState = waitRemoteState
+	}
 
 	return nil
 }
@@ -120,18 +118,14 @@ func (d *Deployer) Recreate(ctx context.Context, client *databricks.WorkspaceCli
 }
 
 func (d *Deployer) Update(ctx context.Context, client *databricks.WorkspaceClient, db *tnstate.TerranovaState, resource IResource, id string, config any) error {
-	var err error
-	updaterBasic, hasBasic := resource.(IResourceBasic)
-
-	if hasBasic {
-		err = updaterBasic.DoUpdate(ctx, id)
-	} else {
-		// panicking here, resource must implement IResourceBasic or IResourceWithRefresh (see TestCRUD that checks that)
-		updaterRefresh := resource.(IResourceWithRefresh)
-		err = updaterRefresh.DoUpdateWithRefresh(ctx, id)
-	}
+	remoteState, err := resource.DoUpdate(ctx, id)
 	if err != nil {
 		return fmt.Errorf("updating id=%s: %w", id, err)
+	}
+
+	// Update remote state if returned and resource supports it
+	if remoteState != nil {
+		d.RemoteState = remoteState
 	}
 
 	err = db.SaveState(d.Group, d.Key, id, config)
@@ -139,18 +133,28 @@ func (d *Deployer) Update(ctx context.Context, client *databricks.WorkspaceClien
 		return fmt.Errorf("saving state id=%s: %w", id, err)
 	}
 
-	//err = resource.WaitAfterUpdate(ctx)
-	//if err != nil {
-	//	return fmt.Errorf("waiting after updating id=%s: %w", id, err)
-	//}
+	waitRemoteState, err := resource.WaitAfterUpdate(ctx)
+	if err != nil {
+		return fmt.Errorf("waiting after updating id=%s: %w", id, err)
+	}
+
+	// Update remote state from wait if returned
+	if waitRemoteState != nil {
+		d.RemoteState = waitRemoteState
+	}
 
 	return nil
 }
 
 func (d *Deployer) UpdateWithID(ctx context.Context, client *databricks.WorkspaceClient, db *tnstate.TerranovaState, resource IResource, updater IResourceUpdatesID, oldID string, config any) error {
-	newID, err := updater.DoUpdateWithID(ctx, oldID)
+	newID, remoteState, err := updater.DoUpdateWithID(ctx, oldID)
 	if err != nil {
 		return fmt.Errorf("updating id=%s: %w", oldID, err)
+	}
+
+	// Update remote state if returned and resource supports it
+	if remoteState != nil {
+		d.RemoteState = remoteState
 	}
 
 	if oldID != newID {
@@ -164,10 +168,15 @@ func (d *Deployer) UpdateWithID(ctx context.Context, client *databricks.Workspac
 		return fmt.Errorf("saving state id=%s: %w", oldID, err)
 	}
 
-	//	err = resource.WaitAfterUpdate(ctx)
-	//if err != nil {
-	//	return fmt.Errorf("waiting after updating id=%s: %w", newID, err)
-	//}
+	waitRemoteState, err := resource.WaitAfterUpdate(ctx)
+	if err != nil {
+		return fmt.Errorf("waiting after updating id=%s: %w", newID, err)
+	}
+
+	// Update remote state from wait if returned
+	if waitRemoteState != nil {
+		d.RemoteState = waitRemoteState
+	}
 
 	return nil
 }

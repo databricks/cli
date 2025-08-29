@@ -10,16 +10,14 @@ import (
 )
 
 type ResourceSchema struct {
-	client      *databricks.WorkspaceClient
-	config      catalog.CreateSchema
-	remoteState *catalog.SchemaInfo
+	client *databricks.WorkspaceClient
+	config catalog.CreateSchema
 }
 
 func NewResourceSchema(client *databricks.WorkspaceClient, schema *resources.Schema) (*ResourceSchema, error) {
 	return &ResourceSchema{
-		client:      client,
-		config:      schema.CreateSchema,
-		remoteState: nil,
+		client: client,
+		config: schema.CreateSchema,
 	}, nil
 }
 
@@ -27,29 +25,19 @@ func (r *ResourceSchema) Config() any {
 	return r.config
 }
 
-func (r *ResourceSchema) RemoteState() any {
-	return r.remoteState
+func (r *ResourceSchema) DoRefresh(ctx context.Context, id string) (any, error) {
+	return r.client.Schemas.GetByFullName(ctx, id)
 }
 
-func (r *ResourceSchema) DoRefresh(ctx context.Context, id string) error {
-	response, err := r.client.Schemas.GetByFullName(ctx, id)
-	if err != nil {
-		return err
-	}
-	r.remoteState = response
-	return nil
-}
-
-func (r *ResourceSchema) DoCreateWithRefresh(ctx context.Context) (string, error) {
+func (r *ResourceSchema) DoCreate(ctx context.Context) (string, any, error) {
 	response, err := r.client.Schemas.Create(ctx, r.config)
-	if err != nil {
-		return "", err
+	if err == nil && response != nil {
+		return response.FullName, response, nil
 	}
-	r.remoteState = response
-	return response.FullName, nil
+	return "", nil, err
 }
 
-func (r *ResourceSchema) DoUpdateWithRefresh(ctx context.Context, id string) error {
+func (r *ResourceSchema) DoUpdate(ctx context.Context, id string) (any, error) {
 	updateRequest := catalog.UpdateSchema{
 		Comment:                      r.config.Comment,
 		EnablePredictiveOptimization: "", // Not supported by DABs
@@ -62,15 +50,24 @@ func (r *ResourceSchema) DoUpdateWithRefresh(ctx context.Context, id string) err
 
 	response, err := r.client.Schemas.Update(ctx, updateRequest)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	if response.FullName != id {
+	if response != nil && response.FullName != id {
 		log.Warnf(ctx, "schemas: response contains unexpected full_name=%#v (expected %#v)", response.FullName, id)
 	}
 
-	r.remoteState = response
-	return nil
+	return response, err
+}
+
+func (r *ResourceSchema) WaitAfterCreate(ctx context.Context) (any, error) {
+	// Intentional no-op
+	return nil, nil
+}
+
+func (r *ResourceSchema) WaitAfterUpdate(ctx context.Context) (any, error) {
+	// Intentional no-op
+	return nil, nil
 }
 
 func DeleteSchema(ctx context.Context, client *databricks.WorkspaceClient, id string) error {

@@ -11,16 +11,14 @@ import (
 )
 
 type ResourceJob struct {
-	client      *databricks.WorkspaceClient
-	config      jobs.JobSettings
-	remoteState *jobs.Job
+	client *databricks.WorkspaceClient
+	config jobs.JobSettings
 }
 
 func NewResourceJob(client *databricks.WorkspaceClient, config *resources.Job) (*ResourceJob, error) {
 	return &ResourceJob{
-		client:      client,
-		config:      config.JobSettings,
-		remoteState: nil,
+		client: client,
+		config: config.JobSettings,
 	}, nil
 }
 
@@ -28,41 +26,32 @@ func (r *ResourceJob) Config() any {
 	return r.config
 }
 
-func (r *ResourceJob) RemoteState() any {
-	return r.remoteState
-}
-
-func (r *ResourceJob) DoRefresh(ctx context.Context, id string) error {
+func (r *ResourceJob) DoRefresh(ctx context.Context, id string) (any, error) {
 	idInt, err := parseJobID(id)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	resp, err := r.client.Jobs.GetByJobId(ctx, idInt)
-	if err != nil {
-		return err
-	}
-	r.remoteState = resp
-	return nil
+	return r.client.Jobs.GetByJobId(ctx, idInt)
 }
 
-func (r *ResourceJob) DoCreate(ctx context.Context) (string, error) {
+func (r *ResourceJob) DoCreate(ctx context.Context) (string, any, error) {
 	request, err := makeCreateJob(r.config)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 	response, err := r.client.Jobs.Create(ctx, request)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
-	return strconv.FormatInt(response.JobId, 10), nil
+	return strconv.FormatInt(response.JobId, 10), nil, nil
 }
 
-func (r *ResourceJob) DoUpdate(ctx context.Context, id string) error {
+func (r *ResourceJob) DoUpdate(ctx context.Context, id string) (any, error) {
 	request, err := makeResetJob(r.config, id)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return r.client.Jobs.Reset(ctx, request)
+	return nil, r.client.Jobs.Reset(ctx, request)
 }
 
 func DeleteJob(ctx context.Context, client *databricks.WorkspaceClient, id string) error {
@@ -71,6 +60,16 @@ func DeleteJob(ctx context.Context, client *databricks.WorkspaceClient, id strin
 		return err
 	}
 	return client.Jobs.DeleteByJobId(ctx, idInt)
+}
+
+func (r *ResourceJob) WaitAfterCreate(ctx context.Context) (any, error) {
+	// Intentional no-op
+	return nil, nil
+}
+
+func (r *ResourceJob) WaitAfterUpdate(ctx context.Context) (any, error) {
+	// Intentional no-op
+	return nil, nil
 }
 
 func makeCreateJob(config jobs.JobSettings) (jobs.CreateJob, error) {

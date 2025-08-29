@@ -10,9 +10,8 @@ import (
 )
 
 type ResourceSqlWarehouse struct {
-	client      *databricks.WorkspaceClient
-	config      sql.CreateWarehouseRequest
-	remoteState *sql.GetWarehouseResponse
+	client *databricks.WorkspaceClient
+	config sql.CreateWarehouseRequest
 }
 
 func NewResourceSqlWarehouse(client *databricks.WorkspaceClient, resource *resources.SqlWarehouse) (*ResourceSqlWarehouse, error) {
@@ -26,29 +25,20 @@ func (r *ResourceSqlWarehouse) Config() any {
 	return r.config
 }
 
-func (r *ResourceSqlWarehouse) RemoteState() any {
-	return r.remoteState
+func (r *ResourceSqlWarehouse) DoRefresh(ctx context.Context, id string) (any, error) {
+	return r.client.Warehouses.GetById(ctx, id)
 }
 
-func (r *ResourceSqlWarehouse) DoRefresh(ctx context.Context, id string) error {
-	response, err := r.client.Warehouses.GetById(ctx, id)
-	if err != nil {
-		return err
-	}
-	r.remoteState = response
-	return nil
-}
-
-func (r *ResourceSqlWarehouse) DoCreate(ctx context.Context) (string, error) {
+func (r *ResourceSqlWarehouse) DoCreate(ctx context.Context) (string, any, error) {
 	waiter, err := r.client.Warehouses.Create(ctx, r.config)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 
-	return waiter.Id, nil
+	return waiter.Id, waiter, nil
 }
 
-func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, id string) error {
+func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, id string) (any, error) {
 	request := sql.EditWarehouseRequest{
 		AutoStopMins:            r.config.AutoStopMins,
 		Channel:                 r.config.Channel,
@@ -69,24 +59,24 @@ func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, id string) error {
 
 	waiter, err := r.client.Warehouses.Edit(ctx, request)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if waiter.Id != id {
 		log.Warnf(ctx, "sql_warehouses: response contains unexpected id=%#v (expected %#v)", waiter.Id, id)
 	}
 
-	return nil
+	return waiter, nil
 }
 
-func (r *ResourceSqlWarehouse) WaitAfterCreate(ctx context.Context) error {
+func (r *ResourceSqlWarehouse) WaitAfterCreate(ctx context.Context) (any, error) {
 	// No need to wait for sql warehouse to be ready after creation similar to clusters
-	return nil
+	return nil, nil
 }
 
-func (r *ResourceSqlWarehouse) WaitAfterUpdate(ctx context.Context) error {
+func (r *ResourceSqlWarehouse) WaitAfterUpdate(ctx context.Context) (any, error) {
 	// No need to wait for sql warehouse to be ready after update similar to clusters
-	return nil
+	return nil, nil
 }
 
 func DeleteSqlWarehouse(ctx context.Context, client *databricks.WorkspaceClient, oldID string) error {

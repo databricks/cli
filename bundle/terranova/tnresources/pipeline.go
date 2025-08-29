@@ -12,14 +12,12 @@ type ResourcePipeline struct {
 	client *databricks.WorkspaceClient
 	config pipelines.CreatePipeline
 	// TODO: use Pipeline struct similar to terraform
-	remoteState *pipelines.GetPipelineResponse
 }
 
 func NewResourcePipeline(client *databricks.WorkspaceClient, resource *resources.Pipeline) (*ResourcePipeline, error) {
 	return &ResourcePipeline{
-		client:      client,
-		config:      resource.CreatePipeline,
-		remoteState: nil,
+		client: client,
+		config: resource.CreatePipeline,
 	}, nil
 }
 
@@ -27,28 +25,19 @@ func (r *ResourcePipeline) Config() any {
 	return r.config
 }
 
-func (r *ResourcePipeline) RemoteState() any {
-	return r.remoteState
+func (r *ResourcePipeline) DoRefresh(ctx context.Context, id string) (any, error) {
+	return r.client.Pipelines.GetByPipelineId(ctx, id)
 }
 
-func (r *ResourcePipeline) DoRefresh(ctx context.Context, id string) error {
-	response, err := r.client.Pipelines.GetByPipelineId(ctx, id)
-	if err != nil {
-		return err
-	}
-	r.remoteState = response
-	return nil
-}
-
-func (r *ResourcePipeline) DoCreate(ctx context.Context) (string, error) {
+func (r *ResourcePipeline) DoCreate(ctx context.Context) (string, any, error) {
 	response, err := r.client.Pipelines.Create(ctx, r.config)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
-	return response.PipelineId, nil
+	return response.PipelineId, nil, nil
 }
 
-func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string) error {
+func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string) (any, error) {
 	request := pipelines.EditPipeline{
 		AllowDuplicateNames:  r.config.AllowDuplicateNames,
 		BudgetPolicyId:       r.config.BudgetPolicyId,
@@ -84,24 +73,23 @@ func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string) error {
 		ForceSendFields:      filterFields[pipelines.EditPipeline](r.config.ForceSendFields),
 	}
 
-	return r.client.Pipelines.Update(ctx, request)
+	err := r.client.Pipelines.Update(ctx, request)
+	return nil, err
 }
 
 func DeletePipeline(ctx context.Context, client *databricks.WorkspaceClient, id string) error {
 	return client.Pipelines.DeleteByPipelineId(ctx, id)
 }
 
-/*
-func (r *ResourcePipeline) WaitAfterCreate(ctx context.Context) error {
+func (r *ResourcePipeline) WaitAfterCreate(ctx context.Context) (any, error) {
 	// Note, terraform provider either
 	// a) reads back state at least once and fails create if state is "failed"
 	// b) repeatededly reads state until state is "running" (if spec.Contionous is set).
 	// TODO: investigate if we need to mimic this behaviour or can rely on Create status code.
-	return nil
+	return nil, nil
 }
 
-func (r *ResourcePipeline) WaitAfterUpdate(ctx context.Context) error {
+func (r *ResourcePipeline) WaitAfterUpdate(ctx context.Context) (any, error) {
 	// TODO: investigate if we need to mimic waiting behaviour in TF or can rely on Update status code.
-	return nil
+	return nil, nil
 }
-*/

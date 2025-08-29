@@ -82,9 +82,13 @@ func (d *Deployer) refreshRemoteState(ctx context.Context, id string) error {
 
 	if !d.Fresh {
 		// TODO retry failures
-		err := d.Resource.DoRefresh(ctx, id)
+		remoteState, err := d.Resource.DoRefresh(ctx, id)
 		if err != nil {
 			return fmt.Errorf("failed to refresh remote state id=%s: %w", id, err)
+		}
+		// Update remote state if returned
+		if remoteState != nil {
+			d.RemoteState = remoteState
 		}
 		d.Fresh = true
 	}
@@ -206,7 +210,11 @@ func (d *Deployer) ReadRemoteStateField(ctx context.Context, db *tnstate.Terrano
 		return nil, err
 	}
 
-	remoteState := d.Resource.RemoteState()
+	// Use remote state tracked by deployer
+	remoteState := d.RemoteState
+	if remoteState == nil {
+		return nil, fmt.Errorf("no remote state available")
+	}
 	// remoteState cannot be nil there; but if it is, structaccess.Get will return an appropriate error
 
 	value, errRemote := structaccess.Get(remoteState, fieldPath)
