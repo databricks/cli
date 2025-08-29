@@ -247,10 +247,7 @@ def _collect_reachable_schemas(
                     if not include_private and field.stage == openapi.Stage.PRIVATE:
                         continue
 
-                    if (
-                        not include_deprecated
-                        and field.deprecated
-                    ):
+                    if not include_deprecated and field.deprecated:
                         continue
 
                     if name not in reachable:
