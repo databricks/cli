@@ -29,6 +29,7 @@ type Pipeline struct {
 	URL            string               `json:"url,omitempty" bundle:"internal"`
 
 	pipelines.CreatePipeline
+	Lifecycle Lifecycle `json:"lifecycle"`
 }
 
 func (p *Pipeline) UnmarshalJSON(b []byte) error {
