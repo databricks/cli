@@ -80,12 +80,18 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			return false
 		}
 
-		// Update resources.id after successful deploy so that future ${resources...id} refs are replaced
-		if b.Graph.HasOutgoingEdges(node) {
-			err = resolveIDReference(ctx, &b.StateDB, configRoot, node.Group, node.Key)
+		// After successful deployment, resolve any references that were delayed during planning
+		// This includes ID references and remote state references
+		for _, reference := range b.Graph.OutgoingLabels(node) {
+			value, err := d.ResolveReferenceRemote(ctx, &b.StateDB, reference)
 			if err != nil {
-				// not using errorPrefix because resource was deployed
-				logdiag.LogError(ctx, fmt.Errorf("failed to replace ref to resources.%s.%s.id: %w", node.Group, node.Key, err))
+				logdiag.LogError(ctx, fmt.Errorf("failed to resolve reference %q for %s.%s after deployment: %w", reference, node.Group, node.Key, err))
+				return false
+			}
+
+			err = replaceReferenceWithValue(ctx, configRoot, reference, value)
+			if err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("failed to replace reference %q with value %v for %s.%s: %w", reference, value, node.Group, node.Key, err))
 				return false
 			}
 		}

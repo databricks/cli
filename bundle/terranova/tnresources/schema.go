@@ -21,15 +21,20 @@ func (*ResourceSchema) PrepareConfig(input *resources.Schema) *catalog.CreateSch
 	return &input.CreateSchema
 }
 
-func (r *ResourceSchema) DoCreate(ctx context.Context, config *catalog.CreateSchema) (string, error) {
-	response, err := r.client.Schemas.Create(ctx, *config)
-	if err != nil || response == nil {
-		return "", err
-	}
-	return response.FullName, nil
+func (r *ResourceSchema) DoRefresh(ctx context.Context, id string) (*catalog.SchemaInfo, error) {
+	return r.client.Schemas.GetByFullName(ctx, id)
 }
 
-func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, config *catalog.CreateSchema) error {
+func (r *ResourceSchema) DoCreate(ctx context.Context, config *catalog.CreateSchema) (string, *catalog.SchemaInfo, error) {
+	response, err := r.client.Schemas.Create(ctx, *config)
+	if err != nil || response == nil {
+		return "", nil, err
+	}
+	return response.FullName, response, nil
+}
+
+// DoUpdate updates the schema in place and returns remote state.
+func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, config *catalog.CreateSchema) (*catalog.SchemaInfo, error) {
 	updateRequest := catalog.UpdateSchema{
 		Comment:                      config.Comment,
 		EnablePredictiveOptimization: "", // Not supported by DABs
@@ -42,14 +47,14 @@ func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, config *catalo
 
 	response, err := r.client.Schemas.Update(ctx, updateRequest)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if response != nil && response.FullName != id {
 		log.Warnf(ctx, "schemas: response contains unexpected full_name=%#v (expected %#v)", response.FullName, id)
 	}
 
-	return nil
+	return response, nil
 }
 
 func (r *ResourceSchema) DoDelete(ctx context.Context, id string) error {
