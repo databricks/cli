@@ -9,13 +9,27 @@ import (
 )
 
 type ResourceDatabaseInstance struct {
-	client *databricks.WorkspaceClient
-	config database.DatabaseInstance
-	waiter *database.WaitGetDatabaseInstanceDatabaseAvailable[database.DatabaseInstance]
+	client      *databricks.WorkspaceClient
+	config      database.DatabaseInstance
+	remoteState *database.DatabaseInstance
+	waiter      *database.WaitGetDatabaseInstanceDatabaseAvailable[database.DatabaseInstance]
 }
 
 func (d ResourceDatabaseInstance) Config() any {
 	return d.config
+}
+
+func (d ResourceDatabaseInstance) RemoteState() any {
+	return d.remoteState
+}
+
+func (d *ResourceDatabaseInstance) DoRefresh(ctx context.Context, id string) error {
+	response, err := d.client.Database.GetDatabaseInstanceByName(ctx, id)
+	if err != nil {
+		return err
+	}
+	d.remoteState = response
+	return nil
 }
 
 func (d *ResourceDatabaseInstance) DoCreate(ctx context.Context) (string, error) {
@@ -47,10 +61,6 @@ func (d *ResourceDatabaseInstance) WaitAfterCreate(ctx context.Context) error {
 	}
 	_, err := d.waiter.Get()
 	return err
-}
-
-func (d ResourceDatabaseInstance) WaitAfterUpdate(ctx context.Context) error {
-	return nil
 }
 
 func NewResourceDatabaseInstance(client *databricks.WorkspaceClient, resource *resources.DatabaseInstance) (*ResourceDatabaseInstance, error) {

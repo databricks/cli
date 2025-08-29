@@ -116,19 +116,18 @@ var SupportedResources = map[string]ResourceSettings{
 			".name",
 		),
 	},
-	/*
-		"sql_warehouses": {
-			New:        reflect.ValueOf(tnresources.NewResourceSqlWarehouse),
-			ConfigType: TypeOfConfig(&tnresources.ResourceSqlWarehouse{}),
-			RemoteType: TypeOfConfig(&tnresources.ResourceSqlWarehouse{}),
-			DeleteFN:   tnresources.DeleteSqlWarehouse,
-		},
-		"database_instances": {
-			New:        reflect.ValueOf(tnresources.NewResourceDatabaseInstance),
-			ConfigType: TypeOfConfig(&tnresources.ResourceDatabaseInstance{}),
-			DeleteFN:   tnresources.DeleteDatabaseInstance,
-		},
-	*/
+	"sql_warehouses": {
+		New:        reflect.ValueOf(tnresources.NewResourceSqlWarehouse),
+		ConfigType: TypeOfConfig(&tnresources.ResourceSqlWarehouse{}),
+		RemoteType: TypeOfRemote(&tnresources.ResourceSqlWarehouse{}),
+		DeleteFN:   tnresources.DeleteSqlWarehouse,
+	},
+	"database_instances": {
+		New:        reflect.ValueOf(tnresources.NewResourceDatabaseInstance),
+		ConfigType: TypeOfConfig(&tnresources.ResourceDatabaseInstance{}),
+		RemoteType: TypeOfRemote(&tnresources.ResourceDatabaseInstance{}),
+		DeleteFN:   tnresources.DeleteDatabaseInstance,
+	},
 }
 
 // Resource needs to implement IResourceCommon and one of the following:

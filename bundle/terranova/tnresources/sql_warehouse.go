@@ -10,8 +10,9 @@ import (
 )
 
 type ResourceSqlWarehouse struct {
-	client *databricks.WorkspaceClient
-	config sql.CreateWarehouseRequest
+	client      *databricks.WorkspaceClient
+	config      sql.CreateWarehouseRequest
+	remoteState *sql.GetWarehouseResponse
 }
 
 func NewResourceSqlWarehouse(client *databricks.WorkspaceClient, resource *resources.SqlWarehouse) (*ResourceSqlWarehouse, error) {
@@ -23,6 +24,19 @@ func NewResourceSqlWarehouse(client *databricks.WorkspaceClient, resource *resou
 
 func (r *ResourceSqlWarehouse) Config() any {
 	return r.config
+}
+
+func (r *ResourceSqlWarehouse) RemoteState() any {
+	return r.remoteState
+}
+
+func (r *ResourceSqlWarehouse) DoRefresh(ctx context.Context, id string) error {
+	response, err := r.client.Warehouses.GetById(ctx, id)
+	if err != nil {
+		return err
+	}
+	r.remoteState = response
+	return nil
 }
 
 func (r *ResourceSqlWarehouse) DoCreate(ctx context.Context) (string, error) {

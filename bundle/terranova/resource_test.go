@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
+	"github.com/databricks/databricks-sdk-go/service/database"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -110,6 +111,12 @@ var testConfig map[string]any = map[string]any{
 			Name:        "myvolume",
 		},
 	},
+
+	"database_instances": &resources.DatabaseInstance{
+		DatabaseInstance: database.DatabaseInstance{
+			Name: "mydb",
+		},
+	},
 }
 
 func testCRUD(t *testing.T, group string, settings ResourceSettings) {
@@ -138,19 +145,19 @@ func testCRUD(t *testing.T, group string, settings ResourceSettings) {
 	modifierBasic, hasBasic := resource.(IResourceBasic)
 	modifierRefresh, hasWithRefresh := resource.(IResourceWithRefresh)
 
-	var createdID string
+	var createdID, source string
 
 	if hasBasic {
-		t.Log("Calling DoCreate")
+		source = "DoCreate"
 		assert.False(t, hasWithRefresh, "resource must implement either IResourceBasic or IResourceWithRefresh but not both")
 		createdID, err = modifierBasic.DoCreate(ctx)
 	} else {
-		t.Log("Calling DoCreateWithRefresh")
+		source = "DoCreateWithRefresh"
 		assert.True(t, hasWithRefresh, "resource must implement exactly one of: IResourceBasic or IResourceWithRefresh")
 		createdID, err = modifierRefresh.DoCreateWithRefresh(ctx)
 	}
-	require.NoError(t, err)
-	require.NotEmpty(t, createdID)
+	require.NoError(t, err, source+" failed")
+	require.NotEmpty(t, createdID, "ID returned from "+source+" was empty")
 
 	if hasBasic {
 		typeCheckNoRemoteState(t, resource, settings)
@@ -176,5 +183,6 @@ func typeCheckWithRemoteState(t *testing.T, resource IResource, settings Resourc
 	assert.Equal(t, settings.ConfigType, reflect.TypeOf(resource.Config()))
 
 	require.NotNil(t, resource.RemoteState())
-	assert.Equal(t, settings.RemoteType, reflect.TypeOf(resource.RemoteState()))
+	t.Logf("settings.RemoteType=%s but RemoteState()=%T", settings.RemoteType, resource.RemoteState())
+	assert.Equal(t, settings.RemoteType, reflect.TypeOf(resource.RemoteState()), "settings.RemoteType=%s but RemoteState()=%T", settings.RemoteType, resource.RemoteState())
 }
