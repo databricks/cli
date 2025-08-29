@@ -78,11 +78,6 @@ func (r *ResourceApp) WaitAfterUpdate(ctx context.Context) (any, error) {
 	return nil, nil
 }
 
-func (r *ResourceApp) WaitAfterCreateWithRefresh(ctx context.Context) error {
-	_, err := r.waitForApp(ctx, r.client, r.config.Name)
-	return err
-}
-
 // waitForApp waits for the app to reach the target state. The target state is either ACTIVE or STOPPED.
 // Apps with no_compute set to true will reach the STOPPED state, otherwise they will reach the ACTIVE state.
 // We can't use the default waiter from SDK because it only waits on ACTIVE state but we need also STOPPED state.
