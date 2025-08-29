@@ -40,18 +40,6 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 		return nil
 	}
 
-	for node, action := range b.PlannedActions {
-		if !b.Graph.HasNode(node) {
-			if action == deployplan.ActionTypeDelete {
-				// it is expected that this node is not seen by makeResourceGraph because it is not in config
-				b.Graph.AddNode(node)
-			} else {
-				// it's internal error today because plan cannot be outdated. In the future when we load serialized plan, this will become user error
-				logdiag.LogError(ctx, fmt.Errorf("cannot %s %s.%s: internal error, plan is outdated", action, node.Group, node.Key))
-			}
-		}
-	}
-
 	if logdiag.HasError(ctx) {
 		return nil
 	}
@@ -112,7 +100,7 @@ func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) dia
 			return false
 		}
 
-		config, ok := b.GetResourceConfig(node.Group, node.Key)
+		config, ok := b.Config.GetResourceConfig(node.Group, node.Key)
 		if !ok {
 			logdiag.LogError(ctx, fmt.Errorf("%s: internal error when reading config", errorPrefix))
 			return false
