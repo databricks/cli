@@ -7,6 +7,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/vfs"
 )
@@ -31,6 +32,17 @@ func (m *configureWSFS) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 
 	// The executable must be running on DBR.
 	if !dbr.RunsOnRuntime(ctx) {
+		return nil
+	}
+
+	// Only use WSFS extensions when deploying to the same workspace where CLI is running.
+	// For cross-workspace deployments, we should use the standard workspace files client
+	// to avoid trying to read files from the current workspace while deploying to a different one.
+	currentWorkspaceHost, _ := env.Lookup(ctx, "DATABRICKS_HOST")
+	targetWorkspaceHost := b.WorkspaceClient().Config.Host
+
+	// If hosts don't match, this is a cross-workspace deployment - skip WSFS extensions
+	if currentWorkspaceHost != "" && targetWorkspaceHost != "" && currentWorkspaceHost != targetWorkspaceHost {
 		return nil
 	}
 
