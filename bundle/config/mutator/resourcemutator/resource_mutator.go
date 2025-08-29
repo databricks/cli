@@ -87,6 +87,9 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 		{"resources.sql_warehouses.*.enable_photon", true},
 		{"resources.sql_warehouses.*.max_num_clusters", 1},
 		{"resources.sql_warehouses.*.spot_instance_policy", "COST_OPTIMIZED"},
+
+		// Apps:
+		{"resources.apps.*.description", ""},
 	}
 
 	for _, defaultDef := range defaults {
