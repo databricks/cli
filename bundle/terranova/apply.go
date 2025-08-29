@@ -78,9 +78,9 @@ func (d *Deployer) Create(ctx context.Context, client *databricks.WorkspaceClien
 		return err
 	}
 
-	// Update remote state if returned and resource supports it
-	if remoteState != nil {
-		d.RemoteState = remoteState
+	err = d.SetRemoteState(remoteState)
+	if err != nil {
+		return err
 	}
 
 	log.Infof(ctx, "Created %s.%s id=%#v", d.Group, d.Key, newID)
@@ -95,9 +95,9 @@ func (d *Deployer) Create(ctx context.Context, client *databricks.WorkspaceClien
 		return fmt.Errorf("waiting after creating id=%s: %w", newID, err)
 	}
 
-	// Update remote state from wait if returned
-	if waitRemoteState != nil {
-		d.RemoteState = waitRemoteState
+	err = d.SetRemoteState(waitRemoteState)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -123,9 +123,9 @@ func (d *Deployer) Update(ctx context.Context, client *databricks.WorkspaceClien
 		return fmt.Errorf("updating id=%s: %w", id, err)
 	}
 
-	// Update remote state if returned and resource supports it
-	if remoteState != nil {
-		d.RemoteState = remoteState
+	err = d.SetRemoteState(remoteState)
+	if err != nil {
+		return err
 	}
 
 	err = db.SaveState(d.Group, d.Key, id, config)
@@ -138,9 +138,9 @@ func (d *Deployer) Update(ctx context.Context, client *databricks.WorkspaceClien
 		return fmt.Errorf("waiting after updating id=%s: %w", id, err)
 	}
 
-	// Update remote state from wait if returned
-	if waitRemoteState != nil {
-		d.RemoteState = waitRemoteState
+	err = d.SetRemoteState(waitRemoteState)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -152,9 +152,9 @@ func (d *Deployer) UpdateWithID(ctx context.Context, client *databricks.Workspac
 		return fmt.Errorf("updating id=%s: %w", oldID, err)
 	}
 
-	// Update remote state if returned and resource supports it
-	if remoteState != nil {
-		d.RemoteState = remoteState
+	err = d.SetRemoteState(remoteState)
+	if err != nil {
+		return err
 	}
 
 	if oldID != newID {
@@ -173,9 +173,9 @@ func (d *Deployer) UpdateWithID(ctx context.Context, client *databricks.Workspac
 		return fmt.Errorf("waiting after updating id=%s: %w", newID, err)
 	}
 
-	// Update remote state from wait if returned
-	if waitRemoteState != nil {
-		d.RemoteState = waitRemoteState
+	err = d.SetRemoteState(waitRemoteState)
+	if err != nil {
+		return err
 	}
 
 	return nil

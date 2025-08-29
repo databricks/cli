@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
 	"slices"
 
 	"github.com/databricks/cli/bundle/config"
@@ -71,8 +72,9 @@ func (b *BundleDeployer) CalculatePlanForDeploy(ctx context.Context, client *dat
 		}
 
 		d := Deployer{
-			Group: node.Group,
-			Key:   node.Key,
+			Group:      node.Group,
+			Key:        node.Key,
+			RemoteType: settings.RemoteType,
 		}
 
 		// This currently does not do API calls, so we can run this sequentially. Once we have remote diffs, we need to run a in threadpool.
@@ -120,10 +122,17 @@ func (b *BundleDeployer) CalculatePlanForDeploy(ctx context.Context, client *dat
 				// action was already added by Run() above
 				continue
 			}
+			settings, ok := SupportedResources[group]
+
+			var remoteType reflect.Type
+			if ok {
+				remoteType = settings.RemoteType
+			}
 			b.Resources[n] = Deployer{
 				Group:      group,
 				Key:        key,
 				ActionType: deployplan.ActionTypeDelete,
+				RemoteType: remoteType,
 			}
 			b.Graph.AddNode(n)
 		}
@@ -139,12 +148,18 @@ func (b *BundleDeployer) CalculatePlanForDestroy(ctx context.Context) error {
 	b.Graph = dagrun.NewGraph[deployplan.ResourceNode]()
 
 	for group, groupData := range b.StateDB.Data.Resources {
+		settings, ok := SupportedResources[group]
+		if !ok {
+			logdiag.LogError(ctx, fmt.Errorf("cannot destroy %s: resource type not supported on direct backend", group))
+			continue
+		}
 		for key := range groupData {
 			n := deployplan.ResourceNode{Group: group, Key: key}
 			b.Resources[n] = Deployer{
 				Group:      group,
 				Key:        key,
 				ActionType: deployplan.ActionTypeDelete,
+				RemoteType: settings.RemoteType,
 			}
 			b.Graph.AddNode(n)
 		}

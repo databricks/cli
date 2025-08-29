@@ -31,6 +31,7 @@ func (d *Deployer) plan(ctx context.Context, client *databricks.WorkspaceClient,
 		return "", err
 	}
 	d.Resource = resource
+	d.RemoteType = settings.RemoteType
 
 	entry, hasEntry := db.GetResourceEntry(d.Group, d.Key)
 	if !hasEntry {
@@ -86,11 +87,10 @@ func (d *Deployer) refreshRemoteState(ctx context.Context, id string) error {
 		if err != nil {
 			return fmt.Errorf("failed to refresh remote state id=%s: %w", id, err)
 		}
-		// Update remote state if returned
-		if remoteState != nil {
-			d.RemoteState = remoteState
+		err = d.SetRemoteState(remoteState)
+		if err != nil {
+			return err
 		}
-		d.Fresh = true
 	}
 
 	return nil

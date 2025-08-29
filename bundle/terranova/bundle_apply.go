@@ -38,7 +38,7 @@ func (b *BundleDeployer) Apply(ctx context.Context, client *databricks.Workspace
 			return false
 		}
 
-		_, ok := SupportedResources[node.Group]
+		settings, ok := SupportedResources[node.Group]
 		if !ok {
 			// Unexpected, this should be filtered at plan.
 			return false
@@ -51,8 +51,9 @@ func (b *BundleDeployer) Apply(ctx context.Context, client *databricks.Workspace
 		}
 
 		d := Deployer{
-			Group: node.Group,
-			Key:   node.Key,
+			Group:      node.Group,
+			Key:        node.Key,
+			RemoteType: settings.RemoteType,
 		}
 
 		if actionType == deployplan.ActionTypeDelete {
