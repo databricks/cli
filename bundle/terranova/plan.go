@@ -5,13 +5,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
 	"slices"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/terranova/tnstate"
 	"github.com/databricks/cli/libs/dagrun"
+	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/structaccess"
 	"github.com/databricks/cli/libs/structdiff"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
@@ -99,7 +103,7 @@ func CalculatePlanForDeploy(ctx context.Context, b *bundle.Bundle) error {
 
 	client := b.WorkspaceClient()
 
-	b.Graph, b.IsReferenced, err = makeResourceGraph(ctx, b)
+	b.Graph, err = makeResourceGraph(ctx, b)
 	if err != nil {
 		return fmt.Errorf("reading config: %w", err)
 	}
@@ -137,7 +141,7 @@ func CalculatePlanForDeploy(ctx context.Context, b *bundle.Bundle) error {
 			settings:     settings,
 		}
 
-		config, ok := b.GetResourceConfig(pl.group, pl.resourceName)
+		config, ok := b.Config.GetResourceConfig(pl.group, pl.resourceName)
 		if !ok {
 			logdiag.LogError(ctx, fmt.Errorf("%s: internal error: cannot read config", errorPrefix))
 			return false
@@ -150,10 +154,43 @@ func CalculatePlanForDeploy(ctx context.Context, b *bundle.Bundle) error {
 			return false
 		}
 
-		if b.IsReferenced[node] && actionType.KeepsID() {
-			err = resolveIDReference(ctx, b, pl.group, pl.resourceName)
+		for _, reference := range b.Graph.OutgoingLabels(node) {
+			path, ok := dynvar.PureReferenceToPath(reference)
+			if !ok || len(path) <= 3 || path[0].Key() != "resources" || path[1].Key() != node.Group || path[2].Key() != node.Key {
+				logdiag.LogError(ctx, fmt.Errorf("internal error: expected reference to resources.%s.%s, got %q", node.Group, node.Key, reference))
+				return false
+			}
+			fieldPath := path[3:].String()
+			if fieldPath == "id" {
+				if actionType.KeepsID() {
+					// Now that we know that ID of this node is not going to change, update it
+					// everywhere to actual value to calculate more accurate and more conservative action for dependent nodes.
+					err = resolveIDReference(ctx, b, pl.group, pl.resourceName)
+					if err != nil {
+						logdiag.LogError(ctx, fmt.Errorf("failed to replace ref to resources.%s.%s.id: %w", pl.group, pl.resourceName, err))
+						return false
+					}
+				}
+				continue
+			}
+			dynPath, err := dyn.NewPathFromString(fieldPath)
 			if err != nil {
-				logdiag.LogError(ctx, fmt.Errorf("failed to replace ref to resources.%s.%s.id: %w", pl.group, pl.resourceName, err))
+				logdiag.LogError(ctx, fmt.Errorf("cannot parse path %s: %w", fieldPath, err))
+				return false
+			}
+			validationErr := structaccess.Validate(reflect.TypeOf(config), dynPath)
+			if validationErr != nil {
+				logdiag.LogError(ctx, fmt.Errorf("schema mismatch for %s: %w", reference, validationErr))
+				return false
+			}
+			value, err := structaccess.Get(config, dynPath)
+			if err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("field not set %s: %w", reference, err))
+				return false
+			}
+			err = resolveFieldReference(ctx, b, path, value)
+			if err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("failed to replace ref to %s: %w", reference, err))
 				return false
 			}
 		}
@@ -180,6 +217,7 @@ func CalculatePlanForDeploy(ctx context.Context, b *bundle.Bundle) error {
 				continue
 			}
 			b.PlannedActions[n] = deployplan.ActionTypeDelete
+			b.Graph.AddNode(n)
 		}
 	}
 

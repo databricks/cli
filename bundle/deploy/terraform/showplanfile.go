@@ -4,13 +4,22 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/log"
 	"github.com/hashicorp/terraform-exec/tfexec"
 	tfjson "github.com/hashicorp/terraform-json"
 )
 
+// silentlyUpdatedResources contains resource types that are automatically created by DABs,
+// no need to show them in the plan
+var silentlyUpdatedResources = map[string]bool{
+	"databricks_grants":      true,
+	"databricks_permissions": true,
+	"databricks_secret_acl":  true,
+}
+
 // GetActions converts Terraform resource changes into deployplan.Action values.
 // The returned slice can be filtered using deployplan.Filter and FilterGroup helpers.
-func GetActions(changes []*tfjson.ResourceChange) []deployplan.Action {
+func GetActions(ctx context.Context, changes []*tfjson.ResourceChange) []deployplan.Action {
 	var result []deployplan.Action
 
 	for _, rc := range changes {
@@ -34,8 +43,9 @@ func GetActions(changes []*tfjson.ResourceChange) []deployplan.Action {
 
 		group, ok := TerraformToGroupName[rc.Type]
 		if !ok {
-			// Happens for databricks_grant, databricks_permissions, databricks_secrets_acl.
-			// These are automatically created by DABs, no need to show them.
+			if !silentlyUpdatedResources[rc.Type] {
+				log.Warnf(ctx, "unknown resource type '%s'", rc.Type)
+			}
 			continue
 		}
 
@@ -59,5 +69,5 @@ func ShowPlanFile(ctx context.Context, tf *tfexec.Terraform, planPath string) ([
 		return nil, err
 	}
 
-	return GetActions(plan.ResourceChanges), nil
+	return GetActions(ctx, plan.ResourceChanges), nil
 }

@@ -8,12 +8,10 @@ package bundle
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
-	"reflect"
 	"sync"
 
 	"github.com/databricks/cli/bundle/config"
@@ -23,7 +21,6 @@ import (
 	"github.com/databricks/cli/bundle/terranova/tnstate"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/dagrun"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/locker"
 	"github.com/databricks/cli/libs/log"
@@ -139,10 +136,6 @@ type Bundle struct {
 
 	// (direct only) planned action for each resource
 	PlannedActions map[deployplan.ResourceNode]deployplan.ActionType
-
-	// (direct only) flag that tells if a given node has references to it
-	// TODO: move this inside Graph
-	IsReferenced map[deployplan.ResourceNode]bool
 
 	// if true, we skip approval checks for deploy, destroy resources and delete
 	// files
@@ -330,39 +323,6 @@ func (b *Bundle) AuthEnv() (map[string]string, error) {
 
 	cfg := b.client.Config
 	return auth.Env(cfg), nil
-}
-
-// GetResourceConfig returns the configuration object for a given resource group/name pair.
-// The returned value is a pointer to the concrete struct that represents that resource type.
-// When the group or name is not found the second return value is false.
-func (b *Bundle) GetResourceConfig(group, name string) (any, bool) {
-	// Resolve the Go type that represents a single resource in this group.
-	typ, ok := config.ResourcesTypes[group]
-	if !ok {
-		return nil, false
-	}
-
-	// Fetch the raw value from the dynamic representation of the bundle config.
-	v, err := dyn.GetByPath(
-		b.Config.Value(),
-		dyn.NewPath(dyn.Key("resources"), dyn.Key(group), dyn.Key(name)),
-	)
-	if err != nil {
-		return nil, false
-	}
-
-	// json-round-trip into a value of the concrete resource type to ensure proper handling of ForceSendFields
-	bytes, err := json.Marshal(v.AsAny())
-	if err != nil {
-		return nil, false
-	}
-
-	typedConfigPtr := reflect.New(typ)
-	if err := json.Unmarshal(bytes, typedConfigPtr.Interface()); err != nil {
-		return nil, false
-	}
-
-	return typedConfigPtr.Interface(), true
 }
 
 func (b *Bundle) StateFilename() string {

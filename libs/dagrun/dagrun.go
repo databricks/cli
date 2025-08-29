@@ -41,10 +41,34 @@ func (g *Graph[N]) HasNode(n N) bool {
 	return ok
 }
 
+// HasOutgoingEdges reports whether this node has at least one outgoing edge.
+// In this graph, an outgoing edge from X->Y means Y references X.
+func (g *Graph[N]) HasOutgoingEdges(n N) bool { return len(g.adj[n]) > 0 }
+
 func (g *Graph[N]) AddDirectedEdge(from, to N, label string) {
 	g.AddNode(from)
 	g.AddNode(to)
 	g.adj[from] = append(g.adj[from], adjEdge[N]{to: to, label: label})
+}
+
+// OutgoingLabels returns labels of all outgoing edges from the given node
+// in the order the edges were added. If the node has no outgoing edges or is
+// unknown to the graph, an empty slice is returned.
+func (g *Graph[N]) OutgoingLabels(node N) []string {
+	outs := g.adj[node]
+	if len(outs) == 0 {
+		return []string{}
+	}
+	labels := make([]string, 0, len(outs))
+	seen := make(map[string]struct{}, len(outs))
+	for _, e := range outs {
+		if _, ok := seen[e.label]; ok {
+			continue
+		}
+		seen[e.label] = struct{}{}
+		labels = append(labels, e.label)
+	}
+	return labels
 }
 
 type CycleError[N comparable] struct {
@@ -61,16 +85,16 @@ func (e *CycleError[N]) Error() string {
 		return fmt.Sprintf("cycle detected: %v refers to itself via %s", e.Nodes[0], e.Edges[0])
 	}
 
-	// Build "A refers to B via E1" pieces for every edge except the closing one.
+	// Build "to refers to from via edge" pieces for every edge except the closing one.
 	var parts []string
 	for i := 1; i < len(e.Nodes); i++ {
-		parts = append(parts, fmt.Sprintf("%v refers to %v via %s", e.Nodes[i-1], e.Nodes[i], e.Edges[i-1]))
+		parts = append(parts, fmt.Sprintf("%v refers to %v via %s", e.Nodes[i], e.Nodes[i-1], e.Edges[i-1]))
 	}
 
 	return fmt.Sprintf(
 		"cycle detected: %s which refers to %v via %s",
 		strings.Join(parts, " "),
-		e.Nodes[0],
+		e.Nodes[len(e.Nodes)-1],
 		e.Edges[len(e.Edges)-1],
 	)
 }

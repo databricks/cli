@@ -5,6 +5,7 @@ from typing import Optional
 RESOURCE_NAMESPACE = {
     "resources.Job": "jobs",
     "resources.Pipeline": "pipelines",
+    "resources.Volume": "volumes",
 }
 
 RESOURCE_TYPES = list(RESOURCE_NAMESPACE.keys())
@@ -17,6 +18,7 @@ LOADED_NAMESPACES = [
     "jobs",
     "pipelines",
     "resources",
+    "catalog",
 ]
 
 RENAMES = {
