@@ -69,9 +69,11 @@ def test_generate_dataclass():
                 param_type_name=variable_or_type(str_type(), is_required=True),
                 type_name=variable_or_type(str_type(), is_required=True),
                 experimental=False,
+                deprecated=False,
             ),
         ],
         experimental=False,
+        deprecated=False,
     )
 
 
