@@ -21,7 +21,7 @@ Resources:
       URL:  [DATABRICKS_URL]/explore/data/my_catalog_[UNIQUE_NAME]
   Database instances:
     my_instance:
-      Name: test-database-instance-[UNIQUE_NAME]
+      Name: test-db-synced-table-[UNIQUE_NAME]
       URL:  (not deployed)
   Synced database tables:
     my_synced_table:
@@ -47,8 +47,8 @@ Resources:
       URL:  [DATABRICKS_URL]/explore/data/my_catalog_[UNIQUE_NAME]
   Database instances:
     my_instance:
-      Name: test-database-instance-[UNIQUE_NAME]
-      URL:  [DATABRICKS_URL]/compute/database-instances/test-database-instance-[UNIQUE_NAME]
+      Name: test-db-synced-table-[UNIQUE_NAME]
+      URL:  [DATABRICKS_URL]/compute/database-instances/test-db-synced-table-[UNIQUE_NAME]
   Synced database tables:
     my_synced_table:
       Name: ${resources.database_catalogs.my_catalog.name}.${resources.database_catalogs.my_catalog.database_name}.my_synced_table

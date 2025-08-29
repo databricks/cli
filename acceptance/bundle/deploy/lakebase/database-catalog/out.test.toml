@@ -1,5 +1,6 @@
 Local = true
 Cloud = true
+CloudSlow = true
 RequiresUnityCatalog = true
 
 [CloudEnvs]
