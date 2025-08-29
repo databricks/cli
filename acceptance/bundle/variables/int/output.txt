@@ -1,0 +1,10 @@
+{
+  "bar": {
+    "default": "25+25",
+    "value": "25+25"
+  },
+  "foo": {
+    "default": 25,
+    "value": 25
+  }
+}

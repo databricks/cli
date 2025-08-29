@@ -114,8 +114,9 @@ func TestResolveWithTypeRetentionFailure(t *testing.T) {
 		"c": dyn.V("${a} ${b}"),
 	})
 
-	_, err := dynvar.Resolve(in, dynvar.DefaultLookup(in))
-	require.ErrorContains(t, err, "cannot interpolate non-string value: ${a}")
+	out, err := dynvar.Resolve(in, dynvar.DefaultLookup(in))
+	require.NoError(t, err)
+	assert.EqualValues(t, "1 2", getByPath(t, out, "c").MustString())
 }
 
 func TestResolveWithTypeRetention(t *testing.T) {
