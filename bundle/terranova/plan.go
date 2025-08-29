@@ -72,24 +72,6 @@ func (d *Deployer) plan(ctx context.Context, client *databricks.WorkspaceClient,
 		return actionType, nil
 	}
 
-	err = d.refreshRemoteState(ctx, entry.ID)
-	if err != nil {
-		return "", err
-	}
-
-	remoteConfig := resource.RemoteStateAsConfig()
-	if remoteConfig == nil {
-		return "", errors.New("internal error: remote state as config not initialized")
-	}
-
-	remoteActionType, err := calcDiff(settings, resource, remoteConfig, config)
-	if err != nil {
-		return "", err
-	}
-
-	_ = remoteActionType
-	// TODO: merge actionType + remoteActionType
-
 	return actionType, nil
 }
 

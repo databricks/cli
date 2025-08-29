@@ -149,11 +149,7 @@ type IResource interface {
 	// This is a pointer, can be nil if refresh was not called yet and resource was never created.
 	RemoteState() any
 
-	// Returns stored remote transformed into ConfigType, so that it can be compared with config to detect drift.
-	// The type is the same as Config() but can also return nil if remoteState was not initialized.
-	RemoteStateAsConfig() any
-
-	// Reads remote state from the backend. Result is available in RemoteState() and RemoteStateAsConfig().
+	// Reads remote state from the backend. Result is available in RemoteState().
 	DoRefresh(ctx context.Context, id string) error
 }
 

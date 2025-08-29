@@ -31,19 +31,6 @@ func (r *ResourceSchema) RemoteState() any {
 	return r.remoteState
 }
 
-func (r *ResourceSchema) RemoteStateAsConfig() any {
-	if r.remoteState == nil {
-		return nil
-	}
-	return catalog.CreateSchema{
-		CatalogName: r.remoteState.CatalogName,
-		Comment:     r.remoteState.Comment,
-		Name:        r.remoteState.Name,
-		Properties:  r.remoteState.Properties,
-		StorageRoot: r.remoteState.StorageRoot,
-	}
-}
-
 func (r *ResourceSchema) DoRefresh(ctx context.Context, id string) error {
 	response, err := r.client.Schemas.GetByFullName(ctx, id)
 	if err != nil {

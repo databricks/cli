@@ -169,7 +169,6 @@ func typeCheckNoRemoteState(t *testing.T, resource IResource, settings ResourceS
 	require.NotNil(t, resource.Config())
 	assert.Equal(t, settings.ConfigType, reflect.TypeOf(resource.Config()))
 	require.Nil(t, resource.RemoteState())
-	require.Nil(t, resource.RemoteStateAsConfig())
 }
 
 func typeCheckWithRemoteState(t *testing.T, resource IResource, settings ResourceSettings) {
@@ -178,7 +177,4 @@ func typeCheckWithRemoteState(t *testing.T, resource IResource, settings Resourc
 
 	require.NotNil(t, resource.RemoteState())
 	assert.Equal(t, settings.RemoteType, reflect.TypeOf(resource.RemoteState()))
-
-	require.NotNil(t, resource.RemoteStateAsConfig())
-	assert.Equal(t, settings.ConfigType, reflect.TypeOf(resource.RemoteStateAsConfig()))
 }

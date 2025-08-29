@@ -31,15 +31,6 @@ func (r *ResourcePipeline) RemoteState() any {
 	return r.remoteState
 }
 
-func (r *ResourcePipeline) RemoteStateAsConfig() any {
-	if r.remoteState == nil {
-		return nil
-	}
-	return pipelines.CreatePipeline{
-		// TODO:
-	}
-}
-
 func (r *ResourcePipeline) DoRefresh(ctx context.Context, id string) error {
 	response, err := r.client.Pipelines.GetByPipelineId(ctx, id)
 	if err != nil {

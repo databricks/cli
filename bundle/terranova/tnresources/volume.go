@@ -35,22 +35,6 @@ func (r *ResourceVolume) RemoteState() any {
 	return r.remoteState
 }
 
-func (r *ResourceVolume) RemoteStateAsConfig() any {
-	if r.remoteState == nil {
-		return nil
-	}
-
-	return catalog.CreateVolumeRequestContent{
-		CatalogName:     r.remoteState.CatalogName,
-		Comment:         r.remoteState.Comment,
-		Name:            r.remoteState.Name,
-		SchemaName:      r.remoteState.SchemaName,
-		StorageLocation: r.remoteState.StorageLocation,
-		VolumeType:      r.remoteState.VolumeType,
-		ForceSendFields: filterFields[catalog.CreateVolumeRequestContent](r.remoteState.ForceSendFields),
-	}
-}
-
 func (r *ResourceVolume) DoRefresh(ctx context.Context, id string) error {
 	response, err := r.client.Volumes.ReadByName(ctx, id)
 	if err != nil {

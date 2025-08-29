@@ -32,13 +32,6 @@ func (r *ResourceJob) RemoteState() any {
 	return r.remoteState
 }
 
-func (r *ResourceJob) RemoteStateAsConfig() any {
-	if r.remoteState == nil || r.remoteState.Settings == nil {
-		return nil
-	}
-	return *r.remoteState.Settings
-}
-
 func (r *ResourceJob) DoRefresh(ctx context.Context, id string) error {
 	idInt, err := parseJobID(id)
 	if err != nil {

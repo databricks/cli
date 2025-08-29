@@ -39,13 +39,6 @@ func (r *ResourceApp) RemoteState() any {
 	return r.remoteState
 }
 
-func (r *ResourceApp) RemoteStateAsConfig() any {
-	if r.remoteState == nil {
-		return nil
-	}
-	return *r.remoteState
-}
-
 func (r *ResourceApp) DoRefresh(ctx context.Context, id string) error {
 	app, err := r.client.Apps.GetByName(ctx, id)
 	if err != nil {
