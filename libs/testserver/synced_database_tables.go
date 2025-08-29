@@ -24,7 +24,6 @@ func (s *FakeWorkspace) SyncedDatabaseTableCreate(req Request) Response {
 		found := false
 		for _, instance := range s.DatabaseInstances {
 			if instance.Name == syncedDatabaseTable.DatabaseInstanceName {
-				fmt.Printf("Found database instance: %s\n", instance.Name)
 				found = true
 				break
 			}

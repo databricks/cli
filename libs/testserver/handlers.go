@@ -505,6 +505,10 @@ func AddDefaultHandlers(server *Server) {
 		return DatabaseInstanceMapGet(req.Workspace, req.Workspace.DatabaseInstances, req.Vars["name"])
 	})
 
+	server.Handle("PATCH", "/api/2.0/database/instances/{name}", func(req Request) any {
+		return req.Workspace.DatabaseInstanceUpdate(req, req.Vars["name"])
+	})
+
 	server.Handle("DELETE", "/api/2.0/database/instances/{name}", func(req Request) any {
 		return DatabaseInstanceMapDelete(req)
 	})
@@ -515,6 +519,10 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("GET", "/api/2.0/database/catalogs/{name}", func(req Request) any {
 		return MapGet(req.Workspace, req.Workspace.DatabaseCatalogs, req.Vars["name"])
+	})
+
+	server.Handle("PATCH", "/api/2.0/database/catalogs/{name}", func(req Request) any {
+		return req.Workspace.DatabaseCatalogUpdate(req, req.Vars["name"])
 	})
 
 	server.Handle("DELETE", "/api/2.0/database/catalogs/{name}", func(req Request) any {

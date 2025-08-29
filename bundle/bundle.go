@@ -130,7 +130,7 @@ type Bundle struct {
 	TerraformPlanIsEmpty bool
 
 	// (direct only) graph of dependencies between resources
-	BundleDeployer terranova.BundleDeployer
+	DeploymentBundle terranova.DeploymentBundle
 
 	// if true, we skip approval checks for deploy, destroy resources and delete
 	// files
@@ -351,7 +351,7 @@ func (b *Bundle) OpenStateFile(ctx context.Context) error {
 		return err
 	}
 
-	err = b.BundleDeployer.OpenStateFile(statePath)
+	err = b.DeploymentBundle.OpenStateFile(statePath)
 	if err != nil {
 		return fmt.Errorf("failed to open/create state file at %s: %s", statePath, err)
 	}
