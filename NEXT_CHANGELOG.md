@@ -3,6 +3,7 @@
 ## Release v0.267.0
 
 ### Notable Changes
+* Add support for schemas in Python support ([#3389])(https://github.com/databricks/cli/pull/3389))
 
 ### CLI
 * Introduce retries to `databricks psql` command ([#3492](https://github.com/databricks/cli/pull/3492))

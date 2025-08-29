@@ -1,0 +1,26 @@
+
+>>> uv run --with-requirements requirements-latest.txt --no-cache -q [CLI] bundle validate --output json
+{
+  "experimental": {
+    "python": {
+      "mutators": [
+        "mutators:update_schema"
+      ],
+      "resources": [
+        "resources:load_resources"
+      ]
+    }
+  },
+  "resources": {
+    "schemas": {
+      "my_schema_1": {
+        "catalog_name": "my_catalog",
+        "name": "My Schema (updated)"
+      },
+      "my_schema_2": {
+        "catalog_name": "my_catalog_2",
+        "name": "My Schema (2) (updated)"
+      }
+    }
+  }
+}
