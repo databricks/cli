@@ -213,7 +213,7 @@ func (d *Deployer) ReadRemoteStateField(ctx context.Context, db *tnstate.Terrano
 	// Use remote state tracked by deployer
 	remoteState := d.RemoteState
 	if remoteState == nil {
-		return nil, fmt.Errorf("no remote state available")
+		return nil, errors.New("no remote state available")
 	}
 	// remoteState cannot be nil there; but if it is, structaccess.Get will return an appropriate error
 

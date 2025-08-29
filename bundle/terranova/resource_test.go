@@ -142,13 +142,25 @@ func testCRUD(t *testing.T, group string, settings ResourceSettings) {
 	_, err = resource.DoRefresh(ctx, myid)
 	require.Error(t, err, "initial DoRefresh should fail because resource does not exist")
 
-	createdID, _, err := resource.DoCreate(ctx)
+	createdID, remoteState, err := resource.DoCreate(ctx)
 	require.NoError(t, err, "DoCreate failed")
 	require.NotEmpty(t, createdID, "ID returned from DoCreate was empty")
 
+	// Type check remote state returned by DoCreate
+	if remoteState != nil {
+		actualType := reflect.TypeOf(remoteState)
+		require.Equal(t, settings.RemoteType, actualType, "DoCreate returned unexpected remote state type: expected %s, got %s", settings.RemoteType, actualType)
+	}
+
 	// Now state can be refreshed:
-	_, err = resource.DoRefresh(ctx, createdID)
+	refreshedState, err := resource.DoRefresh(ctx, createdID)
 	require.NoError(t, err)
+
+	// Type check remote state returned by DoRefresh
+	require.NotNil(t, refreshedState, "DoRefresh should return non-nil remote state")
+	actualRefreshType := reflect.TypeOf(refreshedState)
+	require.Equal(t, settings.RemoteType, actualRefreshType, "DoRefresh returned unexpected remote state type: expected %s, got %s", settings.RemoteType, actualRefreshType)
+
 	typeCheckWithRemoteState(t, resource, settings)
 
 	// TODO: test update and wait

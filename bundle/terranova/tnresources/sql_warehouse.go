@@ -35,7 +35,7 @@ func (r *ResourceSqlWarehouse) DoCreate(ctx context.Context) (string, any, error
 		return "", nil, err
 	}
 
-	return waiter.Id, waiter, nil
+	return waiter.Id, nil, nil
 }
 
 func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, id string) (any, error) {
@@ -66,7 +66,7 @@ func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, id string) (any, er
 		log.Warnf(ctx, "sql_warehouses: response contains unexpected id=%#v (expected %#v)", waiter.Id, id)
 	}
 
-	return waiter, nil
+	return nil, nil
 }
 
 func (r *ResourceSqlWarehouse) WaitAfterCreate(ctx context.Context) (any, error) {
