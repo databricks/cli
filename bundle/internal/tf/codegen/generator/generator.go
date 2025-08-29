@@ -3,6 +3,7 @@ package generator
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -67,9 +68,16 @@ func Run(ctx context.Context, schema *tfjson.ProviderSchema, path string) error 
 			name:           k,
 			block:          v.Block,
 		}
-		err := b.Generate(path)
-		if err != nil {
-			return err
+
+		// Skip fields generation for resource_quality_monitor to avoid unwanted changes,
+		// as of August 2025 the generator turns pointer fields into slices, which breaks the resource behaviour
+		if k == "databricks_quality_monitor" {
+			log.Printf("Warning: Skipping file generation for %s to avoid known unwanted changes", k)
+		} else {
+			err := b.Generate(path)
+			if err != nil {
+				return err
+			}
 		}
 		resources = append(resources, b)
 	}
