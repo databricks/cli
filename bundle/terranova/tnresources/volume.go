@@ -95,15 +95,6 @@ func DeleteVolume(ctx context.Context, client *databricks.WorkspaceClient, id st
 	return client.Volumes.DeleteByName(ctx, id)
 }
 
-func (r *ResourceVolume) ClassifyChanges(changes []structdiff.Change) deployplan.ActionType {
-	for _, change := range changes {
-		if change.Path.String() == ".name" {
-			return deployplan.ActionTypeUpdateWithID
-		}
-	}
-	return deployplan.ActionTypeUpdate
-}
-
 func (r *ResourceVolume) WaitAfterCreate(ctx context.Context) (any, error) {
 	// Intentional no-op
 	return nil, nil
@@ -112,6 +103,15 @@ func (r *ResourceVolume) WaitAfterCreate(ctx context.Context) (any, error) {
 func (r *ResourceVolume) WaitAfterUpdate(ctx context.Context) (any, error) {
 	// Intentional no-op
 	return nil, nil
+}
+
+func (r *ResourceVolume) ClassifyChanges(changes []structdiff.Change) deployplan.ActionType {
+	for _, change := range changes {
+		if change.Path.String() == ".name" {
+			return deployplan.ActionTypeUpdateWithID
+		}
+	}
+	return deployplan.ActionTypeUpdate
 }
 
 func getNameFromID(id string) (string, error) {

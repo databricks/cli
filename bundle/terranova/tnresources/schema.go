@@ -60,6 +60,14 @@ func (r *ResourceSchema) DoUpdate(ctx context.Context, id string) (any, error) {
 	return response, err
 }
 
+func DeleteSchema(ctx context.Context, client *databricks.WorkspaceClient, id string) error {
+	return client.Schemas.Delete(ctx, catalog.DeleteSchemaRequest{
+		FullName:        id,
+		Force:           true,
+		ForceSendFields: nil,
+	})
+}
+
 func (r *ResourceSchema) WaitAfterCreate(ctx context.Context) (any, error) {
 	// Intentional no-op
 	return nil, nil
@@ -68,12 +76,4 @@ func (r *ResourceSchema) WaitAfterCreate(ctx context.Context) (any, error) {
 func (r *ResourceSchema) WaitAfterUpdate(ctx context.Context) (any, error) {
 	// Intentional no-op
 	return nil, nil
-}
-
-func DeleteSchema(ctx context.Context, client *databricks.WorkspaceClient, id string) error {
-	return client.Schemas.Delete(ctx, catalog.DeleteSchemaRequest{
-		FullName:        id,
-		Force:           true,
-		ForceSendFields: nil,
-	})
 }
