@@ -137,7 +137,7 @@ func assignAnnotation(s *jsonschema.Schema, a annotation.Descriptor) {
 		s.Deprecated = true
 		s.DeprecationMessage = a.DeprecationMessage
 	}
-	if a.PythonKeepDeprecated == annotation.PythonKeepDeprecatedTrue {
+	if a.ForceNotDeprecated {
 		s.Deprecated = false
 		s.DeprecationMessage = ""
 	}

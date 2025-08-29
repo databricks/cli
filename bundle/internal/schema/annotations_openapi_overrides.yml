@@ -210,8 +210,6 @@ github.com/databricks/cli/bundle/config/resources.Job:
       ```
 
       For information about defining job tasks and overriding job settings, see [_](/dev-tools/bundles/job-task-types.md), [_](/dev-tools/bundles/job-task-override.md), and [_](/dev-tools/bundles/cluster-override.md).
-  "format":
-    "x-databricks-python-keep-deprecated": "false"
   "health":
     "description": |-
       PLACEHOLDER
@@ -313,8 +311,6 @@ github.com/databricks/cli/bundle/config/resources.ModelServingEndpoint:
   "permissions":
     "description": |-
       PLACEHOLDER
-  "rate_limits":
-    "x-databricks-python-keep-deprecated": "false"
 github.com/databricks/cli/bundle/config/resources.ModelServingEndpointPermissionLevel:
   "_":
     "enum":
@@ -358,11 +354,11 @@ github.com/databricks/cli/bundle/config/resources.Pipeline:
     "description": |-
       PLACEHOLDER
   "target":
-    "x-databricks-python-keep-deprecated": "true"
+    "force_not_deprecated": |-
+      true
   "trigger":
     "deprecation_message": |-
       Use continuous instead
-    "x-databricks-python-keep-deprecated": "false"
 github.com/databricks/cli/bundle/config/resources.PipelinePermissionLevel:
   "_":
     "enum":
@@ -714,8 +710,6 @@ github.com/databricks/databricks-sdk-go/service/compute.DockerImage:
     "description": |-
       PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/compute.Environment:
-  "client":
-    "x-databricks-python-keep-deprecated": "true"
   "dependencies":
     "description": |-
       List of pip dependencies, as supported by the version of pip in this environment.
@@ -723,17 +717,10 @@ github.com/databricks/databricks-sdk-go/service/compute.GcpAttributes:
   "availability":
     "description": |-
       PLACEHOLDER
-  "use_preemptible_executors":
-    "x-databricks-python-keep-deprecated": "false"
 github.com/databricks/databricks-sdk-go/service/compute.InitScriptInfo:
   "abfss":
     "description": |-
       Contains the Azure Data Lake Storage destination path
-  "dbfs":
-    "x-databricks-python-keep-deprecated": "false"
-github.com/databricks/databricks-sdk-go/service/compute.Library:
-  "egg":
-    "x-databricks-python-keep-deprecated": "false"
 github.com/databricks/databricks-sdk-go/service/compute.LogAnalyticsInfo:
   "log_analytics_primary_key":
     "description": |-
@@ -756,9 +743,6 @@ github.com/databricks/databricks-sdk-go/service/jobs.GitSource:
   "git_snapshot":
     "description": |-
       PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/jobs.JobEmailNotifications:
-  "no_alert_for_skipped_runs":
-    "x-databricks-python-keep-deprecated": "false"
 github.com/databricks/databricks-sdk-go/service/jobs.JobEnvironment:
   "spec":
     "description": |-
@@ -778,11 +762,6 @@ github.com/databricks/databricks-sdk-go/service/jobs.RunJobTask:
   "python_named_params":
     "description": |-
       PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/jobs.SparkJarTask:
-  "jar_uri":
-    "x-databricks-python-keep-deprecated": "false"
-  "run_as_repl":
-    "x-databricks-python-keep-deprecated": "false"
 github.com/databricks/databricks-sdk-go/service/jobs.Subscription:
   "subscribers":
     "description": |-
@@ -804,9 +783,6 @@ github.com/databricks/databricks-sdk-go/service/jobs.Task:
   "health":
     "description": |-
       PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/jobs.TaskEmailNotifications:
-  "no_alert_for_skipped_runs":
-    "x-databricks-python-keep-deprecated": "false"
 github.com/databricks/databricks-sdk-go/service/jobs.TriggerSettings:
   "table_update":
     "description": |-
@@ -822,14 +798,10 @@ github.com/databricks/databricks-sdk-go/service/pipelines.CronTrigger:
   "timezone_id":
     "description": |-
       PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/pipelines.IngestionGatewayPipelineDefinition:
-  "connection_id":
-    "x-databricks-python-keep-deprecated": "false"
 github.com/databricks/databricks-sdk-go/service/pipelines.PipelineLibrary:
   "whl":
     "deprecation_message": |-
       This field is deprecated
-    "x-databricks-python-keep-deprecated": "false"
 github.com/databricks/databricks-sdk-go/service/pipelines.PipelineTrigger:
   "cron":
     "description": |-
@@ -837,11 +809,6 @@ github.com/databricks/databricks-sdk-go/service/pipelines.PipelineTrigger:
   "manual":
     "description": |-
       PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/serving.AiGatewayGuardrailParameters:
-  "invalid_keywords":
-    "x-databricks-python-keep-deprecated": "false"
-  "valid_topics":
-    "x-databricks-python-keep-deprecated": "false"
 github.com/databricks/databricks-sdk-go/service/serving.Route:
   "served_entity_name":
     "description": |-
