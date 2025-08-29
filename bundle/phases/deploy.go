@@ -151,22 +151,24 @@ func deployCore(ctx context.Context, b *bundle.Bundle) {
 	}
 }
 
+// uploadLibraries uploads libraries to the workspace.
+// It also cleans up the artifacts directory and transforms wheel tasks.
+// It is called by only "bundle deploy".
+func uploadLibraries(ctx context.Context, b *bundle.Bundle, libs map[string][]libraries.ConfigLocation) {
+	bundle.ApplySeqContext(ctx, b,
+		artifacts.CleanUp(),
+		libraries.Upload(libs),
+	)
+}
+
 // deployPrepare is common set of mutators between "bundle plan" and "bundle deploy".
-// Ideally it should not modify the remote, only in-memory bundle config.
-// TODO: currently it does affect remote, via artifacts.CleanUp() and libraries.Upload().
-// We should refactor deployment so that it consists of two stages:
-// 1. Preparation: only local config is changed. This will be used by both "bundle deploy" and "bundle plan"
-// 2. Deployment: this does all the uploads. Only used by "deploy", not "plan".
-func deployPrepare(ctx context.Context, b *bundle.Bundle) {
+func deployPrepare(ctx context.Context, b *bundle.Bundle) map[string][]libraries.ConfigLocation {
 	bundle.ApplySeqContext(ctx, b,
 		statemgmt.StatePull(),
 		terraform.CheckDashboardsModifiedRemotely(),
 		deploy.StatePull(),
 		mutator.ValidateGitDetails(),
 		terraform.CheckRunningResource(),
-
-		// artifacts.CleanUp() is there because I'm not sure if it's safe to move to later stage.
-		artifacts.CleanUp(),
 
 		// libraries.CheckForSameNameLibraries() needs to be run after we expand glob references so we
 		// know what are the actual library paths.
@@ -176,12 +178,20 @@ func deployPrepare(ctx context.Context, b *bundle.Bundle) {
 		libraries.CheckForSameNameLibraries(),
 		// SwitchToPatchedWheels must be run after ExpandGlobReferences and after build phase because it Artifact.Source and Artifact.Patched populated
 		libraries.SwitchToPatchedWheels(),
+	)
 
-		// libraries.Upload() not just uploads but also replaces local paths with remote paths.
-		// TransformWheelTask depends on it and planning also depends on it.
-		libraries.Upload(),
+	libs, diags := libraries.ReplaceWithRemotePath(ctx, b)
+	for _, diag := range diags {
+		logdiag.LogDiag(ctx, diag)
+	}
+
+	bundle.ApplySeqContext(ctx, b,
+		// TransformWheelTask must be run after ReplaceWithRemotePath so we can use correct remote path in the
+		// transformed notebook
 		trampoline.TransformWheelTask(),
 	)
+
+	return libs
 }
 
 // The deploy phase deploys artifacts and resources.
@@ -205,7 +215,12 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDeploy))
 	}()
 
-	deployPrepare(ctx, b)
+	libs := deployPrepare(ctx, b)
+	if logdiag.HasError(ctx) {
+		return
+	}
+
+	uploadLibraries(ctx, b, libs)
 	if logdiag.HasError(ctx) {
 		return
 	}
