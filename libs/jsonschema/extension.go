@@ -55,8 +55,4 @@ type Extension struct {
 	// This field is not in the JSON schema spec, but it is supported in VSCode
 	// It hides a property from IntelliSense (autocomplete suggestions).
 	DoNotSuggest bool `json:"doNotSuggest,omitempty"`
-
-	// PythonKeepDeprecated is a custom extension that forces the field to be
-	// present in the generated Python code, even if it is deprecated.
-	PythonKeepDeprecated bool `json:"x-databricks-python-keep-deprecated,omitempty"`
 }
