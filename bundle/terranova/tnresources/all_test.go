@@ -110,11 +110,11 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 
 	ctx := context.Background()
 
-	createdID, err := adapter.DoCreate(ctx, config)
+	createdID, _, err := adapter.DoCreate(ctx, config)
 	require.NoError(t, err, "DoCreate failed config=%v", config)
 	require.NotEmpty(t, createdID, "ID returned from DoCreate was empty")
 
-	err = adapter.DoUpdate(ctx, createdID, config)
+	_, err = adapter.DoUpdate(ctx, createdID, config)
 	require.NoError(t, err, "DoUpdate failed")
 }
 

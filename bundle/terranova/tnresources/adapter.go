@@ -25,12 +25,37 @@ type IResource interface {
 	// Example: func (*ResourceJob) PrepareConfig(input *resources.Job) *jobs.JobSettings
 	PrepareConfig(input any) any
 
+	// DoRefresh reads and returns remote state from the backend. The return type defines schema for remote field resolution.
+	// Example: func (r *ResourceJob) DoRefresh(ctx context.Context, id string) (*jobs.Job, error) {
+	DoRefresh(ctx context.Context, id string) (remoteState any, e error)
+
 	// DoDelete deletes the resource.
 	// Example: func (r *ResourceJob) DoDelete(ctx context.Context, id string) error {
 	DoDelete(ctx context.Context, id string) error
 
+	// [Optional] RecreateFields returns a list of fields that will cause resource recreation if changed
+	// Example: func (r *ResourceJob) RecreateFields() []string { return []string{"name", "type"} }
+	RecreateFields() []string
+
+	// [Optional] ClassifyChanges provides non-default change classification.
+	// Default is to consider any change "an update" (RecreateFields handled separately).
+	// Example: func (r *ResourceJob) ClassifyChanges(changes []structdiff.Change) deployplan.ActionType { return deployplan.ActionUpdate }
+	ClassifyChanges(changes []structdiff.Change) deployplan.ActionType
+}
+
+// This interface represents adapted interface to call a resource.
+// The resources don't actually implement this interface, but rather a subset of functions
+// with different signatures: any is replaced with concrete types.
+type IResourceAdapterNoRefresh interface {
+	// Any field named config below have the same type as return value of PrepareConfig.
+	// Any field named remoteState below has the same type as return value of DoRefresh.
+	// We pass config as pointer but it is never nil. Changes to it will be persisted in the state, so should be avoided
+	// We pass remoteState as pointer as well and it maybe nil if it was never refreshed.
+	// Changes to the struct will be visible to subsequent operations as well as we $resources lookups.
+
 	// DoCreate creates a new resource from the config.
 	// Example: func (r *ResourceJob) DoCreate(ctx context.Context, config *jobs.JobSettings) (string, error) {
+	// Alternative: IResourceAdapterWithRefresh.DoCreate can be implemented instead.
 	DoCreate(ctx context.Context, config any) (id string, e error)
 
 	// DoUpdate updates the resource. ID must not change as a result of this operation.
@@ -47,20 +72,36 @@ type IResource interface {
 
 	// [Optional] WaitAfterUpdate waits for the resource to become ready after update.
 	WaitAfterUpdate(ctx context.Context, config any) error
-
-	// [Optional] RecreateFields returns a list of fields that will cause resource recreation if changed
-	RecreateFields() []string
-
-	// [Optional] ClassifyChanges provides non-default change classification.
-	// Default is to consider any change "an update".
-	// Note, RecreateFields takes priority over this. If recreate is detected via RecreateFields, this is not going to be called.
-	ClassifyChanges(changes []structdiff.Change) deployplan.ActionType
 }
 
+// Alternative methods that also return remote state.
+// Only use these if you get remote state for free as part of the main operation. Otherwise, prefer simpler NoRefresh variants.
+type IResourceAdapterWithRefresh interface {
+	// DoCreate creates a new resource from the config. Returns id of the resource and remote state.
+	// Example: func (r *ResourceVolume) DoCreate(ctx context.Context, config *catalog.CreateVolumeRequestContent) (string, *catalog.VolumeInfo, error) {
+	DoCreate(ctx context.Context, config any) (id string, remoteState any, e error)
+
+	// DoUpdate updates the resource. ID must not change as a result of this operation. Returns remote state.
+	// Example: func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, config *catalog.CreateSchema) (*catalog.SchemaInfo, error) {
+	DoUpdate(ctx context.Context, id string, config any) (remoteState any, e error)
+
+	// Optional: updates that may change ID. Returns new id and remote state when available.
+	DoUpdateWithID(ctx context.Context, id string, config any) (newID string, remoteState any, e error)
+
+	// WaitAfterCreate waits for the resource to become ready after creation.
+	WaitAfterCreate(ctx context.Context, id string, config any) (newRemoteState any, e error)
+
+	// WaitAfterUpdate waits for the resource to become ready after update.
+	WaitAfterUpdate(ctx context.Context, id string, config any) (newRemoteState any, e error)
+}
+
+// Adapter wraps resource implementation, validates signatures and type consistency across methods
+// and provides a unified interface.
 type Adapter struct {
 	// Required:
 	new           *calladapt.BoundCaller
 	prepareConfig *calladapt.BoundCaller
+	doRefresh     *calladapt.BoundCaller
 	doDelete      *calladapt.BoundCaller
 	doCreate      *calladapt.BoundCaller
 	doUpdate      *calladapt.BoundCaller
@@ -90,6 +131,7 @@ func NewAdapter(typedNil any, client *databricks.WorkspaceClient) (*Adapter, err
 	adapter := &Adapter{
 		new:             nil,
 		prepareConfig:   nil,
+		doRefresh:       nil,
 		doDelete:        nil,
 		doCreate:        nil,
 		doUpdate:        nil,
@@ -133,7 +175,7 @@ func NewAdapter(typedNil any, client *databricks.WorkspaceClient) (*Adapter, err
 func (a *Adapter) initMethods(resource any) error {
 	it := calladapt.TypeOf[IResource]()
 
-	err := calladapt.EnsureNoExtraMethods(resource, it)
+	err := calladapt.EnsureNoExtraMethods(resource, it, calladapt.TypeOf[IResourceAdapterNoRefresh](), calladapt.TypeOf[IResourceAdapterWithRefresh]())
 	if err != nil {
 		return err
 	}
@@ -147,34 +189,39 @@ func (a *Adapter) initMethods(resource any) error {
 		return err
 	}
 
+	a.doRefresh, err = prepareCallRequired(resource, it, "DoRefresh")
+	if err != nil {
+		return err
+	}
+
 	a.doDelete, err = prepareCallRequired(resource, it, "DoDelete")
 	if err != nil {
 		return err
 	}
 
-	a.doCreate, err = prepareCallRequired(resource, it, "DoCreate")
+	a.doCreate, err = prepareCallFromTwoVariantsRequired(resource, "DoCreate")
 	if err != nil {
 		return err
 	}
 
-	a.doUpdate, err = prepareCallRequired(resource, it, "DoUpdate")
+	a.doUpdate, err = prepareCallFromTwoVariantsRequired(resource, "DoUpdate")
 	if err != nil {
 		return err
 	}
 
 	// Optional methods:
 
-	a.doUpdateWithID, err = calladapt.PrepareCall(resource, it, "DoUpdateWithID")
+	a.doUpdateWithID, err = prepareCallFromTwoVariants(resource, "DoUpdateWithID")
 	if err != nil {
 		return err
 	}
 
-	a.waitAfterCreate, err = calladapt.PrepareCall(resource, it, "WaitAfterCreate")
+	a.waitAfterCreate, err = prepareCallFromTwoVariants(resource, "WaitAfterCreate")
 	if err != nil {
 		return err
 	}
 
-	a.waitAfterUpdate, err = calladapt.PrepareCall(resource, it, "WaitAfterUpdate")
+	a.waitAfterUpdate, err = prepareCallFromTwoVariants(resource, "WaitAfterUpdate")
 	if err != nil {
 		return err
 	}
@@ -208,22 +255,46 @@ func (a *Adapter) validate() error {
 		return err
 	}
 
+	remoteType := a.RemoteType()
+	err = validatePointerToStruct(remoteType, "remote type")
+	if err != nil {
+		return err
+	}
+
 	validations := []any{
 		"PrepareConfig return", a.prepareConfig.OutTypes[0], configType,
 		"DoCreate config", a.doCreate.InTypes[1], configType,
 		"DoUpdate config", a.doUpdate.InTypes[2], configType,
 	}
 
+	// Check if this is WithRefresh version (returns 3 values: id, remoteState, error)
+	if len(a.doCreate.OutTypes) == 3 {
+		validations = append(validations, "DoCreate remoteState return", a.doCreate.OutTypes[1], remoteType)
+	}
+
+	if len(a.doUpdate.OutTypes) == 2 {
+		validations = append(validations, "DoUpdate remoteState return", a.doUpdate.OutTypes[0], remoteType)
+	}
+
 	if a.doUpdateWithID != nil {
 		validations = append(validations, "DoUpdateWithID config", a.doUpdateWithID.InTypes[2], configType)
+		if len(a.doUpdateWithID.OutTypes) == 3 && a.doUpdateWithID.OutTypes[1] != remoteType {
+			validations = append(validations, "DoUpdateWithID remoteState return", a.doUpdateWithID.OutTypes[1], remoteType)
+		}
 	}
 
 	if a.waitAfterCreate != nil {
 		validations = append(validations, "WaitAfterCreate config", a.waitAfterCreate.InTypes[1], configType)
+		if len(a.waitAfterCreate.OutTypes) == 2 {
+			validations = append(validations, "WaitAfterCreate remoteState return", a.waitAfterCreate.OutTypes[0], remoteType)
+		}
 	}
 
 	if a.waitAfterUpdate != nil {
 		validations = append(validations, "WaitAfterUpdate config", a.waitAfterUpdate.InTypes[1], configType)
+		if len(a.waitAfterUpdate.OutTypes) == 2 {
+			validations = append(validations, "WaitAfterUpdate remoteState return", a.waitAfterUpdate.OutTypes[0], remoteType)
+		}
 	}
 
 	err = validateTypes(validations...)
@@ -244,6 +315,10 @@ func (a *Adapter) InputConfigType() reflect.Type {
 
 func (a *Adapter) ConfigType() reflect.Type {
 	return a.prepareConfig.OutTypes[0]
+}
+
+func (a *Adapter) RemoteType() reflect.Type {
+	return a.doRefresh.OutTypes[0]
 }
 
 func (a *Adapter) New(client *databricks.WorkspaceClient) (any, error) {
@@ -268,6 +343,17 @@ func (a *Adapter) PrepareConfig(input any) (any, error) {
 	return outs[0], nil
 }
 
+func (a *Adapter) DoRefresh(ctx context.Context, id string) (any, error) {
+	outs, err := a.doRefresh.Call(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if len(outs) != 1 {
+		return nil, fmt.Errorf("internal error: DoRefresh returned %d values, expected 1", len(outs))
+	}
+	return outs[0], nil
+}
+
 func (a *Adapter) DoDelete(ctx context.Context, id string) error {
 	outs, err := a.doDelete.Call(ctx, id)
 	if err != nil {
@@ -279,21 +365,46 @@ func (a *Adapter) DoDelete(ctx context.Context, id string) error {
 	return nil
 }
 
-func (a *Adapter) DoCreate(ctx context.Context, config any) (string, error) {
+func (a *Adapter) DoCreate(ctx context.Context, config any) (string, any, error) {
+	if a.doCreate == nil {
+		return "", nil, errors.New("internal error: DoCreate not found")
+	}
+
 	outs, err := a.doCreate.Call(ctx, config)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 
 	// no error checking, type is enforced via calladapt + interface
 	id := outs[0].(string)
-	return id, nil
+
+	if len(outs) == 2 {
+		// WithRefresh version
+		return id, outs[1], nil
+	} else {
+		return id, nil, nil
+	}
 }
 
-// DoUpdate updates the resource.
-func (a *Adapter) DoUpdate(ctx context.Context, id string, config any) error {
-	_, err := a.doUpdate.Call(ctx, id, config)
-	return err
+// DoUpdate updates the resource. If the implementation returns remote state,
+// it will be returned as the first value; otherwise it will be nil.
+func (a *Adapter) DoUpdate(ctx context.Context, id string, config any) (any, error) {
+	if a.doUpdate == nil {
+		return nil, errors.New("internal error: DoUpdate not found")
+	}
+
+	outs, err := a.doUpdate.Call(ctx, id, config)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(outs) == 1 {
+		// WithRefresh version
+		return outs[0], nil
+	} else {
+		// NoRefresh version
+		return nil, nil
+	}
 }
 
 // HasClassifyChanges returns true if the resource implements ClassifyChanges method.
@@ -306,19 +417,25 @@ func (a *Adapter) HasDoUpdateWithID() bool {
 	return a.doUpdateWithID != nil
 }
 
-// DoUpdateWithID updates the resource and may change its ID. Returns newID.
-func (a *Adapter) DoUpdateWithID(ctx context.Context, oldID string, config any) (string, error) {
+// DoUpdateWithID updates the resource and may change its ID. Returns newID and remoteState if available.
+func (a *Adapter) DoUpdateWithID(ctx context.Context, oldID string, config any) (string, any, error) {
 	if a.doUpdateWithID == nil {
-		return "", errors.New("internal error: DoUpdateWithID not found")
+		return "", nil, errors.New("internal error: DoUpdateWithID not found")
 	}
 
 	outs, err := a.doUpdateWithID.Call(ctx, oldID, config)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 
 	id := outs[0].(string)
-	return id, nil
+
+	if len(outs) == 2 {
+		// WithRefresh version
+		return id, outs[1], nil
+	} else {
+		return id, nil, nil
+	}
 }
 
 // MustRecreate checks if any of the changes require resource recreation.
@@ -349,24 +466,46 @@ func (a *Adapter) ClassifyChanges(changes []structdiff.Change) (deployplan.Actio
 
 // WaitAfterCreate waits for the resource to become ready after creation.
 // If the resource doesn't implement this method, this is a no-op.
-func (a *Adapter) WaitAfterCreate(ctx context.Context, config any) error {
+// Returns the updated remoteState if the WithRefresh variant is implemented, otherwise returns nil
+func (a *Adapter) WaitAfterCreate(ctx context.Context, id string, config any) (any, error) {
 	if a.waitAfterCreate == nil {
-		return nil // no-op if not implemented
+		return nil, nil // no-op if not implemented
 	}
 
-	_, err := a.waitAfterCreate.Call(ctx, config)
-	return err
+	outs, err := a.waitAfterCreate.Call(ctx, id, config)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(outs) == 1 {
+		// NoRefresh version
+		return nil, nil
+	} else {
+		// WithRefresh version
+		return outs[0], nil
+	}
 }
 
 // WaitAfterUpdate waits for the resource to become ready after update.
 // If the resource doesn't implement this method, this is a no-op.
-func (a *Adapter) WaitAfterUpdate(ctx context.Context, config any) error {
+// Returns the updated remoteState if the WithRefresh variant is implemented, otherwise returns the input remoteState.
+func (a *Adapter) WaitAfterUpdate(ctx context.Context, id string, config any) (any, error) {
 	if a.waitAfterUpdate == nil {
-		return nil // no-op if not implemented
+		return nil, nil // no-op if not implemented
 	}
 
-	_, err := a.waitAfterUpdate.Call(ctx, config)
-	return err
+	outs, err := a.waitAfterUpdate.Call(ctx, id, config)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(outs) == 1 {
+		// NoRefresh version
+		return nil, nil
+	} else {
+		// WithRefresh version
+		return outs[0], nil
+	}
 }
 
 // prepareCallRequired prepares a call and ensures the method is found.
@@ -377,6 +516,39 @@ func prepareCallRequired(resource any, interfaceType reflect.Type, methodName st
 	}
 	if caller == nil {
 		return nil, fmt.Errorf("%s method not found", methodName)
+	}
+	return caller, nil
+}
+
+// prepareCallFromTwoVariants tries to prepare a call from two interface variants (NoRefresh and WithRefresh).
+// Returns the caller from whichever variant works, or nil if neither works.
+func prepareCallFromTwoVariants(resource any, methodName string) (*calladapt.BoundCaller, error) {
+	noRefreshCaller, errNoRefresh := calladapt.PrepareCall(resource, calladapt.TypeOf[IResourceAdapterNoRefresh](), methodName)
+	withRefreshCaller, errWithRefresh := calladapt.PrepareCall(resource, calladapt.TypeOf[IResourceAdapterWithRefresh](), methodName)
+
+	// If both variants have errors, report them - these are real errors
+	if errNoRefresh != nil && errWithRefresh != nil {
+		return nil, fmt.Errorf("%s errors - NoRefresh: %w, WithRefresh: %w", methodName, errNoRefresh, errWithRefresh)
+	}
+
+	// Return the successful variant
+	if noRefreshCaller != nil {
+		return noRefreshCaller, nil
+	} else if withRefreshCaller != nil {
+		return withRefreshCaller, nil
+	}
+
+	return nil, nil // Neither variant found, but that might be okay for optional methods
+}
+
+// prepareCallFromTwoVariantsRequired tries to prepare a call from two interface variants and ensures one is found.
+func prepareCallFromTwoVariantsRequired(resource any, methodName string) (*calladapt.BoundCaller, error) {
+	caller, err := prepareCallFromTwoVariants(resource, methodName)
+	if err != nil {
+		return nil, err
+	}
+	if caller == nil {
+		return nil, fmt.Errorf("%s method not found in either variant", methodName)
 	}
 	return caller, nil
 }

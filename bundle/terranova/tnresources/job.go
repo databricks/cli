@@ -24,6 +24,14 @@ func (*ResourceJob) PrepareConfig(input *resources.Job) *jobs.JobSettings {
 	return &input.JobSettings
 }
 
+func (r *ResourceJob) DoRefresh(ctx context.Context, id string) (*jobs.Job, error) {
+	idInt, err := parseJobID(id)
+	if err != nil {
+		return nil, err
+	}
+	return r.client.Jobs.GetByJobId(ctx, idInt)
+}
+
 func (r *ResourceJob) DoCreate(ctx context.Context, config *jobs.JobSettings) (string, error) {
 	request, err := makeCreateJob(*config)
 	if err != nil {
