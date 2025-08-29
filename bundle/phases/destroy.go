@@ -32,11 +32,7 @@ func assertRootPathExists(ctx context.Context, b *bundle.Bundle) (bool, error) {
 
 func getDeleteActions(ctx context.Context, b *bundle.Bundle) ([]deployplan.Action, error) {
 	if b.DirectDeployment {
-		path, err := b.StateLocalPath(ctx)
-		if err != nil {
-			return nil, err
-		}
-		err = b.BundleDeployer.OpenDB(path)
+		err := b.OpenStateFile(ctx)
 		if err != nil {
 			return nil, err
 		}

@@ -34,18 +34,12 @@ func (l *load) Name() string {
 
 func (l *load) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	var state ExportedResourcesMap
-	var err error
 
 	if b.DirectDeployment {
-		path, err := b.StateLocalPath(ctx)
+		err := b.OpenStateFile(ctx)
 		if err != nil {
 			return diag.FromErr(err)
 		}
-		err = b.BundleDeployer.OpenDB(path)
-		if err != nil {
-			return diag.FromErr(err)
-		}
-		b.BundleDeployer.StateDB.AssertOpened()
 		state = b.BundleDeployer.StateDB.ExportState(ctx)
 	} else {
 		tf := b.Terraform
@@ -53,18 +47,18 @@ func (l *load) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 			return diag.Errorf("terraform not initialized")
 		}
 
-		err = tf.Init(ctx, tfexec.Upgrade(true))
+		err := tf.Init(ctx, tfexec.Upgrade(true))
 		if err != nil {
 			return diag.Errorf("terraform init: %v", err)
 		}
 
 		state, err = terraform.ParseResourcesState(ctx, b)
-	}
-	if err != nil {
-		return diag.FromErr(err)
+		if err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
-	err = l.validateState(state)
+	err := l.validateState(state)
 	if err != nil {
 		return diag.FromErr(err)
 	}

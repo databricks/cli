@@ -340,3 +340,21 @@ func (b *Bundle) StateLocalPath(ctx context.Context) (string, error) {
 		return filepath.Join(cacheDir, terraformStateFilename), nil
 	}
 }
+
+func (b *Bundle) OpenStateFile(ctx context.Context) error {
+	if !b.DirectDeployment {
+		panic("internal error: OpenResourceDatabase must be called with DirectDeployment")
+	}
+
+	statePath, err := b.StateLocalPath(ctx)
+	if err != nil {
+		return err
+	}
+
+	err = b.BundleDeployer.OpenStateFile(statePath)
+	if err != nil {
+		return fmt.Errorf("failed to open/create state file at %s: %s", statePath, err)
+	}
+
+	return nil
+}

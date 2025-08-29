@@ -26,7 +26,7 @@ type BundleDeployer struct {
 	PlannedActions map[deployplan.ResourceNode]deployplan.ActionType
 }
 
-func (b *BundleDeployer) OpenDB(statePath string) error {
+func (b *BundleDeployer) OpenStateFile(statePath string) error {
 	err := b.StateDB.Open(statePath)
 	if err != nil {
 		return fmt.Errorf("failed to read state from %s: %w", statePath, err)
