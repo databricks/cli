@@ -17,20 +17,6 @@ except ImportError:
     raise ImportError("Test dependencies not found.\n\nRun tests using 'uv run pytest'. See http://docs.astral.sh/uv to learn more about uv.")
 
 
-def add_all_resources_to_sys_path():
-    """Add all resources/* directories to sys.path for module discovery."""
-    resources = pathlib.Path(__file__).with_name("resources")
-    resource_dirs = filter(pathlib.Path.is_dir, resources.iterdir())
-    seen: dict[str, pathlib.Path] = {}
-    for resource in resource_dirs:
-        sys.path.append(str(resource.resolve()))
-        for py in resource.rglob("*.py"):
-            mod = ".".join(py.relative_to(resource).with_suffix("").parts)
-            if mod in seen:
-                raise ImportError(f"Duplicate module '{mod}' found:\n  {seen[mod]}\n  {py}")
-            seen[mod] = py
-
-
 def enable_fallback_compute():
     """Enable serverless compute if no compute is specified."""
     conf = WorkspaceClient().config
@@ -58,7 +44,6 @@ def allow_stderr_output(config: pytest.Config):
 def pytest_configure(config: pytest.Config):
     """Configure pytest session."""
     with allow_stderr_output(config):
-        add_all_resources_to_sys_path()
         enable_fallback_compute()
 
         # Initialize Spark session eagerly, so it is available even when
