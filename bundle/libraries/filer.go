@@ -3,6 +3,7 @@ package libraries
 import (
 	"context"
 	"path"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
@@ -24,6 +25,7 @@ func GetFilerForLibraries(ctx context.Context, b *bundle.Bundle) (filer.Filer, s
 	}
 
 	uploadPath := path.Join(b.Config.Workspace.ArtifactPath, InternalDirName)
+	uploadPath = ensureWorkspaceOrVolumesPrefix(uploadPath)
 
 	switch {
 	case IsVolumesPath(artifactPath):
@@ -40,11 +42,21 @@ func GetFilerForLibrariesCleanup(ctx context.Context, b *bundle.Bundle) (filer.F
 		return nil, "", diag.Errorf("remote artifact path not configured")
 	}
 
+	artifactPath = ensureWorkspaceOrVolumesPrefix(artifactPath)
+
 	switch {
 	case IsVolumesPath(artifactPath):
-		return filerForVolume(b, b.Config.Workspace.ArtifactPath)
+		return filerForVolume(b, artifactPath)
 
 	default:
-		return filerForWorkspace(b, b.Config.Workspace.ArtifactPath)
+		return filerForWorkspace(b, artifactPath)
 	}
+}
+
+// If the remote path does not start with /Workspace or /Volumes, prepend /Workspace
+func ensureWorkspaceOrVolumesPrefix(path string) string {
+	if !strings.HasPrefix(path, "/Workspace") && !strings.HasPrefix(path, "/Volumes") {
+		path = "/Workspace" + path
+	}
+	return path
 }

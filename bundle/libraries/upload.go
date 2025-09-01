@@ -23,13 +23,13 @@ import (
 // avoid hitting the rate limit.
 var maxFilesRequestsInFlight = 5
 
-func Upload(libs map[string][]ConfigLocation) bundle.Mutator {
+func Upload(libs map[string][]LocationToUpdate) bundle.Mutator {
 	return &upload{
 		libs: libs,
 	}
 }
 
-func UploadWithClient(libs map[string][]ConfigLocation, client filer.Filer) bundle.Mutator {
+func UploadWithClient(libs map[string][]LocationToUpdate, client filer.Filer) bundle.Mutator {
 	return &upload{
 		libs:   libs,
 		client: client,
@@ -38,10 +38,10 @@ func UploadWithClient(libs map[string][]ConfigLocation, client filer.Filer) bund
 
 type upload struct {
 	client filer.Filer
-	libs   map[string][]ConfigLocation
+	libs   map[string][]LocationToUpdate
 }
 
-type ConfigLocation struct {
+type LocationToUpdate struct {
 	configPath dyn.Path
 	location   dyn.Location
 }

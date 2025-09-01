@@ -8,7 +8,6 @@ import (
 	"github.com/databricks/cli/bundle/apps"
 	"github.com/databricks/cli/bundle/artifacts"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/bundle/deploy/lock"
@@ -21,7 +20,6 @@ import (
 	"github.com/databricks/cli/bundle/scripts"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/bundle/terranova"
-	"github.com/databricks/cli/bundle/trampoline"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
@@ -146,44 +144,11 @@ func deployCore(ctx context.Context, b *bundle.Bundle) {
 // uploadLibraries uploads libraries to the workspace.
 // It also cleans up the artifacts directory and transforms wheel tasks.
 // It is called by only "bundle deploy".
-func uploadLibraries(ctx context.Context, b *bundle.Bundle, libs map[string][]libraries.ConfigLocation) {
+func uploadLibraries(ctx context.Context, b *bundle.Bundle, libs map[string][]libraries.LocationToUpdate) {
 	bundle.ApplySeqContext(ctx, b,
 		artifacts.CleanUp(),
 		libraries.Upload(libs),
 	)
-}
-
-// deployPrepare is common set of mutators between "bundle plan" and "bundle deploy".
-func deployPrepare(ctx context.Context, b *bundle.Bundle) map[string][]libraries.ConfigLocation {
-	bundle.ApplySeqContext(ctx, b,
-		statemgmt.StatePull(),
-		terraform.CheckDashboardsModifiedRemotely(),
-		deploy.StatePull(),
-		mutator.ValidateGitDetails(),
-		terraform.CheckRunningResource(),
-
-		// libraries.CheckForSameNameLibraries() needs to be run after we expand glob references so we
-		// know what are the actual library paths.
-		// libraries.ExpandGlobReferences() has to be run after the libraries are built and thus this
-		// mutator is part of the deploy step rather than validate.
-		libraries.ExpandGlobReferences(),
-		libraries.CheckForSameNameLibraries(),
-		// SwitchToPatchedWheels must be run after ExpandGlobReferences and after build phase because it Artifact.Source and Artifact.Patched populated
-		libraries.SwitchToPatchedWheels(),
-	)
-
-	libs, diags := libraries.ReplaceWithRemotePath(ctx, b)
-	for _, diag := range diags {
-		logdiag.LogDiag(ctx, diag)
-	}
-
-	bundle.ApplySeqContext(ctx, b,
-		// TransformWheelTask must be run after ReplaceWithRemotePath so we can use correct remote path in the
-		// transformed notebook
-		trampoline.TransformWheelTask(),
-	)
-
-	return libs
 }
 
 // The deploy phase deploys artifacts and resources.

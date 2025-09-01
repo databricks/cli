@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"path"
 	"path/filepath"
-	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
@@ -15,7 +14,7 @@ import (
 
 // ReplaceWithRemotePath updates all the libraries paths to point to the remote location
 // where the libraries will be uploaded later.
-func ReplaceWithRemotePath(ctx context.Context, b *bundle.Bundle) (map[string][]ConfigLocation, diag.Diagnostics) {
+func ReplaceWithRemotePath(ctx context.Context, b *bundle.Bundle) (map[string][]LocationToUpdate, diag.Diagnostics) {
 	_, uploadPath, diags := GetFilerForLibraries(ctx, b)
 	if diags.HasError() {
 		return nil, diags
@@ -29,27 +28,23 @@ func ReplaceWithRemotePath(ctx context.Context, b *bundle.Bundle) (map[string][]
 	sources := utils.SortedKeys(libs)
 
 	// Update all the config paths to point to the uploaded location
-	for _, source := range sources {
-		locations := libs[source]
-		err = b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+	err = b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+		for _, source := range sources {
+			locations := libs[source]
 			remotePath := path.Join(uploadPath, filepath.Base(source))
 
-			// If the remote path does not start with /Workspace or /Volumes, prepend /Workspace
-			if !strings.HasPrefix(remotePath, "/Workspace") && !strings.HasPrefix(remotePath, "/Volumes") {
-				remotePath = "/Workspace" + remotePath
-			}
 			for _, location := range locations {
 				v, err = dyn.SetByPath(v, location.configPath, dyn.NewValue(remotePath, []dyn.Location{location.location}))
 				if err != nil {
 					return v, fmt.Errorf("internal error: failed to update path %#v to %#v: %w", source, remotePath, err)
 				}
 			}
-
-			return v, nil
-		})
-		if err != nil {
-			diags = diags.Extend(diag.FromErr(err))
 		}
+
+		return v, nil
+	})
+	if err != nil {
+		diags = diags.Extend(diag.FromErr(err))
 	}
 
 	return libs, diags
@@ -60,9 +55,9 @@ func ReplaceWithRemotePath(ctx context.Context, b *bundle.Bundle) (map[string][]
 // We collect them from task libraries, foreach task libraries, environment dependencies, and artifacts.
 // We return a map of library source to a list of config paths and locations where the library is used.
 // We use map so we don't upload the same library multiple times.
-// Instead we upload it once and update all the config paths to point to the uploaded location.
-func collectLocalLibraries(b *bundle.Bundle) (map[string][]ConfigLocation, error) {
-	libs := make(map[string]([]ConfigLocation))
+// This map is later used to upload the libraries to the remote location and update the config paths to point to the uploaded location.
+func collectLocalLibraries(b *bundle.Bundle) (map[string][]LocationToUpdate, error) {
+	libs := make(map[string]([]LocationToUpdate))
 
 	patterns := []dyn.Pattern{
 		taskLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("whl")),
@@ -86,7 +81,7 @@ func collectLocalLibraries(b *bundle.Bundle) (map[string][]ConfigLocation, error
 				}
 
 				source = filepath.Join(b.SyncRootPath, source)
-				libs[source] = append(libs[source], ConfigLocation{
+				libs[source] = append(libs[source], LocationToUpdate{
 					configPath: p,
 					location:   v.Location(),
 				})
@@ -130,7 +125,7 @@ func collectLocalLibraries(b *bundle.Bundle) (map[string][]ConfigLocation, error
 				}
 			}
 
-			libs[source] = append(libs[source], ConfigLocation{
+			libs[source] = append(libs[source], LocationToUpdate{
 				configPath: p.Append(dyn.Key("remote_path")),
 				location:   v.Location(),
 			})
