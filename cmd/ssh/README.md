@@ -48,7 +48,7 @@ flowchart TD
  subgraph s2["Cluster"]
         s3
         s4
-        n12["WSFS/DBFS/Volumes"]
+        n12["workspace filesystem"]
   end
     n1 -. "1 - start an ssh server job" .-> n3
     n3 -. "2 - start ssh server" .-> n4
