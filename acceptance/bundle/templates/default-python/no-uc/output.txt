@@ -1,7 +1,12 @@
 
 >>> [CLI] bundle init default-python --config-file ./input.json --output-dir output
-
 Welcome to the default Python template for Databricks Asset Bundles!
-Error: template: :1:2: executing "" at <index ((regexp "^(.*)_project$").FindStringSubmatch .project_name) 1>: error calling index: index out of range: 1
+
+Please answer the below to tailor your project to your preferences.
+You can always change your mind and change your configuration in the databricks.yml file later.
+
+Note that [DATABRICKS_URL] is used for initialization
+(see https://docs.databricks.com/dev-tools/cli/profiles.html for how to change your profile).
+Error: template: :1:2: executing "" at <default_catalog>: error calling default_catalog: Unity Catalog is not available for feature tier STANDARD_TIER.
 
 Exit code: 1

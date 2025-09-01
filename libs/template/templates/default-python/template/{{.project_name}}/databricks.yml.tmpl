@@ -5,15 +5,31 @@
 bundle:
   name: {{.project_name}}
   uuid: {{bundle_uuid}}
-{{ if $with_python }}
+
+include:
+  - resources/*.yml
+  - resources/*/*.yml
+
+{{- if $with_python}}
+
 artifacts:
   python_artifact:
     type: whl
     build: uv build --wheel
-{{ end }}
-include:
-  - resources/*.yml
-  - resources/*/*.yml
+{{- end}}
+
+# Variable declarations. These variables are assigned in the dev/prod targets below.
+variables:
+  catalog:
+    description: The catalog to use
+  schema:
+    description: The schema to use
+
+{{- $dev_schema := "dev" }}
+{{- $prod_schema := "prod" }}
+{{- if (regexp "^yes").MatchString .personal_schemas}}
+  {{- $dev_schema = "${workspace.current_user.short_name}"}}
+{{- end}}
 
 targets:
   dev:
@@ -25,20 +41,22 @@ targets:
     default: true
     workspace:
       host: {{workspace_host}}
-{{ if ($with_classic) }}
+    variables:
+      catalog: {{.default_catalog}}
+      schema: {{$dev_schema}}
+  {{- if $with_classic}}
     presets:
-      # Set dynamic_version: true on all artifacts of type "whl".
-      # This makes "bundle deploy" add a timestamp to wheel's version before uploading,
-      # new wheel takes over the previous installation even if actual wheel version is unchanged.
-      # See https://docs.databricks.com/aws/en/dev-tools/bundles/settings
       artifacts_dynamic_version: true
-{{ end }}
+  {{- end}}
   prod:
     mode: production
     workspace:
       host: {{workspace_host}}
       # We explicitly deploy to /Workspace/Users/{{user_name}} to make sure we only have a single copy.
       root_path: /Workspace/Users/{{user_name}}/.bundle/${bundle.name}/${bundle.target}
+    variables:
+      catalog: {{.default_catalog}}
+      schema: {{$prod_schema}}
     permissions:
       - {{if is_service_principal}}service_principal{{else}}user{{end}}_name: {{user_name}}
         level: CAN_MANAGE

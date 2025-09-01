@@ -1,0 +1,98 @@
+# A sample job for {{.project_name}}.
+
+{{- $serverless := (eq .serverless "yes")}}
+{{- $python_package := (eq .include_python "yes")}}
+{{- $notebook := (eq .include_job "yes")}}
+{{- $pipeline := (eq .include_pipeline "yes")}}
+
+resources:
+  jobs:
+    sample_job:
+      name: sample_job
+
+      trigger:
+        # Run this job every day, exactly one day from the last run; see https://docs.databricks.com/api/workspace/jobs/create#trigger
+        periodic:
+          interval: 1
+          unit: DAYS
+
+      #email_notifications:
+      #  on_failure:
+      #    - your_email@example.com
+
+      parameters:
+        - name: catalog
+          default: ${var.catalog}
+        - name: schema
+          default: ${var.schema}
+
+      tasks:
+
+{{- if $notebook}}
+        - task_key: notebook_task
+          notebook_task:
+            notebook_path: ../src/sample_notebook.ipynb
+  {{- if $serverless}}
+          environment_key: default
+  {{- else}}
+          job_cluster_key: job_cluster
+    {{- if $python_package}}
+          libraries:
+            # By default we just include the .whl file generated for the {{.project_name_short}} package in src/.
+            # See https://docs.databricks.com/dev-tools/bundles/library-dependencies.html
+            # for more information on how to add other libraries.
+            - whl: ../../dist/*.whl
+    {{- end}}
+  {{- end}}
+{{- end}}
+
+{{- if $python_package}}
+        - task_key: python_file_task
+          depends_on:
+            - task_key: notebook_task
+          spark_python_task:
+            python_file: ../src/sample_python_file.py
+  {{- if $serverless}}
+          environment_key: default
+  {{- else}}
+          job_cluster_key: job_cluster
+    {{- if $python_package}}
+          libraries:
+            - whl: ../../dist/*.whl
+    {{- end}}
+  {{- end}}
+{{- end}}
+
+{{- if $pipeline}}
+        - task_key: refresh_pipeline
+          depends_on:
+            - task_key: notebook_task
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.{{.project_name_short}}_etl.id}
+{{- end}}
+
+{{- if $serverless}}
+
+      environments:
+        - environment_key: default
+          spec:
+            client: "2"
+  {{- if $python_package}}
+            dependencies:
+              # By default we just include the .whl file generated for the {{.project_name_short}} package in src/.
+              # See https://docs.databricks.com/dev-tools/bundles/library-dependencies.html
+              # for more information on how to add other libraries.
+              - ../dist/*.whl
+  {{- end}}
+{{- else}}
+
+      job_clusters:
+        - job_cluster_key: job_cluster
+          new_cluster:
+            spark_version: {{template "latest_lts_dbr_version"}}
+            node_type_id: {{smallest_node_type}}
+            data_security_mode: SINGLE_USER
+            autoscale:
+              min_workers: 1
+              max_workers: 4
+{{- end}}

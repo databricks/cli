@@ -4,22 +4,38 @@ This file only template directives; it is skipped for the actual output.
 
 {{skip "__preamble"}}
 
-{{$notPipeline := not (eq .include_pipeline "yes")}}
-{{$notJob := not (eq .include_job "yes")}}
-{{$notPythonPackage := not (eq .include_python "yes")}}
+{{$pipeline := eq .include_pipeline "yes"}}
+{{$job := eq .include_job "yes"}}
+{{$python_package := eq .include_python "yes"}}
 
-{{if $notPythonPackage}}
-  {{skip "{{.project_name}}/lib/{{.project_name}}"}}
+{{if not $python_package}}
+  {{skip "{{.project_name}}/pyproject.toml"}}
 {{end}}
 
-{{if $notPipeline}}
-  {{skip "{{.project_name}}/resources/{{.project_name_short}}_pipeline"}}
+{{if not $pipeline}}
+  {{skip "{{.project_name}}/resources/{{.project_name_short}}_etl.pipeline.yml"}}
+  {{skip "{{.project_name}}/src/{{.project_name_short}}_etl"}}
 {{end}}
 
-{{if $notJob}}
-  {{skip "{{.project_name}}/resources/{{.project_name_short}}_job"}}
+{{if not $job}}
+  {{skip "{{.project_name}}/src/sample_notebook.ipynb"}}
+  {{skip "{{.project_name}}/src/sample_python_file.py"}}
+  {{if not $pipeline}}
+    {{skip "{{.project_name}}/resources/{{.project_name_short}}_job.job.yml"}}
+  {{end}}
 {{end}}
 
-{{if not (or $notPipeline $notJob)}}
-  {{skip "{{.project_name}}/resources/.gitkeep"}}
+{{if and (not $pipeline) (not $job) (not $python_package)}}
+  {{skip "{{.project_name}}/src/shared"}}
+{{end}}
+
+# Remove tests for the empty project or if we only have Pipeline
+# (which is usually not testable)
+{{if and (not $python_package) (not $job)}}
+  {{skip "{{.project_name}}/tests"}}
+{{end}}
+
+# Remove .gitkeep files for a non-empty project
+{{if or $python_package $job $pipeline}}
+  {{skip "{{.project_name}}/src/.gitkeep"}}
 {{end}}

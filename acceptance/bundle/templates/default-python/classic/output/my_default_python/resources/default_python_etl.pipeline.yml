@@ -1,0 +1,14 @@
+
+# The main pipeline for my_default_python
+resources:
+  pipelines:
+    default_python_etl:
+      name: default_python_etl
+      ## Specify the 'catalog' field to configure this pipeline to make use of Unity Catalog:
+      # catalog: catalog_name
+      schema: my_default_python_${bundle.target}
+      root_path: ../src
+
+      libraries:
+        - glob:
+            include: ../src/default_python_etl/transformations/**

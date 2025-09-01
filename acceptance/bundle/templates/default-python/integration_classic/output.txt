@@ -3,8 +3,33 @@
 [UV_PYTHON]
 
 >>> [CLI] bundle init default-python --config-file ./input.json --output-dir .
-
 Welcome to the default Python template for Databricks Asset Bundles!
-Error: template: :1:2: executing "" at <index ((regexp "^(.*)_project$").FindStringSubmatch .project_name) 1>: error calling index: index out of range: 1
+
+Please answer the below to tailor your project to your preferences.
+You can always change your mind and change your configuration in the databricks.yml file later.
+
+Note that [DATABRICKS_URL] is used for initialization
+(see https://docs.databricks.com/dev-tools/cli/profiles.html for how to change your profile).
+
+✨ Your new project has been created in the 'project_name_[UNIQUE_NAME]' directory!
+
+Please refer to the README.md file for "getting started" instructions.
+See also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
+
+>>> [CLI] bundle validate -t dev
+Error: path [TEST_TMP_DIR]/dist/*.whl is not contained in sync root path
+
+Name: project_name_[UNIQUE_NAME]
+Target: dev
+Workspace:
+  Host: [DATABRICKS_URL]
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev
+
+Found 1 error
+
+>>> [CLI] bundle destroy -t dev --auto-approve
+Error: path [TEST_TMP_DIR]/dist/*.whl is not contained in sync root path
+
 
 Exit code: 1
