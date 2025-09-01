@@ -79,7 +79,7 @@ sequenceDiagram
   activate P1
   P1 ->> P4: GET ~/.ssh/$v/$cluster/metadata.json
   P4 -->> P1: {port: xxxx} or error
-  P1 ->> P6: GET /dirver-proxy-api/$cluster/$port/metadata
+  P1 ->> P6: GET /driver-proxy-api/$cluster/$port/metadata
   P6 -->> P1: {user: spark-xxxx} or {user: root} or error
   Note over P1,P6: Start the new server in the case of an error
   opt
