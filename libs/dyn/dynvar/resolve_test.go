@@ -116,11 +116,13 @@ func TestResolveWithTypeInterpolation(t *testing.T) {
 		"bool_true":  dyn.V(true),
 		"bool_false": dyn.V(false),
 		"time_val":   dyn.V(dyn.MustTime("2024-01-01")),
+		"nil_val":    dyn.NilValue,
 		// Test interpolation of different types in string templates
 		"float_interp":      dyn.V("Value: ${float_val}"),
 		"bool_true_interp":  dyn.V("Enabled: ${bool_true}"),
 		"bool_false_interp": dyn.V("Disabled: ${bool_false}"),
 		"time_interp":       dyn.V("Date: ${time_val}"),
+		"nil_interp":        dyn.V("Null: ${nil_val}"),
 	})
 
 	out, err := dynvar.Resolve(in, dynvar.DefaultLookup(in))
@@ -141,6 +143,9 @@ func TestResolveWithTypeInterpolation(t *testing.T) {
 	timeResult := getByPath(t, out, "time_interp").MustString()
 	assert.Contains(t, timeResult, "Date: 2024-01-01")
 	assert.Contains(t, timeResult, "00:00:00")
+
+	// Nil interpolation
+	assert.EqualValues(t, "Null: <nil>", getByPath(t, out, "nil_interp").MustString())
 }
 
 func TestResolveWithTypeRetentionFailure(t *testing.T) {
