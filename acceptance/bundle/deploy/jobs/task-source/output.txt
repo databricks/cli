@@ -13,8 +13,6 @@ Deployment complete!
 
 >>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | select(.body.name=="workspace_job") | .body out.requests.txt
 
->>> update_file.py databricks.yml <<: *git_source 
-
 >>> [CLI] bundle plan
 update jobs.git_job
 

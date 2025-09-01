@@ -7,7 +7,7 @@ trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | select(.body.name=="w
 rm out.requests.txt
 
 # Removing the git_source block and deploying again
-trace update_file.py databricks.yml '<<: *git_source' ''
+update_file.py databricks.yml '<<: *git_source' ''
 trace $CLI bundle plan
 trace $CLI bundle deploy
 
