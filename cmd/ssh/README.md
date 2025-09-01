@@ -4,7 +4,7 @@ The SSH tunnel lets customers connect any IDE to Databricks compute to run and d
 
 ## Compute Requirements
 - Dedicated (single user) access mode if you want to use Remote Development tools in IDEs
-- Dedicated or Standard access mode for terminal ssh connections
+- Dedicated or standard access mode for terminal SSH connections
 
 ## Usage
 A. With local ssh config setup:
