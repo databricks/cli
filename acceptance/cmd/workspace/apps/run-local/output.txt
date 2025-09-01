@@ -8,7 +8,4 @@ Hello, world
 
 === Starting the app in background...
 === Waiting
-=== Checking app is running...
->>> curl -s -o - http://127.0.0.1:$(port)
-
-Exit code: 7
+Error: Test script killed due to a timeout

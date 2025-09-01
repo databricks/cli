@@ -1,0 +1,23 @@
+
+>>> [CLI] apps run-local --prepare-environment --debug --port 8081 --debug-port 5252 --app-port 8080
+
+up to date, audited 68 packages in 617ms
+
+14 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+
+> app@1.0.0 build
+> echo 'Building app...'
+
+Building app...
+Running command: npm run run-app
+To debug your app, attach a debugger to port $(debug_port)
+To access your app go to http://localhost:8081
+listen tcp 127.0.0.1:$(port): bind: address already in use
+
+> app@1.0.0 run-app
+> node app.js
+
+Server is running on port 8080

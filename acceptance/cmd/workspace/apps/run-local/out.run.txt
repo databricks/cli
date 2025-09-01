@@ -1,0 +1,54 @@
+
+>>> [CLI] apps run-local --prepare-environment --debug --port 8081 --debug-port 5252 --app-port 8080
+Using CPython 3.13.5
+Creating virtual environment at: .venv
+warning: A virtual environment already exists at `.venv`. In the future, uv will require `--clear` to replace it
+Activate with: source .venv/bin/activate
+Resolved 129 packages in 43ms
+Uninstalled 2 packages in 18ms
+Installed 2 packages in 6ms
+ - flask==3.1.1
+ + flask==3.0.3
+ - werkzeug==3.1.3
+ + werkzeug==3.0.6
+Resolved 7 packages in 2ms
+Uninstalled 2 packages in 15ms
+Installed 2 packages in 5ms
+ - flask==3.0.3
+ + flask==3.1.1
+ - werkzeug==3.0.6
+ + werkzeug==3.1.3
+Running command: uv run python -m debugpy --listen 5252 -m flask run
+To debug your app, attach a debugger to port $(debug_port)
+To access your app go to http://localhost:8081
+listen tcp 127.0.0.1:$(port): bind: address already in use
+0.00s - Debugger warning: It seems that frozen modules are being used, which may
+0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off
+0.00s - to python to disable frozen modules.
+0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "[TEST_TMP_DIR]/app/.venv/lib/python3.13/site-packages/debugpy/__main__.py", line 71, in <module>
+    cli.main()
+    ~~~~~~~~^^
+  File "[TEST_TMP_DIR]/app/.venv/lib/python3.13/site-packages/debugpy/server/cli.py", line 508, in main
+    run()
+    ~~~^^
+  File "[TEST_TMP_DIR]/app/.venv/lib/python3.13/site-packages/debugpy/server/cli.py", line 376, in run_module
+    start_debugging(argv_0)
+    ~~~~~~~~~~~~~~~^^^^^^^^
+  File "[TEST_TMP_DIR]/app/.venv/lib/python3.13/site-packages/debugpy/server/cli.py", line 328, in start_debugging
+    debugpy.listen(options.address)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "[TEST_TMP_DIR]/app/.venv/lib/python3.13/site-packages/debugpy/public_api.py", line 47, in wrapper
+    return wrapped(*args, **kwargs)
+  File "[TEST_TMP_DIR]/app/.venv/lib/python3.13/site-packages/debugpy/server/api.py", line 133, in debug
+    log.reraise_exception("{0}() failed:", func.__name__, level="info")
+    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "[TEST_TMP_DIR]/app/.venv/lib/python3.13/site-packages/debugpy/server/api.py", line 131, in debug
+    return func(address, settrace_kwargs, **kwargs)
+  File "[TEST_TMP_DIR]/app/.venv/lib/python3.13/site-packages/debugpy/server/api.py", line 260, in listen
+    raise RuntimeError(str(endpoints["error"]))
+RuntimeError: Can't listen for client connections: [Errno 48] Address already in use
+Error: exit status 1
