@@ -3,6 +3,7 @@ package acceptance_test
 import (
 	"archive/zip"
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/base32"
 	"encoding/json"
@@ -646,28 +647,8 @@ func runTest(t *testing.T,
 	cmd.Env = append(cmd.Env, "CURRENT_USER_NAME="+user.UserName)
 	cmd.Dir = tmpDir
 
-	outputPath := filepath.Join(tmpDir, "output.txt")
-	out, err := os.Create(outputPath)
-	require.NoError(t, err)
-	defer out.Close()
-
-	var skipReason string
-	if WorkspaceTmpDir {
-		// Reading stdout / stderr line by line does not work on the workspace file system.
-		// Based on debug logs, we do recieve stdout / stderr output, but the write operations
-		// to the file using the FUSE mount leave the file system in an inconsistent state where
-		// subsequent reads do not see the new content. This causes test assertions on output.txt
-		// to fail.
-		//
-		// The file contents do seem to get eventually consistenly when manually accessed via
-		// the workspace UI, but that's too late since test assertions have already failed.
-		//
-		// I've been unable to isolate the root cause or a reproduction  outside of the acceptance
-		// testing framework. So we'll instead run the script and print output all at once.
-		err = runThenPrint(t, cmd, out)
-	} else {
-		skipReason, err = runWithLog(t, cmd, out, tailOutput)
-	}
+	out := bytes.NewBuffer(nil)
+	skipReason, err := runWithLog(t, cmd, out, tailOutput)
 
 	if skipReason != "" {
 		t.Skip("Skipping based on output: " + skipReason)
@@ -675,7 +656,11 @@ func runTest(t *testing.T,
 
 	// Include exit code in output (if non-zero)
 	formatOutput(out, err)
-	require.NoError(t, out.Close())
+
+	// Write the output from the script execution to output.txt.
+	outputPath := filepath.Join(tmpDir, "output.txt")
+	err = os.WriteFile(outputPath, out.Bytes(), 0o644)
+	require.NoError(t, err)
 
 	loadUserReplacements(t, &repls, tmpDir)
 
@@ -1136,21 +1121,7 @@ func isTruePtr(value *bool) bool {
 	return value != nil && *value
 }
 
-// Run the script and print output all at once rather than line by line.
-// Necessary for test runs on the workspace file system.
-func runThenPrint(t *testing.T, cmd *exec.Cmd, out *os.File) error {
-	b, err := cmd.CombinedOutput()
-	if err != nil {
-		return err
-	}
-	_, err = out.Write(b)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool) (string, error) {
+func runWithLog(t *testing.T, cmd *exec.Cmd, out *bytes.Buffer, tail bool) (string, error) {
 	r, w := io.Pipe()
 	cmd.Stdout = w
 	cmd.Stderr = w
