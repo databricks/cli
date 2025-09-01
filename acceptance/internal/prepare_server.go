@@ -27,7 +27,7 @@ import (
 
 func StartDefaultServer(t *testing.T) {
 	s := testserver.New(t)
-	addDefaultHandlers(s)
+	testserver.AddDefaultHandlers(s)
 
 	t.Setenv("DATABRICKS_DEFAULT_HOST", s.URL)
 
@@ -174,7 +174,7 @@ func startLocalServer(t *testing.T,
 	}
 
 	// The earliest handlers take precedence, add default handlers last
-	addDefaultHandlers(s)
+	testserver.AddDefaultHandlers(s)
 	return s.URL
 }
 

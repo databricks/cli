@@ -51,6 +51,26 @@ func (g *Graph[N]) AddDirectedEdge(from, to N, label string) {
 	g.adj[from] = append(g.adj[from], adjEdge[N]{to: to, label: label})
 }
 
+// OutgoingLabels returns labels of all outgoing edges from the given node
+// in the order the edges were added. If the node has no outgoing edges or is
+// unknown to the graph, an empty slice is returned.
+func (g *Graph[N]) OutgoingLabels(node N) []string {
+	outs := g.adj[node]
+	if len(outs) == 0 {
+		return []string{}
+	}
+	labels := make([]string, 0, len(outs))
+	seen := make(map[string]struct{}, len(outs))
+	for _, e := range outs {
+		if _, ok := seen[e.label]; ok {
+			continue
+		}
+		seen[e.label] = struct{}{}
+		labels = append(labels, e.label)
+	}
+	return labels
+}
+
 type CycleError[N comparable] struct {
 	Nodes []N
 	Edges []string

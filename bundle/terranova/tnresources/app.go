@@ -59,8 +59,8 @@ func (r *ResourceApp) DoUpdate(ctx context.Context, id string) error {
 }
 
 func DeleteApp(ctx context.Context, client *databricks.WorkspaceClient, id string) error {
-	// TODO: implement app deletion
-	return nil
+	_, err := client.Apps.DeleteByName(ctx, id)
+	return err
 }
 
 func (r *ResourceApp) WaitAfterCreate(ctx context.Context) error {

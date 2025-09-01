@@ -28,11 +28,15 @@ import (
 
 func getActions(ctx context.Context, b *bundle.Bundle) ([]deployplan.Action, error) {
 	if b.DirectDeployment {
-		err := terranova.CalculatePlanForDeploy(ctx, b)
+		err := b.OpenStateFile(ctx)
 		if err != nil {
 			return nil, err
 		}
-		return terranova.GetDeployActions(ctx, b), nil
+		err = b.BundleDeployer.CalculatePlanForDeploy(ctx, b.WorkspaceClient(), &b.Config)
+		if err != nil {
+			return nil, err
+		}
+		return b.BundleDeployer.GetActions(ctx), nil
 	} else {
 		tf := b.Terraform
 		if tf == nil {
@@ -115,7 +119,7 @@ func deployCore(ctx context.Context, b *bundle.Bundle) {
 	cmdio.LogString(ctx, "Deploying resources...")
 
 	if b.DirectDeployment {
-		bundle.ApplyContext(ctx, b, terranova.TerranovaApply())
+		b.BundleDeployer.Apply(ctx, b.WorkspaceClient(), &b.Config)
 	} else {
 		bundle.ApplyContext(ctx, b, terraform.Apply())
 	}
@@ -130,8 +134,13 @@ func deployCore(ctx context.Context, b *bundle.Bundle) {
 
 	bundle.ApplySeqContext(ctx, b,
 		statemgmt.Load(),
+
+		// TODO: this does terraform specific transformation.
 		apps.InterpolateVariables(),
+
+		// TODO: this should either be part of app resource or separate AppConfig resource that depends on main resource.
 		apps.UploadConfig(),
+
 		metadata.Compute(),
 		metadata.Upload(),
 	)

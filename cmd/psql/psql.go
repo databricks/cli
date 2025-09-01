@@ -3,6 +3,7 @@ package psql
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -26,11 +27,16 @@ func newLakebaseConnectCommand() *cobra.Command {
 
 This command requires a psql client to be installed on your machine for the connection to work.
 
+The command includes automatic retry logic for connection failures. You can configure the retry behavior using the flags below.
+
 You can pass additional arguments to psql after a double-dash (--):
   databricks psql my-database -- -c "SELECT * FROM my_table"
   databricks psql my-database -- --echo-all -d "my-db"
 `,
 	}
+
+	// Add retry configuration flag
+	cmd.Flags().Int("max-retries", 3, "Maximum number of connection retry attempts (set to 0 to disable retries)")
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
@@ -74,7 +80,17 @@ You can pass additional arguments to psql after a double-dash (--):
 		databaseInstanceName := args[0]
 		extraArgs := args[1:]
 
-		return lakebase.Connect(cmd.Context(), databaseInstanceName, extraArgs...)
+		// Read retry configuration from flags
+		maxRetries, _ := cmd.Flags().GetInt("max-retries")
+
+		retryConfig := lakebase.RetryConfig{
+			MaxRetries:    maxRetries,       // Retries are disables when max-retries is 0
+			InitialDelay:  time.Second,      // Fixed initial delay
+			MaxDelay:      10 * time.Second, // Fixed max delay
+			BackoffFactor: 2.0,              // Fixed backoff factor
+		}
+
+		return lakebase.ConnectWithRetryConfig(cmd.Context(), databaseInstanceName, retryConfig, extraArgs...)
 	}
 
 	cmd.ValidArgsFunction = func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {

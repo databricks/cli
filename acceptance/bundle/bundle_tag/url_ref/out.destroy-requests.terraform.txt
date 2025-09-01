@@ -1,0 +1,14 @@
+{
+  "body": {
+    "job_id": [NUMID]
+  },
+  "method": "POST",
+  "path": "/api/2.2/jobs/delete"
+}
+{
+  "body": {
+    "job_id": [NUMID]
+  },
+  "method": "POST",
+  "path": "/api/2.2/jobs/delete"
+}
