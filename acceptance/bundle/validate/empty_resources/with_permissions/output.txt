@@ -184,6 +184,7 @@ app resource 'rname' is missing required source_code_path field
 {
   "apps": {
     "rname": {
+      "description": "",
       "permissions": []
     }
   }
