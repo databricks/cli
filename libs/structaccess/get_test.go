@@ -9,11 +9,12 @@ import (
 
 // unexported global test case type
 type testCase struct {
-	name     string
-	path     string
-	want     any
-	wantSelf bool
-	errFmt   string
+	name        string
+	path        string
+	want        any
+	wantSelf    bool
+	errFmt      string
+	typeHasPath bool
 }
 
 type inner struct {
@@ -181,9 +182,10 @@ func runCommonTests(t *testing.T, obj any) {
 			errFmt: "connection[0]: cannot index struct",
 		},
 		{
-			name:   "out of range index",
-			path:   "items[5]",
-			errFmt: "items[5]: index out of range, length is 2",
+			name:        "out of range index",
+			path:        "items[5]",
+			errFmt:      "items[5]: index out of range, length is 2",
+			typeHasPath: true,
 		},
 		{
 			name:   "no json tag field should not be accessible",
@@ -196,9 +198,10 @@ func runCommonTests(t *testing.T, obj any) {
 			errFmt: "items.id: cannot access key \"id\" on slice",
 		},
 		{
-			name:   "nil pointer access",
-			path:   "connection_not_set.id",
-			errFmt: "connection_not_set: cannot access nil value",
+			name:        "nil pointer access",
+			path:        "connection_not_set.id",
+			errFmt:      "connection_not_set: cannot access nil value",
+			typeHasPath: true,
 		},
 		{
 			name:   "map non-string key type",
@@ -206,9 +209,10 @@ func runCommonTests(t *testing.T, obj any) {
 			errFmt: "map_int.any: map key must be string, got int",
 		},
 		{
-			name:   "map missing key",
-			path:   "labels.missing",
-			errFmt: "labels.missing: key \"missing\" not found in map",
+			name:        "map missing key",
+			path:        "labels.missing",
+			errFmt:      "labels.missing: key \"missing\" not found in map",
+			typeHasPath: true,
 		},
 		{
 			name:   "json dash ignored",
@@ -219,6 +223,13 @@ func runCommonTests(t *testing.T, obj any) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			hasPathError := ValidateByString(reflect.TypeOf(obj), tt.path)
+			if tt.errFmt == "" || tt.typeHasPath {
+				require.NoError(t, hasPathError)
+			} else {
+				require.EqualError(t, hasPathError, tt.errFmt)
+			}
+
 			got, err := GetByString(obj, tt.path)
 			if tt.errFmt != "" {
 				require.EqualError(t, err, tt.errFmt)
@@ -330,9 +341,9 @@ func TestGet_Embedded_NilPointerAnonymousNotDescended(t *testing.T) {
 	type host struct {
 		*embedded
 	}
+	require.NoError(t, ValidateByString(reflect.TypeOf(host{}), "hidden"))
 	_, err := GetByString(host{}, "hidden")
-	typeName := reflect.TypeOf(host{}).String()
-	require.EqualError(t, err, "hidden: field \"hidden\" not found in "+typeName)
+	require.EqualError(t, err, "hidden: field \"hidden\" not found in structaccess.host")
 }
 
 func TestGet_Embedded_ValueAnonymousResolved(t *testing.T) {
@@ -343,6 +354,7 @@ func TestGet_Embedded_ValueAnonymousResolved(t *testing.T) {
 		embedded
 	}
 	in := host{embedded: embedded{Hidden: "x"}}
+	require.NoError(t, ValidateByString(reflect.TypeOf(in), "hidden"))
 	got, err := GetByString(in, "hidden")
 	require.NoError(t, err)
 	require.Equal(t, "x", got)
@@ -364,16 +376,18 @@ func TestGet_BundleTag_SkipsDirect(t *testing.T) {
 
 	// Direct readonly/internal fields should be invisible
 	_, err := GetByString(S{A: "x", B: "y", C: "z"}, "a")
-	typeName := reflect.TypeOf(S{}).String()
-	require.EqualError(t, err, "a: field \"a\" not found in "+typeName)
+	require.EqualError(t, err, "a: field \"a\" not found in structaccess.S")
+	require.EqualError(t, ValidateByString(reflect.TypeOf(S{}), "a"), "a: field \"a\" not found in structaccess.S")
 
 	_, err = GetByString(S{}, "b")
-	require.EqualError(t, err, "b: field \"b\" not found in "+typeName)
+	require.EqualError(t, err, "b: field \"b\" not found in structaccess.S")
+	require.EqualError(t, ValidateByString(reflect.TypeOf(S{}), "b"), "b: field \"b\" not found in structaccess.S")
 
 	// Visible field works
 	v, err := GetByString(S{C: "z"}, "c")
 	require.NoError(t, err)
 	require.Equal(t, "z", v)
+	require.NoError(t, ValidateByString(reflect.TypeOf(S{}), "c"))
 }
 
 func TestGet_BundleTag_SkipsPromoted(t *testing.T) {
@@ -385,6 +399,6 @@ func TestGet_BundleTag_SkipsPromoted(t *testing.T) {
 	}
 	// Promoted readonly field should be invisible
 	_, err := GetByString(host{embedded: embedded{Hidden: "x"}}, "hidden")
-	typeName := reflect.TypeOf(host{}).String()
-	require.EqualError(t, err, "hidden: field \"hidden\" not found in "+typeName)
+	require.EqualError(t, err, "hidden: field \"hidden\" not found in structaccess.host")
+	require.EqualError(t, ValidateByString(reflect.TypeOf(host{}), "hidden"), "hidden: field \"hidden\" not found in structaccess.host")
 }

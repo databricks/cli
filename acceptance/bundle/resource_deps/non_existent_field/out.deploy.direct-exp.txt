@@ -1,5 +1,5 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Error: cannot resolve ${resources.volumes.bar.non_existent}: non_existent: field "non_existent" not found in resources.Volume
+Error: schema mismatch for ${resources.volumes.bar.non_existent}: non_existent: field "non_existent" not found in resources.Volume
 
 Error: cannot plan volumes.foo: dependency failed: volumes.bar
 
