@@ -13,8 +13,7 @@
   {
     "job_cluster_key": "default",
     "notebook_task": {
-      "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/fallback/development/files/src/notebook",
-      "source": "WORKSPACE"
+      "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/fallback/development/files/src/notebook"
     },
     "task_key": "notebook_example"
   },
@@ -51,8 +50,7 @@
   {
     "job_cluster_key": "default",
     "spark_python_task": {
-      "python_file": "/Workspace/Users/[USERNAME]/.bundle/fallback/development/files/src/file.py",
-      "source": "WORKSPACE"
+      "python_file": "/Workspace/Users/[USERNAME]/.bundle/fallback/development/files/src/file.py"
     },
     "task_key": "spark_python_example"
   },
