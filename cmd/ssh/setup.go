@@ -12,10 +12,10 @@ import (
 func newSetupCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "setup",
-		Short: "Setup SSH configuration for a Databricks compute",
-		Long: `Setup SSH configuration for a Databricks compute.
+		Short: "Setup SSH configuration for Databricks compute",
+		Long: `Setup SSH configuration for Databricks compute.
 
-This command configures SSH to connect to a Databricks compute by adding
+This command configures SSH to connect to Databricks compute by adding
 an SSH host configuration to your SSH config file.
 
 ` + disclaimer,
