@@ -651,7 +651,19 @@ func runTest(t *testing.T,
 	require.NoError(t, err)
 	defer out.Close()
 
-	skipReason, err := runWithLog(t, cmd, out, tailOutput)
+	var skipReason string
+	if WorkspaceTmpDir {
+		// Reading stdout / stderr line by line does not work on the workspace file system.
+		// Based on debug logs, we do recieve stdout / stderr output, but the write operations
+		// to the file on the workspace file system are inconsistent. Meaning that test
+		// assertions on output.txt fail.
+		//
+		// I've been unable to isolate the root cause or a reproduction  outside of the acceptance
+		// testing framework. So we'll instead run the script and print output all at once.
+		err = runThenPrint(t, cmd, out)
+	} else {
+		skipReason, err = runWithLog(t, cmd, out, tailOutput)
+	}
 
 	if skipReason != "" {
 		t.Skip("Skipping based on output: " + skipReason)
@@ -1118,6 +1130,20 @@ type LoggedRequest struct {
 
 func isTruePtr(value *bool) bool {
 	return value != nil && *value
+}
+
+// Run the script and print output all at once rather than line by line.
+// Necessary for test runs on the workspace file system.
+func runThenPrint(t *testing.T, cmd *exec.Cmd, out *os.File) error {
+	b, err := cmd.CombinedOutput()
+	if err != nil {
+		return err
+	}
+	_, err = out.Write(b)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool) (string, error) {
