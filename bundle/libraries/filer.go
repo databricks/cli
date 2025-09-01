@@ -54,6 +54,8 @@ func GetFilerForLibrariesCleanup(ctx context.Context, b *bundle.Bundle) (filer.F
 }
 
 // If the remote path does not start with /Workspace or /Volumes, prepend /Workspace
+// Some of the bundle configuration might use workspace paths like /Users or /Shared.
+// While this is still a valid workspace path, the backend converts it to /Workspace/Users or /Workspace/Shared.
 func ensureWorkspaceOrVolumesPrefix(path string) string {
 	if !strings.HasPrefix(path, "/Workspace") && !strings.HasPrefix(path, "/Volumes") {
 		path = "/Workspace" + path
