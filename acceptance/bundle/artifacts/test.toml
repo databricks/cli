@@ -1,4 +1,18 @@
 RecordRequests = true
+
+# Workspace file system does not allow initializing python envs on it.
+# I suspect something about the default python env on DBR interferes with it.
+# We'll likely need a first class venv abstraction in acceptance tests to fix this.
+# script:
+#   uv venv -q .venv
+#   source .venv/bin/activate
+#   uv pip install -q setuptools
+# error:
+#   Failed to inspect Python interpreter from active virtual environment at `.venv/bin/python3`
+#   Caused by: Failed to query Python interpreter
+#   Caused by: failed to canonicalize path `/Workspace/abcd/.venv/bin/python3`: Invalid cross-device link (os error 18)
+SkipOnDbr = true
+
 Ignore = [
     '.venv',
     'dist',
@@ -15,16 +29,3 @@ Response.Body = '''
   "spark_version": "13.3.x-scala2.12"
 }
 '''
-
-# Workspace file system does not allow initializing python envs on it.
-# I suspect something about the default python env on DBR interferes with it.
-# We'll likely need a first class venv abstraction in acceptance tests to fix this.
-# script:
-#   uv venv -q .venv
-#   source .venv/bin/activate
-#   uv pip install -q setuptools
-# error:
-#   Failed to inspect Python interpreter from active virtual environment at `.venv/bin/python3`
-#   Caused by: Failed to query Python interpreter
-#   Caused by: failed to canonicalize path `/Workspace/abcd/.venv/bin/python3`: Invalid cross-device link (os error 18)
-SkipOnDbr = true

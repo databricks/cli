@@ -1,19 +1,6 @@
 Local = false
 CloudSlow = true
 
-Ignore = [
-    ".databricks",
-    ".venv",
-    "build",
-    "dist",
-    "my_test_code",
-    "my_test_code.egg-info",
-    "setup.py",
-    "databricks.yml",
-    "python_wheel_wrapper.yml",
-    "empty.yml",
-]
-
 # Workspace file system does not allow initializing python envs on it.
 # I suspect something about the default python env on DBR interferes with it.
 # We'll likely need a first class venv abstraction in acceptance tests to fix this.
@@ -26,3 +13,16 @@ Ignore = [
 #   Caused by: Failed to query Python interpreter
 #   Caused by: failed to canonicalize path `/Workspace/abcd/.venv/bin/python3`: Invalid cross-device link (os error 18)
 SkipOnDbr = true
+
+Ignore = [
+    ".databricks",
+    ".venv",
+    "build",
+    "dist",
+    "my_test_code",
+    "my_test_code.egg-info",
+    "setup.py",
+    "databricks.yml",
+    "python_wheel_wrapper.yml",
+    "empty.yml",
+]
