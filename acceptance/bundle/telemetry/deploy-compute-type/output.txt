@@ -22,11 +22,11 @@ Deployment complete!
     "value": false
   },
   {
-    "key": "skip_artifact_cleanup",
+    "key": "python_wheel_wrapper_is_set",
     "value": false
   },
   {
-    "key": "python_wheel_wrapper_is_set",
+    "key": "skip_artifact_cleanup",
     "value": false
   },
   {
@@ -52,11 +52,11 @@ Deployment complete!
     "value": false
   },
   {
-    "key": "skip_artifact_cleanup",
+    "key": "python_wheel_wrapper_is_set",
     "value": false
   },
   {
-    "key": "python_wheel_wrapper_is_set",
+    "key": "skip_artifact_cleanup",
     "value": false
   },
   {
