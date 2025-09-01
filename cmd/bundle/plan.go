@@ -2,6 +2,7 @@ package bundle
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
@@ -34,7 +35,7 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 
 	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
 		if f := cmd.Flag("output"); f != nil && f.Changed {
-			return fmt.Errorf("the -o/--output flag is not supported for this command")
+			return errors.New("the -o/--output flag is not supported for this command")
 		}
 		return nil
 	}
