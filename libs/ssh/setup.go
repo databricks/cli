@@ -15,12 +15,18 @@ import (
 )
 
 type SetupOptions struct {
-	HostName      string
-	ClusterID     string
-	SSHConfigPath string
-	SSHKeysDir    string
+	// A host name to add to the SSH config
+	HostName string
+	// The cluster ID to connect to
+	ClusterID string
+	// Delay before shutting down the SSH tunnel, will be added as a --shutdown-delay flag to the ProxyCommand
 	ShutdownDelay time.Duration
-	Profile       string
+	// Optional path to the local ssh config. Defaults to ~/.ssh/config
+	SSHConfigPath string
+	// Optional path to the local directory to store SSH keys. Defaults to ~/.databricks/ssh-tunnel-keys
+	SSHKeysDir string
+	// Optional auth profile name. If present, will be added as --profile flag to the ProxyCommand
+	Profile string
 }
 
 func validateClusterAccess(ctx context.Context, client *databricks.WorkspaceClient, clusterID string) error {

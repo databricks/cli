@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 )
 
+// We use different client keys for each cluster as a good practice for better isolation and control.
 func getLocalSSHKeyPath(clusterID, keysDir string) (string, error) {
 	if keysDir == "" {
 		homeDir, err := os.UserHomeDir()
