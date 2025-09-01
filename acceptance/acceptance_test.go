@@ -655,8 +655,12 @@ func runTest(t *testing.T,
 	if WorkspaceTmpDir {
 		// Reading stdout / stderr line by line does not work on the workspace file system.
 		// Based on debug logs, we do recieve stdout / stderr output, but the write operations
-		// to the file on the workspace file system are inconsistent. Meaning that test
-		// assertions on output.txt fail.
+		// to the file using the FUSE mount leave the file system in an inconsistent state where
+		// subsequent reads do not see the new content. This causes test assertions on output.txt
+		// to fail.
+		//
+		// The file contents do seem to get eventually consistenly when manually accessed via
+		// the workspace UI, but that's too late since test assertions have already failed.
 		//
 		// I've been unable to isolate the root cause or a reproduction  outside of the acceptance
 		// testing framework. So we'll instead run the script and print output all at once.
