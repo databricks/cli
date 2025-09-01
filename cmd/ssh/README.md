@@ -52,8 +52,8 @@ flowchart TD
   end
     n1 -. "1 - start an ssh server job" .-> n3
     n3 -. "2 - start ssh server" .-> n4
-    n4 <-. "3 - save the port number" .-> n12
-    n1 <-. "4 - get ssh server port" .-> n11
+    n4 <-. "3 - save the ssh server port number" .-> n12
+    n1 <-. "4 - get ssh server port number" .-> n11
     n1 <-. "6 - websocket connection" .-> n2
     n2 <-. "7 - websocket connection" .-> n4
     n6 <-.-> n12
