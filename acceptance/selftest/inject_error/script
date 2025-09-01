@@ -1,0 +1,2 @@
+# If INJECT_ERROR is present anywhere in the request, test server will reply with 500 error
+trace musterr $CLI schemas create schema-INJECT_ERROR main

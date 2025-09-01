@@ -1,6 +1,7 @@
 package testserver
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -14,7 +15,6 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/databricks/cli/internal/testutil"
-	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
 type Server struct {
@@ -213,8 +213,8 @@ Response.Body = '<response body here>'
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNotImplemented)
 
-		resp := apierr.APIError{
-			Message: "No stub found for pattern: " + pattern,
+		resp := map[string]string{
+			"message": "No stub found for pattern: " + pattern,
 		}
 
 		respBytes, err := json.Marshal(resp)
@@ -242,7 +242,7 @@ func (s *Server) getWorkspaceForToken(token string) *FakeWorkspace {
 	defer s.mu.Unlock()
 
 	if _, ok := s.fakeWorkspaces[token]; !ok {
-		s.fakeWorkspaces[token] = NewFakeWorkspace(s.Server.URL)
+		s.fakeWorkspaces[token] = NewFakeWorkspace(s.URL, token)
 	}
 
 	return s.fakeWorkspaces[token]
@@ -262,8 +262,17 @@ func (s *Server) Handle(method, path string, handler HandlerFunc) {
 			s.RequestCallback(&request)
 		}
 
-		respAny := handler(request)
-		resp := normalizeResponse(s.t, respAny)
+		var resp EncodedResponse
+
+		if bytes.Contains(request.Body, []byte("INJECT_ERROR")) {
+			resp = EncodedResponse{
+				StatusCode: 500,
+				Body:       []byte("INJECTED"),
+			}
+		} else {
+			respAny := handler(request)
+			resp = normalizeResponse(s.t, respAny)
+		}
 
 		for k, v := range resp.Headers {
 			w.Header()[k] = v

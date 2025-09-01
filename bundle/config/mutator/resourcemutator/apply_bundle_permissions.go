@@ -15,7 +15,7 @@ import (
 	"github.com/databricks/cli/libs/dyn/convert"
 )
 
-var unsupportedResources = []string{"clusters", "volumes", "schemas", "quality_monitors", "registered_models"}
+var unsupportedResources = []string{"clusters", "volumes", "schemas", "quality_monitors", "registered_models", "database_catalogs", "synced_database_tables"}
 
 var (
 	allowedLevels = []string{permissions.CAN_MANAGE, permissions.CAN_VIEW, permissions.CAN_RUN}
@@ -59,6 +59,10 @@ var (
 			permissions.CAN_MANAGE: "CAN_MANAGE",
 			permissions.CAN_VIEW:   "CAN_VIEW",
 			permissions.CAN_RUN:    "CAN_MONITOR",
+		},
+		"database_instances": {
+			permissions.CAN_MANAGE: "CAN_MANAGE",
+			permissions.CAN_VIEW:   "CAN_USE",
 		},
 	}
 )

@@ -106,3 +106,38 @@ func tmpl(w io.Writer, text string, data any) error {
 	template.Must(t.Parse(text))
 	return t.Execute(w, data)
 }
+
+// FilterGroups returns command groups that have at least one available (non-hidden) command.
+// Empty groups or groups with only hidden commands are filtered out from the help output.
+// Commands that belong to filtered groups will have their GroupID cleared.
+func FilterGroups(groups []cobra.Group, allCommands []*cobra.Command) []cobra.Group {
+	var filteredGroups []cobra.Group
+
+	// Create a map to track which groups have available commands
+	groupHasAvailableCommands := make(map[string]bool)
+
+	// Check each command to see if it belongs to a group and is available
+	for _, cmd := range allCommands {
+		if cmd.GroupID != "" && cmd.IsAvailableCommand() {
+			groupHasAvailableCommands[cmd.GroupID] = true
+		}
+	}
+
+	// Collect groups that have available commands
+	validGroupIDs := make(map[string]bool)
+	for _, group := range groups {
+		if groupHasAvailableCommands[group.ID] {
+			filteredGroups = append(filteredGroups, group)
+			validGroupIDs[group.ID] = true
+		}
+	}
+
+	// Clear GroupID for commands that belong to filtered groups
+	for _, cmd := range allCommands {
+		if cmd.GroupID != "" && !validGroupIDs[cmd.GroupID] {
+			cmd.GroupID = ""
+		}
+	}
+
+	return filteredGroups
+}

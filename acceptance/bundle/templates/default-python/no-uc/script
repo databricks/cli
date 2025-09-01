@@ -1,0 +1,3 @@
+trace $CLI bundle init default-python --config-file ./input.json --output-dir output
+
+rm -rf output

@@ -1,0 +1,8 @@
+resources:
+  jobs:
+    out:
+      name: gitjob
+      tasks:
+        - task_key: test_task
+          notebook_task:
+            notebook_path: outnotebook.py

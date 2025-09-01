@@ -11,7 +11,6 @@ import (
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/statemgmt"
-	"github.com/databricks/cli/bundle/terranova"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
@@ -33,7 +32,15 @@ func assertRootPathExists(ctx context.Context, b *bundle.Bundle) (bool, error) {
 
 func getDeleteActions(ctx context.Context, b *bundle.Bundle) ([]deployplan.Action, error) {
 	if b.DirectDeployment {
-		return terranova.CalculateDestroyActions(ctx, b)
+		err := b.OpenStateFile(ctx)
+		if err != nil {
+			return nil, err
+		}
+		err = b.BundleDeployer.CalculatePlanForDestroy(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return b.BundleDeployer.GetActions(ctx), nil
 	}
 
 	tf := b.Terraform
@@ -42,7 +49,7 @@ func getDeleteActions(ctx context.Context, b *bundle.Bundle) ([]deployplan.Actio
 		return nil, errors.New("terraform not initialized")
 	}
 
-	actions, err := terraform.ShowPlanFile(ctx, tf, b.Plan.TerraformPlanPath)
+	actions, err := terraform.ShowPlanFile(ctx, tf, b.TerraformPlanPath)
 	if err != nil {
 		return nil, err
 	}
@@ -58,8 +65,6 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 		return false, err
 	}
 
-	b.Plan.Actions = deleteActions
-
 	if len(deleteActions) > 0 {
 		cmdio.LogString(ctx, "The following resources will be deleted:")
 		for _, a := range deleteActions {
@@ -67,6 +72,34 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 		}
 		cmdio.LogString(ctx, "")
 
+	}
+
+	schemaActions := deployplan.FilterGroup(deleteActions, "schemas", deployplan.ActionTypeDelete)
+	dltActions := deployplan.FilterGroup(deleteActions, "pipelines", deployplan.ActionTypeDelete)
+	volumeActions := deployplan.FilterGroup(deleteActions, "volumes", deployplan.ActionTypeDelete)
+
+	if len(schemaActions) > 0 {
+		cmdio.LogString(ctx, deleteSchemaMessage)
+		for _, a := range schemaActions {
+			cmdio.Log(ctx, a)
+		}
+		cmdio.LogString(ctx, "")
+	}
+
+	if len(dltActions) > 0 {
+		cmdio.LogString(ctx, deleteDltMessage)
+		for _, a := range dltActions {
+			cmdio.Log(ctx, a)
+		}
+		cmdio.LogString(ctx, "")
+	}
+
+	if len(volumeActions) > 0 {
+		cmdio.LogString(ctx, deleteVolumeMessage)
+		for _, a := range volumeActions {
+			cmdio.Log(ctx, a)
+		}
+		cmdio.LogString(ctx, "")
 	}
 
 	cmdio.LogString(ctx, "All files and directories at the following location will be deleted: "+b.Config.Workspace.RootPath)
@@ -86,7 +119,7 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 
 func destroyCore(ctx context.Context, b *bundle.Bundle) {
 	if b.DirectDeployment {
-		bundle.ApplyContext(ctx, b, terranova.TerranovaApply())
+		b.BundleDeployer.Apply(ctx, b.WorkspaceClient(), &b.Config)
 	} else {
 		// Core destructive mutators for destroy. These require informed user consent.
 		bundle.ApplyContext(ctx, b, terraform.Apply())

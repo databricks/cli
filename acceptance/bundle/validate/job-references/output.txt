@@ -54,7 +54,6 @@
       "."
     ]
   },
-  "targets": null,
   "workspace": {
     "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/foobar/default/artifacts",
     "current_user": {

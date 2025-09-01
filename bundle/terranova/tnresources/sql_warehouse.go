@@ -4,8 +4,7 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/libs/structdiff"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 )
@@ -29,25 +28,41 @@ func (r *ResourceSqlWarehouse) Config() any {
 func (r *ResourceSqlWarehouse) DoCreate(ctx context.Context) (string, error) {
 	waiter, err := r.client.Warehouses.Create(ctx, r.config)
 	if err != nil {
-		return "", SDKError{Method: "Warehouses.Create", Err: err}
+		return "", err
 	}
 
 	return waiter.Id, nil
 }
 
-func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, oldID string) (string, error) {
-	request := sql.EditWarehouseRequest{}
-	err := copyViaJSON(&request, r.config)
-	if err != nil {
-		return "", err
+func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, id string) error {
+	request := sql.EditWarehouseRequest{
+		AutoStopMins:            r.config.AutoStopMins,
+		Channel:                 r.config.Channel,
+		ClusterSize:             r.config.ClusterSize,
+		CreatorName:             r.config.CreatorName,
+		EnablePhoton:            r.config.EnablePhoton,
+		EnableServerlessCompute: r.config.EnableServerlessCompute,
+		Id:                      id,
+		InstanceProfileArn:      r.config.InstanceProfileArn,
+		MaxNumClusters:          r.config.MaxNumClusters,
+		MinNumClusters:          r.config.MinNumClusters,
+		Name:                    r.config.Name,
+		SpotInstancePolicy:      r.config.SpotInstancePolicy,
+		Tags:                    r.config.Tags,
+		WarehouseType:           sql.EditWarehouseRequestWarehouseType(r.config.WarehouseType),
+		ForceSendFields:         filterFields[sql.EditWarehouseRequest](r.config.ForceSendFields),
 	}
-	request.Id = oldID
 
 	waiter, err := r.client.Warehouses.Edit(ctx, request)
 	if err != nil {
-		return "", SDKError{Method: "Warehouses.Edit", Err: err}
+		return err
 	}
-	return waiter.Id, nil
+
+	if waiter.Id != id {
+		log.Warnf(ctx, "sql_warehouses: response contains unexpected id=%#v (expected %#v)", waiter.Id, id)
+	}
+
+	return nil
 }
 
 func (r *ResourceSqlWarehouse) WaitAfterCreate(ctx context.Context) error {
@@ -60,14 +75,6 @@ func (r *ResourceSqlWarehouse) WaitAfterUpdate(ctx context.Context) error {
 	return nil
 }
 
-func (r *ResourceSqlWarehouse) ClassifyChanges(changes []structdiff.Change) deployplan.ActionType {
-	return deployplan.ActionTypeUpdate
-}
-
 func DeleteSqlWarehouse(ctx context.Context, client *databricks.WorkspaceClient, oldID string) error {
-	err := client.Warehouses.DeleteById(ctx, oldID)
-	if err != nil {
-		return SDKError{Method: "Warehouses.DeleteById", Err: err}
-	}
-	return nil
+	return client.Warehouses.DeleteById(ctx, oldID)
 }

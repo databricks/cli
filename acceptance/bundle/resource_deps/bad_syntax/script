@@ -1,0 +1,3 @@
+trace $CLI bundle validate -o json | jq .resources
+$CLI bundle plan &> out.plan.$DATABRICKS_CLI_DEPLOYMENT.txt
+musterr $CLI bundle deploy &> out.deploy.$DATABRICKS_CLI_DEPLOYMENT.txt

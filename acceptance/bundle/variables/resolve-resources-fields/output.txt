@@ -1,0 +1,31 @@
+{
+  "a": {
+    "default": "${resources.schemas.foo.name}",
+    "value": "${resources.schemas.foo.name}"
+  },
+  "b": {
+    "default": "this is var.b ${resources.schemas.foo.name}",
+    "value": "this is var.b ${resources.schemas.foo.name}"
+  }
+}
+{
+  "apps": {
+    "baz": {
+      "name": "myapp",
+      "permissions": [],
+      "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files"
+    }
+  },
+  "schemas": {
+    "bar": {
+      "catalog_name": "main",
+      "comment": "var.b=this is var.b ${resources.schemas.foo.name} schemas.bar.name=${resources.schemas.bar.name} schemas.foo.name=${resources.schemas.foo.name}",
+      "name": "unresolved? apps.baz.id=\"${resources.apps.baz.id}\" apps.baz.url=\"${resources.apps.baz.url}\""
+    },
+    "foo": {
+      "catalog_name": "main",
+      "comment": "unresolved? schemas.bar.non_existing:\"${resources.schemas.bar.non_existing}\"  schemas.bar.id:\"${resources.schemas.bar.id}\"",
+      "name": "${resources.schemas.bar.name}"
+    }
+  }
+}

@@ -40,7 +40,7 @@ func newShowCommand() *cobra.Command {
 			for _, v := range installed {
 				isDev := name == "." && v.IsDeveloperMode()
 				isMatch := name == v.Name
-				if !(isDev || isMatch) {
+				if !isDev && !isMatch {
 					continue
 				}
 				return cmdio.Render(ctx, map[string]any{

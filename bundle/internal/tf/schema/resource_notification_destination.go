@@ -26,8 +26,12 @@ type ResourceNotificationDestinationConfigPagerduty struct {
 }
 
 type ResourceNotificationDestinationConfigSlack struct {
-	Url    string `json:"url,omitempty"`
-	UrlSet bool   `json:"url_set,omitempty"`
+	ChannelId     string `json:"channel_id,omitempty"`
+	ChannelIdSet  bool   `json:"channel_id_set,omitempty"`
+	OauthToken    string `json:"oauth_token,omitempty"`
+	OauthTokenSet bool   `json:"oauth_token_set,omitempty"`
+	Url           string `json:"url,omitempty"`
+	UrlSet        bool   `json:"url_set,omitempty"`
 }
 
 type ResourceNotificationDestinationConfig struct {

@@ -1,0 +1,4 @@
+Error: cycle detected: jobs.foo refers to jobs.bar via ${resources.jobs.bar.id} which refers to jobs.foo via ${resources.jobs.foo.id}
+
+
+Exit code (musterr): 1

@@ -238,17 +238,19 @@ func (d *dashboard) saveConfiguration(ctx context.Context, b *bundle.Bundle, das
 	return nil
 }
 
-func waitForChanges(ctx context.Context, w *databricks.WorkspaceClient, dashboard *dashboards.Dashboard) diag.Diagnostics {
+func waitForChanges(ctx context.Context, w *databricks.WorkspaceClient, dashboard *dashboards.Dashboard) {
 	// Compute [time.Time] for the most recent update.
 	tref, err := time.Parse(time.RFC3339, dashboard.UpdateTime)
 	if err != nil {
-		return diag.FromErr(err)
+		logdiag.LogError(ctx, err)
+		return
 	}
 
 	for {
 		obj, err := w.Workspace.GetStatusByPath(ctx, dashboard.Path)
 		if err != nil {
-			return diag.FromErr(err)
+			logdiag.LogError(ctx, err)
+			return
 		}
 
 		// Compute [time.Time] from timestamp in millis since epoch.
@@ -259,18 +261,18 @@ func waitForChanges(ctx context.Context, w *databricks.WorkspaceClient, dashboar
 
 		time.Sleep(1 * time.Second)
 	}
-
-	return nil
 }
 
-func (d *dashboard) updateDashboardForResource(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (d *dashboard) updateDashboardForResource(ctx context.Context, b *bundle.Bundle) {
 	resource, ok := b.Config.Resources.Dashboards[d.resource]
 	if !ok {
-		return diag.Errorf("dashboard resource %q is not defined", d.resource)
+		logdiag.LogError(ctx, fmt.Errorf("dashboard resource %q is not defined", d.resource))
+		return
 	}
 
 	if resource.FilePath == "" {
-		return diag.Errorf("dashboard resource %q has no file path defined", d.resource)
+		logdiag.LogError(ctx, fmt.Errorf("dashboard resource %q has no file path defined", d.resource))
+		return
 	}
 
 	// Resolve the dashboard ID from the resource.
@@ -286,19 +288,21 @@ func (d *dashboard) updateDashboardForResource(ctx context.Context, b *bundle.Bu
 	for {
 		dashboard, err := w.Lakeview.GetByDashboardId(ctx, dashboardID)
 		if err != nil {
-			return diag.FromErr(err)
+			logdiag.LogError(ctx, err)
+			return
 		}
 
 		if etag != dashboard.Etag {
 			err = d.saveSerializedDashboard(ctx, b, dashboard, dashboardPath)
 			if err != nil {
-				return diag.FromErr(err)
+				logdiag.LogError(ctx, err)
+				return
 			}
 		}
 
 		// Abort if we are not watching for changes.
 		if !d.watch {
-			return nil
+			return
 		}
 
 		// Update the etag for the next iteration.
@@ -425,6 +429,37 @@ func NewGenerateDashboardCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "dashboard",
 		Short: "Generate configuration for a dashboard",
+		Long: `Generate bundle configuration for an existing Databricks dashboard.
+
+This command downloads an existing AI/BI dashboard and creates bundle files
+that you can use to deploy the dashboard to other environments or manage it as code.
+
+Examples:
+  # Import dashboard by workspace path
+  databricks bundle generate dashboard --existing-path /Users/me/sales-dashboard \
+    --key sales_dash
+
+  # Import dashboard by ID
+  databricks bundle generate dashboard --existing-id abc123 --key analytics_dashboard
+
+  # Watch for changes to keep bundle in sync with UI modifications
+  databricks bundle generate dashboard --resource my_dashboard --watch --force
+
+What gets generated:
+- Dashboard configuration YAML file with settings and a reference to the dashboard definition
+- Dashboard definition (.lvdash.json) file with layout and queries
+
+Sync workflow for dashboard development:
+When developing dashboards, you can modify them in the Databricks UI and sync
+changes back to your bundle:
+
+1. Make changes to dashboard in the Databricks UI
+2. Run: databricks bundle generate dashboard --resource my_dashboard --force
+3. Commit changes to version control
+4. Deploy to other environments with: databricks bundle deploy --target prod
+
+The --watch flag continuously polls for remote changes and updates your local
+bundle files automatically, useful during active dashboard development.`,
 	}
 
 	d := &dashboard{}

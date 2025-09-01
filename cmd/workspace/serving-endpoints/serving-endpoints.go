@@ -159,6 +159,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().StringVar(&createReq.BudgetPolicyId, "budget-policy-id", createReq.BudgetPolicyId, `The budget policy to be applied to the serving endpoint.`)
 	// TODO: complex arg: config
 	cmd.Flags().StringVar(&createReq.Description, "description", createReq.Description, ``)
+	// TODO: complex arg: email_notifications
 	// TODO: array: rate_limits
 	cmd.Flags().BoolVar(&createReq.RouteOptimized, "route-optimized", createReq.RouteOptimized, `Enable route optimization for the serving endpoint.`)
 	// TODO: array: tags
@@ -264,6 +265,7 @@ func newCreateProvisionedThroughputEndpoint() *cobra.Command {
 
 	// TODO: complex arg: ai_gateway
 	cmd.Flags().StringVar(&createProvisionedThroughputEndpointReq.BudgetPolicyId, "budget-policy-id", createProvisionedThroughputEndpointReq.BudgetPolicyId, `The budget policy associated with the endpoint.`)
+	// TODO: complex arg: email_notifications
 	// TODO: array: tags
 
 	cmd.Use = "create-provisioned-throughput-endpoint"
@@ -1078,6 +1080,7 @@ func newQuery() *cobra.Command {
 
 	cmd.Flags().Var(&queryJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().StringVar(&queryReq.ClientRequestId, "client-request-id", queryReq.ClientRequestId, `Optional user-provided request identifier that will be recorded in the inference table and the usage tracking table.`)
 	// TODO: array: dataframe_records
 	// TODO: complex arg: dataframe_split
 	// TODO: map via StringToStringVar: extra_params
@@ -1091,13 +1094,17 @@ func newQuery() *cobra.Command {
 	// TODO: array: stop
 	cmd.Flags().BoolVar(&queryReq.Stream, "stream", queryReq.Stream, `The stream field used ONLY for __completions__ and __chat external & foundation model__ serving endpoints.`)
 	cmd.Flags().Float64Var(&queryReq.Temperature, "temperature", queryReq.Temperature, `The temperature field used ONLY for __completions__ and __chat external & foundation model__ serving endpoints.`)
+	// TODO: map via StringToStringVar: usage_context
 
 	cmd.Use = "query NAME"
 	cmd.Short = `Query a serving endpoint.`
 	cmd.Long = `Query a serving endpoint.
+  
+  Query a serving endpoint
 
   Arguments:
-    NAME: The name of the serving endpoint. This field is required.`
+    NAME: The name of the serving endpoint. This field is required and is provided
+      via the path parameter.`
 
 	cmd.Annotations = make(map[string]string)
 

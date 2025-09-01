@@ -28,7 +28,7 @@ func initializeProgressLoggerTest(t *testing.T) (
 	}
 	plt.logFlags = initLogFlags(plt.Command)
 	plt.progressLoggerFlag = initProgressLoggerFlag(plt.Command, plt.logFlags)
-	return plt, &plt.logFlags.level, &plt.logFlags.file, &plt.progressLoggerFlag.ProgressLogFormat
+	return plt, &plt.level, &plt.file, &plt.ProgressLogFormat
 }
 
 func TestInitializeErrorOnIncompatibleConfig(t *testing.T) {

@@ -1,0 +1,15 @@
+Local = true
+Cloud = true
+
+# Mitigates running into quota limits in workspaces
+CloudSlow = true
+
+Ignore = [
+    "databricks.yml",
+]
+
+[[Repls]]
+# clean up ?o=<num> suffix after URL since not all workspaces have that
+Old = '\?o=\[(NUMID|ALPHANUMID)\]'
+New = ''
+Order = 1000

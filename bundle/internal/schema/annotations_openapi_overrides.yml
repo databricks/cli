@@ -182,6 +182,15 @@ github.com/databricks/cli/bundle/config/resources.DashboardPermissionLevel:
         CAN_EDIT
       - |-
         CAN_MANAGE
+github.com/databricks/cli/bundle/config/resources.DatabaseInstancePermissionLevel:
+  "_":
+    "enum":
+      - |-
+        CAN_CREATE
+      - |-
+        CAN_USE
+      - |-
+        CAN_MANAGE
 github.com/databricks/cli/bundle/config/resources.Job:
   "_":
     "markdown_description": |-
@@ -386,6 +395,9 @@ github.com/databricks/cli/bundle/config/resources.QualityMonitor:
               quartz_cron_expression: 0 0 8 * * ? # Run Every day at 8am
               timezone_id: UTC
       ```
+  "inference_log":
+    "description": |-
+      PLACEHOLDER
   "table_name":
     "description": |-
       PLACEHOLDER
@@ -412,6 +424,35 @@ github.com/databricks/cli/bundle/config/resources.RegisteredModel:
   "grants":
     "description": |-
       PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.SchemaGrantPrivilege:
+  "_":
+    "enum":
+      - |-
+        ALL_PRIVILEGES
+      - |-
+        APPLY_TAG
+      - |-
+        CREATE_FUNCTION
+      - |-
+        CREATE_TABLE
+      - |-
+        CREATE_VOLUME
+      - |-
+        MANAGE
+      - |-
+        USE_SCHEMA
+      - |-
+        EXECUTE
+      - |-
+        MODIFY
+      - |-
+        REFRESH
+      - |-
+        SELECT
+      - |-
+        READ_VOLUME
+      - |-
+        WRITE_VOLUME
 github.com/databricks/cli/bundle/config/resources.Schema:
   "_":
     "markdown_description": |-
@@ -475,6 +516,11 @@ github.com/databricks/cli/bundle/config/resources.SecretScopePermissionLevel:
       - |-
         MANAGE
 github.com/databricks/cli/bundle/config/resources.SqlWarehouse:
+  "enable_photon":
+    "description": |-
+      Configures whether the warehouse should use Photon optimized clusters.
+
+      Defaults to true.
   "permissions":
     "description": |-
       PLACEHOLDER
@@ -484,11 +530,6 @@ github.com/databricks/cli/bundle/config/resources.SqlWarehouse:
   "warehouse_type":
     "description": |-
       PLACEHOLDER
-  "enable_photon":
-    "description": |-
-      Configures whether the warehouse should use Photon optimized clusters.
-
-      Defaults to true.
 github.com/databricks/cli/bundle/config/resources.SqlWarehousePermissionLevel:
   "_":
     "enum":
@@ -527,6 +568,19 @@ github.com/databricks/cli/bundle/config/resources.Volume:
   "volume_type":
     "description": |-
       PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.VolumeGrantPrivilege:
+  "_":
+    "enum":
+      - |-
+        ALL_PRIVILEGES
+      - |-
+        APPLY_TAG
+      - |-
+        MANAGE
+      - |-
+        READ_VOLUME
+      - |-
+        WRITE_VOLUME
 github.com/databricks/databricks-sdk-go/service/apps.AppDeployment:
   "create_time":
     "description": |-

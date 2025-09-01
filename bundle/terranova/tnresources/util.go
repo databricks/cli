@@ -1,24 +1,35 @@
 package tnresources
 
 import (
-	"encoding/json"
-	"errors"
-	"fmt"
+	"reflect"
+
+	"github.com/databricks/databricks-sdk-go/retries"
 )
 
-// Utility to copy from one type to another based on intermediate JSON transformation
-// (e.g. to copy from JobSettings to CreateJob)
-func copyViaJSON[T1, T2 any](dest *T1, src T2) error {
-	if dest == nil {
-		return errors.New("internal error: unexpected nil")
+// filterFields creates a new slice with fields present only in the provided type.
+// We must use that when copying structs because JSON marshaller in SDK crashes if it sees unknown field.
+func filterFields[T any](fields []string) []string {
+	var result []string
+	typeOfT := reflect.TypeOf((*T)(nil)).Elem()
+
+	for _, field := range fields {
+		if _, ok := typeOfT.FieldByName(field); ok {
+			result = append(result, field)
+		}
 	}
-	data, err := json.Marshal(src)
-	if err != nil {
-		return fmt.Errorf("Failed to serialize %T: %w", src, err)
+
+	return result
+}
+
+// This is copied from the retries package of the databricks-sdk-go. It should be made public,
+// but for now, I'm copying it here.
+func shouldRetry(err error) bool {
+	if err == nil {
+		return false
 	}
-	err = json.Unmarshal(data, dest)
-	if err != nil {
-		return fmt.Errorf("Failed JSON roundtrip from %T to %T: %w", src, dest, err)
+	e := err.(*retries.Err)
+	if e == nil {
+		return false
 	}
-	return nil
+	return !e.Halt
 }

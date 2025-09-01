@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.12"
+# ///
 """
 Start integration test jobs for PRs by non-team members that are approved by team members.
 """

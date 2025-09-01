@@ -1,14 +1,15 @@
 # NEXT CHANGELOG
 
-## Release v0.261.0
+## Release v0.267.0
 
 ### Notable Changes
 
+### CLI
+* Introduce retries to `databricks psql` command ([#3492](https://github.com/databricks/cli/pull/3492))
+* Add rule files for coding agents working on the CLI code base ([#3245](https://github.com/databricks/cli/pull/3245))
+
 ### Dependency updates
 
-### CLI
-
 ### Bundles
-- Fixed an issue where `allow_duplicate_names` field on the pipeline definition was ignored by the bundle ([#3274](https://github.com/databricks/cli/pull/3274))
 
 ### API Changes

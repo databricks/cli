@@ -1,0 +1,13 @@
+Error: exit status 1
+
+Error: Unsupported attribute
+
+  on bundle.tf.json line 23, in resource.databricks_job.bar:
+  23:         "name": "test ${databricks_job.test.tasks[0].new_cluster.custom_tags.missing_tag}",
+
+This object has no argument, nested block, or exported attribute named
+"tasks". Did you mean "tags"?
+
+
+
+Exit code (musterr): 1

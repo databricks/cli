@@ -1,0 +1,2 @@
+trace $CLI apps create my-app
+trace $CLI bundle generate app --existing-app-name my-app --config-dir . --key out

@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
+	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
 )
@@ -116,6 +117,18 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 	}
 	t, err := persistentAuth.Token()
 	if err != nil {
+		if errors.Is(err, cache.ErrNotFound) {
+			// The error returned by the SDK when the token cache doesn't exist or doesn't contain a token
+			// for the given host changed in SDK v0.77.0: https://github.com/databricks/databricks-sdk-go/pull/1250.
+			// This was released as part of CLI v0.264.0.
+			//
+			// Older SDK versions check for a particular substring to determine if
+			// the OAuth authentication type can fall through or if it is a real error.
+			// This means we need to keep this error message constant for backwards compatibility.
+			//
+			// This is captured in an acceptance test under "cmd/auth/token".
+			err = errors.New("cache: databricks OAuth is not configured for this host")
+		}
 		if err, ok := auth.RewriteAuthError(ctx, args.authArguments.Host, args.authArguments.AccountID, args.profileName, err); ok {
 			return nil, err
 		}

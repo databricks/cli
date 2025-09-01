@@ -67,12 +67,20 @@ func TestPipelineOptionsValidateSuccessWithSingleOption(t *testing.T) {
 	}
 }
 
+func TestPipelineOptionsValidateSuccessWithRefreshAndFullRefresh(t *testing.T) {
+	fs, opts := setupPipelineOptions(t)
+	err := fs.Parse([]string{`--refresh=arg1,arg2`, `--full-refresh=arg3,arg4`})
+	require.NoError(t, err)
+	err = opts.Validate(nil)
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"arg1", "arg2"}, opts.Refresh)
+	assert.Equal(t, []string{"arg3", "arg4"}, opts.FullRefresh)
+}
+
 func TestPipelineOptionsValidateFailureWithMultipleOptions(t *testing.T) {
 	args := []string{
 		`--refresh-all`,
-		`--refresh=arg1,arg2,arg3`,
 		`--full-refresh-all`,
-		`--full-refresh=arg1,arg2,arg3`,
 		`--validate-only`,
 	}
 	for i := range args {
@@ -84,7 +92,29 @@ func TestPipelineOptionsValidateFailureWithMultipleOptions(t *testing.T) {
 			err := fs.Parse([]string{args[i], args[j]})
 			require.NoError(t, err)
 			err = opts.Validate(nil)
-			assert.ErrorContains(t, err, "pipeline run arguments are mutually exclusive")
+			assert.ErrorContains(t, err, "pipeline run flags are mutually exclusive")
+		}
+	}
+}
+
+func TestPipelineOptionsValidateFailureWithRefreshAndMutuallyExclusiveFlags(t *testing.T) {
+	args := []string{
+		`--refresh=arg1`,
+		`--full-refresh=arg1`,
+	}
+	mutuallyExclusiveArgs := []string{
+		`--refresh-all`,
+		`--full-refresh-all`,
+		`--validate-only`,
+	}
+
+	for _, refreshArg := range args {
+		for _, exclusiveArg := range mutuallyExclusiveArgs {
+			fs, opts := setupPipelineOptions(t)
+			err := fs.Parse([]string{refreshArg, exclusiveArg})
+			require.NoError(t, err)
+			err = opts.Validate(nil)
+			assert.ErrorContains(t, err, "cannot use --refresh or --full-refresh together with")
 		}
 	}
 }

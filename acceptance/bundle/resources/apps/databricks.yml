@@ -1,6 +1,6 @@
 resources:
   apps:
-    myapp:
-      name: myapp
+    mykey:
+      name: myappname
       description: my_app_description
       source_code_path: ./app

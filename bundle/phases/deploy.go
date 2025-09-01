@@ -20,7 +20,6 @@ import (
 	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/bundle/scripts"
 	"github.com/databricks/cli/bundle/statemgmt"
-	"github.com/databricks/cli/bundle/terranova"
 	"github.com/databricks/cli/bundle/trampoline"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
@@ -28,27 +27,32 @@ import (
 	"github.com/databricks/cli/libs/sync"
 )
 
-func approvalForDeploy(ctx context.Context, b *bundle.Bundle) (bool, error) {
-	var actions []deployplan.Action
-	var err error
-
+func getActions(ctx context.Context, b *bundle.Bundle) ([]deployplan.Action, error) {
 	if b.DirectDeployment {
-		actions, err = terranova.CalculateDeployActions(ctx, b)
+		err := b.OpenStateFile(ctx)
 		if err != nil {
-			return false, err
+			return nil, err
 		}
+		err = b.BundleDeployer.CalculatePlanForDeploy(ctx, b.WorkspaceClient(), &b.Config)
+		if err != nil {
+			return nil, err
+		}
+		return b.BundleDeployer.GetActions(ctx), nil
 	} else {
 		tf := b.Terraform
 		if tf == nil {
-			return false, errors.New("terraform not initialized")
+			return nil, errors.New("terraform not initialized")
 		}
-		actions, err = terraform.ShowPlanFile(ctx, tf, b.Plan.TerraformPlanPath)
-		if err != nil {
-			return false, err
-		}
+		actions, err := terraform.ShowPlanFile(ctx, tf, b.TerraformPlanPath)
+		return actions, err
 	}
+}
 
-	b.Plan.Actions = actions
+func approvalForDeploy(ctx context.Context, b *bundle.Bundle) (bool, error) {
+	actions, err := getActions(ctx, b)
+	if err != nil {
+		return false, err
+	}
 
 	types := []deployplan.ActionType{deployplan.ActionTypeRecreate, deployplan.ActionTypeDelete}
 	schemaActions := deployplan.FilterGroup(actions, "schemas", types...)
@@ -63,7 +67,7 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 
 	// One or more UC schema resources will be deleted or recreated.
 	if len(schemaActions) != 0 {
-		cmdio.LogString(ctx, "The following UC schemas will be deleted or recreated. Any underlying data may be lost:")
+		cmdio.LogString(ctx, deleteOrRecreateSchemaMessage)
 		for _, action := range schemaActions {
 			cmdio.Log(ctx, action)
 		}
@@ -71,12 +75,7 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 
 	// One or more DLT pipelines is being recreated.
 	if len(dltActions) != 0 {
-		msg := `
-This action will result in the deletion or recreation of the following DLT Pipelines along with the
-Streaming Tables (STs) and Materialized Views (MVs) managed by them. Recreating the Pipelines will
-restore the defined STs and MVs through full refresh. Note that recreation is necessary when pipeline
-properties such as the 'catalog' or 'storage' are changed:`
-		cmdio.LogString(ctx, msg)
+		cmdio.LogString(ctx, deleteOrRecreateDltMessage)
 		for _, action := range dltActions {
 			cmdio.Log(ctx, action)
 		}
@@ -84,12 +83,7 @@ properties such as the 'catalog' or 'storage' are changed:`
 
 	// One or more volumes is being recreated.
 	if len(volumeActions) != 0 {
-		msg := `
-This action will result in the deletion or recreation of the following volumes.
-For managed volumes, the files stored in the volume are also deleted from your
-cloud tenant within 30 days. For external volumes, the metadata about the volume
-is removed from the catalog, but the underlying files are not deleted:`
-		cmdio.LogString(ctx, msg)
+		cmdio.LogString(ctx, deleteOrRecreateVolumeMessage)
 		for _, action := range volumeActions {
 			cmdio.Log(ctx, action)
 		}
@@ -97,10 +91,7 @@ is removed from the catalog, but the underlying files are not deleted:`
 
 	// One or more dashboards is being recreated.
 	if len(dashboardActions) != 0 {
-		msg := `
-This action will result in the deletion or recreation of the following dashboards.
-This will result in changed IDs and permanent URLs of the dashboards that will be recreated:`
-		cmdio.LogString(ctx, msg)
+		cmdio.LogString(ctx, deleteOrRecreateDashboardMessage)
 		for _, action := range dashboardActions {
 			cmdio.Log(ctx, action)
 		}
@@ -129,7 +120,7 @@ func deployCore(ctx context.Context, b *bundle.Bundle) {
 	cmdio.LogString(ctx, "Deploying resources...")
 
 	if b.DirectDeployment {
-		bundle.ApplyContext(ctx, b, terranova.TerranovaApply())
+		b.BundleDeployer.Apply(ctx, b.WorkspaceClient(), &b.Config)
 	} else {
 		bundle.ApplyContext(ctx, b, terraform.Apply())
 	}
@@ -144,8 +135,13 @@ func deployCore(ctx context.Context, b *bundle.Bundle) {
 
 	bundle.ApplySeqContext(ctx, b,
 		statemgmt.Load(),
+
+		// TODO: this does terraform specific transformation.
 		apps.InterpolateVariables(),
+
+		// TODO: this should either be part of app resource or separate AppConfig resource that depends on main resource.
 		apps.UploadConfig(),
+
 		metadata.Compute(),
 		metadata.Upload(),
 	)
@@ -153,6 +149,39 @@ func deployCore(ctx context.Context, b *bundle.Bundle) {
 	if !logdiag.HasError(ctx) {
 		cmdio.LogString(ctx, "Deployment complete!")
 	}
+}
+
+// deployPrepare is common set of mutators between "bundle plan" and "bundle deploy".
+// Ideally it should not modify the remote, only in-memory bundle config.
+// TODO: currently it does affect remote, via artifacts.CleanUp() and libraries.Upload().
+// We should refactor deployment so that it consists of two stages:
+// 1. Preparation: only local config is changed. This will be used by both "bundle deploy" and "bundle plan"
+// 2. Deployment: this does all the uploads. Only used by "deploy", not "plan".
+func deployPrepare(ctx context.Context, b *bundle.Bundle) {
+	bundle.ApplySeqContext(ctx, b,
+		statemgmt.StatePull(),
+		terraform.CheckDashboardsModifiedRemotely(),
+		deploy.StatePull(),
+		mutator.ValidateGitDetails(),
+		terraform.CheckRunningResource(),
+
+		// artifacts.CleanUp() is there because I'm not sure if it's safe to move to later stage.
+		artifacts.CleanUp(),
+
+		// libraries.CheckForSameNameLibraries() needs to be run after we expand glob references so we
+		// know what are the actual library paths.
+		// libraries.ExpandGlobReferences() has to be run after the libraries are built and thus this
+		// mutator is part of the deploy step rather than validate.
+		libraries.ExpandGlobReferences(),
+		libraries.CheckForSameNameLibraries(),
+		// SwitchToPatchedWheels must be run after ExpandGlobReferences and after build phase because it Artifact.Source and Artifact.Patched populated
+		libraries.SwitchToPatchedWheels(),
+
+		// libraries.Upload() not just uploads but also replaces local paths with remote paths.
+		// TransformWheelTask depends on it and planning also depends on it.
+		libraries.Upload(),
+		trampoline.TransformWheelTask(),
+	)
 }
 
 // The deploy phase deploys artifacts and resources.
@@ -176,23 +205,12 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDeploy))
 	}()
 
+	deployPrepare(ctx, b)
+	if logdiag.HasError(ctx) {
+		return
+	}
+
 	bundle.ApplySeqContext(ctx, b,
-		statemgmt.StatePull(),
-		terraform.CheckDashboardsModifiedRemotely(),
-		deploy.StatePull(),
-		mutator.ValidateGitDetails(),
-		terraform.CheckRunningResource(),
-		artifacts.CleanUp(),
-		// libraries.CheckForSameNameLibraries() needs to be run after we expand glob references so we
-		// know what are the actual library paths.
-		// libraries.ExpandGlobReferences() has to be run after the libraries are built and thus this
-		// mutator is part of the deploy step rather than validate.
-		libraries.ExpandGlobReferences(),
-		libraries.CheckForSameNameLibraries(),
-		// SwitchToPatchedWheels must be run after ExpandGlobReferences and after build phase because it Artifact.Source and Artifact.Patched populated
-		libraries.SwitchToPatchedWheels(),
-		libraries.Upload(),
-		trampoline.TransformWheelTask(),
 		files.Upload(outputHandler),
 		deploy.StateUpdate(),
 		deploy.StatePush(),
@@ -234,6 +252,32 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 
 	logDeployTelemetry(ctx, b)
 	bundle.ApplyContext(ctx, b, scripts.Execute(config.ScriptPostDeploy))
+}
+
+func Diff(ctx context.Context, b *bundle.Bundle) []deployplan.Action {
+	deployPrepare(ctx, b)
+	if logdiag.HasError(ctx) {
+		return nil
+	}
+
+	if !b.DirectDeployment {
+		bundle.ApplySeqContext(ctx, b,
+			terraform.Interpolate(),
+			terraform.Write(),
+			terraform.Plan(terraform.PlanGoal("deploy")),
+		)
+	}
+
+	if logdiag.HasError(ctx) {
+		return nil
+	}
+
+	actions, err := getActions(ctx, b)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+	}
+
+	return actions
 }
 
 // If there are more than 1 thousand of a resource type, do not

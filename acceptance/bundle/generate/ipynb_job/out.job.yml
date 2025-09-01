@@ -1,0 +1,8 @@
+resources:
+  jobs:
+    out:
+      name: ipynb_job
+      tasks:
+        - task_key: test_task
+          notebook_task:
+            notebook_path: outnotebook.ipynb

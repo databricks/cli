@@ -387,11 +387,11 @@ func createFakeTerraformBinaryWindows(t *testing.T, binPath, jsonPayload, versio
 	tmpJsonPath := filepath.Join(t.TempDir(), "payload.json")
 	err = os.WriteFile(tmpJsonPath, []byte(jsonPayload), 0o644)
 	require.NoError(t, err)
-	_, err = f.WriteString(fmt.Sprintf(`@echo off
+	_, err = fmt.Fprintf(f, `@echo off
 REM This is a fake Terraform binary that returns the JSON payload.
 REM It stubs version %s.
 type "%s"
-`, version, tmpJsonPath))
+`, version, tmpJsonPath)
 	require.NoError(t, err)
 	return binPath
 }
@@ -405,12 +405,12 @@ func createFakeTerraformBinaryOther(t *testing.T, binPath, jsonPayload, version 
 	}()
 	err = f.Chmod(0o777)
 	require.NoError(t, err)
-	_, err = f.WriteString(fmt.Sprintf(`#!/bin/sh
+	_, err = fmt.Fprintf(f, `#!/bin/sh
 # This is a fake Terraform binary that returns the JSON payload.
 # It stubs version %s.
 cat <<EOF
 %sEOF
-`, version, jsonPayload))
+`, version, jsonPayload)
 	require.NoError(t, err)
 	return binPath
 }
@@ -485,8 +485,8 @@ func TestFindExecPath_ExecPathWrongVersion(t *testing.T) {
 
 	// Verify that the error is returned.
 	expected := []string{
-		`Terraform binary at ` + execPath + ` (from $DATABRICKS_TF_EXEC_PATH) is ` + version + ` but expected version is ` + defaultTerraformVersion.Version.String() + `.`,
-		`Set DATABRICKS_TF_VERSION to ` + version + ` to continue.`,
+		`terraform binary at ` + execPath + ` (from $DATABRICKS_TF_EXEC_PATH) is ` + version + ` but expected version is ` + defaultTerraformVersion.Version.String() + `.`,
+		`Set DATABRICKS_TF_VERSION to ` + version + ` to continue`,
 	}
 	_, err := m.findExecPath(ctx, b, b.Config.Bundle.Terraform, testInstaller{t})
 	require.ErrorContains(t, err, strings.Join(expected, " "))
@@ -586,8 +586,8 @@ func TestFindExecPath_Version_ExecPathWrongVersion(t *testing.T) {
 
 	// Verify that the error is returned.
 	expected := []string{
-		`Terraform binary at ` + execPath + ` (from $DATABRICKS_TF_EXEC_PATH) is 1.2.4 but expected version is 1.2.3 (from $DATABRICKS_TF_VERSION).`,
-		`Update $DATABRICKS_TF_EXEC_PATH and $DATABRICKS_TF_VERSION so that versions match.`,
+		`terraform binary at ` + execPath + ` (from $DATABRICKS_TF_EXEC_PATH) is 1.2.4 but expected version is 1.2.3 (from $DATABRICKS_TF_VERSION).`,
+		`Update $DATABRICKS_TF_EXEC_PATH and $DATABRICKS_TF_VERSION so that versions match`,
 	}
 	_, err := m.findExecPath(ctx, b, b.Config.Bundle.Terraform, testInstaller{t})
 	require.ErrorContains(t, err, strings.Join(expected, " "))

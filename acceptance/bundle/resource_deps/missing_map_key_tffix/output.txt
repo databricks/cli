@@ -1,0 +1,44 @@
+
+>>> [CLI] bundle validate -o json
+{
+  "jobs": {
+    "bar": {
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/state/default/state/metadata.json"
+      },
+      "edit_mode": "UI_LOCKED",
+      "format": "MULTI_TASK",
+      "max_concurrent_runs": 1,
+      "name": "test ${resources.jobs.test.task[0].new_cluster[0].custom_tags.missing_tag}",
+      "permissions": [],
+      "queue": {
+        "enabled": true
+      }
+    },
+    "test": {
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/state/default/state/metadata.json"
+      },
+      "edit_mode": "UI_LOCKED",
+      "format": "MULTI_TASK",
+      "max_concurrent_runs": 1,
+      "name": "test",
+      "permissions": [],
+      "queue": {
+        "enabled": true
+      },
+      "tasks": [
+        {
+          "new_cluster": {
+            "custom_tags": {
+              "ResourceClass": "SingleNode"
+            }
+          },
+          "task_key": "test-task"
+        }
+      ]
+    }
+  }
+}
