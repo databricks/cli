@@ -9,6 +9,7 @@
 * Add rule files for coding agents working on the CLI code base ([#3245](https://github.com/databricks/cli/pull/3245))
 
 ### Dependency updates
+* Upgrade TF provider to 1.88.0 ([#3529](https://github.com/databricks/cli/pull/3529))
 
 ### Bundles
 

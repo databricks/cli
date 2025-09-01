@@ -2,6 +2,11 @@
 
 package schema
 
+type ResourceAlertV2EffectiveRunAs struct {
+	ServicePrincipalName string `json:"service_principal_name,omitempty"`
+	UserName             string `json:"user_name,omitempty"`
+}
+
 type ResourceAlertV2EvaluationNotificationSubscriptions struct {
 	DestinationId string `json:"destination_id,omitempty"`
 	UserEmail     string `json:"user_email,omitempty"`
@@ -46,6 +51,11 @@ type ResourceAlertV2Evaluation struct {
 	Threshold          *ResourceAlertV2EvaluationThreshold    `json:"threshold,omitempty"`
 }
 
+type ResourceAlertV2RunAs struct {
+	ServicePrincipalName string `json:"service_principal_name,omitempty"`
+	UserName             string `json:"user_name,omitempty"`
+}
+
 type ResourceAlertV2Schedule struct {
 	PauseStatus        string `json:"pause_status,omitempty"`
 	QuartzCronSchedule string `json:"quartz_cron_schedule,omitempty"`
@@ -53,18 +63,21 @@ type ResourceAlertV2Schedule struct {
 }
 
 type ResourceAlertV2 struct {
-	CreateTime        string                     `json:"create_time,omitempty"`
-	CustomDescription string                     `json:"custom_description,omitempty"`
-	CustomSummary     string                     `json:"custom_summary,omitempty"`
-	DisplayName       string                     `json:"display_name,omitempty"`
-	Evaluation        *ResourceAlertV2Evaluation `json:"evaluation,omitempty"`
-	Id                string                     `json:"id,omitempty"`
-	LifecycleState    string                     `json:"lifecycle_state,omitempty"`
-	OwnerUserName     string                     `json:"owner_user_name,omitempty"`
-	ParentPath        string                     `json:"parent_path,omitempty"`
-	QueryText         string                     `json:"query_text,omitempty"`
-	RunAsUserName     string                     `json:"run_as_user_name,omitempty"`
-	Schedule          *ResourceAlertV2Schedule   `json:"schedule,omitempty"`
-	UpdateTime        string                     `json:"update_time,omitempty"`
-	WarehouseId       string                     `json:"warehouse_id,omitempty"`
+	CreateTime        string                         `json:"create_time,omitempty"`
+	CustomDescription string                         `json:"custom_description,omitempty"`
+	CustomSummary     string                         `json:"custom_summary,omitempty"`
+	DisplayName       string                         `json:"display_name,omitempty"`
+	EffectiveRunAs    *ResourceAlertV2EffectiveRunAs `json:"effective_run_as,omitempty"`
+	Evaluation        *ResourceAlertV2Evaluation     `json:"evaluation,omitempty"`
+	Id                string                         `json:"id,omitempty"`
+	LifecycleState    string                         `json:"lifecycle_state,omitempty"`
+	OwnerUserName     string                         `json:"owner_user_name,omitempty"`
+	ParentPath        string                         `json:"parent_path,omitempty"`
+	QueryText         string                         `json:"query_text,omitempty"`
+	RunAs             *ResourceAlertV2RunAs          `json:"run_as,omitempty"`
+	RunAsUserName     string                         `json:"run_as_user_name,omitempty"`
+	Schedule          *ResourceAlertV2Schedule       `json:"schedule,omitempty"`
+	UpdateTime        string                         `json:"update_time,omitempty"`
+	WarehouseId       string                         `json:"warehouse_id,omitempty"`
+	WorkspaceId       string                         `json:"workspace_id,omitempty"`
 }
