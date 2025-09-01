@@ -56,13 +56,11 @@ func generateHostConfig(opts SetupOptions) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to get local keys folder: %w", err)
 	}
-	escapedIdentityFilePath := strings.ReplaceAll(identityFilePath, `"`, `\"`)
 
 	execPath, err := os.Executable()
 	if err != nil {
 		return "", fmt.Errorf("failed to get executable path: %w", err)
 	}
-	escapedExecPath := strings.ReplaceAll(execPath, `"`, `\"`)
 
 	profileOption := ""
 	if opts.Profile != "" {
@@ -74,9 +72,9 @@ Host %s
     User root
     ConnectTimeout 360
     StrictHostKeyChecking accept-new
-    IdentityFile "%s"
-    ProxyCommand "%s" ssh connect --proxy --cluster=%s --shutdown-delay=%s %s
-`, opts.HostName, escapedIdentityFilePath, escapedExecPath, opts.ClusterID, opts.ShutdownDelay, profileOption)
+    IdentityFile %q
+    ProxyCommand %q ssh connect --proxy --cluster=%s --shutdown-delay=%s %s
+`, opts.HostName, identityFilePath, execPath, opts.ClusterID, opts.ShutdownDelay, profileOption)
 
 	return hostConfig, nil
 }
