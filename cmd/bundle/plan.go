@@ -18,12 +18,11 @@ func newPlanCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "plan",
 		Short: "Show deployment plan",
-		Args:  root.NoArgs,
+		Long: `Show the deployment plan for the current bundle configuration.
 
-		// Output format may change without notice; main use case is in acceptance tests.
-		// Today, this command also uploads libraries, which is not the intent here. We need to refactor
-		// libraries.Upload() mutator to separate config mutation with actual upload.
-		Hidden: true,
+This command builds the bundle and displays the actions which will be done on resources that would be deployed, without making any changes.
+It is useful for previewing changes before running 'bundle deploy'.`,
+		Args: root.NoArgs,
 	}
 
 	var force bool
@@ -32,6 +31,13 @@ func newPlanCommand() *cobra.Command {
 	cmd.Flags().StringVar(&clusterId, "compute-id", "", "Override cluster in the deployment with the given compute ID.")
 	cmd.Flags().StringVarP(&clusterId, "cluster-id", "c", "", "Override cluster in the deployment with the given cluster ID.")
 	cmd.Flags().MarkDeprecated("compute-id", "use --cluster-id instead")
+
+	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
+		if f := cmd.Flag("output"); f != nil && f.Changed {
+			return fmt.Errorf("the -o/--output flag is not supported for this command")
+		}
+		return nil
+	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := logdiag.InitContext(cmd.Context())
