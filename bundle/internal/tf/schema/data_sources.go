@@ -3,12 +3,17 @@
 package schema
 
 type DataSources struct {
+	AccountFederationPolicies              map[string]any `json:"databricks_account_federation_policies,omitempty"`
+	AccountFederationPolicy                map[string]any `json:"databricks_account_federation_policy,omitempty"`
 	AccountNetworkPolicies                 map[string]any `json:"databricks_account_network_policies,omitempty"`
 	AccountNetworkPolicy                   map[string]any `json:"databricks_account_network_policy,omitempty"`
+	AccountSettingV2                       map[string]any `json:"databricks_account_setting_v2,omitempty"`
 	AlertV2                                map[string]any `json:"databricks_alert_v2,omitempty"`
 	AlertsV2                               map[string]any `json:"databricks_alerts_v2,omitempty"`
 	App                                    map[string]any `json:"databricks_app,omitempty"`
 	Apps                                   map[string]any `json:"databricks_apps,omitempty"`
+	AppsSettingsCustomTemplate             map[string]any `json:"databricks_apps_settings_custom_template,omitempty"`
+	AppsSettingsCustomTemplates            map[string]any `json:"databricks_apps_settings_custom_templates,omitempty"`
 	AwsAssumeRolePolicy                    map[string]any `json:"databricks_aws_assume_role_policy,omitempty"`
 	AwsBucketPolicy                        map[string]any `json:"databricks_aws_bucket_policy,omitempty"`
 	AwsCrossaccountPolicy                  map[string]any `json:"databricks_aws_crossaccount_policy,omitempty"`
@@ -42,6 +47,8 @@ type DataSources struct {
 	DbfsFile                               map[string]any `json:"databricks_dbfs_file,omitempty"`
 	DbfsFilePaths                          map[string]any `json:"databricks_dbfs_file_paths,omitempty"`
 	Directory                              map[string]any `json:"databricks_directory,omitempty"`
+	EntityTagAssignment                    map[string]any `json:"databricks_entity_tag_assignment,omitempty"`
+	EntityTagAssignments                   map[string]any `json:"databricks_entity_tag_assignments,omitempty"`
 	ExternalLocation                       map[string]any `json:"databricks_external_location,omitempty"`
 	ExternalLocations                      map[string]any `json:"databricks_external_locations,omitempty"`
 	ExternalMetadata                       map[string]any `json:"databricks_external_metadata,omitempty"`
@@ -81,6 +88,8 @@ type DataSources struct {
 	Schema                                 map[string]any `json:"databricks_schema,omitempty"`
 	Schemas                                map[string]any `json:"databricks_schemas,omitempty"`
 	ServicePrincipal                       map[string]any `json:"databricks_service_principal,omitempty"`
+	ServicePrincipalFederationPolicies     map[string]any `json:"databricks_service_principal_federation_policies,omitempty"`
+	ServicePrincipalFederationPolicy       map[string]any `json:"databricks_service_principal_federation_policy,omitempty"`
 	ServicePrincipals                      map[string]any `json:"databricks_service_principals,omitempty"`
 	ServingEndpoints                       map[string]any `json:"databricks_serving_endpoints,omitempty"`
 	Share                                  map[string]any `json:"databricks_share,omitempty"`
@@ -92,22 +101,30 @@ type DataSources struct {
 	StorageCredentials                     map[string]any `json:"databricks_storage_credentials,omitempty"`
 	Table                                  map[string]any `json:"databricks_table,omitempty"`
 	Tables                                 map[string]any `json:"databricks_tables,omitempty"`
+	TagPolicies                            map[string]any `json:"databricks_tag_policies,omitempty"`
+	TagPolicy                              map[string]any `json:"databricks_tag_policy,omitempty"`
 	User                                   map[string]any `json:"databricks_user,omitempty"`
 	Views                                  map[string]any `json:"databricks_views,omitempty"`
 	Volume                                 map[string]any `json:"databricks_volume,omitempty"`
 	Volumes                                map[string]any `json:"databricks_volumes,omitempty"`
 	WorkspaceNetworkOption                 map[string]any `json:"databricks_workspace_network_option,omitempty"`
+	WorkspaceSettingV2                     map[string]any `json:"databricks_workspace_setting_v2,omitempty"`
 	Zones                                  map[string]any `json:"databricks_zones,omitempty"`
 }
 
 func NewDataSources() *DataSources {
 	return &DataSources{
+		AccountFederationPolicies:              make(map[string]any),
+		AccountFederationPolicy:                make(map[string]any),
 		AccountNetworkPolicies:                 make(map[string]any),
 		AccountNetworkPolicy:                   make(map[string]any),
+		AccountSettingV2:                       make(map[string]any),
 		AlertV2:                                make(map[string]any),
 		AlertsV2:                               make(map[string]any),
 		App:                                    make(map[string]any),
 		Apps:                                   make(map[string]any),
+		AppsSettingsCustomTemplate:             make(map[string]any),
+		AppsSettingsCustomTemplates:            make(map[string]any),
 		AwsAssumeRolePolicy:                    make(map[string]any),
 		AwsBucketPolicy:                        make(map[string]any),
 		AwsCrossaccountPolicy:                  make(map[string]any),
@@ -141,6 +158,8 @@ func NewDataSources() *DataSources {
 		DbfsFile:                               make(map[string]any),
 		DbfsFilePaths:                          make(map[string]any),
 		Directory:                              make(map[string]any),
+		EntityTagAssignment:                    make(map[string]any),
+		EntityTagAssignments:                   make(map[string]any),
 		ExternalLocation:                       make(map[string]any),
 		ExternalLocations:                      make(map[string]any),
 		ExternalMetadata:                       make(map[string]any),
@@ -180,6 +199,8 @@ func NewDataSources() *DataSources {
 		Schema:                                 make(map[string]any),
 		Schemas:                                make(map[string]any),
 		ServicePrincipal:                       make(map[string]any),
+		ServicePrincipalFederationPolicies:     make(map[string]any),
+		ServicePrincipalFederationPolicy:       make(map[string]any),
 		ServicePrincipals:                      make(map[string]any),
 		ServingEndpoints:                       make(map[string]any),
 		Share:                                  make(map[string]any),
@@ -191,11 +212,14 @@ func NewDataSources() *DataSources {
 		StorageCredentials:                     make(map[string]any),
 		Table:                                  make(map[string]any),
 		Tables:                                 make(map[string]any),
+		TagPolicies:                            make(map[string]any),
+		TagPolicy:                              make(map[string]any),
 		User:                                   make(map[string]any),
 		Views:                                  make(map[string]any),
 		Volume:                                 make(map[string]any),
 		Volumes:                                make(map[string]any),
 		WorkspaceNetworkOption:                 make(map[string]any),
+		WorkspaceSettingV2:                     make(map[string]any),
 		Zones:                                  make(map[string]any),
 	}
 }

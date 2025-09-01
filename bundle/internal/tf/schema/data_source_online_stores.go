@@ -13,4 +13,5 @@ type DataSourceOnlineStoresOnlineStores struct {
 
 type DataSourceOnlineStores struct {
 	OnlineStores []DataSourceOnlineStoresOnlineStores `json:"online_stores,omitempty"`
+	WorkspaceId  string                               `json:"workspace_id,omitempty"`
 }
