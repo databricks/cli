@@ -131,6 +131,9 @@ type TestConfig struct {
 	// Null means "databricks.yml"
 	BundleConfigTarget *string
 
+	// If true, skip this test when running on DBR / workspace file system.
+	SkipOnDbr *bool
+
 	// To be added:
 	// BundleConfigMatrix is to BundleConfig what EnvMatrix is to Env
 	// It creates different tests for each possible configuration update.
