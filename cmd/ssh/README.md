@@ -39,16 +39,16 @@ flowchart TD
         n2["Driver Proxy API"]
         n11["Workspace API"]
   end
- subgraph s3["Spark User A (or root)"]
+ subgraph s3["Spark User A or root"]
         n4["SSH Server A"]
   end
- subgraph s4["Spark User B"]
+ subgraph s4["Spark User B or root"]
         n6["SSH Server B"]
   end
  subgraph s2["Cluster"]
         s3
         s4
-        n12["workspace filesystem"]
+        n12["Workspace Filesystem"]
   end
     n1 -. "1 - start an ssh server job" .-> n3
     n3 -. "2 - start ssh server" .-> n4
@@ -59,6 +59,8 @@ flowchart TD
     n6 <-.-> n12
     style s2 stroke:#757575
     style s1 stroke:#757575
+    style s4 stroke-dasharray: 5 5
+    style n6 stroke-dasharray: 5 5
 ```
 
 Connection flow:
