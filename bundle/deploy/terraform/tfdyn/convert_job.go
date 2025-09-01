@@ -22,7 +22,7 @@ var supportedTypeTasks = []string{
 	"spark_python_task",
 }
 
-func setSourceIfNotSet(task dyn.Value, defaultSource string) (dyn.Value, error) {
+func setSourceIfNotSet(task dyn.Value, defaultSource jobs.Source) (dyn.Value, error) {
 	for _, taskType := range supportedTypeTasks {
 		t, err := dyn.Get(task, taskType)
 		if err != nil {
@@ -31,19 +31,19 @@ func setSourceIfNotSet(task dyn.Value, defaultSource string) (dyn.Value, error) 
 
 		_, err = dyn.Get(t, "source")
 		if err != nil {
-			return dyn.Set(task, taskType+".source", dyn.V(defaultSource))
+			return dyn.Set(task, taskType+".source", dyn.V(string(defaultSource)))
 		}
 	}
 	return task, nil
 }
 
 func applyDefaultTaskSource(job dyn.Value) (dyn.Value, error) {
-	defaultSource := "WORKSPACE"
+	defaultSource := jobs.SourceWorkspace
 
 	// Check if the job has git_source set and set the default source to GIT if it does
 	_, err := dyn.Get(job, "git_source")
 	if err == nil {
-		defaultSource = "GIT"
+		defaultSource = jobs.SourceGit
 	}
 
 	// Then iterate over the tasks and set the source to the default if it's not set
