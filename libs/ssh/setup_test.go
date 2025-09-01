@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
@@ -79,7 +78,7 @@ func TestGenerateHostConfig_Valid(t *testing.T) {
 
 	// Check that identity file path is included
 	expectedKeyPath := filepath.Join(tmpDir, "cluster-123")
-	assert.Contains(t, result, fmt.Sprintf(`IdentityFile "%s"`, expectedKeyPath))
+	assert.Contains(t, result, fmt.Sprintf(`IdentityFile %q`, expectedKeyPath))
 }
 
 func TestGenerateHostConfig_WithoutProfile(t *testing.T) {
@@ -121,8 +120,8 @@ func TestGenerateHostConfig_PathEscaping(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Check that quotes are properly escaped
-	expectedEscapedPath := strings.ReplaceAll(filepath.Join(specialDir, "cluster-123"), `"`, `\"`)
-	assert.Contains(t, result, fmt.Sprintf(`IdentityFile "%s"`, expectedEscapedPath))
+	expectedPath := filepath.Join(specialDir, "cluster-123")
+	assert.Contains(t, result, fmt.Sprintf(`IdentityFile %q`, expectedPath))
 }
 
 func TestEnsureSSHConfigExists(t *testing.T) {
