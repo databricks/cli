@@ -1,7 +1,6 @@
 package calladapt_test
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/databricks/cli/libs/calladapt"
@@ -17,13 +16,13 @@ type testIface interface {
 type partialType struct{}
 
 func (*partialType) Foo() {}
-func (*partialType) baz() {}
+func (*partialType) baz() {} //nolint:unused
 
 type goodType struct{}
 
 func (*goodType) Foo() {}
 func (*goodType) Bar() {}
-func (*goodType) baz() {}
+func (*goodType) baz() {} //nolint:unused
 
 type badType struct{}
 
@@ -47,11 +46,12 @@ func TestEnsureNoExtraMethods_RejectsExtra(t *testing.T) {
 	typedNil := (*badType)(nil)
 	err := calladapt.EnsureNoExtraMethods(typedNil, calladapt.TypeOf[testIface]())
 	require.Error(t, err)
-	assert.Equal(t, "unexpected exported method Extra on *calladapt_test.badType; only methods from calladapt_test.testIface are allowed", err.Error())
+	assert.Equal(t, "unexpected method Extra on *calladapt_test.badType; only methods from [calladapt_test.testIface] are allowed", err.Error())
 }
 
-func TestEnsureNoExtraMethods_InvalidInterfaceArg(t *testing.T) {
+func TestEnsureNoExtraMethods_NoInterfaces(t *testing.T) {
 	typedNil := (*goodType)(nil)
-	err := calladapt.EnsureNoExtraMethods(typedNil, reflect.TypeOf(0))
+	err := calladapt.EnsureNoExtraMethods(typedNil)
 	require.Error(t, err)
+	assert.Equal(t, "unexpected method Bar on *calladapt_test.goodType; only methods from [] are allowed", err.Error())
 }
