@@ -12,5 +12,7 @@
 * Upgrade TF provider to 1.88.0 ([#3529](https://github.com/databricks/cli/pull/3529))
 
 ### Bundles
+* Add support for `TaskRetryMode` for continuous jobs ([#3529](https://github.com/databricks/cli/pull/3529))
+* Add support for specifying database instance as an application resource ([#3529](https://github.com/databricks/cli/pull/3529))
 
 ### API Changes
