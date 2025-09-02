@@ -15,7 +15,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		panic("Planning is not done")
 	}
 
-	if len(b.Resources) == 0 {
+	if len(b.DeploymentUnits) == 0 {
 		// Avoid creating state file if nothing to deploy
 		return
 	}
@@ -23,7 +23,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 	b.StateDB.AssertOpened()
 
 	b.Graph.Run(defaultParallelism, func(node deployplan.ResourceNode, failedDependency *deployplan.ResourceNode) bool {
-		d, exists := b.Resources[node]
+		d, exists := b.DeploymentUnits[node]
 		if !exists {
 			// Unexpected, this should be filtered at plan.
 			return false

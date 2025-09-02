@@ -55,13 +55,13 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 		return err
 	}
 
-	b.Resources = make(map[deployplan.ResourceNode]DeploymentUnit)
+	b.DeploymentUnits = make(map[deployplan.ResourceNode]DeploymentUnit)
 
 	// We're processing resources in DAG order, because we're trying to get rid of all references like $resources.jobs.foo.id
 	// if jobs.foo is not going to be (re)created. This means by the time we get to resource depending on $resources.jobs.foo.id
 	// we might have already got rid of this reference, thus potentially downgrading actionType
 
-	// parallelism is set to 1, so there is no multi-threaded access there. TODO: increase parallism, protect b.Resources
+	// parallelism is set to 1, so there is no multi-threaded access there. TODO: increase parallism, protect b.DeploymentUnits
 	b.Graph.Run(1, func(node deployplan.ResourceNode, failedDependency *deployplan.ResourceNode) bool {
 		errorPrefix := fmt.Sprintf("cannot plan %s.%s", node.Group, node.Key)
 
@@ -138,7 +138,7 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 		}
 
 		if d.ActionType != deployplan.ActionTypeNoop {
-			b.Resources[node] = d
+			b.DeploymentUnits[node] = d
 		}
 		return true
 	})
@@ -165,7 +165,7 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 				// action was already added by Run() above
 				continue
 			}
-			b.Resources[n] = DeploymentUnit{
+			b.DeploymentUnits[n] = DeploymentUnit{
 				Group:      group,
 				Key:        key,
 				Adapter:    adapter,
@@ -186,10 +186,10 @@ func (b *DeploymentBundle) CalculatePlanForDestroy(ctx context.Context, client *
 		return err
 	}
 
-	b.Resources = make(map[deployplan.ResourceNode]DeploymentUnit)
+	b.DeploymentUnits = make(map[deployplan.ResourceNode]DeploymentUnit)
 	b.Graph = dagrun.NewGraph[deployplan.ResourceNode]()
 
-	for group, groupData := range b.StateDB.Data.Resources {
+	for group, groupData := range b.StateDB.Data.DeploymentUnits {
 		adapter, ok := b.Adapters[group]
 		if !ok {
 			logdiag.LogError(ctx, fmt.Errorf("cannot destroy %s: resource type not supported on direct backend", group))
@@ -197,7 +197,7 @@ func (b *DeploymentBundle) CalculatePlanForDestroy(ctx context.Context, client *
 		}
 		for key := range groupData {
 			n := deployplan.ResourceNode{Group: group, Key: key}
-			b.Resources[n] = DeploymentUnit{
+			b.DeploymentUnits[n] = DeploymentUnit{
 				Group:      group,
 				Key:        key,
 				Adapter:    adapter,
@@ -211,8 +211,8 @@ func (b *DeploymentBundle) CalculatePlanForDestroy(ctx context.Context, client *
 }
 
 func (b *DeploymentBundle) GetActions(ctx context.Context) []deployplan.Action {
-	actions := make([]deployplan.Action, 0, len(b.Resources))
-	for node, deployer := range b.Resources {
+	actions := make([]deployplan.Action, 0, len(b.DeploymentUnits))
+	for node, deployer := range b.DeploymentUnits {
 		actions = append(actions, deployplan.Action{
 			ResourceNode: node,
 			ActionType:   deployer.ActionType,
