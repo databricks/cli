@@ -10,6 +10,7 @@ import (
 // How many parallel operations (API calls) are allowed
 const defaultParallelism = 10
 
+// DeploymentUnit holds state + adapter (implementation) for a single resource
 type DeploymentUnit struct {
 	Group      string
 	Key        string
@@ -17,6 +18,7 @@ type DeploymentUnit struct {
 	ActionType deployplan.ActionType
 }
 
+// DeploymentBundle holds everything needed to deploy a bundle
 type DeploymentBundle struct {
 	StateDB         tnstate.TerranovaState
 	Graph           *dagrun.Graph[deployplan.ResourceNode]

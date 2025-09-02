@@ -129,7 +129,7 @@ type Bundle struct {
 	// If true, the plan is empty and applying it will not do anything
 	TerraformPlanIsEmpty bool
 
-	// (direct only) graph of dependencies between resources
+	// (direct only) deployment implementation and state
 	DeploymentBundle terranova.DeploymentBundle
 
 	// if true, we skip approval checks for deploy, destroy resources and delete
