@@ -61,7 +61,7 @@ func (r *ResourceVolume) DoUpdate(ctx context.Context, id string, config *catalo
 		log.Warnf(ctx, "volumes: response contains unexpected full_name=%#v (expected %#v)", response.FullName, id)
 	}
 
-	return err
+	return nil
 }
 
 func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string, config *catalog.CreateVolumeRequestContent) (string, error) {
