@@ -43,10 +43,10 @@ type IResource interface {
 
 	// [Optional] DoWaitAfterCreate waits for the resource to become ready after creation.
 	// TODO: wait status should be persisted in the state.
-	DoWaitAfterCreate(ctx context.Context, id string, config any) error
+	DoWaitAfterCreate(ctx context.Context, id string) error
 
 	// [Optional] DoWaitAfterUpdate waits for the resource to become ready after update.
-	DoWaitAfterUpdate(ctx context.Context, id string, config any) error
+	DoWaitAfterUpdate(ctx context.Context, id string) error
 
 	// [Optional] RecreateFields returns a list of fields that will cause resource recreation if changed
 	RecreateFields() []string

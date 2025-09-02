@@ -65,8 +65,9 @@ func (*ResourceApp) RecreateFields() []string {
 	}
 }
 
-func (r *ResourceApp) WaitAfterCreate(ctx context.Context, config *apps.App) (*apps.App, error) {
-	return r.waitForApp(ctx, r.client, config.Name)
+func (r *ResourceApp) DoWaitAfterCreate(ctx context.Context, id string) error {
+	_, err := r.waitForApp(ctx, r.client, id)
+	return err
 }
 
 // waitForApp waits for the app to reach the target state. The target state is either ACTIVE or STOPPED.
