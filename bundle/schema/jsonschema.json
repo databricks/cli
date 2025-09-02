@@ -518,12 +518,15 @@
                         "$ref": "#/$defs/bool"
                       },
                       "database_instance_name": {
+                        "description": "The name of the DatabaseInstance housing the database.",
                         "$ref": "#/$defs/string"
                       },
                       "database_name": {
+                        "description": "The name of the database (in a instance) associated with the catalog.",
                         "$ref": "#/$defs/string"
                       },
                       "name": {
+                        "description": "The name of the catalog in UC.",
                         "$ref": "#/$defs/string"
                       },
                       "uid": {
@@ -550,15 +553,19 @@
                     "description": "A DatabaseInstance represents a logical Postgres instance, comprised of both compute and storage.",
                     "properties": {
                       "capacity": {
+                        "description": "The sku of the instance. Valid values are \"CU_1\", \"CU_2\", \"CU_4\", \"CU_8\".",
                         "$ref": "#/$defs/string"
                       },
                       "child_instance_refs": {
+                        "description": "The refs of the child instances. This is only available if the instance is\nparent instance.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/database.DatabaseInstanceRef"
                       },
                       "creation_time": {
+                        "description": "The timestamp when the instance was created.",
                         "$ref": "#/$defs/string"
                       },
                       "creator": {
+                        "description": "The email of the creator of the instance.",
                         "$ref": "#/$defs/string"
                       },
                       "effective_enable_pg_native_login": {
@@ -566,15 +573,19 @@
                         "$ref": "#/$defs/bool"
                       },
                       "effective_enable_readable_secondaries": {
+                        "description": "xref AIP-129. `enable_readable_secondaries` is owned by the client, while `effective_enable_readable_secondaries` is owned by the server.\n`enable_readable_secondaries` will only be set in Create/Update response messages if and only if the user provides the field via the request.\n`effective_enable_readable_secondaries` on the other hand will always bet set in all response messages (Create/Update/Get/List).",
                         "$ref": "#/$defs/bool"
                       },
                       "effective_node_count": {
+                        "description": "xref AIP-129. `node_count` is owned by the client, while `effective_node_count` is owned by the server.\n`node_count` will only be set in Create/Update response messages if and only if the user provides the field via the request.\n`effective_node_count` on the other hand will always bet set in all response messages (Create/Update/Get/List).",
                         "$ref": "#/$defs/int"
                       },
                       "effective_retention_window_in_days": {
+                        "description": "xref AIP-129. `retention_window_in_days` is owned by the client, while `effective_retention_window_in_days` is owned by the server.\n`retention_window_in_days` will only be set in Create/Update response messages if and only if the user provides the field via the request.\n`effective_retention_window_in_days` on the other hand will always bet set in all response messages (Create/Update/Get/List).",
                         "$ref": "#/$defs/int"
                       },
                       "effective_stopped": {
+                        "description": "xref AIP-129. `stopped` is owned by the client, while `effective_stopped` is owned by the server.\n`stopped` will only be set in Create/Update response messages if and only if the user provides the field via the request.\n`effective_stopped` on the other hand will always bet set in all response messages (Create/Update/Get/List).",
                         "$ref": "#/$defs/bool"
                       },
                       "enable_pg_native_login": {
@@ -582,39 +593,50 @@
                         "$ref": "#/$defs/bool"
                       },
                       "enable_readable_secondaries": {
+                        "description": "Whether to enable secondaries to serve read-only traffic. Defaults to false.",
                         "$ref": "#/$defs/bool"
                       },
                       "name": {
+                        "description": "The name of the instance. This is the unique identifier for the instance.",
                         "$ref": "#/$defs/string"
                       },
                       "node_count": {
+                        "description": "The number of nodes in the instance, composed of 1 primary and 0 or more secondaries. Defaults to\n1 primary and 0 secondaries.",
                         "$ref": "#/$defs/int"
                       },
                       "parent_instance_ref": {
+                        "description": "The ref of the parent instance. This is only available if the instance is\nchild instance.\nInput: For specifying the parent instance to create a child instance. Optional.\nOutput: Only populated if provided as input to create a child instance.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.DatabaseInstanceRef"
                       },
                       "permissions": {
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.DatabaseInstancePermission"
                       },
                       "pg_version": {
+                        "description": "The version of Postgres running on the instance.",
                         "$ref": "#/$defs/string"
                       },
                       "read_only_dns": {
+                        "description": "The DNS endpoint to connect to the instance for read only access. This is only available if\nenable_readable_secondaries is true.",
                         "$ref": "#/$defs/string"
                       },
                       "read_write_dns": {
+                        "description": "The DNS endpoint to connect to the instance for read+write access.",
                         "$ref": "#/$defs/string"
                       },
                       "retention_window_in_days": {
+                        "description": "The retention window for the instance. This is the time window in days\nfor which the historical data is retained. The default value is 7 days.\nValid values are 2 to 35 days.",
                         "$ref": "#/$defs/int"
                       },
                       "state": {
+                        "description": "The current state of the instance.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.DatabaseInstanceState"
                       },
                       "stopped": {
+                        "description": "Whether the instance is stopped.",
                         "$ref": "#/$defs/bool"
                       },
                       "uid": {
+                        "description": "An immutable UUID identifier for the instance.",
                         "$ref": "#/$defs/string"
                       }
                     },
