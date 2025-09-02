@@ -50,6 +50,12 @@ var testConfig map[string]any = map[string]any{
 			DatabaseInstanceName: "mydbinstance1",
 		},
 	},
+
+	"synced_database_tables": &resources.SyncedDatabaseTable{
+		SyncedDatabaseTable: database.SyncedDatabaseTable{
+			Name: "main.myschema.my_synced_table",
+		},
+	},
 }
 
 type prepareWorkspace func(client *databricks.WorkspaceClient) error

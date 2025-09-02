@@ -7,14 +7,15 @@ import (
 )
 
 var SupportedResources = map[string]any{
-	"jobs":               (*ResourceJob)(nil),
-	"pipelines":          (*ResourcePipeline)(nil),
-	"schemas":            (*ResourceSchema)(nil),
-	"volumes":            (*ResourceVolume)(nil),
-	"apps":               (*ResourceApp)(nil),
-	"sql_warehouses":     (*ResourceSqlWarehouse)(nil),
-	"database_instances": (*ResourceDatabaseInstance)(nil),
-	"database_catalogs":  (*ResourceDatabaseCatalog)(nil),
+	"jobs":                   (*ResourceJob)(nil),
+	"pipelines":              (*ResourcePipeline)(nil),
+	"schemas":                (*ResourceSchema)(nil),
+	"volumes":                (*ResourceVolume)(nil),
+	"apps":                   (*ResourceApp)(nil),
+	"sql_warehouses":         (*ResourceSqlWarehouse)(nil),
+	"database_instances":     (*ResourceDatabaseInstance)(nil),
+	"database_catalogs":      (*ResourceDatabaseCatalog)(nil),
+	"synced_database_tables": (*ResourceSyncedDatabaseTable)(nil),
 }
 
 func InitAll(client *databricks.WorkspaceClient) (map[string]*Adapter, error) {

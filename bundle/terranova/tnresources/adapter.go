@@ -338,23 +338,23 @@ func (a *Adapter) ClassifyChanges(changes []structdiff.Change) (deployplan.Actio
 
 // WaitAfterCreate waits for the resource to become ready after creation.
 // If the resource doesn't implement this method, this is a no-op.
-func (a *Adapter) WaitAfterCreate(ctx context.Context, id string, config any) error {
+func (a *Adapter) WaitAfterCreate(ctx context.Context, config any) error {
 	if a.waitAfterCreate == nil {
 		return nil // no-op if not implemented
 	}
 
-	_, err := a.waitAfterCreate.Call(ctx, id, config)
+	_, err := a.waitAfterCreate.Call(ctx, config)
 	return err
 }
 
 // WaitAfterUpdate waits for the resource to become ready after update.
 // If the resource doesn't implement this method, this is a no-op.
-func (a *Adapter) WaitAfterUpdate(ctx context.Context, id string, config any) error {
+func (a *Adapter) WaitAfterUpdate(ctx context.Context, config any) error {
 	if a.waitAfterUpdate == nil {
 		return nil // no-op if not implemented
 	}
 
-	_, err := a.waitAfterUpdate.Call(ctx, id, config)
+	_, err := a.waitAfterUpdate.Call(ctx, config)
 	return err
 }
 

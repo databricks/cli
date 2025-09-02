@@ -533,6 +533,10 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.SyncedDatabaseTableCreate(req)
 	})
 
+	server.Handle("PATCH", "/api/2.0/database/synced_tables/{name}", func(req Request) any {
+		return req.Workspace.SyncedDatabaseTableUpdate(req, req.Vars["name"])
+	})
+
 	server.Handle("GET", "/api/2.0/database/synced_tables/{name}", func(req Request) any {
 		return MapGet(req.Workspace, req.Workspace.SyncedDatabaseTables, req.Vars["name"])
 	})
