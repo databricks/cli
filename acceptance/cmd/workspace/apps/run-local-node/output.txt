@@ -5,5 +5,8 @@ Hello, world
 === Waiting
 === Checking app is running...
 >>> curl -s -o - http://127.0.0.1:$(port)
+{"message":"Hello From App","timestamp":"[TIMESTAMP]","status":"running"}
 
-Exit code: 1
+=== Sending shutdown request...
+>>> curl -s -o /dev/null http://127.0.0.1:$(port)/shutdown
+Process terminated
