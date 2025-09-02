@@ -14,6 +14,9 @@ github.com/databricks/cli/bundle/config/resources.App:
   "effective_budget_policy_id":
     "description": |-
       PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
   "oauth2_app_client_id":
     "description": |-
       PLACEHOLDER
@@ -84,6 +87,9 @@ github.com/databricks/cli/bundle/config/resources.Cluster:
   "kind":
     "description": |-
       PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
   "permissions":
     "description": |-
       PLACEHOLDER
@@ -140,6 +146,9 @@ github.com/databricks/cli/bundle/config/resources.Dashboard:
   "file_path":
     "description": |-
       PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
   "lifecycle_state":
     "description": |-
       The state of the dashboard resource. Used for tracking trashed status.
@@ -190,6 +199,9 @@ github.com/databricks/cli/bundle/config/resources.DatabaseCatalog:
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.DatabaseInstance:
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
   "permissions":
     "description": |-
       PLACEHOLDER
@@ -222,6 +234,9 @@ github.com/databricks/cli/bundle/config/resources.Job:
 
       For information about defining job tasks and overriding job settings, see [_](/dev-tools/bundles/job-task-types.md), [_](/dev-tools/bundles/job-task-override.md), and [_](/dev-tools/bundles/cluster-override.md).
   "health":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
     "description": |-
       PLACEHOLDER
   "permissions":
@@ -258,6 +273,9 @@ github.com/databricks/cli/bundle/config/resources.MlflowExperiment:
                 group_name: users
             description: MLflow experiment used to track runs
       ```
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
   "permissions":
     "description": |-
       PLACEHOLDER
@@ -274,6 +292,9 @@ github.com/databricks/cli/bundle/config/resources.MlflowModel:
   "_":
     "markdown_description": |-
       The model resource allows you to define [legacy models](/api/workspace/modelregistry/createmodel) in bundles. Databricks recommends you use Unity Catalog [registered models](#registered-model) instead.
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
   "permissions":
     "description": |-
       PLACEHOLDER
@@ -319,6 +340,9 @@ github.com/databricks/cli/bundle/config/resources.ModelServingEndpoint:
   "description":
     "description": |-
       PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
   "permissions":
     "description": |-
       PLACEHOLDER
@@ -356,6 +380,9 @@ github.com/databricks/cli/bundle/config/resources.Pipeline:
                   path: ./pipeline.py
       ```
   "dry_run":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
     "description": |-
       PLACEHOLDER
   "permissions":
@@ -406,6 +433,9 @@ github.com/databricks/cli/bundle/config/resources.QualityMonitor:
   "inference_log":
     "description": |-
       PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
   "table_name":
     "description": |-
       PLACEHOLDER
@@ -430,6 +460,9 @@ github.com/databricks/cli/bundle/config/resources.RegisteredModel:
                   principal: account users
       ```
   "grants":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.Schema:
@@ -482,6 +515,9 @@ github.com/databricks/cli/bundle/config/resources.Schema:
   "grants":
     "description": |-
       PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
   "properties":
     "description": |-
       PLACEHOLDER
@@ -529,6 +565,9 @@ github.com/databricks/cli/bundle/config/resources.SqlWarehouse:
       Configures whether the warehouse should use Photon optimized clusters.
 
       Defaults to true.
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
   "permissions":
     "description": |-
       PLACEHOLDER
@@ -571,6 +610,9 @@ github.com/databricks/cli/bundle/config/resources.Volume:
 
       For an example bundle that runs a job that writes to a file in Unity Catalog volume, see the [bundle-examples GitHub repository](https://github.com/databricks/bundle-examples/tree/main/knowledge_base/write_from_job_to_volume).
   "grants":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
     "description": |-
       PLACEHOLDER
   "volume_type":
