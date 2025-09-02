@@ -28,7 +28,7 @@ type SqlWarehouse struct {
 	URL            string                   `json:"url,omitempty" bundle:"internal"`
 
 	sql.CreateWarehouseRequest
-	Lifecycle Lifecycle `json:"lifecycle"`
+	Lifecycle Lifecycle `json:"lifecycle,omitempty"`
 }
 
 func (sw *SqlWarehouse) UnmarshalJSON(b []byte) error {

@@ -51,7 +51,7 @@ type Dashboard struct {
 	URL            string                `json:"url,omitempty" bundle:"internal"`
 
 	DashboardConfig
-	Lifecycle Lifecycle `json:"lifecycle"`
+	Lifecycle Lifecycle `json:"lifecycle,omitempty"`
 
 	// FilePath points to the local `.lvdash.json` file containing the dashboard definition.
 	// This is inlined into serialized_dashboard during deployment. The file_path is kept around

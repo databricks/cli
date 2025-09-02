@@ -68,7 +68,7 @@ type Schema struct {
 	ID string `json:"id,omitempty" bundle:"readonly"`
 
 	catalog.CreateSchema
-	Lifecycle Lifecycle `json:"lifecycle"`
+	Lifecycle Lifecycle `json:"lifecycle,omitempty"`
 
 	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"internal"`
 	URL            string         `json:"url,omitempty" bundle:"internal"`

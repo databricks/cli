@@ -30,7 +30,7 @@ type Job struct {
 	URL            string          `json:"url,omitempty" bundle:"internal"`
 
 	jobs.JobSettings
-	Lifecycle Lifecycle `json:"lifecycle"`
+	Lifecycle Lifecycle `json:"lifecycle,omitempty"`
 }
 
 func (j *Job) UnmarshalJSON(b []byte) error {

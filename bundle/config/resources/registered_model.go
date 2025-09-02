@@ -24,7 +24,7 @@ type RegisteredModel struct {
 	// This represents the input args for terraform, and will get converted
 	// to a HCL representation for CRUD
 	catalog.CreateRegisteredModelRequest
-	Lifecycle Lifecycle `json:"lifecycle"`
+	Lifecycle Lifecycle `json:"lifecycle,omitempty"`
 
 	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"internal"`
 	URL            string         `json:"url,omitempty" bundle:"internal"`

@@ -29,7 +29,7 @@ type DatabaseInstance struct {
 	ModifiedStatus ModifiedStatus               `json:"modified_status,omitempty" bundle:"internal"`
 
 	database.DatabaseInstance
-	Lifecycle Lifecycle `json:"lifecycle"`
+	Lifecycle Lifecycle `json:"lifecycle,omitempty"`
 }
 
 func (d *DatabaseInstance) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {

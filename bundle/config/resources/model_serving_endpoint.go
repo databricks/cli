@@ -26,7 +26,7 @@ type ModelServingEndpoint struct {
 	// This represents the input args for terraform, and will get converted
 	// to a HCL representation for CRUD
 	serving.CreateServingEndpoint
-	Lifecycle Lifecycle `json:"lifecycle"`
+	Lifecycle Lifecycle `json:"lifecycle,omitempty"`
 
 	// This represents the id (ie serving_endpoint_id) that can be used
 	// as a reference in other resources. This value is returned by terraform.
