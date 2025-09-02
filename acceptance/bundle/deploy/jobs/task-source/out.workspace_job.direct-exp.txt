@@ -1,0 +1,33 @@
+{
+  "deployment": {
+    "kind": "BUNDLE",
+    "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/task-source/default/state/metadata.json"
+  },
+  "edit_mode": "UI_LOCKED",
+  "format": "MULTI_TASK",
+  "max_concurrent_runs": 1,
+  "name": "workspace_job",
+  "queue": {
+    "enabled": true
+  },
+  "tasks": [
+    {
+      "for_each_task": {
+        "inputs": "[1]",
+        "task": {
+          "notebook_task": {
+            "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/task-source/default/files/notebook"
+          },
+          "task_key": "test_task_foreach_no_source"
+        }
+      },
+      "task_key": "test_task_foreach"
+    },
+    {
+      "notebook_task": {
+        "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/task-source/default/files/notebook"
+      },
+      "task_key": "test_task_no_source"
+    }
+  ]
+}

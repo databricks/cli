@@ -365,6 +365,7 @@ func (s *FakeWorkspace) JobsGet(jobId string) Response {
 		}
 	}
 
+	job = setSourceIfNotSet(job)
 	return Response{
 		Body: job,
 	}
@@ -421,6 +422,7 @@ func (s *FakeWorkspace) JobsList() Response {
 
 	list := make([]jobs.BaseJob, 0, len(s.Jobs))
 	for _, job := range s.Jobs {
+		job = setSourceIfNotSet(job)
 		baseJob := jobs.BaseJob{}
 		err := jsonConvert(job, &baseJob)
 		if err != nil {
@@ -443,6 +445,35 @@ func (s *FakeWorkspace) JobsList() Response {
 			Jobs: list,
 		},
 	}
+}
+
+func setSourceIfNotSet(job jobs.Job) jobs.Job {
+	// Setting the source field in the output of the Jobs List API same way as backend does
+	if job.Settings != nil {
+		source := "WORKSPACE"
+		if job.Settings.GitSource != nil {
+			source = "GIT"
+		}
+		for _, task := range job.Settings.Tasks {
+			if task.NotebookTask != nil {
+				if task.NotebookTask.Source == "" {
+					task.NotebookTask.Source = jobs.Source(source)
+				}
+				if task.DbtTask != nil {
+					if task.DbtTask.Source == "" {
+						task.DbtTask.Source = jobs.Source(source)
+					}
+				}
+				if task.SparkPythonTask != nil {
+					if task.SparkPythonTask.Source == "" {
+						task.SparkPythonTask.Source = jobs.Source(source)
+					}
+				}
+			}
+		}
+	}
+
+	return job
 }
 
 // jsonConvert saves input to a value pointed by output
