@@ -78,7 +78,7 @@ func (d *DeploymentUnit) Create(ctx context.Context, db *tnstate.TerranovaState,
 		return fmt.Errorf("saving state after creating id=%s: %w", newID, err)
 	}
 
-	err = d.Adapter.DoWaitAfterCreate(ctx, newID, config)
+	err = d.Adapter.WaitAfterCreate(ctx, newID, config)
 	if err != nil {
 		return fmt.Errorf("waiting after creating id=%s: %w", newID, err)
 	}
@@ -111,7 +111,7 @@ func (d *DeploymentUnit) Update(ctx context.Context, db *tnstate.TerranovaState,
 		return fmt.Errorf("saving state id=%s: %w", id, err)
 	}
 
-	err = d.Adapter.DoWaitAfterUpdate(ctx, id, config)
+	err = d.Adapter.WaitAfterUpdate(ctx, id, config)
 	if err != nil {
 		return fmt.Errorf("waiting after updating id=%s: %w", id, err)
 	}
@@ -136,7 +136,7 @@ func (d *DeploymentUnit) UpdateWithID(ctx context.Context, db *tnstate.Terranova
 		return fmt.Errorf("saving state id=%s: %w", oldID, err)
 	}
 
-	err = d.Adapter.DoWaitAfterUpdate(ctx, newID, config)
+	err = d.Adapter.WaitAfterUpdate(ctx, newID, config)
 	if err != nil {
 		return fmt.Errorf("waiting after updating id=%s: %w", newID, err)
 	}

@@ -65,7 +65,7 @@ func (*ResourceApp) RecreateFields() []string {
 	}
 }
 
-func (r *ResourceApp) DoWaitAfterCreate(ctx context.Context, config *apps.App) error {
+func (r *ResourceApp) WaitAfterCreate(ctx context.Context, config *apps.App) error {
 	_, err := r.waitForApp(ctx, r.client, config.Name)
 	return err
 }

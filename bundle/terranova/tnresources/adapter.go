@@ -41,12 +41,12 @@ type IResource interface {
 	// Example: func (r *ResourceVolume) DoUpdateWithID(ctx, id string, config *catalog.CreateVolumeRequestContent) (string, error)
 	DoUpdateWithID(ctx context.Context, id string, config any) (string, error)
 
-	// [Optional] DoWaitAfterCreate waits for the resource to become ready after creation.
+	// [Optional] WaitAfterCreate waits for the resource to become ready after creation.
 	// TODO: wait status should be persisted in the state.
-	DoWaitAfterCreate(ctx context.Context, config any) error
+	WaitAfterCreate(ctx context.Context, config any) error
 
-	// [Optional] DoWaitAfterUpdate waits for the resource to become ready after update.
-	DoWaitAfterUpdate(ctx context.Context, config any) error
+	// [Optional] WaitAfterUpdate waits for the resource to become ready after update.
+	WaitAfterUpdate(ctx context.Context, config any) error
 
 	// [Optional] RecreateFields returns a list of fields that will cause resource recreation if changed
 	RecreateFields() []string
@@ -66,10 +66,10 @@ type Adapter struct {
 	doUpdate      *calladapt.BoundCaller
 
 	// Optional:
-	doUpdateWithID    *calladapt.BoundCaller
-	doWaitAfterCreate *calladapt.BoundCaller
-	doWaitAfterUpdate *calladapt.BoundCaller
-	classifyChanges   *calladapt.BoundCaller
+	doUpdateWithID  *calladapt.BoundCaller
+	waitAfterCreate *calladapt.BoundCaller
+	waitAfterUpdate *calladapt.BoundCaller
+	classifyChanges *calladapt.BoundCaller
 
 	recreateFields map[string]struct{}
 }
@@ -88,16 +88,16 @@ func NewAdapter(typedNil any, client *databricks.WorkspaceClient) (*Adapter, err
 	}
 	impl := outs[0]
 	adapter := &Adapter{
-		new:               nil,
-		prepareConfig:     nil,
-		doDelete:          nil,
-		doCreate:          nil,
-		doUpdate:          nil,
-		doUpdateWithID:    nil,
-		doWaitAfterCreate: nil,
-		doWaitAfterUpdate: nil,
-		classifyChanges:   nil,
-		recreateFields:    map[string]struct{}{},
+		new:             nil,
+		prepareConfig:   nil,
+		doDelete:        nil,
+		doCreate:        nil,
+		doUpdate:        nil,
+		doUpdateWithID:  nil,
+		waitAfterCreate: nil,
+		waitAfterUpdate: nil,
+		classifyChanges: nil,
+		recreateFields:  map[string]struct{}{},
 	}
 
 	err = adapter.initMethods(impl)
@@ -169,12 +169,12 @@ func (a *Adapter) initMethods(resource any) error {
 		return err
 	}
 
-	a.doWaitAfterCreate, err = calladapt.PrepareCall(resource, it, "DoWaitAfterCreate")
+	a.waitAfterCreate, err = calladapt.PrepareCall(resource, it, "WaitAfterCreate")
 	if err != nil {
 		return err
 	}
 
-	a.doWaitAfterUpdate, err = calladapt.PrepareCall(resource, it, "DoWaitAfterUpdate")
+	a.waitAfterUpdate, err = calladapt.PrepareCall(resource, it, "WaitAfterUpdate")
 	if err != nil {
 		return err
 	}
@@ -208,15 +208,15 @@ func (a *Adapter) Validate() error {
 	}
 
 	// Validate wait methods if present
-	if a.doWaitAfterCreate != nil {
-		if a.doWaitAfterCreate.InTypes[1] != configType {
-			return fmt.Errorf("DoWaitAfterCreate config type mismatch: expected %v, got %v", configType, a.doWaitAfterCreate.InTypes[2])
+	if a.waitAfterCreate != nil {
+		if a.waitAfterCreate.InTypes[1] != configType {
+			return fmt.Errorf("WaitAfterCreate config type mismatch: expected %v, got %v", configType, a.waitAfterCreate.InTypes[2])
 		}
 	}
 
-	if a.doWaitAfterUpdate != nil {
-		if a.doWaitAfterUpdate.InTypes[1] != configType {
-			return fmt.Errorf("DoWaitAfterUpdate config type mismatch: expected %v, got %v", configType, a.doWaitAfterUpdate.InTypes[2])
+	if a.waitAfterUpdate != nil {
+		if a.waitAfterUpdate.InTypes[1] != configType {
+			return fmt.Errorf("WaitAfterUpdate config type mismatch: expected %v, got %v", configType, a.waitAfterUpdate.InTypes[2])
 		}
 	}
 
@@ -336,25 +336,25 @@ func (a *Adapter) ClassifyChanges(changes []structdiff.Change) (deployplan.Actio
 	return result, nil
 }
 
-// DoWaitAfterCreate waits for the resource to become ready after creation.
+// WaitAfterCreate waits for the resource to become ready after creation.
 // If the resource doesn't implement this method, this is a no-op.
-func (a *Adapter) DoWaitAfterCreate(ctx context.Context, id string, config any) error {
-	if a.doWaitAfterCreate == nil {
+func (a *Adapter) WaitAfterCreate(ctx context.Context, id string, config any) error {
+	if a.waitAfterCreate == nil {
 		return nil // no-op if not implemented
 	}
 
-	_, err := a.doWaitAfterCreate.Call(ctx, id, config)
+	_, err := a.waitAfterCreate.Call(ctx, id, config)
 	return err
 }
 
-// DoWaitAfterUpdate waits for the resource to become ready after update.
+// WaitAfterUpdate waits for the resource to become ready after update.
 // If the resource doesn't implement this method, this is a no-op.
-func (a *Adapter) DoWaitAfterUpdate(ctx context.Context, id string, config any) error {
-	if a.doWaitAfterUpdate == nil {
+func (a *Adapter) WaitAfterUpdate(ctx context.Context, id string, config any) error {
+	if a.waitAfterUpdate == nil {
 		return nil // no-op if not implemented
 	}
 
-	_, err := a.doWaitAfterUpdate.Call(ctx, id, config)
+	_, err := a.waitAfterUpdate.Call(ctx, id, config)
 	return err
 }
 

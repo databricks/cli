@@ -42,7 +42,7 @@ func (d *ResourceDatabaseInstance) DoUpdate(ctx context.Context, id string, conf
 	return err
 }
 
-func (d *ResourceDatabaseInstance) DoWaitAfterCreate(ctx context.Context, config *database.DatabaseInstance) error {
+func (d *ResourceDatabaseInstance) WaitAfterCreate(ctx context.Context, config *database.DatabaseInstance) error {
 	waiter := &database.WaitGetDatabaseInstanceDatabaseAvailable[database.DatabaseInstance]{
 		Response: config,
 		Name:     config.Name,
