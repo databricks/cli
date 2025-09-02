@@ -42,7 +42,7 @@ func (d *ResourceDatabaseInstance) DoUpdate(ctx context.Context, id string, conf
 	return err
 }
 
-func (d *ResourceDatabaseInstance) WaitAfterCreate(ctx context.Context, config *database.DatabaseInstance) (*database.DatabaseInstance, error) {
+func (d *ResourceDatabaseInstance) DoWaitAfterCreate(ctx context.Context, config *database.DatabaseInstance) error {
 	waiter := &database.WaitGetDatabaseInstanceDatabaseAvailable[database.DatabaseInstance]{
 		Response: config,
 		Name:     config.Name,
@@ -50,8 +50,8 @@ func (d *ResourceDatabaseInstance) WaitAfterCreate(ctx context.Context, config *
 			return d.client.Database.WaitGetDatabaseInstanceDatabaseAvailable(ctx, config.Name, timeout, callback)
 		},
 	}
-	response, err := waiter.GetWithTimeout(20 * time.Minute)
-	return response, err
+	_, err := waiter.GetWithTimeout(20 * time.Minute)
+	return err
 }
 
 func (d *ResourceDatabaseInstance) DoDelete(ctx context.Context, name string) error {

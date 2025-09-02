@@ -43,10 +43,10 @@ type IResource interface {
 
 	// [Optional] DoWaitAfterCreate waits for the resource to become ready after creation.
 	// TODO: wait status should be persisted in the state.
-	DoWaitAfterCreate(ctx context.Context, id string) error
+	DoWaitAfterCreate(ctx context.Context, config any) error
 
 	// [Optional] DoWaitAfterUpdate waits for the resource to become ready after update.
-	DoWaitAfterUpdate(ctx context.Context, id string) error
+	DoWaitAfterUpdate(ctx context.Context, config any) error
 
 	// [Optional] RecreateFields returns a list of fields that will cause resource recreation if changed
 	RecreateFields() []string
@@ -100,7 +100,7 @@ func NewAdapter(typedNil any, client *databricks.WorkspaceClient) (*Adapter, err
 		recreateFields:    map[string]struct{}{},
 	}
 
-	err = adapter.InitMethods(impl)
+	err = adapter.initMethods(impl)
 	if err != nil {
 		return nil, err
 	}
@@ -130,52 +130,56 @@ func NewAdapter(typedNil any, client *databricks.WorkspaceClient) (*Adapter, err
 	return adapter, nil
 }
 
-func (a *Adapter) InitMethods(resource any) error {
-	var err error
-	a.new, err = prepareCallRequired(resource, calladapt.TypeOf[IResource](), "New")
+func (a *Adapter) initMethods(resource any) error {
+	it := calladapt.TypeOf[IResource]()
+
+	err := calladapt.EnsureNoExtraMethods(resource, it)
+	if err != nil {
+		return err
+	}
+	a.new, err = prepareCallRequired(resource, it, "New")
 	if err != nil {
 		return err
 	}
 
-	a.prepareConfig, err = prepareCallRequired(resource, calladapt.TypeOf[IResource](), "PrepareConfig")
+	a.prepareConfig, err = prepareCallRequired(resource, it, "PrepareConfig")
 	if err != nil {
 		return err
 	}
 
-	a.doDelete, err = prepareCallRequired(resource, calladapt.TypeOf[IResource](), "DoDelete")
+	a.doDelete, err = prepareCallRequired(resource, it, "DoDelete")
 	if err != nil {
 		return err
 	}
 
-	// Load Create/Update methods
-	a.doCreate, err = prepareCallRequired(resource, calladapt.TypeOf[IResource](), "DoCreate")
+	a.doCreate, err = prepareCallRequired(resource, it, "DoCreate")
 	if err != nil {
 		return err
 	}
 
-	a.doUpdate, err = prepareCallRequired(resource, calladapt.TypeOf[IResource](), "DoUpdate")
+	a.doUpdate, err = prepareCallRequired(resource, it, "DoUpdate")
 	if err != nil {
 		return err
 	}
 
-	// Optional methods
+	// Optional methods:
 
-	a.doUpdateWithID, err = calladapt.PrepareCall(resource, calladapt.TypeOf[IResource](), "DoUpdateWithID")
+	a.doUpdateWithID, err = calladapt.PrepareCall(resource, it, "DoUpdateWithID")
 	if err != nil {
 		return err
 	}
 
-	a.doWaitAfterCreate, err = calladapt.PrepareCall(resource, calladapt.TypeOf[IResource](), "DoWaitAfterCreate")
+	a.doWaitAfterCreate, err = calladapt.PrepareCall(resource, it, "DoWaitAfterCreate")
 	if err != nil {
 		return err
 	}
 
-	a.doWaitAfterUpdate, err = calladapt.PrepareCall(resource, calladapt.TypeOf[IResource](), "DoWaitAfterUpdate")
+	a.doWaitAfterUpdate, err = calladapt.PrepareCall(resource, it, "DoWaitAfterUpdate")
 	if err != nil {
 		return err
 	}
 
-	a.classifyChanges, err = calladapt.PrepareCall(resource, calladapt.TypeOf[IResource](), "ClassifyChanges")
+	a.classifyChanges, err = calladapt.PrepareCall(resource, it, "ClassifyChanges")
 	return err
 }
 
@@ -205,13 +209,13 @@ func (a *Adapter) Validate() error {
 
 	// Validate wait methods if present
 	if a.doWaitAfterCreate != nil {
-		if a.doWaitAfterCreate.InTypes[2] != configType {
+		if a.doWaitAfterCreate.InTypes[1] != configType {
 			return fmt.Errorf("DoWaitAfterCreate config type mismatch: expected %v, got %v", configType, a.doWaitAfterCreate.InTypes[2])
 		}
 	}
 
 	if a.doWaitAfterUpdate != nil {
-		if a.doWaitAfterUpdate.InTypes[2] != configType {
+		if a.doWaitAfterUpdate.InTypes[1] != configType {
 			return fmt.Errorf("DoWaitAfterUpdate config type mismatch: expected %v, got %v", configType, a.doWaitAfterUpdate.InTypes[2])
 		}
 	}
