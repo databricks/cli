@@ -58,6 +58,11 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 		return false, err
 	}
 
+	err = checkForPreventDestroy(b, deleteActions, true)
+	if err != nil {
+		return false, err
+	}
+
 	b.Plan.Actions = deleteActions
 
 	if len(deleteActions) > 0 {

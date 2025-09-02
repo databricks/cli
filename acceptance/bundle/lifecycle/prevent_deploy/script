@@ -1,9 +1,0 @@
-trace $CLI bundle validate
-
-trace $CLI bundle deploy
-
-trace musterr $CLI bundle destroy --auto-approve
-
-# Rename the job key forces DABs to re-create the job
-trace update_file.py databricks.yml '<<: *job_base' ''
-trace musterr $CLI bundle deploy

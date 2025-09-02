@@ -1,0 +1,18 @@
+trace $CLI bundle validate
+
+trace $CLI bundle deploy
+
+trace musterr $CLI bundle destroy --auto-approve >out.$DATABRICKS_CLI_DEPLOYMENT.txt 2>&1
+
+# Changing the catalog name, deploy must fail because pipeline will be recreated
+trace update_file.py databricks.yml 'catalog: main' 'catalog: mainnew'
+trace musterr $CLI bundle deploy >>out.$DATABRICKS_CLI_DEPLOYMENT.txt 2>&1
+
+# Removing the prevent_destroy, deploy must succeed
+trace update_file.py databricks.yml 'prevent_destroy: true' 'prevent_destroy: false'
+trace $CLI bundle deploy --auto-approve >>out.$DATABRICKS_CLI_DEPLOYMENT.txt 2>&1
+
+trace update_file.py databricks.yml 'prevent_destroy: false' 'prevent_destroy: true'
+# Removing the job, deploy must succeed
+trace update_file.py databricks.yml '<<: *pipeline_base' ''
+trace $CLI bundle deploy --auto-approve >>out.$DATABRICKS_CLI_DEPLOYMENT.txt 2>&1

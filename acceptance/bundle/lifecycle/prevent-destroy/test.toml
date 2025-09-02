@@ -1,0 +1,5 @@
+EnvVaryOutput = "DATABRICKS_CLI_DEPLOYMENT"
+
+Ignore = [
+    ".databricks"
+]
