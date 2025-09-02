@@ -323,7 +323,7 @@ func (m *translatePaths) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 
 	return applyTranslations(ctx, b, t, []func(context.Context, dyn.Value) (dyn.Value, error){
 		t.applyJobTranslations(paths.VisitJobPaths, false),
-    t.applyJobTranslations(paths.VisitJobLibrariesPaths, true),
+		t.applyJobTranslations(paths.VisitJobLibrariesPaths, true),
 		t.applyPipelineTranslations,
 		t.applyArtifactTranslations,
 		t.applyAppsTranslations,

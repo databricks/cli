@@ -41,7 +41,7 @@ func (t *translateContext) applyJobTranslations(visitor visitFunc, allowOutsideS
 			// Skip path translation if the job is using git source.
 			if slices.Contains(ignore, key) {
 				return v, nil
-      }
+			}
 
 			opts := translateOptions{
 				Mode:                     mode,
@@ -76,11 +76,11 @@ func (t *translateContext) applyJobTranslations(visitor visitFunc, allowOutsideS
 				nv, nerr := t.rewriteValue(ctx, p, originalValue, fallback[key], opts)
 				if nerr == nil {
 					logdiag.LogDiag(ctx, diag.Diagnostic{
-					  Severity:  diag.Error,
-					  Summary:   fmt.Sprintf("path %s is defined relative to the %s directory (%s). Please update the path to be relative to the file where it is defined or use earlier version of CLI (0.261.0 or earlier).", originalPath, fallback[key], v.Location()),
-					  Locations: v.Locations(),
-				  })
-				  return nv, nil
+						Severity:  diag.Error,
+						Summary:   fmt.Sprintf("path %s is defined relative to the %s directory (%s). Please update the path to be relative to the file where it is defined or use earlier version of CLI (0.261.0 or earlier).", originalPath, fallback[key], v.Location()),
+						Locations: v.Locations(),
+					})
+					return nv, nil
 				}
 			}
 
