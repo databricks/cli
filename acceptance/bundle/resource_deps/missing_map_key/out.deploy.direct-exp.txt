@@ -1,0 +1,9 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/state/default/files...
+Error: field not set ${resources.jobs.test.tasks[0].new_cluster.custom_tags.missing_tag}: tasks[0].new_cluster.custom_tags.missing_tag: key "missing_tag" not found in map
+
+Error: cannot plan jobs.bar: dependency failed: jobs.test
+
+Error: planning failed
+
+
+Exit code (musterr): 1

@@ -37,15 +37,17 @@ import (
 )
 
 var (
-	KeepTmp     bool
-	NoRepl      bool
-	VerboseTest bool = os.Getenv("VERBOSE_TEST") != ""
-	Tail        bool
-	Forcerun    bool
-	LogRequests bool
-	LogConfig   bool
-	SkipLocal   bool
-	UseVersion  string
+	KeepTmp         bool
+	NoRepl          bool
+	VerboseTest     bool = os.Getenv("VERBOSE_TEST") != ""
+	Tail            bool
+	Forcerun        bool
+	LogRequests     bool
+	LogConfig       bool
+	SkipLocal       bool
+	UseVersion      string
+	WorkspaceTmpDir bool
+	TerraformDir    string
 )
 
 // In order to debug CLI running under acceptance test, search for TestInprocessMode and update
@@ -67,6 +69,15 @@ func init() {
 	flag.BoolVar(&LogConfig, "logconfig", false, "Log merged for each test case")
 	flag.BoolVar(&SkipLocal, "skiplocal", false, "Skip tests that are enabled to run on Local")
 	flag.StringVar(&UseVersion, "useversion", "", "Download previously released version of CLI and use it to run the tests")
+
+	// DABs in the workspace runs on the workspace file system. This flags does the same for acceptance tests
+	// to simulate an identical environment.
+	flag.BoolVar(&WorkspaceTmpDir, "workspace-tmp-dir", false, "Run tests on the workspace file system (For DBR testing).")
+
+	// Symlinks from workspace file system to local file mount are not supported on DBR. Terraform implicitly
+	// creates these symlinks when a file_mirror is used for a provider (in .terraformrc). This flag
+	// allows us to download the provider to the workspace file system on DBR enabling DBR integration testing.
+	flag.StringVar(&TerraformDir, "terraform-dir", "", "Directory to download the terraform provider to")
 }
 
 const (
@@ -143,9 +154,16 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	t.Setenv("LC_ALL", "C")
 
 	buildDir := filepath.Join(cwd, "build", fmt.Sprintf("%s_%s", runtime.GOOS, runtime.GOARCH))
+	err = os.MkdirAll(buildDir, os.ModePerm)
+	require.NoError(t, err)
 
-	// Download terraform and provider and create config; this also creates build directory.
-	RunCommand(t, []string{"python3", filepath.Join(cwd, "install_terraform.py"), "--targetdir", buildDir}, ".")
+	terraformDir := TerraformDir
+	if terraformDir == "" {
+		terraformDir = buildDir
+	}
+
+	// Download terraform and provider and create config.
+	RunCommand(t, []string{"python3", filepath.Join(cwd, "install_terraform.py"), "--targetdir", terraformDir}, ".")
 
 	wheelPath := buildDatabricksBundlesWheel(t, buildDir)
 	if wheelPath != "" {
@@ -221,12 +239,12 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		repls.Set(testDefaultWarehouseId, "[TEST_DEFAULT_WAREHOUSE_ID]")
 	}
 
-	terraformrcPath := filepath.Join(buildDir, ".terraformrc")
+	terraformrcPath := filepath.Join(terraformDir, ".terraformrc")
 	t.Setenv("TF_CLI_CONFIG_FILE", terraformrcPath)
 	t.Setenv("DATABRICKS_TF_CLI_CONFIG_FILE", terraformrcPath)
 	repls.SetPath(terraformrcPath, "[DATABRICKS_TF_CLI_CONFIG_FILE]")
 
-	terraformExecPath := filepath.Join(buildDir, "terraform") + exeSuffix
+	terraformExecPath := filepath.Join(terraformDir, "terraform") + exeSuffix
 	t.Setenv("DATABRICKS_TF_EXEC_PATH", terraformExecPath)
 	t.Setenv("TERRAFORM", terraformExecPath)
 	repls.SetPath(terraformExecPath, "[TERRAFORM]")
@@ -486,6 +504,15 @@ func runTest(t *testing.T,
 		tmpDir, err = os.MkdirTemp(tempDirBase, "")
 		require.NoError(t, err)
 		t.Logf("Created directory: %s", tmpDir)
+	} else if WorkspaceTmpDir {
+		// If the test is being run on DBR, auth is already configured
+		// by the dbr_runner notebook by reading a token from the notebook context and
+		// setting DATABRICKS_TOKEN and DATABRICKS_HOST environment variables.
+		_, _, tmpDir = workspaceTmpDir(t.Context(), t)
+
+		// Run DBR tests on the workspace file system to mimic usage from
+		// DABs in the workspace.
+		t.Logf("Running DBR tests on %s", tmpDir)
 	} else {
 		tmpDir = t.TempDir()
 	}
@@ -552,7 +579,6 @@ func runTest(t *testing.T,
 	// populate CLOUD_ENV_BASE
 	envBase := getCloudEnvBase(cloudEnv)
 	cmd.Env = append(cmd.Env, "CLOUD_ENV_BASE="+envBase)
-	repls.Set(envBase, "[CLOUD_ENV_BASE]")
 
 	// Must be added PrepareReplacementsUser, otherwise conflicts with [USERNAME]
 	testdiff.PrepareReplacementsUUID(t, &repls)
@@ -1163,7 +1189,7 @@ func getCloudEnvBase(cloudEnv string) string {
 	case "gcp", "gcp-ucws":
 		return "gcp"
 	case "":
-		return ""
+		return "aws"
 	default:
 		return "unknown-cloudEnv-" + cloudEnv
 	}

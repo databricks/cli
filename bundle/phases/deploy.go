@@ -8,8 +8,6 @@ import (
 	"github.com/databricks/cli/bundle/apps"
 	"github.com/databricks/cli/bundle/artifacts"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/config/mutator"
-	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
 	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/bundle/deploy/lock"
@@ -21,8 +19,6 @@ import (
 	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/bundle/scripts"
 	"github.com/databricks/cli/bundle/statemgmt"
-	"github.com/databricks/cli/bundle/terranova"
-	"github.com/databricks/cli/bundle/trampoline"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
@@ -30,17 +26,22 @@ import (
 )
 
 func getActions(ctx context.Context, b *bundle.Bundle) ([]deployplan.Action, error) {
-	var actions []deployplan.Action
-	var err error
-
 	if b.DirectDeployment {
-		return terranova.CalculateDeployActions(ctx, b)
+		err := b.OpenStateFile(ctx)
+		if err != nil {
+			return nil, err
+		}
+		err = b.BundleDeployer.CalculatePlanForDeploy(ctx, b.WorkspaceClient(), &b.Config)
+		if err != nil {
+			return nil, err
+		}
+		return b.BundleDeployer.GetActions(ctx), nil
 	} else {
 		tf := b.Terraform
 		if tf == nil {
 			return nil, errors.New("terraform not initialized")
 		}
-		actions, err = terraform.ShowPlanFile(ctx, tf, b.Plan.TerraformPlanPath)
+		actions, err := terraform.ShowPlanFile(ctx, tf, b.TerraformPlanPath)
 		return actions, err
 	}
 }
@@ -50,6 +51,7 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+
 	err = checkForPreventDestroy(b, actions, false)
 	if err != nil {
 		return false, err
@@ -122,7 +124,7 @@ func deployCore(ctx context.Context, b *bundle.Bundle) {
 	cmdio.LogString(ctx, "Deploying resources...")
 
 	if b.DirectDeployment {
-		bundle.ApplyContext(ctx, b, terranova.TerranovaApply())
+		b.BundleDeployer.Apply(ctx, b.WorkspaceClient(), &b.Config)
 	} else {
 		bundle.ApplyContext(ctx, b, terraform.Apply())
 	}
@@ -137,8 +139,13 @@ func deployCore(ctx context.Context, b *bundle.Bundle) {
 
 	bundle.ApplySeqContext(ctx, b,
 		statemgmt.Load(),
+
+		// TODO: this does terraform specific transformation.
 		apps.InterpolateVariables(),
+
+		// TODO: this should either be part of app resource or separate AppConfig resource that depends on main resource.
 		apps.UploadConfig(),
+
 		metadata.Compute(),
 		metadata.Upload(),
 	)
@@ -148,47 +155,13 @@ func deployCore(ctx context.Context, b *bundle.Bundle) {
 	}
 }
 
-// deployPrepare is common set of mutators between "bundle plan" and "bundle deploy".
-// Ideally it should not modify the remote, only in-memory bundle config.
-// TODO: currently it does affect remote, via artifacts.CleanUp() and libraries.Upload().
-// We should refactor deployment so that it consists of two stages:
-// 1. Preparation: only local config is changed. This will be used by both "bundle deploy" and "bundle plan"
-// 2. Deployment: this does all the uploads. Only used by "deploy", not "plan".
-func deployPrepare(ctx context.Context, b *bundle.Bundle) {
+// uploadLibraries uploads libraries to the workspace.
+// It also cleans up the artifacts directory and transforms wheel tasks.
+// It is called by only "bundle deploy".
+func uploadLibraries(ctx context.Context, b *bundle.Bundle, libs map[string][]libraries.LocationToUpdate) {
 	bundle.ApplySeqContext(ctx, b,
-		statemgmt.StatePull(),
-		terraform.CheckDashboardsModifiedRemotely(),
-		deploy.StatePull(),
-		mutator.ValidateGitDetails(),
-		terraform.CheckRunningResource(),
-
-		// artifacts.CleanUp() is there because I'm not sure if it's safe to move to later stage.
 		artifacts.CleanUp(),
-
-		// libraries.CheckForSameNameLibraries() needs to be run after we expand glob references so we
-		// know what are the actual library paths.
-		// libraries.ExpandGlobReferences() has to be run after the libraries are built and thus this
-		// mutator is part of the deploy step rather than validate.
-		libraries.ExpandGlobReferences(),
-		libraries.CheckForSameNameLibraries(),
-		// SwitchToPatchedWheels must be run after ExpandGlobReferences and after build phase because it Artifact.Source and Artifact.Patched populated
-		libraries.SwitchToPatchedWheels(),
-
-		// libraries.Upload() not just uploads but also replaces local paths with remote paths.
-		// TransformWheelTask depends on it and planning also depends on it.
-		libraries.Upload(),
-		trampoline.TransformWheelTask(),
-
-		mutator.ResolveVariableReferencesOnlyResources(
-			"resources",
-		),
-
-		// Reads (typed): resources.pipelines.*.{catalog,schema,target}, resources.volumes.*.{catalog_name,schema_name} (checks for schema references)
-		// Updates (typed): resources.pipelines.*.{schema,target}, resources.volumes.*.schema_name (converts implicit schema references to explicit ${resources.schemas.<schema_key>.name} syntax)
-		// Translates implicit schema references in DLT pipelines or UC Volumes to explicit syntax to capture dependencies
-		// Needs to be run after ${resources} resolution since otherwise that undoes the change here.
-		// TODO: one we have depends_on support we should leverage that here and move this back to initialize phase.
-		resourcemutator.CaptureSchemaDependency(),
+		libraries.Upload(libs),
 	)
 }
 
@@ -213,7 +186,12 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDeploy))
 	}()
 
-	deployPrepare(ctx, b)
+	libs := deployPrepare(ctx, b)
+	if logdiag.HasError(ctx) {
+		return
+	}
+
+	uploadLibraries(ctx, b, libs)
 	if logdiag.HasError(ctx) {
 		return
 	}

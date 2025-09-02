@@ -16,6 +16,11 @@ class Environment:
     In this minimal environment spec, only pip dependencies are supported.
     """
 
+    client: VariableOrOptional[str] = None
+    """
+    [DEPRECATED] Use `environment_version` instead.
+    """
+
     dependencies: VariableOrList[str] = field(default_factory=list)
     """
     List of pip dependencies, as supported by the version of pip in this environment.
@@ -45,6 +50,11 @@ class Environment:
 
 class EnvironmentDict(TypedDict, total=False):
     """"""
+
+    client: VariableOrOptional[str]
+    """
+    [DEPRECATED] Use `environment_version` instead.
+    """
 
     dependencies: VariableOrList[str]
     """

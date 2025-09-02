@@ -1,17 +1,18 @@
 # NEXT CHANGELOG
 
-## Release v0.265.0
+## Release v0.267.0
 
 ### Notable Changes
-* Separate generated classes between jobs and pipelines in Python support ([#3428](https://github.com/databricks/cli/pull/3428))
-
-### Dependency updates
-* Upgrade TF provider to 1.87.0 ([#3430](https://github.com/databricks/cli/pull/3430))
 
 ### CLI
+* Introduce retries to `databricks psql` command ([#3492](https://github.com/databricks/cli/pull/3492))
+* Add rule files for coding agents working on the CLI code base ([#3245](https://github.com/databricks/cli/pull/3245))
+
+### Dependency updates
+* Upgrade TF provider to 1.88.0 ([#3529](https://github.com/databricks/cli/pull/3529))
 
 ### Bundles
-* Add support for Lakebase database instances in DABs ([#3283](https://github.com/databricks/cli/pull/3283))
-* Improve error message for SDK/API errors ([#3379](https://github.com/databricks/cli/pull/3379))
+* Add support for `TaskRetryMode` for continuous jobs ([#3529](https://github.com/databricks/cli/pull/3529))
+* Add support for specifying database instance as an application resource ([#3529](https://github.com/databricks/cli/pull/3529))
 
 ### API Changes

@@ -1,0 +1,14 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Error: exit status 1
+
+Error: Unsupported attribute
+
+  on bundle.tf.json line 22, in resource.databricks_volume.foo:
+  22:         "catalog_name": "${databricks_volume.bar.non_existent}",
+
+This object has no argument, nested block, or exported attribute named
+"non_existent".
+
+
+
+Exit code (musterr): 1

@@ -1,0 +1,19 @@
+bundle:
+  name: plan-no-upload
+
+resources:
+  jobs:
+    my_job:
+      name: my-job
+      tasks:
+        - task_key: task1
+          spark_python_task:
+            python_file: "./my_script.py"
+          environment_key: "env"
+
+      environments:
+        - environment_key: "env"
+          spec:
+            client: "1"
+            dependencies:
+              - "*.whl"

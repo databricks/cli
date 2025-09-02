@@ -353,9 +353,6 @@ github.com/databricks/cli/bundle/config/resources.Pipeline:
   "run_as":
     "description": |-
       PLACEHOLDER
-  "target":
-    "force_not_deprecated": |-
-      true
   "trigger":
     "deprecation_message": |-
       Use continuous instead
@@ -424,6 +421,35 @@ github.com/databricks/cli/bundle/config/resources.RegisteredModel:
   "grants":
     "description": |-
       PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.SchemaGrantPrivilege:
+  "_":
+    "enum":
+      - |-
+        ALL_PRIVILEGES
+      - |-
+        APPLY_TAG
+      - |-
+        CREATE_FUNCTION
+      - |-
+        CREATE_TABLE
+      - |-
+        CREATE_VOLUME
+      - |-
+        MANAGE
+      - |-
+        USE_SCHEMA
+      - |-
+        EXECUTE
+      - |-
+        MODIFY
+      - |-
+        REFRESH
+      - |-
+        SELECT
+      - |-
+        READ_VOLUME
+      - |-
+        WRITE_VOLUME
 github.com/databricks/cli/bundle/config/resources.Schema:
   "_":
     "markdown_description": |-

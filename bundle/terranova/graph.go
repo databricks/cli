@@ -7,8 +7,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
+	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/terranova/tnstate"
 	"github.com/databricks/cli/libs/dagrun"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
@@ -17,37 +18,20 @@ import (
 	"github.com/databricks/cli/libs/logdiag"
 )
 
-// represents node in the graph, each node is a resource
-type nodeKey struct {
-	Group string
-	Name  string
-	// Field names match deployplan.Action.
-	// TODO: Here and in other places Name is ambiguous and should be replaced with ResourceKey
-}
-
-// String() implements StringerComparable
-func (n nodeKey) String() string {
-	return n.Group + "." + n.Name
-}
-
 type fieldRef struct {
-	field           dyn.Path // path to field within resource that contains the references, e.g. "description"
-	ref             dynvar.Ref
-	referencedNodes []nodeKey
+	deployplan.ResourceNode
+	Reference string // refrence in question e.g. ${resources.jobs.foo.id}
 }
 
 // makeResourceGraph creates node graph based on ${resources.group.name.id} references.
-// Returns a graph and a map of all references that have references to them
-// Modifies 'state' in place: all the resources found in the config are removed from state
-func makeResourceGraph(ctx context.Context, b *bundle.Bundle, state resourcestate.ExportedResourcesMap) (*dagrun.Graph[nodeKey], map[nodeKey]bool, error) {
-	isReferenced := make(map[nodeKey]bool)
-	g := dagrun.NewGraph[nodeKey]()
+func makeResourceGraph(ctx context.Context, configRoot dyn.Value) (*dagrun.Graph[deployplan.ResourceNode], error) {
+	g := dagrun.NewGraph[deployplan.ResourceNode]()
 
 	// Collect and sort nodes first, because MapByPattern gives them in randomized order
-	var nodes []nodeKey
+	var nodes []deployplan.ResourceNode
 
 	_, err := dyn.MapByPattern(
-		b.Config.Value(),
+		configRoot,
 		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()),
 		func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 			group := p[1].Key()
@@ -58,55 +42,47 @@ func makeResourceGraph(ctx context.Context, b *bundle.Bundle, state resourcestat
 				return v, fmt.Errorf("unsupported resource: %s", group)
 			}
 
-			nodes = append(nodes, nodeKey{group, name})
+			nodes = append(nodes, deployplan.ResourceNode{Group: group, Key: name})
 			return dyn.InvalidValue, nil
 		},
 	)
 	if err != nil {
-		return nil, nil, fmt.Errorf("reading config: %w", err)
+		return nil, fmt.Errorf("reading config: %w", err)
 	}
 
-	slices.SortFunc(nodes, func(a, b nodeKey) int {
+	slices.SortFunc(nodes, func(a, b deployplan.ResourceNode) int {
 		if a.Group == b.Group {
-			return strings.Compare(a.Name, b.Name)
+			return strings.Compare(a.Key, b.Key)
 		}
 		return strings.Compare(a.Group, b.Group)
 	})
 
 	for _, node := range nodes {
-		groupState := state[node.Group]
-		delete(groupState, node.Name)
-
 		g.AddNode(node)
 
-		fieldRefs, err := extractReferences(b.Config.Value(), node)
+		fieldRefs, err := extractReferences(configRoot, node)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to read references from config for %s: %w", node.String(), err)
+			return nil, fmt.Errorf("failed to read references from config for %s: %w", node.String(), err)
 		}
 
 		for _, fieldRef := range fieldRefs {
-			for _, referencedNode := range fieldRef.referencedNodes {
-				// We're only supporting "id" field at the moment, so label is unambigous
-				label := "${resources." + referencedNode.Group + "." + referencedNode.Name + ".id}"
-				log.Debugf(ctx, "Adding resource edge: %s (via %#v)", label, fieldRef.ref.Str)
-				// TODO: this may add duplicate edges. Investigate if we need to prevent that
-				g.AddDirectedEdge(
-					referencedNode,
-					node,
-					label,
-				)
-				isReferenced[referencedNode] = true
-			}
+			log.Debugf(ctx, "Adding resource edge: %s -> %s via %s", fieldRef.ResourceNode, node, fieldRef.Reference)
+			// TODO: this may add duplicate edges. Investigate if we need to prevent that
+			g.AddDirectedEdge(
+				fieldRef.ResourceNode,
+				node,
+				fieldRef.Reference,
+			)
 		}
 	}
 
-	return g, isReferenced, nil
+	return g, nil
 }
 
-func extractReferences(root dyn.Value, node nodeKey) ([]fieldRef, error) {
+func extractReferences(root dyn.Value, node deployplan.ResourceNode) ([]fieldRef, error) {
 	var result []fieldRef
 
-	val, err := dyn.GetByPath(root, dyn.NewPath(dyn.Key("resources"), dyn.Key(node.Group), dyn.Key(node.Name)))
+	val, err := dyn.GetByPath(root, dyn.NewPath(dyn.Key("resources"), dyn.Key(node.Group), dyn.Key(node.Key)))
 	if err != nil {
 		return nil, err
 	}
@@ -116,11 +92,14 @@ func extractReferences(root dyn.Value, node nodeKey) ([]fieldRef, error) {
 		if !ok {
 			return nil
 		}
-		referencedNodes, err := nodeFromRef(root, ref)
-		if err != nil {
-			return err
+		for _, r := range ref.References() {
+			// validateRef will check resource exists in the config; this will reject references to deleted resources, no need to handle that case separately.
+			item, err := validateRef(root, r)
+			if err != nil {
+				return fmt.Errorf("cannot process reference %s: %w", r, err)
+			}
+			result = append(result, item)
 		}
-		result = append(result, fieldRef{p, ref, referencedNodes})
 		return nil
 	})
 	if err != nil {
@@ -129,39 +108,31 @@ func extractReferences(root dyn.Value, node nodeKey) ([]fieldRef, error) {
 	return result, nil
 }
 
-func validateRef(root dyn.Value, ref string) (string, string, error) {
-	items := strings.Split(ref, ".")
-	if len(items) < 3 { // resources.jobs.foo.id
-		return "", "", errors.New("reference too short")
-	}
-	if items[0] != "resources" {
-		return "", "", errors.New("reference does not start with 'resources'")
-	}
-	_, err := dyn.GetByPath(root, dyn.NewPath(dyn.Key(items[0]), dyn.Key(items[1]), dyn.Key(items[2])))
+func validateRef(root dyn.Value, ref string) (fieldRef, error) {
+	path, err := dyn.NewPathFromString(ref)
 	if err != nil {
-		return "", "", err
+		return fieldRef{}, err
 	}
-	if len(items) > 4 || items[3] != "id" {
-		return "", "", errors.New("${resources...} can only refer to field in the config or 'id'")
+	if len(path) < 3 { // expecting "resources.jobs.foo.*"
+		return fieldRef{}, errors.New("reference too short")
 	}
-	return items[1], items[2], nil
+	if path[0].Key() != "resources" {
+		return fieldRef{}, errors.New("reference does not start with 'resources'")
+	}
+	_, err = dyn.GetByPath(root, path[0:3])
+	if err != nil {
+		return fieldRef{}, err
+	}
+	return fieldRef{
+		ResourceNode: deployplan.ResourceNode{
+			Group: path[1].Key(),
+			Key:   path[2].Key(),
+		},
+		Reference: "${" + ref + "}",
+	}, nil
 }
 
-func nodeFromRef(root dyn.Value, ref dynvar.Ref) ([]nodeKey, error) {
-	var referencedNodes []nodeKey
-	for _, r := range ref.References() {
-		// validateRef will check resource exists in the config; this will reject references to deleted resources, no need to handle that case separately.
-		refGroup, refKey, err := validateRef(root, r)
-		if err != nil {
-			return nil, fmt.Errorf("cannot process reference %s: %w", r, err)
-		}
-		referencedNode := nodeKey{refGroup, refKey}
-		referencedNodes = append(referencedNodes, referencedNode)
-	}
-	return referencedNodes, nil
-}
-
-func resolveIDReference(ctx context.Context, b *bundle.Bundle, group, resourceName string) error {
+func resolveIDReference(ctx context.Context, db *tnstate.TerranovaState, configRoot *config.Root, group, resourceName string) error {
 	mypath := dyn.NewPath(
 		dyn.Key("resources"),
 		dyn.Key(group),
@@ -169,13 +140,13 @@ func resolveIDReference(ctx context.Context, b *bundle.Bundle, group, resourceNa
 		dyn.Key("id"),
 	)
 
-	entry, hasEntry := b.ResourceDatabase.GetResourceEntry(group, resourceName)
+	entry, hasEntry := db.GetResourceEntry(group, resourceName)
 	idValue := entry.ID
 	if !hasEntry || idValue == "" {
 		return errors.New("internal error: no db entry")
 	}
 
-	err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
+	err := configRoot.Mutate(func(root dyn.Value) (dyn.Value, error) {
 		root, err := dynvar.Resolve(root, func(path dyn.Path) (dyn.Value, error) {
 			if slices.Equal(path, mypath) {
 				return dyn.V(idValue), nil
@@ -189,7 +160,37 @@ func resolveIDReference(ctx context.Context, b *bundle.Bundle, group, resourceNa
 		// This fixes the following case: ${resources.jobs.foo.id} is replaced by string "12345"
 		// This string corresponds to job_id integer field. Normalization converts "12345" to 12345.
 		// Without normalization there will be an error when converting dynamic value to typed.
-		root, diags := convert.Normalize(b.Config, root)
+		root, diags := convert.Normalize(configRoot, root)
+		for _, d := range diags {
+			// TODO: add additional context if needed
+			logdiag.LogDiag(ctx, d)
+		}
+		return root, nil
+	})
+	if err != nil {
+		logdiag.LogError(ctx, err)
+	}
+
+	if logdiag.HasError(ctx) {
+		return errors.New("failed to update bundle config")
+	}
+
+	return nil
+}
+
+func resolveFieldReference(ctx context.Context, configRoot *config.Root, targetPath dyn.Path, value any) error {
+	err := configRoot.Mutate(func(root dyn.Value) (dyn.Value, error) {
+		root, err := dynvar.Resolve(root, func(path dyn.Path) (dyn.Value, error) {
+			if slices.Equal(path, targetPath) {
+				return dyn.V(value), nil
+			}
+			return dyn.InvalidValue, dynvar.ErrSkipResolution
+		})
+		if err != nil {
+			return root, err
+		}
+		// Following resolve_variable_references.go, normalize after variable substitution.
+		root, diags := convert.Normalize(configRoot, root)
 		for _, d := range diags {
 			logdiag.LogDiag(ctx, d)
 		}

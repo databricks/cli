@@ -185,6 +185,16 @@ func TestResourcesBindSupport(t *testing.T) {
 				DatabaseInstance: database.DatabaseInstance{},
 			},
 		},
+		DatabaseCatalogs: map[string]*resources.DatabaseCatalog{
+			"my_database_catalog": {
+				DatabaseCatalog: database.DatabaseCatalog{},
+			},
+		},
+		SyncedDatabaseTables: map[string]*resources.SyncedDatabaseTable{
+			"my_synced_database_table": {
+				SyncedDatabaseTable: database.SyncedDatabaseTable{},
+			},
+		},
 	}
 	unbindableResources := map[string]bool{"model": true}
 
@@ -206,6 +216,8 @@ func TestResourcesBindSupport(t *testing.T) {
 	}, nil)
 	m.GetMockWarehousesAPI().EXPECT().GetById(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockDatabaseAPI().EXPECT().GetDatabaseInstance(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockDatabaseAPI().EXPECT().GetDatabaseCatalog(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockDatabaseAPI().EXPECT().GetSyncedDatabaseTable(mock.Anything, mock.Anything).Return(nil, nil)
 
 	allResources := supportedResources.AllResources()
 	for _, group := range allResources {

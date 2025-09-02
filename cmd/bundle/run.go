@@ -86,8 +86,8 @@ func keyToRunner(b *bundle.Bundle, arg string) (run.Runner, error) {
 func newRunCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "run [flags] [KEY]",
-		Short: "Run a job or pipeline update",
-		Long: `Run the job or pipeline identified by KEY.
+		Short: "Run a job, pipeline update or app",
+		Long: `Run the job, pipeline or app identified by KEY.
 
 The KEY is the unique identifier of the resource to run. In addition to
 customizing the run using any of the available flags, you can also specify

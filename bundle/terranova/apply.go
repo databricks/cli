@@ -8,147 +8,11 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/terranova/tnstate"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/logdiag"
-	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 )
-
-// How many parallel operations (API calls) are allowed
-const defaultParallelism = 10
-
-type terranovaApplyMutator struct{}
-
-func TerranovaApply() bundle.Mutator {
-	return &terranovaApplyMutator{}
-}
-
-func (m *terranovaApplyMutator) Name() string {
-	return "TerranovaDeploy"
-}
-
-func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	if len(b.Plan.Actions) == 0 {
-		// Avoid creating state file if nothing to deploy
-		return nil
-	}
-
-	// Maps node key to originally planned action
-	plannedActionsMap := map[nodeKey]deployplan.ActionType{}
-
-	for _, action := range b.Plan.Actions {
-		plannedActionsMap[nodeKey{action.Group, action.Name}] = action.ActionType
-	}
-
-	state := b.ResourceDatabase.ExportState(ctx)
-	g, isReferenced, err := makeResourceGraph(ctx, b, state)
-	if err != nil {
-		logdiag.LogError(ctx, fmt.Errorf("error while reading config: %w", err))
-	}
-
-	// Remained in state are resources that no longer present in the config
-	for _, group := range utils.SortedKeys(state) {
-		groupData := state[group]
-		for _, name := range utils.SortedKeys(groupData) {
-			n := nodeKey{group, name}
-			g.AddNode(n)
-			if plannedActionsMap[n] != deployplan.ActionTypeDelete {
-				logdiag.LogError(ctx, fmt.Errorf("internal error, resources %s.%s is missing from state but action is not delete but %v", group, name, plannedActionsMap[n]))
-				return nil
-			}
-		}
-	}
-
-	err = g.DetectCycle()
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	client := b.WorkspaceClient()
-
-	g.Run(defaultParallelism, func(node nodeKey) {
-		// TODO: if a given node fails, all downstream nodes should not be run. We should report those nodes.
-		// TODO: ensure that config for this node is fully resolved at this point.
-
-		settings, ok := SupportedResources[node.Group]
-		if !ok {
-			return
-		}
-
-		actionType := plannedActionsMap[node]
-
-		// The way plan currently works, is that it does not add resources with Noop action, turning them into Unset.
-		// So we skip both, although at this point we will not see Noop here.
-		if actionType == deployplan.ActionTypeUnset || actionType == deployplan.ActionTypeNoop {
-			return
-		}
-
-		d := Deployer{
-			client:       client,
-			db:           &b.ResourceDatabase,
-			group:        node.Group,
-			resourceName: node.Name,
-			settings:     settings,
-		}
-
-		if actionType == deployplan.ActionTypeDelete {
-			err = d.destroy(ctx)
-			if err != nil {
-				logdiag.LogError(ctx, fmt.Errorf("destroying %s.%s: %w", d.group, d.resourceName, err))
-			}
-			return
-		}
-
-		config, ok := b.GetResourceConfig(node.Group, node.Name)
-		if !ok {
-			logdiag.LogError(ctx, fmt.Errorf("internal error when reading config for %s.%s", node.Group, node.Name))
-			return
-		}
-
-		// Fetch the references to ensure all are resolved
-		myReferences, err := extractReferences(b.Config.Value(), node)
-		if err != nil {
-			logdiag.LogError(ctx, err)
-			return
-		}
-
-		// At this point it's an error to have unresolved deps
-		if len(myReferences) > 0 {
-			// TODO: include the deps themselves in the message
-			logdiag.LogError(ctx, fmt.Errorf("cannot deploy %s.%s due to unresolved deps", node.Group, node.Name))
-			return
-		}
-
-		// TODO: redo plan to downgrade planned action if possible (?)
-
-		err = d.Deploy(ctx, config, actionType)
-		if err != nil {
-			logdiag.LogError(ctx, err)
-			return
-		}
-
-		if isReferenced[node] {
-			err = resolveIDReference(ctx, b, d.group, d.resourceName)
-			if err != nil {
-				logdiag.LogError(ctx, fmt.Errorf("failed to replace ref to resources.%s.%s.id: %w", d.group, d.resourceName, err))
-				return
-			}
-		}
-	})
-
-	err = b.ResourceDatabase.Finalize()
-	if err != nil {
-		logdiag.LogError(ctx, err)
-	}
-
-	// TODO: check if all planned actions were performed
-
-	return nil
-}
 
 type Deployer struct {
 	client       *databricks.WorkspaceClient
@@ -158,18 +22,10 @@ type Deployer struct {
 	settings     ResourceSettings
 }
 
-func (d *Deployer) Deploy(ctx context.Context, inputConfig any, actionType deployplan.ActionType) error {
-	err := d.deploy(ctx, inputConfig, actionType)
-	if err != nil {
-		return fmt.Errorf("deploying %s.%s: %w", d.group, d.resourceName, err)
-	}
-	return nil
-}
-
-func (d *Deployer) destroy(ctx context.Context) error {
+func (d *Deployer) Destroy(ctx context.Context) error {
 	entry, hasEntry := d.db.GetResourceEntry(d.group, d.resourceName)
 	if !hasEntry {
-		log.Infof(ctx, "%s.%s: Cannot delete, missing from state", d.group, d.resourceName)
+		log.Infof(ctx, "Cannot delete %s.%s: missing from state", d.group, d.resourceName)
 		return nil
 	}
 
@@ -185,7 +41,7 @@ func (d *Deployer) destroy(ctx context.Context) error {
 	return nil
 }
 
-func (d *Deployer) deploy(ctx context.Context, inputConfig any, actionType deployplan.ActionType) error {
+func (d *Deployer) Deploy(ctx context.Context, inputConfig any, actionType deployplan.ActionType) error {
 	resource, _, err := New(d.client, d.group, d.resourceName, inputConfig)
 	if err != nil {
 		return err
@@ -219,14 +75,15 @@ func (d *Deployer) deploy(ctx context.Context, inputConfig any, actionType deplo
 		}
 		return d.UpdateWithID(ctx, resource, updater, oldID, config)
 	default:
-		return fmt.Errorf("internal error: unexpected plan: %#v", actionType)
+		return fmt.Errorf("internal error: unexpected actionType: %#v", actionType)
 	}
 }
 
 func (d *Deployer) Create(ctx context.Context, resource IResource, config any) error {
 	newID, err := resource.DoCreate(ctx)
 	if err != nil {
-		return fmt.Errorf("creating: %w", err)
+		// No need to prefix error, there is no ambiguity (only one operation - DoCreate) and no additional context (like id)
+		return err
 	}
 
 	log.Infof(ctx, "Created %s.%s id=%#v", d.group, d.resourceName, newID)
@@ -261,7 +118,7 @@ func (d *Deployer) Recreate(ctx context.Context, resource IResource, oldID strin
 	}
 
 	// TODO: This should be at notice level (info < notice < warn) and it should be visible by default,
-	// but to match terraform output today, we hide it.
+	// but to match terraform output today, we hide it (and also we don't have notice level)
 	log.Infof(ctx, "Recreated %s.%s id=%#v (previously %#v)", d.group, d.resourceName, newID, oldID)
 	err = d.db.SaveState(d.group, d.resourceName, newID, config)
 	if err != nil {

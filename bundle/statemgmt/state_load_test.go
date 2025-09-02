@@ -71,6 +71,12 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 		"database_instances": map[string]ResourceState{
 			"test_database_instance": {ID: "1"},
 		},
+		"database_catalogs": map[string]ResourceState{
+			"test_database_catalog": {ID: "1"},
+		},
+		"synced_database_tables": map[string]ResourceState{
+			"test_synced_database_table": {ID: "1"},
+		},
 	}
 	err := StateToBundle(context.Background(), state, &config)
 	assert.NoError(t, err)
@@ -232,6 +238,20 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 					},
 				},
 			},
+			DatabaseCatalogs: map[string]*resources.DatabaseCatalog{
+				"test_database_catalog": {
+					DatabaseCatalog: database.DatabaseCatalog{
+						Name: "test_database_catalog",
+					},
+				},
+			},
+			SyncedDatabaseTables: map[string]*resources.SyncedDatabaseTable{
+				"test_synced_database_table": {
+					SyncedDatabaseTable: database.SyncedDatabaseTable{
+						Name: "test_synced_database_table",
+					},
+				},
+			},
 		},
 	}
 
@@ -282,6 +302,12 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 
 	assert.Equal(t, "", config.Resources.DatabaseInstances["test_database_instance"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.DatabaseInstances["test_database_instance"].ModifiedStatus)
+
+	assert.Equal(t, "", config.Resources.DatabaseCatalogs["test_database_catalog"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.DatabaseCatalogs["test_database_catalog"].ModifiedStatus)
+
+	assert.Equal(t, "", config.Resources.SyncedDatabaseTables["test_synced_database_table"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.SyncedDatabaseTables["test_synced_database_table"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
 }
@@ -466,6 +492,30 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 				"test_database_instance_new": {
 					DatabaseInstance: database.DatabaseInstance{
 						Name: "test_database_instance_new",
+					},
+				},
+			},
+			DatabaseCatalogs: map[string]*resources.DatabaseCatalog{
+				"test_database_catalog": {
+					DatabaseCatalog: database.DatabaseCatalog{
+						Name: "test_database_catalog",
+					},
+				},
+				"test_database_catalog_new": {
+					DatabaseCatalog: database.DatabaseCatalog{
+						Name: "test_database_catalog_new",
+					},
+				},
+			},
+			SyncedDatabaseTables: map[string]*resources.SyncedDatabaseTable{
+				"test_synced_database_table": {
+					SyncedDatabaseTable: database.SyncedDatabaseTable{
+						Name: "test_synced_database_table",
+					},
+				},
+				"test_synced_database_table_new": {
+					SyncedDatabaseTable: database.SyncedDatabaseTable{
+						Name: "test_synced_database_table_new",
 					},
 				},
 			},

@@ -87,6 +87,9 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 		{"resources.sql_warehouses.*.enable_photon", true},
 		{"resources.sql_warehouses.*.max_num_clusters", 1},
 		{"resources.sql_warehouses.*.spot_instance_policy", "COST_OPTIMIZED"},
+
+		// Apps:
+		{"resources.apps.*.description", ""},
 	}
 
 	for _, defaultDef := range defaults {
@@ -112,8 +115,6 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 		// Updates (dynamic): resources.*.*.permissions (removes permissions entries where user_name or service_principal_name matches current user)
 		// Removes the current user from all resource permissions as the Terraform provider implicitly grants ownership
 		FilterCurrentUser(),
-
-		ApplyDefaultTaskSource(),
 	)
 }
 
@@ -153,6 +154,11 @@ func applyNormalizeMutators(ctx context.Context, b *bundle.Bundle) {
 		// Reads (dynamic): resources.apps.*.resources (reads app resources to merge)
 		// Updates (dynamic): resources.apps.*.resources (merges app resources with the same name)
 		MergeApps(),
+
+		// Reads (typed): resources.pipelines.*.{catalog,schema,target}, resources.volumes.*.{catalog_name,schema_name} (checks for schema references)
+		// Updates (typed): resources.pipelines.*.{schema,target}, resources.volumes.*.schema_name (converts implicit schema references to explicit ${resources.schemas.<schema_key>.name} syntax)
+		// Translates implicit schema references in DLT pipelines or UC Volumes to explicit syntax to capture dependencies
+		CaptureSchemaDependency(),
 
 		// Reads (dynamic): resources.dashboards.*.file_path
 		// Updates (dynamic): resources.dashboards.*.serialized_dashboard
