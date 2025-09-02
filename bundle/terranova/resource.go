@@ -114,6 +114,11 @@ var SupportedResources = map[string]ResourceSettings{
 		ConfigType: TypeOfConfig(&tnresources.ResourceDatabaseInstance{}),
 		DeleteFN:   tnresources.DeleteDatabaseInstance,
 	},
+	"database_catalogs": {
+		New:        reflect.ValueOf(tnresources.NewResourceDatabaseCatalog),
+		ConfigType: TypeOfConfig(&tnresources.ResourceDatabaseCatalog{}),
+		DeleteFN:   tnresources.DeleteDatabaseCatalog,
+	},
 }
 
 type IResource interface {

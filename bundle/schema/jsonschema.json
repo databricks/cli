@@ -1273,7 +1273,9 @@
                       },
                       "target": {
                         "description": "Target schema (database) to add tables in this pipeline to. Exactly one of `schema` or `target` must be specified. To publish to Unity Catalog, also specify `catalog`. This legacy field is deprecated for pipeline creation in favor of the `schema` field.",
-                        "$ref": "#/$defs/string"
+                        "$ref": "#/$defs/string",
+                        "deprecationMessage": "This field is deprecated",
+                        "deprecated": true
                       },
                       "trigger": {
                         "description": "Which pipeline trigger to use. Deprecated: Use `continuous` instead.",
@@ -1474,7 +1476,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "grants": {
-                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Grant"
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.SchemaGrant"
                       },
                       "name": {
                         "description": "Name of schema, relative to parent catalog.",
@@ -1494,6 +1496,56 @@
                       "name"
                     ],
                     "markdownDescription": "The schema resource type allows you to define Unity Catalog [schemas](https://docs.databricks.com/api/workspace/schemas/create) for tables and other assets in your workflows and pipelines created as part of a bundle. A schema, different from other resource types, has the following limitations:\n\n- The owner of a schema resource is always the deployment user, and cannot be changed. If `run_as` is specified in the bundle, it will be ignored by operations on the schema.\n- Only fields supported by the corresponding [Schemas object create API](https://docs.databricks.com/api/workspace/schemas/create) are available for the schema resource. For example, `enable_predictive_optimization` is not supported as it is only available on the [update API](https://docs.databricks.com/api/workspace/schemas/update)."
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.SchemaGrant": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "principal": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "privileges": {
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.SchemaGrantPrivilege"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "privileges",
+                      "principal"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.SchemaGrantPrivilege": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "ALL_PRIVILEGES",
+                      "APPLY_TAG",
+                      "CREATE_FUNCTION",
+                      "CREATE_TABLE",
+                      "CREATE_VOLUME",
+                      "MANAGE",
+                      "USE_SCHEMA",
+                      "EXECUTE",
+                      "MODIFY",
+                      "REFRESH",
+                      "SELECT",
+                      "READ_VOLUME",
+                      "WRITE_VOLUME"
+                    ]
                   },
                   {
                     "type": "string",
@@ -9261,6 +9313,34 @@
                       "type": "array",
                       "items": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.PipelinePermission"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.SchemaGrant": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.SchemaGrant"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.SchemaGrantPrivilege": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.SchemaGrantPrivilege"
                       }
                     },
                     {

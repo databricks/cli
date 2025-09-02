@@ -68,4 +68,5 @@ lint.select = [
     "N", # pep8-naming
     "F", # flake8
     "I", # isort
+    "RUF022", # sort __all__, see: https://docs.astral.sh/ruff/rules/unsorted-dunder-all/
 ]

@@ -53,6 +53,13 @@ class GcpAttributes:
     for the supported number of local SSDs for each instance type.
     """
 
+    use_preemptible_executors: VariableOrOptional[bool] = None
+    """
+    [DEPRECATED] This field determines whether the spark executors will be scheduled to run on preemptible
+    VMs (when set to true) versus standard compute engine VMs (when set to false; default).
+    Note: Soon to be deprecated, use the 'availability' field instead.
+    """
+
     zone_id: VariableOrOptional[str] = None
     """
     Identifier for the availability zone in which the cluster resides.
@@ -106,6 +113,13 @@ class GcpAttributesDict(TypedDict, total=False):
     Each local SSD is 375GB in size.
     Refer to [GCP documentation](https://cloud.google.com/compute/docs/disks/local-ssd#choose_number_local_ssds)
     for the supported number of local SSDs for each instance type.
+    """
+
+    use_preemptible_executors: VariableOrOptional[bool]
+    """
+    [DEPRECATED] This field determines whether the spark executors will be scheduled to run on preemptible
+    VMs (when set to true) versus standard compute engine VMs (when set to false; default).
+    Note: Soon to be deprecated, use the 'availability' field instead.
     """
 
     zone_id: VariableOrOptional[str]

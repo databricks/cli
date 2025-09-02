@@ -1,4 +1,4 @@
-package main
+package testarchive
 
 import (
 	"archive/tar"
@@ -97,8 +97,8 @@ func addFileToArchive(tarWriter *tar.Writer, src, dst string) error {
 	return nil
 }
 
-// createArchive creates a tar.gz archive of all git-tracked files plus downloaded tools
-func createArchive(archiveDir, binDir, repoRoot string) error {
+// CreateArchive creates a tar.gz archive of all git-tracked files plus downloaded tools
+func CreateArchive(archiveDir, binDir, repoRoot string) error {
 	archivePath := filepath.Join(archiveDir, "archive.tar.gz")
 
 	// Download tools for both arm and amd64 architectures.
@@ -106,9 +106,9 @@ func createArchive(archiveDir, binDir, repoRoot string) error {
 	// The Databricks platform explicitly does not provide any guarantees around
 	// the CPU architecture to keep the door open for future optimizations.
 	downloaders := []downloader{
-		goDownloader{arch: "amd64", binDir: binDir},
-		uvDownloader{arch: "amd64", binDir: binDir},
-		jqDownloader{arch: "amd64", binDir: binDir},
+		GoDownloader{Arch: "amd64", BinDir: binDir},
+		UvDownloader{Arch: "amd64", BinDir: binDir},
+		JqDownloader{Arch: "amd64", BinDir: binDir},
 
 		// TODO: Serverless clusters do not support arm64 yet.
 		// Enable ARM64 once serverless clusters support it.
