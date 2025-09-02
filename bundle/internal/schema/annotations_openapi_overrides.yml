@@ -182,6 +182,17 @@ github.com/databricks/cli/bundle/config/resources.DashboardPermissionLevel:
         CAN_EDIT
       - |-
         CAN_MANAGE
+github.com/databricks/cli/bundle/config/resources.DatabaseCatalog:
+  "create_database_if_not_exists":
+    "description": |-
+      PLACEHOLDER
+  "uid":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.DatabaseInstance:
+  "permissions":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.DatabaseInstancePermissionLevel:
   "_":
     "enum":
@@ -421,35 +432,6 @@ github.com/databricks/cli/bundle/config/resources.RegisteredModel:
   "grants":
     "description": |-
       PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.SchemaGrantPrivilege:
-  "_":
-    "enum":
-      - |-
-        ALL_PRIVILEGES
-      - |-
-        APPLY_TAG
-      - |-
-        CREATE_FUNCTION
-      - |-
-        CREATE_TABLE
-      - |-
-        CREATE_VOLUME
-      - |-
-        MANAGE
-      - |-
-        USE_SCHEMA
-      - |-
-        EXECUTE
-      - |-
-        MODIFY
-      - |-
-        REFRESH
-      - |-
-        SELECT
-      - |-
-        READ_VOLUME
-      - |-
-        WRITE_VOLUME
 github.com/databricks/cli/bundle/config/resources.Schema:
   "_":
     "markdown_description": |-
@@ -503,6 +485,35 @@ github.com/databricks/cli/bundle/config/resources.Schema:
   "properties":
     "description": |-
       PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.SchemaGrantPrivilege:
+  "_":
+    "enum":
+      - |-
+        ALL_PRIVILEGES
+      - |-
+        APPLY_TAG
+      - |-
+        CREATE_FUNCTION
+      - |-
+        CREATE_TABLE
+      - |-
+        CREATE_VOLUME
+      - |-
+        MANAGE
+      - |-
+        USE_SCHEMA
+      - |-
+        EXECUTE
+      - |-
+        MODIFY
+      - |-
+        REFRESH
+      - |-
+        SELECT
+      - |-
+        READ_VOLUME
+      - |-
+        WRITE_VOLUME
 github.com/databricks/cli/bundle/config/resources.SecretScopePermissionLevel:
   "_":
     "enum":
@@ -754,6 +765,10 @@ github.com/databricks/databricks-sdk-go/service/compute.LogAnalyticsInfo:
   "log_analytics_workspace_id":
     "description": |-
       The workspace ID for the Azure Log Analytics agent configuration
+github.com/databricks/databricks-sdk-go/service/database.SyncedTablePosition:
+  "delta_table_sync_info":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/jobs.DashboardTask:
   "dashboard_id":
     "description": |-
