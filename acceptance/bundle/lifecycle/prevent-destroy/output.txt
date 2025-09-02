@@ -13,11 +13,3 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/prevent-destroy/de
 Deploying resources...
 Updating deployment state...
 Deployment complete!
-
->>> update_file.py databricks.yml catalog: main catalog: mainnew
-
->>> update_file.py databricks.yml prevent_destroy: true prevent_destroy: false
-
->>> update_file.py databricks.yml prevent_destroy: false prevent_destroy: true
-
->>> update_file.py databricks.yml <<: *pipeline_base 

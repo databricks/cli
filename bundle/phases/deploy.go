@@ -56,7 +56,6 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	b.Plan.Actions = actions
 
 	types := []deployplan.ActionType{deployplan.ActionTypeRecreate, deployplan.ActionTypeDelete}
 	schemaActions := deployplan.FilterGroup(actions, "schemas", types...)

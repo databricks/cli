@@ -70,8 +70,6 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 		return false, err
 	}
 
-	b.Plan.Actions = deleteActions
-
 	if len(deleteActions) > 0 {
 		cmdio.LogString(ctx, "The following resources will be deleted:")
 		for _, a := range deleteActions {
