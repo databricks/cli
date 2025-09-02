@@ -1,0 +1,36 @@
+# This test tests the MLOps Stacks DAB e2e and thus there's a couple of special
+# considerations to take note of:
+#
+#  1. Upstream changes to the MLOps Stacks DAB can cause this test to fail.
+#     In which case we should do one of:
+#     (a) Update this test to reflect the changes
+#     (b) Update the MLOps Stacks DAB to not break this test. Skip this test
+#     temporarily until the MLOps Stacks DAB is updated
+#
+#  2. While rare and to be avoided if possible, the CLI reserves the right to
+#     make changes that can break the MLOps Stacks DAB. In which case we should
+#     skip this test until the MLOps Stacks DAB is updated to work again.
+envsubst < config.json.tmpl > config.json
+trace cat config.json
+
+cleanup() {
+  trace $CLI bundle destroy --auto-approve
+  cd ../..
+  rm -rf test_repo_mlops_stacks
+}
+trap cleanup EXIT
+
+trace $CLI bundle init mlops-stacks --config-file config.json
+trace cat test_repo_mlops_stacks/README.md | head -n 4
+
+cd "test_repo_mlops_stacks/project_name_${UNIQUE_NAME}" || exit 1
+
+trace $CLI bundle summary
+trace $CLI bundle validate
+trace $CLI bundle deploy
+
+trace $CLI bundle summary -o json | jq -r '{experiment_id: .resources.experiments.experiment.id, model_id: .resources.models.model.id, inference_job_id: .resources.jobs.batch_inference_job.id, training_job_id: .resources.jobs.model_training_job.id}'
+
+title "Assert the batch inference job actually exists\n"
+JOB_ID=$($CLI bundle summary -o json | jq -r '.resources.jobs.batch_inference_job.id')
+$CLI jobs get "${JOB_ID}" | jq '{name: .settings.name}'

@@ -1,0 +1,107 @@
+Warning: Ignoring Databricks CLI version constraint for development build. Required: >= 0.229.0, current: [DEV_VERSION]
+
+Error: failed to perform target override for target=dev: failed to merge target=dev field=resources: cannot merge string with sequence
+
+{
+  "bundle": {
+    "databricks_cli_version": "\u003e= 0.229.0",
+    "name": "testing-bundle"
+  },
+  "resources": {
+    "jobs": {
+      "job_one": {
+        "tasks": "${var.job_tasks}"
+      },
+      "job_two": {
+        "tasks": "${var.job_tasks}"
+      }
+    }
+  },
+  "targets": {
+    "dev": {
+      "default": true,
+      "mode": "development",
+      "resources": {
+        "jobs": {
+          "job_one": {
+            "job_clusters": [
+              {
+                "job_cluster_key": "Small",
+                "new_cluster": {
+                  "data_security_mode": "USER_ISOLATION",
+                  "node_type_id": "Standard_DS3_v2",
+                  "num_workers": 1,
+                  "runtime_engine": "STANDARD",
+                  "spark_version": "15.4.x-scala2.12"
+                }
+              },
+              {
+                "job_cluster_key": "Medium",
+                "new_cluster": {
+                  "data_security_mode": "USER_ISOLATION",
+                  "node_type_id": "Standard_DS5_v2",
+                  "num_workers": 1,
+                  "runtime_engine": "STANDARD",
+                  "spark_version": "14.3.x-scala2.12"
+                }
+              }
+            ],
+            "tasks": [
+              {
+                "job_cluster_key": "Medium",
+                "task_key": "Task_One"
+              }
+            ]
+          },
+          "job_two": {
+            "job_clusters": [
+              {
+                "job_cluster_key": "Small",
+                "new_cluster": {
+                  "data_security_mode": "USER_ISOLATION",
+                  "node_type_id": "Standard_DS3_v2",
+                  "num_workers": 2,
+                  "runtime_engine": "STANDARD",
+                  "spark_version": "15.4.x-scala2.12"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "workspace": {
+        "host": "https://..."
+      }
+    }
+  },
+  "variables": {
+    "job_tasks": {
+      "default": [
+        {
+          "job_cluster_key": "Small",
+          "spark_python_task": {
+            "python_file": "./main_dummy.py"
+          },
+          "task_key": "Task_One"
+        },
+        {
+          "depends_on": [
+            {
+              "task_key": "Task_One"
+            }
+          ],
+          "job_cluster_key": "Small",
+          "run_if": "ALL_SUCCESS",
+          "spark_python_task": {
+            "python_file": "./main_dummy.py"
+          },
+          "task_key": "Task_Two"
+        }
+      ],
+      "description": "Common tasks",
+      "type": "complex"
+    }
+  }
+}
+
+Exit code: 1

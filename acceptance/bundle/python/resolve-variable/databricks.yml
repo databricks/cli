@@ -1,7 +1,7 @@
 bundle:
   name: my_project
 
-sync: { paths: [] } # don't need to copy files
+sync: {paths: []} # don't need to copy files
 
 experimental:
   python:
@@ -20,9 +20,9 @@ variables:
   bool_variable_false:
     default: false
   list_variable:
-    default: [ 1, 2, 3 ]
+    default: [1, 2, 3]
   dict_variable:
-    default: { "a": 1, "b": 2 }
+    default: {"a": 1, "b": 2}
   complex_variable:
     default:
       task_key: "abc"

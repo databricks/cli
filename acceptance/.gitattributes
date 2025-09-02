@@ -1,0 +1,5 @@
+# We should always treat new lines in text files acceptance tests in windows as \n.
+# This is important because the characters itself can be semantically important in tests.
+# For example, an additional \r character in windows changes the upload payload if you are
+# uploading the file's content to a workspace.
+*.txt text eol=lf

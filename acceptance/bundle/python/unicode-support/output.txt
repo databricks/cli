@@ -1,0 +1,45 @@
+
+>>> uv run --with-requirements requirements-latest.txt --no-cache -q [CLI] bundle validate --output json
+Warning: This is a warning message with unicode characters: 🔥🔥🔥
+
+{
+  "variables": {
+    "my_variable": {
+      "default": "my_variable",
+      "description": "🔥🔥🔥",
+      "value": "my_variable"
+    }
+  },
+  "resources": {
+    "jobs": {
+      "job_1": {
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_project/default/state/metadata.json"
+        },
+        "edit_mode": "UI_LOCKED",
+        "format": "MULTI_TASK",
+        "max_concurrent_runs": 1,
+        "name": "🔥🔥🔥",
+        "permissions": [],
+        "queue": {
+          "enabled": true
+        }
+      },
+      "job_2": {
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_project/default/state/metadata.json"
+        },
+        "edit_mode": "UI_LOCKED",
+        "format": "MULTI_TASK",
+        "max_concurrent_runs": 1,
+        "name": "🔥🔥🔥",
+        "permissions": [],
+        "queue": {
+          "enabled": true
+        }
+      }
+    }
+  }
+}

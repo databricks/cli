@@ -1,6 +1,3 @@
-bundle:
-  name: boar
-
 include:
   - a.yml
   - dir/*

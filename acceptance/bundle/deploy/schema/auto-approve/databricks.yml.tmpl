@@ -1,0 +1,21 @@
+bundle:
+  name: uc-schema-$UNIQUE_NAME
+
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME
+
+resources:
+  pipelines:
+    foo:
+      name: test-pipeline-$UNIQUE_NAME
+      libraries:
+        - notebook:
+            path: ./nb.sql
+      development: true
+
+include:
+  - "*.yml"
+
+targets:
+  development:
+    default: true

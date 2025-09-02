@@ -58,8 +58,6 @@ func newGetAssignableRolesForResource() *cobra.Command {
 
 	var getAssignableRolesForResourceReq iam.GetAssignableRolesForResourceRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get-assignable-roles-for-resource RESOURCE"
 	cmd.Short = `Get assignable roles for a resource.`
 	cmd.Long = `Get assignable roles for a resource.
@@ -69,7 +67,13 @@ func newGetAssignableRolesForResource() *cobra.Command {
   role.
 
   Arguments:
-    RESOURCE: The resource name for which assignable roles will be listed.`
+    RESOURCE: The resource name for which assignable roles will be listed.
+      
+      Examples | Summary :--- | :--- resource=accounts/<ACCOUNT_ID> | A
+      resource name for the account.
+      resource=accounts/<ACCOUNT_ID>/groups/<GROUP_ID> | A resource name for
+      the group. resource=accounts/<ACCOUNT_ID>/servicePrincipals/<SP_ID> | A
+      resource name for the service principal.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -118,8 +122,6 @@ func newGetRuleSet() *cobra.Command {
 
 	var getRuleSetReq iam.GetRuleSetRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get-rule-set NAME ETAG"
 	cmd.Short = `Get a rule set.`
 	cmd.Long = `Get a rule set.
@@ -130,6 +132,14 @@ func newGetRuleSet() *cobra.Command {
 
   Arguments:
     NAME: The ruleset name associated with the request.
+      
+      Examples | Summary :--- | :---
+      name=accounts/<ACCOUNT_ID>/ruleSets/default | A name for a rule set on
+      the account.
+      name=accounts/<ACCOUNT_ID>/groups/<GROUP_ID>/ruleSets/default | A name
+      for a rule set on the group.
+      name=accounts/<ACCOUNT_ID>/servicePrincipals/<SERVICE_PRINCIPAL_APPLICATION_ID>/ruleSets/default
+      | A name for a rule set on the service principal.
     ETAG: Etag used for versioning. The response is at least as fresh as the eTag
       provided. Etag is used for optimistic concurrency control as a way to help
       prevent simultaneous updates of a rule set from overwriting each other. It
@@ -137,7 +147,12 @@ func newGetRuleSet() *cobra.Command {
       modify -> write pattern to perform rule set updates in order to avoid race
       conditions that is get an etag from a GET rule set request, and pass it
       with the PUT update request to identify the rule set version you are
-      updating.`
+      updating.
+      
+      Examples | Summary :--- | :--- etag= | An empty etag can only be used in
+      GET to indicate no freshness requirements.
+      etag=RENUAAABhSweA4NvVmmUYdiU717H3Tgy0UJdor3gE4a+mq/oj9NjAf8ZsQ== | An
+      etag encoded a specific version of the rule set to get or to be updated.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -188,7 +203,6 @@ func newUpdateRuleSet() *cobra.Command {
 	var updateRuleSetReq iam.UpdateRuleSetRequest
 	var updateRuleSetJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateRuleSetJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "update-rule-set"

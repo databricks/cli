@@ -5,10 +5,6 @@ Local = true
 Cloud = false
 
 [[Repls]]
-Old = '17\d{11}'
-New = '"UNIX_TIME_MILLIS"'
-
-[[Repls]]
 Old = 'darwin|linux|windows'
 New = '[OS]'
 

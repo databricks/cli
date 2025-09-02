@@ -82,11 +82,13 @@ func (transformWheelTask) Apply(ctx context.Context, b *bundle.Bundle) diag.Diag
 		return nil
 	}
 
-	return bundle.Apply(ctx, b, NewTrampoline(
+	bundle.ApplyContext(ctx, b, NewTrampoline(
 		"python_wheel",
 		&pythonTrampoline{},
 		NOTEBOOK_TEMPLATE,
 	))
+
+	return nil
 }
 
 type pythonTrampoline struct{}
@@ -109,7 +111,7 @@ func (t *pythonTrampoline) GetTasks(b *bundle.Bundle) []TaskWithJobKey {
 	r := b.Config.Resources
 	var result []TaskWithJobKey
 	for k := range b.Config.Resources.Jobs {
-		tasks := r.Jobs[k].JobSettings.Tasks
+		tasks := r.Jobs[k].Tasks
 		for i := range tasks {
 			task := &tasks[i]
 

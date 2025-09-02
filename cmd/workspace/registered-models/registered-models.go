@@ -89,7 +89,6 @@ func newCreate() *cobra.Command {
 	var createReq catalog.CreateRegisteredModelRequest
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `The comment attached to the registered model.`)
@@ -191,8 +190,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq catalog.DeleteRegisteredModelRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete FULL_NAME"
 	cmd.Short = `Delete a Registered Model.`
 	cmd.Long = `Delete a Registered Model.
@@ -267,8 +264,6 @@ func newDeleteAlias() *cobra.Command {
 
 	var deleteAliasReq catalog.DeleteAliasRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete-alias FULL_NAME ALIAS"
 	cmd.Short = `Delete a Registered Model Alias.`
 	cmd.Long = `Delete a Registered Model Alias.
@@ -331,8 +326,6 @@ func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getReq catalog.GetRegisteredModelRequest
-
-	// TODO: short flags
 
 	cmd.Flags().BoolVar(&getReq.IncludeAliases, "include-aliases", getReq.IncludeAliases, `Whether to include registered model aliases in the response.`)
 	cmd.Flags().BoolVar(&getReq.IncludeBrowse, "include-browse", getReq.IncludeBrowse, `Whether to include registered models in the response for which the principal can only access selective metadata for.`)
@@ -410,8 +403,6 @@ func newList() *cobra.Command {
 
 	var listReq catalog.ListRegisteredModelsRequest
 
-	// TODO: short flags
-
 	cmd.Flags().StringVar(&listReq.CatalogName, "catalog-name", listReq.CatalogName, `The identifier of the catalog under which to list registered models.`)
 	cmd.Flags().BoolVar(&listReq.IncludeBrowse, "include-browse", listReq.IncludeBrowse, `Whether to include registered models in the response for which the principal can only access selective metadata for.`)
 	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Max number of registered models to return.`)
@@ -478,7 +469,6 @@ func newSetAlias() *cobra.Command {
 	var setAliasReq catalog.SetRegisteredModelAliasRequest
 	var setAliasJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&setAliasJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "set-alias FULL_NAME ALIAS VERSION_NUM"
@@ -571,7 +561,6 @@ func newUpdate() *cobra.Command {
 	var updateReq catalog.UpdateRegisteredModelRequest
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `The comment attached to the registered model.`)

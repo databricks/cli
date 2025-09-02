@@ -6,52 +6,49 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deploy/terraform"
-	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/logdiag"
 )
 
-func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions) (diags diag.Diagnostics) {
+func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions) {
 	log.Info(ctx, "Phase: bind")
 
-	diags = bundle.Apply(ctx, b, lock.Acquire())
-	if diags.HasError() {
-		return diags
+	bundle.ApplyContext(ctx, b, lock.Acquire())
+	if logdiag.HasError(ctx) {
+		return
 	}
 
 	defer func() {
-		diags = diags.Extend(bundle.Apply(ctx, b, lock.Release(lock.GoalBind)))
+		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalBind))
 	}()
 
-	diags = diags.Extend(bundle.ApplySeq(ctx, b,
-		terraform.StatePull(),
+	bundle.ApplySeqContext(ctx, b,
+		statemgmt.StatePull(),
 		terraform.Interpolate(),
 		terraform.Write(),
 		terraform.Import(opts),
-		terraform.StatePush(),
-	))
-
-	return diags
+		statemgmt.StatePush(),
+	)
 }
 
-func Unbind(ctx context.Context, b *bundle.Bundle, resourceType, resourceKey string) (diags diag.Diagnostics) {
+func Unbind(ctx context.Context, b *bundle.Bundle, resourceType, resourceKey string) {
 	log.Info(ctx, "Phase: unbind")
 
-	diags = bundle.Apply(ctx, b, lock.Acquire())
-	if diags.HasError() {
-		return diags
+	bundle.ApplyContext(ctx, b, lock.Acquire())
+	if logdiag.HasError(ctx) {
+		return
 	}
 
 	defer func() {
-		diags = diags.Extend(bundle.Apply(ctx, b, lock.Release(lock.GoalUnbind)))
+		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalUnbind))
 	}()
 
-	diags = diags.Extend(bundle.ApplySeq(ctx, b,
-		terraform.StatePull(),
+	bundle.ApplySeqContext(ctx, b,
+		statemgmt.StatePull(),
 		terraform.Interpolate(),
 		terraform.Write(),
 		terraform.Unbind(resourceType, resourceKey),
-		terraform.StatePush(),
-	))
-
-	return diags
+		statemgmt.StatePush(),
+	)
 }

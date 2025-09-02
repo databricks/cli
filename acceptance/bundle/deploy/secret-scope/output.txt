@@ -1,0 +1,70 @@
+
+=== Print summary before deploy; it should have modified_status=created and no id
+>>> [CLI] bundle summary --output json
+{
+  "backend_type": "DATABRICKS",
+  "modified_status": "created",
+  "name": "my-secrets-[UUID]",
+  "permissions": [
+    {
+      "level": "WRITE",
+      "user_name": "admins"
+    },
+    {
+      "level": "READ",
+      "user_name": "users"
+    }
+  ]
+}
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-secret-scope-test-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Print summary after deploy; it should have id and no modified_status
+>>> [CLI] bundle summary --output json
+{
+  "backend_type": "DATABRICKS",
+  "id": "my-secrets-[UUID]",
+  "name": "my-secrets-[UUID]",
+  "permissions": [
+    {
+      "level": "WRITE",
+      "user_name": "admins"
+    },
+    {
+      "level": "READ",
+      "user_name": "users"
+    }
+  ]
+}
+
+>>> [CLI] secrets list-scopes -o json
+{
+  "backend_type": "DATABRICKS",
+  "name": "my-secrets-[UUID]"
+}
+
+>>> [CLI] secrets list-acls my-secrets-[UUID]
+{"permission":"MANAGE","principal":"[USERNAME]"}
+{"permission":"READ","principal":"users"}
+{"permission":"WRITE","principal":"admins"}
+
+>>> [CLI] secrets put-secret my-secrets-[UUID] my-key --string-value my-secret-value
+
+>>> [CLI] secrets get-secret my-secrets-[UUID] my-key
+{
+  "key":"my-key",
+  "value":"bXktc2VjcmV0LXZhbHVl"
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete secret_scope secret_scope1
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-secret-scope-test-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

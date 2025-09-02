@@ -40,7 +40,7 @@ func (s *stateUpdate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 	state.Version = DeploymentStateVersion
 
 	// Update the state with the current list of synced files.
-	fl, err := FromSlice(b.Files)
+	fl, err := fromSlice(b.Files)
 	if err != nil {
 		return diag.FromErr(err)
 	}

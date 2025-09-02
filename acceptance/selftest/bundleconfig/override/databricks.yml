@@ -1,0 +1,16 @@
+bundle:
+  name: this-name-takes-priority
+
+resources:
+  jobs:
+    example_job:
+      other: attribute
+      string_dq: "[string]"
+      string_sq: '[string]'
+      string1: "string"
+      string2: "string"
+      list1: [string1, string2]
+      list2: [string1, string2]
+      true: true
+      false: false
+      null: null

@@ -1,6 +1,3 @@
-bundle:
-  name: override_job_cluster
-
 variables:
   mykey:
     default: key

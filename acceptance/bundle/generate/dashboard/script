@@ -1,0 +1,4 @@
+# create a dashboard to import
+dashboard_id=$($CLI lakeview create --json @dashboard.json | jq -r '.dashboard_id')
+
+trace $CLI bundle generate dashboard --existing-id $dashboard_id --dashboard-dir out/dashboard --resource-dir out/resource

@@ -12,7 +12,6 @@ targets:
         interactive_cluster:
           spark_version: 14.2.x-cpu-ml-scala2.12
 
-
 resources:
   clusters:
     interactive_cluster:

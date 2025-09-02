@@ -1,6 +1,7 @@
 module github.com/databricks/cli/bundle/internal/tf/codegen
 
 go 1.24
+
 toolchain go1.24.2
 
 require (
@@ -16,7 +17,7 @@ require (
 require (
 	github.com/ProtonMail/go-crypto v1.1.3 // indirect
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
-	github.com/cloudflare/circl v1.5.0 // indirect
+	github.com/cloudflare/circl v1.6.1 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.7 // indirect
 	golang.org/x/crypto v0.35.0 // indirect

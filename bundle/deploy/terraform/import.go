@@ -28,6 +28,10 @@ type importResource struct {
 
 // Apply implements bundle.Mutator.
 func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	if b.DirectDeployment {
+		return diag.Errorf("import is not implemented for DATABRICKS_CLI_DEPLOYMENT=direct")
+	}
+
 	dir, err := Dir(ctx, b)
 	if err != nil {
 		return diag.FromErr(err)
@@ -46,7 +50,7 @@ func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	if err != nil {
 		return diag.Errorf("terraform init: %v", err)
 	}
-	tmpState := filepath.Join(tmpDir, TerraformStateFileName)
+	tmpState := filepath.Join(tmpDir, b.StateFilename())
 
 	importAddress := fmt.Sprintf("%s.%s", m.opts.ResourceType, m.opts.ResourceKey)
 	err = tf.Import(ctx, importAddress, m.opts.ResourceId, tfexec.StateOut(tmpState))
@@ -85,7 +89,7 @@ func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	}
 
 	// If user confirmed changes, move the state file from temp dir to state location
-	f, err := os.Create(filepath.Join(dir, TerraformStateFileName))
+	f, err := os.Create(filepath.Join(dir, b.StateFilename()))
 	if err != nil {
 		return diag.FromErr(err)
 	}

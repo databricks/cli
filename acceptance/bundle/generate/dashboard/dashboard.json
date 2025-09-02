@@ -1,0 +1,5 @@
+{
+    "display_name": "test dashboard",
+    "parent_path": "/test",
+    "serialized_dashboard": "{\"pages\":[{\"displayName\":\"New Page\",\"layout\":[],\"name\":\"12345678\"}]}"
+}

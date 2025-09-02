@@ -1,0 +1,11 @@
+trace cp $TESTDIR/../../deploy/simple/hello_world.py .
+trace cp $TESTDIR/../../deploy/simple/databricks.yml.tmpl .
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+trace $CLI bundle run foo

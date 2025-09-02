@@ -1,0 +1,49 @@
+bundle:
+  name: deploy-compute-type
+
+resources:
+  jobs:
+    my_job:
+      environments:
+        - environment_key: "env"
+          spec:
+            client: "1"
+            dependencies:
+              - "test_package"
+
+targets:
+  one:
+    resources:
+      jobs:
+        my_job:
+          tasks:
+            - task_key: task1
+              notebook_task:
+                notebook_path: ./notebook.py
+            - task_key: task2
+              existing_cluster_id: "1234"
+              spark_python_task:
+                python_file: ./test.py
+            - task_key: task3
+              new_cluster:
+                spark_version: 15.4.x-scala2.12
+                node_type_id: i3.xlarge
+                data_security_mode: SINGLE_USER
+                num_workers: 0
+                spark_conf:
+                  spark.master: "local[*, 4]"
+                  spark.databricks.cluster.profile: singleNode
+                custom_tags:
+                  ResourceClass: SingleNode
+              spark_python_task:
+                python_file: ./test.py
+
+  two:
+    resources:
+      jobs:
+        my_job:
+          tasks:
+            - task_key: task1
+              environment_key: env
+              spark_python_task:
+                python_file: ./test.py

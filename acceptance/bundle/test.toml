@@ -1,7 +1,8 @@
-[Env]
-# The lowest Python version we support. Alternative to "uv run --python 3.10"
-UV_PYTHON = "3.10"
+# This allows recording per-deployment output files, e.g. $CLI bundle deploy > out.$DATABRICKS_CLI_DEPLOYMENT.txt
+EnvVaryOutput = "DATABRICKS_CLI_DEPLOYMENT"
 
-[[Repls]]
-Old = '1\d{18}'
-New = '[TIMESTAMP_NS]'
+# The lowest Python version we support. Alternative to "uv run --python 3.10"
+Env.UV_PYTHON = "3.10"
+
+[BundleConfig.default_name]
+bundle.name = "test-bundle"

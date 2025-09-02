@@ -22,9 +22,3 @@ func AssertOutput(t testutil.TestingT, ctx context.Context, args []string, expec
 	out := captureOutput(t, ctx, args)
 	testdiff.AssertOutput(t, ctx, out, fmt.Sprintf("Output from %v", args), expectedPath)
 }
-
-func AssertOutputJQ(t testutil.TestingT, ctx context.Context, args []string, expectedPath string, ignorePaths []string) {
-	t.Helper()
-	out := captureOutput(t, ctx, args)
-	testdiff.AssertOutputJQ(t, ctx, out, fmt.Sprintf("Output from %v", args), expectedPath, ignorePaths)
-}

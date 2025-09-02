@@ -8,5 +8,5 @@ type ResourceCatalogWorkspaceBinding struct {
 	Id            string `json:"id,omitempty"`
 	SecurableName string `json:"securable_name,omitempty"`
 	SecurableType string `json:"securable_type,omitempty"`
-	WorkspaceId   int    `json:"workspace_id,omitempty"`
+	WorkspaceId   int    `json:"workspace_id"`
 }

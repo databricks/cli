@@ -45,6 +45,7 @@ func New() *cobra.Command {
 	// Add methods
 	cmd.AddCommand(newBuildLogs())
 	cmd.AddCommand(newCreate())
+	cmd.AddCommand(newCreateProvisionedThroughputEndpoint())
 	cmd.AddCommand(newDelete())
 	cmd.AddCommand(newExportMetrics())
 	cmd.AddCommand(newGet())
@@ -61,6 +62,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(newSetPermissions())
 	cmd.AddCommand(newUpdateConfig())
 	cmd.AddCommand(newUpdatePermissions())
+	cmd.AddCommand(newUpdateProvisionedThroughputEndpointConfig())
 
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
@@ -83,8 +85,6 @@ func newBuildLogs() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var buildLogsReq serving.BuildLogsRequest
-
-	// TODO: short flags
 
 	cmd.Use = "build-logs NAME SERVED_MODEL_NAME"
 	cmd.Short = `Get build logs for a served model.`
@@ -152,12 +152,14 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().BoolVar(&createSkipWait, "no-wait", createSkipWait, `do not wait to reach NOT_UPDATING state`)
 	cmd.Flags().DurationVar(&createTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach NOT_UPDATING state`)
-	// TODO: short flags
+
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: ai_gateway
 	cmd.Flags().StringVar(&createReq.BudgetPolicyId, "budget-policy-id", createReq.BudgetPolicyId, `The budget policy to be applied to the serving endpoint.`)
 	// TODO: complex arg: config
+	cmd.Flags().StringVar(&createReq.Description, "description", createReq.Description, ``)
+	// TODO: complex arg: email_notifications
 	// TODO: array: rate_limits
 	cmd.Flags().BoolVar(&createReq.RouteOptimized, "route-optimized", createReq.RouteOptimized, `Enable route optimization for the serving endpoint.`)
 	// TODO: array: tags
@@ -238,6 +240,92 @@ func newCreate() *cobra.Command {
 	return cmd
 }
 
+// start create-provisioned-throughput-endpoint command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createProvisionedThroughputEndpointOverrides []func(
+	*cobra.Command,
+	*serving.CreatePtEndpointRequest,
+)
+
+func newCreateProvisionedThroughputEndpoint() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createProvisionedThroughputEndpointReq serving.CreatePtEndpointRequest
+	var createProvisionedThroughputEndpointJson flags.JsonFlag
+
+	var createProvisionedThroughputEndpointSkipWait bool
+	var createProvisionedThroughputEndpointTimeout time.Duration
+
+	cmd.Flags().BoolVar(&createProvisionedThroughputEndpointSkipWait, "no-wait", createProvisionedThroughputEndpointSkipWait, `do not wait to reach NOT_UPDATING state`)
+	cmd.Flags().DurationVar(&createProvisionedThroughputEndpointTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach NOT_UPDATING state`)
+
+	cmd.Flags().Var(&createProvisionedThroughputEndpointJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: complex arg: ai_gateway
+	cmd.Flags().StringVar(&createProvisionedThroughputEndpointReq.BudgetPolicyId, "budget-policy-id", createProvisionedThroughputEndpointReq.BudgetPolicyId, `The budget policy associated with the endpoint.`)
+	// TODO: complex arg: email_notifications
+	// TODO: array: tags
+
+	cmd.Use = "create-provisioned-throughput-endpoint"
+	cmd.Short = `Create a new PT serving endpoint.`
+	cmd.Long = `Create a new PT serving endpoint.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := createProvisionedThroughputEndpointJson.Unmarshal(&createProvisionedThroughputEndpointReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		} else {
+			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+		}
+
+		wait, err := w.ServingEndpoints.CreateProvisionedThroughputEndpoint(ctx, createProvisionedThroughputEndpointReq)
+		if err != nil {
+			return err
+		}
+		if createProvisionedThroughputEndpointSkipWait {
+			return cmdio.Render(ctx, wait.Response)
+		}
+		spinner := cmdio.Spinner(ctx)
+		info, err := wait.OnProgress(func(i *serving.ServingEndpointDetailed) {
+			status := i.State.ConfigUpdate
+			statusMessage := fmt.Sprintf("current status: %s", status)
+			spinner <- statusMessage
+		}).GetWithTimeout(createProvisionedThroughputEndpointTimeout)
+		close(spinner)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, info)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createProvisionedThroughputEndpointOverrides {
+		fn(cmd, &createProvisionedThroughputEndpointReq)
+	}
+
+	return cmd
+}
+
 // start delete command
 
 // Slice with functions to override default command behavior.
@@ -251,8 +339,6 @@ func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var deleteReq serving.DeleteServingEndpointRequest
-
-	// TODO: short flags
 
 	cmd.Use = "delete NAME"
 	cmd.Short = `Delete a serving endpoint.`
@@ -304,8 +390,6 @@ func newExportMetrics() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var exportMetricsReq serving.ExportMetricsRequest
-
-	// TODO: short flags
 
 	cmd.Use = "export-metrics NAME"
 	cmd.Short = `Get metrics of a serving endpoint.`
@@ -366,8 +450,6 @@ func newGet() *cobra.Command {
 
 	var getReq serving.GetServingEndpointRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get NAME"
 	cmd.Short = `Get a single serving endpoint.`
 	cmd.Long = `Get a single serving endpoint.
@@ -423,8 +505,6 @@ func newGetOpenApi() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getOpenApiReq serving.GetOpenApiRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get-open-api NAME"
 	cmd.Short = `Get the schema for a serving endpoint.`
@@ -486,8 +566,6 @@ func newGetPermissionLevels() *cobra.Command {
 
 	var getPermissionLevelsReq serving.GetServingEndpointPermissionLevelsRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get-permission-levels SERVING_ENDPOINT_ID"
 	cmd.Short = `Get serving endpoint permission levels.`
 	cmd.Long = `Get serving endpoint permission levels.
@@ -543,8 +621,6 @@ func newGetPermissions() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getPermissionsReq serving.GetServingEndpointPermissionsRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get-permissions SERVING_ENDPOINT_ID"
 	cmd.Short = `Get serving endpoint permissions.`
@@ -602,8 +678,6 @@ func newHttpRequest() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var httpRequestReq serving.ExternalFunctionRequest
-
-	// TODO: short flags
 
 	cmd.Flags().StringVar(&httpRequestReq.Headers, "headers", httpRequestReq.Headers, `Additional headers for the request.`)
 	cmd.Flags().StringVar(&httpRequestReq.Json, "json", httpRequestReq.Json, `The JSON payload to send in the request body.`)
@@ -713,8 +787,6 @@ func newLogs() *cobra.Command {
 
 	var logsReq serving.LogsRequest
 
-	// TODO: short flags
-
 	cmd.Use = "logs NAME SERVED_MODEL_NAME"
 	cmd.Short = `Get the latest logs for a served model.`
 	cmd.Long = `Get the latest logs for a served model.
@@ -776,7 +848,6 @@ func newPatch() *cobra.Command {
 	var patchReq serving.PatchServingEndpointTags
 	var patchJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&patchJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: add_tags
@@ -853,7 +924,6 @@ func newPut() *cobra.Command {
 	var putReq serving.PutRequest
 	var putJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&putJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: rate_limits
@@ -928,7 +998,6 @@ func newPutAiGateway() *cobra.Command {
 	var putAiGatewayReq serving.PutAiGatewayRequest
 	var putAiGatewayJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&putAiGatewayJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: fallback_config
@@ -1009,9 +1078,9 @@ func newQuery() *cobra.Command {
 	var queryReq serving.QueryEndpointInput
 	var queryJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&queryJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().StringVar(&queryReq.ClientRequestId, "client-request-id", queryReq.ClientRequestId, `Optional user-provided request identifier that will be recorded in the inference table and the usage tracking table.`)
 	// TODO: array: dataframe_records
 	// TODO: complex arg: dataframe_split
 	// TODO: map via StringToStringVar: extra_params
@@ -1025,13 +1094,17 @@ func newQuery() *cobra.Command {
 	// TODO: array: stop
 	cmd.Flags().BoolVar(&queryReq.Stream, "stream", queryReq.Stream, `The stream field used ONLY for __completions__ and __chat external & foundation model__ serving endpoints.`)
 	cmd.Flags().Float64Var(&queryReq.Temperature, "temperature", queryReq.Temperature, `The temperature field used ONLY for __completions__ and __chat external & foundation model__ serving endpoints.`)
+	// TODO: map via StringToStringVar: usage_context
 
 	cmd.Use = "query NAME"
 	cmd.Short = `Query a serving endpoint.`
 	cmd.Long = `Query a serving endpoint.
+  
+  Query a serving endpoint
 
   Arguments:
-    NAME: The name of the serving endpoint. This field is required.`
+    NAME: The name of the serving endpoint. This field is required and is provided
+      via the path parameter.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1093,7 +1166,6 @@ func newSetPermissions() *cobra.Command {
 	var setPermissionsReq serving.ServingEndpointPermissionsRequest
 	var setPermissionsJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&setPermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: access_control_list
@@ -1174,7 +1246,7 @@ func newUpdateConfig() *cobra.Command {
 
 	cmd.Flags().BoolVar(&updateConfigSkipWait, "no-wait", updateConfigSkipWait, `do not wait to reach NOT_UPDATING state`)
 	cmd.Flags().DurationVar(&updateConfigTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach NOT_UPDATING state`)
-	// TODO: short flags
+
 	cmd.Flags().Var(&updateConfigJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: auto_capture_config
@@ -1267,7 +1339,6 @@ func newUpdatePermissions() *cobra.Command {
 	var updatePermissionsReq serving.ServingEndpointPermissionsRequest
 	var updatePermissionsJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updatePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: access_control_list
@@ -1322,6 +1393,100 @@ func newUpdatePermissions() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range updatePermissionsOverrides {
 		fn(cmd, &updatePermissionsReq)
+	}
+
+	return cmd
+}
+
+// start update-provisioned-throughput-endpoint-config command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateProvisionedThroughputEndpointConfigOverrides []func(
+	*cobra.Command,
+	*serving.UpdateProvisionedThroughputEndpointConfigRequest,
+)
+
+func newUpdateProvisionedThroughputEndpointConfig() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateProvisionedThroughputEndpointConfigReq serving.UpdateProvisionedThroughputEndpointConfigRequest
+	var updateProvisionedThroughputEndpointConfigJson flags.JsonFlag
+
+	var updateProvisionedThroughputEndpointConfigSkipWait bool
+	var updateProvisionedThroughputEndpointConfigTimeout time.Duration
+
+	cmd.Flags().BoolVar(&updateProvisionedThroughputEndpointConfigSkipWait, "no-wait", updateProvisionedThroughputEndpointConfigSkipWait, `do not wait to reach NOT_UPDATING state`)
+	cmd.Flags().DurationVar(&updateProvisionedThroughputEndpointConfigTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach NOT_UPDATING state`)
+
+	cmd.Flags().Var(&updateProvisionedThroughputEndpointConfigJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Use = "update-provisioned-throughput-endpoint-config NAME"
+	cmd.Short = `Update config of a PT serving endpoint.`
+	cmd.Long = `Update config of a PT serving endpoint.
+  
+  Updates any combination of the pt endpoint's served entities, the compute
+  configuration of those served entities, and the endpoint's traffic config.
+  Updates are instantaneous and endpoint should be updated instantly
+
+  Arguments:
+    NAME: The name of the pt endpoint to update. This field is required.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := updateProvisionedThroughputEndpointConfigJson.Unmarshal(&updateProvisionedThroughputEndpointConfigReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		} else {
+			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+		}
+		updateProvisionedThroughputEndpointConfigReq.Name = args[0]
+
+		wait, err := w.ServingEndpoints.UpdateProvisionedThroughputEndpointConfig(ctx, updateProvisionedThroughputEndpointConfigReq)
+		if err != nil {
+			return err
+		}
+		if updateProvisionedThroughputEndpointConfigSkipWait {
+			return cmdio.Render(ctx, wait.Response)
+		}
+		spinner := cmdio.Spinner(ctx)
+		info, err := wait.OnProgress(func(i *serving.ServingEndpointDetailed) {
+			status := i.State.ConfigUpdate
+			statusMessage := fmt.Sprintf("current status: %s", status)
+			spinner <- statusMessage
+		}).GetWithTimeout(updateProvisionedThroughputEndpointConfigTimeout)
+		close(spinner)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, info)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateProvisionedThroughputEndpointConfigOverrides {
+		fn(cmd, &updateProvisionedThroughputEndpointConfigReq)
 	}
 
 	return cmd

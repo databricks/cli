@@ -195,6 +195,8 @@ def _transform(cls: Type[_T], value: Any) -> _T:
         return str(value)  # type:ignore
     elif cls is int:
         return int(value)  # type:ignore
+    elif cls is float:
+        return float(value)  # type:ignore
     elif cls is bool:
         if isinstance(value, bool):
             return value  # type:ignore

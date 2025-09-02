@@ -17,7 +17,7 @@ func GetSync(ctx context.Context, b *bundle.Bundle) (*sync.Sync, error) {
 }
 
 func GetSyncOptions(ctx context.Context, b *bundle.Bundle) (*sync.SyncOptions, error) {
-	cacheDir, err := b.CacheDir(ctx)
+	cacheDir, err := b.LocalStateDir(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get bundle cache directory: %w", err)
 	}

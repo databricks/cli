@@ -75,7 +75,7 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().BoolVar(&createSkipWait, "no-wait", createSkipWait, `do not wait to reach RUNNING state`)
 	cmd.Flags().DurationVar(&createTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
-	// TODO: short flags
+
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().IntVar(&createReq.AutoStopMins, "auto-stop-mins", createReq.AutoStopMins, `The amount of time in minutes that a SQL warehouse must be idle (i.e., no RUNNING queries) before it is automatically stopped.`)
@@ -88,9 +88,9 @@ func newCreate() *cobra.Command {
 	cmd.Flags().IntVar(&createReq.MaxNumClusters, "max-num-clusters", createReq.MaxNumClusters, `Maximum number of clusters that the autoscaler will create to handle concurrent queries.`)
 	cmd.Flags().IntVar(&createReq.MinNumClusters, "min-num-clusters", createReq.MinNumClusters, `Minimum number of available clusters that will be maintained for this SQL warehouse.`)
 	cmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `Logical name for the cluster.`)
-	cmd.Flags().Var(&createReq.SpotInstancePolicy, "spot-instance-policy", `Configurations whether the warehouse should use spot instances. Supported values: [COST_OPTIMIZED, POLICY_UNSPECIFIED, RELIABILITY_OPTIMIZED]`)
+	cmd.Flags().Var(&createReq.SpotInstancePolicy, "spot-instance-policy", `Supported values: [COST_OPTIMIZED, POLICY_UNSPECIFIED, RELIABILITY_OPTIMIZED]`)
 	// TODO: complex arg: tags
-	cmd.Flags().Var(&createReq.WarehouseType, "warehouse-type", `Warehouse type: PRO or CLASSIC. Supported values: [CLASSIC, PRO, TYPE_UNSPECIFIED]`)
+	cmd.Flags().Var(&createReq.WarehouseType, "warehouse-type", `Supported values: [CLASSIC, PRO, TYPE_UNSPECIFIED]`)
 
 	cmd.Use = "create"
 	cmd.Short = `Create a warehouse.`
@@ -175,8 +175,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq sql.DeleteWarehouseRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete ID"
 	cmd.Short = `Delete a warehouse.`
 	cmd.Long = `Delete a warehouse.
@@ -251,7 +249,7 @@ func newEdit() *cobra.Command {
 
 	cmd.Flags().BoolVar(&editSkipWait, "no-wait", editSkipWait, `do not wait to reach RUNNING state`)
 	cmd.Flags().DurationVar(&editTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
-	// TODO: short flags
+
 	cmd.Flags().Var(&editJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().IntVar(&editReq.AutoStopMins, "auto-stop-mins", editReq.AutoStopMins, `The amount of time in minutes that a SQL warehouse must be idle (i.e., no RUNNING queries) before it is automatically stopped.`)
@@ -264,9 +262,9 @@ func newEdit() *cobra.Command {
 	cmd.Flags().IntVar(&editReq.MaxNumClusters, "max-num-clusters", editReq.MaxNumClusters, `Maximum number of clusters that the autoscaler will create to handle concurrent queries.`)
 	cmd.Flags().IntVar(&editReq.MinNumClusters, "min-num-clusters", editReq.MinNumClusters, `Minimum number of available clusters that will be maintained for this SQL warehouse.`)
 	cmd.Flags().StringVar(&editReq.Name, "name", editReq.Name, `Logical name for the cluster.`)
-	cmd.Flags().Var(&editReq.SpotInstancePolicy, "spot-instance-policy", `Configurations whether the warehouse should use spot instances. Supported values: [COST_OPTIMIZED, POLICY_UNSPECIFIED, RELIABILITY_OPTIMIZED]`)
+	cmd.Flags().Var(&editReq.SpotInstancePolicy, "spot-instance-policy", `Supported values: [COST_OPTIMIZED, POLICY_UNSPECIFIED, RELIABILITY_OPTIMIZED]`)
 	// TODO: complex arg: tags
-	cmd.Flags().Var(&editReq.WarehouseType, "warehouse-type", `Warehouse type: PRO or CLASSIC. Supported values: [CLASSIC, PRO, TYPE_UNSPECIFIED]`)
+	cmd.Flags().Var(&editReq.WarehouseType, "warehouse-type", `Supported values: [CLASSIC, PRO, TYPE_UNSPECIFIED]`)
 
 	cmd.Use = "edit ID"
 	cmd.Short = `Update a warehouse.`
@@ -367,8 +365,6 @@ func newGet() *cobra.Command {
 
 	var getReq sql.GetWarehouseRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get ID"
 	cmd.Short = `Get warehouse info.`
 	cmd.Long = `Get warehouse info.
@@ -437,8 +433,6 @@ func newGetPermissionLevels() *cobra.Command {
 
 	var getPermissionLevelsReq sql.GetWarehousePermissionLevelsRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get-permission-levels WAREHOUSE_ID"
 	cmd.Short = `Get SQL warehouse permission levels.`
 	cmd.Long = `Get SQL warehouse permission levels.
@@ -506,8 +500,6 @@ func newGetPermissions() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getPermissionsReq sql.GetWarehousePermissionsRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get-permissions WAREHOUSE_ID"
 	cmd.Short = `Get SQL warehouse permissions.`
@@ -621,8 +613,6 @@ func newList() *cobra.Command {
 
 	var listReq sql.ListWarehousesRequest
 
-	// TODO: short flags
-
 	cmd.Flags().IntVar(&listReq.RunAsUserId, "run-as-user-id", listReq.RunAsUserId, `Service Principal which will be used to fetch the list of warehouses.`)
 
 	cmd.Use = "list"
@@ -674,7 +664,6 @@ func newSetPermissions() *cobra.Command {
 	var setPermissionsReq sql.WarehousePermissionsRequest
 	var setPermissionsJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&setPermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: access_control_list
@@ -762,7 +751,6 @@ func newSetWorkspaceWarehouseConfig() *cobra.Command {
 	var setWorkspaceWarehouseConfigReq sql.SetWorkspaceWarehouseConfigRequest
 	var setWorkspaceWarehouseConfigJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&setWorkspaceWarehouseConfigJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: channel
@@ -845,7 +833,6 @@ func newStart() *cobra.Command {
 
 	cmd.Flags().BoolVar(&startSkipWait, "no-wait", startSkipWait, `do not wait to reach RUNNING state`)
 	cmd.Flags().DurationVar(&startTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
-	// TODO: short flags
 
 	cmd.Use = "start ID"
 	cmd.Short = `Start a warehouse.`
@@ -939,7 +926,6 @@ func newStop() *cobra.Command {
 
 	cmd.Flags().BoolVar(&stopSkipWait, "no-wait", stopSkipWait, `do not wait to reach STOPPED state`)
 	cmd.Flags().DurationVar(&stopTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach STOPPED state`)
-	// TODO: short flags
 
 	cmd.Use = "stop ID"
 	cmd.Short = `Stop a warehouse.`
@@ -1029,7 +1015,6 @@ func newUpdatePermissions() *cobra.Command {
 	var updatePermissionsReq sql.WarehousePermissionsRequest
 	var updatePermissionsJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updatePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: access_control_list

@@ -1,0 +1,40 @@
+
+=== no run key specified
+>>> [CLI] bundle run
+Error: expected a KEY of the resource to run
+
+Exit code: 1
+
+=== deploy and run resource
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/caterpillar/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle run foo
+Run URL: [DATABRICKS_URL]/job/run/[NUMID]
+
+[TIMESTAMP] "run-name" TERMINATED
+
+=== no resource key with --
+>>> [CLI] bundle run --
+Error: expected a KEY of the resource to run
+
+Exit code: 1
+
+=== resource key with parameters
+>>> [CLI] bundle run foo -- arg1 arg2
+Run URL: [DATABRICKS_URL]/job/run/[NUMID]
+
+[TIMESTAMP] "run-name" TERMINATED
+
+=== inline script
+>>> [CLI] bundle run -- echo hello
+hello
+
+=== completion handler
+>>> [CLI] __complete bundle run ,
+foo
+:4
+Completion ended with directive: ShellCompDirectiveNoFileComp

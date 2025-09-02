@@ -117,16 +117,21 @@ func TestExecutorNoShellFound(t *testing.T) {
 }
 
 func TestExecutorCleanupsTempFiles(t *testing.T) {
-	executor, err := NewCommandExecutor(".")
+	if runtime.GOOS != "windows" {
+		t.Skipf("cmd.exe is not available on non-Windows systems")
+	}
+
+	executor, err := NewCommandExecutorWithExecutable(".", CmdExecutable)
 	assert.NoError(t, err)
 
 	cmd, ec, err := executor.prepareCommand(context.Background(), "echo 'Hello'")
 	assert.NoError(t, err)
 
-	command, err := executor.start(context.Background(), cmd, ec)
+	command, err := executor.start(cmd, ec)
 	assert.NoError(t, err)
 
-	fileName := ec.args[1]
+	fileName := ec.scriptFile
+	assert.NotEmpty(t, fileName)
 	assert.FileExists(t, fileName)
 
 	err = command.Wait()

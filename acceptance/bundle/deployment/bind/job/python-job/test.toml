@@ -1,0 +1,2 @@
+Cloud = false # test leaves deployed job
+Timeout = '40s' # python can be slow in CI likely due to caching problems

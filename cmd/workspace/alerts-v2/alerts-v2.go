@@ -20,16 +20,13 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "alerts-v2",
-		Short:   `TODO: Add description.`,
-		Long:    `TODO: Add description`,
+		Short:   `New version of SQL Alerts.`,
+		Long:    `New version of SQL Alerts`,
 		GroupID: "sql",
 		Annotations: map[string]string{
 			"package": "sql",
 		},
-
-		// This service is being previewed; hide from help output.
-		Hidden: true,
-		RunE:   root.ReportUnknownSubcommand,
+		RunE: root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -60,12 +57,22 @@ func newCreateAlert() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var createAlertReq sql.CreateAlertV2Request
+	createAlertReq.Alert = sql.AlertV2{}
 	var createAlertJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createAlertJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	// TODO: complex arg: alert
+	cmd.Flags().StringVar(&createAlertReq.Alert.CustomDescription, "custom-description", createAlertReq.Alert.CustomDescription, `Custom description for the alert.`)
+	cmd.Flags().StringVar(&createAlertReq.Alert.CustomSummary, "custom-summary", createAlertReq.Alert.CustomSummary, `Custom summary for the alert.`)
+	cmd.Flags().StringVar(&createAlertReq.Alert.DisplayName, "display-name", createAlertReq.Alert.DisplayName, `The display name of the alert.`)
+	// TODO: complex arg: effective_run_as
+	// TODO: complex arg: evaluation
+	cmd.Flags().StringVar(&createAlertReq.Alert.ParentPath, "parent-path", createAlertReq.Alert.ParentPath, `The workspace path of the folder containing the alert.`)
+	cmd.Flags().StringVar(&createAlertReq.Alert.QueryText, "query-text", createAlertReq.Alert.QueryText, `Text of the query to be run.`)
+	// TODO: complex arg: run_as
+	cmd.Flags().StringVar(&createAlertReq.Alert.RunAsUserName, "run-as-user-name", createAlertReq.Alert.RunAsUserName, `The run as username or application ID of service principal.`)
+	// TODO: complex arg: schedule
+	cmd.Flags().StringVar(&createAlertReq.Alert.WarehouseId, "warehouse-id", createAlertReq.Alert.WarehouseId, `ID of the SQL warehouse attached to the alert.`)
 
 	cmd.Use = "create-alert"
 	cmd.Short = `Create an alert.`
@@ -86,7 +93,7 @@ func newCreateAlert() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			diags := createAlertJson.Unmarshal(&createAlertReq)
+			diags := createAlertJson.Unmarshal(&createAlertReq.Alert)
 			if diags.HasError() {
 				return diags.Error()
 			}
@@ -130,8 +137,6 @@ func newGetAlert() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getAlertReq sql.GetAlertV2Request
-
-	// TODO: short flags
 
 	cmd.Use = "get-alert ID"
 	cmd.Short = `Get an alert.`
@@ -198,8 +203,6 @@ func newListAlerts() *cobra.Command {
 
 	var listAlertsReq sql.ListAlertsV2Request
 
-	// TODO: short flags
-
 	cmd.Flags().IntVar(&listAlertsReq.PageSize, "page-size", listAlertsReq.PageSize, ``)
 	cmd.Flags().StringVar(&listAlertsReq.PageToken, "page-token", listAlertsReq.PageToken, ``)
 
@@ -250,8 +253,6 @@ func newTrashAlert() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var trashAlertReq sql.TrashAlertV2Request
-
-	// TODO: short flags
 
 	cmd.Use = "trash-alert ID"
 	cmd.Short = `Delete an alert.`
@@ -319,12 +320,22 @@ func newUpdateAlert() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var updateAlertReq sql.UpdateAlertV2Request
+	updateAlertReq.Alert = sql.AlertV2{}
 	var updateAlertJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateAlertJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	// TODO: complex arg: alert
+	cmd.Flags().StringVar(&updateAlertReq.Alert.CustomDescription, "custom-description", updateAlertReq.Alert.CustomDescription, `Custom description for the alert.`)
+	cmd.Flags().StringVar(&updateAlertReq.Alert.CustomSummary, "custom-summary", updateAlertReq.Alert.CustomSummary, `Custom summary for the alert.`)
+	cmd.Flags().StringVar(&updateAlertReq.Alert.DisplayName, "display-name", updateAlertReq.Alert.DisplayName, `The display name of the alert.`)
+	// TODO: complex arg: effective_run_as
+	// TODO: complex arg: evaluation
+	cmd.Flags().StringVar(&updateAlertReq.Alert.ParentPath, "parent-path", updateAlertReq.Alert.ParentPath, `The workspace path of the folder containing the alert.`)
+	cmd.Flags().StringVar(&updateAlertReq.Alert.QueryText, "query-text", updateAlertReq.Alert.QueryText, `Text of the query to be run.`)
+	// TODO: complex arg: run_as
+	cmd.Flags().StringVar(&updateAlertReq.Alert.RunAsUserName, "run-as-user-name", updateAlertReq.Alert.RunAsUserName, `The run as username or application ID of service principal.`)
+	// TODO: complex arg: schedule
+	cmd.Flags().StringVar(&updateAlertReq.Alert.WarehouseId, "warehouse-id", updateAlertReq.Alert.WarehouseId, `ID of the SQL warehouse attached to the alert.`)
 
 	cmd.Use = "update-alert ID UPDATE_MASK"
 	cmd.Short = `Update an alert.`
@@ -349,13 +360,6 @@ func newUpdateAlert() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		if cmd.Flags().Changed("json") {
-			err := root.ExactArgs(1)(cmd, args)
-			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only ID as positional arguments. Provide 'update_mask' in your JSON input")
-			}
-			return nil
-		}
 		check := root.ExactArgs(2)
 		return check(cmd, args)
 	}
@@ -366,7 +370,7 @@ func newUpdateAlert() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			diags := updateAlertJson.Unmarshal(&updateAlertReq)
+			diags := updateAlertJson.Unmarshal(&updateAlertReq.Alert)
 			if diags.HasError() {
 				return diags.Error()
 			}
@@ -378,9 +382,7 @@ func newUpdateAlert() *cobra.Command {
 			}
 		}
 		updateAlertReq.Id = args[0]
-		if !cmd.Flags().Changed("json") {
-			updateAlertReq.UpdateMask = args[1]
-		}
+		updateAlertReq.UpdateMask = args[1]
 
 		response, err := w.AlertsV2.UpdateAlert(ctx, updateAlertReq)
 		if err != nil {

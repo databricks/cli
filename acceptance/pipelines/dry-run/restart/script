@@ -1,0 +1,11 @@
+print_requests() {
+    jq --sort-keys 'select(.method != "GET" and (.path | contains("/pipelines")))' < out.requests.txt
+    rm out.requests.txt
+}
+
+trace $PIPELINES deploy
+rm out.requests.txt
+
+title "Dry running pipeline with --restart flag, should stop the current pipeline and start a new run"
+trace $PIPELINES dry-run --restart
+trace print_requests

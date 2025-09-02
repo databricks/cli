@@ -13,9 +13,36 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
+type VolumeGrantPrivilege string
+
+const (
+	VolumeGrantPrivilegeAllPrivileges VolumeGrantPrivilege = "ALL_PRIVILEGES"
+	VolumeGrantPrivilegeApplyTag      VolumeGrantPrivilege = "APPLY_TAG"
+	VolumeGrantPrivilegeManage        VolumeGrantPrivilege = "MANAGE"
+	VolumeGrantPrivilegeReadVolume    VolumeGrantPrivilege = "READ_VOLUME"
+	VolumeGrantPrivilegeWriteVolume   VolumeGrantPrivilege = "WRITE_VOLUME"
+)
+
+// Values returns all valid VolumeGrantPrivilege values
+func (VolumeGrantPrivilege) Values() []VolumeGrantPrivilege {
+	return []VolumeGrantPrivilege{
+		VolumeGrantPrivilegeAllPrivileges,
+		VolumeGrantPrivilegeApplyTag,
+		VolumeGrantPrivilegeManage,
+		VolumeGrantPrivilegeReadVolume,
+		VolumeGrantPrivilegeWriteVolume,
+	}
+}
+
+type VolumeGrant struct {
+	Privileges []VolumeGrantPrivilege `json:"privileges"`
+
+	Principal string `json:"principal"`
+}
+
 type Volume struct {
 	// List of grants to apply on this volume.
-	Grants []Grant `json:"grants,omitempty"`
+	Grants []VolumeGrant `json:"grants,omitempty"`
 
 	// Full name of the volume (catalog_name.schema_name.volume_name). This value is read from
 	// the terraform state after deployment succeeds.
@@ -54,16 +81,11 @@ func (v *Volume) Exists(ctx context.Context, w *databricks.WorkspaceClient, full
 
 func (*Volume) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
-		SingularName:          "volume",
-		PluralName:            "volumes",
-		SingularTitle:         "Volume",
-		PluralTitle:           "Volumes",
-		TerraformResourceName: "databricks_volume",
+		SingularName:  "volume",
+		PluralName:    "volumes",
+		SingularTitle: "Volume",
+		PluralTitle:   "Volumes",
 	}
-}
-
-func (v *Volume) TerraformResourceName() string {
-	return "databricks_volume"
 }
 
 func (v *Volume) InitializeURL(baseURL url.URL) {

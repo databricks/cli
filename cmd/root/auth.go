@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/manifoldco/promptui"
@@ -58,7 +59,7 @@ func accountClientOrPrompt(ctx context.Context, cfg *config.Config, allowPrompt 
 		// Prompt to select a profile if the current configuration is not an account client.
 		prompt = prompt || errors.Is(err, databricks.ErrNotAccountClient)
 		// Prompt to select a profile if the current configuration doesn't resolve to a credential provider.
-		prompt = prompt || errors.Is(err, config.ErrCannotConfigureAuth)
+		prompt = prompt || errors.Is(err, config.ErrCannotConfigureDefault)
 	}
 
 	if !prompt {
@@ -158,7 +159,7 @@ func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPromp
 		// Prompt to select a profile if the current configuration is not a workspace client.
 		prompt = prompt || errors.Is(err, databricks.ErrNotWorkspaceClient)
 		// Prompt to select a profile if the current configuration doesn't resolve to a credential provider.
-		prompt = prompt || errors.Is(err, config.ErrCannotConfigureAuth)
+		prompt = prompt || errors.Is(err, config.ErrCannotConfigureDefault)
 	}
 
 	if !prompt {
@@ -182,6 +183,9 @@ func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPromp
 }
 
 func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
+	ctx := logdiag.InitContext(cmd.Context())
+	cmd.SetContext(ctx)
+
 	cfg := &config.Config{}
 
 	// The command-line profile flag takes precedence over DATABRICKS_CONFIG_PROFILE.
@@ -196,15 +200,16 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 		cmd.SetContext(SkipLoadBundle(cmd.Context()))
 	}
 
-	ctx := cmd.Context()
-	ctx = cmdctx.SetConfigUsed(ctx, cfg)
+	ctx = cmdctx.SetConfigUsed(cmd.Context(), cfg)
 	cmd.SetContext(ctx)
 
 	// Try to load a bundle configuration if we're allowed to by the caller (see `./auth_options.go`).
 	if !shouldSkipLoadBundle(cmd.Context()) {
-		b, diags := TryConfigureBundle(cmd)
-		if err := diags.Error(); err != nil {
-			return err
+		b := TryConfigureBundle(cmd)
+		// Use the updated context from the command after TryConfigureBundle
+		ctx = cmd.Context()
+		if logdiag.HasError(ctx) {
+			return ErrAlreadyPrinted
 		}
 
 		if b != nil {

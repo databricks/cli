@@ -1,0 +1,6 @@
+job_id=100200300
+echo "my job is $job_id"
+echo "$job_id:JOB_ID" >> ACC_REPLS
+echo "ABCD:EFG:MY_TEXT" >> ACC_REPLS
+
+grep ACC_REPLS script

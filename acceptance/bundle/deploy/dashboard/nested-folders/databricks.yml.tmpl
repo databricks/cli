@@ -1,0 +1,10 @@
+#
+# Acceptance test for deploying dashboards with the following setup:
+# 1. dashboard file is inside the bundle root, but in a separate file from the .yml file
+# 2. sync root is the same as the bundle root
+#
+bundle:
+  name: deploy-dashboard-nested-folders-$UNIQUE_NAME
+
+include:
+  - "resources/*.yml"

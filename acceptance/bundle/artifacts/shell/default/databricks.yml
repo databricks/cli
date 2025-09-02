@@ -1,0 +1,10 @@
+bundle:
+  name: shell-bash
+
+artifacts:
+  my_artifact:
+    # Default shell is bash. echo in bash does not treat \n as a newline.
+    build: |-
+      echo "\n\n\n should not see new lines" > out.shell.txt
+      echo "multiline scripts should work" >> out.shell.txt
+      pwd >> out.shell.txt

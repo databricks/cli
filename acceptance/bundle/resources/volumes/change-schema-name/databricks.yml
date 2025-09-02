@@ -1,0 +1,7 @@
+resources:
+  volumes:
+    volume1:
+      catalog_name: main
+      schema_name: myschema
+      name: myvolume
+      comment: COMMENT1

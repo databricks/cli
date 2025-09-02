@@ -1,0 +1,8 @@
+Local = false
+Cloud = true
+
+Ignore = [
+    "databricks.yml",
+    "resources.yml",
+    ".databricks/"
+]

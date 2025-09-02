@@ -1,0 +1,73 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Check that test file is in workspace
+>>> [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/test.py
+{
+  "object_type": "FILE",
+  "path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/test.py"
+}
+
+>>> [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/test_to_modify.py
+{
+  "object_type": "FILE",
+  "path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/test_to_modify.py"
+}
+
+=== Check that notebook is in workspace
+>>> [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/notebook
+{
+  "object_type": "NOTEBOOK",
+  "path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/notebook",
+  "language": "PYTHON"
+}
+
+=== Check that deployment.json is synced correctly
+>>> [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/state/deployment.json
+{
+  "object_type": "FILE",
+  "path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/state/deployment.json"
+}
+
+=== Remove .databricks directory to simulate a fresh deployment like in CI/CD environment
+>>> rm -rf .databricks
+
+>>> rm test.py
+
+>>> rm notebook.py
+
+>>> echo print('Modified!')
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Check that removed files are not in the workspace anymore
+>>> errcode [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/test.py
+Error: Path (/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/test.py) doesn't exist.
+
+Exit code: 1
+
+>>> errcode [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/notebook
+Error: Path (/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/notebook) doesn't exist.
+
+Exit code: 1
+
+=== Check the content of modified file
+>>> [CLI] workspace export /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/test_to_modify.py
+print('Modified!')
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete job foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Deleting files...
+Destroy complete!

@@ -4,7 +4,6 @@ if [ -n "${TEST_DEFAULT_CLUSTER_ID:-}" ]; then
 fi
 export CLUSTER_ID
 envsubst < databricks.yml.tmpl > databricks.yml
-trace cat databricks.yml
 
 trace $CLI clusters get ${CLUSTER_ID} | jq '{cluster_name}'
 

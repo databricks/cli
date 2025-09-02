@@ -25,7 +25,7 @@
   "method": "POST",
   "path": "/api/2.0/workspace/mkdirs",
   "body": {
-    "path": "/Workspace/Users/[USERNAME]/.bundle/foobar/pat/files"
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/pat/files"
   }
 }
 {

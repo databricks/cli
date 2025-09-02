@@ -5,8 +5,30 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/dyn"
-	assert "github.com/databricks/cli/libs/dyn/dynassert"
+	"github.com/stretchr/testify/assert"
 )
+
+func TestPatternString(t *testing.T) {
+	patterns := []string{
+		"foo.bar",
+		"foo.bar.baz",
+		"foo[1]",
+		"foo[*]",
+		"*[1].bar",
+		"foo.*.bar",
+		"foo[*].bar",
+		"",
+		"foo",
+		"[1]",
+		"[*]",
+		"*",
+	}
+
+	for _, p := range patterns {
+		pp := dyn.MustPatternFromString(p)
+		assert.Equal(t, p, pp.String())
+	}
+}
 
 func TestNewPattern(t *testing.T) {
 	pat := dyn.NewPattern(

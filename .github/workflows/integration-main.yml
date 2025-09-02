@@ -30,7 +30,7 @@ jobs:
       - name: Trigger Workflow in Another Repo
         env:
           GH_TOKEN: ${{ steps.generate-token.outputs.token }}
-        run: |
+        run: |-
           gh workflow run cli-isolated-nightly.yml -R ${{ secrets.ORG_NAME }}/${{secrets.REPO_NAME}} \
           --ref main \
           -f commit_sha=${{ github.event.after }}

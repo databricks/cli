@@ -10,19 +10,29 @@ type ArtifactType string
 
 const ArtifactPythonWheel ArtifactType = `whl`
 
+const ArtifactJar ArtifactType = `jar`
+
+// Values returns all valid ArtifactType values
+func (ArtifactType) Values() []ArtifactType {
+	return []ArtifactType{
+		ArtifactPythonWheel,
+		ArtifactJar,
+	}
+}
+
 type ArtifactFile struct {
 	Source string `json:"source"`
 
 	// Patched is populated if DynamicVersion is set and patching was successful
-	Patched string `json:"patched" bundle:"readonly"`
+	Patched string `json:"patched,omitempty" bundle:"readonly"`
 
-	RemotePath string `json:"remote_path" bundle:"readonly"`
+	RemotePath string `json:"remote_path,omitempty" bundle:"readonly"`
 }
 
 // Artifact defines a single local code artifact that can be
 // built/uploaded/referenced in the context of this bundle.
 type Artifact struct {
-	Type ArtifactType `json:"type"`
+	Type ArtifactType `json:"type,omitempty"`
 
 	// The local path to the directory with a root of artifact,
 	// for example, where setup.py is for Python projects

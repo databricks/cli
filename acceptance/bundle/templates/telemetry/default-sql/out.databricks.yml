@@ -6,6 +6,7 @@ bundle:
 
 include:
   - resources/*.yml
+  - resources/*/*.yml
 
 # Variable declarations. These variables are assigned in the dev/prod targets below.
 variables:

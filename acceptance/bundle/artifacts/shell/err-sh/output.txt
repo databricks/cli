@@ -1,0 +1,7 @@
+
+>>> [CLI] bundle deploy
+Building my_artifact...
+Error: build failed my_artifact, error: exit status 1, output: 
+
+
+Exit code: 1

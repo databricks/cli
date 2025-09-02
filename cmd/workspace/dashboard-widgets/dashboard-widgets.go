@@ -62,12 +62,16 @@ func newCreate() *cobra.Command {
 	var createReq sql.CreateWidget
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&createReq.Text, "text", createReq.Text, `If this is a textbox widget, the application displays this text.`)
+	cmd.Flags().StringVar(&createReq.VisualizationId, "visualization-id", createReq.VisualizationId, `Query Vizualization ID returned by :method:queryvisualizations/create.`)
 
 	cmd.Use = "create"
 	cmd.Short = `Add widget to a dashboard.`
-	cmd.Long = `Add widget to a dashboard.`
+	cmd.Long = `Add widget to a dashboard.
+  
+  Adds a widget to a dashboard`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -124,11 +128,11 @@ func newDelete() *cobra.Command {
 
 	var deleteReq sql.DeleteDashboardWidgetRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete ID"
 	cmd.Short = `Remove widget.`
 	cmd.Long = `Remove widget.
+  
+  Removes a widget from a dashboard
 
   Arguments:
     ID: Widget ID returned by :method:dashboardwidgets/create`
@@ -172,21 +176,25 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*sql.CreateWidget,
+	*sql.UpdateWidgetRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var updateReq sql.CreateWidget
+	var updateReq sql.UpdateWidgetRequest
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&updateReq.Text, "text", updateReq.Text, `If this is a textbox widget, the application displays this text.`)
+	cmd.Flags().StringVar(&updateReq.VisualizationId, "visualization-id", updateReq.VisualizationId, `Query Vizualization ID returned by :method:queryvisualizations/create.`)
 
 	cmd.Use = "update ID"
 	cmd.Short = `Update existing widget.`
 	cmd.Long = `Update existing widget.
+  
+  Updates an existing widget
 
   Arguments:
     ID: Widget ID returned by :method:dashboardwidgets/create`

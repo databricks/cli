@@ -7,11 +7,12 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/databricks/cli/bundle/config/generate"
+	"github.com/databricks/cli/bundle/generate"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/yamlsaver"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/spf13/cobra"
@@ -27,6 +28,26 @@ func NewGeneratePipelineCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "pipeline",
 		Short: "Generate bundle configuration for a pipeline",
+		Long: `Generate bundle configuration for an existing Delta Live Tables pipeline.
+
+This command downloads an existing Lakeflow Declarative Pipeline's configuration and any associated
+notebooks, creating bundle files that you can use to deploy the pipeline to other
+environments or manage it as code.
+
+Examples:
+  # Import a production Lakeflow Declarative Pipeline
+  databricks bundle generate pipeline --existing-pipeline-id abc123 --key etl_pipeline
+
+  # Organize files in custom directories
+  databricks bundle generate pipeline --existing-pipeline-id def456 \
+    --key data_transformation --config-dir resources --source-dir src
+
+What gets generated:
+- Pipeline configuration YAML file with settings and libraries
+- Pipeline notebooks downloaded to the source directory
+
+After generation, you can deploy to other environments and modify settings
+like catalogs, schemas, and compute configurations per target.`,
 	}
 
 	cmd.Flags().StringVar(&pipelineId, "existing-pipeline-id", "", `ID of the pipeline to generate config for`)
@@ -37,10 +58,12 @@ func NewGeneratePipelineCommand() *cobra.Command {
 	cmd.Flags().BoolVarP(&force, "force", "f", false, `Force overwrite existing files in the output directory`)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		ctx := cmd.Context()
-		b, diags := root.MustConfigureBundle(cmd)
-		if err := diags.Error(); err != nil {
-			return diags.Error()
+		ctx := logdiag.InitContext(cmd.Context())
+		cmd.SetContext(ctx)
+
+		b := root.MustConfigureBundle(cmd)
+		if b == nil {
+			return root.ErrAlreadyPrinted
 		}
 
 		w := b.WorkspaceClient()
@@ -49,7 +72,7 @@ func NewGeneratePipelineCommand() *cobra.Command {
 			return err
 		}
 
-		downloader := newDownloader(w, sourceDir, configDir)
+		downloader := generate.NewDownloader(w, sourceDir, configDir)
 		for _, lib := range pipeline.Spec.Libraries {
 			err := downloader.MarkPipelineLibraryForDownload(ctx, &lib)
 			if err != nil {

@@ -67,8 +67,10 @@ func newCreate() *cobra.Command {
 	var createReq sql.CreateQueryVisualizationsLegacyRequest
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&createReq.Description, "description", createReq.Description, `A short description of this visualization.`)
+	cmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `The name of the visualization that appears on dashboards and the query screen.`)
 
 	cmd.Use = "create"
 	cmd.Short = `Add visualization to a query.`
@@ -136,8 +138,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq sql.DeleteQueryVisualizationsLegacyRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete ID"
 	cmd.Short = `Remove visualization.`
 	cmd.Long = `Remove visualization.
@@ -150,7 +150,7 @@ func newDelete() *cobra.Command {
   [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html
 
   Arguments:
-    ID: Widget ID returned by :method:queryvizualisations/create`
+    ID: Widget ID returned by :method:queryvisualizations/create`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -200,8 +200,16 @@ func newUpdate() *cobra.Command {
 	var updateReq sql.LegacyVisualization
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&updateReq.CreatedAt, "created-at", updateReq.CreatedAt, ``)
+	cmd.Flags().StringVar(&updateReq.Description, "description", updateReq.Description, `A short description of this visualization.`)
+	cmd.Flags().StringVar(&updateReq.Id, "id", updateReq.Id, `The UUID for this visualization.`)
+	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `The name of the visualization that appears on dashboards and the query screen.`)
+	// TODO: any: options
+	// TODO: complex arg: query
+	cmd.Flags().StringVar(&updateReq.Type, "type", updateReq.Type, `The type of visualization: chart, table, pivot table, and so on.`)
+	cmd.Flags().StringVar(&updateReq.UpdatedAt, "updated-at", updateReq.UpdatedAt, ``)
 
 	cmd.Use = "update ID"
 	cmd.Short = `Edit existing visualization.`
@@ -240,8 +248,6 @@ func newUpdate() *cobra.Command {
 					return err
 				}
 			}
-		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 		updateReq.Id = args[0]
 

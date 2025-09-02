@@ -1,6 +1,6 @@
 # The main job for {{.project_name}}.
 
-{{- /* Clarify what this job is for for DLT-only users. */}}
+{{- /* Clarify what this job is for Lakeflow Declarative Pipelines only users. */}}
 {{if and (eq .include_dlt "yes") (and (eq .include_notebook "no") (eq .include_python "no")) -}}
 # This job runs {{.project_name}}_pipeline on a schedule.
 {{end -}}
@@ -49,7 +49,7 @@ resources:
           {{- else if (eq .include_notebook "yes" )}}
           depends_on:
             - task_key: notebook_task
-          {{end}}
+{{end}}
           {{- if $with_serverless }}
           environment_key: default
           {{- else }}
@@ -66,7 +66,7 @@ resources:
 {{- end -}}
 {{else}}
 {{- end}}
-{{if $with_serverless}}
+{{if $with_serverless}}{{if (eq .include_python "yes")}}
       # A list of task execution environment specifications that can be referenced by tasks of this job.
       environments:
         - environment_key: default
@@ -74,10 +74,10 @@ resources:
           # Full documentation of this spec can be found at:
           # https://docs.databricks.com/api/workspace/jobs/create#environments-spec
           spec:
-            client: "1"
+            client: "2"
             dependencies:
               - ../dist/*.whl
-{{ else }}
+{{end}}{{ else }}
       job_clusters:
         - job_cluster_key: job_cluster
           new_cluster:
@@ -85,6 +85,6 @@ resources:
             node_type_id: {{smallest_node_type}}
             data_security_mode: SINGLE_USER
             autoscale:
-                min_workers: 1
-                max_workers: 4
+              min_workers: 1
+              max_workers: 4
 {{end -}}

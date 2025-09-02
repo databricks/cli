@@ -1,0 +1,27 @@
+
+>>> cat dash.lvdash.json
+{}
+
+=== deploy initial dashboard
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dashboard update inplace/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== update the dashboard
+>>> [CLI] lakeview update [DASHBOARD_ID] --serialized-dashboard {"a":"b"}
+{
+  "etag":"[UUID]",
+  "lifecycle_state":"ACTIVE",
+  "serialized_dashboard":"{\"a\":\"b\"}"
+}
+
+=== update the dashboard file using bundle generate
+>>> [CLI] bundle generate dashboard --resource test_dashboard --force
+Writing dashboard to "dash.lvdash.json"
+
+>>> cat dash.lvdash.json
+{
+  "a": "b"
+}

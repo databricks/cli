@@ -38,6 +38,7 @@ func getPythonVersions() []string {
 }
 
 func verifyVersion(t *testing.T, tempDir, wheelPath string) {
+	t.Helper()
 	wheelInfo, err := ParseWheelFilename(wheelPath)
 	require.NoError(t, err)
 	expectedVersion := wheelInfo.Version
@@ -93,6 +94,7 @@ func runCmd(t *testing.T, dir, name string, args ...string) {
 }
 
 func captureOutput(t *testing.T, dir, name string, args ...string) string {
+	t.Helper()
 	cmd := exec.Command(name, args...)
 	cmd.Dir = dir
 	var out bytes.Buffer
@@ -100,8 +102,8 @@ func captureOutput(t *testing.T, dir, name string, args ...string) string {
 	cmd.Stderr = &out
 	err := cmd.Run()
 	if err != nil {
-		t.Logf("Command failed: %s %s", name, strings.Join(args, " "))
-		t.Logf("Output:\n%s", out.String())
+		t.Errorf("Command failed: %s %s", name, strings.Join(args, " "))
+		t.Errorf("Output:\n%s", out.String())
 		t.Fatal(err)
 	}
 	return out.String()
@@ -129,6 +131,11 @@ func getWheel(t *testing.T, dir string) string {
 
 func TestPatchWheel(t *testing.T) {
 	pythonVersions := getPythonVersions()
+
+	// Unset any existing virtualenv so that "uv pip install" below is not confused
+	// (it prefers virtual env from the environment and fallsback to .venv in current directory)
+	t.Setenv("VIRTUAL_ENV", "")
+
 	for _, py := range pythonVersions {
 		t.Run(py, func(t *testing.T) {
 			t.Parallel()

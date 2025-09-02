@@ -52,6 +52,12 @@ type DataSourceAppsAppPendingDeployment struct {
 	UpdateTime          string                                                 `json:"update_time,omitempty"`
 }
 
+type DataSourceAppsAppResourcesDatabase struct {
+	DatabaseName string `json:"database_name"`
+	InstanceName string `json:"instance_name"`
+	Permission   string `json:"permission"`
+}
+
 type DataSourceAppsAppResourcesJob struct {
 	Id         string `json:"id"`
 	Permission string `json:"permission"`
@@ -73,13 +79,21 @@ type DataSourceAppsAppResourcesSqlWarehouse struct {
 	Permission string `json:"permission"`
 }
 
+type DataSourceAppsAppResourcesUcSecurable struct {
+	Permission        string `json:"permission"`
+	SecurableFullName string `json:"securable_full_name"`
+	SecurableType     string `json:"securable_type"`
+}
+
 type DataSourceAppsAppResources struct {
+	Database        *DataSourceAppsAppResourcesDatabase        `json:"database,omitempty"`
 	Description     string                                     `json:"description,omitempty"`
 	Job             *DataSourceAppsAppResourcesJob             `json:"job,omitempty"`
 	Name            string                                     `json:"name"`
 	Secret          *DataSourceAppsAppResourcesSecret          `json:"secret,omitempty"`
 	ServingEndpoint *DataSourceAppsAppResourcesServingEndpoint `json:"serving_endpoint,omitempty"`
 	SqlWarehouse    *DataSourceAppsAppResourcesSqlWarehouse    `json:"sql_warehouse,omitempty"`
+	UcSecurable     *DataSourceAppsAppResourcesUcSecurable     `json:"uc_securable,omitempty"`
 }
 
 type DataSourceAppsApp struct {

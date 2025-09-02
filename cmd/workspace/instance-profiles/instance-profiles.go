@@ -63,7 +63,6 @@ func newAdd() *cobra.Command {
 	var addReq compute.AddInstanceProfile
 	var addJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&addJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&addReq.IamRoleArn, "iam-role-arn", addReq.IamRoleArn, `The AWS IAM role ARN of the role associated with the instance profile.`)
@@ -74,8 +73,10 @@ func newAdd() *cobra.Command {
 	cmd.Short = `Register an instance profile.`
 	cmd.Long = `Register an instance profile.
   
-  In the UI, you can select the instance profile when launching clusters. This
-  API is only available to admin users.
+  Registers an instance profile in Databricks. In the UI, you can then give
+  users the permission to use this instance profile when launching clusters.
+  
+  This API is only available to admin users.
 
   Arguments:
     INSTANCE_PROFILE_ARN: The AWS ARN of the instance profile to register with Databricks. This
@@ -150,7 +151,6 @@ func newEdit() *cobra.Command {
 	var editReq compute.InstanceProfile
 	var editJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&editJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&editReq.IamRoleArn, "iam-role-arn", editReq.IamRoleArn, `The AWS IAM role ARN of the role associated with the instance profile.`)
@@ -290,7 +290,6 @@ func newRemove() *cobra.Command {
 	var removeReq compute.RemoveInstanceProfile
 	var removeJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&removeJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "remove INSTANCE_PROFILE_ARN"

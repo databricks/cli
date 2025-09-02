@@ -3,7 +3,9 @@ package tfdyn
 import (
 	"context"
 	"fmt"
+	"slices"
 	"sort"
+	"strings"
 
 	"github.com/databricks/cli/bundle/internal/tf/schema"
 	"github.com/databricks/cli/libs/dyn"
@@ -11,6 +13,104 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
+
+// These are the task types that support the source field
+// https://docs.databricks.com/api/workspace/jobs/create
+var supportedTypeTasks = []string{
+	"db_task",
+	"notebook_task",
+	"spark_python_task",
+}
+
+func setSourceIfNotSet(task dyn.Value, defaultSource jobs.Source) (dyn.Value, error) {
+	for _, taskType := range supportedTypeTasks {
+		t, err := dyn.Get(task, taskType)
+		if err != nil {
+			continue
+		}
+
+		_, err = dyn.Get(t, "source")
+		if err != nil {
+			return dyn.Set(task, taskType+".source", dyn.V(string(defaultSource)))
+		}
+	}
+	return task, nil
+}
+
+func applyDefaultTaskSource(job dyn.Value) (dyn.Value, error) {
+	defaultSource := jobs.SourceWorkspace
+
+	// Check if the job has git_source set and set the default source to GIT if it does
+	_, err := dyn.Get(job, "git_source")
+	if err == nil {
+		defaultSource = jobs.SourceGit
+	}
+
+	// Then iterate over the tasks and set the source to the default if it's not set
+	return dyn.Map(job, "tasks", dyn.Foreach(func(_ dyn.Path, task dyn.Value) (dyn.Value, error) {
+		// Then iterate over the foreach tasks and set the source to the default if it's not set
+		task, err = dyn.Map(task, "for_each_task.task", func(_ dyn.Path, foreachTask dyn.Value) (dyn.Value, error) {
+			return setSourceIfNotSet(foreachTask, defaultSource)
+		})
+		if err != nil {
+			return task, err
+		}
+
+		return setSourceIfNotSet(task, defaultSource)
+	}))
+}
+
+func patchApplyPolicyDefaultValues(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
+	// If the field "apply_policy_default_values" is not set, do nothing.
+	if b, ok := v.Get("apply_policy_default_values").AsBool(); !ok || !b {
+		return v, nil
+	}
+
+	// If the field "policy_id" is not set, do nothing.
+	if _, ok := v.Get("policy_id").AsString(); !ok {
+		return v, nil
+	}
+
+	// The field "apply_policy_default_values" is set.
+	// We need to collect the list of fields that are set explicitly
+	// and pass it to Terraform. This enables Terraform to clear
+	// server-side defaults from the update request, which in turn
+	// allows the backend to re-apply the policy defaults.
+	//
+	// For more details, see: https://github.com/databricks/terraform-provider-databricks/pull/4834
+	//
+	paths := dyn.CollectLeafPaths(v)
+
+	// If any of the map or sequence fields are set, always include them entirely instead of traversing the them.
+	for _, field := range []string{
+		"custom_tags",
+		"init_scripts",
+		"spark_conf",
+		"spark_env_vars",
+		"ssh_public_keys",
+	} {
+		if vv := v.Get(field); vv.IsValid() {
+			// Remove all paths that start with the field.
+			paths = slices.DeleteFunc(paths, func(p string) bool {
+				return strings.HasPrefix(p, field+".") || strings.HasPrefix(p, field+"[")
+			})
+			// Add the field to the paths.
+			paths = append(paths, field)
+		}
+	}
+
+	sort.Strings(paths)
+	valList := make([]dyn.Value, len(paths))
+	for i, s := range paths {
+		valList[i] = dyn.V(s)
+	}
+	v, err := dyn.Set(v, "__apply_policy_default_values_allow_list", dyn.V(valList))
+	if err != nil {
+		return dyn.InvalidValue, err
+	}
+
+	return v, nil
+}
 
 func convertJobResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
 	// Normalize the input value to the underlying job schema.
@@ -48,6 +148,12 @@ func convertJobResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
 		if err != nil {
 			return dyn.InvalidValue, err
 		}
+	}
+
+	// Apply default task source logic
+	vout, err = applyDefaultTaskSource(vout)
+	if err != nil {
+		return dyn.InvalidValue, err
 	}
 
 	// Modify top-level keys.
@@ -99,6 +205,22 @@ func convertJobResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
 	vout, diags = convert.Normalize(schema.ResourceJob{}, vout)
 	for _, diag := range diags {
 		log.Debugf(ctx, "job normalization diagnostic: %s", diag.Summary)
+	}
+
+	// Apply __apply_policy_default_values_allow_list for tasks
+	vout, err = dyn.Map(vout, "task", dyn.Foreach(func(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
+		return dyn.Map(v, "new_cluster", patchApplyPolicyDefaultValues)
+	}))
+	if err != nil {
+		return dyn.InvalidValue, err
+	}
+
+	// Apply __apply_policy_default_values_allow_list for job clusters
+	vout, err = dyn.Map(vout, "job_cluster", dyn.Foreach(func(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
+		return dyn.Map(v, "new_cluster", patchApplyPolicyDefaultValues)
+	}))
+	if err != nil {
+		return dyn.InvalidValue, err
 	}
 
 	return vout, err

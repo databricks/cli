@@ -1,0 +1,4 @@
+# Replace error message from windows
+[[Repls]]
+Old = "CreateFile foo/bar/doesnotexist: The system cannot find the path specified."
+New = "stat foo/bar/doesnotexist: no such file or directory"

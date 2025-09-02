@@ -1,0 +1,1 @@
+Badness = "Fails to merge resources because targets are resolved before variables"

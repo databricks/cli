@@ -1,6 +1,7 @@
 package testserver
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -14,7 +15,6 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/databricks/cli/internal/testutil"
-	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
 type Server struct {
@@ -190,7 +190,7 @@ func New(t testutil.TestingT) *Server {
 	}
 
 	// Set up the not found handler as fallback
-	router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	notFoundFunc := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		pattern := r.Method + " " + r.URL.Path
 		bodyBytes, err := io.ReadAll(r.Body)
 		var body string
@@ -213,8 +213,8 @@ Response.Body = '<response body here>'
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNotImplemented)
 
-		resp := apierr.APIError{
-			Message: "No stub found for pattern: " + pattern,
+		resp := map[string]string{
+			"message": "No stub found for pattern: " + pattern,
 		}
 
 		respBytes, err := json.Marshal(resp)
@@ -227,6 +227,8 @@ Response.Body = '<response body here>'
 			t.Errorf("Response write error: %s", err)
 		}
 	})
+	router.NotFoundHandler = notFoundFunc
+	router.MethodNotAllowedHandler = notFoundFunc
 
 	return s
 }
@@ -240,7 +242,7 @@ func (s *Server) getWorkspaceForToken(token string) *FakeWorkspace {
 	defer s.mu.Unlock()
 
 	if _, ok := s.fakeWorkspaces[token]; !ok {
-		s.fakeWorkspaces[token] = NewFakeWorkspace()
+		s.fakeWorkspaces[token] = NewFakeWorkspace(s.URL, token)
 	}
 
 	return s.fakeWorkspaces[token]
@@ -260,8 +262,17 @@ func (s *Server) Handle(method, path string, handler HandlerFunc) {
 			s.RequestCallback(&request)
 		}
 
-		respAny := handler(request)
-		resp := normalizeResponse(s.t, respAny)
+		var resp EncodedResponse
+
+		if bytes.Contains(request.Body, []byte("INJECT_ERROR")) {
+			resp = EncodedResponse{
+				StatusCode: 500,
+				Body:       []byte("INJECTED"),
+			}
+		} else {
+			respAny := handler(request)
+			resp = normalizeResponse(s.t, respAny)
+		}
 
 		for k, v := range resp.Headers {
 			w.Header()[k] = v

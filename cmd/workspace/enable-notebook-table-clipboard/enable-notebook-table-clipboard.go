@@ -23,10 +23,7 @@ func New() *cobra.Command {
 		Short: `Controls whether users can copy tabular data to the clipboard via the UI.`,
 		Long: `Controls whether users can copy tabular data to the clipboard via the UI. By
   default, this setting is enabled.`,
-
-		// This service is being previewed; hide from help output.
-		Hidden: true,
-		RunE:   root.ReportUnknownSubcommand,
+		RunE: root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -98,7 +95,6 @@ func newPatchEnableNotebookTableClipboard() *cobra.Command {
 	var patchEnableNotebookTableClipboardReq settings.UpdateEnableNotebookTableClipboardRequest
 	var patchEnableNotebookTableClipboardJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&patchEnableNotebookTableClipboardJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "patch-enable-notebook-table-clipboard"

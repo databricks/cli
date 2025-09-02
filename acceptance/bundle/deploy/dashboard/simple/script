@@ -1,0 +1,16 @@
+DASHBOARD_DISPLAY_NAME="test bundle-deploy-dashboard $(uuid)"
+if [ -z "$CLOUD_ENV" ]; then
+    export TEST_DEFAULT_WAREHOUSE_ID="warehouse-1234"
+fi
+
+export DASHBOARD_DISPLAY_NAME
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+DASHBOARD_ID=$($CLI bundle summary --output json | jq -r '.resources.dashboards.dashboard1.id')
+trace $CLI lakeview get $DASHBOARD_ID | jq '{lifecycle_state, parent_path, path, serialized_dashboard: (.serialized_dashboard | fromjson | {pages: (.pages | map({name, displayName, pageType}))})}'

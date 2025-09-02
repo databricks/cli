@@ -1,0 +1,19 @@
+bundle:
+  name: my_project
+
+sync: {paths: []} # don't need to copy files
+
+experimental:
+  python:
+    resources:
+      - "resources:load_resources"
+
+resources:
+  jobs:
+    job_1:
+      name: "🔥🔥🔥"
+
+variables:
+  my_variable:
+    default: "my_variable"
+    description: "🔥🔥🔥"

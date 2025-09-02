@@ -58,7 +58,6 @@ func newCheckPolicy() *cobra.Command {
 	var checkPolicyReq iam.CheckPolicyRequest
 	var checkPolicyJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&checkPolicyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: resource_info

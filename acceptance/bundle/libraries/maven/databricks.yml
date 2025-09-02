@@ -1,7 +1,6 @@
 bundle:
   name: maven
 
-
 resources:
   jobs:
     testjob:
@@ -12,8 +11,8 @@ resources:
             main_class_name: com.databricks.example.Main
 
           libraries:
-          - maven:
-              coordinates: org.jsoup:jsoup:1.7.2
+            - maven:
+                coordinates: org.jsoup:jsoup:1.7.2
 
           new_cluster:
             spark_version: 15.4.x-scala2.12
@@ -21,7 +20,7 @@ resources:
             data_security_mode: SINGLE_USER
             num_workers: 0
             spark_conf:
-                spark.master: "local[*, 4]"
-                spark.databricks.cluster.profile: singleNode
+              spark.master: "local[*, 4]"
+              spark.databricks.cluster.profile: singleNode
             custom_tags:
               ResourceClass: SingleNode

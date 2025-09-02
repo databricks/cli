@@ -61,7 +61,6 @@ func newCreate() *cobra.Command {
 	var createReq settings.CreateNotificationDestinationRequest
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: config
@@ -131,8 +130,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq settings.DeleteNotificationDestinationRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete ID"
 	cmd.Short = `Delete a notification destination.`
 	cmd.Long = `Delete a notification destination.
@@ -185,8 +182,6 @@ func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getReq settings.GetNotificationDestinationRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get ID"
 	cmd.Short = `Get a notification destination.`
@@ -241,8 +236,6 @@ func newList() *cobra.Command {
 
 	var listReq settings.ListNotificationDestinationsRequest
 
-	// TODO: short flags
-
 	cmd.Flags().Int64Var(&listReq.PageSize, "page-size", listReq.PageSize, ``)
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)
 
@@ -295,7 +288,6 @@ func newUpdate() *cobra.Command {
 	var updateReq settings.UpdateNotificationDestinationRequest
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: config

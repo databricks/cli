@@ -1,0 +1,140 @@
+
+>>> cat config.json
+{
+  "input_project_name": "project_name_[UNIQUE_NAME]",
+  "input_root_dir": "test_repo_mlops_stacks",
+  "input_include_models_in_unity_catalog": "no",
+  "input_cloud": "[CLOUD_ENV_BASE]"
+}
+
+>>> [CLI] bundle init mlops-stacks --config-file config.json
+Welcome to MLOps Stacks. For detailed information on project generation, see the README at https://github.com/databricks/mlops-stacks/blob/main/README.md.
+
+*** Your MLOps Stack has been created in the 'test_repo_mlops_stacks/project_name_[UNIQUE_NAME]' directory! ***
+
+Please refer to the README.md for further instructions on getting started.
+
+>>> cat test_repo_mlops_stacks/README.md
+# test_repo_mlops_stacks
+
+This directory contains an ML project based on the default
+[Databricks MLOps Stacks](https://github.com/databricks/mlops-stacks),
+
+>>> [CLI] bundle summary
+Warning: expected a string value, found null
+  at targets.dev.workspace.host
+  in databricks.yml:34:12
+
+Warning: unknown field: description
+  at resources.experiments.experiment
+  in resources/ml-artifacts-resource.yml:21:7
+
+Name: project_name_[UNIQUE_NAME]
+Target: dev
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev
+Resources:
+  Experiments:
+    experiment:
+      Name: /Users/[USERNAME]/[dev [USERNAME]] dev-project_name_[UNIQUE_NAME]-experiment
+      URL:  (not deployed)
+  Jobs:
+    batch_inference_job:
+      Name: [dev [USERNAME]] dev-project_name_[UNIQUE_NAME]-batch-inference-job
+      URL:  (not deployed)
+    model_training_job:
+      Name: [dev [USERNAME]] dev-project_name_[UNIQUE_NAME]-model-training-job
+      URL:  (not deployed)
+  Models:
+    model:
+      Name: [dev [USERNAME]] dev-project_name_[UNIQUE_NAME]-model
+      URL:  (not deployed)
+
+>>> [CLI] bundle validate
+Warning: expected a string value, found null
+  at targets.dev.workspace.host
+  in databricks.yml:34:12
+
+Warning: unknown field: description
+  at resources.experiments.experiment
+  in resources/ml-artifacts-resource.yml:21:7
+
+Name: project_name_[UNIQUE_NAME]
+Target: dev
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev
+
+Found 2 warnings
+
+>>> [CLI] bundle deploy
+Warning: expected a string value, found null
+  at targets.dev.workspace.host
+  in databricks.yml:34:12
+
+Warning: unknown field: description
+  at resources.experiments.experiment
+  in resources/ml-artifacts-resource.yml:21:7
+
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle summary -o json
+Warning: expected a string value, found null
+  at targets.dev.workspace.host
+  in databricks.yml:34:12
+
+Warning: unknown field: description
+  at resources.experiments.experiment
+  in resources/ml-artifacts-resource.yml:21:7
+
+{
+  "experiment_id": "[NUMID]",
+  "model_id": "[dev [USERNAME]] dev-project_name_[UNIQUE_NAME]-model",
+  "inference_job_id": "[NUMID]",
+  "training_job_id": "[NUMID]"
+}
+
+=== Assert the batch inference job actually exists
+Warning: expected a string value, found null
+  at targets.dev.workspace.host
+  in databricks.yml:34:12
+
+Warning: unknown field: description
+  at resources.experiments.experiment
+  in resources/ml-artifacts-resource.yml:21:7
+
+Warning: expected a string value, found null
+  at targets.dev.workspace.host
+  in databricks.yml:34:12
+
+Warning: unknown field: description
+  at resources.experiments.experiment
+  in resources/ml-artifacts-resource.yml:21:7
+
+{
+  "name": "[dev [USERNAME]] dev-project_name_[UNIQUE_NAME]-batch-inference-job"
+}
+
+>>> [CLI] bundle destroy --auto-approve
+Warning: expected a string value, found null
+  at targets.dev.workspace.host
+  in databricks.yml:34:12
+
+Warning: unknown field: description
+  at resources.experiments.experiment
+  in resources/ml-artifacts-resource.yml:21:7
+
+The following resources will be deleted:
+  delete job batch_inference_job
+  delete job model_training_job
+  delete experiment experiment
+  delete model model
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev
+
+Deleting files...
+Destroy complete!

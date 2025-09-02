@@ -1,0 +1,31 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-dashboard-test-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] lakeview get [DASHBOARD_ID]
+{
+  "lifecycle_state": "ACTIVE",
+  "parent_path": "/Users/[USERNAME]",
+  "path": "/Users/[USERNAME]/test bundle-deploy-dashboard [UUID].lvdash.json",
+  "serialized_dashboard": {
+    "pages": [
+      {
+        "name": "02724bf2",
+        "displayName": "Dashboard test bundle-deploy-dashboard",
+        "pageType": "PAGE_TYPE_CANVAS"
+      }
+    ]
+  }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete dashboard dashboard1
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-dashboard-test-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

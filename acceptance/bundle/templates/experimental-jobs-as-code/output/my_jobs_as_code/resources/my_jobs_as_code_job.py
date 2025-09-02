@@ -55,7 +55,7 @@ my_jobs_as_code_job = Job.from_dict(
                 "job_cluster_key": "job_cluster",
                 "new_cluster": {
                     "spark_version": "15.4.x-scala2.12",
-                    "node_type_id": "i3.xlarge",
+                    "node_type_id": "[NODE_TYPE_ID]",
                     "data_security_mode": "SINGLE_USER",
                     "autoscale": {
                         "min_workers": 1,

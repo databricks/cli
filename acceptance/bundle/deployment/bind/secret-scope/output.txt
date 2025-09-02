@@ -1,0 +1,35 @@
+
+>>> [CLI] secrets create-scope test-secret-scope-[UUID]
+
+>>> [CLI] bundle deployment bind secret_scope1 test-secret-scope-[UUID] --auto-approve
+Updating deployment state...
+Successfully bound secret_scope with an id 'test-secret-scope-[UUID]'. Run 'bundle deploy' to deploy changes to your workspace
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/bind-secret-scope-test-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] secrets list-scopes -o json
+{
+  "backend_type": "DATABRICKS",
+  "name": "test-secret-scope-[UUID]"
+}
+
+>>> [CLI] bundle deployment unbind secret_scope1
+Updating deployment state...
+
+>>> [CLI] bundle destroy --auto-approve
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/bind-secret-scope-test-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
+
+>>> [CLI] secrets list-scopes -o json
+{
+  "backend_type": "DATABRICKS",
+  "name": "test-secret-scope-[UUID]"
+}
+
+>>> [CLI] secrets delete-scope test-secret-scope-[UUID]

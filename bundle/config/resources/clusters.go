@@ -50,16 +50,11 @@ func (s *Cluster) Exists(ctx context.Context, w *databricks.WorkspaceClient, id 
 
 func (*Cluster) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
-		SingularName:          "cluster",
-		PluralName:            "clusters",
-		SingularTitle:         "Cluster",
-		PluralTitle:           "Clusters",
-		TerraformResourceName: "databricks_cluster",
+		SingularName:  "cluster",
+		PluralName:    "clusters",
+		SingularTitle: "Cluster",
+		PluralTitle:   "Clusters",
 	}
-}
-
-func (s *Cluster) TerraformResourceName() string {
-	return "databricks_cluster"
 }
 
 func (s *Cluster) InitializeURL(baseURL url.URL) {

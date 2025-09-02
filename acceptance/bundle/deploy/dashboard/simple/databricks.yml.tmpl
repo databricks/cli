@@ -1,0 +1,16 @@
+#
+# Acceptance test for deploying dashboards with the following setup:
+# 1. dashboard file is inside the bundle root
+# 2. sync root is the same as the bundle root
+#
+bundle:
+  name: deploy-dashboard-test-$UNIQUE_NAME
+
+resources:
+  dashboards:
+    dashboard1:
+      display_name: $DASHBOARD_DISPLAY_NAME
+      warehouse_id: $TEST_DEFAULT_WAREHOUSE_ID
+      embed_credentials: true
+      file_path: "sample-dashboard.lvdash.json"
+      parent_path: /Users/$CURRENT_USER_NAME

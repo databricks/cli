@@ -20,14 +20,17 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "disable-legacy-dbfs",
-		Short: `When this setting is on, access to DBFS root and DBFS mounts is disallowed (as well as creation of new mounts).`,
-		Long: `When this setting is on, access to DBFS root and DBFS mounts is disallowed (as
-  well as creation of new mounts). When the setting is off, all DBFS
-  functionality is enabled`,
-
-		// This service is being previewed; hide from help output.
-		Hidden: true,
-		RunE:   root.ReportUnknownSubcommand,
+		Short: `Disabling legacy DBFS has the following implications: 1.`,
+		Long: `Disabling legacy DBFS has the following implications:
+  
+  1. Access to DBFS root and DBFS mounts is disallowed (as well as the creation
+  of new mounts). 2. Disables Databricks Runtime versions prior to 13.3LTS.
+  
+  When the setting is off, all DBFS functionality is enabled and no restrictions
+  are imposed on Databricks Runtime versions. This setting can take up to 20
+  minutes to take effect and requires a manual restart of all-purpose compute
+  clusters and SQL warehouses.`,
+		RunE: root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -56,8 +59,6 @@ func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var deleteReq settings.DeleteDisableLegacyDbfsRequest
-
-	// TODO: short flags
 
 	cmd.Flags().StringVar(&deleteReq.Etag, "etag", deleteReq.Etag, `etag used for versioning.`)
 
@@ -113,8 +114,6 @@ func newGet() *cobra.Command {
 
 	var getReq settings.GetDisableLegacyDbfsRequest
 
-	// TODO: short flags
-
 	cmd.Flags().StringVar(&getReq.Etag, "etag", getReq.Etag, `etag used for versioning.`)
 
 	cmd.Use = "get"
@@ -169,7 +168,6 @@ func newUpdate() *cobra.Command {
 	var updateReq settings.UpdateDisableLegacyDbfsRequest
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "update"

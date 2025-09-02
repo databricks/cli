@@ -2,11 +2,14 @@ package mutator
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle/config/mutator/paths"
 
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/logdiag"
 )
 
 func (t *translateContext) applyPipelineTranslations(ctx context.Context, v dyn.Value) (dyn.Value, error) {
@@ -29,8 +32,7 @@ func (t *translateContext) applyPipelineTranslations(ctx context.Context, v dyn.
 			return nv, nil
 		}
 
-		// If we failed to rewrite the path, try to rewrite it relative to the fallback directory.
-		// We only do this for jobs and pipelines because of the comment in [gatherFallbackPaths].
+		// If we failed to rewrite the path, it uses an old path format which relied on fallback.
 		if fallback[key] != "" {
 			dir, nerr := locationDirectory(v.Location())
 			if nerr != nil {
@@ -50,7 +52,11 @@ func (t *translateContext) applyPipelineTranslations(ctx context.Context, v dyn.
 			originalValue := dyn.NewValue(originalPath, v.Locations())
 			nv, nerr := t.rewriteValue(ctx, p, originalValue, fallback[key], opts)
 			if nerr == nil {
-				// TODO: Emit a warning that this path should be rewritten.
+				logdiag.LogDiag(ctx, diag.Diagnostic{
+					Severity:  diag.Error,
+					Summary:   fmt.Sprintf("path %s is defined relative to the %s directory (%s). Please update the path to be relative to the file where it is defined or use earlier version of CLI (0.261.0 or earlier).", originalPath, fallback[key], v.Location()),
+					Locations: v.Locations(),
+				})
 				return nv, nil
 			}
 		}

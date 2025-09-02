@@ -1,10 +1,6 @@
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, TypedDict
 
-from databricks.bundles.compute._models.maven_library import (
-    MavenLibrary,
-    MavenLibraryParam,
-)
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import VariableOrOptional
@@ -12,9 +8,17 @@ from databricks.bundles.pipelines._models.file_library import (
     FileLibrary,
     FileLibraryParam,
 )
+from databricks.bundles.pipelines._models.maven_library import (
+    MavenLibrary,
+    MavenLibraryParam,
+)
 from databricks.bundles.pipelines._models.notebook_library import (
     NotebookLibrary,
     NotebookLibraryParam,
+)
+from databricks.bundles.pipelines._models.path_pattern import (
+    PathPattern,
+    PathPatternParam,
 )
 
 if TYPE_CHECKING:
@@ -28,6 +32,13 @@ class PipelineLibrary:
     file: VariableOrOptional[FileLibrary] = None
     """
     The path to a file that defines a pipeline and is stored in the Databricks Repos.
+    """
+
+    glob: VariableOrOptional[PathPattern] = None
+    """
+    The unified field to include source codes.
+    Each entry can be a notebook path, a file path, or a folder path that ends `/**`.
+    This field cannot be used together with `notebook` or `file`.
     """
 
     jar: VariableOrOptional[str] = None
@@ -63,6 +74,13 @@ class PipelineLibraryDict(TypedDict, total=False):
     file: VariableOrOptional[FileLibraryParam]
     """
     The path to a file that defines a pipeline and is stored in the Databricks Repos.
+    """
+
+    glob: VariableOrOptional[PathPatternParam]
+    """
+    The unified field to include source codes.
+    Each entry can be a notebook path, a file path, or a folder path that ends `/**`.
+    This field cannot be used together with `notebook` or `file`.
     """
 
     jar: VariableOrOptional[str]

@@ -16,6 +16,13 @@ const (
 	VariableTypeComplex VariableType = "complex"
 )
 
+// Values returns all valid VariableType values
+func (VariableType) Values() []VariableType {
+	return []VariableType{
+		VariableTypeComplex,
+	}
+}
+
 // We alias it here to override the JSON schema associated with a variable value
 // in a target override. This is because we allow for directly specifying the value
 // in addition to the variable.Variable struct format in a target override.

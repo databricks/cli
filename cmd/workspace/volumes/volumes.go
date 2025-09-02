@@ -66,7 +66,6 @@ func newCreate() *cobra.Command {
 	var createReq catalog.CreateVolumeRequestContent
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `The comment attached to the volume.`)
@@ -99,12 +98,7 @@ func newCreate() *cobra.Command {
     CATALOG_NAME: The name of the catalog where the schema and the volume are
     SCHEMA_NAME: The name of the schema where the volume is
     NAME: The name of the volume
-    VOLUME_TYPE: The type of the volume. An external volume is located in the specified
-      external location. A managed volume is located in the default location
-      which is specified by the parent schema, or the parent catalog, or the
-      Metastore. [Learn more]
-      
-      [Learn more]: https://docs.databricks.com/aws/en/volumes/managed-vs-external 
+    VOLUME_TYPE:  
       Supported values: [EXTERNAL, MANAGED]`
 
 	cmd.Annotations = make(map[string]string)
@@ -187,8 +181,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq catalog.DeleteVolumeRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete NAME"
 	cmd.Short = `Delete a Volume.`
 	cmd.Long = `Delete a Volume.
@@ -261,8 +253,6 @@ func newList() *cobra.Command {
 
 	var listReq catalog.ListVolumesRequest
 
-	// TODO: short flags
-
 	cmd.Flags().BoolVar(&listReq.IncludeBrowse, "include-browse", listReq.IncludeBrowse, `Whether to include volumes in the response for which the principal can only access selective metadata for.`)
 	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of volumes to return (page length).`)
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque token returned by a previous request.`)
@@ -331,8 +321,6 @@ func newRead() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var readReq catalog.ReadVolumeRequest
-
-	// TODO: short flags
 
 	cmd.Flags().BoolVar(&readReq.IncludeBrowse, "include-browse", readReq.IncludeBrowse, `Whether to include volumes in the response for which the principal can only access selective metadata for.`)
 
@@ -410,7 +398,6 @@ func newUpdate() *cobra.Command {
 	var updateReq catalog.UpdateVolumeRequestContent
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `The comment attached to the volume.`)

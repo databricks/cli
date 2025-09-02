@@ -3,8 +3,10 @@ package config
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
+	"reflect"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -18,6 +20,11 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
+
+type Script struct {
+	// Content of the script to be executed.
+	Content string `json:"content"`
+}
 
 type Root struct {
 	value dyn.Value
@@ -74,6 +81,8 @@ type Root struct {
 	// Locations is an output-only field that holds configuration location
 	// information for every path in the configuration tree.
 	Locations *dynloc.Locations `json:"__locations,omitempty" bundle:"internal"`
+
+	Scripts map[string]Script `json:"scripts,omitempty"`
 }
 
 // Load loads the bundle configuration file at the specified path.
@@ -558,6 +567,39 @@ func (r Root) GetLocations(path string) []dyn.Location {
 		return nil
 	}
 	return v.Locations()
+}
+
+// GetResourceConfig returns the configuration object for a given resource group/name pair.
+// The returned value is a pointer to the concrete struct that represents that resource type.
+// When the group or name is not found the second return value is false.
+func (r *Root) GetResourceConfig(group, name string) (any, bool) {
+	// Resolve the Go type that represents a single resource in this group.
+	typ, ok := ResourcesTypes[group]
+	if !ok {
+		return nil, false
+	}
+
+	// Fetch the raw value from the dynamic representation of the bundle config.
+	v, err := dyn.GetByPath(
+		r.Value(),
+		dyn.NewPath(dyn.Key("resources"), dyn.Key(group), dyn.Key(name)),
+	)
+	if err != nil {
+		return nil, false
+	}
+
+	// json-round-trip into a value of the concrete resource type to ensure proper handling of ForceSendFields
+	bytes, err := json.Marshal(v.AsAny())
+	if err != nil {
+		return nil, false
+	}
+
+	typedConfigPtr := reflect.New(typ)
+	if err := json.Unmarshal(bytes, typedConfigPtr.Interface()); err != nil {
+		return nil, false
+	}
+
+	return typedConfigPtr.Interface(), true
 }
 
 // Value returns the dynamic configuration value of the root object. This value

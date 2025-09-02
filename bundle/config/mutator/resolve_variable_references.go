@@ -33,11 +33,22 @@ rounds           time
 */
 const maxResolutionRounds = 11
 
+// List of prefixes to be used by default in ResolveVariableReferencesOnlyResources/ResolveVariableReferencesWithoutResources
+// Prefixes specify which references are resolves, e.g. ${bundle...} and so on.
+// This list does not include "artifacts" because this section will be modified in build phase and variable resolution happens in initialize phase.
+// This list does not include "resources" because some of those references are known after resource is deployed.
+var defaultPrefixes = []string{
+	"bundle",
+	"workspace",
+	"variables",
+}
+
+var artifactPath = dyn.MustPathFromString("artifacts")
+
 type resolveVariableReferences struct {
 	prefixes    []string
 	pattern     dyn.Pattern
 	lookupFn    func(dyn.Value, dyn.Path, *bundle.Bundle) (dyn.Value, error)
-	skipFn      func(dyn.Value) bool
 	extraRounds int
 
 	// includeResources allows resolving variables in 'resources', otherwise, they are excluded.
@@ -45,9 +56,14 @@ type resolveVariableReferences struct {
 	// includeResources can be used with appropriate pattern to avoid resolving variables
 	// outside of 'resources'.
 	includeResources bool
+
+	artifactsReferenceUsed bool
 }
 
 func ResolveVariableReferencesOnlyResources(prefixes ...string) bundle.Mutator {
+	if len(prefixes) == 0 {
+		prefixes = defaultPrefixes
+	}
 	return &resolveVariableReferences{
 		prefixes:         prefixes,
 		lookupFn:         lookup,
@@ -58,6 +74,9 @@ func ResolveVariableReferencesOnlyResources(prefixes ...string) bundle.Mutator {
 }
 
 func ResolveVariableReferencesWithoutResources(prefixes ...string) bundle.Mutator {
+	if len(prefixes) == 0 {
+		prefixes = defaultPrefixes
+	}
 	return &resolveVariableReferences{
 		prefixes:    prefixes,
 		lookupFn:    lookup,
@@ -66,11 +85,12 @@ func ResolveVariableReferencesWithoutResources(prefixes ...string) bundle.Mutato
 }
 
 func ResolveVariableReferencesInLookup() bundle.Mutator {
-	return &resolveVariableReferences{prefixes: []string{
-		"bundle",
-		"workspace",
-		"variables",
-	}, pattern: dyn.NewPattern(dyn.Key("variables"), dyn.AnyKey(), dyn.Key("lookup")), lookupFn: lookupForVariables}
+	return &resolveVariableReferences{
+		prefixes:    defaultPrefixes,
+		pattern:     dyn.NewPattern(dyn.Key("variables"), dyn.AnyKey(), dyn.Key("lookup")),
+		lookupFn:    lookupForVariables,
+		extraRounds: maxResolutionRounds - 1,
+	}
 }
 
 func lookup(v dyn.Value, path dyn.Path, b *bundle.Bundle) (dyn.Value, error) {
@@ -149,12 +169,17 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 		if round >= maxRounds-1 {
 			diags = diags.Append(diag.Diagnostic{
 				Severity: diag.Warning,
-				Summary:  fmt.Sprintf("Detected unresolved variables after %d resolution rounds", round+1),
+				Summary:  fmt.Sprintf("Variables references are too deep, stopping resolution after %d rounds. Unresolved variables may remain.", round+1),
 				// Would be nice to include names of the variables there, but that would complicate things more
 			})
 			break
 		}
 	}
+
+	if m.artifactsReferenceUsed {
+		b.Metrics.SetBoolValue("artifacts_reference_used", true)
+	}
+
 	return diags
 }
 
@@ -196,15 +221,17 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn
 					path = newPath
 				}
 
+				// If the path starts with "artifacts", we need to add a metric to track if this reference is used.
+				if path.HasPrefix(artifactPath) {
+					m.artifactsReferenceUsed = true
+				}
+
 				// Perform resolution only if the path starts with one of the specified prefixes.
 				for _, prefix := range prefixes {
 					if path.HasPrefix(prefix) {
-						// Skip resolution if there is a skip function and it returns true.
-						if m.skipFn != nil && m.skipFn(v) {
-							return dyn.InvalidValue, dynvar.ErrSkipResolution
-						}
-						hasUpdates = true
-						return m.lookupFn(normalized, path, b)
+						value, err := m.lookupFn(normalized, path, b)
+						hasUpdates = hasUpdates || (err == nil && value.IsValid())
+						return value, err
 					}
 				}
 

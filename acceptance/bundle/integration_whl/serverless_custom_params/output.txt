@@ -1,0 +1,35 @@
+
+>>> [CLI] bundle deploy
+Building python_artifact...
+Uploading dist/my_test_code-0.0.1-py3-none-any.whl...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle run some_other_job
+Run URL: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[NUMID]
+
+[TIMESTAMP] "[default] Test Wheel Job With Environments [UNIQUE_NAME]" RUNNING
+[TIMESTAMP] "[default] Test Wheel Job With Environments [UNIQUE_NAME]" TERMINATED SUCCESS
+Hello from my func
+Got arguments:
+['my_test_code', 'one', 'two']
+
+>>> [CLI] bundle run some_other_job --python-params=param1,param2
+Run URL: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[NUMID]
+
+[TIMESTAMP] "[default] Test Wheel Job With Environments [UNIQUE_NAME]" RUNNING
+[TIMESTAMP] "[default] Test Wheel Job With Environments [UNIQUE_NAME]" TERMINATED SUCCESS
+Hello from my func
+Got arguments:
+['my_test_code', 'param1', 'param2']
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete job some_other_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Deleting files...
+Destroy complete!

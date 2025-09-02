@@ -1,0 +1,19 @@
+
+>>> [CLI] repos create https://github.com/databricks/databricks-empty-ide-project.git gitHub --path /Repos/me@databricks.com/test-repo
+1
+
+>>> [CLI] repos get /Repos/me@databricks.com/test-repo -o json
+{
+  "branch":"main",
+  "id":1,
+  "path":"/Repos/me@databricks.com/test-repo",
+  "provider":"gitHub",
+  "url":"https://github.com/databricks/databricks-empty-ide-project.git"
+}
+
+>>> [CLI] repos delete /Repos/me@databricks.com/test-repo
+
+>>> [CLI] repos get /Repos/me@databricks.com/test-repo -o json
+Error: failed to look up repo by path: Workspace path not found
+
+Exit code: 1

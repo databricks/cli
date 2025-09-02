@@ -15,14 +15,14 @@ class ComputeConfig:
     :meta private: [EXPERIMENTAL]
     """
 
-    gpu_node_pool_id: VariableOr[str]
-    """
-    IDof the GPU pool to use.
-    """
-
     num_gpus: VariableOr[int]
     """
     Number of GPUs.
+    """
+
+    gpu_node_pool_id: VariableOrOptional[str] = None
+    """
+    IDof the GPU pool to use.
     """
 
     gpu_type: VariableOrOptional[str] = None
@@ -41,14 +41,14 @@ class ComputeConfig:
 class ComputeConfigDict(TypedDict, total=False):
     """"""
 
-    gpu_node_pool_id: VariableOr[str]
-    """
-    IDof the GPU pool to use.
-    """
-
     num_gpus: VariableOr[int]
     """
     Number of GPUs.
+    """
+
+    gpu_node_pool_id: VariableOrOptional[str]
+    """
+    IDof the GPU pool to use.
     """
 
     gpu_type: VariableOrOptional[str]

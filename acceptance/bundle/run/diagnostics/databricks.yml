@@ -1,0 +1,5 @@
+bundle:
+  name: run diagnostics
+
+workspace:
+  file_path: /Volumes/test

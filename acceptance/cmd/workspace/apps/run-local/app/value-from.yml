@@ -1,7 +1,7 @@
 command:
-- python
-- -c
-- "print('Hello, world')"
+  - python
+  - -c
+  - "print('Hello, world')"
 
 env:
   - name: VALUE_FROM

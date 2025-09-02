@@ -1,0 +1,13 @@
+bundle:
+  name: "development-prefix"
+
+resources:
+  schemas:
+    foo:
+      catalog_name: "foo"
+      name: "bar"
+
+targets:
+  development:
+    default: true
+    mode: development

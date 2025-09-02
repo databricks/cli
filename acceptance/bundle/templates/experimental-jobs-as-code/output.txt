@@ -30,7 +30,7 @@ Warning: Ignoring Databricks CLI version constraint for development build. Requi
               "min_workers": 1
             },
             "data_security_mode": "SINGLE_USER",
-            "node_type_id": "i3.xlarge",
+            "node_type_id": "[NODE_TYPE_ID]",
             "num_workers": 0,
             "spark_version": "15.4.x-scala2.12"
           }
@@ -46,13 +46,6 @@ Warning: Ignoring Databricks CLI version constraint for development build. Requi
         "dev": "[USERNAME]"
       },
       "tasks": [
-        {
-          "job_cluster_key": "job_cluster",
-          "notebook_task": {
-            "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/my_jobs_as_code/dev/files/src/notebook"
-          },
-          "task_key": "notebook_task"
-        },
         {
           "depends_on": [
             {
@@ -70,6 +63,13 @@ Warning: Ignoring Databricks CLI version constraint for development build. Requi
             "package_name": "my_jobs_as_code"
           },
           "task_key": "main_task"
+        },
+        {
+          "job_cluster_key": "job_cluster",
+          "notebook_task": {
+            "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/my_jobs_as_code/dev/files/src/notebook"
+          },
+          "task_key": "notebook_task"
         }
       ],
       "trigger": {
@@ -103,6 +103,9 @@ Warning: Ignoring Databricks CLI version constraint for development build. Requi
       ],
       "name": "[dev [USERNAME]] my_jobs_as_code_pipeline",
       "permissions": [],
+      "tags": {
+        "dev": "[USERNAME]"
+      },
       "target": "my_jobs_as_code_dev"
     }
   }

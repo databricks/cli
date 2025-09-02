@@ -1,0 +1,10 @@
+{
+  "execution_context": {
+    "cmd_exec_id": "[CMD-EXEC-ID]",
+    "version": "[DEV_VERSION]",
+    "command": "bundle_deploy",
+    "operating_system": "[OS]",
+    "execution_time_ms": SMALL_INT,
+    "exit_code": 1
+  }
+}

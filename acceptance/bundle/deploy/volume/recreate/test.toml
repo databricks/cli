@@ -1,0 +1,9 @@
+Local = false
+Cloud = true
+RequiresUnityCatalog = true
+
+EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["terraform"]  # needs volume recreation, grants
+
+Ignore = [
+    "databricks.yml",
+]

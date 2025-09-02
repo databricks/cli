@@ -3,9 +3,9 @@ bundle:
 
 sync:
   paths:
-  - ../other_dab
+    - ../other_dab
   exclude:
-  - ../other_dab/**
+    - ../other_dab/**
 
 resources:
   jobs:
@@ -18,5 +18,5 @@ resources:
             package_name: "my_test_code"
             entry_point: "run"
           libraries:
-          - whl: ../other_dab/dist/*.whl
-          - whl: ../other_dab/dist/lib/other_test_code-0.0.1-py3-none-any.whl
+            - whl: ../other_dab/dist/*.whl
+            - whl: ../other_dab/dist/lib/other_test_code-0.0.1-py3-none-any.whl

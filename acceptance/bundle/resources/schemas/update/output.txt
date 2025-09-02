@@ -1,0 +1,56 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests
+{
+  "method": "POST",
+  "path": "/api/2.1/unity-catalog/schemas",
+  "body": {
+    "catalog_name": "main",
+    "comment": "COMMENT1",
+    "name": "myschema"
+  }
+}
+schemas schema1 id='main.myschema' name='myschema' catalog_name='main' comment='COMMENT1'
+
+=== Update comment and re-deploy
+>>> update_file.py databricks.yml COMMENT1 COMMENT2
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/schemas/main.myschema",
+  "body": {
+    "comment": "COMMENT2"
+  }
+}
+schemas schema1 id='main.myschema' name='myschema' catalog_name='main' comment='COMMENT2'
+
+=== Restore comment to original value and re-deploy
+>>> update_file.py databricks.yml COMMENT2 COMMENT1
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/schemas/main.myschema",
+  "body": {
+    "comment": "COMMENT1"
+  }
+}
+schemas schema1 id='main.myschema' name='myschema' catalog_name='main' comment='COMMENT1'

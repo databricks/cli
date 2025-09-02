@@ -24,6 +24,11 @@ type Resources struct {
 	Clusters              map[string]*resources.Cluster              `json:"clusters,omitempty"`
 	Dashboards            map[string]*resources.Dashboard            `json:"dashboards,omitempty"`
 	Apps                  map[string]*resources.App                  `json:"apps,omitempty"`
+	SecretScopes          map[string]*resources.SecretScope          `json:"secret_scopes,omitempty"`
+	SqlWarehouses         map[string]*resources.SqlWarehouse         `json:"sql_warehouses,omitempty"`
+	DatabaseInstances     map[string]*resources.DatabaseInstance     `json:"database_instances,omitempty"`
+	DatabaseCatalogs      map[string]*resources.DatabaseCatalog      `json:"database_catalogs,omitempty"`
+	SyncedDatabaseTables  map[string]*resources.SyncedDatabaseTable  `json:"synced_database_tables,omitempty"`
 }
 
 type ConfigResource interface {
@@ -33,10 +38,6 @@ type ConfigResource interface {
 
 	// ResourceDescription returns a struct containing strings describing a resource
 	ResourceDescription() resources.ResourceDescription
-
-	// TerraformResourceName returns an equivalent name of the resource. For example "databricks_job"
-	// for jobs and "databricks_pipeline" for pipelines.
-	TerraformResourceName() string
 
 	// GetName returns the in-product name of the resource.
 	GetName() string
@@ -60,6 +61,10 @@ func collectResourceMap[T ConfigResource](
 	description resources.ResourceDescription,
 	input map[string]T,
 ) ResourceGroup {
+	if description.PluralName == "" {
+		panic("description of a resource group cannot be empty")
+	}
+
 	r := make(map[string]ConfigResource)
 	for key, resource := range input {
 		r[key] = resource
@@ -86,6 +91,11 @@ func (r *Resources) AllResources() []ResourceGroup {
 		collectResourceMap(descriptions["dashboards"], r.Dashboards),
 		collectResourceMap(descriptions["volumes"], r.Volumes),
 		collectResourceMap(descriptions["apps"], r.Apps),
+		collectResourceMap(descriptions["secret_scopes"], r.SecretScopes),
+		collectResourceMap(descriptions["sql_warehouses"], r.SqlWarehouses),
+		collectResourceMap(descriptions["database_instances"], r.DatabaseInstances),
+		collectResourceMap(descriptions["database_catalogs"], r.DatabaseCatalogs),
+		collectResourceMap(descriptions["synced_database_tables"], r.SyncedDatabaseTables),
 	}
 }
 
@@ -157,6 +167,36 @@ func (r *Resources) FindResourceByConfigKey(key string) (ConfigResource, error) 
 		}
 	}
 
+	for k := range r.SecretScopes {
+		if k == key {
+			found = append(found, r.SecretScopes[k])
+		}
+	}
+
+	for k := range r.SqlWarehouses {
+		if k == key {
+			found = append(found, r.SqlWarehouses[k])
+		}
+	}
+
+	for k := range r.DatabaseInstances {
+		if k == key {
+			found = append(found, r.DatabaseInstances[k])
+		}
+	}
+
+	for k := range r.DatabaseCatalogs {
+		if k == key {
+			found = append(found, r.DatabaseCatalogs[k])
+		}
+	}
+
+	for k := range r.SyncedDatabaseTables {
+		if k == key {
+			found = append(found, r.SyncedDatabaseTables[k])
+		}
+	}
+
 	if len(found) == 0 {
 		return nil, fmt.Errorf("no such resource: %s", key)
 	}
@@ -164,7 +204,7 @@ func (r *Resources) FindResourceByConfigKey(key string) (ConfigResource, error) 
 	if len(found) > 1 {
 		keys := make([]string, 0, len(found))
 		for _, r := range found {
-			keys = append(keys, fmt.Sprintf("%s:%s", r.TerraformResourceName(), key))
+			keys = append(keys, fmt.Sprintf("%s.%s", r.ResourceDescription().PluralName, key))
 		}
 		return nil, fmt.Errorf("ambiguous: %s (can resolve to all of %s)", key, keys)
 	}
@@ -187,5 +227,10 @@ func SupportedResources() map[string]resources.ResourceDescription {
 		"dashboards":              (&resources.Dashboard{}).ResourceDescription(),
 		"volumes":                 (&resources.Volume{}).ResourceDescription(),
 		"apps":                    (&resources.App{}).ResourceDescription(),
+		"secret_scopes":           (&resources.SecretScope{}).ResourceDescription(),
+		"sql_warehouses":          (&resources.SqlWarehouse{}).ResourceDescription(),
+		"database_instances":      (&resources.DatabaseInstance{}).ResourceDescription(),
+		"database_catalogs":       (&resources.DatabaseCatalog{}).ResourceDescription(),
+		"synced_database_tables":  (&resources.SyncedDatabaseTable{}).ResourceDescription(),
 	}
 }

@@ -1,8 +1,0 @@
-{
-    "properties": {
-        "unique_id": {
-            "type": "string",
-            "description": "Unique ID for the schema name"
-        }
-    }
-}

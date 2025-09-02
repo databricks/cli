@@ -1,7 +1,13 @@
 {
   "artifacts": {
     "python_artifact": {
-      "build": "python3 setup.py bdist_wheel",
+      "build": "uv build --wheel",
+      "dynamic_version": true,
+      "files": [
+        {
+          "source": "[TEST_TMP_DIR]/project_name_[UNIQUE_NAME]/dist/*.whl"
+        }
+      ],
       "path": "[TEST_TMP_DIR]/project_name_[UNIQUE_NAME]",
       "type": "whl"
     }
@@ -19,7 +25,6 @@
     "mode": "development",
     "name": "project_name_[UNIQUE_NAME]",
     "target": "dev",
-    "terraform": {},
     "uuid": "[UUID]"
   },
   "include": [
@@ -27,6 +32,7 @@
     "resources/project_name_[UNIQUE_NAME].pipeline.yml"
   ],
   "presets": {
+    "artifacts_dynamic_version": true,
     "jobs_max_concurrent_runs": 4,
     "name_prefix": "[dev [USERNAME]] ",
     "pipelines_development": true,
@@ -70,24 +76,6 @@
         },
         "tasks": [
           {
-            "job_cluster_key": "job_cluster",
-            "notebook_task": {
-              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/notebook"
-            },
-            "task_key": "notebook_task"
-          },
-          {
-            "depends_on": [
-              {
-                "task_key": "notebook_task"
-              }
-            ],
-            "pipeline_task": {
-              "pipeline_id": "${resources.pipelines.project_name_[UNIQUE_NAME]_pipeline.id}"
-            },
-            "task_key": "refresh_pipeline"
-          },
-          {
             "depends_on": [
               {
                 "task_key": "refresh_pipeline"
@@ -104,6 +92,24 @@
               "package_name": "project_name_[UNIQUE_NAME]"
             },
             "task_key": "main_task"
+          },
+          {
+            "job_cluster_key": "job_cluster",
+            "notebook_task": {
+              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/notebook"
+            },
+            "task_key": "notebook_task"
+          },
+          {
+            "depends_on": [
+              {
+                "task_key": "notebook_task"
+              }
+            ],
+            "pipeline_task": {
+              "pipeline_id": "${resources.pipelines.project_name_[UNIQUE_NAME]_pipeline.id}"
+            },
+            "task_key": "refresh_pipeline"
           }
         ],
         "trigger": {
@@ -130,13 +136,16 @@
         "libraries": [
           {
             "notebook": {
-              "path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/dlt_pipeline"
+              "path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/pipeline"
             }
           }
         ],
         "name": "[dev [USERNAME]] project_name_[UNIQUE_NAME]_pipeline",
         "permissions": [],
-        "schema": "project_name_[UNIQUE_NAME]_dev"
+        "schema": "project_name_[UNIQUE_NAME]_dev",
+        "tags": {
+          "dev": "[USERNAME]"
+        }
       }
     }
   },
@@ -145,7 +154,6 @@
       "."
     ]
   },
-  "targets": null,
   "workspace": {
     "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/artifacts",
     "file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files",

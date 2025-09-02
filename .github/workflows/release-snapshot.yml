@@ -32,7 +32,7 @@ jobs:
           fetch-tags: true
 
       - name: Setup Go
-        uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b # v5.4.0
+        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
           go-version-file: go.mod
 
@@ -88,12 +88,12 @@ jobs:
         # Snapshot release may only be updated for commits to the main branch.
         if: github.ref == 'refs/heads/main'
 
-        uses: softprops/action-gh-release@da05d552573ad5aba039eaac05058a918a7bf631 # v2.2.2
+        uses: softprops/action-gh-release@72f2c25fcb47643c292f7107632f7a47c1df5cd8 # v2.3.2
         with:
           name: Snapshot
           prerelease: true
           tag_name: snapshot
           token: ${{ secrets.GITHUB_TOKEN }}
-          files: |
+          files: |-
             dist/databricks_cli_*.zip
             dist/databricks_cli_*.tar.gz

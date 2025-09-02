@@ -1,9 +1,10 @@
 package apps
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -36,16 +37,17 @@ var defaultLibraries = []string{
 }
 
 type PythonApp struct {
+	ctx    context.Context
 	config *Config
 	spec   *AppSpec
 	uvArgs []string
 }
 
-func NewPythonApp(config *Config, spec *AppSpec) *PythonApp {
+func NewPythonApp(ctx context.Context, config *Config, spec *AppSpec) *PythonApp {
 	if config.DebugPort == "" {
 		config.DebugPort = DEBUG_PORT
 	}
-	return &PythonApp{config: config, spec: spec}
+	return &PythonApp{ctx: ctx, config: config, spec: spec}
 }
 
 // PrepareEnvironment creates a Python virtual environment using uv and installs required dependencies.
@@ -55,20 +57,22 @@ func NewPythonApp(config *Config, spec *AppSpec) *PythonApp {
 func (p *PythonApp) PrepareEnvironment() error {
 	// Create venv first
 	venvArgs := []string{"uv", "venv"}
-	if err := p.runCommand(venvArgs); err != nil {
+	if err := runCommand(p.ctx, p.config.AppPath, venvArgs); err != nil {
 		return err
 	}
 
 	// Install default libraries
 	installArgs := append([]string{"uv", "pip", "install"}, defaultLibraries...)
-	if err := p.runCommand(installArgs); err != nil {
+	if err := runCommand(p.ctx, p.config.AppPath, installArgs); err != nil {
 		return err
 	}
 
 	// Install requirements if they exist
 	if _, err := os.Stat(filepath.Join(p.config.AppPath, "requirements.txt")); err == nil {
-		reqArgs := []string{"uv", "pip", "install", "-r", filepath.Join(p.config.AppPath, "requirements.txt")}
-		if err := p.runCommand(reqArgs); err != nil {
+		// We also execute command with CWD set at p.config.AppPath
+		// so we can just path local path to requirements.txt here
+		reqArgs := []string{"uv", "pip", "install", "-r", "requirements.txt"}
+		if err := runCommand(p.ctx, p.config.AppPath, reqArgs); err != nil {
 			return err
 		}
 	}
@@ -88,7 +92,7 @@ func (p *PythonApp) GetCommand(debug bool) ([]string, error) {
 	if len(spec.Command) == 0 {
 		files, err := filepath.Glob(filepath.Join(spec.config.AppPath, "*.py"))
 		if err != nil {
-			return nil, errors.New("Error reading source code directory")
+			return nil, fmt.Errorf("error reading source code directory: %w", err)
 		}
 
 		if len(files) > 0 {
@@ -96,7 +100,7 @@ func (p *PythonApp) GetCommand(debug bool) ([]string, error) {
 		}
 
 		if len(spec.Command) == 0 {
-			return nil, errors.New("No python file found")
+			return nil, errors.New("no python file found")
 		}
 
 	} else {
@@ -130,13 +134,4 @@ func (p *PythonApp) enableDebugging() {
 	} else {
 		spec.Command = append([]string{"python", "-m", "debugpy", "--listen", p.config.DebugPort}, spec.Command[1:]...)
 	}
-}
-
-// runCommand executes the given command as a bash command and returns any error.
-func (p *PythonApp) runCommand(args []string) error {
-	cmd := exec.Command("bash", "-c", strings.Join(args, " "))
-	cmd.Dir = p.spec.config.AppPath
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
 }

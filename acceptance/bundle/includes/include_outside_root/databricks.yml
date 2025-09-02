@@ -2,4 +2,4 @@ bundle:
   name: include_outside_root
 
 include:
- - a.yml
+  - a.yml

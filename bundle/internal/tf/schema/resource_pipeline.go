@@ -59,6 +59,7 @@ type ResourcePipelineClusterClusterLogConf struct {
 
 type ResourcePipelineClusterGcpAttributes struct {
 	Availability         string `json:"availability,omitempty"`
+	FirstOnDemand        int    `json:"first_on_demand,omitempty"`
 	GoogleServiceAccount string `json:"google_service_account,omitempty"`
 	LocalSsdCount        int    `json:"local_ssd_count,omitempty"`
 	ZoneId               string `json:"zone_id,omitempty"`
@@ -131,8 +132,12 @@ type ResourcePipelineCluster struct {
 }
 
 type ResourcePipelineDeployment struct {
-	Kind             string `json:"kind,omitempty"`
+	Kind             string `json:"kind"`
 	MetadataFilePath string `json:"metadata_file_path,omitempty"`
+}
+
+type ResourcePipelineEnvironment struct {
+	Dependencies []string `json:"dependencies,omitempty"`
 }
 
 type ResourcePipelineEventLog struct {
@@ -148,56 +153,83 @@ type ResourcePipelineFilters struct {
 
 type ResourcePipelineGatewayDefinition struct {
 	ConnectionId          string `json:"connection_id,omitempty"`
-	ConnectionName        string `json:"connection_name,omitempty"`
-	GatewayStorageCatalog string `json:"gateway_storage_catalog,omitempty"`
+	ConnectionName        string `json:"connection_name"`
+	GatewayStorageCatalog string `json:"gateway_storage_catalog"`
 	GatewayStorageName    string `json:"gateway_storage_name,omitempty"`
-	GatewayStorageSchema  string `json:"gateway_storage_schema,omitempty"`
+	GatewayStorageSchema  string `json:"gateway_storage_schema"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsReportTableConfigurationQueryBasedConnectorConfig struct {
+	CursorColumns                        []string `json:"cursor_columns,omitempty"`
+	DeletionCondition                    string   `json:"deletion_condition,omitempty"`
+	HardDeletionSyncMinIntervalInSeconds int      `json:"hard_deletion_sync_min_interval_in_seconds,omitempty"`
 }
 
 type ResourcePipelineIngestionDefinitionObjectsReportTableConfiguration struct {
-	PrimaryKeys                    []string `json:"primary_keys,omitempty"`
-	SalesforceIncludeFormulaFields bool     `json:"salesforce_include_formula_fields,omitempty"`
-	ScdType                        string   `json:"scd_type,omitempty"`
-	SequenceBy                     []string `json:"sequence_by,omitempty"`
+	ExcludeColumns                 []string                                                                                     `json:"exclude_columns,omitempty"`
+	IncludeColumns                 []string                                                                                     `json:"include_columns,omitempty"`
+	PrimaryKeys                    []string                                                                                     `json:"primary_keys,omitempty"`
+	SalesforceIncludeFormulaFields bool                                                                                         `json:"salesforce_include_formula_fields,omitempty"`
+	ScdType                        string                                                                                       `json:"scd_type,omitempty"`
+	SequenceBy                     []string                                                                                     `json:"sequence_by,omitempty"`
+	QueryBasedConnectorConfig      *ResourcePipelineIngestionDefinitionObjectsReportTableConfigurationQueryBasedConnectorConfig `json:"query_based_connector_config,omitempty"`
 }
 
 type ResourcePipelineIngestionDefinitionObjectsReport struct {
-	DestinationCatalog string                                                              `json:"destination_catalog,omitempty"`
-	DestinationSchema  string                                                              `json:"destination_schema,omitempty"`
+	DestinationCatalog string                                                              `json:"destination_catalog"`
+	DestinationSchema  string                                                              `json:"destination_schema"`
 	DestinationTable   string                                                              `json:"destination_table,omitempty"`
-	SourceUrl          string                                                              `json:"source_url,omitempty"`
+	SourceUrl          string                                                              `json:"source_url"`
 	TableConfiguration *ResourcePipelineIngestionDefinitionObjectsReportTableConfiguration `json:"table_configuration,omitempty"`
 }
 
+type ResourcePipelineIngestionDefinitionObjectsSchemaTableConfigurationQueryBasedConnectorConfig struct {
+	CursorColumns                        []string `json:"cursor_columns,omitempty"`
+	DeletionCondition                    string   `json:"deletion_condition,omitempty"`
+	HardDeletionSyncMinIntervalInSeconds int      `json:"hard_deletion_sync_min_interval_in_seconds,omitempty"`
+}
+
 type ResourcePipelineIngestionDefinitionObjectsSchemaTableConfiguration struct {
-	PrimaryKeys                    []string `json:"primary_keys,omitempty"`
-	SalesforceIncludeFormulaFields bool     `json:"salesforce_include_formula_fields,omitempty"`
-	ScdType                        string   `json:"scd_type,omitempty"`
-	SequenceBy                     []string `json:"sequence_by,omitempty"`
+	ExcludeColumns                 []string                                                                                     `json:"exclude_columns,omitempty"`
+	IncludeColumns                 []string                                                                                     `json:"include_columns,omitempty"`
+	PrimaryKeys                    []string                                                                                     `json:"primary_keys,omitempty"`
+	SalesforceIncludeFormulaFields bool                                                                                         `json:"salesforce_include_formula_fields,omitempty"`
+	ScdType                        string                                                                                       `json:"scd_type,omitempty"`
+	SequenceBy                     []string                                                                                     `json:"sequence_by,omitempty"`
+	QueryBasedConnectorConfig      *ResourcePipelineIngestionDefinitionObjectsSchemaTableConfigurationQueryBasedConnectorConfig `json:"query_based_connector_config,omitempty"`
 }
 
 type ResourcePipelineIngestionDefinitionObjectsSchema struct {
-	DestinationCatalog string                                                              `json:"destination_catalog,omitempty"`
-	DestinationSchema  string                                                              `json:"destination_schema,omitempty"`
+	DestinationCatalog string                                                              `json:"destination_catalog"`
+	DestinationSchema  string                                                              `json:"destination_schema"`
 	SourceCatalog      string                                                              `json:"source_catalog,omitempty"`
-	SourceSchema       string                                                              `json:"source_schema,omitempty"`
+	SourceSchema       string                                                              `json:"source_schema"`
 	TableConfiguration *ResourcePipelineIngestionDefinitionObjectsSchemaTableConfiguration `json:"table_configuration,omitempty"`
 }
 
+type ResourcePipelineIngestionDefinitionObjectsTableTableConfigurationQueryBasedConnectorConfig struct {
+	CursorColumns                        []string `json:"cursor_columns,omitempty"`
+	DeletionCondition                    string   `json:"deletion_condition,omitempty"`
+	HardDeletionSyncMinIntervalInSeconds int      `json:"hard_deletion_sync_min_interval_in_seconds,omitempty"`
+}
+
 type ResourcePipelineIngestionDefinitionObjectsTableTableConfiguration struct {
-	PrimaryKeys                    []string `json:"primary_keys,omitempty"`
-	SalesforceIncludeFormulaFields bool     `json:"salesforce_include_formula_fields,omitempty"`
-	ScdType                        string   `json:"scd_type,omitempty"`
-	SequenceBy                     []string `json:"sequence_by,omitempty"`
+	ExcludeColumns                 []string                                                                                    `json:"exclude_columns,omitempty"`
+	IncludeColumns                 []string                                                                                    `json:"include_columns,omitempty"`
+	PrimaryKeys                    []string                                                                                    `json:"primary_keys,omitempty"`
+	SalesforceIncludeFormulaFields bool                                                                                        `json:"salesforce_include_formula_fields,omitempty"`
+	ScdType                        string                                                                                      `json:"scd_type,omitempty"`
+	SequenceBy                     []string                                                                                    `json:"sequence_by,omitempty"`
+	QueryBasedConnectorConfig      *ResourcePipelineIngestionDefinitionObjectsTableTableConfigurationQueryBasedConnectorConfig `json:"query_based_connector_config,omitempty"`
 }
 
 type ResourcePipelineIngestionDefinitionObjectsTable struct {
-	DestinationCatalog string                                                             `json:"destination_catalog,omitempty"`
-	DestinationSchema  string                                                             `json:"destination_schema,omitempty"`
+	DestinationCatalog string                                                             `json:"destination_catalog"`
+	DestinationSchema  string                                                             `json:"destination_schema"`
 	DestinationTable   string                                                             `json:"destination_table,omitempty"`
 	SourceCatalog      string                                                             `json:"source_catalog,omitempty"`
 	SourceSchema       string                                                             `json:"source_schema,omitempty"`
-	SourceTable        string                                                             `json:"source_table,omitempty"`
+	SourceTable        string                                                             `json:"source_table"`
 	TableConfiguration *ResourcePipelineIngestionDefinitionObjectsTableTableConfiguration `json:"table_configuration,omitempty"`
 }
 
@@ -207,18 +239,47 @@ type ResourcePipelineIngestionDefinitionObjects struct {
 	Table  *ResourcePipelineIngestionDefinitionObjectsTable  `json:"table,omitempty"`
 }
 
+type ResourcePipelineIngestionDefinitionSourceConfigurationsCatalogPostgresSlotConfig struct {
+	PublicationName string `json:"publication_name,omitempty"`
+	SlotName        string `json:"slot_name,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionSourceConfigurationsCatalogPostgres struct {
+	SlotConfig *ResourcePipelineIngestionDefinitionSourceConfigurationsCatalogPostgresSlotConfig `json:"slot_config,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionSourceConfigurationsCatalog struct {
+	SourceCatalog string                                                                  `json:"source_catalog,omitempty"`
+	Postgres      *ResourcePipelineIngestionDefinitionSourceConfigurationsCatalogPostgres `json:"postgres,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionSourceConfigurations struct {
+	Catalog *ResourcePipelineIngestionDefinitionSourceConfigurationsCatalog `json:"catalog,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionTableConfigurationQueryBasedConnectorConfig struct {
+	CursorColumns                        []string `json:"cursor_columns,omitempty"`
+	DeletionCondition                    string   `json:"deletion_condition,omitempty"`
+	HardDeletionSyncMinIntervalInSeconds int      `json:"hard_deletion_sync_min_interval_in_seconds,omitempty"`
+}
+
 type ResourcePipelineIngestionDefinitionTableConfiguration struct {
-	PrimaryKeys                    []string `json:"primary_keys,omitempty"`
-	SalesforceIncludeFormulaFields bool     `json:"salesforce_include_formula_fields,omitempty"`
-	ScdType                        string   `json:"scd_type,omitempty"`
-	SequenceBy                     []string `json:"sequence_by,omitempty"`
+	ExcludeColumns                 []string                                                                        `json:"exclude_columns,omitempty"`
+	IncludeColumns                 []string                                                                        `json:"include_columns,omitempty"`
+	PrimaryKeys                    []string                                                                        `json:"primary_keys,omitempty"`
+	SalesforceIncludeFormulaFields bool                                                                            `json:"salesforce_include_formula_fields,omitempty"`
+	ScdType                        string                                                                          `json:"scd_type,omitempty"`
+	SequenceBy                     []string                                                                        `json:"sequence_by,omitempty"`
+	QueryBasedConnectorConfig      *ResourcePipelineIngestionDefinitionTableConfigurationQueryBasedConnectorConfig `json:"query_based_connector_config,omitempty"`
 }
 
 type ResourcePipelineIngestionDefinition struct {
-	ConnectionName     string                                                 `json:"connection_name,omitempty"`
-	IngestionGatewayId string                                                 `json:"ingestion_gateway_id,omitempty"`
-	Objects            []ResourcePipelineIngestionDefinitionObjects           `json:"objects,omitempty"`
-	TableConfiguration *ResourcePipelineIngestionDefinitionTableConfiguration `json:"table_configuration,omitempty"`
+	ConnectionName       string                                                    `json:"connection_name,omitempty"`
+	IngestionGatewayId   string                                                    `json:"ingestion_gateway_id,omitempty"`
+	SourceType           string                                                    `json:"source_type,omitempty"`
+	Objects              []ResourcePipelineIngestionDefinitionObjects              `json:"objects,omitempty"`
+	SourceConfigurations []ResourcePipelineIngestionDefinitionSourceConfigurations `json:"source_configurations,omitempty"`
+	TableConfiguration   *ResourcePipelineIngestionDefinitionTableConfiguration    `json:"table_configuration,omitempty"`
 }
 
 type ResourcePipelineLatestUpdates struct {
@@ -228,7 +289,11 @@ type ResourcePipelineLatestUpdates struct {
 }
 
 type ResourcePipelineLibraryFile struct {
-	Path string `json:"path,omitempty"`
+	Path string `json:"path"`
+}
+
+type ResourcePipelineLibraryGlob struct {
+	Include string `json:"include"`
 }
 
 type ResourcePipelineLibraryMaven struct {
@@ -238,13 +303,14 @@ type ResourcePipelineLibraryMaven struct {
 }
 
 type ResourcePipelineLibraryNotebook struct {
-	Path string `json:"path,omitempty"`
+	Path string `json:"path"`
 }
 
 type ResourcePipelineLibrary struct {
 	Jar      string                           `json:"jar,omitempty"`
 	Whl      string                           `json:"whl,omitempty"`
 	File     *ResourcePipelineLibraryFile     `json:"file,omitempty"`
+	Glob     *ResourcePipelineLibraryGlob     `json:"glob,omitempty"`
 	Maven    *ResourcePipelineLibraryMaven    `json:"maven,omitempty"`
 	Notebook *ResourcePipelineLibraryNotebook `json:"notebook,omitempty"`
 }
@@ -296,15 +362,18 @@ type ResourcePipeline struct {
 	LastModified         int                                  `json:"last_modified,omitempty"`
 	Name                 string                               `json:"name,omitempty"`
 	Photon               bool                                 `json:"photon,omitempty"`
+	RootPath             string                               `json:"root_path,omitempty"`
 	RunAsUserName        string                               `json:"run_as_user_name,omitempty"`
 	Schema               string                               `json:"schema,omitempty"`
 	Serverless           bool                                 `json:"serverless,omitempty"`
 	State                string                               `json:"state,omitempty"`
 	Storage              string                               `json:"storage,omitempty"`
+	Tags                 map[string]string                    `json:"tags,omitempty"`
 	Target               string                               `json:"target,omitempty"`
 	Url                  string                               `json:"url,omitempty"`
 	Cluster              []ResourcePipelineCluster            `json:"cluster,omitempty"`
 	Deployment           *ResourcePipelineDeployment          `json:"deployment,omitempty"`
+	Environment          *ResourcePipelineEnvironment         `json:"environment,omitempty"`
 	EventLog             *ResourcePipelineEventLog            `json:"event_log,omitempty"`
 	Filters              *ResourcePipelineFilters             `json:"filters,omitempty"`
 	GatewayDefinition    *ResourcePipelineGatewayDefinition   `json:"gateway_definition,omitempty"`

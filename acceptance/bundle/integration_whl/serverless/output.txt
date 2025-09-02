@@ -12,8 +12,8 @@ Deployment complete!
 >>> [CLI] bundle run some_other_job
 Run URL: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[NUMID]
 
-[TIMESTAMP] "My Wheel Job" RUNNING 
-[TIMESTAMP] "My Wheel Job" TERMINATED SUCCESS 
+[TIMESTAMP] "My Wheel Job" RUNNING
+[TIMESTAMP] "My Wheel Job" TERMINATED SUCCESS
 Hello from my func
 Got arguments:
 ['my_test_code']
@@ -30,8 +30,8 @@ Deployment complete!
 >>> [CLI] bundle run some_other_job
 Run URL: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[NUMID]
 
-[TIMESTAMP] "My Wheel Job" RUNNING 
-[TIMESTAMP] "My Wheel Job" TERMINATED SUCCESS 
+[TIMESTAMP] "My Wheel Job" RUNNING
+[TIMESTAMP] "My Wheel Job" TERMINATED SUCCESS
 UPDATED MY FUNC
 Got arguments:
 ['my_test_code']

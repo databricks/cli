@@ -1,0 +1,20 @@
+Local = false
+Cloud = true
+
+Ignore = [
+    "databricks.yml",
+    "a/b/resources.yml",
+    "metadata.json",
+]
+
+[Env]
+# MSYS2 automatically converts absolute paths like /Users/$username/$UNIQUE_NAME to
+# C:/Program Files/Git/Users/$username/UNIQUE_NAME before passing it to the CLI
+# Setting this environment variable prevents that conversion on windows.
+MSYS_NO_PATHCONV = "1"
+
+[[Repls]]
+# clean up ?o=<num> suffix after URL since not all workspaces have that
+Old = '\?o=\[NUMID\]'
+New = ''
+Order = 1000

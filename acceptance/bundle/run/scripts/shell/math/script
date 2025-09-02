@@ -1,0 +1,4 @@
+export ARG1=1
+export ARG2=2
+
+trace $CLI bundle run add

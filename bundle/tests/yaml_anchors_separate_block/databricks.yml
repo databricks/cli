@@ -10,6 +10,6 @@ resources:
   jobs:
     my_job:
       tasks:
-      - task_key: yaml_anchors_separate_block
+        - task_key: yaml_anchors_separate_block
       tags:
         <<: *custom_tags

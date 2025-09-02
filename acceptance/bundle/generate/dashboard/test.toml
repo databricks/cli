@@ -1,0 +1,7 @@
+[[Repls]]
+Old = '\\\\'
+New = '/'
+
+[[Repls]]
+Old = "[0-9a-f]{32}"
+New = "[DASHBOARD_ID]"

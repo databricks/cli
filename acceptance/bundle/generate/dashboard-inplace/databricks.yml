@@ -1,0 +1,9 @@
+bundle:
+  name: dashboard update inplace
+
+resources:
+  dashboards:
+    test_dashboard:
+      display_name: "test dashboard"
+      warehouse_id: ""
+      file_path: ./dash.lvdash.json

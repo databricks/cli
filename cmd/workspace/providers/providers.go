@@ -63,7 +63,6 @@ func newCreate() *cobra.Command {
 	var createReq sharing.CreateProvider
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `Description about the provider.`)
@@ -78,8 +77,8 @@ func newCreate() *cobra.Command {
 
   Arguments:
     NAME: The name of the Provider.
-    AUTHENTICATION_TYPE: The delta sharing authentication type. 
-      Supported values: [DATABRICKS, OAUTH_CLIENT_CREDENTIALS, TOKEN]`
+    AUTHENTICATION_TYPE:  
+      Supported values: [DATABRICKS, OAUTH_CLIENT_CREDENTIALS, OIDC_FEDERATION, TOKEN]`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -155,8 +154,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq sharing.DeleteProviderRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete NAME"
 	cmd.Short = `Delete a provider.`
 	cmd.Long = `Delete a provider.
@@ -225,8 +222,6 @@ func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getReq sharing.GetProviderRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get NAME"
 	cmd.Short = `Get a provider.`
@@ -298,8 +293,6 @@ func newList() *cobra.Command {
 
 	var listReq sharing.ListProvidersRequest
 
-	// TODO: short flags
-
 	cmd.Flags().StringVar(&listReq.DataProviderGlobalMetastoreId, "data-provider-global-metastore-id", listReq.DataProviderGlobalMetastoreId, `If not provided, all providers will be returned.`)
 	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of providers to return.`)
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
@@ -354,8 +347,6 @@ func newListProviderShareAssets() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listProviderShareAssetsReq sharing.ListProviderShareAssetsRequest
-
-	// TODO: short flags
 
 	cmd.Flags().IntVar(&listProviderShareAssetsReq.FunctionMaxResults, "function-max-results", listProviderShareAssetsReq.FunctionMaxResults, `Maximum number of functions to return.`)
 	cmd.Flags().IntVar(&listProviderShareAssetsReq.NotebookMaxResults, "notebook-max-results", listProviderShareAssetsReq.NotebookMaxResults, `Maximum number of notebooks to return.`)
@@ -420,8 +411,6 @@ func newListShares() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listSharesReq sharing.ListSharesRequest
-
-	// TODO: short flags
 
 	cmd.Flags().IntVar(&listSharesReq.MaxResults, "max-results", listSharesReq.MaxResults, `Maximum number of shares to return.`)
 	cmd.Flags().StringVar(&listSharesReq.PageToken, "page-token", listSharesReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
@@ -494,7 +483,6 @@ func newUpdate() *cobra.Command {
 	var updateReq sharing.UpdateProvider
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `Description about the provider.`)

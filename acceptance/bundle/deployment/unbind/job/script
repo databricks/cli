@@ -1,0 +1,9 @@
+trace $CLI bundle deploy --var "job_name=My Job"
+
+job_id=$(trace $CLI bundle summary --var "job_name=My Job" --output json | jq -r '.resources.jobs.job_1.id')
+
+trace $CLI bundle deployment unbind job_1 --var "job_name=My Job"
+
+trace $CLI bundle deploy --var "job_name=Updated Job"
+
+trace $CLI jobs get $job_id --output json

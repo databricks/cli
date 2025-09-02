@@ -1,0 +1,99 @@
+
+>>> [CLI] bundle validate
+Name: basic
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/app-with-job-[UNIQUE_NAME]
+
+Validation OK!
+
+>>> [CLI] bundle deploy --force-lock --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/app-with-job-[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== App should exist after bundle deployment
+>>> [CLI] apps get app-[UNIQUE_NAME]
+{
+  "app_status": {
+    "message": "App status is unavailable.",
+    "state": "UNAVAILABLE"
+  }
+}
+
+=== Check app config
+>>> [CLI] workspace export /Workspace/Users/[USERNAME]/.bundle/app-with-job-[UNIQUE_NAME]/files/app/app.yml
+command:
+  - flask
+  - --app
+  - app
+  - run
+env:
+  - name: JOB_ID
+    valueFrom: "app-job"
+
+=== Try to run the app
+
+>>> cat out.app-run
+
+=== App should be in the running state
+>>> [CLI] apps get app-[UNIQUE_NAME]
+{
+  "app_status": {
+    "message": "App has status: App is running",
+    "state": "RUNNING"
+  }
+}
+
+=== Stop the app
+>>> [CLI] apps stop app-[UNIQUE_NAME]
+{
+  "compute_status": {
+    "message": "Start the app compute to deploy the app.",
+    "state": "STOPPED"
+  }
+}
+
+>>> [CLI] apps get app-[UNIQUE_NAME]
+{
+  "app_status": {
+    "message": "App status is unavailable.",
+    "state": "UNAVAILABLE"
+  },
+  "compute_status": {
+    "message": "Start the app compute to deploy the app.",
+    "state": "STOPPED"
+  }
+}
+
+=== Try to run the app again
+
+>>> cat out.app-run
+
+=== App should be in the running state
+>>> [CLI] apps get app-[UNIQUE_NAME]
+{
+  "app_status": {
+    "message": "App has status: App is running",
+    "state": "RUNNING"
+  }
+}
+
+=== Redeploy it again just to check that it can be redeployed
+>>> [CLI] bundle deploy --force-lock --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/app-with-job-[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete app test_app
+  delete job foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/app-with-job-[UNIQUE_NAME]
+
+Deleting files...
+Destroy complete!

@@ -1,0 +1,6 @@
+echo "$DATABRICKS_BUNDLES_WHEEL" > "requirements-latest.txt"
+
+trace uv run $UV_ARGS -q $CLI bundle validate --output json | \
+  jq "pick(.variables, .resources)"
+
+rm -fr .databricks __pycache__

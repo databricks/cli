@@ -53,6 +53,12 @@ func convertDashboardResource(ctx context.Context, vin dyn.Value) (dyn.Value, er
 		return dyn.InvalidValue, err
 	}
 
+	// Drop the "file_path" field. It's always inlined into "serialized_dashboard".
+	vout, err = dyn.DropKeys(vout, []string{"file_path"})
+	if err != nil {
+		return dyn.InvalidValue, err
+	}
+
 	return vout, nil
 }
 

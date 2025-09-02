@@ -312,3 +312,40 @@ func TestSchema_LoadFS(t *testing.T) {
 	_, err := LoadFS(fsys, "schema-valid.json")
 	assert.NoError(t, err)
 }
+
+func TestSchemaGetDefinition(t *testing.T) {
+	s := &Schema{
+		Definitions: map[string]any{
+			"foo": map[string]any{
+				"type": "string",
+			},
+			"bar": map[string]any{
+				"baz": map[string]any{
+					"type": "integer",
+				},
+			},
+			"invalid": "abc",
+		},
+	}
+
+	ns, err := s.GetDefinition("#/$defs/foo")
+	assert.NoError(t, err)
+	assert.Equal(t, &Schema{
+		Type: "string",
+	}, ns)
+
+	ns, err = s.GetDefinition("#/$defs/bar/baz")
+	assert.NoError(t, err)
+	assert.Equal(t, &Schema{
+		Type: "integer",
+	}, ns)
+
+	_, err = s.GetDefinition("a/b/c")
+	assert.EqualError(t, err, "invalid reference \"a/b/c\". References must start with #/$defs/")
+
+	_, err = s.GetDefinition("#/$defs/invalid/abc")
+	assert.EqualError(t, err, "invalid reference \"#/$defs/invalid/abc\". Failed to resolve reference at \"invalid\"")
+
+	_, err = s.GetDefinition("#/$defs")
+	assert.EqualError(t, err, "invalid reference \"#/$defs\". Expected more than 2 tokens")
+}

@@ -33,7 +33,7 @@ Response.Body = '''
     "lifecycle_state": "ACTIVE",
     "path": "/Users/[USERNAME]/test dashboard [UUID].lvdash.json",
     "parent_path": "/Users/tester@databricks.com",
-    "serialized_dashboard": "{\"pages\":[{\"name\":\"02724bf2\",\"displayName\":\"Page One\"}]}"
+    "serialized_dashboard": "{\"pages\":[{\"name\":\"02724bf2\",\"displayName\":\"Page One\",\"pageType\":\"PAGE_TYPE_CANVAS\"}]}"
 }
 '''
 

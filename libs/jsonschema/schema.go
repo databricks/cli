@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
+	"strings"
 
 	"github.com/databricks/cli/internal/build"
 	"golang.org/x/mod/semver"
@@ -87,6 +88,46 @@ type Schema struct {
 	Deprecated bool `json:"deprecated,omitempty"`
 }
 
+func anyToSchema(a any) (*Schema, error) {
+	b, err := json.Marshal(a)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal any to bytes: %w", err)
+	}
+
+	res := &Schema{}
+	err = json.Unmarshal(b, res)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal bytes to JSON schema: %w", err)
+	}
+
+	return res, nil
+}
+
+func (s *Schema) GetDefinition(p string) (*Schema, error) {
+	parts := strings.Split(p, "/")
+	if parts[0] != "#" || parts[1] != "$defs" {
+		return nil, fmt.Errorf("invalid reference %q. References must start with #/$defs/", p)
+	}
+
+	if len(parts) <= 2 {
+		return nil, fmt.Errorf("invalid reference %q. Expected more than 2 tokens", p)
+	}
+
+	curr := s.Definitions
+	var ok bool
+	for _, part := range parts[2:] {
+		curr, ok = curr[part].(map[string]any)
+		if !ok {
+			return nil, fmt.Errorf("invalid reference %q. Failed to resolve reference at %q", p, part)
+		}
+	}
+
+	// Leaf nodes in definitions are of type map[string]any when loaded
+	// via [json.Unmarshal]. This function call is necessary to convert
+	// the map to a [Schema] object.
+	return anyToSchema(curr)
+}
+
 // Default value defined in a JSON Schema, represented as a string.
 func (s *Schema) DefaultString() (string, error) {
 	return toString(s.Default, s.Type)
@@ -116,8 +157,8 @@ const (
 )
 
 // Validate property types are all valid JSON schema types.
-func (schema *Schema) validateSchemaPropertyTypes() error {
-	for _, v := range schema.Properties {
+func (s *Schema) validateSchemaPropertyTypes() error {
+	for _, v := range s.Properties {
 		switch v.Type {
 		case NumberType, BooleanType, StringType, IntegerType, ObjectType, ArrayType:
 			continue
@@ -135,8 +176,8 @@ func (schema *Schema) validateSchemaPropertyTypes() error {
 }
 
 // Validate default property values are consistent with types.
-func (schema *Schema) validateSchemaDefaultValueTypes() error {
-	for name, property := range schema.Properties {
+func (s *Schema) validateSchemaDefaultValueTypes() error {
+	for name, property := range s.Properties {
 		if property.Default == nil {
 			continue
 		}
@@ -147,8 +188,8 @@ func (schema *Schema) validateSchemaDefaultValueTypes() error {
 	return nil
 }
 
-func (schema *Schema) validateConstValueTypes() error {
-	for name, property := range schema.Properties {
+func (s *Schema) validateConstValueTypes() error {
+	for name, property := range s.Properties {
 		if property.Const == nil {
 			continue
 		}
@@ -160,8 +201,8 @@ func (schema *Schema) validateConstValueTypes() error {
 }
 
 // Validate enum field values for properties are consistent with types.
-func (schema *Schema) validateSchemaEnumValueTypes() error {
-	for name, property := range schema.Properties {
+func (s *Schema) validateSchemaEnumValueTypes() error {
+	for name, property := range s.Properties {
 		if property.Enum == nil {
 			continue
 		}
@@ -176,8 +217,8 @@ func (schema *Schema) validateSchemaEnumValueTypes() error {
 }
 
 // Validate default value is contained in the list of enums if both are defined.
-func (schema *Schema) validateSchemaDefaultValueIsInEnums() error {
-	for name, property := range schema.Properties {
+func (s *Schema) validateSchemaDefaultValueIsInEnums() error {
+	for name, property := range s.Properties {
 		if property.Default == nil || property.Enum == nil {
 			continue
 		}
@@ -191,8 +232,8 @@ func (schema *Schema) validateSchemaDefaultValueIsInEnums() error {
 }
 
 // Validate usage of "pattern" is consistent.
-func (schema *Schema) validateSchemaPattern() error {
-	for name, property := range schema.Properties {
+func (s *Schema) validateSchemaPattern() error {
+	for name, property := range s.Properties {
 		pattern := property.Pattern
 		if pattern == "" {
 			continue
@@ -220,9 +261,9 @@ func (schema *Schema) validateSchemaPattern() error {
 	return nil
 }
 
-func (schema *Schema) validateSchemaMinimumCliVersion(currentVersion string) func() error {
+func (s *Schema) validateSchemaMinimumCliVersion(currentVersion string) func() error {
 	return func() error {
-		if schema.MinDatabricksCliVersion == "" {
+		if s.MinDatabricksCliVersion == "" {
 			return nil
 		}
 
@@ -232,20 +273,20 @@ func (schema *Schema) validateSchemaMinimumCliVersion(currentVersion string) fun
 		}
 
 		// Confirm that MinDatabricksCliVersion is a valid semver.
-		if !semver.IsValid(schema.MinDatabricksCliVersion) {
-			return fmt.Errorf("invalid minimum CLI version %q specified. Please specify the version in the format v0.0.0", schema.MinDatabricksCliVersion)
+		if !semver.IsValid(s.MinDatabricksCliVersion) {
+			return fmt.Errorf("invalid minimum CLI version %q specified. Please specify the version in the format v0.0.0", s.MinDatabricksCliVersion)
 		}
 
 		// Confirm that MinDatabricksCliVersion is less than or equal to the current version.
-		if semver.Compare(schema.MinDatabricksCliVersion, currentVersion) > 0 {
-			return fmt.Errorf("minimum CLI version %q is greater than current CLI version %q. Please upgrade your current Databricks CLI", schema.MinDatabricksCliVersion, currentVersion)
+		if semver.Compare(s.MinDatabricksCliVersion, currentVersion) > 0 {
+			return fmt.Errorf("minimum CLI version %q is greater than current CLI version %q. Please upgrade your current Databricks CLI", s.MinDatabricksCliVersion, currentVersion)
 		}
 		return nil
 	}
 }
 
-func (schema *Schema) validateSchemaSkippedPropertiesHaveDefaults() error {
-	for name, property := range schema.Properties {
+func (s *Schema) validateSchemaSkippedPropertiesHaveDefaults() error {
+	for name, property := range s.Properties {
 		if property.SkipPromptIf != nil && property.Default == nil {
 			return fmt.Errorf("property %q has a skip_prompt_if clause but no default value", name)
 		}
@@ -253,16 +294,16 @@ func (schema *Schema) validateSchemaSkippedPropertiesHaveDefaults() error {
 	return nil
 }
 
-func (schema *Schema) validate() error {
+func (s *Schema) validate() error {
 	for _, fn := range []func() error{
-		schema.validateSchemaPropertyTypes,
-		schema.validateSchemaDefaultValueTypes,
-		schema.validateSchemaEnumValueTypes,
-		schema.validateConstValueTypes,
-		schema.validateSchemaDefaultValueIsInEnums,
-		schema.validateSchemaPattern,
-		schema.validateSchemaMinimumCliVersion("v" + build.GetInfo().Version),
-		schema.validateSchemaSkippedPropertiesHaveDefaults,
+		s.validateSchemaPropertyTypes,
+		s.validateSchemaDefaultValueTypes,
+		s.validateSchemaEnumValueTypes,
+		s.validateConstValueTypes,
+		s.validateSchemaDefaultValueIsInEnums,
+		s.validateSchemaPattern,
+		s.validateSchemaMinimumCliVersion("v" + build.GetInfo().Version),
+		s.validateSchemaSkippedPropertiesHaveDefaults,
 	} {
 		err := fn()
 		if err != nil {

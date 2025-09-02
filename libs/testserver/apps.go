@@ -19,6 +19,8 @@ func (s *FakeWorkspace) AppsUpsert(req Request, name string) Response {
 		}
 	}
 
+	defer s.LockUnlock()()
+
 	if name != "" {
 		_, ok := s.Apps[name]
 		if !ok {

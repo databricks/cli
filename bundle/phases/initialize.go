@@ -2,6 +2,7 @@ package phases
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
 
@@ -17,21 +18,32 @@ import (
 	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/bundle/scripts"
 	"github.com/databricks/cli/bundle/trampoline"
-	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/logdiag"
 )
 
 // The initialize phase fills in defaults and connects to the workspace.
 // Interpolation of fields referring to the "bundle" and "workspace" keys
 // happens upon completion of this phase.
-func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func Initialize(ctx context.Context, b *bundle.Bundle) {
+	var err error
+
 	log.Info(ctx, "Phase: initialize")
 
-	return bundle.ApplySeq(ctx, b,
+	b.DirectDeployment, err = IsDirectDeployment(ctx)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return
+	}
+
+	bundle.ApplySeqContext(ctx, b,
 		// Reads (dynamic): resource.*.*
 		// Checks that none of resources.<type>.<key> is nil. Raises error otherwise.
 		validate.AllResourcesHaveValues(),
 		validate.NoInterpolationInAuthConfig(),
+		validate.NoInterpolationInBundleName(),
+		validate.Scripts(),
 
 		// Updates (dynamic): sync.{paths,include,exclude} (makes them relative to bundle root rather than to definition file)
 		// Rewrites sync paths to be relative to the bundle root instead of the file they were defined in.
@@ -101,17 +113,13 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 
 		// Reads (dynamic): variables.*.lookup (checks for variables with lookup fields)
 		// Updates (dynamic): variables.*.value (sets values based on resolved lookups)
-		mutator.ResolveResourceReferences(),
+		mutator.ResolveLookupVariables(),
 
 		// Reads (dynamic): * (strings) (searches for variable references in string values)
 		// Updates (dynamic): * (except 'resources') (strings) (resolves variable references to their actual values)
 		// Resolves variable references in configuration (except resources) using bundle, workspace,
 		// and variables prefixes
-		mutator.ResolveVariableReferencesWithoutResources(
-			"bundle",
-			"workspace",
-			"variables",
-		),
+		mutator.ResolveVariableReferencesWithoutResources(),
 
 		// Check for invalid use of /Volumes in workspace paths
 		validate.ValidateVolumePath(),
@@ -130,14 +138,19 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Static resources (e.g. YAML) are already loaded, we initialize and normalize them before Python
 		resourcemutator.ProcessStaticResources(),
 
-		pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseLoad),
-		pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseInit),
 		pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseLoadResources),
 		pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseApplyMutators),
 		// This is the last mutator that can change bundle resources.
 		//
 		// After PythonMutator, mutators must not change bundle resources, or such changes are not
 		// going to be visible in Python code.
+
+		// Validate all required fields are set. This is run after variable interpolation and PyDABs mutators
+		// since they can also set and modify resources.
+		validate.Required(),
+
+		// Validate that all fields with enum values specified are set to a valid value.
+		validate.Enum(),
 
 		// Reads (typed): b.Config.Permissions (checks if current user or their groups have CAN_MANAGE permissions)
 		// Reads (typed): b.Config.Workspace.CurrentUser (gets current user information)
@@ -150,6 +163,11 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Reads (dynamic): resources.jobs.*.tasks (checks for tasks with local libraries and incompatible DBR versions)
 		// Provides warnings when Python wheel tasks are used with DBR < 13.3 or when wheel wrapper is incompatible with source-linked deployment
 		trampoline.WrapperWarning(),
+
+		// Reads (typed): b.Config.Presets.ArtifactsDynamicVersion (checks if artifacts preset is enabled)
+		// Updates (typed): b.Config.Artifacts[].DynamicVersion (sets to true when preset is enabled)
+		// Applies the artifacts_dynamic_version preset to enable dynamic versioning on all artifacts
+		mutator.ApplyArtifactsDynamicVersion(),
 
 		// Reads (typed): b.Config.Artifacts, b.BundleRootPath (checks artifact configurations and bundle path)
 		// Updates (typed): b.Config.Artifacts (auto-creates Python wheel artifact if none defined but setup.py exists)
@@ -182,15 +200,41 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Updates (typed): b.Config.Resources.Pipelines[].CreatePipeline.Deployment (sets deployment metadata for bundle deployments)
 		// Annotates pipelines with bundle deployment metadata
 		metadata.AnnotatePipelines(),
+	)
 
+	if logdiag.HasError(ctx) {
+		return
+	}
+
+	if !b.DirectDeployment {
 		// Reads (typed): b.Config.Bundle.Terraform (checks terraform configuration)
 		// Updates (typed): b.Config.Bundle.Terraform (sets default values if not already set)
 		// Updates (typed): b.Terraform (initializes Terraform executor with proper environment variables and paths)
 		// Initializes Terraform with the correct binary, working directory, and environment variables for authentication
-		terraform.Initialize(),
 
-		// Reads (typed): b.Config.Experimental.Scripts["post_init"] (checks if script is defined)
-		// Executes the post_init script hook defined in the bundle configuration
-		scripts.Execute(config.ScriptPostInit),
-	)
+		bundle.ApplyContext(ctx, b, terraform.Initialize())
+	}
+
+	if logdiag.HasError(ctx) {
+		return
+	}
+
+	// Reads (typed): b.Config.Experimental.Scripts["post_init"] (checks if script is defined)
+	// Executes the post_init script hook defined in the bundle configuration
+	bundle.ApplyContext(ctx, b, scripts.Execute(config.ScriptPostInit))
+}
+
+func IsDirectDeployment(ctx context.Context) (bool, error) {
+	deployment := env.Get(ctx, "DATABRICKS_CLI_DEPLOYMENT")
+	// We use "direct-exp" while direct backend is not suitable for end users.
+	// Once we consider it usable we'll change the value to "direct".
+	// This is to prevent accidentally running direct backend with older CLI versions where it was still considered experimental.
+	switch deployment {
+	case "direct-exp":
+		return true, nil
+	case "terraform", "":
+		return false, nil
+	default:
+		return false, fmt.Errorf("unexpected setting for DATABRICKS_CLI_DEPLOYMENT=%#v (expected 'terraform' or 'direct-exp' or absent/empty which means 'terraform')", deployment)
+	}
 }

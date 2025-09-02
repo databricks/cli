@@ -4,6 +4,8 @@ import (
 	"context"
 	"strings"
 
+	"github.com/databricks/cli/cmd/psql"
+
 	"github.com/databricks/cli/cmd/account"
 	"github.com/databricks/cli/cmd/api"
 	"github.com/databricks/cli/cmd/auth"
@@ -11,11 +13,13 @@ import (
 	"github.com/databricks/cli/cmd/configure"
 	"github.com/databricks/cli/cmd/fs"
 	"github.com/databricks/cli/cmd/labs"
+	"github.com/databricks/cli/cmd/pipelines"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/cmd/selftest"
 	"github.com/databricks/cli/cmd/sync"
 	"github.com/databricks/cli/cmd/version"
 	"github.com/databricks/cli/cmd/workspace"
+	"github.com/databricks/cli/libs/cmdgroup"
 	"github.com/spf13/cobra"
 )
 
@@ -31,7 +35,8 @@ func New(ctx context.Context) *cobra.Command {
 	cli.AddCommand(account.New())
 
 	// Add workspace subcommands.
-	for _, cmd := range workspace.All() {
+	workspaceCommands := workspace.All()
+	for _, cmd := range workspaceCommands {
 		// Built-in groups for the workspace commands.
 		groups := []cobra.Group{
 			{
@@ -60,22 +65,26 @@ func New(ctx context.Context) *cobra.Command {
 		cli.AddCommand(cmd)
 	}
 
-	// Add workspace command groups.
-	groups := workspace.Groups()
-	for i := range groups {
-		cli.AddGroup(&groups[i])
-	}
-
 	// Add other subcommands.
 	cli.AddCommand(api.New())
 	cli.AddCommand(auth.New())
 	cli.AddCommand(bundle.New())
+	cli.AddCommand(psql.New())
 	cli.AddCommand(configure.New())
 	cli.AddCommand(fs.New())
 	cli.AddCommand(labs.New(ctx))
 	cli.AddCommand(sync.New())
 	cli.AddCommand(version.New())
 	cli.AddCommand(selftest.New())
+	cli.AddCommand(pipelines.InstallPipelinesCLI())
+
+	// Add workspace command groups, filtering out empty groups or groups with only hidden commands.
+	allGroups := workspace.Groups()
+	allCommands := cli.Commands()
+	filteredGroups := cmdgroup.FilterGroups(allGroups, allCommands)
+	for i := range filteredGroups {
+		cli.AddGroup(&filteredGroups[i])
+	}
 
 	return cli
 }

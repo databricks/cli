@@ -1,0 +1,17 @@
+title "experimental.skip_name_prefix_for_schema is false"
+
+trace $CLI bundle validate -o json | jq .resources.schemas.foo.name
+
+trace $CLI bundle validate -o json -t two | jq .resources.schemas.foo.name
+
+trace $CLI bundle validate -o json -t three | jq .resources.schemas.foo.name
+
+title "experimental.skip_name_prefix_for_schema is true"
+
+export BUNDLE_VAR_skip=true
+
+trace $CLI bundle validate -o json -t one | jq .resources.schemas.foo.name
+
+trace $CLI bundle validate -o json -t two  | jq .resources.schemas.foo.name
+
+trace $CLI bundle validate -o json -t three  | jq .resources.schemas.foo.name

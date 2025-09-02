@@ -1,13 +1,13 @@
 bundle:
   name: my_project
 
-sync: { paths: [] } # don't need to copy files
+sync: {paths: []} # don't need to copy files
 
 experimental:
   python:
     resources:
-    - "resources:load_resources_1"
-    - "resources:load_resources_2"
+      - "resources:load_resources_1"
+      - "resources:load_resources_2"
 
 resources:
   jobs:

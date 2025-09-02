@@ -65,11 +65,11 @@ func TestMergeJobTasks(t *testing.T) {
 	j := b.Config.Resources.Jobs["foo"]
 
 	assert.Len(t, j.Tasks, 2)
-	assert.Equal(t, "foo", j.Tasks[0].TaskKey)
-	assert.Equal(t, "bar", j.Tasks[1].TaskKey)
+	assert.Equal(t, "foo", j.Tasks[1].TaskKey)
+	assert.Equal(t, "bar", j.Tasks[0].TaskKey)
 
 	// This task was merged with a subsequent one.
-	task0 := j.Tasks[0]
+	task0 := j.Tasks[1]
 	cluster := task0.NewCluster
 	assert.Equal(t, "13.3.x-scala2.12", cluster.SparkVersion)
 	assert.Equal(t, "i3.2xlarge", cluster.NodeTypeId)
@@ -79,7 +79,7 @@ func TestMergeJobTasks(t *testing.T) {
 	assert.Equal(t, "package2", task0.Libraries[1].Pypi.Package)
 
 	// This task was left untouched.
-	task1 := j.Tasks[1].NewCluster
+	task1 := j.Tasks[0].NewCluster
 	assert.Equal(t, "10.4.x-scala2.12", task1.SparkVersion)
 }
 

@@ -1,0 +1,39 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+envsubst < schema.yml.tmpl > schema.yml
+
+CATALOG_NAME="main"
+SCHEMA_NAME="test-schema-${UNIQUE_NAME}"
+VOLUME_NAME="test-volume-${UNIQUE_NAME}"
+
+cleanup() {
+  title "Test cleanup"
+  trace $CLI bundle destroy --auto-approve
+
+  title "Assert the schema is deleted"
+  trace errcode $CLI schemas get "${CATALOG_NAME}.${SCHEMA_NAME}" 2>/dev/null
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+
+title "Assert the schema is created"
+trace $CLI schemas get "${CATALOG_NAME}.${SCHEMA_NAME}" | jq "{full_name, comment}"
+
+title "Assert the pipeline is created and uses the schema"
+PIPELINE_ID=$($CLI bundle summary -o json | jq -r '.resources.pipelines.foo.id')
+trace $CLI pipelines get "${PIPELINE_ID}" | jq "{spec}"
+
+title "Create a volume in the schema, and add a file to it. This ensures that the
+     schema has some data in it and deletion will fail unless the generated
+     terraform configuration has force_destroy set to true."
+trace $CLI volumes create "${CATALOG_NAME}" "${SCHEMA_NAME}" "${VOLUME_NAME}" MANAGED | jq "{full_name}"
+
+FILE_NAME="test-file-${UNIQUE_NAME}.txt"
+echo "Hello, world!" > $FILE_NAME
+trace $CLI fs cp "${FILE_NAME}" "dbfs:/Volumes/${CATALOG_NAME}/${SCHEMA_NAME}/${VOLUME_NAME}"
+
+title "Remove the UC schema from the resource configuration."
+trace rm schema.yml
+
+title "Try to redeploy the bundle - should fail without --auto-approve"
+trace $CLI bundle deploy

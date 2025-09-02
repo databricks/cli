@@ -1,0 +1,63 @@
+
+>>> [CLI] bundle validate
+Name: deploy-lakebase-single-instance-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-single-instance-[UNIQUE_NAME]/default
+
+Validation OK!
+
+>>> [CLI] bundle summary
+Name: deploy-lakebase-single-instance-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-single-instance-[UNIQUE_NAME]/default
+Resources:
+  Database instances:
+    my_database:
+      Name: test-db-instance-single-[UNIQUE_NAME]
+      URL:  (not deployed)
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-single-instance-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] database get-database-instance test-db-instance-single-[UNIQUE_NAME]
+{
+  "capacity": "CU_1",
+  "creation_time": "[TIMESTAMP]Z",
+  "creator": "[USERNAME]",
+  "effective_enable_readable_secondaries": false,
+  "effective_node_count": 1,
+  "effective_retention_window_in_days": 7,
+  "effective_stopped": false,
+  "name": "test-db-instance-single-[UNIQUE_NAME]",
+  "pg_version": "PG_VERSION_16",
+  "state": "AVAILABLE",
+  "uid": "[UUID]"
+}
+
+>>> [CLI] bundle summary
+Name: deploy-lakebase-single-instance-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-single-instance-[UNIQUE_NAME]/default
+Resources:
+  Database instances:
+    my_database:
+      Name: test-db-instance-single-[UNIQUE_NAME]
+      URL:  [DATABRICKS_URL]/compute/database-instances/test-db-instance-single-[UNIQUE_NAME]
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete database_instance my_database
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-single-instance-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

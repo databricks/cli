@@ -1,0 +1,25 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle validate
+trace $CLI bundle deploy
+
+title "Assert the volume is created successfully"
+CATALOG_NAME="main"
+SCHEMA_NAME="schema1-${UNIQUE_NAME}"
+VOLUME_NAME="my_volume"
+VOLUME_FULL_NAME="${CATALOG_NAME}.${SCHEMA_NAME}.${VOLUME_NAME}"
+trace $CLI volumes read "${VOLUME_FULL_NAME}" | jq '{catalog_name, full_name, schema_name, volume_type}'
+
+title "Assert that the grants were successfully applied"
+trace $CLI grants get VOLUME "${VOLUME_FULL_NAME}"
+
+title "Recreation of the volume without --auto-approve should fail since prompting is not possible"
+trace errcode $CLI bundle deploy --var=schema_name='${resources.schemas.schema2.name}'
+
+title "Successfully recreate the volume with --auto-approve"
+trace $CLI bundle deploy --var=schema_name='${resources.schemas.schema2.name}' --auto-approve

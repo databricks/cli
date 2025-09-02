@@ -20,57 +20,34 @@ func New() *cobra.Command {
 		Use:   "permissions",
 		Short: `Permissions API are used to create read, write, edit, update and manage access for various users on different objects and endpoints.`,
 		Long: `Permissions API are used to create read, write, edit, update and manage access
-  for various users on different objects and endpoints.
-  
-  * **[Apps permissions](:service:apps)** — Manage which users can manage or
-  use apps.
-  
-  * **[Cluster permissions](:service:clusters)** — Manage which users can
-  manage, restart, or attach to clusters.
-  
-  * **[Cluster policy permissions](:service:clusterpolicies)** — Manage which
-  users can use cluster policies.
-  
-  * **[Delta Live Tables pipeline permissions](:service:pipelines)** — Manage
-  which users can view, manage, run, cancel, or own a Delta Live Tables
-  pipeline.
-  
-  * **[Job permissions](:service:jobs)** — Manage which users can view,
-  manage, trigger, cancel, or own a job.
-  
-  * **[MLflow experiment permissions](:service:experiments)** — Manage which
-  users can read, edit, or manage MLflow experiments.
-  
-  * **[MLflow registered model permissions](:service:modelregistry)** — Manage
-  which users can read, edit, or manage MLflow registered models.
-  
-  * **[Password permissions](:service:users)** — Manage which users can use
-  password login when SSO is enabled.
-  
-  * **[Instance Pool permissions](:service:instancepools)** — Manage which
-  users can manage or attach to pools.
-  
-  * **[Repo permissions](repos)** — Manage which users can read, run, edit, or
-  manage a repo.
-  
-  * **[Serving endpoint permissions](:service:servingendpoints)** — Manage
-  which users can view, query, or manage a serving endpoint.
-  
-  * **[SQL warehouse permissions](:service:warehouses)** — Manage which users
-  can use or manage SQL warehouses.
-  
-  * **[Token permissions](:service:tokenmanagement)** — Manage which users can
-  create or use tokens.
-  
-  * **[Workspace object permissions](:service:workspace)** — Manage which
-  users can read, run, edit, or manage alerts, dbsql-dashboards, directories,
-  files, notebooks and queries.
-  
+  for various users on different objects and endpoints. * **[Apps
+  permissions](:service:apps)** — Manage which users can manage or use apps. *
+  **[Cluster permissions](:service:clusters)** — Manage which users can
+  manage, restart, or attach to clusters. * **[Cluster policy
+  permissions](:service:clusterpolicies)** — Manage which users can use
+  cluster policies. * **[Delta Live Tables pipeline
+  permissions](:service:pipelines)** — Manage which users can view, manage,
+  run, cancel, or own a Delta Live Tables pipeline. * **[Job
+  permissions](:service:jobs)** — Manage which users can view, manage,
+  trigger, cancel, or own a job. * **[MLflow experiment
+  permissions](:service:experiments)** — Manage which users can read, edit, or
+  manage MLflow experiments. * **[MLflow registered model
+  permissions](:service:modelregistry)** — Manage which users can read, edit,
+  or manage MLflow registered models. * **[Instance Pool
+  permissions](:service:instancepools)** — Manage which users can manage or
+  attach to pools. * **[Repo permissions](repos)** — Manage which users can
+  read, run, edit, or manage a repo. * **[Serving endpoint
+  permissions](:service:servingendpoints)** — Manage which users can view,
+  query, or manage a serving endpoint. * **[SQL warehouse
+  permissions](:service:warehouses)** — Manage which users can use or manage
+  SQL warehouses. * **[Token permissions](:service:tokenmanagement)** — Manage
+  which users can create or use tokens. * **[Workspace object
+  permissions](:service:workspace)** — Manage which users can read, run, edit,
+  or manage alerts, dbsql-dashboards, directories, files, notebooks and queries.
   For the mapping of the required permissions for specific actions or abilities
-  and other important information, see [Access Control].
-  
-  Note that to manage access control on service principals, use **[Account
-  Access Control Proxy](:service:accountaccesscontrolproxy)**.
+  and other important information, see [Access Control]. Note that to manage
+  access control on service principals, use **[Account Access Control
+  Proxy](:service:accountaccesscontrolproxy)**.
   
   [Access Control]: https://docs.databricks.com/security/auth-authz/access-control/index.html`,
 		GroupID: "iam",
@@ -108,8 +85,6 @@ func newGet() *cobra.Command {
 
 	var getReq iam.GetPermissionRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get REQUEST_OBJECT_TYPE REQUEST_OBJECT_ID"
 	cmd.Short = `Get object permissions.`
 	cmd.Long = `Get object permissions.
@@ -119,10 +94,10 @@ func newGet() *cobra.Command {
 
   Arguments:
     REQUEST_OBJECT_TYPE: The type of the request object. Can be one of the following: alerts,
-      authorization, clusters, cluster-policies, dashboards, dbsql-dashboards,
-      directories, experiments, files, instance-pools, jobs, notebooks,
-      pipelines, queries, registered-models, repos, serving-endpoints, or
-      warehouses.
+      alertsv2, authorization, clusters, cluster-policies, dashboards,
+      dbsql-dashboards, directories, experiments, files, instance-pools, jobs,
+      notebooks, pipelines, queries, registered-models, repos,
+      serving-endpoints, or warehouses.
     REQUEST_OBJECT_ID: The id of the request object.`
 
 	cmd.Annotations = make(map[string]string)
@@ -173,8 +148,6 @@ func newGetPermissionLevels() *cobra.Command {
 
 	var getPermissionLevelsReq iam.GetPermissionLevelsRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get-permission-levels REQUEST_OBJECT_TYPE REQUEST_OBJECT_ID"
 	cmd.Short = `Get object permission levels.`
 	cmd.Long = `Get object permission levels.
@@ -182,8 +155,12 @@ func newGetPermissionLevels() *cobra.Command {
   Gets the permission levels that a user can have on an object.
 
   Arguments:
-    REQUEST_OBJECT_TYPE: <needs content>
-    REQUEST_OBJECT_ID: <needs content>`
+    REQUEST_OBJECT_TYPE: The type of the request object. Can be one of the following: alerts,
+      alertsv2, authorization, clusters, cluster-policies, dashboards,
+      dbsql-dashboards, directories, experiments, files, instance-pools, jobs,
+      notebooks, pipelines, queries, registered-models, repos,
+      serving-endpoints, or warehouses.
+    REQUEST_OBJECT_ID: `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -225,16 +202,15 @@ func newGetPermissionLevels() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var setOverrides []func(
 	*cobra.Command,
-	*iam.PermissionsRequest,
+	*iam.SetObjectPermissions,
 )
 
 func newSet() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var setReq iam.PermissionsRequest
+	var setReq iam.SetObjectPermissions
 	var setJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&setJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: access_control_list
@@ -249,10 +225,10 @@ func newSet() *cobra.Command {
 
   Arguments:
     REQUEST_OBJECT_TYPE: The type of the request object. Can be one of the following: alerts,
-      authorization, clusters, cluster-policies, dashboards, dbsql-dashboards,
-      directories, experiments, files, instance-pools, jobs, notebooks,
-      pipelines, queries, registered-models, repos, serving-endpoints, or
-      warehouses.
+      alertsv2, authorization, clusters, cluster-policies, dashboards,
+      dbsql-dashboards, directories, experiments, files, instance-pools, jobs,
+      notebooks, pipelines, queries, registered-models, repos,
+      serving-endpoints, or warehouses.
     REQUEST_OBJECT_ID: The id of the request object.`
 
 	cmd.Annotations = make(map[string]string)
@@ -307,16 +283,15 @@ func newSet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*iam.PermissionsRequest,
+	*iam.UpdateObjectPermissions,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var updateReq iam.PermissionsRequest
+	var updateReq iam.UpdateObjectPermissions
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: access_control_list
@@ -330,10 +305,10 @@ func newUpdate() *cobra.Command {
 
   Arguments:
     REQUEST_OBJECT_TYPE: The type of the request object. Can be one of the following: alerts,
-      authorization, clusters, cluster-policies, dashboards, dbsql-dashboards,
-      directories, experiments, files, instance-pools, jobs, notebooks,
-      pipelines, queries, registered-models, repos, serving-endpoints, or
-      warehouses.
+      alertsv2, authorization, clusters, cluster-policies, dashboards,
+      dbsql-dashboards, directories, experiments, files, instance-pools, jobs,
+      notebooks, pipelines, queries, registered-models, repos,
+      serving-endpoints, or warehouses.
     REQUEST_OBJECT_ID: The id of the request object.`
 
 	cmd.Annotations = make(map[string]string)

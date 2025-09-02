@@ -17,10 +17,7 @@ from databricks.bundles.jobs._models.cron_schedule import (
     CronSchedule,
     CronScheduleParam,
 )
-from databricks.bundles.jobs._models.git_source import (
-    GitSource,
-    GitSourceParam,
-)
+from databricks.bundles.jobs._models.git_source import GitSource, GitSourceParam
 from databricks.bundles.jobs._models.job_cluster import JobCluster, JobClusterParam
 from databricks.bundles.jobs._models.job_email_notifications import (
     JobEmailNotifications,
@@ -188,6 +185,15 @@ class Job(Resource):
     A configuration to trigger a run when certain conditions are met. The default behavior is that the job runs only when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.
     """
 
+    usage_policy_id: VariableOrOptional[str] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    The id of the user specified usage policy to use for this job.
+    If not specified, a default usage policy may be applied when creating or modifying the job.
+    See `effective_usage_policy_id` for the usage policy used by this workload.
+    """
+
     webhook_notifications: VariableOrOptional[WebhookNotifications] = None
     """
     A collection of system notification IDs to notify when runs of this job begin or complete.
@@ -317,6 +323,15 @@ class JobDict(TypedDict, total=False):
     trigger: VariableOrOptional[TriggerSettingsParam]
     """
     A configuration to trigger a run when certain conditions are met. The default behavior is that the job runs only when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.
+    """
+
+    usage_policy_id: VariableOrOptional[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    The id of the user specified usage policy to use for this job.
+    If not specified, a default usage policy may be applied when creating or modifying the job.
+    See `effective_usage_policy_id` for the usage policy used by this workload.
     """
 
     webhook_notifications: VariableOrOptional[WebhookNotificationsParam]

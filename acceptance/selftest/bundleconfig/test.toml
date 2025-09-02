@@ -1,0 +1,12 @@
+[BundleConfig.config1.bundle]
+name = "my-bundle"
+
+[BundleConfig.config2.resources.jobs.example_job]
+name = "Example Job"
+new_string = "hello"
+new_list = ["abc", "def"]
+new_map = {key= "value"}
+
+# change datatype
+list2 = 123 # insert number instead of a list
+string2 = ["item1", "item2"]

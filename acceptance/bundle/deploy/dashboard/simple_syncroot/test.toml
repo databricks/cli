@@ -1,0 +1,17 @@
+Local = true
+Cloud = true
+RequiresWarehouse = true
+
+Ignore = [
+    "databricks.yml",
+    "sample-dashboard.lvdash.json",
+]
+
+[[Repls]]
+Old = "[0-9a-f]{32}"
+New = "[DASHBOARD_ID]"
+
+[[Repls]]
+# Windows:
+Old = 'The system cannot find the file specified.'
+New = 'no such file or directory'

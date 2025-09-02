@@ -1,6 +1,3 @@
-bundle:
-  name: bind-schema-test-$UNIQUE_NAME
-
 resources:
   schemas:
     schema1:

@@ -10,7 +10,7 @@ rm -rf envs.txt
 
 export DATABRICKS_BUNDLE_RESTRICTED_CODE_EXECUTION=1
 title "With DATABRICKS_BUNDLE_RESTRICTED_CODE_EXECUTION=1, no envs are accessible"
-trace errcode uv run $UV_ARGS -q $CLI bundle summary | jq '.experimental'
-errcode cat envs.txt
+trace musterr uv run $UV_ARGS -q $CLI bundle summary
+trace musterr cat envs.txt
 
 rm -fr .databricks __pycache__

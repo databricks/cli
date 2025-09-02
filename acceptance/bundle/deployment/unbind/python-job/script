@@ -1,0 +1,11 @@
+UV_RUN="uv run --with $DATABRICKS_BUNDLES_WHEEL -q"
+
+trace $UV_RUN $CLI bundle deploy --var "job_name=My Job"
+
+job_id=$(trace $UV_RUN $CLI bundle summary --var "job_name=My Job" --output json | jq -r '.resources.jobs.job_1.id')
+
+trace $UV_RUN $CLI bundle deployment unbind job_1 --var "job_name=My Job"
+
+trace $UV_RUN $CLI bundle deploy --var "job_name=Updated Job"
+
+trace $CLI jobs get $job_id --output json

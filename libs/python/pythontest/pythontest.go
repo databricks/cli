@@ -85,12 +85,12 @@ func CreatePythonEnv(opts *VenvOpts) error {
 		cmd := exec.Command(opts.PythonExe, "--version")
 		out, err := cmd.CombinedOutput()
 		if err != nil {
-			return fmt.Errorf("Failed to run %s --version: %s", opts.PythonExe, err)
+			return fmt.Errorf("failed to run %s --version: %s", opts.PythonExe, err)
 		}
 		outString := string(out)
 		expectVersion := "Python " + opts.PythonVersion
 		if !strings.HasPrefix(outString, expectVersion) {
-			return fmt.Errorf("Unexpected output from %s --version: %v (expected %v)", opts.PythonExe, outString, expectVersion)
+			return fmt.Errorf("unexpected output from %s --version: %v (expected %v)", opts.PythonExe, outString, expectVersion)
 		}
 	}
 

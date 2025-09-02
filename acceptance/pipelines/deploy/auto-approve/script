@@ -1,0 +1,10 @@
+trace $PIPELINES deploy
+
+title "Remove resources from configuration to test auto-approve"
+trace rm resources.yml
+
+title "Try to redeploy without --auto-approve - should fail"
+trace errcode $PIPELINES deploy
+
+title "Redeploy with --auto-approve - should succeed"
+trace $PIPELINES deploy --auto-approve

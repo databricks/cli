@@ -1,0 +1,13 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-secret-scope-with-permissions/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> jq -s -c .[] | select(.path=="/api/2.0/secrets/acls/put") | .body out.requests.txt
+{"permission":"MANAGE","principal":"admins","scope":"test-secrets-permissions"}
+{"permission":"MANAGE","principal":"resource_level_admins","scope":"test-secrets-permissions"}
+{"permission":"READ","principal":"resource_level_users","scope":"test-secrets-permissions"}
+{"permission":"READ","principal":"users","scope":"test-secrets-permissions"}
+{"permission":"WRITE","principal":"resource_level_writers","scope":"test-secrets-permissions"}

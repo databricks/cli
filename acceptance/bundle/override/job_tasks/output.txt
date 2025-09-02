@@ -8,7 +8,7 @@
   "tasks": [
     {
       "new_cluster": {
-        "node_type_id": "i3.xlarge",
+        "node_type_id": "[NODE_TYPE_ID]",
         "num_workers": 1,
         "spark_version": "13.3.x-scala2.12"
       },
@@ -68,11 +68,11 @@ Exit code: 1
 >>> errcode [CLI] bundle validate -t staging
 Error: file test1.py not found
 
-Name: override_job_tasks
+Name: test-bundle
 Target: staging
 Workspace:
   User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/override_job_tasks/staging
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/staging
 
 Found 1 error
 

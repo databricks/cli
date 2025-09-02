@@ -29,25 +29,25 @@ jobs:
 
       - name: Delete old comments
         env:
-           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-            # Delete previous comment if it exists
-            previous_comment_ids=$(gh api "repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
-              --jq '.[] | select(.body | startswith("<!-- INTEGRATION_TESTS_MANUAL -->")) | .id')
-            echo "Previous comment IDs: $previous_comment_ids"
-            # Iterate over each comment ID and delete the comment
-            if [ ! -z "$previous_comment_ids" ]; then
-              echo "$previous_comment_ids" | while read -r comment_id; do
-                echo "Deleting comment with ID: $comment_id"
-                gh api "repos/${{ github.repository }}/issues/comments/$comment_id" -X DELETE
-              done
-            fi
+          # Delete previous comment if it exists
+          previous_comment_ids=$(gh api "repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
+            --jq '.[] | select(.body | startswith("<!-- INTEGRATION_TESTS_MANUAL -->")) | .id')
+          echo "Previous comment IDs: $previous_comment_ids"
+          # Iterate over each comment ID and delete the comment
+          if [ ! -z "$previous_comment_ids" ]; then
+            echo "$previous_comment_ids" | while read -r comment_id; do
+              echo "Deleting comment with ID: $comment_id"
+              gh api "repos/${{ github.repository }}/issues/comments/$comment_id" -X DELETE
+            done
+          fi
 
       - name: Comment on PR
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
-        run: |
+        run: |-
           gh pr comment ${{ github.event.pull_request.number }} --body \
           "<!-- INTEGRATION_TESTS_MANUAL -->
           An authorized user can trigger integration tests manually by following the instructions below:

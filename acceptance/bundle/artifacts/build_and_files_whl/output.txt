@@ -1,16 +1,16 @@
 
 >>> [CLI] bundle validate
-Name: build_and_files_whl
+Name: test-bundle
 Target: default
 Workspace:
   User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/build_and_files_whl/default
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
 Validation OK!
 
 >>> errcode [CLI] bundle deploy
 Building artifact_with_custom_dist...
-Error: cannot find built wheel in [TEST_TMP_DIR] for package artifact_with_custom_dist
-
-
-Exit code: 1
+Uploading mydist/my_test_code-0.0.1-py3-none-any.whl...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Deployment complete!

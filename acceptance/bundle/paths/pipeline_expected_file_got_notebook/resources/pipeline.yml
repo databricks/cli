@@ -3,4 +3,4 @@ resources:
     nyc_taxi_pipeline:
       libraries:
         # path points to a notebook, not a file, it should error out
-        - file: { path: "../${var.notebook_dir}/*.py" }
+        - file: {path: "../${var.notebook_dir}/*.py"}

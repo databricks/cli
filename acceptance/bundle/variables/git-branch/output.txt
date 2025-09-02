@@ -5,21 +5,16 @@
     "environment": "prod",
     "git": {
       "actual_branch": "main",
-      "branch": "",
       "bundle_root_path": "."
     },
     "name": "git",
-    "target": "prod",
-    "terraform": {
-      "exec_path": "[TERRAFORM]"
-    }
+    "target": "prod"
   },
   "sync": {
     "paths": [
       "."
     ]
   },
-  "targets": null,
   "variables": {
     "deployment_branch": {
       "default": "",
@@ -54,17 +49,13 @@ Validation OK!
       "bundle_root_path": "."
     },
     "name": "git",
-    "target": "dev",
-    "terraform": {
-      "exec_path": "[TERRAFORM]"
-    }
+    "target": "dev"
   },
   "sync": {
     "paths": [
       "."
     ]
   },
-  "targets": null,
   "variables": {
     "deployment_branch": {
       "default": "dev-branch",

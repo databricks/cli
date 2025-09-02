@@ -3,7 +3,6 @@ bundle:
   databricks_cli_version: 0.200.0
   compute_id: "mycompute"
 
-
 variables:
   simplevar:
     default: 5678

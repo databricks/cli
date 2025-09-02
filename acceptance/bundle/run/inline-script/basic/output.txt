@@ -14,7 +14,7 @@ Exit code: 5
 >>> cat stderr.txt
 Hello
 
->>> cat -
+>>> [CLI] bundle run -- cat -
 abc
 
 >>> [CLI] bundle run -- printf hello

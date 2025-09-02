@@ -1,5 +1,2 @@
-bundle:
-  name: expand_globs
-
 include:
   - resources/artifacts.yml

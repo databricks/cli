@@ -169,7 +169,7 @@ def _apply_mutators_for_type(
 def python_mutator(
     args: _Args,
 ) -> tuple[dict, dict[tuple[str, ...], Location], Diagnostics]:
-    input = json.load(open(args.input))
+    input = json.load(open(args.input, encoding="utf-8"))
     experimental = input.get("experimental", {})
 
     if experimental.get("pydabs", {}) != {}:
@@ -446,14 +446,14 @@ def main(argv: list[str]) -> int:
     logging.basicConfig(level=logging.DEBUG, stream=sys.stderr)
     new_bundle, locations, diagnostics = python_mutator(args)
 
-    with open(args.diagnostics, "w") as f:
+    with open(args.diagnostics, "w", encoding="utf-8") as f:
         _write_diagnostics(f, diagnostics)
 
     if locations_path := args.locations:
-        with open(locations_path, "w") as f:
+        with open(locations_path, "w", encoding="utf-8") as f:
             _write_locations(f, locations)
 
-    with open(args.output, "w") as f:
+    with open(args.output, "w", encoding="utf-8") as f:
         _write_output(f, new_bundle)
 
     return 1 if diagnostics.has_error() else 0
@@ -466,12 +466,12 @@ def _write_diagnostics(f: TextIO, diagnostics: Diagnostics) -> None:
         if obj.get("path"):
             obj["path"] = ".".join(obj["path"])
 
-        json.dump(obj, f)
+        json.dump(obj, f, ensure_ascii=False)
         f.write("\n")
 
 
 def _write_output(f: TextIO, bundle: dict) -> None:
-    json.dump(bundle, f)
+    json.dump(bundle, f, ensure_ascii=False)
 
 
 def _relativize_locations(
@@ -503,7 +503,7 @@ def _write_locations(f: TextIO, locations: dict[tuple[str, ...], Location]) -> N
     for path, location in locations.items():
         obj = {"path": ".".join(path), **location.as_dict()}
 
-        json.dump(obj, f)
+        json.dump(obj, f, ensure_ascii=False)
         f.write("\n")
 
 

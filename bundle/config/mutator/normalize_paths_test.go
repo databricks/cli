@@ -5,13 +5,12 @@ import (
 	"path/filepath"
 	"testing"
 
-	assert "github.com/databricks/cli/libs/dyn/dynassert"
-
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -65,6 +64,18 @@ func TestNormalizePath_url(t *testing.T) {
 	value, err := normalizePath("s3:///path/to/notebook.py", dyn.Location{}, "/tmp")
 	assert.NoError(t, err)
 	assert.Equal(t, "s3:///path/to/notebook.py", value)
+}
+
+func TestNormalizePath_requirementsFile(t *testing.T) {
+	tmpDir := t.TempDir()
+	location := dyn.Location{File: filepath.Join(tmpDir, "resources", "job_1.yml")}
+	value, err := normalizePath("-r ../requirements.txt", location, tmpDir)
+	assert.NoError(t, err)
+	assert.Equal(t, "-r requirements.txt", value)
+
+	value, err = normalizePath("-r      ../requirements.txt", location, tmpDir)
+	assert.NoError(t, err)
+	assert.Equal(t, "-r requirements.txt", value)
 }
 
 func TestLocationDirectory(t *testing.T) {

@@ -9,8 +9,6 @@ resources:
       clusters:
         - num_workers: ${var.bar}
 
-
-
 variables:
   foo:
     default: "a_string"

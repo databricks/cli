@@ -1,0 +1,41 @@
+[[Server]]
+Pattern = "GET /api/2.0/apps/my_app"
+Response.Body = '''
+{
+    "app_id": "1234567890",
+    "name": "my_app",
+    "description": "This is a test app",
+    "default_source_code_path": "/Workspace/Users/foo@bar.com/my_app"
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.0/workspace/list"
+Response.Body = '''
+{
+    "objects": [
+        {
+            "path": "/Workspace/Users/foo@bar.com/my_app/sub/folder/1.py",
+            "object_type": "FILE"
+        }
+    ]
+}
+'''
+[[Server]]
+Pattern = "GET /api/2.0/workspace/get-status"
+Response.Body = '''
+{
+    "path": "/Workspace/Users/foo@bar.com/my_app/sub/folder/1.py",
+    "object_type": "FILE"
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.0/workspace/export"
+Response.Body = '''
+print("Hello, World!")
+'''
+
+[[Repls]]
+Old = '\\'
+New = '/'

@@ -1,0 +1,10 @@
+
+>>> [CLI] bundle validate
+Error: Bundle root path contains glob pattern characters
+
+The path to the bundle root [TEST_TMP_DIR]/[abc] contains glob pattern character "[". Please remove the character from this path to use bundle commands.
+
+
+Found 1 error
+
+Exit code: 1

@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"sync"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/fileset"
+	"github.com/databricks/cli/libs/logdiag"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -25,27 +25,18 @@ func (v *validateSyncPatterns) Name() string {
 
 func (v *validateSyncPatterns) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	s := b.Config.Sync
-	if len(s.Exclude) == 0 && len(s.Include) == 0 {
+
+	checkPatterns(ctx, s.Exclude, "sync.exclude", b)
+	if logdiag.HasError(ctx) {
 		return nil
 	}
 
-	diags, err := checkPatterns(s.Exclude, "sync.exclude", b)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	includeDiags, err := checkPatterns(s.Include, "sync.include", b)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	return diags.Extend(includeDiags)
+	checkPatterns(ctx, s.Include, "sync.include", b)
+	return nil
 }
 
-func checkPatterns(patterns []string, path string, b *bundle.Bundle) (diag.Diagnostics, error) {
-	var mu sync.Mutex
+func checkPatterns(ctx context.Context, patterns []string, path string, b *bundle.Bundle) {
 	var errs errgroup.Group
-	var diags diag.Diagnostics
 
 	for index, pattern := range patterns {
 		// If the pattern is negated, strip the negation prefix
@@ -67,18 +58,19 @@ func checkPatterns(patterns []string, path string, b *bundle.Bundle) (diag.Diagn
 
 			if len(all) == 0 {
 				path := fmt.Sprintf("%s[%d]", path, index)
-				mu.Lock()
-				diags = diags.Append(diag.Diagnostic{
+				logdiag.LogDiag(ctx, diag.Diagnostic{
 					Severity:  diag.Warning,
 					Summary:   fmt.Sprintf("Pattern %s does not match any files", pattern),
 					Locations: b.Config.GetLocations(path),
 					Paths:     []dyn.Path{dyn.MustPathFromString(path)},
 				})
-				mu.Unlock()
 			}
 			return nil
 		})
 	}
 
-	return diags, errs.Wait()
+	err := errs.Wait()
+	if err != nil {
+		logdiag.LogError(ctx, err)
+	}
 }

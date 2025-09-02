@@ -1,4 +1,5 @@
 import os
+import sys
 
 SECTIONS = [
     "jobs",
@@ -12,6 +13,8 @@ SECTIONS = [
     "clusters",
     "dashboards",
     "apps",
+    "sql_warehouses",
+    "secret_scopes",
 ]
 
 CLI = os.environ["CLI"]

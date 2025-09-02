@@ -1,0 +1,6 @@
+resources:
+  schemas:
+    schema1:
+      name: myschema
+      catalog_name: main
+      comment: COMMENT1

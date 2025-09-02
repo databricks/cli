@@ -1,0 +1,7 @@
+bundle:
+  name: my_project
+
+experimental:
+  python:
+    resources:
+      - "resources:load_resources"

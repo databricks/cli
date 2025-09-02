@@ -1,15 +1,35 @@
 
 >>> [CLI] bundle validate
-Name: apps_yaml
+Name: test-bundle
 Target: default
 Workspace:
   User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/apps_yaml/default
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
 Validation OK!
 
+>>> [CLI] bundle plan
+create apps.myapp
+
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/apps_yaml/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
+
+>>> jq select(.path | test("app.yml")) out.requests.txt
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete app myapp
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Deleting files...
+Destroy complete!
+
+>>> print_requests
+{
+  "method": "DELETE",
+  "path": "/api/2.0/apps/myapp"
+}

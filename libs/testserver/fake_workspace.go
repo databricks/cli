@@ -5,41 +5,93 @@ import (
 	"encoding/json"
 	"fmt"
 	"path"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
 
+	"github.com/databricks/databricks-sdk-go/service/database"
+
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
+	"github.com/databricks/databricks-sdk-go/service/dashboards"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
-	"github.com/google/uuid"
 )
+
+// 4611686018427387911 == 2 ** 62 + 7
+// 2305843009213693969 == 2 ** 61 + 17
+// This values cannot be represented by float64, so they can test incorrect use of json parsing
+// (encoding/json without options parses numbers into float64)
+// These are also easier to spot / replace in test output compared to numbers with one or few digits.
+const (
+	TestJobID                   = 4611686018427387911
+	TestRunID                   = 2305843009213693969
+	UserNameTokenPrefix         = "dbapi0"
+	ServicePrincipalTokenPrefix = "dbapi1"
+	UserID                      = "1000012345"
+)
+
+var TestUser = iam.User{
+	Id:       UserID,
+	UserName: "tester@databricks.com",
+}
+
+var TestUserSP = iam.User{
+	Id:       UserID,
+	UserName: "aaaaaaaa-bbbb-4ccc-dddd-eeeeeeeeeeee",
+}
+
+type FileEntry struct {
+	Info workspace.ObjectInfo
+	Data []byte
+}
 
 // FakeWorkspace holds a state of a workspace for acceptance tests.
 type FakeWorkspace struct {
-	mu sync.Mutex
+	mu                 sync.Mutex
+	url                string
+	isServicePrincipal bool
 
-	directories map[string]bool
-	files       map[string][]byte
+	directories  map[string]bool
+	files        map[string]FileEntry
+	repoIdByPath map[string]int64
+
 	// normally, ids are not sequential, but we make them sequential for deterministic diff
-	nextJobId int64
-	jobs      map[int64]jobs.Job
+	nextJobId    int64
+	nextJobRunId int64
+	Jobs         map[int64]jobs.Job
+	JobRuns      map[int64]jobs.Run
 
-	Pipelines map[string]pipelines.PipelineSpec
-	Monitors  map[string]catalog.MonitorInfo
-	Apps      map[string]apps.App
-	Schemas   map[string]catalog.SchemaInfo
+	Pipelines       map[string]pipelines.GetPipelineResponse
+	PipelineUpdates map[string]bool
+	Monitors        map[string]catalog.MonitorInfo
+	Apps            map[string]apps.App
+	Schemas         map[string]catalog.SchemaInfo
+	Volumes         map[string]catalog.VolumeInfo
+	Dashboards      map[string]dashboards.Dashboard
+	SqlWarehouses   map[string]sql.GetWarehouseResponse
+
+	Acls map[string][]workspace.AclItem
+
+	nextRepoId int64
+	Repos      map[string]workspace.RepoInfo
+
+	DatabaseInstances    map[string]database.DatabaseInstance
+	DatabaseCatalogs     map[string]database.DatabaseCatalog
+	SyncedDatabaseTables map[string]database.SyncedDatabaseTable
 }
 
-func (w *FakeWorkspace) LockUnlock() func() {
-	if w == nil {
+func (s *FakeWorkspace) LockUnlock() func() {
+	if s == nil {
 		panic("LockUnlock called on nil FakeWorkspace")
 	}
-	w.mu.Lock()
-	return func() { w.mu.Unlock() }
+	s.mu.Lock()
+	return func() { s.mu.Unlock() }
 }
 
 // Generic functions to handle map operations
@@ -50,6 +102,7 @@ func MapGet[T any](w *FakeWorkspace, collection map[string]T, key string) Respon
 	if !ok {
 		return Response{
 			StatusCode: 404,
+			Body:       map[string]string{"message": fmt.Sprintf("Resource %T not found: %v", value, key)},
 		}
 	}
 	return Response{
@@ -57,7 +110,26 @@ func MapGet[T any](w *FakeWorkspace, collection map[string]T, key string) Respon
 	}
 }
 
-func MapDelete[T any](w *FakeWorkspace, collection map[string]T, key string) Response {
+func MapList[K comparable, T any](w *FakeWorkspace, collection map[K]T, responseFieldName string) Response {
+	defer w.LockUnlock()()
+
+	items := make([]T, 0, len(collection))
+
+	for _, value := range collection {
+		items = append(items, value)
+	}
+
+	// Create a map with the provided field name containing the items
+	wrapper := map[string]any{
+		responseFieldName: items,
+	}
+
+	return Response{
+		Body: wrapper,
+	}
+}
+
+func MapDelete[K comparable, V any](w *FakeWorkspace, collection map[K]V, key K) Response {
 	defer w.LockUnlock()()
 
 	_, ok := collection[key]
@@ -70,19 +142,41 @@ func MapDelete[T any](w *FakeWorkspace, collection map[string]T, key string) Res
 	return Response{}
 }
 
-func NewFakeWorkspace() *FakeWorkspace {
+func NewFakeWorkspace(url, token string) *FakeWorkspace {
 	return &FakeWorkspace{
+		url:                url,
+		isServicePrincipal: strings.HasPrefix(token, ServicePrincipalTokenPrefix),
 		directories: map[string]bool{
 			"/Workspace": true,
 		},
-		files:     map[string][]byte{},
-		jobs:      map[int64]jobs.Job{},
-		nextJobId: 1,
+		files:        make(map[string]FileEntry),
+		repoIdByPath: make(map[string]int64),
 
-		Pipelines: map[string]pipelines.PipelineSpec{},
-		Monitors:  map[string]catalog.MonitorInfo{},
-		Apps:      map[string]apps.App{},
-		Schemas:   map[string]catalog.SchemaInfo{},
+		Jobs:                 map[int64]jobs.Job{},
+		JobRuns:              map[int64]jobs.Run{},
+		nextJobId:            TestJobID,
+		nextJobRunId:         TestRunID,
+		Pipelines:            map[string]pipelines.GetPipelineResponse{},
+		PipelineUpdates:      map[string]bool{},
+		Monitors:             map[string]catalog.MonitorInfo{},
+		Apps:                 map[string]apps.App{},
+		Schemas:              map[string]catalog.SchemaInfo{},
+		Volumes:              map[string]catalog.VolumeInfo{},
+		Dashboards:           map[string]dashboards.Dashboard{},
+		SqlWarehouses:        map[string]sql.GetWarehouseResponse{},
+		Repos:                map[string]workspace.RepoInfo{},
+		Acls:                 map[string][]workspace.AclItem{},
+		DatabaseInstances:    map[string]database.DatabaseInstance{},
+		DatabaseCatalogs:     map[string]database.DatabaseCatalog{},
+		SyncedDatabaseTables: map[string]database.SyncedDatabaseTable{},
+	}
+}
+
+func (s *FakeWorkspace) CurrentUser() iam.User {
+	if s != nil && s.isServicePrincipal {
+		return TestUserSP
+	} else {
+		return TestUser
 	}
 }
 
@@ -96,12 +190,16 @@ func (s *FakeWorkspace) WorkspaceGetStatus(path string) Response {
 				Path:       path,
 			},
 		}
-	} else if _, ok := s.files[path]; ok {
+	} else if entry, ok := s.files[path]; ok {
 		return Response{
-			Body: &workspace.ObjectInfo{
-				ObjectType: "FILE",
+			Body: entry.Info,
+		}
+	} else if repoId, ok := s.repoIdByPath[path]; ok {
+		return Response{
+			Body: workspace.ObjectInfo{
+				ObjectType: "REPO",
 				Path:       path,
-				Language:   "SCALA",
+				ObjectId:   repoId,
 			},
 		}
 	} else {
@@ -119,35 +217,74 @@ func (s *FakeWorkspace) WorkspaceMkdirs(request workspace.Mkdirs) {
 
 func (s *FakeWorkspace) WorkspaceExport(path string) []byte {
 	defer s.LockUnlock()()
-	return s.files[path]
+	return s.files[path].Data
 }
 
 func (s *FakeWorkspace) WorkspaceDelete(path string, recursive bool) {
 	defer s.LockUnlock()()
 	if !recursive {
-		s.files[path] = nil
+		delete(s.files, path)
 	} else {
 		for key := range s.files {
 			if strings.HasPrefix(key, path) {
-				s.files[key] = nil
+				delete(s.files, key)
 			}
 		}
 	}
 }
 
-func (s *FakeWorkspace) WorkspaceFilesImportFile(filePath string, body []byte) {
+func (s *FakeWorkspace) WorkspaceFilesImportFile(filePath string, body []byte, overwrite bool) Response {
 	if !strings.HasPrefix(filePath, "/") {
 		filePath = "/" + filePath
 	}
 
 	defer s.LockUnlock()()
 
-	s.files[filePath] = body
+	workspacePath := filePath
+
+	if !overwrite {
+		if _, exists := s.files[workspacePath]; exists {
+			return Response{
+				StatusCode: 409,
+				Body:       map[string]string{"message": fmt.Sprintf("File already exists at (%s).", workspacePath)},
+			}
+		}
+	}
+
+	// Note: Files with .py, .scala, .r or .sql extension can
+	// be notebooks if they contain a magical "Databricks notebook source"
+	// header comment. We omit support non-python extensions for now for simplicity.
+	extension := filepath.Ext(filePath)
+	if extension == ".py" && strings.HasPrefix(string(body), "# Databricks notebook source") {
+		// Notebooks are stripped of their extension by the workspace import API.
+		workspacePath = strings.TrimSuffix(filePath, extension)
+		s.files[workspacePath] = FileEntry{
+			Info: workspace.ObjectInfo{
+				ObjectType: "NOTEBOOK",
+				Path:       workspacePath,
+				Language:   "PYTHON",
+			},
+			Data: body,
+		}
+	} else {
+		// The endpoint does not set language for files, so we omit that
+		// here as well.
+		// ref: https://docs.databricks.com/api/workspace/workspace/getstatus#language
+		s.files[workspacePath] = FileEntry{
+			Info: workspace.ObjectInfo{
+				ObjectType: "FILE",
+				Path:       workspacePath,
+			},
+			Data: body,
+		}
+	}
 
 	// Add all directories in the path to the directories map
-	for dir := path.Dir(filePath); dir != "/"; dir = path.Dir(dir) {
+	for dir := path.Dir(workspacePath); dir != "/"; dir = path.Dir(dir) {
 		s.directories[dir] = true
 	}
+
+	return Response{}
 }
 
 func (s *FakeWorkspace) WorkspaceFilesExportFile(path string) []byte {
@@ -157,7 +294,7 @@ func (s *FakeWorkspace) WorkspaceFilesExportFile(path string) []byte {
 
 	defer s.LockUnlock()()
 
-	return s.files[path]
+	return s.files[path].Data
 }
 
 func (s *FakeWorkspace) JobsCreate(request jobs.CreateJob) Response {
@@ -175,7 +312,7 @@ func (s *FakeWorkspace) JobsCreate(request jobs.CreateJob) Response {
 		}
 	}
 
-	s.jobs[jobId] = jobs.Job{
+	s.Jobs[jobId] = jobs.Job{
 		JobId:    jobId,
 		Settings: &jobSettings,
 	}
@@ -190,7 +327,7 @@ func (s *FakeWorkspace) JobsReset(request jobs.ResetJob) Response {
 
 	jobId := request.JobId
 
-	_, ok := s.jobs[request.JobId]
+	_, ok := s.Jobs[request.JobId]
 	if !ok {
 		return Response{
 			StatusCode: 403,
@@ -198,27 +335,13 @@ func (s *FakeWorkspace) JobsReset(request jobs.ResetJob) Response {
 		}
 	}
 
-	s.jobs[jobId] = jobs.Job{
+	s.Jobs[jobId] = jobs.Job{
 		JobId:    jobId,
 		Settings: &request.NewSettings,
 	}
 
 	return Response{
 		Body: "",
-	}
-}
-
-func (s *FakeWorkspace) PipelinesCreate(r pipelines.PipelineSpec) Response {
-	defer s.LockUnlock()()
-
-	pipelineId := uuid.New().String()
-
-	s.Pipelines[pipelineId] = r
-
-	return Response{
-		Body: pipelines.CreatePipelineResponse{
-			PipelineId: pipelineId,
-		},
 	}
 }
 
@@ -235,41 +358,71 @@ func (s *FakeWorkspace) JobsGet(jobId string) Response {
 
 	defer s.LockUnlock()()
 
-	job, ok := s.jobs[jobIdInt]
+	job, ok := s.Jobs[jobIdInt]
 	if !ok {
 		return Response{
 			StatusCode: 404,
 		}
 	}
 
+	job = setSourceIfNotSet(job)
 	return Response{
 		Body: job,
 	}
 }
 
-func (s *FakeWorkspace) PipelinesGet(pipelineId string) Response {
+func (s *FakeWorkspace) JobsRunNow(jobId int64) Response {
 	defer s.LockUnlock()()
 
-	spec, ok := s.Pipelines[pipelineId]
+	_, ok := s.Jobs[jobId]
 	if !ok {
 		return Response{
 			StatusCode: 404,
 		}
 	}
 
-	return Response{
-		Body: pipelines.GetPipelineResponse{
-			PipelineId: pipelineId,
-			Spec:       &spec,
+	runId := s.nextJobRunId
+	s.nextJobRunId++
+	s.JobRuns[runId] = jobs.Run{
+		RunId: runId,
+		State: &jobs.RunState{
+			LifeCycleState: jobs.RunLifeCycleStateRunning,
 		},
+		RunPageUrl: fmt.Sprintf("%s/job/run/%d", s.url, runId),
+		RunType:    jobs.RunTypeJobRun,
+		RunName:    "run-name",
+	}
+
+	return Response{
+		Body: jobs.RunNowResponse{
+			RunId: runId,
+		},
+	}
+}
+
+func (s *FakeWorkspace) JobsGetRun(runId int64) Response {
+	defer s.LockUnlock()()
+
+	run, ok := s.JobRuns[runId]
+	if !ok {
+		return Response{
+			StatusCode: 404,
+		}
+	}
+
+	// Mark the run as terminated.
+	run.State.LifeCycleState = jobs.RunLifeCycleStateTerminated
+	return Response{
+		Body: run,
 	}
 }
 
 func (s *FakeWorkspace) JobsList() Response {
 	defer s.LockUnlock()()
 
-	list := make([]jobs.BaseJob, 0, len(s.jobs))
-	for _, job := range s.jobs {
+	list := make([]jobs.BaseJob, 0, len(s.Jobs))
+	for _, job := range s.Jobs {
+		job = setSourceIfNotSet(job)
 		baseJob := jobs.BaseJob{}
 		err := jsonConvert(job, &baseJob)
 		if err != nil {
@@ -292,6 +445,35 @@ func (s *FakeWorkspace) JobsList() Response {
 			Jobs: list,
 		},
 	}
+}
+
+func setSourceIfNotSet(job jobs.Job) jobs.Job {
+	// Setting the source field in the output of the Jobs List API same way as backend does
+	if job.Settings != nil {
+		source := "WORKSPACE"
+		if job.Settings.GitSource != nil {
+			source = "GIT"
+		}
+		for _, task := range job.Settings.Tasks {
+			if task.NotebookTask != nil {
+				if task.NotebookTask.Source == "" {
+					task.NotebookTask.Source = jobs.Source(source)
+				}
+				if task.DbtTask != nil {
+					if task.DbtTask.Source == "" {
+						task.DbtTask.Source = jobs.Source(source)
+					}
+				}
+				if task.SparkPythonTask != nil {
+					if task.SparkPythonTask.Source == "" {
+						task.SparkPythonTask.Source = jobs.Source(source)
+					}
+				}
+			}
+		}
+	}
+
+	return job
 }
 
 // jsonConvert saves input to a value pointed by output

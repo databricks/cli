@@ -53,6 +53,9 @@ __all__ = [
     "DbfsStorageInfo",
     "DbfsStorageInfoDict",
     "DbfsStorageInfoParam",
+    "DbtPlatformTask",
+    "DbtPlatformTaskDict",
+    "DbtPlatformTaskParam",
     "DbtTask",
     "DbtTaskDict",
     "DbtTaskParam",
@@ -262,158 +265,57 @@ __all__ = [
 ]
 
 
-from databricks.bundles.compute._models.adlsgen2_info import (
+from databricks.bundles.jobs._models.adlsgen2_info import (
     Adlsgen2Info,
     Adlsgen2InfoDict,
     Adlsgen2InfoParam,
-)
-from databricks.bundles.compute._models.auto_scale import (
-    AutoScale,
-    AutoScaleDict,
-    AutoScaleParam,
-)
-from databricks.bundles.compute._models.aws_attributes import (
-    AwsAttributes,
-    AwsAttributesDict,
-    AwsAttributesParam,
-)
-from databricks.bundles.compute._models.aws_availability import (
-    AwsAvailability,
-    AwsAvailabilityParam,
-)
-from databricks.bundles.compute._models.azure_attributes import (
-    AzureAttributes,
-    AzureAttributesDict,
-    AzureAttributesParam,
-)
-from databricks.bundles.compute._models.azure_availability import (
-    AzureAvailability,
-    AzureAvailabilityParam,
-)
-from databricks.bundles.compute._models.clients_types import (
-    ClientsTypes,
-    ClientsTypesDict,
-    ClientsTypesParam,
-)
-from databricks.bundles.compute._models.cluster_log_conf import (
-    ClusterLogConf,
-    ClusterLogConfDict,
-    ClusterLogConfParam,
-)
-from databricks.bundles.compute._models.cluster_spec import (
-    ClusterSpec,
-    ClusterSpecDict,
-    ClusterSpecParam,
-)
-from databricks.bundles.compute._models.data_security_mode import (
-    DataSecurityMode,
-    DataSecurityModeParam,
-)
-from databricks.bundles.compute._models.dbfs_storage_info import (
-    DbfsStorageInfo,
-    DbfsStorageInfoDict,
-    DbfsStorageInfoParam,
-)
-from databricks.bundles.compute._models.docker_basic_auth import (
-    DockerBasicAuth,
-    DockerBasicAuthDict,
-    DockerBasicAuthParam,
-)
-from databricks.bundles.compute._models.docker_image import (
-    DockerImage,
-    DockerImageDict,
-    DockerImageParam,
-)
-from databricks.bundles.compute._models.ebs_volume_type import (
-    EbsVolumeType,
-    EbsVolumeTypeParam,
-)
-from databricks.bundles.compute._models.environment import (
-    Environment,
-    EnvironmentDict,
-    EnvironmentParam,
-)
-from databricks.bundles.compute._models.gcp_attributes import (
-    GcpAttributes,
-    GcpAttributesDict,
-    GcpAttributesParam,
-)
-from databricks.bundles.compute._models.gcp_availability import (
-    GcpAvailability,
-    GcpAvailabilityParam,
-)
-from databricks.bundles.compute._models.gcs_storage_info import (
-    GcsStorageInfo,
-    GcsStorageInfoDict,
-    GcsStorageInfoParam,
-)
-from databricks.bundles.compute._models.init_script_info import (
-    InitScriptInfo,
-    InitScriptInfoDict,
-    InitScriptInfoParam,
-)
-from databricks.bundles.compute._models.library import (
-    Library,
-    LibraryDict,
-    LibraryParam,
-)
-from databricks.bundles.compute._models.local_file_info import (
-    LocalFileInfo,
-    LocalFileInfoDict,
-    LocalFileInfoParam,
-)
-from databricks.bundles.compute._models.log_analytics_info import (
-    LogAnalyticsInfo,
-    LogAnalyticsInfoDict,
-    LogAnalyticsInfoParam,
-)
-from databricks.bundles.compute._models.maven_library import (
-    MavenLibrary,
-    MavenLibraryDict,
-    MavenLibraryParam,
-)
-from databricks.bundles.compute._models.python_py_pi_library import (
-    PythonPyPiLibrary,
-    PythonPyPiLibraryDict,
-    PythonPyPiLibraryParam,
-)
-from databricks.bundles.compute._models.r_cran_library import (
-    RCranLibrary,
-    RCranLibraryDict,
-    RCranLibraryParam,
-)
-from databricks.bundles.compute._models.runtime_engine import (
-    RuntimeEngine,
-    RuntimeEngineParam,
-)
-from databricks.bundles.compute._models.s3_storage_info import (
-    S3StorageInfo,
-    S3StorageInfoDict,
-    S3StorageInfoParam,
-)
-from databricks.bundles.compute._models.volumes_storage_info import (
-    VolumesStorageInfo,
-    VolumesStorageInfoDict,
-    VolumesStorageInfoParam,
-)
-from databricks.bundles.compute._models.workload_type import (
-    WorkloadType,
-    WorkloadTypeDict,
-    WorkloadTypeParam,
-)
-from databricks.bundles.compute._models.workspace_storage_info import (
-    WorkspaceStorageInfo,
-    WorkspaceStorageInfoDict,
-    WorkspaceStorageInfoParam,
 )
 from databricks.bundles.jobs._models.authentication_method import (
     AuthenticationMethod,
     AuthenticationMethodParam,
 )
+from databricks.bundles.jobs._models.auto_scale import (
+    AutoScale,
+    AutoScaleDict,
+    AutoScaleParam,
+)
+from databricks.bundles.jobs._models.aws_attributes import (
+    AwsAttributes,
+    AwsAttributesDict,
+    AwsAttributesParam,
+)
+from databricks.bundles.jobs._models.aws_availability import (
+    AwsAvailability,
+    AwsAvailabilityParam,
+)
+from databricks.bundles.jobs._models.azure_attributes import (
+    AzureAttributes,
+    AzureAttributesDict,
+    AzureAttributesParam,
+)
+from databricks.bundles.jobs._models.azure_availability import (
+    AzureAvailability,
+    AzureAvailabilityParam,
+)
 from databricks.bundles.jobs._models.clean_rooms_notebook_task import (
     CleanRoomsNotebookTask,
     CleanRoomsNotebookTaskDict,
     CleanRoomsNotebookTaskParam,
+)
+from databricks.bundles.jobs._models.clients_types import (
+    ClientsTypes,
+    ClientsTypesDict,
+    ClientsTypesParam,
+)
+from databricks.bundles.jobs._models.cluster_log_conf import (
+    ClusterLogConf,
+    ClusterLogConfDict,
+    ClusterLogConfParam,
+)
+from databricks.bundles.jobs._models.cluster_spec import (
+    ClusterSpec,
+    ClusterSpecDict,
+    ClusterSpecParam,
 )
 from databricks.bundles.jobs._models.compute_config import (
     ComputeConfig,
@@ -445,7 +347,40 @@ from databricks.bundles.jobs._models.dashboard_task import (
     DashboardTaskDict,
     DashboardTaskParam,
 )
+from databricks.bundles.jobs._models.data_security_mode import (
+    DataSecurityMode,
+    DataSecurityModeParam,
+)
+from databricks.bundles.jobs._models.dbfs_storage_info import (
+    DbfsStorageInfo,
+    DbfsStorageInfoDict,
+    DbfsStorageInfoParam,
+)
+from databricks.bundles.jobs._models.dbt_platform_task import (
+    DbtPlatformTask,
+    DbtPlatformTaskDict,
+    DbtPlatformTaskParam,
+)
 from databricks.bundles.jobs._models.dbt_task import DbtTask, DbtTaskDict, DbtTaskParam
+from databricks.bundles.jobs._models.docker_basic_auth import (
+    DockerBasicAuth,
+    DockerBasicAuthDict,
+    DockerBasicAuthParam,
+)
+from databricks.bundles.jobs._models.docker_image import (
+    DockerImage,
+    DockerImageDict,
+    DockerImageParam,
+)
+from databricks.bundles.jobs._models.ebs_volume_type import (
+    EbsVolumeType,
+    EbsVolumeTypeParam,
+)
+from databricks.bundles.jobs._models.environment import (
+    Environment,
+    EnvironmentDict,
+    EnvironmentParam,
+)
 from databricks.bundles.jobs._models.file_arrival_trigger_configuration import (
     FileArrivalTriggerConfiguration,
     FileArrivalTriggerConfigurationDict,
@@ -455,6 +390,20 @@ from databricks.bundles.jobs._models.for_each_task import (
     ForEachTask,
     ForEachTaskDict,
     ForEachTaskParam,
+)
+from databricks.bundles.jobs._models.gcp_attributes import (
+    GcpAttributes,
+    GcpAttributesDict,
+    GcpAttributesParam,
+)
+from databricks.bundles.jobs._models.gcp_availability import (
+    GcpAvailability,
+    GcpAvailabilityParam,
+)
+from databricks.bundles.jobs._models.gcs_storage_info import (
+    GcsStorageInfo,
+    GcsStorageInfoDict,
+    GcsStorageInfoParam,
 )
 from databricks.bundles.jobs._models.gen_ai_compute_task import (
     GenAiComputeTask,
@@ -466,6 +415,11 @@ from databricks.bundles.jobs._models.git_source import (
     GitSource,
     GitSourceDict,
     GitSourceParam,
+)
+from databricks.bundles.jobs._models.init_script_info import (
+    InitScriptInfo,
+    InitScriptInfoDict,
+    InitScriptInfoParam,
 )
 from databricks.bundles.jobs._models.job import Job, JobDict, JobParam
 from databricks.bundles.jobs._models.job_cluster import (
@@ -525,6 +479,22 @@ from databricks.bundles.jobs._models.jobs_health_rules import (
     JobsHealthRulesDict,
     JobsHealthRulesParam,
 )
+from databricks.bundles.jobs._models.library import Library, LibraryDict, LibraryParam
+from databricks.bundles.jobs._models.local_file_info import (
+    LocalFileInfo,
+    LocalFileInfoDict,
+    LocalFileInfoParam,
+)
+from databricks.bundles.jobs._models.log_analytics_info import (
+    LogAnalyticsInfo,
+    LogAnalyticsInfoDict,
+    LogAnalyticsInfoParam,
+)
+from databricks.bundles.jobs._models.maven_library import (
+    MavenLibrary,
+    MavenLibraryDict,
+    MavenLibraryParam,
+)
 from databricks.bundles.jobs._models.notebook_task import (
     NotebookTask,
     NotebookTaskDict,
@@ -569,6 +539,11 @@ from databricks.bundles.jobs._models.power_bi_task import (
     PowerBiTaskDict,
     PowerBiTaskParam,
 )
+from databricks.bundles.jobs._models.python_py_pi_library import (
+    PythonPyPiLibrary,
+    PythonPyPiLibraryDict,
+    PythonPyPiLibraryParam,
+)
 from databricks.bundles.jobs._models.python_wheel_task import (
     PythonWheelTask,
     PythonWheelTaskDict,
@@ -579,11 +554,25 @@ from databricks.bundles.jobs._models.queue_settings import (
     QueueSettingsDict,
     QueueSettingsParam,
 )
+from databricks.bundles.jobs._models.r_cran_library import (
+    RCranLibrary,
+    RCranLibraryDict,
+    RCranLibraryParam,
+)
 from databricks.bundles.jobs._models.run_if import RunIf, RunIfParam
 from databricks.bundles.jobs._models.run_job_task import (
     RunJobTask,
     RunJobTaskDict,
     RunJobTaskParam,
+)
+from databricks.bundles.jobs._models.runtime_engine import (
+    RuntimeEngine,
+    RuntimeEngineParam,
+)
+from databricks.bundles.jobs._models.s3_storage_info import (
+    S3StorageInfo,
+    S3StorageInfoDict,
+    S3StorageInfoParam,
 )
 from databricks.bundles.jobs._models.source import Source, SourceParam
 from databricks.bundles.jobs._models.spark_jar_task import (
@@ -664,11 +653,26 @@ from databricks.bundles.jobs._models.trigger_settings import (
     TriggerSettingsDict,
     TriggerSettingsParam,
 )
+from databricks.bundles.jobs._models.volumes_storage_info import (
+    VolumesStorageInfo,
+    VolumesStorageInfoDict,
+    VolumesStorageInfoParam,
+)
 from databricks.bundles.jobs._models.webhook import Webhook, WebhookDict, WebhookParam
 from databricks.bundles.jobs._models.webhook_notifications import (
     WebhookNotifications,
     WebhookNotificationsDict,
     WebhookNotificationsParam,
+)
+from databricks.bundles.jobs._models.workload_type import (
+    WorkloadType,
+    WorkloadTypeDict,
+    WorkloadTypeParam,
+)
+from databricks.bundles.jobs._models.workspace_storage_info import (
+    WorkspaceStorageInfo,
+    WorkspaceStorageInfoDict,
+    WorkspaceStorageInfoParam,
 )
 
 

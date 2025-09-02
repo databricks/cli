@@ -9,7 +9,7 @@ HH:MM:SS Debug: POST /telemetry-ext
 >     "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"... (N more bytes)",
 >     "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"... (N more bytes)"
 >   ],
->   "uploadTime": "UNIX_TIME_MILLIS"
+>   "uploadTime": [UNIX_TIME_MILLIS]
 > }
 < HTTP/1.1 501 Not Implemented
 < {
@@ -25,7 +25,7 @@ HH:MM:SS Debug: POST /telemetry-ext
 >     "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"... (N more bytes)",
 >     "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"... (N more bytes)"
 >   ],
->   "uploadTime": "UNIX_TIME_MILLIS"
+>   "uploadTime": [UNIX_TIME_MILLIS]
 > }
 < HTTP/1.1 501 Not Implemented
 < {
@@ -41,7 +41,7 @@ HH:MM:SS Debug: POST /telemetry-ext
 >     "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"... (N more bytes)",
 >     "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"... (N more bytes)"
 >   ],
->   "uploadTime": "UNIX_TIME_MILLIS"
+>   "uploadTime": [UNIX_TIME_MILLIS]
 > }
 < HTTP/1.1 501 Not Implemented
 < {

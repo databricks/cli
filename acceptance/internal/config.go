@@ -52,6 +52,9 @@ type TestConfig struct {
 	// If true and Cloud=true, run this test only if a default warehouse is available in the cloud environment
 	RequiresWarehouse *bool
 
+	// If set, current user will be set to a service principal-like UUID instead of email (default is false)
+	IsServicePrincipal *bool
+
 	// List of additional replacements to apply on this test.
 	// Old is a regexp, New is a replacement expression.
 	Repls []testdiff.Replacement
@@ -97,6 +100,11 @@ type TestConfig struct {
 	// List of keys for which to do string replacement value -> [KEY]. If not set, defaults to true.
 	EnvRepl map[string]bool
 
+	// Name of EnvMatrix key that determines variant-specific output file names.
+	// If set and present in EnvMatrix, update mode will run all variants for this key,
+	// and comparison will only consider files containing the current variant value.
+	EnvVaryOutput *string
+
 	// Maximum amount of time the test is allowed to run, will be killed after that.
 	Timeout time.Duration
 
@@ -106,6 +114,27 @@ type TestConfig struct {
 	// For cloud tests, max(Timeout, TimeoutCloud) is used for timeout
 	// For cloud+windows tests, max(Timeout, TimeoutWindows, TimeoutCloud) is used for timeout
 	TimeoutCloud time.Duration
+
+	// Maps a name (arbitrary string, can be used to override/disable setting in a child config) to a mapping that specifies how
+	// to update databricks.yml (or other file designated by BundleConfigTarget).
+	// Example:
+	// BundleConfig.header.bundle.name = "test-bundle"
+	// This overwrite bundle.name in the databricks.yml, so you can omit adding """
+	// bundle:
+	//   name: somename
+	// """ to every test.
+	// If child config wants to disable or override this, they can simply do
+	// BundleConfig.header = ""
+	BundleConfig map[string]any
+
+	// Target config for BundleConfig updates. Empty string disables BundleConfig updates.
+	// Null means "databricks.yml"
+	BundleConfigTarget *string
+
+	// To be added:
+	// BundleConfigMatrix is to BundleConfig what EnvMatrix is to Env
+	// It creates different tests for each possible configuration update.
+	// BundleConfigMatrix map[string][]any
 }
 
 type ServerStub struct {
@@ -192,8 +221,11 @@ func DoLoadConfig(t *testing.T, path string) TestConfig {
 	require.NoError(t, err, "Failed to parse config %s", path)
 
 	keys := meta.Undecoded()
-	if len(keys) > 0 {
-		t.Fatalf("Undecoded keys in %s: %#v", path, keys)
+	for ind, key := range keys {
+		if len(key) > 0 && key[0] == "BundleConfig" {
+			continue
+		}
+		t.Errorf("Undecoded key in %s[%d]: %#v", path, ind, key)
 	}
 
 	return config

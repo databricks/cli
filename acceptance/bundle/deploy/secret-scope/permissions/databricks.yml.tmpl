@@ -1,0 +1,22 @@
+bundle:
+  name: deploy-secret-scope-with-permissions
+
+resources:
+  secret_scopes:
+    secret_scope_azure:
+      name: test-secrets-permissions
+      permissions:
+        - group_name: resource_level_users
+          level: READ
+        - group_name: resource_level_writers
+          level: WRITE
+        - group_name: resource_level_admins
+          level: MANAGE
+
+permissions:
+  - user_name: $CURRENT_USER_NAME # this will be omitted by `FilterCurrentUser`
+    level: CAN_MANAGE
+  - group_name: users
+    level: CAN_VIEW # this is mapped to READ
+  - group_name: admins
+    level: CAN_MANAGE # this is mapped to MANAGE

@@ -17,8 +17,8 @@ import (
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/dbr"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/tags"
 	"github.com/databricks/databricks-sdk-go"
 	workspaceConfig "github.com/databricks/databricks-sdk-go/config"
@@ -78,78 +78,37 @@ func assertBuiltinTemplateValid(t *testing.T, template string, settings map[stri
 
 	b, err := bundle.Load(ctx, filepath.Join(tempDir, "my_project"))
 	require.NoError(t, err)
-	diags := phases.LoadNamedTarget(ctx, b, target)
-	require.NoError(t, diags.Error())
+
+	// Initialize logdiag context for phase functions
+	ctx = logdiag.InitContext(ctx)
+	logdiag.SetCollect(ctx, true)
+
+	phases.LoadNamedTarget(ctx, b, target)
+	diags := logdiag.FlushCollected(ctx)
+	require.Empty(t, diags)
 
 	// Apply initialize / validation mutators
-	bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	bundle.ApplyFuncContext(ctx, b, func(ctx context.Context, b *bundle.Bundle) {
 		b.Config.Workspace.CurrentUser = &bundleConfig.User{User: cachedUser}
 		b.Config.Bundle.Terraform = &bundleConfig.Terraform{
 			ExecPath: "sh",
 		}
-		return nil
 	})
 
 	b.Tagging = tags.ForCloud(w.Config)
 	b.SetWorkpaceClient(w)
 	b.WorkspaceClient()
 
-	diags = phases.Initialize(ctx, b)
-	require.NoError(t, diags.Error())
+	phases.Initialize(ctx, b)
+	diags = logdiag.FlushCollected(ctx)
+	require.Empty(t, diags)
 
 	// Apply build mutator
 	if build {
-		diags = phases.Build(ctx, b)
-		require.NoError(t, diags.Error())
+		phases.Build(ctx, b)
+		diags = logdiag.FlushCollected(ctx)
+		require.Empty(t, diags)
 	}
-}
-
-func TestBuiltinPythonTemplateValid(t *testing.T) {
-	// Test option combinations
-	options := []string{"yes", "no"}
-	isServicePrincipal := false
-	catalog := "hive_metastore"
-	cachedCatalog = &catalog
-	build := false
-	for _, includeNotebook := range options {
-		for _, includeDlt := range options {
-			for _, includePython := range options {
-				for _, isServicePrincipal := range []bool{true, false} {
-					for _, serverless := range options {
-						config := map[string]any{
-							"project_name":     "my_project",
-							"include_notebook": includeNotebook,
-							"include_dlt":      includeDlt,
-							"include_python":   includePython,
-							"serverless":       serverless,
-						}
-						tempDir := t.TempDir()
-						assertBuiltinTemplateValid(t, "default-python", config, "dev", isServicePrincipal, build, tempDir)
-					}
-				}
-			}
-		}
-	}
-
-	// Test prod mode + build
-	config := map[string]any{
-		"project_name":     "my_project",
-		"include_notebook": "yes",
-		"include_dlt":      "yes",
-		"include_python":   "yes",
-		"serverless":       "yes",
-	}
-	isServicePrincipal = false
-	build = true
-
-	// On Windows, we can't always remove the resulting temp dir since background
-	// processes might have it open, so we use 'defer' for a best-effort cleanup
-	tempDir, err := os.MkdirTemp("", "templates")
-	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
-
-	assertBuiltinTemplateValid(t, "default-python", config, "prod", isServicePrincipal, build, tempDir)
-	defer os.RemoveAll(tempDir)
 }
 
 func TestBuiltinSQLTemplateValid(t *testing.T) {
@@ -171,6 +130,8 @@ func TestBuiltinSQLTemplateValid(t *testing.T) {
 }
 
 func TestBuiltinDbtTemplateValid(t *testing.T) {
+	catalog := "hive_metastore"
+	cachedCatalog = &catalog
 	for _, personal_schemas := range []string{"yes", "no"} {
 		for _, target := range []string{"dev", "prod"} {
 			for _, isServicePrincipal := range []bool{true, false} {

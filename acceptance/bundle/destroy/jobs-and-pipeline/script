@@ -1,0 +1,52 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+envsubst < resources.yml.tmpl > resources.yml
+
+SNAPSHOTS_DIR=".databricks/bundle/default/sync-snapshots"
+
+# double slash at the start prevents Windows to apply replacements to the path
+DEPLOYMENT_PATH="//Workspace/Users/${CURRENT_USER_NAME}/.bundle/${UNIQUE_NAME}"
+
+cleanup() {
+  title "Destroy bundle"
+  trace $CLI bundle destroy --auto-approve
+
+  title "Assert pipeline is deleted"
+  trace errcode $CLI pipelines get "${PIPELINE_ID}"
+
+  title "Assert job is deleted:\n"
+  errcode $CLI jobs get "${JOB_ID}" 2>&1
+
+  title "Assert snapshot file is deleted: "
+  if [ -d ${SNAPSHOTS_DIR} ] && [ -z "$(ls -A ${SNAPSHOTS_DIR})" ]; then
+      echo "Directory exists and is empty"
+  else
+      echo "Directory either does not exist or is not empty. This is unexpected by this test"
+  fi
+
+  title "Assert bundle deployment path is deleted"
+  trace errcode $CLI workspace get-status "${DEPLOYMENT_PATH}"
+}
+trap cleanup EXIT
+
+title "Assert the snapshot file does not exist:\n"
+if [[ ! -d ".databricks/bundle/default/sync-snapshots" ]]; then
+    echo "Directory does not exist"
+else
+    echo "Directory exists and this is unexpected by this test"
+fi
+
+trace $CLI bundle deploy
+
+title "Assert the snapshot file exists"
+trace find.py --expect 1 '^.databricks/bundle/default/sync-snapshots/[a-z0-9]+\.json' > /dev/null
+
+title "Assert bundle deployment path is created"
+trace $CLI workspace get-status "${DEPLOYMENT_PATH}" | jq '{path, object_type}'
+
+title "Assert the pipeline is created"
+PIPELINE_ID=$($CLI bundle summary -o json | jq -r '.resources.pipelines.bar.id')
+trace $CLI pipelines get "${PIPELINE_ID}" | jq "{spec}"
+
+title "Assert the job is created:\n"
+JOB_ID=$($CLI bundle summary -o json | jq -r '.resources.jobs.foo.id')
+$CLI jobs get "${JOB_ID}" | jq '{name: .settings.name}'

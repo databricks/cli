@@ -1,0 +1,11 @@
+bundle:
+  name: shell-sh
+
+artifacts:
+  my_artifact:
+    executable: sh
+    # echo in sh treats \n as a newline.
+    build: |-
+      echo "\n\n\nshould see new lines" > out.shell.txt
+      echo "multiline scripts should work" >> out.shell.txt
+      pwd >> out.shell.txt

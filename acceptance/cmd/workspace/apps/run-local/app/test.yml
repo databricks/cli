@@ -1,4 +1,4 @@
 command:
-- python
-- -c
-- "print('Hello, world')"
+  - python
+  - -c
+  - "print('Hello, world')"

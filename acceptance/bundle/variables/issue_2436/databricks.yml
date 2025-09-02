@@ -1,0 +1,64 @@
+bundle:
+  name: testing-bundle
+  databricks_cli_version: ">= 0.229.0"
+
+variables:
+  job_tasks:
+    description: "Common tasks"
+    type: complex
+    default:
+      - task_key: Task_One
+        spark_python_task:
+          python_file: ./main_dummy.py
+        job_cluster_key: Small
+      - task_key: Task_Two
+        depends_on:
+          - task_key: Task_One
+        run_if: "ALL_SUCCESS"
+        spark_python_task:
+          python_file: ./main_dummy.py
+        job_cluster_key: Small
+
+resources:
+  jobs:
+    job_one:
+      tasks: ${var.job_tasks}
+    job_two:
+      tasks: ${var.job_tasks}
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: https://...
+    resources:
+      jobs:
+        job_one:
+          tasks:
+            - task_key: Task_One
+              job_cluster_key: Medium
+          job_clusters:
+            - job_cluster_key: Small
+              new_cluster:
+                spark_version: 15.4.x-scala2.12
+                node_type_id: Standard_DS3_v2
+                data_security_mode: USER_ISOLATION
+                runtime_engine: STANDARD
+                num_workers: 1
+            - job_cluster_key: Medium
+              new_cluster:
+                spark_version: 14.3.x-scala2.12
+                node_type_id: Standard_DS5_v2
+                data_security_mode: USER_ISOLATION
+                runtime_engine: STANDARD
+                num_workers: 1
+        job_two:
+          job_clusters:
+            - job_cluster_key: Small
+              new_cluster:
+                spark_version: 15.4.x-scala2.12
+                node_type_id: Standard_DS3_v2
+                data_security_mode: USER_ISOLATION
+                runtime_engine: STANDARD
+                num_workers: 2

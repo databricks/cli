@@ -50,6 +50,8 @@ func GetCloud(t TestingT) Cloud {
 		return Azure
 	case "gcp":
 		return GCP
+	case "gcp-ucws":
+		return GCP
 	// CLOUD_ENV is set to "ucws" in the "aws-prod-ucws" test environment
 	case "ucws":
 		return AWS

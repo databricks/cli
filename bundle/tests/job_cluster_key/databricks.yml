@@ -11,8 +11,8 @@ targets:
         foo:
           name: job
           tasks:
-          - task_key: test
-            job_cluster_key: key
+            - task_key: test
+              job_cluster_key: key
   development:
     resources:
       jobs:
@@ -23,5 +23,5 @@ targets:
                 node_type_id: i3.xlarge
                 num_workers: 1
           tasks:
-          - task_key: test
-            job_cluster_key: key
+            - task_key: test
+              job_cluster_key: key

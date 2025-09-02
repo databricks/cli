@@ -1,0 +1,25 @@
+Cloud = true
+
+Ignore = ["input.json"]
+
+# Using shortcuts, because max path component name on Windows is 256 chars
+# INCLUDE_NOTEBOOK
+EnvMatrix.NBOOK = ["yes", "no"]
+
+# INCLUDE_DLT
+EnvMatrix.DLT = ["yes", "no"]
+
+# INCLUDE_PYTHON
+EnvMatrix.PY = ["yes", "no"]
+
+[[Server]]
+Pattern = "PUT /api/2.0/permissions/directories/0"
+Response.Body = '{}'
+
+[[Repls]]
+Old = '202\d{5}.\d{5,}'
+New = '[VERSION_TIMESTAMP]'
+
+[[Repls]]
+Old = '\\'
+New = '/'

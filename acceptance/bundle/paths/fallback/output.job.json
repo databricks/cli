@@ -1,19 +1,5 @@
 [
   {
-    "job_cluster_key": "default",
-    "notebook_task": {
-      "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/fallback/development/files/src/notebook"
-    },
-    "task_key": "notebook_example"
-  },
-  {
-    "job_cluster_key": "default",
-    "spark_python_task": {
-      "python_file": "/Workspace/Users/[USERNAME]/.bundle/fallback/development/files/src/file.py"
-    },
-    "task_key": "spark_python_example"
-  },
-  {
     "dbt_task": {
       "commands": [
         "dbt run",
@@ -26,13 +12,10 @@
   },
   {
     "job_cluster_key": "default",
-    "sql_task": {
-      "file": {
-        "path": "/Workspace/Users/[USERNAME]/.bundle/fallback/development/files/src/sql.sql"
-      },
-      "warehouse_id": "cafef00d"
+    "notebook_task": {
+      "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/fallback/development/files/src/notebook"
     },
-    "task_key": "sql_example"
+    "task_key": "notebook_example"
   },
   {
     "job_cluster_key": "default",
@@ -63,5 +46,22 @@
       "main_class_name": "com.example.Main"
     },
     "task_key": "spark_jar_example"
+  },
+  {
+    "job_cluster_key": "default",
+    "spark_python_task": {
+      "python_file": "/Workspace/Users/[USERNAME]/.bundle/fallback/development/files/src/file.py"
+    },
+    "task_key": "spark_python_example"
+  },
+  {
+    "job_cluster_key": "default",
+    "sql_task": {
+      "file": {
+        "path": "/Workspace/Users/[USERNAME]/.bundle/fallback/development/files/src/sql.sql"
+      },
+      "warehouse_id": "cafef00d"
+    },
+    "task_key": "sql_example"
   }
 ]

@@ -1,0 +1,12 @@
+resources:
+  jobs:
+    bar:
+      name: test-job-metadata-2-$UNIQUE_NAME
+      tasks:
+        - task_key: my_notebook_task
+          new_cluster:
+            num_workers: 1
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+          notebook_task:
+            notebook_path: "./bar.py"

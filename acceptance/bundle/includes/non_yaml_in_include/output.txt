@@ -1,5 +1,5 @@
 Error: Files in the 'include' configuration section must be YAML or JSON files.
-  in databricks.yml:5:4
+  in databricks.yml:5:5
 
 The file test.py in the 'include' configuration section is not a YAML or JSON file, and only such files are supported. To include files to sync, specify them in the 'sync.include' configuration section instead.
 

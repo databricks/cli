@@ -2,7 +2,6 @@ package sync
 
 import (
 	"context"
-	"flag"
 	"os"
 	"path/filepath"
 	"strings"
@@ -47,11 +46,11 @@ func TestSyncOptionsFromArgsRequiredTwoArgs(t *testing.T) {
 	var err error
 	f := syncFlags{}
 	_, err = f.syncOptionsFromArgs(New(), []string{})
-	require.ErrorIs(t, err, flag.ErrHelp)
+	require.ErrorContains(t, err, "accepts 2 arg(s), received 0")
 	_, err = f.syncOptionsFromArgs(New(), []string{"foo"})
-	require.ErrorIs(t, err, flag.ErrHelp)
+	require.ErrorContains(t, err, "accepts 2 arg(s), received 1")
 	_, err = f.syncOptionsFromArgs(New(), []string{"foo", "bar", "qux"})
-	require.ErrorIs(t, err, flag.ErrHelp)
+	require.ErrorContains(t, err, "accepts 2 arg(s), received 3")
 }
 
 func TestSyncOptionsFromArgs(t *testing.T) {

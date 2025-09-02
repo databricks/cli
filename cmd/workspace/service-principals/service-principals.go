@@ -65,7 +65,6 @@ func newCreate() *cobra.Command {
 	var createReq iam.ServicePrincipal
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().BoolVar(&createReq.Active, "active", createReq.Active, `If this user is active.`)
@@ -142,8 +141,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq iam.DeleteServicePrincipalRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete ID"
 	cmd.Short = `Delete a service principal.`
 	cmd.Long = `Delete a service principal.
@@ -211,8 +208,6 @@ func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getReq iam.GetServicePrincipalRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get ID"
 	cmd.Short = `Get service principal details.`
@@ -283,8 +278,6 @@ func newList() *cobra.Command {
 
 	var listReq iam.ListServicePrincipalsRequest
 
-	// TODO: short flags
-
 	cmd.Flags().StringVar(&listReq.Attributes, "attributes", listReq.Attributes, `Comma-separated list of attributes to return in response.`)
 	cmd.Flags().Int64Var(&listReq.Count, "count", listReq.Count, `Desired number of results per page.`)
 	cmd.Flags().StringVar(&listReq.ExcludedAttributes, "excluded-attributes", listReq.ExcludedAttributes, `Comma-separated list of attributes to exclude in response.`)
@@ -342,7 +335,6 @@ func newPatch() *cobra.Command {
 	var patchReq iam.PartialUpdate
 	var patchJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&patchJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: Operations
@@ -430,7 +422,6 @@ func newUpdate() *cobra.Command {
 	var updateReq iam.ServicePrincipal
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().BoolVar(&updateReq.Active, "active", updateReq.Active, `If this user is active.`)

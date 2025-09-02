@@ -4,7 +4,7 @@
   "foo": {
     "deployment": {
       "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/override_job_cluster/development/state/metadata.json"
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/development/state/metadata.json"
     },
     "edit_mode": "UI_LOCKED",
     "format": "MULTI_TASK",
@@ -12,7 +12,7 @@
       {
         "job_cluster_key": "key",
         "new_cluster": {
-          "node_type_id": "i3.xlarge",
+          "node_type_id": "[NODE_TYPE_ID]",
           "num_workers": 1,
           "spark_version": "13.3.x-scala2.12"
         }
@@ -32,7 +32,7 @@
   "foo": {
     "deployment": {
       "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/override_job_cluster/staging/state/metadata.json"
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/staging/state/metadata.json"
     },
     "edit_mode": "UI_LOCKED",
     "format": "MULTI_TASK",

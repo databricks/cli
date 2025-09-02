@@ -1,0 +1,21 @@
+Local = false
+CloudSlow = true
+RecordRequests = false
+
+Ignore = [
+    "databricks.yml",
+    "databricks.yml.tmpl",
+    "hello_world.py",
+]
+
+[[Repls]]
+Old = '\d{5,}'
+New = "[NUMID]"
+
+[[Repls]]
+Old = '\\\\'
+New = '/'
+
+[[Repls]]
+Old = '\\'
+New = '/'

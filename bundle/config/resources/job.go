@@ -32,12 +32,12 @@ type Job struct {
 	jobs.JobSettings
 }
 
-func (s *Job) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, s)
+func (j *Job) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, j)
 }
 
-func (s Job) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(s)
+func (j Job) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(j)
 }
 
 func (j *Job) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {
@@ -57,16 +57,11 @@ func (j *Job) Exists(ctx context.Context, w *databricks.WorkspaceClient, id stri
 
 func (j *Job) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
-		SingularName:          "job",
-		PluralName:            "jobs",
-		SingularTitle:         "Job",
-		PluralTitle:           "Jobs",
-		TerraformResourceName: "databricks_job",
+		SingularName:  "job",
+		PluralName:    "jobs",
+		SingularTitle: "Job",
+		PluralTitle:   "Jobs",
 	}
-}
-
-func (j *Job) TerraformResourceName() string {
-	return "databricks_job"
 }
 
 func (j *Job) InitializeURL(baseURL url.URL) {

@@ -35,6 +35,8 @@ func allResourceTypes(t *testing.T) []string {
 		"apps",
 		"clusters",
 		"dashboards",
+		"database_catalogs",
+		"database_instances",
 		"experiments",
 		"jobs",
 		"model_serving_endpoints",
@@ -43,6 +45,9 @@ func allResourceTypes(t *testing.T) []string {
 		"quality_monitors",
 		"registered_models",
 		"schemas",
+		"secret_scopes",
+		"sql_warehouses",
+		"synced_database_tables",
 		"volumes",
 	},
 		resourceTypes,
@@ -137,11 +142,16 @@ func TestRunAsWorksForAllowedResources(t *testing.T) {
 // they are not on the allow list below.
 var allowList = []string{
 	"clusters",
+	"database_catalogs",
+	"database_instances",
+	"synced_database_tables",
 	"jobs",
 	"models",
 	"registered_models",
 	"experiments",
 	"schemas",
+	"secret_scopes",
+	"sql_warehouses",
 	"volumes",
 }
 

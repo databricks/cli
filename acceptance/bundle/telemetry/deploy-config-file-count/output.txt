@@ -1,7 +1,10 @@
 
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/boar/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
 Deployment complete!
 
 >>> cat out.requests.txt
+{
+  "configuration_file_count": 4
+}

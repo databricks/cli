@@ -6,6 +6,8 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/databricks/databricks-sdk-go/service/database"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
@@ -21,6 +23,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/databricks/databricks-sdk-go/service/serving"
+	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -140,8 +143,10 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 				},
 				Dashboards: map[string]*resources.Dashboard{
 					"dashboard1": {
-						Dashboard: dashboards.Dashboard{
-							DisplayName: "dashboard1",
+						DashboardConfig: resources.DashboardConfig{
+							Dashboard: dashboards.Dashboard{
+								DisplayName: "dashboard1",
+							},
 						},
 					},
 				},
@@ -149,6 +154,39 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 					"app1": {
 						App: apps.App{
 							Name: "app1",
+						},
+					},
+				},
+				SecretScopes: map[string]*resources.SecretScope{
+					"secretScope1": {
+						Name: "secretScope1",
+					},
+				},
+				SqlWarehouses: map[string]*resources.SqlWarehouse{
+					"sql_warehouse1": {
+						CreateWarehouseRequest: sql.CreateWarehouseRequest{
+							Name: "sql_warehouse1",
+						},
+					},
+				},
+				DatabaseInstances: map[string]*resources.DatabaseInstance{
+					"database_instance1": {
+						DatabaseInstance: database.DatabaseInstance{
+							Name: "database_instance1",
+						},
+					},
+				},
+				DatabaseCatalogs: map[string]*resources.DatabaseCatalog{
+					"database_catalog1": {
+						DatabaseCatalog: database.DatabaseCatalog{
+							Name: "database_catalog1",
+						},
+					},
+				},
+				SyncedDatabaseTables: map[string]*resources.SyncedDatabaseTable{
+					"synced_database_table1": {
+						SyncedDatabaseTable: database.SyncedDatabaseTable{
+							Name: "synced_database_table1",
 						},
 					},
 				},
@@ -182,16 +220,16 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 	// Pipeline 1
 	assert.Equal(t, "[dev lennart] pipeline1", b.Config.Resources.Pipelines["pipeline1"].Name)
 	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].Continuous)
-	assert.True(t, b.Config.Resources.Pipelines["pipeline1"].CreatePipeline.Development)
+	assert.True(t, b.Config.Resources.Pipelines["pipeline1"].Development)
 
 	// Experiment 1
 	assert.Equal(t, "/Users/lennart.kats@databricks.com/[dev lennart] experiment1", b.Config.Resources.Experiments["experiment1"].Name)
-	assert.Contains(t, b.Config.Resources.Experiments["experiment1"].Experiment.Tags, ml.ExperimentTag{Key: "dev", Value: "lennart"})
+	assert.Contains(t, b.Config.Resources.Experiments["experiment1"].Tags, ml.ExperimentTag{Key: "dev", Value: "lennart"})
 	assert.Equal(t, "dev", b.Config.Resources.Experiments["experiment1"].Experiment.Tags[0].Key)
 
 	// Experiment 2
 	assert.Equal(t, "[dev lennart] experiment2", b.Config.Resources.Experiments["experiment2"].Name)
-	assert.Contains(t, b.Config.Resources.Experiments["experiment2"].Experiment.Tags, ml.ExperimentTag{Key: "dev", Value: "lennart"})
+	assert.Contains(t, b.Config.Resources.Experiments["experiment2"].Tags, ml.ExperimentTag{Key: "dev", Value: "lennart"})
 
 	// Model 1
 	assert.Equal(t, "[dev lennart] model1", b.Config.Resources.Models["model1"].Name)
@@ -267,13 +305,14 @@ func TestProcessTargetModeDefault(t *testing.T) {
 	require.NoError(t, diags.Error())
 	assert.Equal(t, "job1", b.Config.Resources.Jobs["job1"].Name)
 	assert.Equal(t, "pipeline1", b.Config.Resources.Pipelines["pipeline1"].Name)
-	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].CreatePipeline.Development)
+	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].Development)
 	assert.Equal(t, "servingendpoint1", b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
 	assert.Equal(t, "registeredmodel1", b.Config.Resources.RegisteredModels["registeredmodel1"].Name)
 	assert.Equal(t, "qualityMonitor1", b.Config.Resources.QualityMonitors["qualityMonitor1"].TableName)
 	assert.Equal(t, "schema1", b.Config.Resources.Schemas["schema1"].Name)
 	assert.Equal(t, "volume1", b.Config.Resources.Volumes["volume1"].Name)
 	assert.Equal(t, "cluster1", b.Config.Resources.Clusters["cluster1"].ClusterName)
+	assert.Equal(t, "sql_warehouse1", b.Config.Resources.SqlWarehouses["sql_warehouse1"].Name)
 }
 
 // Make sure that we have test coverage for all resource types
@@ -287,7 +326,7 @@ func TestAllResourcesMocked(t *testing.T) {
 			assert.True(
 				t,
 				!field.IsNil() && field.Len() > 0,
-				"process_target_mode should support '%s' (please add it to process_target_mode.go and extend the test suite)",
+				"apply_target_mode should support '%s' (please add it to apply_target_mode.go and extend the test suite)",
 				resources.Type().Field(i).Name,
 			)
 		}
@@ -318,8 +357,8 @@ func TestAllNonUcResourcesAreRenamed(t *testing.T) {
 				nameField := resource.Elem().FieldByName("Name")
 				resourceType := resources.Type().Field(i).Name
 
-				// Skip apps, as they are not renamed
-				if resourceType == "Apps" {
+				// Skip resources that are not renamed
+				if resourceType == "Apps" || resourceType == "SecretScopes" || resourceType == "DatabaseInstances" || resourceType == "DatabaseCatalogs" || resourceType == "SyncedDatabaseTables" {
 					continue
 				}
 
@@ -430,5 +469,5 @@ func TestPipelinesDevelopmentDisabled(t *testing.T) {
 	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
-	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].CreatePipeline.Development)
+	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].Development)
 }

@@ -1,6 +1,3 @@
-bundle:
-  name: python-wheel-local
-
 workspace:
   artifact_path: /foo/bar
 
@@ -15,4 +12,4 @@ resources:
             package_name: "my_test_code"
             entry_point: "run"
           libraries:
-          - whl: ./package/*.whl
+            - whl: ./package/*.whl

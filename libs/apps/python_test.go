@@ -1,6 +1,7 @@
 package apps
 
 import (
+	"context"
 	"path/filepath"
 	"testing"
 
@@ -88,7 +89,7 @@ func TestPythonAppGetCommand(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			config, spec := tt.setup()
-			app := NewPythonApp(config, spec)
+			app := NewPythonApp(context.Background(), config, spec)
 			cmd, err := app.GetCommand(tt.debug)
 
 			if !tt.wantErr {
