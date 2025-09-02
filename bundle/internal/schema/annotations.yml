@@ -439,6 +439,10 @@ github.com/databricks/cli/bundle/config.Workspace:
   "state_path":
     "description": |-
       The workspace state path
+github.com/databricks/cli/bundle/config/resources.App:
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.AppPermission:
   "group_name":
     "description": |-
@@ -450,6 +454,10 @@ github.com/databricks/cli/bundle/config/resources.AppPermission:
     "description": |-
       PLACEHOLDER
   "user_name":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.Cluster:
+  "lifecycle":
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.ClusterPermission:
@@ -465,6 +473,10 @@ github.com/databricks/cli/bundle/config/resources.ClusterPermission:
   "user_name":
     "description": |-
       PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.Dashboard:
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.DashboardPermission:
   "group_name":
     "description": |-
@@ -476,6 +488,10 @@ github.com/databricks/cli/bundle/config/resources.DashboardPermission:
     "description": |-
       PLACEHOLDER
   "user_name":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.DatabaseInstance:
+  "lifecycle":
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.DatabaseInstancePermission:
@@ -498,6 +514,10 @@ github.com/databricks/cli/bundle/config/resources.Grant:
   "privileges":
     "description": |-
       The privileges to grant to the specified entity
+github.com/databricks/cli/bundle/config/resources.Job:
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.JobPermission:
   "group_name":
     "description": |-
@@ -509,6 +529,14 @@ github.com/databricks/cli/bundle/config/resources.JobPermission:
     "description": |-
       PLACEHOLDER
   "user_name":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.Lifecycle:
+  "prevent_destroy":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.MlflowExperiment:
+  "lifecycle":
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.MlflowExperimentPermission:
@@ -524,6 +552,10 @@ github.com/databricks/cli/bundle/config/resources.MlflowExperimentPermission:
   "user_name":
     "description": |-
       PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.MlflowModel:
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.MlflowModelPermission:
   "group_name":
     "description": |-
@@ -535,6 +567,10 @@ github.com/databricks/cli/bundle/config/resources.MlflowModelPermission:
     "description": |-
       PLACEHOLDER
   "user_name":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.ModelServingEndpoint:
+  "lifecycle":
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.ModelServingEndpointPermission:
@@ -568,6 +604,10 @@ github.com/databricks/cli/bundle/config/resources.Permission:
   "user_name":
     "description": |-
       The name of the user that has the permission set in level.
+github.com/databricks/cli/bundle/config/resources.Pipeline:
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.PipelinePermission:
   "group_name":
     "description": |-
@@ -579,6 +619,18 @@ github.com/databricks/cli/bundle/config/resources.PipelinePermission:
     "description": |-
       PLACEHOLDER
   "user_name":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.QualityMonitor:
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.RegisteredModel:
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.Schema:
+  "lifecycle":
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.SchemaGrant:
@@ -595,6 +647,9 @@ github.com/databricks/cli/bundle/config/resources.SecretScope:
   "keyvault_metadata":
     "description": |-
       The metadata for the secret scope if the `backend_type` is `AZURE_KEYVAULT`
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
   "name":
     "description": |-
       Scope name requested by the user. Scope names are unique.
@@ -614,6 +669,10 @@ github.com/databricks/cli/bundle/config/resources.SecretScopePermission:
   "user_name":
     "description": |-
       The name of the user that has the permission set in level. This field translates to a `principal` field in secret scope ACL.
+github.com/databricks/cli/bundle/config/resources.SqlWarehouse:
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.SqlWarehousePermission:
   "group_name":
     "description": |-
@@ -650,6 +709,10 @@ github.com/databricks/cli/bundle/config/resources.SyncedDatabaseTable:
     "description": |-
       PLACEHOLDER
   "unity_catalog_provisioning_state":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.Volume:
+  "lifecycle":
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.VolumeGrant:
