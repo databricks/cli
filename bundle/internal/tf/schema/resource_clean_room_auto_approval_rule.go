@@ -10,4 +10,5 @@ type ResourceCleanRoomAutoApprovalRule struct {
 	RuleId                     string `json:"rule_id,omitempty"`
 	RuleOwnerCollaboratorAlias string `json:"rule_owner_collaborator_alias,omitempty"`
 	RunnerCollaboratorAlias    string `json:"runner_collaborator_alias,omitempty"`
+	WorkspaceId                string `json:"workspace_id,omitempty"`
 }

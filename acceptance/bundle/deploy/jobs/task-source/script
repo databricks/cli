@@ -1,6 +1,19 @@
 trace $CLI bundle deploy
 
-trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | select(.body.name=="git_job") | .body' out.requests.txt | jq --sort-keys
-trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | select(.body.name=="workspace_job") | .body' out.requests.txt | jq --sort-keys
+# For terraform we expect the task source to be explicitly set always
+# For direct-exp we do not expect it to be set unless explicitly specified in the bundle config
+trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | select(.body.name=="git_job") | .body' out.requests.txt | jq --sort-keys > out.git_job.$DATABRICKS_CLI_DEPLOYMENT.txt
+trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | select(.body.name=="workspace_job") | .body' out.requests.txt | jq --sort-keys > out.workspace_job.$DATABRICKS_CLI_DEPLOYMENT.txt
+rm out.requests.txt
+
+# Removing the git_source block and deploying again
+update_file.py databricks.yml '<<: *git_source' ''
+trace $CLI bundle plan
+trace $CLI bundle deploy
+
+# In direct mode update should not contain source unless explicitly specified in the bundle config
+# In terraform mode update should always contain source field
+trace jq -s '.[] | select(.path=="/api/2.2/jobs/reset") | select(.body.new_settings.name=="git_job") | .body' out.requests.txt | jq --sort-keys >> out.git_job.$DATABRICKS_CLI_DEPLOYMENT.txt
+trace jq -s '.[] | select(.path=="/api/2.2/jobs/reset") | select(.body.new_settings.name=="workspace_job") | .body' out.requests.txt | jq --sort-keys >> out.workspace_job.$DATABRICKS_CLI_DEPLOYMENT.txt
 
 rm out.requests.txt

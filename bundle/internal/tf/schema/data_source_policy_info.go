@@ -46,4 +46,5 @@ type DataSourcePolicyInfo struct {
 	UpdatedAt           int                                `json:"updated_at,omitempty"`
 	UpdatedBy           string                             `json:"updated_by,omitempty"`
 	WhenCondition       string                             `json:"when_condition,omitempty"`
+	WorkspaceId         string                             `json:"workspace_id,omitempty"`
 }

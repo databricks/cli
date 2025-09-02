@@ -3,8 +3,8 @@
 package schema
 
 type DataSourceShareObjectPartitionValue struct {
-	Name                 string `json:"name,omitempty"`
-	Op                   string `json:"op,omitempty"`
+	Name                 string `json:"name"`
+	Op                   string `json:"op"`
 	RecipientPropertyKey string `json:"recipient_property_key,omitempty"`
 	Value                string `json:"value,omitempty"`
 }
@@ -14,36 +14,25 @@ type DataSourceShareObjectPartition struct {
 }
 
 type DataSourceShareObject struct {
-	AddedAt                           int                              `json:"added_at,omitempty"`
-	AddedBy                           string                           `json:"added_by,omitempty"`
-	CdfEnabled                        bool                             `json:"cdf_enabled,omitempty"`
-	Comment                           string                           `json:"comment,omitempty"`
-	Content                           string                           `json:"content,omitempty"`
-	DataObjectType                    string                           `json:"data_object_type,omitempty"`
-	EffectiveCdfEnabled               bool                             `json:"effective_cdf_enabled,omitempty"`
-	EffectiveHistoryDataSharingStatus string                           `json:"effective_history_data_sharing_status,omitempty"`
-	EffectiveSharedAs                 string                           `json:"effective_shared_as,omitempty"`
-	EffectiveStartVersion             int                              `json:"effective_start_version,omitempty"`
-	EffectiveStringSharedAs           string                           `json:"effective_string_shared_as,omitempty"`
-	HistoryDataSharingStatus          string                           `json:"history_data_sharing_status,omitempty"`
-	Name                              string                           `json:"name"`
-	Partition                         []DataSourceShareObjectPartition `json:"partition,omitempty"`
-	SharedAs                          string                           `json:"shared_as,omitempty"`
-	StartVersion                      int                              `json:"start_version,omitempty"`
-	Status                            string                           `json:"status,omitempty"`
-	StringSharedAs                    string                           `json:"string_shared_as,omitempty"`
+	AddedAt                  int                              `json:"added_at,omitempty"`
+	AddedBy                  string                           `json:"added_by,omitempty"`
+	CdfEnabled               bool                             `json:"cdf_enabled,omitempty"`
+	Comment                  string                           `json:"comment,omitempty"`
+	Content                  string                           `json:"content,omitempty"`
+	DataObjectType           string                           `json:"data_object_type"`
+	HistoryDataSharingStatus string                           `json:"history_data_sharing_status,omitempty"`
+	Name                     string                           `json:"name"`
+	SharedAs                 string                           `json:"shared_as,omitempty"`
+	StartVersion             int                              `json:"start_version,omitempty"`
+	Status                   string                           `json:"status,omitempty"`
+	StringSharedAs           string                           `json:"string_shared_as,omitempty"`
+	Partition                []DataSourceShareObjectPartition `json:"partition,omitempty"`
 }
 
 type DataSourceShare struct {
-	Comment         string                  `json:"comment,omitempty"`
-	CreatedAt       int                     `json:"created_at,omitempty"`
-	CreatedBy       string                  `json:"created_by,omitempty"`
-	EffectiveOwner  string                  `json:"effective_owner,omitempty"`
-	Name            string                  `json:"name,omitempty"`
-	Object          []DataSourceShareObject `json:"object,omitempty"`
-	Owner           string                  `json:"owner,omitempty"`
-	StorageLocation string                  `json:"storage_location,omitempty"`
-	StorageRoot     string                  `json:"storage_root,omitempty"`
-	UpdatedAt       int                     `json:"updated_at,omitempty"`
-	UpdatedBy       string                  `json:"updated_by,omitempty"`
+	CreatedAt int                     `json:"created_at,omitempty"`
+	CreatedBy string                  `json:"created_by,omitempty"`
+	Id        string                  `json:"id,omitempty"`
+	Name      string                  `json:"name,omitempty"`
+	Object    []DataSourceShareObject `json:"object,omitempty"`
 }
