@@ -31,14 +31,14 @@ resources:
 {{- if $notebook}}
         - task_key: notebook_task
           notebook_task:
-            notebook_path: ../src/sample_notebook.ipynb
+            notebook_path: sample_notebook.ipynb
   {{- if $serverless}}
           environment_key: default
   {{- else}}
           job_cluster_key: job_cluster
     {{- if $python_package}}
           libraries:
-            # By default we just include the .whl file generated for the {{.project_name_short}} package in src/.
+            # By default we just include the .whl file generated for the {{.project_name_short}} package.
             # See https://docs.databricks.com/dev-tools/bundles/library-dependencies.html
             # for more information on how to add other libraries.
             - whl: ../../dist/*.whl
@@ -51,7 +51,7 @@ resources:
           depends_on:
             - task_key: notebook_task
           spark_python_task:
-            python_file: ../src/sample_python_file.py
+            python_file: sample_python_file.py
   {{- if $serverless}}
           environment_key: default
   {{- else}}
@@ -79,10 +79,10 @@ resources:
             client: "2"
   {{- if $python_package}}
             dependencies:
-              # By default we just include the .whl file generated for the {{.project_name_short}} package in src/.
+              # By default we just include the .whl file generated for the {{.project_name_short}} package.
               # See https://docs.databricks.com/dev-tools/bundles/library-dependencies.html
               # for more information on how to add other libraries.
-              - ../dist/*.whl
+              - ../../dist/*.whl
   {{- end}}
 {{- else}}
 

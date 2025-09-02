@@ -22,8 +22,8 @@ resources:
       {{- if $with_serverless}}
       serverless: true
       {{- end}}
-      root_path: ../src
+      root_path: "."
 
       libraries:
         - glob:
-            include: ../src/{{.project_name_short}}_etl/transformations/**
+            include: transformations/**

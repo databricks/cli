@@ -27,7 +27,7 @@ func TestBuiltin(t *testing.T) {
 	// Verify the filesystems work for each template
 	_, err = fs.Stat(templates["dbt-sql"].FS, `template/{{.project_name}}/dbt_project.yml.tmpl`)
 	assert.NoError(t, err)
-	_, err = fs.Stat(templates["default-python"].FS, `template/{{.project_name}}/tests/main_test.py.tmpl`)
+	_, err = fs.Stat(templates["default-python"].FS, `template/{{.project_name}}/tests/sample_taxis_test.py.tmpl`)
 	assert.NoError(t, err)
 	_, err = fs.Stat(templates["default-sql"].FS, `template/{{.project_name}}/src/orders_daily.sql.tmpl`)
 	assert.NoError(t, err)

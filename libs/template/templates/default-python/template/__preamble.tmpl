@@ -14,19 +14,19 @@ This file only template directives; it is skipped for the actual output.
 
 {{if not $pipeline}}
   {{skip "{{.project_name}}/resources/{{.project_name_short}}_etl.pipeline.yml"}}
-  {{skip "{{.project_name}}/src/{{.project_name_short}}_etl"}}
+  {{skip "{{.project_name}}/resources/{{.project_name_short}}_etl"}}
 {{end}}
 
 {{if not $job}}
-  {{skip "{{.project_name}}/src/sample_notebook.ipynb"}}
-  {{skip "{{.project_name}}/src/sample_python_file.py"}}
+  {{skip "{{.project_name}}/resources/sample_job/sample_notebook.ipynb"}}
+  {{skip "{{.project_name}}/resources/sample_job/sample_python_file.py"}}
   {{if not $pipeline}}
     {{skip "{{.project_name}}/resources/{{.project_name_short}}_job.job.yml"}}
   {{end}}
 {{end}}
 
 {{if and (not $pipeline) (not $job) (not $python_package)}}
-  {{skip "{{.project_name}}/src/shared"}}
+  {{skip "{{.project_name}}/lib/shared"}}
 {{end}}
 
 # Remove tests for the empty project or if we only have Pipeline
@@ -37,5 +37,5 @@ This file only template directives; it is skipped for the actual output.
 
 # Remove .gitkeep files for a non-empty project
 {{if or $python_package $job $pipeline}}
-  {{skip "{{.project_name}}/src/.gitkeep"}}
+  {{skip "{{.project_name}}/lib/.gitkeep"}}
 {{end}}
