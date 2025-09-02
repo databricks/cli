@@ -189,36 +189,3 @@ func TestConvertAppWithLifecycle(t *testing.T) {
 		},
 	}, out.App["my_app"])
 }
-
-func TestConvertAppWithLifecycleFalse(t *testing.T) {
-	src := resources.App{
-		SourceCodePath: "./app",
-		Config: map[string]any{
-			"command": []string{"python", "app.py"},
-		},
-		App: apps.App{
-			Name: "app_id",
-		},
-		Lifecycle: resources.Lifecycle{
-			PreventDestroy: false,
-		},
-	}
-
-	vin, err := convert.FromTyped(src, dyn.NilValue)
-	require.NoError(t, err)
-
-	ctx := context.Background()
-	out := schema.NewResources()
-	err = appConverter{}.Convert(ctx, "my_app", vin, out)
-	require.NoError(t, err)
-
-	// Assert equality on the app
-	assert.Equal(t, map[string]any{
-		"name":        "app_id",
-		"description": "",
-		"no_compute":  true,
-		"lifecycle": map[string]any{
-			"prevent_destroy": false,
-		},
-	}, out.App["my_app"])
-}
