@@ -72,7 +72,7 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 
 		adapter, ok := b.Adapters[node.Group]
 		if !ok {
-			logdiag.LogError(ctx, fmt.Errorf("%s: resource type not supported on direct backend", errorPrefix))
+			logdiag.LogError(ctx, fmt.Errorf("%s: resource type not supported on direct backend, available: %s", errorPrefix, strings.Join(utils.SortedKeys(b.Adapters), ", ")))
 			return false
 		}
 

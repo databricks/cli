@@ -25,7 +25,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 	b.Graph.Run(defaultParallelism, func(node deployplan.ResourceNode, failedDependency *deployplan.ResourceNode) bool {
 		d, exists := b.DeploymentUnits[node]
 		if !exists {
-			logdiag.LogError(ctx, fmt.Errorf("internal error: %s: resource type not supported on direct backend", d.Group))
+			// Resource with actionType == noop are not added to DeploymentUnits
 			return false
 		}
 		errorPrefix := fmt.Sprintf("cannot %s %s.%s", d.ActionType.String(), node.Group, node.Key)
