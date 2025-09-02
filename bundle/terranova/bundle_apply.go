@@ -43,7 +43,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		}
 
 		if d.ActionType == deployplan.ActionTypeDelete {
-			err := d.Destroy(ctx, client, &b.StateDB)
+			err := d.Destroy(ctx, &b.StateDB)
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
@@ -73,7 +73,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 
 		// TODO: redo calcDiff to downgrade planned action if possible (?)
 
-		err = d.Deploy(ctx, client, &b.StateDB, config, d.ActionType)
+		err = d.Deploy(ctx, &b.StateDB, config, d.ActionType)
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 			return false

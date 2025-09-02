@@ -11,10 +11,9 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/terranova/tnstate"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go"
 )
 
-func (d *DeploymentUnit) Destroy(ctx context.Context, client *databricks.WorkspaceClient, db *tnstate.TerranovaState) error {
+func (d *DeploymentUnit) Destroy(ctx context.Context, db *tnstate.TerranovaState) error {
 	entry, hasEntry := db.GetResourceEntry(d.Group, d.Key)
 	if !hasEntry {
 		log.Infof(ctx, "Cannot delete %s.%s: missing from state", d.Group, d.Key)
@@ -25,7 +24,7 @@ func (d *DeploymentUnit) Destroy(ctx context.Context, client *databricks.Workspa
 		return errors.New("invalid state: empty id")
 	}
 
-	err := d.Delete(ctx, client, db, entry.ID)
+	err := d.Delete(ctx, db, entry.ID)
 	if err != nil {
 		return err
 	}
@@ -33,14 +32,14 @@ func (d *DeploymentUnit) Destroy(ctx context.Context, client *databricks.Workspa
 	return nil
 }
 
-func (d *DeploymentUnit) Deploy(ctx context.Context, client *databricks.WorkspaceClient, db *tnstate.TerranovaState, inputConfig any, actionType deployplan.ActionType) error {
+func (d *DeploymentUnit) Deploy(ctx context.Context, db *tnstate.TerranovaState, inputConfig any, actionType deployplan.ActionType) error {
 	config, err := d.Adapter.PrepareConfig(inputConfig)
 	if err != nil {
 		return err
 	}
 
 	if actionType == deployplan.ActionTypeCreate {
-		return d.Create(ctx, client, db, config)
+		return d.Create(ctx, db, config)
 	}
 
 	entry, hasEntry := db.GetResourceEntry(d.Group, d.Key)
@@ -55,17 +54,17 @@ func (d *DeploymentUnit) Deploy(ctx context.Context, client *databricks.Workspac
 
 	switch actionType {
 	case deployplan.ActionTypeRecreate:
-		return d.Recreate(ctx, client, db, oldID, config)
+		return d.Recreate(ctx, db, oldID, config)
 	case deployplan.ActionTypeUpdate:
-		return d.Update(ctx, client, db, oldID, config)
+		return d.Update(ctx, db, oldID, config)
 	case deployplan.ActionTypeUpdateWithID:
-		return d.UpdateWithID(ctx, client, db, oldID, config)
+		return d.UpdateWithID(ctx, db, oldID, config)
 	default:
 		return fmt.Errorf("internal error: unexpected actionType: %#v", actionType)
 	}
 }
 
-func (d *DeploymentUnit) Create(ctx context.Context, client *databricks.WorkspaceClient, db *tnstate.TerranovaState, config any) error {
+func (d *DeploymentUnit) Create(ctx context.Context, db *tnstate.TerranovaState, config any) error {
 	newID, err := d.Adapter.DoCreate(ctx, config)
 	if err != nil {
 		// No need to prefix error, there is no ambiguity (only one operation - DoCreate) and no additional context (like id)
@@ -87,7 +86,7 @@ func (d *DeploymentUnit) Create(ctx context.Context, client *databricks.Workspac
 	return nil
 }
 
-func (d *DeploymentUnit) Recreate(ctx context.Context, client *databricks.WorkspaceClient, db *tnstate.TerranovaState, oldID string, config any) error {
+func (d *DeploymentUnit) Recreate(ctx context.Context, db *tnstate.TerranovaState, oldID string, config any) error {
 	err := d.Adapter.DoDelete(ctx, oldID)
 	if err != nil {
 		return fmt.Errorf("deleting old id=%s: %w", oldID, err)
@@ -98,10 +97,10 @@ func (d *DeploymentUnit) Recreate(ctx context.Context, client *databricks.Worksp
 		return fmt.Errorf("deleting state: %w", err)
 	}
 
-	return d.Create(ctx, client, db, config)
+	return d.Create(ctx, db, config)
 }
 
-func (d *DeploymentUnit) Update(ctx context.Context, client *databricks.WorkspaceClient, db *tnstate.TerranovaState, id string, config any) error {
+func (d *DeploymentUnit) Update(ctx context.Context, db *tnstate.TerranovaState, id string, config any) error {
 	err := d.Adapter.DoUpdate(ctx, id, config)
 	if err != nil {
 		return fmt.Errorf("updating id=%s: %w", id, err)
@@ -120,7 +119,7 @@ func (d *DeploymentUnit) Update(ctx context.Context, client *databricks.Workspac
 	return nil
 }
 
-func (d *DeploymentUnit) UpdateWithID(ctx context.Context, client *databricks.WorkspaceClient, db *tnstate.TerranovaState, oldID string, config any) error {
+func (d *DeploymentUnit) UpdateWithID(ctx context.Context, db *tnstate.TerranovaState, oldID string, config any) error {
 	newID, err := d.Adapter.DoUpdateWithID(ctx, oldID, config)
 	if err != nil {
 		return fmt.Errorf("updating id=%s: %w", oldID, err)
@@ -145,7 +144,7 @@ func (d *DeploymentUnit) UpdateWithID(ctx context.Context, client *databricks.Wo
 	return nil
 }
 
-func (d *DeploymentUnit) Delete(ctx context.Context, client *databricks.WorkspaceClient, db *tnstate.TerranovaState, oldID string) error {
+func (d *DeploymentUnit) Delete(ctx context.Context, db *tnstate.TerranovaState, oldID string) error {
 	// TODO: recognize 404 and 403 as "deleted" and proceed to removing state
 	err := d.Adapter.DoDelete(ctx, oldID)
 	if err != nil {
