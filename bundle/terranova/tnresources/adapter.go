@@ -37,7 +37,7 @@ type IResource interface {
 	// Example: func (r *ResourceJob) DoUpdate(ctx context.Context, id string, config *jobs.JobSettings) error {
 	DoUpdate(ctx context.Context, id string, config any) error
 
-	// [Optional] DoUpdateWithID performs an update that may result in reasource having a new ID
+	// [Optional] DoUpdateWithID performs an update that may result in resource having a new ID
 	// Example: func (r *ResourceVolume) DoUpdateWithID(ctx, id string, config *catalog.CreateVolumeRequestContent) (string, error)
 	DoUpdateWithID(ctx context.Context, id string, config any) (string, error)
 
