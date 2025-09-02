@@ -7,6 +7,7 @@ Usage:
 
 Flags:
       --capacity string                The sku of the instance.
+      --enable-pg-native-login         Whether the instance has PG native password login enabled.
       --enable-readable-secondaries    Whether to enable secondaries to serve read-only traffic.
   -h, --help                           help for update-database-instance
       --json JSON                      either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))

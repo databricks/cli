@@ -39,6 +39,7 @@ var EnumFields = map[string][]string{
 	"resources.database_instances.*.state": {"AVAILABLE", "DELETING", "FAILING_OVER", "STARTING", "STOPPED", "UPDATING"},
 
 	"resources.jobs.*.continuous.pause_status":                                                        {"PAUSED", "UNPAUSED"},
+	"resources.jobs.*.continuous.task_retry_mode":                                                     {"NEVER", "ON_FAILURE"},
 	"resources.jobs.*.deployment.kind":                                                                {"BUNDLE"},
 	"resources.jobs.*.edit_mode":                                                                      {"EDITABLE", "UI_LOCKED"},
 	"resources.jobs.*.format":                                                                         {"MULTI_TASK", "SINGLE_TASK"},
@@ -126,11 +127,20 @@ var EnumFields = map[string][]string{
 	"resources.quality_monitors.*.inference_log.problem_type": {"PROBLEM_TYPE_CLASSIFICATION", "PROBLEM_TYPE_REGRESSION"},
 	"resources.quality_monitors.*.schedule.pause_status":      {"PAUSED", "UNPAUSED", "UNSPECIFIED"},
 
+	"resources.schemas.*.grants[*].privileges[*]": {"ALL_PRIVILEGES", "APPLY_TAG", "CREATE_FUNCTION", "CREATE_TABLE", "CREATE_VOLUME", "MANAGE", "USE_SCHEMA", "EXECUTE", "MODIFY", "REFRESH", "SELECT", "READ_VOLUME", "WRITE_VOLUME"},
+
 	"resources.secret_scopes.*.backend_type": {"AZURE_KEYVAULT", "DATABRICKS"},
 
 	"resources.sql_warehouses.*.channel.name":         {"CHANNEL_NAME_CURRENT", "CHANNEL_NAME_CUSTOM", "CHANNEL_NAME_PREVIEW", "CHANNEL_NAME_PREVIOUS"},
 	"resources.sql_warehouses.*.spot_instance_policy": {"COST_OPTIMIZED", "POLICY_UNSPECIFIED", "RELIABILITY_OPTIMIZED"},
 	"resources.sql_warehouses.*.warehouse_type":       {"CLASSIC", "PRO", "TYPE_UNSPECIFIED"},
+
+	"resources.synced_database_tables.*.data_synchronization_status.continuous_update_status.initial_pipeline_sync_progress.provisioning_phase": {"PROVISIONING_PHASE_INDEX_SCAN", "PROVISIONING_PHASE_INDEX_SORT", "PROVISIONING_PHASE_MAIN"},
+	"resources.synced_database_tables.*.data_synchronization_status.detailed_state":                                                             {"SYNCED_TABLED_OFFLINE", "SYNCED_TABLE_OFFLINE_FAILED", "SYNCED_TABLE_ONLINE", "SYNCED_TABLE_ONLINE_CONTINUOUS_UPDATE", "SYNCED_TABLE_ONLINE_NO_PENDING_UPDATE", "SYNCED_TABLE_ONLINE_PIPELINE_FAILED", "SYNCED_TABLE_ONLINE_TRIGGERED_UPDATE", "SYNCED_TABLE_ONLINE_UPDATING_PIPELINE_RESOURCES", "SYNCED_TABLE_PROVISIONING", "SYNCED_TABLE_PROVISIONING_INITIAL_SNAPSHOT", "SYNCED_TABLE_PROVISIONING_PIPELINE_RESOURCES"},
+	"resources.synced_database_tables.*.data_synchronization_status.provisioning_status.initial_pipeline_sync_progress.provisioning_phase":      {"PROVISIONING_PHASE_INDEX_SCAN", "PROVISIONING_PHASE_INDEX_SORT", "PROVISIONING_PHASE_MAIN"},
+	"resources.synced_database_tables.*.data_synchronization_status.triggered_update_status.triggered_update_progress.provisioning_phase":       {"PROVISIONING_PHASE_INDEX_SCAN", "PROVISIONING_PHASE_INDEX_SORT", "PROVISIONING_PHASE_MAIN"},
+	"resources.synced_database_tables.*.spec.scheduling_policy":                                                                                 {"CONTINUOUS", "SNAPSHOT", "TRIGGERED"},
+	"resources.synced_database_tables.*.unity_catalog_provisioning_state":                                                                       {"ACTIVE", "DEGRADED", "DELETING", "FAILED", "PROVISIONING", "UPDATING"},
 
 	"resources.volumes.*.grants[*].privileges[*]": {"ALL_PRIVILEGES", "APPLY_TAG", "MANAGE", "READ_VOLUME", "WRITE_VOLUME"},
 	"resources.volumes.*.volume_type":             {"EXTERNAL", "MANAGED"},

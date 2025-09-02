@@ -150,6 +150,7 @@ Additional Commands:
   configure                              Configure authentication
   help                                   Help about any command
   labs                                   Manage Databricks Labs installations
+  tag-policies                           The Tag Policy API allows you to manage tag policies in Databricks.
   version                                Retrieve information about the current version of this CLI
 
 Flags:
