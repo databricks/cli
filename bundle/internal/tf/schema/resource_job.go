@@ -3,7 +3,8 @@
 package schema
 
 type ResourceJobContinuous struct {
-	PauseStatus string `json:"pause_status,omitempty"`
+	PauseStatus   string `json:"pause_status,omitempty"`
+	TaskRetryMode string `json:"task_retry_mode,omitempty"`
 }
 
 type ResourceJobDbtTask struct {

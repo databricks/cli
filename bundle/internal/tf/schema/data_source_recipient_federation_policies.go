@@ -19,5 +19,6 @@ type DataSourceRecipientFederationPoliciesPolicies struct {
 }
 
 type DataSourceRecipientFederationPolicies struct {
-	Policies []DataSourceRecipientFederationPoliciesPolicies `json:"policies,omitempty"`
+	Policies    []DataSourceRecipientFederationPoliciesPolicies `json:"policies,omitempty"`
+	WorkspaceId string                                          `json:"workspace_id,omitempty"`
 }
