@@ -25,6 +25,10 @@ from databricks.bundles.pipelines._models.ingestion_pipeline_definition import (
     IngestionPipelineDefinition,
     IngestionPipelineDefinitionParam,
 )
+from databricks.bundles.pipelines._models.lifecycle import (
+    Lifecycle,
+    LifecycleParam,
+)
 from databricks.bundles.pipelines._models.notifications import (
     Notifications,
     NotificationsParam,
@@ -142,6 +146,8 @@ class Pipeline(Resource):
     """
     Libraries or code needed by this deployment.
     """
+
+    lifecycle: VariableOrOptional[Lifecycle] = None
 
     name: VariableOrOptional[str] = None
     """
@@ -300,6 +306,8 @@ class PipelineDict(TypedDict, total=False):
     """
     Libraries or code needed by this deployment.
     """
+
+    lifecycle: VariableOrOptional[LifecycleParam]
 
     name: VariableOrOptional[str]
     """
