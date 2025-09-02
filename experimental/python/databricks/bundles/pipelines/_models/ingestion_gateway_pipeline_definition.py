@@ -30,6 +30,11 @@ class IngestionGatewayPipelineDefinition:
     Required, Immutable. The name of the schema for the gateway pipelines's storage location.
     """
 
+    connection_id: VariableOrOptional[str] = None
+    """
+    [DEPRECATED] [Deprecated, use connection_name instead] Immutable. The Unity Catalog connection that this gateway pipeline uses to communicate with the source.
+    """
+
     gateway_storage_name: VariableOrOptional[str] = None
     """
     Optional. The Unity Catalog-compatible name for the gateway storage location.
@@ -61,6 +66,11 @@ class IngestionGatewayPipelineDefinitionDict(TypedDict, total=False):
     gateway_storage_schema: VariableOr[str]
     """
     Required, Immutable. The name of the schema for the gateway pipelines's storage location.
+    """
+
+    connection_id: VariableOrOptional[str]
+    """
+    [DEPRECATED] [Deprecated, use connection_name instead] Immutable. The Unity Catalog connection that this gateway pipeline uses to communicate with the source.
     """
 
     gateway_storage_name: VariableOrOptional[str]
