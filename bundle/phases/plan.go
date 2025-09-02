@@ -58,9 +58,11 @@ func checkForPreventDestroy(b *bundle.Bundle, actions []deployplan.Action, isDes
 		if action.ActionType == deployplan.ActionTypeRecreate || (isDestroy && action.ActionType == deployplan.ActionTypeDelete) {
 			path := dyn.NewPath(dyn.Key("resources"), dyn.Key(action.Group), dyn.Key(action.Key), dyn.Key("lifecycle"))
 			lifecycleV, err := dyn.GetByPath(root, path)
+			// If there is no lifecycle, skip
 			if err != nil {
-				return err
+				return nil
 			}
+
 			if lifecycleV.Kind() == dyn.KindMap {
 				preventDestroyV := lifecycleV.Get("prevent_destroy")
 				preventDestroy, ok := preventDestroyV.AsBool()
