@@ -110,7 +110,7 @@ func TestVisitJobPaths_environments(t *testing.T) {
 	}
 
 	actual := collectVisitedPaths(t, root, VisitJobPaths)
-	expected := []dyn.Path{}
+	var expected []dyn.Path
 
 	assert.ElementsMatch(t, expected, actual)
 }
