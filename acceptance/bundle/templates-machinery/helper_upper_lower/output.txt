@@ -1,7 +1,7 @@
 
 >>> [CLI] bundle init .
-✨ Successfully initialized template
+Error: failed to compute file content for hello.txt.tmpl. error in {{ .s | lower }}
+{{ .s | upper }}
+: template: :1: function "lower" not defined
 
->>> cat hello.txt
-abcd0123😀
-ABCD0123😀
+Exit code: 1

@@ -1,0 +1,29 @@
+{{- $with_serverless := (eq .serverless "yes")}}
+# The main pipeline for {{.project_name}}
+resources:
+  pipelines:
+    {{.project_name_short}}_etl:
+      {{- /* Note that pipeline names must be unique in a worskspace,
+           * so we use the project name as part as the name.
+           */}}
+      name: {{.project_name_short}}_etl
+      {{- if or (eq default_catalog "") (eq default_catalog "hive_metastore")}}
+      {{- if $with_serverless }}
+      ## Catalog is required for serverless compute
+      catalog: main
+      {{- else}}
+      ## Specify the 'catalog' field to configure this pipeline to make use of Unity Catalog:
+      # catalog: catalog_name
+      {{- end}}
+      {{- else}}
+      catalog: {{default_catalog}}
+      {{- end}}
+      schema: {{.project_name}}_${bundle.target}
+      {{- if $with_serverless}}
+      serverless: true
+      {{- end}}
+      root_path: ../src
+
+      libraries:
+        - glob:
+            include: ../src/{{.project_name_short}}_etl/transformations/**

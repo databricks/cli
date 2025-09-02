@@ -1,0 +1,15 @@
+
+# The main pipeline for my_default_python
+resources:
+  pipelines:
+    default_python_etl:
+      name: default_python_etl
+      ## Catalog is required for serverless compute
+      catalog: main
+      schema: my_default_python_${bundle.target}
+      serverless: true
+      root_path: ../src
+
+      libraries:
+        - glob:
+            include: ../src/default_python_etl/transformations/**

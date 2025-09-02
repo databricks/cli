@@ -4,7 +4,7 @@ This file only contains template directives; it is skipped for the actual output
 
 {{skip "__preamble"}}
 
-{{$notDLT := not (eq .include_dlt "yes")}}
+{{$notDLT := not (eq .include_pipeline "yes")}}
 {{$notNotebook := not (eq .include_notebook "yes")}}
 {{$notPython := not (eq .include_python "yes")}}
 

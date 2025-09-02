@@ -105,6 +105,22 @@ func TestTemplateUuidFunction(t *testing.T) {
 	assert.Regexp(t, "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", uuid)
 }
 
+func TestTemplateReplaceFunction(t *testing.T) {
+	ctx := context.Background()
+
+	ctx = cmdctx.SetWorkspaceClient(ctx, nil)
+	helpers := loadHelpers(ctx)
+	r, err := newRenderer(ctx, nil, helpers, os.DirFS("."), "./testdata/replace/template", "./testdata/replace/library")
+	require.NoError(t, err)
+
+	err = r.walk()
+	assert.NoError(t, err)
+
+	assert.Len(t, r.files, 1)
+	content := strings.TrimSpace(string(r.files[0].(*inMemoryFile).content))
+	assert.Equal(t, "my", content)
+}
+
 func TestTemplateUrlFunction(t *testing.T) {
 	ctx := context.Background()
 
@@ -135,6 +151,26 @@ func TestTemplateMapPairFunction(t *testing.T) {
 
 	assert.Len(t, r.files, 1)
 	assert.Equal(t, "false 123 hello 12.3", string(r.files[0].(*inMemoryFile).content))
+}
+
+func TestTemplateShortDateFunction(t *testing.T) {
+	ctx := context.Background()
+
+	ctx = cmdctx.SetWorkspaceClient(ctx, nil)
+	helpers := loadHelpers(ctx)
+	r, err := newRenderer(ctx, nil, helpers, os.DirFS("."), "./testdata/short-date/template", "./testdata/short-date/library")
+	require.NoError(t, err)
+
+	err = r.walk()
+	assert.NoError(t, err)
+
+	assert.Len(t, r.files, 1)
+	content := string(r.files[0].(*inMemoryFile).content)
+	assert.Contains(t, content, "This file was created on")
+
+	// Check that the file path contains a date-like pattern
+	filePath := r.files[0].RelPath()
+	assert.Regexp(t, `^[A-Za-z]{3}_\d{2}_\d{4}\.txt$`, filePath)
 }
 
 func TestWorkspaceHost(t *testing.T) {
