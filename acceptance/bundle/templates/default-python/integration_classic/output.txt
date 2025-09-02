@@ -60,7 +60,7 @@ Resources:
 +        "id": "[NUMID]",
          "job_clusters": [
            {
-@@ -120,5 +121,6 @@
+@@ -119,5 +120,6 @@
              "unit": "DAYS"
            }
 -        }
@@ -68,13 +68,13 @@ Resources:
 +        "url": "[DATABRICKS_URL]/jobs/[NUMID]"
        }
      },
-@@ -135,4 +137,5 @@
+@@ -134,4 +136,5 @@
          "development": true,
          "edition": "ADVANCED",
 +        "id": "[UUID]",
          "libraries": [
            {
-@@ -147,5 +150,6 @@
+@@ -146,5 +149,6 @@
          "tags": {
            "dev": "[USERNAME]"
 -        }
@@ -184,18 +184,18 @@ Validation OK!
 @@ -97,5 +84,5 @@
              "job_cluster_key": "job_cluster",
              "notebook_task": {
--              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/notebook",
-+              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/files/src/notebook",
-               "source": "WORKSPACE"
+-              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/notebook"
++              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/files/src/notebook"
              },
-@@ -115,5 +102,5 @@
+             "task_key": "notebook_task"
+@@ -114,5 +101,5 @@
          ],
          "trigger": {
 -          "pause_status": "PAUSED",
 +          "pause_status": "UNPAUSED",
            "periodic": {
              "interval": 1,
-@@ -127,25 +114,21 @@
+@@ -126,25 +113,21 @@
          "channel": "CURRENT",
          "configuration": {
 -          "bundle.sourcePath": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src"
@@ -226,7 +226,7 @@ Validation OK!
 +        "schema": "project_name_[UNIQUE_NAME]_prod"
        }
      }
-@@ -157,10 +140,10 @@
+@@ -156,10 +139,10 @@
    },
    "workspace": {
 -    "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/artifacts",
@@ -345,18 +345,18 @@ Resources:
 @@ -98,5 +85,5 @@
              "job_cluster_key": "job_cluster",
              "notebook_task": {
--              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/notebook",
-+              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/files/src/notebook",
-               "source": "WORKSPACE"
+-              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/notebook"
++              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/files/src/notebook"
              },
-@@ -116,5 +103,5 @@
+             "task_key": "notebook_task"
+@@ -115,5 +102,5 @@
          ],
          "trigger": {
 -          "pause_status": "PAUSED",
 +          "pause_status": "UNPAUSED",
            "periodic": {
              "interval": 1,
-@@ -129,11 +116,10 @@
+@@ -128,11 +115,10 @@
          "channel": "CURRENT",
          "configuration": {
 -          "bundle.sourcePath": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src"
@@ -370,7 +370,7 @@ Resources:
 -        "development": true,
          "edition": "ADVANCED",
          "id": "[UUID]",
-@@ -141,14 +127,11 @@
+@@ -140,14 +126,11 @@
            {
              "notebook": {
 -              "path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/pipeline"
@@ -388,7 +388,7 @@ Resources:
 +        "schema": "project_name_[UNIQUE_NAME]_prod",
          "url": "[DATABRICKS_URL]/pipelines/[UUID]"
        }
-@@ -161,10 +144,10 @@
+@@ -160,10 +143,10 @@
    },
    "workspace": {
 -    "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/artifacts",
