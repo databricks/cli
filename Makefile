@@ -1,6 +1,6 @@
 default: checks fmt lint
 
-PACKAGES=./acceptance/... ./libs/... ./internal/... ./cmd/... ./bundle/... .
+PACKAGES=./acceptance/... ./libs/... ./internal/... ./cmd/... ./bundle/... ./experimental/ssh/... .
 
 GOTESTSUM_FORMAT ?= pkgname-and-test-fails
 GOTESTSUM_CMD ?= go tool gotestsum --format ${GOTESTSUM_FORMAT} --no-summary=skipped --jsonfile test-output.json
@@ -136,4 +136,4 @@ generate:
 	$(GENKIT_BINARY) update-sdk
 
 
-.PHONY: lint lintfull tidy lintcheck fmt fmtfull test cover showcover build snapshot schema integration integration-short acc-cover acc-showcover docs ws links checks test-update test-update-aws test-update-all generate-validation
+.PHONY: lint lintfull tidy lintcheck fmt fmtfull test cover showcover build snapshot snapshot-release schema integration integration-short acc-cover acc-showcover docs ws links checks test-update test-update-aws test-update-all generate-validation

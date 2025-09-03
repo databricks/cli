@@ -1,4 +1,4 @@
-package ssh
+package keys
 
 import (
 	"context"
@@ -25,7 +25,7 @@ func createSecretsScope(ctx context.Context, client *databricks.WorkspaceClient,
 	return secretsScope, nil
 }
 
-func getSecret(ctx context.Context, client *databricks.WorkspaceClient, scope, key string) ([]byte, error) {
+func GetSecret(ctx context.Context, client *databricks.WorkspaceClient, scope, key string) ([]byte, error) {
 	resp, err := client.Secrets.GetSecret(ctx, workspace.GetSecretRequest{
 		Scope: scope,
 		Key:   key,
@@ -53,7 +53,7 @@ func putSecret(ctx context.Context, client *databricks.WorkspaceClient, scope, k
 	return nil
 }
 
-func putSecretInScope(ctx context.Context, client *databricks.WorkspaceClient, clusterID, key, value string) (string, error) {
+func PutSecretInScope(ctx context.Context, client *databricks.WorkspaceClient, clusterID, key, value string) (string, error) {
 	scopeName, err := createSecretsScope(ctx, client, clusterID)
 	if err != nil {
 		return "", err
