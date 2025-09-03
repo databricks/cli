@@ -102,11 +102,9 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	if ok {
 		require.Equal(t, adapter.InputConfigType(), reflect.TypeOf(inputConfig))
 	} else {
-		// InputConfigType() returns a pointer type, so create instance of the element type
 		inputConfig = reflect.New(adapter.InputConfigType().Elem()).Interface()
 	}
 
-	// Prepare the config using the adapter
 	config, err := adapter.PrepareConfig(inputConfig)
 	require.NoError(t, err, "PrepareConfig failed")
 
@@ -116,7 +114,6 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	require.NoError(t, err, "DoCreate failed config=%v", config)
 	require.NotEmpty(t, createdID, "ID returned from DoCreate was empty")
 
-	// Test DoUpdate
 	err = adapter.DoUpdate(ctx, createdID, config)
 	require.NoError(t, err, "DoUpdate failed")
 }
