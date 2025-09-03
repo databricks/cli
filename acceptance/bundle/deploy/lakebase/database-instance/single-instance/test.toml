@@ -2,7 +2,7 @@ Local = true
 Cloud = true
 
 # Mitigates running into quota limits in workspaces
-CloudSlow = false
+CloudSlow = true
 
 Ignore = [
     "databricks.yml",
