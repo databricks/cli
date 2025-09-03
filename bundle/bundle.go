@@ -15,12 +15,10 @@ import (
 	"sync"
 
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/metadata"
-	"github.com/databricks/cli/bundle/terranova/tnstate"
+	"github.com/databricks/cli/bundle/terranova"
 	"github.com/databricks/cli/libs/auth"
-	"github.com/databricks/cli/libs/dagrun"
 	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/locker"
 	"github.com/databricks/cli/libs/log"
@@ -132,10 +130,7 @@ type Bundle struct {
 	TerraformPlanIsEmpty bool
 
 	// (direct only) graph of dependencies between resources
-	Graph *dagrun.Graph[deployplan.ResourceNode]
-
-	// (direct only) planned action for each resource
-	PlannedActions map[deployplan.ResourceNode]deployplan.ActionType
+	BundleDeployer terranova.BundleDeployer
 
 	// if true, we skip approval checks for deploy, destroy resources and delete
 	// files
@@ -149,9 +144,6 @@ type Bundle struct {
 
 	// If true, don't use terraform. Set by DATABRICKS_CLI_DEPLOYMENT=direct
 	DirectDeployment bool
-
-	// State file access for direct deployment (only initialized if DirectDeployment = true)
-	ResourceDatabase tnstate.TerranovaState
 }
 
 func Load(ctx context.Context, path string) (*Bundle, error) {
@@ -349,7 +341,7 @@ func (b *Bundle) StateLocalPath(ctx context.Context) (string, error) {
 	}
 }
 
-func (b *Bundle) OpenResourceDatabase(ctx context.Context) error {
+func (b *Bundle) OpenStateFile(ctx context.Context) error {
 	if !b.DirectDeployment {
 		panic("internal error: OpenResourceDatabase must be called with DirectDeployment")
 	}
@@ -359,9 +351,9 @@ func (b *Bundle) OpenResourceDatabase(ctx context.Context) error {
 		return err
 	}
 
-	err = b.ResourceDatabase.Open(statePath)
+	err = b.BundleDeployer.OpenStateFile(statePath)
 	if err != nil {
-		return fmt.Errorf("failed to open/create resoruce database in %s: %s", statePath, err)
+		return fmt.Errorf("failed to open/create state file at %s: %s", statePath, err)
 	}
 
 	return nil

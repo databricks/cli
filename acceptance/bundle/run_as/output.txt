@@ -1,0 +1,24 @@
+
+>>> [CLI] bundle validate -o json -t no_run_as
+jobs.job_one: null
+jobs.job_three: {"user_name":"user_override"}
+jobs.job_two: {"service_principal_name":"sp_override"}
+pipelines.pipeline_one: null
+pipelines.pipeline_three: {"user_name":"user_override"}
+pipelines.pipeline_two: {"service_principal_name":"sp_override"}
+
+>>> [CLI] bundle validate -o json -t with_user_run_as
+jobs.job_one: {"user_name":"user_base"}
+jobs.job_three: {"user_name":"user_override"}
+jobs.job_two: {"service_principal_name":"sp_override"}
+pipelines.pipeline_one: {"user_name":"user_base"}
+pipelines.pipeline_three: {"user_name":"user_override"}
+pipelines.pipeline_two: {"service_principal_name":"sp_override"}
+
+>>> [CLI] bundle validate -o json -t with_sp_run_as
+jobs.job_one: {"service_principal_name":"sp_base"}
+jobs.job_three: {"user_name":"user_override"}
+jobs.job_two: {"service_principal_name":"sp_override"}
+pipelines.pipeline_one: {"service_principal_name":"sp_base"}
+pipelines.pipeline_three: {"user_name":"user_override"}
+pipelines.pipeline_two: {"service_principal_name":"sp_override"}

@@ -1,7 +1,7 @@
 [project]
 name = "databricks-bundles"
 description = "Python support for Databricks Asset Bundles"
-version = "0.266.0"
+version = "0.267.0"
 
 authors = [
     { name = "Gleb Kanterov", email = "gleb.kanterov@databricks.com" },
@@ -68,4 +68,5 @@ lint.select = [
     "N", # pep8-naming
     "F", # flake8
     "I", # isort
+    "RUF022", # sort __all__, see: https://docs.astral.sh/ruff/rules/unsorted-dunder-all/
 ]

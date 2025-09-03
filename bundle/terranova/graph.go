@@ -7,8 +7,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/terranova/tnstate"
 	"github.com/databricks/cli/libs/dagrun"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
@@ -23,14 +24,14 @@ type fieldRef struct {
 }
 
 // makeResourceGraph creates node graph based on ${resources.group.name.id} references.
-func makeResourceGraph(ctx context.Context, b *bundle.Bundle) (*dagrun.Graph[deployplan.ResourceNode], error) {
+func makeResourceGraph(ctx context.Context, configRoot dyn.Value) (*dagrun.Graph[deployplan.ResourceNode], error) {
 	g := dagrun.NewGraph[deployplan.ResourceNode]()
 
 	// Collect and sort nodes first, because MapByPattern gives them in randomized order
 	var nodes []deployplan.ResourceNode
 
 	_, err := dyn.MapByPattern(
-		b.Config.Value(),
+		configRoot,
 		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()),
 		func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 			group := p[1].Key()
@@ -59,7 +60,7 @@ func makeResourceGraph(ctx context.Context, b *bundle.Bundle) (*dagrun.Graph[dep
 	for _, node := range nodes {
 		g.AddNode(node)
 
-		fieldRefs, err := extractReferences(b.Config.Value(), node)
+		fieldRefs, err := extractReferences(configRoot, node)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read references from config for %s: %w", node.String(), err)
 		}
@@ -131,7 +132,7 @@ func validateRef(root dyn.Value, ref string) (fieldRef, error) {
 	}, nil
 }
 
-func resolveIDReference(ctx context.Context, b *bundle.Bundle, group, resourceName string) error {
+func resolveIDReference(ctx context.Context, db *tnstate.TerranovaState, configRoot *config.Root, group, resourceName string) error {
 	mypath := dyn.NewPath(
 		dyn.Key("resources"),
 		dyn.Key(group),
@@ -139,13 +140,13 @@ func resolveIDReference(ctx context.Context, b *bundle.Bundle, group, resourceNa
 		dyn.Key("id"),
 	)
 
-	entry, hasEntry := b.ResourceDatabase.GetResourceEntry(group, resourceName)
+	entry, hasEntry := db.GetResourceEntry(group, resourceName)
 	idValue := entry.ID
 	if !hasEntry || idValue == "" {
 		return errors.New("internal error: no db entry")
 	}
 
-	err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
+	err := configRoot.Mutate(func(root dyn.Value) (dyn.Value, error) {
 		root, err := dynvar.Resolve(root, func(path dyn.Path) (dyn.Value, error) {
 			if slices.Equal(path, mypath) {
 				return dyn.V(idValue), nil
@@ -159,7 +160,7 @@ func resolveIDReference(ctx context.Context, b *bundle.Bundle, group, resourceNa
 		// This fixes the following case: ${resources.jobs.foo.id} is replaced by string "12345"
 		// This string corresponds to job_id integer field. Normalization converts "12345" to 12345.
 		// Without normalization there will be an error when converting dynamic value to typed.
-		root, diags := convert.Normalize(b.Config, root)
+		root, diags := convert.Normalize(configRoot, root)
 		for _, d := range diags {
 			// TODO: add additional context if needed
 			logdiag.LogDiag(ctx, d)
@@ -177,8 +178,8 @@ func resolveIDReference(ctx context.Context, b *bundle.Bundle, group, resourceNa
 	return nil
 }
 
-func resolveFieldReference(ctx context.Context, b *bundle.Bundle, targetPath dyn.Path, value any) error {
-	err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
+func resolveFieldReference(ctx context.Context, configRoot *config.Root, targetPath dyn.Path, value any) error {
+	err := configRoot.Mutate(func(root dyn.Value) (dyn.Value, error) {
 		root, err := dynvar.Resolve(root, func(path dyn.Path) (dyn.Value, error) {
 			if slices.Equal(path, targetPath) {
 				return dyn.V(value), nil
@@ -189,7 +190,7 @@ func resolveFieldReference(ctx context.Context, b *bundle.Bundle, targetPath dyn
 			return root, err
 		}
 		// Following resolve_variable_references.go, normalize after variable substitution.
-		root, diags := convert.Normalize(b.Config, root)
+		root, diags := convert.Normalize(configRoot, root)
 		for _, d := range diags {
 			logdiag.LogDiag(ctx, d)
 		}

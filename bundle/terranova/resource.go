@@ -114,6 +114,16 @@ var SupportedResources = map[string]ResourceSettings{
 		ConfigType: TypeOfConfig(&tnresources.ResourceDatabaseInstance{}),
 		DeleteFN:   tnresources.DeleteDatabaseInstance,
 	},
+	"database_catalogs": {
+		New:        reflect.ValueOf(tnresources.NewResourceDatabaseCatalog),
+		ConfigType: TypeOfConfig(&tnresources.ResourceDatabaseCatalog{}),
+		DeleteFN:   tnresources.DeleteDatabaseCatalog,
+	},
+	"synced_database_tables": {
+		New:        reflect.ValueOf(tnresources.NewResourceSyncedDatabaseTable),
+		ConfigType: TypeOfConfig(&tnresources.ResourceSyncedDatabaseTable{}),
+		DeleteFN:   tnresources.DeleteSyncedDatabaseTable,
+	},
 }
 
 type IResource interface {

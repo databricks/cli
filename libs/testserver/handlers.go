@@ -228,10 +228,6 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.JobsList()
 	})
 
-	server.Handle("GET", "/api/2.2/jobs/list", func(req Request) any {
-		return req.Workspace.JobsList()
-	})
-
 	server.Handle("POST", "/api/2.2/jobs/run-now", func(req Request) any {
 		var request jobs.RunNow
 		if err := json.Unmarshal(req.Body, &request); err != nil {
