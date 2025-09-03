@@ -31,6 +31,7 @@ func (s *FakeWorkspace) DatabaseInstanceCreate(req Request) Response {
 	databaseInstance.CreationTime = time.Now().UTC().Format(time.RFC3339)
 	databaseInstance.EffectiveEnableReadableSecondaries = false
 	databaseInstance.EffectiveStopped = false
+	databaseInstance.EffectiveEnablePgNativeLogin = false
 
 	s.DatabaseInstances[databaseInstance.Name] = databaseInstance
 
@@ -59,6 +60,7 @@ func DatabaseInstanceMapGet(w *FakeWorkspace, collection map[string]database.Dat
 	// Explicitly set boolean fields that should always be present
 	result["effective_enable_readable_secondaries"] = value.EffectiveEnableReadableSecondaries
 	result["effective_stopped"] = value.EffectiveStopped
+	result["effective_enable_pg_native_login"] = value.EffectiveEnablePgNativeLogin
 
 	return Response{
 		Body: result,
