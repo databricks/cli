@@ -25,8 +25,9 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 	b.Graph.Run(defaultParallelism, func(node deployplan.ResourceNode, failedDependency *deployplan.ResourceNode) bool {
 		d, exists := b.DeploymentUnits[node]
 		if !exists {
-			// Resource with actionType == noop are not added to DeploymentUnits
-			return false
+			// Resource with actionType == noop are not added to DeploymentUnits.
+			// All references to it must have been resolved during planning.
+			return true
 		}
 		errorPrefix := fmt.Sprintf("cannot %s %s.%s", d.ActionType.String(), node.Group, node.Key)
 
