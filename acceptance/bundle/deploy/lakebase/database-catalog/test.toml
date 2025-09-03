@@ -2,6 +2,6 @@ Local = true
 Cloud = true
 
 # Mitigates running into quota limits in workspaces
-CloudSlow = true
+CloudSlow = false
 
 RecordRequests = false
