@@ -25,9 +25,10 @@
 }
 
 >>> [CLI] bundle plan
-create schemas.my
-create volumes.bar
-create volumes.foo
+Plan: 3 to add, 0 to change, 0 to delete
+  create schemas.my
+  create volumes.bar
+  create volumes.foo
 
 >>> print_requests
 

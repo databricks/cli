@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
 )
@@ -74,8 +73,41 @@ func newPlanCommand() *cobra.Command {
 
 		changes := phases.Diff(ctx, b)
 
+		// Count actions by type and collect formatted actions
+		createCount := 0
+		updateCount := 0
+		deleteCount := 0
+		var actions []string
+
 		for _, change := range changes {
-			cmdio.LogString(ctx, fmt.Sprintf("%s %s.%s", change.ActionType, change.Group, change.Key))
+			actionItem := fmt.Sprintf("  %s %s.%s", change.ActionType, change.Group, change.Key)
+			actions = append(actions, actionItem)
+
+			switch change.ActionType.String() {
+			case "create":
+				createCount++
+			case "update", "update_with_id":
+				updateCount++
+			case "delete":
+				deleteCount++
+			case "recreate":
+				// A recreate counts as both a delete and a create
+				deleteCount++
+				createCount++
+			}
+		}
+
+		// Print summary line and actions to stdout
+		totalChanges := createCount + updateCount + deleteCount
+		if totalChanges > 0 {
+			fmt.Printf("Plan: %d to add, %d to change, %d to delete\n", createCount, updateCount, deleteCount)
+
+			// Print all actions in the order they were processed
+			for _, action := range actions {
+				fmt.Println(action)
+			}
+		} else {
+			fmt.Println("No changes. Your infrastructure matches the configuration.")
 		}
 
 		if logdiag.HasError(ctx) {

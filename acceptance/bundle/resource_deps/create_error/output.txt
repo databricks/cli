@@ -1,9 +1,10 @@
 
 >>> [CLI] bundle plan
-create jobs.bar
-create jobs.baz
-create jobs.foo
-create jobs.independent
+Plan: 4 to add, 0 to change, 0 to delete
+  create jobs.bar
+  create jobs.baz
+  create jobs.foo
+  create jobs.independent
 
 >>> print_sorted_requests
 {
@@ -66,9 +67,10 @@ Resources:
 
 === Plan should still contain foo and bar
 >>> [CLI] bundle plan
-create jobs.bar
-create jobs.baz
-create jobs.foo
+Plan: 3 to add, 0 to change, 0 to delete
+  create jobs.bar
+  create jobs.baz
+  create jobs.foo
 
 === Expecting no difference in the output between first and second deploy
 >>> print_requests

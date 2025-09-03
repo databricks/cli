@@ -15,7 +15,8 @@ resources:
             path: "./foo.py"
 
 >>> [CLI] bundle plan
-create pipelines.my
+Plan: 1 to add, 0 to change, 0 to delete
+  create pipelines.my
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files...
@@ -54,7 +55,8 @@ Deployment complete!
 >>> update_file.py databricks.yml my_connection my_new_connection
 
 >>> [CLI] bundle plan
-recreate pipelines.my
+Plan: 1 to add, 0 to change, 1 to delete
+  recreate pipelines.my
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files...

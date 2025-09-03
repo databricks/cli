@@ -1,4 +1,5 @@
 Error: cycle detected: jobs.foo refers to jobs.bar via ${resources.jobs.bar.id} which refers to jobs.foo via ${resources.jobs.foo.id}
 
+No changes. Your infrastructure matches the configuration.
 
 Exit code (musterr): 1
