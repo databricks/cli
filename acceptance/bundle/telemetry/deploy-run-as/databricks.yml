@@ -1,7 +1,3 @@
-bundle:
-  name: test_bundle_run_as_telemetry
-  uuid: 11111111-2222-3333-4444-555555555555
-
 run_as:
   service_principal_name: "sp_test"
 
