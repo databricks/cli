@@ -29,6 +29,7 @@ Common workflows:
 
 	cmd.AddCommand(newSetupCommand())
 	cmd.AddCommand(newConnectCommand())
+	cmd.AddCommand(newServerCommand())
 
 	return cmd
 }
