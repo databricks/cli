@@ -1,0 +1,12 @@
+cd bundle
+
+trace $CLI bundle validate -o json | jq '.resources.jobs.test.tasks[0].libraries'
+trace $CLI bundle deploy
+
+cd ..
+
+title "Check that the job libraries are uploaded and the path is correct in the job"
+trace cat out.requests.txt | jq 'select(.path == "/api/2.2/jobs/create")' | jq '.body.tasks[0].libraries'
+trace cat out.requests.txt | jq 'select(.path | test("/api/2.0/workspace-files/import-file/Workspace/Users/.*/.bundle/outside_of_bundle_root/default/artifacts/.internal/test.whl"))'
+
+rm out.requests.txt

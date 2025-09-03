@@ -24,7 +24,7 @@
         "whl": "dist/wheel1.whl"
       },
       {
-        "whl": "dist/wheel2.whl"
+        "whl": "../dist/wheel2.whl"
       }
     ],
     "python_wheel_task": {
@@ -39,7 +39,7 @@
         "jar": "target/jar1.jar"
       },
       {
-        "jar": "target/jar2.jar"
+        "jar": "../target/jar2.jar"
       }
     ],
     "spark_jar_task": {
