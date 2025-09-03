@@ -56,7 +56,7 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 		return err
 	}
 
-	b.DeploymentUnits = make(map[deployplan.ResourceNode]DeploymentUnit)
+	b.DeploymentUnits = make(map[deployplan.ResourceNode]*DeploymentUnit)
 
 	// We're processing resources in DAG order, because we're trying to get rid of all references like $resources.jobs.foo.id
 	// if jobs.foo is not going to be (re)created. This means by the time we get to resource depending on $resources.jobs.foo.id
@@ -83,7 +83,7 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 			return false
 		}
 
-		d := DeploymentUnit{
+		d := &DeploymentUnit{
 			Group:   node.Group,
 			Key:     node.Key,
 			Adapter: adapter,
@@ -166,7 +166,7 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 				// action was already added by Run() above
 				continue
 			}
-			b.DeploymentUnits[n] = DeploymentUnit{
+			b.DeploymentUnits[n] = &DeploymentUnit{
 				Group:      group,
 				Key:        key,
 				Adapter:    adapter,
@@ -187,7 +187,7 @@ func (b *DeploymentBundle) CalculatePlanForDestroy(ctx context.Context, client *
 		return err
 	}
 
-	b.DeploymentUnits = make(map[deployplan.ResourceNode]DeploymentUnit)
+	b.DeploymentUnits = make(map[deployplan.ResourceNode]*DeploymentUnit)
 	b.Graph = dagrun.NewGraph[deployplan.ResourceNode]()
 
 	for group, groupData := range b.StateDB.Data.DeploymentUnits {
@@ -198,7 +198,7 @@ func (b *DeploymentBundle) CalculatePlanForDestroy(ctx context.Context, client *
 		}
 		for key := range groupData {
 			n := deployplan.ResourceNode{Group: group, Key: key}
-			b.DeploymentUnits[n] = DeploymentUnit{
+			b.DeploymentUnits[n] = &DeploymentUnit{
 				Group:      group,
 				Key:        key,
 				Adapter:    adapter,

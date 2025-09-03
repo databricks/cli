@@ -22,6 +22,6 @@ type DeploymentUnit struct {
 type DeploymentBundle struct {
 	StateDB         tnstate.TerranovaState
 	Graph           *dagrun.Graph[deployplan.ResourceNode]
-	DeploymentUnits map[deployplan.ResourceNode]DeploymentUnit
+	DeploymentUnits map[deployplan.ResourceNode]*DeploymentUnit
 	Adapters        map[string]*tnresources.Adapter
 }
