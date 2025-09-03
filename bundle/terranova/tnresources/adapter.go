@@ -122,7 +122,7 @@ func NewAdapter(typedNil any, client *databricks.WorkspaceClient) (*Adapter, err
 		}
 	}
 
-	err = adapter.Validate()
+	err = adapter.validate()
 	if err != nil {
 		return nil, err
 	}
@@ -183,41 +183,52 @@ func (a *Adapter) initMethods(resource any) error {
 	return err
 }
 
-func (a *Adapter) Validate() error {
+// validateTypes validates type matches for variadic triples of (name, actual, expected).
+func validateTypes(triples ...any) error {
+	if len(triples)%3 != 0 {
+		return errors.New("validateTypes requires arguments in triples of (name, actual, expected)")
+	}
+
+	for i := 0; i < len(triples); i += 3 {
+		name := triples[i].(string)
+		actual := triples[i+1].(reflect.Type)
+		expected := triples[i+2].(reflect.Type)
+
+		if actual != expected {
+			return fmt.Errorf("%s type mismatch: expected %v, got %v", name, expected, actual)
+		}
+	}
+	return nil
+}
+
+func (a *Adapter) validate() error {
 	configType := a.ConfigType()
-	if err := validatePointerToStruct(configType, "config type"); err != nil {
+	err := validatePointerToStruct(configType, "config type")
+	if err != nil {
 		return err
 	}
 
-	if a.prepareConfig.OutTypes[0] != configType {
-		return fmt.Errorf("PrepareConfig return type mismatch: expected %v, got %v", configType, a.prepareConfig.OutTypes[0])
-	}
-
-	if a.doCreate.InTypes[1] != configType {
-		return fmt.Errorf("DoCreate config type mismatch: expected %v, got %v", configType, a.doCreate.InTypes[1])
-	}
-
-	if a.doUpdate.InTypes[2] != configType {
-		return fmt.Errorf("DoUpdate config type mismatch: expected %v, got %v", configType, a.doUpdate.InTypes[2])
+	validations := []any{
+		"PrepareConfig return", a.prepareConfig.OutTypes[0], configType,
+		"DoCreate config", a.doCreate.InTypes[1], configType,
+		"DoUpdate config", a.doUpdate.InTypes[2], configType,
 	}
 
 	if a.doUpdateWithID != nil {
-		if a.doUpdateWithID.InTypes[2] != configType {
-			return fmt.Errorf("DoUpdateWithID config type mismatch: expected %v, got %v", configType, a.doUpdateWithID.InTypes[2])
-		}
+		validations = append(validations, "DoUpdateWithID config", a.doUpdateWithID.InTypes[2], configType)
 	}
 
-	// Validate wait methods if present
 	if a.waitAfterCreate != nil {
-		if a.waitAfterCreate.InTypes[1] != configType {
-			return fmt.Errorf("WaitAfterCreate config type mismatch: expected %v, got %v", configType, a.waitAfterCreate.InTypes[1])
-		}
+		validations = append(validations, "WaitAfterCreate config", a.waitAfterCreate.InTypes[1], configType)
 	}
 
 	if a.waitAfterUpdate != nil {
-		if a.waitAfterUpdate.InTypes[1] != configType {
-			return fmt.Errorf("WaitAfterUpdate config type mismatch: expected %v, got %v", configType, a.waitAfterUpdate.InTypes[1])
-		}
+		validations = append(validations, "WaitAfterUpdate config", a.waitAfterUpdate.InTypes[1], configType)
+	}
+
+	err = validateTypes(validations...)
+	if err != nil {
+		return err
 	}
 
 	if a.doUpdateWithID != nil && a.classifyChanges == nil {
