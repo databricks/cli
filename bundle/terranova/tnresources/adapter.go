@@ -210,13 +210,13 @@ func (a *Adapter) Validate() error {
 	// Validate wait methods if present
 	if a.waitAfterCreate != nil {
 		if a.waitAfterCreate.InTypes[1] != configType {
-			return fmt.Errorf("WaitAfterCreate config type mismatch: expected %v, got %v", configType, a.waitAfterCreate.InTypes[2])
+			return fmt.Errorf("WaitAfterCreate config type mismatch: expected %v, got %v", configType, a.waitAfterCreate.InTypes[1])
 		}
 	}
 
 	if a.waitAfterUpdate != nil {
 		if a.waitAfterUpdate.InTypes[1] != configType {
-			return fmt.Errorf("WaitAfterUpdate config type mismatch: expected %v, got %v", configType, a.waitAfterUpdate.InTypes[2])
+			return fmt.Errorf("WaitAfterUpdate config type mismatch: expected %v, got %v", configType, a.waitAfterUpdate.InTypes[1])
 		}
 	}
 
