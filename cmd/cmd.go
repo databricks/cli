@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/cmd/psql"
-	"github.com/databricks/cli/cmd/ssh"
+	ssh "github.com/databricks/cli/experimental/ssh/cmd"
 
 	"github.com/databricks/cli/cmd/account"
 	"github.com/databricks/cli/cmd/api"
