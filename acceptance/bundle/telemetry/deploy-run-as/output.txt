@@ -6,7 +6,9 @@ Updating deployment state...
 Deployment complete!
 
 >>> cat out.requests.txt
+
+>>> cat telemetry.json
 {
-  "key": "bundle.run_as_set",
+  "key": "run_as_set",
   "value": true
 }

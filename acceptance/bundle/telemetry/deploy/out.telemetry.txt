@@ -47,7 +47,7 @@
               "value": false
             },
             {
-              "key": "bundle.run_as_set",
+              "key": "run_as_set",
               "value": false
             },
             {
