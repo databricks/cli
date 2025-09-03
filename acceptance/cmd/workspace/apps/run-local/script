@@ -31,7 +31,19 @@ while [ -z "$(grep -o "To access your app go to " out.run.txt 2>/dev/null)" ]; d
 done
 
 title "Checking app is running..."
-trace curl -s -o - http://127.0.0.1:$PROXY_PORT || true
+# Wait for the proxy to be ready to serve requests (with timeout)
+timeout=30
+counter=0
+while ! curl -s -o /dev/null http://127.0.0.1:$PROXY_PORT 2>/dev/null; do
+    sleep 1
+    counter=$((counter + 1))
+    if [ $counter -ge $timeout ]; then
+        echo "Timeout waiting for proxy to be ready after ${timeout}s"
+        exit 1
+    fi
+done
+
+trace curl -s -o - http://127.0.0.1:$PROXY_PORT
 
 title "Sending shutdown request..."
 trace curl -s -o /dev/null  http://127.0.0.1:$PROXY_PORT/shutdown || true
