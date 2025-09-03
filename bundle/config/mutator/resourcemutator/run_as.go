@@ -193,6 +193,9 @@ func (m *setRunAs) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// Track the use of the legacy run_as mode.
 	b.Metrics.AddBoolValue("experimental.use_legacy_run_as", b.Config.Experimental != nil && b.Config.Experimental.UseLegacyRunAs)
 
+	// Track whether top level run_as is set.
+	b.Metrics.AddBoolValue("bundle.run_as_set", b.Config.Value().Get("run_as").Kind() != dyn.KindInvalid)
+
 	// Mutator is a no-op if run_as is not specified in the bundle
 	if b.Config.Value().Get("run_as").Kind() == dyn.KindInvalid {
 		return nil

@@ -1,0 +1,14 @@
+bundle:
+  name: test_bundle_run_as_telemetry
+
+run_as:
+  service_principal_name: "sp_test"
+
+resources:
+  jobs:
+    test_job:
+      name: Test Job
+
+targets:
+  default:
+    default: true

@@ -1,0 +1,12 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test_bundle_run_as_telemetry/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> cat out.requests.txt
+{
+  "key": "bundle.run_as_set",
+  "value": true
+}
