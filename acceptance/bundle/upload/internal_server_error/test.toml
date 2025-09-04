@@ -1,0 +1,3 @@
+[[Server]]
+Pattern = "POST /api/2.0/workspace-files/import-file/Workspace/Users/tester@databricks.com/.bundle/test-bundle/default/files/file_to_upload.txt"
+Response.StatusCode = 500
