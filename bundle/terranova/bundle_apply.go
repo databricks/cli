@@ -10,12 +10,12 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 )
 
-func (b *BundleDeployer) Apply(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root) {
+func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root) {
 	if b.Graph == nil {
 		panic("Planning is not done")
 	}
 
-	if len(b.PlannedActions) == 0 {
+	if len(b.DeploymentUnits) == 0 {
 		// Avoid creating state file if nothing to deploy
 		return
 	}
@@ -23,9 +23,13 @@ func (b *BundleDeployer) Apply(ctx context.Context, client *databricks.Workspace
 	b.StateDB.AssertOpened()
 
 	b.Graph.Run(defaultParallelism, func(node deployplan.ResourceNode, failedDependency *deployplan.ResourceNode) bool {
-		actionType := b.PlannedActions[node]
-
-		errorPrefix := fmt.Sprintf("cannot %s %s.%s", actionType.String(), node.Group, node.Key)
+		d, exists := b.DeploymentUnits[node]
+		if !exists {
+			// Resource with actionType == noop are not added to DeploymentUnits.
+			// All references to it must have been resolved during planning.
+			return true
+		}
+		errorPrefix := fmt.Sprintf("cannot %s %s.%s", d.ActionType.String(), node.Group, node.Key)
 
 		// If a dependency failed, report and skip execution for this node by returning false
 		if failedDependency != nil {
@@ -33,28 +37,14 @@ func (b *BundleDeployer) Apply(ctx context.Context, client *databricks.Workspace
 			return false
 		}
 
-		settings, ok := SupportedResources[node.Group]
-		if !ok {
-			// Unexpected, this should be filtered at plan.
-			return false
-		}
-
 		// The way plan currently works, is that it does not add resources with Noop action, turning them into Unset.
 		// So we skip both, although at this point we will not see Noop here.
-		if actionType == deployplan.ActionTypeUnset || actionType == deployplan.ActionTypeNoop {
+		if d.ActionType == deployplan.ActionTypeUnset || d.ActionType == deployplan.ActionTypeNoop {
 			return true
 		}
 
-		d := Deployer{
-			client:       client,
-			db:           &b.StateDB,
-			group:        node.Group,
-			resourceName: node.Key,
-			settings:     settings,
-		}
-
-		if actionType == deployplan.ActionTypeDelete {
-			err := d.Destroy(ctx)
+		if d.ActionType == deployplan.ActionTypeDelete {
+			err := d.Destroy(ctx, &b.StateDB)
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
@@ -84,7 +74,7 @@ func (b *BundleDeployer) Apply(ctx context.Context, client *databricks.Workspace
 
 		// TODO: redo calcDiff to downgrade planned action if possible (?)
 
-		err = d.Deploy(ctx, config, actionType)
+		err = d.Deploy(ctx, &b.StateDB, config, d.ActionType)
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 			return false
@@ -92,7 +82,7 @@ func (b *BundleDeployer) Apply(ctx context.Context, client *databricks.Workspace
 
 		// Update resources.id after successful deploy so that future ${resources...id} refs are replaced
 		if b.Graph.HasOutgoingEdges(node) {
-			err = resolveIDReference(ctx, d.db, configRoot, node.Group, node.Key)
+			err = resolveIDReference(ctx, &b.StateDB, configRoot, node.Group, node.Key)
 			if err != nil {
 				// not using errorPrefix because resource was deployed
 				logdiag.LogError(ctx, fmt.Errorf("failed to replace ref to resources.%s.%s.id: %w", node.Group, node.Key, err))

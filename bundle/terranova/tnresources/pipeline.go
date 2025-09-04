@@ -10,80 +10,79 @@ import (
 
 type ResourcePipeline struct {
 	client *databricks.WorkspaceClient
-	config pipelines.CreatePipeline
 }
 
-func NewResourcePipeline(client *databricks.WorkspaceClient, resource *resources.Pipeline) (*ResourcePipeline, error) {
+func (*ResourcePipeline) New(client *databricks.WorkspaceClient) *ResourcePipeline {
 	return &ResourcePipeline{
 		client: client,
-		config: resource.CreatePipeline,
-	}, nil
+	}
 }
 
-func (r *ResourcePipeline) Config() any {
-	return r.config
+func (*ResourcePipeline) PrepareConfig(input *resources.Pipeline) *pipelines.CreatePipeline {
+	return &input.CreatePipeline
 }
 
-func (r *ResourcePipeline) DoCreate(ctx context.Context) (string, error) {
-	response, err := r.client.Pipelines.Create(ctx, r.config)
+func (r *ResourcePipeline) DoCreate(ctx context.Context, config *pipelines.CreatePipeline) (string, error) {
+	response, err := r.client.Pipelines.Create(ctx, *config)
 	if err != nil {
 		return "", err
 	}
 	return response.PipelineId, nil
 }
 
-func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string) error {
+func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string, config *pipelines.CreatePipeline) error {
 	request := pipelines.EditPipeline{
-		AllowDuplicateNames:  r.config.AllowDuplicateNames,
-		BudgetPolicyId:       r.config.BudgetPolicyId,
-		Catalog:              r.config.Catalog,
-		Channel:              r.config.Channel,
-		Clusters:             r.config.Clusters,
-		Configuration:        r.config.Configuration,
-		Continuous:           r.config.Continuous,
-		Deployment:           r.config.Deployment,
-		Development:          r.config.Development,
-		Edition:              r.config.Edition,
-		Environment:          r.config.Environment,
-		EventLog:             r.config.EventLog,
+		AllowDuplicateNames:  config.AllowDuplicateNames,
+		BudgetPolicyId:       config.BudgetPolicyId,
+		Catalog:              config.Catalog,
+		Channel:              config.Channel,
+		Clusters:             config.Clusters,
+		Configuration:        config.Configuration,
+		Continuous:           config.Continuous,
+		Deployment:           config.Deployment,
+		Development:          config.Development,
+		Edition:              config.Edition,
+		Environment:          config.Environment,
+		EventLog:             config.EventLog,
 		ExpectedLastModified: 0,
-		Filters:              r.config.Filters,
-		GatewayDefinition:    r.config.GatewayDefinition,
-		Id:                   r.config.Id,
-		IngestionDefinition:  r.config.IngestionDefinition,
-		Libraries:            r.config.Libraries,
-		Name:                 r.config.Name,
-		Notifications:        r.config.Notifications,
-		Photon:               r.config.Photon,
-		RestartWindow:        r.config.RestartWindow,
-		RootPath:             r.config.RootPath,
-		RunAs:                r.config.RunAs,
-		Schema:               r.config.Schema,
-		Serverless:           r.config.Serverless,
-		Storage:              r.config.Storage,
-		Tags:                 r.config.Tags,
-		Target:               r.config.Target,
-		Trigger:              r.config.Trigger,
+		Filters:              config.Filters,
+		GatewayDefinition:    config.GatewayDefinition,
+		Id:                   config.Id,
+		IngestionDefinition:  config.IngestionDefinition,
+		Libraries:            config.Libraries,
+		Name:                 config.Name,
+		Notifications:        config.Notifications,
+		Photon:               config.Photon,
+		RestartWindow:        config.RestartWindow,
+		RootPath:             config.RootPath,
+		RunAs:                config.RunAs,
+		Schema:               config.Schema,
+		Serverless:           config.Serverless,
+		Storage:              config.Storage,
+		Tags:                 config.Tags,
+		Target:               config.Target,
+		Trigger:              config.Trigger,
 		PipelineId:           id,
-		ForceSendFields:      filterFields[pipelines.EditPipeline](r.config.ForceSendFields),
+		ForceSendFields:      filterFields[pipelines.EditPipeline](config.ForceSendFields),
 	}
 
 	return r.client.Pipelines.Update(ctx, request)
 }
 
-func DeletePipeline(ctx context.Context, client *databricks.WorkspaceClient, id string) error {
-	return client.Pipelines.DeleteByPipelineId(ctx, id)
+func (r *ResourcePipeline) DoDelete(ctx context.Context, id string) error {
+	return r.client.Pipelines.DeleteByPipelineId(ctx, id)
 }
 
-func (r *ResourcePipeline) WaitAfterCreate(ctx context.Context) error {
-	// Note, terraform provider either
-	// a) reads back state at least once and fails create if state is "failed"
-	// b) repeatededly reads state until state is "running" (if spec.Contionous is set).
-	// TODO: investigate if we need to mimic this behaviour or can rely on Create status code.
-	return nil
+func (*ResourcePipeline) RecreateFields() []string {
+	return []string{
+		".storage",
+		".catalog",
+		".ingestion_definition.connection_name",
+		".ingestion_definition.ingestion_gateway_id",
+	}
 }
 
-func (r *ResourcePipeline) WaitAfterUpdate(ctx context.Context) error {
-	// TODO: investigate if we need to mimic waiting behaviour in TF or can rely on Update status code.
-	return nil
-}
+// Note, terraform provider either
+// a) reads back state at least once and fails create if state is "failed"
+// b) repeatededly reads state until state is "running" (if spec.Contionous is set).
+// TODO: investigate if we need to mimic this behaviour or can rely on Create status code.
