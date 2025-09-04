@@ -145,7 +145,7 @@ func TestPrepareCallErrors(t *testing.T) {
 			recv:      (*MyStruct)(nil),
 			ifaceType: TypeOf[interface{ PMethodAcceptData() error }](),
 			method:    "PMethodAcceptData",
-			errMsg:    "interface { PMethodAcceptData() error }.PMethodAcceptData: param count mismatch: interface 0, concrete 2 (incl. recv)",
+			errMsg:    "interface { PMethodAcceptData() error }.PMethodAcceptData: param count mismatch: interface 0, concrete 1",
 		},
 		{
 			name:       "incorrect number of return values",

@@ -126,8 +126,8 @@ func PrepareCall(receiver any, ifaceType reflect.Type, methodName string) (*Boun
 	// Check parameter count and compatibility
 	argN := concFT.NumIn() - 1
 	if argN != ifaceFT.NumIn() {
-		return nil, &CallAdaptError{Msg: fmt.Sprintf("%v.%s: param count mismatch: interface %d, concrete %d (incl. recv)",
-			ifaceType, methodName, ifaceFT.NumIn(), concFT.NumIn())}
+		return nil, &CallAdaptError{Msg: fmt.Sprintf("%v.%s: param count mismatch: interface %d, concrete %d",
+			ifaceType, methodName, ifaceFT.NumIn(), concFT.NumIn()-1)}
 	}
 	inTypes := make([]reflect.Type, argN)
 	for i := range argN {
