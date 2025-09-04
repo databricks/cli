@@ -1,0 +1,14 @@
+
+>>> [CLI] bundle plan
+create apps.reporting_app
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete app reporting_app
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
+
+Exit code: 1

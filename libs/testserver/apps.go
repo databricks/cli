@@ -50,6 +50,7 @@ func (s *FakeWorkspace) AppsUpsert(req Request, name string) Response {
 
 	app.Url = name + "-123.cloud.databricksapps.com"
 	app.Id = strconv.Itoa(len(s.Apps) + 1000)
+	app.UserApiScopes = nil
 
 	s.Apps[name] = app
 	return Response{

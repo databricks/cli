@@ -1,0 +1,7 @@
+Cloud = true
+RecordRequests = false
+
+[[Server]]
+Pattern = "PUT /api/2.0/apps"
+Response.StatusCode = 200
+Response.Body = "{}"
