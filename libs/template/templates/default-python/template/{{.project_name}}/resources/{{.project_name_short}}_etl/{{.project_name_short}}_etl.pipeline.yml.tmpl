@@ -1,4 +1,7 @@
-{{- $with_serverless := (eq .serverless "yes")}}
+# The main pipeline for {{.project_name}}
+
+{{- $serverless := (eq .serverless "yes") -}}
+
 # The main pipeline for {{.project_name}}
 resources:
   pipelines:
@@ -7,23 +10,29 @@ resources:
            * so we use the project name as part as the name.
            */}}
       name: {{.project_name_short}}_etl
-      {{- if or (eq default_catalog "") (eq default_catalog "hive_metastore")}}
-      {{- if $with_serverless }}
+{{- if or (eq default_catalog "") (eq default_catalog "hive_metastore")}}
+  {{- if $serverless }}
       ## Catalog is required for serverless compute
       catalog: main
-      {{- else}}
+  {{- else}}
       ## Specify the 'catalog' field to configure this pipeline to make use of Unity Catalog:
-      # catalog: catalog_name
-      {{- end}}
-      {{- else}}
-      catalog: {{default_catalog}}
-      {{- end}}
-      schema: {{.project_name}}_${bundle.target}
-      {{- if $with_serverless}}
+      # catalog: ${var.catalog}
+  {{- end}}
+{{- else}}
+      catalog: ${var.catalog}
+{{- end}}
+      schema: ${var.schema}
+{{- if $serverless }}
       serverless: true
-      {{- end}}
+{{- end}}
       root_path: "."
 
       libraries:
         - glob:
             include: transformations/**
+
+      environment:
+        dependencies:
+          # By default we include the .whl file generated for the project's pyproject.toml
+          # in the root of this project. Any other dependencies can be added there.
+          - ../../dist/*.whl
