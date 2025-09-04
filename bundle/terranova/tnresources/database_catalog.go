@@ -10,16 +10,19 @@ import (
 
 type ResourceDatabaseCatalog struct {
 	client *databricks.WorkspaceClient
-	config database.DatabaseCatalog
 }
 
-func (d ResourceDatabaseCatalog) Config() any {
-	return d.config
+func (*ResourceDatabaseCatalog) New(client *databricks.WorkspaceClient) *ResourceDatabaseCatalog {
+	return &ResourceDatabaseCatalog{client: client}
 }
 
-func (d *ResourceDatabaseCatalog) DoCreate(ctx context.Context) (string, error) {
-	result, err := d.client.Database.CreateDatabaseCatalog(ctx, database.CreateDatabaseCatalogRequest{
-		Catalog: d.config,
+func (*ResourceDatabaseCatalog) PrepareConfig(input *resources.DatabaseCatalog) *database.DatabaseCatalog {
+	return &input.DatabaseCatalog
+}
+
+func (r *ResourceDatabaseCatalog) DoCreate(ctx context.Context, config *database.DatabaseCatalog) (string, error) {
+	result, err := r.client.Database.CreateDatabaseCatalog(ctx, database.CreateDatabaseCatalogRequest{
+		Catalog: *config,
 	})
 	if err != nil {
 		return "", err
@@ -27,34 +30,19 @@ func (d *ResourceDatabaseCatalog) DoCreate(ctx context.Context) (string, error) 
 	return result.Name, nil
 }
 
-func (d ResourceDatabaseCatalog) DoUpdate(ctx context.Context, id string) error {
+func (r *ResourceDatabaseCatalog) DoUpdate(ctx context.Context, id string, config *database.DatabaseCatalog) error {
 	request := database.UpdateDatabaseCatalogRequest{
-		DatabaseCatalog: d.config,
-		Name:            d.config.Name,
+		DatabaseCatalog: *config,
+		Name:            id,
 		UpdateMask:      "*",
 	}
 
-	_, err := d.client.Database.UpdateDatabaseCatalog(ctx, request)
+	_, err := r.client.Database.UpdateDatabaseCatalog(ctx, request)
 	return err
 }
 
-func (d ResourceDatabaseCatalog) WaitAfterCreate(_ context.Context) error {
-	return nil
-}
-
-func (d ResourceDatabaseCatalog) WaitAfterUpdate(_ context.Context) error {
-	return nil
-}
-
-func NewResourceDatabaseCatalog(client *databricks.WorkspaceClient, resource *resources.DatabaseCatalog) (*ResourceDatabaseCatalog, error) {
-	return &ResourceDatabaseCatalog{
-		client: client,
-		config: resource.DatabaseCatalog,
-	}, nil
-}
-
-func DeleteDatabaseCatalog(ctx context.Context, client *databricks.WorkspaceClient, name string) error {
-	return client.Database.DeleteDatabaseCatalog(ctx, database.DeleteDatabaseCatalogRequest{
-		Name: name,
+func (r *ResourceDatabaseCatalog) DoDelete(ctx context.Context, id string) error {
+	return r.client.Database.DeleteDatabaseCatalog(ctx, database.DeleteDatabaseCatalogRequest{
+		Name: id,
 	})
 }
