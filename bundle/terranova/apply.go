@@ -163,7 +163,7 @@ func (d *DeploymentUnit) UpdateWithID(ctx context.Context, db *tnstate.Terranova
 		return fmt.Errorf("saving state id=%s: %w", oldID, err)
 	}
 
-	waitRemoteState, err := d.Adapter.WaitAfterUpdate(ctx, newID, config)
+	waitRemoteState, err := d.Adapter.WaitAfterUpdate(ctx, config)
 	if err != nil {
 		return fmt.Errorf("waiting after updating id=%s: %w", newID, err)
 	}

@@ -467,12 +467,12 @@ func (a *Adapter) ClassifyChanges(changes []structdiff.Change) (deployplan.Actio
 // WaitAfterCreate waits for the resource to become ready after creation.
 // If the resource doesn't implement this method, this is a no-op.
 // Returns the updated remoteState if the WithRefresh variant is implemented, otherwise returns nil
-func (a *Adapter) WaitAfterCreate(ctx context.Context, id string, config any) (any, error) {
+func (a *Adapter) WaitAfterCreate(ctx context.Context, config any) (any, error) {
 	if a.waitAfterCreate == nil {
 		return nil, nil // no-op if not implemented
 	}
 
-	outs, err := a.waitAfterCreate.Call(ctx, id, config)
+	outs, err := a.waitAfterCreate.Call(ctx, config)
 	if err != nil {
 		return nil, err
 	}
@@ -489,12 +489,12 @@ func (a *Adapter) WaitAfterCreate(ctx context.Context, id string, config any) (a
 // WaitAfterUpdate waits for the resource to become ready after update.
 // If the resource doesn't implement this method, this is a no-op.
 // Returns the updated remoteState if the WithRefresh variant is implemented, otherwise returns the input remoteState.
-func (a *Adapter) WaitAfterUpdate(ctx context.Context, id string, config any) (any, error) {
+func (a *Adapter) WaitAfterUpdate(ctx context.Context, config any) (any, error) {
 	if a.waitAfterUpdate == nil {
 		return nil, nil // no-op if not implemented
 	}
 
-	outs, err := a.waitAfterUpdate.Call(ctx, id, config)
+	outs, err := a.waitAfterUpdate.Call(ctx, config)
 	if err != nil {
 		return nil, err
 	}
