@@ -126,7 +126,7 @@ func PrepareCall(receiver any, ifaceType reflect.Type, methodName string) (*Boun
 	// Check parameter count and compatibility
 	argN := concFT.NumIn() - 1
 	if argN != ifaceFT.NumIn() {
-		return nil, &CallAdaptError{Msg: fmt.Sprintf("%v.%s: param count mismatch: iface %d, concrete %d (incl. recv)",
+		return nil, &CallAdaptError{Msg: fmt.Sprintf("%v.%s: param count mismatch: interface %d, concrete %d (incl. recv)",
 			ifaceType, methodName, ifaceFT.NumIn(), concFT.NumIn())}
 	}
 	inTypes := make([]reflect.Type, argN)
@@ -135,7 +135,7 @@ func PrepareCall(receiver any, ifaceType reflect.Type, methodName string) (*Boun
 		it := ifaceFT.In(i)
 		// Interface side may use `any` as a wildcard
 		if it != anyType && inTypes[i] != it {
-			return nil, &CallAdaptError{Msg: fmt.Sprintf("%v.%s: param %d mismatch: iface %v, concrete %v",
+			return nil, &CallAdaptError{Msg: fmt.Sprintf("%v.%s: param %d mismatch: interface %v, concrete %v",
 				ifaceType, methodName, i, it, inTypes[i])}
 		}
 	}
@@ -143,7 +143,7 @@ func PrepareCall(receiver any, ifaceType reflect.Type, methodName string) (*Boun
 	// Check return count and compatibility
 	outN := concFT.NumOut()
 	if outN != ifaceFT.NumOut() {
-		return nil, &CallAdaptError{Msg: fmt.Sprintf("%v.%s: return count mismatch: iface %d, concrete %d",
+		return nil, &CallAdaptError{Msg: fmt.Sprintf("%v.%s: return count mismatch: interface %d, concrete %d",
 			ifaceType, methodName, ifaceFT.NumOut(), outN)}
 	}
 	outTypes := make([]reflect.Type, outN)
@@ -152,7 +152,7 @@ func PrepareCall(receiver any, ifaceType reflect.Type, methodName string) (*Boun
 		it := ifaceFT.Out(i)
 		// Interface side may use `any` as a wildcard
 		if it != anyType && outTypes[i] != it {
-			return nil, &CallAdaptError{Msg: fmt.Sprintf("%v.%s: result %d mismatch: iface %v, concrete %v",
+			return nil, &CallAdaptError{Msg: fmt.Sprintf("%v.%s: result %d mismatch: interface %v, concrete %v",
 				ifaceType, methodName, i, it, outTypes[i])}
 		}
 	}

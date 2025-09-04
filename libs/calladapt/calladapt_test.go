@@ -138,21 +138,21 @@ func TestPrepareCallErrors(t *testing.T) {
 			recv:      (*MyStruct)(nil),
 			ifaceType: TypeOf[interface{ PMethodAcceptData(data NewData) error }](),
 			method:    "PMethodAcceptData",
-			errMsg:    "interface { PMethodAcceptData(calladapt.NewData) error }.PMethodAcceptData: param 0 mismatch: iface calladapt.NewData, concrete calladapt.Data",
+			errMsg:    "interface { PMethodAcceptData(calladapt.NewData) error }.PMethodAcceptData: param 0 mismatch: interface calladapt.NewData, concrete calladapt.Data",
 		},
 		{
 			name:      "incorrect number of args",
 			recv:      (*MyStruct)(nil),
 			ifaceType: TypeOf[interface{ PMethodAcceptData() error }](),
 			method:    "PMethodAcceptData",
-			errMsg:    "interface { PMethodAcceptData() error }.PMethodAcceptData: param count mismatch: iface 0, concrete 2 (incl. recv)",
+			errMsg:    "interface { PMethodAcceptData() error }.PMethodAcceptData: param count mismatch: interface 0, concrete 2 (incl. recv)",
 		},
 		{
 			name:       "incorrect number of return values",
 			recv:       (*MyStruct)(nil),
 			ifaceType:  TypeOf[interface{ PMethodAcceptData(any) (any, error) }](),
 			method:     "PMethodAcceptData",
-			errMsg:     "interface { PMethodAcceptData(interface {}) (interface {}, error) }.PMethodAcceptData: return count mismatch: iface 2, concrete 1",
+			errMsg:     "interface { PMethodAcceptData(interface {}) (interface {}, error) }.PMethodAcceptData: return count mismatch: interface 2, concrete 1",
 			unexpected: true,
 		},
 		{
@@ -200,7 +200,7 @@ func TestPrepareCallErrors(t *testing.T) {
 			recv:       (*MyStruct)(nil),
 			ifaceType:  TypeOf[interface{ GetCustomError() error }](),
 			method:     "GetCustomError",
-			errMsg:     "interface { GetCustomError() error }.GetCustomError: result 0 mismatch: iface error, concrete calladapt.CustomError",
+			errMsg:     "interface { GetCustomError() error }.GetCustomError: result 0 mismatch: interface error, concrete calladapt.CustomError",
 			unexpected: true,
 		},
 		{
