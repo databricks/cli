@@ -16,11 +16,22 @@ func TypeOf[T any]() reflect.Type {
 // It can invoke the underlying function and returns all non-error outputs and
 // the error (if the method returns one as the last return value).
 type BoundCaller struct {
-	Func             reflect.Value
-	Receiver         reflect.Value
-	InTypes          []reflect.Type
-	OutTypes         []reflect.Type
-	Name             string
+	// Func is the function being called by Call()
+	Func reflect.Value
+
+	// Receiver is value passed as receiver argument. Users do not provide receiver, only regular arguments.
+	Receiver reflect.Value
+
+	// Types of each argument (excluding receiver)
+	InTypes []reflect.Type
+
+	// Type of each return value excluding the last error
+	OutTypes []reflect.Type
+
+	// Name of the method being called
+	Name string
+
+	// Whether wrapped function's last return value is an error
 	HasTrailingError bool
 }
 
@@ -56,6 +67,8 @@ func (c *BoundCaller) call(args ...any) ([]reflect.Value, error) {
 }
 
 // Call returns all non-error outputs and an error if the last return value is error and non-nil.
+// Note, both internal errors and wrapped function errors are returned in error return value.
+// The errors raised by this module are allways wrapped with CallAdapterError{}.
 func (c *BoundCaller) Call(args ...any) ([]any, error) {
 	outs, err := c.call(args...)
 	if err != nil {
