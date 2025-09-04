@@ -89,9 +89,9 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 			}
 			return result
 		},
-		"short_date_time": func() string {
+		"short_date_time": func() (string, error) {
 			now := time.Now()
-			return fmt.Sprintf("%s_%02d_%02d%02d", now.Format("jan"), now.Day(), now.Hour(), now.Minute())
+			return fmt.Sprintf("%s_%02d_%02d%02d", now.Format("jan"), now.Day(), now.Hour(), now.Minute()), nil
 		},
 		// Get smallest node type (follows Terraform's GetSmallestNodeType)
 		"smallest_node_type": func() (string, error) {
