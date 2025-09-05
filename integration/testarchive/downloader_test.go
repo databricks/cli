@@ -69,7 +69,7 @@ func TestGoDownloader(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	for _, arch := range []string{"arm64", "amd64"} {
-		err := testarchive.GoDownloader{Arch: arch, BinDir: tmpDir}.Download()
+		err := testarchive.GoDownloader{Arch: arch, BinDir: tmpDir, RepoRoot: "../.."}.Download()
 		require.NoError(t, err)
 
 		entries, err := os.ReadDir(filepath.Join(tmpDir, arch))

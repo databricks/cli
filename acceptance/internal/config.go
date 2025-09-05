@@ -36,6 +36,9 @@ type TestConfig struct {
 	// If true, run this test when running locally with a testserver
 	Local *bool
 
+	// If true, this test will not be run in -short mode (which is default for make test / PR)
+	Slow *bool
+
 	// If true, run this test when running with cloud env configured
 	Cloud *bool
 
