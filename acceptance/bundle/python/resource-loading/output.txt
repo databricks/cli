@@ -68,7 +68,7 @@
           3
         ]
       ],
-      "experimental": [
+      "python": [
         [
           0,
           7,
@@ -78,14 +78,14 @@
       "resources": [
         [
           0,
-          13,
+          12,
           3
         ]
       ],
       "resources.jobs": [
         [
           0,
-          14,
+          13,
           5
         ]
       ],
@@ -106,7 +106,7 @@
       "resources.jobs.my_job_3": [
         [
           0,
-          15,
+          14,
           7
         ]
       ],
