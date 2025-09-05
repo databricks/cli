@@ -499,7 +499,7 @@ func (a *Adapter) WaitAfterUpdate(ctx context.Context, config any) (any, error) 
 		return nil, err
 	}
 
-	if len(outs) == 1 {
+	if len(outs) == 0 {
 		// NoRefresh version
 		return nil, nil
 	} else {
