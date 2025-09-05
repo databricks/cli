@@ -110,12 +110,27 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 
 	ctx := context.Background()
 
-	createdID, _, err := adapter.DoCreate(ctx, config)
+	// initial DoRefresh() cannot find the resource
+	remote, err := adapter.DoRefresh(ctx, "1234")
+	require.Nil(t, remote)
+	// TODO: if errors.Is(err, databricks.ErrResourceDoesNotExist) {... }
+
+	createdID, remoteStateFromCreate, err := adapter.DoCreate(ctx, config)
 	require.NoError(t, err, "DoCreate failed config=%v", config)
 	require.NotEmpty(t, createdID, "ID returned from DoCreate was empty")
 
-	_, err = adapter.DoUpdate(ctx, createdID, config)
+	remote, err = adapter.DoRefresh(ctx, createdID)
+	require.NoError(t, err)
+	require.NotNil(t, remote)
+	if remoteStateFromCreate != nil {
+		require.Equal(t, remoteStateFromCreate, remote)
+	}
+
+	remoteStateFromUpdate, err := adapter.DoUpdate(ctx, createdID, config)
 	require.NoError(t, err, "DoUpdate failed")
+	if remoteStateFromUpdate != nil {
+		require.Equal(t, remote, remoteStateFromUpdate)
+	}
 }
 
 // validateFields uses structwalk to generate all valid field paths and checks membership.
