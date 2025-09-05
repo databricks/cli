@@ -126,6 +126,12 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		require.Equal(t, remoteStateFromCreate, remote)
 	}
 
+	remoteStateFromWaitCreate, err := adapter.WaitAfterCreate(ctx, config)
+	require.NoError(t, err)
+	if remoteStateFromWaitCreate != nil {
+		require.Equal(t, remote, remoteStateFromWaitCreate)
+	}
+
 	remoteStateFromUpdate, err := adapter.DoUpdate(ctx, createdID, config)
 	require.NoError(t, err, "DoUpdate failed")
 	if remoteStateFromUpdate != nil {
