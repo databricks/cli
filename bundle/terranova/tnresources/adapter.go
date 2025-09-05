@@ -326,9 +326,6 @@ func (a *Adapter) New(client *databricks.WorkspaceClient) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	if len(outs) != 1 {
-		return nil, fmt.Errorf("internal error: New returned %d values, expected 1", len(outs))
-	}
 	return outs[0], nil
 }
 
@@ -336,9 +333,6 @@ func (a *Adapter) PrepareConfig(input any) (any, error) {
 	outs, err := a.prepareConfig.Call(input)
 	if err != nil {
 		return nil, err
-	}
-	if len(outs) != 1 {
-		return nil, fmt.Errorf("internal error: PrepareConfig returned %d values, expected 1", len(outs))
 	}
 	return outs[0], nil
 }
@@ -348,19 +342,13 @@ func (a *Adapter) DoRefresh(ctx context.Context, id string) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	if len(outs) != 1 {
-		return nil, fmt.Errorf("internal error: DoRefresh returned %d values, expected 1", len(outs))
-	}
 	return outs[0], nil
 }
 
 func (a *Adapter) DoDelete(ctx context.Context, id string) error {
-	outs, err := a.doDelete.Call(ctx, id)
+	_, err := a.doDelete.Call(ctx, id)
 	if err != nil {
 		return err
-	}
-	if len(outs) != 0 {
-		return fmt.Errorf("internal error: DoDelete returned %d values, expected 0", len(outs))
 	}
 	return nil
 }
