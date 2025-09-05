@@ -89,10 +89,10 @@ type IResourceWithRefresh interface {
 	DoUpdateWithID(ctx context.Context, id string, config any) (newID string, remoteState any, e error)
 
 	// WaitAfterCreate waits for the resource to become ready after creation.
-	WaitAfterCreate(ctx context.Context, id string, config any) (newRemoteState any, e error)
+	WaitAfterCreate(ctx context.Context, config any) (newRemoteState any, e error)
 
 	// WaitAfterUpdate waits for the resource to become ready after update.
-	WaitAfterUpdate(ctx context.Context, id string, config any) (newRemoteState any, e error)
+	WaitAfterUpdate(ctx context.Context, config any) (newRemoteState any, e error)
 }
 
 // Adapter wraps resource implementation, validates signatures and type consistency across methods
