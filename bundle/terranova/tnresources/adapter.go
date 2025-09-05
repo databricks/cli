@@ -278,7 +278,7 @@ func (a *Adapter) validate() error {
 
 	if a.doUpdateWithID != nil {
 		validations = append(validations, "DoUpdateWithID config", a.doUpdateWithID.InTypes[2], configType)
-		if len(a.doUpdateWithID.OutTypes) == 3 && a.doUpdateWithID.OutTypes[1] != remoteType {
+		if len(a.doUpdateWithID.OutTypes) == 3 {
 			validations = append(validations, "DoUpdateWithID remoteState return", a.doUpdateWithID.OutTypes[1], remoteType)
 		}
 	}
