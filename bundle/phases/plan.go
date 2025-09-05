@@ -2,14 +2,17 @@ package phases
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/deploy/terraform"
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/bundle/trampoline"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/logdiag"
 )
 
@@ -45,4 +48,29 @@ func deployPrepare(ctx context.Context, b *bundle.Bundle) map[string][]libraries
 	)
 
 	return libs
+}
+
+// checkForPreventDestroy checks if the resource has lifecycle.prevent_destroy set, but the plan calls for this resource to be recreated or destroyed.
+// If it does, it returns an error.
+func checkForPreventDestroy(b *bundle.Bundle, actions []deployplan.Action, isDestroy bool) error {
+	root := b.Config.Value()
+	for _, action := range actions {
+		if action.ActionType == deployplan.ActionTypeRecreate || (isDestroy && action.ActionType == deployplan.ActionTypeDelete) {
+			path := dyn.NewPath(dyn.Key("resources"), dyn.Key(action.Group), dyn.Key(action.Key), dyn.Key("lifecycle"))
+			lifecycleV, err := dyn.GetByPath(root, path)
+			// If there is no lifecycle, skip
+			if err != nil {
+				return nil
+			}
+
+			if lifecycleV.Kind() == dyn.KindMap {
+				preventDestroyV := lifecycleV.Get("prevent_destroy")
+				preventDestroy, ok := preventDestroyV.AsBool()
+				if ok && preventDestroy {
+					return fmt.Errorf("resource %s has lifecycle.prevent_destroy set, but the plan calls for this resource to be recreated or destroyed. To avoid this error, disable lifecycle.prevent_destroy", action.Key)
+				}
+			}
+		}
+	}
+	return nil
 }

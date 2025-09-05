@@ -50,3 +50,30 @@ func TestConvertExperiment(t *testing.T) {
 		},
 	}, out.Permissions["mlflow_experiment_my_experiment"])
 }
+
+func TestConvertExperimentWithLifecycle(t *testing.T) {
+	src := resources.MlflowExperiment{
+		Experiment: ml.Experiment{
+			Name: "name",
+		},
+		Lifecycle: resources.Lifecycle{
+			PreventDestroy: true,
+		},
+	}
+
+	vin, err := convert.FromTyped(src, dyn.NilValue)
+	require.NoError(t, err)
+
+	ctx := context.Background()
+	out := schema.NewResources()
+	err = experimentConverter{}.Convert(ctx, "my_experiment", vin, out)
+	require.NoError(t, err)
+
+	// Assert equality on the experiment
+	assert.Equal(t, map[string]any{
+		"name": "name",
+		"lifecycle": map[string]any{
+			"prevent_destroy": true,
+		},
+	}, out.MlflowExperiment["my_experiment"])
+}

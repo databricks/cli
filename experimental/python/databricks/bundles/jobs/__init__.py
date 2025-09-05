@@ -134,6 +134,9 @@ __all__ = [
     "Library",
     "LibraryDict",
     "LibraryParam",
+    "Lifecycle",
+    "LifecycleDict",
+    "LifecycleParam",
     "LocalFileInfo",
     "LocalFileInfoDict",
     "LocalFileInfoParam",
@@ -482,6 +485,11 @@ from databricks.bundles.jobs._models.jobs_health_rules import (
     JobsHealthRulesParam,
 )
 from databricks.bundles.jobs._models.library import Library, LibraryDict, LibraryParam
+from databricks.bundles.jobs._models.lifecycle import (
+    Lifecycle,
+    LifecycleDict,
+    LifecycleParam,
+)
 from databricks.bundles.jobs._models.local_file_info import (
     LocalFileInfo,
     LocalFileInfoDict,

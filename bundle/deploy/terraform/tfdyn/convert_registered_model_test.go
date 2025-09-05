@@ -56,3 +56,30 @@ func TestConvertRegisteredModel(t *testing.T) {
 		},
 	}, out.Grants["registered_model_my_registered_model"])
 }
+
+func TestConvertRegisteredModelWithLifecycle(t *testing.T) {
+	src := resources.RegisteredModel{
+		CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{
+			Name: "name",
+		},
+		Lifecycle: resources.Lifecycle{
+			PreventDestroy: true,
+		},
+	}
+
+	vin, err := convert.FromTyped(src, dyn.NilValue)
+	require.NoError(t, err)
+
+	ctx := context.Background()
+	out := schema.NewResources()
+	err = registeredModelConverter{}.Convert(ctx, "my_registered_model", vin, out)
+	require.NoError(t, err)
+
+	// Assert equality on the registered model
+	assert.Equal(t, map[string]any{
+		"name": "name",
+		"lifecycle": map[string]any{
+			"prevent_destroy": true,
+		},
+	}, out.RegisteredModel["my_registered_model"])
+}

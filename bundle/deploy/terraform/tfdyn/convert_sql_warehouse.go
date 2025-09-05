@@ -28,6 +28,11 @@ func (sqlWarehouseConverter) Convert(ctx context.Context, key string, vin dyn.Va
 		return err
 	}
 
+	vout, err = convertLifecycle(ctx, vout, vin.Get("lifecycle"))
+	if err != nil {
+		return err
+	}
+
 	// Add the converted resource to the output.
 	out.SqlEndpoint[key] = vout.AsAny()
 

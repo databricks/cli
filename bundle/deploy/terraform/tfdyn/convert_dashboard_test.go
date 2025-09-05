@@ -112,3 +112,34 @@ func TestConvertDashboardSerializedDashboardAny(t *testing.T) {
 	// Assert that the "file_path" is dropped.
 	assert.NotContains(t, out.Dashboard["my_dashboard"], "file_path")
 }
+
+func TestConvertDashboardWithLifecycle(t *testing.T) {
+	src := resources.Dashboard{
+		DashboardConfig: resources.DashboardConfig{
+			Dashboard: dashboards.Dashboard{
+				DisplayName: "my dashboard",
+				WarehouseId: "f00dcafe",
+			},
+		},
+		Lifecycle: resources.Lifecycle{
+			PreventDestroy: true,
+		},
+	}
+
+	vin, err := convert.FromTyped(src, dyn.NilValue)
+	require.NoError(t, err)
+
+	ctx := context.Background()
+	out := schema.NewResources()
+	err = dashboardConverter{}.Convert(ctx, "my_dashboard", vin, out)
+	require.NoError(t, err)
+
+	// Assert equality on the dashboard
+	assert.Equal(t, map[string]any{
+		"display_name": "my dashboard",
+		"warehouse_id": "f00dcafe",
+		"lifecycle": map[string]any{
+			"prevent_destroy": true,
+		},
+	}, out.Dashboard["my_dashboard"])
+}
