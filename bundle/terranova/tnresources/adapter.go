@@ -99,7 +99,6 @@ type IResourceWithRefresh interface {
 // and provides a unified interface.
 type Adapter struct {
 	// Required:
-	new           *calladapt.BoundCaller
 	prepareConfig *calladapt.BoundCaller
 	doRefresh     *calladapt.BoundCaller
 	doDelete      *calladapt.BoundCaller
@@ -129,7 +128,6 @@ func NewAdapter(typedNil any, client *databricks.WorkspaceClient) (*Adapter, err
 	}
 	impl := outs[0]
 	adapter := &Adapter{
-		new:             nil,
 		prepareConfig:   nil,
 		doRefresh:       nil,
 		doDelete:        nil,
@@ -176,10 +174,6 @@ func (a *Adapter) initMethods(resource any) error {
 	it := calladapt.TypeOf[IResource]()
 
 	err := calladapt.EnsureNoExtraMethods(resource, it, calladapt.TypeOf[IResourceNoRefresh](), calladapt.TypeOf[IResourceWithRefresh]())
-	if err != nil {
-		return err
-	}
-	a.new, err = prepareCallRequired(resource, it, "New")
 	if err != nil {
 		return err
 	}
@@ -319,14 +313,6 @@ func (a *Adapter) ConfigType() reflect.Type {
 
 func (a *Adapter) RemoteType() reflect.Type {
 	return a.doRefresh.OutTypes[0]
-}
-
-func (a *Adapter) New(client *databricks.WorkspaceClient) (any, error) {
-	outs, err := a.new.Call(client)
-	if err != nil {
-		return nil, err
-	}
-	return outs[0], nil
 }
 
 func (a *Adapter) PrepareConfig(input any) (any, error) {
