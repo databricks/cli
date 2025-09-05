@@ -1,8 +1,7 @@
 # The main pipeline for {{.project_name}}
 
-{{- $serverless := (eq .serverless "yes") -}}
+{{- $serverless := (eq .serverless "yes")}}
 
-# The main pipeline for {{.project_name}}
 resources:
   pipelines:
     {{.project_name_short}}_etl:
@@ -31,8 +30,10 @@ resources:
         - glob:
             include: transformations/**
 
+{{- if eq .include_python "yes"}}
       environment:
         dependencies:
           # By default we include the .whl file generated for the project's pyproject.toml
           # in the root of this project. Any other dependencies can be added there.
           - ../../dist/*.whl
+{{- end}}
