@@ -8,6 +8,7 @@ This file only template directives; it is skipped for the actual output.
 {{$job := eq .include_job "yes"}}
 {{$python_package := eq .include_python "yes"}}
 {{$isSQL := eq .language "sql"}}
+{{$lakeflow_only := eq .lakeflow_only "yes"}}
 
 {{if not $python_package}}
   {{skip "{{.project_name}}/pyproject.toml"}}
@@ -49,4 +50,12 @@ This file only template directives; it is skipped for the actual output.
   {{else}}
      {{skip "{{.project_name}}/resources/{{.project_name_short}}_etl/transformations/*.sql"}}
   {{end}}
+{{end}}
+
+{{if $lakeflow_only}}
+  # Only include a simple job.yml direcly in resources/{{.project_name_short}}_etl
+  {{skip "{{.project_name}}/resources/sample_job/**"}}
+{{else}}
+  # Include a full job that might have more than one task
+  {{skip "{{.project_name}}/resources/{{.project_name_short}}_etl/*.job.yml"}}
 {{end}}

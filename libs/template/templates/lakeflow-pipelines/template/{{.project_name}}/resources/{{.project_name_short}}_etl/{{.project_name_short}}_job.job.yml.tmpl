@@ -1,7 +1,9 @@
-{{/* For Lakeflow Pipelines, we only include a simple job.yml
-   * directly in resources/{{.project_name_short}}_etl
-   */ -}}
 # The job that triggers {{.project_name_short}}_etl.
+
+{{- /* For Lakeflow Pipelines, we only include a simple job.yml
+     * directly in resources/{{.project_name_short}}_etl
+     */}}
+
 resources:
   jobs:
     {{.project_name_short}}_job:
