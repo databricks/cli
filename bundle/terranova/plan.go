@@ -72,11 +72,7 @@ func (d *DeploymentUnit) refreshRemoteState(ctx context.Context, id string) erro
 	return nil
 }
 
-type ErrorDelayed struct{}
-
-func (e ErrorDelayed) Error() string { return "must be resolved after apply" }
-
-var ErrDelayed ErrorDelayed
+var ErrDelayed = errors.New("must be resolved after apply")
 
 func (d *DeploymentUnit) ResolveReferenceLocalOrRemote(ctx context.Context, db *tnstate.TerranovaState, reference string, actionType deployplan.ActionType, config any) (any, error) {
 	path, ok := dynvar.PureReferenceToPath(reference)
