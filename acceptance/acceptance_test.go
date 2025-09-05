@@ -84,7 +84,7 @@ const (
 	EntryPointScript = "script"
 	CleanupScript    = "script.cleanup"
 	PrepareScript    = "script.prepare"
-	MaxFileSize      = 100_000
+	MaxFileSize      = 1_000_000
 	// Filename to save replacements to (used by diff.py)
 	ReplsFile = "repls.json"
 	// Filename for materialized config (used as golden file)
