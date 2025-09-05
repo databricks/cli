@@ -141,7 +141,7 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 
 	remoteStateFromWaitUpdate, err := adapter.WaitAfterUpdate(ctx, config)
 	require.NoError(t, err)
-	if remoteStateFromWaitCreate != nil {
+	if remoteStateFromWaitUpdate != nil {
 		require.Equal(t, remote, remoteStateFromWaitUpdate)
 	}
 
