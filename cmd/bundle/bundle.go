@@ -41,5 +41,6 @@ Online documentation: https://docs.databricks.com/en/dev-tools/bundles/index.htm
 	cmd.AddCommand(deployment.NewDeploymentCommand())
 	cmd.AddCommand(newOpenCommand())
 	cmd.AddCommand(newPlanCommand())
+	cmd.AddCommand(newRefSchemaCommand())
 	return cmd
 }
