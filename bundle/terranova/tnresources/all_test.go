@@ -143,6 +143,14 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	if remoteStateFromWaitCreate != nil {
 		require.Equal(t, remote, remoteStateFromWaitUpdate)
 	}
+
+	err = adapter.DoDelete(ctx, createdID)
+	require.NoError(t, err)
+
+	remoteAfterDelete, err := adapter.DoRefresh(ctx, createdID)
+	require.Error(t, err)
+	require.Nil(t, remoteAfterDelete)
+
 }
 
 // validateFields uses structwalk to generate all valid field paths and checks membership.
