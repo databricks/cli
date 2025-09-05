@@ -45,6 +45,11 @@ func dumpRemoteSchemas() error {
 	for _, resourceName := range utils.SortedKeys(adapters) {
 		adapter := adapters[resourceName]
 
+		// TODO: fields with bundle: tag has variety of behaviors
+		// id is REMOTE but it shows up in inputType
+		// "url" is remote on some resources
+		// "modified_status" in internal
+
 		// path -> typeLabel -> set of sources
 		pathTypes := make(map[string]map[string]map[string]struct{})
 
@@ -53,9 +58,9 @@ func dumpRemoteSchemas() error {
 				if path == nil {
 					return true
 				}
-				p := convertArraysToIndexed(path.String())
+				p := path.String()
 				p = strings.TrimPrefix(p, ".")
-				t := fmt.Sprint(typ)
+				t := strings.ReplaceAll(fmt.Sprint(typ), "interface {}", "any")
 				byType, ok := pathTypes[p]
 				if !ok {
 					byType = make(map[string]map[string]struct{})
@@ -104,11 +109,4 @@ func formatTags(sources map[string]struct{}) string {
 		return "ALL"
 	}
 	return strings.Join(utils.SortedKeys(sources), "\t")
-}
-
-// convertArraysToIndexed converts array patterns like "tasks[*]" to "tasks[0]" format.
-func convertArraysToIndexed(path string) string {
-	// Replace patterns like "field[*]" with "field[0]"
-	result := strings.ReplaceAll(path, "[*]", "[0]")
-	return result
 }
