@@ -42,7 +42,7 @@ var ShortName = map[ActionType]ActionType{
 }
 
 func (a ActionType) IsNoop() bool {
-	return a == ActionTypeNoop || a == ActionTypeUnset
+	return a == ActionTypeNoop
 }
 
 func (a ActionType) KeepsID() bool {

@@ -37,12 +37,6 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			return false
 		}
 
-		// The way plan currently works, is that it does not add resources with Noop action, turning them into Unset.
-		// So we skip both, although at this point we will not see Noop here.
-		if d.ActionType == deployplan.ActionTypeUnset || d.ActionType == deployplan.ActionTypeNoop {
-			return true
-		}
-
 		if d.ActionType == deployplan.ActionTypeDelete {
 			err := d.Destroy(ctx, &b.StateDB)
 			if err != nil {
