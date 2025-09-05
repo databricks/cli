@@ -1,6 +1,7 @@
 
 >>> [CLI] bundle plan
-create jobs.foo
+Plan: 1 to add, 0 to change, 0 to delete
+  create jobs.foo
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
@@ -9,6 +10,7 @@ Updating deployment state...
 Deployment complete!
 
 >>> [CLI] bundle plan
+No changes. Your infrastructure matches the configuration.
 
 >>> print_requests
 {
@@ -50,7 +52,8 @@ jobs foo id='[JOB_ID]' name='foo'
 >>> update_file.py databricks.yml DAYS HOURS
 
 >>> [CLI] bundle plan
-update jobs.foo
+Plan: 0 to add, 1 to change, 0 to delete
+  update jobs.foo
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
@@ -59,6 +62,7 @@ Updating deployment state...
 Deployment complete!
 
 >>> [CLI] bundle plan
+No changes. Your infrastructure matches the configuration.
 
 >>> print_requests
 {

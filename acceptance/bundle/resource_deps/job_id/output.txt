@@ -1,7 +1,8 @@
 
 >>> [CLI] bundle plan
-create jobs.bar
-create jobs.foo
+Plan: 2 to add, 0 to change, 0 to delete
+  create jobs.bar
+  create jobs.foo
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...

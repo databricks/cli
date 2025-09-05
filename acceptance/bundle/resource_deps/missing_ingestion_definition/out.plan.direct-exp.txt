@@ -4,5 +4,6 @@ Error: cannot plan pipelines.bar: dependency failed: pipelines.foo
 
 Error: planning failed
 
+No changes. Your infrastructure matches the configuration.
 
 Exit code (musterr): 1
