@@ -46,7 +46,7 @@ type IResource interface {
 // This interface represents adapted interface to call a resource.
 // The resources don't actually implement this interface, but rather a subset of functions
 // with different signatures: any is replaced with concrete types.
-type IResourceAdapterNoRefresh interface {
+type IResourceNoRefresh interface {
 	// Any field named config below have the same type as return value of PrepareConfig.
 	// Any field named remoteState below has the same type as return value of DoRefresh.
 	// We pass config as pointer but it is never nil. Changes to it will be persisted in the state, so should be avoided
@@ -76,7 +76,7 @@ type IResourceAdapterNoRefresh interface {
 
 // Alternative methods that also return remote state.
 // Only use these if you get remote state for free as part of the main operation. Otherwise, prefer simpler NoRefresh variants.
-type IResourceAdapterWithRefresh interface {
+type IResourceWithRefresh interface {
 	// DoCreate creates a new resource from the config. Returns id of the resource and remote state.
 	// Example: func (r *ResourceVolume) DoCreate(ctx context.Context, config *catalog.CreateVolumeRequestContent) (string, *catalog.VolumeInfo, error) {
 	DoCreate(ctx context.Context, config any) (id string, remoteState any, e error)
@@ -175,7 +175,7 @@ func NewAdapter(typedNil any, client *databricks.WorkspaceClient) (*Adapter, err
 func (a *Adapter) initMethods(resource any) error {
 	it := calladapt.TypeOf[IResource]()
 
-	err := calladapt.EnsureNoExtraMethods(resource, it, calladapt.TypeOf[IResourceAdapterNoRefresh](), calladapt.TypeOf[IResourceAdapterWithRefresh]())
+	err := calladapt.EnsureNoExtraMethods(resource, it, calladapt.TypeOf[IResourceNoRefresh](), calladapt.TypeOf[IResourceWithRefresh]())
 	if err != nil {
 		return err
 	}
@@ -523,8 +523,8 @@ func prepareCallRequired(resource any, interfaceType reflect.Type, methodName st
 // prepareCallFromTwoVariants tries to prepare a call from two interface variants (NoRefresh and WithRefresh).
 // Returns the caller from whichever variant works, or nil if neither works.
 func prepareCallFromTwoVariants(resource any, methodName string) (*calladapt.BoundCaller, error) {
-	noRefreshCaller, errNoRefresh := calladapt.PrepareCall(resource, calladapt.TypeOf[IResourceAdapterNoRefresh](), methodName)
-	withRefreshCaller, errWithRefresh := calladapt.PrepareCall(resource, calladapt.TypeOf[IResourceAdapterWithRefresh](), methodName)
+	noRefreshCaller, errNoRefresh := calladapt.PrepareCall(resource, calladapt.TypeOf[IResourceNoRefresh](), methodName)
+	withRefreshCaller, errWithRefresh := calladapt.PrepareCall(resource, calladapt.TypeOf[IResourceWithRefresh](), methodName)
 
 	// If both variants have errors, report them - these are real errors
 	if errNoRefresh != nil && errWithRefresh != nil {
