@@ -37,6 +37,7 @@ func (r *ResourceApp) DoCreate(ctx context.Context, config *apps.App) (string, e
 	if err != nil {
 		return "", err
 	}
+
 	return waiter.Response.Name, nil
 }
 
@@ -49,9 +50,11 @@ func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *apps.App)
 	if err != nil {
 		return err
 	}
+
 	if response.Name != id {
 		log.Warnf(ctx, "apps: response contains unexpected name=%#v (expected %#v)", response.Name, id)
 	}
+
 	return nil
 }
 
