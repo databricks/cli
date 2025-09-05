@@ -110,12 +110,47 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 
 	ctx := context.Background()
 
-	createdID, err := adapter.DoCreate(ctx, config)
+	// initial DoRefresh() cannot find the resource
+	remote, err := adapter.DoRefresh(ctx, "1234")
+	require.Nil(t, remote)
+	require.Error(t, err)
+	// TODO: if errors.Is(err, databricks.ErrResourceDoesNotExist) {... }
+
+	createdID, remoteStateFromCreate, err := adapter.DoCreate(ctx, config)
 	require.NoError(t, err, "DoCreate failed config=%v", config)
 	require.NotEmpty(t, createdID, "ID returned from DoCreate was empty")
 
-	err = adapter.DoUpdate(ctx, createdID, config)
+	remote, err = adapter.DoRefresh(ctx, createdID)
+	require.NoError(t, err)
+	require.NotNil(t, remote)
+	if remoteStateFromCreate != nil {
+		require.Equal(t, remoteStateFromCreate, remote)
+	}
+
+	remoteStateFromWaitCreate, err := adapter.WaitAfterCreate(ctx, config)
+	require.NoError(t, err)
+	if remoteStateFromWaitCreate != nil {
+		require.Equal(t, remote, remoteStateFromWaitCreate)
+	}
+
+	remoteStateFromUpdate, err := adapter.DoUpdate(ctx, createdID, config)
 	require.NoError(t, err, "DoUpdate failed")
+	if remoteStateFromUpdate != nil {
+		require.Equal(t, remote, remoteStateFromUpdate)
+	}
+
+	remoteStateFromWaitUpdate, err := adapter.WaitAfterUpdate(ctx, config)
+	require.NoError(t, err)
+	if remoteStateFromWaitUpdate != nil {
+		require.Equal(t, remote, remoteStateFromWaitUpdate)
+	}
+
+	err = adapter.DoDelete(ctx, createdID)
+	require.NoError(t, err)
+
+	remoteAfterDelete, err := adapter.DoRefresh(ctx, createdID)
+	require.Error(t, err)
+	require.Nil(t, remoteAfterDelete)
 }
 
 // validateFields uses structwalk to generate all valid field paths and checks membership.

@@ -20,6 +20,10 @@ func (*ResourceSyncedDatabaseTable) PrepareConfig(input *resources.SyncedDatabas
 	return &input.SyncedDatabaseTable
 }
 
+func (r *ResourceSyncedDatabaseTable) DoRefresh(ctx context.Context, name string) (*database.SyncedDatabaseTable, error) {
+	return r.client.Database.GetSyncedDatabaseTableByName(ctx, name)
+}
+
 func (r *ResourceSyncedDatabaseTable) DoCreate(ctx context.Context, config *database.SyncedDatabaseTable) (string, error) {
 	result, err := r.client.Database.CreateSyncedDatabaseTable(ctx, database.CreateSyncedDatabaseTableRequest{
 		SyncedTable: *config,
