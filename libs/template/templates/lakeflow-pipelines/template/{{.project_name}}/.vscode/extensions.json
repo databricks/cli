@@ -1,7 +1,6 @@
 {
     "recommendations": [
         "databricks.databricks",
-        "ms-python.vscode-pylance",
         "redhat.vscode-yaml"
     ]
 }

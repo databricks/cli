@@ -1,7 +1,7 @@
 {{/* The latest LTS DBR version; this should be updated a few months after each LTS.
    */}}
 {{define "latest_lts_dbr_version" -}}
-  15.4.x-scala2.12
+  16.4.x-scala2.12
 {{- end}}
 
 {{/* A safe version of DB Connect that is compatible with at least half the
@@ -14,11 +14,4 @@
    */}}
 {{define "conservative_db_connect_version_spec" -}}
   >=15.4,<15.5
-{{- end}}
-
-{{/* DB Connect 15 only supports versions up to 3.13 because of a limitation in
-   * pyarrow: https://arrow.apache.org/docs/python/install.html#python-compatibility
-   */}}
-{{define "conservative_db_connect_python_version_spec" -}}
-  >=3.10,<=3.13
 {{- end}}

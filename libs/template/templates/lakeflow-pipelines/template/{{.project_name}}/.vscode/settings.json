@@ -8,17 +8,23 @@
         "**/*.egg-info": true,
         "**/__pycache__": true,
         ".pytest_cache": true,
+        "dist": true,
     },
+    "files.associations": {
+        "**/.gitkeep": "markdown"
+    }
 
     // Pylance settings (VS Code)
-    "python.analysis.extraPaths": ["src", "resources"],
-    "python.analysis.typeCheckingMode": "basic",
+    // Set typeCheckingMode to "basic" to enable type checking!
+    "python.analysis.typeCheckingMode": "off",
+    "python.analysis.extraPaths": ["src", "lib", "resources"],
     "python.analysis.diagnosticMode": "workspace",
     "python.analysis.stubPath": ".vscode",
 
     // Pyright settings (Cursor)
-    "cursorpyright.analysis.extraPaths": ["src", "resources"],
-    "cursorpyright.analysis.typeCheckingMode": "basic",
+    // Set typeCheckingMode to "basic" to enable type checking!
+    "cursorpyright.analysis.typeCheckingMode": "off",
+    "cursorpyright.analysis.extraPaths": ["src", "lib", "resources"],
     "cursorpyright.analysis.diagnosticMode": "workspace",
     "cursorpyright.analysis.stubPath": ".vscode",
 
@@ -27,7 +33,7 @@
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,
     "[python]": {
-        "editor.defaultFormatter": "ms-python.black-formatter",
+        "editor.defaultFormatter": "ms-python.python",
         "editor.formatOnSave": true,
     },
 }
