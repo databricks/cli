@@ -113,6 +113,7 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	// initial DoRefresh() cannot find the resource
 	remote, err := adapter.DoRefresh(ctx, "1234")
 	require.Nil(t, remote)
+	require.Error(t, err)
 	// TODO: if errors.Is(err, databricks.ErrResourceDoesNotExist) {... }
 
 	createdID, remoteStateFromCreate, err := adapter.DoCreate(ctx, config)
