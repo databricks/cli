@@ -95,7 +95,6 @@ func (d *DeploymentUnit) ResolveReferenceLocalOrRemote(ctx context.Context, db *
 		return nil, ErrDelayed
 	}
 
-	// Note: using config instead of resource.Config() means we have access too full schema besides SDK, e.g. permissions or grants.
 	configValidErr := structaccess.Validate(reflect.TypeOf(config), fieldPath)
 	remoteValidErr := structaccess.Validate(d.Adapter.RemoteType(), fieldPath)
 
