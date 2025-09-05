@@ -85,3 +85,17 @@ def test_location_from_weird_callable():
     location = Location.from_callable(print)
 
     assert location is None
+
+
+def test_has_error():
+    diagnostics = Diagnostics.create_error("foo is deprecated")
+
+    assert diagnostics.has_error()
+    assert not diagnostics.has_warning()
+
+
+def test_has_warning():
+    diagnostics = Diagnostics.create_warning("foo is deprecated")
+
+    assert not diagnostics.has_error()
+    assert diagnostics.has_warning()
