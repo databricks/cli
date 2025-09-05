@@ -1,4 +1,4 @@
-package ssh
+package server
 
 import (
 	"context"
@@ -9,11 +9,17 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/experimental/ssh/internal/keys"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 )
 
-func prepareSSHDConfig(ctx context.Context, client *databricks.WorkspaceClient, clientPublicKey string, opts ServerOptions) (string, error) {
+func prepareSSHDConfig(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOptions) (string, error) {
+	clientPublicKey, err := keys.GetSecret(ctx, client, opts.SecretsScope, opts.ClientPublicKeyName)
+	if err != nil {
+		return "", fmt.Errorf("failed to get client public key: %w", err)
+	}
+
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return "", fmt.Errorf("failed to get home directory: %w", err)
@@ -30,19 +36,19 @@ func prepareSSHDConfig(ctx context.Context, client *databricks.WorkspaceClient, 
 		return "", fmt.Errorf("failed to create SSH directory: %w", err)
 	}
 
-	privateKeyBytes, publicKeyBytes, err := checkAndGenerateSSHKeyPairFromSecrets(ctx, client, opts.ClusterID, opts.ServerPrivateKeyName, opts.ServerPublicKeyName)
+	privateKeyBytes, publicKeyBytes, err := keys.CheckAndGenerateSSHKeyPairFromSecrets(ctx, client, opts.ClusterID, opts.SecretsScope, opts.ServerPrivateKeyName, opts.ServerPublicKeyName)
 	if err != nil {
 		return "", fmt.Errorf("failed to get SSH key pair from secrets: %w", err)
 	}
 
 	keyPath := filepath.Join(sshDir, "keys", opts.ServerPrivateKeyName)
-	if err := saveSSHKeyPair(keyPath, privateKeyBytes, publicKeyBytes); err != nil {
+	if err := keys.SaveSSHKeyPair(keyPath, privateKeyBytes, publicKeyBytes); err != nil {
 		return "", fmt.Errorf("failed to save SSH key pair: %w", err)
 	}
 
 	sshdConfig := filepath.Join(sshDir, "sshd_config")
 	authKeys := filepath.Join(sshDir, "authorized_keys")
-	if err := os.WriteFile(authKeys, []byte(clientPublicKey), 0o600); err != nil {
+	if err := os.WriteFile(authKeys, clientPublicKey, 0o600); err != nil {
 		return "", err
 	}
 
@@ -79,7 +85,7 @@ func prepareSSHDConfig(ctx context.Context, client *databricks.WorkspaceClient, 
 	if err := os.MkdirAll("/run/sshd", 0o755); err != nil {
 		// On shared clusters this will fail, but there it's not needed, as we execute it as a non-root user
 		// TODO: fail if this happens on dedicated clusters
-		cmdio.LogString(ctx, "Failed to create /run/sshd directory, SSHD may not work properly")
+		log.Warn(ctx, "Failed to create /run/sshd directory, SSHD may not work properly")
 	}
 
 	return sshdConfig, nil

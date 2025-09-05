@@ -1,4 +1,4 @@
-package ssh
+package keys
 
 import (
 	"context"
@@ -12,13 +12,12 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go"
 	"golang.org/x/crypto/ssh"
 )
 
 // We use different client keys for each cluster as a good practice for better isolation and control.
-func getLocalSSHKeyPath(clusterID, keysDir string) (string, error) {
+func GetLocalSSHKeyPath(clusterID, keysDir string) (string, error) {
 	if keysDir == "" {
 		homeDir, err := os.UserHomeDir()
 		if err != nil {
@@ -50,7 +49,7 @@ func generateSSHKeyPair() ([]byte, []byte, error) {
 	return privateKeyPEM, publicKeyBytes, nil
 }
 
-func saveSSHKeyPair(keyPath string, privateKeyBytes, publicKeyBytes []byte) error {
+func SaveSSHKeyPair(keyPath string, privateKeyBytes, publicKeyBytes []byte) error {
 	err := os.RemoveAll(filepath.Dir(keyPath))
 	if err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("failed to remove existing key directory: %w", err)
@@ -107,21 +106,17 @@ func checkSSHKeyPairPermissions(keyPath string) error {
 	return nil
 }
 
-func checkAndGenerateSSHKeyPair(ctx context.Context, keyPath string) (string, string, error) {
+func CheckAndGenerateSSHKeyPair(ctx context.Context, keyPath string) (string, string, error) {
 	if err := checkSSHKeyPairPermissions(keyPath); err != nil {
-		cmdio.LogString(ctx, "Generating new SSH key pair...")
-
 		privateKeyBytes, publicKeyBytes, err := generateSSHKeyPair()
 		if err != nil {
 			return "", "", err
 		}
-
-		if err := saveSSHKeyPair(keyPath, privateKeyBytes, publicKeyBytes); err != nil {
+		if err := SaveSSHKeyPair(keyPath, privateKeyBytes, publicKeyBytes); err != nil {
 			return "", "", err
 		}
 	}
 
-	cmdio.LogString(ctx, "Using SSH key pair at "+keyPath)
 	publicKeyBytes, err := os.ReadFile(keyPath + ".pub")
 	if err != nil {
 		return "", "", fmt.Errorf("failed to read public key: %w", err)
@@ -130,16 +125,9 @@ func checkAndGenerateSSHKeyPair(ctx context.Context, keyPath string) (string, st
 	return keyPath, strings.TrimSpace(string(publicKeyBytes)), nil
 }
 
-func checkAndGenerateSSHKeyPairFromSecrets(ctx context.Context, client *databricks.WorkspaceClient, clusterID, privateKeyName, publicKeyName string) ([]byte, []byte, error) {
-	secretsScopeName, err := createSecretsScope(ctx, client, clusterID)
+func CheckAndGenerateSSHKeyPairFromSecrets(ctx context.Context, client *databricks.WorkspaceClient, clusterID, secretsScopeName, privateKeyName, publicKeyName string) ([]byte, []byte, error) {
+	privateKeyBytes, err := GetSecret(ctx, client, secretsScopeName, privateKeyName)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to create secrets scope: %w", err)
-	}
-
-	privateKeyBytes, err := getSecret(ctx, client, secretsScopeName, privateKeyName)
-	if err != nil {
-		cmdio.LogString(ctx, "SSH key pair not found in secrets scope, generating a new one...")
-
 		privateKeyBytes, publicKeyBytes, err := generateSSHKeyPair()
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to generate SSH key pair: %w", err)
@@ -157,9 +145,7 @@ func checkAndGenerateSSHKeyPairFromSecrets(ctx context.Context, client *databric
 
 		return privateKeyBytes, publicKeyBytes, nil
 	} else {
-		cmdio.LogString(ctx, "Using SSH key pair from secrets scope")
-
-		publicKeyBytes, err := getSecret(ctx, client, secretsScopeName, publicKeyName)
+		publicKeyBytes, err := GetSecret(ctx, client, secretsScopeName, publicKeyName)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to get public key from secrets scope: %w", err)
 		}
