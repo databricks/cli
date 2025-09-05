@@ -366,6 +366,9 @@ func (a *Adapter) DoCreate(ctx context.Context, config any) (string, any, error)
 	// no error checking, type is enforced via calladapt + interface
 	id := outs[0].(string)
 
+	// No refresh variant returns   (string,      err)
+	// With refresh variant returns (string, any, err)
+	// We normalize it to           (string, any, err)
 	if len(outs) == 2 {
 		// WithRefresh version
 		return id, outs[1], nil
