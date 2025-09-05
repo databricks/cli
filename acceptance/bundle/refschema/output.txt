@@ -1,0 +1,22 @@
+
+>>> [CLI] bundle ref-schema --help
+Dumps all available fields for each resource type by walking the relevant types. Each line is a path to a field, type and set of tags:
+- INPUT: field is present in bundle config.
+- STATE: field is present in the state of the resource (direct deployment only).
+- REMOTE: field is present in the remote state of the resource (direct deployment only).
+- ALL: shortcut for all three.
+
+Usage:
+  databricks bundle ref-schema [flags]
+
+Flags:
+  -h, --help   help for ref-schema
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+      --var strings      set values for variables defined in bundle config. Example: --var="foo=bar"
+
+>>> [CLI] bundle ref-schema
