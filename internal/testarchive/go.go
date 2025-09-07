@@ -15,12 +15,13 @@ type downloader interface {
 }
 
 type GoDownloader struct {
-	BinDir string
-	Arch   string
+	BinDir   string
+	Arch     string
+	RepoRoot string
 }
 
 func (g GoDownloader) readGoVersionFromMod() (string, error) {
-	goModPath := filepath.Join("..", "..", "go.mod")
+	goModPath := filepath.Join(g.RepoRoot, "go.mod")
 
 	file, err := os.Open(goModPath)
 	if err != nil {

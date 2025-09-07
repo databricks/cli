@@ -106,7 +106,7 @@ func CreateArchive(archiveDir, binDir, repoRoot string) error {
 	// The Databricks platform explicitly does not provide any guarantees around
 	// the CPU architecture to keep the door open for future optimizations.
 	downloaders := []downloader{
-		GoDownloader{Arch: "amd64", BinDir: binDir},
+		GoDownloader{Arch: "amd64", BinDir: binDir, RepoRoot: repoRoot},
 		UvDownloader{Arch: "amd64", BinDir: binDir},
 		JqDownloader{Arch: "amd64", BinDir: binDir},
 
