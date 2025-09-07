@@ -47,6 +47,9 @@ links:
 checks: tidy ws links
 
 test:
+	${GOTESTSUM_CMD} -- ${PACKAGES} -timeout=${LOCAL_TIMEOUT} -short
+
+test-slow:
 	${GOTESTSUM_CMD} -- ${PACKAGES} -timeout=${LOCAL_TIMEOUT}
 
 # Updates acceptance test output (local tests)

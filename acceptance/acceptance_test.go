@@ -411,12 +411,16 @@ func getSkipReason(config *internal.TestConfig, configPath string) string {
 		return "Disabled via SkipLocal setting in " + configPath
 	}
 
+	if Forcerun {
+		return ""
+	}
+
 	if isTruePtr(config.SkipOnDbr) && WorkspaceTmpDir {
 		return "Disabled via SkipOnDbr setting in " + configPath
 	}
 
-	if Forcerun {
-		return ""
+	if isTruePtr(config.Slow) && testing.Short() {
+		return "Disabled via Slow setting in " + configPath
 	}
 
 	isEnabled, isPresent := config.GOOS[runtime.GOOS]

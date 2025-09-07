@@ -1,0 +1,9 @@
+Slow = true
+Timeout = "3m"
+
+[[Server]]
+# Client single timeout is 90s, retry timeout is 30m, API delay is 2m and test timeout is 3m, so we should see test killed with timeout.
+# Badness: actually what happens is CLI aborts after single attempt.
+Delay = "2m"
+Pattern = "POST /api/2.0/workspace-files/import-file/Workspace/Users/tester@databricks.com/.bundle/test-bundle/default/files/file_to_upload.txt"
+Response.StatusCode = 200
