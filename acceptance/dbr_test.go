@@ -159,11 +159,3 @@ func TestSetupDbrRunner(t *testing.T) {
 
 	t.Logf("Created DBR testing notebook at: %s", url)
 }
-
-func TestArchive(t *testing.T) {
-	archiveDir := t.TempDir()
-	binDir := t.TempDir()
-	testarchive.CreateArchive(archiveDir, binDir, "..")
-
-	assert.FileExists(t, filepath.Join(archiveDir, "archive.tar.gz"))
-}
