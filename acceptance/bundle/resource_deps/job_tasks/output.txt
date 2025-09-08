@@ -1,0 +1,28 @@
+
+>>> [CLI] bundle validate
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Validation OK!
+
+>>> [CLI] bundle deploy
+Uploading hello.whl...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_telemetry_bool_values
+experimental.use_legacy_run_as
+has_classic_interactive_compute
+has_classic_job_compute
+has_serverless_compute
+presets_name_prefix_is_set
+python_wheel_wrapper_is_set
+resref_jobs_tags_my_own_tag_key
+resref_jobs_task_python_wheel_task_cut_3
+run_as_set
+skip_artifact_cleanup
