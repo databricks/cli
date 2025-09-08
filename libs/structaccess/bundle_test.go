@@ -16,8 +16,7 @@ func TestGet_ConfigRoot_JobTagsAccess(t *testing.T) {
 		Resources: config.Resources{
 			Jobs: map[string]*resources.Job{
 				"my_job": {
-					ID:  "jobid",
-					URL: "joburl",
+					BaseResource: resources.BaseResource{ID: "jobid", URL: "joburl"},
 					JobSettings: jobs.JobSettings{
 						Name: "example",
 						Tasks: []jobs.Task{
