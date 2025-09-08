@@ -43,7 +43,7 @@ func TestConvertAlert(t *testing.T) {
 	require.NoError(t, err)
 
 	// Assert equality on the alert
-	alert := out.Alert["test_alert"]
+	alert := out.AlertV2["test_alert"]
 	assert.Equal(t, map[string]any{
 		"display_name":       "test_alert",
 		"query_text":         "SELECT 1",
