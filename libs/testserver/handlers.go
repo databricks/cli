@@ -450,7 +450,7 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("GET", "/api/2.0/alerts", func(req Request) any {
-		return req.Workspace.AlertsList(req)
+		return MapList(req.Workspace, req.Workspace.Alerts, "alerts")
 	})
 
 	server.Handle("POST", "/api/2.0/alerts", func(req Request) any {
