@@ -23,6 +23,11 @@ func (*ResourceSqlWarehouse) PrepareConfig(input *resources.SqlWarehouse) *sql.C
 	return &input.CreateWarehouseRequest
 }
 
+// DoRefresh reads the warehouse by id.
+func (r *ResourceSqlWarehouse) DoRefresh(ctx context.Context, id string) (*sql.GetWarehouseResponse, error) {
+	return r.client.Warehouses.GetById(ctx, id)
+}
+
 // DoCreate creates the warehouse and returns its id.
 func (r *ResourceSqlWarehouse) DoCreate(ctx context.Context, config *sql.CreateWarehouseRequest) (string, error) {
 	waiter, err := r.client.Warehouses.Create(ctx, *config)

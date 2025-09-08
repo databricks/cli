@@ -166,16 +166,12 @@ def _apply_mutators_for_type(
     return resources, Diagnostics()
 
 
-def python_mutator(
-    args: _Args,
-) -> tuple[dict, dict[tuple[str, ...], Location], Diagnostics]:
-    input = json.load(open(args.input, encoding="utf-8"))
+def _read_conf(input: dict) -> tuple[_Conf, Diagnostics]:
     experimental = input.get("experimental", {})
 
     if experimental.get("pydabs", {}) != {}:
         return (
-            {},
-            {},
+            _Conf(),
             Diagnostics.create_error(
                 "'experimental/pydabs' is not supported by 'databricks-bundles', use 'experimental/python' instead",
                 detail="",
@@ -184,8 +180,53 @@ def python_mutator(
             ),
         )
 
-    conf_dict = experimental.get("python", {})
+    experimental_conf_dict = experimental.get("python", {})
+    experimental_conf = _transform(_Conf, experimental_conf_dict)
+
+    conf_dict = input.get("python", {})
     conf = _transform(_Conf, conf_dict)
+
+    has_conf = conf != _Conf()
+    has_experimental_conf = experimental_conf != _Conf()
+
+    if has_conf and not has_experimental_conf:
+        return conf, Diagnostics()
+    elif not has_conf and has_experimental_conf:
+        # do not generate warning in Python code, if CLI supports non-experimental 'python',
+        # it should generate a warning
+        return experimental_conf, Diagnostics()
+    elif has_conf and has_experimental_conf:
+        # for backward-compatibility, CLI can copy contents of 'python' into 'experimental/python'
+        # if configs are equal, it isn't a problem
+        if conf != experimental_conf:
+            return (
+                _Conf(),
+                Diagnostics.create_error(
+                    "Both 'python' and 'experimental/python' sections are present, use 'python' section only",
+                    detail="",
+                    location=None,
+                    path=(
+                        "experimental",
+                        "python",
+                    ),
+                ),
+            )
+        else:
+            return conf, Diagnostics()
+    else:
+        return _Conf(), Diagnostics()
+
+
+def python_mutator(
+    args: _Args,
+) -> tuple[dict, dict[tuple[str, ...], Location], Diagnostics]:
+    input = json.load(open(args.input, encoding="utf-8"))
+    diagnostics = Diagnostics()
+
+    conf, diagnostics = diagnostics.extend_tuple(_read_conf(input))
+    if diagnostics.has_error():
+        return input, {}, diagnostics
+
     bundle = _parse_bundle_info(input)
 
     if args.phase == "load_resources":

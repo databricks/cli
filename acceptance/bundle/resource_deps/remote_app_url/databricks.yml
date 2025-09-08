@@ -1,0 +1,13 @@
+sync:
+  exclude:
+    - "*.*"
+
+resources:
+  apps:
+    myapp:
+      name: myapp
+      description: best app
+      source_code_path: ./app
+  pipelines:
+    mypipeline:
+      name: app url is ${resources.apps.myapp.url}
