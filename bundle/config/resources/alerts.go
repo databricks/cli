@@ -35,7 +35,6 @@ func (a Alert) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(a)
 }
 
-// TODO: check this works in context where it's used.
 func (a *Alert) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {
 	_, err := w.AlertsV2.GetAlertById(ctx, id)
 	if err != nil {
