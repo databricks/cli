@@ -1,7 +1,8 @@
-package bundle
+package debug
 
 import (
 	"fmt"
+	"io"
 	"reflect"
 	"sort"
 	"strings"
@@ -14,9 +15,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newRefSchemaCommand() *cobra.Command {
+func NewRefSchemaCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "ref-schema",
+		Use:   "refschema",
 		Short: "Dump all relevant fields all bundle resources",
 		Long: `Dumps all available fields for each resource type by walking the relevant types. Each line is a path to a field, type and set of tags:
 - INPUT: field is present in bundle config.
@@ -29,14 +30,14 @@ func newRefSchemaCommand() *cobra.Command {
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		return dumpRemoteSchemas()
+		return dumpRemoteSchemas(cmd.OutOrStdout())
 	}
 
 	return cmd
 }
 
 // dumpRemoteSchemas walks through all supported resources and dumps their schema fields.
-func dumpRemoteSchemas() error {
+func dumpRemoteSchemas(out io.Writer) error {
 	adapters, err := tnresources.InitAll(nil)
 	if err != nil {
 		return fmt.Errorf("failed to initialize adapters: %w", err)
@@ -91,13 +92,13 @@ func dumpRemoteSchemas() error {
 			byType := pathTypes[p]
 			for _, t := range utils.SortedKeys(byType) {
 				info := formatTags(byType[t])
-				lines = append(lines, fmt.Sprintf("resources.%s.*.%s\t%s\t%s", resourceName, p, t, info))
+				lines = append(lines, fmt.Sprintf("resources.%s.*.%s\t%s\t%s\n", resourceName, p, t, info))
 			}
 		}
 
 		sort.Strings(lines)
 		for _, l := range lines {
-			fmt.Println(l)
+			fmt.Fprintf(out, l)
 		}
 	}
 
