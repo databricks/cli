@@ -1,13 +1,3 @@
-github.com/databricks/cli/bundle/config/resources.Alert:
-  "evaluation":
-    "description": |-
-      PLACEHOLDER
-  "permissions":
-    "description": |-
-      PLACEHOLDER
-  "schedule":
-    "description": |-
-      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.App:
   "app_status":
     "description": |-
