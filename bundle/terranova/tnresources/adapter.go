@@ -240,7 +240,7 @@ func validateTypes(triples ...any) error {
 }
 
 func (a *Adapter) validate() error {
-	configType := a.ConfigType()
+	configType := a.StateType()
 	err := validatePointerToStruct(configType, "config type")
 	if err != nil {
 		return err
@@ -304,7 +304,7 @@ func (a *Adapter) InputConfigType() reflect.Type {
 	return a.prepareConfig.InTypes[0]
 }
 
-func (a *Adapter) ConfigType() reflect.Type {
+func (a *Adapter) StateType() reflect.Type {
 	return a.prepareConfig.OutTypes[0]
 }
 

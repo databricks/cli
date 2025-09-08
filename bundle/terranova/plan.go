@@ -40,7 +40,7 @@ func (d *DeploymentUnit) plan(ctx context.Context, client *databricks.WorkspaceC
 		return "", fmt.Errorf("reading config: %w", err)
 	}
 
-	savedState, err := typeConvert(d.Adapter.ConfigType(), entry.State)
+	savedState, err := typeConvert(d.Adapter.StateType(), entry.State)
 	if err != nil {
 		return "", fmt.Errorf("interpreting state: %w", err)
 	}
