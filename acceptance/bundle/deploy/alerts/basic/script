@@ -1,10 +1,11 @@
 trace $CLI bundle deploy
 
-trace $CLI bundle summary
+alert_id=$($CLI bundle summary --output json | jq -r '.resources.alerts.myalert.id')
 
-alert_id=$(trace $CLI bundle summary --output json | jq -r '.resources.alerts.myalert.id')
-trace $CLI alerts-v2 get-alert $alert_id
+trace $CLI alerts-v2 get-alert $alert_id | jq '{display_name, lifecycle_state}'
 
 trace $CLI bundle destroy --auto-approve
+
+trace $CLI alerts-v2 get-alert $alert_id | jq '{display_name, lifecycle_state}'
 
 trace $CLI bundle summary
