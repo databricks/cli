@@ -1,4 +1,6 @@
 
+>>> errcode [CLI] bundle plan
+
 >>> musterr [CLI] bundle destroy --auto-approve
 Error: exit status 1
 
@@ -15,6 +17,23 @@ the scope of the plan using the -target flag.
 
 
 Exit code (musterr): 1
+
+>>> errcode [CLI] bundle plan
+Error: exit status 1
+
+Error: Instance cannot be destroyed
+
+  on bundle.tf.json line 15, in resource.databricks_pipeline:
+  15:       "my_pipelines": {
+
+Resource databricks_pipeline.my_pipelines has lifecycle.prevent_destroy set,
+but the plan calls for this resource to be destroyed. To avoid this error and
+continue with the plan, either disable lifecycle.prevent_destroy or reduce
+the scope of the plan using the -target flag.
+
+
+
+Exit code: 1
 
 >>> musterr [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/prevent-destroy/default/files...
@@ -34,6 +53,9 @@ the scope of the plan using the -target flag.
 
 Exit code (musterr): 1
 
+>>> errcode [CLI] bundle plan
+recreate pipelines.my_pipelines
+
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/prevent-destroy/default/files...
 
@@ -45,6 +67,9 @@ properties such as the 'catalog' or 'storage' are changed:
 Deploying resources...
 Updating deployment state...
 Deployment complete!
+
+>>> errcode [CLI] bundle plan
+delete pipelines.my_pipelines
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/prevent-destroy/default/files...

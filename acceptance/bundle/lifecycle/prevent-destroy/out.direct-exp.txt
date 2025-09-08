@@ -1,16 +1,24 @@
 
+>>> errcode [CLI] bundle plan
+
 >>> musterr [CLI] bundle destroy --auto-approve
-Error: resource my_pipelines has lifecycle.prevent_destroy set, but the plan calls for this resource to be recreated or destroyed. To avoid this error, disable lifecycle.prevent_destroy
+Error: resource my_pipelines has lifecycle.prevent_destroy set, but the plan calls for this resource to be recreated or destroyed. To avoid this error, disable lifecycle.prevent_destroy for pipelines.my_pipelines 
 
 
 Exit code (musterr): 1
+
+>>> errcode [CLI] bundle plan
+recreate pipelines.my_pipelines
 
 >>> musterr [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/prevent-destroy/default/files...
-Error: resource my_pipelines has lifecycle.prevent_destroy set, but the plan calls for this resource to be recreated or destroyed. To avoid this error, disable lifecycle.prevent_destroy
+Error: resource my_pipelines has lifecycle.prevent_destroy set, but the plan calls for this resource to be recreated or destroyed. To avoid this error, disable lifecycle.prevent_destroy for pipelines.my_pipelines 
 
 
 Exit code (musterr): 1
+
+>>> errcode [CLI] bundle plan
+recreate pipelines.my_pipelines
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/prevent-destroy/default/files...
@@ -23,6 +31,9 @@ properties such as the 'catalog' or 'storage' are changed:
 Deploying resources...
 Updating deployment state...
 Deployment complete!
+
+>>> errcode [CLI] bundle plan
+delete pipelines.my_pipelines
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/prevent-destroy/default/files...

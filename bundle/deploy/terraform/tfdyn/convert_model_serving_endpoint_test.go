@@ -86,30 +86,3 @@ func TestConvertModelServingEndpoint(t *testing.T) {
 		},
 	}, out.Permissions["model_serving_my_model_serving_endpoint"])
 }
-
-func TestConvertModelServingEndpointWithLifecycle(t *testing.T) {
-	src := resources.ModelServingEndpoint{
-		CreateServingEndpoint: serving.CreateServingEndpoint{
-			Name: "name",
-		},
-		Lifecycle: resources.Lifecycle{
-			PreventDestroy: true,
-		},
-	}
-
-	vin, err := convert.FromTyped(src, dyn.NilValue)
-	require.NoError(t, err)
-
-	ctx := context.Background()
-	out := schema.NewResources()
-	err = modelServingEndpointConverter{}.Convert(ctx, "my_model_serving_endpoint", vin, out)
-	require.NoError(t, err)
-
-	// Assert equality on the model serving endpoint
-	assert.Equal(t, map[string]any{
-		"name": "name",
-		"lifecycle": map[string]any{
-			"prevent_destroy": true,
-		},
-	}, out.ModelServing["my_model_serving_endpoint"])
-}

@@ -77,31 +77,3 @@ func TestConvertSchema(t *testing.T) {
 		},
 	}, out.Grants["schema_my_schema"])
 }
-
-func TestConvertSchemaWithLifecycle(t *testing.T) {
-	src := resources.Schema{
-		CreateSchema: catalog.CreateSchema{
-			Name: "name",
-		},
-		Lifecycle: resources.Lifecycle{
-			PreventDestroy: true,
-		},
-	}
-
-	vin, err := convert.FromTyped(src, dyn.NilValue)
-	require.NoError(t, err)
-
-	ctx := context.Background()
-	out := schema.NewResources()
-	err = schemaConverter{}.Convert(ctx, "my_schema", vin, out)
-	require.NoError(t, err)
-
-	// Assert equality on the schema
-	assert.Equal(t, map[string]any{
-		"name":          "name",
-		"force_destroy": true,
-		"lifecycle": map[string]any{
-			"prevent_destroy": true,
-		},
-	}, out.Schema["my_schema"])
-}

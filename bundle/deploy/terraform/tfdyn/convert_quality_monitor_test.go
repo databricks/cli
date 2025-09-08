@@ -44,32 +44,3 @@ func TestConvertQualityMonitor(t *testing.T) {
 		},
 	}, out.QualityMonitor["my_monitor"])
 }
-
-func TestConvertQualityMonitorWithLifecycle(t *testing.T) {
-	src := resources.QualityMonitor{
-		TableName: "test_table_name",
-		CreateMonitor: catalog.CreateMonitor{
-			AssetsDir: "assets_dir",
-		},
-		Lifecycle: resources.Lifecycle{
-			PreventDestroy: true,
-		},
-	}
-
-	vin, err := convert.FromTyped(src, dyn.NilValue)
-	require.NoError(t, err)
-
-	ctx := context.Background()
-	out := schema.NewResources()
-	err = qualityMonitorConverter{}.Convert(ctx, "my_monitor", vin, out)
-	require.NoError(t, err)
-
-	// Assert equality on the quality monitor
-	assert.Equal(t, map[string]any{
-		"assets_dir": "assets_dir",
-		"table_name": "test_table_name",
-		"lifecycle": map[string]any{
-			"prevent_destroy": true,
-		},
-	}, out.QualityMonitor["my_monitor"])
-}

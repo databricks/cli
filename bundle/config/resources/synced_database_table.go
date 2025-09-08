@@ -16,6 +16,7 @@ type SyncedDatabaseTable struct {
 	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"internal"`
 
 	database.SyncedDatabaseTable
+	Lifecycle Lifecycle `json:"lifecycle,omitempty"`
 }
 
 func (s *SyncedDatabaseTable) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {

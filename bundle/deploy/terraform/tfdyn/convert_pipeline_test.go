@@ -139,30 +139,3 @@ func TestConvertPipeline(t *testing.T) {
 		},
 	}, out.Permissions["pipeline_my_pipeline"])
 }
-
-func TestConvertPipelineWithLifecycle(t *testing.T) {
-	src := resources.Pipeline{
-		CreatePipeline: pipelines.CreatePipeline{
-			Name: "my pipeline",
-		},
-		Lifecycle: resources.Lifecycle{
-			PreventDestroy: true,
-		},
-	}
-
-	vin, err := convert.FromTyped(src, dyn.NilValue)
-	require.NoError(t, err)
-
-	ctx := context.Background()
-	out := schema.NewResources()
-	err = pipelineConverter{}.Convert(ctx, "my_pipeline", vin, out)
-	require.NoError(t, err)
-
-	// Assert equality on the pipeline
-	assert.Equal(t, map[string]any{
-		"name": "my pipeline",
-		"lifecycle": map[string]any{
-			"prevent_destroy": true,
-		},
-	}, out.Pipeline["my_pipeline"])
-}

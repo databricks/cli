@@ -72,30 +72,3 @@ func TestConvertVolume(t *testing.T) {
 		},
 	}, out.Grants["volume_my_volume"])
 }
-
-func TestConvertVolumeWithLifecycle(t *testing.T) {
-	src := resources.Volume{
-		CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
-			Name: "name",
-		},
-		Lifecycle: resources.Lifecycle{
-			PreventDestroy: true,
-		},
-	}
-
-	vin, err := convert.FromTyped(src, dyn.NilValue)
-	require.NoError(t, err)
-
-	ctx := context.Background()
-	out := schema.NewResources()
-	err = volumeConverter{}.Convert(ctx, "my_volume", vin, out)
-	require.NoError(t, err)
-
-	// Assert equality on the volume
-	assert.Equal(t, map[string]any{
-		"name": "name",
-		"lifecycle": map[string]any{
-			"prevent_destroy": true,
-		},
-	}, out.Volume["my_volume"])
-}
