@@ -10,6 +10,7 @@ from databricks.bundles.core._variable import (
     VariableOrList,
     VariableOrOptional,
 )
+from databricks.bundles.schemas._models.lifecycle import Lifecycle, LifecycleParam
 from databricks.bundles.schemas._models.schema_grant import (
     SchemaGrant,
     SchemaGrantParam,
@@ -39,6 +40,8 @@ class Schema(Resource):
     """
 
     grants: VariableOrList[SchemaGrant] = field(default_factory=list)
+
+    lifecycle: VariableOrOptional[Lifecycle] = None
 
     properties: VariableOrDict[str] = field(default_factory=dict)
 
@@ -74,6 +77,8 @@ class SchemaDict(TypedDict, total=False):
     """
 
     grants: VariableOrList[SchemaGrantParam]
+
+    lifecycle: VariableOrOptional[LifecycleParam]
 
     properties: VariableOrDict[str]
 
