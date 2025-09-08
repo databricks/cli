@@ -25,8 +25,7 @@ func NewRefSchemaCommand() *cobra.Command {
 - REMOTE: field is present in the remote state of the resource (direct deployment only).
 - ALL: shortcut for all three.
 `,
-		Args:   root.NoArgs,
-		Hidden: true,
+		Args: root.NoArgs,
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
