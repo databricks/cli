@@ -57,7 +57,7 @@ var (
 		},
 		"alerts": {
 			permissions.CAN_MANAGE: "CAN_MANAGE",
-			permissions.CAN_VIEW:   "CAN_VIEW",
+			permissions.CAN_VIEW:   "CAN_READ",
 			permissions.CAN_RUN:    "CAN_RUN",
 		},
 		"sql_warehouses": {

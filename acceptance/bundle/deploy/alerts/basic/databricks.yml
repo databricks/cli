@@ -4,6 +4,10 @@ bundle:
 resources:
   alerts:
     myalert:
+      permissions:
+        - level: CAN_RUN
+          group_name: users
+
       custom_summary: "My alert"
       display_name: "My alert $UNIQUE_NAME"
       evaluation:

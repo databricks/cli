@@ -11,6 +11,23 @@ Deployment complete!
   "lifecycle_state": "ACTIVE"
 }
 
+>>> [CLI] permissions get alertsv2 [NUMID]
+{
+  "access_control_list": [
+    {
+      "all_permissions": [
+        {
+          "inherited": false,
+          "permission_level": "CAN_RUN"
+        }
+      ],
+      "group_name": "users"
+    }
+  ],
+  "object_id": "/alertsv2/[NUMID]",
+  "object_type": "alertv2"
+}
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete alert myalert
