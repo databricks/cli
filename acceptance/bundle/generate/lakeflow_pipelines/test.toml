@@ -1,0 +1,30 @@
+[[Server]]
+Pattern = "GET /api/2.0/workspace/export"
+Response.Body = '''
+print("Hello, World!")
+'''
+
+[[Repls]]
+Old = '\\'
+New = '/'
+
+[[Server]]
+Pattern = "GET /api/2.0/workspace/list"
+Response.Body = '''
+{
+    "objects": [
+        {
+            "path": "/Workspace/Users/tester@databricks.com/lakeflow_pipeline/transformations/1.py",
+            "object_type": "FILE"
+        },
+        {
+            "path": "/Workspace/Users/tester@databricks.com/lakeflow_pipeline/transformations/2.py",
+            "object_type": "FILE"
+        },
+        {
+            "path": "/Workspace/Users/tester@databricks.com/lakeflow_pipeline/explorations/1.py",
+            "object_type": "FILE"
+        }
+    ]
+}
+'''
