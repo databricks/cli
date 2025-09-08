@@ -166,7 +166,7 @@ func (d *DeploymentUnit) ResolveReferenceRemote(ctx context.Context, db *tnstate
 func (d *DeploymentUnit) ReadRemoteStateField(ctx context.Context, db *tnstate.TerranovaState, fieldPath dyn.Path) (any, error) {
 	// We have options:
 	// 1) Rely on the cached value; refresh if not cached.
-	// 2) Alwayds refresh, read the value.
+	// 2) Always refresh, read the value.
 	// 3) Consider this "unknown/variable" that always triggers a diff.
 	// Long term we'll do (1), for now going with (2).
 	// Not considering (3) because it would result in bad plans.
