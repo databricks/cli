@@ -35,5 +35,4 @@ func (m *resourcePathMkdir) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 		return nil
 	}
 	return diag.FromErr(err)
-
 }
