@@ -115,5 +115,6 @@ func GenerateFingerprint(data ...any) (string, error) {
 		hasher.Write(bytes)
 	}
 
-	return hex.EncodeToString(hasher.Sum(nil)), nil
+	hash := hasher.Sum(nil)
+	return hex.EncodeToString(hash[:16]), nil
 }
