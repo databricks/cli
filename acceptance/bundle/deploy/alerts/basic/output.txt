@@ -1,19 +1,81 @@
 
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/alerts-basic-$UNIQUE_NAME/default/files...
 Deploying resources...
-Error: terraform apply: exit status 1
-
-Error: failed to create alert_v2
-
-  with databricks_alert_v2.myalert,
-  on bundle.tf.json line 37, in resource.databricks_alert_v2.myalert:
-  37:       }
-
-Alert V2 is not enabled in this workspace. Please contact your administrator
-for more information.
-
-
 Updating deployment state...
+Deployment complete!
 
-Exit code: 1
+>>> [CLI] bundle summary
+Name: alerts-basic-$UNIQUE_NAME
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/alerts-basic-$UNIQUE_NAME/default
+Resources:
+  Alerts:
+    myalert:
+      Name: My alert $UNIQUE_NAME
+      URL:  [DATABRICKS_URL]/sql/alerts-v2/[NUMID]
+
+>>> [CLI] bundle summary --output json
+
+>>> [CLI] alerts-v2 get-alert [NUMID]
+{
+  "create_time":"[TIMESTAMP]Z",
+  "custom_summary":"My alert",
+  "display_name":"My alert $UNIQUE_NAME",
+  "effective_run_as": {
+    "service_principal_name":"[USERNAME]"
+  },
+  "evaluation": {
+    "comparison_operator":"EQUAL",
+    "notification": {
+      "notify_on_ok":false,
+      "retrigger_seconds":1
+    },
+    "source": {
+      "aggregation":"MAX",
+      "display":"1",
+      "name":"1"
+    },
+    "state":"UNKNOWN",
+    "threshold": {
+      "value": {
+        "double_value":2
+      }
+    }
+  },
+  "id":"[NUMID]",
+  "lifecycle_state":"ACTIVE",
+  "owner_user_name":"[USERNAME]",
+  "parent_path":"/Workspace/Users/[USERNAME]/.bundle/alerts-basic-$UNIQUE_NAME/default/resources",
+  "query_text":"select 2",
+  "schedule": {
+    "pause_status":"UNPAUSED",
+    "quartz_cron_schedule":"44 19 */1 * * ?",
+    "timezone_id":"Europe/Amsterdam"
+  },
+  "update_time":"[TIMESTAMP]Z",
+  "warehouse_id":"dd43ee29fedd958d"
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete alert myalert
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/alerts-basic-$UNIQUE_NAME/default
+
+Deleting files...
+Destroy complete!
+
+>>> [CLI] bundle summary
+Name: alerts-basic-$UNIQUE_NAME
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/alerts-basic-$UNIQUE_NAME/default
+Resources:
+  Alerts:
+    myalert:
+      Name: My alert $UNIQUE_NAME
+      URL:  (not deployed)
