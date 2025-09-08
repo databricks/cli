@@ -66,7 +66,6 @@ func (a *Alert) GetName() string {
 	return a.DisplayName
 }
 
-// TODO: Test that "bundle open" works with this.
 func (a *Alert) GetURL() string {
 	return a.URL
 }
