@@ -91,7 +91,8 @@ func buildAndUploadArchive(ctx context.Context, t *testing.T, f filer.Filer) {
 	archiveName := "archive.tar.gz"
 
 	// Build the CLI archives and upload to the workspace.
-	testarchive.CreateArchive(archiveDir, binDir, "..")
+	err := testarchive.CreateArchive(archiveDir, binDir, "..")
+	require.NoError(t, err)
 
 	archiveReader, err := os.Open(filepath.Join(archiveDir, archiveName))
 	require.NoError(t, err)
@@ -145,6 +146,10 @@ func uploadParams(ctx context.Context, t *testing.T, f filer.Filer) {
 // Running this test will setup a DBR test runner the configured workspace.
 // You'll need to run the tests by actually running the notebook on the workspace.
 func TestSetupDbrRunner(t *testing.T) {
+	if os.Getenv(("SETUP_DBR_RUNNER")) == "" {
+		t.Skip("SETUP_DBR_RUNNER is not set")
+	}
+
 	ctx := t.Context()
 	w, f, dir := workspaceStableDir(ctx, t)
 
