@@ -170,7 +170,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		DatabaseInstances:    map[string]database.DatabaseInstance{},
 		DatabaseCatalogs:     map[string]database.DatabaseCatalog{},
 		SyncedDatabaseTables: map[string]database.SyncedDatabaseTable{},
-		Alerts:            map[string]sql.AlertV2{},
+		Alerts:               map[string]sql.AlertV2{},
 	}
 }
 
