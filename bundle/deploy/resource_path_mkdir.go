@@ -3,7 +3,6 @@ package deploy
 import (
 	"context"
 	"errors"
-	"net/http"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
@@ -29,12 +28,12 @@ func (m *resourcePathMkdir) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 
 	w := b.WorkspaceClient()
 
-	// Create the resource path if it doesn't exist.
+	// Optimisitcally create the resource path. If it already exists ignore the error.
+	err := w.Workspace.MkdirsByPath(ctx, b.Config.Workspace.ResourcePath)
 	var aerr *apierr.APIError
-	_, err := w.Workspace.GetStatusByPath(ctx, b.Config.Workspace.ResourcePath)
-	if errors.As(err, &aerr) && aerr.StatusCode == http.StatusNotFound {
-		err := w.Workspace.MkdirsByPath(ctx, b.Config.Workspace.ResourcePath)
-		return diag.FromErr(err)
+	if errors.As(err, &aerr) && aerr.ErrorCode == "RESOURCE_ALREADY_EXISTS" {
+		return nil
 	}
 	return diag.FromErr(err)
+
 }
