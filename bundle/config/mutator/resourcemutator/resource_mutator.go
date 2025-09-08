@@ -90,6 +90,9 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 		{"resources.sql_warehouses.*.enable_photon", true},
 		{"resources.sql_warehouses.*.max_num_clusters", 1},
 		{"resources.sql_warehouses.*.spot_instance_policy", "COST_OPTIMIZED"},
+
+		// Apps:
+		{"resources.apps.*.description", ""},
 	}
 
 	for _, defaultDef := range defaults {
@@ -115,8 +118,6 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 		// Updates (dynamic): resources.*.*.permissions (removes permissions entries where user_name or service_principal_name matches current user)
 		// Removes the current user from all resource permissions as the Terraform provider implicitly grants ownership
 		FilterCurrentUser(),
-
-		ApplyDefaultTaskSource(),
 	)
 }
 

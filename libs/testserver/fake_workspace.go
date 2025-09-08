@@ -82,8 +82,9 @@ type FakeWorkspace struct {
 	nextRepoId int64
 	Repos      map[string]workspace.RepoInfo
 
-	DatabaseInstances map[string]database.DatabaseInstance
-	DatabaseCatalogs  map[string]database.DatabaseCatalog
+	DatabaseInstances    map[string]database.DatabaseInstance
+	DatabaseCatalogs     map[string]database.DatabaseCatalog
+	SyncedDatabaseTables map[string]database.SyncedDatabaseTable
 }
 
 func (s *FakeWorkspace) LockUnlock() func() {
@@ -152,22 +153,23 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		files:        make(map[string]FileEntry),
 		repoIdByPath: make(map[string]int64),
 
-		Jobs:              map[int64]jobs.Job{},
-		JobRuns:           map[int64]jobs.Run{},
-		nextJobId:         TestJobID,
-		nextJobRunId:      TestRunID,
-		Pipelines:         map[string]pipelines.GetPipelineResponse{},
-		PipelineUpdates:   map[string]bool{},
-		Monitors:          map[string]catalog.MonitorInfo{},
-		Apps:              map[string]apps.App{},
-		Schemas:           map[string]catalog.SchemaInfo{},
-		Volumes:           map[string]catalog.VolumeInfo{},
-		Dashboards:        map[string]dashboards.Dashboard{},
-		SqlWarehouses:     map[string]sql.GetWarehouseResponse{},
-		Repos:             map[string]workspace.RepoInfo{},
-		Acls:              map[string][]workspace.AclItem{},
-		DatabaseInstances: map[string]database.DatabaseInstance{},
-		DatabaseCatalogs:  map[string]database.DatabaseCatalog{},
+		Jobs:                 map[int64]jobs.Job{},
+		JobRuns:              map[int64]jobs.Run{},
+		nextJobId:            TestJobID,
+		nextJobRunId:         TestRunID,
+		Pipelines:            map[string]pipelines.GetPipelineResponse{},
+		PipelineUpdates:      map[string]bool{},
+		Monitors:             map[string]catalog.MonitorInfo{},
+		Apps:                 map[string]apps.App{},
+		Schemas:              map[string]catalog.SchemaInfo{},
+		Volumes:              map[string]catalog.VolumeInfo{},
+		Dashboards:           map[string]dashboards.Dashboard{},
+		SqlWarehouses:        map[string]sql.GetWarehouseResponse{},
+		Repos:                map[string]workspace.RepoInfo{},
+		Acls:                 map[string][]workspace.AclItem{},
+		DatabaseInstances:    map[string]database.DatabaseInstance{},
+		DatabaseCatalogs:     map[string]database.DatabaseCatalog{},
+		SyncedDatabaseTables: map[string]database.SyncedDatabaseTable{},
 		Alerts:            map[string]sql.AlertV2{},
 	}
 }
@@ -365,6 +367,7 @@ func (s *FakeWorkspace) JobsGet(jobId string) Response {
 		}
 	}
 
+	job = setSourceIfNotSet(job)
 	return Response{
 		Body: job,
 	}
@@ -421,6 +424,7 @@ func (s *FakeWorkspace) JobsList() Response {
 
 	list := make([]jobs.BaseJob, 0, len(s.Jobs))
 	for _, job := range s.Jobs {
+		job = setSourceIfNotSet(job)
 		baseJob := jobs.BaseJob{}
 		err := jsonConvert(job, &baseJob)
 		if err != nil {
@@ -443,6 +447,35 @@ func (s *FakeWorkspace) JobsList() Response {
 			Jobs: list,
 		},
 	}
+}
+
+func setSourceIfNotSet(job jobs.Job) jobs.Job {
+	// Setting the source field in the output of the Jobs List API same way as backend does
+	if job.Settings != nil {
+		source := "WORKSPACE"
+		if job.Settings.GitSource != nil {
+			source = "GIT"
+		}
+		for _, task := range job.Settings.Tasks {
+			if task.NotebookTask != nil {
+				if task.NotebookTask.Source == "" {
+					task.NotebookTask.Source = jobs.Source(source)
+				}
+				if task.DbtTask != nil {
+					if task.DbtTask.Source == "" {
+						task.DbtTask.Source = jobs.Source(source)
+					}
+				}
+				if task.SparkPythonTask != nil {
+					if task.SparkPythonTask.Source == "" {
+						task.SparkPythonTask.Source = jobs.Source(source)
+					}
+				}
+			}
+		}
+	}
+
+	return job
 }
 
 // jsonConvert saves input to a value pointed by output

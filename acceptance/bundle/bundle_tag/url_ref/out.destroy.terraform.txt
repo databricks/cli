@@ -1,0 +1,8 @@
+The following resources will be deleted:
+  delete job bar
+  delete job foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Deleting files...
+Destroy complete!

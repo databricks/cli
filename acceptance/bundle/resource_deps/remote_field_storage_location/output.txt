@@ -1,0 +1,72 @@
+
+>>> [CLI] bundle validate -o json
+{
+  "schemas": {
+    "my": {
+      "catalog_name": "main",
+      "name": "myschema-[UNIQUE_NAME]"
+    }
+  },
+  "volumes": {
+    "bar": {
+      "catalog_name": "main",
+      "name": "volumebar-[UNIQUE_NAME]",
+      "schema_name": "${resources.schemas.my.name}",
+      "volume_type": "MANAGED"
+    },
+    "foo": {
+      "catalog_name": "main",
+      "name": "volumefoo-[UNIQUE_NAME]",
+      "schema_name": "${resources.schemas.my.name}",
+      "storage_location": "${resources.volumes.bar.storage_location}",
+      "volume_type": "MANAGED"
+    }
+  }
+}
+
+>>> [CLI] bundle plan
+create schemas.my
+create volumes.bar
+create volumes.foo
+
+>>> print_requests
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/testbundle-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Error: terraform apply: exit status 1
+
+Error: Provider produced inconsistent final plan
+
+When expanding the plan for databricks_volume.foo to include new values
+learned so far during apply, provider
+"registry.terraform.io/databricks/databricks" produced an invalid new value
+for .storage_location: was null, but now
+cty.StringVal("s3://deco-uc-prod-isolated-aws-us-east-1/metastore/[UUID]/volumes/[UUID]").
+
+This is a bug in the provider, which should be reported in the provider's own
+issue tracker.
+
+
+Updating deployment state...
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete schema my
+  delete volume bar
+
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete schema my
+
+This action will result in the deletion of the following volumes.
+For managed volumes, the files stored in the volume are also deleted from your
+cloud tenant within 30 days. For external volumes, the metadata about the volume
+is removed from the catalog, but the underlying files are not deleted:
+  delete volume bar
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/testbundle-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
+
+Exit code: 1

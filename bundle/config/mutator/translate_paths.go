@@ -303,7 +303,6 @@ func applyTranslations(ctx context.Context, b *bundle.Bundle, t *translateContex
 
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		var err error
-
 		for _, fn := range translations {
 			v, err = fn(ctx, v)
 			if err != nil {
@@ -323,7 +322,8 @@ func (m *translatePaths) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	}
 
 	return applyTranslations(ctx, b, t, []func(context.Context, dyn.Value) (dyn.Value, error){
-		t.applyJobTranslations,
+		t.applyJobTranslations(paths.VisitJobPaths, false),
+		t.applyJobTranslations(paths.VisitJobLibrariesPaths, true),
 		t.applyPipelineTranslations,
 		t.applyArtifactTranslations,
 		t.applyAppsTranslations,

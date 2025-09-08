@@ -136,5 +136,7 @@ type DataSourceCleanRoomAssetsAssets struct {
 }
 
 type DataSourceCleanRoomAssets struct {
-	Assets []DataSourceCleanRoomAssetsAssets `json:"assets,omitempty"`
+	Assets        []DataSourceCleanRoomAssetsAssets `json:"assets,omitempty"`
+	CleanRoomName string                            `json:"clean_room_name"`
+	WorkspaceId   string                            `json:"workspace_id,omitempty"`
 }

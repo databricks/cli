@@ -228,6 +228,9 @@ github.com/databricks/cli/bundle/config.Resources:
       The SQL warehouse definitions for the bundle, where each key is the name of the warehouse.
     "markdown_description": |-
       The SQL warehouse definitions for the bundle, where each key is the name of the warehouse. See [\_](/dev-tools/bundles/resources.md#sql_warehouses).
+  "synced_database_tables":
+    "description": |-
+      PLACEHOLDER
   "volumes":
     "description": |-
       The volume definitions for the bundle, where each key is the name of the volume.
@@ -498,89 +501,6 @@ github.com/databricks/cli/bundle/config/resources.DashboardPermission:
   "user_name":
     "description": |-
       PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.DatabaseCatalog:
-  "create_database_if_not_exists":
-    "description": |-
-      PLACEHOLDER
-  "database_instance_name":
-    "description": |-
-      PLACEHOLDER
-  "database_name":
-    "description": |-
-      PLACEHOLDER
-  "name":
-    "description": |-
-      PLACEHOLDER
-  "permissions":
-    "description": |-
-      PLACEHOLDER
-  "uid":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.DatabaseInstance:
-  "capacity":
-    "description": |-
-      PLACEHOLDER
-  "child_instance_refs":
-    "description": |-
-      PLACEHOLDER
-  "creation_time":
-    "description": |-
-      PLACEHOLDER
-  "creator":
-    "description": |-
-      PLACEHOLDER
-  "effective_enable_readable_secondaries":
-    "description": |-
-      PLACEHOLDER
-  "effective_node_count":
-    "description": |-
-      PLACEHOLDER
-  "effective_retention_window_in_days":
-    "description": |-
-      PLACEHOLDER
-  "effective_stopped":
-    "description": |-
-      PLACEHOLDER
-  "enable_readable_secondaries":
-    "description": |-
-      PLACEHOLDER
-  "name":
-    "description": |-
-      PLACEHOLDER
-  "node_count":
-    "description": |-
-      PLACEHOLDER
-  "parent_instance_ref":
-    "description": |-
-      PLACEHOLDER
-  "permissions":
-    "description": |-
-      PLACEHOLDER
-  "pg_version":
-    "description": |-
-      PLACEHOLDER
-  "purge_on_delete":
-    "description": |-
-      PLACEHOLDER
-  "read_only_dns":
-    "description": |-
-      PLACEHOLDER
-  "read_write_dns":
-    "description": |-
-      PLACEHOLDER
-  "retention_window_in_days":
-    "description": |-
-      PLACEHOLDER
-  "state":
-    "description": |-
-      PLACEHOLDER
-  "stopped":
-    "description": |-
-      PLACEHOLDER
-  "uid":
-    "description": |-
-      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.DatabaseInstancePermission:
   "group_name":
     "description": |-
@@ -684,6 +604,13 @@ github.com/databricks/cli/bundle/config/resources.PipelinePermission:
   "user_name":
     "description": |-
       PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.SchemaGrant:
+  "principal":
+    "description": |-
+      PLACEHOLDER
+  "privileges":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.SecretScope:
   "backend_type":
     "description": |-
@@ -721,6 +648,31 @@ github.com/databricks/cli/bundle/config/resources.SqlWarehousePermission:
     "description": |-
       PLACEHOLDER
   "user_name":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.SyncedDatabaseTable:
+  "data_synchronization_status":
+    "description": |-
+      PLACEHOLDER
+  "database_instance_name":
+    "description": |-
+      PLACEHOLDER
+  "effective_database_instance_name":
+    "description": |-
+      PLACEHOLDER
+  "effective_logical_database_name":
+    "description": |-
+      PLACEHOLDER
+  "logical_database_name":
+    "description": |-
+      PLACEHOLDER
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "spec":
+    "description": |-
+      PLACEHOLDER
+  "unity_catalog_provisioning_state":
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.VolumeGrant:

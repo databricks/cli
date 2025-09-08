@@ -96,4 +96,5 @@ type DataSourceDatabaseSyncedDatabaseTable struct {
 	Name                          string                                                          `json:"name"`
 	Spec                          *DataSourceDatabaseSyncedDatabaseTableSpec                      `json:"spec,omitempty"`
 	UnityCatalogProvisioningState string                                                          `json:"unity_catalog_provisioning_state,omitempty"`
+	WorkspaceId                   string                                                          `json:"workspace_id,omitempty"`
 }

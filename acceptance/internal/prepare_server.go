@@ -27,7 +27,7 @@ import (
 
 func StartDefaultServer(t *testing.T) {
 	s := testserver.New(t)
-	addDefaultHandlers(s)
+	testserver.AddDefaultHandlers(s)
 
 	t.Setenv("DATABRICKS_DEFAULT_HOST", s.URL)
 
@@ -168,13 +168,29 @@ func startLocalServer(t *testing.T,
 		items := strings.Split(stub.Pattern, " ")
 		require.Len(t, items, 2)
 		s.Handle(items[0], items[1], func(req testserver.Request) any {
-			time.Sleep(stub.Delay)
+			if stub.Delay > 0 {
+				ctx := req.Context
+
+				timer := time.NewTimer(stub.Delay)
+				defer timer.Stop()
+
+				select {
+				case <-timer.C:
+					break
+				case <-ctx.Done():
+					// Client canceled/connection closed; just exit.
+					// Optional: log the reason (context deadline, cancellation, etc.)
+					t.Logf("request canceled: %v", ctx.Err())
+					return nil
+				}
+			}
+
 			return stub.Response
 		})
 	}
 
 	// The earliest handlers take precedence, add default handlers last
-	addDefaultHandlers(s)
+	testserver.AddDefaultHandlers(s)
 	return s.URL
 }
 

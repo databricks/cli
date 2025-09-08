@@ -1,0 +1,28 @@
+
+>>> [CLI] bundle validate -o json
+[
+  {
+    "whl": "../*.whl"
+  }
+]
+
+>>> [CLI] bundle deploy
+Uploading ../test.whl...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/outside_of_bundle_root/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Check that the job libraries are uploaded and the path is correct in the job
+>>> cat out.requests.txt
+[
+  {
+    "whl": "/Workspace/Users/[USERNAME]/.bundle/outside_of_bundle_root/default/artifacts/.internal/test.whl"
+  }
+]
+
+>>> cat out.requests.txt
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/outside_of_bundle_root/default/artifacts/.internal/test.whl"
+}

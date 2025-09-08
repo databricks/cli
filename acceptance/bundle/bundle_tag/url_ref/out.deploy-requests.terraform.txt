@@ -1,0 +1,34 @@
+{
+  "body": {
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "Untitled",
+    "queue": {
+      "enabled": true
+    }
+  },
+  "method": "POST",
+  "path": "/api/2.2/jobs/create"
+}
+{
+  "body": {
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "Untitled",
+    "queue": {
+      "enabled": true
+    }
+  },
+  "method": "POST",
+  "path": "/api/2.2/jobs/create"
+}

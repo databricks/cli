@@ -1,0 +1,7 @@
+print_requests() {
+    jq --sort-keys 'select(.method != "GET" and (.path | contains("/apps")))' < out.requests.txt
+    rm out.requests.txt
+}
+
+trace $CLI bundle deploy
+trace print_requests

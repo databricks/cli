@@ -96,8 +96,7 @@
           {
             "job_cluster_key": "job_cluster",
             "notebook_task": {
-              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/notebook",
-              "source": "WORKSPACE"
+              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/notebook"
             },
             "task_key": "notebook_task"
           },
@@ -137,7 +136,7 @@
         "libraries": [
           {
             "notebook": {
-              "path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/dlt_pipeline"
+              "path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/pipeline"
             }
           }
         ],

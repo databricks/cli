@@ -11,46 +11,45 @@ import (
 
 type ResourceSqlWarehouse struct {
 	client *databricks.WorkspaceClient
-	config sql.CreateWarehouseRequest
 }
 
-func NewResourceSqlWarehouse(client *databricks.WorkspaceClient, resource *resources.SqlWarehouse) (*ResourceSqlWarehouse, error) {
-	return &ResourceSqlWarehouse{
-		client: client,
-		config: resource.CreateWarehouseRequest,
-	}, nil
+// New initializes a ResourceSqlWarehouse with the given client.
+func (*ResourceSqlWarehouse) New(client *databricks.WorkspaceClient) *ResourceSqlWarehouse {
+	return &ResourceSqlWarehouse{client: client}
 }
 
-func (r *ResourceSqlWarehouse) Config() any {
-	return r.config
+// PrepareConfig converts bundle config to the SDK type.
+func (*ResourceSqlWarehouse) PrepareConfig(input *resources.SqlWarehouse) *sql.CreateWarehouseRequest {
+	return &input.CreateWarehouseRequest
 }
 
-func (r *ResourceSqlWarehouse) DoCreate(ctx context.Context) (string, error) {
-	waiter, err := r.client.Warehouses.Create(ctx, r.config)
+// DoCreate creates the warehouse and returns its id.
+func (r *ResourceSqlWarehouse) DoCreate(ctx context.Context, config *sql.CreateWarehouseRequest) (string, error) {
+	waiter, err := r.client.Warehouses.Create(ctx, *config)
 	if err != nil {
 		return "", err
 	}
-
 	return waiter.Id, nil
 }
 
-func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, id string) error {
+// DoUpdate updates the warehouse in place.
+func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, id string, config *sql.CreateWarehouseRequest) error {
 	request := sql.EditWarehouseRequest{
-		AutoStopMins:            r.config.AutoStopMins,
-		Channel:                 r.config.Channel,
-		ClusterSize:             r.config.ClusterSize,
-		CreatorName:             r.config.CreatorName,
-		EnablePhoton:            r.config.EnablePhoton,
-		EnableServerlessCompute: r.config.EnableServerlessCompute,
+		AutoStopMins:            config.AutoStopMins,
+		Channel:                 config.Channel,
+		ClusterSize:             config.ClusterSize,
+		CreatorName:             config.CreatorName,
+		EnablePhoton:            config.EnablePhoton,
+		EnableServerlessCompute: config.EnableServerlessCompute,
 		Id:                      id,
-		InstanceProfileArn:      r.config.InstanceProfileArn,
-		MaxNumClusters:          r.config.MaxNumClusters,
-		MinNumClusters:          r.config.MinNumClusters,
-		Name:                    r.config.Name,
-		SpotInstancePolicy:      r.config.SpotInstancePolicy,
-		Tags:                    r.config.Tags,
-		WarehouseType:           sql.EditWarehouseRequestWarehouseType(r.config.WarehouseType),
-		ForceSendFields:         filterFields[sql.EditWarehouseRequest](r.config.ForceSendFields),
+		InstanceProfileArn:      config.InstanceProfileArn,
+		MaxNumClusters:          config.MaxNumClusters,
+		MinNumClusters:          config.MinNumClusters,
+		Name:                    config.Name,
+		SpotInstancePolicy:      config.SpotInstancePolicy,
+		Tags:                    config.Tags,
+		WarehouseType:           sql.EditWarehouseRequestWarehouseType(config.WarehouseType),
+		ForceSendFields:         filterFields[sql.EditWarehouseRequest](config.ForceSendFields),
 	}
 
 	waiter, err := r.client.Warehouses.Edit(ctx, request)
@@ -65,16 +64,6 @@ func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, id string) error {
 	return nil
 }
 
-func (r *ResourceSqlWarehouse) WaitAfterCreate(ctx context.Context) error {
-	// No need to wait for sql warehouse to be ready after creation similar to clusters
-	return nil
-}
-
-func (r *ResourceSqlWarehouse) WaitAfterUpdate(ctx context.Context) error {
-	// No need to wait for sql warehouse to be ready after update similar to clusters
-	return nil
-}
-
-func DeleteSqlWarehouse(ctx context.Context, client *databricks.WorkspaceClient, oldID string) error {
-	return client.Warehouses.DeleteById(ctx, oldID)
+func (r *ResourceSqlWarehouse) DoDelete(ctx context.Context, oldID string) error {
+	return r.client.Warehouses.DeleteById(ctx, oldID)
 }

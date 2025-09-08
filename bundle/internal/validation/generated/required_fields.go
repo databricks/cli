@@ -210,7 +210,9 @@ var RequiredFields = map[string][]string{
 
 	"resources.sql_warehouses.*.permissions[*]": {"level"},
 
-	"resources.volumes.*": {"catalog_name", "name", "schema_name", "volume_type"},
+	"resources.synced_database_tables.*": {"name"},
+
+	"resources.volumes.*":           {"catalog_name", "name", "schema_name", "volume_type"},
 	"resources.volumes.*.grants[*]": {"privileges", "principal"},
 
 	"scripts.*": {"content"},

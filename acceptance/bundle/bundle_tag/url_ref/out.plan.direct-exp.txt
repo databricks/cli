@@ -1,0 +1,8 @@
+Error: schema mismatch for ${resources.jobs.foo.url}: url: field "url" not found in resources.Job
+
+Error: cannot plan jobs.bar: dependency failed: jobs.foo
+
+Error: planning failed
+
+
+Exit code: 1

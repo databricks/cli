@@ -28,6 +28,10 @@ acceptance/bundle/templates-machinery/helpers-error/output.txt
 acceptance/bundle/apps/config_section/output.txt
 integration/bundle/testdata/apps/bundle_deploy.txt
 
+# Extra whitespace in test output:
+acceptance/bundle/resource_deps/bad_syntax/out.plan.terraform.txt
+acceptance/bundle/upload/internal_server_error/output.txt
+
 # Extra whitespace in command help:
 acceptance/cmd/workspace/apps/output.txt
 

@@ -28,7 +28,7 @@ func TestGetFilerForLibrariesValidWsfs(t *testing.T) {
 
 	client, uploadPath, diags := GetFilerForLibraries(context.Background(), b)
 	require.NoError(t, diags.Error())
-	assert.Equal(t, "/foo/bar/artifacts/.internal", uploadPath)
+	assert.Equal(t, "/Workspace/foo/bar/artifacts/.internal", uploadPath)
 
 	assert.IsType(t, &filer.WorkspaceFilesClient{}, client)
 }
@@ -48,7 +48,7 @@ func TestGetFilerForLibrariesCleanupValidWsfs(t *testing.T) {
 
 	client, uploadPath, diags := GetFilerForLibrariesCleanup(context.Background(), b)
 	require.NoError(t, diags.Error())
-	assert.Equal(t, "/foo/bar/artifacts", uploadPath)
+	assert.Equal(t, "/Workspace/foo/bar/artifacts", uploadPath)
 
 	assert.IsType(t, &filer.WorkspaceFilesClient{}, client)
 }

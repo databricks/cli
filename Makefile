@@ -47,6 +47,9 @@ links:
 checks: tidy ws links
 
 test:
+	${GOTESTSUM_CMD} -- ${PACKAGES} -timeout=${LOCAL_TIMEOUT} -short
+
+test-slow:
 	${GOTESTSUM_CMD} -- ${PACKAGES} -timeout=${LOCAL_TIMEOUT}
 
 # Updates acceptance test output (local tests)
@@ -80,6 +83,10 @@ acc-showcover:
 
 build: tidy
 	go build
+
+# builds the binary in a VM environment (such as Parallels Desktop) where your files are mirrored from the host os
+build-vm: tidy
+	go build -buildvcs=false
 
 snapshot:
 	go build -o .databricks/databricks
