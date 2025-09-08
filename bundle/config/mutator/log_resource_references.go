@@ -22,12 +22,7 @@ func (m *logResourceReferences) Name() string {
 	return "LogResourceReferences"
 }
 
-func (m *logResourceReferences) Validate(ctx context.Context, b *bundle.Bundle) error {
-	return nil
-}
-
 func (m *logResourceReferences) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	// Walk only the resources subtree.
 	err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
 		pattern := dyn.NewPattern(dyn.Key("resources"))
 		used := map[string]struct{}{}
