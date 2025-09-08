@@ -31,11 +31,11 @@ func getActions(ctx context.Context, b *bundle.Bundle) ([]deployplan.Action, err
 		if err != nil {
 			return nil, err
 		}
-		err = b.BundleDeployer.CalculatePlanForDeploy(ctx, b.WorkspaceClient(), &b.Config)
+		err = b.DeploymentBundle.CalculatePlanForDeploy(ctx, b.WorkspaceClient(), &b.Config)
 		if err != nil {
 			return nil, err
 		}
-		return b.BundleDeployer.GetActions(ctx), nil
+		return b.DeploymentBundle.GetActions(ctx), nil
 	} else {
 		tf := b.Terraform
 		if tf == nil {
@@ -123,7 +123,7 @@ func deployCore(ctx context.Context, b *bundle.Bundle) {
 	cmdio.LogString(ctx, "Deploying resources...")
 
 	if b.DirectDeployment {
-		b.BundleDeployer.Apply(ctx, b.WorkspaceClient(), &b.Config)
+		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(), &b.Config)
 	} else {
 		bundle.ApplyContext(ctx, b, terraform.Apply())
 	}

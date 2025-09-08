@@ -9,6 +9,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/terranova/tnresources"
 	"github.com/databricks/cli/bundle/terranova/tnstate"
 	"github.com/databricks/cli/libs/dagrun"
 	"github.com/databricks/cli/libs/dyn"
@@ -37,7 +38,7 @@ func makeResourceGraph(ctx context.Context, configRoot dyn.Value) (*dagrun.Graph
 			group := p[1].Key()
 			name := p[2].Key()
 
-			_, ok := SupportedResources[group]
+			_, ok := tnresources.SupportedResources[group]
 			if !ok {
 				return v, fmt.Errorf("unsupported resource: %s", group)
 			}
