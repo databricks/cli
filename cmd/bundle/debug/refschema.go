@@ -97,7 +97,7 @@ func dumpRemoteSchemas(out io.Writer) error {
 
 		sort.Strings(lines)
 		for _, l := range lines {
-			fmt.Fprintf(out, l)
+			fmt.Fprint(out, l)
 		}
 	}
 
