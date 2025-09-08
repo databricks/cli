@@ -4,71 +4,56 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/libs/structdiff"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 )
 
 type ResourceAlert struct {
 	client *databricks.WorkspaceClient
-	config sql.AlertV2
 }
 
-func NewResourceAlert(client *databricks.WorkspaceClient, resource *resources.Alert) (*ResourceAlert, error) {
-	return &ResourceAlert{
-		client: client,
-		config: resource.AlertV2,
-	}, nil
+// New initializes a ResourceAlert with the given client.
+func (*ResourceAlert) New(client *databricks.WorkspaceClient) *ResourceAlert {
+	return &ResourceAlert{client: client}
 }
 
-func (r *ResourceAlert) Config() any {
-	return r.config
+// PrepareConfig converts bundle config to the SDK type.
+func (*ResourceAlert) PrepareConfig(input *resources.Alert) *sql.AlertV2 {
+	return &input.AlertV2
 }
 
-func (r *ResourceAlert) DoCreate(ctx context.Context) (string, error) {
+// DoRefresh reads the alert by id.
+func (r *ResourceAlert) DoRefresh(ctx context.Context, id string) (*sql.AlertV2, error) {
+	return r.client.AlertsV2.GetAlertById(ctx, id)
+}
+
+// DoCreate creates the alert and returns its id.
+func (r *ResourceAlert) DoCreate(ctx context.Context, config *sql.AlertV2) (string, error) {
 	request := sql.CreateAlertV2Request{
-		Alert: r.config,
+		Alert: *config,
 	}
 	response, err := r.client.AlertsV2.CreateAlert(ctx, request)
 	if err != nil {
 		return "", err
 	}
-
 	return response.Id, nil
 }
 
-func (r *ResourceAlert) DoUpdate(ctx context.Context, oldID string) (string, error) {
+// DoUpdate updates the alert in place.
+func (r *ResourceAlert) DoUpdate(ctx context.Context, id string, config *sql.AlertV2) error {
 	request := sql.UpdateAlertV2Request{
-		Id:         oldID,
-		Alert:      r.config,
+		Id:         id,
+		Alert:      *config,
 		UpdateMask: "*",
 	}
-	response, err := r.client.AlertsV2.UpdateAlert(ctx, request)
-	if err != nil {
-		return "", err
-	}
-	return response.Id, nil
-}
-
-func (r *ResourceAlert) WaitAfterCreate(ctx context.Context) error {
-	// Alerts do not have a live status to wait for.
-	return nil
-}
-
-func (r *ResourceAlert) WaitAfterUpdate(ctx context.Context) error {
-	// Alerts do not have a live status to wait for.
-	return nil
-}
-
-func (r *ResourceAlert) ClassifyChanges(changes []structdiff.Change) deployplan.ActionType {
-	return deployplan.ActionTypeUpdate
-}
-
-func DeleteAlert(ctx context.Context, client *databricks.WorkspaceClient, oldID string) error {
-	err := client.AlertsV2.TrashAlertById(ctx, oldID)
+	_, err := r.client.AlertsV2.UpdateAlert(ctx, request)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+// DoDelete deletes the alert by id.
+func (r *ResourceAlert) DoDelete(ctx context.Context, id string) error {
+	return r.client.AlertsV2.TrashAlertById(ctx, id)
 }
