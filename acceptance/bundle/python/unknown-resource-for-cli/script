@@ -1,0 +1,4 @@
+$CLI bundle validate --output json | \
+  jq "pick(.experimental.python, .resources)"
+
+rm -fr .databricks __pycache__

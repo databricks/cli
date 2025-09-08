@@ -1,0 +1,16 @@
+Error: unknown field: unknown_resource
+  at resources
+  in __generated_by_python__.yml:1:792
+
+{
+  "experimental": {
+    "python": {
+      "resources": [
+        "resources:load_resources"
+      ]
+    }
+  },
+  "resources": null
+}
+
+Exit code: 1
