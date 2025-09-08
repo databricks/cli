@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
@@ -14,8 +15,7 @@ import (
 )
 
 type populateCurrentUser struct {
-	lastKnownAuthorizationHeader string
-	cache                        bundle.Cache
+	cache bundle.Cache
 }
 
 // PopulateCurrentUser sets the `current_user` property on the workspace.
