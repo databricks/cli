@@ -21,6 +21,10 @@ func (*ResourceDatabaseInstance) PrepareConfig(input *resources.DatabaseInstance
 	return &input.DatabaseInstance
 }
 
+func (d *ResourceDatabaseInstance) DoRefresh(ctx context.Context, id string) (*database.DatabaseInstance, error) {
+	return d.client.Database.GetDatabaseInstanceByName(ctx, id)
+}
+
 func (d *ResourceDatabaseInstance) DoCreate(ctx context.Context, config *database.DatabaseInstance) (string, error) {
 	waiter, err := d.client.Database.CreateDatabaseInstance(ctx, database.CreateDatabaseInstanceRequest{
 		DatabaseInstance: *config,
