@@ -12,8 +12,9 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 )
 
-// IResource represents the unified interface for resource adapters.
+// IResource describes core methods for the resource implementation.
 // The resources don't actually implement this interface, but implement the same methods with signatures with concrete types.
+// The resources need to have all of the methods on IResource that are not marked [Optional].
 type IResource interface {
 	// New returns a new implementation instance for a given resource.
 	// Note, this is a class method, it will be called with nil receiver.
@@ -43,19 +44,16 @@ type IResource interface {
 	ClassifyChanges(changes []structdiff.Change) deployplan.ActionType
 }
 
-// This interface represents adapted interface to call a resource.
-// The resources don't actually implement this interface, but rather a subset of functions
-// with different signatures: any is replaced with concrete types.
+// IResourceNoRefresh describes additional methods for resource to implement.
+// Each method exists in two forms: NoRefresh (this interface) and WithRefresh (IResourceWithInterface).
+// Resource can pick which signature to implement for each method individually.
 type IResourceNoRefresh interface {
 	// Any field named config below have the same type as return value of PrepareConfig.
 	// Any field named remoteState below has the same type as return value of DoRefresh.
-	// We pass config as pointer but it is never nil. Changes to it will be persisted in the state, so should be avoided
-	// We pass remoteState as pointer as well and it maybe nil if it was never refreshed.
-	// Changes to the struct will be visible to subsequent operations as well as we $resources lookups.
+	// We pass config as pointer but it is never nil. Changes to it will be persisted in the state, so should be used carefully.
 
 	// DoCreate creates a new resource from the config.
 	// Example: func (r *ResourceJob) DoCreate(ctx context.Context, config *jobs.JobSettings) (string, error) {
-	// Alternative: IResourceAdapterWithRefresh.DoCreate can be implemented instead.
 	DoCreate(ctx context.Context, config any) (id string, e error)
 
 	// DoUpdate updates the resource. ID must not change as a result of this operation.
@@ -74,8 +72,9 @@ type IResourceNoRefresh interface {
 	WaitAfterUpdate(ctx context.Context, config any) error
 }
 
-// Alternative methods that also return remote state.
-// Only use these if you get remote state for free as part of the main operation. Otherwise, prefer simpler NoRefresh variants.
+// IResourceWithRefresh is an alternative to IResourceNoRefresh but every method can return remoteState.
+// Only use these if you get remote state for free as part of the main operation. Otherwise, prefer simpler NoRefresh variants. The state will be fetched via separate DoRefresh in this case.
+// Note, resource implementations don't pick between IResourceNoRefresh and IResourceWithRefresh, they can make independent decision for each of the methods.
 type IResourceWithRefresh interface {
 	// DoCreate creates a new resource from the config. Returns id of the resource and remote state.
 	// Example: func (r *ResourceVolume) DoCreate(ctx context.Context, config *catalog.CreateVolumeRequestContent) (string, *catalog.VolumeInfo, error) {
