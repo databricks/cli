@@ -115,7 +115,7 @@ type Adapter struct {
 }
 
 func NewAdapter(typedNil any, client *databricks.WorkspaceClient) (*Adapter, error) {
-	newCall, err := prepareCallRequired(typedNil, calladapt.TypeOf[IResource](), "New")
+	newCall, err := prepareCallRequired(typedNil, "New")
 	if err != nil {
 		return nil, err
 	}
@@ -171,24 +171,22 @@ func NewAdapter(typedNil any, client *databricks.WorkspaceClient) (*Adapter, err
 }
 
 func (a *Adapter) initMethods(resource any) error {
-	it := calladapt.TypeOf[IResource]()
-
-	err := calladapt.EnsureNoExtraMethods(resource, it, calladapt.TypeOf[IResourceNoRefresh](), calladapt.TypeOf[IResourceWithRefresh]())
+	err := calladapt.EnsureNoExtraMethods(resource, calladapt.TypeOf[IResource](), calladapt.TypeOf[IResourceNoRefresh](), calladapt.TypeOf[IResourceWithRefresh]())
 	if err != nil {
 		return err
 	}
 
-	a.prepareConfig, err = prepareCallRequired(resource, it, "PrepareConfig")
+	a.prepareConfig, err = prepareCallRequired(resource, "PrepareConfig")
 	if err != nil {
 		return err
 	}
 
-	a.doRefresh, err = prepareCallRequired(resource, it, "DoRefresh")
+	a.doRefresh, err = prepareCallRequired(resource, "DoRefresh")
 	if err != nil {
 		return err
 	}
 
-	a.doDelete, err = prepareCallRequired(resource, it, "DoDelete")
+	a.doDelete, err = prepareCallRequired(resource, "DoDelete")
 	if err != nil {
 		return err
 	}
@@ -220,7 +218,7 @@ func (a *Adapter) initMethods(resource any) error {
 		return err
 	}
 
-	a.classifyChanges, err = calladapt.PrepareCall(resource, it, "ClassifyChanges")
+	a.classifyChanges, err = calladapt.PrepareCall(resource, calladapt.TypeOf[IResource](), "ClassifyChanges")
 	return err
 }
 
@@ -486,8 +484,8 @@ func (a *Adapter) WaitAfterUpdate(ctx context.Context, config any) (any, error) 
 }
 
 // prepareCallRequired prepares a call and ensures the method is found.
-func prepareCallRequired(resource any, interfaceType reflect.Type, methodName string) (*calladapt.BoundCaller, error) {
-	caller, err := calladapt.PrepareCall(resource, interfaceType, methodName)
+func prepareCallRequired(resource any, methodName string) (*calladapt.BoundCaller, error) {
+	caller, err := calladapt.PrepareCall(resource, calladapt.TypeOf[IResource](), methodName)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", methodName, err)
 	}
