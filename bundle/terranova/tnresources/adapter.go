@@ -98,11 +98,11 @@ type IResourceWithRefresh interface {
 // and provides a unified interface.
 type Adapter struct {
 	// Required:
-	prepareConfig *calladapt.BoundCaller
-	doRefresh     *calladapt.BoundCaller
-	doDelete      *calladapt.BoundCaller
-	doCreate      *calladapt.BoundCaller
-	doUpdate      *calladapt.BoundCaller
+	prepareState *calladapt.BoundCaller
+	doRefresh    *calladapt.BoundCaller
+	doDelete     *calladapt.BoundCaller
+	doCreate     *calladapt.BoundCaller
+	doUpdate     *calladapt.BoundCaller
 
 	// Optional:
 	doUpdateWithID  *calladapt.BoundCaller
@@ -127,7 +127,7 @@ func NewAdapter(typedNil any, client *databricks.WorkspaceClient) (*Adapter, err
 	}
 	impl := outs[0]
 	adapter := &Adapter{
-		prepareConfig:   nil,
+		prepareState:    nil,
 		doRefresh:       nil,
 		doDelete:        nil,
 		doCreate:        nil,
@@ -175,7 +175,7 @@ func (a *Adapter) initMethods(resource any) error {
 		return err
 	}
 
-	a.prepareConfig, err = prepareCallRequired(resource, "PrepareState")
+	a.prepareState, err = prepareCallRequired(resource, "PrepareState")
 	if err != nil {
 		return err
 	}
@@ -253,7 +253,7 @@ func (a *Adapter) validate() error {
 	}
 
 	validations := []any{
-		"PrepareState return", a.prepareConfig.OutTypes[0], configType,
+		"PrepareState return", a.prepareState.OutTypes[0], configType,
 		"DoCreate config", a.doCreate.InTypes[1], configType,
 		"DoUpdate config", a.doUpdate.InTypes[2], configType,
 	}
@@ -301,11 +301,11 @@ func (a *Adapter) validate() error {
 }
 
 func (a *Adapter) InputConfigType() reflect.Type {
-	return a.prepareConfig.InTypes[0]
+	return a.prepareState.InTypes[0]
 }
 
 func (a *Adapter) StateType() reflect.Type {
-	return a.prepareConfig.OutTypes[0]
+	return a.prepareState.OutTypes[0]
 }
 
 func (a *Adapter) RemoteType() reflect.Type {
@@ -313,7 +313,7 @@ func (a *Adapter) RemoteType() reflect.Type {
 }
 
 func (a *Adapter) PrepareState(input any) (any, error) {
-	outs, err := a.prepareConfig.Call(input)
+	outs, err := a.prepareState.Call(input)
 	if err != nil {
 		return nil, err
 	}
