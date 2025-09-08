@@ -241,7 +241,6 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 
 	// Alerts: Prefix
 	// TODO: Add acceptance test for this.
-	// TODO: Ensure that this is the right call here.
 	for _, a := range r.Alerts {
 		if a == nil {
 			continue
