@@ -478,6 +478,10 @@ github.com/databricks/cli/bundle/config/resources.DashboardPermission:
   "user_name":
     "description": |-
       PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.DatabaseCatalog:
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.DatabaseInstancePermission:
   "group_name":
     "description": |-
@@ -645,6 +649,9 @@ github.com/databricks/cli/bundle/config/resources.SyncedDatabaseTable:
     "description": |-
       PLACEHOLDER
   "effective_logical_database_name":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
     "description": |-
       PLACEHOLDER
   "logical_database_name":

@@ -534,6 +534,9 @@
                         "description": "The name of the database (in a instance) associated with the catalog.",
                         "$ref": "#/$defs/string"
                       },
+                      "lifecycle": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                      },
                       "name": {
                         "description": "The name of the catalog in UC.",
                         "$ref": "#/$defs/string"
@@ -1856,6 +1859,9 @@
                       },
                       "effective_logical_database_name": {
                         "$ref": "#/$defs/string"
+                      },
+                      "lifecycle": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "logical_database_name": {
                         "$ref": "#/$defs/string"
