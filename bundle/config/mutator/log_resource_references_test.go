@@ -6,6 +6,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config"
 	cres "github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -14,7 +15,13 @@ func TestConvertReferenceToMetric_Table(t *testing.T) {
 	cfg := config.Root{
 		Resources: config.Resources{
 			Jobs: map[string]*cres.Job{
-				"foo":    {},
+				"foo": {
+					JobSettings: jobs.JobSettings{
+						Tasks: []jobs.Task{
+							{TaskKey: "alpha"},
+						},
+					},
+				},
 				"niljob": nil,
 			},
 			Apps: map[string]*cres.App{
@@ -32,14 +39,51 @@ func TestConvertReferenceToMetric_Table(t *testing.T) {
 		ref  string
 		want string
 	}{
-		{name: "basic job id", ref: "resources.jobs.foo.id", want: "resref__jobs__id"},
-		{name: "invalid empty", ref: "", want: ""},
-		{name: "invalid variables", ref: "variables.foo", want: ""},
-		{name: "invalid short resources", ref: "resources", want: ""},
-		{name: "invalid short group", ref: "resources.jobs", want: ""},
-		{name: "mapkey censor on app config", ref: "resources.apps.app1.config.foo", want: "resref__apps__config__mapkey"},
-		{name: "nil job pointer yields plain id", ref: "resources.jobs.niljob.id", want: "resref__jobs__id"},
-		{name: "err censor on missing job key", ref: "resources.jobs.missing.id", want: "resreferr__jobs"},
+		{
+			name: "basic job id",
+			ref:  "resources.jobs.foo.id",
+			want: "resref__jobs__id",
+		},
+		{
+			name: "invalid empty",
+			ref:  "",
+			want: "",
+		},
+		{
+			name: "invalid variables",
+			ref:  "variables.foo",
+			want: "",
+		},
+		{
+			name: "invalid short resources",
+			ref:  "resources",
+			want: "",
+		},
+		{
+			name: "invalid short group",
+			ref:  "resources.jobs",
+			want: "",
+		},
+		{
+			name: "mapkey censor on app config",
+			ref:  "resources.apps.app1.config.foo",
+			want: "resref__apps__config__mapkey",
+		},
+		{
+			name: "nil job pointer yields plain id",
+			ref:  "resources.jobs.niljob.id",
+			want: "resref__jobs__id",
+		},
+		{
+			name: "err censor on missing job key",
+			ref:  "resources.jobs.missing.id",
+			want: "resreferr__jobs",
+		},
+		{
+			name: "array index task key",
+			ref:  "resources.jobs.foo.tasks[0].task_key",
+			want: "resref__jobs__tasks__task_key",
+		},
 	}
 
 	for _, tt := range tests {
