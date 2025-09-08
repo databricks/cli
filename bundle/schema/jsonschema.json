@@ -108,6 +108,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
@@ -295,6 +296,7 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.Kind"
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "node_type_id": {
@@ -433,6 +435,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "lifecycle_state": {
@@ -535,6 +538,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
@@ -609,6 +613,7 @@
                         "$ref": "#/$defs/bool"
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
@@ -774,6 +779,7 @@
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.JobCluster"
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "max_concurrent_runs": {
@@ -898,6 +904,7 @@
                     "type": "object",
                     "properties": {
                       "prevent_destroy": {
+                        "description": "Lifecycle setting to prevent the resource from being destroyed.",
                         "$ref": "#/$defs/bool"
                       }
                     },
@@ -932,6 +939,7 @@
                         "$ref": "#/$defs/int64"
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "lifecycle_stage": {
@@ -1014,6 +1022,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
@@ -1112,6 +1121,7 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.EmailNotifications"
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
@@ -1300,6 +1310,7 @@
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/pipelines.PipelineLibrary"
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
@@ -1447,6 +1458,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "notifications": {
@@ -1516,6 +1528,7 @@
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Grant"
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
@@ -1562,6 +1575,7 @@
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.SchemaGrant"
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
@@ -1653,6 +1667,7 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/workspace.AzureKeyVaultSecretScopeMetadata"
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
@@ -1760,6 +1775,7 @@
                         "deprecated": true
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "max_num_clusters": {
@@ -1861,6 +1877,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "logical_database_name": {
@@ -1904,6 +1921,7 @@
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.VolumeGrant"
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {

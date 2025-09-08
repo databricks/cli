@@ -478,10 +478,6 @@ github.com/databricks/cli/bundle/config/resources.DashboardPermission:
   "user_name":
     "description": |-
       PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.DatabaseCatalog:
-  "lifecycle":
-    "description": |-
-      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.DatabaseInstancePermission:
   "group_name":
     "description": |-
@@ -518,7 +514,7 @@ github.com/databricks/cli/bundle/config/resources.JobPermission:
 github.com/databricks/cli/bundle/config/resources.Lifecycle:
   "prevent_destroy":
     "description": |-
-      PLACEHOLDER
+      Lifecycle setting to prevent the resource from being destroyed.
 github.com/databricks/cli/bundle/config/resources.MlflowExperimentPermission:
   "group_name":
     "description": |-
@@ -605,7 +601,7 @@ github.com/databricks/cli/bundle/config/resources.SecretScope:
       The metadata for the secret scope if the `backend_type` is `AZURE_KEYVAULT`
   "lifecycle":
     "description": |-
-      PLACEHOLDER
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
   "name":
     "description": |-
       Scope name requested by the user. Scope names are unique.
@@ -653,7 +649,7 @@ github.com/databricks/cli/bundle/config/resources.SyncedDatabaseTable:
       PLACEHOLDER
   "lifecycle":
     "description": |-
-      PLACEHOLDER
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
   "logical_database_name":
     "description": |-
       PLACEHOLDER

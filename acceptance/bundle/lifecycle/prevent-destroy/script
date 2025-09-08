@@ -16,7 +16,7 @@ trace errcode $CLI bundle plan >>out.$DATABRICKS_CLI_DEPLOYMENT.txt 2>&1
 trace $CLI bundle deploy --auto-approve >>out.$DATABRICKS_CLI_DEPLOYMENT.txt 2>&1
 
 update_file.py databricks.yml 'prevent_destroy: false' 'prevent_destroy: true'
-# Removing the job, deploy must succeed
+# Removing the pipeline, deploy must succeed
 update_file.py databricks.yml '<<: *pipeline_base' ''
 trace errcode $CLI bundle plan >>out.$DATABRICKS_CLI_DEPLOYMENT.txt 2>&1
 trace $CLI bundle deploy --auto-approve >>out.$DATABRICKS_CLI_DEPLOYMENT.txt 2>&1

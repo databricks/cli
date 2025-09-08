@@ -16,7 +16,7 @@ github.com/databricks/cli/bundle/config/resources.App:
       PLACEHOLDER
   "lifecycle":
     "description": |-
-      PLACEHOLDER
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
   "oauth2_app_client_id":
     "description": |-
       PLACEHOLDER
@@ -89,7 +89,7 @@ github.com/databricks/cli/bundle/config/resources.Cluster:
       PLACEHOLDER
   "lifecycle":
     "description": |-
-      PLACEHOLDER
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
   "permissions":
     "description": |-
       PLACEHOLDER
@@ -148,7 +148,7 @@ github.com/databricks/cli/bundle/config/resources.Dashboard:
       PLACEHOLDER
   "lifecycle":
     "description": |-
-      PLACEHOLDER
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
   "lifecycle_state":
     "description": |-
       The state of the dashboard resource. Used for tracking trashed status.
@@ -195,13 +195,16 @@ github.com/databricks/cli/bundle/config/resources.DatabaseCatalog:
   "create_database_if_not_exists":
     "description": |-
       PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
   "uid":
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.DatabaseInstance:
   "lifecycle":
     "description": |-
-      PLACEHOLDER
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
   "permissions":
     "description": |-
       PLACEHOLDER
@@ -238,7 +241,7 @@ github.com/databricks/cli/bundle/config/resources.Job:
       PLACEHOLDER
   "lifecycle":
     "description": |-
-      PLACEHOLDER
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
   "permissions":
     "description": |-
       PLACEHOLDER
@@ -275,7 +278,7 @@ github.com/databricks/cli/bundle/config/resources.MlflowExperiment:
       ```
   "lifecycle":
     "description": |-
-      PLACEHOLDER
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
   "permissions":
     "description": |-
       PLACEHOLDER
@@ -294,7 +297,7 @@ github.com/databricks/cli/bundle/config/resources.MlflowModel:
       The model resource allows you to define [legacy models](/api/workspace/modelregistry/createmodel) in bundles. Databricks recommends you use Unity Catalog [registered models](#registered-model) instead.
   "lifecycle":
     "description": |-
-      PLACEHOLDER
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
   "permissions":
     "description": |-
       PLACEHOLDER
@@ -342,7 +345,7 @@ github.com/databricks/cli/bundle/config/resources.ModelServingEndpoint:
       PLACEHOLDER
   "lifecycle":
     "description": |-
-      PLACEHOLDER
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
   "permissions":
     "description": |-
       PLACEHOLDER
@@ -384,7 +387,7 @@ github.com/databricks/cli/bundle/config/resources.Pipeline:
       PLACEHOLDER
   "lifecycle":
     "description": |-
-      PLACEHOLDER
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
   "permissions":
     "description": |-
       PLACEHOLDER
@@ -435,7 +438,7 @@ github.com/databricks/cli/bundle/config/resources.QualityMonitor:
       PLACEHOLDER
   "lifecycle":
     "description": |-
-      PLACEHOLDER
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
   "table_name":
     "description": |-
       PLACEHOLDER
@@ -464,7 +467,7 @@ github.com/databricks/cli/bundle/config/resources.RegisteredModel:
       PLACEHOLDER
   "lifecycle":
     "description": |-
-      PLACEHOLDER
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
 github.com/databricks/cli/bundle/config/resources.Schema:
   "_":
     "markdown_description": |-
@@ -517,7 +520,7 @@ github.com/databricks/cli/bundle/config/resources.Schema:
       PLACEHOLDER
   "lifecycle":
     "description": |-
-      PLACEHOLDER
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
   "properties":
     "description": |-
       PLACEHOLDER
@@ -567,7 +570,7 @@ github.com/databricks/cli/bundle/config/resources.SqlWarehouse:
       Defaults to true.
   "lifecycle":
     "description": |-
-      PLACEHOLDER
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
   "permissions":
     "description": |-
       PLACEHOLDER
@@ -614,7 +617,7 @@ github.com/databricks/cli/bundle/config/resources.Volume:
       PLACEHOLDER
   "lifecycle":
     "description": |-
-      PLACEHOLDER
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
   "volume_type":
     "description": |-
       PLACEHOLDER
