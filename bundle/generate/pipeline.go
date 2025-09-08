@@ -10,7 +10,7 @@ import (
 
 var pipelineOrder = yamlsaver.NewOrder([]string{"name", "clusters", "configuration", "libraries"})
 
-func ConvertPipelineToValue(pipeline *pipelines.PipelineSpec, rootPath string, remoteRootPath string) (dyn.Value, error) {
+func ConvertPipelineToValue(pipeline *pipelines.PipelineSpec, rootPath, remoteRootPath string) (dyn.Value, error) {
 	if pipeline.RootPath != "" {
 		pipeline.RootPath = rootPath
 	}
