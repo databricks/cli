@@ -80,9 +80,14 @@ func TestConvertReferenceToMetric_Table(t *testing.T) {
 			want: "resreferr__jobs",
 		},
 		{
-			name: "array index task key",
+			name: "array index tasks key",
 			ref:  "resources.jobs.foo.tasks[0].task_key",
 			want: "resref__jobs__tasks__task_key",
+		},
+		{
+			name: "array index task key",
+			ref:  "resources.jobs.foo.task[0].task_key",
+			want: "resreferr__jobs__task",
 		},
 	}
 
