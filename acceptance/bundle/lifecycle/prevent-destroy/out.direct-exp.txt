@@ -2,7 +2,7 @@
 >>> errcode [CLI] bundle plan
 
 >>> musterr [CLI] bundle destroy --auto-approve
-Error: resource my_pipelines has lifecycle.prevent_destroy set, but the plan calls for this resource to be recreated or destroyed. To avoid this error, disable lifecycle.prevent_destroy for pipelines.my_pipelines 
+Error: resource my_pipelines has lifecycle.prevent_destroy set, but the plan calls for this resource to be recreated or destroyed. To avoid this error, disable lifecycle.prevent_destroy for pipelines.my_pipelines
 
 
 Exit code (musterr): 1
@@ -12,7 +12,7 @@ recreate pipelines.my_pipelines
 
 >>> musterr [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/prevent-destroy/default/files...
-Error: resource my_pipelines has lifecycle.prevent_destroy set, but the plan calls for this resource to be recreated or destroyed. To avoid this error, disable lifecycle.prevent_destroy for pipelines.my_pipelines 
+Error: resource my_pipelines has lifecycle.prevent_destroy set, but the plan calls for this resource to be recreated or destroyed. To avoid this error, disable lifecycle.prevent_destroy for pipelines.my_pipelines
 
 
 Exit code (musterr): 1

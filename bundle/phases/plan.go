@@ -67,7 +67,7 @@ func checkForPreventDestroy(b *bundle.Bundle, actions []deployplan.Action, isDes
 				preventDestroyV := lifecycleV.Get("prevent_destroy")
 				preventDestroy, ok := preventDestroyV.AsBool()
 				if ok && preventDestroy {
-					return fmt.Errorf("resource %s has lifecycle.prevent_destroy set, but the plan calls for this resource to be recreated or destroyed. To avoid this error, disable lifecycle.prevent_destroy for %s.%s ", action.Key, action.Group, action.Key)
+					return fmt.Errorf("resource %s has lifecycle.prevent_destroy set, but the plan calls for this resource to be recreated or destroyed. To avoid this error, disable lifecycle.prevent_destroy for %s.%s", action.Key, action.Group, action.Key)
 				}
 			}
 		}
