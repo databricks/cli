@@ -74,8 +74,15 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			return false
 		}
 
-		// After successful deployment, resolve any references that were delayed during planning
-		// This includes ID references and remote state references
+		// We now process references of the form "resources.<group>.<key>.<field...>" and refers
+		// for the resource that was just deployed. We first look up those references (ResolveReferenceRemote)
+		// and the replace them across the whole bundle (replaceReferenceWithValue).
+		// Note, we've already replaced what we could in plan phase:
+		// - "id" for cases where id cannot change;
+		// - "field" for cases where field is part of the config.
+		// Now we're focussing on the remaining cases:
+		// - "id" for cases where id could have changed;
+		// - "field" for cases where field is part of the remote state.
 		for _, reference := range b.Graph.OutgoingLabels(node) {
 			value, err := d.ResolveReferenceRemote(ctx, &b.StateDB, reference)
 			if err != nil {
