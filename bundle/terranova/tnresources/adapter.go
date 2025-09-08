@@ -22,9 +22,9 @@ type IResource interface {
 	// Single instance is reused across all instances, so it must not store any resource-specific state.
 	New(client *databricks.WorkspaceClient) any
 
-	// PrepareConfig converts resource's config as defined by bundle schema to the concrete type used by create/update and persisted in the state.
-	// Example: func (*ResourceJob) PrepareConfig(input *resources.Job) *jobs.JobSettings
-	PrepareConfig(input any) any
+	// PrepareState converts resource's config as defined by bundle schema to the concrete type used by create/update and persisted in the state.
+	// Example: func (*ResourceJob) PrepareState(input *resources.Job) *jobs.JobSettings
+	PrepareState(input any) any
 
 	// DoRefresh reads and returns remote state from the backend. The return type defines schema for remote field resolution.
 	// Example: func (r *ResourceJob) DoRefresh(ctx context.Context, id string) (*jobs.Job, error) {
@@ -48,7 +48,7 @@ type IResource interface {
 // Each method exists in two forms: NoRefresh (this interface) and WithRefresh (IResourceWithInterface).
 // Resource can pick which signature to implement for each method individually.
 type IResourceNoRefresh interface {
-	// Any field named config below have the same type as return value of PrepareConfig.
+	// Any field named config below have the same type as return value of PrepareState.
 	// Any field named remoteState below has the same type as return value of DoRefresh.
 	// We pass config as pointer but it is never nil. Changes to it will be persisted in the state, so should be used carefully.
 
@@ -175,7 +175,7 @@ func (a *Adapter) initMethods(resource any) error {
 		return err
 	}
 
-	a.prepareConfig, err = prepareCallRequired(resource, "PrepareConfig")
+	a.prepareConfig, err = prepareCallRequired(resource, "PrepareState")
 	if err != nil {
 		return err
 	}
@@ -253,7 +253,7 @@ func (a *Adapter) validate() error {
 	}
 
 	validations := []any{
-		"PrepareConfig return", a.prepareConfig.OutTypes[0], configType,
+		"PrepareState return", a.prepareConfig.OutTypes[0], configType,
 		"DoCreate config", a.doCreate.InTypes[1], configType,
 		"DoUpdate config", a.doUpdate.InTypes[2], configType,
 	}
@@ -312,7 +312,7 @@ func (a *Adapter) RemoteType() reflect.Type {
 	return a.doRefresh.OutTypes[0]
 }
 
-func (a *Adapter) PrepareConfig(input any) (any, error) {
+func (a *Adapter) PrepareState(input any) (any, error) {
 	outs, err := a.prepareConfig.Call(input)
 	if err != nil {
 		return nil, err

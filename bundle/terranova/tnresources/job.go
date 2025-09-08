@@ -20,7 +20,7 @@ func (*ResourceJob) New(client *databricks.WorkspaceClient) *ResourceJob {
 	}
 }
 
-func (*ResourceJob) PrepareConfig(input *resources.Job) *jobs.JobSettings {
+func (*ResourceJob) PrepareState(input *resources.Job) *jobs.JobSettings {
 	return &input.JobSettings
 }
 

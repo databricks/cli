@@ -34,7 +34,7 @@ func (d *DeploymentUnit) Destroy(ctx context.Context, db *tnstate.TerranovaState
 
 func (d *DeploymentUnit) Deploy(ctx context.Context, db *tnstate.TerranovaState, inputConfig any, actionType deployplan.ActionType) error {
 	// Note, config may be different between plan and deploy due to resolved $resource references
-	config, err := d.Adapter.PrepareConfig(inputConfig)
+	config, err := d.Adapter.PrepareState(inputConfig)
 	if err != nil {
 		return fmt.Errorf("reading config: %w", err)
 	}

@@ -105,8 +105,8 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		inputConfig = reflect.New(adapter.InputConfigType().Elem()).Interface()
 	}
 
-	config, err := adapter.PrepareConfig(inputConfig)
-	require.NoError(t, err, "PrepareConfig failed")
+	config, err := adapter.PrepareState(inputConfig)
+	require.NoError(t, err, "PrepareState failed")
 
 	ctx := context.Background()
 

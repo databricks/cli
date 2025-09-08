@@ -35,7 +35,7 @@ func (d *DeploymentUnit) plan(ctx context.Context, client *databricks.WorkspaceC
 		return "", errors.New("invalid state: empty id")
 	}
 
-	config, err := d.Adapter.PrepareConfig(inputConfig)
+	config, err := d.Adapter.PrepareState(inputConfig)
 	if err != nil {
 		return "", fmt.Errorf("reading config: %w", err)
 	}

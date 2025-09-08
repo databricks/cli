@@ -17,7 +17,7 @@ func (*ResourceDatabaseInstance) New(client *databricks.WorkspaceClient) *Resour
 	return &ResourceDatabaseInstance{client: client}
 }
 
-func (*ResourceDatabaseInstance) PrepareConfig(input *resources.DatabaseInstance) *database.DatabaseInstance {
+func (*ResourceDatabaseInstance) PrepareState(input *resources.DatabaseInstance) *database.DatabaseInstance {
 	return &input.DatabaseInstance
 }
 

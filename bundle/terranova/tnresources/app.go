@@ -19,7 +19,7 @@ func (*ResourceApp) New(client *databricks.WorkspaceClient) *ResourceApp {
 	return &ResourceApp{client: client}
 }
 
-func (*ResourceApp) PrepareConfig(input *resources.App) *apps.App {
+func (*ResourceApp) PrepareState(input *resources.App) *apps.App {
 	return &input.App
 }
 
