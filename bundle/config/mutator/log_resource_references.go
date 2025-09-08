@@ -56,9 +56,17 @@ func (m *logResourceReferences) Apply(ctx context.Context, b *bundle.Bundle) dia
 			return dyn.InvalidValue, err
 		}
 
+		maxRefsLogged := 50
+
+		// map iteration is randomized, which works for this case
 		for key := range used {
 			b.Metrics.AddBoolValue(key, true)
+			maxRefsLogged--
+			if maxRefsLogged <= 0 {
+				break
+			}
 		}
+
 		return root, nil
 	})
 	if err != nil {
