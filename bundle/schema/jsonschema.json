@@ -81,6 +81,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "effective_run_as": {
+                        "description": "The actual identity that will be used to execute the alert.\nThis is an output-only field that shows the resolved run-as identity after applying\npermissions and defaults.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2RunAs"
                       },
                       "evaluation": {
@@ -110,6 +111,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "run_as": {
+                        "description": "Specifies the identity that will be used to run the alert.\nThis field allows you to configure alerts to run as a specific user or service principal.\n- For user identity: Set `user_name` to the email of an active workspace user. Users can only set this to their own email.\n- For service principal: Set `service_principal_name` to the application ID. Requires the `servicePrincipal/user` role.\nIf not specified, the alert will run as the request user.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2RunAs"
                       },
                       "run_as_user_name": {
