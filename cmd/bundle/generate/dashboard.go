@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path"
 	"path/filepath"
@@ -53,6 +54,10 @@ type dashboard struct {
 
 	// Relative path from the resource directory to the dashboard directory.
 	relativeDashboardDir string
+
+	// Output and error streams.
+	out io.Writer
+	err io.Writer
 }
 
 func (d *dashboard) resolveID(ctx context.Context, b *bundle.Bundle) string {
@@ -185,7 +190,7 @@ func (d *dashboard) saveSerializedDashboard(_ context.Context, b *bundle.Bundle,
 		}
 	}
 
-	fmt.Printf("Writing dashboard to %q\n", rel)
+	fmt.Fprintf(d.out, "Writing dashboard to %q\n", rel)
 	return os.WriteFile(filename, data, 0o644)
 }
 
@@ -229,7 +234,7 @@ func (d *dashboard) saveConfiguration(ctx context.Context, b *bundle.Bundle, das
 		rel = resourcePath
 	}
 
-	fmt.Printf("Writing configuration to %q\n", rel)
+	fmt.Fprintf(d.out, "Writing configuration to %q\n", rel)
 	err = saver.SaveAsYAML(result, resourcePath, d.force)
 	if err != nil {
 		return err
@@ -462,7 +467,10 @@ The --watch flag continuously polls for remote changes and updates your local
 bundle files automatically, useful during active dashboard development.`,
 	}
 
-	d := &dashboard{}
+	d := &dashboard{
+		out: cmd.OutOrStdout(),
+		err: cmd.ErrOrStderr(),
+	}
 
 	// Lookup flags.
 	cmd.Flags().StringVar(&d.existingPath, "existing-path", "", `workspace path of the dashboard to generate configuration for`)
