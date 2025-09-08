@@ -1,0 +1,22 @@
+resources:
+  alerts:
+    myalert:
+        display_name: myalert-$UNIQUE_NAME
+        query_text: select 2
+        evaluation: {
+            "comparison_operator":"EQUAL",
+            "source": {
+                "aggregation":"MAX",
+                "display":"1",
+                "name":"1"
+            },
+            "threshold": {
+                "value": {
+                    "double_value":2
+                }
+            }
+        }
+        schedule:
+          pause_status: UNPAUSED
+          quartz_cron_schedule: 44 19 */1 * * ?
+          timezone_id: Europe/Amsterdam

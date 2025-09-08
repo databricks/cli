@@ -1,0 +1,19 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Error: terraform apply: exit status 1
+
+Error: failed to create alert_v2
+
+  with databricks_alert_v2.myalert,
+  on bundle.tf.json line 37, in resource.databricks_alert_v2.myalert:
+  37:       }
+
+Alert V2 is not enabled in this workspace. Please contact your administrator
+for more information.
+
+
+Updating deployment state...
+
+Exit code: 1
