@@ -22,7 +22,7 @@ has_classic_job_compute
 has_serverless_compute
 presets_name_prefix_is_set
 python_wheel_wrapper_is_set
-resref_jobs_tags_my_own_tag_key
-resref_jobs_task_python_wheel_task_cut_3
+resref__jobs__tags__mapkey
+resreferr__jobs__task
 run_as_set
 skip_artifact_cleanup

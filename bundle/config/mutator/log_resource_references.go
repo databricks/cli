@@ -2,14 +2,22 @@ package mutator
 
 import (
 	"context"
-	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
+	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/structaccess"
 )
+
+// Longest field name:
+// >>> len('hard_deletion_sync_min_interval_in_seconds') == 42
+const maxFieldLength = 42
+
+const maxMetricLength = 200
 
 // logResourceReferences scans resources for ${resources.*} references and logs them.
 func LogResourceReferences() bundle.Mutator {
@@ -38,7 +46,7 @@ func (m *logResourceReferences) Apply(ctx context.Context, b *bundle.Bundle) dia
 						continue
 					}
 
-					key := convertReferenceToMetric(r)
+					key := convertReferenceToMetric(ctx, b.Config, r)
 					if key != "" {
 						used[key] = struct{}{}
 					}
@@ -71,43 +79,67 @@ func (m *logResourceReferences) Apply(ctx context.Context, b *bundle.Bundle) dia
 }
 
 // convertReferenceToMetric converts a reference like "resources.jobs.foo.id" to
-// a telemetry key like "jobs_id"; and deep paths like
-// "resources.pipelines.bar.my.som.field[3].key.bla" to "pipelines_my_som_cut_4".
-// It drops the resource key, keeps up to 2 key fields, truncates each to 15 chars,
-// and appends _cut_N when there are remaining components (indices count too).
-func convertReferenceToMetric(ref string) string {
+// a telemetry key like "resref__jobs__id"
+func convertReferenceToMetric(ctx context.Context, cfg any, ref string) string {
 	p, err := dyn.NewPathFromString(ref)
 	if err != nil || len(p) < 3 || p[0].Key() != "resources" {
 		return ""
 	}
 
-	kept := []string{"resref", truncate(p[1].Key(), 20)}
-	remaining := 0
+	kept := []string{"resref", truncate(p[1].Key(), maxFieldLength, "")}
 	for i := 3; i < len(p); i++ {
 		c := p[i]
 		if c.Key() != "" {
-			if len(kept) < 4 {
-				// Longest field name:
-				// >>> len('hard_deletion_sync_min_interval_in_seconds') == 42
-				kept = append(kept, truncate(c.Key(), 42))
-				continue
+			item := c.Key()
+
+			repl, err := censorValue(ctx, cfg, p[:i])
+			if err != nil {
+				kept[0] = "resreferr"
+				break
 			}
-			remaining++
+
+			if repl != "" {
+				item = repl
+			}
+
+			item = truncate(item, maxFieldLength, "")
+			kept = append(kept, item)
 			continue
 		}
-		// index
-		remaining++
 	}
 
-	if remaining > 0 {
-		kept = append(kept, fmt.Sprintf("cut_%d", remaining))
-	}
-	return strings.Join(kept, "_")
+	result := strings.Join(kept, "__")
+	return truncate(result, maxMetricLength, "__cut")
 }
 
-func truncate(s string, n int) string {
+func truncate(s string, n int, suffix string) string {
 	if len(s) <= n {
 		return s
 	}
-	return s[:n]
+	return s[:n] + suffix
+}
+
+func censorValue(ctx context.Context, v any, path dyn.Path) (string, error) {
+	v, err := structaccess.Get(v, path)
+	if err != nil {
+		log.Infof(ctx, "internal error: path=%s: %s", path, err)
+		return "err", err
+	}
+
+	rv := reflect.ValueOf(v)
+	for rv.IsValid() {
+		switch rv.Kind() {
+		case reflect.Pointer, reflect.Interface:
+			if rv.IsNil() {
+				return "", nil
+			}
+			rv = rv.Elem()
+		default:
+			if rv.Kind() == reflect.Map {
+				return "mapkey", nil
+			}
+			return "", nil
+		}
+	}
+	return "", nil
 }
