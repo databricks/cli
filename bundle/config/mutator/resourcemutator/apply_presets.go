@@ -240,7 +240,6 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	// Apps: No presets
 
 	// Alerts: Prefix
-	// TODO: Add acceptance test for this.
 	for _, a := range r.Alerts {
 		if a == nil {
 			continue
