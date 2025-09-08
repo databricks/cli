@@ -88,7 +88,7 @@ func (m *populateCurrentUser) Apply(ctx context.Context, b *bundle.Bundle) diag.
 		cachedUserBytes, isCacheHit := m.cache.Read(ctx, fingerprint)
 		if isCacheHit {
 			if err := json.Unmarshal(cachedUserBytes, &me); err == nil {
-				fmt.Printf("[DEBUG antonnek] bearer token found: will use that for cache fingerprint\n")
+				fmt.Printf("[DEBUG antonnek] user info read from cache: %s\n", fingerprint)
 			}
 		}
 	}
@@ -104,11 +104,12 @@ func (m *populateCurrentUser) Apply(ctx context.Context, b *bundle.Bundle) diag.
 			if err != nil {
 				fmt.Printf("[DEBUG antonnek] could not serialize current user information: %v\n", err)
 			}
-			err = m.cache.Store(ctx, bearerToken, userBytes)
+			fingerprint, err := bundle.GenerateFingerprint("auth_header", bearerToken)
+			err = m.cache.Store(ctx, fingerprint, userBytes)
 			if err != nil {
 				fmt.Printf("[DEBUG antonnek] could not store user information: %v\n", err)
 			} else {
-				fmt.Printf("[DEBUG antonnek] stored user information in cache!")
+				fmt.Printf("[DEBUG antonnek] stored user information in cache: %s\n", fingerprint)
 			}
 		}
 	}
