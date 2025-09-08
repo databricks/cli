@@ -10,11 +10,11 @@ import atexit
 import platform
 import time
 
-SSH_TUNNEL_BASENAME = "databricks_cli_linux"
+SSH_TUNNEL_BASENAME = "databricks_cli"
 
 dbutils.widgets.text("version", "")
-dbutils.widgets.text("secretsScope", "")
-dbutils.widgets.text("publicKeySecretName", "")
+dbutils.widgets.text("keysSecretScopeName", "")
+dbutils.widgets.text("authorizedKeySecretName", "")
 dbutils.widgets.text("maxClients", "10")
 dbutils.widgets.text("shutdownDelay", "10m")
 
@@ -86,13 +86,13 @@ def run_ssh_server():
     if os.environ.get("VIRTUAL_ENV") is None:
         os.environ["VIRTUAL_ENV"] = sys.executable
 
-    secrets_scope = dbutils.widgets.get("secretsScope")
+    secrets_scope = dbutils.widgets.get("keysSecretScopeName")
     if not secrets_scope:
-        raise RuntimeError("Secrets scope is required. Please provide it using the 'secretsScope' widget.")
+        raise RuntimeError("Secrets scope is required. Please provide it using the 'keysSecretScopeName' widget.")
 
-    public_key_secret_name = dbutils.widgets.get("publicKeySecretName")
+    public_key_secret_name = dbutils.widgets.get("authorizedKeySecretName")
     if not public_key_secret_name:
-        raise RuntimeError("Public key secret name is required. Please provide it using the 'publicKeySecretName' widget.")
+        raise RuntimeError("Public key secret name is required. Please provide it using the 'authorizedKeySecretName' widget.")
 
     version = dbutils.widgets.get("version")
     if not version:
@@ -103,13 +103,18 @@ def run_ssh_server():
 
     arch = platform.machine()
     if arch == "x86_64":
-        cli_arch = "amd64"
+        cli_arch = "linux_amd64"
     elif arch == "aarch64" or arch == "arm64":
-        cli_arch = "arm64"
+        cli_arch = "linux_arm64"
     else:
         raise RuntimeError(f"Unsupported architecture: {arch}")
 
-    binary_path = f"/Workspace/Users/{user_name}/.databricks/ssh-tunnel/{version}/{SSH_TUNNEL_BASENAME}_{cli_arch}/databricks"
+    if version.find("dev") != -1:
+        cli_name = f"{SSH_TUNNEL_BASENAME}_{cli_arch}"
+    else:
+        cli_name = f"{SSH_TUNNEL_BASENAME}_{version}_{cli_arch}"
+
+    binary_path = f"/Workspace/Users/{user_name}/.databricks/ssh-tunnel/{version}/{cli_name}/databricks"
     try:
         subprocess.run(
             [
@@ -117,8 +122,8 @@ def run_ssh_server():
                 "ssh",
                 "server",
                 f"--cluster={ctx.clusterId}",
-                f"--secrets-scope-name={secrets_scope}",
-                f"--client-key-name={public_key_secret_name}",
+                f"--keys-secret-scope-name={secrets_scope}",
+                f"--authorized-key-secret-name={public_key_secret_name}",
                 f"--max-clients={max_clients}",
                 f"--shutdown-delay={shutdown_delay}",
                 f"--version={version}",

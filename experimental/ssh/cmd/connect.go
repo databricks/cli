@@ -5,7 +5,6 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/experimental/ssh/internal/client"
-	"github.com/databricks/cli/experimental/ssh/internal/proxy"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/spf13/cobra"
 )
@@ -61,11 +60,7 @@ the SSH server and handling the connection proxy.
 			ClientPublicKeyName: defaultClientPublicKeyName,
 			ServerTimeout:       serverTimeout,
 		}
-		err := client.RunClient(ctx, wsClient, opts)
-		if err != nil && proxy.IsNormalClosure(err) {
-			return nil
-		}
-		return err
+		return client.Run(ctx, wsClient, opts)
 	}
 
 	return cmd
