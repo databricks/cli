@@ -55,7 +55,7 @@ func (d *DeploymentUnit) plan(ctx context.Context, client *databricks.WorkspaceC
 }
 
 func (d *DeploymentUnit) refreshRemoteState(ctx context.Context, id string) error {
-	if d.Fresh {
+	if d.RemoteState != nil {
 		return nil
 	}
 

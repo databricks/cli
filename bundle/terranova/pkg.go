@@ -15,11 +15,22 @@ const defaultParallelism = 10
 
 // DeploymentUnit holds state + adapter (implementation) for a single resource
 type DeploymentUnit struct {
-	Group       string
-	Key         string
-	Adapter     *tnresources.Adapter
-	ActionType  deployplan.ActionType
-	Fresh       bool
+	// Resource type as defined in the config ("jobs", "pipelines", etc)
+	Group string
+
+	// Resource key as defined the config ("foo" for "resources.jobs.foo")
+	Key string
+
+	// Implementation for this resource; all deployments from the same group share the adapter
+	Adapter *tnresources.Adapter
+
+	// Planned ActionType
+	ActionType deployplan.ActionType
+
+	// Remote state (pointer to adapter.RemoteType()) or nil if remote state was not fetched yet.
+	// Remote state will be eagerly populated by (withRefresh) DoCreate/DoUpdate/WaitForCreate/WaitForUpdate.
+	// If the resource does not implement withRefresh variants of those methods, remoteState remains nil and
+	// will be populated lazily by calling DoRefresh().
 	RemoteState any
 }
 
@@ -46,6 +57,5 @@ func (d *DeploymentUnit) SetRemoteState(remoteState any) error {
 	}
 
 	d.RemoteState = remoteState
-	d.Fresh = true
 	return nil
 }
