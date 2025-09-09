@@ -32,32 +32,31 @@ func (m *logResourceReferences) Name() string {
 
 func (m *logResourceReferences) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
-		pattern := dyn.NewPattern(dyn.Key("resources"))
 		used := map[string]struct{}{}
-		_, err := dyn.MapByPattern(root, pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-			_ = dyn.WalkReadOnly(v, func(path dyn.Path, val dyn.Value) error {
-				ref, ok := dynvar.NewRef(val)
-				if !ok {
-					return nil
-				}
-				for _, r := range ref.References() {
-					// Only track ${resources.*} references.
-					if !strings.HasPrefix(r, "resources.") {
-						continue
-					}
-
-					key := convertReferenceToMetric(ctx, b.Config, r)
-					if key != "" {
-						used[key] = struct{}{}
-					}
-				}
-				return nil
-			})
-			return v, nil
-		})
-		if err != nil {
-			return dyn.InvalidValue, err
+		resources := root.Get("resources")
+		if !resources.IsValid() {
+			// No resources section, nothing to do
+			return root, nil
 		}
+
+		_ = dyn.WalkReadOnly(resources, func(path dyn.Path, val dyn.Value) error {
+			ref, ok := dynvar.NewRef(val)
+			if !ok {
+				return nil
+			}
+			for _, r := range ref.References() {
+				// Only track ${resources.*} references.
+				if !strings.HasPrefix(r, "resources.") {
+					continue
+				}
+
+				key := convertReferenceToMetric(ctx, b.Config, r)
+				if key != "" {
+					used[key] = struct{}{}
+				}
+			}
+			return nil
+		})
 
 		maxRefsLogged := 50
 
