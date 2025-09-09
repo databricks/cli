@@ -2,6 +2,7 @@ package tnresources
 
 import (
 	"context"
+	"math"
 	"reflect"
 	"testing"
 
@@ -188,7 +189,11 @@ func setupTestServerClient(t *testing.T) (*testserver.Server, *databricks.Worksp
 	testserver.AddDefaultHandlers(server)
 	t.Setenv("DATABRICKS_HOST", server.URL)
 	t.Setenv("DATABRICKS_TOKEN", "testtoken")
-	client, err := databricks.NewWorkspaceClient()
+	client, err := databricks.NewWorkspaceClient(&databricks.Config{
+		Host:               server.URL,
+		Token:              "testtoken",
+		RateLimitPerSecond: math.MaxInt,
+	})
 	require.NoError(t, err)
 	return server, client
 }
