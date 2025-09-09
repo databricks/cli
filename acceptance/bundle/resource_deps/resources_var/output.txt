@@ -43,8 +43,8 @@ has_classic_job_compute false
 has_serverless_compute false
 presets_name_prefix_is_set true
 python_wheel_wrapper_is_set false
-resref__volumes__catalog_name true
-resref__volumes__name true
-resref__volumes__schema_name true
+resref_volumes.catalog_name true
+resref_volumes.name true
+resref_volumes.schema_name true
 run_as_set false
 skip_artifact_cleanup false

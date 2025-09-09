@@ -86,7 +86,9 @@ func convertReferenceToMetric(ctx context.Context, cfg any, ref string) string {
 		return ""
 	}
 
-	kept := []string{"resref", truncate(p[1].Key(), maxFieldLength, "")}
+	group := truncate(p[1].Key(), maxFieldLength, "")
+	kept := []string{"resref_" + group}
+
 	for i := 3; i < len(p); i++ {
 		c := p[i]
 		if c.Key() != "" {
@@ -94,7 +96,7 @@ func convertReferenceToMetric(ctx context.Context, cfg any, ref string) string {
 
 			repl, err := censorValue(ctx, cfg, p[:i])
 			if err != nil {
-				kept[0] = "resreferr"
+				kept[0] = "resreferr_" + group
 				break
 			}
 
@@ -108,7 +110,7 @@ func convertReferenceToMetric(ctx context.Context, cfg any, ref string) string {
 		}
 	}
 
-	result := strings.Join(kept, "__")
+	result := strings.Join(kept, ".")
 	return truncate(result, maxMetricLength, "__cut")
 }
 
@@ -136,7 +138,7 @@ func censorValue(ctx context.Context, v any, path dyn.Path) (string, error) {
 			rv = rv.Elem()
 		default:
 			if rv.Kind() == reflect.Map {
-				return "mapkey", nil
+				return "*", nil
 			}
 			return "", nil
 		}

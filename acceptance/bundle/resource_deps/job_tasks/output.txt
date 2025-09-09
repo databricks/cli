@@ -13,7 +13,7 @@ has_classic_job_compute false
 has_serverless_compute true
 presets_name_prefix_is_set false
 python_wheel_wrapper_is_set false
-resref__jobs__tags__mapkey true
-resreferr__jobs__task true
+resref_jobs.tags.* true
+resreferr_jobs.task true
 run_as_set false
 skip_artifact_cleanup false
