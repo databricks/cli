@@ -1,13 +1,13 @@
 
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/alerts-basic-$UNIQUE_NAME/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/alerts-basic-[UNIQUE_NAME]/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
 
 >>> [CLI] alerts-v2 get-alert [NUMID]
 {
-  "display_name": "My alert $UNIQUE_NAME",
+  "display_name": "My alert",
   "lifecycle_state": "ACTIVE"
 }
 
@@ -32,25 +32,25 @@ Deployment complete!
 The following resources will be deleted:
   delete alert myalert
 
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/alerts-basic-$UNIQUE_NAME/default
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/alerts-basic-[UNIQUE_NAME]/default
 
 Deleting files...
 Destroy complete!
 
 >>> [CLI] alerts-v2 get-alert [NUMID]
 {
-  "display_name": "My alert $UNIQUE_NAME",
+  "display_name": "My alert",
   "lifecycle_state": "TRASHED"
 }
 
 >>> [CLI] bundle summary
-Name: alerts-basic-$UNIQUE_NAME
+Name: alerts-basic-[UNIQUE_NAME]
 Target: default
 Workspace:
   User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/alerts-basic-$UNIQUE_NAME/default
+  Path: /Workspace/Users/[USERNAME]/.bundle/alerts-basic-[UNIQUE_NAME]/default
 Resources:
   Alerts:
     myalert:
-      Name: My alert $UNIQUE_NAME
+      Name: My alert
       URL:  (not deployed)
