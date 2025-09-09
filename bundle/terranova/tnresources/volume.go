@@ -15,31 +15,31 @@ import (
 
 type ResourceVolume struct {
 	client *databricks.WorkspaceClient
-	config catalog.CreateVolumeRequestContent
 }
 
-func NewResourceVolume(client *databricks.WorkspaceClient, schema *resources.Volume) (*ResourceVolume, error) {
-	return &ResourceVolume{
-		client: client,
-		config: schema.CreateVolumeRequestContent,
-	}, nil
+func (*ResourceVolume) New(client *databricks.WorkspaceClient) *ResourceVolume {
+	return &ResourceVolume{client: client}
 }
 
-func (r *ResourceVolume) Config() any {
-	return r.config
+func (*ResourceVolume) PrepareState(input *resources.Volume) *catalog.CreateVolumeRequestContent {
+	return &input.CreateVolumeRequestContent
 }
 
-func (r *ResourceVolume) DoCreate(ctx context.Context) (string, error) {
-	response, err := r.client.Volumes.Create(ctx, r.config)
+func (r *ResourceVolume) DoRefresh(ctx context.Context, id string) (*catalog.VolumeInfo, error) {
+	return r.client.Volumes.ReadByName(ctx, id)
+}
+
+func (r *ResourceVolume) DoCreate(ctx context.Context, config *catalog.CreateVolumeRequestContent) (string, *catalog.VolumeInfo, error) {
+	response, err := r.client.Volumes.Create(ctx, *config)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
-	return response.FullName, nil
+	return response.FullName, response, nil
 }
 
-func (r *ResourceVolume) DoUpdate(ctx context.Context, id string) error {
+func (r *ResourceVolume) DoUpdate(ctx context.Context, id string, config *catalog.CreateVolumeRequestContent) (*catalog.VolumeInfo, error) {
 	updateRequest := catalog.UpdateVolumeRequestContent{
-		Comment: r.config.Comment,
+		Comment: config.Comment,
 		Name:    id,
 		NewName: "", // Not supported by Update(). Needs DoUpdateWithID()
 		Owner:   "", // Not supported by DABs
@@ -49,28 +49,28 @@ func (r *ResourceVolume) DoUpdate(ctx context.Context, id string) error {
 
 	nameFromID, err := getNameFromID(id)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	if r.config.Name != nameFromID {
-		return fmt.Errorf("internal error: unexpected change of name from %#v to %#v", nameFromID, r.config.Name)
+	if config.Name != nameFromID {
+		return nil, fmt.Errorf("internal error: unexpected change of name from %#v to %#v", nameFromID, config.Name)
 	}
 
 	response, err := r.client.Volumes.Update(ctx, updateRequest)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if id != response.FullName {
 		log.Warnf(ctx, "volumes: response contains unexpected full_name=%#v (expected %#v)", response.FullName, id)
 	}
 
-	return nil
+	return response, err
 }
 
-func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string) (string, error) {
+func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string, config *catalog.CreateVolumeRequestContent) (string, *catalog.VolumeInfo, error) {
 	updateRequest := catalog.UpdateVolumeRequestContent{
-		Comment: r.config.Comment,
+		Comment: config.Comment,
 		Name:    id,
 
 		NewName: "", // Initialized below if needed
@@ -81,34 +81,33 @@ func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string) (string,
 
 	items := strings.Split(id, ".")
 	if len(items) == 0 {
-		return "", fmt.Errorf("unexpected id=%#v", id)
+		return "", nil, fmt.Errorf("unexpected id=%#v", id)
 	}
 	nameFromID := items[len(items)-1]
 
-	if r.config.Name != nameFromID {
-		updateRequest.NewName = r.config.Name
+	if config.Name != nameFromID {
+		updateRequest.NewName = config.Name
 	}
 
 	response, err := r.client.Volumes.Update(ctx, updateRequest)
-	if err != nil {
-		return "", err
+	if err != nil || response == nil {
+		return "", nil, err
 	}
 
-	return response.FullName, nil
+	return response.FullName, response, nil
 }
 
-func DeleteVolume(ctx context.Context, client *databricks.WorkspaceClient, id string) error {
-	return client.Volumes.DeleteByName(ctx, id)
+func (r *ResourceVolume) DoDelete(ctx context.Context, id string) error {
+	return r.client.Volumes.DeleteByName(ctx, id)
 }
 
-func (r *ResourceVolume) WaitAfterCreate(ctx context.Context) error {
-	// Intentional no-op
-	return nil
-}
-
-func (r *ResourceVolume) WaitAfterUpdate(ctx context.Context) error {
-	// Intentional no-op
-	return nil
+func (*ResourceVolume) RecreateFields() []string {
+	return []string{
+		".catalog_name",
+		".schema_name",
+		".storage_location",
+		".volume_type",
+	}
 }
 
 func (r *ResourceVolume) ClassifyChanges(changes []structdiff.Change) deployplan.ActionType {

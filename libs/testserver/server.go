@@ -2,6 +2,7 @@ package testserver
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -37,6 +38,7 @@ type Request struct {
 	Body      []byte
 	Vars      map[string]string
 	Workspace *FakeWorkspace
+	Context   context.Context
 }
 
 type Response struct {
@@ -64,6 +66,7 @@ func NewRequest(t testutil.TestingT, r *http.Request, fakeWorkspace *FakeWorkspa
 		Body:      body,
 		Vars:      mux.Vars(r),
 		Workspace: fakeWorkspace,
+		Context:   r.Context(),
 	}
 }
 
@@ -271,6 +274,9 @@ func (s *Server) Handle(method, path string, handler HandlerFunc) {
 			}
 		} else {
 			respAny := handler(request)
+			if respAny == nil && request.Context.Err() != nil {
+				return
+			}
 			resp = normalizeResponse(s.t, respAny)
 		}
 

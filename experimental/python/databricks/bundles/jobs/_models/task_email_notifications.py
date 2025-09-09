@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, TypedDict
 
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
-from databricks.bundles.core._variable import VariableOrList
+from databricks.bundles.core._variable import VariableOrList, VariableOrOptional
 
 if TYPE_CHECKING:
     from typing_extensions import Self
@@ -12,6 +12,12 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class TaskEmailNotifications:
     """"""
+
+    no_alert_for_skipped_runs: VariableOrOptional[bool] = None
+    """
+    [DEPRECATED] If true, do not send email to recipients specified in `on_failure` if the run is skipped.
+    This field is `deprecated`. Please use the `notification_settings.no_alert_for_skipped_runs` field.
+    """
 
     on_duration_warning_threshold_exceeded: VariableOrList[str] = field(
         default_factory=list
@@ -52,6 +58,12 @@ class TaskEmailNotifications:
 
 class TaskEmailNotificationsDict(TypedDict, total=False):
     """"""
+
+    no_alert_for_skipped_runs: VariableOrOptional[bool]
+    """
+    [DEPRECATED] If true, do not send email to recipients specified in `on_failure` if the run is skipped.
+    This field is `deprecated`. Please use the `notification_settings.no_alert_for_skipped_runs` field.
+    """
 
     on_duration_warning_threshold_exceeded: VariableOrList[str]
     """

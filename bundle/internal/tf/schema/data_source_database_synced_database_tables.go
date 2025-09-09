@@ -100,4 +100,5 @@ type DataSourceDatabaseSyncedDatabaseTablesSyncedTables struct {
 
 type DataSourceDatabaseSyncedDatabaseTables struct {
 	SyncedTables []DataSourceDatabaseSyncedDatabaseTablesSyncedTables `json:"synced_tables,omitempty"`
+	WorkspaceId  string                                               `json:"workspace_id,omitempty"`
 }

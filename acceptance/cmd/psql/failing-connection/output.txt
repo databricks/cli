@@ -1,0 +1,61 @@
+
+=== Command should use default number of retries:
+>>> musterr [CLI] psql my-database -- --dbname=db1 -p 3000
+Connecting to Databricks Database Instance my-database ...
+Postgres version: 14
+Database instance status: AVAILABLE
+Successfully fetched database credentials
+Launching psql session to my-database.my-host.com (attempt 1/3)...
+Simulating connection failure with exit code '2'
+Connection failed with retryable error: connection failed (retryable): psql exited with code 2
+Connection attempt 1/3 failed, retrying in 1s...
+Launching psql session to my-database.my-host.com (attempt 2/3)...
+Simulating connection failure with exit code '2'
+Connection failed with retryable error: connection failed (retryable): psql exited with code 2
+Connection attempt 2/3 failed, retrying in 2s...
+Launching psql session to my-database.my-host.com (attempt 3/3)...
+Simulating connection failure with exit code '2'
+Connection failed with retryable error: connection failed (retryable): psql exited with code 2
+Error: failed to connect after 3 attempts, last error: connection failed (retryable): psql exited with code 2
+
+Exit code (musterr): 1
+
+=== Command should use custom number of retries:
+>>> musterr [CLI] psql my-database --max-retries 5 -- --dbname=db1 -p 3000
+Connecting to Databricks Database Instance my-database ...
+Postgres version: 14
+Database instance status: AVAILABLE
+Successfully fetched database credentials
+Launching psql session to my-database.my-host.com (attempt 1/5)...
+Simulating connection failure with exit code '2'
+Connection failed with retryable error: connection failed (retryable): psql exited with code 2
+Connection attempt 1/5 failed, retrying in 1s...
+Launching psql session to my-database.my-host.com (attempt 2/5)...
+Simulating connection failure with exit code '2'
+Connection failed with retryable error: connection failed (retryable): psql exited with code 2
+Connection attempt 2/5 failed, retrying in 2s...
+Launching psql session to my-database.my-host.com (attempt 3/5)...
+Simulating connection failure with exit code '2'
+Connection failed with retryable error: connection failed (retryable): psql exited with code 2
+Connection attempt 3/5 failed, retrying in 4s...
+Launching psql session to my-database.my-host.com (attempt 4/5)...
+Simulating connection failure with exit code '2'
+Connection failed with retryable error: connection failed (retryable): psql exited with code 2
+Connection attempt 4/5 failed, retrying in 8s...
+Launching psql session to my-database.my-host.com (attempt 5/5)...
+Simulating connection failure with exit code '2'
+Connection failed with retryable error: connection failed (retryable): psql exited with code 2
+Error: failed to connect after 5 attempts, last error: connection failed (retryable): psql exited with code 2
+
+Exit code (musterr): 1
+
+=== Command should not use retries:
+>>> musterr [CLI] psql my-database --max-retries 0 -- --dbname=db1 -p 3000
+Connecting to Databricks Database Instance my-database ...
+Postgres version: 14
+Database instance status: AVAILABLE
+Successfully fetched database credentials
+Launching psql with connection to my-database.my-host.com...
+Simulating connection failure with exit code '2'
+
+Exit code (musterr): 2

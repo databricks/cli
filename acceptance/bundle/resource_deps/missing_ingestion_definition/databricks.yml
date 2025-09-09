@@ -1,0 +1,6 @@
+resources:
+  pipelines:
+    foo:
+      name: pfoo
+    bar:
+      name: pbar ${resources.pipelines.foo.ingestion_definition.connection_name}

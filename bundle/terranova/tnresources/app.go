@@ -13,23 +13,23 @@ import (
 
 type ResourceApp struct {
 	client *databricks.WorkspaceClient
-	config apps.App
 }
 
-func NewResourceApp(client *databricks.WorkspaceClient, config *resources.App) (*ResourceApp, error) {
-	return &ResourceApp{
-		client: client,
-		config: config.App,
-	}, nil
+func (*ResourceApp) New(client *databricks.WorkspaceClient) *ResourceApp {
+	return &ResourceApp{client: client}
 }
 
-func (r *ResourceApp) Config() any {
-	return r.config
+func (*ResourceApp) PrepareState(input *resources.App) *apps.App {
+	return &input.App
 }
 
-func (r *ResourceApp) DoCreate(ctx context.Context) (string, error) {
+func (r *ResourceApp) DoRefresh(ctx context.Context, id string) (*apps.App, error) {
+	return r.client.Apps.GetByName(ctx, id)
+}
+
+func (r *ResourceApp) DoCreate(ctx context.Context, config *apps.App) (string, error) {
 	request := apps.CreateAppRequest{
-		App:             r.config,
+		App:             *config,
 		NoCompute:       true,
 		ForceSendFields: nil,
 	}
@@ -41,9 +41,9 @@ func (r *ResourceApp) DoCreate(ctx context.Context) (string, error) {
 	return waiter.Response.Name, nil
 }
 
-func (r *ResourceApp) DoUpdate(ctx context.Context, id string) error {
+func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *apps.App) error {
 	request := apps.UpdateAppRequest{
-		App:  r.config,
+		App:  *config,
 		Name: id,
 	}
 	response, err := r.client.Apps.Update(ctx, request)
@@ -58,22 +58,19 @@ func (r *ResourceApp) DoUpdate(ctx context.Context, id string) error {
 	return nil
 }
 
-func DeleteApp(ctx context.Context, client *databricks.WorkspaceClient, id string) error {
-	_, err := client.Apps.DeleteByName(ctx, id)
+func (r *ResourceApp) DoDelete(ctx context.Context, id string) error {
+	_, err := r.client.Apps.DeleteByName(ctx, id)
 	return err
 }
 
-func (r *ResourceApp) WaitAfterCreate(ctx context.Context) error {
-	_, err := r.waitForApp(ctx, r.client, r.config.Name)
-	if err != nil {
-		return err
+func (*ResourceApp) RecreateFields() []string {
+	return []string{
+		".name",
 	}
-	return nil
 }
 
-func (r *ResourceApp) WaitAfterUpdate(ctx context.Context) error {
-	// Intentional no-op
-	return nil
+func (r *ResourceApp) WaitAfterCreate(ctx context.Context, config *apps.App) (*apps.App, error) {
+	return r.waitForApp(ctx, r.client, config.Name)
 }
 
 // waitForApp waits for the app to reach the target state. The target state is either ACTIVE or STOPPED.

@@ -29,3 +29,7 @@ trace $CLI psql my-database -- -d db2
 title "Command should use the port from extra arguments when specified:"
 trace $CLI psql my-database -- --dbname=db1 -p 3000
 trace $CLI psql my-database -- -d db2 --port=3001
+
+title "Command should not use retries if max-retries is set to 0:"
+trace $CLI psql my-database --max-retries 0 -- --dbname=db1 -p 3000
+trace $CLI psql my-database --max-retries 0 -- -d db2 --port=3001

@@ -1,0 +1,14 @@
+Error: exit status 1
+
+Error: Missing map element
+
+  on bundle.tf.json line 23, in resource.databricks_job.bar:
+  23:         "name": "test ${databricks_job.test.task[0].new_cluster[0].custom_tags.missing_tag}",
+    ├────────────────
+    │ databricks_job.test.task[0].new_cluster[0].custom_tags is map of string with 1 element
+
+This map does not have an element with the key "missing_tag".
+
+
+
+Exit code (musterr): 1

@@ -1,60 +1,46 @@
 package terranova
 
 import (
-	"cmp"
 	"context"
 	"errors"
 	"fmt"
-	"slices"
+	"reflect"
 
-	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/terranova/tnresources"
 	"github.com/databricks/cli/bundle/terranova/tnstate"
-	"github.com/databricks/cli/libs/dagrun"
-	"github.com/databricks/cli/libs/dyn/dynvar"
-	"github.com/databricks/cli/libs/logdiag"
-	"github.com/databricks/cli/libs/structaccess"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/structdiff"
-	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
+
+	"github.com/databricks/cli/libs/dyn/dynvar"
+	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/structaccess"
 )
 
-type Planner struct {
-	client       *databricks.WorkspaceClient
-	db           *tnstate.TerranovaState
-	group        string
-	resourceName string
-	settings     ResourceSettings
-}
-
-func (d *Planner) Plan(ctx context.Context, inputConfig any) (deployplan.ActionType, error) {
-	result, err := d.plan(ctx, inputConfig)
+func (d *DeploymentUnit) Plan(ctx context.Context, client *databricks.WorkspaceClient, db *tnstate.TerranovaState, inputConfig any, localOnly, refresh bool) (deployplan.ActionType, error) {
+	result, err := d.plan(ctx, client, db, inputConfig, localOnly, refresh)
 	if err != nil {
-		return deployplan.ActionTypeNoop, fmt.Errorf("planning: %s.%s: %w", d.group, d.resourceName, err)
+		return deployplan.ActionTypeNoop, fmt.Errorf("planning: %s.%s: %w", d.Group, d.Key, err)
 	}
 	return result, err
 }
 
-func (d *Planner) plan(_ context.Context, inputConfig any) (deployplan.ActionType, error) {
-	entry, hasEntry := d.db.GetResourceEntry(d.group, d.resourceName)
-
-	resource, cfgType, err := New(d.client, d.group, d.resourceName, inputConfig)
-	if err != nil {
-		return "", err
-	}
-
-	config := resource.Config()
-
+func (d *DeploymentUnit) plan(ctx context.Context, client *databricks.WorkspaceClient, db *tnstate.TerranovaState, inputConfig any, localOnly, refresh bool) (deployplan.ActionType, error) {
+	entry, hasEntry := db.GetResourceEntry(d.Group, d.Key)
 	if !hasEntry {
 		return deployplan.ActionTypeCreate, nil
 	}
-
-	oldID := entry.ID
-	if oldID == "" {
+	if entry.ID == "" {
 		return "", errors.New("invalid state: empty id")
 	}
 
-	savedState, err := typeConvert(cfgType, entry.State)
+	newState, err := d.Adapter.PrepareState(inputConfig)
+	if err != nil {
+		return "", fmt.Errorf("reading config: %w", err)
+	}
+
+	savedState, err := typeConvert(d.Adapter.StateType(), entry.State)
 	if err != nil {
 		return "", fmt.Errorf("interpreting state: %w", err)
 	}
@@ -65,180 +51,153 @@ func (d *Planner) plan(_ context.Context, inputConfig any) (deployplan.ActionTyp
 	// for integers: compare 0 with actual object ID. As long as real object IDs are never 0 we're good.
 	// Once we add non-id fields or add per-field details to "bundle plan", we must read dynamic data and deal with references as first class citizen.
 	// This means distinguishing between 0 that are actually object ids and 0 that are there because typed struct integer cannot contain ${...} string.
-	return calcDiff(d.settings, resource, savedState, config)
+	return calcDiff(d.Adapter, savedState, newState)
 }
 
-func GetDeployActions(ctx context.Context, b *bundle.Bundle) []deployplan.Action {
-	actions := make([]deployplan.Action, 0, len(b.PlannedActions))
-	for node, actionType := range b.PlannedActions {
-		actions = append(actions, deployplan.Action{
-			ResourceNode: node,
-			ActionType:   actionType,
-		})
+func (d *DeploymentUnit) refreshRemoteState(ctx context.Context, id string) error {
+	if d.RemoteState != nil {
+		return nil
 	}
 
-	// TODO: topological sort would be more informative; once we removed terraform
-
-	slices.SortFunc(actions, func(x, y deployplan.Action) int {
-		if c := cmp.Compare(x.Group, y.Group); c != 0 {
-			return c
-		}
-		return cmp.Compare(x.Key, y.Key)
-	})
-
-	return actions
-}
-
-func CalculatePlanForDeploy(ctx context.Context, b *bundle.Bundle) error {
-	if !b.DirectDeployment {
-		panic("direct deployment required")
+	// TODO retry failures
+	remoteState, err := d.Adapter.DoRefresh(ctx, id)
+	if err != nil {
+		return fmt.Errorf("failed to refresh remote state id=%s: %w", id, err)
 	}
-
-	err := b.OpenResourceDatabase(ctx)
+	err = d.SetRemoteState(remoteState)
 	if err != nil {
 		return err
 	}
 
-	client := b.WorkspaceClient()
+	return nil
+}
 
-	b.Graph, err = makeResourceGraph(ctx, b)
-	if err != nil {
-		return fmt.Errorf("reading config: %w", err)
+var ErrDelayed = errors.New("must be resolved after apply")
+
+func (d *DeploymentUnit) ResolveReferenceLocalOrRemote(ctx context.Context, db *tnstate.TerranovaState, reference string, actionType deployplan.ActionType, config any) (any, error) {
+	path, ok := dynvar.PureReferenceToPath(reference)
+	if !ok || len(path) <= 3 || path[0].Key() != "resources" || path[1].Key() != d.Group || path[2].Key() != d.Key {
+		return nil, fmt.Errorf("internal error: expected reference to resources.%s.%s, got %q", d.Group, d.Key, reference)
 	}
 
-	err = b.Graph.DetectCycle()
-	if err != nil {
-		return err
+	fieldPath := path[3:]
+
+	if fieldPath.String() == "id" {
+		if actionType.KeepsID() {
+			entry, hasEntry := db.GetResourceEntry(d.Group, d.Key)
+			idValue := entry.ID
+			if !hasEntry || idValue == "" {
+				return nil, errors.New("internal error: no db entry")
+			}
+			return idValue, nil
+		}
+		// id may change after deployment, this needs to be done later
+		return nil, ErrDelayed
 	}
 
-	b.PlannedActions = make(map[deployplan.ResourceNode]deployplan.ActionType)
+	configValidErr := structaccess.Validate(reflect.TypeOf(config), fieldPath)
+	remoteValidErr := structaccess.Validate(d.Adapter.RemoteType(), fieldPath)
 
-	// We're processing resources in DAG order, because we're trying to get rid of all references like $resources.jobs.foo.id
-	// if jobs.foo is not going to be (re)created. This means by the time we get to resource depending on $resources.jobs.foo.id
-	// we might have already got rid of this reference, thus potentially downgrading actionType
+	if configValidErr != nil && remoteValidErr != nil {
+		return nil, fmt.Errorf("schema mismatch: %w; %w", configValidErr, remoteValidErr)
+	}
 
-	// parallelism is set to 1, so there is no multi-threaded access there.
-	b.Graph.Run(1, func(node deployplan.ResourceNode, failedDependency *deployplan.ResourceNode) bool {
-		errorPrefix := fmt.Sprintf("cannot plan %s.%s", node.Group, node.Key)
-
-		if failedDependency != nil {
-			logdiag.LogError(ctx, fmt.Errorf("%s: dependency failed: %s", errorPrefix, failedDependency.String()))
-			return false
-		}
-		settings, ok := SupportedResources[node.Group]
-		if !ok {
-			logdiag.LogError(ctx, fmt.Errorf("%s: resource type not supported on direct backend", errorPrefix))
-			return false
-		}
-
-		pl := Planner{
-			client:       client,
-			db:           &b.ResourceDatabase,
-			group:        node.Group,
-			resourceName: node.Key,
-			settings:     settings,
-		}
-
-		config, ok := b.GetResourceConfig(pl.group, pl.resourceName)
-		if !ok {
-			logdiag.LogError(ctx, fmt.Errorf("%s: internal error: cannot read config", errorPrefix))
-			return false
-		}
-
-		// This currently does not do API calls, so we can run this sequentially. Once we have remote diffs, we need to run a in threadpool.
-		actionType, err := pl.Plan(ctx, config)
+	if configValidErr == nil && remoteValidErr != nil {
+		// The field is only present in local schema; it must be resolved here.
+		value, err := structaccess.Get(config, fieldPath)
 		if err != nil {
-			logdiag.LogError(ctx, err)
-			return false
+			return nil, fmt.Errorf("field not set: %w", err)
 		}
 
-		for _, reference := range b.Graph.OutgoingLabels(node) {
-			path, ok := dynvar.PureReferenceToPath(reference)
-			if !ok || len(path) <= 3 || path[0].Key() != "resources" || path[1].Key() != node.Group || path[2].Key() != node.Key {
-				logdiag.LogError(ctx, fmt.Errorf("internal error: expected reference to resources.%s.%s, got %q", node.Group, node.Key, reference))
-				return false
-			}
-			fieldPath := path[3:].String()
-			if fieldPath == "id" {
-				if actionType.KeepsID() {
-					// Now that we know that ID of this node is not going to change, update it
-					// everywhere to actual value to calculate more accurate and more conservative action for dependent nodes.
-					err = resolveIDReference(ctx, b, pl.group, pl.resourceName)
-					if err != nil {
-						logdiag.LogError(ctx, fmt.Errorf("failed to replace ref to resources.%s.%s.id: %w", pl.group, pl.resourceName, err))
-						return false
-					}
-				}
-				continue
-			}
-			value, err := structaccess.Get(config, fieldPath)
-			if err != nil {
-				logdiag.LogError(ctx, fmt.Errorf("cannot resolve %s: %w", reference, err))
-				return false
-			}
-			err = resolveFieldReference(ctx, b, path, value)
-			if err != nil {
-				logdiag.LogError(ctx, fmt.Errorf("failed to replace ref to %s: %w", reference, err))
-				return false
-			}
-		}
-
-		if actionType != deployplan.ActionTypeNoop {
-			b.PlannedActions[node] = actionType
-		}
-		return true
-	})
-
-	if logdiag.HasError(ctx) {
-		return errors.New("planning failed")
+		return value, nil
 	}
 
-	state := b.ResourceDatabase.ExportState(ctx)
-
-	// Remained in state are resources that no longer present in the config
-	for _, group := range utils.SortedKeys(state) {
-		groupData := state[group]
-		for _, key := range utils.SortedKeys(groupData) {
-			n := deployplan.ResourceNode{Group: group, Key: key}
-			if b.Graph.HasNode(n) {
-				// action was already added by Run() above
-				continue
-			}
-			b.PlannedActions[n] = deployplan.ActionTypeDelete
+	if configValidErr != nil && remoteValidErr == nil {
+		// The field is only present in remote state schema.
+		// If resource is unchanged in this plan, we can proceed with resolution.
+		// If resource is going to change, we need to postpone this until deploy.
+		if !actionType.IsNoop() {
+			return nil, ErrDelayed
 		}
+
+		return d.ReadRemoteStateField(ctx, db, fieldPath)
+
 	}
 
-	return nil
+	// Field is present in both: try local, fallback to remote.
+
+	value, err := structaccess.Get(config, fieldPath)
+
+	if err == nil && value != nil {
+		return value, nil
+	}
+
+	if !actionType.IsNoop() {
+		log.Infof(ctx, "Reference %q not found in config, delaying resolution after apply: %s", reference, err)
+		// Can only proceed with remote resolution if resource is not going to be deployed
+		return nil, ErrDelayed
+	}
+
+	log.Infof(ctx, "Reference %q not found in config, trying remote state: %s", reference, err)
+	return d.ReadRemoteStateField(ctx, db, fieldPath)
 }
 
-func CalculatePlanForDestroy(ctx context.Context, b *bundle.Bundle) error {
-	if !b.DirectDeployment {
-		panic("direct deployment required")
+func (d *DeploymentUnit) ResolveReferenceRemote(ctx context.Context, db *tnstate.TerranovaState, reference string) (any, error) {
+	path, ok := dynvar.PureReferenceToPath(reference)
+	if !ok || len(path) <= 3 || path[0].Key() != "resources" || path[1].Key() != d.Group || path[2].Key() != d.Key {
+		return nil, fmt.Errorf("internal error: expected reference to resources.%s.%s, got %q", d.Group, d.Key, reference)
 	}
 
-	err := b.OpenResourceDatabase(ctx)
+	fieldPath := path[3:]
+
+	// Handle "id" field separately - read from state, not remote state
+	if fieldPath.String() == "id" {
+		entry, hasEntry := db.GetResourceEntry(d.Group, d.Key)
+		if !hasEntry || entry.ID == "" {
+			return nil, fmt.Errorf("internal error: no state entry or empty ID for %s.%s", d.Group, d.Key)
+		}
+		return entry.ID, nil
+	}
+
+	// Read other fields from remote state
+	return d.ReadRemoteStateField(ctx, db, fieldPath)
+}
+
+func (d *DeploymentUnit) ReadRemoteStateField(ctx context.Context, db *tnstate.TerranovaState, fieldPath dyn.Path) (any, error) {
+	// We have options:
+	// 1) Rely on the cached value; refresh if not cached.
+	// 2) Always refresh, read the value.
+	// 3) Consider this "unknown/variable" that always triggers a diff.
+	// Long term we'll do (1), for now going with (2).
+	// Not considering (3) because it would result in bad plans.
+
+	entry, _ := db.GetResourceEntry(d.Group, d.Key)
+	if entry.ID == "" {
+		return nil, errors.New("internal error: Missing state entry")
+	}
+
+	err := d.refreshRemoteState(ctx, entry.ID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	db := &b.ResourceDatabase
-	db.AssertOpened()
+	// Use remote state tracked by deployer
+	remoteState := d.RemoteState
+	if remoteState == nil {
+		return nil, errors.New("no remote state available")
+	}
+	// remoteState cannot be nil there; but if it is, structaccess.Get will return an appropriate error
 
-	b.PlannedActions = make(map[deployplan.ResourceNode]deployplan.ActionType)
-	b.Graph = dagrun.NewGraph[deployplan.ResourceNode]()
-
-	for group, groupData := range db.Data.Resources {
-		for key := range groupData {
-			node := deployplan.ResourceNode{Group: group, Key: key}
-			b.PlannedActions[node] = deployplan.ActionTypeDelete
-			b.Graph.AddNode(node)
-		}
+	value, errRemote := structaccess.Get(remoteState, fieldPath)
+	if errRemote != nil {
+		return nil, fmt.Errorf("field not set in remote state: %w", errRemote)
 	}
 
-	return nil
+	return value, nil
 }
 
-func calcDiff(settings ResourceSettings, resource IResource, savedState, config any) (deployplan.ActionType, error) {
+// TODO: return struct that has action but also individual differences and their effect (e.g. recreate)
+func calcDiff(adapter *tnresources.Adapter, savedState, config any) (deployplan.ActionType, error) {
 	localDiff, err := structdiff.GetStructDiff(savedState, config)
 	if err != nil {
 		return "", err
@@ -248,21 +207,17 @@ func calcDiff(settings ResourceSettings, resource IResource, savedState, config 
 		return deployplan.ActionTypeNoop, nil
 	}
 
-	if settings.MustRecreate(localDiff) {
+	if adapter.MustRecreate(localDiff) {
 		return deployplan.ActionTypeRecreate, nil
 	}
 
-	customClassify, hasCustomClassify := resource.(IResourceCustomClassify)
-
-	if hasCustomClassify {
-		_, hasUpdateWithID := resource.(IResourceUpdatesID)
-
-		result := customClassify.ClassifyChanges(localDiff)
-		if result == deployplan.ActionTypeRecreate && !settings.RecreateAllowed {
-			return "", errors.New("internal error: unexpected plan='recreate'")
+	if adapter.HasClassifyChanges() {
+		result, err := adapter.ClassifyChanges(localDiff)
+		if err != nil {
+			return "", err
 		}
 
-		if result == deployplan.ActionTypeUpdateWithID && !hasUpdateWithID {
+		if result == deployplan.ActionTypeUpdateWithID && !adapter.HasDoUpdateWithID() {
 			return "", errors.New("internal error: unexpected plan='update_with_id'")
 		}
 

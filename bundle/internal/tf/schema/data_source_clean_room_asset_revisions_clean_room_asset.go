@@ -133,4 +133,5 @@ type DataSourceCleanRoomAssetRevisionsCleanRoomAsset struct {
 	View                     *DataSourceCleanRoomAssetRevisionsCleanRoomAssetView                     `json:"view,omitempty"`
 	ViewLocalDetails         *DataSourceCleanRoomAssetRevisionsCleanRoomAssetViewLocalDetails         `json:"view_local_details,omitempty"`
 	VolumeLocalDetails       *DataSourceCleanRoomAssetRevisionsCleanRoomAssetVolumeLocalDetails       `json:"volume_local_details,omitempty"`
+	WorkspaceId              string                                                                   `json:"workspace_id,omitempty"`
 }

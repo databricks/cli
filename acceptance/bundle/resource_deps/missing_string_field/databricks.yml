@@ -1,0 +1,7 @@
+resources:
+  pipelines:
+    foo:
+      name: pfoo
+    bar:
+      name: pbar
+      catalog: ${resources.pipelines.foo.catalog}

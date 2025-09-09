@@ -228,10 +228,6 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.JobsList()
 	})
 
-	server.Handle("GET", "/api/2.2/jobs/list", func(req Request) any {
-		return req.Workspace.JobsList()
-	})
-
 	server.Handle("POST", "/api/2.2/jobs/run-now", func(req Request) any {
 		var request jobs.RunNow
 		if err := json.Unmarshal(req.Body, &request); err != nil {
@@ -509,6 +505,10 @@ func AddDefaultHandlers(server *Server) {
 		return DatabaseInstanceMapGet(req.Workspace, req.Workspace.DatabaseInstances, req.Vars["name"])
 	})
 
+	server.Handle("PATCH", "/api/2.0/database/instances/{name}", func(req Request) any {
+		return req.Workspace.DatabaseInstanceUpdate(req, req.Vars["name"])
+	})
+
 	server.Handle("DELETE", "/api/2.0/database/instances/{name}", func(req Request) any {
 		return DatabaseInstanceMapDelete(req)
 	})
@@ -521,12 +521,20 @@ func AddDefaultHandlers(server *Server) {
 		return MapGet(req.Workspace, req.Workspace.DatabaseCatalogs, req.Vars["name"])
 	})
 
+	server.Handle("PATCH", "/api/2.0/database/catalogs/{name}", func(req Request) any {
+		return req.Workspace.DatabaseCatalogUpdate(req, req.Vars["name"])
+	})
+
 	server.Handle("DELETE", "/api/2.0/database/catalogs/{name}", func(req Request) any {
 		return MapDelete(req.Workspace, req.Workspace.DatabaseCatalogs, req.Vars["name"])
 	})
 
 	server.Handle("POST", "/api/2.0/database/synced_tables", func(req Request) any {
 		return req.Workspace.SyncedDatabaseTableCreate(req)
+	})
+
+	server.Handle("PATCH", "/api/2.0/database/synced_tables/{name}", func(req Request) any {
+		return req.Workspace.SyncedDatabaseTableUpdate(req, req.Vars["name"])
 	})
 
 	server.Handle("GET", "/api/2.0/database/synced_tables/{name}", func(req Request) any {

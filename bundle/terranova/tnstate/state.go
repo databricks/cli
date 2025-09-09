@@ -18,9 +18,9 @@ type TerranovaState struct {
 }
 
 type Database struct {
-	Lineage   string                              `json:"lineage"`
-	Serial    int                                 `json:"serial"`
-	Resources map[string]map[string]ResourceEntry `json:"resources"`
+	Lineage         string                              `json:"lineage"`
+	Serial          int                                 `json:"serial"`
+	DeploymentUnits map[string]map[string]ResourceEntry `json:"resources"`
 }
 
 type ResourceEntry struct {
@@ -33,10 +33,10 @@ func (db *TerranovaState) SaveState(group, resourceName, newID string, state any
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
-	groupData, ok := db.Data.Resources[group]
+	groupData, ok := db.Data.DeploymentUnits[group]
 	if !ok {
 		groupData = make(map[string]ResourceEntry)
-		db.Data.Resources[group] = groupData
+		db.Data.DeploymentUnits[group] = groupData
 	}
 
 	groupData[resourceName] = ResourceEntry{
@@ -52,14 +52,14 @@ func (db *TerranovaState) DeleteState(group, resourceName string) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
-	groupData, ok := db.Data.Resources[group]
+	groupData, ok := db.Data.DeploymentUnits[group]
 	if !ok {
 		return nil
 	}
 
 	delete(groupData, resourceName)
 	if len(groupData) == 0 {
-		delete(db.Data.Resources, group)
+		delete(db.Data.DeploymentUnits, group)
 	}
 
 	return nil
@@ -70,7 +70,7 @@ func (db *TerranovaState) GetResourceEntry(group, resourceName string) (Resource
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
-	groupData, ok := db.Data.Resources[group]
+	groupData, ok := db.Data.DeploymentUnits[group]
 	if !ok {
 		return ResourceEntry{}, false
 	}
@@ -94,9 +94,9 @@ func (db *TerranovaState) Open(path string) error {
 	if err != nil {
 		if os.IsNotExist(err) {
 			db.Data = Database{
-				Serial:    0,
-				Lineage:   uuid.New().String(),
-				Resources: make(map[string]map[string]ResourceEntry),
+				Serial:          0,
+				Lineage:         uuid.New().String(),
+				DeploymentUnits: make(map[string]map[string]ResourceEntry),
 			}
 			db.Path = path
 			return nil
@@ -127,8 +127,8 @@ func (db *TerranovaState) AssertOpened() {
 }
 
 func (db *TerranovaState) ExportState(ctx context.Context) resourcestate.ExportedResourcesMap {
-	result := make(resourcestate.ExportedResourcesMap, len(db.Data.Resources))
-	for groupName, group := range db.Data.Resources {
+	result := make(resourcestate.ExportedResourcesMap, len(db.Data.DeploymentUnits))
+	for groupName, group := range db.Data.DeploymentUnits {
 		resultGroup := make(map[string]resourcestate.ResourceState, len(group))
 		result[groupName] = resultGroup
 		for resourceName, entry := range group {

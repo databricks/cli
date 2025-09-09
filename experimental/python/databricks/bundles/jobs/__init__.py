@@ -244,6 +244,8 @@ __all__ = [
     "TaskNotificationSettingsDict",
     "TaskNotificationSettingsParam",
     "TaskParam",
+    "TaskRetryMode",
+    "TaskRetryModeParam",
     "TriggerSettings",
     "TriggerSettingsDict",
     "TriggerSettingsParam",
@@ -647,6 +649,10 @@ from databricks.bundles.jobs._models.task_notification_settings import (
     TaskNotificationSettings,
     TaskNotificationSettingsDict,
     TaskNotificationSettingsParam,
+)
+from databricks.bundles.jobs._models.task_retry_mode import (
+    TaskRetryMode,
+    TaskRetryModeParam,
 )
 from databricks.bundles.jobs._models.trigger_settings import (
     TriggerSettings,
