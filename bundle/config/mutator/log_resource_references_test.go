@@ -42,7 +42,7 @@ func TestConvertReferenceToMetric_Table(t *testing.T) {
 		{
 			name: "basic job id",
 			ref:  "resources.jobs.foo.id",
-			want: "resref__jobs__id",
+			want: "resref_jobs.id",
 		},
 		{
 			name: "invalid empty",
@@ -67,27 +67,27 @@ func TestConvertReferenceToMetric_Table(t *testing.T) {
 		{
 			name: "mapkey censor on app config",
 			ref:  "resources.apps.app1.config.foo",
-			want: "resref__apps__config__mapkey",
+			want: "resref_apps.config.*",
 		},
 		{
 			name: "nil job pointer yields plain id",
 			ref:  "resources.jobs.niljob.id",
-			want: "resref__jobs__id",
+			want: "resref_jobs.id",
 		},
 		{
 			name: "err censor on missing job key",
 			ref:  "resources.jobs.missing.id",
-			want: "resreferr__jobs",
+			want: "resreferr_jobs",
 		},
 		{
 			name: "array index tasks key",
 			ref:  "resources.jobs.foo.tasks[0].task_key",
-			want: "resref__jobs__tasks__task_key",
+			want: "resref_jobs.tasks.task_key",
 		},
 		{
 			name: "array index task key",
 			ref:  "resources.jobs.foo.task[0].task_key",
-			want: "resreferr__jobs__task",
+			want: "resreferr_jobs.task",
 		},
 	}
 
