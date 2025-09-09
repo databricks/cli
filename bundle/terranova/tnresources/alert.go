@@ -17,8 +17,8 @@ func (*ResourceAlert) New(client *databricks.WorkspaceClient) *ResourceAlert {
 	return &ResourceAlert{client: client}
 }
 
-// PrepareConfig converts bundle config to the SDK type.
-func (*ResourceAlert) PrepareConfig(input *resources.Alert) *sql.AlertV2 {
+// PrepareState converts bundle config to the SDK type.
+func (*ResourceAlert) PrepareState(input *resources.Alert) *sql.AlertV2 {
 	return &input.AlertV2
 }
 
