@@ -75,7 +75,7 @@ func newPlanCommand() *cobra.Command {
 		changes := phases.Diff(ctx, b)
 
 		for _, change := range changes {
-			cmdio.LogString(ctx, fmt.Sprintf("%s %s.%s", change.ActionType, change.Group, change.Key))
+			cmdio.LogString(ctx, fmt.Sprintf("%s %s.%s", change.ActionType.String(), change.Group, change.Key))
 		}
 
 		if logdiag.HasError(ctx) {

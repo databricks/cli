@@ -428,11 +428,11 @@ func (a *Adapter) MustRecreate(changes []structdiff.Change) bool {
 // ClassifyChanges calls the resource's ClassifyChanges method if implemented.
 func (a *Adapter) ClassifyChanges(changes []structdiff.Change) (deployplan.ActionType, error) {
 	if a.classifyChanges == nil {
-		return "", errors.New("internal error: ClassifyChanges not implemented")
+		return deployplan.ActionTypeUnset, errors.New("internal error: ClassifyChanges not implemented")
 	}
 	outs, err := a.classifyChanges.Call(changes)
 	if err != nil {
-		return "", err
+		return deployplan.ActionTypeUnset, err
 	}
 	result := outs[0].(deployplan.ActionType)
 	return result, nil

@@ -32,17 +32,17 @@ func (d *DeploymentUnit) plan(ctx context.Context, client *databricks.WorkspaceC
 		return deployplan.ActionTypeCreate, nil
 	}
 	if entry.ID == "" {
-		return "", errors.New("invalid state: empty id")
+		return deployplan.ActionTypeUnset, errors.New("invalid state: empty id")
 	}
 
 	newState, err := d.Adapter.PrepareState(inputConfig)
 	if err != nil {
-		return "", fmt.Errorf("reading config: %w", err)
+		return deployplan.ActionTypeUnset, fmt.Errorf("reading config: %w", err)
 	}
 
 	savedState, err := typeConvert(d.Adapter.StateType(), entry.State)
 	if err != nil {
-		return "", fmt.Errorf("interpreting state: %w", err)
+		return deployplan.ActionTypeUnset, fmt.Errorf("interpreting state: %w", err)
 	}
 
 	// Note, currently we're diffing static structs, not dynamic value.
@@ -200,7 +200,7 @@ func (d *DeploymentUnit) ReadRemoteStateField(ctx context.Context, db *tnstate.T
 func calcDiff(adapter *tnresources.Adapter, savedState, config any) (deployplan.ActionType, error) {
 	localDiff, err := structdiff.GetStructDiff(savedState, config)
 	if err != nil {
-		return "", err
+		return deployplan.ActionTypeUnset, err
 	}
 
 	if len(localDiff) == 0 {
@@ -214,11 +214,11 @@ func calcDiff(adapter *tnresources.Adapter, savedState, config any) (deployplan.
 	if adapter.HasClassifyChanges() {
 		result, err := adapter.ClassifyChanges(localDiff)
 		if err != nil {
-			return "", err
+			return deployplan.ActionTypeUnset, err
 		}
 
 		if result == deployplan.ActionTypeUpdateWithID && !adapter.HasDoUpdateWithID() {
-			return "", errors.New("internal error: unexpected plan='update_with_id'")
+			return deployplan.ActionTypeUnset, errors.New("internal error: unexpected plan='update_with_id'")
 		}
 
 		return result, nil

@@ -13,7 +13,7 @@ type Action struct {
 
 func (a Action) String() string {
 	typ, _ := strings.CutSuffix(a.Group, "s")
-	return fmt.Sprintf("  %s %s %s", a.ActionType, typ, a.Key)
+	return fmt.Sprintf("  %s %s %s", a.ActionType.String(), typ, a.Key)
 }
 
 // Implements cmdio.Event for cmdio.Log
@@ -21,24 +21,30 @@ func (a Action) IsInplaceSupported() bool {
 	return false
 }
 
-// These enum values are superset to action types defined in the tfjson library.
-// "recreate" maps to the tfjson.Actions.Replace() function.
-// "update" and "update_with_id" maps to tfjson.Actions.Update() and so on. source:
-// https://github.com/hashicorp/terraform-json/blob/0104004301ca8e7046d089cdc2e2db2179d225be/action.go#L14
-type ActionType string
+type ActionType uint8
 
+// Actions are ordered in increasing severity.
+// If case of several options, action with highest severity wins.
+// Note, Create/Delete are handled explicitly and never compared.
 const (
-	ActionTypeUnset        ActionType = ""
-	ActionTypeNoop         ActionType = "noop"
-	ActionTypeCreate       ActionType = "create"
-	ActionTypeDelete       ActionType = "delete"
-	ActionTypeUpdate       ActionType = "update"
-	ActionTypeUpdateWithID ActionType = "update_with_id"
-	ActionTypeRecreate     ActionType = "recreate"
+	ActionTypeUnset ActionType = iota
+	ActionTypeNoop
+	ActionTypeResize
+	ActionTypeUpdate
+	ActionTypeUpdateWithID
+	ActionTypeCreate
+	ActionTypeRecreate
+	ActionTypeDelete
 )
 
-var ShortName = map[ActionType]ActionType{
-	ActionTypeUpdateWithID: ActionTypeUpdate,
+var ShortName = map[ActionType]string{
+	ActionTypeNoop:         "noop",
+	ActionTypeResize:       "resize",
+	ActionTypeUpdate:       "update",
+	ActionTypeUpdateWithID: "update",
+	ActionTypeCreate:       "create",
+	ActionTypeRecreate:     "recreate",
+	ActionTypeDelete:       "delete",
 }
 
 func (a ActionType) IsNoop() bool {
@@ -47,11 +53,7 @@ func (a ActionType) IsNoop() bool {
 
 func (a ActionType) KeepsID() bool {
 	switch a {
-	case ActionTypeCreate:
-		return false
-	case ActionTypeUpdateWithID:
-		return false
-	case ActionTypeRecreate:
+	case ActionTypeCreate, ActionTypeUpdateWithID, ActionTypeRecreate:
 		return false
 	default:
 		return true
@@ -59,11 +61,7 @@ func (a ActionType) KeepsID() bool {
 }
 
 func (a ActionType) String() string {
-	shortAction := ShortName[a]
-	if shortAction != "" {
-		return string(shortAction)
-	}
-	return string(a)
+	return ShortName[a]
 }
 
 // Filter returns actions that match the specified action type
