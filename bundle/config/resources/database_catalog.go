@@ -11,9 +11,7 @@ import (
 )
 
 type DatabaseCatalog struct {
-	ID             string         `json:"id,omitempty" bundle:"readonly"`
-	URL            string         `json:"url,omitempty" bundle:"internal"`
-	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"internal"`
+	BaseResource
 
 	database.DatabaseCatalog
 }

@@ -23,10 +23,9 @@ type MlflowModelPermission struct {
 }
 
 type MlflowModel struct {
-	ID             string                  `json:"id,omitempty" bundle:"readonly"`
-	Permissions    []MlflowModelPermission `json:"permissions,omitempty"`
-	ModifiedStatus ModifiedStatus          `json:"modified_status,omitempty" bundle:"internal"`
-	URL            string                  `json:"url,omitempty" bundle:"internal"`
+	BaseResource
+
+	Permissions []MlflowModelPermission `json:"permissions,omitempty"`
 
 	ml.CreateModelRequest
 }
