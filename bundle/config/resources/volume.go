@@ -42,11 +42,10 @@ type VolumeGrant struct {
 
 type Volume struct {
 	BaseResource
+	catalog.CreateVolumeRequestContent
 
 	// List of grants to apply on this volume.
 	Grants []VolumeGrant `json:"grants,omitempty"`
-
-	catalog.CreateVolumeRequestContent
 }
 
 func (v *Volume) UnmarshalJSON(b []byte) error {

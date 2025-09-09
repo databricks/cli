@@ -61,11 +61,9 @@ type SchemaGrant struct {
 
 type Schema struct {
 	BaseResource
-
+	catalog.CreateSchema
 	// List of grants to apply on this schema.
 	Grants []SchemaGrant `json:"grants,omitempty"`
-
-	catalog.CreateSchema
 }
 
 func (s *Schema) Exists(ctx context.Context, w *databricks.WorkspaceClient, fullName string) (bool, error) {

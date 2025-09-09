@@ -12,7 +12,6 @@ import (
 
 type DatabaseCatalog struct {
 	BaseResource
-
 	database.DatabaseCatalog
 }
 

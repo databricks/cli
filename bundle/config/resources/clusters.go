@@ -24,10 +24,9 @@ type ClusterPermission struct {
 
 type Cluster struct {
 	BaseResource
+	compute.ClusterSpec
 
 	Permissions []ClusterPermission `json:"permissions,omitempty"`
-
-	compute.ClusterSpec
 }
 
 func (s *Cluster) UnmarshalJSON(b []byte) error {

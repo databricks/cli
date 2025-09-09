@@ -24,9 +24,9 @@ type PipelinePermission struct {
 
 type Pipeline struct {
 	BaseResource
-	Permissions []PipelinePermission `json:"permissions,omitempty"`
-
 	pipelines.CreatePipeline //nolint CreatePipeline also defines Id field with the same json tag "id"
+
+	Permissions []PipelinePermission `json:"permissions,omitempty"`
 }
 
 func (p *Pipeline) UnmarshalJSON(b []byte) error {
