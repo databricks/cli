@@ -65,7 +65,7 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 		return false, err
 	}
 
-	err = checkForPreventDestroy(b, deleteActions, true)
+	err = checkForPreventDestroy(b, deleteActions)
 	if err != nil {
 		return false, err
 	}

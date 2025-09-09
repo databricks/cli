@@ -52,7 +52,7 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 		return false, err
 	}
 
-	err = checkForPreventDestroy(b, actions, false)
+	err = checkForPreventDestroy(b, actions)
 	if err != nil {
 		return false, err
 	}

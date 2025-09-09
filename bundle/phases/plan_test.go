@@ -54,7 +54,7 @@ func TestCheckPreventDestroyForAllResources(t *testing.T) {
 				},
 			}
 
-			err := checkForPreventDestroy(b, actions, false)
+			err := checkForPreventDestroy(b, actions)
 			require.Error(t, err)
 			require.Contains(t, err.Error(), "resource test_resource has lifecycle.prevent_destroy set")
 			require.Contains(t, err.Error(), "but the plan calls for this resource to be recreated or destroyed")
