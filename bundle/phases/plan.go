@@ -57,7 +57,7 @@ func checkForPreventDestroy(b *bundle.Bundle, actions []deployplan.Action, isDes
 	for _, action := range actions {
 		// If the action is not a recreate or a delete as part of destroy - skip checking for prevent destroy
 		// We allow delete as part of deploy though (hence isDestroy check) because we mimic the behavior of terraform which allows such resources to be removed from config.
-		if action.ActionType != deployplan.ActionTypeRecreate && !(isDestroy && action.ActionType == deployplan.ActionTypeDelete) {
+		if action.ActionType != deployplan.ActionTypeRecreate && (!isDestroy || action.ActionType != deployplan.ActionTypeDelete) {
 			continue
 		}
 

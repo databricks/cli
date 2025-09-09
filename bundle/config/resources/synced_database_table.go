@@ -12,9 +12,7 @@ import (
 
 type SyncedDatabaseTable struct {
 	BaseResource
-
 	database.SyncedDatabaseTable
-	Lifecycle Lifecycle `json:"lifecycle,omitempty"`
 }
 
 func (s *SyncedDatabaseTable) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {

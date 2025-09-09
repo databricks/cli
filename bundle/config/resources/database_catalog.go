@@ -12,9 +12,7 @@ import (
 
 type DatabaseCatalog struct {
 	BaseResource
-
 	database.DatabaseCatalog
-	Lifecycle Lifecycle `json:"lifecycle,omitempty"`
 }
 
 func (d *DatabaseCatalog) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {

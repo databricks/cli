@@ -24,6 +24,7 @@ type AppPermission struct {
 
 type App struct {
 	BaseResource
+	apps.App // nolint App struct also defines Id and URL field with the same json tag "id" and "url"
 
 	// SourceCodePath is a required field used by DABs to point to Databricks app source code
 	// on local disk and to the corresponding workspace path during app deployment.
@@ -36,9 +37,6 @@ type App struct {
 	Config map[string]any `json:"config,omitempty"`
 
 	Permissions []AppPermission `json:"permissions,omitempty"`
-
-	Lifecycle Lifecycle `json:"lifecycle,omitempty"`
-	apps.App // nolint App struct also defines Id and URL field with the same json tag "id" and "url"
 }
 
 func (a *App) UnmarshalJSON(b []byte) error {

@@ -25,11 +25,9 @@ type JobPermission struct {
 
 type Job struct {
 	BaseResource
+	jobs.JobSettings
 
 	Permissions []JobPermission `json:"permissions,omitempty"`
-
-	jobs.JobSettings
-	Lifecycle Lifecycle `json:"lifecycle,omitempty"`
 }
 
 func (j *Job) UnmarshalJSON(b []byte) error {

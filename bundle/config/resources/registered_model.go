@@ -14,14 +14,13 @@ import (
 type RegisteredModel struct {
 	BaseResource
 
-	// This is a resource agnostic implementation of grants.
-	// Implementation could be different based on the resource type.
-	Grants []Grant `json:"grants,omitempty"`
-
 	// This represents the input args for terraform, and will get converted
 	// to a HCL representation for CRUD
 	catalog.CreateRegisteredModelRequest
-	Lifecycle Lifecycle `json:"lifecycle,omitempty"`
+
+	// This is a resource agnostic implementation of grants.
+	// Implementation could be different based on the resource type.
+	Grants []Grant `json:"grants,omitempty"`
 }
 
 func (s *RegisteredModel) UnmarshalJSON(b []byte) error {
