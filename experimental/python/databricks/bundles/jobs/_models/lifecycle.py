@@ -14,6 +14,9 @@ class Lifecycle:
     """"""
 
     prevent_destroy: VariableOrOptional[bool] = None
+    """
+    Lifecycle setting to prevent the resource from being destroyed.
+    """
 
     @classmethod
     def from_dict(cls, value: "LifecycleDict") -> "Self":
@@ -27,6 +30,9 @@ class LifecycleDict(TypedDict, total=False):
     """"""
 
     prevent_destroy: VariableOrOptional[bool]
+    """
+    Lifecycle setting to prevent the resource from being destroyed.
+    """
 
 
 LifecycleParam = LifecycleDict | Lifecycle
