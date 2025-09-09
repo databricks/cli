@@ -516,7 +516,7 @@ func runTest(t *testing.T,
 		// If the test is being run on DBR, auth is already configured
 		// by the dbr_runner notebook by reading a token from the notebook context and
 		// setting DATABRICKS_TOKEN and DATABRICKS_HOST environment variables.
-		_, _, tmpDir = workspaceTmpDir(t.Context(), t)
+		_, _, tmpDir = workspaceTmpDir(context.Background(), t)
 
 		// Run DBR tests on the workspace file system to mimic usage from
 		// DABs in the workspace.

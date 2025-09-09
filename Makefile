@@ -135,5 +135,8 @@ generate:
 	@echo "Generating CLI code..."
 	$(GENKIT_BINARY) update-sdk
 
+# Create a scratch testing environment to run tests on DBR.
+dbr_scratch:
+	SETUP_DBR_RUNNER=1 deco env run -i -n azure-prod-ucws -- go test -test.v -run TestSetupDbrRunner github.com/databricks/cli/acceptance -count 1
 
-.PHONY: lint lintfull tidy lintcheck fmt fmtfull test cover showcover build snapshot schema integration integration-short acc-cover acc-showcover docs ws links checks test-update test-update-aws test-update-all generate-validation
+.PHONY: lint lintfull tidy lintcheck fmt fmtfull test cover showcover build snapshot schema integration integration-short acc-cover acc-showcover docs ws links checks test-update test-update-aws test-update-all generate-validation dbr_scratch
