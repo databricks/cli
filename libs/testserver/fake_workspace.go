@@ -205,7 +205,7 @@ func (s *FakeWorkspace) WorkspaceGetStatus(path string) Response {
 	} else {
 		return Response{
 			StatusCode: 404,
-			Body:       map[string]string{"message": "Workspace path not found"},
+			Body:       map[string]string{"message": "Workspace path not found: " + path},
 		}
 	}
 }
