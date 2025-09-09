@@ -25,15 +25,19 @@ func (*ResourceVolume) PrepareConfig(input *resources.Volume) *catalog.CreateVol
 	return &input.CreateVolumeRequestContent
 }
 
-func (r *ResourceVolume) DoCreate(ctx context.Context, config *catalog.CreateVolumeRequestContent) (string, error) {
-	response, err := r.client.Volumes.Create(ctx, *config)
-	if err != nil {
-		return "", err
-	}
-	return response.FullName, nil
+func (r *ResourceVolume) DoRefresh(ctx context.Context, id string) (*catalog.VolumeInfo, error) {
+	return r.client.Volumes.ReadByName(ctx, id)
 }
 
-func (r *ResourceVolume) DoUpdate(ctx context.Context, id string, config *catalog.CreateVolumeRequestContent) error {
+func (r *ResourceVolume) DoCreate(ctx context.Context, config *catalog.CreateVolumeRequestContent) (string, *catalog.VolumeInfo, error) {
+	response, err := r.client.Volumes.Create(ctx, *config)
+	if err != nil {
+		return "", nil, err
+	}
+	return response.FullName, response, nil
+}
+
+func (r *ResourceVolume) DoUpdate(ctx context.Context, id string, config *catalog.CreateVolumeRequestContent) (*catalog.VolumeInfo, error) {
 	updateRequest := catalog.UpdateVolumeRequestContent{
 		Comment: config.Comment,
 		Name:    id,
@@ -45,26 +49,26 @@ func (r *ResourceVolume) DoUpdate(ctx context.Context, id string, config *catalo
 
 	nameFromID, err := getNameFromID(id)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if config.Name != nameFromID {
-		return fmt.Errorf("internal error: unexpected change of name from %#v to %#v", nameFromID, config.Name)
+		return nil, fmt.Errorf("internal error: unexpected change of name from %#v to %#v", nameFromID, config.Name)
 	}
 
 	response, err := r.client.Volumes.Update(ctx, updateRequest)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if id != response.FullName {
 		log.Warnf(ctx, "volumes: response contains unexpected full_name=%#v (expected %#v)", response.FullName, id)
 	}
 
-	return nil
+	return response, err
 }
 
-func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string, config *catalog.CreateVolumeRequestContent) (string, error) {
+func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string, config *catalog.CreateVolumeRequestContent) (string, *catalog.VolumeInfo, error) {
 	updateRequest := catalog.UpdateVolumeRequestContent{
 		Comment: config.Comment,
 		Name:    id,
@@ -77,7 +81,7 @@ func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string, config *
 
 	items := strings.Split(id, ".")
 	if len(items) == 0 {
-		return "", fmt.Errorf("unexpected id=%#v", id)
+		return "", nil, fmt.Errorf("unexpected id=%#v", id)
 	}
 	nameFromID := items[len(items)-1]
 
@@ -87,10 +91,10 @@ func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string, config *
 
 	response, err := r.client.Volumes.Update(ctx, updateRequest)
 	if err != nil || response == nil {
-		return "", err
+		return "", nil, err
 	}
 
-	return response.FullName, nil
+	return response.FullName, response, nil
 }
 
 func (r *ResourceVolume) DoDelete(ctx context.Context, id string) error {

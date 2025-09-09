@@ -22,6 +22,10 @@ func (*ResourcePipeline) PrepareConfig(input *resources.Pipeline) *pipelines.Cre
 	return &input.CreatePipeline
 }
 
+func (r *ResourcePipeline) DoRefresh(ctx context.Context, id string) (*pipelines.GetPipelineResponse, error) {
+	return r.client.Pipelines.GetByPipelineId(ctx, id)
+}
+
 func (r *ResourcePipeline) DoCreate(ctx context.Context, config *pipelines.CreatePipeline) (string, error) {
 	response, err := r.client.Pipelines.Create(ctx, *config)
 	if err != nil {
