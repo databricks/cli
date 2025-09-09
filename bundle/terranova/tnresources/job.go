@@ -2,6 +2,7 @@ package tnresources
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -11,22 +12,28 @@ import (
 
 type ResourceJob struct {
 	client *databricks.WorkspaceClient
-	config jobs.JobSettings
 }
 
-func NewResourceJob(client *databricks.WorkspaceClient, job *resources.Job) (*ResourceJob, error) {
+func (*ResourceJob) New(client *databricks.WorkspaceClient) *ResourceJob {
 	return &ResourceJob{
 		client: client,
-		config: job.JobSettings,
-	}, nil
+	}
 }
 
-func (r *ResourceJob) Config() any {
-	return r.config
+func (*ResourceJob) PrepareConfig(input *resources.Job) *jobs.JobSettings {
+	return &input.JobSettings
 }
 
-func (r *ResourceJob) DoCreate(ctx context.Context) (string, error) {
-	request, err := makeCreateJob(r.config)
+func (r *ResourceJob) DoRefresh(ctx context.Context, id string) (*jobs.Job, error) {
+	idInt, err := parseJobID(id)
+	if err != nil {
+		return nil, err
+	}
+	return r.client.Jobs.GetByJobId(ctx, idInt)
+}
+
+func (r *ResourceJob) DoCreate(ctx context.Context, config *jobs.JobSettings) (string, error) {
+	request, err := makeCreateJob(*config)
 	if err != nil {
 		return "", err
 	}
@@ -37,30 +44,20 @@ func (r *ResourceJob) DoCreate(ctx context.Context) (string, error) {
 	return strconv.FormatInt(response.JobId, 10), nil
 }
 
-func (r *ResourceJob) DoUpdate(ctx context.Context, id string) error {
-	request, err := makeResetJob(r.config, id)
+func (r *ResourceJob) DoUpdate(ctx context.Context, id string, config *jobs.JobSettings) error {
+	request, err := makeResetJob(*config, id)
 	if err != nil {
 		return err
 	}
 	return r.client.Jobs.Reset(ctx, request)
 }
 
-func DeleteJob(ctx context.Context, client *databricks.WorkspaceClient, id string) error {
-	idInt, err := strconv.ParseInt(id, 10, 64)
+func (r *ResourceJob) DoDelete(ctx context.Context, id string) error {
+	idInt, err := parseJobID(id)
 	if err != nil {
 		return err
 	}
-	return client.Jobs.DeleteByJobId(ctx, idInt)
-}
-
-func (r *ResourceJob) WaitAfterCreate(ctx context.Context) error {
-	// Intentional no-op
-	return nil
-}
-
-func (r *ResourceJob) WaitAfterUpdate(ctx context.Context) error {
-	// Intentional no-op
-	return nil
+	return r.client.Jobs.DeleteByJobId(ctx, idInt)
 }
 
 func makeCreateJob(config jobs.JobSettings) (jobs.CreateJob, error) {
@@ -100,7 +97,7 @@ func makeCreateJob(config jobs.JobSettings) (jobs.CreateJob, error) {
 }
 
 func makeResetJob(config jobs.JobSettings, id string) (jobs.ResetJob, error) {
-	idInt, err := strconv.ParseInt(id, 10, 64)
+	idInt, err := parseJobID(id)
 	if err != nil {
 		return jobs.ResetJob{}, err
 	}
@@ -109,4 +106,12 @@ func makeResetJob(config jobs.JobSettings, id string) (jobs.ResetJob, error) {
 		NewSettings: config,
 	}
 	return result, err
+}
+
+func parseJobID(id string) (int64, error) {
+	result, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("internal error: job id is not integer: %q: %w", id, err)
+	}
+	return result, nil
 }

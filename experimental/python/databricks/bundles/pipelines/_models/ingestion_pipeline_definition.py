@@ -12,6 +12,10 @@ from databricks.bundles.pipelines._models.ingestion_source_type import (
     IngestionSourceType,
     IngestionSourceTypeParam,
 )
+from databricks.bundles.pipelines._models.source_config import (
+    SourceConfig,
+    SourceConfigParam,
+)
 from databricks.bundles.pipelines._models.table_specific_config import (
     TableSpecificConfig,
     TableSpecificConfigParam,
@@ -38,6 +42,13 @@ class IngestionPipelineDefinition:
     objects: VariableOrList[IngestionConfig] = field(default_factory=list)
     """
     Required. Settings specifying tables to replicate and the destination for the replicated tables.
+    """
+
+    source_configurations: VariableOrList[SourceConfig] = field(default_factory=list)
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    Top-level source configurations
     """
 
     source_type: VariableOrOptional[IngestionSourceType] = None
@@ -76,6 +87,13 @@ class IngestionPipelineDefinitionDict(TypedDict, total=False):
     objects: VariableOrList[IngestionConfigParam]
     """
     Required. Settings specifying tables to replicate and the destination for the replicated tables.
+    """
+
+    source_configurations: VariableOrList[SourceConfigParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    Top-level source configurations
     """
 
     source_type: VariableOrOptional[IngestionSourceTypeParam]

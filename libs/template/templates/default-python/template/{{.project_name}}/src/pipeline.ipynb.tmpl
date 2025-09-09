@@ -14,7 +14,7 @@
    "source": [
     "# Lakeflow Declarative Pipeline\n",
     "\n",
-    "This Lakeflow Declarative Pipeline (LDP) definition is executed using a pipeline defined in resources/{{.project_name}}.pipeline.yml."
+    "This Lakeflow Declarative Pipeline definition is executed using a pipeline defined in resources/{{.project_name}}.pipeline.yml."
    ]
   },
   {
@@ -64,7 +64,7 @@
     {{- if (eq .include_python "yes") }}
     "@dlt.view\n",
     "def taxi_raw():\n",
-    "    return main.get_taxis(spark)\n",
+    "    return main.find_all_taxis()\n",
     {{else}}
     "\n",
     "@dlt.view\n",

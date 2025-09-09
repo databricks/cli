@@ -1,0 +1,8 @@
+trace $CLI bundle deploy
+
+trace cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson' > telemetry.json
+
+trace cat telemetry.json | jq '.entry.databricks_cli_log.bundle_deploy_event.experimental.bool_values[] | select(.key == "run_as_set")'
+
+rm out.requests.txt
+rm telemetry.json

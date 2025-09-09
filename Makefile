@@ -47,6 +47,9 @@ links:
 checks: tidy ws links
 
 test:
+	${GOTESTSUM_CMD} -- ${PACKAGES} -timeout=${LOCAL_TIMEOUT} -short
+
+test-slow:
 	${GOTESTSUM_CMD} -- ${PACKAGES} -timeout=${LOCAL_TIMEOUT}
 
 # Updates acceptance test output (local tests)
@@ -81,8 +84,17 @@ acc-showcover:
 build: tidy
 	go build
 
+# builds the binary in a VM environment (such as Parallels Desktop) where your files are mirrored from the host os
+build-vm: tidy
+	go build -buildvcs=false
+
 snapshot:
 	go build -o .databricks/databricks
+
+# Produce release binaries and archives in the dist folder without uploading them anywhere.
+# Useful for "databricks ssh" development, as it needs to upload linux releases to the /Workspace.
+snapshot-release:
+	goreleaser release --clean --skip docker --snapshot
 
 schema:
 	go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema.json

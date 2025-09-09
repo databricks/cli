@@ -1,0 +1,9 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Error: cannot resolve "${resources.jobs.foo.url}": schema mismatch: url: field "url" not found in resources.Job; url: field "url" not found in jobs.Job
+
+Error: cannot plan jobs.bar: dependency failed: jobs.foo
+
+Error: planning failed
+
+
+Exit code: 1

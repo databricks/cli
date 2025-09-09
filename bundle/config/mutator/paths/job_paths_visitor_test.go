@@ -78,8 +78,6 @@ func TestVisitJobPaths(t *testing.T) {
 		dyn.MustPathFromString("resources.jobs.job0.tasks[1].spark_python_task.python_file"),
 		dyn.MustPathFromString("resources.jobs.job0.tasks[2].dbt_task.project_directory"),
 		dyn.MustPathFromString("resources.jobs.job0.tasks[3].sql_task.file.path"),
-		dyn.MustPathFromString("resources.jobs.job0.tasks[4].libraries[0].whl"),
-		dyn.MustPathFromString("resources.jobs.job0.tasks[5].libraries[0].jar"),
 		dyn.MustPathFromString("resources.jobs.job0.tasks[6].libraries[0].requirements"),
 	}
 
@@ -112,10 +110,7 @@ func TestVisitJobPaths_environments(t *testing.T) {
 	}
 
 	actual := collectVisitedPaths(t, root, VisitJobPaths)
-	expected := []dyn.Path{
-		dyn.MustPathFromString("resources.jobs.job0.environments[0].spec.dependencies[0]"),
-		dyn.MustPathFromString("resources.jobs.job0.environments[0].spec.dependencies[1]"),
-	}
+	var expected []dyn.Path
 
 	assert.ElementsMatch(t, expected, actual)
 }

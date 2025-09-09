@@ -95,6 +95,9 @@ func TestRunAsWorksForAllowedResources(t *testing.T) {
 			Experiments: map[string]*resources.MlflowExperiment{
 				"experiment_one": {},
 			},
+			Pipelines: map[string]*resources.Pipeline{
+				"pipeline_one": {},
+			},
 		},
 	}
 
@@ -146,6 +149,7 @@ var allowList = []string{
 	"database_instances",
 	"synced_database_tables",
 	"jobs",
+	"pipelines",
 	"models",
 	"registered_models",
 	"experiments",

@@ -920,9 +920,9 @@ func newSendMessageFeedback() *cobra.Command {
 
 	cmd.Flags().Var(&sendMessageFeedbackJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&sendMessageFeedbackReq.FeedbackText, "feedback-text", sendMessageFeedbackReq.FeedbackText, `Optional text feedback that will be stored as a comment.`)
+	cmd.Flags().StringVar(&sendMessageFeedbackReq.Comment, "comment", sendMessageFeedbackReq.Comment, `Optional text feedback that will be stored as a comment.`)
 
-	cmd.Use = "send-message-feedback SPACE_ID CONVERSATION_ID MESSAGE_ID FEEDBACK_RATING"
+	cmd.Use = "send-message-feedback SPACE_ID CONVERSATION_ID MESSAGE_ID RATING"
 	cmd.Short = `Send message feedback.`
 	cmd.Long = `Send message feedback.
   
@@ -932,7 +932,7 @@ func newSendMessageFeedback() *cobra.Command {
     SPACE_ID: The ID associated with the Genie space where the message is located.
     CONVERSATION_ID: The ID associated with the conversation.
     MESSAGE_ID: The ID associated with the message to provide feedback for.
-    FEEDBACK_RATING: The rating (POSITIVE, NEGATIVE, or NONE). 
+    RATING: The rating (POSITIVE, NEGATIVE, or NONE). 
       Supported values: [NEGATIVE, NONE, POSITIVE]`
 
 	// This command is being previewed; hide from help output.
@@ -944,7 +944,7 @@ func newSendMessageFeedback() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(3)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only SPACE_ID, CONVERSATION_ID, MESSAGE_ID as positional arguments. Provide 'feedback_rating' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, provide only SPACE_ID, CONVERSATION_ID, MESSAGE_ID as positional arguments. Provide 'rating' in your JSON input")
 			}
 			return nil
 		}
@@ -973,9 +973,9 @@ func newSendMessageFeedback() *cobra.Command {
 		sendMessageFeedbackReq.ConversationId = args[1]
 		sendMessageFeedbackReq.MessageId = args[2]
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[3], &sendMessageFeedbackReq.FeedbackRating)
+			_, err = fmt.Sscan(args[3], &sendMessageFeedbackReq.Rating)
 			if err != nil {
-				return fmt.Errorf("invalid FEEDBACK_RATING: %s", args[3])
+				return fmt.Errorf("invalid RATING: %s", args[3])
 			}
 		}
 

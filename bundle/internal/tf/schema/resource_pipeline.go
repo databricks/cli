@@ -239,6 +239,24 @@ type ResourcePipelineIngestionDefinitionObjects struct {
 	Table  *ResourcePipelineIngestionDefinitionObjectsTable  `json:"table,omitempty"`
 }
 
+type ResourcePipelineIngestionDefinitionSourceConfigurationsCatalogPostgresSlotConfig struct {
+	PublicationName string `json:"publication_name,omitempty"`
+	SlotName        string `json:"slot_name,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionSourceConfigurationsCatalogPostgres struct {
+	SlotConfig *ResourcePipelineIngestionDefinitionSourceConfigurationsCatalogPostgresSlotConfig `json:"slot_config,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionSourceConfigurationsCatalog struct {
+	SourceCatalog string                                                                  `json:"source_catalog,omitempty"`
+	Postgres      *ResourcePipelineIngestionDefinitionSourceConfigurationsCatalogPostgres `json:"postgres,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionSourceConfigurations struct {
+	Catalog *ResourcePipelineIngestionDefinitionSourceConfigurationsCatalog `json:"catalog,omitempty"`
+}
+
 type ResourcePipelineIngestionDefinitionTableConfigurationQueryBasedConnectorConfig struct {
 	CursorColumns                        []string `json:"cursor_columns,omitempty"`
 	DeletionCondition                    string   `json:"deletion_condition,omitempty"`
@@ -256,11 +274,12 @@ type ResourcePipelineIngestionDefinitionTableConfiguration struct {
 }
 
 type ResourcePipelineIngestionDefinition struct {
-	ConnectionName     string                                                 `json:"connection_name,omitempty"`
-	IngestionGatewayId string                                                 `json:"ingestion_gateway_id,omitempty"`
-	SourceType         string                                                 `json:"source_type,omitempty"`
-	Objects            []ResourcePipelineIngestionDefinitionObjects           `json:"objects,omitempty"`
-	TableConfiguration *ResourcePipelineIngestionDefinitionTableConfiguration `json:"table_configuration,omitempty"`
+	ConnectionName       string                                                    `json:"connection_name,omitempty"`
+	IngestionGatewayId   string                                                    `json:"ingestion_gateway_id,omitempty"`
+	SourceType           string                                                    `json:"source_type,omitempty"`
+	Objects              []ResourcePipelineIngestionDefinitionObjects              `json:"objects,omitempty"`
+	SourceConfigurations []ResourcePipelineIngestionDefinitionSourceConfigurations `json:"source_configurations,omitempty"`
+	TableConfiguration   *ResourcePipelineIngestionDefinitionTableConfiguration    `json:"table_configuration,omitempty"`
 }
 
 type ResourcePipelineLatestUpdates struct {

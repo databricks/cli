@@ -13,5 +13,6 @@ type DataSourceCleanRoomAutoApprovalRulesRules struct {
 }
 
 type DataSourceCleanRoomAutoApprovalRules struct {
-	Rules []DataSourceCleanRoomAutoApprovalRulesRules `json:"rules,omitempty"`
+	Rules       []DataSourceCleanRoomAutoApprovalRulesRules `json:"rules,omitempty"`
+	WorkspaceId string                                      `json:"workspace_id,omitempty"`
 }

@@ -275,6 +275,11 @@ github.com/databricks/cli/bundle/config/resources.DatabaseInstance:
   "creator":
     "description": |-
       The email of the creator of the instance.
+  "effective_enable_pg_native_login":
+    "description": |-
+      xref AIP-129. `enable_pg_native_login` is owned by the client, while `effective_enable_pg_native_login` is owned by the server.
+      `enable_pg_native_login` will only be set in Create/Update response messages if and only if the user provides the field via the request.
+      `effective_enable_pg_native_login` on the other hand will always bet set in all response messages (Create/Update/Get/List).
   "effective_enable_readable_secondaries":
     "description": |-
       xref AIP-129. `enable_readable_secondaries` is owned by the client, while `effective_enable_readable_secondaries` is owned by the server.
@@ -295,6 +300,9 @@ github.com/databricks/cli/bundle/config/resources.DatabaseInstance:
       xref AIP-129. `stopped` is owned by the client, while `effective_stopped` is owned by the server.
       `stopped` will only be set in Create/Update response messages if and only if the user provides the field via the request.
       `effective_stopped` on the other hand will always bet set in all response messages (Create/Update/Get/List).
+  "enable_pg_native_login":
+    "description": |-
+      Whether the instance has PG native password login enabled. Defaults to true.
   "enable_readable_secondaries":
     "description": |-
       Whether to enable secondaries to serve read-only traffic. Defaults to false.
@@ -784,6 +792,49 @@ github.com/databricks/cli/bundle/config/resources.SqlWarehouse:
   "warehouse_type":
     "description": |-
       Warehouse type: `PRO` or `CLASSIC`. If you want to use serverless compute, you must set to `PRO` and also set the field `enable_serverless_compute` to `true`.
+github.com/databricks/cli/bundle/config/resources.SyncedDatabaseTable:
+  "_":
+    "description": |-
+      Next field marker: 14
+  "data_synchronization_status":
+    "description": |-
+      Synced Table data synchronization status
+  "database_instance_name":
+    "description": |-
+      Name of the target database instance. This is required when creating synced database tables in standard catalogs.
+      This is optional when creating synced database tables in registered catalogs. If this field is specified
+      when creating synced database tables in registered catalogs, the database instance name MUST
+      match that of the registered catalog (or the request will be rejected).
+  "effective_database_instance_name":
+    "description": |-
+      The name of the database instance that this table is registered to. This field is always returned, and for
+      tables inside database catalogs is inferred database instance associated with the catalog.
+  "effective_logical_database_name":
+    "description": |-
+      The name of the logical database that this table is registered to.
+  "logical_database_name":
+    "description": |-
+      Target Postgres database object (logical database) name for this table.
+
+      When creating a synced table in a registered Postgres catalog, the
+      target Postgres database name is inferred to be that of the registered catalog.
+      If this field is specified in this scenario, the Postgres database name MUST
+      match that of the registered catalog (or the request will be rejected).
+
+      When creating a synced table in a standard catalog, this field is required.
+      In this scenario, specifying this field will allow targeting an arbitrary postgres database.
+      Note that this has implications for the `create_database_objects_is_missing` field in `spec`.
+  "name":
+    "description": |-
+      Full three-part (catalog, schema, table) name of the table.
+  "spec":
+    "description": |-
+      Specification of a synced database table.
+  "unity_catalog_provisioning_state":
+    "description": |-
+      The provisioning state of the synced table entity in Unity Catalog. This is distinct from the
+      state of the data synchronization pipeline (i.e. the table may be in "ACTIVE" but the pipeline
+      may be in "PROVISIONING" as it runs asynchronously).
 github.com/databricks/cli/bundle/config/resources.Volume:
   "catalog_name":
     "description": |-
@@ -1922,6 +1973,257 @@ github.com/databricks/databricks-sdk-go/service/database.DatabaseInstanceState:
         UPDATING
       - |-
         FAILING_OVER
+github.com/databricks/databricks-sdk-go/service/database.DeltaTableSyncInfo:
+  "delta_commit_timestamp":
+    "description": |-
+      The timestamp when the above Delta version was committed in the source Delta table.
+      Note: This is the Delta commit time, not the time the data was written to the synced table.
+  "delta_commit_version":
+    "description": |-
+      The Delta Lake commit version that was last successfully synced.
+github.com/databricks/databricks-sdk-go/service/database.NewPipelineSpec:
+  "_":
+    "description": |-
+      Custom fields that user can set for pipeline while creating SyncedDatabaseTable.
+      Note that other fields of pipeline are still inferred by table def internally
+  "storage_catalog":
+    "description": |-
+      This field needs to be specified if the destination catalog is a managed postgres catalog.
+
+      UC catalog for the pipeline to store intermediate files (checkpoints, event logs etc).
+      This needs to be a standard catalog where the user has permissions to create Delta tables.
+  "storage_schema":
+    "description": |-
+      This field needs to be specified if the destination catalog is a managed postgres catalog.
+
+      UC schema for the pipeline to store intermediate files (checkpoints, event logs etc).
+      This needs to be in the standard catalog where the user has permissions to create Delta tables.
+github.com/databricks/databricks-sdk-go/service/database.ProvisioningInfoState:
+  "_":
+    "enum":
+      - |-
+        PROVISIONING
+      - |-
+        ACTIVE
+      - |-
+        FAILED
+      - |-
+        DELETING
+      - |-
+        UPDATING
+      - |-
+        DEGRADED
+github.com/databricks/databricks-sdk-go/service/database.ProvisioningPhase:
+  "_":
+    "enum":
+      - |-
+        PROVISIONING_PHASE_MAIN
+      - |-
+        PROVISIONING_PHASE_INDEX_SCAN
+      - |-
+        PROVISIONING_PHASE_INDEX_SORT
+github.com/databricks/databricks-sdk-go/service/database.SyncedTableContinuousUpdateStatus:
+  "_":
+    "description": |-
+      Detailed status of a synced table. Shown if the synced table is in the SYNCED_CONTINUOUS_UPDATE
+      or the SYNCED_UPDATING_PIPELINE_RESOURCES state.
+  "initial_pipeline_sync_progress":
+    "description": |-
+      Progress of the initial data synchronization.
+  "last_processed_commit_version":
+    "description": |-
+      The last source table Delta version that was successfully synced to the synced table.
+  "timestamp":
+    "description": |-
+      The end timestamp of the last time any data was synchronized from the source table to the synced
+      table. This is when the data is available in the synced table.
+github.com/databricks/databricks-sdk-go/service/database.SyncedTableFailedStatus:
+  "_":
+    "description": |-
+      Detailed status of a synced table. Shown if the synced table is in the OFFLINE_FAILED or the
+      SYNCED_PIPELINE_FAILED state.
+  "last_processed_commit_version":
+    "description": |-
+      The last source table Delta version that was successfully synced to the synced table.
+      The last source table Delta version that was synced to the synced table.
+      Only populated if the table is still
+      synced and available for serving.
+  "timestamp":
+    "description": |-
+      The end timestamp of the last time any data was synchronized from the source table to the synced
+      table. Only populated if the table is still synced and available for serving.
+github.com/databricks/databricks-sdk-go/service/database.SyncedTablePipelineProgress:
+  "_":
+    "description": |-
+      Progress information of the Synced Table data synchronization pipeline.
+  "estimated_completion_time_seconds":
+    "description": |-
+      The estimated time remaining to complete this update in seconds.
+  "latest_version_currently_processing":
+    "description": |-
+      The source table Delta version that was last processed by the pipeline. The pipeline may not
+      have completely processed this version yet.
+  "provisioning_phase":
+    "description": |-
+      The current phase of the data synchronization pipeline.
+  "sync_progress_completion":
+    "description": |-
+      The completion ratio of this update. This is a number between 0 and 1.
+  "synced_row_count":
+    "description": |-
+      The number of rows that have been synced in this update.
+  "total_row_count":
+    "description": |-
+      The total number of rows that need to be synced in this update. This number may be an estimate.
+github.com/databricks/databricks-sdk-go/service/database.SyncedTablePosition:
+  "delta_table_sync_info": {}
+  "sync_end_timestamp":
+    "description": |-
+      The end timestamp of the most recent successful synchronization.
+      This is the time when the data is available in the synced table.
+  "sync_start_timestamp":
+    "description": |-
+      The starting timestamp of the most recent successful synchronization from the source table
+      to the destination (synced) table.
+      Note this is the starting timestamp of the sync operation, not the end time.
+      E.g., for a batch, this is the time when the sync operation started.
+github.com/databricks/databricks-sdk-go/service/database.SyncedTableProvisioningStatus:
+  "_":
+    "description": |-
+      Detailed status of a synced table. Shown if the synced table is in the
+      PROVISIONING_PIPELINE_RESOURCES or the PROVISIONING_INITIAL_SNAPSHOT state.
+  "initial_pipeline_sync_progress":
+    "description": |-
+      Details about initial data synchronization. Only populated when in the
+      PROVISIONING_INITIAL_SNAPSHOT state.
+github.com/databricks/databricks-sdk-go/service/database.SyncedTableSchedulingPolicy:
+  "_":
+    "enum":
+      - |-
+        CONTINUOUS
+      - |-
+        TRIGGERED
+      - |-
+        SNAPSHOT
+github.com/databricks/databricks-sdk-go/service/database.SyncedTableSpec:
+  "_":
+    "description": |-
+      Specification of a synced database table.
+  "create_database_objects_if_missing":
+    "description": |-
+      If true, the synced table's logical database and schema resources in PG
+      will be created if they do not already exist.
+  "existing_pipeline_id":
+    "description": |-
+      At most one of existing_pipeline_id and new_pipeline_spec should be defined.
+
+      If existing_pipeline_id is defined, the synced table will be bin packed into the existing pipeline
+      referenced. This avoids creating a new pipeline and allows sharing existing compute.
+      In this case, the scheduling_policy of this synced table must match the scheduling policy of the existing pipeline.
+  "new_pipeline_spec":
+    "description": |-
+      At most one of existing_pipeline_id and new_pipeline_spec should be defined.
+
+      If new_pipeline_spec is defined, a new pipeline is created for this synced table. The location pointed to is used
+      to store intermediate files (checkpoints, event logs etc). The caller must have write permissions to create Delta
+      tables in the specified catalog and schema. Again, note this requires write permissions, whereas the source table
+      only requires read permissions.
+  "primary_key_columns":
+    "description": |-
+      Primary Key columns to be used for data insert/update in the destination.
+  "scheduling_policy":
+    "description": |-
+      Scheduling policy of the underlying pipeline.
+  "source_table_full_name":
+    "description": |-
+      Three-part (catalog, schema, table) name of the source Delta table.
+  "timeseries_key":
+    "description": |-
+      Time series key to deduplicate (tie-break) rows with the same primary key.
+github.com/databricks/databricks-sdk-go/service/database.SyncedTableState:
+  "_":
+    "description": |-
+      The state of a synced table.
+    "enum":
+      - |-
+        SYNCED_TABLE_PROVISIONING
+      - |-
+        SYNCED_TABLE_PROVISIONING_PIPELINE_RESOURCES
+      - |-
+        SYNCED_TABLE_PROVISIONING_INITIAL_SNAPSHOT
+      - |-
+        SYNCED_TABLE_ONLINE
+      - |-
+        SYNCED_TABLE_ONLINE_CONTINUOUS_UPDATE
+      - |-
+        SYNCED_TABLE_ONLINE_TRIGGERED_UPDATE
+      - |-
+        SYNCED_TABLE_ONLINE_NO_PENDING_UPDATE
+      - |-
+        SYNCED_TABLED_OFFLINE
+      - |-
+        SYNCED_TABLE_OFFLINE_FAILED
+      - |-
+        SYNCED_TABLE_ONLINE_PIPELINE_FAILED
+      - |-
+        SYNCED_TABLE_ONLINE_UPDATING_PIPELINE_RESOURCES
+github.com/databricks/databricks-sdk-go/service/database.SyncedTableStatus:
+  "_":
+    "description": |-
+      Status of a synced table.
+  "continuous_update_status":
+    "description": |-
+      Detailed status of a synced table. Shown if the synced table is in the SYNCED_CONTINUOUS_UPDATE
+      or the SYNCED_UPDATING_PIPELINE_RESOURCES state.
+  "detailed_state":
+    "description": |-
+      The state of the synced table.
+  "failed_status":
+    "description": |-
+      Detailed status of a synced table. Shown if the synced table is in the OFFLINE_FAILED or the
+      SYNCED_PIPELINE_FAILED state.
+  "last_sync":
+    "description": |-
+      Summary of the last successful synchronization from source to destination.
+
+      Will always be present if there has been a successful sync. Even if the most recent syncs have failed.
+
+      Limitation:
+      The only exception is if the synced table is doing a FULL REFRESH, then the last sync information
+      will not be available until the full refresh is complete. This limitation will be addressed in a future version.
+
+      This top-level field is a convenience for consumers who want easy access to last sync information
+      without having to traverse detailed_status.
+  "message":
+    "description": |-
+      A text description of the current state of the synced table.
+  "pipeline_id":
+    "description": |-
+      ID of the associated pipeline. The pipeline ID may have been provided by the client
+      (in the case of bin packing), or generated by the server (when creating a new pipeline).
+  "provisioning_status":
+    "description": |-
+      Detailed status of a synced table. Shown if the synced table is in the
+      PROVISIONING_PIPELINE_RESOURCES or the PROVISIONING_INITIAL_SNAPSHOT state.
+  "triggered_update_status":
+    "description": |-
+      Detailed status of a synced table. Shown if the synced table is in the SYNCED_TRIGGERED_UPDATE
+      or the SYNCED_NO_PENDING_UPDATE state.
+github.com/databricks/databricks-sdk-go/service/database.SyncedTableTriggeredUpdateStatus:
+  "_":
+    "description": |-
+      Detailed status of a synced table. Shown if the synced table is in the SYNCED_TRIGGERED_UPDATE
+      or the SYNCED_NO_PENDING_UPDATE state.
+  "last_processed_commit_version":
+    "description": |-
+      The last source table Delta version that was successfully synced to the synced table.
+  "timestamp":
+    "description": |-
+      The end timestamp of the last time any data was synchronized from the source table to the synced
+      table. This is when the data is available in the synced table.
+  "triggered_update_progress":
+    "description": |-
+      Progress of the active data synchronization pipeline.
 github.com/databricks/databricks-sdk-go/service/jobs.AuthenticationMethod:
   "_":
     "enum":
@@ -1997,6 +2299,9 @@ github.com/databricks/databricks-sdk-go/service/jobs.Continuous:
   "pause_status":
     "description": |-
       Indicate whether the continuous execution of the job is paused or not. Defaults to UNPAUSED.
+  "task_retry_mode":
+    "description": |-
+      Indicate whether the continuous job is applying task level retries or not. Defaults to NEVER.
 github.com/databricks/databricks-sdk-go/service/jobs.CronSchedule:
   "pause_status":
     "description": |-
@@ -2955,6 +3260,18 @@ github.com/databricks/databricks-sdk-go/service/jobs.TaskNotificationSettings:
   "no_alert_for_skipped_runs":
     "description": |-
       If true, do not send notifications to recipients specified in `on_failure` if the run is skipped.
+github.com/databricks/databricks-sdk-go/service/jobs.TaskRetryMode:
+  "_":
+    "description": |-
+      task retry mode of the continuous job
+      * NEVER: The failed task will not be retried.
+      * ON_FAILURE: Retry a failed task if at least one other task in the job is still running its first attempt.
+      When this condition is no longer met or the retry limit is reached, the job run is cancelled and a new run is started.
+    "enum":
+      - |-
+        NEVER
+      - |-
+        ON_FAILURE
 github.com/databricks/databricks-sdk-go/service/jobs.TriggerSettings:
   "file_arrival":
     "description": |-
@@ -3111,6 +3428,11 @@ github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefin
   "objects":
     "description": |-
       Required. Settings specifying tables to replicate and the destination for the replicated tables.
+  "source_configurations":
+    "description": |-
+      Top-level source configurations
+    "x-databricks-preview": |-
+      PRIVATE
   "source_type":
     "description": |-
       The type of the foreign source.
@@ -3390,6 +3712,29 @@ github.com/databricks/databricks-sdk-go/service/pipelines.PipelinesEnvironment:
       List of pip dependencies, as supported by the version of pip in this environment.
       Each dependency is a pip requirement file line https://pip.pypa.io/en/stable/reference/requirements-file-format/
       Allowed dependency could be <requirement specifier>, <archive url/path>, <local project path>(WSFS or Volumes in Databricks), <vcs project url>
+github.com/databricks/databricks-sdk-go/service/pipelines.PostgresCatalogConfig:
+  "_":
+    "description": |-
+      PG-specific catalog-level configuration parameters
+  "slot_config":
+    "description": |-
+      Optional. The Postgres slot configuration to use for logical replication
+    "x-databricks-preview": |-
+      PRIVATE
+github.com/databricks/databricks-sdk-go/service/pipelines.PostgresSlotConfig:
+  "_":
+    "description": |-
+      PostgresSlotConfig contains the configuration for a Postgres logical replication slot
+  "publication_name":
+    "description": |-
+      The name of the publication to use for the Postgres source
+    "x-databricks-preview": |-
+      PRIVATE
+  "slot_name":
+    "description": |-
+      The name of the logical replication slot to use for the Postgres source
+    "x-databricks-preview": |-
+      PRIVATE
 github.com/databricks/databricks-sdk-go/service/pipelines.ReportSpec:
   "destination_catalog":
     "description": |-
@@ -3447,6 +3792,26 @@ github.com/databricks/databricks-sdk-go/service/pipelines.SchemaSpec:
   "table_configuration":
     "description": |-
       Configuration settings to control the ingestion of tables. These settings are applied to all tables in this schema and override the table_configuration defined in the IngestionPipelineDefinition object.
+github.com/databricks/databricks-sdk-go/service/pipelines.SourceCatalogConfig:
+  "_":
+    "description": |-
+      SourceCatalogConfig contains catalog-level custom configuration parameters for each source
+  "postgres":
+    "description": |-
+      Postgres-specific catalog-level configuration parameters
+    "x-databricks-preview": |-
+      PRIVATE
+  "source_catalog":
+    "description": |-
+      Source catalog name
+    "x-databricks-preview": |-
+      PRIVATE
+github.com/databricks/databricks-sdk-go/service/pipelines.SourceConfig:
+  "catalog":
+    "description": |-
+      Catalog-level source configuration parameters
+    "x-databricks-preview": |-
+      PRIVATE
 github.com/databricks/databricks-sdk-go/service/pipelines.TableSpec:
   "destination_catalog":
     "description": |-
