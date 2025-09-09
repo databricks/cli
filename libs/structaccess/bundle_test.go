@@ -34,7 +34,7 @@ func TestGet_ConfigRoot_JobTagsAccess(t *testing.T) {
 			},
 			Apps: map[string]*resources.App{
 				"my_app": {
-					URL: "app_outer_url",
+					BaseResource: resources.BaseResource{URL: "app_outer_url"},
 					App: apps.App{
 						Url: "app_inner_url",
 					},

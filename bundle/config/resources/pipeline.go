@@ -23,14 +23,10 @@ type PipelinePermission struct {
 }
 
 type Pipeline struct {
-	// We cannot embed BaseResource here because pipelines.CreatePipeline has its own Id field
-	// that conflicts with BaseResource.ID
-	ID             string               `json:"id,omitempty" bundle:"readonly"`
-	Permissions    []PipelinePermission `json:"permissions,omitempty"`
-	ModifiedStatus ModifiedStatus       `json:"modified_status,omitempty" bundle:"internal"`
-	URL            string               `json:"url,omitempty" bundle:"internal"`
+	BaseResource
+	Permissions []PipelinePermission `json:"permissions,omitempty"`
 
-	pipelines.CreatePipeline
+	pipelines.CreatePipeline //nolint CreatePipeline also defines Id field with the same json tag "id"
 }
 
 func (p *Pipeline) UnmarshalJSON(b []byte) error {
