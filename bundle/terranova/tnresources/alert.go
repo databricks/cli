@@ -46,11 +46,7 @@ func (r *ResourceAlert) DoUpdate(ctx context.Context, id string, config *sql.Ale
 		Alert:      *config,
 		UpdateMask: "*",
 	}
-	response, err := r.client.AlertsV2.UpdateAlert(ctx, request)
-	if err != nil {
-		return nil, err
-	}
-	return response, nil
+	return r.client.AlertsV2.UpdateAlert(ctx, request)
 }
 
 // DoDelete deletes the alert by id.
