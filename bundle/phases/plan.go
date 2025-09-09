@@ -2,6 +2,7 @@ package phases
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
@@ -54,6 +55,7 @@ func deployPrepare(ctx context.Context, b *bundle.Bundle) map[string][]libraries
 // If it does, it returns an error.
 func checkForPreventDestroy(b *bundle.Bundle, actions []deployplan.Action) error {
 	root := b.Config.Value()
+	var errs []error
 	for _, action := range actions {
 		if action.ActionType != deployplan.ActionTypeRecreate && action.ActionType != deployplan.ActionTypeDelete {
 			continue
@@ -71,8 +73,9 @@ func checkForPreventDestroy(b *bundle.Bundle, actions []deployplan.Action) error
 			return fmt.Errorf("internal error: prevent_destroy is not a boolean for %s.%s", action.Group, action.Key)
 		}
 		if preventDestroy {
-			return fmt.Errorf("resource %s has lifecycle.prevent_destroy set, but the plan calls for this resource to be recreated or destroyed. To avoid this error, disable lifecycle.prevent_destroy for %s.%s", action.Key, action.Group, action.Key)
+			errs = append(errs, fmt.Errorf("resource %s has lifecycle.prevent_destroy set, but the plan calls for this resource to be recreated or destroyed. To avoid this error, disable lifecycle.prevent_destroy for %s.%s", action.Key, action.Group, action.Key))
 		}
 	}
-	return nil
+
+	return errors.Join(errs...)
 }
