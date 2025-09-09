@@ -1,3 +1,5 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
 trace $CLI bundle deploy
 
 alert_id=$($CLI bundle summary --output json | jq -r '.resources.alerts.myalert.id')
