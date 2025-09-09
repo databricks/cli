@@ -22,9 +22,9 @@ type IResource interface {
 	// Single instance is reused across all instances, so it must not store any resource-specific state.
 	New(client *databricks.WorkspaceClient) any
 
-	// PrepareConfig converts resource's config as defined by bundle schema to the concrete type used by create/update and persisted in the state.
-	// Example: func (*ResourceJob) PrepareConfig(input *resources.Job) *jobs.JobSettings
-	PrepareConfig(input any) any
+	// PrepareState converts resource's config as defined by bundle schema to the concrete type used by create/update and persisted in the state.
+	// Example: func (*ResourceJob) PrepareState(input *resources.Job) *jobs.JobSettings
+	PrepareState(input any) any
 
 	// DoRefresh reads and returns remote state from the backend. The return type defines schema for remote field resolution.
 	// Example: func (r *ResourceJob) DoRefresh(ctx context.Context, id string) (*jobs.Job, error) {
@@ -48,61 +48,61 @@ type IResource interface {
 // Each method exists in two forms: NoRefresh (this interface) and WithRefresh (IResourceWithInterface).
 // Resource can pick which signature to implement for each method individually.
 type IResourceNoRefresh interface {
-	// Any field named config below have the same type as return value of PrepareConfig.
-	// Any field named remoteState below has the same type as return value of DoRefresh.
-	// We pass config as pointer but it is never nil. Changes to it will be persisted in the state, so should be used carefully.
+	// Any field named newState below has the same type as the return value of PrepareState.
+	// Any field named remoteState below has the same type as the return value of DoRefresh.
+	// We pass newState as a pointer but it is never nil. Changes to it will be persisted in the state, so should be used carefully.
 
-	// DoCreate creates a new resource from the config.
-	// Example: func (r *ResourceJob) DoCreate(ctx context.Context, config *jobs.JobSettings) (string, error) {
-	DoCreate(ctx context.Context, config any) (id string, e error)
+	// DoCreate creates a new resource from the newState.
+	// Example: func (r *ResourceJob) DoCreate(ctx context.Context, newState *jobs.JobSettings) (string, error) {
+	DoCreate(ctx context.Context, newState any) (id string, e error)
 
 	// DoUpdate updates the resource. ID must not change as a result of this operation.
-	// Example: func (r *ResourceJob) DoUpdate(ctx context.Context, id string, config *jobs.JobSettings) error {
-	DoUpdate(ctx context.Context, id string, config any) error
+	// Example: func (r *ResourceJob) DoUpdate(ctx context.Context, id string, newState *jobs.JobSettings) error {
+	DoUpdate(ctx context.Context, id string, newState any) error
 
 	// [Optional] DoUpdateWithID performs an update that may result in resource having a new ID
-	// Example: func (r *ResourceVolume) DoUpdateWithID(ctx, id string, config *catalog.CreateVolumeRequestContent) (string, error)
-	DoUpdateWithID(ctx context.Context, id string, config any) (string, error)
+	// Example: func (r *ResourceVolume) DoUpdateWithID(ctx, id string, newState *catalog.CreateVolumeRequestContent) (string, error)
+	DoUpdateWithID(ctx context.Context, id string, newState any) (string, error)
 
 	// [Optional] WaitAfterCreate waits for the resource to become ready after creation.
 	// TODO: wait status should be persisted in the state.
-	WaitAfterCreate(ctx context.Context, config any) error
+	WaitAfterCreate(ctx context.Context, newState any) error
 
 	// [Optional] WaitAfterUpdate waits for the resource to become ready after update.
-	WaitAfterUpdate(ctx context.Context, config any) error
+	WaitAfterUpdate(ctx context.Context, newState any) error
 }
 
 // IResourceWithRefresh is an alternative to IResourceNoRefresh but every method can return remoteState.
 // Only use these if you get remote state for free as part of the main operation. Otherwise, prefer simpler NoRefresh variants. The state will be fetched via separate DoRefresh in this case.
 // Note, resource implementations don't pick between IResourceNoRefresh and IResourceWithRefresh, they can make independent decision for each of the methods.
 type IResourceWithRefresh interface {
-	// DoCreate creates a new resource from the config. Returns id of the resource and remote state.
-	// Example: func (r *ResourceVolume) DoCreate(ctx context.Context, config *catalog.CreateVolumeRequestContent) (string, *catalog.VolumeInfo, error) {
-	DoCreate(ctx context.Context, config any) (id string, remoteState any, e error)
+	// DoCreate creates a new resource from the newState. Returns id of the resource and remote state.
+	// Example: func (r *ResourceVolume) DoCreate(ctx context.Context, newState *catalog.CreateWarehouseRequestContent) (string, *catalog.VolumeInfo, error) {
+	DoCreate(ctx context.Context, newState any) (id string, remoteState any, e error)
 
 	// DoUpdate updates the resource. ID must not change as a result of this operation. Returns remote state.
-	// Example: func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, config *catalog.CreateSchema) (*catalog.SchemaInfo, error) {
-	DoUpdate(ctx context.Context, id string, config any) (remoteState any, e error)
+	// Example: func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, newState *catalog.CreateSchema) (*catalog.SchemaInfo, error) {
+	DoUpdate(ctx context.Context, id string, newState any) (remoteState any, e error)
 
 	// Optional: updates that may change ID. Returns new id and remote state when available.
-	DoUpdateWithID(ctx context.Context, id string, config any) (newID string, remoteState any, e error)
+	DoUpdateWithID(ctx context.Context, id string, newState any) (newID string, remoteState any, e error)
 
 	// WaitAfterCreate waits for the resource to become ready after creation.
-	WaitAfterCreate(ctx context.Context, config any) (newRemoteState any, e error)
+	WaitAfterCreate(ctx context.Context, newState any) (newRemoteState any, e error)
 
 	// WaitAfterUpdate waits for the resource to become ready after update.
-	WaitAfterUpdate(ctx context.Context, config any) (newRemoteState any, e error)
+	WaitAfterUpdate(ctx context.Context, newState any) (newRemoteState any, e error)
 }
 
 // Adapter wraps resource implementation, validates signatures and type consistency across methods
 // and provides a unified interface.
 type Adapter struct {
 	// Required:
-	prepareConfig *calladapt.BoundCaller
-	doRefresh     *calladapt.BoundCaller
-	doDelete      *calladapt.BoundCaller
-	doCreate      *calladapt.BoundCaller
-	doUpdate      *calladapt.BoundCaller
+	prepareState *calladapt.BoundCaller
+	doRefresh    *calladapt.BoundCaller
+	doDelete     *calladapt.BoundCaller
+	doCreate     *calladapt.BoundCaller
+	doUpdate     *calladapt.BoundCaller
 
 	// Optional:
 	doUpdateWithID  *calladapt.BoundCaller
@@ -127,7 +127,7 @@ func NewAdapter(typedNil any, client *databricks.WorkspaceClient) (*Adapter, err
 	}
 	impl := outs[0]
 	adapter := &Adapter{
-		prepareConfig:   nil,
+		prepareState:    nil,
 		doRefresh:       nil,
 		doDelete:        nil,
 		doCreate:        nil,
@@ -175,7 +175,7 @@ func (a *Adapter) initMethods(resource any) error {
 		return err
 	}
 
-	a.prepareConfig, err = prepareCallRequired(resource, "PrepareConfig")
+	a.prepareState, err = prepareCallRequired(resource, "PrepareState")
 	if err != nil {
 		return err
 	}
@@ -240,8 +240,8 @@ func validateTypes(triples ...any) error {
 }
 
 func (a *Adapter) validate() error {
-	configType := a.ConfigType()
-	err := validatePointerToStruct(configType, "config type")
+	stateType := a.StateType()
+	err := validatePointerToStruct(stateType, "state type")
 	if err != nil {
 		return err
 	}
@@ -253,9 +253,9 @@ func (a *Adapter) validate() error {
 	}
 
 	validations := []any{
-		"PrepareConfig return", a.prepareConfig.OutTypes[0], configType,
-		"DoCreate config", a.doCreate.InTypes[1], configType,
-		"DoUpdate config", a.doUpdate.InTypes[2], configType,
+		"PrepareState return", a.prepareState.OutTypes[0], stateType,
+		"DoCreate newState", a.doCreate.InTypes[1], stateType,
+		"DoUpdate newState", a.doUpdate.InTypes[2], stateType,
 	}
 
 	// Check if this is WithRefresh version (returns 3 values: id, remoteState, error)
@@ -268,21 +268,21 @@ func (a *Adapter) validate() error {
 	}
 
 	if a.doUpdateWithID != nil {
-		validations = append(validations, "DoUpdateWithID config", a.doUpdateWithID.InTypes[2], configType)
+		validations = append(validations, "DoUpdateWithID newState", a.doUpdateWithID.InTypes[2], stateType)
 		if len(a.doUpdateWithID.OutTypes) == 3 {
 			validations = append(validations, "DoUpdateWithID remoteState return", a.doUpdateWithID.OutTypes[1], remoteType)
 		}
 	}
 
 	if a.waitAfterCreate != nil {
-		validations = append(validations, "WaitAfterCreate config", a.waitAfterCreate.InTypes[1], configType)
+		validations = append(validations, "WaitAfterCreate newState", a.waitAfterCreate.InTypes[1], stateType)
 		if len(a.waitAfterCreate.OutTypes) == 2 {
 			validations = append(validations, "WaitAfterCreate remoteState return", a.waitAfterCreate.OutTypes[0], remoteType)
 		}
 	}
 
 	if a.waitAfterUpdate != nil {
-		validations = append(validations, "WaitAfterUpdate config", a.waitAfterUpdate.InTypes[1], configType)
+		validations = append(validations, "WaitAfterUpdate newState", a.waitAfterUpdate.InTypes[1], stateType)
 		if len(a.waitAfterUpdate.OutTypes) == 2 {
 			validations = append(validations, "WaitAfterUpdate remoteState return", a.waitAfterUpdate.OutTypes[0], remoteType)
 		}
@@ -301,19 +301,19 @@ func (a *Adapter) validate() error {
 }
 
 func (a *Adapter) InputConfigType() reflect.Type {
-	return a.prepareConfig.InTypes[0]
+	return a.prepareState.InTypes[0]
 }
 
-func (a *Adapter) ConfigType() reflect.Type {
-	return a.prepareConfig.OutTypes[0]
+func (a *Adapter) StateType() reflect.Type {
+	return a.prepareState.OutTypes[0]
 }
 
 func (a *Adapter) RemoteType() reflect.Type {
 	return a.doRefresh.OutTypes[0]
 }
 
-func (a *Adapter) PrepareConfig(input any) (any, error) {
-	outs, err := a.prepareConfig.Call(input)
+func (a *Adapter) PrepareState(input any) (any, error) {
+	outs, err := a.prepareState.Call(input)
 	if err != nil {
 		return nil, err
 	}
@@ -336,12 +336,12 @@ func (a *Adapter) DoDelete(ctx context.Context, id string) error {
 	return nil
 }
 
-func (a *Adapter) DoCreate(ctx context.Context, config any) (string, any, error) {
+func (a *Adapter) DoCreate(ctx context.Context, newState any) (string, any, error) {
 	if a.doCreate == nil {
 		return "", nil, errors.New("internal error: DoCreate not found")
 	}
 
-	outs, err := a.doCreate.Call(ctx, config)
+	outs, err := a.doCreate.Call(ctx, newState)
 	if err != nil {
 		return "", nil, err
 	}
@@ -362,12 +362,12 @@ func (a *Adapter) DoCreate(ctx context.Context, config any) (string, any, error)
 
 // DoUpdate updates the resource. If the implementation returns remote state,
 // it will be returned as the first value; otherwise it will be nil.
-func (a *Adapter) DoUpdate(ctx context.Context, id string, config any) (any, error) {
+func (a *Adapter) DoUpdate(ctx context.Context, id string, newState any) (any, error) {
 	if a.doUpdate == nil {
 		return nil, errors.New("internal error: DoUpdate not found")
 	}
 
-	outs, err := a.doUpdate.Call(ctx, id, config)
+	outs, err := a.doUpdate.Call(ctx, id, newState)
 	if err != nil {
 		return nil, err
 	}
@@ -392,12 +392,12 @@ func (a *Adapter) HasDoUpdateWithID() bool {
 }
 
 // DoUpdateWithID updates the resource and may change its ID. Returns newID and remoteState if available.
-func (a *Adapter) DoUpdateWithID(ctx context.Context, oldID string, config any) (string, any, error) {
+func (a *Adapter) DoUpdateWithID(ctx context.Context, oldID string, newState any) (string, any, error) {
 	if a.doUpdateWithID == nil {
 		return "", nil, errors.New("internal error: DoUpdateWithID not found")
 	}
 
-	outs, err := a.doUpdateWithID.Call(ctx, oldID, config)
+	outs, err := a.doUpdateWithID.Call(ctx, oldID, newState)
 	if err != nil {
 		return "", nil, err
 	}
@@ -441,12 +441,12 @@ func (a *Adapter) ClassifyChanges(changes []structdiff.Change) (deployplan.Actio
 // WaitAfterCreate waits for the resource to become ready after creation.
 // If the resource doesn't implement this method, this is a no-op.
 // Returns the updated remoteState if the WithRefresh variant is implemented, otherwise returns nil
-func (a *Adapter) WaitAfterCreate(ctx context.Context, config any) (any, error) {
+func (a *Adapter) WaitAfterCreate(ctx context.Context, newState any) (any, error) {
 	if a.waitAfterCreate == nil {
 		return nil, nil // no-op if not implemented
 	}
 
-	outs, err := a.waitAfterCreate.Call(ctx, config)
+	outs, err := a.waitAfterCreate.Call(ctx, newState)
 	if err != nil {
 		return nil, err
 	}
@@ -463,12 +463,12 @@ func (a *Adapter) WaitAfterCreate(ctx context.Context, config any) (any, error) 
 // WaitAfterUpdate waits for the resource to become ready after update.
 // If the resource doesn't implement this method, this is a no-op.
 // Returns the updated remoteState if the WithRefresh variant is implemented, otherwise returns the input remoteState.
-func (a *Adapter) WaitAfterUpdate(ctx context.Context, config any) (any, error) {
+func (a *Adapter) WaitAfterUpdate(ctx context.Context, newState any) (any, error) {
 	if a.waitAfterUpdate == nil {
 		return nil, nil // no-op if not implemented
 	}
 
-	outs, err := a.waitAfterUpdate.Call(ctx, config)
+	outs, err := a.waitAfterUpdate.Call(ctx, newState)
 	if err != nil {
 		return nil, err
 	}

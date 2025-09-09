@@ -79,7 +79,7 @@ func dumpRemoteSchemas(out io.Writer) error {
 		if err := collect(adapter.InputConfigType(), "INPUT"); err != nil {
 			return fmt.Errorf("failed to walk input type for %s: %w", resourceName, err)
 		}
-		if err := collect(adapter.ConfigType(), "STATE"); err != nil {
+		if err := collect(adapter.StateType(), "STATE"); err != nil {
 			return fmt.Errorf("failed to walk config type for %s: %w", resourceName, err)
 		}
 		if err := collect(adapter.RemoteType(), "REMOTE"); err != nil {
