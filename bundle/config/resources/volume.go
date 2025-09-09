@@ -41,18 +41,13 @@ type VolumeGrant struct {
 }
 
 type Volume struct {
+	BaseResource
+
 	// List of grants to apply on this volume.
 	Grants []VolumeGrant `json:"grants,omitempty"`
 
-	// Full name of the volume (catalog_name.schema_name.volume_name). This value is read from
-	// the terraform state after deployment succeeds.
-	ID string `json:"id,omitempty" bundle:"readonly"`
-
 	catalog.CreateVolumeRequestContent
 	Lifecycle Lifecycle `json:"lifecycle,omitempty"`
-
-	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"internal"`
-	URL            string         `json:"url,omitempty" bundle:"internal"`
 }
 
 func (v *Volume) UnmarshalJSON(b []byte) error {

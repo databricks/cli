@@ -18,8 +18,12 @@ func (*ResourcePipeline) New(client *databricks.WorkspaceClient) *ResourcePipeli
 	}
 }
 
-func (*ResourcePipeline) PrepareConfig(input *resources.Pipeline) *pipelines.CreatePipeline {
+func (*ResourcePipeline) PrepareState(input *resources.Pipeline) *pipelines.CreatePipeline {
 	return &input.CreatePipeline
+}
+
+func (r *ResourcePipeline) DoRefresh(ctx context.Context, id string) (*pipelines.GetPipelineResponse, error) {
+	return r.client.Pipelines.GetByPipelineId(ctx, id)
 }
 
 func (r *ResourcePipeline) DoCreate(ctx context.Context, config *pipelines.CreatePipeline) (string, error) {

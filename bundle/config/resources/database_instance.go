@@ -23,10 +23,9 @@ type DatabaseInstancePermission struct {
 }
 
 type DatabaseInstance struct {
-	ID             string                       `json:"id,omitempty" bundle:"readonly"`
-	URL            string                       `json:"url,omitempty" bundle:"internal"`
-	Permissions    []DatabaseInstancePermission `json:"permissions,omitempty"`
-	ModifiedStatus ModifiedStatus               `json:"modified_status,omitempty" bundle:"internal"`
+	BaseResource
+
+	Permissions []DatabaseInstancePermission `json:"permissions,omitempty"`
 
 	database.DatabaseInstance
 	Lifecycle Lifecycle `json:"lifecycle,omitempty"`

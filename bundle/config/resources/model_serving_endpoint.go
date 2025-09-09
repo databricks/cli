@@ -23,21 +23,17 @@ type ModelServingEndpointPermission struct {
 }
 
 type ModelServingEndpoint struct {
-	// This represents the input args for terraform, and will get converted
-	// to a HCL representation for CRUD
-	serving.CreateServingEndpoint
 	Lifecycle Lifecycle `json:"lifecycle,omitempty"`
 
-	// This represents the id (ie serving_endpoint_id) that can be used
-	// as a reference in other resources. This value is returned by terraform.
-	ID string `json:"id,omitempty" bundle:"readonly"`
+	BaseResource
 
 	// This is a resource agnostic implementation of permissions for ACLs.
 	// Implementation could be different based on the resource type.
 	Permissions []ModelServingEndpointPermission `json:"permissions,omitempty"`
 
-	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"internal"`
-	URL            string         `json:"url,omitempty" bundle:"internal"`
+	// This represents the input args for terraform, and will get converted
+	// to a HCL representation for CRUD
+	serving.CreateServingEndpoint
 }
 
 func (s *ModelServingEndpoint) UnmarshalJSON(b []byte) error {

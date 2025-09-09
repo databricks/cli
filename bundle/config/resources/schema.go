@@ -60,18 +60,13 @@ type SchemaGrant struct {
 }
 
 type Schema struct {
+	BaseResource
+
 	// List of grants to apply on this schema.
 	Grants []SchemaGrant `json:"grants,omitempty"`
 
-	// Full name of the schema (catalog_name.schema_name). This value is read from
-	// the terraform state after deployment succeeds.
-	ID string `json:"id,omitempty" bundle:"readonly"`
-
 	catalog.CreateSchema
 	Lifecycle Lifecycle `json:"lifecycle,omitempty"`
-
-	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"internal"`
-	URL            string         `json:"url,omitempty" bundle:"internal"`
 }
 
 func (s *Schema) Exists(ctx context.Context, w *databricks.WorkspaceClient, fullName string) (bool, error) {

@@ -21,11 +21,9 @@ type SqlWarehousePermission struct {
 }
 
 type SqlWarehouse struct {
-	ID string `json:"id,omitempty" bundle:"readonly"`
+	BaseResource
 
-	Permissions    []SqlWarehousePermission `json:"permissions,omitempty"`
-	ModifiedStatus ModifiedStatus           `json:"modified_status,omitempty" bundle:"internal"`
-	URL            string                   `json:"url,omitempty" bundle:"internal"`
+	Permissions []SqlWarehousePermission `json:"permissions,omitempty"`
 
 	sql.CreateWarehouseRequest
 	Lifecycle Lifecycle `json:"lifecycle,omitempty"`

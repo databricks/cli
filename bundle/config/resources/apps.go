@@ -23,9 +23,7 @@ type AppPermission struct {
 }
 
 type App struct {
-	// This is app's name pulled from the state. Usually the same as Name but may be different if Name in the config
-	// was changed but the app was not re-deployed yet.
-	ID string `json:"id,omitempty" bundle:"readonly"`
+	BaseResource
 
 	// SourceCodePath is a required field used by DABs to point to Databricks app source code
 	// on local disk and to the corresponding workspace path during app deployment.
@@ -34,15 +32,13 @@ type App struct {
 	// Config is an optional field which allows configuring the app following Databricks app configuration format like in app.yml.
 	// When this field is set, DABs read the configuration set in this field and write
 	// it to app.yml in the root of the source code folder in Databricks workspace.
-	// If there’s app.yml defined locally, DABs will raise an error.
+	// If there's app.yml defined locally, DABs will raise an error.
 	Config map[string]any `json:"config,omitempty"`
 
-	Permissions    []AppPermission `json:"permissions,omitempty"`
-	ModifiedStatus ModifiedStatus  `json:"modified_status,omitempty" bundle:"internal"`
-	URL            string          `json:"url,omitempty" bundle:"internal"`
+	Permissions []AppPermission `json:"permissions,omitempty"`
 
-	apps.App
 	Lifecycle Lifecycle `json:"lifecycle,omitempty"`
+	apps.App // nolint App struct also defines Id and URL field with the same json tag "id" and "url"
 }
 
 func (a *App) UnmarshalJSON(b []byte) error {
