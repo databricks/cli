@@ -1,20 +1,5 @@
 bundle:
   name: prevent-destroy
 
-lifecycle: &lifecycle_base
-  lifecycle:
-    prevent_destroy: true
-
-pipeline: &pipeline_base
-  resources:
-    pipelines:
-      my_pipelines:
-        name: "test-pipeline"
-        libraries:
-          - notebook:
-              path: "./test-notebook.py"
-        <<: *lifecycle_base
-        schema: test-schema
-        catalog: main
-
-<<: *pipeline_base
+include:
+  - resources/*.yml
