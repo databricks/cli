@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/compute"
@@ -26,7 +27,10 @@ func WorkspaceTest(t testutil.TestingT) (context.Context, *WorkspaceT) {
 
 	t.Logf("CLOUD_ENV=%s", testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
-	w, err := databricks.NewWorkspaceClient()
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{
+		HTTPTimeoutSeconds:  config.WorkspaceClientHTTPTimeoutSeconds,
+		RetryTimeoutSeconds: config.WorkspaceRetryTimeoutSeconds,
+	})
 	require.NoError(t, err)
 
 	wt := &WorkspaceT{
@@ -54,7 +58,10 @@ func UcWorkspaceTest(t testutil.TestingT) (context.Context, *WorkspaceT) {
 		t.Skipf("Skipping on accounts")
 	}
 
-	w, err := databricks.NewWorkspaceClient()
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{
+		HTTPTimeoutSeconds:  config.WorkspaceClientHTTPTimeoutSeconds,
+		RetryTimeoutSeconds: config.WorkspaceRetryTimeoutSeconds,
+	})
 	require.NoError(t, err)
 
 	wt := &WorkspaceT{
