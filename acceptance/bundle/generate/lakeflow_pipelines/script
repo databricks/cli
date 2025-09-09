@@ -1,10 +1,5 @@
 export PIPELINE_ID=$($CLI pipelines create --json @pipeline.json | jq -r .pipeline_id)
 
-# content is base64 encoded "print('Hello, World!')"
-$CLI workspace import /Workspace/Users/tester@databricks.com/lakeflow_pipeline/transformations/1.py --content "cHJpbnQoJ0hlbGxvLCBXb3JsZCAxIScp" --format AUTO
-$CLI workspace import /Workspace/Users/tester@databricks.com/lakeflow_pipeline/transformations/2.py --content "cHJpbnQoJ0hlbGxvLCBXb3JsZCAxIScp" --format AUTO
-$CLI workspace import /Workspace/Users/tester@databricks.com/lakeflow_pipeline/explorations/1.py --content "cHJpbnQoJ0hlbGxvLCBXb3JsZCAxIScp" --format AUTO
-
 $CLI bundle generate pipeline --existing-pipeline-id ${PIPELINE_ID} --config-dir out/config --key out --source-dir out/pipeline > out.stdout 2> out.stderr
 
 # Combine stdout and stderr, then sort only the "File successfully saved" lines
