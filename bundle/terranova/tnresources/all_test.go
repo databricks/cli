@@ -187,8 +187,6 @@ func TestRecreateFields(t *testing.T) {
 func setupTestServerClient(t *testing.T) (*testserver.Server, *databricks.WorkspaceClient) {
 	server := testserver.New(t)
 	testserver.AddDefaultHandlers(server)
-	t.Setenv("DATABRICKS_HOST", server.URL)
-	t.Setenv("DATABRICKS_TOKEN", "testtoken")
 	client, err := databricks.NewWorkspaceClient(&databricks.Config{
 		Host:               server.URL,
 		Token:              "testtoken",
