@@ -1,10 +1,10 @@
 bundle:
-  name: test-pipeline-lakeflow-pipeline
+  name: test-pipeline-lakeflow-pipeline-$UNIQUE_NAME
 
 resources:
   pipelines:
     foo:
-      name: test-pipeline-lakeflow-pipeline
+      name: test-pipeline-lakeflow-pipeline-$UNIQUE_NAME
       libraries:
         - glob:
             include: ./pipeline/transformations/**

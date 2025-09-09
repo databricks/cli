@@ -1,4 +1,11 @@
+envsubst < databricks.yml.tmpl > databricks.yml
 trace $CLI bundle validate
+
+cleanup() {
+  trace $CLI bundle destroy --auto-approve
+  rm out.requests.txt
+}
+trap cleanup EXIT
 trace $CLI bundle deploy
 
 trace jq -s '.[] | select(.path=="/api/2.0/pipelines" and .method == "POST") | .body' out.requests.txt
