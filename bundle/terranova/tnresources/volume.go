@@ -44,7 +44,7 @@ func (r *ResourceVolume) DoUpdate(ctx context.Context, id string, config *catalo
 		NewName: "", // Not supported by Update(). Needs DoUpdateWithID()
 		Owner:   "", // Not supported by DABs
 
-		ForceSendFields: nil,
+		ForceSendFields: filterFields[catalog.UpdateVolumeRequestContent](config.ForceSendFields, "NewName", "Owner"),
 	}
 
 	nameFromID, err := getNameFromID(id)
@@ -76,7 +76,7 @@ func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string, config *
 		NewName: "", // Initialized below if needed
 		Owner:   "", // Not supported by DABs
 
-		ForceSendFields: nil,
+		ForceSendFields: filterFields[catalog.UpdateVolumeRequestContent](config.ForceSendFields, "Owner"),
 	}
 
 	items := strings.Split(id, ".")
