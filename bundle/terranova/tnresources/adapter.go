@@ -26,12 +26,18 @@ type IResource interface {
 	// Example: func (*ResourceJob) PrepareState(input *resources.Job) *jobs.JobSettings
 	PrepareState(input any) any
 
+	// [Required if type(remoteState) != type(state)] RemapState adapts remote state to local state type.
+	// The adapted remote state will then be compared with newState to detect remote drift.
+	// Adaptation is not necessary (but possible) if types already match.
+	// Example: func (*ResourceJob) RemapState(jobs *jobs.Job) *jobs.JobSettings
+	RemapState(input any) any
+
 	// DoRefresh reads and returns remote state from the backend. The return type defines schema for remote field resolution.
-	// Example: func (r *ResourceJob) DoRefresh(ctx context.Context, id string) (*jobs.Job, error) {
+	// Example: func (r *ResourceJob) DoRefresh(ctx context.Context, id string) (*jobs.Job, error)
 	DoRefresh(ctx context.Context, id string) (remoteState any, e error)
 
 	// DoDelete deletes the resource.
-	// Example: func (r *ResourceJob) DoDelete(ctx context.Context, id string) error {
+	// Example: func (r *ResourceJob) DoDelete(ctx context.Context, id string) error
 	DoDelete(ctx context.Context, id string) error
 
 	// [Optional] FieldTriggers returns actions to trigger when given fields are changed.
@@ -49,11 +55,11 @@ type IResourceNoRefresh interface {
 	// We pass newState as a pointer but it is never nil. Changes to it will be persisted in the state, so should be used carefully.
 
 	// DoCreate creates a new resource from the newState.
-	// Example: func (r *ResourceJob) DoCreate(ctx context.Context, newState *jobs.JobSettings) (string, error) {
+	// Example: func (r *ResourceJob) DoCreate(ctx context.Context, newState *jobs.JobSettings) (string, error)
 	DoCreate(ctx context.Context, newState any) (id string, e error)
 
 	// DoUpdate updates the resource. ID must not change as a result of this operation.
-	// Example: func (r *ResourceJob) DoUpdate(ctx context.Context, id string, newState *jobs.JobSettings) error {
+	// Example: func (r *ResourceJob) DoUpdate(ctx context.Context, id string, newState *jobs.JobSettings) error
 	DoUpdate(ctx context.Context, id string, newState any) error
 
 	// [Optional] DoUpdateWithID performs an update that may result in resource having a new ID
@@ -73,11 +79,11 @@ type IResourceNoRefresh interface {
 // Note, resource implementations don't pick between IResourceNoRefresh and IResourceWithRefresh, they can make independent decision for each of the methods.
 type IResourceWithRefresh interface {
 	// DoCreate creates a new resource from the newState. Returns id of the resource and remote state.
-	// Example: func (r *ResourceVolume) DoCreate(ctx context.Context, newState *catalog.CreateWarehouseRequestContent) (string, *catalog.VolumeInfo, error) {
+	// Example: func (r *ResourceVolume) DoCreate(ctx context.Context, newState *catalog.CreateWarehouseRequestContent) (string, *catalog.VolumeInfo, error)
 	DoCreate(ctx context.Context, newState any) (id string, remoteState any, e error)
 
 	// DoUpdate updates the resource. ID must not change as a result of this operation. Returns remote state.
-	// Example: func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, newState *catalog.CreateSchema) (*catalog.SchemaInfo, error) {
+	// Example: func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, newState *catalog.CreateSchema) (*catalog.SchemaInfo, error)
 	DoUpdate(ctx context.Context, id string, newState any) (remoteState any, e error)
 
 	// Optional: updates that may change ID. Returns new id and remote state when available.
@@ -95,6 +101,7 @@ type IResourceWithRefresh interface {
 type Adapter struct {
 	// Required:
 	prepareState *calladapt.BoundCaller
+	remapState   *calladapt.BoundCaller
 	doRefresh    *calladapt.BoundCaller
 	doDelete     *calladapt.BoundCaller
 	doCreate     *calladapt.BoundCaller
@@ -123,6 +130,7 @@ func NewAdapter(typedNil any, client *databricks.WorkspaceClient) (*Adapter, err
 	impl := outs[0]
 	adapter := &Adapter{
 		prepareState:    nil,
+		remapState:      nil,
 		doRefresh:       nil,
 		doDelete:        nil,
 		doCreate:        nil,
@@ -170,6 +178,12 @@ func (a *Adapter) initMethods(resource any) error {
 	}
 
 	a.prepareState, err = prepareCallRequired(resource, "PrepareState")
+	if err != nil {
+		return err
+	}
+
+	// RemapState is optional when remote type already matches state type.
+	a.remapState, err = calladapt.PrepareCall(resource, calladapt.TypeOf[IResource](), "RemapState")
 	if err != nil {
 		return err
 	}
@@ -251,6 +265,17 @@ func (a *Adapter) validate() error {
 		"DoUpdate newState", a.doUpdate.InTypes[2], stateType,
 	}
 
+	// If RemapState is implemented, validate its signature.
+	// Otherwise require remote type to equal state type so remapping isn't needed.
+	if a.remapState != nil {
+		validations = append(validations,
+			"RemapState input", a.remapState.InTypes[0], remoteType,
+			"RemapState return", a.remapState.OutTypes[0], stateType,
+		)
+	} else if remoteType != stateType {
+		return fmt.Errorf("RemapState method not found and remote type %v must match state type %v", remoteType, stateType)
+	}
+
 	// Check if this is WithRefresh version (returns 3 values: id, remoteState, error)
 	if len(a.doCreate.OutTypes) == 3 {
 		validations = append(validations, "DoCreate remoteState return", a.doCreate.OutTypes[1], remoteType)
@@ -317,6 +342,18 @@ func (a *Adapter) RemoteType() reflect.Type {
 
 func (a *Adapter) PrepareState(input any) (any, error) {
 	outs, err := a.prepareState.Call(input)
+	if err != nil {
+		return nil, err
+	}
+	return outs[0], nil
+}
+
+func (a *Adapter) RemapState(remoteState any) (any, error) {
+	if a.remapState == nil {
+		return remoteState, nil
+	}
+
+	outs, err := a.remapState.Call(remoteState)
 	if err != nil {
 		return nil, err
 	}

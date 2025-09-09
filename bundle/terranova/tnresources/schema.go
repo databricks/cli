@@ -22,6 +22,17 @@ func (*ResourceSchema) PrepareState(input *resources.Schema) *catalog.CreateSche
 	return &input.CreateSchema
 }
 
+func (*ResourceSchema) RemapState(info *catalog.SchemaInfo) *catalog.CreateSchema {
+	return &catalog.CreateSchema{
+		CatalogName:     info.CatalogName,
+		Comment:         info.Comment,
+		Name:            info.Name,
+		Properties:      info.Properties,
+		StorageRoot:     info.StorageRoot,
+		ForceSendFields: filterFields[catalog.CreateSchema](info.ForceSendFields),
+	}
+}
+
 func (r *ResourceSchema) DoRefresh(ctx context.Context, id string) (*catalog.SchemaInfo, error) {
 	return r.client.Schemas.GetByFullName(ctx, id)
 }
