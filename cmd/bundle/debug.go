@@ -14,5 +14,6 @@ func newDebugCommand() *cobra.Command {
 		Hidden: true,
 	}
 	cmd.AddCommand(debug.NewTerraformCommand())
+	cmd.AddCommand(debug.NewRefSchemaCommand())
 	return cmd
 }
