@@ -45,6 +45,11 @@ func TestConvertReferenceToMetric_Table(t *testing.T) {
 			want: "resref_jobs.id",
 		},
 		{
+			name: "basic job id with non-ascii key",
+			ref:  "resources.jobs.джоб.id",
+			want: "resreferr_jobs",
+		},
+		{
 			name: "invalid empty",
 			ref:  "",
 			want: "",
