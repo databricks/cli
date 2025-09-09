@@ -28,29 +28,29 @@ func (r *ResourceAlert) DoRefresh(ctx context.Context, id string) (*sql.AlertV2,
 }
 
 // DoCreate creates the alert and returns its id.
-func (r *ResourceAlert) DoCreate(ctx context.Context, config *sql.AlertV2) (string, error) {
+func (r *ResourceAlert) DoCreate(ctx context.Context, config *sql.AlertV2) (string, *sql.AlertV2, error) {
 	request := sql.CreateAlertV2Request{
 		Alert: *config,
 	}
 	response, err := r.client.AlertsV2.CreateAlert(ctx, request)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
-	return response.Id, nil
+	return response.Id, response, nil
 }
 
 // DoUpdate updates the alert in place.
-func (r *ResourceAlert) DoUpdate(ctx context.Context, id string, config *sql.AlertV2) error {
+func (r *ResourceAlert) DoUpdate(ctx context.Context, id string, config *sql.AlertV2) (*sql.AlertV2, error) {
 	request := sql.UpdateAlertV2Request{
 		Id:         id,
 		Alert:      *config,
 		UpdateMask: "*",
 	}
-	_, err := r.client.AlertsV2.UpdateAlert(ctx, request)
+	response, err := r.client.AlertsV2.UpdateAlert(ctx, request)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return response, nil
 }
 
 // DoDelete deletes the alert by id.
