@@ -105,8 +105,8 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		inputConfig = reflect.New(adapter.InputConfigType().Elem()).Interface()
 	}
 
-	config, err := adapter.PrepareConfig(inputConfig)
-	require.NoError(t, err, "PrepareConfig failed")
+	newState, err := adapter.PrepareState(inputConfig)
+	require.NoError(t, err, "PrepareState failed")
 
 	ctx := context.Background()
 
@@ -116,8 +116,8 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	require.Error(t, err)
 	// TODO: if errors.Is(err, databricks.ErrResourceDoesNotExist) {... }
 
-	createdID, remoteStateFromCreate, err := adapter.DoCreate(ctx, config)
-	require.NoError(t, err, "DoCreate failed config=%v", config)
+	createdID, remoteStateFromCreate, err := adapter.DoCreate(ctx, newState)
+	require.NoError(t, err, "DoCreate failed state=%v", newState)
 	require.NotEmpty(t, createdID, "ID returned from DoCreate was empty")
 
 	remote, err = adapter.DoRefresh(ctx, createdID)
@@ -127,19 +127,19 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		require.Equal(t, remoteStateFromCreate, remote)
 	}
 
-	remoteStateFromWaitCreate, err := adapter.WaitAfterCreate(ctx, config)
+	remoteStateFromWaitCreate, err := adapter.WaitAfterCreate(ctx, newState)
 	require.NoError(t, err)
 	if remoteStateFromWaitCreate != nil {
 		require.Equal(t, remote, remoteStateFromWaitCreate)
 	}
 
-	remoteStateFromUpdate, err := adapter.DoUpdate(ctx, createdID, config)
+	remoteStateFromUpdate, err := adapter.DoUpdate(ctx, createdID, newState)
 	require.NoError(t, err, "DoUpdate failed")
 	if remoteStateFromUpdate != nil {
 		require.Equal(t, remote, remoteStateFromUpdate)
 	}
 
-	remoteStateFromWaitUpdate, err := adapter.WaitAfterUpdate(ctx, config)
+	remoteStateFromWaitUpdate, err := adapter.WaitAfterUpdate(ctx, newState)
 	require.NoError(t, err)
 	if remoteStateFromWaitUpdate != nil {
 		require.Equal(t, remote, remoteStateFromWaitUpdate)

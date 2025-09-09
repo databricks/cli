@@ -35,12 +35,12 @@ func (d *DeploymentUnit) plan(ctx context.Context, client *databricks.WorkspaceC
 		return "", errors.New("invalid state: empty id")
 	}
 
-	config, err := d.Adapter.PrepareConfig(inputConfig)
+	newState, err := d.Adapter.PrepareState(inputConfig)
 	if err != nil {
 		return "", fmt.Errorf("reading config: %w", err)
 	}
 
-	savedState, err := typeConvert(d.Adapter.ConfigType(), entry.State)
+	savedState, err := typeConvert(d.Adapter.StateType(), entry.State)
 	if err != nil {
 		return "", fmt.Errorf("interpreting state: %w", err)
 	}
@@ -51,7 +51,7 @@ func (d *DeploymentUnit) plan(ctx context.Context, client *databricks.WorkspaceC
 	// for integers: compare 0 with actual object ID. As long as real object IDs are never 0 we're good.
 	// Once we add non-id fields or add per-field details to "bundle plan", we must read dynamic data and deal with references as first class citizen.
 	// This means distinguishing between 0 that are actually object ids and 0 that are there because typed struct integer cannot contain ${...} string.
-	return calcDiff(d.Adapter, savedState, config)
+	return calcDiff(d.Adapter, savedState, newState)
 }
 
 func (d *DeploymentUnit) refreshRemoteState(ctx context.Context, id string) error {

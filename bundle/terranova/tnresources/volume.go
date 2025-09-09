@@ -21,7 +21,7 @@ func (*ResourceVolume) New(client *databricks.WorkspaceClient) *ResourceVolume {
 	return &ResourceVolume{client: client}
 }
 
-func (*ResourceVolume) PrepareConfig(input *resources.Volume) *catalog.CreateVolumeRequestContent {
+func (*ResourceVolume) PrepareState(input *resources.Volume) *catalog.CreateVolumeRequestContent {
 	return &input.CreateVolumeRequestContent
 }
 
