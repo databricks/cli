@@ -93,10 +93,16 @@ func TestStatementResponseTypes(t *testing.T) {
 }
 
 func TestExecuteStatementCommand(t *testing.T) {
-	cmd := newExecuteStatementCommand()
-	assert.NotNil(t, cmd)
-	assert.Equal(t, "execute-statement WAREHOUSE_ID STATEMENT", cmd.Use)
-	assert.Contains(t, cmd.Long, "Execute a SQL statement")
+    cmd := newExecuteStatementCommand()
+    assert.NotNil(t, cmd)
+    // Accepts either inline statement or --file
+    assert.Equal(t, "execute-statement STATEMENT", cmd.Use)
+    assert.Contains(t, cmd.Long, "Execute a SQL statement")
+    // Ensure --file flag is present for SQL file input
+    f := cmd.Flags().Lookup("file")
+    if assert.NotNil(t, f) {
+        assert.Equal(t, "file", f.Name)
+    }
 }
 
 func TestGetStatementCommand(t *testing.T) {

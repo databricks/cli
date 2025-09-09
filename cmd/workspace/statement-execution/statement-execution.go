@@ -1,17 +1,22 @@
 package statement_execution
 
 import (
-	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/libs/cmdctx"
-	"github.com/spf13/cobra"
+    "fmt"
+    "io"
+    "os"
+
+    "github.com/databricks/cli/cmd/root"
+    "github.com/databricks/cli/libs/cmdctx"
+    "github.com/spf13/cobra"
 )
 
+// New returns the statement-execution root command.
 func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "statement-execution",
-		Short: "Execute SQL statements",
-		Long:  "Execute SQL statements against Databricks SQL warehouses",
-	}
+    cmd := &cobra.Command{
+        Use:   "statement-execution",
+        Short: "Execute SQL statements",
+        Long:  "Execute SQL statements against Databricks SQL warehouses",
+    }
 
 	cmd.AddCommand(newExecuteStatementCommand())
 	cmd.AddCommand(newGetStatementCommand())
@@ -19,11 +24,12 @@ func New() *cobra.Command {
 	return cmd
 }
 
+// newExecuteStatementCommand returns the execute-statement subcommand.
 func newExecuteStatementCommand() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "execute-statement STATEMENT",
-		Short: "Execute a SQL statement",
-		Long: `Execute a SQL statement and optionally await its results.
+    cmd := &cobra.Command{
+        Use:   "execute-statement STATEMENT",
+        Short: "Execute a SQL statement",
+        Long: `Execute a SQL statement and optionally await its results.
 
 The warehouse_id is automatically set to a5e694153a0d5e8c by default, but can be overridden:
 - Via DATABRICKS_WAREHOUSE_ID environment variable
@@ -42,6 +48,7 @@ The command supports various options for controlling execution behavior:
 - Different result dispositions (INLINE or EXTERNAL_LINKS)
 - Various output formats (JSON_ARRAY, ARROW_STREAM, CSV)
 - Parameterized queries
+ - Reading SQL from a file via --file (use "-" for stdin)
 
 Examples:
   # Execute with default warehouse (simplest)
@@ -61,10 +68,18 @@ Examples:
   databricks statement-execution execute-statement "SELECT * FROM my_table" --wait-timeout 0s
 
   # Execute with external links for large results
-  databricks statement-execution execute-statement "SELECT * FROM my_table" --disposition EXTERNAL_LINKS`,
-	}
+  databricks statement-execution execute-statement "SELECT * FROM my_table" --disposition EXTERNAL_LINKS
+
+  # Execute SQL from a file
+  databricks statement-execution execute-statement --file query.sql
+
+  # Execute SQL from stdin
+  cat query.sql | databricks statement-execution execute-statement --file -
+  `,
+    }
 
 	var req ExecuteStatementRequest
+	var filePath string
 
 	cmd.Flags().StringVar(&req.Catalog, "catalog", "", "Default catalog for statement execution")
 	cmd.Flags().StringVar(&req.Schema, "schema", "", "Default schema for statement execution")
@@ -75,20 +90,47 @@ Examples:
 	cmd.Flags().Int64Var(&req.RowLimit, "row-limit", 0, "Row limit for result set")
 	cmd.Flags().Int64Var(&req.ByteLimit, "byte-limit", 16777216, "Byte limit for result size (default 16MB)")
 
+    cmd.Flags().StringVar(&filePath, "file", "", "Path to SQL file containing the statement (use '-' for stdin)")
+
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		if len(args) < 1 || len(args) > 2 {
-			return cmd.Usage()
-		}
+		// Validate args depending on whether a file was provided.
+		if filePath == "" {
+			// Statement must be provided as an argument: either STATEMENT or WAREHOUSE_ID STATEMENT
+			if len(args) < 1 || len(args) > 2 {
+				return cmd.Usage()
+			}
 
-		// Handle optional warehouse_id parameter
-		if len(args) == 2 {
-			req.WarehouseId = args[0]
-			req.Statement = args[1]
+			// Handle optional warehouse_id parameter
+			if len(args) == 2 {
+				req.WarehouseId = args[0]
+				req.Statement = args[1]
+			} else {
+				req.Statement = args[0]
+				// warehouse_id will be set automatically in the implementation
+			}
 		} else {
-			req.Statement = args[0]
-			// warehouse_id will be set automatically in the implementation
-		}
+			// File provided: args may optionally include a warehouse id
+			if len(args) > 1 {
+				return cmd.Usage()
+			}
+			if len(args) == 1 {
+				req.WarehouseId = args[0]
+			}
+
+        	// Read file contents (support '-' for stdin)
+        	var b []byte
+        	var err error
+        	if filePath == "-" {
+        		b, err = io.ReadAll(os.Stdin)
+        	} else {
+        		b, err = os.ReadFile(filePath)
+        	}
+        	if err != nil {
+        		return fmt.Errorf("failed to read SQL file: %w", err)
+        	}
+        	req.Statement = string(b)
+        }
 
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
@@ -99,6 +141,7 @@ Examples:
 	return cmd
 }
 
+// newGetStatementCommand returns the get-statement subcommand.
 func newGetStatementCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "get-statement STATEMENT_ID",
