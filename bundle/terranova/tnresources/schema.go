@@ -17,7 +17,7 @@ func (*ResourceSchema) New(client *databricks.WorkspaceClient) *ResourceSchema {
 	return &ResourceSchema{client: client}
 }
 
-func (*ResourceSchema) PrepareConfig(input *resources.Schema) *catalog.CreateSchema {
+func (*ResourceSchema) PrepareState(input *resources.Schema) *catalog.CreateSchema {
 	return &input.CreateSchema
 }
 

@@ -16,7 +16,7 @@ func (*ResourceSyncedDatabaseTable) New(client *databricks.WorkspaceClient) *Res
 	return &ResourceSyncedDatabaseTable{client: client}
 }
 
-func (*ResourceSyncedDatabaseTable) PrepareConfig(input *resources.SyncedDatabaseTable) *database.SyncedDatabaseTable {
+func (*ResourceSyncedDatabaseTable) PrepareState(input *resources.SyncedDatabaseTable) *database.SyncedDatabaseTable {
 	return &input.SyncedDatabaseTable
 }
 

@@ -18,7 +18,7 @@ func (*ResourcePipeline) New(client *databricks.WorkspaceClient) *ResourcePipeli
 	}
 }
 
-func (*ResourcePipeline) PrepareConfig(input *resources.Pipeline) *pipelines.CreatePipeline {
+func (*ResourcePipeline) PrepareState(input *resources.Pipeline) *pipelines.CreatePipeline {
 	return &input.CreatePipeline
 }
 

@@ -33,14 +33,14 @@ func (d *DeploymentUnit) Destroy(ctx context.Context, db *tnstate.TerranovaState
 }
 
 func (d *DeploymentUnit) Deploy(ctx context.Context, db *tnstate.TerranovaState, inputConfig any, actionType deployplan.ActionType) error {
-	// Note, config may be different between plan and deploy due to resolved $resource references
-	config, err := d.Adapter.PrepareConfig(inputConfig)
+	// Note, newState may be different between plan and deploy due to resolved $resource references
+	newState, err := d.Adapter.PrepareState(inputConfig)
 	if err != nil {
 		return fmt.Errorf("reading config: %w", err)
 	}
 
 	if actionType == deployplan.ActionTypeCreate {
-		return d.Create(ctx, db, config)
+		return d.Create(ctx, db, newState)
 	}
 
 	entry, hasEntry := db.GetResourceEntry(d.Group, d.Key)
@@ -55,18 +55,18 @@ func (d *DeploymentUnit) Deploy(ctx context.Context, db *tnstate.TerranovaState,
 
 	switch actionType {
 	case deployplan.ActionTypeRecreate:
-		return d.Recreate(ctx, db, oldID, config)
+		return d.Recreate(ctx, db, oldID, newState)
 	case deployplan.ActionTypeUpdate:
-		return d.Update(ctx, db, oldID, config)
+		return d.Update(ctx, db, oldID, newState)
 	case deployplan.ActionTypeUpdateWithID:
-		return d.UpdateWithID(ctx, db, oldID, config)
+		return d.UpdateWithID(ctx, db, oldID, newState)
 	default:
 		return fmt.Errorf("internal error: unexpected actionType: %#v", actionType)
 	}
 }
 
-func (d *DeploymentUnit) Create(ctx context.Context, db *tnstate.TerranovaState, config any) error {
-	newID, remoteState, err := d.Adapter.DoCreate(ctx, config)
+func (d *DeploymentUnit) Create(ctx context.Context, db *tnstate.TerranovaState, newState any) error {
+	newID, remoteState, err := d.Adapter.DoCreate(ctx, newState)
 	if err != nil {
 		// No need to prefix error, there is no ambiguity (only one operation - DoCreate) and no additional context (like id)
 		return err
@@ -79,12 +79,12 @@ func (d *DeploymentUnit) Create(ctx context.Context, db *tnstate.TerranovaState,
 		return err
 	}
 
-	err = db.SaveState(d.Group, d.Key, newID, config)
+	err = db.SaveState(d.Group, d.Key, newID, newState)
 	if err != nil {
 		return fmt.Errorf("saving state after creating id=%s: %w", newID, err)
 	}
 
-	waitRemoteState, err := d.Adapter.WaitAfterCreate(ctx, config)
+	waitRemoteState, err := d.Adapter.WaitAfterCreate(ctx, newState)
 	if err != nil {
 		return fmt.Errorf("waiting after creating id=%s: %w", newID, err)
 	}
@@ -97,7 +97,7 @@ func (d *DeploymentUnit) Create(ctx context.Context, db *tnstate.TerranovaState,
 	return nil
 }
 
-func (d *DeploymentUnit) Recreate(ctx context.Context, db *tnstate.TerranovaState, oldID string, config any) error {
+func (d *DeploymentUnit) Recreate(ctx context.Context, db *tnstate.TerranovaState, oldID string, newState any) error {
 	err := d.Adapter.DoDelete(ctx, oldID)
 	if err != nil {
 		return fmt.Errorf("deleting old id=%s: %w", oldID, err)
@@ -108,11 +108,11 @@ func (d *DeploymentUnit) Recreate(ctx context.Context, db *tnstate.TerranovaStat
 		return fmt.Errorf("deleting state: %w", err)
 	}
 
-	return d.Create(ctx, db, config)
+	return d.Create(ctx, db, newState)
 }
 
-func (d *DeploymentUnit) Update(ctx context.Context, db *tnstate.TerranovaState, id string, config any) error {
-	remoteState, err := d.Adapter.DoUpdate(ctx, id, config)
+func (d *DeploymentUnit) Update(ctx context.Context, db *tnstate.TerranovaState, id string, newState any) error {
+	remoteState, err := d.Adapter.DoUpdate(ctx, id, newState)
 	if err != nil {
 		return fmt.Errorf("updating id=%s: %w", id, err)
 	}
@@ -122,12 +122,12 @@ func (d *DeploymentUnit) Update(ctx context.Context, db *tnstate.TerranovaState,
 		return err
 	}
 
-	err = db.SaveState(d.Group, d.Key, id, config)
+	err = db.SaveState(d.Group, d.Key, id, newState)
 	if err != nil {
 		return fmt.Errorf("saving state id=%s: %w", id, err)
 	}
 
-	waitRemoteState, err := d.Adapter.WaitAfterUpdate(ctx, config)
+	waitRemoteState, err := d.Adapter.WaitAfterUpdate(ctx, newState)
 	if err != nil {
 		return fmt.Errorf("waiting after updating id=%s: %w", id, err)
 	}
@@ -141,8 +141,8 @@ func (d *DeploymentUnit) Update(ctx context.Context, db *tnstate.TerranovaState,
 	return nil
 }
 
-func (d *DeploymentUnit) UpdateWithID(ctx context.Context, db *tnstate.TerranovaState, oldID string, config any) error {
-	newID, remoteState, err := d.Adapter.DoUpdateWithID(ctx, oldID, config)
+func (d *DeploymentUnit) UpdateWithID(ctx context.Context, db *tnstate.TerranovaState, oldID string, newState any) error {
+	newID, remoteState, err := d.Adapter.DoUpdateWithID(ctx, oldID, newState)
 	if err != nil {
 		return fmt.Errorf("updating id=%s: %w", oldID, err)
 	}
@@ -158,12 +158,12 @@ func (d *DeploymentUnit) UpdateWithID(ctx context.Context, db *tnstate.Terranova
 		return err
 	}
 
-	err = db.SaveState(d.Group, d.Key, newID, config)
+	err = db.SaveState(d.Group, d.Key, newID, newState)
 	if err != nil {
 		return fmt.Errorf("saving state id=%s: %w", oldID, err)
 	}
 
-	waitRemoteState, err := d.Adapter.WaitAfterUpdate(ctx, config)
+	waitRemoteState, err := d.Adapter.WaitAfterUpdate(ctx, newState)
 	if err != nil {
 		return fmt.Errorf("waiting after updating id=%s: %w", newID, err)
 	}
