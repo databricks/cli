@@ -1,0 +1,5 @@
+trace $CLI bundle validate
+trace $CLI bundle deploy
+
+trace jq -s '.[] | select(.path=="/api/2.0/pipelines" and .method == "POST") | .body' out.requests.txt
+rm out.requests.txt

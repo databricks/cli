@@ -1,0 +1,13 @@
+bundle:
+  name: test-pipeline-lakeflow-pipeline
+
+resources:
+  pipelines:
+    foo:
+      name: test-pipeline-lakeflow-pipeline
+      libraries:
+        - glob:
+            include: ./pipeline/transformations/**
+        - glob:
+            include: /Workspace/Shared/transformations/**
+      root_path: "./pipeline/"

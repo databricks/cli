@@ -1,0 +1,39 @@
+
+>>> [CLI] bundle validate
+Name: test-pipeline-lakeflow-pipeline
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-pipeline-lakeflow-pipeline/default
+
+Validation OK!
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-lakeflow-pipeline/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> jq -s .[] | select(.path=="/api/2.0/pipelines" and .method == "POST") | .body out.requests.txt
+{
+  "channel": "CURRENT",
+  "deployment": {
+    "kind": "BUNDLE",
+    "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-lakeflow-pipeline/default/state/metadata.json"
+  },
+  "edition": "ADVANCED",
+  "libraries": [
+    {
+      "glob": {
+        "include": "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-lakeflow-pipeline/default/files/pipeline/transformations/**"
+      }
+    },
+    {
+      "glob": {
+        "include": "/Workspace/Shared/transformations/**"
+      }
+    }
+  ],
+  "name": "test-pipeline-lakeflow-pipeline",
+  "root_path": "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-lakeflow-pipeline/default/files/pipeline"
+}
