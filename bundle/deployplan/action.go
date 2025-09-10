@@ -21,7 +21,7 @@ func (a Action) IsInplaceSupported() bool {
 	return false
 }
 
-type ActionType uint8
+type ActionType int
 
 // Actions are ordered in increasing severity.
 // If case of several options, action with highest severity wins.
