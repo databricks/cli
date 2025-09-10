@@ -28,6 +28,11 @@ func (experimentConverter) Convert(ctx context.Context, key string, vin dyn.Valu
 		return err
 	}
 
+	vout, err = convertLifecycle(ctx, vout, vin.Get("lifecycle"))
+	if err != nil {
+		return err
+	}
+
 	// Add the converted resource to the output.
 	out.MlflowExperiment[key] = vout.AsAny()
 

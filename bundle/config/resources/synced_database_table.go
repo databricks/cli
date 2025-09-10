@@ -12,7 +12,6 @@ import (
 
 type SyncedDatabaseTable struct {
 	BaseResource
-
 	database.SyncedDatabaseTable
 }
 

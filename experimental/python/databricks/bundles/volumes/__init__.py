@@ -1,4 +1,7 @@
 __all__ = [
+    "Lifecycle",
+    "LifecycleDict",
+    "LifecycleParam",
     "Volume",
     "VolumeDict",
     "VolumeGrant",
@@ -12,6 +15,11 @@ __all__ = [
 ]
 
 
+from databricks.bundles.volumes._models.lifecycle import (
+    Lifecycle,
+    LifecycleDict,
+    LifecycleParam,
+)
 from databricks.bundles.volumes._models.volume import Volume, VolumeDict, VolumeParam
 from databricks.bundles.volumes._models.volume_grant import (
     VolumeGrant,

@@ -27,6 +27,11 @@ func (d databaseInstanceConverter) Convert(ctx context.Context, key string, vin 
 		return err
 	}
 
+	vout, err = convertLifecycle(ctx, vout, vin.Get("lifecycle"))
+	if err != nil {
+		return err
+	}
+
 	out.DatabaseInstance[key] = vout.AsAny()
 
 	// Configure permissions for this resource.
