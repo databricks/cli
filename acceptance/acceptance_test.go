@@ -581,6 +581,16 @@ func runTest(t *testing.T,
 	testdiff.PrepareReplacementsWorkspaceConfig(t, &repls, cfg)
 
 	cmd.Env = auth.ProcessEnv(cfg)
+
+	rateLimit := os.Getenv("DATABRICKS_RATE_LIMIT")
+	if rateLimit == "" {
+		if isRunningOnCloud {
+			rateLimit = "100"
+		} else {
+			rateLimit = "1000000000"
+		}
+	}
+	cmd.Env = append(cmd.Env, "DATABRICKS_RATE_LIMIT="+rateLimit)
 	cmd.Env = append(cmd.Env, "UNIQUE_NAME="+uniqueName)
 	cmd.Env = append(cmd.Env, "TEST_TMP_DIR="+tmpDir)
 
