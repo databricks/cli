@@ -595,8 +595,6 @@ github.com/databricks/cli/bundle/config/resources.Pipeline:
       Write-only setting, available only in Create/Update calls. Specifies the user or service principal that the pipeline runs as. If not specified, the pipeline runs as the user who created the pipeline.
 
       Only `user_name` or `service_principal_name` can be specified. If both are specified, an error is thrown.
-    "x-databricks-preview": |-
-      PRIVATE
   "schema":
     "description": |-
       The default schema (database) where tables are read from or published to.
@@ -3119,6 +3117,11 @@ github.com/databricks/databricks-sdk-go/service/jobs.Task:
   "disable_auto_optimization":
     "description": |-
       An option to disable auto optimization in serverless
+  "disabled":
+    "description": |-
+      An optional flag to disable the task. If set to true, the task will not run even if it is part of a job.
+    "x-databricks-preview": |-
+      PRIVATE
   "email_notifications":
     "description": |-
       An optional set of email addresses that is notified when runs of this task begin or complete as well as when this task is deleted. The default behavior is to not send any emails.
@@ -3517,6 +3520,8 @@ github.com/databricks/databricks-sdk-go/service/pipelines.IngestionSourceType:
         CONFLUENCE
       - |-
         META_MARKETING
+      - |-
+        FOREIGN_CATALOG
 github.com/databricks/databricks-sdk-go/service/pipelines.ManualTrigger: {}
 github.com/databricks/databricks-sdk-go/service/pipelines.NotebookLibrary:
   "path":

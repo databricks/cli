@@ -1339,9 +1339,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "run_as": {
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.RunAs",
-                        "x-databricks-preview": "PRIVATE",
-                        "doNotSuggest": true
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.RunAs"
                       },
                       "schema": {
                         "description": "The default schema (database) where tables are read from or published to.",
@@ -6531,6 +6529,12 @@
                       "description": "An option to disable auto optimization in serverless",
                       "$ref": "#/$defs/bool"
                     },
+                    "disabled": {
+                      "description": "An optional flag to disable the task. If set to true, the task will not run even if it is part of a job.",
+                      "$ref": "#/$defs/bool",
+                      "x-databricks-preview": "PRIVATE",
+                      "doNotSuggest": true
+                    },
                     "email_notifications": {
                       "description": "An optional set of email addresses that is notified when runs of this task begin or complete as well as when this task is deleted. The default behavior is to not send any emails.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.TaskEmailNotifications"
@@ -7178,7 +7182,8 @@
                     "SHAREPOINT",
                     "DYNAMICS365",
                     "CONFLUENCE",
-                    "META_MARKETING"
+                    "META_MARKETING",
+                    "FOREIGN_CATALOG"
                   ]
                 },
                 {

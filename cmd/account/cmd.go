@@ -3,7 +3,6 @@
 package account
 
 import (
-	"github.com/databricks/cli/libs/cmdgroup"
 	"github.com/spf13/cobra"
 
 	account_access_control "github.com/databricks/cli/cmd/account/access-control"
@@ -15,6 +14,7 @@ import (
 	encryption_keys "github.com/databricks/cli/cmd/account/encryption-keys"
 	account_federation_policy "github.com/databricks/cli/cmd/account/federation-policy"
 	account_groups "github.com/databricks/cli/cmd/account/groups"
+	account_iam_v2 "github.com/databricks/cli/cmd/account/iam-v2"
 	account_ip_access_lists "github.com/databricks/cli/cmd/account/ip-access-lists"
 	log_delivery "github.com/databricks/cli/cmd/account/log-delivery"
 	account_metastore_assignments "github.com/databricks/cli/cmd/account/metastore-assignments"
@@ -77,6 +77,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(workspace_assignment.New())
 	cmd.AddCommand(workspace_network_configuration.New())
 	cmd.AddCommand(workspaces.New())
+	cmd.AddCommand(account_iam_v2.New())
 	cmd.AddCommand(budgets.New())
 
 	// Add account command groups, filtering out empty groups or groups with only hidden commands.
