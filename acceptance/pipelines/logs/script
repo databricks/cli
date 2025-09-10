@@ -1,0 +1,8 @@
+trace $PIPELINES deploy
+trace $PIPELINES run
+
+title "Calling logs"
+trace errcode $PIPELINES logs
+
+title "Calling logs with pipeline name"
+trace errcode $PIPELINES logs test-logs
