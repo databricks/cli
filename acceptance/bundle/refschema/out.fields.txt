@@ -82,6 +82,8 @@ resources.apps.*.effective_budget_policy_id	string	ALL
 resources.apps.*.effective_user_api_scopes	[]string	ALL
 resources.apps.*.effective_user_api_scopes[*]	string	ALL
 resources.apps.*.id	string	ALL
+resources.apps.*.lifecycle	resources.Lifecycle	INPUT
+resources.apps.*.lifecycle.prevent_destroy	bool	INPUT
 resources.apps.*.modified_status	string	INPUT
 resources.apps.*.name	string	ALL
 resources.apps.*.oauth2_app_client_id	string	ALL
@@ -142,6 +144,8 @@ resources.database_catalogs.*.create_database_if_not_exists	bool	ALL
 resources.database_catalogs.*.database_instance_name	string	ALL
 resources.database_catalogs.*.database_name	string	ALL
 resources.database_catalogs.*.id	string	INPUT
+resources.database_catalogs.*.lifecycle	resources.Lifecycle	INPUT
+resources.database_catalogs.*.lifecycle.prevent_destroy	bool	INPUT
 resources.database_catalogs.*.modified_status	string	INPUT
 resources.database_catalogs.*.name	string	ALL
 resources.database_catalogs.*.uid	string	ALL
@@ -164,6 +168,8 @@ resources.database_instances.*.effective_stopped	bool	ALL
 resources.database_instances.*.enable_pg_native_login	bool	ALL
 resources.database_instances.*.enable_readable_secondaries	bool	ALL
 resources.database_instances.*.id	string	INPUT
+resources.database_instances.*.lifecycle	resources.Lifecycle	INPUT
+resources.database_instances.*.lifecycle.prevent_destroy	bool	INPUT
 resources.database_instances.*.modified_status	string	INPUT
 resources.database_instances.*.name	string	ALL
 resources.database_instances.*.node_count	int	ALL
@@ -349,6 +355,8 @@ resources.jobs.*.job_clusters[*].new_cluster.workload_type.clients	compute.Clien
 resources.jobs.*.job_clusters[*].new_cluster.workload_type.clients.jobs	bool	INPUT	STATE
 resources.jobs.*.job_clusters[*].new_cluster.workload_type.clients.notebooks	bool	INPUT	STATE
 resources.jobs.*.job_id	int64	REMOTE
+resources.jobs.*.lifecycle	resources.Lifecycle	INPUT
+resources.jobs.*.lifecycle.prevent_destroy	bool	INPUT
 resources.jobs.*.max_concurrent_runs	int	INPUT	STATE
 resources.jobs.*.modified_status	string	INPUT
 resources.jobs.*.name	string	INPUT	STATE
@@ -2137,6 +2145,8 @@ resources.pipelines.*.libraries[*].maven.repo	string	INPUT	STATE
 resources.pipelines.*.libraries[*].notebook	*pipelines.NotebookLibrary	INPUT	STATE
 resources.pipelines.*.libraries[*].notebook.path	string	INPUT	STATE
 resources.pipelines.*.libraries[*].whl	string	INPUT	STATE
+resources.pipelines.*.lifecycle	resources.Lifecycle	INPUT
+resources.pipelines.*.lifecycle.prevent_destroy	bool	INPUT
 resources.pipelines.*.modified_status	string	INPUT
 resources.pipelines.*.name	string	ALL
 resources.pipelines.*.notifications	[]pipelines.Notifications	INPUT	STATE
@@ -2444,6 +2454,8 @@ resources.schemas.*.grants[*].principal	string	INPUT
 resources.schemas.*.grants[*].privileges	[]resources.SchemaGrantPrivilege	INPUT
 resources.schemas.*.grants[*].privileges[*]	resources.SchemaGrantPrivilege	INPUT
 resources.schemas.*.id	string	INPUT
+resources.schemas.*.lifecycle	resources.Lifecycle	INPUT
+resources.schemas.*.lifecycle.prevent_destroy	bool	INPUT
 resources.schemas.*.metastore_id	string	REMOTE
 resources.schemas.*.modified_status	string	INPUT
 resources.schemas.*.name	string	ALL
@@ -2477,6 +2489,8 @@ resources.sql_warehouses.*.health.summary	string	REMOTE
 resources.sql_warehouses.*.id	string	INPUT	REMOTE
 resources.sql_warehouses.*.instance_profile_arn	string	ALL
 resources.sql_warehouses.*.jdbc_url	string	REMOTE
+resources.sql_warehouses.*.lifecycle	resources.Lifecycle	INPUT
+resources.sql_warehouses.*.lifecycle.prevent_destroy	bool	INPUT
 resources.sql_warehouses.*.max_num_clusters	int	ALL
 resources.sql_warehouses.*.min_num_clusters	int	ALL
 resources.sql_warehouses.*.modified_status	string	INPUT
@@ -2549,6 +2563,8 @@ resources.synced_database_tables.*.database_instance_name	string	ALL
 resources.synced_database_tables.*.effective_database_instance_name	string	ALL
 resources.synced_database_tables.*.effective_logical_database_name	string	ALL
 resources.synced_database_tables.*.id	string	INPUT
+resources.synced_database_tables.*.lifecycle	resources.Lifecycle	INPUT
+resources.synced_database_tables.*.lifecycle.prevent_destroy	bool	INPUT
 resources.synced_database_tables.*.logical_database_name	string	ALL
 resources.synced_database_tables.*.modified_status	string	INPUT
 resources.synced_database_tables.*.name	string	ALL
@@ -2582,6 +2598,8 @@ resources.volumes.*.grants[*].principal	string	INPUT
 resources.volumes.*.grants[*].privileges	[]resources.VolumeGrantPrivilege	INPUT
 resources.volumes.*.grants[*].privileges[*]	resources.VolumeGrantPrivilege	INPUT
 resources.volumes.*.id	string	INPUT
+resources.volumes.*.lifecycle	resources.Lifecycle	INPUT
+resources.volumes.*.lifecycle.prevent_destroy	bool	INPUT
 resources.volumes.*.metastore_id	string	REMOTE
 resources.volumes.*.modified_status	string	INPUT
 resources.volumes.*.name	string	ALL

@@ -25,13 +25,13 @@ type ModelServingEndpointPermission struct {
 type ModelServingEndpoint struct {
 	BaseResource
 
-	// This is a resource agnostic implementation of permissions for ACLs.
-	// Implementation could be different based on the resource type.
-	Permissions []ModelServingEndpointPermission `json:"permissions,omitempty"`
-
 	// This represents the input args for terraform, and will get converted
 	// to a HCL representation for CRUD
 	serving.CreateServingEndpoint
+
+	// This is a resource agnostic implementation of permissions for ACLs.
+	// Implementation could be different based on the resource type.
+	Permissions []ModelServingEndpointPermission `json:"permissions,omitempty"`
 }
 
 func (s *ModelServingEndpoint) UnmarshalJSON(b []byte) error {

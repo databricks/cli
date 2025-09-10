@@ -217,6 +217,10 @@
                         "description": "The unique identifier of the app.",
                         "$ref": "#/$defs/string"
                       },
+                      "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                      },
                       "name": {
                         "description": "The name of the app. The name must contain only lowercase alphanumeric characters and hyphens.\nIt must be unique within the workspace.",
                         "$ref": "#/$defs/string"
@@ -401,6 +405,10 @@
                       "kind": {
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.Kind"
                       },
+                      "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                      },
                       "node_type_id": {
                         "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the :method:clusters/listNodeTypes API call.",
                         "$ref": "#/$defs/string"
@@ -536,6 +544,10 @@
                       "file_path": {
                         "$ref": "#/$defs/string"
                       },
+                      "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                      },
                       "lifecycle_state": {
                         "description": "The state of the dashboard resource. Used for tracking trashed status.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/dashboards.LifecycleState"
@@ -635,6 +647,10 @@
                         "description": "The name of the database (in a instance) associated with the catalog.",
                         "$ref": "#/$defs/string"
                       },
+                      "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                      },
                       "name": {
                         "description": "The name of the catalog in UC.",
                         "$ref": "#/$defs/string"
@@ -705,6 +721,10 @@
                       "enable_readable_secondaries": {
                         "description": "Whether to enable secondaries to serve read-only traffic. Defaults to false.",
                         "$ref": "#/$defs/bool"
+                      },
+                      "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
                         "description": "The name of the instance. This is the unique identifier for the instance.",
@@ -868,6 +888,10 @@
                         "description": "A list of job cluster specifications that can be shared and reused by tasks of this job. Libraries cannot be declared in a shared job cluster. You must declare dependent libraries in task settings.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.JobCluster"
                       },
+                      "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                      },
                       "max_concurrent_runs": {
                         "description": "An optional maximum allowed number of concurrent runs of the job.\nSet this value if you want to be able to execute multiple runs of the same job concurrently.\nThis is useful for example if you trigger your job on a frequent schedule and want to allow consecutive runs to overlap with each other, or if you want to trigger multiple runs which differ by their input parameters.\nThis setting affects only new runs. For example, suppose the job’s concurrency is 4 and there are 4 concurrent active runs. Then setting the concurrency to 3 won’t kill any of the active runs.\nHowever, from then on, new runs are skipped unless there are fewer than 3 active runs.\nThis value cannot exceed 1000. Setting this value to `0` causes all new runs to be skipped.",
                         "$ref": "#/$defs/int"
@@ -984,6 +1008,24 @@
                   }
                 ]
               },
+              "resources.Lifecycle": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "prevent_destroy": {
+                        "description": "Lifecycle setting to prevent the resource from being destroyed.",
+                        "$ref": "#/$defs/bool"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "resources.MlflowExperiment": {
                 "oneOf": [
                   {
@@ -1005,6 +1047,10 @@
                       "last_update_time": {
                         "description": "Last update time",
                         "$ref": "#/$defs/int64"
+                      },
+                      "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "lifecycle_stage": {
                         "description": "Current life cycle stage of the experiment: \"active\" or \"deleted\".\nDeleted experiments are not returned by APIs.",
@@ -1084,6 +1130,10 @@
                       "description": {
                         "description": "Optional description for registered model.",
                         "$ref": "#/$defs/string"
+                      },
+                      "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
                         "description": "Register models under this name",
@@ -1179,6 +1229,10 @@
                       "email_notifications": {
                         "description": "Email notification settings.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.EmailNotifications"
+                      },
+                      "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
                         "description": "The name of the serving endpoint. This field is required and must be unique across a Databricks workspace.\nAn endpoint name can consist of alphanumeric characters, dashes, and underscores.",
@@ -1365,6 +1419,10 @@
                         "description": "Libraries or code needed by this deployment.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/pipelines.PipelineLibrary"
                       },
+                      "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                      },
                       "name": {
                         "description": "Friendly identifier for this pipeline.",
                         "$ref": "#/$defs/string"
@@ -1509,6 +1567,10 @@
                         "description": "[Create:ERR Update:IGN] The latest error message for a monitor failure.",
                         "$ref": "#/$defs/string"
                       },
+                      "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                      },
                       "notifications": {
                         "description": "[Create:OPT Update:OPT] Field for specifying notification settings.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.MonitorNotifications"
@@ -1575,6 +1637,10 @@
                       "grants": {
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Grant"
                       },
+                      "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                      },
                       "name": {
                         "description": "The name of the registered model",
                         "$ref": "#/$defs/string"
@@ -1617,6 +1683,10 @@
                       },
                       "grants": {
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.SchemaGrant"
+                      },
+                      "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
                         "description": "Name of schema, relative to parent catalog.",
@@ -1705,6 +1775,10 @@
                       "keyvault_metadata": {
                         "description": "The metadata for the secret scope if the `backend_type` is `AZURE_KEYVAULT`",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/workspace.AzureKeyVaultSecretScopeMetadata"
+                      },
+                      "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
                         "description": "Scope name requested by the user. Scope names are unique.",
@@ -1810,6 +1884,10 @@
                         "deprecationMessage": "This field is deprecated",
                         "deprecated": true
                       },
+                      "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                      },
                       "max_num_clusters": {
                         "description": "Maximum number of clusters that the autoscaler will create to handle concurrent queries.\n\nSupported values:\n  - Must be \u003e= min_num_clusters\n  - Must be \u003c= 30.\n\nDefaults to min_clusters if unset.",
                         "$ref": "#/$defs/int"
@@ -1908,6 +1986,10 @@
                       "effective_logical_database_name": {
                         "$ref": "#/$defs/string"
                       },
+                      "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                      },
                       "logical_database_name": {
                         "$ref": "#/$defs/string"
                       },
@@ -1947,6 +2029,10 @@
                       },
                       "grants": {
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.VolumeGrant"
+                      },
+                      "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
                         "description": "The name of the volume",

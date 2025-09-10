@@ -14,11 +14,11 @@ import (
 type QualityMonitor struct {
 	BaseResource
 
-	// The table name is a required field but not included as a JSON field in [catalog.CreateMonitor].
-	TableName string `json:"table_name"`
-
 	// This struct defines the creation payload for a monitor.
 	catalog.CreateMonitor
+
+	// The table name is a required field but not included as a JSON field in [catalog.CreateMonitor].
+	TableName string `json:"table_name"`
 }
 
 func (s *QualityMonitor) UnmarshalJSON(b []byte) error {

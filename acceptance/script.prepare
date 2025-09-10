@@ -93,3 +93,7 @@ envsubst() {
     # when MSYS_NO_PATHCONV is enabled.
     env -u MSYS_NO_PATHCONV envsubst.py
 }
+
+print_telemetry_bool_values() {
+    jq -r 'select(.path? == "/telemetry-ext") | (.body.protoLogs // [])[] | fromjson | ( (.entry // .) | (.databricks_cli_log.bundle_deploy_event.experimental.bool_values // []) ) | map("\(.key) \(.value)") | .[]' out.requests.txt | sort
+}

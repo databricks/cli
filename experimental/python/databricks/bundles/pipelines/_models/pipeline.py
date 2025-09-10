@@ -25,6 +25,10 @@ from databricks.bundles.pipelines._models.ingestion_pipeline_definition import (
     IngestionPipelineDefinition,
     IngestionPipelineDefinitionParam,
 )
+from databricks.bundles.pipelines._models.lifecycle import (
+    Lifecycle,
+    LifecycleParam,
+)
 from databricks.bundles.pipelines._models.notifications import (
     Notifications,
     NotificationsParam,
@@ -141,6 +145,11 @@ class Pipeline(Resource):
     libraries: VariableOrList[PipelineLibrary] = field(default_factory=list)
     """
     Libraries or code needed by this deployment.
+    """
+
+    lifecycle: VariableOrOptional[Lifecycle] = None
+    """
+    Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
     """
 
     name: VariableOrOptional[str] = None
@@ -299,6 +308,11 @@ class PipelineDict(TypedDict, total=False):
     libraries: VariableOrList[PipelineLibraryParam]
     """
     Libraries or code needed by this deployment.
+    """
+
+    lifecycle: VariableOrOptional[LifecycleParam]
+    """
+    Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
     """
 
     name: VariableOrOptional[str]

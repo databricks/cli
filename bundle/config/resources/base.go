@@ -5,4 +5,5 @@ type BaseResource struct {
 	ID             string         `json:"id,omitempty" bundle:"readonly"`
 	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"internal"`
 	URL            string         `json:"url,omitempty" bundle:"internal"`
+	Lifecycle      Lifecycle      `json:"lifecycle,omitempty"`
 }
