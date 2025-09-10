@@ -33,7 +33,7 @@ func (r *ResourceAlert) DoCreate(ctx context.Context, config *sql.AlertV2) (stri
 		Alert: *config,
 	}
 	response, err := r.client.AlertsV2.CreateAlert(ctx, request)
-	if err != nil {
+	if err != nil || response == nil {
 		return "", nil, err
 	}
 	return response.Id, response, nil
