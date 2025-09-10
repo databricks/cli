@@ -1,4 +1,4 @@
-package ssh
+package setup
 
 import (
 	"context"
@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/databricks/cli/experimental/ssh/internal/keys"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/compute"
@@ -52,7 +53,7 @@ func resolveConfigPath(configPath string) (string, error) {
 }
 
 func generateHostConfig(opts SetupOptions) (string, error) {
-	identityFilePath, err := getLocalSSHKeyPath(opts.ClusterID, opts.SSHKeysDir)
+	identityFilePath, err := keys.GetLocalSSHKeyPath(opts.ClusterID, opts.SSHKeysDir)
 	if err != nil {
 		return "", fmt.Errorf("failed to get local keys folder: %w", err)
 	}

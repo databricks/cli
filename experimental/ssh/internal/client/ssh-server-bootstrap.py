@@ -35,9 +35,14 @@ def setup_subreaper():
             while True:
                 # -1 means any child, WNOHANG means don't block
                 pid, status = os.waitpid(-1, os.WNOHANG)
-                if pid == 0:
+                if pid > 0:
+                    print(f"Reaped child {pid} with status {status}")
+                elif pid == 0:
+                    print("No child has changed state")
                     break
-                print(f"Reaped child {pid} with status {status}")
+                else:
+                    print("Error while reaping child processes")
+                    break
         except ChildProcessError:
             pass
 
@@ -89,12 +94,6 @@ def run_ssh_server():
     if not public_key_secret_name:
         raise RuntimeError("Public key secret name is required. Please provide it using the 'publicKeySecretName' widget.")
 
-    public_key = dbutils.secrets.get(scope=secrets_scope, key=public_key_secret_name)
-    if not public_key:
-        raise RuntimeError(f"Public key secret '{public_key_secret_name}' in scope '{secrets_scope}' is empty.")
-
-    os.environ["PUBLIC_SSH_KEY"] = public_key
-
     version = dbutils.widgets.get("version")
     if not version:
         raise RuntimeError("Version is required. Please provide it using the 'version' widget.")
@@ -118,11 +117,14 @@ def run_ssh_server():
                 "ssh",
                 "server",
                 f"--cluster={ctx.clusterId}",
+                f"--secrets-scope-name={secrets_scope}",
+                f"--client-key-name={public_key_secret_name}",
                 f"--max-clients={max_clients}",
                 f"--shutdown-delay={shutdown_delay}",
                 f"--version={version}",
                 # "info" has enough verbosity for debugging purposes, and "debug" log level prints too much (including secrets)
                 "--log-level=info",
+                "--log-format=json",
                 # To get the server logs:
                 # 1. Get a job run id from the "databricks ssh connect" output
                 # 2. Run "databricks jobs get-run <id>" and open a run_page_url
