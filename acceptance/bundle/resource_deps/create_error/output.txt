@@ -1,6 +1,6 @@
 
 >>> [CLI] bundle plan
-Plan: 4 to add, 0 to change, 0 to delete
+Plan: 4 to add, 0 to change, 0 to delete, 0 unchanged
   create jobs.bar
   create jobs.baz
   create jobs.foo
@@ -67,7 +67,7 @@ Resources:
 
 === Plan should still contain foo and bar
 >>> [CLI] bundle plan
-Plan: 3 to add, 0 to change, 0 to delete
+Plan: 3 to add, 0 to change, 0 to delete, 1 unchanged
   create jobs.bar
   create jobs.baz
   create jobs.foo

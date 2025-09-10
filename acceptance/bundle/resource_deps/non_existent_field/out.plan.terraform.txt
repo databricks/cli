@@ -9,6 +9,5 @@ This object has no argument, nested block, or exported attribute named
 "non_existent".
 
 
-No changes. Your infrastructure matches the configuration.
 
 Exit code (musterr): 1

@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
 )
@@ -72,17 +73,21 @@ func newPlanCommand() *cobra.Command {
 		}
 
 		changes := phases.Diff(ctx, b)
+		if logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
+		}
 
 		// Count actions by type and collect formatted actions
 		createCount := 0
 		updateCount := 0
 		deleteCount := 0
 		var actions []string
+		changed := make(map[string]bool)
 
 		for _, change := range changes {
 			actionItem := fmt.Sprintf("  %s %s.%s", change.ActionType, change.Group, change.Key)
 			actions = append(actions, actionItem)
-
+			changed[change.Group+"."+change.Key] = true
 			switch change.ActionType.String() {
 			case "create":
 				createCount++
@@ -97,17 +102,32 @@ func newPlanCommand() *cobra.Command {
 			}
 		}
 
+		// Calculate number of all unchanged resources
+		unchanged := 0
+		rv := b.Config.Value().Get("resources")
+		if rv.Kind() != dyn.KindInvalid && rv.Kind() != dyn.KindNil {
+			_, err := dyn.MapByPattern(rv, dyn.NewPattern(dyn.AnyKey(), dyn.AnyKey()), func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+				if _, ok := changed[p[0].Key()+"."+p[1].Key()]; !ok {
+					unchanged++
+				}
+				return v, nil
+			})
+			if err != nil {
+				return root.ErrAlreadyPrinted
+			}
+		}
+
 		// Print summary line and actions to stdout
 		totalChanges := createCount + updateCount + deleteCount
 		if totalChanges > 0 {
-			fmt.Printf("Plan: %d to add, %d to change, %d to delete\n", createCount, updateCount, deleteCount)
+			fmt.Printf("Plan: %d to add, %d to change, %d to delete, %d unchanged\n", createCount, updateCount, deleteCount, unchanged)
 
 			// Print all actions in the order they were processed
 			for _, action := range actions {
-				fmt.Println(action)
+				fmt.Fprintf(cmd.OutOrStdout(), "%s\n", action)
 			}
 		} else {
-			fmt.Println("No changes. Your infrastructure matches the configuration.")
+			fmt.Printf("Plan: 0 to add, 0 to change, 0 to delete, %d unchanged\n", unchanged)
 		}
 
 		if logdiag.HasError(ctx) {

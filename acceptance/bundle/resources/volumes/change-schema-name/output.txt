@@ -37,7 +37,7 @@ Deployment complete!
 >>> update_file.py databricks.yml myschema mynewschema
 
 >>> [CLI] bundle plan
-Plan: 1 to add, 0 to change, 1 to delete
+Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
   recreate volumes.volume1
 
 >>> [CLI] bundle deploy --auto-approve

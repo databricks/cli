@@ -1,6 +1,6 @@
 
 >>> [CLI] bundle plan
-Plan: 2 to add, 0 to change, 0 to delete
+Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
   create jobs.bar
   create pipelines.foo
 
@@ -45,13 +45,13 @@ Deployment complete!
 }
 
 >>> [CLI] bundle plan
-No changes. Your infrastructure matches the configuration.
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 === Update catalog, triggering recreate for pipeline; this means updating downstream deps
 >>> update_file.py databricks.yml mycatalog mynewcatalog
 
 >>> [CLI] bundle plan
-Plan: 1 to add, 1 to change, 1 to delete
+Plan: 1 to add, 1 to change, 1 to delete, 0 unchanged
   update jobs.bar
   recreate pipelines.foo
 
@@ -156,7 +156,7 @@ Exit code (musterr): 1
 
 === Follow up plan & deploy do nothing
 >>> [CLI] bundle plan
-No changes. Your infrastructure matches the configuration.
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...

@@ -1,6 +1,6 @@
 
 >>> [CLI] bundle plan
-Plan: 1 to add, 0 to change, 0 to delete
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
   create apps.mykey
 
 >>> [CLI] bundle deploy
@@ -35,7 +35,7 @@ Resources:
 >>> update_file.py databricks.yml my_app_description MY_APP_DESCRIPTION
 
 >>> [CLI] bundle plan
-Plan: 0 to add, 1 to change, 0 to delete
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
   update apps.mykey
 
 >>> [CLI] bundle deploy
@@ -70,7 +70,7 @@ Resources:
 >>> update_file.py databricks.yml myappname mynewappname
 
 >>> [CLI] bundle plan
-Plan: 1 to add, 0 to change, 1 to delete
+Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
   recreate apps.mykey
 
 >>> [CLI] bundle summary
@@ -107,7 +107,7 @@ Deployment complete!
 }
 
 >>> [CLI] bundle plan
-No changes. Your infrastructure matches the configuration.
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 >>> [CLI] bundle summary
 Name: test-bundle

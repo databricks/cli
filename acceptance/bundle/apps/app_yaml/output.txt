@@ -9,7 +9,7 @@ Workspace:
 Validation OK!
 
 >>> [CLI] bundle plan
-Plan: 1 to add, 0 to change, 0 to delete
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
   create apps.myapp
 
 >>> [CLI] bundle deploy

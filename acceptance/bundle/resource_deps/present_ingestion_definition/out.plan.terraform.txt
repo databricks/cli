@@ -9,6 +9,5 @@ Block type "ingestion_definition" is represented by a list of objects, so it
 must be indexed using a numeric key, like .ingestion_definition[0].
 
 
-No changes. Your infrastructure matches the configuration.
 
 Exit code: 1

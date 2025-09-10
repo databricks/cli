@@ -36,7 +36,7 @@ Deployment complete!
 >>> rm resources.yml
 
 >>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 2 to delete
+Plan: 0 to add, 0 to change, 2 to delete, 0 unchanged
   delete jobs.foo
   delete pipelines.bar
 

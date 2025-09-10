@@ -15,6 +15,5 @@ Error: Self-referential block
 Configuration for databricks_job.foo may not refer to itself.
 
 
-No changes. Your infrastructure matches the configuration.
 
 Exit code (musterr): 1

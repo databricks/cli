@@ -14,7 +14,7 @@ Deployment complete!
 >>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | select(.body.name=="workspace_job") | .body out.requests.txt
 
 >>> [CLI] bundle plan
-Plan: 0 to add, 1 to change, 0 to delete
+Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
   update jobs.git_job
 
 >>> [CLI] bundle deploy

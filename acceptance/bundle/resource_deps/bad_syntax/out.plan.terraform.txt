@@ -8,4 +8,3 @@ Error: Invalid attribute name
 An attribute name is required after a dot.
 
 
-No changes. Your infrastructure matches the configuration.
