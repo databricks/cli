@@ -201,6 +201,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		deploy.StatePush(),
 		permissions.ApplyWorkspaceRootPermissions(),
 		metrics.TrackUsedCompute(),
+		deploy.ResourcePathMkdir(),
 	)
 
 	if logdiag.HasError(ctx) {
