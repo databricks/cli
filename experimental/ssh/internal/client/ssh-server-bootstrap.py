@@ -115,6 +115,7 @@ def run_ssh_server():
         cli_name = f"{SSH_TUNNEL_BASENAME}_{version}_{cli_arch}"
 
     binary_path = f"/Workspace/Users/{user_name}/.databricks/ssh-tunnel/{version}/{cli_name}/databricks"
+
     try:
         subprocess.run(
             [
