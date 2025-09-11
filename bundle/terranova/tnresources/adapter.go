@@ -384,7 +384,6 @@ func (a *Adapter) DoUpdate(ctx context.Context, id string, newState any) (any, e
 	}
 }
 
-// HasClassifyChanges returns true if the resource implements ClassifyChanges method.
 // HasDoUpdateWithID returns true if the resource implements DoUpdateWithID method.
 func (a *Adapter) HasDoUpdateWithID() bool {
 	return a.doUpdateWithID != nil
