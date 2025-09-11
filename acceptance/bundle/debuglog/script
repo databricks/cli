@@ -1,3 +1,0 @@
-$CLI bundle validate --debug 2> tmp.stderr.$DATABRICKS_CLI_DEPLOYMENT.txt
-sed 's/[0-9]/0/g' tmp.stderr.$DATABRICKS_CLI_DEPLOYMENT.txt | sort_lines.py > out.stderr.$DATABRICKS_CLI_DEPLOYMENT.txt
-rm tmp.stderr.$DATABRICKS_CLI_DEPLOYMENT.txt
