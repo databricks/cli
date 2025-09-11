@@ -12,7 +12,10 @@ import (
 func (s *FakeWorkspace) JobsCreate(req Request) Response {
 	var request jobs.CreateJob
 	if err := json.Unmarshal(req.Body, &request); err != nil {
-		return Response{Body: fmt.Sprintf("internal error: %s", err), StatusCode: 500}
+		return Response{
+			StatusCode: 400,
+			Body:       fmt.Sprintf("request parsing error: %s", err),
+		}
 	}
 
 	defer s.LockUnlock()()
@@ -22,7 +25,10 @@ func (s *FakeWorkspace) JobsCreate(req Request) Response {
 
 	jobSettings := jobs.JobSettings{}
 	if err := jsonConvert(request, &jobSettings); err != nil {
-		return Response{StatusCode: 400, Body: fmt.Sprintf("Cannot convert request to jobSettings: %s", err)}
+		return Response{
+			StatusCode: 400,
+			Body:       fmt.Sprintf("Cannot convert request to jobSettings: %s", err),
+		}
 	}
 
 	s.Jobs[jobId] = jobs.Job{JobId: jobId, Settings: &jobSettings}
@@ -32,7 +38,10 @@ func (s *FakeWorkspace) JobsCreate(req Request) Response {
 func (s *FakeWorkspace) JobsReset(req Request) Response {
 	var request jobs.ResetJob
 	if err := json.Unmarshal(req.Body, &request); err != nil {
-		return Response{Body: fmt.Sprintf("internal error: %s", err), StatusCode: 500}
+		return Response{
+			StatusCode: 400,
+			Body:       fmt.Sprintf("request parsing error: %s", err),
+		}
 	}
 
 	defer s.LockUnlock()()
@@ -50,7 +59,10 @@ func (s *FakeWorkspace) JobsGet(req Request) Response {
 	id := req.URL.Query().Get("job_id")
 	jobIdInt, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {
-		return Response{StatusCode: 400, Body: fmt.Sprintf("Failed to parse job id: %s: %v", err, id)}
+		return Response{
+			StatusCode: 400,
+			Body:       fmt.Sprintf("Failed to parse job id: %s: %v", err, id),
+		}
 	}
 
 	defer s.LockUnlock()()
@@ -64,10 +76,33 @@ func (s *FakeWorkspace) JobsGet(req Request) Response {
 	return Response{Body: job}
 }
 
+func (s *FakeWorkspace) JobsList() Response {
+	defer s.LockUnlock()()
+
+	list := make([]jobs.BaseJob, 0, len(s.Jobs))
+	for _, job := range s.Jobs {
+		job = setSourceIfNotSet(job)
+		baseJob := jobs.BaseJob{}
+		if err := jsonConvert(job, &baseJob); err != nil {
+			return Response{
+				StatusCode: 400,
+				Body:       fmt.Sprintf("failed to convert job to base job: %s", err),
+			}
+		}
+		list = append(list, baseJob)
+	}
+
+	sort.Slice(list, func(i, j int) bool { return list[i].JobId < list[j].JobId })
+	return Response{Body: jobs.ListJobsResponse{Jobs: list}}
+}
+
 func (s *FakeWorkspace) JobsRunNow(req Request) Response {
 	var request jobs.RunNow
 	if err := json.Unmarshal(req.Body, &request); err != nil {
-		return Response{Body: fmt.Sprintf("internal error: %s", err), StatusCode: 500}
+		return Response{
+			StatusCode: 400,
+			Body:       fmt.Sprintf("request parsing error: %s", err),
+		}
 	}
 
 	defer s.LockUnlock()()
@@ -93,7 +128,10 @@ func (s *FakeWorkspace) JobsGetRun(req Request) Response {
 	runId := req.URL.Query().Get("run_id")
 	runIdInt, err := strconv.ParseInt(runId, 10, 64)
 	if err != nil {
-		return Response{Body: fmt.Sprintf("internal error: %s", err), StatusCode: 500}
+		return Response{
+			StatusCode: 400,
+			Body:       fmt.Sprintf("Failed to parse job id: %s: %v", err, runId),
+		}
 	}
 
 	defer s.LockUnlock()()
@@ -105,23 +143,6 @@ func (s *FakeWorkspace) JobsGetRun(req Request) Response {
 
 	run.State.LifeCycleState = jobs.RunLifeCycleStateTerminated
 	return Response{Body: run}
-}
-
-func (s *FakeWorkspace) JobsList() Response {
-	defer s.LockUnlock()()
-
-	list := make([]jobs.BaseJob, 0, len(s.Jobs))
-	for _, job := range s.Jobs {
-		job = setSourceIfNotSet(job)
-		baseJob := jobs.BaseJob{}
-		if err := jsonConvert(job, &baseJob); err != nil {
-			return Response{StatusCode: 400, Body: fmt.Sprintf("failed to convert job to base job: %s", err)}
-		}
-		list = append(list, baseJob)
-	}
-
-	sort.Slice(list, func(i, j int) bool { return list[i].JobId < list[j].JobId })
-	return Response{Body: jobs.ListJobsResponse{Jobs: list}}
 }
 
 func setSourceIfNotSet(job jobs.Job) jobs.Job {
