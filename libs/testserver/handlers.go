@@ -178,7 +178,9 @@ func AddDefaultHandlers(server *Server) {
 		}
 	})
 
-	server.Handle("POST", "/api/2.2/jobs/create", func(req Request) any { return req.Workspace.JobsCreate(req) })
+	server.Handle("POST", "/api/2.2/jobs/create", func(req Request) any {
+		return req.Workspace.JobsCreate(req)
+	})
 
 	server.Handle("POST", "/api/2.2/jobs/delete", func(req Request) any {
 		var request jobs.DeleteJob
@@ -188,19 +190,29 @@ func AddDefaultHandlers(server *Server) {
 		return MapDelete(req.Workspace, req.Workspace.Jobs, request.JobId)
 	})
 
-	server.Handle("POST", "/api/2.2/jobs/reset", func(req Request) any { return req.Workspace.JobsReset(req) })
+	server.Handle("POST", "/api/2.2/jobs/reset", func(req Request) any {
+		return req.Workspace.JobsReset(req)
+	})
 
-	server.Handle("GET", "/api/2.0/jobs/get", func(req Request) any { return req.Workspace.JobsGetFromRequest(req) })
+	server.Handle("GET", "/api/2.0/jobs/get", func(req Request) any {
+		return req.Workspace.JobsGet(req)
+	})
 
-	server.Handle("GET", "/api/2.2/jobs/get", func(req Request) any { return req.Workspace.JobsGetFromRequest(req) })
+	server.Handle("GET", "/api/2.2/jobs/get", func(req Request) any {
+		return req.Workspace.JobsGet(req)
+	})
 
 	server.Handle("GET", "/api/2.2/jobs/list", func(req Request) any {
 		return req.Workspace.JobsList()
 	})
 
-	server.Handle("POST", "/api/2.2/jobs/run-now", func(req Request) any { return req.Workspace.JobsRunNow(req) })
+	server.Handle("POST", "/api/2.2/jobs/run-now", func(req Request) any {
+		return req.Workspace.JobsRunNow(req)
+	})
 
-	server.Handle("GET", "/api/2.2/jobs/runs/get", func(req Request) any { return req.Workspace.JobsGetRunFromRequest(req) })
+	server.Handle("GET", "/api/2.2/jobs/runs/get", func(req Request) any {
+		return req.Workspace.JobsGetRun(req)
+	})
 
 	server.Handle("GET", "/api/2.2/jobs/runs/list", func(req Request) any {
 		return MapList(req.Workspace, req.Workspace.JobRuns, "runs")

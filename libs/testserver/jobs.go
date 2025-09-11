@@ -46,7 +46,7 @@ func (s *FakeWorkspace) JobsReset(req Request) Response {
 	return Response{Body: ""}
 }
 
-func (s *FakeWorkspace) JobsGetFromRequest(req Request) Response {
+func (s *FakeWorkspace) JobsGet(req Request) Response {
 	id := req.URL.Query().Get("job_id")
 	jobIdInt, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {
@@ -89,7 +89,7 @@ func (s *FakeWorkspace) JobsRunNow(req Request) Response {
 	return Response{Body: jobs.RunNowResponse{RunId: runId}}
 }
 
-func (s *FakeWorkspace) JobsGetRunFromRequest(req Request) Response {
+func (s *FakeWorkspace) JobsGetRun(req Request) Response {
 	runId := req.URL.Query().Get("run_id")
 	runIdInt, err := strconv.ParseInt(runId, 10, 64)
 	if err != nil {
