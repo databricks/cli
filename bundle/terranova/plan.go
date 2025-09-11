@@ -207,22 +207,11 @@ func calcDiff(adapter *tnresources.Adapter, savedState, config any) (deployplan.
 		return deployplan.ActionTypeNoop, nil
 	}
 
-	if adapter.MustRecreate(localDiff) {
-		return deployplan.ActionTypeRecreate, nil
+	result := adapter.ClassifyByTriggers(localDiff)
+
+	if result == deployplan.ActionTypeUpdateWithID && !adapter.HasDoUpdateWithID() {
+		return deployplan.ActionTypeUnset, errors.New("internal error: unexpected plan='update_with_id'")
 	}
 
-	if adapter.HasClassifyChanges() {
-		result, err := adapter.ClassifyChanges(localDiff)
-		if err != nil {
-			return deployplan.ActionTypeUnset, err
-		}
-
-		if result == deployplan.ActionTypeUpdateWithID && !adapter.HasDoUpdateWithID() {
-			return deployplan.ActionTypeUnset, errors.New("internal error: unexpected plan='update_with_id'")
-		}
-
-		return result, nil
-	}
-
-	return deployplan.ActionTypeUpdate, nil
+	return result, nil
 }

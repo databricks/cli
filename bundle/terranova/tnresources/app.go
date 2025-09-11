@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/retries"
@@ -63,9 +64,9 @@ func (r *ResourceApp) DoDelete(ctx context.Context, id string) error {
 	return err
 }
 
-func (*ResourceApp) RecreateFields() []string {
-	return []string{
-		".name",
+func (*ResourceApp) FieldTriggers() map[string]deployplan.ActionType {
+	return map[string]deployplan.ActionType{
+		".name": deployplan.ActionTypeRecreate,
 	}
 }
 
