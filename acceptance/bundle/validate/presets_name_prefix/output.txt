@@ -8,6 +8,13 @@ Warning: required field "catalog_name" is not set
   in databricks.yml:14:7
 
 {
+  "alerts": {
+    "alert1": {
+      "display_name": "prefix-alert1",
+      "parent_path": "/Workspace/foo/bar",
+      "permissions": []
+    }
+  },
   "jobs": {
     "job1": {
       "deployment": {
@@ -48,6 +55,13 @@ Warning: required field "catalog_name" is not set
   in databricks.yml:14:7
 
 {
+  "alerts": {
+    "alert1": {
+      "display_name": "[prefix]alert1",
+      "parent_path": "/Workspace/foo/bar",
+      "permissions": []
+    }
+  },
   "jobs": {
     "job1": {
       "deployment": {
@@ -88,6 +102,13 @@ Warning: required field "catalog_name" is not set
   in databricks.yml:14:7
 
 {
+  "alerts": {
+    "alert1": {
+      "display_name": "alert1",
+      "parent_path": "/Workspace/foo/bar",
+      "permissions": []
+    }
+  },
   "jobs": {
     "job1": {
       "deployment": {

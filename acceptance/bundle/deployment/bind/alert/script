@@ -1,0 +1,6 @@
+alert_id=$(trace $CLI alerts-v2 create-alert --json @alert.json | jq -r '.id')
+trace $CLI bundle deployment bind my_alert $alert_id --auto-approve
+trace $CLI bundle summary
+
+trace $CLI bundle deployment unbind my_alert
+trace $CLI bundle summary

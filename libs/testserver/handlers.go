@@ -411,8 +411,28 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.SqlDataSourcesList(req)
 	})
 
-	// Secrets ACLs:
+	// Alerts v2:
+	server.Handle("GET", "/api/2.0/alerts/{id}", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.Alerts, req.Vars["id"])
+	})
 
+	server.Handle("GET", "/api/2.0/alerts", func(req Request) any {
+		return MapList(req.Workspace, req.Workspace.Alerts, "alerts")
+	})
+
+	server.Handle("POST", "/api/2.0/alerts", func(req Request) any {
+		return req.Workspace.AlertsUpsert(req, "")
+	})
+
+	server.Handle("PATCH", "/api/2.0/alerts/{id}", func(req Request) any {
+		return req.Workspace.AlertsUpsert(req, req.Vars["id"])
+	})
+
+	server.Handle("DELETE", "/api/2.0/alerts/{id}", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.Alerts, req.Vars["id"])
+	})
+
+	// Secrets ACLs:
 	server.Handle("GET", "/api/2.0/secrets/acls/get", func(req Request) any {
 		return req.Workspace.SecretsAclsGet(req)
 	})
