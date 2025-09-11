@@ -445,6 +445,8 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("GET", "/api/2.0/secrets/acls/get", func(req Request) any {
+		defer req.Workspace.LockUnlock()()
+
 		scope := req.URL.Query().Get("scope")
 		principal := req.URL.Query().Get("principal")
 		scopeAcls := req.Workspace.Acls[scope]
@@ -461,6 +463,8 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("POST", "/api/2.0/secrets/acls/put", func(req Request) any {
+		defer req.Workspace.LockUnlock()()
+
 		var request workspace.PutAcl
 		if err := json.Unmarshal(req.Body, &request); err != nil {
 			return Response{
@@ -476,6 +480,8 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("POST", "/api/2.0/secrets/acls/delete", func(req Request) any {
+		defer req.Workspace.LockUnlock()()
+
 		var request workspace.DeleteAcl
 		if err := json.Unmarshal(req.Body, &request); err != nil {
 			return Response{
