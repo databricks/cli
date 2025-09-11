@@ -13,7 +13,7 @@ type Action struct {
 
 func (a Action) String() string {
 	typ, _ := strings.CutSuffix(a.Group, "s")
-	return fmt.Sprintf("  %s %s %s", a.ActionType.String(), typ, a.Key)
+	return fmt.Sprintf("  %s %s %s", a.ActionType.StringShort(), typ, a.Key)
 }
 
 // Implements cmdio.Event for cmdio.Log
@@ -37,14 +37,22 @@ const (
 	ActionTypeDelete
 )
 
-var ShortName = map[ActionType]string{
+var actionName = map[ActionType]string{
 	ActionTypeNoop:         "noop",
 	ActionTypeResize:       "resize",
-	ActionTypeUpdate:       "update",
-	ActionTypeUpdateWithID: "update",
+	ActionTypeUpdate:       "update(id_stable)",
+	ActionTypeUpdateWithID: "update(id_changes)",
 	ActionTypeCreate:       "create",
 	ActionTypeRecreate:     "recreate",
 	ActionTypeDelete:       "delete",
+}
+
+var nameToAction = map[string]ActionType{}
+
+func init() {
+	for k, v := range actionName {
+		nameToAction[v] = k
+	}
 }
 
 func (a ActionType) IsNoop() bool {
@@ -53,15 +61,30 @@ func (a ActionType) IsNoop() bool {
 
 func (a ActionType) KeepsID() bool {
 	switch a {
-	case ActionTypeCreate, ActionTypeUpdateWithID, ActionTypeRecreate:
+	case ActionTypeCreate, ActionTypeUpdateWithID, ActionTypeRecreate, ActionTypeDelete:
 		return false
 	default:
 		return true
 	}
 }
 
-func (a ActionType) String() string {
-	return ShortName[a]
+// StringShort short version of action string, without part in parens.
+func (a ActionType) StringShort() string {
+	items := strings.SplitN(actionName[a], "(", 2)
+	return items[0]
+}
+
+// StringFull returns the string representation of the action type.
+func (a ActionType) StringFull() string {
+	return actionName[a]
+}
+
+func ActionTypeFromString(s string) ActionType {
+	actionType, ok := nameToAction[s]
+	if !ok {
+		return ActionTypeUnset
+	}
+	return actionType
 }
 
 // Filter returns actions that match the specified action type

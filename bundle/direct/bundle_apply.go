@@ -10,12 +10,12 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 )
 
-func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root) {
+func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root, plan *deployplan.Plan) {
 	if b.Graph == nil {
 		panic("Planning is not done")
 	}
 
-	if len(b.DeploymentUnits) == 0 {
+	if len(plan.Plan) == 0 {
 		// Avoid creating state file if nothing to deploy
 		return
 	}
@@ -23,13 +23,24 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 	b.StateDB.AssertOpened()
 
 	b.Graph.Run(defaultParallelism, func(node deployplan.ResourceNode, failedDependency *deployplan.ResourceNode) bool {
-		d, exists := b.DeploymentUnits[node]
-		if !exists {
-			// Resource with actionType == noop are not added to DeploymentUnits.
-			// All references to it must have been resolved during planning.
+		key := "resources." + node.Group + "." + node.Key
+		entry, ok := plan.Plan[key]
+		if !ok {
+			// Nothing to do for this node
 			return true
 		}
-		errorPrefix := fmt.Sprintf("cannot %s %s.%s", d.ActionType.String(), node.Group, node.Key)
+
+		at := deployplan.ActionTypeFromString(entry.Action)
+		if at == deployplan.ActionTypeUnset {
+			logdiag.LogError(ctx, fmt.Errorf("unknown action %q for %s.%s", entry.Action, node.Group, node.Key))
+			return false
+		}
+		d := &DeploymentUnit{
+			Group:   node.Group,
+			Key:     node.Key,
+			Adapter: b.Adapters[node.Group],
+		}
+		errorPrefix := fmt.Sprintf("cannot %s %s.%s", entry.Action, node.Group, node.Key)
 
 		// If a dependency failed, report and skip execution for this node by returning false
 		if failedDependency != nil {
@@ -37,7 +48,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			return false
 		}
 
-		if d.ActionType == deployplan.ActionTypeDelete {
+		if at == deployplan.ActionTypeDelete {
 			err := d.Destroy(ctx, &b.StateDB)
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
@@ -68,7 +79,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 
 		// TODO: redo calcDiff to downgrade planned action if possible (?)
 
-		err = d.Deploy(ctx, &b.StateDB, config, d.ActionType)
+		err = d.Deploy(ctx, &b.StateDB, config, at)
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 			return false

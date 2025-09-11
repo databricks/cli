@@ -36,10 +36,9 @@ type DeploymentUnit struct {
 
 // DeploymentBundle holds everything needed to deploy a bundle
 type DeploymentBundle struct {
-	StateDB         dstate.DeploymentState
-	Graph           *dagrun.Graph[deployplan.ResourceNode]
-	DeploymentUnits map[deployplan.ResourceNode]*DeploymentUnit
-	Adapters        map[string]*dresources.Adapter
+	StateDB  dstate.DeploymentState
+	Graph    *dagrun.Graph[deployplan.ResourceNode]
+	Adapters map[string]*dresources.Adapter
 }
 
 // SetRemoteState updates the remote state with type validation and marks as fresh.
