@@ -91,6 +91,9 @@
                         "description": "UUID identifying the alert.",
                         "$ref": "#/$defs/string"
                       },
+                      "lifecycle": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                      },
                       "lifecycle_state": {
                         "description": "Indicates whether the query is trashed.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.LifecycleState"

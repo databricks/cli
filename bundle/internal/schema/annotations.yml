@@ -446,6 +446,9 @@ github.com/databricks/cli/bundle/config/resources.Alert:
   "evaluation":
     "description": |-
       PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
   "permissions":
     "description": |-
       PLACEHOLDER

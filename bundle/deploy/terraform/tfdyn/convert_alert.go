@@ -28,6 +28,11 @@ func (alertConverter) Convert(ctx context.Context, key string, vin dyn.Value, ou
 		return err
 	}
 
+	vout, err = convertLifecycle(ctx, vout, vin.Get("lifecycle"))
+	if err != nil {
+		return err
+	}
+
 	// Add the converted resource to the output.
 	out.AlertV2[key] = vout.AsAny()
 

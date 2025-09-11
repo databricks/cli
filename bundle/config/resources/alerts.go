@@ -30,12 +30,10 @@ type AlertPermission struct {
 }
 
 type Alert struct {
-	ID             string            `json:"id,omitempty" bundle:"readonly"`
-	Permissions    []AlertPermission `json:"permissions,omitempty"`
-	ModifiedStatus ModifiedStatus    `json:"modified_status,omitempty" bundle:"internal"`
-	URL            string            `json:"url,omitempty" bundle:"internal"`
+	BaseResource
+	sql.AlertV2 //nolint AlertV2 also defines Id and URL field with the same json tag "id" and "url"
 
-	sql.AlertV2
+	Permissions []AlertPermission `json:"permissions,omitempty"`
 }
 
 func (a *Alert) UnmarshalJSON(b []byte) error {
