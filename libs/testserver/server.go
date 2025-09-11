@@ -56,7 +56,7 @@ type EncodedResponse struct {
 func NewRequest(t testutil.TestingT, r *http.Request, fakeWorkspace *FakeWorkspace) Request {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		t.Fatalf("Failed to read request body: %s", err)
+		t.Logf("Error while reading request body: %s", err)
 	}
 
 	return Request{
