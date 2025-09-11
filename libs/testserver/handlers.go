@@ -185,7 +185,10 @@ func AddDefaultHandlers(server *Server) {
 	server.Handle("POST", "/api/2.2/jobs/delete", func(req Request) any {
 		var request jobs.DeleteJob
 		if err := json.Unmarshal(req.Body, &request); err != nil {
-			return Response{Body: fmt.Sprintf("internal error: %s", err), StatusCode: 500}
+			return Response{
+				StatusCode: 400,
+				Body:       fmt.Sprintf("request parsing error: %s", err),
+			}
 		}
 		return MapDelete(req.Workspace, req.Workspace.Jobs, request.JobId)
 	})
