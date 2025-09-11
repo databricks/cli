@@ -21,11 +21,6 @@ func (s *FakeWorkspace) SecretsAclsGet(req Request) Response {
 	return Response{StatusCode: 404}
 }
 
-func (s *FakeWorkspace) SecretsAclsList(req Request) Response {
-	scope := req.URL.Query().Get("scope")
-	return MapGet(s, s.Acls, scope)
-}
-
 func (s *FakeWorkspace) SecretsAclsPut(req Request) Response {
 	defer s.LockUnlock()()
 

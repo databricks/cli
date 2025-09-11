@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
@@ -179,79 +178,29 @@ func AddDefaultHandlers(server *Server) {
 		}
 	})
 
-	server.Handle("POST", "/api/2.2/jobs/create", func(req Request) any {
-		var request jobs.CreateJob
-		if err := json.Unmarshal(req.Body, &request); err != nil {
-			return Response{
-				Body:       fmt.Sprintf("internal error: %s", err),
-				StatusCode: 500,
-			}
-		}
-
-		return req.Workspace.JobsCreate(request)
-	})
+	server.Handle("POST", "/api/2.2/jobs/create", func(req Request) any { return req.Workspace.JobsCreate(req) })
 
 	server.Handle("POST", "/api/2.2/jobs/delete", func(req Request) any {
 		var request jobs.DeleteJob
 		if err := json.Unmarshal(req.Body, &request); err != nil {
-			return Response{
-				Body:       fmt.Sprintf("internal error: %s", err),
-				StatusCode: 500,
-			}
+			return Response{Body: fmt.Sprintf("internal error: %s", err), StatusCode: 500}
 		}
 		return MapDelete(req.Workspace, req.Workspace.Jobs, request.JobId)
 	})
 
-	server.Handle("POST", "/api/2.2/jobs/reset", func(req Request) any {
-		var request jobs.ResetJob
-		if err := json.Unmarshal(req.Body, &request); err != nil {
-			return Response{
-				Body:       fmt.Sprintf("internal error: %s", err),
-				StatusCode: 500,
-			}
-		}
+	server.Handle("POST", "/api/2.2/jobs/reset", func(req Request) any { return req.Workspace.JobsReset(req) })
 
-		return req.Workspace.JobsReset(request)
-	})
+	server.Handle("GET", "/api/2.0/jobs/get", func(req Request) any { return req.Workspace.JobsGetFromRequest(req) })
 
-	server.Handle("GET", "/api/2.0/jobs/get", func(req Request) any {
-		jobId := req.URL.Query().Get("job_id")
-		return req.Workspace.JobsGet(jobId)
-	})
-
-	server.Handle("GET", "/api/2.2/jobs/get", func(req Request) any {
-		jobId := req.URL.Query().Get("job_id")
-		return req.Workspace.JobsGet(jobId)
-	})
+	server.Handle("GET", "/api/2.2/jobs/get", func(req Request) any { return req.Workspace.JobsGetFromRequest(req) })
 
 	server.Handle("GET", "/api/2.2/jobs/list", func(req Request) any {
 		return req.Workspace.JobsList()
 	})
 
-	server.Handle("POST", "/api/2.2/jobs/run-now", func(req Request) any {
-		var request jobs.RunNow
-		if err := json.Unmarshal(req.Body, &request); err != nil {
-			return Response{
-				Body:       fmt.Sprintf("internal error: %s", err),
-				StatusCode: 500,
-			}
-		}
+	server.Handle("POST", "/api/2.2/jobs/run-now", func(req Request) any { return req.Workspace.JobsRunNow(req) })
 
-		return req.Workspace.JobsRunNow(request.JobId)
-	})
-
-	server.Handle("GET", "/api/2.2/jobs/runs/get", func(req Request) any {
-		runId := req.URL.Query().Get("run_id")
-		runIdInt, err := strconv.ParseInt(runId, 10, 64)
-		if err != nil {
-			return Response{
-				Body:       fmt.Sprintf("internal error: %s", err),
-				StatusCode: 500,
-			}
-		}
-
-		return req.Workspace.JobsGetRun(runIdInt)
-	})
+	server.Handle("GET", "/api/2.2/jobs/runs/get", func(req Request) any { return req.Workspace.JobsGetRunFromRequest(req) })
 
 	server.Handle("GET", "/api/2.2/jobs/runs/list", func(req Request) any {
 		return MapList(req.Workspace, req.Workspace.JobRuns, "runs")
@@ -454,7 +403,7 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("GET", "/api/2.0/secrets/acls/list", func(req Request) any {
-		return req.Workspace.SecretsAclsList(req)
+		return MapGet(req.Workspace, req.Workspace.Acls, req.URL.Query().Get("scope"))
 	})
 
 	server.Handle("POST", "/api/2.0/secrets/acls/put", func(req Request) any {
