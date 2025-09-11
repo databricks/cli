@@ -1,4 +1,4 @@
-package ssh
+package proxy
 
 import (
 	"bytes"
@@ -62,7 +62,7 @@ func (tb *testBuffer) AssertWrite(expected []byte) error {
 }
 
 type TestProxy struct {
-	Proxy   *proxyConnection
+	Proxy   *ProxyConnection
 	Input   io.Writer
 	Output  *testBuffer
 	URL     string
@@ -72,7 +72,7 @@ type TestProxy struct {
 func setupTestServer(ctx context.Context, t *testing.T) *TestProxy {
 	serverInput, serverInputWriter := io.Pipe()
 	serverOutput := newTestBuffer(t)
-	var serverProxy *proxyConnection
+	var serverProxy *ProxyConnection
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if serverProxy != nil {
 			err := serverProxy.AcceptHandover(ctx, w, r)
@@ -81,7 +81,7 @@ func setupTestServer(ctx context.Context, t *testing.T) *TestProxy {
 			}
 			return
 		}
-		serverProxy = newProxyConnection(nil)
+		serverProxy = NewProxyConnection(nil)
 		err := serverProxy.Accept(w, r)
 		if err != nil {
 			t.Errorf("failed to accept websocket connection: %v", err)
@@ -117,7 +117,7 @@ func setupTestClient(ctx context.Context, t *testing.T, serverURL string) *TestP
 	clientInput, clientInputWriter := io.Pipe()
 	clientOutput := newTestBuffer(t)
 	wsURL := "ws" + serverURL[4:]
-	clientProxy := newProxyConnection(func(ctx context.Context, connID string) (*websocket.Conn, error) {
+	clientProxy := NewProxyConnection(func(ctx context.Context, connID string) (*websocket.Conn, error) {
 		return createTestWebsocketConnection(wsURL)
 	})
 	err := clientProxy.Connect(ctx)

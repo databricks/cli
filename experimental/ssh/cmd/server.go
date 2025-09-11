@@ -4,8 +4,8 @@ import (
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/experimental/ssh/internal/server"
 	"github.com/databricks/cli/libs/cmdctx"
-	"github.com/databricks/cli/libs/ssh"
 	"github.com/spf13/cobra"
 )
 
@@ -27,33 +27,38 @@ and proxies them to local SSH daemon processes.
 	var shutdownDelay time.Duration
 	var clusterID string
 	var version string
+	var secretsScope string
+	var publicKeySecretName string
 
 	cmd.Flags().StringVar(&clusterID, "cluster", "", "Databricks cluster ID")
 	cmd.MarkFlagRequired("cluster")
-	cmd.Flags().IntVar(&maxClients, "max-clients", 10, "Maximum number of SSH clients")
-	cmd.Flags().DurationVar(&shutdownDelay, "shutdown-delay", 10*time.Minute, "Delay before shutting down after no pings from clients")
+	cmd.Flags().StringVar(&secretsScope, "secrets-scope-name", "", "Databricks secrets scope name")
+	cmd.MarkFlagRequired("secrets-scope-name")
+	cmd.Flags().StringVar(&publicKeySecretName, "client-key-name", "", "Databricks client key name")
+	cmd.MarkFlagRequired("client-key-name")
+
+	cmd.Flags().IntVar(&maxClients, "max-clients", defaultMaxClients, "Maximum number of SSH clients")
+	cmd.Flags().DurationVar(&shutdownDelay, "shutdown-delay", defaultShutdownDelay, "Delay before shutting down after no pings from clients")
 	cmd.Flags().StringVar(&version, "version", "", "Client version of the Databricks CLI")
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		client := cmdctx.WorkspaceClient(ctx)
-		opts := ssh.ServerOptions{
+		opts := server.ServerOptions{
 			ClusterID:            clusterID,
 			MaxClients:           maxClients,
 			ShutdownDelay:        shutdownDelay,
 			Version:              version,
-			ConfigDir:            ".ssh-tunnel",
-			ServerPrivateKeyName: "server-private-key",
-			ServerPublicKeyName:  "server-public-key",
-			DefaultPort:          7772,
-			PortRange:            100,
+			ConfigDir:            serverConfigDir,
+			SecretsScope:         secretsScope,
+			ClientPublicKeyName:  publicKeySecretName,
+			ServerPrivateKeyName: serverPrivateKeyName,
+			ServerPublicKeyName:  serverPublicKeyName,
+			DefaultPort:          defaultServerPort,
+			PortRange:            serverPortRange,
 		}
-		err := ssh.RunServer(ctx, client, opts)
-		if err != nil && ssh.IsNormalClosure(err) {
-			return nil
-		}
-		return err
+		return server.RunServer(ctx, client, opts)
 	}
 
 	return cmd

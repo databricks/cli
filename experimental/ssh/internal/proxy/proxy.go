@@ -1,4 +1,4 @@
-package ssh
+package proxy
 
 import (
 	"context"
@@ -24,7 +24,7 @@ const (
 	proxyHandoverAckCloseConnTimeout = 15 * time.Second
 )
 
-type proxyConnection struct {
+type ProxyConnection struct {
 	connID                    string
 	conn                      atomic.Value // *websocket.Conn
 	createWebsocketConnection createWebsocketConnectionFunc
@@ -36,15 +36,15 @@ type proxyConnection struct {
 
 type createWebsocketConnectionFunc func(ctx context.Context, connID string) (*websocket.Conn, error)
 
-func newProxyConnection(createConn createWebsocketConnectionFunc) *proxyConnection {
-	return &proxyConnection{
+func NewProxyConnection(createConn createWebsocketConnectionFunc) *ProxyConnection {
+	return &ProxyConnection{
 		connID:                    uuid.NewString(),
 		currentConnectionClosed:   make(chan error),
 		createWebsocketConnection: createConn,
 	}
 }
 
-func (pc *proxyConnection) Start(ctx context.Context, src io.Reader, dst io.Writer) error {
+func (pc *ProxyConnection) Start(ctx context.Context, src io.Reader, dst io.Writer) error {
 	g, gCtx := errgroup.WithContext(ctx)
 	g.Go(func() error {
 		return pc.runSendingLoop(gCtx, src)
@@ -55,7 +55,7 @@ func (pc *proxyConnection) Start(ctx context.Context, src io.Reader, dst io.Writ
 	return g.Wait()
 }
 
-func (pc *proxyConnection) Connect(ctx context.Context) error {
+func (pc *ProxyConnection) Connect(ctx context.Context) error {
 	conn, err := pc.createWebsocketConnection(ctx, pc.connID)
 	if err != nil {
 		return err
@@ -64,7 +64,7 @@ func (pc *proxyConnection) Connect(ctx context.Context) error {
 	return nil
 }
 
-func (pc *proxyConnection) Accept(w http.ResponseWriter, r *http.Request) error {
+func (pc *ProxyConnection) Accept(w http.ResponseWriter, r *http.Request) error {
 	conn, err := pc.acceptWebsocketConnection(w, r)
 	if err != nil {
 		return err
@@ -73,7 +73,7 @@ func (pc *proxyConnection) Accept(w http.ResponseWriter, r *http.Request) error 
 	return nil
 }
 
-func (pc *proxyConnection) acceptWebsocketConnection(w http.ResponseWriter, r *http.Request) (*websocket.Conn, error) {
+func (pc *ProxyConnection) acceptWebsocketConnection(w http.ResponseWriter, r *http.Request) (*websocket.Conn, error) {
 	upgrader := websocket.Upgrader{}
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -82,7 +82,7 @@ func (pc *proxyConnection) acceptWebsocketConnection(w http.ResponseWriter, r *h
 	return conn, nil
 }
 
-func (pc *proxyConnection) runSendingLoop(ctx context.Context, src io.Reader) error {
+func (pc *ProxyConnection) runSendingLoop(ctx context.Context, src io.Reader) error {
 	for {
 		if ctx.Err() != nil {
 			return ctx.Err()
@@ -107,14 +107,14 @@ func (pc *proxyConnection) runSendingLoop(ctx context.Context, src io.Reader) er
 	}
 }
 
-func (pc *proxyConnection) sendMessage(mt int, data []byte) error {
+func (pc *ProxyConnection) sendMessage(mt int, data []byte) error {
 	pc.handoverMutex.Lock()
 	defer pc.handoverMutex.Unlock()
 	conn := pc.conn.Load().(*websocket.Conn)
 	return conn.WriteMessage(mt, data)
 }
 
-func (pc *proxyConnection) runReceivingLoop(ctx context.Context, dst io.Writer) error {
+func (pc *ProxyConnection) runReceivingLoop(ctx context.Context, dst io.Writer) error {
 	for {
 		if ctx.Err() != nil {
 			return ctx.Err()
@@ -157,7 +157,7 @@ func (pc *proxyConnection) runReceivingLoop(ctx context.Context, dst io.Writer) 
 	}
 }
 
-func (pc *proxyConnection) signalClosedConnection(err error) error {
+func (pc *ProxyConnection) signalClosedConnection(err error) error {
 	select {
 	case pc.currentConnectionClosed <- err:
 		return err
@@ -166,7 +166,7 @@ func (pc *proxyConnection) signalClosedConnection(err error) error {
 	}
 }
 
-func (pc *proxyConnection) blockUntilHandoverComplete(conn *websocket.Conn) error {
+func (pc *ProxyConnection) blockUntilHandoverComplete(conn *websocket.Conn) error {
 	pc.handoverMutex.Lock()
 	defer pc.handoverMutex.Unlock()
 	// Sanity check to ensure we are not in the middle of a handover - this should not happen.
@@ -176,7 +176,7 @@ func (pc *proxyConnection) blockUntilHandoverComplete(conn *websocket.Conn) erro
 	return nil
 }
 
-func (pc *proxyConnection) Close() error {
+func (pc *ProxyConnection) Close() error {
 	// Keep in mind that pc.sendMessage blocks during handover
 	err := pc.sendMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 	if err != nil {
@@ -189,7 +189,7 @@ func (pc *proxyConnection) Close() error {
 	return nil
 }
 
-func (pc *proxyConnection) InitiateHandover(ctx context.Context) error {
+func (pc *ProxyConnection) InitiateHandover(ctx context.Context) error {
 	// Blocks proxying any outgoing messages during the entire handover
 	pc.handoverMutex.Lock()
 	defer pc.handoverMutex.Unlock()
@@ -226,7 +226,7 @@ func (pc *proxyConnection) InitiateHandover(ctx context.Context) error {
 	return nil
 }
 
-func (pc *proxyConnection) AcceptHandover(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func (pc *ProxyConnection) AcceptHandover(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	// Blocks proxying any outgoing messages during the entire handover
 	pc.handoverMutex.Lock()
 	defer pc.handoverMutex.Unlock()

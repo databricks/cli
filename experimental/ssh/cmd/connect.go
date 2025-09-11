@@ -4,16 +4,10 @@ import (
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/experimental/ssh/internal/client"
+	"github.com/databricks/cli/experimental/ssh/internal/proxy"
 	"github.com/databricks/cli/libs/cmdctx"
-	"github.com/databricks/cli/libs/ssh"
 	"github.com/spf13/cobra"
-)
-
-const (
-	defaultClientPublicKeyName = "client-public-key"
-	defaultShutdownDelay       = 10 * time.Minute
-	defaultHandoverTimeout     = 30 * time.Minute
-	defaultMaxClients          = 10
 )
 
 func newConnectCommand() *cobra.Command {
@@ -54,8 +48,8 @@ the SSH server and handling the connection proxy.
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		client := cmdctx.WorkspaceClient(ctx)
-		opts := ssh.ClientOptions{
+		wsClient := cmdctx.WorkspaceClient(ctx)
+		opts := client.ClientOptions{
 			ClusterID:           clusterID,
 			ProxyMode:           proxyMode,
 			ServerMetadata:      serverMetadata,
@@ -65,8 +59,13 @@ the SSH server and handling the connection proxy.
 			ReleasesDir:         releasesDir,
 			AdditionalArgs:      args,
 			ClientPublicKeyName: defaultClientPublicKeyName,
+			ServerTimeout:       serverTimeout,
 		}
-		return ssh.RunClient(ctx, client, opts)
+		err := client.RunClient(ctx, wsClient, opts)
+		if err != nil && proxy.IsNormalClosure(err) {
+			return nil
+		}
+		return err
 	}
 
 	return cmd
