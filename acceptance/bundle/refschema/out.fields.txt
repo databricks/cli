@@ -31,6 +31,8 @@ resources.alerts.*.evaluation.threshold.value.bool_value	bool	ALL
 resources.alerts.*.evaluation.threshold.value.double_value	float64	ALL
 resources.alerts.*.evaluation.threshold.value.string_value	string	ALL
 resources.alerts.*.id	string	ALL
+resources.alerts.*.lifecycle	resources.Lifecycle	INPUT
+resources.alerts.*.lifecycle.prevent_destroy	bool	INPUT
 resources.alerts.*.lifecycle_state	sql.LifecycleState	ALL
 resources.alerts.*.modified_status	string	INPUT
 resources.alerts.*.owner_user_name	string	ALL
