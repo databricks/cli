@@ -1,1 +1,4 @@
-$CLI bundle validate --debug 2> out.stderr.$DATABRICKS_CLI_DEPLOYMENT.txt
+$CLI bundle validate --debug 2> tmp.stderr.$DATABRICKS_CLI_DEPLOYMENT.txt
+# filter out lines that can change the order
+grep -v '^<' tmp.stderr.$DATABRICKS_CLI_DEPLOYMENT.txt | grep -v '^>' | grep -v '^Debug: GET /api/2.0/workspace/get-status' > out.stderr.$DATABRICKS_CLI_DEPLOYMENT.txt
+rm tmp.stderr.$DATABRICKS_CLI_DEPLOYMENT.txt
