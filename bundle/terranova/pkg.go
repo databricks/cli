@@ -36,10 +36,9 @@ type DeploymentUnit struct {
 
 // DeploymentBundle holds everything needed to deploy a bundle
 type DeploymentBundle struct {
-	StateDB         tnstate.TerranovaState
-	Graph           *dagrun.Graph[deployplan.ResourceNode]
-	DeploymentUnits map[deployplan.ResourceNode]*DeploymentUnit
-	Adapters        map[string]*tnresources.Adapter
+	StateDB  tnstate.TerranovaState
+	Graph    *dagrun.Graph[deployplan.ResourceNode]
+	Adapters map[string]*tnresources.Adapter
 }
 
 // SetRemoteState updates the remote state with type validation and marks as fresh.
@@ -59,6 +58,8 @@ func (d *DeploymentUnit) SetRemoteState(remoteState any) error {
 	d.RemoteState = remoteState
 	return nil
 }
+
+// Plan JSON structures
 
 type Plan struct {
 	PlanVersion string               `json:"plan_version"`

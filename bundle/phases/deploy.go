@@ -19,42 +19,44 @@ import (
 	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/bundle/scripts"
 	"github.com/databricks/cli/bundle/statemgmt"
+	"github.com/databricks/cli/bundle/terranova"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/sync"
 )
 
-func getActions(ctx context.Context, b *bundle.Bundle) ([]deployplan.Action, error) {
+func getActions(ctx context.Context, b *bundle.Bundle) ([]deployplan.Action, *terranova.Plan, error) {
 	if b.DirectDeployment {
 		err := b.OpenStateFile(ctx)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
-		err = b.DeploymentBundle.CalculatePlanForDeploy(ctx, b.WorkspaceClient(), &b.Config)
+		plan, err := b.DeploymentBundle.CalculatePlanForDeploy(ctx, b.WorkspaceClient(), &b.Config)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
-		return b.DeploymentBundle.GetActions(ctx), nil
-	} else {
-		tf := b.Terraform
-		if tf == nil {
-			return nil, errors.New("terraform not initialized")
-		}
-		actions, err := terraform.ShowPlanFile(ctx, tf, b.TerraformPlanPath)
-		return actions, err
+		actions := plan.GetActions()
+		return actions, &plan, nil
 	}
+
+	tf := b.Terraform
+	if tf == nil {
+		return nil, nil, errors.New("terraform not initialized")
+	}
+	actions, err := terraform.ShowPlanFile(ctx, tf, b.TerraformPlanPath)
+	return actions, nil, err
 }
 
-func approvalForDeploy(ctx context.Context, b *bundle.Bundle) (bool, error) {
-	actions, err := getActions(ctx, b)
+func approvalForDeploy(ctx context.Context, b *bundle.Bundle) (bool, *terranova.Plan, error) {
+	actions, plan, err := getActions(ctx, b)
 	if err != nil {
-		return false, err
+		return false, nil, err
 	}
 
 	err = checkForPreventDestroy(b, actions)
 	if err != nil {
-		return false, err
+		return false, nil, err
 	}
 
 	types := []deployplan.ActionType{deployplan.ActionTypeRecreate, deployplan.ActionTypeDelete}
@@ -65,7 +67,7 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 
 	// We don't need to display any prompts in this case.
 	if len(schemaActions) == 0 && len(dltActions) == 0 && len(volumeActions) == 0 && len(dashboardActions) == 0 {
-		return true, nil
+		return true, plan, nil
 	}
 
 	// One or more UC schema resources will be deleted or recreated.
@@ -101,20 +103,20 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	}
 
 	if b.AutoApprove {
-		return true, nil
+		return true, plan, nil
 	}
 
 	if !cmdio.IsPromptSupported(ctx) {
-		return false, errors.New("the deployment requires destructive actions, but current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed")
+		return false, plan, errors.New("the deployment requires destructive actions, but current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed")
 	}
 
 	cmdio.LogString(ctx, "")
 	approved, err := cmdio.AskYesOrNo(ctx, "Would you like to proceed?")
 	if err != nil {
-		return false, err
+		return false, plan, err
 	}
 
-	return approved, nil
+	return approved, plan, nil
 }
 
 func deployCore(ctx context.Context, b *bundle.Bundle) {
@@ -123,7 +125,16 @@ func deployCore(ctx context.Context, b *bundle.Bundle) {
 	cmdio.LogString(ctx, "Deploying resources...")
 
 	if b.DirectDeployment {
-		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(), &b.Config)
+		approved, plan, err := approvalForDeploy(ctx, b)
+		if err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
+		if !approved {
+			cmdio.LogString(ctx, "Deployment cancelled!")
+			return
+		}
+		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(), &b.Config, *plan)
 	} else {
 		bundle.ApplyContext(ctx, b, terraform.Apply())
 	}
@@ -220,17 +231,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
-	haveApproval, err := approvalForDeploy(ctx, b)
-	if err != nil {
-		logdiag.LogError(ctx, err)
-		return
-	}
-
-	if haveApproval {
-		deployCore(ctx, b)
-	} else {
-		cmdio.LogString(ctx, "Deployment cancelled!")
-	}
+	deployCore(ctx, b)
 
 	if logdiag.HasError(ctx) {
 		return
@@ -258,7 +259,7 @@ func Diff(ctx context.Context, b *bundle.Bundle) []deployplan.Action {
 		return nil
 	}
 
-	actions, err := getActions(ctx, b)
+	actions, _, err := getActions(ctx, b)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 	}

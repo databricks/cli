@@ -2,6 +2,8 @@ package bundle
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
@@ -28,10 +30,12 @@ func newPlanCommand() *cobra.Command {
 
 	var force bool
 	var clusterId string
+	var output string
 	cmd.Flags().BoolVar(&force, "force", false, "Force-override Git branch validation.")
 	cmd.Flags().StringVar(&clusterId, "compute-id", "", "Override cluster in the deployment with the given compute ID.")
 	cmd.Flags().StringVarP(&clusterId, "cluster-id", "c", "", "Override cluster in the deployment with the given cluster ID.")
 	cmd.Flags().MarkDeprecated("compute-id", "use --cluster-id instead")
+	cmd.Flags().StringVarP(&output, "output", "o", "text", "Output format: text or json")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := logdiag.InitContext(cmd.Context())
@@ -70,6 +74,29 @@ func newPlanCommand() *cobra.Command {
 
 		if logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
+		}
+
+		if output == "json" {
+			// Emit JSON plan for direct deployment only
+			if !b.DirectDeployment {
+				return errors.New("json output is only supported for direct deployment")
+			}
+			if err := b.OpenStateFile(ctx); err != nil {
+				return err
+			}
+			plan, err := b.DeploymentBundle.CalculatePlanForDeploy(ctx, b.WorkspaceClient(), &b.Config)
+			if err != nil {
+				return err
+			}
+			buf, err := json.MarshalIndent(plan, "", "  ")
+			if err != nil {
+				return err
+			}
+			cmdio.LogString(ctx, string(buf))
+			if logdiag.HasError(ctx) {
+				return root.ErrAlreadyPrinted
+			}
+			return nil
 		}
 
 		changes := phases.Diff(ctx, b)

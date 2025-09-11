@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/terranova/tnresources"
 	"github.com/databricks/cli/bundle/terranova/tnstate"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/structdiff"
 	"github.com/databricks/databricks-sdk-go"
 
@@ -52,24 +51,6 @@ func (d *DeploymentUnit) plan(ctx context.Context, client *databricks.WorkspaceC
 	// Once we add non-id fields or add per-field details to "bundle plan", we must read dynamic data and deal with references as first class citizen.
 	// This means distinguishing between 0 that are actually object ids and 0 that are there because typed struct integer cannot contain ${...} string.
 	return calcDiff(d.Adapter, savedState, newState)
-}
-
-func (d *DeploymentUnit) refreshRemoteState(ctx context.Context, id string) error {
-	if d.RemoteState != nil {
-		return nil
-	}
-
-	// TODO retry failures
-	remoteState, err := d.Adapter.DoRefresh(ctx, id)
-	if err != nil {
-		return fmt.Errorf("failed to refresh remote state id=%s: %w", id, err)
-	}
-	err = d.SetRemoteState(remoteState)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 var ErrDelayed = errors.New("must be resolved after apply")
@@ -161,39 +142,6 @@ func (d *DeploymentUnit) ResolveReferenceRemote(ctx context.Context, db *tnstate
 
 	// Read other fields from remote state
 	return d.ReadRemoteStateField(ctx, db, fieldPath)
-}
-
-func (d *DeploymentUnit) ReadRemoteStateField(ctx context.Context, db *tnstate.TerranovaState, fieldPath dyn.Path) (any, error) {
-	// We have options:
-	// 1) Rely on the cached value; refresh if not cached.
-	// 2) Always refresh, read the value.
-	// 3) Consider this "unknown/variable" that always triggers a diff.
-	// Long term we'll do (1), for now going with (2).
-	// Not considering (3) because it would result in bad plans.
-
-	entry, _ := db.GetResourceEntry(d.Group, d.Key)
-	if entry.ID == "" {
-		return nil, errors.New("internal error: Missing state entry")
-	}
-
-	err := d.refreshRemoteState(ctx, entry.ID)
-	if err != nil {
-		return nil, err
-	}
-
-	// Use remote state tracked by deployer
-	remoteState := d.RemoteState
-	if remoteState == nil {
-		return nil, errors.New("no remote state available")
-	}
-	// remoteState cannot be nil there; but if it is, structaccess.Get will return an appropriate error
-
-	value, errRemote := structaccess.Get(remoteState, fieldPath)
-	if errRemote != nil {
-		return nil, fmt.Errorf("field not set in remote state: %w", errRemote)
-	}
-
-	return value, nil
 }
 
 // TODO: return struct that has action but also individual differences and their effect (e.g. recreate)

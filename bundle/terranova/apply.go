@@ -10,7 +10,9 @@ import (
 
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/terranova/tnstate"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/structaccess"
 )
 
 func (d *DeploymentUnit) Destroy(ctx context.Context, db *tnstate.TerranovaState) error {
@@ -39,6 +41,11 @@ func (d *DeploymentUnit) Deploy(ctx context.Context, db *tnstate.TerranovaState,
 		return fmt.Errorf("reading config: %w", err)
 	}
 
+	if actionType == deployplan.ActionTypeNoop {
+		// Nothing to change remotely; leave state and remote as-is.
+		return nil
+	}
+
 	if actionType == deployplan.ActionTypeCreate {
 		return d.Create(ctx, db, newState)
 	}
@@ -54,6 +61,8 @@ func (d *DeploymentUnit) Deploy(ctx context.Context, db *tnstate.TerranovaState,
 	}
 
 	switch actionType {
+	case deployplan.ActionTypeNoop:
+		return nil
 	case deployplan.ActionTypeRecreate:
 		return d.Recreate(ctx, db, oldID, newState)
 	case deployplan.ActionTypeUpdate:
@@ -190,6 +199,36 @@ func (d *DeploymentUnit) Delete(ctx context.Context, db *tnstate.TerranovaState,
 	}
 
 	return nil
+}
+
+func (d *DeploymentUnit) refreshRemoteState(ctx context.Context, id string) error {
+	if d.RemoteState != nil {
+		return nil
+	}
+	remoteState, err := d.Adapter.DoRefresh(ctx, id)
+	if err != nil {
+		return fmt.Errorf("failed to refresh remote state id=%s: %w", id, err)
+	}
+	return d.SetRemoteState(remoteState)
+}
+
+func (d *DeploymentUnit) ReadRemoteStateField(ctx context.Context, db *tnstate.TerranovaState, fieldPath dyn.Path) (any, error) {
+	entry, _ := db.GetResourceEntry(d.Group, d.Key)
+	if entry.ID == "" {
+		return nil, errors.New("internal error: Missing state entry")
+	}
+	if err := d.refreshRemoteState(ctx, entry.ID); err != nil {
+		return nil, err
+	}
+	remoteState := d.RemoteState
+	if remoteState == nil {
+		return nil, errors.New("no remote state available")
+	}
+	value, errRemote := structaccess.Get(remoteState, fieldPath)
+	if errRemote != nil {
+		return nil, fmt.Errorf("field not set in remote state: %w", errRemote)
+	}
+	return value, nil
 }
 
 func typeConvert(destType reflect.Type, src any) (any, error) {

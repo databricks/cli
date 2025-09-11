@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/statemgmt"
+	"github.com/databricks/cli/bundle/terranova"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
@@ -30,44 +31,46 @@ func assertRootPathExists(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	return true, err
 }
 
-func getDeleteActions(ctx context.Context, b *bundle.Bundle) ([]deployplan.Action, error) {
+func getDeleteActions(ctx context.Context, b *bundle.Bundle) ([]deployplan.Action, *terranova.Plan, error) {
 	if b.DirectDeployment {
 		err := b.OpenStateFile(ctx)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
-		err = b.DeploymentBundle.CalculatePlanForDestroy(ctx, b.WorkspaceClient())
+		plan, err := b.DeploymentBundle.CalculatePlanForDestroy(ctx, b.WorkspaceClient())
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
-		return b.DeploymentBundle.GetActions(ctx), nil
+		actions := plan.GetActions()
+		deleteActions := deployplan.Filter(actions, deployplan.ActionTypeDelete)
+		return deleteActions, &plan, nil
 	}
 
 	tf := b.Terraform
 
 	if tf == nil {
-		return nil, errors.New("terraform not initialized")
+		return nil, nil, errors.New("terraform not initialized")
 	}
 
 	actions, err := terraform.ShowPlanFile(ctx, tf, b.TerraformPlanPath)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	deleteActions := deployplan.Filter(actions, deployplan.ActionTypeDelete)
 
-	return deleteActions, nil
+	return deleteActions, nil, nil
 }
 
-func approvalForDestroy(ctx context.Context, b *bundle.Bundle) (bool, error) {
-	deleteActions, err := getDeleteActions(ctx, b)
+func approvalForDestroy(ctx context.Context, b *bundle.Bundle) (bool, *terranova.Plan, error) {
+	deleteActions, plan, err := getDeleteActions(ctx, b)
 	if err != nil {
-		return false, err
+		return false, nil, err
 	}
 
 	err = checkForPreventDestroy(b, deleteActions)
 	if err != nil {
-		return false, err
+		return false, nil, err
 	}
 
 	if len(deleteActions) > 0 {
@@ -111,20 +114,20 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	cmdio.LogString(ctx, "")
 
 	if b.AutoApprove {
-		return true, nil
+		return true, plan, nil
 	}
 
 	approved, err := cmdio.AskYesOrNo(ctx, "Would you like to proceed?")
 	if err != nil {
-		return false, err
+		return false, plan, err
 	}
 
-	return approved, nil
+	return approved, plan, nil
 }
 
-func destroyCore(ctx context.Context, b *bundle.Bundle) {
+func destroyCore(ctx context.Context, b *bundle.Bundle, plan *terranova.Plan) {
 	if b.DirectDeployment {
-		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(), &b.Config)
+		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(), &b.Config, *plan)
 	} else {
 		// Core destructive mutators for destroy. These require informed user consent.
 		bundle.ApplyContext(ctx, b, terraform.Apply())
@@ -182,14 +185,14 @@ func Destroy(ctx context.Context, b *bundle.Bundle) {
 		return
 	}
 
-	hasApproval, err := approvalForDestroy(ctx, b)
+	hasApproval, plan, err := approvalForDestroy(ctx, b)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return
 	}
 
 	if hasApproval {
-		destroyCore(ctx, b)
+		destroyCore(ctx, b, plan)
 	} else {
 		cmdio.LogString(ctx, "Destroy cancelled!")
 	}
