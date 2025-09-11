@@ -1,4 +1,4 @@
-package ssh
+package client
 
 import (
 	"context"
@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/databricks/cli/experimental/ssh/internal/workspace"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go"
@@ -17,32 +18,8 @@ import (
 
 type releaseProvider func(ctx context.Context, architecture, version, releasesDir string) (io.ReadCloser, error)
 
-func getWorkspaceRootDir(ctx context.Context, client *databricks.WorkspaceClient) (string, error) {
-	me, err := client.CurrentUser.Me(ctx)
-	if err != nil {
-		return "", fmt.Errorf("failed to get current user: %w", err)
-	}
-	return fmt.Sprintf("/Workspace/Users/%s/.databricks/ssh-tunnel", me.UserName), nil
-}
-
-func getWorkspaceVersionedDir(ctx context.Context, client *databricks.WorkspaceClient, version string) (string, error) {
-	contentDir, err := getWorkspaceRootDir(ctx, client)
-	if err != nil {
-		return "", fmt.Errorf("failed to get workspace root directory: %w", err)
-	}
-	return filepath.ToSlash(filepath.Join(contentDir, version)), nil
-}
-
-func getWorkspaceContentDir(ctx context.Context, client *databricks.WorkspaceClient, version, clusterID string) (string, error) {
-	contentDir, err := getWorkspaceVersionedDir(ctx, client, version)
-	if err != nil {
-		return "", fmt.Errorf("failed to get versioned workspace directory: %w", err)
-	}
-	return filepath.ToSlash(filepath.Join(contentDir, clusterID)), nil
-}
-
-func uploadTunnelBinaries(ctx context.Context, client *databricks.WorkspaceClient, version, releasesDir string) error {
-	versionedDir, err := getWorkspaceVersionedDir(ctx, client, version)
+func UploadTunnelReleases(ctx context.Context, client *databricks.WorkspaceClient, version, releasesDir string) error {
+	versionedDir, err := workspace.GetWorkspaceVersionedDir(ctx, client, version)
 	if err != nil {
 		return fmt.Errorf("failed to get versioned directory: %w", err)
 	}

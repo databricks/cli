@@ -4,8 +4,8 @@ import (
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/experimental/ssh/internal/setup"
 	"github.com/databricks/cli/libs/cmdctx"
-	"github.com/databricks/cli/libs/ssh"
 	"github.com/spf13/cobra"
 )
 
@@ -31,20 +31,20 @@ an SSH host configuration to your SSH config file.
 	cmd.Flags().StringVar(&clusterID, "cluster", "", "Databricks cluster ID")
 	cmd.MarkFlagRequired("cluster")
 	cmd.Flags().StringVar(&sshConfigPath, "ssh-config", "", "Path to SSH config file (default ~/.ssh/config)")
-	cmd.Flags().DurationVar(&shutdownDelay, "shutdown-delay", 10*time.Minute, "SSH server will terminate after this delay if there are no active connections")
+	cmd.Flags().DurationVar(&shutdownDelay, "shutdown-delay", defaultShutdownDelay, "SSH server will terminate after this delay if there are no active connections")
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		client := cmdctx.WorkspaceClient(ctx)
-		opts := ssh.SetupOptions{
+		opts := setup.SetupOptions{
 			HostName:      hostName,
 			ClusterID:     clusterID,
 			SSHConfigPath: sshConfigPath,
 			ShutdownDelay: shutdownDelay,
 			Profile:       client.Config.Profile,
 		}
-		return ssh.Setup(ctx, client, opts)
+		return setup.Setup(ctx, client, opts)
 	}
 
 	return cmd
