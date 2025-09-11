@@ -395,6 +395,8 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.VolumesCreate(req)
 	})
 
+	// Repos:
+
 	server.Handle("POST", "/api/2.0/repos", func(req Request) any {
 		return req.Workspace.ReposCreate(req)
 	})
@@ -420,6 +422,7 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	// SQL Warehouses:
+
 	server.Handle("GET", "/api/2.0/sql/warehouses/{warehouse_id}", func(req Request) any {
 		return MapGet(req.Workspace, req.Workspace.SqlWarehouses, req.Vars["warehouse_id"])
 	})
@@ -444,60 +447,24 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.SqlDataSourcesList(req)
 	})
 
-	server.Handle("GET", "/api/2.0/secrets/acls/get", func(req Request) any {
-		defer req.Workspace.LockUnlock()()
+	// Secrets ACLs:
 
-		scope := req.URL.Query().Get("scope")
-		principal := req.URL.Query().Get("principal")
-		scopeAcls := req.Workspace.Acls[scope]
-		for _, acl := range scopeAcls {
-			if acl.Principal == principal {
-				return acl
-			}
-		}
-		return Response{StatusCode: 404}
+	server.Handle("GET", "/api/2.0/secrets/acls/get", func(req Request) any {
+		return req.Workspace.SecretsAclsGet(req)
 	})
 
 	server.Handle("GET", "/api/2.0/secrets/acls/list", func(req Request) any {
-		return MapGet(req.Workspace, req.Workspace.Acls, req.Vars["scope"])
+		return req.Workspace.SecretsAclsList(req)
 	})
 
 	server.Handle("POST", "/api/2.0/secrets/acls/put", func(req Request) any {
-		defer req.Workspace.LockUnlock()()
-
-		var request workspace.PutAcl
-		if err := json.Unmarshal(req.Body, &request); err != nil {
-			return Response{
-				Body:       fmt.Sprintf("internal error: %s", err),
-				StatusCode: 500,
-			}
-		}
-		req.Workspace.Acls[request.Scope] = append(req.Workspace.Acls[request.Scope], workspace.AclItem{
-			Principal:  request.Principal,
-			Permission: request.Permission,
-		})
-		return ""
+		return req.Workspace.SecretsAclsPut(req)
 	})
 
 	server.Handle("POST", "/api/2.0/secrets/acls/delete", func(req Request) any {
-		defer req.Workspace.LockUnlock()()
-
-		var request workspace.DeleteAcl
-		if err := json.Unmarshal(req.Body, &request); err != nil {
-			return Response{
-				Body:       fmt.Sprintf("internal error: %s", err),
-				StatusCode: 500,
-			}
-		}
-		scopeAcls := req.Workspace.Acls[request.Scope]
-		for i, acl := range scopeAcls {
-			if acl.Principal == request.Principal {
-				req.Workspace.Acls[request.Scope] = append(scopeAcls[:i], scopeAcls[i+1:]...)
-				return ""
-			}
-		}
-		return Response{StatusCode: 404}
+		return req.Workspace.SecretsAclsDelete(req)
 	})
+	// Database Instances:
 
 	server.Handle("POST", "/api/2.0/database/instances", func(req Request) any {
 		return req.Workspace.DatabaseInstanceCreate(req)
@@ -519,6 +486,8 @@ func AddDefaultHandlers(server *Server) {
 		return DatabaseInstanceMapDelete(req)
 	})
 
+	// Database Catalogs:
+
 	server.Handle("POST", "/api/2.0/database/catalogs", func(req Request) any {
 		return req.Workspace.DatabaseCatalogCreate(req)
 	})
@@ -534,6 +503,8 @@ func AddDefaultHandlers(server *Server) {
 	server.Handle("DELETE", "/api/2.0/database/catalogs/{name}", func(req Request) any {
 		return MapDelete(req.Workspace, req.Workspace.DatabaseCatalogs, req.Vars["name"])
 	})
+
+	// Synced Database Tables:
 
 	server.Handle("POST", "/api/2.0/database/synced_tables", func(req Request) any {
 		return req.Workspace.SyncedDatabaseTableCreate(req)
