@@ -24,11 +24,6 @@
 10:07:59 Debug: Apply pid=12345 mutator=SyncInferRoot
 10:07:59 Debug: Apply pid=12345 mutator=PopulateCurrentUser
 10:07:59 Debug: GET /api/2.0/preview/scim/v2/Me
-< HTTP/1.1 200 OK
-< {
-<   "id": "[USERID]",
-<   "userName": "[USERNAME]"
-< } pid=12345 mutator=PopulateCurrentUser sdk=true
 10:07:59 Debug: Apply pid=12345 mutator=LoadGitDetails
 10:07:59 Debug: Apply pid=12345 mutator=ApplySourceLinkedDeploymentPreset
 10:07:59 Debug: Apply pid=12345 mutator=DefineDefaultWorkspaceRoot
@@ -73,22 +68,9 @@
 10:07:59 Debug: ApplyParallel pid=12345 mutator=fast_validate(readonly) mutator=validate:job_task_cluster_spec
 10:07:59 Debug: ApplyParallel pid=12345 mutator=fast_validate(readonly) mutator=validate:artifact_paths
 10:07:59 Debug: GET /api/2.0/workspace/get-status?path=/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files
-< HTTP/1.1 404 Not Found
-< {
-<   "message": "Workspace path not found"
-< } pid=12345 mutator=validate:files_to_sync sdk=true
 10:07:59 Debug: non-retriable error: Workspace path not found pid=12345 mutator=validate:files_to_sync sdk=true
 10:07:59 Debug: POST /api/2.0/workspace/mkdirs
-> {
->   "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files"
-> }
-< HTTP/1.1 200 OK pid=12345 mutator=validate:files_to_sync sdk=true
 10:07:59 Debug: GET /api/2.0/workspace/get-status?path=/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files
-< HTTP/1.1 200 OK
-< {
-<   "object_type": "DIRECTORY",
-<   "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files"
-< } pid=12345 mutator=validate:files_to_sync sdk=true
 10:07:59 Debug: Path /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files has type directory (ID: 0) pid=12345 mutator=validate:files_to_sync
 10:07:59 Info: completed execution pid=12345 exit_code=0
 10:07:59 Debug: no telemetry logs to upload pid=12345
