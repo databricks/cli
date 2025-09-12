@@ -33,15 +33,14 @@ func (d *DeploymentUnit) Destroy(ctx context.Context, db *tnstate.TerranovaState
 }
 
 func (d *DeploymentUnit) Deploy(ctx context.Context, db *tnstate.TerranovaState, inputConfig any, actionType deployplan.ActionType) error {
+	if actionType == deployplan.ActionTypeNoop {
+		return nil
+	}
+
 	// Note, newState may be different between plan and deploy due to resolved $resource references
 	newState, err := d.Adapter.PrepareState(inputConfig)
 	if err != nil {
 		return fmt.Errorf("reading config: %w", err)
-	}
-
-	if actionType == deployplan.ActionTypeNoop {
-		// Nothing to change remotely; leave state and remote as-is.
-		return nil
 	}
 
 	if actionType == deployplan.ActionTypeCreate {
@@ -59,8 +58,6 @@ func (d *DeploymentUnit) Deploy(ctx context.Context, db *tnstate.TerranovaState,
 	}
 
 	switch actionType {
-	case deployplan.ActionTypeNoop:
-		return nil
 	case deployplan.ActionTypeRecreate:
 		return d.Recreate(ctx, db, oldID, newState)
 	case deployplan.ActionTypeUpdate:
