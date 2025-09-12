@@ -184,7 +184,6 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
-	// Build unified plan (prepare step already done above)
 	plan := planWithoutPrepare(ctx, b)
 	if logdiag.HasError(ctx) {
 		return

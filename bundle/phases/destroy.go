@@ -149,7 +149,6 @@ func Destroy(ctx context.Context, b *bundle.Bundle) {
 		return
 	}
 
-	// Build unified plan for destroy
 	var plan *deployplan.Plan
 	if b.DirectDeployment {
 		err := b.OpenStateFile(ctx)
