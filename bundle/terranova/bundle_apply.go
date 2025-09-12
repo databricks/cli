@@ -15,12 +15,12 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		panic("Planning is not done")
 	}
 
-	b.StateDB.AssertOpened()
-
 	if len(plan.Plan) == 0 {
 		// Avoid creating state file if nothing to deploy
 		return
 	}
+
+	b.StateDB.AssertOpened()
 
 	b.Graph.Run(defaultParallelism, func(node deployplan.ResourceNode, failedDependency *deployplan.ResourceNode) bool {
 		key := "resources." + node.Group + "." + node.Key
