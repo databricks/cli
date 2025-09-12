@@ -13,7 +13,7 @@ type Action struct {
 
 func (a Action) String() string {
 	typ, _ := strings.CutSuffix(a.Group, "s")
-	return fmt.Sprintf("  %s %s %s", a.ActionType.String(), typ, a.Key)
+	return fmt.Sprintf("  %s %s %s", a.ActionType.StringShort(), typ, a.Key)
 }
 
 // Implements cmdio.Event for cmdio.Log
@@ -73,7 +73,9 @@ func (a ActionType) KeepsID() bool {
 	}
 }
 
-func (a ActionType) String() string {
+// StringShort short version of action. Currently this only replaces "update_with_id" with "update".
+// Note, we intentionally do not implement String() method to force explicit choice.
+func (a ActionType) StringShort() string {
 	result := ShortName[a]
 	if result != "" {
 		return result
@@ -81,7 +83,7 @@ func (a ActionType) String() string {
 	return a.StringFull()
 }
 
-// StringFull returns the full identifier for the action type.
+// StringFull returns the string representation of the action type.
 func (a ActionType) StringFull() string {
 	return FullName[a]
 }
