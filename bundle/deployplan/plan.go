@@ -10,8 +10,9 @@ type Plan struct {
 	// Current version is zero which has no backward compatibility
 	PlanVersion int `json:"plan_version,omitempty"`
 	// TODO:
-	// CliVersion  string               `json:"cli_version"`
-	Plan map[string]PlanEntry `json:"plan"`
+	// - CliVersion  string               `json:"cli_version"`
+	// - Copy Serial / Lineage from the state file
+	Plan map[string]PlanEntry `json:"plan,omitzero"`
 }
 
 type PlanEntry struct {
