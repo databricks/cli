@@ -58,7 +58,9 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 		return Plan{}, err
 	}
 
-	plan := Plan{PlanVersion: "v1", CliVersion: "", Plan: make(map[string]PlanEntry)}
+	plan := Plan{
+		Plan: make(map[string]PlanEntry),
+	}
 
 	// We're processing resources in DAG order, because we're trying to get rid of all
 	// references like $resources.jobs.foo.id if jobs.foo is not going to be (re)created.
@@ -95,9 +97,12 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 			return false
 		}
 
+		hasDelayedResolutions := false
+
 		for _, reference := range b.Graph.OutgoingLabels(node) {
 			value, err := d.ResolveReferenceLocalOrRemote(ctx, &b.StateDB, reference, actionType, config)
 			if errors.Is(err, ErrDelayed) {
+				hasDelayedResolutions = true
 				continue
 			}
 			if err != nil {
@@ -111,12 +116,20 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 			}
 		}
 
-		// Build plan entry (include noops)
+		if actionType == deployplan.ActionTypeNoop {
+			if hasDelayedResolutions {
+				logdiag.LogError(ctx, fmt.Errorf("%s: internal error, action noop must not have delayed resolutions", errorPrefix))
+				return false
+			}
+
+			return true
+		}
+
 		key := "resources." + node.Group + "." + node.Key
 		plan.Plan[key] = PlanEntry{
 			Action: actionType.StringFull(),
-			// DependsOn currently omitted (requires incoming-edge tracking). Can be added later.
 		}
+
 		return true
 	})
 
@@ -159,7 +172,9 @@ func (b *DeploymentBundle) CalculatePlanForDestroy(ctx context.Context, client *
 	}
 
 	b.Graph = dagrun.NewGraph[deployplan.ResourceNode]()
-	plan := Plan{PlanVersion: "v1", CliVersion: "", Plan: make(map[string]PlanEntry)}
+	plan := Plan{
+		Plan: make(map[string]PlanEntry),
+	}
 
 	for group, groupData := range b.StateDB.Data.DeploymentUnits {
 		_, ok := b.Adapters[group]

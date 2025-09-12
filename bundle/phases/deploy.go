@@ -26,37 +26,14 @@ import (
 	"github.com/databricks/cli/libs/sync"
 )
 
-func getActions(ctx context.Context, b *bundle.Bundle) ([]deployplan.Action, *terranova.Plan, error) {
-	if b.DirectDeployment {
-		err := b.OpenStateFile(ctx)
-		if err != nil {
-			return nil, nil, err
-		}
-		plan, err := b.DeploymentBundle.CalculatePlanForDeploy(ctx, b.WorkspaceClient(), &b.Config)
-		if err != nil {
-			return nil, nil, err
-		}
-		actions := plan.GetActions()
-		return actions, &plan, nil
-	}
+// removed getActions; unified plan flow returns terranova.Plan and uses GetActions() where needed
 
-	tf := b.Terraform
-	if tf == nil {
-		return nil, nil, errors.New("terraform not initialized")
-	}
-	actions, err := terraform.ShowPlanFile(ctx, tf, b.TerraformPlanPath)
-	return actions, nil, err
-}
+func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *terranova.Plan) (bool, error) {
+	actions := plan.GetActions()
 
-func approvalForDeploy(ctx context.Context, b *bundle.Bundle) (bool, *terranova.Plan, error) {
-	actions, plan, err := getActions(ctx, b)
+	err := checkForPreventDestroy(b, actions)
 	if err != nil {
-		return false, nil, err
-	}
-
-	err = checkForPreventDestroy(b, actions)
-	if err != nil {
-		return false, nil, err
+		return false, err
 	}
 
 	types := []deployplan.ActionType{deployplan.ActionTypeRecreate, deployplan.ActionTypeDelete}
@@ -67,7 +44,7 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle) (bool, *terranova.
 
 	// We don't need to display any prompts in this case.
 	if len(schemaActions) == 0 && len(dltActions) == 0 && len(volumeActions) == 0 && len(dashboardActions) == 0 {
-		return true, plan, nil
+		return true, nil
 	}
 
 	// One or more UC schema resources will be deleted or recreated.
@@ -103,20 +80,20 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle) (bool, *terranova.
 	}
 
 	if b.AutoApprove {
-		return true, plan, nil
+		return true, nil
 	}
 
 	if !cmdio.IsPromptSupported(ctx) {
-		return false, plan, errors.New("the deployment requires destructive actions, but current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed")
+		return false, errors.New("the deployment requires destructive actions, but current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed")
 	}
 
 	cmdio.LogString(ctx, "")
 	approved, err := cmdio.AskYesOrNo(ctx, "Would you like to proceed?")
 	if err != nil {
-		return false, plan, err
+		return false, err
 	}
 
-	return approved, plan, nil
+	return approved, nil
 }
 
 func deployCore(ctx context.Context, b *bundle.Bundle, plan *terranova.Plan) {
@@ -210,19 +187,13 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
-	if !b.DirectDeployment {
-		bundle.ApplySeqContext(ctx, b,
-			terraform.Interpolate(),
-			terraform.Write(),
-			terraform.Plan(terraform.PlanGoal("deploy")),
-		)
-	}
-
+	// Build unified plan
+	plan := Plan(ctx, b)
 	if logdiag.HasError(ctx) {
 		return
 	}
 
-	approved, plan, err := approvalForDeploy(ctx, b)
+	approved, err := approvalForDeploy(ctx, b, plan)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return
@@ -232,7 +203,11 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
-	deployCore(ctx, b, plan)
+	if b.DirectDeployment {
+		deployCore(ctx, b, plan)
+	} else {
+		deployCore(ctx, b, nil)
+	}
 
 	if logdiag.HasError(ctx) {
 		return
@@ -242,30 +217,59 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	bundle.ApplyContext(ctx, b, scripts.Execute(config.ScriptPostDeploy))
 }
 
-func Diff(ctx context.Context, b *bundle.Bundle) []deployplan.Action {
+func Plan(ctx context.Context, b *bundle.Bundle) *terranova.Plan {
 	deployPrepare(ctx, b)
 	if logdiag.HasError(ctx) {
-		return nil
+		return &terranova.Plan{}
 	}
 
-	if !b.DirectDeployment {
-		bundle.ApplySeqContext(ctx, b,
-			terraform.Interpolate(),
-			terraform.Write(),
-			terraform.Plan(terraform.PlanGoal("deploy")),
-		)
+	if b.DirectDeployment {
+		if err := b.OpenStateFile(ctx); err != nil {
+			logdiag.LogError(ctx, err)
+			return &terranova.Plan{}
+		}
+		plan, err := b.DeploymentBundle.CalculatePlanForDeploy(ctx, b.WorkspaceClient(), &b.Config)
+		if err != nil {
+			logdiag.LogError(ctx, err)
+			return &terranova.Plan{}
+		}
+		return &plan
 	}
+
+	bundle.ApplySeqContext(ctx, b,
+		terraform.Interpolate(),
+		terraform.Write(),
+		terraform.Plan(terraform.PlanGoal("deploy")),
+	)
 
 	if logdiag.HasError(ctx) {
-		return nil
+		return &terranova.Plan{}
 	}
 
-	actions, _, err := getActions(ctx, b)
+	tf := b.Terraform
+	if tf == nil {
+		logdiag.LogError(ctx, errors.New("terraform not initialized"))
+		return &terranova.Plan{}
+	}
+
+	tfPlan, err := tf.ShowPlanFile(ctx, b.TerraformPlanPath)
 	if err != nil {
 		logdiag.LogError(ctx, err)
+		return &terranova.Plan{}
 	}
 
-	return actions
+	actions := terraform.GetActions(ctx, tfPlan.ResourceChanges)
+
+	plan := terranova.Plan{
+		Plan: make(map[string]terranova.PlanEntry),
+	}
+
+	for _, a := range actions {
+		key := "resources." + a.Group + "." + a.Key
+		plan.Plan[key] = terranova.PlanEntry{Action: a.ActionType.StringFull()}
+	}
+
+	return &plan
 }
 
 // If there are more than 1 thousand of a resource type, do not

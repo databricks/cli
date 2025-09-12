@@ -3,7 +3,6 @@ package bundle
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
@@ -76,18 +75,9 @@ func newPlanCommand() *cobra.Command {
 			return root.ErrAlreadyPrinted
 		}
 
+		plan := phases.Plan(ctx, b)
+
 		if output == "json" {
-			// Emit JSON plan for direct deployment only
-			if !b.DirectDeployment {
-				return errors.New("json output is only supported for direct deployment")
-			}
-			if err := b.OpenStateFile(ctx); err != nil {
-				return err
-			}
-			plan, err := b.DeploymentBundle.CalculatePlanForDeploy(ctx, b.WorkspaceClient(), &b.Config)
-			if err != nil {
-				return err
-			}
 			buf, err := json.MarshalIndent(plan, "", "  ")
 			if err != nil {
 				return err
@@ -99,10 +89,8 @@ func newPlanCommand() *cobra.Command {
 			return nil
 		}
 
-		changes := phases.Diff(ctx, b)
-
-		for _, change := range changes {
-			cmdio.LogString(ctx, fmt.Sprintf("%s %s.%s", change.ActionType.StringShort(), change.Group, change.Key))
+		for _, action := range plan.GetActions() {
+			cmdio.LogString(ctx, fmt.Sprintf("%s %s.%s", action.ActionType.StringShort(), action.Group, action.Key))
 		}
 
 		if logdiag.HasError(ctx) {
