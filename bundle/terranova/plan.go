@@ -164,6 +164,7 @@ func (d *DeploymentUnit) ReadRemoteStateField(ctx context.Context, db *tnstate.T
 	// 3) Consider this "unknown/variable" that always triggers a diff.
 	// Long term we'll do (1), for now going with (2).
 	// Not considering (3) because it would result in bad plans.
+
 	entry, _ := db.GetResourceEntry(d.Group, d.Key)
 	if entry.ID == "" {
 		return nil, errors.New("internal error: Missing state entry")
