@@ -47,6 +47,7 @@ var (
 	SkipLocal       bool
 	UseVersion      string
 	WorkspaceTmpDir bool
+	TerraformDir    string
 )
 
 // In order to debug CLI running under acceptance test, search for TestInprocessMode and update
@@ -72,13 +73,18 @@ func init() {
 	// DABs in the workspace runs on the workspace file system. This flags does the same for acceptance tests
 	// to simulate an identical environment.
 	flag.BoolVar(&WorkspaceTmpDir, "workspace-tmp-dir", false, "Run tests on the workspace file system (For DBR testing).")
+
+	// Symlinks from workspace file system to local file mount are not supported on DBR. Terraform implicitly
+	// creates these symlinks when a file_mirror is used for a provider (in .terraformrc). This flag
+	// allows us to download the provider to the workspace file system on DBR enabling DBR integration testing.
+	flag.StringVar(&TerraformDir, "terraform-dir", "", "Directory to download the terraform provider to")
 }
 
 const (
 	EntryPointScript = "script"
 	CleanupScript    = "script.cleanup"
 	PrepareScript    = "script.prepare"
-	MaxFileSize      = 100_000
+	MaxFileSize      = 1_000_000
 	// Filename to save replacements to (used by diff.py)
 	ReplsFile = "repls.json"
 	// Filename for materialized config (used as golden file)
@@ -148,9 +154,16 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	t.Setenv("LC_ALL", "C")
 
 	buildDir := filepath.Join(cwd, "build", fmt.Sprintf("%s_%s", runtime.GOOS, runtime.GOARCH))
+	err = os.MkdirAll(buildDir, os.ModePerm)
+	require.NoError(t, err)
 
-	// Download terraform and provider and create config; this also creates build directory.
-	RunCommand(t, []string{"python3", filepath.Join(cwd, "install_terraform.py"), "--targetdir", buildDir}, ".")
+	terraformDir := TerraformDir
+	if terraformDir == "" {
+		terraformDir = buildDir
+	}
+
+	// Download terraform and provider and create config.
+	RunCommand(t, []string{"python3", filepath.Join(cwd, "install_terraform.py"), "--targetdir", terraformDir}, ".")
 
 	wheelPath := buildDatabricksBundlesWheel(t, buildDir)
 	if wheelPath != "" {
@@ -226,12 +239,12 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		repls.Set(testDefaultWarehouseId, "[TEST_DEFAULT_WAREHOUSE_ID]")
 	}
 
-	terraformrcPath := filepath.Join(buildDir, ".terraformrc")
+	terraformrcPath := filepath.Join(terraformDir, ".terraformrc")
 	t.Setenv("TF_CLI_CONFIG_FILE", terraformrcPath)
 	t.Setenv("DATABRICKS_TF_CLI_CONFIG_FILE", terraformrcPath)
 	repls.SetPath(terraformrcPath, "[DATABRICKS_TF_CLI_CONFIG_FILE]")
 
-	terraformExecPath := filepath.Join(buildDir, "terraform") + exeSuffix
+	terraformExecPath := filepath.Join(terraformDir, "terraform") + exeSuffix
 	t.Setenv("DATABRICKS_TF_EXEC_PATH", terraformExecPath)
 	t.Setenv("TERRAFORM", terraformExecPath)
 	repls.SetPath(terraformExecPath, "[TERRAFORM]")
@@ -402,6 +415,14 @@ func getSkipReason(config *internal.TestConfig, configPath string) string {
 		return ""
 	}
 
+	if isTruePtr(config.SkipOnDbr) && WorkspaceTmpDir {
+		return "Disabled via SkipOnDbr setting in " + configPath
+	}
+
+	if isTruePtr(config.Slow) && testing.Short() {
+		return "Disabled via Slow setting in " + configPath
+	}
+
 	isEnabled, isPresent := config.GOOS[runtime.GOOS]
 	if isPresent && !isEnabled {
 		return fmt.Sprintf("Disabled via GOOS.%s setting in %s", runtime.GOOS, configPath)
@@ -560,6 +581,16 @@ func runTest(t *testing.T,
 	testdiff.PrepareReplacementsWorkspaceConfig(t, &repls, cfg)
 
 	cmd.Env = auth.ProcessEnv(cfg)
+
+	rateLimit := os.Getenv("DATABRICKS_RATE_LIMIT")
+	if rateLimit == "" {
+		if isRunningOnCloud {
+			rateLimit = "100"
+		} else {
+			rateLimit = "1000000000"
+		}
+	}
+	cmd.Env = append(cmd.Env, "DATABRICKS_RATE_LIMIT="+rateLimit)
 	cmd.Env = append(cmd.Env, "UNIQUE_NAME="+uniqueName)
 	cmd.Env = append(cmd.Env, "TEST_TMP_DIR="+tmpDir)
 

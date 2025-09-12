@@ -1,0 +1,5 @@
+variables:
+  foo:
+    default: 25
+  bar:
+    default: "${var.foo}+${var.foo}"

@@ -179,6 +179,7 @@ func newCreateDatabaseInstance() *cobra.Command {
 
 	cmd.Flags().StringVar(&createDatabaseInstanceReq.DatabaseInstance.Capacity, "capacity", createDatabaseInstanceReq.DatabaseInstance.Capacity, `The sku of the instance.`)
 	// TODO: array: child_instance_refs
+	cmd.Flags().BoolVar(&createDatabaseInstanceReq.DatabaseInstance.EnablePgNativeLogin, "enable-pg-native-login", createDatabaseInstanceReq.DatabaseInstance.EnablePgNativeLogin, `Whether the instance has PG native password login enabled.`)
 	cmd.Flags().BoolVar(&createDatabaseInstanceReq.DatabaseInstance.EnableReadableSecondaries, "enable-readable-secondaries", createDatabaseInstanceReq.DatabaseInstance.EnableReadableSecondaries, `Whether to enable secondaries to serve read-only traffic.`)
 	cmd.Flags().IntVar(&createDatabaseInstanceReq.DatabaseInstance.NodeCount, "node-count", createDatabaseInstanceReq.DatabaseInstance.NodeCount, `The number of nodes in the instance, composed of 1 primary and 0 or more secondaries.`)
 	// TODO: complex arg: parent_instance_ref
@@ -1499,6 +1500,7 @@ func newUpdateDatabaseInstance() *cobra.Command {
 
 	cmd.Flags().StringVar(&updateDatabaseInstanceReq.DatabaseInstance.Capacity, "capacity", updateDatabaseInstanceReq.DatabaseInstance.Capacity, `The sku of the instance.`)
 	// TODO: array: child_instance_refs
+	cmd.Flags().BoolVar(&updateDatabaseInstanceReq.DatabaseInstance.EnablePgNativeLogin, "enable-pg-native-login", updateDatabaseInstanceReq.DatabaseInstance.EnablePgNativeLogin, `Whether the instance has PG native password login enabled.`)
 	cmd.Flags().BoolVar(&updateDatabaseInstanceReq.DatabaseInstance.EnableReadableSecondaries, "enable-readable-secondaries", updateDatabaseInstanceReq.DatabaseInstance.EnableReadableSecondaries, `Whether to enable secondaries to serve read-only traffic.`)
 	cmd.Flags().IntVar(&updateDatabaseInstanceReq.DatabaseInstance.NodeCount, "node-count", updateDatabaseInstanceReq.DatabaseInstance.NodeCount, `The number of nodes in the instance, composed of 1 primary and 0 or more secondaries.`)
 	// TODO: complex arg: parent_instance_ref

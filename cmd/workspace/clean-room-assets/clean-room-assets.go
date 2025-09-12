@@ -176,6 +176,8 @@ func newCreateCleanRoomAssetReview() *cobra.Command {
 
 	cmd.Flags().Var(&createCleanRoomAssetReviewJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	// TODO: complex arg: notebook_review
+
 	cmd.Use = "create-clean-room-asset-review CLEAN_ROOM_NAME ASSET_TYPE NAME"
 	cmd.Short = `Create a review (e.g. approval) for an asset.`
 	cmd.Long = `Create a review (e.g. approval) for an asset.
@@ -184,7 +186,7 @@ func newCreateCleanRoomAssetReview() *cobra.Command {
 
   Arguments:
     CLEAN_ROOM_NAME: Name of the clean room
-    ASSET_TYPE: Asset type. Can only be NOTEBOOK_FILE. 
+    ASSET_TYPE: Asset type. Can either be NOTEBOOK_FILE or JAR_ANALYSIS. 
       Supported values: [FOREIGN_TABLE, NOTEBOOK_FILE, TABLE, VIEW, VOLUME]
     NAME: Name of the asset`
 
@@ -211,8 +213,6 @@ func newCreateCleanRoomAssetReview() *cobra.Command {
 					return err
 				}
 			}
-		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 		createCleanRoomAssetReviewReq.CleanRoomName = args[0]
 		_, err = fmt.Sscan(args[1], &createCleanRoomAssetReviewReq.AssetType)

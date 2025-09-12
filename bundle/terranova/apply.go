@@ -8,158 +8,15 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/terranova/tnstate"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/logdiag"
-	"github.com/databricks/databricks-sdk-go"
 )
 
-// How many parallel operations (API calls) are allowed
-const defaultParallelism = 10
-
-type terranovaApplyMutator struct{}
-
-func TerranovaApply() bundle.Mutator {
-	return &terranovaApplyMutator{}
-}
-
-func (m *terranovaApplyMutator) Name() string {
-	return "TerranovaDeploy"
-}
-
-func (m *terranovaApplyMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	if b.Graph == nil {
-		panic("Planning is not done")
-	}
-
-	if len(b.PlannedActions) == 0 {
-		// Avoid creating state file if nothing to deploy
-		return nil
-	}
-
-	for node, action := range b.PlannedActions {
-		if !b.Graph.HasNode(node) {
-			if action == deployplan.ActionTypeDelete {
-				// it is expected that this node is not seen by makeResourceGraph because it is not in config
-				b.Graph.AddNode(node)
-			} else {
-				// it's internal error today because plan cannot be outdated. In the future when we load serialized plan, this will become user error
-				logdiag.LogError(ctx, fmt.Errorf("cannot %s %s.%s: internal error, plan is outdated", action, node.Group, node.Key))
-			}
-		}
-	}
-
-	if logdiag.HasError(ctx) {
-		return nil
-	}
-
-	client := b.WorkspaceClient()
-
-	b.Graph.Run(defaultParallelism, func(node deployplan.ResourceNode, failedDependency *deployplan.ResourceNode) bool {
-		actionType := b.PlannedActions[node]
-
-		errorPrefix := fmt.Sprintf("cannot %s %s.%s", actionType.String(), node.Group, node.Key)
-
-		// If a dependency failed, report and skip execution for this node by returning false
-		if failedDependency != nil {
-			logdiag.LogError(ctx, fmt.Errorf("%s: dependency failed: %s", errorPrefix, failedDependency.String()))
-			return false
-		}
-
-		settings, ok := SupportedResources[node.Group]
-		if !ok {
-			// Unexpected, this should be filtered at plan.
-			return false
-		}
-
-		// The way plan currently works, is that it does not add resources with Noop action, turning them into Unset.
-		// So we skip both, although at this point we will not see Noop here.
-		if actionType == deployplan.ActionTypeUnset || actionType == deployplan.ActionTypeNoop {
-			return true
-		}
-
-		d := Deployer{
-			client:       client,
-			db:           &b.ResourceDatabase,
-			group:        node.Group,
-			resourceName: node.Key,
-			settings:     settings,
-		}
-
-		if actionType == deployplan.ActionTypeDelete {
-			err := d.Destroy(ctx)
-			if err != nil {
-				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
-				return false
-			}
-			return true
-		}
-
-		// Fetch the references to ensure all are resolved
-		myReferences, err := extractReferences(b.Config.Value(), node)
-		if err != nil {
-			logdiag.LogError(ctx, fmt.Errorf("%s: reading references from config: %w", errorPrefix, err))
-			return false
-		}
-
-		// At this point it's an error to have unresolved deps
-		if len(myReferences) > 0 {
-			// TODO: include the deps themselves in the message
-			logdiag.LogError(ctx, fmt.Errorf("%s: unresolved deps", errorPrefix))
-			return false
-		}
-
-		config, ok := b.GetResourceConfig(node.Group, node.Key)
-		if !ok {
-			logdiag.LogError(ctx, fmt.Errorf("%s: internal error when reading config", errorPrefix))
-			return false
-		}
-
-		// TODO: redo calcDiff to downgrade planned action if possible (?)
-
-		err = d.Deploy(ctx, config, actionType)
-		if err != nil {
-			logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
-			return false
-		}
-
-		// Update resources.id after successful deploy so that future ${resources...id} refs are replaced
-		if b.Graph.HasOutgoingEdges(node) {
-			err = resolveIDReference(ctx, b, node.Group, node.Key)
-			if err != nil {
-				// not using errorPrefix because resource was deployed
-				logdiag.LogError(ctx, fmt.Errorf("failed to replace ref to resources.%s.%s.id: %w", node.Group, node.Key, err))
-				return false
-			}
-		}
-
-		return true
-	})
-
-	// This must run even if deploy failed:
-	err := b.ResourceDatabase.Finalize()
-	if err != nil {
-		logdiag.LogError(ctx, err)
-	}
-
-	return nil
-}
-
-type Deployer struct {
-	client       *databricks.WorkspaceClient
-	db           *tnstate.TerranovaState
-	group        string
-	resourceName string
-	settings     ResourceSettings
-}
-
-func (d *Deployer) Destroy(ctx context.Context) error {
-	entry, hasEntry := d.db.GetResourceEntry(d.group, d.resourceName)
+func (d *DeploymentUnit) Destroy(ctx context.Context, db *tnstate.TerranovaState) error {
+	entry, hasEntry := db.GetResourceEntry(d.Group, d.Key)
 	if !hasEntry {
-		log.Infof(ctx, "Cannot delete %s.%s: missing from state", d.group, d.resourceName)
+		log.Infof(ctx, "Cannot delete %s.%s: missing from state", d.Group, d.Key)
 		return nil
 	}
 
@@ -167,7 +24,7 @@ func (d *Deployer) Destroy(ctx context.Context) error {
 		return errors.New("invalid state: empty id")
 	}
 
-	err := d.Delete(ctx, entry.ID)
+	err := d.Delete(ctx, db, entry.ID)
 	if err != nil {
 		return err
 	}
@@ -175,19 +32,18 @@ func (d *Deployer) Destroy(ctx context.Context) error {
 	return nil
 }
 
-func (d *Deployer) Deploy(ctx context.Context, inputConfig any, actionType deployplan.ActionType) error {
-	resource, _, err := New(d.client, d.group, d.resourceName, inputConfig)
+func (d *DeploymentUnit) Deploy(ctx context.Context, db *tnstate.TerranovaState, inputConfig any, actionType deployplan.ActionType) error {
+	// Note, newState may be different between plan and deploy due to resolved $resource references
+	newState, err := d.Adapter.PrepareState(inputConfig)
 	if err != nil {
-		return err
+		return fmt.Errorf("reading config: %w", err)
 	}
-
-	config := resource.Config()
 
 	if actionType == deployplan.ActionTypeCreate {
-		return d.Create(ctx, resource, config)
+		return d.Create(ctx, db, newState)
 	}
 
-	entry, hasEntry := d.db.GetResourceEntry(d.group, d.resourceName)
+	entry, hasEntry := db.GetResourceEntry(d.Group, d.Key)
 	if !hasEntry {
 		return errors.New("state entry not found")
 	}
@@ -199,126 +55,136 @@ func (d *Deployer) Deploy(ctx context.Context, inputConfig any, actionType deplo
 
 	switch actionType {
 	case deployplan.ActionTypeRecreate:
-		return d.Recreate(ctx, resource, oldID, config)
+		return d.Recreate(ctx, db, oldID, newState)
 	case deployplan.ActionTypeUpdate:
-		return d.Update(ctx, resource, oldID, config)
+		return d.Update(ctx, db, oldID, newState)
 	case deployplan.ActionTypeUpdateWithID:
-		updater, hasUpdater := resource.(IResourceUpdatesID)
-		if !hasUpdater {
-			return errors.New("internal error: plan is update_with_id but resource does not implement UpdateWithID")
-		}
-		return d.UpdateWithID(ctx, resource, updater, oldID, config)
+		return d.UpdateWithID(ctx, db, oldID, newState)
 	default:
 		return fmt.Errorf("internal error: unexpected actionType: %#v", actionType)
 	}
 }
 
-func (d *Deployer) Create(ctx context.Context, resource IResource, config any) error {
-	newID, err := resource.DoCreate(ctx)
+func (d *DeploymentUnit) Create(ctx context.Context, db *tnstate.TerranovaState, newState any) error {
+	newID, remoteState, err := d.Adapter.DoCreate(ctx, newState)
 	if err != nil {
 		// No need to prefix error, there is no ambiguity (only one operation - DoCreate) and no additional context (like id)
 		return err
 	}
 
-	log.Infof(ctx, "Created %s.%s id=%#v", d.group, d.resourceName, newID)
+	log.Infof(ctx, "Created %s.%s id=%#v", d.Group, d.Key, newID)
 
-	err = d.db.SaveState(d.group, d.resourceName, newID, config)
+	err = d.SetRemoteState(remoteState)
+	if err != nil {
+		return err
+	}
+
+	err = db.SaveState(d.Group, d.Key, newID, newState)
 	if err != nil {
 		return fmt.Errorf("saving state after creating id=%s: %w", newID, err)
 	}
 
-	err = resource.WaitAfterCreate(ctx)
+	waitRemoteState, err := d.Adapter.WaitAfterCreate(ctx, newState)
 	if err != nil {
 		return fmt.Errorf("waiting after creating id=%s: %w", newID, err)
 	}
 
+	err = d.SetRemoteState(waitRemoteState)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func (d *Deployer) Recreate(ctx context.Context, resource IResource, oldID string, config any) error {
-	err := DeleteResource(ctx, d.client, d.group, oldID)
+func (d *DeploymentUnit) Recreate(ctx context.Context, db *tnstate.TerranovaState, oldID string, newState any) error {
+	err := d.Adapter.DoDelete(ctx, oldID)
 	if err != nil {
 		return fmt.Errorf("deleting old id=%s: %w", oldID, err)
 	}
 
-	err = d.db.SaveState(d.group, d.resourceName, "", nil)
+	err = db.SaveState(d.Group, d.Key, "", nil)
 	if err != nil {
 		return fmt.Errorf("deleting state: %w", err)
 	}
 
-	newID, err := resource.DoCreate(ctx)
-	if err != nil {
-		return fmt.Errorf("re-creating: %w", err)
-	}
-
-	// TODO: This should be at notice level (info < notice < warn) and it should be visible by default,
-	// but to match terraform output today, we hide it (and also we don't have notice level)
-	log.Infof(ctx, "Recreated %s.%s id=%#v (previously %#v)", d.group, d.resourceName, newID, oldID)
-	err = d.db.SaveState(d.group, d.resourceName, newID, config)
-	if err != nil {
-		return fmt.Errorf("saving state for id=%s: %w", newID, err)
-	}
-
-	err = resource.WaitAfterCreate(ctx)
-	if err != nil {
-		return fmt.Errorf("waiting after re-creating id=%s: %w", newID, err)
-	}
-
-	return nil
+	return d.Create(ctx, db, newState)
 }
 
-func (d *Deployer) Update(ctx context.Context, resource IResource, id string, config any) error {
-	err := resource.DoUpdate(ctx, id)
+func (d *DeploymentUnit) Update(ctx context.Context, db *tnstate.TerranovaState, id string, newState any) error {
+	remoteState, err := d.Adapter.DoUpdate(ctx, id, newState)
 	if err != nil {
 		return fmt.Errorf("updating id=%s: %w", id, err)
 	}
 
-	err = d.db.SaveState(d.group, d.resourceName, id, config)
+	err = d.SetRemoteState(remoteState)
+	if err != nil {
+		return err
+	}
+
+	err = db.SaveState(d.Group, d.Key, id, newState)
 	if err != nil {
 		return fmt.Errorf("saving state id=%s: %w", id, err)
 	}
 
-	err = resource.WaitAfterUpdate(ctx)
+	waitRemoteState, err := d.Adapter.WaitAfterUpdate(ctx, newState)
 	if err != nil {
 		return fmt.Errorf("waiting after updating id=%s: %w", id, err)
+	}
+
+	// Update remote state with the result from wait operation
+	err = d.SetRemoteState(waitRemoteState)
+	if err != nil {
+		return err
 	}
 
 	return nil
 }
 
-func (d *Deployer) UpdateWithID(ctx context.Context, resource IResource, updater IResourceUpdatesID, oldID string, config any) error {
-	newID, err := updater.DoUpdateWithID(ctx, oldID)
+func (d *DeploymentUnit) UpdateWithID(ctx context.Context, db *tnstate.TerranovaState, oldID string, newState any) error {
+	newID, remoteState, err := d.Adapter.DoUpdateWithID(ctx, oldID, newState)
 	if err != nil {
 		return fmt.Errorf("updating id=%s: %w", oldID, err)
 	}
 
 	if oldID != newID {
-		log.Infof(ctx, "Updated %s.%s id=%#v (previously %#v)", d.group, d.resourceName, newID, oldID)
+		log.Infof(ctx, "Updated %s.%s id=%#v (previously %#v)", d.Group, d.Key, newID, oldID)
 	} else {
-		log.Infof(ctx, "Updated %s.%s id=%#v", d.group, d.resourceName, newID)
+		log.Infof(ctx, "Updated %s.%s id=%#v", d.Group, d.Key, newID)
 	}
 
-	err = d.db.SaveState(d.group, d.resourceName, newID, config)
+	err = d.SetRemoteState(remoteState)
+	if err != nil {
+		return err
+	}
+
+	err = db.SaveState(d.Group, d.Key, newID, newState)
 	if err != nil {
 		return fmt.Errorf("saving state id=%s: %w", oldID, err)
 	}
 
-	err = resource.WaitAfterUpdate(ctx)
+	waitRemoteState, err := d.Adapter.WaitAfterUpdate(ctx, newState)
 	if err != nil {
 		return fmt.Errorf("waiting after updating id=%s: %w", newID, err)
+	}
+
+	// Update remote state with the result from wait operation
+	err = d.SetRemoteState(waitRemoteState)
+	if err != nil {
+		return err
 	}
 
 	return nil
 }
 
-func (d *Deployer) Delete(ctx context.Context, oldID string) error {
+func (d *DeploymentUnit) Delete(ctx context.Context, db *tnstate.TerranovaState, oldID string) error {
 	// TODO: recognize 404 and 403 as "deleted" and proceed to removing state
-	err := DeleteResource(ctx, d.client, d.group, oldID)
+	err := d.Adapter.DoDelete(ctx, oldID)
 	if err != nil {
 		return fmt.Errorf("deleting id=%s: %w", oldID, err)
 	}
 
-	err = d.db.DeleteState(d.group, d.resourceName)
+	err = db.DeleteState(d.Group, d.Key)
 	if err != nil {
 		return fmt.Errorf("deleting state id=%s: %w", oldID, err)
 	}

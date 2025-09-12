@@ -14,6 +14,52 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
+// These are the task types that support the source field
+// https://docs.databricks.com/api/workspace/jobs/create
+var supportedTypeTasks = []string{
+	"db_task",
+	"notebook_task",
+	"spark_python_task",
+}
+
+func setSourceIfNotSet(task dyn.Value, defaultSource jobs.Source) (dyn.Value, error) {
+	for _, taskType := range supportedTypeTasks {
+		t, err := dyn.Get(task, taskType)
+		if err != nil {
+			continue
+		}
+
+		_, err = dyn.Get(t, "source")
+		if err != nil {
+			return dyn.Set(task, taskType+".source", dyn.V(string(defaultSource)))
+		}
+	}
+	return task, nil
+}
+
+func applyDefaultTaskSource(job dyn.Value) (dyn.Value, error) {
+	defaultSource := jobs.SourceWorkspace
+
+	// Check if the job has git_source set and set the default source to GIT if it does
+	_, err := dyn.Get(job, "git_source")
+	if err == nil {
+		defaultSource = jobs.SourceGit
+	}
+
+	// Then iterate over the tasks and set the source to the default if it's not set
+	return dyn.Map(job, "tasks", dyn.Foreach(func(_ dyn.Path, task dyn.Value) (dyn.Value, error) {
+		// Then iterate over the foreach tasks and set the source to the default if it's not set
+		task, err = dyn.Map(task, "for_each_task.task", func(_ dyn.Path, foreachTask dyn.Value) (dyn.Value, error) {
+			return setSourceIfNotSet(foreachTask, defaultSource)
+		})
+		if err != nil {
+			return task, err
+		}
+
+		return setSourceIfNotSet(task, defaultSource)
+	}))
+}
+
 func patchApplyPolicyDefaultValues(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
 	// If the field "apply_policy_default_values" is not set, do nothing.
 	if b, ok := v.Get("apply_policy_default_values").AsBool(); !ok || !b {
@@ -104,6 +150,12 @@ func convertJobResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
 		}
 	}
 
+	// Apply default task source logic
+	vout, err = applyDefaultTaskSource(vout)
+	if err != nil {
+		return dyn.InvalidValue, err
+	}
+
 	// Modify top-level keys.
 	vout, err = renameKeys(vout, map[string]string{
 		"tasks":        "task",
@@ -178,6 +230,11 @@ type jobConverter struct{}
 
 func (jobConverter) Convert(ctx context.Context, key string, vin dyn.Value, out *schema.Resources) error {
 	vout, err := convertJobResource(ctx, vin)
+	if err != nil {
+		return err
+	}
+
+	vout, err = convertLifecycle(ctx, vout, vin.Get("lifecycle"))
 	if err != nil {
 		return err
 	}

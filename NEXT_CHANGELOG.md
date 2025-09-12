@@ -1,11 +1,11 @@
 # NEXT CHANGELOG
 
-## Release v0.267.0
+## Release v0.269.0
 
 ### Notable Changes
+* Add support for SQL Alerts in DABs ([#3033](https://github.com/databricks/cli/pull/3033))
 
 ### CLI
-* Add rule files for coding agents working on the CLI code base ([#3245](https://github.com/databricks/cli/pull/3245))
 
 ### Dependency updates
 

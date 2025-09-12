@@ -16,6 +16,7 @@ linters:
     - unused
     - exhaustruct
     - copyloopvar
+    - forbidigo
   settings:
     copyloopvar:
       check-alias: true
@@ -69,6 +70,12 @@ linters:
       - path-except: bundle/terranova/tnresources
         linters:
           - exhaustruct
+      - path: bundle/terranova/tnresources/all_test.go
+        linters:
+          - exhaustruct
+      - path-except: ^cmd
+        linters:
+          - forbidigo
 issues:
   max-issues-per-linter: 1000
   max-same-issues: 1000

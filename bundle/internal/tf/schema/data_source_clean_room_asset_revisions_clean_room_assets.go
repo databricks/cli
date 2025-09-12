@@ -136,5 +136,7 @@ type DataSourceCleanRoomAssetRevisionsCleanRoomAssetsRevisions struct {
 }
 
 type DataSourceCleanRoomAssetRevisionsCleanRoomAssets struct {
-	Revisions []DataSourceCleanRoomAssetRevisionsCleanRoomAssetsRevisions `json:"revisions,omitempty"`
+	Name        string                                                      `json:"name"`
+	Revisions   []DataSourceCleanRoomAssetRevisionsCleanRoomAssetsRevisions `json:"revisions,omitempty"`
+	WorkspaceId string                                                      `json:"workspace_id,omitempty"`
 }

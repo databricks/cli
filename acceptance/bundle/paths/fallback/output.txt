@@ -21,12 +21,6 @@ Error: path ../src/sql.sql is defined relative to the [TEST_TMP_DIR]/resources d
   in override_job.yml:24:25
      resources/my_job.yml:27:21
 
-Error: path ../dist/wheel2.whl is defined relative to the [TEST_TMP_DIR]/resources directory ([TEST_TMP_DIR]/override_job.yml:33:24). Please update the path to be relative to the file where it is defined or use earlier version of CLI (0.261.0 or earlier).
-  in override_job.yml:33:24
-
-Error: path ../target/jar2.jar is defined relative to the [TEST_TMP_DIR]/resources directory ([TEST_TMP_DIR]/override_job.yml:41:24). Please update the path to be relative to the file where it is defined or use earlier version of CLI (0.261.0 or earlier).
-  in override_job.yml:41:24
-
 Error: path ../src/notebook2.py is defined relative to the [TEST_TMP_DIR]/resources directory ([TEST_TMP_DIR]/override_pipeline.yml:13:23). Please update the path to be relative to the file where it is defined or use earlier version of CLI (0.261.0 or earlier).
   in override_pipeline.yml:13:23
 
