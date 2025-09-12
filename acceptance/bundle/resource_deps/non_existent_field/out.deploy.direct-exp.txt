@@ -1,7 +1,5 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Error: cannot resolve "${resources.volumes.bar.non_existent}": schema mismatch: non_existent: field "non_existent" not found in resources.Volume; non_existent: field "non_existent" not found in catalog.VolumeInfo
-
-Error: cannot plan resources.volumes.foo: dependency failed: resources.volumes.bar
+Error: cannot plan resources.volumes.foo: cannot resolve "${resources.volumes.bar.non_existent}": schema mismatch: non_existent: field "non_existent" not found in catalog.CreateVolumeRequestContent; non_existent: field "non_existent" not found in catalog.VolumeInfo
 
 Error: planning failed
 

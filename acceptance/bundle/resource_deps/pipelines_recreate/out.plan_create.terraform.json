@@ -1,0 +1,10 @@
+{
+  "plan": {
+    "resources.jobs.bar": {
+      "action": "create"
+    },
+    "resources.pipelines.foo": {
+      "action": "create"
+    }
+  }
+}

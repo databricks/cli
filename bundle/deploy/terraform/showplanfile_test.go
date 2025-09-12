@@ -42,10 +42,7 @@ func TestPopulatePlan(t *testing.T) {
 		},
 	}
 
-	plan := &deployplan.Plan{
-		Plan: make(map[string]deployplan.PlanEntry),
-	}
-
+	plan := deployplan.NewPlan()
 	populatePlan(ctx, plan, changes)
 
 	actions := plan.GetActions()

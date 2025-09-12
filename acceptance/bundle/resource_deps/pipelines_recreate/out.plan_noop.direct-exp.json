@@ -1,0 +1,16 @@
+{
+  "plan": {
+    "resources.jobs.bar": {
+      "depends_on": [
+        {
+          "node": "resources.pipelines.foo",
+          "label": "${resources.pipelines.foo.id}"
+        }
+      ],
+      "action": "skip"
+    },
+    "resources.pipelines.foo": {
+      "action": "skip"
+    }
+  }
+}

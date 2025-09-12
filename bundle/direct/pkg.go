@@ -7,7 +7,6 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
-	"github.com/databricks/cli/libs/dagrun"
 )
 
 // How many parallel operations (API calls) are allowed
@@ -33,9 +32,10 @@ type DeploymentUnit struct {
 
 // DeploymentBundle holds everything needed to deploy a bundle
 type DeploymentBundle struct {
-	StateDB  dstate.DeploymentState
-	Graph    *dagrun.Graph
-	Adapters map[string]*dresources.Adapter
+	StateDB          dstate.DeploymentState
+	Adapters         map[string]*dresources.Adapter
+	Plan             *deployplan.Plan
+	RemoteStateCache map[string]any
 }
 
 // SetRemoteState updates the remote state with type validation and marks as fresh.

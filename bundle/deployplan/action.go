@@ -40,8 +40,10 @@ const (
 	ActionTypeDelete
 )
 
+const ActionTypeSkipString = "skip"
+
 var actionName = map[ActionType]string{
-	ActionTypeSkip:         "skip",
+	ActionTypeSkip:         ActionTypeSkipString,
 	ActionTypeResize:       "resize",
 	ActionTypeUpdate:       "update",
 	ActionTypeUpdateWithID: "update_id",
