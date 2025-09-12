@@ -64,7 +64,7 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 	// if jobs.foo is not going to be (re)created. This means by the time we get to resource depending on $resources.jobs.foo.id
 	// we might have already got rid of this reference, thus potentially downgrading actionType
 	//
-	// parallelism is set to 1, so there is no multi-threaded access there. TODO: increase parallism, protect b.Graph
+	// parallelism is set to 1, so there is no multi-threaded access there. TODO: increase parallism
 	b.Graph.Run(1, func(node deployplan.ResourceNode, failedDependency *deployplan.ResourceNode) bool {
 		errorPrefix := fmt.Sprintf("cannot plan %s.%s", node.Group, node.Key)
 
