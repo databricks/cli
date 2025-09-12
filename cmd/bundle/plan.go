@@ -76,6 +76,9 @@ func newPlanCommand() *cobra.Command {
 		}
 
 		plan := phases.Plan(ctx, b)
+		if logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
+		}
 
 		if output == "json" {
 			buf, err := json.MarshalIndent(plan, "", "  ")
