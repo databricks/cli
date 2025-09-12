@@ -40,8 +40,7 @@ func getDeleteActions(ctx context.Context, b *bundle.Bundle) ([]deployplan.Actio
 		if err != nil {
 			return nil, nil, err
 		}
-		actions := plan.GetActions()
-		deleteActions := deployplan.Filter(actions, deployplan.ActionTypeDelete)
+		deleteActions := plan.GetActions()
 		return deleteActions, plan, nil
 	}
 
