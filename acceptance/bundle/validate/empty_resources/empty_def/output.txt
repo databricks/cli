@@ -141,3 +141,14 @@ Error: secret_scope rname is not defined
     "rname": null
   }
 }
+
+=== resources.alerts.rname ===
+Error: alert rname is not defined
+  at resources.alerts.rname
+  in databricks.yml:6:11
+
+{
+  "alerts": {
+    "rname": null
+  }
+}

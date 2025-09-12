@@ -34,14 +34,10 @@ type IResource interface {
 	// Example: func (r *ResourceJob) DoDelete(ctx context.Context, id string) error {
 	DoDelete(ctx context.Context, id string) error
 
-	// [Optional] RecreateFields returns a list of fields that will cause resource recreation if changed
-	// Example: func (r *ResourceJob) RecreateFields() []string { return []string{"name", "type"} }
-	RecreateFields() []string
-
-	// [Optional] ClassifyChanges provides non-default change classification.
-	// Default is to consider any change "an update" (RecreateFields handled separately).
-	// Example: func (r *ResourceJob) ClassifyChanges(changes []structdiff.Change) deployplan.ActionType { return deployplan.ActionUpdate }
-	ClassifyChanges(changes []structdiff.Change) deployplan.ActionType
+	// [Optional] FieldTriggers returns actions to trigger when given fields are changed.
+	// Keys are field paths (e.g., ".name", ".catalog_name"). Values are actions.
+	// Unspecified changed fields default to ActionTypeUpdate.
+	FieldTriggers() map[string]deployplan.ActionType
 }
 
 // IResourceNoRefresh describes additional methods for resource to implement.
@@ -108,9 +104,8 @@ type Adapter struct {
 	doUpdateWithID  *calladapt.BoundCaller
 	waitAfterCreate *calladapt.BoundCaller
 	waitAfterUpdate *calladapt.BoundCaller
-	classifyChanges *calladapt.BoundCaller
 
-	recreateFields map[string]struct{}
+	fieldTriggers map[string]deployplan.ActionType
 }
 
 func NewAdapter(typedNil any, client *databricks.WorkspaceClient) (*Adapter, error) {
@@ -135,8 +130,7 @@ func NewAdapter(typedNil any, client *databricks.WorkspaceClient) (*Adapter, err
 		doUpdateWithID:  nil,
 		waitAfterCreate: nil,
 		waitAfterUpdate: nil,
-		classifyChanges: nil,
-		recreateFields:  map[string]struct{}{},
+		fieldTriggers:   map[string]deployplan.ActionType{},
 	}
 
 	err = adapter.initMethods(impl)
@@ -144,20 +138,20 @@ func NewAdapter(typedNil any, client *databricks.WorkspaceClient) (*Adapter, err
 		return nil, err
 	}
 
-	// Load optional RecreateFields method from the unified interface
-	recreateCall, err := calladapt.PrepareCall(impl, calladapt.TypeOf[IResource](), "RecreateFields")
+	// Load optional FieldTriggers method from the unified interface
+	triggerCall, err := calladapt.PrepareCall(impl, calladapt.TypeOf[IResource](), "FieldTriggers")
 	if err != nil {
 		return nil, err
 	}
-	if recreateCall != nil {
-		outs, err := recreateCall.Call()
+	if triggerCall != nil {
+		outs, err := triggerCall.Call()
 		if err != nil || len(outs) != 1 {
-			return nil, fmt.Errorf("failed to call RecreateFields: %w", err)
+			return nil, fmt.Errorf("failed to call FieldTriggers: %w", err)
 		}
-		fields := outs[0].([]string)
-		adapter.recreateFields = make(map[string]struct{}, len(fields))
-		for _, field := range fields {
-			adapter.recreateFields[field] = struct{}{}
+		fields := outs[0].(map[string]deployplan.ActionType)
+		adapter.fieldTriggers = make(map[string]deployplan.ActionType, len(fields))
+		for k, v := range fields {
+			adapter.fieldTriggers[k] = v
 		}
 	}
 
@@ -217,8 +211,7 @@ func (a *Adapter) initMethods(resource any) error {
 		return err
 	}
 
-	a.classifyChanges, err = calladapt.PrepareCall(resource, calladapt.TypeOf[IResource](), "ClassifyChanges")
-	return err
+	return nil
 }
 
 // validateTypes validates type matches for variadic triples of (name, actual, expected).
@@ -293,8 +286,18 @@ func (a *Adapter) validate() error {
 		return err
 	}
 
-	if a.doUpdateWithID != nil && a.classifyChanges == nil {
-		return errors.New("if DoUpdateWithID is present, should have implement ClassifyChanges")
+	// FieldTriggers validation
+	hasUpdateWithIDTrigger := false
+	for _, action := range a.fieldTriggers {
+		if action == deployplan.ActionTypeUpdateWithID {
+			hasUpdateWithIDTrigger = true
+		}
+	}
+	if hasUpdateWithIDTrigger && a.doUpdateWithID == nil {
+		return errors.New("FieldTriggers includes update_with_id but DoUpdateWithID is not implemented")
+	}
+	if a.doUpdateWithID != nil && !hasUpdateWithIDTrigger {
+		return errors.New("DoUpdateWithID is implemented but FieldTriggers lacks update_with_id trigger")
 	}
 
 	return nil
@@ -381,11 +384,6 @@ func (a *Adapter) DoUpdate(ctx context.Context, id string, newState any) (any, e
 	}
 }
 
-// HasClassifyChanges returns true if the resource implements ClassifyChanges method.
-func (a *Adapter) HasClassifyChanges() bool {
-	return a.classifyChanges != nil
-}
-
 // HasDoUpdateWithID returns true if the resource implements DoUpdateWithID method.
 func (a *Adapter) HasDoUpdateWithID() bool {
 	return a.doUpdateWithID != nil
@@ -412,30 +410,26 @@ func (a *Adapter) DoUpdateWithID(ctx context.Context, oldID string, newState any
 	}
 }
 
-// MustRecreate checks if any of the changes require resource recreation.
-func (a *Adapter) MustRecreate(changes []structdiff.Change) bool {
-	if len(a.recreateFields) == 0 {
-		return false
+// ClassifyByTriggers classifies a set of changes using FieldTriggers.
+// Unspecified changed fields default to ActionTypeUpdate. Final action is the
+// maximum by precedence. No changes yield ActionTypeNoop.
+func (a *Adapter) ClassifyByTriggers(changes []structdiff.Change) deployplan.ActionType {
+	if len(changes) == 0 {
+		return deployplan.ActionTypeNoop
 	}
+
+	// Default when there are changes but no explicit trigger is update.
+	result := deployplan.ActionTypeUpdate
 	for _, change := range changes {
-		if _, ok := a.recreateFields[change.Path.String()]; ok {
-			return true
+		action, ok := a.fieldTriggers[change.Path.String()]
+		if !ok {
+			action = deployplan.ActionTypeUpdate
+		}
+		if action > result {
+			result = action
 		}
 	}
-	return false
-}
-
-// ClassifyChanges calls the resource's ClassifyChanges method if implemented.
-func (a *Adapter) ClassifyChanges(changes []structdiff.Change) (deployplan.ActionType, error) {
-	if a.classifyChanges == nil {
-		return "", errors.New("internal error: ClassifyChanges not implemented")
-	}
-	outs, err := a.classifyChanges.Call(changes)
-	if err != nil {
-		return "", err
-	}
-	result := outs[0].(deployplan.ActionType)
-	return result, nil
+	return result
 }
 
 // WaitAfterCreate waits for the resource to become ready after creation.

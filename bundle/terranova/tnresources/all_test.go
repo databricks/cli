@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/structdiff/structpath"
 	"github.com/databricks/cli/libs/structwalk"
 	"github.com/databricks/cli/libs/testserver"
@@ -155,7 +156,7 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 }
 
 // validateFields uses structwalk to generate all valid field paths and checks membership.
-func validateFields(t *testing.T, configType reflect.Type, fields map[string]struct{}) {
+func validateFields(t *testing.T, configType reflect.Type, fields map[string]deployplan.ActionType) {
 	validPaths := make(map[string]struct{})
 
 	err := structwalk.WalkType(configType, func(path *structpath.PathNode, typ reflect.Type) bool {
@@ -171,15 +172,15 @@ func validateFields(t *testing.T, configType reflect.Type, fields map[string]str
 	}
 }
 
-// TestRecreateFields validates that all fields in RecreateFields
+// TestFieldTriggers validates that all trigger keys
 // exist in the corresponding ConfigType for each resource.
-func TestRecreateFields(t *testing.T) {
+func TestFieldTriggers(t *testing.T) {
 	for resourceName, resource := range SupportedResources {
 		adapter, err := NewAdapter(resource, nil)
 		require.NoError(t, err)
 
 		t.Run(resourceName, func(t *testing.T) {
-			validateFields(t, adapter.InputConfigType(), adapter.recreateFields)
+			validateFields(t, adapter.InputConfigType(), adapter.fieldTriggers)
 		})
 	}
 }

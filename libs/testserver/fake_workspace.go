@@ -73,6 +73,7 @@ type FakeWorkspace struct {
 	Volumes         map[string]catalog.VolumeInfo
 	Dashboards      map[string]dashboards.Dashboard
 	SqlWarehouses   map[string]sql.GetWarehouseResponse
+	Alerts          map[string]sql.AlertV2
 
 	Acls map[string][]workspace.AclItem
 
@@ -167,6 +168,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		DatabaseInstances:    map[string]database.DatabaseInstance{},
 		DatabaseCatalogs:     map[string]database.DatabaseCatalog{},
 		SyncedDatabaseTables: map[string]database.SyncedDatabaseTable{},
+		Alerts:               map[string]sql.AlertV2{},
 	}
 }
 
