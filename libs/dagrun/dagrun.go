@@ -36,13 +36,6 @@ func (g *Graph[N]) AddNode(n N) {
 	}
 }
 
-// NodesInInsertionOrder returns nodes in the order they were added.
-func (g *Graph[N]) NodesInInsertionOrder() []N {
-	out := make([]N, 0, len(g.nodes))
-	out = append(out, g.nodes...)
-	return out
-}
-
 func (g *Graph[N]) HasNode(n N) bool {
 	_, ok := g.adj[n]
 	return ok

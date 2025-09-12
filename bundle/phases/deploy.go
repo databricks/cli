@@ -119,21 +119,12 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle) (bool, *terranova.
 	return approved, plan, nil
 }
 
-func deployCore(ctx context.Context, b *bundle.Bundle) {
+func deployCore(ctx context.Context, b *bundle.Bundle, plan *terranova.Plan) {
 	// Core mutators that CRUD resources and modify deployment state. These
 	// mutators need informed consent if they are potentially destructive.
 	cmdio.LogString(ctx, "Deploying resources...")
 
 	if b.DirectDeployment {
-		approved, plan, err := approvalForDeploy(ctx, b)
-		if err != nil {
-			logdiag.LogError(ctx, err)
-			return
-		}
-		if !approved {
-			cmdio.LogString(ctx, "Deployment cancelled!")
-			return
-		}
 		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(), &b.Config, *plan)
 	} else {
 		bundle.ApplyContext(ctx, b, terraform.Apply())
@@ -231,7 +222,17 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
-	deployCore(ctx, b)
+	approved, plan, err := approvalForDeploy(ctx, b)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return
+	}
+	if !approved {
+		cmdio.LogString(ctx, "Deployment cancelled!")
+		return
+	}
+
+	deployCore(ctx, b, plan)
 
 	if logdiag.HasError(ctx) {
 		return
