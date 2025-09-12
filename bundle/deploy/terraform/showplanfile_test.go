@@ -54,17 +54,11 @@ func TestPopulatePlan(t *testing.T) {
 	assert.Equal(t, []deployplan.Action{
 		{
 			ActionType: deployplan.ActionTypeDelete,
-			ResourceNode: deployplan.ResourceNode{
-				Group: "pipelines",
-				Key:   "delete pipeline",
-			},
+			Key:        "resources.pipelines.delete pipeline",
 		},
 		{
 			ActionType: deployplan.ActionTypeRecreate,
-			ResourceNode: deployplan.ResourceNode{
-				Group: "pipelines",
-				Key:   "recreate pipeline",
-			},
+			Key:        "resources.pipelines.recreate pipeline",
 		},
 	}, res)
 

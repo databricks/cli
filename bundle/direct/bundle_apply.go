@@ -22,29 +22,33 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 
 	b.StateDB.AssertOpened()
 
-	b.Graph.Run(defaultParallelism, func(node deployplan.ResourceNode, failedDependency *deployplan.ResourceNode) bool {
-		key := "resources." + node.Group + "." + node.Key
-		entry, ok := plan.Plan[key]
+	b.Graph.Run(defaultParallelism, func(node string, failedDependency *string) bool {
+		entry, ok := plan.Plan[node]
 		if !ok {
 			// Nothing to do for this node
 			return true
 		}
 
+		group, key := deployplan.ParseResourceKey(node)
+		if group == "" {
+			logdiag.LogError(ctx, fmt.Errorf("internal error: bad node key: %s", node))
+			return false
+		}
+
 		at := deployplan.ActionTypeFromString(entry.Action)
 		if at == deployplan.ActionTypeUnset {
-			logdiag.LogError(ctx, fmt.Errorf("unknown action %q for %s.%s", entry.Action, node.Group, node.Key))
+			logdiag.LogError(ctx, fmt.Errorf("unknown action %q for %s", entry.Action, node))
 			return false
 		}
 		d := &DeploymentUnit{
-			Group:   node.Group,
-			Key:     node.Key,
-			Adapter: b.Adapters[node.Group],
+			KeyFull: node,
+			Adapter: b.Adapters[group],
 		}
-		errorPrefix := fmt.Sprintf("cannot %s %s.%s", entry.Action, node.Group, node.Key)
+		errorPrefix := fmt.Sprintf("cannot %s %s", entry.Action, node)
 
 		// If a dependency failed, report and skip execution for this node by returning false
 		if failedDependency != nil {
-			logdiag.LogError(ctx, fmt.Errorf("%s: dependency failed: %s", errorPrefix, failedDependency.String()))
+			logdiag.LogError(ctx, fmt.Errorf("%s: dependency failed: %s", errorPrefix, *failedDependency))
 			return false
 		}
 
@@ -71,7 +75,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			return false
 		}
 
-		config, ok := configRoot.GetResourceConfig(node.Group, node.Key)
+		config, ok := configRoot.GetResourceConfig(group, key)
 		if !ok {
 			logdiag.LogError(ctx, fmt.Errorf("%s: internal error when reading config", errorPrefix))
 			return false
@@ -97,13 +101,13 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		for _, reference := range b.Graph.OutgoingLabels(node) {
 			value, err := d.ResolveReferenceRemote(ctx, &b.StateDB, reference)
 			if err != nil {
-				logdiag.LogError(ctx, fmt.Errorf("failed to resolve reference %q for %s.%s after deployment: %w", reference, node.Group, node.Key, err))
+				logdiag.LogError(ctx, fmt.Errorf("failed to resolve reference %q for %s after deployment: %w", reference, node, err))
 				return false
 			}
 
 			err = replaceReferenceWithValue(ctx, configRoot, reference, value)
 			if err != nil {
-				logdiag.LogError(ctx, fmt.Errorf("failed to replace reference %q with value %v for %s.%s: %w", reference, value, node.Group, node.Key, err))
+				logdiag.LogError(ctx, fmt.Errorf("failed to replace reference %q with value %v for %s: %w", reference, value, node, err))
 				return false
 			}
 		}

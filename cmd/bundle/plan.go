@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/validate"
@@ -83,7 +84,8 @@ func newPlanCommand() *cobra.Command {
 		switch root.OutputType(cmd) {
 		case flags.OutputText:
 			for _, action := range plan.GetActions() {
-				fmt.Fprintf(out, "%s %s.%s\n", action.ActionType.StringShort(), action.Group, action.Key)
+				key := strings.TrimPrefix(action.Key, "resources.")
+				fmt.Fprintf(out, "%s %s\n", action.ActionType.StringShort(), key)
 			}
 		case flags.OutputJSON:
 			buf, err := json.MarshalIndent(plan, "", "  ")

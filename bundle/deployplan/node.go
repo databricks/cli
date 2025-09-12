@@ -1,14 +1,17 @@
 package deployplan
 
-type ResourceNode struct {
-	// Resource group in the config, e.g. "jobs" or "pipelines"
-	Group string
+import "strings"
 
-	// Key of the resource in the config, e.g. "foo" if job is located at resources.jobs.foo
-	Key string
-}
-
-// String implements StringerComparable
-func (n ResourceNode) String() string {
-	return n.Group + "." + n.Key
+// ParseResourceKey parses a canonical resource key "resources.<group>.<key>" and returns (group, key).
+// Returns ("", "") if the input does not match the expected format.
+func ParseResourceKey(full string) (string, string) {
+	if !strings.HasPrefix(full, "resources.") {
+		return "", ""
+	}
+	rest := strings.TrimPrefix(full, "resources.")
+	parts := strings.SplitN(rest, ".", 2)
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		return "", ""
+	}
+	return parts[0], parts[1]
 }

@@ -6,10 +6,8 @@ import (
 	"fmt"
 	"reflect"
 	"slices"
-	"strings"
 
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/libs/dagrun"
 	"github.com/databricks/cli/libs/dyn"
@@ -20,16 +18,16 @@ import (
 )
 
 type fieldRef struct {
-	deployplan.ResourceNode
+	Node      string
 	Reference string // refrence in question e.g. ${resources.jobs.foo.id}
 }
 
 // makeResourceGraph creates node graph based on ${resources.group.name.id} references.
-func makeResourceGraph(ctx context.Context, configRoot dyn.Value) (*dagrun.Graph[deployplan.ResourceNode], error) {
-	g := dagrun.NewGraph[deployplan.ResourceNode]()
+func makeResourceGraph(ctx context.Context, configRoot dyn.Value) (*dagrun.Graph, error) {
+	g := dagrun.NewGraph()
 
 	// Collect and sort nodes first, because MapByPattern gives them in randomized order
-	var nodes []deployplan.ResourceNode
+	var nodes []string
 
 	_, err := dyn.MapByPattern(
 		configRoot,
@@ -43,7 +41,7 @@ func makeResourceGraph(ctx context.Context, configRoot dyn.Value) (*dagrun.Graph
 				return v, fmt.Errorf("unsupported resource: %s", group)
 			}
 
-			nodes = append(nodes, deployplan.ResourceNode{Group: group, Key: name})
+			nodes = append(nodes, "resources."+group+"."+name)
 			return dyn.InvalidValue, nil
 		},
 	)
@@ -51,26 +49,21 @@ func makeResourceGraph(ctx context.Context, configRoot dyn.Value) (*dagrun.Graph
 		return nil, fmt.Errorf("reading config: %w", err)
 	}
 
-	slices.SortFunc(nodes, func(a, b deployplan.ResourceNode) int {
-		if a.Group == b.Group {
-			return strings.Compare(a.Key, b.Key)
-		}
-		return strings.Compare(a.Group, b.Group)
-	})
+	slices.Sort(nodes)
 
 	for _, node := range nodes {
 		g.AddNode(node)
 
 		fieldRefs, err := extractReferences(configRoot, node)
 		if err != nil {
-			return nil, fmt.Errorf("failed to read references from config for %s: %w", node.String(), err)
+			return nil, fmt.Errorf("failed to read references from config for %s: %w", node, err)
 		}
 
 		for _, fieldRef := range fieldRefs {
-			log.Debugf(ctx, "Adding resource edge: %s -> %s via %s", fieldRef.ResourceNode, node, fieldRef.Reference)
+			log.Debugf(ctx, "Adding resource edge: %s -> %s via %s", fieldRef.Node, node, fieldRef.Reference)
 			// TODO: this may add duplicate edges. Investigate if we need to prevent that
 			g.AddDirectedEdge(
-				fieldRef.ResourceNode,
+				fieldRef.Node,
 				node,
 				fieldRef.Reference,
 			)
@@ -80,10 +73,15 @@ func makeResourceGraph(ctx context.Context, configRoot dyn.Value) (*dagrun.Graph
 	return g, nil
 }
 
-func extractReferences(root dyn.Value, node deployplan.ResourceNode) ([]fieldRef, error) {
+func extractReferences(root dyn.Value, node string) ([]fieldRef, error) {
 	var result []fieldRef
 
-	val, err := dyn.GetByPath(root, dyn.NewPath(dyn.Key("resources"), dyn.Key(node.Group), dyn.Key(node.Key)))
+	path, err := dyn.NewPathFromString(node)
+	if err != nil {
+		return nil, fmt.Errorf("internal error: bad node key: %q: %w", node, err)
+	}
+
+	val, err := dyn.GetByPath(root, path)
 	if err != nil {
 		return nil, err
 	}
@@ -126,10 +124,7 @@ func validateRef(root dyn.Value, ref string) (fieldRef, error) {
 		return fieldRef{}, err
 	}
 	return fieldRef{
-		ResourceNode: deployplan.ResourceNode{
-			Group: path[1].Key(),
-			Key:   path[2].Key(),
-		},
+		Node:      "resources." + path[1].Key() + "." + path[2].Key(),
 		Reference: "${" + ref + "}",
 	}, nil
 }

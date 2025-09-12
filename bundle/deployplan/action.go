@@ -6,14 +6,18 @@ import (
 )
 
 type Action struct {
-	ResourceNode
+	// Full resource key in format "resources.<group>.<key>"
+	Key string
 
 	ActionType ActionType
 }
 
 func (a Action) String() string {
-	typ, _ := strings.CutSuffix(a.Group, "s")
-	return fmt.Sprintf("  %s %s %s", a.ActionType.StringShort(), typ, a.Key)
+	// Backward compatible format: "resources.jobs.foo" -> "job foo"
+	key := strings.TrimPrefix(a.Key, "resources.")
+	key = strings.ReplaceAll(key, "s.", " ")
+	key = strings.ReplaceAll(key, ".", " ")
+	return fmt.Sprintf("  %s %s", a.ActionType.StringShort(), key)
 }
 
 // Implements cmdio.Event for cmdio.Log
@@ -112,7 +116,8 @@ func FilterGroup(changes []Action, group string, actionTypes ...ActionType) []Ac
 	}
 
 	for _, action := range changes {
-		if action.Group == group && actionTypeSet[action.ActionType] {
+		actionGroup, _ := ParseResourceKey(action.Key)
+		if actionGroup == group && actionTypeSet[action.ActionType] {
 			result = append(result, action)
 		}
 	}
