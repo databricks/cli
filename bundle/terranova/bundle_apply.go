@@ -29,8 +29,8 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			// Nothing to do for this node
 			return true
 		}
-		at, ok := deployplan.ActionTypeFromString(entry.Action)
-		if !ok {
+		at := deployplan.ActionTypeFromString(entry.Action)
+		if at == deployplan.ActionTypeUnset {
 			logdiag.LogError(ctx, fmt.Errorf("unknown action %q for %s.%s", entry.Action, node.Group, node.Key))
 			return false
 		}

@@ -189,8 +189,8 @@ func (p Plan) GetActions() []deployplan.Action {
 		if len(parts) != 2 {
 			continue
 		}
-		at, ok := deployplan.ActionTypeFromString(entry.Action)
-		if !ok {
+		at := deployplan.ActionTypeFromString(entry.Action)
+		if at == deployplan.ActionTypeUnset {
 			continue
 		}
 		actions = append(actions, deployplan.Action{

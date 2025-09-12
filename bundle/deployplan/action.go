@@ -38,13 +38,7 @@ const (
 )
 
 var ShortName = map[ActionType]string{
-	ActionTypeNoop:         "noop",
-	ActionTypeResize:       "resize",
-	ActionTypeUpdate:       "update",
 	ActionTypeUpdateWithID: "update",
-	ActionTypeCreate:       "create",
-	ActionTypeRecreate:     "recreate",
-	ActionTypeDelete:       "delete",
 }
 
 // FullName provides stable identifiers for actions including update_with_id.
@@ -58,13 +52,21 @@ var FullName = map[ActionType]string{
 	ActionTypeDelete:       "delete",
 }
 
+var FullNameReverse = map[string]ActionType{}
+
+func init() {
+	for k, v := range FullName {
+		FullNameReverse[v] = k
+	}
+}
+
 func (a ActionType) IsNoop() bool {
 	return a == ActionTypeNoop
 }
 
 func (a ActionType) KeepsID() bool {
 	switch a {
-	case ActionTypeCreate, ActionTypeUpdateWithID, ActionTypeRecreate:
+	case ActionTypeCreate, ActionTypeUpdateWithID, ActionTypeRecreate, ActionTypeDelete:
 		return false
 	default:
 		return true
@@ -72,7 +74,11 @@ func (a ActionType) KeepsID() bool {
 }
 
 func (a ActionType) String() string {
-	return ShortName[a]
+	result := ShortName[a]
+	if result != "" {
+		return result
+	}
+	return a.StringFull()
 }
 
 // StringFull returns the full identifier for the action type.
@@ -81,13 +87,12 @@ func (a ActionType) StringFull() string {
 }
 
 // ActionTypeFromString decodes a string to ActionType using FullName.
-func ActionTypeFromString(s string) (ActionType, bool) {
-	for k, v := range FullName {
-		if v == s {
-			return k, true
-		}
+func ActionTypeFromString(s string) ActionType {
+	actionType, ok := FullNameReverse[s]
+	if !ok {
+		return ActionTypeUnset
 	}
-	return ActionTypeUnset, false
+	return actionType
 }
 
 // Filter returns actions that match the specified action type
