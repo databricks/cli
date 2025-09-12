@@ -1,11 +1,9 @@
 package terranova
 
 import (
-	"cmp"
 	"context"
 	"errors"
 	"fmt"
-	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config"
@@ -35,11 +33,11 @@ func (b *DeploymentBundle) Init(client *databricks.WorkspaceClient) error {
 	return err
 }
 
-func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root) (Plan, error) {
+func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root) (*deployplan.Plan, error) {
 	b.StateDB.AssertOpened()
 	err := b.Init(client)
 	if err != nil {
-		return Plan{}, err
+		return nil, err
 	}
 
 	// TODO: make this --local option
@@ -50,16 +48,16 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 
 	b.Graph, err = makeResourceGraph(ctx, configRoot.Value())
 	if err != nil {
-		return Plan{}, fmt.Errorf("reading config: %w", err)
+		return nil, fmt.Errorf("reading config: %w", err)
 	}
 
 	err = b.Graph.DetectCycle()
 	if err != nil {
-		return Plan{}, err
+		return nil, err
 	}
 
-	plan := Plan{
-		Plan: make(map[string]PlanEntry),
+	plan := deployplan.Plan{
+		Plan: make(map[string]deployplan.PlanEntry),
 	}
 
 	// We're processing resources in DAG order, because we're trying to get rid of all
@@ -126,7 +124,7 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 		}
 
 		key := "resources." + node.Group + "." + node.Key
-		plan.Plan[key] = PlanEntry{
+		plan.Plan[key] = deployplan.PlanEntry{
 			Action: actionType.StringFull(),
 		}
 
@@ -134,7 +132,7 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 	})
 
 	if logdiag.HasError(ctx) {
-		return plan, errors.New("planning failed")
+		return nil, errors.New("planning failed")
 	}
 
 	state := b.StateDB.ExportState(ctx)
@@ -156,24 +154,24 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 			}
 			b.Graph.AddNode(n)
 			keyStr := "resources." + group + "." + key
-			plan.Plan[keyStr] = PlanEntry{Action: deployplan.ActionTypeDelete.StringFull()}
+			plan.Plan[keyStr] = deployplan.PlanEntry{Action: deployplan.ActionTypeDelete.StringFull()}
 		}
 	}
 
-	return plan, nil
+	return &plan, nil
 }
 
-func (b *DeploymentBundle) CalculatePlanForDestroy(ctx context.Context, client *databricks.WorkspaceClient) (Plan, error) {
+func (b *DeploymentBundle) CalculatePlanForDestroy(ctx context.Context, client *databricks.WorkspaceClient) (*deployplan.Plan, error) {
 	b.StateDB.AssertOpened()
 
 	err := b.Init(client)
 	if err != nil {
-		return Plan{}, err
+		return nil, err
 	}
 
 	b.Graph = dagrun.NewGraph[deployplan.ResourceNode]()
-	plan := Plan{
-		Plan: make(map[string]PlanEntry),
+	plan := deployplan.Plan{
+		Plan: make(map[string]deployplan.PlanEntry),
 	}
 
 	for group, groupData := range b.StateDB.Data.DeploymentUnits {
@@ -186,40 +184,9 @@ func (b *DeploymentBundle) CalculatePlanForDestroy(ctx context.Context, client *
 			n := deployplan.ResourceNode{Group: group, Key: key}
 			b.Graph.AddNode(n)
 			keyStr := "resources." + group + "." + key
-			plan.Plan[keyStr] = PlanEntry{Action: deployplan.ActionTypeDelete.StringFull()}
+			plan.Plan[keyStr] = deployplan.PlanEntry{Action: deployplan.ActionTypeDelete.StringFull()}
 		}
 	}
 
-	return plan, nil
-}
-
-// GetActions derives a sorted list of non-noop actions from the plan.
-func (p Plan) GetActions() []deployplan.Action {
-	actions := make([]deployplan.Action, 0, len(p.Plan))
-	for key, entry := range p.Plan {
-		if entry.Action == deployplan.ActionTypeNoop.StringFull() {
-			continue
-		}
-		parts := strings.SplitN(strings.TrimPrefix(key, "resources."), ".", 2)
-		if len(parts) != 2 {
-			continue
-		}
-		at := deployplan.ActionTypeFromString(entry.Action)
-		if at == deployplan.ActionTypeUnset {
-			continue
-		}
-		actions = append(actions, deployplan.Action{
-			ResourceNode: deployplan.ResourceNode{Group: parts[0], Key: parts[1]},
-			ActionType:   at,
-		})
-	}
-
-	slices.SortFunc(actions, func(x, y deployplan.Action) int {
-		if c := cmp.Compare(x.Group, y.Group); c != 0 {
-			return c
-		}
-		return cmp.Compare(x.Key, y.Key)
-	})
-
-	return actions
+	return &plan, nil
 }

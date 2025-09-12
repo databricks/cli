@@ -19,16 +19,15 @@ import (
 	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/bundle/scripts"
 	"github.com/databricks/cli/bundle/statemgmt"
-	"github.com/databricks/cli/bundle/terranova"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/sync"
 )
 
-// removed getActions; unified plan flow returns terranova.Plan and uses GetActions() where needed
+// removed getActions; unified plan flow returns deployplan.Plan and uses GetActions() where needed
 
-func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *terranova.Plan) (bool, error) {
+func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (bool, error) {
 	actions := plan.GetActions()
 
 	err := checkForPreventDestroy(b, actions)
@@ -96,13 +95,13 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *terranova.Pl
 	return approved, nil
 }
 
-func deployCore(ctx context.Context, b *bundle.Bundle, plan *terranova.Plan) {
+func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) {
 	// Core mutators that CRUD resources and modify deployment state. These
 	// mutators need informed consent if they are potentially destructive.
 	cmdio.LogString(ctx, "Deploying resources...")
 
 	if b.DirectDeployment {
-		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(), &b.Config, *plan)
+		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(), &b.Config, plan)
 	} else {
 		bundle.ApplyContext(ctx, b, terraform.Apply())
 	}
@@ -217,23 +216,23 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	bundle.ApplyContext(ctx, b, scripts.Execute(config.ScriptPostDeploy))
 }
 
-func Plan(ctx context.Context, b *bundle.Bundle) *terranova.Plan {
+func Plan(ctx context.Context, b *bundle.Bundle) *deployplan.Plan {
 	deployPrepare(ctx, b)
 	if logdiag.HasError(ctx) {
-		return &terranova.Plan{}
+		return nil
 	}
 
 	if b.DirectDeployment {
 		if err := b.OpenStateFile(ctx); err != nil {
 			logdiag.LogError(ctx, err)
-			return &terranova.Plan{}
+			return nil
 		}
 		plan, err := b.DeploymentBundle.CalculatePlanForDeploy(ctx, b.WorkspaceClient(), &b.Config)
 		if err != nil {
 			logdiag.LogError(ctx, err)
-			return &terranova.Plan{}
+			return nil
 		}
-		return &plan
+		return plan
 	}
 
 	bundle.ApplySeqContext(ctx, b,
@@ -243,30 +242,30 @@ func Plan(ctx context.Context, b *bundle.Bundle) *terranova.Plan {
 	)
 
 	if logdiag.HasError(ctx) {
-		return &terranova.Plan{}
+		return nil
 	}
 
 	tf := b.Terraform
 	if tf == nil {
 		logdiag.LogError(ctx, errors.New("terraform not initialized"))
-		return &terranova.Plan{}
+		return nil
 	}
 
 	tfPlan, err := tf.ShowPlanFile(ctx, b.TerraformPlanPath)
 	if err != nil {
 		logdiag.LogError(ctx, err)
-		return &terranova.Plan{}
+		return nil
 	}
 
 	actions := terraform.GetActions(ctx, tfPlan.ResourceChanges)
 
-	plan := terranova.Plan{
-		Plan: make(map[string]terranova.PlanEntry),
+	plan := deployplan.Plan{
+		Plan: make(map[string]deployplan.PlanEntry),
 	}
 
 	for _, a := range actions {
 		key := "resources." + a.Group + "." + a.Key
-		plan.Plan[key] = terranova.PlanEntry{Action: a.ActionType.StringFull()}
+		plan.Plan[key] = deployplan.PlanEntry{Action: a.ActionType.StringFull()}
 	}
 
 	return &plan

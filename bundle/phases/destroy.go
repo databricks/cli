@@ -11,7 +11,6 @@ import (
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/statemgmt"
-	"github.com/databricks/cli/bundle/terranova"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
@@ -31,7 +30,7 @@ func assertRootPathExists(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	return true, err
 }
 
-func getDeleteActions(ctx context.Context, b *bundle.Bundle) ([]deployplan.Action, *terranova.Plan, error) {
+func getDeleteActions(ctx context.Context, b *bundle.Bundle) ([]deployplan.Action, *deployplan.Plan, error) {
 	if b.DirectDeployment {
 		err := b.OpenStateFile(ctx)
 		if err != nil {
@@ -43,7 +42,7 @@ func getDeleteActions(ctx context.Context, b *bundle.Bundle) ([]deployplan.Actio
 		}
 		actions := plan.GetActions()
 		deleteActions := deployplan.Filter(actions, deployplan.ActionTypeDelete)
-		return deleteActions, &plan, nil
+		return deleteActions, plan, nil
 	}
 
 	tf := b.Terraform
@@ -62,7 +61,8 @@ func getDeleteActions(ctx context.Context, b *bundle.Bundle) ([]deployplan.Actio
 	return deleteActions, nil, nil
 }
 
-func approvalForDestroy(ctx context.Context, b *bundle.Bundle) (bool, *terranova.Plan, error) {
+func approvalForDestroy(ctx context.Context, b *bundle.Bundle) (bool, *deployplan.Plan, error) {
+	// XXX use plan.GetActions()
 	deleteActions, plan, err := getDeleteActions(ctx, b)
 	if err != nil {
 		return false, nil, err
@@ -125,9 +125,9 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle) (bool, *terranova
 	return approved, plan, nil
 }
 
-func destroyCore(ctx context.Context, b *bundle.Bundle, plan *terranova.Plan) {
+func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) {
 	if b.DirectDeployment {
-		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(), &b.Config, *plan)
+		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(), &b.Config, plan)
 	} else {
 		// Core destructive mutators for destroy. These require informed user consent.
 		bundle.ApplyContext(ctx, b, terraform.Apply())

@@ -58,34 +58,3 @@ func (d *DeploymentUnit) SetRemoteState(remoteState any) error {
 	d.RemoteState = remoteState
 	return nil
 }
-
-// Plan JSON structures
-
-type Plan struct {
-	// Current version is zero which has no backward compatibility
-	//
-	PlanVersion int `json:"plan_version,omitempty"`
-	// TODO:
-	// CliVersion  string               `json:"cli_version"`
-	Plan map[string]PlanEntry `json:"plan"`
-}
-
-type PlanEntry struct {
-	ID        string           `json:"id,omitempty"`
-	DependsOn []DependsOnEntry `json:"depends_on,omitempty"`
-	Action    string           `json:"action"`
-	Fields    []Field          `json:"fields,omitempty"`
-}
-
-type DependsOnEntry struct {
-	Node  string `json:"node"`
-	Label string `json:"label,omitempty"`
-}
-
-type Field struct {
-	Path   string `json:"path"`
-	State  any    `json:"state,omitempty"`
-	Config any    `json:"config"`
-	Remote any    `json:"remote,omitempty"`
-	Action string `json:"action"`
-}
