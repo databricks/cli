@@ -8,7 +8,6 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/structdiff"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
@@ -101,22 +100,14 @@ func (r *ResourceVolume) DoDelete(ctx context.Context, id string) error {
 	return r.client.Volumes.DeleteByName(ctx, id)
 }
 
-func (*ResourceVolume) RecreateFields() []string {
-	return []string{
-		".catalog_name",
-		".schema_name",
-		".storage_location",
-		".volume_type",
+func (*ResourceVolume) FieldTriggers() map[string]deployplan.ActionType {
+	return map[string]deployplan.ActionType{
+		".catalog_name":     deployplan.ActionTypeRecreate,
+		".schema_name":      deployplan.ActionTypeRecreate,
+		".storage_location": deployplan.ActionTypeRecreate,
+		".volume_type":      deployplan.ActionTypeRecreate,
+		".name":             deployplan.ActionTypeUpdateWithID,
 	}
-}
-
-func (r *ResourceVolume) ClassifyChanges(changes []structdiff.Change) deployplan.ActionType {
-	for _, change := range changes {
-		if change.Path.String() == ".name" {
-			return deployplan.ActionTypeUpdateWithID
-		}
-	}
-	return deployplan.ActionTypeUpdate
 }
 
 func getNameFromID(id string) (string, error) {

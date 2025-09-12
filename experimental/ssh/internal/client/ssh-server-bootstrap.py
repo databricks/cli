@@ -10,7 +10,7 @@ import atexit
 import platform
 import time
 
-SSH_TUNNEL_BASENAME = "databricks_cli_linux"
+SSH_TUNNEL_BASENAME = "databricks_cli"
 
 dbutils.widgets.text("version", "")
 dbutils.widgets.text("secretsScope", "")
@@ -103,13 +103,19 @@ def run_ssh_server():
 
     arch = platform.machine()
     if arch == "x86_64":
-        cli_arch = "amd64"
+        cli_arch = "linux_amd64"
     elif arch == "aarch64" or arch == "arm64":
-        cli_arch = "arm64"
+        cli_arch = "linux_arm64"
     else:
         raise RuntimeError(f"Unsupported architecture: {arch}")
 
-    binary_path = f"/Workspace/Users/{user_name}/.databricks/ssh-tunnel/{version}/{SSH_TUNNEL_BASENAME}_{cli_arch}/databricks"
+    if version.find("dev") != -1:
+        cli_name = f"{SSH_TUNNEL_BASENAME}_{cli_arch}"
+    else:
+        cli_name = f"{SSH_TUNNEL_BASENAME}_{version}_{cli_arch}"
+
+    binary_path = f"/Workspace/Users/{user_name}/.databricks/ssh-tunnel/{version}/{cli_name}/databricks"
+
     try:
         subprocess.run(
             [

@@ -59,6 +59,119 @@
         "cli": {
           "bundle": {
             "config": {
+              "resources.Alert": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "create_time": {
+                        "description": "The timestamp indicating when the alert was created.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "custom_description": {
+                        "description": "Custom description for the alert. support mustache template.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "custom_summary": {
+                        "description": "Custom summary for the alert. support mustache template.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "display_name": {
+                        "description": "The display name of the alert.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "effective_run_as": {
+                        "description": "The actual identity that will be used to execute the alert.\nThis is an output-only field that shows the resolved run-as identity after applying\npermissions and defaults.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2RunAs"
+                      },
+                      "evaluation": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2Evaluation"
+                      },
+                      "id": {
+                        "description": "UUID identifying the alert.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "lifecycle": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                      },
+                      "lifecycle_state": {
+                        "description": "Indicates whether the query is trashed.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.LifecycleState"
+                      },
+                      "owner_user_name": {
+                        "description": "The owner's username. This field is set to \"Unavailable\" if the user has been deleted.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "parent_path": {
+                        "description": "The workspace path of the folder containing the alert. Can only be set on create, and cannot be updated.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "permissions": {
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.AlertPermission"
+                      },
+                      "query_text": {
+                        "description": "Text of the query to be run.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "run_as": {
+                        "description": "Specifies the identity that will be used to run the alert.\nThis field allows you to configure alerts to run as a specific user or service principal.\n- For user identity: Set `user_name` to the email of an active workspace user. Users can only set this to their own email.\n- For service principal: Set `service_principal_name` to the application ID. Requires the `servicePrincipal/user` role.\nIf not specified, the alert will run as the request user.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2RunAs"
+                      },
+                      "run_as_user_name": {
+                        "description": "The run as username or application ID of service principal.\nOn Create and Update, this field can be set to application ID of an active service principal. Setting this field requires the servicePrincipal/user role.\nDeprecated: Use `run_as` field instead. This field will be removed in a future release.",
+                        "$ref": "#/$defs/string",
+                        "deprecationMessage": "This field is deprecated",
+                        "deprecated": true
+                      },
+                      "schedule": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.CronSchedule"
+                      },
+                      "update_time": {
+                        "description": "The timestamp indicating when the alert was updated.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "warehouse_id": {
+                        "description": "ID of the SQL warehouse attached to the alert.",
+                        "$ref": "#/$defs/string"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.AlertPermission": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "group_name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "level": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "service_principal_name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "user_name": {
+                        "$ref": "#/$defs/string"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "level"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "resources.App": {
                 "oneOf": [
                   {
@@ -2435,6 +2548,9 @@
                 {
                   "type": "object",
                   "properties": {
+                    "alerts": {
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Alert"
+                    },
                     "apps": {
                       "description": "The app resource defines a Databricks app.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.App",
@@ -8028,7 +8144,6 @@
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.AiGatewayRateLimitKey"
                     },
                     "principal": {
-                      "description": "Principal field for a user, user group, or service principal to apply rate limiting to. Accepts a user email, group name, or service principal application ID.",
                       "$ref": "#/$defs/string"
                     },
                     "renewal_period": {
@@ -8934,6 +9049,220 @@
                 }
               ]
             },
+            "sql.Aggregation": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "SUM",
+                    "COUNT",
+                    "COUNT_DISTINCT",
+                    "AVG",
+                    "MEDIAN",
+                    "MIN",
+                    "MAX",
+                    "STDDEV"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "sql.AlertEvaluationState": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "UNSPECIFIED - default unspecify value for proto enum, do not use it in the code\nUNKNOWN - alert not yet evaluated\nTRIGGERED - alert is triggered\nOK - alert is not triggered\nERROR - alert evaluation failed",
+                  "enum": [
+                    "UNKNOWN",
+                    "TRIGGERED",
+                    "OK",
+                    "ERROR"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "sql.AlertV2Evaluation": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "comparison_operator": {
+                      "description": "Operator used for comparison in alert evaluation.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.ComparisonOperator"
+                    },
+                    "empty_result_state": {
+                      "description": "Alert state if result is empty.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertEvaluationState"
+                    },
+                    "last_evaluated_at": {
+                      "description": "Timestamp of the last evaluation.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "notification": {
+                      "description": "User or Notification Destination to notify when alert is triggered.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2Notification"
+                    },
+                    "source": {
+                      "description": "Source column from result to use to evaluate alert",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2OperandColumn"
+                    },
+                    "state": {
+                      "description": "Latest state of alert evaluation.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertEvaluationState"
+                    },
+                    "threshold": {
+                      "description": "Threshold to user for alert evaluation, can be a column or a value.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2Operand"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "sql.AlertV2Notification": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "notify_on_ok": {
+                      "description": "Whether to notify alert subscribers when alert returns back to normal.",
+                      "$ref": "#/$defs/bool"
+                    },
+                    "retrigger_seconds": {
+                      "description": "Number of seconds an alert must wait after being triggered to rearm itself. After rearming, it can be triggered again. If 0 or not specified, the alert will not be triggered again.",
+                      "$ref": "#/$defs/int"
+                    },
+                    "subscriptions": {
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/sql.AlertV2Subscription"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "sql.AlertV2Operand": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "column": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2OperandColumn"
+                    },
+                    "value": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2OperandValue"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "sql.AlertV2OperandColumn": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "aggregation": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.Aggregation"
+                    },
+                    "display": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "name": {
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "sql.AlertV2OperandValue": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "bool_value": {
+                      "$ref": "#/$defs/bool"
+                    },
+                    "double_value": {
+                      "$ref": "#/$defs/float64"
+                    },
+                    "string_value": {
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "sql.AlertV2RunAs": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "service_principal_name": {
+                      "description": "Application ID of an active service principal. Setting this field requires the `servicePrincipal/user` role.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "user_name": {
+                      "description": "The email of an active workspace user. Can only set this field to their own email.",
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "sql.AlertV2Subscription": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "destination_id": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "user_email": {
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "sql.Channel": {
               "oneOf": [
                 {
@@ -8972,6 +9301,27 @@
                 }
               ]
             },
+            "sql.ComparisonOperator": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "LESS_THAN",
+                    "GREATER_THAN",
+                    "EQUAL",
+                    "NOT_EQUAL",
+                    "GREATER_THAN_OR_EQUAL",
+                    "LESS_THAN_OR_EQUAL",
+                    "IS_NULL",
+                    "IS_NOT_NULL"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "sql.CreateWarehouseRequestWarehouseType": {
               "oneOf": [
                 {
@@ -8982,6 +9332,32 @@
                     "CLASSIC",
                     "PRO"
                   ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "sql.CronSchedule": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "pause_status": {
+                      "description": "Indicate whether this schedule is paused or not.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.SchedulePauseStatus"
+                    },
+                    "quartz_cron_schedule": {
+                      "description": "A cron expression using quartz syntax that specifies the schedule for this pipeline.\nShould use the quartz format described here: http://www.quartz-scheduler.org/documentation/quartz-2.1.7/tutorials/tutorial-lesson-06.html",
+                      "$ref": "#/$defs/string"
+                    },
+                    "timezone_id": {
+                      "description": "A Java timezone id. The schedule will be resolved using this timezone.\nThis will be combined with the quartz_cron_schedule to determine the schedule.\nSee https://docs.databricks.com/sql/language-manual/sql-ref-syntax-aux-conf-mgmt-set-timezone.html for details.",
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false
                 },
                 {
                   "type": "string",
@@ -9019,6 +9395,36 @@
                     }
                   },
                   "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "sql.LifecycleState": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "ACTIVE",
+                    "TRASHED"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "sql.SchedulePauseStatus": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "UNPAUSED",
+                    "PAUSED"
+                  ]
                 },
                 {
                   "type": "string",
@@ -9151,6 +9557,20 @@
           "cli": {
             "bundle": {
               "config": {
+                "resources.Alert": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Alert"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
                 "resources.App": {
                   "oneOf": [
                     {
@@ -9513,6 +9933,20 @@
           "cli": {
             "bundle": {
               "config": {
+                "resources.AlertPermission": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.AlertPermission"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
                 "resources.AppPermission": {
                   "oneOf": [
                     {
@@ -10168,6 +10602,20 @@
                     "type": "array",
                     "items": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.ServedModelInput"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "sql.AlertV2Subscription": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2Subscription"
                     }
                   },
                   {
