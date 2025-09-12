@@ -1,0 +1,9 @@
+
+>>> [CLI] bundle plan -o json
+{
+  "plan": {
+    "resources.volumes.volume1": {
+      "action": "update_with_id"
+    }
+  }
+}

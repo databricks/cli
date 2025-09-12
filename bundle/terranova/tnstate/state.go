@@ -21,6 +21,7 @@ type Database struct {
 	Lineage         string                              `json:"lineage"`
 	Serial          int                                 `json:"serial"`
 	DeploymentUnits map[string]map[string]ResourceEntry `json:"resources"`
+	// TODO: refactor to have key match key in the plan (e.g. "resources.jobs.foo")
 }
 
 type ResourceEntry struct {

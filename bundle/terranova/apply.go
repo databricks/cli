@@ -33,6 +33,10 @@ func (d *DeploymentUnit) Destroy(ctx context.Context, db *tnstate.TerranovaState
 }
 
 func (d *DeploymentUnit) Deploy(ctx context.Context, db *tnstate.TerranovaState, inputConfig any, actionType deployplan.ActionType) error {
+	if actionType == deployplan.ActionTypeNoop {
+		return nil
+	}
+
 	// Note, newState may be different between plan and deploy due to resolved $resource references
 	newState, err := d.Adapter.PrepareState(inputConfig)
 	if err != nil {

@@ -2,6 +2,7 @@ package bundle
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
@@ -28,10 +29,12 @@ func newPlanCommand() *cobra.Command {
 
 	var force bool
 	var clusterId string
+	var output string
 	cmd.Flags().BoolVar(&force, "force", false, "Force-override Git branch validation.")
 	cmd.Flags().StringVar(&clusterId, "compute-id", "", "Override cluster in the deployment with the given compute ID.")
 	cmd.Flags().StringVarP(&clusterId, "cluster-id", "c", "", "Override cluster in the deployment with the given cluster ID.")
 	cmd.Flags().MarkDeprecated("compute-id", "use --cluster-id instead")
+	cmd.Flags().StringVarP(&output, "output", "o", "text", "Output format: text or json")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := logdiag.InitContext(cmd.Context())
@@ -72,10 +75,25 @@ func newPlanCommand() *cobra.Command {
 			return root.ErrAlreadyPrinted
 		}
 
-		changes := phases.Diff(ctx, b)
+		plan := phases.Plan(ctx, b)
+		if logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
+		}
 
-		for _, change := range changes {
-			cmdio.LogString(ctx, fmt.Sprintf("%s %s.%s", change.ActionType.String(), change.Group, change.Key))
+		if output == "json" {
+			buf, err := json.MarshalIndent(plan, "", "  ")
+			if err != nil {
+				return err
+			}
+			cmdio.LogString(ctx, string(buf))
+			if logdiag.HasError(ctx) {
+				return root.ErrAlreadyPrinted
+			}
+			return nil
+		}
+
+		for _, action := range plan.GetActions() {
+			cmdio.LogString(ctx, fmt.Sprintf("%s %s.%s", action.ActionType.StringShort(), action.Group, action.Key))
 		}
 
 		if logdiag.HasError(ctx) {
