@@ -190,20 +190,16 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
-	approved, err := approvalForDeploy(ctx, b, plan)
+	haveApproval, err := approvalForDeploy(ctx, b, plan)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return
 	}
-	if !approved {
-		cmdio.LogString(ctx, "Deployment cancelled!")
-		return
-	}
-
-	if b.DirectDeployment {
+	if haveApproval {
 		deployCore(ctx, b, plan)
 	} else {
-		deployCore(ctx, b, nil)
+		cmdio.LogString(ctx, "Deployment cancelled!")
+		return
 	}
 
 	if logdiag.HasError(ctx) {
