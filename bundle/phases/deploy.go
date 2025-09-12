@@ -25,8 +25,6 @@ import (
 	"github.com/databricks/cli/libs/sync"
 )
 
-// removed getActions; unified plan flow returns deployplan.Plan and uses GetActions() where needed
-
 func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (bool, error) {
 	actions := plan.GetActions()
 
