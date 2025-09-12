@@ -48,7 +48,6 @@ func TestPopulatePlan(t *testing.T) {
 
 	populatePlan(ctx, plan, changes)
 
-	// Get actions from the populated plan
 	actions := plan.GetActions()
 	res := deployplan.FilterGroup(actions, "pipelines", deployplan.ActionTypeDelete, deployplan.ActionTypeRecreate)
 
