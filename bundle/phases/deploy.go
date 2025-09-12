@@ -184,8 +184,8 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
-	// Build unified plan
-	plan := Plan(ctx, b)
+	// Build unified plan (prepare step already done above)
+	plan := planWithoutPrepare(ctx, b)
 	if logdiag.HasError(ctx) {
 		return
 	}
@@ -214,12 +214,9 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	bundle.ApplyContext(ctx, b, scripts.Execute(config.ScriptPostDeploy))
 }
 
-func Plan(ctx context.Context, b *bundle.Bundle) *deployplan.Plan {
-	deployPrepare(ctx, b)
-	if logdiag.HasError(ctx) {
-		return nil
-	}
-
+// planWithoutPrepare builds a deployment plan without running deployPrepare.
+// This is used when deployPrepare has already been called.
+func planWithoutPrepare(ctx context.Context, b *bundle.Bundle) *deployplan.Plan {
 	if b.DirectDeployment {
 		if err := b.OpenStateFile(ctx); err != nil {
 			logdiag.LogError(ctx, err)
@@ -249,24 +246,22 @@ func Plan(ctx context.Context, b *bundle.Bundle) *deployplan.Plan {
 		return nil
 	}
 
-	tfPlan, err := tf.ShowPlanFile(ctx, b.TerraformPlanPath)
+	plan, err := terraform.ShowPlanFile(ctx, tf, b.TerraformPlanPath)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return nil
 	}
 
-	actions := terraform.GetActions(ctx, tfPlan.ResourceChanges)
+	return plan
+}
 
-	plan := deployplan.Plan{
-		Plan: make(map[string]deployplan.PlanEntry),
+func Plan(ctx context.Context, b *bundle.Bundle) *deployplan.Plan {
+	deployPrepare(ctx, b)
+	if logdiag.HasError(ctx) {
+		return nil
 	}
 
-	for _, a := range actions {
-		key := "resources." + a.Group + "." + a.Key
-		plan.Plan[key] = deployplan.PlanEntry{Action: a.ActionType.StringFull()}
-	}
-
-	return &plan
+	return planWithoutPrepare(ctx, b)
 }
 
 // If there are more than 1 thousand of a resource type, do not

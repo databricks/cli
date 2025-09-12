@@ -169,21 +169,10 @@ func Destroy(ctx context.Context, b *bundle.Bundle) {
 			return
 		}
 
-		actions, err := terraform.ShowPlanFile(ctx, tf, b.TerraformPlanPath)
+		plan, err = terraform.ShowPlanFile(ctx, tf, b.TerraformPlanPath)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return
-		}
-
-		deleteActions := deployplan.Filter(actions, deployplan.ActionTypeDelete)
-
-		plan = &deployplan.Plan{
-			Plan: make(map[string]deployplan.PlanEntry),
-		}
-
-		for _, a := range deleteActions {
-			key := "resources." + a.Group + "." + a.Key
-			plan.Plan[key] = deployplan.PlanEntry{Action: a.ActionType.StringFull()}
 		}
 	}
 
