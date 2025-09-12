@@ -85,7 +85,11 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 			return false
 		}
 
-		d := &DeploymentUnit{Group: node.Group, Key: node.Key, Adapter: adapter}
+		d := &DeploymentUnit{
+			Group:   node.Group,
+			Key:     node.Key,
+			Adapter: adapter,
+		}
 
 		// This currently does not do API calls, so we can run this sequentially. Once we have remote diffs, we need to run in threadpool.
 		actionType, err := d.Plan(ctx, client, &b.StateDB, config, localOnly, refresh)
