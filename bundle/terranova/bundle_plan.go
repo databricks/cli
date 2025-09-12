@@ -60,10 +60,9 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 		Plan: make(map[string]deployplan.PlanEntry),
 	}
 
-	// We're processing resources in DAG order, because we're trying to get rid of all
-	// references like $resources.jobs.foo.id if jobs.foo is not going to be (re)created.
-	// This means by the time we get to resource depending on $resources.jobs.foo.id
-	// we might have already got rid of this reference, thus potentially downgrading actionType.
+	// We're processing resources in DAG order, because we're trying to get rid of all references like $resources.jobs.foo.id
+	// if jobs.foo is not going to be (re)created. This means by the time we get to resource depending on $resources.jobs.foo.id
+	// we might have already got rid of this reference, thus potentially downgrading actionType
 	//
 	// parallelism is set to 1, so there is no multi-threaded access there. TODO: increase parallism, protect b.Graph
 	b.Graph.Run(1, func(node deployplan.ResourceNode, failedDependency *deployplan.ResourceNode) bool {
