@@ -35,7 +35,6 @@ type Field struct {
 	Action string `json:"action"`
 }
 
-// GetActions derives a sorted list of non-noop actions from the plan.
 func (p Plan) GetActions() []Action {
 	actions := make([]Action, 0, len(p.Plan))
 	for key, entry := range p.Plan {
