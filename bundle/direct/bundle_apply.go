@@ -2,16 +2,22 @@ package direct
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/structs/structaccess"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go"
 )
 
 func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root, plan *deployplan.Plan) {
-	if b.Graph == nil {
+	if plan == nil {
 		panic("Planning is not done")
 	}
 
@@ -20,40 +26,57 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		return
 	}
 
+	if b.RemoteStateCache == nil {
+		b.RemoteStateCache = make(map[string]any)
+	}
+
 	b.StateDB.AssertOpened()
 
-	b.Graph.Run(defaultParallelism, func(resourceKey string, failedDependency *string) bool {
-		entry, ok := plan.Plan[resourceKey]
-		if !ok {
-			// Nothing to do for this node
-			return true
-		}
+	g, err := makeGraph(plan)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return
+	}
 
-		group := config.GetResourceTypeFromKey(resourceKey)
-		if group == "" {
-			logdiag.LogError(ctx, fmt.Errorf("internal error: bad node: %s", resourceKey))
+	g.Run(defaultParallelism, func(resourceKey string, failedDependency *string) bool {
+		entry := plan.LockEntry(resourceKey)
+		defer plan.UnlockEntry(resourceKey)
+
+		if entry == nil {
+			logdiag.LogError(ctx, fmt.Errorf("internal error: node not in graph: %q", resourceKey))
 			return false
 		}
 
-		at := deployplan.ActionTypeFromString(entry.Action)
+		action := entry.Action
+		errorPrefix := fmt.Sprintf("cannot %s %s", action, resourceKey)
+
+		at := deployplan.ActionTypeFromString(action)
 		if at == deployplan.ActionTypeUnset {
-			logdiag.LogError(ctx, fmt.Errorf("unknown action %q for %s", entry.Action, resourceKey))
+			logdiag.LogError(ctx, fmt.Errorf("cannot deploy %s: unknown action %q", resourceKey, action))
 			return false
 		}
-		d := &DeploymentUnit{
-			ResourceKey: resourceKey,
-			Adapter:     b.Adapters[group],
-		}
-		errorPrefix := fmt.Sprintf("cannot %s %s", entry.Action, resourceKey)
 
 		// If a dependency failed, report and skip execution for this node by returning false
 		if failedDependency != nil {
-			logdiag.LogError(ctx, fmt.Errorf("%s: dependency failed: %s", errorPrefix, *failedDependency))
+			if at != deployplan.ActionTypeSkip {
+				logdiag.LogError(ctx, fmt.Errorf("%s: dependency failed: %s", errorPrefix, *failedDependency))
+			}
 			return false
 		}
 
+		adapter, err := b.getAdapterForKey(resourceKey)
+		if adapter == nil {
+			logdiag.LogError(ctx, fmt.Errorf("%s: internal error: cannot get adapter: %w", errorPrefix, err))
+			return false
+		}
+
+		d := &DeploymentUnit{
+			ResourceKey: resourceKey,
+			Adapter:     adapter,
+		}
+
 		if at == deployplan.ActionTypeDelete {
-			err := d.Destroy(ctx, &b.StateDB)
+			err = d.Destroy(ctx, &b.StateDB)
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
@@ -61,63 +84,124 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			return true
 		}
 
-		// Fetch the references to ensure all are resolved
-		myReferences, err := extractReferences(configRoot.Value(), resourceKey)
-		if err != nil {
-			logdiag.LogError(ctx, fmt.Errorf("%s: reading references from config: %w", errorPrefix, err))
-			return false
-		}
+		// we don't need Inbound here; we need to process entry.NewState.Refs
 
-		// At this point it's an error to have unresolved deps
-		if len(myReferences) > 0 {
-			// TODO: include the deps themselves in the message
-			logdiag.LogError(ctx, fmt.Errorf("%s: unresolved deps", errorPrefix))
-			return false
-		}
+		// log.Warnf(ctx, "processing %s", jsonDump(entry.NewState.Refs))
 
-		config, ok := configRoot.GetResourceConfig(resourceKey)
-		if !ok {
-			logdiag.LogError(ctx, fmt.Errorf("%s: internal error when reading config", errorPrefix))
-			return false
-		}
+		if at != deployplan.ActionTypeSkip {
 
-		// TODO: redo calcDiff to downgrade planned action if possible (?)
+			for fieldPathStr, refString := range entry.NewState.Refs {
+				// log.Warnf(ctx, "processing entry %q %q", fieldPathStr, refString)
+				refs, ok := dynvar.NewRef(dyn.V(refString))
+				if !ok {
+					logdiag.LogError(ctx, fmt.Errorf("%s: cannot parse %q", errorPrefix, refString))
+					return false
+				}
 
-		err = d.Deploy(ctx, &b.StateDB, config, at)
-		if err != nil {
-			logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
-			return false
-		}
+				for _, pathString := range refs.References() {
+					ref := "${" + pathString + "}"
+					// Note, today edge.Label is always a reference "${...}". If we have other types of dependencies, we need to be more careful here:
+					targetPath, err := structpath.Parse(pathString)
+					if !ok {
+						logdiag.LogError(ctx, fmt.Errorf("%s: cannot parse reference %q: %w", errorPrefix, ref, err))
+						return false
+					}
 
-		// We now process references of the form "resources.<group>.<key>.<field...>" and refers
-		// for the resource that was just deployed. We first look up those references (ResolveReferenceRemote)
-		// and the replace them across the whole bundle (replaceReferenceWithValue).
-		// Note, we've already replaced what we could in plan phase:
-		// - "id" for cases where id cannot change;
-		// - "field" for cases where field is part of the config.
-		// Now we're focussing on the remaining cases:
-		// - "id" for cases where id could have changed;
-		// - "field" for cases where field is part of the remote state.
-		for _, reference := range b.Graph.OutgoingLabels(resourceKey) {
-			value, err := d.ResolveReferenceRemote(ctx, &b.StateDB, reference)
-			if err != nil {
-				logdiag.LogError(ctx, fmt.Errorf("failed to resolve reference %q for %s after deployment: %w", reference, resourceKey, err))
+					value, err := b.LookupReferenceRemote(ctx, targetPath)
+					if err != nil {
+						logdiag.LogError(ctx, fmt.Errorf("%s: cannot resolve %q: %w", errorPrefix, ref, err))
+						return false
+					}
+
+					err = entry.NewState.ResolveRef(ref, value)
+					if err != nil {
+						logdiag.LogError(ctx, fmt.Errorf("%s: cannot update %s: with value of %q=%v: %w", errorPrefix, fieldPathStr, ref, value, err))
+						return false
+					}
+				}
+			}
+
+			if len(entry.NewState.Refs) > 0 {
+				logdiag.LogError(ctx, fmt.Errorf("%s: unresolved references: %s", errorPrefix, jsonDump(entry.NewState.Refs)))
 				return false
 			}
 
-			err = replaceReferenceWithValue(ctx, configRoot, reference, value)
+			resourceConfig := entry.NewState.Config
+
+			// TODO: redo calcDiff to downgrade planned action if possible (?)
+
+			err = d.Deploy(ctx, &b.StateDB, resourceConfig, at)
 			if err != nil {
-				logdiag.LogError(ctx, fmt.Errorf("failed to replace reference %q with value %v for %s: %w", reference, value, resourceKey, err))
+				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
 			}
+		}
+
+		// Today they only type of edge is via ${...} reference.
+		// There are 2 types of reference local (already resolved during plan) and remote (what's left)
+		needRemoteState := len(g.Adj[resourceKey]) > 0
+		if needRemoteState {
+			entry, _ := b.StateDB.GetResourceEntry(d.ResourceKey)
+			if entry.ID == "" {
+				logdiag.LogError(ctx, fmt.Errorf("%s: internal error: missing entry in state after deploy", errorPrefix))
+				return false
+			}
+
+			err = d.refreshRemoteState(ctx, entry.ID)
+			if err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("%s: failed to read remote state: %w", errorPrefix, err))
+				return false
+			}
+			b.RemoteStateCache[resourceKey] = d.RemoteState
 		}
 
 		return true
 	})
 
 	// This must run even if deploy failed:
-	err := b.StateDB.Finalize()
+	err = b.StateDB.Finalize()
 	if err != nil {
 		logdiag.LogError(ctx, err)
 	}
+}
+
+func (b *DeploymentBundle) LookupReferenceRemote(ctx context.Context, path *structpath.PathNode) (any, error) {
+	targetResourceKey := path.Prefix(3).String()
+	fieldPath := path.SkipPrefix(3)
+	fieldPathS := fieldPath.String()
+
+	targetEntry := b.Plan.LockEntry(targetResourceKey)
+	defer b.Plan.UnlockEntry(targetResourceKey)
+
+	if targetEntry == nil {
+		return nil, fmt.Errorf("internal error: %s: missing entry in the plan", targetResourceKey)
+	}
+
+	targetAction := deployplan.ActionTypeFromString(targetEntry.Action)
+	if targetAction == deployplan.ActionTypeUnset {
+		return nil, fmt.Errorf("internal error: %s: missing action in the plan", targetResourceKey)
+	}
+
+	if fieldPathS == "id" {
+		dbentry, hasEntry := b.StateDB.GetResourceEntry(targetResourceKey)
+		if !hasEntry || dbentry.ID == "" {
+			return nil, errors.New("internal error: no db entry")
+		}
+		return dbentry.ID, nil
+	}
+
+	remoteState, ok := b.RemoteStateCache[targetResourceKey]
+	if !ok {
+		return nil, fmt.Errorf("internal error: %s: missing remote state", targetResourceKey)
+	}
+
+	return structaccess.Get(remoteState, fieldPath)
+}
+
+func jsonDump(obj map[string]string) string {
+	bytes, err := json.MarshalIndent(obj, "", "  ")
+	if err != nil {
+		return err.Error()
+	}
+	return string(bytes)
 }

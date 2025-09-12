@@ -21,8 +21,9 @@ type testCase struct {
 	edges           []edge
 	returnValues    map[string]bool // node -> false to indicate failure
 	cycle           string
-	failedFrom      map[string]string   // node -> expected failedFrom
-	failedFromOneOf map[string][]string // node -> any of these failedFrom values acceptable
+	failedFrom      map[string]string        // node -> expected failedFrom
+	failedFromOneOf map[string][]string      // node -> any of these failedFrom values acceptable
+	inbound         map[string][]inboundEdge // node -> expected inbound edges
 }
 
 func TestRun_VariousGraphsAndPools(t *testing.T) {
@@ -55,6 +56,10 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 				{"B", "C", "B->C"},
 			},
 			seen: []string{"A", "B", "C"},
+			inbound: map[string][]inboundEdge{
+				"B": {{From: "A", Label: "A->B"}},
+				"C": {{From: "B", Label: "B->C"}},
+			},
 		},
 		{
 			name: "one-node cycle",
@@ -211,6 +216,11 @@ func runTestCase(t *testing.T, tc testCase, g *Graph, p int) {
 		if assert.NotNil(t, gotPtr, "expected failedFrom for %s", node) {
 			assert.True(t, slices.Contains(oneOf, *gotPtr), "failedFrom for %s not in %v, got %v", node, oneOf, *gotPtr)
 		}
+	}
+
+	// Verify inbound edges
+	if tc.inbound != nil {
+		assert.Equal(t, tc.inbound, g.Inbound, "inbound edges")
 	}
 }
 

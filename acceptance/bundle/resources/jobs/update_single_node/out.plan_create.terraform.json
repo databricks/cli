@@ -1,0 +1,9 @@
+
+>>> [CLI] bundle debug plan
+{
+  "plan": {
+    "resources.jobs.foo": {
+      "action": "create"
+    }
+  }
+}

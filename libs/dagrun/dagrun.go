@@ -7,56 +7,66 @@ import (
 )
 
 type adjEdge struct {
-	to    string
-	label string
+	To    string
+	Label string
+}
+
+type inboundEdge struct {
+	From  string
+	Label string
 }
 
 type Graph struct {
-	adj   map[string][]adjEdge
-	nodes []string // maintains insertion order of added nodes
+	Adj     map[string][]adjEdge
+	Inbound map[string][]inboundEdge // maintains all inbound edges to the node
+	Nodes   []string                 // maintains insertion order of added nodes
 }
 
 func NewGraph() *Graph {
-	return &Graph{adj: make(map[string][]adjEdge)}
-}
-
-func (g *Graph) Size() int { return len(g.nodes) }
-
-func (g *Graph) AddNode(n string) {
-	if _, ok := g.adj[n]; !ok {
-		g.adj[n] = nil
-		g.nodes = append(g.nodes, n)
+	return &Graph{
+		Adj:     make(map[string][]adjEdge),
+		Inbound: make(map[string][]inboundEdge),
 	}
 }
 
-func (g *Graph) HasNode(n string) bool { _, ok := g.adj[n]; return ok }
+func (g *Graph) Size() int { return len(g.Nodes) }
+
+func (g *Graph) AddNode(n string) {
+	if _, ok := g.Adj[n]; !ok {
+		g.Adj[n] = nil
+		g.Nodes = append(g.Nodes, n)
+	}
+}
+
+func (g *Graph) HasNode(n string) bool { _, ok := g.Adj[n]; return ok }
 
 // HasOutgoingEdges reports whether this node has at least one outgoing edge.
 // In this graph, an outgoing edge from X->Y means Y references X.
-func (g *Graph) HasOutgoingEdges(n string) bool { return len(g.adj[n]) > 0 }
+func (g *Graph) HasOutgoingEdges(n string) bool { return len(g.Adj[n]) > 0 }
 
 func (g *Graph) AddDirectedEdge(from, to, label string) {
 	g.AddNode(from)
 	g.AddNode(to)
-	g.adj[from] = append(g.adj[from], adjEdge{to: to, label: label})
+	g.Adj[from] = append(g.Adj[from], adjEdge{To: to, Label: label})
+	g.Inbound[to] = append(g.Inbound[to], inboundEdge{From: from, Label: label})
 }
 
 // OutgoingLabels returns labels of all outgoing edges from the given node
 // in the order the edges were added. If the node has no outgoing edges or is
 // unknown to the graph, an empty slice is returned.
 func (g *Graph) OutgoingLabels(node string) []string {
-	outs := g.adj[node]
+	outs := g.Adj[node]
 	if len(outs) == 0 {
 		return []string{}
 	}
 	labels := make([]string, 0, len(outs))
 	seen := make(map[string]struct{}, len(outs))
 	for _, e := range outs {
-		if _, ok := seen[e.label]; ok {
+		if _, ok := seen[e.Label]; ok {
 			continue
 		}
-		seen[e.label] = struct{}{}
-		labels = append(labels, e.label)
+		seen[e.Label] = struct{}{}
+		labels = append(labels, e.Label)
 	}
 	return labels
 }
@@ -90,13 +100,13 @@ func (e *CycleError) Error() string {
 }
 
 func (g *Graph) indegrees() map[string]int {
-	in := make(map[string]int, len(g.adj))
-	for v := range g.adj {
+	in := make(map[string]int, len(g.Adj))
+	for v := range g.Adj {
 		in[v] = 0
 	}
-	for _, outs := range g.adj {
+	for _, outs := range g.Adj {
 		for _, e := range outs {
-			in[e.to]++
+			in[e.To]++
 		}
 	}
 	return in
@@ -104,14 +114,14 @@ func (g *Graph) indegrees() map[string]int {
 
 func (g *Graph) DetectCycle() error {
 	// Build list of roots in insertion order
-	roots := g.nodes
+	roots := g.Nodes
 
 	const (
 		white = 0
 		grey  = 1
 		black = 2
 	)
-	color := make(map[string]int, len(g.adj))
+	color := make(map[string]int, len(g.Adj))
 
 	type frame struct {
 		node  string
@@ -129,17 +139,17 @@ func (g *Graph) DetectCycle() error {
 
 		for st.len() > 0 {
 			f := st.peek()
-			outs := g.adj[f.node]
+			outs := g.Adj[f.node]
 
 			if f.next < len(outs) {
 				edge := outs[f.next]
 				st.peek().next++
-				switch color[edge.to] {
+				switch color[edge.To] {
 				case white:
-					color[edge.to] = grey
-					st.push(frame{node: edge.to, inLbl: edge.label})
+					color[edge.To] = grey
+					st.push(frame{node: edge.To, inLbl: edge.Label})
 				case grey:
-					closeLbl := edge.label
+					closeLbl := edge.Label
 					var nodes []string
 					var edges []string
 					for i := st.len() - 1; i >= 0; i-- {
@@ -147,7 +157,7 @@ func (g *Graph) DetectCycle() error {
 						if lbl := st.data[i].inLbl; lbl != "" {
 							edges = append(edges, lbl)
 						}
-						if st.data[i].node == edge.to {
+						if st.data[i].node == edge.To {
 							break
 						}
 					}
@@ -175,15 +185,15 @@ func (g *Graph) DetectCycle() error {
 // The callback should return true on success or false on failure. Nodes are not
 // skipped when dependencies fail; instead, they are executed with failedDependency set.
 func (g *Graph) Run(pool int, runUnit func(node string, failedDependency *string) bool) {
-	if pool <= 0 || pool > len(g.adj) {
-		pool = len(g.adj)
+	if pool <= 0 || pool > len(g.Adj) {
+		pool = len(g.Adj)
 	}
 
 	in := g.indegrees()
 
 	// Prepare initial ready nodes in stable insertion order
 	var initial []string
-	for _, n := range g.nodes {
+	for _, n := range g.Nodes {
 		if in[n] == 0 {
 			initial = append(initial, n)
 		}
@@ -223,17 +233,17 @@ func (g *Graph) Run(pool int, runUnit func(node string, failedDependency *string
 				cause = &parent
 			}
 			// Record a failed dependency cause for children, if not set yet
-			for _, e := range g.adj[res.n] {
-				if _, exists := failedCause[e.to]; !exists {
-					failedCause[e.to] = cause
+			for _, e := range g.Adj[res.n] {
+				if _, exists := failedCause[e.To]; !exists {
+					failedCause[e.To] = cause
 				}
 			}
 		}
 
 		// Decrement indegrees and enqueue children that become ready
-		for _, e := range g.adj[res.n] {
-			if in[e.to]--; in[e.to] == 0 {
-				ready <- task{n: e.to, failedFrom: failedCause[e.to]}
+		for _, e := range g.Adj[res.n] {
+			if in[e.To]--; in[e.To] == 0 {
+				ready <- task{n: e.To, failedFrom: failedCause[e.To]}
 			}
 		}
 	}
