@@ -3,11 +3,18 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/databricks/databricks-sdk-go/service/database"
 	"github.com/google/uuid"
 )
+
+var ForceSendFields []string = []string{
+	"EffectiveEnableReadableSecondaries",
+	"EffectiveStopped",
+	"EffectiveEnablePgNativeLogin",
+}
 
 func (s *FakeWorkspace) DatabaseInstanceCreate(req Request) Response {
 	defer s.LockUnlock()()
@@ -31,6 +38,9 @@ func (s *FakeWorkspace) DatabaseInstanceCreate(req Request) Response {
 	databaseInstance.CreationTime = time.Now().UTC().Format(time.RFC3339)
 	databaseInstance.EffectiveEnableReadableSecondaries = false
 	databaseInstance.EffectiveStopped = false
+	databaseInstance.EffectiveEnablePgNativeLogin = false
+
+	databaseInstance.ForceSendFields = slices.Clone(ForceSendFields)
 
 	s.DatabaseInstances[databaseInstance.Name] = databaseInstance
 
@@ -51,17 +61,61 @@ func DatabaseInstanceMapGet(w *FakeWorkspace, collection map[string]database.Dat
 		}
 	}
 
-	// Convert to map[string]interface{} to ensure all fields are included
-	jsonBytes, _ := json.Marshal(value)
-	var result map[string]any
-	_ = json.Unmarshal(jsonBytes, &result)
-
-	// Explicitly set boolean fields that should always be present
-	result["effective_enable_readable_secondaries"] = value.EffectiveEnableReadableSecondaries
-	result["effective_stopped"] = value.EffectiveStopped
+	value.ForceSendFields = slices.Clone(ForceSendFields)
 
 	return Response{
-		Body: result,
+		Body: value,
+	}
+}
+
+func (s *FakeWorkspace) DatabaseInstanceUpdate(req Request, name string) Response {
+	defer s.LockUnlock()()
+
+	// Parse the update request
+	var updateReq database.UpdateDatabaseInstanceRequest
+	err := json.Unmarshal(req.Body, &updateReq)
+	if err != nil {
+		return Response{
+			Body:       fmt.Sprintf("cannot unmarshal request body: %s", err),
+			StatusCode: 400,
+		}
+	}
+
+	// Check if the instance exists
+	existing, ok := s.DatabaseInstances[name]
+	if !ok {
+		return Response{
+			StatusCode: 404,
+			Body:       map[string]string{"message": fmt.Sprintf("DatabaseInstance not found: %v", name)},
+		}
+	}
+
+	// Update the instance with new values while preserving system-managed fields
+	updated := updateReq.DatabaseInstance
+	updated.Uid = existing.Uid                   // Preserve UID
+	updated.Creator = existing.Creator           // Preserve creator
+	updated.CreationTime = existing.CreationTime // Preserve creation time
+	updated.State = existing.State               // Preserve state
+
+	// Set defaults for effective fields if not specified
+	if updated.EffectiveNodeCount == 0 {
+		updated.EffectiveNodeCount = existing.EffectiveNodeCount
+	}
+	if updated.EffectiveRetentionWindowInDays == 0 {
+		updated.EffectiveRetentionWindowInDays = existing.EffectiveRetentionWindowInDays
+	}
+	if updated.PgVersion == "" {
+		updated.PgVersion = existing.PgVersion
+	}
+
+	// Set ForceSendFields to ensure consistent serialization with DatabaseInstanceMapGet
+	updated.ForceSendFields = slices.Clone(ForceSendFields)
+
+	// Update the stored instance
+	s.DatabaseInstances[name] = updated
+
+	return Response{
+		Body: updated,
 	}
 }
 

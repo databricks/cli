@@ -154,6 +154,9 @@ github.com/databricks/cli/bundle/config.Python:
       If enabled, Python code will execute within this environment. If disabled,
       it defaults to using the Python interpreter available in the current shell.
 github.com/databricks/cli/bundle/config.Resources:
+  "alerts":
+    "description": |-
+      PLACEHOLDER
   "apps":
     "description": |-
       The app resource defines a Databricks app.
@@ -439,6 +442,32 @@ github.com/databricks/cli/bundle/config.Workspace:
   "state_path":
     "description": |-
       The workspace state path
+github.com/databricks/cli/bundle/config/resources.Alert:
+  "evaluation":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+  "schedule":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.AlertPermission:
+  "group_name":
+    "description": |-
+      PLACEHOLDER
+  "level":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "user_name":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.AppPermission:
   "group_name":
     "description": |-
@@ -478,89 +507,6 @@ github.com/databricks/cli/bundle/config/resources.DashboardPermission:
   "user_name":
     "description": |-
       PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.DatabaseCatalog:
-  "create_database_if_not_exists":
-    "description": |-
-      PLACEHOLDER
-  "database_instance_name":
-    "description": |-
-      PLACEHOLDER
-  "database_name":
-    "description": |-
-      PLACEHOLDER
-  "name":
-    "description": |-
-      PLACEHOLDER
-  "permissions":
-    "description": |-
-      PLACEHOLDER
-  "uid":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.DatabaseInstance:
-  "capacity":
-    "description": |-
-      PLACEHOLDER
-  "child_instance_refs":
-    "description": |-
-      PLACEHOLDER
-  "creation_time":
-    "description": |-
-      PLACEHOLDER
-  "creator":
-    "description": |-
-      PLACEHOLDER
-  "effective_enable_readable_secondaries":
-    "description": |-
-      PLACEHOLDER
-  "effective_node_count":
-    "description": |-
-      PLACEHOLDER
-  "effective_retention_window_in_days":
-    "description": |-
-      PLACEHOLDER
-  "effective_stopped":
-    "description": |-
-      PLACEHOLDER
-  "enable_readable_secondaries":
-    "description": |-
-      PLACEHOLDER
-  "name":
-    "description": |-
-      PLACEHOLDER
-  "node_count":
-    "description": |-
-      PLACEHOLDER
-  "parent_instance_ref":
-    "description": |-
-      PLACEHOLDER
-  "permissions":
-    "description": |-
-      PLACEHOLDER
-  "pg_version":
-    "description": |-
-      PLACEHOLDER
-  "purge_on_delete":
-    "description": |-
-      PLACEHOLDER
-  "read_only_dns":
-    "description": |-
-      PLACEHOLDER
-  "read_write_dns":
-    "description": |-
-      PLACEHOLDER
-  "retention_window_in_days":
-    "description": |-
-      PLACEHOLDER
-  "state":
-    "description": |-
-      PLACEHOLDER
-  "stopped":
-    "description": |-
-      PLACEHOLDER
-  "uid":
-    "description": |-
-      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.DatabaseInstancePermission:
   "group_name":
     "description": |-
@@ -594,6 +540,10 @@ github.com/databricks/cli/bundle/config/resources.JobPermission:
   "user_name":
     "description": |-
       PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.Lifecycle:
+  "prevent_destroy":
+    "description": |-
+      Lifecycle setting to prevent the resource from being destroyed.
 github.com/databricks/cli/bundle/config/resources.MlflowExperimentPermission:
   "group_name":
     "description": |-
@@ -678,6 +628,9 @@ github.com/databricks/cli/bundle/config/resources.SecretScope:
   "keyvault_metadata":
     "description": |-
       The metadata for the secret scope if the `backend_type` is `AZURE_KEYVAULT`
+  "lifecycle":
+    "description": |-
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
   "name":
     "description": |-
       Scope name requested by the user. Scope names are unique.
@@ -723,6 +676,9 @@ github.com/databricks/cli/bundle/config/resources.SyncedDatabaseTable:
   "effective_logical_database_name":
     "description": |-
       PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
   "logical_database_name":
     "description": |-
       PLACEHOLDER

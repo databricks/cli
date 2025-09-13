@@ -5,28 +5,20 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"reflect"
 	"slices"
+	"strings"
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/bundle/terranova/tnstate"
+	"github.com/databricks/cli/bundle/terranova/tnresources"
 	"github.com/databricks/cli/libs/dagrun"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/dynvar"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
-	"github.com/databricks/cli/libs/structaccess"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 )
 
-type BundleDeployer struct {
-	StateDB        tnstate.TerranovaState
-	Graph          *dagrun.Graph[deployplan.ResourceNode]
-	PlannedActions map[deployplan.ResourceNode]deployplan.ActionType
-}
-
-func (b *BundleDeployer) OpenStateFile(statePath string) error {
+func (b *DeploymentBundle) OpenStateFile(statePath string) error {
 	err := b.StateDB.Open(statePath)
 	if err != nil {
 		return fmt.Errorf("failed to read state from %s: %w", statePath, err)
@@ -34,9 +26,27 @@ func (b *BundleDeployer) OpenStateFile(statePath string) error {
 	return nil
 }
 
-func (b *BundleDeployer) CalculatePlanForDeploy(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root) error {
+func (b *DeploymentBundle) Init(client *databricks.WorkspaceClient) error {
+	if b.Adapters != nil {
+		return nil
+	}
 	var err error
+	b.Adapters, err = tnresources.InitAll(client)
+	return err
+}
+
+func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root) error {
 	b.StateDB.AssertOpened()
+	err := b.Init(client)
+	if err != nil {
+		return err
+	}
+
+	// TODO: make this --local option
+	localOnly := false
+
+	// TODO: get this from --refresh / --norefresh option (default refresh for prod, norefresh for dev mode)
+	refresh := true
 
 	b.Graph, err = makeResourceGraph(ctx, configRoot.Value())
 	if err != nil {
@@ -48,13 +58,13 @@ func (b *BundleDeployer) CalculatePlanForDeploy(ctx context.Context, client *dat
 		return err
 	}
 
-	b.PlannedActions = make(map[deployplan.ResourceNode]deployplan.ActionType)
+	b.DeploymentUnits = make(map[deployplan.ResourceNode]*DeploymentUnit)
 
 	// We're processing resources in DAG order, because we're trying to get rid of all references like $resources.jobs.foo.id
 	// if jobs.foo is not going to be (re)created. This means by the time we get to resource depending on $resources.jobs.foo.id
 	// we might have already got rid of this reference, thus potentially downgrading actionType
 
-	// parallelism is set to 1, so there is no multi-threaded access there.
+	// parallelism is set to 1, so there is no multi-threaded access there. TODO: increase parallism, protect b.DeploymentUnits
 	b.Graph.Run(1, func(node deployplan.ResourceNode, failedDependency *deployplan.ResourceNode) bool {
 		errorPrefix := fmt.Sprintf("cannot plan %s.%s", node.Group, node.Key)
 
@@ -62,76 +72,51 @@ func (b *BundleDeployer) CalculatePlanForDeploy(ctx context.Context, client *dat
 			logdiag.LogError(ctx, fmt.Errorf("%s: dependency failed: %s", errorPrefix, failedDependency.String()))
 			return false
 		}
-		settings, ok := SupportedResources[node.Group]
+
+		adapter, ok := b.Adapters[node.Group]
 		if !ok {
-			logdiag.LogError(ctx, fmt.Errorf("%s: resource type not supported on direct backend", errorPrefix))
+			logdiag.LogError(ctx, fmt.Errorf("%s: resource type not supported on direct backend, available: %s", errorPrefix, strings.Join(utils.SortedKeys(b.Adapters), ", ")))
 			return false
 		}
 
-		pl := Planner{
-			client:       client,
-			db:           &b.StateDB,
-			group:        node.Group,
-			resourceName: node.Key,
-			settings:     settings,
-		}
-
-		config, ok := configRoot.GetResourceConfig(pl.group, pl.resourceName)
+		config, ok := configRoot.GetResourceConfig(node.Group, node.Key)
 		if !ok {
 			logdiag.LogError(ctx, fmt.Errorf("%s: internal error: cannot read config", errorPrefix))
 			return false
 		}
 
+		d := &DeploymentUnit{
+			Group:   node.Group,
+			Key:     node.Key,
+			Adapter: adapter,
+		}
+
 		// This currently does not do API calls, so we can run this sequentially. Once we have remote diffs, we need to run a in threadpool.
-		actionType, err := pl.Plan(ctx, config)
+		var err error
+		d.ActionType, err = d.Plan(ctx, client, &b.StateDB, config, localOnly, refresh)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return false
 		}
 
 		for _, reference := range b.Graph.OutgoingLabels(node) {
-			path, ok := dynvar.PureReferenceToPath(reference)
-			if !ok || len(path) <= 3 || path[0].Key() != "resources" || path[1].Key() != node.Group || path[2].Key() != node.Key {
-				logdiag.LogError(ctx, fmt.Errorf("internal error: expected reference to resources.%s.%s, got %q", node.Group, node.Key, reference))
-				return false
-			}
-			fieldPath := path[3:].String()
-			if fieldPath == "id" {
-				if actionType.KeepsID() {
-					// Now that we know that ID of this node is not going to change, update it
-					// everywhere to actual value to calculate more accurate and more conservative action for dependent nodes.
-					err = resolveIDReference(ctx, pl.db, configRoot, pl.group, pl.resourceName)
-					if err != nil {
-						logdiag.LogError(ctx, fmt.Errorf("failed to replace ref to resources.%s.%s.id: %w", pl.group, pl.resourceName, err))
-						return false
-					}
-				}
+			value, err := d.ResolveReferenceLocalOrRemote(ctx, &b.StateDB, reference, d.ActionType, config)
+			if errors.Is(err, ErrDelayed) {
 				continue
 			}
-			dynPath, err := dyn.NewPathFromString(fieldPath)
 			if err != nil {
-				logdiag.LogError(ctx, fmt.Errorf("cannot parse path %s: %w", fieldPath, err))
+				logdiag.LogError(ctx, fmt.Errorf("cannot resolve %q: %w", reference, err))
 				return false
 			}
-			validationErr := structaccess.Validate(reflect.TypeOf(config), dynPath)
-			if validationErr != nil {
-				logdiag.LogError(ctx, fmt.Errorf("schema mismatch for %s: %w", reference, validationErr))
-				return false
-			}
-			value, err := structaccess.Get(config, dynPath)
+			err = replaceReferenceWithValue(ctx, configRoot, reference, value)
 			if err != nil {
-				logdiag.LogError(ctx, fmt.Errorf("field not set %s: %w", reference, err))
-				return false
-			}
-			err = resolveFieldReference(ctx, configRoot, path, value)
-			if err != nil {
-				logdiag.LogError(ctx, fmt.Errorf("failed to replace ref to %s: %w", reference, err))
+				logdiag.LogError(ctx, fmt.Errorf("failed to replace %q with %v: %w", reference, value, err))
 				return false
 			}
 		}
 
-		if actionType != deployplan.ActionTypeNoop {
-			b.PlannedActions[node] = actionType
+		if d.ActionType != deployplan.ActionTypeNoop {
+			b.DeploymentUnits[node] = d
 		}
 		return true
 	})
@@ -144,6 +129,13 @@ func (b *BundleDeployer) CalculatePlanForDeploy(ctx context.Context, client *dat
 
 	// Remained in state are resources that no longer present in the config
 	for _, group := range utils.SortedKeys(state) {
+		adapter, ok := b.Adapters[group]
+
+		if !ok {
+			log.Warnf(ctx, "%s: resource type not supported on direct backend", group)
+			continue
+		}
+
 		groupData := state[group]
 		for _, key := range utils.SortedKeys(groupData) {
 			n := deployplan.ResourceNode{Group: group, Key: key}
@@ -151,7 +143,12 @@ func (b *BundleDeployer) CalculatePlanForDeploy(ctx context.Context, client *dat
 				// action was already added by Run() above
 				continue
 			}
-			b.PlannedActions[n] = deployplan.ActionTypeDelete
+			b.DeploymentUnits[n] = &DeploymentUnit{
+				Group:      group,
+				Key:        key,
+				Adapter:    adapter,
+				ActionType: deployplan.ActionTypeDelete,
+			}
 			b.Graph.AddNode(n)
 		}
 	}
@@ -159,29 +156,44 @@ func (b *BundleDeployer) CalculatePlanForDeploy(ctx context.Context, client *dat
 	return nil
 }
 
-func (b *BundleDeployer) CalculatePlanForDestroy(ctx context.Context) error {
+func (b *DeploymentBundle) CalculatePlanForDestroy(ctx context.Context, client *databricks.WorkspaceClient) error {
 	b.StateDB.AssertOpened()
 
-	b.PlannedActions = make(map[deployplan.ResourceNode]deployplan.ActionType)
+	err := b.Init(client)
+	if err != nil {
+		return err
+	}
+
+	b.DeploymentUnits = make(map[deployplan.ResourceNode]*DeploymentUnit)
 	b.Graph = dagrun.NewGraph[deployplan.ResourceNode]()
 
-	for group, groupData := range b.StateDB.Data.Resources {
+	for group, groupData := range b.StateDB.Data.DeploymentUnits {
+		adapter, ok := b.Adapters[group]
+		if !ok {
+			logdiag.LogError(ctx, fmt.Errorf("cannot destroy %s: resource type not supported on direct backend", group))
+			continue
+		}
 		for key := range groupData {
-			node := deployplan.ResourceNode{Group: group, Key: key}
-			b.PlannedActions[node] = deployplan.ActionTypeDelete
-			b.Graph.AddNode(node)
+			n := deployplan.ResourceNode{Group: group, Key: key}
+			b.DeploymentUnits[n] = &DeploymentUnit{
+				Group:      group,
+				Key:        key,
+				Adapter:    adapter,
+				ActionType: deployplan.ActionTypeDelete,
+			}
+			b.Graph.AddNode(n)
 		}
 	}
 
 	return nil
 }
 
-func (b *BundleDeployer) GetActions(ctx context.Context) []deployplan.Action {
-	actions := make([]deployplan.Action, 0, len(b.PlannedActions))
-	for node, actionType := range b.PlannedActions {
+func (b *DeploymentBundle) GetActions(ctx context.Context) []deployplan.Action {
+	actions := make([]deployplan.Action, 0, len(b.DeploymentUnits))
+	for node, deployer := range b.DeploymentUnits {
 		actions = append(actions, deployplan.Action{
 			ResourceNode: node,
-			ActionType:   actionType,
+			ActionType:   deployer.ActionType,
 		})
 	}
 

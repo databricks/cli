@@ -1,0 +1,6 @@
+trace $CLI bundle plan
+
+# Expect no non-GET requests
+trace jq -s '.[] | select(.method != "GET")' out.requests.txt
+
+rm out.requests.txt

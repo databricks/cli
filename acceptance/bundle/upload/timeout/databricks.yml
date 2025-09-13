@@ -1,0 +1,9 @@
+bundle:
+  name: test-bundle
+
+sync:
+  include:
+    - files_to_upload.txt
+  exclude:
+    - "out*"
+    - "test.toml"

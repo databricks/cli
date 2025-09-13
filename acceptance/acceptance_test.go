@@ -84,7 +84,7 @@ const (
 	EntryPointScript = "script"
 	CleanupScript    = "script.cleanup"
 	PrepareScript    = "script.prepare"
-	MaxFileSize      = 100_000
+	MaxFileSize      = 1_000_000
 	// Filename to save replacements to (used by diff.py)
 	ReplsFile = "repls.json"
 	// Filename for materialized config (used as golden file)
@@ -415,6 +415,14 @@ func getSkipReason(config *internal.TestConfig, configPath string) string {
 		return ""
 	}
 
+	if isTruePtr(config.SkipOnDbr) && WorkspaceTmpDir {
+		return "Disabled via SkipOnDbr setting in " + configPath
+	}
+
+	if isTruePtr(config.Slow) && testing.Short() {
+		return "Disabled via Slow setting in " + configPath
+	}
+
 	isEnabled, isPresent := config.GOOS[runtime.GOOS]
 	if isPresent && !isEnabled {
 		return fmt.Sprintf("Disabled via GOOS.%s setting in %s", runtime.GOOS, configPath)
@@ -573,6 +581,16 @@ func runTest(t *testing.T,
 	testdiff.PrepareReplacementsWorkspaceConfig(t, &repls, cfg)
 
 	cmd.Env = auth.ProcessEnv(cfg)
+
+	rateLimit := os.Getenv("DATABRICKS_RATE_LIMIT")
+	if rateLimit == "" {
+		if isRunningOnCloud {
+			rateLimit = "100"
+		} else {
+			rateLimit = "1000000000"
+		}
+	}
+	cmd.Env = append(cmd.Env, "DATABRICKS_RATE_LIMIT="+rateLimit)
 	cmd.Env = append(cmd.Env, "UNIQUE_NAME="+uniqueName)
 	cmd.Env = append(cmd.Env, "TEST_TMP_DIR="+tmpDir)
 

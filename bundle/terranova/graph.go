@@ -4,12 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
 	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/bundle/terranova/tnstate"
+	"github.com/databricks/cli/bundle/terranova/tnresources"
 	"github.com/databricks/cli/libs/dagrun"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
@@ -37,7 +38,7 @@ func makeResourceGraph(ctx context.Context, configRoot dyn.Value) (*dagrun.Graph
 			group := p[1].Key()
 			name := p[2].Key()
 
-			_, ok := SupportedResources[group]
+			_, ok := tnresources.SupportedResources[group]
 			if !ok {
 				return v, fmt.Errorf("unsupported resource: %s", group)
 			}
@@ -100,6 +101,7 @@ func extractReferences(root dyn.Value, node deployplan.ResourceNode) ([]fieldRef
 			}
 			result = append(result, item)
 		}
+
 		return nil
 	})
 	if err != nil {
@@ -132,57 +134,59 @@ func validateRef(root dyn.Value, ref string) (fieldRef, error) {
 	}, nil
 }
 
-func resolveIDReference(ctx context.Context, db *tnstate.TerranovaState, configRoot *config.Root, group, resourceName string) error {
-	mypath := dyn.NewPath(
-		dyn.Key("resources"),
-		dyn.Key(group),
-		dyn.Key(resourceName),
-		dyn.Key("id"),
-	)
-
-	entry, hasEntry := db.GetResourceEntry(group, resourceName)
-	idValue := entry.ID
-	if !hasEntry || idValue == "" {
-		return errors.New("internal error: no db entry")
+// adaptValue converts arbitrary values to types that dyn library can handle.
+// The dyn library supports basic Go types (string, bool, int, float) but not typedefs.
+// This function normalizes SDK typedefs to their underlying representation.
+func adaptValue(value any) (any, error) {
+	if value == nil {
+		return nil, nil
 	}
 
-	err := configRoot.Mutate(func(root dyn.Value) (dyn.Value, error) {
-		root, err := dynvar.Resolve(root, func(path dyn.Path) (dyn.Value, error) {
-			if slices.Equal(path, mypath) {
-				return dyn.V(idValue), nil
-			}
-			return dyn.InvalidValue, dynvar.ErrSkipResolution
-		})
-		if err != nil {
-			return root, err
+	rv := reflect.ValueOf(value)
+
+	switch rv.Kind() {
+	case reflect.String:
+		return rv.String(), nil
+	case reflect.Bool:
+		return rv.Bool(), nil
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return rv.Int(), nil
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return int64(rv.Uint()), nil
+	case reflect.Float32, reflect.Float64:
+		return rv.Float(), nil
+	case reflect.Ptr:
+		if rv.IsNil() {
+			return nil, nil
 		}
-		// Following resolve_variable_references.go, normalize after variable substitution.
-		// This fixes the following case: ${resources.jobs.foo.id} is replaced by string "12345"
-		// This string corresponds to job_id integer field. Normalization converts "12345" to 12345.
-		// Without normalization there will be an error when converting dynamic value to typed.
-		root, diags := convert.Normalize(configRoot, root)
-		for _, d := range diags {
-			// TODO: add additional context if needed
-			logdiag.LogDiag(ctx, d)
+		return adaptValue(rv.Elem().Interface())
+	case reflect.Interface:
+		if rv.IsNil() {
+			return nil, nil
 		}
-		return root, nil
-	})
-	if err != nil {
-		logdiag.LogError(ctx, err)
+		return adaptValue(rv.Elem().Interface())
+	default:
+		return nil, fmt.Errorf("unsupported type %T (kind %v)", value, rv.Kind())
 	}
-
-	if logdiag.HasError(ctx) {
-		return errors.New("failed to update bundle config")
-	}
-
-	return nil
 }
 
-func resolveFieldReference(ctx context.Context, configRoot *config.Root, targetPath dyn.Path, value any) error {
-	err := configRoot.Mutate(func(root dyn.Value) (dyn.Value, error) {
+func replaceReferenceWithValue(ctx context.Context, bundleConfig *config.Root, reference string, value any) error {
+	targetPath, ok := dynvar.PureReferenceToPath(reference)
+	if !ok {
+		return fmt.Errorf("internal error: bad reference: %q", reference)
+	}
+
+	// dyn modules does not work with typedefs, only original types; SDK have many typedefs, so we simplify type here
+	// adaptValue should also return for non-scalar types like structs and maps and slices
+	normValue, err := adaptValue(value)
+	if err != nil {
+		return fmt.Errorf("cannot resolve value of type %T: %w", value, err)
+	}
+
+	err = bundleConfig.Mutate(func(root dyn.Value) (dyn.Value, error) {
 		root, err := dynvar.Resolve(root, func(path dyn.Path) (dyn.Value, error) {
 			if slices.Equal(path, targetPath) {
-				return dyn.V(value), nil
+				return dyn.V(normValue), nil
 			}
 			return dyn.InvalidValue, dynvar.ErrSkipResolution
 		})
@@ -190,7 +194,7 @@ func resolveFieldReference(ctx context.Context, configRoot *config.Root, targetP
 			return root, err
 		}
 		// Following resolve_variable_references.go, normalize after variable substitution.
-		root, diags := convert.Normalize(configRoot, root)
+		root, diags := convert.Normalize(bundleConfig, root)
 		for _, d := range diags {
 			logdiag.LogDiag(ctx, d)
 		}

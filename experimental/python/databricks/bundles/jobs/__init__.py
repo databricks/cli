@@ -134,6 +134,9 @@ __all__ = [
     "Library",
     "LibraryDict",
     "LibraryParam",
+    "Lifecycle",
+    "LifecycleDict",
+    "LifecycleParam",
     "LocalFileInfo",
     "LocalFileInfoDict",
     "LocalFileInfoParam",
@@ -244,6 +247,8 @@ __all__ = [
     "TaskNotificationSettingsDict",
     "TaskNotificationSettingsParam",
     "TaskParam",
+    "TaskRetryMode",
+    "TaskRetryModeParam",
     "TriggerSettings",
     "TriggerSettingsDict",
     "TriggerSettingsParam",
@@ -480,6 +485,11 @@ from databricks.bundles.jobs._models.jobs_health_rules import (
     JobsHealthRulesParam,
 )
 from databricks.bundles.jobs._models.library import Library, LibraryDict, LibraryParam
+from databricks.bundles.jobs._models.lifecycle import (
+    Lifecycle,
+    LifecycleDict,
+    LifecycleParam,
+)
 from databricks.bundles.jobs._models.local_file_info import (
     LocalFileInfo,
     LocalFileInfoDict,
@@ -647,6 +657,10 @@ from databricks.bundles.jobs._models.task_notification_settings import (
     TaskNotificationSettings,
     TaskNotificationSettingsDict,
     TaskNotificationSettingsParam,
+)
+from databricks.bundles.jobs._models.task_retry_mode import (
+    TaskRetryMode,
+    TaskRetryModeParam,
 )
 from databricks.bundles.jobs._models.trigger_settings import (
     TriggerSettings,

@@ -36,11 +36,11 @@ func getDeleteActions(ctx context.Context, b *bundle.Bundle) ([]deployplan.Actio
 		if err != nil {
 			return nil, err
 		}
-		err = b.BundleDeployer.CalculatePlanForDestroy(ctx)
+		err = b.DeploymentBundle.CalculatePlanForDestroy(ctx, b.WorkspaceClient())
 		if err != nil {
 			return nil, err
 		}
-		return b.BundleDeployer.GetActions(ctx), nil
+		return b.DeploymentBundle.GetActions(ctx), nil
 	}
 
 	tf := b.Terraform
@@ -61,6 +61,11 @@ func getDeleteActions(ctx context.Context, b *bundle.Bundle) ([]deployplan.Actio
 
 func approvalForDestroy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	deleteActions, err := getDeleteActions(ctx, b)
+	if err != nil {
+		return false, err
+	}
+
+	err = checkForPreventDestroy(b, deleteActions)
 	if err != nil {
 		return false, err
 	}
@@ -119,7 +124,7 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 
 func destroyCore(ctx context.Context, b *bundle.Bundle) {
 	if b.DirectDeployment {
-		b.BundleDeployer.Apply(ctx, b.WorkspaceClient(), &b.Config)
+		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(), &b.Config)
 	} else {
 		// Core destructive mutators for destroy. These require informed user consent.
 		bundle.ApplyContext(ctx, b, terraform.Apply())
