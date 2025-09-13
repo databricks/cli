@@ -1,0 +1,4 @@
+Pipeline configuration successfully saved to out/config/out.pipeline.yml
+File successfully saved to out/pipeline/explorations/1.py
+File successfully saved to out/pipeline/transformations/1.py
+File successfully saved to out/pipeline/transformations/2.py
