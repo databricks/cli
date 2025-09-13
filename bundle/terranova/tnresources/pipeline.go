@@ -23,6 +23,44 @@ func (*ResourcePipeline) PrepareState(input *resources.Pipeline) *pipelines.Crea
 	return &input.CreatePipeline
 }
 
+func (*ResourcePipeline) RemapState(p *pipelines.GetPipelineResponse) *pipelines.CreatePipeline {
+	spec := p.Spec
+	return &pipelines.CreatePipeline{
+		// TODO: Fields that are not available in GetPipelineResponse (like AllowDuplicateNames) should be added to resource's ignore_remote_changes list so that they never produce a call to action
+		AllowDuplicateNames: false,
+		BudgetPolicyId:      spec.BudgetPolicyId,
+		Catalog:             spec.Catalog,
+		Channel:             spec.Channel,
+		Clusters:            spec.Clusters,
+		Configuration:       spec.Configuration,
+		Continuous:          spec.Continuous,
+		Deployment:          spec.Deployment,
+		Development:         spec.Development,
+		DryRun:              false,
+		Edition:             spec.Edition,
+		Environment:         spec.Environment,
+		EventLog:            spec.EventLog,
+		Filters:             spec.Filters,
+		GatewayDefinition:   spec.GatewayDefinition,
+		Id:                  spec.Id,
+		IngestionDefinition: spec.IngestionDefinition,
+		Libraries:           spec.Libraries,
+		Name:                spec.Name,
+		Notifications:       spec.Notifications,
+		Photon:              spec.Photon,
+		RestartWindow:       spec.RestartWindow,
+		RootPath:            spec.RootPath,
+		RunAs:               p.RunAs,
+		Schema:              spec.Schema,
+		Serverless:          spec.Serverless,
+		Storage:             spec.Storage,
+		Tags:                spec.Tags,
+		Target:              spec.Target,
+		Trigger:             spec.Trigger,
+		ForceSendFields:     filterFields[pipelines.CreatePipeline](spec.ForceSendFields, "AllowDuplicateNames", "DryRun", "RunAs"),
+	}
+}
+
 func (r *ResourcePipeline) DoRefresh(ctx context.Context, id string) (*pipelines.GetPipelineResponse, error) {
 	return r.client.Pipelines.GetByPipelineId(ctx, id)
 }
