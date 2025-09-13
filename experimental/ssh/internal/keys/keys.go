@@ -125,27 +125,27 @@ func CheckAndGenerateSSHKeyPair(ctx context.Context, keyPath string) (string, st
 	return keyPath, strings.TrimSpace(string(publicKeyBytes)), nil
 }
 
-func CheckAndGenerateSSHKeyPairFromSecrets(ctx context.Context, client *databricks.WorkspaceClient, clusterID, secretsScopeName, privateKeyName, publicKeyName string) ([]byte, []byte, error) {
-	privateKeyBytes, err := GetSecret(ctx, client, secretsScopeName, privateKeyName)
+func CheckAndGenerateSSHKeyPairFromSecrets(ctx context.Context, client *databricks.WorkspaceClient, clusterID, secretScopeName, privateKeyName, publicKeyName string) ([]byte, []byte, error) {
+	privateKeyBytes, err := GetSecret(ctx, client, secretScopeName, privateKeyName)
 	if err != nil {
 		privateKeyBytes, publicKeyBytes, err := generateSSHKeyPair()
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to generate SSH key pair: %w", err)
 		}
 
-		err = putSecret(ctx, client, secretsScopeName, privateKeyName, string(privateKeyBytes))
+		err = putSecret(ctx, client, secretScopeName, privateKeyName, string(privateKeyBytes))
 		if err != nil {
 			return nil, nil, err
 		}
 
-		err = putSecret(ctx, client, secretsScopeName, publicKeyName, string(publicKeyBytes))
+		err = putSecret(ctx, client, secretScopeName, publicKeyName, string(publicKeyBytes))
 		if err != nil {
 			return nil, nil, err
 		}
 
 		return privateKeyBytes, publicKeyBytes, nil
 	} else {
-		publicKeyBytes, err := GetSecret(ctx, client, secretsScopeName, publicKeyName)
+		publicKeyBytes, err := GetSecret(ctx, client, secretScopeName, publicKeyName)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to get public key from secrets scope: %w", err)
 		}
