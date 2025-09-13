@@ -61,6 +61,7 @@ func buildNodes(s jsonschema.Schema, refs map[string]*jsonschema.Schema, ownFiel
 			continue
 		}
 		visited[k] = true
+		v = resolveRefs(v, refs)
 
 		if v.Deprecated {
 			continue
@@ -69,7 +70,6 @@ func buildNodes(s jsonschema.Schema, refs map[string]*jsonschema.Schema, ownFiel
 			continue
 		}
 
-		v = resolveRefs(v, refs)
 		node := rootNode{
 			Title:       k,
 			Description: getDescription(v),
