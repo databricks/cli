@@ -61,12 +61,15 @@ func buildNodes(s jsonschema.Schema, refs map[string]*jsonschema.Schema, ownFiel
 			continue
 		}
 		visited[k] = true
+		v = resolveRefs(v, refs)
 
 		if v.Deprecated {
 			continue
 		}
+		if v.DoNotSuggest {
+			continue
+		}
 
-		v = resolveRefs(v, refs)
 		node := rootNode{
 			Title:       k,
 			Description: getDescription(v),
@@ -172,6 +175,9 @@ func getAttributes(props, refs map[string]*jsonschema.Schema, ownFields map[stri
 	var attributes []attributeNode
 	for k, v := range props {
 		v = resolveRefs(v, refs)
+		if v.DoNotSuggest {
+			continue
+		}
 		typeString := getHumanReadableType(v.Type)
 		if typeString == "" {
 			typeString = "Any"

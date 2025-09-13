@@ -55,4 +55,8 @@ type Extension struct {
 	// This field is not in the JSON schema spec, but it is supported in VSCode
 	// It hides a property from IntelliSense (autocomplete suggestions).
 	DoNotSuggest bool `json:"doNotSuggest,omitempty"`
+
+	// FieldBehaviors defines field behaviors from the OpenAPI spec (e.g. OUTPUT_ONLY)
+	// This is used to filter out fields that should not be exposed to users
+	FieldBehaviors []string `json:"x-databricks-field-behaviors,omitempty"`
 }
