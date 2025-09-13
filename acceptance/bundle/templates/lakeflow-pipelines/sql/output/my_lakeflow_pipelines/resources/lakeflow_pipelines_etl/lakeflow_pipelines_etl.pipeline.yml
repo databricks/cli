@@ -1,0 +1,15 @@
+# The main pipeline for my_lakeflow_pipelines
+
+resources:
+  pipelines:
+    lakeflow_pipelines_etl:
+      name: lakeflow_pipelines_etl
+      ## Catalog is required for serverless compute
+      catalog: main
+      schema: ${var.schema}
+      serverless: true
+      root_path: "."
+
+      libraries:
+        - glob:
+            include: transformations/**
