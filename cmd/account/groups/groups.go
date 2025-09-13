@@ -70,7 +70,7 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().StringVar(&createReq.DisplayName, "display-name", createReq.DisplayName, `String that represents a human-readable group name.`)
 	// TODO: array: entitlements
-	cmd.Flags().StringVar(&createReq.ExternalId, "external-id", createReq.ExternalId, ``)
+	cmd.Flags().StringVar(&createReq.ExternalId, "external-id", createReq.ExternalId, `external_id should be unique for identifying groups.`)
 	// TODO: array: groups
 	cmd.Flags().StringVar(&createReq.Id, "id", createReq.Id, `Databricks group ID.`)
 	// TODO: array: members
@@ -428,7 +428,7 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().StringVar(&updateReq.DisplayName, "display-name", updateReq.DisplayName, `String that represents a human-readable group name.`)
 	// TODO: array: entitlements
-	cmd.Flags().StringVar(&updateReq.ExternalId, "external-id", updateReq.ExternalId, ``)
+	cmd.Flags().StringVar(&updateReq.ExternalId, "external-id", updateReq.ExternalId, `external_id should be unique for identifying groups.`)
 	// TODO: array: groups
 	cmd.Flags().StringVar(&updateReq.Id, "id", updateReq.Id, `Databricks group ID.`)
 	// TODO: array: members

@@ -12,8 +12,6 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class RunAs:
     """
-    :meta private: [EXPERIMENTAL]
-
     Write-only setting, available only in Create/Update calls. Specifies the user or service principal that the pipeline runs as. If not specified, the pipeline runs as the user who created the pipeline.
 
     Only `user_name` or `service_principal_name` can be specified. If both are specified, an error is thrown.

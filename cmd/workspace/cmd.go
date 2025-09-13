@@ -112,6 +112,7 @@ import (
 	workspace "github.com/databricks/cli/cmd/workspace/workspace"
 	workspace_bindings "github.com/databricks/cli/cmd/workspace/workspace-bindings"
 	workspace_conf "github.com/databricks/cli/cmd/workspace/workspace-conf"
+	workspace_iam_v2 "github.com/databricks/cli/cmd/workspace/workspace-iam-v2"
 	workspace_settings_v2 "github.com/databricks/cli/cmd/workspace/workspace-settings-v2"
 	"github.com/spf13/cobra"
 )
@@ -229,6 +230,7 @@ func All() []*cobra.Command {
 	out = append(out, workspace_conf.New())
 	out = append(out, workspace_settings_v2.New())
 	out = append(out, forecasting.New())
+	out = append(out, workspace_iam_v2.New())
 
 	return out
 }

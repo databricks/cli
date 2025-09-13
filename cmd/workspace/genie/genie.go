@@ -248,9 +248,6 @@ func newDeleteConversationMessage() *cobra.Command {
     CONVERSATION_ID: The ID associated with the conversation.
     MESSAGE_ID: The ID associated with the message to delete.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -751,9 +748,6 @@ func newListConversationMessages() *cobra.Command {
   Arguments:
     SPACE_ID: The ID associated with the Genie space where the conversation is located
     CONVERSATION_ID: The ID of the conversation to list messages from`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 

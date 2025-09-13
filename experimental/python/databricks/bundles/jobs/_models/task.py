@@ -145,6 +145,13 @@ class Task:
     An option to disable auto optimization in serverless
     """
 
+    disabled: VariableOrOptional[bool] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    An optional flag to disable the task. If set to true, the task will not run even if it is part of a job.
+    """
+
     email_notifications: VariableOrOptional[TaskEmailNotifications] = None
     """
     An optional set of email addresses that is notified when runs of this task begin or complete as well as when this task is deleted. The default behavior is to not send any emails.
@@ -346,6 +353,13 @@ class TaskDict(TypedDict, total=False):
     disable_auto_optimization: VariableOrOptional[bool]
     """
     An option to disable auto optimization in serverless
+    """
+
+    disabled: VariableOrOptional[bool]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    An optional flag to disable the task. If set to true, the task will not run even if it is part of a job.
     """
 
     email_notifications: VariableOrOptional[TaskEmailNotificationsParam]

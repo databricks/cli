@@ -255,8 +255,8 @@ func newTrashAlert() *cobra.Command {
 	var trashAlertReq sql.TrashAlertV2Request
 
 	cmd.Use = "trash-alert ID"
-	cmd.Short = `Delete an alert.`
-	cmd.Long = `Delete an alert.
+	cmd.Short = `Delete an alert (legacy TrashAlert).`
+	cmd.Long = `Delete an alert (legacy TrashAlert).
   
   Moves an alert to the trash. Trashed alerts immediately disappear from list
   views, and can no longer trigger. You can restore a trashed alert through the
