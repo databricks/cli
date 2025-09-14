@@ -17,7 +17,9 @@ try:
     import csv
     import os
 except ImportError:
-    raise ImportError("Test dependencies not found.\n\nRun tests using 'uv run pytest'. See http://docs.astral.sh/uv to learn more about uv.")
+    raise ImportError(
+        "Test dependencies not found.\n\nRun tests using 'uv run pytest'. See http://docs.astral.sh/uv to learn more about uv."
+    )
 
 
 @pytest.fixture()
@@ -31,6 +33,7 @@ def spark() -> SparkSession:
     """
     return DatabricksSession.builder.getOrCreate()
 
+
 @pytest.fixture()
 def load_fixture(spark: SparkSession):
     """Provide a callable to load JSON or CSV from fixtures/ directory.
@@ -41,6 +44,7 @@ def load_fixture(spark: SparkSession):
             data = load_fixture("my_data.json")
             assert data.count() >= 1
     """
+
     def _loader(filename: str):
         path = pathlib.Path(__file__).parent.parent / "fixtures" / filename
         suffix = path.suffix.lower()
@@ -52,6 +56,7 @@ def load_fixture(spark: SparkSession):
                 rows = list(csv.DictReader(f))
             return spark.createDataFrame(rows)
         raise ValueError(f"Unsupported fixture type for: {filename}")
+
     return _loader
 
 

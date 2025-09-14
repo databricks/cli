@@ -5,7 +5,7 @@ resources:
     lakeflow_pipelines_etl:
       name: lakeflow_pipelines_etl
       ## Catalog is required for serverless compute
-      catalog: main
+      catalog: ${var.catalog}
       schema: ${var.schema}
       serverless: true
       root_path: "."

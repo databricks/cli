@@ -12,7 +12,7 @@ resources:
 {{- if or (eq default_catalog "") (eq default_catalog "hive_metastore")}}
   {{- if $serverless }}
       ## Catalog is required for serverless compute
-      catalog: main
+      catalog: ${var.catalog}
   {{- else}}
       ## Specify the 'catalog' field to configure this pipeline to make use of Unity Catalog:
       # catalog: ${var.catalog}

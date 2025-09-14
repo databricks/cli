@@ -12,7 +12,7 @@
     },
     "files.associations": {
         "**/.gitkeep": "markdown"
-    }
+    },
 
     // Pylance settings (VS Code)
     // Set typeCheckingMode to "basic" to enable type checking!
@@ -33,7 +33,7 @@
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,
     "[python]": {
-        "editor.defaultFormatter": "ms-python.python",
+        "editor.defaultFormatter": "ms-python.black-formatter",
         "editor.formatOnSave": true,
     },
 }
