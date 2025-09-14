@@ -1,0 +1,56 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/alerts-basic-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] alerts-v2 get-alert [NUMID]
+{
+  "display_name": "My alert",
+  "lifecycle_state": "ACTIVE"
+}
+
+>>> [CLI] permissions get alertsv2 [NUMID]
+{
+  "access_control_list": [
+    {
+      "all_permissions": [
+        {
+          "inherited": false,
+          "permission_level": "CAN_RUN"
+        }
+      ],
+      "group_name": "users"
+    }
+  ],
+  "object_id": "/alertsv2/[NUMID]",
+  "object_type": "alertv2"
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete alert myalert
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/alerts-basic-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
+
+>>> [CLI] alerts-v2 get-alert [NUMID]
+{
+  "display_name": "My alert",
+  "lifecycle_state": "TRASHED"
+}
+
+>>> [CLI] bundle summary
+Name: alerts-basic-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/alerts-basic-[UNIQUE_NAME]/default
+Resources:
+  Alerts:
+    myalert:
+      Name: My alert
+      URL:  (not deployed)

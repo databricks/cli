@@ -52,6 +52,11 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 		return false, err
 	}
 
+	err = checkForPreventDestroy(b, actions)
+	if err != nil {
+		return false, err
+	}
+
 	types := []deployplan.ActionType{deployplan.ActionTypeRecreate, deployplan.ActionTypeDelete}
 	schemaActions := deployplan.FilterGroup(actions, "schemas", types...)
 	dltActions := deployplan.FilterGroup(actions, "pipelines", types...)
@@ -196,6 +201,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		deploy.StatePush(),
 		permissions.ApplyWorkspaceRootPermissions(),
 		metrics.TrackUsedCompute(),
+		deploy.ResourcePathMkdir(),
 	)
 
 	if logdiag.HasError(ctx) {

@@ -1,0 +1,4 @@
+touch hello.whl
+trace $CLI bundle deploy
+trace print_telemetry_bool_values
+rm out.requests.txt hello.whl

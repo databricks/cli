@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -17,19 +18,24 @@ func (*ResourceSchema) New(client *databricks.WorkspaceClient) *ResourceSchema {
 	return &ResourceSchema{client: client}
 }
 
-func (*ResourceSchema) PrepareConfig(input *resources.Schema) *catalog.CreateSchema {
+func (*ResourceSchema) PrepareState(input *resources.Schema) *catalog.CreateSchema {
 	return &input.CreateSchema
 }
 
-func (r *ResourceSchema) DoCreate(ctx context.Context, config *catalog.CreateSchema) (string, error) {
-	response, err := r.client.Schemas.Create(ctx, *config)
-	if err != nil || response == nil {
-		return "", err
-	}
-	return response.FullName, nil
+func (r *ResourceSchema) DoRefresh(ctx context.Context, id string) (*catalog.SchemaInfo, error) {
+	return r.client.Schemas.GetByFullName(ctx, id)
 }
 
-func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, config *catalog.CreateSchema) error {
+func (r *ResourceSchema) DoCreate(ctx context.Context, config *catalog.CreateSchema) (string, *catalog.SchemaInfo, error) {
+	response, err := r.client.Schemas.Create(ctx, *config)
+	if err != nil || response == nil {
+		return "", nil, err
+	}
+	return response.FullName, response, nil
+}
+
+// DoUpdate updates the schema in place and returns remote state.
+func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, config *catalog.CreateSchema) (*catalog.SchemaInfo, error) {
 	updateRequest := catalog.UpdateSchema{
 		Comment:                      config.Comment,
 		EnablePredictiveOptimization: "", // Not supported by DABs
@@ -37,19 +43,19 @@ func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, config *catalo
 		NewName:                      "", // We recreate schemas on name change intentionally.
 		Owner:                        "", // Not supported by DABs
 		Properties:                   config.Properties,
-		ForceSendFields:              filterFields[catalog.UpdateSchema](config.ForceSendFields),
+		ForceSendFields:              filterFields[catalog.UpdateSchema](config.ForceSendFields, "EnablePredictiveOptimization", "NewName", "Owner"),
 	}
 
 	response, err := r.client.Schemas.Update(ctx, updateRequest)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if response != nil && response.FullName != id {
 		log.Warnf(ctx, "schemas: response contains unexpected full_name=%#v (expected %#v)", response.FullName, id)
 	}
 
-	return nil
+	return response, nil
 }
 
 func (r *ResourceSchema) DoDelete(ctx context.Context, id string) error {
@@ -60,10 +66,10 @@ func (r *ResourceSchema) DoDelete(ctx context.Context, id string) error {
 	})
 }
 
-func (*ResourceSchema) RecreateFields() []string {
-	return []string{
-		".name",
-		".catalog_name",
-		".storage_root",
+func (*ResourceSchema) FieldTriggers() map[string]deployplan.ActionType {
+	return map[string]deployplan.ActionType{
+		".name":         deployplan.ActionTypeRecreate,
+		".catalog_name": deployplan.ActionTypeRecreate,
+		".storage_root": deployplan.ActionTypeRecreate,
 	}
 }

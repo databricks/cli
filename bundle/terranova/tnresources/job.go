@@ -20,8 +20,16 @@ func (*ResourceJob) New(client *databricks.WorkspaceClient) *ResourceJob {
 	}
 }
 
-func (*ResourceJob) PrepareConfig(input *resources.Job) *jobs.JobSettings {
+func (*ResourceJob) PrepareState(input *resources.Job) *jobs.JobSettings {
 	return &input.JobSettings
+}
+
+func (r *ResourceJob) DoRefresh(ctx context.Context, id string) (*jobs.Job, error) {
+	idInt, err := parseJobID(id)
+	if err != nil {
+		return nil, err
+	}
+	return r.client.Jobs.GetByJobId(ctx, idInt)
 }
 
 func (r *ResourceJob) DoCreate(ctx context.Context, config *jobs.JobSettings) (string, error) {
@@ -82,7 +90,7 @@ func makeCreateJob(config jobs.JobSettings) (jobs.CreateJob, error) {
 		Trigger:              config.Trigger,
 		UsagePolicyId:        config.UsagePolicyId,
 		WebhookNotifications: config.WebhookNotifications,
-		ForceSendFields:      filterFields[jobs.CreateJob](config.ForceSendFields),
+		ForceSendFields:      filterFields[jobs.CreateJob](config.ForceSendFields, "AccessControlList"),
 	}
 
 	return result, nil

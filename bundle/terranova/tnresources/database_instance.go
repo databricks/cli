@@ -17,8 +17,12 @@ func (*ResourceDatabaseInstance) New(client *databricks.WorkspaceClient) *Resour
 	return &ResourceDatabaseInstance{client: client}
 }
 
-func (*ResourceDatabaseInstance) PrepareConfig(input *resources.DatabaseInstance) *database.DatabaseInstance {
+func (*ResourceDatabaseInstance) PrepareState(input *resources.DatabaseInstance) *database.DatabaseInstance {
 	return &input.DatabaseInstance
+}
+
+func (d *ResourceDatabaseInstance) DoRefresh(ctx context.Context, id string) (*database.DatabaseInstance, error) {
+	return d.client.Database.GetDatabaseInstanceByName(ctx, id)
 }
 
 func (d *ResourceDatabaseInstance) DoCreate(ctx context.Context, config *database.DatabaseInstance) (string, error) {

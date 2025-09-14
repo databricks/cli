@@ -1,0 +1,226 @@
+package proxy
+
+import (
+	"bytes"
+	"context"
+	"errors"
+	"fmt"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+	"time"
+
+	"github.com/gorilla/websocket"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+type testBuffer struct {
+	t       *testing.T
+	buff    *bytes.Buffer
+	OnWrite chan []byte
+}
+
+const (
+	MESSAGE_CHUNKS      = 5
+	MESSAGES_PER_CHUNK  = 1024
+	TOTAL_MESSAGE_COUNT = MESSAGE_CHUNKS * MESSAGES_PER_CHUNK
+)
+
+func newTestBuffer(t *testing.T) *testBuffer {
+	return &testBuffer{
+		t:       t,
+		buff:    new(bytes.Buffer),
+		OnWrite: make(chan []byte, TOTAL_MESSAGE_COUNT),
+	}
+}
+
+func (tb *testBuffer) String() string {
+	return tb.buff.String()
+}
+
+func (tb *testBuffer) Read(p []byte) (n int, err error) {
+	return tb.buff.Read(p)
+}
+
+func (tb *testBuffer) Write(p []byte) (n int, err error) {
+	n, err = tb.buff.Write(p)
+	require.NoError(tb.t, err)
+	tb.OnWrite <- p
+	return n, err
+}
+
+func (tb *testBuffer) AssertWrite(expected []byte) error {
+	select {
+	case data := <-tb.OnWrite:
+		assert.Equal(tb.t, expected, data)
+		return nil
+	case <-time.After(2 * time.Second):
+		return errors.New("timeout waiting for write, was expecting: " + string(expected))
+	}
+}
+
+type TestProxy struct {
+	Proxy   *ProxyConnection
+	Input   io.Writer
+	Output  *testBuffer
+	URL     string
+	Cleanup func()
+}
+
+func setupTestServer(ctx context.Context, t *testing.T) *TestProxy {
+	serverInput, serverInputWriter := io.Pipe()
+	serverOutput := newTestBuffer(t)
+	var serverProxy *ProxyConnection
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if serverProxy != nil {
+			err := serverProxy.AcceptHandover(ctx, w, r)
+			if err != nil {
+				t.Errorf("failed to accept handover: %v", err)
+			}
+			return
+		}
+		serverProxy = NewProxyConnection(nil)
+		err := serverProxy.Accept(w, r)
+		if err != nil {
+			t.Errorf("failed to accept websocket connection: %v", err)
+			return
+		}
+		defer serverProxy.Close()
+		err = serverProxy.Start(ctx, serverInput, serverOutput)
+		if err != nil && !errors.Is(err, errProxyEOF) {
+			t.Errorf("server error: %v", err)
+			return
+		}
+	}))
+	cleanup := func() {
+		server.Close()
+		serverProxy.Close()
+		serverInputWriter.Close()
+	}
+	return &TestProxy{
+		Proxy:   serverProxy,
+		Input:   serverInputWriter,
+		Output:  serverOutput,
+		Cleanup: cleanup,
+		URL:     server.URL,
+	}
+}
+
+func createTestWebsocketConnection(url string) (*websocket.Conn, error) {
+	conn, _, err := websocket.DefaultDialer.Dial(url, nil) // nolint:bodyclose
+	return conn, err
+}
+
+func setupTestClient(ctx context.Context, t *testing.T, serverURL string) *TestProxy {
+	clientInput, clientInputWriter := io.Pipe()
+	clientOutput := newTestBuffer(t)
+	wsURL := "ws" + serverURL[4:]
+	clientProxy := NewProxyConnection(func(ctx context.Context, connID string) (*websocket.Conn, error) {
+		return createTestWebsocketConnection(wsURL)
+	})
+	err := clientProxy.Connect(ctx)
+	require.NoError(t, err)
+
+	go func() {
+		err := clientProxy.Start(ctx, clientInput, clientOutput)
+		if err != nil && !errors.Is(err, errProxyEOF) {
+			t.Errorf("proxy error: %v", err)
+		}
+	}()
+
+	cleanup := func() {
+		clientProxy.Close()
+		clientInputWriter.Close()
+	}
+
+	return &TestProxy{
+		Proxy:   clientProxy,
+		Input:   clientInputWriter,
+		Output:  clientOutput,
+		Cleanup: cleanup,
+		URL:     wsURL,
+	}
+}
+
+func TestClientServerExchange(t *testing.T) {
+	ctx := t.Context()
+
+	server := setupTestServer(ctx, t)
+	defer server.Cleanup()
+
+	client := setupTestClient(ctx, t, server.URL)
+	defer client.Cleanup()
+
+	_, err := client.Input.Write(createTestMessage("client", 1))
+	require.NoError(t, err)
+	err = server.Output.AssertWrite(createTestMessage("client", 1))
+	require.NoError(t, err)
+
+	_, err = server.Input.Write(createTestMessage("server", 1))
+	require.NoError(t, err)
+	err = client.Output.AssertWrite(createTestMessage("server", 1))
+	require.NoError(t, err)
+
+	_, err = client.Input.Write(createTestMessage("client", 2))
+	require.NoError(t, err)
+	_, err = server.Input.Write(createTestMessage("server", 2))
+	require.NoError(t, err)
+	err = client.Output.AssertWrite(createTestMessage("server", 2))
+	require.NoError(t, err)
+	err = server.Output.AssertWrite(createTestMessage("client", 2))
+	require.NoError(t, err)
+
+	expectedClientOutput := fmt.Sprintf("%s%s", createTestMessage("client", 1), createTestMessage("client", 2))
+	expectedServerOutput := fmt.Sprintf("%s%s", createTestMessage("server", 1), createTestMessage("server", 2))
+	assert.Equal(t, expectedClientOutput, server.Output.String())
+	assert.Equal(t, expectedServerOutput, client.Output.String())
+}
+
+func createTestMessage(location string, seq int) []byte {
+	return fmt.Appendf(nil, "%s-msg-%d", location, seq)
+}
+
+func TestConnectionHandover(t *testing.T) {
+	ctx := t.Context()
+
+	server := setupTestServer(ctx, t)
+	defer server.Cleanup()
+
+	client := setupTestClient(ctx, t, server.URL)
+	defer client.Cleanup()
+
+	handoverChan := make(chan struct{})
+
+	go func() {
+		for i := range TOTAL_MESSAGE_COUNT {
+			client.Input.Write(createTestMessage("client", i)) // nolint:errcheck
+			server.Input.Write(createTestMessage("server", i)) // nolint:errcheck
+			if i > 0 && i%MESSAGES_PER_CHUNK == 0 {
+				handoverChan <- struct{}{}
+			}
+		}
+	}()
+
+	go func() {
+		for {
+			select {
+			case <-handoverChan:
+				err := client.Proxy.InitiateHandover(ctx)
+				if err != nil {
+					t.Errorf("failed to initiate handover: %v", err)
+				}
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+
+	for i := range TOTAL_MESSAGE_COUNT {
+		err := server.Output.AssertWrite(createTestMessage("client", i))
+		require.NoError(t, err)
+		err = client.Output.AssertWrite(createTestMessage("server", i))
+		require.NoError(t, err)
+	}
+}

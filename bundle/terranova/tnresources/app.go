@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/retries"
@@ -19,8 +20,12 @@ func (*ResourceApp) New(client *databricks.WorkspaceClient) *ResourceApp {
 	return &ResourceApp{client: client}
 }
 
-func (*ResourceApp) PrepareConfig(input *resources.App) *apps.App {
+func (*ResourceApp) PrepareState(input *resources.App) *apps.App {
 	return &input.App
+}
+
+func (r *ResourceApp) DoRefresh(ctx context.Context, id string) (*apps.App, error) {
+	return r.client.Apps.GetByName(ctx, id)
 }
 
 func (r *ResourceApp) DoCreate(ctx context.Context, config *apps.App) (string, error) {
@@ -59,15 +64,14 @@ func (r *ResourceApp) DoDelete(ctx context.Context, id string) error {
 	return err
 }
 
-func (*ResourceApp) RecreateFields() []string {
-	return []string{
-		".name",
+func (*ResourceApp) FieldTriggers() map[string]deployplan.ActionType {
+	return map[string]deployplan.ActionType{
+		".name": deployplan.ActionTypeRecreate,
 	}
 }
 
-func (r *ResourceApp) WaitAfterCreate(ctx context.Context, config *apps.App) error {
-	_, err := r.waitForApp(ctx, r.client, config.Name)
-	return err
+func (r *ResourceApp) WaitAfterCreate(ctx context.Context, config *apps.App) (*apps.App, error) {
+	return r.waitForApp(ctx, r.client, config.Name)
 }
 
 // waitForApp waits for the app to reach the target state. The target state is either ACTIVE or STOPPED.

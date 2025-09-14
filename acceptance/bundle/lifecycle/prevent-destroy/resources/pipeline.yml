@@ -1,0 +1,11 @@
+resources:
+  pipelines:
+    my_pipelines:
+      name: "test-pipeline"
+      libraries:
+        - notebook:
+            path: "../test-notebook.py"
+      lifecycle:
+        prevent_destroy: true
+      schema: test-schema
+      catalog: main

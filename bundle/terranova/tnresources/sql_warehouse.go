@@ -18,9 +18,14 @@ func (*ResourceSqlWarehouse) New(client *databricks.WorkspaceClient) *ResourceSq
 	return &ResourceSqlWarehouse{client: client}
 }
 
-// PrepareConfig converts bundle config to the SDK type.
-func (*ResourceSqlWarehouse) PrepareConfig(input *resources.SqlWarehouse) *sql.CreateWarehouseRequest {
+// PrepareState converts bundle config to the SDK type.
+func (*ResourceSqlWarehouse) PrepareState(input *resources.SqlWarehouse) *sql.CreateWarehouseRequest {
 	return &input.CreateWarehouseRequest
+}
+
+// DoRefresh reads the warehouse by id.
+func (r *ResourceSqlWarehouse) DoRefresh(ctx context.Context, id string) (*sql.GetWarehouseResponse, error) {
+	return r.client.Warehouses.GetById(ctx, id)
 }
 
 // DoCreate creates the warehouse and returns its id.

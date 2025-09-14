@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 )
@@ -18,8 +19,12 @@ func (*ResourcePipeline) New(client *databricks.WorkspaceClient) *ResourcePipeli
 	}
 }
 
-func (*ResourcePipeline) PrepareConfig(input *resources.Pipeline) *pipelines.CreatePipeline {
+func (*ResourcePipeline) PrepareState(input *resources.Pipeline) *pipelines.CreatePipeline {
 	return &input.CreatePipeline
+}
+
+func (r *ResourcePipeline) DoRefresh(ctx context.Context, id string) (*pipelines.GetPipelineResponse, error) {
+	return r.client.Pipelines.GetByPipelineId(ctx, id)
 }
 
 func (r *ResourcePipeline) DoCreate(ctx context.Context, config *pipelines.CreatePipeline) (string, error) {
@@ -73,12 +78,12 @@ func (r *ResourcePipeline) DoDelete(ctx context.Context, id string) error {
 	return r.client.Pipelines.DeleteByPipelineId(ctx, id)
 }
 
-func (*ResourcePipeline) RecreateFields() []string {
-	return []string{
-		".storage",
-		".catalog",
-		".ingestion_definition.connection_name",
-		".ingestion_definition.ingestion_gateway_id",
+func (*ResourcePipeline) FieldTriggers() map[string]deployplan.ActionType {
+	return map[string]deployplan.ActionType{
+		".storage":                              deployplan.ActionTypeRecreate,
+		".catalog":                              deployplan.ActionTypeRecreate,
+		".ingestion_definition.connection_name": deployplan.ActionTypeRecreate,
+		".ingestion_definition.ingestion_gateway_id": deployplan.ActionTypeRecreate,
 	}
 }
 

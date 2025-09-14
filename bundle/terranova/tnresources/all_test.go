@@ -2,10 +2,12 @@ package tnresources
 
 import (
 	"context"
+	"math"
 	"reflect"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/structdiff/structpath"
 	"github.com/databricks/cli/libs/structwalk"
 	"github.com/databricks/cli/libs/testserver"
@@ -105,21 +107,56 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		inputConfig = reflect.New(adapter.InputConfigType().Elem()).Interface()
 	}
 
-	config, err := adapter.PrepareConfig(inputConfig)
-	require.NoError(t, err, "PrepareConfig failed")
+	newState, err := adapter.PrepareState(inputConfig)
+	require.NoError(t, err, "PrepareState failed")
 
 	ctx := context.Background()
 
-	createdID, err := adapter.DoCreate(ctx, config)
-	require.NoError(t, err, "DoCreate failed config=%v", config)
+	// initial DoRefresh() cannot find the resource
+	remote, err := adapter.DoRefresh(ctx, "1234")
+	require.Nil(t, remote)
+	require.Error(t, err)
+	// TODO: if errors.Is(err, databricks.ErrResourceDoesNotExist) {... }
+
+	createdID, remoteStateFromCreate, err := adapter.DoCreate(ctx, newState)
+	require.NoError(t, err, "DoCreate failed state=%v", newState)
 	require.NotEmpty(t, createdID, "ID returned from DoCreate was empty")
 
-	err = adapter.DoUpdate(ctx, createdID, config)
+	remote, err = adapter.DoRefresh(ctx, createdID)
+	require.NoError(t, err)
+	require.NotNil(t, remote)
+	if remoteStateFromCreate != nil {
+		require.Equal(t, remoteStateFromCreate, remote)
+	}
+
+	remoteStateFromWaitCreate, err := adapter.WaitAfterCreate(ctx, newState)
+	require.NoError(t, err)
+	if remoteStateFromWaitCreate != nil {
+		require.Equal(t, remote, remoteStateFromWaitCreate)
+	}
+
+	remoteStateFromUpdate, err := adapter.DoUpdate(ctx, createdID, newState)
 	require.NoError(t, err, "DoUpdate failed")
+	if remoteStateFromUpdate != nil {
+		require.Equal(t, remote, remoteStateFromUpdate)
+	}
+
+	remoteStateFromWaitUpdate, err := adapter.WaitAfterUpdate(ctx, newState)
+	require.NoError(t, err)
+	if remoteStateFromWaitUpdate != nil {
+		require.Equal(t, remote, remoteStateFromWaitUpdate)
+	}
+
+	err = adapter.DoDelete(ctx, createdID)
+	require.NoError(t, err)
+
+	remoteAfterDelete, err := adapter.DoRefresh(ctx, createdID)
+	require.Error(t, err)
+	require.Nil(t, remoteAfterDelete)
 }
 
 // validateFields uses structwalk to generate all valid field paths and checks membership.
-func validateFields(t *testing.T, configType reflect.Type, fields map[string]struct{}) {
+func validateFields(t *testing.T, configType reflect.Type, fields map[string]deployplan.ActionType) {
 	validPaths := make(map[string]struct{})
 
 	err := structwalk.WalkType(configType, func(path *structpath.PathNode, typ reflect.Type) bool {
@@ -135,15 +172,15 @@ func validateFields(t *testing.T, configType reflect.Type, fields map[string]str
 	}
 }
 
-// TestRecreateFields validates that all fields in RecreateFields
+// TestFieldTriggers validates that all trigger keys
 // exist in the corresponding ConfigType for each resource.
-func TestRecreateFields(t *testing.T) {
+func TestFieldTriggers(t *testing.T) {
 	for resourceName, resource := range SupportedResources {
 		adapter, err := NewAdapter(resource, nil)
 		require.NoError(t, err)
 
 		t.Run(resourceName, func(t *testing.T) {
-			validateFields(t, adapter.InputConfigType(), adapter.recreateFields)
+			validateFields(t, adapter.InputConfigType(), adapter.fieldTriggers)
 		})
 	}
 }
@@ -151,9 +188,11 @@ func TestRecreateFields(t *testing.T) {
 func setupTestServerClient(t *testing.T) (*testserver.Server, *databricks.WorkspaceClient) {
 	server := testserver.New(t)
 	testserver.AddDefaultHandlers(server)
-	t.Setenv("DATABRICKS_HOST", server.URL)
-	t.Setenv("DATABRICKS_TOKEN", "testtoken")
-	client, err := databricks.NewWorkspaceClient()
+	client, err := databricks.NewWorkspaceClient(&databricks.Config{
+		Host:               server.URL,
+		Token:              "testtoken",
+		RateLimitPerSecond: math.MaxInt,
+	})
 	require.NoError(t, err)
 	return server, client
 }

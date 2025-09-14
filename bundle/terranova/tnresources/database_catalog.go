@@ -16,8 +16,12 @@ func (*ResourceDatabaseCatalog) New(client *databricks.WorkspaceClient) *Resourc
 	return &ResourceDatabaseCatalog{client: client}
 }
 
-func (*ResourceDatabaseCatalog) PrepareConfig(input *resources.DatabaseCatalog) *database.DatabaseCatalog {
+func (*ResourceDatabaseCatalog) PrepareState(input *resources.DatabaseCatalog) *database.DatabaseCatalog {
 	return &input.DatabaseCatalog
+}
+
+func (r *ResourceDatabaseCatalog) DoRefresh(ctx context.Context, id string) (*database.DatabaseCatalog, error) {
+	return r.client.Database.GetDatabaseCatalogByName(ctx, id)
 }
 
 func (r *ResourceDatabaseCatalog) DoCreate(ctx context.Context, config *database.DatabaseCatalog) (string, error) {
