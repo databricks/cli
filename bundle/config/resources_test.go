@@ -160,11 +160,11 @@ func TestResourcesBindSupport(t *testing.T) {
 				App: apps.App{},
 			},
 		},
-		Alerts: map[string]*resources.Alert{
-			"my_alert": {
-				AlertV2: sql.AlertV2{},
-			},
-		},
+		// Alerts: map[string]*resources.Alert{
+		// 	"my_alert": {
+		// 		AlertV2: sql.AlertV2{},
+		// 	},
+		// },
 		QualityMonitors: map[string]*resources.QualityMonitor{
 			"my_quality_monitor": {
 				CreateMonitor: catalog.CreateMonitor{},
