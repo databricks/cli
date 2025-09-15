@@ -15,4 +15,3 @@ def sample_zones_sample():
         .groupBy(col("pickup_zip"))
         .agg(sum("fare_amount").alias("total_fare"))
     )
-
