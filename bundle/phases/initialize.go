@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
+	"github.com/databricks/databricks-sdk-go/useragent"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/apps"
@@ -35,6 +36,11 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return
+	}
+	if b.DirectDeployment {
+		useragent.WithUserAgentExtra("engine", "direct")
+	} else {
+		useragent.WithUserAgentExtra("engine", "terraform")
 	}
 
 	bundle.ApplySeqContext(ctx, b,

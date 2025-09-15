@@ -1,0 +1,8 @@
+RecordRequests = true
+Local = true
+EnvVaryOutput = "DATABRICKS_CLI_DEPLOYMENT"
+
+IncludeRequestHeaders = ["User-Agent"]
+
+[EnvMatrix]
+DATABRICKS_CLI_DEPLOYMENT = ["terraform", "direct-exp"]
