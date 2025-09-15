@@ -18,7 +18,7 @@ func configureInteractive(cmd *cobra.Command, flags *configureFlags, cfg *config
 	// Ask user to specify the host if not already set.
 	if cfg.Host == "" {
 		prompt := cmdio.Prompt(ctx)
-		prompt.Label = "Databricks host"
+		prompt.Label = "Databricks workspace host (https://...):"
 		prompt.AllowEdit = true
 		prompt.Validate = func(input string) error {
 			normalized := NormalizeHost(input)
