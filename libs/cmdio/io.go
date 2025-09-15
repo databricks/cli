@@ -115,46 +115,6 @@ func IsGitBash(ctx context.Context) bool {
 	return false
 }
 
-// IsHyperlinkSupported detects if the terminal supports hyperlinks (OSC 8 escape sequences).
-func IsHyperlinkSupported(ctx context.Context) bool {
-	// Check if we're in a terminal that supports hyperlinks
-	if !IsOutTTY(ctx) {
-		return false
-	}
-
-	// Check for terminals that don't support hyperlinks
-	term := env.Get(ctx, "TERM")
-	if term == "dumb" || term == "linux" {
-		return false
-	}
-
-	// Check for NO_COLOR environment variable
-	if env.Get(ctx, "NO_COLOR") != "" {
-		return false
-	}
-
-	// Git Bash doesn't support hyperlinks well
-	if IsGitBash(ctx) {
-		return false
-	}
-
-	// Default to true for modern terminals, let them handle unsupported sequences gracefully
-	return true
-}
-
-// Hyperlink creates a clickable hyperlink in terminals that support it.
-// Falls back to displaying the URL in parentheses for unsupported terminals.
-func Hyperlink(ctx context.Context, text, url string) string {
-	if !IsHyperlinkSupported(ctx) {
-		return fmt.Sprintf("%s (%s)", text, url)
-	}
-
-	// Use OSC 8 escape sequence for hyperlinks
-	// \033]8;;URL\033\\ starts the hyperlink
-	// \033]8;;\033\\ ends the hyperlink
-	return fmt.Sprintf("\033]8;;%s\033\\%s\033]8;;\033\\", url, text)
-}
-
 type Tuple struct{ Name, Id string }
 
 func (c *cmdIO) Select(items []Tuple, label string) (id string, err error) {

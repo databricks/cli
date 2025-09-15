@@ -34,10 +34,7 @@ func configureInteractive(cmd *cobra.Command, flags *configureFlags, cfg *config
 	// Ask user to specify the token is not already set.
 	if cfg.Token == "" {
 		prompt := cmdio.Prompt(ctx)
-
-		url := fmt.Sprintf("%s/settings/users/access-tokens", cfg.Host)
-		linkText := cmdio.Hyperlink(ctx, "here", url)
-		prompt.Label = fmt.Sprintf("Personal access token (you can find it %s)", linkText)
+		prompt.Label = "Personal access token"
 		prompt.Mask = '*'
 		out, err := prompt.Run()
 		if err != nil {
