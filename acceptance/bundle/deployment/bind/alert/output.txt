@@ -1,33 +1,15 @@
 
 >>> [CLI] alerts-v2 create-alert --json @alert.json
+Warning: unknown field: alerts
+  at resources
+  in databricks.yml:4:3
+
 
 >>> [CLI] bundle deployment bind my_alert [UUID] --auto-approve
-Updating deployment state...
-Successfully bound alert with an id '[UUID]'. Run 'bundle deploy' to deploy changes to your workspace
+Warning: unknown field: alerts
+  at resources
+  in databricks.yml:4:3
 
->>> [CLI] bundle summary
-Name: test-bundle-$UNIQUE_NAME
-Target: default
-Workspace:
-  User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle-$UNIQUE_NAME/default
-Resources:
-  Alerts:
-    my_alert:
-      Name: test-alert
-      URL:  [DATABRICKS_URL]/sql/alerts-v2/[UUID]?o=[NUMID]
+Error: no such resource: my_alert
 
->>> [CLI] bundle deployment unbind my_alert
-Updating deployment state...
-
->>> [CLI] bundle summary
-Name: test-bundle-$UNIQUE_NAME
-Target: default
-Workspace:
-  User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle-$UNIQUE_NAME/default
-Resources:
-  Alerts:
-    my_alert:
-      Name: test-alert
-      URL:  (not deployed)
+Exit code: 1

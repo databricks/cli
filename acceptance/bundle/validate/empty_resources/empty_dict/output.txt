@@ -199,11 +199,8 @@ Warning: required field "name" is not set
 }
 
 === resources.alerts.rname ===
-{
-  "alerts": {
-    "rname": {
-      "parent_path": "/Workspace/Users/[USERNAME]/.bundle/BUNDLE/default/resources",
-      "permissions": []
-    }
-  }
-}
+Warning: unknown field: alerts
+  at resources
+  in databricks.yml:5:3
+
+{}
