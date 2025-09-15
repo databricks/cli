@@ -19,20 +19,25 @@ func configureInteractive(cmd *cobra.Command, flags *configureFlags, cfg *config
 	if cfg.Host == "" {
 		prompt := cmdio.Prompt(ctx)
 		prompt.Label = "Databricks host"
-		prompt.Default = "https://"
 		prompt.AllowEdit = true
-		prompt.Validate = validateHost
+		prompt.Validate = func(input string) error {
+			normalized := NormalizeHost(input)
+			return validateHost(normalized)
+		}
 		out, err := prompt.Run()
 		if err != nil {
 			return err
 		}
-		cfg.Host = out
+		cfg.Host = NormalizeHost(out)
 	}
 
 	// Ask user to specify the token is not already set.
 	if cfg.Token == "" {
 		prompt := cmdio.Prompt(ctx)
-		prompt.Label = "Personal access token"
+
+		url := fmt.Sprintf("%s/settings/users/access-tokens", cfg.Host)
+		linkText := cmdio.Hyperlink(ctx, "here", url)
+		prompt.Label = fmt.Sprintf("Personal access token (you can find it %s)", linkText)
 		prompt.Mask = '*'
 		out, err := prompt.Run()
 		if err != nil {
@@ -110,14 +115,15 @@ The host must be specified with the --host flag or the DATABRICKS_HOST environme
 
 		// Populate configuration from flags (if set).
 		if flags.Host != "" {
-			cfg.Host = flags.Host
+			cfg.Host = NormalizeHost(flags.Host)
 		}
 		if flags.Profile != "" {
 			cfg.Profile = flags.Profile
 		}
 
-		// Verify that the host is valid (if set).
+		// Normalize and verify that the host is valid (if set).
 		if cfg.Host != "" {
+			cfg.Host = NormalizeHost(cfg.Host)
 			err = validateHost(cfg.Host)
 			if err != nil {
 				return err
