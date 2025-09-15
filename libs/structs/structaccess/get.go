@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/structdiff/structtag"
+	"github.com/databricks/cli/libs/structs/structtag"
 )
 
 // GetByString returns the value at the given path inside v.

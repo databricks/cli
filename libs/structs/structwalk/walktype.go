@@ -4,7 +4,7 @@ import (
 	"errors"
 	"reflect"
 
-	"github.com/databricks/cli/libs/structdiff/structpath"
+	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 // VisitTypeFunc is invoked for fields encountered while walking typ. This includes both leaf nodes as well as any

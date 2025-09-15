@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/libs/structdiff/structpath"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 

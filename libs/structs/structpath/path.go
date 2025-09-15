@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"strconv"
 
-	"github.com/databricks/cli/libs/structdiff/structtag"
+	"github.com/databricks/cli/libs/structs/structtag"
 )
 
 const (
