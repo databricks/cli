@@ -1,0 +1,11 @@
+title "This should complain about "not_found" not found, but errcode is zero"
+trace python3 ./success.py | contains.py not_found
+
+title "This should complain about "not_found" not found, but errcode is propagated"
+trace musterr python3 ./failure.py | contains.py not_found
+
+title "This should not complain"
+trace python3 ./success.py | contains.py world Hello
+
+title "This should not complain, but errcode is propagated"
+trace musterr python3 ./failure.py | contains.py Failed
