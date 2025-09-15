@@ -23,6 +23,25 @@ func (*ResourceSqlWarehouse) PrepareState(input *resources.SqlWarehouse) *sql.Cr
 	return &input.CreateWarehouseRequest
 }
 
+func (*ResourceSqlWarehouse) RemapState(warehouse *sql.GetWarehouseResponse) *sql.CreateWarehouseRequest {
+	return &sql.CreateWarehouseRequest{
+		AutoStopMins:            warehouse.AutoStopMins,
+		Channel:                 warehouse.Channel,
+		ClusterSize:             warehouse.ClusterSize,
+		CreatorName:             warehouse.CreatorName,
+		EnablePhoton:            warehouse.EnablePhoton,
+		EnableServerlessCompute: warehouse.EnableServerlessCompute,
+		InstanceProfileArn:      warehouse.InstanceProfileArn,
+		MaxNumClusters:          warehouse.MaxNumClusters,
+		MinNumClusters:          warehouse.MinNumClusters,
+		Name:                    warehouse.Name,
+		SpotInstancePolicy:      warehouse.SpotInstancePolicy,
+		Tags:                    warehouse.Tags,
+		WarehouseType:           sql.CreateWarehouseRequestWarehouseType(warehouse.WarehouseType),
+		ForceSendFields:         filterFields[sql.CreateWarehouseRequest](warehouse.ForceSendFields),
+	}
+}
+
 // DoRefresh reads the warehouse by id.
 func (r *ResourceSqlWarehouse) DoRefresh(ctx context.Context, id string) (*sql.GetWarehouseResponse, error) {
 	return r.client.Warehouses.GetById(ctx, id)

@@ -24,6 +24,18 @@ func (*ResourceVolume) PrepareState(input *resources.Volume) *catalog.CreateVolu
 	return &input.CreateVolumeRequestContent
 }
 
+func (*ResourceVolume) RemapState(info *catalog.VolumeInfo) *catalog.CreateVolumeRequestContent {
+	return &catalog.CreateVolumeRequestContent{
+		CatalogName:     info.CatalogName,
+		Comment:         info.Comment,
+		Name:            info.Name,
+		SchemaName:      info.SchemaName,
+		StorageLocation: info.StorageLocation,
+		VolumeType:      info.VolumeType,
+		ForceSendFields: filterFields[catalog.CreateVolumeRequestContent](info.ForceSendFields),
+	}
+}
+
 func (r *ResourceVolume) DoRefresh(ctx context.Context, id string) (*catalog.VolumeInfo, error) {
 	return r.client.Volumes.ReadByName(ctx, id)
 }

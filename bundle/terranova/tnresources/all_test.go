@@ -8,6 +8,8 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structwalk"
 	"github.com/databricks/cli/libs/testserver"
@@ -15,6 +17,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/database"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -146,6 +149,31 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	if remoteStateFromWaitUpdate != nil {
 		require.Equal(t, remote, remoteStateFromWaitUpdate)
 	}
+
+	remappedState, err := adapter.RemapState(remote)
+	require.NoError(t, err)
+	require.NotNil(t, remappedState)
+
+	require.NoError(t, structwalk.Walk(newState, func(path *structpath.PathNode, val any) {
+		remoteValue, err := structaccess.Get(remappedState, dyn.MustPathFromString(path.DynPath()))
+		if err != nil {
+			t.Errorf("Failed to read %s from remapped remote state %#v", path.DynPath(), remappedState)
+		}
+		if val == nil {
+			// t.Logf("Ignoring %s nil, remoteValue=%#v", path.String(), remoteValue)
+			return
+		}
+		v := reflect.ValueOf(val)
+		if v.IsZero() {
+			// t.Logf("Ignoring %s zero (%#v), remoteValue=%#v", path.String(), val, remoteValue)
+			// testserver can set field to backend-generated value
+			return
+		}
+		// t.Logf("Testing %s v=%#v, remoteValue=%#v", path.String(), val, remoteValue)
+		// We expect fields set explicitly to be preserved by testserver, which is true for all resources as of today.
+		// If not true for your resource, add exception here:
+		assert.Equal(t, val, remoteValue, path.DynPath())
+	}))
 
 	err = adapter.DoDelete(ctx, createdID)
 	require.NoError(t, err)
