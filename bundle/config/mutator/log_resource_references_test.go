@@ -22,6 +22,10 @@ func TestConvertReferenceToMetric_Table(t *testing.T) {
 						},
 					},
 				},
+				"джоб": {
+					JobSettings: jobs.JobSettings{},
+				},
+
 				"niljob": nil,
 			},
 			Apps: map[string]*cres.App{
@@ -47,7 +51,7 @@ func TestConvertReferenceToMetric_Table(t *testing.T) {
 		{
 			name: "basic job id with non-ascii key",
 			ref:  "resources.jobs.джоб.id",
-			want: "resreferr_jobs",
+			want: "resref_jobs.id",
 		},
 		{
 			name: "invalid empty",
