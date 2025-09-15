@@ -28,7 +28,7 @@ require (
 	github.com/spf13/cobra v1.10.1 // Apache 2.0
 	github.com/spf13/pflag v1.0.10 // BSD-3-Clause
 	github.com/stretchr/testify v1.11.1 // MIT
-	golang.org/x/crypto v0.41.0 // BSD-3-Clause
+	golang.org/x/crypto v0.42.0 // BSD-3-Clause
 	golang.org/x/exp v0.0.0-20250620022241-b7579e27df2b
 	golang.org/x/mod v0.28.0
 	golang.org/x/oauth2 v0.31.0
