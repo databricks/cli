@@ -8028,6 +8028,7 @@
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.AiGatewayRateLimitKey"
                     },
                     "principal": {
+                      "description": "Principal field for a user, user group, or service principal to apply rate limiting to. Accepts a user email, group name, or service principal application ID.",
                       "$ref": "#/$defs/string"
                     },
                     "renewal_period": {
