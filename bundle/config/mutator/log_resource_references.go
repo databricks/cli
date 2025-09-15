@@ -10,7 +10,7 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/structaccess"
+	"github.com/databricks/cli/libs/structs/structaccess"
 )
 
 // Longest field name:

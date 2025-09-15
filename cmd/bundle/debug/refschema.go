@@ -9,8 +9,8 @@ import (
 
 	"github.com/databricks/cli/bundle/terranova/tnresources"
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/libs/structdiff/structpath"
-	"github.com/databricks/cli/libs/structwalk"
+	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structwalk"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/spf13/cobra"
 )

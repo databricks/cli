@@ -10,12 +10,12 @@ import (
 	"github.com/databricks/cli/bundle/terranova/tnresources"
 	"github.com/databricks/cli/bundle/terranova/tnstate"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/structdiff"
+	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/databricks-sdk-go"
 
 	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/structaccess"
+	"github.com/databricks/cli/libs/structs/structaccess"
 )
 
 func (d *DeploymentUnit) Plan(ctx context.Context, client *databricks.WorkspaceClient, db *tnstate.TerranovaState, inputConfig any, localOnly, refresh bool) (deployplan.ActionType, error) {

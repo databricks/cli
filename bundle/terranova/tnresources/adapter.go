@@ -8,7 +8,7 @@ import (
 
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/calladapt"
-	"github.com/databricks/cli/libs/structdiff"
+	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/databricks-sdk-go"
 )
 

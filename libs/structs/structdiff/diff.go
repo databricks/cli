@@ -6,7 +6,7 @@ import (
 	"slices"
 	"sort"
 
-	"github.com/databricks/cli/libs/structdiff/structpath"
+	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 type Change struct {

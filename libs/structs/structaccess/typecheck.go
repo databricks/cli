@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/structdiff/structtag"
+	"github.com/databricks/cli/libs/structs/structtag"
 )
 
 // ValidateByString reports whether the given path string is valid for the provided type.

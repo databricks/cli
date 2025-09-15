@@ -11,8 +11,8 @@ import (
 	"text/template"
 
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/libs/structdiff/structpath"
-	"github.com/databricks/cli/libs/structwalk"
+	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structwalk"
 )
 
 type RequiredPatternInfo struct {
