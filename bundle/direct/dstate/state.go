@@ -1,4 +1,4 @@
-package tnstate
+package dstate
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type TerranovaState struct {
+type DeploymentState struct {
 	Path string
 	Data Database
 	mu   sync.Mutex
@@ -28,7 +28,7 @@ type ResourceEntry struct {
 	State any    `json:"state"`
 }
 
-func (db *TerranovaState) SaveState(group, resourceName, newID string, state any) error {
+func (db *DeploymentState) SaveState(group, resourceName, newID string, state any) error {
 	db.AssertOpened()
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -47,7 +47,7 @@ func (db *TerranovaState) SaveState(group, resourceName, newID string, state any
 	return nil
 }
 
-func (db *TerranovaState) DeleteState(group, resourceName string) error {
+func (db *DeploymentState) DeleteState(group, resourceName string) error {
 	db.AssertOpened()
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -65,7 +65,7 @@ func (db *TerranovaState) DeleteState(group, resourceName string) error {
 	return nil
 }
 
-func (db *TerranovaState) GetResourceEntry(group, resourceName string) (ResourceEntry, bool) {
+func (db *DeploymentState) GetResourceEntry(group, resourceName string) (ResourceEntry, bool) {
 	db.AssertOpened()
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -79,7 +79,7 @@ func (db *TerranovaState) GetResourceEntry(group, resourceName string) (Resource
 	return result, ok
 }
 
-func (db *TerranovaState) Open(path string) error {
+func (db *DeploymentState) Open(path string) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
@@ -113,20 +113,20 @@ func (db *TerranovaState) Open(path string) error {
 	return nil
 }
 
-func (db *TerranovaState) Finalize() error {
+func (db *DeploymentState) Finalize() error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
 	return db.unlockedSave()
 }
 
-func (db *TerranovaState) AssertOpened() {
+func (db *DeploymentState) AssertOpened() {
 	if db.Path == "" {
-		panic("internal error: TerranovaState must be opened first")
+		panic("internal error: DeploymentState must be opened first")
 	}
 }
 
-func (db *TerranovaState) ExportState(ctx context.Context) resourcestate.ExportedResourcesMap {
+func (db *DeploymentState) ExportState(ctx context.Context) resourcestate.ExportedResourcesMap {
 	result := make(resourcestate.ExportedResourcesMap, len(db.Data.DeploymentUnits))
 	for groupName, group := range db.Data.DeploymentUnits {
 		resultGroup := make(map[string]resourcestate.ResourceState, len(group))
@@ -141,7 +141,7 @@ func (db *TerranovaState) ExportState(ctx context.Context) resourcestate.Exporte
 	return result
 }
 
-func (db *TerranovaState) unlockedSave() error {
+func (db *DeploymentState) unlockedSave() error {
 	db.AssertOpened()
 	data, err := json.MarshalIndent(db.Data, "", " ")
 	if err != nil {

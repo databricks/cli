@@ -15,9 +15,9 @@ import (
 	"sync"
 
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/metadata"
-	"github.com/databricks/cli/bundle/terranova"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/locker"
@@ -130,7 +130,7 @@ type Bundle struct {
 	TerraformPlanIsEmpty bool
 
 	// (direct only) deployment implementation and state
-	DeploymentBundle terranova.DeploymentBundle
+	DeploymentBundle direct.DeploymentBundle
 
 	// if true, we skip approval checks for deploy, destroy resources and delete
 	// files

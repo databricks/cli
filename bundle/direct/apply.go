@@ -1,4 +1,4 @@
-package terranova
+package direct
 
 import (
 	"bytes"
@@ -9,11 +9,11 @@ import (
 	"reflect"
 
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/bundle/terranova/tnstate"
+	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/log"
 )
 
-func (d *DeploymentUnit) Destroy(ctx context.Context, db *tnstate.TerranovaState) error {
+func (d *DeploymentUnit) Destroy(ctx context.Context, db *dstate.DeploymentState) error {
 	entry, hasEntry := db.GetResourceEntry(d.Group, d.Key)
 	if !hasEntry {
 		log.Infof(ctx, "Cannot delete %s.%s: missing from state", d.Group, d.Key)
@@ -32,7 +32,7 @@ func (d *DeploymentUnit) Destroy(ctx context.Context, db *tnstate.TerranovaState
 	return nil
 }
 
-func (d *DeploymentUnit) Deploy(ctx context.Context, db *tnstate.TerranovaState, inputConfig any, actionType deployplan.ActionType) error {
+func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState, inputConfig any, actionType deployplan.ActionType) error {
 	// Note, newState may be different between plan and deploy due to resolved $resource references
 	newState, err := d.Adapter.PrepareState(inputConfig)
 	if err != nil {
@@ -65,7 +65,7 @@ func (d *DeploymentUnit) Deploy(ctx context.Context, db *tnstate.TerranovaState,
 	}
 }
 
-func (d *DeploymentUnit) Create(ctx context.Context, db *tnstate.TerranovaState, newState any) error {
+func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState, newState any) error {
 	newID, remoteState, err := d.Adapter.DoCreate(ctx, newState)
 	if err != nil {
 		// No need to prefix error, there is no ambiguity (only one operation - DoCreate) and no additional context (like id)
@@ -97,7 +97,7 @@ func (d *DeploymentUnit) Create(ctx context.Context, db *tnstate.TerranovaState,
 	return nil
 }
 
-func (d *DeploymentUnit) Recreate(ctx context.Context, db *tnstate.TerranovaState, oldID string, newState any) error {
+func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentState, oldID string, newState any) error {
 	err := d.Adapter.DoDelete(ctx, oldID)
 	if err != nil {
 		return fmt.Errorf("deleting old id=%s: %w", oldID, err)
@@ -111,7 +111,7 @@ func (d *DeploymentUnit) Recreate(ctx context.Context, db *tnstate.TerranovaStat
 	return d.Create(ctx, db, newState)
 }
 
-func (d *DeploymentUnit) Update(ctx context.Context, db *tnstate.TerranovaState, id string, newState any) error {
+func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState, id string, newState any) error {
 	remoteState, err := d.Adapter.DoUpdate(ctx, id, newState)
 	if err != nil {
 		return fmt.Errorf("updating id=%s: %w", id, err)
@@ -141,7 +141,7 @@ func (d *DeploymentUnit) Update(ctx context.Context, db *tnstate.TerranovaState,
 	return nil
 }
 
-func (d *DeploymentUnit) UpdateWithID(ctx context.Context, db *tnstate.TerranovaState, oldID string, newState any) error {
+func (d *DeploymentUnit) UpdateWithID(ctx context.Context, db *dstate.DeploymentState, oldID string, newState any) error {
 	newID, remoteState, err := d.Adapter.DoUpdateWithID(ctx, oldID, newState)
 	if err != nil {
 		return fmt.Errorf("updating id=%s: %w", oldID, err)
@@ -177,7 +177,7 @@ func (d *DeploymentUnit) UpdateWithID(ctx context.Context, db *tnstate.Terranova
 	return nil
 }
 
-func (d *DeploymentUnit) Delete(ctx context.Context, db *tnstate.TerranovaState, oldID string) error {
+func (d *DeploymentUnit) Delete(ctx context.Context, db *dstate.DeploymentState, oldID string) error {
 	// TODO: recognize 404 and 403 as "deleted" and proceed to removing state
 	err := d.Adapter.DoDelete(ctx, oldID)
 	if err != nil {
