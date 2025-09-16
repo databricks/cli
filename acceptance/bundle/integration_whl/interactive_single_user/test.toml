@@ -1,1 +1,1 @@
-EnvMatrix.DATABRICKS_CLI_BUNDLE_ENGINE = ["terraform"]  # clusters resource
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform"]  # clusters resource

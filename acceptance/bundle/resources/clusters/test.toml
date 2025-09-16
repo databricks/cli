@@ -1,1 +1,1 @@
-EnvMatrix.DATABRICKS_CLI_BUNDLE_ENGINE = ["terraform"]  # clusters are not implemented yet
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform"]  # clusters are not implemented yet

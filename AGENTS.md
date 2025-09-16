@@ -65,7 +65,7 @@ GIT_EDITOR=true GIT_SEQUENCE_EDITOR=true VISUAL=true GIT_PAGER=cat git rebase or
 
 **Mutators**: Transform bundle configuration through a pipeline. Located in `bundle/config/mutator/` and `bundle/mutator/`. Each mutator implements the `Mutator` interface.
 
-**Direct vs Terraform Deployment**: The CLI supports two deployment modes controlled by `DATABRICKS_CLI_BUNDLE_ENGINE` environment variable:
+**Direct vs Terraform Deployment**: The CLI supports two deployment modes controlled by `DATABRICKS_BUNDLE_ENGINE` environment variable:
 - `terraform` (default) - Uses Terraform for resource management
 - `direct` - Direct API calls without Terraform
 

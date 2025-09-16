@@ -1,4 +1,4 @@
-EnvMatrix.DATABRICKS_CLI_BUNDLE_ENGINE = ["terraform"]  # clusters not implemented
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform"]  # clusters not implemented
 
 [EnvMatrix]
 DATA_SECURITY_MODE = [

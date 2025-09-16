@@ -225,7 +225,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 }
 
 func IsDirectDeployment(ctx context.Context) (bool, error) {
-	deployment := env.Get(ctx, "DATABRICKS_CLI_BUNDLE_ENGINE")
+	deployment := env.Get(ctx, "DATABRICKS_BUNDLE_ENGINE")
 	// We use "direct-exp" while direct backend is not suitable for end users.
 	// Once we consider it usable we'll change the value to "direct".
 	// This is to prevent accidentally running direct backend with older CLI versions where it was still considered experimental.
@@ -235,6 +235,6 @@ func IsDirectDeployment(ctx context.Context) (bool, error) {
 	case "terraform", "":
 		return false, nil
 	default:
-		return false, fmt.Errorf("unexpected setting for DATABRICKS_CLI_BUNDLE_ENGINE=%#v (expected 'terraform' or 'direct-exp' or absent/empty which means 'terraform')", deployment)
+		return false, fmt.Errorf("unexpected setting for DATABRICKS_BUNDLE_ENGINE=%#v (expected 'terraform' or 'direct-exp' or absent/empty which means 'terraform')", deployment)
 	}
 }

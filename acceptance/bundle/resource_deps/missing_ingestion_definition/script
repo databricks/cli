@@ -1,2 +1,2 @@
 $CLI bundle validate -o json | jq .resources.pipelines.bar.name
-musterr $CLI bundle plan &> out.plan.$DATABRICKS_CLI_BUNDLE_ENGINE.txt
+musterr $CLI bundle plan &> out.plan.$DATABRICKS_BUNDLE_ENGINE.txt

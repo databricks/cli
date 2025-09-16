@@ -41,7 +41,7 @@ def print_resource_direct(group, name):
     print(result.get("__id__"))
 
 
-if os.environ.get("DATABRICKS_CLI_BUNDLE_ENGINE", "").startswith("direct"):
+if os.environ.get("DATABRICKS_BUNDLE_ENGINE", "").startswith("direct"):
     print_resource_direct(*sys.argv[1:])
 else:
     print_resource_terraform(*sys.argv[1:])

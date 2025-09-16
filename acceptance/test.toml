@@ -15,8 +15,8 @@ Env.PYTHONDONTWRITEBYTECODE = "1"
 Env.PYTHONUNBUFFERED = "1"
 Env.PYTHONUTF8 = "1"
 
-EnvMatrix.DATABRICKS_CLI_BUNDLE_ENGINE = ["terraform", "direct-exp"]
-EnvRepl.DATABRICKS_CLI_BUNDLE_ENGINE = false
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct-exp"]
+EnvRepl.DATABRICKS_BUNDLE_ENGINE = false
 
 # >>> datetime.datetime.fromtimestamp(18000000000)
 # datetime.datetime(2027, 1, 15, 9, 0)

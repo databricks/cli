@@ -5,4 +5,4 @@ Cloud = false
   windows = false
 
 [EnvMatrix]
-  DATABRICKS_CLI_BUNDLE_ENGINE = ["terraform", "direct-exp"]
+  DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct-exp"]

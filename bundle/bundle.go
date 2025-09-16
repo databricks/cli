@@ -34,10 +34,10 @@ import (
 
 const internalFolder = ".internal"
 
-// Filename where resources are stored for DATABRICKS_CLI_BUNDLE_ENGINE=direct
+// Filename where resources are stored for DATABRICKS_BUNDLE_ENGINE=direct
 const resourcesFilename = "resources.json"
 
-// Filename where resources are stored for DATABRICKS_CLI_BUNDLE_ENGINE=terraform
+// Filename where resources are stored for DATABRICKS_BUNDLE_ENGINE=terraform
 const terraformStateFilename = "terraform.tfstate"
 
 // This struct is used as a communication channel to collect metrics
@@ -142,7 +142,7 @@ type Bundle struct {
 
 	Metrics Metrics
 
-	// If true, don't use terraform. Set by DATABRICKS_CLI_BUNDLE_ENGINE=direct
+	// If true, don't use terraform. Set by DATABRICKS_BUNDLE_ENGINE=direct
 	DirectDeployment bool
 }
 
