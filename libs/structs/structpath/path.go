@@ -159,7 +159,11 @@ func (p *PathNode) String() string {
 	}
 
 	if p.index == tagStruct {
-		return p.prev.String() + "." + p.key
+		prev := p.prev.String()
+		if prev == "" {
+			return p.key
+		}
+		return prev + "." + p.key
 	}
 
 	return fmt.Sprintf("%s[%q]", p.prev.String(), p.key)

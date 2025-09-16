@@ -114,11 +114,11 @@ func (r *ResourceVolume) DoDelete(ctx context.Context, id string) error {
 
 func (*ResourceVolume) FieldTriggers() map[string]deployplan.ActionType {
 	return map[string]deployplan.ActionType{
-		".catalog_name":     deployplan.ActionTypeRecreate,
-		".schema_name":      deployplan.ActionTypeRecreate,
-		".storage_location": deployplan.ActionTypeRecreate,
-		".volume_type":      deployplan.ActionTypeRecreate,
-		".name":             deployplan.ActionTypeUpdateWithID,
+		"catalog_name":     deployplan.ActionTypeRecreate,
+		"schema_name":      deployplan.ActionTypeRecreate,
+		"storage_location": deployplan.ActionTypeRecreate,
+		"volume_type":      deployplan.ActionTypeRecreate,
+		"name":             deployplan.ActionTypeUpdateWithID,
 	}
 }
 

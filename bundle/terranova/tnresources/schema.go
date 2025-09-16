@@ -79,8 +79,8 @@ func (r *ResourceSchema) DoDelete(ctx context.Context, id string) error {
 
 func (*ResourceSchema) FieldTriggers() map[string]deployplan.ActionType {
 	return map[string]deployplan.ActionType{
-		".name":         deployplan.ActionTypeRecreate,
-		".catalog_name": deployplan.ActionTypeRecreate,
-		".storage_root": deployplan.ActionTypeRecreate,
+		"name":         deployplan.ActionTypeRecreate,
+		"catalog_name": deployplan.ActionTypeRecreate,
+		"storage_root": deployplan.ActionTypeRecreate,
 	}
 }
