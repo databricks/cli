@@ -55,17 +55,14 @@ func newGetPublishedDashboardTokenInfo() *cobra.Command {
 	cmd.Flags().StringVar(&getPublishedDashboardTokenInfoReq.ExternalViewerId, "external-viewer-id", getPublishedDashboardTokenInfoReq.ExternalViewerId, `Provided external viewer id to be included in the custom claim.`)
 
 	cmd.Use = "get-published-dashboard-token-info DASHBOARD_ID"
-	cmd.Short = `Read an information of a published dashboard to mint an OAuth token.`
-	cmd.Long = `Read an information of a published dashboard to mint an OAuth token.
+	cmd.Short = `Read information of a published dashboard to mint an OAuth token.`
+	cmd.Long = `Read information of a published dashboard to mint an OAuth token.
   
   Get a required authorization details and scopes of a published dashboard to
   mint an OAuth token.
 
   Arguments:
     DASHBOARD_ID: UUID identifying the published dashboard.`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 

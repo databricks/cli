@@ -18,6 +18,12 @@ func (s syncedDatabaseTableConverter) Convert(ctx context.Context, key string, v
 	for _, diag := range diags {
 		log.Debugf(ctx, "synced database table normalization diagnostic: %s", diag.Summary)
 	}
+
+	var err error
+	vout, err = convertLifecycle(ctx, vout, vin.Get("lifecycle"))
+	if err != nil {
+		return err
+	}
 	out.DatabaseSyncedDatabaseTable[key] = vout.AsAny()
 
 	return nil

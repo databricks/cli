@@ -6,6 +6,5 @@ cleanup() {
  trap cleanup EXIT
 
 trace $CLI bundle validate
-trace $CLI bundle summary
 trace $CLI bundle deploy
 trace $CLI bundle summary

@@ -33,7 +33,7 @@ def print_resource_terraform(group, name, *attrs):
         print(f"State not found for {group}.{name}")
 
 
-def print_resource_terranova(group, name, *attrs):
+def print_resource_direct(group, name, *attrs):
     filename = ".databricks/bundle/default/resources.json"
     raw = open(filename).read()
     data = json.loads(raw)
@@ -48,7 +48,7 @@ def print_resource_terranova(group, name, *attrs):
     print(group, name, " ".join(values))
 
 
-if os.environ.get("DATABRICKS_CLI_DEPLOYMENT", "").startswith("direct"):
-    print_resource_terranova(*sys.argv[1:])
+if os.environ.get("DATABRICKS_BUNDLE_ENGINE", "").startswith("direct"):
+    print_resource_direct(*sys.argv[1:])
 else:
     print_resource_terraform(*sys.argv[1:])

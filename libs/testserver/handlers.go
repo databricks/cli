@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
@@ -180,48 +179,30 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("POST", "/api/2.2/jobs/create", func(req Request) any {
-		var request jobs.CreateJob
-		if err := json.Unmarshal(req.Body, &request); err != nil {
-			return Response{
-				Body:       fmt.Sprintf("internal error: %s", err),
-				StatusCode: 500,
-			}
-		}
-
-		return req.Workspace.JobsCreate(request)
+		return req.Workspace.JobsCreate(req)
 	})
 
 	server.Handle("POST", "/api/2.2/jobs/delete", func(req Request) any {
 		var request jobs.DeleteJob
 		if err := json.Unmarshal(req.Body, &request); err != nil {
 			return Response{
-				Body:       fmt.Sprintf("internal error: %s", err),
-				StatusCode: 500,
+				StatusCode: 400,
+				Body:       fmt.Sprintf("request parsing error: %s", err),
 			}
 		}
 		return MapDelete(req.Workspace, req.Workspace.Jobs, request.JobId)
 	})
 
 	server.Handle("POST", "/api/2.2/jobs/reset", func(req Request) any {
-		var request jobs.ResetJob
-		if err := json.Unmarshal(req.Body, &request); err != nil {
-			return Response{
-				Body:       fmt.Sprintf("internal error: %s", err),
-				StatusCode: 500,
-			}
-		}
-
-		return req.Workspace.JobsReset(request)
+		return req.Workspace.JobsReset(req)
 	})
 
 	server.Handle("GET", "/api/2.0/jobs/get", func(req Request) any {
-		jobId := req.URL.Query().Get("job_id")
-		return req.Workspace.JobsGet(jobId)
+		return req.Workspace.JobsGet(req)
 	})
 
 	server.Handle("GET", "/api/2.2/jobs/get", func(req Request) any {
-		jobId := req.URL.Query().Get("job_id")
-		return req.Workspace.JobsGet(jobId)
+		return req.Workspace.JobsGet(req)
 	})
 
 	server.Handle("GET", "/api/2.2/jobs/list", func(req Request) any {
@@ -229,28 +210,11 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("POST", "/api/2.2/jobs/run-now", func(req Request) any {
-		var request jobs.RunNow
-		if err := json.Unmarshal(req.Body, &request); err != nil {
-			return Response{
-				Body:       fmt.Sprintf("internal error: %s", err),
-				StatusCode: 500,
-			}
-		}
-
-		return req.Workspace.JobsRunNow(request.JobId)
+		return req.Workspace.JobsRunNow(req)
 	})
 
 	server.Handle("GET", "/api/2.2/jobs/runs/get", func(req Request) any {
-		runId := req.URL.Query().Get("run_id")
-		runIdInt, err := strconv.ParseInt(runId, 10, 64)
-		if err != nil {
-			return Response{
-				Body:       fmt.Sprintf("internal error: %s", err),
-				StatusCode: 500,
-			}
-		}
-
-		return req.Workspace.JobsGetRun(runIdInt)
+		return req.Workspace.JobsGetRun(req)
 	})
 
 	server.Handle("GET", "/api/2.2/jobs/runs/list", func(req Request) any {
@@ -395,6 +359,8 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.VolumesCreate(req)
 	})
 
+	// Repos:
+
 	server.Handle("POST", "/api/2.0/repos", func(req Request) any {
 		return req.Workspace.ReposCreate(req)
 	})
@@ -420,6 +386,7 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	// SQL Warehouses:
+
 	server.Handle("GET", "/api/2.0/sql/warehouses/{warehouse_id}", func(req Request) any {
 		return MapGet(req.Workspace, req.Workspace.SqlWarehouses, req.Vars["warehouse_id"])
 	})
@@ -444,54 +411,44 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.SqlDataSourcesList(req)
 	})
 
+	// Alerts v2:
+	server.Handle("GET", "/api/2.0/alerts/{id}", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.Alerts, req.Vars["id"])
+	})
+
+	server.Handle("GET", "/api/2.0/alerts", func(req Request) any {
+		return MapList(req.Workspace, req.Workspace.Alerts, "alerts")
+	})
+
+	server.Handle("POST", "/api/2.0/alerts", func(req Request) any {
+		return req.Workspace.AlertsUpsert(req, "")
+	})
+
+	server.Handle("PATCH", "/api/2.0/alerts/{id}", func(req Request) any {
+		return req.Workspace.AlertsUpsert(req, req.Vars["id"])
+	})
+
+	server.Handle("DELETE", "/api/2.0/alerts/{id}", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.Alerts, req.Vars["id"])
+	})
+
+	// Secrets ACLs:
 	server.Handle("GET", "/api/2.0/secrets/acls/get", func(req Request) any {
-		scope := req.URL.Query().Get("scope")
-		principal := req.URL.Query().Get("principal")
-		scopeAcls := req.Workspace.Acls[scope]
-		for _, acl := range scopeAcls {
-			if acl.Principal == principal {
-				return acl
-			}
-		}
-		return Response{StatusCode: 404}
+		return req.Workspace.SecretsAclsGet(req)
 	})
 
 	server.Handle("GET", "/api/2.0/secrets/acls/list", func(req Request) any {
-		return MapGet(req.Workspace, req.Workspace.Acls, req.Vars["scope"])
+		return MapGet(req.Workspace, req.Workspace.Acls, req.URL.Query().Get("scope"))
 	})
 
 	server.Handle("POST", "/api/2.0/secrets/acls/put", func(req Request) any {
-		var request workspace.PutAcl
-		if err := json.Unmarshal(req.Body, &request); err != nil {
-			return Response{
-				Body:       fmt.Sprintf("internal error: %s", err),
-				StatusCode: 500,
-			}
-		}
-		req.Workspace.Acls[request.Scope] = append(req.Workspace.Acls[request.Scope], workspace.AclItem{
-			Principal:  request.Principal,
-			Permission: request.Permission,
-		})
-		return ""
+		return req.Workspace.SecretsAclsPut(req)
 	})
 
 	server.Handle("POST", "/api/2.0/secrets/acls/delete", func(req Request) any {
-		var request workspace.DeleteAcl
-		if err := json.Unmarshal(req.Body, &request); err != nil {
-			return Response{
-				Body:       fmt.Sprintf("internal error: %s", err),
-				StatusCode: 500,
-			}
-		}
-		scopeAcls := req.Workspace.Acls[request.Scope]
-		for i, acl := range scopeAcls {
-			if acl.Principal == request.Principal {
-				req.Workspace.Acls[request.Scope] = append(scopeAcls[:i], scopeAcls[i+1:]...)
-				return ""
-			}
-		}
-		return Response{StatusCode: 404}
+		return req.Workspace.SecretsAclsDelete(req)
 	})
+	// Database Instances:
 
 	server.Handle("POST", "/api/2.0/database/instances", func(req Request) any {
 		return req.Workspace.DatabaseInstanceCreate(req)
@@ -505,9 +462,15 @@ func AddDefaultHandlers(server *Server) {
 		return DatabaseInstanceMapGet(req.Workspace, req.Workspace.DatabaseInstances, req.Vars["name"])
 	})
 
+	server.Handle("PATCH", "/api/2.0/database/instances/{name}", func(req Request) any {
+		return req.Workspace.DatabaseInstanceUpdate(req, req.Vars["name"])
+	})
+
 	server.Handle("DELETE", "/api/2.0/database/instances/{name}", func(req Request) any {
 		return DatabaseInstanceMapDelete(req)
 	})
+
+	// Database Catalogs:
 
 	server.Handle("POST", "/api/2.0/database/catalogs", func(req Request) any {
 		return req.Workspace.DatabaseCatalogCreate(req)
@@ -517,12 +480,22 @@ func AddDefaultHandlers(server *Server) {
 		return MapGet(req.Workspace, req.Workspace.DatabaseCatalogs, req.Vars["name"])
 	})
 
+	server.Handle("PATCH", "/api/2.0/database/catalogs/{name}", func(req Request) any {
+		return req.Workspace.DatabaseCatalogUpdate(req, req.Vars["name"])
+	})
+
 	server.Handle("DELETE", "/api/2.0/database/catalogs/{name}", func(req Request) any {
 		return MapDelete(req.Workspace, req.Workspace.DatabaseCatalogs, req.Vars["name"])
 	})
 
+	// Synced Database Tables:
+
 	server.Handle("POST", "/api/2.0/database/synced_tables", func(req Request) any {
 		return req.Workspace.SyncedDatabaseTableCreate(req)
+	})
+
+	server.Handle("PATCH", "/api/2.0/database/synced_tables/{name}", func(req Request) any {
+		return req.Workspace.SyncedDatabaseTableUpdate(req, req.Vars["name"])
 	})
 
 	server.Handle("GET", "/api/2.0/database/synced_tables/{name}", func(req Request) any {

@@ -15,9 +15,9 @@ import (
 	"sync"
 
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/metadata"
-	"github.com/databricks/cli/bundle/terranova"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/locker"
@@ -34,10 +34,10 @@ import (
 
 const internalFolder = ".internal"
 
-// Filename where resources are stored for DATABRICKS_CLI_DEPLOYMENT=direct
+// Filename where resources are stored for DATABRICKS_BUNDLE_ENGINE=direct
 const resourcesFilename = "resources.json"
 
-// Filename where resources are stored for DATABRICKS_CLI_DEPLOYMENT=terraform
+// Filename where resources are stored for DATABRICKS_BUNDLE_ENGINE=terraform
 const terraformStateFilename = "terraform.tfstate"
 
 // This struct is used as a communication channel to collect metrics
@@ -129,8 +129,8 @@ type Bundle struct {
 	// If true, the plan is empty and applying it will not do anything
 	TerraformPlanIsEmpty bool
 
-	// (direct only) graph of dependencies between resources
-	BundleDeployer terranova.BundleDeployer
+	// (direct only) deployment implementation and state
+	DeploymentBundle direct.DeploymentBundle
 
 	// if true, we skip approval checks for deploy, destroy resources and delete
 	// files
@@ -142,7 +142,7 @@ type Bundle struct {
 
 	Metrics Metrics
 
-	// If true, don't use terraform. Set by DATABRICKS_CLI_DEPLOYMENT=direct
+	// If true, don't use terraform. Set by DATABRICKS_BUNDLE_ENGINE=direct
 	DirectDeployment bool
 }
 
@@ -351,7 +351,7 @@ func (b *Bundle) OpenStateFile(ctx context.Context) error {
 		return err
 	}
 
-	err = b.BundleDeployer.OpenStateFile(statePath)
+	err = b.DeploymentBundle.OpenStateFile(statePath)
 	if err != nil {
 		return fmt.Errorf("failed to open/create state file at %s: %s", statePath, err)
 	}

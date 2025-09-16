@@ -2,6 +2,7 @@ package bundle
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
@@ -10,6 +11,7 @@ import (
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
 )
@@ -72,7 +74,7 @@ func newPlanCommand() *cobra.Command {
 			return root.ErrAlreadyPrinted
 		}
 
-		changes := phases.Diff(ctx, b)
+		plan := phases.Plan(ctx, b)
 		if logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}
@@ -81,12 +83,9 @@ func newPlanCommand() *cobra.Command {
 		createCount := 0
 		updateCount := 0
 		deleteCount := 0
-		var actions []string
 		changed := make(map[string]bool)
 
-		for _, change := range changes {
-			actionItem := fmt.Sprintf("  %s %s.%s", change.ActionType, change.Group, change.Key)
-			actions = append(actions, actionItem)
+		for _, change := range plan.GetActions() {
 			changed[change.Group+"."+change.Key] = true
 			switch change.ActionType.String() {
 			case "create":
@@ -117,17 +116,32 @@ func newPlanCommand() *cobra.Command {
 			}
 		}
 
-		// Print summary line and actions to stdout
-		totalChanges := createCount + updateCount + deleteCount
-		if totalChanges > 0 {
-			fmt.Printf("Plan: %d to add, %d to change, %d to delete, %d unchanged\n", createCount, updateCount, deleteCount, unchanged)
+		out := cmd.OutOrStdout()
 
-			// Print all actions in the order they were processed
-			for _, action := range actions {
-				fmt.Fprintf(cmd.OutOrStdout(), "%s\n", action)
+		switch root.OutputType(cmd) {
+		case flags.OutputText:
+      // Print summary line and actions to stdout
+		  totalChanges := createCount + updateCount + deleteCount
+      if totalChanges > 0 {
+			  fmt.Fprintf(out, "Plan: %d to add, %d to change, %d to delete, %d unchanged\n", createCount, updateCount, deleteCount, unchanged)
+        
+        // Print all actions in the order they were processed
+        for _, action := range plan.GetActions() {
+          fmt.Fprintf(out, "%s %s.%s\n", action.ActionType.StringShort(), action.Group, action.Key)
+        }
+      } else {
+        fmt.Fprintf(out, "Plan: 0 to add, 0 to change, 0 to delete, %d unchanged\n", unchanged)
+      }
+		case flags.OutputJSON:
+			buf, err := json.MarshalIndent(plan, "", "  ")
+			if err != nil {
+				return err
 			}
-		} else {
-			fmt.Printf("Plan: 0 to add, 0 to change, 0 to delete, %d unchanged\n", unchanged)
+			fmt.Fprintln(out, string(buf))
+			if logdiag.HasError(ctx) {
+				return root.ErrAlreadyPrinted
+			}
+			return nil
 		}
 
 		if logdiag.HasError(ctx) {
