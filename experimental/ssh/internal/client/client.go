@@ -23,6 +23,7 @@ import (
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/gorilla/websocket"
@@ -279,7 +280,7 @@ func checkClusterState(ctx context.Context, client *databricks.WorkspaceClient, 
 		if err != nil {
 			return fmt.Errorf("failed to get cluster info: %w", err)
 		}
-		if cluster.State != "RUNNING" {
+		if cluster.State != compute.StateRunning {
 			return fmt.Errorf("cluster %s is not running, current state: %s. Use --auto-start-cluster to start it automatically", clusterID, cluster.State)
 		}
 	}
