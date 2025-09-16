@@ -7,8 +7,11 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/databricks-sdk-go/service/apps"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/require"
 )
 
@@ -61,4 +64,59 @@ func TestCheckPreventDestroyForAllResources(t *testing.T) {
 			require.Contains(t, err.Error(), fmt.Sprintf("disable lifecycle.prevent_destroy for %s.test_resource", resourceType))
 		})
 	}
+}
+
+func TestCheckForPreventDestroyWhenFirstHasNoPreventDestroy(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Bundle: config.Bundle{
+				Name: "test",
+			},
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"test_job": {
+						JobSettings: jobs.JobSettings{
+							Tasks: []jobs.Task{},
+						},
+					},
+				},
+				Apps: map[string]*resources.App{
+					"test_app": {
+						App: apps.App{
+							Name: "Test App",
+						},
+						BaseResource: resources.BaseResource{
+							Lifecycle: resources.Lifecycle{
+								PreventDestroy: true,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	actions := []deployplan.Action{
+		{
+			ResourceNode: deployplan.ResourceNode{
+				Group: "jobs",
+				Key:   "test_job",
+			},
+			ActionType: deployplan.ActionTypeRecreate,
+		},
+		{
+			ResourceNode: deployplan.ResourceNode{
+				Group: "apps",
+				Key:   "test_app",
+			},
+			ActionType: deployplan.ActionTypeRecreate,
+		},
+	}
+
+	ctx := context.Background()
+	bundle.ApplyFuncContext(ctx, b, func(ctx context.Context, b *bundle.Bundle) {
+		err := checkForPreventDestroy(b, actions)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "resource test_app has lifecycle.prevent_destroy set")
+	})
 }
