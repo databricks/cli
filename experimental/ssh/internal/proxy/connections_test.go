@@ -84,47 +84,47 @@ func TestConnectionsManager_Remove(t *testing.T) {
 }
 
 func TestConnectionsManager_ThreadSafety(t *testing.T) {
-	cm := NewConnectionsManager(100, time.Hour)
 	const numGoroutines = 10
 	const numOperationsPerGoroutine = 100
+	cm := NewConnectionsManager(numGoroutines*numOperationsPerGoroutine, time.Hour)
 
 	var wg sync.WaitGroup
 
 	for i := range numGoroutines {
 		wg.Add(1)
-		go func(routineID int) {
+		go func() {
 			defer wg.Done()
 			for j := range numOperationsPerGoroutine {
-				cm.TryAdd(fmt.Sprintf("conn-%d-%d", routineID, j), &proxyConnection{})
+				cm.TryAdd(fmt.Sprintf("conn-%d-%d", i, j), &proxyConnection{})
 			}
-		}(i)
+		}()
 	}
 
 	wg.Wait()
 
 	// Verify we can get the count without race conditions
 	countAfterAdds := cm.Count()
-	assert.LessOrEqual(t, countAfterAdds, numGoroutines*numOperationsPerGoroutine)
+	assert.Equal(t, countAfterAdds, numGoroutines*numOperationsPerGoroutine)
 
 	// Now do concurrent gets, removes, and counts
 	for i := range numGoroutines {
 		wg.Add(1)
-		go func(routineID int) {
+		go func() {
 			defer wg.Done()
 			for j := range numOperationsPerGoroutine {
-				cm.Get(fmt.Sprintf("conn-%d-%d", routineID, j))
+				cm.Get(fmt.Sprintf("conn-%d-%d", i, j))
 			}
-		}(i)
+		}()
 	}
 
 	for i := range numGoroutines {
 		wg.Add(1)
-		go func(routineID int) {
+		go func() {
 			defer wg.Done()
 			for j := range numOperationsPerGoroutine {
-				cm.Remove(fmt.Sprintf("conn-%d-%d", routineID, j))
+				cm.Remove(fmt.Sprintf("conn-%d-%d", i, j))
 			}
-		}(i)
+		}()
 	}
 
 	for range numGoroutines {
