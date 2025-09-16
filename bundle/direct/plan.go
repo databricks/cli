@@ -1,4 +1,4 @@
-package terranova
+package direct
 
 import (
 	"context"
@@ -7,8 +7,8 @@ import (
 	"reflect"
 
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/bundle/terranova/tnresources"
-	"github.com/databricks/cli/bundle/terranova/tnstate"
+	"github.com/databricks/cli/bundle/direct/dresources"
+	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/databricks-sdk-go"
@@ -18,7 +18,7 @@ import (
 	"github.com/databricks/cli/libs/structs/structaccess"
 )
 
-func (d *DeploymentUnit) Plan(ctx context.Context, client *databricks.WorkspaceClient, db *tnstate.TerranovaState, inputConfig any, localOnly, refresh bool) (deployplan.ActionType, error) {
+func (d *DeploymentUnit) Plan(ctx context.Context, client *databricks.WorkspaceClient, db *dstate.DeploymentState, inputConfig any, localOnly, refresh bool) (deployplan.ActionType, error) {
 	result, err := d.plan(ctx, client, db, inputConfig, localOnly, refresh)
 	if err != nil {
 		return deployplan.ActionTypeNoop, fmt.Errorf("planning: %s.%s: %w", d.Group, d.Key, err)
@@ -26,7 +26,7 @@ func (d *DeploymentUnit) Plan(ctx context.Context, client *databricks.WorkspaceC
 	return result, err
 }
 
-func (d *DeploymentUnit) plan(ctx context.Context, client *databricks.WorkspaceClient, db *tnstate.TerranovaState, inputConfig any, localOnly, refresh bool) (deployplan.ActionType, error) {
+func (d *DeploymentUnit) plan(ctx context.Context, client *databricks.WorkspaceClient, db *dstate.DeploymentState, inputConfig any, localOnly, refresh bool) (deployplan.ActionType, error) {
 	entry, hasEntry := db.GetResourceEntry(d.Group, d.Key)
 	if !hasEntry {
 		return deployplan.ActionTypeCreate, nil
@@ -74,7 +74,7 @@ func (d *DeploymentUnit) refreshRemoteState(ctx context.Context, id string) erro
 
 var ErrDelayed = errors.New("must be resolved after apply")
 
-func (d *DeploymentUnit) ResolveReferenceLocalOrRemote(ctx context.Context, db *tnstate.TerranovaState, reference string, actionType deployplan.ActionType, config any) (any, error) {
+func (d *DeploymentUnit) ResolveReferenceLocalOrRemote(ctx context.Context, db *dstate.DeploymentState, reference string, actionType deployplan.ActionType, config any) (any, error) {
 	path, ok := dynvar.PureReferenceToPath(reference)
 	if !ok || len(path) <= 3 || path[0].Key() != "resources" || path[1].Key() != d.Group || path[2].Key() != d.Key {
 		return nil, fmt.Errorf("internal error: expected reference to resources.%s.%s, got %q", d.Group, d.Key, reference)
@@ -142,7 +142,7 @@ func (d *DeploymentUnit) ResolveReferenceLocalOrRemote(ctx context.Context, db *
 	return d.ReadRemoteStateField(ctx, db, fieldPath)
 }
 
-func (d *DeploymentUnit) ResolveReferenceRemote(ctx context.Context, db *tnstate.TerranovaState, reference string) (any, error) {
+func (d *DeploymentUnit) ResolveReferenceRemote(ctx context.Context, db *dstate.DeploymentState, reference string) (any, error) {
 	path, ok := dynvar.PureReferenceToPath(reference)
 	if !ok || len(path) <= 3 || path[0].Key() != "resources" || path[1].Key() != d.Group || path[2].Key() != d.Key {
 		return nil, fmt.Errorf("internal error: expected reference to resources.%s.%s, got %q", d.Group, d.Key, reference)
@@ -163,7 +163,7 @@ func (d *DeploymentUnit) ResolveReferenceRemote(ctx context.Context, db *tnstate
 	return d.ReadRemoteStateField(ctx, db, fieldPath)
 }
 
-func (d *DeploymentUnit) ReadRemoteStateField(ctx context.Context, db *tnstate.TerranovaState, fieldPath dyn.Path) (any, error) {
+func (d *DeploymentUnit) ReadRemoteStateField(ctx context.Context, db *dstate.DeploymentState, fieldPath dyn.Path) (any, error) {
 	// We have options:
 	// 1) Rely on the cached value; refresh if not cached.
 	// 2) Always refresh, read the value.
@@ -197,7 +197,7 @@ func (d *DeploymentUnit) ReadRemoteStateField(ctx context.Context, db *tnstate.T
 }
 
 // TODO: return struct that has action but also individual differences and their effect (e.g. recreate)
-func calcDiff(adapter *tnresources.Adapter, savedState, config any) (deployplan.ActionType, error) {
+func calcDiff(adapter *dresources.Adapter, savedState, config any) (deployplan.ActionType, error) {
 	localDiff, err := structdiff.GetStructDiff(savedState, config)
 	if err != nil {
 		return deployplan.ActionTypeUnset, err

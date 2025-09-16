@@ -1,12 +1,12 @@
-package terranova
+package direct
 
 import (
 	"fmt"
 	"reflect"
 
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/bundle/terranova/tnresources"
-	"github.com/databricks/cli/bundle/terranova/tnstate"
+	"github.com/databricks/cli/bundle/direct/dresources"
+	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/dagrun"
 )
 
@@ -22,7 +22,7 @@ type DeploymentUnit struct {
 	Key string
 
 	// Implementation for this resource; all deployments from the same group share the adapter
-	Adapter *tnresources.Adapter
+	Adapter *dresources.Adapter
 
 	// Planned ActionType
 	ActionType deployplan.ActionType
@@ -36,10 +36,10 @@ type DeploymentUnit struct {
 
 // DeploymentBundle holds everything needed to deploy a bundle
 type DeploymentBundle struct {
-	StateDB         tnstate.TerranovaState
+	StateDB         dstate.DeploymentState
 	Graph           *dagrun.Graph[deployplan.ResourceNode]
 	DeploymentUnits map[deployplan.ResourceNode]*DeploymentUnit
-	Adapters        map[string]*tnresources.Adapter
+	Adapters        map[string]*dresources.Adapter
 }
 
 // SetRemoteState updates the remote state with type validation and marks as fresh.

@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/databricks/cli/bundle/terranova/tnresources"
+	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structwalk"
@@ -37,7 +37,7 @@ func NewRefSchemaCommand() *cobra.Command {
 
 // dumpRemoteSchemas walks through all supported resources and dumps their schema fields.
 func dumpRemoteSchemas(out io.Writer) error {
-	adapters, err := tnresources.InitAll(nil)
+	adapters, err := dresources.InitAll(nil)
 	if err != nil {
 		return fmt.Errorf("failed to initialize adapters: %w", err)
 	}
