@@ -1,4 +1,4 @@
-package terranova
+package direct
 
 import (
 	"cmp"
@@ -10,7 +10,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/bundle/terranova/tnresources"
+	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/libs/dagrun"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
@@ -31,7 +31,7 @@ func (b *DeploymentBundle) Init(client *databricks.WorkspaceClient) error {
 		return nil
 	}
 	var err error
-	b.Adapters, err = tnresources.InitAll(client)
+	b.Adapters, err = dresources.InitAll(client)
 	return err
 }
 

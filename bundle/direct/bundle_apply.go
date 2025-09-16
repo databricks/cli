@@ -1,4 +1,4 @@
-package terranova
+package direct
 
 import (
 	"context"
