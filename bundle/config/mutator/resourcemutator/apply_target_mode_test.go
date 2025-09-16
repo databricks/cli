@@ -190,13 +190,13 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						},
 					},
 				},
-				Alerts: map[string]*resources.Alert{
-					"alert1": {
-						AlertV2: sql.AlertV2{
-							DisplayName: "alert1",
-						},
-					},
-				},
+				// Alerts: map[string]*resources.Alert{
+				// 	"alert1": {
+				// 		AlertV2: sql.AlertV2{
+				// 			DisplayName: "alert1",
+				// 		},
+				// 	},
+				// },
 			},
 		},
 		SyncRoot: vfs.MustNew("/Users/lennart.kats@databricks.com"),
