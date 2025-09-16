@@ -1,9 +1,11 @@
 package structpath
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
+	"strings"
 
 	"github.com/databricks/cli/libs/structs/structtag"
 )
@@ -166,7 +168,224 @@ func (p *PathNode) String() string {
 		return prev + "." + p.key
 	}
 
-	return fmt.Sprintf("%s[%q]", p.prev.String(), p.key)
+	// Format map key with single quotes, escaping single quotes by doubling them
+	escapedKey := strings.ReplaceAll(p.key, "'", "''")
+	return fmt.Sprintf("%s['%s']", p.prev.String(), escapedKey)
+}
+
+// Parse parses a string representation of a path using a state machine.
+//
+// State Machine for Path Parsing:
+//
+// States:
+//   - START: Beginning of parsing, expects field name or "["
+//   - FIELD_START: After a dot, expects field name only
+//   - FIELD: Reading field name characters
+//   - BRACKET_OPEN: Just encountered "[", expects digit, "'" or "*"
+//   - INDEX: Reading array index digits, expects more digits or "]"
+//   - MAP_KEY: Reading map key content, expects any char or "'"
+//   - MAP_KEY_QUOTE: Encountered "'" in map key, expects "'" (escape) or "]" (end)
+//   - WILDCARD: Reading "*" in brackets, expects "]"
+//   - EXPECT_DOT_OR_END: After bracket close, expects ".", "[" or end of string
+//   - END: Successfully completed parsing
+//
+// Transitions:
+//   - START: [a-zA-Z_-] -> FIELD, "[" -> BRACKET_OPEN, EOF -> END
+//   - FIELD_START: [a-zA-Z_-] -> FIELD, other -> ERROR
+//   - FIELD: [a-zA-Z0-9_-] -> FIELD, "." -> FIELD_START, "[" -> BRACKET_OPEN, EOF -> END
+//   - BRACKET_OPEN: [0-9] -> INDEX, "'" -> MAP_KEY, "*" -> WILDCARD
+//   - INDEX: [0-9] -> INDEX, "]" -> EXPECT_DOT_OR_END
+//   - MAP_KEY: (any except "'") -> MAP_KEY, "'" -> MAP_KEY_QUOTE
+//   - MAP_KEY_QUOTE: "'" -> MAP_KEY (escape), "]" -> EXPECT_DOT_OR_END (end key)
+//   - WILDCARD: "]" -> EXPECT_DOT_OR_END
+//   - EXPECT_DOT_OR_END: "." -> FIELD_START, "[" -> BRACKET_OPEN, EOF -> END
+func Parse(s string) (*PathNode, error) {
+	if s == "" {
+		return nil, nil
+	}
+
+	// State machine states
+	const (
+		stateStart = iota
+		stateFieldStart
+		stateField
+		stateBracketOpen
+		stateIndex
+		stateMapKey
+		stateMapKeyQuote
+		stateWildcard
+		stateExpectDotOrEnd
+		stateEnd
+	)
+
+	state := stateStart
+	var result *PathNode
+	var currentToken strings.Builder
+	pos := 0
+
+	for pos < len(s) {
+		ch := s[pos]
+
+		switch state {
+		case stateStart:
+			if ch == '[' {
+				state = stateBracketOpen
+			} else if !isReservedFieldChar(ch) {
+				currentToken.WriteByte(ch)
+				state = stateField
+			} else {
+				return nil, fmt.Errorf("unexpected character '%c' at position %d", ch, pos)
+			}
+
+		case stateFieldStart:
+			if !isReservedFieldChar(ch) {
+				currentToken.WriteByte(ch)
+				state = stateField
+			} else {
+				return nil, fmt.Errorf("expected field name after '.' but got '%c' at position %d", ch, pos)
+			}
+
+		case stateField:
+			if ch == '.' {
+				result = NewStructField(result, reflect.StructTag(""), currentToken.String())
+				currentToken.Reset()
+				state = stateFieldStart
+			} else if ch == '[' {
+				result = NewStructField(result, reflect.StructTag(""), currentToken.String())
+				currentToken.Reset()
+				state = stateBracketOpen
+			} else if !isReservedFieldChar(ch) {
+				currentToken.WriteByte(ch)
+			} else {
+				return nil, fmt.Errorf("invalid character '%c' in field name at position %d", ch, pos)
+			}
+
+		case stateBracketOpen:
+			if ch >= '0' && ch <= '9' {
+				currentToken.WriteByte(ch)
+				state = stateIndex
+			} else if ch == '\'' {
+				state = stateMapKey
+			} else if ch == '*' {
+				state = stateWildcard
+			} else {
+				return nil, fmt.Errorf("unexpected character '%c' after '[' at position %d", ch, pos)
+			}
+
+		case stateIndex:
+			if ch >= '0' && ch <= '9' {
+				currentToken.WriteByte(ch)
+			} else if ch == ']' {
+				index, err := strconv.Atoi(currentToken.String())
+				if err != nil {
+					return nil, fmt.Errorf("invalid index '%s' at position %d", currentToken.String(), pos-len(currentToken.String()))
+				}
+				result = NewIndex(result, index)
+				currentToken.Reset()
+				state = stateExpectDotOrEnd
+			} else {
+				return nil, fmt.Errorf("unexpected character '%c' in index at position %d", ch, pos)
+			}
+
+		case stateMapKey:
+			switch ch {
+			case '\'':
+				state = stateMapKeyQuote
+			case 0, ']':
+				return nil, fmt.Errorf("unterminated map key at position %d", pos)
+			default:
+				currentToken.WriteByte(ch)
+			}
+
+		case stateMapKeyQuote:
+			switch ch {
+			case '\'':
+				// Escaped quote - add single quote to key and continue
+				currentToken.WriteByte('\'')
+				state = stateMapKey
+			case ']':
+				// End of map key
+				result = NewMapKey(result, currentToken.String())
+				currentToken.Reset()
+				state = stateExpectDotOrEnd
+			default:
+				return nil, fmt.Errorf("unexpected character '%c' after quote in map key at position %d", ch, pos)
+			}
+
+		case stateWildcard:
+			if ch == ']' {
+				result = NewAnyKey(result) // Default to AnyKey for wildcards
+				state = stateExpectDotOrEnd
+			} else {
+				return nil, fmt.Errorf("unexpected character '%c' after '*' at position %d", ch, pos)
+			}
+
+		case stateExpectDotOrEnd:
+			switch ch {
+			case '.':
+				state = stateFieldStart
+			case '[':
+				state = stateBracketOpen
+			default:
+				return nil, fmt.Errorf("unexpected character '%c' at position %d", ch, pos)
+			}
+
+		case stateEnd:
+			return result, nil
+
+		default:
+			return nil, fmt.Errorf("parser error at position %d", pos)
+		}
+
+		pos++
+	}
+
+	// Handle end-of-input based on final state
+	switch state {
+	case stateStart:
+		return result, nil // Empty path, result is nil
+	case stateField:
+		result = NewStructField(result, reflect.StructTag(""), currentToken.String())
+		return result, nil
+	case stateExpectDotOrEnd:
+		return result, nil
+	case stateFieldStart:
+		return nil, errors.New("expected field name after '.' but reached end of input")
+	case stateBracketOpen:
+		return nil, errors.New("unexpected end of input: unclosed bracket")
+	case stateIndex:
+		return nil, errors.New("unexpected end of input while parsing index")
+	case stateMapKey:
+		return nil, fmt.Errorf("unterminated map key at position %d", pos)
+	case stateMapKeyQuote:
+		return nil, errors.New("unexpected end of input after quote in map key")
+	case stateWildcard:
+		return nil, errors.New("unexpected end of input after wildcard '*'")
+	case stateEnd:
+		return result, nil
+	default:
+		return nil, fmt.Errorf("parser error at position %d", pos)
+	}
+}
+
+// isReservedFieldChar checks if character is reserved and cannot be used in field names
+func isReservedFieldChar(ch byte) bool {
+	switch ch {
+	case ',': // Cannot appear in Golang JSON struct tag
+		return true
+	case '"': // Cannot appear in Golang struct tag
+		return true
+	case '`': // Cannot appear in Golang struct tag
+		return true
+	case '.': // Path separator
+		return true
+	case '[': // Bracket notation start
+		return true
+	case ']': // Bracket notation end
+		return true
+	default:
+		return false
+	}
 }
 
 // Path in libs/dyn format
@@ -192,6 +411,7 @@ func (p *PathNode) DynPath() string {
 		return p.prev.DynPath() + "[*]"
 	}
 
+	// Both struct fields and map keys use dot notation in DynPath
 	prev := p.prev.DynPath()
 	if prev == "" {
 		return p.key
