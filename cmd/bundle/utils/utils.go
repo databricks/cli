@@ -23,7 +23,7 @@ func configureVariables(cmd *cobra.Command, b *bundle.Bundle, variables []string
 }
 
 func InitializeBundle(cmd *cobra.Command) *bundle.Bundle {
-	// Load bundle config and apply target.
+	// Load bundle config and apply target
 	b := root.MustConfigureBundle(cmd)
 	ctx := cmd.Context()
 	if logdiag.HasError(ctx) {
