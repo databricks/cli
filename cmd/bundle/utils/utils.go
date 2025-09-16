@@ -3,11 +3,11 @@ package utils
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/databricks-sdk-go/useragent"
 	"github.com/spf13/cobra"
@@ -22,7 +22,7 @@ func configureVariables(cmd *cobra.Command, b *bundle.Bundle, variables []string
 	})
 }
 
-func InitializeBundle(cmd *cobra.Command) *bundle.Bundle {
+func ConfigureBundleWithVariables(cmd *cobra.Command) *bundle.Bundle {
 	// Load bundle config and apply target
 	b := root.MustConfigureBundle(cmd)
 	ctx := cmd.Context()
@@ -44,6 +44,10 @@ func InitializeBundle(cmd *cobra.Command) *bundle.Bundle {
 		logdiag.LogError(ctx, err)
 		return b
 	}
+
+	// We use "direct-exp" while direct backend is not suitable for end users.
+	// Once we consider it usable we'll change the value to "direct".
+	// This is to prevent accidentally running direct backend with older CLI versions where it was still considered experimental.
 	b.DirectDeployment = engine == "direct-exp"
 
 	// Set the engine in the user agent
@@ -53,7 +57,7 @@ func InitializeBundle(cmd *cobra.Command) *bundle.Bundle {
 }
 
 func deploymentEngine(ctx context.Context) (string, error) {
-	engine := os.Getenv("DATABRICKS_CLI_DEPLOYMENT")
+	engine := env.Get(ctx, "DATABRICKS_CLI_DEPLOYMENT")
 
 	// By default, use Terraform
 	if engine == "" {

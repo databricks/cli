@@ -90,7 +90,7 @@ Example usage:
 		ctx := logdiag.InitContext(cmd.Context())
 		cmd.SetContext(ctx)
 
-		b := utils.InitializeBundle(cmd)
+		b := utils.ConfigureBundleWithVariables(cmd)
 		if b == nil || logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}

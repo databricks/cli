@@ -89,7 +89,7 @@ Please run this command before deploying to ensure configuration quality.`,
 }
 
 func prepareBundleForValidate(cmd *cobra.Command, includeLocations bool) *bundle.Bundle {
-	b := utils.InitializeBundle(cmd)
+	b := utils.ConfigureBundleWithVariables(cmd)
 	ctx := cmd.Context()
 
 	if b == nil || logdiag.HasError(ctx) {

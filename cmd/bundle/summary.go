@@ -68,7 +68,7 @@ Useful after deployment to see what was created and where to find it.`,
 }
 
 func prepareBundleForSummary(cmd *cobra.Command, forcePull, includeLocations bool) *bundle.Bundle {
-	b := utils.InitializeBundle(cmd)
+	b := utils.ConfigureBundleWithVariables(cmd)
 	ctx := cmd.Context()
 	if b == nil || logdiag.HasError(ctx) {
 		return nil

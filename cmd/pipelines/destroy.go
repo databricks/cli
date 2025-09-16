@@ -37,7 +37,7 @@ func destroyCommand() *cobra.Command {
 		cmd.SetContext(ctx)
 		logdiag.SetSeverity(ctx, diag.Warning)
 
-		b := utils.InitializeBundle(cmd)
+		b := utils.ConfigureBundleWithVariables(cmd)
 		if b == nil || logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}

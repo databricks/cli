@@ -45,7 +45,7 @@ func deployCommand() *cobra.Command {
 		// Enable collection of diagnostics to check for OSS template warning in ConfigureBundleWithVariables
 		logdiag.SetCollect(ctx, true)
 
-		b := utils.InitializeBundle(cmd)
+		b := utils.ConfigureBundleWithVariables(cmd)
 		if b == nil || logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}
