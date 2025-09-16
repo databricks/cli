@@ -2,6 +2,8 @@ package deployplan
 
 import (
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 	"testing"
 
@@ -11,7 +13,11 @@ import (
 func TestStringShort(t *testing.T) {
 	shortMap := make(map[string][]string)
 
-	for a, s := range actionName {
+	keys := slices.Collect(maps.Keys(actionName))
+	slices.Sort(keys)
+
+	for _, a := range keys {
+		s := actionName[a]
 		require.Equal(t, a.StringFull(), s)
 		short := a.StringShort()
 		require.NotEmpty(t, short)
