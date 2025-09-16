@@ -28,11 +28,13 @@ the SSH server and handling the connection proxy.
 	var maxClients int
 	var handoverTimeout time.Duration
 	var releasesDir string
+	var autoStartCluster bool
 
 	cmd.Flags().StringVar(&clusterID, "cluster", "", "Databricks cluster ID (required)")
 	cmd.MarkFlagRequired("cluster")
 	cmd.Flags().DurationVar(&shutdownDelay, "shutdown-delay", defaultShutdownDelay, "Delay before shutting down the server after the last client disconnects")
 	cmd.Flags().IntVar(&maxClients, "max-clients", defaultMaxClients, "Maximum number of SSH clients")
+	cmd.Flags().BoolVar(&autoStartCluster, "auto-start-cluster", true, "Automatically start the cluster if it is not running")
 
 	cmd.Flags().BoolVar(&proxyMode, "proxy", false, "ProxyCommand mode")
 	cmd.Flags().MarkHidden("proxy")
@@ -59,6 +61,7 @@ the SSH server and handling the connection proxy.
 			AdditionalArgs:      args,
 			ClientPublicKeyName: defaultClientPublicKeyName,
 			ServerTimeout:       serverTimeout,
+			AutoStartCluster:    autoStartCluster,
 		}
 		return client.Run(ctx, wsClient, opts)
 	}
