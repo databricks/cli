@@ -41,7 +41,7 @@ type IResource interface {
 	DoDelete(ctx context.Context, id string) error
 
 	// [Optional] FieldTriggers returns actions to trigger when given fields are changed.
-	// Keys are field paths (e.g., ".name", ".catalog_name"). Values are actions.
+	// Keys are field paths (e.g., "name", "catalog_name"). Values are actions.
 	// Unspecified changed fields default to ActionTypeUpdate.
 	FieldTriggers() map[string]deployplan.ActionType
 }

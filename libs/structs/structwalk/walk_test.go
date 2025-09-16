@@ -36,16 +36,16 @@ func TestValueInt(t *testing.T) {
 
 func TestValueTypesEmpty(t *testing.T) {
 	expected := map[string]any{
-		".ArrayString[0]":  "",
-		".ArrayString[1]":  "",
-		".Array[0].X":      0,
-		".Array[1].X":      0,
-		".BoolField":       false,
-		".EmptyTagField":   "",
-		".IntField":        0,
-		".Nested.X":        0,
-		".ValidFieldNoTag": "",
-		".valid_field":     "",
+		"ArrayString[0]":  "",
+		"ArrayString[1]":  "",
+		"Array[0].X":      0,
+		"Array[1].X":      0,
+		"BoolField":       false,
+		"EmptyTagField":   "",
+		"IntField":        0,
+		"Nested.X":        0,
+		"ValidFieldNoTag": "",
+		"valid_field":     "",
 	}
 
 	assert.Equal(t, expected, flatten(t, Types{}))
@@ -59,11 +59,11 @@ func TestValueTypesEmpty(t *testing.T) {
 	forcedResults := flatten(t, forced)
 
 	// Ensure forced fields are present with zero values
-	assert.Equal(t, "", forcedResults[".omit_str"])
-	assert.Equal(t, false, forcedResults[".omit_bool"])
+	assert.Equal(t, "", forcedResults["omit_str"])
+	assert.Equal(t, false, forcedResults["omit_bool"])
 
 	// Non-forced omitempty zero field should remain absent
-	_, ok := forcedResults[".omit_int"]
+	_, ok := forcedResults["omit_int"]
 	assert.False(t, ok, "omit_int should be absent when not forced")
 }
 
@@ -76,11 +76,11 @@ func TestValueJobSettings(t *testing.T) {
 	}
 
 	assert.Equal(t, map[string]any{
-		`.tags["env"]`:         "test",
-		`.tags["team"]`:        "data",
-		".name":                "test-job",
-		".max_concurrent_runs": 5,
-		".timeout_seconds":     3600,
+		`tags["env"]`:         "test",
+		`tags["team"]`:        "data",
+		"name":                "test-job",
+		"max_concurrent_runs": 5,
+		"timeout_seconds":     3600,
 	}, flatten(t, jobSettings))
 }
 
@@ -108,6 +108,6 @@ func TestValueBundleTag(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	assert.Equal(t, []string{".A", ".D"}, readonly)
-	assert.Equal(t, []string{".B", ".D"}, internal)
+	assert.Equal(t, []string{"A", "D"}, readonly)
+	assert.Equal(t, []string{"B", "D"}, internal)
 }

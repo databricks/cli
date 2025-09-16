@@ -118,10 +118,10 @@ func (r *ResourcePipeline) DoDelete(ctx context.Context, id string) error {
 
 func (*ResourcePipeline) FieldTriggers() map[string]deployplan.ActionType {
 	return map[string]deployplan.ActionType{
-		".storage":                              deployplan.ActionTypeRecreate,
-		".catalog":                              deployplan.ActionTypeRecreate,
-		".ingestion_definition.connection_name": deployplan.ActionTypeRecreate,
-		".ingestion_definition.ingestion_gateway_id": deployplan.ActionTypeRecreate,
+		"storage":                              deployplan.ActionTypeRecreate,
+		"catalog":                              deployplan.ActionTypeRecreate,
+		"ingestion_definition.connection_name": deployplan.ActionTypeRecreate,
+		"ingestion_definition.ingestion_gateway_id": deployplan.ActionTypeRecreate,
 	}
 }
 
