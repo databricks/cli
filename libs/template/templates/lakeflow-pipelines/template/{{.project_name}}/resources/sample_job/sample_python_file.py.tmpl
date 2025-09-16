@@ -2,6 +2,7 @@ import argparse
 from datetime import datetime
 from shared import taxis
 
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--catalog", default="{{.default_catalog}}")
@@ -14,6 +15,7 @@ def main():
     df.write.mode("overwrite").saveAsTable(table_name)
 
     print(f"Wrote {df.count()} taxi records to {table_name}")
+
 
 if __name__ == "__main__":
     main()

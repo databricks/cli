@@ -1,4 +1,4 @@
-import dlt
+from pyspark import pipelines as dp
 from pyspark.sql.functions import col
 
 
@@ -7,6 +7,6 @@ from pyspark.sql.functions import col
 # using "+ Add" in the file browser.
 
 
-@dlt.table
+@dp.table
 def sample_trips_my_lakeflow_pipelines():
     return spark.read.table("samples.nyctaxi.trips")
