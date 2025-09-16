@@ -62,10 +62,10 @@ func checkForPreventDestroy(b *bundle.Bundle, actions []deployplan.Action) error
 		}
 
 		path := dyn.NewPath(dyn.Key("resources"), dyn.Key(action.Group), dyn.Key(action.Key), dyn.Key("lifecycle"), dyn.Key("prevent_destroy"))
-		// If there is no prevent_destroy, skip
+		// If there is no prevent_destroy, skip and check other resources
 		preventDestroyV, err := dyn.GetByPath(root, path)
 		if err != nil {
-			return nil
+			continue
 		}
 
 		preventDestroy, ok := preventDestroyV.AsBool()
