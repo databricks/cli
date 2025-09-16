@@ -3,10 +3,7 @@ $CLI bundle validate
 title "API request paths"
 trace cat out.requests.txt | jq .path
 
-title "engine value in user agent"
-trace cat out.requests.txt | jq -r '.headers["User-Agent"][0] | split(" ") | map(select(startswith("engine/"))) | .[0]'
+title "write engine value in user agent to file"
+trace cat out.requests.txt | jq -r '.headers["User-Agent"][0] | split(" ") | map(select(startswith("engine/"))) | .[0]'  > out.user_agent.$DATABRICKS_CLI_DEPLOYMENT.txt
 
-cat output.txt > output.$DATABRICKS_CLI_DEPLOYMENT.txt
-
-rm output.txt
 rm out.requests.txt

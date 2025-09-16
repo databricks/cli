@@ -13,9 +13,5 @@ Validation OK!
 "/api/2.0/workspace/mkdirs"
 "/api/2.0/workspace/get-status"
 
-=== engine value in user agent
+=== write engine value in user agent to file
 >>> cat out.requests.txt
-engine/terraform
-engine/terraform
-engine/terraform
-engine/terraform
