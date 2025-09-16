@@ -54,16 +54,11 @@ func InitializeBundle(cmd *cobra.Command) *bundle.Bundle {
 
 func deploymentEngine(ctx context.Context) (string, error) {
 	engine := os.Getenv("DATABRICKS_CLI_DEPLOYMENT")
-	if engine == "" || engine == "terraform" {
+	switch engine {
+	case "terraform", "":
 		return "terraform", nil
-	}
-
-	// We use "direct-exp" while direct backend is not suitable for end users.
-	// Once we consider it usable we'll change the value to "direct".
-	// This is to prevent accidentally running direct backend with older CLI versions where it was still considered experimental.
-	if engine == "direct-exp" {
+	case "direct-exp":
 		return "direct-exp", nil
 	}
-
 	return "", fmt.Errorf("unexpected setting for DATABRICKS_CLI_DEPLOYMENT=%#v (expected 'terraform' or 'direct-exp' or absent/empty which means 'terraform')", engine)
 }
