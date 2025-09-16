@@ -18,7 +18,7 @@ RecordRequests = false
 #   25:           }
 #
 # At least 1 "new_cluster" blocks are required.
-EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["direct-exp"]
+EnvMatrix.DATABRICKS_CLI_BUNDLE_ENGINE = ["direct-exp"]
 
 [[Server]]
 Pattern = "POST /api/2.2/jobs/create"

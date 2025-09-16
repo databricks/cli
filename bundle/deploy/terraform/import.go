@@ -29,7 +29,7 @@ type importResource struct {
 // Apply implements bundle.Mutator.
 func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	if b.DirectDeployment {
-		return diag.Errorf("import is not implemented for DATABRICKS_CLI_DEPLOYMENT=direct")
+		return diag.Errorf("import is not implemented for DATABRICKS_CLI_BUNDLE_ENGINE=direct")
 	}
 
 	dir, err := Dir(ctx, b)

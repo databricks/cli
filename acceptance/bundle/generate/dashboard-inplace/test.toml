@@ -1,4 +1,4 @@
-EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["terraform"]  # dashboards not supported yet
+EnvMatrix.DATABRICKS_CLI_BUNDLE_ENGINE = ["terraform"]  # dashboards not supported yet
 
 [[Repls]]
 Old = "[0-9a-f]{32}"

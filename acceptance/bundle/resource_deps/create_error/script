@@ -10,7 +10,7 @@ print_sorted_requests() {
 
 echo "*" > .gitignore
 trace $CLI bundle plan 2>&1
-musterr $CLI bundle deploy &> out.deploy.$DATABRICKS_CLI_DEPLOYMENT.txt
+musterr $CLI bundle deploy &> out.deploy.$DATABRICKS_CLI_BUNDLE_ENGINE.txt
 trace print_sorted_requests
 
 trace $CLI bundle summary
@@ -22,10 +22,10 @@ title "Plan should still contain foo and bar"
 trace $CLI bundle plan
 
 rm out.requests.txt
-musterr $CLI bundle deploy &> out.deploy2.$DATABRICKS_CLI_DEPLOYMENT.txt
+musterr $CLI bundle deploy &> out.deploy2.$DATABRICKS_CLI_BUNDLE_ENGINE.txt
 title "Expecting no difference in the output between first and second deploy"
-diff.py out.deploy.$DATABRICKS_CLI_DEPLOYMENT.txt out.deploy2.$DATABRICKS_CLI_DEPLOYMENT.txt
-rm out.deploy2.$DATABRICKS_CLI_DEPLOYMENT.txt
+diff.py out.deploy.$DATABRICKS_CLI_BUNDLE_ENGINE.txt out.deploy2.$DATABRICKS_CLI_BUNDLE_ENGINE.txt
+rm out.deploy2.$DATABRICKS_CLI_BUNDLE_ENGINE.txt
 trace print_requests
 
 trace $CLI bundle destroy --auto-approve

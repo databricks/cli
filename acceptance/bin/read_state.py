@@ -48,7 +48,7 @@ def print_resource_terranova(group, name, *attrs):
     print(group, name, " ".join(values))
 
 
-if os.environ.get("DATABRICKS_CLI_DEPLOYMENT", "").startswith("direct"):
+if os.environ.get("DATABRICKS_CLI_BUNDLE_ENGINE", "").startswith("direct"):
     print_resource_terranova(*sys.argv[1:])
 else:
     print_resource_terraform(*sys.argv[1:])
