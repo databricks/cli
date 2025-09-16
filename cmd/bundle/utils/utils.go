@@ -57,7 +57,7 @@ func ConfigureBundleWithVariables(cmd *cobra.Command) *bundle.Bundle {
 }
 
 func deploymentEngine(ctx context.Context) (string, error) {
-	engine := env.Get(ctx, "DATABRICKS_CLI_DEPLOYMENT")
+	engine := env.Get(ctx, "DATABRICKS_BUNDLE_ENGINE")
 
 	// By default, use Terraform
 	if engine == "" {
@@ -65,7 +65,7 @@ func deploymentEngine(ctx context.Context) (string, error) {
 	}
 
 	if engine != "terraform" && engine != "direct-exp" {
-		return "", fmt.Errorf("unexpected setting for DATABRICKS_CLI_DEPLOYMENT=%#v (expected 'terraform' or 'direct-exp' or absent/empty which means 'terraform')", engine)
+		return "", fmt.Errorf("unexpected setting for DATABRICKS_BUNDLE_ENGINE=%#v (expected 'terraform' or 'direct-exp' or absent/empty which means 'terraform')", engine)
 	}
 
 	return engine, nil

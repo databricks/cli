@@ -4,6 +4,6 @@ title "API request paths"
 trace cat out.requests.txt | jq .path
 
 title "write engine value in user agent to file"
-trace cat out.requests.txt | jq -r '.headers["User-Agent"][0] | split(" ") | map(select(startswith("engine/"))) | .[0]'  > out.user_agent.$DATABRICKS_CLI_DEPLOYMENT.txt
+trace cat out.requests.txt | jq -r '.headers["User-Agent"][0] | split(" ") | map(select(startswith("engine/"))) | .[0]'  > out.user_agent.$DATABRICKS_BUNDLE_ENGINE.txt
 
 rm out.requests.txt
