@@ -1,6 +1,7 @@
 package deployplan
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -26,4 +27,10 @@ func TestStringShort(t *testing.T) {
 			"update(id_changes)",
 		},
 	}, shortMap)
+}
+
+func TestNoStringer(t *testing.T) {
+	// Users should explicitly choose between full and short name, no default String()
+	_, hasStringer := any(ActionTypeNoop).(fmt.Stringer)
+	require.False(t, hasStringer)
 }
