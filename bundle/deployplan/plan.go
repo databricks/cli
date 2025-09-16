@@ -39,14 +39,8 @@ func (p Plan) GetActions() []Action {
 	actions := make([]Action, 0, len(p.Plan))
 	for key, entry := range p.Plan {
 		at := ActionTypeFromString(entry.Action)
-		if at == ActionTypeUnset {
-			continue
-		}
-		if entry.Action == ActionTypeNoop.StringFull() {
-			continue
-		}
 		parts := strings.SplitN(strings.TrimPrefix(key, "resources."), ".", 2)
-		if len(parts) != 2 {
+		if len(parts) < 2 {
 			continue
 		}
 		actions = append(actions, Action{
