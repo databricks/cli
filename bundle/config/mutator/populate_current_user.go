@@ -3,6 +3,7 @@ package mutator
 import (
 	"context"
 	"encoding/json"
+
 	"github.com/databricks/cli/libs/log"
 
 	"github.com/databricks/cli/bundle"
