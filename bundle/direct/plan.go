@@ -58,18 +58,11 @@ func (d *DeploymentUnit) refreshRemoteState(ctx context.Context, id string) erro
 	if d.RemoteState != nil {
 		return nil
 	}
-
-	// TODO retry failures
 	remoteState, err := d.Adapter.DoRefresh(ctx, id)
 	if err != nil {
 		return fmt.Errorf("failed to refresh remote state id=%s: %w", id, err)
 	}
-	err = d.SetRemoteState(remoteState)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return d.SetRemoteState(remoteState)
 }
 
 var ErrDelayed = errors.New("must be resolved after apply")
@@ -163,6 +156,7 @@ func (d *DeploymentUnit) ResolveReferenceRemote(ctx context.Context, db *dstate.
 	return d.ReadRemoteStateField(ctx, db, fieldPath)
 }
 
+// ReadRemoteStateField reads a field from remote state with refresh if needed.
 func (d *DeploymentUnit) ReadRemoteStateField(ctx context.Context, db *dstate.DeploymentState, fieldPath dyn.Path) (any, error) {
 	// We have options:
 	// 1) Rely on the cached value; refresh if not cached.

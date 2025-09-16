@@ -1,15 +1,16 @@
-package phases
+package terraform
 
 import (
+	"context"
 	"testing"
 
-	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestParseTerraformActions(t *testing.T) {
+func TestPopulatePlan(t *testing.T) {
+	ctx := context.Background()
 	changes := []*tfjson.ResourceChange{
 		{
 			Type: "databricks_pipeline",
@@ -41,7 +42,13 @@ func TestParseTerraformActions(t *testing.T) {
 		},
 	}
 
-	actions := terraform.GetActions(t.Context(), changes)
+	plan := &deployplan.Plan{
+		Plan: make(map[string]deployplan.PlanEntry),
+	}
+
+	populatePlan(ctx, plan, changes)
+
+	actions := plan.GetActions()
 	res := deployplan.FilterGroup(actions, "pipelines", deployplan.ActionTypeDelete, deployplan.ActionTypeRecreate)
 
 	assert.Equal(t, []deployplan.Action{
@@ -60,4 +67,17 @@ func TestParseTerraformActions(t *testing.T) {
 			},
 		},
 	}, res)
+
+	// Also test that the plan was populated correctly with expected entries
+	assert.Contains(t, plan.Plan, "resources.pipelines.create pipeline")
+	assert.Equal(t, "create", plan.Plan["resources.pipelines.create pipeline"].Action)
+
+	assert.Contains(t, plan.Plan, "resources.pipelines.delete pipeline")
+	assert.Equal(t, "delete", plan.Plan["resources.pipelines.delete pipeline"].Action)
+
+	assert.Contains(t, plan.Plan, "resources.pipelines.recreate pipeline")
+	assert.Equal(t, "recreate", plan.Plan["resources.pipelines.recreate pipeline"].Action)
+
+	// Unknown resource type should not be in the plan
+	assert.NotContains(t, plan.Plan, "resources.recreate whatever")
 }

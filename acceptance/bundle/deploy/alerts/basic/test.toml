@@ -1,4 +1,4 @@
-Cloud = true
+Cloud = false
 Local = false
 
 # Permissions with alerts does not work with direct deployment yet.
