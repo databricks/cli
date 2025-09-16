@@ -2,6 +2,7 @@ package bundle
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
@@ -9,7 +10,7 @@ import (
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
 )
@@ -72,10 +73,28 @@ func newPlanCommand() *cobra.Command {
 			return root.ErrAlreadyPrinted
 		}
 
-		changes := phases.Diff(ctx, b)
+		plan := phases.Plan(ctx, b)
+		if logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
+		}
 
-		for _, change := range changes {
-			cmdio.LogString(ctx, fmt.Sprintf("%s %s.%s", change.ActionType.String(), change.Group, change.Key))
+		out := cmd.OutOrStdout()
+
+		switch root.OutputType(cmd) {
+		case flags.OutputText:
+			for _, action := range plan.GetActions() {
+				fmt.Fprintf(out, "%s %s.%s\n", action.ActionType.StringShort(), action.Group, action.Key)
+			}
+		case flags.OutputJSON:
+			buf, err := json.MarshalIndent(plan, "", "  ")
+			if err != nil {
+				return err
+			}
+			fmt.Fprintln(out, string(buf))
+			if logdiag.HasError(ctx) {
+				return root.ErrAlreadyPrinted
+			}
+			return nil
 		}
 
 		if logdiag.HasError(ctx) {
