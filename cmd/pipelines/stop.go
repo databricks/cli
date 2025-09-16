@@ -53,7 +53,7 @@ If there is only one pipeline in the project, KEY is optional and the pipeline w
 		ctx := logdiag.InitContext(cmd.Context())
 		cmd.SetContext(ctx)
 
-		b := utils.ConfigureBundleWithVariables(cmd)
+		b := utils.InitializeBundle(cmd)
 		if b == nil || logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}

@@ -1,3 +1,5 @@
+
+>>> [CLI] bundle validate
 Name: test-bundle
 Target: default
 Workspace:

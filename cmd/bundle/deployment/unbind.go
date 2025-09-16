@@ -57,7 +57,7 @@ To re-bind the resource later, use:
 		ctx := logdiag.InitContext(cmd.Context())
 		cmd.SetContext(ctx)
 
-		b := utils.ConfigureBundleWithVariables(cmd)
+		b := utils.InitializeBundle(cmd)
 		if b == nil || logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}

@@ -1,4 +1,4 @@
-$CLI bundle validate
+trace $CLI bundle validate
 
 title "API request paths"
 trace cat out.requests.txt | jq .path
