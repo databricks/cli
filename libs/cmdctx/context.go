@@ -3,7 +3,6 @@ package cmdctx
 import (
 	"context"
 
-	"github.com/databricks/cli/libs/env"
 	"github.com/google/uuid"
 )
 
@@ -30,10 +29,6 @@ const (
 	// accountClientKey is the context key for an already configured account
 	// client that can be used to make authenticated requests.
 	accountClientKey = key(4)
-
-	// deploymentEngineKey is the context key for the deployment engine used to run the
-	// command.
-	deploymentEngineKey = key(5)
 )
 
 func GenerateExecId(ctx context.Context) context.Context {
@@ -52,18 +47,4 @@ func ExecId(ctx context.Context) string {
 		panic("cmdctx.ExecId called without calling command.SetExecId first")
 	}
 	return v.(string)
-}
-
-func DeploymentEngine(ctx context.Context) string {
-	v := ctx.Value(deploymentEngineKey)
-	if v != nil {
-		return v.(string)
-	}
-
-	engine := env.Get(ctx, "DATABRICKS_CLI_DEPLOYMENT")
-	if engine == "" {
-		return "terraform"
-	}
-
-	return engine
 }
