@@ -1,42 +1,40 @@
-package server
+package proxy
 
 import (
 	"sync"
 	"time"
-
-	"github.com/databricks/cli/experimental/ssh/internal/proxy"
 )
 
-// connectionsManager manages concurrent websocket clients and sends a shutdown signal if no
+// ConnectionsManager manages concurrent websocket clients and sends a shutdown signal if no
 // clients are connected for a specified duration.
-type connectionsManager struct {
+type ConnectionsManager struct {
 	maxClients      int
 	shutdownDelay   time.Duration
 	shutdownTimer   *time.Timer
 	shutdownTimerMu sync.Mutex
-	connections     map[string]*proxy.ProxyConnection
+	connections     map[string]*proxyConnection
 	connectionsMu   sync.Mutex
 	TimedOut        chan bool
 }
 
-func newConnectionsManager(maxClients int, shutdownDelay time.Duration) *connectionsManager {
-	cm := &connectionsManager{
+func NewConnectionsManager(maxClients int, shutdownDelay time.Duration) *ConnectionsManager {
+	cm := &ConnectionsManager{
 		maxClients:    maxClients,
 		shutdownDelay: shutdownDelay,
-		connections:   make(map[string]*proxy.ProxyConnection),
+		connections:   make(map[string]*proxyConnection),
 		TimedOut:      make(chan bool),
 	}
 	cm.startShutdownTimer()
 	return cm
 }
 
-func (cm *connectionsManager) Count() int {
+func (cm *ConnectionsManager) Count() int {
 	cm.connectionsMu.Lock()
 	defer cm.connectionsMu.Unlock()
 	return len(cm.connections)
 }
 
-func (cm *connectionsManager) TryAdd(id string, conn *proxy.ProxyConnection) bool {
+func (cm *ConnectionsManager) TryAdd(id string, conn *proxyConnection) bool {
 	count := cm.Count()
 	if count >= cm.maxClients {
 		return false
@@ -46,20 +44,20 @@ func (cm *connectionsManager) TryAdd(id string, conn *proxy.ProxyConnection) boo
 	return true
 }
 
-func (cm *connectionsManager) addConnection(id string, conn *proxy.ProxyConnection) {
+func (cm *ConnectionsManager) addConnection(id string, conn *proxyConnection) {
 	cm.connectionsMu.Lock()
 	defer cm.connectionsMu.Unlock()
 	cm.connections[id] = conn
 }
 
-func (cm *connectionsManager) Get(id string) (*proxy.ProxyConnection, bool) {
+func (cm *ConnectionsManager) Get(id string) (*proxyConnection, bool) {
 	cm.connectionsMu.Lock()
 	defer cm.connectionsMu.Unlock()
 	conn, exists := cm.connections[id]
 	return conn, exists
 }
 
-func (cm *connectionsManager) Remove(id string) {
+func (cm *ConnectionsManager) Remove(id string) {
 	cm.removeConnection(id)
 	count := cm.Count()
 	if count <= 0 {
@@ -67,13 +65,13 @@ func (cm *connectionsManager) Remove(id string) {
 	}
 }
 
-func (cm *connectionsManager) removeConnection(id string) {
+func (cm *ConnectionsManager) removeConnection(id string) {
 	cm.connectionsMu.Lock()
 	defer cm.connectionsMu.Unlock()
 	delete(cm.connections, id)
 }
 
-func (cm *connectionsManager) startShutdownTimer() {
+func (cm *ConnectionsManager) startShutdownTimer() {
 	cm.shutdownTimerMu.Lock()
 	defer cm.shutdownTimerMu.Unlock()
 	if cm.shutdownTimer != nil {
@@ -84,7 +82,7 @@ func (cm *connectionsManager) startShutdownTimer() {
 	})
 }
 
-func (cm *connectionsManager) cancelShutdownTimer() {
+func (cm *ConnectionsManager) cancelShutdownTimer() {
 	cm.shutdownTimerMu.Lock()
 	defer cm.shutdownTimerMu.Unlock()
 	if cm.shutdownTimer != nil {

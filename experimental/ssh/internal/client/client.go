@@ -26,7 +26,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/gorilla/websocket"
-	"golang.org/x/sync/errgroup"
 )
 
 //go:embed ssh-server-bootstrap.py
@@ -63,7 +62,7 @@ type ClientOptions struct {
 	AdditionalArgs []string
 }
 
-func RunClient(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOptions) error {
+func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOptions) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -85,11 +84,11 @@ func RunClient(ctx context.Context, client *databricks.WorkspaceClient, opts Cli
 	}
 	cmdio.LogString(ctx, "Using SSH key: "+privateKeyPath)
 
-	secretsScopeName, err := keys.PutSecretInScope(ctx, client, opts.ClusterID, opts.ClientPublicKeyName, publicKey)
+	keysSecretScopeName, err := keys.PutSecretInScope(ctx, client, opts.ClusterID, opts.ClientPublicKeyName, publicKey)
 	if err != nil {
 		return fmt.Errorf("failed to store public key in secret scope: %w", err)
 	}
-	cmdio.LogString(ctx, fmt.Sprintf("Secrets scope: %s, key name: %s", secretsScopeName, opts.ClientPublicKeyName))
+	cmdio.LogString(ctx, fmt.Sprintf("Secrets scope: %s, key name: %s", keysSecretScopeName, opts.ClientPublicKeyName))
 
 	var userName string
 	var serverPort int
@@ -101,7 +100,7 @@ func RunClient(ctx context.Context, client *databricks.WorkspaceClient, opts Cli
 		if err := UploadTunnelReleases(ctx, client, version, opts.ReleasesDir); err != nil {
 			return fmt.Errorf("failed to upload ssh-tunnel binaries: %w", err)
 		}
-		userName, serverPort, err = ensureSSHServerIsRunning(ctx, client, opts.ClusterID, secretsScopeName, opts.ClientPublicKeyName, version, opts.ShutdownDelay, opts.MaxClients, opts.ServerTimeout)
+		userName, serverPort, err = ensureSSHServerIsRunning(ctx, client, opts.ClusterID, keysSecretScopeName, opts.ClientPublicKeyName, version, opts.ShutdownDelay, opts.MaxClients, opts.ServerTimeout)
 		if err != nil {
 			return fmt.Errorf("failed to ensure that ssh server is running: %w", err)
 		}
@@ -124,7 +123,7 @@ func RunClient(ctx context.Context, client *databricks.WorkspaceClient, opts Cli
 	cmdio.LogString(ctx, fmt.Sprintf("Server port: %d", serverPort))
 
 	if opts.ProxyMode {
-		return startSSHProxy(ctx, client, opts.ClusterID, serverPort, opts.HandoverTimeout)
+		return runSSHProxy(ctx, client, opts.ClusterID, serverPort, opts.HandoverTimeout)
 	} else {
 		cmdio.LogString(ctx, fmt.Sprintf("Additional SSH arguments: %v", opts.AdditionalArgs))
 		return spawnSSHClient(ctx, opts.ClusterID, userName, privateKeyPath, serverPort, opts.HandoverTimeout, opts.AdditionalArgs)
@@ -165,7 +164,7 @@ func getServerMetadata(ctx context.Context, client *databricks.WorkspaceClient, 
 	return serverPort, string(bodyBytes), nil
 }
 
-func submitSSHTunnelJob(ctx context.Context, client *databricks.WorkspaceClient, clusterID, secretsScope, publicKeySecretName, version string, shutdownDelay time.Duration, maxClients int, serverTimeout time.Duration) (int64, error) {
+func submitSSHTunnelJob(ctx context.Context, client *databricks.WorkspaceClient, clusterID, keysSecretScopeName, publicKeySecretName, version string, shutdownDelay time.Duration, maxClients int, serverTimeout time.Duration) (int64, error) {
 	contentDir, err := sshWorkspace.GetWorkspaceContentDir(ctx, client, version, clusterID)
 	if err != nil {
 		return 0, fmt.Errorf("failed to get workspace content directory: %w", err)
@@ -201,11 +200,11 @@ func submitSSHTunnelJob(ctx context.Context, client *databricks.WorkspaceClient,
 				NotebookTask: &jobs.NotebookTask{
 					NotebookPath: jobNotebookPath,
 					BaseParameters: map[string]string{
-						"version":             version,
-						"secretsScope":        secretsScope,
-						"publicKeySecretName": publicKeySecretName,
-						"shutdownDelay":       shutdownDelay.String(),
-						"maxClients":          strconv.Itoa(maxClients),
+						"version":                 version,
+						"keysSecretScopeName":     keysSecretScopeName,
+						"authorizedKeySecretName": publicKeySecretName,
+						"shutdownDelay":           shutdownDelay.String(),
+						"maxClients":              strconv.Itoa(maxClients),
 					},
 				},
 				TimeoutSeconds:    int(serverTimeout.Seconds()),
@@ -253,45 +252,14 @@ func spawnSSHClient(ctx context.Context, clusterID, userName, privateKeyPath str
 	return sshCmd.Run()
 }
 
-func startSSHProxy(ctx context.Context, client *databricks.WorkspaceClient, clusterID string, serverPort int, handoverTimeout time.Duration) error {
-	g, gCtx := errgroup.WithContext(ctx)
-
-	cmdio.LogString(ctx, "Establishing SSH proxy connection...")
-	conn := proxy.NewProxyConnection(func(ctx context.Context, connID string) (*websocket.Conn, error) {
+func runSSHProxy(ctx context.Context, client *databricks.WorkspaceClient, clusterID string, serverPort int, handoverTimeout time.Duration) error {
+	createConn := func(ctx context.Context, connID string) (*websocket.Conn, error) {
 		return createWebsocketConnection(ctx, client, connID, clusterID, serverPort)
-	})
-	if err := conn.Connect(gCtx); err != nil {
-		return fmt.Errorf("failed to connect to proxy: %w", err)
 	}
-	defer conn.Close()
-	cmdio.LogString(ctx, "SSH proxy connection established")
-
-	cmdio.LogString(ctx, fmt.Sprintf("Connection handover timeout: %v", handoverTimeout))
-	handoverTicker := time.NewTicker(handoverTimeout)
-	defer handoverTicker.Stop()
-
-	g.Go(func() error {
-		for {
-			select {
-			case <-gCtx.Done():
-				return gCtx.Err()
-			case <-handoverTicker.C:
-				err := conn.InitiateHandover(gCtx)
-				if err != nil {
-					return err
-				}
-			}
-		}
-	})
-
-	g.Go(func() error {
-		return conn.Start(gCtx, os.Stdin, os.Stdout)
-	})
-
-	return g.Wait()
+	return proxy.RunClientProxy(ctx, os.Stdin, os.Stdout, handoverTimeout, createConn)
 }
 
-func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceClient, clusterID, secretsScope, publicKeySecretName, version string, shutdownDelay time.Duration, maxClients int, serverTimeout time.Duration) (string, int, error) {
+func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceClient, clusterID, keysSecretScopeName, publicKeySecretName, version string, shutdownDelay time.Duration, maxClients int, serverTimeout time.Duration) (string, int, error) {
 	cmdio.LogString(ctx, "Ensuring the cluster is running: "+clusterID)
 	err := client.Clusters.EnsureClusterIsRunning(ctx, clusterID)
 	if err != nil {
@@ -302,7 +270,7 @@ func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceC
 	if errors.Is(err, errServerMetadata) {
 		cmdio.LogString(ctx, "SSH server is not running, starting it now...")
 
-		runID, err := submitSSHTunnelJob(ctx, client, clusterID, secretsScope, publicKeySecretName, version, shutdownDelay, maxClients, serverTimeout)
+		runID, err := submitSSHTunnelJob(ctx, client, clusterID, keysSecretScopeName, publicKeySecretName, version, shutdownDelay, maxClients, serverTimeout)
 		if err != nil {
 			return "", 0, fmt.Errorf("failed to submit ssh server job: %w", err)
 		}
