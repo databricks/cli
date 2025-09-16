@@ -33,7 +33,10 @@ resources:
           notebook_task:
             notebook_path: sample_notebook.ipynb
   {{- if $serverless}}
+    {{- /* Environments for notebooks are still in private preview */}}
+    {{- if $python_package}}
           environment_key: default
+    {{- end}}
   {{- else}}
           job_cluster_key: job_cluster
     {{- if $python_package}}
