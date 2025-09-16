@@ -3,7 +3,7 @@ package mutator
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"github.com/databricks/cli/libs/log"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
@@ -36,7 +36,7 @@ func (m *populateCurrentUser) initializeCache(ctx context.Context, b *bundle.Bun
 
 	m.cache = bundle.NewFileCache(cacheDir)
 
-	fmt.Printf("[DEBUG antonnek] New cache dir initialized: %s\n", cacheDir)
+	log.Debugf(ctx, "[Local Cache] New cache dir initialized: %s\n", cacheDir)
 
 	return nil
 }
@@ -52,11 +52,11 @@ func (m *populateCurrentUser) Apply(ctx context.Context, b *bundle.Bundle) diag.
 
 	err := m.initializeCache(ctx, b)
 	if err != nil {
-		fmt.Printf("[DEBUG antonnek] failed to initialize cache: %v \n", err)
+		log.Debugf(ctx, "[Local Cache] failed to initialize cache: %v \n", err)
 	}
 	w := b.WorkspaceClient()
 
-	bearerToken := m.getBearerToken(w)
+	bearerToken := m.getBearerToken(ctx, w)
 	me := m.getUserFromCache(ctx, bearerToken)
 
 	if me == nil {
@@ -80,15 +80,15 @@ func (m *populateCurrentUser) Apply(ctx context.Context, b *bundle.Bundle) diag.
 }
 
 // getBearerToken extracts the bearer token from the workspace client's token source
-func (m *populateCurrentUser) getBearerToken(w *databricks.WorkspaceClient) string {
+func (m *populateCurrentUser) getBearerToken(ctx context.Context, w *databricks.WorkspaceClient) string {
 	bearerToken := ""
 	tokenSource := w.Config.GetTokenSource()
 	if tokenSource == nil {
-		fmt.Printf("[DEBUG antonnek] token source not found\n")
+		log.Debugf(ctx, "[Local Cache] token source not found\n")
 	} else {
 		token, err := tokenSource.Token(context.Background())
 		if err != nil {
-			fmt.Printf("[DEBUG antonnek] error reading token source: %v \n", err)
+			log.Debugf(ctx, "[Local Cache] error reading token source: %v \n", err)
 		} else {
 			bearerToken = token.AccessToken
 		}
@@ -102,8 +102,8 @@ func (m *populateCurrentUser) getUserFromCache(ctx context.Context, bearerToken 
 		return nil
 	}
 
-	fmt.Printf("[DEBUG antonnek] bearer token found: will use that for cache fingerprint\n")
-	fmt.Printf("[DEBUG antonnek] bearer token: %s\n", bearerToken)
+	log.Debugf(ctx, "[Local Cache] bearer token found: will use that for cache fingerprint\n")
+	log.Debugf(ctx, "[Local Cache] bearer token: %s\n", bearerToken)
 
 	fingerprint, err := bundle.GenerateFingerprint("auth_header", bearerToken)
 	if err != nil {
@@ -114,7 +114,7 @@ func (m *populateCurrentUser) getUserFromCache(ctx context.Context, bearerToken 
 	if isCacheHit {
 		var me *iam.User
 		if err := json.Unmarshal(cachedUserBytes, &me); err == nil {
-			fmt.Printf("[DEBUG antonnek] user info read from cache: %s\n", fingerprint)
+			log.Debugf(ctx, "[Local Cache] user info read from cache: %s\n", fingerprint)
 			return me
 		}
 	}
@@ -130,7 +130,7 @@ func (m *populateCurrentUser) storeUserInCache(ctx context.Context, bearerToken 
 
 	userBytes, err := json.Marshal(user)
 	if err != nil {
-		fmt.Printf("[DEBUG antonnek] could not serialize current user information: %v\n", err)
+		log.Debugf(ctx, "[Local Cache] could not serialize current user information: %v\n", err)
 		return
 	}
 
@@ -141,8 +141,8 @@ func (m *populateCurrentUser) storeUserInCache(ctx context.Context, bearerToken 
 
 	err = m.cache.Store(ctx, fingerprint, userBytes)
 	if err != nil {
-		fmt.Printf("[DEBUG antonnek] could not store user information: %v\n", err)
+		log.Debugf(ctx, "[Local Cache] could not store user information: %v\n", err)
 	} else {
-		fmt.Printf("[DEBUG antonnek] stored user information in cache: %s\n", fingerprint)
+		log.Debugf(ctx, "[Local Cache] stored user information in cache: %s\n", fingerprint)
 	}
 }
