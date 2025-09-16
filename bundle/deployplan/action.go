@@ -51,6 +51,9 @@ var nameToAction = map[string]ActionType{}
 
 func init() {
 	for k, v := range actionName {
+		if _, ok := nameToAction[v]; ok {
+			panic("duplicate action string: " + v)
+		}
 		nameToAction[v] = k
 	}
 }
