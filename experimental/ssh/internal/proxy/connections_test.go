@@ -104,7 +104,7 @@ func TestConnectionsManager_ThreadSafety(t *testing.T) {
 
 	// Verify we can get the count without race conditions
 	countAfterAdds := cm.Count()
-	assert.Equal(t, countAfterAdds, numGoroutines*numOperationsPerGoroutine)
+	assert.Equal(t, numGoroutines*numOperationsPerGoroutine, countAfterAdds)
 
 	// Now do concurrent gets, removes, and counts
 	for i := range numGoroutines {
