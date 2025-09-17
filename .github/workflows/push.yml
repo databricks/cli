@@ -135,7 +135,7 @@ jobs:
           make checks
           git diff --exit-code
 
-  validate-bundle-schema:
+  validate-generated-is-up-to-date:
     needs: cleanups
     runs-on: ubuntu-latest
 
