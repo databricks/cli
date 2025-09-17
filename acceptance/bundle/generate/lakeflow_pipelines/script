@@ -1,0 +1,9 @@
+export PIPELINE_ID=$($CLI pipelines create --json @pipeline.json | jq -r .pipeline_id)
+
+$CLI bundle generate pipeline --existing-pipeline-id ${PIPELINE_ID} --config-dir out/config --key out --source-dir out/pipeline > out.stdout 2> out.stderr
+
+# Combine stdout and stderr, then sort only the "File successfully saved" lines
+cat out.stdout out.stderr > out.txt
+grep -v "^File successfully saved" out.txt
+grep "^File successfully saved" out.txt | sort
+rm out.txt out.stdout out.stderr
