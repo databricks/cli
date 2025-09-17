@@ -6,6 +6,8 @@ import (
 	"regexp"
 	"strings"
 	"unicode"
+
+	"github.com/databricks/cli/libs/textutil"
 )
 
 // The tag type holds the validation and normalization rules for
@@ -13,11 +15,11 @@ import (
 type tag struct {
 	keyLength    int
 	keyPattern   *regexp.Regexp
-	keyNormalize transformer
+	keyNormalize textutil.Transformer
 
 	valueLength    int
 	valuePattern   *regexp.Regexp
-	valueNormalize transformer
+	valueNormalize textutil.Transformer
 }
 
 func (t *tag) ValidateKey(s string) error {
@@ -50,9 +52,9 @@ func (t *tag) ValidateValue(s string) error {
 }
 
 func (t *tag) NormalizeKey(s string) string {
-	return t.keyNormalize.transform(s)
+	return t.keyNormalize.TransformString(s)
 }
 
 func (t *tag) NormalizeValue(s string) string {
-	return t.valueNormalize.transform(s)
+	return t.valueNormalize.TransformString(s)
 }

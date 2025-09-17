@@ -3,6 +3,8 @@ package tags
 import (
 	"regexp"
 	"unicode"
+
+	"github.com/databricks/cli/libs/textutil"
 )
 
 // Tag keys and values on GCP are limited to 63 characters and must match the
@@ -45,19 +47,19 @@ var gcpInner = &unicode.RangeTable{
 var gcpTag = &tag{
 	keyLength:  63,
 	keyPattern: regexp.MustCompile(`^([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9]$`),
-	keyNormalize: chain(
-		normalizeMarks(),
-		replaceNotIn(latin1, '_'),
-		replaceNotIn(gcpInner, '_'),
-		trimIfNotIn(gcpOuter),
+	keyNormalize: textutil.Chain(
+		textutil.NormalizeMarks(),
+		textutil.ReplaceNotIn(latin1, '_'),
+		textutil.ReplaceNotIn(gcpInner, '_'),
+		textutil.TrimIfNotIn(gcpOuter),
 	),
 
 	valueLength:  63,
 	valuePattern: regexp.MustCompile(`^(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?$`),
-	valueNormalize: chain(
-		normalizeMarks(),
-		replaceNotIn(latin1, '_'),
-		replaceNotIn(gcpInner, '_'),
-		trimIfNotIn(gcpOuter),
+	valueNormalize: textutil.Chain(
+		textutil.NormalizeMarks(),
+		textutil.ReplaceNotIn(latin1, '_'),
+		textutil.ReplaceNotIn(gcpInner, '_'),
+		textutil.TrimIfNotIn(gcpOuter),
 	),
 }

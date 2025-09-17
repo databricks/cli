@@ -3,6 +3,8 @@ package tags
 import (
 	"regexp"
 
+	"github.com/databricks/cli/libs/textutil"
+
 	"golang.org/x/text/unicode/rangetable"
 )
 
@@ -12,14 +14,14 @@ var azureForbiddenChars = rangetable.New('<', '>', '*', '&', '%', ';', '\\', '/'
 var azureTag = &tag{
 	keyLength:  512,
 	keyPattern: regexp.MustCompile(`^[^<>\*&%;\\\/\+\?]*$`),
-	keyNormalize: chain(
-		replaceNotIn(latin1, '_'),
-		replaceIn(azureForbiddenChars, '_'),
+	keyNormalize: textutil.Chain(
+		textutil.ReplaceNotIn(latin1, '_'),
+		textutil.ReplaceIn(azureForbiddenChars, '_'),
 	),
 
 	valueLength:  256,
 	valuePattern: regexp.MustCompile(`^.*$`),
-	valueNormalize: chain(
-		replaceNotIn(latin1, '_'),
+	valueNormalize: textutil.Chain(
+		textutil.ReplaceNotIn(latin1, '_'),
 	),
 }

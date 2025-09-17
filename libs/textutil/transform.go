@@ -1,4 +1,4 @@
-package tags
+package textutil
 
 import (
 	"strings"
@@ -9,34 +9,34 @@ import (
 	"golang.org/x/text/unicode/norm"
 )
 
-type transformer interface {
-	transform(string) string
+type Transformer interface {
+	TransformString(string) string
 }
 
-type chainTransformer []transformer
+type chainTransformer []Transformer
 
-func (c chainTransformer) transform(s string) string {
+func (c chainTransformer) TransformString(s string) string {
 	for _, t := range c {
-		s = t.transform(s)
+		s = t.TransformString(s)
 	}
 	return s
 }
 
-func chain(t ...transformer) transformer {
+func Chain(t ...Transformer) Transformer {
 	return chainTransformer(t)
 }
 
-// Implement [transformer] interface with text/transform package.
+// Implement [Transformer] interface with text/transform package.
 type textTransformer struct {
 	transform.Transformer
 }
 
-func (t textTransformer) transform(s string) string {
+func (t textTransformer) TransformString(s string) string {
 	s, _, _ = transform.String(t, s)
 	return s
 }
 
-func normalizeMarks() transformer {
+func NormalizeMarks() Transformer {
 	// Decompose unicode characters, then remove all non-spacing marks, then recompose.
 	// This turns 'é' into 'e' and 'ü' into 'u'.
 	return textTransformer{
@@ -50,7 +50,7 @@ type replaceTransformer struct {
 	replacement rune
 }
 
-func (t replaceTransformer) transform(s string) string {
+func (t replaceTransformer) TransformString(s string) string {
 	return strings.Map(func(r rune) rune {
 		if t.set.Contains(r) {
 			return t.replacement
@@ -59,11 +59,11 @@ func (t replaceTransformer) transform(s string) string {
 	}, s)
 }
 
-func replaceIn(table *unicode.RangeTable, replacement rune) transformer {
+func ReplaceIn(table *unicode.RangeTable, replacement rune) Transformer {
 	return replaceTransformer{runes.In(table), replacement}
 }
 
-func replaceNotIn(table *unicode.RangeTable, replacement rune) transformer {
+func ReplaceNotIn(table *unicode.RangeTable, replacement rune) Transformer {
 	return replaceTransformer{runes.NotIn(table), replacement}
 }
 
@@ -72,16 +72,16 @@ type trimTransformer struct {
 	set runes.Set
 }
 
-func (t trimTransformer) transform(s string) string {
+func (t trimTransformer) TransformString(s string) string {
 	return strings.TrimFunc(s, func(r rune) bool {
 		return t.set.Contains(r)
 	})
 }
 
-func trimIfIn(table *unicode.RangeTable) transformer {
+func trimIfIn(table *unicode.RangeTable) Transformer {
 	return trimTransformer{runes.In(table)}
 }
 
-func trimIfNotIn(table *unicode.RangeTable) transformer {
+func TrimIfNotIn(table *unicode.RangeTable) Transformer {
 	return trimTransformer{runes.NotIn(table)}
 }
