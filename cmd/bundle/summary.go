@@ -78,6 +78,10 @@ func runResolveConfig(ctx context.Context, cmd *cobra.Command) error {
 	if logdiag.HasError(ctx) {
 		return nil
 	}
+	bundle.ApplyContext(ctx, b, mutator.NormalizePaths())
+	if logdiag.HasError(ctx) {
+		return nil
+	}
 
 	err := renderJsonOutput(cmd, b)
 	if err != nil {
