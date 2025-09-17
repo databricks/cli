@@ -154,7 +154,7 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	require.NoError(t, err)
 	require.NotNil(t, remappedState)
 
-	require.NoError(t, structwalk.Walk(newState, func(path *structpath.PathNode, val any) {
+	require.NoError(t, structwalk.Walk(newState, func(path *structpath.PathNode, val any, field *reflect.StructField) {
 		remoteValue, err := structaccess.Get(remappedState, dyn.MustPathFromString(path.DynPath()))
 		if err != nil {
 			t.Errorf("Failed to read %s from remapped remote state %#v", path.DynPath(), remappedState)
@@ -187,7 +187,7 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 func validateFields(t *testing.T, configType reflect.Type, fields map[string]deployplan.ActionType) {
 	validPaths := make(map[string]struct{})
 
-	err := structwalk.WalkType(configType, func(path *structpath.PathNode, typ reflect.Type) bool {
+	err := structwalk.WalkType(configType, func(path *structpath.PathNode, typ reflect.Type, field *reflect.StructField) bool {
 		validPaths[path.String()] = struct{}{}
 		return true // continue walking
 	})

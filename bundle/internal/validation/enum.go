@@ -12,6 +12,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structtag"
 	"github.com/databricks/cli/libs/structs/structwalk"
 )
 
@@ -109,13 +110,13 @@ func getEnumValues(typ reflect.Type) ([]string, error) {
 func extractEnumFields(typ reflect.Type) ([]EnumPatternInfo, error) {
 	fieldsByPattern := make(map[string][]string)
 
-	err := structwalk.WalkType(typ, func(path *structpath.PathNode, fieldType reflect.Type) bool {
+	err := structwalk.WalkType(typ, func(path *structpath.PathNode, fieldType reflect.Type, field *reflect.StructField) bool {
 		if path == nil {
 			return true
 		}
 
 		// Do not generate enum validation code for fields that are internal or readonly.
-		bundleTag := path.BundleTag()
+		bundleTag := structtag.BundleTag(field.Tag.Get("bundle"))
 		if bundleTag.Internal() || bundleTag.ReadOnly() {
 			return false
 		}
