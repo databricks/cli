@@ -206,6 +206,13 @@ func TestPathNode(t *testing.T) {
 			String: "名前🙂",
 			Field:  "名前🙂",
 		},
+		{
+			name:    "map key with reserved characters",
+			node:    NewMapKey(nil, "key\x00[],`"),
+			String:  "['key\x00[],`']",
+			DynPath: "key\x00[],`",
+			MapKey:  "key\x00[],`",
+		},
 	}
 
 	for _, tt := range tests {
@@ -437,8 +444,9 @@ func TestParseErrors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := Parse(tt.input)
-			assert.Error(t, err)
-			assert.Equal(t, tt.error, err.Error())
+			if assert.Error(t, err) {
+				assert.Equal(t, tt.error, err.Error())
+			}
 		})
 	}
 }

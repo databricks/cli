@@ -291,8 +291,6 @@ func Parse(s string) (*PathNode, error) {
 			switch ch {
 			case '\'':
 				state = stateMapKeyQuote
-			case 0, ']':
-				return nil, fmt.Errorf("unterminated map key at position %d", pos)
 			default:
 				currentToken.WriteByte(ch)
 			}
@@ -314,7 +312,9 @@ func Parse(s string) (*PathNode, error) {
 
 		case stateWildcard:
 			if ch == ']' {
-				result = NewAnyKey(result) // Default to AnyKey for wildcards
+				// Note, since we're parsing this without type info present, we don't know if it's AnyKey or AnyIndex
+				// Perhaps structpath should be simplified to have Wildcard as merged representation of AnyKey/AnyIndex
+				result = NewAnyKey(result)
 				state = stateExpectDotOrEnd
 			} else {
 				return nil, fmt.Errorf("unexpected character '%c' after '*' at position %d", ch, pos)
