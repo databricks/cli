@@ -34,6 +34,7 @@ func (m *populateCurrentUser) Apply(ctx context.Context, b *bundle.Bundle) diag.
 
 	b.Config.Workspace.CurrentUser = &config.User{
 		ShortName: iamutil.GetShortUserName(me),
+		DnsName:   iamutil.GetShortUserDnsName(me),
 		User:      me,
 	}
 

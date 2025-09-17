@@ -111,3 +111,126 @@ func TestGetShortUserName(t *testing.T) {
 		assert.Equal(t, tt.expected, GetShortUserName(tt.user))
 	}
 }
+
+func TestGetShortUserDnsName(t *testing.T) {
+	tests := []struct {
+		name     string
+		user     *iam.User
+		expected string
+	}{
+		{
+			name: "basic email with dots",
+			user: &iam.User{
+				UserName: "test.user.1234@example.com",
+			},
+			expected: "test-user-1234",
+		},
+		{
+			name: "email with underscores",
+			user: &iam.User{
+				UserName: "test_user@example.com",
+			},
+			expected: "test-user",
+		},
+		{
+			name: "email with special characters",
+			user: &iam.User{
+				UserName: "test$#%user@example.com",
+			},
+			expected: "test-user",
+		},
+		{
+			name: "service principal with display name",
+			user: &iam.User{
+				UserName:    `1706906c-c0a2-4c25-9f57-3a7aa3cb8123`,
+				DisplayName: "my_service_principal",
+			},
+			expected: "my-service-principal",
+		},
+		{
+			name: "uppercase letters should be lowercased",
+			user: &iam.User{
+				UserName: "John.Doe@COMPANY.COM",
+			},
+			expected: "john-doe",
+		},
+		{
+			name: "mixed case with numbers",
+			user: &iam.User{
+				UserName: "User123.Test@example.com",
+			},
+			expected: "user123-test",
+		},
+		{
+			name: "unicode characters with normalization",
+			user: &iam.User{
+				UserName: "tést.üser@example.com",
+			},
+			expected: "test-user",
+		},
+		{
+			name: "complex special characters",
+			user: &iam.User{
+				UserName: "user+tag&more@example.com",
+			},
+			expected: "user-tag-more",
+		},
+		{
+			name: "service principal with mixed case display name",
+			user: &iam.User{
+				UserName:    `1706906c-c0a2-4c25-9f57-3a7aa3cb8123`,
+				DisplayName: "My_Service_Principal",
+			},
+			expected: "my-service-principal",
+		},
+		{
+			name: "email with multiple consecutive special chars",
+			user: &iam.User{
+				UserName: "test...user___name@example.com",
+			},
+			expected: "test-user-name",
+		},
+		{
+			name: "chinese characters in email",
+			user: &iam.User{
+				UserName: "用户.测试@example.com",
+			},
+			expected: "-----",
+		},
+		{
+			name: "japanese characters in email",
+			user: &iam.User{
+				UserName: "ユーザー.テスト@example.com",
+			},
+			expected: "--------",
+		},
+		{
+			name: "emoji in email",
+			user: &iam.User{
+				UserName: "user😀.test🚀@example.com",
+			},
+			expected: "user-test",
+		},
+		{
+			name: "mixed latin and chinese characters",
+			user: &iam.User{
+				UserName: "john.李明@company.com",
+			},
+			expected: "john---",
+		},
+		{
+			name: "service principal with emoji display name",
+			user: &iam.User{
+				UserName:    "1706906c-c0a2-4c25-9f57-3a7aa3cb8123",
+				DisplayName: "bot🤖_service",
+			},
+			expected: "bot-service",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, GetShortUserDnsName(tt.user))
+		})
+	}
+}
