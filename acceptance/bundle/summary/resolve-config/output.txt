@@ -1,0 +1,43 @@
+
+>>> [CLI] bundle summary --resolve-config
+{
+  "bundle": {
+    "name": "test-bundle"
+  },
+  "include": [
+    "targets/default.yml",
+    "targets/not_default.yml",
+    "targets/variable_default.yml",
+    "targets/variable_mode.yml"
+  ],
+  "targets": {
+    "also_default": {
+      "default": true,
+      "mode": "development",
+      "workspace": {
+        "host": "https://example.com"
+      }
+    },
+    "default": {
+      "default": true,
+      "mode": "development"
+    },
+    "not_default": {
+      "mode": "production"
+    },
+    "variable_default": {
+      "default": "${var.default}"
+    },
+    "variable_mode": {
+      "mode": "${var.mode}"
+    }
+  },
+  "variables": {
+    "default": {
+      "default": false
+    },
+    "mode": {
+      "default": "development"
+    }
+  }
+}
