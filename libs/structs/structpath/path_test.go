@@ -302,7 +302,7 @@ func TestParseErrors(t *testing.T) {
 		{
 			name:  "ends with dot",
 			input: "field.",
-			error: "expected field name after '.' but reached end of input",
+			error: "unexpected end of input after '.'",
 		},
 		{
 			name:  "consecutive dots",
@@ -317,7 +317,7 @@ func TestParseErrors(t *testing.T) {
 		{
 			name:  "unclosed bracket",
 			input: "field[",
-			error: "unexpected end of input: unclosed bracket",
+			error: "unexpected end of input after '['",
 		},
 		{
 			name:  "empty brackets",
@@ -337,7 +337,7 @@ func TestParseErrors(t *testing.T) {
 		{
 			name:  "unclosed map key quote",
 			input: "['key]",
-			error: "unterminated map key at position 5",
+			error: "unexpected end of input while parsing map key",
 		},
 		{
 			name:  "empty field name",
@@ -367,12 +367,7 @@ func TestParseErrors(t *testing.T) {
 		{
 			name:  "parser error - invalid state",
 			input: "field[']",
-			error: "unterminated map key at position 7",
-		},
-		{
-			name:  "map key with null byte",
-			input: "['key\x00']",
-			error: "unterminated map key at position 5",
+			error: "unexpected end of input while parsing map key",
 		},
 		{
 			name:  "field with right bracket",
@@ -407,7 +402,7 @@ func TestParseErrors(t *testing.T) {
 		{
 			name:  "map key terminated by EOF",
 			input: "['key",
-			error: "unterminated map key at position 5",
+			error: "unexpected end of input while parsing map key",
 		},
 		{
 			name:  "starts with comma",

@@ -350,13 +350,13 @@ func Parse(s string) (*PathNode, error) {
 	case stateExpectDotOrEnd:
 		return result, nil
 	case stateFieldStart:
-		return nil, errors.New("expected field name after '.' but reached end of input")
+		return nil, errors.New("unexpected end of input after '.'")
 	case stateBracketOpen:
-		return nil, errors.New("unexpected end of input: unclosed bracket")
+		return nil, errors.New("unexpected end of input after '['")
 	case stateIndex:
 		return nil, errors.New("unexpected end of input while parsing index")
 	case stateMapKey:
-		return nil, fmt.Errorf("unterminated map key at position %d", pos)
+		return nil, fmt.Errorf("unexpected end of input while parsing map key")
 	case stateMapKeyQuote:
 		return nil, errors.New("unexpected end of input after quote in map key")
 	case stateWildcard:
