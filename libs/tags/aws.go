@@ -24,7 +24,7 @@ var awsTag = &tag{
 	keyPattern: regexp.MustCompile(`^[\d \w\+\-=\.:\/@]*$`),
 	keyNormalize: textutil.Chain(
 		textutil.NormalizeMarks(),
-		textutil.ReplaceNotIn(latin1, '_'),
+		textutil.ReplaceNotIn(textutil.Latin1, '_'),
 		textutil.ReplaceNotIn(awsChars, '_'),
 	),
 
@@ -32,7 +32,7 @@ var awsTag = &tag{
 	valuePattern: regexp.MustCompile(`^[\d \w\+\-=\.:/@]*$`),
 	valueNormalize: textutil.Chain(
 		textutil.NormalizeMarks(),
-		textutil.ReplaceNotIn(latin1, '_'),
+		textutil.ReplaceNotIn(textutil.Latin1, '_'),
 		textutil.ReplaceNotIn(awsChars, '_'),
 	),
 }

@@ -15,13 +15,13 @@ var azureTag = &tag{
 	keyLength:  512,
 	keyPattern: regexp.MustCompile(`^[^<>\*&%;\\\/\+\?]*$`),
 	keyNormalize: textutil.Chain(
-		textutil.ReplaceNotIn(latin1, '_'),
+		textutil.ReplaceNotIn(textutil.Latin1, '_'),
 		textutil.ReplaceIn(azureForbiddenChars, '_'),
 	),
 
 	valueLength:  256,
 	valuePattern: regexp.MustCompile(`^.*$`),
 	valueNormalize: textutil.Chain(
-		textutil.ReplaceNotIn(latin1, '_'),
+		textutil.ReplaceNotIn(textutil.Latin1, '_'),
 	),
 }

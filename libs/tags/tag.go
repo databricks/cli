@@ -29,7 +29,7 @@ func (t *tag) ValidateKey(s string) error {
 	if len(s) > t.keyLength {
 		return fmt.Errorf("key length %d exceeds maximum of %d", len(s), t.keyLength)
 	}
-	if strings.ContainsFunc(s, func(r rune) bool { return !unicode.Is(latin1, r) }) {
+	if strings.ContainsFunc(s, func(r rune) bool { return !unicode.Is(textutil.Latin1, r) }) {
 		return errors.New("key contains non-latin1 characters")
 	}
 	if !t.keyPattern.MatchString(s) {
@@ -42,7 +42,7 @@ func (t *tag) ValidateValue(s string) error {
 	if len(s) > t.valueLength {
 		return fmt.Errorf("value length %d exceeds maximum of %d", len(s), t.valueLength)
 	}
-	if strings.ContainsFunc(s, func(r rune) bool { return !unicode.Is(latin1, r) }) {
+	if strings.ContainsFunc(s, func(r rune) bool { return !unicode.Is(textutil.Latin1, r) }) {
 		return errors.New("value contains non-latin1 characters")
 	}
 	if !t.valuePattern.MatchString(s) {

@@ -49,7 +49,7 @@ var gcpTag = &tag{
 	keyPattern: regexp.MustCompile(`^([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9]$`),
 	keyNormalize: textutil.Chain(
 		textutil.NormalizeMarks(),
-		textutil.ReplaceNotIn(latin1, '_'),
+		textutil.ReplaceNotIn(textutil.Latin1, '_'),
 		textutil.ReplaceNotIn(gcpInner, '_'),
 		textutil.TrimIfNotIn(gcpOuter),
 	),
@@ -58,7 +58,7 @@ var gcpTag = &tag{
 	valuePattern: regexp.MustCompile(`^(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?$`),
 	valueNormalize: textutil.Chain(
 		textutil.NormalizeMarks(),
-		textutil.ReplaceNotIn(latin1, '_'),
+		textutil.ReplaceNotIn(textutil.Latin1, '_'),
 		textutil.ReplaceNotIn(gcpInner, '_'),
 		textutil.TrimIfNotIn(gcpOuter),
 	),
