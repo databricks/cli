@@ -2,14 +2,18 @@ package phases
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/deploy/terraform"
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/bundle/trampoline"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/logdiag"
 )
 
@@ -45,4 +49,33 @@ func deployPrepare(ctx context.Context, b *bundle.Bundle) map[string][]libraries
 	)
 
 	return libs
+}
+
+// checkForPreventDestroy checks if the resource has lifecycle.prevent_destroy set, but the plan calls for this resource to be recreated or destroyed.
+// If it does, it returns an error.
+func checkForPreventDestroy(b *bundle.Bundle, actions []deployplan.Action) error {
+	root := b.Config.Value()
+	var errs []error
+	for _, action := range actions {
+		if action.ActionType != deployplan.ActionTypeRecreate && action.ActionType != deployplan.ActionTypeDelete {
+			continue
+		}
+
+		path := dyn.NewPath(dyn.Key("resources"), dyn.Key(action.Group), dyn.Key(action.Key), dyn.Key("lifecycle"), dyn.Key("prevent_destroy"))
+		// If there is no prevent_destroy, skip and check other resources
+		preventDestroyV, err := dyn.GetByPath(root, path)
+		if err != nil {
+			continue
+		}
+
+		preventDestroy, ok := preventDestroyV.AsBool()
+		if !ok {
+			return fmt.Errorf("internal error: prevent_destroy is not a boolean for %s.%s", action.Group, action.Key)
+		}
+		if preventDestroy {
+			errs = append(errs, fmt.Errorf("resource %s has lifecycle.prevent_destroy set, but the plan calls for this resource to be recreated or destroyed. To avoid this error, disable lifecycle.prevent_destroy for %s.%s", action.Key, action.Group, action.Key))
+		}
+	}
+
+	return errors.Join(errs...)
 }

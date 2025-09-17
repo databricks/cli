@@ -1,5 +1,13 @@
 # Version changelog
 
+## Release v0.268.0
+
+### Bundles
+* Add support for schemas in Python support ([#3389])(https://github.com/databricks/cli/pull/3389))
+
+* Updated templates to use the new "environment_version" property instead of the deprecated "client" property ([#3554](https://github.com/databricks/cli/pull/3554)).
+
+
 ## Release v0.267.0
 
 ### CLI
@@ -16,6 +24,7 @@
 * Add support for specifying database instance as an application resource ([#3529](https://github.com/databricks/cli/pull/3529))
 * Allow referencing job libraries outside bundle root without the need to specify sync root ([#2842](https://github.com/databricks/cli/pull/2842))
 * Add top level `run_as` support for Lakeflow Declarative Pipelines ([#3307](https://github.com/databricks/cli/pull/3307))
+* Add support for `lifecycle prevent_destroy` option ([#3448](https://github.com/databricks/cli/pull/3448))
 
 
 ## Release v0.266.0

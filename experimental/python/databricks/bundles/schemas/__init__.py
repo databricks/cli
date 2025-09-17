@@ -1,4 +1,7 @@
 __all__ = [
+    "Lifecycle",
+    "LifecycleDict",
+    "LifecycleParam",
     "Schema",
     "SchemaDict",
     "SchemaGrant",
@@ -10,6 +13,11 @@ __all__ = [
 ]
 
 
+from databricks.bundles.schemas._models.lifecycle import (
+    Lifecycle,
+    LifecycleDict,
+    LifecycleParam,
+)
 from databricks.bundles.schemas._models.schema import Schema, SchemaDict, SchemaParam
 from databricks.bundles.schemas._models.schema_grant import (
     SchemaGrant,

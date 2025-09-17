@@ -29,7 +29,7 @@ def print_resource_terraform(group, name):
             return
 
 
-def print_resource_terranova(group, name):
+def print_resource_direct(group, name):
     filename = ".databricks/bundle/default/resources.json"
     raw = open(filename).read()
     data = json.loads(raw)
@@ -41,7 +41,7 @@ def print_resource_terranova(group, name):
     print(result.get("__id__"))
 
 
-if os.environ.get("DATABRICKS_CLI_DEPLOYMENT", "").startswith("direct"):
-    print_resource_terranova(*sys.argv[1:])
+if os.environ.get("DATABRICKS_BUNDLE_ENGINE", "").startswith("direct"):
+    print_resource_direct(*sys.argv[1:])
 else:
     print_resource_terraform(*sys.argv[1:])

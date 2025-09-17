@@ -84,7 +84,7 @@ const (
 	EntryPointScript = "script"
 	CleanupScript    = "script.cleanup"
 	PrepareScript    = "script.prepare"
-	MaxFileSize      = 100_000
+	MaxFileSize      = 1_000_000
 	// Filename to save replacements to (used by diff.py)
 	ReplsFile = "repls.json"
 	// Filename for materialized config (used as golden file)
@@ -367,7 +367,7 @@ func getEnvFilters(t *testing.T) []string {
 		// Clear it just to be sure, since it's going to be part of os.Environ() and we're going to add different value based on settings.
 		os.Unsetenv(key)
 
-		if key == "DATABRICKS_CLI_DEPLOYMENT" && items[1] == "direct" {
+		if key == "DATABRICKS_BUNDLE_ENGINE" && items[1] == "direct" {
 			// CLI only recognizes "direct-exp" at the moment, but in the future will recognize "direct" as well.
 			// On CI we set "direct". To avoid renaming jobs in CI on the future, we correct direct -> direct-exp here
 			items[1] = "direct-exp"
@@ -581,6 +581,16 @@ func runTest(t *testing.T,
 	testdiff.PrepareReplacementsWorkspaceConfig(t, &repls, cfg)
 
 	cmd.Env = auth.ProcessEnv(cfg)
+
+	rateLimit := os.Getenv("DATABRICKS_RATE_LIMIT")
+	if rateLimit == "" {
+		if isRunningOnCloud {
+			rateLimit = "100"
+		} else {
+			rateLimit = "1000000000"
+		}
+	}
+	cmd.Env = append(cmd.Env, "DATABRICKS_RATE_LIMIT="+rateLimit)
 	cmd.Env = append(cmd.Env, "UNIQUE_NAME="+uniqueName)
 	cmd.Env = append(cmd.Env, "TEST_TMP_DIR="+tmpDir)
 
@@ -1383,7 +1393,7 @@ func loadUserReplacements(t *testing.T, repls *testdiff.ReplacementsContext, tmp
 
 type pathFilter struct {
 	// contains substrings from the variants other than current.
-	// E.g. if EnvVaryOutput is DATABRICKS_CLI_DEPLOYMENT and current test running DATABRICKS_CLI_DEPLOYMENT="terraform" then
+	// E.g. if EnvVaryOutput is DATABRICKS_BUNDLE_ENGINE and current test running DATABRICKS_BUNDLE_ENGINE="terraform" then
 	// notSelected contains ".direct-exp." meaning if filename contains that (e.g. out.deploy.direct-exp.txt) then we ignore it here.
 	notSelected []string
 }
