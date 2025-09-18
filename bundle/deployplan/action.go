@@ -6,15 +6,14 @@ import (
 )
 
 type Action struct {
-	// Full resource key in format "resources.<group>.<key>"
-	Key string
-
-	ActionType ActionType
+	// Full resource key, e.g. "resources.jobs.foo" or "resources.jobs.foo.permissions"
+	ResourceKey string
+	ActionType  ActionType
 }
 
 func (a Action) String() string {
 	// Backward compatible format: "resources.jobs.foo" -> "job foo"
-	key := strings.TrimPrefix(a.Key, "resources.")
+	key := strings.TrimPrefix(a.ResourceKey, "resources.")
 	key = strings.ReplaceAll(key, "s.", " ")
 	key = strings.ReplaceAll(key, ".", " ")
 	return fmt.Sprintf("  %s %s", a.ActionType.StringShort(), key)
@@ -116,7 +115,7 @@ func FilterGroup(changes []Action, group string, actionTypes ...ActionType) []Ac
 	}
 
 	for _, action := range changes {
-		actionGroup, _ := ParseResourceKey(action.Key)
+		actionGroup, _ := ParseResourceKey(action.ResourceKey)
 		if actionGroup == group && actionTypeSet[action.ActionType] {
 			result = append(result, action)
 		}

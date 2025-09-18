@@ -91,8 +91,8 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 		}
 
 		d := &DeploymentUnit{
-			KeyFull: node,
-			Adapter: adapter,
+			ResourceKey: node,
+			Adapter:     adapter,
 		}
 
 		// This currently does not do API calls, so we can run this sequentially. Once we have remote diffs, we need to run in threadpool.

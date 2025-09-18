@@ -48,8 +48,8 @@ func TestCheckPreventDestroyForAllResources(t *testing.T) {
 
 			actions := []deployplan.Action{
 				{
-					Key:        "resources." + resourceType + ".test_resource",
-					ActionType: deployplan.ActionTypeRecreate,
+					ResourceKey: "resources." + resourceType + ".test_resource",
+					ActionType:  deployplan.ActionTypeRecreate,
 				},
 			}
 
@@ -94,12 +94,12 @@ func TestCheckForPreventDestroyWhenFirstHasNoPreventDestroy(t *testing.T) {
 
 	actions := []deployplan.Action{
 		{
-			Key:        "resources.jobs.test_job",
-			ActionType: deployplan.ActionTypeRecreate,
+			ResourceKey: "resources.jobs.test_job",
+			ActionType:  deployplan.ActionTypeRecreate,
 		},
 		{
-			Key:        "resources.apps.test_app",
-			ActionType: deployplan.ActionTypeRecreate,
+			ResourceKey: "resources.apps.test_app",
+			ActionType:  deployplan.ActionTypeRecreate,
 		},
 	}
 

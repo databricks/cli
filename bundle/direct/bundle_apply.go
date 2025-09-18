@@ -41,8 +41,8 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			return false
 		}
 		d := &DeploymentUnit{
-			KeyFull: node,
-			Adapter: b.Adapters[group],
+			ResourceKey: node,
+			Adapter:     b.Adapters[group],
 		}
 		errorPrefix := fmt.Sprintf("cannot %s %s", entry.Action, node)
 

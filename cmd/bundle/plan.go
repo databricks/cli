@@ -84,7 +84,7 @@ func newPlanCommand() *cobra.Command {
 		switch root.OutputType(cmd) {
 		case flags.OutputText:
 			for _, action := range plan.GetActions() {
-				key := strings.TrimPrefix(action.Key, "resources.")
+				key := strings.TrimPrefix(action.ResourceKey, "resources.")
 				fmt.Fprintf(out, "%s %s\n", action.ActionType.StringShort(), key)
 			}
 		case flags.OutputJSON:

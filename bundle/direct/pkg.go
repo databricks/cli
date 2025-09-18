@@ -15,8 +15,8 @@ const defaultParallelism = 10
 
 // DeploymentUnit holds state + adapter (implementation) for a single resource
 type DeploymentUnit struct {
-	// Canonical full key: resources.<group>.<key>
-	KeyFull string
+	// Resource identifier: "resources.jobs.foo" or "resources.jobs.foo.permissions"
+	ResourceKey string
 
 	// Implementation for this resource; all deployments from the same group share the adapter
 	Adapter *dresources.Adapter
