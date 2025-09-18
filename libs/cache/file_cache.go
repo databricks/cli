@@ -41,8 +41,14 @@ type cacheEntry struct {
 }
 
 // GetOrCompute retrieves cached content or computes it using the provided function.
-func (fc *FileCache) GetOrCompute(ctx context.Context, fingerprint string, compute func(ctx context.Context) (any, error)) (any, error) {
-	cacheKey := fc.getCacheKey(fingerprint)
+func (fc *FileCache) GetOrCompute(ctx context.Context, fingerprint any, compute func(ctx context.Context) (any, error)) (any, error) {
+	// Convert fingerprint to deterministic string
+	fingerprintStr, err := FingerprintToString(fingerprint)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert fingerprint to string: %w", err)
+	}
+
+	cacheKey := fc.getCacheKey(fingerprintStr)
 	cachePath := fc.getCachePath(cacheKey)
 
 	// Check in-memory cache first
