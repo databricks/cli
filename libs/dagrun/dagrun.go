@@ -197,8 +197,8 @@ func (g *Graph) Run(pool int, runUnit func(node string, failedDependency *string
 	// For each node, remember a failed direct dependency (any one) if present.
 	failedCause := make(map[string]*string, len(in))
 
-	ready := make(chan task[string], len(in))
-	done := make(chan doneResult[string], len(in))
+	ready := make(chan task, len(in))
+	done := make(chan doneResult, len(in))
 
 	var wg sync.WaitGroup
 	wg.Add(pool)
@@ -207,7 +207,7 @@ func (g *Graph) Run(pool int, runUnit func(node string, failedDependency *string
 	}
 
 	for _, n := range initial {
-		ready <- task[string]{n: n, failedFrom: nil}
+		ready <- task{n: n, failedFrom: nil}
 	}
 
 	for remaining := len(in); remaining > 0; remaining-- {
@@ -233,7 +233,7 @@ func (g *Graph) Run(pool int, runUnit func(node string, failedDependency *string
 		// Decrement indegrees and enqueue children that become ready
 		for _, e := range g.adj[res.n] {
 			if in[e.to]--; in[e.to] == 0 {
-				ready <- task[string]{n: e.to, failedFrom: failedCause[e.to]}
+				ready <- task{n: e.to, failedFrom: failedCause[e.to]}
 			}
 		}
 	}
@@ -241,17 +241,17 @@ func (g *Graph) Run(pool int, runUnit func(node string, failedDependency *string
 	wg.Wait()
 }
 
-type doneResult[T any] struct {
-	n       T
+type doneResult struct {
+	n       string
 	success bool
 }
 
-type task[T any] struct {
-	n          T
-	failedFrom *T
+type task struct {
+	n          string
+	failedFrom *string
 }
 
-func runWorkerLoop(wg *sync.WaitGroup, ready <-chan task[string], done chan<- doneResult[string], runUnit func(string, *string) bool) {
+func runWorkerLoop(wg *sync.WaitGroup, ready <-chan task, done chan<- doneResult, runUnit func(string, *string) bool) {
 	defer wg.Done()
 	for t := range ready {
 		success := runUnit(t.n, t.failedFrom)
@@ -259,6 +259,6 @@ func runWorkerLoop(wg *sync.WaitGroup, ready <-chan task[string], done chan<- do
 			// Enforce failure status when a dependency has failed
 			success = false
 		}
-		done <- doneResult[string]{n: t.n, success: success}
+		done <- doneResult{n: t.n, success: success}
 	}
 }
