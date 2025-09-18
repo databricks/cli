@@ -2,6 +2,7 @@ package cache
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -163,13 +164,27 @@ func (fc *FileCache) writeToCache(cachePath string, data any) {
 	}
 
 	// Write to temporary file first, then rename for atomic operation
-	tempPath := cachePath + ".tmp"
+	tempPath, err := generateTempPath(cachePath)
+	if err != nil {
+		return
+	}
+
 	if err := os.WriteFile(tempPath, entryData, 0o644); err != nil {
 		return
 	}
 
 	// Atomic rename
 	_ = os.Rename(tempPath, cachePath)
+}
+
+// generateTempPath creates a temporary file path with a random component to prevent collisions.
+func generateTempPath(cachePath string) (string, error) {
+	randomBytes := make([]byte, 8)
+	if _, err := rand.Read(randomBytes); err != nil {
+		return "", err
+	}
+	randomSuffix := hex.EncodeToString(randomBytes)
+	return cachePath + ".tmp." + randomSuffix, nil
 }
 
 // getCacheKey generates a safe cache key from the fingerprint.
