@@ -1,7 +1,6 @@
 package structpath
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -9,17 +8,15 @@ import (
 
 func TestPathNode(t *testing.T) {
 	tests := []struct {
-		name          string
-		node          *PathNode
-		String        string
-		DynPath       string // Only set when different from String
-		IgnoreDynPath bool   // Do not test DynPath
-		Index         any
-		MapKey        any
-		Field         any
-		Root          any
-		AnyKey        bool
-		AnyIndex      bool
+		name        string
+		node        *PathNode
+		String      string
+		Index       any
+		MapKey      any
+		Field       any
+		Root        any
+		DotStar     bool
+		BracketStar bool
 	}{
 		// Single node tests
 		{
@@ -35,137 +32,127 @@ func TestPathNode(t *testing.T) {
 			Index:  5,
 		},
 		{
-			name:    "map key",
-			node:    NewMapKey(nil, "mykey"),
-			String:  `['mykey']`,
-			DynPath: "mykey",
-			MapKey:  "mykey",
+			name:   "map key",
+			node:   NewMapKey(nil, "mykey"),
+			String: `['mykey']`,
+			MapKey: "mykey",
 		},
 		{
 			name:   "struct field with JSON tag",
-			node:   NewStructField(nil, reflect.StructTag(`json:"json_name"`), "GoFieldName"),
+			node:   NewStructField(nil, "json_name"),
 			String: "json_name",
 			Field:  "json_name",
 		},
 		{
 			name:   "struct field without JSON tag (fallback to Go name)",
-			node:   NewStructField(nil, reflect.StructTag(""), "GoFieldName"),
+			node:   NewStructField(nil, "GoFieldName"),
 			String: "GoFieldName",
 			Field:  "GoFieldName",
 		},
 		{
 			name:   "struct field with dash JSON tag",
-			node:   NewStructField(nil, reflect.StructTag(`json:"-"`), "GoFieldName"),
+			node:   NewStructField(nil, "-"),
 			String: "-",
 			Field:  "-",
 		},
 		{
 			name:   "struct field with JSON tag options",
-			node:   NewStructField(nil, reflect.StructTag(`json:"lazy_field,omitempty"`), "LazyField"),
+			node:   NewStructField(nil, "lazy_field"),
 			String: "lazy_field",
 			Field:  "lazy_field",
 		},
 		{
-			name:    "any key",
-			node:    NewAnyKey(nil),
-			String:  "[*]",
-			DynPath: "*",
-			AnyKey:  true,
+			name:    "dot star",
+			node:    NewDotStar(nil),
+			String:  "*",
+			DotStar: true,
 		},
 		{
-			name:     "any index",
-			node:     NewAnyIndex(nil),
-			String:   "[*]",
-			AnyIndex: true,
+			name:        "bracket star",
+			node:        NewBracketStar(nil),
+			String:      "[*]",
+			BracketStar: true,
 		},
 
 		// Two node tests
 		{
 			name:   "struct field -> array index",
-			node:   NewIndex(NewStructField(nil, reflect.StructTag(`json:"items"`), "Items"), 3),
+			node:   NewIndex(NewStructField(nil, "items"), 3),
 			String: "items[3]",
 			Index:  3,
 		},
 		{
-			name:    "struct field -> map key",
-			node:    NewMapKey(NewStructField(nil, reflect.StructTag(`json:"config"`), "Config"), "database"),
-			String:  `config['database']`,
-			DynPath: "config.database",
-			MapKey:  "database",
+			name:   "struct field -> map key",
+			node:   NewMapKey(NewStructField(nil, "config"), "database"),
+			String: `config['database']`,
+			MapKey: "database",
 		},
 		{
 			name:   "struct field -> struct field",
-			node:   NewStructField(NewStructField(nil, reflect.StructTag(`json:"user"`), "User"), reflect.StructTag(`json:"name"`), "Name"),
+			node:   NewStructField(NewStructField(nil, "user"), "name"),
 			String: "user.name",
 			Field:  "name",
 		},
 		{
-			name:    "map key -> array index",
-			node:    NewIndex(NewMapKey(nil, "servers"), 0),
-			String:  `['servers'][0]`,
-			DynPath: "servers[0]",
-			Index:   0,
+			name:   "map key -> array index",
+			node:   NewIndex(NewMapKey(nil, "servers"), 0),
+			String: `['servers'][0]`,
+			Index:  0,
 		},
 		{
-			name:    "map key -> struct field",
-			node:    NewStructField(NewMapKey(nil, "primary"), reflect.StructTag(`json:"host"`), "Host"),
-			String:  `['primary'].host`,
-			DynPath: `primary.host`,
-			Field:   "host",
+			name:   "map key -> struct field",
+			node:   NewStructField(NewMapKey(nil, "primary"), "host"),
+			String: `['primary'].host`,
+			Field:  "host",
 		},
 		{
 			name:   "array index -> struct field",
-			node:   NewStructField(NewIndex(nil, 2), reflect.StructTag(`json:"id"`), "ID"),
+			node:   NewStructField(NewIndex(nil, 2), "id"),
 			String: "[2].id",
 			Field:  "id",
 		},
 		{
-			name:    "array index -> map key",
-			node:    NewMapKey(NewIndex(nil, 1), "status"),
-			String:  `[1]['status']`,
-			DynPath: "[1].status",
-			MapKey:  "status",
+			name:   "array index -> map key",
+			node:   NewMapKey(NewIndex(nil, 1), "status"),
+			String: `[1]['status']`,
+			MapKey: "status",
 		},
 		{
 			name:   "struct field without JSON tag -> struct field with JSON tag",
-			node:   NewStructField(NewStructField(nil, reflect.StructTag(""), "Parent"), reflect.StructTag(`json:"child_name"`), "ChildName"),
+			node:   NewStructField(NewStructField(nil, "Parent"), "child_name"),
 			String: "Parent.child_name",
 			Field:  "child_name",
 		},
 		{
-			name:    "any key",
-			node:    NewAnyKey(NewStructField(nil, reflect.StructTag(""), "Parent")),
-			String:  "Parent[*]",
-			DynPath: "Parent.*",
-			AnyKey:  true,
+			name:    "dot star with parent",
+			node:    NewDotStar(NewStructField(nil, "Parent")),
+			String:  "Parent.*",
+			DotStar: true,
 		},
 		{
-			name:     "any index",
-			node:     NewAnyIndex(NewStructField(nil, reflect.StructTag(""), "Parent")),
-			String:   "Parent[*]",
-			AnyIndex: true,
+			name:        "bracket star with parent",
+			node:        NewBracketStar(NewStructField(nil, "Parent")),
+			String:      "Parent[*]",
+			BracketStar: true,
 		},
 		// Edge cases with special characters in map keys
 		{
-			name:    "map key with single quote",
-			node:    NewMapKey(nil, "key's"),
-			String:  `['key''s']`,
-			DynPath: "key's",
-			MapKey:  "key's",
+			name:   "map key with single quote",
+			node:   NewMapKey(nil, "key's"),
+			String: `['key''s']`,
+			MapKey: "key's",
 		},
 		{
-			name:    "map key with multiple single quotes",
-			node:    NewMapKey(nil, "''"),
-			String:  `['''''']`,
-			DynPath: "''",
-			MapKey:  "''",
+			name:   "map key with multiple single quotes",
+			node:   NewMapKey(nil, "''"),
+			String: `['''''']`,
+			MapKey: "''",
 		},
 		{
-			name:          "empty map key",
-			node:          NewMapKey(nil, ""),
-			String:        `['']`,
-			IgnoreDynPath: true,
-			MapKey:        "",
+			name:   "empty map key",
+			node:   NewMapKey(nil, ""),
+			String: `['']`,
+			MapKey: "",
 		},
 		{
 			name: "complex path",
@@ -173,45 +160,43 @@ func TestPathNode(t *testing.T) {
 				NewIndex(
 					NewMapKey(
 						NewStructField(
-							NewStructField(nil, reflect.StructTag(`json:"user"`), "User"),
-							reflect.StructTag(`json:"settings"`), "Settings"),
+							NewStructField(nil, "user"),
+							"settings"),
 						"theme"),
 					0),
-				reflect.StructTag(`json:"color"`), "Color"),
-			String:  "user.settings['theme'][0].color",
-			DynPath: "user.settings.theme[0].color",
-			Field:   "color",
+				"color"),
+			String: "user.settings['theme'][0].color",
+			Field:  "color",
 		},
 		{
 			name:   "field with special characters",
-			node:   NewStructField(nil, reflect.StructTag(""), "field@name:with#symbols!"),
+			node:   NewStructField(nil, "field@name:with#symbols!"),
 			String: "field@name:with#symbols!",
 			Field:  "field@name:with#symbols!",
 		},
 		{
 			name:   "field with spaces",
-			node:   NewStructField(nil, reflect.StructTag(""), "field with spaces"),
+			node:   NewStructField(nil, "field with spaces"),
 			String: "field with spaces",
 			Field:  "field with spaces",
 		},
 		{
 			name:   "field starting with digit",
-			node:   NewStructField(nil, reflect.StructTag(""), "123field"),
+			node:   NewStructField(nil, "123field"),
 			String: "123field",
 			Field:  "123field",
 		},
 		{
 			name:   "field with unicode",
-			node:   NewStructField(nil, reflect.StructTag(""), "名前🙂"),
+			node:   NewStructField(nil, "名前🙂"),
 			String: "名前🙂",
 			Field:  "名前🙂",
 		},
 		{
-			name:    "map key with reserved characters",
-			node:    NewMapKey(nil, "key\x00[],`"),
-			String:  "['key\x00[],`']",
-			DynPath: "key\x00[],`",
-			MapKey:  "key\x00[],`",
+			name:   "map key with reserved characters",
+			node:   NewMapKey(nil, "key\x00[],`"),
+			String: "['key\x00[],`']",
+			MapKey: "key\x00[],`",
 		},
 	}
 
@@ -227,17 +212,6 @@ func TestPathNode(t *testing.T) {
 			if parsed != nil {
 				roundtripResult := parsed.String()
 				assert.Equal(t, tt.String, roundtripResult, "Roundtrip conversion should be identical")
-			}
-
-			if !tt.IgnoreDynPath {
-				dynResult := tt.node.DynPath()
-				expectedDyn := tt.String
-				if tt.DynPath != "" {
-					expectedDyn = tt.DynPath
-					// Enforce rule: DynPath should only be set when different from String
-					assert.NotEqual(t, expectedDyn, tt.String, "Test case %q: DynPath should only be set when different from String", tt.name)
-				}
-				assert.Equal(t, expectedDyn, dynResult, "DynPath() method")
 			}
 
 			// Index
@@ -281,9 +255,9 @@ func TestPathNode(t *testing.T) {
 				assert.True(t, isRoot)
 			}
 
-			// AnyKey, AnyIndex
-			assert.Equal(t, tt.AnyKey, tt.node.AnyKey())
-			assert.Equal(t, tt.AnyIndex, tt.node.AnyIndex())
+			// DotStar and BracketStar
+			assert.Equal(t, tt.DotStar, tt.node.DotStar())
+			assert.Equal(t, tt.BracketStar, tt.node.BracketStar())
 		})
 	}
 }

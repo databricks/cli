@@ -51,7 +51,7 @@ func Validate(t reflect.Type, path dyn.Path) error {
 
 			switch cur.Kind() {
 			case reflect.Struct:
-				sf, _, ok := findStructFieldByKeyType(cur, c.Key())
+				sf, _, ok := FindStructFieldByKeyType(cur, c.Key())
 				if !ok {
 					return fmt.Errorf("%s: field %q not found in %s", newPrefix, c.Key(), cur.String())
 				}
@@ -83,11 +83,15 @@ func Validate(t reflect.Type, path dyn.Path) error {
 	return nil
 }
 
-// findStructFieldByKeyType searches exported fields of struct type t for a field matching key.
+// FindStructFieldByKeyType searches exported fields of struct type t for a field matching key.
 // It matches json tag name (when present and not "-") only.
 // It also searches embedded anonymous structs (pointer or value) recursively.
 // Returns the StructField, the declaring owner type, and whether it was found.
-func findStructFieldByKeyType(t reflect.Type, key string) (reflect.StructField, reflect.Type, bool) {
+func FindStructFieldByKeyType(t reflect.Type, key string) (reflect.StructField, reflect.Type, bool) {
+	if t.Kind() != reflect.Struct {
+		return reflect.StructField{}, reflect.TypeOf(nil), false
+	}
+
 	// First pass: direct fields
 	for i := range t.NumField() {
 		sf := t.Field(i)
@@ -99,6 +103,16 @@ func findStructFieldByKeyType(t reflect.Type, key string) (reflect.StructField, 
 			name = ""
 		}
 		if name != "" && name == key {
+			// Skip fields marked as internal/readonly
+			btag := structtag.BundleTag(sf.Tag.Get("bundle"))
+			if btag.Internal() || btag.ReadOnly() {
+				continue
+			}
+			return sf, t, true
+		}
+
+		// Fallback to Go field name when no JSON tag
+		if name == "" && sf.Name == key {
 			// Skip fields marked as internal/readonly
 			btag := structtag.BundleTag(sf.Tag.Get("bundle"))
 			if btag.Internal() || btag.ReadOnly() {
@@ -121,7 +135,7 @@ func findStructFieldByKeyType(t reflect.Type, key string) (reflect.StructField, 
 		if ft.Kind() != reflect.Struct {
 			continue
 		}
-		if osf, owner, ok := findStructFieldByKeyType(ft, key); ok {
+		if osf, owner, ok := FindStructFieldByKeyType(ft, key); ok {
 			// Skip fields marked as internal/readonly
 			btag := structtag.BundleTag(osf.Tag.Get("bundle"))
 			if btag.Internal() || btag.ReadOnly() {
