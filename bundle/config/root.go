@@ -573,15 +573,11 @@ func (r Root) GetLocations(path string) []dyn.Location {
 // For example, "resources.jobs.foo" returns "jobs".
 // Returns empty string if the path is not in the expected format.
 func GetResourceTypeFromKey(path string) string {
-	if !strings.HasPrefix(path, "resources.") {
+	parts := strings.Split(path, ".")
+	if len(parts) != 3 || parts[0] != "resources" {
 		return ""
 	}
-	rest := strings.TrimPrefix(path, "resources.")
-	parts := strings.SplitN(rest, ".", 2)
-	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
-		return ""
-	}
-	return parts[0]
+	return parts[1]
 }
 
 // GetResourceConfig returns the configuration object for a given resource path.
