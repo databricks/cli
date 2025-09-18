@@ -22,29 +22,29 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 
 	b.StateDB.AssertOpened()
 
-	b.Graph.Run(defaultParallelism, func(node string, failedDependency *string) bool {
-		entry, ok := plan.Plan[node]
+	b.Graph.Run(defaultParallelism, func(resourceKey string, failedDependency *string) bool {
+		entry, ok := plan.Plan[resourceKey]
 		if !ok {
 			// Nothing to do for this node
 			return true
 		}
 
-		group := config.GetResourceTypeFromKey(node)
+		group := config.GetResourceTypeFromKey(resourceKey)
 		if group == "" {
-			logdiag.LogError(ctx, fmt.Errorf("internal error: bad node key: %s", node))
+			logdiag.LogError(ctx, fmt.Errorf("internal error: bad node: %s", resourceKey))
 			return false
 		}
 
 		at := deployplan.ActionTypeFromString(entry.Action)
 		if at == deployplan.ActionTypeUnset {
-			logdiag.LogError(ctx, fmt.Errorf("unknown action %q for %s", entry.Action, node))
+			logdiag.LogError(ctx, fmt.Errorf("unknown action %q for %s", entry.Action, resourceKey))
 			return false
 		}
 		d := &DeploymentUnit{
-			ResourceKey: node,
+			ResourceKey: resourceKey,
 			Adapter:     b.Adapters[group],
 		}
-		errorPrefix := fmt.Sprintf("cannot %s %s", entry.Action, node)
+		errorPrefix := fmt.Sprintf("cannot %s %s", entry.Action, resourceKey)
 
 		// If a dependency failed, report and skip execution for this node by returning false
 		if failedDependency != nil {
@@ -62,7 +62,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		}
 
 		// Fetch the references to ensure all are resolved
-		myReferences, err := extractReferences(configRoot.Value(), node)
+		myReferences, err := extractReferences(configRoot.Value(), resourceKey)
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: reading references from config: %w", errorPrefix, err))
 			return false
@@ -75,7 +75,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			return false
 		}
 
-		config, ok := configRoot.GetResourceConfig(node)
+		config, ok := configRoot.GetResourceConfig(resourceKey)
 		if !ok {
 			logdiag.LogError(ctx, fmt.Errorf("%s: internal error when reading config", errorPrefix))
 			return false
@@ -98,16 +98,16 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		// Now we're focussing on the remaining cases:
 		// - "id" for cases where id could have changed;
 		// - "field" for cases where field is part of the remote state.
-		for _, reference := range b.Graph.OutgoingLabels(node) {
+		for _, reference := range b.Graph.OutgoingLabels(resourceKey) {
 			value, err := d.ResolveReferenceRemote(ctx, &b.StateDB, reference)
 			if err != nil {
-				logdiag.LogError(ctx, fmt.Errorf("failed to resolve reference %q for %s after deployment: %w", reference, node, err))
+				logdiag.LogError(ctx, fmt.Errorf("failed to resolve reference %q for %s after deployment: %w", reference, resourceKey, err))
 				return false
 			}
 
 			err = replaceReferenceWithValue(ctx, configRoot, reference, value)
 			if err != nil {
-				logdiag.LogError(ctx, fmt.Errorf("failed to replace reference %q with value %v for %s: %w", reference, value, node, err))
+				logdiag.LogError(ctx, fmt.Errorf("failed to replace reference %q with value %v for %s: %w", reference, value, resourceKey, err))
 				return false
 			}
 		}

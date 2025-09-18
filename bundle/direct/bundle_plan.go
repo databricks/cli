@@ -65,13 +65,13 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 	// we might have already got rid of this reference, thus potentially downgrading actionType
 	//
 	// parallelism is set to 1, so there is no multi-threaded access there. TODO: increase parallism
-	b.Graph.Run(1, func(node string, failedDependency *string) bool {
-		group := config.GetResourceTypeFromKey(node)
+	b.Graph.Run(1, func(resourceKey string, failedDependency *string) bool {
+		group := config.GetResourceTypeFromKey(resourceKey)
 		if group == "" {
-			logdiag.LogError(ctx, fmt.Errorf("internal error: bad node key: %s", node))
+			logdiag.LogError(ctx, fmt.Errorf("internal error: bad node: %s", resourceKey))
 			return false
 		}
-		errorPrefix := "cannot plan " + node
+		errorPrefix := "cannot plan " + resourceKey
 
 		if failedDependency != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: dependency failed: %s", errorPrefix, *failedDependency))
@@ -84,14 +84,14 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 			return false
 		}
 
-		config, ok := configRoot.GetResourceConfig(node)
+		config, ok := configRoot.GetResourceConfig(resourceKey)
 		if !ok {
 			logdiag.LogError(ctx, fmt.Errorf("%s: internal error: cannot read config", errorPrefix))
 			return false
 		}
 
 		d := &DeploymentUnit{
-			ResourceKey: node,
+			ResourceKey: resourceKey,
 			Adapter:     adapter,
 		}
 
@@ -104,7 +104,7 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 
 		hasDelayedResolutions := false
 
-		for _, reference := range b.Graph.OutgoingLabels(node) {
+		for _, reference := range b.Graph.OutgoingLabels(resourceKey) {
 			value, err := d.ResolveReferenceLocalOrRemote(ctx, &b.StateDB, reference, actionType, config)
 			if errors.Is(err, ErrDelayed) {
 				hasDelayedResolutions = true
@@ -129,7 +129,10 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 			return true
 		}
 
-		plan.Plan[node] = deployplan.PlanEntry{Action: actionType.StringFull()}
+		plan.Plan[resourceKey] = deployplan.PlanEntry{
+			Action: actionType.StringFull(),
+		}
+
 		return true
 	})
 
