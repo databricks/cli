@@ -100,7 +100,6 @@ func walkTypeValue(path *structpath.PathNode, typ reflect.Type, field *reflect.S
 	visitedCount[typ]--
 }
 
-
 func walkTypeStruct(path *structpath.PathNode, st reflect.Type, visit VisitTypeFunc, visitedCount map[reflect.Type]int) {
 	for i := range st.NumField() {
 		sf := st.Field(i)
