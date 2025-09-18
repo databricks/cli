@@ -20,6 +20,6 @@ func TestReplace(t *testing.T) {
 }
 
 func TestTrim(t *testing.T) {
-	assert.Equal(t, "abc", trimIfIn(unicode.Digit).TransformString("000abc999"))
+	assert.Equal(t, "abc", TrimIfIn(unicode.Digit).TransformString("000abc999"))
 	assert.Equal(t, "000", TrimIfNotIn(unicode.Digit).TransformString("abc000abc"))
 }

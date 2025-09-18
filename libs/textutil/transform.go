@@ -78,7 +78,7 @@ func (t trimTransformer) TransformString(s string) string {
 	})
 }
 
-func trimIfIn(table *unicode.RangeTable) Transformer {
+func TrimIfIn(table *unicode.RangeTable) Transformer {
 	return trimTransformer{runes.In(table)}
 }
 
