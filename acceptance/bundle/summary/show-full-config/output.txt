@@ -1,5 +1,5 @@
 
->>> [CLI] bundle summary --resolve-config
+>>> [CLI] bundle summary --show-full-config
 {
   "bundle": {
     "name": "test-bundle"

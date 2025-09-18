@@ -31,12 +31,12 @@ Useful after deployment to see what was created and where to find it.`,
 
 	var forcePull bool
 	var includeLocations bool
-	var resolveConfig bool
+	var shouldShowFullConfig bool
 	cmd.Flags().BoolVar(&forcePull, "force-pull", false, "Skip local cache and load the state from the remote workspace")
 	cmd.Flags().BoolVar(&includeLocations, "include-locations", false, "Include location information in the output")
 	cmd.Flags().MarkHidden("include-locations")
-	cmd.Flags().BoolVar(&resolveConfig, "resolve-config", false, "Resolve and output the bundle config")
-	cmd.Flags().MarkHidden("resolve-config")
+	cmd.Flags().BoolVar(&shouldShowFullConfig, "show-full-config", false, "Load and output the full bundle config")
+	cmd.Flags().MarkHidden("show-full-config")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		var err error
@@ -44,13 +44,13 @@ Useful after deployment to see what was created and where to find it.`,
 		cmd.SetContext(ctx)
 		logdiag.SetSeverity(ctx, diag.Warning)
 
-		if resolveConfig {
-			err = runResolveConfig(ctx, cmd)
+		if shouldShowFullConfig {
+			err = showFullConfig(ctx, cmd)
 			if err != nil {
 				return err
 			}
 		} else {
-			err = runSummary(ctx, cmd, forcePull, includeLocations)
+			err = showSummary(ctx, cmd, forcePull, includeLocations)
 			if err != nil {
 				return err
 			}
@@ -66,7 +66,7 @@ Useful after deployment to see what was created and where to find it.`,
 	return cmd
 }
 
-func runResolveConfig(ctx context.Context, cmd *cobra.Command) error {
+func showFullConfig(ctx context.Context, cmd *cobra.Command) error {
 	// call `MustLoad` directly instead of `MustConfigureBundle` because the latter does
 	// validation that we're not interested in here
 	b := bundle.MustLoad(ctx)
@@ -75,10 +75,6 @@ func runResolveConfig(ctx context.Context, cmd *cobra.Command) error {
 	}
 
 	mutator.DefaultMutators(ctx, b)
-	if logdiag.HasError(ctx) {
-		return nil
-	}
-	bundle.ApplyContext(ctx, b, mutator.NormalizePaths())
 	if logdiag.HasError(ctx) {
 		return nil
 	}
@@ -91,7 +87,7 @@ func runResolveConfig(ctx context.Context, cmd *cobra.Command) error {
 	return nil
 }
 
-func runSummary(ctx context.Context, cmd *cobra.Command, forcePull, includeLocations bool) error {
+func showSummary(ctx context.Context, cmd *cobra.Command, forcePull, includeLocations bool) error {
 	var err error
 	b := prepareBundleForSummary(cmd, forcePull, includeLocations)
 
