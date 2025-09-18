@@ -14,20 +14,22 @@ import (
 
 // FileCache implements the Cache interface using local disk storage.
 type FileCache struct {
-	baseDir string
-	mu      sync.RWMutex
-	pending map[string]chan struct{} // Track pending writes
+	baseDir  string
+	mu       sync.RWMutex
+	pending  map[string]chan struct{} // Track pending writes
+	memCache map[string]any           // In-memory cache for immediate access
 }
 
 // NewFileCache creates a new file-based cache that stores data in the specified directory.
 func NewFileCache(baseDir string) (*FileCache, error) {
-	if err := os.MkdirAll(baseDir, 0755); err != nil {
+	if err := os.MkdirAll(baseDir, 0o755); err != nil {
 		return nil, fmt.Errorf("failed to create cache directory: %w", err)
 	}
 
 	return &FileCache{
-		baseDir: baseDir,
-		pending: make(map[string]chan struct{}),
+		baseDir:  baseDir,
+		pending:  make(map[string]chan struct{}),
+		memCache: make(map[string]any),
 	}, nil
 }
 
@@ -42,8 +44,20 @@ func (fc *FileCache) GetOrCompute(ctx context.Context, fingerprint string, compu
 	cacheKey := fc.getCacheKey(fingerprint)
 	cachePath := fc.getCachePath(cacheKey)
 
-	// Try to read from cache first
+	// Check in-memory cache first
+	fc.mu.RLock()
+	if data, found := fc.memCache[cacheKey]; found {
+		fc.mu.RUnlock()
+		return data, nil
+	}
+	fc.mu.RUnlock()
+
+	// Try to read from disk cache
 	if data, found := fc.readFromCache(cachePath); found {
+		// Store in memory cache for faster future access
+		fc.mu.Lock()
+		fc.memCache[cacheKey] = data
+		fc.mu.Unlock()
 		return data, nil
 	}
 
@@ -54,10 +68,13 @@ func (fc *FileCache) GetOrCompute(ctx context.Context, fingerprint string, compu
 		// Wait for pending write to complete
 		select {
 		case <-pendingCh:
-			// Try reading again after write completes
-			if data, found := fc.readFromCache(cachePath); found {
+			// Try reading from memory cache again
+			fc.mu.RLock()
+			if data, found := fc.memCache[cacheKey]; found {
+				fc.mu.RUnlock()
 				return data, nil
 			}
+			fc.mu.RUnlock()
 		case <-ctx.Done():
 			return nil, ctx.Err()
 		}
@@ -75,13 +92,25 @@ func (fc *FileCache) GetOrCompute(ctx context.Context, fingerprint string, compu
 		}()
 	}
 
+	// Check if context is already cancelled before computing
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+	}
+
 	// Compute the value
 	result, err := compute(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	// Async write to cache
+	// Store in memory cache immediately
+	fc.mu.Lock()
+	fc.memCache[cacheKey] = result
+	fc.mu.Unlock()
+
+	// Async write to disk cache
 	go fc.writeToCache(cachePath, result)
 
 	return result, nil
@@ -129,13 +158,13 @@ func (fc *FileCache) writeToCache(cachePath string, data any) {
 	}
 
 	// Ensure directory exists
-	if err := os.MkdirAll(filepath.Dir(cachePath), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(cachePath), 0o755); err != nil {
 		return
 	}
 
 	// Write to temporary file first, then rename for atomic operation
 	tempPath := cachePath + ".tmp"
-	if err := os.WriteFile(tempPath, entryData, 0644); err != nil {
+	if err := os.WriteFile(tempPath, entryData, 0o644); err != nil {
 		return
 	}
 
