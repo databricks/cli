@@ -115,11 +115,17 @@ func walkStruct(path *structpath.PathNode, s reflect.Value, visit VisitFunc) {
 			continue
 		}
 
-		node := structpath.NewStructField(path, sf.Tag, sf.Name)
 		jsonTag := structtag.JSONTag(sf.Tag.Get("json"))
 		if jsonTag.Name() == "-" {
 			continue // skip fields without json name
 		}
+
+		// Resolve field name from JSON tag or fall back to Go field name
+		fieldName := jsonTag.Name()
+		if fieldName == "" {
+			fieldName = sf.Name
+		}
+		node := structpath.NewStructField(path, fieldName)
 
 		fieldVal := s.Field(i)
 		// Skip zero values with omitempty unless field is explicitly forced.

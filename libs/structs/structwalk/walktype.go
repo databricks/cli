@@ -84,14 +84,14 @@ func walkTypeValue(path *structpath.PathNode, typ reflect.Type, field *reflect.S
 		walkTypeStruct(path, typ, visit, visitedCount)
 
 	case reflect.Slice, reflect.Array:
-		walkTypeValue(structpath.NewAnyIndex(path), typ.Elem(), nil, visit, visitedCount)
+		walkTypeValue(structpath.NewBracketStar(path), typ.Elem(), nil, visit, visitedCount)
 
 	case reflect.Map:
 		if typ.Key().Kind() != reflect.String {
 			return // unsupported map key type
 		}
 		// For maps, we walk the value type directly at the current path
-		walkTypeValue(structpath.NewAnyKey(path), typ.Elem(), nil, visit, visitedCount)
+		walkTypeValue(structpath.NewBracketStar(path), typ.Elem(), nil, visit, visitedCount)
 
 	default:
 		// func, chan, interface, invalid, etc. -> ignore
@@ -122,7 +122,12 @@ func walkTypeStruct(path *structpath.PathNode, st reflect.Type, visit VisitTypeF
 			continue
 		}
 
-		node := structpath.NewStructField(path, sf.Tag, sf.Name)
+		// Resolve field name from JSON tag or fall back to Go field name
+		fieldName := jsonTagName
+		if fieldName == "" {
+			fieldName = sf.Name
+		}
+		node := structpath.NewStructField(path, fieldName)
 		walkTypeValue(node, sf.Type, &sf, visit, visitedCount)
 	}
 }
