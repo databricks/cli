@@ -17,9 +17,23 @@ func getScalarFields(t *testing.T, typ reflect.Type) map[string]any {
 		for typ.Kind() == reflect.Pointer {
 			typ = typ.Elem()
 		}
+
+		s := path.String()
+
 		if isScalar(typ.Kind()) {
-			results[path.String()] = reflect.Zero(typ).Interface()
+			results[s] = reflect.Zero(typ).Interface()
 		}
+
+		// Test structpath round trip as well
+		pathNew, err := structpath.Parse(s)
+		if assert.NoError(t, err, "Parse(path.String()) failed for %q: %s", s, err) {
+			// This currently does not work because path carries json tags
+			// QQQ perhaps we should remove tags from the path and add structaccess.GetTag(path, tag) method to fetch it.
+			// assert.Equal(t, path, pathNew, "Parse(path.String()) returned different path;\npath=%#v\npathNew=%#v", path, pathNew)
+			newS := pathNew.String()
+			assert.Equal(t, s, newS, "Parse(path.String()).String() is different from path.String()\npath.String()=%q\npathNew.String()=%q", path, pathNew)
+		}
+
 		return true
 	})
 	require.NoError(t, err)

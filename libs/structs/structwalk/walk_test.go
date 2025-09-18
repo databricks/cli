@@ -12,7 +12,16 @@ import (
 func flatten(t *testing.T, value any) map[string]any {
 	results := make(map[string]any)
 	err := Walk(value, func(path *structpath.PathNode, value any) {
-		results[path.String()] = value
+		s := path.String()
+		results[s] = value
+
+		// Test path parsing round trip
+		newPath, err := structpath.Parse(s)
+		if assert.NoError(t, err, s) {
+			// newPath is not comparable with path a.t.m due to bundle tags on PathNode
+			newS := newPath.String()
+			assert.Equal(t, s, newS)
+		}
 	})
 	require.NoError(t, err)
 	return results
@@ -76,8 +85,8 @@ func TestValueJobSettings(t *testing.T) {
 	}
 
 	assert.Equal(t, map[string]any{
-		`tags["env"]`:         "test",
-		`tags["team"]`:        "data",
+		`tags['env']`:         "test",
+		`tags['team']`:        "data",
 		"name":                "test-job",
 		"max_concurrent_runs": 5,
 		"timeout_seconds":     3600,
