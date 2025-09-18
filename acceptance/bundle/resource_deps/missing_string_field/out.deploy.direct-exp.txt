@@ -4,9 +4,9 @@ Warning: expected a string value, found null
   in databricks.yml:6:16
 
 Deploying resources...
-Error: failed to resolve reference "${resources.pipelines.foo.catalog}" for pipelines.foo after deployment: field not set in remote state: catalog: field "catalog" not found in pipelines.GetPipelineResponse
+Error: failed to resolve reference "${resources.pipelines.foo.catalog}" for resources.pipelines.foo after deployment: field not set in remote state: catalog: field "catalog" not found in pipelines.GetPipelineResponse
 
-Error: cannot create pipelines.bar: dependency failed: pipelines.foo
+Error: cannot create resources.pipelines.bar: dependency failed: resources.pipelines.foo
 
 Updating deployment state...
 
