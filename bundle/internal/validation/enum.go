@@ -116,9 +116,11 @@ func extractEnumFields(typ reflect.Type) ([]EnumPatternInfo, error) {
 		}
 
 		// Do not generate enum validation code for fields that are internal or readonly.
-		bundleTag := structtag.BundleTag(field.Tag.Get("bundle"))
-		if bundleTag.Internal() || bundleTag.ReadOnly() {
-			return false
+		if field != nil {
+			bundleTag := structtag.BundleTag(field.Tag.Get("bundle"))
+			if bundleTag.Internal() || bundleTag.ReadOnly() {
+				return false
+			}
 		}
 
 		// Check if this field type is an enum
