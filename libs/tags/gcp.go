@@ -3,6 +3,8 @@ package tags
 import (
 	"regexp"
 	"unicode"
+
+	"github.com/databricks/cli/libs/textutil"
 )
 
 // Tag keys and values on GCP are limited to 63 characters and must match the
