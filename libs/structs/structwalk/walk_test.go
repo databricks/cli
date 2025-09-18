@@ -110,14 +110,16 @@ func TestValueBundleTag(t *testing.T) {
 		C: "c",
 		D: "d",
 	}, func(path *structpath.PathNode, value any, field *reflect.StructField) {
-		if field != nil {
-			bundleTag := structtag.BundleTag(field.Tag.Get("bundle"))
-			if bundleTag.ReadOnly() {
-				readonly = append(readonly, path.String())
-			}
-			if bundleTag.Internal() {
-				internal = append(internal, path.String())
-			}
+		if field == nil {
+			return
+		}
+
+		bundleTag := structtag.BundleTag(field.Tag.Get("bundle"))
+		if bundleTag.ReadOnly() {
+			readonly = append(readonly, path.String())
+		}
+		if bundleTag.Internal() {
+			internal = append(internal, path.String())
 		}
 	})
 	require.NoError(t, err)

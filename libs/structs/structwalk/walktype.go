@@ -3,9 +3,9 @@ package structwalk
 import (
 	"errors"
 	"reflect"
-	"strings"
 
 	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structtag"
 )
 
 // VisitTypeFunc is invoked for fields encountered while walking typ. This includes both leaf nodes as well as any
@@ -100,18 +100,6 @@ func walkTypeValue(path *structpath.PathNode, typ reflect.Type, field *reflect.S
 	visitedCount[typ]--
 }
 
-// getJSONTagName extracts the field name from a JSON tag
-func getJSONTagName(jsonTag string) string {
-	if jsonTag == "" {
-		return ""
-	}
-
-	if idx := strings.IndexByte(jsonTag, ','); idx == -1 {
-		return jsonTag
-	} else {
-		return jsonTag[:idx]
-	}
-}
 
 func walkTypeStruct(path *structpath.PathNode, st reflect.Type, visit VisitTypeFunc, visitedCount map[reflect.Type]int) {
 	for i := range st.NumField() {
@@ -130,7 +118,7 @@ func walkTypeStruct(path *structpath.PathNode, st reflect.Type, visit VisitTypeF
 		}
 
 		// Skip fields marked as "-" in json tag
-		jsonTagName := getJSONTagName(jsonTag)
+		jsonTagName := structtag.JSONTag(jsonTag).Name()
 		if jsonTagName == "-" {
 			continue
 		}
