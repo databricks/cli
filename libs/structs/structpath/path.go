@@ -147,6 +147,12 @@ func NewAnyIndex(prev *PathNode) *PathNode {
 }
 
 // String returns the string representation of the path.
+// The map keys are encoded in single quotes: tags['name']. Single quote can escaped by placing two single quotes: tags[””] (map key is one single quote).
+// This encoding is chosen over traditional double quotes because when encoded in JSON it does not need to be escaped:
+//
+//	{
+//		"resources.jobs.foo.tags['cost-center']": {}
+//	}
 func (p *PathNode) String() string {
 	if p == nil {
 		return ""
