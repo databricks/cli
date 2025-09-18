@@ -21,8 +21,8 @@ type Cache interface {
 	GetOrCompute(ctx context.Context, fingerprint any, compute func(ctx context.Context) (any, error)) (any, error)
 }
 
-// FingerprintToString converts any struct to a deterministic string representation for use as a cache key.
-func FingerprintToString(fingerprint any) (string, error) {
+// fingerprintToString converts any struct to a deterministic string representation for use as a cache key.
+func fingerprintToString(fingerprint any) (string, error) {
 	// Serialize to JSON with sorted keys for deterministic output
 	data, err := json.Marshal(fingerprint)
 	if err != nil {
