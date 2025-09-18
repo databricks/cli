@@ -356,7 +356,7 @@ func Parse(s string) (*PathNode, error) {
 	case stateIndex:
 		return nil, errors.New("unexpected end of input while parsing index")
 	case stateMapKey:
-		return nil, fmt.Errorf("unexpected end of input while parsing map key")
+		return nil, errors.New("unexpected end of input while parsing map key")
 	case stateMapKeyQuote:
 		return nil, errors.New("unexpected end of input after quote in map key")
 	case stateWildcard:
