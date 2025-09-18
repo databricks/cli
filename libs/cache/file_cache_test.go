@@ -26,7 +26,7 @@ func TestNewFileCache(t *testing.T) {
 	info, err := os.Stat(cacheDir)
 	require.NoError(t, err)
 	assert.True(t, info.IsDir())
-	assert.Equal(t, os.FileMode(0755), info.Mode().Perm())
+	assert.Equal(t, os.FileMode(0o755), info.Mode().Perm())
 }
 
 func TestNewFileCacheWithExistingDirectory(t *testing.T) {
@@ -34,7 +34,7 @@ func TestNewFileCacheWithExistingDirectory(t *testing.T) {
 	cacheDir := filepath.Join(tempDir, "existing")
 
 	// Create directory first
-	err := os.MkdirAll(cacheDir, 0700)
+	err := os.MkdirAll(cacheDir, 0o700)
 	require.NoError(t, err)
 
 	cache, err := NewFileCache(cacheDir)
@@ -118,7 +118,7 @@ func TestFileCacheGetOrComputeConcurrency(t *testing.T) {
 	results := make(chan any, numGoroutines)
 	errors := make(chan error, numGoroutines)
 
-	for i := 0; i < numGoroutines; i++ {
+	for range numGoroutines {
 		go func() {
 			result, err := cache.GetOrCompute(ctx, fingerprint, func(ctx context.Context) (any, error) {
 				atomic.AddInt32(&computeCalls, 1)
@@ -131,7 +131,7 @@ func TestFileCacheGetOrComputeConcurrency(t *testing.T) {
 	}
 
 	// Collect all results
-	for i := 0; i < numGoroutines; i++ {
+	for range numGoroutines {
 		result := <-results
 		err := <-errors
 		require.NoError(t, err)
