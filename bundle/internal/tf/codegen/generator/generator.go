@@ -70,7 +70,8 @@ func Run(ctx context.Context, schema *tfjson.ProviderSchema, path string) error 
 		}
 
 		// Skip fields generation for resource_quality_monitor to avoid unwanted changes,
-		// as of August 2025 the generator turns pointer fields into slices, which breaks the resource behaviour
+		// as of August 2025 the generator turns pointer fields into slices, which breaks the resource behaviour.
+		// See https://github.com/databricks/cli/pull/3462
 		if k == "databricks_quality_monitor" {
 			log.Printf("Warning: Skipping file generation for %s to avoid known unwanted changes", k)
 		} else {
