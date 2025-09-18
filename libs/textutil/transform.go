@@ -9,6 +9,7 @@ import (
 	"golang.org/x/text/unicode/norm"
 )
 
+// Transformer represents a text transformation operation.
 type Transformer interface {
 	TransformString(string) string
 }
@@ -22,6 +23,7 @@ func (c chainTransformer) TransformString(s string) string {
 	return s
 }
 
+// Chain creates a transformer that applies multiple transformers in sequence.
 func Chain(t ...Transformer) Transformer {
 	return chainTransformer(t)
 }
@@ -60,10 +62,12 @@ func (t replaceTransformer) TransformString(s string) string {
 	}, s)
 }
 
+// ReplaceIn creates a transformer that replaces characters within the given Unicode range table with the replacement rune.
 func ReplaceIn(table *unicode.RangeTable, replacement rune) Transformer {
 	return replaceTransformer{runes.In(table), replacement}
 }
 
+// ReplaceNotIn creates a transformer that replaces characters NOT within the given Unicode range table with the replacement rune.
 func ReplaceNotIn(table *unicode.RangeTable, replacement rune) Transformer {
 	return replaceTransformer{runes.NotIn(table), replacement}
 }
@@ -84,6 +88,7 @@ func TrimIfIn(table *unicode.RangeTable) Transformer {
 	return trimTransformer{runes.In(table)}
 }
 
+// TrimIfNotIn creates a transformer that trims characters from the beginning and end of strings if they are NOT within the given Unicode range table.
 func TrimIfNotIn(table *unicode.RangeTable) Transformer {
 	return trimTransformer{runes.NotIn(table)}
 }
