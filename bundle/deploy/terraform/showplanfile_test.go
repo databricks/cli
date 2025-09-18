@@ -65,7 +65,7 @@ func TestPopulatePlan(t *testing.T) {
 			ResourceKey: "resources.pipelines.recreate pipeline",
 		},
 	}
-	assert.ElementsMatch(t, expectedActions, actions)
+	assert.Equal(t, expectedActions, actions)
 
 	// Also test that the plan was populated correctly with expected entries
 	assert.Contains(t, plan.Plan, "resources.pipelines.create pipeline")
