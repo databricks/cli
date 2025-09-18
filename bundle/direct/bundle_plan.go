@@ -66,7 +66,7 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 	//
 	// parallelism is set to 1, so there is no multi-threaded access there. TODO: increase parallism
 	b.Graph.Run(1, func(node string, failedDependency *string) bool {
-		group, key := deployplan.ParseResourceKey(node)
+		group := config.GetResourceTypeFromKey(node)
 		if group == "" {
 			logdiag.LogError(ctx, fmt.Errorf("internal error: bad node key: %s", node))
 			return false
@@ -84,7 +84,7 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 			return false
 		}
 
-		config, ok := configRoot.GetResourceConfig(group, key)
+		config, ok := configRoot.GetResourceConfig(node)
 		if !ok {
 			logdiag.LogError(ctx, fmt.Errorf("%s: internal error: cannot read config", errorPrefix))
 			return false

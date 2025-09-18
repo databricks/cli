@@ -29,7 +29,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			return true
 		}
 
-		group, key := deployplan.ParseResourceKey(node)
+		group := config.GetResourceTypeFromKey(node)
 		if group == "" {
 			logdiag.LogError(ctx, fmt.Errorf("internal error: bad node key: %s", node))
 			return false
@@ -75,7 +75,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			return false
 		}
 
-		config, ok := configRoot.GetResourceConfig(group, key)
+		config, ok := configRoot.GetResourceConfig(node)
 		if !ok {
 			logdiag.LogError(ctx, fmt.Errorf("%s: internal error when reading config", errorPrefix))
 			return false

@@ -49,9 +49,13 @@ func TestPopulatePlan(t *testing.T) {
 	populatePlan(ctx, plan, changes)
 
 	actions := plan.GetActions()
-	res := deployplan.FilterGroup(actions, "pipelines", deployplan.ActionTypeDelete, deployplan.ActionTypeRecreate)
 
-	assert.Equal(t, []deployplan.Action{
+	// Assert that the actions list contains all expected actions
+	expectedActions := []deployplan.Action{
+		{
+			ActionType:  deployplan.ActionTypeCreate,
+			ResourceKey: "resources.pipelines.create pipeline",
+		},
 		{
 			ActionType:  deployplan.ActionTypeDelete,
 			ResourceKey: "resources.pipelines.delete pipeline",
@@ -60,7 +64,8 @@ func TestPopulatePlan(t *testing.T) {
 			ActionType:  deployplan.ActionTypeRecreate,
 			ResourceKey: "resources.pipelines.recreate pipeline",
 		},
-	}, res)
+	}
+	assert.ElementsMatch(t, expectedActions, actions)
 
 	// Also test that the plan was populated correctly with expected entries
 	assert.Contains(t, plan.Plan, "resources.pipelines.create pipeline")

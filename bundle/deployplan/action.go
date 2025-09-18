@@ -103,22 +103,3 @@ func Filter(changes []Action, actionType ActionType) []Action {
 	}
 	return result
 }
-
-// FilterGroup returns actions that match the specified group and any of the specified action types
-func FilterGroup(changes []Action, group string, actionTypes ...ActionType) []Action {
-	var result []Action
-
-	// Create a set of action types for efficient lookup
-	actionTypeSet := make(map[ActionType]bool)
-	for _, actionType := range actionTypes {
-		actionTypeSet[actionType] = true
-	}
-
-	for _, action := range changes {
-		actionGroup, _ := ParseResourceKey(action.ResourceKey)
-		if actionGroup == group && actionTypeSet[action.ActionType] {
-			result = append(result, action)
-		}
-	}
-	return result
-}
