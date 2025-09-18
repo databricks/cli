@@ -11,25 +11,6 @@ import (
 	"path/filepath"
 )
 
-// Cache provides an abstract interface for caching content to local disk.
-// Implementations should handle storing and retrieving cached components
-// using fingerprints for cache invalidation.
-type Cache interface {
-	// Read retrieves cached content for the given fingerprint.
-	// Returns the cached data and true if found, or nil and false if not found or expired.
-	Read(ctx context.Context, fingerprint string) ([]byte, bool)
-
-	// Store saves content to the cache with the given fingerprint.
-	// Returns an error if the cache operation fails.
-	Store(ctx context.Context, fingerprint string, content []byte) error
-
-	// Clear removes all cached content from the cache directory.
-	Clear(ctx context.Context) error
-
-	// ClearFingerprint removes cached content for a specific fingerprint.
-	ClearFingerprint(ctx context.Context, fingerprint string) error
-}
-
 // FileCache implements the Cache interface using the local filesystem.
 type FileCache struct {
 	cachePath string
