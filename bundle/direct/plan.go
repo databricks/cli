@@ -9,13 +9,12 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/databricks-sdk-go"
 
-	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structaccess"
+	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 func (d *DeploymentUnit) Plan(ctx context.Context, client *databricks.WorkspaceClient, db *dstate.DeploymentState, inputConfig any, localOnly, refresh bool) (deployplan.ActionType, error) {
@@ -68,12 +67,12 @@ func (d *DeploymentUnit) refreshRemoteState(ctx context.Context, id string) erro
 var ErrDelayed = errors.New("must be resolved after apply")
 
 func (d *DeploymentUnit) ResolveReferenceLocalOrRemote(ctx context.Context, db *dstate.DeploymentState, reference string, actionType deployplan.ActionType, config any) (any, error) {
-	path, ok := dynvar.PureReferenceToPath(reference)
-	if !ok || len(path) <= 3 || path[0:3].String() != d.ResourceKey {
+	path, ok := structpath.PureReferenceToPath(reference)
+	if !ok || path.Len() <= 3 || path.Prefix(3).String() != d.ResourceKey {
 		return nil, fmt.Errorf("internal error: expected reference to %q, got %q", d.ResourceKey, reference)
 	}
 
-	fieldPath := path[3:]
+	fieldPath := path.SkipPrefix(3)
 
 	if fieldPath.String() == "id" {
 		if actionType.KeepsID() {
@@ -136,12 +135,12 @@ func (d *DeploymentUnit) ResolveReferenceLocalOrRemote(ctx context.Context, db *
 }
 
 func (d *DeploymentUnit) ResolveReferenceRemote(ctx context.Context, db *dstate.DeploymentState, reference string) (any, error) {
-	path, ok := dynvar.PureReferenceToPath(reference)
-	if !ok || len(path) <= 3 || path[0:3].String() != d.ResourceKey {
+	path, ok := structpath.PureReferenceToPath(reference)
+	if !ok || path.Len() <= 3 || path.Prefix(3).String() != d.ResourceKey {
 		return nil, fmt.Errorf("internal error: expected reference to %q, got %q", d.ResourceKey, reference)
 	}
 
-	fieldPath := path[3:]
+	fieldPath := path.SkipPrefix(3)
 
 	// Handle "id" field separately - read from state, not remote state
 	if fieldPath.String() == "id" {
@@ -157,7 +156,7 @@ func (d *DeploymentUnit) ResolveReferenceRemote(ctx context.Context, db *dstate.
 }
 
 // ReadRemoteStateField reads a field from remote state with refresh if needed.
-func (d *DeploymentUnit) ReadRemoteStateField(ctx context.Context, db *dstate.DeploymentState, fieldPath dyn.Path) (any, error) {
+func (d *DeploymentUnit) ReadRemoteStateField(ctx context.Context, db *dstate.DeploymentState, fieldPath *structpath.PathNode) (any, error) {
 	// We have options:
 	// 1) Rely on the cached value; refresh if not cached.
 	// 2) Always refresh, read the value.

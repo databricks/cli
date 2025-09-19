@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/structs/dynpath"
 	"github.com/databricks/cli/libs/structs/structaccess"
 )
 
@@ -115,7 +116,7 @@ func truncate(s string, n int, suffix string) string {
 }
 
 func censorValue(ctx context.Context, v any, path dyn.Path) (string, error) {
-	v, err := structaccess.Get(v, path)
+	v, err := structaccess.Get(v, dynpath.ConvertDynPathToPathNode(path))
 	if err != nil {
 		log.Infof(ctx, "internal error: path=%s: %s", path, err)
 		return "err", err

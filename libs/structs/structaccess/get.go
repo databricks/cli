@@ -1,27 +1,28 @@
 package structaccess
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
 
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structtag"
 )
 
 // GetByString returns the value at the given path inside v.
 // This is a convenience function that parses the path string and calls Get.
 //
-// Path grammar (compatible with dyn path):
+// Path grammar:
 //   - Struct field names and map keys separated by '.' (e.g., connection.id)
-//   - (Note, this prevents maps keys that are not id-like from being referenced, but this general problem with references today.)
+//   - Map keys in bracket notation ['key'] (e.g., labels['env'])
 //   - Numeric indices in brackets for arrays/slices (e.g., items[0].name)
 //   - Leading '.' is allowed (e.g., .connection.id)
+//   - Flexible notation: x.field and x['field'] both work for structs and maps
 //
 // Behavior:
-//   - For structs: a key matches a field by its json tag name (if present and not "-").
-//     Embedded anonymous structs are searched.
-//   - For maps: a key indexes map[string]T (or string alias key types).
+//   - For structs: supports both .field and ['field'] notation
+//   - For maps: supports both ['key'] and .key notation
 //   - For slices/arrays: an index [N] selects the N-th element.
 //   - Wildcards ("*" or "[*]") are not supported and return an error.
 func GetByString(v any, path string) (any, error) {
@@ -29,23 +30,26 @@ func GetByString(v any, path string) (any, error) {
 		return v, nil
 	}
 
-	dynPath, err := dyn.NewPathFromString(path)
+	pathNode, err := structpath.Parse(path)
 	if err != nil {
 		return nil, err
 	}
 
-	return Get(v, dynPath)
+	return Get(v, pathNode)
 }
 
 // Get returns the value at the given path inside v.
-func Get(v any, path dyn.Path) (any, error) {
-	if len(path) == 0 {
+func Get(v any, path *structpath.PathNode) (any, error) {
+	if path.IsRoot() {
 		return v, nil
 	}
 
+	// Convert path to slice for easier iteration
+	pathSegments := path.AsSlice()
+
 	cur := reflect.ValueOf(v)
 	prefix := ""
-	for _, c := range path {
+	for _, node := range pathSegments {
 		var ok bool
 		cur, ok = deref(cur)
 		if !ok {
@@ -53,34 +57,51 @@ func Get(v any, path dyn.Path) (any, error) {
 			return nil, fmt.Errorf("%s: cannot access nil value", prefix)
 		}
 
-		if c.Key() != "" {
-			// Key access: struct field (by json tag) or map key.
-			newPrefix := prefix
-			if newPrefix == "" {
-				newPrefix = c.Key()
-			} else {
-				newPrefix = newPrefix + "." + c.Key()
+		// Handle different node types
+		if idx, isIndex := node.Index(); isIndex {
+			// Index access: slice/array
+			newPrefix := prefix + "[" + strconv.Itoa(idx) + "]"
+			kind := cur.Kind()
+			if kind != reflect.Slice && kind != reflect.Array {
+				return nil, fmt.Errorf("%s: cannot index %s", newPrefix, kind)
 			}
-			nv, err := accessKey(cur, c.Key(), newPrefix)
-			if err != nil {
-				return nil, err
+			if idx < 0 || idx >= cur.Len() {
+				return nil, fmt.Errorf("%s: index out of range, length is %d", newPrefix, cur.Len())
 			}
-			cur = nv
+			cur = cur.Index(idx)
 			prefix = newPrefix
 			continue
 		}
 
-		// Index access: slice/array
-		idx := c.Index()
-		newPrefix := prefix + "[" + strconv.Itoa(idx) + "]"
-		kind := cur.Kind()
-		if kind != reflect.Slice && kind != reflect.Array {
-			return nil, fmt.Errorf("%s: cannot index %s", newPrefix, kind)
+		// Handle different types of path nodes
+		if node.DotStar() || node.BracketStar() {
+			return nil, fmt.Errorf("wildcards not supported: %s", path.String())
 		}
-		if idx < 0 || idx >= cur.Len() {
-			return nil, fmt.Errorf("%s: index out of range, length is %d", newPrefix, cur.Len())
+
+		// Handle field or map key access with flexible notation
+		var key string
+		var newPrefix string
+
+		if field, isField := node.Field(); isField {
+			key = field
+			newPrefix = prefix
+			if newPrefix == "" {
+				newPrefix = key
+			} else {
+				newPrefix = newPrefix + "." + key
+			}
+		} else if mapKey, isMapKey := node.MapKey(); isMapKey {
+			key = mapKey
+			newPrefix = prefix + "['" + key + "']"
+		} else {
+			return nil, errors.New("unsupported path node type")
 		}
-		cur = cur.Index(idx)
+
+		nv, err := accessKey(cur, key, newPrefix)
+		if err != nil {
+			return nil, err
+		}
+		cur = nv
 		prefix = newPrefix
 	}
 
@@ -103,46 +124,56 @@ func Get(v any, path dyn.Path) (any, error) {
 func accessKey(v reflect.Value, key, prefix string) (reflect.Value, error) {
 	switch v.Kind() {
 	case reflect.Struct:
-		fv, sf, owner, ok := findStructFieldByKey(v, key)
-		if !ok {
-			return reflect.Value{}, fmt.Errorf("%s: field %q not found in %s", prefix, key, v.Type())
-		}
-		// Evaluate ForceSendFields on both the current struct and the declaring owner
-		force := containsForceSendField(v, sf.Name) || containsForceSendField(owner, sf.Name)
-
-		// Honor omitempty: if present and value is zero and not forced, treat as omitted (nil).
-		jsonTag := structtag.JSONTag(sf.Tag.Get("json"))
-		if jsonTag.OmitEmpty() && !force {
-			if fv.Kind() == reflect.Pointer {
-				if fv.IsNil() {
-					return reflect.Value{}, nil
-				}
-				// Non-nil pointer: check the element zero-ness for pointers to scalars/structs.
-				if fv.Elem().IsZero() {
-					return reflect.Value{}, nil
-				}
-			} else if fv.IsZero() {
-				return reflect.Value{}, nil
-			}
-		}
-		return fv, nil
+		return accessStructField(v, key, prefix)
 	case reflect.Map:
-		kt := v.Type().Key()
-		if kt.Kind() != reflect.String {
-			return reflect.Value{}, fmt.Errorf("%s: map key must be string, got %s", prefix, kt)
-		}
-		mk := reflect.ValueOf(key)
-		if kt != mk.Type() {
-			mk = mk.Convert(kt)
-		}
-		mv := v.MapIndex(mk)
-		if !mv.IsValid() {
-			return reflect.Value{}, fmt.Errorf("%s: key %q not found in map", prefix, key)
-		}
-		return mv, nil
+		return accessMapKey(v, key, prefix)
 	default:
 		return reflect.Value{}, fmt.Errorf("%s: cannot access key %q on %s", prefix, key, v.Kind())
 	}
+}
+
+// accessStructField returns the struct field value selected by key from v.
+func accessStructField(v reflect.Value, key, prefix string) (reflect.Value, error) {
+	fv, sf, owner, ok := findStructFieldByKey(v, key)
+	if !ok {
+		return reflect.Value{}, fmt.Errorf("%s: field %q not found in %s", prefix, key, v.Type())
+	}
+	// Evaluate ForceSendFields on both the current struct and the declaring owner
+	force := containsForceSendField(v, sf.Name) || containsForceSendField(owner, sf.Name)
+
+	// Honor omitempty: if present and value is zero and not forced, treat as omitted (nil).
+	jsonTag := structtag.JSONTag(sf.Tag.Get("json"))
+	if jsonTag.OmitEmpty() && !force {
+		if fv.Kind() == reflect.Pointer {
+			if fv.IsNil() {
+				return reflect.Value{}, nil
+			}
+			// Non-nil pointer: check the element zero-ness for pointers to scalars/structs.
+			if fv.Elem().IsZero() {
+				return reflect.Value{}, nil
+			}
+		} else if fv.IsZero() {
+			return reflect.Value{}, nil
+		}
+	}
+	return fv, nil
+}
+
+// accessMapKey returns the map entry value selected by key from v.
+func accessMapKey(v reflect.Value, key, prefix string) (reflect.Value, error) {
+	kt := v.Type().Key()
+	if kt.Kind() != reflect.String {
+		return reflect.Value{}, fmt.Errorf("%s: map key must be string, got %s", prefix, kt)
+	}
+	mk := reflect.ValueOf(key)
+	if kt != mk.Type() {
+		mk = mk.Convert(kt)
+	}
+	mv := v.MapIndex(mk)
+	if !mv.IsValid() {
+		return reflect.Value{}, fmt.Errorf("%s: key %q not found in map", prefix, key)
+	}
+	return mv, nil
 }
 
 // findStructFieldByKey searches exported fields of struct v for a field matching key.

@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
 )
@@ -101,4 +102,22 @@ func ConvertPathNodeToDynPath(path *structpath.PathNode, rootType reflect.Type) 
 	}
 
 	return result.String()
+}
+
+// ConvertDynPathToPathNode converts a dyn.Path to a *structpath.PathNode for compatibility.
+// This is a bridge function for code that still uses dyn.Path.
+func ConvertDynPathToPathNode(dynPath dyn.Path) *structpath.PathNode {
+	var result *structpath.PathNode
+
+	for _, component := range dynPath {
+		if component.Key() != "" {
+			// Key component - assume struct field for now
+			result = structpath.NewStructField(result, component.Key())
+		} else {
+			// Index component
+			result = structpath.NewIndex(result, component.Index())
+		}
+	}
+
+	return result
 }
