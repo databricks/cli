@@ -74,7 +74,7 @@ type User struct {
 
 	// A short name for the user that is stripped off of non-alphanumeric character
 	// Can be used as a prefix for resources that use their name as part of their URL (e.g. Apps, Database Instances)
-	DnsName string `json:"dns_name,omitempty" bundle:"readonly"`
+	DomainFriendlyName string `json:"domain_friendly_name,omitempty" bundle:"readonly"`
 
 	*iam.User
 }
