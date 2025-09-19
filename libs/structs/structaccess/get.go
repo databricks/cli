@@ -12,19 +12,6 @@ import (
 
 // GetByString returns the value at the given path inside v.
 // This is a convenience function that parses the path string and calls Get.
-//
-// Path grammar:
-//   - Struct field names and map keys separated by '.' (e.g., connection.id)
-//   - Map keys in bracket notation ['key'] (e.g., labels['env'])
-//   - Numeric indices in brackets for arrays/slices (e.g., items[0].name)
-//   - Leading '.' is allowed (e.g., .connection.id)
-//   - Flexible notation: x.field and x['field'] both work for structs and maps
-//
-// Behavior:
-//   - For structs: supports both .field and ['field'] notation
-//   - For maps: supports both ['key'] and .key notation
-//   - For slices/arrays: an index [N] selects the N-th element.
-//   - Wildcards ("*" or "[*]") are not supported and return an error.
 func GetByString(v any, path string) (any, error) {
 	if path == "" {
 		return v, nil
@@ -39,6 +26,10 @@ func GetByString(v any, path string) (any, error) {
 }
 
 // Get returns the value at the given path inside v.
+// - For structs: supports both .field and ['field'] notation
+// - For maps: supports both ['key'] and .key notation
+// - For slices/arrays: an index [N] selects the N-th element.
+// - Wildcards ("*" or "[*]") are not supported and return an error.
 func Get(v any, path *structpath.PathNode) (any, error) {
 	if path.IsRoot() {
 		return v, nil
@@ -57,9 +48,7 @@ func Get(v any, path *structpath.PathNode) (any, error) {
 			return nil, fmt.Errorf("%s: cannot access nil value", prefix)
 		}
 
-		// Handle different node types
 		if idx, isIndex := node.Index(); isIndex {
-			// Index access: slice/array
 			newPrefix := prefix + "[" + strconv.Itoa(idx) + "]"
 			kind := cur.Kind()
 			if kind != reflect.Slice && kind != reflect.Array {
@@ -73,12 +62,10 @@ func Get(v any, path *structpath.PathNode) (any, error) {
 			continue
 		}
 
-		// Handle different types of path nodes
 		if node.DotStar() || node.BracketStar() {
 			return nil, fmt.Errorf("wildcards not supported: %s", path.String())
 		}
 
-		// Handle field or map key access with flexible notation
 		var key string
 		var newPrefix string
 
@@ -92,7 +79,7 @@ func Get(v any, path *structpath.PathNode) (any, error) {
 			}
 		} else if mapKey, isMapKey := node.MapKey(); isMapKey {
 			key = mapKey
-			newPrefix = prefix + "['" + key + "']"
+			newPrefix = prefix + "[" + structpath.EncodeMapKey(key) + "]"
 		} else {
 			return nil, errors.New("unsupported path node type")
 		}

@@ -186,8 +186,12 @@ func (p *PathNode) String() string {
 	}
 
 	// Format map key with single quotes, escaping single quotes by doubling them
-	escapedKey := strings.ReplaceAll(p.key, "'", "''")
-	return fmt.Sprintf("%s['%s']", p.prev.String(), escapedKey)
+	return fmt.Sprintf("%s[%s]", p.prev.String(), EncodeMapKey(p.key))
+}
+
+func EncodeMapKey(s string) string {
+	escaped := strings.ReplaceAll(s, "'", "''")
+	return "'" + escaped + "'"
 }
 
 // Parse parses a string representation of a path using a state machine.
