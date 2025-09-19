@@ -57,7 +57,7 @@
   "workspace": {
     "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/foobar/default/artifacts",
     "current_user": {
-      "dns_name": "[USERNAME]",
+      "domain_friendly_name": "[USERNAME]",
       "id": "[USERID]",
       "short_name": "[USERNAME]",
       "userName": "[USERNAME]"
