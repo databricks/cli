@@ -111,56 +111,46 @@ func Get(v any, path *structpath.PathNode) (any, error) {
 func accessKey(v reflect.Value, key, prefix string) (reflect.Value, error) {
 	switch v.Kind() {
 	case reflect.Struct:
-		return accessStructField(v, key, prefix)
+		fv, sf, owner, ok := findStructFieldByKey(v, key)
+		if !ok {
+			return reflect.Value{}, fmt.Errorf("%s: field %q not found in %s", prefix, key, v.Type())
+		}
+		// Evaluate ForceSendFields on both the current struct and the declaring owner
+		force := containsForceSendField(v, sf.Name) || containsForceSendField(owner, sf.Name)
+
+		// Honor omitempty: if present and value is zero and not forced, treat as omitted (nil).
+		jsonTag := structtag.JSONTag(sf.Tag.Get("json"))
+		if jsonTag.OmitEmpty() && !force {
+			if fv.Kind() == reflect.Pointer {
+				if fv.IsNil() {
+					return reflect.Value{}, nil
+				}
+				// Non-nil pointer: check the element zero-ness for pointers to scalars/structs.
+				if fv.Elem().IsZero() {
+					return reflect.Value{}, nil
+				}
+			} else if fv.IsZero() {
+				return reflect.Value{}, nil
+			}
+		}
+		return fv, nil
 	case reflect.Map:
-		return accessMapKey(v, key, prefix)
+		kt := v.Type().Key()
+		if kt.Kind() != reflect.String {
+			return reflect.Value{}, fmt.Errorf("%s: map key must be string, got %s", prefix, kt)
+		}
+		mk := reflect.ValueOf(key)
+		if kt != mk.Type() {
+			mk = mk.Convert(kt)
+		}
+		mv := v.MapIndex(mk)
+		if !mv.IsValid() {
+			return reflect.Value{}, fmt.Errorf("%s: key %q not found in map", prefix, key)
+		}
+		return mv, nil
 	default:
 		return reflect.Value{}, fmt.Errorf("%s: cannot access key %q on %s", prefix, key, v.Kind())
 	}
-}
-
-// accessStructField returns the struct field value selected by key from v.
-func accessStructField(v reflect.Value, key, prefix string) (reflect.Value, error) {
-	fv, sf, owner, ok := findStructFieldByKey(v, key)
-	if !ok {
-		return reflect.Value{}, fmt.Errorf("%s: field %q not found in %s", prefix, key, v.Type())
-	}
-	// Evaluate ForceSendFields on both the current struct and the declaring owner
-	force := containsForceSendField(v, sf.Name) || containsForceSendField(owner, sf.Name)
-
-	// Honor omitempty: if present and value is zero and not forced, treat as omitted (nil).
-	jsonTag := structtag.JSONTag(sf.Tag.Get("json"))
-	if jsonTag.OmitEmpty() && !force {
-		if fv.Kind() == reflect.Pointer {
-			if fv.IsNil() {
-				return reflect.Value{}, nil
-			}
-			// Non-nil pointer: check the element zero-ness for pointers to scalars/structs.
-			if fv.Elem().IsZero() {
-				return reflect.Value{}, nil
-			}
-		} else if fv.IsZero() {
-			return reflect.Value{}, nil
-		}
-	}
-	return fv, nil
-}
-
-// accessMapKey returns the map entry value selected by key from v.
-func accessMapKey(v reflect.Value, key, prefix string) (reflect.Value, error) {
-	kt := v.Type().Key()
-	if kt.Kind() != reflect.String {
-		return reflect.Value{}, fmt.Errorf("%s: map key must be string, got %s", prefix, kt)
-	}
-	mk := reflect.ValueOf(key)
-	if kt != mk.Type() {
-		mk = mk.Convert(kt)
-	}
-	mv := v.MapIndex(mk)
-	if !mv.IsValid() {
-		return reflect.Value{}, fmt.Errorf("%s: key %q not found in map", prefix, key)
-	}
-	return mv, nil
 }
 
 // findStructFieldByKey searches exported fields of struct v for a field matching key.
