@@ -1,8 +1,6 @@
 package dynpath
 
 import (
-	"fmt"
-	"os"
 	"reflect"
 	"strconv"
 	"strings"
@@ -17,11 +15,6 @@ import (
 // - BracketStar accessing arrays/slices renders as "parent[*]"
 // - DotStar always renders as "parent.*"
 func ConvertPathNodeToDynPath(path *structpath.PathNode, rootType reflect.Type) string {
-	if path == nil {
-		return ""
-	}
-	fmt.Fprintf(os.Stderr, "pathg=%#v\n", path)
-
 	segments := path.AsSlice()
 	var result strings.Builder
 	currentType := rootType

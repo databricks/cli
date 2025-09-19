@@ -82,10 +82,6 @@ func (p *PathNode) Parent() *PathNode {
 // AsSlice returns the path as a slice of PathNodes from root to current.
 // Efficiently pre-allocates the exact length and fills in reverse order.
 func (p *PathNode) AsSlice() []*PathNode {
-	if p == nil {
-		return nil
-	}
-
 	// First pass: count the length
 	length := 0
 	current := p

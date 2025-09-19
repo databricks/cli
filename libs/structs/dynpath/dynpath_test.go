@@ -100,14 +100,28 @@ func TestConvertPathNodeToDynPath(t *testing.T) {
 		{
 			name:       "bracket star with parent - array",
 			structPath: "Parent[*]",
-			rootType:   reflect.TypeOf(struct{ Parent []int }{}),
-			dynPath:    "Parent[*]",
+			rootType: reflect.TypeOf(struct {
+				Parent []int
+			}{}),
+			dynPath: "Parent[*]",
 		},
+
+		{
+			name:       "bracket star with parent - array",
+			structPath: "parent[*]",
+			rootType: reflect.TypeOf(struct {
+				Parent []int `json:"parent"`
+			}{}),
+			dynPath: "parent[*]",
+		},
+
 		{
 			name:       "bracket star with parent - map",
 			structPath: "Parent[*]",
-			rootType:   reflect.TypeOf(struct{ Parent map[string]int }{}),
-			dynPath:    "Parent.*",
+			rootType: reflect.TypeOf(struct {
+				Parent map[string]int
+			}{}),
+			dynPath: "Parent.*",
 		},
 
 		// Special characters and edge cases
