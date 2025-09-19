@@ -6,6 +6,38 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestNormalizeHost(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		// Empty input
+		{"", "https://"},
+		{"   ", "https://"},
+
+		// Already has https://
+		{"https://example.databricks.com", "https://example.databricks.com"},
+		{"HTTPS://EXAMPLE.DATABRICKS.COM", "HTTPS://EXAMPLE.DATABRICKS.COM"},
+		{"https://example.databricks.com/", "https://example.databricks.com/"},
+
+		// Missing protocol (should add https://)
+		{"example.databricks.com", "https://example.databricks.com"},
+		{"  example.databricks.com  ", "https://example.databricks.com"},
+		{"subdomain.example.databricks.com", "https://subdomain.example.databricks.com"},
+
+		// Edge cases
+		{"https://", "https://"},
+		{"example.com", "https://example.com"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.input, func(t *testing.T) {
+			result := NormalizeHost(test.input)
+			assert.Equal(t, test.expected, result)
+		})
+	}
+}
+
 func TestValidateHost(t *testing.T) {
 	var err error
 
