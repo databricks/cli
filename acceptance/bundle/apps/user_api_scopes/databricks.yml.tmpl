@@ -1,0 +1,11 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+resources:
+  apps:
+    reporting_app:
+      name: t-$UNIQUE_NAME
+      description: "test app"
+      source_code_path: ./app
+      user_api_scopes:
+        - sql
