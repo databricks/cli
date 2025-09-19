@@ -201,9 +201,10 @@ func (p *PathNode) String() string {
 // State Machine for Path Parsing:
 //
 // States:
-//   - START: Beginning of parsing, expects field name or "["
-//   - FIELD_START: After a dot, expects field name only
+//   - START: Beginning of parsing, expects field name, "[", or "*"
+//   - FIELD_START: After a dot, expects field name or "*"
 //   - FIELD: Reading field name characters
+//   - DOT_STAR: Encountered "*" (at start or after dot), expects ".", "[", or EOF
 //   - BRACKET_OPEN: Just encountered "[", expects digit, "'" or "*"
 //   - INDEX: Reading array index digits, expects more digits or "]"
 //   - MAP_KEY: Reading map key content, expects any char or "'"
@@ -213,9 +214,10 @@ func (p *PathNode) String() string {
 //   - END: Successfully completed parsing
 //
 // Transitions:
-//   - START: [a-zA-Z_-] -> FIELD, "[" -> BRACKET_OPEN, EOF -> END
-//   - FIELD_START: [a-zA-Z_-] -> FIELD, other -> ERROR
+//   - START: [a-zA-Z_-] -> FIELD, "[" -> BRACKET_OPEN, "*" -> DOT_STAR, EOF -> END
+//   - FIELD_START: [a-zA-Z_-] -> FIELD, "*" -> DOT_STAR, other -> ERROR
 //   - FIELD: [a-zA-Z0-9_-] -> FIELD, "." -> FIELD_START, "[" -> BRACKET_OPEN, EOF -> END
+//   - DOT_STAR: "." -> FIELD_START, "[" -> BRACKET_OPEN, EOF -> END, other -> ERROR
 //   - BRACKET_OPEN: [0-9] -> INDEX, "'" -> MAP_KEY, "*" -> WILDCARD
 //   - INDEX: [0-9] -> INDEX, "]" -> EXPECT_DOT_OR_END
 //   - MAP_KEY: (any except "'") -> MAP_KEY, "'" -> MAP_KEY_QUOTE
@@ -232,6 +234,7 @@ func Parse(s string) (*PathNode, error) {
 		stateStart = iota
 		stateFieldStart
 		stateField
+		stateDotStar
 		stateBracketOpen
 		stateIndex
 		stateMapKey
@@ -253,6 +256,8 @@ func Parse(s string) (*PathNode, error) {
 		case stateStart:
 			if ch == '[' {
 				state = stateBracketOpen
+			} else if ch == '*' {
+				state = stateDotStar
 			} else if !isReservedFieldChar(ch) {
 				currentToken.WriteByte(ch)
 				state = stateField
@@ -261,7 +266,9 @@ func Parse(s string) (*PathNode, error) {
 			}
 
 		case stateFieldStart:
-			if !isReservedFieldChar(ch) {
+			if ch == '*' {
+				state = stateDotStar
+			} else if !isReservedFieldChar(ch) {
 				currentToken.WriteByte(ch)
 				state = stateField
 			} else {
@@ -281,6 +288,17 @@ func Parse(s string) (*PathNode, error) {
 				currentToken.WriteByte(ch)
 			} else {
 				return nil, fmt.Errorf("invalid character '%c' in field name at position %d", ch, pos)
+			}
+
+		case stateDotStar:
+			if ch == '.' {
+				result = NewDotStar(result)
+				state = stateFieldStart
+			} else if ch == '[' {
+				result = NewDotStar(result)
+				state = stateBracketOpen
+			} else {
+				return nil, fmt.Errorf("unexpected character '%c' after '.*' at position %d", ch, pos)
 			}
 
 		case stateBracketOpen:
@@ -367,6 +385,9 @@ func Parse(s string) (*PathNode, error) {
 		return result, nil // Empty path, result is nil
 	case stateField:
 		result = NewStructField(result, currentToken.String())
+		return result, nil
+	case stateDotStar:
+		result = NewDotStar(result)
 		return result, nil
 	case stateExpectDotOrEnd:
 		return result, nil
