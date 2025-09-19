@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"reflect"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle/internal/annotation"
@@ -115,6 +116,14 @@ func mapIncorrectTypNames(ref string) string {
 	}
 }
 
+func isOutputOnly(s jsonschema.Schema) *bool {
+	if s.FieldBehaviors == nil || !slices.Contains(s.FieldBehaviors, "OUTPUT_ONLY") {
+		return nil
+	}
+	res := true
+	return &res
+}
+
 // Use the OpenAPI spec to load descriptions for the given type.
 func (p *openapiParser) extractAnnotations(typ reflect.Type, outputPath, overridesPath string) error {
 	annotations := annotation.File{}
@@ -150,7 +159,8 @@ func (p *openapiParser) extractAnnotations(typ reflect.Type, outputPath, overrid
 			if preview == "PUBLIC" {
 				preview = ""
 			}
-			if ref.Description != "" || ref.Enum != nil || ref.Deprecated || ref.DeprecationMessage != "" || preview != "" {
+			outputOnly := isOutputOnly(ref)
+			if ref.Description != "" || ref.Enum != nil || ref.Deprecated || ref.DeprecationMessage != "" || preview != "" || outputOnly != nil {
 				if ref.Deprecated && ref.DeprecationMessage == "" {
 					ref.DeprecationMessage = "This field is deprecated"
 				}
@@ -160,6 +170,7 @@ func (p *openapiParser) extractAnnotations(typ reflect.Type, outputPath, overrid
 					Enum:               ref.Enum,
 					DeprecationMessage: ref.DeprecationMessage,
 					Preview:            preview,
+					OutputOnly:         outputOnly,
 				}
 			}
 
@@ -192,6 +203,7 @@ func (p *openapiParser) extractAnnotations(typ reflect.Type, outputPath, overrid
 						Enum:               refProp.Enum,
 						Preview:            preview,
 						DeprecationMessage: refProp.DeprecationMessage,
+						OutputOnly:         isOutputOnly(*refProp),
 					}
 					if description == "" {
 						addEmptyOverride(k, basePath, overrides)
