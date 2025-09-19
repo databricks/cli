@@ -1,51 +1,46 @@
 package structaccess
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
 
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structtag"
 )
 
 // GetByString returns the value at the given path inside v.
 // This is a convenience function that parses the path string and calls Get.
-//
-// Path grammar (compatible with dyn path):
-//   - Struct field names and map keys separated by '.' (e.g., connection.id)
-//   - (Note, this prevents maps keys that are not id-like from being referenced, but this general problem with references today.)
-//   - Numeric indices in brackets for arrays/slices (e.g., items[0].name)
-//   - Leading '.' is allowed (e.g., .connection.id)
-//
-// Behavior:
-//   - For structs: a key matches a field by its json tag name (if present and not "-").
-//     Embedded anonymous structs are searched.
-//   - For maps: a key indexes map[string]T (or string alias key types).
-//   - For slices/arrays: an index [N] selects the N-th element.
-//   - Wildcards ("*" or "[*]") are not supported and return an error.
 func GetByString(v any, path string) (any, error) {
 	if path == "" {
 		return v, nil
 	}
 
-	dynPath, err := dyn.NewPathFromString(path)
+	pathNode, err := structpath.Parse(path)
 	if err != nil {
 		return nil, err
 	}
 
-	return Get(v, dynPath)
+	return Get(v, pathNode)
 }
 
 // Get returns the value at the given path inside v.
-func Get(v any, path dyn.Path) (any, error) {
-	if len(path) == 0 {
+// - For structs: supports both .field and ['field'] notation
+// - For maps: supports both ['key'] and .key notation
+// - For slices/arrays: an index [N] selects the N-th element.
+// - Wildcards ("*" or "[*]") are not supported and return an error.
+func Get(v any, path *structpath.PathNode) (any, error) {
+	if path.IsRoot() {
 		return v, nil
 	}
 
+	// Convert path to slice for easier iteration
+	pathSegments := path.AsSlice()
+
 	cur := reflect.ValueOf(v)
 	prefix := ""
-	for _, c := range path {
+	for _, node := range pathSegments {
 		var ok bool
 		cur, ok = deref(cur)
 		if !ok {
@@ -53,34 +48,47 @@ func Get(v any, path dyn.Path) (any, error) {
 			return nil, fmt.Errorf("%s: cannot access nil value", prefix)
 		}
 
-		if c.Key() != "" {
-			// Key access: struct field (by json tag) or map key.
-			newPrefix := prefix
-			if newPrefix == "" {
-				newPrefix = c.Key()
-			} else {
-				newPrefix = newPrefix + "." + c.Key()
+		if idx, isIndex := node.Index(); isIndex {
+			newPrefix := prefix + "[" + strconv.Itoa(idx) + "]"
+			kind := cur.Kind()
+			if kind != reflect.Slice && kind != reflect.Array {
+				return nil, fmt.Errorf("%s: cannot index %s", newPrefix, kind)
 			}
-			nv, err := accessKey(cur, c.Key(), newPrefix)
-			if err != nil {
-				return nil, err
+			if idx < 0 || idx >= cur.Len() {
+				return nil, fmt.Errorf("%s: index out of range, length is %d", newPrefix, cur.Len())
 			}
-			cur = nv
+			cur = cur.Index(idx)
 			prefix = newPrefix
 			continue
 		}
 
-		// Index access: slice/array
-		idx := c.Index()
-		newPrefix := prefix + "[" + strconv.Itoa(idx) + "]"
-		kind := cur.Kind()
-		if kind != reflect.Slice && kind != reflect.Array {
-			return nil, fmt.Errorf("%s: cannot index %s", newPrefix, kind)
+		if node.DotStar() || node.BracketStar() {
+			return nil, fmt.Errorf("wildcards not supported: %s", path.String())
 		}
-		if idx < 0 || idx >= cur.Len() {
-			return nil, fmt.Errorf("%s: index out of range, length is %d", newPrefix, cur.Len())
+
+		var key string
+		var newPrefix string
+
+		if field, isField := node.Field(); isField {
+			key = field
+			newPrefix = prefix
+			if newPrefix == "" {
+				newPrefix = key
+			} else {
+				newPrefix = newPrefix + "." + key
+			}
+		} else if mapKey, isMapKey := node.MapKey(); isMapKey {
+			key = mapKey
+			newPrefix = prefix + "[" + structpath.EncodeMapKey(key) + "]"
+		} else {
+			return nil, errors.New("unsupported path node type")
 		}
-		cur = cur.Index(idx)
+
+		nv, err := accessKey(cur, key, newPrefix)
+		if err != nil {
+			return nil, err
+		}
+		cur = nv
 		prefix = newPrefix
 	}
 

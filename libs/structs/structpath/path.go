@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/dynvar"
 )
 
 const (
@@ -93,19 +96,14 @@ func (p *PathNode) Parent() *PathNode {
 // AsSlice returns the path as a slice of PathNodes from root to current.
 // Efficiently pre-allocates the exact length and fills in reverse order.
 func (p *PathNode) AsSlice() []*PathNode {
-	// First pass: count the length
-	length := 0
-	current := p
-	for current != nil {
-		length++
-		current = current.Parent()
-	}
+	// Use Len() to get the length efficiently
+	length := p.Len()
 
 	// Allocate slice with exact capacity
 	segments := make([]*PathNode, length)
 
-	// Second pass: fill in reverse order (from end to start)
-	current = p
+	// Fill in reverse order (from end to start)
+	current := p
 	for i := length - 1; i >= 0; i-- {
 		segments[i] = current
 		current = current.Parent()
@@ -209,8 +207,12 @@ func (p *PathNode) String() string {
 	}
 
 	// Format map key with single quotes, escaping single quotes by doubling them
-	escapedKey := strings.ReplaceAll(p.key, "'", "''")
-	return fmt.Sprintf("%s['%s']", p.prev.String(), escapedKey)
+	return fmt.Sprintf("%s[%s]", p.prev.String(), EncodeMapKey(p.key))
+}
+
+func EncodeMapKey(s string) string {
+	escaped := strings.ReplaceAll(s, "'", "''")
+	return "'" + escaped + "'"
 }
 
 // Parse parses a string representation of a path using a state machine.
@@ -463,4 +465,100 @@ func isValidField(s string) bool {
 		}
 	}
 	return len(s) > 0
+}
+
+// PureReferenceToPath returns a PathNode if s is a pure variable reference, otherwise false.
+// This function is similar to dynvar.PureReferenceToPath but returns a *PathNode instead of dyn.Path.
+func PureReferenceToPath(s string) (*PathNode, bool) {
+	ref, ok := dynvar.NewRef(dyn.V(s))
+	if !ok {
+		return nil, false
+	}
+
+	if !ref.IsPure() {
+		return nil, false
+	}
+
+	pathNode, err := Parse(ref.References()[0])
+	if err != nil {
+		return nil, false
+	}
+
+	return pathNode, true
+}
+
+// SkipPrefix returns a new PathNode that skips the first n components of the path.
+// If n is greater than or equal to the path length, returns nil (root).
+func (p *PathNode) SkipPrefix(n int) *PathNode {
+	if p.IsRoot() || n <= 0 {
+		return p
+	}
+
+	length := p.Len()
+	if n >= length {
+		return nil // Return root
+	}
+
+	startNode := p.Prefix(n)
+
+	var result *PathNode
+	current := p
+	for current != startNode {
+		result = &PathNode{
+			prev:  result,
+			key:   current.key,
+			index: current.index,
+		}
+		current = current.Parent()
+	}
+
+	return result.Reverse()
+}
+
+// Reverse returns a new PathNode with the order of components reversed.
+func (p *PathNode) Reverse() *PathNode {
+	var result *PathNode
+	current := p
+	for current != nil {
+		next := current.prev
+		current.prev = result
+		result = current
+		current = next
+	}
+	return result
+}
+
+// Len returns the number of components in the path.
+func (p *PathNode) Len() int {
+	length := 0
+	current := p
+	for current != nil {
+		length++
+		current = current.Parent()
+	}
+	return length
+}
+
+// Prefix returns the PathNode at the nth position (1-indexed from root).
+// If n is greater than the path length, returns the entire path.
+// If n <= 0, returns nil (root).
+func (p *PathNode) Prefix(n int) *PathNode {
+	if p.IsRoot() || n <= 0 {
+		return nil // Return root
+	}
+
+	// Find the path length first to handle edge cases
+	length := p.Len()
+	if n >= length {
+		return p // Return entire path
+	}
+
+	// Traverse from root to find the nth node (1-indexed)
+	current := p
+	// Move to root first
+	for range length - n {
+		current = current.Parent()
+	}
+
+	return current
 }
