@@ -61,6 +61,8 @@ type ClientOptions struct {
 	ClientPublicKeyName string
 	// If true, the CLI will attempt to start the cluster if it is not running.
 	AutoStartCluster bool
+	// Optional auth profile name. If present, will be added as --profile flag to the ProxyCommand while spawning ssh client.
+	Profile string
 	// Additional arguments to pass to the SSH client in the non proxy mode.
 	AdditionalArgs []string
 }
@@ -238,6 +240,10 @@ func spawnSSHClient(ctx context.Context, userName, privateKeyPath string, server
 
 	proxyCommand := fmt.Sprintf("%s ssh connect --proxy --cluster=%s --handover-timeout=%s --metadata=%s,%d --auto-start-cluster=%t",
 		executablePath, opts.ClusterID, opts.HandoverTimeout.String(), userName, serverPort, opts.AutoStartCluster)
+
+	if opts.Profile != "" {
+		proxyCommand += " --profile=" + opts.Profile
+	}
 
 	sshArgs := []string{
 		"-l", userName,
