@@ -1,5 +1,6 @@
 
 >>> [CLI] bundle plan
+Plan: 1 to add, 0 to change, 0 to delete, 1 unchanged
 create jobs.foo
 
 >>> [CLI] bundle plan -o json
@@ -18,6 +19,7 @@ Updating deployment state...
 Deployment complete!
 
 >>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 >>> [CLI] bundle plan -o json
 {
@@ -64,6 +66,7 @@ jobs foo id='[JOB_ID]' name='foo'
 >>> update_file.py databricks.yml DAYS HOURS
 
 >>> [CLI] bundle plan
+Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
 update jobs.foo
 
 >>> [CLI] bundle plan -o json
@@ -82,6 +85,7 @@ Updating deployment state...
 Deployment complete!
 
 >>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 >>> [CLI] bundle plan -o json
 {

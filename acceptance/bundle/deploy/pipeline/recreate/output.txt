@@ -31,6 +31,7 @@ Deployment complete!
 }
 
 >>> [CLI] bundle plan --var=catalog=another_catalog
+Plan: 2 to add, 0 to change, 2 to delete, 2 unchanged
 recreate pipelines.foo
 recreate schemas.bar
 

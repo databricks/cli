@@ -15,6 +15,7 @@ resources:
             path: "./foo.py"
 
 >>> [CLI] bundle plan
+Plan: 1 to add, 0 to change, 0 to delete, 1 unchanged
 create pipelines.my
 
 >>> [CLI] bundle plan -o json
@@ -58,6 +59,7 @@ Deployment complete!
 >>> update_file.py databricks.yml pipelines/custom pipelines/newcustom
 
 >>> [CLI] bundle plan
+Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
 recreate pipelines.my
 
 >>> [CLI] bundle plan -o json

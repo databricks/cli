@@ -9,6 +9,7 @@ Workspace:
 Validation OK!
 
 >>> [CLI] bundle plan
+Plan: 2 to add, 0 to change, 0 to delete, 2 unchanged
 create apps.myapp
 create pipelines.mypipeline
 
