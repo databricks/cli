@@ -77,25 +77,32 @@ func ConvertPathNodeToDynPath(path *structpath.PathNode, rootType reflect.Type) 
 				result.WriteString(".")
 			}
 			result.WriteString("*")
-			// Type doesn't change for wildcards
+
+			// If it's a map, we can inspect the type; otherwise we cannot since we don't know what field to look into
+			if currentType != nil && currentType.Kind() == reflect.Map {
+				currentType = currentType.Elem()
+			} else {
+				currentType = nil
+			}
 
 		} else if segment.BracketStar() {
-			// Context-aware wildcard rendering
-			if currentType != nil && currentType.Kind() == reflect.Map {
+			if currentType != nil && (currentType.Kind() == reflect.Array || currentType.Kind() == reflect.Slice) {
+				result.WriteString("[*]")
+				currentType = currentType.Elem()
+			} else {
 				// Map wildcard uses dot notation in DynPath
 				if result.Len() > 0 {
 					result.WriteString(".")
 				}
 				result.WriteString("*")
-				currentType = currentType.Elem()
-			} else {
-				// Array/slice wildcard or fallback uses bracket notation
-				result.WriteString("[*]")
-				if currentType != nil && (currentType.Kind() == reflect.Array || currentType.Kind() == reflect.Slice) {
+
+				if currentType != nil && currentType.Kind() == reflect.Map {
 					currentType = currentType.Elem()
 				} else {
 					currentType = nil
 				}
+
+				// QQQ return error if we cannot disambiguate?
 			}
 		}
 	}

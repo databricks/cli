@@ -135,6 +135,7 @@ func TestPathNode(t *testing.T) {
 			String:      "Parent[*]",
 			BracketStar: true,
 		},
+
 		// Edge cases with special characters in map keys
 		{
 			name:   "map key with single quote",
@@ -198,6 +199,32 @@ func TestPathNode(t *testing.T) {
 			String: "['key\x00[],`']",
 			MapKey: "key\x00[],`",
 		},
+
+		// Additional dot-star pattern tests
+		{
+			name:    "field dot star",
+			node:    NewDotStar(NewStructField(nil, "bla")),
+			String:  "bla.*",
+			DotStar: true,
+		},
+		{
+			name:   "field dot star dot field",
+			node:   NewStructField(NewDotStar(NewStructField(nil, "bla")), "foo"),
+			String: "bla.*.foo",
+			Field:  "foo",
+		},
+		{
+			name:   "field dot star bracket index",
+			node:   NewIndex(NewDotStar(NewStructField(nil, "bla")), 0),
+			String: "bla.*[0]",
+			Index:  0,
+		},
+		{
+			name:        "field dot star bracket star",
+			node:        NewBracketStar(NewDotStar(NewStructField(nil, "bla"))),
+			String:      "bla.*[*]",
+			BracketStar: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -208,8 +235,8 @@ func TestPathNode(t *testing.T) {
 
 			// Test roundtrip conversion: String() -> Parse() -> String()
 			parsed, err := Parse(tt.String)
-			assert.NoError(t, err, "Parse() should not error")
-			if parsed != nil {
+			if assert.NoError(t, err, "Parse() should not error") {
+				assert.Equal(t, tt.node, parsed)
 				roundtripResult := parsed.String()
 				assert.Equal(t, tt.String, roundtripResult, "Roundtrip conversion should be identical")
 			}
@@ -407,6 +434,13 @@ func TestParseErrors(t *testing.T) {
 			name:  "incomplete map key quote",
 			input: "field['key'",
 			error: "unexpected end of input after quote in map key",
+		},
+
+		// Invalid dot-star patterns
+		{
+			name:  "dot star followed by field name",
+			input: "bla.*foo",
+			error: "unexpected character 'f' after '.*' at position 5",
 		},
 	}
 

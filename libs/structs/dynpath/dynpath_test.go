@@ -55,42 +55,41 @@ func TestConvertPathNodeToDynPath(t *testing.T) {
 		},
 
 		// Compound paths
-		/*
-				{
-					name:       "struct field -> array index",
-					structPath: "items[3]",
-					dynPath:    "items[3]",
-				},
-			{
-				name:       "struct field -> map key",
-				structPath: "config['database']",
-				dynPath:    "config.database",
-			},
-			{
-				name:       "struct field -> struct field",
-				structPath: "user.name",
-				dynPath:    "user.name",
-			},
-			{
-				name:       "map key -> array index",
-				structPath: "['servers'][0]",
-				dynPath:    "servers[0]",
-			},
-			{
-				name:       "map key -> struct field",
-				structPath: "['primary'].host",
-				dynPath:    "primary.host",
-			},
-			{
-				name:       "array index -> struct field",
-				structPath: "[2].id",
-				dynPath:    "[2].id",
-			},
-			{
-				name:       "array index -> map key",
-				structPath: "[1]['status']",
-				dynPath:    "[1].status",
-			},*/
+		{
+			name:       "struct field -> array index",
+			structPath: "items[3]",
+			dynPath:    "items[3]",
+		},
+		{
+			name:       "struct field -> map key",
+			structPath: "config['database']",
+			dynPath:    "config.database",
+		},
+		{
+			name:       "struct field -> struct field",
+			structPath: "user.name",
+			dynPath:    "user.name",
+		},
+		{
+			name:       "map key -> array index",
+			structPath: "['servers'][0]",
+			dynPath:    "servers[0]",
+		},
+		{
+			name:       "map key -> struct field",
+			structPath: "['primary'].host",
+			dynPath:    "primary.host",
+		},
+		{
+			name:       "array index -> struct field",
+			structPath: "[2].id",
+			dynPath:    "[2].id",
+		},
+		{
+			name:       "array index -> map key",
+			structPath: "[1]['status']",
+			dynPath:    "[1].status",
+		},
 
 		// Wildcard combinations
 		{
@@ -180,9 +179,6 @@ func TestConvertPathNodeToDynPath(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.name != "dot star with parent" {
-				return
-			}
 			pathNode, err := structpath.Parse(tt.structPath)
 			t.Logf("%q node=%#v", tt.structPath, pathNode)
 			assert.NoError(t, err, "Failed to parse structPath: %s", tt.structPath)
