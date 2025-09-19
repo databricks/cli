@@ -19,7 +19,10 @@ from urllib.request import urlretrieve
 os_name = platform.system().lower()
 
 arch = platform.machine().lower()
-arch = {"x86_64": "amd64"}.get(arch, arch)
+arch = {
+    "x86_64": "amd64",
+    "aarch64": "arm64",
+}.get(arch, arch)
 if os_name == "windows" and arch not in ("386", "amd64"):
     # terraform 1.5.5 only has builds for these two.
     arch = "amd64"
