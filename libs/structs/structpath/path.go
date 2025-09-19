@@ -3,18 +3,15 @@ package structpath
 import (
 	"errors"
 	"fmt"
-	"reflect"
 	"strconv"
 	"strings"
-
-	"github.com/databricks/cli/libs/structs/structtag"
 )
 
 const (
-	tagStruct   = -1
-	tagMapKey   = -2
-	tagAnyKey   = -4
-	tagAnyIndex = -5
+	tagStruct      = -1
+	tagMapKey      = -2
+	tagDotStar     = -4
+	tagBracketStar = -5
 )
 
 // PathNode represents a node in a path for struct diffing.
@@ -51,18 +48,18 @@ func (p *PathNode) MapKey() (string, bool) {
 	return "", false
 }
 
-func (p *PathNode) AnyKey() bool {
+func (p *PathNode) DotStar() bool {
 	if p == nil {
 		return false
 	}
-	return p.index == tagAnyKey
+	return p.index == tagDotStar
 }
 
-func (p *PathNode) AnyIndex() bool {
+func (p *PathNode) BracketStar() bool {
 	if p == nil {
 		return false
 	}
-	return p.index == tagAnyIndex
+	return p.index == tagBracketStar
 }
 
 func (p *PathNode) Field() (string, bool) {
@@ -80,6 +77,30 @@ func (p *PathNode) Parent() *PathNode {
 		return nil
 	}
 	return p.prev
+}
+
+// AsSlice returns the path as a slice of PathNodes from root to current.
+// Efficiently pre-allocates the exact length and fills in reverse order.
+func (p *PathNode) AsSlice() []*PathNode {
+	// First pass: count the length
+	length := 0
+	current := p
+	for current != nil {
+		length++
+		current = current.Parent()
+	}
+
+	// Allocate slice with exact capacity
+	segments := make([]*PathNode, length)
+
+	// Second pass: fill in reverse order (from end to start)
+	current = p
+	for i := length - 1; i >= 0; i-- {
+		segments[i] = current
+		current = current.Parent()
+	}
+
+	return segments
 }
 
 // NewIndex creates a new PathNode for an array/slice index.
@@ -103,33 +124,26 @@ func NewMapKey(prev *PathNode, key string) *PathNode {
 }
 
 // NewStructField creates a new PathNode for a struct field.
-// The jsonTag is used for JSON key resolution, and fieldName is used as fallback.
-func NewStructField(prev *PathNode, tag reflect.StructTag, fieldName string) *PathNode {
-	jsonTag := structtag.JSONTag(tag.Get("json"))
-
-	key := fieldName
-	if name := jsonTag.Name(); name != "" {
-		key = name
-	}
-
+// The fieldName should be the resolved field name (e.g., from JSON tag or Go field name).
+func NewStructField(prev *PathNode, fieldName string) *PathNode {
 	return &PathNode{
 		prev:  prev,
-		key:   key,
+		key:   fieldName,
 		index: tagStruct,
 	}
 }
 
-func NewAnyKey(prev *PathNode) *PathNode {
+func NewDotStar(prev *PathNode) *PathNode {
 	return &PathNode{
 		prev:  prev,
-		index: tagAnyKey,
+		index: tagDotStar,
 	}
 }
 
-func NewAnyIndex(prev *PathNode) *PathNode {
+func NewBracketStar(prev *PathNode) *PathNode {
 	return &PathNode{
 		prev:  prev,
-		index: tagAnyIndex,
+		index: tagBracketStar,
 	}
 }
 
@@ -149,8 +163,20 @@ func (p *PathNode) String() string {
 		return p.prev.String() + "[" + strconv.Itoa(p.index) + "]"
 	}
 
-	if p.index == tagAnyKey || p.index == tagAnyIndex {
-		return p.prev.String() + "[*]"
+	if p.index == tagDotStar {
+		prev := p.prev.String()
+		if prev == "" {
+			return "*"
+		}
+		return prev + ".*"
+	}
+
+	if p.index == tagBracketStar {
+		prev := p.prev.String()
+		if prev == "" {
+			return "[*]"
+		}
+		return prev + "[*]"
 	}
 
 	if p.index == tagStruct {
@@ -171,9 +197,10 @@ func (p *PathNode) String() string {
 // State Machine for Path Parsing:
 //
 // States:
-//   - START: Beginning of parsing, expects field name or "["
-//   - FIELD_START: After a dot, expects field name only
+//   - START: Beginning of parsing, expects field name, "[", or "*"
+//   - FIELD_START: After a dot, expects field name or "*"
 //   - FIELD: Reading field name characters
+//   - DOT_STAR: Encountered "*" (at start or after dot), expects ".", "[", or EOF
 //   - BRACKET_OPEN: Just encountered "[", expects digit, "'" or "*"
 //   - INDEX: Reading array index digits, expects more digits or "]"
 //   - MAP_KEY: Reading map key content, expects any char or "'"
@@ -183,9 +210,10 @@ func (p *PathNode) String() string {
 //   - END: Successfully completed parsing
 //
 // Transitions:
-//   - START: [a-zA-Z_-] -> FIELD, "[" -> BRACKET_OPEN, EOF -> END
-//   - FIELD_START: [a-zA-Z_-] -> FIELD, other -> ERROR
+//   - START: [a-zA-Z_-] -> FIELD, "[" -> BRACKET_OPEN, "*" -> DOT_STAR, EOF -> END
+//   - FIELD_START: [a-zA-Z_-] -> FIELD, "*" -> DOT_STAR, other -> ERROR
 //   - FIELD: [a-zA-Z0-9_-] -> FIELD, "." -> FIELD_START, "[" -> BRACKET_OPEN, EOF -> END
+//   - DOT_STAR: "." -> FIELD_START, "[" -> BRACKET_OPEN, EOF -> END, other -> ERROR
 //   - BRACKET_OPEN: [0-9] -> INDEX, "'" -> MAP_KEY, "*" -> WILDCARD
 //   - INDEX: [0-9] -> INDEX, "]" -> EXPECT_DOT_OR_END
 //   - MAP_KEY: (any except "'") -> MAP_KEY, "'" -> MAP_KEY_QUOTE
@@ -202,6 +230,7 @@ func Parse(s string) (*PathNode, error) {
 		stateStart = iota
 		stateFieldStart
 		stateField
+		stateDotStar
 		stateBracketOpen
 		stateIndex
 		stateMapKey
@@ -223,6 +252,8 @@ func Parse(s string) (*PathNode, error) {
 		case stateStart:
 			if ch == '[' {
 				state = stateBracketOpen
+			} else if ch == '*' {
+				state = stateDotStar
 			} else if !isReservedFieldChar(ch) {
 				currentToken.WriteByte(ch)
 				state = stateField
@@ -231,7 +262,9 @@ func Parse(s string) (*PathNode, error) {
 			}
 
 		case stateFieldStart:
-			if !isReservedFieldChar(ch) {
+			if ch == '*' {
+				state = stateDotStar
+			} else if !isReservedFieldChar(ch) {
 				currentToken.WriteByte(ch)
 				state = stateField
 			} else {
@@ -240,17 +273,29 @@ func Parse(s string) (*PathNode, error) {
 
 		case stateField:
 			if ch == '.' {
-				result = NewStructField(result, reflect.StructTag(""), currentToken.String())
+				result = NewStructField(result, currentToken.String())
 				currentToken.Reset()
 				state = stateFieldStart
 			} else if ch == '[' {
-				result = NewStructField(result, reflect.StructTag(""), currentToken.String())
+				result = NewStructField(result, currentToken.String())
 				currentToken.Reset()
 				state = stateBracketOpen
 			} else if !isReservedFieldChar(ch) {
 				currentToken.WriteByte(ch)
 			} else {
 				return nil, fmt.Errorf("invalid character '%c' in field name at position %d", ch, pos)
+			}
+
+		case stateDotStar:
+			switch ch {
+			case '.':
+				result = NewDotStar(result)
+				state = stateFieldStart
+			case '[':
+				result = NewDotStar(result)
+				state = stateBracketOpen
+			default:
+				return nil, fmt.Errorf("unexpected character '%c' after '.*' at position %d", ch, pos)
 			}
 
 		case stateBracketOpen:
@@ -305,9 +350,7 @@ func Parse(s string) (*PathNode, error) {
 
 		case stateWildcard:
 			if ch == ']' {
-				// Note, since we're parsing this without type info present, we don't know if it's AnyKey or AnyIndex
-				// Perhaps structpath should be simplified to have Wildcard as merged representation of AnyKey/AnyIndex
-				result = NewAnyKey(result)
+				result = NewBracketStar(result)
 				state = stateExpectDotOrEnd
 			} else {
 				return nil, fmt.Errorf("unexpected character '%c' after '*' at position %d", ch, pos)
@@ -338,7 +381,10 @@ func Parse(s string) (*PathNode, error) {
 	case stateStart:
 		return result, nil // Empty path, result is nil
 	case stateField:
-		result = NewStructField(result, reflect.StructTag(""), currentToken.String())
+		result = NewStructField(result, currentToken.String())
+		return result, nil
+	case stateDotStar:
+		result = NewDotStar(result)
 		return result, nil
 	case stateExpectDotOrEnd:
 		return result, nil
@@ -378,37 +424,5 @@ func isReservedFieldChar(ch byte) bool {
 		return true
 	default:
 		return false
-	}
-}
-
-// Path in libs/dyn format
-func (p *PathNode) DynPath() string {
-	if p == nil {
-		return ""
-	}
-
-	if p.index >= 0 {
-		return p.prev.DynPath() + "[" + strconv.Itoa(p.index) + "]"
-	}
-
-	if p.index == tagAnyKey {
-		prev := p.prev.DynPath()
-		if prev == "" {
-			return "*"
-		} else {
-			return prev + ".*"
-		}
-	}
-
-	if p.index == tagAnyIndex {
-		return p.prev.DynPath() + "[*]"
-	}
-
-	// Both struct fields and map keys use dot notation in DynPath
-	prev := p.prev.DynPath()
-	if prev == "" {
-		return p.key
-	} else {
-		return prev + "." + p.key
 	}
 }

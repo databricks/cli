@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/libs/structs/dynpath"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
@@ -29,8 +30,7 @@ func getScalarFields(t *testing.T, typ reflect.Type) map[string]any {
 		pathNew, err := structpath.Parse(s)
 		if assert.NoError(t, err, "Parse(path.String()) failed for %q: %s", s, err) {
 			newS := pathNew.String()
-			// This still does not work because of AnyKey / AnyIndex ambiguity
-			// assert.Equal(t, path, pathNew, "Parse(path.String()) returned different path;\npath=%#v %q\npathNew=%#v %q", path, s, pathNew, newS)
+			assert.Equal(t, path, pathNew, "Parse(path.String()) returned different path;\npath=%#v %q\npathNew=%#v %q", path, s, pathNew, newS)
 			assert.Equal(t, s, newS, "Parse(path.String()).String() is different from path.String()\npath.String()=%q\npathNew.String()=%q", path, pathNew)
 		}
 
@@ -166,15 +166,15 @@ func TestTypeRoot(t *testing.T) {
 	)
 }
 
-func getReadonlyFields(t *testing.T, typ reflect.Type) []string {
+func getReadonlyFields(t *testing.T, rootType reflect.Type) []string {
 	var results []string
-	err := WalkType(typ, func(path *structpath.PathNode, typ reflect.Type, field *reflect.StructField) (continueWalk bool) {
+	err := WalkType(rootType, func(path *structpath.PathNode, typ reflect.Type, field *reflect.StructField) (continueWalk bool) {
 		if path == nil || field == nil {
 			return true
 		}
 		bundleTag := field.Tag.Get("bundle")
 		if strings.Contains(bundleTag, "readonly") {
-			results = append(results, path.DynPath())
+			results = append(results, dynpath.ConvertPathNodeToDynPath(path, rootType))
 		}
 		return true
 	})
