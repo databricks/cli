@@ -1,11 +1,12 @@
 package structaccess
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
 
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structtag"
 )
 
@@ -17,66 +18,85 @@ func ValidateByString(t reflect.Type, path string) error {
 		return nil
 	}
 
-	p, err := dyn.NewPathFromString(path)
+	pathNode, err := structpath.Parse(path)
 	if err != nil {
 		return err
 	}
 
-	return Validate(t, p)
+	return Validate(t, pathNode)
 }
 
 // Validate reports whether the given path is valid for the provided type.
 // It returns nil if the path resolves fully, or an error indicating where resolution failed.
-func Validate(t reflect.Type, path dyn.Path) error {
-	if len(path) == 0 {
+func Validate(t reflect.Type, path *structpath.PathNode) error {
+	if path.IsRoot() {
 		return nil
 	}
 
+	// Convert path to slice for easier iteration
+	pathSegments := path.AsSlice()
+
 	cur := t
 	prefix := ""
-	for _, c := range path {
+	for _, node := range pathSegments {
 		// Always dereference pointers at the type level.
 		for cur.Kind() == reflect.Pointer {
 			cur = cur.Elem()
 		}
 
-		if c.Key() != "" {
-			// Key access: struct field (by json tag) or map key.
-			newPrefix := prefix
-			if newPrefix == "" {
-				newPrefix = c.Key()
-			} else {
-				newPrefix = newPrefix + "." + c.Key()
+		// Handle different node types
+		if idx, isIndex := node.Index(); isIndex {
+			// Index access: slice/array
+			newPrefix := prefix + "[" + strconv.Itoa(idx) + "]"
+			kind := cur.Kind()
+			if kind != reflect.Slice && kind != reflect.Array {
+				return fmt.Errorf("%s: cannot index %s", newPrefix, kind)
 			}
-
-			switch cur.Kind() {
-			case reflect.Struct:
-				sf, _, ok := FindStructFieldByKeyType(cur, c.Key())
-				if !ok {
-					return fmt.Errorf("%s: field %q not found in %s", newPrefix, c.Key(), cur.String())
-				}
-				cur = sf.Type
-			case reflect.Map:
-				kt := cur.Key()
-				if kt.Kind() != reflect.String {
-					return fmt.Errorf("%s: map key must be string, got %s", newPrefix, kt)
-				}
-				cur = cur.Elem()
-			default:
-				return fmt.Errorf("%s: cannot access key %q on %s", newPrefix, c.Key(), cur.Kind())
-			}
+			cur = cur.Elem()
 			prefix = newPrefix
 			continue
 		}
 
-		// Index access: slice/array
-		idx := c.Index()
-		newPrefix := prefix + "[" + strconv.Itoa(idx) + "]"
-		kind := cur.Kind()
-		if kind != reflect.Slice && kind != reflect.Array {
-			return fmt.Errorf("%s: cannot index %s", newPrefix, kind)
+		// Handle wildcards
+		if node.DotStar() || node.BracketStar() {
+			return fmt.Errorf("wildcards not supported: %s", path.String())
 		}
-		cur = cur.Elem()
+
+		// Handle field or map key access
+		var key string
+		var newPrefix string
+
+		if field, isField := node.Field(); isField {
+			key = field
+			newPrefix = prefix
+			if newPrefix == "" {
+				newPrefix = key
+			} else {
+				newPrefix = newPrefix + "." + key
+			}
+		} else if mapKey, isMapKey := node.MapKey(); isMapKey {
+			key = mapKey
+			newPrefix = prefix + "['" + key + "']"
+		} else {
+			return errors.New("unsupported path node type")
+		}
+
+		switch cur.Kind() {
+		case reflect.Struct:
+			sf, _, ok := FindStructFieldByKeyType(cur, key)
+			if !ok {
+				return fmt.Errorf("%s: field %q not found in %s", newPrefix, key, cur.String())
+			}
+			cur = sf.Type
+		case reflect.Map:
+			kt := cur.Key()
+			if kt.Kind() != reflect.String {
+				return fmt.Errorf("%s: map key must be string, got %s", newPrefix, kt)
+			}
+			cur = cur.Elem()
+		default:
+			return fmt.Errorf("%s: cannot access key %q on %s", newPrefix, key, cur.Kind())
+		}
 		prefix = newPrefix
 	}
 

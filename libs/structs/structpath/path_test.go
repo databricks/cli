@@ -463,3 +463,110 @@ func TestNewIndexPanic(t *testing.T) {
 	NewIndex(nil, -1) // Should panic
 	t.Error("Expected panic did not occur")
 }
+
+func TestPrefixAndSkipPrefix(t *testing.T) {
+	tests := []struct {
+		input      string
+		n          int
+		prefix     string
+		skipPrefix string
+	}{
+		{
+			input:      "resources.jobs.my_job.tasks[0].name",
+			n:          0,
+			prefix:     "",
+			skipPrefix: "resources.jobs.my_job.tasks[0].name",
+		},
+		{
+			input:      "resources.jobs.my_job.tasks[0].name",
+			n:          1,
+			prefix:     "resources",
+			skipPrefix: "jobs.my_job.tasks[0].name",
+		},
+		{
+			input:      "resources.jobs.my_job.tasks[0].name",
+			n:          3,
+			prefix:     "resources.jobs.my_job",
+			skipPrefix: "tasks[0].name",
+		},
+		{
+			input:      "resources.jobs.my_job.tasks[0].name",
+			n:          5,
+			prefix:     "resources.jobs.my_job.tasks[0]",
+			skipPrefix: "name",
+		},
+		{
+			input:      "resources.jobs.my_job.tasks[0].name",
+			n:          6,
+			prefix:     "resources.jobs.my_job.tasks[0].name",
+			skipPrefix: "",
+		},
+		{
+			input:      "resources.jobs.my_job.tasks[0].name",
+			n:          10,
+			prefix:     "resources.jobs.my_job.tasks[0].name",
+			skipPrefix: "",
+		},
+		{
+			input:      "resources.jobs.my_job.tasks[0].name",
+			n:          -1,
+			prefix:     "",
+			skipPrefix: "resources.jobs.my_job.tasks[0].name",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			path, err := Parse(tt.input)
+			assert.NoError(t, err)
+
+			// Test Prefix
+			prefixResult := path.Prefix(tt.n)
+			if tt.prefix == "" {
+				assert.Nil(t, prefixResult)
+			} else {
+				assert.NotNil(t, prefixResult)
+				assert.Equal(t, tt.prefix, prefixResult.String())
+			}
+
+			// Test SkipPrefix
+			skipResult := path.SkipPrefix(tt.n)
+			if tt.skipPrefix == "" {
+				assert.Nil(t, skipResult)
+			} else {
+				assert.NotNil(t, skipResult)
+				assert.Equal(t, tt.skipPrefix, skipResult.String())
+			}
+		})
+	}
+}
+
+func TestLen(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected int
+	}{
+		{
+			input:    "",
+			expected: 0,
+		},
+		{
+			input:    "field",
+			expected: 1,
+		},
+		{
+			input:    "resources.jobs['my_job'].tasks[0]",
+			expected: 5,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			var path *PathNode
+			var err error
+			path, err = Parse(tt.input)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expected, path.Len())
+		})
+	}
+}
