@@ -1,6 +1,8 @@
 package dynpath
 
 import (
+	"fmt"
+	"os"
 	"reflect"
 	"strconv"
 	"strings"
@@ -18,6 +20,7 @@ func ConvertPathNodeToDynPath(path *structpath.PathNode, rootType reflect.Type) 
 	if path == nil {
 		return ""
 	}
+	fmt.Fprintf(os.Stderr, "pathg=%#v\n", path)
 
 	segments := path.AsSlice()
 	var result strings.Builder
