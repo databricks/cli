@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
@@ -18,10 +19,9 @@ type DeploymentState struct {
 }
 
 type Database struct {
-	Lineage         string                              `json:"lineage"`
-	Serial          int                                 `json:"serial"`
-	DeploymentUnits map[string]map[string]ResourceEntry `json:"resources"`
-	// TODO: refactor to have key match key in the plan (e.g. "resources.jobs.foo")
+	Lineage string                   `json:"lineage"`
+	Serial  int                      `json:"serial"`
+	State   map[string]ResourceEntry `json:"state"`
 }
 
 type ResourceEntry struct {
@@ -29,18 +29,30 @@ type ResourceEntry struct {
 	State any    `json:"state"`
 }
 
-func (db *DeploymentState) SaveState(group, resourceName, newID string, state any) error {
+// splitKey parses a canonical key back into group and name.
+func splitKey(key string) (group, name string, ok bool) {
+	const prefix = "resources."
+	if !strings.HasPrefix(key, prefix) {
+		return "", "", false
+	}
+	rest := strings.TrimPrefix(key, prefix)
+	idx := strings.IndexByte(rest, '.')
+	if idx <= 0 || idx >= len(rest)-1 {
+		return "", "", false
+	}
+	return rest[:idx], rest[idx+1:], true
+}
+
+func (db *DeploymentState) SaveState(key, newID string, state any) error {
 	db.AssertOpened()
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
-	groupData, ok := db.Data.DeploymentUnits[group]
-	if !ok {
-		groupData = make(map[string]ResourceEntry)
-		db.Data.DeploymentUnits[group] = groupData
+	if db.Data.State == nil {
+		db.Data.State = make(map[string]ResourceEntry)
 	}
 
-	groupData[resourceName] = ResourceEntry{
+	db.Data.State[key] = ResourceEntry{
 		ID:    newID,
 		State: state,
 	}
@@ -48,35 +60,30 @@ func (db *DeploymentState) SaveState(group, resourceName, newID string, state an
 	return nil
 }
 
-func (db *DeploymentState) DeleteState(group, resourceName string) error {
+func (db *DeploymentState) DeleteState(key string) error {
 	db.AssertOpened()
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
-	groupData, ok := db.Data.DeploymentUnits[group]
-	if !ok {
+	if db.Data.State == nil {
 		return nil
 	}
 
-	delete(groupData, resourceName)
-	if len(groupData) == 0 {
-		delete(db.Data.DeploymentUnits, group)
-	}
+	delete(db.Data.State, key)
 
 	return nil
 }
 
-func (db *DeploymentState) GetResourceEntry(group, resourceName string) (ResourceEntry, bool) {
+func (db *DeploymentState) GetResourceEntry(key string) (ResourceEntry, bool) {
 	db.AssertOpened()
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
-	groupData, ok := db.Data.DeploymentUnits[group]
-	if !ok {
+	if db.Data.State == nil {
 		return ResourceEntry{}, false
 	}
 
-	result, ok := groupData[resourceName]
+	result, ok := db.Data.State[key]
 	return result, ok
 }
 
@@ -95,9 +102,9 @@ func (db *DeploymentState) Open(path string) error {
 	if err != nil {
 		if os.IsNotExist(err) {
 			db.Data = Database{
-				Serial:          0,
-				Lineage:         uuid.New().String(),
-				DeploymentUnits: make(map[string]map[string]ResourceEntry),
+				Serial:  0,
+				Lineage: uuid.New().String(),
+				State:   make(map[string]ResourceEntry),
 			}
 			db.Path = path
 			return nil
@@ -128,15 +135,20 @@ func (db *DeploymentState) AssertOpened() {
 }
 
 func (db *DeploymentState) ExportState(ctx context.Context) resourcestate.ExportedResourcesMap {
-	result := make(resourcestate.ExportedResourcesMap, len(db.Data.DeploymentUnits))
-	for groupName, group := range db.Data.DeploymentUnits {
-		resultGroup := make(map[string]resourcestate.ResourceState, len(group))
-		result[groupName] = resultGroup
-		for resourceName, entry := range group {
-			resultGroup[resourceName] = resourcestate.ResourceState{
-				ID: entry.ID,
-				// TODO: extract Etag
-			}
+	result := make(resourcestate.ExportedResourcesMap)
+	for key, entry := range db.Data.State {
+		groupName, resourceName, ok := splitKey(key)
+		if !ok {
+			continue
+		}
+		resultGroup, ok := result[groupName]
+		if !ok {
+			resultGroup = make(map[string]resourcestate.ResourceState)
+			result[groupName] = resultGroup
+		}
+		resultGroup[resourceName] = resourcestate.ResourceState{
+			ID: entry.ID,
+			// TODO: extract Etag
 		}
 	}
 	return result

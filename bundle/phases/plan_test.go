@@ -2,7 +2,6 @@ package phases
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -49,19 +48,16 @@ func TestCheckPreventDestroyForAllResources(t *testing.T) {
 
 			actions := []deployplan.Action{
 				{
-					ResourceNode: deployplan.ResourceNode{
-						Group: resourceType,
-						Key:   "test_resource",
-					},
-					ActionType: deployplan.ActionTypeRecreate,
+					ResourceKey: "resources." + resourceType + ".test_resource",
+					ActionType:  deployplan.ActionTypeRecreate,
 				},
 			}
 
 			err := checkForPreventDestroy(b, actions)
 			require.Error(t, err)
-			require.Contains(t, err.Error(), "resource test_resource has lifecycle.prevent_destroy set")
+			require.Contains(t, err.Error(), "resources."+resourceType+".test_resource has lifecycle.prevent_destroy set")
 			require.Contains(t, err.Error(), "but the plan calls for this resource to be recreated or destroyed")
-			require.Contains(t, err.Error(), fmt.Sprintf("disable lifecycle.prevent_destroy for %s.test_resource", resourceType))
+			require.Contains(t, err.Error(), "disable lifecycle.prevent_destroy for resources."+resourceType+".test_resource")
 		})
 	}
 }
@@ -98,18 +94,12 @@ func TestCheckForPreventDestroyWhenFirstHasNoPreventDestroy(t *testing.T) {
 
 	actions := []deployplan.Action{
 		{
-			ResourceNode: deployplan.ResourceNode{
-				Group: "jobs",
-				Key:   "test_job",
-			},
-			ActionType: deployplan.ActionTypeRecreate,
+			ResourceKey: "resources.jobs.test_job",
+			ActionType:  deployplan.ActionTypeRecreate,
 		},
 		{
-			ResourceNode: deployplan.ResourceNode{
-				Group: "apps",
-				Key:   "test_app",
-			},
-			ActionType: deployplan.ActionTypeRecreate,
+			ResourceKey: "resources.apps.test_app",
+			ActionType:  deployplan.ActionTypeRecreate,
 		},
 	}
 
@@ -117,6 +107,6 @@ func TestCheckForPreventDestroyWhenFirstHasNoPreventDestroy(t *testing.T) {
 	bundle.ApplyFuncContext(ctx, b, func(ctx context.Context, b *bundle.Bundle) {
 		err := checkForPreventDestroy(b, actions)
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "resource test_app has lifecycle.prevent_destroy set")
+		require.Contains(t, err.Error(), "resources.apps.test_app has lifecycle.prevent_destroy set")
 	})
 }

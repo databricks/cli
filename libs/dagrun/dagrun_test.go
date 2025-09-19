@@ -13,14 +13,6 @@ import (
 
 type edge struct{ from, to, name string }
 
-type stringWrapper struct {
-	Value string
-}
-
-func (s stringWrapper) String() string {
-	return s.Value
-}
-
 type testCase struct {
 	name            string
 	nodes           []string
@@ -146,12 +138,12 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 	for _, tc := range tests {
 		for _, p := range poolsToRun {
 			t.Run(tc.name+fmt.Sprintf(" pool=%d", p), func(t *testing.T) {
-				g := NewGraph[stringWrapper]()
+				g := NewGraph()
 				for _, n := range tc.nodes {
-					g.AddNode(stringWrapper{n})
+					g.AddNode(n)
 				}
 				for _, e := range tc.edges {
-					g.AddDirectedEdge(stringWrapper{e.from}, stringWrapper{e.to}, e.name)
+					g.AddDirectedEdge(e.from, e.to, e.name)
 				}
 
 				runTestCase(t, tc, g, p)
@@ -163,14 +155,14 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 	}
 }
 
-func runTestCase(t *testing.T, tc testCase, g *Graph[stringWrapper], p int) {
+func runTestCase(t *testing.T, tc testCase, g *Graph, p int) {
 	err := g.DetectCycle()
 	if tc.cycle != "" {
 		require.Error(t, err, "expected cycle, got none")
 		require.Equal(t, tc.cycle, err.Error())
 		innerCalled := 0
 		require.Panics(t, func() {
-			g.Run(p, func(n stringWrapper, failed *stringWrapper) bool {
+			g.Run(p, func(n string, failed *string) bool {
 				innerCalled += 1
 				return true
 			})
@@ -183,17 +175,17 @@ func runTestCase(t *testing.T, tc testCase, g *Graph[stringWrapper], p int) {
 	var mu sync.Mutex
 	var seen []string
 	failedFrom := map[string]*string{}
-	g.Run(p, func(n stringWrapper, failed *stringWrapper) bool {
+	g.Run(p, func(n string, failed *string) bool {
 		mu.Lock()
-		seen = append(seen, n.Value)
+		seen = append(seen, n)
 		if failed != nil {
-			v := failed.Value
-			failedFrom[n.Value] = &v
+			v := *failed
+			failedFrom[n] = &v
 		} else {
-			failedFrom[n.Value] = nil
+			failedFrom[n] = nil
 		}
 		mu.Unlock()
-		if stop, exists := tc.returnValues[n.Value]; exists {
+		if stop, exists := tc.returnValues[n]; exists {
 			return stop
 		}
 		return true // success by default
@@ -223,10 +215,10 @@ func runTestCase(t *testing.T, tc testCase, g *Graph[stringWrapper], p int) {
 }
 
 func TestOutgoingLabels_OrderAndEmpty(t *testing.T) {
-	g := NewGraph[stringWrapper]()
-	a := stringWrapper{"A"}
-	b := stringWrapper{"B"}
-	c := stringWrapper{"C"}
+	g := NewGraph()
+	a := "A"
+	b := "B"
+	c := "C"
 
 	// no edges yet
 	require.Empty(t, g.OutgoingLabels(a))
@@ -245,9 +237,9 @@ func TestOutgoingLabels_OrderAndEmpty(t *testing.T) {
 }
 
 func TestOutgoingLabels_DuplicateEdgesDifferentLabels(t *testing.T) {
-	g := NewGraph[stringWrapper]()
-	x := stringWrapper{"X"}
-	y := stringWrapper{"Y"}
+	g := NewGraph()
+	x := "X"
+	y := "Y"
 
 	// same (from,to) pair with different labels
 	g.AddDirectedEdge(x, y, "e1")
@@ -259,10 +251,10 @@ func TestOutgoingLabels_DuplicateEdgesDifferentLabels(t *testing.T) {
 }
 
 func TestOutgoingLabels_SameLabelDifferentTargets(t *testing.T) {
-	g := NewGraph[stringWrapper]()
-	a := stringWrapper{"A"}
-	b := stringWrapper{"B"}
-	c := stringWrapper{"C"}
+	g := NewGraph()
+	a := "A"
+	b := "B"
+	c := "C"
 
 	// same label to different targets should be returned once
 	g.AddDirectedEdge(a, b, "dup")

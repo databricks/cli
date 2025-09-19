@@ -80,7 +80,22 @@ like catalogs, schemas, and compute configurations per target.`,
 			}
 		}
 
-		v, err := generate.ConvertPipelineToValue(pipeline.Spec)
+		// If the root path is set, we need to download the files from the root path
+		remoteRootPath := pipeline.Spec.RootPath
+		if pipeline.Spec.RootPath != "" {
+			err := downloader.MarkDirectoryForDownload(ctx, &pipeline.Spec.RootPath)
+			if err != nil {
+				return err
+			}
+		}
+
+		// Making sure the root path is relative to the config directory.
+		rel, err := filepath.Rel(configDir, sourceDir)
+		if err != nil {
+			return err
+		}
+
+		v, err := generate.ConvertPipelineToValue(pipeline.Spec, filepath.ToSlash(rel), remoteRootPath)
 		if err != nil {
 			return err
 		}

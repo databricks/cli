@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/validate"
@@ -127,7 +128,8 @@ func newPlanCommand() *cobra.Command {
         
         // Print all actions in the order they were processed
         for _, action := range plan.GetActions() {
-          fmt.Fprintf(out, "%s %s.%s\n", action.ActionType.StringShort(), action.Group, action.Key)
+          key := strings.TrimPrefix(action.ResourceKey, "resources.")
+          fmt.Fprintf(out, "%s %s\n", action.ActionType.StringShort(), key)
         }
       } else {
         fmt.Fprintf(out, "Plan: 0 to add, 0 to change, 0 to delete, %d unchanged\n", unchanged)
