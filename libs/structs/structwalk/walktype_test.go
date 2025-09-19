@@ -2,6 +2,7 @@ package structwalk
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config"
@@ -13,7 +14,7 @@ import (
 
 func getScalarFields(t *testing.T, typ reflect.Type) map[string]any {
 	results := make(map[string]any)
-	err := WalkType(typ, func(path *structpath.PathNode, typ reflect.Type) (continueWalk bool) {
+	err := WalkType(typ, func(path *structpath.PathNode, typ reflect.Type, field *reflect.StructField) (continueWalk bool) {
 		for typ.Kind() == reflect.Pointer {
 			typ = typ.Elem()
 		}
@@ -27,10 +28,9 @@ func getScalarFields(t *testing.T, typ reflect.Type) map[string]any {
 		// Test structpath round trip as well
 		pathNew, err := structpath.Parse(s)
 		if assert.NoError(t, err, "Parse(path.String()) failed for %q: %s", s, err) {
-			// This currently does not work because path carries json tags
-			// QQQ perhaps we should remove tags from the path and add structaccess.GetTag(path, tag) method to fetch it.
-			// assert.Equal(t, path, pathNew, "Parse(path.String()) returned different path;\npath=%#v\npathNew=%#v", path, pathNew)
 			newS := pathNew.String()
+			// This still does not work because of AnyKey / AnyIndex ambiguity
+			// assert.Equal(t, path, pathNew, "Parse(path.String()) returned different path;\npath=%#v %q\npathNew=%#v %q", path, s, pathNew, newS)
 			assert.Equal(t, s, newS, "Parse(path.String()).String() is different from path.String()\npath.String()=%q\npathNew.String()=%q", path, pathNew)
 		}
 
@@ -168,11 +168,12 @@ func TestTypeRoot(t *testing.T) {
 
 func getReadonlyFields(t *testing.T, typ reflect.Type) []string {
 	var results []string
-	err := WalkType(typ, func(path *structpath.PathNode, typ reflect.Type) (continueWalk bool) {
-		if path == nil {
+	err := WalkType(typ, func(path *structpath.PathNode, typ reflect.Type, field *reflect.StructField) (continueWalk bool) {
+		if path == nil || field == nil {
 			return true
 		}
-		if path.BundleTag().ReadOnly() {
+		bundleTag := field.Tag.Get("bundle")
+		if strings.Contains(bundleTag, "readonly") {
 			results = append(results, path.DynPath())
 		}
 		return true
@@ -206,14 +207,15 @@ func TestTypeBundleTag(t *testing.T) {
 	}
 
 	var readonly, internal []string
-	err := WalkType(reflect.TypeOf(Foo{}), func(path *structpath.PathNode, typ reflect.Type) (continueWalk bool) {
-		if path == nil {
+	err := WalkType(reflect.TypeOf(Foo{}), func(path *structpath.PathNode, typ reflect.Type, field *reflect.StructField) (continueWalk bool) {
+		if path == nil || field == nil {
 			return true
 		}
-		if path.BundleTag().ReadOnly() {
+		bundleTag := field.Tag.Get("bundle")
+		if strings.Contains(bundleTag, "readonly") {
 			readonly = append(readonly, path.String())
 		}
-		if path.BundleTag().Internal() {
+		if strings.Contains(bundleTag, "internal") {
 			internal = append(internal, path.String())
 		}
 		return true
@@ -240,7 +242,7 @@ func TestWalkTypeVisited(t *testing.T) {
 	}
 
 	var visited []string
-	err := WalkType(reflect.TypeOf(Outer{}), func(path *structpath.PathNode, typ reflect.Type) (continueWalk bool) {
+	err := WalkType(reflect.TypeOf(Outer{}), func(path *structpath.PathNode, typ reflect.Type, field *reflect.StructField) (continueWalk bool) {
 		if path == nil {
 			return true
 		}
@@ -279,7 +281,7 @@ func TestWalkSkip(t *testing.T) {
 	}
 
 	var seen []string
-	err := WalkType(reflect.TypeOf(Outer{}), func(path *structpath.PathNode, typ reflect.Type) (continueWalk bool) {
+	err := WalkType(reflect.TypeOf(Outer{}), func(path *structpath.PathNode, typ reflect.Type, field *reflect.StructField) (continueWalk bool) {
 		if path == nil {
 			return true
 		}

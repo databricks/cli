@@ -20,21 +20,11 @@ const (
 // PathNode represents a node in a path for struct diffing.
 // It can represent struct fields, map keys, or array/slice indices.
 type PathNode struct {
-	prev      *PathNode
-	jsonTag   structtag.JSONTag // For JSON key resolution
-	bundleTag structtag.BundleTag
-	key       string // Computed key (JSON key for structs, string key for maps, or Go field name for fallback)
+	prev *PathNode
+	key  string // Computed key (JSON key for structs, string key for maps, or Go field name for fallback)
 	// If index >= 0, the node specifies a slice/array index in index.
 	// If index < 0, this describes the type of node (see tagStruct and other consts above)
 	index int
-}
-
-func (p *PathNode) JSONTag() structtag.JSONTag {
-	return p.jsonTag
-}
-
-func (p *PathNode) BundleTag() structtag.BundleTag {
-	return p.bundleTag
 }
 
 func (p *PathNode) IsRoot() bool {
@@ -116,7 +106,6 @@ func NewMapKey(prev *PathNode, key string) *PathNode {
 // The jsonTag is used for JSON key resolution, and fieldName is used as fallback.
 func NewStructField(prev *PathNode, tag reflect.StructTag, fieldName string) *PathNode {
 	jsonTag := structtag.JSONTag(tag.Get("json"))
-	bundleTag := structtag.BundleTag(tag.Get("bundle"))
 
 	key := fieldName
 	if name := jsonTag.Name(); name != "" {
@@ -124,11 +113,9 @@ func NewStructField(prev *PathNode, tag reflect.StructTag, fieldName string) *Pa
 	}
 
 	return &PathNode{
-		prev:      prev,
-		jsonTag:   jsonTag,
-		bundleTag: bundleTag,
-		key:       key,
-		index:     tagStruct,
+		prev:  prev,
+		key:   key,
+		index: tagStruct,
 	}
 }
 
