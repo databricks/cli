@@ -11,6 +11,11 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
+const (
+	WorkspaceClientHTTPTimeoutSeconds = 90
+	WorkspaceRetryTimeoutSeconds      = 15 * 60
+)
+
 // Workspace defines configurables at the workspace level.
 type Workspace struct {
 	// Unified authentication attributes.
@@ -89,10 +94,10 @@ func (w *Workspace) Config() *config.Config {
 		// Having client-side timeouts that kill the deployment seems counter-productive. We should just keep on
 		// trying and the user should be the one interrupting it if they decide so.
 		// Default is 30s
-		HTTPTimeoutSeconds: 90,
+		HTTPTimeoutSeconds: WorkspaceClientHTTPTimeoutSeconds,
 
 		// Default is 5min
-		RetryTimeoutSeconds: 15 * 60,
+		RetryTimeoutSeconds: WorkspaceRetryTimeoutSeconds,
 
 		// Generic
 		Host:               w.Host,
