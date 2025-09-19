@@ -287,13 +287,14 @@ func Parse(s string) (*PathNode, error) {
 			}
 
 		case stateDotStar:
-			if ch == '.' {
+			switch ch {
+			case '.':
 				result = NewDotStar(result)
 				state = stateFieldStart
-			} else if ch == '[' {
+			case '[':
 				result = NewDotStar(result)
 				state = stateBracketOpen
-			} else {
+			default:
 				return nil, fmt.Errorf("unexpected character '%c' after '.*' at position %d", ch, pos)
 			}
 
