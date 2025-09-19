@@ -31,8 +31,8 @@ Deployment complete!
 >>> update_file.py databricks.yml catalog_name: main catalog_name: newmain
 
 >>> [CLI] bundle plan
-Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
-  recreate schemas.schema1
+Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
+recreate schemas.schema1
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...

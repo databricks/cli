@@ -1,11 +1,11 @@
 
 >>> [CLI] bundle plan
-Plan: 5 to add, 0 to change, 0 to delete, 0 unchanged
-  create jobs.a
-  create jobs.b
-  create jobs.c
-  create jobs.d
-  create jobs.e
+Plan: 5 to add, 0 to change, 0 to delete, 5 unchanged
+create jobs.a
+create jobs.b
+create jobs.c
+create jobs.d
+create jobs.e
 
 >>> print_requests
 
@@ -27,12 +27,12 @@ Deployment complete!
 >>> update_file.py databricks.yml prefix new_prefix
 
 >>> [CLI] bundle plan
-Plan: 0 to add, 5 to change, 0 to delete, 0 unchanged
-  update jobs.a
-  update jobs.b
-  update jobs.c
-  update jobs.d
-  update jobs.e
+Plan: 0 to add, 5 to change, 0 to delete, 5 unchanged
+update jobs.a
+update jobs.b
+update jobs.c
+update jobs.d
+update jobs.e
 
 >>> print_requests
 

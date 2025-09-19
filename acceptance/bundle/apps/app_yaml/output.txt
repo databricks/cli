@@ -9,8 +9,8 @@ Workspace:
 Validation OK!
 
 >>> [CLI] bundle plan
-Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
-  create apps.myapp
+Plan: 1 to add, 0 to change, 0 to delete, 1 unchanged
+create apps.myapp
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...

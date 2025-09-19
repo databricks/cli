@@ -1,6 +1,6 @@
 
 >>> [CLI] bundle plan
-Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
-  create jobs.my_job
+Plan: 1 to add, 0 to change, 0 to delete, 1 unchanged
+create jobs.my_job
 
 >>> jq -s .[] | select(.method != "GET") out.requests.txt

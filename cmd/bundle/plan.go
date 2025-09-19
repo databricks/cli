@@ -87,8 +87,8 @@ func newPlanCommand() *cobra.Command {
 		changed := make(map[string]bool)
 
 		for _, change := range plan.GetActions() {
-			changed[change.Group+"."+change.Key] = true
-			switch change.ActionType.String() {
+			changed[change.ResourceKey] = true
+			switch change.ActionType.StringShort() {
 			case "create":
 				createCount++
 			case "update", "update_with_id":
@@ -121,19 +121,19 @@ func newPlanCommand() *cobra.Command {
 
 		switch root.OutputType(cmd) {
 		case flags.OutputText:
-      // Print summary line and actions to stdout
-		  totalChanges := createCount + updateCount + deleteCount
-      if totalChanges > 0 {
-			  fmt.Fprintf(out, "Plan: %d to add, %d to change, %d to delete, %d unchanged\n", createCount, updateCount, deleteCount, unchanged)
-        
-        // Print all actions in the order they were processed
-        for _, action := range plan.GetActions() {
-          key := strings.TrimPrefix(action.ResourceKey, "resources.")
-          fmt.Fprintf(out, "%s %s\n", action.ActionType.StringShort(), key)
-        }
-      } else {
-        fmt.Fprintf(out, "Plan: 0 to add, 0 to change, 0 to delete, %d unchanged\n", unchanged)
-      }
+			// Print summary line and actions to stdout
+			totalChanges := createCount + updateCount + deleteCount
+			if totalChanges > 0 {
+				fmt.Fprintf(out, "Plan: %d to add, %d to change, %d to delete, %d unchanged\n", createCount, updateCount, deleteCount, unchanged)
+
+				// Print all actions in the order they were processed
+				for _, action := range plan.GetActions() {
+					key := strings.TrimPrefix(action.ResourceKey, "resources.")
+					fmt.Fprintf(out, "%s %s\n", action.ActionType.StringShort(), key)
+				}
+			} else {
+				fmt.Fprintf(out, "Plan: 0 to add, 0 to change, 0 to delete, %d unchanged\n", unchanged)
+			}
 		case flags.OutputJSON:
 			buf, err := json.MarshalIndent(plan, "", "  ")
 			if err != nil {
