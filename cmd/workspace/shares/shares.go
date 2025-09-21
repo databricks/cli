@@ -37,7 +37,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(newCreate())
 	cmd.AddCommand(newDelete())
 	cmd.AddCommand(newGet())
-	cmd.AddCommand(newList())
+	cmd.AddCommand(newListShares())
 	cmd.AddCommand(newSharePermissions())
 	cmd.AddCommand(newUpdate())
 	cmd.AddCommand(newUpdatePermissions())
@@ -251,24 +251,24 @@ func newGet() *cobra.Command {
 	return cmd
 }
 
-// start list command
+// start list-shares command
 
 // Slice with functions to override default command behavior.
 // Functions can be added from the `init()` function in manually curated files in this directory.
-var listOverrides []func(
+var listSharesOverrides []func(
 	*cobra.Command,
-	*sharing.ListSharesRequest,
+	*sharing.SharesListRequest,
 )
 
-func newList() *cobra.Command {
+func newListShares() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var listReq sharing.ListSharesRequest
+	var listSharesReq sharing.SharesListRequest
 
-	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of shares to return.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
+	cmd.Flags().IntVar(&listSharesReq.MaxResults, "max-results", listSharesReq.MaxResults, `Maximum number of shares to return.`)
+	cmd.Flags().StringVar(&listSharesReq.PageToken, "page-token", listSharesReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
 
-	cmd.Use = "list"
+	cmd.Use = "list-shares"
 	cmd.Short = `List shares.`
 	cmd.Long = `List shares.
   
@@ -288,7 +288,7 @@ func newList() *cobra.Command {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
-		response := w.Shares.List(ctx, listReq)
+		response := w.Shares.ListShares(ctx, listSharesReq)
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -297,8 +297,8 @@ func newList() *cobra.Command {
 	cmd.ValidArgsFunction = cobra.NoFileCompletions
 
 	// Apply optional overrides to this command.
-	for _, fn := range listOverrides {
-		fn(cmd, &listReq)
+	for _, fn := range listSharesOverrides {
+		fn(cmd, &listSharesReq)
 	}
 
 	return cmd
