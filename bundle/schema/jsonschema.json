@@ -632,7 +632,7 @@
                         "doNotSuggest": true
                       },
                       "enable_pg_native_login": {
-                        "description": "Whether the instance has PG native password login enabled. Defaults to true.",
+                        "description": "Whether to enable PG native password login on the instance. Defaults to false.",
                         "$ref": "#/$defs/bool"
                       },
                       "enable_readable_secondaries": {
@@ -648,7 +648,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "node_count": {
-                        "description": "The number of nodes in the instance, composed of 1 primary and 0 or more secondaries. Defaults to\n1 primary and 0 secondaries.",
+                        "description": "The number of nodes in the instance, composed of 1 primary and 0 or more secondaries. Defaults to\n1 primary and 0 secondaries. This field is input only, see effective_node_count for the output.",
                         "$ref": "#/$defs/int"
                       },
                       "parent_instance_ref": {
@@ -683,7 +683,7 @@
                         "doNotSuggest": true
                       },
                       "stopped": {
-                        "description": "Whether the instance is stopped.",
+                        "description": "Whether to stop the instance. An input only param, see effective_stopped for the output.",
                         "$ref": "#/$defs/bool"
                       },
                       "uid": {
@@ -1371,9 +1371,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "run_as": {
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.RunAs",
-                        "x-databricks-preview": "PRIVATE",
-                        "doNotSuggest": true
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.RunAs"
                       },
                       "schema": {
                         "description": "The default schema (database) where tables are read from or published to.",
@@ -4031,6 +4029,14 @@
                       "$ref": "#/$defs/string"
                     },
                     "jar_dependencies": {
+                      "description": "Use `java_dependencies` instead.",
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-preview": "PRIVATE",
+                      "deprecationMessage": "This field is deprecated",
+                      "doNotSuggest": true,
+                      "deprecated": true
+                    },
+                    "java_dependencies": {
                       "description": "List of jar dependencies, should be string representing volume paths. For example: `/Volumes/path/to/test.jar`.",
                       "$ref": "#/$defs/slice/string",
                       "x-databricks-preview": "PRIVATE",
@@ -6564,7 +6570,7 @@
                   "type": "object",
                   "properties": {
                     "clean_rooms_notebook_task": {
-                      "description": "The task runs a [clean rooms](https://docs.databricks.com/en/clean-rooms/index.html) notebook\nwhen the `clean_rooms_notebook_task` field is present.",
+                      "description": "The task runs a [clean rooms](https://docs.databricks.com/clean-rooms/index.html) notebook\nwhen the `clean_rooms_notebook_task` field is present.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.CleanRoomsNotebookTask"
                     },
                     "condition_task": {
@@ -6603,6 +6609,12 @@
                     "disable_auto_optimization": {
                       "description": "An option to disable auto optimization in serverless",
                       "$ref": "#/$defs/bool"
+                    },
+                    "disabled": {
+                      "description": "An optional flag to disable the task. If set to true, the task will not run even if it is part of a job.",
+                      "$ref": "#/$defs/bool",
+                      "x-databricks-preview": "PRIVATE",
+                      "doNotSuggest": true
                     },
                     "email_notifications": {
                       "description": "An optional set of email addresses that is notified when runs of this task begin or complete as well as when this task is deleted. The default behavior is to not send any emails.",
@@ -6689,8 +6701,10 @@
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.SparkPythonTask"
                     },
                     "spark_submit_task": {
-                      "description": "(Legacy) The task runs the spark-submit script when the `spark_submit_task` field is present. This task can run only on new clusters and is not compatible with serverless compute.\n\nIn the `new_cluster` specification, `libraries` and `spark_conf` are not supported. Instead, use `--jars` and `--py-files` to add Java and Python libraries and `--conf` to set the Spark configurations.\n\n`master`, `deploy-mode`, and `executor-cores` are automatically configured by Databricks; you _cannot_ specify them in parameters.\n\nBy default, the Spark submit job uses all available memory (excluding reserved memory for Databricks services). You can set `--driver-memory`, and `--executor-memory` to a smaller value to leave some room for off-heap usage.\n\nThe `--jars`, `--py-files`, `--files` arguments support DBFS and S3 paths.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.SparkSubmitTask"
+                      "description": "(Legacy) The task runs the spark-submit script when the spark_submit_task field is present. Databricks recommends using the spark_jar_task instead; see [Spark Submit task for jobs](/jobs/spark-submit).",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.SparkSubmitTask",
+                      "deprecationMessage": "This field is deprecated",
+                      "deprecated": true
                     },
                     "sql_task": {
                       "description": "The task runs a SQL query or file, or it refreshes a SQL alert or a legacy SQL dashboard when the `sql_task` field is present.",
@@ -7169,6 +7183,12 @@
                       "description": "Immutable. Identifier for the gateway that is used by this ingestion pipeline to communicate with the source database. This is used with connectors to databases like SQL Server.",
                       "$ref": "#/$defs/string"
                     },
+                    "netsuite_jar_path": {
+                      "description": "Netsuite only configuration. When the field is set for a netsuite connector,\nthe jar stored in the field will be validated and added to the classpath of\npipeline's cluster.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-preview": "PRIVATE",
+                      "doNotSuggest": true
+                    },
                     "objects": {
                       "description": "Required. Settings specifying tables to replicate and the destination for the replicated tables.",
                       "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/pipelines.IngestionConfig"
@@ -7230,6 +7250,58 @@
                 }
               ]
             },
+            "pipelines.IngestionPipelineDefinitionWorkdayReportParameters": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "incremental": {
+                      "description": "(Optional) Marks the report as incremental.\nThis field is deprecated and should not be used. Use `parameters` instead. The incremental behavior is now\ncontrolled by the `parameters` field.",
+                      "$ref": "#/$defs/bool",
+                      "deprecationMessage": "This field is deprecated",
+                      "deprecated": true
+                    },
+                    "parameters": {
+                      "description": "Parameters for the Workday report. Each key represents the parameter name (e.g., \"start_date\", \"end_date\"),\nand the corresponding value is a SQL-like expression used to compute the parameter value at runtime.\nExample:\n{\n\"start_date\": \"{ coalesce(current_offset(), date(\\\"2025-02-01\\\")) }\",\n\"end_date\": \"{ current_date() - INTERVAL 1 DAY }\"\n}",
+                      "$ref": "#/$defs/map/string"
+                    },
+                    "report_parameters": {
+                      "description": "(Optional) Additional custom parameters for Workday Report\nThis field is deprecated and should not be used. Use `parameters` instead.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue",
+                      "deprecationMessage": "This field is deprecated",
+                      "deprecated": true
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "pipelines.IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "key": {
+                      "description": "Key for the report parameter, can be a column name or other metadata",
+                      "$ref": "#/$defs/string"
+                    },
+                    "value": {
+                      "description": "Value for the report parameter.\nPossible values it can take are these sql functions:\n1. coalesce(current_offset(), date(\"YYYY-MM-DD\")) -\u003e if current_offset() is null, then the passed date, else current_offset()\n2. current_date()\n3. date_sub(current_date(), x) -\u003e subtract x (some non-negative integer) days from current date",
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "pipelines.IngestionSourceType": {
               "oneOf": [
                 {
@@ -7252,7 +7324,8 @@
                     "SHAREPOINT",
                     "DYNAMICS365",
                     "CONFLUENCE",
-                    "META_MARKETING"
+                    "META_MARKETING",
+                    "FOREIGN_CATALOG"
                   ]
                 },
                 {
@@ -7885,6 +7958,12 @@
                     "sequence_by": {
                       "description": "The column names specifying the logical order of events in the source data. Delta Live Tables uses this sequencing to handle change events that arrive out of order.",
                       "$ref": "#/$defs/slice/string"
+                    },
+                    "workday_report_parameters": {
+                      "description": "(Optional) Additional custom parameters for Workday Report",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefinitionWorkdayReportParameters",
+                      "x-databricks-preview": "PRIVATE",
+                      "doNotSuggest": true
                     }
                   },
                   "additionalProperties": false
@@ -10102,6 +10181,20 @@
                     "type": "array",
                     "items": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.IngestionConfig"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "pipelines.IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue"
                     }
                   },
                   {
