@@ -14,7 +14,7 @@ jobs:
     environment: prod
     env:
       DATABRICKS_AUTH_TYPE: github-oidc
-      DATABRICKS_HOST: https://my-workspace.cloud.databricks.com/
+      DATABRICKS_HOST: https://adb-575821473882772.12.azuredatabricks.net
       DATABRICKS_CLIENT_ID: d4116c39-c6c4-4107-80e8-feec3aebd5c5
     steps:
       - name: Checkout repository
