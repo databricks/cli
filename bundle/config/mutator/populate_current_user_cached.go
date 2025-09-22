@@ -2,6 +2,7 @@ package mutator
 
 import (
 	"context"
+	"os"
 
 	"github.com/databricks/cli/libs/cache"
 
@@ -26,14 +27,20 @@ func PopulateCurrentUserCached() bundle.Mutator {
 }
 
 // initializeCache sets up the cache for authorization headers if not already initialized
-func (m *populateCurrentUserCached) initializeCache(ctx context.Context, b *bundle.Bundle) error {
+func (m *populateCurrentUserCached) initializeCache(ctx context.Context, b *bundle.Bundle) {
 	if m.cache != nil {
-		return nil
+		return
+	}
+
+	if os.Getenv("DATABRICKS_EXPERIMENTAL_CACHE_ENABLED") != "true" {
+		log.Debugf(ctx, "[Local Cache] Local cache is disabled. Enable it be setting an env variable DATABRICKS_EXPERIMENTAL_CACHE_ENABLED=true \n")
+		return
 	}
 
 	cacheDir, err := b.BundleLevelCacheDir(ctx, "auth")
 	if err != nil {
-		return err
+		log.Debugf(ctx, "[Local Cache] BundleLevelCacheDir could not initialize: %v \n", err)
+		return
 	}
 
 	m.cache, err = cache.NewFileCache[*iam.User](cacheDir)
@@ -42,8 +49,6 @@ func (m *populateCurrentUserCached) initializeCache(ctx context.Context, b *bund
 	} else {
 		log.Debugf(ctx, "[Local Cache] New cache dir initialized: %s\n", cacheDir)
 	}
-
-	return nil
 }
 
 func (m *populateCurrentUserCached) Name() string {
@@ -54,21 +59,31 @@ func (m *populateCurrentUserCached) Apply(ctx context.Context, b *bundle.Bundle)
 	if b.Config.Workspace.CurrentUser != nil {
 		return nil
 	}
-
-	err := m.initializeCache(ctx, b)
-	if err != nil {
-		log.Debugf(ctx, "[Local Cache] failed to initialize cache: %v \n", err)
-	}
+	m.initializeCache(ctx, b)
 	w := b.WorkspaceClient()
 
 	bearerToken := m.getBearerToken(ctx, w)
 
-	me, err := m.cache.GetOrCompute(ctx, bearerToken, func(ctx context.Context) (*iam.User, error) {
-		currentUser, err := w.CurrentUser.Me(ctx)
-		return currentUser, err
-	})
+	var me *iam.User
+	var err error
+
+	if m.cache != nil {
+		log.Debugf(ctx, "[Local Cache] local cache is enabled \n")
+		me, err = m.cache.GetOrCompute(ctx, bearerToken, func(ctx context.Context) (*iam.User, error) {
+			currentUser, err := w.CurrentUser.Me(ctx)
+			return currentUser, err
+		})
+	} else {
+		log.Debugf(ctx, "[Local Cache] local cache is disabled \n")
+		me, err = w.CurrentUser.Me(ctx)
+	}
+
 	if err != nil {
 		return diag.FromErr(err)
+	}
+
+	if me == nil {
+		return diag.Errorf("could not find current user, but no error was returned")
 	}
 
 	b.Config.Workspace.CurrentUser = &config.User{
