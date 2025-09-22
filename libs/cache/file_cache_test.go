@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -26,7 +27,19 @@ func TestNewFileCache(t *testing.T) {
 	info, err := os.Stat(cacheDir)
 	require.NoError(t, err)
 	assert.True(t, info.IsDir())
-	assert.Equal(t, os.FileMode(0o755), info.Mode().Perm())
+
+	// Check permissions - Windows has different permission semantics
+	if runtime.GOOS != "windows" {
+		assert.Equal(t, os.FileMode(0o755), info.Mode().Perm())
+	} else {
+		// On Windows, verify directory is accessible by trying to create a test file
+		testFile := filepath.Join(cacheDir, "test_access")
+		err := os.WriteFile(testFile, []byte("test"), 0o644)
+		assert.NoError(t, err)
+		if err == nil {
+			_ = os.Remove(testFile) // Clean up (ignore removal error)
+		}
+	}
 }
 
 func TestNewFileCacheWithExistingDirectory(t *testing.T) {
