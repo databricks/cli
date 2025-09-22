@@ -137,6 +137,16 @@ func runCommonTests(t *testing.T, obj any) {
 			path: "alias_map.foo",
 			want: "bar",
 		},
+		{
+			name: "struct field with bracket notation",
+			path: "['connection']['id']",
+			want: "abc",
+		},
+		{
+			name: "map key with bracket notation",
+			path: "labels['env']",
+			want: "dev",
+		},
 
 		// Regular scalar fields - always return zero values
 		{
@@ -398,56 +408,3 @@ func TestGet_BundleTag_SkipsPromoted(t *testing.T) {
 	require.EqualError(t, ValidateByString(reflect.TypeOf(host{}), "hidden"), "hidden: field \"hidden\" not found in structaccess.host")
 }
 
-func TestGet_FlexibleNotation(t *testing.T) {
-	type testStruct struct {
-		Field string            `json:"field"`
-		Map   map[string]string `json:"map"`
-	}
-
-	obj := testStruct{
-		Field: "value",
-		Map:   map[string]string{"key": "mapvalue"},
-	}
-
-	tests := []struct {
-		name   string
-		path   string
-		want   string
-		errFmt string
-	}{
-		// Struct field access - both notations should work
-		{
-			name: "struct field with dot notation",
-			path: "field",
-			want: "value",
-		},
-		{
-			name: "struct field with bracket notation",
-			path: "['field']",
-			want: "value",
-		},
-		// Map key access - both notations should work
-		{
-			name: "map key with bracket notation",
-			path: "map['key']",
-			want: "mapvalue",
-		},
-		{
-			name: "map key with dot notation",
-			path: "map.key",
-			want: "mapvalue",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetByString(obj, tt.path)
-			if tt.errFmt != "" {
-				require.EqualError(t, err, tt.errFmt)
-				return
-			}
-			require.NoError(t, err)
-			require.Equal(t, tt.want, got)
-		})
-	}
-}
