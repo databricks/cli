@@ -407,4 +407,3 @@ func TestGet_BundleTag_SkipsPromoted(t *testing.T) {
 	require.EqualError(t, err, "hidden: field \"hidden\" not found in structaccess.host")
 	require.EqualError(t, ValidateByString(reflect.TypeOf(host{}), "hidden"), "hidden: field \"hidden\" not found in structaccess.host")
 }
-
