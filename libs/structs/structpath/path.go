@@ -459,7 +459,7 @@ func isReservedFieldChar(ch byte) bool {
 }
 
 func isValidField(s string) bool {
-	for ind, _ := range s {
+	for ind := range s {
 		if isReservedFieldChar(s[ind]) {
 			return false
 		}
