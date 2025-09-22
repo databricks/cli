@@ -15,7 +15,7 @@ jobs:
     env:
       DATABRICKS_AUTH_TYPE: github-oidc
       DATABRICKS_HOST: https://adb-575821473882772.12.azuredatabricks.net
-      DATABRICKS_CLIENT_ID: d4116c39-c6c4-4107-80e8-feec3aebd5c5
+      DATABRICKS_CLIENT_ID: a71e69be-fe57-484b-ae8b-bb6ce382668a
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
