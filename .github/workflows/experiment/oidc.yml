@@ -1,0 +1,38 @@
+name: Try OIDC
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: prod
+    env:
+      DATABRICKS_AUTH_TYPE: github-oidc
+      DATABRICKS_HOST: https://my-workspace.cloud.databricks.com/
+      DATABRICKS_CLIENT_ID: d4116c39-c6c4-4107-80e8-feec3aebd5c5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Databricks CLI
+        uses: databricks/setup-cli@main
+
+      - name: Run Databricks CLI commands
+        run: databricks current-user me
+
+# LIMIT TO MAIN AS WELL?
+# {
+#   "oidc_policy": {
+#     "issuer": "https://token.actions.githubusercontent.com",
+#     "audiences": [
+#       "https://github.com/databricks/cli"
+#     ],
+#     "subject": "repo:databricks/cli:job_workflow_ref:databricks-eng/ds-projects/.github/workflows/experiment/oidc.yaml"
+#   }
+# }'
