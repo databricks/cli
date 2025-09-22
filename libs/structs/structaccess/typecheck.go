@@ -111,16 +111,6 @@ func FindStructFieldByKeyType(t reflect.Type, key string) (reflect.StructField, 
 			}
 			return sf, t, true
 		}
-
-		// Fallback to Go field name when no JSON tag
-		if name == "" && sf.Name == key {
-			// Skip fields marked as internal/readonly
-			btag := structtag.BundleTag(sf.Tag.Get("bundle"))
-			if btag.Internal() || btag.ReadOnly() {
-				continue
-			}
-			return sf, t, true
-		}
 	}
 
 	// Second pass: search embedded anonymous structs recursively (flattening semantics)
