@@ -91,7 +91,7 @@ func walkTypeValue(path *structpath.PathNode, typ reflect.Type, field *reflect.S
 			return // unsupported map key type
 		}
 		// For maps, we walk the value type directly at the current path
-		walkTypeValue(structpath.NewBracketStar(path), typ.Elem(), nil, visit, visitedCount)
+		walkTypeValue(structpath.NewDotStar(path), typ.Elem(), nil, visit, visitedCount)
 
 	default:
 		// func, chan, interface, invalid, etc. -> ignore
@@ -127,7 +127,7 @@ func walkTypeStruct(path *structpath.PathNode, st reflect.Type, visit VisitTypeF
 		if fieldName == "" {
 			fieldName = sf.Name
 		}
-		node := structpath.NewStructField(path, fieldName)
+		node := structpath.NewStringKey(path, fieldName)
 		walkTypeValue(node, sf.Type, &sf, visit, visitedCount)
 	}
 }

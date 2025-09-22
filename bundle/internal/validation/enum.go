@@ -11,7 +11,6 @@ import (
 	"text/template"
 
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/libs/structs/dynpath"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structtag"
 	"github.com/databricks/cli/libs/structs/structwalk"
@@ -133,8 +132,7 @@ func extractEnumFields(typ reflect.Type) ([]EnumPatternInfo, error) {
 				return true
 			}
 
-			fieldPath := dynpath.ConvertPathNodeToDynPath(path, typ)
-			fieldsByPattern[fieldPath] = enumValues
+			fieldsByPattern[path.String()] = enumValues
 		}
 		return true
 	})

@@ -11,7 +11,6 @@ import (
 	"text/template"
 
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/libs/structs/dynpath"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structtag"
 	"github.com/databricks/cli/libs/structs/structwalk"
@@ -69,7 +68,7 @@ func extractRequiredFields(typ reflect.Type) ([]RequiredPatternInfo, error) {
 			return true
 		}
 
-		parentPath := dynpath.ConvertPathNodeToDynPath(path.Parent(), typ)
+		parentPath := path.Parent().String()
 		fieldsByPattern[parentPath] = append(fieldsByPattern[parentPath], fieldName)
 		return true
 	})

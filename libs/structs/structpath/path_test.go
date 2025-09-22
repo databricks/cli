@@ -177,9 +177,9 @@ func TestPathNode(t *testing.T) {
 		},
 		{
 			name:   "field with spaces",
-			node:   NewStructField(nil, "field with spaces"),
-			String: "field with spaces",
-			Field:  "field with spaces",
+			node:   NewStringKey(nil, "field with spaces"),
+			String: "['field with spaces']",
+			MapKey: "field with spaces",
 		},
 		{
 			name:   "field starting with digit",
@@ -457,7 +457,7 @@ func TestParseErrors(t *testing.T) {
 func TestNewIndexPanic(t *testing.T) {
 	defer func() {
 		if r := recover(); r != nil {
-			assert.Contains(t, r.(string), "index msut be non-negative")
+			assert.Contains(t, r.(string), "index must be non-negative")
 		}
 	}()
 	NewIndex(nil, -1) // Should panic

@@ -72,6 +72,17 @@ func (p *PathNode) Field() (string, bool) {
 	return "", false
 }
 
+// StringKey returns either Field() or MapKey() if either is available
+func (p *PathNode) StringKey() (string, bool) {
+	if p == nil {
+		return "", false
+	}
+	if p.index == tagStruct || p.index == tagMapKey {
+		return p.key, true
+	}
+	return "", false
+}
+
 func (p *PathNode) Parent() *PathNode {
 	if p == nil {
 		return nil
@@ -106,7 +117,7 @@ func (p *PathNode) AsSlice() []*PathNode {
 // NewIndex creates a new PathNode for an array/slice index.
 func NewIndex(prev *PathNode, index int) *PathNode {
 	if index < 0 {
-		panic("index msut be non-negative")
+		panic("index must be non-negative")
 	}
 	return &PathNode{
 		prev:  prev,
@@ -130,6 +141,16 @@ func NewStructField(prev *PathNode, fieldName string) *PathNode {
 		prev:  prev,
 		key:   fieldName,
 		index: tagStruct,
+	}
+}
+
+// NewStringKey creates either StructField or MapKey
+// The fieldName should be the resolved field name (e.g., from JSON tag or Go field name).
+func NewStringKey(prev *PathNode, fieldName string) *PathNode {
+	if isValidField(fieldName) {
+		return NewStructField(prev, fieldName)
+	} else {
+		return NewMapKey(prev, fieldName)
 	}
 }
 
@@ -422,7 +443,24 @@ func isReservedFieldChar(ch byte) bool {
 		return true
 	case ']': // Bracket notation end
 		return true
+	case '\'':
+		return true
+	case ' ':
+		return true
+	case '}':
+		return true
+	case '{':
+		return true
 	default:
 		return false
 	}
+}
+
+func isValidField(s string) bool {
+	for ind, _ := range s {
+		if isReservedFieldChar(s[ind]) {
+			return false
+		}
+	}
+	return len(s) > 0
 }

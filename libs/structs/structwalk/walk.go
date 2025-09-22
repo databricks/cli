@@ -125,7 +125,7 @@ func walkStruct(path *structpath.PathNode, s reflect.Value, visit VisitFunc) {
 		if fieldName == "" {
 			fieldName = sf.Name
 		}
-		node := structpath.NewStructField(path, fieldName)
+		node := structpath.NewStringKey(path, fieldName)
 
 		fieldVal := s.Field(i)
 		// Skip zero values with omitempty unless field is explicitly forced.
