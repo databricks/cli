@@ -11,26 +11,28 @@ import (
 	"path/filepath"
 	"sync"
 	"time"
+
+	"github.com/databricks/cli/libs/log"
 )
 
 // FileCache implements the Cache interface using local disk storage.
-type FileCache struct {
+type FileCache[T any] struct {
 	baseDir  string
 	mu       sync.RWMutex
 	pending  map[string]chan struct{} // Track pending writes
-	memCache map[string]any           // In-memory cache for immediate access
+	memCache map[string]T             // In-memory cache for immediate access
 }
 
 // NewFileCache creates a new file-based cache that stores data in the specified directory.
-func NewFileCache(baseDir string) (*FileCache, error) {
+func NewFileCache[T any](baseDir string) (*FileCache[T], error) {
 	if err := os.MkdirAll(baseDir, 0o755); err != nil {
 		return nil, fmt.Errorf("failed to create cache directory: %w", err)
 	}
 
-	return &FileCache{
+	return &FileCache[T]{
 		baseDir:  baseDir,
 		pending:  make(map[string]chan struct{}),
-		memCache: make(map[string]any),
+		memCache: make(map[string]T),
 	}, nil
 }
 
@@ -41,20 +43,29 @@ type cacheEntry struct {
 }
 
 // GetOrCompute retrieves cached content or computes it using the provided function.
-func (fc *FileCache) GetOrCompute(ctx context.Context, fingerprint any, compute func(ctx context.Context) (any, error)) (any, error) {
+func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compute func(ctx context.Context) (T, error)) (T, error) {
+	var zero T
+
 	// Convert fingerprint to deterministic string
-	fingerprintStr, err := fingerprintToString(fingerprint)
+	fingerprintHash, err := fingerprintToHash(fingerprint)
+	log.Debugf(ctx, "[Local Cache] using fingerprint with hash: %s \n", fingerprintHash)
+
 	if err != nil {
-		return nil, fmt.Errorf("failed to convert fingerprint to string: %w", err)
+		log.Debugf(ctx, "[Local Cache] cache miss: non-compliant fingerprint \n")
+		return zero, fmt.Errorf("failed to convert fingerprint to string: %w", err)
 	}
 
-	cacheKey := fc.getCacheKey(fingerprintStr)
+	cacheKey := fc.getCacheKey(fingerprintHash)
+	log.Debugf(ctx, "[Local Cache] using cache key: %s \n", cacheKey)
+
 	cachePath := fc.getCachePath(cacheKey)
+	log.Debugf(ctx, "[Local Cache] using cache path: %s \n", cachePath)
 
 	// Check in-memory cache first
 	fc.mu.RLock()
 	if data, found := fc.memCache[cacheKey]; found {
 		fc.mu.RUnlock()
+		log.Debugf(ctx, "[Local Cache] cache hit: in-memory \n")
 		return data, nil
 	}
 	fc.mu.RUnlock()
@@ -65,6 +76,7 @@ func (fc *FileCache) GetOrCompute(ctx context.Context, fingerprint any, compute 
 		fc.mu.Lock()
 		fc.memCache[cacheKey] = data
 		fc.mu.Unlock()
+		log.Debugf(ctx, "[Local Cache] cache hit: disk-read \n")
 		return data, nil
 	}
 
@@ -79,11 +91,13 @@ func (fc *FileCache) GetOrCompute(ctx context.Context, fingerprint any, compute 
 			fc.mu.RLock()
 			if data, found := fc.memCache[cacheKey]; found {
 				fc.mu.RUnlock()
+				log.Debugf(ctx, "[Local Cache] cache hit: in-memory from pending write \n")
 				return data, nil
 			}
 			fc.mu.RUnlock()
 		case <-ctx.Done():
-			return nil, ctx.Err()
+			log.Debugf(ctx, "[Local Cache] cache miss: no hit while waiting for pending write \n")
+			return zero, ctx.Err()
 		}
 	} else {
 		// Mark this key as pending
@@ -102,14 +116,16 @@ func (fc *FileCache) GetOrCompute(ctx context.Context, fingerprint any, compute 
 	// Check if context is already cancelled before computing
 	select {
 	case <-ctx.Done():
-		return nil, ctx.Err()
+		log.Debugf(ctx, "[Local Cache] cache miss: context is already cancelled \n")
+		return zero, ctx.Err()
 	default:
 	}
 
 	// Compute the value
 	result, err := compute(ctx)
 	if err != nil {
-		return nil, err
+		log.Debugf(ctx, "[Local Cache] error while caching: %v \n", err)
+		return zero, err
 	}
 
 	// Store in memory cache immediately
@@ -118,36 +134,40 @@ func (fc *FileCache) GetOrCompute(ctx context.Context, fingerprint any, compute 
 	fc.mu.Unlock()
 
 	// Async write to disk cache
+	log.Debugf(ctx, "[Local Cache] async writing to cache: %s :: %v \n", cachePath, result)
 	go fc.writeToCache(cachePath, result)
 
+	log.Debugf(ctx, "[Local Cache] cache miss, but stored the compute result for future calls \n")
 	return result, nil
 }
 
 // readFromCache attempts to read and deserialize data from the cache file.
-func (fc *FileCache) readFromCache(cachePath string) (any, bool) {
+func (fc *FileCache[T]) readFromCache(cachePath string) (T, bool) {
+	var zero T
+
 	fc.mu.RLock()
 	defer fc.mu.RUnlock()
 
 	data, err := os.ReadFile(cachePath)
 	if err != nil {
-		return nil, false
+		return zero, false
 	}
 
 	var entry cacheEntry
 	if err := json.Unmarshal(data, &entry); err != nil {
-		return nil, false
+		return zero, false
 	}
 
-	var result any
+	var result T
 	if err := json.Unmarshal(entry.Data, &result); err != nil {
-		return nil, false
+		return zero, false
 	}
 
 	return result, true
 }
 
 // writeToCache serializes and writes data to the cache file asynchronously.
-func (fc *FileCache) writeToCache(cachePath string, data any) {
+func (fc *FileCache[T]) writeToCache(cachePath string, data any) {
 	// Serialize the data
 	serializedData, err := json.Marshal(data)
 	if err != nil {
@@ -194,14 +214,12 @@ func generateTempPath(cachePath string) (string, error) {
 }
 
 // getCacheKey generates a safe cache key from the fingerprint.
-func (fc *FileCache) getCacheKey(fingerprint string) string {
+func (fc *FileCache[T]) getCacheKey(fingerprint string) string {
 	hash := sha256.Sum256([]byte(fingerprint))
 	return hex.EncodeToString(hash[:])
 }
 
 // getCachePath returns the full path to the cache file for a given cache key.
-func (fc *FileCache) getCachePath(cacheKey string) string {
-	// Create subdirectories based on first 2 characters for better file distribution
-	subDir := cacheKey[:2]
-	return filepath.Join(fc.baseDir, subDir, cacheKey+".json")
+func (fc *FileCache[T]) getCachePath(cacheKey string) string {
+	return filepath.Join(fc.baseDir, cacheKey+".json")
 }

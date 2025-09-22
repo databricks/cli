@@ -16,7 +16,7 @@ func TestNewFileCache(t *testing.T) {
 	tempDir := t.TempDir()
 	cacheDir := filepath.Join(tempDir, "cache")
 
-	cache, err := NewFileCache(cacheDir)
+	cache, err := NewFileCache[string](cacheDir)
 	require.NoError(t, err)
 	assert.NotNil(t, cache)
 	assert.Equal(t, cacheDir, cache.baseDir)
@@ -37,7 +37,7 @@ func TestNewFileCacheWithExistingDirectory(t *testing.T) {
 	err := os.MkdirAll(cacheDir, 0o700)
 	require.NoError(t, err)
 
-	cache, err := NewFileCache(cacheDir)
+	cache, err := NewFileCache[string](cacheDir)
 	require.NoError(t, err)
 	assert.NotNil(t, cache)
 	assert.Equal(t, cacheDir, cache.baseDir)
@@ -47,7 +47,7 @@ func TestNewFileCacheInvalidPath(t *testing.T) {
 	// Try to create cache in a location that should fail
 	invalidPath := "/root/invalid/path/that/should/not/exist"
 
-	cache, err := NewFileCache(invalidPath)
+	cache, err := NewFileCache[string](invalidPath)
 	if err != nil {
 		assert.Nil(t, cache)
 		assert.Contains(t, err.Error(), "failed to create cache directory")
@@ -57,7 +57,7 @@ func TestNewFileCacheInvalidPath(t *testing.T) {
 func TestFileCacheGetOrCompute(t *testing.T) {
 	ctx := context.Background()
 	tempDir := t.TempDir()
-	cache, err := NewFileCache(tempDir)
+	cache, err := NewFileCache[string](tempDir)
 	require.NoError(t, err)
 
 	fingerprint := struct {
@@ -71,7 +71,7 @@ func TestFileCacheGetOrCompute(t *testing.T) {
 
 	// First call should compute the value
 	var computeCalls int32
-	result, err := cache.GetOrCompute(ctx, fingerprint, func(ctx context.Context) (any, error) {
+	result, err := cache.GetOrCompute(ctx, fingerprint, func(ctx context.Context) (string, error) {
 		atomic.AddInt32(&computeCalls, 1)
 		return expectedValue, nil
 	})
@@ -81,7 +81,7 @@ func TestFileCacheGetOrCompute(t *testing.T) {
 	assert.Equal(t, int32(1), atomic.LoadInt32(&computeCalls))
 
 	// Second call should return cached value
-	result2, err := cache.GetOrCompute(ctx, fingerprint, func(ctx context.Context) (any, error) {
+	result2, err := cache.GetOrCompute(ctx, fingerprint, func(ctx context.Context) (string, error) {
 		atomic.AddInt32(&computeCalls, 1)
 		return "should-not-be-called", nil
 	})
@@ -97,7 +97,7 @@ func TestFileCacheGetOrCompute(t *testing.T) {
 func TestFileCacheGetOrComputeError(t *testing.T) {
 	ctx := context.Background()
 	tempDir := t.TempDir()
-	cache, err := NewFileCache(tempDir)
+	cache, err := NewFileCache[string](tempDir)
 	require.NoError(t, err)
 
 	fingerprint := struct {
@@ -107,11 +107,11 @@ func TestFileCacheGetOrComputeError(t *testing.T) {
 	}
 
 	// Compute function returns error
-	result, err := cache.GetOrCompute(ctx, fingerprint, func(ctx context.Context) (any, error) {
-		return nil, assert.AnError
+	result, err := cache.GetOrCompute(ctx, fingerprint, func(ctx context.Context) (string, error) {
+		return "", assert.AnError
 	})
 
-	assert.Nil(t, result)
+	assert.Empty(t, result)
 	assert.Error(t, err)
 	assert.Equal(t, assert.AnError, err)
 }
@@ -119,7 +119,7 @@ func TestFileCacheGetOrComputeError(t *testing.T) {
 func TestFileCacheGetOrComputeConcurrency(t *testing.T) {
 	ctx := context.Background()
 	tempDir := t.TempDir()
-	cache, err := NewFileCache(tempDir)
+	cache, err := NewFileCache[string](tempDir)
 	require.NoError(t, err)
 
 	fingerprint := struct {
@@ -137,7 +137,7 @@ func TestFileCacheGetOrComputeConcurrency(t *testing.T) {
 
 	for range numGoroutines {
 		go func() {
-			result, err := cache.GetOrCompute(ctx, fingerprint, func(ctx context.Context) (any, error) {
+			result, err := cache.GetOrCompute(ctx, fingerprint, func(ctx context.Context) (string, error) {
 				atomic.AddInt32(&computeCalls, 1)
 				time.Sleep(10 * time.Millisecond) // Simulate work
 				return expectedValue, nil
@@ -164,7 +164,7 @@ func TestFileCacheGetOrComputeConcurrency(t *testing.T) {
 
 func TestFileCacheGetOrComputeContextCancellation(t *testing.T) {
 	tempDir := t.TempDir()
-	cache, err := NewFileCache(tempDir)
+	cache, err := NewFileCache[string](tempDir)
 	require.NoError(t, err)
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -176,18 +176,18 @@ func TestFileCacheGetOrComputeContextCancellation(t *testing.T) {
 		Key: "cancelled-key",
 	}
 
-	result, err := cache.GetOrCompute(ctx, fingerprint, func(ctx context.Context) (any, error) {
+	result, err := cache.GetOrCompute(ctx, fingerprint, func(ctx context.Context) (string, error) {
 		return "should-not-be-reached", nil
 	})
 
-	assert.Nil(t, result)
+	assert.Empty(t, result)
 	assert.Equal(t, context.Canceled, err)
 }
 
 func TestFingerprintDeterministic(t *testing.T) {
 	ctx := context.Background()
 	tempDir := t.TempDir()
-	cache, err := NewFileCache(tempDir)
+	cache, err := NewFileCache[string](tempDir)
 	require.NoError(t, err)
 
 	// Create two identical structs with fields in different JSON order
@@ -215,7 +215,7 @@ func TestFingerprintDeterministic(t *testing.T) {
 	var computeCalls int32
 
 	// First call with fingerprint1
-	result1, err := cache.GetOrCompute(ctx, fingerprint1, func(ctx context.Context) (any, error) {
+	result1, err := cache.GetOrCompute(ctx, fingerprint1, func(ctx context.Context) (string, error) {
 		atomic.AddInt32(&computeCalls, 1)
 		return expectedValue, nil
 	})
@@ -224,7 +224,7 @@ func TestFingerprintDeterministic(t *testing.T) {
 	assert.Equal(t, int32(1), atomic.LoadInt32(&computeCalls))
 
 	// Second call with fingerprint2 (should hit cache, not compute again)
-	result2, err := cache.GetOrCompute(ctx, fingerprint2, func(ctx context.Context) (any, error) {
+	result2, err := cache.GetOrCompute(ctx, fingerprint2, func(ctx context.Context) (string, error) {
 		atomic.AddInt32(&computeCalls, 1)
 		return "should-not-be-called", nil
 	})
