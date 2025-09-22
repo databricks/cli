@@ -12,6 +12,9 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
       - name: Test Databricks OIDC
         uses: ./.github/actions/foo/bar
         with:
