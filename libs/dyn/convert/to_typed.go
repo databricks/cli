@@ -54,6 +54,8 @@ func ToTyped(dst any, src dyn.Value) error {
 		return toTypedFloat(dstv, src)
 	case reflect.Interface:
 		return toTypedInterface(dstv, src)
+	default:
+		// Fall through to the error case.
 	}
 
 	return fmt.Errorf("unsupported type: %s", dstv.Kind())
@@ -130,6 +132,8 @@ func toTypedStruct(dst reflect.Value, src dyn.Value) error {
 			dst.SetZero()
 			return nil
 		}
+	default:
+		// Fall through to the error case.
 	}
 
 	return TypeError{
@@ -167,6 +171,8 @@ func toTypedMap(dst reflect.Value, src dyn.Value) error {
 			dst.SetZero()
 			return nil
 		}
+	default:
+		// Fall through to the error case.
 	}
 
 	return TypeError{
@@ -198,6 +204,8 @@ func toTypedSlice(dst reflect.Value, src dyn.Value) error {
 			dst.SetZero()
 			return nil
 		}
+	default:
+		// Fall through to the error case.
 	}
 
 	return TypeError{
@@ -220,6 +228,8 @@ func toTypedString(dst reflect.Value, src dyn.Value) error {
 	case dyn.KindFloat:
 		dst.SetString(strconv.FormatFloat(src.MustFloat(), 'f', -1, 64))
 		return nil
+	default:
+		// Fall through to the error case.
 	}
 
 	return TypeError{
@@ -248,6 +258,8 @@ func toTypedBool(dst reflect.Value, src dyn.Value) error {
 			dst.SetZero()
 			return nil
 		}
+	default:
+		// Fall through to the error case.
 	}
 
 	return TypeError{
@@ -284,6 +296,8 @@ func toTypedInt(dst reflect.Value, src dyn.Value) error {
 			dst.SetZero()
 			return nil
 		}
+	default:
+		// Fall through to the error case.
 	}
 
 	return TypeError{
@@ -307,6 +321,8 @@ func toTypedFloat(dst reflect.Value, src dyn.Value) error {
 			dst.SetZero()
 			return nil
 		}
+	default:
+		// Fall through to the error case.
 	}
 
 	return TypeError{
