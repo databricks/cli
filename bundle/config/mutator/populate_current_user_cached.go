@@ -62,14 +62,18 @@ func (m *populateCurrentUserCached) Apply(ctx context.Context, b *bundle.Bundle)
 	m.initializeCache(ctx, b)
 	w := b.WorkspaceClient()
 
-	bearerToken := m.getBearerToken(ctx, w)
+	fingerprint := struct {
+		bearerToken string
+	}{
+		bearerToken: m.getBearerToken(ctx, w),
+	}
 
 	var me *iam.User
 	var err error
 
 	if m.cache != nil {
 		log.Debugf(ctx, "[Local Cache] local cache is enabled \n")
-		me, err = m.cache.GetOrCompute(ctx, bearerToken, func(ctx context.Context) (*iam.User, error) {
+		me, err = m.cache.GetOrCompute(ctx, fingerprint, func(ctx context.Context) (*iam.User, error) {
 			currentUser, err := w.CurrentUser.Me(ctx)
 			return currentUser, err
 		})
