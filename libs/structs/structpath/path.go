@@ -75,13 +75,10 @@ func (p *PathNode) Parent() *PathNode {
 // AsSlice returns the path as a slice of PathNodes from root to current.
 // Efficiently pre-allocates the exact length and fills in reverse order.
 func (p *PathNode) AsSlice() []*PathNode {
-	// Use Len() to get the length efficiently
 	length := p.Len()
-
-	// Allocate slice with exact capacity
 	segments := make([]*PathNode, length)
 
-	// Fill in reverse order (from end to start)
+	// Fill in reverse order
 	current := p
 	for i := length - 1; i >= 0; i-- {
 		segments[i] = current
