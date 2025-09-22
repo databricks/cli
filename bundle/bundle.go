@@ -32,10 +32,7 @@ import (
 	"github.com/hashicorp/terraform-exec/tfexec"
 )
 
-const (
-	internalFolder = ".internal"
-	cacheFolder    = ".cache"
-)
+const internalFolder = ".internal"
 
 // Filename where resources are stored for DATABRICKS_BUNDLE_ENGINE=direct
 const resourcesFilename = "resources.json"
