@@ -127,7 +127,7 @@ func NewBracketStar(prev *PathNode) *PathNode {
 }
 
 // String returns the string representation of the path.
-// The map keys are encoded in single quotes: tags['name']. Single quote can escaped by placing two single quotes: tags[””] (map key is one single quote).
+// The map keys are encoded in single quotes: tags['name']. Single quote can escaped by placing two single quotes.
 // This encoding is chosen over traditional double quotes because when encoded in JSON it does not need to be escaped:
 //
 //	{
@@ -138,36 +138,48 @@ func (p *PathNode) String() string {
 		return ""
 	}
 
-	if p.index >= 0 {
-		return p.prev.String() + "[" + strconv.Itoa(p.index) + "]"
-	}
+	// Get all path components from root to current
+	components := p.AsSlice()
 
-	if p.index == tagDotStar {
-		prev := p.prev.String()
-		if prev == "" {
-			return "*"
+	var result strings.Builder
+
+	for i, node := range components {
+		if node.index >= 0 {
+			// Array/slice index
+			result.WriteString("[")
+			result.WriteString(strconv.Itoa(node.index))
+			result.WriteString("]")
+		} else if node.index == tagDotStar {
+			// Dot star wildcard
+			if i == 0 {
+				result.WriteString("*")
+			} else {
+				result.WriteString(".*")
+			}
+		} else if node.index == tagBracketStar {
+			// Bracket star wildcard
+			if i == 0 {
+				result.WriteString("[*]")
+			} else {
+				result.WriteString("[*]")
+			}
+		} else if isValidField(node.key) {
+			// Valid field name
+			if i == 0 {
+				result.WriteString(node.key)
+			} else {
+				result.WriteString(".")
+				result.WriteString(node.key)
+			}
+		} else {
+			// Map key with single quotes
+			result.WriteString("[")
+			result.WriteString(EncodeMapKey(node.key))
+			result.WriteString("]")
 		}
-		return prev + ".*"
 	}
 
-	if p.index == tagBracketStar {
-		prev := p.prev.String()
-		if prev == "" {
-			return "[*]"
-		}
-		return prev + "[*]"
-	}
-
-	if isValidField(p.key) {
-		prev := p.prev.String()
-		if prev == "" {
-			return p.key
-		}
-		return prev + "." + p.key
-	}
-
-	// Format map key with single quotes, escaping single quotes by doubling them
-	return fmt.Sprintf("%s[%s]", p.prev.String(), EncodeMapKey(p.key))
+	return result.String()
 }
 
 func EncodeMapKey(s string) string {
