@@ -147,27 +147,19 @@ func (p *PathNode) String() string {
 			result.WriteString(strconv.Itoa(node.index))
 			result.WriteString("]")
 		} else if node.index == tagDotStar {
-			// Dot star wildcard
 			if i == 0 {
 				result.WriteString("*")
 			} else {
 				result.WriteString(".*")
 			}
 		} else if node.index == tagBracketStar {
-			// Bracket star wildcard
-			if i == 0 {
-				result.WriteString("[*]")
-			} else {
-				result.WriteString("[*]")
-			}
+			result.WriteString("[*]")
 		} else if isValidField(node.key) {
 			// Valid field name
-			if i == 0 {
-				result.WriteString(node.key)
-			} else {
+			if i != 0 {
 				result.WriteString(".")
-				result.WriteString(node.key)
 			}
+			result.WriteString(node.key)
 		} else {
 			// Map key with single quotes
 			result.WriteString("[")
