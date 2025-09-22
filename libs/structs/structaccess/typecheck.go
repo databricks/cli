@@ -42,7 +42,6 @@ func Validate(t reflect.Type, path *structpath.PathNode) error {
 			cur = cur.Elem()
 		}
 
-		// Handle different node types
 		if _, isIndex := node.Index(); isIndex {
 			// Index access: slice/array
 			kind := cur.Kind()
