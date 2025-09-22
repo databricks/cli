@@ -82,14 +82,14 @@ jobs:
         # populates the cache and cache may include test results.
         if: ${{ github.event_name == 'pull_request' || github.event_name == 'schedule' }}
         env:
-          ENVFILTER: DATABRICKS_CLI_DEPLOYMENT=${{ matrix.deployment }}
+          ENVFILTER: DATABRICKS_BUNDLE_ENGINE=${{ matrix.deployment }}
         run: make test
 
       - name: Run tests with coverage
         # Still run 'make cover' on push to main and merge checks to make sure it does not get broken.
         if: ${{ github.event_name != 'pull_request' && github.event_name != 'schedule' }}
         env:
-          ENVFILTER: DATABRICKS_CLI_DEPLOYMENT=${{ matrix.deployment }}
+          ENVFILTER: DATABRICKS_BUNDLE_ENGINE=${{ matrix.deployment }}
         run: make cover
 
       - name: Analyze slow tests
@@ -135,7 +135,7 @@ jobs:
           make checks
           git diff --exit-code
 
-  validate-bundle-schema:
+  validate-generated-is-up-to-date:
     needs: cleanups
     runs-on: ubuntu-latest
 
@@ -156,6 +156,13 @@ jobs:
         run: |
           if ! ( make schema && git diff --exit-code ); then
             echo "The schema is not up to date. Please run 'make schema' and commit the changes."
+            exit 1
+          fi
+
+      - name: Verify that the generated enum and required fields are up to date
+        run: |
+          if ! ( make generate-validation && git diff --exit-code ); then
+            echo "The generated enum and required fields are not up to date. Please run 'make generate-validation' and commit the changes."
             exit 1
           fi
 

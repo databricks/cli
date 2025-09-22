@@ -27,15 +27,15 @@ and proxies them to local SSH daemon processes.
 	var shutdownDelay time.Duration
 	var clusterID string
 	var version string
-	var secretsScope string
-	var publicKeySecretName string
+	var keysSecretScopeName string
+	var authorizedKeyName string
 
 	cmd.Flags().StringVar(&clusterID, "cluster", "", "Databricks cluster ID")
 	cmd.MarkFlagRequired("cluster")
-	cmd.Flags().StringVar(&secretsScope, "secrets-scope-name", "", "Databricks secrets scope name")
-	cmd.MarkFlagRequired("secrets-scope-name")
-	cmd.Flags().StringVar(&publicKeySecretName, "client-key-name", "", "Databricks client key name")
-	cmd.MarkFlagRequired("client-key-name")
+	cmd.Flags().StringVar(&keysSecretScopeName, "keys-secret-scope-name", "", "Databricks secret scope name to store SSH keys")
+	cmd.MarkFlagRequired("keys-secret-scope-name")
+	cmd.Flags().StringVar(&authorizedKeyName, "authorized-key-secret-name", "", "Authorized key secret name in the secret scope")
+	cmd.MarkFlagRequired("authorized-key-secret-name")
 
 	cmd.Flags().IntVar(&maxClients, "max-clients", defaultMaxClients, "Maximum number of SSH clients")
 	cmd.Flags().DurationVar(&shutdownDelay, "shutdown-delay", defaultShutdownDelay, "Delay before shutting down after no pings from clients")
@@ -44,21 +44,21 @@ and proxies them to local SSH daemon processes.
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		client := cmdctx.WorkspaceClient(ctx)
+		wsc := cmdctx.WorkspaceClient(ctx)
 		opts := server.ServerOptions{
 			ClusterID:            clusterID,
 			MaxClients:           maxClients,
 			ShutdownDelay:        shutdownDelay,
 			Version:              version,
 			ConfigDir:            serverConfigDir,
-			SecretsScope:         secretsScope,
-			ClientPublicKeyName:  publicKeySecretName,
+			KeysSecretScopeName:  keysSecretScopeName,
+			AuthorizedKeyName:    authorizedKeyName,
 			ServerPrivateKeyName: serverPrivateKeyName,
 			ServerPublicKeyName:  serverPublicKeyName,
 			DefaultPort:          defaultServerPort,
 			PortRange:            serverPortRange,
 		}
-		return server.RunServer(ctx, client, opts)
+		return server.Run(ctx, wsc, opts)
 	}
 
 	return cmd
