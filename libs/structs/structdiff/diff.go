@@ -134,7 +134,7 @@ func diffStruct(path *structpath.PathNode, s1, s2 reflect.Value, changes *[]Chan
 		if fieldName == "" {
 			fieldName = sf.Name
 		}
-		node := structpath.NewStructField(path, fieldName)
+		node := structpath.NewStringKey(path, fieldName)
 
 		v1Field := s1.Field(i)
 		v2Field := s2.Field(i)
@@ -183,7 +183,7 @@ func diffMapStringKey(path *structpath.PathNode, m1, m2 reflect.Value, changes *
 		k := keySet[ks]
 		v1 := m1.MapIndex(k)
 		v2 := m2.MapIndex(k)
-		node := structpath.NewMapKey(path, ks)
+		node := structpath.NewStringKey(path, ks)
 		diffValues(node, v1, v2, changes)
 	}
 }
