@@ -290,36 +290,6 @@ func (b *Bundle) InternalDir(ctx context.Context) (string, error) {
 	return dir, nil
 }
 
-// BundleLevelCacheDir is used to cache components needed for the bundle that are target-independent
-func (b *Bundle) BundleLevelCacheDir(ctx context.Context, cacheComponentName string) (string, error) {
-	cacheDirName, exists := env.TempDir(ctx)
-	if !exists || cacheDirName == "" {
-		cacheDirName = filepath.Join(
-			// Anchor at bundle root directory.
-			b.BundleRootPath,
-			// Static cache directory.
-			".databricks",
-		)
-	}
-
-	// Fixed components of the result path.
-	parts := []string{
-		cacheDirName,
-		cacheFolder,
-		cacheComponentName,
-	}
-
-	// Make directory if it doesn't exist yet.
-	dir := filepath.Join(parts...)
-	err := os.MkdirAll(dir, 0o700)
-	if err != nil {
-		return "", err
-	}
-
-	libsync.WriteGitIgnore(ctx, b.BundleRootPath)
-	return dir, nil
-}
-
 // GetSyncIncludePatterns returns a list of user defined includes
 // And also adds InternalDir folder to include list for sync command
 // so this folder is always synced
