@@ -60,10 +60,11 @@ type FakeWorkspace struct {
 	repoIdByPath map[string]int64
 
 	// normally, ids are not sequential, but we make them sequential for deterministic diff
-	nextJobId    int64
-	nextJobRunId int64
-	Jobs         map[int64]jobs.Job
-	JobRuns      map[int64]jobs.Run
+	nextJobId       int64
+	nextJobRunId    int64
+	Jobs            map[int64]jobs.Job
+	JobRuns         map[int64]jobs.Run
+	JobsPermissions map[string][]jobs.JobAccessControlRequest
 
 	Pipelines       map[string]pipelines.GetPipelineResponse
 	PipelineUpdates map[string]bool
@@ -153,6 +154,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 
 		Jobs:                 map[int64]jobs.Job{},
 		JobRuns:              map[int64]jobs.Run{},
+		JobsPermissions:      map[string][]jobs.JobAccessControlRequest{},
 		nextJobId:            TestJobID,
 		nextJobRunId:         TestRunID,
 		Pipelines:            map[string]pipelines.GetPipelineResponse{},

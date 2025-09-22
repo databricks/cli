@@ -1,0 +1,81 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/unbind_permissions/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle summary --output json
+
+>>> [CLI] jobs get-permissions [NUMID] --output json
+{
+  "access_control_list": [
+    {
+      "all_permissions": [
+        {
+          "permission_level":"CAN_MANAGE"
+        }
+      ],
+      "group_name":"jiro-group"
+    },
+    {
+      "all_permissions": [
+        {
+          "permission_level":"CAN_MANAGE"
+        }
+      ],
+      "user_name":"[USERNAME]@user.com"
+    },
+    {
+      "all_permissions": [
+        {
+          "permission_level":"IS_OWNER"
+        }
+      ],
+      "user_name":"[USERNAME]"
+    }
+  ],
+  "object_id":"jobs/[NUMID]",
+  "object_type":"job"
+}
+
+>>> [CLI] bundle deployment unbind job_1
+Updating deployment state...
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/unbind_permissions/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] jobs get-permissions [NUMID] --output json
+{
+  "access_control_list": [
+    {
+      "all_permissions": [
+        {
+          "permission_level":"CAN_MANAGE"
+        }
+      ],
+      "group_name":"jiro-group"
+    },
+    {
+      "all_permissions": [
+        {
+          "permission_level":"CAN_MANAGE"
+        }
+      ],
+      "user_name":"[USERNAME]@user.com"
+    },
+    {
+      "all_permissions": [
+        {
+          "permission_level":"IS_OWNER"
+        }
+      ],
+      "user_name":"[USERNAME]"
+    }
+  ],
+  "object_id":"jobs/[NUMID]",
+  "object_type":"job"
+}

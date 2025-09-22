@@ -153,6 +153,7 @@ Deployment complete!
 
 >>> [CLI] jobs get [BAR_ID]
 {
+  "creator_user_name":"[USERNAME]",
   "job_id":[BAR_ID],
   "settings": {
     "deployment": {

@@ -1,0 +1,7 @@
+trace $CLI bundle deploy
+job_id=$(trace $CLI bundle summary --output json | jq -r '.resources.jobs.job_1.id')
+trace $CLI jobs get-permissions $job_id --output json
+
+trace $CLI bundle deployment unbind job_1
+trace $CLI bundle deploy
+trace $CLI jobs get-permissions $job_id --output json

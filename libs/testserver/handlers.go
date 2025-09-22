@@ -505,4 +505,12 @@ func AddDefaultHandlers(server *Server) {
 	server.Handle("DELETE", "/api/2.0/database/synced_tables/{name}", func(req Request) any {
 		return MapDelete(req.Workspace, req.Workspace.SyncedDatabaseTables, req.Vars["name"])
 	})
+
+	server.Handle("PUT", "/api/2.0/permissions/jobs/{job_id}", func(req Request) any {
+		return req.Workspace.JobsUpdatePermissions(req, req.Vars["job_id"])
+	})
+
+	server.Handle("GET", "/api/2.0/permissions/jobs/{job_id}", func(req Request) any {
+		return req.Workspace.JobsGetPermissions(req, req.Vars["job_id"])
+	})
 }

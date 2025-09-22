@@ -1,5 +1,4 @@
-Local = false
-Cloud = false
+Cloud = false # test leaves deployed job
 
 [EnvMatrix]
   DATABRICKS_BUNDLE_ENGINE = ["terraform"]

@@ -31,7 +31,7 @@ func (s *FakeWorkspace) JobsCreate(req Request) Response {
 		}
 	}
 
-	s.Jobs[jobId] = jobs.Job{JobId: jobId, Settings: &jobSettings}
+	s.Jobs[jobId] = jobs.Job{JobId: jobId, Settings: &jobSettings, CreatorUserName: TestUser.UserName}
 	return Response{Body: jobs.CreateResponse{JobId: jobId}}
 }
 
@@ -143,6 +143,62 @@ func (s *FakeWorkspace) JobsGetRun(req Request) Response {
 
 	run.State.LifeCycleState = jobs.RunLifeCycleStateTerminated
 	return Response{Body: run}
+}
+
+func (s *FakeWorkspace) JobsUpdatePermissions(req Request, jobId string) Response {
+	var request jobs.JobPermissionsRequest
+	if err := json.Unmarshal(req.Body, &request); err != nil {
+		return Response{
+			StatusCode: 400,
+			Body:       fmt.Sprintf("request parsing error: %s", err),
+		}
+	}
+
+	defer s.LockUnlock()()
+
+	s.JobsPermissions[jobId] = request.AccessControlList
+	acl := []jobs.JobAccessControlResponse{}
+	for _, accessControlList := range request.AccessControlList {
+		acl = append(acl, jobs.JobAccessControlResponse{
+			UserName:             accessControlList.UserName,
+			ServicePrincipalName: accessControlList.ServicePrincipalName,
+			GroupName:            accessControlList.GroupName,
+			AllPermissions: []jobs.JobPermission{
+				{
+					PermissionLevel: accessControlList.PermissionLevel,
+				},
+			},
+		})
+	}
+
+	return Response{Body: jobs.JobPermissions{
+		AccessControlList: acl,
+		ObjectType:        "job",
+		ObjectId:          jobId,
+	}}
+}
+
+func (s *FakeWorkspace) JobsGetPermissions(req Request, jobId string) Response {
+	jobPermissions := s.JobsPermissions[jobId]
+	acl := []jobs.JobAccessControlResponse{}
+	for _, accessControlList := range jobPermissions {
+		acl = append(acl, jobs.JobAccessControlResponse{
+			UserName:             accessControlList.UserName,
+			ServicePrincipalName: accessControlList.ServicePrincipalName,
+			GroupName:            accessControlList.GroupName,
+			AllPermissions: []jobs.JobPermission{
+				{
+					PermissionLevel: accessControlList.PermissionLevel,
+				},
+			},
+		})
+	}
+
+	return Response{Body: jobs.JobPermissions{
+		AccessControlList: acl,
+		ObjectType:        "job",
+		ObjectId:          fmt.Sprintf("jobs/%s", jobId),
+	}}
 }
 
 func setSourceIfNotSet(job jobs.Job) jobs.Job {
