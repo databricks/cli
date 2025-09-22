@@ -23,8 +23,8 @@ type FileCache[T any] struct {
 	memCache map[string]T             // In-memory cache for immediate access
 }
 
-// NewFileCache creates a new file-based cache that stores data in the specified directory.
-func NewFileCache[T any](baseDir string) (*FileCache[T], error) {
+// newFileCacheWithBaseDir creates a new file-based cache that stores data in the specified directory.
+func newFileCacheWithBaseDir[T any](baseDir string) (*FileCache[T], error) {
 	if err := os.MkdirAll(baseDir, 0o755); err != nil {
 		return nil, fmt.Errorf("failed to create cache directory: %w", err)
 	}
@@ -34,6 +34,17 @@ func NewFileCache[T any](baseDir string) (*FileCache[T], error) {
 		pending:  make(map[string]chan struct{}),
 		memCache: make(map[string]T),
 	}, nil
+}
+
+// NewFileCache creates a new file-based cache using UserCacheDir() + "databricks" + cached component name.
+func NewFileCache[T any](component string) (*FileCache[T], error) {
+	userCacheDir, err := os.UserCacheDir()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user cache directory: %w", err)
+	}
+
+	baseDir := filepath.Join(userCacheDir, "databricks", component)
+	return newFileCacheWithBaseDir[T](baseDir)
 }
 
 // cacheEntry represents the structure of a cached item on disk.
