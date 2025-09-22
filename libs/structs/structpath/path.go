@@ -11,10 +11,9 @@ import (
 )
 
 const (
-	tagStruct      = -1
-	tagMapKey      = -2
-	tagDotStar     = -4
-	tagBracketStar = -5
+	tagStringKey   = -1
+	tagDotStar     = -2
+	tagBracketStar = -3
 )
 
 // PathNode represents a node in a path for struct diffing.
@@ -23,7 +22,7 @@ type PathNode struct {
 	prev *PathNode
 	key  string // Computed key (JSON key for structs, string key for maps, or Go field name for fallback)
 	// If index >= 0, the node specifies a slice/array index in index.
-	// If index < 0, this describes the type of node (see tagStruct and other consts above)
+	// If index < 0, this describes the type of node
 	index int
 }
 
@@ -41,16 +40,6 @@ func (p *PathNode) Index() (int, bool) {
 	return -1, false
 }
 
-func (p *PathNode) MapKey() (string, bool) {
-	if p == nil {
-		return "", false
-	}
-	if p.index == tagMapKey {
-		return p.key, true
-	}
-	return "", false
-}
-
 func (p *PathNode) DotStar() bool {
 	if p == nil {
 		return false
@@ -65,22 +54,12 @@ func (p *PathNode) BracketStar() bool {
 	return p.index == tagBracketStar
 }
 
-func (p *PathNode) Field() (string, bool) {
-	if p == nil {
-		return "", false
-	}
-	if p.index == tagStruct {
-		return p.key, true
-	}
-	return "", false
-}
-
 // StringKey returns either Field() or MapKey() if either is available
 func (p *PathNode) StringKey() (string, bool) {
 	if p == nil {
 		return "", false
 	}
-	if p.index == tagStruct || p.index == tagMapKey {
+	if p.index == tagStringKey {
 		return p.key, true
 	}
 	return "", false
@@ -123,32 +102,13 @@ func NewIndex(prev *PathNode, index int) *PathNode {
 	}
 }
 
-// NewMapKey creates a new PathNode for a map key.
-func NewMapKey(prev *PathNode, key string) *PathNode {
-	return &PathNode{
-		prev:  prev,
-		key:   key,
-		index: tagMapKey,
-	}
-}
-
-// NewStructField creates a new PathNode for a struct field.
-// The fieldName should be the resolved field name (e.g., from JSON tag or Go field name).
-func NewStructField(prev *PathNode, fieldName string) *PathNode {
-	return &PathNode{
-		prev:  prev,
-		key:   fieldName,
-		index: tagStruct,
-	}
-}
-
 // NewStringKey creates either StructField or MapKey
 // The fieldName should be the resolved field name (e.g., from JSON tag or Go field name).
 func NewStringKey(prev *PathNode, fieldName string) *PathNode {
-	if isValidField(fieldName) {
-		return NewStructField(prev, fieldName)
-	} else {
-		return NewMapKey(prev, fieldName)
+	return &PathNode{
+		prev:  prev,
+		key:   fieldName,
+		index: tagStringKey,
 	}
 }
 
@@ -198,7 +158,7 @@ func (p *PathNode) String() string {
 		return prev + "[*]"
 	}
 
-	if p.index == tagStruct {
+	if isValidField(p.key) {
 		prev := p.prev.String()
 		if prev == "" {
 			return p.key
@@ -296,11 +256,11 @@ func Parse(s string) (*PathNode, error) {
 
 		case stateField:
 			if ch == '.' {
-				result = NewStructField(result, currentToken.String())
+				result = NewStringKey(result, currentToken.String())
 				currentToken.Reset()
 				state = stateFieldStart
 			} else if ch == '[' {
-				result = NewStructField(result, currentToken.String())
+				result = NewStringKey(result, currentToken.String())
 				currentToken.Reset()
 				state = stateBracketOpen
 			} else if !isReservedFieldChar(ch) {
@@ -364,7 +324,7 @@ func Parse(s string) (*PathNode, error) {
 				state = stateMapKey
 			case ']':
 				// End of map key
-				result = NewMapKey(result, currentToken.String())
+				result = NewStringKey(result, currentToken.String())
 				currentToken.Reset()
 				state = stateExpectDotOrEnd
 			default:
@@ -404,7 +364,7 @@ func Parse(s string) (*PathNode, error) {
 	case stateStart:
 		return result, nil // Empty path, result is nil
 	case stateField:
-		result = NewStructField(result, currentToken.String())
+		result = NewStringKey(result, currentToken.String())
 		return result, nil
 	case stateDotStar:
 		result = NewDotStar(result)

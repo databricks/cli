@@ -92,7 +92,7 @@ func walkValue(path *structpath.PathNode, val reflect.Value, field *reflect.Stru
 		sort.Strings(keys)
 		for _, ks := range keys {
 			v := val.MapIndex(reflect.ValueOf(ks))
-			node := structpath.NewMapKey(path, ks)
+			node := structpath.NewStringKey(path, ks)
 			walkValue(node, v, nil, visit)
 		}
 

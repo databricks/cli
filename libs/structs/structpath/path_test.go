@@ -12,8 +12,7 @@ func TestPathNode(t *testing.T) {
 		node        *PathNode
 		String      string
 		Index       any
-		MapKey      any
-		Field       any
+		StringKey   any
 		Root        any
 		DotStar     bool
 		BracketStar bool
@@ -32,34 +31,10 @@ func TestPathNode(t *testing.T) {
 			Index:  5,
 		},
 		{
-			name:   "map key",
-			node:   NewMapKey(nil, "mykey"),
-			String: `['mykey']`,
-			MapKey: "mykey",
-		},
-		{
-			name:   "struct field with JSON tag",
-			node:   NewStructField(nil, "json_name"),
-			String: "json_name",
-			Field:  "json_name",
-		},
-		{
-			name:   "struct field without JSON tag (fallback to Go name)",
-			node:   NewStructField(nil, "GoFieldName"),
-			String: "GoFieldName",
-			Field:  "GoFieldName",
-		},
-		{
-			name:   "struct field with dash JSON tag",
-			node:   NewStructField(nil, "-"),
-			String: "-",
-			Field:  "-",
-		},
-		{
-			name:   "struct field with JSON tag options",
-			node:   NewStructField(nil, "lazy_field"),
-			String: "lazy_field",
-			Field:  "lazy_field",
+			name:      "map key",
+			node:      NewStringKey(nil, "mykey"),
+			String:    `mykey`,
+			StringKey: "mykey",
 		},
 		{
 			name:    "dot star",
@@ -77,151 +52,126 @@ func TestPathNode(t *testing.T) {
 		// Two node tests
 		{
 			name:   "struct field -> array index",
-			node:   NewIndex(NewStructField(nil, "items"), 3),
+			node:   NewIndex(NewStringKey(nil, "items"), 3),
 			String: "items[3]",
 			Index:  3,
 		},
 		{
-			name:   "struct field -> map key",
-			node:   NewMapKey(NewStructField(nil, "config"), "database"),
-			String: `config['database']`,
-			MapKey: "database",
+			name:      "struct field -> map key",
+			node:      NewStringKey(NewStringKey(nil, "config"), "database.name"),
+			String:    `config['database.name']`,
+			StringKey: "database.name",
 		},
 		{
-			name:   "struct field -> struct field",
-			node:   NewStructField(NewStructField(nil, "user"), "name"),
-			String: "user.name",
-			Field:  "name",
+			name:      "struct field -> struct field",
+			node:      NewStringKey(NewStringKey(nil, "user"), "name"),
+			String:    "user.name",
+			StringKey: "name",
 		},
 		{
 			name:   "map key -> array index",
-			node:   NewIndex(NewMapKey(nil, "servers"), 0),
-			String: `['servers'][0]`,
+			node:   NewIndex(NewStringKey(nil, "servers list"), 0),
+			String: `['servers list'][0]`,
 			Index:  0,
 		},
 		{
-			name:   "map key -> struct field",
-			node:   NewStructField(NewMapKey(nil, "primary"), "host"),
-			String: `['primary'].host`,
-			Field:  "host",
+			name:      "array index -> struct field",
+			node:      NewStringKey(NewIndex(nil, 2), "id"),
+			String:    "[2].id",
+			StringKey: "id",
 		},
 		{
-			name:   "array index -> struct field",
-			node:   NewStructField(NewIndex(nil, 2), "id"),
-			String: "[2].id",
-			Field:  "id",
-		},
-		{
-			name:   "array index -> map key",
-			node:   NewMapKey(NewIndex(nil, 1), "status"),
-			String: `[1]['status']`,
-			MapKey: "status",
-		},
-		{
-			name:   "struct field without JSON tag -> struct field with JSON tag",
-			node:   NewStructField(NewStructField(nil, "Parent"), "child_name"),
-			String: "Parent.child_name",
-			Field:  "child_name",
+			name:      "array index -> map key",
+			node:      NewStringKey(NewIndex(nil, 1), "status{}"),
+			String:    `[1]['status{}']`,
+			StringKey: "status{}",
 		},
 		{
 			name:    "dot star with parent",
-			node:    NewDotStar(NewStructField(nil, "Parent")),
+			node:    NewDotStar(NewStringKey(nil, "Parent")),
 			String:  "Parent.*",
 			DotStar: true,
 		},
 		{
 			name:        "bracket star with parent",
-			node:        NewBracketStar(NewStructField(nil, "Parent")),
+			node:        NewBracketStar(NewStringKey(nil, "Parent")),
 			String:      "Parent[*]",
 			BracketStar: true,
 		},
 
 		// Edge cases with special characters in map keys
 		{
-			name:   "map key with single quote",
-			node:   NewMapKey(nil, "key's"),
-			String: `['key''s']`,
-			MapKey: "key's",
+			name:      "map key with single quote",
+			node:      NewStringKey(nil, "key's"),
+			String:    `['key''s']`,
+			StringKey: "key's",
 		},
 		{
-			name:   "map key with multiple single quotes",
-			node:   NewMapKey(nil, "''"),
-			String: `['''''']`,
-			MapKey: "''",
+			name:      "map key with multiple single quotes",
+			node:      NewStringKey(nil, "''"),
+			String:    `['''''']`,
+			StringKey: "''",
 		},
 		{
-			name:   "empty map key",
-			node:   NewMapKey(nil, ""),
-			String: `['']`,
-			MapKey: "",
+			name:      "empty map key",
+			node:      NewStringKey(nil, ""),
+			String:    `['']`,
+			StringKey: "",
 		},
 		{
 			name: "complex path",
-			node: NewStructField(
+			node: NewStringKey(
 				NewIndex(
-					NewMapKey(
-						NewStructField(
-							NewStructField(nil, "user"),
+					NewStringKey(
+						NewStringKey(
+							NewStringKey(nil, "user"),
 							"settings"),
-						"theme"),
+						"theme.list"),
 					0),
 				"color"),
-			String: "user.settings['theme'][0].color",
-			Field:  "color",
+			String:    "user.settings['theme.list'][0].color",
+			StringKey: "color",
 		},
 		{
-			name:   "field with special characters",
-			node:   NewStructField(nil, "field@name:with#symbols!"),
-			String: "field@name:with#symbols!",
-			Field:  "field@name:with#symbols!",
+			name:      "field with special characters",
+			node:      NewStringKey(nil, "field@name:with#symbols!"),
+			String:    "field@name:with#symbols!",
+			StringKey: "field@name:with#symbols!",
 		},
 		{
-			name:   "field with spaces",
-			node:   NewStringKey(nil, "field with spaces"),
-			String: "['field with spaces']",
-			MapKey: "field with spaces",
+			name:      "field with spaces",
+			node:      NewStringKey(nil, "field with spaces"),
+			String:    "['field with spaces']",
+			StringKey: "field with spaces",
 		},
 		{
-			name:   "field starting with digit",
-			node:   NewStructField(nil, "123field"),
-			String: "123field",
-			Field:  "123field",
+			name:      "field starting with digit",
+			node:      NewStringKey(nil, "123field"),
+			String:    "123field",
+			StringKey: "123field",
 		},
 		{
-			name:   "field with unicode",
-			node:   NewStructField(nil, "名前🙂"),
-			String: "名前🙂",
-			Field:  "名前🙂",
+			name:      "field with unicode",
+			node:      NewStringKey(nil, "名前🙂"),
+			String:    "名前🙂",
+			StringKey: "名前🙂",
 		},
 		{
-			name:   "map key with reserved characters",
-			node:   NewMapKey(nil, "key\x00[],`"),
-			String: "['key\x00[],`']",
-			MapKey: "key\x00[],`",
+			name:      "map key with reserved characters",
+			node:      NewStringKey(nil, "key\x00[],`"),
+			String:    "['key\x00[],`']",
+			StringKey: "key\x00[],`",
 		},
 
-		// Additional dot-star pattern tests
-		{
-			name:    "field dot star",
-			node:    NewDotStar(NewStructField(nil, "bla")),
-			String:  "bla.*",
-			DotStar: true,
-		},
-		{
-			name:   "field dot star dot field",
-			node:   NewStructField(NewDotStar(NewStructField(nil, "bla")), "foo"),
-			String: "bla.*.foo",
-			Field:  "foo",
-		},
 		{
 			name:   "field dot star bracket index",
-			node:   NewIndex(NewDotStar(NewStructField(nil, "bla")), 0),
+			node:   NewIndex(NewDotStar(NewStringKey(nil, "bla")), 0),
 			String: "bla.*[0]",
 			Index:  0,
 		},
 		{
 			name:        "field dot star bracket star",
-			node:        NewBracketStar(NewDotStar(NewStructField(nil, "bla"))),
+			node:        NewBracketStar(NewDotStar(NewStringKey(nil, "bla"))),
 			String:      "bla.*[*]",
 			BracketStar: true,
 		},
@@ -252,26 +202,14 @@ func TestPathNode(t *testing.T) {
 				assert.True(t, isIndex)
 			}
 
-			// Field
-			gotField, isField := tt.node.Field()
-			if tt.Field == nil {
-				assert.Equal(t, "", gotField)
-				assert.False(t, isField)
+			gotStringKey, isStringKey := tt.node.StringKey()
+			if tt.StringKey == nil {
+				assert.Equal(t, "", gotStringKey)
+				assert.False(t, isStringKey)
 			} else {
-				expected := tt.Field.(string)
-				assert.Equal(t, expected, gotField)
-				assert.True(t, isField)
-			}
-
-			// MapKey
-			gotMapKey, isMapKey := tt.node.MapKey()
-			if tt.MapKey == nil {
-				assert.Equal(t, "", gotMapKey)
-				assert.False(t, isMapKey)
-			} else {
-				expected := tt.MapKey.(string)
-				assert.Equal(t, expected, gotMapKey)
-				assert.True(t, isMapKey)
+				expected := tt.StringKey.(string)
+				assert.Equal(t, expected, gotStringKey)
+				assert.True(t, isStringKey)
 			}
 
 			// IsRoot

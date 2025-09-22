@@ -63,7 +63,7 @@ func extractRequiredFields(typ reflect.Type) ([]RequiredPatternInfo, error) {
 			return true
 		}
 
-		fieldName, ok := path.Field()
+		fieldName, ok := path.StringKey()
 		if !ok {
 			return true
 		}

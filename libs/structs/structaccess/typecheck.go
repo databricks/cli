@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"strconv"
 
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structtag"
@@ -37,7 +36,6 @@ func Validate(t reflect.Type, path *structpath.PathNode) error {
 	pathSegments := path.AsSlice()
 
 	cur := t
-	prefix := ""
 	for _, node := range pathSegments {
 		// Always dereference pointers at the type level.
 		for cur.Kind() == reflect.Pointer {
@@ -45,15 +43,13 @@ func Validate(t reflect.Type, path *structpath.PathNode) error {
 		}
 
 		// Handle different node types
-		if idx, isIndex := node.Index(); isIndex {
+		if _, isIndex := node.Index(); isIndex {
 			// Index access: slice/array
-			newPrefix := prefix + "[" + strconv.Itoa(idx) + "]"
 			kind := cur.Kind()
 			if kind != reflect.Slice && kind != reflect.Array {
-				return fmt.Errorf("%s: cannot index %s", newPrefix, kind)
+				return fmt.Errorf("%s: cannot index %s", node.String(), kind)
 			}
 			cur = cur.Elem()
-			prefix = newPrefix
 			continue
 		}
 
@@ -62,22 +58,9 @@ func Validate(t reflect.Type, path *structpath.PathNode) error {
 			return fmt.Errorf("wildcards not supported: %s", path.String())
 		}
 
-		// Handle field or map key access
-		var key string
-		var newPrefix string
+		key, ok := node.StringKey()
 
-		if field, isField := node.Field(); isField {
-			key = field
-			newPrefix = prefix
-			if newPrefix == "" {
-				newPrefix = key
-			} else {
-				newPrefix = newPrefix + "." + key
-			}
-		} else if mapKey, isMapKey := node.MapKey(); isMapKey {
-			key = mapKey
-			newPrefix = prefix + "['" + key + "']"
-		} else {
+		if !ok {
 			return errors.New("unsupported path node type")
 		}
 
@@ -85,19 +68,18 @@ func Validate(t reflect.Type, path *structpath.PathNode) error {
 		case reflect.Struct:
 			sf, _, ok := FindStructFieldByKeyType(cur, key)
 			if !ok {
-				return fmt.Errorf("%s: field %q not found in %s", newPrefix, key, cur.String())
+				return fmt.Errorf("%s: field %q not found in %s", node.String(), key, cur.String())
 			}
 			cur = sf.Type
 		case reflect.Map:
 			kt := cur.Key()
 			if kt.Kind() != reflect.String {
-				return fmt.Errorf("%s: map key must be string, got %s", newPrefix, kt)
+				return fmt.Errorf("%s: map key must be string, got %s", node.String(), kt)
 			}
 			cur = cur.Elem()
 		default:
-			return fmt.Errorf("%s: cannot access key %q on %s", newPrefix, key, cur.Kind())
+			return fmt.Errorf("%s: cannot access key %q on %s", node.String(), key, cur.Kind())
 		}
-		prefix = newPrefix
 	}
 
 	return nil
