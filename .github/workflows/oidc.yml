@@ -11,28 +11,9 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: prod
-    env:
-      DATABRICKS_AUTH_TYPE: github-oidc
-      DATABRICKS_HOST: https://adb-575821473882772.12.azuredatabricks.net
-      DATABRICKS_CLIENT_ID: a71e69be-fe57-484b-ae8b-bb6ce382668a
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install Databricks CLI
-        uses: databricks/setup-cli@main
-
-      - name: Run Databricks CLI commands
-        run: databricks current-user me
-
-# LIMIT TO MAIN AS WELL?
-# {
-#   "oidc_policy": {
-#     "issuer": "https://token.actions.githubusercontent.com",
-#     "audiences": [
-#       "https://github.com/databricks/cli"
-#     ],
-#     "subject": "repo:databricks/cli:job_workflow_ref:databricks-eng/ds-projects/.github/workflows/experiment/oidc.yaml"
-#   }
-# }'
+      - name: Test Databricks OIDC
+        uses: ./.github/actions/foo/bar
+        with:
+          databricks_host: https://adb-575821473882772.12.azuredatabricks.net
+          databricks_client_id: a71e69be-fe57-484b-ae8b-bb6ce382668a

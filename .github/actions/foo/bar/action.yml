@@ -1,0 +1,25 @@
+name: 'Databricks OIDC Test'
+description: 'Test Databricks CLI with OIDC authentication'
+inputs:
+  databricks_host:
+    description: 'Databricks workspace host URL'
+    required: true
+  databricks_client_id:
+    description: 'Databricks client ID for OIDC'
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install Databricks CLI
+      uses: databricks/setup-cli@main
+
+    - name: Run Databricks CLI commands
+      shell: bash
+      env:
+        DATABRICKS_AUTH_TYPE: github-oidc
+        DATABRICKS_HOST: ${{ inputs.databricks_host }}
+        DATABRICKS_CLIENT_ID: ${{ inputs.databricks_client_id }}
+      run: databricks current-user me
