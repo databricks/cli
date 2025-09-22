@@ -157,7 +157,7 @@ func (s *FakeWorkspace) JobsUpdatePermissions(req Request, jobId string) Respons
 	defer s.LockUnlock()()
 
 	s.JobsPermissions[jobId] = request.AccessControlList
-	acl := []jobs.JobAccessControlResponse{}
+	var acl []jobs.JobAccessControlResponse
 	for _, accessControlList := range request.AccessControlList {
 		acl = append(acl, jobs.JobAccessControlResponse{
 			UserName:             accessControlList.UserName,
@@ -180,7 +180,7 @@ func (s *FakeWorkspace) JobsUpdatePermissions(req Request, jobId string) Respons
 
 func (s *FakeWorkspace) JobsGetPermissions(req Request, jobId string) Response {
 	jobPermissions := s.JobsPermissions[jobId]
-	acl := []jobs.JobAccessControlResponse{}
+	var acl []jobs.JobAccessControlResponse
 	for _, accessControlList := range jobPermissions {
 		acl = append(acl, jobs.JobAccessControlResponse{
 			UserName:             accessControlList.UserName,
@@ -197,7 +197,7 @@ func (s *FakeWorkspace) JobsGetPermissions(req Request, jobId string) Response {
 	return Response{Body: jobs.JobPermissions{
 		AccessControlList: acl,
 		ObjectType:        "job",
-		ObjectId:          fmt.Sprintf("jobs/%s", jobId),
+		ObjectId:          "jobs/" + jobId,
 	}}
 }
 
