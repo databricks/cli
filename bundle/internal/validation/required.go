@@ -12,6 +12,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structtag"
 	"github.com/databricks/cli/libs/structs/structwalk"
 )
 
@@ -45,29 +46,30 @@ func formatSliceToString(values []string) string {
 func extractRequiredFields(typ reflect.Type) ([]RequiredPatternInfo, error) {
 	fieldsByPattern := make(map[string][]string)
 
-	err := structwalk.WalkType(typ, func(path *structpath.PathNode, _ reflect.Type) bool {
-		if path == nil {
+	err := structwalk.WalkType(typ, func(path *structpath.PathNode, _ reflect.Type, field *reflect.StructField) bool {
+		if path == nil || field == nil {
 			return true
 		}
 
 		// Do not generate required validation code for fields that are internal or readonly.
-		bundleTag := path.BundleTag()
+		bundleTag := structtag.BundleTag(field.Tag.Get("bundle"))
 		if bundleTag.Internal() || bundleTag.ReadOnly() {
 			return false
 		}
 
 		// The "omitempty" tag indicates the field is optional in bundle config.
-		if path.JSONTag().OmitEmpty() {
+		jsonTag := structtag.JSONTag(field.Tag.Get("json"))
+		if jsonTag.OmitEmpty() {
 			return true
 		}
 
-		field, ok := path.Field()
+		fieldName, ok := path.Field()
 		if !ok {
 			return true
 		}
 
 		parentPath := path.Parent().DynPath()
-		fieldsByPattern[parentPath] = append(fieldsByPattern[parentPath], field)
+		fieldsByPattern[parentPath] = append(fieldsByPattern[parentPath], fieldName)
 		return true
 	})
 
