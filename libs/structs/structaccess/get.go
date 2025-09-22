@@ -25,10 +25,7 @@ func GetByString(v any, path string) (any, error) {
 }
 
 // Get returns the value at the given path inside v.
-// - For structs: supports both .field and ['field'] notation
-// - For maps: supports both ['key'] and .key notation
-// - For slices/arrays: an index [N] selects the N-th element.
-// - Wildcards ("*" or "[*]") are not supported and return an error.
+// Wildcards ("*" or "[*]") are not supported and return an error.
 func Get(v any, path *structpath.PathNode) (any, error) {
 	if path.IsRoot() {
 		return v, nil
