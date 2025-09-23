@@ -137,20 +137,15 @@ func (v Value) AsAny() any {
 }
 
 func (v Value) IsZero() bool {
-	switch v.k {
-	case KindInvalid:
+	if v.v == nil {
 		return true
-	case KindMap:
-		m := v.v.(Mapping)
-		return m.Len() == 0
-	case KindSequence:
-		vv := v.v.([]Value)
-		return len(vv) == 0
-	case KindNil:
-		return true
-	case KindTime:
-		t := v.v.(Time)
-		return t.IsZero()
+	}
+
+	switch x := v.v.(type) {
+	case Mapping:
+		return x.Len() == 0
+	case []Value:
+		return len(x) == 0
 	default:
 		return reflect.ValueOf(v.v).IsZero()
 	}
