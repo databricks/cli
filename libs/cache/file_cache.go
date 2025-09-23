@@ -59,24 +59,24 @@ func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compu
 
 	// Convert fingerprint to deterministic string
 	fingerprintHash, err := fingerprintToHash(fingerprint)
-	log.Debugf(ctx, "[Local Cache] using fingerprint with hash: %s \n", fingerprintHash)
+	log.Debugf(ctx, "[Local Cache] using fingerprint with hash: %s\n", fingerprintHash)
 
 	if err != nil {
-		log.Debugf(ctx, "[Local Cache] cache miss: non-compliant fingerprint \n")
+		log.Debugf(ctx, "[Local Cache] cache miss: non-compliant fingerprint\n")
 		return zero, fmt.Errorf("failed to convert fingerprint to string: %w", err)
 	}
 
 	cacheKey := fc.getCacheKey(fingerprintHash)
-	log.Debugf(ctx, "[Local Cache] using cache key: %s \n", cacheKey)
+	log.Debugf(ctx, "[Local Cache] using cache key: %s\n", cacheKey)
 
 	cachePath := fc.getCachePath(cacheKey)
-	log.Debugf(ctx, "[Local Cache] using cache path: %s \n", cachePath)
+	log.Debugf(ctx, "[Local Cache] using cache path: %s\n", cachePath)
 
 	// Check in-memory cache first
 	fc.mu.RLock()
 	if data, found := fc.memCache[cacheKey]; found {
 		fc.mu.RUnlock()
-		log.Debugf(ctx, "[Local Cache] cache hit: in-memory \n")
+		log.Debugf(ctx, "[Local Cache] cache hit: in-memory\n")
 		return data, nil
 	}
 	fc.mu.RUnlock()
@@ -87,7 +87,7 @@ func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compu
 		fc.mu.Lock()
 		fc.memCache[cacheKey] = data
 		fc.mu.Unlock()
-		log.Debugf(ctx, "[Local Cache] cache hit: disk-read \n")
+		log.Debugf(ctx, "[Local Cache] cache hit: disk-read\n")
 		return data, nil
 	}
 
@@ -102,12 +102,12 @@ func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compu
 			fc.mu.RLock()
 			if data, found := fc.memCache[cacheKey]; found {
 				fc.mu.RUnlock()
-				log.Debugf(ctx, "[Local Cache] cache hit: in-memory from pending write \n")
+				log.Debugf(ctx, "[Local Cache] cache hit: in-memory from pending write\n")
 				return data, nil
 			}
 			fc.mu.RUnlock()
 		case <-ctx.Done():
-			log.Debugf(ctx, "[Local Cache] cache miss: no hit while waiting for pending write \n")
+			log.Debugf(ctx, "[Local Cache] cache miss: no hit while waiting for pending write\n")
 			return zero, ctx.Err()
 		}
 	} else {
@@ -127,7 +127,7 @@ func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compu
 	// Check if context is already cancelled before computing
 	select {
 	case <-ctx.Done():
-		log.Debugf(ctx, "[Local Cache] cache miss: context is already cancelled \n")
+		log.Debugf(ctx, "[Local Cache] cache miss: context is already cancelled\n")
 		return zero, ctx.Err()
 	default:
 	}
@@ -135,7 +135,7 @@ func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compu
 	// Compute the value
 	result, err := compute(ctx)
 	if err != nil {
-		log.Debugf(ctx, "[Local Cache] error while caching: %v \n", err)
+		log.Debugf(ctx, "[Local Cache] error while caching: %v\n", err)
 		return zero, err
 	}
 
@@ -145,10 +145,10 @@ func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compu
 	fc.mu.Unlock()
 
 	// Async write to disk cache
-	log.Debugf(ctx, "[Local Cache] async writing to cache path: %s \n", cachePath)
+	log.Debugf(ctx, "[Local Cache] async writing to cache path: %s\n", cachePath)
 	go fc.writeToCache(cachePath, result)
 
-	log.Debugf(ctx, "[Local Cache] cache miss, but stored the compute result for future calls \n")
+	log.Debugf(ctx, "[Local Cache] cache miss, but stored the compute result for future calls\n")
 	return result, nil
 }
 

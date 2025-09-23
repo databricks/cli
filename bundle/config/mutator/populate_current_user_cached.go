@@ -34,14 +34,14 @@ func (m *populateCurrentUserCached) initializeCache(ctx context.Context) {
 	}
 
 	if os.Getenv("DATABRICKS_EXPERIMENTAL_CACHE_ENABLED") != "true" {
-		log.Debugf(ctx, "[Local Cache] Local cache is disabled. Enable it be setting an env variable DATABRICKS_EXPERIMENTAL_CACHE_ENABLED=true \n")
+		log.Debugf(ctx, "[Local Cache] Local cache is disabled. Enable it be setting an env variable DATABRICKS_EXPERIMENTAL_CACHE_ENABLED=true\n")
 		return
 	}
 
 	var err error
 	m.cache, err = cache.NewFileCache[*iam.User]("auth")
 	if err != nil {
-		log.Debugf(ctx, "[Local Cache] Failed to initialize cache dir: %v \n", err)
+		log.Debugf(ctx, "[Local Cache] Failed to initialize cache dir: %v\n", err)
 	}
 }
 
@@ -66,13 +66,13 @@ func (m *populateCurrentUserCached) Apply(ctx context.Context, b *bundle.Bundle)
 	var err error
 
 	if m.cache != nil && fingerprint.authHeader != "" {
-		log.Debugf(ctx, "[Local Cache] local cache is enabled \n")
+		log.Debugf(ctx, "[Local Cache] local cache is enabled\n")
 		me, err = m.cache.GetOrCompute(ctx, fingerprint, func(ctx context.Context) (*iam.User, error) {
 			currentUser, err := w.CurrentUser.Me(ctx)
 			return currentUser, err
 		})
 	} else {
-		log.Debugf(ctx, "[Local Cache] local cache is disabled \n")
+		log.Debugf(ctx, "[Local Cache] local cache is disabled\n")
 		me, err = w.CurrentUser.Me(ctx)
 	}
 
