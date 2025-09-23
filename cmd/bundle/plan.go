@@ -8,6 +8,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/validate"
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
@@ -87,17 +88,19 @@ func newPlanCommand() *cobra.Command {
 
 		for _, change := range plan.GetActions() {
 			changed[change.ResourceKey] = true
-			switch change.ActionType.StringShort() {
-			case "create":
+			switch change.ActionType {
+			case deployplan.ActionTypeCreate:
 				createCount++
-			case "update":
+			case deployplan.ActionTypeUpdate, deployplan.ActionTypeUpdateWithID:
 				updateCount++
-			case "delete":
+			case deployplan.ActionTypeDelete:
 				deleteCount++
-			case "recreate":
+			case deployplan.ActionTypeRecreate, deployplan.ActionTypeResize:
 				// A recreate counts as both a delete and a create
 				deleteCount++
 				createCount++
+			case deployplan.ActionTypeNoop, deployplan.ActionTypeUnset:
+				// Noop
 			}
 		}
 
