@@ -1,14 +1,15 @@
 # NEXT CHANGELOG
 
-## Release v0.269.0
+## Release v0.270.0
 
 ### Notable Changes
-* Add support for SQL Alerts in DABs ([#3033](https://github.com/databricks/cli/pull/3033))
 
 ### CLI
 
 ### Dependency updates
 
 ### Bundles
+* Add new Lakeflow Pipelines support for bundle generate ([#3568](https://github.com/databricks/cli/pull/3568))
+* Introduce new bundle variable: `${workspace.current_user.domain_friendly_name}` ([#3623](https://github.com/databricks/cli/pull/3623))
 
 ### API Changes

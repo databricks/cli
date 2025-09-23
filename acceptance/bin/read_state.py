@@ -37,18 +37,20 @@ def print_resource_direct(group, name, *attrs):
     filename = ".databricks/bundle/default/resources.json"
     raw = open(filename).read()
     data = json.loads(raw)
-    resources = data["resources"].get(group, {})
-    result = resources.get(name)
+    state_map = data["state"]
+    result = state_map.get(f"resources.{group}.{name}")
+
     if result is None:
         print(f"State not found for {group}.{name}")
         return
-    state = result["state"]
+
+    state = result.get("state", {})
     state.setdefault("id", result.get("__id__"))
     values = [f"{x}={state.get(x)!r}" for x in attrs]
     print(group, name, " ".join(values))
 
 
-if os.environ.get("DATABRICKS_CLI_DEPLOYMENT", "").startswith("direct"):
+if os.environ.get("DATABRICKS_BUNDLE_ENGINE", "").startswith("direct"):
     print_resource_direct(*sys.argv[1:])
 else:
     print_resource_terraform(*sys.argv[1:])

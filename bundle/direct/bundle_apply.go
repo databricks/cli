@@ -10,34 +10,49 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 )
 
-func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root) {
+func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root, plan *deployplan.Plan) {
 	if b.Graph == nil {
 		panic("Planning is not done")
 	}
 
-	if len(b.DeploymentUnits) == 0 {
+	if len(plan.Plan) == 0 {
 		// Avoid creating state file if nothing to deploy
 		return
 	}
 
 	b.StateDB.AssertOpened()
 
-	b.Graph.Run(defaultParallelism, func(node deployplan.ResourceNode, failedDependency *deployplan.ResourceNode) bool {
-		d, exists := b.DeploymentUnits[node]
-		if !exists {
-			// Resource with actionType == noop are not added to DeploymentUnits.
-			// All references to it must have been resolved during planning.
+	b.Graph.Run(defaultParallelism, func(resourceKey string, failedDependency *string) bool {
+		entry, ok := plan.Plan[resourceKey]
+		if !ok {
+			// Nothing to do for this node
 			return true
 		}
-		errorPrefix := fmt.Sprintf("cannot %s %s.%s", d.ActionType.String(), node.Group, node.Key)
 
-		// If a dependency failed, report and skip execution for this node by returning false
-		if failedDependency != nil {
-			logdiag.LogError(ctx, fmt.Errorf("%s: dependency failed: %s", errorPrefix, failedDependency.String()))
+		group := config.GetResourceTypeFromKey(resourceKey)
+		if group == "" {
+			logdiag.LogError(ctx, fmt.Errorf("internal error: bad node: %s", resourceKey))
 			return false
 		}
 
-		if d.ActionType == deployplan.ActionTypeDelete {
+		at := deployplan.ActionTypeFromString(entry.Action)
+		if at == deployplan.ActionTypeUnset {
+			logdiag.LogError(ctx, fmt.Errorf("unknown action %q for %s", entry.Action, resourceKey))
+			return false
+		}
+		d := &DeploymentUnit{
+			ResourceKey: resourceKey,
+			Adapter:     b.Adapters[group],
+		}
+		errorPrefix := fmt.Sprintf("cannot %s %s", entry.Action, resourceKey)
+
+		// If a dependency failed, report and skip execution for this node by returning false
+		if failedDependency != nil {
+			logdiag.LogError(ctx, fmt.Errorf("%s: dependency failed: %s", errorPrefix, *failedDependency))
+			return false
+		}
+
+		if at == deployplan.ActionTypeDelete {
 			err := d.Destroy(ctx, &b.StateDB)
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
@@ -47,7 +62,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		}
 
 		// Fetch the references to ensure all are resolved
-		myReferences, err := extractReferences(configRoot.Value(), node)
+		myReferences, err := extractReferences(configRoot.Value(), resourceKey)
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: reading references from config: %w", errorPrefix, err))
 			return false
@@ -60,7 +75,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			return false
 		}
 
-		config, ok := configRoot.GetResourceConfig(node.Group, node.Key)
+		config, ok := configRoot.GetResourceConfig(resourceKey)
 		if !ok {
 			logdiag.LogError(ctx, fmt.Errorf("%s: internal error when reading config", errorPrefix))
 			return false
@@ -68,7 +83,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 
 		// TODO: redo calcDiff to downgrade planned action if possible (?)
 
-		err = d.Deploy(ctx, &b.StateDB, config, d.ActionType)
+		err = d.Deploy(ctx, &b.StateDB, config, at)
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 			return false
@@ -83,16 +98,16 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		// Now we're focussing on the remaining cases:
 		// - "id" for cases where id could have changed;
 		// - "field" for cases where field is part of the remote state.
-		for _, reference := range b.Graph.OutgoingLabels(node) {
+		for _, reference := range b.Graph.OutgoingLabels(resourceKey) {
 			value, err := d.ResolveReferenceRemote(ctx, &b.StateDB, reference)
 			if err != nil {
-				logdiag.LogError(ctx, fmt.Errorf("failed to resolve reference %q for %s.%s after deployment: %w", reference, node.Group, node.Key, err))
+				logdiag.LogError(ctx, fmt.Errorf("failed to resolve reference %q for %s after deployment: %w", reference, resourceKey, err))
 				return false
 			}
 
 			err = replaceReferenceWithValue(ctx, configRoot, reference, value)
 			if err != nil {
-				logdiag.LogError(ctx, fmt.Errorf("failed to replace reference %q with value %v for %s.%s: %w", reference, value, node.Group, node.Key, err))
+				logdiag.LogError(ctx, fmt.Errorf("failed to replace reference %q with value %v for %s: %w", reference, value, resourceKey, err))
 				return false
 			}
 		}

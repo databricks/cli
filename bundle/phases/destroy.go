@@ -30,42 +30,10 @@ func assertRootPathExists(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	return true, err
 }
 
-func getDeleteActions(ctx context.Context, b *bundle.Bundle) ([]deployplan.Action, error) {
-	if b.DirectDeployment {
-		err := b.OpenStateFile(ctx)
-		if err != nil {
-			return nil, err
-		}
-		err = b.DeploymentBundle.CalculatePlanForDestroy(ctx, b.WorkspaceClient())
-		if err != nil {
-			return nil, err
-		}
-		return b.DeploymentBundle.GetActions(ctx), nil
-	}
+func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (bool, error) {
+	deleteActions := plan.GetActions()
 
-	tf := b.Terraform
-
-	if tf == nil {
-		return nil, errors.New("terraform not initialized")
-	}
-
-	actions, err := terraform.ShowPlanFile(ctx, tf, b.TerraformPlanPath)
-	if err != nil {
-		return nil, err
-	}
-
-	deleteActions := deployplan.Filter(actions, deployplan.ActionTypeDelete)
-
-	return deleteActions, nil
-}
-
-func approvalForDestroy(ctx context.Context, b *bundle.Bundle) (bool, error) {
-	deleteActions, err := getDeleteActions(ctx, b)
-	if err != nil {
-		return false, err
-	}
-
-	err = checkForPreventDestroy(b, deleteActions)
+	err := checkForPreventDestroy(b, deleteActions)
 	if err != nil {
 		return false, err
 	}
@@ -76,12 +44,11 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 			cmdio.Log(ctx, a)
 		}
 		cmdio.LogString(ctx, "")
-
 	}
 
-	schemaActions := deployplan.FilterGroup(deleteActions, "schemas", deployplan.ActionTypeDelete)
-	dltActions := deployplan.FilterGroup(deleteActions, "pipelines", deployplan.ActionTypeDelete)
-	volumeActions := deployplan.FilterGroup(deleteActions, "volumes", deployplan.ActionTypeDelete)
+	schemaActions := filterGroup(deleteActions, "schemas", deployplan.ActionTypeDelete)
+	dltActions := filterGroup(deleteActions, "pipelines", deployplan.ActionTypeDelete)
+	volumeActions := filterGroup(deleteActions, "volumes", deployplan.ActionTypeDelete)
 
 	if len(schemaActions) > 0 {
 		cmdio.LogString(ctx, deleteSchemaMessage)
@@ -122,9 +89,9 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	return approved, nil
 }
 
-func destroyCore(ctx context.Context, b *bundle.Bundle) {
+func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) {
 	if b.DirectDeployment {
-		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(), &b.Config)
+		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(), &b.Config, plan)
 	} else {
 		// Core destructive mutators for destroy. These require informed user consent.
 		bundle.ApplyContext(ctx, b, terraform.Apply())
@@ -182,14 +149,40 @@ func Destroy(ctx context.Context, b *bundle.Bundle) {
 		return
 	}
 
-	hasApproval, err := approvalForDestroy(ctx, b)
+	var plan *deployplan.Plan
+	if b.DirectDeployment {
+		err := b.OpenStateFile(ctx)
+		if err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
+		plan, err = b.DeploymentBundle.CalculatePlanForDestroy(ctx, b.WorkspaceClient())
+		if err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
+	} else {
+		tf := b.Terraform
+		if tf == nil {
+			logdiag.LogError(ctx, errors.New("terraform not initialized"))
+			return
+		}
+
+		plan, err = terraform.ShowPlanFile(ctx, tf, b.TerraformPlanPath)
+		if err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
+	}
+
+	hasApproval, err := approvalForDestroy(ctx, b, plan)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return
 	}
 
 	if hasApproval {
-		destroyCore(ctx, b)
+		destroyCore(ctx, b, plan)
 	} else {
 		cmdio.LogString(ctx, "Destroy cancelled!")
 	}

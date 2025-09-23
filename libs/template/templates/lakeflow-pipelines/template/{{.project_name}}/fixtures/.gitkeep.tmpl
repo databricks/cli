@@ -1,0 +1,15 @@
+# Test fixtures directory
+
+{{- /*
+We don't want to have too many README.md files, since they
+stand out so much. But we do need to have a file here to make
+sure the folder is added to Git.
+*/}}
+
+Add JSON or CSV files here. In tests, use them with `load_fixture()`:
+
+```
+def test_using_fixture(load_fixture):
+    data = load_fixture("my_data.json")
+    assert len(data) >= 1
+```

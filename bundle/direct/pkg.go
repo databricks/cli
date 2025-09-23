@@ -15,11 +15,8 @@ const defaultParallelism = 10
 
 // DeploymentUnit holds state + adapter (implementation) for a single resource
 type DeploymentUnit struct {
-	// Resource type as defined in the config ("jobs", "pipelines", etc)
-	Group string
-
-	// Resource key as defined the config ("foo" for "resources.jobs.foo")
-	Key string
+	// Resource identifier: "resources.jobs.foo" or "resources.jobs.foo.permissions"
+	ResourceKey string
 
 	// Implementation for this resource; all deployments from the same group share the adapter
 	Adapter *dresources.Adapter
@@ -36,10 +33,9 @@ type DeploymentUnit struct {
 
 // DeploymentBundle holds everything needed to deploy a bundle
 type DeploymentBundle struct {
-	StateDB         dstate.DeploymentState
-	Graph           *dagrun.Graph[deployplan.ResourceNode]
-	DeploymentUnits map[deployplan.ResourceNode]*DeploymentUnit
-	Adapters        map[string]*dresources.Adapter
+	StateDB  dstate.DeploymentState
+	Graph    *dagrun.Graph
+	Adapters map[string]*dresources.Adapter
 }
 
 // SetRemoteState updates the remote state with type validation and marks as fresh.

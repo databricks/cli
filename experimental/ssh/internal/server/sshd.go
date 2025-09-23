@@ -15,7 +15,7 @@ import (
 )
 
 func prepareSSHDConfig(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOptions) (string, error) {
-	clientPublicKey, err := keys.GetSecret(ctx, client, opts.SecretsScope, opts.ClientPublicKeyName)
+	clientPublicKey, err := keys.GetSecret(ctx, client, opts.KeysSecretScopeName, opts.AuthorizedKeyName)
 	if err != nil {
 		return "", fmt.Errorf("failed to get client public key: %w", err)
 	}
@@ -36,7 +36,7 @@ func prepareSSHDConfig(ctx context.Context, client *databricks.WorkspaceClient, 
 		return "", fmt.Errorf("failed to create SSH directory: %w", err)
 	}
 
-	privateKeyBytes, publicKeyBytes, err := keys.CheckAndGenerateSSHKeyPairFromSecrets(ctx, client, opts.ClusterID, opts.SecretsScope, opts.ServerPrivateKeyName, opts.ServerPublicKeyName)
+	privateKeyBytes, publicKeyBytes, err := keys.CheckAndGenerateSSHKeyPairFromSecrets(ctx, client, opts.ClusterID, opts.KeysSecretScopeName, opts.ServerPrivateKeyName, opts.ServerPublicKeyName)
 	if err != nil {
 		return "", fmt.Errorf("failed to get SSH key pair from secrets: %w", err)
 	}
