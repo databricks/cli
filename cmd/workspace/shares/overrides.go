@@ -36,6 +36,7 @@ func newList() *cobra.Command {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
+		//nolint:staticcheck // this API is deprecated but we still need to expose this in the CLI.
 		response := w.Shares.List(ctx, listReq)
 		return cmdio.RenderIterator(ctx, response)
 	}
