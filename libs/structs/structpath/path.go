@@ -11,8 +11,13 @@ import (
 )
 
 const (
-	tagStringKey   = -1
-	tagDotStar     = -2
+	// Encodes string key, which is encoded as .field or as ['spark.conf']
+	tagStringKey = -1
+
+	// Encodes wildcard after a dot: foo.*
+	tagDotStar = -2
+
+	// Encodes wildcard in brackets: foo[*]
 	tagBracketStar = -3
 )
 
@@ -124,7 +129,8 @@ func NewBracketStar(prev *PathNode) *PathNode {
 }
 
 // String returns the string representation of the path.
-// The map keys are encoded in single quotes: tags['name']. Single quote can escaped by placing two single quotes.
+// The string keys are encoded in dot syntax (foo.bar) if they don't have any reserved characters (so can be parsed as fields).
+// Otherwise they are encoded in brackets + single quotes: tags['name']. Single quote can escaped by placing two single quotes.
 // This encoding is chosen over traditional double quotes because when encoded in JSON it does not need to be escaped:
 //
 //	{
@@ -473,11 +479,11 @@ func (p *PathNode) SkipPrefix(n int) *PathNode {
 		current = current.Parent()
 	}
 
-	return result.Reverse()
+	return result.ReverseInPlace()
 }
 
-// Reverse returns a new PathNode with the order of components reversed.
-func (p *PathNode) Reverse() *PathNode {
+// ReverseInPlace returns a new PathNode with the order of components reversed.
+func (p *PathNode) ReverseInPlace() *PathNode {
 	var result *PathNode
 	current := p
 	for current != nil {
