@@ -49,6 +49,12 @@ func (m *unbind) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 				return diag.Errorf("terraform state rm: %v", err)
 			}
 		}
+		if resource.Address == fmt.Sprintf("databricks_grants.%s_%s", m.bundleType, m.resourceKey) {
+			err = tf.StateRm(ctx, resource.Address)
+			if err != nil {
+				return diag.Errorf("terraform state rm: %v", err)
+			}
+		}
 	}
 
 	return nil

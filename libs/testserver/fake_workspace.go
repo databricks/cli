@@ -65,6 +65,7 @@ type FakeWorkspace struct {
 	Jobs            map[int64]jobs.Job
 	JobRuns         map[int64]jobs.Run
 	JobsPermissions map[string][]jobs.JobAccessControlRequest
+	SchemasGrants   map[string][]catalog.PrivilegeAssignment
 
 	Pipelines       map[string]pipelines.GetPipelineResponse
 	PipelineUpdates map[string]bool
@@ -155,6 +156,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		Jobs:                 map[int64]jobs.Job{},
 		JobRuns:              map[int64]jobs.Run{},
 		JobsPermissions:      map[string][]jobs.JobAccessControlRequest{},
+		SchemasGrants:        map[string][]catalog.PrivilegeAssignment{},
 		nextJobId:            TestJobID,
 		nextJobRunId:         TestRunID,
 		Pipelines:            map[string]pipelines.GetPipelineResponse{},
