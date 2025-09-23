@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -70,15 +69,13 @@ func workspaceStableDir(ctx context.Context, t *testing.T) (w *databricks.Worksp
 		Path:      path,
 		Recursive: true,
 	})
-	var aerr *apierr.APIError
-	if err != nil && (!errors.As(err, &aerr) || aerr.ErrorCode != "RESOURCE_DOES_NOT_EXIST") {
+	if err != nil && !apierr.IsMissing(err) {
 		t.Fatalf("Failed to delete directory %s: %v", path, err)
 	}
 
 	err = w.Workspace.MkdirsByPath(ctx, path)
 	require.NoError(t, err)
 
-	// Create a filer client for the workspace.
 	f, err = filer.NewWorkspaceFilesClient(w, path)
 	require.NoError(t, err)
 
