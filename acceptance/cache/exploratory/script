@@ -1,7 +1,9 @@
-unset DATABRICKS_CLIENT_SECRET
-unset DATABRICKS_CLIENT_ID
-unset DATABRICKS_HOST
-unset DATABRICKS_AUTH_TYPE
+#unset DATABRICKS_CLIENT_SECRET
+#unset DATABRICKS_CLIENT_ID
+#unset DATABRICKS_HOST
+#unset DATABRICKS_AUTH_TYPE
 
 # export DATABRICKS_CONFIG_FILE=/Users/<your-username>/.databrickscfg
-trace $CLI bundle validate -p dogfood
+
+export DATABRICKS_EXPERIMENTAL_CACHE_ENABLED=true
+trace $CLI bundle validate -p dogfood --debug

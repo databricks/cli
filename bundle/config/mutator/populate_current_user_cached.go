@@ -64,7 +64,7 @@ func (m *populateCurrentUserCached) Apply(ctx context.Context, b *bundle.Bundle)
 	var me *iam.User
 	var err error
 
-	if m.cache != nil {
+	if m.cache != nil && fingerprint.bearerToken != "" {
 		log.Debugf(ctx, "[Local Cache] local cache is enabled \n")
 		me, err = m.cache.GetOrCompute(ctx, fingerprint, func(ctx context.Context) (*iam.User, error) {
 			currentUser, err := w.CurrentUser.Me(ctx)
