@@ -129,9 +129,9 @@ Warning: unknown field: description
   in resources/ml-artifacts-resource.yml:21:7
 
 The following resources will be deleted:
+  delete experiment experiment
   delete job batch_inference_job
   delete job model_training_job
-  delete experiment experiment
   delete model model
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev

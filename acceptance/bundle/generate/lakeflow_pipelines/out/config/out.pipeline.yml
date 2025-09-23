@@ -1,0 +1,10 @@
+resources:
+  pipelines:
+    out:
+      name: lakeflow-pipeline
+      libraries:
+        - glob:
+            include: ../pipeline/transformations/**
+        - glob:
+            include: /Workspace/Users/foo@databricks.com/another/**
+      root_path: ../pipeline

@@ -1,0 +1,17 @@
+
+>>> [CLI] bundle validate
+Name: prevent-destroy
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/prevent-destroy/default
+
+Validation OK!
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/prevent-destroy/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> errcode [CLI] bundle plan

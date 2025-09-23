@@ -9,6 +9,7 @@ from databricks.bundles.core._variable import (
     VariableOrList,
     VariableOrOptional,
 )
+from databricks.bundles.volumes._models.lifecycle import Lifecycle, LifecycleParam
 from databricks.bundles.volumes._models.volume_grant import (
     VolumeGrant,
     VolumeGrantParam,
@@ -44,6 +45,11 @@ class Volume(Resource):
     """
 
     grants: VariableOrList[VolumeGrant] = field(default_factory=list)
+
+    lifecycle: VariableOrOptional[Lifecycle] = None
+    """
+    Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+    """
 
     storage_location: VariableOrOptional[str] = None
     """
@@ -84,6 +90,11 @@ class VolumeDict(TypedDict, total=False):
     """
 
     grants: VariableOrList[VolumeGrantParam]
+
+    lifecycle: VariableOrOptional[LifecycleParam]
+    """
+    Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+    """
 
     storage_location: VariableOrOptional[str]
     """

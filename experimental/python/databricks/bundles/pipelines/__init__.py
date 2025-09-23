@@ -56,6 +56,9 @@ __all__ = [
     "InitScriptInfo",
     "InitScriptInfoDict",
     "InitScriptInfoParam",
+    "Lifecycle",
+    "LifecycleDict",
+    "LifecycleParam",
     "LocalFileInfo",
     "LocalFileInfoDict",
     "LocalFileInfoParam",
@@ -235,6 +238,11 @@ from databricks.bundles.pipelines._models.init_script_info import (
     InitScriptInfo,
     InitScriptInfoDict,
     InitScriptInfoParam,
+)
+from databricks.bundles.pipelines._models.lifecycle import (
+    Lifecycle,
+    LifecycleDict,
+    LifecycleParam,
 )
 from databricks.bundles.pipelines._models.local_file_info import (
     LocalFileInfo,

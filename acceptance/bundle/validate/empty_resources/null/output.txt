@@ -141,3 +141,10 @@ Error: secret_scope rname is not defined
     "rname": null
   }
 }
+
+=== resources.alerts.rname ===
+Warning: unknown field: alerts
+  at resources
+  in databricks.yml:5:3
+
+{}

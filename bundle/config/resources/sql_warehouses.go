@@ -21,13 +21,10 @@ type SqlWarehousePermission struct {
 }
 
 type SqlWarehouse struct {
-	ID string `json:"id,omitempty" bundle:"readonly"`
-
-	Permissions    []SqlWarehousePermission `json:"permissions,omitempty"`
-	ModifiedStatus ModifiedStatus           `json:"modified_status,omitempty" bundle:"internal"`
-	URL            string                   `json:"url,omitempty" bundle:"internal"`
-
+	BaseResource
 	sql.CreateWarehouseRequest
+
+	Permissions []SqlWarehousePermission `json:"permissions,omitempty"`
 }
 
 func (sw *SqlWarehouse) UnmarshalJSON(b []byte) error {

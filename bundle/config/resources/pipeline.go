@@ -23,12 +23,10 @@ type PipelinePermission struct {
 }
 
 type Pipeline struct {
-	ID             string               `json:"id,omitempty" bundle:"readonly"`
-	Permissions    []PipelinePermission `json:"permissions,omitempty"`
-	ModifiedStatus ModifiedStatus       `json:"modified_status,omitempty" bundle:"internal"`
-	URL            string               `json:"url,omitempty" bundle:"internal"`
+	BaseResource
+	pipelines.CreatePipeline //nolint CreatePipeline also defines Id field with the same json tag "id"
 
-	pipelines.CreatePipeline
+	Permissions []PipelinePermission `json:"permissions,omitempty"`
 }
 
 func (p *Pipeline) UnmarshalJSON(b []byte) error {

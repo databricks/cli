@@ -1,0 +1,21 @@
+# The job that triggers lakeflow_pipelines_etl.
+
+resources:
+  jobs:
+    lakeflow_pipelines_job:
+      name: lakeflow_pipelines_job
+
+      trigger:
+        # Run this job every day, exactly one day from the last run; see https://docs.databricks.com/api/workspace/jobs/create#trigger
+        periodic:
+          interval: 1
+          unit: DAYS
+
+      #email_notifications:
+      #  on_failure:
+      #    - your_email@example.com
+
+      tasks:
+        - task_key: refresh_pipeline
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.lakeflow_pipelines_etl.id}

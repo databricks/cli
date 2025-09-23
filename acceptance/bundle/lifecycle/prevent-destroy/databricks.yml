@@ -1,0 +1,5 @@
+bundle:
+  name: prevent-destroy
+
+include:
+  - resources/*.yml

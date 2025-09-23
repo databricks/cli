@@ -45,12 +45,10 @@ type DashboardConfig struct {
 }
 
 type Dashboard struct {
-	ID             string                `json:"id,omitempty" bundle:"readonly"`
-	Permissions    []DashboardPermission `json:"permissions,omitempty"`
-	ModifiedStatus ModifiedStatus        `json:"modified_status,omitempty" bundle:"internal"`
-	URL            string                `json:"url,omitempty" bundle:"internal"`
-
+	BaseResource
 	DashboardConfig
+
+	Permissions []DashboardPermission `json:"permissions,omitempty"`
 
 	// FilePath points to the local `.lvdash.json` file containing the dashboard definition.
 	// This is inlined into serialized_dashboard during deployment. The file_path is kept around

@@ -1,0 +1,7 @@
+resources:
+  schemas:
+    my_schema:
+      catalog_name: "test-catalog"
+      name: test-schema
+      lifecycle:
+        prevent_destroy: true

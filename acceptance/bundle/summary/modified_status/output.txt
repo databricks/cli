@@ -1,6 +1,10 @@
 
 === Initial view of resources without id and modified_status=created
 >>> [CLI] bundle summary -o json
+Warning: unknown field: alerts
+  at resources
+  in databricks.yml:4:3
+
 {
   "pipelines": {
     "my_pipeline": {
@@ -46,6 +50,10 @@
 }
 
 >>> [CLI] bundle deploy
+Warning: unknown field: alerts
+  at resources
+  in databricks.yml:4:3
+
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
 Updating deployment state...
@@ -53,6 +61,10 @@ Deployment complete!
 
 === Post-deployment view of resources with id and without modified_status
 >>> [CLI] bundle summary -o json
+Warning: unknown field: alerts
+  at resources
+  in databricks.yml:4:3
+
 {
   "pipelines": {
     "my_pipeline": {

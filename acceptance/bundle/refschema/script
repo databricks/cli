@@ -1,0 +1,2 @@
+trace $CLI bundle debug refschema --help
+trace $CLI bundle debug refschema > out.fields.txt

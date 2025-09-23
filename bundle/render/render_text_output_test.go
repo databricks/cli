@@ -329,31 +329,28 @@ func TestRenderSummary(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job1": {
-						ID:          "1",
-						URL:         "https://url1",
-						JobSettings: jobs.JobSettings{Name: "job1-name"},
+						BaseResource: resources.BaseResource{ID: "1", URL: "https://url1"},
+						JobSettings:  jobs.JobSettings{Name: "job1-name"},
 					},
 					"job2": {
-						ID:          "2",
-						URL:         "https://url2",
-						JobSettings: jobs.JobSettings{Name: "job2-name"},
+						BaseResource: resources.BaseResource{ID: "2", URL: "https://url2"},
+						JobSettings:  jobs.JobSettings{Name: "job2-name"},
 					},
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline2": {
-						ID: "4",
+						BaseResource: resources.BaseResource{ID: "4"},
 						// no URL
 						CreatePipeline: pipelines.CreatePipeline{Name: "pipeline2-name"},
 					},
 					"pipeline1": {
-						ID:             "3",
-						URL:            "https://url3",
+						BaseResource:   resources.BaseResource{ID: "3", URL: "https://url3"},
 						CreatePipeline: pipelines.CreatePipeline{Name: "pipeline1-name"},
 					},
 				},
 				Schemas: map[string]*resources.Schema{
 					"schema1": {
-						ID: "catalog.schema",
+						BaseResource: resources.BaseResource{ID: "catalog.schema"},
 						CreateSchema: catalog.CreateSchema{
 							Name: "schema",
 						},
@@ -362,11 +359,10 @@ func TestRenderSummary(t *testing.T) {
 				},
 				ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
 					"endpoint1": {
-						ID: "7",
+						BaseResource: resources.BaseResource{ID: "7", URL: "https://url4"},
 						CreateServingEndpoint: serving.CreateServingEndpoint{
 							Name: "my_serving_endpoint",
 						},
-						URL: "https://url4",
 					},
 				},
 			},

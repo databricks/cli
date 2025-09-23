@@ -2,6 +2,15 @@
 >>> [CLI] bundle plan
 create jobs.foo
 
+>>> [CLI] bundle plan -o json
+{
+  "plan": {
+    "resources.jobs.foo": {
+      "action": "create"
+    }
+  }
+}
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
@@ -9,6 +18,11 @@ Updating deployment state...
 Deployment complete!
 
 >>> [CLI] bundle plan
+
+>>> [CLI] bundle plan -o json
+{
+  "plan": {}
+}
 
 >>> print_requests
 {
@@ -52,6 +66,15 @@ jobs foo id='[JOB_ID]' name='foo'
 >>> [CLI] bundle plan
 update jobs.foo
 
+>>> [CLI] bundle plan -o json
+{
+  "plan": {
+    "resources.jobs.foo": {
+      "action": "update(id_stable)"
+    }
+  }
+}
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
@@ -59,6 +82,11 @@ Updating deployment state...
 Deployment complete!
 
 >>> [CLI] bundle plan
+
+>>> [CLI] bundle plan -o json
+{
+  "plan": {}
+}
 
 >>> print_requests
 {

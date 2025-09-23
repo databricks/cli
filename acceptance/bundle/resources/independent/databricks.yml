@@ -1,0 +1,30 @@
+# independent resources
+
+resources:
+  jobs:
+    foo:
+      name: foo
+
+      trigger:
+        periodic:
+          interval: 1
+          unit: DAYS
+
+      job_clusters:
+        - job_cluster_key: key
+          new_cluster:
+            spark_version: 13.3.x-scala2.12
+
+  pipelines:
+    my:
+      name: test-pipeline
+      libraries:
+        - file:
+            path: "./foo.py"
+
+  volumes:
+    volume1:
+      catalog_name: main
+      schema_name: myschema
+      name: myvolume
+      comment: COMMENT1

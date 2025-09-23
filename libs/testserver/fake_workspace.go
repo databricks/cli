@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"path"
 	"path/filepath"
-	"sort"
-	"strconv"
 	"strings"
 	"sync"
 
@@ -75,6 +73,7 @@ type FakeWorkspace struct {
 	Volumes         map[string]catalog.VolumeInfo
 	Dashboards      map[string]dashboards.Dashboard
 	SqlWarehouses   map[string]sql.GetWarehouseResponse
+	Alerts          map[string]sql.AlertV2
 
 	Acls map[string][]workspace.AclItem
 
@@ -169,6 +168,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		DatabaseInstances:    map[string]database.DatabaseInstance{},
 		DatabaseCatalogs:     map[string]database.DatabaseCatalog{},
 		SyncedDatabaseTables: map[string]database.SyncedDatabaseTable{},
+		Alerts:               map[string]sql.AlertV2{},
 	}
 }
 
@@ -295,185 +295,6 @@ func (s *FakeWorkspace) WorkspaceFilesExportFile(path string) []byte {
 	defer s.LockUnlock()()
 
 	return s.files[path].Data
-}
-
-func (s *FakeWorkspace) JobsCreate(request jobs.CreateJob) Response {
-	defer s.LockUnlock()()
-
-	jobId := s.nextJobId
-	s.nextJobId++
-
-	jobSettings := jobs.JobSettings{}
-	err := jsonConvert(request, &jobSettings)
-	if err != nil {
-		return Response{
-			StatusCode: 400,
-			Body:       fmt.Sprintf("Cannot convert request to jobSettings: %s", err),
-		}
-	}
-
-	s.Jobs[jobId] = jobs.Job{
-		JobId:    jobId,
-		Settings: &jobSettings,
-	}
-
-	return Response{
-		Body: jobs.CreateResponse{JobId: jobId},
-	}
-}
-
-func (s *FakeWorkspace) JobsReset(request jobs.ResetJob) Response {
-	defer s.LockUnlock()()
-
-	jobId := request.JobId
-
-	_, ok := s.Jobs[request.JobId]
-	if !ok {
-		return Response{
-			StatusCode: 403,
-			Body:       "{}",
-		}
-	}
-
-	s.Jobs[jobId] = jobs.Job{
-		JobId:    jobId,
-		Settings: &request.NewSettings,
-	}
-
-	return Response{
-		Body: "",
-	}
-}
-
-func (s *FakeWorkspace) JobsGet(jobId string) Response {
-	id := jobId
-
-	jobIdInt, err := strconv.ParseInt(id, 10, 64)
-	if err != nil {
-		return Response{
-			StatusCode: 400,
-			Body:       fmt.Sprintf("Failed to parse job id: %s: %v", err, id),
-		}
-	}
-
-	defer s.LockUnlock()()
-
-	job, ok := s.Jobs[jobIdInt]
-	if !ok {
-		return Response{
-			StatusCode: 404,
-		}
-	}
-
-	job = setSourceIfNotSet(job)
-	return Response{
-		Body: job,
-	}
-}
-
-func (s *FakeWorkspace) JobsRunNow(jobId int64) Response {
-	defer s.LockUnlock()()
-
-	_, ok := s.Jobs[jobId]
-	if !ok {
-		return Response{
-			StatusCode: 404,
-		}
-	}
-
-	runId := s.nextJobRunId
-	s.nextJobRunId++
-	s.JobRuns[runId] = jobs.Run{
-		RunId: runId,
-		State: &jobs.RunState{
-			LifeCycleState: jobs.RunLifeCycleStateRunning,
-		},
-		RunPageUrl: fmt.Sprintf("%s/job/run/%d", s.url, runId),
-		RunType:    jobs.RunTypeJobRun,
-		RunName:    "run-name",
-	}
-
-	return Response{
-		Body: jobs.RunNowResponse{
-			RunId: runId,
-		},
-	}
-}
-
-func (s *FakeWorkspace) JobsGetRun(runId int64) Response {
-	defer s.LockUnlock()()
-
-	run, ok := s.JobRuns[runId]
-	if !ok {
-		return Response{
-			StatusCode: 404,
-		}
-	}
-
-	// Mark the run as terminated.
-	run.State.LifeCycleState = jobs.RunLifeCycleStateTerminated
-	return Response{
-		Body: run,
-	}
-}
-
-func (s *FakeWorkspace) JobsList() Response {
-	defer s.LockUnlock()()
-
-	list := make([]jobs.BaseJob, 0, len(s.Jobs))
-	for _, job := range s.Jobs {
-		job = setSourceIfNotSet(job)
-		baseJob := jobs.BaseJob{}
-		err := jsonConvert(job, &baseJob)
-		if err != nil {
-			return Response{
-				StatusCode: 400,
-				Body:       fmt.Sprintf("failed to convert job to base job: %s", err),
-			}
-		}
-
-		list = append(list, baseJob)
-	}
-
-	// sort to have less non-determinism in tests
-	sort.Slice(list, func(i, j int) bool {
-		return list[i].JobId < list[j].JobId
-	})
-
-	return Response{
-		Body: jobs.ListJobsResponse{
-			Jobs: list,
-		},
-	}
-}
-
-func setSourceIfNotSet(job jobs.Job) jobs.Job {
-	// Setting the source field in the output of the Jobs List API same way as backend does
-	if job.Settings != nil {
-		source := "WORKSPACE"
-		if job.Settings.GitSource != nil {
-			source = "GIT"
-		}
-		for _, task := range job.Settings.Tasks {
-			if task.NotebookTask != nil {
-				if task.NotebookTask.Source == "" {
-					task.NotebookTask.Source = jobs.Source(source)
-				}
-				if task.DbtTask != nil {
-					if task.DbtTask.Source == "" {
-						task.DbtTask.Source = jobs.Source(source)
-					}
-				}
-				if task.SparkPythonTask != nil {
-					if task.SparkPythonTask.Source == "" {
-						task.SparkPythonTask.Source = jobs.Source(source)
-					}
-				}
-			}
-		}
-	}
-
-	return job
 }
 
 // jsonConvert saves input to a value pointed by output

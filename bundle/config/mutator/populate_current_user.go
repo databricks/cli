@@ -33,8 +33,9 @@ func (m *populateCurrentUser) Apply(ctx context.Context, b *bundle.Bundle) diag.
 	}
 
 	b.Config.Workspace.CurrentUser = &config.User{
-		ShortName: iamutil.GetShortUserName(me),
-		User:      me,
+		ShortName:          iamutil.GetShortUserName(me),
+		DomainFriendlyName: iamutil.GetShortUserDomainFriendlyName(me),
+		User:               me,
 	}
 
 	// Configure tagging object now that we know we have a valid client.

@@ -23,14 +23,12 @@ type SecretScopePermission struct {
 }
 
 type SecretScope struct {
-	// ID is Name that is stored in resources state, usually the same as Name unless re-deployment is pending.
-	ID string `json:"id,omitempty" bundle:"readonly"`
+	BaseResource
 
 	// A unique name to identify the secret scope.
 	Name string `json:"name"`
 
-	Permissions    []SecretScopePermission `json:"permissions,omitempty"`
-	ModifiedStatus ModifiedStatus          `json:"modified_status,omitempty" bundle:"internal"`
+	Permissions []SecretScopePermission `json:"permissions,omitempty"`
 
 	// Secret scope configuration is explicitly defined here with individual fields
 	// to maintain API stability and prevent unintended configuration changes.

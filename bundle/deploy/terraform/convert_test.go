@@ -575,8 +575,8 @@ func TestBundleToTerraformDeletedResources(t *testing.T) {
 		JobSettings: jobs.JobSettings{},
 	}
 	job2 := resources.Job{
-		ModifiedStatus: resources.ModifiedStatusDeleted,
-		JobSettings:    jobs.JobSettings{},
+		BaseResource: resources.BaseResource{ModifiedStatus: resources.ModifiedStatusDeleted},
+		JobSettings:  jobs.JobSettings{},
 	}
 	config := config.Root{
 		Resources: config.Resources{

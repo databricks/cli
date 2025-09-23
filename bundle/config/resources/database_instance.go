@@ -23,12 +23,10 @@ type DatabaseInstancePermission struct {
 }
 
 type DatabaseInstance struct {
-	ID             string                       `json:"id,omitempty" bundle:"readonly"`
-	URL            string                       `json:"url,omitempty" bundle:"internal"`
-	Permissions    []DatabaseInstancePermission `json:"permissions,omitempty"`
-	ModifiedStatus ModifiedStatus               `json:"modified_status,omitempty" bundle:"internal"`
-
+	BaseResource
 	database.DatabaseInstance
+
+	Permissions []DatabaseInstancePermission `json:"permissions,omitempty"`
 }
 
 func (d *DatabaseInstance) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {

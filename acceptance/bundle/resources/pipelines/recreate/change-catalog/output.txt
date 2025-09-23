@@ -17,6 +17,15 @@ resources:
 >>> [CLI] bundle plan
 create pipelines.my
 
+>>> [CLI] bundle plan -o json
+{
+  "plan": {
+    "resources.pipelines.my": {
+      "action": "create"
+    }
+  }
+}
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files...
 Deploying resources...
@@ -50,6 +59,15 @@ Deployment complete!
 
 >>> [CLI] bundle plan
 recreate pipelines.my
+
+>>> [CLI] bundle plan -o json
+{
+  "plan": {
+    "resources.pipelines.my": {
+      "action": "recreate"
+    }
+  }
+}
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files...

@@ -1,6 +1,6 @@
 # NEXT CHANGELOG
 
-## Release v0.268.0
+## Release v0.270.0
 
 ### Notable Changes
 
@@ -9,7 +9,7 @@
 ### Dependency updates
 
 ### Bundles
-
-* Updated templates to use the new "environment_version" property instead of the deprecated "client" property ([#3554](https://github.com/databricks/cli/pull/3554)).
+* Add new Lakeflow Pipelines support for bundle generate ([#3568](https://github.com/databricks/cli/pull/3568))
+* Introduce new bundle variable: `${workspace.current_user.domain_friendly_name}` ([#3623](https://github.com/databricks/cli/pull/3623))
 
 ### API Changes

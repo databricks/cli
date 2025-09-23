@@ -35,7 +35,7 @@ func TestAppInterpolateVariables(t *testing.T) {
 				},
 				Jobs: map[string]*resources.Job{
 					"my_job": {
-						ID: "123",
+						BaseResource: resources.BaseResource{ID: "123"},
 					},
 				},
 			},

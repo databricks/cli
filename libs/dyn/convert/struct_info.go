@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/structdiff/structtag"
+	"github.com/databricks/cli/libs/structs/structtag"
 )
 
 // structInfo holds the type information we need to efficiently

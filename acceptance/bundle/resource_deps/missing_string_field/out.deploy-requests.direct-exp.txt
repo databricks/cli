@@ -13,16 +13,3 @@
   "method": "POST",
   "path": "/api/2.0/pipelines"
 }
-{
-  "body": {
-    "channel": "CURRENT",
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-    },
-    "edition": "ADVANCED",
-    "name": "pbar"
-  },
-  "method": "POST",
-  "path": "/api/2.0/pipelines"
-}

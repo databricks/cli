@@ -1,6 +1,6 @@
 default: checks fmt lint
 
-PACKAGES=./acceptance/... ./libs/... ./internal/... ./cmd/... ./bundle/... .
+PACKAGES=./acceptance/... ./libs/... ./internal/... ./cmd/... ./bundle/... ./experimental/ssh/... .
 
 GOTESTSUM_FORMAT ?= pkgname-and-test-fails
 GOTESTSUM_CMD ?= go tool gotestsum --format ${GOTESTSUM_FORMAT} --no-summary=skipped --jsonfile test-output.json
@@ -91,6 +91,11 @@ build-vm: tidy
 snapshot:
 	go build -o .databricks/databricks
 
+# Produce release binaries and archives in the dist folder without uploading them anywhere.
+# Useful for "databricks ssh" development, as it needs to upload linux releases to the /Workspace.
+snapshot-release:
+	goreleaser release --clean --skip docker --snapshot
+
 schema:
 	go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema.json
 
@@ -107,6 +112,7 @@ integration-short:
 
 generate-validation:
 	go run ./bundle/internal/validation/.
+	gofmt -w -s ./bundle/internal/validation/generated
 
 # Rule to generate the CLI from a new version of the OpenAPI spec.
 # I recommend running this rule from Arca because of faster build times
@@ -131,7 +137,7 @@ generate:
 	$(GENKIT_BINARY) update-sdk
 
 # Create a scratch testing environment to run tests on DBR.
-dbr_scratch:
+dbr-scratch:
 	SETUP_DBR_RUNNER=1 deco env run -i -n azure-prod-ucws -- go test -test.v -run TestSetupDbrRunner github.com/databricks/cli/acceptance -count 1
 
-.PHONY: lint lintfull tidy lintcheck fmt fmtfull test cover showcover build snapshot schema integration integration-short acc-cover acc-showcover docs ws links checks test-update test-update-aws test-update-all generate-validation dbr_scratch
+.PHONY: lint lintfull tidy lintcheck fmt fmtfull test cover showcover build snapshot snapshot-release schema integration integration-short acc-cover acc-showcover docs ws links checks test-update test-update-aws test-update-all generate-validation dbr-scratch

@@ -24,12 +24,10 @@ type JobPermission struct {
 }
 
 type Job struct {
-	ID             string          `json:"id,omitempty" bundle:"readonly"`
-	Permissions    []JobPermission `json:"permissions,omitempty"`
-	ModifiedStatus ModifiedStatus  `json:"modified_status,omitempty" bundle:"internal"`
-	URL            string          `json:"url,omitempty" bundle:"internal"`
-
+	BaseResource
 	jobs.JobSettings
+
+	Permissions []JobPermission `json:"permissions,omitempty"`
 }
 
 func (j *Job) UnmarshalJSON(b []byte) error {

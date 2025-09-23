@@ -23,12 +23,10 @@ type ClusterPermission struct {
 }
 
 type Cluster struct {
-	ID             string              `json:"id,omitempty" bundle:"readonly"`
-	Permissions    []ClusterPermission `json:"permissions,omitempty"`
-	ModifiedStatus ModifiedStatus      `json:"modified_status,omitempty" bundle:"internal"`
-	URL            string              `json:"url,omitempty" bundle:"internal"`
-
+	BaseResource
 	compute.ClusterSpec
+
+	Permissions []ClusterPermission `json:"permissions,omitempty"`
 }
 
 func (s *Cluster) UnmarshalJSON(b []byte) error {

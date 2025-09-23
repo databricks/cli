@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/cmd/psql"
+	ssh "github.com/databricks/cli/experimental/ssh/cmd"
 
 	"github.com/databricks/cli/cmd/account"
 	"github.com/databricks/cli/cmd/api"
@@ -77,6 +78,7 @@ func New(ctx context.Context) *cobra.Command {
 	cli.AddCommand(version.New())
 	cli.AddCommand(selftest.New())
 	cli.AddCommand(pipelines.InstallPipelinesCLI())
+	cli.AddCommand(ssh.New())
 
 	// Add workspace command groups, filtering out empty groups or groups with only hidden commands.
 	allGroups := workspace.Groups()

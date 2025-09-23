@@ -5,9 +5,9 @@ print_requests() {
 
 trace $CLI bundle validate
 trace $CLI bundle validate -o json | jq .resources
-errcode $CLI bundle plan &> out.plan.$DATABRICKS_CLI_DEPLOYMENT.txt
-errcode $CLI bundle deploy &> out.deploy.$DATABRICKS_CLI_DEPLOYMENT.txt
-print_requests &> out.deploy-requests.$DATABRICKS_CLI_DEPLOYMENT.txt
-errcode $CLI bundle summary &> out.summary.$DATABRICKS_CLI_DEPLOYMENT.txt
-$CLI bundle destroy --auto-approve &> out.destroy.$DATABRICKS_CLI_DEPLOYMENT.txt
-print_requests &> out.destroy-requests.$DATABRICKS_CLI_DEPLOYMENT.txt
+errcode $CLI bundle plan &> out.plan.$DATABRICKS_BUNDLE_ENGINE.txt
+errcode $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
+print_requests &> out.deploy-requests.$DATABRICKS_BUNDLE_ENGINE.txt
+errcode $CLI bundle summary &> out.summary.$DATABRICKS_BUNDLE_ENGINE.txt
+$CLI bundle destroy --auto-approve &> out.destroy.$DATABRICKS_BUNDLE_ENGINE.txt
+print_requests &> out.destroy-requests.$DATABRICKS_BUNDLE_ENGINE.txt
