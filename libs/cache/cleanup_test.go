@@ -15,7 +15,6 @@ import (
 func TestDefaultCleanupConfig(t *testing.T) {
 	config := DefaultCleanupConfig()
 	assert.Equal(t, 7*24*time.Hour, config.MaxAge)
-	assert.Equal(t, 24*time.Hour, config.ScanInterval)
 	assert.False(t, config.DryRun)
 }
 
@@ -24,9 +23,8 @@ func TestCleanupManager_Start_Stop(t *testing.T) {
 	tempDir := t.TempDir()
 
 	config := CleanupConfig{
-		MaxAge:       time.Hour,
-		ScanInterval: 100 * time.Millisecond,
-		DryRun:       false,
+		MaxAge: time.Hour,
+		DryRun: false,
 	}
 
 	manager := NewCleanupManager(config)
@@ -58,9 +56,8 @@ func TestCleanupManager_CleanupOldFiles(t *testing.T) {
 	tempDir := t.TempDir()
 
 	config := CleanupConfig{
-		MaxAge:       time.Hour,
-		ScanInterval: time.Hour, // Long interval to prevent automatic cleanup during test
-		DryRun:       false,
+		MaxAge: time.Hour,
+		DryRun: false,
 	}
 
 	manager := NewCleanupManager(config)
@@ -111,9 +108,8 @@ func TestCleanupManager_DryRun(t *testing.T) {
 	tempDir := t.TempDir()
 
 	config := CleanupConfig{
-		MaxAge:       time.Hour,
-		ScanInterval: time.Hour,
-		DryRun:       true, // Dry run mode
+		MaxAge: time.Hour,
+		DryRun: true, // Dry run mode
 	}
 
 	manager := NewCleanupManager(config)
@@ -142,9 +138,8 @@ func TestCleanupManager_CorruptedFiles(t *testing.T) {
 	tempDir := t.TempDir()
 
 	config := CleanupConfig{
-		MaxAge:       time.Hour,
-		ScanInterval: time.Hour,
-		DryRun:       false,
+		MaxAge: time.Hour,
+		DryRun: false,
 	}
 
 	manager := NewCleanupManager(config)
@@ -180,9 +175,8 @@ func TestCleanupManager_NonexistentDirectory(t *testing.T) {
 	nonexistentDir := "/nonexistent/directory"
 
 	config := CleanupConfig{
-		MaxAge:       time.Hour,
-		ScanInterval: time.Hour,
-		DryRun:       false,
+		MaxAge: time.Hour,
+		DryRun: false,
 	}
 
 	manager := NewCleanupManager(config)
@@ -192,7 +186,6 @@ func TestCleanupManager_NonexistentDirectory(t *testing.T) {
 }
 
 func TestShouldDeleteFile(t *testing.T) {
-	ctx := context.Background()
 	tempDir := t.TempDir()
 
 	manager := NewCleanupManager(DefaultCleanupConfig())
@@ -208,7 +201,7 @@ func TestShouldDeleteFile(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, os.WriteFile(oldFile, oldData, 0o644))
 
-	shouldDelete, age := manager.shouldDeleteFile(ctx, oldFile, cutoff)
+	shouldDelete, age := manager.shouldDeleteFile(oldFile, cutoff)
 	assert.True(t, shouldDelete, "Old file should be marked for deletion")
 	assert.Greater(t, age, 2*time.Hour, "Age should be calculated correctly")
 
@@ -222,7 +215,7 @@ func TestShouldDeleteFile(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, os.WriteFile(recentFile, recentData, 0o644))
 
-	shouldDelete, age = manager.shouldDeleteFile(ctx, recentFile, cutoff)
+	shouldDelete, age = manager.shouldDeleteFile(recentFile, cutoff)
 	assert.False(t, shouldDelete, "Recent file should not be marked for deletion")
 	assert.Less(t, age, time.Hour, "Age should be calculated correctly")
 
@@ -233,7 +226,7 @@ func TestShouldDeleteFile(t *testing.T) {
 	oldTime := cutoff.Add(-time.Hour)
 	require.NoError(t, os.Chtimes(invalidFile, oldTime, oldTime))
 
-	shouldDelete, age = manager.shouldDeleteFile(ctx, invalidFile, cutoff)
+	shouldDelete, age = manager.shouldDeleteFile(invalidFile, cutoff)
 	assert.True(t, shouldDelete, "Invalid file should be marked for deletion based on mod time")
 	assert.Greater(t, age, time.Hour, "Age should be based on modification time")
 }
@@ -279,9 +272,8 @@ func TestCleanupFileWalk(t *testing.T) {
 	tempDir := t.TempDir()
 
 	config := CleanupConfig{
-		MaxAge:       time.Hour,
-		ScanInterval: time.Hour,
-		DryRun:       false,
+		MaxAge: time.Hour,
+		DryRun: false,
 	}
 
 	manager := NewCleanupManager(config)

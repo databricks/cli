@@ -14,17 +14,15 @@ import (
 
 // CleanupConfig holds configuration for cache cleanup.
 type CleanupConfig struct {
-	MaxAge       time.Duration // Maximum age of cache files before cleanup
-	ScanInterval time.Duration // How often to scan for old files
-	DryRun       bool          // If true, only logs what would be deleted
+	MaxAge time.Duration // Maximum age of cache files before cleanup
+	DryRun bool          // If true, only logs what would be deleted
 }
 
 // DefaultCleanupConfig returns sensible defaults for cache cleanup.
 func DefaultCleanupConfig() CleanupConfig {
 	return CleanupConfig{
-		MaxAge:       7 * 24 * time.Hour, // 7 days
-		ScanInterval: 24 * time.Hour,     // Daily cleanup
-		DryRun:       false,
+		MaxAge: 7 * 24 * time.Hour, // 7 days
+		DryRun: false,
 	}
 }
 
@@ -47,7 +45,7 @@ func NewCleanupManager(config CleanupConfig) *CleanupManager {
 	}
 }
 
-// Start begins the background cleanup process.
+// Start runs a one-time cleanup of cache files.
 // This is non-blocking and will not prevent the main process from exiting.
 func (cm *CleanupManager) Start(ctx context.Context, cacheDir string) {
 	cm.mu.Lock()
@@ -69,22 +67,10 @@ func (cm *CleanupManager) Start(ctx context.Context, cacheDir string) {
 
 		log.Debugf(ctx, "[Cache Cleanup] Starting cleanup manager for directory: %s", cacheDir)
 
-		// Perform initial cleanup
+		// Perform one-time cleanup
 		cm.cleanup(ctx, cacheDir)
 
-		// Set up periodic cleanup
-		ticker := time.NewTicker(cm.config.ScanInterval)
-		defer ticker.Stop()
-
-		for {
-			select {
-			case <-cm.stopCh:
-				log.Debugf(ctx, "[Cache Cleanup] Cleanup manager stopped")
-				return
-			case <-ticker.C:
-				cm.cleanup(ctx, cacheDir)
-			}
-		}
+		log.Debugf(ctx, "[Cache Cleanup] Cleanup manager finished")
 	}()
 }
 
@@ -136,7 +122,7 @@ func (cm *CleanupManager) cleanup(ctx context.Context, cacheDir string) {
 		scannedCount++
 		totalSize += info.Size()
 
-		shouldDelete, fileAge := cm.shouldDeleteFile(ctx, path, cutoff)
+		shouldDelete, fileAge := cm.shouldDeleteFile(path, cutoff)
 		if shouldDelete {
 			deletedSize += info.Size()
 			deletedCount++
@@ -169,7 +155,7 @@ func (cm *CleanupManager) cleanup(ctx context.Context, cacheDir string) {
 }
 
 // shouldDeleteFile determines if a cache file should be deleted based on its age.
-func (cm *CleanupManager) shouldDeleteFile(ctx context.Context, path string, cutoff time.Time) (bool, time.Duration) {
+func (cm *CleanupManager) shouldDeleteFile(path string, cutoff time.Time) (bool, time.Duration) {
 	// Try to read the cache entry to get the timestamp
 	data, err := os.ReadFile(path)
 	if err != nil {
