@@ -5,8 +5,10 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/config/variable"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -251,4 +253,31 @@ func TestIsFullVariableOverrideDef(t *testing.T) {
 	for i, tc := range testCases {
 		assert.Equal(t, tc.expected, isFullVariableOverrideDef(tc.value), "test case %d", i)
 	}
+}
+
+const inputJob = `{"deployment":{"kind":"BUNDLE","metadata_file_path":"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"},"edit_mode":"UI_LOCKED","format":"MULTI_TASK","max_concurrent_runs":1,"name":"job foo","permissions":[],"queue":{"enabled":true},"tasks":[{"run_job_task":{"job_id":"${resources.jobs.bar.id}"},"task_key":"job_task"}]}`
+
+// I'm expecting either:
+// a) job_id is ignored, everything else is parsed
+// b) an error
+// However, what happens is task_key gets zeroed out:
+// const expectedOut = `{"deployment":{"kind":"BUNDLE","metadata_file_path":"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"},"edit_mode":"UI_LOCKED","format":"MULTI_TASK","max_concurrent_runs":1,"name":"job foo","permissions":[],"queue":{"enabled":true},"tasks":[{"run_job_task":{"job_id":0},"task_key":"job_task"}]}`
+const actualOut = `{"deployment":{"kind":"BUNDLE","metadata_file_path":"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"},"edit_mode":"UI_LOCKED","format":"MULTI_TASK","lifecycle":{},"max_concurrent_runs":1,"name":"job foo","queue":{"enabled":true},"tasks":[{"run_job_task":{"job_id":0},"task_key":""}]}`
+
+func TestUnmarshalResourceJob(t *testing.T) {
+	x := resources.Job{}
+	err := json.Unmarshal([]byte(inputJob), &x)
+	require.NoError(t, err)
+
+	newBytes, err := json.Marshal(x)
+	require.NoError(t, err)
+	assert.Equal(t, actualOut, string(newBytes))
+}
+
+func TestUnmarshalJobSettings(t *testing.T) {
+	// When parsing into jobs.JobSettings directly, error is raised:
+	x := jobs.JobSettings{}
+	err := json.Unmarshal([]byte(inputJob), &x)
+	require.Error(t, err)
+	require.Equal(t, err.Error(), "invalid character 'r' after top-level value")
 }
