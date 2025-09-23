@@ -39,7 +39,7 @@ func (m *populateCurrentUser) initializeCache(ctx context.Context) {
 	}
 
 	var err error
-	m.cache, err = cache.NewFileCache[*iam.User]("auth")
+	m.cache, err = cache.NewFileCache[*iam.User]("auth", 30)
 	if err != nil {
 		log.Debugf(ctx, "[Local Cache] Failed to initialize cache dir: %v\n", err)
 	}

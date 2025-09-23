@@ -106,7 +106,7 @@ func (cm *CleanupManager) cleanup(ctx context.Context, cacheDir string) {
 
 	var deletedCount, scannedCount int
 	var totalSize, deletedSize int64
-	cutoff := time.Now().Add(-cm.config.MaxAge)
+	now := time.Now()
 
 	err := filepath.Walk(cacheDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -122,7 +122,7 @@ func (cm *CleanupManager) cleanup(ctx context.Context, cacheDir string) {
 		scannedCount++
 		totalSize += info.Size()
 
-		shouldDelete, fileAge := cm.shouldDeleteFile(path, cutoff)
+		shouldDelete, fileAge := cm.shouldDeleteFile(path, now)
 		if shouldDelete {
 			deletedSize += info.Size()
 			deletedCount++
@@ -154,15 +154,16 @@ func (cm *CleanupManager) cleanup(ctx context.Context, cacheDir string) {
 		action, deletedCount, float64(deletedSize)/(1024*1024))
 }
 
-// shouldDeleteFile determines if a cache file should be deleted based on its age.
-func (cm *CleanupManager) shouldDeleteFile(path string, cutoff time.Time) (bool, time.Duration) {
-	// Try to read the cache entry to get the timestamp
+// shouldDeleteFile determines if a cache file should be deleted based on its expiry.
+func (cm *CleanupManager) shouldDeleteFile(path string, now time.Time) (bool, time.Duration) {
+	// Try to read the cache entry to get the expiry
 	data, err := os.ReadFile(path)
 	if err != nil {
 		// If we can't read the file, use file modification time as fallback
 		if info, statErr := os.Stat(path); statErr == nil {
 			age := time.Since(info.ModTime())
-			return info.ModTime().Before(cutoff), age
+			// Use MaxAge fallback for files without expiry information
+			return info.ModTime().Add(cm.config.MaxAge).Before(now), age
 		}
 		return true, time.Duration(0) // Delete unreadable files
 	}
@@ -172,11 +173,28 @@ func (cm *CleanupManager) shouldDeleteFile(path string, cutoff time.Time) (bool,
 		// If we can't parse the cache entry, use file modification time as fallback
 		if info, statErr := os.Stat(path); statErr == nil {
 			age := time.Since(info.ModTime())
-			return info.ModTime().Before(cutoff), age
+			// Use MaxAge fallback for files without expiry information
+			return info.ModTime().Add(cm.config.MaxAge).Before(now), age
 		}
 		return true, time.Duration(0) // Delete unparseable files
 	}
 
-	age := time.Since(entry.Timestamp)
-	return entry.Timestamp.Before(cutoff), age
+	// Check if the file has expired
+	if !entry.Expiry.IsZero() {
+		isExpired := entry.Expiry.Before(now)
+		age := now.Sub(entry.Expiry)
+		if age < 0 {
+			age = 0 // File hasn't expired yet
+		}
+		return isExpired, age
+	}
+
+	// Fallback to Timestamp field for backward compatibility
+	if !entry.Timestamp.IsZero() {
+		age := time.Since(entry.Timestamp)
+		return entry.Timestamp.Add(cm.config.MaxAge).Before(now), age
+	}
+
+	// If neither expiry nor timestamp is available, delete the file
+	return true, time.Duration(0)
 }

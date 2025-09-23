@@ -189,53 +189,68 @@ func TestShouldDeleteFile(t *testing.T) {
 	tempDir := t.TempDir()
 
 	manager := NewCleanupManager(DefaultCleanupConfig())
-	cutoff := time.Now().Add(-time.Hour)
+	now := time.Now()
 
-	// Test with valid cache entry - old file
-	oldFile := filepath.Join(tempDir, "old.json")
-	oldEntry := cacheEntry{
-		Data:      json.RawMessage(`"data"`),
-		Timestamp: cutoff.Add(-time.Hour), // Before cutoff
+	// Test with valid cache entry with expiry - expired file
+	expiredFile := filepath.Join(tempDir, "expired.json")
+	expiredEntry := cacheEntry{
+		Data:   json.RawMessage(`"data"`),
+		Expiry: now.Add(-time.Hour), // Expired 1 hour ago
 	}
-	oldData, err := json.Marshal(oldEntry)
+	expiredData, err := json.Marshal(expiredEntry)
 	require.NoError(t, err)
-	require.NoError(t, os.WriteFile(oldFile, oldData, 0o644))
+	require.NoError(t, os.WriteFile(expiredFile, expiredData, 0o644))
 
-	shouldDelete, age := manager.shouldDeleteFile(oldFile, cutoff)
-	assert.True(t, shouldDelete, "Old file should be marked for deletion")
-	assert.Greater(t, age, 2*time.Hour, "Age should be calculated correctly")
+	shouldDelete, age := manager.shouldDeleteFile(expiredFile, now)
+	assert.True(t, shouldDelete, "Expired file should be marked for deletion")
+	assert.GreaterOrEqual(t, age, time.Hour, "Age should reflect time since expiry")
 
-	// Test with valid cache entry - recent file
-	recentFile := filepath.Join(tempDir, "recent.json")
-	recentEntry := cacheEntry{
-		Data:      json.RawMessage(`"data"`),
-		Timestamp: cutoff.Add(time.Hour), // After cutoff
+	// Test with valid cache entry with expiry - not expired file
+	validFile := filepath.Join(tempDir, "valid.json")
+	validEntry := cacheEntry{
+		Data:   json.RawMessage(`"data"`),
+		Expiry: now.Add(time.Hour), // Expires in 1 hour
 	}
-	recentData, err := json.Marshal(recentEntry)
+	validData, err := json.Marshal(validEntry)
 	require.NoError(t, err)
-	require.NoError(t, os.WriteFile(recentFile, recentData, 0o644))
+	require.NoError(t, os.WriteFile(validFile, validData, 0o644))
 
-	shouldDelete, age = manager.shouldDeleteFile(recentFile, cutoff)
-	assert.False(t, shouldDelete, "Recent file should not be marked for deletion")
-	assert.Less(t, age, time.Hour, "Age should be calculated correctly")
+	shouldDelete, age = manager.shouldDeleteFile(validFile, now)
+	assert.False(t, shouldDelete, "Valid file should not be marked for deletion")
+	assert.Equal(t, time.Duration(0), age, "Age should be 0 for unexpired files")
+
+	// Test with legacy timestamp field (backward compatibility)
+	legacyFile := filepath.Join(tempDir, "legacy.json")
+	legacyEntry := cacheEntry{
+		Data:      json.RawMessage(`"data"`),
+		Timestamp: now.Add(-2 * time.Hour), // Created 2 hours ago
+	}
+	legacyData, err := json.Marshal(legacyEntry)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(legacyFile, legacyData, 0o644))
+
+	shouldDelete, age = manager.shouldDeleteFile(legacyFile, now)
+	// Should not be deleted since MaxAge is 7 days by default, but 2 hours < 7 days
+	assert.False(t, shouldDelete, "Legacy file should not be deleted if within MaxAge")
+	assert.Greater(t, age, 2*time.Hour, "Age should be based on timestamp")
 
 	// Test with invalid JSON - should use file modification time
 	invalidFile := filepath.Join(tempDir, "invalid.json")
 	require.NoError(t, os.WriteFile(invalidFile, []byte("invalid"), 0o644))
 	// Set modification time to be old
-	oldTime := cutoff.Add(-time.Hour)
+	oldTime := now.Add(-8 * 24 * time.Hour) // 8 days ago (beyond default MaxAge)
 	require.NoError(t, os.Chtimes(invalidFile, oldTime, oldTime))
 
-	shouldDelete, age = manager.shouldDeleteFile(invalidFile, cutoff)
+	shouldDelete, age = manager.shouldDeleteFile(invalidFile, now)
 	assert.True(t, shouldDelete, "Invalid file should be marked for deletion based on mod time")
-	assert.Greater(t, age, time.Hour, "Age should be based on modification time")
+	assert.Greater(t, age, 7*24*time.Hour, "Age should be based on modification time")
 }
 
 func TestCleanupIntegrationWithFileCache(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Create file cache which should start cleanup automatically
-	cache, err := newFileCacheWithBaseDir[string](tempDir)
+	cache, err := newFileCacheWithBaseDir[string](tempDir, 60) // 1 hour for tests
 	require.NoError(t, err)
 	require.NotNil(t, cache.cleanupMgr)
 

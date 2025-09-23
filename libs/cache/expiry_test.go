@@ -1,0 +1,91 @@
+package cache
+
+import (
+	"context"
+	"encoding/json"
+	"os"
+	"path/filepath"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+// TestFileCacheExpiryBehavior tests that the new expiry-based cache works as expected
+func TestFileCacheExpiryBehavior(t *testing.T) {
+	ctx := context.Background()
+	tempDir := t.TempDir()
+
+	// Create cache with 1 minute expiry
+	cache, err := newFileCacheWithBaseDir[string](tempDir, 1)
+	require.NoError(t, err)
+	defer cache.StopCleanup()
+
+	fingerprint := struct {
+		Key string `json:"key"`
+	}{
+		Key: "test-expiry",
+	}
+
+	// Compute and store a value
+	result, err := cache.GetOrCompute(ctx, fingerprint, func(ctx context.Context) (string, error) {
+		return "test-value", nil
+	})
+	require.NoError(t, err)
+	assert.Equal(t, "test-value", result)
+
+	// Allow time for async write to complete
+	time.Sleep(100 * time.Millisecond)
+
+	// Find the cache file and verify it has the correct expiry
+	cacheFiles, err := filepath.Glob(filepath.Join(tempDir, "*.json"))
+	require.NoError(t, err)
+	require.Len(t, cacheFiles, 1)
+
+	// Read the cache file and check expiry
+	data, err := os.ReadFile(cacheFiles[0])
+	require.NoError(t, err)
+
+	var entry cacheEntry
+	err = json.Unmarshal(data, &entry)
+	require.NoError(t, err)
+
+	// Verify expiry is set and is approximately 1 minute from now
+	assert.False(t, entry.Expiry.IsZero(), "Expiry should be set")
+	expectedExpiry := time.Now().Add(time.Minute)
+	timeDiff := entry.Expiry.Sub(expectedExpiry).Abs()
+	assert.Less(t, timeDiff, 10*time.Second, "Expiry should be approximately 1 minute from creation time")
+
+	// Verify cleanup would identify an expired file
+	manager := NewCleanupManager(DefaultCleanupConfig())
+	futureTime := time.Now().Add(2 * time.Minute) // 2 minutes from now, past expiry
+	shouldDelete, age := manager.shouldDeleteFile(cacheFiles[0], futureTime)
+	assert.True(t, shouldDelete, "File should be marked for deletion when past expiry")
+	assert.Greater(t, age, time.Duration(0), "Age should be positive when expired")
+}
+
+// TestLegacyTimestampCompatibility tests that old cache files with timestamp still work
+func TestLegacyTimestampCompatibility(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// Create a legacy cache file with timestamp
+	legacyEntry := cacheEntry{
+		Data:      json.RawMessage(`"legacy-value"`),
+		Timestamp: time.Now().Add(-time.Hour), // 1 hour ago
+	}
+	legacyData, err := json.Marshal(legacyEntry)
+	require.NoError(t, err)
+
+	legacyFile := filepath.Join(tempDir, "legacy.json")
+	require.NoError(t, os.WriteFile(legacyFile, legacyData, 0o644))
+
+	// Test cleanup logic handles legacy files correctly
+	manager := NewCleanupManager(DefaultCleanupConfig())
+	now := time.Now()
+
+	// Should not delete a 1-hour-old file (default MaxAge is 7 days)
+	shouldDelete, age := manager.shouldDeleteFile(legacyFile, now)
+	assert.False(t, shouldDelete, "Legacy file should not be deleted if within MaxAge")
+	assert.Greater(t, age, time.Hour, "Age should be calculated from timestamp")
+}

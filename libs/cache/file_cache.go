@@ -17,15 +17,16 @@ import (
 
 // FileCache implements the Cache interface using local disk storage.
 type FileCache[T any] struct {
-	baseDir    string
-	mu         sync.RWMutex
-	pending    map[string]chan struct{} // Track pending writes
-	memCache   map[string]T             // In-memory cache for immediate access
-	cleanupMgr *CleanupManager          // Background cleanup manager
+	baseDir       string
+	expiryMinutes int
+	mu            sync.RWMutex
+	pending       map[string]chan struct{} // Track pending writes
+	memCache      map[string]T             // In-memory cache for immediate access
+	cleanupMgr    *CleanupManager          // Background cleanup manager
 }
 
 // newFileCacheWithBaseDir creates a new file-based cache that stores data in the specified directory.
-func newFileCacheWithBaseDir[T any](baseDir string) (*FileCache[T], error) {
+func newFileCacheWithBaseDir[T any](baseDir string, expiryMinutes int) (*FileCache[T], error) {
 	if err := os.MkdirAll(baseDir, 0o755); err != nil {
 		return nil, fmt.Errorf("failed to create cache directory: %w", err)
 	}
@@ -33,10 +34,11 @@ func newFileCacheWithBaseDir[T any](baseDir string) (*FileCache[T], error) {
 	cleanupMgr := NewCleanupManager(DefaultCleanupConfig())
 
 	fc := &FileCache[T]{
-		baseDir:    baseDir,
-		pending:    make(map[string]chan struct{}),
-		memCache:   make(map[string]T),
-		cleanupMgr: cleanupMgr,
+		baseDir:       baseDir,
+		expiryMinutes: expiryMinutes,
+		pending:       make(map[string]chan struct{}),
+		memCache:      make(map[string]T),
+		cleanupMgr:    cleanupMgr,
 	}
 
 	// Start background cleanup (non-blocking)
@@ -46,20 +48,21 @@ func newFileCacheWithBaseDir[T any](baseDir string) (*FileCache[T], error) {
 }
 
 // NewFileCache creates a new file-based cache using UserCacheDir() + "databricks" + cached component name.
-func NewFileCache[T any](component string) (*FileCache[T], error) {
+func NewFileCache[T any](component string, expiryMinutes int) (*FileCache[T], error) {
 	userCacheDir, err := os.UserCacheDir()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user cache directory: %w", err)
 	}
 
 	baseDir := filepath.Join(userCacheDir, "databricks", component)
-	return newFileCacheWithBaseDir[T](baseDir)
+	return newFileCacheWithBaseDir[T](baseDir, expiryMinutes)
 }
 
 // cacheEntry represents the structure of a cached item on disk.
 type cacheEntry struct {
 	Data      json.RawMessage `json:"data"`
-	Timestamp time.Time       `json:"timestamp"`
+	Expiry    time.Time       `json:"expiry"`
+	Timestamp time.Time       `json:"timestamp,omitempty"` // For backward compatibility
 }
 
 // GetOrCompute retrieves cached content or computes it using the provided function.
@@ -195,8 +198,8 @@ func (fc *FileCache[T]) writeToCache(cachePath string, data any) {
 	}
 
 	entry := cacheEntry{
-		Data:      serializedData,
-		Timestamp: time.Now(),
+		Data:   serializedData,
+		Expiry: time.Now().Add(time.Duration(fc.expiryMinutes) * time.Minute),
 	}
 
 	entryData, err := json.Marshal(entry)
