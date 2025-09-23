@@ -17,10 +17,11 @@ import (
 
 // FileCache implements the Cache interface using local disk storage.
 type FileCache[T any] struct {
-	baseDir  string
-	mu       sync.RWMutex
-	pending  map[string]chan struct{} // Track pending writes
-	memCache map[string]T             // In-memory cache for immediate access
+	baseDir    string
+	mu         sync.RWMutex
+	pending    map[string]chan struct{} // Track pending writes
+	memCache   map[string]T             // In-memory cache for immediate access
+	cleanupMgr *CleanupManager          // Background cleanup manager
 }
 
 // newFileCacheWithBaseDir creates a new file-based cache that stores data in the specified directory.
@@ -29,11 +30,19 @@ func newFileCacheWithBaseDir[T any](baseDir string) (*FileCache[T], error) {
 		return nil, fmt.Errorf("failed to create cache directory: %w", err)
 	}
 
-	return &FileCache[T]{
-		baseDir:  baseDir,
-		pending:  make(map[string]chan struct{}),
-		memCache: make(map[string]T),
-	}, nil
+	cleanupMgr := NewCleanupManager(DefaultCleanupConfig())
+
+	fc := &FileCache[T]{
+		baseDir:    baseDir,
+		pending:    make(map[string]chan struct{}),
+		memCache:   make(map[string]T),
+		cleanupMgr: cleanupMgr,
+	}
+
+	// Start background cleanup (non-blocking)
+	cleanupMgr.Start(context.Background(), baseDir)
+
+	return fc, nil
 }
 
 // NewFileCache creates a new file-based cache using UserCacheDir() + "databricks" + cached component name.
@@ -233,4 +242,12 @@ func (fc *FileCache[T]) getCacheKey(fingerprint string) string {
 // getCachePath returns the full path to the cache file for a given cache key.
 func (fc *FileCache[T]) getCachePath(cacheKey string) string {
 	return filepath.Join(fc.baseDir, cacheKey+".json")
+}
+
+// StopCleanup stops the background cleanup process.
+// This is non-blocking and will not wait for cleanup to complete.
+func (fc *FileCache[T]) StopCleanup() {
+	if fc.cleanupMgr != nil {
+		fc.cleanupMgr.Stop()
+	}
 }
