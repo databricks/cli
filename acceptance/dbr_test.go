@@ -22,6 +22,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	paramFileName             = "params.json"
+	runnerFileName            = "scratch_dbr_runner.ipynb"
+	runnerFileNameInWorkspace = "scratch_dbr_runner"
+	archiveFileName           = "archive.tar.gz"
+)
+
 func workspaceTmpDir(ctx context.Context, t *testing.T) (*databricks.WorkspaceClient, filer.Filer, string) {
 	w, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
@@ -88,16 +95,15 @@ func workspaceStableDir(ctx context.Context, t *testing.T) (w *databricks.Worksp
 func buildAndUploadArchive(ctx context.Context, t *testing.T, f filer.Filer) {
 	archiveDir := t.TempDir()
 	binDir := t.TempDir()
-	archiveName := "archive.tar.gz"
 
 	// Build the CLI archives and upload to the workspace.
-	err := testarchive.CreateArchive(archiveDir, binDir, "..")
+	err := testarchive.CreateArchive(archiveDir, binDir, "..", archiveFileName)
 	require.NoError(t, err)
 
-	archiveReader, err := os.Open(filepath.Join(archiveDir, archiveName))
+	archiveReader, err := os.Open(filepath.Join(archiveDir, archiveFileName))
 	require.NoError(t, err)
 
-	err = f.Write(ctx, archiveName, archiveReader)
+	err = f.Write(ctx, archiveFileName, archiveReader)
 	require.NoError(t, err)
 
 	err = archiveReader.Close()
@@ -105,20 +111,19 @@ func buildAndUploadArchive(ctx context.Context, t *testing.T, f filer.Filer) {
 }
 
 func uploadScratchRunner(ctx context.Context, t *testing.T, f filer.Filer, w *databricks.WorkspaceClient, dir string) string {
-	runnerReader, err := os.Open("scratch_dbr_runner.ipynb")
+	runnerReader, err := os.Open(runnerFileName)
 	require.NoError(t, err)
 
-	err = f.Write(ctx, "scratch_dbr_runner.ipynb", runnerReader)
+	err = f.Write(ctx, runnerFileNameInWorkspace, runnerReader)
 	require.NoError(t, err)
 
 	err = runnerReader.Close()
 	require.NoError(t, err)
 
-	status, err := w.Workspace.GetStatusByPath(ctx, path.Join(dir, "scratch_dbr_runner"))
+	status, err := w.Workspace.GetStatusByPath(ctx, path.Join(dir, runnerFileNameInWorkspace))
 	require.NoError(t, err)
 
 	url := w.Config.Host + "/editor/notebooks/" + strconv.FormatInt(status.ObjectId, 10)
-
 	return url
 }
 
@@ -139,7 +144,7 @@ func uploadParams(ctx context.Context, t *testing.T, f filer.Filer) {
 	b, err := json.MarshalIndent(env, "", "  ")
 	require.NoError(t, err)
 
-	err = f.Write(ctx, "params.json", bytes.NewReader(b))
+	err = f.Write(ctx, paramFileName, bytes.NewReader(b))
 	require.NoError(t, err)
 }
 
@@ -153,13 +158,13 @@ func TestSetupDbrRunner(t *testing.T) {
 	ctx := t.Context()
 	w, f, dir := workspaceStableDir(ctx, t)
 
-	t.Logf("Building and uploading archive...")
+	t.Logf("Building and uploading archive file: %s", archiveFileName)
 	buildAndUploadArchive(ctx, t, f)
 
-	t.Logf("Uploading params...")
+	t.Logf("Uploading params file: %s", paramFileName)
 	uploadParams(ctx, t, f)
 
-	t.Logf("Uploading runner...")
+	t.Logf("Uploading runner file: %s", runnerFileNameInWorkspace)
 	url := uploadScratchRunner(ctx, t, f, w, dir)
 
 	t.Logf("Created DBR testing notebook at: %s", url)

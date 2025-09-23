@@ -23,7 +23,7 @@ func TestArchive(t *testing.T) {
 	binDir := t.TempDir()
 	repoRoot := "../.."
 
-	err := testarchive.CreateArchive(archiveDir, binDir, repoRoot)
+	err := testarchive.CreateArchive(archiveDir, binDir, repoRoot, "archive.tar.gz")
 	require.NoError(t, err)
 
 	assertDir := t.TempDir()
