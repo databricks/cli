@@ -1,7 +1,7 @@
 
 >>> [CLI] bundle plan
 create jobs.foo
-Plan: 1 to add, 0 to change, 0 to delete, 1 unchanged
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle plan -o json
 {
@@ -67,7 +67,7 @@ jobs foo id='[JOB_ID]' name='foo'
 
 >>> [CLI] bundle plan
 update jobs.foo
-Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle plan -o json
 {

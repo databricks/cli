@@ -2,7 +2,7 @@
 >>> [CLI] bundle plan
 create jobs.bar
 create jobs.foo
-Plan: 2 to add, 0 to change, 0 to delete, 2 unchanged
+Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
@@ -71,7 +71,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 >>> [CLI] bundle plan
 update jobs.foo
-Plan: 0 to add, 1 to change, 0 to delete, 2 unchanged
+Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...

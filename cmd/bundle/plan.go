@@ -90,7 +90,7 @@ func newPlanCommand() *cobra.Command {
 			switch change.ActionType.StringShort() {
 			case "create":
 				createCount++
-			case "update", "update_with_id":
+			case "update":
 				updateCount++
 			case "delete":
 				deleteCount++
@@ -103,9 +103,10 @@ func newPlanCommand() *cobra.Command {
 
 		// Calculate number of all unchanged resources
 		unchanged := 0
-		for _, resource := range b.Config.Resources.AllResources() {
-			for _, resource := range resource.Resources {
-				if _, ok := changed[resource.GetName()]; !ok {
+		for _, group := range b.Config.Resources.AllResources() {
+			for rKey := range group.Resources {
+				resourceKey := "resources." + group.Description.PluralName + "." + rKey
+				if _, ok := changed[resourceKey]; !ok {
 					unchanged++
 				}
 			}
