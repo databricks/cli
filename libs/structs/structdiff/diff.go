@@ -68,6 +68,7 @@ func diffValues(path *structpath.PathNode, v1, v2 reflect.Value, changes *[]Chan
 
 	kind := v1.Kind()
 
+	// Perform nil checks for nilable types.
 	switch kind {
 	case reflect.Pointer, reflect.Map, reflect.Slice, reflect.Interface, reflect.Chan, reflect.Func:
 		v1Nil := v1.IsNil()
@@ -79,6 +80,9 @@ func diffValues(path *structpath.PathNode, v1, v2 reflect.Value, changes *[]Chan
 			*changes = append(*changes, Change{Path: path, Old: v1.Interface(), New: v2.Interface()})
 			return
 		}
+	default:
+		// Not a nilable type.
+		// Proceed with direct comparison below.
 	}
 
 	switch kind {

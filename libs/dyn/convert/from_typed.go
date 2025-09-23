@@ -255,6 +255,8 @@ func fromTypedString(src reflect.Value, ref dyn.Value, options ...fromTypedOptio
 			return dyn.NilValue, nil
 		}
 		return dyn.V(src.String()), nil
+	default:
+		// Fall through to the error case.
 	}
 
 	return dyn.InvalidValue, fmt.Errorf("cannot convert string field to dynamic type %#v: src=%#v ref=%#v", ref.Kind().String(), src, ref.AsAny())
@@ -280,6 +282,8 @@ func fromTypedBool(src reflect.Value, ref dyn.Value, options ...fromTypedOptions
 		if dynvar.IsPureVariableReference(ref.MustString()) {
 			return ref, nil
 		}
+	default:
+		// Fall through to the error case.
 	}
 
 	return dyn.InvalidValue, fmt.Errorf("cannot convert bool field to dynamic type %#v: src=%#v ref=%#v", ref.Kind().String(), src, ref.AsAny())
@@ -305,6 +309,8 @@ func fromTypedInt(src reflect.Value, ref dyn.Value, options ...fromTypedOptions)
 		if dynvar.IsPureVariableReference(ref.MustString()) {
 			return ref, nil
 		}
+	default:
+		// Fall through to the error case.
 	}
 
 	return dyn.InvalidValue, fmt.Errorf("cannot convert int field to dynamic type %#v: src=%#v ref=%#v", ref.Kind().String(), src, ref.AsAny())
@@ -330,6 +336,8 @@ func fromTypedFloat(src reflect.Value, ref dyn.Value, options ...fromTypedOption
 		if dynvar.IsPureVariableReference(ref.MustString()) {
 			return ref, nil
 		}
+	default:
+		// Fall through to the error case.
 	}
 
 	return dyn.InvalidValue, fmt.Errorf("cannot convert float field to dynamic type %#v: src=%#v ref=%#v", ref.Kind().String(), src, ref.AsAny())
