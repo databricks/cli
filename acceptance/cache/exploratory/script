@@ -1,9 +1,7 @@
-#unset DATABRICKS_CLIENT_SECRET
-#unset DATABRICKS_CLIENT_ID
-#unset DATABRICKS_HOST
-#unset DATABRICKS_AUTH_TYPE
-
-# export DATABRICKS_CONFIG_FILE=/Users/<your-username>/.databrickscfg
-
 export DATABRICKS_EXPERIMENTAL_CACHE_ENABLED=true
-trace $CLI bundle validate -p dogfood --debug
+
+title "First call in a session is expected to be a cache miss:\n"
+trace $CLI bundle validate -p dogfood --debug 2>&1 | grep "Local Cache" | grep -v "cache path"
+
+title "Second call in a session is expected to be a cache hit\n"
+trace $CLI bundle validate -p dogfood --debug 2>&1 | grep "Local Cache" | grep -v "cache path"

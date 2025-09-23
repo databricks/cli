@@ -2,6 +2,7 @@ package mutator
 
 import (
 	"context"
+	"net/http"
 	"os"
 
 	"github.com/databricks/cli/libs/cache"
@@ -56,15 +57,15 @@ func (m *populateCurrentUserCached) Apply(ctx context.Context, b *bundle.Bundle)
 	w := b.WorkspaceClient()
 
 	fingerprint := struct {
-		bearerToken string
+		authHeader string
 	}{
-		bearerToken: m.getBearerToken(ctx, w),
+		authHeader: m.getAuthorizationHeader(ctx, w),
 	}
 
 	var me *iam.User
 	var err error
 
-	if m.cache != nil && fingerprint.bearerToken != "" {
+	if m.cache != nil && fingerprint.authHeader != "" {
 		log.Debugf(ctx, "[Local Cache] local cache is enabled \n")
 		me, err = m.cache.GetOrCompute(ctx, fingerprint, func(ctx context.Context) (*iam.User, error) {
 			currentUser, err := w.CurrentUser.Me(ctx)
@@ -94,20 +95,14 @@ func (m *populateCurrentUserCached) Apply(ctx context.Context, b *bundle.Bundle)
 	return nil
 }
 
-// getBearerToken extracts the bearer token from the workspace client's token source
-func (m *populateCurrentUserCached) getBearerToken(ctx context.Context, w *databricks.WorkspaceClient) string {
-	bearerToken := ""
-	tokenSource := w.Config.GetTokenSource()
-	if tokenSource == nil {
-		log.Debugf(ctx, "[Local Cache] token source not found\n")
-	} else {
-		token, err := tokenSource.Token(context.Background())
-		if err != nil {
-			log.Debugf(ctx, "[Local Cache] error reading token source: %v \n", err)
-		} else {
-			bearerToken = token.AccessToken
-		}
+func (m *populateCurrentUserCached) getAuthorizationHeader(ctx context.Context, w *databricks.WorkspaceClient) string {
+	// Create a dummy request to extract the Authorization header
+	req := &http.Request{Header: http.Header{}}
+	if err := w.Config.Authenticate(req); err != nil {
+		return ""
 	}
-	log.Debugf(ctx, "[Local Cache] found bearer token with length: %d\n", len(bearerToken))
-	return bearerToken
+
+	authHeader := req.Header.Get("Authorization")
+	log.Debugf(ctx, "[Local Cache] found authorization header with length: %d\n", len(authHeader))
+	return authHeader
 }

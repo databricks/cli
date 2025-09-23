@@ -145,7 +145,7 @@ func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compu
 	fc.mu.Unlock()
 
 	// Async write to disk cache
-	log.Debugf(ctx, "[Local Cache] async writing to cache: %s :: %v \n", cachePath, result)
+	log.Debugf(ctx, "[Local Cache] async writing to cache path: %s \n", cachePath)
 	go fc.writeToCache(cachePath, result)
 
 	log.Debugf(ctx, "[Local Cache] cache miss, but stored the compute result for future calls \n")
