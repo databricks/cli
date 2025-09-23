@@ -124,6 +124,11 @@ func TestNormalizePath_unsupportedPipOptions(t *testing.T) {
 			expectError: false,
 		},
 		{
+			name:        "unknown option without space should pass through",
+			input:       "--unknownflag",
+			expectError: false,
+		},
+		{
 			name:        "supported option should work",
 			input:       "-e ../myproject",
 			expectError: false,
