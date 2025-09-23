@@ -17,8 +17,8 @@ func normalizeHost(input string) string {
 		return input
 	}
 
-	// If it already starts with https://, return as-is
-	if u.Scheme == "https" {
+	// If it already starts with https:// or http://, return as-is
+	if u.Scheme == "https" || u.Scheme == "http" {
 		return input
 	}
 

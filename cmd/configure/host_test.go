@@ -28,6 +28,9 @@ func TestNormalizeHost(t *testing.T) {
 		// Edge cases
 		{"https://", "https://"},
 		{"example.com", "https://example.com"},
+		{"https://example.databricks.com/path", "https://example.databricks.com/path"},
+		{"https://example.databricks.com/path/", "https://example.databricks.com/path/"},
+		{"http://localhost:8080", "http://localhost:8080"},
 	}
 
 	for _, test := range tests {
