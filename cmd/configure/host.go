@@ -6,17 +6,19 @@ import (
 	"strings"
 )
 
-// NormalizeHost normalizes host input to prevent double https:// prefixes.
+// normalizeHost normalizes host input to prevent double https:// prefixes.
 // If the input already starts with https://, it returns it as-is.
 // If the input doesn't start with https://, it prepends https://.
-func NormalizeHost(input string) string {
+func normalizeHost(input string) string {
 	input = strings.TrimSpace(input)
-	if input == "" {
-		return "https://"
+	u, err := url.Parse(input)
+	// If the input is not a valid URL, return it as-is
+	if err != nil {
+		return input
 	}
 
 	// If it already starts with https://, return as-is
-	if strings.HasPrefix(strings.ToLower(input), "https://") {
+	if u.Scheme == "https" {
 		return input
 	}
 

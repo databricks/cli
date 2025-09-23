@@ -32,7 +32,7 @@ func TestNormalizeHost(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.input, func(t *testing.T) {
-			result := NormalizeHost(test.input)
+			result := normalizeHost(test.input)
 			assert.Equal(t, test.expected, result)
 		})
 	}
