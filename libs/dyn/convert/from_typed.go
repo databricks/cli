@@ -102,7 +102,9 @@ func fromTypedStruct(src reflect.Value, ref dyn.Value, options ...fromTypedOptio
 	refm, _ := ref.AsMap()
 	out := dyn.NewMapping()
 	info := getStructInfo(src.Type())
-	forceSendFields := getForceSendFields(src)
+
+	// Collect ForceSendFields from all levels for field inclusion logic
+	forceSendFieldsMap := getForceSendFieldsForFromTyped(src)
 
 	for _, fieldval := range info.FieldValues(src) {
 		k := fieldval.Key
@@ -128,13 +130,41 @@ func fromTypedStruct(src reflect.Value, ref dyn.Value, options ...fromTypedOptio
 			return dyn.InvalidValue, err
 		}
 
-		// Either if the key was set in the reference or the field is not zero-valued, we include it.
-		if ok || nv.Kind() != dyn.KindNil {
-			goName := info.GolangNames[k]
+		goName := info.GolangNames[k]
+
+		// Determine which ForceSendFields to check based on field path
+		fieldIndex := info.Fields[k]
+		var structKey int
+		if len(fieldIndex) == 1 {
+			structKey = -1 // Direct field
+		} else {
+			structKey = fieldIndex[0] // Embedded struct index
+		}
+
+		// Check if this field is in the appropriate ForceSendFields
+		forceSendFields := forceSendFieldsMap[structKey]
+		inForceSendFields := slices.Contains(forceSendFields, goName)
+
+		// Either if the key was set in the reference, the field is not zero-valued, OR it's in ForceSendFields
+		if ok || nv.Kind() != dyn.KindNil || inForceSendFields {
 			// If v isZero, it could be because it's a variable reference; so we check that nv is zero as well
-			if v.Kind() != reflect.Struct && v.IsZero() && nv.IsZero() && !info.ForceEmpty[k] && !slices.Contains(forceSendFields, goName) {
+			// BUT: always include if it's in ForceSendFields
+			if v.Kind() != reflect.Struct && v.IsZero() && nv.IsZero() && !info.ForceEmpty[k] && !inForceSendFields {
 				continue
 			}
+
+			// If the field is in ForceSendFields but nv is nil, convert it to the appropriate zero value
+			if inForceSendFields && nv.Kind() == dyn.KindNil {
+				// Convert the zero value using proper recursive conversion instead of dyn.V() directly
+				// This prevents "not handled" panics for complex types like structs, slices, maps, etc.
+				// Use refv to preserve location information from the original reference
+				var err error
+				nv, err = fromTyped(v.Interface(), refv, includeZeroValues)
+				if err != nil {
+					return dyn.InvalidValue, err
+				}
+			}
+
 			out.SetLoc(k, refloc, nv)
 		}
 	}
@@ -343,17 +373,59 @@ func fromTypedFloat(src reflect.Value, ref dyn.Value, options ...fromTypedOption
 	return dyn.InvalidValue, fmt.Errorf("cannot convert float field to dynamic type %#v: src=%#v ref=%#v", ref.Kind().String(), src, ref.AsAny())
 }
 
-func getForceSendFields(v reflect.Value) []string {
-	if !v.IsValid() || v.Kind() != reflect.Struct {
-		return nil
+// getForceSendFieldsForFromTyped collects ForceSendFields values for FromTyped operations
+// Returns map[structKey][]fieldName where structKey is -1 for direct fields, embedded index for embedded fields
+func getForceSendFieldsForFromTyped(v reflect.Value) map[int][]string {
+	if !v.IsValid() || v.Type().Kind() != reflect.Struct {
+		return make(map[int][]string)
 	}
-	fsField := v.FieldByName("ForceSendFields")
-	if !fsField.IsValid() || fsField.Kind() != reflect.Slice {
-		return nil
+
+	result := make(map[int][]string)
+
+	for i := range v.Type().NumField() {
+		field := v.Type().Field(i)
+		fieldValue := v.Field(i)
+
+		if field.Name == "ForceSendFields" && !field.Anonymous {
+			// Direct ForceSendFields (structKey = -1)
+			if fields := extractForceSendFieldsSlice(fieldValue); len(fields) > 0 {
+				result[-1] = fields
+			}
+		} else if field.Anonymous {
+			// Embedded struct - check for ForceSendFields inside it
+			if embeddedStruct := getEmbeddedStructForReading(fieldValue); embeddedStruct.IsValid() {
+				if forceSendField := embeddedStruct.FieldByName("ForceSendFields"); forceSendField.IsValid() {
+					if fields := extractForceSendFieldsSlice(forceSendField); len(fields) > 0 {
+						result[i] = fields
+					}
+				}
+			}
+		}
 	}
-	result, ok := fsField.Interface().([]string)
-	if ok {
-		return result
+
+	return result
+}
+
+// Helper function to extract []string from a ForceSendFields field
+func extractForceSendFieldsSlice(fieldValue reflect.Value) []string {
+	if fieldValue.IsValid() && fieldValue.Kind() == reflect.Slice {
+		if fields, ok := fieldValue.Interface().([]string); ok {
+			return fields
+		}
 	}
 	return nil
+}
+
+// Helper function for reading - doesn't create nil pointers
+func getEmbeddedStructForReading(fieldValue reflect.Value) reflect.Value {
+	if fieldValue.Kind() == reflect.Pointer {
+		if fieldValue.IsNil() {
+			return reflect.Value{} // Don't create, just return invalid
+		}
+		fieldValue = fieldValue.Elem()
+	}
+	if fieldValue.Kind() == reflect.Struct {
+		return fieldValue
+	}
+	return reflect.Value{}
 }
