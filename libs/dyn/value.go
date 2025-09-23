@@ -2,6 +2,7 @@ package dyn
 
 import (
 	"fmt"
+	"reflect"
 	"slices"
 )
 
@@ -147,19 +148,11 @@ func (v Value) IsZero() bool {
 		return len(vv) == 0
 	case KindNil:
 		return true
-	case KindString:
-		return v.v == ""
-	case KindBool:
-		return v.v == false
-	case KindInt:
-		return v.v == 0
-	case KindFloat:
-		return v.v == 0.0
 	case KindTime:
 		t := v.v.(Time)
 		return t.IsZero()
 	default:
-		return false
+		return reflect.ValueOf(v.v).IsZero()
 	}
 }
 
