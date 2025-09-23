@@ -58,17 +58,8 @@ func IsLibraryLocal(dep string) bool {
 		}
 	}
 
-	// If the dependency starts with --, it's a pip flag option which is a valid
-	// entry for environment dependencies but not a local path
-	if containsPipFlag(dep) {
-		return false
-	}
-
-	// If the dependency is a requirements file, it can either be a local path or a remote path.
-	// Even though the path to requirements.txt can be local we don't return true in this function anyway
-	// and don't treat such path as a local library path.
-	// Instead we handle translation of these paths in a separate code path in TranslatePath mutator.
-	if strings.HasPrefix(dep, "-r") {
+	// If the dependency contains pip options (like -e, -r, --extra-index-url), it's not a local path
+	if ContainsPipFlag(dep) {
 		return false
 	}
 
@@ -90,9 +81,27 @@ func IsLocalRequirementsFile(dep string) (string, bool) {
 	return dep, IsLocalPath(dep)
 }
 
-func containsPipFlag(input string) bool {
-	re := regexp.MustCompile(`--[a-zA-Z0-9-]+`)
-	return re.MatchString(input)
+// Pip options that take local file path arguments (these paths get normalized)
+var PipOptionsWithPaths = []string{
+	"-r", "-e", "-f", "-i", // short options
+	"--requirement", "--editable", "--find-links", // long options
+}
+
+// Pip options that don't take local file paths (URLs, hostnames, etc.)
+var PipOptionsWithoutPaths = []string{
+	"--index-url", "--extra-index-url", "--trusted-host",
+}
+
+// All pip options supported by the CLI (derived from the above two lists)
+var PipOptionsAll = append(PipOptionsWithPaths, PipOptionsWithoutPaths...)
+
+func ContainsPipFlag(input string) bool {
+	for _, option := range PipOptionsAll {
+		if strings.HasPrefix(input, option+" ") {
+			return true
+		}
+	}
+	return false
 }
 
 // pep440Regex is a regular expression that matches PEP 440 version specifiers.

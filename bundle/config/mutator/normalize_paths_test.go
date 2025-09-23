@@ -90,3 +90,77 @@ func TestLocationDirectoryNoFile(t *testing.T) {
 	_, err := locationDirectory(loc)
 	assert.Error(t, err)
 }
+
+func TestNormalizePath_unsupportedPipOptions(t *testing.T) {
+	loc := dyn.Location{File: "/bundle/root/test.yml", Line: 1, Column: 1}
+
+	tests := []struct {
+		name        string
+		input       string
+		expectError bool
+		errorMsg    string
+	}{
+		{
+			name:        "unsupported single dash option",
+			input:       "-x some-package",
+			expectError: true,
+			errorMsg:    "unsupported pip option '-x' in dependency '-x some-package'. Supported options are: -r, -e, -f, -i, --requirement, --editable, --find-links, --index-url, --extra-index-url, --trusted-host",
+		},
+		{
+			name:        "unsupported double dash option",
+			input:       "--unknown-flag /path/to/something",
+			expectError: true,
+			errorMsg:    "unsupported pip option '--unknown-flag' in dependency '--unknown-flag /path/to/something'. Supported options are: -r, -e, -f, -i, --requirement, --editable, --find-links, --index-url, --extra-index-url, --trusted-host",
+		},
+		{
+			name:        "future pip option",
+			input:       "--future-2026-option /path/to/something",
+			expectError: true,
+			errorMsg:    "unsupported pip option '--future-2026-option' in dependency '--future-2026-option /path/to/something'. Supported options are: -r, -e, -f, -i, --requirement, --editable, --find-links, --index-url, --extra-index-url, --trusted-host",
+		},
+		{
+			name:        "pip option without space",
+			input:       "-e",
+			expectError: false,
+		},
+		{
+			name:        "supported option should work",
+			input:       "-e ../myproject",
+			expectError: false,
+		},
+		{
+			name:        "extra-index-url should be recognized but not normalized",
+			input:       "--extra-index-url https://pypi.org/simple",
+			expectError: false,
+		},
+		{
+			name:        "trusted-host should be recognized but not normalized",
+			input:       "--trusted-host pypi.org",
+			expectError: false,
+		},
+		{
+			name:        "absolute path in pip option should work",
+			input:       "-e /Workspace/Users/lennart/abspath.whl",
+			expectError: false,
+		},
+		{
+			name:        "absolute path in long pip option should work",
+			input:       "--editable /Workspace/Users/lennart/abspath.whl",
+			expectError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := normalizePath(tt.input, loc, "/bundle/root")
+
+			if tt.expectError {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.errorMsg)
+			} else {
+				assert.NoError(t, err)
+				assert.NotEmpty(t, result)
+			}
+		})
+	}
+}

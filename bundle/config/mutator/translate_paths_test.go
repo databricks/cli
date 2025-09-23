@@ -768,7 +768,6 @@ func TestTranslatePathJobEnvironments(t *testing.T) {
 											"simplejson",
 											"/Workspace/Users/foo@bar.com/test.whl",
 											"--extra-index-url https://name:token@gitlab.com/api/v4/projects/9876/packages/pypi/simple foobar",
-											"foobar --extra-index-url https://name:token@gitlab.com/api/v4/projects/9876/packages/pypi/simple",
 											"https://foo@bar.com/packages/pypi/simple",
 										},
 									},
@@ -791,8 +790,103 @@ func TestTranslatePathJobEnvironments(t *testing.T) {
 	assert.Equal(t, "simplejson", b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies[2])
 	assert.Equal(t, "/Workspace/Users/foo@bar.com/test.whl", b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies[3])
 	assert.Equal(t, "--extra-index-url https://name:token@gitlab.com/api/v4/projects/9876/packages/pypi/simple foobar", b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies[4])
-	assert.Equal(t, "foobar --extra-index-url https://name:token@gitlab.com/api/v4/projects/9876/packages/pypi/simple", b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies[5])
-	assert.Equal(t, "https://foo@bar.com/packages/pypi/simple", b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies[6])
+	assert.Equal(t, "https://foo@bar.com/packages/pypi/simple", b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies[5])
+}
+
+func TestTranslatePathJobEnvironmentsWithPipOptions(t *testing.T) {
+	dir := t.TempDir()
+	touchEmptyFile(t, filepath.Join(dir, "env1.py"))
+
+	b := &bundle.Bundle{
+		SyncRootPath:   dir,
+		BundleRootPath: dir,
+		SyncRoot:       vfs.MustNew(dir),
+		Config: config.Root{
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"job": {
+						JobSettings: jobs.JobSettings{
+							Environments: []jobs.JobEnvironment{
+								{
+									Spec: &compute.Environment{
+										Dependencies: []string{
+											"-e ..",
+											"-e ../myproject",
+											"-f /path/to/wheels",
+											"--find-links /path/to/wheels",
+											"--editable ../another-project",
+											"--requirement requirements.txt",
+											"beautifulsoup4",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	bundletest.SetLocation(b, "resources.jobs", []dyn.Location{{File: filepath.Join(dir, "job/resource.yml")}})
+
+	diags := bundle.ApplySeq(context.Background(), b, mutator.NormalizePaths(), mutator.TranslatePaths())
+	require.NoError(t, diags.Error())
+
+	// Pip options with paths should have their paths normalized
+	assert.Equal(t, "-e .", b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies[0])
+	assert.Equal(t, "-e myproject", b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies[1])
+	assert.Equal(t, "-f /path/to/wheels", b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies[2])                 // absolute path, no change
+	assert.Equal(t, "--find-links /path/to/wheels", b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies[3])       // not a local path, should remain unchanged
+	assert.Equal(t, "--editable another-project", b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies[4])         // long flag with path normalized
+	assert.Equal(t, "--requirement job/requirements.txt", b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies[5]) // long flag with path normalized
+	assert.Equal(t, "beautifulsoup4", b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies[6])                     // not a local path, should remain unchanged
+}
+
+func TestTranslatePathPipelineEnvironmentsWithPipOptions(t *testing.T) {
+	dir := t.TempDir()
+	touchEmptyFile(t, filepath.Join(dir, "env1.py"))
+
+	b := &bundle.Bundle{
+		SyncRootPath:   dir,
+		BundleRootPath: dir,
+		SyncRoot:       vfs.MustNew(dir),
+		Config: config.Root{
+			Resources: config.Resources{
+				Pipelines: map[string]*resources.Pipeline{
+					"pipeline": {
+						CreatePipeline: pipelines.CreatePipeline{
+							Environment: &pipelines.PipelinesEnvironment{
+								Dependencies: []string{
+									"-e ..",
+									"-e ../myproject",
+									"-f /path/to/wheels",
+									"--find-links /path/to/wheels",
+									"--editable ../another-project",
+									"--requirement requirements.txt",
+									"beautifulsoup4",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	bundletest.SetLocation(b, "resources.pipelines", []dyn.Location{{File: filepath.Join(dir, "pipeline/resource.yml")}})
+
+	diags := bundle.ApplySeq(context.Background(), b, mutator.NormalizePaths(), mutator.TranslatePaths())
+	require.NoError(t, diags.Error())
+
+	// Pip options with paths should have their paths normalized
+	assert.Equal(t, "-e .", b.Config.Resources.Pipelines["pipeline"].Environment.Dependencies[0])
+	assert.Equal(t, "-e myproject", b.Config.Resources.Pipelines["pipeline"].Environment.Dependencies[1])
+	assert.Equal(t, "-f /path/to/wheels", b.Config.Resources.Pipelines["pipeline"].Environment.Dependencies[2])                      // absolute path, no change
+	assert.Equal(t, "--find-links /path/to/wheels", b.Config.Resources.Pipelines["pipeline"].Environment.Dependencies[3])            // not a local path, should remain unchanged
+	assert.Equal(t, "--editable another-project", b.Config.Resources.Pipelines["pipeline"].Environment.Dependencies[4])              // long flag with path normalized
+	assert.Equal(t, "--requirement pipeline/requirements.txt", b.Config.Resources.Pipelines["pipeline"].Environment.Dependencies[5]) // long flag with path normalized
+	assert.Equal(t, "beautifulsoup4", b.Config.Resources.Pipelines["pipeline"].Environment.Dependencies[6])                          // not a local path, should remain unchanged
 }
 
 func TestTranslatePathWithComplexVariables(t *testing.T) {
@@ -1014,4 +1108,131 @@ func TestTranslatePathsWithSourceLinkedDeployment(t *testing.T) {
 		"/Users/jane.doe@databricks.com/absolute_remote.py",
 		b.Config.Resources.Pipelines["pipeline"].Libraries[1].Notebook.Path,
 	)
+}
+
+func TestTranslatePathJobEnvironmentsWithUnsupportedPipOptions(t *testing.T) {
+	dir := t.TempDir()
+	touchEmptyFile(t, filepath.Join(dir, "myproject", "setup.py"))
+
+	b := &bundle.Bundle{
+		SyncRootPath:   dir,
+		BundleRootPath: dir,
+		SyncRoot:       vfs.MustNew(dir),
+		Config: config.Root{
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"job": {
+						JobSettings: jobs.JobSettings{
+							Environments: []jobs.JobEnvironment{
+								{
+									Spec: &compute.Environment{
+										Dependencies: []string{
+											"-x unknown-flag /path/to/something", // This should fail
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	bundletest.SetLocation(b, "resources.jobs", []dyn.Location{{
+		File: filepath.Join(dir, "resources", "job.yml"),
+	}})
+
+	diags := bundle.ApplySeq(context.Background(), b, mutator.NormalizePaths(), mutator.TranslatePaths())
+
+	// Should have an error due to unsupported pip option
+	assert.Error(t, diags.Error())
+	assert.Contains(t, diags.Error().Error(), "unsupported pip option '-x'")
+	assert.Contains(t, diags.Error().Error(), "Supported options are: -r, -e, -f, -i, --requirement, --editable, --find-links, --index-url, --extra-index-url, --trusted-host")
+}
+
+func TestTranslatePathJobEnvironmentsWithAbsolutePaths(t *testing.T) {
+	dir := t.TempDir()
+
+	b := &bundle.Bundle{
+		SyncRootPath:   dir,
+		BundleRootPath: dir,
+		SyncRoot:       vfs.MustNew(dir),
+		Config: config.Root{
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"job": {
+						JobSettings: jobs.JobSettings{
+							Environments: []jobs.JobEnvironment{
+								{
+									Spec: &compute.Environment{
+										Dependencies: []string{
+											"-e /Workspace/Users/lennart/abspath.whl",
+											"--editable /Workspace/Users/lennart/abspath2.whl",
+											"-r /Workspace/Users/lennart/requirements.txt",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	bundletest.SetLocation(b, "resources.jobs", []dyn.Location{{File: filepath.Join(dir, "job/resource.yml")}})
+
+	diags := bundle.ApplySeq(context.Background(), b, mutator.NormalizePaths(), mutator.TranslatePaths())
+	require.NoError(t, diags.Error())
+
+	// Absolute paths should remain unchanged
+	assert.Equal(t, "-e /Workspace/Users/lennart/abspath.whl", b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies[0])
+	assert.Equal(t, "--editable /Workspace/Users/lennart/abspath2.whl", b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies[1])
+	assert.Equal(t, "-r /Workspace/Users/lennart/requirements.txt", b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies[2])
+}
+
+func TestTranslatePathJobEnvironmentsWithVariablePaths(t *testing.T) {
+	dir := t.TempDir()
+
+	// Create actual files that the variables will resolve to
+	touchEmptyFile(t, filepath.Join(dir, "my_package.whl"))
+	touchEmptyFile(t, filepath.Join(dir, "requirements.txt"))
+
+	b := &bundle.Bundle{
+		SyncRootPath:   dir,
+		BundleRootPath: dir,
+		SyncRoot:       vfs.MustNew(dir),
+		Config: config.Root{
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"job": {
+						JobSettings: jobs.JobSettings{
+							Environments: []jobs.JobEnvironment{
+								{
+									Spec: &compute.Environment{
+										Dependencies: []string{
+											"-e ${workspace.file_path}",
+											"--editable ${workspace.file_path}",
+											"-r ${workspace.file_path}",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	bundletest.SetLocation(b, "resources.jobs", []dyn.Location{{File: filepath.Join(dir, "job/resource.yml")}})
+
+	diags := bundle.ApplySeq(context.Background(), b, mutator.NormalizePaths(), mutator.TranslatePaths())
+	require.NoError(t, diags.Error())
+
+	// Variable paths should remain unchanged (they get resolved later)
+	assert.Equal(t, "-e ${workspace.file_path}", b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies[0])
+	assert.Equal(t, "--editable ${workspace.file_path}", b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies[1])
+	assert.Equal(t, "-r ${workspace.file_path}", b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies[2])
 }

@@ -81,6 +81,15 @@ func TestIsLibraryLocal(t *testing.T) {
 		{path: "https://github.com/pypa/pip/archive/22.0.2.zip", expected: false},
 		{path: "pip @ https://github.com/pypa/pip/archive/22.0.2.zip", expected: false},
 		{path: "requests [security] @ https://github.com/psf/requests/archive/refs/heads/main.zip", expected: false},
+
+		// Test pip options: these should not be treated as local paths
+		{path: "-e ..", expected: false},
+		{path: "-e ../myproject", expected: false},
+		{path: "-e ./local/package", expected: false},
+		{path: "-r requirements.txt", expected: false},
+		{path: "-f /path/to/wheels", expected: false},
+		{path: "--find-links /path/to/wheels", expected: false},
+		{path: "--index-url https://pypi.org/simple", expected: false},
 	}
 
 	for i, tc := range testCases {
@@ -132,6 +141,46 @@ func TestIsLocalRequirementsFile(t *testing.T) {
 			got, isLocal := IsLocalRequirementsFile(tt.input)
 			require.Equal(t, tt.expected, got)
 			require.Equal(t, tt.isLocal, isLocal)
+		})
+	}
+}
+
+func TestContainsPipFlag(t *testing.T) {
+	testCases := []struct {
+		input    string
+		expected bool
+	}{
+		// Single-dash options
+		{"-e ..", true},
+		{"-e ../myproject", true},
+		{"-e ./local/package", true},
+		{"-r requirements.txt", true},
+		{"-f /path/to/wheels", true},
+		{"-i https://pypi.org/simple", true},
+
+		// Double-dash options
+		{"--find-links /path/to/wheels", true},
+		{"--index-url https://pypi.org/simple", true},
+		{"--extra-index-url https://pypi.org/simple", true},
+		{"--trusted-host pypi.org", true},
+		{"--editable ../myproject", true},
+
+		// Not pip options
+		{"beautifulsoup4", false},
+		{"../local/package", false},
+		{"./local/package", false},
+		{"requirements.txt", false},
+		{"", false},
+		{"-", false},
+		{"--", false},
+		{"-e", false}, // No space after -e
+		{"-r", false}, // No space after -r
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.input, func(t *testing.T) {
+			got := ContainsPipFlag(tc.input)
+			assert.Equal(t, tc.expected, got, "input: %s", tc.input)
 		})
 	}
 }
