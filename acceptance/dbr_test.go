@@ -69,6 +69,9 @@ func workspaceStableDir(ctx context.Context, t *testing.T) (w *databricks.Worksp
 		Path:      path,
 		Recursive: true,
 	})
+
+	// Ignore missing errors. That means that previous instances
+	// of dbr_scratch do not exist and thus do not need to be cleaned up.
 	if err != nil && !apierr.IsMissing(err) {
 		t.Fatalf("Failed to delete directory %s: %v", path, err)
 	}
