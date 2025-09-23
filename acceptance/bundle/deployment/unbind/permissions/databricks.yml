@@ -6,7 +6,5 @@ resources:
     job_1:
       name: "Job name"
       permissions:
-        - level: CAN_MANAGE
-          user_name: tester@user.com
-        - group_name: jiro-group
+        - group_name: users
           level: CAN_MANAGE

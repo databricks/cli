@@ -1,7 +1,14 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    trace $CLI jobs delete $job_id
+    echo $?
+}
+trap cleanup EXIT
+
 trace $CLI bundle deploy
 job_id=$(trace $CLI bundle summary --output json | jq -r '.resources.jobs.job_1.id')
-trace $CLI jobs get-permissions $job_id --output json
+trace $CLI jobs get-permissions $job_id --output json | jq '.access_control_list[] | select(.group_name == "users")'
 
 trace $CLI bundle deployment unbind job_1
 trace $CLI bundle deploy
-trace $CLI jobs get-permissions $job_id --output json
+trace $CLI jobs get-permissions $job_id --output json | jq '.access_control_list[] | select(.group_name == "users")'

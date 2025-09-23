@@ -1,4 +1,4 @@
-Cloud = false # test leaves deployed job
+IsServicePrincipal = true
 
 [EnvMatrix]
   DATABRICKS_BUNDLE_ENGINE = ["terraform"]

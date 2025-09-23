@@ -9,34 +9,13 @@ Deployment complete!
 
 >>> [CLI] jobs get-permissions [NUMID] --output json
 {
-  "access_control_list": [
+  "all_permissions": [
     {
-      "all_permissions": [
-        {
-          "permission_level":"CAN_MANAGE"
-        }
-      ],
-      "group_name":"jiro-group"
-    },
-    {
-      "all_permissions": [
-        {
-          "permission_level":"CAN_MANAGE"
-        }
-      ],
-      "user_name":"[USERNAME]@user.com"
-    },
-    {
-      "all_permissions": [
-        {
-          "permission_level":"IS_OWNER"
-        }
-      ],
-      "user_name":"[USERNAME]"
+      "inherited": false,
+      "permission_level": "CAN_MANAGE"
     }
   ],
-  "object_id":"jobs/[NUMID]",
-  "object_type":"job"
+  "group_name": "users"
 }
 
 >>> [CLI] bundle deployment unbind job_1
@@ -50,32 +29,23 @@ Deployment complete!
 
 >>> [CLI] jobs get-permissions [NUMID] --output json
 {
-  "access_control_list": [
+  "all_permissions": [
     {
-      "all_permissions": [
-        {
-          "permission_level":"CAN_MANAGE"
-        }
-      ],
-      "group_name":"jiro-group"
-    },
-    {
-      "all_permissions": [
-        {
-          "permission_level":"CAN_MANAGE"
-        }
-      ],
-      "user_name":"[USERNAME]@user.com"
-    },
-    {
-      "all_permissions": [
-        {
-          "permission_level":"IS_OWNER"
-        }
-      ],
-      "user_name":"[USERNAME]"
+      "inherited": false,
+      "permission_level": "CAN_MANAGE"
     }
   ],
-  "object_id":"jobs/[NUMID]",
-  "object_type":"job"
+  "group_name": "users"
 }
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete job job_1
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/unbind_permissions/default
+
+Deleting files...
+Destroy complete!
+
+>>> [CLI] jobs delete [NUMID]
+0

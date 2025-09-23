@@ -184,11 +184,13 @@ func (s *FakeWorkspace) JobsGetPermissions(req Request, jobId string) Response {
 	for _, accessControlList := range jobPermissions {
 		acl = append(acl, jobs.JobAccessControlResponse{
 			UserName:             accessControlList.UserName,
+			DisplayName:          accessControlList.UserName,
 			ServicePrincipalName: accessControlList.ServicePrincipalName,
 			GroupName:            accessControlList.GroupName,
 			AllPermissions: []jobs.JobPermission{
 				{
 					PermissionLevel: accessControlList.PermissionLevel,
+					ForceSendFields: []string{"Inherited"},
 				},
 			},
 		})
@@ -197,7 +199,7 @@ func (s *FakeWorkspace) JobsGetPermissions(req Request, jobId string) Response {
 	return Response{Body: jobs.JobPermissions{
 		AccessControlList: acl,
 		ObjectType:        "job",
-		ObjectId:          "jobs/" + jobId,
+		ObjectId:          "/jobs/" + jobId,
 	}}
 }
 
