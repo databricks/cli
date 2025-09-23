@@ -31,9 +31,9 @@ Deployment complete!
 }
 
 >>> [CLI] bundle plan --var=catalog=another_catalog
-Plan: 2 to add, 0 to change, 2 to delete, 2 unchanged
 recreate pipelines.foo
 recreate schemas.bar
+Plan: 2 to add, 0 to change, 2 to delete, 2 unchanged
 
 === Try to redeploy the bundle, pointing the DLT pipeline to a different UC catalog
 >>> errcode [CLI] bundle deploy --force-lock --var=catalog=another_catalog

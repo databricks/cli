@@ -1,8 +1,8 @@
 
 >>> [CLI] bundle plan
-Plan: 2 to add, 0 to change, 0 to delete, 2 unchanged
 create jobs.bar
 create jobs.foo
+Plan: 2 to add, 0 to change, 0 to delete, 2 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
@@ -70,8 +70,8 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 >>> update_file.py databricks.yml DAYS HOURS
 
 >>> [CLI] bundle plan
-Plan: 0 to add, 1 to change, 0 to delete, 2 unchanged
 update jobs.foo
+Plan: 0 to add, 1 to change, 0 to delete, 2 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...

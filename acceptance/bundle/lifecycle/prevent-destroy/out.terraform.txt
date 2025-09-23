@@ -117,9 +117,9 @@ the scope of the plan using the -target flag.
 Exit code (musterr): 1
 
 >>> errcode [CLI] bundle plan
-Plan: 2 to add, 0 to change, 2 to delete, 2 unchanged
 recreate pipelines.my_pipelines
 recreate schemas.my_schema
+Plan: 2 to add, 0 to change, 2 to delete, 2 unchanged
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/prevent-destroy/default/files...
@@ -137,9 +137,9 @@ Updating deployment state...
 Deployment complete!
 
 >>> errcode [CLI] bundle plan
-Plan: 0 to add, 0 to change, 2 to delete, 0 unchanged
 delete pipelines.my_pipelines
 delete schemas.my_schema
+Plan: 0 to add, 0 to change, 2 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/prevent-destroy/default/files...

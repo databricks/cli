@@ -1,7 +1,7 @@
 
 >>> [CLI] bundle plan
-Plan: 1 to add, 0 to change, 0 to delete, 1 unchanged
 create apps.mykey
+Plan: 1 to add, 0 to change, 0 to delete, 1 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
@@ -35,8 +35,8 @@ Resources:
 >>> update_file.py databricks.yml my_app_description MY_APP_DESCRIPTION
 
 >>> [CLI] bundle plan
-Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
 update apps.mykey
+Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
@@ -70,8 +70,8 @@ Resources:
 >>> update_file.py databricks.yml myappname mynewappname
 
 >>> [CLI] bundle plan
-Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
 recreate apps.mykey
+Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
 
 >>> [CLI] bundle summary
 Name: test-bundle

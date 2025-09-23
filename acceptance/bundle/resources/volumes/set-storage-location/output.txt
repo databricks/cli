@@ -1,8 +1,8 @@
 
 >>> [CLI] bundle plan
-Plan: 2 to add, 0 to change, 0 to delete, 2 unchanged
 create schemas.myschema
 create volumes.volume1
+Plan: 2 to add, 0 to change, 0 to delete, 2 unchanged
 
 >>> print_requests
 

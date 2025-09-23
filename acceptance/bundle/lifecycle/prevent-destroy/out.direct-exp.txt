@@ -7,8 +7,8 @@ resources.schemas.my_schema has lifecycle.prevent_destroy set, but the plan call
 Exit code (musterr): 1
 
 >>> errcode [CLI] bundle plan
-Plan: 1 to add, 0 to change, 1 to delete, 2 unchanged
 recreate pipelines.my_pipelines
+Plan: 1 to add, 0 to change, 1 to delete, 2 unchanged
 
 >>> musterr [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/prevent-destroy/default/files...
@@ -18,9 +18,9 @@ Error: resources.pipelines.my_pipelines has lifecycle.prevent_destroy set, but t
 Exit code (musterr): 1
 
 >>> errcode [CLI] bundle plan
-Plan: 2 to add, 0 to change, 2 to delete, 2 unchanged
 recreate pipelines.my_pipelines
 recreate schemas.my_schema
+Plan: 2 to add, 0 to change, 2 to delete, 2 unchanged
 
 >>> musterr [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/prevent-destroy/default/files...
@@ -31,9 +31,9 @@ resources.schemas.my_schema has lifecycle.prevent_destroy set, but the plan call
 Exit code (musterr): 1
 
 >>> errcode [CLI] bundle plan
-Plan: 2 to add, 0 to change, 2 to delete, 2 unchanged
 recreate pipelines.my_pipelines
 recreate schemas.my_schema
+Plan: 2 to add, 0 to change, 2 to delete, 2 unchanged
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/prevent-destroy/default/files...
@@ -51,9 +51,9 @@ Updating deployment state...
 Deployment complete!
 
 >>> errcode [CLI] bundle plan
-Plan: 0 to add, 0 to change, 2 to delete, 0 unchanged
 delete pipelines.my_pipelines
 delete schemas.my_schema
+Plan: 0 to add, 0 to change, 2 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/prevent-destroy/default/files...

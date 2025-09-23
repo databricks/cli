@@ -11,7 +11,6 @@ import (
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
@@ -104,16 +103,11 @@ func newPlanCommand() *cobra.Command {
 
 		// Calculate number of all unchanged resources
 		unchanged := 0
-		rv := b.Config.Value().Get("resources")
-		if rv.Kind() != dyn.KindInvalid && rv.Kind() != dyn.KindNil {
-			_, err := dyn.MapByPattern(rv, dyn.NewPattern(dyn.AnyKey(), dyn.AnyKey()), func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-				if _, ok := changed[p[0].Key()+"."+p[1].Key()]; !ok {
+		for _, resource := range b.Config.Resources.AllResources() {
+			for _, resource := range resource.Resources {
+				if _, ok := changed[resource.GetName()]; !ok {
 					unchanged++
 				}
-				return v, nil
-			})
-			if err != nil {
-				return root.ErrAlreadyPrinted
 			}
 		}
 
@@ -124,16 +118,13 @@ func newPlanCommand() *cobra.Command {
 			// Print summary line and actions to stdout
 			totalChanges := createCount + updateCount + deleteCount
 			if totalChanges > 0 {
-				fmt.Fprintf(out, "Plan: %d to add, %d to change, %d to delete, %d unchanged\n", createCount, updateCount, deleteCount, unchanged)
-
 				// Print all actions in the order they were processed
 				for _, action := range plan.GetActions() {
 					key := strings.TrimPrefix(action.ResourceKey, "resources.")
 					fmt.Fprintf(out, "%s %s\n", action.ActionType.StringShort(), key)
 				}
-			} else {
-				fmt.Fprintf(out, "Plan: 0 to add, 0 to change, 0 to delete, %d unchanged\n", unchanged)
 			}
+			fmt.Fprintf(out, "Plan: %d to add, %d to change, %d to delete, %d unchanged\n", createCount, updateCount, deleteCount, unchanged)
 		case flags.OutputJSON:
 			buf, err := json.MarshalIndent(plan, "", "  ")
 			if err != nil {

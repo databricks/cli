@@ -2,6 +2,6 @@ Warning: expected a string value, found null
   at resources.pipelines.bar.catalog
   in databricks.yml:6:16
 
-Plan: 2 to add, 0 to change, 0 to delete, 2 unchanged
 create pipelines.bar
 create pipelines.foo
+Plan: 2 to add, 0 to change, 0 to delete, 2 unchanged

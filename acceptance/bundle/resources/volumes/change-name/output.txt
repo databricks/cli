@@ -37,8 +37,8 @@ Deployment complete!
 >>> update_file.py databricks.yml myvolume mynewvolume
 
 >>> [CLI] bundle plan
-Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
 update volumes.volume1
+Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
 
 >>> [CLI] bundle plan -o json
 
