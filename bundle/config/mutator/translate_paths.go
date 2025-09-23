@@ -18,7 +18,6 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/notebook"
 )
 
@@ -104,12 +103,6 @@ func (t *translateContext) rewritePath(
 	input string,
 	opts translateOptions,
 ) (string, error) {
-	// If the input contains variables (like ${workspace.file_path}), skip translation
-	// Variables will be resolved later by other mutators
-	if dynvar.ContainsVariableReference(input) {
-		return "", nil
-	}
-
 	// If the input is a local requirements file, we need to translate it to an absolute path.
 	if reqPath, ok := libraries.IsLocalRequirementsFile(input); ok {
 		input = reqPath
