@@ -70,7 +70,7 @@ func (s *FakeWorkspace) SchemasUpdateGrants(req Request, fullName string) Respon
 		}
 	}
 	defer s.LockUnlock()()
-	
+
 	// For simplicity, we'll just replace all grants (similar to how job permissions work)
 	var grants []catalog.PrivilegeAssignment
 	for _, change := range request.Changes {
@@ -82,7 +82,7 @@ func (s *FakeWorkspace) SchemasUpdateGrants(req Request, fullName string) Respon
 		}
 	}
 	s.SchemasGrants[fullName] = grants
-	
+
 	return Response{
 		Body: catalog.GetPermissionsResponse{
 			PrivilegeAssignments: grants,
@@ -92,7 +92,7 @@ func (s *FakeWorkspace) SchemasUpdateGrants(req Request, fullName string) Respon
 
 func (s *FakeWorkspace) SchemasGetGrants(req Request, fullName string) Response {
 	defer s.LockUnlock()()
-	
+
 	grants := s.SchemasGrants[fullName]
 	return Response{
 		Body: catalog.GetPermissionsResponse{
