@@ -28,7 +28,7 @@ func PopulateCurrentUser() bundle.Mutator {
 }
 
 // initializeCache sets up the cache for authorization headers if not already initialized
-func (m *populateCurrentUser) initializeCache(ctx context.Context) {
+func (m *populateCurrentUser) initializeCache(ctx context.Context, b *bundle.Bundle) {
 	if m.cache != nil {
 		return
 	}
@@ -39,7 +39,7 @@ func (m *populateCurrentUser) initializeCache(ctx context.Context) {
 	}
 
 	var err error
-	m.cache, err = cache.NewFileCache[*iam.User]("auth", 30)
+	m.cache, err = cache.NewFileCache[*iam.User]("auth", 30, &b.Metrics)
 	if err != nil {
 		log.Debugf(ctx, "[Local Cache] Failed to initialize cache dir: %v\n", err)
 	}
@@ -53,7 +53,7 @@ func (m *populateCurrentUser) Apply(ctx context.Context, b *bundle.Bundle) diag.
 	if b.Config.Workspace.CurrentUser != nil {
 		return nil
 	}
-	m.initializeCache(ctx)
+	m.initializeCache(ctx, b)
 	w := b.WorkspaceClient()
 
 	fingerprint := struct {
