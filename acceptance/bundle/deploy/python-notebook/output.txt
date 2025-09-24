@@ -8,6 +8,7 @@ Deployment complete!
 >>> [CLI] jobs list --output json
 [
   {
+    "creator_user_name": "[USERNAME]",
     "job_id": [NUMID],
     "settings": {
       "deployment": {
