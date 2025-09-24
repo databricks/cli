@@ -4,7 +4,7 @@ create jobs.foo
 
 Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 
->>> [CLI] bundle plan -o json
+>>> [CLI] bundle debug plan
 {
   "plan": {
     "resources.jobs.foo": {
@@ -19,7 +19,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> [CLI] bundle plan -o json
+>>> [CLI] bundle debug plan
 {
   "plan": {}
 }
@@ -75,7 +75,7 @@ update jobs.foo
 
 Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
->>> [CLI] bundle plan -o json
+>>> [CLI] bundle debug plan
 {
   "plan": {
     "resources.jobs.foo": {
