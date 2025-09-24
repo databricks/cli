@@ -17,7 +17,7 @@ func TestNewFileCache(t *testing.T) {
 	tempDir := t.TempDir()
 	cacheDir := filepath.Join(tempDir, "cache")
 
-	cache, err := newFileCacheWithBaseDir[string](cacheDir)
+	cache, err := newFileCacheWithBaseDir[string](cacheDir, 60) // 1 hour for tests
 	require.NoError(t, err)
 	assert.NotNil(t, cache)
 	assert.Equal(t, cacheDir, cache.baseDir)
@@ -50,7 +50,7 @@ func TestNewFileCacheWithExistingDirectory(t *testing.T) {
 	err := os.MkdirAll(cacheDir, 0o700)
 	require.NoError(t, err)
 
-	cache, err := newFileCacheWithBaseDir[string](cacheDir)
+	cache, err := newFileCacheWithBaseDir[string](cacheDir, 60) // 1 hour for tests
 	require.NoError(t, err)
 	assert.NotNil(t, cache)
 	assert.Equal(t, cacheDir, cache.baseDir)
@@ -60,7 +60,7 @@ func TestNewFileCacheInvalidPath(t *testing.T) {
 	// Try to create cache in a location that should fail
 	invalidPath := "/root/invalid/path/that/should/not/exist"
 
-	cache, err := newFileCacheWithBaseDir[string](invalidPath)
+	cache, err := newFileCacheWithBaseDir[string](invalidPath, 60) // 1 hour for tests
 	if err != nil {
 		assert.Nil(t, cache)
 		assert.Contains(t, err.Error(), "failed to create cache directory")
@@ -70,7 +70,7 @@ func TestNewFileCacheInvalidPath(t *testing.T) {
 func TestFileCacheGetOrCompute(t *testing.T) {
 	ctx := context.Background()
 	tempDir := t.TempDir()
-	cache, err := newFileCacheWithBaseDir[string](tempDir)
+	cache, err := newFileCacheWithBaseDir[string](tempDir, 60) // 1 hour for tests
 	require.NoError(t, err)
 
 	fingerprint := struct {
@@ -110,7 +110,7 @@ func TestFileCacheGetOrCompute(t *testing.T) {
 func TestFileCacheGetOrComputeError(t *testing.T) {
 	ctx := context.Background()
 	tempDir := t.TempDir()
-	cache, err := newFileCacheWithBaseDir[string](tempDir)
+	cache, err := newFileCacheWithBaseDir[string](tempDir, 60) // 1 hour for tests
 	require.NoError(t, err)
 
 	fingerprint := struct {
@@ -132,7 +132,7 @@ func TestFileCacheGetOrComputeError(t *testing.T) {
 func TestFileCacheGetOrComputeConcurrency(t *testing.T) {
 	ctx := context.Background()
 	tempDir := t.TempDir()
-	cache, err := newFileCacheWithBaseDir[string](tempDir)
+	cache, err := newFileCacheWithBaseDir[string](tempDir, 60) // 1 hour for tests
 	require.NoError(t, err)
 
 	fingerprint := struct {
@@ -177,7 +177,7 @@ func TestFileCacheGetOrComputeConcurrency(t *testing.T) {
 
 func TestFileCacheGetOrComputeContextCancellation(t *testing.T) {
 	tempDir := t.TempDir()
-	cache, err := newFileCacheWithBaseDir[string](tempDir)
+	cache, err := newFileCacheWithBaseDir[string](tempDir, 60) // 1 hour for tests
 	require.NoError(t, err)
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -200,7 +200,7 @@ func TestFileCacheGetOrComputeContextCancellation(t *testing.T) {
 func TestFingerprintDeterministic(t *testing.T) {
 	ctx := context.Background()
 	tempDir := t.TempDir()
-	cache, err := newFileCacheWithBaseDir[string](tempDir)
+	cache, err := newFileCacheWithBaseDir[string](tempDir, 60) // 1 hour for tests
 	require.NoError(t, err)
 
 	// Create two identical structs with fields in different JSON order
