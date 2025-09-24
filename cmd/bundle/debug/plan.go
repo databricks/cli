@@ -13,7 +13,7 @@ import (
 func NewPlanCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "plan",
-		Short: "Show deployment plan",
+		Short: "Show deployment plan in JSON format (experimental)",
 		Long:  "Show the deployment plan for the current bundle configuration. This command is experimental and may change without notice.",
 		Args:  root.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
