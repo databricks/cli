@@ -12,6 +12,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/databricks/cli/bundle"
+
 	"github.com/databricks/cli/libs/log"
 )
 
@@ -23,6 +25,7 @@ type FileCache[T any] struct {
 	pending       map[string]chan struct{} // Track pending writes
 	memCache      map[string]T             // In-memory cache for immediate access
 	cleanupMgr    *CleanupManager          // Background cleanup manager
+	metrics       *bundle.Metrics          // Telemetry metrics
 }
 
 // newFileCacheWithBaseDir creates a new file-based cache that stores data in the specified directory.
@@ -48,14 +51,19 @@ func newFileCacheWithBaseDir[T any](baseDir string, expiryMinutes int) (*FileCac
 }
 
 // NewFileCache creates a new file-based cache using UserCacheDir() + "databricks" + cached component name.
-func NewFileCache[T any](component string, expiryMinutes int) (*FileCache[T], error) {
+func NewFileCache[T any](component string, expiryMinutes int, metrics *bundle.Metrics) (*FileCache[T], error) {
 	userCacheDir, err := os.UserCacheDir()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user cache directory: %w", err)
 	}
 
 	baseDir := filepath.Join(userCacheDir, "databricks", component)
-	return newFileCacheWithBaseDir[T](baseDir, expiryMinutes)
+	fc, err := newFileCacheWithBaseDir[T](baseDir, expiryMinutes)
+	if err != nil {
+		return nil, err
+	}
+	fc.metrics = metrics
+	return fc, nil
 }
 
 // cacheEntry represents the structure of a cached item on disk.
@@ -65,6 +73,12 @@ type cacheEntry struct {
 	Timestamp time.Time       `json:"timestamp,omitempty"` // For backward compatibility
 }
 
+func (fc *FileCache[T]) addTelemetryMetric(key string) {
+	if fc.metrics != nil {
+		fc.metrics.SetBoolValue(key, true)
+	}
+}
+
 // GetOrCompute retrieves cached content or computes it using the provided function.
 func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compute func(ctx context.Context) (T, error)) (T, error) {
 	var zero T
@@ -72,6 +86,8 @@ func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compu
 	// Convert fingerprint to deterministic string
 	fingerprintHash, err := fingerprintToHash(fingerprint)
 	log.Debugf(ctx, "[Local Cache] using fingerprint with hash: %s\n", fingerprintHash)
+
+	fc.addTelemetryMetric("local.cache.attempt")
 
 	if err != nil {
 		log.Debugf(ctx, "[Local Cache] cache miss: non-compliant fingerprint\n")
@@ -89,6 +105,7 @@ func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compu
 	if data, found := fc.memCache[cacheKey]; found {
 		fc.mu.RUnlock()
 		log.Debugf(ctx, "[Local Cache] cache hit: in-memory\n")
+		fc.addTelemetryMetric("local.cache.hit")
 		return data, nil
 	}
 	fc.mu.RUnlock()
@@ -100,6 +117,7 @@ func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compu
 		fc.memCache[cacheKey] = data
 		fc.mu.Unlock()
 		log.Debugf(ctx, "[Local Cache] cache hit: disk-read\n")
+		fc.addTelemetryMetric("local.cache.hit")
 		return data, nil
 	}
 
@@ -115,11 +133,13 @@ func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compu
 			if data, found := fc.memCache[cacheKey]; found {
 				fc.mu.RUnlock()
 				log.Debugf(ctx, "[Local Cache] cache hit: in-memory from pending write\n")
+				fc.addTelemetryMetric("local.cache.hit")
 				return data, nil
 			}
 			fc.mu.RUnlock()
 		case <-ctx.Done():
 			log.Debugf(ctx, "[Local Cache] cache miss: no hit while waiting for pending write\n")
+			fc.addTelemetryMetric("local.cache.miss")
 			return zero, ctx.Err()
 		}
 	} else {
@@ -140,6 +160,7 @@ func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compu
 	select {
 	case <-ctx.Done():
 		log.Debugf(ctx, "[Local Cache] cache miss: context is already cancelled\n")
+		fc.addTelemetryMetric("local.cache.miss")
 		return zero, ctx.Err()
 	default:
 	}
@@ -148,6 +169,7 @@ func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compu
 	result, err := compute(ctx)
 	if err != nil {
 		log.Debugf(ctx, "[Local Cache] error while caching: %v\n", err)
+		fc.addTelemetryMetric("local.cache.error")
 		return zero, err
 	}
 
@@ -161,6 +183,7 @@ func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compu
 	go fc.writeToCache(cachePath, result)
 
 	log.Debugf(ctx, "[Local Cache] cache miss, but stored the compute result for future calls\n")
+	fc.addTelemetryMetric("local.cache.miss")
 	return result, nil
 }
 

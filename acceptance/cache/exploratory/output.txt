@@ -12,3 +12,14 @@
 [DEBUG_TIMESTAMP] Debug: [Local Cache] using fingerprint with hash: [SHA256_HASH]
 [DEBUG_TIMESTAMP] Debug: [Local Cache] using cache key: [SHA256_HASH]
 [DEBUG_TIMESTAMP] Debug: [Local Cache] cache hit: disk-read
+
+=== Bundle deploy should send telemetry values
+
+>>> [CLI] bundle deploy -p dogfood
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/exploratory-cache-test/default/files...
+Deploying resources...
+Deployment complete!
+
+>>> print_telemetry_bool_values
+local.cache.attempt true
+local.cache.hit true
