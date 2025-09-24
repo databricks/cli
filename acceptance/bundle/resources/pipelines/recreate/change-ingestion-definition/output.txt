@@ -19,7 +19,7 @@ create pipelines.my
 
 Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 
->>> [CLI] bundle plan -o json
+>>> [CLI] bundle debug plan
 {
   "plan": {
     "resources.pipelines.my": {
@@ -69,7 +69,7 @@ recreate pipelines.my
 
 Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
 
->>> [CLI] bundle plan -o json
+>>> [CLI] bundle debug plan
 {
   "plan": {
     "resources.pipelines.my": {

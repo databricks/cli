@@ -3,13 +3,12 @@ package bundle
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config/validate"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/flags"
@@ -21,12 +20,11 @@ func newPlanCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "plan",
 		Short: "Show deployment plan",
-		Args:  root.NoArgs,
+		Long: `Show the deployment plan for the current bundle configuration.
 
-		// Output format may change without notice; main use case is in acceptance tests.
-		// Today, this command also uploads libraries, which is not the intent here. We need to refactor
-		// libraries.Upload() mutator to separate config mutation with actual upload.
-		Hidden: true,
+This command builds the bundle and displays the actions which will be done on resources that would be deployed, without making any changes.
+It is useful for previewing changes before running 'bundle deploy'.`,
+		Args: root.NoArgs,
 	}
 
 	var force bool
@@ -35,6 +33,13 @@ func newPlanCommand() *cobra.Command {
 	cmd.Flags().StringVar(&clusterId, "compute-id", "", "Override cluster in the deployment with the given compute ID.")
 	cmd.Flags().StringVarP(&clusterId, "cluster-id", "c", "", "Override cluster in the deployment with the given cluster ID.")
 	cmd.Flags().MarkDeprecated("compute-id", "use --cluster-id instead")
+
+	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
+		if f := cmd.Flag("output"); f != nil && f.Changed {
+			return errors.New("the -o/--output flag is not supported for this command. Use an experimental 'databricks bundle debug plan' command instead")
+		}
+		return nil
+	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := logdiag.InitContext(cmd.Context())
@@ -57,27 +62,9 @@ func newPlanCommand() *cobra.Command {
 			}
 		})
 
-		phases.Initialize(ctx, b)
-
-		if logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
-		}
-
-		bundle.ApplyContext(ctx, b, validate.FastValidate())
-
-		if logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
-		}
-
-		phases.Build(ctx, b)
-
-		if logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
-		}
-
-		plan := phases.Plan(ctx, b)
-		if logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
+		plan, err := utils.GetPlan(ctx, b)
+		if err != nil {
+			return err
 		}
 
 		// Count actions by type and collect formatted actions
