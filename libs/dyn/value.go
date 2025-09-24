@@ -147,7 +147,7 @@ func (v Value) IsZero() bool {
 	case []Value:
 		return len(x) == 0
 	default:
-		return reflect.ValueOf(v.v).IsZero()
+		return reflect.ValueOf(x).IsZero()
 	}
 }
 
