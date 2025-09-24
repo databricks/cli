@@ -6,6 +6,8 @@ create jobs.c
 create jobs.d
 create jobs.e
 
+Plan: 5 to add, 0 to change, 0 to delete, 0 unchanged
+
 >>> print_requests
 
 >>> [CLI] bundle deploy
@@ -31,6 +33,8 @@ update jobs.b
 update jobs.c
 update jobs.d
 update jobs.e
+
+Plan: 0 to add, 5 to change, 0 to delete, 0 unchanged
 
 >>> print_requests
 
