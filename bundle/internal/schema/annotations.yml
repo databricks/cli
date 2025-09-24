@@ -651,6 +651,9 @@ github.com/databricks/cli/bundle/config/resources.SyncedDatabaseTable:
   "effective_logical_database_name":
     "description": |-
       PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
   "logical_database_name":
     "description": |-
       PLACEHOLDER
