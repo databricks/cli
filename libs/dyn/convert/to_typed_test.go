@@ -130,6 +130,7 @@ func TestToTypedStructZeroFieldsForceSend(t *testing.T) {
 	type Tmp struct {
 		Foo             string   `json:"foo"`
 		Bar             string   `json:"bar,omitempty"`
+		NumWorkers      int      `json:"num_workers,omitempty"`
 		ForceSendFields []string `json:"-"`
 	}
 
@@ -143,12 +144,13 @@ func TestToTypedStructZeroFieldsForceSend(t *testing.T) {
 	m := dyn.Mapping{}
 	m.SetLoc("foo", nil, dyn.V(""))
 	m.SetLoc("bar", nil, dyn.V(""))
+	m.SetLoc("num_workers", nil, dyn.V(int64(0)))
 	v := dyn.V(m)
 
 	// The previously set fields should be cleared.
 	err := ToTyped(&out, v)
 	require.NoError(t, err)
-	assert.Equal(t, Tmp{ForceSendFields: []string{"Foo", "Bar"}}, out)
+	assert.Equal(t, Tmp{ForceSendFields: []string{"Foo", "Bar", "NumWorkers"}}, out)
 }
 
 func TestToTypedStructAnonymousByValue(t *testing.T) {
