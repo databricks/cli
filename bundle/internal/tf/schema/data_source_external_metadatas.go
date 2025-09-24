@@ -21,4 +21,5 @@ type DataSourceExternalMetadatasExternalMetadata struct {
 
 type DataSourceExternalMetadatas struct {
 	ExternalMetadata []DataSourceExternalMetadatasExternalMetadata `json:"external_metadata,omitempty"`
+	WorkspaceId      string                                        `json:"workspace_id,omitempty"`
 }

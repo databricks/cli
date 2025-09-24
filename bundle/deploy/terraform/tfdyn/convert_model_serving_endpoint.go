@@ -28,6 +28,11 @@ func (modelServingEndpointConverter) Convert(ctx context.Context, key string, vi
 		return err
 	}
 
+	vout, err = convertLifecycle(ctx, vout, vin.Get("lifecycle"))
+	if err != nil {
+		return err
+	}
+
 	// Add the converted resource to the output.
 	out.ModelServing[key] = vout.AsAny()
 

@@ -44,6 +44,7 @@ from databricks.bundles.jobs._models.jobs_health_rules import (
     JobsHealthRules,
     JobsHealthRulesParam,
 )
+from databricks.bundles.jobs._models.lifecycle import Lifecycle, LifecycleParam
 from databricks.bundles.jobs._models.performance_target import (
     PerformanceTarget,
     PerformanceTargetParam,
@@ -114,6 +115,11 @@ class Job(Resource):
     job_clusters: VariableOrList[JobCluster] = field(default_factory=list)
     """
     A list of job cluster specifications that can be shared and reused by tasks of this job. Libraries cannot be declared in a shared job cluster. You must declare dependent libraries in task settings.
+    """
+
+    lifecycle: VariableOrOptional[Lifecycle] = None
+    """
+    Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
     """
 
     max_concurrent_runs: VariableOrOptional[int] = None
@@ -254,6 +260,11 @@ class JobDict(TypedDict, total=False):
     job_clusters: VariableOrList[JobClusterParam]
     """
     A list of job cluster specifications that can be shared and reused by tasks of this job. Libraries cannot be declared in a shared job cluster. You must declare dependent libraries in task settings.
+    """
+
+    lifecycle: VariableOrOptional[LifecycleParam]
+    """
+    Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
     """
 
     max_concurrent_runs: VariableOrOptional[int]

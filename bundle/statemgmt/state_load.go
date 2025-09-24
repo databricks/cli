@@ -40,7 +40,7 @@ func (l *load) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		if err != nil {
 			return diag.FromErr(err)
 		}
-		state = b.BundleDeployer.StateDB.ExportState(ctx)
+		state = b.DeploymentBundle.StateDB.ExportState(ctx)
 	} else {
 		tf := b.Terraform
 		if tf == nil {

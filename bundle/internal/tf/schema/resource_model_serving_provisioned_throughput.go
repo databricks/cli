@@ -45,6 +45,7 @@ type ResourceModelServingProvisionedThroughputAiGatewayRateLimits struct {
 	Key           string `json:"key,omitempty"`
 	Principal     string `json:"principal,omitempty"`
 	RenewalPeriod string `json:"renewal_period"`
+	Tokens        int    `json:"tokens,omitempty"`
 }
 
 type ResourceModelServingProvisionedThroughputAiGatewayUsageTrackingConfig struct {

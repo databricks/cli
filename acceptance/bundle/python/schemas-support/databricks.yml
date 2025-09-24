@@ -1,0 +1,17 @@
+bundle:
+  name: my_project
+
+sync: {paths: []} # don't need to copy files
+
+experimental:
+  python:
+    resources:
+      - "resources:load_resources"
+    mutators:
+      - "mutators:update_schema"
+
+resources:
+  schemas:
+    my_schema_1:
+      name: "My Schema"
+      catalog_name: "my_catalog"

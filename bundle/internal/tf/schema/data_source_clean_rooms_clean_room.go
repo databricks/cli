@@ -84,4 +84,5 @@ type DataSourceCleanRoomsCleanRoom struct {
 	RemoteDetailedInfo     *DataSourceCleanRoomsCleanRoomRemoteDetailedInfo `json:"remote_detailed_info,omitempty"`
 	Status                 string                                           `json:"status,omitempty"`
 	UpdatedAt              int                                              `json:"updated_at,omitempty"`
+	WorkspaceId            string                                           `json:"workspace_id,omitempty"`
 }

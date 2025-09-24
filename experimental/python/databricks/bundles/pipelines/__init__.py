@@ -56,6 +56,9 @@ __all__ = [
     "InitScriptInfo",
     "InitScriptInfoDict",
     "InitScriptInfoParam",
+    "Lifecycle",
+    "LifecycleDict",
+    "LifecycleParam",
     "LocalFileInfo",
     "LocalFileInfoDict",
     "LocalFileInfoParam",
@@ -96,6 +99,12 @@ __all__ = [
     "PipelinesEnvironment",
     "PipelinesEnvironmentDict",
     "PipelinesEnvironmentParam",
+    "PostgresCatalogConfig",
+    "PostgresCatalogConfigDict",
+    "PostgresCatalogConfigParam",
+    "PostgresSlotConfig",
+    "PostgresSlotConfigDict",
+    "PostgresSlotConfigParam",
     "ReportSpec",
     "ReportSpecDict",
     "ReportSpecParam",
@@ -111,6 +120,12 @@ __all__ = [
     "SchemaSpec",
     "SchemaSpecDict",
     "SchemaSpecParam",
+    "SourceCatalogConfig",
+    "SourceCatalogConfigDict",
+    "SourceCatalogConfigParam",
+    "SourceConfig",
+    "SourceConfigDict",
+    "SourceConfigParam",
     "TableSpec",
     "TableSpecDict",
     "TableSpecParam",
@@ -224,6 +239,11 @@ from databricks.bundles.pipelines._models.init_script_info import (
     InitScriptInfoDict,
     InitScriptInfoParam,
 )
+from databricks.bundles.pipelines._models.lifecycle import (
+    Lifecycle,
+    LifecycleDict,
+    LifecycleParam,
+)
 from databricks.bundles.pipelines._models.local_file_info import (
     LocalFileInfo,
     LocalFileInfoDict,
@@ -292,6 +312,16 @@ from databricks.bundles.pipelines._models.pipelines_environment import (
     PipelinesEnvironmentDict,
     PipelinesEnvironmentParam,
 )
+from databricks.bundles.pipelines._models.postgres_catalog_config import (
+    PostgresCatalogConfig,
+    PostgresCatalogConfigDict,
+    PostgresCatalogConfigParam,
+)
+from databricks.bundles.pipelines._models.postgres_slot_config import (
+    PostgresSlotConfig,
+    PostgresSlotConfigDict,
+    PostgresSlotConfigParam,
+)
 from databricks.bundles.pipelines._models.report_spec import (
     ReportSpec,
     ReportSpecDict,
@@ -312,6 +342,16 @@ from databricks.bundles.pipelines._models.schema_spec import (
     SchemaSpec,
     SchemaSpecDict,
     SchemaSpecParam,
+)
+from databricks.bundles.pipelines._models.source_catalog_config import (
+    SourceCatalogConfig,
+    SourceCatalogConfigDict,
+    SourceCatalogConfigParam,
+)
+from databricks.bundles.pipelines._models.source_config import (
+    SourceConfig,
+    SourceConfigDict,
+    SourceConfigParam,
 )
 from databricks.bundles.pipelines._models.table_spec import (
     TableSpec,

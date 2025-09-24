@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/databricks-sdk-go/service/pipelines"
 )
 
 type setRunAs struct{}
@@ -79,16 +80,6 @@ func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
 		return diags
 	}
 
-	// DLT pipelines do not support run_as in the API.
-	if len(b.Config.Resources.Pipelines) > 0 {
-		diags = diags.Extend(reportRunAsNotSupported(
-			"pipelines",
-			b.Config.GetLocation("resources.pipelines"),
-			b.Config.Workspace.CurrentUser.UserName,
-			identity,
-		))
-	}
-
 	// Model serving endpoints do not support run_as in the API.
 	if len(b.Config.Resources.ModelServingEndpoints) > 0 {
 		diags = diags.Extend(reportRunAsNotSupported(
@@ -119,6 +110,16 @@ func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
 		))
 	}
 
+	// // Alerts do not support run_as in the API.
+	// if len(b.Config.Resources.Alerts) > 0 {
+	// 	diags = diags.Extend(reportRunAsNotSupported(
+	// 		"alerts",
+	// 		b.Config.GetLocation("resources.alerts"),
+	// 		b.Config.Workspace.CurrentUser.UserName,
+	// 		identity,
+	// 	))
+	// }
+
 	// Apps do not support run_as in the API.
 	if len(b.Config.Resources.Apps) > 0 {
 		diags = diags.Extend(reportRunAsNotSupported(
@@ -144,6 +145,24 @@ func setRunAsForJobs(b *bundle.Bundle) {
 			continue
 		}
 		job.RunAs = &jobs.JobRunAs{
+			ServicePrincipalName: runAs.ServicePrincipalName,
+			UserName:             runAs.UserName,
+		}
+	}
+}
+
+func setRunAsForPipelines(b *bundle.Bundle) {
+	runAs := b.Config.RunAs
+	if runAs == nil {
+		return
+	}
+
+	for i := range b.Config.Resources.Pipelines {
+		pipeline := b.Config.Resources.Pipelines[i]
+		if pipeline.RunAs != nil {
+			continue
+		}
+		pipeline.RunAs = &pipelines.RunAs{
 			ServicePrincipalName: runAs.ServicePrincipalName,
 			UserName:             runAs.UserName,
 		}
@@ -184,11 +203,16 @@ func (m *setRunAs) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// Track the use of the legacy run_as mode.
 	b.Metrics.AddBoolValue("experimental.use_legacy_run_as", b.Config.Experimental != nil && b.Config.Experimental.UseLegacyRunAs)
 
+	// Track whether top level run_as is set.
+	b.Metrics.AddBoolValue("run_as_set", b.Config.Value().Get("run_as").Kind() != dyn.KindInvalid)
+
 	// Mutator is a no-op if run_as is not specified in the bundle
 	if b.Config.Value().Get("run_as").Kind() == dyn.KindInvalid {
 		return nil
 	}
 
+	// User has opted to use the legacy behavior of run_as with the
+	// experimental.use_legacy_run_as flag.
 	if b.Config.Experimental != nil && b.Config.Experimental.UseLegacyRunAs {
 		setPipelineOwnersToRunAsIdentity(b)
 		setRunAsForJobs(b)
@@ -209,5 +233,6 @@ func (m *setRunAs) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	}
 
 	setRunAsForJobs(b)
+	setRunAsForPipelines(b)
 	return nil
 }
