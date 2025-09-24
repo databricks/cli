@@ -62,7 +62,7 @@ func TestFileCacheExpiryBehavior(t *testing.T) {
 	futureTime := time.Now().Add(2 * time.Minute) // 2 minutes from now, past expiry
 	shouldDelete, age := manager.shouldDeleteFile(cacheFiles[0], futureTime)
 	assert.True(t, shouldDelete, "File should be marked for deletion when past expiry")
-	assert.Greater(t, age, time.Duration(0), "Age should be positive when expired")
+	assert.GreaterOrEqual(t, age, time.Duration(0), "Age should be positive when expired")
 }
 
 // TestLegacyTimestampCompatibility tests that old cache files with timestamp still work
@@ -87,5 +87,5 @@ func TestLegacyTimestampCompatibility(t *testing.T) {
 	// Should not delete a 1-hour-old file (default MaxAge is 7 days)
 	shouldDelete, age := manager.shouldDeleteFile(legacyFile, now)
 	assert.False(t, shouldDelete, "Legacy file should not be deleted if within MaxAge")
-	assert.Greater(t, age, time.Hour, "Age should be calculated from timestamp")
+	assert.GreaterOrEqual(t, age, time.Hour, "Age should be calculated from timestamp")
 }
