@@ -162,6 +162,7 @@ resources.database_instances.*.child_instance_refs[*].name	string	ALL
 resources.database_instances.*.child_instance_refs[*].uid	string	ALL
 resources.database_instances.*.creation_time	string	ALL
 resources.database_instances.*.creator	string	ALL
+resources.database_instances.*.effective_capacity	string	ALL
 resources.database_instances.*.effective_enable_pg_native_login	bool	ALL
 resources.database_instances.*.effective_enable_readable_secondaries	bool	ALL
 resources.database_instances.*.effective_node_count	int	ALL
@@ -230,6 +231,8 @@ resources.jobs.*.environments[*].spec.dependencies[*]	string	INPUT	STATE
 resources.jobs.*.environments[*].spec.environment_version	string	INPUT	STATE
 resources.jobs.*.environments[*].spec.jar_dependencies	[]string	INPUT	STATE
 resources.jobs.*.environments[*].spec.jar_dependencies[*]	string	INPUT	STATE
+resources.jobs.*.environments[*].spec.java_dependencies	[]string	INPUT	STATE
+resources.jobs.*.environments[*].spec.java_dependencies[*]	string	INPUT	STATE
 resources.jobs.*.format	jobs.Format	INPUT	STATE
 resources.jobs.*.git_source	*jobs.GitSource	INPUT	STATE
 resources.jobs.*.git_source.git_branch	string	INPUT	STATE
@@ -419,6 +422,8 @@ resources.jobs.*.settings.environments[*].spec.dependencies[*]	string	REMOTE
 resources.jobs.*.settings.environments[*].spec.environment_version	string	REMOTE
 resources.jobs.*.settings.environments[*].spec.jar_dependencies	[]string	REMOTE
 resources.jobs.*.settings.environments[*].spec.jar_dependencies[*]	string	REMOTE
+resources.jobs.*.settings.environments[*].spec.java_dependencies	[]string	REMOTE
+resources.jobs.*.settings.environments[*].spec.java_dependencies[*]	string	REMOTE
 resources.jobs.*.settings.format	jobs.Format	REMOTE
 resources.jobs.*.settings.git_source	*jobs.GitSource	REMOTE
 resources.jobs.*.settings.git_source.git_branch	string	REMOTE
@@ -607,6 +612,7 @@ resources.jobs.*.settings.tasks[*].depends_on[*].outcome	string	REMOTE
 resources.jobs.*.settings.tasks[*].depends_on[*].task_key	string	REMOTE
 resources.jobs.*.settings.tasks[*].description	string	REMOTE
 resources.jobs.*.settings.tasks[*].disable_auto_optimization	bool	REMOTE
+resources.jobs.*.settings.tasks[*].disabled	bool	REMOTE
 resources.jobs.*.settings.tasks[*].email_notifications	*jobs.TaskEmailNotifications	REMOTE
 resources.jobs.*.settings.tasks[*].email_notifications.no_alert_for_skipped_runs	bool	REMOTE
 resources.jobs.*.settings.tasks[*].email_notifications.on_duration_warning_threshold_exceeded	[]string	REMOTE
@@ -666,6 +672,7 @@ resources.jobs.*.settings.tasks[*].for_each_task.task.depends_on[*].outcome	stri
 resources.jobs.*.settings.tasks[*].for_each_task.task.depends_on[*].task_key	string	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.description	string	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.disable_auto_optimization	bool	REMOTE
+resources.jobs.*.settings.tasks[*].for_each_task.task.disabled	bool	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.email_notifications	*jobs.TaskEmailNotifications	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.email_notifications.no_alert_for_skipped_runs	bool	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.email_notifications.on_duration_warning_threshold_exceeded	[]string	REMOTE
@@ -1276,6 +1283,7 @@ resources.jobs.*.tasks[*].depends_on[*].outcome	string	INPUT	STATE
 resources.jobs.*.tasks[*].depends_on[*].task_key	string	INPUT	STATE
 resources.jobs.*.tasks[*].description	string	INPUT	STATE
 resources.jobs.*.tasks[*].disable_auto_optimization	bool	INPUT	STATE
+resources.jobs.*.tasks[*].disabled	bool	INPUT	STATE
 resources.jobs.*.tasks[*].email_notifications	*jobs.TaskEmailNotifications	INPUT	STATE
 resources.jobs.*.tasks[*].email_notifications.no_alert_for_skipped_runs	bool	INPUT	STATE
 resources.jobs.*.tasks[*].email_notifications.on_duration_warning_threshold_exceeded	[]string	INPUT	STATE
@@ -1335,6 +1343,7 @@ resources.jobs.*.tasks[*].for_each_task.task.depends_on[*].outcome	string	INPUT	
 resources.jobs.*.tasks[*].for_each_task.task.depends_on[*].task_key	string	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.description	string	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.disable_auto_optimization	bool	INPUT	STATE
+resources.jobs.*.tasks[*].for_each_task.task.disabled	bool	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.email_notifications	*jobs.TaskEmailNotifications	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.email_notifications.no_alert_for_skipped_runs	bool	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.email_notifications.on_duration_warning_threshold_exceeded	[]string	INPUT	STATE
@@ -2034,6 +2043,7 @@ resources.pipelines.*.id	string	INPUT	STATE
 resources.pipelines.*.ingestion_definition	*pipelines.IngestionPipelineDefinition	INPUT	STATE
 resources.pipelines.*.ingestion_definition.connection_name	string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.ingestion_gateway_id	string	INPUT	STATE
+resources.pipelines.*.ingestion_definition.netsuite_jar_path	string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects	[]pipelines.IngestionConfig	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*]	pipelines.IngestionConfig	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].report	*pipelines.ReportSpec	INPUT	STATE
@@ -2057,6 +2067,14 @@ resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration
 resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.scd_type	pipelines.TableSpecificConfigScdType	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.sequence_by	[]string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.sequence_by[*]	string	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.workday_report_parameters	*pipelines.IngestionPipelineDefinitionWorkdayReportParameters	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.workday_report_parameters.incremental	bool	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.workday_report_parameters.parameters	map[string]string	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.workday_report_parameters.parameters[*]	string	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.workday_report_parameters.report_parameters	[]pipelines.IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.workday_report_parameters.report_parameters[*]	pipelines.IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.workday_report_parameters.report_parameters[*].key	string	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.workday_report_parameters.report_parameters[*].value	string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].schema	*pipelines.SchemaSpec	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].schema.destination_catalog	string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].schema.destination_schema	string	INPUT	STATE
@@ -2078,6 +2096,14 @@ resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration
 resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.scd_type	pipelines.TableSpecificConfigScdType	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.sequence_by	[]string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.sequence_by[*]	string	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.workday_report_parameters	*pipelines.IngestionPipelineDefinitionWorkdayReportParameters	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.workday_report_parameters.incremental	bool	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.workday_report_parameters.parameters	map[string]string	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.workday_report_parameters.parameters[*]	string	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.workday_report_parameters.report_parameters	[]pipelines.IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.workday_report_parameters.report_parameters[*]	pipelines.IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.workday_report_parameters.report_parameters[*].key	string	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.workday_report_parameters.report_parameters[*].value	string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].table	*pipelines.TableSpec	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].table.destination_catalog	string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].table.destination_schema	string	INPUT	STATE
@@ -2101,6 +2127,14 @@ resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.
 resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.scd_type	pipelines.TableSpecificConfigScdType	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.sequence_by	[]string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.sequence_by[*]	string	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.workday_report_parameters	*pipelines.IngestionPipelineDefinitionWorkdayReportParameters	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.workday_report_parameters.incremental	bool	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.workday_report_parameters.parameters	map[string]string	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.workday_report_parameters.parameters[*]	string	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.workday_report_parameters.report_parameters	[]pipelines.IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.workday_report_parameters.report_parameters[*]	pipelines.IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.workday_report_parameters.report_parameters[*].key	string	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.workday_report_parameters.report_parameters[*].value	string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.source_configurations	[]pipelines.SourceConfig	INPUT	STATE
 resources.pipelines.*.ingestion_definition.source_configurations[*]	pipelines.SourceConfig	INPUT	STATE
 resources.pipelines.*.ingestion_definition.source_configurations[*].catalog	*pipelines.SourceCatalogConfig	INPUT	STATE
@@ -2126,6 +2160,14 @@ resources.pipelines.*.ingestion_definition.table_configuration.salesforce_includ
 resources.pipelines.*.ingestion_definition.table_configuration.scd_type	pipelines.TableSpecificConfigScdType	INPUT	STATE
 resources.pipelines.*.ingestion_definition.table_configuration.sequence_by	[]string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.table_configuration.sequence_by[*]	string	INPUT	STATE
+resources.pipelines.*.ingestion_definition.table_configuration.workday_report_parameters	*pipelines.IngestionPipelineDefinitionWorkdayReportParameters	INPUT	STATE
+resources.pipelines.*.ingestion_definition.table_configuration.workday_report_parameters.incremental	bool	INPUT	STATE
+resources.pipelines.*.ingestion_definition.table_configuration.workday_report_parameters.parameters	map[string]string	INPUT	STATE
+resources.pipelines.*.ingestion_definition.table_configuration.workday_report_parameters.parameters[*]	string	INPUT	STATE
+resources.pipelines.*.ingestion_definition.table_configuration.workday_report_parameters.report_parameters	[]pipelines.IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue	INPUT	STATE
+resources.pipelines.*.ingestion_definition.table_configuration.workday_report_parameters.report_parameters[*]	pipelines.IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue	INPUT	STATE
+resources.pipelines.*.ingestion_definition.table_configuration.workday_report_parameters.report_parameters[*].key	string	INPUT	STATE
+resources.pipelines.*.ingestion_definition.table_configuration.workday_report_parameters.report_parameters[*].value	string	INPUT	STATE
 resources.pipelines.*.last_modified	int64	REMOTE
 resources.pipelines.*.latest_updates	[]pipelines.UpdateStateInfo	REMOTE
 resources.pipelines.*.latest_updates[*]	pipelines.UpdateStateInfo	REMOTE
@@ -2295,6 +2337,7 @@ resources.pipelines.*.spec.id	string	REMOTE
 resources.pipelines.*.spec.ingestion_definition	*pipelines.IngestionPipelineDefinition	REMOTE
 resources.pipelines.*.spec.ingestion_definition.connection_name	string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.ingestion_gateway_id	string	REMOTE
+resources.pipelines.*.spec.ingestion_definition.netsuite_jar_path	string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects	[]pipelines.IngestionConfig	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*]	pipelines.IngestionConfig	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].report	*pipelines.ReportSpec	REMOTE
@@ -2318,6 +2361,14 @@ resources.pipelines.*.spec.ingestion_definition.objects[*].report.table_configur
 resources.pipelines.*.spec.ingestion_definition.objects[*].report.table_configuration.scd_type	pipelines.TableSpecificConfigScdType	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].report.table_configuration.sequence_by	[]string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].report.table_configuration.sequence_by[*]	string	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].report.table_configuration.workday_report_parameters	*pipelines.IngestionPipelineDefinitionWorkdayReportParameters	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].report.table_configuration.workday_report_parameters.incremental	bool	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].report.table_configuration.workday_report_parameters.parameters	map[string]string	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].report.table_configuration.workday_report_parameters.parameters[*]	string	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].report.table_configuration.workday_report_parameters.report_parameters	[]pipelines.IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].report.table_configuration.workday_report_parameters.report_parameters[*]	pipelines.IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].report.table_configuration.workday_report_parameters.report_parameters[*].key	string	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].report.table_configuration.workday_report_parameters.report_parameters[*].value	string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].schema	*pipelines.SchemaSpec	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].schema.destination_catalog	string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].schema.destination_schema	string	REMOTE
@@ -2339,6 +2390,14 @@ resources.pipelines.*.spec.ingestion_definition.objects[*].schema.table_configur
 resources.pipelines.*.spec.ingestion_definition.objects[*].schema.table_configuration.scd_type	pipelines.TableSpecificConfigScdType	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].schema.table_configuration.sequence_by	[]string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].schema.table_configuration.sequence_by[*]	string	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].schema.table_configuration.workday_report_parameters	*pipelines.IngestionPipelineDefinitionWorkdayReportParameters	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].schema.table_configuration.workday_report_parameters.incremental	bool	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].schema.table_configuration.workday_report_parameters.parameters	map[string]string	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].schema.table_configuration.workday_report_parameters.parameters[*]	string	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].schema.table_configuration.workday_report_parameters.report_parameters	[]pipelines.IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].schema.table_configuration.workday_report_parameters.report_parameters[*]	pipelines.IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].schema.table_configuration.workday_report_parameters.report_parameters[*].key	string	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].schema.table_configuration.workday_report_parameters.report_parameters[*].value	string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].table	*pipelines.TableSpec	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].table.destination_catalog	string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].table.destination_schema	string	REMOTE
@@ -2362,6 +2421,14 @@ resources.pipelines.*.spec.ingestion_definition.objects[*].table.table_configura
 resources.pipelines.*.spec.ingestion_definition.objects[*].table.table_configuration.scd_type	pipelines.TableSpecificConfigScdType	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].table.table_configuration.sequence_by	[]string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].table.table_configuration.sequence_by[*]	string	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].table.table_configuration.workday_report_parameters	*pipelines.IngestionPipelineDefinitionWorkdayReportParameters	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].table.table_configuration.workday_report_parameters.incremental	bool	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].table.table_configuration.workday_report_parameters.parameters	map[string]string	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].table.table_configuration.workday_report_parameters.parameters[*]	string	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].table.table_configuration.workday_report_parameters.report_parameters	[]pipelines.IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].table.table_configuration.workday_report_parameters.report_parameters[*]	pipelines.IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].table.table_configuration.workday_report_parameters.report_parameters[*].key	string	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].table.table_configuration.workday_report_parameters.report_parameters[*].value	string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.source_configurations	[]pipelines.SourceConfig	REMOTE
 resources.pipelines.*.spec.ingestion_definition.source_configurations[*]	pipelines.SourceConfig	REMOTE
 resources.pipelines.*.spec.ingestion_definition.source_configurations[*].catalog	*pipelines.SourceCatalogConfig	REMOTE
@@ -2387,6 +2454,14 @@ resources.pipelines.*.spec.ingestion_definition.table_configuration.salesforce_i
 resources.pipelines.*.spec.ingestion_definition.table_configuration.scd_type	pipelines.TableSpecificConfigScdType	REMOTE
 resources.pipelines.*.spec.ingestion_definition.table_configuration.sequence_by	[]string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.table_configuration.sequence_by[*]	string	REMOTE
+resources.pipelines.*.spec.ingestion_definition.table_configuration.workday_report_parameters	*pipelines.IngestionPipelineDefinitionWorkdayReportParameters	REMOTE
+resources.pipelines.*.spec.ingestion_definition.table_configuration.workday_report_parameters.incremental	bool	REMOTE
+resources.pipelines.*.spec.ingestion_definition.table_configuration.workday_report_parameters.parameters	map[string]string	REMOTE
+resources.pipelines.*.spec.ingestion_definition.table_configuration.workday_report_parameters.parameters[*]	string	REMOTE
+resources.pipelines.*.spec.ingestion_definition.table_configuration.workday_report_parameters.report_parameters	[]pipelines.IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue	REMOTE
+resources.pipelines.*.spec.ingestion_definition.table_configuration.workday_report_parameters.report_parameters[*]	pipelines.IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue	REMOTE
+resources.pipelines.*.spec.ingestion_definition.table_configuration.workday_report_parameters.report_parameters[*].key	string	REMOTE
+resources.pipelines.*.spec.ingestion_definition.table_configuration.workday_report_parameters.report_parameters[*].value	string	REMOTE
 resources.pipelines.*.spec.libraries	[]pipelines.PipelineLibrary	REMOTE
 resources.pipelines.*.spec.libraries[*]	pipelines.PipelineLibrary	REMOTE
 resources.pipelines.*.spec.libraries[*].file	*pipelines.FileLibrary	REMOTE
