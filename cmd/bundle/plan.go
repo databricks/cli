@@ -3,13 +3,12 @@ package bundle
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config/validate"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/flags"
@@ -35,6 +34,13 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 	cmd.Flags().StringVarP(&clusterId, "cluster-id", "c", "", "Override cluster in the deployment with the given cluster ID.")
 	cmd.Flags().MarkDeprecated("compute-id", "use --cluster-id instead")
 
+	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
+		if f := cmd.Flag("output"); f != nil && f.Changed {
+			return errors.New("the -o/--output flag is not supported for this command. Use an experimental 'databricks bundle debug plan' command instead")
+		}
+		return nil
+	}
+
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := logdiag.InitContext(cmd.Context())
 		cmd.SetContext(ctx)
@@ -56,27 +62,9 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 			}
 		})
 
-		phases.Initialize(ctx, b)
-
-		if logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
-		}
-
-		bundle.ApplyContext(ctx, b, validate.FastValidate())
-
-		if logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
-		}
-
-		phases.Build(ctx, b)
-
-		if logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
-		}
-
-		plan := phases.Plan(ctx, b)
-		if logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
+		plan, err := utils.GetPlan(ctx, b)
+		if err != nil {
+			return err
 		}
 
 		// Count actions by type and collect formatted actions
