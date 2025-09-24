@@ -9,6 +9,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/validate"
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
@@ -86,14 +87,56 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 			return root.ErrAlreadyPrinted
 		}
 
+		// Count actions by type and collect formatted actions
+		createCount := 0
+		updateCount := 0
+		deleteCount := 0
+		changed := make(map[string]bool)
+
+		for _, change := range plan.GetActions() {
+			changed[change.ResourceKey] = true
+			switch change.ActionType {
+			case deployplan.ActionTypeCreate:
+				createCount++
+			case deployplan.ActionTypeUpdate, deployplan.ActionTypeUpdateWithID:
+				updateCount++
+			case deployplan.ActionTypeDelete:
+				deleteCount++
+			case deployplan.ActionTypeRecreate, deployplan.ActionTypeResize:
+				// A recreate counts as both a delete and a create
+				deleteCount++
+				createCount++
+			case deployplan.ActionTypeNoop, deployplan.ActionTypeUnset:
+				// Noop
+			}
+		}
+
+		// Calculate number of all unchanged resources
+		unchanged := 0
+		for _, group := range b.Config.Resources.AllResources() {
+			for rKey := range group.Resources {
+				resourceKey := "resources." + group.Description.PluralName + "." + rKey
+				if _, ok := changed[resourceKey]; !ok {
+					unchanged++
+				}
+			}
+		}
+
 		out := cmd.OutOrStdout()
 
 		switch root.OutputType(cmd) {
 		case flags.OutputText:
-			for _, action := range plan.GetActions() {
-				key := strings.TrimPrefix(action.ResourceKey, "resources.")
-				fmt.Fprintf(out, "%s %s\n", action.ActionType.StringShort(), key)
+			// Print summary line and actions to stdout
+			totalChanges := createCount + updateCount + deleteCount
+			if totalChanges > 0 {
+				// Print all actions in the order they were processed
+				for _, action := range plan.GetActions() {
+					key := strings.TrimPrefix(action.ResourceKey, "resources.")
+					fmt.Fprintf(out, "%s %s\n", action.ActionType.StringShort(), key)
+				}
+				fmt.Fprintln(out)
 			}
+			fmt.Fprintf(out, "Plan: %d to add, %d to change, %d to delete, %d unchanged\n", createCount, updateCount, deleteCount, unchanged)
 		case flags.OutputJSON:
 			buf, err := json.MarshalIndent(plan, "", "  ")
 			if err != nil {

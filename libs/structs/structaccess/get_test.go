@@ -138,9 +138,14 @@ func runCommonTests(t *testing.T, obj any) {
 			want: "bar",
 		},
 		{
-			name: "leading dot allowed",
-			path: ".connection.id",
+			name: "struct field with bracket notation",
+			path: "['connection']['id']",
 			want: "abc",
+		},
+		{
+			name: "map key with bracket notation",
+			path: "labels['env']",
+			want: "dev",
 		},
 
 		// Regular scalar fields - always return zero values
@@ -169,7 +174,7 @@ func runCommonTests(t *testing.T, obj any) {
 		{
 			name:   "wildcard not supported",
 			path:   "items[*].id",
-			errFmt: "invalid path: items[*].id",
+			errFmt: "wildcards not supported: items[*].id",
 		},
 		{
 			name:   "missing field",

@@ -3,6 +3,8 @@
 create jobs.bar
 create jobs.foo
 
+Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
@@ -63,12 +65,15 @@ Deployment complete!
 }
 
 >>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 === Update trigger.periodic.unit and re-deploy; jobs.bar is unchanged
 >>> update_file.py databricks.yml DAYS HOURS
 
 >>> [CLI] bundle plan
 update jobs.foo
+
+Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
@@ -115,6 +120,7 @@ Deployment complete!
 }
 
 >>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 === Fetch job ID and verify remote state
 >>> [CLI] jobs get [FOO_ID]

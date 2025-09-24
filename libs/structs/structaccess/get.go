@@ -1,87 +1,74 @@
 package structaccess
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
-	"strconv"
 
-	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structtag"
 )
 
 // GetByString returns the value at the given path inside v.
 // This is a convenience function that parses the path string and calls Get.
-//
-// Path grammar (compatible with dyn path):
-//   - Struct field names and map keys separated by '.' (e.g., connection.id)
-//   - (Note, this prevents maps keys that are not id-like from being referenced, but this general problem with references today.)
-//   - Numeric indices in brackets for arrays/slices (e.g., items[0].name)
-//   - Leading '.' is allowed (e.g., .connection.id)
-//
-// Behavior:
-//   - For structs: a key matches a field by its json tag name (if present and not "-").
-//     Embedded anonymous structs are searched.
-//   - For maps: a key indexes map[string]T (or string alias key types).
-//   - For slices/arrays: an index [N] selects the N-th element.
-//   - Wildcards ("*" or "[*]") are not supported and return an error.
 func GetByString(v any, path string) (any, error) {
 	if path == "" {
 		return v, nil
 	}
 
-	dynPath, err := dyn.NewPathFromString(path)
+	pathNode, err := structpath.Parse(path)
 	if err != nil {
 		return nil, err
 	}
 
-	return Get(v, dynPath)
+	return Get(v, pathNode)
 }
 
 // Get returns the value at the given path inside v.
-func Get(v any, path dyn.Path) (any, error) {
-	if len(path) == 0 {
+// Wildcards ("*" or "[*]") are not supported and return an error.
+func Get(v any, path *structpath.PathNode) (any, error) {
+	if path.IsRoot() {
 		return v, nil
 	}
 
+	// Convert path to slice for easier iteration
+	pathSegments := path.AsSlice()
+
 	cur := reflect.ValueOf(v)
-	prefix := ""
-	for _, c := range path {
+	for _, node := range pathSegments {
 		var ok bool
 		cur, ok = deref(cur)
 		if !ok {
 			// cannot proceed further due to nil encountered at current location
-			return nil, fmt.Errorf("%s: cannot access nil value", prefix)
+			return nil, fmt.Errorf("%s: cannot access nil value", node.Parent().String())
 		}
 
-		if c.Key() != "" {
-			// Key access: struct field (by json tag) or map key.
-			newPrefix := prefix
-			if newPrefix == "" {
-				newPrefix = c.Key()
-			} else {
-				newPrefix = newPrefix + "." + c.Key()
+		if idx, isIndex := node.Index(); isIndex {
+			kind := cur.Kind()
+			if kind != reflect.Slice && kind != reflect.Array {
+				return nil, fmt.Errorf("%s: cannot index %s", node.String(), kind)
 			}
-			nv, err := accessKey(cur, c.Key(), newPrefix)
-			if err != nil {
-				return nil, err
+			if idx < 0 || idx >= cur.Len() {
+				return nil, fmt.Errorf("%s: index out of range, length is %d", node.String(), cur.Len())
 			}
-			cur = nv
-			prefix = newPrefix
+			cur = cur.Index(idx)
 			continue
 		}
 
-		// Index access: slice/array
-		idx := c.Index()
-		newPrefix := prefix + "[" + strconv.Itoa(idx) + "]"
-		kind := cur.Kind()
-		if kind != reflect.Slice && kind != reflect.Array {
-			return nil, fmt.Errorf("%s: cannot index %s", newPrefix, kind)
+		if node.DotStar() || node.BracketStar() {
+			return nil, fmt.Errorf("wildcards not supported: %s", path.String())
 		}
-		if idx < 0 || idx >= cur.Len() {
-			return nil, fmt.Errorf("%s: index out of range, length is %d", newPrefix, cur.Len())
+
+		key, ok := node.StringKey()
+		if !ok {
+			return nil, errors.New("unsupported path node type")
 		}
-		cur = cur.Index(idx)
-		prefix = newPrefix
+
+		nv, err := accessKey(cur, key, node)
+		if err != nil {
+			return nil, err
+		}
+		cur = nv
 	}
 
 	// If the current value is invalid (e.g., omitted due to omitempty), return nil.
@@ -100,12 +87,12 @@ func Get(v any, path dyn.Path) (any, error) {
 
 // accessKey returns the field or map entry value selected by key from v.
 // v must be non-pointer, non-interface reflect.Value.
-func accessKey(v reflect.Value, key, prefix string) (reflect.Value, error) {
+func accessKey(v reflect.Value, key string, path *structpath.PathNode) (reflect.Value, error) {
 	switch v.Kind() {
 	case reflect.Struct:
 		fv, sf, owner, ok := findStructFieldByKey(v, key)
 		if !ok {
-			return reflect.Value{}, fmt.Errorf("%s: field %q not found in %s", prefix, key, v.Type())
+			return reflect.Value{}, fmt.Errorf("%s: field %q not found in %s", path.String(), key, v.Type())
 		}
 		// Evaluate ForceSendFields on both the current struct and the declaring owner
 		force := containsForceSendField(v, sf.Name) || containsForceSendField(owner, sf.Name)
@@ -129,7 +116,7 @@ func accessKey(v reflect.Value, key, prefix string) (reflect.Value, error) {
 	case reflect.Map:
 		kt := v.Type().Key()
 		if kt.Kind() != reflect.String {
-			return reflect.Value{}, fmt.Errorf("%s: map key must be string, got %s", prefix, kt)
+			return reflect.Value{}, fmt.Errorf("%s: map key must be string, got %s", path.String(), kt)
 		}
 		mk := reflect.ValueOf(key)
 		if kt != mk.Type() {
@@ -137,11 +124,11 @@ func accessKey(v reflect.Value, key, prefix string) (reflect.Value, error) {
 		}
 		mv := v.MapIndex(mk)
 		if !mv.IsValid() {
-			return reflect.Value{}, fmt.Errorf("%s: key %q not found in map", prefix, key)
+			return reflect.Value{}, fmt.Errorf("%s: key %q not found in map", path.String(), key)
 		}
 		return mv, nil
 	default:
-		return reflect.Value{}, fmt.Errorf("%s: cannot access key %q on %s", prefix, key, v.Kind())
+		return reflect.Value{}, fmt.Errorf("%s: cannot access key %q on %s", path.String(), key, v.Kind())
 	}
 }
 
