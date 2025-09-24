@@ -6,55 +6,45 @@ import (
 	"sync"
 )
 
-type StringerComparable interface {
-	fmt.Stringer
-	comparable
-}
-
-type adjEdge[N StringerComparable] struct {
-	to    N
+type adjEdge struct {
+	to    string
 	label string
 }
 
-type Graph[N StringerComparable] struct {
-	adj   map[N][]adjEdge[N]
-	nodes []N // maintains insertion order of added nodes
+type Graph struct {
+	adj   map[string][]adjEdge
+	nodes []string // maintains insertion order of added nodes
 }
 
-func NewGraph[N StringerComparable]() *Graph[N] {
-	return &Graph[N]{adj: make(map[N][]adjEdge[N])}
+func NewGraph() *Graph {
+	return &Graph{adj: make(map[string][]adjEdge)}
 }
 
-func (g *Graph[N]) Size() int {
-	return len(g.nodes)
-}
+func (g *Graph) Size() int { return len(g.nodes) }
 
-func (g *Graph[N]) AddNode(n N) {
+func (g *Graph) AddNode(n string) {
 	if _, ok := g.adj[n]; !ok {
 		g.adj[n] = nil
 		g.nodes = append(g.nodes, n)
 	}
 }
 
-func (g *Graph[N]) HasNode(n N) bool {
-	_, ok := g.adj[n]
-	return ok
-}
+func (g *Graph) HasNode(n string) bool { _, ok := g.adj[n]; return ok }
 
 // HasOutgoingEdges reports whether this node has at least one outgoing edge.
 // In this graph, an outgoing edge from X->Y means Y references X.
-func (g *Graph[N]) HasOutgoingEdges(n N) bool { return len(g.adj[n]) > 0 }
+func (g *Graph) HasOutgoingEdges(n string) bool { return len(g.adj[n]) > 0 }
 
-func (g *Graph[N]) AddDirectedEdge(from, to N, label string) {
+func (g *Graph) AddDirectedEdge(from, to, label string) {
 	g.AddNode(from)
 	g.AddNode(to)
-	g.adj[from] = append(g.adj[from], adjEdge[N]{to: to, label: label})
+	g.adj[from] = append(g.adj[from], adjEdge{to: to, label: label})
 }
 
 // OutgoingLabels returns labels of all outgoing edges from the given node
 // in the order the edges were added. If the node has no outgoing edges or is
 // unknown to the graph, an empty slice is returned.
-func (g *Graph[N]) OutgoingLabels(node N) []string {
+func (g *Graph) OutgoingLabels(node string) []string {
 	outs := g.adj[node]
 	if len(outs) == 0 {
 		return []string{}
@@ -71,12 +61,12 @@ func (g *Graph[N]) OutgoingLabels(node N) []string {
 	return labels
 }
 
-type CycleError[N comparable] struct {
-	Nodes []N
+type CycleError struct {
+	Nodes []string
 	Edges []string
 }
 
-func (e *CycleError[N]) Error() string {
+func (e *CycleError) Error() string {
 	if len(e.Nodes) == 0 {
 		return "cycle detected"
 	}
@@ -99,8 +89,8 @@ func (e *CycleError[N]) Error() string {
 	)
 }
 
-func (g *Graph[N]) indegrees() map[N]int {
-	in := make(map[N]int, len(g.adj))
+func (g *Graph) indegrees() map[string]int {
+	in := make(map[string]int, len(g.adj))
 	for v := range g.adj {
 		in[v] = 0
 	}
@@ -112,7 +102,7 @@ func (g *Graph[N]) indegrees() map[N]int {
 	return in
 }
 
-func (g *Graph[N]) DetectCycle() error {
+func (g *Graph) DetectCycle() error {
 	// Build list of roots in insertion order
 	roots := g.nodes
 
@@ -121,10 +111,10 @@ func (g *Graph[N]) DetectCycle() error {
 		grey  = 1
 		black = 2
 	)
-	color := make(map[N]int, len(g.adj))
+	color := make(map[string]int, len(g.adj))
 
 	type frame struct {
-		node  N
+		node  string
 		inLbl string
 		next  int
 	}
@@ -150,7 +140,7 @@ func (g *Graph[N]) DetectCycle() error {
 					st.push(frame{node: edge.to, inLbl: edge.label})
 				case grey:
 					closeLbl := edge.label
-					var nodes []N
+					var nodes []string
 					var edges []string
 					for i := st.len() - 1; i >= 0; i-- {
 						nodes = append(nodes, st.data[i].node)
@@ -168,7 +158,7 @@ func (g *Graph[N]) DetectCycle() error {
 						edges[i], edges[j] = edges[j], edges[i]
 					}
 					edges = append(edges, closeLbl)
-					return &CycleError[N]{Nodes: nodes, Edges: edges}
+					return &CycleError{Nodes: nodes, Edges: edges}
 				}
 			} else {
 				color[f.node] = black
@@ -184,7 +174,7 @@ func (g *Graph[N]) DetectCycle() error {
 // is non-nil, it indicates that at least one direct dependency of the node failed.
 // The callback should return true on success or false on failure. Nodes are not
 // skipped when dependencies fail; instead, they are executed with failedDependency set.
-func (g *Graph[N]) Run(pool int, runUnit func(node N, failedDependency *N) bool) {
+func (g *Graph) Run(pool int, runUnit func(node string, failedDependency *string) bool) {
 	if pool <= 0 || pool > len(g.adj) {
 		pool = len(g.adj)
 	}
@@ -192,7 +182,7 @@ func (g *Graph[N]) Run(pool int, runUnit func(node N, failedDependency *N) bool)
 	in := g.indegrees()
 
 	// Prepare initial ready nodes in stable insertion order
-	var initial []N
+	var initial []string
 	for _, n := range g.nodes {
 		if in[n] == 0 {
 			initial = append(initial, n)
@@ -205,10 +195,10 @@ func (g *Graph[N]) Run(pool int, runUnit func(node N, failedDependency *N) bool)
 	}
 
 	// For each node, remember a failed direct dependency (any one) if present.
-	failedCause := make(map[N]*N, len(in))
+	failedCause := make(map[string]*string, len(in))
 
-	ready := make(chan task[N], len(in))
-	done := make(chan doneResult[N], len(in))
+	ready := make(chan task, len(in))
+	done := make(chan doneResult, len(in))
 
 	var wg sync.WaitGroup
 	wg.Add(pool)
@@ -217,7 +207,7 @@ func (g *Graph[N]) Run(pool int, runUnit func(node N, failedDependency *N) bool)
 	}
 
 	for _, n := range initial {
-		ready <- task[N]{n: n, failedFrom: nil}
+		ready <- task{n: n, failedFrom: nil}
 	}
 
 	for remaining := len(in); remaining > 0; remaining-- {
@@ -225,7 +215,7 @@ func (g *Graph[N]) Run(pool int, runUnit func(node N, failedDependency *N) bool)
 
 		if !res.success {
 			// Determine the originating failure cause to propagate
-			var cause *N
+			var cause *string
 			if existing, ok := failedCause[res.n]; ok && existing != nil {
 				cause = existing
 			} else {
@@ -243,7 +233,7 @@ func (g *Graph[N]) Run(pool int, runUnit func(node N, failedDependency *N) bool)
 		// Decrement indegrees and enqueue children that become ready
 		for _, e := range g.adj[res.n] {
 			if in[e.to]--; in[e.to] == 0 {
-				ready <- task[N]{n: e.to, failedFrom: failedCause[e.to]}
+				ready <- task{n: e.to, failedFrom: failedCause[e.to]}
 			}
 		}
 	}
@@ -251,17 +241,17 @@ func (g *Graph[N]) Run(pool int, runUnit func(node N, failedDependency *N) bool)
 	wg.Wait()
 }
 
-type doneResult[N StringerComparable] struct {
-	n       N
+type doneResult struct {
+	n       string
 	success bool
 }
 
-type task[T StringerComparable] struct {
-	n          T
-	failedFrom *T
+type task struct {
+	n          string
+	failedFrom *string
 }
 
-func runWorkerLoop[N StringerComparable](wg *sync.WaitGroup, ready <-chan task[N], done chan<- doneResult[N], runUnit func(N, *N) bool) {
+func runWorkerLoop(wg *sync.WaitGroup, ready <-chan task, done chan<- doneResult, runUnit func(string, *string) bool) {
 	defer wg.Done()
 	for t := range ready {
 		success := runUnit(t.n, t.failedFrom)
@@ -269,6 +259,6 @@ func runWorkerLoop[N StringerComparable](wg *sync.WaitGroup, ready <-chan task[N
 			// Enforce failure status when a dependency has failed
 			success = false
 		}
-		done <- doneResult[N]{n: t.n, success: success}
+		done <- doneResult{n: t.n, success: success}
 	}
 }

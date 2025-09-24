@@ -65,30 +65,34 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 	// we might have already got rid of this reference, thus potentially downgrading actionType
 	//
 	// parallelism is set to 1, so there is no multi-threaded access there. TODO: increase parallism
-	b.Graph.Run(1, func(node deployplan.ResourceNode, failedDependency *deployplan.ResourceNode) bool {
-		errorPrefix := fmt.Sprintf("cannot plan %s.%s", node.Group, node.Key)
+	b.Graph.Run(1, func(resourceKey string, failedDependency *string) bool {
+		group := config.GetResourceTypeFromKey(resourceKey)
+		if group == "" {
+			logdiag.LogError(ctx, fmt.Errorf("internal error: bad node: %s", resourceKey))
+			return false
+		}
+		errorPrefix := "cannot plan " + resourceKey
 
 		if failedDependency != nil {
-			logdiag.LogError(ctx, fmt.Errorf("%s: dependency failed: %s", errorPrefix, failedDependency.String()))
+			logdiag.LogError(ctx, fmt.Errorf("%s: dependency failed: %s", errorPrefix, *failedDependency))
 			return false
 		}
 
-		adapter, ok := b.Adapters[node.Group]
+		adapter, ok := b.Adapters[group]
 		if !ok {
 			logdiag.LogError(ctx, fmt.Errorf("%s: resource type not supported on direct backend, available: %s", errorPrefix, strings.Join(utils.SortedKeys(b.Adapters), ", ")))
 			return false
 		}
 
-		config, ok := configRoot.GetResourceConfig(node.Group, node.Key)
+		config, ok := configRoot.GetResourceConfig(resourceKey)
 		if !ok {
 			logdiag.LogError(ctx, fmt.Errorf("%s: internal error: cannot read config", errorPrefix))
 			return false
 		}
 
 		d := &DeploymentUnit{
-			Group:   node.Group,
-			Key:     node.Key,
-			Adapter: adapter,
+			ResourceKey: resourceKey,
+			Adapter:     adapter,
 		}
 
 		// This currently does not do API calls, so we can run this sequentially. Once we have remote diffs, we need to run in threadpool.
@@ -100,7 +104,7 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 
 		hasDelayedResolutions := false
 
-		for _, reference := range b.Graph.OutgoingLabels(node) {
+		for _, reference := range b.Graph.OutgoingLabels(resourceKey) {
 			value, err := d.ResolveReferenceLocalOrRemote(ctx, &b.StateDB, reference, actionType, config)
 			if errors.Is(err, ErrDelayed) {
 				hasDelayedResolutions = true
@@ -122,12 +126,10 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 				logdiag.LogError(ctx, fmt.Errorf("%s: internal error, action noop must not have delayed resolutions", errorPrefix))
 				return false
 			}
-
 			return true
 		}
 
-		key := "resources." + node.Group + "." + node.Key
-		plan.Plan[key] = deployplan.PlanEntry{
+		plan.Plan[resourceKey] = deployplan.PlanEntry{
 			Action: actionType.StringFull(),
 		}
 
@@ -148,16 +150,13 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 			log.Warnf(ctx, "%s: resource type not supported on direct backend", group)
 			continue
 		}
-
-		groupData := state[group]
-		for _, key := range utils.SortedKeys(groupData) {
-			n := deployplan.ResourceNode{Group: group, Key: key}
+		for _, key := range utils.SortedKeys(state[group]) {
+			n := "resources." + group + "." + key
 			if b.Graph.HasNode(n) {
 				continue
 			}
 			b.Graph.AddNode(n)
-			keyStr := "resources." + group + "." + key
-			plan.Plan[keyStr] = deployplan.PlanEntry{Action: deployplan.ActionTypeDelete.StringFull()}
+			plan.Plan[n] = deployplan.PlanEntry{Action: deployplan.ActionTypeDelete.StringFull()}
 		}
 	}
 
@@ -172,22 +171,20 @@ func (b *DeploymentBundle) CalculatePlanForDestroy(ctx context.Context, client *
 		return nil, err
 	}
 
-	b.Graph = dagrun.NewGraph[deployplan.ResourceNode]()
-	plan := deployplan.Plan{
-		Plan: make(map[string]deployplan.PlanEntry),
-	}
+	b.Graph = dagrun.NewGraph()
+	plan := deployplan.Plan{Plan: make(map[string]deployplan.PlanEntry)}
 
-	for group, groupData := range b.StateDB.Data.DeploymentUnits {
+	state := b.StateDB.ExportState(ctx)
+	for group, groupData := range state {
 		_, ok := b.Adapters[group]
 		if !ok {
 			logdiag.LogError(ctx, fmt.Errorf("cannot destroy %s: resource type not supported on direct backend", group))
 			continue
 		}
 		for key := range groupData {
-			n := deployplan.ResourceNode{Group: group, Key: key}
+			n := "resources." + group + "." + key
 			b.Graph.AddNode(n)
-			keyStr := "resources." + group + "." + key
-			plan.Plan[keyStr] = deployplan.PlanEntry{Action: deployplan.ActionTypeDelete.StringFull()}
+			plan.Plan[n] = deployplan.PlanEntry{Action: deployplan.ActionTypeDelete.StringFull()}
 		}
 	}
 

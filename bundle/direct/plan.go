@@ -21,13 +21,13 @@ import (
 func (d *DeploymentUnit) Plan(ctx context.Context, client *databricks.WorkspaceClient, db *dstate.DeploymentState, inputConfig any, localOnly, refresh bool) (deployplan.ActionType, error) {
 	result, err := d.plan(ctx, client, db, inputConfig, localOnly, refresh)
 	if err != nil {
-		return deployplan.ActionTypeNoop, fmt.Errorf("planning: %s.%s: %w", d.Group, d.Key, err)
+		return deployplan.ActionTypeNoop, fmt.Errorf("planning: %s: %w", d.ResourceKey, err)
 	}
 	return result, err
 }
 
 func (d *DeploymentUnit) plan(ctx context.Context, client *databricks.WorkspaceClient, db *dstate.DeploymentState, inputConfig any, localOnly, refresh bool) (deployplan.ActionType, error) {
-	entry, hasEntry := db.GetResourceEntry(d.Group, d.Key)
+	entry, hasEntry := db.GetResourceEntry(d.ResourceKey)
 	if !hasEntry {
 		return deployplan.ActionTypeCreate, nil
 	}
@@ -69,15 +69,15 @@ var ErrDelayed = errors.New("must be resolved after apply")
 
 func (d *DeploymentUnit) ResolveReferenceLocalOrRemote(ctx context.Context, db *dstate.DeploymentState, reference string, actionType deployplan.ActionType, config any) (any, error) {
 	path, ok := dynvar.PureReferenceToPath(reference)
-	if !ok || len(path) <= 3 || path[0].Key() != "resources" || path[1].Key() != d.Group || path[2].Key() != d.Key {
-		return nil, fmt.Errorf("internal error: expected reference to resources.%s.%s, got %q", d.Group, d.Key, reference)
+	if !ok || len(path) <= 3 || path[0:3].String() != d.ResourceKey {
+		return nil, fmt.Errorf("internal error: expected reference to %q, got %q", d.ResourceKey, reference)
 	}
 
 	fieldPath := path[3:]
 
 	if fieldPath.String() == "id" {
 		if actionType.KeepsID() {
-			entry, hasEntry := db.GetResourceEntry(d.Group, d.Key)
+			entry, hasEntry := db.GetResourceEntry(d.ResourceKey)
 			idValue := entry.ID
 			if !hasEntry || idValue == "" {
 				return nil, errors.New("internal error: no db entry")
@@ -137,17 +137,17 @@ func (d *DeploymentUnit) ResolveReferenceLocalOrRemote(ctx context.Context, db *
 
 func (d *DeploymentUnit) ResolveReferenceRemote(ctx context.Context, db *dstate.DeploymentState, reference string) (any, error) {
 	path, ok := dynvar.PureReferenceToPath(reference)
-	if !ok || len(path) <= 3 || path[0].Key() != "resources" || path[1].Key() != d.Group || path[2].Key() != d.Key {
-		return nil, fmt.Errorf("internal error: expected reference to resources.%s.%s, got %q", d.Group, d.Key, reference)
+	if !ok || len(path) <= 3 || path[0:3].String() != d.ResourceKey {
+		return nil, fmt.Errorf("internal error: expected reference to %q, got %q", d.ResourceKey, reference)
 	}
 
 	fieldPath := path[3:]
 
 	// Handle "id" field separately - read from state, not remote state
 	if fieldPath.String() == "id" {
-		entry, hasEntry := db.GetResourceEntry(d.Group, d.Key)
+		entry, hasEntry := db.GetResourceEntry(d.ResourceKey)
 		if !hasEntry || entry.ID == "" {
-			return nil, fmt.Errorf("internal error: no state entry or empty ID for %s.%s", d.Group, d.Key)
+			return nil, fmt.Errorf("internal error: no state entry or empty ID for %s", d.ResourceKey)
 		}
 		return entry.ID, nil
 	}
@@ -165,7 +165,7 @@ func (d *DeploymentUnit) ReadRemoteStateField(ctx context.Context, db *dstate.De
 	// Long term we'll do (1), for now going with (2).
 	// Not considering (3) because it would result in bad plans.
 
-	entry, _ := db.GetResourceEntry(d.Group, d.Key)
+	entry, _ := db.GetResourceEntry(d.ResourceKey)
 	if entry.ID == "" {
 		return nil, errors.New("internal error: Missing state entry")
 	}

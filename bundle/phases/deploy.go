@@ -34,10 +34,10 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 	}
 
 	types := []deployplan.ActionType{deployplan.ActionTypeRecreate, deployplan.ActionTypeDelete}
-	schemaActions := deployplan.FilterGroup(actions, "schemas", types...)
-	dltActions := deployplan.FilterGroup(actions, "pipelines", types...)
-	volumeActions := deployplan.FilterGroup(actions, "volumes", types...)
-	dashboardActions := deployplan.FilterGroup(actions, "dashboards", types...)
+	schemaActions := filterGroup(actions, "schemas", types...)
+	dltActions := filterGroup(actions, "pipelines", types...)
+	volumeActions := filterGroup(actions, "volumes", types...)
+	dashboardActions := filterGroup(actions, "dashboards", types...)
 
 	// We don't need to display any prompts in this case.
 	if len(schemaActions) == 0 && len(dltActions) == 0 && len(volumeActions) == 0 && len(dashboardActions) == 0 {

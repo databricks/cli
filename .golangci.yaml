@@ -15,6 +15,7 @@ linters:
     - unconvert
     - unused
     - exhaustruct
+    - exhaustive
     - copyloopvar
     - forbidigo
   settings:
@@ -59,6 +60,8 @@ linters:
         - len
         - equal-values
         - encoded-compare # Always replaces Equal() with JSONEq, but sometimes exact string match is wanted for JSON
+    exhaustive:
+      default-signifies-exhaustive: true
   exclusions:
     generated: lax
     presets:

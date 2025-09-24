@@ -100,6 +100,8 @@ func override(basePath dyn.Path, left, right dyn.Value, visitor OverrideVisitor)
 		}
 	case dyn.KindNil:
 		return left, nil
+	default:
+		// Fall through to the error case.
 	}
 
 	return dyn.InvalidValue, fmt.Errorf("unexpected kind %s at %s", left.Kind(), basePath.String())

@@ -7,6 +7,7 @@ import (
 	"sort"
 
 	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structtag"
 )
 
 type Change struct {
@@ -67,6 +68,7 @@ func diffValues(path *structpath.PathNode, v1, v2 reflect.Value, changes *[]Chan
 
 	kind := v1.Kind()
 
+	// Perform nil checks for nilable types.
 	switch kind {
 	case reflect.Pointer, reflect.Map, reflect.Slice, reflect.Interface, reflect.Chan, reflect.Func:
 		v1Nil := v1.IsNil()
@@ -78,6 +80,9 @@ func diffValues(path *structpath.PathNode, v1, v2 reflect.Value, changes *[]Chan
 			*changes = append(*changes, Change{Path: path, Old: v1.Interface(), New: v2.Interface()})
 			return
 		}
+	default:
+		// Not a nilable type.
+		// Proceed with direct comparison below.
 	}
 
 	switch kind {
@@ -130,7 +135,8 @@ func diffStruct(path *structpath.PathNode, s1, s2 reflect.Value, changes *[]Chan
 		zero2 := v2Field.IsZero()
 
 		if zero1 || zero2 {
-			if node.JSONTag().OmitEmpty() {
+			jsonTag := structtag.JSONTag(sf.Tag.Get("json"))
+			if jsonTag.OmitEmpty() {
 				if zero1 {
 					if !slices.Contains(forced1, sf.Name) {
 						v1Field = reflect.ValueOf(nil)
