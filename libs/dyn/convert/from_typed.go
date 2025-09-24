@@ -388,14 +388,14 @@ func getForceSendFieldsForFromTyped(v reflect.Value) map[int][]string {
 
 		if field.Name == "ForceSendFields" && !field.Anonymous {
 			// Direct ForceSendFields (structKey = -1)
-			if fields := extractForceSendFieldsSlice(fieldValue); len(fields) > 0 {
+			if fields, ok := fieldValue.Interface().([]string); ok {
 				result[-1] = fields
 			}
 		} else if field.Anonymous {
 			// Embedded struct - check for ForceSendFields inside it
 			if embeddedStruct := getEmbeddedStructForReading(fieldValue); embeddedStruct.IsValid() {
 				if forceSendField := embeddedStruct.FieldByName("ForceSendFields"); forceSendField.IsValid() {
-					if fields := extractForceSendFieldsSlice(forceSendField); len(fields) > 0 {
+					if fields, ok := forceSendField.Interface().([]string); ok {
 						result[i] = fields
 					}
 				}
@@ -404,16 +404,6 @@ func getForceSendFieldsForFromTyped(v reflect.Value) map[int][]string {
 	}
 
 	return result
-}
-
-// Helper function to extract []string from a ForceSendFields field
-func extractForceSendFieldsSlice(fieldValue reflect.Value) []string {
-	if fieldValue.IsValid() && fieldValue.Kind() == reflect.Slice {
-		if fields, ok := fieldValue.Interface().([]string); ok {
-			return fields
-		}
-	}
-	return nil
 }
 
 // Helper function for reading - doesn't create nil pointers
