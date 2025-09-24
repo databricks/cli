@@ -15,4 +15,6 @@ trace $CLI grants get schema $schema_id --output json | jq '.privilege_assignmen
 
 trace $CLI bundle deployment unbind schema_1
 trace $CLI bundle deploy --var "suffix=another"
+
+title "Grants should be the same as before unbind"
 trace $CLI grants get schema $schema_id --output json | jq '.privilege_assignments[] | select(.principal == "account users")'

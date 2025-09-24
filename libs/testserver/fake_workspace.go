@@ -64,14 +64,13 @@ type FakeWorkspace struct {
 	nextJobRunId    int64
 	Jobs            map[int64]jobs.Job
 	JobRuns         map[int64]jobs.Run
-	JobsPermissions map[string][]jobs.JobAccessControlRequest
-	SchemasGrants   map[string][]catalog.PrivilegeAssignment
-
+	JobPermissions  map[string][]jobs.JobAccessControlRequest
 	Pipelines       map[string]pipelines.GetPipelineResponse
 	PipelineUpdates map[string]bool
 	Monitors        map[string]catalog.MonitorInfo
 	Apps            map[string]apps.App
 	Schemas         map[string]catalog.SchemaInfo
+	SchemasGrants   map[string][]catalog.PrivilegeAssignment
 	Volumes         map[string]catalog.VolumeInfo
 	Dashboards      map[string]dashboards.Dashboard
 	SqlWarehouses   map[string]sql.GetWarehouseResponse
@@ -155,7 +154,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 
 		Jobs:                 map[int64]jobs.Job{},
 		JobRuns:              map[int64]jobs.Run{},
-		JobsPermissions:      map[string][]jobs.JobAccessControlRequest{},
+		JobPermissions:       map[string][]jobs.JobAccessControlRequest{},
 		SchemasGrants:        map[string][]catalog.PrivilegeAssignment{},
 		nextJobId:            TestJobID,
 		nextJobRunId:         TestRunID,

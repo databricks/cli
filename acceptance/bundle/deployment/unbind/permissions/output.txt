@@ -27,6 +27,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
+=== Permissions should be the same as before unbind
 >>> [CLI] jobs get-permissions [NUMID] --output json
 {
   "all_permissions": [

@@ -43,13 +43,8 @@ func (m *unbind) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	}
 
 	for _, resource := range state.Values.RootModule.Resources {
-		if resource.Address == fmt.Sprintf("databricks_permissions.%s_%s", m.bundleType, m.resourceKey) {
-			err = tf.StateRm(ctx, resource.Address)
-			if err != nil {
-				return diag.Errorf("terraform state rm: %v", err)
-			}
-		}
-		if resource.Address == fmt.Sprintf("databricks_grants.%s_%s", m.bundleType, m.resourceKey) {
+		if resource.Address == fmt.Sprintf("databricks_permissions.%s_%s", m.bundleType, m.resourceKey) ||
+			resource.Address == fmt.Sprintf("databricks_grants.%s_%s", m.bundleType, m.resourceKey) {
 			err = tf.StateRm(ctx, resource.Address)
 			if err != nil {
 				return diag.Errorf("terraform state rm: %v", err)

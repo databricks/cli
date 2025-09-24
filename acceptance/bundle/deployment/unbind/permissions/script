@@ -13,4 +13,6 @@ trace $CLI jobs get-permissions $job_id --output json | jq '.access_control_list
 
 trace $CLI bundle deployment unbind job_1
 trace $CLI bundle deploy
+
+title "Permissions should be the same as before unbind"
 trace $CLI jobs get-permissions $job_id --output json | jq '.access_control_list[] | select(.group_name == "users")'

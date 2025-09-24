@@ -23,6 +23,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
+=== Grants should be the same as before unbind
 >>> [CLI] grants get schema main.test-schema-[UNIQUE_NAME] --output json
 {
   "principal": "account users",

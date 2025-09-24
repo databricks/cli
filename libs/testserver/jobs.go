@@ -31,6 +31,8 @@ func (s *FakeWorkspace) JobsCreate(req Request) Response {
 		}
 	}
 
+	// CreatorUserName field is used by TF to check if the resource exists or not. CreatorUserName should be non-empty for the resource to be considered as "exists"
+	// https://github.com/databricks/terraform-provider-databricks/blob/main/permissions/permission_definitions.go#L108
 	s.Jobs[jobId] = jobs.Job{JobId: jobId, Settings: &jobSettings, CreatorUserName: TestUser.UserName}
 	return Response{Body: jobs.CreateResponse{JobId: jobId}}
 }
@@ -156,7 +158,7 @@ func (s *FakeWorkspace) JobsUpdatePermissions(req Request, jobId string) Respons
 
 	defer s.LockUnlock()()
 
-	s.JobsPermissions[jobId] = request.AccessControlList
+	s.JobPermissions[jobId] = request.AccessControlList
 	var acl []jobs.JobAccessControlResponse
 	for _, accessControlList := range request.AccessControlList {
 		acl = append(acl, jobs.JobAccessControlResponse{
@@ -179,7 +181,7 @@ func (s *FakeWorkspace) JobsUpdatePermissions(req Request, jobId string) Respons
 }
 
 func (s *FakeWorkspace) JobsGetPermissions(req Request, jobId string) Response {
-	jobPermissions := s.JobsPermissions[jobId]
+	jobPermissions := s.JobPermissions[jobId]
 	var acl []jobs.JobAccessControlResponse
 	for _, accessControlList := range jobPermissions {
 		acl = append(acl, jobs.JobAccessControlResponse{
