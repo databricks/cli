@@ -2,6 +2,7 @@
 >>> [CLI] bundle plan
 create jobs.bar
 create pipelines.foo
+
 Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
@@ -53,6 +54,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 >>> [CLI] bundle plan
 update jobs.bar
 recreate pipelines.foo
+
 Plan: 1 to add, 1 to change, 1 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy --auto-approve

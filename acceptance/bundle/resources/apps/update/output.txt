@@ -1,6 +1,7 @@
 
 >>> [CLI] bundle plan
 create apps.mykey
+
 Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
@@ -36,6 +37,7 @@ Resources:
 
 >>> [CLI] bundle plan
 update apps.mykey
+
 Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
@@ -71,6 +73,7 @@ Resources:
 
 >>> [CLI] bundle plan
 recreate apps.mykey
+
 Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
 
 >>> [CLI] bundle summary

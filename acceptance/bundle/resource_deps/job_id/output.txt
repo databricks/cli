@@ -2,6 +2,7 @@
 >>> [CLI] bundle plan
 create jobs.bar
 create jobs.foo
+
 Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy

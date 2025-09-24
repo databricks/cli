@@ -4,6 +4,7 @@ create jobs.bar
 create jobs.baz
 create jobs.foo
 create jobs.independent
+
 Plan: 4 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> print_sorted_requests
@@ -70,6 +71,7 @@ Resources:
 create jobs.bar
 create jobs.baz
 create jobs.foo
+
 Plan: 3 to add, 0 to change, 0 to delete, 1 unchanged
 
 === Expecting no difference in the output between first and second deploy

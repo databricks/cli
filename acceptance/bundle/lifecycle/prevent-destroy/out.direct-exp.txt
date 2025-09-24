@@ -8,6 +8,7 @@ Exit code (musterr): 1
 
 >>> errcode [CLI] bundle plan
 recreate pipelines.my_pipelines
+
 Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
 
 >>> musterr [CLI] bundle deploy
@@ -20,6 +21,7 @@ Exit code (musterr): 1
 >>> errcode [CLI] bundle plan
 recreate pipelines.my_pipelines
 recreate schemas.my_schema
+
 Plan: 2 to add, 0 to change, 2 to delete, 0 unchanged
 
 >>> musterr [CLI] bundle deploy
@@ -33,6 +35,7 @@ Exit code (musterr): 1
 >>> errcode [CLI] bundle plan
 recreate pipelines.my_pipelines
 recreate schemas.my_schema
+
 Plan: 2 to add, 0 to change, 2 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy --auto-approve
@@ -53,6 +56,7 @@ Deployment complete!
 >>> errcode [CLI] bundle plan
 delete pipelines.my_pipelines
 delete schemas.my_schema
+
 Plan: 0 to add, 0 to change, 2 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy --auto-approve

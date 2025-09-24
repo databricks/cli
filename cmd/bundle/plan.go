@@ -127,6 +127,7 @@ func newPlanCommand() *cobra.Command {
 					key := strings.TrimPrefix(action.ResourceKey, "resources.")
 					fmt.Fprintf(out, "%s %s\n", action.ActionType.StringShort(), key)
 				}
+				fmt.Fprintln(out)
 			}
 			fmt.Fprintf(out, "Plan: %d to add, %d to change, %d to delete, %d unchanged\n", createCount, updateCount, deleteCount, unchanged)
 		case flags.OutputJSON:

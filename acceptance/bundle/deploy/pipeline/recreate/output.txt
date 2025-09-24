@@ -33,6 +33,7 @@ Deployment complete!
 >>> [CLI] bundle plan --var=catalog=another_catalog
 recreate pipelines.foo
 recreate schemas.bar
+
 Plan: 2 to add, 0 to change, 2 to delete, 0 unchanged
 
 === Try to redeploy the bundle, pointing the DLT pipeline to a different UC catalog

@@ -38,6 +38,7 @@ Deployment complete!
 >>> [CLI] bundle plan
 delete jobs.foo
 delete pipelines.bar
+
 Plan: 0 to add, 0 to change, 2 to delete, 0 unchanged
 
 === Try to redeploy the bundle - should fail without --auto-approve
