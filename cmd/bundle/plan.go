@@ -3,7 +3,6 @@ package bundle
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -35,13 +34,6 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 	cmd.Flags().StringVar(&clusterId, "compute-id", "", "Override cluster in the deployment with the given compute ID.")
 	cmd.Flags().StringVarP(&clusterId, "cluster-id", "c", "", "Override cluster in the deployment with the given cluster ID.")
 	cmd.Flags().MarkDeprecated("compute-id", "use --cluster-id instead")
-
-	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
-		if f := cmd.Flag("output"); f != nil && f.Changed {
-			return errors.New("the -o/--output flag is not supported for this command")
-		}
-		return nil
-	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := logdiag.InitContext(cmd.Context())
