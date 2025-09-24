@@ -51,6 +51,7 @@ func TestValueIsValid(t *testing.T) {
 }
 
 func TestIsZero(t *testing.T) {
+	assert.True(t, dyn.V(0).IsZero(), "int")
 	assert.True(t, dyn.V(int(0)).IsZero(), "int")
 	assert.False(t, dyn.V(int(1)).IsZero(), "int")
 	assert.True(t, dyn.V(uint(0)).IsZero(), "uint")
@@ -84,4 +85,7 @@ func TestIsZero(t *testing.T) {
 	assert.False(t, dyn.V(float64(0.01)).IsZero(), "float64")
 
 	assert.True(t, dyn.V(dyn.Time{}).IsZero(), "time")
+	assert.True(t, dyn.V(dyn.Mapping{}).IsZero(), "Mapping")
+	assert.True(t, dyn.V([]dyn.Value{}).IsZero(), "Sequence")
+	assert.False(t, dyn.V([]dyn.Value{dyn.V(0)}).IsZero(), "Sequence")
 }
