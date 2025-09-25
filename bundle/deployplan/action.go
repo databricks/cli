@@ -63,10 +63,6 @@ func init() {
 	}
 }
 
-func (a ActionType) IsNoop() bool {
-	return a == ActionTypeSkip
-}
-
 func (a ActionType) KeepsID() bool {
 	switch a {
 	case ActionTypeCreate, ActionTypeUpdateWithID, ActionTypeRecreate, ActionTypeDelete:
