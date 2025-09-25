@@ -407,3 +407,69 @@ func TestGet_BundleTag_SkipsPromoted(t *testing.T) {
 	require.EqualError(t, err, "hidden: field \"hidden\" not found in structaccess.host")
 	require.EqualError(t, ValidateByString(reflect.TypeOf(host{}), "hidden"), "hidden: field \"hidden\" not found in structaccess.host")
 }
+
+func TestGet_EmbeddedStructForceSendFields(t *testing.T) {
+	type Inner struct {
+		InnerFieldOmit    string   `json:"inner_field_omit,omitempty"`
+		InnerFieldNoOmit  string   `json:"inner_field_no_omit"`
+		ForceSendFields   []string `json:"-"`
+	}
+
+	type Outer struct {
+		OuterFieldOmit   string `json:"outer_field_omit,omitempty"`
+		OuterFieldNoOmit string `json:"outer_field_no_omit"`
+		Inner
+	}
+
+	objWithOuterFSF := Outer{
+		OuterFieldOmit:   "",
+		OuterFieldNoOmit: "",
+		Inner: Inner{
+			InnerFieldOmit:   "",
+			InnerFieldNoOmit: "",
+			ForceSendFields:  []string{"OuterFieldOmit"},
+		},
+	}
+
+	got, err := GetByString(objWithOuterFSF, "outer_field_omit")
+	require.NoError(t, err)
+	require.Nil(t, got)
+
+	got, err = GetByString(objWithOuterFSF, "outer_field_no_omit")
+	require.NoError(t, err)
+	require.Equal(t, "", got)
+
+	got, err = GetByString(objWithOuterFSF, "inner_field_omit")
+	require.NoError(t, err)
+	require.Nil(t, got)
+
+	got, err = GetByString(objWithOuterFSF, "inner_field_no_omit")
+	require.NoError(t, err)
+	require.Equal(t, "", got)
+
+	objWithInnerFSF := Outer{
+		OuterFieldOmit:   "",
+		OuterFieldNoOmit: "",
+		Inner: Inner{
+			InnerFieldOmit:   "",
+			InnerFieldNoOmit: "",
+			ForceSendFields:  []string{"InnerFieldOmit"},
+		},
+	}
+
+	got, err = GetByString(objWithInnerFSF, "outer_field_omit")
+	require.NoError(t, err)
+	require.Nil(t, got)
+
+	got, err = GetByString(objWithInnerFSF, "outer_field_no_omit")
+	require.NoError(t, err)
+	require.Equal(t, "", got)
+
+	got, err = GetByString(objWithInnerFSF, "inner_field_omit")
+	require.NoError(t, err)
+	require.Equal(t, "", got)
+
+	got, err = GetByString(objWithInnerFSF, "inner_field_no_omit")
+	require.NoError(t, err)
+	require.Equal(t, "", got)
+}
