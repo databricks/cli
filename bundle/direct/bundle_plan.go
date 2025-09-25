@@ -121,7 +121,7 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 			}
 		}
 
-		if actionType == deployplan.ActionTypeNoop {
+		if actionType == deployplan.ActionTypeSkip {
 			if hasDelayedResolutions {
 				logdiag.LogError(ctx, fmt.Errorf("%s: internal error, action noop must not have delayed resolutions", errorPrefix))
 				return false
