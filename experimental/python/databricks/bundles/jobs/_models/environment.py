@@ -33,7 +33,7 @@ class Environment:
     The version is a string, consisting of an integer.
     """
 
-    jar_dependencies: VariableOrList[str] = field(default_factory=list)
+    java_dependencies: VariableOrList[str] = field(default_factory=list)
     """
     :meta private: [EXPERIMENTAL]
     
@@ -68,7 +68,7 @@ class EnvironmentDict(TypedDict, total=False):
     The version is a string, consisting of an integer.
     """
 
-    jar_dependencies: VariableOrList[str]
+    java_dependencies: VariableOrList[str]
     """
     :meta private: [EXPERIMENTAL]
     

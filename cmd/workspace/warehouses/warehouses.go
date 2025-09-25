@@ -619,7 +619,7 @@ func newList() *cobra.Command {
 	cmd.Short = `List warehouses.`
 	cmd.Long = `List warehouses.
   
-  Lists all SQL warehouses that a user has manager permissions on.`
+  Lists all SQL warehouses that a user has access to.`
 
 	cmd.Annotations = make(map[string]string)
 
