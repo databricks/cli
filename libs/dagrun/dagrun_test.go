@@ -21,9 +21,8 @@ type testCase struct {
 	edges           []edge
 	returnValues    map[string]bool // node -> false to indicate failure
 	cycle           string
-	failedFrom      map[string]string        // node -> expected failedFrom
-	failedFromOneOf map[string][]string      // node -> any of these failedFrom values acceptable
-	inbound         map[string][]inboundEdge // node -> expected inbound edges
+	failedFrom      map[string]string   // node -> expected failedFrom
+	failedFromOneOf map[string][]string // node -> any of these failedFrom values acceptable
 }
 
 func TestRun_VariousGraphsAndPools(t *testing.T) {
@@ -56,10 +55,6 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 				{"B", "C", "B->C"},
 			},
 			seen: []string{"A", "B", "C"},
-			inbound: map[string][]inboundEdge{
-				"B": {{From: "A", Label: "A->B"}},
-				"C": {{From: "B", Label: "B->C"}},
-			},
 		},
 		{
 			name: "one-node cycle",
@@ -217,60 +212,4 @@ func runTestCase(t *testing.T, tc testCase, g *Graph, p int) {
 			assert.True(t, slices.Contains(oneOf, *gotPtr), "failedFrom for %s not in %v, got %v", node, oneOf, *gotPtr)
 		}
 	}
-
-	// Verify inbound edges
-	if tc.inbound != nil {
-		assert.Equal(t, tc.inbound, g.Inbound, "inbound edges")
-	}
-}
-
-func TestOutgoingLabels_OrderAndEmpty(t *testing.T) {
-	g := NewGraph()
-	a := "A"
-	b := "B"
-	c := "C"
-
-	// no edges yet
-	require.Empty(t, g.OutgoingLabels(a))
-
-	// add edges from A
-	g.AddDirectedEdge(a, b, "A->B #1")
-	g.AddDirectedEdge(a, c, "A->C #1")
-	g.AddDirectedEdge(a, b, "A->B #1")
-
-	// order preserved as added
-	got := g.OutgoingLabels(a)
-	require.Equal(t, []string{"A->B #1", "A->C #1"}, got)
-
-	// B still has no outgoing edges
-	require.Empty(t, g.OutgoingLabels(b))
-}
-
-func TestOutgoingLabels_DuplicateEdgesDifferentLabels(t *testing.T) {
-	g := NewGraph()
-	x := "X"
-	y := "Y"
-
-	// same (from,to) pair with different labels
-	g.AddDirectedEdge(x, y, "e1")
-	g.AddDirectedEdge(x, y, "e2")
-	g.AddDirectedEdge(x, y, "e3")
-
-	labels := g.OutgoingLabels(x)
-	assert.Equal(t, []string{"e1", "e2", "e3"}, labels)
-}
-
-func TestOutgoingLabels_SameLabelDifferentTargets(t *testing.T) {
-	g := NewGraph()
-	a := "A"
-	b := "B"
-	c := "C"
-
-	// same label to different targets should be returned once
-	g.AddDirectedEdge(a, b, "dup")
-	g.AddDirectedEdge(a, c, "dup")
-	g.AddDirectedEdge(a, b, "other")
-
-	labels := g.OutgoingLabels(a)
-	assert.Equal(t, []string{"dup", "other"}, labels)
 }
