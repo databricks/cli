@@ -21,6 +21,11 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		panic("Planning is not done")
 	}
 
+	if len(plan.Plan) == 0 {
+		// Avoid creating state file if nothing to deploy
+		return
+	}
+
 	b.StateDB.AssertOpened()
 
 	g, err := makeGraph(plan)
