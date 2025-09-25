@@ -17,15 +17,13 @@ type inboundEdge struct {
 }
 
 type Graph struct {
-	Adj     map[string][]adjEdge
-	Inbound map[string][]inboundEdge // maintains all inbound edges to the node
-	Nodes   []string                 // maintains insertion order of added nodes
+	Adj   map[string][]adjEdge
+	Nodes []string // maintains insertion order of added nodes
 }
 
 func NewGraph() *Graph {
 	return &Graph{
-		Adj:     make(map[string][]adjEdge),
-		Inbound: make(map[string][]inboundEdge),
+		Adj: make(map[string][]adjEdge),
 	}
 }
 
@@ -40,35 +38,10 @@ func (g *Graph) AddNode(n string) {
 
 func (g *Graph) HasNode(n string) bool { _, ok := g.Adj[n]; return ok }
 
-// HasOutgoingEdges reports whether this node has at least one outgoing edge.
-// In this graph, an outgoing edge from X->Y means Y references X.
-func (g *Graph) HasOutgoingEdges(n string) bool { return len(g.Adj[n]) > 0 }
-
 func (g *Graph) AddDirectedEdge(from, to, label string) {
 	g.AddNode(from)
 	g.AddNode(to)
 	g.Adj[from] = append(g.Adj[from], adjEdge{To: to, Label: label})
-	g.Inbound[to] = append(g.Inbound[to], inboundEdge{From: from, Label: label})
-}
-
-// OutgoingLabels returns labels of all outgoing edges from the given node
-// in the order the edges were added. If the node has no outgoing edges or is
-// unknown to the graph, an empty slice is returned.
-func (g *Graph) OutgoingLabels(node string) []string {
-	outs := g.Adj[node]
-	if len(outs) == 0 {
-		return []string{}
-	}
-	labels := make([]string, 0, len(outs))
-	seen := make(map[string]struct{}, len(outs))
-	for _, e := range outs {
-		if _, ok := seen[e.Label]; ok {
-			continue
-		}
-		seen[e.Label] = struct{}{}
-		labels = append(labels, e.Label)
-	}
-	return labels
 }
 
 type CycleError struct {
