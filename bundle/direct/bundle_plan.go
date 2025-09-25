@@ -110,7 +110,6 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 				}
 
 				value, err := b.LookupReferenceLocal(ctx, path)
-				// log.Warnf(ctx, "local lookup path=%s value=%#v err=%s", path.String(), value, err)
 				if err != nil {
 					if errors.Is(err, errDelayed) {
 						continue
@@ -234,45 +233,6 @@ func (b *DeploymentBundle) CalculatePlanForDestroy(ctx context.Context, client *
 	return plan, nil
 }
 
-func (b *DeploymentBundle) NeedsRemote(ctx context.Context, path *structpath.PathNode, newState any) bool {
-	targetResourceKey := path.Prefix(3).String()
-	fieldPath := path.SkipPrefix(3)
-
-	if fieldPath.String() == "id" {
-		return false
-	}
-
-	adapter, _ := b.getAdapterForKey(targetResourceKey)
-	if adapter == nil {
-		return false
-	}
-
-	configValidErr := structaccess.Validate(reflect.TypeOf(newState), fieldPath)
-	remoteValidErr := structaccess.Validate(adapter.RemoteType(), fieldPath)
-
-	if configValidErr != nil && remoteValidErr != nil {
-		return false
-	}
-
-	if configValidErr == nil && remoteValidErr != nil {
-		return false
-	}
-
-	if configValidErr != nil && remoteValidErr == nil {
-		return true
-	}
-
-	// Field is present in both: try local, fallback to remote.
-
-	value, err := structaccess.Get(newState, fieldPath)
-
-	if err == nil && value != nil {
-		return false
-	}
-
-	return true
-}
-
 func (b *DeploymentBundle) LookupReferenceLocal(ctx context.Context, path *structpath.PathNode) (any, error) {
 	targetResourceKey := path.Prefix(3).String()
 	fieldPath := path.SkipPrefix(3)
@@ -309,7 +269,6 @@ func (b *DeploymentBundle) LookupReferenceLocal(ctx context.Context, path *struc
 
 	_, isUnresolved := targetEntry.NewState.Refs[fieldPathS]
 	if isUnresolved {
-		// fmt.Fprintf(os.Stderr, "isUnresolved!\n")
 		// The value that is requested is itself a reference; this means it will be resolved after apply
 		return nil, errDelayed
 	}
@@ -456,8 +415,6 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 			}
 			return strings.Compare(a.Label, b.Label)
 		})
-
-		// fmt.Fprintf(os.Stderr, "cfg=%T cfg=%v\n", cfg, cfg)
 
 		e := deployplan.PlanEntry{
 			DependsOn: dependsOn,
