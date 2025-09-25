@@ -50,14 +50,28 @@ func newFileCacheWithBaseDir[T any](baseDir string, expiryMinutes int) (*FileCac
 	return fc, nil
 }
 
-// NewFileCache creates a new file-based cache using UserCacheDir() + "databricks" + cached component name.
-func NewFileCache[T any](component string, expiryMinutes int, metrics *bundle.Metrics) (*FileCache[T], error) {
-	userCacheDir, err := os.UserCacheDir()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get user cache directory: %w", err)
+func getCacheBaseDir() (string, error) {
+	// Check if user has configured a custom cache directory
+	if customCacheDir := os.Getenv("DATABRICKS_CACHE_FOLDER"); customCacheDir != "" {
+		return customCacheDir, nil
 	}
 
-	baseDir := filepath.Join(userCacheDir, "databricks", component)
+	// Use default cache directory
+	userCacheDir, err := os.UserCacheDir()
+	if err != nil {
+		return "", fmt.Errorf("failed to get user cache directory: %w", err)
+	}
+	return filepath.Join(userCacheDir, "databricks"), nil
+}
+
+// NewFileCache creates a new file-based cache using UserCacheDir() + "databricks" + cached component name.
+func NewFileCache[T any](component string, expiryMinutes int, metrics *bundle.Metrics) (*FileCache[T], error) {
+	cacheBaseDir, err := getCacheBaseDir()
+	if err != nil {
+		return nil, err
+	}
+
+	baseDir := filepath.Join(cacheBaseDir, component)
 	fc, err := newFileCacheWithBaseDir[T](baseDir, expiryMinutes)
 	if err != nil {
 		return nil, err
