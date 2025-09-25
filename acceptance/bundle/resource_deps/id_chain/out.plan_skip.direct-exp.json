@@ -1,0 +1,43 @@
+{
+  "plan": {
+    "resources.jobs.a": {
+      "action": "skip"
+    },
+    "resources.jobs.b": {
+      "depends_on": [
+        {
+          "node": "resources.jobs.a",
+          "label": "${resources.jobs.a.id}"
+        }
+      ],
+      "action": "skip"
+    },
+    "resources.jobs.c": {
+      "depends_on": [
+        {
+          "node": "resources.jobs.b",
+          "label": "${resources.jobs.b.id}"
+        }
+      ],
+      "action": "skip"
+    },
+    "resources.jobs.d": {
+      "depends_on": [
+        {
+          "node": "resources.jobs.c",
+          "label": "${resources.jobs.c.id}"
+        }
+      ],
+      "action": "skip"
+    },
+    "resources.jobs.e": {
+      "depends_on": [
+        {
+          "node": "resources.jobs.d",
+          "label": "${resources.jobs.d.id}"
+        }
+      ],
+      "action": "skip"
+    }
+  }
+}
