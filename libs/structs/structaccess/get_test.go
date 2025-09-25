@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/stretchr/testify/require"
 )
 
@@ -689,4 +690,13 @@ func TestGetJobSettings(t *testing.T) {
 
 	testGet(t, &jobSettings, "tasks[0].run_job_task", &jobs.RunJobTask{})
 	testGet(t, &jobSettings, "tasks[0].run_job_task.job_id", int64(0))
+}
+
+func TestPipeline(t *testing.T) {
+	p := pipelines.CreatePipeline{}
+
+	v, err := GetByString(&p, "ingestion_definition.connectin_name")
+	require.Error(t, err)
+	require.Equal(t, "ingestion_definition: cannot access nil value", err.Error())
+	require.Nil(t, v)
 }

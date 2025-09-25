@@ -36,6 +36,10 @@ func Get(v any, path *structpath.PathNode) (any, error) {
 
 	cur := reflect.ValueOf(v)
 	for _, node := range pathSegments {
+		if node.DotStar() || node.BracketStar() {
+			return nil, fmt.Errorf("wildcards not supported: %s", path.String())
+		}
+
 		var ok bool
 		cur, ok = deref(cur)
 		if !ok {
@@ -53,10 +57,6 @@ func Get(v any, path *structpath.PathNode) (any, error) {
 			}
 			cur = cur.Index(idx)
 			continue
-		}
-
-		if node.DotStar() || node.BracketStar() {
-			return nil, fmt.Errorf("wildcards not supported: %s", path.String())
 		}
 
 		key, ok := node.StringKey()
@@ -288,6 +288,8 @@ func isEmptyForOmitEmpty(v reflect.Value) bool {
 func deref(v reflect.Value) (reflect.Value, bool) {
 	for {
 		switch v.Kind() {
+		case reflect.Invalid:
+			return v, false
 		case reflect.Pointer:
 			if v.IsNil() {
 				return reflect.Value{}, false
