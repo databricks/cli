@@ -279,24 +279,6 @@ func isEmptyForOmitEmpty(v reflect.Value) bool {
 	}
 }
 
-// containsForceSendField reports whether struct v has a ForceSendFields slice containing goFieldName.
-func containsForceSendField(v reflect.Value, goFieldName string) bool {
-	if !v.IsValid() || v.Kind() != reflect.Struct {
-		return false
-	}
-	fsField := v.FieldByName("ForceSendFields")
-	if !fsField.IsValid() || fsField.Kind() != reflect.Slice {
-		return false
-	}
-	for i := range fsField.Len() {
-		el := fsField.Index(i)
-		if el.Kind() == reflect.String && el.String() == goFieldName {
-			return true
-		}
-	}
-	return false
-}
-
 // deref dereferences pointers and interfaces until it reaches a non-pointer, non-interface value.
 // Returns ok=false if it encounters a nil pointer/interface.
 func deref(v reflect.Value) (reflect.Value, bool) {
