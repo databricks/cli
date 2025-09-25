@@ -427,7 +427,9 @@ func TestGet_EmbeddedStructForceSendFields(t *testing.T) {
 		Inner: Inner{
 			InnerFieldOmit:   "",
 			InnerFieldNoOmit: "",
-			ForceSendFields:  []string{"OuterFieldOmit"},
+			// Presence of "OuterFieldOmit" does not have any effect
+			// on OuterFieldOmit because it's in the wrong struct
+			ForceSendFields: []string{"OuterFieldOmit"},
 		},
 	}
 
