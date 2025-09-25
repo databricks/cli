@@ -7,7 +7,7 @@
           "label": "${resources.pipelines.foo.id}"
         }
       ],
-      "action": "update(id_stable)",
+      "action": "update",
       "new_state": {
         "config": {
           "deployment": {
@@ -29,7 +29,7 @@
       },
       "local_changes": {
         "description": {
-          "action": "update(id_stable)"
+          "action": "update"
         }
       }
     },

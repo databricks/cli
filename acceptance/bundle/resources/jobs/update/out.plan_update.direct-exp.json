@@ -3,7 +3,7 @@
 {
   "plan": {
     "resources.jobs.foo": {
-      "action": "update(id_stable)",
+      "action": "update",
       "new_state": {
         "config": {
           "deployment": {
@@ -37,7 +37,7 @@
       },
       "local_changes": {
         "trigger.periodic.unit": {
-          "action": "update(id_stable)"
+          "action": "update"
         }
       }
     }

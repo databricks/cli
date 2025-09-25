@@ -1,7 +1,7 @@
 {
   "plan": {
     "resources.jobs.bar": {
-      "action": "update(id_stable)"
+      "action": "update"
     },
     "resources.pipelines.foo": {
       "action": "recreate"
