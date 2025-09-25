@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/require"
 )
 
@@ -627,4 +628,63 @@ func TestGet_FieldByNameBugRegressionTest(t *testing.T) {
 	testGet(t, objWithEmptyFields, "name", "")
 	testGet(t, objWithEmptyFields, "permissions_omit", nil)
 	testGet(t, objWithEmptyFields, "permissions_no_omit", []string{})
+}
+
+func TestGet_PointerToStructWithZeroValues(t *testing.T) {
+	type NestedStruct struct {
+		ID    int64  `json:"id"`
+		Name  string `json:"name"`
+		Count int    `json:"count"`
+	}
+
+	type Container struct {
+		// Pointer with omitempty - this is the key case
+		NestedOmit *NestedStruct `json:"nested_omit,omitempty"`
+		// Pointer without omitempty for comparison
+		NestedNoOmit *NestedStruct `json:"nested_no_omit"`
+	}
+
+	// Test case: explicitly set pointer to struct with zero values
+	obj := Container{
+		NestedOmit:   &NestedStruct{ID: 0, Name: "", Count: 0}, // All zero values but pointer is explicitly set
+		NestedNoOmit: &NestedStruct{ID: 0, Name: "", Count: 0},
+	}
+
+	// The pointer was explicitly set, so it should return the struct even with zero values
+	testGet(t, obj, "nested_omit", &NestedStruct{ID: 0, Name: "", Count: 0})
+	testGet(t, obj, "nested_omit.id", int64(0))
+	testGet(t, obj, "nested_omit.name", "")
+	testGet(t, obj, "nested_omit.count", 0)
+
+	// Non-omit field should definitely work
+	testGet(t, obj, "nested_no_omit", &NestedStruct{ID: 0, Name: "", Count: 0})
+	testGet(t, obj, "nested_no_omit.id", int64(0))
+
+	// Test case: nil pointer should return nil
+	objNil := Container{
+		NestedOmit:   nil,
+		NestedNoOmit: nil,
+	}
+	testGet(t, objNil, "nested_omit", nil)
+	testGet(t, objNil, "nested_no_omit", nil)
+}
+
+func TestGetJobSettings(t *testing.T) {
+	jobSettings := jobs.JobSettings{
+		Name: "job foo",
+		// Tasks []Task `json:"tasks,omitempty"`
+		Tasks: []jobs.Task{
+			{
+				TaskKey: "job_task",
+				// RunJobTask *RunJobTask `json:"run_job_task,omitempty"`
+				RunJobTask: &jobs.RunJobTask{
+					// JobId int64 `json:"job_id"`
+					JobId: 0,
+				},
+			},
+		},
+	}
+
+	testGet(t, &jobSettings, "tasks[0].run_job_task", &jobs.RunJobTask{})
+	testGet(t, &jobSettings, "tasks[0].run_job_task.job_id", int64(0))
 }
