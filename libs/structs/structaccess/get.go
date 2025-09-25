@@ -139,18 +139,16 @@ func accessKey(v reflect.Value, key string, path *structpath.PathNode) (reflect.
 	}
 }
 
-// findStructFieldByKey searches exported fields of struct v for a field matching key.
-// It matches json tag name (when present and not "-") only.
-// It also searches embedded anonymous structs (pointer or value) recursively.
-// Returns: fieldValue, structField, embeddedIndex, found
-// embeddedIndex is -1 for direct fields, or the index of the embedded struct containing the field.
-func findStructFieldByKey(v reflect.Value, key string) (reflect.Value, reflect.StructField, int, bool) {
+// findFieldInStruct searches for a field by JSON key in a single struct (no embedding).
+// Returns: fieldValue, structField, found
+func findFieldInStruct(v reflect.Value, key string) (reflect.Value, reflect.StructField, bool) {
 	t := v.Type()
-
-	// First pass: direct fields
 	for i := range t.NumField() {
 		sf := t.Field(i)
 		if sf.PkgPath != "" { // unexported
+			continue
+		}
+		if sf.Anonymous { // skip embedded fields
 			continue
 		}
 
@@ -166,11 +164,26 @@ func findStructFieldByKey(v reflect.Value, key string) (reflect.Value, reflect.S
 			if btag.Internal() || btag.ReadOnly() {
 				continue
 			}
-			return v.Field(i), sf, -1, true
+			return v.Field(i), sf, true
 		}
 	}
+	return reflect.Value{}, reflect.StructField{}, false
+}
 
-	// Second pass: search embedded anonymous structs recursively (flattening semantics)
+// findStructFieldByKey searches exported fields of struct v for a field matching key.
+// It matches json tag name (when present and not "-") only.
+// It also searches embedded anonymous structs (flattening semantics).
+// Returns: fieldValue, structField, embeddedIndex, found
+// embeddedIndex is -1 for direct fields, or the index of the embedded struct containing the field.
+func findStructFieldByKey(v reflect.Value, key string) (reflect.Value, reflect.StructField, int, bool) {
+	t := v.Type()
+
+	// First pass: direct fields
+	if fv, sf, found := findFieldInStruct(v, key); found {
+		return fv, sf, -1, true
+	}
+
+	// Second pass: search embedded anonymous structs (flattening semantics)
 	for i := range t.NumField() {
 		sf := t.Field(i)
 		if !sf.Anonymous {
@@ -188,21 +201,8 @@ func findStructFieldByKey(v reflect.Value, key string) (reflect.Value, reflect.S
 		if fv.Kind() != reflect.Struct {
 			continue
 		}
-		if out, osf, embeddedIndex, ok := findStructFieldByKey(fv, key); ok {
-			// Skip fields marked as internal or readonly via bundle tag
-			btag := structtag.BundleTag(osf.Tag.Get("bundle"))
-			if btag.Internal() || btag.ReadOnly() {
-				// Treat as not found and continue searching other anonymous fields
-				continue
-			}
-			// If the field was found in a nested embedded struct, return the current embedded index
-			// If it was a direct field in the embedded struct, return the current embedded index
-			if embeddedIndex == -1 {
-				return out, osf, i, true
-			} else {
-				// Field was found in a deeper nested struct, keep the original embedded index
-				return out, osf, embeddedIndex, true
-			}
+		if out, osf, found := findFieldInStruct(fv, key); found {
+			return out, osf, i, true
 		}
 	}
 
