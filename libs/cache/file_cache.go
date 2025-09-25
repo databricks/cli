@@ -218,6 +218,11 @@ func (fc *FileCache[T]) readFromCache(cachePath string) (T, bool) {
 		return zero, false
 	}
 
+	// Check if cache entry has expired
+	if time.Now().After(entry.Expiry) {
+		return zero, false
+	}
+
 	var result T
 	if err := json.Unmarshal(entry.Data, &result); err != nil {
 		return zero, false

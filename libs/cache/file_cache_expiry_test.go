@@ -89,3 +89,43 @@ func TestLegacyTimestampCompatibility(t *testing.T) {
 	assert.False(t, shouldDelete, "Legacy file should not be deleted if within MaxAge")
 	assert.GreaterOrEqual(t, age, time.Hour, "Age should be calculated from timestamp")
 }
+
+// TestReadFromCacheRespectsExpiry tests that readFromCache returns false for expired entries
+func TestReadFromCacheRespectsExpiry(t *testing.T) {
+	tempDir := t.TempDir()
+	cache, err := newFileCacheWithBaseDir[string](tempDir, 1)
+	require.NoError(t, err)
+	defer cache.StopCleanup()
+
+	// Create an expired cache file
+	expiredEntry := cacheEntry{
+		Data:   json.RawMessage(`"expired-value"`),
+		Expiry: time.Now().Add(-time.Hour), // Expired 1 hour ago
+	}
+	expiredData, err := json.Marshal(expiredEntry)
+	require.NoError(t, err)
+
+	expiredFile := filepath.Join(tempDir, "expired.json")
+	require.NoError(t, os.WriteFile(expiredFile, expiredData, 0o644))
+
+	// Try to read from expired cache - should return false
+	result, found := cache.readFromCache(expiredFile)
+	assert.False(t, found, "Should not find expired cache entry")
+	assert.Equal(t, "", result, "Result should be zero value for expired entry")
+
+	// Create a valid (non-expired) cache file
+	validEntry := cacheEntry{
+		Data:   json.RawMessage(`"valid-value"`),
+		Expiry: time.Now().Add(time.Hour), // Expires in 1 hour
+	}
+	validData, err := json.Marshal(validEntry)
+	require.NoError(t, err)
+
+	validFile := filepath.Join(tempDir, "valid.json")
+	require.NoError(t, os.WriteFile(validFile, validData, 0o644))
+
+	// Try to read from valid cache - should return true
+	result, found = cache.readFromCache(validFile)
+	assert.True(t, found, "Should find valid cache entry")
+	assert.Equal(t, "valid-value", result, "Should return correct value for valid entry")
+}
