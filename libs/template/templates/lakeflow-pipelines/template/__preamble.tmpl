@@ -55,6 +55,7 @@ This file only template directives; it is skipped for the actual output.
 {{if $lakeflow_only}}
   # Only include a simple job.yml direcly in resources/{{.project_name_short}}_etl
   {{skip "{{.project_name}}/resources/sample_job/**"}}
+  {{skip "{{.project_name}}/lib/**"}}
 {{else}}
   # Include a full job that might have more than one task
   {{skip "{{.project_name}}/resources/{{.project_name_short}}_etl/*.job.yml"}}
