@@ -99,6 +99,9 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 			if totalChanges > 0 {
 				// Print all actions in the order they were processed
 				for _, action := range plan.GetActions() {
+					if action.ActionType == deployplan.ActionTypeSkip {
+						continue
+					}
 					key := strings.TrimPrefix(action.ResourceKey, "resources.")
 					fmt.Fprintf(out, "%s %s\n", action.ActionType.StringShort(), key)
 				}

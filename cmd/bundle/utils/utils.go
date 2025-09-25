@@ -69,8 +69,8 @@ func GetPlan(ctx context.Context, b *bundle.Bundle) (*deployplan.Plan, error) {
 			for rKey := range group.Resources {
 				resourceKey := "resources." + group.Description.PluralName + "." + rKey
 				if _, ok := plan.Plan[resourceKey]; !ok {
-					plan.Plan[resourceKey] = &deployplan.PlanEntry{
-						Action: deployplan.ActionTypeNoop.StringFull(),
+					plan.Plan[resourceKey] = deployplan.PlanEntry{
+						Action: deployplan.ActionTypeSkip.String(),
 					}
 				}
 			}
