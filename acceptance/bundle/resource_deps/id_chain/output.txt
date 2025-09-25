@@ -10,6 +10,10 @@ Plan: 5 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> print_requests
 
+>>> [CLI] bundle debug plan
+
+>>> print_requests
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
@@ -26,6 +30,10 @@ Deployment complete!
 >>> update_file.py databricks.yml aa_desc aa_new_desc
 
 >>> update_file.py databricks.yml prefix new_prefix
+
+>>> [CLI] bundle debug plan
+
+>>> print_requests
 
 >>> [CLI] bundle plan
 update jobs.a
@@ -50,3 +58,7 @@ Deployment complete!
 "cc"
 "dd"
 "ee"
+
+>>> [CLI] bundle debug plan
+
+>>> print_requests
