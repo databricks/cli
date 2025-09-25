@@ -21,15 +21,6 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		panic("Planning is not done")
 	}
 
-	if len(plan.Plan) == 0 {
-		// Avoid creating state file if nothing to deploy
-		return
-	}
-
-	if b.RemoteStateCache == nil {
-		b.RemoteStateCache = make(map[string]any)
-	}
-
 	b.StateDB.AssertOpened()
 
 	g, err := makeGraph(plan)
@@ -147,7 +138,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 				logdiag.LogError(ctx, fmt.Errorf("%s: failed to read remote state: %w", errorPrefix, err))
 				return false
 			}
-			b.RemoteStateCache[resourceKey] = d.RemoteState
+			b.RemoteStateCache.Store(resourceKey, d.RemoteState)
 		}
 
 		return true
@@ -185,7 +176,7 @@ func (b *DeploymentBundle) LookupReferenceRemote(ctx context.Context, path *stru
 		return dbentry.ID, nil
 	}
 
-	remoteState, ok := b.RemoteStateCache[targetResourceKey]
+	remoteState, ok := b.RemoteStateCache.Load(targetResourceKey)
 	if !ok {
 		return nil, fmt.Errorf("internal error: %s: missing remote state", targetResourceKey)
 	}
