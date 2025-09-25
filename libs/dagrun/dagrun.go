@@ -11,11 +11,6 @@ type adjEdge struct {
 	Label string
 }
 
-type inboundEdge struct {
-	From  string
-	Label string
-}
-
 type Graph struct {
 	Adj   map[string][]adjEdge
 	Nodes []string // maintains insertion order of added nodes
