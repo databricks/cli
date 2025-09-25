@@ -3,6 +3,7 @@ package direct
 import (
 	"fmt"
 	"reflect"
+	"sync"
 
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
@@ -35,7 +36,7 @@ type DeploymentBundle struct {
 	StateDB          dstate.DeploymentState
 	Adapters         map[string]*dresources.Adapter
 	Plan             *deployplan.Plan
-	RemoteStateCache map[string]any
+	RemoteStateCache sync.Map
 }
 
 // SetRemoteState updates the remote state with type validation and marks as fresh.
