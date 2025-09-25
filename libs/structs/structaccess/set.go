@@ -11,8 +11,6 @@ import (
 	"github.com/databricks/cli/libs/structs/structtag"
 )
 
-// XXX setting nil vs zero value?
-
 // Set sets the value at the given path inside the target object.
 // The target must be a pointer to the object to modify.
 func Set(target any, path *structpath.PathNode, value any) error {

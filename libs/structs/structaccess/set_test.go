@@ -492,7 +492,6 @@ func testSetGet(t *testing.T, obj any, path string, setValue, expectedGetValue a
 }
 
 func TestSetJobSettings(t *testing.T) {
-	// Create a realistic JobSettings based on the provided YAML config
 	jobSettings := jobs.JobSettings{
 		Name: "job foo",
 		Tasks: []jobs.Task{
