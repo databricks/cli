@@ -51,6 +51,12 @@ func newFileCacheWithBaseDir[T any](baseDir string, expiryMinutes int) (*FileCac
 }
 
 func getCacheBaseDir() (string, error) {
+	// Check if user has configured a custom cache directory
+	if customCacheDir := os.Getenv("DATABRICKS_CACHE_FOLDER"); customCacheDir != "" {
+		return customCacheDir, nil
+	}
+
+	// Use default cache directory
 	userCacheDir, err := os.UserCacheDir()
 	if err != nil {
 		return "", fmt.Errorf("failed to get user cache directory: %w", err)

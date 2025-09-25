@@ -14,7 +14,7 @@
 [DEBUG_TIMESTAMP] Debug: [Local Cache] cache hit: disk-read
 
 >>> [CLI] cache clear
-Cache cleared successfully
+Cache cleared successfully from [TEST_TMP_DIR]/.cache
 
 === First call after a clear is expected to be a cache miss:
 [DEBUG_TIMESTAMP] Debug: [Local Cache] found authorization header with length: 45

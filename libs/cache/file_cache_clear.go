@@ -2,6 +2,7 @@ package cache
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	"github.com/databricks/cli/libs/cmdio"
@@ -15,7 +16,7 @@ func ClearFileCache(ctx context.Context) error {
 
 	// Check if the cache directory exists
 	if _, err := os.Stat(databricksCacheDir); os.IsNotExist(err) {
-		cmdio.LogString(ctx, "No cache directory found, nothing to clear")
+		cmdio.LogString(ctx, fmt.Sprintf("No cache directory found at %s, nothing to clear", databricksCacheDir))
 		return nil
 	}
 
@@ -25,6 +26,6 @@ func ClearFileCache(ctx context.Context) error {
 		return err
 	}
 
-	cmdio.LogString(ctx, "Cache cleared successfully")
+	cmdio.LogString(ctx, "Cache cleared successfully from "+databricksCacheDir)
 	return nil
 }

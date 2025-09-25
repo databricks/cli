@@ -1,4 +1,5 @@
 export DATABRICKS_EXPERIMENTAL_CACHE_ENABLED=true
+export DATABRICKS_CACHE_FOLDER=$(pwd)/.cache
 
 $CLI cache clear &> /dev/null
 
@@ -12,3 +13,5 @@ trace $CLI cache clear
 
 title "First call after a clear is expected to be a cache miss:\n"
 trace $CLI bundle validate --debug 2>&1 | grep "Local Cache" | grep -v "cache path"
+
+rm -rf "${DATABRICKS_CACHE_FOLDER}"
