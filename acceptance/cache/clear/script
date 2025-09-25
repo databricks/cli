@@ -1,6 +1,6 @@
 export DATABRICKS_EXPERIMENTAL_CACHE_ENABLED=true
 
-$CLI cache clear
+$CLI cache clear &> /dev/null
 
 title "First call in a session is expected to be a cache miss:\n"
 trace $CLI bundle validate --debug 2>&1 | grep "Local Cache" | grep -v "cache path"
