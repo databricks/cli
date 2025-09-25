@@ -275,10 +275,8 @@ func isEmptyForOmitEmpty(v reflect.Value) bool {
 	case reflect.Interface, reflect.Pointer:
 		return v.IsNil()
 	case reflect.Struct:
-		// For structs, we should not treat them as empty when accessed via a non-nil pointer.
-		// This function is only called for non-pointer values, so if we reach here,
-		// it means we're checking a struct value that was dereferenced from a pointer.
-		// Since the pointer was non-nil, the struct should not be omitted.
+		// Pointers to structs are not considered empty if pointer != nil
+		// Structs as values are never empty and omitempty on them has no effect.
 		return false
 	default:
 		return v.IsZero()
