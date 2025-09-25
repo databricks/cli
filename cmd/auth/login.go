@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"runtime"
 	"strings"
 	"time"
@@ -14,9 +15,11 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/cfgpickers"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
+	browserpkg "github.com/pkg/browser"
 	"github.com/spf13/cobra"
 )
 
@@ -136,7 +139,11 @@ depends on the existing profiles you have set in your configuration file
 		if err != nil {
 			return err
 		}
-		persistentAuth, err := u2m.NewPersistentAuth(ctx, u2m.WithOAuthArgument(oauthArgument))
+		persistentAuthOpts := []u2m.PersistentAuthOption{
+			u2m.WithOAuthArgument(oauthArgument),
+		}
+		persistentAuthOpts = append(persistentAuthOpts, u2m.WithBrowser(getBrowserFunc(cmd)))
+		persistentAuth, err := u2m.NewPersistentAuth(ctx, persistentAuthOpts...)
 		if err != nil {
 			return err
 		}
@@ -287,4 +294,25 @@ func loadProfileByName(ctx context.Context, profileName string, profiler profile
 		return &profiles[0], nil
 	}
 	return nil, nil
+}
+
+// getBrowserFunc returns a function that opens the given URL in the browser.
+func getBrowserFunc(cmd *cobra.Command) func(url string) error {
+	browser := env.Get(cmd.Context(), "BROWSER")
+	switch browser {
+	case "":
+		return browserpkg.OpenURL
+	case "none":
+		return func(url string) error {
+			fmt.Fprintf(cmd.OutOrStdout(), "Please open %s in the browser to continue authentication\n", url)
+			return nil
+		}
+	default:
+		return func(url string) error {
+			execCmd := exec.Command(browser, url)
+			execCmd.Stdout = cmd.OutOrStdout()
+			execCmd.Stderr = cmd.OutOrStderr()
+			return execCmd.Run()
+		}
+	}
 }
