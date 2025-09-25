@@ -1,7 +1,7 @@
 {
   "plan": {
     "resources.volumes.volume1": {
-      "action": "update(id_changes)",
+      "action": "update_id",
       "new_state": {
         "config": {
           "catalog_name": "main",
@@ -13,7 +13,7 @@
       },
       "local_changes": {
         "name": {
-          "action": "update(id_changes)"
+          "action": "update_id"
         }
       }
     }

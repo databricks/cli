@@ -3,7 +3,7 @@
 {
   "plan": {
     "resources.jobs.foo": {
-      "action": "update(id_stable)"
+      "action": "update"
     }
   }
 }
