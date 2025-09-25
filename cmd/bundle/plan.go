@@ -71,10 +71,9 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 		createCount := 0
 		updateCount := 0
 		deleteCount := 0
-		changed := make(map[string]bool)
+		unchangedCount := 0
 
 		for _, change := range plan.GetActions() {
-			changed[change.ResourceKey] = true
 			switch change.ActionType {
 			case deployplan.ActionTypeCreate:
 				createCount++
@@ -87,18 +86,7 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 				deleteCount++
 				createCount++
 			case deployplan.ActionTypeSkip, deployplan.ActionTypeUnset:
-				// Noop
-			}
-		}
-
-		// Calculate number of all unchanged resources
-		unchanged := 0
-		for _, group := range b.Config.Resources.AllResources() {
-			for rKey := range group.Resources {
-				resourceKey := "resources." + group.Description.PluralName + "." + rKey
-				if _, ok := changed[resourceKey]; !ok {
-					unchanged++
-				}
+				unchangedCount++
 			}
 		}
 
@@ -116,7 +104,7 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 				}
 				fmt.Fprintln(out)
 			}
-			fmt.Fprintf(out, "Plan: %d to add, %d to change, %d to delete, %d unchanged\n", createCount, updateCount, deleteCount, unchanged)
+			fmt.Fprintf(out, "Plan: %d to add, %d to change, %d to delete, %d unchanged\n", createCount, updateCount, deleteCount, unchangedCount)
 		case flags.OutputJSON:
 			buf, err := json.MarshalIndent(plan, "", "  ")
 			if err != nil {

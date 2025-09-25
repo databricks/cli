@@ -63,5 +63,19 @@ func GetPlan(ctx context.Context, b *bundle.Bundle) (*deployplan.Plan, error) {
 		return nil, root.ErrAlreadyPrinted
 	}
 
+	// Direct engine includes noop actions, TF does not. This adds no-op actions for consistency:
+	if !b.DirectDeployment {
+		for _, group := range b.Config.Resources.AllResources() {
+			for rKey := range group.Resources {
+				resourceKey := "resources." + group.Description.PluralName + "." + rKey
+				if _, ok := plan.Plan[resourceKey]; !ok {
+					plan.Plan[resourceKey] = &deployplan.PlanEntry{
+						Action: deployplan.ActionTypeNoop.StringFull(),
+					}
+				}
+			}
+		}
+	}
+
 	return plan, nil
 }
