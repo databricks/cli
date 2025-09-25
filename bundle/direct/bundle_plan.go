@@ -121,16 +121,15 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 			}
 		}
 
+		plan.Plan[resourceKey] = deployplan.PlanEntry{
+			Action: actionType.String(),
+		}
+
 		if actionType == deployplan.ActionTypeSkip {
 			if hasDelayedResolutions {
 				logdiag.LogError(ctx, fmt.Errorf("%s: internal error, action noop must not have delayed resolutions", errorPrefix))
 				return false
 			}
-			return true
-		}
-
-		plan.Plan[resourceKey] = deployplan.PlanEntry{
-			Action: actionType.String(),
 		}
 
 		return true

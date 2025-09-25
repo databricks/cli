@@ -24,7 +24,11 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 >>> [CLI] bundle debug plan
 {
-  "plan": {}
+  "plan": {
+    "resources.jobs.foo": {
+      "action": "skip"
+    }
+  }
 }
 
 >>> print_requests
@@ -91,7 +95,11 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 >>> [CLI] bundle debug plan
 {
-  "plan": {}
+  "plan": {
+    "resources.jobs.foo": {
+      "action": "skip"
+    }
+  }
 }
 
 >>> print_requests
