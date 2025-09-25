@@ -93,29 +93,39 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 			return false
 		}
 
-		// XXX use Refs?
-		for _, edge := range g.Inbound[resourceKey] {
-			// Note, today edge.Label is always a reference "${...}". If we have other types of dependencies, we need to be more careful here:
-			path, ok := structpath.PureReferenceToPath(edge.Label)
+		// Process all references in the resource using Refs map
+		// Refs maps path inside resource to references e.g. "${resources.jobs.foo.id} ${resources.jobs.foo.name}"
+		for _, refValue := range entry.NewState.Refs {
+			// Use NewRef to extract all references from the string
+			ref, ok := dynvar.NewRef(dyn.V(refValue))
 			if !ok {
-				logdiag.LogError(ctx, fmt.Errorf("%s: unknown label %q", errorPrefix, edge.Label))
-				return false
+				continue
 			}
 
-			value, err := b.LookupReferenceLocal(ctx, path)
-			// log.Warnf(ctx, "local lookup path=%s value=%#v err=%s", path.String(), value, err)
-			if err != nil {
-				if errors.Is(err, errDelayed) {
-					continue
+			// Process each reference in the string
+			for _, refStr := range ref.References() {
+				reference := "${" + refStr + "}"
+				path, ok := structpath.PureReferenceToPath(reference)
+				if !ok {
+					logdiag.LogError(ctx, fmt.Errorf("%s: unknown reference %q", errorPrefix, reference))
+					return false
 				}
-				logdiag.LogError(ctx, fmt.Errorf("%s: cannot resolve %q: %w", errorPrefix, edge.Label, err))
-				return false
-			}
 
-			err = entry.NewState.ResolveRef(edge.Label, value)
-			if err != nil {
-				logdiag.LogError(ctx, fmt.Errorf("%s: cannot set value of %q in %q: %w", errorPrefix, edge.Label, edge.From, err))
-				return false
+				value, err := b.LookupReferenceLocal(ctx, path)
+				// log.Warnf(ctx, "local lookup path=%s value=%#v err=%s", path.String(), value, err)
+				if err != nil {
+					if errors.Is(err, errDelayed) {
+						continue
+					}
+					logdiag.LogError(ctx, fmt.Errorf("%s: cannot resolve %q: %w", errorPrefix, reference, err))
+					return false
+				}
+
+				err = entry.NewState.ResolveRef(reference, value)
+				if err != nil {
+					logdiag.LogError(ctx, fmt.Errorf("%s: cannot set value of %q: %w", errorPrefix, reference, err))
+					return false
+				}
 			}
 		}
 
