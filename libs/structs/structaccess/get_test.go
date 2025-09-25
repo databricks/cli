@@ -459,9 +459,9 @@ func TestGet_MultipleEmbeddedStructsForceSendFields(t *testing.T) {
 	}
 
 	type Second struct {
-		SecondFieldOmit  string   `json:"second_field_omit,omitempty"`
-		SecondFieldNoOmit string  `json:"second_field_no_omit"`
-		ForceSendFields  []string `json:"-"`
+		SecondFieldOmit   string   `json:"second_field_omit,omitempty"`
+		SecondFieldNoOmit string   `json:"second_field_no_omit"`
+		ForceSendFields   []string `json:"-"`
 	}
 
 	type Outer struct {
@@ -521,9 +521,9 @@ func TestGet_MixedForceSendFields(t *testing.T) {
 	}
 
 	type Second struct {
-		SecondFieldOmit  string   `json:"second_field_omit,omitempty"`
-		SecondFieldNoOmit string  `json:"second_field_no_omit"`
-		ForceSendFields  []string `json:"-"`
+		SecondFieldOmit   string   `json:"second_field_omit,omitempty"`
+		SecondFieldNoOmit string   `json:"second_field_no_omit"`
+		ForceSendFields   []string `json:"-"`
 	}
 
 	type Outer struct {
