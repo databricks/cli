@@ -84,7 +84,6 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 
 		if at != deployplan.ActionTypeSkip {
 			for fieldPathStr, refString := range entry.NewState.Refs {
-				// log.Warnf(ctx, "processing entry %q %q", fieldPathStr, refString)
 				refs, ok := dynvar.NewRef(dyn.V(refString))
 				if !ok {
 					logdiag.LogError(ctx, fmt.Errorf("%s: cannot parse %q", errorPrefix, refString))
