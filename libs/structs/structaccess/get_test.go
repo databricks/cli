@@ -17,6 +17,13 @@ type testCase struct {
 	typeHasPath bool
 }
 
+func testGet(t *testing.T, obj any, path string, want any) {
+	t.Helper()
+	got, err := GetByString(obj, path)
+	require.NoError(t, err)
+	require.Equal(t, want, got)
+}
+
 type inner struct {
 	ID   string `json:"id"`
 	Name string `json:"name,omitempty"`
@@ -332,9 +339,7 @@ func runOmitEmptyTests(t *testing.T, obj any, wantNil bool) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetByString(obj, tt.path)
-			require.NoError(t, err)
-			require.Equal(t, tt.want, got)
+			testGet(t, obj, tt.path, tt.want)
 		})
 	}
 }
@@ -360,16 +365,12 @@ func TestGet_Embedded_ValueAnonymousResolved(t *testing.T) {
 	}
 	in := host{embedded: embedded{Hidden: "x"}}
 	require.NoError(t, ValidateByString(reflect.TypeOf(in), "hidden"))
-	got, err := GetByString(in, "hidden")
-	require.NoError(t, err)
-	require.Equal(t, "x", got)
+	testGet(t, in, "hidden", "x")
 }
 
 func TestGet_InterfaceRoot_Unwraps(t *testing.T) {
 	v := any(makeOuterNoFSF())
-	got, err := GetByString(v, "items[0].id")
-	require.NoError(t, err)
-	require.Equal(t, "i0", got)
+	testGet(t, v, "items[0].id", "i0")
 }
 
 func TestGet_BundleTag_SkipsDirect(t *testing.T) {
@@ -389,9 +390,7 @@ func TestGet_BundleTag_SkipsDirect(t *testing.T) {
 	require.EqualError(t, ValidateByString(reflect.TypeOf(S{}), "b"), "b: field \"b\" not found in structaccess.S")
 
 	// Visible field works
-	v, err := GetByString(S{C: "z"}, "c")
-	require.NoError(t, err)
-	require.Equal(t, "z", v)
+	testGet(t, S{C: "z"}, "c", "z")
 	require.NoError(t, ValidateByString(reflect.TypeOf(S{}), "c"))
 }
 
@@ -410,9 +409,9 @@ func TestGet_BundleTag_SkipsPromoted(t *testing.T) {
 
 func TestGet_EmbeddedStructForceSendFields(t *testing.T) {
 	type Inner struct {
-		InnerFieldOmit    string   `json:"inner_field_omit,omitempty"`
-		InnerFieldNoOmit  string   `json:"inner_field_no_omit"`
-		ForceSendFields   []string `json:"-"`
+		InnerFieldOmit   string   `json:"inner_field_omit,omitempty"`
+		InnerFieldNoOmit string   `json:"inner_field_no_omit"`
+		ForceSendFields  []string `json:"-"`
 	}
 
 	type Outer struct {
@@ -431,21 +430,10 @@ func TestGet_EmbeddedStructForceSendFields(t *testing.T) {
 		},
 	}
 
-	got, err := GetByString(objWithOuterFSF, "outer_field_omit")
-	require.NoError(t, err)
-	require.Nil(t, got)
-
-	got, err = GetByString(objWithOuterFSF, "outer_field_no_omit")
-	require.NoError(t, err)
-	require.Equal(t, "", got)
-
-	got, err = GetByString(objWithOuterFSF, "inner_field_omit")
-	require.NoError(t, err)
-	require.Nil(t, got)
-
-	got, err = GetByString(objWithOuterFSF, "inner_field_no_omit")
-	require.NoError(t, err)
-	require.Equal(t, "", got)
+	testGet(t, objWithOuterFSF, "outer_field_omit", nil)
+	testGet(t, objWithOuterFSF, "outer_field_no_omit", "")
+	testGet(t, objWithOuterFSF, "inner_field_omit", nil)
+	testGet(t, objWithOuterFSF, "inner_field_no_omit", "")
 
 	objWithInnerFSF := Outer{
 		OuterFieldOmit:   "",
@@ -457,19 +445,8 @@ func TestGet_EmbeddedStructForceSendFields(t *testing.T) {
 		},
 	}
 
-	got, err = GetByString(objWithInnerFSF, "outer_field_omit")
-	require.NoError(t, err)
-	require.Nil(t, got)
-
-	got, err = GetByString(objWithInnerFSF, "outer_field_no_omit")
-	require.NoError(t, err)
-	require.Equal(t, "", got)
-
-	got, err = GetByString(objWithInnerFSF, "inner_field_omit")
-	require.NoError(t, err)
-	require.Equal(t, "", got)
-
-	got, err = GetByString(objWithInnerFSF, "inner_field_no_omit")
-	require.NoError(t, err)
-	require.Equal(t, "", got)
+	testGet(t, objWithInnerFSF, "outer_field_omit", nil)
+	testGet(t, objWithInnerFSF, "outer_field_no_omit", "")
+	testGet(t, objWithInnerFSF, "inner_field_omit", "")
+	testGet(t, objWithInnerFSF, "inner_field_no_omit", "")
 }
