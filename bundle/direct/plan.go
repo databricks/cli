@@ -20,7 +20,7 @@ import (
 func (d *DeploymentUnit) Plan(ctx context.Context, client *databricks.WorkspaceClient, db *dstate.DeploymentState, inputConfig any, localOnly, refresh bool) (deployplan.ActionType, error) {
 	result, err := d.plan(ctx, client, db, inputConfig, localOnly, refresh)
 	if err != nil {
-		return deployplan.ActionTypeNoop, fmt.Errorf("planning: %s: %w", d.ResourceKey, err)
+		return deployplan.ActionTypeSkip, fmt.Errorf("planning: %s: %w", d.ResourceKey, err)
 	}
 	return result, err
 }
@@ -197,7 +197,7 @@ func calcDiff(adapter *dresources.Adapter, savedState, config any) (deployplan.A
 	}
 
 	if len(localDiff) == 0 {
-		return deployplan.ActionTypeNoop, nil
+		return deployplan.ActionTypeSkip, nil
 	}
 
 	result := adapter.ClassifyByTriggers(localDiff)

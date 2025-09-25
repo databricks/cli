@@ -31,7 +31,7 @@ type ActionType int
 // Note, Create/Delete are handled explicitly and never compared.
 const (
 	ActionTypeUnset ActionType = iota
-	ActionTypeNoop
+	ActionTypeSkip
 	ActionTypeResize
 	ActionTypeUpdate
 	ActionTypeUpdateWithID
@@ -41,7 +41,7 @@ const (
 )
 
 var actionName = map[ActionType]string{
-	ActionTypeNoop:         "noop",
+	ActionTypeSkip:         "skip",
 	ActionTypeResize:       "resize",
 	ActionTypeUpdate:       "update",
 	ActionTypeUpdateWithID: "update_id",
@@ -62,7 +62,7 @@ func init() {
 }
 
 func (a ActionType) IsNoop() bool {
-	return a == ActionTypeNoop
+	return a == ActionTypeSkip
 }
 
 func (a ActionType) KeepsID() bool {
