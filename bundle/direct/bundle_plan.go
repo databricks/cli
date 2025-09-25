@@ -130,7 +130,7 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 		}
 
 		plan.Plan[resourceKey] = deployplan.PlanEntry{
-			Action: actionType.StringFull(),
+			Action: actionType.String(),
 		}
 
 		return true
@@ -156,7 +156,7 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 				continue
 			}
 			b.Graph.AddNode(n)
-			plan.Plan[n] = deployplan.PlanEntry{Action: deployplan.ActionTypeDelete.StringFull()}
+			plan.Plan[n] = deployplan.PlanEntry{Action: deployplan.ActionTypeDelete.String()}
 		}
 	}
 
@@ -184,7 +184,7 @@ func (b *DeploymentBundle) CalculatePlanForDestroy(ctx context.Context, client *
 		for key := range groupData {
 			n := "resources." + group + "." + key
 			b.Graph.AddNode(n)
-			plan.Plan[n] = deployplan.PlanEntry{Action: deployplan.ActionTypeDelete.StringFull()}
+			plan.Plan[n] = deployplan.PlanEntry{Action: deployplan.ActionTypeDelete.String()}
 		}
 	}
 
