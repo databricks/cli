@@ -84,12 +84,9 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			return true
 		}
 
-		// we don't need Inbound here; we need to process entry.NewState.Refs
-
-		// log.Warnf(ctx, "processing %s", jsonDump(entry.NewState.Refs))
+		// We don't keep NewState around for 'skip' nodes
 
 		if at != deployplan.ActionTypeSkip {
-
 			for fieldPathStr, refString := range entry.NewState.Refs {
 				// log.Warnf(ctx, "processing entry %q %q", fieldPathStr, refString)
 				refs, ok := dynvar.NewRef(dyn.V(refString))
@@ -126,11 +123,9 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 				return false
 			}
 
-			resourceConfig := entry.NewState.Config
-
 			// TODO: redo calcDiff to downgrade planned action if possible (?)
 
-			err = d.Deploy(ctx, &b.StateDB, resourceConfig, at)
+			err = d.Deploy(ctx, &b.StateDB, entry.NewState.Config, at)
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
