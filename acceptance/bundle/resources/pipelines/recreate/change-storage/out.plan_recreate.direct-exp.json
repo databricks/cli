@@ -21,9 +21,11 @@
           "storage": "dbfs:/pipelines/newcustom"
         }
       },
-      "local_changes": {
-        "storage": {
-          "action": "recreate"
+      "changes": {
+        "local": {
+          "storage": {
+            "action": "recreate"
+          }
         }
       }
     }

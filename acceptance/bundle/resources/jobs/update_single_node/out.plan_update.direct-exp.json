@@ -42,9 +42,11 @@
           }
         }
       },
-      "local_changes": {
-        "trigger.periodic.unit": {
-          "action": "update"
+      "changes": {
+        "local": {
+          "trigger.periodic.unit": {
+            "action": "update"
+          }
         }
       }
     }

@@ -27,9 +27,11 @@
           "description": "depends on foo id ${resources.pipelines.foo.id}"
         }
       },
-      "local_changes": {
-        "description": {
-          "action": "update"
+      "changes": {
+        "local": {
+          "description": {
+            "action": "update"
+          }
         }
       }
     },
@@ -47,9 +49,11 @@
           "name": "pipeline foo"
         }
       },
-      "local_changes": {
-        "catalog": {
-          "action": "recreate"
+      "changes": {
+        "local": {
+          "catalog": {
+            "action": "recreate"
+          }
         }
       }
     }

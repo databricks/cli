@@ -18,9 +18,11 @@
           }
         }
       },
-      "local_changes": {
-        "description": {
-          "action": "update"
+      "changes": {
+        "local": {
+          "description": {
+            "action": "update"
+          }
         }
       }
     },
@@ -48,9 +50,11 @@
           }
         }
       },
-      "local_changes": {
-        "description": {
-          "action": "update"
+      "changes": {
+        "local": {
+          "description": {
+            "action": "update"
+          }
         }
       }
     },
@@ -78,9 +82,11 @@
           }
         }
       },
-      "local_changes": {
-        "description": {
-          "action": "update"
+      "changes": {
+        "local": {
+          "description": {
+            "action": "update"
+          }
         }
       }
     },
@@ -108,9 +114,11 @@
           }
         }
       },
-      "local_changes": {
-        "description": {
-          "action": "update"
+      "changes": {
+        "local": {
+          "description": {
+            "action": "update"
+          }
         }
       }
     },
@@ -138,9 +146,11 @@
           }
         }
       },
-      "local_changes": {
-        "description": {
-          "action": "update"
+      "changes": {
+        "local": {
+          "description": {
+            "action": "update"
+          }
         }
       }
     }
