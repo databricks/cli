@@ -222,19 +222,15 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("GET", "/oidc/.well-known/oauth-authorization-server", func(_ Request) any {
-		return map[string]string{
-			"authorization_endpoint": server.URL + "oidc/v1/authorize",
-			"token_endpoint":         server.URL + "/oidc/v1/token",
-		}
+		return server.fakeOidc.OidcEndpoints()
 	})
 
-	server.Handle("POST", "/oidc/v1/token", func(_ Request) any {
-		return map[string]string{
-			"access_token": "oauth-token",
-			"expires_in":   "3600",
-			"scope":        "all-apis",
-			"token_type":   "Bearer",
-		}
+	server.Handle("GET", "/oidc/v1/authorize", func(req Request) any {
+		return server.fakeOidc.OidcAuthorize(req)
+	})
+
+	server.Handle("POST", "/oidc/v1/token", func(req Request) any {
+		return server.fakeOidc.OidcToken(req)
 	})
 
 	server.Handle("POST", "/telemetry-ext", func(_ Request) any {

@@ -25,6 +25,7 @@ type Server struct {
 	t testutil.TestingT
 
 	fakeWorkspaces map[string]*FakeWorkspace
+	fakeOidc       *FakeOidc
 	mu             sync.Mutex
 
 	RequestCallback  func(request *Request)
@@ -190,6 +191,7 @@ func New(t testutil.TestingT) *Server {
 		Router:         router,
 		t:              t,
 		fakeWorkspaces: map[string]*FakeWorkspace{},
+		fakeOidc:       &FakeOidc{url: server.URL},
 	}
 
 	// Set up the not found handler as fallback
