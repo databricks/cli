@@ -839,9 +839,6 @@ func TestFromTypedNilSliceRetainsLocation(t *testing.T) {
 	assert.Equal(t, dyn.NewValue(nil, []dyn.Location{{File: "foobar"}}), nv)
 }
 
-// Regression test for ForceSendFields with complex types causing panics.
-// Bug: when a field is in ForceSendFields but fromTyped() returns dyn.NilValue,
-// the code calls dyn.V() directly on complex types, causing "not handled" panics.
 func TestFromTypedForceSendFieldsComplexTypes(t *testing.T) {
 	type Inner struct {
 		Value string `json:"value"`
@@ -890,7 +887,6 @@ func TestFromTypedForceSendFieldsComplexTypes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// This should not panic once the bug is fixed
 			nv, err := FromTyped(tt.src, dyn.NilValue)
 			require.NoError(t, err)
 
