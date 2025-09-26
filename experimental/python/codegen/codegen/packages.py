@@ -1,7 +1,14 @@
 import re
 from typing import Optional
 
-# All supported resource types and their namespace
+# All supported resource types and their namespace.
+#
+# We put each resource type into own package and don't do cross-package imports,
+# each package is self-contained. If two resources share the same datatype, it's
+# duplicated to allow independent evolution.
+#
+# The convention is that each resource type uses a plural name as package name,
+# e.g., "resources.Job" -> "jobs", "resources.Pipeline" -> "pipelines".
 RESOURCE_NAMESPACE = {
     "resources.Job": "jobs",
     "resources.Pipeline": "pipelines",
