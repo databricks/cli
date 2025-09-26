@@ -210,7 +210,7 @@ func getForceSendFieldsValues(v reflect.Value) map[int]reflect.Value {
 			result[-1] = fieldValue
 		} else if field.Anonymous {
 			// Embedded struct - check for ForceSendFields inside it
-			if embeddedStruct := getEmbeddedStruct(fieldValue); embeddedStruct.IsValid() {
+			if embeddedStruct := deref(fieldValue); embeddedStruct.IsValid() {
 				if forceSendField := embeddedStruct.FieldByName("ForceSendFields"); forceSendField.IsValid() {
 					result[i] = forceSendField
 				}
@@ -221,16 +221,13 @@ func getForceSendFieldsValues(v reflect.Value) map[int]reflect.Value {
 	return result
 }
 
-// getEmbeddedStruct handles embedded struct access - never creates nil pointers
-func getEmbeddedStruct(fieldValue reflect.Value) reflect.Value {
-	if fieldValue.Kind() == reflect.Pointer {
-		if fieldValue.IsNil() {
-			return reflect.Value{} // Don't create, just return invalid
+// deref dereferences a pointer, returning invalid value if nil
+func deref(v reflect.Value) reflect.Value {
+	if v.Kind() == reflect.Pointer {
+		if v.IsNil() {
+			return reflect.Value{}
 		}
-		fieldValue = fieldValue.Elem()
+		return v.Elem()
 	}
-	if fieldValue.Kind() == reflect.Struct {
-		return fieldValue
-	}
-	return reflect.Value{}
+	return v
 }
