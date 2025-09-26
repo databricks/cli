@@ -1,0 +1,13 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] volumes delete mycatalog.myschema.myname
+
+>>> [CLI] bundle plan
+create volumes.foo
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged

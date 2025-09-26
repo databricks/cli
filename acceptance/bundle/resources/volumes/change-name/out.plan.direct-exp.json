@@ -16,6 +16,12 @@
           "name": {
             "action": "update_id"
           }
+        },
+        "remote": {
+          "storage_location": {
+            "action": "skip",
+            "reason": "remote_only"
+          }
         }
       }
     }
