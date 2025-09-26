@@ -355,4 +355,3 @@ func fromTypedFloat(src reflect.Value, ref dyn.Value, options ...fromTypedOption
 
 	return dyn.InvalidValue, fmt.Errorf("cannot convert float field to dynamic type %#v: src=%#v ref=%#v", ref.Kind().String(), src, ref.AsAny())
 }
-

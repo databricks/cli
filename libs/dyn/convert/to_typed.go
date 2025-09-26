@@ -70,7 +70,7 @@ func toTypedStruct(dst reflect.Value, src dyn.Value) error {
 
 		info := getStructInfo(dst.Type())
 
-		forceSendFieldLocations := getForceSendFieldLocationsForToTyped(dst)
+		forceSendFieldLocations := getForceSendFieldsValues(dst)
 		forceSendFieldsMap := make(map[int][]string)
 
 		for _, pair := range src.MustMap().Pairs() {
@@ -149,54 +149,6 @@ func toTypedStruct(dst reflect.Value, src dyn.Value) error {
 		value: src,
 		msg:   fmt.Sprintf("expected a map, found a %s", src.Kind()),
 	}
-}
-
-// getForceSendFieldLocationsForToTyped collects ForceSendFields locations for ToTyped operations
-// Returns map[structKey]reflect.Value for setting ForceSendFields slices
-func getForceSendFieldLocationsForToTyped(v reflect.Value) map[int]reflect.Value {
-	if !v.IsValid() || v.Type().Kind() != reflect.Struct {
-		return make(map[int]reflect.Value)
-	}
-
-	locations := make(map[int]reflect.Value)
-
-	for i := range v.Type().NumField() {
-		field := v.Type().Field(i)
-		fieldValue := v.Field(i)
-
-		if field.Name == "ForceSendFields" && !field.Anonymous {
-			// Direct ForceSendFields (structKey = -1)
-			locations[-1] = fieldValue
-		} else if field.Anonymous {
-			// Embedded struct - check for ForceSendFields inside it
-			if embeddedStruct := getEmbeddedStructForWriting(fieldValue); embeddedStruct.IsValid() {
-				if forceSendField := embeddedStruct.FieldByName("ForceSendFields"); forceSendField.IsValid() {
-					locations[i] = forceSendField
-				}
-			}
-		}
-	}
-
-	return locations
-}
-
-// Helper function for writing - creates nil pointers when needed for ToTyped
-func getEmbeddedStructForWriting(fieldValue reflect.Value) reflect.Value {
-	if fieldValue.Kind() == reflect.Pointer {
-		if fieldValue.IsNil() {
-			// For ToTyped, we need to create the embedded struct to get the location
-			if fieldValue.CanSet() {
-				fieldValue.Set(reflect.New(fieldValue.Type().Elem()))
-			} else {
-				return reflect.Value{} // Can't set, return invalid
-			}
-		}
-		fieldValue = fieldValue.Elem()
-	}
-	if fieldValue.Kind() == reflect.Struct {
-		return fieldValue
-	}
-	return reflect.Value{}
 }
 
 func toTypedMap(dst reflect.Value, src dyn.Value) error {

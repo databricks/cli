@@ -164,19 +164,18 @@ func (s *structInfo) FieldValues(v reflect.Value) []FieldValue {
 		}
 
 		if fv.IsValid() {
-			isEmpty := isEmptyForOmitEmpty(fv)
 			var inForceSendFields bool
 
-			// Only check ForceSendFields if the field value is empty
-			if isEmpty {
+			// Check ForceSendFields if the field value is zero
+			if fv.IsZero() {
 				goName := s.GolangNames[k]
 				structKey := s.ForceSendFieldsStructKey[k]
 				forceSendFields := forceSendFieldsMap[structKey]
 				inForceSendFields = slices.Contains(forceSendFields, goName)
 			}
 
-			// IsForced is true if field is not empty OR if it's in ForceSendFields
-			isForced := !isEmpty || inForceSendFields
+			// IsForced is true if field is not zero OR if it's in ForceSendFields
+			isForced := !fv.IsZero() || inForceSendFields
 
 			out = append(out, FieldValue{
 				Key:      k,
@@ -189,34 +188,18 @@ func (s *structInfo) FieldValues(v reflect.Value) []FieldValue {
 	return out
 }
 
-// isEmptyForOmitEmpty returns true if the value should be omitted by JSON omitempty.
-// This matches JSON encoder behavior, which is different from reflect.IsZero() for slices/maps.
-func isEmptyForOmitEmpty(v reflect.Value) bool {
-	switch v.Kind() {
-	case reflect.Slice, reflect.Map, reflect.Array:
-		return v.Len() == 0
-	case reflect.Interface, reflect.Pointer:
-		return v.IsNil()
-	case reflect.Struct:
-		// Pointers to structs are not considered empty if pointer != nil
-		// Structs as values are never empty and omitempty on them has no effect.
-		return false
-	default:
-		return v.IsZero()
-	}
-}
 
 // Type of [dyn.Value].
 var configValueType = reflect.TypeOf((*dyn.Value)(nil)).Elem()
 
-// getForceSendFieldsForFromTyped collects ForceSendFields values for FromTyped operations
-// Returns map[structKey][]fieldName where structKey is -1 for direct fields, embedded index for embedded fields
-func getForceSendFieldsForFromTyped(v reflect.Value) map[int][]string {
+// getForceSendFieldsValues collects ForceSendFields reflect.Values
+// Returns map[structKey]reflect.Value where structKey is -1 for direct fields, embedded index for embedded fields
+func getForceSendFieldsValues(v reflect.Value) map[int]reflect.Value {
 	if !v.IsValid() || v.Type().Kind() != reflect.Struct {
-		return make(map[int][]string)
+		return make(map[int]reflect.Value)
 	}
 
-	result := make(map[int][]string)
+	result := make(map[int]reflect.Value)
 
 	for i := range v.Type().NumField() {
 		field := v.Type().Field(i)
@@ -224,16 +207,12 @@ func getForceSendFieldsForFromTyped(v reflect.Value) map[int][]string {
 
 		if field.Name == "ForceSendFields" && !field.Anonymous {
 			// Direct ForceSendFields (structKey = -1)
-			if fields, ok := fieldValue.Interface().([]string); ok {
-				result[-1] = fields
-			}
+			result[-1] = fieldValue
 		} else if field.Anonymous {
 			// Embedded struct - check for ForceSendFields inside it
-			if embeddedStruct := getEmbeddedStructForReading(fieldValue); embeddedStruct.IsValid() {
+			if embeddedStruct := getEmbeddedStruct(fieldValue); embeddedStruct.IsValid() {
 				if forceSendField := embeddedStruct.FieldByName("ForceSendFields"); forceSendField.IsValid() {
-					if fields, ok := forceSendField.Interface().([]string); ok {
-						result[i] = fields
-					}
+					result[i] = forceSendField
 				}
 			}
 		}
@@ -242,8 +221,23 @@ func getForceSendFieldsForFromTyped(v reflect.Value) map[int][]string {
 	return result
 }
 
-// Helper function for reading - doesn't create nil pointers
-func getEmbeddedStructForReading(fieldValue reflect.Value) reflect.Value {
+// getForceSendFieldsForFromTyped collects ForceSendFields values for FromTyped operations
+// Returns map[structKey][]fieldName where structKey is -1 for direct fields, embedded index for embedded fields
+func getForceSendFieldsForFromTyped(v reflect.Value) map[int][]string {
+	values := getForceSendFieldsValues(v)
+	result := make(map[int][]string)
+
+	for structKey, fieldValue := range values {
+		if fields, ok := fieldValue.Interface().([]string); ok {
+			result[structKey] = fields
+		}
+	}
+
+	return result
+}
+
+// getEmbeddedStruct handles embedded struct access - never creates nil pointers
+func getEmbeddedStruct(fieldValue reflect.Value) reflect.Value {
 	if fieldValue.Kind() == reflect.Pointer {
 		if fieldValue.IsNil() {
 			return reflect.Value{} // Don't create, just return invalid
