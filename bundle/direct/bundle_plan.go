@@ -162,10 +162,12 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 			if fieldAction > localAction {
 				localAction = fieldAction
 			}
-			if entry.LocalChanges == nil {
-				entry.LocalChanges = make(map[string]deployplan.Trigger)
+			if entry.Changes == nil {
+				entry.Changes = &deployplan.Changes{
+					Local: make(map[string]deployplan.Trigger),
+				}
 			}
-			entry.LocalChanges[ch.Path.String()] = deployplan.Trigger{Action: fieldAction.String()}
+			entry.Changes.Local[ch.Path.String()] = deployplan.Trigger{Action: fieldAction.String()}
 		}
 
 		entry.Action = localAction.String()

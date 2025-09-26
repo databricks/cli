@@ -21,9 +21,11 @@
           "name": "test-pipeline-[UNIQUE_NAME]"
         }
       },
-      "local_changes": {
-        "catalog": {
-          "action": "recreate"
+      "changes": {
+        "local": {
+          "catalog": {
+            "action": "recreate"
+          }
         }
       }
     }

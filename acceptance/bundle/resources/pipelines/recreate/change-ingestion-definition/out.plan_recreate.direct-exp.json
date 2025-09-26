@@ -26,9 +26,11 @@
           "name": "test-pipeline-[UNIQUE_NAME]"
         }
       },
-      "local_changes": {
-        "ingestion_definition.connection_name": {
-          "action": "recreate"
+      "changes": {
+        "local": {
+          "ingestion_definition.connection_name": {
+            "action": "recreate"
+          }
         }
       }
     }
