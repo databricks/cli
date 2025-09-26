@@ -14,6 +14,18 @@ Deployment complete!
 >>> cat out.requests.txt
 [
   {
+    "key": "local.cache.attempt",
+    "value": true
+  },
+  {
+    "key": "local.cache.hit",
+    "value": true
+  },
+  {
+    "key": "local.cache.miss",
+    "value": true
+  },
+  {
     "key": "experimental.use_legacy_run_as",
     "value": false
   },
@@ -47,6 +59,18 @@ Deployment complete!
   }
 ]
 [
+  {
+    "key": "local.cache.attempt",
+    "value": true
+  },
+  {
+    "key": "local.cache.hit",
+    "value": true
+  },
+  {
+    "key": "local.cache.miss",
+    "value": true
+  },
   {
     "key": "experimental.use_legacy_run_as",
     "value": false

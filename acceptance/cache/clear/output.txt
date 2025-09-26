@@ -12,6 +12,7 @@
 [DEBUG_TIMESTAMP] Debug: [Local Cache] using fingerprint with hash: [SHA256_HASH]
 [DEBUG_TIMESTAMP] Debug: [Local Cache] using cache key: [SHA256_HASH]
 [DEBUG_TIMESTAMP] Debug: [Local Cache] cache hit: disk-read
+[DEBUG_TIMESTAMP] Debug: [Local Cache] cache miss, but stored the compute result for future calls
 
 >>> [CLI] cache clear
 Cache cleared successfully from [TEST_TMP_DIR]/.cache

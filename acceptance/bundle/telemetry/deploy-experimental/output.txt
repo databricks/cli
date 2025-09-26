@@ -13,6 +13,18 @@ Deployment complete!
 {
   "bool_values": [
     {
+      "key": "local.cache.attempt",
+      "value": true
+    },
+    {
+      "key": "local.cache.hit",
+      "value": true
+    },
+    {
+      "key": "local.cache.miss",
+      "value": true
+    },
+    {
       "key": "experimental.use_legacy_run_as",
       "value": true
     },
