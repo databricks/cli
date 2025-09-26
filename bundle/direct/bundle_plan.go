@@ -21,6 +21,7 @@ import (
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
 var errDelayed = errors.New("must be resolved after apply")
@@ -69,7 +70,7 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 	// We're processing resources in DAG order, because we're trying to get rid of all references like $resources.jobs.foo.id
 	// if jobs.foo is not going to be (re)created. This means by the time we get to resource depending on $resources.jobs.foo.id
 	// we might have already got rid of this reference, thus potentially downgrading actionType
-	g.Run(1, func(resourceKey string, failedDependency *string) bool {
+	g.Run(defaultParallelism, func(resourceKey string, failedDependency *string) bool {
 		errorPrefix := "cannot plan " + resourceKey
 
 		entry := plan.LockEntry(resourceKey)
@@ -151,26 +152,61 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 		// This means distinguishing between 0 that are actually object ids and 0 that are there because typed struct integer cannot contain ${...} string.
 		localDiff, err := structdiff.GetStructDiff(savedState, entry.NewState.Config)
 		if err != nil {
-			logdiag.LogError(ctx, fmt.Errorf("%s: diffing state: %w", errorPrefix, err))
+			logdiag.LogError(ctx, fmt.Errorf("%s: diffing local state: %w", errorPrefix, err))
 			return false
 		}
 
-		localAction := deployplan.ActionTypeSkip
+		localAction, localChangeMap := convertChangesToTriggersMap(adapter, localDiff)
 
-		for _, ch := range localDiff {
-			fieldAction := adapter.ClassifyByTriggers(ch)
-			if fieldAction > localAction {
-				localAction = fieldAction
-			}
-			if entry.Changes == nil {
+		if localAction == deployplan.ActionTypeRecreate {
+			entry.Action = localAction.String()
+			if len(localChangeMap) > 0 {
 				entry.Changes = &deployplan.Changes{
-					Local: make(map[string]deployplan.Trigger),
+					Local: localChangeMap,
 				}
 			}
-			entry.Changes.Local[ch.Path.String()] = deployplan.Trigger{Action: fieldAction.String()}
+			return true
 		}
 
-		entry.Action = localAction.String()
+		remoteState, err := adapter.DoRefresh(ctx, dbentry.ID)
+		if err != nil {
+			if errors.Is(err, apierr.ErrResourceDoesNotExist) || errors.Is(err, apierr.ErrNotFound) {
+				remoteState = nil
+			} else {
+				logdiag.LogError(ctx, fmt.Errorf("%s: failed to read id=%q: %w (localAction=%q)", errorPrefix, dbentry.ID, err, localAction.String()))
+				return false
+			}
+		}
+
+		var remoteAction deployplan.ActionType
+		var remoteChangeMap map[string]deployplan.Trigger
+
+		if remoteState == nil {
+			remoteAction = deployplan.ActionTypeCreate
+		} else {
+			remoteStateComparable, err := adapter.RemapState(remoteState)
+			if err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("%s: failed to interpret remote state id=%q: %w", errorPrefix, dbentry.ID, err))
+			}
+
+			remoteDiff, err := structdiff.GetStructDiff(savedState, remoteStateComparable)
+			if err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("%s: diffing remote state: %w", errorPrefix, err))
+				return false
+			}
+
+			remoteAction, remoteChangeMap = interpretOldStateVsRemoteState(adapter, remoteDiff)
+		}
+
+		entry.Action = max(localAction, remoteAction).String()
+
+		if len(localChangeMap) > 0 || len(remoteChangeMap) > 0 {
+			entry.Changes = &deployplan.Changes{
+				Local:  localChangeMap,
+				Remote: remoteChangeMap,
+			}
+		}
+
 		return true
 	})
 
@@ -209,6 +245,86 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 	return plan, nil
 }
 
+func convertChangesToTriggersMap(adapter *dresources.Adapter, diff []structdiff.Change) (deployplan.ActionType, map[string]deployplan.Trigger) {
+	action := deployplan.ActionTypeSkip
+	var m map[string]deployplan.Trigger
+
+	for _, ch := range diff {
+		fieldAction := adapter.ClassifyByTriggers(ch)
+		if fieldAction > action {
+			action = fieldAction
+		}
+		if m == nil {
+			m = make(map[string]deployplan.Trigger)
+		}
+		m[ch.Path.String()] = deployplan.Trigger{Action: fieldAction.String()}
+	}
+
+	return action, m
+}
+
+/*
+
+How we interpret remote and local differences, few examples:
+
+previous state: x
+new state : y
+remote state: z
+
+previous state: x
+new state: y
+remote state: x
+
+remote-value is the same as last deployed, this is the default and not interesting, so it won’t be included in Changes.Remote
+
+
+diff(savedState, remoteValue) —> no changes there, not interesting
+
+
+previous state: x
+new state: y
+remote state: y
+
+remote-value is different from last-deployed. One can say that because new-config and remote-value are converged on the same value, this should be noop/skip, but we’ve chosen to always act on local config changes, to avoid surprises.
+
+
+To summarize, Remote.Changes is diff between previous state and remote state. If there are both local and remote actions, we take maximum possible action.
+
+
+previous state: nil
+new state: <irrelevant>
+remote state: z
+
+This is a case of server-side default being set. We’ll include it into Changes.Remote with action="skip” and reason="server_side_only”
+*/
+
+func interpretOldStateVsRemoteState(adapter *dresources.Adapter, diff []structdiff.Change) (deployplan.ActionType, map[string]deployplan.Trigger) {
+	action := deployplan.ActionTypeSkip
+	m := make(map[string]deployplan.Trigger)
+
+	for _, ch := range diff {
+		if ch.Old == nil {
+			m[ch.Path.String()] = deployplan.Trigger{
+				Action: deployplan.ActionTypeSkipString,
+				// a.k.a server-side default
+				Reason: "remote_only",
+			}
+			continue
+		}
+		fieldAction := adapter.ClassifyByTriggers(ch)
+		if fieldAction > action {
+			action = fieldAction
+		}
+		m[ch.Path.String()] = deployplan.Trigger{Action: fieldAction.String()}
+	}
+
+	if len(m) == 0 {
+		m = nil
+	}
+
+	return action, m
+}
+
 func (b *DeploymentBundle) CalculatePlanForDestroy(ctx context.Context, client *databricks.WorkspaceClient) (*deployplan.Plan, error) {
 	b.StateDB.AssertOpened()
 
@@ -240,6 +356,7 @@ func (b *DeploymentBundle) LookupReferenceLocal(ctx context.Context, path *struc
 	fieldPath := path.SkipPrefix(3)
 	fieldPathS := fieldPath.String()
 
+	// TODO: this will panic if targetResourceKey == resourceKey
 	targetEntry := b.Plan.LockEntry(targetResourceKey)
 	defer b.Plan.UnlockEntry(targetResourceKey)
 
