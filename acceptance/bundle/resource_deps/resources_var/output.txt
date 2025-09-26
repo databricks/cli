@@ -43,7 +43,6 @@ has_classic_job_compute false
 has_serverless_compute false
 local.cache.attempt true
 local.cache.hit true
-local.cache.miss true
 presets_name_prefix_is_set true
 python_wheel_wrapper_is_set false
 resref_volumes.catalog_name true

@@ -13,10 +13,6 @@ Deployment complete!
       "value": true
     },
     {
-      "key": "local.cache.hit",
-      "value": true
-    },
-    {
       "key": "local.cache.miss",
       "value": true
     },
