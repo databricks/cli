@@ -626,3 +626,131 @@ func TestToTypedAnyWithNil(t *testing.T) {
 	require.NoError(t, err)
 	assert.Nil(t, out)
 }
+
+func TestToTypedEmbeddedStructForceSendFields(t *testing.T) {
+	type Inner struct {
+		InnerField      string   `json:"inner_field"`
+		ForceSendFields []string `json:"-"`
+	}
+
+	type Outer struct {
+		OuterField string `json:"outer_field"`
+		Inner
+	}
+
+	var out Outer
+	m := dyn.Mapping{}
+	m.SetLoc("outer_field", nil, dyn.V(""))
+	m.SetLoc("inner_field", nil, dyn.V(""))
+	v := dyn.V(m)
+
+	err := ToTyped(&out, v)
+	require.NoError(t, err)
+
+	// Bug: ForceSendFields contains "OuterField" which belongs to outer struct
+	// Expected: ForceSendFields should only contain "InnerField"
+	assert.Equal(t, []string{"InnerField"}, out.ForceSendFields)
+}
+
+func TestToTypedMultipleEmbeddedStructsForceSendFields(t *testing.T) {
+	type First struct {
+		FirstField      string   `json:"first_field"`
+		ForceSendFields []string `json:"-"`
+	}
+
+	type Second struct {
+		SecondField     string   `json:"second_field"`
+		ForceSendFields []string `json:"-"`
+	}
+
+	type Outer struct {
+		OuterField string `json:"outer_field"`
+		First
+		Second
+	}
+
+	var out Outer
+	m := dyn.Mapping{}
+	m.SetLoc("outer_field", nil, dyn.V(""))
+	m.SetLoc("first_field", nil, dyn.V(""))
+	m.SetLoc("second_field", nil, dyn.V(""))
+	v := dyn.V(m)
+
+	err := ToTyped(&out, v)
+	require.NoError(t, err)
+
+	// Each embedded struct should only get its own fields in ForceSendFields
+	assert.Equal(t, []string{"FirstField"}, out.First.ForceSendFields)
+	assert.Equal(t, []string{"SecondField"}, out.Second.ForceSendFields)
+}
+
+func TestToTypedMixedForceSendFields(t *testing.T) {
+	type First struct {
+		FirstField string `json:"first_field"`
+		// No ForceSendFields
+	}
+
+	type Second struct {
+		SecondField     string   `json:"second_field"`
+		ForceSendFields []string `json:"-"`
+	}
+
+	type Outer struct {
+		OuterField      string   `json:"outer_field"`
+		ForceSendFields []string `json:"-"`
+		First
+		Second
+	}
+
+	var out Outer
+	m := dyn.Mapping{}
+	m.SetLoc("outer_field", nil, dyn.V(""))
+	m.SetLoc("first_field", nil, dyn.V(""))
+	m.SetLoc("second_field", nil, dyn.V(""))
+	v := dyn.V(m)
+
+	err := ToTyped(&out, v)
+	require.NoError(t, err)
+
+	// Outer should get its own direct fields
+	assert.Equal(t, []string{"OuterField"}, out.ForceSendFields)
+	// First has no ForceSendFields field, so nothing to check
+	// Second should get its own field
+	assert.Equal(t, []string{"SecondField"}, out.Second.ForceSendFields)
+}
+
+func TestToTypedFieldByNameBugRegressionTest(t *testing.T) {
+	// This test reproduces the EXACT bug: only direct field is zero, embedded fields are non-zero
+	// The bug occurred because dst.FieldByName("ForceSendFields") finds embedded ForceSendFields
+	// instead of direct ForceSendFields (which doesn't exist)
+	type BaseResource struct {
+		ID string `json:"id,omitempty"`
+	}
+
+	type JobSettings struct {
+		Name            string   `json:"name"`
+		ForceSendFields []string `json:"-"`
+	}
+
+	type Job struct {
+		BaseResource          // embedded at [0]
+		JobSettings           // embedded at [1], has ForceSendFields
+		Permissions  []string `json:"permissions,omitempty"` // direct at [2]
+	}
+
+	var out Job
+	m := dyn.Mapping{}
+	// Non-zero JobSettings fields - these should NOT go to ForceSendFields
+	m.SetLoc("name", nil, dyn.V("test-job"))
+	// Zero direct field - this SHOULD trigger the bug with old code
+	m.SetLoc("permissions", nil, dyn.V([]dyn.Value{}))
+	v := dyn.V(m)
+
+	err := ToTyped(&out, v)
+	require.NoError(t, err)
+
+	// "Permissions" should be dropped, JobSettings.ForceSendFields stays empty
+	assert.Empty(t, out.ForceSendFields)
+	assert.Equal(t, "test-job", out.Name)
+	assert.Empty(t, out.Permissions)
+}
