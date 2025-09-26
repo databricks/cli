@@ -31,11 +31,12 @@ func NewPlan() *Plan {
 }
 
 type PlanEntry struct {
-	ID        string               `json:"id,omitempty"`
-	DependsOn []DependsOnEntry     `json:"depends_on,omitempty"`
-	Action    string               `json:"action,omitempty"`
-	NewState  *structvar.StructVar `json:"new_state,omitempty"`
-	Changes   *Changes             `json:"changes,omitempty"`
+	ID          string               `json:"id,omitempty"`
+	DependsOn   []DependsOnEntry     `json:"depends_on,omitempty"`
+	Action      string               `json:"action,omitempty"`
+	NewState    *structvar.StructVar `json:"new_state,omitempty"`
+	RemoteState any                  `json:"remote_state,omitempty"`
+	Changes     *Changes             `json:"changes,omitempty"`
 }
 
 type DependsOnEntry struct {
