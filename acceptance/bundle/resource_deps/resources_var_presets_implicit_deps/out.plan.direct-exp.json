@@ -1,0 +1,66 @@
+{
+  "plan": {
+    "resources.pipelines.mypipeline": {
+      "depends_on": [
+        {
+          "node": "resources.volumes.foo",
+          "label": "${resources.volumes.foo.catalog_name}"
+        },
+        {
+          "node": "resources.volumes.foo",
+          "label": "${resources.volumes.foo.name}"
+        },
+        {
+          "node": "resources.volumes.foo",
+          "label": "${resources.volumes.foo.schema_name}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "config": {
+          "channel": "CURRENT",
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/dev/state/metadata.json"
+          },
+          "development": true,
+          "edition": "ADVANCED",
+          "name": "[dev [USERNAME]] pipeline for mycatalog.dev_[USERNAME]_myschema.myname",
+          "tags": {
+            "dev": "[USERNAME]"
+          }
+        }
+      }
+    },
+    "resources.schemas.bar": {
+      "action": "create",
+      "new_state": {
+        "config": {
+          "catalog_name": "mycatalog",
+          "name": "dev_[USERNAME]_myschema"
+        }
+      }
+    },
+    "resources.volumes.foo": {
+      "depends_on": [
+        {
+          "node": "resources.schemas.bar",
+          "label": "${resources.schemas.bar.catalog_name}"
+        },
+        {
+          "node": "resources.schemas.bar",
+          "label": "${resources.schemas.bar.name}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "config": {
+          "catalog_name": "mycatalog",
+          "name": "myname",
+          "schema_name": "dev_[USERNAME]_myschema",
+          "volume_type": "MANAGED"
+        }
+      }
+    }
+  }
+}

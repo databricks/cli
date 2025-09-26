@@ -25,5 +25,41 @@
     }
   }
 }
+create pipelines.bar
+create pipelines.foo
+
+Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> print_requests
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests
+{
+  "body": {
+    "channel": "CURRENT",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+    },
+    "edition": "ADVANCED",
+    "name": "pfoo"
+  },
+  "method": "POST",
+  "path": "/api/2.0/pipelines"
+}
+{
+  "body": {
+    "channel": "CURRENT",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+    },
+    "edition": "ADVANCED",
+    "name": "pbar"
+  },
+  "method": "POST",
+  "path": "/api/2.0/pipelines"
+}

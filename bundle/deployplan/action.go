@@ -40,8 +40,10 @@ const (
 	ActionTypeDelete
 )
 
+const ActionTypeSkipString = "skip"
+
 var actionName = map[ActionType]string{
-	ActionTypeSkip:         "skip",
+	ActionTypeSkip:         ActionTypeSkipString,
 	ActionTypeResize:       "resize",
 	ActionTypeUpdate:       "update",
 	ActionTypeUpdateWithID: "update_id",
@@ -59,10 +61,6 @@ func init() {
 		}
 		nameToAction[v] = k
 	}
-}
-
-func (a ActionType) IsNoop() bool {
-	return a == ActionTypeSkip
 }
 
 func (a ActionType) KeepsID() bool {

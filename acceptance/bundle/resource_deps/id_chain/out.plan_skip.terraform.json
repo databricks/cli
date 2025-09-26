@@ -1,0 +1,19 @@
+{
+  "plan": {
+    "resources.jobs.a": {
+      "action": "skip"
+    },
+    "resources.jobs.b": {
+      "action": "skip"
+    },
+    "resources.jobs.c": {
+      "action": "skip"
+    },
+    "resources.jobs.d": {
+      "action": "skip"
+    },
+    "resources.jobs.e": {
+      "action": "skip"
+    }
+  }
+}

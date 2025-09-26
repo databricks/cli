@@ -1,0 +1,97 @@
+{
+  "plan": {
+    "resources.pipelines.foo1": {
+      "action": "skip"
+    },
+    "resources.pipelines.foo2": {
+      "depends_on": [
+        {
+          "node": "resources.pipelines.foo1",
+          "label": "${resources.pipelines.foo1.creator_user_name}"
+        }
+      ],
+      "action": "update",
+      "new_state": {
+        "config": {
+          "channel": "CURRENT",
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+          },
+          "edition": "ADVANCED",
+          "name": "foo2 foo1.creator_user_name=${resources.pipelines.foo1.creator_user_name}"
+        },
+        "vars": {
+          "name": "foo2 foo1.creator_user_name=${resources.pipelines.foo1.creator_user_name}"
+        }
+      },
+      "changes": {
+        "local": {
+          "name": {
+            "action": "update"
+          }
+        }
+      }
+    },
+    "resources.pipelines.foo3": {
+      "depends_on": [
+        {
+          "node": "resources.pipelines.foo2",
+          "label": "${resources.pipelines.foo2.state}"
+        }
+      ],
+      "action": "update",
+      "new_state": {
+        "config": {
+          "channel": "CURRENT",
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+          },
+          "edition": "ADVANCED",
+          "name": "foo3 foo2.state=${resources.pipelines.foo2.state}"
+        },
+        "vars": {
+          "name": "foo3 foo2.state=${resources.pipelines.foo2.state}"
+        }
+      },
+      "changes": {
+        "local": {
+          "name": {
+            "action": "update"
+          }
+        }
+      }
+    },
+    "resources.pipelines.foo4": {
+      "depends_on": [
+        {
+          "node": "resources.pipelines.foo3",
+          "label": "${resources.pipelines.foo3.last_modified}"
+        }
+      ],
+      "action": "update",
+      "new_state": {
+        "config": {
+          "channel": "CURRENT",
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+          },
+          "edition": "ADVANCED",
+          "name": "foo4 foo3.last_modified=${resources.pipelines.foo3.last_modified}"
+        },
+        "vars": {
+          "name": "foo4 foo3.last_modified=${resources.pipelines.foo3.last_modified}"
+        }
+      },
+      "changes": {
+        "local": {
+          "name": {
+            "action": "update"
+          }
+        }
+      }
+    }
+  }
+}
