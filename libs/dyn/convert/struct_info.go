@@ -188,7 +188,6 @@ func (s *structInfo) FieldValues(v reflect.Value) []FieldValue {
 	return out
 }
 
-
 // Type of [dyn.Value].
 var configValueType = reflect.TypeOf((*dyn.Value)(nil)).Elem()
 
