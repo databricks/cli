@@ -164,18 +164,15 @@ func (s *structInfo) FieldValues(v reflect.Value) []FieldValue {
 		}
 
 		if fv.IsValid() {
-			var inForceSendFields bool
+			isForced := true
 
-			// Check ForceSendFields if the field value is zero
+			// TODO: we should use isEmptyForOmitEmpty instead of IsZero()
 			if fv.IsZero() {
 				goName := s.GolangNames[k]
 				structKey := s.ForceSendFieldsStructKey[k]
 				forceSendFields := forceSendFieldsMap[structKey]
-				inForceSendFields = slices.Contains(forceSendFields, goName)
+				isForced = slices.Contains(forceSendFields, goName)
 			}
-
-			// IsForced is true if field is not zero OR if it's in ForceSendFields
-			isForced := !fv.IsZero() || inForceSendFields
 
 			out = append(out, FieldValue{
 				Key:      k,
