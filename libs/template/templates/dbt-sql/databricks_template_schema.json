@@ -47,6 +47,13 @@
             "pattern_match_failure_message": "Invalid schema name.",
             "description": "\nPlease provide an initial schema during development.\ndefault_schema",
             "order": 5
+        },
+        "serverless": {
+            "type": "string",
+            "default": "yes",
+            "enum": ["yes", "no"],
+            "description": "Use serverless compute",
+            "order": 6
         }
     },
     "success_message": "\n📊 Your new project has been created in the '{{.project_name}}' directory!\nIf you already have dbt installed, just type 'cd {{.project_name}}; dbt init' to get started.\nRefer to the README.md file for full \"getting started\" guide and production setup instructions.\n"
