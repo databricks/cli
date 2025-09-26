@@ -3,5 +3,8 @@ print_requests() {
     rm out.requests.txt
 }
 
+trace $CLI bundle debug plan > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
+trace print_requests
+trace $CLI bundle debug plan > out.plan_skip.$DATABRICKS_BUNDLE_ENGINE.json
 trace print_requests
