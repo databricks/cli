@@ -143,7 +143,7 @@ func (s *structInfo) FieldValues(v reflect.Value) []FieldValue {
 	out := make([]FieldValue, 0, len(s.Fields))
 
 	// Collect ForceSendFields from all levels for field inclusion logic
-	forceSendFieldsMap := getForceSendFieldsForFromTyped(v)
+	forceSendFieldsMap := getForceSendFieldsValues(v)
 
 	for _, k := range s.FieldNames {
 		index := s.Fields[k]
@@ -170,8 +170,12 @@ func (s *structInfo) FieldValues(v reflect.Value) []FieldValue {
 			if fv.IsZero() {
 				goName := s.GolangNames[k]
 				structKey := s.ForceSendFieldsStructKey[k]
-				forceSendFields := forceSendFieldsMap[structKey]
-				isForced = slices.Contains(forceSendFields, goName)
+				if fieldValue, exists := forceSendFieldsMap[structKey]; exists {
+					forceSendFields := fieldValue.Interface().([]string)
+					isForced = slices.Contains(forceSendFields, goName)
+				} else {
+					isForced = false
+				}
 			}
 
 			out = append(out, FieldValue{
@@ -211,21 +215,6 @@ func getForceSendFieldsValues(v reflect.Value) map[int]reflect.Value {
 					result[i] = forceSendField
 				}
 			}
-		}
-	}
-
-	return result
-}
-
-// getForceSendFieldsForFromTyped collects ForceSendFields values for FromTyped operations
-// Returns map[structKey][]fieldName where structKey is -1 for direct fields, embedded index for embedded fields
-func getForceSendFieldsForFromTyped(v reflect.Value) map[int][]string {
-	values := getForceSendFieldsValues(v)
-	result := make(map[int][]string)
-
-	for structKey, fieldValue := range values {
-		if fields, ok := fieldValue.Interface().([]string); ok {
-			result[structKey] = fields
 		}
 	}
 
