@@ -598,12 +598,6 @@ func runTest(t *testing.T,
 	envBase := getCloudEnvBase(cloudEnv)
 	cmd.Env = append(cmd.Env, "CLOUD_ENV_BASE="+envBase)
 
-	// Set unique cache folder for this test to avoid race conditions between parallel tests
-	userCacheDir, err := os.UserCacheDir()
-	require.NoError(t, err)
-	uniqueCacheDir := filepath.Join(userCacheDir, "databricks-test-"+uniqueName)
-	cmd.Env = append(cmd.Env, "DATABRICKS_CACHE_FOLDER="+uniqueCacheDir)
-
 	// Must be added PrepareReplacementsUser, otherwise conflicts with [USERNAME]
 	testdiff.PrepareReplacementsUUID(t, &repls)
 
@@ -628,6 +622,12 @@ func runTest(t *testing.T,
 		require.NoError(t, err)
 		cmd.Env = append(cmd.Env, "GOCOVERDIR="+coverDir)
 	}
+
+	// Set unique cache folder for this test to avoid race conditions between parallel tests
+	userCacheDir, err := os.UserCacheDir()
+	require.NoError(t, err)
+	uniqueCacheDir := filepath.Join(userCacheDir, strings.ReplaceAll(dir, string(os.PathSeparator), "--"))
+	cmd.Env = append(cmd.Env, "DATABRICKS_CACHE_FOLDER="+uniqueCacheDir)
 
 	for _, key := range utils.SortedKeys(config.Env) {
 		if hasKey(customEnv, key) {

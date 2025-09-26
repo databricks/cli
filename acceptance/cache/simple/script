@@ -1,3 +1,7 @@
+export DATABRICKS_CACHE_FOLDER=$(pwd)/.cache
+
+$CLI cache clear &> /dev/null
+
 title "First call in a session is expected to be a cache miss:\n"
 trace $CLI bundle validate -p dogfood --debug 2>&1 | grep "Local Cache" | grep -v "cache path"
 
@@ -9,3 +13,4 @@ trace $CLI bundle deploy -p dogfood
 
 trace print_telemetry_bool_values | grep "local.cache"
 rm out.requests.txt
+rm -rf "${DATABRICKS_CACHE_FOLDER}"
