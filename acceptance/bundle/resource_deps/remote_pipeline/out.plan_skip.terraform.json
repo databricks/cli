@@ -1,0 +1,16 @@
+{
+  "plan": {
+    "resources.pipelines.foo1": {
+      "action": "skip"
+    },
+    "resources.pipelines.foo2": {
+      "action": "skip"
+    },
+    "resources.pipelines.foo3": {
+      "action": "skip"
+    },
+    "resources.pipelines.foo4": {
+      "action": "skip"
+    }
+  }
+}
