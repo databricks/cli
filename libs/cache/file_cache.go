@@ -96,6 +96,7 @@ func (fc *FileCache[T]) addTelemetryMetric(key string) {
 // GetOrCompute retrieves cached content or computes it using the provided function.
 func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compute func(ctx context.Context) (T, error)) (T, error) {
 	var zero T
+	isCacheHit := false
 
 	// Convert fingerprint to deterministic string
 	fingerprintHash, err := fingerprintToHash(fingerprint)
@@ -116,13 +117,15 @@ func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compu
 
 	// Check in-memory cache first
 	fc.mu.RLock()
-	if data, found := fc.memCache[cacheKey]; found {
+	if _, found := fc.memCache[cacheKey]; found {
 		fc.mu.RUnlock()
 		log.Debugf(ctx, "[Local Cache] cache hit: in-memory\n")
 		fc.addTelemetryMetric("local.cache.hit")
-		return data, nil
+		isCacheHit = true
+		// return data, nil	// cache layer is currently no-op
+	} else {
+		fc.mu.RUnlock()
 	}
-	fc.mu.RUnlock()
 
 	// Try to read from disk cache
 	if data, found := fc.readFromCache(cachePath); found {
@@ -132,7 +135,8 @@ func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compu
 		fc.mu.Unlock()
 		log.Debugf(ctx, "[Local Cache] cache hit: disk-read\n")
 		fc.addTelemetryMetric("local.cache.hit")
-		return data, nil
+		isCacheHit = true
+		// return data, nil // cache layer is currently no-op
 	}
 
 	// Check if there's a pending write for this key
@@ -144,13 +148,15 @@ func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compu
 		case <-pendingCh:
 			// Try reading from memory cache again
 			fc.mu.RLock()
-			if data, found := fc.memCache[cacheKey]; found {
+			if _, found := fc.memCache[cacheKey]; found {
 				fc.mu.RUnlock()
 				log.Debugf(ctx, "[Local Cache] cache hit: in-memory from pending write\n")
 				fc.addTelemetryMetric("local.cache.hit")
-				return data, nil
+				isCacheHit = true
+				// return data, nil // cache layer is currently no-op
+			} else {
+				fc.mu.RUnlock()
 			}
-			fc.mu.RUnlock()
 		case <-ctx.Done():
 			log.Debugf(ctx, "[Local Cache] cache miss: no hit while waiting for pending write\n")
 			fc.addTelemetryMetric("local.cache.miss")
@@ -174,7 +180,9 @@ func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compu
 	select {
 	case <-ctx.Done():
 		log.Debugf(ctx, "[Local Cache] cache miss: context is already cancelled\n")
-		fc.addTelemetryMetric("local.cache.miss")
+		if !isCacheHit {
+			fc.addTelemetryMetric("local.cache.miss")
+		}
 		return zero, ctx.Err()
 	default:
 	}
@@ -197,7 +205,10 @@ func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compu
 	go fc.writeToCache(cachePath, result)
 
 	log.Debugf(ctx, "[Local Cache] cache miss, but stored the compute result for future calls\n")
-	fc.addTelemetryMetric("local.cache.miss")
+
+	if !isCacheHit {
+		fc.addTelemetryMetric("local.cache.miss")
+	}
 	return result, nil
 }
 
@@ -215,6 +226,11 @@ func (fc *FileCache[T]) readFromCache(cachePath string) (T, bool) {
 
 	var entry cacheEntry
 	if err := json.Unmarshal(data, &entry); err != nil {
+		return zero, false
+	}
+
+	// Check if cache entry has expired
+	if time.Now().After(entry.Expiry) {
 		return zero, false
 	}
 

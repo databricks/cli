@@ -623,6 +623,12 @@ func runTest(t *testing.T,
 		cmd.Env = append(cmd.Env, "GOCOVERDIR="+coverDir)
 	}
 
+	// Set unique cache folder for this test to avoid race conditions between parallel tests
+	userCacheDir, err := os.UserCacheDir()
+	require.NoError(t, err)
+	uniqueCacheDir := filepath.Join(userCacheDir, strings.ReplaceAll(dir, string(os.PathSeparator), "--"))
+	cmd.Env = append(cmd.Env, "DATABRICKS_CACHE_FOLDER="+uniqueCacheDir)
+
 	for _, key := range utils.SortedKeys(config.Env) {
 		if hasKey(customEnv, key) {
 			// We want EnvMatrix to take precedence.

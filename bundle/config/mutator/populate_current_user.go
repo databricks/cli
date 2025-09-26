@@ -33,8 +33,8 @@ func (m *populateCurrentUser) initializeCache(ctx context.Context, b *bundle.Bun
 		return
 	}
 
-	if os.Getenv("DATABRICKS_EXPERIMENTAL_CACHE_ENABLED") != "true" {
-		log.Debugf(ctx, "[Local Cache] Local cache is disabled. Enable it be setting an env variable DATABRICKS_EXPERIMENTAL_CACHE_ENABLED=true\n")
+	if os.Getenv("DATABRICKS_CACHE_DISABLED") == "true" {
+		log.Debugf(ctx, "[Local Cache] Local cache is disabled via environment variable DATABRICKS_CACHE_DISABLED=true\n")
 		return
 	}
 

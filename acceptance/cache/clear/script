@@ -1,4 +1,3 @@
-export DATABRICKS_EXPERIMENTAL_CACHE_ENABLED=true
 export DATABRICKS_CACHE_FOLDER=$(pwd)/.cache
 
 $CLI cache clear &> /dev/null
