@@ -116,11 +116,11 @@ func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compu
 
 	// Check in-memory cache first
 	fc.mu.RLock()
-	if data, found := fc.memCache[cacheKey]; found {
+	if _, found := fc.memCache[cacheKey]; found {
 		fc.mu.RUnlock()
 		log.Debugf(ctx, "[Local Cache] cache hit: in-memory\n")
 		fc.addTelemetryMetric("local.cache.hit")
-		return data, nil
+		// return data, nil	// cache layer is currently no-op
 	}
 	fc.mu.RUnlock()
 
@@ -132,7 +132,7 @@ func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compu
 		fc.mu.Unlock()
 		log.Debugf(ctx, "[Local Cache] cache hit: disk-read\n")
 		fc.addTelemetryMetric("local.cache.hit")
-		return data, nil
+		// return data, nil // cache layer is currently no-op
 	}
 
 	// Check if there's a pending write for this key
@@ -144,11 +144,11 @@ func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compu
 		case <-pendingCh:
 			// Try reading from memory cache again
 			fc.mu.RLock()
-			if data, found := fc.memCache[cacheKey]; found {
+			if _, found := fc.memCache[cacheKey]; found {
 				fc.mu.RUnlock()
 				log.Debugf(ctx, "[Local Cache] cache hit: in-memory from pending write\n")
 				fc.addTelemetryMetric("local.cache.hit")
-				return data, nil
+				// return data, nil // cache layer is currently no-op
 			}
 			fc.mu.RUnlock()
 		case <-ctx.Done():
