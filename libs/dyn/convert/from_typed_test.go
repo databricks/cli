@@ -923,6 +923,6 @@ func TestFromTypedForceSendFieldsEmbedded(t *testing.T) {
 	field := nv.Get("field")
 	other := nv.Get("other")
 	assert.True(t, field.IsValid(), "embedded field should be present due to ForceSendFields")
-	assert.Equal(t, field.Kind(), dyn.KindNil, "embedded field should be present due to ForceSendFields")
+	assert.Equal(t, dyn.KindNil, field.Kind(), "embedded field should be present due to ForceSendFields")
 	assert.Equal(t, dyn.V("value"), other)
 }
