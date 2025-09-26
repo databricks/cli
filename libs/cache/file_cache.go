@@ -121,8 +121,9 @@ func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compu
 		log.Debugf(ctx, "[Local Cache] cache hit: in-memory\n")
 		fc.addTelemetryMetric("local.cache.hit")
 		// return data, nil	// cache layer is currently no-op
+	} else {
+		fc.mu.RUnlock()
 	}
-	fc.mu.RUnlock()
 
 	// Try to read from disk cache
 	if data, found := fc.readFromCache(cachePath); found {
@@ -149,8 +150,9 @@ func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compu
 				log.Debugf(ctx, "[Local Cache] cache hit: in-memory from pending write\n")
 				fc.addTelemetryMetric("local.cache.hit")
 				// return data, nil // cache layer is currently no-op
+			} else {
+				fc.mu.RUnlock()
 			}
-			fc.mu.RUnlock()
 		case <-ctx.Done():
 			log.Debugf(ctx, "[Local Cache] cache miss: no hit while waiting for pending write\n")
 			fc.addTelemetryMetric("local.cache.miss")
