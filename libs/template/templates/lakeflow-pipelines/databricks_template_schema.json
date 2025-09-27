@@ -1,5 +1,5 @@
 {
-    "//": "This template is based on an upcoming version of the default-python template, but comes with a SQL variation + certain defaults that are specific to Lakeflow Pipelines.",
+    "template_dir": "../default",
     "welcome_message": "Welcome to the template for Lakeflow Declarative Pipelines!\n\nPlease answer the below to tailor your project to your preferences.\nYou can always change your mind and change your configuration in the databricks.yml file later.\n\nNote that {{workspace_host}} is used for initialization\n(see https://docs.databricks.com/dev-tools/cli/profiles.html for how to change your profile).",
     "properties": {
         "lakeflow_only": {
@@ -20,10 +20,10 @@
             "pattern_match_failure_message": "Name must consist of letters, numbers, and underscores."
         },
         "project_name_short": {
-            "//": "This is a derived property based on project_name (it replaces my_project with sample and strips _project|_app|_service)",
+            "//": "This is a derived property based on project_name (it replaces lakeflow_project with lakeflow and strips _project|_app|_service)",
             "skip_prompt_if": {},
             "type": "string",
-            "default": "{{if or (eq .project_name \"lakeflow_project\") (eq .project_name \"my_project\")}}sample{{else}}{{with (regexp \"^(my_|lakeflow_)?(.*)(_project|_app|_service)?$\").FindStringSubmatch .project_name}}{{index . 2}}{{else}}{{.project_name}}{{end}}{{end}}",
+            "default": "{{if or (eq .project_name \"lakeflow_project\") (eq .project_name \"my_project\")}}lakeflow{{else}}{{with (regexp \"^(my_|lakeflow_)?(.*)(_project|_app|_service)?$\").FindStringSubmatch .project_name}}{{index . 2}}{{else}}{{.project_name}}{{end}}{{end}}",
             "description": "Short name for the project",
             "order": 2
         },
