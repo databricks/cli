@@ -2,15 +2,6 @@
     "template_dir": "../default",
     "welcome_message": "Welcome to the default Python template for Databricks Asset Bundles!\n\nPlease answer the below to tailor your project to your preferences.\nYou can always change your mind and change your configuration in the databricks.yml file later.\n\nNote that {{workspace_host}} is used for initialization\n(see https://docs.databricks.com/dev-tools/cli/profiles.html for how to change your profile).",
     "properties": {
-        "lakeflow_only": {
-            "//": "This property is set by default to 'no' for the default-python template",
-            "skip_prompt_if": {},
-            "default": "no",
-            "type": "string",
-            "enum": ["yes", "no"],
-            "description": "Adjust template for Lakeflow Pipelines",
-            "order": 0
-        },
         "project_name": {
             "type": "string",
             "default": "my_project",

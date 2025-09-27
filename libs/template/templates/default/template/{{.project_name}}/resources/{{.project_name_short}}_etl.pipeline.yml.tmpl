@@ -28,12 +28,10 @@ resources:
 
       libraries:
         - glob:
-            include: transformations/**
+            include: src/{{.project_name_short}}_etl/transformations/**
 
-{{- if eq .include_python "yes"}}
       environment:
         dependencies:
-          # By default we include the .whl file generated for the project's pyproject.toml
-          # in the root of this project. Any other dependencies can be added there.
-          - ../../dist/*.whl
-{{- end}}
+          # We include every dependency defined by pyproject.toml by defining an environment
+          # that points to the folder where pyproject.toml is deployed.
+          - --editable ${workspace.file_path}

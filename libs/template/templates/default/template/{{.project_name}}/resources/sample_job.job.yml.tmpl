@@ -31,7 +31,7 @@ resources:
 {{- if $notebook}}
         - task_key: notebook_task
           notebook_task:
-            notebook_path: sample_notebook.ipynb
+            notebook_path: ../src/sample_notebook.ipynb
   {{- if $serverless}}
     {{- /* Environments for notebooks are still in private preview */}}
     {{- if $python_package}}
@@ -54,7 +54,7 @@ resources:
           depends_on:
             - task_key: notebook_task
           spark_python_task:
-            python_file: sample_python_file.py
+            python_file: ../src/sample_python_file.py
   {{- if $serverless}}
           environment_key: default
   {{- else}}
@@ -82,10 +82,9 @@ resources:
             client: "2"
   {{- if $python_package}}
             dependencies:
-              # By default we just include the .whl file generated for the {{.project_name_short}} package.
-              # See https://docs.databricks.com/dev-tools/bundles/library-dependencies.html
-              # for more information on how to add other libraries.
-              - ../../dist/*.whl
+              # We include every dependency defined by pyproject.toml by defining an environment
+              # that points to the folder where pyproject.toml is deployed.
+              - --editable ${workspace.file_path}
   {{- end}}
 {{- else}}
 
