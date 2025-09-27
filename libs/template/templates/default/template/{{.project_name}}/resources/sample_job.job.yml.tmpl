@@ -44,32 +44,46 @@ resources:
             # By default we just include the .whl file generated for the {{.project_name_short}} package.
             # See https://docs.databricks.com/dev-tools/bundles/library-dependencies.html
             # for more information on how to add other libraries.
-            - whl: ../../dist/*.whl
+            - whl: ../dist/*.whl
     {{- end}}
   {{- end}}
 {{- end}}
 
 {{- if $python_package}}
-        - task_key: python_file_task
+        - task_key: python_wheel_task
+  {{- if $notebook}}
           depends_on:
             - task_key: notebook_task
-          spark_python_task:
-            python_file: ../src/sample_python_file.py
+  {{- end}}
+          python_wheel_task:
+            package_name: {{.project_name_short}}
+            entry_point: main
+            parameters:
+              - "--catalog"
+              - "${var.catalog}"
+              - "--schema"
+              - "${var.schema}"
   {{- if $serverless}}
           environment_key: default
   {{- else}}
           job_cluster_key: job_cluster
-    {{- if $python_package}}
           libraries:
-            - whl: ../../dist/*.whl
-    {{- end}}
+            # By default we just include the .whl file generated for the {{.project_name_short}} package.
+            # See https://docs.databricks.com/dev-tools/bundles/library-dependencies.html
+            # for more information on how to add other libraries.
+            - whl: ../dist/*.whl
   {{- end}}
 {{- end}}
 
 {{- if $pipeline}}
         - task_key: refresh_pipeline
+  {{- if $notebook}}
           depends_on:
             - task_key: notebook_task
+  {{- else if $python_package}}
+          depends_on:
+            - task_key: python_wheel_task
+  {{- end}}
           pipeline_task:
             pipeline_id: ${resources.pipelines.{{.project_name_short}}_etl.id}
 {{- end}}
@@ -82,9 +96,10 @@ resources:
             client: "2"
   {{- if $python_package}}
             dependencies:
-              # We include every dependency defined by pyproject.toml by defining an environment
-              # that points to the folder where pyproject.toml is deployed.
-              - --editable ${workspace.file_path}
+              # By default we just include the .whl file generated for the {{.project_name_short}} package.
+              # See https://docs.databricks.com/dev-tools/bundles/library-dependencies.html
+              # for more information on how to add other libraries.
+              - ../dist/*.whl
   {{- end}}
 {{- else}}
 

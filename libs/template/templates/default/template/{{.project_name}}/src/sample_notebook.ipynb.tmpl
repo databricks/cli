@@ -19,13 +19,23 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 2,
-   "metadata": {},
+   "execution_count": 0,
+   "metadata": {
+    "application/vnd.databricks.v1+cell": {
+     "cellMetadata": {},
+     "inputWidgets": {},
+     "nuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+     "showTitle": false,
+     "title": ""
+    }
+   },
    "outputs": [],
    "source": [
-    "# Reload wheel file dependencies every time they are updated\n",
-    "%load_ext autoreload\n",
-    "%autoreload 2"
+    "# Set default catalog and schema\n",
+    "catalog = dbutils.widgets.get(\"catalog\")\n",
+    "schema = dbutils.widgets.get(\"schema\")\n",
+    "spark.sql(f\"USE CATALOG {catalog}\")\n",
+    "spark.sql(f\"USE SCHEMA {schema}\")\n"
    ]
   },
   {
@@ -45,28 +55,89 @@
    },
    "outputs": [],
    "source": [
-   {{- if (eq .include_python "yes") }}
+{{- if (eq .include_python "yes") }}
     "import sys\n",
     "\n",
     "sys.path.append(\"../src\")\n",
-    "from {{.project_name}} import main\n",
+    "from {{.project_name_short}} import taxis\n",
     "\n",
-    "main.get_taxis().show(10)"
-   {{else}}
+    "taxis.find_all_taxis().show(10)"
+{{- else }}
     "spark.read.table(\"samples.nyctaxi.trips\")"
-   {{end -}}
+{{- end }}
    ]
   }
  ],
  "metadata": {
   "application/vnd.databricks.v1+notebook": {
    "dashboards": [],
+   "environmentMetadata": {
+    "base_environment": "",
+    "dependencies": [
+     {{- /* Make sure that this file always gets any library dependencies (when using serverless)*/}}
+     "--editable .."
+    ],
+    "environment_version": "2"
+   },
    "language": "python",
    "notebookMetadata": {
     "pythonIndentUnit": 2
    },
    "notebookName": "notebook",
-   "widgets": {}
+   "widgets": {
+    "catalog": {
+     "currentValue": "{{.default_catalog}}",
+     "nuid": "c4t4l0g-w1dg-3t12-3456-789012345678",
+     "typedWidgetInfo": {
+      "autoCreated": false,
+      "defaultValue": "{{.default_catalog}}",
+      "label": "Catalog",
+      "name": "catalog",
+      "options": {
+       "widgetDisplayType": "Text",
+       "validationRegex": null
+      },
+      "parameterDataType": "String"
+     },
+     "widgetInfo": {
+      "widgetType": "text",
+      "defaultValue": "{{.default_catalog}}",
+      "label": "Catalog",
+      "name": "catalog",
+      "options": {
+       "widgetType": "text",
+       "autoCreated": false,
+       "validationRegex": null
+      }
+     }
+    },
+    "schema": {
+     "currentValue": "{{short_name}}",
+     "nuid": "5ch3m4-w1dg-3t98-7654-321098765432",
+     "typedWidgetInfo": {
+      "autoCreated": false,
+      "defaultValue": "default",
+      "label": "Schema",
+      "name": "schema",
+      "options": {
+       "widgetDisplayType": "Text",
+       "validationRegex": null
+      },
+      "parameterDataType": "String"
+     },
+     "widgetInfo": {
+      "widgetType": "text",
+      "defaultValue": "default",
+      "label": "Schema",
+      "name": "schema",
+      "options": {
+       "widgetType": "text",
+       "autoCreated": false,
+       "validationRegex": null
+      }
+     }
+    }
+   }
   },
   "kernelspec": {
    "display_name": "Python 3",
