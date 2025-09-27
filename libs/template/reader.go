@@ -10,40 +10,75 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/jsonschema"
 	"github.com/databricks/cli/libs/log"
 )
 
 type Reader interface {
-	// FS returns a file system that contains the template
-	// definition files.
-	FS(ctx context.Context) (fs.FS, error)
+	// LoadSchemaAndTemplateFS loads and returns the schema and template filesystem.
+	LoadSchemaAndTemplateFS(ctx context.Context) (*jsonschema.Schema, fs.FS, error)
 
 	// Cleanup releases any resources associated with the reader
 	// like cleaning up temporary directories.
 	Cleanup(ctx context.Context)
 }
 
+// builtinReader reads a template from the built-in templates.
 type builtinReader struct {
 	name string
 }
 
-func (r *builtinReader) FS(ctx context.Context) (fs.FS, error) {
+func (r *builtinReader) LoadSchemaAndTemplateFS(ctx context.Context) (*jsonschema.Schema, fs.FS, error) {
 	builtin, err := builtin()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
+	var schemaFS fs.FS
 	for _, entry := range builtin {
 		if entry.Name == r.name {
-			return entry.FS, nil
+			schemaFS = entry.FS
+			break
 		}
 	}
 
-	return nil, fmt.Errorf("builtin template %s not found", r.name)
+	if schemaFS == nil {
+		return nil, nil, fmt.Errorf("builtin template %s not found", r.name)
+	}
+
+	schema, err := jsonschema.LoadFS(schemaFS, schemaFileName)
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil, nil, fmt.Errorf("not a bundle template: expected to find a template schema file at %s", schemaFileName)
+		}
+		return nil, nil, fmt.Errorf("failed to load schema for template %s: %w", r.name, err)
+	}
+
+	// If no template_dir is specified, assume it's in the same directory as the schema
+	if schema.TemplateDir == "" {
+		return schema, schemaFS, nil
+	}
+
+	// Find the referenced template filesystem
+	templateDirName := filepath.Base(schema.TemplateDir)
+	var templateFS fs.FS
+	for _, entry := range builtin {
+		if entry.Name == templateDirName {
+			templateFS = entry.FS
+			break
+		}
+	}
+
+	if templateFS == nil {
+		return nil, nil, fmt.Errorf("template directory %s (referenced by %s) not found", templateDirName, r.name)
+	}
+
+	return schema, templateFS, nil
 }
 
 func (r *builtinReader) Cleanup(ctx context.Context) {}
 
+// gitReader reads a template from a git repository.
 type gitReader struct {
 	gitUrl string
 	// tag or branch to checkout
@@ -66,19 +101,19 @@ func repoName(url string) string {
 	return parts[len(parts)-1]
 }
 
-func (r *gitReader) FS(ctx context.Context) (fs.FS, error) {
-	// Calling FS twice will lead to two downloaded copies of the git repo.
-	// In the future if you need to call FS twice, consider adding some caching
+func (r *gitReader) LoadSchemaAndTemplateFS(ctx context.Context) (*jsonschema.Schema, fs.FS, error) {
+	// Calling LoadSchemaAndTemplateFS twice will lead to two downloaded copies of the git repo.
+	// In the future if you need to call this twice, consider adding some caching
 	// logic here to avoid multiple downloads.
 	if r.tmpRepoDir != "" {
-		return nil, errors.New("FS called twice on git reader")
+		return nil, nil, errors.New("LoadSchemaAndTemplateFS called twice on git reader")
 	}
 
 	// Create a temporary directory with the name of the repository.  The '*'
 	// character is replaced by a random string in the generated temporary directory.
 	repoDir, err := os.MkdirTemp("", repoName(r.gitUrl)+"-*")
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	r.tmpRepoDir = repoDir
 
@@ -89,10 +124,12 @@ func (r *gitReader) FS(ctx context.Context) (fs.FS, error) {
 	err = r.cloneFunc(ctx, r.gitUrl, r.ref, repoDir)
 	close(promptSpinner)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return os.DirFS(filepath.Join(repoDir, r.templateDir)), nil
+	templateFS := os.DirFS(filepath.Join(repoDir, r.templateDir))
+
+	return loadSchemaFromFS(templateFS)
 }
 
 func (r *gitReader) Cleanup(ctx context.Context) {
@@ -107,13 +144,28 @@ func (r *gitReader) Cleanup(ctx context.Context) {
 	}
 }
 
+// localReader reads a template from a local filesystem.
 type localReader struct {
 	// Path on the local filesystem that contains the template
 	path string
 }
 
-func (r *localReader) FS(ctx context.Context) (fs.FS, error) {
-	return os.DirFS(r.path), nil
+func (r *localReader) LoadSchemaAndTemplateFS(ctx context.Context) (*jsonschema.Schema, fs.FS, error) {
+	templateFS := os.DirFS(r.path)
+	return loadSchemaFromFS(templateFS)
 }
 
 func (r *localReader) Cleanup(ctx context.Context) {}
+
+// loadSchemaFromFS is a helper function that loads the schema from a filesystem
+// and returns both the schema and the filesystem.
+func loadSchemaFromFS(templateFS fs.FS) (*jsonschema.Schema, fs.FS, error) {
+	schema, err := jsonschema.LoadFS(templateFS, schemaFileName)
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil, nil, fmt.Errorf("not a bundle template: expected to find a template schema file at %s", schemaFileName)
+		}
+		return nil, nil, fmt.Errorf("failed to load schema: %w", err)
+	}
+	return schema, templateFS, nil
+}
