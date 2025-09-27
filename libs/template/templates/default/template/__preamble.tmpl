@@ -40,6 +40,7 @@ This file only template directives; it is skipped for the actual output.
 # Remove .gitkeep files for a non-empty project
 {{if or $python_package $job $pipeline}}
   {{skip "{{.project_name}}/lib/.gitkeep"}}
+  {{skip "{{.project_name}}/resources/.gitkeep"}}
 {{end}}
 
 # Language-specific file selection
