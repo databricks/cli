@@ -8,6 +8,8 @@ dependencies = [
     # See also https://docs.databricks.com/dev-tools/bundles/library-dependencies
 ]
 
+{{- /* Note: We don't define [project.scripts] here since we run with DB Connect */}}
+
 [dependency-groups]
 dev = [
     "pytest",

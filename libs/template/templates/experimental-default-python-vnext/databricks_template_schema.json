@@ -1,6 +1,6 @@
 {
     "template_dir": "../default",
-    "welcome_message": "Welcome to the default Python template for Databricks Asset Bundles!\n\nPlease answer the below to tailor your project to your preferences.\nYou can always change your mind and change your configuration in the databricks.yml file later.\n\nNote that {{workspace_host}} is used for initialization\n(see https://docs.databricks.com/dev-tools/cli/profiles.html for how to change your profile).",
+    "welcome_message": "Welcome to the experimental \"vNext\" default Python template for Databricks Asset Bundles!\n\n⚠️  EXPERIMENTAL: This template is experimental and may be removed or changed without notice.\n\nPlease answer the below to tailor your project to your preferences.\nYou can always change your mind and change your configuration in the databricks.yml file later.\n\nNote that {{workspace_host}} is used for initialization\n(see https://docs.databricks.com/dev-tools/cli/profiles.html for how to change your profile).",
     "properties": {
         "project_name": {
             "type": "string",

@@ -3,11 +3,6 @@ from databricks.sdk.runtime import spark
 from {{.project_name_short}} import taxis
 
 
-def get_taxis():
-    """Get taxi data for use in notebooks."""
-    return taxis.find_all_taxis()
-
-
 def main():
     # Process command-line arguments
     parser = argparse.ArgumentParser(description="Databricks job with catalog and schema parameters")
