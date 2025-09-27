@@ -61,19 +61,13 @@ func (r *builtinReader) LoadSchemaAndTemplateFS(ctx context.Context) (*jsonschem
 
 	// Find the referenced template filesystem
 	templateDirName := filepath.Base(schema.TemplateDir)
-	var templateFS fs.FS
 	for _, entry := range builtin {
 		if entry.Name == templateDirName {
-			templateFS = entry.FS
-			break
+			return schema, entry.FS, nil
 		}
 	}
 
-	if templateFS == nil {
-		return nil, nil, fmt.Errorf("template directory %s (referenced by %s) not found", templateDirName, r.name)
-	}
-
-	return schema, templateFS, nil
+	return nil, nil, fmt.Errorf("template directory %s (referenced by %s) not found", templateDirName, r.name)
 }
 
 func (r *builtinReader) Cleanup(ctx context.Context) {}
