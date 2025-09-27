@@ -33,6 +33,7 @@ const (
 	DefaultPydabs          TemplateName = "default-pydabs"
 	Custom                 TemplateName = "custom"
 	ExperimentalJobsAsCode TemplateName = "experimental-jobs-as-code"
+	Default                TemplateName = "default"
 )
 
 var databricksTemplates = []Template{
