@@ -144,3 +144,74 @@ func TestLocalReader(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "somecontent", string(b))
 }
+
+func TestLocalReaderWithTemplateDir(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create a template directory with template_dir pointing to another directory
+	schemaDir := filepath.Join(tmpDir, "schema-template")
+	templateDir := filepath.Join(tmpDir, "actual-template")
+
+	// Create the schema template directory with a schema that references ../actual-template
+	testutil.WriteFile(t, filepath.Join(schemaDir, "databricks_template_schema.json"),
+		`{"welcome_message": "test with template_dir", "template_dir": "../actual-template"}`)
+
+	// Create the actual template directory with template files
+	testutil.WriteFile(t, filepath.Join(templateDir, "template", "somefile"), "content from template_dir")
+	testutil.WriteFile(t, filepath.Join(templateDir, "template", "{{.project_name}}", "test.yml.tmpl"), "test template content")
+
+	ctx := context.Background()
+	r := &localReader{path: schemaDir}
+	schema, fsys, err := r.LoadSchemaAndTemplateFS(ctx)
+	require.NoError(t, err)
+	assert.NotNil(t, schema)
+	assert.Equal(t, "test with template_dir", schema.WelcomeMessage)
+
+	// Assert the fs returned is rooted at the template_dir location
+	b, err := fs.ReadFile(fsys, "template/somefile")
+	require.NoError(t, err)
+	assert.Equal(t, "content from template_dir", string(b))
+
+	// Verify we can read the templated file
+	b2, err := fs.ReadFile(fsys, "template/{{.project_name}}/test.yml.tmpl")
+	require.NoError(t, err)
+	assert.Equal(t, "test template content", string(b2))
+}
+
+func TestGitReaderWithTemplateDir(t *testing.T) {
+	ctx := cmdio.MockDiscard(context.Background())
+
+	cloneFunc := func(ctx context.Context, url, reference, targetPath string) error {
+		// Create a template with template_dir reference
+		schemaDir := filepath.Join(targetPath, "a", "b", "c")
+		templateDir := filepath.Join(targetPath, "a", "b", "actual-template")
+
+		testutil.WriteFile(t, filepath.Join(schemaDir, "databricks_template_schema.json"),
+			`{"welcome_message": "git test with template_dir", "template_dir": "../actual-template"}`)
+
+		// Create the actual template directory with template files
+		testutil.WriteFile(t, filepath.Join(templateDir, "template", "gitfile"), "content from git template_dir")
+
+		return nil
+	}
+
+	r := &gitReader{
+		gitUrl:      "someurl",
+		cloneFunc:   cloneFunc,
+		ref:         "sometag",
+		templateDir: "a/b/c",
+	}
+
+	schema, fsys, err := r.LoadSchemaAndTemplateFS(ctx)
+	require.NoError(t, err)
+	assert.NotNil(t, schema)
+	assert.Equal(t, "git test with template_dir", schema.WelcomeMessage)
+
+	// Assert the fs returned is rooted at the template_dir location
+	b, err := fs.ReadFile(fsys, "template/gitfile")
+	require.NoError(t, err)
+	assert.Equal(t, "content from git template_dir", string(b))
+
+	// Cleanup
+	r.Cleanup(ctx)
+}

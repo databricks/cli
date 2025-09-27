@@ -1,0 +1,36 @@
+
+>>> [CLI] bundle init default-python-vnext --config-file ./input.json --output-dir output
+Welcome to the experimental default Python template for Databricks Asset Bundles!
+
+⚠️  EXPERIMENTAL: This template is experimental and may be removed or changed without notice.
+
+Please answer the below to tailor your project to your preferences.
+You can always change your mind and change your configuration in the databricks.yml file later.
+
+Note that [DATABRICKS_URL] is used for initialization
+(see https://docs.databricks.com/dev-tools/cli/profiles.html for how to change your profile).
+
+✨ Your new project has been created in the 'my_vnext_project' directory!
+
+Please refer to the README.md file for "getting started" instructions.
+See also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
+
+>>> [CLI] bundle validate -t dev
+Name: my_vnext_project
+Target: dev
+Workspace:
+  Host: [DATABRICKS_URL]
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/my_vnext_project/dev
+
+Validation OK!
+
+>>> [CLI] bundle validate -t prod
+Name: my_vnext_project
+Target: prod
+Workspace:
+  Host: [DATABRICKS_URL]
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/my_vnext_project/prod
+
+Validation OK!

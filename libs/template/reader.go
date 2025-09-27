@@ -61,19 +61,13 @@ func (r *builtinReader) LoadSchemaAndTemplateFS(ctx context.Context) (*jsonschem
 
 	// Find the referenced template filesystem
 	templateDirName := filepath.Base(schema.TemplateDir)
-	var templateFS fs.FS
 	for _, entry := range builtin {
 		if entry.Name == templateDirName {
-			templateFS = entry.FS
-			break
+			return schema, entry.FS, nil
 		}
 	}
 
-	if templateFS == nil {
-		return nil, nil, fmt.Errorf("template directory %s (referenced by %s) not found", templateDirName, r.name)
-	}
-
-	return schema, templateFS, nil
+	return nil, nil, fmt.Errorf("template directory %s (referenced by %s) not found", templateDirName, r.name)
 }
 
 func (r *builtinReader) Cleanup(ctx context.Context) {}
@@ -127,9 +121,8 @@ func (r *gitReader) LoadSchemaAndTemplateFS(ctx context.Context) (*jsonschema.Sc
 		return nil, nil, err
 	}
 
-	templateFS := os.DirFS(filepath.Join(repoDir, r.templateDir))
-
-	return loadSchemaFromFS(templateFS)
+	templateDir := filepath.Join(repoDir, r.templateDir)
+	return loadSchemaAndResolveTemplateDir(templateDir)
 }
 
 func (r *gitReader) Cleanup(ctx context.Context) {
@@ -151,15 +144,15 @@ type localReader struct {
 }
 
 func (r *localReader) LoadSchemaAndTemplateFS(ctx context.Context) (*jsonschema.Schema, fs.FS, error) {
-	templateFS := os.DirFS(r.path)
-	return loadSchemaFromFS(templateFS)
+	return loadSchemaAndResolveTemplateDir(r.path)
 }
 
 func (r *localReader) Cleanup(ctx context.Context) {}
 
-// loadSchemaFromFS is a helper function that loads the schema from a filesystem
-// and returns both the schema and the filesystem.
-func loadSchemaFromFS(templateFS fs.FS) (*jsonschema.Schema, fs.FS, error) {
+// loadSchemaAndResolveTemplateDir loads a schema from a local directory path
+// and resolves any template_dir reference.
+func loadSchemaAndResolveTemplateDir(path string) (*jsonschema.Schema, fs.FS, error) {
+	templateFS := os.DirFS(path)
 	schema, err := jsonschema.LoadFS(templateFS, schemaFileName)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
@@ -167,5 +160,19 @@ func loadSchemaFromFS(templateFS fs.FS) (*jsonschema.Schema, fs.FS, error) {
 		}
 		return nil, nil, fmt.Errorf("failed to load schema: %w", err)
 	}
-	return schema, templateFS, nil
+
+	// If no template_dir is specified, just use templateFS
+	if schema.TemplateDir == "" {
+		return schema, templateFS, nil
+	}
+
+	// Resolve template_dir relative to the schema location
+	templateDir := filepath.Join(path, schema.TemplateDir)
+
+	// Check if the referenced template directory exists
+	if _, err := os.Stat(templateDir); os.IsNotExist(err) {
+		return nil, nil, fmt.Errorf("template directory %s not found", templateDir)
+	}
+
+	return schema, os.DirFS(templateDir), nil
 }

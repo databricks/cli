@@ -1,0 +1,20 @@
+# The main pipeline for my_vnext_project
+
+resources:
+  pipelines:
+    vnext_project_etl:
+      name: vnext_project_etl
+      ## Specify the 'catalog' field to configure this pipeline to make use of Unity Catalog:
+      # catalog: ${var.catalog}
+      schema: ${var.schema}
+      root_path: "."
+
+      libraries:
+        - glob:
+            include: ../src/vnext_project_etl/transformations/**
+
+      environment:
+        dependencies:
+          # We include every dependency defined by pyproject.toml by defining an environment
+          # that points to the folder where pyproject.toml is deployed.
+          - --editable ${workspace.file_path}

@@ -1,0 +1,10 @@
+{
+    "project_name": "my_vnext_project",
+    "include_job": "yes",
+    "include_pipeline": "yes",
+    "include_python": "yes",
+    "serverless": "no",
+    "default_catalog": "main",
+    "personal_schemas": "yes",
+    "language": "python"
+}

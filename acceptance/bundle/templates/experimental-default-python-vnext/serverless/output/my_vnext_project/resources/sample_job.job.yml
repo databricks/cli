@@ -1,0 +1,54 @@
+# A sample job for my_vnext_project.
+
+resources:
+  jobs:
+    sample_job:
+      name: sample_job
+
+      trigger:
+        # Run this job every day, exactly one day from the last run; see https://docs.databricks.com/api/workspace/jobs/create#trigger
+        periodic:
+          interval: 1
+          unit: DAYS
+
+      #email_notifications:
+      #  on_failure:
+      #    - your_email@example.com
+
+      parameters:
+        - name: catalog
+          default: ${var.catalog}
+        - name: schema
+          default: ${var.schema}
+
+      tasks:
+        - task_key: notebook_task
+          notebook_task:
+            notebook_path: ../src/sample_notebook.ipynb
+          environment_key: default
+        - task_key: python_wheel_task
+          depends_on:
+            - task_key: notebook_task
+          python_wheel_task:
+            package_name: vnext_project
+            entry_point: vnext_project.main:main
+            parameters:
+              - "--catalog"
+              - "${var.catalog}"
+              - "--schema"
+              - "${var.schema}"
+          environment_key: default
+        - task_key: refresh_pipeline
+          depends_on:
+            - task_key: notebook_task
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.vnext_project_etl.id}
+
+      environments:
+        - environment_key: default
+          spec:
+            client: "2"
+            dependencies:
+              # We include every dependency defined by pyproject.toml by defining an environment
+              # that points to the folder where pyproject.toml is deployed.
+              - --editable ${workspace.file_path}

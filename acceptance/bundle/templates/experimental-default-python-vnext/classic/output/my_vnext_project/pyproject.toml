@@ -1,0 +1,34 @@
+[project]
+name = "my_vnext_project"
+version = "0.0.1"
+authors = [{ name = "[USERNAME]" }]
+requires-python = ">=3.10,<=3.13"
+dependencies = [
+    # Any dependencies for jobs and pipelines in this project can be added here
+    # See also https://docs.databricks.com/dev-tools/bundles/library-dependencies
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "databricks-dlt",
+    "databricks-connect>=15.4,<15.5",
+]
+
+[tool.pytest.ini_options]
+pythonpath = "src"
+testpaths = [
+    "tests",
+    "src",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+sources = ["src"]
+
+[tool.black]
+line-length = 125
