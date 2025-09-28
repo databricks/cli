@@ -41,7 +41,7 @@ resources:
           job_cluster_key: job_cluster
     {{- if $python_package}}
           libraries:
-            # By default we just include the .whl file generated for the {{.project_name_short}} package.
+            # By default we just include the .whl file generated for the {{.project_name}} package.
             # See https://docs.databricks.com/dev-tools/bundles/library-dependencies.html
             # for more information on how to add other libraries.
             - whl: ../dist/*.whl
@@ -56,7 +56,7 @@ resources:
             - task_key: notebook_task
   {{- end}}
           python_wheel_task:
-            package_name: {{.project_name_short}}
+            package_name: {{.project_name}}
             entry_point: main
             parameters:
               - "--catalog"
@@ -68,7 +68,7 @@ resources:
   {{- else}}
           job_cluster_key: job_cluster
           libraries:
-            # By default we just include the .whl file generated for the {{.project_name_short}} package.
+            # By default we just include the .whl file generated for the {{.project_name}} package.
             # See https://docs.databricks.com/dev-tools/bundles/library-dependencies.html
             # for more information on how to add other libraries.
             - whl: ../dist/*.whl
@@ -96,7 +96,7 @@ resources:
             client: "2"
   {{- if $python_package}}
             dependencies:
-              # By default we just include the .whl file generated for the {{.project_name_short}} package.
+              # By default we just include the .whl file generated for the {{.project_name}} package.
               # See https://docs.databricks.com/dev-tools/bundles/library-dependencies.html
               # for more information on how to add other libraries.
               - ../dist/*.whl

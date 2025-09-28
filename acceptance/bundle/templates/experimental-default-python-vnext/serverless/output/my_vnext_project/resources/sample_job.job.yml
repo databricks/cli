@@ -30,8 +30,8 @@ resources:
           depends_on:
             - task_key: notebook_task
           python_wheel_task:
-            package_name: vnext_project
-            entry_point: vnext_project.main:main
+            package_name: my_vnext_project
+            entry_point: main
             parameters:
               - "--catalog"
               - "${var.catalog}"
@@ -49,6 +49,7 @@ resources:
           spec:
             client: "2"
             dependencies:
-              # We include every dependency defined by pyproject.toml by defining an environment
-              # that points to the folder where pyproject.toml is deployed.
-              - --editable ${workspace.file_path}
+              # By default we just include the .whl file generated for the my_vnext_project package.
+              # See https://docs.databricks.com/dev-tools/bundles/library-dependencies.html
+              # for more information on how to add other libraries.
+              - ../dist/*.whl

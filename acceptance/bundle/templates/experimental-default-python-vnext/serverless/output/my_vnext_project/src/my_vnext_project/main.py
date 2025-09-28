@@ -1,6 +1,6 @@
 import argparse
 from databricks.sdk.runtime import spark
-from {{.project_name_short}} import taxis
+from my_vnext_project import taxis
 
 
 def main():

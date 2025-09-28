@@ -1,9 +1,9 @@
-# The main pipeline for my_vnext_project
+# The main pipeline for my_lakeflow_pipelines
 
 resources:
   pipelines:
-    vnext_project_etl:
-      name: vnext_project_etl
+    lakeflow_pipelines_etl:
+      name: lakeflow_pipelines_etl
       ## Catalog is required for serverless compute
       catalog: ${var.catalog}
       schema: ${var.schema}
@@ -12,7 +12,7 @@ resources:
 
       libraries:
         - glob:
-            include: ../src/vnext_project_etl/transformations/**
+            include: ../src/lakeflow_pipelines_etl/transformations/**
 
       environment:
         dependencies:

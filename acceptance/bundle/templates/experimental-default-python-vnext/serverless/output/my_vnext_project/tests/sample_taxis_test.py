@@ -1,6 +1,6 @@
 from databricks.sdk.runtime import spark
 from pyspark.sql import DataFrame
-from vnext_project import taxis
+from my_vnext_project import taxis
 
 
 def test_find_all_taxis():

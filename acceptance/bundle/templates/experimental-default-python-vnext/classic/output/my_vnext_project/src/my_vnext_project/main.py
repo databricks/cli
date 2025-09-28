@@ -1,11 +1,6 @@
 import argparse
 from databricks.sdk.runtime import spark
-from vnext_project import taxis
-
-
-def get_taxis():
-    """Get taxi data for use in notebooks."""
-    return taxis.find_all_taxis()
+from my_vnext_project import taxis
 
 
 def main():

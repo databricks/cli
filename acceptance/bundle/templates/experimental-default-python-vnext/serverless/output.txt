@@ -1,6 +1,6 @@
 
->>> [CLI] bundle init default-python-vnext --config-file ./input.json --output-dir output
-Welcome to the experimental default Python template for Databricks Asset Bundles!
+>>> [CLI] bundle init experimental-default-python-vnext --config-file ./input.json --output-dir output
+Welcome to the experimental "vNext" default Python template for Databricks Asset Bundles!
 
 ⚠️  EXPERIMENTAL: This template is experimental and may be removed or changed without notice.
 

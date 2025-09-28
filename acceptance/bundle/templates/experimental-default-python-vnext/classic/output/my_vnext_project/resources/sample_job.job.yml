@@ -27,7 +27,7 @@ resources:
             notebook_path: ../src/sample_notebook.ipynb
           job_cluster_key: job_cluster
           libraries:
-            # By default we just include the .whl file generated for the vnext_project package.
+            # By default we just include the .whl file generated for the my_vnext_project package.
             # See https://docs.databricks.com/dev-tools/bundles/library-dependencies.html
             # for more information on how to add other libraries.
             - whl: ../dist/*.whl
@@ -35,8 +35,8 @@ resources:
           depends_on:
             - task_key: notebook_task
           python_wheel_task:
-            package_name: vnext_project
-            entry_point: vnext_project.main:main
+            package_name: my_vnext_project
+            entry_point: main
             parameters:
               - "--catalog"
               - "${var.catalog}"
@@ -44,6 +44,9 @@ resources:
               - "${var.schema}"
           job_cluster_key: job_cluster
           libraries:
+            # By default we just include the .whl file generated for the my_vnext_project package.
+            # See https://docs.databricks.com/dev-tools/bundles/library-dependencies.html
+            # for more information on how to add other libraries.
             - whl: ../dist/*.whl
         - task_key: refresh_pipeline
           depends_on:

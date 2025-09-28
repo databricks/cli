@@ -1,5 +1,5 @@
 [project]
-name = "my_vnext_project"
+name = "my_lakeflow_pipelines"
 version = "0.0.1"
 authors = [{ name = "[USERNAME]" }]
 requires-python = ">=3.10,<=3.13"
@@ -16,7 +16,7 @@ dev = [
 ]
 
 [project.scripts]
-main = "my_vnext_project.main:main"
+main = "my_lakeflow_pipelines.main:main"
 
 [build-system]
 requires = ["hatchling"]
