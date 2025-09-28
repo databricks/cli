@@ -45,15 +45,14 @@ func (r *ResourceMlflowModel) DoCreate(ctx context.Context, config *ml.CreateMod
 	if err != nil {
 		return "", nil, err
 	}
-	// Convert ml.Model to ml.ModelDatabricks for consistency with DoRefresh
+	// Create API call returns [ml.Model] while DoRefresh returns [ml.ModelDatabricks].
+	// Thus we need to convert the response to the expected type.
 	modelDatabricks := &ml.ModelDatabricks{
-		Name:                 response.RegisteredModel.Name,
-		Description:          response.RegisteredModel.Description,
-		Tags:                 response.RegisteredModel.Tags,
-		CreationTimestamp:    response.RegisteredModel.CreationTimestamp,
-		LastUpdatedTimestamp: response.RegisteredModel.LastUpdatedTimestamp,
-		UserId:               response.RegisteredModel.UserId,
-		// Note: Some fields like LatestVersions might be missing in the conversion
+		Name:            response.RegisteredModel.Name,
+		Description:     response.RegisteredModel.Description,
+		Tags:            response.RegisteredModel.Tags,
+		ForceSendFields: filterFields[ml.ModelDatabricks](response.RegisteredModel.ForceSendFields),
+		// Skip coping fields that are not part of the bundle config tree.
 	}
 	return response.RegisteredModel.Name, modelDatabricks, nil
 }
@@ -72,15 +71,14 @@ func (r *ResourceMlflowModel) DoUpdate(ctx context.Context, id string, config *m
 		return nil, err
 	}
 
-	// Convert ml.Model to ml.ModelDatabricks for consistency with DoRefresh
+	// Update API call returns [ml.Model] while DoRefresh returns [ml.ModelDatabricks].
+	// Thus we need to convert the response to the expected type.
 	modelDatabricks := &ml.ModelDatabricks{
-		Name:                 response.RegisteredModel.Name,
-		Description:          response.RegisteredModel.Description,
-		Tags:                 response.RegisteredModel.Tags,
-		CreationTimestamp:    response.RegisteredModel.CreationTimestamp,
-		LastUpdatedTimestamp: response.RegisteredModel.LastUpdatedTimestamp,
-		UserId:               response.RegisteredModel.UserId,
-		// Note: Some fields like LatestVersions might be missing in the conversion
+		Name:            response.RegisteredModel.Name,
+		Description:     response.RegisteredModel.Description,
+		Tags:            response.RegisteredModel.Tags,
+		ForceSendFields: filterFields[ml.ModelDatabricks](response.RegisteredModel.ForceSendFields),
+		// Skip coping fields that are not part of the bundle config tree.
 	}
 	return modelDatabricks, nil
 }
@@ -93,8 +91,19 @@ func (r *ResourceMlflowModel) DoDelete(ctx context.Context, id string) error {
 
 func (*ResourceMlflowModel) FieldTriggers() map[string]deployplan.ActionType {
 	return map[string]deployplan.ActionType{
-		".name": deployplan.ActionTypeRecreate, // Name changes require recreation
-		// Description changes can be updated in place
-		// Tags are handled separately and don't require special triggers
+		// Recreate matches current behavior of Terraform. It is possible to rename without recreate
+		// but that would require dynamic select of the method during update since
+		// the [ml.RenameModel] needs to be called instead of [ml.UpdateModel].
+		//
+		// We might reasonably choose to never fix this because this is a legacy resource.
+		"name": deployplan.ActionTypeRecreate,
+
+		// Allowing updates for tags requires dynamic selection of the method since
+		// tags can only be updated by calling [ml.SetModelTag] or [ml.DeleteModelTag] methods.
+		//
+		// Skip annotation matches the current behavior of Terraform where tags changes are showed
+		// in plan but are just ignored / not applied. Since this is a legacy resource we might
+		// reasonably choose to not fix it here as well.
+		"tags": deployplan.ActionTypeSkip,
 	}
 }
