@@ -4,6 +4,9 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/validate"
+	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/logdiag"
@@ -37,4 +40,42 @@ func ConfigureBundleWithVariables(cmd *cobra.Command) *bundle.Bundle {
 	configureVariables(cmd, b, variables)
 
 	return b
+}
+
+func GetPlan(ctx context.Context, b *bundle.Bundle) (*deployplan.Plan, error) {
+	phases.Initialize(ctx, b)
+	if logdiag.HasError(ctx) {
+		return nil, root.ErrAlreadyPrinted
+	}
+
+	bundle.ApplyContext(ctx, b, validate.FastValidate())
+	if logdiag.HasError(ctx) {
+		return nil, root.ErrAlreadyPrinted
+	}
+
+	phases.Build(ctx, b)
+	if logdiag.HasError(ctx) {
+		return nil, root.ErrAlreadyPrinted
+	}
+
+	plan := phases.Plan(ctx, b)
+	if logdiag.HasError(ctx) {
+		return nil, root.ErrAlreadyPrinted
+	}
+
+	// Direct engine includes noop actions, TF does not. This adds no-op actions for consistency:
+	if !b.DirectDeployment {
+		for _, group := range b.Config.Resources.AllResources() {
+			for rKey := range group.Resources {
+				resourceKey := "resources." + group.Description.PluralName + "." + rKey
+				if _, ok := plan.Plan[resourceKey]; !ok {
+					plan.Plan[resourceKey] = deployplan.PlanEntry{
+						Action: deployplan.ActionTypeSkip.String(),
+					}
+				}
+			}
+		}
+	}
+
+	return plan, nil
 }

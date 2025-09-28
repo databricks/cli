@@ -26,8 +26,7 @@ func (m *syncDefaultPath) Apply(ctx context.Context, b *bundle.Bundle) diag.Diag
 
 		// If the sync paths field is already set, do nothing.
 		// We know it is set if its value is either a nil or a sequence (empty or not).
-		switch pv.Kind() {
-		case dyn.KindNil, dyn.KindSequence:
+		if pv.Kind() == dyn.KindNil || pv.Kind() == dyn.KindSequence {
 			isset = true
 		}
 

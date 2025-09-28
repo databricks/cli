@@ -2,6 +2,7 @@ package structwalk
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config"
@@ -13,13 +14,25 @@ import (
 
 func getScalarFields(t *testing.T, typ reflect.Type) map[string]any {
 	results := make(map[string]any)
-	err := WalkType(typ, func(path *structpath.PathNode, typ reflect.Type) (continueWalk bool) {
+	err := WalkType(typ, func(path *structpath.PathNode, typ reflect.Type, field *reflect.StructField) (continueWalk bool) {
 		for typ.Kind() == reflect.Pointer {
 			typ = typ.Elem()
 		}
+
+		s := path.String()
+
 		if isScalar(typ.Kind()) {
-			results[path.String()] = reflect.Zero(typ).Interface()
+			results[s] = reflect.Zero(typ).Interface()
 		}
+
+		// Test structpath round trip as well
+		pathNew, err := structpath.Parse(s)
+		if assert.NoError(t, err, "Parse(path.String()) failed for %q: %s", s, err) {
+			newS := pathNew.String()
+			assert.Equal(t, path, pathNew, "Parse(path.String()) returned different path;\npath=%#v %q\npathNew=%#v %q", path, s, pathNew, newS)
+			assert.Equal(t, s, newS, "Parse(path.String()).String() is different from path.String()\npath.String()=%q\npathNew.String()=%q", path, pathNew)
+		}
+
 		return true
 	})
 	require.NoError(t, err)
@@ -42,39 +55,39 @@ func TestTypeScalar(t *testing.T) {
 
 func TestTypes(t *testing.T) {
 	assert.Equal(t, map[string]any{
-		".ArrayString[*]":     "",
-		".Array[*].X":         0,
-		".BoolField":          false,
-		".EmptyTagField":      "",
-		".EmptyTagFieldPtr":   "",
-		".IntField":           0,
-		`.Map[*].X`:           0,
-		`.MapPtr[*].X`:        0,
-		".Nested.X":           0,
-		".NestedPtr.X":        0,
-		".SliceString[*]":     "",
-		".Slice[*].X":         0,
-		".ValidFieldNoTag":    "",
-		".ValidFieldPtrNoTag": "",
-		".omit_bool":          false,
-		".omit_int":           0,
-		".omit_str":           "",
-		".valid_field":        "",
-		".valid_field_ptr":    "",
+		"ArrayString[*]":     "",
+		"Array[*].X":         0,
+		"BoolField":          false,
+		"EmptyTagField":      "",
+		"EmptyTagFieldPtr":   "",
+		"IntField":           0,
+		`Map.*.X`:            0,
+		`MapPtr.*.X`:         0,
+		"Nested.X":           0,
+		"NestedPtr.X":        0,
+		"SliceString[*]":     "",
+		"Slice[*].X":         0,
+		"ValidFieldNoTag":    "",
+		"ValidFieldPtrNoTag": "",
+		"omit_bool":          false,
+		"omit_int":           0,
+		"omit_str":           "",
+		"valid_field":        "",
+		"valid_field_ptr":    "",
 	}, getScalarFields(t, reflect.TypeOf(Types{})))
 }
 
 func TestTypeSelf(t *testing.T) {
 	assert.Equal(t, map[string]any{
-		".valid_field":                   "",
-		".SelfArrayPtr[*].valid_field":   "",
-		".SelfIndirect.X.valid_field":    "",
-		".SelfIndirectPtr.X.valid_field": "",
-		`.SelfMapPtr[*].valid_field`:     "",
-		`.SelfMap[*].valid_field`:        "",
-		".SelfReference.valid_field":     "",
-		".SelfSlicePtr[*].valid_field":   "",
-		".SelfSlice[*].valid_field":      "",
+		"valid_field":                   "",
+		"SelfArrayPtr[*].valid_field":   "",
+		"SelfIndirect.X.valid_field":    "",
+		"SelfIndirectPtr.X.valid_field": "",
+		`SelfMapPtr.*.valid_field`:      "",
+		`SelfMap.*.valid_field`:         "",
+		"SelfReference.valid_field":     "",
+		"SelfSlicePtr[*].valid_field":   "",
+		"SelfSlice[*].valid_field":      "",
 	}, getScalarFields(t, reflect.TypeOf(Self{})))
 }
 
@@ -102,20 +115,20 @@ func TestTypeJobSettings(t *testing.T) {
 		// Verify we found a reasonable number of fields (it's 533 at the time of writing)
 		500, 600,
 		map[string]any{
-			".name":                "",
-			".timeout_seconds":     0,
-			".max_concurrent_runs": 0,
+			"name":                "",
+			"timeout_seconds":     0,
+			"max_concurrent_runs": 0,
 
 			// Verify circular reference behavior - we should see one level of nesting
-			".tasks[*].for_each_task.task.task_key":        "",
-			".tasks[*].for_each_task.task.description":     "",
-			".tasks[*].for_each_task.task.timeout_seconds": 0,
+			"tasks[*].for_each_task.task.task_key":        "",
+			"tasks[*].for_each_task.task.description":     "",
+			"tasks[*].for_each_task.task.timeout_seconds": 0,
 		},
 
 		// Verify we DON'T see second level circular references
 		[]string{
-			".tasks[*].for_each_task.task.for_each_task.task.task_key",
-			".tasks[*].for_each_task.task.for_each_task.task.description",
+			"tasks[*].for_each_task.task.for_each_task.task.task_key",
+			"tasks[*].for_each_task.task.for_each_task.task.description",
 		},
 	)
 }
@@ -125,41 +138,42 @@ func TestTypeRoot(t *testing.T) {
 		reflect.TypeOf(config.Root{}),
 		4000, 4300, // 4003 at the time of the update
 		map[string]any{
-			".bundle.target":                 "",
-			`.variables[*].lookup.dashboard`: "",
+			"bundle.target":                "",
+			`variables.*.lookup.dashboard`: "",
 
-			`.resources.jobs[*].name`:                "",
-			`.resources.jobs[*].timeout_seconds`:     0,
-			`.resources.jobs[*].max_concurrent_runs`: 0,
-			`.resources.jobs[*].format`:              jobs.Format(""),
-			`.resources.jobs[*].description`:         "",
+			`resources.jobs.*.name`:                "",
+			`resources.jobs.*.timeout_seconds`:     0,
+			`resources.jobs.*.max_concurrent_runs`: 0,
+			`resources.jobs.*.format`:              jobs.Format(""),
+			`resources.jobs.*.description`:         "",
 
 			// Verify nested task fields are accessible
-			`.resources.jobs[*].tasks[*].task_key`:                                       "",
-			`.resources.jobs[*].tasks[*].notebook_task.notebook_path`:                    "",
-			`.resources.jobs[*].tasks[*].spark_jar_task.main_class_name`:                 "",
-			`.resources.jobs[*].tasks[*].for_each_task.inputs`:                           "",
-			`.resources.jobs[*].tasks[*].for_each_task.task.task_key`:                    "",
-			`.resources.jobs[*].tasks[*].for_each_task.task.notebook_task.notebook_path`: "",
-			`.resources.jobs[*].tasks[*].new_cluster.node_type_id`:                       "",
-			`.resources.jobs[*].tasks[*].new_cluster.num_workers`:                        0,
+			`resources.jobs.*.tasks[*].task_key`:                                       "",
+			`resources.jobs.*.tasks[*].notebook_task.notebook_path`:                    "",
+			`resources.jobs.*.tasks[*].spark_jar_task.main_class_name`:                 "",
+			`resources.jobs.*.tasks[*].for_each_task.inputs`:                           "",
+			`resources.jobs.*.tasks[*].for_each_task.task.task_key`:                    "",
+			`resources.jobs.*.tasks[*].for_each_task.task.notebook_task.notebook_path`: "",
+			`resources.jobs.*.tasks[*].new_cluster.node_type_id`:                       "",
+			`resources.jobs.*.tasks[*].new_cluster.num_workers`:                        0,
 
 			// Verify job cluster fields are accessible
-			`.resources.jobs[*].job_clusters[*].job_cluster_key`:         "",
-			`.resources.jobs[*].job_clusters[*].new_cluster.num_workers`: 0,
+			`resources.jobs.*.job_clusters[*].job_cluster_key`:         "",
+			`resources.jobs.*.job_clusters[*].new_cluster.num_workers`: 0,
 		},
 		nil,
 	)
 }
 
-func getReadonlyFields(t *testing.T, typ reflect.Type) []string {
+func getReadonlyFields(t *testing.T, rootType reflect.Type) []string {
 	var results []string
-	err := WalkType(typ, func(path *structpath.PathNode, typ reflect.Type) (continueWalk bool) {
-		if path == nil {
+	err := WalkType(rootType, func(path *structpath.PathNode, typ reflect.Type, field *reflect.StructField) (continueWalk bool) {
+		if path == nil || field == nil {
 			return true
 		}
-		if path.BundleTag().ReadOnly() {
-			results = append(results, path.DynPath())
+		bundleTag := field.Tag.Get("bundle")
+		if strings.Contains(bundleTag, "readonly") {
+			results = append(results, path.String())
 		}
 		return true
 	})
@@ -192,22 +206,23 @@ func TestTypeBundleTag(t *testing.T) {
 	}
 
 	var readonly, internal []string
-	err := WalkType(reflect.TypeOf(Foo{}), func(path *structpath.PathNode, typ reflect.Type) (continueWalk bool) {
-		if path == nil {
+	err := WalkType(reflect.TypeOf(Foo{}), func(path *structpath.PathNode, typ reflect.Type, field *reflect.StructField) (continueWalk bool) {
+		if path == nil || field == nil {
 			return true
 		}
-		if path.BundleTag().ReadOnly() {
+		bundleTag := field.Tag.Get("bundle")
+		if strings.Contains(bundleTag, "readonly") {
 			readonly = append(readonly, path.String())
 		}
-		if path.BundleTag().Internal() {
+		if strings.Contains(bundleTag, "internal") {
 			internal = append(internal, path.String())
 		}
 		return true
 	})
 	require.NoError(t, err)
 
-	assert.Equal(t, []string{".A", ".D"}, readonly)
-	assert.Equal(t, []string{".B", ".D"}, internal)
+	assert.Equal(t, []string{"A", "D"}, readonly)
+	assert.Equal(t, []string{"B", "D"}, internal)
 }
 
 func TestWalkTypeVisited(t *testing.T) {
@@ -226,7 +241,7 @@ func TestWalkTypeVisited(t *testing.T) {
 	}
 
 	var visited []string
-	err := WalkType(reflect.TypeOf(Outer{}), func(path *structpath.PathNode, typ reflect.Type) (continueWalk bool) {
+	err := WalkType(reflect.TypeOf(Outer{}), func(path *structpath.PathNode, typ reflect.Type, field *reflect.StructField) (continueWalk bool) {
 		if path == nil {
 			return true
 		}
@@ -236,19 +251,19 @@ func TestWalkTypeVisited(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, []string{
-		".Inner",
-		".Inner.A",
-		".Inner.B",
-		".MapInner",
-		".MapInner[*]",
-		".MapInner[*].A",
-		".MapInner[*].B",
-		".SliceInner",
-		".SliceInner[*]",
-		".SliceInner[*].A",
-		".SliceInner[*].B",
-		".C",
-		".D",
+		"Inner",
+		"Inner.A",
+		"Inner.B",
+		"MapInner",
+		"MapInner.*",
+		"MapInner.*.A",
+		"MapInner.*.B",
+		"SliceInner",
+		"SliceInner[*]",
+		"SliceInner[*].A",
+		"SliceInner[*].B",
+		"C",
+		"D",
 	}, visited)
 }
 
@@ -265,13 +280,13 @@ func TestWalkSkip(t *testing.T) {
 	}
 
 	var seen []string
-	err := WalkType(reflect.TypeOf(Outer{}), func(path *structpath.PathNode, typ reflect.Type) (continueWalk bool) {
+	err := WalkType(reflect.TypeOf(Outer{}), func(path *structpath.PathNode, typ reflect.Type, field *reflect.StructField) (continueWalk bool) {
 		if path == nil {
 			return true
 		}
 		seen = append(seen, path.String())
-		return path.String() != ".Inner"
+		return path.String() != "Inner"
 	})
 	require.NoError(t, err)
-	assert.Equal(t, []string{".A", ".B", ".Inner", ".D"}, seen)
+	assert.Equal(t, []string{"A", "B", "Inner", "D"}, seen)
 }

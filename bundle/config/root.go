@@ -3,7 +3,6 @@ package config
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"reflect"
@@ -569,10 +568,34 @@ func (r Root) GetLocations(path string) []dyn.Location {
 	return v.Locations()
 }
 
-// GetResourceConfig returns the configuration object for a given resource group/name pair.
+// GetResourceTypeFromKey extracts the resource group from a resource path.
+// For example, "resources.jobs.foo" returns "jobs".
+// Returns empty string if the path is not in the expected format.
+func GetResourceTypeFromKey(path string) string {
+	parts := strings.Split(path, ".")
+	if len(parts) != 3 || parts[0] != "resources" {
+		return ""
+	}
+	return parts[1]
+}
+
+// GetResourceConfig returns the configuration object for a given resource path.
+// The path should be in the format "resources.group.name" (e.g., "resources.jobs.foo").
 // The returned value is a pointer to the concrete struct that represents that resource type.
-// When the group or name is not found the second return value is false.
-func (r *Root) GetResourceConfig(group, name string) (any, bool) {
+// When the path is invalid or resource is not found, the second return value is false.
+func (r *Root) GetResourceConfig(path string) (any, bool) {
+	// Extract and validate the resource group from the path
+	group := GetResourceTypeFromKey(path)
+	if group == "" {
+		return nil, false
+	}
+
+	// Create dynamic path for value retrieval
+	dynPath, err := dyn.NewPathFromString(path)
+	if err != nil {
+		return nil, false
+	}
+
 	// Resolve the Go type that represents a single resource in this group.
 	typ, ok := ResourcesTypes[group]
 	if !ok {
@@ -580,22 +603,15 @@ func (r *Root) GetResourceConfig(group, name string) (any, bool) {
 	}
 
 	// Fetch the raw value from the dynamic representation of the bundle config.
-	v, err := dyn.GetByPath(
-		r.Value(),
-		dyn.NewPath(dyn.Key("resources"), dyn.Key(group), dyn.Key(name)),
-	)
-	if err != nil {
-		return nil, false
-	}
-
-	// json-round-trip into a value of the concrete resource type to ensure proper handling of ForceSendFields
-	bytes, err := json.Marshal(v.AsAny())
+	v, err := dyn.GetByPath(r.Value(), dynPath)
 	if err != nil {
 		return nil, false
 	}
 
 	typedConfigPtr := reflect.New(typ)
-	if err := json.Unmarshal(bytes, typedConfigPtr.Interface()); err != nil {
+
+	err = convert.ToTyped(typedConfigPtr.Interface(), v)
+	if err != nil {
 		return nil, false
 	}
 
