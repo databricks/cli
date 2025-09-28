@@ -1,4 +1,4 @@
-package tnresources
+package dresources
 
 import (
 	"context"
