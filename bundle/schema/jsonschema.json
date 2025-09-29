@@ -958,25 +958,9 @@
                         "description": "Location where artifacts for the experiment are stored.",
                         "$ref": "#/$defs/string"
                       },
-                      "creation_time": {
-                        "description": "Creation time",
-                        "$ref": "#/$defs/int64"
-                      },
-                      "experiment_id": {
-                        "description": "Unique identifier for the experiment.",
-                        "$ref": "#/$defs/string"
-                      },
-                      "last_update_time": {
-                        "description": "Last update time",
-                        "$ref": "#/$defs/int64"
-                      },
                       "lifecycle": {
                         "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
-                      },
-                      "lifecycle_stage": {
-                        "description": "Current life cycle stage of the experiment: \"active\" or \"deleted\".\nDeleted experiments are not returned by APIs.",
-                        "$ref": "#/$defs/string"
                       },
                       "name": {
                         "description": "Human readable name that identifies the experiment.",
@@ -991,6 +975,9 @@
                       }
                     },
                     "additionalProperties": false,
+                    "required": [
+                      "name"
+                    ],
                     "markdownDescription": "The experiment resource allows you to define [MLflow experiments](https://docs.databricks.com/api/workspace/experiments/createexperiment) in a bundle. For information about MLflow experiments, see [link](https://docs.databricks.com/mlflow/experiments.html)."
                   },
                   {
