@@ -195,13 +195,13 @@ resources.database_instances.*.stopped	bool	ALL
 resources.database_instances.*.uid	string	ALL
 resources.database_instances.*.url	string	INPUT
 resources.experiments.*.artifact_location	string	ALL
-resources.experiments.*.creation_time	int64	INPUT	REMOTE
-resources.experiments.*.experiment_id	string	INPUT	REMOTE
+resources.experiments.*.creation_time	int64	REMOTE
+resources.experiments.*.experiment_id	string	REMOTE
 resources.experiments.*.id	string	INPUT
-resources.experiments.*.last_update_time	int64	INPUT	REMOTE
+resources.experiments.*.last_update_time	int64	REMOTE
 resources.experiments.*.lifecycle	resources.Lifecycle	INPUT
 resources.experiments.*.lifecycle.prevent_destroy	bool	INPUT
-resources.experiments.*.lifecycle_stage	string	INPUT	REMOTE
+resources.experiments.*.lifecycle_stage	string	REMOTE
 resources.experiments.*.modified_status	string	INPUT
 resources.experiments.*.name	string	ALL
 resources.experiments.*.permissions	[]resources.MlflowExperimentPermission	INPUT

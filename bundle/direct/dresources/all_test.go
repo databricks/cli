@@ -62,7 +62,7 @@ var testConfig map[string]any = map[string]any{
 		},
 	},
 	"experiments": &resources.MlflowExperiment{
-		Experiment: ml.Experiment{
+		CreateExperiment: ml.CreateExperiment{
 			Name: "my-experiment",
 			Tags: []ml.ExperimentTag{
 				{
