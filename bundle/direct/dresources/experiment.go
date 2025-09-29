@@ -25,6 +25,7 @@ func (*ResourceExperiment) PrepareState(input *resources.MlflowExperiment) *ml.C
 		Name:             input.Name,
 		ArtifactLocation: input.ArtifactLocation,
 		Tags:             input.Tags,
+		ForceSendFields:  filterFields[ml.CreateExperiment](input.ForceSendFields),
 	}
 }
 
@@ -55,10 +56,11 @@ func (r *ResourceExperiment) DoCreate(ctx context.Context, state *ml.CreateExper
 	return result.ExperimentId, nil
 }
 
-func (r *ResourceExperiment) DoUpdate(ctx context.Context, id string, state *ml.CreateExperiment) error {
+func (r *ResourceExperiment) DoUpdate(ctx context.Context, id string, config *ml.CreateExperiment) error {
 	updateReq := ml.UpdateExperiment{
-		ExperimentId: id,
-		NewName:      state.Name,
+		ExperimentId:    id,
+		NewName:         config.Name,
+		ForceSendFields: filterFields[ml.UpdateExperiment](config.ForceSendFields),
 	}
 
 	err := r.client.Experiments.UpdateExperiment(ctx, updateReq)

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/databricks/databricks-sdk-go/service/ml"
 )
@@ -44,7 +45,7 @@ func (s *FakeWorkspace) ExperimentCreate(req Request) Response {
 		},
 	}
 
-	experimentId := fmt.Sprintf("%d", len(s.Experiments)+1000)
+	experimentId := strconv.Itoa(len(s.Experiments) + 1000)
 
 	// Create the experiment
 	exp := ml.Experiment{
