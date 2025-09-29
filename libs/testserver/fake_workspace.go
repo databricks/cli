@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/database"
 
 	"github.com/databricks/databricks-sdk-go/service/apps"
@@ -75,6 +76,7 @@ type FakeWorkspace struct {
 	Dashboards      map[string]dashboards.Dashboard
 	SqlWarehouses   map[string]sql.GetWarehouseResponse
 	Alerts          map[string]sql.AlertV2
+	Clusters        map[string]compute.ClusterDetails
 
 	Acls map[string][]workspace.AclItem
 
@@ -172,6 +174,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		DatabaseCatalogs:     map[string]database.DatabaseCatalog{},
 		SyncedDatabaseTables: map[string]database.SyncedDatabaseTable{},
 		Alerts:               map[string]sql.AlertV2{},
+		Clusters:             map[string]compute.ClusterDetails{},
 	}
 }
 
