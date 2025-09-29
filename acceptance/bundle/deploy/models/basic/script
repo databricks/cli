@@ -1,0 +1,33 @@
+title "deply a model"
+envsubst < templates/original.tmpl > databricks.yml
+
+trace $CLI bundle plan
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+
+title "GET Model"
+trace $CLI model-registry get-model my-model-$UNIQUE_NAME | jq '.registered_model_databricks | {name, description, tags}'
+
+title "add a new tag, this should be a no-op"
+envsubst < templates/additional_tag.tmpl > databricks.yml
+trace $CLI bundle plan
+trace $CLI bundle deploy
+
+title "GET Model"
+trace $CLI model-registry get-model my-model-$UNIQUE_NAME | jq '.registered_model_databricks | {name, description, tags}'
+
+title "update the description, this should update the description"
+envsubst < templates/new_description.tmpl > databricks.yml
+trace $CLI bundle plan
+trace $CLI bundle deploy
+
+title "GET Model"
+trace $CLI model-registry get-model my-model-$UNIQUE_NAME | jq '.registered_model_databricks | {name, description, tags}'
+
+title "destroy the model"
+trace $CLI bundle destroy --auto-approve

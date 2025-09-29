@@ -1,0 +1,88 @@
+
+=== deply a model
+>>> [CLI] bundle plan
+create models.my_model
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-models-basic-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== GET Model
+>>> [CLI] model-registry get-model my-model-[UNIQUE_NAME]
+{
+  "name": "my-model-[UNIQUE_NAME]",
+  "description": "original description",
+  "tags": [
+    {
+      "key": "key1",
+      "value": "value1"
+    }
+  ]
+}
+
+=== add a new tag, this should be a no-op
+>>> [CLI] bundle plan
+update models.my_model
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-models-basic-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== GET Model
+>>> [CLI] model-registry get-model my-model-[UNIQUE_NAME]
+{
+  "name": "my-model-[UNIQUE_NAME]",
+  "description": "original description",
+  "tags": [
+    {
+      "key": "key1",
+      "value": "value1"
+    }
+  ]
+}
+
+=== update the description, this should update the description
+>>> [CLI] bundle plan
+update models.my_model
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-models-basic-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== GET Model
+>>> [CLI] model-registry get-model my-model-[UNIQUE_NAME]
+{
+  "name": "my-model-[UNIQUE_NAME]",
+  "description": "new description",
+  "tags": [
+    {
+      "key": "key1",
+      "value": "value1"
+    }
+  ]
+}
+
+=== destroy the model
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete model my_model
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-models-basic-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
+
+>>> [CLI] bundle destroy --auto-approve
+No active deployment found to destroy!
