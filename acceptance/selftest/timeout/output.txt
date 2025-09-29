@@ -1,4 +1,4 @@
 
->>> sleep 2
+>>> sleep 4
 
 Error: Test script killed due to a timeout
