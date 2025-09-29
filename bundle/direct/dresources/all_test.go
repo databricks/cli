@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/database"
+	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -68,6 +69,19 @@ var testConfig map[string]any = map[string]any{
 			CatalogName:     "main",
 			SchemaName:      "default",
 			StorageLocation: "s3://my-bucket/my-path",
+		},
+	},
+
+	"models": &resources.MlflowModel{
+		CreateModelRequest: ml.CreateModelRequest{
+			Name:        "my_mlflow_model",
+			Description: "my_mlflow_model_description",
+			Tags: []ml.ModelTag{
+				{
+					Key:   "k1",
+					Value: "v1",
+				},
+			},
 		},
 	},
 }

@@ -1,0 +1,8 @@
+RecordRequests = true
+Local = true
+EnvVaryOutput = "DATABRICKS_BUNDLE_ENGINE"
+
+IncludeRequestHeaders = ["User-Agent"]
+
+[EnvMatrix]
+DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct-exp"]
