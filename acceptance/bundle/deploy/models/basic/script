@@ -28,6 +28,3 @@ trace $CLI bundle deploy
 
 title "GET Model"
 trace $CLI model-registry get-model my-model-$UNIQUE_NAME | jq '.registered_model_databricks | {name, description, tags}'
-
-title "destroy the model"
-trace $CLI bundle destroy --auto-approve

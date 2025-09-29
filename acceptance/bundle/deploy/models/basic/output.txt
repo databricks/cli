@@ -74,7 +74,6 @@ Deployment complete!
   ]
 }
 
-=== destroy the model
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete model my_model
@@ -83,6 +82,3 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Deleting files...
 Destroy complete!
-
->>> [CLI] bundle destroy --auto-approve
-No active deployment found to destroy!

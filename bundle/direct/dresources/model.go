@@ -51,19 +51,27 @@ func (r *ResourceMlflowModel) DoCreate(ctx context.Context, config *ml.CreateMod
 		Name:            response.RegisteredModel.Name,
 		Description:     response.RegisteredModel.Description,
 		Tags:            response.RegisteredModel.Tags,
-		ForceSendFields: filterFields[ml.ModelDatabricks](response.RegisteredModel.ForceSendFields),
-		// Skip coping fields that are not part of the bundle config tree.
+		ForceSendFields: filterFields[ml.ModelDatabricks](response.RegisteredModel.ForceSendFields, "CreationTimestamp", "Id", "LastUpdatedTimestamp", "LatestVersions", "PermissionLevel", "UserId"),
+
+		// Coping the fields only to satisfy the linter. These fields are not
+		// part of the configuration tree so they don't need to be copied.
+		// The linter works as a safeguard to ensure we add new fields to the bundle config tree
+		// to the mapping logic here as well.
+		CreationTimestamp:    0,
+		Id:                   "",
+		LastUpdatedTimestamp: 0,
+		LatestVersions:       nil,
+		PermissionLevel:      "",
+		UserId:               "",
 	}
 	return response.RegisteredModel.Name, modelDatabricks, nil
 }
 
 func (r *ResourceMlflowModel) DoUpdate(ctx context.Context, id string, config *ml.CreateModelRequest) (*ml.ModelDatabricks, error) {
 	updateRequest := ml.UpdateModelRequest{
-		Name:        id,
-		Description: config.Description,
-		// Note: Name changes are not supported by the MLflow model registry API
-		// Tags are updated separately via SetModelTag/DeleteModelTag operations
-		// For simplicity, we only support description updates
+		Name:            id,
+		Description:     config.Description,
+		ForceSendFields: filterFields[ml.UpdateModelRequest](config.ForceSendFields),
 	}
 
 	response, err := r.client.ModelRegistry.UpdateModel(ctx, updateRequest)
@@ -77,8 +85,18 @@ func (r *ResourceMlflowModel) DoUpdate(ctx context.Context, id string, config *m
 		Name:            response.RegisteredModel.Name,
 		Description:     response.RegisteredModel.Description,
 		Tags:            response.RegisteredModel.Tags,
-		ForceSendFields: filterFields[ml.ModelDatabricks](response.RegisteredModel.ForceSendFields),
-		// Skip coping fields that are not part of the bundle config tree.
+		ForceSendFields: filterFields[ml.ModelDatabricks](response.RegisteredModel.ForceSendFields, "CreationTimestamp", "Id", "LastUpdatedTimestamp", "LatestVersions", "PermissionLevel", "UserId"),
+
+		// Coping the fields only to satisfy the linter. These fields are not
+		// part of the configuration tree so they don't need to be copied.
+		// The linter works as a safeguard to ensure we add new fields to the bundle config tree
+		// to the mapping logic here as well.
+		CreationTimestamp:    0,
+		Id:                   "",
+		LastUpdatedTimestamp: 0,
+		LatestVersions:       nil,
+		PermissionLevel:      "",
+		UserId:               "",
 	}
 	return modelDatabricks, nil
 }
