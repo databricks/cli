@@ -87,7 +87,7 @@ func TestComputeMetadataMutator(t *testing.T) {
 				},
 			},
 			Resources: metadata.Resources{
-				Jobs: map[string]*metadata.Job{
+				Jobs: map[string]*metadata.Resource{
 					"my-job-1": {
 						RelativePath: "a/b/c",
 						ID:           "1111",
@@ -97,7 +97,7 @@ func TestComputeMetadataMutator(t *testing.T) {
 						ID:           "2222",
 					},
 				},
-				Pipelines: map[string]*metadata.Pipeline{
+				Pipelines: map[string]*metadata.Resource{
 					"my-pipeline-1": {
 						RelativePath: "x/y/z",
 						ID:           "3333",

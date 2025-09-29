@@ -35,7 +35,7 @@ func (m *compute) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	}
 
 	// Set job config paths in metadata
-	jobsMetadata := make(map[string]*metadata.Job)
+	jobsMetadata := make(map[string]*metadata.Resource)
 	for name, job := range b.Config.Resources.Jobs {
 		// Compute config file path the job is defined in, relative to the bundle
 		// root
@@ -45,7 +45,7 @@ func (m *compute) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 			return diag.Errorf("failed to compute relative path for job %s: %v", name, err)
 		}
 		// Metadata for the job
-		jobsMetadata[name] = &metadata.Job{
+		jobsMetadata[name] = &metadata.Resource{
 			ID:           job.ID,
 			RelativePath: filepath.ToSlash(relativePath),
 		}
@@ -53,7 +53,7 @@ func (m *compute) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	b.Metadata.Config.Resources.Jobs = jobsMetadata
 
 	// Set pipeline config paths in metadata
-	pipelinesMetadata := make(map[string]*metadata.Pipeline)
+	pipelinesMetadata := make(map[string]*metadata.Resource)
 	for name, pipeline := range b.Config.Resources.Pipelines {
 		// Compute config file path the pipeline is defined in, relative to the bundle
 		// root
@@ -63,7 +63,7 @@ func (m *compute) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 			return diag.Errorf("failed to compute relative path for pipeline %s: %v", name, err)
 		}
 		// Metadata for the pipeline
-		pipelinesMetadata[name] = &metadata.Pipeline{
+		pipelinesMetadata[name] = &metadata.Resource{
 			ID:           pipeline.ID,
 			RelativePath: filepath.ToSlash(relativePath),
 		}
