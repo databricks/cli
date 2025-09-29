@@ -112,6 +112,14 @@ func (s *FakeWorkspace) ExperimentUpdate(req Request) Response {
 	// Update the experiment
 	if updateReq.NewName != "" {
 		experiment.Name = updateReq.NewName
+
+		// The server modifies the value of the tag as well. Mimic that behaviour
+		// in the test server as well.
+		for i := range experiment.Tags {
+			if experiment.Tags[i].Key == "mlflow.experiment.sourceName" {
+				experiment.Tags[i].Value = updateReq.NewName
+			}
+		}
 	}
 
 	s.Experiments[updateReq.ExperimentId] = experiment

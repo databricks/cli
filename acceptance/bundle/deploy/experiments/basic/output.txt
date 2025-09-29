@@ -70,7 +70,7 @@ Deployment complete!
     },
     {
       "key": "mlflow.experiment.sourceName",
-      "value": "/Users/[USERNAME]/original-[UNIQUE_NAME]"
+      "value": "/Users/[USERNAME]/new-name-[UNIQUE_NAME]"
     },
     {
       "key": "mlflow.ownerId",
