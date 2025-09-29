@@ -4,6 +4,8 @@
 
 >>> export EXPERIMENT_NAME=/Users/[USERNAME]/original-[UNIQUE_NAME]
 
+>>> envsubst
+
 >>> [CLI] bundle plan
 create experiments.my_experiment
 
@@ -49,6 +51,8 @@ Deployment complete!
 
 === update the name
 >>> export EXPERIMENT_NAME=/Users/[USERNAME]/new-name-[UNIQUE_NAME]
+
+>>> envsubst
 
 >>> [CLI] bundle plan
 update experiments.my_experiment
@@ -96,6 +100,8 @@ Deployment complete!
 === updating the artifact location should cause a recreation
 >>> export EXPERIMENT_ARTIFACT_LOCATION=s3://new-[UNIQUE_NAME]
 
+>>> envsubst
+
 >>> [CLI] bundle plan
 recreate experiments.my_experiment
 
@@ -140,6 +146,8 @@ Deployment complete!
 }
 
 === adding a new tag should be a no-op for direct deployment. It is a no-op as well for terraform, but shows up in the plan due to a persistent drift bug. The actual state of the experiment is not updated.
+>>> envsubst
+
 >>> [CLI] bundle plan
 
 >>> [CLI] bundle deploy
