@@ -1,0 +1,12 @@
+title "create the registered model"
+
+trace export NAME="my-registered-model-$UNIQUE_NAME"
+trace export COMMENT="original comment"
+trace export CATALOG_NAME="main"
+trace export SCHEMA_NAME="default"
+trace export STORAGE_LOCATION="s3://my-bucket/my-path"
+envsubst < databricks.yml.tmpl > databricks.yml
+trace $CLI bundle plan
+trace $CLI bundle deploy
+registered_model_id=$($CLI bundle summary --output json | jq -r '.resources.registered_models.my_registered_model.id')
+trace $CLI registered-models get "${registered_model_id}" | jq '{name, comment, catalog_name, schema_name, storage_location}'

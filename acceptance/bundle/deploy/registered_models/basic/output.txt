@@ -1,0 +1,31 @@
+
+=== create the registered model
+>>> export NAME=my-registered-model-[UNIQUE_NAME]
+
+>>> export COMMENT=original comment
+
+>>> export CATALOG_NAME=main
+
+>>> export SCHEMA_NAME=default
+
+>>> export STORAGE_LOCATION=s3://my-bucket/my-path
+
+>>> [CLI] bundle plan
+create registered_models.my_registered_model
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-registered-models-basic-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] registered-models get main.default.my-registered-model-[UNIQUE_NAME]
+{
+  "name": "my-registered-model-[UNIQUE_NAME]",
+  "comment": "original comment",
+  "catalog_name": "main",
+  "schema_name": "default",
+  "storage_location": "abfss://decotestprod-unity-iso@decotestprodunityiso.dfs.core.windows.net/[UUID]/models/[UUID]"
+}
