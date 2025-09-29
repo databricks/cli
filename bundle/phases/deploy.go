@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/apps"
 	"github.com/databricks/cli/bundle/artifacts"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deploy"
@@ -114,13 +113,6 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) {
 
 	bundle.ApplySeqContext(ctx, b,
 		statemgmt.Load(),
-
-		// TODO: this does terraform specific transformation.
-		apps.InterpolateVariables(),
-
-		// TODO: this should either be part of app resource or separate AppConfig resource that depends on main resource.
-		apps.UploadConfig(),
-
 		metadata.Compute(),
 		metadata.Upload(),
 	)
