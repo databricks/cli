@@ -1,4 +1,2 @@
 # Test that timeout mechanism works (script sleeps 2s but should be killed much sooner)
 Timeout = '500ms'
-TimeoutWindows = '300ms'
-TimeoutCloud = '300ms'
