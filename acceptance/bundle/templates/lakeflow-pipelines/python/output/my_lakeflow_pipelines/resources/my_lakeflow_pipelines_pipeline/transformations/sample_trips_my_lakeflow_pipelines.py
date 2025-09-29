@@ -10,4 +10,6 @@ from utilities import utils
 
 @dlt.table
 def sample_trips_my_lakeflow_pipelines():
-    return spark.read.table("samples.nyctaxi.trips").withColumn("trip_distance_km", utils.distance_km(col("trip_distance")))
+    return spark.read.table("samples.nyctaxi.trips").withColumn(
+        "trip_distance_km", utils.distance_km(col("trip_distance"))
+    )
