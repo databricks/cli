@@ -2,7 +2,7 @@
 === create the experiment
 >>> export EXPERIMENT_ARTIFACT_LOCATION=s3://original-[UNIQUE_NAME]
 
->>> export EXPERIMENT_NAME=/Users/[USERNAME]/original-[UNIQUE_NAME]
+>>> export EXPERIMENT_NAME_PREFIX=original
 
 >>> envsubst
 
@@ -50,7 +50,7 @@ Deployment complete!
 }
 
 === update the name
->>> export EXPERIMENT_NAME=/Users/[USERNAME]/new-name-[UNIQUE_NAME]
+>>> export EXPERIMENT_NAME_PREFIX=new-name
 
 >>> envsubst
 
