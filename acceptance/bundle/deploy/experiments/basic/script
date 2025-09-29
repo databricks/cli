@@ -4,6 +4,10 @@ cleanup() {
 
 trap cleanup EXIT
 
+# disable conversion of absolute paths like /Users/$username/$UNIQUE_NAME to
+# C:/Program Files/Git/Users/$username/UNIQUE_NAME on windows.
+export MSYS_NO_PATHCONV=1
+
 title "create the experiment"
 trace export EXPERIMENT_ARTIFACT_LOCATION="s3://original-${UNIQUE_NAME}"
 trace export EXPERIMENT_NAME="/Users/${CURRENT_USER_NAME}/original-${UNIQUE_NAME}"

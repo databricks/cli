@@ -5,12 +5,6 @@ Local = true
 Old = '\d{3,}'
 New = "[NUMID]"
 
-[Env]
-# MSYS2 automatically converts absolute paths like /Users/$username/$UNIQUE_NAME to
-# C:/Program Files/Git/Users/$username/UNIQUE_NAME.
-# Setting this environment variable prevents that conversion on windows.
-MSYS_NO_PATHCONV = "1"
-
 # Test both terraform and direct deployment engines
 [EnvMatrix]
 DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct-exp"]
