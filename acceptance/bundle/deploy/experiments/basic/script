@@ -29,7 +29,7 @@ trace $CLI bundle deploy
 experiment_id=$($CLI bundle summary --output json | jq -r '.resources.experiments.my_experiment.id')
 trace $CLI experiments get-experiment $experiment_id | jq '.experiment | {name, artifact_location, tags}'
 
-title "adding a new tag should be a no-op for direct deployment. It is not for Terraform because of a persistent drift bug"
+title "adding a new tag should be a no-op for direct deployment. It is a no-op as well for terraform, but shows up in the plan due to a persistent drift bug. The actual state of the experiment is not updated."
 envsubst < templates/two_tag.tmpl > databricks.yml
 trace $CLI bundle plan > out.additional_tag.$DATABRICKS_BUNDLE_ENGINE.txt
 trace $CLI bundle deploy

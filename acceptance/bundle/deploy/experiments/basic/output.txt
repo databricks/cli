@@ -131,7 +131,7 @@ Deployment complete!
   ]
 }
 
-=== adding a new tag should be a no-op for direct deployment. It is not for Terraform because of a persistent drift bug
+=== adding a new tag should be a no-op for direct deployment. It is a no-op as well for terraform, but shows up in the plan due to a persistent drift bug. The actual state of the experiment is not updated.
 >>> [CLI] bundle plan
 
 >>> [CLI] bundle deploy
