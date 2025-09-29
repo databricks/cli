@@ -44,16 +44,13 @@ func (p Plan) GetActions() []Action {
 			continue
 		}
 		actions = append(actions, Action{
-			ResourceNode: ResourceNode{Group: parts[0], Key: parts[1]},
-			ActionType:   at,
+			ResourceKey: key,
+			ActionType:  at,
 		})
 	}
 
 	slices.SortFunc(actions, func(x, y Action) int {
-		if c := cmp.Compare(x.Group, y.Group); c != 0 {
-			return c
-		}
-		return cmp.Compare(x.Key, y.Key)
+		return cmp.Compare(x.ResourceKey, y.ResourceKey)
 	})
 
 	return actions

@@ -14,9 +14,9 @@ import (
 )
 
 func (d *DeploymentUnit) Destroy(ctx context.Context, db *dstate.DeploymentState) error {
-	entry, hasEntry := db.GetResourceEntry(d.Group, d.Key)
+	entry, hasEntry := db.GetResourceEntry(d.ResourceKey)
 	if !hasEntry {
-		log.Infof(ctx, "Cannot delete %s.%s: missing from state", d.Group, d.Key)
+		log.Infof(ctx, "Cannot delete %s: missing from state", d.ResourceKey)
 		return nil
 	}
 
@@ -33,6 +33,10 @@ func (d *DeploymentUnit) Destroy(ctx context.Context, db *dstate.DeploymentState
 }
 
 func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState, inputConfig any, actionType deployplan.ActionType) error {
+	if actionType == deployplan.ActionTypeSkip {
+		return nil
+	}
+
 	// Note, newState may be different between plan and deploy due to resolved $resource references
 	newState, err := d.Adapter.PrepareState(inputConfig)
 	if err != nil {
@@ -43,7 +47,7 @@ func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState,
 		return d.Create(ctx, db, newState)
 	}
 
-	entry, hasEntry := db.GetResourceEntry(d.Group, d.Key)
+	entry, hasEntry := db.GetResourceEntry(d.ResourceKey)
 	if !hasEntry {
 		return errors.New("state entry not found")
 	}
@@ -72,14 +76,14 @@ func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState,
 		return err
 	}
 
-	log.Infof(ctx, "Created %s.%s id=%#v", d.Group, d.Key, newID)
+	log.Infof(ctx, "Created %s id=%#v", d.ResourceKey, newID)
 
 	err = d.SetRemoteState(remoteState)
 	if err != nil {
 		return err
 	}
 
-	err = db.SaveState(d.Group, d.Key, newID, newState)
+	err = db.SaveState(d.ResourceKey, newID, newState)
 	if err != nil {
 		return fmt.Errorf("saving state after creating id=%s: %w", newID, err)
 	}
@@ -103,7 +107,7 @@ func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentStat
 		return fmt.Errorf("deleting old id=%s: %w", oldID, err)
 	}
 
-	err = db.SaveState(d.Group, d.Key, "", nil)
+	err = db.SaveState(d.ResourceKey, "", nil)
 	if err != nil {
 		return fmt.Errorf("deleting state: %w", err)
 	}
@@ -122,7 +126,7 @@ func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState,
 		return err
 	}
 
-	err = db.SaveState(d.Group, d.Key, id, newState)
+	err = db.SaveState(d.ResourceKey, id, newState)
 	if err != nil {
 		return fmt.Errorf("saving state id=%s: %w", id, err)
 	}
@@ -148,9 +152,9 @@ func (d *DeploymentUnit) UpdateWithID(ctx context.Context, db *dstate.Deployment
 	}
 
 	if oldID != newID {
-		log.Infof(ctx, "Updated %s.%s id=%#v (previously %#v)", d.Group, d.Key, newID, oldID)
+		log.Infof(ctx, "Updated %s id=%#v (previously %#v)", d.ResourceKey, newID, oldID)
 	} else {
-		log.Infof(ctx, "Updated %s.%s id=%#v", d.Group, d.Key, newID)
+		log.Infof(ctx, "Updated %s id=%#v", d.ResourceKey, newID)
 	}
 
 	err = d.SetRemoteState(remoteState)
@@ -158,7 +162,7 @@ func (d *DeploymentUnit) UpdateWithID(ctx context.Context, db *dstate.Deployment
 		return err
 	}
 
-	err = db.SaveState(d.Group, d.Key, newID, newState)
+	err = db.SaveState(d.ResourceKey, newID, newState)
 	if err != nil {
 		return fmt.Errorf("saving state id=%s: %w", oldID, err)
 	}
@@ -184,7 +188,7 @@ func (d *DeploymentUnit) Delete(ctx context.Context, db *dstate.DeploymentState,
 		return fmt.Errorf("deleting id=%s: %w", oldID, err)
 	}
 
-	err = db.DeleteState(d.Group, d.Key)
+	err = db.DeleteState(d.ResourceKey)
 	if err != nil {
 		return fmt.Errorf("deleting state id=%s: %w", oldID, err)
 	}

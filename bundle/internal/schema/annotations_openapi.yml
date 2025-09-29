@@ -4,54 +4,90 @@ github.com/databricks/cli/bundle/config/resources.App:
     "description": |-
       The active deployment of the app. A deployment is considered active when it has been deployed
       to the app compute.
-  "app_status": {}
+    "x-databricks-field-behaviors_output_only": |-
+      true
+  "app_status":
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "budget_policy_id": {}
-  "compute_status": {}
+  "compute_status":
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "create_time":
     "description": |-
       The creation time of the app. Formatted timestamp in ISO 6801.
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "creator":
     "description": |-
       The email of the user that created the app.
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "default_source_code_path":
     "description": |-
       The default workspace file system path of the source code from which app deployment are
       created. This field tracks the workspace source code path of the last active deployment.
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "description":
     "description": |-
       The description of the app.
-  "effective_budget_policy_id": {}
+  "effective_budget_policy_id":
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "effective_user_api_scopes":
     "description": |-
       The effective api scopes granted to the user access token.
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "id":
     "description": |-
       The unique identifier of the app.
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "name":
     "description": |-
       The name of the app. The name must contain only lowercase alphanumeric characters and hyphens.
       It must be unique within the workspace.
-  "oauth2_app_client_id": {}
-  "oauth2_app_integration_id": {}
+  "oauth2_app_client_id":
+    "x-databricks-field-behaviors_output_only": |-
+      true
+  "oauth2_app_integration_id":
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "pending_deployment":
     "description": |-
       The pending deployment of the app. A deployment is considered pending when it is being prepared
       for deployment to the app compute.
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "resources":
     "description": |-
       Resources for the app.
-  "service_principal_client_id": {}
-  "service_principal_id": {}
-  "service_principal_name": {}
+  "service_principal_client_id":
+    "x-databricks-field-behaviors_output_only": |-
+      true
+  "service_principal_id":
+    "x-databricks-field-behaviors_output_only": |-
+      true
+  "service_principal_name":
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "update_time":
     "description": |-
       The update time of the app. Formatted timestamp in ISO 6801.
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "updater":
     "description": |-
       The email of the user that last updated the app.
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "url":
     "description": |-
       The URL of the app once it is deployed.
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "user_api_scopes": {}
 github.com/databricks/cli/bundle/config/resources.Cluster:
   "_":
@@ -257,7 +293,9 @@ github.com/databricks/cli/bundle/config/resources.DatabaseCatalog:
   "name":
     "description": |-
       The name of the catalog in UC.
-  "uid": {}
+  "uid":
+    "x-databricks-field-behaviors_output_only": |-
+      true
 github.com/databricks/cli/bundle/config/resources.DatabaseInstance:
   "_":
     "description": |-
@@ -269,40 +307,56 @@ github.com/databricks/cli/bundle/config/resources.DatabaseInstance:
     "description": |-
       The refs of the child instances. This is only available if the instance is
       parent instance.
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "creation_time":
     "description": |-
       The timestamp when the instance was created.
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "creator":
     "description": |-
       The email of the creator of the instance.
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "effective_enable_pg_native_login":
     "description": |-
       xref AIP-129. `enable_pg_native_login` is owned by the client, while `effective_enable_pg_native_login` is owned by the server.
       `enable_pg_native_login` will only be set in Create/Update response messages if and only if the user provides the field via the request.
       `effective_enable_pg_native_login` on the other hand will always bet set in all response messages (Create/Update/Get/List).
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "effective_enable_readable_secondaries":
     "description": |-
       xref AIP-129. `enable_readable_secondaries` is owned by the client, while `effective_enable_readable_secondaries` is owned by the server.
       `enable_readable_secondaries` will only be set in Create/Update response messages if and only if the user provides the field via the request.
       `effective_enable_readable_secondaries` on the other hand will always bet set in all response messages (Create/Update/Get/List).
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "effective_node_count":
     "description": |-
       xref AIP-129. `node_count` is owned by the client, while `effective_node_count` is owned by the server.
       `node_count` will only be set in Create/Update response messages if and only if the user provides the field via the request.
       `effective_node_count` on the other hand will always bet set in all response messages (Create/Update/Get/List).
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "effective_retention_window_in_days":
     "description": |-
       xref AIP-129. `retention_window_in_days` is owned by the client, while `effective_retention_window_in_days` is owned by the server.
       `retention_window_in_days` will only be set in Create/Update response messages if and only if the user provides the field via the request.
       `effective_retention_window_in_days` on the other hand will always bet set in all response messages (Create/Update/Get/List).
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "effective_stopped":
     "description": |-
       xref AIP-129. `stopped` is owned by the client, while `effective_stopped` is owned by the server.
       `stopped` will only be set in Create/Update response messages if and only if the user provides the field via the request.
       `effective_stopped` on the other hand will always bet set in all response messages (Create/Update/Get/List).
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "enable_pg_native_login":
     "description": |-
-      Whether the instance has PG native password login enabled. Defaults to true.
+      Whether to enable PG native password login on the instance. Defaults to false.
   "enable_readable_secondaries":
     "description": |-
       Whether to enable secondaries to serve read-only traffic. Defaults to false.
@@ -312,7 +366,7 @@ github.com/databricks/cli/bundle/config/resources.DatabaseInstance:
   "node_count":
     "description": |-
       The number of nodes in the instance, composed of 1 primary and 0 or more secondaries. Defaults to
-      1 primary and 0 secondaries.
+      1 primary and 0 secondaries. This field is input only, see effective_node_count for the output.
   "parent_instance_ref":
     "description": |-
       The ref of the parent instance. This is only available if the instance is
@@ -322,13 +376,19 @@ github.com/databricks/cli/bundle/config/resources.DatabaseInstance:
   "pg_version":
     "description": |-
       The version of Postgres running on the instance.
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "read_only_dns":
     "description": |-
       The DNS endpoint to connect to the instance for read only access. This is only available if
       enable_readable_secondaries is true.
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "read_write_dns":
     "description": |-
       The DNS endpoint to connect to the instance for read+write access.
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "retention_window_in_days":
     "description": |-
       The retention window for the instance. This is the time window in days
@@ -337,12 +397,16 @@ github.com/databricks/cli/bundle/config/resources.DatabaseInstance:
   "state":
     "description": |-
       The current state of the instance.
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "stopped":
     "description": |-
-      Whether the instance is stopped.
+      Whether to stop the instance. An input only param, see effective_stopped for the output.
   "uid":
     "description": |-
       An immutable UUID identifier for the instance.
+    "x-databricks-field-behaviors_output_only": |-
+      true
 github.com/databricks/cli/bundle/config/resources.Job:
   "budget_policy_id":
     "description": |-
@@ -595,8 +659,6 @@ github.com/databricks/cli/bundle/config/resources.Pipeline:
       Write-only setting, available only in Create/Update calls. Specifies the user or service principal that the pipeline runs as. If not specified, the pipeline runs as the user who created the pipeline.
 
       Only `user_name` or `service_principal_name` can be specified. If both are specified, an error is thrown.
-    "x-databricks-preview": |-
-      PRIVATE
   "schema":
     "description": |-
       The default schema (database) where tables are read from or published to.
@@ -799,6 +861,8 @@ github.com/databricks/cli/bundle/config/resources.SyncedDatabaseTable:
   "data_synchronization_status":
     "description": |-
       Synced Table data synchronization status
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "database_instance_name":
     "description": |-
       Name of the target database instance. This is required when creating synced database tables in standard catalogs.
@@ -809,9 +873,13 @@ github.com/databricks/cli/bundle/config/resources.SyncedDatabaseTable:
     "description": |-
       The name of the database instance that this table is registered to. This field is always returned, and for
       tables inside database catalogs is inferred database instance associated with the catalog.
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "effective_logical_database_name":
     "description": |-
       The name of the logical database that this table is registered to.
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "logical_database_name":
     "description": |-
       Target Postgres database object (logical database) name for this table.
@@ -835,6 +903,8 @@ github.com/databricks/cli/bundle/config/resources.SyncedDatabaseTable:
       The provisioning state of the synced table entity in Unity Catalog. This is distinct from the
       state of the data synchronization pipeline (i.e. the table may be in "ACTIVE" but the pipeline
       may be in "PROVISIONING" as it runs asynchronously).
+    "x-databricks-field-behaviors_output_only": |-
+      true
 github.com/databricks/cli/bundle/config/resources.Volume:
   "catalog_name":
     "description": |-
@@ -858,12 +928,18 @@ github.com/databricks/databricks-sdk-go/service/apps.AppDeployment:
   "create_time":
     "description": |-
       The creation time of the deployment. Formatted timestamp in ISO 6801.
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "creator":
     "description": |-
       The email of the user creates the deployment.
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "deployment_artifacts":
     "description": |-
       The deployment artifacts for an app.
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "deployment_id":
     "description": |-
       The unique id of the deployment.
@@ -879,9 +955,13 @@ github.com/databricks/databricks-sdk-go/service/apps.AppDeployment:
   "status":
     "description": |-
       Status and status message of the deployment
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "update_time":
     "description": |-
       The update time of the deployment. Formatted timestamp in ISO 6801.
+    "x-databricks-field-behaviors_output_only": |-
+      true
 github.com/databricks/databricks-sdk-go/service/apps.AppDeploymentArtifacts:
   "source_code_path":
     "description": |-
@@ -908,9 +988,13 @@ github.com/databricks/databricks-sdk-go/service/apps.AppDeploymentStatus:
   "message":
     "description": |-
       Message corresponding with the deployment state.
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "state":
     "description": |-
       State of the deployment.
+    "x-databricks-field-behaviors_output_only": |-
+      true
 github.com/databricks/databricks-sdk-go/service/apps.AppResource:
   "database": {}
   "description":
@@ -1035,9 +1119,13 @@ github.com/databricks/databricks-sdk-go/service/apps.ApplicationStatus:
   "message":
     "description": |-
       Application status message
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "state":
     "description": |-
       State of the application.
+    "x-databricks-field-behaviors_output_only": |-
+      true
 github.com/databricks/databricks-sdk-go/service/apps.ComputeState:
   "_":
     "enum":
@@ -1059,9 +1147,13 @@ github.com/databricks/databricks-sdk-go/service/apps.ComputeStatus:
   "message":
     "description": |-
       Compute status message
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "state":
     "description": |-
       State of the app compute.
+    "x-databricks-field-behaviors_output_only": |-
+      true
 github.com/databricks/databricks-sdk-go/service/catalog.MonitorCronSchedule:
   "pause_status":
     "description": |-
@@ -1665,6 +1757,13 @@ github.com/databricks/databricks-sdk-go/service/compute.Environment:
       The version is a string, consisting of an integer.
   "jar_dependencies":
     "description": |-
+      Use `java_dependencies` instead.
+    "deprecation_message": |-
+      This field is deprecated
+    "x-databricks-preview": |-
+      PRIVATE
+  "java_dependencies":
+    "description": |-
       List of jar dependencies, should be string representing volume paths. For example: `/Volumes/path/to/test.jar`.
     "x-databricks-preview": |-
       PRIVATE
@@ -1939,13 +2038,12 @@ github.com/databricks/databricks-sdk-go/service/database.DatabaseInstanceRef:
       Output: Only populated if provided as input to create a child instance.
   "effective_lsn":
     "description": |-
-      xref AIP-129. `lsn` is owned by the client, while `effective_lsn` is owned by the server.
-      `lsn` will only be set in Create/Update response messages if and only if the user provides the field via the request.
-      `effective_lsn` on the other hand will always bet set in all response messages (Create/Update/Get/List).
       For a parent ref instance, this is the LSN on the parent instance from which the
       instance was created.
       For a child ref instance, this is the LSN on the instance from which the child instance
       was created.
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "lsn":
     "description": |-
       User-specified WAL LSN of the ref database instance.
@@ -1958,6 +2056,8 @@ github.com/databricks/databricks-sdk-go/service/database.DatabaseInstanceRef:
   "uid":
     "description": |-
       Id of the ref database instance.
+    "x-databricks-field-behaviors_output_only": |-
+      true
 github.com/databricks/databricks-sdk-go/service/database.DatabaseInstanceState:
   "_":
     "enum":
@@ -1978,9 +2078,13 @@ github.com/databricks/databricks-sdk-go/service/database.DeltaTableSyncInfo:
     "description": |-
       The timestamp when the above Delta version was committed in the source Delta table.
       Note: This is the Delta commit time, not the time the data was written to the synced table.
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "delta_commit_version":
     "description": |-
       The Delta Lake commit version that was last successfully synced.
+    "x-databricks-field-behaviors_output_only": |-
+      true
 github.com/databricks/databricks-sdk-go/service/database.NewPipelineSpec:
   "_":
     "description": |-
@@ -2030,13 +2134,19 @@ github.com/databricks/databricks-sdk-go/service/database.SyncedTableContinuousUp
   "initial_pipeline_sync_progress":
     "description": |-
       Progress of the initial data synchronization.
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "last_processed_commit_version":
     "description": |-
       The last source table Delta version that was successfully synced to the synced table.
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "timestamp":
     "description": |-
       The end timestamp of the last time any data was synchronized from the source table to the synced
       table. This is when the data is available in the synced table.
+    "x-databricks-field-behaviors_output_only": |-
+      true
 github.com/databricks/databricks-sdk-go/service/database.SyncedTableFailedStatus:
   "_":
     "description": |-
@@ -2048,10 +2158,14 @@ github.com/databricks/databricks-sdk-go/service/database.SyncedTableFailedStatus
       The last source table Delta version that was synced to the synced table.
       Only populated if the table is still
       synced and available for serving.
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "timestamp":
     "description": |-
       The end timestamp of the last time any data was synchronized from the source table to the synced
       table. Only populated if the table is still synced and available for serving.
+    "x-databricks-field-behaviors_output_only": |-
+      true
 github.com/databricks/databricks-sdk-go/service/database.SyncedTablePipelineProgress:
   "_":
     "description": |-
@@ -2059,34 +2173,52 @@ github.com/databricks/databricks-sdk-go/service/database.SyncedTablePipelineProg
   "estimated_completion_time_seconds":
     "description": |-
       The estimated time remaining to complete this update in seconds.
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "latest_version_currently_processing":
     "description": |-
       The source table Delta version that was last processed by the pipeline. The pipeline may not
       have completely processed this version yet.
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "provisioning_phase":
     "description": |-
       The current phase of the data synchronization pipeline.
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "sync_progress_completion":
     "description": |-
       The completion ratio of this update. This is a number between 0 and 1.
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "synced_row_count":
     "description": |-
       The number of rows that have been synced in this update.
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "total_row_count":
     "description": |-
       The total number of rows that need to be synced in this update. This number may be an estimate.
+    "x-databricks-field-behaviors_output_only": |-
+      true
 github.com/databricks/databricks-sdk-go/service/database.SyncedTablePosition:
-  "delta_table_sync_info": {}
+  "delta_table_sync_info":
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "sync_end_timestamp":
     "description": |-
       The end timestamp of the most recent successful synchronization.
       This is the time when the data is available in the synced table.
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "sync_start_timestamp":
     "description": |-
       The starting timestamp of the most recent successful synchronization from the source table
       to the destination (synced) table.
       Note this is the starting timestamp of the sync operation, not the end time.
       E.g., for a batch, this is the time when the sync operation started.
+    "x-databricks-field-behaviors_output_only": |-
+      true
 github.com/databricks/databricks-sdk-go/service/database.SyncedTableProvisioningStatus:
   "_":
     "description": |-
@@ -2096,6 +2228,8 @@ github.com/databricks/databricks-sdk-go/service/database.SyncedTableProvisioning
     "description": |-
       Details about initial data synchronization. Only populated when in the
       PROVISIONING_INITIAL_SNAPSHOT state.
+    "x-databricks-field-behaviors_output_only": |-
+      true
 github.com/databricks/databricks-sdk-go/service/database.SyncedTableSchedulingPolicy:
   "_":
     "enum":
@@ -2178,6 +2312,8 @@ github.com/databricks/databricks-sdk-go/service/database.SyncedTableStatus:
   "detailed_state":
     "description": |-
       The state of the synced table.
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "failed_status":
     "description": |-
       Detailed status of a synced table. Shown if the synced table is in the OFFLINE_FAILED or the
@@ -2194,13 +2330,19 @@ github.com/databricks/databricks-sdk-go/service/database.SyncedTableStatus:
 
       This top-level field is a convenience for consumers who want easy access to last sync information
       without having to traverse detailed_status.
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "message":
     "description": |-
       A text description of the current state of the synced table.
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "pipeline_id":
     "description": |-
       ID of the associated pipeline. The pipeline ID may have been provided by the client
       (in the case of bin packing), or generated by the server (when creating a new pipeline).
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "provisioning_status":
     "description": |-
       Detailed status of a synced table. Shown if the synced table is in the
@@ -2217,13 +2359,19 @@ github.com/databricks/databricks-sdk-go/service/database.SyncedTableTriggeredUpd
   "last_processed_commit_version":
     "description": |-
       The last source table Delta version that was successfully synced to the synced table.
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "timestamp":
     "description": |-
       The end timestamp of the last time any data was synchronized from the source table to the synced
       table. This is when the data is available in the synced table.
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "triggered_update_progress":
     "description": |-
       Progress of the active data synchronization pipeline.
+    "x-databricks-field-behaviors_output_only": |-
+      true
 github.com/databricks/databricks-sdk-go/service/jobs.AuthenticationMethod:
   "_":
     "enum":
@@ -3087,7 +3235,7 @@ github.com/databricks/databricks-sdk-go/service/jobs.TableUpdateTriggerConfigura
 github.com/databricks/databricks-sdk-go/service/jobs.Task:
   "clean_rooms_notebook_task":
     "description": |-
-      The task runs a [clean rooms](https://docs.databricks.com/en/clean-rooms/index.html) notebook
+      The task runs a [clean rooms](https://docs.databricks.com/clean-rooms/index.html) notebook
       when the `clean_rooms_notebook_task` field is present.
   "condition_task":
     "description": |-
@@ -3119,6 +3267,11 @@ github.com/databricks/databricks-sdk-go/service/jobs.Task:
   "disable_auto_optimization":
     "description": |-
       An option to disable auto optimization in serverless
+  "disabled":
+    "description": |-
+      An optional flag to disable the task. If set to true, the task will not run even if it is part of a job.
+    "x-databricks-preview": |-
+      PRIVATE
   "email_notifications":
     "description": |-
       An optional set of email addresses that is notified when runs of this task begin or complete as well as when this task is deleted. The default behavior is to not send any emails.
@@ -3196,15 +3349,9 @@ github.com/databricks/databricks-sdk-go/service/jobs.Task:
       The task runs a Python file when the `spark_python_task` field is present.
   "spark_submit_task":
     "description": |-
-      (Legacy) The task runs the spark-submit script when the `spark_submit_task` field is present. This task can run only on new clusters and is not compatible with serverless compute.
-
-      In the `new_cluster` specification, `libraries` and `spark_conf` are not supported. Instead, use `--jars` and `--py-files` to add Java and Python libraries and `--conf` to set the Spark configurations.
-
-      `master`, `deploy-mode`, and `executor-cores` are automatically configured by Databricks; you _cannot_ specify them in parameters.
-
-      By default, the Spark submit job uses all available memory (excluding reserved memory for Databricks services). You can set `--driver-memory`, and `--executor-memory` to a smaller value to leave some room for off-heap usage.
-
-      The `--jars`, `--py-files`, `--files` arguments support DBFS and S3 paths.
+      (Legacy) The task runs the spark-submit script when the spark_submit_task field is present. Databricks recommends using the spark_jar_task instead; see [Spark Submit task for jobs](/jobs/spark-submit).
+    "deprecation_message": |-
+      This field is deprecated
   "sql_task":
     "description": |-
       The task runs a SQL query or file, or it refreshes a SQL alert or a legacy SQL dashboard when the `sql_task` field is present.
@@ -3425,6 +3572,13 @@ github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefin
   "ingestion_gateway_id":
     "description": |-
       Immutable. Identifier for the gateway that is used by this ingestion pipeline to communicate with the source database. This is used with connectors to databases like SQL Server.
+  "netsuite_jar_path":
+    "description": |-
+      Netsuite only configuration. When the field is set for a netsuite connector,
+      the jar stored in the field will be validated and added to the classpath of
+      pipeline's cluster.
+    "x-databricks-preview": |-
+      PRIVATE
   "objects":
     "description": |-
       Required. Settings specifying tables to replicate and the destination for the replicated tables.
@@ -3438,6 +3592,8 @@ github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefin
       The type of the foreign source.
       The source type will be inferred from the source connection or ingestion gateway.
       This field is output only and will be ignored if provided.
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "table_configuration":
     "description": |-
       Configuration settings to control the ingestion of tables. These settings are applied to all tables in the pipeline.
@@ -3478,6 +3634,40 @@ github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefin
       This field is mutable and can be updated without triggering a full snapshot.
     "x-databricks-preview": |-
       PRIVATE
+github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefinitionWorkdayReportParameters:
+  "incremental":
+    "description": |-
+      (Optional) Marks the report as incremental.
+      This field is deprecated and should not be used. Use `parameters` instead. The incremental behavior is now
+      controlled by the `parameters` field.
+    "deprecation_message": |-
+      This field is deprecated
+  "parameters":
+    "description": |-
+      Parameters for the Workday report. Each key represents the parameter name (e.g., "start_date", "end_date"),
+      and the corresponding value is a SQL-like expression used to compute the parameter value at runtime.
+      Example:
+      {
+      "start_date": "{ coalesce(current_offset(), date(\"2025-02-01\")) }",
+      "end_date": "{ current_date() - INTERVAL 1 DAY }"
+      }
+  "report_parameters":
+    "description": |-
+      (Optional) Additional custom parameters for Workday Report
+      This field is deprecated and should not be used. Use `parameters` instead.
+    "deprecation_message": |-
+      This field is deprecated
+github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue:
+  "key":
+    "description": |-
+      Key for the report parameter, can be a column name or other metadata
+  "value":
+    "description": |-
+      Value for the report parameter.
+      Possible values it can take are these sql functions:
+      1. coalesce(current_offset(), date("YYYY-MM-DD")) -> if current_offset() is null, then the passed date, else current_offset()
+      2. current_date()
+      3. date_sub(current_date(), x) -> subtract x (some non-negative integer) days from current date
 github.com/databricks/databricks-sdk-go/service/pipelines.IngestionSourceType:
   "_":
     "enum":
@@ -3517,6 +3707,8 @@ github.com/databricks/databricks-sdk-go/service/pipelines.IngestionSourceType:
         CONFLUENCE
       - |-
         META_MARKETING
+      - |-
+        FOREIGN_CATALOG
 github.com/databricks/databricks-sdk-go/service/pipelines.ManualTrigger: {}
 github.com/databricks/databricks-sdk-go/service/pipelines.NotebookLibrary:
   "path":
@@ -3869,6 +4061,11 @@ github.com/databricks/databricks-sdk-go/service/pipelines.TableSpecificConfig:
   "sequence_by":
     "description": |-
       The column names specifying the logical order of events in the source data. Delta Live Tables uses this sequencing to handle change events that arrive out of order.
+  "workday_report_parameters":
+    "description": |-
+      (Optional) Additional custom parameters for Workday Report
+    "x-databricks-preview": |-
+      PRIVATE
 github.com/databricks/databricks-sdk-go/service/pipelines.TableSpecificConfigScdType:
   "_":
     "description": |-

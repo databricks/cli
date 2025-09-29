@@ -8,7 +8,6 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structwalk"
@@ -154,10 +153,10 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	require.NoError(t, err)
 	require.NotNil(t, remappedState)
 
-	require.NoError(t, structwalk.Walk(newState, func(path *structpath.PathNode, val any) {
-		remoteValue, err := structaccess.Get(remappedState, dyn.MustPathFromString(path.DynPath()))
+	require.NoError(t, structwalk.Walk(newState, func(path *structpath.PathNode, val any, field *reflect.StructField) {
+		remoteValue, err := structaccess.Get(remappedState, path)
 		if err != nil {
-			t.Errorf("Failed to read %s from remapped remote state %#v", path.DynPath(), remappedState)
+			t.Errorf("Failed to read %s from remapped remote state %#v", path.String(), remappedState)
 		}
 		if val == nil {
 			// t.Logf("Ignoring %s nil, remoteValue=%#v", path.String(), remoteValue)
@@ -172,7 +171,7 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		// t.Logf("Testing %s v=%#v, remoteValue=%#v", path.String(), val, remoteValue)
 		// We expect fields set explicitly to be preserved by testserver, which is true for all resources as of today.
 		// If not true for your resource, add exception here:
-		assert.Equal(t, val, remoteValue, path.DynPath())
+		assert.Equal(t, val, remoteValue, path.String())
 	}))
 
 	err = adapter.DoDelete(ctx, createdID)
@@ -187,7 +186,7 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 func validateFields(t *testing.T, configType reflect.Type, fields map[string]deployplan.ActionType) {
 	validPaths := make(map[string]struct{})
 
-	err := structwalk.WalkType(configType, func(path *structpath.PathNode, typ reflect.Type) bool {
+	err := structwalk.WalkType(configType, func(path *structpath.PathNode, typ reflect.Type, field *reflect.StructField) bool {
 		validPaths[path.String()] = struct{}{}
 		return true // continue walking
 	})

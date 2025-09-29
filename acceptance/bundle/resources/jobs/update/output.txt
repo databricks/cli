@@ -2,7 +2,9 @@
 >>> [CLI] bundle plan
 create jobs.foo
 
->>> [CLI] bundle plan -o json
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle debug plan
 {
   "plan": {
     "resources.jobs.foo": {
@@ -18,10 +20,15 @@ Updating deployment state...
 Deployment complete!
 
 >>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
->>> [CLI] bundle plan -o json
+>>> [CLI] bundle debug plan
 {
-  "plan": {}
+  "plan": {
+    "resources.jobs.foo": {
+      "action": "skip"
+    }
+  }
 }
 
 >>> print_requests
@@ -66,11 +73,13 @@ jobs foo id='[JOB_ID]' name='foo'
 >>> [CLI] bundle plan
 update jobs.foo
 
->>> [CLI] bundle plan -o json
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle debug plan
 {
   "plan": {
     "resources.jobs.foo": {
-      "action": "update(id_stable)"
+      "action": "update"
     }
   }
 }
@@ -82,10 +91,15 @@ Updating deployment state...
 Deployment complete!
 
 >>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
->>> [CLI] bundle plan -o json
+>>> [CLI] bundle debug plan
 {
-  "plan": {}
+  "plan": {
+    "resources.jobs.foo": {
+      "action": "skip"
+    }
+  }
 }
 
 >>> print_requests

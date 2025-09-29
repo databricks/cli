@@ -136,7 +136,7 @@ func StateToBundle(ctx context.Context, state ExportedResourcesMap, config *conf
 
 func (l *load) validateState(state ExportedResourcesMap) error {
 	if len(state) == 0 && slices.Contains(l.modes, ErrorOnEmptyState) {
-		return errors.New("no deployment state. Did you forget to run 'databricks bundle deploy'?")
+		return errors.New("resource not found or not yet deployed. Did you forget to run 'databricks bundle deploy'?")
 	}
 
 	return nil

@@ -16,6 +16,8 @@ Deployment complete!
 >>> [CLI] bundle plan
 update jobs.git_job
 
+Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/task-source/default/files...
 Deploying resources...

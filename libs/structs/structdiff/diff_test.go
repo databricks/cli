@@ -132,7 +132,7 @@ func TestGetStructDiff(t *testing.T) {
 			name: "map diff",
 			a:    A{M: map[string]int{"a": 1}},
 			b:    A{M: map[string]int{"a": 2}},
-			want: []ResolvedChange{{Field: "m[\"a\"]", Old: 1, New: 2}},
+			want: []ResolvedChange{{Field: "m.a", Old: 1, New: 2}},
 		},
 		{
 			name: "slice diff",
@@ -243,9 +243,9 @@ func TestGetStructDiff(t *testing.T) {
 			a:    map[string]C{"key1": {Title: "title", ForceSendFields: []string{"Name", "IsEnabled", "Title"}}},
 			b:    map[string]C{"key1": {Title: "title", ForceSendFields: []string{"Age"}}},
 			want: []ResolvedChange{
-				{Field: "[\"key1\"].name", Old: "", New: nil},
-				{Field: "[\"key1\"].age", Old: nil, New: 0},
-				{Field: "[\"key1\"].is_enabled", Old: false, New: nil},
+				{Field: "key1.name", Old: "", New: nil},
+				{Field: "key1.age", Old: nil, New: 0},
+				{Field: "key1.is_enabled", Old: false, New: nil},
 			},
 		},
 
@@ -255,9 +255,9 @@ func TestGetStructDiff(t *testing.T) {
 			a:    map[string]*C{"key1": {Title: "title", ForceSendFields: []string{"Name", "IsEnabled", "Title"}}},
 			b:    map[string]*C{"key1": {Title: "title", ForceSendFields: []string{"Age"}}},
 			want: []ResolvedChange{
-				{Field: "[\"key1\"].name", Old: "", New: nil},
-				{Field: "[\"key1\"].age", Old: nil, New: 0},
-				{Field: "[\"key1\"].is_enabled", Old: false, New: nil},
+				{Field: "key1.name", Old: "", New: nil},
+				{Field: "key1.age", Old: nil, New: 0},
+				{Field: "key1.is_enabled", Old: false, New: nil},
 			},
 		},
 	}

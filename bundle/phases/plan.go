@@ -61,19 +61,25 @@ func checkForPreventDestroy(b *bundle.Bundle, actions []deployplan.Action) error
 			continue
 		}
 
-		path := dyn.NewPath(dyn.Key("resources"), dyn.Key(action.Group), dyn.Key(action.Key), dyn.Key("lifecycle"), dyn.Key("prevent_destroy"))
+		path, err := dyn.NewPathFromString(action.ResourceKey)
+		if err != nil {
+			return fmt.Errorf("failed to parse %q", action.ResourceKey)
+		}
+
+		path = append(path, dyn.Key("lifecycle"), dyn.Key("prevent_destroy"))
+
 		// If there is no prevent_destroy, skip
 		preventDestroyV, err := dyn.GetByPath(root, path)
 		if err != nil {
-			return nil
+			continue
 		}
 
 		preventDestroy, ok := preventDestroyV.AsBool()
 		if !ok {
-			return fmt.Errorf("internal error: prevent_destroy is not a boolean for %s.%s", action.Group, action.Key)
+			return fmt.Errorf("internal error: prevent_destroy is not a boolean for %s", action.ResourceKey)
 		}
 		if preventDestroy {
-			errs = append(errs, fmt.Errorf("resource %s has lifecycle.prevent_destroy set, but the plan calls for this resource to be recreated or destroyed. To avoid this error, disable lifecycle.prevent_destroy for %s.%s", action.Key, action.Group, action.Key))
+			errs = append(errs, fmt.Errorf("%s has lifecycle.prevent_destroy set, but the plan calls for this resource to be recreated or destroyed. To avoid this error, disable lifecycle.prevent_destroy for %s", action.ResourceKey, action.ResourceKey))
 		}
 	}
 

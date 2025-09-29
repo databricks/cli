@@ -1,9 +1,11 @@
 package structwalk
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structtag"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -11,8 +13,17 @@ import (
 
 func flatten(t *testing.T, value any) map[string]any {
 	results := make(map[string]any)
-	err := Walk(value, func(path *structpath.PathNode, value any) {
-		results[path.String()] = value
+	err := Walk(value, func(path *structpath.PathNode, value any, field *reflect.StructField) {
+		s := path.String()
+		results[s] = value
+
+		// Test path parsing round trip
+		newPath, err := structpath.Parse(s)
+		if assert.NoError(t, err, s) {
+			newS := newPath.String()
+			assert.Equal(t, path, newPath, "s=%q newS=%q", s, newS)
+			assert.Equal(t, s, newS)
+		}
 	})
 	require.NoError(t, err)
 	return results
@@ -76,8 +87,8 @@ func TestValueJobSettings(t *testing.T) {
 	}
 
 	assert.Equal(t, map[string]any{
-		`tags["env"]`:         "test",
-		`tags["team"]`:        "data",
+		`tags.env`:            "test",
+		`tags.team`:           "data",
 		"name":                "test-job",
 		"max_concurrent_runs": 5,
 		"timeout_seconds":     3600,
@@ -98,11 +109,16 @@ func TestValueBundleTag(t *testing.T) {
 		B: "b",
 		C: "c",
 		D: "d",
-	}, func(path *structpath.PathNode, value any) {
-		if path.BundleTag().ReadOnly() {
+	}, func(path *structpath.PathNode, value any, field *reflect.StructField) {
+		if field == nil {
+			return
+		}
+
+		bundleTag := structtag.BundleTag(field.Tag.Get("bundle"))
+		if bundleTag.ReadOnly() {
 			readonly = append(readonly, path.String())
 		}
-		if path.BundleTag().Internal() {
+		if bundleTag.Internal() {
 			internal = append(internal, path.String())
 		}
 	})

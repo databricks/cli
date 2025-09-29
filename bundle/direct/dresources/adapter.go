@@ -449,10 +449,10 @@ func (a *Adapter) DoUpdateWithID(ctx context.Context, oldID string, newState any
 
 // ClassifyByTriggers classifies a set of changes using FieldTriggers.
 // Unspecified changed fields default to ActionTypeUpdate. Final action is the
-// maximum by precedence. No changes yield ActionTypeNoop.
+// maximum by precedence. No changes yield ActionTypeSkip.
 func (a *Adapter) ClassifyByTriggers(changes []structdiff.Change) deployplan.ActionType {
 	if len(changes) == 0 {
-		return deployplan.ActionTypeNoop
+		return deployplan.ActionTypeSkip
 	}
 
 	// Default when there are changes but no explicit trigger is update.

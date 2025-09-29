@@ -478,6 +478,10 @@ github.com/databricks/cli/bundle/config/resources.DashboardPermission:
   "user_name":
     "description": |-
       PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.DatabaseInstance:
+  "effective_capacity":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.DatabaseInstancePermission:
   "group_name":
     "description": |-

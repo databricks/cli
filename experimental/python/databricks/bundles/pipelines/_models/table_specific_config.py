@@ -8,6 +8,10 @@ from databricks.bundles.pipelines._models.ingestion_pipeline_definition_table_sp
     IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig,
     IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfigParam,
 )
+from databricks.bundles.pipelines._models.ingestion_pipeline_definition_workday_report_parameters import (
+    IngestionPipelineDefinitionWorkdayReportParameters,
+    IngestionPipelineDefinitionWorkdayReportParametersParam,
+)
 from databricks.bundles.pipelines._models.table_specific_config_scd_type import (
     TableSpecificConfigScdType,
     TableSpecificConfigScdTypeParam,
@@ -71,6 +75,15 @@ class TableSpecificConfig:
     The column names specifying the logical order of events in the source data. Delta Live Tables uses this sequencing to handle change events that arrive out of order.
     """
 
+    workday_report_parameters: VariableOrOptional[
+        IngestionPipelineDefinitionWorkdayReportParameters
+    ] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    (Optional) Additional custom parameters for Workday Report
+    """
+
     @classmethod
     def from_dict(cls, value: "TableSpecificConfigDict") -> "Self":
         return _transform(cls, value)
@@ -130,6 +143,15 @@ class TableSpecificConfigDict(TypedDict, total=False):
     sequence_by: VariableOrList[str]
     """
     The column names specifying the logical order of events in the source data. Delta Live Tables uses this sequencing to handle change events that arrive out of order.
+    """
+
+    workday_report_parameters: VariableOrOptional[
+        IngestionPipelineDefinitionWorkdayReportParametersParam
+    ]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    (Optional) Additional custom parameters for Workday Report
     """
 
 

@@ -1,7 +1,7 @@
 {
   "plan": {
     "resources.volumes.volume1": {
-      "action": "update(id_stable)"
+      "action": "update"
     }
   }
 }
