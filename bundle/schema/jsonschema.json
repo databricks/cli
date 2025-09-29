@@ -80,9 +80,6 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.ComputeStatus",
                         "doNotSuggest": true
                       },
-                      "config": {
-                        "$ref": "#/$defs/map/interface"
-                      },
                       "create_time": {
                         "description": "The creation time of the app. Formatted timestamp in ISO 6801.",
                         "$ref": "#/$defs/string",
@@ -9633,20 +9630,6 @@
             }
           }
         }
-      },
-      "interface": {
-        "oneOf": [
-          {
-            "type": "object",
-            "additionalProperties": {
-              "$ref": "#/$defs/interface"
-            }
-          },
-          {
-            "type": "string",
-            "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
-          }
-        ]
       },
       "string": {
         "oneOf": [

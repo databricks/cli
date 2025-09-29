@@ -74,8 +74,6 @@ resources.apps.*.budget_policy_id	string	ALL
 resources.apps.*.compute_status	*apps.ComputeStatus	ALL
 resources.apps.*.compute_status.message	string	ALL
 resources.apps.*.compute_status.state	apps.ComputeState	ALL
-resources.apps.*.config	map[string]any	INPUT
-resources.apps.*.config.*	any	INPUT
 resources.apps.*.create_time	string	ALL
 resources.apps.*.creator	string	ALL
 resources.apps.*.default_source_code_path	string	ALL
