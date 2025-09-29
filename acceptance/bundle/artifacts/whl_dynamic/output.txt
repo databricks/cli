@@ -23,6 +23,7 @@
     "type": "whl"
   }
 }
+Building my_test_code...
 
 >>> [CLI] bundle deploy
 Building my_test_code...
@@ -102,7 +103,8 @@ my_test_code-0.0.1+[UNIX_TIME_NANOS][1].dist-info/RECORD
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/my_test_code/dist/my_test_code-0.0.1-py3-none-any.whl"
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/prebuilt/other_test_code-0.0.1-py3-none-any.whl"
 
-=== Updating the local wheel and deploying again
+=== Updating the local wheel and deploying againBuilding my_test_code...
+
 >>> [CLI] bundle deploy
 Building my_test_code...
 Uploading .databricks/bundle/default/patched_wheels/my_prebuilt_whl_other_test_code/other_test_code-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl...

@@ -6,6 +6,7 @@ cp -r $TESTDIR/../whl_prebuilt_multiple/dist/lib/other_test_code-0.0.1-py3-none-
 
 trace $CLI bundle validate -o json | jq .artifacts
 
+$CLI bundle debug plan > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 
 title "There are 2 original wheels and 2 patched ones"
@@ -24,6 +25,7 @@ rm out.requests.txt
 
 title "Updating the local wheel and deploying again"
 touch my_test_code/src/new_module.py
+$CLI bundle debug plan > out.plan_update.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 
 title "Verify contents, it should now have new_module.py"
