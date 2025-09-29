@@ -11,7 +11,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> [CLI] experiments get-experiment 1
+>>> [CLI] experiments get-experiment [NUMID]
 {
   "name": "/Users/[USERNAME]/original-[UNIQUE_NAME]",
   "artifact_location": "s3://original-[UNIQUE_NAME]",
@@ -55,7 +55,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> [CLI] experiments get-experiment 1
+>>> [CLI] experiments get-experiment [NUMID]
 {
   "name": "/Users/[USERNAME]/new-name-[UNIQUE_NAME]",
   "artifact_location": "s3://original-[UNIQUE_NAME]",
@@ -99,7 +99,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> [CLI] experiments get-experiment 1
+>>> [CLI] experiments get-experiment [NUMID]
 {
   "name": "/Users/[USERNAME]/new-name-[UNIQUE_NAME]",
   "artifact_location": "s3://new-[UNIQUE_NAME]",
@@ -140,7 +140,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> [CLI] experiments get-experiment 1
+>>> [CLI] experiments get-experiment [NUMID]
 {
   "name": "/Users/[USERNAME]/new-name-[UNIQUE_NAME]",
   "artifact_location": "s3://new-[UNIQUE_NAME]",

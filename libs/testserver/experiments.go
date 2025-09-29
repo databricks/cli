@@ -44,8 +44,7 @@ func (s *FakeWorkspace) ExperimentCreate(req Request) Response {
 		},
 	}
 
-	// Generate a new experiment ID
-	experimentId := fmt.Sprintf("%d", len(s.Experiments)+1)
+	experimentId := fmt.Sprintf("%d", len(s.Experiments)+1000)
 
 	// Create the experiment
 	exp := ml.Experiment{
