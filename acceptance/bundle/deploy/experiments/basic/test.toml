@@ -1,0 +1,6 @@
+Cloud = false
+Local = false
+
+# Test both terraform and direct deployment engines
+[EnvMatrix]
+DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct-exp"]
