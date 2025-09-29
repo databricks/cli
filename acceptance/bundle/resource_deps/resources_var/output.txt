@@ -33,8 +33,6 @@
   }
 }
 
->>> [CLI] bundle debug plan
-
 >>> jq -s .[] | select(.path=="/api/2.0/pipelines") | .body.name out.requests.txt
 "[dev [USERNAME]] pipeline for mycatalog.myschema.myname"
 

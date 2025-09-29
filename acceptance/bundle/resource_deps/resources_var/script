@@ -1,5 +1,5 @@
 trace $CLI bundle validate -t dev -o json | jq .resources
-trace $CLI bundle debug plan > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle debug plan > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 trace errcode $CLI bundle deploy -t dev &> out.deploy.txt
 trace jq -s '.[] | select(.path=="/api/2.0/pipelines") | .body.name' out.requests.txt
 trace print_telemetry_bool_values

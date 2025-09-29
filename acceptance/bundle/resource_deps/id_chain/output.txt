@@ -10,8 +10,6 @@ Plan: 5 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> print_requests
 
->>> [CLI] bundle debug plan
-
 >>> print_requests
 
 >>> [CLI] bundle deploy
@@ -30,8 +28,6 @@ Deployment complete!
 >>> update_file.py databricks.yml aa_desc aa_new_desc
 
 >>> update_file.py databricks.yml prefix new_prefix
-
->>> [CLI] bundle debug plan
 
 >>> print_requests
 
@@ -58,7 +54,5 @@ Deployment complete!
 "cc"
 "dd"
 "ee"
-
->>> [CLI] bundle debug plan
 
 >>> print_requests

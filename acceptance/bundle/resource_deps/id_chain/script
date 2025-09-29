@@ -16,7 +16,7 @@ print_requests_short() {
 trace $CLI bundle plan
 trace print_requests
 
-trace $CLI bundle debug plan > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle debug plan > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
 trace print_requests
 
 trace $CLI bundle deploy
@@ -25,7 +25,7 @@ trace print_requests_short
 trace update_file.py databricks.yml aa_desc aa_new_desc
 trace update_file.py databricks.yml prefix new_prefix
 
-trace $CLI bundle debug plan > out.plan_update.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle debug plan > out.plan_update.$DATABRICKS_BUNDLE_ENGINE.json
 trace print_requests
 
 trace $CLI bundle plan
@@ -34,5 +34,5 @@ trace print_requests
 trace $CLI bundle deploy
 trace print_requests_short
 
-trace $CLI bundle debug plan > out.plan_skip.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle debug plan > out.plan_skip.$DATABRICKS_BUNDLE_ENGINE.json
 trace print_requests

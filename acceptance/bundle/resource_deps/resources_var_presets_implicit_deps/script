@@ -1,5 +1,5 @@
 trace $CLI bundle validate -t dev -o json | jq .resources
-trace $CLI bundle debug plan -t dev > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle debug plan -t dev > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy -t dev
 trace jq -s '.[] | select(.path=="/api/2.0/pipelines") | .body.name' out.requests.txt
 rm out.requests.txt

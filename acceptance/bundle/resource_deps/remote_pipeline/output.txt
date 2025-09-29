@@ -1,6 +1,4 @@
 
->>> [CLI] bundle debug plan
-
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
@@ -12,7 +10,5 @@ Deployment complete!
 "foo2 foo1.creator_user_name=[USERNAME]"
 "foo3 foo2.state=IDLE"
 "foo4 foo3.last_modified=[UNIX_TIME_MILLIS]"
-
->>> [CLI] bundle debug plan
 
 >>> print_requests
