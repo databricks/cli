@@ -232,7 +232,7 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 	// Experiment 1
 	assert.Equal(t, "/Users/lennart.kats@databricks.com/[dev lennart] experiment1", b.Config.Resources.Experiments["experiment1"].Name)
 	assert.Contains(t, b.Config.Resources.Experiments["experiment1"].Tags, ml.ExperimentTag{Key: "dev", Value: "lennart"})
-	assert.Equal(t, "dev", b.Config.Resources.Experiments["experiment1"].Experiment.Tags[0].Key)
+	assert.Equal(t, "dev", b.Config.Resources.Experiments["experiment1"].CreateExperiment.Tags[0].Key)
 
 	// Experiment 2
 	assert.Equal(t, "[dev lennart] experiment2", b.Config.Resources.Experiments["experiment2"].Name)
