@@ -1,2 +1,4 @@
-# Test that timeout mechanism works (script sleeps 2s but should be killed much sooner)
+# Test that timeout mechanism works (script sleeps 4s but should be killed much sooner)
 Timeout = '500ms'
+TimeoutWindows = '500ms'
+TimeoutCloud = '500ms'
