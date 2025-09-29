@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/databricks/cli/internal/testutil"
@@ -30,9 +31,10 @@ var (
 )
 
 type Replacement struct {
-	Old   *regexp.Regexp
-	New   string
-	Order int
+	Old      *regexp.Regexp
+	New      string
+	Order    int
+	Distinct bool
 }
 
 type ReplacementsContext struct {
@@ -52,7 +54,25 @@ func (r *ReplacementsContext) Replace(s string) string {
 		return repls[i].Order < repls[j].Order
 	})
 	for _, repl := range repls {
-		s = repl.Old.ReplaceAllString(s, repl.New)
+		if !repl.Distinct {
+			s = repl.Old.ReplaceAllString(s, repl.New)
+			continue
+		}
+
+		nextIndex := 0
+		seen := make(map[string]int)
+		s = repl.Old.ReplaceAllStringFunc(s, func(match string) string {
+			idx, ok := seen[match]
+			if !ok {
+				idx = nextIndex
+				seen[match] = idx
+				nextIndex++
+			}
+
+			submatches := repl.Old.FindStringSubmatchIndex(match)
+			replaced := repl.Old.ExpandString(nil, repl.New, match, submatches)
+			return string(replaced) + "[" + strconv.Itoa(idx) + "]"
+		})
 	}
 	return s
 }
