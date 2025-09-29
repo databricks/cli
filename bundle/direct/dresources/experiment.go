@@ -28,23 +28,23 @@ func (*ResourceExperiment) PrepareState(input *resources.MlflowExperiment) *ml.C
 	}
 }
 
-func (*ResourceExperiment) RemapState(response *ml.GetExperimentResponse) *ml.CreateExperiment {
-	experiment := response.Experiment
+func (*ResourceExperiment) RemapState(experiment *ml.Experiment) *ml.CreateExperiment {
 	return &ml.CreateExperiment{
 		Name:             experiment.Name,
 		ArtifactLocation: experiment.ArtifactLocation,
 		Tags:             experiment.Tags,
+		ForceSendFields:  filterFields[ml.CreateExperiment](experiment.ForceSendFields),
 	}
 }
 
-func (r *ResourceExperiment) DoRefresh(ctx context.Context, id string) (*ml.GetExperimentResponse, error) {
+func (r *ResourceExperiment) DoRefresh(ctx context.Context, id string) (*ml.Experiment, error) {
 	result, err := r.client.Experiments.GetExperiment(ctx, ml.GetExperimentRequest{
 		ExperimentId: id,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get experiment %s: %w", id, err)
 	}
-	return result, nil
+	return result.Experiment, nil
 }
 
 func (r *ResourceExperiment) DoCreate(ctx context.Context, state *ml.CreateExperiment) (string, error) {
@@ -80,8 +80,12 @@ func (r *ResourceExperiment) DoDelete(ctx context.Context, id string) error {
 
 func (*ResourceExperiment) FieldTriggers() map[string]deployplan.ActionType {
 	return map[string]deployplan.ActionType{
-		"name":              deployplan.ActionTypeUpdate,
+		"name": deployplan.ActionTypeUpdate,
+
+		// artifact_location is marked as suppress_diff in TF. This mirrors that behaviour.
 		"artifact_location": deployplan.ActionTypeRecreate,
-		"tags":              deployplan.ActionTypeUpdate,
+
+		// Tags updates are not supported by TF. This mirrors that behaviour.
+		"tags": deployplan.ActionTypeSkip,
 	}
 }

@@ -1,14 +1,175 @@
+
+=== create the experiment
+>>> [CLI] bundle plan
+create experiments.my_experiment
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/experiment-basic-[UNIQUE_NAME]/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> [CLI] experiments get-experiment [NUMID] | jq '{name: .experiment.name, description: .experiment.description, lifecycle_stage: .experiment.lifecycle_stage}'
+>>> [CLI] experiments get-experiment 1
 {
-  "name": "/Users/[USERNAME]/test-experiment-[UNIQUE_NAME]",
-  "description": "Test experiment for bundle deployment",
-  "lifecycle_stage": "active"
+  "name": "/Users/[USERNAME]/original-[UNIQUE_NAME]",
+  "artifact_location": "s3://original-[UNIQUE_NAME]",
+  "tags": [
+    {
+      "key": "k1",
+      "value": "v1"
+    },
+    {
+      "key": "mlflow.ownerId",
+      "value": "[USERID]"
+    },
+    {
+      "key": "mlflow.experiment.sourceName",
+      "value": "/Users/[USERNAME]/original-[UNIQUE_NAME]"
+    },
+    {
+      "key": "mlflow.ownerId",
+      "value": "[USERID]"
+    },
+    {
+      "key": "mlflow.ownerEmail",
+      "value": "[USERNAME]"
+    },
+    {
+      "key": "mlflow.experimentType",
+      "value": "MLFLOW_EXPERIMENT"
+    }
+  ]
+}
+
+=== update the name
+>>> [CLI] bundle plan
+update experiments.my_experiment
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/experiment-basic-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] experiments get-experiment 1
+{
+  "name": "/Users/[USERNAME]/new-name-[UNIQUE_NAME]",
+  "artifact_location": "s3://original-[UNIQUE_NAME]",
+  "tags": [
+    {
+      "key": "k1",
+      "value": "v1"
+    },
+    {
+      "key": "mlflow.ownerId",
+      "value": "[USERID]"
+    },
+    {
+      "key": "mlflow.experiment.sourceName",
+      "value": "/Users/[USERNAME]/original-[UNIQUE_NAME]"
+    },
+    {
+      "key": "mlflow.ownerId",
+      "value": "[USERID]"
+    },
+    {
+      "key": "mlflow.ownerEmail",
+      "value": "[USERNAME]"
+    },
+    {
+      "key": "mlflow.experimentType",
+      "value": "MLFLOW_EXPERIMENT"
+    }
+  ]
+}
+
+=== updating the artifact location should cause a recreation
+>>> [CLI] bundle plan
+recreate experiments.my_experiment
+
+Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/experiment-basic-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] experiments get-experiment 1
+{
+  "name": "/Users/[USERNAME]/new-name-[UNIQUE_NAME]",
+  "artifact_location": "s3://new-[UNIQUE_NAME]",
+  "tags": [
+    {
+      "key": "k1",
+      "value": "v1"
+    },
+    {
+      "key": "mlflow.ownerId",
+      "value": "[USERID]"
+    },
+    {
+      "key": "mlflow.experiment.sourceName",
+      "value": "/Users/[USERNAME]/new-name-[UNIQUE_NAME]"
+    },
+    {
+      "key": "mlflow.ownerId",
+      "value": "[USERID]"
+    },
+    {
+      "key": "mlflow.ownerEmail",
+      "value": "[USERNAME]"
+    },
+    {
+      "key": "mlflow.experimentType",
+      "value": "MLFLOW_EXPERIMENT"
+    }
+  ]
+}
+
+=== adding a new tag should be a no-op for direct deployment. It is not for Terraform because of a persistent drift bug
+>>> [CLI] bundle plan
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/experiment-basic-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] experiments get-experiment 1
+{
+  "name": "/Users/[USERNAME]/new-name-[UNIQUE_NAME]",
+  "artifact_location": "s3://new-[UNIQUE_NAME]",
+  "tags": [
+    {
+      "key": "k1",
+      "value": "v1"
+    },
+    {
+      "key": "mlflow.ownerId",
+      "value": "[USERID]"
+    },
+    {
+      "key": "mlflow.experiment.sourceName",
+      "value": "/Users/[USERNAME]/new-name-[UNIQUE_NAME]"
+    },
+    {
+      "key": "mlflow.ownerId",
+      "value": "[USERID]"
+    },
+    {
+      "key": "mlflow.ownerEmail",
+      "value": "[USERNAME]"
+    },
+    {
+      "key": "mlflow.experimentType",
+      "value": "MLFLOW_EXPERIMENT"
+    }
+  ]
 }
 
 >>> [CLI] bundle destroy --auto-approve
@@ -19,12 +180,3 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Deleting files...
 Destroy complete!
-
->>> [CLI] bundle summary
-Name: experiment-basic-[UNIQUE_NAME]
-Target: default
-Workspace:
-  User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/experiment-basic-[UNIQUE_NAME]/default
-
-Resources:

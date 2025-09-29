@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/database"
+	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -58,6 +59,18 @@ var testConfig map[string]any = map[string]any{
 	"synced_database_tables": &resources.SyncedDatabaseTable{
 		SyncedDatabaseTable: database.SyncedDatabaseTable{
 			Name: "main.myschema.my_synced_table",
+		},
+	},
+	"experiments": &resources.MlflowExperiment{
+		Experiment: ml.Experiment{
+			Name: "my-experiment",
+			Tags: []ml.ExperimentTag{
+				{
+					Key:   "my-tag",
+					Value: "my-value",
+				},
+			},
+			ArtifactLocation: "s3://my-bucket/my-experiment",
 		},
 	},
 }

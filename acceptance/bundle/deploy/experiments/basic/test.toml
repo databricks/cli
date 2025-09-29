@@ -1,5 +1,5 @@
-Cloud = false
-Local = false
+Cloud = true
+Local = true
 
 # Test both terraform and direct deployment engines
 [EnvMatrix]

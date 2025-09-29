@@ -1,0 +1,11 @@
+bundle:
+  name: experiment-basic-$UNIQUE_NAME
+
+resources:
+  experiments:
+    my_experiment:
+      artifact_location: $EXPERIMENT_ARTIFACT_LOCATION
+      name: $EXPERIMENT_NAME
+      tags:
+        - key: "k1"
+          value: "v1"

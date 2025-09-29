@@ -521,4 +521,22 @@ func AddDefaultHandlers(server *Server) {
 	server.Handle("GET", "/api/2.0/permissions/jobs/{job_id}", func(req Request) any {
 		return req.Workspace.JobsGetPermissions(req, req.Vars["job_id"])
 	})
+
+	// MLflow Experiments:
+
+	server.Handle("GET", "/api/2.0/mlflow/experiments/get", func(req Request) any {
+		return req.Workspace.ExperimentGet(req)
+	})
+
+	server.Handle("POST", "/api/2.0/mlflow/experiments/create", func(req Request) any {
+		return req.Workspace.ExperimentCreate(req)
+	})
+
+	server.Handle("POST", "/api/2.0/mlflow/experiments/update", func(req Request) any {
+		return req.Workspace.ExperimentUpdate(req)
+	})
+
+	server.Handle("POST", "/api/2.0/mlflow/experiments/delete", func(req Request) any {
+		return req.Workspace.ExperimentDelete(req)
+	})
 }
