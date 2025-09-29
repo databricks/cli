@@ -29,6 +29,10 @@ Refer to the README.md file for full "getting started" guide and production setu
           {
             "key": "personal_schemas",
             "value": "yes, use a schema based on the current user name during development"
+          },
+          {
+            "key": "serverless",
+            "value": "yes"
           }
         ]
       }
