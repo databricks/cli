@@ -13,7 +13,6 @@ import (
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/dynvar"
 )
 
 type normalizePaths struct{}
@@ -86,12 +85,6 @@ func collectGitSourcePaths(b *bundle.Bundle) []dyn.Path {
 }
 
 func normalizePath(path string, location dyn.Location, bundleRootPath string) (string, error) {
-	// If the path contains variables (like ${workspace.file_path}), skip normalization
-	// Variables will be resolved later by other mutators
-	if dynvar.ContainsVariableReference(path) {
-		return path, nil
-	}
-
 	// Handle pip options with paths: only support specific known options
 	// Check if this looks like a pip option
 	if strings.HasPrefix(path, "-") {
