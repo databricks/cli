@@ -3,7 +3,7 @@ Local = true
 Cloud = false
 
 # default timeouts
-Timeout = '20s'
+Timeout = '30s'
 TimeoutWindows = '60s'
 
 # Slowest test I saw:

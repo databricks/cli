@@ -1,0 +1,19 @@
+
+>>> [CLI] bundle validate
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Validation OK!
+
+=== API request paths
+>>> cat out.requests.txt
+"/api/2.0/preview/scim/v2/Me"
+"/api/2.0/workspace/get-status"
+"/api/2.0/workspace/mkdirs"
+"/api/2.0/workspace/get-status"
+
+=== write engine value in user agent to file
+>>> cat out.requests.txt

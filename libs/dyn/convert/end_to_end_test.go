@@ -113,3 +113,59 @@ func TestAdditional(t *testing.T) {
 		})
 	})
 }
+
+func TestEndToEndForceSendFields(t *testing.T) {
+	type Inner struct {
+		InnerField      string   `json:"inner_field"`
+		ForceSendFields []string `json:"-"`
+	}
+	type Outer struct {
+		OuterField string `json:"outer_field"`
+		Inner
+	}
+
+	// Test with zero value in embedded struct
+	src := Outer{
+		OuterField: "outer_value",
+		Inner: Inner{
+			InnerField:      "",                     // Zero value
+			ForceSendFields: []string{"InnerField"}, // Should be preserved
+		},
+	}
+
+	assertFromTypedToTypedEqual(t, src)
+}
+
+func TestEndToEndPointerForceSendFields(t *testing.T) {
+	type NewCluster struct {
+		NumWorkers      int      `json:"num_workers"`
+		SparkVersion    string   `json:"spark_version"`
+		ForceSendFields []string `json:"-"`
+	}
+	type JobCluster struct {
+		JobClusterKey string      `json:"job_cluster_key"`
+		NewCluster    *NewCluster `json:"new_cluster"`
+	}
+	type JobSettings struct {
+		JobClusters     []JobCluster `json:"job_clusters"`
+		Name            string       `json:"name"`
+		ForceSendFields []string     `json:"-"`
+	}
+
+	// Test with zero value in pointer embedded struct (like acceptance test)
+	src := JobSettings{
+		Name: "test-job",
+		JobClusters: []JobCluster{
+			{
+				JobClusterKey: "key",
+				NewCluster: &NewCluster{
+					NumWorkers:      0, // Zero value
+					SparkVersion:    "13.3.x-scala2.12",
+					ForceSendFields: []string{"NumWorkers"}, // Should be preserved
+				},
+			},
+		},
+	}
+
+	assertFromTypedToTypedEqual(t, src)
+}

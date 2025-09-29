@@ -3,18 +3,22 @@ package structpath
 import (
 	"errors"
 	"fmt"
-	"reflect"
 	"strconv"
 	"strings"
 
-	"github.com/databricks/cli/libs/structs/structtag"
+	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/dynvar"
 )
 
 const (
-	tagStruct   = -1
-	tagMapKey   = -2
-	tagAnyKey   = -4
-	tagAnyIndex = -5
+	// Encodes string key, which is encoded as .field or as ['spark.conf']
+	tagStringKey = -1
+
+	// Encodes wildcard after a dot: foo.*
+	tagDotStar = -2
+
+	// Encodes wildcard in brackets: foo[*]
+	tagBracketStar = -3
 )
 
 // PathNode represents a node in a path for struct diffing.
@@ -23,7 +27,7 @@ type PathNode struct {
 	prev *PathNode
 	key  string // Computed key (JSON key for structs, string key for maps, or Go field name for fallback)
 	// If index >= 0, the node specifies a slice/array index in index.
-	// If index < 0, this describes the type of node (see tagStruct and other consts above)
+	// If index < 0, this describes the type of node
 	index int
 }
 
@@ -41,35 +45,26 @@ func (p *PathNode) Index() (int, bool) {
 	return -1, false
 }
 
-func (p *PathNode) MapKey() (string, bool) {
-	if p == nil {
-		return "", false
-	}
-	if p.index == tagMapKey {
-		return p.key, true
-	}
-	return "", false
-}
-
-func (p *PathNode) AnyKey() bool {
+func (p *PathNode) DotStar() bool {
 	if p == nil {
 		return false
 	}
-	return p.index == tagAnyKey
+	return p.index == tagDotStar
 }
 
-func (p *PathNode) AnyIndex() bool {
+func (p *PathNode) BracketStar() bool {
 	if p == nil {
 		return false
 	}
-	return p.index == tagAnyIndex
+	return p.index == tagBracketStar
 }
 
-func (p *PathNode) Field() (string, bool) {
+// StringKey returns either Field() or MapKey() if either is available
+func (p *PathNode) StringKey() (string, bool) {
 	if p == nil {
 		return "", false
 	}
-	if p.index == tagStruct {
+	if p.index == tagStringKey {
 		return p.key, true
 	}
 	return "", false
@@ -82,10 +77,26 @@ func (p *PathNode) Parent() *PathNode {
 	return p.prev
 }
 
+// AsSlice returns the path as a slice of PathNodes from root to current.
+// Efficiently pre-allocates the exact length and fills in reverse order.
+func (p *PathNode) AsSlice() []*PathNode {
+	length := p.Len()
+	segments := make([]*PathNode, length)
+
+	// Fill in reverse order
+	current := p
+	for i := length - 1; i >= 0; i-- {
+		segments[i] = current
+		current = current.Parent()
+	}
+
+	return segments
+}
+
 // NewIndex creates a new PathNode for an array/slice index.
 func NewIndex(prev *PathNode, index int) *PathNode {
 	if index < 0 {
-		panic("index msut be non-negative")
+		panic("index must be non-negative")
 	}
 	return &PathNode{
 		prev:  prev,
@@ -93,48 +104,33 @@ func NewIndex(prev *PathNode, index int) *PathNode {
 	}
 }
 
-// NewMapKey creates a new PathNode for a map key.
-func NewMapKey(prev *PathNode, key string) *PathNode {
+// NewStringKey creates either StructField or MapKey
+// The fieldName should be the resolved field name (e.g., from JSON tag or Go field name).
+func NewStringKey(prev *PathNode, fieldName string) *PathNode {
 	return &PathNode{
 		prev:  prev,
-		key:   key,
-		index: tagMapKey,
+		key:   fieldName,
+		index: tagStringKey,
 	}
 }
 
-// NewStructField creates a new PathNode for a struct field.
-// The jsonTag is used for JSON key resolution, and fieldName is used as fallback.
-func NewStructField(prev *PathNode, tag reflect.StructTag, fieldName string) *PathNode {
-	jsonTag := structtag.JSONTag(tag.Get("json"))
-
-	key := fieldName
-	if name := jsonTag.Name(); name != "" {
-		key = name
-	}
-
+func NewDotStar(prev *PathNode) *PathNode {
 	return &PathNode{
 		prev:  prev,
-		key:   key,
-		index: tagStruct,
+		index: tagDotStar,
 	}
 }
 
-func NewAnyKey(prev *PathNode) *PathNode {
+func NewBracketStar(prev *PathNode) *PathNode {
 	return &PathNode{
 		prev:  prev,
-		index: tagAnyKey,
-	}
-}
-
-func NewAnyIndex(prev *PathNode) *PathNode {
-	return &PathNode{
-		prev:  prev,
-		index: tagAnyIndex,
+		index: tagBracketStar,
 	}
 }
 
 // String returns the string representation of the path.
-// The map keys are encoded in single quotes: tags['name']. Single quote can escaped by placing two single quotes: tags[””] (map key is one single quote).
+// The string keys are encoded in dot syntax (foo.bar) if they don't have any reserved characters (so can be parsed as fields).
+// Otherwise they are encoded in brackets + single quotes: tags['name']. Single quote can escaped by placing two single quotes.
 // This encoding is chosen over traditional double quotes because when encoded in JSON it does not need to be escaped:
 //
 //	{
@@ -145,25 +141,45 @@ func (p *PathNode) String() string {
 		return ""
 	}
 
-	if p.index >= 0 {
-		return p.prev.String() + "[" + strconv.Itoa(p.index) + "]"
-	}
+	// Get all path components from root to current
+	components := p.AsSlice()
 
-	if p.index == tagAnyKey || p.index == tagAnyIndex {
-		return p.prev.String() + "[*]"
-	}
+	var result strings.Builder
 
-	if p.index == tagStruct {
-		prev := p.prev.String()
-		if prev == "" {
-			return p.key
+	for i, node := range components {
+		if node.index >= 0 {
+			// Array/slice index
+			result.WriteString("[")
+			result.WriteString(strconv.Itoa(node.index))
+			result.WriteString("]")
+		} else if node.index == tagDotStar {
+			if i == 0 {
+				result.WriteString("*")
+			} else {
+				result.WriteString(".*")
+			}
+		} else if node.index == tagBracketStar {
+			result.WriteString("[*]")
+		} else if isValidField(node.key) {
+			// Valid field name
+			if i != 0 {
+				result.WriteString(".")
+			}
+			result.WriteString(node.key)
+		} else {
+			// Map key with single quotes
+			result.WriteString("[")
+			result.WriteString(EncodeMapKey(node.key))
+			result.WriteString("]")
 		}
-		return prev + "." + p.key
 	}
 
-	// Format map key with single quotes, escaping single quotes by doubling them
-	escapedKey := strings.ReplaceAll(p.key, "'", "''")
-	return fmt.Sprintf("%s['%s']", p.prev.String(), escapedKey)
+	return result.String()
+}
+
+func EncodeMapKey(s string) string {
+	escaped := strings.ReplaceAll(s, "'", "''")
+	return "'" + escaped + "'"
 }
 
 // Parse parses a string representation of a path using a state machine.
@@ -171,9 +187,10 @@ func (p *PathNode) String() string {
 // State Machine for Path Parsing:
 //
 // States:
-//   - START: Beginning of parsing, expects field name or "["
-//   - FIELD_START: After a dot, expects field name only
+//   - START: Beginning of parsing, expects field name, "[", or "*"
+//   - FIELD_START: After a dot, expects field name or "*"
 //   - FIELD: Reading field name characters
+//   - DOT_STAR: Encountered "*" (at start or after dot), expects ".", "[", or EOF
 //   - BRACKET_OPEN: Just encountered "[", expects digit, "'" or "*"
 //   - INDEX: Reading array index digits, expects more digits or "]"
 //   - MAP_KEY: Reading map key content, expects any char or "'"
@@ -183,9 +200,10 @@ func (p *PathNode) String() string {
 //   - END: Successfully completed parsing
 //
 // Transitions:
-//   - START: [a-zA-Z_-] -> FIELD, "[" -> BRACKET_OPEN, EOF -> END
-//   - FIELD_START: [a-zA-Z_-] -> FIELD, other -> ERROR
+//   - START: [a-zA-Z_-] -> FIELD, "[" -> BRACKET_OPEN, "*" -> DOT_STAR, EOF -> END
+//   - FIELD_START: [a-zA-Z_-] -> FIELD, "*" -> DOT_STAR, other -> ERROR
 //   - FIELD: [a-zA-Z0-9_-] -> FIELD, "." -> FIELD_START, "[" -> BRACKET_OPEN, EOF -> END
+//   - DOT_STAR: "." -> FIELD_START, "[" -> BRACKET_OPEN, EOF -> END, other -> ERROR
 //   - BRACKET_OPEN: [0-9] -> INDEX, "'" -> MAP_KEY, "*" -> WILDCARD
 //   - INDEX: [0-9] -> INDEX, "]" -> EXPECT_DOT_OR_END
 //   - MAP_KEY: (any except "'") -> MAP_KEY, "'" -> MAP_KEY_QUOTE
@@ -202,6 +220,7 @@ func Parse(s string) (*PathNode, error) {
 		stateStart = iota
 		stateFieldStart
 		stateField
+		stateDotStar
 		stateBracketOpen
 		stateIndex
 		stateMapKey
@@ -223,6 +242,8 @@ func Parse(s string) (*PathNode, error) {
 		case stateStart:
 			if ch == '[' {
 				state = stateBracketOpen
+			} else if ch == '*' {
+				state = stateDotStar
 			} else if !isReservedFieldChar(ch) {
 				currentToken.WriteByte(ch)
 				state = stateField
@@ -231,7 +252,9 @@ func Parse(s string) (*PathNode, error) {
 			}
 
 		case stateFieldStart:
-			if !isReservedFieldChar(ch) {
+			if ch == '*' {
+				state = stateDotStar
+			} else if !isReservedFieldChar(ch) {
 				currentToken.WriteByte(ch)
 				state = stateField
 			} else {
@@ -240,17 +263,29 @@ func Parse(s string) (*PathNode, error) {
 
 		case stateField:
 			if ch == '.' {
-				result = NewStructField(result, reflect.StructTag(""), currentToken.String())
+				result = NewStringKey(result, currentToken.String())
 				currentToken.Reset()
 				state = stateFieldStart
 			} else if ch == '[' {
-				result = NewStructField(result, reflect.StructTag(""), currentToken.String())
+				result = NewStringKey(result, currentToken.String())
 				currentToken.Reset()
 				state = stateBracketOpen
 			} else if !isReservedFieldChar(ch) {
 				currentToken.WriteByte(ch)
 			} else {
 				return nil, fmt.Errorf("invalid character '%c' in field name at position %d", ch, pos)
+			}
+
+		case stateDotStar:
+			switch ch {
+			case '.':
+				result = NewDotStar(result)
+				state = stateFieldStart
+			case '[':
+				result = NewDotStar(result)
+				state = stateBracketOpen
+			default:
+				return nil, fmt.Errorf("unexpected character '%c' after '.*' at position %d", ch, pos)
 			}
 
 		case stateBracketOpen:
@@ -296,7 +331,7 @@ func Parse(s string) (*PathNode, error) {
 				state = stateMapKey
 			case ']':
 				// End of map key
-				result = NewMapKey(result, currentToken.String())
+				result = NewStringKey(result, currentToken.String())
 				currentToken.Reset()
 				state = stateExpectDotOrEnd
 			default:
@@ -305,9 +340,7 @@ func Parse(s string) (*PathNode, error) {
 
 		case stateWildcard:
 			if ch == ']' {
-				// Note, since we're parsing this without type info present, we don't know if it's AnyKey or AnyIndex
-				// Perhaps structpath should be simplified to have Wildcard as merged representation of AnyKey/AnyIndex
-				result = NewAnyKey(result)
+				result = NewBracketStar(result)
 				state = stateExpectDotOrEnd
 			} else {
 				return nil, fmt.Errorf("unexpected character '%c' after '*' at position %d", ch, pos)
@@ -338,7 +371,10 @@ func Parse(s string) (*PathNode, error) {
 	case stateStart:
 		return result, nil // Empty path, result is nil
 	case stateField:
-		result = NewStructField(result, reflect.StructTag(""), currentToken.String())
+		result = NewStringKey(result, currentToken.String())
+		return result, nil
+	case stateDotStar:
+		result = NewDotStar(result)
 		return result, nil
 	case stateExpectDotOrEnd:
 		return result, nil
@@ -376,39 +412,120 @@ func isReservedFieldChar(ch byte) bool {
 		return true
 	case ']': // Bracket notation end
 		return true
+	case '\'':
+		return true
+	case ' ':
+		return true
+	case '}':
+		return true
+	case '{':
+		return true
 	default:
 		return false
 	}
 }
 
-// Path in libs/dyn format
-func (p *PathNode) DynPath() string {
-	if p == nil {
-		return ""
-	}
-
-	if p.index >= 0 {
-		return p.prev.DynPath() + "[" + strconv.Itoa(p.index) + "]"
-	}
-
-	if p.index == tagAnyKey {
-		prev := p.prev.DynPath()
-		if prev == "" {
-			return "*"
-		} else {
-			return prev + ".*"
+func isValidField(s string) bool {
+	for ind := range s {
+		if isReservedFieldChar(s[ind]) {
+			return false
 		}
 	}
+	return len(s) > 0
+}
 
-	if p.index == tagAnyIndex {
-		return p.prev.DynPath() + "[*]"
+// PureReferenceToPath returns a PathNode if s is a pure variable reference, otherwise false.
+// This function is similar to dynvar.PureReferenceToPath but returns a *PathNode instead of dyn.Path.
+func PureReferenceToPath(s string) (*PathNode, bool) {
+	ref, ok := dynvar.NewRef(dyn.V(s))
+	if !ok {
+		return nil, false
 	}
 
-	// Both struct fields and map keys use dot notation in DynPath
-	prev := p.prev.DynPath()
-	if prev == "" {
-		return p.key
-	} else {
-		return prev + "." + p.key
+	if !ref.IsPure() {
+		return nil, false
 	}
+
+	pathNode, err := Parse(ref.References()[0])
+	if err != nil {
+		return nil, false
+	}
+
+	return pathNode, true
+}
+
+// SkipPrefix returns a new PathNode that skips the first n components of the path.
+// If n is greater than or equal to the path length, returns nil (root).
+func (p *PathNode) SkipPrefix(n int) *PathNode {
+	if p.IsRoot() || n <= 0 {
+		return p
+	}
+
+	length := p.Len()
+	if n >= length {
+		return nil // Return root
+	}
+
+	startNode := p.Prefix(n)
+
+	var result *PathNode
+	current := p
+	for current != startNode {
+		result = &PathNode{
+			prev:  result,
+			key:   current.key,
+			index: current.index,
+		}
+		current = current.Parent()
+	}
+
+	return result.ReverseInPlace()
+}
+
+// ReverseInPlace returns a new PathNode with the order of components reversed.
+func (p *PathNode) ReverseInPlace() *PathNode {
+	var result *PathNode
+	current := p
+	for current != nil {
+		next := current.prev
+		current.prev = result
+		result = current
+		current = next
+	}
+	return result
+}
+
+// Len returns the number of components in the path.
+func (p *PathNode) Len() int {
+	length := 0
+	current := p
+	for current != nil {
+		length++
+		current = current.Parent()
+	}
+	return length
+}
+
+// Prefix returns the PathNode at the nth position (1-indexed from root).
+// If n is greater than the path length, returns the entire path.
+// If n <= 0, returns nil (root).
+func (p *PathNode) Prefix(n int) *PathNode {
+	if p.IsRoot() || n <= 0 {
+		return nil // Return root
+	}
+
+	// Find the path length first to handle edge cases
+	length := p.Len()
+	if n >= length {
+		return p // Return entire path
+	}
+
+	// Traverse from root to find the nth node (1-indexed)
+	current := p
+	// Move to root first
+	for range length - n {
+		current = current.Parent()
+	}
+
+	return current
 }

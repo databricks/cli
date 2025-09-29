@@ -37,9 +37,12 @@ Real-time Serving
 Identity and Access Management
   current-user                           This API allows retrieving information about currently authenticated user or service principal.
   groups                                 Groups simplify identity management, making it easier to assign access to Databricks workspace, data, and other securable objects.
+  groups-v2                              Groups simplify identity management, making it easier to assign access to Databricks workspace, data, and other securable objects.
   permissions                            Permissions API are used to create read, write, edit, update and manage access for various users on different objects and endpoints.
   service-principals                     Identities for use with jobs, automated tools, and systems such as scripts, apps, and CI/CD platforms.
+  service-principals-v2                  Identities for use with jobs, automated tools, and systems such as scripts, apps, and CI/CD platforms.
   users                                  User identities recognized by Databricks and represented by email addresses.
+  users-v2                               User identities recognized by Databricks and represented by email addresses.
 
 Databricks SQL
   alerts                                 The alerts API can be used to perform CRUD operations on alerts.
@@ -142,6 +145,9 @@ Quality Monitor v2
 OAuth
   service-principal-secrets-proxy        These APIs enable administrators to manage service principal secrets at the workspace level.
 
+Identity and Access Management (v2)
+  workspace-iam-v2                       These APIs are used to manage identities and the workspace access of these identities in <Databricks>.
+
 Additional Commands:
   account                                Databricks Account Commands
   api                                    Perform Databricks API call
@@ -150,8 +156,9 @@ Additional Commands:
   configure                              Configure authentication
   help                                   Help about any command
   labs                                   Manage Databricks Labs installations
-  tag-policies                           The Tag Policy API allows you to manage tag policies in Databricks.
+  tag-policies                           The Tag Policy API allows you to manage policies for governed tags in Databricks.
   version                                Retrieve information about the current version of this CLI
+  workspace-settings-v2                  APIs to manage workspace level settings.
 
 Flags:
       --debug            enable debug logging

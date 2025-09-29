@@ -29,8 +29,7 @@ func getScalarFields(t *testing.T, typ reflect.Type) map[string]any {
 		pathNew, err := structpath.Parse(s)
 		if assert.NoError(t, err, "Parse(path.String()) failed for %q: %s", s, err) {
 			newS := pathNew.String()
-			// This still does not work because of AnyKey / AnyIndex ambiguity
-			// assert.Equal(t, path, pathNew, "Parse(path.String()) returned different path;\npath=%#v %q\npathNew=%#v %q", path, s, pathNew, newS)
+			assert.Equal(t, path, pathNew, "Parse(path.String()) returned different path;\npath=%#v %q\npathNew=%#v %q", path, s, pathNew, newS)
 			assert.Equal(t, s, newS, "Parse(path.String()).String() is different from path.String()\npath.String()=%q\npathNew.String()=%q", path, pathNew)
 		}
 
@@ -62,8 +61,8 @@ func TestTypes(t *testing.T) {
 		"EmptyTagField":      "",
 		"EmptyTagFieldPtr":   "",
 		"IntField":           0,
-		`Map[*].X`:           0,
-		`MapPtr[*].X`:        0,
+		`Map.*.X`:            0,
+		`MapPtr.*.X`:         0,
 		"Nested.X":           0,
 		"NestedPtr.X":        0,
 		"SliceString[*]":     "",
@@ -84,8 +83,8 @@ func TestTypeSelf(t *testing.T) {
 		"SelfArrayPtr[*].valid_field":   "",
 		"SelfIndirect.X.valid_field":    "",
 		"SelfIndirectPtr.X.valid_field": "",
-		`SelfMapPtr[*].valid_field`:     "",
-		`SelfMap[*].valid_field`:        "",
+		`SelfMapPtr.*.valid_field`:      "",
+		`SelfMap.*.valid_field`:         "",
 		"SelfReference.valid_field":     "",
 		"SelfSlicePtr[*].valid_field":   "",
 		"SelfSlice[*].valid_field":      "",
@@ -139,42 +138,42 @@ func TestTypeRoot(t *testing.T) {
 		reflect.TypeOf(config.Root{}),
 		4000, 4300, // 4003 at the time of the update
 		map[string]any{
-			"bundle.target":                 "",
-			`variables[*].lookup.dashboard`: "",
+			"bundle.target":                "",
+			`variables.*.lookup.dashboard`: "",
 
-			`resources.jobs[*].name`:                "",
-			`resources.jobs[*].timeout_seconds`:     0,
-			`resources.jobs[*].max_concurrent_runs`: 0,
-			`resources.jobs[*].format`:              jobs.Format(""),
-			`resources.jobs[*].description`:         "",
+			`resources.jobs.*.name`:                "",
+			`resources.jobs.*.timeout_seconds`:     0,
+			`resources.jobs.*.max_concurrent_runs`: 0,
+			`resources.jobs.*.format`:              jobs.Format(""),
+			`resources.jobs.*.description`:         "",
 
 			// Verify nested task fields are accessible
-			`resources.jobs[*].tasks[*].task_key`:                                       "",
-			`resources.jobs[*].tasks[*].notebook_task.notebook_path`:                    "",
-			`resources.jobs[*].tasks[*].spark_jar_task.main_class_name`:                 "",
-			`resources.jobs[*].tasks[*].for_each_task.inputs`:                           "",
-			`resources.jobs[*].tasks[*].for_each_task.task.task_key`:                    "",
-			`resources.jobs[*].tasks[*].for_each_task.task.notebook_task.notebook_path`: "",
-			`resources.jobs[*].tasks[*].new_cluster.node_type_id`:                       "",
-			`resources.jobs[*].tasks[*].new_cluster.num_workers`:                        0,
+			`resources.jobs.*.tasks[*].task_key`:                                       "",
+			`resources.jobs.*.tasks[*].notebook_task.notebook_path`:                    "",
+			`resources.jobs.*.tasks[*].spark_jar_task.main_class_name`:                 "",
+			`resources.jobs.*.tasks[*].for_each_task.inputs`:                           "",
+			`resources.jobs.*.tasks[*].for_each_task.task.task_key`:                    "",
+			`resources.jobs.*.tasks[*].for_each_task.task.notebook_task.notebook_path`: "",
+			`resources.jobs.*.tasks[*].new_cluster.node_type_id`:                       "",
+			`resources.jobs.*.tasks[*].new_cluster.num_workers`:                        0,
 
 			// Verify job cluster fields are accessible
-			`resources.jobs[*].job_clusters[*].job_cluster_key`:         "",
-			`resources.jobs[*].job_clusters[*].new_cluster.num_workers`: 0,
+			`resources.jobs.*.job_clusters[*].job_cluster_key`:         "",
+			`resources.jobs.*.job_clusters[*].new_cluster.num_workers`: 0,
 		},
 		nil,
 	)
 }
 
-func getReadonlyFields(t *testing.T, typ reflect.Type) []string {
+func getReadonlyFields(t *testing.T, rootType reflect.Type) []string {
 	var results []string
-	err := WalkType(typ, func(path *structpath.PathNode, typ reflect.Type, field *reflect.StructField) (continueWalk bool) {
+	err := WalkType(rootType, func(path *structpath.PathNode, typ reflect.Type, field *reflect.StructField) (continueWalk bool) {
 		if path == nil || field == nil {
 			return true
 		}
 		bundleTag := field.Tag.Get("bundle")
 		if strings.Contains(bundleTag, "readonly") {
-			results = append(results, path.DynPath())
+			results = append(results, path.String())
 		}
 		return true
 	})
@@ -256,9 +255,9 @@ func TestWalkTypeVisited(t *testing.T) {
 		"Inner.A",
 		"Inner.B",
 		"MapInner",
-		"MapInner[*]",
-		"MapInner[*].A",
-		"MapInner[*].B",
+		"MapInner.*",
+		"MapInner.*.A",
+		"MapInner.*.B",
 		"SliceInner",
 		"SliceInner[*]",
 		"SliceInner[*].A",

@@ -8,7 +8,6 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structwalk"
@@ -17,6 +16,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/database"
+	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -59,6 +59,18 @@ var testConfig map[string]any = map[string]any{
 	"synced_database_tables": &resources.SyncedDatabaseTable{
 		SyncedDatabaseTable: database.SyncedDatabaseTable{
 			Name: "main.myschema.my_synced_table",
+		},
+	},
+	"models": &resources.MlflowModel{
+		CreateModelRequest: ml.CreateModelRequest{
+			Name:        "my_mlflow_model",
+			Description: "my_mlflow_model_description",
+			Tags: []ml.ModelTag{
+				{
+					Key:   "k1",
+					Value: "v1",
+				},
+			},
 		},
 	},
 }
@@ -155,9 +167,9 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	require.NotNil(t, remappedState)
 
 	require.NoError(t, structwalk.Walk(newState, func(path *structpath.PathNode, val any, field *reflect.StructField) {
-		remoteValue, err := structaccess.Get(remappedState, dyn.MustPathFromString(path.DynPath()))
+		remoteValue, err := structaccess.Get(remappedState, path)
 		if err != nil {
-			t.Errorf("Failed to read %s from remapped remote state %#v", path.DynPath(), remappedState)
+			t.Errorf("Failed to read %s from remapped remote state %#v", path.String(), remappedState)
 		}
 		if val == nil {
 			// t.Logf("Ignoring %s nil, remoteValue=%#v", path.String(), remoteValue)
@@ -172,7 +184,7 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		// t.Logf("Testing %s v=%#v, remoteValue=%#v", path.String(), val, remoteValue)
 		// We expect fields set explicitly to be preserved by testserver, which is true for all resources as of today.
 		// If not true for your resource, add exception here:
-		assert.Equal(t, val, remoteValue, path.DynPath())
+		assert.Equal(t, val, remoteValue, path.String())
 	}))
 
 	err = adapter.DoDelete(ctx, createdID)
