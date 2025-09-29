@@ -25,7 +25,6 @@ acceptance/bundle/artifacts/shell/err-sh/output.txt
 acceptance/bundle/templates-machinery/helpers-error/output.txt
 
 # "bundle deploy" with apps has trailing whitespace:
-acceptance/bundle/apps/config_section/output.txt
 integration/bundle/testdata/apps/bundle_deploy.txt
 
 # Extra whitespace in test output:
