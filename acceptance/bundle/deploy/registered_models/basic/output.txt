@@ -1,5 +1,4 @@
 
-=== create the registered model
 >>> export NAME=my-registered-model-[UNIQUE_NAME]
 
 >>> export COMMENT=original comment
@@ -8,8 +7,52 @@
 
 >>> export SCHEMA_NAME=default
 
->>> export STORAGE_LOCATION=s3://my-bucket/my-path
+=== create catalog and schema to test diff functionality
+>>> [CLI] catalogs create mycatalog-[UNIQUE_NAME]
+{
+  "browse_only":false,
+  "catalog_type":"MANAGED_CATALOG",
+  "created_at":[UNIX_TIME_MILLIS],
+  "created_by":"[USERNAME]",
+  "effective_predictive_optimization_flag": {
+    "inherited_from_name":"metastore_azure_eastus2",
+    "inherited_from_type":"METASTORE",
+    "value":"DISABLE"
+  },
+  "enable_predictive_optimization":"INHERIT",
+  "full_name":"mycatalog-[UNIQUE_NAME]",
+  "isolation_mode":"OPEN",
+  "metastore_id":"[UUID]",
+  "name":"mycatalog-[UNIQUE_NAME]",
+  "owner":"[USERNAME]",
+  "securable_type":"CATALOG",
+  "updated_at":[UNIX_TIME_MILLIS],
+  "updated_by":"[USERNAME]"
+}
 
+>>> [CLI] schemas create myschema-[UNIQUE_NAME] mycatalog-[UNIQUE_NAME]
+{
+  "browse_only":false,
+  "catalog_name":"mycatalog-[UNIQUE_NAME]",
+  "catalog_type":"MANAGED_CATALOG",
+  "created_at":[UNIX_TIME_MILLIS],
+  "created_by":"[USERNAME]",
+  "effective_predictive_optimization_flag": {
+    "inherited_from_name":"metastore_azure_eastus2",
+    "inherited_from_type":"METASTORE",
+    "value":"DISABLE"
+  },
+  "enable_predictive_optimization":"INHERIT",
+  "full_name":"mycatalog-[UNIQUE_NAME].myschema-[UNIQUE_NAME]",
+  "metastore_id":"[UUID]",
+  "name":"myschema-[UNIQUE_NAME]",
+  "owner":"[USERNAME]",
+  "schema_id":"[UUID]",
+  "updated_at":[UNIX_TIME_MILLIS],
+  "updated_by":"[USERNAME]"
+}
+
+=== create the registered model
 >>> [CLI] bundle plan
 create registered_models.my_registered_model
 
@@ -26,6 +69,98 @@ Deployment complete!
   "name": "my-registered-model-[UNIQUE_NAME]",
   "comment": "original comment",
   "catalog_name": "main",
-  "schema_name": "default",
-  "storage_location": "abfss://decotestprod-unity-iso@decotestprodunityiso.dfs.core.windows.net/[UUID]/models/[UUID]"
+  "schema_name": "default"
 }
+
+=== update the comment, this should not recreate
+>>> [CLI] bundle plan
+update registered_models.my_registered_model
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-registered-models-basic-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] registered-models get main.default.my-registered-model-[UNIQUE_NAME]
+{
+  "name": "my-registered-model-[UNIQUE_NAME]",
+  "comment": "updated comment",
+  "catalog_name": "main",
+  "schema_name": "default"
+}
+
+=== update the name, this should recreate
+>>> [CLI] bundle plan
+recreate registered_models.my_registered_model
+
+Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-registered-models-basic-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] registered-models get main.default.my-registered-model-updated-[UNIQUE_NAME]
+{
+  "name": "my-registered-model-updated-[UNIQUE_NAME]",
+  "comment": "updated comment",
+  "catalog_name": "main",
+  "schema_name": "default"
+}
+
+=== update the catalog name, this should recreate
+>>> [CLI] bundle plan
+recreate registered_models.my_registered_model
+
+Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-registered-models-basic-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] registered-models get mycatalog-[UNIQUE_NAME].default.my-registered-model-updated-[UNIQUE_NAME]
+{
+  "name": "my-registered-model-updated-[UNIQUE_NAME]",
+  "comment": "updated comment",
+  "catalog_name": "mycatalog-[UNIQUE_NAME]",
+  "schema_name": "default"
+}
+
+=== update the schema name, this should recreate
+>>> [CLI] bundle plan
+recreate registered_models.my_registered_model
+
+Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-registered-models-basic-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] registered-models get mycatalog-[UNIQUE_NAME].myschema-[UNIQUE_NAME].my-registered-model-updated-[UNIQUE_NAME]
+{
+  "name": "my-registered-model-updated-[UNIQUE_NAME]",
+  "comment": "updated comment",
+  "catalog_name": "mycatalog-[UNIQUE_NAME]",
+  "schema_name": "myschema-[UNIQUE_NAME]"
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete registered_model my_registered_model
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-registered-models-basic-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
+
+>>> [CLI] schemas delete mycatalog-[UNIQUE_NAME].myschema-[UNIQUE_NAME] --force
+
+>>> [CLI] catalogs delete mycatalog-[UNIQUE_NAME] --force

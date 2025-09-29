@@ -58,7 +58,7 @@ func (r *ResourceRegisteredModel) DoUpdate(ctx context.Context, id string, confi
 		// Owner is not part of the configuration tree
 		Owner: "",
 
-		// name updates are not supported yet. Can be added as a follow-up.
+		// Name updates are not supported yet without recreating. Can be added as a follow-up.
 		NewName: "",
 	}
 

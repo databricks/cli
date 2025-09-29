@@ -1,6 +1,7 @@
 bundle:
   name: deploy-registered-models-basic-$UNIQUE_NAME
 
+# TODO: Add a sepatate test for storage_location
 resources:
   registered_models:
     my_registered_model:
@@ -8,4 +9,3 @@ resources:
       comment: $COMMENT
       catalog_name: $CATALOG_NAME
       schema_name: $SCHEMA_NAME
-      storage_location: $STORAGE_LOCATION
