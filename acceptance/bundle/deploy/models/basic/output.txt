@@ -79,11 +79,8 @@ Deployment complete!
   ]
 }
 
-=== add a new tag, this should be a no-op
+=== add a new tag, this should be a no-op; terraform does make an update request but since update request has no tags in it, it does nothing; direct skips request completely
 >>> [CLI] bundle plan
-update models.my_model
-
-Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-models-basic-[UNIQUE_NAME]/default/files...
