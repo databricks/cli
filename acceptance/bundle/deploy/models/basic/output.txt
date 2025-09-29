@@ -1,5 +1,9 @@
 
-=== deply a model
+>>> export MODEL_NAME=original-name-[UNIQUE_NAME]
+
+>>> export MODEL_DESCRIPTION=original-description-[UNIQUE_NAME]
+
+=== create a model
 >>> [CLI] bundle plan
 create models.my_model
 
@@ -11,11 +15,62 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== GET Model
->>> [CLI] model-registry get-model my-model-[UNIQUE_NAME]
+>>> [CLI] model-registry get-model original-name-[UNIQUE_NAME]
 {
-  "name": "my-model-[UNIQUE_NAME]",
-  "description": "original description",
+  "name": "original-name-[UNIQUE_NAME]",
+  "description": "original-description-[UNIQUE_NAME]",
+  "tags": [
+    {
+      "key": "key1",
+      "value": "value1"
+    }
+  ]
+}
+
+>>> export MODEL_DESCRIPTION=new-description-[UNIQUE_NAME]
+
+=== update the description, this should update the description remotely as well
+>>> [CLI] bundle plan
+update models.my_model
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-models-basic-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] model-registry get-model original-name-[UNIQUE_NAME]
+{
+  "name": "original-name-[UNIQUE_NAME]",
+  "description": "new-description-[UNIQUE_NAME]",
+  "tags": [
+    {
+      "key": "key1",
+      "value": "value1"
+    }
+  ]
+}
+
+>>> export MODEL_NAME=new-name-[UNIQUE_NAME]
+
+=== update the name, this should recreate the model with the new name
+>>> [CLI] bundle plan
+recreate models.my_model
+
+Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-models-basic-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] model-registry get-model new-name-[UNIQUE_NAME]
+{
+  "name": "new-name-[UNIQUE_NAME]",
+  "description": "new-description-[UNIQUE_NAME]",
   "tags": [
     {
       "key": "key1",
@@ -36,36 +91,10 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== GET Model
->>> [CLI] model-registry get-model my-model-[UNIQUE_NAME]
+>>> [CLI] model-registry get-model new-name-[UNIQUE_NAME]
 {
-  "name": "my-model-[UNIQUE_NAME]",
-  "description": "original description",
-  "tags": [
-    {
-      "key": "key1",
-      "value": "value1"
-    }
-  ]
-}
-
-=== update the description, this should update the description
->>> [CLI] bundle plan
-update models.my_model
-
-Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
-
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-models-basic-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
-
-=== GET Model
->>> [CLI] model-registry get-model my-model-[UNIQUE_NAME]
-{
-  "name": "my-model-[UNIQUE_NAME]",
-  "description": "new description",
+  "name": "new-name-[UNIQUE_NAME]",
+  "description": "new-description-[UNIQUE_NAME]",
   "tags": [
     {
       "key": "key1",
