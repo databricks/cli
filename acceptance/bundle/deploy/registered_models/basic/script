@@ -7,8 +7,8 @@ envsubst < databricks.yml.tmpl > databricks.yml
 title "create catalog and schema to test diff functionality"
 catalog_name="mycatalog-${UNIQUE_NAME}"
 schema_name="myschema-${UNIQUE_NAME}"
-trace $CLI catalogs create ${catalog_name}
-trace $CLI schemas create ${schema_name} ${catalog_name}
+trace $CLI catalogs create ${catalog_name} | jq '{full_name}'
+trace $CLI schemas create ${schema_name} ${catalog_name} | jq '{full_name}'
 
 
 cleanup() {

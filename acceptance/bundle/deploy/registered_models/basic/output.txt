@@ -10,46 +10,12 @@
 === create catalog and schema to test diff functionality
 >>> [CLI] catalogs create mycatalog-[UNIQUE_NAME]
 {
-  "browse_only":false,
-  "catalog_type":"MANAGED_CATALOG",
-  "created_at":[UNIX_TIME_MILLIS],
-  "created_by":"[USERNAME]",
-  "effective_predictive_optimization_flag": {
-    "inherited_from_name":"metastore_azure_eastus2",
-    "inherited_from_type":"METASTORE",
-    "value":"DISABLE"
-  },
-  "enable_predictive_optimization":"INHERIT",
-  "full_name":"mycatalog-[UNIQUE_NAME]",
-  "isolation_mode":"OPEN",
-  "metastore_id":"[UUID]",
-  "name":"mycatalog-[UNIQUE_NAME]",
-  "owner":"[USERNAME]",
-  "securable_type":"CATALOG",
-  "updated_at":[UNIX_TIME_MILLIS],
-  "updated_by":"[USERNAME]"
+  "full_name": "mycatalog-[UNIQUE_NAME]"
 }
 
 >>> [CLI] schemas create myschema-[UNIQUE_NAME] mycatalog-[UNIQUE_NAME]
 {
-  "browse_only":false,
-  "catalog_name":"mycatalog-[UNIQUE_NAME]",
-  "catalog_type":"MANAGED_CATALOG",
-  "created_at":[UNIX_TIME_MILLIS],
-  "created_by":"[USERNAME]",
-  "effective_predictive_optimization_flag": {
-    "inherited_from_name":"metastore_azure_eastus2",
-    "inherited_from_type":"METASTORE",
-    "value":"DISABLE"
-  },
-  "enable_predictive_optimization":"INHERIT",
-  "full_name":"mycatalog-[UNIQUE_NAME].myschema-[UNIQUE_NAME]",
-  "metastore_id":"[UUID]",
-  "name":"myschema-[UNIQUE_NAME]",
-  "owner":"[USERNAME]",
-  "schema_id":"[UUID]",
-  "updated_at":[UNIX_TIME_MILLIS],
-  "updated_by":"[USERNAME]"
+  "full_name": "mycatalog-[UNIQUE_NAME].myschema-[UNIQUE_NAME]"
 }
 
 === create the registered model
