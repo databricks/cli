@@ -34,4 +34,5 @@ resources:
         dependencies:
           # We include every dependency defined by pyproject.toml by defining an editable environment
           # that points to the folder where pyproject.toml is deployed.
+          {{- /* HACK: due to a bug in the CLI as of 2025-09-29, we can't use a relative path here. */}}
           - --editable ${workspace.file_path}
