@@ -114,7 +114,13 @@ def _handle_line_magic(lines: List[str]) -> List[str]:
 
     if lmagic == "sql":
         lines = lines[1:]
-        spark_string = "global _sqldf\n" + "_sqldf = spark.sql('''" + "".join(lines).replace("'", "\\'") + "''')\n" + "display(_sqldf)\n"
+        spark_string = (
+            "global _sqldf\n"
+            + "_sqldf = spark.sql('''"
+            + "".join(lines).replace("'", "\\'")
+            + "''')\n"
+            + "display(_sqldf)\n"
+        )
         return spark_string.splitlines(keepends=True)
 
     if lmagic == "python":
