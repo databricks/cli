@@ -1,5 +1,9 @@
 
 === create the experiment
+>>> export EXPERIMENT_ARTIFACT_LOCATION=s3://original-[UNIQUE_NAME]
+
+>>> export EXPERIMENT_NAME=/Users/[USERNAME]/original-[UNIQUE_NAME]
+
 >>> [CLI] bundle plan
 create experiments.my_experiment
 
@@ -44,6 +48,8 @@ Deployment complete!
 }
 
 === update the name
+>>> export EXPERIMENT_NAME=/Users/[USERNAME]/new-name-[UNIQUE_NAME]
+
 >>> [CLI] bundle plan
 update experiments.my_experiment
 
@@ -88,6 +94,8 @@ Deployment complete!
 }
 
 === updating the artifact location should cause a recreation
+>>> export EXPERIMENT_ARTIFACT_LOCATION=s3://new-[UNIQUE_NAME]
+
 >>> [CLI] bundle plan
 recreate experiments.my_experiment
 

@@ -5,8 +5,8 @@ cleanup() {
 trap cleanup EXIT
 
 title "create the experiment"
-export EXPERIMENT_ARTIFACT_LOCATION="s3://original-${UNIQUE_NAME}"
-export EXPERIMENT_NAME="/Users/${CURRENT_USER_NAME}/original-${UNIQUE_NAME}"
+trace export EXPERIMENT_ARTIFACT_LOCATION="s3://original-${UNIQUE_NAME}"
+trace export EXPERIMENT_NAME="/Users/${CURRENT_USER_NAME}/original-${UNIQUE_NAME}"
 envsubst < templates/one_tag.tmpl > databricks.yml
 trace $CLI bundle plan
 trace $CLI bundle deploy
@@ -14,7 +14,7 @@ experiment_id=$($CLI bundle summary --output json | jq -r '.resources.experiment
 trace $CLI experiments get-experiment $experiment_id | jq '.experiment | {name, artifact_location, tags}'
 
 title "update the name"
-export EXPERIMENT_NAME="/Users/${CURRENT_USER_NAME}/new-name-${UNIQUE_NAME}"
+trace export EXPERIMENT_NAME="/Users/${CURRENT_USER_NAME}/new-name-${UNIQUE_NAME}"
 envsubst < templates/one_tag.tmpl > databricks.yml
 trace $CLI bundle plan
 trace $CLI bundle deploy
@@ -22,7 +22,7 @@ experiment_id=$($CLI bundle summary --output json | jq -r '.resources.experiment
 trace $CLI experiments get-experiment $experiment_id | jq '.experiment | {name, artifact_location, tags}'
 
 title "updating the artifact location should cause a recreation"
-export EXPERIMENT_ARTIFACT_LOCATION="s3://new-${UNIQUE_NAME}"
+trace export EXPERIMENT_ARTIFACT_LOCATION="s3://new-${UNIQUE_NAME}"
 envsubst < templates/one_tag.tmpl > databricks.yml
 trace $CLI bundle plan
 trace $CLI bundle deploy
