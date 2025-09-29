@@ -47,6 +47,15 @@ func TestReplacement_Distinct(t *testing.T) {
 	assert.Equal(t, "[NUMBER][0]\n[NUMBER][1]\n[NUMBER][0]", got)
 }
 
+func TestReplacement_DistinctSingleMatch(t *testing.T) {
+	rc := ReplacementsContext{Repls: []Replacement{
+		{Old: regexp.MustCompile(`\d+`), New: "[NUMBER]", Distinct: true},
+	}}
+
+	got := rc.Replace("25")
+	assert.Equal(t, "[NUMBER]", got)
+}
+
 func TestReplacement_TemporaryDirectory(t *testing.T) {
 	var repls ReplacementsContext
 

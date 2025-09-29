@@ -59,6 +59,12 @@ func (r *ReplacementsContext) Replace(s string) string {
 			continue
 		}
 
+		matches := repl.Old.FindAllString(s, -1)
+		if len(matches) <= 1 {
+			s = repl.Old.ReplaceAllString(s, repl.New)
+			continue
+		}
+
 		nextIndex := 0
 		seen := make(map[string]int)
 		s = repl.Old.ReplaceAllStringFunc(s, func(match string) string {
