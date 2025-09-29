@@ -80,9 +80,7 @@ func (r *ResourceExperiment) DoDelete(ctx context.Context, id string) error {
 
 func (*ResourceExperiment) FieldTriggers() map[string]deployplan.ActionType {
 	return map[string]deployplan.ActionType{
-		"name": deployplan.ActionTypeUpdate,
-
-		// artifact_location is marked as suppress_diff in TF. This mirrors that behaviour.
+		"name":              deployplan.ActionTypeUpdate,
 		"artifact_location": deployplan.ActionTypeRecreate,
 
 		// Tags updates are not supported by TF. This mirrors that behaviour.
