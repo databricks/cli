@@ -12,6 +12,7 @@ var SupportedResources = map[string]any{
 	"experiments":            (*ResourceExperiment)(nil),
 	"schemas":                (*ResourceSchema)(nil),
 	"volumes":                (*ResourceVolume)(nil),
+	"models":                 (*ResourceMlflowModel)(nil),
 	"apps":                   (*ResourceApp)(nil),
 	"sql_warehouses":         (*ResourceSqlWarehouse)(nil),
 	"database_instances":     (*ResourceDatabaseInstance)(nil),

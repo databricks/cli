@@ -1940,6 +1940,45 @@ resources.jobs.*.webhook_notifications.on_streaming_backlog_exceeded[*].id	strin
 resources.jobs.*.webhook_notifications.on_success	[]jobs.Webhook	INPUT	STATE
 resources.jobs.*.webhook_notifications.on_success[*]	jobs.Webhook	INPUT	STATE
 resources.jobs.*.webhook_notifications.on_success[*].id	string	INPUT	STATE
+resources.models.*.creation_timestamp	int64	REMOTE
+resources.models.*.description	string	ALL
+resources.models.*.id	string	INPUT	REMOTE
+resources.models.*.last_updated_timestamp	int64	REMOTE
+resources.models.*.latest_versions	[]ml.ModelVersion	REMOTE
+resources.models.*.latest_versions[*]	ml.ModelVersion	REMOTE
+resources.models.*.latest_versions[*].creation_timestamp	int64	REMOTE
+resources.models.*.latest_versions[*].current_stage	string	REMOTE
+resources.models.*.latest_versions[*].description	string	REMOTE
+resources.models.*.latest_versions[*].last_updated_timestamp	int64	REMOTE
+resources.models.*.latest_versions[*].name	string	REMOTE
+resources.models.*.latest_versions[*].run_id	string	REMOTE
+resources.models.*.latest_versions[*].run_link	string	REMOTE
+resources.models.*.latest_versions[*].source	string	REMOTE
+resources.models.*.latest_versions[*].status	ml.ModelVersionStatus	REMOTE
+resources.models.*.latest_versions[*].status_message	string	REMOTE
+resources.models.*.latest_versions[*].tags	[]ml.ModelVersionTag	REMOTE
+resources.models.*.latest_versions[*].tags[*]	ml.ModelVersionTag	REMOTE
+resources.models.*.latest_versions[*].tags[*].key	string	REMOTE
+resources.models.*.latest_versions[*].tags[*].value	string	REMOTE
+resources.models.*.latest_versions[*].user_id	string	REMOTE
+resources.models.*.latest_versions[*].version	string	REMOTE
+resources.models.*.lifecycle	resources.Lifecycle	INPUT
+resources.models.*.lifecycle.prevent_destroy	bool	INPUT
+resources.models.*.modified_status	string	INPUT
+resources.models.*.name	string	ALL
+resources.models.*.permission_level	ml.PermissionLevel	REMOTE
+resources.models.*.permissions	[]resources.MlflowModelPermission	INPUT
+resources.models.*.permissions[*]	resources.MlflowModelPermission	INPUT
+resources.models.*.permissions[*].group_name	string	INPUT
+resources.models.*.permissions[*].level	resources.MlflowModelPermissionLevel	INPUT
+resources.models.*.permissions[*].service_principal_name	string	INPUT
+resources.models.*.permissions[*].user_name	string	INPUT
+resources.models.*.tags	[]ml.ModelTag	ALL
+resources.models.*.tags[*]	ml.ModelTag	ALL
+resources.models.*.tags[*].key	string	ALL
+resources.models.*.tags[*].value	string	ALL
+resources.models.*.url	string	INPUT
+resources.models.*.user_id	string	REMOTE
 resources.pipelines.*.allow_duplicate_names	bool	INPUT	STATE
 resources.pipelines.*.budget_policy_id	string	INPUT	STATE
 resources.pipelines.*.catalog	string	INPUT	STATE

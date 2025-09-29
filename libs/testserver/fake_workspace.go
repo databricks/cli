@@ -61,22 +61,23 @@ type FakeWorkspace struct {
 	repoIdByPath map[string]int64
 
 	// normally, ids are not sequential, but we make them sequential for deterministic diff
-	nextJobId       int64
-	nextJobRunId    int64
-	Jobs            map[int64]jobs.Job
-	JobRuns         map[int64]jobs.Run
-	JobPermissions  map[string][]jobs.JobAccessControlRequest
-	Pipelines       map[string]pipelines.GetPipelineResponse
-	PipelineUpdates map[string]bool
-	Monitors        map[string]catalog.MonitorInfo
-	Apps            map[string]apps.App
-	Schemas         map[string]catalog.SchemaInfo
-	SchemasGrants   map[string][]catalog.PrivilegeAssignment
-	Volumes         map[string]catalog.VolumeInfo
-	Dashboards      map[string]dashboards.Dashboard
-	SqlWarehouses   map[string]sql.GetWarehouseResponse
-	Alerts          map[string]sql.AlertV2
-	Experiments     map[string]ml.Experiment
+	nextJobId           int64
+	nextJobRunId        int64
+	Jobs                map[int64]jobs.Job
+	JobRuns             map[int64]jobs.Run
+	JobPermissions      map[string][]jobs.JobAccessControlRequest
+	Pipelines           map[string]pipelines.GetPipelineResponse
+	PipelineUpdates     map[string]bool
+	Monitors            map[string]catalog.MonitorInfo
+	Apps                map[string]apps.App
+	Schemas             map[string]catalog.SchemaInfo
+	SchemasGrants       map[string][]catalog.PrivilegeAssignment
+	Volumes             map[string]catalog.VolumeInfo
+	Dashboards          map[string]dashboards.Dashboard
+	SqlWarehouses       map[string]sql.GetWarehouseResponse
+	Alerts              map[string]sql.AlertV2
+	Experiments         map[string]ml.Experiment
+	ModelRegistryModels map[string]ml.Model
 
 	Acls map[string][]workspace.AclItem
 
@@ -175,6 +176,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		SyncedDatabaseTables: map[string]database.SyncedDatabaseTable{},
 		Alerts:               map[string]sql.AlertV2{},
 		Experiments:          map[string]ml.Experiment{},
+		ModelRegistryModels:  map[string]ml.Model{},
 	}
 }
 

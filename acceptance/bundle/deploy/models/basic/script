@@ -1,0 +1,32 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace export MODEL_NAME=original-name-$UNIQUE_NAME
+trace export MODEL_DESCRIPTION=original-description-$UNIQUE_NAME
+envsubst < templates/one_tag.tmpl > databricks.yml
+title "create a model"
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace $CLI model-registry get-model $MODEL_NAME | jq '.registered_model_databricks | {name, description, tags}'
+
+trace export MODEL_DESCRIPTION=new-description-$UNIQUE_NAME
+envsubst < templates/one_tag.tmpl > databricks.yml
+title "update the description, this should update the description remotely as well"
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace $CLI model-registry get-model $MODEL_NAME | jq '.registered_model_databricks | {name, description, tags}'
+
+trace export MODEL_NAME=new-name-$UNIQUE_NAME
+envsubst < templates/one_tag.tmpl > databricks.yml
+title "update the name, this should recreate the model with the new name"
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace $CLI model-registry get-model $MODEL_NAME | jq '.registered_model_databricks | {name, description, tags}'
+
+title "add a new tag, this should be a no-op"
+envsubst < templates/two_tag.tmpl > databricks.yml
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace $CLI model-registry get-model $MODEL_NAME | jq '.registered_model_databricks | {name, description, tags}'

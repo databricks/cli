@@ -523,7 +523,6 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	// MLflow Experiments:
-
 	server.Handle("GET", "/api/2.0/mlflow/experiments/get", func(req Request) any {
 		return req.Workspace.ExperimentGet(req)
 	})
@@ -538,5 +537,22 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("POST", "/api/2.0/mlflow/experiments/delete", func(req Request) any {
 		return req.Workspace.ExperimentDelete(req)
+	})
+
+	// Model registry models.
+	server.Handle("POST", "/api/2.0/mlflow/registered-models/create", func(req Request) any {
+		return req.Workspace.ModelRegistryCreateModel(req)
+	})
+
+	server.Handle("GET", "/api/2.0/mlflow/databricks/registered-models/get", func(req Request) any {
+		return req.Workspace.ModelRegistryGetModel(req)
+	})
+
+	server.Handle("PATCH", "/api/2.0/mlflow/registered-models/update", func(req Request) any {
+		return req.Workspace.ModelRegistryUpdateModel(req)
+	})
+
+	server.Handle("DELETE", "/api/2.0/mlflow/registered-models/delete", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.ModelRegistryModels, req.URL.Query().Get("name"))
 	})
 }

@@ -73,6 +73,18 @@ var testConfig map[string]any = map[string]any{
 			ArtifactLocation: "s3://my-bucket/my-experiment",
 		},
 	},
+	"models": &resources.MlflowModel{
+		CreateModelRequest: ml.CreateModelRequest{
+			Name:        "my_mlflow_model",
+			Description: "my_mlflow_model_description",
+			Tags: []ml.ModelTag{
+				{
+					Key:   "k1",
+					Value: "v1",
+				},
+			},
+		},
+	},
 }
 
 type prepareWorkspace func(client *databricks.WorkspaceClient) error
