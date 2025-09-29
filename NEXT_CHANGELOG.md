@@ -5,11 +5,11 @@
 ### Notable Changes
 
 ### CLI
-* Remove app.config section ([#3680](https://github.com/databricks/cli/pull/3680))
 
 ### Dependency updates
 
 ### Bundles
+* Remove resources.apps.config section ([#3680](https://github.com/databricks/cli/pull/3680))
 
 ### API Changes
 * Added `databricks account account-groups-v2` command group.
