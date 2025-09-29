@@ -36,7 +36,10 @@ func (*ResourceRegisteredModel) RemapState(model *catalog.RegisteredModelInfo) *
 
 func (r *ResourceRegisteredModel) DoRefresh(ctx context.Context, id string) (*catalog.RegisteredModelInfo, error) {
 	return r.client.RegisteredModels.Get(ctx, catalog.GetRegisteredModelRequest{
-		FullName: id,
+		FullName:        id,
+		IncludeAliases:  false,
+		IncludeBrowse:   false,
+		ForceSendFields: nil,
 	})
 }
 
