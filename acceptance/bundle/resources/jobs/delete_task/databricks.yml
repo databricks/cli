@@ -1,0 +1,25 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    job:
+      tasks:
+        - task_key: TestTask1                                # TO_DELETE
+          existing_cluster_id: "0717-132531-5opeqon1"        # TO_DELETE
+          python_wheel_task:                                 # TO_DELETE
+            package_name: "whl"                              # TO_DELETE
+            entry_point: "run"                               # TO_DELETE
+          libraries:                                         # TO_DELETE
+            - whl: /Workspace/Users/foo@bar.com/mywheel.whl  # TO_DELETE
+        - task_key: TestTask2
+          for_each_task:
+            inputs: "[1]"
+            task:
+              task_key: TestTask2
+              existing_cluster_id: "0717-132531-5opeqon1"
+              python_wheel_task:
+                package_name: "whl"
+                entry_point: "run"
+              libraries:
+                - whl: /Workspace/Users/foo@bar.com/mywheel.whl
