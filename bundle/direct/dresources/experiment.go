@@ -48,8 +48,8 @@ func (r *ResourceExperiment) DoRefresh(ctx context.Context, id string) (*ml.Expe
 	return result.Experiment, nil
 }
 
-func (r *ResourceExperiment) DoCreate(ctx context.Context, state *ml.CreateExperiment) (string, error) {
-	result, err := r.client.Experiments.CreateExperiment(ctx, *state)
+func (r *ResourceExperiment) DoCreate(ctx context.Context, config *ml.CreateExperiment) (string, error) {
+	result, err := r.client.Experiments.CreateExperiment(ctx, *config)
 	if err != nil {
 		return "", fmt.Errorf("failed to create experiment: %w", err)
 	}
