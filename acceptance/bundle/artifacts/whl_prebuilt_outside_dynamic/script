@@ -1,5 +1,7 @@
 cd this_dab
 
+touch ../other_dab/dist/lib/other_test_code-0.0.1-py3-none-any.whl  # ensure timestamp is different
+
 trace errcode $CLI bundle deploy
 
 title "Expecting to find two patched wheels in current directory"
