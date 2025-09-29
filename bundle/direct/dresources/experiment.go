@@ -2,7 +2,6 @@ package dresources
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
@@ -43,7 +42,7 @@ func (r *ResourceExperiment) DoRefresh(ctx context.Context, id string) (*ml.Expe
 		ExperimentId: id,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to get experiment %s: %w", id, err)
+		return nil, err
 	}
 	return result.Experiment, nil
 }
@@ -51,7 +50,7 @@ func (r *ResourceExperiment) DoRefresh(ctx context.Context, id string) (*ml.Expe
 func (r *ResourceExperiment) DoCreate(ctx context.Context, config *ml.CreateExperiment) (string, error) {
 	result, err := r.client.Experiments.CreateExperiment(ctx, *config)
 	if err != nil {
-		return "", fmt.Errorf("failed to create experiment: %w", err)
+		return "", err
 	}
 	return result.ExperimentId, nil
 }
@@ -63,21 +62,13 @@ func (r *ResourceExperiment) DoUpdate(ctx context.Context, id string, config *ml
 		ForceSendFields: filterFields[ml.UpdateExperiment](config.ForceSendFields),
 	}
 
-	err := r.client.Experiments.UpdateExperiment(ctx, updateReq)
-	if err != nil {
-		return fmt.Errorf("failed to update experiment %s: %w", id, err)
-	}
-	return nil
+	return r.client.Experiments.UpdateExperiment(ctx, updateReq)
 }
 
 func (r *ResourceExperiment) DoDelete(ctx context.Context, id string) error {
-	err := r.client.Experiments.DeleteExperiment(ctx, ml.DeleteExperiment{
+	return r.client.Experiments.DeleteExperiment(ctx, ml.DeleteExperiment{
 		ExperimentId: id,
 	})
-	if err != nil {
-		return fmt.Errorf("failed to delete experiment %s: %w", id, err)
-	}
-	return nil
 }
 
 func (*ResourceExperiment) FieldTriggers() map[string]deployplan.ActionType {
