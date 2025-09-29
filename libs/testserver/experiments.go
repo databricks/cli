@@ -19,8 +19,8 @@ func (s *FakeWorkspace) ExperimentCreate(req Request) Response {
 		}
 	}
 
-	// TODO(verify):Server appends these tags automatically to experiments.
-	// replicate that behaviour in the test server as well.
+	// Server appends these tags automatically to experiments.
+	// We replicate that behaviour in the test server as well.
 	appendTags := []ml.ExperimentTag{
 		{
 			Key:   "mlflow.ownerId",
