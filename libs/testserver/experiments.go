@@ -56,37 +56,13 @@ func (s *FakeWorkspace) ExperimentCreate(req Request) Response {
 		LifecycleStage:   "active",
 	}
 
-	s.Experiments[experimentId] = exp
+	s.Experiments[experimentId] = ml.GetExperimentResponse{
+		Experiment: &exp,
+	}
 
 	return Response{
 		Body: ml.CreateExperimentResponse{
 			ExperimentId: experimentId,
-		},
-	}
-}
-
-func (s *FakeWorkspace) ExperimentGet(req Request) Response {
-	defer s.LockUnlock()()
-
-	experimentId := req.URL.Query().Get("experiment_id")
-	if experimentId == "" {
-		return Response{
-			StatusCode: http.StatusBadRequest,
-			Body:       map[string]string{"message": "experiment_id is required"},
-		}
-	}
-
-	experiment, exists := s.Experiments[experimentId]
-	if !exists {
-		return Response{
-			StatusCode: http.StatusNotFound,
-			Body:       map[string]string{"message": fmt.Sprintf("Experiment %s not found", experimentId)},
-		}
-	}
-
-	return Response{
-		Body: ml.GetExperimentResponse{
-			Experiment: &experiment,
 		},
 	}
 }
@@ -112,13 +88,13 @@ func (s *FakeWorkspace) ExperimentUpdate(req Request) Response {
 
 	// Update the experiment
 	if updateReq.NewName != "" {
-		experiment.Name = updateReq.NewName
+		experiment.Experiment.Name = updateReq.NewName
 
 		// The server modifies the value of the tag as well. Mimic that behaviour
 		// in the test server as well.
-		for i := range experiment.Tags {
-			if experiment.Tags[i].Key == "mlflow.experiment.sourceName" {
-				experiment.Tags[i].Value = updateReq.NewName
+		for i := range experiment.Experiment.Tags {
+			if experiment.Experiment.Tags[i].Key == "mlflow.experiment.sourceName" {
+				experiment.Experiment.Tags[i].Value = updateReq.NewName
 			}
 		}
 	}
@@ -129,8 +105,6 @@ func (s *FakeWorkspace) ExperimentUpdate(req Request) Response {
 }
 
 func (s *FakeWorkspace) ExperimentDelete(req Request) Response {
-	defer s.LockUnlock()()
-
 	var deleteReq ml.DeleteExperiment
 	if err := json.Unmarshal(req.Body, &deleteReq); err != nil {
 		return Response{
@@ -139,15 +113,5 @@ func (s *FakeWorkspace) ExperimentDelete(req Request) Response {
 		}
 	}
 
-	_, exists := s.Experiments[deleteReq.ExperimentId]
-	if !exists {
-		return Response{
-			StatusCode: http.StatusNotFound,
-			Body:       map[string]string{"message": fmt.Sprintf("Experiment %s not found", deleteReq.ExperimentId)},
-		}
-	}
-
-	delete(s.Experiments, deleteReq.ExperimentId)
-
-	return Response{}
+	return MapDelete(s, s.Experiments, deleteReq.ExperimentId)
 }

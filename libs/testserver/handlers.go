@@ -524,7 +524,15 @@ func AddDefaultHandlers(server *Server) {
 
 	// MLflow Experiments:
 	server.Handle("GET", "/api/2.0/mlflow/experiments/get", func(req Request) any {
-		return req.Workspace.ExperimentGet(req)
+		experimentId := req.URL.Query().Get("experiment_id")
+		if experimentId == "" {
+			return Response{
+				StatusCode: http.StatusBadRequest,
+				Body:       map[string]string{"message": "experiment_id is required"},
+			}
+		}
+
+		return MapGet(req.Workspace, req.Workspace.Experiments, experimentId)
 	})
 
 	server.Handle("POST", "/api/2.0/mlflow/experiments/create", func(req Request) any {
