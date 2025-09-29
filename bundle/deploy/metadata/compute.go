@@ -52,6 +52,24 @@ func (m *compute) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	}
 	b.Metadata.Config.Resources.Jobs = jobsMetadata
 
+	// Set pipeline config paths in metadata
+	pipelinesMetadata := make(map[string]*metadata.Pipeline)
+	for name, pipeline := range b.Config.Resources.Pipelines {
+		// Compute config file path the pipeline is defined in, relative to the bundle
+		// root
+		l := b.Config.GetLocation("resources.pipelines." + name)
+		relativePath, err := filepath.Rel(b.BundleRootPath, l.File)
+		if err != nil {
+			return diag.Errorf("failed to compute relative path for pipeline %s: %v", name, err)
+		}
+		// Metadata for the pipeline
+		pipelinesMetadata[name] = &metadata.Pipeline{
+			ID:           pipeline.ID,
+			RelativePath: filepath.ToSlash(relativePath),
+		}
+	}
+	b.Metadata.Config.Resources.Pipelines = pipelinesMetadata
+
 	// Set file upload destination of the bundle in metadata
 	b.Metadata.Config.Workspace.FilePath = b.Config.Workspace.FilePath
 	// In source-linked deployment files are not copied and resources use source files, therefore we use sync path as file path in metadata

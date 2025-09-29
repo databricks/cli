@@ -22,8 +22,17 @@ type Job struct {
 	RelativePath string `json:"relative_path"`
 }
 
+type Pipeline struct {
+	ID string `json:"id,omitempty"`
+
+	// Relative path from the bundle root to the configuration file that holds
+	// the definition of this resource.
+	RelativePath string `json:"relative_path"`
+}
+
 type Resources struct {
-	Jobs map[string]*Job `json:"jobs,omitempty"`
+	Jobs      map[string]*Job      `json:"jobs,omitempty"`
+	Pipelines map[string]*Pipeline `json:"pipelines,omitempty"`
 }
 
 type Config struct {
