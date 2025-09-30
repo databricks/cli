@@ -101,11 +101,11 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 			}
 
 			// Process each reference in the string
-			for _, refStr := range ref.References() {
-				reference := "${" + refStr + "}"
-				path, ok := structpath.PureReferenceToPath(reference)
-				if !ok {
-					logdiag.LogError(ctx, fmt.Errorf("%s: unknown reference %q", errorPrefix, reference))
+			for _, pathString := range ref.References() {
+				ref := "${" + pathString + "}"
+				path, err := structpath.Parse(pathString)
+				if err != nil {
+					logdiag.LogError(ctx, fmt.Errorf("%s: cannot parse reference %q: %w", errorPrefix, ref, err))
 					return false
 				}
 
@@ -114,13 +114,13 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 					if errors.Is(err, errDelayed) {
 						continue
 					}
-					logdiag.LogError(ctx, fmt.Errorf("%s: cannot resolve %q: %w", errorPrefix, reference, err))
+					logdiag.LogError(ctx, fmt.Errorf("%s: cannot resolve %q: %w", errorPrefix, ref, err))
 					return false
 				}
 
-				err = entry.NewState.ResolveRef(reference, value)
+				err = entry.NewState.ResolveRef(ref, value)
 				if err != nil {
-					logdiag.LogError(ctx, fmt.Errorf("%s: cannot set value of %q: %w", errorPrefix, reference, err))
+					logdiag.LogError(ctx, fmt.Errorf("%s: cannot set value of %q: %w", errorPrefix, ref, err))
 					return false
 				}
 			}
@@ -178,7 +178,7 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 		return nil, errors.New("planning failed")
 	}
 
-	// Note, we cannot simply remove noop entries here as then we'd need to ensure there are no edges to them
+	// Note, we cannot simply remove 'skip' entries here as then we'd need to ensure there are no edges to them
 
 	state := b.StateDB.ExportState(ctx)
 
@@ -331,14 +331,13 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()),
 		func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 			group := p[1].Key()
-			name := p[2].Key()
 
 			_, ok := dresources.SupportedResources[group]
 			if !ok {
 				return v, fmt.Errorf("unsupported resource: %s", group)
 			}
 
-			nodes = append(nodes, "resources."+group+"."+name)
+			nodes = append(nodes, p.String())
 			return dyn.InvalidValue, nil
 		},
 	)

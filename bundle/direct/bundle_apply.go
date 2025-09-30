@@ -92,7 +92,6 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 
 				for _, pathString := range refs.References() {
 					ref := "${" + pathString + "}"
-					// Note, today edge.Label is always a reference "${...}". If we have other types of dependencies, we need to be more careful here:
 					targetPath, err := structpath.Parse(pathString)
 					if !ok {
 						logdiag.LogError(ctx, fmt.Errorf("%s: cannot parse reference %q: %w", errorPrefix, ref, err))
@@ -127,8 +126,9 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			}
 		}
 
-		// Today they only type of edge is via ${...} reference.
-		// There are 2 types of reference local (already resolved during plan) and remote (what's left)
+		// TODO: Note, we only really need remote state if there are remote references.
+		//       The graph includes edges for both local and remote references. The local references are
+		//       already resolved and should not play a role here.
 		needRemoteState := len(g.Adj[resourceKey]) > 0
 		if needRemoteState {
 			entry, _ := b.StateDB.GetResourceEntry(d.ResourceKey)

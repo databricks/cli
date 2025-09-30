@@ -23,7 +23,7 @@ trace jq .path < out.requests.txt | grep import | grep whl | sort
 
 rm out.requests.txt
 
-title "Updating the local wheel and deploying again"
+title "Updating the local wheel and deploying again\n"
 touch my_test_code/src/new_module.py
 $CLI bundle debug plan > out.plan_update.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy

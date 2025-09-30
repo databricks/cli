@@ -59,10 +59,7 @@ func ShowPlanFile(ctx context.Context, tf *tfexec.Terraform, planPath string) (*
 		return nil, err
 	}
 
-	plan := &deployplan.Plan{
-		Plan: make(map[string]*deployplan.PlanEntry),
-	}
-
+	plan := deployplan.NewPlan()
 	populatePlan(ctx, plan, tfPlan.ResourceChanges)
 
 	return plan, nil

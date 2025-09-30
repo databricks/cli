@@ -447,9 +447,8 @@ func (a *Adapter) DoUpdateWithID(ctx context.Context, oldID string, newState any
 	}
 }
 
-// ClassifyByTriggers classifies a set of changes using FieldTriggers.
-// Unspecified changed fields default to ActionTypeUpdate. Final action is the
-// maximum by precedence. No changes yield ActionTypeSkip.
+// ClassifyByTriggers classifies a single using FieldTriggers.
+// Defaults to ActionTypeUpdate.
 func (a *Adapter) ClassifyByTriggers(change structdiff.Change) deployplan.ActionType {
 	action, ok := a.fieldTriggers[change.Path.String()]
 	if ok {

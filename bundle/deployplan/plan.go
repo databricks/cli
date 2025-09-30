@@ -54,9 +54,6 @@ type Trigger struct {
 }
 
 func (p *Plan) GetActions() []Action {
-	p.mutex.Lock()
-	defer p.mutex.Unlock()
-
 	actions := make([]Action, 0, len(p.Plan))
 	for key, entry := range p.Plan {
 		at := ActionTypeFromString(entry.Action)
