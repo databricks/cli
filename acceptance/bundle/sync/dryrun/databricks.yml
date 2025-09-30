@@ -2,7 +2,3 @@ resources:
   dashboards:
     dashboard1:
       display_name: My dashboard
-
-sync:
-  exclude:
-    - .cache

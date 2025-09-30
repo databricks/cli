@@ -20,7 +20,7 @@ EnvRepl.DATABRICKS_BUNDLE_ENGINE = false
 
 # Each test in the suite is using a dedicated .cache folder, this folder is ignored by the test runner:
 Ignore = [
-    '.cache',
+    '.databricks/.cache',
 ]
 
 # >>> datetime.datetime.fromtimestamp(18000000000)

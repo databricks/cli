@@ -624,7 +624,7 @@ func runTest(t *testing.T,
 	}
 
 	// Set unique cache folder for this test to avoid race conditions between parallel tests
-	uniqueCacheDir := filepath.Join(tmpDir, ".cache")
+	uniqueCacheDir := filepath.Join(tmpDir, ".databricks", ".cache")
 	cmd.Env = append(cmd.Env, "DATABRICKS_CACHE_FOLDER="+uniqueCacheDir)
 
 	for _, key := range utils.SortedKeys(config.Env) {

@@ -1,6 +1,3 @@
-sync:
-  exclude:
-    - .cache
 resources:
   jobs:
     test_job:
