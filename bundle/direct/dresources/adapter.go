@@ -145,6 +145,7 @@ func NewAdapter(typedNil any, client *databricks.WorkspaceClient) (*Adapter, err
 		doUpdateWithID:  nil,
 		waitAfterCreate: nil,
 		waitAfterUpdate: nil,
+		classifyChange:  nil,
 		fieldTriggers:   map[string]deployplan.ActionType{},
 	}
 
