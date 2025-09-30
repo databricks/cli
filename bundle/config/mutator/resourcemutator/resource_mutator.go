@@ -112,11 +112,6 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 		// Updates (dynamic): resources.{jobs,pipelines,experiments,models,model_serving_endpoints,dashboards,apps}.*.permissions (adds permissions from bundle-level configuration)
 		// Applies bundle-level permissions to all supported resources
 		ApplyBundlePermissions(),
-
-		// Reads (typed): b.Config.Workspace.CurrentUser.UserName (gets current user name)
-		// Updates (dynamic): resources.*.*.permissions (removes permissions entries where user_name or service_principal_name matches current user)
-		// Removes the current user from all resource permissions as the Terraform provider implicitly grants ownership
-		FilterCurrentUser(),
 	)
 }
 
