@@ -133,17 +133,25 @@ def download_run_id(run_id, repo, rm):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--run", type=int, help="Github run_id to load")
-    parser.add_argument("--commit", help="Commit to get run_id from. If not set, getting either PR status or most recent commit")
+    parser.add_argument(
+        "--commit", help="Commit to get run_id from. If not set, getting either PR status or most recent commit"
+    )
     parser.add_argument("--rm", help="Remove previously downloaded files first", action="store_true")
     parser.add_argument("--filter", help="Filter results by test name (substring match)")
     parser.add_argument("--filter-env", help="Filter results by env name (substring match)")
     parser.add_argument("--output", help="Show output for failing tests", action="store_true")
     parser.add_argument("--markdown", help="Output in GitHub-flavored markdown format", action="store_true")
-    parser.add_argument("--omit-repl", help="Omit lines starting with 'REPL' and containing 'Available replacements:'", action="store_true")
+    parser.add_argument(
+        "--omit-repl",
+        help="Omit lines starting with 'REPL' and containing 'Available replacements:'",
+        action="store_true",
+    )
 
     # This does not work because we don't store artifacts for unit tests. We could download logs instead but that requires different parsing method:
     # ~/work/cli % gh api -H "Accept: application/vnd.github+json" /repos/databricks/cli/actions/runs/15827411452/logs  > logs.zip
-    parser.add_argument("--unit", action="store_true", help="Extract run_id for unit tests rather than integration tests (not working)")
+    parser.add_argument(
+        "--unit", action="store_true", help="Extract run_id for unit tests rather than integration tests (not working)"
+    )
     args = parser.parse_args()
 
     repo = CLI_REPO if args.unit else DECO_REPO
