@@ -72,6 +72,9 @@ type IResourceNoRefresh interface {
 
 	// [Optional] WaitAfterUpdate waits for the resource to become ready after update.
 	WaitAfterUpdate(ctx context.Context, newState any) error
+
+	// [Optional] ClassifyChange classifies a set of changes using custom logic.
+	ClassifyChange(changes []structdiff.Change, remoteState any) (deployplan.ActionType, error)
 }
 
 // IResourceWithRefresh is an alternative to IResourceNoRefresh but every method can return remoteState.
@@ -94,6 +97,9 @@ type IResourceWithRefresh interface {
 
 	// WaitAfterUpdate waits for the resource to become ready after update.
 	WaitAfterUpdate(ctx context.Context, newState any) (newRemoteState any, e error)
+
+	// ClassifyChange classifies a set of changes using custom logic.
+	ClassifyChange(changes []structdiff.Change, newState any) (actionType deployplan.ActionType, newRemoteState any, e error)
 }
 
 // Adapter wraps resource implementation, validates signatures and type consistency across methods
@@ -111,6 +117,7 @@ type Adapter struct {
 	doUpdateWithID  *calladapt.BoundCaller
 	waitAfterCreate *calladapt.BoundCaller
 	waitAfterUpdate *calladapt.BoundCaller
+	classifyChange  *calladapt.BoundCaller
 
 	fieldTriggers map[string]deployplan.ActionType
 }
@@ -303,6 +310,13 @@ func (a *Adapter) validate() error {
 		validations = append(validations, "WaitAfterUpdate newState", a.waitAfterUpdate.InTypes[1], stateType)
 		if len(a.waitAfterUpdate.OutTypes) == 2 {
 			validations = append(validations, "WaitAfterUpdate remoteState return", a.waitAfterUpdate.OutTypes[0], remoteType)
+		}
+	}
+
+	if a.classifyChange != nil {
+		validations = append(validations, "ClassifyChange changes", a.classifyChange.InTypes[1], stateType)
+		if len(a.classifyChange.OutTypes) == 3 {
+			validations = append(validations, "ClassifyChange remoteState return", a.classifyChange.OutTypes[1], remoteType)
 		}
 	}
 
@@ -499,6 +513,31 @@ func (a *Adapter) WaitAfterUpdate(ctx context.Context, newState any) (any, error
 		// WithRefresh version
 		return outs[0], nil
 	}
+}
+
+func (a *Adapter) ClassifyChange(change structdiff.Change, remoteState any) (deployplan.ActionType, any, error) {
+	if a.classifyChange == nil {
+		return deployplan.ActionTypeUnset, nil, nil
+	}
+
+	outs, err := a.classifyChange.Call(change, remoteState)
+	if err != nil {
+		return deployplan.ActionTypeSkip, nil, err
+	}
+
+	actionType := outs[0].(deployplan.ActionType)
+	if len(outs) == 1 {
+		// NoRefresh version
+		return actionType, nil, nil
+	} else {
+		// WithRefresh version
+		return actionType, outs[1], nil
+	}
+}
+
+// HasClassifyChange returns true if the resource implements ClassifyChange method.
+func (a *Adapter) HasClassifyChange() bool {
+	return a.classifyChange != nil
 }
 
 // prepareCallRequired prepares a call and ensures the method is found.
