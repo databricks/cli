@@ -5,6 +5,7 @@ resources:
 
 sync:
   exclude:
+    - .cache
     - 'project-folder/app.*'
     - 'project-folder/query.sql'
   include:
