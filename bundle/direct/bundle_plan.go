@@ -93,37 +93,8 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 
 		// Process all references in the resource using Refs map
 		// Refs maps path inside resource to references e.g. "${resources.jobs.foo.id} ${resources.jobs.foo.name}"
-		for _, refValue := range entry.NewState.Refs {
-			// Use NewRef to extract all references from the string
-			ref, ok := dynvar.NewRef(dyn.V(refValue))
-			if !ok {
-				continue
-			}
-
-			// Process each reference in the string
-			for _, pathString := range ref.References() {
-				ref := "${" + pathString + "}"
-				path, err := structpath.Parse(pathString)
-				if err != nil {
-					logdiag.LogError(ctx, fmt.Errorf("%s: cannot parse reference %q: %w", errorPrefix, ref, err))
-					return false
-				}
-
-				value, err := b.LookupReferenceLocal(ctx, path)
-				if err != nil {
-					if errors.Is(err, errDelayed) {
-						continue
-					}
-					logdiag.LogError(ctx, fmt.Errorf("%s: cannot resolve %q: %w", errorPrefix, ref, err))
-					return false
-				}
-
-				err = entry.NewState.ResolveRef(ref, value)
-				if err != nil {
-					logdiag.LogError(ctx, fmt.Errorf("%s: cannot set value of %q: %w", errorPrefix, ref, err))
-					return false
-				}
-			}
+		if !b.resolveReferences(ctx, entry, errorPrefix, true) {
+			return false
 		}
 
 		dbentry, hasEntry := b.StateDB.GetResourceEntry(resourceKey)
@@ -317,6 +288,56 @@ func (b *DeploymentBundle) LookupReferenceLocal(ctx context.Context, path *struc
 	}
 
 	return nil, errDelayed
+}
+
+// resolveReferences processes all references in entry.NewState.Refs.
+// If isLocal is true, uses LookupReferenceLocal (for planning phase).
+// If isLocal is false, uses LookupReferenceRemote (for apply phase).
+func (b *DeploymentBundle) resolveReferences(ctx context.Context, entry *deployplan.PlanEntry, errorPrefix string, isLocal bool) bool {
+	for fieldPathStr, refString := range entry.NewState.Refs {
+		refs, ok := dynvar.NewRef(dyn.V(refString))
+		if !ok {
+			if !isLocal {
+				logdiag.LogError(ctx, fmt.Errorf("%s: cannot parse %q", errorPrefix, refString))
+				return false
+			}
+			continue
+		}
+
+		for _, pathString := range refs.References() {
+			ref := "${" + pathString + "}"
+			targetPath, err := structpath.Parse(pathString)
+			if err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("%s: cannot parse reference %q: %w", errorPrefix, ref, err))
+				return false
+			}
+
+			var value any
+			if isLocal {
+				value, err = b.LookupReferenceLocal(ctx, targetPath)
+				if err != nil {
+					if errors.Is(err, errDelayed) {
+						continue
+					}
+					logdiag.LogError(ctx, fmt.Errorf("%s: cannot resolve %q: %w", errorPrefix, ref, err))
+					return false
+				}
+			} else {
+				value, err = b.LookupReferenceRemote(ctx, targetPath)
+				if err != nil {
+					logdiag.LogError(ctx, fmt.Errorf("%s: cannot resolve %q: %w", errorPrefix, ref, err))
+					return false
+				}
+			}
+
+			err = entry.NewState.ResolveRef(ref, value)
+			if err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("%s: cannot update %s with value of %q = %T %v: %w", errorPrefix, fieldPathStr, ref, value, value, err))
+				return false
+			}
+		}
+	}
+	return true
 }
 
 func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root) (*deployplan.Plan, error) {

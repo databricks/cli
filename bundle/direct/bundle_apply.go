@@ -8,8 +8,6 @@ import (
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -83,33 +81,8 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		// We don't keep NewState around for 'skip' nodes
 
 		if at != deployplan.ActionTypeSkip {
-			for fieldPathStr, refString := range entry.NewState.Refs {
-				refs, ok := dynvar.NewRef(dyn.V(refString))
-				if !ok {
-					logdiag.LogError(ctx, fmt.Errorf("%s: cannot parse %q", errorPrefix, refString))
-					return false
-				}
-
-				for _, pathString := range refs.References() {
-					ref := "${" + pathString + "}"
-					targetPath, err := structpath.Parse(pathString)
-					if !ok {
-						logdiag.LogError(ctx, fmt.Errorf("%s: cannot parse reference %q: %w", errorPrefix, ref, err))
-						return false
-					}
-
-					value, err := b.LookupReferenceRemote(ctx, targetPath)
-					if err != nil {
-						logdiag.LogError(ctx, fmt.Errorf("%s: cannot resolve %q: %w", errorPrefix, ref, err))
-						return false
-					}
-
-					err = entry.NewState.ResolveRef(ref, value)
-					if err != nil {
-						logdiag.LogError(ctx, fmt.Errorf("%s: cannot update %s: with value of %q=%v: %w", errorPrefix, fieldPathStr, ref, value, err))
-						return false
-					}
-				}
+			if !b.resolveReferences(ctx, entry, errorPrefix, false) {
+				return false
 			}
 
 			if len(entry.NewState.Refs) > 0 {
