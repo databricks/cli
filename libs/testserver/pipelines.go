@@ -180,3 +180,61 @@ func (s *FakeWorkspace) PipelineStop(pipelineId string) Response {
 		},
 	}
 }
+
+func (s *FakeWorkspace) PipelinesUpdatePermissions(req Request, pipelineId string) Response {
+	var request pipelines.PipelinePermissionsRequest
+	if err := json.Unmarshal(req.Body, &request); err != nil {
+		return Response{
+			StatusCode: 400,
+			Body:       fmt.Sprintf("request parsing error: %s", err),
+		}
+	}
+	defer s.LockUnlock()()
+
+	s.PipelinePermissions[pipelineId] = request.AccessControlList
+	var acl []pipelines.PipelineAccessControlResponse
+	for _, permission := range request.AccessControlList {
+		acl = append(acl, pipelines.PipelineAccessControlResponse{
+			UserName:             permission.UserName,
+			ServicePrincipalName: permission.ServicePrincipalName,
+			GroupName:            permission.GroupName,
+			AllPermissions: []pipelines.PipelinePermission{
+				{
+					PermissionLevel: permission.PermissionLevel,
+				},
+			},
+		})
+	}
+	return Response{
+		Body: pipelines.PipelinePermissions{
+			AccessControlList: acl,
+			ObjectType:        "pipelines",
+			ObjectId:          "/pipelines/" + pipelineId,
+		},
+	}
+}
+
+func (s *FakeWorkspace) PipelinesGetPermissions(req Request, pipelineId string) Response {
+	permissions := s.PipelinePermissions[pipelineId]
+	var acl []pipelines.PipelineAccessControlResponse
+	for _, permission := range permissions {
+		acl = append(acl, pipelines.PipelineAccessControlResponse{
+			UserName:             permission.UserName,
+			ServicePrincipalName: permission.ServicePrincipalName,
+			GroupName:            permission.GroupName,
+			AllPermissions: []pipelines.PipelinePermission{
+				{
+					PermissionLevel: permission.PermissionLevel,
+					ForceSendFields: []string{"Inherited"},
+				},
+			},
+		})
+	}
+	return Response{
+		Body: pipelines.PipelinePermissions{
+			AccessControlList: acl,
+			ObjectType:        "pipelines",
+			ObjectId:          "/pipelines/" + pipelineId,
+		},
+	}
+}

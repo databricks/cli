@@ -514,12 +514,22 @@ func AddDefaultHandlers(server *Server) {
 		return MapDelete(req.Workspace, req.Workspace.SyncedDatabaseTables, req.Vars["name"])
 	})
 
+	// Job Permissions:
 	server.Handle("PUT", "/api/2.0/permissions/jobs/{job_id}", func(req Request) any {
 		return req.Workspace.JobsUpdatePermissions(req, req.Vars["job_id"])
 	})
 
 	server.Handle("GET", "/api/2.0/permissions/jobs/{job_id}", func(req Request) any {
 		return req.Workspace.JobsGetPermissions(req, req.Vars["job_id"])
+	})
+
+	// Pipelines Permissions:
+	server.Handle("PUT", "/api/2.0/permissions/pipelines/{pipeline_id}", func(req Request) any {
+		return req.Workspace.PipelinesUpdatePermissions(req, req.Vars["pipeline_id"])
+	})
+
+	server.Handle("GET", "/api/2.0/permissions/pipelines/{pipeline_id}", func(req Request) any {
+		return req.Workspace.PipelinesGetPermissions(req, req.Vars["pipeline_id"])
 	})
 
 	// Model registry models.
