@@ -66,9 +66,7 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 		return nil, err
 	}
 
-	// We're processing resources in DAG order, because we're trying to get rid of all references like $resources.jobs.foo.id
-	// if jobs.foo is not going to be (re)created. This means by the time we get to resource depending on $resources.jobs.foo.id
-	// we might have already got rid of this reference, thus potentially downgrading actionType
+	// We're processing resources in DAG order because we're resolving refernces (that can be resolved at plan stage).
 	g.Run(1, func(resourceKey string, failedDependency *string) bool {
 		errorPrefix := "cannot plan " + resourceKey
 

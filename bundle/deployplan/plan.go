@@ -74,6 +74,7 @@ func (p *Plan) GetActions() []Action {
 	return actions
 }
 
+// LockEntry returns *PlanEntry; subsequent calls before UnlockEntry() with the same resourceKey will panic.
 func (p *Plan) LockEntry(resourceKey string) *PlanEntry {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
