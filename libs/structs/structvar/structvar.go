@@ -48,7 +48,7 @@ func (sv *StructVar) ResolveRef(reference string, value any) error {
 			// Pure reference - use original typed value
 			err = structaccess.Set(sv.Config, pathNode, value)
 			if err != nil {
-				return fmt.Errorf("cannot set (%T).%s to %T (%#v): %w\nsv.Config = %#v", sv.Config, pathNode.String(), value, value, err, sv.Config)
+				return fmt.Errorf("cannot set (%T).%s to %T (%#v): %w", sv.Config, pathNode.String(), value, value, err)
 			}
 			// Remove the fully resolved reference
 			delete(sv.Refs, pathKey)

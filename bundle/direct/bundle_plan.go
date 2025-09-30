@@ -332,7 +332,7 @@ func (b *DeploymentBundle) resolveReferences(ctx context.Context, entry *deployp
 
 			err = entry.NewState.ResolveRef(ref, value)
 			if err != nil {
-				logdiag.LogError(ctx, fmt.Errorf("%s: cannot update %s with value of %q = %T %v: %w", errorPrefix, fieldPathStr, ref, value, value, err))
+				logdiag.LogError(ctx, fmt.Errorf("%s: cannot update %s with value of %q: %w", errorPrefix, fieldPathStr, ref, err))
 				return false
 			}
 		}
