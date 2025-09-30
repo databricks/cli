@@ -1,7 +1,0 @@
-{
-  "plan": {
-    "resources.models.my_model": {
-      "action": "update"
-    }
-  }
-}

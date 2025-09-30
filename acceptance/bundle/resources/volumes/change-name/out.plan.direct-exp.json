@@ -11,10 +11,25 @@
           "volume_type": "MANAGED"
         }
       },
+      "remote_state": {
+        "catalog_name": "main",
+        "comment": "COMMENT1",
+        "full_name": "main.myschema.myvolume",
+        "name": "myvolume",
+        "schema_name": "myschema",
+        "storage_location": "s3://deco-uc-prod-isolated-aws-us-east-1/metastore/[UUID]/volumes/[UUID]",
+        "volume_type": "MANAGED"
+      },
       "changes": {
         "local": {
           "name": {
             "action": "update_id"
+          }
+        },
+        "remote": {
+          "storage_location": {
+            "action": "skip",
+            "reason": "server_side_default"
           }
         }
       }

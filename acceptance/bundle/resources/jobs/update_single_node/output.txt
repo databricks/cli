@@ -10,15 +10,6 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> [CLI] bundle debug plan
-{
-  "plan": {
-    "resources.jobs.foo": {
-      "action": "skip"
-    }
-  }
-}
-
 >>> print_requests
 {
   "body": {
