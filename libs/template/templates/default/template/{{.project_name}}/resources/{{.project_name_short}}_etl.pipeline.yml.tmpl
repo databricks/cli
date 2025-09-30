@@ -24,7 +24,7 @@ resources:
 {{- if $serverless }}
       serverless: true
 {{- end}}
-      root_path: "."
+      root_path: "../src/{{.project_name_short}}_etl"
 
       libraries:
         - glob:

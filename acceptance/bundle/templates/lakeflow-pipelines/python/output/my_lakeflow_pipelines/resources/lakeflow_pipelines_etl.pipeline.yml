@@ -8,7 +8,7 @@ resources:
       catalog: ${var.catalog}
       schema: ${var.schema}
       serverless: true
-      root_path: "."
+      root_path: "../src/lakeflow_pipelines_etl"
 
       libraries:
         - glob:
