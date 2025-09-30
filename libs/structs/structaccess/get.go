@@ -24,11 +24,11 @@ func GetByString(v any, path string) (any, error) {
 	return Get(v, pathNode)
 }
 
-// Get returns the value at the given path inside v.
-// Wildcards ("*" or "[*]") are not supported and return an error.
-func Get(v any, path *structpath.PathNode) (any, error) {
+// getValue returns the reflect.Value at the given path inside v.
+// This is the internal function that Get() wraps.
+func getValue(v any, path *structpath.PathNode) (reflect.Value, error) {
 	if path.IsRoot() {
-		return v, nil
+		return reflect.ValueOf(v), nil
 	}
 
 	// Convert path to slice for easier iteration
@@ -37,23 +37,23 @@ func Get(v any, path *structpath.PathNode) (any, error) {
 	cur := reflect.ValueOf(v)
 	for _, node := range pathSegments {
 		if node.DotStar() || node.BracketStar() {
-			return nil, fmt.Errorf("wildcards not supported: %s", path.String())
+			return reflect.Value{}, fmt.Errorf("wildcards not supported: %s", path.String())
 		}
 
 		var ok bool
 		cur, ok = deref(cur)
 		if !ok {
 			// cannot proceed further due to nil encountered at current location
-			return nil, fmt.Errorf("%s: cannot access nil value", node.Parent().String())
+			return reflect.Value{}, fmt.Errorf("%s: cannot access nil value", node.Parent().String())
 		}
 
 		if idx, isIndex := node.Index(); isIndex {
 			kind := cur.Kind()
 			if kind != reflect.Slice && kind != reflect.Array {
-				return nil, fmt.Errorf("%s: cannot index %s", node.String(), kind)
+				return reflect.Value{}, fmt.Errorf("%s: cannot index %s", node.String(), kind)
 			}
 			if idx < 0 || idx >= cur.Len() {
-				return nil, fmt.Errorf("%s: index out of range, length is %d", node.String(), cur.Len())
+				return reflect.Value{}, fmt.Errorf("%s: index out of range, length is %d", node.String(), cur.Len())
 			}
 			cur = cur.Index(idx)
 			continue
@@ -61,14 +61,25 @@ func Get(v any, path *structpath.PathNode) (any, error) {
 
 		key, ok := node.StringKey()
 		if !ok {
-			return nil, errors.New("unsupported path node type")
+			return reflect.Value{}, errors.New("unsupported path node type")
 		}
 
 		nv, err := accessKey(cur, key, node)
 		if err != nil {
-			return nil, err
+			return reflect.Value{}, err
 		}
 		cur = nv
+	}
+
+	return cur, nil
+}
+
+// Get returns the value at the given path inside v.
+// Wildcards ("*" or "[*]") are not supported and return an error.
+func Get(v any, path *structpath.PathNode) (any, error) {
+	cur, err := getValue(v, path)
+	if err != nil {
+		return nil, err
 	}
 
 	// If the current value is invalid (e.g., omitted due to omitempty), return nil.

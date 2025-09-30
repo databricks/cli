@@ -1,0 +1,23 @@
+{
+  "plan": {
+    "resources.volumes.volume1": {
+      "action": "update_id",
+      "new_state": {
+        "config": {
+          "catalog_name": "main",
+          "comment": "COMMENT1",
+          "name": "mynewvolume",
+          "schema_name": "myschema",
+          "volume_type": "MANAGED"
+        }
+      },
+      "changes": {
+        "local": {
+          "name": {
+            "action": "update_id"
+          }
+        }
+      }
+    }
+  }
+}

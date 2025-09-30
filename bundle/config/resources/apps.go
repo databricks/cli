@@ -30,12 +30,6 @@ type App struct {
 	// on local disk and to the corresponding workspace path during app deployment.
 	SourceCodePath string `json:"source_code_path"`
 
-	// Config is an optional field which allows configuring the app following Databricks app configuration format like in app.yml.
-	// When this field is set, DABs read the configuration set in this field and write
-	// it to app.yml in the root of the source code folder in Databricks workspace.
-	// If there's app.yml defined locally, DABs will raise an error.
-	Config map[string]any `json:"config,omitempty"`
-
 	Permissions []AppPermission `json:"permissions,omitempty"`
 }
 

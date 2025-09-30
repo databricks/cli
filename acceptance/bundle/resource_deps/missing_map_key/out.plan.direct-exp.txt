@@ -1,6 +1,4 @@
-Error: cannot resolve "${resources.jobs.test.tasks[0].new_cluster.custom_tags.missing_tag}": field not set: tasks[0].new_cluster.custom_tags.missing_tag: key "missing_tag" not found in map
-
-Error: cannot plan resources.jobs.bar: dependency failed: resources.jobs.test
+Error: cannot plan resources.jobs.bar: cannot resolve "${resources.jobs.test.tasks[0].new_cluster.custom_tags.missing_tag}": field not set: tasks[0].new_cluster.custom_tags.missing_tag: key "missing_tag" not found in map
 
 Error: planning failed
 
