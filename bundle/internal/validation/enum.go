@@ -132,7 +132,8 @@ func extractEnumFields(typ reflect.Type) ([]EnumPatternInfo, error) {
 				return true
 			}
 
-			fieldsByPattern[path.String()] = enumValues
+			fieldPath := path.DynPath()
+			fieldsByPattern[fieldPath] = enumValues
 		}
 		return true
 	})

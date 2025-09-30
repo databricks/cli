@@ -15,7 +15,7 @@ import (
 
 func TestConvertExperiment(t *testing.T) {
 	src := resources.MlflowExperiment{
-		CreateExperiment: ml.CreateExperiment{
+		Experiment: ml.Experiment{
 			Name: "name",
 		},
 		Permissions: []resources.MlflowExperimentPermission{

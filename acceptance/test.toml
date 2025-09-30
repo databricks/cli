@@ -3,7 +3,7 @@ Local = true
 Cloud = false
 
 # default timeouts
-Timeout = '30s'
+Timeout = '20s'
 TimeoutWindows = '60s'
 
 # Slowest test I saw:
@@ -32,7 +32,6 @@ Order = 10
 Old = '1[78]\d{17}'
 New = '[UNIX_TIME_NANOS]'
 Order = 10
-Distinct = true
 
 [[Repls]]
 Old = '\d{17,}'
@@ -54,7 +53,6 @@ Order = 10
 Old = '1[78]\d{11}'
 New = '[UNIX_TIME_MILLIS]'
 Order = 10
-Distinct = true
 
 [[Repls]]
 Old = '\d{11,}'

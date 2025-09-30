@@ -18,17 +18,15 @@ func configureInteractive(cmd *cobra.Command, flags *configureFlags, cfg *config
 	// Ask user to specify the host if not already set.
 	if cfg.Host == "" {
 		prompt := cmdio.Prompt(ctx)
-		prompt.Label = "Databricks workspace host (https://...)"
+		prompt.Label = "Databricks host"
+		prompt.Default = "https://"
 		prompt.AllowEdit = true
-		prompt.Validate = func(input string) error {
-			normalized := normalizeHost(input)
-			return validateHost(normalized)
-		}
+		prompt.Validate = validateHost
 		out, err := prompt.Run()
 		if err != nil {
 			return err
 		}
-		cfg.Host = normalizeHost(out)
+		cfg.Host = out
 	}
 
 	// Ask user to specify the token is not already set.
@@ -112,15 +110,14 @@ The host must be specified with the --host flag or the DATABRICKS_HOST environme
 
 		// Populate configuration from flags (if set).
 		if flags.Host != "" {
-			cfg.Host = normalizeHost(flags.Host)
+			cfg.Host = flags.Host
 		}
 		if flags.Profile != "" {
 			cfg.Profile = flags.Profile
 		}
 
-		// Normalize and verify that the host is valid (if set).
+		// Verify that the host is valid (if set).
 		if cfg.Host != "" {
-			cfg.Host = normalizeHost(cfg.Host)
 			err = validateHost(cfg.Host)
 			if err != nil {
 				return err

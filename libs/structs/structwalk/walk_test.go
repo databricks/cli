@@ -87,8 +87,8 @@ func TestValueJobSettings(t *testing.T) {
 	}
 
 	assert.Equal(t, map[string]any{
-		`tags.env`:            "test",
-		`tags.team`:           "data",
+		`tags['env']`:         "test",
+		`tags['team']`:        "data",
 		"name":                "test-job",
 		"max_concurrent_runs": 5,
 		"timeout_seconds":     3600,

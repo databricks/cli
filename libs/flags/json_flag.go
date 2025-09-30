@@ -63,14 +63,12 @@ func (j *JsonFlag) Unmarshal(v any) diag.Diagnostics {
 			kind = reflect.TypeOf(v).Elem().Kind()
 		}
 
-		var expectedJsonType string
+		expectedJsonType := "string"
 		switch kind {
 		case reflect.Struct, reflect.Map:
 			expectedJsonType = "object"
 		case reflect.Slice:
 			expectedJsonType = "array"
-		default:
-			expectedJsonType = "string"
 		}
 
 		return diags.Append(diag.Diagnostic{

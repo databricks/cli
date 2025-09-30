@@ -92,9 +92,5 @@ func Groups() []cobra.Group {
 			ID:    "oauth2",
 			Title: "OAuth",
 		},
-		{
-			ID:    "iamv2",
-			Title: "Identity and Access Management (v2)",
-		},
 	}
 }

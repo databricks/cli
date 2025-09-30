@@ -162,7 +162,7 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 			},
 			Experiments: map[string]*resources.MlflowExperiment{
 				"test_mlflow_experiment": {
-					CreateExperiment: ml.CreateExperiment{
+					Experiment: ml.Experiment{
 						Name: "test_mlflow_experiment",
 					},
 				},
@@ -369,12 +369,12 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 			},
 			Experiments: map[string]*resources.MlflowExperiment{
 				"test_mlflow_experiment": {
-					CreateExperiment: ml.CreateExperiment{
+					Experiment: ml.Experiment{
 						Name: "test_mlflow_experiment",
 					},
 				},
 				"test_mlflow_experiment_new": {
-					CreateExperiment: ml.CreateExperiment{
+					Experiment: ml.Experiment{
 						Name: "test_mlflow_experiment_new",
 					},
 				},

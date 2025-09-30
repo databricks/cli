@@ -45,7 +45,6 @@ var RequiredFields = map[string][]string{
 	"resources.database_instances.*":                {"name"},
 	"resources.database_instances.*.permissions[*]": {"level"},
 
-	"resources.experiments.*":                {"name"},
 	"resources.experiments.*.permissions[*]": {"level"},
 
 	"resources.jobs.*.deployment":                                                                                  {"kind"},

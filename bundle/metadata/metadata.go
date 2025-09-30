@@ -14,7 +14,7 @@ type Workspace struct {
 	FilePath string `json:"file_path"`
 }
 
-type Resource struct {
+type Job struct {
 	ID string `json:"id,omitempty"`
 
 	// Relative path from the bundle root to the configuration file that holds
@@ -23,8 +23,7 @@ type Resource struct {
 }
 
 type Resources struct {
-	Jobs      map[string]*Resource `json:"jobs,omitempty"`
-	Pipelines map[string]*Resource `json:"pipelines,omitempty"`
+	Jobs map[string]*Job `json:"jobs,omitempty"`
 }
 
 type Config struct {

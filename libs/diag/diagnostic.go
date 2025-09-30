@@ -77,6 +77,16 @@ func Warningf(format string, args ...any) Diagnostics {
 	}
 }
 
+// Infof creates a new info diagnostic.
+func Infof(format string, args ...any) Diagnostics {
+	return []Diagnostic{
+		{
+			Severity: Info,
+			Summary:  fmt.Sprintf(format, args...),
+		},
+	}
+}
+
 // Recommendationf creates a new recommendation diagnostic.
 func Recommendationf(format string, args ...any) Diagnostics {
 	return []Diagnostic{

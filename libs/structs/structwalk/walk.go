@@ -92,7 +92,7 @@ func walkValue(path *structpath.PathNode, val reflect.Value, field *reflect.Stru
 		sort.Strings(keys)
 		for _, ks := range keys {
 			v := val.MapIndex(reflect.ValueOf(ks))
-			node := structpath.NewStringKey(path, ks)
+			node := structpath.NewMapKey(path, ks)
 			walkValue(node, v, nil, visit)
 		}
 
@@ -115,17 +115,11 @@ func walkStruct(path *structpath.PathNode, s reflect.Value, visit VisitFunc) {
 			continue
 		}
 
+		node := structpath.NewStructField(path, sf.Tag, sf.Name)
 		jsonTag := structtag.JSONTag(sf.Tag.Get("json"))
 		if jsonTag.Name() == "-" {
 			continue // skip fields without json name
 		}
-
-		// Resolve field name from JSON tag or fall back to Go field name
-		fieldName := jsonTag.Name()
-		if fieldName == "" {
-			fieldName = sf.Name
-		}
-		node := structpath.NewStringKey(path, fieldName)
 
 		fieldVal := s.Field(i)
 		// Skip zero values with omitempty unless field is explicitly forced.

@@ -184,6 +184,9 @@ class Pipeline(Resource):
     """
 
     run_as: VariableOrOptional[RunAs] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    """
 
     schema: VariableOrOptional[str] = None
     """
@@ -344,6 +347,9 @@ class PipelineDict(TypedDict, total=False):
     """
 
     run_as: VariableOrOptional[RunAsParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    """
 
     schema: VariableOrOptional[str]
     """

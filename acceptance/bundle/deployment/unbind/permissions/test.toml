@@ -1,6 +1,0 @@
-[EnvMatrix]
-  DATABRICKS_BUNDLE_ENGINE = ["terraform"]
-
-Ignore = [
-    ".databricks",
-]

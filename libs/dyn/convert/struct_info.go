@@ -2,7 +2,6 @@ package convert
 
 import (
 	"reflect"
-	"slices"
 	"sync"
 
 	"github.com/databricks/cli/libs/dyn"
@@ -27,10 +26,6 @@ type structInfo struct {
 
 	// Maps JSON-name of the field to Golang struct name
 	GolangNames map[string]string
-
-	// ForceSendFieldsStructKey maps the JSON-name of the field to which ForceSendFields slice it belongs to:
-	// -1 for direct fields, embedded struct index for embedded fields
-	ForceSendFieldsStructKey map[string]int
 }
 
 // structInfoCache caches type information.
@@ -58,10 +53,9 @@ func getStructInfo(typ reflect.Type) structInfo {
 // buildStructInfo populates a new [structInfo] for the given type.
 func buildStructInfo(typ reflect.Type) structInfo {
 	out := structInfo{
-		Fields:                   make(map[string][]int),
-		ForceEmpty:               make(map[string]bool),
-		GolangNames:              make(map[string]string),
-		ForceSendFieldsStructKey: make(map[string]int),
+		Fields:      make(map[string][]int),
+		ForceEmpty:  make(map[string]bool),
+		GolangNames: make(map[string]string),
 	}
 
 	// Queue holds the indexes of the structs to visit.
@@ -118,15 +112,6 @@ func buildStructInfo(typ reflect.Type) structInfo {
 				out.ForceEmpty[name] = true
 			}
 			out.GolangNames[name] = sf.Name
-
-			// Determine which ForceSendFields this field belongs to
-			if len(prefix) == 0 {
-				// Direct field on the main struct
-				out.ForceSendFieldsStructKey[name] = -1
-			} else {
-				// Field on embedded struct
-				out.ForceSendFieldsStructKey[name] = prefix[0]
-			}
 		}
 	}
 
@@ -134,16 +119,12 @@ func buildStructInfo(typ reflect.Type) structInfo {
 }
 
 type FieldValue struct {
-	Key      string
-	Value    reflect.Value
-	IsForced bool
+	Key   string
+	Value reflect.Value
 }
 
 func (s *structInfo) FieldValues(v reflect.Value) []FieldValue {
 	out := make([]FieldValue, 0, len(s.Fields))
-
-	// Collect ForceSendFields from all levels for field inclusion logic
-	forceSendFieldsMap := getForceSendFieldsValues(v)
 
 	for _, k := range s.FieldNames {
 		index := s.Fields[k]
@@ -164,25 +145,7 @@ func (s *structInfo) FieldValues(v reflect.Value) []FieldValue {
 		}
 
 		if fv.IsValid() {
-			isForced := true
-
-			// TODO: we should use isEmptyForOmitEmpty instead of IsZero()
-			if fv.IsZero() {
-				goName := s.GolangNames[k]
-				structKey := s.ForceSendFieldsStructKey[k]
-				if fieldValue, exists := forceSendFieldsMap[structKey]; exists {
-					forceSendFields := fieldValue.Interface().([]string)
-					isForced = slices.Contains(forceSendFields, goName)
-				} else {
-					isForced = false
-				}
-			}
-
-			out = append(out, FieldValue{
-				Key:      k,
-				Value:    fv,
-				IsForced: isForced,
-			})
+			out = append(out, FieldValue{Key: k, Value: fv})
 		}
 	}
 
@@ -191,43 +154,3 @@ func (s *structInfo) FieldValues(v reflect.Value) []FieldValue {
 
 // Type of [dyn.Value].
 var configValueType = reflect.TypeOf((*dyn.Value)(nil)).Elem()
-
-// getForceSendFieldsValues collects ForceSendFields reflect.Values
-// Returns map[structKey]reflect.Value where structKey is -1 for direct fields, embedded index for embedded fields
-func getForceSendFieldsValues(v reflect.Value) map[int]reflect.Value {
-	if !v.IsValid() || v.Type().Kind() != reflect.Struct {
-		return make(map[int]reflect.Value)
-	}
-
-	result := make(map[int]reflect.Value)
-
-	for i := range v.Type().NumField() {
-		field := v.Type().Field(i)
-		fieldValue := v.Field(i)
-
-		if field.Name == "ForceSendFields" && !field.Anonymous {
-			// Direct ForceSendFields (structKey = -1)
-			result[-1] = fieldValue
-		} else if field.Anonymous {
-			// Embedded struct - check for ForceSendFields inside it
-			if embeddedStruct := deref(fieldValue); embeddedStruct.IsValid() {
-				if forceSendField := embeddedStruct.FieldByName("ForceSendFields"); forceSendField.IsValid() {
-					result[i] = forceSendField
-				}
-			}
-		}
-	}
-
-	return result
-}
-
-// deref dereferences a pointer, returning invalid value if nil
-func deref(v reflect.Value) reflect.Value {
-	if v.Kind() == reflect.Pointer {
-		if v.IsNil() {
-			return reflect.Value{}
-		}
-		return v.Elem()
-	}
-	return v
-}

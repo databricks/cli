@@ -35,9 +35,6 @@ func walkReadOnly(v Value, p Path, fn func(p Path, v Value) error) error {
 				return err
 			}
 		}
-	default:
-		// Other kinds are not walkable.
-		// This was a leaf node.
 	}
 
 	return nil

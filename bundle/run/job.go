@@ -235,9 +235,6 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, e
 	case jobs.RunResultStateTimedout:
 		log.Infof(ctx, "Run has timed out!")
 		return nil, fmt.Errorf("run timed out: %s", run.State.StateMessage)
-
-	// TODO: handle other result states.
-	default:
 	}
 
 	return nil, err

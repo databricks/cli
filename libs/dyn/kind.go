@@ -29,9 +29,7 @@ func kindOf(v any) Kind {
 		return KindString
 	case bool:
 		return KindBool
-	case int, int8, int16, int32, int64:
-		return KindInt
-	case uint, uint8, uint16, uint32, uint64:
+	case int, int32, int64:
 		return KindInt
 	case float32, float64:
 		return KindFloat
@@ -40,7 +38,7 @@ func kindOf(v any) Kind {
 	case nil:
 		return KindNil
 	default:
-		panic(fmt.Sprintf("not handled: %T", v))
+		panic("not handled")
 	}
 }
 

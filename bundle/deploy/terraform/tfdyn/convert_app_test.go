@@ -16,6 +16,9 @@ import (
 func TestConvertApp(t *testing.T) {
 	src := resources.App{
 		SourceCodePath: "./app",
+		Config: map[string]any{
+			"command": []string{"python", "app.py"},
+		},
 		App: apps.App{
 			Name:        "app_id",
 			Description: "app description",
@@ -98,6 +101,9 @@ func TestConvertApp(t *testing.T) {
 func TestConvertAppWithNoDescription(t *testing.T) {
 	src := resources.App{
 		SourceCodePath: "./app",
+		Config: map[string]any{
+			"command": []string{"python", "app.py"},
+		},
 		App: apps.App{
 			Name: "app_id",
 			Resources: []apps.AppResource{

@@ -21,7 +21,6 @@ class IngestionSourceType(Enum):
     DYNAMICS365 = "DYNAMICS365"
     CONFLUENCE = "CONFLUENCE"
     META_MARKETING = "META_MARKETING"
-    FOREIGN_CATALOG = "FOREIGN_CATALOG"
 
 
 IngestionSourceTypeParam = (
@@ -44,7 +43,6 @@ IngestionSourceTypeParam = (
         "DYNAMICS365",
         "CONFLUENCE",
         "META_MARKETING",
-        "FOREIGN_CATALOG",
     ]
     | IngestionSourceType
 )

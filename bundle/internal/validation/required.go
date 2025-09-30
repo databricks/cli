@@ -63,12 +63,12 @@ func extractRequiredFields(typ reflect.Type) ([]RequiredPatternInfo, error) {
 			return true
 		}
 
-		fieldName, ok := path.StringKey()
+		fieldName, ok := path.Field()
 		if !ok {
 			return true
 		}
 
-		parentPath := path.Parent().String()
+		parentPath := path.Parent().DynPath()
 		fieldsByPattern[parentPath] = append(fieldsByPattern[parentPath], fieldName)
 		return true
 	})

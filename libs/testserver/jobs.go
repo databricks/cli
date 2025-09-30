@@ -31,9 +31,7 @@ func (s *FakeWorkspace) JobsCreate(req Request) Response {
 		}
 	}
 
-	// CreatorUserName field is used by TF to check if the resource exists or not. CreatorUserName should be non-empty for the resource to be considered as "exists"
-	// https://github.com/databricks/terraform-provider-databricks/blob/main/permissions/permission_definitions.go#L108
-	s.Jobs[jobId] = jobs.Job{JobId: jobId, Settings: &jobSettings, CreatorUserName: TestUser.UserName}
+	s.Jobs[jobId] = jobs.Job{JobId: jobId, Settings: &jobSettings}
 	return Response{Body: jobs.CreateResponse{JobId: jobId}}
 }
 
@@ -145,64 +143,6 @@ func (s *FakeWorkspace) JobsGetRun(req Request) Response {
 
 	run.State.LifeCycleState = jobs.RunLifeCycleStateTerminated
 	return Response{Body: run}
-}
-
-func (s *FakeWorkspace) JobsUpdatePermissions(req Request, jobId string) Response {
-	var request jobs.JobPermissionsRequest
-	if err := json.Unmarshal(req.Body, &request); err != nil {
-		return Response{
-			StatusCode: 400,
-			Body:       fmt.Sprintf("request parsing error: %s", err),
-		}
-	}
-
-	defer s.LockUnlock()()
-
-	s.JobPermissions[jobId] = request.AccessControlList
-	var acl []jobs.JobAccessControlResponse
-	for _, accessControlList := range request.AccessControlList {
-		acl = append(acl, jobs.JobAccessControlResponse{
-			UserName:             accessControlList.UserName,
-			ServicePrincipalName: accessControlList.ServicePrincipalName,
-			GroupName:            accessControlList.GroupName,
-			AllPermissions: []jobs.JobPermission{
-				{
-					PermissionLevel: accessControlList.PermissionLevel,
-				},
-			},
-		})
-	}
-
-	return Response{Body: jobs.JobPermissions{
-		AccessControlList: acl,
-		ObjectType:        "job",
-		ObjectId:          jobId,
-	}}
-}
-
-func (s *FakeWorkspace) JobsGetPermissions(req Request, jobId string) Response {
-	jobPermissions := s.JobPermissions[jobId]
-	var acl []jobs.JobAccessControlResponse
-	for _, accessControlList := range jobPermissions {
-		acl = append(acl, jobs.JobAccessControlResponse{
-			UserName:             accessControlList.UserName,
-			DisplayName:          accessControlList.UserName,
-			ServicePrincipalName: accessControlList.ServicePrincipalName,
-			GroupName:            accessControlList.GroupName,
-			AllPermissions: []jobs.JobPermission{
-				{
-					PermissionLevel: accessControlList.PermissionLevel,
-					ForceSendFields: []string{"Inherited"},
-				},
-			},
-		})
-	}
-
-	return Response{Body: jobs.JobPermissions{
-		AccessControlList: acl,
-		ObjectType:        "job",
-		ObjectId:          "/jobs/" + jobId,
-	}}
 }
 
 func setSourceIfNotSet(job jobs.Job) jobs.Job {

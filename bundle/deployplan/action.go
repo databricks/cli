@@ -31,7 +31,7 @@ type ActionType int
 // Note, Create/Delete are handled explicitly and never compared.
 const (
 	ActionTypeUnset ActionType = iota
-	ActionTypeSkip
+	ActionTypeNoop
 	ActionTypeResize
 	ActionTypeUpdate
 	ActionTypeUpdateWithID
@@ -41,10 +41,10 @@ const (
 )
 
 var actionName = map[ActionType]string{
-	ActionTypeSkip:         "skip",
+	ActionTypeNoop:         "noop",
 	ActionTypeResize:       "resize",
-	ActionTypeUpdate:       "update",
-	ActionTypeUpdateWithID: "update_id",
+	ActionTypeUpdate:       "update(id_stable)",
+	ActionTypeUpdateWithID: "update(id_changes)",
 	ActionTypeCreate:       "create",
 	ActionTypeRecreate:     "recreate",
 	ActionTypeDelete:       "delete",
@@ -62,7 +62,7 @@ func init() {
 }
 
 func (a ActionType) IsNoop() bool {
-	return a == ActionTypeSkip
+	return a == ActionTypeNoop
 }
 
 func (a ActionType) KeepsID() bool {
@@ -74,14 +74,14 @@ func (a ActionType) KeepsID() bool {
 	}
 }
 
-// StringShort short version of action string, without suffix
+// StringShort short version of action string, without part in parens.
 func (a ActionType) StringShort() string {
-	items := strings.SplitN(actionName[a], "_", 2)
+	items := strings.SplitN(actionName[a], "(", 2)
 	return items[0]
 }
 
-// String returns the string representation of the action type.
-func (a ActionType) String() string {
+// StringFull returns the string representation of the action type.
+func (a ActionType) StringFull() string {
 	return actionName[a]
 }
 

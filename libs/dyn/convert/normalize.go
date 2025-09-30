@@ -58,8 +58,6 @@ func (n normalizeOptions) normalizeType(typ reflect.Type, src dyn.Value, seen []
 		return n.normalizeFloat(typ, src, path)
 	case reflect.Interface:
 		return n.normalizeInterface(typ, src, path)
-	default:
-		// Fall through to the error case.
 	}
 
 	return dyn.InvalidValue, diag.Errorf("unsupported type: %s", typ.Kind())
@@ -177,8 +175,6 @@ func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen 
 		if dynvar.IsPureVariableReference(src.MustString()) {
 			return src, nil
 		}
-	default:
-		// Fall through to the error case.
 	}
 
 	// Cannot interpret as a struct.
@@ -217,8 +213,6 @@ func (n normalizeOptions) normalizeMap(typ reflect.Type, src dyn.Value, seen []r
 		if dynvar.IsPureVariableReference(src.MustString()) {
 			return src, nil
 		}
-	default:
-		// Fall through to the error case.
 	}
 
 	// Cannot interpret as a map.
@@ -254,8 +248,6 @@ func (n normalizeOptions) normalizeSlice(typ reflect.Type, src dyn.Value, seen [
 		if dynvar.IsPureVariableReference(src.MustString()) {
 			return src, nil
 		}
-	default:
-		// Fall through to the error case.
 	}
 
 	// Cannot interpret as a slice.
@@ -264,41 +256,43 @@ func (n normalizeOptions) normalizeSlice(typ reflect.Type, src dyn.Value, seen [
 
 func (n normalizeOptions) normalizeString(typ reflect.Type, src dyn.Value, path dyn.Path) (dyn.Value, diag.Diagnostics) {
 	var diags diag.Diagnostics
+	var out string
 
 	switch src.Kind() {
 	case dyn.KindString:
-		return dyn.NewValue(src.MustString(), src.Locations()), nil
+		out = src.MustString()
 	case dyn.KindBool:
-		return dyn.NewValue(strconv.FormatBool(src.MustBool()), src.Locations()), nil
+		out = strconv.FormatBool(src.MustBool())
 	case dyn.KindInt:
-		return dyn.NewValue(strconv.FormatInt(src.MustInt(), 10), src.Locations()), nil
+		out = strconv.FormatInt(src.MustInt(), 10)
 	case dyn.KindFloat:
-		return dyn.NewValue(strconv.FormatFloat(src.MustFloat(), 'f', -1, 64), src.Locations()), nil
+		out = strconv.FormatFloat(src.MustFloat(), 'f', -1, 64)
 	case dyn.KindTime:
-		return dyn.NewValue(src.MustTime().String(), src.Locations()), nil
+		out = src.MustTime().String()
 	case dyn.KindNil:
 		// Return a warning if the field is present but has a null value.
 		return dyn.InvalidValue, diags.Append(nullWarning(dyn.KindString, src, path))
 	default:
-		// Fall through to the error case.
+		return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindString, src, path))
 	}
 
-	return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindString, src, path))
+	return dyn.NewValue(out, src.Locations()), diags
 }
 
 func (n normalizeOptions) normalizeBool(typ reflect.Type, src dyn.Value, path dyn.Path) (dyn.Value, diag.Diagnostics) {
 	var diags diag.Diagnostics
+	var out bool
 
 	switch src.Kind() {
 	case dyn.KindBool:
-		return dyn.NewValue(src.MustBool(), src.Locations()), nil
+		out = src.MustBool()
 	case dyn.KindString:
 		// See https://github.com/go-yaml/yaml/blob/f6f7691b1fdeb513f56608cd2c32c51f8194bf51/decode.go#L684-L693.
 		switch src.MustString() {
 		case "true", "y", "Y", "yes", "Yes", "YES", "on", "On", "ON":
-			return dyn.NewValue(true, src.Locations()), nil
+			out = true
 		case "false", "n", "N", "no", "No", "NO", "off", "Off", "OFF":
-			return dyn.NewValue(false, src.Locations()), nil
+			out = false
 		default:
 			// Return verbatim if it's a pure variable reference.
 			if dynvar.IsPureVariableReference(src.MustString()) {
@@ -312,20 +306,21 @@ func (n normalizeOptions) normalizeBool(typ reflect.Type, src dyn.Value, path dy
 		// Return a warning if the field is present but has a null value.
 		return dyn.InvalidValue, diags.Append(nullWarning(dyn.KindBool, src, path))
 	default:
-		// Fall through to the error case.
+		return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindBool, src, path))
 	}
 
-	return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindBool, src, path))
+	return dyn.NewValue(out, src.Locations()), diags
 }
 
 func (n normalizeOptions) normalizeInt(typ reflect.Type, src dyn.Value, path dyn.Path) (dyn.Value, diag.Diagnostics) {
 	var diags diag.Diagnostics
+	var out int64
 
 	switch src.Kind() {
 	case dyn.KindInt:
-		return dyn.NewValue(src.MustInt(), src.Locations()), nil
+		out = src.MustInt()
 	case dyn.KindFloat:
-		out := int64(src.MustFloat())
+		out = int64(src.MustFloat())
 		if src.MustFloat() != float64(out) {
 			return dyn.InvalidValue, diags.Append(diag.Diagnostic{
 				Severity:  diag.Warning,
@@ -334,10 +329,9 @@ func (n normalizeOptions) normalizeInt(typ reflect.Type, src dyn.Value, path dyn
 				Paths:     []dyn.Path{path},
 			})
 		}
-		return dyn.NewValue(out, src.Locations()), nil
 	case dyn.KindString:
 		var err error
-		out, err := strconv.ParseInt(src.MustString(), 10, 64)
+		out, err = strconv.ParseInt(src.MustString(), 10, 64)
 		if err != nil {
 			// Return verbatim if it's a pure variable reference.
 			if dynvar.IsPureVariableReference(src.MustString()) {
@@ -351,25 +345,25 @@ func (n normalizeOptions) normalizeInt(typ reflect.Type, src dyn.Value, path dyn
 				Paths:     []dyn.Path{path},
 			})
 		}
-		return dyn.NewValue(out, src.Locations()), nil
 	case dyn.KindNil:
 		// Return a warning if the field is present but has a null value.
 		return dyn.InvalidValue, diags.Append(nullWarning(dyn.KindInt, src, path))
 	default:
-		// Fall through to the error case.
+		return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindInt, src, path))
 	}
 
-	return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindInt, src, path))
+	return dyn.NewValue(out, src.Locations()), diags
 }
 
 func (n normalizeOptions) normalizeFloat(typ reflect.Type, src dyn.Value, path dyn.Path) (dyn.Value, diag.Diagnostics) {
 	var diags diag.Diagnostics
+	var out float64
 
 	switch src.Kind() {
 	case dyn.KindFloat:
-		return dyn.NewValue(src.MustFloat(), src.Locations()), nil
+		out = src.MustFloat()
 	case dyn.KindInt:
-		out := float64(src.MustInt())
+		out = float64(src.MustInt())
 		if src.MustInt() != int64(out) {
 			return dyn.InvalidValue, diags.Append(diag.Diagnostic{
 				Severity:  diag.Warning,
@@ -378,10 +372,9 @@ func (n normalizeOptions) normalizeFloat(typ reflect.Type, src dyn.Value, path d
 				Paths:     []dyn.Path{path},
 			})
 		}
-		return dyn.NewValue(out, src.Locations()), nil
 	case dyn.KindString:
 		var err error
-		out, err := strconv.ParseFloat(src.MustString(), 64)
+		out, err = strconv.ParseFloat(src.MustString(), 64)
 		if err != nil {
 			// Return verbatim if it's a pure variable reference.
 			if dynvar.IsPureVariableReference(src.MustString()) {
@@ -395,15 +388,14 @@ func (n normalizeOptions) normalizeFloat(typ reflect.Type, src dyn.Value, path d
 				Paths:     []dyn.Path{path},
 			})
 		}
-		return dyn.NewValue(out, src.Locations()), nil
 	case dyn.KindNil:
 		// Return a warning if the field is present but has a null value.
 		return dyn.InvalidValue, diags.Append(nullWarning(dyn.KindFloat, src, path))
 	default:
-		// Fall through to the error case.
+		return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindFloat, src, path))
 	}
 
-	return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindFloat, src, path))
+	return dyn.NewValue(out, src.Locations()), diags
 }
 
 func (n normalizeOptions) normalizeInterface(_ reflect.Type, src dyn.Value, path dyn.Path) (dyn.Value, diag.Diagnostics) {

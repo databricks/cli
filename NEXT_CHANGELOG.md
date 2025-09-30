@@ -1,6 +1,6 @@
 # NEXT CHANGELOG
 
-## Release v0.271.0
+## Release v0.270.0
 
 ### Notable Changes
 
@@ -9,11 +9,7 @@
 ### Dependency updates
 
 ### Bundles
-* Remove resources.apps.config section ([#3680](https://github.com/databricks/cli/pull/3680))
-* Prompt for serverless compute in `dbt-sql` template (defaults to `yes`) ([#3668](https://github.com/databricks/cli/pull/3668))
+* Add new Lakeflow Pipelines support for bundle generate ([#3568](https://github.com/databricks/cli/pull/3568))
+* Introduce new bundle variable: `${workspace.current_user.domain_friendly_name}` ([#3623](https://github.com/databricks/cli/pull/3623))
 
 ### API Changes
-* Added `databricks account account-groups-v2` command group.
-* Added `databricks account account-iam-v2` command group.
-* Added `databricks feature-engineering` command group.
-* Added `databricks shares list-shares` command.

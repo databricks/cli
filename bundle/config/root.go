@@ -3,6 +3,7 @@ package config
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"reflect"
@@ -608,10 +609,14 @@ func (r *Root) GetResourceConfig(path string) (any, bool) {
 		return nil, false
 	}
 
-	typedConfigPtr := reflect.New(typ)
-
-	err = convert.ToTyped(typedConfigPtr.Interface(), v)
+	// json-round-trip into a value of the concrete resource type to ensure proper handling of ForceSendFields
+	bytes, err := json.Marshal(v.AsAny())
 	if err != nil {
+		return nil, false
+	}
+
+	typedConfigPtr := reflect.New(typ)
+	if err := json.Unmarshal(bytes, typedConfigPtr.Interface()); err != nil {
 		return nil, false
 	}
 

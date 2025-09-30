@@ -1,0 +1,4 @@
+trace $CLI bundle validate
+trace $CLI bundle deploy
+jq 'select(.path | test("default/files/app/app.yml"))' out.requests.txt  > out.app.yml.txt
+rm out.requests.txt

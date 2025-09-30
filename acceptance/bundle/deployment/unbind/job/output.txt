@@ -18,7 +18,6 @@ Deployment complete!
 
 >>> [CLI] jobs get [NUMID] --output json
 {
-  "creator_user_name":"[USERNAME]",
   "job_id":[NUMID],
   "settings": {
     "deployment": {

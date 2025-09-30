@@ -1,0 +1,23 @@
+
+>>> [CLI] bundle validate
+Warning: App config section detected
+
+remove 'config' from app resource 'myapp' section and use app.yml file in the root of this app instead
+
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Found 1 warning
+
+>>> [CLI] bundle deploy
+Warning: App config section detected
+
+remove 'config' from app resource 'myapp' section and use app.yml file in the root of this app instead
+
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!

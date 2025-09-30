@@ -11,7 +11,6 @@ type resolveServicePrincipal struct {
 }
 
 func (l resolveServicePrincipal) Resolve(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {
-	//nolint:staticcheck // this API is deprecated but we still need use it as there is no replacement yet.
 	entity, err := w.ServicePrincipals.GetByDisplayName(ctx, l.name)
 	if err != nil {
 		return "", err

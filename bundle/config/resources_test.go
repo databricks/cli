@@ -131,7 +131,7 @@ func TestResourcesBindSupport(t *testing.T) {
 		},
 		Experiments: map[string]*resources.MlflowExperiment{
 			"my_experiment": {
-				CreateExperiment: ml.CreateExperiment{},
+				Experiment: ml.Experiment{},
 			},
 		},
 		RegisteredModels: map[string]*resources.RegisteredModel{

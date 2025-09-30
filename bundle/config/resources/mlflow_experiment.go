@@ -24,7 +24,7 @@ type MlflowExperimentPermission struct {
 
 type MlflowExperiment struct {
 	BaseResource
-	ml.CreateExperiment
+	ml.Experiment
 
 	Permissions []MlflowExperimentPermission `json:"permissions,omitempty"`
 }
