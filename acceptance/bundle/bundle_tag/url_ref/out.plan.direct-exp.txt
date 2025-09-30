@@ -1,6 +1,6 @@
 Error: cannot resolve "${resources.jobs.foo.url}": schema mismatch: url: field "url" not found in resources.Job; url: field "url" not found in jobs.Job
 
-Error: cannot plan jobs.bar: dependency failed: jobs.foo
+Error: cannot plan resources.jobs.bar: dependency failed: resources.jobs.foo
 
 Error: planning failed
 

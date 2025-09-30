@@ -2,13 +2,15 @@ package phases
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/databricks-sdk-go/service/apps"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/require"
 )
 
@@ -46,19 +48,65 @@ func TestCheckPreventDestroyForAllResources(t *testing.T) {
 
 			actions := []deployplan.Action{
 				{
-					ResourceNode: deployplan.ResourceNode{
-						Group: resourceType,
-						Key:   "test_resource",
-					},
-					ActionType: deployplan.ActionTypeRecreate,
+					ResourceKey: "resources." + resourceType + ".test_resource",
+					ActionType:  deployplan.ActionTypeRecreate,
 				},
 			}
 
 			err := checkForPreventDestroy(b, actions)
 			require.Error(t, err)
-			require.Contains(t, err.Error(), "resource test_resource has lifecycle.prevent_destroy set")
+			require.Contains(t, err.Error(), "resources."+resourceType+".test_resource has lifecycle.prevent_destroy set")
 			require.Contains(t, err.Error(), "but the plan calls for this resource to be recreated or destroyed")
-			require.Contains(t, err.Error(), fmt.Sprintf("disable lifecycle.prevent_destroy for %s.test_resource", resourceType))
+			require.Contains(t, err.Error(), "disable lifecycle.prevent_destroy for resources."+resourceType+".test_resource")
 		})
 	}
+}
+
+func TestCheckForPreventDestroyWhenFirstHasNoPreventDestroy(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Bundle: config.Bundle{
+				Name: "test",
+			},
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"test_job": {
+						JobSettings: jobs.JobSettings{
+							Tasks: []jobs.Task{},
+						},
+					},
+				},
+				Apps: map[string]*resources.App{
+					"test_app": {
+						App: apps.App{
+							Name: "Test App",
+						},
+						BaseResource: resources.BaseResource{
+							Lifecycle: resources.Lifecycle{
+								PreventDestroy: true,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	actions := []deployplan.Action{
+		{
+			ResourceKey: "resources.jobs.test_job",
+			ActionType:  deployplan.ActionTypeRecreate,
+		},
+		{
+			ResourceKey: "resources.apps.test_app",
+			ActionType:  deployplan.ActionTypeRecreate,
+		},
+	}
+
+	ctx := context.Background()
+	bundle.ApplyFuncContext(ctx, b, func(ctx context.Context, b *bundle.Bundle) {
+		err := checkForPreventDestroy(b, actions)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "resources.apps.test_app has lifecycle.prevent_destroy set")
+	})
 }

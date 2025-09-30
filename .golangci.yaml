@@ -15,6 +15,7 @@ linters:
     - unconvert
     - unused
     - exhaustruct
+    - exhaustive
     - copyloopvar
     - forbidigo
   settings:
@@ -59,6 +60,8 @@ linters:
         - len
         - equal-values
         - encoded-compare # Always replaces Equal() with JSONEq, but sometimes exact string match is wanted for JSON
+    exhaustive:
+      default-signifies-exhaustive: true
   exclusions:
     generated: lax
     presets:
@@ -67,10 +70,10 @@ linters:
       - legacy
       - std-error-handling
     rules:
-      - path-except: bundle/terranova/tnresources
+      - path-except: bundle/direct/dresources
         linters:
           - exhaustruct
-      - path: bundle/terranova/tnresources/all_test.go
+      - path: bundle/direct/dresources/all_test.go
         linters:
           - exhaustruct
       - path-except: ^cmd

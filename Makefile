@@ -112,6 +112,7 @@ integration-short:
 
 generate-validation:
 	go run ./bundle/internal/validation/.
+	gofmt -w -s ./bundle/internal/validation/generated
 
 # Rule to generate the CLI from a new version of the OpenAPI spec.
 # I recommend running this rule from Arca because of faster build times

@@ -1,0 +1,20 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    if [[ -n "$schema_id" ]]; then
+        trace $CLI schemas delete $schema_id
+    fi
+    echo $?
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+schema_id=$($CLI bundle summary --output json | jq -r '.resources.schemas.schema_1.id')
+trace $CLI grants get schema $schema_id --output json | jq '.privilege_assignments[] | select(.principal == "account users")'
+
+trace $CLI bundle deployment unbind schema_1
+trace $CLI bundle deploy --var "suffix=another"
+
+title "Grants should be the same as before unbind"
+trace $CLI grants get schema $schema_id --output json | jq '.privilege_assignments[] | select(.principal == "account users")'

@@ -15,7 +15,7 @@ var RequiredFields = map[string][]string{
 
 	"permissions[*]": {"level"},
 
-	"resources.apps.*":                               {"source_code_path", "name"},
+	"resources.apps.*":                               {"name", "source_code_path"},
 	"resources.apps.*.permissions[*]":                {"level"},
 	"resources.apps.*.resources[*]":                  {"name"},
 	"resources.apps.*.resources[*].database":         {"database_name", "instance_name", "permission"},
@@ -45,6 +45,7 @@ var RequiredFields = map[string][]string{
 	"resources.database_instances.*":                {"name"},
 	"resources.database_instances.*.permissions[*]": {"level"},
 
+	"resources.experiments.*":                {"name"},
 	"resources.experiments.*.permissions[*]": {"level"},
 
 	"resources.jobs.*.deployment":                                                                                  {"kind"},
@@ -190,7 +191,7 @@ var RequiredFields = map[string][]string{
 	"resources.pipelines.*.permissions[*]":                         {"level"},
 	"resources.pipelines.*.restart_window":                         {"start_hour"},
 
-	"resources.quality_monitors.*":                   {"table_name", "assets_dir", "output_schema_name"},
+	"resources.quality_monitors.*":                   {"assets_dir", "output_schema_name", "table_name"},
 	"resources.quality_monitors.*.custom_metrics[*]": {"definition", "input_columns", "name", "output_data_type", "type"},
 	"resources.quality_monitors.*.inference_log":     {"granularities", "model_id_col", "prediction_col", "problem_type", "timestamp_col"},
 	"resources.quality_monitors.*.schedule":          {"quartz_cron_expression", "timezone_id"},

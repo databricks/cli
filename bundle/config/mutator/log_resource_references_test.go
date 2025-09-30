@@ -22,14 +22,11 @@ func TestConvertReferenceToMetric_Table(t *testing.T) {
 						},
 					},
 				},
-				"niljob": nil,
-			},
-			Apps: map[string]*cres.App{
-				"app1": {
-					Config: map[string]any{
-						"k": "v",
-					},
+				"джоб": {
+					JobSettings: jobs.JobSettings{},
 				},
+
+				"niljob": nil,
 			},
 		},
 	}
@@ -47,7 +44,7 @@ func TestConvertReferenceToMetric_Table(t *testing.T) {
 		{
 			name: "basic job id with non-ascii key",
 			ref:  "resources.jobs.джоб.id",
-			want: "resreferr_jobs",
+			want: "resref_jobs.id",
 		},
 		{
 			name: "invalid empty",
@@ -68,11 +65,6 @@ func TestConvertReferenceToMetric_Table(t *testing.T) {
 			name: "invalid short group",
 			ref:  "resources.jobs",
 			want: "",
-		},
-		{
-			name: "mapkey censor on app config",
-			ref:  "resources.apps.app1.config.foo",
-			want: "resref_apps.config.*",
 		},
 		{
 			name: "nil job pointer yields plain id",

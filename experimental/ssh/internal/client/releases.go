@@ -42,8 +42,8 @@ func uploadReleases(ctx context.Context, workspaceFiler filer.Filer, getRelease 
 	for _, arch := range architectures {
 		fileName := getReleaseName(arch, version)
 		remoteSubFolder := strings.TrimSuffix(fileName, ".zip")
-		remoteBinaryPath := filepath.Join(remoteSubFolder, "databricks")
-		remoteArchivePath := filepath.Join(remoteSubFolder, "databricks.zip")
+		remoteBinaryPath := filepath.ToSlash(filepath.Join(remoteSubFolder, "databricks"))
+		remoteArchivePath := filepath.ToSlash(filepath.Join(remoteSubFolder, "databricks.zip"))
 
 		_, err := workspaceFiler.Stat(ctx, remoteBinaryPath)
 		if err == nil {

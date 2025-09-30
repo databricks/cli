@@ -1,5 +1,24 @@
 # Version changelog
 
+## Release v0.270.0
+
+### Notable Changes
+* Add 'databricks bundle plan' command. This command shows the deployment plan for the current bundle configuration without making any changes. ([#3530](https://github.com/databricks/cli/pull/3530))
+
+### Bundles
+* Add 'databricks bundle plan' command ([#3530](https://github.com/databricks/cli/pull/3530))
+* Add new Lakeflow Pipelines support for bundle generate ([#3568](https://github.com/databricks/cli/pull/3568))
+* Fix bundle deploy to not update permissions or grants for unbound resources ([#3642](https://github.com/databricks/cli/pull/3642))
+* Introduce new bundle variable: `${workspace.current_user.domain_friendly_name}` ([#3623](https://github.com/databricks/cli/pull/3623))
+* Improve the output of bundle run when bundle is not deployed ([#3652](https://github.com/databricks/cli/pull/3652))
+
+
+## Release v0.269.0
+
+### Bundles
+* Fix checkForPreventDestroy to check all resources if some does not have prevent_destroy set ([#3615](https://github.com/databricks/cli/pull/3615))
+
+
 ## Release v0.268.0
 
 ### Bundles
@@ -24,6 +43,7 @@
 * Add support for specifying database instance as an application resource ([#3529](https://github.com/databricks/cli/pull/3529))
 * Allow referencing job libraries outside bundle root without the need to specify sync root ([#2842](https://github.com/databricks/cli/pull/2842))
 * Add top level `run_as` support for Lakeflow Declarative Pipelines ([#3307](https://github.com/databricks/cli/pull/3307))
+* Add support for `lifecycle prevent_destroy` option ([#3448](https://github.com/databricks/cli/pull/3448))
 
 
 ## Release v0.266.0

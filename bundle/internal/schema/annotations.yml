@@ -154,9 +154,6 @@ github.com/databricks/cli/bundle/config.Python:
       If enabled, Python code will execute within this environment. If disabled,
       it defaults to using the Python interpreter available in the current shell.
 github.com/databricks/cli/bundle/config.Resources:
-  "alerts":
-    "description": |-
-      PLACEHOLDER
   "apps":
     "description": |-
       The app resource defines a Databricks app.
@@ -442,32 +439,6 @@ github.com/databricks/cli/bundle/config.Workspace:
   "state_path":
     "description": |-
       The workspace state path
-github.com/databricks/cli/bundle/config/resources.Alert:
-  "evaluation":
-    "description": |-
-      PLACEHOLDER
-  "lifecycle":
-    "description": |-
-      PLACEHOLDER
-  "permissions":
-    "description": |-
-      PLACEHOLDER
-  "schedule":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.AlertPermission:
-  "group_name":
-    "description": |-
-      PLACEHOLDER
-  "level":
-    "description": |-
-      PLACEHOLDER
-  "service_principal_name":
-    "description": |-
-      PLACEHOLDER
-  "user_name":
-    "description": |-
-      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.AppPermission:
   "group_name":
     "description": |-
@@ -505,6 +476,10 @@ github.com/databricks/cli/bundle/config/resources.DashboardPermission:
     "description": |-
       PLACEHOLDER
   "user_name":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.DatabaseInstance:
+  "effective_capacity":
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.DatabaseInstancePermission:
