@@ -1,0 +1,14 @@
+{
+  "plan": {
+    "resources.models.my_model": {
+      "action": "skip",
+      "changes": {
+        "local": {
+          "tags": {
+            "action": "skip"
+          }
+        }
+      }
+    }
+  }
+}

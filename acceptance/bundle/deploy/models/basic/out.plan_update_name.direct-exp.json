@@ -1,0 +1,26 @@
+{
+  "plan": {
+    "resources.models.my_model": {
+      "action": "recreate",
+      "new_state": {
+        "config": {
+          "description": "new-description-[UNIQUE_NAME]",
+          "name": "new-name-[UNIQUE_NAME]",
+          "tags": [
+            {
+              "key": "key1",
+              "value": "value1"
+            }
+          ]
+        }
+      },
+      "changes": {
+        "local": {
+          "name": {
+            "action": "recreate"
+          }
+        }
+      }
+    }
+  }
+}
