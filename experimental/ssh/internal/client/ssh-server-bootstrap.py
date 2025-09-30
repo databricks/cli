@@ -77,7 +77,9 @@ def run_ssh_server():
     workspace_url = ctx.workspaceUrl or client.config.host or spark.conf.get("spark.databricks.workspaceUrl")
     user_name = client.current_user.me().user_name
 
-    os.environ["DATABRICKS_HOST"] = workspace_url if workspace_url.startswith("https://") else f"https://{workspace_url}"
+    os.environ["DATABRICKS_HOST"] = (
+        workspace_url if workspace_url.startswith("https://") else f"https://{workspace_url}"
+    )
     os.environ["DATABRICKS_TOKEN"] = ctx.apiToken
     os.environ["DATABRICKS_CLUSTER_ID"] = ctx.clusterId
     os.environ["DATABRICKS_VIRTUAL_ENV"] = sys.executable
@@ -92,7 +94,9 @@ def run_ssh_server():
 
     public_key_secret_name = dbutils.widgets.get("authorizedKeySecretName")
     if not public_key_secret_name:
-        raise RuntimeError("Public key secret name is required. Please provide it using the 'authorizedKeySecretName' widget.")
+        raise RuntimeError(
+            "Public key secret name is required. Please provide it using the 'authorizedKeySecretName' widget."
+        )
 
     version = dbutils.widgets.get("version")
     if not version:

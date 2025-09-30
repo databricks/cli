@@ -23,7 +23,9 @@ def parse_lines(cmd):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--ref", default="main", help="Reference to calculate diff against.")
-    parser.add_argument("-H", "--head", action="store_true", help="Shortcut for '--ref HEAD' - test uncommitted changes only")
+    parser.add_argument(
+        "-H", "--head", action="store_true", help="Shortcut for '--ref HEAD' - test uncommitted changes only"
+    )
     parser.add_argument("args", nargs=argparse.REMAINDER, help="golangci-lint command and options")
     args = parser.parse_args()
 
