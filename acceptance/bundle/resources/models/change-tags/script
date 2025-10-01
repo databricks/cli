@@ -23,4 +23,4 @@ envsubst < templates/two_tag.tmpl > databricks.yml
 deploy_with_plan
 
 title "Print all POST API requests made the the models service."
-trace cat out.requests.txt | jq 'select(.method == "POST")' | jq 'select(.path | contains("/api/2.0/mlflow/registered-models"))' > out.requests.models.$DATABRICKS_BUNDLE_ENGINE.txt
+trace cat out.requests.txt | jq 'select(.method == "POST")' | jq 'select(.path | contains("/api/2.0/mlflow/registered-models"))' > out.requests.models.txt
