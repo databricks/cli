@@ -252,9 +252,7 @@ func interpretOldStateVsRemoteState(ctx context.Context, adapter *dresources.Ada
 			}
 			continue
 		}
-		var fieldAction deployplan.ActionType
-		var err error
-		fieldAction, err = adapter.ClassifyChange(ch, remoteState)
+		fieldAction, err := adapter.ClassifyChange(ch, remoteState)
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("internal error: failed to classify changes: %w", err))
 			continue

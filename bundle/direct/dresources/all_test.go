@@ -197,14 +197,13 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 
 	path, err := structpath.Parse("name")
 	require.NoError(t, err)
-	if adapter.HasClassifyChange() {
-		_, err := adapter.ClassifyChange(structdiff.Change{
-			Path: path,
-			Old:  nil,
-			New:  "mynewname",
-		}, remote)
-		require.NoError(t, err)
-	}
+
+	_, err = adapter.ClassifyChange(structdiff.Change{
+		Path: path,
+		Old:  nil,
+		New:  "mynewname",
+	}, remote)
+	require.NoError(t, err)
 }
 
 // validateFields uses structwalk to generate all valid field paths and checks membership.

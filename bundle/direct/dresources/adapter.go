@@ -525,11 +525,6 @@ func (a *Adapter) ClassifyChange(change structdiff.Change, remoteState any) (dep
 	return actionType, nil
 }
 
-// HasClassifyChange returns true if the resource implements ClassifyChange method.
-func (a *Adapter) HasClassifyChange() bool {
-	return a.classifyChange != nil
-}
-
 // prepareCallRequired prepares a call and ensures the method is found.
 func prepareCallRequired(resource any, methodName string) (*calladapt.BoundCaller, error) {
 	caller, err := calladapt.PrepareCall(resource, calladapt.TypeOf[IResource](), methodName)
