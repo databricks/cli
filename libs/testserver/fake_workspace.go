@@ -80,6 +80,8 @@ type FakeWorkspace struct {
 	Experiments         map[string]ml.GetExperimentResponse
 	ModelRegistryModels map[string]ml.Model
 	Clusters            map[string]compute.ClusterDetails
+	Catalogs            map[string]catalog.CatalogInfo
+	RegisteredModels    map[string]catalog.RegisteredModelInfo
 
 	Acls map[string][]workspace.AclItem
 
@@ -167,7 +169,9 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		PipelineUpdates:      map[string]bool{},
 		Monitors:             map[string]catalog.MonitorInfo{},
 		Apps:                 map[string]apps.App{},
+		Catalogs:             map[string]catalog.CatalogInfo{},
 		Schemas:              map[string]catalog.SchemaInfo{},
+		RegisteredModels:     map[string]catalog.RegisteredModelInfo{},
 		Volumes:              map[string]catalog.VolumeInfo{},
 		Dashboards:           map[string]dashboards.Dashboard{},
 		SqlWarehouses:        map[string]sql.GetWarehouseResponse{},

@@ -357,6 +357,42 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.SchemasGetGrants(req, req.Vars["full_name"])
 	})
 
+	// Catalogs:
+
+	server.Handle("GET", "/api/2.1/unity-catalog/catalogs/{name}", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.Catalogs, req.Vars["name"])
+	})
+
+	server.Handle("POST", "/api/2.1/unity-catalog/catalogs", func(req Request) any {
+		return req.Workspace.CatalogsCreate(req)
+	})
+
+	server.Handle("PATCH", "/api/2.1/unity-catalog/catalogs/{name}", func(req Request) any {
+		return req.Workspace.CatalogsUpdate(req, req.Vars["name"])
+	})
+
+	server.Handle("DELETE", "/api/2.1/unity-catalog/catalogs/{name}", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.Catalogs, req.Vars["name"])
+	})
+
+	// Registered Models:
+
+	server.Handle("GET", "/api/2.1/unity-catalog/models/{full_name}", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.RegisteredModels, req.Vars["full_name"])
+	})
+
+	server.Handle("POST", "/api/2.1/unity-catalog/models", func(req Request) any {
+		return req.Workspace.RegisteredModelsCreate(req)
+	})
+
+	server.Handle("PATCH", "/api/2.1/unity-catalog/models/{full_name}", func(req Request) any {
+		return req.Workspace.RegisteredModelsUpdate(req, req.Vars["full_name"])
+	})
+
+	server.Handle("DELETE", "/api/2.1/unity-catalog/models/{full_name}", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.RegisteredModels, req.Vars["full_name"])
+	})
+
 	// Volumes:
 
 	server.Handle("GET", "/api/2.1/unity-catalog/volumes/{full_name}", func(req Request) any {
