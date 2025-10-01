@@ -1,8 +1,10 @@
-Guidelines on implementing a resource
+# Guidelines on implementing a resource
 
  - See adapter.go on what methods are needed and what constraints are present.
  - Return SDK errors directly, no need to wrap them. Things like current operation, resource key, id are already added by the caller and will be part of the error message.
- - Although the arguments are pointers, they are never nil, so nil checks are not needed.
+ - Although the arguments are pointers, they are never nil, so nil checks are not needed. The passed id argument is never empty string.
+ - When returning id from DoCreate() and from DoUpdateWithID() there is no need to check that returned id is non-empty, this will be done by the framework and converted to error.
+   An exception could be made if default error message lacks the necessary context.
  - The arguments point to actual struct that will be persisted in state, any changes to it will affect what is stored in state. Usually there is no need to change it, but if there is, there should always be detailed explanation.
  - Each Create/Update/Delete method should correspond to one API call. We persist state right after, so there is minimum chance of having orphaned resources.
  - The logic what kind of update it is should be in FieldTriggers / ClassifyChange methods. The methods performing update should not have logic in them on what method to call.
@@ -13,7 +15,7 @@ Nice to have
  - Add link to corresponding API documentation before each method.
  - Add link to corresponding terraform resource implementation at the top of the file.
 
-Testing:
+Testing
  - Make sure to implement CRUD for testserver in libs/testserver
  - Test first with go test ./bundle/direct/dresources
    - You might need to add test fixture in all\_test.go
