@@ -19,3 +19,84 @@ For more complex tests one can also use:
 - custom output files: redirect output to custom file (it must start with `out`), e.g. `$CLI bundle validate > out.txt 2> out.error.txt`.
 
 See [selftest](./selftest) for a toy test.
+
+## Running acceptance tests on Windows
+
+To run the acceptance tests from a terminal on Windows (eg. Git Bash from VS Code),
+you need to install a few prerequisites and optionally make user policy changes.
+
+### Install Chocolatey
+
+Run "PowerShell" as administrator and follow the [Chocolatey installation instructions][choco].
+
+[choco]: https://chocolatey.org/install#individual
+
+Confirm it is installed correctly:
+```pwsh
+PS C:\WINDOWS\system32> choco --version
+2.5.1
+```
+
+### Tools
+
+Install the following tools:
+```pwsh
+choco install vscode
+choco install git
+choco install make
+choco install jq
+choco install python3
+choco install uv
+choco install go
+choco install nodejs
+```
+
+### Shim for `python3.exe`
+
+The default Python installation only installs `python.exe` and not `python3.exe`.
+
+We rely on calling `python3` in acceptance tests (shebangs in scripts and elsewhere).
+
+To install `python3` and `pip3` shims for the install, run PowerShell as administrator and execute the following:
+```pwsh
+# Find your current python.exe
+$py = (Get-Command python.exe).Source
+
+# Create a python3.exe shim that points to it
+& "$env:ChocolateyInstall\tools\shimgen.exe" `
+  --output "$env:ChocolateyInstall\bin\python3.exe" `
+  --path   $py
+
+# Optional: pip3, too
+$pip = (Get-Command pip.exe).Source
+& "$env:ChocolateyInstall\tools\shimgen.exe" `
+  --output "$env:ChocolateyInstall\bin\pip3.exe" `
+  --path   $pip
+
+refreshenv
+python3 --version
+pip3 --version
+```
+
+### Enable symlink creation
+
+You need to be able to create symlinks.
+If you're not an administrator user, enable this by following these steps:
+
+* Press Win+R, type `secpol.msc`, press Enter.
+* Go to Local Policies → User Rights Assignment.
+* Find "Create symbolic links".
+* Add your username to the list.
+* Sign out and back in.
+
+### Enable long path support (up to ~32,767 characters)
+
+Modern Windows (10 Anniversary Update and newer) supports longer paths if you enable it.
+
+Some acceptance tests fail if this is not enabled because their paths exceed the
+default maximum total length of 260 characters.
+
+* Run "Edit group policy".
+* Go to Local Computer Policy → Computer Configuration → Administrative Templates → System → Filesystem → Enable Win32 long paths.
+* Enable the setting.
+* Reboot.
