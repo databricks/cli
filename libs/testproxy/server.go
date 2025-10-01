@@ -157,17 +157,11 @@ func (s *ProxyServer) proxyToCloud(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	formattedHeaders := http.Header{}
-	for k, v := range responseHeaders {
-		formattedHeaders[k] = []string{*v}
-	}
-
 	// Successful response
 	if encodedResponse == nil {
 		encodedResponse = &testserver.EncodedResponse{
 			StatusCode: 200,
 			Body:       respBody.Bytes(),
-			Headers:    formattedHeaders,
 		}
 	}
 
