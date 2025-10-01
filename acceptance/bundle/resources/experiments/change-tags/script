@@ -28,5 +28,5 @@ envsubst < templates/one_tag.tmpl > databricks.yml
 deploy_with_plan
 
 title "adding a new tag should be a no-op"
-trace envsubst < templates/one_tag.tmpl > databricks.yml
+trace envsubst < templates/two_tag.tmpl > databricks.yml
 deploy_with_plan_split
