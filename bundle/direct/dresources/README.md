@@ -1,7 +1,7 @@
-Guidelines on writing a resource
+Guidelines on implementing a resource
 
  - See adapter.go on what methods are needed and what constraints are present.
- - Return SDK errors directly, no need to wrap it. Things like current operation, resource key, id are already part of the error message.
+ - Return SDK errors directly, no need to wrap them. Things like current operation, resource key, id are already added by the caller and will be part of the error message.
  - Although the arguments are pointers, they are never nil, so nil checks are not needed.
  - The arguments point to actual struct that will be persisted in state, any changes to it will affect what is stored in state. Usually there is no need to change it, but if there is, there should always be detailed explanation.
  - Each Create/Update/Delete method should correspond to one API call. We persist state right after, so there is minimum chance of having orphaned resources.
@@ -12,3 +12,12 @@ Guidelines on writing a resource
 Nice to have
  - Add link to corresponding API documentation before each method.
  - Add link to corresponding terraform resource implementation at the top of the file.
+
+Testing:
+ - Make sure to implement CRUD for testserver in libs/testserver
+ - Test first with go test ./bundle/direct/dresources
+   - You might need to add test fixture in all\_test.go
+ - Implement acceptance tests in acceptance/bundle/resources/<resource>/<subtest>
+   - See acceptance/bundle/resources/volumes
+   - Prefer smaller tests for each operation.
+   - Make sure bundle deploy/plan/debug plan/summary/destroy are covered
