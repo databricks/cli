@@ -3,11 +3,11 @@
 >>> setmtime.py [TIMESTAMP].[NUMID] my_test_code-0.0.1-py3-none-any.whl
 
 >>> [CLI] selftest patchwhl my_test_code-0.0.1-py3-none-any.whl
-Warn: Patched whl: my_test_code-0.0.1-py3-none-any.whl -> my_test_code-0.0.1+[UNIX_TIME_NANOS]-py3-none-any.whl
+Warn: Patched whl: my_test_code-0.0.1-py3-none-any.whl -> my_test_code-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl
 
 >>> diff.py original output
---- original/my_test_code-0.0.1+[UNIX_TIME_NANOS].dist-info/METADATA
-+++ output/my_test_code-0.0.1+[UNIX_TIME_NANOS].dist-info/METADATA
+--- original/my_test_code-0.0.1+[UNIX_TIME_NANOS][0].dist-info/METADATA
++++ output/my_test_code-0.0.1+[UNIX_TIME_NANOS][0].dist-info/METADATA
 @@ -1,5 +1,5 @@
  Metadata-Version: 2.1
  Name: my-test-code
@@ -15,8 +15,8 @@ Warn: Patched whl: my_test_code-0.0.1-py3-none-any.whl -> my_test_code-0.0.1+[UN
 +Version: 0.0.1+[UNIX_TIME_NANOS]
  Summary: my test wheel
  Home-page: https://databricks.com
---- original/my_test_code-0.0.1+[UNIX_TIME_NANOS].dist-info/RECORD
-+++ output/my_test_code-0.0.1+[UNIX_TIME_NANOS].dist-info/RECORD
+--- original/my_test_code-0.0.1+[UNIX_TIME_NANOS][0].dist-info/RECORD
++++ output/my_test_code-0.0.1+[UNIX_TIME_NANOS][0].dist-info/RECORD
 @@ -1,7 +1,7 @@
  src/__init__.py,sha256=BRmKeYehopKv4NG_SFa7t6wn248RrPHJivu7DM1R-Rw,48
  src/__main__.py,sha256=8TtsnLsaJEM35Y4L8ocrv-qfxusgYpRL2HPyYiabHng,242

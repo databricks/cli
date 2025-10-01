@@ -4,15 +4,6 @@ create jobs.foo
 
 Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 
->>> [CLI] bundle debug plan
-{
-  "plan": {
-    "resources.jobs.foo": {
-      "action": "create"
-    }
-  }
-}
-
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
@@ -23,13 +14,6 @@ Deployment complete!
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 >>> [CLI] bundle debug plan
-{
-  "plan": {
-    "resources.jobs.foo": {
-      "action": "skip"
-    }
-  }
-}
 
 >>> print_requests
 {
@@ -75,15 +59,6 @@ update jobs.foo
 
 Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
->>> [CLI] bundle debug plan
-{
-  "plan": {
-    "resources.jobs.foo": {
-      "action": "update"
-    }
-  }
-}
-
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
@@ -92,15 +67,6 @@ Deployment complete!
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
-
->>> [CLI] bundle debug plan
-{
-  "plan": {
-    "resources.jobs.foo": {
-      "action": "skip"
-    }
-  }
-}
 
 >>> print_requests
 {

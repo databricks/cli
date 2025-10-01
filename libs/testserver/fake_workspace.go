@@ -17,6 +17,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
@@ -76,6 +77,8 @@ type FakeWorkspace struct {
 	Dashboards      map[string]dashboards.Dashboard
 	SqlWarehouses   map[string]sql.GetWarehouseResponse
 	Alerts          map[string]sql.AlertV2
+  Experiments         map[string]ml.GetExperimentResponse
+	ModelRegistryModels map[string]ml.Model
 	Clusters        map[string]compute.ClusterDetails
 
 	Acls map[string][]workspace.AclItem
@@ -174,6 +177,8 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		DatabaseCatalogs:     map[string]database.DatabaseCatalog{},
 		SyncedDatabaseTables: map[string]database.SyncedDatabaseTable{},
 		Alerts:               map[string]sql.AlertV2{},
+    Experiments:          map[string]ml.GetExperimentResponse{},
+		ModelRegistryModels:  map[string]ml.Model{},
 		Clusters:             map[string]compute.ClusterDetails{},
 	}
 }

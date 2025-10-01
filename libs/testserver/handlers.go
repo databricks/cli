@@ -546,5 +546,47 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("POST", "/api/2.1/clusters/permanent-delete", func(req Request) any {
 		return req.Workspace.ClustersPermanentDelete(req)
+  })
+
+	// MLflow Experiments:
+	server.Handle("GET", "/api/2.0/mlflow/experiments/get", func(req Request) any {
+		experimentId := req.URL.Query().Get("experiment_id")
+		if experimentId == "" {
+			return Response{
+				StatusCode: http.StatusBadRequest,
+				Body:       map[string]string{"message": "experiment_id is required"},
+			}
+		}
+
+		return MapGet(req.Workspace, req.Workspace.Experiments, experimentId)
+	})
+
+	server.Handle("POST", "/api/2.0/mlflow/experiments/create", func(req Request) any {
+		return req.Workspace.ExperimentCreate(req)
+	})
+
+	server.Handle("POST", "/api/2.0/mlflow/experiments/update", func(req Request) any {
+		return req.Workspace.ExperimentUpdate(req)
+	})
+
+	server.Handle("POST", "/api/2.0/mlflow/experiments/delete", func(req Request) any {
+		return req.Workspace.ExperimentDelete(req)
+	})
+
+	// Model registry models.
+	server.Handle("POST", "/api/2.0/mlflow/registered-models/create", func(req Request) any {
+		return req.Workspace.ModelRegistryCreateModel(req)
+	})
+
+	server.Handle("GET", "/api/2.0/mlflow/databricks/registered-models/get", func(req Request) any {
+		return req.Workspace.ModelRegistryGetModel(req)
+	})
+
+	server.Handle("PATCH", "/api/2.0/mlflow/registered-models/update", func(req Request) any {
+		return req.Workspace.ModelRegistryUpdateModel(req)
+	})
+
+	server.Handle("DELETE", "/api/2.0/mlflow/registered-models/delete", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.ModelRegistryModels, req.URL.Query().Get("name"))
 	})
 }

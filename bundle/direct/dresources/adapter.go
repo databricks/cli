@@ -72,6 +72,9 @@ type IResourceNoRefresh interface {
 
 	// [Optional] WaitAfterUpdate waits for the resource to become ready after update.
 	WaitAfterUpdate(ctx context.Context, newState any) error
+
+	// [Optional] ClassifyChange classifies a set of changes using custom logic.
+	ClassifyChange(change structdiff.Change, remoteState any) (deployplan.ActionType, error)
 }
 
 // IResourceWithRefresh is an alternative to IResourceNoRefresh but every method can return remoteState.
@@ -111,6 +114,7 @@ type Adapter struct {
 	doUpdateWithID  *calladapt.BoundCaller
 	waitAfterCreate *calladapt.BoundCaller
 	waitAfterUpdate *calladapt.BoundCaller
+	classifyChange  *calladapt.BoundCaller
 
 	fieldTriggers map[string]deployplan.ActionType
 }
@@ -138,6 +142,7 @@ func NewAdapter(typedNil any, client *databricks.WorkspaceClient) (*Adapter, err
 		doUpdateWithID:  nil,
 		waitAfterCreate: nil,
 		waitAfterUpdate: nil,
+		classifyChange:  nil,
 		fieldTriggers:   map[string]deployplan.ActionType{},
 	}
 
@@ -306,6 +311,10 @@ func (a *Adapter) validate() error {
 		}
 	}
 
+	if a.classifyChange != nil {
+		validations = append(validations, "ClassifyChange changes", a.classifyChange.InTypes[1], remoteType)
+	}
+
 	err = validateTypes(validations...)
 	if err != nil {
 		return err
@@ -447,26 +456,14 @@ func (a *Adapter) DoUpdateWithID(ctx context.Context, oldID string, newState any
 	}
 }
 
-// ClassifyByTriggers classifies a set of changes using FieldTriggers.
-// Unspecified changed fields default to ActionTypeUpdate. Final action is the
-// maximum by precedence. No changes yield ActionTypeSkip.
-func (a *Adapter) ClassifyByTriggers(changes []structdiff.Change) deployplan.ActionType {
-	if len(changes) == 0 {
-		return deployplan.ActionTypeSkip
+// ClassifyByTriggers classifies a single using FieldTriggers.
+// Defaults to ActionTypeUpdate.
+func (a *Adapter) ClassifyByTriggers(change structdiff.Change) deployplan.ActionType {
+	action, ok := a.fieldTriggers[change.Path.String()]
+	if ok {
+		return action
 	}
-
-	// Default when there are changes but no explicit trigger is update.
-	result := deployplan.ActionTypeUpdate
-	for _, change := range changes {
-		action, ok := a.fieldTriggers[change.Path.String()]
-		if !ok {
-			action = deployplan.ActionTypeUpdate
-		}
-		if action > result {
-			result = action
-		}
-	}
-	return result
+	return deployplan.ActionTypeUpdate
 }
 
 // WaitAfterCreate waits for the resource to become ready after creation.
@@ -511,6 +508,21 @@ func (a *Adapter) WaitAfterUpdate(ctx context.Context, newState any) (any, error
 		// WithRefresh version
 		return outs[0], nil
 	}
+}
+
+func (a *Adapter) ClassifyChange(change structdiff.Change, remoteState any) (deployplan.ActionType, error) {
+	// If ClassifyChange is not implemented, use FieldTriggers.
+	if a.classifyChange == nil {
+		return a.ClassifyByTriggers(change), nil
+	}
+
+	outs, err := a.classifyChange.Call(change, remoteState)
+	if err != nil {
+		return deployplan.ActionTypeSkip, err
+	}
+
+	actionType := outs[0].(deployplan.ActionType)
+	return actionType, nil
 }
 
 // prepareCallRequired prepares a call and ensures the method is found.

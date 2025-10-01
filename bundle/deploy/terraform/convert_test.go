@@ -360,7 +360,7 @@ func TestBundleToTerraformModelPermissions(t *testing.T) {
 
 func TestBundleToTerraformExperiment(t *testing.T) {
 	src := resources.MlflowExperiment{
-		Experiment: ml.Experiment{
+		CreateExperiment: ml.CreateExperiment{
 			Name: "name",
 		},
 	}
@@ -383,7 +383,7 @@ func TestBundleToTerraformExperiment(t *testing.T) {
 
 func TestBundleToTerraformExperimentPermissions(t *testing.T) {
 	src := resources.MlflowExperiment{
-		Experiment: ml.Experiment{
+		CreateExperiment: ml.CreateExperiment{
 			Name: "name",
 		},
 		Permissions: []resources.MlflowExperimentPermission{

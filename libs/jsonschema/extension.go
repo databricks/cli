@@ -35,6 +35,12 @@ type Extension struct {
 	// compatible with the current CLI version.
 	Version *int `json:"version,omitempty"`
 
+	// TemplateDir specifies the directory containing the template files to use.
+	// If not specified, the template files are expected to be in the same directory
+	// as the schema file. This allows schema files to reference template files
+	// from a different directory (e.g., "../default").
+	TemplateDir string `json:"template_dir,omitempty"`
+
 	// Preview indicates launch stage (e.g. PREVIEW).
 	//
 	// This field indicates whether the associated field is part of a private preview feature.
