@@ -25,8 +25,8 @@ trace $CLI bundle plan
 trace $CLI bundle deploy
 trace $CLI model-registry get-model $MODEL_NAME | jq '.registered_model_databricks | {name, description, tags}'
 
-title "add a new tag, this should be a no-op"
+title "add a new tag, this should be a no-op; terraform does make an update request but since update request has no tags in it, it does nothing; direct skips request completely"
 envsubst < templates/two_tag.tmpl > databricks.yml
-trace $CLI bundle plan
+trace $CLI bundle plan > out.plan_update_tag.$DATABRICKS_BUNDLE_ENGINE.txt
 trace $CLI bundle deploy
 trace $CLI model-registry get-model $MODEL_NAME | jq '.registered_model_databricks | {name, description, tags}'

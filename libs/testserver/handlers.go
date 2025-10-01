@@ -558,6 +558,31 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.JobsGetPermissions(req, req.Vars["job_id"])
 	})
 
+	// MLflow Experiments:
+	server.Handle("GET", "/api/2.0/mlflow/experiments/get", func(req Request) any {
+		experimentId := req.URL.Query().Get("experiment_id")
+		if experimentId == "" {
+			return Response{
+				StatusCode: http.StatusBadRequest,
+				Body:       map[string]string{"message": "experiment_id is required"},
+			}
+		}
+
+		return MapGet(req.Workspace, req.Workspace.Experiments, experimentId)
+	})
+
+	server.Handle("POST", "/api/2.0/mlflow/experiments/create", func(req Request) any {
+		return req.Workspace.ExperimentCreate(req)
+	})
+
+	server.Handle("POST", "/api/2.0/mlflow/experiments/update", func(req Request) any {
+		return req.Workspace.ExperimentUpdate(req)
+	})
+
+	server.Handle("POST", "/api/2.0/mlflow/experiments/delete", func(req Request) any {
+		return req.Workspace.ExperimentDelete(req)
+	})
+
 	// Model registry models.
 	server.Handle("POST", "/api/2.0/mlflow/registered-models/create", func(req Request) any {
 		return req.Workspace.ModelRegistryCreateModel(req)

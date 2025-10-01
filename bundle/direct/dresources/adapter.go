@@ -447,26 +447,14 @@ func (a *Adapter) DoUpdateWithID(ctx context.Context, oldID string, newState any
 	}
 }
 
-// ClassifyByTriggers classifies a set of changes using FieldTriggers.
-// Unspecified changed fields default to ActionTypeUpdate. Final action is the
-// maximum by precedence. No changes yield ActionTypeSkip.
-func (a *Adapter) ClassifyByTriggers(changes []structdiff.Change) deployplan.ActionType {
-	if len(changes) == 0 {
-		return deployplan.ActionTypeSkip
+// ClassifyByTriggers classifies a single using FieldTriggers.
+// Defaults to ActionTypeUpdate.
+func (a *Adapter) ClassifyByTriggers(change structdiff.Change) deployplan.ActionType {
+	action, ok := a.fieldTriggers[change.Path.String()]
+	if ok {
+		return action
 	}
-
-	// Default when there are changes but no explicit trigger is update.
-	result := deployplan.ActionTypeUpdate
-	for _, change := range changes {
-		action, ok := a.fieldTriggers[change.Path.String()]
-		if !ok {
-			action = deployplan.ActionTypeUpdate
-		}
-		if action > result {
-			result = action
-		}
-	}
-	return result
+	return deployplan.ActionTypeUpdate
 }
 
 // WaitAfterCreate waits for the resource to become ready after creation.

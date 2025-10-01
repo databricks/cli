@@ -32,17 +32,7 @@ func (d *DeploymentUnit) Destroy(ctx context.Context, db *dstate.DeploymentState
 	return nil
 }
 
-func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState, inputConfig any, actionType deployplan.ActionType) error {
-	if actionType == deployplan.ActionTypeSkip {
-		return nil
-	}
-
-	// Note, newState may be different between plan and deploy due to resolved $resource references
-	newState, err := d.Adapter.PrepareState(inputConfig)
-	if err != nil {
-		return fmt.Errorf("reading config: %w", err)
-	}
-
+func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState, newState any, actionType deployplan.ActionType) error {
 	if actionType == deployplan.ActionTypeCreate {
 		return d.Create(ctx, db, newState)
 	}
@@ -210,4 +200,15 @@ func typeConvert(destType reflect.Type, src any) (any, error) {
 	}
 
 	return reflect.ValueOf(destPtr).Elem().Interface(), nil
+}
+
+func (d *DeploymentUnit) refreshRemoteState(ctx context.Context, id string) error {
+	if d.RemoteState != nil {
+		return nil
+	}
+	remoteState, err := d.Adapter.DoRefresh(ctx, id)
+	if err != nil {
+		return fmt.Errorf("failed to refresh remote state id=%s: %w", id, err)
+	}
+	return d.SetRemoteState(remoteState)
 }
