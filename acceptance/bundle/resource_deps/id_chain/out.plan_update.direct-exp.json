@@ -18,6 +18,24 @@
           }
         }
       },
+      "remote_state": {
+        "creator_user_name": "[USERNAME]",
+        "job_id": [NUMID],
+        "settings": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+          },
+          "description": "aa_desc",
+          "edit_mode": "UI_LOCKED",
+          "format": "MULTI_TASK",
+          "max_concurrent_runs": 1,
+          "name": "aa",
+          "queue": {
+            "enabled": true
+          }
+        }
+      },
       "changes": {
         "local": {
           "description": {
@@ -41,6 +59,24 @@
             "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
           },
           "description": "new_prefix [NUMID]",
+          "edit_mode": "UI_LOCKED",
+          "format": "MULTI_TASK",
+          "max_concurrent_runs": 1,
+          "name": "bb",
+          "queue": {
+            "enabled": true
+          }
+        }
+      },
+      "remote_state": {
+        "creator_user_name": "[USERNAME]",
+        "job_id": [NUMID],
+        "settings": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+          },
+          "description": "prefix [NUMID]",
           "edit_mode": "UI_LOCKED",
           "format": "MULTI_TASK",
           "max_concurrent_runs": 1,
@@ -82,6 +118,24 @@
           }
         }
       },
+      "remote_state": {
+        "creator_user_name": "[USERNAME]",
+        "job_id": [NUMID],
+        "settings": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+          },
+          "description": "prefix [NUMID]",
+          "edit_mode": "UI_LOCKED",
+          "format": "MULTI_TASK",
+          "max_concurrent_runs": 1,
+          "name": "cc",
+          "queue": {
+            "enabled": true
+          }
+        }
+      },
       "changes": {
         "local": {
           "description": {
@@ -114,6 +168,24 @@
           }
         }
       },
+      "remote_state": {
+        "creator_user_name": "[USERNAME]",
+        "job_id": [NUMID],
+        "settings": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+          },
+          "description": "prefix [NUMID]",
+          "edit_mode": "UI_LOCKED",
+          "format": "MULTI_TASK",
+          "max_concurrent_runs": 1,
+          "name": "dd",
+          "queue": {
+            "enabled": true
+          }
+        }
+      },
       "changes": {
         "local": {
           "description": {
@@ -137,6 +209,24 @@
             "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
           },
           "description": "new_prefix [NUMID]",
+          "edit_mode": "UI_LOCKED",
+          "format": "MULTI_TASK",
+          "max_concurrent_runs": 1,
+          "name": "ee",
+          "queue": {
+            "enabled": true
+          }
+        }
+      },
+      "remote_state": {
+        "creator_user_name": "[USERNAME]",
+        "job_id": [NUMID],
+        "settings": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+          },
+          "description": "prefix [NUMID]",
           "edit_mode": "UI_LOCKED",
           "format": "MULTI_TASK",
           "max_concurrent_runs": 1,

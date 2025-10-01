@@ -21,6 +21,7 @@ import (
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
 var errDelayed = errors.New("must be resolved after apply")
@@ -67,7 +68,7 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 	}
 
 	// We're processing resources in DAG order because we're resolving refernces (that can be resolved at plan stage).
-	g.Run(1, func(resourceKey string, failedDependency *string) bool {
+	g.Run(defaultParallelism, func(resourceKey string, failedDependency *string) bool {
 		errorPrefix := "cannot plan " + resourceKey
 
 		entry := plan.LockEntry(resourceKey)
@@ -120,26 +121,66 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 		// This means distinguishing between 0 that are actually object ids and 0 that are there because typed struct integer cannot contain ${...} string.
 		localDiff, err := structdiff.GetStructDiff(savedState, entry.NewState.Config)
 		if err != nil {
-			logdiag.LogError(ctx, fmt.Errorf("%s: diffing state: %w", errorPrefix, err))
+			logdiag.LogError(ctx, fmt.Errorf("%s: diffing local state: %w", errorPrefix, err))
 			return false
 		}
 
-		localAction := deployplan.ActionTypeSkip
+		localAction, localChangeMap := convertChangesToTriggersMap(adapter, localDiff)
 
-		for _, ch := range localDiff {
-			fieldAction := adapter.ClassifyByTriggers(ch)
-			if fieldAction > localAction {
-				localAction = fieldAction
-			}
-			if entry.Changes == nil {
+		if localAction == deployplan.ActionTypeRecreate {
+			entry.Action = localAction.String()
+			if len(localChangeMap) > 0 {
 				entry.Changes = &deployplan.Changes{
-					Local: make(map[string]deployplan.Trigger),
+					Local: localChangeMap,
 				}
 			}
-			entry.Changes.Local[ch.Path.String()] = deployplan.Trigger{Action: fieldAction.String()}
+			return true
 		}
 
-		entry.Action = localAction.String()
+		remoteState, err := adapter.DoRefresh(ctx, dbentry.ID)
+		if err != nil {
+			if errors.Is(err, apierr.ErrResourceDoesNotExist) || errors.Is(err, apierr.ErrNotFound) {
+				remoteState = nil
+			} else {
+				logdiag.LogError(ctx, fmt.Errorf("%s: failed to read id=%q: %w (localAction=%q)", errorPrefix, dbentry.ID, err, localAction.String()))
+				return false
+			}
+		}
+
+		// We have a choice whether to include remoteState or remoteStateComparable from below.
+		// Including remoteState because in the near future remoteState is expected to become a superset struct of remoteStateComparable
+		entry.RemoteState = remoteState
+
+		var remoteAction deployplan.ActionType
+		var remoteChangeMap map[string]deployplan.Trigger
+
+		if remoteState == nil {
+			remoteAction = deployplan.ActionTypeCreate
+		} else {
+			remoteStateComparable, err := adapter.RemapState(remoteState)
+			if err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("%s: failed to interpret remote state id=%q: %w", errorPrefix, dbentry.ID, err))
+				return false
+			}
+
+			remoteDiff, err := structdiff.GetStructDiff(savedState, remoteStateComparable)
+			if err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("%s: diffing remote state: %w", errorPrefix, err))
+				return false
+			}
+
+			remoteAction, remoteChangeMap = interpretOldStateVsRemoteState(adapter, remoteDiff)
+		}
+
+		entry.Action = max(localAction, remoteAction).String()
+
+		if len(localChangeMap) > 0 || len(remoteChangeMap) > 0 {
+			entry.Changes = &deployplan.Changes{
+				Local:  localChangeMap,
+				Remote: remoteChangeMap,
+			}
+		}
+
 		return true
 	})
 
@@ -178,6 +219,53 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 	return plan, nil
 }
 
+func convertChangesToTriggersMap(adapter *dresources.Adapter, diff []structdiff.Change) (deployplan.ActionType, map[string]deployplan.Trigger) {
+	action := deployplan.ActionTypeSkip
+	var m map[string]deployplan.Trigger
+
+	for _, ch := range diff {
+		fieldAction := adapter.ClassifyByTriggers(ch)
+		if fieldAction > action {
+			action = fieldAction
+		}
+		if m == nil {
+			m = make(map[string]deployplan.Trigger)
+		}
+		m[ch.Path.String()] = deployplan.Trigger{Action: fieldAction.String()}
+	}
+
+	return action, m
+}
+
+func interpretOldStateVsRemoteState(adapter *dresources.Adapter, diff []structdiff.Change) (deployplan.ActionType, map[string]deployplan.Trigger) {
+	action := deployplan.ActionTypeSkip
+	m := make(map[string]deployplan.Trigger)
+
+	for _, ch := range diff {
+		if ch.Old == nil {
+			// The field was not set by us, but comes from the remote state.
+			// This could either be server-side default or a policy.
+			// In any case, this is not a change we should react to.
+			m[ch.Path.String()] = deployplan.Trigger{
+				Action: deployplan.ActionTypeSkipString,
+				Reason: "server_side_default",
+			}
+			continue
+		}
+		fieldAction := adapter.ClassifyByTriggers(ch)
+		if fieldAction > action {
+			action = fieldAction
+		}
+		m[ch.Path.String()] = deployplan.Trigger{Action: fieldAction.String()}
+	}
+
+	if len(m) == 0 {
+		m = nil
+	}
+
+	return action, m
+}
+
 func (b *DeploymentBundle) CalculatePlanForDestroy(ctx context.Context, client *databricks.WorkspaceClient) (*deployplan.Plan, error) {
 	b.StateDB.AssertOpened()
 
@@ -209,6 +297,7 @@ func (b *DeploymentBundle) LookupReferenceLocal(ctx context.Context, path *struc
 	fieldPath := path.SkipPrefix(3)
 	fieldPathS := fieldPath.String()
 
+	// TODO: this will panic if targetResourceKey == resourceKey
 	targetEntry := b.Plan.LockEntry(targetResourceKey)
 	defer b.Plan.UnlockEntry(targetResourceKey)
 

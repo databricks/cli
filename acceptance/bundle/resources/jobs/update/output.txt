@@ -14,13 +14,6 @@ Deployment complete!
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 >>> [CLI] bundle debug plan
-{
-  "plan": {
-    "resources.jobs.foo": {
-      "action": "skip"
-    }
-  }
-}
 
 >>> print_requests
 {
@@ -74,15 +67,6 @@ Deployment complete!
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
-
->>> [CLI] bundle debug plan
-{
-  "plan": {
-    "resources.jobs.foo": {
-      "action": "skip"
-    }
-  }
-}
 
 >>> print_requests
 {

@@ -1,0 +1,3 @@
+trace $CLI bundle deploy
+trace $CLI volumes delete mycatalog.myschema.myname
+trace $CLI bundle plan

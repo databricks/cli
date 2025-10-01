@@ -27,6 +27,24 @@
           "description": "depends on foo id ${resources.pipelines.foo.id}"
         }
       },
+      "remote_state": {
+        "creator_user_name": "[USERNAME]",
+        "job_id": [BAR_ID],
+        "settings": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+          },
+          "description": "depends on foo id [FOO_ID]",
+          "edit_mode": "UI_LOCKED",
+          "format": "MULTI_TASK",
+          "max_concurrent_runs": 1,
+          "name": "job bar",
+          "queue": {
+            "enabled": true
+          }
+        }
+      },
       "changes": {
         "local": {
           "description": {
