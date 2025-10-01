@@ -91,12 +91,19 @@ If you're not an administrator user, enable this by following these steps:
 
 ### Enable long path support (up to ~32,767 characters)
 
-Modern Windows (10 Anniversary Update and newer) supports longer paths if you enable it.
-
-Some acceptance tests fail if this is not enabled because their paths exceed the
-default maximum total length of 260 characters.
+Some acceptance tests fail if this is not enabled because their paths
+exceed the default maximum total length of 260 characters.
 
 * Run "Edit group policy".
 * Go to Local Computer Policy → Computer Configuration → Administrative Templates → System → Filesystem → Enable Win32 long paths.
 * Enable the setting.
 * Reboot.
+
+
+
+
+⚠️ Last resort: Group Policy full disable
+
+If you’re on Windows Pro/Enterprise, and you’ve disabled Tamper Protection, you can permanently disable Defender via Group Policy Editor (gpedit.msc) →
+Computer Configuration → Administrative Templates → Windows Components → Microsoft Defender Antivirus → Turn off Microsoft Defender Antivirus → Enabled.
+Reboot afterwards.
