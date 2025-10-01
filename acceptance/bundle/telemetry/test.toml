@@ -1,9 +1,6 @@
 RecordRequests = true
 IncludeRequestHeaders = ["User-Agent"]
 
-#[Env]
-#DATABRICKS_CACHE_DISABLED = 'true'
-
 [[Repls]]
 Old = '"execution_time_ms": \d{1,5},'
 New = '"execution_time_ms": SMALL_INT,'
