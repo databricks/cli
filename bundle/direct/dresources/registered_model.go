@@ -62,6 +62,7 @@ func (r *ResourceRegisteredModel) DoUpdate(ctx context.Context, id string, confi
 		Owner: "",
 
 		// Name updates are not supported yet without recreating. Can be added as a follow-up.
+		// Note: TF also does not support changing name without a recreate so the current behavior matches TF.
 		NewName: "",
 	}
 
