@@ -61,6 +61,18 @@ var testConfig map[string]any = map[string]any{
 			Name: "main.myschema.my_synced_table",
 		},
 	},
+	"experiments": &resources.MlflowExperiment{
+		CreateExperiment: ml.CreateExperiment{
+			Name: "my-experiment",
+			Tags: []ml.ExperimentTag{
+				{
+					Key:   "my-tag",
+					Value: "my-value",
+				},
+			},
+			ArtifactLocation: "s3://my-bucket/my-experiment",
+		},
+	},
 	"models": &resources.MlflowModel{
 		CreateModelRequest: ml.CreateModelRequest{
 			Name:        "my_mlflow_model",

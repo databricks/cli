@@ -76,6 +76,7 @@ type FakeWorkspace struct {
 	Dashboards          map[string]dashboards.Dashboard
 	SqlWarehouses       map[string]sql.GetWarehouseResponse
 	Alerts              map[string]sql.AlertV2
+	Experiments         map[string]ml.GetExperimentResponse
 	ModelRegistryModels map[string]ml.Model
 
 	Acls map[string][]workspace.AclItem
@@ -174,6 +175,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		DatabaseCatalogs:     map[string]database.DatabaseCatalog{},
 		SyncedDatabaseTables: map[string]database.SyncedDatabaseTable{},
 		Alerts:               map[string]sql.AlertV2{},
+		Experiments:          map[string]ml.GetExperimentResponse{},
 		ModelRegistryModels:  map[string]ml.Model{},
 	}
 }
