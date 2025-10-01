@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/structs/structaccess"
+	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structwalk"
 	"github.com/databricks/cli/libs/testserver"
@@ -61,6 +62,17 @@ var testConfig map[string]any = map[string]any{
 			Name: "main.myschema.my_synced_table",
 		},
 	},
+
+	"registered_models": &resources.RegisteredModel{
+		CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{
+			Name:            "my_registered_model",
+			Comment:         "Test registered model",
+			CatalogName:     "main",
+			SchemaName:      "default",
+			StorageLocation: "s3://my-bucket/my-path",
+		},
+	},
+
 	"experiments": &resources.MlflowExperiment{
 		CreateExperiment: ml.CreateExperiment{
 			Name: "my-experiment",
@@ -73,6 +85,7 @@ var testConfig map[string]any = map[string]any{
 			ArtifactLocation: "s3://my-bucket/my-experiment",
 		},
 	},
+
 	"models": &resources.MlflowModel{
 		CreateModelRequest: ml.CreateModelRequest{
 			Name:        "my_mlflow_model",
@@ -162,21 +175,25 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		require.Equal(t, remote, remoteStateFromWaitCreate)
 	}
 
+	remappedState, err := adapter.RemapState(remote)
+	require.NoError(t, err)
+	require.NotNil(t, remappedState)
+
 	remoteStateFromUpdate, err := adapter.DoUpdate(ctx, createdID, newState)
 	require.NoError(t, err, "DoUpdate failed")
 	if remoteStateFromUpdate != nil {
-		require.Equal(t, remote, remoteStateFromUpdate)
+		remappedStateFromUpdate, err := adapter.RemapState(remoteStateFromUpdate)
+		require.NoError(t, err)
+		require.Equal(t, remappedState, remappedStateFromUpdate)
 	}
 
 	remoteStateFromWaitUpdate, err := adapter.WaitAfterUpdate(ctx, newState)
 	require.NoError(t, err)
 	if remoteStateFromWaitUpdate != nil {
-		require.Equal(t, remote, remoteStateFromWaitUpdate)
+		remappedStateFromWaitUpdate, err := adapter.RemapState(remoteStateFromWaitUpdate)
+		require.NoError(t, err)
+		require.Equal(t, remappedState, remappedStateFromWaitUpdate)
 	}
-
-	remappedState, err := adapter.RemapState(remote)
-	require.NoError(t, err)
-	require.NotNil(t, remappedState)
 
 	require.NoError(t, structwalk.Walk(newState, func(path *structpath.PathNode, val any, field *reflect.StructField) {
 		remoteValue, err := structaccess.Get(remappedState, path)
@@ -205,6 +222,16 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	remoteAfterDelete, err := adapter.DoRefresh(ctx, createdID)
 	require.Error(t, err)
 	require.Nil(t, remoteAfterDelete)
+
+	path, err := structpath.Parse("name")
+	require.NoError(t, err)
+
+	_, err = adapter.ClassifyChange(structdiff.Change{
+		Path: path,
+		Old:  nil,
+		New:  "mynewname",
+	}, remote)
+	require.NoError(t, err)
 }
 
 // validateFields uses structwalk to generate all valid field paths and checks membership.

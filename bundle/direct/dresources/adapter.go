@@ -72,6 +72,9 @@ type IResourceNoRefresh interface {
 
 	// [Optional] WaitAfterUpdate waits for the resource to become ready after update.
 	WaitAfterUpdate(ctx context.Context, newState any) error
+
+	// [Optional] ClassifyChange classifies a set of changes using custom logic.
+	ClassifyChange(change structdiff.Change, remoteState any) (deployplan.ActionType, error)
 }
 
 // IResourceWithRefresh is an alternative to IResourceNoRefresh but every method can return remoteState.
@@ -111,6 +114,7 @@ type Adapter struct {
 	doUpdateWithID  *calladapt.BoundCaller
 	waitAfterCreate *calladapt.BoundCaller
 	waitAfterUpdate *calladapt.BoundCaller
+	classifyChange  *calladapt.BoundCaller
 
 	fieldTriggers map[string]deployplan.ActionType
 }
@@ -138,6 +142,7 @@ func NewAdapter(typedNil any, client *databricks.WorkspaceClient) (*Adapter, err
 		doUpdateWithID:  nil,
 		waitAfterCreate: nil,
 		waitAfterUpdate: nil,
+		classifyChange:  nil,
 		fieldTriggers:   map[string]deployplan.ActionType{},
 	}
 
@@ -304,6 +309,10 @@ func (a *Adapter) validate() error {
 		if len(a.waitAfterUpdate.OutTypes) == 2 {
 			validations = append(validations, "WaitAfterUpdate remoteState return", a.waitAfterUpdate.OutTypes[0], remoteType)
 		}
+	}
+
+	if a.classifyChange != nil {
+		validations = append(validations, "ClassifyChange changes", a.classifyChange.InTypes[1], remoteType)
 	}
 
 	err = validateTypes(validations...)
@@ -499,6 +508,21 @@ func (a *Adapter) WaitAfterUpdate(ctx context.Context, newState any) (any, error
 		// WithRefresh version
 		return outs[0], nil
 	}
+}
+
+func (a *Adapter) ClassifyChange(change structdiff.Change, remoteState any) (deployplan.ActionType, error) {
+	// If ClassifyChange is not implemented, use FieldTriggers.
+	if a.classifyChange == nil {
+		return a.ClassifyByTriggers(change), nil
+	}
+
+	outs, err := a.classifyChange.Call(change, remoteState)
+	if err != nil {
+		return deployplan.ActionTypeSkip, err
+	}
+
+	actionType := outs[0].(deployplan.ActionType)
+	return actionType, nil
 }
 
 // prepareCallRequired prepares a call and ensures the method is found.

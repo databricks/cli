@@ -169,7 +169,7 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 				return false
 			}
 
-			remoteAction, remoteChangeMap = interpretOldStateVsRemoteState(adapter, remoteDiff)
+			remoteAction, remoteChangeMap = interpretOldStateVsRemoteState(ctx, adapter, remoteDiff, remoteState)
 		}
 
 		entry.Action = max(localAction, remoteAction).String()
@@ -237,7 +237,7 @@ func convertChangesToTriggersMap(adapter *dresources.Adapter, diff []structdiff.
 	return action, m
 }
 
-func interpretOldStateVsRemoteState(adapter *dresources.Adapter, diff []structdiff.Change) (deployplan.ActionType, map[string]deployplan.Trigger) {
+func interpretOldStateVsRemoteState(ctx context.Context, adapter *dresources.Adapter, diff []structdiff.Change, remoteState any) (deployplan.ActionType, map[string]deployplan.Trigger) {
 	action := deployplan.ActionTypeSkip
 	m := make(map[string]deployplan.Trigger)
 
@@ -252,7 +252,12 @@ func interpretOldStateVsRemoteState(adapter *dresources.Adapter, diff []structdi
 			}
 			continue
 		}
-		fieldAction := adapter.ClassifyByTriggers(ch)
+		fieldAction, err := adapter.ClassifyChange(ch, remoteState)
+		if err != nil {
+			logdiag.LogError(ctx, fmt.Errorf("internal error: failed to classify changes: %w", err))
+			continue
+		}
+
 		if fieldAction > action {
 			action = fieldAction
 		}
