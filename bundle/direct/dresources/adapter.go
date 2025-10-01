@@ -78,7 +78,7 @@ type IResourceNoRefresh interface {
 	WaitAfterUpdate(ctx context.Context, newState any) error
 
 	// [Optional] ClassifyChange classifies a set of changes using custom logic.
-	ClassifyChange(change structdiff.Change, remoteState any) (deployplan.ActionType, error)
+	ClassifyChange(change structdiff.Change, remoteState any) deployplan.ActionType
 }
 
 // IResourceWithRefresh is an alternative to IResourceNoRefresh but every method can return remoteState.
@@ -553,19 +553,19 @@ func (a *Adapter) WaitAfterUpdate(ctx context.Context, newState any) (any, error
 	}
 }
 
-func (a *Adapter) ClassifyChange(change structdiff.Change, remoteState any) (deployplan.ActionType, error) {
+func (a *Adapter) ClassifyChange(change structdiff.Change, remoteState any) deployplan.ActionType {
 	// If ClassifyChange is not implemented, use FieldTriggers.
 	if a.classifyChange == nil {
-		return a.ClassifyByTriggers(change), nil
+		return a.ClassifyByTriggers(change)
 	}
 
 	outs, err := a.classifyChange.Call(change, remoteState)
 	if err != nil {
-		return deployplan.ActionTypeSkip, err
+		return deployplan.ActionTypeSkip
 	}
 
 	actionType := outs[0].(deployplan.ActionType)
-	return actionType, nil
+	return actionType
 }
 
 // prepareCallRequired prepares a call and ensures the method is found.

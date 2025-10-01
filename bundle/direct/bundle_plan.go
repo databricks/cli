@@ -135,11 +135,7 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 			}
 		}
 
-		// We have a choice whether to include remoteState or remoteStateComparable from below.
-		// Including remoteState because in the near future remoteState is expected to become a superset struct of remoteStateComparable
-		entry.RemoteState = remoteState
-
-		localAction, localChangeMap := convertChangesToTriggersMap(ctx, adapter, localDiff, remoteState)
+		localAction, localChangeMap := convertChangesToTriggersMap(adapter, localDiff, remoteState)
 		if localAction == deployplan.ActionTypeRecreate {
 			entry.Action = localAction.String()
 			if len(localChangeMap) > 0 {
@@ -149,6 +145,10 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 			}
 			return true
 		}
+
+		// We have a choice whether to include remoteState or remoteStateComparable from below.
+		// Including remoteState because in the near future remoteState is expected to become a superset struct of remoteStateComparable
+		entry.RemoteState = remoteState
 
 		var remoteAction deployplan.ActionType
 		var remoteChangeMap map[string]deployplan.Trigger
@@ -168,7 +168,7 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 				return false
 			}
 
-			remoteAction, remoteChangeMap = interpretOldStateVsRemoteState(ctx, adapter, remoteDiff, remoteState)
+			remoteAction, remoteChangeMap = interpretOldStateVsRemoteState(adapter, remoteDiff, remoteState)
 		}
 
 		entry.Action = max(localAction, remoteAction).String()
@@ -218,16 +218,12 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 	return plan, nil
 }
 
-func convertChangesToTriggersMap(ctx context.Context, adapter *dresources.Adapter, diff []structdiff.Change, remoteState any) (deployplan.ActionType, map[string]deployplan.Trigger) {
+func convertChangesToTriggersMap(adapter *dresources.Adapter, diff []structdiff.Change, remoteState any) (deployplan.ActionType, map[string]deployplan.Trigger) {
 	action := deployplan.ActionTypeSkip
 	var m map[string]deployplan.Trigger
 
 	for _, ch := range diff {
-		fieldAction, err := adapter.ClassifyChange(ch, remoteState)
-		if err != nil {
-			logdiag.LogError(ctx, fmt.Errorf("internal error: failed to classify changes: %w", err))
-			continue
-		}
+		fieldAction := adapter.ClassifyChange(ch, remoteState)
 		if fieldAction > action {
 			action = fieldAction
 		}
@@ -240,7 +236,7 @@ func convertChangesToTriggersMap(ctx context.Context, adapter *dresources.Adapte
 	return action, m
 }
 
-func interpretOldStateVsRemoteState(ctx context.Context, adapter *dresources.Adapter, diff []structdiff.Change, remoteState any) (deployplan.ActionType, map[string]deployplan.Trigger) {
+func interpretOldStateVsRemoteState(adapter *dresources.Adapter, diff []structdiff.Change, remoteState any) (deployplan.ActionType, map[string]deployplan.Trigger) {
 	action := deployplan.ActionTypeSkip
 	m := make(map[string]deployplan.Trigger)
 
@@ -255,12 +251,7 @@ func interpretOldStateVsRemoteState(ctx context.Context, adapter *dresources.Ada
 			}
 			continue
 		}
-		fieldAction, err := adapter.ClassifyChange(ch, remoteState)
-		if err != nil {
-			logdiag.LogError(ctx, fmt.Errorf("internal error: failed to classify changes: %w", err))
-			continue
-		}
-
+		fieldAction := adapter.ClassifyChange(ch, remoteState)
 		if fieldAction > action {
 			action = fieldAction
 		}

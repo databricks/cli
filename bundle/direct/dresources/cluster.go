@@ -25,7 +25,7 @@ func (r *ResourceCluster) PrepareState(input *resources.Cluster) *compute.Cluste
 }
 
 func (r *ResourceCluster) RemapState(input *compute.ClusterDetails) *compute.ClusterSpec {
-	return &compute.ClusterSpec{
+	spec := &compute.ClusterSpec{
 		Autoscale:                  input.Autoscale,
 		AutoterminationMinutes:     input.AutoterminationMinutes,
 		AwsAttributes:              input.AwsAttributes,
@@ -57,7 +57,12 @@ func (r *ResourceCluster) RemapState(input *compute.ClusterDetails) *compute.Clu
 		TotalInitialRemoteDiskSize: input.TotalInitialRemoteDiskSize,
 		UseMlRuntime:               input.UseMlRuntime,
 		WorkloadType:               input.WorkloadType,
+		ForceSendFields:            filterFields[compute.ClusterSpec](input.ForceSendFields),
 	}
+	if input.Spec != nil {
+		spec.ApplyPolicyDefaultValues = input.Spec.ApplyPolicyDefaultValues
+	}
+	return spec
 }
 
 func (r *ResourceCluster) DoRefresh(ctx context.Context, id string) (*compute.ClusterDetails, error) {
@@ -82,9 +87,10 @@ func (r *ResourceCluster) DoUpdate(ctx context.Context, id string, config *compu
 
 func (r *ResourceCluster) DoResize(ctx context.Context, id string, config *compute.ClusterSpec) error {
 	_, err := r.client.Clusters.Resize(ctx, compute.ResizeCluster{
-		ClusterId:  id,
-		NumWorkers: config.NumWorkers,
-		Autoscale:  config.Autoscale,
+		ClusterId:       id,
+		NumWorkers:      config.NumWorkers,
+		Autoscale:       config.Autoscale,
+		ForceSendFields: filterFields[compute.ResizeCluster](config.ForceSendFields),
 	})
 	return err
 }
@@ -93,27 +99,29 @@ func (r *ResourceCluster) DoDelete(ctx context.Context, id string) error {
 	return r.client.Clusters.PermanentDeleteByClusterId(ctx, id)
 }
 
-func (r *ResourceCluster) ClassifyChange(change structdiff.Change, remoteState *compute.ClusterDetails) (deployplan.ActionType, error) {
+func (r *ResourceCluster) ClassifyChange(change structdiff.Change, remoteState *compute.ClusterDetails) deployplan.ActionType {
 	// Always update if the cluster is not running.
 	if remoteState.State != compute.StateRunning {
-		return deployplan.ActionTypeUpdate, nil
+		return deployplan.ActionTypeUpdate
 	}
 
 	if change.Path.String() == "num_workers" {
-		return deployplan.ActionTypeResize, nil
+		return deployplan.ActionTypeResize
 	}
 
-	return deployplan.ActionTypeUpdate, nil
+	return deployplan.ActionTypeUpdate
 }
 
 func makeCreateCluster(config *compute.ClusterSpec) compute.CreateCluster {
 	return compute.CreateCluster{
+		ApplyPolicyDefaultValues:   config.ApplyPolicyDefaultValues,
 		Autoscale:                  config.Autoscale,
 		AutoterminationMinutes:     config.AutoterminationMinutes,
 		AwsAttributes:              config.AwsAttributes,
 		AzureAttributes:            config.AzureAttributes,
 		ClusterLogConf:             config.ClusterLogConf,
 		ClusterName:                config.ClusterName,
+		CloneFrom:                  nil, // Not supported by DABs
 		CustomTags:                 config.CustomTags,
 		DataSecurityMode:           config.DataSecurityMode,
 		DockerImage:                config.DockerImage,
@@ -139,12 +147,14 @@ func makeCreateCluster(config *compute.ClusterSpec) compute.CreateCluster {
 		TotalInitialRemoteDiskSize: config.TotalInitialRemoteDiskSize,
 		UseMlRuntime:               config.UseMlRuntime,
 		WorkloadType:               config.WorkloadType,
+		ForceSendFields:            filterFields[compute.CreateCluster](config.ForceSendFields),
 	}
 }
 
 func makeEditCluster(id string, config *compute.ClusterSpec) compute.EditCluster {
 	return compute.EditCluster{
 		ClusterId:                  id,
+		ApplyPolicyDefaultValues:   config.ApplyPolicyDefaultValues,
 		Autoscale:                  config.Autoscale,
 		AutoterminationMinutes:     config.AutoterminationMinutes,
 		AwsAttributes:              config.AwsAttributes,
@@ -176,5 +186,6 @@ func makeEditCluster(id string, config *compute.ClusterSpec) compute.EditCluster
 		TotalInitialRemoteDiskSize: config.TotalInitialRemoteDiskSize,
 		UseMlRuntime:               config.UseMlRuntime,
 		WorkloadType:               config.WorkloadType,
+		ForceSendFields:            filterFields[compute.EditCluster](config.ForceSendFields),
 	}
 }
