@@ -1,1 +1,24 @@
-Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+{
+  "plan": {
+    "resources.models.my_model": {
+      "action": "skip",
+      "remote_state": {
+        "description": "original-description-[UNIQUE_NAME]",
+        "name": "original-name-[UNIQUE_NAME]",
+        "tags": [
+          {
+            "key": "key1",
+            "value": "value1"
+          }
+        ]
+      },
+      "changes": {
+        "local": {
+          "tags": {
+            "action": "skip"
+          }
+        }
+      }
+    }
+  }
+}

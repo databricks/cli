@@ -6,7 +6,7 @@ cleanup() {
 trap cleanup EXIT
 
 deploy_with_plan() {
-    trace $CLI bundle plan
+    trace $CLI bundle debug plan
     trace $CLI bundle deploy
     model_id=$($CLI bundle summary --output json | jq -r '.resources.models.my_model.id')
     trace $CLI model-registry get-model $model_id | jq '.registered_model_databricks | {name, description, tags}'

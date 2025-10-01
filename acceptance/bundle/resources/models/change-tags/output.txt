@@ -4,7 +4,7 @@
 
 >>> export MODEL_NAME=original-name-[UNIQUE_NAME]
 
->>> [CLI] bundle plan
+>>> [CLI] bundle debug plan
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/model-change-tags-[UNIQUE_NAME]/default/files...
@@ -25,7 +25,7 @@ Deployment complete!
 }
 
 === add a new tag, this should be a no-op; terraform does make an update request but since update request has no tags in it, it does nothing; direct skips request completely
->>> [CLI] bundle plan
+>>> [CLI] bundle debug plan
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/model-change-tags-[UNIQUE_NAME]/default/files...
