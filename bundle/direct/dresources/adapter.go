@@ -66,6 +66,10 @@ type IResourceNoRefresh interface {
 	// Example: func (r *ResourceVolume) DoUpdateWithID(ctx, id string, newState *catalog.CreateVolumeRequestContent) (string, error)
 	DoUpdateWithID(ctx context.Context, id string, newState any) (string, error)
 
+	// [Optional] DoResize resizes the resource. Only supported by clusters
+	// Example: func (r *ResourceCluster) DoResize(ctx context.Context, id string, newState *compute.ClusterSpec) error
+	DoResize(ctx context.Context, id string, newState any) error
+
 	// [Optional] WaitAfterCreate waits for the resource to become ready after creation.
 	// TODO: wait status should be persisted in the state.
 	WaitAfterCreate(ctx context.Context, newState any) error
@@ -92,6 +96,9 @@ type IResourceWithRefresh interface {
 	// Optional: updates that may change ID. Returns new id and remote state when available.
 	DoUpdateWithID(ctx context.Context, id string, newState any) (newID string, remoteState any, e error)
 
+	// [Optional] DoResize resizes the resource. Only supported by clusters
+	DoResize(ctx context.Context, id string, newState any) (remoteState any, e error)
+
 	// WaitAfterCreate waits for the resource to become ready after creation.
 	WaitAfterCreate(ctx context.Context, newState any) (newRemoteState any, e error)
 
@@ -115,6 +122,7 @@ type Adapter struct {
 	waitAfterCreate *calladapt.BoundCaller
 	waitAfterUpdate *calladapt.BoundCaller
 	classifyChange  *calladapt.BoundCaller
+	doResize        *calladapt.BoundCaller
 
 	fieldTriggers map[string]deployplan.ActionType
 }
@@ -140,6 +148,7 @@ func NewAdapter(typedNil any, client *databricks.WorkspaceClient) (*Adapter, err
 		doCreate:        nil,
 		doUpdate:        nil,
 		doUpdateWithID:  nil,
+		doResize:        nil,
 		waitAfterCreate: nil,
 		waitAfterUpdate: nil,
 		classifyChange:  nil,
@@ -230,6 +239,16 @@ func (a *Adapter) initMethods(resource any) error {
 		return err
 	}
 
+	a.classifyChange, err = calladapt.PrepareCall(resource, calladapt.TypeOf[IResourceNoRefresh](), "ClassifyChange")
+	if err != nil {
+		return err
+	}
+
+	a.doResize, err = prepareCallFromTwoVariants(resource, "DoResize")
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -290,6 +309,13 @@ func (a *Adapter) validate() error {
 		validations = append(validations, "DoUpdate remoteState return", a.doUpdate.OutTypes[0], remoteType)
 	}
 
+	if a.doResize != nil {
+		validations = append(validations, "DoResize newState", a.doResize.InTypes[2], stateType)
+		if len(a.doUpdate.OutTypes) == 2 {
+			validations = append(validations, "DoResize remoteState return", a.doUpdate.OutTypes[0], remoteType)
+		}
+	}
+
 	if a.doUpdateWithID != nil {
 		validations = append(validations, "DoUpdateWithID newState", a.doUpdateWithID.InTypes[2], stateType)
 		if len(a.doUpdateWithID.OutTypes) == 3 {
@@ -312,7 +338,7 @@ func (a *Adapter) validate() error {
 	}
 
 	if a.classifyChange != nil {
-		validations = append(validations, "ClassifyChange changes", a.classifyChange.InTypes[1], remoteType)
+		validations = append(validations, "ClassifyChange remoteState", a.classifyChange.InTypes[1], remoteType)
 	}
 
 	err = validateTypes(validations...)
@@ -453,6 +479,23 @@ func (a *Adapter) DoUpdateWithID(ctx context.Context, oldID string, newState any
 		return id, outs[1], nil
 	} else {
 		return id, nil, nil
+	}
+}
+
+func (a *Adapter) DoResize(ctx context.Context, id string, newState any) (any, error) {
+	if a.doResize == nil {
+		return nil, errors.New("internal error: DoResize not found")
+	}
+
+	outs, err := a.doResize.Call(ctx, id, newState)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(outs) == 1 {
+		return outs[0], nil
+	} else {
+		return nil, nil
 	}
 }
 

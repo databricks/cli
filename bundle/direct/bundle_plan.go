@@ -125,8 +125,21 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 			return false
 		}
 
-		localAction, localChangeMap := convertChangesToTriggersMap(adapter, localDiff)
+		remoteState, err := adapter.DoRefresh(ctx, dbentry.ID)
+		if err != nil {
+			if errors.Is(err, apierr.ErrResourceDoesNotExist) || errors.Is(err, apierr.ErrNotFound) {
+				remoteState = nil
+			} else {
+				logdiag.LogError(ctx, fmt.Errorf("%s: failed to read id=%q: %w", errorPrefix, dbentry.ID, err))
+				return false
+			}
+		}
 
+		// We have a choice whether to include remoteState or remoteStateComparable from below.
+		// Including remoteState because in the near future remoteState is expected to become a superset struct of remoteStateComparable
+		entry.RemoteState = remoteState
+
+		localAction, localChangeMap := convertChangesToTriggersMap(ctx, adapter, localDiff, remoteState)
 		if localAction == deployplan.ActionTypeRecreate {
 			entry.Action = localAction.String()
 			if len(localChangeMap) > 0 {
@@ -136,20 +149,6 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 			}
 			return true
 		}
-
-		remoteState, err := adapter.DoRefresh(ctx, dbentry.ID)
-		if err != nil {
-			if errors.Is(err, apierr.ErrResourceDoesNotExist) || errors.Is(err, apierr.ErrNotFound) {
-				remoteState = nil
-			} else {
-				logdiag.LogError(ctx, fmt.Errorf("%s: failed to read id=%q: %w (localAction=%q)", errorPrefix, dbentry.ID, err, localAction.String()))
-				return false
-			}
-		}
-
-		// We have a choice whether to include remoteState or remoteStateComparable from below.
-		// Including remoteState because in the near future remoteState is expected to become a superset struct of remoteStateComparable
-		entry.RemoteState = remoteState
 
 		var remoteAction deployplan.ActionType
 		var remoteChangeMap map[string]deployplan.Trigger
@@ -219,12 +218,16 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 	return plan, nil
 }
 
-func convertChangesToTriggersMap(adapter *dresources.Adapter, diff []structdiff.Change) (deployplan.ActionType, map[string]deployplan.Trigger) {
+func convertChangesToTriggersMap(ctx context.Context, adapter *dresources.Adapter, diff []structdiff.Change, remoteState any) (deployplan.ActionType, map[string]deployplan.Trigger) {
 	action := deployplan.ActionTypeSkip
 	var m map[string]deployplan.Trigger
 
 	for _, ch := range diff {
-		fieldAction := adapter.ClassifyByTriggers(ch)
+		fieldAction, err := adapter.ClassifyChange(ch, remoteState)
+		if err != nil {
+			logdiag.LogError(ctx, fmt.Errorf("internal error: failed to classify changes: %w", err))
+			continue
+		}
 		if fieldAction > action {
 			action = fieldAction
 		}
