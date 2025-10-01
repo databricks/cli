@@ -149,9 +149,6 @@ Deployment complete!
 >>> envsubst
 
 >>> [CLI] bundle plan
-update experiments.my_experiment
-
-Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/experiment-basic-[UNIQUE_NAME]/default/files...
