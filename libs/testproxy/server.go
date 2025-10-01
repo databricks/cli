@@ -7,14 +7,12 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
-	"strconv"
 
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/testserver"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/httpclient"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -24,8 +22,7 @@ type ProxyServer struct {
 
 	t testutil.TestingT
 
-	apiClient        *client.DatabricksClient
-	workspaceClient  *databricks.WorkspaceClient
+	apiClient        *httpclient.ApiClient
 	RequestCallback  func(request *testserver.Request)
 	ResponseCallback func(request *testserver.Request, response *testserver.EncodedResponse)
 }
@@ -50,10 +47,10 @@ func New(t testutil.TestingT) *ProxyServer {
 	// In CI test environments this would read the appropriate environment
 	// variables.
 	var err error
-	s.apiClient, err = client.New(&config.Config{})
+	cfg := &config.Config{}
+	clientCfg, err := config.HTTPClientConfigFromConfig(cfg)
 	require.NoError(t, err)
-	s.workspaceClient, err = databricks.NewWorkspaceClient()
-	require.NoError(t, err)
+	s.apiClient = httpclient.NewApiClient(clientCfg)
 
 	// Set up the proxy handler as the default handler for all requests.
 	server := httptest.NewServer(http.HandlerFunc(s.proxyToCloud))
@@ -107,7 +104,29 @@ func (s *ProxyServer) proxyToCloud(w http.ResponseWriter, r *http.Request) {
 
 	reqBody := s.reqBody(request)
 	respBody := bytes.Buffer{}
-	err := s.apiClient.Do(context.Background(), r.Method, r.URL.Path, headers, queryParams, reqBody, &respBody)
+
+	// List of response headers to pass through to the client.
+	// We can extend this code to pass all X-Databricks headers if we introduce a
+	// more powerful visitor like `WithRequestHeaders` to the SDK. That is left
+	// as a future exercise for now.
+	includeResponseHeaders := []string{"X-Databricks-Org-Id"}
+	responseHeaders := make(map[string]*string)
+
+	visitors := []httpclient.DoOption{
+		httpclient.WithRequestHeaders(headers),
+		httpclient.WithQueryParameters(queryParams),
+		httpclient.WithRequestData(reqBody),
+		httpclient.WithResponseUnmarshal(&respBody),
+	}
+
+	for _, header := range includeResponseHeaders {
+		responseHeaders[header] = new(string)
+		visitors = append(visitors, httpclient.WithResponseHeader(header, responseHeaders[header]))
+	}
+
+	err := s.apiClient.Do(context.Background(), r.Method, r.URL.Path,
+		visitors...,
+	)
 
 	var encodedResponse *testserver.EncodedResponse
 
@@ -138,14 +157,9 @@ func (s *ProxyServer) proxyToCloud(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// The SDK reads the X-Databricks-Org-Id header to get the workspace ID. Set it for
-	// the /api/2.0/preview/scim/v2/Me endpoint so that the SDK CurrentWorkspaceID()
-	// method returns the workspace ID.
-	responseHeaders := http.Header{}
-	if r.Method == "GET" && r.URL.Path == "/api/2.0/preview/scim/v2/Me" {
-		workspaceId, err := s.workspaceClient.CurrentWorkspaceID(context.Background())
-		require.NoError(s.t, err)
-		responseHeaders["X-Databricks-Org-Id"] = []string{strconv.FormatInt(workspaceId, 10)}
+	formattedHeaders := http.Header{}
+	for k, v := range responseHeaders {
+		formattedHeaders[k] = []string{*v}
 	}
 
 	// Successful response
@@ -153,14 +167,14 @@ func (s *ProxyServer) proxyToCloud(w http.ResponseWriter, r *http.Request) {
 		encodedResponse = &testserver.EncodedResponse{
 			StatusCode: 200,
 			Body:       respBody.Bytes(),
-			Headers:    responseHeaders,
+			Headers:    formattedHeaders,
 		}
 	}
 
 	// Send response to client.
 	if len(responseHeaders) > 0 {
 		for k, v := range responseHeaders {
-			w.Header()[k] = v
+			w.Header()[k] = []string{*v}
 		}
 	}
 
