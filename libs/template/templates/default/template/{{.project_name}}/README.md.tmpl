@@ -50,7 +50,7 @@ with this project. It's also possible to interact with it directly using the CLI
     is optional here.)
 
     This deploys everything that's defined for this project.
-    {{- if eq .lakeflow_only "yes"}}
+    {{- if eq .include_pipeline "yes"}}
     For example, the default template would deploy a pipeline called
     `[dev yourname] {{.project_name_short}}_etl` to your workspace.
     {{- else}}
@@ -64,7 +64,7 @@ with this project. It's also possible to interact with it directly using the CLI
    $ databricks bundle deploy --target prod
    ```
 
-   {{- if eq .lakeflow_only "yes"}}
+   {{- if eq .include_pipeline "yes"}}
    Note the default template has a includes a job that runs the pipeline every day
    (defined in resources/{{.project_name_short}}_etl/{{.project_name_short}}_job.job.yml). The schedule
    is paused when deploying in development mode (see

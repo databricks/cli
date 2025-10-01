@@ -1,13 +1,9 @@
-# The job that triggers {{.project_name_short}}_etl.
-
-{{- /* For Lakeflow Pipelines, we only include a simple job.yml
-     * directly in resources/{{.project_name_short}}_etl
-     */}}
+# A sample job for my_lakeflow_pipelines.
 
 resources:
   jobs:
-    {{.project_name_short}}_job:
-      name: {{.project_name_short}}_job
+    sample_job:
+      name: sample_job
 
       trigger:
         # Run this job every day, exactly one day from the last run; see https://docs.databricks.com/api/workspace/jobs/create#trigger
@@ -19,7 +15,18 @@ resources:
       #  on_failure:
       #    - your_email@example.com
 
+      parameters:
+        - name: catalog
+          default: ${var.catalog}
+        - name: schema
+          default: ${var.schema}
+
       tasks:
         - task_key: refresh_pipeline
           pipeline_task:
-            pipeline_id: ${resources.pipelines.{{.project_name_short}}_etl.id}
+            pipeline_id: ${resources.pipelines.lakeflow_pipelines_etl.id}
+
+      environments:
+        - environment_key: default
+          spec:
+            client: "2"
