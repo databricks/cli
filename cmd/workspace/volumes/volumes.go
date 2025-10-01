@@ -98,7 +98,12 @@ func newCreate() *cobra.Command {
     CATALOG_NAME: The name of the catalog where the schema and the volume are
     SCHEMA_NAME: The name of the schema where the volume is
     NAME: The name of the volume
-    VOLUME_TYPE:  
+    VOLUME_TYPE: The type of the volume. An external volume is located in the specified
+      external location. A managed volume is located in the default location
+      which is specified by the parent schema, or the parent catalog, or the
+      Metastore. [Learn more]
+      
+      [Learn more]: https://docs.databricks.com/aws/en/volumes/managed-vs-external 
       Supported values: [EXTERNAL, MANAGED]`
 
 	cmd.Annotations = make(map[string]string)
@@ -196,28 +201,16 @@ func newDelete() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No NAME argument specified. Loading names for Volumes drop-down."
-			names, err := w.Volumes.VolumeInfoNameToVolumeIdMap(ctx, catalog.ListVolumesRequest{})
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Volumes drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "The three-level (fully qualified) name of the volume")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the three-level (fully qualified) name of the volume")
-		}
 		deleteReq.Name = args[0]
 
 		err = w.Volumes.Delete(ctx, deleteReq)
@@ -267,7 +260,7 @@ func newList() *cobra.Command {
   The returned volumes are filtered based on the privileges of the calling user.
   For example, the metastore admin is able to list all the volumes. A regular
   user needs to be the owner or have the **READ VOLUME** privilege on the volume
-  to recieve the volumes in the response. For the latter case, the caller must
+  to receive the volumes in the response. For the latter case, the caller must
   also be the owner or have the **USE_CATALOG** privilege on the parent catalog
   and the **USE_SCHEMA** privilege on the parent schema.
   
@@ -340,28 +333,16 @@ func newRead() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No NAME argument specified. Loading names for Volumes drop-down."
-			names, err := w.Volumes.VolumeInfoNameToVolumeIdMap(ctx, catalog.ListVolumesRequest{})
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Volumes drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "The three-level (fully qualified) name of the volume")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the three-level (fully qualified) name of the volume")
-		}
 		readReq.Name = args[0]
 
 		response, err := w.Volumes.Read(ctx, readReq)
@@ -422,6 +403,11 @@ func newUpdate() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -438,23 +424,6 @@ func newUpdate() *cobra.Command {
 					return err
 				}
 			}
-		}
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No NAME argument specified. Loading names for Volumes drop-down."
-			names, err := w.Volumes.VolumeInfoNameToVolumeIdMap(ctx, catalog.ListVolumesRequest{})
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Volumes drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "The three-level (fully qualified) name of the volume")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the three-level (fully qualified) name of the volume")
 		}
 		updateReq.Name = args[0]
 
