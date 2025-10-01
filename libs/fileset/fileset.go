@@ -3,6 +3,7 @@ package fileset
 import (
 	"fmt"
 	"io/fs"
+	"os"
 	pathlib "path"
 	"path/filepath"
 	"slices"
@@ -57,6 +58,10 @@ func New(root vfs.Path, args ...[]string) *FileSet {
 	}
 }
 
+func Empty() *FileSet {
+	return &FileSet{}
+}
+
 // Ignorer returns the [FileSet]'s current ignorer.
 func (w *FileSet) Ignorer() Ignorer {
 	return w.ignore
@@ -94,6 +99,10 @@ func (w *FileSet) recursiveListFiles(path string, seen map[string]struct{}) (out
 
 		info, err := d.Info()
 		if err != nil {
+			// Skip files that were deleted/renamed during traversal
+			if os.IsNotExist(err) {
+				return nil
+			}
 			return err
 		}
 
