@@ -1,0 +1,33 @@
+{
+  "plan": {
+    "resources.pipelines.my": {
+      "action": "recreate",
+      "new_state": {
+        "config": {
+          "channel": "CURRENT",
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/state/metadata.json"
+          },
+          "edition": "ADVANCED",
+          "libraries": [
+            {
+              "file": {
+                "path": "/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files/foo.py"
+              }
+            }
+          ],
+          "name": "test-pipeline-[UNIQUE_NAME]",
+          "storage": "dbfs:/pipelines/newcustom"
+        }
+      },
+      "changes": {
+        "local": {
+          "storage": {
+            "action": "recreate"
+          }
+        }
+      }
+    }
+  }
+}

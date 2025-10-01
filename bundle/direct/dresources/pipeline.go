@@ -42,7 +42,8 @@ func (*ResourcePipeline) RemapState(p *pipelines.GetPipelineResponse) *pipelines
 		EventLog:            spec.EventLog,
 		Filters:             spec.Filters,
 		GatewayDefinition:   spec.GatewayDefinition,
-		Id:                  spec.Id,
+		// Clear "id" field, otherwise it shows up in changes.remote
+		Id:                  "",
 		IngestionDefinition: spec.IngestionDefinition,
 		Libraries:           spec.Libraries,
 		Name:                spec.Name,
@@ -57,7 +58,7 @@ func (*ResourcePipeline) RemapState(p *pipelines.GetPipelineResponse) *pipelines
 		Tags:                spec.Tags,
 		Target:              spec.Target,
 		Trigger:             spec.Trigger,
-		ForceSendFields:     filterFields[pipelines.CreatePipeline](spec.ForceSendFields, "AllowDuplicateNames", "DryRun", "RunAs"),
+		ForceSendFields:     filterFields[pipelines.CreatePipeline](spec.ForceSendFields, "AllowDuplicateNames", "DryRun", "RunAs", "Id"),
 	}
 }
 
