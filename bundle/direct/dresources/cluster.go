@@ -26,6 +26,7 @@ func (r *ResourceCluster) PrepareState(input *resources.Cluster) *compute.Cluste
 
 func (r *ResourceCluster) RemapState(input *compute.ClusterDetails) *compute.ClusterSpec {
 	spec := &compute.ClusterSpec{
+		ApplyPolicyDefaultValues:   false,
 		Autoscale:                  input.Autoscale,
 		AutoterminationMinutes:     input.AutoterminationMinutes,
 		AwsAttributes:              input.AwsAttributes,
