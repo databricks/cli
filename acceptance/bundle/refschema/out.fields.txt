@@ -2571,6 +2571,33 @@ resources.pipelines.*.trigger.cron.quartz_cron_schedule	string	INPUT	STATE
 resources.pipelines.*.trigger.cron.timezone_id	string	INPUT	STATE
 resources.pipelines.*.trigger.manual	*pipelines.ManualTrigger	INPUT	STATE
 resources.pipelines.*.url	string	INPUT
+resources.registered_models.*.aliases	[]catalog.RegisteredModelAlias	REMOTE
+resources.registered_models.*.aliases[*]	catalog.RegisteredModelAlias	REMOTE
+resources.registered_models.*.aliases[*].alias_name	string	REMOTE
+resources.registered_models.*.aliases[*].version_num	int	REMOTE
+resources.registered_models.*.browse_only	bool	REMOTE
+resources.registered_models.*.catalog_name	string	ALL
+resources.registered_models.*.comment	string	ALL
+resources.registered_models.*.created_at	int64	REMOTE
+resources.registered_models.*.created_by	string	REMOTE
+resources.registered_models.*.full_name	string	REMOTE
+resources.registered_models.*.grants	[]resources.Grant	INPUT
+resources.registered_models.*.grants[*]	resources.Grant	INPUT
+resources.registered_models.*.grants[*].principal	string	INPUT
+resources.registered_models.*.grants[*].privileges	[]string	INPUT
+resources.registered_models.*.grants[*].privileges[*]	string	INPUT
+resources.registered_models.*.id	string	INPUT
+resources.registered_models.*.lifecycle	resources.Lifecycle	INPUT
+resources.registered_models.*.lifecycle.prevent_destroy	bool	INPUT
+resources.registered_models.*.metastore_id	string	REMOTE
+resources.registered_models.*.modified_status	string	INPUT
+resources.registered_models.*.name	string	ALL
+resources.registered_models.*.owner	string	REMOTE
+resources.registered_models.*.schema_name	string	ALL
+resources.registered_models.*.storage_location	string	ALL
+resources.registered_models.*.updated_at	int64	REMOTE
+resources.registered_models.*.updated_by	string	REMOTE
+resources.registered_models.*.url	string	INPUT
 resources.schemas.*.browse_only	bool	REMOTE
 resources.schemas.*.catalog_name	string	ALL
 resources.schemas.*.catalog_type	catalog.CatalogType	REMOTE
