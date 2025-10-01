@@ -25,6 +25,8 @@ See [selftest](./selftest) for a toy test.
 To run the acceptance tests from a terminal on Windows (eg. Git Bash from VS Code),
 you need to install a few prerequisites and optionally make user policy changes.
 
+These steps were verified to work with a Windows 11 VM running on Parallels.
+
 ### Install Chocolatey
 
 Run "PowerShell" as administrator and follow the [Chocolatey installation instructions][choco].
@@ -41,14 +43,14 @@ PS C:\WINDOWS\system32> choco --version
 
 Install the following tools:
 ```pwsh
-choco install vscode
-choco install git
-choco install make
-choco install jq
-choco install python3
-choco install uv
-choco install go
-choco install nodejs
+choco install -y vscode
+choco install -y git
+choco install -y make
+choco install -y jq
+choco install -y python3
+choco install -y uv
+choco install -y go
+choco install -y nodejs
 ```
 
 ### Shim for `python3.exe`
@@ -59,23 +61,57 @@ We rely on calling `python3` in acceptance tests (shebangs in scripts and elsewh
 
 To install `python3` and `pip3` shims for the install, run PowerShell as administrator and execute the following:
 ```pwsh
-# Find your current python.exe
-$py = (Get-Command python.exe).Source
-
-# Create a python3.exe shim that points to it
-& "$env:ChocolateyInstall\tools\shimgen.exe" `
-  --output "$env:ChocolateyInstall\bin\python3.exe" `
-  --path   $py
-
-# Optional: pip3, too
-$pip = (Get-Command pip.exe).Source
-& "$env:ChocolateyInstall\tools\shimgen.exe" `
-  --output "$env:ChocolateyInstall\bin\pip3.exe" `
-  --path   $pip
-
+# Refresh first to pick up Python 3 installed in the previous step.
 refreshenv
-python3 --version
-pip3 --version
+
+# Optional: python3, only if python.exe exists
+$python3Exists = $false
+try {
+  $py = (Get-Command python.exe -ErrorAction Stop).Source
+  $python3Exists = $true
+  & "$env:ChocolateyInstall\tools\shimgen.exe" `
+    --output "$env:ChocolateyInstall\bin\python3.exe" `
+    --path   $py
+} catch {
+  Write-Host "python.exe not found, skipping python3 shim creation."
+}
+
+# Optional: pip3, too, but only if pip.exe exists
+$pipExists = $false
+try {
+  $pip = (Get-Command pip.exe -ErrorAction Stop).Source
+  $pipExists = $true
+  & "$env:ChocolateyInstall\tools\shimgen.exe" `
+    --output "$env:ChocolateyInstall\bin\pip3.exe" `
+    --path   $pip
+} catch {
+  Write-Host "pip.exe not found, skipping pip3 shim creation."
+}
+
+# Refresh to pick up the shims.
+refreshenv
+
+# Check python3 version only if python3 shim was created
+if ($python3Exists) {
+  try {
+    python3 --version
+  } catch {
+    Write-Host "python3 not found or not working. Please check your installation."
+  }
+} else {
+  Write-Host "python3 not available."
+}
+
+# Check pip3 version only if pip3 shim was created
+if ($pipExists) {
+  try {
+    pip3 --version
+  } catch {
+    Write-Host "pip3 not found or not working. Please check your installation."
+  }
+} else {
+  Write-Host "pip3 not available."
+}
 ```
 
 ### Enable symlink creation
@@ -87,23 +123,25 @@ If you're not an administrator user, enable this by following these steps:
 * Go to Local Policies → User Rights Assignment.
 * Find "Create symbolic links".
 * Add your username to the list.
-* Sign out and back in.
+* Reboot.
 
 ### Enable long path support (up to ~32,767 characters)
 
 Some acceptance tests fail if this is not enabled because their paths
 exceed the default maximum total length of 260 characters.
 
-* Run "Edit group policy".
-* Go to Local Computer Policy → Computer Configuration → Administrative Templates → System → Filesystem → Enable Win32 long paths.
+* Press Win+R, type `gpedit.msc`, press Enter.
+* Go to Computer Configuration → Administrative Templates → System → Filesystem → Enable Win32 long paths.
 * Enable the setting.
 * Reboot.
 
+### Disable Microsoft Defender
 
+The tests frequently create and remove temporary directories.
+Sometimes, Microsoft Defender locks a file (such as an executable) during deletion,
+which can cause errors and test failures.
 
-
-⚠️ Last resort: Group Policy full disable
-
-If you’re on Windows Pro/Enterprise, and you’ve disabled Tamper Protection, you can permanently disable Defender via Group Policy Editor (gpedit.msc) →
-Computer Configuration → Administrative Templates → Windows Components → Microsoft Defender Antivirus → Turn off Microsoft Defender Antivirus → Enabled.
-Reboot afterwards.
+* Press Win+R, type `gpedit.msc`, press Enter.
+* Go to Computer Configuration → Administrative Templates → Windows Components → Microsoft Defender Antivirus → Turn off Microsoft Defender Antivirus.
+* Enable the setting.
+* Reboot.

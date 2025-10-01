@@ -3,11 +3,6 @@ venv_activate
 trace python -c 'import sys; print("%s.%s" % sys.version_info[:2])'
 uv pip install -q setuptools
 
-# Note(@pietern): without installing hatchling directly,
-# this test fails with Python 3.13 on Windows.
-# I cannot reproduce with `-keeptmp` and then manually running `uv build --wheel`...
-uv pip install -q hatchling
-
 envsubst < input.json.tmpl > input.json
 trace $CLI bundle init default-python --config-file ./input.json --output-dir .
 rm input.json
