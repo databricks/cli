@@ -33,14 +33,6 @@ func StartDefaultServer(t *testing.T) {
 
 	// Do not read user's ~/.databrickscfg
 	homeDir := t.TempDir()
-	t.Cleanup(func() {
-		// Log all paths in this directory
-		filepath.Walk(homeDir, func(path string, info os.FileInfo, err error) error {
-			t.Logf("Path: %s", path)
-			return nil
-		})
-		os.RemoveAll(homeDir)
-	})
 	t.Setenv(env.HomeEnvVar(), homeDir)
 }
 
