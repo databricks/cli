@@ -7,9 +7,11 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/testserver"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -23,6 +25,7 @@ type ProxyServer struct {
 	t testutil.TestingT
 
 	apiClient        *client.DatabricksClient
+	workspaceClient  *databricks.WorkspaceClient
 	RequestCallback  func(request *testserver.Request)
 	ResponseCallback func(request *testserver.Request, response *testserver.EncodedResponse)
 }
@@ -48,6 +51,8 @@ func New(t testutil.TestingT) *ProxyServer {
 	// variables.
 	var err error
 	s.apiClient, err = client.New(&config.Config{})
+	require.NoError(t, err)
+	s.workspaceClient, err = databricks.NewWorkspaceClient()
 	require.NoError(t, err)
 
 	// Set up the proxy handler as the default handler for all requests.
@@ -133,15 +138,32 @@ func (s *ProxyServer) proxyToCloud(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// The SDK reads the X-Databricks-Org-Id header to get the workspace ID. Set it for
+	// the /api/2.0/preview/scim/v2/Me endpoint so that the SDK CurrentWorkspaceID()
+	// method returns the workspace ID.
+	responseHeaders := http.Header{}
+	if r.Method == "GET" && r.URL.Path == "/api/2.0/preview/scim/v2/Me" {
+		workspaceId, err := s.workspaceClient.CurrentWorkspaceID(context.Background())
+		require.NoError(s.t, err)
+		responseHeaders["X-Databricks-Org-Id"] = []string{strconv.FormatInt(workspaceId, 10)}
+	}
+
 	// Successful response
 	if encodedResponse == nil {
 		encodedResponse = &testserver.EncodedResponse{
 			StatusCode: 200,
 			Body:       respBody.Bytes(),
+			Headers:    responseHeaders,
 		}
 	}
 
 	// Send response to client.
+	if len(responseHeaders) > 0 {
+		for k, v := range responseHeaders {
+			w.Header()[k] = v
+		}
+	}
+
 	w.WriteHeader(encodedResponse.StatusCode)
 
 	_, err = w.Write(encodedResponse.Body)
