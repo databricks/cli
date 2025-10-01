@@ -1,0 +1,11 @@
+bundle:
+  name: experiment-change-name-$UNIQUE_NAME
+
+resources:
+  experiments:
+    my_experiment:
+      artifact_location: $EXPERIMENT_ARTIFACT_LOCATION
+      name: /Users/${CURRENT_USER_NAME}/${EXPERIMENT_NAME_PREFIX}-${UNIQUE_NAME}
+      tags:
+        - key: "k1"
+          value: "v1"

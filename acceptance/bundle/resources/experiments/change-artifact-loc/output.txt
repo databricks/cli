@@ -1,0 +1,106 @@
+
+=== create the experiment
+>>> export EXPERIMENT_ARTIFACT_LOCATION=s3://original-[UNIQUE_NAME]
+
+>>> export EXPERIMENT_NAME_PREFIX=original
+
+>>> [CLI] bundle plan
+create experiments.my_experiment
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/experiment-change-artifact-loc-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] experiments get-experiment [NUMID]
+{
+  "name": "/Users/[USERNAME]/original-[UNIQUE_NAME]",
+  "artifact_location": "s3://original-[UNIQUE_NAME]",
+  "tags": [
+    {
+      "key": "k1",
+      "value": "v1"
+    },
+    {
+      "key": "mlflow.ownerId",
+      "value": "[USERID]"
+    },
+    {
+      "key": "mlflow.experiment.sourceName",
+      "value": "/Users/[USERNAME]/original-[UNIQUE_NAME]"
+    },
+    {
+      "key": "mlflow.ownerId",
+      "value": "[USERID]"
+    },
+    {
+      "key": "mlflow.ownerEmail",
+      "value": "[USERNAME]"
+    },
+    {
+      "key": "mlflow.experimentType",
+      "value": "MLFLOW_EXPERIMENT"
+    }
+  ]
+}
+
+=== update the artifact location
+>>> export EXPERIMENT_ARTIFACT_LOCATION=s3://new-[UNIQUE_NAME]
+
+>>> [CLI] bundle plan
+recreate experiments.my_experiment
+
+Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/experiment-change-artifact-loc-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] experiments get-experiment [NUMID]
+{
+  "name": "/Users/[USERNAME]/original-[UNIQUE_NAME]",
+  "artifact_location": "s3://new-[UNIQUE_NAME]",
+  "tags": [
+    {
+      "key": "k1",
+      "value": "v1"
+    },
+    {
+      "key": "mlflow.ownerId",
+      "value": "[USERID]"
+    },
+    {
+      "key": "mlflow.experiment.sourceName",
+      "value": "/Users/[USERNAME]/original-[UNIQUE_NAME]"
+    },
+    {
+      "key": "mlflow.ownerId",
+      "value": "[USERID]"
+    },
+    {
+      "key": "mlflow.ownerEmail",
+      "value": "[USERNAME]"
+    },
+    {
+      "key": "mlflow.experimentType",
+      "value": "MLFLOW_EXPERIMENT"
+    }
+  ]
+}
+
+=== Print all POST API requests made the the experiments service.
+>>> cat out.requests.txt
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete experiment my_experiment
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/experiment-change-artifact-loc-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
