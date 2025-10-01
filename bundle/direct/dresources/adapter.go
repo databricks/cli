@@ -74,7 +74,7 @@ type IResourceNoRefresh interface {
 	WaitAfterUpdate(ctx context.Context, newState any) error
 
 	// [Optional] ClassifyChange classifies a set of changes using custom logic.
-	ClassifyChange(changes []structdiff.Change, remoteState any) (deployplan.ActionType, error)
+	ClassifyChange(change structdiff.Change, remoteState any) (deployplan.ActionType, error)
 }
 
 // IResourceWithRefresh is an alternative to IResourceNoRefresh but every method can return remoteState.
@@ -97,9 +97,6 @@ type IResourceWithRefresh interface {
 
 	// WaitAfterUpdate waits for the resource to become ready after update.
 	WaitAfterUpdate(ctx context.Context, newState any) (newRemoteState any, e error)
-
-	// ClassifyChange classifies a set of changes using custom logic.
-	ClassifyChange(changes []structdiff.Change, newState any) (actionType deployplan.ActionType, newRemoteState any, e error)
 }
 
 // Adapter wraps resource implementation, validates signatures and type consistency across methods
@@ -316,9 +313,6 @@ func (a *Adapter) validate() error {
 
 	if a.classifyChange != nil {
 		validations = append(validations, "ClassifyChange changes", a.classifyChange.InTypes[1], stateType)
-		if len(a.classifyChange.OutTypes) == 3 {
-			validations = append(validations, "ClassifyChange remoteState return", a.classifyChange.OutTypes[1], remoteType)
-		}
 	}
 
 	err = validateTypes(validations...)
@@ -516,24 +510,18 @@ func (a *Adapter) WaitAfterUpdate(ctx context.Context, newState any) (any, error
 	}
 }
 
-func (a *Adapter) ClassifyChange(change structdiff.Change, remoteState any) (deployplan.ActionType, any, error) {
+func (a *Adapter) ClassifyChange(change structdiff.Change, remoteState any) (deployplan.ActionType, error) {
 	if a.classifyChange == nil {
-		return deployplan.ActionTypeUnset, nil, nil
+		return deployplan.ActionTypeUnset, nil
 	}
 
 	outs, err := a.classifyChange.Call(change, remoteState)
 	if err != nil {
-		return deployplan.ActionTypeSkip, nil, err
+		return deployplan.ActionTypeSkip, err
 	}
 
 	actionType := outs[0].(deployplan.ActionType)
-	if len(outs) == 1 {
-		// NoRefresh version
-		return actionType, nil, nil
-	} else {
-		// WithRefresh version
-		return actionType, outs[1], nil
-	}
+	return actionType, nil
 }
 
 // HasClassifyChange returns true if the resource implements ClassifyChange method.

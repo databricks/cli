@@ -255,12 +255,14 @@ func interpretOldStateVsRemoteState(ctx context.Context, adapter *dresources.Ada
 		var fieldAction deployplan.ActionType
 		if adapter.HasClassifyChange() {
 			var err error
-			fieldAction, _, err = adapter.ClassifyChange(ch, remoteState)
+			fieldAction, err = adapter.ClassifyChange(ch, remoteState)
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("internal error: failed to classify changes: %w", err))
 				continue
 			}
-		} else {
+		}
+
+		if fieldAction == deployplan.ActionTypeUnset {
 			fieldAction = adapter.ClassifyByTriggers(ch)
 		}
 		if fieldAction > action {
