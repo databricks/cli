@@ -1,0 +1,27 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm out.requests.txt
+}
+
+trap cleanup EXIT
+
+deploy_with_plan() {
+    trace $CLI bundle plan
+    trace $CLI bundle deploy
+    model_id=$($CLI bundle summary --output json | jq -r '.resources.models.my_model.id')
+    trace $CLI model-registry get-model $model_id | jq '.registered_model_databricks | {name, description, tags}'
+}
+
+title "create the model"
+trace export MODEL_DESCRIPTION="original-description-${UNIQUE_NAME}"
+trace export MODEL_NAME="original-name-${UNIQUE_NAME}"
+envsubst < databricks.yml.tmpl > databricks.yml
+deploy_with_plan
+
+title "update the name, this should recreate the model with the new name"
+trace export MODEL_NAME="new-name-${UNIQUE_NAME}"
+envsubst < databricks.yml.tmpl > databricks.yml
+deploy_with_plan
+
+title "Print all POST API requests made the the models service."
+trace cat out.requests.txt | jq 'select(.method == "POST")' | jq 'select(.path | contains("/api/2.0/mlflow/registered-models"))' > out.requests.models.txt

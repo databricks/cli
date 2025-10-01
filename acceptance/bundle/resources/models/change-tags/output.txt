@@ -1,0 +1,58 @@
+
+=== create the model
+>>> export MODEL_DESCRIPTION=original-description-[UNIQUE_NAME]
+
+>>> export MODEL_NAME=original-name-[UNIQUE_NAME]
+
+>>> [CLI] bundle plan
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/model-change-tags-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] model-registry get-model original-name-[UNIQUE_NAME]
+{
+  "name": "original-name-[UNIQUE_NAME]",
+  "description": "original-description-[UNIQUE_NAME]",
+  "tags": [
+    {
+      "key": "key1",
+      "value": "value1"
+    }
+  ]
+}
+
+=== add a new tag, this should be a no-op; terraform does make an update request but since update request has no tags in it, it does nothing; direct skips request completely
+>>> [CLI] bundle plan
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/model-change-tags-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] model-registry get-model original-name-[UNIQUE_NAME]
+{
+  "name": "original-name-[UNIQUE_NAME]",
+  "description": "original-description-[UNIQUE_NAME]",
+  "tags": [
+    {
+      "key": "key1",
+      "value": "value1"
+    }
+  ]
+}
+
+=== Print all POST API requests made the the models service.
+>>> cat out.requests.txt
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete model my_model
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/model-change-tags-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

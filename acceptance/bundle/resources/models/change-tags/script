@@ -1,0 +1,26 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm out.requests.txt
+}
+
+trap cleanup EXIT
+
+deploy_with_plan() {
+    trace $CLI bundle plan > out.plan.$DATABRICKS_BUNDLE_ENGINE.txt
+    trace $CLI bundle deploy
+    model_id=$($CLI bundle summary --output json | jq -r '.resources.models.my_model.id')
+    trace $CLI model-registry get-model $model_id | jq '.registered_model_databricks | {name, description, tags}'
+}
+
+title "create the model"
+trace export MODEL_DESCRIPTION="original-description-${UNIQUE_NAME}"
+trace export MODEL_NAME="original-name-${UNIQUE_NAME}"
+envsubst < templates/one_tag.tmpl > databricks.yml
+deploy_with_plan
+
+title "add a new tag, this should be a no-op; terraform does make an update request but since update request has no tags in it, it does nothing; direct skips request completely"
+envsubst < templates/two_tag.tmpl > databricks.yml
+deploy_with_plan
+
+title "Print all POST API requests made the the models service."
+trace cat out.requests.txt | jq 'select(.method == "POST")' | jq 'select(.path | contains("/api/2.0/mlflow/registered-models"))' > out.requests.models.$DATABRICKS_BUNDLE_ENGINE.txt
