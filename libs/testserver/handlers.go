@@ -546,7 +546,7 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("POST", "/api/2.1/clusters/permanent-delete", func(req Request) any {
 		return req.Workspace.ClustersPermanentDelete(req)
-  })
+	})
 
 	// MLflow Experiments:
 	server.Handle("GET", "/api/2.0/mlflow/experiments/get", func(req Request) any {
