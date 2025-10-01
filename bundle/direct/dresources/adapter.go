@@ -312,7 +312,7 @@ func (a *Adapter) validate() error {
 	}
 
 	if a.classifyChange != nil {
-		validations = append(validations, "ClassifyChange changes", a.classifyChange.InTypes[1], stateType)
+		validations = append(validations, "ClassifyChange changes", a.classifyChange.InTypes[1], remoteType)
 	}
 
 	err = validateTypes(validations...)
@@ -511,8 +511,9 @@ func (a *Adapter) WaitAfterUpdate(ctx context.Context, newState any) (any, error
 }
 
 func (a *Adapter) ClassifyChange(change structdiff.Change, remoteState any) (deployplan.ActionType, error) {
+	// If ClassifyChange is not implemented, use FieldTriggers.
 	if a.classifyChange == nil {
-		return deployplan.ActionTypeUnset, nil
+		return a.ClassifyByTriggers(change), nil
 	}
 
 	outs, err := a.classifyChange.Call(change, remoteState)
