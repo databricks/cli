@@ -2,9 +2,6 @@ package template
 
 import (
 	"context"
-	"errors"
-	"fmt"
-	"io/fs"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -82,15 +79,12 @@ func (tmpl *defaultWriter) Configure(ctx context.Context, configPath, outputDir 
 }
 
 func (tmpl *defaultWriter) promptForInput(ctx context.Context, reader Reader) error {
-	readerFs, err := reader.FS(ctx)
+	schema, readerFs, err := reader.LoadSchemaAndTemplateFS(ctx)
 	if err != nil {
 		return err
 	}
-	if _, err := fs.Stat(readerFs, schemaFileName); errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("not a bundle template: expected to find a template schema file at %s", schemaFileName)
-	}
 
-	tmpl.config, err = newConfig(ctx, readerFs, schemaFileName)
+	tmpl.config, err = newConfigFromSchema(ctx, schema)
 	if err != nil {
 		return err
 	}
