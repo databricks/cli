@@ -9,7 +9,7 @@ resources:
            * so we use the project name as part as the name.
            */}}
       name: {{.project_name_short}}_etl
-{{- if or (eq default_catalog "") (eq default_catalog "hive_metastore")}}
+{{- if or (eq .default_catalog "") (eq .default_catalog "hive_metastore")}}
   {{- if $serverless }}
       ## Catalog is required for serverless compute
       catalog: ${var.catalog}

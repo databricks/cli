@@ -3,9 +3,15 @@
 [UV_PYTHON]
 
 >>> [CLI] bundle init default-python --config-file ./input.json --output-dir .
+Welcome to the experimental "vNext" default Python template for Databricks Asset Bundles!
 
-Welcome to the default Python template for Databricks Asset Bundles!
-Workspace to use (auto-detected, edit in 'project_name_[UNIQUE_NAME]/databricks.yml'): [DATABRICKS_URL]
+⚠️  EXPERIMENTAL: This template is experimental and may be removed or changed without notice.
+
+Please answer the below to tailor your project to your preferences.
+You can always change your mind and change your configuration in the databricks.yml file later.
+
+Note that [DATABRICKS_URL] is used for initialization
+(see https://docs.databricks.com/dev-tools/cli/profiles.html for how to change your profile).
 
 ✨ Your new project has been created in the 'project_name_[UNIQUE_NAME]' directory!
 
@@ -41,12 +47,12 @@ Workspace:
   Path: /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev
 Resources:
   Jobs:
-    project_name_[UNIQUE_NAME]_job:
-      Name: [dev [USERNAME]] project_name_[UNIQUE_NAME]_job
+    sample_job:
+      Name: [dev [USERNAME]] sample_job
       URL:  [DATABRICKS_URL]/jobs/[NUMID]
   Pipelines:
-    project_name_[UNIQUE_NAME]_pipeline:
-      Name: [dev [USERNAME]] project_name_[UNIQUE_NAME]_pipeline
+    project_name_[UNIQUE_NAME]_etl:
+      Name: [dev [USERNAME]] project_name_[UNIQUE_NAME]_etl
       URL:  [DATABRICKS_URL]/pipelines/[UUID]
 
 >>> [CLI] bundle summary -t dev -o json
@@ -60,7 +66,7 @@ Resources:
 +        "id": "[NUMID]",
          "job_clusters": [
            {
-@@ -119,5 +120,6 @@
+@@ -140,5 +141,6 @@
              "unit": "DAYS"
            }
 -        }
@@ -68,13 +74,13 @@ Resources:
 +        "url": "[DATABRICKS_URL]/jobs/[NUMID]"
        }
      },
-@@ -134,4 +136,5 @@
-         "development": true,
-         "edition": "ADVANCED",
+@@ -157,4 +159,5 @@
+           ]
+         },
 +        "id": "[UUID]",
          "libraries": [
            {
-@@ -146,5 +149,6 @@
+@@ -170,5 +173,6 @@
          "tags": {
            "dev": "[USERNAME]"
 -        }
@@ -85,12 +91,12 @@ Resources:
 
 >>> [CLI] bundle destroy -t dev --auto-approve
 The following resources will be deleted:
-  delete job project_name_[UNIQUE_NAME]_job
-  delete pipeline project_name_[UNIQUE_NAME]_pipeline
+  delete job sample_job
+  delete pipeline project_name_[UNIQUE_NAME]_etl
 
 This action will result in the deletion of the following Lakeflow Declarative Pipelines along with the
 Streaming Tables (STs) and Materialized Views (MVs) managed by them:
-  delete pipeline project_name_[UNIQUE_NAME]_pipeline
+  delete pipeline project_name_[UNIQUE_NAME]_etl
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev
 
@@ -139,7 +145,7 @@ Validation OK!
      "uuid": "[UUID]"
    },
 @@ -32,14 +26,10 @@
-     "resources/project_name_[UNIQUE_NAME].pipeline.yml"
+     "resources/sample_job.job.yml"
    ],
 -  "presets": {
 -    "artifacts_dynamic_version": true,
@@ -166,14 +172,23 @@ Validation OK!
 +          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/state/metadata.json"
          },
          "edit_mode": "UI_LOCKED",
-@@ -66,12 +56,9 @@
+@@ -66,6 +56,6 @@
            }
          ],
 -        "max_concurrent_runs": 4,
--        "name": "[dev [USERNAME]] project_name_[UNIQUE_NAME]_job",
+-        "name": "[dev [USERNAME]] sample_job",
 +        "max_concurrent_runs": 1,
-+        "name": "project_name_[UNIQUE_NAME]_job",
-         "permissions": [],
++        "name": "sample_job",
+         "parameters": [
+           {
+@@ -74,5 +64,5 @@
+           },
+           {
+-            "default": "[USERNAME]",
++            "default": "prod",
+             "name": "schema"
+           }
+@@ -81,7 +71,4 @@
          "queue": {
            "enabled": true
 -        },
@@ -181,26 +196,28 @@ Validation OK!
 -          "dev": "[USERNAME]"
          },
          "tasks": [
-@@ -97,5 +84,5 @@
-             "job_cluster_key": "job_cluster",
+@@ -94,5 +81,5 @@
+             ],
              "notebook_task": {
--              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/notebook"
-+              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/files/src/notebook"
+-              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/sample_notebook"
++              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/files/src/sample_notebook"
              },
              "task_key": "notebook_task"
-@@ -114,5 +101,5 @@
+@@ -117,5 +104,5 @@
+                 "hive_metastore",
+                 "--schema",
+-                "[USERNAME]"
++                "prod"
+               ]
+             },
+@@ -135,5 +122,5 @@
          ],
          "trigger": {
 -          "pause_status": "PAUSED",
 +          "pause_status": "UNPAUSED",
            "periodic": {
              "interval": 1,
-@@ -126,25 +113,21 @@
-         "channel": "CURRENT",
-         "configuration": {
--          "bundle.sourcePath": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src"
-+          "bundle.sourcePath": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/files/src"
-         },
+@@ -148,11 +135,10 @@
          "deployment": {
            "kind": "BUNDLE",
 -          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/state/metadata.json"
@@ -208,25 +225,41 @@ Validation OK!
          },
 -        "development": true,
          "edition": "ADVANCED",
-         "libraries": [
+         "environment": {
+           "dependencies": [
+-            "--editable /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files"
++            "--editable /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/files"
+           ]
+         },
+@@ -160,15 +146,12 @@
            {
-             "notebook": {
--              "path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/pipeline"
-+              "path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/files/src/pipeline"
+             "glob": {
+-              "include": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/project_name_[UNIQUE_NAME]_etl/transformations/**"
++              "include": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/files/src/project_name_[UNIQUE_NAME]_etl/transformations/**"
              }
            }
          ],
--        "name": "[dev [USERNAME]] project_name_[UNIQUE_NAME]_pipeline",
-+        "name": "project_name_[UNIQUE_NAME]_pipeline",
+-        "name": "[dev [USERNAME]] project_name_[UNIQUE_NAME]_etl",
++        "name": "project_name_[UNIQUE_NAME]_etl",
          "permissions": [],
--        "schema": "project_name_[UNIQUE_NAME]_dev",
+-        "root_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/project_name_[UNIQUE_NAME]_etl",
+-        "schema": "[USERNAME]",
 -        "tags": {
 -          "dev": "[USERNAME]"
 -        }
-+        "schema": "project_name_[UNIQUE_NAME]_prod"
++        "root_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/files/src/project_name_[UNIQUE_NAME]_etl",
++        "schema": "prod"
        }
      }
-@@ -156,10 +139,10 @@
+@@ -186,16 +169,16 @@
+     },
+     "schema": {
+-      "default": "[USERNAME]",
++      "default": "prod",
+       "description": "The schema to use",
+-      "value": "[USERNAME]"
++      "value": "prod"
+     }
    },
    "workspace": {
 -    "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/artifacts",
@@ -260,12 +293,12 @@ Workspace:
   Path: /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod
 Resources:
   Jobs:
-    project_name_[UNIQUE_NAME]_job:
-      Name: project_name_[UNIQUE_NAME]_job
+    sample_job:
+      Name: sample_job
       URL:  [DATABRICKS_URL]/jobs/[NUMID]
   Pipelines:
-    project_name_[UNIQUE_NAME]_pipeline:
-      Name: project_name_[UNIQUE_NAME]_pipeline
+    project_name_[UNIQUE_NAME]_etl:
+      Name: project_name_[UNIQUE_NAME]_etl
       URL:  [DATABRICKS_URL]/pipelines/[UUID]
 
 >>> [CLI] bundle summary -t prod -o json
@@ -300,7 +333,7 @@ Resources:
      "uuid": "[UUID]"
    },
 @@ -32,14 +26,10 @@
-     "resources/project_name_[UNIQUE_NAME].pipeline.yml"
+     "resources/sample_job.job.yml"
    ],
 -  "presets": {
 -    "artifacts_dynamic_version": true,
@@ -327,14 +360,23 @@ Resources:
 +          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/state/metadata.json"
          },
          "edit_mode": "UI_LOCKED",
-@@ -67,12 +57,9 @@
+@@ -67,6 +57,6 @@
            }
          ],
 -        "max_concurrent_runs": 4,
--        "name": "[dev [USERNAME]] project_name_[UNIQUE_NAME]_job",
+-        "name": "[dev [USERNAME]] sample_job",
 +        "max_concurrent_runs": 1,
-+        "name": "project_name_[UNIQUE_NAME]_job",
-         "permissions": [],
++        "name": "sample_job",
+         "parameters": [
+           {
+@@ -75,5 +65,5 @@
+           },
+           {
+-            "default": "[USERNAME]",
++            "default": "prod",
+             "name": "schema"
+           }
+@@ -82,7 +72,4 @@
          "queue": {
            "enabled": true
 -        },
@@ -342,26 +384,28 @@ Resources:
 -          "dev": "[USERNAME]"
          },
          "tasks": [
-@@ -98,5 +85,5 @@
-             "job_cluster_key": "job_cluster",
+@@ -95,5 +82,5 @@
+             ],
              "notebook_task": {
--              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/notebook"
-+              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/files/src/notebook"
+-              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/sample_notebook"
++              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/files/src/sample_notebook"
              },
              "task_key": "notebook_task"
-@@ -115,5 +102,5 @@
+@@ -118,5 +105,5 @@
+                 "hive_metastore",
+                 "--schema",
+-                "[USERNAME]"
++                "prod"
+               ]
+             },
+@@ -136,5 +123,5 @@
          ],
          "trigger": {
 -          "pause_status": "PAUSED",
 +          "pause_status": "UNPAUSED",
            "periodic": {
              "interval": 1,
-@@ -128,11 +115,10 @@
-         "channel": "CURRENT",
-         "configuration": {
--          "bundle.sourcePath": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src"
-+          "bundle.sourcePath": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/files/src"
-         },
+@@ -150,11 +137,10 @@
          "deployment": {
            "kind": "BUNDLE",
 -          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/state/metadata.json"
@@ -369,26 +413,41 @@ Resources:
          },
 -        "development": true,
          "edition": "ADVANCED",
-         "id": "[UUID]",
-@@ -140,14 +126,11 @@
+         "environment": {
+           "dependencies": [
+-            "--editable /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files"
++            "--editable /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/files"
+           ]
+         },
+@@ -163,15 +149,12 @@
            {
-             "notebook": {
--              "path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/pipeline"
-+              "path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/files/src/pipeline"
+             "glob": {
+-              "include": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/project_name_[UNIQUE_NAME]_etl/transformations/**"
++              "include": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/files/src/project_name_[UNIQUE_NAME]_etl/transformations/**"
              }
            }
          ],
--        "name": "[dev [USERNAME]] project_name_[UNIQUE_NAME]_pipeline",
-+        "name": "project_name_[UNIQUE_NAME]_pipeline",
+-        "name": "[dev [USERNAME]] project_name_[UNIQUE_NAME]_etl",
++        "name": "project_name_[UNIQUE_NAME]_etl",
          "permissions": [],
--        "schema": "project_name_[UNIQUE_NAME]_dev",
+-        "root_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/project_name_[UNIQUE_NAME]_etl",
+-        "schema": "[USERNAME]",
 -        "tags": {
 -          "dev": "[USERNAME]"
 -        },
-+        "schema": "project_name_[UNIQUE_NAME]_prod",
++        "root_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/files/src/project_name_[UNIQUE_NAME]_etl",
++        "schema": "prod",
          "url": "[DATABRICKS_URL]/pipelines/[UUID]"
        }
-@@ -160,10 +143,10 @@
+@@ -190,16 +173,16 @@
+     },
+     "schema": {
+-      "default": "[USERNAME]",
++      "default": "prod",
+       "description": "The schema to use",
+-      "value": "[USERNAME]"
++      "value": "prod"
+     }
    },
    "workspace": {
 -    "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/artifacts",
@@ -407,12 +466,12 @@ Resources:
 
 >>> [CLI] bundle destroy -t prod --auto-approve
 The following resources will be deleted:
-  delete job project_name_[UNIQUE_NAME]_job
-  delete pipeline project_name_[UNIQUE_NAME]_pipeline
+  delete job sample_job
+  delete pipeline project_name_[UNIQUE_NAME]_etl
 
 This action will result in the deletion of the following Lakeflow Declarative Pipelines along with the
 Streaming Tables (STs) and Materialized Views (MVs) managed by them:
-  delete pipeline project_name_[UNIQUE_NAME]_pipeline
+  delete pipeline project_name_[UNIQUE_NAME]_etl
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod
 
