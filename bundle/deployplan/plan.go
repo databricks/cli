@@ -97,3 +97,9 @@ func (p *Plan) UnlockEntry(resourceKey string) {
 	defer p.mutex.Unlock()
 	p.locks[resourceKey] = false
 }
+
+func (p *Plan) RemoveEntry(resourceKey string) {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+	delete(p.Plan, resourceKey)
+}
