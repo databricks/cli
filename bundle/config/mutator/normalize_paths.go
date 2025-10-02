@@ -11,6 +11,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/mutator/paths"
+	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 )
@@ -84,14 +85,9 @@ func collectGitSourcePaths(b *bundle.Bundle) []dyn.Path {
 	return jobs
 }
 
-var flagsWithLocalPath = []string{
-	"-r",
-	"-e",
-}
-
 func normalizePath(path string, location dyn.Location, bundleRootPath string) (string, error) {
-	// Handle requirements file paths with -r flag
-	for _, flag := range flagsWithLocalPath {
+	// Handle local file paths used inside pip flags
+	for _, flag := range libraries.PipFlagsWithLocalPaths {
 		reqPath, ok := strings.CutPrefix(path, flag+" ")
 		if ok {
 			// Normalize the path part

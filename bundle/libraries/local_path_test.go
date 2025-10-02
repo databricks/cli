@@ -58,6 +58,8 @@ func TestIsLibraryLocal(t *testing.T) {
 		{path: "dbfs:/mnt/path/to/package", expected: false},
 		{path: "beautifulsoup4", expected: false},
 		{path: "-e some/local/path", expected: false},
+		{path: "-i http://myindexurl.com", expected: false},
+		{path: "--index-url http://myindexurl.com", expected: false},
 
 		// Check the possible version specifiers as in PEP 440
 		// https://peps.python.org/pep-0440/#public-version-identifiers
@@ -130,7 +132,7 @@ func TestIsLocalRequirementsFile(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, isLocal := IsLocalRequirementsFile(tt.input)
+			got, _, isLocal := IsLocalPathInPipFlag(tt.input)
 			require.Equal(t, tt.expected, got)
 			require.Equal(t, tt.isLocal, isLocal)
 		})

@@ -74,18 +74,25 @@ func IsLibraryLocal(dep string) bool {
 	return IsLocalPath(dep)
 }
 
-func IsLocalRequirementsFile(dep string) (string, bool) {
-	dep, ok := strings.CutPrefix(dep, "-r ")
-	if !ok {
-		return "", false
+var PipFlagsWithLocalPaths = []string{
+	"-r",
+	"-e",
+}
+
+func IsLocalPathInPipFlag(dep string) (string, string, bool) {
+	for _, flag := range PipFlagsWithLocalPaths {
+		dep, ok := strings.CutPrefix(dep, flag+" ")
+		if ok {
+			dep = strings.TrimSpace(dep)
+			return dep, flag, IsLocalPath(dep)
+		}
 	}
 
-	dep = strings.TrimSpace(dep)
-	return dep, IsLocalPath(dep)
+	return "", "", false
 }
 
 func containsPipFlag(input string) bool {
-	re := regexp.MustCompile(`--?[a-zA-Z0-9-]+`)
+	re := regexp.MustCompile(`^\s*--?[a-zA-Z0-9-]+`)
 	return re.MatchString(input)
 }
 
