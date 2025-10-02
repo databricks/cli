@@ -565,6 +565,10 @@ func (a *Adapter) ClassifyChange(change structdiff.Change, remoteState any) depl
 	}
 
 	actionType := outs[0].(deployplan.ActionType)
+	// If the action type is unset, use FieldTriggers.
+	if actionType == deployplan.ActionTypeUnset {
+		return a.ClassifyByTriggers(change)
+	}
 	return actionType
 }
 
