@@ -161,7 +161,7 @@ func (b *DeploymentBundle) LookupReferenceRemote(ctx context.Context, path *stru
 	return structaccess.Get(remoteState, fieldPath)
 }
 
-func jsonDump(obj map[string]string) string {
+func jsonDump(obj any) string {
 	bytes, err := json.MarshalIndent(obj, "", "  ")
 	if err != nil {
 		return err.Error()
