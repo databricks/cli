@@ -1,6 +1,12 @@
+Welcome to the experimental "vNext" default Python template for Databricks Asset Bundles!
 
-Welcome to the default Python template for Databricks Asset Bundles!
-Workspace to use (auto-detected, edit in 'my_default_python/databricks.yml'): [DATABRICKS_URL]
+⚠️  EXPERIMENTAL: This template is experimental and may be removed or changed without notice.
+
+Please answer the below to tailor your project to your preferences.
+You can always change your mind and change your configuration in the databricks.yml file later.
+
+Note that [DATABRICKS_URL] is used for initialization
+(see https://docs.databricks.com/dev-tools/cli/profiles.html for how to change your profile).
 
 ✨ Your new project has been created in the 'my_default_python' directory!
 
@@ -25,15 +31,23 @@ See also the documentation at https://docs.databricks.com/dev-tools/bundles/inde
         "template_name": "default-python",
         "template_enum_args": [
           {
-            "key": "include_dlt",
-            "value": "no"
+            "key": "include_job",
+            "value": "yes"
           },
           {
-            "key": "include_notebook",
+            "key": "include_pipeline",
             "value": "yes"
           },
           {
             "key": "include_python",
+            "value": "yes"
+          },
+          {
+            "key": "language",
+            "value": "python"
+          },
+          {
+            "key": "personal_schemas",
             "value": "yes"
           },
           {
