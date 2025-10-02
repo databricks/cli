@@ -192,6 +192,9 @@ func newCreateDefaultBaseEnvironment() *cobra.Command {
   jobs. This process will asynchronously generate a cache to optimize dependency
   resolution.`
 
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
 	cmd.Annotations = make(map[string]string)
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -255,6 +258,9 @@ func newDeleteDefaultBaseEnvironment() *cobra.Command {
   may be used by downstream workloads. Please ensure that the deletion is
   intentional.`
 
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -307,6 +313,9 @@ func newGetDefaultBaseEnvironment() *cobra.Command {
 	cmd.Long = `get a default base environment.
   
   Return the default base environment details for a given ID.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
@@ -430,6 +439,9 @@ func newListDefaultBaseEnvironments() *cobra.Command {
   List default base environments defined in the workspaces for the requested
   user.`
 
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -482,6 +494,9 @@ func newRefreshDefaultBaseEnvironments() *cobra.Command {
   Refresh the cached default base environments for the given IDs. This process
   will asynchronously regenerate the caches. The existing caches remains
   available until it expires.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
@@ -615,6 +630,9 @@ func newUpdateDefaultBaseEnvironment() *cobra.Command {
   asynchronously regenerate the cache. The existing cache remains available
   until it expires.`
 
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -688,6 +706,9 @@ func newUpdateDefaultDefaultBaseEnvironment() *cobra.Command {
   
   Set the default base environment for the workspace. This marks the specified
   DBE as the workspace default.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 

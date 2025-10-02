@@ -200,6 +200,9 @@ func newCreateSpace() *cobra.Command {
     WAREHOUSE_ID: Warehouse to associate with the new space
     SERIALIZED_SPACE: Serialized export model for the space contents`
 
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -534,6 +537,9 @@ func newGenerateDownloadFullQueryResult() *cobra.Command {
     MESSAGE_ID: Message ID
     ATTACHMENT_ID: Attachment ID`
 
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -606,6 +612,9 @@ func newGetDownloadFullQueryResult() *cobra.Command {
     ATTACHMENT_ID: Attachment ID
     DOWNLOAD_ID: Download ID. This ID is provided by the [Generate Download
       endpoint](:method:genie/generateDownloadFullQueryResult)`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1411,6 +1420,9 @@ func newUpdateSpace() *cobra.Command {
 
   Arguments:
     SPACE_ID: Genie space ID`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 

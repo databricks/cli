@@ -825,6 +825,9 @@ func newFailoverDatabaseInstance() *cobra.Command {
   Arguments:
     NAME: Name of the instance to failover.`
 
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -1696,6 +1699,9 @@ func newUpdateDatabaseInstanceRole() *cobra.Command {
     INSTANCE_NAME: 
     NAME: The name of the role. This is the unique identifier for the role in an
       instance.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 

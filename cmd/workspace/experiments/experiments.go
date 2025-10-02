@@ -1125,6 +1125,9 @@ func newGetLoggedModels() *cobra.Command {
   
   Batch endpoint for getting logged models from a list of model IDs`
 
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {

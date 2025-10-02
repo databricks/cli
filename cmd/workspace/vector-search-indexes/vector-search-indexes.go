@@ -707,6 +707,9 @@ func newUpdateIndexBudgetPolicy() *cobra.Command {
   Arguments:
     INDEX_NAME: Name of the vector search index`
 
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
