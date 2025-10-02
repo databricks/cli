@@ -1697,4 +1697,4 @@ func newUpdateWorkspaceAccessDetailLocal() *cobra.Command {
 	return cmd
 }
 
-// end service workspace_iamV2
+// end service WorkspaceIamV2
