@@ -92,7 +92,7 @@ func IsLocalPathInPipFlag(dep string) (string, string, bool) {
 }
 
 func containsPipFlag(input string) bool {
-	re := regexp.MustCompile(`^\s*--?[a-zA-Z0-9-]+`)
+	re := regexp.MustCompile(`--?[a-zA-Z0-9-]+\s`)
 	return re.MatchString(input)
 }
 
