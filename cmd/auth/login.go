@@ -297,6 +297,10 @@ func loadProfileByName(ctx context.Context, profileName string, profiler profile
 }
 
 // getBrowserFunc returns a function that opens the given URL in the browser.
+// It respects the BROWSER environment variable:
+// - empty string: uses the default browser
+// - "none": prints the URL to stdout without opening a browser
+// - custom command: executes the specified command with the URL as argument
 func getBrowserFunc(cmd *cobra.Command) func(url string) error {
 	browser := env.Get(cmd.Context(), "BROWSER")
 	switch browser {

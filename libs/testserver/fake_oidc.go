@@ -3,21 +3,11 @@ package testserver
 import (
 	"net/http"
 	"net/url"
-	"sync"
 )
 
 // FakeOidc holds OAuth state for acceptance tests.
 type FakeOidc struct {
-	mu  sync.Mutex
 	url string
-}
-
-func (s *FakeOidc) LockUnlock() func() {
-	if s == nil {
-		panic("LockUnlock called on nil FakeOidc")
-	}
-	s.mu.Lock()
-	return func() { s.mu.Unlock() }
 }
 
 func (s *FakeOidc) OidcEndpoints() Response {
@@ -30,8 +20,6 @@ func (s *FakeOidc) OidcEndpoints() Response {
 }
 
 func (s *FakeOidc) OidcAuthorize(req Request) Response {
-	defer s.LockUnlock()()
-
 	redirectURI, err := url.Parse(req.URL.Query().Get("redirect_uri"))
 	if err != nil {
 		return Response{
