@@ -104,7 +104,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 					// no such resource
 					plan.RemoveEntry(resourceKey)
 				} else {
-					log.Warnf(ctx, "cannot read %s id=%q: %w", resourceKey, dbentry.ID, err)
+					log.Warnf(ctx, "cannot read %s id=%q: %s", resourceKey, dbentry.ID, err)
 					return false
 				}
 			}
