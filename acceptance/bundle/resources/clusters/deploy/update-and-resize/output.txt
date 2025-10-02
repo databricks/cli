@@ -1,0 +1,125 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Cluster should exist after bundle deployment:
+{
+  "cluster_name": "test-cluster-[UNIQUE_NAME]",
+  "num_workers": 2
+}
+
+=== Changing num_workers should call update API on stopped cluster
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> jq select(.method == "POST" and (.path | contains("/clusters/edit"))) out.requests.txt
+{
+  "method": "POST",
+  "path": "/api/2.1/clusters/edit",
+  "body": {
+    "autotermination_minutes": 60,
+    "cluster_id": "[UUID]",
+    "cluster_name": "test-cluster-[UNIQUE_NAME]",
+    "node_type_id": "[NODE_TYPE_ID]",
+    "num_workers": 3,
+    "spark_conf": {
+      "spark.executor.memory": "2g"
+    },
+    "spark_version": "13.3.x-snapshot-scala2.12"
+  }
+}
+
+=== Cluster should have new num_workers
+{
+  "cluster_name": "test-cluster-[UNIQUE_NAME]",
+  "num_workers": 3
+}
+
+=== Starting the cluster
+{
+  "autotermination_minutes":60,
+  "cluster_id":"[UUID]",
+  "cluster_name":"test-cluster-[UNIQUE_NAME]",
+  "node_type_id":"[NODE_TYPE_ID]",
+  "num_workers":3,
+  "spark_conf": {
+    "spark.executor.memory":"2g"
+  },
+  "spark_version":"13.3.x-snapshot-scala2.12",
+  "state":"RUNNING"
+}
+
+=== Changing num_workers should call resize API on running cluster
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> jq select(.method == "POST" and (.path | contains("/clusters/resize"))) out.requests.txt
+{
+  "method": "POST",
+  "path": "/api/2.1/clusters/resize",
+  "body": {
+    "cluster_id": "[UUID]",
+    "num_workers": 4
+  }
+}
+
+=== Cluster should have new num_workers
+{
+  "cluster_name": "test-cluster-[UNIQUE_NAME]",
+  "num_workers": 4
+}
+
+=== Changing num_workers and spark_conf should call update API
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> jq select(.method == "POST" and (.path | contains("/clusters/edit"))) out.requests.txt
+{
+  "method": "POST",
+  "path": "/api/2.1/clusters/edit",
+  "body": {
+    "autotermination_minutes": 60,
+    "cluster_id": "[UUID]",
+    "cluster_name": "test-cluster-[UNIQUE_NAME]",
+    "node_type_id": "[NODE_TYPE_ID]",
+    "num_workers": 5,
+    "spark_conf": {
+      "spark.executor.memory": "4g"
+    },
+    "spark_version": "13.3.x-snapshot-scala2.12"
+  }
+}
+
+=== Cluster should have new num_workers and spark_conf
+{
+  "cluster_name": "test-cluster-[UNIQUE_NAME]",
+  "num_workers": 5,
+  "spark_conf": {
+    "spark.executor.memory": "4g"
+  }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete cluster test_cluster
+  delete job foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Deleting files...
+Destroy complete!

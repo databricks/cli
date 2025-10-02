@@ -163,7 +163,9 @@ Warning: unknown field: grants
 
 {
   "clusters": {
-    "rname": {}
+    "rname": {
+      "autotermination_minutes": 60
+    }
   }
 }
 
