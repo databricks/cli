@@ -84,19 +84,26 @@ func collectGitSourcePaths(b *bundle.Bundle) []dyn.Path {
 	return jobs
 }
 
+var flagsWithLocalPath = []string{
+	"-r",
+	"-e",
+}
+
 func normalizePath(path string, location dyn.Location, bundleRootPath string) (string, error) {
 	// Handle requirements file paths with -r flag
-	reqPath, ok := strings.CutPrefix(path, "-r ")
-	if ok {
-		// Normalize the path part
-		reqPath = strings.TrimSpace(reqPath)
-		normalizedPath, err := normalizePath(reqPath, location, bundleRootPath)
-		if err != nil {
-			return "", err
-		}
+	for _, flag := range flagsWithLocalPath {
+		reqPath, ok := strings.CutPrefix(path, flag+" ")
+		if ok {
+			// Normalize the path part
+			reqPath = strings.TrimSpace(reqPath)
+			normalizedPath, err := normalizePath(reqPath, location, bundleRootPath)
+			if err != nil {
+				return "", err
+			}
 
-		// Reconstruct the path with -r flag
-		return "-r " + normalizedPath, nil
+			// Reconstruct the path with -r flag
+			return flag + " " + normalizedPath, nil
+		}
 	}
 
 	pathAsUrl, err := url.Parse(path)
