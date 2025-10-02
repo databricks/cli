@@ -106,7 +106,8 @@ func (r *ResourceCluster) ClassifyChange(change structdiff.Change, remoteState *
 		return deployplan.ActionTypeUpdate
 	}
 
-	if change.Path.String() == "num_workers" {
+	changedPath := change.Path.String()
+	if changedPath == "num_workers" || changedPath == "autoscale" {
 		return deployplan.ActionTypeResize
 	}
 
