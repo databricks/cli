@@ -91,7 +91,7 @@ func IsLocalRequirementsFile(dep string) (string, bool) {
 }
 
 func containsPipFlag(input string) bool {
-	re := regexp.MustCompile(`--[a-zA-Z0-9-]+`)
+	re := regexp.MustCompile(`--?[a-zA-Z0-9-]+`)
 	return re.MatchString(input)
 }
 

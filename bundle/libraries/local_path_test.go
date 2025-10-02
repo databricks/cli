@@ -57,6 +57,7 @@ func TestIsLibraryLocal(t *testing.T) {
 		{path: "s3://mybucket/path/to/package", expected: false},
 		{path: "dbfs:/mnt/path/to/package", expected: false},
 		{path: "beautifulsoup4", expected: false},
+		{path: "-e some/local/path", expected: false},
 
 		// Check the possible version specifiers as in PEP 440
 		// https://peps.python.org/pep-0440/#public-version-identifiers
