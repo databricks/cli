@@ -92,7 +92,10 @@ func IsLocalPathInPipFlag(dep string) (string, string, bool) {
 }
 
 func containsPipFlag(input string) bool {
-	re := regexp.MustCompile(`--?[a-zA-Z0-9-]+\s`)
+	// Trailing space means the the flag takes an argument or there's multiple arguments in input
+	// Alternatively it could be a flag with no argument and no space after it
+	// For example: -r myfile.txt or --index-url http://myindexurl.com or -i
+	re := regexp.MustCompile(`--?[a-zA-Z0-9-]+(\s|$)`)
 	return re.MatchString(input)
 }
 
