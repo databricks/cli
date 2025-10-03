@@ -62,9 +62,9 @@ func jobLibrariesRewritePatterns() []jobRewritePattern {
 				dyn.Key("dependencies"),
 				dyn.AnyIndex(),
 			),
-			TranslateModeEnvironmentRequirements,
+			TranslateModeEnvironmentPipFlag,
 			func(s string) bool {
-				_, ok := libraries.IsLocalRequirementsFile(s)
+				_, _, ok := libraries.IsLocalPathInPipFlag(s)
 				return !ok
 			},
 		},
