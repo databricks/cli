@@ -95,7 +95,7 @@ func containsPipFlag(input string) bool {
 	// Trailing space means the the flag takes an argument or there's multiple arguments in input
 	// Alternatively it could be a flag with no argument and no space after it
 	// For example: -r myfile.txt or --index-url http://myindexurl.com or -i
-	re := regexp.MustCompile(`^\s*--?[a-zA-Z0-9-]+(\s|$)`)
+	re := regexp.MustCompile(`(^|\s+)--?[a-zA-Z0-9-]+(\s+|$)`)
 	return re.MatchString(input)
 }
 
