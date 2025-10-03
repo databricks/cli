@@ -803,6 +803,11 @@ github.com/databricks/databricks-sdk-go/service/compute.InitScriptInfo:
   "abfss":
     "description": |-
       Contains the Azure Data Lake Storage destination path
+github.com/databricks/databricks-sdk-go/service/compute.Kind:
+  "_":
+    "enum":
+      - |-
+        CLASSIC_PREVIEW
 github.com/databricks/databricks-sdk-go/service/compute.LogAnalyticsInfo:
   "log_analytics_primary_key":
     "description": |-
