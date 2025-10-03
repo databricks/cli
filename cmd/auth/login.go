@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"os/exec"
 	"runtime"
 	"strings"
 	"time"
@@ -16,6 +15,7 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg/cfgpickers"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/exec"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
@@ -313,10 +313,20 @@ func getBrowserFunc(cmd *cobra.Command) func(url string) error {
 		}
 	default:
 		return func(url string) error {
-			execCmd := exec.Command(browser, url)
-			execCmd.Stdout = cmd.OutOrStdout()
-			execCmd.Stderr = cmd.OutOrStderr()
-			return execCmd.Run()
+			// Run the browser command via a shell.
+			// It can be a script or a binary and scripts cannot be executed directly on Windows.
+			e, err := exec.NewCommandExecutor(".")
+			if err != nil {
+				return err
+			}
+
+			e.WithInheritOutput()
+			cmd, err := e.StartCommand(cmd.Context(), fmt.Sprintf("%q %q", browser, url))
+			if err != nil {
+				return err
+			}
+
+			return cmd.Wait()
 		}
 	}
 }
