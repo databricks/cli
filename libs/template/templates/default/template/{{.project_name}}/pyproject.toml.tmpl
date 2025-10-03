@@ -6,6 +6,9 @@ requires-python = "{{template "conservative_db_connect_python_version_spec"}}"
 dependencies = [
     # Any dependencies for jobs and pipelines in this project can be added here
     # See also https://docs.databricks.com/dev-tools/bundles/library-dependencies
+    #
+    # LIMITATION: for pipelines, dependencies are cached during development;
+    # add dependencies to the 'environment' section of pipeline.yml file instead
 ]
 
 [dependency-groups]
