@@ -31,6 +31,7 @@ linters:
       disable-all: true
       enabled-checks:
         - ruleguard
+        - offBy1
       settings:
         ruleguard:
           failOn: all

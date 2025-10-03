@@ -70,10 +70,12 @@ func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	defer os.RemoveAll(tmpDir)
 
 	if changed && !m.opts.AutoApprove {
-		output := buf.String()
-		// Remove output starting from Warning until end of output
-		output = output[:strings.Index(output, "Warning:")]
-		cmdio.LogString(ctx, output)
+                output := buf.String()
+                // Remove output starting from Warning until end of output, if present.
+                if idx := strings.Index(output, "Warning:"); idx != -1 {
+                        output = output[:idx]
+                }
+                cmdio.LogString(ctx, output)
 
 		if !cmdio.IsPromptSupported(ctx) {
 			return diag.Errorf("This bind operation requires user confirmation, but the current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed.")
