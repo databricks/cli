@@ -44,6 +44,7 @@ func New() *cobra.Command {
 	}
 
 	// Add methods
+	cmd.AddCommand(newApplyEnvironment())
 	cmd.AddCommand(newCreate())
 	cmd.AddCommand(newDelete())
 	cmd.AddCommand(newGet())
@@ -53,6 +54,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(newListPipelineEvents())
 	cmd.AddCommand(newListPipelines())
 	cmd.AddCommand(newListUpdates())
+	cmd.AddCommand(newRestorePipeline())
 	cmd.AddCommand(newSetPermissions())
 	cmd.AddCommand(newStartUpdate())
 	cmd.AddCommand(newStop())
@@ -62,6 +64,72 @@ func New() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
+	}
+
+	return cmd
+}
+
+// start apply-environment command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var applyEnvironmentOverrides []func(
+	*cobra.Command,
+	*pipelines.ApplyEnvironmentRequest,
+)
+
+func newApplyEnvironment() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var applyEnvironmentReq pipelines.ApplyEnvironmentRequest
+
+	cmd.Use = "apply-environment PIPELINE_ID"
+	cmd.Short = `.`
+	cmd.Long = `.
+  
+  * Applies the current pipeline environment onto the pipeline compute. The
+  environment applied can be used by subsequent dev-mode updates.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
+			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have ")
+		}
+		applyEnvironmentReq.PipelineId = args[0]
+
+		response, err := w.Pipelines.ApplyEnvironment(ctx, applyEnvironmentReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range applyEnvironmentOverrides {
+		fn(cmd, &applyEnvironmentReq)
 	}
 
 	return cmd
@@ -651,6 +719,75 @@ func newListUpdates() *cobra.Command {
 	return cmd
 }
 
+// start restore-pipeline command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var restorePipelineOverrides []func(
+	*cobra.Command,
+	*pipelines.RestorePipelineRequest,
+)
+
+func newRestorePipeline() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var restorePipelineReq pipelines.RestorePipelineRequest
+
+	cmd.Use = "restore-pipeline PIPELINE_ID"
+	cmd.Short = `.`
+	cmd.Long = `.
+  
+  * Restores a pipeline that was previously deleted, if within the restoration
+  window. All tables deleted at pipeline deletion will be undropped as well.
+
+  Arguments:
+    PIPELINE_ID: The ID of the pipeline to restore`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
+			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The ID of the pipeline to restore")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the id of the pipeline to restore")
+		}
+		restorePipelineReq.PipelineId = args[0]
+
+		response, err := w.Pipelines.RestorePipeline(ctx, restorePipelineReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range restorePipelineOverrides {
+		fn(cmd, &restorePipelineReq)
+	}
+
+	return cmd
+}
+
 // start set-permissions command
 
 // Slice with functions to override default command behavior.
@@ -964,6 +1101,7 @@ func newUpdate() *cobra.Command {
 	// TODO: map via StringToStringVar: tags
 	cmd.Flags().StringVar(&updateReq.Target, "target", updateReq.Target, `Target schema (database) to add tables in this pipeline to.`)
 	// TODO: complex arg: trigger
+	cmd.Flags().StringVar(&updateReq.UsagePolicyId, "usage-policy-id", updateReq.UsagePolicyId, `Usage policy of this pipeline.`)
 
 	cmd.Use = "update PIPELINE_ID"
 	cmd.Short = `Edit a pipeline.`

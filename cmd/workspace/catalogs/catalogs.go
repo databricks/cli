@@ -70,6 +70,8 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided free-form text description.`)
 	cmd.Flags().StringVar(&createReq.ConnectionName, "connection-name", createReq.ConnectionName, `The name of the connection to an external data source.`)
+	// TODO: complex arg: conversion_info
+	// TODO: complex arg: dr_replication_info
 	// TODO: map via StringToStringVar: options
 	// TODO: map via StringToStringVar: properties
 	cmd.Flags().StringVar(&createReq.ProviderName, "provider-name", createReq.ProviderName, `The name of delta sharing provider.`)
@@ -274,6 +276,7 @@ func newList() *cobra.Command {
 	var listReq catalog.ListCatalogsRequest
 
 	cmd.Flags().BoolVar(&listReq.IncludeBrowse, "include-browse", listReq.IncludeBrowse, `Whether to include catalogs in the response for which the principal can only access selective metadata for.`)
+	cmd.Flags().BoolVar(&listReq.IncludeUnbound, "include-unbound", listReq.IncludeUnbound, `Whether to include catalogs not bound to the workspace.`)
 	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of catalogs to return.`)
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
 
@@ -333,6 +336,8 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `User-provided free-form text description.`)
+	// TODO: complex arg: conversion_info
+	// TODO: complex arg: dr_replication_info
 	cmd.Flags().Var(&updateReq.EnablePredictiveOptimization, "enable-predictive-optimization", `Whether predictive optimization should be enabled for this object and objects under it. Supported values: [DISABLE, ENABLE, INHERIT]`)
 	cmd.Flags().Var(&updateReq.IsolationMode, "isolation-mode", `Whether the current securable is accessible from all workspaces or a specific set of workspaces. Supported values: [ISOLATED, OPEN]`)
 	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the catalog.`)

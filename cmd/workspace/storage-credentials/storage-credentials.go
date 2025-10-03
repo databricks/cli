@@ -281,6 +281,7 @@ func newList() *cobra.Command {
 
 	var listReq catalog.ListStorageCredentialsRequest
 
+	cmd.Flags().BoolVar(&listReq.IncludeUnbound, "include-unbound", listReq.IncludeUnbound, `Whether to include credentials not bound to the workspace.`)
 	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of storage credentials to return.`)
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
 

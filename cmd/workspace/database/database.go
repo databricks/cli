@@ -41,6 +41,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(newDeleteDatabaseInstanceRole())
 	cmd.AddCommand(newDeleteDatabaseTable())
 	cmd.AddCommand(newDeleteSyncedDatabaseTable())
+	cmd.AddCommand(newFailoverDatabaseInstance())
 	cmd.AddCommand(newFindDatabaseInstanceByUid())
 	cmd.AddCommand(newGenerateDatabaseCredential())
 	cmd.AddCommand(newGetDatabaseCatalog())
@@ -54,6 +55,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(newListSyncedDatabaseTables())
 	cmd.AddCommand(newUpdateDatabaseCatalog())
 	cmd.AddCommand(newUpdateDatabaseInstance())
+	cmd.AddCommand(newUpdateDatabaseInstanceRole())
 	cmd.AddCommand(newUpdateSyncedDatabaseTable())
 
 	// Apply optional overrides to this command.
@@ -83,6 +85,8 @@ func newCreateDatabaseCatalog() *cobra.Command {
 	cmd.Flags().Var(&createDatabaseCatalogJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().BoolVar(&createDatabaseCatalogReq.Catalog.CreateDatabaseIfNotExists, "create-database-if-not-exists", createDatabaseCatalogReq.Catalog.CreateDatabaseIfNotExists, ``)
+	cmd.Flags().StringVar(&createDatabaseCatalogReq.Catalog.DatabaseBranchId, "database-branch-id", createDatabaseCatalogReq.Catalog.DatabaseBranchId, `The branch_id of the database branch associated with the catalog.`)
+	cmd.Flags().StringVar(&createDatabaseCatalogReq.Catalog.DatabaseProjectId, "database-project-id", createDatabaseCatalogReq.Catalog.DatabaseProjectId, `The project_id of the database project associated with the catalog.`)
 
 	cmd.Use = "create-database-catalog NAME DATABASE_INSTANCE_NAME DATABASE_NAME"
 	cmd.Short = `Create a Database Catalog.`
@@ -179,12 +183,15 @@ func newCreateDatabaseInstance() *cobra.Command {
 
 	cmd.Flags().StringVar(&createDatabaseInstanceReq.DatabaseInstance.Capacity, "capacity", createDatabaseInstanceReq.DatabaseInstance.Capacity, `The sku of the instance.`)
 	// TODO: array: child_instance_refs
+	// TODO: array: custom_tags
+	// TODO: array: effective_custom_tags
 	cmd.Flags().BoolVar(&createDatabaseInstanceReq.DatabaseInstance.EnablePgNativeLogin, "enable-pg-native-login", createDatabaseInstanceReq.DatabaseInstance.EnablePgNativeLogin, `Whether to enable PG native password login on the instance.`)
 	cmd.Flags().BoolVar(&createDatabaseInstanceReq.DatabaseInstance.EnableReadableSecondaries, "enable-readable-secondaries", createDatabaseInstanceReq.DatabaseInstance.EnableReadableSecondaries, `Whether to enable secondaries to serve read-only traffic.`)
 	cmd.Flags().IntVar(&createDatabaseInstanceReq.DatabaseInstance.NodeCount, "node-count", createDatabaseInstanceReq.DatabaseInstance.NodeCount, `The number of nodes in the instance, composed of 1 primary and 0 or more secondaries.`)
 	// TODO: complex arg: parent_instance_ref
 	cmd.Flags().IntVar(&createDatabaseInstanceReq.DatabaseInstance.RetentionWindowInDays, "retention-window-in-days", createDatabaseInstanceReq.DatabaseInstance.RetentionWindowInDays, `The retention window for the instance.`)
 	cmd.Flags().BoolVar(&createDatabaseInstanceReq.DatabaseInstance.Stopped, "stopped", createDatabaseInstanceReq.DatabaseInstance.Stopped, `Whether to stop the instance.`)
+	cmd.Flags().StringVar(&createDatabaseInstanceReq.DatabaseInstance.UsagePolicyId, "usage-policy-id", createDatabaseInstanceReq.DatabaseInstance.UsagePolicyId, `The desired usage policy to associate with the instance.`)
 
 	cmd.Use = "create-database-instance NAME"
 	cmd.Short = `Create a Database Instance.`
@@ -278,14 +285,21 @@ func newCreateDatabaseInstanceRole() *cobra.Command {
 
 	cmd.Flags().Var(&createDatabaseInstanceRoleJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().StringVar(&createDatabaseInstanceRoleReq.DatabaseInstanceName, "database-instance-name", createDatabaseInstanceRoleReq.DatabaseInstanceName, ``)
 	// TODO: complex arg: attributes
+	// TODO: complex arg: effective_attributes
 	cmd.Flags().Var(&createDatabaseInstanceRoleReq.DatabaseInstanceRole.IdentityType, "identity-type", `The type of the role. Supported values: [GROUP, PG_ONLY, SERVICE_PRINCIPAL, USER]`)
+	cmd.Flags().StringVar(&createDatabaseInstanceRoleReq.DatabaseInstanceRole.InstanceName, "instance-name", createDatabaseInstanceRoleReq.DatabaseInstanceRole.InstanceName, ``)
 	cmd.Flags().Var(&createDatabaseInstanceRoleReq.DatabaseInstanceRole.MembershipRole, "membership-role", `An enum value for a standard role that this role is a member of. Supported values: [DATABRICKS_SUPERUSER]`)
-	cmd.Flags().StringVar(&createDatabaseInstanceRoleReq.DatabaseInstanceRole.Name, "name", createDatabaseInstanceRoleReq.DatabaseInstanceRole.Name, `The name of the role.`)
 
-	cmd.Use = "create-database-instance-role INSTANCE_NAME"
+	cmd.Use = "create-database-instance-role INSTANCE_NAME NAME"
 	cmd.Short = `Create a role for a Database Instance.`
-	cmd.Long = `Create a role for a Database Instance.`
+	cmd.Long = `Create a role for a Database Instance.
+
+  Arguments:
+    INSTANCE_NAME: 
+    NAME: The name of the role. This is the unique identifier for the role in an
+      instance.`
 
 	// This command is being previewed; hide from help output.
 	cmd.Hidden = true
@@ -293,7 +307,14 @@ func newCreateDatabaseInstanceRole() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(1)
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(1)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, provide only INSTANCE_NAME as positional arguments. Provide 'name' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(2)
 		return check(cmd, args)
 	}
 
@@ -315,6 +336,9 @@ func newCreateDatabaseInstanceRole() *cobra.Command {
 			}
 		}
 		createDatabaseInstanceRoleReq.InstanceName = args[0]
+		if !cmd.Flags().Changed("json") {
+			createDatabaseInstanceRoleReq.DatabaseInstanceRole.Name = args[1]
+		}
 
 		response, err := w.Database.CreateDatabaseInstanceRole(ctx, createDatabaseInstanceRoleReq)
 		if err != nil {
@@ -440,7 +464,9 @@ func newCreateSyncedDatabaseTable() *cobra.Command {
 	cmd.Flags().Var(&createSyncedDatabaseTableJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: data_synchronization_status
+	cmd.Flags().StringVar(&createSyncedDatabaseTableReq.SyncedTable.DatabaseBranchId, "database-branch-id", createSyncedDatabaseTableReq.SyncedTable.DatabaseBranchId, `The branch_id of the database branch associated with the table.`)
 	cmd.Flags().StringVar(&createSyncedDatabaseTableReq.SyncedTable.DatabaseInstanceName, "database-instance-name", createSyncedDatabaseTableReq.SyncedTable.DatabaseInstanceName, `Name of the target database instance.`)
+	cmd.Flags().StringVar(&createSyncedDatabaseTableReq.SyncedTable.DatabaseProjectId, "database-project-id", createSyncedDatabaseTableReq.SyncedTable.DatabaseProjectId, `The project_id of the database project associated with the table.`)
 	cmd.Flags().StringVar(&createSyncedDatabaseTableReq.SyncedTable.LogicalDatabaseName, "logical-database-name", createSyncedDatabaseTableReq.SyncedTable.LogicalDatabaseName, `Target Postgres database object (logical database) name for this table.`)
 	// TODO: complex arg: spec
 
@@ -770,6 +796,77 @@ func newDeleteSyncedDatabaseTable() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range deleteSyncedDatabaseTableOverrides {
 		fn(cmd, &deleteSyncedDatabaseTableReq)
+	}
+
+	return cmd
+}
+
+// start failover-database-instance command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var failoverDatabaseInstanceOverrides []func(
+	*cobra.Command,
+	*database.FailoverDatabaseInstanceRequest,
+)
+
+func newFailoverDatabaseInstance() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var failoverDatabaseInstanceReq database.FailoverDatabaseInstanceRequest
+	var failoverDatabaseInstanceJson flags.JsonFlag
+
+	cmd.Flags().Var(&failoverDatabaseInstanceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&failoverDatabaseInstanceReq.FailoverTargetDatabaseInstanceName, "failover-target-database-instance-name", failoverDatabaseInstanceReq.FailoverTargetDatabaseInstanceName, ``)
+
+	cmd.Use = "failover-database-instance NAME"
+	cmd.Short = `Failover the primary node of a Database Instance to a secondary.`
+	cmd.Long = `Failover the primary node of a Database Instance to a secondary.
+
+  Arguments:
+    NAME: Name of the instance to failover.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := failoverDatabaseInstanceJson.Unmarshal(&failoverDatabaseInstanceReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		failoverDatabaseInstanceReq.Name = args[0]
+
+		response, err := w.Database.FailoverDatabaseInstance(ctx, failoverDatabaseInstanceReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range failoverDatabaseInstanceOverrides {
+		fn(cmd, &failoverDatabaseInstanceReq)
 	}
 
 	return cmd
@@ -1405,6 +1502,8 @@ func newUpdateDatabaseCatalog() *cobra.Command {
 	cmd.Flags().Var(&updateDatabaseCatalogJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().BoolVar(&updateDatabaseCatalogReq.DatabaseCatalog.CreateDatabaseIfNotExists, "create-database-if-not-exists", updateDatabaseCatalogReq.DatabaseCatalog.CreateDatabaseIfNotExists, ``)
+	cmd.Flags().StringVar(&updateDatabaseCatalogReq.DatabaseCatalog.DatabaseBranchId, "database-branch-id", updateDatabaseCatalogReq.DatabaseCatalog.DatabaseBranchId, `The branch_id of the database branch associated with the catalog.`)
+	cmd.Flags().StringVar(&updateDatabaseCatalogReq.DatabaseCatalog.DatabaseProjectId, "database-project-id", updateDatabaseCatalogReq.DatabaseCatalog.DatabaseProjectId, `The project_id of the database project associated with the catalog.`)
 
 	cmd.Use = "update-database-catalog NAME UPDATE_MASK DATABASE_INSTANCE_NAME DATABASE_NAME"
 	cmd.Short = `Update a Database Catalog.`
@@ -1500,12 +1599,15 @@ func newUpdateDatabaseInstance() *cobra.Command {
 
 	cmd.Flags().StringVar(&updateDatabaseInstanceReq.DatabaseInstance.Capacity, "capacity", updateDatabaseInstanceReq.DatabaseInstance.Capacity, `The sku of the instance.`)
 	// TODO: array: child_instance_refs
+	// TODO: array: custom_tags
+	// TODO: array: effective_custom_tags
 	cmd.Flags().BoolVar(&updateDatabaseInstanceReq.DatabaseInstance.EnablePgNativeLogin, "enable-pg-native-login", updateDatabaseInstanceReq.DatabaseInstance.EnablePgNativeLogin, `Whether to enable PG native password login on the instance.`)
 	cmd.Flags().BoolVar(&updateDatabaseInstanceReq.DatabaseInstance.EnableReadableSecondaries, "enable-readable-secondaries", updateDatabaseInstanceReq.DatabaseInstance.EnableReadableSecondaries, `Whether to enable secondaries to serve read-only traffic.`)
 	cmd.Flags().IntVar(&updateDatabaseInstanceReq.DatabaseInstance.NodeCount, "node-count", updateDatabaseInstanceReq.DatabaseInstance.NodeCount, `The number of nodes in the instance, composed of 1 primary and 0 or more secondaries.`)
 	// TODO: complex arg: parent_instance_ref
 	cmd.Flags().IntVar(&updateDatabaseInstanceReq.DatabaseInstance.RetentionWindowInDays, "retention-window-in-days", updateDatabaseInstanceReq.DatabaseInstance.RetentionWindowInDays, `The retention window for the instance.`)
 	cmd.Flags().BoolVar(&updateDatabaseInstanceReq.DatabaseInstance.Stopped, "stopped", updateDatabaseInstanceReq.DatabaseInstance.Stopped, `Whether to stop the instance.`)
+	cmd.Flags().StringVar(&updateDatabaseInstanceReq.DatabaseInstance.UsagePolicyId, "usage-policy-id", updateDatabaseInstanceReq.DatabaseInstance.UsagePolicyId, `The desired usage policy to associate with the instance.`)
 
 	cmd.Use = "update-database-instance NAME UPDATE_MASK"
 	cmd.Short = `Update a Database Instance.`
@@ -1563,6 +1665,86 @@ func newUpdateDatabaseInstance() *cobra.Command {
 	return cmd
 }
 
+// start update-database-instance-role command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateDatabaseInstanceRoleOverrides []func(
+	*cobra.Command,
+	*database.UpdateDatabaseInstanceRoleRequest,
+)
+
+func newUpdateDatabaseInstanceRole() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateDatabaseInstanceRoleReq database.UpdateDatabaseInstanceRoleRequest
+	updateDatabaseInstanceRoleReq.DatabaseInstanceRole = database.DatabaseInstanceRole{}
+	var updateDatabaseInstanceRoleJson flags.JsonFlag
+
+	cmd.Flags().Var(&updateDatabaseInstanceRoleJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&updateDatabaseInstanceRoleReq.DatabaseInstanceName, "database-instance-name", updateDatabaseInstanceRoleReq.DatabaseInstanceName, ``)
+	// TODO: complex arg: attributes
+	// TODO: complex arg: effective_attributes
+	cmd.Flags().Var(&updateDatabaseInstanceRoleReq.DatabaseInstanceRole.IdentityType, "identity-type", `The type of the role. Supported values: [GROUP, PG_ONLY, SERVICE_PRINCIPAL, USER]`)
+	cmd.Flags().StringVar(&updateDatabaseInstanceRoleReq.DatabaseInstanceRole.InstanceName, "instance-name", updateDatabaseInstanceRoleReq.DatabaseInstanceRole.InstanceName, ``)
+	cmd.Flags().Var(&updateDatabaseInstanceRoleReq.DatabaseInstanceRole.MembershipRole, "membership-role", `An enum value for a standard role that this role is a member of. Supported values: [DATABRICKS_SUPERUSER]`)
+
+	cmd.Use = "update-database-instance-role INSTANCE_NAME NAME"
+	cmd.Short = `Update a role for a Database Instance.`
+	cmd.Long = `Update a role for a Database Instance.
+
+  Arguments:
+    INSTANCE_NAME: 
+    NAME: The name of the role. This is the unique identifier for the role in an
+      instance.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := updateDatabaseInstanceRoleJson.Unmarshal(&updateDatabaseInstanceRoleReq.DatabaseInstanceRole)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		updateDatabaseInstanceRoleReq.InstanceName = args[0]
+		updateDatabaseInstanceRoleReq.Name = args[1]
+
+		response, err := w.Database.UpdateDatabaseInstanceRole(ctx, updateDatabaseInstanceRoleReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateDatabaseInstanceRoleOverrides {
+		fn(cmd, &updateDatabaseInstanceRoleReq)
+	}
+
+	return cmd
+}
+
 // start update-synced-database-table command
 
 // Slice with functions to override default command behavior.
@@ -1582,7 +1764,9 @@ func newUpdateSyncedDatabaseTable() *cobra.Command {
 	cmd.Flags().Var(&updateSyncedDatabaseTableJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: data_synchronization_status
+	cmd.Flags().StringVar(&updateSyncedDatabaseTableReq.SyncedTable.DatabaseBranchId, "database-branch-id", updateSyncedDatabaseTableReq.SyncedTable.DatabaseBranchId, `The branch_id of the database branch associated with the table.`)
 	cmd.Flags().StringVar(&updateSyncedDatabaseTableReq.SyncedTable.DatabaseInstanceName, "database-instance-name", updateSyncedDatabaseTableReq.SyncedTable.DatabaseInstanceName, `Name of the target database instance.`)
+	cmd.Flags().StringVar(&updateSyncedDatabaseTableReq.SyncedTable.DatabaseProjectId, "database-project-id", updateSyncedDatabaseTableReq.SyncedTable.DatabaseProjectId, `The project_id of the database project associated with the table.`)
 	cmd.Flags().StringVar(&updateSyncedDatabaseTableReq.SyncedTable.LogicalDatabaseName, "logical-database-name", updateSyncedDatabaseTableReq.SyncedTable.LogicalDatabaseName, `Target Postgres database object (logical database) name for this table.`)
 	// TODO: complex arg: spec
 

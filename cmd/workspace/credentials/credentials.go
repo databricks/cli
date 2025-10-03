@@ -364,6 +364,7 @@ func newListCredentials() *cobra.Command {
 
 	var listCredentialsReq catalog.ListCredentialsRequest
 
+	cmd.Flags().BoolVar(&listCredentialsReq.IncludeUnbound, "include-unbound", listCredentialsReq.IncludeUnbound, `Whether to include credentials not bound to the workspace.`)
 	cmd.Flags().IntVar(&listCredentialsReq.MaxResults, "max-results", listCredentialsReq.MaxResults, `Maximum number of credentials to return.`)
 	cmd.Flags().StringVar(&listCredentialsReq.PageToken, "page-token", listCredentialsReq.PageToken, `Opaque token to retrieve the next page of results.`)
 	cmd.Flags().Var(&listCredentialsReq.Purpose, "purpose", `Return only credentials for the specified purpose. Supported values: [SERVICE, STORAGE]`)

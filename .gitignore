@@ -39,3 +39,5 @@ tools/yamlfmt.exe
 
 # Release artifacts
 dist/
+
+vendor/

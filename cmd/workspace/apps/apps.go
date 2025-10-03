@@ -34,12 +34,14 @@ func New() *cobra.Command {
 
 	// Add methods
 	cmd.AddCommand(newCreate())
+	cmd.AddCommand(newCreateUpdate())
 	cmd.AddCommand(newDelete())
 	cmd.AddCommand(newDeploy())
 	cmd.AddCommand(newGet())
 	cmd.AddCommand(newGetDeployment())
 	cmd.AddCommand(newGetPermissionLevels())
 	cmd.AddCommand(newGetPermissions())
+	cmd.AddCommand(newGetUpdate())
 	cmd.AddCommand(newList())
 	cmd.AddCommand(newListDeployments())
 	cmd.AddCommand(newSetPermissions())
@@ -84,11 +86,13 @@ func newCreate() *cobra.Command {
 	// TODO: complex arg: active_deployment
 	// TODO: complex arg: app_status
 	cmd.Flags().StringVar(&createReq.App.BudgetPolicyId, "budget-policy-id", createReq.App.BudgetPolicyId, ``)
+	cmd.Flags().Var(&createReq.App.ComputeSize, "compute-size", `Supported values: [LARGE, LIQUID, MEDIUM]`)
 	// TODO: complex arg: compute_status
 	cmd.Flags().StringVar(&createReq.App.Description, "description", createReq.App.Description, `The description of the app.`)
 	// TODO: array: effective_user_api_scopes
 	// TODO: complex arg: pending_deployment
 	// TODO: array: resources
+	cmd.Flags().StringVar(&createReq.App.UsagePolicyId, "usage-policy-id", createReq.App.UsagePolicyId, ``)
 	// TODO: array: user_api_scopes
 
 	cmd.Use = "create NAME"
@@ -169,6 +173,127 @@ func newCreate() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range createOverrides {
 		fn(cmd, &createReq)
+	}
+
+	return cmd
+}
+
+// start create-update command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createUpdateOverrides []func(
+	*cobra.Command,
+	*apps.AsyncUpdateAppRequest,
+)
+
+func newCreateUpdate() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createUpdateReq apps.AsyncUpdateAppRequest
+	var createUpdateJson flags.JsonFlag
+
+	var createUpdateSkipWait bool
+	var createUpdateTimeout time.Duration
+
+	cmd.Flags().BoolVar(&createUpdateSkipWait, "no-wait", createUpdateSkipWait, `do not wait to reach SUCCEEDED state`)
+	cmd.Flags().DurationVar(&createUpdateTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach SUCCEEDED state`)
+
+	cmd.Flags().Var(&createUpdateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: complex arg: app
+
+	cmd.Use = "create-update APP_NAME UPDATE_MASK"
+	cmd.Short = `Create an app update.`
+	cmd.Long = `Create an app update.
+  
+  Creates an app update and starts the update process. The update process is
+  asynchronous and the status of the update can be checked with the GetAppUpdate
+  method.
+
+  Arguments:
+    APP_NAME: 
+    UPDATE_MASK: The field mask must be a single string, with multiple fields separated by
+      commas (no spaces). The field path is relative to the resource object,
+      using a dot (.) to navigate sub-fields (e.g., author.given_name).
+      Specification of elements in sequence or map fields is not allowed, as
+      only the entire collection field can be specified. Field names must
+      exactly match the resource field names.
+      
+      A field mask of * indicates full replacement. It’s recommended to
+      always explicitly list the fields being updated and avoid using *
+      wildcards, as it can lead to unintended results if the API changes in the
+      future.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(1)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, provide only APP_NAME as positional arguments. Provide 'update_mask' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := createUpdateJson.Unmarshal(&createUpdateReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		createUpdateReq.AppName = args[0]
+		if !cmd.Flags().Changed("json") {
+			createUpdateReq.UpdateMask = args[1]
+		}
+
+		wait, err := w.Apps.CreateUpdate(ctx, createUpdateReq)
+		if err != nil {
+			return err
+		}
+		if createUpdateSkipWait {
+			return cmdio.Render(ctx, wait.Response)
+		}
+		spinner := cmdio.Spinner(ctx)
+		info, err := wait.OnProgress(func(i *apps.AppUpdate) {
+			if i.Status == nil {
+				return
+			}
+			status := i.Status.State
+			statusMessage := fmt.Sprintf("current status: %s", status)
+			if i.Status != nil {
+				statusMessage = i.Status.Message
+			}
+			spinner <- statusMessage
+		}).GetWithTimeout(createUpdateTimeout)
+		close(spinner)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, info)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createUpdateOverrides {
+		fn(cmd, &createUpdateReq)
 	}
 
 	return cmd
@@ -561,6 +686,62 @@ func newGetPermissions() *cobra.Command {
 	return cmd
 }
 
+// start get-update command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getUpdateOverrides []func(
+	*cobra.Command,
+	*apps.GetAppUpdateRequest,
+)
+
+func newGetUpdate() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getUpdateReq apps.GetAppUpdateRequest
+
+	cmd.Use = "get-update APP_NAME"
+	cmd.Short = `Get an app update.`
+	cmd.Long = `Get an app update.
+  
+  Gets the status of an app update.
+
+  Arguments:
+    APP_NAME: The name of the app.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		getUpdateReq.AppName = args[0]
+
+		response, err := w.Apps.GetUpdate(ctx, getUpdateReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getUpdateOverrides {
+		fn(cmd, &getUpdateReq)
+	}
+
+	return cmd
+}
+
 // start list command
 
 // Slice with functions to override default command behavior.
@@ -926,11 +1107,13 @@ func newUpdate() *cobra.Command {
 	// TODO: complex arg: active_deployment
 	// TODO: complex arg: app_status
 	cmd.Flags().StringVar(&updateReq.App.BudgetPolicyId, "budget-policy-id", updateReq.App.BudgetPolicyId, ``)
+	cmd.Flags().Var(&updateReq.App.ComputeSize, "compute-size", `Supported values: [LARGE, LIQUID, MEDIUM]`)
 	// TODO: complex arg: compute_status
 	cmd.Flags().StringVar(&updateReq.App.Description, "description", updateReq.App.Description, `The description of the app.`)
 	// TODO: array: effective_user_api_scopes
 	// TODO: complex arg: pending_deployment
 	// TODO: array: resources
+	cmd.Flags().StringVar(&updateReq.App.UsagePolicyId, "usage-policy-id", updateReq.App.UsagePolicyId, ``)
 	// TODO: array: user_api_scopes
 
 	cmd.Use = "update NAME"

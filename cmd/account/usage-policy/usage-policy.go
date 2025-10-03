@@ -1,15 +1,13 @@
 // Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
 
-package credentials
+package usage_policy
 
 import (
-	"fmt"
-
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/provisioning"
+	"github.com/databricks/databricks-sdk-go/service/billing"
 	"github.com/spf13/cobra"
 )
 
@@ -19,18 +17,17 @@ var cmdOverrides []func(*cobra.Command)
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "credentials",
-		Short: `These APIs manage credential configurations for this workspace.`,
-		Long: `These APIs manage credential configurations for this workspace. Databricks
-  needs access to a cross-account service IAM role in your AWS account so that
-  Databricks can deploy clusters in the appropriate VPC for the new workspace. A
-  credential configuration encapsulates this role information, and its ID is
-  used when creating a new workspace.`,
-		GroupID: "provisioning",
+		Use:     "usage-policy",
+		Short:   `A service serves REST API about Usage policies.`,
+		Long:    `A service serves REST API about Usage policies`,
+		GroupID: "billing",
 		Annotations: map[string]string{
-			"package": "provisioning",
+			"package": "billing",
 		},
-		RunE: root.ReportUnknownSubcommand,
+
+		// This service is being previewed; hide from help output.
+		Hidden: true,
+		RunE:   root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -38,6 +35,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(newDelete())
 	cmd.AddCommand(newGet())
 	cmd.AddCommand(newList())
+	cmd.AddCommand(newUpdate())
 
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
@@ -53,37 +51,32 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*provisioning.CreateCredentialRequest,
+	*billing.CreateUsagePolicyRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var createReq provisioning.CreateCredentialRequest
+	var createReq billing.CreateUsagePolicyRequest
 	var createJson flags.JsonFlag
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	// TODO: complex arg: policy
+	cmd.Flags().StringVar(&createReq.RequestId, "request-id", createReq.RequestId, `A unique identifier for this request.`)
+
 	cmd.Use = "create"
-	cmd.Short = `Create credential configuration.`
-	cmd.Long = `Create credential configuration.
+	cmd.Short = `Create a usage policy.`
+	cmd.Long = `Create a usage policy.
   
-  Creates a Databricks credential configuration that represents cloud
-  cross-account credentials for a specified account. Databricks uses this to set
-  up network infrastructure properly to host Databricks clusters. For your AWS
-  IAM role, you need to trust the External ID (the Databricks Account API
-  account ID) in the returned credential object, and configure the required
-  access policy.
-  
-  Save the response's credentials_id field, which is the ID for your new
-  credential configuration object.
-  
-  For information about how to create a new workspace with this API, see [Create
-  a new workspace using the Account API]
-  
-  [Create a new workspace using the Account API]: http://docs.databricks.com/administration-guide/account-api/new-workspace.html`
+  Creates a new usage policy.`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -101,11 +94,9 @@ func newCreate() *cobra.Command {
 					return err
 				}
 			}
-		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		response, err := a.Credentials.Create(ctx, createReq)
+		response, err := a.UsagePolicy.Create(ctx, createReq)
 		if err != nil {
 			return err
 		}
@@ -130,24 +121,22 @@ func newCreate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*provisioning.DeleteCredentialRequest,
+	*billing.DeleteUsagePolicyRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var deleteReq provisioning.DeleteCredentialRequest
+	var deleteReq billing.DeleteUsagePolicyRequest
 
-	cmd.Use = "delete CREDENTIALS_ID"
-	cmd.Short = `Delete credential configuration.`
-	cmd.Long = `Delete credential configuration.
+	cmd.Use = "delete POLICY_ID"
+	cmd.Short = `Delete a usage policy.`
+	cmd.Long = `Delete a usage policy.
   
-  Deletes a Databricks credential configuration object for an account, both
-  specified by ID. You cannot delete a credential that is associated with any
-  workspace.
+  Deletes a usage policy
 
   Arguments:
-    CREDENTIALS_ID: Databricks Account API credential configuration ID`
+    POLICY_ID: The Id of the policy.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -161,13 +150,13 @@ func newDelete() *cobra.Command {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
 
-		deleteReq.CredentialsId = args[0]
+		deleteReq.PolicyId = args[0]
 
-		response, err := a.Credentials.Delete(ctx, deleteReq)
+		err = a.UsagePolicy.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -188,23 +177,22 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*provisioning.GetCredentialRequest,
+	*billing.GetUsagePolicyRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var getReq provisioning.GetCredentialRequest
+	var getReq billing.GetUsagePolicyRequest
 
-	cmd.Use = "get CREDENTIALS_ID"
-	cmd.Short = `Get credential configuration.`
-	cmd.Long = `Get credential configuration.
+	cmd.Use = "get POLICY_ID"
+	cmd.Short = `Get a usage policy.`
+	cmd.Long = `Get a usage policy.
   
-  Gets a Databricks credential configuration object for an account, both
-  specified by ID.
+  Retrieves a usage policy by it's ID.
 
   Arguments:
-    CREDENTIALS_ID: Credential configuration ID`
+    POLICY_ID: The Id of the policy.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -218,9 +206,9 @@ func newGet() *cobra.Command {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
 
-		getReq.CredentialsId = args[0]
+		getReq.PolicyId = args[0]
 
-		response, err := a.Credentials.Get(ctx, getReq)
+		response, err := a.UsagePolicy.Get(ctx, getReq)
 		if err != nil {
 			return err
 		}
@@ -245,25 +233,114 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
+	*billing.ListUsagePoliciesRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
+	var listReq billing.ListUsagePoliciesRequest
+
+	// TODO: complex arg: filter_by
+	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `The maximum number of usage policies to return.`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `A page token, received from a previous ListUsagePolicies call.`)
+	// TODO: complex arg: sort_spec
+
 	cmd.Use = "list"
-	cmd.Short = `List credential configuration.`
-	cmd.Long = `List credential configuration.
+	cmd.Short = `List usage policies.`
+	cmd.Long = `List usage policies.
   
-  List Databricks credential configuration objects for an account, specified by
-  ID.`
+  Lists all usage policies. Policies are returned in the alphabetically
+  ascending order of their names.`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
-		response, err := a.Credentials.List(ctx)
+
+		response := a.UsagePolicy.List(ctx, listReq)
+		return cmdio.RenderIterator(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listOverrides {
+		fn(cmd, &listReq)
+	}
+
+	return cmd
+}
+
+// start update command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateOverrides []func(
+	*cobra.Command,
+	*billing.UpdateUsagePolicyRequest,
+)
+
+func newUpdate() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateReq billing.UpdateUsagePolicyRequest
+	updateReq.Policy = billing.UsagePolicy{}
+	var updateJson flags.JsonFlag
+
+	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: complex arg: limit_config
+	// TODO: array: binding_workspace_ids
+	// TODO: array: custom_tags
+	cmd.Flags().StringVar(&updateReq.Policy.PolicyName, "policy-name", updateReq.Policy.PolicyName, `The name of the policy.`)
+
+	cmd.Use = "update POLICY_ID"
+	cmd.Short = `Update a usage policy.`
+	cmd.Long = `Update a usage policy.
+  
+  Updates a usage policy
+
+  Arguments:
+    POLICY_ID: The Id of the policy. This field is generated by Databricks and globally
+      unique.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := cmdctx.AccountClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := updateJson.Unmarshal(&updateReq.Policy)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		updateReq.PolicyId = args[0]
+
+		response, err := a.UsagePolicy.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}
@@ -275,11 +352,11 @@ func newList() *cobra.Command {
 	cmd.ValidArgsFunction = cobra.NoFileCompletions
 
 	// Apply optional overrides to this command.
-	for _, fn := range listOverrides {
-		fn(cmd)
+	for _, fn := range updateOverrides {
+		fn(cmd, &updateReq)
 	}
 
 	return cmd
 }
 
-// end service Credentials
+// end service UsagePolicy

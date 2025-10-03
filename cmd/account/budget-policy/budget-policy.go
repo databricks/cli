@@ -297,6 +297,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: limit_config
+	cmd.Flags().StringVar(&updateReq.UpdateMask, "update-mask", updateReq.UpdateMask, `Field mask specifying which fields to update.`)
 	// TODO: array: binding_workspace_ids
 	// TODO: array: custom_tags
 	cmd.Flags().StringVar(&updateReq.Policy.PolicyName, "policy-name", updateReq.Policy.PolicyName, `The name of the policy.`)

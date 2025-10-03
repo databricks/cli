@@ -148,7 +148,7 @@ func newDelete() *cobra.Command {
 
   Arguments:
     NAME: The fully-qualified name of the function (of the form
-      __catalog_name__.__schema_name__.__function__name__).`
+      __catalog_name__.__schema_name__.__function__name__) .`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -165,14 +165,14 @@ func newDelete() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to load names for Functions drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
-			id, err := cmdio.Select(ctx, names, "The fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__)")
+			id, err := cmdio.Select(ctx, names, "The fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__) ")
 			if err != nil {
 				return err
 			}
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__)")
+			return fmt.Errorf("expected to have the fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__) ")
 		}
 		deleteReq.Name = args[0]
 
@@ -354,7 +354,7 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of function.`)
+	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of the function.`)
 
 	cmd.Use = "update NAME"
 	cmd.Short = `Update a function.`
