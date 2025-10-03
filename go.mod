@@ -90,3 +90,5 @@ tool (
 	github.com/google/yamlfmt/cmd/yamlfmt
 	gotest.tools/gotestsum
 )
+
+replace github.com/databricks/databricks-sdk-go => ../databricks-sdk-go
