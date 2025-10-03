@@ -3,6 +3,7 @@ package metadata
 import (
 	"context"
 	"path/filepath"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
@@ -83,6 +84,13 @@ func (m *compute) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 	// In source-linked deployment files are not copied and resources use source files, therefore we use sync path as file path in metadata
 	if config.IsExplicitlyEnabled(b.Config.Presets.SourceLinkedDeployment) {
 		b.Metadata.Config.Workspace.FilePath = b.SyncRootPath
+		b.Metadata.Config.Bundle.SourceLinked = true
 	}
+
+	// Set the git folder path for deployments from the workspace
+	if b.WorktreeRoot != nil && strings.HasPrefix(b.WorktreeRoot.Native(), "/Workspace/") {
+		b.Metadata.Config.Workspace.GitFolderPath = b.WorktreeRoot.Native()
+	}
+
 	return nil
 }
