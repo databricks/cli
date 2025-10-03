@@ -7,11 +7,13 @@ import (
 const Version = 1
 
 type Bundle struct {
-	Git config.Git `json:"git,omitempty"`
+	Git          config.Git `json:"git,omitempty"`
+	SourceLinked bool       `json:"source_linked"`
 }
 
 type Workspace struct {
-	FilePath string `json:"file_path"`
+	FilePath      string `json:"file_path"`
+	GitFolderPath string `json:"git_folder_path,omitempty"`
 }
 
 type Resource struct {
