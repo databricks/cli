@@ -18,7 +18,6 @@ Validation OK!
   "format": "MULTI_TASK",
   "max_concurrent_runs": 1,
   "name": "include_outside_root",
-  "permissions": [],
   "queue": {
     "enabled": true
   },
