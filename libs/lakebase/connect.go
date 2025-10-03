@@ -11,7 +11,7 @@ import (
 
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	execlib "github.com/databricks/cli/libs/exec"
+	"github.com/databricks/cli/libs/execv"
 	"github.com/databricks/databricks-sdk-go/service/database"
 	"github.com/google/uuid"
 )
@@ -131,7 +131,7 @@ func ConnectWithRetryConfig(ctx context.Context, databaseInstanceName string, re
 	// If retries are disabled, go directly to interactive session
 	if retryConfig.MaxRetries <= 0 {
 		cmdio.LogString(ctx, fmt.Sprintf("Launching psql with connection to %s...", db.ReadWriteDns))
-		return execlib.Execv(execlib.ExecvOptions{
+		return execv.Execv(execv.Options{
 			Args: args,
 			Env:  cmdEnv,
 		})

@@ -1,6 +1,6 @@
 //go:build linux || darwin
 
-package exec
+package execv
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 	"syscall"
 )
 
-func execv(opts ExecvOptions) error {
+func execv(opts Options) error {
 	if opts.Dir != "" {
 		err := os.Chdir(opts.Dir)
 		if err != nil {

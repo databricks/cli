@@ -1,37 +1,24 @@
-package exec
+package execv
 
 import (
 	"os"
-	"os/exec"
+	osexec "os/exec"
 	"path/filepath"
 	"runtime"
 	"testing"
 
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/exec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestShellExecvOpts(t *testing.T) {
-	opts, err := shellExecvOpts("echo hello", "/a/b/c", []string{"key1=value1", "key2=value2"})
-	require.NoError(t, err)
-
-	assert.Equal(t, []string{"key1=value1", "key2=value2"}, opts.Env)
-	assert.Equal(t, "/a/b/c", opts.Dir)
-
-	bashPath, err := exec.LookPath("bash")
-	require.NoError(t, err)
-	assert.Equal(t, bashPath, opts.Args[0])
-	assert.Equal(t, "-ec", opts.Args[1])
-	assert.Equal(t, "echo hello", opts.Args[2])
-}
-
-func TestShellExecv_Windows(t *testing.T) {
+func TestShell_Windows(t *testing.T) {
 	if runtime.GOOS != "windows" {
 		t.Skip("skipping windows test")
 	}
 
-	cmdExePath, err := exec.LookPath("cmd.exe")
+	cmdExePath, err := osexec.LookPath("cmd.exe")
 	require.NoError(t, err)
 
 	// Cleanup environment so that other shells like bash and sh are not used.
@@ -56,7 +43,7 @@ func TestShellExecv_Windows(t *testing.T) {
 		dir := t.TempDir()
 		t.Setenv("TMP", dir)
 
-		opts, err := shellExecvOpts(test.content, dir, []string{})
+		prep, err := exec.PrepareShellCommand(test.content)
 		require.NoError(t, err)
 
 		// Verify that the temporary file is created.
@@ -66,8 +53,14 @@ func TestShellExecv_Windows(t *testing.T) {
 		assert.Regexp(t, "cli-exec.*\\.cmd", files[0].Name())
 
 		exitCode := -1
-		opts.windowsExit = func(status int) {
-			exitCode = status
+		opts := Options{
+			Args:    prep.Args,
+			Env:     []string{},
+			Dir:     dir,
+			cleanup: prep.CleanupFn,
+			windowsExit: func(status int) {
+				exitCode = status
+			},
 		}
 
 		// Execute the script.
