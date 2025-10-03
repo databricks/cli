@@ -43,8 +43,6 @@ func TestShell_Windows(t *testing.T) {
 		dir := t.TempDir()
 		t.Setenv("TMP", dir)
 
-		// We can't directly test Shell() since it exits the process.
-		// Instead, test the underlying preparation and execv separately.
 		prep, err := exec.PrepareShellCommand(test.content)
 		require.NoError(t, err)
 
@@ -54,7 +52,6 @@ func TestShell_Windows(t *testing.T) {
 		assert.Len(t, files, 1)
 		assert.Regexp(t, "cli-exec.*\\.cmd", files[0].Name())
 
-		// Override exit function for testing.
 		exitCode := -1
 		opts := Options{
 			Args:    prep.Args,
