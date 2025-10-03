@@ -532,7 +532,12 @@ def _relativize_path(path: str) -> str:
         return path
 
     cwd = os.getcwd()
-    common = os.path.commonpath([os.getcwd(), path])
+
+    try:
+        common = os.path.commonpath([cwd, path])
+    except ValueError:
+        # On Windows, paths on different drives don't have a common path
+        return path
 
     if common == cwd:
         return os.path.relpath(path, cwd)
