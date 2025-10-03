@@ -8,7 +8,6 @@ Error: path [TEST_TMP_DIR]/src/notebook.py is not contained in sync root path
       "my_job": {
         "max_concurrent_runs": 1,
         "name": "include_outside_root",
-        "permissions": [],
         "queue": {
           "enabled": true
         },

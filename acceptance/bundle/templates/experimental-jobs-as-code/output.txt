@@ -38,7 +38,6 @@ Warning: Ignoring Databricks CLI version constraint for development build. Requi
       ],
       "max_concurrent_runs": 4,
       "name": "[dev [USERNAME]] my_jobs_as_code_job",
-      "permissions": [],
       "queue": {
         "enabled": true
       },
@@ -102,7 +101,6 @@ Warning: Ignoring Databricks CLI version constraint for development build. Requi
         }
       ],
       "name": "[dev [USERNAME]] my_jobs_as_code_pipeline",
-      "permissions": [],
       "tags": {
         "dev": "[USERNAME]"
       },

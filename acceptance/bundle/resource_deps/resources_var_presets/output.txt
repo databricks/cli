@@ -11,7 +11,6 @@
       "development": true,
       "edition": "ADVANCED",
       "name": "[dev [USERNAME]] pipeline for ${resources.schemas.foo.catalog_name}.${resources.schemas.foo.name}",
-      "permissions": [],
       "tags": {
         "dev": "[USERNAME]"
       }
