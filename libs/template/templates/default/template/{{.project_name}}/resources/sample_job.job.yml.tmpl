@@ -93,7 +93,7 @@ resources:
       environments:
         - environment_key: default
           spec:
-            client: "2"
+            environment_version: "4"
   {{- if $python_package}}
             dependencies:
               # By default we just include the .whl file generated for the {{.project_name}} package.
