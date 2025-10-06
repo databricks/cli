@@ -1,0 +1,37 @@
+echo "*" > .gitignore
+trace $CLI bundle plan
+$CLI bundle debug plan > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle deploy
+$CLI bundle debug plan > out.plan_skip.$DATABRICKS_BUNDLE_ENGINE.json
+
+print_requests() {
+    jq --sort-keys 'select(.method != "GET" and (.path | contains("/jobs")))' < out.requests.txt
+    rm out.requests.txt
+    read_state.py jobs foo id name
+}
+
+trace print_requests
+
+title "Update trigger.periodic.unit and re-deploy"
+trace update_file.py databricks.yml DAYS HOURS
+trace $CLI bundle plan
+$CLI bundle debug plan > out.plan_update.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle deploy
+trace print_requests
+
+trace $CLI bundle plan
+
+title "Fetch job ID and verify remote state"
+
+ppid=`read_id.py jobs foo`
+echo "$ppid:JOB_ID" >> ACC_REPLS
+
+trace $CLI jobs get $ppid
+rm out.requests.txt
+
+title "Destroy the job and verify that it's removed from the state and from remote"
+trace $CLI bundle destroy --auto-approve
+trace print_requests
+
+trace musterr $CLI jobs get $ppid
+rm out.requests.txt

@@ -29,6 +29,8 @@ create schemas.my
 create volumes.bar
 create volumes.foo
 
+Plan: 3 to add, 0 to change, 0 to delete, 0 unchanged
+
 >>> print_requests
 
 >>> [CLI] bundle deploy

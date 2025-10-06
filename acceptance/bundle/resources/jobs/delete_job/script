@@ -1,0 +1,10 @@
+print_requests() {
+    jq 'select(.method != "GET" and (.path | contains("/jobs")))' < out.requests.txt
+    rm out.requests.txt
+}
+
+trace $CLI bundle deploy
+cp empty.yml databricks.yml
+$CLI bundle debug plan > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle deploy
+print_requests

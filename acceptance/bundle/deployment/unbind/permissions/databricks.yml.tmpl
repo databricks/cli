@@ -1,0 +1,13 @@
+bundle:
+  name: unbind_permissions
+
+workspace:
+  root_path: "~/.bundle/$UNIQUE_NAME"
+
+resources:
+  jobs:
+    job_1:
+      name: "Job name"
+      permissions:
+        - group_name: users
+          level: CAN_MANAGE

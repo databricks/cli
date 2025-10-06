@@ -31,6 +31,7 @@ Deployment complete!
   "capacity": "CU_1",
   "creation_time": "[TIMESTAMP]Z",
   "creator": "[USERNAME]",
+  "effective_capacity": "CU_1",
   "effective_enable_pg_native_login": false,
   "effective_enable_readable_secondaries": false,
   "effective_node_count": 1,

@@ -1,5 +1,32 @@
 # Version changelog
 
+## Release v0.271.0
+
+### Bundles
+* Added support for a "template_dir" option in the databricks_template_schema.json format. ([#3671](https://github.com/databricks/cli/pull/3671)).
+* Remove resources.apps.config section ([#3680](https://github.com/databricks/cli/pull/3680))
+* Prompt for serverless compute in `dbt-sql` template (defaults to `yes`) ([#3668](https://github.com/databricks/cli/pull/3668))
+
+### API Changes
+* Added `databricks account account-groups-v2` command group.
+* Added `databricks account account-iam-v2` command group.
+* Added `databricks feature-engineering` command group.
+* Added `databricks shares list-shares` command.
+
+
+## Release v0.270.0
+
+### Notable Changes
+* Add 'databricks bundle plan' command. This command shows the deployment plan for the current bundle configuration without making any changes. ([#3530](https://github.com/databricks/cli/pull/3530))
+
+### Bundles
+* Add 'databricks bundle plan' command ([#3530](https://github.com/databricks/cli/pull/3530))
+* Add new Lakeflow Pipelines support for bundle generate ([#3568](https://github.com/databricks/cli/pull/3568))
+* Fix bundle deploy to not update permissions or grants for unbound resources ([#3642](https://github.com/databricks/cli/pull/3642))
+* Introduce new bundle variable: `${workspace.current_user.domain_friendly_name}` ([#3623](https://github.com/databricks/cli/pull/3623))
+* Improve the output of bundle run when bundle is not deployed ([#3652](https://github.com/databricks/cli/pull/3652))
+
+
 ## Release v0.269.0
 
 ### Bundles

@@ -1,6 +1,0 @@
-Warning: expected a string value, found null
-  at resources.pipelines.bar.catalog
-  in databricks.yml:6:16
-
-create pipelines.bar
-create pipelines.foo

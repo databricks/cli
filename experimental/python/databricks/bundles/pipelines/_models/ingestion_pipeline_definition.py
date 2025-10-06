@@ -39,6 +39,15 @@ class IngestionPipelineDefinition:
     Immutable. Identifier for the gateway that is used by this ingestion pipeline to communicate with the source database. This is used with connectors to databases like SQL Server.
     """
 
+    netsuite_jar_path: VariableOrOptional[str] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    Netsuite only configuration. When the field is set for a netsuite connector,
+    the jar stored in the field will be validated and added to the classpath of
+    pipeline's cluster.
+    """
+
     objects: VariableOrList[IngestionConfig] = field(default_factory=list)
     """
     Required. Settings specifying tables to replicate and the destination for the replicated tables.
@@ -82,6 +91,15 @@ class IngestionPipelineDefinitionDict(TypedDict, total=False):
     ingestion_gateway_id: VariableOrOptional[str]
     """
     Immutable. Identifier for the gateway that is used by this ingestion pipeline to communicate with the source database. This is used with connectors to databases like SQL Server.
+    """
+
+    netsuite_jar_path: VariableOrOptional[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    Netsuite only configuration. When the field is set for a netsuite connector,
+    the jar stored in the field will be validated and added to the classpath of
+    pipeline's cluster.
     """
 
     objects: VariableOrList[IngestionConfigParam]

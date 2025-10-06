@@ -9,6 +9,8 @@ Exit code (musterr): 1
 >>> errcode [CLI] bundle plan
 recreate pipelines.my_pipelines
 
+Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
+
 >>> musterr [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/prevent-destroy/default/files...
 Error: resources.pipelines.my_pipelines has lifecycle.prevent_destroy set, but the plan calls for this resource to be recreated or destroyed. To avoid this error, disable lifecycle.prevent_destroy for resources.pipelines.my_pipelines
@@ -19,6 +21,8 @@ Exit code (musterr): 1
 >>> errcode [CLI] bundle plan
 recreate pipelines.my_pipelines
 recreate schemas.my_schema
+
+Plan: 2 to add, 0 to change, 2 to delete, 0 unchanged
 
 >>> musterr [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/prevent-destroy/default/files...
@@ -31,6 +35,8 @@ Exit code (musterr): 1
 >>> errcode [CLI] bundle plan
 recreate pipelines.my_pipelines
 recreate schemas.my_schema
+
+Plan: 2 to add, 0 to change, 2 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/prevent-destroy/default/files...
@@ -50,6 +56,8 @@ Deployment complete!
 >>> errcode [CLI] bundle plan
 delete pipelines.my_pipelines
 delete schemas.my_schema
+
+Plan: 0 to add, 0 to change, 2 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/prevent-destroy/default/files...
