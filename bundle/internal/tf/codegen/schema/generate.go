@@ -38,7 +38,7 @@ func (s *Schema) installTerraform(ctx context.Context) (path string, err error) 
 	installDir := filepath.Join(s.WorkingDir, "bin")
 	err = os.MkdirAll(installDir, 0o755)
 	if err != nil {
-		return
+		return path, err
 	}
 
 	installer := &releases.ExactVersion{
@@ -50,7 +50,7 @@ func (s *Schema) installTerraform(ctx context.Context) (path string, err error) 
 	installer.SetLogger(log.Default())
 
 	path, err = installer.Install(ctx)
-	return
+	return path, err
 }
 
 func (s *Schema) generateSchema(ctx context.Context, execPath string) error {
