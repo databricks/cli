@@ -25,9 +25,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func StartDefaultServer(t *testing.T) {
+func StartDefaultServer(t *testing.T, logRequests bool) {
 	s := testserver.New(t)
 	testserver.AddDefaultHandlers(s)
+
+	// Log API responses if the -logrequests flag is set.
+	if logRequests {
+		s.ResponseCallback = logResponseCallback(t)
+	}
 
 	t.Setenv("DATABRICKS_DEFAULT_HOST", s.URL)
 
