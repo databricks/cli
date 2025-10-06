@@ -3,7 +3,6 @@ package fileset
 import (
 	"fmt"
 	"io/fs"
-	"os"
 	pathlib "path"
 	"path/filepath"
 	"slices"
@@ -97,17 +96,8 @@ func (w *FileSet) recursiveListFiles(path string, seen map[string]struct{}) (out
 			return err
 		}
 
-		info, err := d.Info()
-		if err != nil {
-			// Skip files that were deleted/renamed during traversal
-			if os.IsNotExist(err) {
-				return nil
-			}
-			return err
-		}
-
 		switch {
-		case info.Mode().IsDir():
+		case d.IsDir():
 			ign, err := w.ignore.IgnoreDirectory(name)
 			if err != nil {
 				return fmt.Errorf("cannot check if %s should be ignored: %w", name, err)
@@ -116,7 +106,7 @@ func (w *FileSet) recursiveListFiles(path string, seen map[string]struct{}) (out
 				return fs.SkipDir
 			}
 
-		case info.Mode().IsRegular():
+		case d.Type().IsRegular():
 			ign, err := w.ignore.IgnoreFile(name)
 			if err != nil {
 				return fmt.Errorf("cannot check if %s should be ignored: %w", name, err)
