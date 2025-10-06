@@ -2,8 +2,10 @@ package dresources
 
 import (
 	"context"
+	"encoding/json"
 	"math"
 	"reflect"
+	"strconv"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -17,7 +19,9 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/database"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
+	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -47,13 +51,6 @@ var testConfig map[string]any = map[string]any{
 	"database_instances": &resources.DatabaseInstance{
 		DatabaseInstance: database.DatabaseInstance{
 			Name: "mydbinstance",
-		},
-	},
-
-	"database_catalogs": &resources.DatabaseCatalog{
-		DatabaseCatalog: database.DatabaseCatalog{
-			Name:                 "mydbcatalog",
-			DatabaseInstanceName: "mydbinstance1",
 		},
 	},
 
@@ -100,18 +97,74 @@ var testConfig map[string]any = map[string]any{
 	},
 }
 
-type prepareWorkspace func(client *databricks.WorkspaceClient) error
+type prepareWorkspace func(client *databricks.WorkspaceClient) (any, error)
 
 // some resource require other resources to exist
 var testDeps = map[string]prepareWorkspace{
-	"database_catalogs": func(client *databricks.WorkspaceClient) error {
+	"database_catalogs": func(client *databricks.WorkspaceClient) (any, error) {
 		_, err := client.Database.CreateDatabaseInstance(context.Background(), database.CreateDatabaseInstanceRequest{
 			DatabaseInstance: database.DatabaseInstance{
 				Name: "mydbinstance1",
 			},
 		})
-		return err
+
+		return &resources.DatabaseCatalog{
+			DatabaseCatalog: database.DatabaseCatalog{
+				Name:                 "mydbcatalog",
+				DatabaseInstanceName: "mydbinstance1",
+			},
+		}, err
 	},
+
+	"jobs.permissions": func(client *databricks.WorkspaceClient) (any, error) {
+		resp, err := client.Jobs.Create(context.Background(), jobs.CreateJob{
+			Name: "job-permissions",
+			Tasks: []jobs.Task{
+				{
+					TaskKey: "t",
+					NotebookTask: &jobs.NotebookTask{
+						NotebookPath: "/Workspace/Users/user@example.com/notebook",
+					},
+				},
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &PermissionsInput[resources.JobPermission]{
+			// XXX jobs or job?
+			ObjectID: "/jobs/" + strconv.FormatInt(resp.JobId, 10),
+			Permissions: []resources.JobPermission{{
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
+			}},
+		}, nil
+	},
+
+	"pipelines.permissions": func(client *databricks.WorkspaceClient) (any, error) {
+		resp, err := client.Pipelines.Create(context.Background(), pipelines.CreatePipeline{
+			Name: "pipeline-permissions",
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &PermissionsInput[resources.PipelinePermission]{
+			ObjectID: "/pipelines/" + resp.PipelineId,
+			Permissions: []resources.PipelinePermission{{
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
+			}},
+		}, nil
+	},
+}
+
+var fakeDelete = map[string]bool{
+	// Permissions inherit the lifecycle of their parent job, so the delete step only clears ACLs.
+	// The helper expects resources to disappear entirely, so we skip that assertion for permissions.
+	"jobs.permissions":      true,
+	"pipelines.permissions": true,
 }
 
 func TestAll(t *testing.T) {
@@ -133,18 +186,25 @@ func TestAll(t *testing.T) {
 }
 
 func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.WorkspaceClient) {
+	var inputConfig any
+	var err error
+
 	prepDeps, hasDeps := testDeps[group]
 	if hasDeps {
-		require.NoError(t, prepDeps(client))
-	}
-
-	var inputConfig any
-	inputConfig, ok := testConfig[group]
-
-	if ok {
-		require.Equal(t, adapter.InputConfigType(), reflect.TypeOf(inputConfig))
+		inputConfig, err = prepDeps(client)
+		require.NoError(t, err)
 	} else {
-		inputConfig = reflect.New(adapter.InputConfigType().Elem()).Interface()
+		var ok bool
+		inputConfig, ok = testConfig[group]
+
+		if ok {
+			// For permissions, PrepareState accepts any, so skip strict type check
+			if adapter.InputConfigType().String() != "interface {}" {
+				require.Equal(t, adapter.InputConfigType().String(), reflect.TypeOf(inputConfig).String())
+			}
+		} else {
+			inputConfig = reflect.New(adapter.InputConfigType().Elem()).Interface()
+		}
 	}
 
 	newState, err := adapter.PrepareState(inputConfig)
@@ -223,15 +283,11 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		// t.Logf("Testing %s v=%#v, remoteValue=%#v", path.String(), val, remoteValue)
 		// We expect fields set explicitly to be preserved by testserver, which is true for all resources as of today.
 		// If not true for your resource, add exception here:
-		assert.Equal(t, val, remoteValue, path.String())
+		assert.Equal(t, val, remoteValue, "path=%q\nnewState=%s\nremappedState=%s", path.String(), jsonDump(newState), jsonDump(remappedState))
 	}))
 
 	err = adapter.DoDelete(ctx, createdID)
 	require.NoError(t, err)
-
-	remoteAfterDelete, err := adapter.DoRefresh(ctx, createdID)
-	require.Error(t, err)
-	require.Nil(t, remoteAfterDelete)
 
 	path, err := structpath.Parse("name")
 	require.NoError(t, err)
@@ -249,6 +305,14 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		New:  "mynewname",
 	}, remote, false)
 	require.NoError(t, err)
+
+	remoteAfterDelete, err := adapter.DoRefresh(ctx, createdID)
+	if fakeDelete[group] {
+		require.NoError(t, err)
+	} else {
+		require.Error(t, err)
+		require.Nil(t, remoteAfterDelete)
+	}
 }
 
 // validateFields uses structwalk to generate all valid field paths and checks membership.
@@ -294,4 +358,12 @@ func setupTestServerClient(t *testing.T) (*testserver.Server, *databricks.Worksp
 	})
 	require.NoError(t, err)
 	return server, client
+}
+
+func jsonDump(obj any) string {
+	bytes, err := json.MarshalIndent(obj, "", "  ")
+	if err != nil {
+		return err.Error()
+	}
+	return string(bytes)
 }
