@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"context"
+	"runtime"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -142,6 +143,11 @@ func TestComputeMetadataMutatorSourceLinked(t *testing.T) {
 }
 
 func TestComputeMetadataMutatorWorkspaceGitFolder(t *testing.T) {
+	// The native path of the worktree root on Windows will never match the /Workspace prefix,
+	// so `GitFolderPath` will never be set and this test will never pass
+	if runtime.GOOS == "windows" {
+		t.Skip("this test is not applicable on Windows")
+	}
 	gitFolderPath := "/Workspace/Users/test.user@databricks.com/git_folder"
 	path := vfs.MustNew(gitFolderPath)
 	b := &bundle.Bundle{
