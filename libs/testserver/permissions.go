@@ -7,17 +7,52 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
+// source: https://github.com/databricks/terraform-provider-databricks/blob/main/permissions/permission_definitions.go
+
+var requestObjectTypeToObjectType = map[string]string{
+	"cluster-policies":        "cluster-policy",
+	"instance-pools":          "instance-pool",
+	"clusters":                "cluster",
+	"pipelines":               "pipelines",
+	"jobs":                    "job",
+	"notebooks":               "notebook",
+	"directories":             "directory",
+	"files":                   "file",
+	"repos":                   "repo",
+	"authorization":           "tokens", // maps to both "tokens" and "passwords"
+	"sql/warehouses":          "warehouses",
+	"dbsql-dashboards":        "dashboard",
+	"sql/alerts":              "alert",
+	"sql/queries":             "query",
+	"dashboards":              "dashboard",
+	"experiments":             "mlflowExperiment",
+	"registered-models":       "registered-model",
+	"serving-endpoints":       "serving-endpoint",
+	"vector-search-endpoints": "vector-search-endpoints",
+	"apps":                    "apps",
+	"database-instances":      "database-instances",
+	"alertsv2":                "alertv2",
+}
+
 // GetPermissions retrieves permissions for a given object type and ID
 func (s *FakeWorkspace) GetPermissions(req Request) any {
 	defer s.LockUnlock()()
 
-	objectType := req.Vars["object_type"]
 	objectId := req.Vars["object_id"]
+	requestObjectType := req.Vars["object_type"]
 
-	if objectType == "" {
+	if requestObjectType == "" {
 		return Response{
 			StatusCode: 400,
 			Body:       map[string]string{"message": "object_type is required"},
+		}
+	}
+
+	objectType := requestObjectTypeToObjectType[requestObjectType]
+	if objectType == "" {
+		return Response{
+			StatusCode: 400,
+			Body:       map[string]string{"message": "request_object_type is not recognized: " + requestObjectType},
 		}
 	}
 
@@ -28,7 +63,7 @@ func (s *FakeWorkspace) GetPermissions(req Request) any {
 		}
 	}
 
-	permissionKey := fmt.Sprintf("%s:%s", objectType, objectId)
+	permissionKey := fmt.Sprintf("%s:%s", requestObjectType, objectId)
 	permissions, exists := s.Permissions[permissionKey]
 
 	if !exists {
@@ -48,13 +83,21 @@ func (s *FakeWorkspace) GetPermissions(req Request) any {
 func (s *FakeWorkspace) SetPermissions(req Request) any {
 	defer s.LockUnlock()()
 
-	objectType := req.Vars["object_type"]
+	requestObjectType := req.Vars["object_type"]
 	objectId := req.Vars["object_id"]
 
+	if requestObjectType == "" {
+		return Response{
+			StatusCode: 400,
+			Body:       map[string]string{"message": "request_object_type is required"},
+		}
+	}
+
+	objectType := requestObjectTypeToObjectType[requestObjectType]
 	if objectType == "" {
 		return Response{
 			StatusCode: 400,
-			Body:       map[string]string{"message": "object_type is required"},
+			Body:       map[string]string{"message": "request_object_type is not recognized: " + requestObjectType},
 		}
 	}
 
@@ -73,7 +116,7 @@ func (s *FakeWorkspace) SetPermissions(req Request) any {
 		}
 	}
 
-	permissionKey := fmt.Sprintf("%s:%s", objectType, objectId)
+	permissionKey := fmt.Sprintf("%s:%s", requestObjectType, objectId)
 
 	// Get existing permissions or create new ones
 	existingPermissions, exists := s.Permissions[permissionKey]
