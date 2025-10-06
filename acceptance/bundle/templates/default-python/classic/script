@@ -4,9 +4,23 @@ cd output/my_default_python
 trace $CLI bundle validate -t dev
 trace $CLI bundle validate -t prod
 
+trace $CLI bundle plan
+$CLI bundle debug plan -t dev > ../../out.plan_dev.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle debug plan -t prod > ../../out.plan_prod.$DATABRICKS_BUNDLE_ENGINE.json
+
+rm ../../out.requests.txt
+trace $CLI bundle deploy -t dev
+jq -c < ../../out.requests.txt | sort | jq 'select(.method != "GET" and (.path | contains("/import-file/") | not) and (.path | contains("/telemetry-ext") | not))' > ../../out.requests.dev.$DATABRICKS_BUNDLE_ENGINE.txt
+
+rm ../../out.requests.txt
+# TODO: fails on testserver with 501 Not Implemented on PUT [DATABRICKS_URL]/api/2.0/permissions/directories/0
+#trace errcode $CLI bundle deploy -t prod
+#jq -c < ../../out.requests.txt | sort | jq 'select(.method != "GET" and (.path | contains("/import-file/") | not) and (.path | contains("/telemetry-ext") | not))' > ../../out.requests.prod.$DATABRICKS_BUNDLE_ENGINE.txt
+#rm ../../out.requests.txt
+
 # Do not affect this repository's git behaviour #2318
 mv .gitignore out.gitignore
-rm .databricks/.gitignore
+rm -r .databricks dist
 
 cd ../../
 
