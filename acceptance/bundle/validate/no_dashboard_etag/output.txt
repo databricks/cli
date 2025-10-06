@@ -1,0 +1,15 @@
+
+>>> [CLI] bundle validate
+Error: dashboard "foobar" has an etag set. Etags should not be set in bundle configuration.
+  at resources.dashboards.foobar
+  in databricks.yml:6:7
+
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Found 1 error
+
+Exit code: 1
