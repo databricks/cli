@@ -1361,10 +1361,10 @@ func isSameYAMLContent(str1, str2 string) bool {
 }
 
 func BuildYamlfmt(t *testing.T) {
-       args := []string{
-               "go", "tool", "-modfile=tools/go.mod", "yamlfmt", "-version",
-       }
-       RunCommand(t, args, "..")
+	args := []string{
+		"go", "tool", "-modfile=tools/go.mod", "yamlfmt", "-version",
+	}
+	RunCommand(t, args, "..")
 }
 
 func loadUserReplacements(t *testing.T, repls *testdiff.ReplacementsContext, tmpDir string) {
