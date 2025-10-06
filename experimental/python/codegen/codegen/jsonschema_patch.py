@@ -3,10 +3,6 @@ from dataclasses import replace
 from codegen.jsonschema import Schema
 
 REMOVED_FIELDS = {
-    "compute.ClusterSpec": {
-        # doesn't work, openapi schema needs to be updated to be enum
-        "kind",
-    },
     # fields that were deprecated a long time ago
     "resources.Pipeline": {
         # 'trigger' is deprecated, use 'continuous' or schedule pipeline refresh using job instead

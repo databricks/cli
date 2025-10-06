@@ -21,7 +21,6 @@ Warning: This is a warning message with unicode characters: 🔥🔥🔥
         "format": "MULTI_TASK",
         "max_concurrent_runs": 1,
         "name": "🔥🔥🔥",
-        "permissions": [],
         "queue": {
           "enabled": true
         }
@@ -35,7 +34,6 @@ Warning: This is a warning message with unicode characters: 🔥🔥🔥
         "format": "MULTI_TASK",
         "max_concurrent_runs": 1,
         "name": "🔥🔥🔥",
-        "permissions": [],
         "queue": {
           "enabled": true
         }
