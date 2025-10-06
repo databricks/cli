@@ -1,5 +1,4 @@
-mkdir -p home
-export HOME="$PWD/home"
+sethome "./home"
 
 # Use a fake browser that performs a GET on the authorization URL
 # and follows the redirect back to localhost.
@@ -9,4 +8,4 @@ trace $CLI auth login --host $DATABRICKS_HOST --profile test
 trace $CLI auth profiles
 
 # Track the .databrickscfg file that was created to surface changes.
-mv "$HOME/.databrickscfg" "./out.databrickscfg"
+mv "./home/.databrickscfg" "./out.databrickscfg"
