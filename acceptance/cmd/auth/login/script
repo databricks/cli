@@ -7,3 +7,6 @@ export BROWSER="browser.py"
 
 trace $CLI auth login --host $DATABRICKS_HOST --profile test
 trace $CLI auth profiles
+
+# Track the .databrickscfg file that was created to surface changes.
+mv "$HOME/.databrickscfg" "./out.databrickscfg"
