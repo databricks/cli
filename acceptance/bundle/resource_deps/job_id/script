@@ -22,6 +22,7 @@ echo "$bar_id:BAR_ID" >> ACC_REPLS
 cp empty.yml databricks.yml
 trace $CLI bundle debug plan > out.plan_delete.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
+# TODO sorting requests should not be needed one we persist depends_on in state
 trace print_sorted_requests
 
 trace $CLI bundle destroy --auto-approve
