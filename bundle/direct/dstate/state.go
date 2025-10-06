@@ -146,9 +146,18 @@ func (db *DeploymentState) ExportState(ctx context.Context) resourcestate.Export
 			resultGroup = make(map[string]resourcestate.ResourceState)
 			result[groupName] = resultGroup
 		}
+		// Extract etag for dashboards.
+		var etag string
+		if dashboard, ok := entry.State.(map[string]any); groupName == "dashboards" && ok {
+			v, ok := dashboard["etag"].(string)
+			if ok {
+				etag = v
+			}
+		}
+
 		resultGroup[resourceName] = resourcestate.ResourceState{
-			ID: entry.ID,
-			// TODO: extract Etag
+			ID:   entry.ID,
+			ETag: etag,
 		}
 	}
 	return result

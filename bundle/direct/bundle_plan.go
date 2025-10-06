@@ -224,7 +224,7 @@ func convertChangesToTriggersMap(adapter *dresources.Adapter, diff []structdiff.
 	var m map[string]deployplan.Trigger
 
 	for _, ch := range diff {
-		fieldAction := adapter.ClassifyByTriggers(ch)
+		fieldAction := adapter.ClassifyByTriggersLocal(ch)
 		if fieldAction > action {
 			action = fieldAction
 		}

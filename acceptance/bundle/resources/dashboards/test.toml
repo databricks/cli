@@ -1,0 +1,19 @@
+Local = true
+Cloud = true
+RequiresWarehouse = true
+
+[EnvMatrix]
+  DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct-exp"]
+
+[[Repls]]
+Old = "[0-9a-f]{32}"
+New = "[DASHBOARD_ID]"
+
+# Etag can be both negative and positive.
+[[Repls]]
+Old = "\"[-0-9]{8,}\""
+New = "[ETAG]"
+
+[[Repls]]
+Old = "\"[0-9]{8,}\""
+New = "[ETAG]"
