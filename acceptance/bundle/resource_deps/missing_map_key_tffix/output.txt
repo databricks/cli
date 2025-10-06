@@ -11,7 +11,6 @@
       "format": "MULTI_TASK",
       "max_concurrent_runs": 1,
       "name": "test ${resources.jobs.test.task[0].new_cluster[0].custom_tags.missing_tag}",
-      "permissions": [],
       "queue": {
         "enabled": true
       }
@@ -25,7 +24,6 @@
       "format": "MULTI_TASK",
       "max_concurrent_runs": 1,
       "name": "test",
-      "permissions": [],
       "queue": {
         "enabled": true
       },

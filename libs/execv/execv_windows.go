@@ -1,6 +1,6 @@
 //go:build windows
 
-package exec
+package execv
 
 import (
 	"fmt"
@@ -9,22 +9,23 @@ import (
 	"strings"
 )
 
-// Note: Windows does not support an execv syscall that replaces the current process.
-// To emulate this, we create a child process, pass the stdin, stdout and stderr file descriptors,
-// and return the exit code.
+// execv emulates Unix execv behavior on Windows.
+//
+// Windows does not support an execv syscall that replaces the current process.
+// To emulate this, we create a child process, pass the stdin, stdout and stderr
+// file descriptors, wait for it to complete, and exit with its exit code.
+//
 // ref: https://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/execv-wexecv?view=msvc-170
-func execv(opts ExecvOptions) error {
+func execv(opts Options) error {
 	if opts.cleanup != nil {
 		defer opts.cleanup()
 	}
 
 	windowsExit := func(status int) {
-		// First clean up the temporary script if it exists.
+		// Clean up before exiting (defer will not run).
 		if opts.cleanup != nil {
 			opts.cleanup()
 		}
-
-		// Then exit the process.
 		opts.windowsExit(status)
 	}
 
@@ -43,7 +44,7 @@ func execv(opts ExecvOptions) error {
 
 	err = cmd.Start()
 	if err != nil {
-		return fmt.Errorf(" %s failed: %w", strings.Join(opts.Args, " "), err)
+		return fmt.Errorf("%s failed: %w", strings.Join(opts.Args, " "), err)
 	}
 
 	err = cmd.Wait()

@@ -20,7 +20,6 @@
     ],
     "max_concurrent_runs": 1,
     "name": "job",
-    "permissions": [],
     "queue": {
       "enabled": true
     }
@@ -48,7 +47,6 @@
     ],
     "max_concurrent_runs": 1,
     "name": "job",
-    "permissions": [],
     "queue": {
       "enabled": true
     }

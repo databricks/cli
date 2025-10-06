@@ -116,6 +116,10 @@ func (m *bundlePermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 					levelsMap[key],
 				)...)
 
+				if len(permissions) == 0 {
+					permissions = nil
+				}
+
 				pv, err = convert.FromTyped(permissions, dyn.NilValue)
 				if err != nil {
 					return dyn.InvalidValue, fmt.Errorf("failed to convert permissions: %w", err)

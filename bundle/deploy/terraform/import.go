@@ -71,8 +71,10 @@ func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 
 	if changed && !m.opts.AutoApprove {
 		output := buf.String()
-		// Remove output starting from Warning until end of output
-		output = output[:strings.Index(output, "Warning:")]
+		// Remove output starting from Warning until end of output, if present.
+		if idx := strings.Index(output, "Warning:"); idx != -1 {
+			output = output[:idx]
+		}
 		cmdio.LogString(ctx, output)
 
 		if !cmdio.IsPromptSupported(ctx) {

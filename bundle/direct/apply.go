@@ -95,7 +95,7 @@ func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState,
 
 func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentState, oldID string, newState any) error {
 	err := d.Adapter.DoDelete(ctx, oldID)
-	if err != nil {
+	if err != nil && !isResourceGone(err) {
 		return fmt.Errorf("deleting old id=%s: %w", oldID, err)
 	}
 
@@ -174,9 +174,8 @@ func (d *DeploymentUnit) UpdateWithID(ctx context.Context, db *dstate.Deployment
 }
 
 func (d *DeploymentUnit) Delete(ctx context.Context, db *dstate.DeploymentState, oldID string) error {
-	// TODO: recognize 404 and 403 as "deleted" and proceed to removing state
 	err := d.Adapter.DoDelete(ctx, oldID)
-	if err != nil {
+	if err != nil && !isResourceGone(err) {
 		return fmt.Errorf("deleting id=%s: %w", oldID, err)
 	}
 
