@@ -24,12 +24,19 @@ lintcheck:
 fmtfull:
 	ruff format -n
 	${GO_TOOL} golangci-lint fmt
-	${GO_TOOL} yamlfmt .
+	./tools/yamlfmt .
 
 fmt:
 	ruff format -n
 	./tools/lintdiff.py fmt
-	${GO_TOOL} yamlfmt .
+	./tools/yamlfmt .
+
+# pre-building yamlfmt because it is invoked from tests and scripts
+tools/yamlfmt: tools/go.mod
+	go build -modfile=tools/go.mod -o tools/yamlfmt github.com/google/yamlfmt/cmd/yamlfmt
+
+tools/yamlfmt.exe: tools/go.mod
+	go build -modfile=tools/go.mod -o tools/yamlfmt.exe github.com/google/yamlfmt/cmd/yamlfmt
 
 ws:
 	./tools/validate_whitespace.py
