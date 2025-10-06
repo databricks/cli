@@ -21,7 +21,7 @@ tidy:
 lintcheck: ./tools/golangci-lint
 	./tools/golangci-lint run ./...
 
-fmtfull:
+fmtfull: ./tools/golangci-lint ./tools/yamlfmt
 	ruff format -n
 	./tools/golangci-lint fmt
 	./tools/yamlfmt .
