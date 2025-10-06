@@ -1,5 +1,3 @@
-# experimental-default-python-vnext
+# default-python
 
-This experimental internal template is a specialized form of the 'default' template.
-It is available as a hidden template in the CLI for testing purposes.
-It is designed to replace the 'default-python' template in an upcoming version.
+This template is the default Python template that uses the shared 'default' template structure via `template_dir`.

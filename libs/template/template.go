@@ -25,7 +25,6 @@ type TemplateName string
 
 const (
 	DefaultPython             TemplateName = "default-python"
-	ExperimentalDefaultPython TemplateName = "experimental-default-python-vnext"
 	DefaultSql                TemplateName = "default-sql"
 	LakeflowPipelines         TemplateName = "lakeflow-pipelines"
 	CLIPipelines              TemplateName = "cli-pipelines"
@@ -43,13 +42,6 @@ var databricksTemplates = []Template{
 		description: "The default Python template for Notebooks and Lakeflow",
 		Reader:      &builtinReader{name: string(DefaultPython)},
 		Writer:      &writerWithFullTelemetry{defaultWriter: defaultWriter{name: DefaultPython}},
-	},
-	{
-		name:        ExperimentalDefaultPython,
-		hidden:      true,
-		description: "The next version of the default Python template (experimental)",
-		Reader:      &builtinReader{name: string(ExperimentalDefaultPython)},
-		Writer:      &writerWithFullTelemetry{defaultWriter: defaultWriter{name: ExperimentalDefaultPython}},
 	},
 	{
 		name:        DefaultSql,
