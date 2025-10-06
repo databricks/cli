@@ -138,7 +138,7 @@ func TestComputeMetadataMutatorSourceLinked(t *testing.T) {
 	require.NoError(t, diags.Error())
 
 	assert.Equal(t, syncRootPath, b.Metadata.Config.Workspace.FilePath)
-	assert.Equal(t, true, b.Metadata.Config.Bundle.SourceLinked)
+	assert.True(t, b.Metadata.Config.Bundle.SourceLinked)
 }
 
 func TestComputeMetadataMutatorWorkspaceGitFolder(t *testing.T) {

@@ -41,7 +41,8 @@ Deployment complete!
     "bundle": {
       "git": {
         "bundle_root_path": "."
-      }
+      },
+      "source_linked": false
     },
     "workspace": {
       "file_path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files"
