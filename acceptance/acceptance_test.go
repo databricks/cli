@@ -1361,11 +1361,10 @@ func isSameYAMLContent(str1, str2 string) bool {
 }
 
 func BuildYamlfmt(t *testing.T) {
-	// Using make here instead of "go build" directly cause it's faster when it's already built
-	args := []string{
-		"make", "-s", "tools/yamlfmt" + exeSuffix,
-	}
-	RunCommand(t, args, "..")
+       args := []string{
+               "go", "tool", "-modfile=tools/go.mod", "yamlfmt", "-version",
+       }
+       RunCommand(t, args, "..")
 }
 
 func loadUserReplacements(t *testing.T, repls *testdiff.ReplacementsContext, tmpDir string) {

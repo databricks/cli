@@ -2,13 +2,14 @@ default: checks fmt lint
 
 PACKAGES=./acceptance/... ./libs/... ./internal/... ./cmd/... ./bundle/... ./experimental/ssh/... .
 
+GO_TOOL ?= go tool -modfile=tools/go.mod
 GOTESTSUM_FORMAT ?= pkgname-and-test-fails
-GOTESTSUM_CMD ?= go tool gotestsum --format ${GOTESTSUM_FORMAT} --no-summary=skipped --jsonfile test-output.json
+GOTESTSUM_CMD ?= ${GO_TOOL} gotestsum --format ${GOTESTSUM_FORMAT} --no-summary=skipped --jsonfile test-output.json
 LOCAL_TIMEOUT ?= 30m
 
 
 lintfull:
-	golangci-lint run --fix
+	${GO_TOOL} golangci-lint run --fix
 
 lint:
 	./tools/lintdiff.py run --fix
@@ -18,24 +19,17 @@ tidy:
 	go mod tidy
 
 lintcheck:
-	golangci-lint run ./...
+	${GO_TOOL} golangci-lint run ./...
 
-fmtfull: tools/yamlfmt
+fmtfull:
 	ruff format -n
-	golangci-lint fmt
-	./tools/yamlfmt .
+	${GO_TOOL} golangci-lint fmt
+	${GO_TOOL} yamlfmt .
 
-fmt: tools/yamlfmt
+fmt:
 	ruff format -n
 	./tools/lintdiff.py fmt
-	./tools/yamlfmt .
-
-# pre-building yamlfmt because I also want to call it from tests
-tools/yamlfmt: go.mod
-	go build -o tools/yamlfmt github.com/google/yamlfmt/cmd/yamlfmt
-
-tools/yamlfmt.exe: go.mod
-	go build -o tools/yamlfmt.exe github.com/google/yamlfmt/cmd/yamlfmt
+	${GO_TOOL} yamlfmt .
 
 ws:
 	./tools/validate_whitespace.py
@@ -65,7 +59,7 @@ test-update-aws:
 test-update-all: test-update test-update-aws
 
 slowest:
-	go tool gotestsum tool slowest --jsonfile test-output.json --threshold 1s --num 50
+	${GO_TOOL} gotestsum tool slowest --jsonfile test-output.json --threshold 1s --num 50
 
 cover:
 	rm -fr ./acceptance/build/cover/
@@ -102,7 +96,7 @@ schema:
 docs:
 	go run ./bundle/docsgen ./bundle/internal/schema ./bundle/docsgen
 
-INTEGRATION = go tool gotestsum --format github-actions --rerun-fails --jsonfile output.json --packages "./acceptance ./integration/..." -- -parallel 4 -timeout=2h
+INTEGRATION = ${GO_TOOL} gotestsum --format github-actions --rerun-fails --jsonfile output.json --packages "./acceptance ./integration/..." -- -parallel 4 -timeout=2h
 
 integration:
 	$(INTEGRATION)
