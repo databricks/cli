@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/google/uuid"
 )
@@ -148,11 +149,16 @@ func (db *DeploymentState) ExportState(ctx context.Context) resourcestate.Export
 		}
 		// Extract etag for dashboards.
 		var etag string
-		if dashboard, ok := entry.State.(map[string]any); groupName == "dashboards" && ok {
+		switch dashboard := entry.State.(type) {
+		// TODO: Is this necessary for detect change?
+		case map[string]any:
 			v, ok := dashboard["etag"].(string)
 			if ok {
 				etag = v
 			}
+
+		case *resources.DashboardConfig:
+			etag = dashboard.Etag
 		}
 
 		resultGroup[resourceName] = resourcestate.ResourceState{

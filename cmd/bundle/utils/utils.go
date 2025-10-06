@@ -42,7 +42,7 @@ func ConfigureBundleWithVariables(cmd *cobra.Command) *bundle.Bundle {
 	// Initialize variables by assigning them values passed as command line flags
 	configureVariables(cmd, b, variables)
 
-	engine, err := deploymentEngine(ctx)
+	engine, err := DeploymentEngine(ctx)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return b
@@ -59,7 +59,7 @@ func ConfigureBundleWithVariables(cmd *cobra.Command) *bundle.Bundle {
 	return b
 }
 
-func deploymentEngine(ctx context.Context) (string, error) {
+func DeploymentEngine(ctx context.Context) (string, error) {
 	engine := env.Get(ctx, "DATABRICKS_BUNDLE_ENGINE")
 
 	// By default, use Terraform
