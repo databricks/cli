@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.12"
+# ///
 """Update PR references in changelog files.
 
 1. Convert occurrences of `#1234` to the canonical markdown link

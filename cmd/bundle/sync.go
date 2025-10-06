@@ -57,7 +57,17 @@ func newSyncCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "sync [flags]",
 		Short: "Synchronize bundle tree to the workspace",
-		Args:  root.NoArgs,
+		Long: `Synchronize bundle files to Databricks workspace for development.
+
+Use sync during development to upload local changes without full deployment:
+  databricks bundle sync              # One-time sync of all files
+  databricks bundle sync --watch      # Continuously watch and sync changes
+  databricks bundle sync --full       # Force full sync (vs incremental)
+  databricks bundle sync --dry-run    # Preview what would be synced
+
+Sync is faster than deploy for rapid development but doesn't update job/pipeline definitions.
+Use 'databricks bundle deploy' for full resource deployment.`,
+		Args: root.NoArgs,
 	}
 
 	var f syncFlags

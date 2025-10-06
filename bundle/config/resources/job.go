@@ -24,20 +24,18 @@ type JobPermission struct {
 }
 
 type Job struct {
-	ID             string          `json:"id,omitempty" bundle:"readonly"`
-	Permissions    []JobPermission `json:"permissions,omitempty"`
-	ModifiedStatus ModifiedStatus  `json:"modified_status,omitempty" bundle:"internal"`
-	URL            string          `json:"url,omitempty" bundle:"internal"`
-
+	BaseResource
 	jobs.JobSettings
+
+	Permissions []JobPermission `json:"permissions,omitempty"`
 }
 
-func (s *Job) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, s)
+func (j *Job) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, j)
 }
 
-func (s Job) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(s)
+func (j Job) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(j)
 }
 
 func (j *Job) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {

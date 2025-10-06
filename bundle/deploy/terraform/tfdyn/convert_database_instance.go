@@ -1,0 +1,48 @@
+package tfdyn
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/databricks/databricks-sdk-go/service/database"
+
+	"github.com/databricks/cli/bundle/internal/tf/schema"
+	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/convert"
+	"github.com/databricks/cli/libs/log"
+)
+
+type databaseInstanceConverter struct{}
+
+func (d databaseInstanceConverter) Convert(ctx context.Context, key string, vin dyn.Value, out *schema.Resources) error {
+	// Normalize the output value to the target schema.
+	vout, diags := convert.Normalize(database.DatabaseInstance{}, vin)
+	for _, diag := range diags {
+		log.Debugf(ctx, "database instance normalization diagnostic: %s", diag.Summary)
+	}
+
+	// Always set purge_on_delete to true
+	vout, err := dyn.Set(vout, "purge_on_delete", dyn.V(true))
+	if err != nil {
+		return err
+	}
+
+	vout, err = convertLifecycle(ctx, vout, vin.Get("lifecycle"))
+	if err != nil {
+		return err
+	}
+
+	out.DatabaseInstance[key] = vout.AsAny()
+
+	// Configure permissions for this resource.
+	if permissions := convertPermissionsResource(ctx, vin); permissions != nil {
+		permissions.DatabaseInstanceName = fmt.Sprintf("${databricks_database_instance.%s.name}", key)
+		out.Permissions["database_instance_"+key] = permissions
+	}
+
+	return nil
+}
+
+func init() {
+	registerConverter("database_instances", databaseInstanceConverter{})
+}

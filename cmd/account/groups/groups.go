@@ -291,7 +291,9 @@ func newList() *cobra.Command {
 	cmd.Short = `List group details.`
 	cmd.Long = `List group details.
   
-  Gets all details of the groups associated with the Databricks account.`
+  Gets all details of the groups associated with the Databricks account. As of
+  08/22/2025, this endpoint will not return members. Instead, members should be
+  retrieved by iterating through Get group details.`
 
 	cmd.Annotations = make(map[string]string)
 

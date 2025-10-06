@@ -4,6 +4,7 @@ package schema
 
 type ResourceVectorSearchIndexDeltaSyncIndexSpecEmbeddingSourceColumns struct {
 	EmbeddingModelEndpointName string `json:"embedding_model_endpoint_name,omitempty"`
+	ModelEndpointNameForQuery  string `json:"model_endpoint_name_for_query,omitempty"`
 	Name                       string `json:"name,omitempty"`
 }
 
@@ -23,6 +24,7 @@ type ResourceVectorSearchIndexDeltaSyncIndexSpec struct {
 
 type ResourceVectorSearchIndexDirectAccessIndexSpecEmbeddingSourceColumns struct {
 	EmbeddingModelEndpointName string `json:"embedding_model_endpoint_name,omitempty"`
+	ModelEndpointNameForQuery  string `json:"model_endpoint_name_for_query,omitempty"`
 	Name                       string `json:"name,omitempty"`
 }
 

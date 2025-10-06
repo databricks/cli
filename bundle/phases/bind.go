@@ -32,7 +32,7 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions) {
 	)
 }
 
-func Unbind(ctx context.Context, b *bundle.Bundle, resourceType, resourceKey string) {
+func Unbind(ctx context.Context, b *bundle.Bundle, bundleType, tfResourceType, resourceKey string) {
 	log.Info(ctx, "Phase: unbind")
 
 	bundle.ApplyContext(ctx, b, lock.Acquire())
@@ -48,7 +48,7 @@ func Unbind(ctx context.Context, b *bundle.Bundle, resourceType, resourceKey str
 		statemgmt.StatePull(),
 		terraform.Interpolate(),
 		terraform.Write(),
-		terraform.Unbind(resourceType, resourceKey),
+		terraform.Unbind(bundleType, tfResourceType, resourceKey),
 		statemgmt.StatePush(),
 	)
 }

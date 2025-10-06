@@ -28,6 +28,7 @@ type Config struct {
 	Host                       string `json:"host,omitempty"`
 	HttpTimeoutSeconds         int    `json:"http_timeout_seconds,omitempty"`
 	MetadataServiceUrl         string `json:"metadata_service_url,omitempty"`
+	OauthCallbackPort          int    `json:"oauth_callback_port,omitempty"`
 	OidcTokenEnv               string `json:"oidc_token_env,omitempty"`
 	Password                   string `json:"password,omitempty"`
 	Profile                    string `json:"profile,omitempty"`

@@ -1,0 +1,31 @@
+
+>>> [CLI] bundle deployment bind database_instance1 [UUID] --auto-approve
+Updating deployment state...
+Successfully bound database_instance with an id '[UUID]'. Run 'bundle deploy' to deploy changes to your workspace
+
+>>> [CLI] bundle summary
+Name: test-bundle-$UNIQUE_NAME
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle-$UNIQUE_NAME/default
+Resources:
+  Database instances:
+    database_instance1:
+      Name: test-instance-02
+      URL:  [DATABRICKS_URL]/compute/database-instances/test-instance-02?o=[NUMID]
+
+>>> [CLI] bundle deployment unbind database_instance1
+Updating deployment state...
+
+>>> [CLI] bundle summary
+Name: test-bundle-$UNIQUE_NAME
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle-$UNIQUE_NAME/default
+Resources:
+  Database instances:
+    database_instance1:
+      Name: test-instance-02
+      URL:  (not deployed)

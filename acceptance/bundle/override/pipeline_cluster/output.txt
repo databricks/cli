@@ -18,8 +18,7 @@
       "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/development/state/metadata.json"
     },
     "edition": "ADVANCED",
-    "name": "job",
-    "permissions": []
+    "name": "job"
   }
 }
 
@@ -42,7 +41,6 @@
       "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/staging/state/metadata.json"
     },
     "edition": "ADVANCED",
-    "name": "job",
-    "permissions": []
+    "name": "job"
   }
 }

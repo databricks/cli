@@ -25,6 +25,11 @@ echo 1234
 echo 12345
 echo 123456
 
+printf "\n=== Distinct replacements\n"
+echo distinct 25
+echo distinct 35
+echo distinct 25
+
 printf "\n=== Testing --version"
 trace $CLI --version
 

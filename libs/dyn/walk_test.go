@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	. "github.com/databricks/cli/libs/dyn"
-	assert "github.com/databricks/cli/libs/dyn/dynassert"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -251,4 +251,19 @@ func TestWalkSequenceError(t *testing.T) {
 	// The third call was for the value at index 1.
 	assert.Equal(t, MustPathFromString(".[1]"), tracker.calls[2].path)
 	assert.Equal(t, V("bar"), tracker.calls[2].value)
+}
+
+func TestCollectLeafPaths(t *testing.T) {
+	v := V(map[string]Value{
+		"a": V(1),
+		"b": V(map[string]Value{
+			"c": V(2),
+			"d": V(map[string]Value{
+				"e": V(3),
+			}),
+		}),
+		"f": V([]Value{V(4), V(5)}),
+	})
+	paths := CollectLeafPaths(v)
+	assert.ElementsMatch(t, []string{"a", "b.c", "b.d.e", "f[0]", "f[1]"}, paths)
 }

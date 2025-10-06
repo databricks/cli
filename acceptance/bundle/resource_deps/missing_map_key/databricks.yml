@@ -1,0 +1,14 @@
+bundle:
+  name: state
+
+resources:
+  jobs:
+    test:
+      name: "test"
+      tasks:
+        - task_key: "test-task"
+          new_cluster:
+            custom_tags:
+              ResourceClass: SingleNode
+    bar:
+      name: "test ${resources.jobs.test.tasks[0].new_cluster.custom_tags.missing_tag}"

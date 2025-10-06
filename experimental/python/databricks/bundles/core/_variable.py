@@ -11,9 +11,9 @@ from typing import (
 __all__ = [
     "Variable",
     "VariableOr",
-    "VariableOrOptional",
     "VariableOrDict",
     "VariableOrList",
+    "VariableOrOptional",
     "variables",
 ]
 

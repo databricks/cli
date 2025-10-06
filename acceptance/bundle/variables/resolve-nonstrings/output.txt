@@ -30,7 +30,6 @@
         "no_alert_for_canceled_runs": true,
         "no_alert_for_skipped_runs": false
       },
-      "permissions": [],
       "queue": {
         "enabled": true
       },

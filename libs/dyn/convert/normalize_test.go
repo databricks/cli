@@ -5,7 +5,8 @@ import (
 
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
-	assert "github.com/databricks/cli/libs/dyn/dynassert"
+	"github.com/databricks/cli/libs/dyn/dynassert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNormalizeStruct(t *testing.T) {
@@ -143,7 +144,7 @@ func TestNormalizeStructNestedError(t *testing.T) {
 	assert.Len(t, err, 2)
 
 	// Verify that valid fields are retained.
-	assert.Equal(t,
+	dynassert.Equal(t,
 		dyn.V(map[string]dyn.Value{
 			"foo": dyn.V(map[string]dyn.Value{
 				"f2": dyn.V(int64(1)),
@@ -186,7 +187,7 @@ func TestNormalizeStructIncludeMissingFields(t *testing.T) {
 	})
 	vout, err := Normalize(typ, vin, IncludeMissingFields)
 	assert.Empty(t, err)
-	assert.Equal(t, dyn.V(map[string]dyn.Value{
+	dynassert.Equal(t, dyn.V(map[string]dyn.Value{
 		"existing": dyn.V("already set"),
 		"nested": dyn.V(map[string]dyn.Value{
 			"string": dyn.V(""),
@@ -222,7 +223,7 @@ func TestNormalizeStructIncludeMissingFieldsOnRecursiveType(t *testing.T) {
 	})
 	vout, err := Normalize(typ, vin, IncludeMissingFields)
 	assert.Empty(t, err)
-	assert.Equal(t, dyn.V(map[string]dyn.Value{
+	dynassert.Equal(t, dyn.V(map[string]dyn.Value{
 		"ptr": dyn.V(map[string]dyn.Value{
 			"ptr": dyn.V(map[string]dyn.Value{
 				// Note: the ptr field is not zero-initialized because that would recurse.
@@ -356,7 +357,7 @@ func TestNormalizeMapNestedError(t *testing.T) {
 	assert.Len(t, err, 2)
 
 	// Verify that valid fields are retained.
-	assert.Equal(t,
+	dynassert.Equal(t,
 		dyn.V(map[string]dyn.Value{
 			"foo": dyn.V(map[string]dyn.Value{
 				"f2": dyn.V(int64(1)),
@@ -478,7 +479,7 @@ func TestNormalizeSliceNestedError(t *testing.T) {
 	assert.Len(t, err, 2)
 
 	// Verify that valid fields are retained.
-	assert.Equal(t,
+	dynassert.Equal(t,
 		dyn.V([]dyn.Value{
 			dyn.V(map[string]dyn.Value{
 				"f2": dyn.V(int64(1)),

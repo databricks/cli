@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"regexp"
+	"slices"
 	"strings"
 	"text/template"
 
@@ -37,6 +38,12 @@ var (
 	cachedIsServicePrincipal *bool
 	cachedCatalog            *string
 )
+
+var metastoreDisabledErrorCodes = []string{
+	"PERMISSION_DENIED",
+	"METASTORE_DOES_NOT_EXIST", // Default metastore is not assigned to the workspace.
+	"FEATURE_DISABLED",         // Unity Catalog is not available for feature tier STANDARD_TIER.
+}
 
 // UUID that is stable for the duration of the template execution. This can be used
 // to populate the `bundle.uuid` field in databricks.yml by template authors.
@@ -141,7 +148,7 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 				metastore, err := w.Metastores.Current(ctx)
 				if err != nil {
 					var aerr *apierr.APIError
-					if errors.As(err, &aerr) && (aerr.ErrorCode == "PERMISSION_DENIED" || aerr.ErrorCode == "METASTORE_DOES_NOT_EXIST") {
+					if errors.As(err, &aerr) && slices.Contains(metastoreDisabledErrorCodes, aerr.ErrorCode) {
 						// Ignore: access denied or workspace doesn't have a metastore assigned
 						empty_default := ""
 						cachedCatalog = &empty_default

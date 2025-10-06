@@ -16,8 +16,7 @@
         "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/foobar/use-default-variable-values/state/metadata.json"
       },
       "edition": "ADVANCED",
-      "name": "a_string",
-      "permissions": []
+      "name": "a_string"
     }
   }
 }
@@ -39,8 +38,7 @@
         "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/foobar/override-string-variable/state/metadata.json"
       },
       "edition": "ADVANCED",
-      "name": "overridden_string",
-      "permissions": []
+      "name": "overridden_string"
     }
   }
 }
@@ -62,8 +60,7 @@
         "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/foobar/override-int-variable/state/metadata.json"
       },
       "edition": "ADVANCED",
-      "name": "a_string",
-      "permissions": []
+      "name": "a_string"
     }
   }
 }
@@ -85,8 +82,7 @@
         "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/foobar/override-both-bool-and-string-variables/state/metadata.json"
       },
       "edition": "ADVANCED",
-      "name": "overridden_string",
-      "permissions": []
+      "name": "overridden_string"
     }
   }
 }

@@ -134,6 +134,17 @@ class Diagnostics:
 
         return False
 
+    def has_warning(self) -> bool:
+        """
+        Returns True if there is at least one warning in diagnostics.
+        """
+
+        for item in self.items:
+            if item.severity == Severity.WARNING:
+                return True
+
+        return False
+
     @classmethod
     def create_error(
         cls,

@@ -54,6 +54,8 @@ func ToTyped(dst any, src dyn.Value) error {
 		return toTypedFloat(dstv, src)
 	case reflect.Interface:
 		return toTypedInterface(dstv, src)
+	default:
+		// Fall through to the error case.
 	}
 
 	return fmt.Errorf("unsupported type: %s", dstv.Kind())
@@ -67,11 +69,16 @@ func toTypedStruct(dst reflect.Value, src dyn.Value) error {
 		dst.SetZero()
 
 		info := getStructInfo(dst.Type())
+
+		forceSendFieldLocations := getForceSendFieldsValues(dst)
+		forceSendFieldsMap := make(map[int][]string)
+
 		for _, pair := range src.MustMap().Pairs() {
 			pk := pair.Key
 			pv := pair.Value
+			jsonKey := pk.MustString()
 
-			index, ok := info.Fields[pk.MustString()]
+			index, ok := info.Fields[jsonKey]
 			if !ok {
 				// Ignore unknown fields.
 				// A warning will be printed later. See PR #904.
@@ -97,6 +104,25 @@ func toTypedStruct(dst reflect.Value, src dyn.Value) error {
 			if err != nil {
 				return err
 			}
+
+			if pv.IsZero() {
+				// Use first index as key: -1 for direct fields, struct index for embedded fields
+				var structKey int
+				if len(index) == 1 {
+					structKey = -1 // Direct field
+				} else {
+					structKey = index[0] // Embedded struct index
+				}
+
+				forceSendFieldsMap[structKey] = append(forceSendFieldsMap[structKey], info.GolangNames[jsonKey])
+			}
+		}
+
+		// Set ForceSendFields using precalculated locations
+		for structKey, fields := range forceSendFieldsMap {
+			if forceSendFieldLocation, exists := forceSendFieldLocations[structKey]; exists {
+				forceSendFieldLocation.Set(reflect.ValueOf(fields))
+			}
 		}
 
 		// Populate field(s) for [dyn.Value], if any.
@@ -115,6 +141,8 @@ func toTypedStruct(dst reflect.Value, src dyn.Value) error {
 			dst.SetZero()
 			return nil
 		}
+	default:
+		// Fall through to the error case.
 	}
 
 	return TypeError{
@@ -152,6 +180,8 @@ func toTypedMap(dst reflect.Value, src dyn.Value) error {
 			dst.SetZero()
 			return nil
 		}
+	default:
+		// Fall through to the error case.
 	}
 
 	return TypeError{
@@ -183,6 +213,8 @@ func toTypedSlice(dst reflect.Value, src dyn.Value) error {
 			dst.SetZero()
 			return nil
 		}
+	default:
+		// Fall through to the error case.
 	}
 
 	return TypeError{
@@ -205,6 +237,8 @@ func toTypedString(dst reflect.Value, src dyn.Value) error {
 	case dyn.KindFloat:
 		dst.SetString(strconv.FormatFloat(src.MustFloat(), 'f', -1, 64))
 		return nil
+	default:
+		// Fall through to the error case.
 	}
 
 	return TypeError{
@@ -233,6 +267,8 @@ func toTypedBool(dst reflect.Value, src dyn.Value) error {
 			dst.SetZero()
 			return nil
 		}
+	default:
+		// Fall through to the error case.
 	}
 
 	return TypeError{
@@ -269,6 +305,8 @@ func toTypedInt(dst reflect.Value, src dyn.Value) error {
 			dst.SetZero()
 			return nil
 		}
+	default:
+		// Fall through to the error case.
 	}
 
 	return TypeError{
@@ -292,6 +330,8 @@ func toTypedFloat(dst reflect.Value, src dyn.Value) error {
 			dst.SetZero()
 			return nil
 		}
+	default:
+		// Fall through to the error case.
 	}
 
 	return TypeError{

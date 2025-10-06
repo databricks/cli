@@ -1,0 +1,32 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> cat databricks.yml
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    job:
+      tasks:
+        - task_key: TestTask2
+          for_each_task:
+            inputs: "[1]"
+            task:
+              task_key: TestTask2
+              existing_cluster_id: "0717-132531-5opeqon1"
+              python_wheel_task:
+                package_name: "whl"
+                entry_point: "run"
+              libraries:
+                - whl: /Workspace/Users/foo@bar.com/mywheel.whl
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!

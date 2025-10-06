@@ -305,6 +305,9 @@ var renderFuncMap = template.FuncMap{
 	},
 	"replace": strings.ReplaceAll,
 	"join":    strings.Join,
+	"sub": func(a, b int) int {
+		return a - b
+	},
 	"bool": func(v bool) string {
 		if v {
 			return color.GreenString("YES")
@@ -324,6 +327,10 @@ var renderFuncMap = template.FuncMap{
 		return string(b), nil
 	},
 	"pretty_date": func(t time.Time) string {
+		return t.Format("2006-01-02T15:04:05Z")
+	},
+	"pretty_UTC_date_from_millis": func(millis int64) string {
+		t := time.UnixMilli(millis).UTC()
 		return t.Format("2006-01-02T15:04:05Z")
 	},
 	"b64_encode": func(in string) (string, error) {
@@ -395,8 +402,10 @@ func fancyJSON(v any) ([]byte, error) {
 }
 
 const errorTemplate = `{{ "Error" | red }}: {{ .Summary }}
+{{- if and .Paths (ne (index .Paths 0).String "") }}
 {{- range $index, $element := .Paths }}
   {{ if eq $index 0 }}at {{else}}   {{ end}}{{ $element.String | green }}
+{{- end }}
 {{- end }}
 {{- range $index, $element := .Locations }}
   {{ if eq $index 0 }}in {{else}}   {{ end}}{{ $element.String | cyan }}
@@ -409,8 +418,10 @@ const errorTemplate = `{{ "Error" | red }}: {{ .Summary }}
 `
 
 const warningTemplate = `{{ "Warning" | yellow }}: {{ .Summary }}
+{{- if and .Paths (ne (index .Paths 0).String "") }}
 {{- range $index, $element := .Paths }}
   {{ if eq $index 0 }}at {{else}}   {{ end}}{{ $element.String | green }}
+{{- end }}
 {{- end }}
 {{- range $index, $element := .Locations }}
   {{ if eq $index 0 }}in {{else}}   {{ end}}{{ $element.String | cyan }}
@@ -423,8 +434,10 @@ const warningTemplate = `{{ "Warning" | yellow }}: {{ .Summary }}
 `
 
 const recommendationTemplate = `{{ "Recommendation" | blue }}: {{ .Summary }}
+{{- if and .Paths (ne (index .Paths 0).String "") }}
 {{- range $index, $element := .Paths }}
   {{ if eq $index 0 }}at {{else}}   {{ end}}{{ $element.String | green }}
+{{- end }}
 {{- end }}
 {{- range $index, $element := .Locations }}
   {{ if eq $index 0 }}in {{else}}   {{ end}}{{ $element.String | cyan }}

@@ -28,6 +28,26 @@ func NewGeneratePipelineCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "pipeline",
 		Short: "Generate bundle configuration for a pipeline",
+		Long: `Generate bundle configuration for an existing Delta Live Tables pipeline.
+
+This command downloads an existing Lakeflow Declarative Pipeline's configuration and any associated
+notebooks, creating bundle files that you can use to deploy the pipeline to other
+environments or manage it as code.
+
+Examples:
+  # Import a production Lakeflow Declarative Pipeline
+  databricks bundle generate pipeline --existing-pipeline-id abc123 --key etl_pipeline
+
+  # Organize files in custom directories
+  databricks bundle generate pipeline --existing-pipeline-id def456 \
+    --key data_transformation --config-dir resources --source-dir src
+
+What gets generated:
+- Pipeline configuration YAML file with settings and libraries
+- Pipeline notebooks downloaded to the source directory
+
+After generation, you can deploy to other environments and modify settings
+like catalogs, schemas, and compute configurations per target.`,
 	}
 
 	cmd.Flags().StringVar(&pipelineId, "existing-pipeline-id", "", `ID of the pipeline to generate config for`)
@@ -60,7 +80,22 @@ func NewGeneratePipelineCommand() *cobra.Command {
 			}
 		}
 
-		v, err := generate.ConvertPipelineToValue(pipeline.Spec)
+		// If the root path is set, we need to download the files from the root path
+		remoteRootPath := pipeline.Spec.RootPath
+		if pipeline.Spec.RootPath != "" {
+			err := downloader.MarkDirectoryForDownload(ctx, &pipeline.Spec.RootPath)
+			if err != nil {
+				return err
+			}
+		}
+
+		// Making sure the root path is relative to the config directory.
+		rel, err := filepath.Rel(configDir, sourceDir)
+		if err != nil {
+			return err
+		}
+
+		v, err := generate.ConvertPipelineToValue(pipeline.Spec, filepath.ToSlash(rel), remoteRootPath)
 		if err != nil {
 			return err
 		}

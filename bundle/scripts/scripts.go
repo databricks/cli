@@ -71,7 +71,7 @@ func executeHook(ctx context.Context, executor *exec.Executor, b *bundle.Bundle,
 
 	// Don't run any arbitrary code when restricted execution is enabled.
 	if _, ok := env.RestrictedExecution(ctx); ok {
-		return nil, nil, errors.New("Running scripts is not allowed when DATABRICKS_BUNDLE_RESTRICTED_CODE_EXECUTION is set")
+		return nil, nil, errors.New("running scripts is not allowed when DATABRICKS_BUNDLE_RESTRICTED_CODE_EXECUTION is set")
 	}
 
 	cmd, err := executor.StartCommand(ctx, string(command))

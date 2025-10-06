@@ -35,6 +35,12 @@ type Extension struct {
 	// compatible with the current CLI version.
 	Version *int `json:"version,omitempty"`
 
+	// TemplateDir specifies the directory containing the template files to use.
+	// If not specified, the template files are expected to be in the same directory
+	// as the schema file. This allows schema files to reference template files
+	// from a different directory (e.g., "../default").
+	TemplateDir string `json:"template_dir,omitempty"`
+
 	// Preview indicates launch stage (e.g. PREVIEW).
 	//
 	// This field indicates whether the associated field is part of a private preview feature.
@@ -55,4 +61,8 @@ type Extension struct {
 	// This field is not in the JSON schema spec, but it is supported in VSCode
 	// It hides a property from IntelliSense (autocomplete suggestions).
 	DoNotSuggest bool `json:"doNotSuggest,omitempty"`
+
+	// FieldBehaviors defines field behaviors from the OpenAPI spec (e.g. OUTPUT_ONLY)
+	// This is used to filter out fields that should not be exposed to users
+	FieldBehaviors []string `json:"x-databricks-field-behaviors,omitempty"`
 }

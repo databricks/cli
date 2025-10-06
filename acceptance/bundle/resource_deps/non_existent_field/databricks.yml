@@ -1,0 +1,10 @@
+resources:
+  volumes:
+    bar:
+      catalog_name: mycatalog
+      schema_name: myschema
+      name: barname
+    foo:
+      catalog_name: ${resources.volumes.bar.non_existent}
+      schema_name: ${resources.volumes.bar.schema_name}
+      name: myname

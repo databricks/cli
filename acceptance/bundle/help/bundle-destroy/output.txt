@@ -1,6 +1,17 @@
 
 >>> [CLI] bundle destroy --help
-Destroy deployed bundle resources
+Destroy all resources deployed by this bundle from the workspace.
+
+This command removes all Databricks resources that were created by deploying
+this bundle.
+
+Examples:
+  databricks bundle destroy                 # Destroy resources in default target
+  databricks bundle destroy --target prod   # Destroy resources in production target
+
+Typical use cases:
+- Cleaning up development or testing targets
+- Removing resources during environment decommissioning
 
 Usage:
   databricks bundle destroy [flags]

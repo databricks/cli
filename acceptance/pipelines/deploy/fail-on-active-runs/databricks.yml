@@ -1,0 +1,6 @@
+bundle:
+  name: pipeline-fail-on-active-runs
+resources:
+  pipelines:
+    my_pipeline:
+      name: pipeline-fail-on-active-runs

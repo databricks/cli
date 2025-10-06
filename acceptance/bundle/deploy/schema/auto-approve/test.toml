@@ -2,8 +2,6 @@ Local = true
 Cloud = true
 RequiresUnityCatalog = true
 
-EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["terraform"]  # requires "${resources}"
-
 Ignore = [
     "databricks.yml",
     "test-file-*.txt",

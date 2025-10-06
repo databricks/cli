@@ -1,0 +1,7 @@
+{
+  "plan": {
+    "resources.jobs.test_job": {
+      "action": "create"
+    }
+  }
+}

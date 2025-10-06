@@ -133,9 +133,10 @@ func logDeployTelemetry(ctx context.Context, b *bundle.Bundle) {
 	}
 
 	mode := protos.BundleModeUnspecified
-	if b.Config.Bundle.Mode == config.Development {
+	switch b.Config.Bundle.Mode {
+	case config.Development:
 		mode = protos.BundleModeDevelopment
-	} else if b.Config.Bundle.Mode == config.Production {
+	case config.Production:
 		mode = protos.BundleModeProduction
 	}
 

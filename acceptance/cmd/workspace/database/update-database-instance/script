@@ -1,0 +1,3 @@
+trace errcode $CLI database update-database-instance test-db --json '{"stopped": true}'
+
+trace $CLI database update-database-instance test-db "*" --json '{"stopped": true}'

@@ -1,0 +1,14 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests
+"foo1 name"
+"foo2 foo1.creator_user_name=[USERNAME]"
+"foo3 foo2.state=IDLE"
+"foo4 foo3.last_modified=[UNIX_TIME_MILLIS]"
+
+>>> print_requests

@@ -1,0 +1,2 @@
+trace $CLI bundle validate -o json -t target_x | jq .variables
+trace $CLI bundle validate -o json -t target_y | jq .variables

@@ -1,0 +1,8 @@
+Cloud = false
+Local = false
+
+# Permissions with alerts does not work with direct deployment yet.
+# So we skip this test on direct-exp until we have permissions support in
+# direct deployment.
+[EnvMatrix]
+DATABRICKS_BUNDLE_ENGINE = ["terraform"]

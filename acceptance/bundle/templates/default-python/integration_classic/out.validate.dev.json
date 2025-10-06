@@ -67,7 +67,6 @@
         ],
         "max_concurrent_runs": 4,
         "name": "[dev [USERNAME]] project_name_[UNIQUE_NAME]_job",
-        "permissions": [],
         "queue": {
           "enabled": true
         },
@@ -136,13 +135,15 @@
         "libraries": [
           {
             "notebook": {
-              "path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/dlt_pipeline"
+              "path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/pipeline"
             }
           }
         ],
         "name": "[dev [USERNAME]] project_name_[UNIQUE_NAME]_pipeline",
-        "permissions": [],
-        "schema": "project_name_[UNIQUE_NAME]_dev"
+        "schema": "project_name_[UNIQUE_NAME]_dev",
+        "tags": {
+          "dev": "[USERNAME]"
+        }
       }
     }
   },
@@ -151,7 +152,6 @@
       "."
     ]
   },
-  "targets": null,
   "workspace": {
     "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/artifacts",
     "file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files",

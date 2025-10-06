@@ -10,11 +10,13 @@ type ResourcePermissionsAccessControl struct {
 }
 
 type ResourcePermissions struct {
+	AlertV2Id              string                             `json:"alert_v2_id,omitempty"`
 	AppName                string                             `json:"app_name,omitempty"`
 	Authorization          string                             `json:"authorization,omitempty"`
 	ClusterId              string                             `json:"cluster_id,omitempty"`
 	ClusterPolicyId        string                             `json:"cluster_policy_id,omitempty"`
 	DashboardId            string                             `json:"dashboard_id,omitempty"`
+	DatabaseInstanceName   string                             `json:"database_instance_name,omitempty"`
 	DirectoryId            string                             `json:"directory_id,omitempty"`
 	DirectoryPath          string                             `json:"directory_path,omitempty"`
 	ExperimentId           string                             `json:"experiment_id,omitempty"`

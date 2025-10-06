@@ -92,7 +92,7 @@ func (p *PythonApp) GetCommand(debug bool) ([]string, error) {
 	if len(spec.Command) == 0 {
 		files, err := filepath.Glob(filepath.Join(spec.config.AppPath, "*.py"))
 		if err != nil {
-			return nil, fmt.Errorf("Error reading source code directory: %w", err)
+			return nil, fmt.Errorf("error reading source code directory: %w", err)
 		}
 
 		if len(files) > 0 {
@@ -100,7 +100,7 @@ func (p *PythonApp) GetCommand(debug bool) ([]string, error) {
 		}
 
 		if len(spec.Command) == 0 {
-			return nil, errors.New("No python file found")
+			return nil, errors.New("no python file found")
 		}
 
 	} else {

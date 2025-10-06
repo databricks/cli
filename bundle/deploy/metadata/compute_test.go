@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle/metadata"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -36,20 +37,31 @@ func TestComputeMetadataMutator(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"my-job-1": {
-						ID: "1111",
+						BaseResource: resources.BaseResource{ID: "1111"},
 						JobSettings: jobs.JobSettings{
 							Name: "My Job One",
 						},
 					},
 					"my-job-2": {
-						ID: "2222",
+						BaseResource: resources.BaseResource{ID: "2222"},
 						JobSettings: jobs.JobSettings{
 							Name: "My Job Two",
 						},
 					},
 				},
 				Pipelines: map[string]*resources.Pipeline{
-					"my-pipeline": {},
+					"my-pipeline-1": {
+						BaseResource: resources.BaseResource{ID: "3333"},
+						CreatePipeline: pipelines.CreatePipeline{
+							Name: "My Pipeline One",
+						},
+					},
+					"my-pipeline-2": {
+						BaseResource: resources.BaseResource{ID: "4444"},
+						CreatePipeline: pipelines.CreatePipeline{
+							Name: "My Pipeline Two",
+						},
+					},
 				},
 			},
 		},
@@ -57,7 +69,8 @@ func TestComputeMetadataMutator(t *testing.T) {
 
 	bundletest.SetLocation(b, "resources.jobs.my-job-1", []dyn.Location{{File: "a/b/c"}})
 	bundletest.SetLocation(b, "resources.jobs.my-job-2", []dyn.Location{{File: "d/e/f"}})
-	bundletest.SetLocation(b, "resources.pipelines.my-pipeline", []dyn.Location{{File: "abc"}})
+	bundletest.SetLocation(b, "resources.pipelines.my-pipeline-1", []dyn.Location{{File: "x/y/z"}})
+	bundletest.SetLocation(b, "resources.pipelines.my-pipeline-2", []dyn.Location{{File: "u/v/w"}})
 
 	expectedMetadata := metadata.Metadata{
 		Version: metadata.Version,
@@ -74,7 +87,7 @@ func TestComputeMetadataMutator(t *testing.T) {
 				},
 			},
 			Resources: metadata.Resources{
-				Jobs: map[string]*metadata.Job{
+				Jobs: map[string]*metadata.Resource{
 					"my-job-1": {
 						RelativePath: "a/b/c",
 						ID:           "1111",
@@ -82,6 +95,16 @@ func TestComputeMetadataMutator(t *testing.T) {
 					"my-job-2": {
 						RelativePath: "d/e/f",
 						ID:           "2222",
+					},
+				},
+				Pipelines: map[string]*metadata.Resource{
+					"my-pipeline-1": {
+						RelativePath: "x/y/z",
+						ID:           "3333",
+					},
+					"my-pipeline-2": {
+						RelativePath: "u/v/w",
+						ID:           "4444",
 					},
 				},
 			},

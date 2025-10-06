@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/dyn"
-	assert "github.com/databricks/cli/libs/dyn/dynassert"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -80,6 +80,79 @@ func TestToTypedStructClearFields(t *testing.T) {
 	assert.Equal(t, Tmp{}, out)
 }
 
+func TestToTypedStructClearFieldsForceSend(t *testing.T) {
+	type Tmp struct {
+		Foo             string   `json:"foo"`
+		Bar             string   `json:"bar,omitempty"`
+		ForceSendFields []string `json:"-"`
+	}
+
+	// Struct value with non-empty fields.
+	out := Tmp{
+		Foo: "baz",
+		Bar: "qux",
+	}
+
+	// Value is an empty map.
+	v := dyn.V(map[string]dyn.Value{})
+
+	// The previously set fields should be cleared.
+	err := ToTyped(&out, v)
+	require.NoError(t, err)
+	assert.Equal(t, Tmp{}, out)
+}
+
+func TestToTypedStructZeroFields(t *testing.T) {
+	type Tmp struct {
+		Foo string `json:"foo"`
+		Bar string `json:"bar,omitempty"`
+	}
+
+	// Struct value with non-empty fields.
+	out := Tmp{
+		Foo: "baz",
+		Bar: "qux",
+	}
+
+	// Value is an empty map.
+	v := dyn.V(map[string]dyn.Value{
+		"foo": dyn.V(""),
+		"bar": dyn.V(""),
+	})
+
+	// The previously set fields should be cleared.
+	err := ToTyped(&out, v)
+	require.NoError(t, err)
+	assert.Equal(t, Tmp{}, out)
+}
+
+func TestToTypedStructZeroFieldsForceSend(t *testing.T) {
+	type Tmp struct {
+		Foo             string   `json:"foo"`
+		Bar             string   `json:"bar,omitempty"`
+		NumWorkers      int      `json:"num_workers,omitempty"`
+		ForceSendFields []string `json:"-"`
+	}
+
+	// Struct value with non-empty fields.
+	out := Tmp{
+		Foo: "baz",
+		Bar: "qux",
+	}
+
+	// Value is an empty map.
+	m := dyn.Mapping{}
+	m.SetLoc("foo", nil, dyn.V(""))
+	m.SetLoc("bar", nil, dyn.V(""))
+	m.SetLoc("num_workers", nil, dyn.V(int64(0)))
+	v := dyn.V(m)
+
+	// The previously set fields should be cleared.
+	err := ToTyped(&out, v)
+	require.NoError(t, err)
+	assert.Equal(t, Tmp{ForceSendFields: []string{"Foo", "Bar", "NumWorkers"}}, out)
+}
+
 func TestToTypedStructAnonymousByValue(t *testing.T) {
 	type Bar struct {
 		Bar string `json:"bar"`
@@ -103,7 +176,7 @@ func TestToTypedStructAnonymousByValue(t *testing.T) {
 	err := ToTyped(&out, v)
 	require.NoError(t, err)
 	assert.Equal(t, "bar", out.Foo.Foo)
-	assert.Equal(t, "baz", out.Foo.Bar.Bar)
+	assert.Equal(t, "baz", out.Bar.Bar)
 }
 
 func TestToTypedStructAnonymousByPointer(t *testing.T) {
@@ -129,7 +202,7 @@ func TestToTypedStructAnonymousByPointer(t *testing.T) {
 	err := ToTyped(&out, v)
 	require.NoError(t, err)
 	assert.Equal(t, "bar", out.Foo.Foo)
-	assert.Equal(t, "baz", out.Foo.Bar.Bar)
+	assert.Equal(t, "baz", out.Bar.Bar)
 }
 
 func TestToTypedStructNil(t *testing.T) {
@@ -296,7 +369,7 @@ func TestToTypedString(t *testing.T) {
 }
 
 func TestToTypedStringOverwrite(t *testing.T) {
-	var out string = "bar"
+	out := "bar"
 	err := ToTyped(&out, dyn.V("foo"))
 	require.NoError(t, err)
 	assert.Equal(t, "foo", out)
@@ -327,14 +400,14 @@ func TestToTypedBool(t *testing.T) {
 	var out bool
 	err := ToTyped(&out, dyn.V(true))
 	require.NoError(t, err)
-	assert.Equal(t, true, out)
+	assert.True(t, out)
 }
 
 func TestToTypedBoolOverwrite(t *testing.T) {
-	var out bool = true
+	out := true
 	err := ToTyped(&out, dyn.V(false))
 	require.NoError(t, err)
-	assert.Equal(t, false, out)
+	assert.False(t, out)
 }
 
 func TestToTypedBoolFromString(t *testing.T) {
@@ -344,14 +417,14 @@ func TestToTypedBoolFromString(t *testing.T) {
 	for _, v := range []string{"y", "yes", "on", "true"} {
 		err := ToTyped(&out, dyn.V(v))
 		require.NoError(t, err)
-		assert.Equal(t, true, out)
+		assert.True(t, out)
 	}
 
 	// False-ish
 	for _, v := range []string{"n", "no", "off", "false"} {
 		err := ToTyped(&out, dyn.V(v))
 		require.NoError(t, err)
-		assert.Equal(t, false, out)
+		assert.False(t, out)
 	}
 
 	// Other
@@ -360,10 +433,10 @@ func TestToTypedBoolFromString(t *testing.T) {
 }
 
 func TestToTypedBoolFromStringVariableReference(t *testing.T) {
-	var out bool = true
+	out := true
 	err := ToTyped(&out, dyn.V("${var.foo}"))
 	require.NoError(t, err)
-	assert.Equal(t, false, out)
+	assert.False(t, out)
 }
 
 func TestToTypedInt(t *testing.T) {
@@ -388,7 +461,7 @@ func TestToTypedInt64(t *testing.T) {
 }
 
 func TestToTypedIntOverwrite(t *testing.T) {
-	var out int = 123
+	out := 123
 	err := ToTyped(&out, dyn.V(1234))
 	require.NoError(t, err)
 	assert.Equal(t, int(1234), out)
@@ -422,7 +495,7 @@ func TestToTypedIntFromStringInt(t *testing.T) {
 }
 
 func TestToTypedIntFromStringVariableReference(t *testing.T) {
-	var out int = 123
+	out := 123
 	err := ToTyped(&out, dyn.V("${var.foo}"))
 	require.NoError(t, err)
 	assert.Equal(t, int(0), out)
@@ -445,28 +518,28 @@ func TestToTypedFloat32(t *testing.T) {
 	var out float32
 	err := ToTyped(&out, dyn.V(float32(1.0)))
 	require.NoError(t, err)
-	assert.Equal(t, float32(1.0), out)
+	assert.Zero(t, 1.0-out)
 }
 
 func TestToTypedFloat64(t *testing.T) {
 	var out float64
 	err := ToTyped(&out, dyn.V(float64(1.0)))
 	require.NoError(t, err)
-	assert.Equal(t, float64(1.0), out)
+	assert.Zero(t, 1.0-out)
 }
 
 func TestToTypedFloat32Overwrite(t *testing.T) {
 	var out float32 = 1.0
 	err := ToTyped(&out, dyn.V(float32(2.0)))
 	require.NoError(t, err)
-	assert.Equal(t, float32(2.0), out)
+	assert.Zero(t, 2.0-out)
 }
 
 func TestToTypedFloat64Overwrite(t *testing.T) {
-	var out float64 = 1.0
+	out := 1.0
 	err := ToTyped(&out, dyn.V(float64(2.0)))
 	require.NoError(t, err)
-	assert.Equal(t, float64(2.0), out)
+	assert.Zero(t, 2.0-out)
 }
 
 func TestToTypedFloat32FromStringError(t *testing.T) {
@@ -485,28 +558,28 @@ func TestToTypedFloat32FromString(t *testing.T) {
 	var out float32
 	err := ToTyped(&out, dyn.V("1.2"))
 	require.NoError(t, err)
-	assert.Equal(t, float32(1.2), out)
+	assert.Zero(t, 1.2-out)
 }
 
 func TestToTypedFloat64FromString(t *testing.T) {
 	var out float64
 	err := ToTyped(&out, dyn.V("1.2"))
 	require.NoError(t, err)
-	assert.Equal(t, float64(1.2), out)
+	assert.Zero(t, 1.2-out)
 }
 
 func TestToTypedFloat32FromStringVariableReference(t *testing.T) {
 	var out float32 = 1.0
 	err := ToTyped(&out, dyn.V("${var.foo}"))
 	require.NoError(t, err)
-	assert.Equal(t, float32(0.0), out)
+	assert.Zero(t, out)
 }
 
 func TestToTypedFloat64FromStringVariableReference(t *testing.T) {
-	var out float64 = 1.0
+	out := 1.0
 	err := ToTyped(&out, dyn.V("${var.foo}"))
 	require.NoError(t, err)
-	assert.Equal(t, float64(0.0), out)
+	assert.Zero(t, out)
 }
 
 func TestToTypedWithAliasKeyType(t *testing.T) {
@@ -551,5 +624,133 @@ func TestToTypedAnyWithNil(t *testing.T) {
 	var out any
 	err := ToTyped(&out, dyn.NilValue)
 	require.NoError(t, err)
-	assert.Equal(t, nil, out)
+	assert.Nil(t, out)
+}
+
+func TestToTypedEmbeddedStructForceSendFields(t *testing.T) {
+	type Inner struct {
+		InnerField      string   `json:"inner_field"`
+		ForceSendFields []string `json:"-"`
+	}
+
+	type Outer struct {
+		OuterField string `json:"outer_field"`
+		Inner
+	}
+
+	var out Outer
+	m := dyn.Mapping{}
+	m.SetLoc("outer_field", nil, dyn.V(""))
+	m.SetLoc("inner_field", nil, dyn.V(""))
+	v := dyn.V(m)
+
+	err := ToTyped(&out, v)
+	require.NoError(t, err)
+
+	// Bug: ForceSendFields contains "OuterField" which belongs to outer struct
+	// Expected: ForceSendFields should only contain "InnerField"
+	assert.Equal(t, []string{"InnerField"}, out.ForceSendFields)
+}
+
+func TestToTypedMultipleEmbeddedStructsForceSendFields(t *testing.T) {
+	type First struct {
+		FirstField      string   `json:"first_field"`
+		ForceSendFields []string `json:"-"`
+	}
+
+	type Second struct {
+		SecondField     string   `json:"second_field"`
+		ForceSendFields []string `json:"-"`
+	}
+
+	type Outer struct {
+		OuterField string `json:"outer_field"`
+		First
+		Second
+	}
+
+	var out Outer
+	m := dyn.Mapping{}
+	m.SetLoc("outer_field", nil, dyn.V(""))
+	m.SetLoc("first_field", nil, dyn.V(""))
+	m.SetLoc("second_field", nil, dyn.V(""))
+	v := dyn.V(m)
+
+	err := ToTyped(&out, v)
+	require.NoError(t, err)
+
+	// Each embedded struct should only get its own fields in ForceSendFields
+	assert.Equal(t, []string{"FirstField"}, out.First.ForceSendFields)
+	assert.Equal(t, []string{"SecondField"}, out.Second.ForceSendFields)
+}
+
+func TestToTypedMixedForceSendFields(t *testing.T) {
+	type First struct {
+		FirstField string `json:"first_field"`
+		// No ForceSendFields
+	}
+
+	type Second struct {
+		SecondField     string   `json:"second_field"`
+		ForceSendFields []string `json:"-"`
+	}
+
+	type Outer struct {
+		OuterField      string   `json:"outer_field"`
+		ForceSendFields []string `json:"-"`
+		First
+		Second
+	}
+
+	var out Outer
+	m := dyn.Mapping{}
+	m.SetLoc("outer_field", nil, dyn.V(""))
+	m.SetLoc("first_field", nil, dyn.V(""))
+	m.SetLoc("second_field", nil, dyn.V(""))
+	v := dyn.V(m)
+
+	err := ToTyped(&out, v)
+	require.NoError(t, err)
+
+	// Outer should get its own direct fields
+	assert.Equal(t, []string{"OuterField"}, out.ForceSendFields)
+	// First has no ForceSendFields field, so nothing to check
+	// Second should get its own field
+	assert.Equal(t, []string{"SecondField"}, out.Second.ForceSendFields)
+}
+
+func TestToTypedFieldByNameBugRegressionTest(t *testing.T) {
+	// This test reproduces the EXACT bug: only direct field is zero, embedded fields are non-zero
+	// The bug occurred because dst.FieldByName("ForceSendFields") finds embedded ForceSendFields
+	// instead of direct ForceSendFields (which doesn't exist)
+	type BaseResource struct {
+		ID string `json:"id,omitempty"`
+	}
+
+	type JobSettings struct {
+		Name            string   `json:"name"`
+		ForceSendFields []string `json:"-"`
+	}
+
+	type Job struct {
+		BaseResource          // embedded at [0]
+		JobSettings           // embedded at [1], has ForceSendFields
+		Permissions  []string `json:"permissions,omitempty"` // direct at [2]
+	}
+
+	var out Job
+	m := dyn.Mapping{}
+	// Non-zero JobSettings fields - these should NOT go to ForceSendFields
+	m.SetLoc("name", nil, dyn.V("test-job"))
+	// Zero direct field - this SHOULD trigger the bug with old code
+	m.SetLoc("permissions", nil, dyn.V([]dyn.Value{}))
+	v := dyn.V(m)
+
+	err := ToTyped(&out, v)
+	require.NoError(t, err)
+
+	// "Permissions" should be dropped, JobSettings.ForceSendFields stays empty
+	assert.Empty(t, out.ForceSendFields)
+	assert.Equal(t, "test-job", out.Name)
+	assert.Empty(t, out.Permissions)
 }

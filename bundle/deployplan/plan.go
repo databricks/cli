@@ -1,81 +1,105 @@
 package deployplan
 
 import (
+	"cmp"
 	"fmt"
+	"slices"
 	"strings"
+	"sync"
+
+	"github.com/databricks/cli/libs/structs/structvar"
 )
 
 type Plan struct {
-	// TerraformPlanPath is the path to the plan from the terraform CLI
-	TerraformPlanPath string
+	// Current version is zero which is omitted and has no backward compatibility guarantees
+	PlanVersion int `json:"plan_version,omitempty"`
+	// TODO:
+	// - CliVersion  string               `json:"cli_version"`
+	// - Copy Serial / Lineage from the state file
+	// - Store a path to state file
+	Plan map[string]*PlanEntry `json:"plan,omitzero"`
 
-	// If true, the plan is empty and applying it will not do anything
-	TerraformIsEmpty bool
-
-	// List of actions to apply (direct deployment)
-	Actions []Action
+	mutex sync.Mutex      `json:"-"`
+	locks map[string]bool `json:"-"`
 }
 
-type Action struct {
-	// Resource group in the config, e.g. "jobs", "pipelines" etc
-	Group string
-
-	// Key of the resource the config
-	Name string
-
-	ActionType ActionType
+func NewPlan() *Plan {
+	return &Plan{
+		Plan:  make(map[string]*PlanEntry),
+		locks: make(map[string]bool),
+	}
 }
 
-func (a Action) String() string {
-	typ, _ := strings.CutSuffix(a.Group, "s")
-	return fmt.Sprintf("  %s %s %s", a.ActionType, typ, a.Name)
+type PlanEntry struct {
+	ID          string               `json:"id,omitempty"`
+	DependsOn   []DependsOnEntry     `json:"depends_on,omitempty"`
+	Action      string               `json:"action,omitempty"`
+	NewState    *structvar.StructVar `json:"new_state,omitempty"`
+	RemoteState any                  `json:"remote_state,omitempty"`
+	Changes     *Changes             `json:"changes,omitempty"`
 }
 
-// Implements cmdio.Event for cmdio.Log
-func (a Action) IsInplaceSupported() bool {
-	return false
+type DependsOnEntry struct {
+	Node  string `json:"node"`
+	Label string `json:"label,omitempty"`
 }
 
-// These enum values correspond to action types defined in the tfjson library.
-// "recreate" maps to the tfjson.Actions.Replace() function.
-// "update" maps to tfjson.Actions.Update() and so on. source:
-// https://github.com/hashicorp/terraform-json/blob/0104004301ca8e7046d089cdc2e2db2179d225be/action.go#L14
-type ActionType string
+type Changes struct {
+	Local  map[string]Trigger `json:"local,omitempty"`
+	Remote map[string]Trigger `json:"remote,omitempty"`
+}
 
-const (
-	ActionTypeUnset    ActionType = ""
-	ActionTypeNoop     ActionType = "noop"
-	ActionTypeCreate   ActionType = "create"
-	ActionTypeDelete   ActionType = "delete"
-	ActionTypeUpdate   ActionType = "update"
-	ActionTypeRecreate ActionType = "recreate"
-)
+type Trigger struct {
+	Action string `json:"action"`
+	Reason string `json:"reason,omitempty"`
+}
 
-// Filter returns actions that match the specified action type
-func Filter(changes []Action, actionType ActionType) []Action {
-	var result []Action
-	for _, action := range changes {
-		if action.ActionType == actionType {
-			result = append(result, action)
+func (p *Plan) GetActions() []Action {
+	actions := make([]Action, 0, len(p.Plan))
+	for key, entry := range p.Plan {
+		at := ActionTypeFromString(entry.Action)
+		parts := strings.SplitN(strings.TrimPrefix(key, "resources."), ".", 2)
+		if len(parts) < 2 {
+			continue
 		}
+		actions = append(actions, Action{
+			ResourceKey: key,
+			ActionType:  at,
+		})
 	}
-	return result
+
+	slices.SortFunc(actions, func(x, y Action) int {
+		return cmp.Compare(x.ResourceKey, y.ResourceKey)
+	})
+
+	return actions
 }
 
-// FilterGroup returns actions that match the specified group and any of the specified action types
-func FilterGroup(changes []Action, group string, actionTypes ...ActionType) []Action {
-	var result []Action
+// LockEntry returns *PlanEntry; subsequent calls before UnlockEntry() with the same resourceKey will panic.
+func (p *Plan) LockEntry(resourceKey string) *PlanEntry {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
 
-	// Create a set of action types for efficient lookup
-	actionTypeSet := make(map[ActionType]bool)
-	for _, actionType := range actionTypes {
-		actionTypeSet[actionType] = true
-	}
-
-	for _, action := range changes {
-		if action.Group == group && actionTypeSet[action.ActionType] {
-			result = append(result, action)
+	entry, ok := p.Plan[resourceKey]
+	if ok {
+		if p.locks[resourceKey] {
+			panic(fmt.Sprintf("internal DAG error, concurrent access to %q", resourceKey))
 		}
+		p.locks[resourceKey] = true
+		return entry
 	}
-	return result
+
+	return nil
+}
+
+func (p *Plan) UnlockEntry(resourceKey string) {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+	p.locks[resourceKey] = false
+}
+
+func (p *Plan) RemoveEntry(resourceKey string) {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+	delete(p.Plan, resourceKey)
 }

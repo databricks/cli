@@ -1,0 +1,14 @@
+resources:
+  jobs:
+    foo:
+      name: foo
+      description: INJECT_ERROR
+    bar:
+      name: bar
+      description: depends on foo id ${resources.jobs.foo.id}
+    baz:
+      name: baz
+      description: depends on bar id ${resources.jobs.bar.id}
+    independent:
+      name: independent
+      description: should be deployed anyway

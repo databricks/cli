@@ -8,7 +8,7 @@ resources:
       schema: my_default_python_${bundle.target}
       libraries:
         - notebook:
-            path: ../src/dlt_pipeline.ipynb
+            path: ../src/pipeline.ipynb
 
       configuration:
         bundle.sourcePath: ${workspace.file_path}/src

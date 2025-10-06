@@ -46,7 +46,7 @@ type resolver struct {
 	in dyn.Value
 	fn Lookup
 
-	refs     map[string]ref
+	refs     map[string]Ref
 	resolved map[string]dyn.Value
 
 	// Memoization for lookups.
@@ -73,11 +73,11 @@ func (r resolver) run() (out dyn.Value, err error) {
 }
 
 func (r *resolver) collectVariableReferences() (err error) {
-	r.refs = make(map[string]ref)
+	r.refs = make(map[string]Ref)
 
 	// First walk the input to gather all values with a variable reference.
 	_, err = dyn.Walk(r.in, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-		ref, ok := newRef(v)
+		ref, ok := NewRef(v)
 		if !ok {
 			// Skip values without variable references.
 			return v, nil
@@ -113,9 +113,9 @@ func (r *resolver) resolveVariableReferences() (err error) {
 	return nil
 }
 
-func (r *resolver) resolveRef(ref ref, seen []string) (dyn.Value, error) {
+func (r *resolver) resolveRef(ref Ref, seen []string) (dyn.Value, error) {
 	// This is an unresolved variable reference.
-	deps := ref.references()
+	deps := ref.References()
 
 	// Resolve each of the dependencies, then interpolate them in the ref.
 	resolved := make([]dyn.Value, len(deps))
@@ -145,7 +145,7 @@ func (r *resolver) resolveRef(ref ref, seen []string) (dyn.Value, error) {
 	}
 
 	// Interpolate the resolved values.
-	if ref.isPure() && complete {
+	if ref.IsPure() && complete {
 		// If the variable reference is pure, we can substitute it.
 		// This is useful for interpolating values of non-string types.
 		//
@@ -153,11 +153,11 @@ func (r *resolver) resolveRef(ref ref, seen []string) (dyn.Value, error) {
 		// of where it is used. This also means that relative path resolution is done
 		// relative to where a variable is used, not where it is defined.
 		//
-		return dyn.NewValue(resolved[0].Value(), ref.value.Locations()), nil
+		return dyn.NewValue(resolved[0].Value(), ref.Value.Locations()), nil
 	}
 
 	// Not pure; perform string interpolation.
-	for j := range ref.matches {
+	for j := range ref.Matches {
 		// The value is invalid if resolution returned [ErrSkipResolution].
 		// We must skip those and leave the original variable reference in place.
 		if !resolved[j].IsValid() {
@@ -167,16 +167,19 @@ func (r *resolver) resolveRef(ref ref, seen []string) (dyn.Value, error) {
 		// Try to turn the resolved value into a string.
 		s, ok := resolved[j].AsString()
 		if !ok {
-			return dyn.InvalidValue, fmt.Errorf(
-				"cannot interpolate non-string value: %s",
-				ref.matches[j][0],
-			)
+			// Only allow primitive types to be converted to string.
+			switch resolved[j].Kind() {
+			case dyn.KindString, dyn.KindBool, dyn.KindInt, dyn.KindFloat, dyn.KindTime, dyn.KindNil:
+				s = fmt.Sprint(resolved[j].AsAny())
+			default:
+				return dyn.InvalidValue, fmt.Errorf("cannot interpolate non-primitive value of type %s into string", resolved[j].Kind())
+			}
 		}
 
-		ref.str = strings.Replace(ref.str, ref.matches[j][0], s, 1)
+		ref.Str = strings.Replace(ref.Str, ref.Matches[j][0], s, 1)
 	}
 
-	return dyn.NewValue(ref.str, ref.value.Locations()), nil
+	return dyn.NewValue(ref.Str, ref.Value.Locations()), nil
 }
 
 func (r *resolver) resolveKey(key string, seen []string) (dyn.Value, error) {
@@ -204,7 +207,7 @@ func (r *resolver) resolveKey(key string, seen []string) (dyn.Value, error) {
 	}
 
 	// If the returned value is a valid variable reference, resolve it.
-	ref, ok := newRef(v)
+	ref, ok := NewRef(v)
 	if ok {
 		v, err = r.resolveRef(ref, seen)
 	}

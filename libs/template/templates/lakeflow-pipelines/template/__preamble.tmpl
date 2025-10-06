@@ -1,16 +1,62 @@
 # Preamble
 
-This file only contains template directives; it is skipped for the actual output.
+This file only template directives; it is skipped for the actual output.
 
 {{skip "__preamble"}}
 
+{{$pipeline := eq .include_pipeline "yes"}}
+{{$job := eq .include_job "yes"}}
+{{$python_package := eq .include_python "yes"}}
 {{$isSQL := eq .language "sql"}}
+{{$lakeflow_only := eq .lakeflow_only "yes"}}
 
-{{if $isSQL}}
-  {{skip "{{.project_name}}/resources/{{.project_name}}_pipeline/utilities/utils.py"}}
-  {{skip "{{.project_name}}/resources/{{.project_name}}_pipeline/transformations/sample_zones_{{.project_name}}.py"}}
-  {{skip "{{.project_name}}/resources/{{.project_name}}_pipeline/transformations/sample_trips_{{.project_name}}.py"}}
+{{if not $python_package}}
+  {{skip "{{.project_name}}/pyproject.toml"}}
+{{end}}
+
+{{if not $pipeline}}
+  {{skip "{{.project_name}}/resources/{{.project_name_short}}_etl.pipeline.yml"}}
+  {{skip "{{.project_name}}/resources/{{.project_name_short}}_etl"}}
+{{end}}
+
+{{if not $job}}
+  {{skip "{{.project_name}}/resources/sample_job/sample_notebook.ipynb"}}
+  {{skip "{{.project_name}}/resources/sample_job/sample_python_file.py"}}
+  {{if not $pipeline}}
+    {{skip "{{.project_name}}/resources/sample_job"}}
+  {{end}}
+{{end}}
+
+{{if and (not $pipeline) (not $job) (not $python_package)}}
+  {{skip "{{.project_name}}/lib/shared"}}
+{{end}}
+
+# Remove tests when Python package is not included (no pytest dependencies)
+{{if not $python_package}}
+  {{skip "{{.project_name}}/tests"}}
+  {{skip "{{.project_name}}/fixtures"}}
+{{end}}
+
+# Remove .gitkeep files for a non-empty project
+{{if or $python_package $job $pipeline}}
+  {{skip "{{.project_name}}/lib/.gitkeep"}}
+{{end}}
+
+# Language-specific file selection
+{{if $pipeline}}
+  {{if $isSQL}}
+    {{skip "{{.project_name}}/resources/{{.project_name_short}}_etl/transformations/*.py"}}
+    {{skip "{{.project_name}}/resources/{{.project_name_short}}_etl/utilities"}}
+  {{else}}
+     {{skip "{{.project_name}}/resources/{{.project_name_short}}_etl/transformations/*.sql"}}
+  {{end}}
+{{end}}
+
+{{if $lakeflow_only}}
+  # Only include a simple job.yml direcly in resources/{{.project_name_short}}_etl
+  {{skip "{{.project_name}}/resources/sample_job/**"}}
+  {{skip "{{.project_name}}/lib/**"}}
 {{else}}
-  {{skip "{{.project_name}}/resources/{{.project_name}}_pipeline/transformations/sample_zones_{{.project_name}}.sql"}}
-  {{skip "{{.project_name}}/resources/{{.project_name}}_pipeline/transformations/sample_trips_{{.project_name}}.sql"}}
+  # Include a full job that might have more than one task
+  {{skip "{{.project_name}}/resources/{{.project_name_short}}_etl/*.job.yml"}}
 {{end}}

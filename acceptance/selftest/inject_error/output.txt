@@ -1,0 +1,5 @@
+
+>>> musterr [CLI] schemas create schema-INJECT_ERROR main
+Error: INJECTED
+
+Exit code (musterr): 1

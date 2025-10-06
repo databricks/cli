@@ -21,7 +21,7 @@ func convertPipelineResource(ctx context.Context, vin dyn.Value) (dyn.Value, err
 		return dyn.InvalidValue, err
 	}
 
-	vout, err = dyn.DropKeys(vout, []string{"allow_duplicate_names", "dry_run"})
+	vout, err = dyn.DropKeys(vout, []string{"dry_run"})
 	if err != nil {
 		return dyn.InvalidValue, err
 	}
@@ -39,6 +39,11 @@ type pipelineConverter struct{}
 
 func (pipelineConverter) Convert(ctx context.Context, key string, vin dyn.Value, out *schema.Resources) error {
 	vout, err := convertPipelineResource(ctx, vin)
+	if err != nil {
+		return err
+	}
+
+	vout, err = convertLifecycle(ctx, vout, vin.Get("lifecycle"))
 	if err != nil {
 		return err
 	}

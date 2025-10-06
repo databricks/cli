@@ -2,6 +2,7 @@ package dyn
 
 import (
 	"fmt"
+	"reflect"
 	"slices"
 )
 
@@ -132,6 +133,21 @@ func (v Value) AsAny() any {
 	default:
 		// Panic because we only want to deal with known types.
 		panic(fmt.Sprintf("invalid kind: %d", v.k))
+	}
+}
+
+func (v Value) IsZero() bool {
+	if v.v == nil {
+		return true
+	}
+
+	switch x := v.v.(type) {
+	case Mapping:
+		return x.Len() == 0
+	case []Value:
+		return len(x) == 0
+	default:
+		return reflect.ValueOf(x).IsZero()
 	}
 }
 

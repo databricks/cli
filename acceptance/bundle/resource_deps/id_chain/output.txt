@@ -1,0 +1,58 @@
+
+>>> [CLI] bundle plan
+create jobs.a
+create jobs.b
+create jobs.c
+create jobs.d
+create jobs.e
+
+Plan: 5 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> print_requests
+
+>>> print_requests
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests_short
+"aa"
+"bb"
+"cc"
+"dd"
+"ee"
+
+>>> update_file.py databricks.yml aa_desc aa_new_desc
+
+>>> update_file.py databricks.yml prefix new_prefix
+
+>>> print_requests
+
+>>> [CLI] bundle plan
+update jobs.a
+update jobs.b
+update jobs.c
+update jobs.d
+update jobs.e
+
+Plan: 0 to add, 5 to change, 0 to delete, 0 unchanged
+
+>>> print_requests
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests_short
+"aa"
+"bb"
+"cc"
+"dd"
+"ee"
+
+>>> print_requests

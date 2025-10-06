@@ -1,0 +1,23 @@
+variables:
+  a:
+    default: ${resources.schemas.foo.name}
+  b:
+    default: this is var.b ${var.a}
+
+resources:
+  schemas:
+    foo:
+      catalog_name: main
+      name: ${resources.schemas.bar.name}
+      # non_existing and "id" stay unresolved
+      comment: unresolved? schemas.bar.non_existing:"${resources.schemas.bar.non_existing}"  schemas.bar.id:"${resources.schemas.bar.id}"
+    bar:
+      catalog_name: main
+      # "id" and "url" are output only and not present in the config -- should be left unresolved
+      name: unresolved? apps.baz.id="${resources.apps.baz.id}" apps.baz.url="${resources.apps.baz.url}"
+      # includes direct and indirect references to $resources
+      comment: var.b=${var.b} schemas.bar.name=${resources.schemas.bar.name} schemas.foo.name=${resources.schemas.foo.name}
+  apps:
+    baz:
+      name: myapp
+      source_code_path: .

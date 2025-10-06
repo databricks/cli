@@ -26,7 +26,7 @@ func createTestPipeline(t *testing.T, workspace *FakeWorkspace) string {
 }
 
 func TestPipelineStartUpdate_HandlesNonExistentPipeline(t *testing.T) {
-	workspace := NewFakeWorkspace("http://test")
+	workspace := NewFakeWorkspace("http://test", "dbapi123")
 
 	response := workspace.PipelineStartUpdate("non-existent-pipeline")
 	assert.Equal(t, 404, response.StatusCode)
@@ -34,7 +34,7 @@ func TestPipelineStartUpdate_HandlesNonExistentPipeline(t *testing.T) {
 }
 
 func TestPipelineGetUpdate_HandlesNonExistent(t *testing.T) {
-	workspace := NewFakeWorkspace("http://test")
+	workspace := NewFakeWorkspace("http://test", "dbapi123")
 
 	response := workspace.PipelineGetUpdate("non-existent-pipeline", "some-update-id")
 	assert.Equal(t, 404, response.StatusCode)
@@ -47,7 +47,7 @@ func TestPipelineGetUpdate_HandlesNonExistent(t *testing.T) {
 }
 
 func TestPipelineStop_AfterUpdate(t *testing.T) {
-	workspace := NewFakeWorkspace("http://test")
+	workspace := NewFakeWorkspace("http://test", "dbapi123")
 
 	pipelineId := createTestPipeline(t, workspace)
 

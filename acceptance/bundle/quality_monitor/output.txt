@@ -15,7 +15,6 @@
         "timestamp_col": "timestamp"
       },
       "output_schema_name": "main.dev",
-      "schedule": null,
       "table_name": "main.test.dev"
     }
   }

@@ -1,0 +1,29 @@
+Local = true
+Cloud = false
+BundleConfigTarget = "databricks.yml"
+
+Ignore = [
+    ".databricks"
+]
+
+[[Server]]
+Pattern = "GET /api/2.0/database/instances/"
+Response.Body = '''
+{
+  "database_instances": [
+    {
+      "id": "12345678-1234-5678-9abc-123456789def",
+      "name": "test-instance-01"
+    }
+  ]
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.0/database/instances/{name}"
+Response.Body = '''
+{
+  "id": "12345678-1234-5678-9abc-123456789def",
+  "name": "test-instance-01"
+}
+'''

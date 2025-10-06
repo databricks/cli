@@ -118,8 +118,7 @@ func newApproveTransitionRequest() *cobra.Command {
       
       * Production: Production stage.
       
-      * Archived: Archived stage. 
-      Supported values: [Archived, None, Production, Staging]
+      * Archived: Archived stage.
     ARCHIVE_EXISTING_VERSIONS: Specifies whether to archive all current model versions in the target
       stage.`
 
@@ -161,10 +160,7 @@ func newApproveTransitionRequest() *cobra.Command {
 			approveTransitionRequestReq.Version = args[1]
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[2], &approveTransitionRequestReq.Stage)
-			if err != nil {
-				return fmt.Errorf("invalid STAGE: %s", args[2])
-			}
+			approveTransitionRequestReq.Stage = args[2]
 		}
 		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[3], &approveTransitionRequestReq.ArchiveExistingVersions)
@@ -307,7 +303,6 @@ func newCreateModel() *cobra.Command {
 	cmd.Long = `Create a model.
   
   Creates a new registered model with the name specified in the request body.
-  
   Throws RESOURCE_ALREADY_EXISTS if a registered model with the given name
   exists.
 
@@ -493,8 +488,7 @@ func newCreateTransitionRequest() *cobra.Command {
       
       * Production: Production stage.
       
-      * Archived: Archived stage. 
-      Supported values: [Archived, None, Production, Staging]`
+      * Archived: Archived stage.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -534,10 +528,7 @@ func newCreateTransitionRequest() *cobra.Command {
 			createTransitionRequestReq.Version = args[1]
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[2], &createTransitionRequestReq.Stage)
-			if err != nil {
-				return fmt.Errorf("invalid STAGE: %s", args[2])
-			}
+			createTransitionRequestReq.Stage = args[2]
 		}
 
 		response, err := w.ModelRegistry.CreateTransitionRequest(ctx, createTransitionRequestReq)
@@ -586,9 +577,7 @@ func newCreateWebhook() *cobra.Command {
 	cmd.Short = `Create a webhook.`
 	cmd.Long = `Create a webhook.
   
-  **NOTE**: This endpoint is in Public Preview.
-  
-  Creates a registry webhook.`
+  **NOTE:** This endpoint is in Public Preview. Creates a registry webhook.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -954,8 +943,7 @@ func newDeleteTransitionRequest() *cobra.Command {
       
       * Production: Production stage.
       
-      * Archived: Archived stage. 
-      Supported values: [Archived, None, Production, Staging]
+      * Archived: Archived stage.
     CREATOR: Username of the user who created this request. Of the transition requests
       matching the specified details, only the one transition created by this
       user will be deleted.`
@@ -974,17 +962,14 @@ func newDeleteTransitionRequest() *cobra.Command {
 
 		deleteTransitionRequestReq.Name = args[0]
 		deleteTransitionRequestReq.Version = args[1]
-		_, err = fmt.Sscan(args[2], &deleteTransitionRequestReq.Stage)
-		if err != nil {
-			return fmt.Errorf("invalid STAGE: %s", args[2])
-		}
+		deleteTransitionRequestReq.Stage = args[2]
 		deleteTransitionRequestReq.Creator = args[3]
 
-		err = w.ModelRegistry.DeleteTransitionRequest(ctx, deleteTransitionRequestReq)
+		response, err := w.ModelRegistry.DeleteTransitionRequest(ctx, deleteTransitionRequestReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1013,20 +998,19 @@ func newDeleteWebhook() *cobra.Command {
 
 	var deleteWebhookReq ml.DeleteWebhookRequest
 
-	cmd.Flags().StringVar(&deleteWebhookReq.Id, "id", deleteWebhookReq.Id, `Webhook ID required to delete a registry webhook.`)
-
-	cmd.Use = "delete-webhook"
+	cmd.Use = "delete-webhook ID"
 	cmd.Short = `Delete a webhook.`
 	cmd.Long = `Delete a webhook.
   
-  **NOTE:** This endpoint is in Public Preview.
-  
-  Deletes a registry webhook.`
+  **NOTE:** This endpoint is in Public Preview. Deletes a registry webhook.
+
+  Arguments:
+    ID: Webhook ID required to delete a registry webhook.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(0)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -1034,6 +1018,8 @@ func newDeleteWebhook() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+
+		deleteWebhookReq.Id = args[0]
 
 		err = w.ModelRegistry.DeleteWebhook(ctx, deleteWebhookReq)
 		if err != nil {
@@ -1210,8 +1196,6 @@ func newGetModelVersion() *cobra.Command {
 	cmd.Use = "get-model-version NAME VERSION"
 	cmd.Short = `Get a model version.`
 	cmd.Long = `Get a model version.
-  
-  Get a model version.
 
   Arguments:
     NAME: Name of the registered model
@@ -1436,7 +1420,7 @@ func newListModels() *cobra.Command {
 
 	var listModelsReq ml.ListModelsRequest
 
-	cmd.Flags().IntVar(&listModelsReq.MaxResults, "max-results", listModelsReq.MaxResults, `Maximum number of registered models desired.`)
+	cmd.Flags().Int64Var(&listModelsReq.MaxResults, "max-results", listModelsReq.MaxResults, `Maximum number of registered models desired.`)
 	cmd.Flags().StringVar(&listModelsReq.PageToken, "page-token", listModelsReq.PageToken, `Pagination token to go to the next page based on a previous query.`)
 
 	cmd.Use = "list-models"
@@ -1495,7 +1479,7 @@ func newListTransitionRequests() *cobra.Command {
   Gets a list of all open stage transition requests for the model version.
 
   Arguments:
-    NAME: Name of the model.
+    NAME: Name of the registered model.
     VERSION: Version of the model.`
 
 	cmd.Annotations = make(map[string]string)
@@ -1544,16 +1528,15 @@ func newListWebhooks() *cobra.Command {
 	var listWebhooksReq ml.ListWebhooksRequest
 
 	// TODO: array: events
-	cmd.Flags().StringVar(&listWebhooksReq.ModelName, "model-name", listWebhooksReq.ModelName, `If not specified, all webhooks associated with the specified events are listed, regardless of their associated model.`)
+	cmd.Flags().Int64Var(&listWebhooksReq.MaxResults, "max-results", listWebhooksReq.MaxResults, ``)
+	cmd.Flags().StringVar(&listWebhooksReq.ModelName, "model-name", listWebhooksReq.ModelName, `Registered model name If not specified, all webhooks associated with the specified events are listed, regardless of their associated model.`)
 	cmd.Flags().StringVar(&listWebhooksReq.PageToken, "page-token", listWebhooksReq.PageToken, `Token indicating the page of artifact results to fetch.`)
 
 	cmd.Use = "list-webhooks"
 	cmd.Short = `List registry webhooks.`
 	cmd.Long = `List registry webhooks.
   
-  **NOTE:** This endpoint is in Public Preview.
-  
-  Lists all registry webhooks.`
+  **NOTE:** This endpoint is in Public Preview. Lists all registry webhooks.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1619,8 +1602,7 @@ func newRejectTransitionRequest() *cobra.Command {
       
       * Production: Production stage.
       
-      * Archived: Archived stage. 
-      Supported values: [Archived, None, Production, Staging]`
+      * Archived: Archived stage.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1660,10 +1642,7 @@ func newRejectTransitionRequest() *cobra.Command {
 			rejectTransitionRequestReq.Version = args[1]
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[2], &rejectTransitionRequestReq.Stage)
-			if err != nil {
-				return fmt.Errorf("invalid STAGE: %s", args[2])
-			}
+			rejectTransitionRequestReq.Stage = args[2]
 		}
 
 		response, err := w.ModelRegistry.RejectTransitionRequest(ctx, rejectTransitionRequestReq)
@@ -1782,13 +1761,13 @@ func newSearchModelVersions() *cobra.Command {
 	var searchModelVersionsReq ml.SearchModelVersionsRequest
 
 	cmd.Flags().StringVar(&searchModelVersionsReq.Filter, "filter", searchModelVersionsReq.Filter, `String filter condition, like "name='my-model-name'".`)
-	cmd.Flags().IntVar(&searchModelVersionsReq.MaxResults, "max-results", searchModelVersionsReq.MaxResults, `Maximum number of models desired.`)
+	cmd.Flags().Int64Var(&searchModelVersionsReq.MaxResults, "max-results", searchModelVersionsReq.MaxResults, `Maximum number of models desired.`)
 	// TODO: array: order_by
 	cmd.Flags().StringVar(&searchModelVersionsReq.PageToken, "page-token", searchModelVersionsReq.PageToken, `Pagination token to go to next page based on previous search query.`)
 
 	cmd.Use = "search-model-versions"
-	cmd.Short = `Searches model versions.`
-	cmd.Long = `Searches model versions.
+	cmd.Short = `Search model versions.`
+	cmd.Long = `Search model versions.
   
   Searches for specific model versions based on the supplied __filter__.`
 
@@ -1835,7 +1814,7 @@ func newSearchModels() *cobra.Command {
 	var searchModelsReq ml.SearchModelsRequest
 
 	cmd.Flags().StringVar(&searchModelsReq.Filter, "filter", searchModelsReq.Filter, `String filter condition, like "name LIKE 'my-model-name'".`)
-	cmd.Flags().IntVar(&searchModelsReq.MaxResults, "max-results", searchModelsReq.MaxResults, `Maximum number of models desired.`)
+	cmd.Flags().Int64Var(&searchModelsReq.MaxResults, "max-results", searchModelsReq.MaxResults, `Maximum number of models desired.`)
 	// TODO: array: order_by
 	cmd.Flags().StringVar(&searchModelsReq.PageToken, "page-token", searchModelsReq.PageToken, `Pagination token to go to the next page based on a previous search query.`)
 
@@ -2174,9 +2153,7 @@ func newTestRegistryWebhook() *cobra.Command {
 	cmd.Short = `Test a webhook.`
 	cmd.Long = `Test a webhook.
   
-  **NOTE:** This endpoint is in Public Preview.
-  
-  Tests a registry webhook.
+  **NOTE:** This endpoint is in Public Preview. Tests a registry webhook.
 
   Arguments:
     ID: Webhook ID`
@@ -2260,7 +2237,7 @@ func newTransitionStage() *cobra.Command {
   
   Transition a model version's stage. This is a Databricks workspace version of
   the [MLflow endpoint] that also accepts a comment associated with the
-  transition to be recorded.",
+  transition to be recorded.
   
   [MLflow endpoint]: https://www.mlflow.org/docs/latest/rest-api.html#transition-modelversion-stage
 
@@ -2275,8 +2252,7 @@ func newTransitionStage() *cobra.Command {
       
       * Production: Production stage.
       
-      * Archived: Archived stage. 
-      Supported values: [Archived, None, Production, Staging]
+      * Archived: Archived stage.
     ARCHIVE_EXISTING_VERSIONS: Specifies whether to archive all current model versions in the target
       stage.`
 
@@ -2318,10 +2294,7 @@ func newTransitionStage() *cobra.Command {
 			transitionStageReq.Version = args[1]
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[2], &transitionStageReq.Stage)
-			if err != nil {
-				return fmt.Errorf("invalid STAGE: %s", args[2])
-			}
+			transitionStageReq.Stage = args[2]
 		}
 		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[3], &transitionStageReq.ArchiveExistingVersions)
@@ -2496,11 +2469,11 @@ func newUpdateModel() *cobra.Command {
 			updateModelReq.Name = args[0]
 		}
 
-		err = w.ModelRegistry.UpdateModel(ctx, updateModelReq)
+		response, err := w.ModelRegistry.UpdateModel(ctx, updateModelReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -2582,11 +2555,11 @@ func newUpdateModelVersion() *cobra.Command {
 			updateModelVersionReq.Version = args[1]
 		}
 
-		err = w.ModelRegistry.UpdateModelVersion(ctx, updateModelVersionReq)
+		response, err := w.ModelRegistry.UpdateModelVersion(ctx, updateModelVersionReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -2696,15 +2669,13 @@ func newUpdateWebhook() *cobra.Command {
 	// TODO: array: events
 	// TODO: complex arg: http_url_spec
 	// TODO: complex arg: job_spec
-	cmd.Flags().Var(&updateWebhookReq.Status, "status", `Enable or disable triggering the webhook, or put the webhook into test mode. Supported values: [ACTIVE, DISABLED, TEST_MODE]`)
+	cmd.Flags().Var(&updateWebhookReq.Status, "status", `Supported values: [ACTIVE, DISABLED, TEST_MODE]`)
 
 	cmd.Use = "update-webhook ID"
 	cmd.Short = `Update a webhook.`
 	cmd.Long = `Update a webhook.
   
-  **NOTE:** This endpoint is in Public Preview.
-  
-  Updates a registry webhook.
+  **NOTE:** This endpoint is in Public Preview. Updates a registry webhook.
 
   Arguments:
     ID: Webhook ID`
@@ -2744,11 +2715,11 @@ func newUpdateWebhook() *cobra.Command {
 			updateWebhookReq.Id = args[0]
 		}
 
-		err = w.ModelRegistry.UpdateWebhook(ctx, updateWebhookReq)
+		response, err := w.ModelRegistry.UpdateWebhook(ctx, updateWebhookReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

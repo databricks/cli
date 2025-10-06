@@ -1,0 +1,31 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] volumes update mycatalog.myschema.myname --json {"new_name": "my_new_name"}
+{
+  "catalog_name":"mycatalog",
+  "full_name":"mycatalog.myschema.my_new_name",
+  "name":"my_new_name",
+  "schema_name":"myschema",
+  "storage_location":"s3://deco-uc-prod-isolated-aws-us-east-1/metastore/[UUID]/volumes/[UUID]",
+  "volume_type":"MANAGED"
+}
+
+>>> [CLI] volumes read mycatalog.myschema.my_new_name
+{
+  "catalog_name":"mycatalog",
+  "full_name":"mycatalog.myschema.my_new_name",
+  "name":"my_new_name",
+  "schema_name":"myschema",
+  "storage_location":"s3://deco-uc-prod-isolated-aws-us-east-1/metastore/[UUID]/volumes/[UUID]",
+  "volume_type":"MANAGED"
+}
+
+>>> [CLI] bundle plan
+create volumes.foo
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged

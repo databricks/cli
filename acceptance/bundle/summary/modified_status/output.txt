@@ -1,6 +1,10 @@
 
 === Initial view of resources without id and modified_status=created
 >>> [CLI] bundle summary -o json
+Warning: unknown field: alerts
+  at resources
+  in databricks.yml:4:3
+
 {
   "pipelines": {
     "my_pipeline": {
@@ -18,8 +22,7 @@
         }
       ],
       "modified_status": "created",
-      "name": "test-pipeline",
-      "permissions": []
+      "name": "test-pipeline"
     }
   },
   "schemas": {
@@ -29,10 +32,26 @@
       "modified_status": "created",
       "name": "test-schema"
     }
+  },
+  "sql_warehouses": {
+    "my_sql_warehouse": {
+      "auto_stop_mins": 120,
+      "cluster_size": "X-Large",
+      "enable_photon": true,
+      "enable_serverless_compute": true,
+      "max_num_clusters": 1,
+      "modified_status": "created",
+      "name": "test-sql-warehouse",
+      "spot_instance_policy": "COST_OPTIMIZED"
+    }
   }
 }
 
 >>> [CLI] bundle deploy
+Warning: unknown field: alerts
+  at resources
+  in databricks.yml:4:3
+
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
 Updating deployment state...
@@ -40,6 +59,10 @@ Deployment complete!
 
 === Post-deployment view of resources with id and without modified_status
 >>> [CLI] bundle summary -o json
+Warning: unknown field: alerts
+  at resources
+  in databricks.yml:4:3
+
 {
   "pipelines": {
     "my_pipeline": {
@@ -58,7 +81,6 @@ Deployment complete!
         }
       ],
       "name": "test-pipeline",
-      "permissions": [],
       "url": "[DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]"
     }
   },
@@ -69,6 +91,19 @@ Deployment complete!
       "id": "main.test-schema",
       "name": "test-schema",
       "url": "[DATABRICKS_URL]/explore/data/main/test-schema?o=[NUMID]"
+    }
+  },
+  "sql_warehouses": {
+    "my_sql_warehouse": {
+      "auto_stop_mins": 120,
+      "cluster_size": "X-Large",
+      "enable_photon": true,
+      "enable_serverless_compute": true,
+      "id": "[UUID]",
+      "max_num_clusters": 1,
+      "name": "test-sql-warehouse",
+      "spot_instance_policy": "COST_OPTIMIZED",
+      "url": "[DATABRICKS_URL]/sql/warehouses/[UUID]?o=[NUMID]"
     }
   }
 }
@@ -89,6 +124,13 @@ Deployment complete!
       "modified_status": "deleted",
       "url": "[DATABRICKS_URL]/explore/data/main/test-schema?o=[NUMID]"
     }
+  },
+  "sql_warehouses": {
+    "my_sql_warehouse": {
+      "id": "[UUID]",
+      "modified_status": "deleted",
+      "url": "[DATABRICKS_URL]/sql/warehouses/[UUID]?o=[NUMID]"
+    }
   }
 }
 
@@ -96,6 +138,14 @@ Deployment complete!
 The following resources will be deleted:
   delete pipeline my_pipeline
   delete schema my_schema
+  delete sql_warehouse my_sql_warehouse
+
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete schema my_schema
+
+This action will result in the deletion of the following Lakeflow Declarative Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them:
+  delete pipeline my_pipeline
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 

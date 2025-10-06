@@ -1,0 +1,1 @@
+trace musterr $CLI bundle plan &> out.plan.$DATABRICKS_BUNDLE_ENGINE.txt

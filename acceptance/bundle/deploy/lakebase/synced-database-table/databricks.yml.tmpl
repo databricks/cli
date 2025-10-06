@@ -1,0 +1,24 @@
+bundle:
+  name: deploy-lakebase-synced-table-$UNIQUE_NAME
+
+resources:
+  database_instances:
+    my_instance:
+      name: test-db-synced-table-$UNIQUE_NAME
+      capacity: CU_1
+  database_catalogs:
+    my_catalog:
+      database_instance_name: ${resources.database_instances.my_instance.name}
+      database_name: my_database
+      name: my_catalog_$UNIQUE_NAME
+      create_database_if_not_exists: true
+  synced_database_tables:
+    my_synced_table:
+      name: ${resources.database_catalogs.my_catalog.name}.${resources.database_catalogs.my_catalog.database_name}.my_synced_table
+      database_instance_name: ${resources.database_instances.my_instance.name}
+      logical_database_name: ${resources.database_catalogs.my_catalog.database_name}
+      spec:
+        source_table_full_name: "samples.nyctaxi.trips"
+        scheduling_policy: SNAPSHOT
+        primary_key_columns:
+          - tpep_pickup_datetime

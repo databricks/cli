@@ -8,7 +8,6 @@
     "format": "MULTI_TASK",
     "max_concurrent_runs": 5,
     "name": "job1",
-    "permissions": [],
     "queue": {
       "enabled": true
     }
@@ -22,7 +21,6 @@
     "format": "MULTI_TASK",
     "max_concurrent_runs": 3,
     "name": "job2",
-    "permissions": [],
     "queue": {
       "enabled": true
     }

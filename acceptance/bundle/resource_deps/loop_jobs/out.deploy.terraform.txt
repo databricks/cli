@@ -1,0 +1,9 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Error: exit status 1
+
+Error: Cycle: databricks_job.foo, databricks_job.bar
+
+
+
+
+Exit code (musterr): 1

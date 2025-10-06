@@ -1,0 +1,44 @@
+[[Server]]
+Pattern = "GET /api/2.0/database/instances/database-starting"
+Response.Body = '''
+{
+    "state": "STARTING",
+    "pg_version": "14"
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.0/database/instances/database-updating"
+Response.Body = '''
+{
+    "state": "UPDATING",
+    "pg_version": "14"
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.0/database/instances/database-stopped"
+Response.Body = '''
+{
+    "state": "STOPPED",
+    "pg_version": "14"
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.0/database/instances/database-failing-over"
+Response.Body = '''
+{
+    "state": "FAILING_OVER",
+    "pg_version": "14"
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.0/database/instances/database-deleting"
+Response.Body = '''
+{
+    "state": "DELETING",
+    "pg_version": "14"
+}
+'''

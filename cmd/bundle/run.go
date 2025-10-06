@@ -8,7 +8,6 @@ import (
 	"os"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/resources"
@@ -20,7 +19,7 @@ import (
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/exec"
+	"github.com/databricks/cli/libs/execv"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
@@ -87,8 +86,8 @@ func keyToRunner(b *bundle.Bundle, arg string) (run.Runner, error) {
 func newRunCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "run [flags] [KEY]",
-		Short: "Run a job or pipeline update",
-		Long: `Run the job or pipeline identified by KEY.
+		Short: "Run a job, pipeline update or app",
+		Long: `Run the job, pipeline or app identified by KEY.
 
 The KEY is the unique identifier of the resource to run. In addition to
 customizing the run using any of the available flags, you can also specify
@@ -160,22 +159,11 @@ Example usage:
 
 		if _, ok := b.Config.Scripts[key]; ok {
 			if len(args) > 0 {
-				return fmt.Errorf("additional arguments are not supported for scripts. Got: %v. We recommend using environment variables to pass runtime arguments to a script. For example: FOO=bar databricks bundle run my_script.", args)
+				return fmt.Errorf("additional arguments are not supported for scripts. Got: %v. We recommend using environment variables to pass runtime arguments to a script. For example: FOO=bar databricks bundle run my_script", args)
 			}
 
 			content := b.Config.Scripts[key].Content
 			return executeScript(content, cmd, b)
-		}
-
-		// Load resource IDs from terraform state.
-		if !b.DirectDeployment {
-			bundle.ApplySeqContext(ctx, b,
-				terraform.Interpolate(),
-				terraform.Write(),
-			)
-			if logdiag.HasError(ctx) {
-				return root.ErrAlreadyPrinted
-			}
 		}
 
 		bundle.ApplySeqContext(ctx, b,
@@ -237,6 +225,9 @@ Example usage:
 	}
 
 	cmd.ValidArgsFunction = func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		ctx := logdiag.InitContext(cmd.Context())
+		cmd.SetContext(ctx)
+
 		b := root.MustConfigureBundle(cmd)
 		if logdiag.HasError(cmd.Context()) {
 			return nil, cobra.ShellCompDirectiveError
@@ -287,7 +278,7 @@ func scriptEnv(cmd *cobra.Command, b *bundle.Bundle) []string {
 }
 
 func executeScript(content string, cmd *cobra.Command, b *bundle.Bundle) error {
-	return exec.ShellExecv(content, b.BundleRootPath, scriptEnv(cmd, b))
+	return execv.Shell(content, b.BundleRootPath, scriptEnv(cmd, b))
 }
 
 func executeInline(cmd *cobra.Command, args []string, b *bundle.Bundle) error {
@@ -296,7 +287,7 @@ func executeInline(cmd *cobra.Command, args []string, b *bundle.Bundle) error {
 		return err
 	}
 
-	return exec.Execv(exec.ExecvOptions{
+	return execv.Execv(execv.Options{
 		Args: args,
 		Env:  scriptEnv(cmd, b),
 		Dir:  dir,

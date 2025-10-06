@@ -33,9 +33,21 @@ def main():
         if original_content != formatted_content:
             has_changes.append(str(yaml_file))
             # Add $ markers for trailing whitespace
-            original_with_markers = [line.rstrip("\n") + ("$" if line.rstrip() != line.rstrip("\n") else "") + "\n" for line in original_content]
-            formatted_with_markers = [line.rstrip("\n") + ("$" if line.rstrip() != line.rstrip("\n") else "") + "\n" for line in formatted_content]
-            diff = unified_diff(original_with_markers, formatted_with_markers, fromfile=str(yaml_file), tofile=str(yaml_file), lineterm="")
+            original_with_markers = [
+                line.rstrip("\n") + ("$" if line.rstrip() != line.rstrip("\n") else "") + "\n"
+                for line in original_content
+            ]
+            formatted_with_markers = [
+                line.rstrip("\n") + ("$" if line.rstrip() != line.rstrip("\n") else "") + "\n"
+                for line in formatted_content
+            ]
+            diff = unified_diff(
+                original_with_markers,
+                formatted_with_markers,
+                fromfile=str(yaml_file),
+                tofile=str(yaml_file),
+                lineterm="",
+            )
             print("".join(diff))
 
     if has_changes:

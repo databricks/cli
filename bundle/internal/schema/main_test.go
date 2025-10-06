@@ -132,15 +132,18 @@ func TestNoDuplicatedAnnotations(t *testing.T) {
 		"annotations.yml",
 	}
 
-	annotations := map[string]bool{}
+	annotations := map[string]string{}
 	for _, file := range files {
 		annotationsFile, err := getAnnotations(file)
 		assert.NoError(t, err)
-		for k := range annotationsFile {
-			if _, ok := annotations[k]; ok {
-				t.Errorf("Annotation `%s` is duplicated in %s", k, file)
+		for typ, props := range annotationsFile {
+			for prop := range props {
+				key := typ + "_" + prop
+				if prevFile, ok := annotations[key]; ok {
+					t.Errorf("Annotation `%s` is duplicated in %s and %s", key, prevFile, file)
+				}
+				annotations[key] = file
 			}
-			annotations[k] = true
 		}
 	}
 }

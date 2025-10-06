@@ -9,7 +9,7 @@ func findAllTasks(b *bundle.Bundle) map[string]([]jobs.Task) {
 	r := b.Config.Resources
 	result := make(map[string]([]jobs.Task), 0)
 	for k := range b.Config.Resources.Jobs {
-		result[k] = append(result[k], r.Jobs[k].JobSettings.Tasks...)
+		result[k] = append(result[k], r.Jobs[k].Tasks...)
 	}
 
 	return result

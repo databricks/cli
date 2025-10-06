@@ -1,0 +1,31 @@
+resources:
+  jobs:
+    test_job:
+      name: "My Wheel Job"
+      environments: []
+      tags:
+        my_own_tag_key: my_own_tag_value
+      tasks:
+        - task_key: TestTask
+          python_wheel_task:
+            package_name: "my_test_code"
+            entry_point: "run"
+          environment_key: test_env
+          libraries:
+            - whl: hello.whl
+    foo:
+      name: "My foo Job"
+      environments: []
+      tags:
+        my_other_tag: ${resources.jobs.test_job.tags.my_own_tag_key}
+      tasks:
+        - task_key: TestTask
+          python_wheel_task:
+            package_name: "my_test_code"
+            # for direct, the syntax follows SDK struct:
+            #entry_point: ${resources.jobs.test_job.tasks[0].python_wheel_task.entry_point}
+            # for terraform, the syntax follows TF model:
+            entry_point: ${resources.jobs.test_job.task[0].python_wheel_task[0].entry_point}
+          environment_key: test_env
+          libraries:
+            - whl: hello.whl

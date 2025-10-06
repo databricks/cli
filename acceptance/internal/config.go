@@ -36,6 +36,9 @@ type TestConfig struct {
 	// If true, run this test when running locally with a testserver
 	Local *bool
 
+	// If true, this test will not be run in -short mode (which is default for make test / PR)
+	Slow *bool
+
 	// If true, run this test when running with cloud env configured
 	Cloud *bool
 
@@ -51,6 +54,9 @@ type TestConfig struct {
 
 	// If true and Cloud=true, run this test only if a default warehouse is available in the cloud environment
 	RequiresWarehouse *bool
+
+	// If set, current user will be set to a service principal-like UUID instead of email (default is false)
+	IsServicePrincipal *bool
 
 	// List of additional replacements to apply on this test.
 	// Old is a regexp, New is a replacement expression.
@@ -97,6 +103,11 @@ type TestConfig struct {
 	// List of keys for which to do string replacement value -> [KEY]. If not set, defaults to true.
 	EnvRepl map[string]bool
 
+	// Name of EnvMatrix key that determines variant-specific output file names.
+	// If set and present in EnvMatrix, update mode will run all variants for this key,
+	// and comparison will only consider files containing the current variant value.
+	EnvVaryOutput *string
+
 	// Maximum amount of time the test is allowed to run, will be killed after that.
 	Timeout time.Duration
 
@@ -122,6 +133,9 @@ type TestConfig struct {
 	// Target config for BundleConfig updates. Empty string disables BundleConfig updates.
 	// Null means "databricks.yml"
 	BundleConfigTarget *string
+
+	// If true, skip this test when running on DBR / workspace file system.
+	SkipOnDbr *bool
 
 	// To be added:
 	// BundleConfigMatrix is to BundleConfig what EnvMatrix is to Env

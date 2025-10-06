@@ -21,3 +21,8 @@ New = "CUSTOM_NUMBER_REGEX"
 # Fix path with reverse slashes in the output for Windows.
 Old = 'TEST_TMP_DIR]\\subdir\\a\\b\\c'
 New = 'TEST_TMP_DIR]/subdir/a/b/c'
+
+[[Repls]]
+Old = '(?m)^distinct (\d+)$'
+New = '[NUMBER]'
+Distinct = true

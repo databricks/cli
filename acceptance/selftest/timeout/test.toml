@@ -1,5 +1,4 @@
-# Manually check that test takes about 0.1s:
-# PASS: TestAccept/selftest/timeout (0.10s)
-Timeout = '100ms'
-TimeoutWindows = '300ms'
-TimeoutCloud = '300ms'
+# Test that timeout mechanism works (script sleeps 4s but should be killed much sooner)
+Timeout = '500ms'
+TimeoutWindows = '500ms'
+TimeoutCloud = '500ms'

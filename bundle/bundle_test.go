@@ -165,17 +165,17 @@ func TestBundleGetResourceConfigJobsPointer(t *testing.T) {
 
 	b := &Bundle{Config: rootCfg}
 
-	res, ok := b.GetResourceConfig("jobs", "my_job")
+	res, ok := b.Config.GetResourceConfig("resources.jobs.my_job")
 	require.True(t, ok, "expected to find jobs.my_job in config")
 
 	_, isJob := res.(*resources.Job)
 	assert.True(t, isJob, "expected *resources.Job, got %T", res)
 
-	res, ok = b.GetResourceConfig("jobs", "not_found")
+	res, ok = b.Config.GetResourceConfig("resources.jobs.not_found")
 	require.False(t, ok)
 	require.Nil(t, res)
 
-	res, ok = b.GetResourceConfig("not_found", "my_job")
+	res, ok = b.Config.GetResourceConfig("resources.not_found.my_job")
 	require.False(t, ok)
 	require.Nil(t, res)
 }

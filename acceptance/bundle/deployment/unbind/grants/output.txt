@@ -1,0 +1,49 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] grants get schema main.test-schema-[UNIQUE_NAME] --output json
+{
+  "principal": "account users",
+  "privileges": [
+    "CREATE_VOLUME",
+    "SELECT"
+  ]
+}
+
+>>> [CLI] bundle deployment unbind schema_1
+Updating deployment state...
+
+>>> [CLI] bundle deploy --var suffix=another
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Grants should be the same as before unbind
+>>> [CLI] grants get schema main.test-schema-[UNIQUE_NAME] --output json
+{
+  "principal": "account users",
+  "privileges": [
+    "CREATE_VOLUME",
+    "SELECT"
+  ]
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete schema schema_1
+
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete schema schema_1
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Deleting files...
+Destroy complete!
+
+>>> [CLI] schemas delete main.test-schema-[UNIQUE_NAME]
+0

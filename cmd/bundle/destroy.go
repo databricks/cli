@@ -24,7 +24,19 @@ func newDestroyCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "destroy",
 		Short: "Destroy deployed bundle resources",
-		Args:  root.NoArgs,
+		Long: `Destroy all resources deployed by this bundle from the workspace.
+
+This command removes all Databricks resources that were created by deploying
+this bundle.
+
+Examples:
+  databricks bundle destroy                 # Destroy resources in default target
+  databricks bundle destroy --target prod   # Destroy resources in production target
+
+Typical use cases:
+- Cleaning up development or testing targets
+- Removing resources during environment decommissioning`,
+		Args: root.NoArgs,
 	}
 
 	var autoApprove bool
@@ -70,16 +82,19 @@ func newDestroyCommand() *cobra.Command {
 			return root.ErrAlreadyPrinted
 		}
 
-		bundle.ApplySeqContext(ctx, b,
-			// We need to resolve artifact variable (how we do it in build phase)
-			// because some of the to-be-destroyed resource might use this variable.
-			// Not resolving might lead to terraform "Reference to undeclared resource" error
-			mutator.ResolveVariableReferencesWithoutResources("artifacts"),
-			mutator.ResolveVariableReferencesOnlyResources("artifacts"),
-		)
+		// not applicable to direct deployment, we don't need resource configuration there
+		if !b.DirectDeployment {
+			bundle.ApplySeqContext(ctx, b,
+				// We need to resolve artifact variable (how we do it in build phase)
+				// because some of the to-be-destroyed resource might use this variable.
+				// Not resolving might lead to terraform "Reference to undeclared resource" error
+				mutator.ResolveVariableReferencesWithoutResources("artifacts"),
+				mutator.ResolveVariableReferencesOnlyResources("artifacts"),
+			)
 
-		if logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
+			if logdiag.HasError(ctx) {
+				return root.ErrAlreadyPrinted
+			}
 		}
 
 		phases.Destroy(ctx, b)

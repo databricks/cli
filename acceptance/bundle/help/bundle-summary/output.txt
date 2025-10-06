@@ -1,6 +1,7 @@
 
 >>> [CLI] bundle summary --help
-Summarize resources deployed by this bundle
+Summarize resources deployed by this bundle with their workspace URLs.
+Useful after deployment to see what was created and where to find it.
 
 Usage:
   databricks bundle summary [flags]

@@ -41,7 +41,7 @@
 
 === file cannot be parsed
 >>> errcode [CLI] bundle validate -o json --target invalid_json
-Error: failed to parse variables file [TEST_TMP_DIR]/.databricks/bundle/invalid_json/variable-overrides.json: error decoding JSON at :0:0: invalid character 'o' in literal false (expecting 'a')
+Error: failed to parse variables file [TEST_TMP_DIR]/.databricks/bundle/invalid_json/variable-overrides.json: error decoding JSON at [TEST_TMP_DIR]/.databricks/bundle/invalid_json/variable-overrides.json:1:1: invalid character 'o' in literal false (expecting 'a')
 
 
 Exit code: 1

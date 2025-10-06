@@ -11,7 +11,9 @@ if TYPE_CHECKING:
 
 @dataclass(kw_only=True)
 class SparkSubmitTask:
-    """"""
+    """
+    [DEPRECATED]
+    """
 
     parameters: VariableOrList[str] = field(default_factory=list)
     """

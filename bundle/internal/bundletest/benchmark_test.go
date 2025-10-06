@@ -3,6 +3,7 @@ package bundletest
 import (
 	"testing"
 
+	"github.com/databricks/cli/bundle/internal/validation/generated"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/stretchr/testify/assert"
 )
@@ -28,5 +29,35 @@ func BenchmarkWalk(b *testing.B) {
 			return v, nil
 		})
 		assert.NoError(b, err)
+	}
+}
+
+// This took 49 microseconds to run on 6th Aug 2025.
+func BenchmarkEnumPrefixTree(b *testing.B) {
+	for b.Loop() {
+		// Generate prefix tree for all enum fields.
+		trie := &dyn.TrieNode{}
+		for k := range generated.EnumFields {
+			pattern, err := dyn.NewPatternFromString(k)
+			assert.NoError(b, err)
+
+			err = trie.Insert(pattern)
+			assert.NoError(b, err)
+		}
+	}
+}
+
+// This took 15 microseconds to run on 6th Aug 2025.
+func BenchmarkRequiredPrefixTree(b *testing.B) {
+	for b.Loop() {
+		// Generate prefix tree for all required fields.
+		trie := &dyn.TrieNode{}
+		for k := range generated.RequiredFields {
+			pattern, err := dyn.NewPatternFromString(k)
+			assert.NoError(b, err)
+
+			err = trie.Insert(pattern)
+			assert.NoError(b, err)
+		}
 	}
 }

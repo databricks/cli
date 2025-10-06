@@ -23,20 +23,18 @@ type PipelinePermission struct {
 }
 
 type Pipeline struct {
-	ID             string               `json:"id,omitempty" bundle:"readonly"`
-	Permissions    []PipelinePermission `json:"permissions,omitempty"`
-	ModifiedStatus ModifiedStatus       `json:"modified_status,omitempty" bundle:"internal"`
-	URL            string               `json:"url,omitempty" bundle:"internal"`
+	BaseResource
+	pipelines.CreatePipeline //nolint CreatePipeline also defines Id field with the same json tag "id"
 
-	pipelines.CreatePipeline
+	Permissions []PipelinePermission `json:"permissions,omitempty"`
 }
 
-func (s *Pipeline) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, s)
+func (p *Pipeline) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, p)
 }
 
-func (s Pipeline) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(s)
+func (p Pipeline) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(p)
 }
 
 func (p *Pipeline) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {
@@ -50,7 +48,7 @@ func (p *Pipeline) Exists(ctx context.Context, w *databricks.WorkspaceClient, id
 	return true, nil
 }
 
-func (j *Pipeline) ResourceDescription() ResourceDescription {
+func (p *Pipeline) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "pipeline",
 		PluralName:    "pipelines",
@@ -71,6 +69,6 @@ func (p *Pipeline) GetName() string {
 	return p.Name
 }
 
-func (s *Pipeline) GetURL() string {
-	return s.URL
+func (p *Pipeline) GetURL() string {
+	return p.URL
 }

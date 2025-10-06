@@ -1,0 +1,13 @@
+{
+  "plan": {
+    "resources.pipelines.mypipeline": {
+      "action": "create"
+    },
+    "resources.schemas.bar": {
+      "action": "create"
+    },
+    "resources.volumes.foo": {
+      "action": "create"
+    }
+  }
+}

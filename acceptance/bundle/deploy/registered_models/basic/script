@@ -1,0 +1,50 @@
+trace export NAME="my-registered-model-$UNIQUE_NAME"
+trace export COMMENT="original comment"
+trace export CATALOG_NAME="main"
+trace export SCHEMA_NAME="default"
+envsubst < databricks.yml.tmpl > databricks.yml
+
+title "create catalog and schema to test diff functionality"
+catalog_name="mycatalog-${UNIQUE_NAME}"
+schema_name="myschema-${UNIQUE_NAME}"
+trace $CLI catalogs create ${catalog_name} | jq '{full_name}'
+trace $CLI schemas create ${schema_name} ${catalog_name} | jq '{full_name}'
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    trace $CLI schemas delete ${catalog_name}.${schema_name} --force
+    trace $CLI catalogs delete ${catalog_name} --force
+}
+trap cleanup EXIT
+
+deploy_registered_model() {
+    trace $CLI bundle plan
+    trace $CLI bundle deploy
+    registered_model_id=$($CLI bundle summary --output json | jq -r '.resources.registered_models.my_registered_model.id')
+    trace $CLI registered-models get "${registered_model_id}" | jq '{name, comment, catalog_name, schema_name}'
+}
+
+title "create the registered model"
+deploy_registered_model
+
+export COMMENT="updated comment"
+envsubst < databricks.yml.tmpl > databricks.yml
+
+title "update the comment, this should not recreate"
+deploy_registered_model
+
+export NAME="my-registered-model-updated-$UNIQUE_NAME"
+envsubst < databricks.yml.tmpl > databricks.yml
+
+title "update the name, this should recreate"
+deploy_registered_model
+
+title "update the catalog name, this should recreate"
+export CATALOG_NAME="${catalog_name}"
+envsubst < databricks.yml.tmpl > databricks.yml
+deploy_registered_model
+
+title "update the schema name, this should recreate"
+export SCHEMA_NAME="${schema_name}"
+envsubst < databricks.yml.tmpl > databricks.yml
+deploy_registered_model

@@ -60,3 +60,43 @@ func (s *FakeWorkspace) SchemasUpdate(req Request, name string) Response {
 		Body: existing,
 	}
 }
+
+func (s *FakeWorkspace) SchemasUpdateGrants(req Request, fullName string) Response {
+	var request catalog.UpdatePermissions
+	if err := json.Unmarshal(req.Body, &request); err != nil {
+		return Response{
+			StatusCode: http.StatusBadRequest,
+			Body:       fmt.Sprintf("request parsing error: %s", err),
+		}
+	}
+	defer s.LockUnlock()()
+
+	// For simplicity, we'll just replace all grants (similar to how job permissions work)
+	var grants []catalog.PrivilegeAssignment
+	for _, change := range request.Changes {
+		if len(change.Add) > 0 {
+			grants = append(grants, catalog.PrivilegeAssignment{
+				Principal:  change.Principal,
+				Privileges: change.Add,
+			})
+		}
+	}
+	s.SchemasGrants[fullName] = grants
+
+	return Response{
+		Body: catalog.GetPermissionsResponse{
+			PrivilegeAssignments: grants,
+		},
+	}
+}
+
+func (s *FakeWorkspace) SchemasGetGrants(req Request, fullName string) Response {
+	defer s.LockUnlock()()
+
+	grants := s.SchemasGrants[fullName]
+	return Response{
+		Body: catalog.GetPermissionsResponse{
+			PrivilegeAssignments: grants,
+		},
+	}
+}

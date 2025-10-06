@@ -1,0 +1,2 @@
+title "Command should show instances names in autocomplete:\n"
+$CLI __complete psql ""

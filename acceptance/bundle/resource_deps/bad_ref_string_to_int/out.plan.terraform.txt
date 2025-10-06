@@ -1,0 +1,16 @@
+
+>>> musterr [CLI] bundle plan
+Error: exit status 1
+
+Error: Incorrect attribute value type
+
+  on bundle.tf.json line 43, in resource.databricks_job.foo.task[0].run_job_task:
+  43:               "job_id": "${databricks_job.bar.name}"
+    ├────────────────
+    │ databricks_job.bar.name is "job bar"
+
+Inappropriate value for attribute "job_id": a number is required.
+
+
+
+Exit code (musterr): 1

@@ -1,2 +1,2 @@
-trace sleep 2
+trace sleep 4
 echo "This is never printed"

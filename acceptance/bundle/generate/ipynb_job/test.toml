@@ -1,0 +1,86 @@
+[[Server]]
+Pattern = "GET /api/2.2/jobs/get"
+Response.Body = '''
+{
+    "job_id": 11223344,
+    "settings": {
+        "name": "ipynb_job",
+        "tasks": [
+            {
+                "task_key": "test_task",
+                "notebook_task": {
+                    "notebook_path": "/Workspace/Users/tester@databricks.com/outnotebook"
+                }
+            }
+        ]
+    }
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.0/workspace/get-status"
+Response.Body = '''
+{
+    "path": "/Workspace/Users/tester@databricks.com/outnotebook",
+    "object_type": "NOTEBOOK",
+    "language": "PYTHON",
+    "repos_export_format": "JUPYTER"
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.0/workspace/export"
+Response.Body = '''
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 0,
+   "metadata": {
+    "application/vnd.databricks.v1+cell": {
+     "cellMetadata": {},
+     "inputWidgets": {},
+     "nuid": "7027244a-b958-4dca-aca6-57a2c638f368",
+     "showTitle": false,
+     "tableResultSettingsMap": {},
+     "title": ""
+    }
+   },
+   "outputs": [],
+   "source": [
+    "%python\n",
+    "\n",
+    "print(\"Hello, World!\")"
+   ]
+  }
+ ],
+ "metadata": {
+  "application/vnd.databricks.v1+notebook": {
+   "computePreferences": {
+    "hardware": {
+     "accelerator": null,
+     "gpuPoolId": null,
+     "memory": null
+    }
+   },
+   "dashboards": [],
+   "environmentMetadata": {
+    "base_environment": "",
+    "environment_version": "1"
+   },
+   "inputWidgetPreferences": null,
+   "language": "python",
+   "notebookMetadata": {
+    "pythonIndentUnit": 2
+   },
+   "notebookName": "test",
+   "widgets": {}
+  },
+  "language_info": {
+   "name": "python"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 0
+}
+'''

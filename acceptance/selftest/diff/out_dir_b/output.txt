@@ -1,4 +1,4 @@
-Hello!
+Hello! 🚀
 {
     "id": "[UUID]",
     "userName": "[USERNAME]"

@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/stretchr/testify/assert"
@@ -17,9 +16,10 @@ func TestResolveDashboard_ResolveSuccess(t *testing.T) {
 
 	api := m.GetMockDashboardsAPI()
 	api.EXPECT().
-		GetByName(mock.Anything, "dashboard").
-		Return(&sql.Dashboard{
-			Id: "1234",
+		ListAll(mock.Anything, mock.Anything).
+		Return([]sql.Dashboard{
+			{Id: "1234", Name: "dashboard"},
+			{Id: "5678", Name: "dashboard2"},
 		}, nil)
 
 	ctx := context.Background()
@@ -34,13 +34,16 @@ func TestResolveDashboard_ResolveNotFound(t *testing.T) {
 
 	api := m.GetMockDashboardsAPI()
 	api.EXPECT().
-		GetByName(mock.Anything, "dashboard").
-		Return(nil, &apierr.APIError{StatusCode: 404})
+		ListAll(mock.Anything, mock.Anything).
+		Return([]sql.Dashboard{
+			{Id: "1234", Name: "dashboard1"},
+			{Id: "5678", Name: "dashboard2"},
+		}, nil)
 
 	ctx := context.Background()
 	l := resolveDashboard{name: "dashboard"}
 	_, err := l.Resolve(ctx, m.WorkspaceClient)
-	require.ErrorIs(t, err, apierr.ErrNotFound)
+	require.ErrorContains(t, err, "dashboard name 'dashboard' does not exist")
 }
 
 func TestResolveDashboard_String(t *testing.T) {

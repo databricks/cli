@@ -62,7 +62,34 @@ func walk(v Value, p Path, fn func(p Path, v Value) (Value, error)) (Value, erro
 			out = append(out, nv)
 		}
 		v.v = out
+	default:
+		// Other kinds are not walkable.
+		// This was a leaf node.
 	}
 
 	return v, nil
+}
+
+// CollectLeafPaths traverses the value and returns all paths (as dot notation strings) to leaf nodes (non-map, non-sequence).
+// The return value is not ordered.
+func CollectLeafPaths(v Value) []string {
+	var paths []string
+
+	Walk(v, func(p Path, v Value) (Value, error) { //nolint:errcheck
+		if len(p) == 0 {
+			return v, nil
+		}
+
+		switch v.Kind() {
+		case KindMap, KindSequence:
+			// Ignore internal nodes.
+		default:
+			// This was a leaf node.
+			paths = append(paths, p.String())
+		}
+
+		return v, nil
+	})
+
+	return paths
 }

@@ -142,6 +142,35 @@ func TestDeprecatedFields(t *testing.T) {
 	assert.Equal(t, "nested deprecation message", nodes[0].Attributes[0].Description)
 }
 
+func TestDoNotSuggestFields(t *testing.T) {
+	s := jsonschema.Schema{
+		Type: "object",
+		Properties: map[string]*jsonschema.Schema{
+			"doNotSuggestField": {Extension: jsonschema.Extension{DoNotSuggest: true}},
+			"notDoNotSuggestField": {
+				Properties: map[string]*jsonschema.Schema{
+					"nestedDoNotSuggestField": {
+						Description: "nested description",
+						Extension: jsonschema.Extension{
+							DeprecationMessage: "nested do message",
+							DoNotSuggest:       true,
+						},
+					},
+					"nestedNotDoNotSuggestField": {
+						Description: "nested suggested field",
+					},
+				},
+			},
+		},
+	}
+	nodes := buildNodes(s, nil, nil)
+	assert.Len(t, nodes, 1)
+	assert.Equal(t, "notDoNotSuggestField", nodes[0].Title)
+
+	assert.Len(t, nodes[0].Attributes, 1)
+	assert.Equal(t, "nestedNotDoNotSuggestField", nodes[0].Attributes[0].Title)
+}
+
 func strPtr(s string) *string {
 	return &s
 }

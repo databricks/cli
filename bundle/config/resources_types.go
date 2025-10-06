@@ -3,7 +3,7 @@ package config
 import (
 	"reflect"
 
-	"github.com/databricks/cli/libs/structdiff/structtag"
+	"github.com/databricks/cli/libs/structs/structtag"
 )
 
 // ResourcesTypes maps the configuration key of each Databricks resource group (for example

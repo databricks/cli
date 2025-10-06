@@ -23,6 +23,9 @@ Deployment complete!
       "client": "1",
       "dependencies": [
         "-r /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/requirements.txt",
+        "-e /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/file.py",
+        "-i http://myindexurl.com",
+        "--index-url http://myindexurl.com",
         "test_package",
         "test_package==2.0.1",
         "test_package>=2.0.1",
@@ -79,6 +82,9 @@ Deployment complete!
       "client": "1",
       "dependencies": [
         "-r /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/requirements.txt",
+        "-e /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/file.py",
+        "-i http://myindexurl.com",
+        "--index-url http://myindexurl.com",
         "test_package",
         "test_package==2.0.1",
         "test_package>=2.0.1",

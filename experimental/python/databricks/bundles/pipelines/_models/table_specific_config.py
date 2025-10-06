@@ -4,6 +4,14 @@ from typing import TYPE_CHECKING, TypedDict
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import VariableOrList, VariableOrOptional
+from databricks.bundles.pipelines._models.ingestion_pipeline_definition_table_specific_config_query_based_connector_config import (
+    IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig,
+    IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfigParam,
+)
+from databricks.bundles.pipelines._models.ingestion_pipeline_definition_workday_report_parameters import (
+    IngestionPipelineDefinitionWorkdayReportParameters,
+    IngestionPipelineDefinitionWorkdayReportParametersParam,
+)
 from databricks.bundles.pipelines._models.table_specific_config_scd_type import (
     TableSpecificConfigScdType,
     TableSpecificConfigScdTypeParam,
@@ -39,6 +47,15 @@ class TableSpecificConfig:
     The primary key of the table used to apply changes.
     """
 
+    query_based_connector_config: VariableOrOptional[
+        IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig
+    ] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    Configurations that are only applicable for query-based ingestion connectors.
+    """
+
     salesforce_include_formula_fields: VariableOrOptional[bool] = None
     """
     :meta private: [EXPERIMENTAL]
@@ -56,6 +73,15 @@ class TableSpecificConfig:
     sequence_by: VariableOrList[str] = field(default_factory=list)
     """
     The column names specifying the logical order of events in the source data. Delta Live Tables uses this sequencing to handle change events that arrive out of order.
+    """
+
+    workday_report_parameters: VariableOrOptional[
+        IngestionPipelineDefinitionWorkdayReportParameters
+    ] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    (Optional) Additional custom parameters for Workday Report
     """
 
     @classmethod
@@ -91,6 +117,15 @@ class TableSpecificConfigDict(TypedDict, total=False):
     The primary key of the table used to apply changes.
     """
 
+    query_based_connector_config: VariableOrOptional[
+        IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfigParam
+    ]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    Configurations that are only applicable for query-based ingestion connectors.
+    """
+
     salesforce_include_formula_fields: VariableOrOptional[bool]
     """
     :meta private: [EXPERIMENTAL]
@@ -108,6 +143,15 @@ class TableSpecificConfigDict(TypedDict, total=False):
     sequence_by: VariableOrList[str]
     """
     The column names specifying the logical order of events in the source data. Delta Live Tables uses this sequencing to handle change events that arrive out of order.
+    """
+
+    workday_report_parameters: VariableOrOptional[
+        IngestionPipelineDefinitionWorkdayReportParametersParam
+    ]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    (Optional) Additional custom parameters for Workday Report
     """
 
 

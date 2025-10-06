@@ -1,0 +1,7 @@
+trace $PIPELINES deploy
+title "Run pipeline and display pipeline configuration summary and events durations"
+# Test note: The mock API handler for "GET /api/2.0/pipelines/{pipeline_id}/events" doesn't support
+# the OrderBy query parameter. In production, the real API returns events in descending order (newest first), and
+# bundle/run/pipeline.go reverses them again to display chronologically.
+# So, test output appears "backwards" compared to production behavior.
+trace $PIPELINES run

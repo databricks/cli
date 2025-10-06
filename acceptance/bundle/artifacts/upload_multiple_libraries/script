@@ -1,0 +1,19 @@
+# Create test wheel files
+mkdir -p whl
+echo "test wheel content 1" > whl/source1.whl
+echo "test wheel content 2" > whl/source2.whl
+echo "test wheel content 3" > whl/source3.whl
+echo "test wheel content 4" > whl/source4.whl
+
+trace $CLI bundle deploy
+
+title "Expecting 5 wheels in libraries section in /jobs/create"
+trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | .body.tasks' out.requests.txt
+
+title "Expecting 4 wheels to be uploaded"
+trace jq .path < out.requests.txt | grep import | grep whl | sort
+
+title "Expecting environment dependencies to be updated"
+trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | .body.environments' out.requests.txt
+
+rm out.requests.txt

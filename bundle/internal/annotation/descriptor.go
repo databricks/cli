@@ -9,9 +9,7 @@ type Descriptor struct {
 	MarkdownExamples    string `json:"markdown_examples,omitempty"`
 	DeprecationMessage  string `json:"deprecation_message,omitempty"`
 	Preview             string `json:"x-databricks-preview,omitempty"`
-
-	// If true, takes priority over 'DeprecationMessage'
-	ForceNotDeprecated bool `json:"force_not_deprecated,omitempty"`
+	OutputOnly          *bool  `json:"x-databricks-field-behaviors_output_only,omitempty"`
 }
 
 const Placeholder = "PLACEHOLDER"

@@ -56,6 +56,8 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 		{"resources.dashboards.*.embed_credentials", false},
 		{"resources.volumes.*.volume_type", "MANAGED"},
 
+		{"resources.alerts.*.parent_path", b.Config.Workspace.ResourcePath},
+
 		// Jobs:
 
 		// The defaults are the same as for terraform provider latest version (v1.75.0)
@@ -80,6 +82,16 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 		// https://github.com/databricks/terraform-provider-databricks/blob/v1.75.0/pipelines/resource_pipeline.go#L253
 		{"resources.pipelines.*.edition", "ADVANCED"},
 		{"resources.pipelines.*.channel", "CURRENT"},
+
+		// SqlWarehouses (same as terraform)
+		// https://github.com/databricks/terraform-provider-databricks/blob/v1.75.0/sql/resource_sql_endpoint.go#L59
+		{"resources.sql_warehouses.*.auto_stop_mins", 120},
+		{"resources.sql_warehouses.*.enable_photon", true},
+		{"resources.sql_warehouses.*.max_num_clusters", 1},
+		{"resources.sql_warehouses.*.spot_instance_policy", "COST_OPTIMIZED"},
+
+		// Apps:
+		{"resources.apps.*.description", ""},
 	}
 
 	for _, defaultDef := range defaults {
@@ -118,11 +130,7 @@ func applyNormalizeMutators(ctx context.Context, b *bundle.Bundle) {
 		// Reads (dynamic): * (strings) (searches for variable references in string values)
 		// Updates (dynamic): resources.* (strings) (resolves variable references to their actual values)
 		// Resolves variable references in 'resources' using bundle, workspace, and variables prefixes
-		mutator.ResolveVariableReferencesOnlyResources(
-			"bundle",
-			"workspace",
-			"variables",
-		),
+		mutator.ResolveVariableReferencesOnlyResources(),
 
 		// Reads (dynamic): resources.pipelines.*.libraries (checks for notebook.path and file.path fields)
 		// Updates (dynamic): resources.pipelines.*.libraries (expands glob patterns in path fields to multiple library entries)

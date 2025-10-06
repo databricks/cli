@@ -1,0 +1,10 @@
+bundle:
+  name: "abc"
+
+run_as:
+  user_name: ""
+
+resources:
+  jobs:
+    foo:
+      name: foo

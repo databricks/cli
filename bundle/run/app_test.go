@@ -59,12 +59,6 @@ func setupBundle(t *testing.T) (context.Context, *bundle.Bundle, *mocks.MockWork
 							Name: "my_app",
 						},
 						SourceCodePath: "./my_app",
-						Config: map[string]any{
-							"command": []string{"echo", "hello"},
-							"env": []map[string]string{
-								{"name": "MY_APP", "value": "my value"},
-							},
-						},
 					},
 				},
 			},

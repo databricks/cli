@@ -1,0 +1,13 @@
+
+>>> [PIPELINES] deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/pipeline-fail-on-active-runs/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
+
+>>> errcode [PIPELINES] deploy --fail-on-active-runs
+Error: pipeline [UUID] is running
+
+
+Exit code: 1

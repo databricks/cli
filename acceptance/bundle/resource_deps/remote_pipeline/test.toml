@@ -1,0 +1,5 @@
+[[Repls]]
+Old = '1[78]\d{11}'
+New = '[UNIX_TIME_MILLIS]'
+# Distinct makes the test the test output flaky
+Distinct = false

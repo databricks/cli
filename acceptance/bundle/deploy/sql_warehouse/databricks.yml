@@ -1,0 +1,12 @@
+bundle:
+  name: test_sql_warehouse
+
+resources:
+  sql_warehouses:
+    test_sql_warehouse:
+      name: sql_warehouse_name
+      cluster_size: X-Large
+      enable_serverless_compute: true
+      max_num_clusters: 1
+      min_num_clusters: 1
+      auto_stop_mins: 120

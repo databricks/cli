@@ -1,0 +1,31 @@
+
+>>> [CLI] bundle deployment bind sql_warehouse1 [SQL-WAREHOUSE-ID] --auto-approve
+Updating deployment state...
+Successfully bound sql_warehouse with an id '[SQL-WAREHOUSE-ID]'. Run 'bundle deploy' to deploy changes to your workspace
+
+>>> [CLI] bundle summary
+Name: test-bundle-$UNIQUE_NAME
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle-$UNIQUE_NAME/default
+Resources:
+  SQL Warehouses:
+    sql_warehouse1:
+      Name: DEFAULT Test SQL Warehouse
+      URL:  [DATABRICKS_URL]/sql/warehouses/[SQL-WAREHOUSE-ID]?o=[NUMID]
+
+>>> [CLI] bundle deployment unbind sql_warehouse1
+Updating deployment state...
+
+>>> [CLI] bundle summary
+Name: test-bundle-$UNIQUE_NAME
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle-$UNIQUE_NAME/default
+Resources:
+  SQL Warehouses:
+    sql_warehouse1:
+      Name: DEFAULT Test SQL Warehouse
+      URL:  (not deployed)

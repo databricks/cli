@@ -135,15 +135,18 @@ func TestBuiltinDbtTemplateValid(t *testing.T) {
 	for _, personal_schemas := range []string{"yes", "no"} {
 		for _, target := range []string{"dev", "prod"} {
 			for _, isServicePrincipal := range []bool{true, false} {
-				config := map[string]any{
-					"project_name":     "my_project",
-					"http_path":        "/sql/1.0/warehouses/123",
-					"default_catalog":  "hive_metastore",
-					"personal_schemas": personal_schemas,
-					"shared_schema":    "lennart",
+				for _, serverless := range []string{"yes", "no"} {
+					config := map[string]any{
+						"project_name":     "my_project",
+						"http_path":        "/sql/1.0/warehouses/123",
+						"default_catalog":  "hive_metastore",
+						"personal_schemas": personal_schemas,
+						"shared_schema":    "lennart",
+						"serverless":       serverless,
+					}
+					build := false
+					assertBuiltinTemplateValid(t, "dbt-sql", config, target, isServicePrincipal, build, t.TempDir())
 				}
-				build := false
-				assertBuiltinTemplateValid(t, "dbt-sql", config, target, isServicePrincipal, build, t.TempDir())
 			}
 		}
 	}

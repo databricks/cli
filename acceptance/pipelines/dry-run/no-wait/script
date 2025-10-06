@@ -1,5 +1,3 @@
 trace $PIPELINES deploy
 title "Dry running pipeline with --no-wait flag"
-trace $PIPELINES dry-run my_pipeline --no-wait
-# This printf is here to fix the whitespace linter error (ensures exactly one newline at end)
-printf "<EOL>\n"
+trace $PIPELINES dry-run --no-wait

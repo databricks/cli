@@ -1,0 +1,14 @@
+bundle:
+  name: partial_run
+
+resources:
+  jobs:
+    my_job:
+      name: my_job
+      tasks:
+        - task_key: task_1
+          notebook_task:
+            notebook_path: "./notebook1.py"
+        - task_key: task_2
+          notebook_task:
+            notebook_path: "./notebook2.py"

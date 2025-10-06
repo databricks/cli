@@ -1,0 +1,7 @@
+{
+  "plan": {
+    "resources.volumes.foo": {
+      "action": "create"
+    }
+  }
+}

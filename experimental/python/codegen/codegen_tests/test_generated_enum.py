@@ -4,6 +4,7 @@ from codegen.jsonschema import Schema, SchemaType
 
 def test_generate_enum():
     generated = generate_enum(
+        namespace="bananas",
         schema_name="jobs.MyEnum",
         schema=Schema(
             enum=["myEnumValue"],
@@ -14,8 +15,9 @@ def test_generate_enum():
 
     assert generated == GeneratedEnum(
         class_name="MyEnum",
-        package="databricks.bundles.jobs._models.my_enum",
+        package="databricks.bundles.bananas._models.my_enum",
         values={"MY_ENUM_VALUE": "myEnumValue"},
         description="enum description",
         experimental=False,
+        deprecated=False,
     )

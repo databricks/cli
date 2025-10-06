@@ -20,12 +20,12 @@ func (m *annotateJobs) Name() string {
 
 func (m *annotateJobs) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	for _, job := range b.Config.Resources.Jobs {
-		job.JobSettings.Deployment = &jobs.JobDeployment{
+		job.Deployment = &jobs.JobDeployment{
 			Kind:             jobs.JobDeploymentKindBundle,
 			MetadataFilePath: metadataFilePath(b),
 		}
-		job.JobSettings.EditMode = jobs.JobEditModeUiLocked
-		job.JobSettings.Format = jobs.FormatMultiTask
+		job.EditMode = jobs.JobEditModeUiLocked
+		job.Format = jobs.FormatMultiTask
 	}
 
 	return nil

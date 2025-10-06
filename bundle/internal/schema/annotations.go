@@ -138,9 +138,8 @@ func assignAnnotation(s *jsonschema.Schema, a annotation.Descriptor) {
 		s.Preview = a.Preview
 	}
 
-	if a.ForceNotDeprecated {
-		s.Deprecated = false
-		s.DeprecationMessage = ""
+	if a.OutputOnly != nil && *a.OutputOnly {
+		s.DoNotSuggest = true
 	}
 
 	s.MarkdownDescription = convertLinksToAbsoluteUrl(a.MarkdownDescription)

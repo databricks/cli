@@ -1,7 +1,6 @@
 {
   "max_concurrent_runs": 1,
   "name": "job",
-  "permissions": [],
   "queue": {
     "enabled": true
   },
@@ -37,7 +36,6 @@ Exit code: 1
 {
   "max_concurrent_runs": 1,
   "name": "job",
-  "permissions": [],
   "queue": {
     "enabled": true
   },

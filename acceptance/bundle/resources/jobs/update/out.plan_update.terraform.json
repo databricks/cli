@@ -1,0 +1,7 @@
+{
+  "plan": {
+    "resources.jobs.foo": {
+      "action": "update"
+    }
+  }
+}

@@ -4,6 +4,8 @@ import (
 	"regexp"
 	"unicode"
 
+	"github.com/databricks/cli/libs/textutil"
+
 	"golang.org/x/text/unicode/rangetable"
 )
 
@@ -20,17 +22,17 @@ var awsChars = rangetable.Merge(
 var awsTag = &tag{
 	keyLength:  127,
 	keyPattern: regexp.MustCompile(`^[\d \w\+\-=\.:\/@]*$`),
-	keyNormalize: chain(
-		normalizeMarks(),
-		replaceNotIn(latin1, '_'),
-		replaceNotIn(awsChars, '_'),
+	keyNormalize: textutil.Chain(
+		textutil.NormalizeMarks(),
+		textutil.ReplaceNotIn(textutil.Latin1, '_'),
+		textutil.ReplaceNotIn(awsChars, '_'),
 	),
 
 	valueLength:  255,
 	valuePattern: regexp.MustCompile(`^[\d \w\+\-=\.:/@]*$`),
-	valueNormalize: chain(
-		normalizeMarks(),
-		replaceNotIn(latin1, '_'),
-		replaceNotIn(awsChars, '_'),
+	valueNormalize: textutil.Chain(
+		textutil.NormalizeMarks(),
+		textutil.ReplaceNotIn(textutil.Latin1, '_'),
+		textutil.ReplaceNotIn(awsChars, '_'),
 	),
 }

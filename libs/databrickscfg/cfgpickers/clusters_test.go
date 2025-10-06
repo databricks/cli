@@ -74,6 +74,7 @@ func TestFirstCompatibleCluster(t *testing.T) {
 					{
 						ClusterId:        "abc-id",
 						ClusterName:      "first shared",
+						ClusterSource:    compute.ClusterSourceApi,
 						DataSecurityMode: compute.DataSecurityModeUserIsolation,
 						SparkVersion:     "12.2.x-whatever",
 						State:            compute.StateRunning,
@@ -81,6 +82,7 @@ func TestFirstCompatibleCluster(t *testing.T) {
 					{
 						ClusterId:        "bcd-id",
 						ClusterName:      "second personal",
+						ClusterSource:    compute.ClusterSourceUi,
 						DataSecurityMode: compute.DataSecurityModeSingleUser,
 						SparkVersion:     "14.5.x-whatever",
 						State:            compute.StateRunning,

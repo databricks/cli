@@ -1,0 +1,74 @@
+Local = true
+Cloud = false
+
+[[Server]]
+Pattern = "GET /api/2.0/pipelines/{pipeline_id}/updates/{update_id}"
+Response.Body = '''
+{
+  "update": {
+    "update_id": "test-update-123",
+    "state": "COMPLETED",
+    "full_refresh": true,
+    "cause": "Manual trigger",
+    "creation_time": 1640995200000,
+    "cluster_id": "test-cluster-456",
+    "config": {
+      "name": "test-pipeline",
+      "id": "test-pipeline-789",
+      "serverless": true,
+      "channel": "CURRENT",
+      "continuous": true,
+      "development": true,
+      "catalog": "test_catalog",
+      "schema": "test_schema"
+    }
+  }
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.0/pipelines/{pipeline_id}/events"
+Response.Body = '''
+{
+  "events": [
+    {
+      "timestamp": "2022-01-01T00:00:01.000Z",
+      "event_type": "update_progress",
+      "message": "Update test-update-123 is CREATED."
+    },
+    {
+      "timestamp": "2022-01-01T00:00:02.000Z",
+      "event_type": "update_progress",
+      "message": "Update test-update-123 is WAITING_FOR_RESOURCES."
+    },
+    {
+      "timestamp": "2022-01-01T00:00:03.000Z",
+      "event_type": "update_progress",
+      "message": "Update test-update-123 is INITIALIZING."
+    },
+    {
+      "timestamp": "2022-01-01T00:00:04.000Z",
+      "event_type": "update_progress",
+      "message": "Update test-update-123 is SETTING_UP_TABLES."
+    },
+    {
+      "timestamp": "2022-01-01T00:00:05.000Z",
+      "event_type": "update_progress",
+      "message": "Update test-update-123 is RUNNING."
+    },
+    {
+      "timestamp": "2022-01-01T00:01:30.000Z",
+      "event_type": "update_progress",
+      "message": "Update test-update-123 is COMPLETED."
+    }
+  ]
+}
+'''
+
+[[Server]]
+Pattern = "POST /api/2.0/pipelines/{pipeline_id}/updates"
+Response.Body = '''
+{
+  "update_id": "test-update-123"
+}
+'''

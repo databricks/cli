@@ -24,3 +24,9 @@ Opening browser at [DATABRICKS_URL]/jobs/[NUMID]?o=[NUMID]
 Error: exec: "open": cannot run executable found relative to current directory
 
 Exit code (musterr): 1
+
+=== test auto-completion handler
+>>> [CLI] __complete bundle open ,
+foo
+:4
+Completion ended with directive: ShellCompDirectiveNoFileComp

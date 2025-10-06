@@ -54,8 +54,7 @@
               "path": "s3://notebooks/*.ipynb"
             }
           }
-        ],
-        "permissions": []
+        ]
       }
     }
   }

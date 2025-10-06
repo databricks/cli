@@ -1,0 +1,25 @@
+
+>>> [CLI] bundle validate
+Warning: Please do not use variable interpolation in the name of your bundle. The name of your bundle
+is a part of the path at which your bundle state is stored at by default. Parameterizing it at
+runtime can have unexpected consequences like duplicate deployments or resources not being
+cleaned up during bundle destroy.
+  at bundle.name
+  in databricks.yml:2:9
+
+Name: trees are green
+Target: one
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/trees are green/one
+
+Found 1 warning
+
+>>> [CLI] bundle validate --target two
+Name: trees are red
+Target: two
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/trees are red/two
+
+Validation OK!

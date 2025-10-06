@@ -1,0 +1,3 @@
+targets:
+  variable_default:
+    default: ${var.default}

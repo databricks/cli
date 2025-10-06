@@ -96,13 +96,17 @@ func fromTypedStruct(src reflect.Value, ref dyn.Value, options ...fromTypedOptio
 		}
 	case dyn.KindMap, dyn.KindNil:
 	default:
-		return dyn.InvalidValue, fmt.Errorf("unhandled type: %s", ref.Kind())
+		return dyn.InvalidValue, fmt.Errorf("cannot convert struct field to dynamic type %#v: src=%#v ref=%#v", ref.Kind().String(), src, ref.AsAny())
 	}
 
 	refm, _ := ref.AsMap()
 	out := dyn.NewMapping()
 	info := getStructInfo(src.Type())
-	for k, v := range info.FieldValues(src) {
+
+	for _, fieldval := range info.FieldValues(src) {
+		k := fieldval.Key
+		v := fieldval.Value
+		isForced := fieldval.IsForced
 		pair, ok := refm.GetPairByString(k)
 		refloc := pair.Key.Locations()
 		refv := pair.Value
@@ -124,8 +128,26 @@ func fromTypedStruct(src reflect.Value, ref dyn.Value, options ...fromTypedOptio
 			return dyn.InvalidValue, err
 		}
 
-		// Either if the key was set in the reference or the field is not zero-valued, we include it.
-		if ok || nv.Kind() != dyn.KindNil {
+		// Either if the key was set in the reference, the field is not zero-valued, OR it's forced
+		if ok || nv.Kind() != dyn.KindNil || isForced {
+			// If v isZero, it could be because it's a variable reference; so we check that nv is zero as well
+			// BUT: always include if it's forced
+			if v.Kind() != reflect.Struct && v.IsZero() && nv.IsZero() && !info.ForceEmpty[k] && !isForced {
+				continue
+			}
+
+			// If the field is forced but nv is nil, convert it to the appropriate zero value
+			if isForced && nv.Kind() == dyn.KindNil {
+				// Convert the zero value using proper recursive conversion instead of dyn.V() directly
+				// This prevents "not handled" panics for complex types like structs, slices, maps, etc.
+				// Use refv to preserve location information from the original reference
+				var err error
+				nv, err = fromTyped(v.Interface(), refv, includeZeroValues)
+				if err != nil {
+					return dyn.InvalidValue, err
+				}
+			}
+
 			out.SetLoc(k, refloc, nv)
 		}
 	}
@@ -152,7 +174,7 @@ func fromTypedMap(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
 		}
 	case dyn.KindMap, dyn.KindNil:
 	default:
-		return dyn.InvalidValue, fmt.Errorf("unhandled type: %s", ref.Kind())
+		return dyn.InvalidValue, fmt.Errorf("cannot convert map field to dynamic type %#v: src=%#v ref=%#v", ref.Kind().String(), src, ref.AsAny())
 	}
 
 	// Return nil if the map is nil.
@@ -200,7 +222,7 @@ func fromTypedSlice(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
 		}
 	case dyn.KindSequence, dyn.KindNil:
 	default:
-		return dyn.InvalidValue, fmt.Errorf("unhandled type: %s", ref.Kind())
+		return dyn.InvalidValue, fmt.Errorf("cannot convert slice field to dynamic type %#v: src=%#v ref=%#v", ref.Kind().String(), src, ref.AsAny())
 	}
 
 	// Return nil if the slice is nil.
@@ -246,9 +268,11 @@ func fromTypedString(src reflect.Value, ref dyn.Value, options ...fromTypedOptio
 			return dyn.NilValue, nil
 		}
 		return dyn.V(src.String()), nil
+	default:
+		// Fall through to the error case.
 	}
 
-	return dyn.InvalidValue, fmt.Errorf("unhandled type: %s", ref.Kind())
+	return dyn.InvalidValue, fmt.Errorf("cannot convert string field to dynamic type %#v: src=%#v ref=%#v", ref.Kind().String(), src, ref.AsAny())
 }
 
 func fromTypedBool(src reflect.Value, ref dyn.Value, options ...fromTypedOptions) (dyn.Value, error) {
@@ -271,9 +295,11 @@ func fromTypedBool(src reflect.Value, ref dyn.Value, options ...fromTypedOptions
 		if dynvar.IsPureVariableReference(ref.MustString()) {
 			return ref, nil
 		}
+	default:
+		// Fall through to the error case.
 	}
 
-	return dyn.InvalidValue, fmt.Errorf("unhandled type: %s", ref.Kind())
+	return dyn.InvalidValue, fmt.Errorf("cannot convert bool field to dynamic type %#v: src=%#v ref=%#v", ref.Kind().String(), src, ref.AsAny())
 }
 
 func fromTypedInt(src reflect.Value, ref dyn.Value, options ...fromTypedOptions) (dyn.Value, error) {
@@ -296,9 +322,11 @@ func fromTypedInt(src reflect.Value, ref dyn.Value, options ...fromTypedOptions)
 		if dynvar.IsPureVariableReference(ref.MustString()) {
 			return ref, nil
 		}
+	default:
+		// Fall through to the error case.
 	}
 
-	return dyn.InvalidValue, fmt.Errorf("unhandled type: %s", ref.Kind())
+	return dyn.InvalidValue, fmt.Errorf("cannot convert int field to dynamic type %#v: src=%#v ref=%#v", ref.Kind().String(), src, ref.AsAny())
 }
 
 func fromTypedFloat(src reflect.Value, ref dyn.Value, options ...fromTypedOptions) (dyn.Value, error) {
@@ -321,7 +349,9 @@ func fromTypedFloat(src reflect.Value, ref dyn.Value, options ...fromTypedOption
 		if dynvar.IsPureVariableReference(ref.MustString()) {
 			return ref, nil
 		}
+	default:
+		// Fall through to the error case.
 	}
 
-	return dyn.InvalidValue, fmt.Errorf("unhandled type: %s", ref.Kind())
+	return dyn.InvalidValue, fmt.Errorf("cannot convert float field to dynamic type %#v: src=%#v ref=%#v", ref.Kind().String(), src, ref.AsAny())
 }

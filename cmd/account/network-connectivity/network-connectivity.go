@@ -604,7 +604,7 @@ func newUpdatePrivateEndpointRule() *cobra.Command {
 	cmd.Flags().BoolVar(&updatePrivateEndpointRuleReq.PrivateEndpointRule.Enabled, "enabled", updatePrivateEndpointRuleReq.PrivateEndpointRule.Enabled, `Only used by private endpoints towards an AWS S3 service.`)
 	// TODO: array: resource_names
 
-	cmd.Use = "update-private-endpoint-rule NETWORK_CONNECTIVITY_CONFIG_ID PRIVATE_ENDPOINT_RULE_ID"
+	cmd.Use = "update-private-endpoint-rule NETWORK_CONNECTIVITY_CONFIG_ID PRIVATE_ENDPOINT_RULE_ID UPDATE_MASK"
 	cmd.Short = `Update a private endpoint rule.`
 	cmd.Long = `Update a private endpoint rule.
   
@@ -614,12 +614,18 @@ func newUpdatePrivateEndpointRule() *cobra.Command {
   Arguments:
     NETWORK_CONNECTIVITY_CONFIG_ID: The ID of a network connectivity configuration, which is the parent
       resource of this private endpoint rule object.
-    PRIVATE_ENDPOINT_RULE_ID: Your private endpoint rule ID.`
+    PRIVATE_ENDPOINT_RULE_ID: Your private endpoint rule ID.
+    UPDATE_MASK: The field mask must be a single string, with multiple fields separated by
+      commas (no spaces). The field path is relative to the resource object,
+      using a dot (.) to navigate sub-fields (e.g., author.given_name).
+      Specification of elements in sequence or map fields is not allowed, as
+      only the entire collection field can be specified. Field names must
+      exactly match the resource field names.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(2)
+		check := root.ExactArgs(3)
 		return check(cmd, args)
 	}
 
@@ -642,6 +648,7 @@ func newUpdatePrivateEndpointRule() *cobra.Command {
 		}
 		updatePrivateEndpointRuleReq.NetworkConnectivityConfigId = args[0]
 		updatePrivateEndpointRuleReq.PrivateEndpointRuleId = args[1]
+		updatePrivateEndpointRuleReq.UpdateMask = args[2]
 
 		response, err := a.NetworkConnectivity.UpdatePrivateEndpointRule(ctx, updatePrivateEndpointRuleReq)
 		if err != nil {

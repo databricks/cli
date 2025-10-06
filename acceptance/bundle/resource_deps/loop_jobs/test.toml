@@ -1,0 +1,6 @@
+Badness = "Files are uploaded then deployment fails with loop error; should not upload the files in this case; validate should fail as well"
+RecordRequests = false
+
+[[Repls]]
+Old = 'Cycle: databricks_job.bar, databricks_job.foo'
+New = 'Cycle: databricks_job.foo, databricks_job.bar'

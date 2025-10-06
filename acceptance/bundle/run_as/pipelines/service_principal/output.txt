@@ -1,0 +1,37 @@
+
+=== run_as should succeed in all cases
+>>> errcode [CLI] bundle validate -t t_user_name
+Name: run_as
+Target: t_user_name
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/run_as/t_user_name
+
+Validation OK!
+
+>>> errcode [CLI] bundle validate -t t_user_name_different
+Name: run_as
+Target: t_user_name_different
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/run_as/t_user_name_different
+
+Validation OK!
+
+>>> errcode [CLI] bundle validate -t t_service_principal_name
+Name: run_as
+Target: t_service_principal_name
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/run_as/t_service_principal_name
+
+Validation OK!
+
+>>> errcode [CLI] bundle validate -t t_service_principal_name_different
+Name: run_as
+Target: t_service_principal_name_different
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/run_as/t_service_principal_name_different
+
+Validation OK!

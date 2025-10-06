@@ -1,0 +1,10 @@
+Error: exit status 1
+
+Error: Invalid attribute name
+
+  on bundle.tf.json line 22, in resource.databricks_volume.foo:
+  22:         "catalog_name": "${resources.volumes.bar.bad..syntax}",
+
+An attribute name is required after a dot.
+
+

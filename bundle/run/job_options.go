@@ -2,6 +2,8 @@ package run
 
 import (
 	"errors"
+	"fmt"
+	"regexp"
 	"strconv"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -25,10 +27,14 @@ type JobOptions struct {
 	// If a job uses job parameters, it cannot use task parameters.
 	// Also see https://docs.databricks.com/en/workflows/jobs/settings.html#add-parameters-for-all-job-tasks.
 	jobParams map[string]string
+
+	// only is a list of task keys to run. If not specified, the full job is run.
+	only []string
 }
 
 func (o *JobOptions) DefineJobOptions(fs *flag.FlagSet) {
 	fs.StringToStringVar(&o.jobParams, "params", nil, "comma separated k=v pairs for job parameters")
+	fs.StringSliceVar(&o.only, "only", nil, "comma separated list of task keys to run")
 }
 
 func (o *JobOptions) DefineTaskOptions(fs *flag.FlagSet) {
@@ -57,6 +63,9 @@ func (o *JobOptions) hasJobParametersConfigured() bool {
 	return len(o.jobParams) > 0
 }
 
+// regex to match valid task keys as defined in https://docs.databricks.com/api/workspace/jobs/create#tasks-task_key
+var taskKeyRegex = regexp.MustCompile(`^[\w\-\_]+$`)
+
 // Validate returns if the combination of options is valid.
 func (o *JobOptions) Validate(job *resources.Job) error {
 	if job == nil {
@@ -70,6 +79,26 @@ func (o *JobOptions) Validate(job *resources.Job) error {
 	}
 	if !hasJobParams && o.hasJobParametersConfigured() {
 		return errors.New("the job to run does not define job parameters; specifying job parameters is not allowed")
+	}
+
+	if len(o.only) > 0 {
+		for _, task := range o.only {
+			// Skip if did not match the regex. It can mean that the more complex syntax like "task1.table1" is used.
+			if !taskKeyRegex.MatchString(task) {
+				continue
+			}
+
+			found := false
+			for _, t := range job.Tasks {
+				if t.TaskKey == task {
+					found = true
+					break
+				}
+			}
+			if !found {
+				return fmt.Errorf("task %#v not found in job %#v", task, job.Name)
+			}
+		}
 	}
 
 	return nil
@@ -121,6 +150,7 @@ func (o *JobOptions) toPayload(job *resources.Job, jobID int64) (*jobs.RunNow, e
 		SqlParams:         o.sqlParams,
 
 		JobParameters: o.jobParams,
+		Only:          o.only,
 	}
 
 	return payload, nil

@@ -1,0 +1,5 @@
+Cloud = false
+Local = true
+
+RecordRequests = true
+EnvVaryOutput = "DATABRICKS_BUNDLE_ENGINE"

@@ -1,0 +1,114 @@
+
+>>> [CLI] bundle plan
+create jobs.bar
+create jobs.baz
+create jobs.foo
+create jobs.independent
+
+Plan: 4 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> print_sorted_requests
+{
+  "body": {
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+    },
+    "description": "INJECT_ERROR",
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "foo",
+    "queue": {
+      "enabled": true
+    }
+  },
+  "method": "POST",
+  "path": "/api/2.2/jobs/create"
+}
+{
+  "body": {
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+    },
+    "description": "should be deployed anyway",
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "independent",
+    "queue": {
+      "enabled": true
+    }
+  },
+  "method": "POST",
+  "path": "/api/2.2/jobs/create"
+}
+
+>>> [CLI] bundle summary
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+Resources:
+  Jobs:
+    bar:
+      Name: bar
+      URL:  (not deployed)
+    baz:
+      Name: baz
+      URL:  (not deployed)
+    foo:
+      Name: foo
+      URL:  (not deployed)
+    independent:
+      Name: independent
+      URL:  [DATABRICKS_URL]/jobs/[IND_ID]?o=[NUMID]
+
+=== Plan should still contain foo and bar
+>>> [CLI] bundle plan
+create jobs.bar
+create jobs.baz
+create jobs.foo
+
+Plan: 3 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== Expecting no difference in the output between first and second deploy
+>>> print_requests
+{
+  "body": {
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+    },
+    "description": "INJECT_ERROR",
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "foo",
+    "queue": {
+      "enabled": true
+    }
+  },
+  "method": "POST",
+  "path": "/api/2.2/jobs/create"
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete job independent
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Deleting files...
+Destroy complete!
+
+>>> print_requests
+{
+  "body": {
+    "job_id": [IND_ID]
+  },
+  "method": "POST",
+  "path": "/api/2.2/jobs/delete"
+}

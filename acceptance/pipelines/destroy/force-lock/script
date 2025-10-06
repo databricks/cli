@@ -1,0 +1,12 @@
+export username=$($CLI current-user me | jq -r .userName)
+export MSYS_NO_PATHCONV=1
+trace errcode $PIPELINES deploy
+
+title "upload lock file"
+trace $CLI workspace import /Workspace/Users/$username/.bundle/test-pipeline-force-lock/default/state/deploy.lock --format AUTO --file ./deploy.lock
+
+title "test deployment without force-lock (should fail)"
+trace errcode $PIPELINES destroy --auto-approve
+
+title "test deployment with force-lock (should succeed)"
+trace $PIPELINES destroy --force-lock --auto-approve

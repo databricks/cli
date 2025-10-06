@@ -41,9 +41,11 @@ type DataSourceServingEndpointsEndpointsAiGatewayInferenceTableConfig struct {
 }
 
 type DataSourceServingEndpointsEndpointsAiGatewayRateLimits struct {
-	Calls         int    `json:"calls"`
+	Calls         int    `json:"calls,omitempty"`
 	Key           string `json:"key,omitempty"`
+	Principal     string `json:"principal,omitempty"`
 	RenewalPeriod string `json:"renewal_period"`
+	Tokens        int    `json:"tokens,omitempty"`
 }
 
 type DataSourceServingEndpointsEndpointsAiGatewayUsageTrackingConfig struct {
@@ -197,6 +199,7 @@ type DataSourceServingEndpointsEndpoints struct {
 	State                []DataSourceServingEndpointsEndpointsState     `json:"state,omitempty"`
 	Tags                 []DataSourceServingEndpointsEndpointsTags      `json:"tags,omitempty"`
 	Task                 string                                         `json:"task,omitempty"`
+	UsagePolicyId        string                                         `json:"usage_policy_id,omitempty"`
 }
 
 type DataSourceServingEndpoints struct {

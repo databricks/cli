@@ -11,9 +11,7 @@ if TYPE_CHECKING:
 
 @dataclass(kw_only=True)
 class PathPattern:
-    """
-    :meta private: [EXPERIMENTAL]
-    """
+    """"""
 
     include: VariableOrOptional[str] = None
     """

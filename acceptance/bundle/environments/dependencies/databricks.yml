@@ -21,6 +21,9 @@ resources:
             client: "1"
             dependencies:
               - "-r ./requirements.txt"
+              - "-e ./file.py"
+              - "-i http://myindexurl.com"
+              - "--index-url http://myindexurl.com"
               - "test_package"
               - "test_package==2.0.1"
               - "test_package>=2.0.1"

@@ -3,7 +3,7 @@
 {
   "assets_dir":"/Users/user/databricks_lakehouse_monitoring",
   "drift_metrics_table_name":"",
-  "monitor_version":"",
+  "monitor_version":0,
   "output_schema_name":"catalog.schema",
   "profile_metrics_table_name":"",
   "snapshot": {},

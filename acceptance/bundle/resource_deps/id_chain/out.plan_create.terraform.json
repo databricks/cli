@@ -1,0 +1,19 @@
+{
+  "plan": {
+    "resources.jobs.a": {
+      "action": "create"
+    },
+    "resources.jobs.b": {
+      "action": "create"
+    },
+    "resources.jobs.c": {
+      "action": "create"
+    },
+    "resources.jobs.d": {
+      "action": "create"
+    },
+    "resources.jobs.e": {
+      "action": "create"
+    }
+  }
+}

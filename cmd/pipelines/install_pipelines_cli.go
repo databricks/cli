@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
+	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/spf13/cobra"
@@ -42,6 +44,19 @@ func installPipelinesSymlink(ctx context.Context, directory string) error {
 
 	target, err := filepath.EvalSymlinks(pipelinesPath)
 	if err != nil {
+		if strings.Contains(err.Error(), "databricks") &&
+			(strings.Contains(err.Error(), "no such file or directory") || (runtime.GOOS == "windows" && strings.Contains(err.Error(), "The system cannot find the file specified"))) {
+			err = os.Remove(pipelinesPath)
+			if err != nil {
+				return err
+			}
+			err = os.Symlink(realPath, pipelinesPath)
+			if err != nil {
+				return err
+			}
+			cmdio.LogString(ctx, fmt.Sprintf("found existing pipelines installation at %s. Pipelines CLI is successfully reinstalled in directory %q", pipelinesPath, dir))
+			return nil
+		}
 		return err
 	}
 	if realPath == target {
@@ -61,6 +76,6 @@ func InstallPipelinesCLI() *cobra.Command {
 			return installPipelinesSymlink(cmd.Context(), directory)
 		},
 	}
-	cmd.Flags().StringVarP(&directory, "directory", "d", "", "Directory in which to install pipelines CLI (defaults to databricks CLI's directory)")
+	cmd.Flags().StringVarP(&directory, "directory", "d", "", "Directory in which to install Pipelines CLI (defaults to Databricks CLI's directory).")
 	return cmd
 }

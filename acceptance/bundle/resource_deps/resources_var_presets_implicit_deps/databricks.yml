@@ -1,0 +1,21 @@
+# this tests resolution of $resources in presence of complicating factors:
+#  - presets that modify schema name
+#  - implicit dependencies between schema and volume which inject $resource references
+resources:
+  schemas:
+    bar:
+      catalog_name: mycatalog
+      name: myschema
+  volumes:
+    foo:
+      catalog_name: ${resources.schemas.bar.catalog_name}
+      schema_name: ${resources.schemas.bar.name}
+      name: myname
+  pipelines:
+    mypipeline:
+      # When creating the pipeline we should see dev prefix in schema_name here
+      name: pipeline for ${resources.volumes.foo.catalog_name}.${resources.volumes.foo.schema_name}.${resources.volumes.foo.name}
+
+targets:
+  dev:
+    mode: development

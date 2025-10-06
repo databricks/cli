@@ -1,6 +1,0 @@
-resources:
-  apps:
-    myapp:
-      name: myapp
-      description: my_app_description
-      source_code_path: ./app

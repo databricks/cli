@@ -1,0 +1,19 @@
+bundle:
+  name: unbind_grants-$UNIQUE_NAME
+
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME
+
+variables:
+  suffix:
+    default: ""
+    description: "Suffix for the schema name"
+
+resources:
+  schemas:
+    schema_1:
+      name: "test-schema-$UNIQUE_NAME${var.suffix}"
+      catalog_name: "main"
+      grants:
+        - principal: "account users"
+          privileges: ["CREATE_VOLUME", "SELECT"]

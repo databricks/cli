@@ -1,6 +1,6 @@
 # The main job for {{.project_name}}.
 
-{{- /* Clarify what this job is for for DLT-only users. */}}
+{{- /* Clarify what this job is for Lakeflow Declarative Pipelines only users. */}}
 {{if and (eq .include_dlt "yes") (and (eq .include_notebook "no") (eq .include_python "no")) -}}
 # This job runs {{.project_name}}_pipeline on a schedule.
 {{end -}}
@@ -74,7 +74,7 @@ resources:
           # Full documentation of this spec can be found at:
           # https://docs.databricks.com/api/workspace/jobs/create#environments-spec
           spec:
-            client: "2"
+            environment_version: "2"
             dependencies:
               - ../dist/*.whl
 {{end}}{{ else }}

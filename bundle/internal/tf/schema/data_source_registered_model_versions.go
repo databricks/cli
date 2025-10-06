@@ -7,6 +7,14 @@ type DataSourceRegisteredModelVersionsModelVersionsAliases struct {
 	VersionNum int    `json:"version_num,omitempty"`
 }
 
+type DataSourceRegisteredModelVersionsModelVersionsModelVersionDependenciesDependenciesConnection struct {
+	ConnectionName string `json:"connection_name,omitempty"`
+}
+
+type DataSourceRegisteredModelVersionsModelVersionsModelVersionDependenciesDependenciesCredential struct {
+	CredentialName string `json:"credential_name,omitempty"`
+}
+
 type DataSourceRegisteredModelVersionsModelVersionsModelVersionDependenciesDependenciesFunction struct {
 	FunctionFullName string `json:"function_full_name"`
 }
@@ -16,8 +24,10 @@ type DataSourceRegisteredModelVersionsModelVersionsModelVersionDependenciesDepen
 }
 
 type DataSourceRegisteredModelVersionsModelVersionsModelVersionDependenciesDependencies struct {
-	Function []DataSourceRegisteredModelVersionsModelVersionsModelVersionDependenciesDependenciesFunction `json:"function,omitempty"`
-	Table    []DataSourceRegisteredModelVersionsModelVersionsModelVersionDependenciesDependenciesTable    `json:"table,omitempty"`
+	Connection []DataSourceRegisteredModelVersionsModelVersionsModelVersionDependenciesDependenciesConnection `json:"connection,omitempty"`
+	Credential []DataSourceRegisteredModelVersionsModelVersionsModelVersionDependenciesDependenciesCredential `json:"credential,omitempty"`
+	Function   []DataSourceRegisteredModelVersionsModelVersionsModelVersionDependenciesDependenciesFunction   `json:"function,omitempty"`
+	Table      []DataSourceRegisteredModelVersionsModelVersionsModelVersionDependenciesDependenciesTable      `json:"table,omitempty"`
 }
 
 type DataSourceRegisteredModelVersionsModelVersionsModelVersionDependencies struct {

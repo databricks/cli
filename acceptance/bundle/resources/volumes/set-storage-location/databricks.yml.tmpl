@@ -1,0 +1,16 @@
+bundle:
+  name: testbundle-$UNIQUE_NAME
+
+resources:
+  schemas:
+    myschema:
+      catalog_name: main
+      name: testschema-$UNIQUE_NAME
+
+  volumes:
+    volume1:
+      catalog_name: main
+      schema_name: testschema-$UNIQUE_NAME
+      name: testvolume-$UNIQUE_NAME
+      comment: COMMENT1
+      storage_location: "s3://my_bucket/my_location"

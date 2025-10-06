@@ -1,0 +1,78 @@
+{
+  "plan": {
+    "resources.jobs.foo": {
+      "action": "update",
+      "new_state": {
+        "config": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+          },
+          "edit_mode": "UI_LOCKED",
+          "format": "MULTI_TASK",
+          "job_clusters": [
+            {
+              "job_cluster_key": "key",
+              "new_cluster": {
+                "num_workers": 0,
+                "spark_version": "13.3.x-scala2.12"
+              }
+            }
+          ],
+          "max_concurrent_runs": 1,
+          "name": "foo",
+          "queue": {
+            "enabled": true
+          },
+          "trigger": {
+            "pause_status": "UNPAUSED",
+            "periodic": {
+              "interval": 1,
+              "unit": "HOURS"
+            }
+          }
+        }
+      },
+      "remote_state": {
+        "creator_user_name": "[USERNAME]",
+        "job_id": [JOB_ID],
+        "settings": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+          },
+          "edit_mode": "UI_LOCKED",
+          "format": "MULTI_TASK",
+          "job_clusters": [
+            {
+              "job_cluster_key": "key",
+              "new_cluster": {
+                "num_workers": 0,
+                "spark_version": "13.3.x-scala2.12"
+              }
+            }
+          ],
+          "max_concurrent_runs": 1,
+          "name": "foo",
+          "queue": {
+            "enabled": true
+          },
+          "trigger": {
+            "pause_status": "UNPAUSED",
+            "periodic": {
+              "interval": 1,
+              "unit": "DAYS"
+            }
+          }
+        }
+      },
+      "changes": {
+        "local": {
+          "trigger.periodic.unit": {
+            "action": "update"
+          }
+        }
+      }
+    }
+  }
+}

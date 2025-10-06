@@ -3,6 +3,9 @@
 package clean_rooms
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -18,10 +21,10 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "clean-rooms",
-		Short: `A clean room uses Delta Sharing and serverless compute to provide a secure and privacy-protecting environment where multiple parties can work together on sensitive enterprise data without direct access to each other’s data.`,
+		Short: `A clean room uses Delta Sharing and serverless compute to provide a secure and privacy-protecting environment where multiple parties can work together on sensitive enterprise data without direct access to each other's data.`,
 		Long: `A clean room uses Delta Sharing and serverless compute to provide a secure and
   privacy-protecting environment where multiple parties can work together on
-  sensitive enterprise data without direct access to each other’s data.`,
+  sensitive enterprise data without direct access to each other's data.`,
 		GroupID: "cleanrooms",
 		Annotations: map[string]string{
 			"package": "cleanrooms",
@@ -61,12 +64,18 @@ func newCreate() *cobra.Command {
 	createReq.CleanRoom = cleanrooms.CleanRoom{}
 	var createJson flags.JsonFlag
 
+	var createSkipWait bool
+	var createTimeout time.Duration
+
+	cmd.Flags().BoolVar(&createSkipWait, "no-wait", createSkipWait, `do not wait to reach ACTIVE state`)
+	cmd.Flags().DurationVar(&createTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach ACTIVE state`)
+
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.CleanRoom.Comment, "comment", createReq.CleanRoom.Comment, ``)
 	cmd.Flags().StringVar(&createReq.CleanRoom.Name, "name", createReq.CleanRoom.Name, `The name of the clean room.`)
 	// TODO: complex arg: output_catalog
-	cmd.Flags().StringVar(&createReq.CleanRoom.Owner, "owner", createReq.CleanRoom.Owner, `This is Databricks username of the owner of the local clean room securable for permission management.`)
+	cmd.Flags().StringVar(&createReq.CleanRoom.Owner, "owner", createReq.CleanRoom.Owner, `This is the Databricks username of the owner of the local clean room securable for permission management.`)
 	// TODO: complex arg: remote_detailed_info
 
 	cmd.Use = "create"
@@ -108,11 +117,24 @@ func newCreate() *cobra.Command {
 			}
 		}
 
-		response, err := w.CleanRooms.Create(ctx, createReq)
+		wait, err := w.CleanRooms.Create(ctx, createReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		if createSkipWait {
+			return cmdio.Render(ctx, wait.Response)
+		}
+		spinner := cmdio.Spinner(ctx)
+		info, err := wait.OnProgress(func(i *cleanrooms.CleanRoom) {
+			status := i.Status
+			statusMessage := fmt.Sprintf("current status: %s", status)
+			spinner <- statusMessage
+		}).GetWithTimeout(createTimeout)
+		close(spinner)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, info)
 	}
 
 	// Disable completions since they are not applicable.

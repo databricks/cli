@@ -34,6 +34,10 @@ func newConfig(ctx context.Context, templateFS fs.FS, schemaPath string) (*confi
 	if err != nil {
 		return nil, err
 	}
+	return newConfigFromSchema(ctx, schema)
+}
+
+func newConfigFromSchema(ctx context.Context, schema *jsonschema.Schema) (*config, error) {
 	if err := validateSchema(schema); err != nil {
 		return nil, err
 	}

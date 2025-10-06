@@ -1,0 +1,29 @@
+print_requests() {
+    # url is output-only field that terraform adds but that is ignored by the backend
+    jq --sort-keys 'select(.method != "GET" and (.path | contains("/apps"))) | (.body.url = null | del(.body.url))' < out.requests.txt
+    rm out.requests.txt
+}
+
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace print_requests
+trace $CLI bundle summary
+
+title "Update description and re-deploy"
+trace update_file.py databricks.yml my_app_description MY_APP_DESCRIPTION
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace print_requests
+trace $CLI bundle summary
+
+title "Update name and re-deploy"
+trace update_file.py databricks.yml myappname mynewappname
+trace $CLI bundle plan
+trace $CLI bundle summary
+trace $CLI bundle deploy
+trace print_requests
+
+trace $CLI bundle plan
+trace $CLI bundle summary
+trace $CLI bundle destroy --auto-approve
+trace print_requests

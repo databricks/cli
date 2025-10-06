@@ -1,0 +1,10 @@
+print_requests() {
+    jq --sort-keys 'select(.method != "GET" and (.path | contains("/pipeline"))) | (.body.name // empty)' < out.requests.txt
+    rm out.requests.txt
+}
+
+$CLI bundle debug plan > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle deploy
+trace print_requests
+$CLI bundle debug plan > out.plan_skip.$DATABRICKS_BUNDLE_ENGINE.json
+trace print_requests

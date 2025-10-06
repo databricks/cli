@@ -1,0 +1,7 @@
+{
+  "plan": {
+    "resources.volumes.volume1": {
+      "action": "update"
+    }
+  }
+}

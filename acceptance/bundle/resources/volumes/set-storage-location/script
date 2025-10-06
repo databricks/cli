@@ -1,0 +1,19 @@
+print_requests() {
+    jq 'select(.method != "GET" and (.path | contains("/unity")))' < out.requests.txt
+    rm out.requests.txt
+}
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    trace print_requests
+}
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+trace $CLI bundle plan
+trace print_requests
+
+trap cleanup EXIT
+
+trace musterr $CLI bundle deploy
+trace print_requests

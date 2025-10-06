@@ -1,0 +1,6 @@
+DATABASE_INSTANCE_ID="12345678-1234-5678-9abc-123456789def"
+trace $CLI bundle deployment bind database_instance1 "${DATABASE_INSTANCE_ID}" --auto-approve
+trace $CLI bundle summary
+
+trace $CLI bundle deployment unbind database_instance1
+trace $CLI bundle summary

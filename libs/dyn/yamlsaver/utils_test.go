@@ -4,7 +4,8 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/dyn"
-	assert "github.com/databricks/cli/libs/dyn/dynassert"
+	"github.com/databricks/cli/libs/dyn/dynassert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestConvertToMap(t *testing.T) {
@@ -31,7 +32,7 @@ func TestConvertToMap(t *testing.T) {
 	}
 	result, err := ConvertToMapValue(v, nil, []string{"format"}, map[string]dyn.Value{})
 	assert.NoError(t, err)
-	assert.Equal(t, dyn.V(map[string]dyn.Value{
+	dynassert.Equal(t, dyn.V(map[string]dyn.Value{
 		"list": dyn.V(
 			[]dyn.Value{
 				dyn.V("a"),
@@ -77,7 +78,7 @@ func TestConvertToMapValueWithOrder(t *testing.T) {
 	result, err := ConvertToMapValue(v, NewOrder([]string{"list", "name", "map"}), []string{"format"}, map[string]dyn.Value{})
 	assert.NoError(t, err)
 
-	assert.Equal(t, dyn.V(map[string]dyn.Value{
+	dynassert.Equal(t, dyn.V(map[string]dyn.Value{
 		"list": dyn.NewValue(
 			[]dyn.Value{
 				dyn.V("a"),

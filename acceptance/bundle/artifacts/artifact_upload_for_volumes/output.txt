@@ -1,0 +1,73 @@
+
+>>> [CLI] bundle deploy
+Uploading whl/source.whl...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Expecting 2 wheels in libraries section in /jobs/create
+>>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | .body.tasks out.requests.txt
+[
+  {
+    "existing_cluster_id": "0717-132531-5opeqon1",
+    "libraries": [
+      {
+        "whl": "/Volumes/foo/bar/artifacts/.internal/source.whl"
+      },
+      {
+        "whl": "/Volumes/some/path/mywheel.whl"
+      }
+    ],
+    "python_wheel_task": {
+      "entry_point": "run",
+      "package_name": "whl"
+    },
+    "task_key": "TestTask1"
+  },
+  {
+    "for_each_task": {
+      "inputs": "[1]",
+      "task": {
+        "existing_cluster_id": "0717-132531-5opeqon1",
+        "libraries": [
+          {
+            "whl": "/Volumes/foo/bar/artifacts/.internal/source.whl"
+          },
+          {
+            "whl": "/Volumes/some/path/mywheel.whl"
+          }
+        ],
+        "python_wheel_task": {
+          "entry_point": "run",
+          "package_name": "whl"
+        },
+        "task_key": "TestTask2"
+      }
+    },
+    "task_key": "TestTask2"
+  }
+]
+
+=== Expecting environment dependencies to be updated
+>>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | .body.environments out.requests.txt
+[
+  {
+    "environment_key": "test_env",
+    "spec": {
+      "client": "1",
+      "dependencies": [
+        "/Volumes/foo/bar/artifacts/.internal/source.whl",
+        "/Volumes/some/path/mywheel.whl"
+      ]
+    }
+  }
+]
+
+=== Expecting wheel to be uploaded
+>>> jq -s .[] | select(.path=="/api/2.0/fs/files/Volumes/foo/bar/artifacts/.internal/source.whl") out.requests.txt
+{
+  "method": "PUT",
+  "path": "/api/2.0/fs/files/Volumes/foo/bar/artifacts/.internal/source.whl",
+  "raw_body": "test wheel content\n"
+}

@@ -1,0 +1,2 @@
+cp $TESTDIR/../{databricks.yml,test.py} .
+source $TESTDIR/../_script

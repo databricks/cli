@@ -1,0 +1,22 @@
+resources:
+  jobs:
+    foo:
+      name: foo
+
+      trigger:
+        periodic:
+          interval: 1
+          unit: DAYS
+
+      job_clusters:
+        - job_cluster_key: key
+          new_cluster:
+            # main intention is to test this "num_workers: 0" as there were issues with zero conversion
+            # ../update also tests this but there num_workers is implicitly set
+            num_workers: 0
+            spark_version: 13.3.x-scala2.12
+            spark_conf:
+              spark.databricks.cluster.profile: singleNode
+              spark.master: local[*]
+            custom_tags:
+              ResourceClass: SingleNode

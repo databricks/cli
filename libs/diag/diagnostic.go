@@ -48,7 +48,8 @@ func FromErr(err error) Diagnostics {
 	return []Diagnostic{
 		{
 			Severity: Error,
-			Summary:  err.Error(),
+			Summary:  FormatAPIErrorSummary(err),
+			Detail:   FormatAPIErrorDetails(err),
 		},
 	}
 }
@@ -71,16 +72,6 @@ func Warningf(format string, args ...any) Diagnostics {
 	return []Diagnostic{
 		{
 			Severity: Warning,
-			Summary:  fmt.Sprintf(format, args...),
-		},
-	}
-}
-
-// Infof creates a new info diagnostic.
-func Infof(format string, args ...any) Diagnostics {
-	return []Diagnostic{
-		{
-			Severity: Info,
 			Summary:  fmt.Sprintf(format, args...),
 		},
 	}

@@ -40,7 +40,6 @@ func runSparkJarTests(t *testing.T, testCases []sparkJarTestCase, testRunner fun
 
 	// Run the tests that can run
 	for _, tc := range testCases {
-		tc := tc // Capture range variable for goroutine
 		canRun := testCanRun[tc.name]
 
 		t.Run(tc.name, func(t *testing.T) {

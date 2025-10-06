@@ -20,7 +20,7 @@
             "type": "string",
             "default": "yes",
             "enum": ["yes", "no"],
-            "description": "Include a stub (sample) Delta Live Tables pipeline in '{{.project_name}}{{path_separator}}src'",
+            "description": "Include a stub (sample) Lakeflow Declarative Pipeline in '{{.project_name}}{{path_separator}}src'",
             "order": 3
         },
         "include_python": {

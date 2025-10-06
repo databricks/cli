@@ -14,6 +14,10 @@ linters:
     - testifylint
     - unconvert
     - unused
+    - exhaustruct
+    - exhaustive
+    - copyloopvar
+    - forbidigo
   settings:
     copyloopvar:
       check-alias: true
@@ -27,6 +31,7 @@ linters:
       disable-all: true
       enabled-checks:
         - ruleguard
+        - offBy1
       settings:
         ruleguard:
           failOn: all
@@ -48,16 +53,6 @@ linters:
         - all
         # disabled checks:
         - -ST1003
-        - -ST1016
-        - -ST1005
-        - -ST1023
-        - -QF1001
-        - -QF1003
-        - -QF1007
-        - -QF1008
-        - -QF1009
-        - -QF1011
-        - -QF1012
     testifylint:
       enable-all: true
       disable:
@@ -65,6 +60,9 @@ linters:
         - empty
         - len
         - equal-values
+        - encoded-compare # Always replaces Equal() with JSONEq, but sometimes exact string match is wanted for JSON
+    exhaustive:
+      default-signifies-exhaustive: true
   exclusions:
     generated: lax
     presets:
@@ -72,6 +70,16 @@ linters:
       - common-false-positives
       - legacy
       - std-error-handling
+    rules:
+      - path-except: bundle/direct/dresources
+        linters:
+          - exhaustruct
+      - path: bundle/direct/dresources/all_test.go
+        linters:
+          - exhaustruct
+      - path-except: ^cmd
+        linters:
+          - forbidigo
 issues:
   max-issues-per-linter: 1000
   max-same-issues: 1000

@@ -75,10 +75,7 @@ func EnsureRemotePathIsUsable(ctx context.Context, wsc *databricks.WorkspaceClie
 	)
 
 	// We expect the object at path to be a directory or a repo.
-	switch info.ObjectType {
-	case workspace.ObjectTypeDirectory:
-		return nil
-	case workspace.ObjectTypeRepo:
+	if info.ObjectType == workspace.ObjectTypeDirectory || info.ObjectType == workspace.ObjectTypeRepo {
 		return nil
 	}
 
