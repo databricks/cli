@@ -32,6 +32,15 @@ var ResourcesTypes = func() map[string]reflect.Type {
 		}
 
 		res[name] = elemType
+
+		// Automatically detect and add permissions field types
+		// Look for a "Permissions" field in the resource type
+		for _, resourceField := range reflect.VisibleFields(elemType) {
+			if resourceField.Name == "Permissions" {
+				permissionsKey := name + ".permissions"
+				res[permissionsKey] = resourceField.Type
+			}
+		}
 	}
 
 	return res

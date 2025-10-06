@@ -87,6 +87,23 @@
         }
       }
     },
+    "resources.jobs.my_default_python_job.permissions": {
+      "depends_on": [
+        {
+          "node": "resources.jobs.my_default_python_job",
+          "label": "${resources.jobs.my_default_python_job.id}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "config": {
+          "object_id": ""
+        },
+        "vars": {
+          "object_id": "/jobs/${resources.jobs.my_default_python_job.id}"
+        }
+      }
+    },
     "resources.pipelines.my_default_python_pipeline": {
       "action": "create",
       "new_state": {
@@ -109,6 +126,23 @@
           ],
           "name": "my_default_python_pipeline",
           "schema": "my_default_python_prod"
+        }
+      }
+    },
+    "resources.pipelines.my_default_python_pipeline.permissions": {
+      "depends_on": [
+        {
+          "node": "resources.pipelines.my_default_python_pipeline",
+          "label": "${resources.pipelines.my_default_python_pipeline.id}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "config": {
+          "object_id": ""
+        },
+        "vars": {
+          "object_id": "/pipelines/${resources.pipelines.my_default_python_pipeline.id}"
         }
       }
     }

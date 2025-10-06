@@ -1,0 +1,133 @@
+
+>>> [CLI] bundle debug plan
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/jobs-permissions-test/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] permissions get jobs [JOB_ID]
+{
+  "access_control_list": [
+    {
+      "all_permissions": [
+        {
+          "inherited":false,
+          "permission_level":"CAN_VIEW"
+        }
+      ],
+      "display_name":"viewer@example.com",
+      "user_name":"viewer@example.com"
+    },
+    {
+      "all_permissions": [
+        {
+          "inherited":false,
+          "permission_level":"CAN_MANAGE"
+        }
+      ],
+      "group_name":"data-team"
+    },
+    {
+      "all_permissions": [
+        {
+          "inherited":false,
+          "permission_level":"IS_OWNER"
+        }
+      ],
+      "display_name":"[USERNAME]",
+      "user_name":"[USERNAME]"
+    }
+  ],
+  "object_id":"/jobs/[JOB_ID]",
+  "object_type":"job"
+}
+
+=== Update one permission and deploy again
+
+>>> [CLI] bundle debug plan
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/jobs-permissions-test/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== Delete one permission and deploy again
+
+>>> [CLI] bundle debug plan
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/jobs-permissions-test/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== Delete the whole block and deploy again
+
+>>> [CLI] bundle debug plan
+Warning: unknown field: level
+  at resources.jobs.job_with_permissions.tasks[1]
+  in databricks.yml:13:11
+
+
+>>> [CLI] bundle deploy
+Warning: unknown field: level
+  at resources.jobs.job_with_permissions.tasks[1]
+  in databricks.yml:13:11
+
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/jobs-permissions-test/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_sorted_requests
+
+>>> [CLI] bundle plan
+Warning: unknown field: level
+  at resources.jobs.job_with_permissions.tasks[1]
+  in databricks.yml:13:11
+
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== Restore original config
+
+>>> [CLI] bundle debug plan
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/jobs-permissions-test/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete job job_with_permissions
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/jobs-permissions-test/default
+
+Deleting files...
+Destroy complete!
+
+>>> print_requests
