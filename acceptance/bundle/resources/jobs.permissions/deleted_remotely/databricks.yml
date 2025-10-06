@@ -1,0 +1,17 @@
+bundle:
+  name: jobs-permissions-deleted-remotely
+
+resources:
+  jobs:
+    job_with_permissions:
+      name: job permissions deleted remotely
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Workspace/Users/user@example.com/notebook
+            source: WORKSPACE
+      permissions:
+        - level: CAN_VIEW
+          user_name: viewer@example.com
+        - level: CAN_MANAGE
+          group_name: data-team
