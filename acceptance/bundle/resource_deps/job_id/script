@@ -9,6 +9,7 @@ print_sorted_requests() {
 }
 
 trace $CLI bundle plan
+trace $CLI bundle debug plan > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 trace print_requests
 
