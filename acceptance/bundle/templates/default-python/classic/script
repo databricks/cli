@@ -4,7 +4,9 @@ cd output/my_default_python
 trace $CLI bundle validate -t dev
 trace $CLI bundle validate -t prod
 
-trace $CLI bundle plan
+trace $CLI bundle plan -t dev
+trace $CLI bundle plan -t prod
+
 $CLI bundle debug plan -t dev > ../../out.plan_dev.$DATABRICKS_BUNDLE_ENGINE.json
 $CLI bundle debug plan -t prod > ../../out.plan_prod.$DATABRICKS_BUNDLE_ENGINE.json
 
