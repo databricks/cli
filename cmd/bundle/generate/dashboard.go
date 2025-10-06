@@ -19,6 +19,7 @@ import (
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/statemgmt"
+	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
@@ -392,6 +393,16 @@ func (d *dashboard) RunE(cmd *cobra.Command, args []string) error {
 	if b == nil {
 		return root.ErrAlreadyPrinted
 	}
+
+	engine, err := utils.DeploymentEngine(ctx)
+	if err != nil {
+		return err
+	}
+
+	// We use "direct-exp" while direct backend is not suitable for end users.
+	// Once we consider it usable we'll change the value to "direct".
+	// This is to prevent accidentally running direct backend with older CLI versions where it was still considered experimental.
+	b.DirectDeployment = engine == "direct-exp"
 
 	d.initialize(ctx, b)
 	if logdiag.HasError(ctx) {

@@ -43,8 +43,25 @@ type IResource interface {
 	// [Optional] FieldTriggers returns actions to trigger when given fields are changed.
 	// Keys are field paths (e.g., "name", "catalog_name"). Values are actions.
 	// Unspecified changed fields default to ActionTypeUpdate.
+	// TODO(shreyas): remove this method and use FieldTriggersLocal and FieldTriggersRemote everywhere.
 	FieldTriggers() map[string]deployplan.ActionType
+
+	// FieldTriggersLocal returns actions to trigger when given fields are changed
+	// compared to what was persisted in the local state.
+	//
+	// Keys are field paths (e.g., "name", "catalog_name"). Values are actions.
+	// Unspecified changed fields default to ActionTypeUpdate.
+	FieldTriggersLocal() map[string]deployplan.ActionType
+
+	// FieldTriggersRemote returns actions to trigger when given fields are changed
+	// compared to what is returned by DoRefresh.
+	//
+	// Keys are field paths (e.g., "name", "catalog_name"). Values are actions.
+	// Unspecified changed fields default to ActionTypeUpdate.
+	FieldTriggersRemote() map[string]deployplan.ActionType
 }
+
+// TODO(question): Does changing the warehouse ID modify the etag?
 
 // IResourceNoRefresh describes additional methods for resource to implement.
 // Each method exists in two forms: NoRefresh (this interface) and WithRefresh (IResourceWithInterface).
@@ -116,7 +133,9 @@ type Adapter struct {
 	waitAfterUpdate *calladapt.BoundCaller
 	classifyChange  *calladapt.BoundCaller
 
-	fieldTriggers map[string]deployplan.ActionType
+	fieldTriggers       map[string]deployplan.ActionType
+	fieldTriggersLocal  map[string]deployplan.ActionType
+	fieldTriggersRemote map[string]deployplan.ActionType
 }
 
 func NewAdapter(typedNil any, client *databricks.WorkspaceClient) (*Adapter, error) {
@@ -133,17 +152,19 @@ func NewAdapter(typedNil any, client *databricks.WorkspaceClient) (*Adapter, err
 	}
 	impl := outs[0]
 	adapter := &Adapter{
-		prepareState:    nil,
-		remapState:      nil,
-		doRefresh:       nil,
-		doDelete:        nil,
-		doCreate:        nil,
-		doUpdate:        nil,
-		doUpdateWithID:  nil,
-		waitAfterCreate: nil,
-		waitAfterUpdate: nil,
-		classifyChange:  nil,
-		fieldTriggers:   map[string]deployplan.ActionType{},
+		prepareState:        nil,
+		remapState:          nil,
+		doRefresh:           nil,
+		doDelete:            nil,
+		doCreate:            nil,
+		doUpdate:            nil,
+		doUpdateWithID:      nil,
+		waitAfterCreate:     nil,
+		waitAfterUpdate:     nil,
+		classifyChange:      nil,
+		fieldTriggers:       map[string]deployplan.ActionType{},
+		fieldTriggersLocal:  map[string]deployplan.ActionType{},
+		fieldTriggersRemote: map[string]deployplan.ActionType{},
 	}
 
 	err = adapter.initMethods(impl)
@@ -165,6 +186,40 @@ func NewAdapter(typedNil any, client *databricks.WorkspaceClient) (*Adapter, err
 		adapter.fieldTriggers = make(map[string]deployplan.ActionType, len(fields))
 		for k, v := range fields {
 			adapter.fieldTriggers[k] = v
+		}
+	}
+
+	// Load optional FieldTriggersLocal method
+	localTriggerCall, err := calladapt.PrepareCall(impl, calladapt.TypeOf[IResource](), "FieldTriggersLocal")
+	if err != nil {
+		return nil, err
+	}
+	if localTriggerCall != nil {
+		outs, err := localTriggerCall.Call()
+		if err != nil || len(outs) != 1 {
+			return nil, fmt.Errorf("failed to call FieldTriggersLocal: %w", err)
+		}
+		fields := outs[0].(map[string]deployplan.ActionType)
+		adapter.fieldTriggersLocal = make(map[string]deployplan.ActionType, len(fields))
+		for k, v := range fields {
+			adapter.fieldTriggersLocal[k] = v
+		}
+	}
+
+	// Load optional FieldTriggersRemote method
+	remoteTriggerCall, err := calladapt.PrepareCall(impl, calladapt.TypeOf[IResource](), "FieldTriggersRemote")
+	if err != nil {
+		return nil, err
+	}
+	if remoteTriggerCall != nil {
+		outs, err := remoteTriggerCall.Call()
+		if err != nil || len(outs) != 1 {
+			return nil, fmt.Errorf("failed to call FieldTriggersRemote: %w", err)
+		}
+		fields := outs[0].(map[string]deployplan.ActionType)
+		adapter.fieldTriggersRemote = make(map[string]deployplan.ActionType, len(fields))
+		for k, v := range fields {
+			adapter.fieldTriggersRemote[k] = v
 		}
 	}
 
@@ -226,6 +281,13 @@ func (a *Adapter) initMethods(resource any) error {
 	}
 
 	a.waitAfterUpdate, err = prepareCallFromTwoVariants(resource, "WaitAfterUpdate")
+	if err != nil {
+		return err
+	}
+
+	// ClassifyChange is optional
+	// TODO(shreyas) can this be removed?
+	a.classifyChange, err = calladapt.PrepareCall(resource, calladapt.TypeOf[IResourceNoRefresh](), "ClassifyChange")
 	if err != nil {
 		return err
 	}
@@ -456,10 +518,22 @@ func (a *Adapter) DoUpdateWithID(ctx context.Context, oldID string, newState any
 	}
 }
 
-// ClassifyByTriggers classifies a single using FieldTriggers.
+// ClassifyByTriggersLocal classifies a single change using the local fields trigger map.
 // Defaults to ActionTypeUpdate.
-func (a *Adapter) ClassifyByTriggers(change structdiff.Change) deployplan.ActionType {
-	action, ok := a.fieldTriggers[change.Path.String()]
+func (a *Adapter) ClassifyByTriggersLocal(change structdiff.Change) deployplan.ActionType {
+	triggers := a.fieldTriggersLocal
+	action, ok := triggers[change.Path.String()]
+	if ok {
+		return action
+	}
+	return deployplan.ActionTypeUpdate
+}
+
+// ClassifyByTriggersRemote classifies a single change using the remote fields trigger map.
+// Defaults to ActionTypeUpdate.
+func (a *Adapter) ClassifyByTriggersRemote(change structdiff.Change) deployplan.ActionType {
+	triggers := a.fieldTriggersRemote
+	action, ok := triggers[change.Path.String()]
 	if ok {
 		return action
 	}
@@ -513,7 +587,7 @@ func (a *Adapter) WaitAfterUpdate(ctx context.Context, newState any) (any, error
 func (a *Adapter) ClassifyChange(change structdiff.Change, remoteState any) (deployplan.ActionType, error) {
 	// If ClassifyChange is not implemented, use FieldTriggers.
 	if a.classifyChange == nil {
-		return a.ClassifyByTriggers(change), nil
+		return a.ClassifyByTriggersRemote(change), nil
 	}
 
 	outs, err := a.classifyChange.Call(change, remoteState)

@@ -129,6 +129,15 @@ func TestAccept(t *testing.T) {
 	testAccept(t, InprocessMode, "")
 }
 
+// func TestAccept(t *testing.T) {
+// 	testutil.LoadDebugEnvIfRunFromIDE(t, "workspace")
+// 	testAccept(t, true, "bundle/deploy/dashboard/generate_inplace")
+// }
+
+// func TestAccept(t *testing.T) {
+// 	testAccept(t, true, "bundle/resources/dashboards/change-name")
+// }
+
 func TestInprocessMode(t *testing.T) {
 	if InprocessMode && !Forcerun {
 		t.Skip("Already tested by TestAccept")
