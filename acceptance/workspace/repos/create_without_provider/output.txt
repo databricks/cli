@@ -2,7 +2,7 @@
 >>> [CLI] repos create https://github.com/databricks/databricks-empty-ide-project.git --path /Repos/me@databricks.com/test-repo
 {
   "branch":"main",
-  "id":1,
+  "id":[NUMID],
   "path":"/Repos/me@databricks.com/test-repo",
   "provider":"gitHub",
   "url":"https://github.com/databricks/databricks-empty-ide-project.git"

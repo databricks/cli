@@ -21,11 +21,11 @@ func (s *FakeWorkspace) ReposCreate(req Request) Response {
 		}
 	}
 
-	s.nextRepoId++
-	id := strconv.FormatInt(s.nextRepoId, 10)
+	repoId := nextID()
+	id := strconv.FormatInt(repoId, 10)
 
 	repoInfo := workspace.RepoInfo{
-		Id:       s.nextRepoId,
+		Id:       repoId,
 		Path:     repoReq.Path,
 		Provider: repoReq.Provider,
 		Url:      repoReq.Url,
@@ -33,7 +33,7 @@ func (s *FakeWorkspace) ReposCreate(req Request) Response {
 	}
 
 	s.Repos[id] = repoInfo
-	s.repoIdByPath[repoReq.Path] = s.nextRepoId
+	s.repoIdByPath[repoReq.Path] = repoId
 
 	return Response{
 		Body: repoInfo,
