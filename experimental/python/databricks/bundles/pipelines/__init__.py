@@ -51,6 +51,12 @@ __all__ = [
     "IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig",
     "IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfigDict",
     "IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfigParam",
+    "IngestionPipelineDefinitionWorkdayReportParameters",
+    "IngestionPipelineDefinitionWorkdayReportParametersDict",
+    "IngestionPipelineDefinitionWorkdayReportParametersParam",
+    "IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue",
+    "IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValueDict",
+    "IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValueParam",
     "IngestionSourceType",
     "IngestionSourceTypeParam",
     "InitScriptInfo",
@@ -229,6 +235,16 @@ from databricks.bundles.pipelines._models.ingestion_pipeline_definition_table_sp
     IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig,
     IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfigDict,
     IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfigParam,
+)
+from databricks.bundles.pipelines._models.ingestion_pipeline_definition_workday_report_parameters import (
+    IngestionPipelineDefinitionWorkdayReportParameters,
+    IngestionPipelineDefinitionWorkdayReportParametersDict,
+    IngestionPipelineDefinitionWorkdayReportParametersParam,
+)
+from databricks.bundles.pipelines._models.ingestion_pipeline_definition_workday_report_parameters_query_key_value import (
+    IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue,
+    IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValueDict,
+    IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValueParam,
 )
 from databricks.bundles.pipelines._models.ingestion_source_type import (
     IngestionSourceType,

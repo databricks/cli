@@ -353,6 +353,42 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.SchemasGetGrants(req, req.Vars["full_name"])
 	})
 
+	// Catalogs:
+
+	server.Handle("GET", "/api/2.1/unity-catalog/catalogs/{name}", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.Catalogs, req.Vars["name"])
+	})
+
+	server.Handle("POST", "/api/2.1/unity-catalog/catalogs", func(req Request) any {
+		return req.Workspace.CatalogsCreate(req)
+	})
+
+	server.Handle("PATCH", "/api/2.1/unity-catalog/catalogs/{name}", func(req Request) any {
+		return req.Workspace.CatalogsUpdate(req, req.Vars["name"])
+	})
+
+	server.Handle("DELETE", "/api/2.1/unity-catalog/catalogs/{name}", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.Catalogs, req.Vars["name"])
+	})
+
+	// Registered Models:
+
+	server.Handle("GET", "/api/2.1/unity-catalog/models/{full_name}", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.RegisteredModels, req.Vars["full_name"])
+	})
+
+	server.Handle("POST", "/api/2.1/unity-catalog/models", func(req Request) any {
+		return req.Workspace.RegisteredModelsCreate(req)
+	})
+
+	server.Handle("PATCH", "/api/2.1/unity-catalog/models/{full_name}", func(req Request) any {
+		return req.Workspace.RegisteredModelsUpdate(req, req.Vars["full_name"])
+	})
+
+	server.Handle("DELETE", "/api/2.1/unity-catalog/models/{full_name}", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.RegisteredModels, req.Vars["full_name"])
+	})
+
 	// Volumes:
 
 	server.Handle("GET", "/api/2.1/unity-catalog/volumes/{full_name}", func(req Request) any {
@@ -516,5 +552,47 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("GET", "/api/2.0/permissions/jobs/{job_id}", func(req Request) any {
 		return req.Workspace.JobsGetPermissions(req, req.Vars["job_id"])
+	})
+
+	// MLflow Experiments:
+	server.Handle("GET", "/api/2.0/mlflow/experiments/get", func(req Request) any {
+		experimentId := req.URL.Query().Get("experiment_id")
+		if experimentId == "" {
+			return Response{
+				StatusCode: http.StatusBadRequest,
+				Body:       map[string]string{"message": "experiment_id is required"},
+			}
+		}
+
+		return MapGet(req.Workspace, req.Workspace.Experiments, experimentId)
+	})
+
+	server.Handle("POST", "/api/2.0/mlflow/experiments/create", func(req Request) any {
+		return req.Workspace.ExperimentCreate(req)
+	})
+
+	server.Handle("POST", "/api/2.0/mlflow/experiments/update", func(req Request) any {
+		return req.Workspace.ExperimentUpdate(req)
+	})
+
+	server.Handle("POST", "/api/2.0/mlflow/experiments/delete", func(req Request) any {
+		return req.Workspace.ExperimentDelete(req)
+	})
+
+	// Model registry models.
+	server.Handle("POST", "/api/2.0/mlflow/registered-models/create", func(req Request) any {
+		return req.Workspace.ModelRegistryCreateModel(req)
+	})
+
+	server.Handle("GET", "/api/2.0/mlflow/databricks/registered-models/get", func(req Request) any {
+		return req.Workspace.ModelRegistryGetModel(req)
+	})
+
+	server.Handle("PATCH", "/api/2.0/mlflow/registered-models/update", func(req Request) any {
+		return req.Workspace.ModelRegistryUpdateModel(req)
+	})
+
+	server.Handle("DELETE", "/api/2.0/mlflow/registered-models/delete", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.ModelRegistryModels, req.URL.Query().Get("name"))
 	})
 }

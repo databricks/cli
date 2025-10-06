@@ -46,8 +46,8 @@ func TestApplyWorkspaceRootPermissions(t *testing.T) {
 					"model_2": {},
 				},
 				Experiments: map[string]*resources.MlflowExperiment{
-					"experiment_1": {Experiment: ml.Experiment{}},
-					"experiment_2": {Experiment: ml.Experiment{}},
+					"experiment_1": {CreateExperiment: ml.CreateExperiment{}},
+					"experiment_2": {CreateExperiment: ml.CreateExperiment{}},
 				},
 				ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
 					"endpoint_1": {CreateServingEndpoint: serving.CreateServingEndpoint{}},
@@ -106,8 +106,8 @@ func TestApplyWorkspaceRootPermissionsForAllPaths(t *testing.T) {
 					"model_2": {},
 				},
 				Experiments: map[string]*resources.MlflowExperiment{
-					"experiment_1": {Experiment: ml.Experiment{}},
-					"experiment_2": {Experiment: ml.Experiment{}},
+					"experiment_1": {CreateExperiment: ml.CreateExperiment{}},
+					"experiment_2": {CreateExperiment: ml.CreateExperiment{}},
 				},
 				ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
 					"endpoint_1": {CreateServingEndpoint: serving.CreateServingEndpoint{}},

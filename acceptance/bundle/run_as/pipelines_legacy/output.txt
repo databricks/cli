@@ -51,15 +51,13 @@ Warning: required field "schema_name" is not set
 >>> jq .resources.experiments
 {
   "experiment_one": {
-    "name": "experiment_one",
-    "permissions": []
+    "name": "experiment_one"
   }
 }
 
 >>> jq .resources.models
 {
   "model_one": {
-    "name": "skynet",
-    "permissions": []
+    "name": "skynet"
   }
 }

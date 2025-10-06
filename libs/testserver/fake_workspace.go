@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
@@ -60,21 +61,25 @@ type FakeWorkspace struct {
 	repoIdByPath map[string]int64
 
 	// normally, ids are not sequential, but we make them sequential for deterministic diff
-	nextJobId       int64
-	nextJobRunId    int64
-	Jobs            map[int64]jobs.Job
-	JobRuns         map[int64]jobs.Run
-	JobPermissions  map[string][]jobs.JobAccessControlRequest
-	Pipelines       map[string]pipelines.GetPipelineResponse
-	PipelineUpdates map[string]bool
-	Monitors        map[string]catalog.MonitorInfo
-	Apps            map[string]apps.App
-	Schemas         map[string]catalog.SchemaInfo
-	SchemasGrants   map[string][]catalog.PrivilegeAssignment
-	Volumes         map[string]catalog.VolumeInfo
-	Dashboards      map[string]dashboards.Dashboard
-	SqlWarehouses   map[string]sql.GetWarehouseResponse
-	Alerts          map[string]sql.AlertV2
+	nextJobId           int64
+	nextJobRunId        int64
+	Jobs                map[int64]jobs.Job
+	JobRuns             map[int64]jobs.Run
+	JobPermissions      map[string][]jobs.JobAccessControlRequest
+	Pipelines           map[string]pipelines.GetPipelineResponse
+	PipelineUpdates     map[string]bool
+	Monitors            map[string]catalog.MonitorInfo
+	Apps                map[string]apps.App
+	Schemas             map[string]catalog.SchemaInfo
+	SchemasGrants       map[string][]catalog.PrivilegeAssignment
+	Volumes             map[string]catalog.VolumeInfo
+	Dashboards          map[string]dashboards.Dashboard
+	SqlWarehouses       map[string]sql.GetWarehouseResponse
+	Alerts              map[string]sql.AlertV2
+	Experiments         map[string]ml.GetExperimentResponse
+	ModelRegistryModels map[string]ml.Model
+	Catalogs            map[string]catalog.CatalogInfo
+	RegisteredModels    map[string]catalog.RegisteredModelInfo
 
 	Acls map[string][]workspace.AclItem
 
@@ -162,7 +167,9 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		PipelineUpdates:      map[string]bool{},
 		Monitors:             map[string]catalog.MonitorInfo{},
 		Apps:                 map[string]apps.App{},
+		Catalogs:             map[string]catalog.CatalogInfo{},
 		Schemas:              map[string]catalog.SchemaInfo{},
+		RegisteredModels:     map[string]catalog.RegisteredModelInfo{},
 		Volumes:              map[string]catalog.VolumeInfo{},
 		Dashboards:           map[string]dashboards.Dashboard{},
 		SqlWarehouses:        map[string]sql.GetWarehouseResponse{},
@@ -172,6 +179,8 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		DatabaseCatalogs:     map[string]database.DatabaseCatalog{},
 		SyncedDatabaseTables: map[string]database.SyncedDatabaseTable{},
 		Alerts:               map[string]sql.AlertV2{},
+		Experiments:          map[string]ml.GetExperimentResponse{},
+		ModelRegistryModels:  map[string]ml.Model{},
 	}
 }
 

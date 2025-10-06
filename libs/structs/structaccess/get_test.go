@@ -4,6 +4,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/stretchr/testify/require"
 )
 
@@ -15,6 +17,13 @@ type testCase struct {
 	wantSelf    bool
 	errFmt      string
 	typeHasPath bool
+}
+
+func testGet(t *testing.T, obj any, path string, want any) {
+	t.Helper()
+	got, err := GetByString(obj, path)
+	require.NoError(t, err)
+	require.Equal(t, want, got)
 }
 
 type inner struct {
@@ -332,9 +341,7 @@ func runOmitEmptyTests(t *testing.T, obj any, wantNil bool) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetByString(obj, tt.path)
-			require.NoError(t, err)
-			require.Equal(t, tt.want, got)
+			testGet(t, obj, tt.path, tt.want)
 		})
 	}
 }
@@ -360,16 +367,12 @@ func TestGet_Embedded_ValueAnonymousResolved(t *testing.T) {
 	}
 	in := host{embedded: embedded{Hidden: "x"}}
 	require.NoError(t, ValidateByString(reflect.TypeOf(in), "hidden"))
-	got, err := GetByString(in, "hidden")
-	require.NoError(t, err)
-	require.Equal(t, "x", got)
+	testGet(t, in, "hidden", "x")
 }
 
 func TestGet_InterfaceRoot_Unwraps(t *testing.T) {
 	v := any(makeOuterNoFSF())
-	got, err := GetByString(v, "items[0].id")
-	require.NoError(t, err)
-	require.Equal(t, "i0", got)
+	testGet(t, v, "items[0].id", "i0")
 }
 
 func TestGet_BundleTag_SkipsDirect(t *testing.T) {
@@ -389,9 +392,7 @@ func TestGet_BundleTag_SkipsDirect(t *testing.T) {
 	require.EqualError(t, ValidateByString(reflect.TypeOf(S{}), "b"), "b: field \"b\" not found in structaccess.S")
 
 	// Visible field works
-	v, err := GetByString(S{C: "z"}, "c")
-	require.NoError(t, err)
-	require.Equal(t, "z", v)
+	testGet(t, S{C: "z"}, "c", "z")
 	require.NoError(t, ValidateByString(reflect.TypeOf(S{}), "c"))
 }
 
@@ -406,4 +407,296 @@ func TestGet_BundleTag_SkipsPromoted(t *testing.T) {
 	_, err := GetByString(host{embedded: embedded{Hidden: "x"}}, "hidden")
 	require.EqualError(t, err, "hidden: field \"hidden\" not found in structaccess.host")
 	require.EqualError(t, ValidateByString(reflect.TypeOf(host{}), "hidden"), "hidden: field \"hidden\" not found in structaccess.host")
+}
+
+func TestGet_EmbeddedStructForceSendFields(t *testing.T) {
+	type Inner struct {
+		InnerFieldOmit   string   `json:"inner_field_omit,omitempty"`
+		InnerFieldNoOmit string   `json:"inner_field_no_omit"`
+		ForceSendFields  []string `json:"-"`
+	}
+
+	type Outer struct {
+		OuterFieldOmit   string `json:"outer_field_omit,omitempty"`
+		OuterFieldNoOmit string `json:"outer_field_no_omit"`
+		Inner
+	}
+
+	objWithOuterFSF := Outer{
+		OuterFieldOmit:   "",
+		OuterFieldNoOmit: "",
+		Inner: Inner{
+			InnerFieldOmit:   "",
+			InnerFieldNoOmit: "",
+			// Presence of "OuterFieldOmit" does not have any effect
+			// on OuterFieldOmit because it's in the wrong struct
+			ForceSendFields: []string{"OuterFieldOmit"},
+		},
+	}
+
+	testGet(t, objWithOuterFSF, "outer_field_omit", nil)
+	testGet(t, objWithOuterFSF, "outer_field_no_omit", "")
+	testGet(t, objWithOuterFSF, "inner_field_omit", nil)
+	testGet(t, objWithOuterFSF, "inner_field_no_omit", "")
+
+	objWithInnerFSF := Outer{
+		OuterFieldOmit:   "",
+		OuterFieldNoOmit: "",
+		Inner: Inner{
+			InnerFieldOmit:   "",
+			InnerFieldNoOmit: "",
+			ForceSendFields:  []string{"InnerFieldOmit"},
+		},
+	}
+
+	testGet(t, objWithInnerFSF, "outer_field_omit", nil)
+	testGet(t, objWithInnerFSF, "outer_field_no_omit", "")
+	testGet(t, objWithInnerFSF, "inner_field_omit", "")
+	testGet(t, objWithInnerFSF, "inner_field_no_omit", "")
+}
+
+func TestGet_MultipleEmbeddedStructsForceSendFields(t *testing.T) {
+	type First struct {
+		FirstFieldOmit   string   `json:"first_field_omit,omitempty"`
+		FirstFieldNoOmit string   `json:"first_field_no_omit"`
+		ForceSendFields  []string `json:"-"`
+	}
+
+	type Second struct {
+		SecondFieldOmit   string   `json:"second_field_omit,omitempty"`
+		SecondFieldNoOmit string   `json:"second_field_no_omit"`
+		ForceSendFields   []string `json:"-"`
+	}
+
+	type Outer struct {
+		OuterFieldOmit   string `json:"outer_field_omit,omitempty"`
+		OuterFieldNoOmit string `json:"outer_field_no_omit"`
+		First
+		Second
+	}
+
+	objWithFirstFSF := Outer{
+		OuterFieldOmit:   "",
+		OuterFieldNoOmit: "",
+		First: First{
+			FirstFieldOmit:   "",
+			FirstFieldNoOmit: "",
+			ForceSendFields:  []string{"FirstFieldOmit"},
+		},
+		Second: Second{
+			SecondFieldOmit:   "",
+			SecondFieldNoOmit: "",
+		},
+	}
+
+	testGet(t, objWithFirstFSF, "outer_field_omit", nil)
+	testGet(t, objWithFirstFSF, "outer_field_no_omit", "")
+	testGet(t, objWithFirstFSF, "first_field_omit", "")
+	testGet(t, objWithFirstFSF, "first_field_no_omit", "")
+	testGet(t, objWithFirstFSF, "second_field_omit", nil)
+	testGet(t, objWithFirstFSF, "second_field_no_omit", "")
+
+	objWithSecondFSF := Outer{
+		OuterFieldOmit:   "",
+		OuterFieldNoOmit: "",
+		First: First{
+			FirstFieldOmit:   "",
+			FirstFieldNoOmit: "",
+		},
+		Second: Second{
+			SecondFieldOmit:   "",
+			SecondFieldNoOmit: "",
+			ForceSendFields:   []string{"SecondFieldOmit"},
+		},
+	}
+
+	testGet(t, objWithSecondFSF, "outer_field_omit", nil)
+	testGet(t, objWithSecondFSF, "outer_field_no_omit", "")
+	testGet(t, objWithSecondFSF, "first_field_omit", nil)
+	testGet(t, objWithSecondFSF, "first_field_no_omit", "")
+	testGet(t, objWithSecondFSF, "second_field_omit", "")
+	testGet(t, objWithSecondFSF, "second_field_no_omit", "")
+}
+
+func TestGet_MixedForceSendFields(t *testing.T) {
+	type First struct {
+		FirstFieldOmit   string `json:"first_field_omit,omitempty"`
+		FirstFieldNoOmit string `json:"first_field_no_omit"`
+	}
+
+	type Second struct {
+		SecondFieldOmit   string   `json:"second_field_omit,omitempty"`
+		SecondFieldNoOmit string   `json:"second_field_no_omit"`
+		ForceSendFields   []string `json:"-"`
+	}
+
+	type Outer struct {
+		OuterFieldOmit   string   `json:"outer_field_omit,omitempty"`
+		OuterFieldNoOmit string   `json:"outer_field_no_omit"`
+		ForceSendFields  []string `json:"-"`
+		First
+		Second
+	}
+
+	objWithOuterFSF := Outer{
+		OuterFieldOmit:   "",
+		OuterFieldNoOmit: "",
+		ForceSendFields:  []string{"OuterFieldOmit"},
+		First: First{
+			FirstFieldOmit:   "",
+			FirstFieldNoOmit: "",
+		},
+		Second: Second{
+			SecondFieldOmit:   "",
+			SecondFieldNoOmit: "",
+		},
+	}
+
+	testGet(t, objWithOuterFSF, "outer_field_omit", "")
+	testGet(t, objWithOuterFSF, "outer_field_no_omit", "")
+	testGet(t, objWithOuterFSF, "first_field_omit", nil)
+	testGet(t, objWithOuterFSF, "first_field_no_omit", "")
+	testGet(t, objWithOuterFSF, "second_field_omit", nil)
+	testGet(t, objWithOuterFSF, "second_field_no_omit", "")
+
+	objWithSecondFSF := Outer{
+		OuterFieldOmit:   "",
+		OuterFieldNoOmit: "",
+		First: First{
+			FirstFieldOmit:   "",
+			FirstFieldNoOmit: "",
+		},
+		Second: Second{
+			SecondFieldOmit:   "",
+			SecondFieldNoOmit: "",
+			ForceSendFields:   []string{"SecondFieldOmit"},
+		},
+	}
+
+	testGet(t, objWithSecondFSF, "outer_field_omit", nil)
+	testGet(t, objWithSecondFSF, "outer_field_no_omit", "")
+	testGet(t, objWithSecondFSF, "first_field_omit", nil)
+	testGet(t, objWithSecondFSF, "first_field_no_omit", "")
+	testGet(t, objWithSecondFSF, "second_field_omit", "")
+	testGet(t, objWithSecondFSF, "second_field_no_omit", "")
+}
+
+func TestGet_FieldByNameBugRegressionTest(t *testing.T) {
+	type BaseResource struct {
+		ID string `json:"id,omitempty"`
+	}
+
+	type JobSettings struct {
+		Name            string   `json:"name"`
+		ForceSendFields []string `json:"-"`
+	}
+
+	type Job struct {
+		BaseResource
+		JobSettings
+		PermissionsOmit   []string `json:"permissions_omit,omitempty"`
+		PermissionsNoOmit []string `json:"permissions_no_omit"`
+	}
+
+	objWithNameValue := Job{
+		BaseResource: BaseResource{
+			ID: "resource_id",
+		},
+		JobSettings: JobSettings{
+			Name:            "test-job",
+			ForceSendFields: []string{"Name"},
+		},
+		PermissionsOmit:   []string{"read", "write"},
+		PermissionsNoOmit: []string{"read", "write"},
+	}
+
+	testGet(t, objWithNameValue, "id", "resource_id")
+	testGet(t, objWithNameValue, "name", "test-job")
+	testGet(t, objWithNameValue, "permissions_omit", []string{"read", "write"})
+	testGet(t, objWithNameValue, "permissions_no_omit", []string{"read", "write"})
+
+	objWithEmptyFields := Job{
+		BaseResource: BaseResource{
+			ID: "",
+		},
+		JobSettings: JobSettings{
+			Name:            "",
+			ForceSendFields: []string{"Name"},
+		},
+		PermissionsOmit:   []string{},
+		PermissionsNoOmit: []string{},
+	}
+
+	testGet(t, objWithEmptyFields, "id", nil)
+	testGet(t, objWithEmptyFields, "name", "")
+	testGet(t, objWithEmptyFields, "permissions_omit", nil)
+	testGet(t, objWithEmptyFields, "permissions_no_omit", []string{})
+}
+
+func TestGet_PointerToStructWithZeroValues(t *testing.T) {
+	type NestedStruct struct {
+		ID    int64  `json:"id"`
+		Name  string `json:"name"`
+		Count int    `json:"count"`
+	}
+
+	type Container struct {
+		// Pointer with omitempty - this is the key case
+		NestedOmit *NestedStruct `json:"nested_omit,omitempty"`
+		// Pointer without omitempty for comparison
+		NestedNoOmit *NestedStruct `json:"nested_no_omit"`
+	}
+
+	// Test case: explicitly set pointer to struct with zero values
+	obj := Container{
+		NestedOmit:   &NestedStruct{ID: 0, Name: "", Count: 0}, // All zero values but pointer is explicitly set
+		NestedNoOmit: &NestedStruct{ID: 0, Name: "", Count: 0},
+	}
+
+	// The pointer was explicitly set, so it should return the struct even with zero values
+	testGet(t, obj, "nested_omit", &NestedStruct{ID: 0, Name: "", Count: 0})
+	testGet(t, obj, "nested_omit.id", int64(0))
+	testGet(t, obj, "nested_omit.name", "")
+	testGet(t, obj, "nested_omit.count", 0)
+
+	// Non-omit field should definitely work
+	testGet(t, obj, "nested_no_omit", &NestedStruct{ID: 0, Name: "", Count: 0})
+	testGet(t, obj, "nested_no_omit.id", int64(0))
+
+	// Test case: nil pointer should return nil
+	objNil := Container{
+		NestedOmit:   nil,
+		NestedNoOmit: nil,
+	}
+	testGet(t, objNil, "nested_omit", nil)
+	testGet(t, objNil, "nested_no_omit", nil)
+}
+
+func TestGetJobSettings(t *testing.T) {
+	jobSettings := jobs.JobSettings{
+		Name: "job foo",
+		// Tasks []Task `json:"tasks,omitempty"`
+		Tasks: []jobs.Task{
+			{
+				TaskKey: "job_task",
+				// RunJobTask *RunJobTask `json:"run_job_task,omitempty"`
+				RunJobTask: &jobs.RunJobTask{
+					// JobId int64 `json:"job_id"`
+					JobId: 0,
+				},
+			},
+		},
+	}
+
+	testGet(t, &jobSettings, "tasks[0].run_job_task", &jobs.RunJobTask{})
+	testGet(t, &jobSettings, "tasks[0].run_job_task.job_id", int64(0))
+}
+
+func TestPipeline(t *testing.T) {
+	p := pipelines.CreatePipeline{}
+
+	v, err := GetByString(&p, "ingestion_definition.connectin_name")
+	require.Error(t, err)
+	require.Equal(t, "ingestion_definition: cannot access nil value", err.Error())
+	require.Nil(t, v)
 }
