@@ -78,7 +78,7 @@ type IResourceNoRefresh interface {
 	WaitAfterUpdate(ctx context.Context, newState any) error
 
 	// [Optional] ClassifyChange classifies a set of changes using custom logic.
-	ClassifyChange(change structdiff.Change, remoteState any) deployplan.ActionType
+	ClassifyChange(change structdiff.Change, remoteState any) (deployplan.ActionType, error)
 }
 
 // IResourceWithRefresh is an alternative to IResourceNoRefresh but every method can return remoteState.
@@ -95,9 +95,6 @@ type IResourceWithRefresh interface {
 
 	// Optional: updates that may change ID. Returns new id and remote state when available.
 	DoUpdateWithID(ctx context.Context, id string, newState any) (newID string, remoteState any, e error)
-
-	// [Optional] DoResize resizes the resource. Only supported by clusters
-	DoResize(ctx context.Context, id string, newState any) (remoteState any, e error)
 
 	// WaitAfterCreate waits for the resource to become ready after creation.
 	WaitAfterCreate(ctx context.Context, newState any) (newRemoteState any, e error)
@@ -244,7 +241,7 @@ func (a *Adapter) initMethods(resource any) error {
 		return err
 	}
 
-	a.doResize, err = prepareCallFromTwoVariants(resource, "DoResize")
+	a.doResize, err = calladapt.PrepareCall(resource, calladapt.TypeOf[IResourceNoRefresh](), "DoResize")
 	if err != nil {
 		return err
 	}
@@ -311,9 +308,6 @@ func (a *Adapter) validate() error {
 
 	if a.doResize != nil {
 		validations = append(validations, "DoResize newState", a.doResize.InTypes[2], stateType)
-		if len(a.doUpdate.OutTypes) == 2 {
-			validations = append(validations, "DoResize remoteState return", a.doUpdate.OutTypes[0], remoteType)
-		}
 	}
 
 	if a.doUpdateWithID != nil {
@@ -482,21 +476,13 @@ func (a *Adapter) DoUpdateWithID(ctx context.Context, oldID string, newState any
 	}
 }
 
-func (a *Adapter) DoResize(ctx context.Context, id string, newState any) (any, error) {
+func (a *Adapter) DoResize(ctx context.Context, id string, newState any) error {
 	if a.doResize == nil {
-		return nil, errors.New("internal error: DoResize not found")
+		return errors.New("internal error: DoResize not found")
 	}
 
-	outs, err := a.doResize.Call(ctx, id, newState)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(outs) == 1 {
-		return outs[0], nil
-	} else {
-		return nil, nil
-	}
+	_, err := a.doResize.Call(ctx, id, newState)
+	return err
 }
 
 // ClassifyByTriggers classifies a single using FieldTriggers.
@@ -553,23 +539,23 @@ func (a *Adapter) WaitAfterUpdate(ctx context.Context, newState any) (any, error
 	}
 }
 
-func (a *Adapter) ClassifyChange(change structdiff.Change, remoteState any) deployplan.ActionType {
+func (a *Adapter) ClassifyChange(change structdiff.Change, remoteState any) (deployplan.ActionType, error) {
 	// If ClassifyChange is not implemented, use FieldTriggers.
 	if a.classifyChange == nil {
-		return a.ClassifyByTriggers(change)
+		return a.ClassifyByTriggers(change), nil
 	}
 
 	outs, err := a.classifyChange.Call(change, remoteState)
 	if err != nil {
-		return deployplan.ActionTypeSkip
+		return deployplan.ActionTypeSkip, err
 	}
 
 	actionType := outs[0].(deployplan.ActionType)
 	// If the action type is unset, use FieldTriggers.
 	if actionType == deployplan.ActionTypeUnset {
-		return a.ClassifyByTriggers(change)
+		return a.ClassifyByTriggers(change), nil
 	}
-	return actionType
+	return actionType, nil
 }
 
 // prepareCallRequired prepares a call and ensures the method is found.

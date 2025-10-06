@@ -1,0 +1,58 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm out.requests.txt
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+
+title "Cluster should exist with num_workers after bundle deployment:\n"
+CLUSTER_ID=$($CLI bundle summary -o json | jq -r '.resources.clusters.test_cluster.id')
+$CLI clusters get "${CLUSTER_ID}" | jq '{cluster_name,num_workers,autoscale}'
+
+title "Adding autoscale section should call update API on stopped cluster\n"
+update_file.py databricks.yml "      num_workers: 2" "      autoscale:
+        min_workers: 2
+        max_workers: 4"
+trace $CLI bundle deploy
+trace jq 'select(.method == "POST" and (.path | contains("/clusters/edit")))' out.requests.txt
+rm out.requests.txt
+
+title "Cluster should have autoscale\n"
+$CLI clusters get "${CLUSTER_ID}" | jq '{cluster_name,num_workers,autoscale}'
+
+title "Changing autoscale should call update API on stopped cluster\n"
+update_file.py databricks.yml "min_workers: 2" "min_workers: 3"
+update_file.py databricks.yml "max_workers: 4" "max_workers: 5"
+trace $CLI bundle deploy
+trace jq 'select(.method == "POST" and (.path | contains("/clusters/edit")))' out.requests.txt
+rm out.requests.txt
+
+title "Cluster should have new autoscale\n"
+$CLI clusters get "${CLUSTER_ID}" | jq '{cluster_name,num_workers,autoscale}'
+
+title "Starting the cluster\n"
+$CLI clusters start "${CLUSTER_ID}"
+
+title "Changing autoscale should call resize API on running cluster\n"
+update_file.py databricks.yml "min_workers: 3" "min_workers: 4"
+update_file.py databricks.yml "max_workers: 5" "max_workers: 6"
+trace $CLI bundle deploy
+trace jq 'select(.method == "POST" and (.path | contains("/clusters/resize")))' out.requests.txt
+rm out.requests.txt
+
+title "Cluster should have new autoscale\n"
+$CLI clusters get "${CLUSTER_ID}" | jq '{cluster_name,num_workers,autoscale}'
+
+title "Removing autoscale section should call resize API\n"
+update_file.py databricks.yml "      autoscale:
+        min_workers: 4
+        max_workers: 6" "      num_workers: 3"
+trace $CLI bundle deploy
+trace jq 'select(.method == "POST" and (.path | contains("/clusters/resize")))' out.requests.txt
+rm out.requests.txt
+
+title "Cluster should have num_workers\n"
+$CLI clusters get "${CLUSTER_ID}" | jq '{cluster_name,num_workers,autoscale}'

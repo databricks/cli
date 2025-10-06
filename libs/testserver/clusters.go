@@ -46,6 +46,7 @@ func (s *FakeWorkspace) ClustersResize(req Request) any {
 	}
 
 	cluster.NumWorkers = request.NumWorkers
+	cluster.Autoscale = request.Autoscale
 	s.Clusters[request.ClusterId] = cluster
 
 	return Response{}

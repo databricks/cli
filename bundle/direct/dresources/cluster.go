@@ -2,6 +2,7 @@ package dresources
 
 import (
 	"context"
+	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
@@ -100,18 +101,18 @@ func (r *ResourceCluster) DoDelete(ctx context.Context, id string) error {
 	return r.client.Clusters.PermanentDeleteByClusterId(ctx, id)
 }
 
-func (r *ResourceCluster) ClassifyChange(change structdiff.Change, remoteState *compute.ClusterDetails) deployplan.ActionType {
+func (r *ResourceCluster) ClassifyChange(change structdiff.Change, remoteState *compute.ClusterDetails) (deployplan.ActionType, error) {
 	// Always update if the cluster is not running.
 	if remoteState.State != compute.StateRunning {
-		return deployplan.ActionTypeUpdate
+		return deployplan.ActionTypeUpdate, nil
 	}
 
 	changedPath := change.Path.String()
-	if changedPath == "num_workers" || changedPath == "autoscale" {
-		return deployplan.ActionTypeResize
+	if changedPath == "num_workers" || strings.HasPrefix(changedPath, "autoscale") {
+		return deployplan.ActionTypeResize, nil
 	}
 
-	return deployplan.ActionTypeUpdate
+	return deployplan.ActionTypeUpdate, nil
 }
 
 func makeCreateCluster(config *compute.ClusterSpec) compute.CreateCluster {

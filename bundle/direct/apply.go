@@ -189,14 +189,9 @@ func (d *DeploymentUnit) Delete(ctx context.Context, db *dstate.DeploymentState,
 }
 
 func (d *DeploymentUnit) Resize(ctx context.Context, db *dstate.DeploymentState, id string, newState any) error {
-	remoteState, err := d.Adapter.DoResize(ctx, id, newState)
+	err := d.Adapter.DoResize(ctx, id, newState)
 	if err != nil {
 		return fmt.Errorf("resizing id=%s: %w", id, err)
-	}
-
-	err = d.SetRemoteState(remoteState)
-	if err != nil {
-		return err
 	}
 
 	err = db.SaveState(d.ResourceKey, id, newState)

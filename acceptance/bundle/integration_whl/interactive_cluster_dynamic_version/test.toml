@@ -1,5 +1,3 @@
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform"]  # clusters not implemented
-
 [EnvMatrix]
 DATA_SECURITY_MODE = [
     "USER_ISOLATION",
