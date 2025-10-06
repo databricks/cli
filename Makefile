@@ -8,35 +8,39 @@ GOTESTSUM_CMD ?= ${GO_TOOL} gotestsum --format ${GOTESTSUM_FORMAT} --no-summary=
 LOCAL_TIMEOUT ?= 30m
 
 
-lintfull:
-	${GO_TOOL} golangci-lint run --fix
+lintfull: ./tools/golangci-lint
+	./tools/golangci-lint run --fix
 
-lint:
-	./tools/lintdiff.py run --fix
+lint: ./tools/golangci-lint
+	./tools/lintdiff.py ./tools/golangci-lint run --fix
 
 tidy:
 	@# not part of golangci-lint, apparently
 	go mod tidy
 
-lintcheck:
-	${GO_TOOL} golangci-lint run ./...
+lintcheck: ./tools/golangci-lint
+	./tools/golangci-lint run ./...
 
 fmtfull:
 	ruff format -n
-	${GO_TOOL} golangci-lint fmt
+	./tools/golangci-lint fmt
 	./tools/yamlfmt .
 
-fmt:
+fmt: ./tools/golangci-lint ./tools/yamlfmt
 	ruff format -n
-	./tools/lintdiff.py fmt
+	./tools/lintdiff.py ./tools/golangci-lint fmt
 	./tools/yamlfmt .
 
 # pre-building yamlfmt because it is invoked from tests and scripts
-tools/yamlfmt: tools/go.mod
+tools/yamlfmt: tools/go.mod tools/go.sum
 	go build -modfile=tools/go.mod -o tools/yamlfmt github.com/google/yamlfmt/cmd/yamlfmt
 
-tools/yamlfmt.exe: tools/go.mod
+tools/yamlfmt.exe: tools/go.mod tools/go.sum
 	go build -modfile=tools/go.mod -o tools/yamlfmt.exe github.com/google/yamlfmt/cmd/yamlfmt
+
+# pre-building golangci-lint because it's faster to run pre-built version
+tools/golangci-lint: tools/go.mod tools/go.sum
+	go build -modfile=tools/go.mod -o tools/golangci-lint github.com/golangci/golangci-lint/v2/cmd/golangci-lint
 
 ws:
 	./tools/validate_whitespace.py

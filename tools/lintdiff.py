@@ -46,11 +46,10 @@ def main():
     # Note: Paths are always relative to repo root, even when running from subdirectories.
     # Example: Running from tools/ returns 'tools/lintdiff.py' rather than just 'lintdiff.py'.
     changed = parse_lines(["git", "diff", "--name-only", args.ref, "--", "."])
-    base_cmd = ["go", "tool", "-modfile=tools/go.mod", "golangci-lint"]
 
-    if changed is None:
-        cmd = base_cmd + args.args
-    else:
+    cmd = args.args[:]
+
+    if changed is not None:
         # We need to pass packages to golangci-lint, not individual files.
         # QQQ for lint we should also pass all dependent packages
         dirs = set()
@@ -66,7 +65,7 @@ def main():
         if not dirs:
             sys.exit(0)
 
-        cmd = base_cmd + args.args + dirs
+        cmd += dirs
 
     print("+ " + " ".join(cmd), file=sys.stderr, flush=True)
     os.execvp(cmd[0], cmd)
