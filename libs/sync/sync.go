@@ -78,14 +78,9 @@ func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 		return nil, err
 	}
 
-	var excludeFileSet *fileset.FileSet
-	if len(opts.Exclude) > 0 {
-		excludeFileSet, err = fileset.NewGlobSet(opts.LocalRoot, opts.Exclude)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		excludeFileSet = fileset.Empty()
+	excludeFileSet, err := fileset.NewGlobSet(opts.LocalRoot, opts.Exclude)
+	if err != nil {
+		return nil, err
 	}
 
 	// Verify that the remote path we're about to synchronize to is valid and allowed.
