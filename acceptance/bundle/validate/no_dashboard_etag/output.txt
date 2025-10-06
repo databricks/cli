@@ -1,6 +1,6 @@
 
 >>> [CLI] bundle validate
-Error: dashboard "foobar" has an etag set. Etags should not be set in bundle configuration
+Error: dashboard "foobar" has an etag set. Etags must not be set in bundle configuration
   at resources.dashboards.foobar
   in databricks.yml:6:7
 
