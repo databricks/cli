@@ -15,10 +15,9 @@ trace $CLI bundle deploy -t dev
 jq -c < ../../out.requests.txt | sort | jq 'select(.method != "GET" and (.path | contains("/import-file/") | not) and (.path | contains("/telemetry-ext") | not))' > ../../out.requests.dev.$DATABRICKS_BUNDLE_ENGINE.txt
 
 rm ../../out.requests.txt
-# TODO: fails on testserver with 501 Not Implemented on PUT [DATABRICKS_URL]/api/2.0/permissions/directories/0
-#trace errcode $CLI bundle deploy -t prod
-#jq -c < ../../out.requests.txt | sort | jq 'select(.method != "GET" and (.path | contains("/import-file/") | not) and (.path | contains("/telemetry-ext") | not))' > ../../out.requests.prod.$DATABRICKS_BUNDLE_ENGINE.txt
-#rm ../../out.requests.txt
+trace $CLI bundle deploy -t prod
+jq -c < ../../out.requests.txt | sort | jq 'select(.method != "GET" and (.path | contains("/import-file/") | not) and (.path | contains("/telemetry-ext") | not))' > ../../out.requests.prod.$DATABRICKS_BUNDLE_ENGINE.txt
+rm ../../out.requests.txt
 
 # Do not affect this repository's git behaviour #2318
 mv .gitignore out.gitignore

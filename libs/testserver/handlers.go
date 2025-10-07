@@ -160,24 +160,6 @@ func AddDefaultHandlers(server *Server) {
 		return TestMetastore
 	})
 
-	server.Handle("GET", "/api/2.0/permissions/directories/{objectId}", func(req Request) any {
-		objectId := req.Vars["objectId"]
-		return workspace.WorkspaceObjectPermissions{
-			ObjectId:   objectId,
-			ObjectType: "DIRECTORY",
-			AccessControlList: []workspace.WorkspaceObjectAccessControlResponse{
-				{
-					UserName: "tester@databricks.com",
-					AllPermissions: []workspace.WorkspaceObjectPermission{
-						{
-							PermissionLevel: "CAN_MANAGE",
-						},
-					},
-				},
-			},
-		}
-	})
-
 	server.Handle("POST", "/api/2.2/jobs/create", func(req Request) any {
 		return req.Workspace.JobsCreate(req)
 	})
@@ -550,14 +532,6 @@ func AddDefaultHandlers(server *Server) {
 		return MapDelete(req.Workspace, req.Workspace.SyncedDatabaseTables, req.Vars["name"])
 	})
 
-	server.Handle("PUT", "/api/2.0/permissions/jobs/{job_id}", func(req Request) any {
-		return req.Workspace.JobsUpdatePermissions(req, req.Vars["job_id"])
-	})
-
-	server.Handle("GET", "/api/2.0/permissions/jobs/{job_id}", func(req Request) any {
-		return req.Workspace.JobsGetPermissions(req, req.Vars["job_id"])
-	})
-
 	// MLflow Experiments:
 	server.Handle("GET", "/api/2.0/mlflow/experiments/get", func(req Request) any {
 		experimentId := req.URL.Query().Get("experiment_id")
@@ -598,5 +572,14 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("DELETE", "/api/2.0/mlflow/registered-models/delete", func(req Request) any {
 		return MapDelete(req.Workspace, req.Workspace.ModelRegistryModels, req.URL.Query().Get("name"))
+	})
+
+	// Generic permissions endpoints
+	server.Handle("GET", "/api/2.0/permissions/{object_type}/{object_id}", func(req Request) any {
+		return req.Workspace.GetPermissions(req)
+	})
+
+	server.Handle("PUT", "/api/2.0/permissions/{object_type}/{object_id}", func(req Request) any {
+		return req.Workspace.SetPermissions(req)
 	})
 }
