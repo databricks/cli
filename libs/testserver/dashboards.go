@@ -53,6 +53,7 @@ func (s *FakeWorkspace) DashboardCreate(req Request) Response {
 		Info: workspace.ObjectInfo{
 			ObjectType: "DASHBOARD",
 			Path:       dashboard.Path,
+			ObjectId:   nextID(),
 		},
 		Data: []byte(dashboard.SerializedDashboard),
 	}
