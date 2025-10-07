@@ -19,7 +19,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"sync"
+	"sync/atomic"
 	"syscall"
 )
 
@@ -72,9 +72,7 @@ func main() {
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
 
-	var configContent string
-	var configReady bool
-	var configMux sync.Mutex
+	var configContent atomic.Value
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -82,15 +80,11 @@ func main() {
 	// Start background config download
 	go func() {
 		content, err := downloadConfig(ctx)
-		configMux.Lock()
-		defer configMux.Unlock()
 		if err != nil {
 			fmt.Printf("testrunner: Failed to download %s: %v\n", repoConfigURL, err)
-			configContent = ""
 		} else {
-			configContent = content
+			configContent.Store(content)
 		}
-		configReady = true
 	}()
 
 	// Run the main command
@@ -111,17 +105,14 @@ func main() {
 	}
 
 	// Check if config is ready
-	configMux.Lock()
-	ready := configReady
-	content := configContent
-	configMux.Unlock()
+	content := configContent.Load()
 
-	if !ready {
+	if content == "" {
 		fmt.Printf("CI config download not completed, propagating exit code %d", exitCode)
 		os.Exit(exitCode)
 	}
 
-	config, err := parseConfig(content)
+	config, err := parseConfig(content.(string))
 	if err != nil {
 		fmt.Printf("Error parsing CI config: %v\n", err)
 		os.Exit(exitCode)
