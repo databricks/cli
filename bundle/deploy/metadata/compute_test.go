@@ -87,7 +87,6 @@ func TestComputeMetadataMutator(t *testing.T) {
 					Commit:         "abcd",
 					BundleRootPath: "a/b/c/d",
 				},
-				SourceLinked: false,
 			},
 			Resources: metadata.Resources{
 				Jobs: map[string]*metadata.Resource{
@@ -111,6 +110,9 @@ func TestComputeMetadataMutator(t *testing.T) {
 					},
 				},
 			},
+		},
+		Extra: metadata.Extra{
+			SourceLinked: false,
 		},
 	}
 
@@ -139,10 +141,10 @@ func TestComputeMetadataMutatorSourceLinked(t *testing.T) {
 	require.NoError(t, diags.Error())
 
 	assert.Equal(t, syncRootPath, b.Metadata.Config.Workspace.FilePath)
-	assert.True(t, b.Metadata.Config.Bundle.SourceLinked)
+	assert.True(t, b.Metadata.Extra.SourceLinked)
 }
 
-func TestComputeMetadataMutatorWorkspaceGitFolder(t *testing.T) {
+func TestComputeMetadataMutatorGitFolderPath(t *testing.T) {
 	// The native path of the worktree root on Windows will never match the /Workspace prefix,
 	// so `GitFolderPath` will never be set and this test will never pass
 	if runtime.GOOS == "windows" {
@@ -158,5 +160,5 @@ func TestComputeMetadataMutatorWorkspaceGitFolder(t *testing.T) {
 	diags := bundle.Apply(context.Background(), b, Compute())
 	require.NoError(t, diags.Error())
 
-	assert.Equal(t, gitFolderPath, b.Metadata.Config.Workspace.GitFolderPath)
+	assert.Equal(t, gitFolderPath, b.Metadata.Extra.GitFolderPath)
 }

@@ -7,13 +7,11 @@ import (
 const Version = 1
 
 type Bundle struct {
-	Git          config.Git `json:"git,omitempty"`
-	SourceLinked bool       `json:"source_linked"`
+	Git config.Git `json:"git,omitempty"`
 }
 
 type Workspace struct {
-	FilePath      string `json:"file_path"`
-	GitFolderPath string `json:"git_folder_path,omitempty"`
+	FilePath string `json:"file_path"`
 }
 
 type Resource struct {
@@ -35,6 +33,11 @@ type Config struct {
 	Resources Resources `json:"resources,omitempty"`
 }
 
+type Extra struct {
+	SourceLinked  bool   `json:"source_linked"`
+	GitFolderPath string `json:"git_folder_path,omitempty"`
+}
+
 // Metadata about the bundle deployment. This is the interface Databricks services
 // rely on to integrate with bundles when they need additional information about
 // a bundle deployment.
@@ -45,4 +48,6 @@ type Metadata struct {
 	Version int `json:"version"`
 
 	Config Config `json:"config"`
+	// Fields that don't map 1-to-1 with the bundle configuration schema
+	Extra Extra `json:"extra"`
 }
