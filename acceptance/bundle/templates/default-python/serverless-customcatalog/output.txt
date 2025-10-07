@@ -1,81 +1,12 @@
 
 >>> [CLI] bundle init default-python --config-file [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/input.json --output-dir output
-Welcome to the experimental "vNext" default Python template for Databricks Asset Bundles!
-
-⚠️  EXPERIMENTAL: This template is experimental and may be removed or changed without notice.
+Welcome to the default Python template for Databricks Asset Bundles!
 
 Please answer the below to tailor your project to your preferences.
 You can always change your mind and change your configuration in the databricks.yml file later.
 
 Note that [DATABRICKS_URL] is used for initialization
 (see https://docs.databricks.com/dev-tools/cli/profiles.html for how to change your profile).
+Error: failed to compute file content for __preamble.tmpl. variable "lakeflow_only" not defined
 
-✨ Your new project has been created in the 'my_default_python' directory!
-
-Please refer to the README.md file for "getting started" instructions.
-See also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
-
->>> diff.py [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/output output/
---- [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/output/my_default_python/databricks.yml
-+++ output/my_default_python/databricks.yml
-@@ -32,5 +32,5 @@
-       host: [DATABRICKS_URL]
-     variables:
--      catalog: hive_metastore
-+      catalog: customcatalog
-       schema: ${workspace.current_user.short_name}
-   prod:
-@@ -41,5 +41,5 @@
-       root_path: /Workspace/Users/[USERNAME]/.bundle/${bundle.name}/${bundle.target}
-     variables:
--      catalog: hive_metastore
-+      catalog: customcatalog
-       schema: prod
-     permissions:
---- [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/output/my_default_python/resources/default_python_etl.pipeline.yml
-+++ output/my_default_python/resources/default_python_etl.pipeline.yml
-@@ -5,5 +5,4 @@
-     default_python_etl:
-       name: default_python_etl
--      ## Catalog is required for serverless compute
-       catalog: ${var.catalog}
-       schema: ${var.schema}
---- [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/output/my_default_python/src/default_python_etl/explorations/sample_exploration.ipynb
-+++ output/my_default_python/src/default_python_etl/explorations/sample_exploration.ipynb
-@@ -38,5 +38,5 @@
-     "# !!! Before performing any data analysis, make sure to run the pipeline to materialize the sample datasets. The tables referenced in this notebook depend on that step./n",
-     "/n",
--    "display(spark.sql(/"SELECT * FROM hive_metastore.[USERNAME].sample_trips_my_default_python/"))"
-+    "display(spark.sql(/"SELECT * FROM customcatalog.[USERNAME].sample_trips_my_default_python/"))"
-    ]
-   }
---- [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/output/my_default_python/src/sample_notebook.ipynb
-+++ output/my_default_python/src/sample_notebook.ipynb
-@@ -82,9 +82,9 @@
-    "widgets": {
-     "catalog": {
--     "currentValue": "hive_metastore",
-+     "currentValue": "customcatalog",
-      "nuid": "c4t4l0g-w1dg-3t12-3456-[NUMID]",
-      "typedWidgetInfo": {
-       "autoCreated": false,
--      "defaultValue": "hive_metastore",
-+      "defaultValue": "customcatalog",
-       "label": "Catalog",
-       "name": "catalog",
-@@ -97,5 +97,5 @@
-      "widgetInfo": {
-       "widgetType": "text",
--      "defaultValue": "hive_metastore",
-+      "defaultValue": "customcatalog",
-       "label": "Catalog",
-       "name": "catalog",
---- [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/output/my_default_python/src/sample_python_file.py
-+++ output/my_default_python/src/sample_python_file.py
-@@ -6,5 +6,5 @@
- def main():
-     parser = argparse.ArgumentParser()
--    parser.add_argument("--catalog", default="hive_metastore")
-+    parser.add_argument("--catalog", default="customcatalog")
-     parser.add_argument("--schema", default="default")
-     args = parser.parse_args()
+Exit code: 1
