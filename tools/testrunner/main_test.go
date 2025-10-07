@@ -42,6 +42,18 @@ func TestConfigRuleMatches(t *testing.T) {
 		// Empty values cases
 		{"* TestDeploy", "", "TestDeploy", true},
 		{"bundle *", "bundle", "", true},
+
+		// Subtest failure results in parent test failure as well. So we allow strict prefixes to fail as well
+		{"acceptance TestAccept/bundle/templates/default-python/combinations/classic", "acceptance", "TestAccept", true},
+		{"acceptance TestAccept/bundle/templates/default-python/combinations/classic", "acceptance", "TestAnother", false},
+		{"acceptance TestAccept/bundle/templates/default-python/combinations/classic", "acceptance", "TestAccept/bundle/templates/default-python/combinations/classic/x", false},
+
+		// pattern version
+		{"acceptance TestAccept/bundle/templates/default-python/combinations/classic/", "acceptance", "TestAccept", true},
+		{"acceptance TestAccept/bundle/templates/default-python/combinations/classic/", "acceptance", "TestAnother", false},
+		{"acceptance TestAccept/bundle/templates/default-python/combinations/classic/", "acceptance", "TestAccept/bundle/templates/default-python/combinations/classic/x", true},
+		{"acceptance TestAccept/bundle/templates/default-python/combinations/classic/", "acceptance", "TestAccept/bundle/templates/default-python/combinations/classic", true},
+		{"acceptance TestAccept/bundle/templates/default-python/combinations/classic/", "acceptance", "TestAccept/bundle/templates/default-python/combinations", true},
 	}
 
 	for _, tt := range tests {
