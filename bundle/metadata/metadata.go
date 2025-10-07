@@ -27,14 +27,18 @@ type Resources struct {
 	Pipelines map[string]*Resource `json:"pipelines,omitempty"`
 }
 
+type Presets struct {
+	SourceLinkedDeployment bool `json:"source_linked_deployment"`
+}
+
 type Config struct {
 	Bundle    Bundle    `json:"bundle,omitempty"`
 	Workspace Workspace `json:"workspace,omitempty"`
 	Resources Resources `json:"resources,omitempty"`
+	Presets   Presets   `json:"presets,omitempty"`
 }
 
 type Extra struct {
-	SourceLinked  bool   `json:"source_linked"`
 	GitFolderPath string `json:"git_folder_path,omitempty"`
 }
 

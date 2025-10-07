@@ -58,9 +58,6 @@ Deployment complete!
         }
       }
     }
-  },
-  "extra": {
-    "source_linked": false
   }
 }
 === Check that metadata contains created job ids

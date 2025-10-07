@@ -111,9 +111,6 @@ func TestComputeMetadataMutator(t *testing.T) {
 				},
 			},
 		},
-		Extra: metadata.Extra{
-			SourceLinked: false,
-		},
 	}
 
 	diags := bundle.Apply(context.Background(), b, Compute())
@@ -141,7 +138,7 @@ func TestComputeMetadataMutatorSourceLinked(t *testing.T) {
 	require.NoError(t, diags.Error())
 
 	assert.Equal(t, syncRootPath, b.Metadata.Config.Workspace.FilePath)
-	assert.True(t, b.Metadata.Extra.SourceLinked)
+	assert.True(t, b.Metadata.Config.Presets.SourceLinkedDeployment)
 }
 
 func TestComputeMetadataMutatorGitFolderPath(t *testing.T) {
