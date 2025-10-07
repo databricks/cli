@@ -160,24 +160,6 @@ func AddDefaultHandlers(server *Server) {
 		return TestMetastore
 	})
 
-	server.Handle("GET", "/api/2.0/permissions/directories/{objectId}", func(req Request) any {
-		objectId := req.Vars["objectId"]
-		return workspace.WorkspaceObjectPermissions{
-			ObjectId:   objectId,
-			ObjectType: "DIRECTORY",
-			AccessControlList: []workspace.WorkspaceObjectAccessControlResponse{
-				{
-					UserName: "tester@databricks.com",
-					AllPermissions: []workspace.WorkspaceObjectPermission{
-						{
-							PermissionLevel: "CAN_MANAGE",
-						},
-					},
-				},
-			},
-		}
-	})
-
 	server.Handle("POST", "/api/2.2/jobs/create", func(req Request) any {
 		return req.Workspace.JobsCreate(req)
 	})
@@ -222,19 +204,15 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("GET", "/oidc/.well-known/oauth-authorization-server", func(_ Request) any {
-		return map[string]string{
-			"authorization_endpoint": server.URL + "oidc/v1/authorize",
-			"token_endpoint":         server.URL + "/oidc/v1/token",
-		}
+		return server.fakeOidc.OidcEndpoints()
 	})
 
-	server.Handle("POST", "/oidc/v1/token", func(_ Request) any {
-		return map[string]string{
-			"access_token": "oauth-token",
-			"expires_in":   "3600",
-			"scope":        "all-apis",
-			"token_type":   "Bearer",
-		}
+	server.Handle("GET", "/oidc/v1/authorize", func(req Request) any {
+		return server.fakeOidc.OidcAuthorize(req)
+	})
+
+	server.Handle("POST", "/oidc/v1/token", func(req Request) any {
+		return server.fakeOidc.OidcToken(req)
 	})
 
 	server.Handle("POST", "/telemetry-ext", func(_ Request) any {
@@ -624,5 +602,14 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("DELETE", "/api/2.0/mlflow/registered-models/delete", func(req Request) any {
 		return MapDelete(req.Workspace, req.Workspace.ModelRegistryModels, req.URL.Query().Get("name"))
+	})
+
+	// Generic permissions endpoints
+	server.Handle("GET", "/api/2.0/permissions/{object_type}/{object_id}", func(req Request) any {
+		return req.Workspace.GetPermissions(req)
+	})
+
+	server.Handle("PUT", "/api/2.0/permissions/{object_type}/{object_id}", func(req Request) any {
+		return req.Workspace.SetPermissions(req)
 	})
 }

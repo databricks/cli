@@ -1,6 +1,3 @@
 Local = true
 Cloud = false
 RecordRequests = true
-
-[[Server]]
-Pattern = "PUT /api/2.0/permissions/directories/{objectId}"

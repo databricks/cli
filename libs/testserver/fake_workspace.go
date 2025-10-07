@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/database"
@@ -23,14 +24,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
-// 4611686018427387911 == 2 ** 62 + 7
-// 2305843009213693969 == 2 ** 61 + 17
-// This values cannot be represented by float64, so they can test incorrect use of json parsing
-// (encoding/json without options parses numbers into float64)
-// These are also easier to spot / replace in test output compared to numbers with one or few digits.
 const (
-	TestJobID                   = 4611686018427387911
-	TestRunID                   = 2305843009213693969
 	UserNameTokenPrefix         = "dbapi0"
 	ServicePrincipalTokenPrefix = "dbapi1"
 	UserID                      = "1000012345"
@@ -46,6 +40,29 @@ var TestUserSP = iam.User{
 	UserName: "aaaaaaaa-bbbb-4ccc-dddd-eeeeeeeeeeee",
 }
 
+var (
+	idMutex sync.Mutex
+	lastID  int64
+)
+
+// nextID returns nanosecond timestamp but strictly incremental
+// (saves last value, protects with mutex and ensures next value is at least last+1)
+// IDs are prefixed with 7 and padded to avoid matching regex 1[78]\d{14}
+func nextID() int64 {
+	idMutex.Lock()
+	defer idMutex.Unlock()
+
+	// offset enough so that it does not match UNIX_TIME_NANO regex
+	newid := time.Now().UnixNano() + 7000000000000000000
+	if newid <= lastID {
+		lastID++
+	} else {
+		lastID = newid
+	}
+
+	return lastID
+}
+
 type FileEntry struct {
 	Info workspace.ObjectInfo
 	Data []byte
@@ -57,13 +74,10 @@ type FakeWorkspace struct {
 	url                string
 	isServicePrincipal bool
 
-	directories  map[string]bool
+	directories  map[string]workspace.ObjectInfo
 	files        map[string]FileEntry
 	repoIdByPath map[string]int64
 
-	// normally, ids are not sequential, but we make them sequential for deterministic diff
-	nextJobId           int64
-	nextJobRunId        int64
 	Jobs                map[int64]jobs.Job
 	JobRuns             map[int64]jobs.Run
 	JobPermissions      map[string][]jobs.JobAccessControlRequest
@@ -85,8 +99,10 @@ type FakeWorkspace struct {
 
 	Acls map[string][]workspace.AclItem
 
-	nextRepoId int64
-	Repos      map[string]workspace.RepoInfo
+	// Generic permissions storage: key is "{object_type}:{object_id}"
+	Permissions map[string]iam.ObjectPermissions
+
+	Repos map[string]workspace.RepoInfo
 
 	DatabaseInstances    map[string]database.DatabaseInstance
 	DatabaseCatalogs     map[string]database.DatabaseCatalog
@@ -153,8 +169,12 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 	return &FakeWorkspace{
 		url:                url,
 		isServicePrincipal: strings.HasPrefix(token, ServicePrincipalTokenPrefix),
-		directories: map[string]bool{
-			"/Workspace": true,
+		directories: map[string]workspace.ObjectInfo{
+			"/Workspace": {
+				ObjectType: "DIRECTORY",
+				Path:       "/Workspace",
+				ObjectId:   nextID(),
+			},
 		},
 		files:        make(map[string]FileEntry),
 		repoIdByPath: make(map[string]int64),
@@ -163,8 +183,6 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		JobRuns:              map[int64]jobs.Run{},
 		JobPermissions:       map[string][]jobs.JobAccessControlRequest{},
 		SchemasGrants:        map[string][]catalog.PrivilegeAssignment{},
-		nextJobId:            TestJobID,
-		nextJobRunId:         TestRunID,
 		Pipelines:            map[string]pipelines.GetPipelineResponse{},
 		PipelineUpdates:      map[string]bool{},
 		Monitors:             map[string]catalog.MonitorInfo{},
@@ -177,6 +195,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		SqlWarehouses:        map[string]sql.GetWarehouseResponse{},
 		Repos:                map[string]workspace.RepoInfo{},
 		Acls:                 map[string][]workspace.AclItem{},
+		Permissions:          map[string]iam.ObjectPermissions{},
 		DatabaseInstances:    map[string]database.DatabaseInstance{},
 		DatabaseCatalogs:     map[string]database.DatabaseCatalog{},
 		SyncedDatabaseTables: map[string]database.SyncedDatabaseTable{},
@@ -198,12 +217,9 @@ func (s *FakeWorkspace) CurrentUser() iam.User {
 func (s *FakeWorkspace) WorkspaceGetStatus(path string) Response {
 	defer s.LockUnlock()()
 
-	if s.directories[path] {
+	if dirInfo, ok := s.directories[path]; ok {
 		return Response{
-			Body: &workspace.ObjectInfo{
-				ObjectType: "DIRECTORY",
-				Path:       path,
-			},
+			Body: &dirInfo,
 		}
 	} else if entry, ok := s.files[path]; ok {
 		return Response{
@@ -227,7 +243,11 @@ func (s *FakeWorkspace) WorkspaceGetStatus(path string) Response {
 
 func (s *FakeWorkspace) WorkspaceMkdirs(request workspace.Mkdirs) {
 	defer s.LockUnlock()()
-	s.directories[request.Path] = true
+	s.directories[request.Path] = workspace.ObjectInfo{
+		ObjectType: "DIRECTORY",
+		Path:       request.Path,
+		ObjectId:   nextID(),
+	}
 }
 
 func (s *FakeWorkspace) WorkspaceExport(path string) []byte {
@@ -278,6 +298,7 @@ func (s *FakeWorkspace) WorkspaceFilesImportFile(filePath string, body []byte, o
 				ObjectType: "NOTEBOOK",
 				Path:       workspacePath,
 				Language:   "PYTHON",
+				ObjectId:   nextID(),
 			},
 			Data: body,
 		}
@@ -289,6 +310,7 @@ func (s *FakeWorkspace) WorkspaceFilesImportFile(filePath string, body []byte, o
 			Info: workspace.ObjectInfo{
 				ObjectType: "FILE",
 				Path:       workspacePath,
+				ObjectId:   nextID(),
 			},
 			Data: body,
 		}
@@ -296,7 +318,13 @@ func (s *FakeWorkspace) WorkspaceFilesImportFile(filePath string, body []byte, o
 
 	// Add all directories in the path to the directories map
 	for dir := path.Dir(workspacePath); dir != "/"; dir = path.Dir(dir) {
-		s.directories[dir] = true
+		if _, exists := s.directories[dir]; !exists {
+			s.directories[dir] = workspace.ObjectInfo{
+				ObjectType: "DIRECTORY",
+				Path:       dir,
+				ObjectId:   nextID(),
+			}
+		}
 	}
 
 	return Response{}
