@@ -9,6 +9,7 @@ import (
 var SupportedResources = map[string]any{
 	"jobs":                   (*ResourceJob)(nil),
 	"pipelines":              (*ResourcePipeline)(nil),
+	"experiments":            (*ResourceExperiment)(nil),
 	"schemas":                (*ResourceSchema)(nil),
 	"volumes":                (*ResourceVolume)(nil),
 	"models":                 (*ResourceMlflowModel)(nil),
@@ -18,6 +19,7 @@ var SupportedResources = map[string]any{
 	"database_catalogs":      (*ResourceDatabaseCatalog)(nil),
 	"synced_database_tables": (*ResourceSyncedDatabaseTable)(nil),
 	"alerts":                 (*ResourceAlert)(nil),
+	"registered_models":      (*ResourceRegisteredModel)(nil),
 }
 
 func InitAll(client *databricks.WorkspaceClient) (map[string]*Adapter, error) {

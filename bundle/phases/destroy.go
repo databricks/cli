@@ -156,7 +156,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle) {
 			logdiag.LogError(ctx, err)
 			return
 		}
-		plan, err = b.DeploymentBundle.CalculatePlanForDestroy(ctx, b.WorkspaceClient())
+		plan, err = b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(), nil)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return

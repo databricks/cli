@@ -228,7 +228,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	cloudEnv := os.Getenv("CLOUD_ENV")
 
 	if cloudEnv == "" {
-		internal.StartDefaultServer(t)
+		internal.StartDefaultServer(t, LogRequests)
 		if os.Getenv("TEST_DEFAULT_WAREHOUSE_ID") == "" {
 			t.Setenv("TEST_DEFAULT_WAREHOUSE_ID", "8ec9edc1-db0c-40df-af8d-7580020fe61e")
 		}
