@@ -1,3 +1,4 @@
+# Code generated from jsonschema.json. DO NOT EDIT.
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, TypedDict
 
