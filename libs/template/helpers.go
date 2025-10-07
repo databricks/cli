@@ -52,6 +52,10 @@ var metastoreDisabledErrorCodes = []string{
 // is run and can be used to attribute DBU revenue to bundle templates.
 var bundleUuid = uuid.New().String()
 
+// latestStableEnvironmentVersion is the latest stable version for serverless environment.
+// This constant can be updated when a new environment version becomes the recommended default.
+const latestStableEnvironmentVersion = 2
+
 func loadHelpers(ctx context.Context) template.FuncMap {
 	w := cmdctx.WorkspaceClient(ctx)
 	return template.FuncMap{
@@ -180,6 +184,11 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 		},
 		"upper": func(s string) string {
 			return strings.ToUpper(s)
+		},
+		// Returns the latest stable recommended version for serverless environment.
+		// This can be updated in a single place when new environment versions roll out.
+		"latest_stable_environment_version": func() int {
+			return latestStableEnvironmentVersion
 		},
 	}
 }

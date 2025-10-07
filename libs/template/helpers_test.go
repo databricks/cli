@@ -178,3 +178,20 @@ func TestWorkspaceHostNotConfigured(t *testing.T) {
 	err = r.walk()
 	require.ErrorContains(t, err, "cannot determine target workspace")
 }
+
+func TestTemplateLatestStableEnvironmentVersionFunction(t *testing.T) {
+	ctx := context.Background()
+
+	ctx = cmdctx.SetWorkspaceClient(ctx, nil)
+	helpers := loadHelpers(ctx)
+	r, err := newRenderer(ctx, nil, helpers, os.DirFS("."), "./testdata/latest-stable-environment-version/template", "./testdata/latest-stable-environment-version/library")
+	require.NoError(t, err)
+
+	err = r.walk()
+	assert.NoError(t, err)
+
+	assert.Len(t, r.files, 1)
+	envVersion, err := strconv.Atoi(strings.TrimSpace(string(r.files[0].(*inMemoryFile).content)))
+	require.NoError(t, err)
+	assert.Equal(t, latestStableEnvironmentVersion, envVersion)
+}
