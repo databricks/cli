@@ -30,7 +30,7 @@ Deployment complete!
       "min_workers": 2
     },
     "autotermination_minutes": 60,
-    "cluster_id": "[UUID]",
+    "cluster_id": "[CLUSTER_ID]",
     "cluster_name": "test-cluster-[UNIQUE_NAME]",
     "node_type_id": "[NODE_TYPE_ID]",
     "spark_version": "13.3.x-snapshot-scala2.12"
@@ -65,7 +65,7 @@ Deployment complete!
       "min_workers": 3
     },
     "autotermination_minutes": 60,
-    "cluster_id": "[UUID]",
+    "cluster_id": "[CLUSTER_ID]",
     "cluster_name": "test-cluster-[UNIQUE_NAME]",
     "node_type_id": "[NODE_TYPE_ID]",
     "spark_version": "13.3.x-snapshot-scala2.12"
@@ -89,7 +89,7 @@ Deployment complete!
     "min_workers":3
   },
   "autotermination_minutes":60,
-  "cluster_id":"[UUID]",
+  "cluster_id":"[CLUSTER_ID]",
   "cluster_name":"test-cluster-[UNIQUE_NAME]",
   "node_type_id":"[NODE_TYPE_ID]",
   "spark_version":"13.3.x-snapshot-scala2.12",
@@ -113,7 +113,7 @@ Deployment complete!
       "max_workers": 6,
       "min_workers": 4
     },
-    "cluster_id": "[UUID]"
+    "cluster_id": "[CLUSTER_ID]"
   }
 }
 
@@ -140,7 +140,7 @@ Deployment complete!
   "method": "POST",
   "path": "/api/2.1/clusters/resize",
   "body": {
-    "cluster_id": "[UUID]",
+    "cluster_id": "[CLUSTER_ID]",
     "num_workers": 3
   }
 }
@@ -155,7 +155,6 @@ Deployment complete!
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete cluster test_cluster
-  delete job foo
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 
