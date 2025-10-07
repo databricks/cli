@@ -74,12 +74,9 @@ func main() {
 
 	var configContent atomic.Value
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
 	// Start background config download
 	go func() {
-		content, err := downloadConfig(ctx)
+		content, err := downloadConfig(context.Background())
 		if err != nil {
 			fmt.Printf("testrunner: Failed to download %s: %v\n", repoConfigURL, err)
 		} else {
@@ -89,9 +86,6 @@ func main() {
 
 	// Run the main command
 	err := cmd.Run()
-
-	// Cancel background download if still running
-	cancel()
 
 	exitCode, err := getExitCode(err)
 	if err != nil {
@@ -174,7 +168,7 @@ func checkFailures(config *Config, jsonFile string, originalExitCode int) int {
 
 		var result TestResult
 		if err := json.Unmarshal([]byte(line), &result); err != nil {
-			fmt.Printf("failed to parse json: %q: %w\n", line, err)
+			fmt.Printf("failed to parse json: %q: %s\n", line, err)
 			return originalExitCode
 		}
 
