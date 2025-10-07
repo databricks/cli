@@ -38,6 +38,10 @@ resources:
       name: "Test Pipeline"
       environment:
         dependencies:
+          - "-r ./requirements.txt"
+          - "-e ./file.py"
+          - "-i http://myindexurl.com"
+          - "--index-url http://myindexurl.com"
           - "dist/*.whl"
           - "/Workspace/Users/test@databricks.com/test-package.whl"
           - "test_package"
