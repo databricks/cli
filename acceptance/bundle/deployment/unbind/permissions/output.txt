@@ -11,6 +11,7 @@ Deployment complete!
 {
   "all_permissions": [
     {
+      "inherited": false,
       "permission_level": "CAN_MANAGE"
     }
   ],
@@ -31,6 +32,7 @@ Deployment complete!
 {
   "all_permissions": [
     {
+      "inherited": false,
       "permission_level": "CAN_MANAGE"
     }
   ],
