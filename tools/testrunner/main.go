@@ -283,6 +283,14 @@ func parseConfig(content string) (*Config, error) {
 	return config, scanner.Err()
 }
 
+// parsePattern returns the pattern and whether it's a prefix match.
+func parsePattern(pattern string) (string, bool) {
+	if pattern == "*" {
+		return "", true
+	}
+	return strings.CutSuffix(pattern, "/")
+}
+
 func parseConfigRule(line, originalLine string) (ConfigRule, error) {
 	parts := strings.Fields(line)
 	if len(parts) != 2 {
@@ -299,21 +307,8 @@ func parseConfigRule(line, originalLine string) (ConfigRule, error) {
 	}
 
 	// Check for wildcard or prefix
-	if packagePattern == "*" {
-		rule.PackagePrefix = true
-		rule.PackagePattern = ""
-	} else if strings.HasSuffix(packagePattern, "/") {
-		rule.PackagePrefix = true
-		rule.PackagePattern = packagePattern[:len(packagePattern)-1]
-	}
-
-	if testPattern == "*" {
-		rule.TestPrefix = true
-		rule.TestPattern = ""
-	} else if strings.HasSuffix(testPattern, "/") {
-		rule.TestPrefix = true
-		rule.TestPattern = testPattern[:len(testPattern)-1]
-	}
+	rule.PackagePattern, rule.PackagePrefix = parsePattern(packagePattern)
+	rule.TestPattern, rule.TestPrefix = parsePattern(testPattern)
 
 	return rule, nil
 }
@@ -322,7 +317,7 @@ func (r ConfigRule) matches(packageName, testName string) bool {
 	// Check package pattern
 	var packageMatch bool
 	if r.PackagePrefix {
-		packageMatch = strings.HasPrefix(packageName, r.PackagePattern)
+		packageMatch = matchesPathPrefix(packageName, r.PackagePattern)
 	} else {
 		packageMatch = packageName == r.PackagePattern
 	}
@@ -333,8 +328,20 @@ func (r ConfigRule) matches(packageName, testName string) bool {
 
 	// Check test pattern
 	if r.TestPrefix {
-		return strings.HasPrefix(testName, r.TestPattern)
+		return matchesPathPrefix(testName, r.TestPattern)
 	} else {
 		return testName == r.TestPattern
 	}
+}
+
+// matchesPathPrefix returns true if s matches pattern or starts with pattern + "/"
+// If pattern is empty (wildcard "*"), it matches any string
+func matchesPathPrefix(s, pattern string) bool {
+	if pattern == "" {
+		return true
+	}
+	if s == pattern {
+		return true
+	}
+	return strings.HasPrefix(s, pattern+"/")
 }
