@@ -1,0 +1,15 @@
+# List of test cases that will not cause integration test to fail.
+# The test will be still run but failure is silented. See tools/testrunner on main branch.
+#
+# Format is two words: package testname
+#
+# Each can be replaced by "*" (without quotes to match everything)
+# * TestAccept/selftest/basic  # matches this test name across any package
+# libs/telemetry *             # matches all test cases inside libs/telemetry package
+#
+# The above examples are non-recursive. If package name or test name ends with a /, it acts as a prefix:
+# acceptance TestAccept/bundle/resources/jobs/  # jobs undergoing maintenance
+#
+
+# The endpoint returns an error (Oct 7 2025)
+integration/libs/telemetry TestTelemetryEndpoint
