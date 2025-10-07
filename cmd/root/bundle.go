@@ -52,7 +52,7 @@ func getProfile(cmd *cobra.Command) (value string) {
 	if flag != nil {
 		value = flag.Value.String()
 		if value != "" {
-			return
+			return value
 		}
 	}
 

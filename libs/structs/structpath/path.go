@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	// Encodes string key, which is encoded as .field or as ['spark.conf']
+	// Encodes string key, which is encoded as .field or as ['spark.conf']x
 	tagStringKey = -1
 
 	// Encodes wildcard after a dot: foo.*
