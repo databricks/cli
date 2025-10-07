@@ -18,7 +18,6 @@ Validation OK!
     "max_num_clusters": 1,
     "min_num_clusters": 1,
     "name": "sql_warehouse_name",
-    "permissions": [],
     "spot_instance_policy": "COST_OPTIMIZED"
   }
 }

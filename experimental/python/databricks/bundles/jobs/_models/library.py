@@ -31,6 +31,11 @@ class Library:
     Specification of a CRAN library to be installed as part of the library
     """
 
+    egg: VariableOrOptional[str] = None
+    """
+    [DEPRECATED] Deprecated. URI of the egg library to install. Installing Python egg files is deprecated and is not supported in Databricks Runtime 14.0 and above.
+    """
+
     jar: VariableOrOptional[str] = None
     """
     URI of the JAR library to install. Supported URIs include Workspace paths, Unity Catalog Volumes paths, and S3 URIs.
@@ -81,6 +86,11 @@ class LibraryDict(TypedDict, total=False):
     cran: VariableOrOptional[RCranLibraryParam]
     """
     Specification of a CRAN library to be installed as part of the library
+    """
+
+    egg: VariableOrOptional[str]
+    """
+    [DEPRECATED] Deprecated. URI of the egg library to install. Installing Python egg files is deprecated and is not supported in Databricks Runtime 14.0 and above.
     """
 
     jar: VariableOrOptional[str]

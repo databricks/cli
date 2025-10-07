@@ -25,9 +25,11 @@ type Resources struct {
 	Dashboards            map[string]*resources.Dashboard            `json:"dashboards,omitempty"`
 	Apps                  map[string]*resources.App                  `json:"apps,omitempty"`
 	SecretScopes          map[string]*resources.SecretScope          `json:"secret_scopes,omitempty"`
-	SqlWarehouses         map[string]*resources.SqlWarehouse         `json:"sql_warehouses,omitempty"`
-	DatabaseInstances     map[string]*resources.DatabaseInstance     `json:"database_instances,omitempty"`
-	DatabaseCatalogs      map[string]*resources.DatabaseCatalog      `json:"database_catalogs,omitempty"`
+	// Alerts                map[string]*resources.Alert                `json:"alerts,omitempty"`
+	SqlWarehouses        map[string]*resources.SqlWarehouse        `json:"sql_warehouses,omitempty"`
+	DatabaseInstances    map[string]*resources.DatabaseInstance    `json:"database_instances,omitempty"`
+	DatabaseCatalogs     map[string]*resources.DatabaseCatalog     `json:"database_catalogs,omitempty"`
+	SyncedDatabaseTables map[string]*resources.SyncedDatabaseTable `json:"synced_database_tables,omitempty"`
 }
 
 type ConfigResource interface {
@@ -90,10 +92,12 @@ func (r *Resources) AllResources() []ResourceGroup {
 		collectResourceMap(descriptions["dashboards"], r.Dashboards),
 		collectResourceMap(descriptions["volumes"], r.Volumes),
 		collectResourceMap(descriptions["apps"], r.Apps),
+		// collectResourceMap(descriptions["alerts"], r.Alerts),
 		collectResourceMap(descriptions["secret_scopes"], r.SecretScopes),
 		collectResourceMap(descriptions["sql_warehouses"], r.SqlWarehouses),
 		collectResourceMap(descriptions["database_instances"], r.DatabaseInstances),
 		collectResourceMap(descriptions["database_catalogs"], r.DatabaseCatalogs),
+		collectResourceMap(descriptions["synced_database_tables"], r.SyncedDatabaseTables),
 	}
 }
 
@@ -171,6 +175,12 @@ func (r *Resources) FindResourceByConfigKey(key string) (ConfigResource, error) 
 		}
 	}
 
+	// for k := range r.Alerts {
+	// 	if k == key {
+	// 		found = append(found, r.Alerts[k])
+	// 	}
+	// }
+
 	for k := range r.SqlWarehouses {
 		if k == key {
 			found = append(found, r.SqlWarehouses[k])
@@ -186,6 +196,12 @@ func (r *Resources) FindResourceByConfigKey(key string) (ConfigResource, error) 
 	for k := range r.DatabaseCatalogs {
 		if k == key {
 			found = append(found, r.DatabaseCatalogs[k])
+		}
+	}
+
+	for k := range r.SyncedDatabaseTables {
+		if k == key {
+			found = append(found, r.SyncedDatabaseTables[k])
 		}
 	}
 
@@ -220,8 +236,10 @@ func SupportedResources() map[string]resources.ResourceDescription {
 		"volumes":                 (&resources.Volume{}).ResourceDescription(),
 		"apps":                    (&resources.App{}).ResourceDescription(),
 		"secret_scopes":           (&resources.SecretScope{}).ResourceDescription(),
-		"sql_warehouses":          (&resources.SqlWarehouse{}).ResourceDescription(),
-		"database_instances":      (&resources.DatabaseInstance{}).ResourceDescription(),
-		"database_catalogs":       (&resources.DatabaseCatalog{}).ResourceDescription(),
+		// "alerts":                  (&resources.Alert{}).ResourceDescription(),
+		"sql_warehouses":         (&resources.SqlWarehouse{}).ResourceDescription(),
+		"database_instances":     (&resources.DatabaseInstance{}).ResourceDescription(),
+		"database_catalogs":      (&resources.DatabaseCatalog{}).ResourceDescription(),
+		"synced_database_tables": (&resources.SyncedDatabaseTable{}).ResourceDescription(),
 	}
 }

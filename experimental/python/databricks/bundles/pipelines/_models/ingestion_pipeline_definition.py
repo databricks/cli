@@ -13,6 +13,10 @@ from databricks.bundles.pipelines._models.ingestion_source_type import (
     IngestionSourceType,
     IngestionSourceTypeParam,
 )
+from databricks.bundles.pipelines._models.source_config import (
+    SourceConfig,
+    SourceConfigParam,
+)
 from databricks.bundles.pipelines._models.table_specific_config import (
     TableSpecificConfig,
     TableSpecificConfigParam,
@@ -36,9 +40,25 @@ class IngestionPipelineDefinition:
     Immutable. Identifier for the gateway that is used by this ingestion pipeline to communicate with the source database. This is used with connectors to databases like SQL Server.
     """
 
+    netsuite_jar_path: VariableOrOptional[str] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    Netsuite only configuration. When the field is set for a netsuite connector,
+    the jar stored in the field will be validated and added to the classpath of
+    pipeline's cluster.
+    """
+
     objects: VariableOrList[IngestionConfig] = field(default_factory=list)
     """
     Required. Settings specifying tables to replicate and the destination for the replicated tables.
+    """
+
+    source_configurations: VariableOrList[SourceConfig] = field(default_factory=list)
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    Top-level source configurations
     """
 
     source_type: VariableOrOptional[IngestionSourceType] = None
@@ -74,9 +94,25 @@ class IngestionPipelineDefinitionDict(TypedDict, total=False):
     Immutable. Identifier for the gateway that is used by this ingestion pipeline to communicate with the source database. This is used with connectors to databases like SQL Server.
     """
 
+    netsuite_jar_path: VariableOrOptional[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    Netsuite only configuration. When the field is set for a netsuite connector,
+    the jar stored in the field will be validated and added to the classpath of
+    pipeline's cluster.
+    """
+
     objects: VariableOrList[IngestionConfigParam]
     """
     Required. Settings specifying tables to replicate and the destination for the replicated tables.
+    """
+
+    source_configurations: VariableOrList[SourceConfigParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    Top-level source configurations
     """
 
     source_type: VariableOrOptional[IngestionSourceTypeParam]

@@ -2,7 +2,6 @@ package phases
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
 
@@ -18,7 +17,6 @@ import (
 	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/bundle/scripts"
 	"github.com/databricks/cli/bundle/trampoline"
-	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 )
@@ -27,15 +25,7 @@ import (
 // Interpolation of fields referring to the "bundle" and "workspace" keys
 // happens upon completion of this phase.
 func Initialize(ctx context.Context, b *bundle.Bundle) {
-	var err error
-
 	log.Info(ctx, "Phase: initialize")
-
-	b.DirectDeployment, err = IsDirectDeployment(ctx)
-	if err != nil {
-		logdiag.LogError(ctx, err)
-		return
-	}
 
 	bundle.ApplySeqContext(ctx, b,
 		// Reads (dynamic): resource.*.*
@@ -222,19 +212,4 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 	// Reads (typed): b.Config.Experimental.Scripts["post_init"] (checks if script is defined)
 	// Executes the post_init script hook defined in the bundle configuration
 	bundle.ApplyContext(ctx, b, scripts.Execute(config.ScriptPostInit))
-}
-
-func IsDirectDeployment(ctx context.Context) (bool, error) {
-	deployment := env.Get(ctx, "DATABRICKS_CLI_DEPLOYMENT")
-	// We use "direct-exp" while direct backend is not suitable for end users.
-	// Once we consider it usable we'll change the value to "direct".
-	// This is to prevent accidentally running direct backend with older CLI versions where it was still considered experimental.
-	switch deployment {
-	case "direct-exp":
-		return true, nil
-	case "terraform", "":
-		return false, nil
-	default:
-		return false, fmt.Errorf("unexpected setting for DATABRICKS_CLI_DEPLOYMENT=%#v (expected 'terraform' or 'direct-exp' or absent/empty which means 'terraform')", deployment)
-	}
 }

@@ -54,6 +54,12 @@ func (s secretScopeConverter) Convert(ctx context.Context, key string, vin dyn.V
 	for _, diag := range diags {
 		log.Debugf(ctx, "secret scope normalization diagnostic: %s", diag.Summary)
 	}
+
+	vout, err := convertLifecycle(ctx, vout, vin.Get("lifecycle"))
+	if err != nil {
+		return err
+	}
+
 	out.SecretScope[key] = vout.AsAny()
 
 	// Configure permissions for this resource

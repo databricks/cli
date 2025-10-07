@@ -18,3 +18,13 @@ func GetShortUserName(user *iam.User) string {
 	local, _, _ := strings.Cut(name, "@")
 	return textutil.NormalizeString(local)
 }
+
+// GetShortUserDomainFriendlyName returns a dns-friendly for of the user name based on short name
+// We replace all non-alphanumeric characters with a dash (following Databricks Apps' naming requirements)
+func GetShortUserDomainFriendlyName(user *iam.User) string {
+	name := GetShortUserName(user)
+	return strings.ToLower(textutil.Chain(
+		textutil.NormalizeMarks(),
+		textutil.ReplaceNotIn(textutil.Alphanumeric, '-'),
+	).TransformString(name))
+}

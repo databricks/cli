@@ -25,14 +25,38 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func StartDefaultServer(t *testing.T) {
+func StartDefaultServer(t *testing.T, logRequests bool) {
 	s := testserver.New(t)
-	addDefaultHandlers(s)
+	testserver.AddDefaultHandlers(s)
+
+	// Log API responses if the -logrequests flag is set.
+	if logRequests {
+		s.ResponseCallback = logResponseCallback(t)
+	}
 
 	t.Setenv("DATABRICKS_DEFAULT_HOST", s.URL)
 
-	// Do not read user's ~/.databrickscfg
-	homeDir := t.TempDir()
+	// Do not read user's ~/.databrickscfg.
+	//
+	// We use a custom temporary home directory and cleanup routine here to avoid
+	// issues observed with t.TempDir() on Windows, where Go 1.25's test cleanup
+	// can fail to remove certain directories (e.g., due to locked or system-managed files).
+	// Instead of failing the test, we log any errors encountered during cleanup.
+	// This approach ensures test reliability across platforms.
+	//
+	// See debugging journey in https://github.com/databricks/cli/pull/3575.
+	homeDir, err := os.MkdirTemp("", "acceptance-home-dir")
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		err := os.RemoveAll(homeDir)
+		if err != nil {
+			t.Logf("Failed to remove temporary home directory: %v", err)
+			_ = filepath.Walk(homeDir, func(path string, info os.FileInfo, err error) error {
+				t.Logf("%s", path)
+				return nil
+			})
+		}
+	})
 	t.Setenv(env.HomeEnvVar(), homeDir)
 }
 
@@ -168,13 +192,29 @@ func startLocalServer(t *testing.T,
 		items := strings.Split(stub.Pattern, " ")
 		require.Len(t, items, 2)
 		s.Handle(items[0], items[1], func(req testserver.Request) any {
-			time.Sleep(stub.Delay)
+			if stub.Delay > 0 {
+				ctx := req.Context
+
+				timer := time.NewTimer(stub.Delay)
+				defer timer.Stop()
+
+				select {
+				case <-timer.C:
+					break
+				case <-ctx.Done():
+					// Client canceled/connection closed; just exit.
+					// Optional: log the reason (context deadline, cancellation, etc.)
+					t.Logf("request canceled: %v", ctx.Err())
+					return nil
+				}
+			}
+
 			return stub.Response
 		})
 	}
 
 	// The earliest handlers take precedence, add default handlers last
-	addDefaultHandlers(s)
+	testserver.AddDefaultHandlers(s)
 	return s.URL
 }
 

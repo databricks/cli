@@ -2,6 +2,11 @@
 
 package schema
 
+type DataSourceAlertsV2ResultsEffectiveRunAs struct {
+	ServicePrincipalName string `json:"service_principal_name,omitempty"`
+	UserName             string `json:"user_name,omitempty"`
+}
+
 type DataSourceAlertsV2ResultsEvaluationNotificationSubscriptions struct {
 	DestinationId string `json:"destination_id,omitempty"`
 	UserEmail     string `json:"user_email,omitempty"`
@@ -46,6 +51,11 @@ type DataSourceAlertsV2ResultsEvaluation struct {
 	Threshold          *DataSourceAlertsV2ResultsEvaluationThreshold    `json:"threshold,omitempty"`
 }
 
+type DataSourceAlertsV2ResultsRunAs struct {
+	ServicePrincipalName string `json:"service_principal_name,omitempty"`
+	UserName             string `json:"user_name,omitempty"`
+}
+
 type DataSourceAlertsV2ResultsSchedule struct {
 	PauseStatus        string `json:"pause_status,omitempty"`
 	QuartzCronSchedule string `json:"quartz_cron_schedule,omitempty"`
@@ -53,22 +63,25 @@ type DataSourceAlertsV2ResultsSchedule struct {
 }
 
 type DataSourceAlertsV2Results struct {
-	CreateTime        string                               `json:"create_time,omitempty"`
-	CustomDescription string                               `json:"custom_description,omitempty"`
-	CustomSummary     string                               `json:"custom_summary,omitempty"`
-	DisplayName       string                               `json:"display_name,omitempty"`
-	Evaluation        *DataSourceAlertsV2ResultsEvaluation `json:"evaluation,omitempty"`
-	Id                string                               `json:"id,omitempty"`
-	LifecycleState    string                               `json:"lifecycle_state,omitempty"`
-	OwnerUserName     string                               `json:"owner_user_name,omitempty"`
-	ParentPath        string                               `json:"parent_path,omitempty"`
-	QueryText         string                               `json:"query_text,omitempty"`
-	RunAsUserName     string                               `json:"run_as_user_name,omitempty"`
-	Schedule          *DataSourceAlertsV2ResultsSchedule   `json:"schedule,omitempty"`
-	UpdateTime        string                               `json:"update_time,omitempty"`
-	WarehouseId       string                               `json:"warehouse_id,omitempty"`
+	CreateTime        string                                   `json:"create_time,omitempty"`
+	CustomDescription string                                   `json:"custom_description,omitempty"`
+	CustomSummary     string                                   `json:"custom_summary,omitempty"`
+	DisplayName       string                                   `json:"display_name,omitempty"`
+	EffectiveRunAs    *DataSourceAlertsV2ResultsEffectiveRunAs `json:"effective_run_as,omitempty"`
+	Evaluation        *DataSourceAlertsV2ResultsEvaluation     `json:"evaluation,omitempty"`
+	Id                string                                   `json:"id,omitempty"`
+	LifecycleState    string                                   `json:"lifecycle_state,omitempty"`
+	OwnerUserName     string                                   `json:"owner_user_name,omitempty"`
+	ParentPath        string                                   `json:"parent_path,omitempty"`
+	QueryText         string                                   `json:"query_text,omitempty"`
+	RunAs             *DataSourceAlertsV2ResultsRunAs          `json:"run_as,omitempty"`
+	RunAsUserName     string                                   `json:"run_as_user_name,omitempty"`
+	Schedule          *DataSourceAlertsV2ResultsSchedule       `json:"schedule,omitempty"`
+	UpdateTime        string                                   `json:"update_time,omitempty"`
+	WarehouseId       string                                   `json:"warehouse_id,omitempty"`
 }
 
 type DataSourceAlertsV2 struct {
-	Results []DataSourceAlertsV2Results `json:"results,omitempty"`
+	Results     []DataSourceAlertsV2Results `json:"results,omitempty"`
+	WorkspaceId string                      `json:"workspace_id,omitempty"`
 }

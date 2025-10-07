@@ -1,0 +1,6 @@
+resources:
+  volumes:
+    foo:
+      catalog_name: mycatalog
+      schema_name: myschema
+      name: myname

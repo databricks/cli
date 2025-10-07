@@ -5,6 +5,8 @@ from typing import Optional
 RESOURCE_NAMESPACE = {
     "resources.Job": "jobs",
     "resources.Pipeline": "pipelines",
+    "resources.Schema": "schemas",
+    "resources.Volume": "volumes",
 }
 
 RESOURCE_TYPES = list(RESOURCE_NAMESPACE.keys())
@@ -17,6 +19,7 @@ LOADED_NAMESPACES = [
     "jobs",
     "pipelines",
     "resources",
+    "catalog",
 ]
 
 RENAMES = {
@@ -53,10 +56,6 @@ def is_resource(ref: str) -> bool:
 
 def should_load_ref(ref: str) -> bool:
     name = ref.split("/")[-1]
-
-    # FIXME doesn't work, looks like enum, but doesn't have any values specified
-    if name == "compute.Kind":
-        return False
 
     for namespace in LOADED_NAMESPACES:
         if name.startswith(f"{namespace}."):

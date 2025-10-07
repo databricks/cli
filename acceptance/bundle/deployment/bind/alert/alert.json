@@ -1,0 +1,7 @@
+{
+    "display_name": "Test Alert",
+    "query_text": "SELECT 1",
+    "warehouse_id": "0123-456789-warehouse0",
+    "custom_summary": "Test Alert Summary",
+    "custom_description": "Test Alert Description"
+}

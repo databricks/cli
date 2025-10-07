@@ -11,8 +11,9 @@ import (
 	"text/template"
 
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/libs/structdiff/structpath"
-	"github.com/databricks/cli/libs/structwalk"
+	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structtag"
+	"github.com/databricks/cli/libs/structs/structwalk"
 )
 
 type EnumPatternInfo struct {
@@ -109,15 +110,17 @@ func getEnumValues(typ reflect.Type) ([]string, error) {
 func extractEnumFields(typ reflect.Type) ([]EnumPatternInfo, error) {
 	fieldsByPattern := make(map[string][]string)
 
-	err := structwalk.WalkType(typ, func(path *structpath.PathNode, fieldType reflect.Type) bool {
+	err := structwalk.WalkType(typ, func(path *structpath.PathNode, fieldType reflect.Type, field *reflect.StructField) bool {
 		if path == nil {
 			return true
 		}
 
 		// Do not generate enum validation code for fields that are internal or readonly.
-		bundleTag := path.BundleTag()
-		if bundleTag.Internal() || bundleTag.ReadOnly() {
-			return false
+		if field != nil {
+			bundleTag := structtag.BundleTag(field.Tag.Get("bundle"))
+			if bundleTag.Internal() || bundleTag.ReadOnly() {
+				return false
+			}
 		}
 
 		// Check if this field type is an enum
@@ -129,8 +132,7 @@ func extractEnumFields(typ reflect.Type) ([]EnumPatternInfo, error) {
 				return true
 			}
 
-			fieldPath := path.DynPath()
-			fieldsByPattern[fieldPath] = enumValues
+			fieldsByPattern[path.String()] = enumValues
 		}
 		return true
 	})

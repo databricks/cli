@@ -19,7 +19,7 @@ import (
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/exec"
+	"github.com/databricks/cli/libs/execv"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
@@ -86,8 +86,8 @@ func keyToRunner(b *bundle.Bundle, arg string) (run.Runner, error) {
 func newRunCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "run [flags] [KEY]",
-		Short: "Run a job or pipeline update",
-		Long: `Run the job or pipeline identified by KEY.
+		Short: "Run a job, pipeline update or app",
+		Long: `Run the job, pipeline or app identified by KEY.
 
 The KEY is the unique identifier of the resource to run. In addition to
 customizing the run using any of the available flags, you can also specify
@@ -278,7 +278,7 @@ func scriptEnv(cmd *cobra.Command, b *bundle.Bundle) []string {
 }
 
 func executeScript(content string, cmd *cobra.Command, b *bundle.Bundle) error {
-	return exec.ShellExecv(content, b.BundleRootPath, scriptEnv(cmd, b))
+	return execv.Shell(content, b.BundleRootPath, scriptEnv(cmd, b))
 }
 
 func executeInline(cmd *cobra.Command, args []string, b *bundle.Bundle) error {
@@ -287,7 +287,7 @@ func executeInline(cmd *cobra.Command, args []string, b *bundle.Bundle) error {
 		return err
 	}
 
-	return exec.Execv(exec.ExecvOptions{
+	return execv.Execv(execv.Options{
 		Args: args,
 		Env:  scriptEnv(cmd, b),
 		Dir:  dir,

@@ -79,13 +79,17 @@ def _transitively_mark_deprecated_and_private(
 def _remove_deprecated_fields(
     schemas: dict[str, openapi.Schema],
 ) -> dict[str, openapi.Schema]:
+    """
+    Remove fields that were deprecated during Private Preview.
+    """
+
     new_schemas = {}
 
     for name, schema in schemas.items():
         if schema.type == openapi.SchemaType.OBJECT:
             new_properties = {}
             for field_name, field in schema.properties.items():
-                if field.deprecated:
+                if field.deprecated and field.stage == openapi.Stage.PRIVATE:
                     continue
 
                 new_properties[field_name] = field

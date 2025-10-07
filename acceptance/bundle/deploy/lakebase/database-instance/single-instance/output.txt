@@ -17,7 +17,7 @@ Workspace:
 Resources:
   Database instances:
     my_database:
-      Name: test-database-instance-[UNIQUE_NAME]
+      Name: test-db-instance-single-[UNIQUE_NAME]
       URL:  (not deployed)
 
 >>> [CLI] bundle deploy
@@ -26,16 +26,18 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> [CLI] database get-database-instance test-database-instance-[UNIQUE_NAME]
+>>> [CLI] database get-database-instance test-db-instance-single-[UNIQUE_NAME]
 {
   "capacity": "CU_1",
   "creation_time": "[TIMESTAMP]Z",
   "creator": "[USERNAME]",
+  "effective_capacity": "CU_1",
+  "effective_enable_pg_native_login": false,
   "effective_enable_readable_secondaries": false,
   "effective_node_count": 1,
   "effective_retention_window_in_days": 7,
   "effective_stopped": false,
-  "name": "test-database-instance-[UNIQUE_NAME]",
+  "name": "test-db-instance-single-[UNIQUE_NAME]",
   "pg_version": "PG_VERSION_16",
   "state": "AVAILABLE",
   "uid": "[UUID]"
@@ -50,8 +52,8 @@ Workspace:
 Resources:
   Database instances:
     my_database:
-      Name: test-database-instance-[UNIQUE_NAME]
-      URL:  [DATABRICKS_URL]/compute/database-instances/test-database-instance-[UNIQUE_NAME]
+      Name: test-db-instance-single-[UNIQUE_NAME]
+      URL:  [DATABRICKS_URL]/compute/database-instances/test-db-instance-single-[UNIQUE_NAME]
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

@@ -35,8 +35,8 @@ resources:
   experiments:
     myexperiment:
       artifact_location: /dbfs/myexperiment
-      last_update_time: ${var.complexvar.key2}
-      lifecycle_stage: ${var.simplevar}
+      name: ${var.simplevar}
+      tags: ${var.complexvar.key1}
       permissions:
         - service_principal_name: myserviceprincipal
           level: CAN_MANAGE

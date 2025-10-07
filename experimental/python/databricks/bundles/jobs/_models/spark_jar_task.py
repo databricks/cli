@@ -4,7 +4,11 @@ from typing import TYPE_CHECKING, TypedDict
 
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
-from databricks.bundles.core._variable import VariableOr, VariableOrList
+from databricks.bundles.core._variable import (
+    VariableOr,
+    VariableOrList,
+    VariableOrOptional,
+)
 
 if TYPE_CHECKING:
     from typing_extensions import Self
@@ -21,11 +25,21 @@ class SparkJarTask:
     The code must use `SparkContext.getOrCreate` to obtain a Spark context; otherwise, runs of the job fail.
     """
 
+    jar_uri: VariableOrOptional[str] = None
+    """
+    [DEPRECATED] Deprecated since 04/2016. Provide a `jar` through the `libraries` field instead. For an example, see :method:jobs/create.
+    """
+
     parameters: VariableOrList[str] = field(default_factory=list)
     """
     Parameters passed to the main method.
     
     Use [Task parameter variables](https://docs.databricks.com/jobs.html#parameter-variables) to set parameters containing information about job runs.
+    """
+
+    run_as_repl: VariableOrOptional[bool] = None
+    """
+    [DEPRECATED] Deprecated. A value of `false` is no longer supported.
     """
 
     @classmethod
@@ -46,11 +60,21 @@ class SparkJarTaskDict(TypedDict, total=False):
     The code must use `SparkContext.getOrCreate` to obtain a Spark context; otherwise, runs of the job fail.
     """
 
+    jar_uri: VariableOrOptional[str]
+    """
+    [DEPRECATED] Deprecated since 04/2016. Provide a `jar` through the `libraries` field instead. For an example, see :method:jobs/create.
+    """
+
     parameters: VariableOrList[str]
     """
     Parameters passed to the main method.
     
     Use [Task parameter variables](https://docs.databricks.com/jobs.html#parameter-variables) to set parameters containing information about job runs.
+    """
+
+    run_as_repl: VariableOrOptional[bool]
+    """
+    [DEPRECATED] Deprecated. A value of `false` is no longer supported.
     """
 
 

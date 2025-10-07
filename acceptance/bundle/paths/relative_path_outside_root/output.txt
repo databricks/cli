@@ -12,15 +12,13 @@
         "format": "MULTI_TASK",
         "max_concurrent_runs": 1,
         "name": "include_outside_root",
-        "permissions": [],
         "queue": {
           "enabled": true
         },
         "tasks": [
           {
             "notebook_task": {
-              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/relative_path_outside_root/default/files/src/notebook",
-              "source": "WORKSPACE"
+              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/relative_path_outside_root/default/files/src/notebook"
             },
             "task_key": "task_key"
           }

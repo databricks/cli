@@ -105,7 +105,7 @@ class Task:
 
     clean_rooms_notebook_task: VariableOrOptional[CleanRoomsNotebookTask] = None
     """
-    The task runs a [clean rooms](https://docs.databricks.com/en/clean-rooms/index.html) notebook
+    The task runs a [clean rooms](https://docs.databricks.com/clean-rooms/index.html) notebook
     when the `clean_rooms_notebook_task` field is present.
     """
 
@@ -144,6 +144,13 @@ class Task:
     disable_auto_optimization: VariableOrOptional[bool] = None
     """
     An option to disable auto optimization in serverless
+    """
+
+    disabled: VariableOrOptional[bool] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    An optional flag to disable the task. If set to true, the task will not run even if it is part of a job.
     """
 
     email_notifications: VariableOrOptional[TaskEmailNotifications] = None
@@ -262,15 +269,7 @@ class Task:
 
     spark_submit_task: VariableOrOptional[SparkSubmitTask] = None
     """
-    (Legacy) The task runs the spark-submit script when the `spark_submit_task` field is present. This task can run only on new clusters and is not compatible with serverless compute.
-    
-    In the `new_cluster` specification, `libraries` and `spark_conf` are not supported. Instead, use `--jars` and `--py-files` to add Java and Python libraries and `--conf` to set the Spark configurations.
-    
-    `master`, `deploy-mode`, and `executor-cores` are automatically configured by Databricks; you _cannot_ specify them in parameters.
-    
-    By default, the Spark submit job uses all available memory (excluding reserved memory for Databricks services). You can set `--driver-memory`, and `--executor-memory` to a smaller value to leave some room for off-heap usage.
-    
-    The `--jars`, `--py-files`, `--files` arguments support DBFS and S3 paths.
+    [DEPRECATED] (Legacy) The task runs the spark-submit script when the spark_submit_task field is present. Databricks recommends using the spark_jar_task instead; see [Spark Submit task for jobs](/jobs/spark-submit).
     """
 
     sql_task: VariableOrOptional[SqlTask] = None
@@ -308,7 +307,7 @@ class TaskDict(TypedDict, total=False):
 
     clean_rooms_notebook_task: VariableOrOptional[CleanRoomsNotebookTaskParam]
     """
-    The task runs a [clean rooms](https://docs.databricks.com/en/clean-rooms/index.html) notebook
+    The task runs a [clean rooms](https://docs.databricks.com/clean-rooms/index.html) notebook
     when the `clean_rooms_notebook_task` field is present.
     """
 
@@ -347,6 +346,13 @@ class TaskDict(TypedDict, total=False):
     disable_auto_optimization: VariableOrOptional[bool]
     """
     An option to disable auto optimization in serverless
+    """
+
+    disabled: VariableOrOptional[bool]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    An optional flag to disable the task. If set to true, the task will not run even if it is part of a job.
     """
 
     email_notifications: VariableOrOptional[TaskEmailNotificationsParam]
@@ -465,15 +471,7 @@ class TaskDict(TypedDict, total=False):
 
     spark_submit_task: VariableOrOptional[SparkSubmitTaskParam]
     """
-    (Legacy) The task runs the spark-submit script when the `spark_submit_task` field is present. This task can run only on new clusters and is not compatible with serverless compute.
-    
-    In the `new_cluster` specification, `libraries` and `spark_conf` are not supported. Instead, use `--jars` and `--py-files` to add Java and Python libraries and `--conf` to set the Spark configurations.
-    
-    `master`, `deploy-mode`, and `executor-cores` are automatically configured by Databricks; you _cannot_ specify them in parameters.
-    
-    By default, the Spark submit job uses all available memory (excluding reserved memory for Databricks services). You can set `--driver-memory`, and `--executor-memory` to a smaller value to leave some room for off-heap usage.
-    
-    The `--jars`, `--py-files`, `--files` arguments support DBFS and S3 paths.
+    [DEPRECATED] (Legacy) The task runs the spark-submit script when the spark_submit_task field is present. Databricks recommends using the spark_jar_task instead; see [Spark Submit task for jobs](/jobs/spark-submit).
     """
 
     sql_task: VariableOrOptional[SqlTaskParam]

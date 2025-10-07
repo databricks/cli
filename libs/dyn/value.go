@@ -2,6 +2,7 @@ package dyn
 
 import (
 	"fmt"
+	"reflect"
 	"slices"
 )
 
@@ -136,30 +137,17 @@ func (v Value) AsAny() any {
 }
 
 func (v Value) IsZero() bool {
-	switch v.k {
-	case KindInvalid:
+	if v.v == nil {
 		return true
-	case KindMap:
-		m := v.v.(Mapping)
-		return m.Len() == 0
-	case KindSequence:
-		vv := v.v.([]Value)
-		return len(vv) == 0
-	case KindNil:
-		return true
-	case KindString:
-		return v.v == ""
-	case KindBool:
-		return v.v == false
-	case KindInt:
-		return v.v == 0
-	case KindFloat:
-		return v.v == 0.0
-	case KindTime:
-		t := v.v.(Time)
-		return t.IsZero()
+	}
+
+	switch x := v.v.(type) {
+	case Mapping:
+		return x.Len() == 0
+	case []Value:
+		return len(x) == 0
 	default:
-		return false
+		return reflect.ValueOf(x).IsZero()
 	}
 }
 

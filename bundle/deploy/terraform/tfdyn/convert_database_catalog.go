@@ -18,6 +18,13 @@ func (d databaseCatalogConverter) Convert(ctx context.Context, key string, vin d
 	for _, diag := range diags {
 		log.Debugf(ctx, "database Catalog normalization diagnostic: %s", diag.Summary)
 	}
+
+	var err error
+	vout, err = convertLifecycle(ctx, vout, vin.Get("lifecycle"))
+	if err != nil {
+		return err
+	}
+
 	out.DatabaseDatabaseCatalog[key] = vout.AsAny()
 
 	return nil

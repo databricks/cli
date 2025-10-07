@@ -37,9 +37,12 @@ Real-time Serving
 Identity and Access Management
   current-user                           This API allows retrieving information about currently authenticated user or service principal.
   groups                                 Groups simplify identity management, making it easier to assign access to Databricks workspace, data, and other securable objects.
+  groups-v2                              Groups simplify identity management, making it easier to assign access to Databricks workspace, data, and other securable objects.
   permissions                            Permissions API are used to create read, write, edit, update and manage access for various users on different objects and endpoints.
   service-principals                     Identities for use with jobs, automated tools, and systems such as scripts, apps, and CI/CD platforms.
+  service-principals-v2                  Identities for use with jobs, automated tools, and systems such as scripts, apps, and CI/CD platforms.
   users                                  User identities recognized by Databricks and represented by email addresses.
+  users-v2                               User identities recognized by Databricks and represented by email addresses.
 
 Databricks SQL
   alerts                                 The alerts API can be used to perform CRUD operations on alerts.
@@ -57,6 +60,7 @@ Unity Catalog
   catalogs                               A catalog is the first layer of Unity Catalog’s three-level namespace.
   connections                            Connections allow for creating a connection to an external data source.
   credentials                            A credential represents an authentication and authorization mechanism for accessing services on your cloud tenant.
+  entity-tag-assignments                 Tags are attributes that include keys and optional values that you can use to organize and categorize entities in Unity Catalog.
   external-lineage                       External Lineage APIs enable defining and managing lineage relationships between Databricks objects and external systems.
   external-locations                     An external location is an object that combines a cloud storage path with a storage credential that authorizes access to the cloud storage path.
   external-metadata                      External Metadata objects enable customers to register and manage metadata about external systems within Unity Catalog.
@@ -65,9 +69,11 @@ Unity Catalog
   metastores                             A metastore is the top-level container of objects in Unity Catalog.
   model-versions                         Databricks provides a hosted version of MLflow Model Registry in Unity Catalog.
   online-tables                          Online tables provide lower latency and higher QPS access to data from Delta tables.
+  policies                               Attribute-Based Access Control (ABAC) provides high leverage governance for enforcing compliance policies in Unity Catalog.
   quality-monitors                       A monitor computes and monitors data or model quality metrics for a table over time.
   registered-models                      Databricks provides a hosted version of MLflow Model Registry in Unity Catalog.
   resource-quotas                        Unity Catalog enforces resource quotas on all securable objects, which limits the number of resources that can be created.
+  rfa                                    Request for Access enables customers to request access to and manage access request destinations for Unity Catalog securables.
   schemas                                A schema (also called a database) is the second layer of Unity Catalog’s three-level namespace.
   storage-credentials                    A storage credential represents an authentication and authorization mechanism for accessing data stored on your cloud tenant.
   system-schemas                         A system schema is a schema that lives within the system catalog.
@@ -139,6 +145,9 @@ Quality Monitor v2
 OAuth
   service-principal-secrets-proxy        These APIs enable administrators to manage service principal secrets at the workspace level.
 
+Identity and Access Management (v2)
+  workspace-iam-v2                       These APIs are used to manage identities and the workspace access of these identities in <Databricks>.
+
 Additional Commands:
   account                                Databricks Account Commands
   api                                    Perform Databricks API call
@@ -147,7 +156,9 @@ Additional Commands:
   configure                              Configure authentication
   help                                   Help about any command
   labs                                   Manage Databricks Labs installations
+  tag-policies                           The Tag Policy API allows you to manage policies for governed tags in Databricks.
   version                                Retrieve information about the current version of this CLI
+  workspace-settings-v2                  APIs to manage workspace level settings.
 
 Flags:
       --debug            enable debug logging

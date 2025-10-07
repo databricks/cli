@@ -14,9 +14,9 @@ from databricks.bundles.core._resources import Resources
 
 __all__ = [
     "load_resources_from_current_package_module",
-    "load_resources_from_package_module",
-    "load_resources_from_modules",
     "load_resources_from_module",
+    "load_resources_from_modules",
+    "load_resources_from_package_module",
 ]
 
 """

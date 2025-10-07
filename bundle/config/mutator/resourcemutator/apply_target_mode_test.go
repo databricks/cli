@@ -96,8 +96,8 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 					"pipeline1": {CreatePipeline: pipelines.CreatePipeline{Name: "pipeline1", Continuous: true}},
 				},
 				Experiments: map[string]*resources.MlflowExperiment{
-					"experiment1": {Experiment: ml.Experiment{Name: "/Users/lennart.kats@databricks.com/experiment1"}},
-					"experiment2": {Experiment: ml.Experiment{Name: "experiment2"}},
+					"experiment1": {CreateExperiment: ml.CreateExperiment{Name: "/Users/lennart.kats@databricks.com/experiment1"}},
+					"experiment2": {CreateExperiment: ml.CreateExperiment{Name: "experiment2"}},
 				},
 				Models: map[string]*resources.MlflowModel{
 					"model1": {CreateModelRequest: ml.CreateModelRequest{Name: "model1"}},
@@ -183,6 +183,20 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						},
 					},
 				},
+				SyncedDatabaseTables: map[string]*resources.SyncedDatabaseTable{
+					"synced_database_table1": {
+						SyncedDatabaseTable: database.SyncedDatabaseTable{
+							Name: "synced_database_table1",
+						},
+					},
+				},
+				// Alerts: map[string]*resources.Alert{
+				// 	"alert1": {
+				// 		AlertV2: sql.AlertV2{
+				// 			DisplayName: "alert1",
+				// 		},
+				// 	},
+				// },
 			},
 		},
 		SyncRoot: vfs.MustNew("/Users/lennart.kats@databricks.com"),
@@ -218,7 +232,7 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 	// Experiment 1
 	assert.Equal(t, "/Users/lennart.kats@databricks.com/[dev lennart] experiment1", b.Config.Resources.Experiments["experiment1"].Name)
 	assert.Contains(t, b.Config.Resources.Experiments["experiment1"].Tags, ml.ExperimentTag{Key: "dev", Value: "lennart"})
-	assert.Equal(t, "dev", b.Config.Resources.Experiments["experiment1"].Experiment.Tags[0].Key)
+	assert.Equal(t, "dev", b.Config.Resources.Experiments["experiment1"].CreateExperiment.Tags[0].Key)
 
 	// Experiment 2
 	assert.Equal(t, "[dev lennart] experiment2", b.Config.Resources.Experiments["experiment2"].Name)
@@ -351,7 +365,7 @@ func TestAllNonUcResourcesAreRenamed(t *testing.T) {
 				resourceType := resources.Type().Field(i).Name
 
 				// Skip resources that are not renamed
-				if resourceType == "Apps" || resourceType == "SecretScopes" || resourceType == "DatabaseInstances" || resourceType == "DatabaseCatalogs" {
+				if resourceType == "Apps" || resourceType == "SecretScopes" || resourceType == "DatabaseInstances" || resourceType == "DatabaseCatalogs" || resourceType == "SyncedDatabaseTables" {
 					continue
 				}
 

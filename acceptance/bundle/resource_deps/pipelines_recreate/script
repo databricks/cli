@@ -9,9 +9,8 @@ print_sorted_requests() {
 }
 
 echo "*" > .gitignore
-# In direct, plan is sorted by deployment order. In TF it comes back sorted alphabetically.
-# I think deployment order is better, sorting here to remove the mismatch
-trace $CLI bundle plan 2>&1 | sort
+trace $CLI bundle plan
+$CLI bundle debug plan > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 trace print_requests
 
@@ -25,7 +24,8 @@ trace $CLI bundle plan  # empty
 
 title "Update catalog, triggering recreate for pipeline; this means updating downstream deps"
 trace update_file.py databricks.yml mycatalog mynewcatalog
-trace $CLI bundle plan 2>&1 | sort
+trace $CLI bundle plan
+$CLI bundle debug plan > out.plan_update.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy --auto-approve
 trace print_requests
 
@@ -41,6 +41,7 @@ rm out.requests.txt
 
 title "Follow up plan & deploy do nothing"
 trace $CLI bundle plan
+$CLI bundle debug plan > out.plan_noop.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 trace print_requests
 

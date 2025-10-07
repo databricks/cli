@@ -32,6 +32,7 @@ func allResourceTypes(t *testing.T) []string {
 	// the dyn library gives us the correct list of all resources supported. Please
 	// also update this check when adding a new resource
 	require.Equal(t, []string{
+		// "alerts",
 		"apps",
 		"clusters",
 		"dashboards",
@@ -47,6 +48,7 @@ func allResourceTypes(t *testing.T) []string {
 		"schemas",
 		"secret_scopes",
 		"sql_warehouses",
+		"synced_database_tables",
 		"volumes",
 	},
 		resourceTypes,
@@ -93,6 +95,9 @@ func TestRunAsWorksForAllowedResources(t *testing.T) {
 			},
 			Experiments: map[string]*resources.MlflowExperiment{
 				"experiment_one": {},
+			},
+			Pipelines: map[string]*resources.Pipeline{
+				"pipeline_one": {},
 			},
 		},
 	}
@@ -143,7 +148,9 @@ var allowList = []string{
 	"clusters",
 	"database_catalogs",
 	"database_instances",
+	"synced_database_tables",
 	"jobs",
+	"pipelines",
 	"models",
 	"registered_models",
 	"experiments",

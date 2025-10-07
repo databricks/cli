@@ -9,6 +9,10 @@ from databricks.bundles.jobs._models.adlsgen2_info import (
     Adlsgen2Info,
     Adlsgen2InfoParam,
 )
+from databricks.bundles.jobs._models.dbfs_storage_info import (
+    DbfsStorageInfo,
+    DbfsStorageInfoParam,
+)
 from databricks.bundles.jobs._models.gcs_storage_info import (
     GcsStorageInfo,
     GcsStorageInfoParam,
@@ -44,6 +48,12 @@ class InitScriptInfo:
     abfss: VariableOrOptional[Adlsgen2Info] = None
     """
     Contains the Azure Data Lake Storage destination path
+    """
+
+    dbfs: VariableOrOptional[DbfsStorageInfo] = None
+    """
+    [DEPRECATED] destination needs to be provided. e.g.
+    `{ "dbfs": { "destination" : "dbfs:/home/cluster_log" } }`
     """
 
     file: VariableOrOptional[LocalFileInfo] = None
@@ -92,6 +102,12 @@ class InitScriptInfoDict(TypedDict, total=False):
     abfss: VariableOrOptional[Adlsgen2InfoParam]
     """
     Contains the Azure Data Lake Storage destination path
+    """
+
+    dbfs: VariableOrOptional[DbfsStorageInfoParam]
+    """
+    [DEPRECATED] destination needs to be provided. e.g.
+    `{ "dbfs": { "destination" : "dbfs:/home/cluster_log" } }`
     """
 
     file: VariableOrOptional[LocalFileInfoParam]

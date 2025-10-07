@@ -38,6 +38,7 @@ from databricks.bundles.jobs._models.init_script_info import (
     InitScriptInfo,
     InitScriptInfoParam,
 )
+from databricks.bundles.jobs._models.kind import Kind, KindParam
 from databricks.bundles.jobs._models.runtime_engine import (
     RuntimeEngine,
     RuntimeEngineParam,
@@ -171,6 +172,8 @@ class ClusterSpec:
     
     When set to true, Databricks will automatically set single node related `custom_tags`, `spark_conf`, and `num_workers`
     """
+
+    kind: VariableOrOptional[Kind] = None
 
     node_type_id: VariableOrOptional[str] = None
     """
@@ -384,6 +387,8 @@ class ClusterSpecDict(TypedDict, total=False):
     
     When set to true, Databricks will automatically set single node related `custom_tags`, `spark_conf`, and `num_workers`
     """
+
+    kind: VariableOrOptional[KindParam]
 
     node_type_id: VariableOrOptional[str]
     """

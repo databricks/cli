@@ -1,0 +1,6 @@
+$CLI bundle debug plan > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle deploy
+grep -v TO_DELETE databricks.yml > tmp.yml && mv tmp.yml databricks.yml
+trace cat databricks.yml
+$CLI bundle debug plan > out.plan_update.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle deploy

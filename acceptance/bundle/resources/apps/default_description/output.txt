@@ -1,0 +1,16 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests
+{
+  "body": {
+    "description": "",
+    "name": "myappname"
+  },
+  "method": "POST",
+  "path": "/api/2.0/apps"
+}

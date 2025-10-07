@@ -8,6 +8,8 @@ from databricks.bundles.core._resource import Resource
 if TYPE_CHECKING:
     from databricks.bundles.jobs._models.job import Job
     from databricks.bundles.pipelines._models.pipeline import Pipeline
+    from databricks.bundles.schemas._models.schema import Schema
+    from databricks.bundles.volumes._models.volume import Volume
 
 _T = TypeVar("_T", bound=Resource)
 
@@ -127,3 +129,67 @@ def pipeline_mutator(function: Callable) -> ResourceMutator["Pipeline"]:
     from databricks.bundles.pipelines._models.pipeline import Pipeline
 
     return ResourceMutator(resource_type=Pipeline, function=function)
+
+
+@overload
+def schema_mutator(
+    function: Callable[[Bundle, "Schema"], "Schema"],
+) -> ResourceMutator["Schema"]: ...
+
+
+@overload
+def schema_mutator(
+    function: Callable[["Schema"], "Schema"],
+) -> ResourceMutator["Schema"]: ...
+
+
+def schema_mutator(function: Callable) -> ResourceMutator["Schema"]:
+    """
+    Decorator for defining a schema mutator. Function should return a new instance of the schema with the desired changes,
+    instead of mutating the input schema.
+
+    Example:
+
+    .. code-block:: python
+
+        @schema_mutator
+        def my_schema_mutator(bundle: Bundle, schema: Schema) -> Schema:
+            return replace(schema, name="my_schema")
+
+    :param function: Function that mutates a schema.
+    """
+    from databricks.bundles.schemas._models.schema import Schema
+
+    return ResourceMutator(resource_type=Schema, function=function)
+
+
+@overload
+def volume_mutator(
+    function: Callable[[Bundle, "Volume"], "Volume"],
+) -> ResourceMutator["Volume"]: ...
+
+
+@overload
+def volume_mutator(
+    function: Callable[["Volume"], "Volume"],
+) -> ResourceMutator["Volume"]: ...
+
+
+def volume_mutator(function: Callable) -> ResourceMutator["Volume"]:
+    """
+    Decorator for defining a volume mutator. Function should return a new instance of the volume with the desired changes,
+    instead of mutating the input volume.
+
+    Example:
+
+    .. code-block:: python
+
+        @volume_mutator
+        def my_volume_mutator(bundle: Bundle, volume: Volume) -> Volume:
+            return replace(volume, name="my_volume")
+
+    :param function: Function that mutates a volume.
+    """
+    from databricks.bundles.volumes._models.volume import Volume
+
+    return ResourceMutator(resource_type=Volume, function=function)

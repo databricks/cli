@@ -2,6 +2,7 @@ package dagrun
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 	"sync"
 	"testing"
@@ -12,25 +13,22 @@ import (
 
 type edge struct{ from, to, name string }
 
-type stringWrapper struct {
-	Value string
-}
-
-func (s stringWrapper) String() string {
-	return s.Value
+type testCase struct {
+	name            string
+	nodes           []string
+	seen            []string
+	seenSorted      []string
+	edges           []edge
+	returnValues    map[string]bool // node -> false to indicate failure
+	cycle           string
+	failedFrom      map[string]string   // node -> expected failedFrom
+	failedFromOneOf map[string][]string // node -> any of these failedFrom values acceptable
 }
 
 func TestRun_VariousGraphsAndPools(t *testing.T) {
-	pools := []int{1, 2, 3, 4}
+	poolsToRun := []int{1, 2, 3, 4}
 
-	tests := []struct {
-		name       string
-		nodes      []string
-		seen       []string
-		seenSorted []string
-		edges      []edge
-		cycle      string
-	}{
+	tests := []testCase{
 		// disconnected graphs
 		{
 			name: "empty graph",
@@ -71,7 +69,7 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 				{"A", "B", "${A.id}"},
 				{"B", "A", "${B.id}"},
 			},
-			cycle: "cycle detected: A refers to B via ${A.id} which refers to A via ${B.id}",
+			cycle: "cycle detected: B refers to A via ${A.id} which refers to B via ${B.id}",
 		},
 		{
 			name: "three-node cycle",
@@ -80,53 +78,138 @@ func TestRun_VariousGraphsAndPools(t *testing.T) {
 				{"Y", "Z", "e2"},
 				{"Z", "X", "e3"},
 			},
-			cycle: "cycle detected: X refers to Y via e1 Y refers to Z via e2 which refers to X via e3",
+			cycle: "cycle detected: Y refers to X via e1 Z refers to Y via e2 which refers to Z via e3",
+		},
+		{
+			name:         "downstream runs with failed dependency",
+			edges:        []edge{{"A", "B", "A->B"}, {"B", "C", "B->C"}},
+			seen:         []string{"A", "B", "C"},
+			returnValues: map[string]bool{"B": false},
+			failedFrom: map[string]string{
+				"C": "B",
+			},
+		},
+		{
+			name:         "multiple failures propagate to same node (any one reported)",
+			edges:        []edge{{"A", "D", "A->D"}, {"B", "D", "B->D"}},
+			seenSorted:   []string{"A", "B", "D"},
+			returnValues: map[string]bool{"A": false, "B": false},
+			failedFromOneOf: map[string][]string{
+				"D": {"A", "B"},
+			},
+		},
+		{
+			name:  "chain failure propagates same source",
+			nodes: []string{"A", "B", "C", "D", "E", "F", "G"},
+			edges: []edge{
+				{"A", "B", "A->B"},
+				{"B", "C", "B->C"},
+				{"C", "D", "C->D"},
+				{"D", "E", "D->E"},
+				{"E", "F", "E->F"},
+				{"F", "G", "F->G"},
+			},
+			seen: []string{"A", "B", "C", "D", "E", "F", "G"},
+			returnValues: map[string]bool{
+				"B": false,
+				// It does not matter what node returns if failedDependency was set; here we return a mix of true and false
+				"E": false,
+			},
+			failedFrom: map[string]string{
+				"C": "B",
+				"D": "B",
+				"E": "B",
+				"F": "B",
+				"G": "B",
+			},
+		},
+		{
+			name:         "callback true is ignored on failed dependency",
+			nodes:        []string{"A", "B", "C"},
+			edges:        []edge{{"A", "B", "A->B"}, {"B", "C", "B->C"}},
+			seen:         []string{"A", "B", "C"},
+			returnValues: map[string]bool{"B": false},
+			failedFrom: map[string]string{
+				"C": "B",
+			},
 		},
 	}
 
 	for _, tc := range tests {
-		for _, p := range pools {
+		for _, p := range poolsToRun {
 			t.Run(tc.name+fmt.Sprintf(" pool=%d", p), func(t *testing.T) {
-				g := NewGraph[stringWrapper]()
+				g := NewGraph()
 				for _, n := range tc.nodes {
-					g.AddNode(stringWrapper{n})
+					g.AddNode(n)
 				}
 				for _, e := range tc.edges {
-					g.AddDirectedEdge(stringWrapper{e.from}, stringWrapper{e.to}, e.name)
+					g.AddDirectedEdge(e.from, e.to, e.name)
 				}
 
-				err := g.DetectCycle()
-				if tc.cycle != "" {
-					require.Error(t, err, "expected cycle, got none")
-					require.Equal(t, tc.cycle, err.Error())
-					innerCalled := 0
-					require.Panics(t, func() {
-						g.Run(p, func(n stringWrapper) {
-							innerCalled += 1
-						})
-					})
-					require.Zero(t, innerCalled)
-					return
-				}
-				require.NoError(t, err)
+				runTestCase(t, tc, g, p)
 
-				var mu sync.Mutex
-				var seen []string
-				g.Run(p, func(n stringWrapper) {
-					mu.Lock()
-					seen = append(seen, n.Value)
-					mu.Unlock()
-				})
-
-				if tc.seen != nil {
-					assert.Equal(t, tc.seen, seen)
-				} else if tc.seenSorted != nil {
-					sort.Strings(seen)
-					assert.Equal(t, tc.seenSorted, seen)
-				} else {
-					assert.Empty(t, seen)
-				}
+				// graph should be usable for multiple runs:
+				runTestCase(t, tc, g, p)
 			})
+		}
+	}
+}
+
+func runTestCase(t *testing.T, tc testCase, g *Graph, p int) {
+	err := g.DetectCycle()
+	if tc.cycle != "" {
+		require.Error(t, err, "expected cycle, got none")
+		require.Equal(t, tc.cycle, err.Error())
+		innerCalled := 0
+		require.Panics(t, func() {
+			g.Run(p, func(n string, failed *string) bool {
+				innerCalled += 1
+				return true
+			})
+		})
+		require.Zero(t, innerCalled)
+		return
+	}
+	require.NoError(t, err)
+
+	var mu sync.Mutex
+	var seen []string
+	failedFrom := map[string]*string{}
+	g.Run(p, func(n string, failed *string) bool {
+		mu.Lock()
+		seen = append(seen, n)
+		if failed != nil {
+			v := *failed
+			failedFrom[n] = &v
+		} else {
+			failedFrom[n] = nil
+		}
+		mu.Unlock()
+		if stop, exists := tc.returnValues[n]; exists {
+			return stop
+		}
+		return true // success by default
+	})
+
+	if tc.seen != nil {
+		assert.Equal(t, tc.seen, seen)
+	} else if tc.seenSorted != nil {
+		sort.Strings(seen)
+		assert.Equal(t, tc.seenSorted, seen)
+	} else {
+		assert.Empty(t, seen)
+	}
+
+	for node, want := range tc.failedFrom {
+		gotPtr := failedFrom[node]
+		if assert.NotNil(t, gotPtr, "expected failedFrom for %s", node) {
+			assert.Equal(t, want, *gotPtr)
+		}
+	}
+	for node, oneOf := range tc.failedFromOneOf {
+		gotPtr := failedFrom[node]
+		if assert.NotNil(t, gotPtr, "expected failedFrom for %s", node) {
+			assert.True(t, slices.Contains(oneOf, *gotPtr), "failedFrom for %s not in %v, got %v", node, oneOf, *gotPtr)
 		}
 	}
 }

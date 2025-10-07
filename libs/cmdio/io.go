@@ -138,10 +138,10 @@ func (c *cmdIO) Select(items []Tuple, label string) (id string, err error) {
 		Stdin: io.NopCloser(c.in),
 	}).Run()
 	if err != nil {
-		return
+		return id, err
 	}
 	id = items[idx].Id
-	return
+	return id, err
 }
 
 // Show a selection prompt where the user can pick one of the name/id items.

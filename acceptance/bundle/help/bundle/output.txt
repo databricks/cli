@@ -24,7 +24,8 @@ Available Commands:
   generate    Generate bundle configuration
   init        Initialize using a bundle template
   open        Open a resource in the browser
-  run         Run a job or pipeline update
+  plan        Show deployment plan
+  run         Run a job, pipeline update or app
   schema      Generate JSON Schema for bundle configuration
   summary     Summarize resources deployed by this bundle
   sync        Synchronize bundle tree to the workspace

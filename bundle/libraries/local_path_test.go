@@ -48,8 +48,11 @@ func TestIsLibraryLocal(t *testing.T) {
 		{path: "../../local/*.whl", expected: true},
 		{path: "..\\..\\local\\*.whl", expected: true},
 		{path: "file://path/to/package/whl.whl", expected: true},
+		{path: "local/foo-bar.whl", expected: true},
+
 		{path: "", expected: false},
 		{path: "pypipackage", expected: false},
+		{path: "foo-bar", expected: false},
 		{path: "/Volumes/catalog/schema/volume/path.whl", expected: false},
 		{path: "/Workspace/my_project/dist.whl", expected: false},
 		{path: "-r ../requirements.txt", expected: false},
@@ -57,6 +60,12 @@ func TestIsLibraryLocal(t *testing.T) {
 		{path: "s3://mybucket/path/to/package", expected: false},
 		{path: "dbfs:/mnt/path/to/package", expected: false},
 		{path: "beautifulsoup4", expected: false},
+		{path: "-e some/local/path", expected: false},
+		{path: "-i http://myindexurl.com", expected: false},
+		{path: "--index-url http://myindexurl.com", expected: false},
+		{path: "-i", expected: false},
+		{path: "--index-url", expected: false},
+		{path: "-i -e", expected: false},
 
 		// Check the possible version specifiers as in PEP 440
 		// https://peps.python.org/pep-0440/#public-version-identifiers
@@ -129,7 +138,7 @@ func TestIsLocalRequirementsFile(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, isLocal := IsLocalRequirementsFile(tt.input)
+			got, _, isLocal := IsLocalPathInPipFlag(tt.input)
 			require.Equal(t, tt.expected, got)
 			require.Equal(t, tt.isLocal, isLocal)
 		})

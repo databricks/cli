@@ -39,6 +39,8 @@ Deployment complete!
 >>> [CLI] bundle plan
 update volumes.volume1
 
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
@@ -62,6 +64,7 @@ Deployment complete!
   "full_name":"main.myschema.mynewvolume",
   "name":"mynewvolume",
   "schema_name":"myschema",
+  "storage_location":"s3://deco-uc-prod-isolated-aws-us-east-1/metastore/[UUID]/volumes/[UUID]",
   "volume_type":"MANAGED"
 }
 

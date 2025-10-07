@@ -3,6 +3,10 @@
   name_prefix: "prefix-"
 
 >>> [CLI] bundle validate -o json
+Warning: unknown field: alerts
+  at resources
+  in databricks.yml:22:3
+
 Warning: required field "catalog_name" is not set
   at resources.schemas.schema1
   in databricks.yml:14:7
@@ -18,7 +22,6 @@ Warning: required field "catalog_name" is not set
       "format": "MULTI_TASK",
       "max_concurrent_runs": 1,
       "name": "prefix-job1",
-      "permissions": [],
       "queue": {
         "enabled": true
       }
@@ -43,6 +46,10 @@ Warning: required field "catalog_name" is not set
   name_prefix: "[prefix]"
 
 >>> [CLI] bundle validate -o json
+Warning: unknown field: alerts
+  at resources
+  in databricks.yml:22:3
+
 Warning: required field "catalog_name" is not set
   at resources.schemas.schema1
   in databricks.yml:14:7
@@ -58,7 +65,6 @@ Warning: required field "catalog_name" is not set
       "format": "MULTI_TASK",
       "max_concurrent_runs": 1,
       "name": "[prefix]job1",
-      "permissions": [],
       "queue": {
         "enabled": true
       }
@@ -83,6 +89,10 @@ Warning: required field "catalog_name" is not set
   name_prefix: ""
 
 >>> [CLI] bundle validate -o json
+Warning: unknown field: alerts
+  at resources
+  in databricks.yml:22:3
+
 Warning: required field "catalog_name" is not set
   at resources.schemas.schema1
   in databricks.yml:14:7
@@ -98,7 +108,6 @@ Warning: required field "catalog_name" is not set
       "format": "MULTI_TASK",
       "max_concurrent_runs": 1,
       "name": "job1",
-      "permissions": [],
       "queue": {
         "enabled": true
       }

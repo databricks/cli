@@ -1,0 +1,2 @@
+Badness = "Uploading files even though bundle is wrong; bundle validate does not detect the issue; error message in direct could be nicer"
+RecordRequests = false

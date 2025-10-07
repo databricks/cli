@@ -25,8 +25,11 @@ acceptance/bundle/artifacts/shell/err-sh/output.txt
 acceptance/bundle/templates-machinery/helpers-error/output.txt
 
 # "bundle deploy" with apps has trailing whitespace:
-acceptance/bundle/apps/config_section/output.txt
 integration/bundle/testdata/apps/bundle_deploy.txt
+
+# Extra whitespace in test output:
+acceptance/bundle/resource_deps/bad_syntax/out.plan.terraform.txt
+acceptance/bundle/upload/internal_server_error/output.txt
 
 # Extra whitespace in command help:
 acceptance/cmd/workspace/apps/output.txt
