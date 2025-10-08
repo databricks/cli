@@ -269,8 +269,8 @@ func (s *Sync) computeFileLists(ctx context.Context) (*fileLists, error) {
 
 // FileCounts contains the counts of files by their sync status.
 type FileCounts struct {
-	Included          int
-	ExcludedByGitIgnore int
+	Included              int
+	ExcludedByGitIgnore   int
 	ExcludedBySyncExclude int
 }
 
