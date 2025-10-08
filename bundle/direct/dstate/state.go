@@ -150,13 +150,17 @@ func (db *DeploymentState) ExportState(ctx context.Context) resourcestate.Export
 		// Extract etag for dashboards.
 		var etag string
 		switch dashboard := entry.State.(type) {
-		// TODO: Is this necessary for detect change?
+		// TODO(shreyas): Can the state here be collapsed? Look into the root cause of this divergence.
+		// Dashboard state has type map[string]any during bundle deployment.
+		// covered by test case: bundle/deploy/dashboard/detect-change
 		case map[string]any:
 			v, ok := dashboard["etag"].(string)
 			if ok {
 				etag = v
 			}
 
+		// Dashboard state has type *resources.DashboardConfig during bundle generation.
+		// covered by test case: bundle/deploy/dashboard/generate_inplace
 		case *resources.DashboardConfig:
 			etag = dashboard.Etag
 		}
