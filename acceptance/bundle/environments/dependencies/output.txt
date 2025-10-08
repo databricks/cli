@@ -61,6 +61,10 @@ Deployment complete!
     "edition": "ADVANCED",
     "environment": {
       "dependencies": [
+        "-r /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/requirements.txt",
+        "-e /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/file.py",
+        "-i http://myindexurl.com",
+        "--index-url http://myindexurl.com",
         "/Workspace/Users/[USERNAME]/.bundle/dependencies/default/artifacts/.internal/test.whl",
         "/Workspace/Users/test@databricks.com/test-package.whl",
         "test_package",
@@ -110,6 +114,10 @@ Deployment complete!
 >>> [CLI] bundle validate -o json
 {
   "dependencies": [
+    "-r /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/requirements.txt",
+    "-e /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/file.py",
+    "-i http://myindexurl.com",
+    "--index-url http://myindexurl.com",
     "./dist/*.whl",
     "/Workspace/Users/test@databricks.com/test-package.whl",
     "test_package",

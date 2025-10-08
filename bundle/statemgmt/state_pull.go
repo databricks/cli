@@ -14,7 +14,7 @@ import (
 	"github.com/databricks/cli/libs/log"
 )
 
-type tfState struct {
+type state struct {
 	Serial  int64  `json:"serial"`
 	Lineage string `json:"lineage"`
 }
@@ -27,7 +27,7 @@ func (l *statePull) Name() string {
 	return "statemgmt:state-pull"
 }
 
-func (l *statePull) remoteState(ctx context.Context, b *bundle.Bundle) (*tfState, []byte, error) {
+func (l *statePull) remoteState(ctx context.Context, b *bundle.Bundle) (*state, []byte, error) {
 	f, err := l.filerFactory(b)
 	if err != nil {
 		return nil, nil, err
@@ -44,7 +44,7 @@ func (l *statePull) remoteState(ctx context.Context, b *bundle.Bundle) (*tfState
 		return nil, nil, err
 	}
 
-	state := &tfState{}
+	state := &state{}
 	err = json.Unmarshal(content, state)
 	if err != nil {
 		return nil, nil, err
@@ -53,7 +53,7 @@ func (l *statePull) remoteState(ctx context.Context, b *bundle.Bundle) (*tfState
 	return state, content, nil
 }
 
-func (l *statePull) localState(ctx context.Context, b *bundle.Bundle) (*tfState, error) {
+func (l *statePull) localState(ctx context.Context, b *bundle.Bundle) (*state, error) {
 	path, err := b.StateLocalPath(ctx)
 	if err != nil {
 		return nil, err
@@ -64,7 +64,7 @@ func (l *statePull) localState(ctx context.Context, b *bundle.Bundle) (*tfState,
 		return nil, err
 	}
 
-	state := &tfState{}
+	state := &state{}
 	err = json.Unmarshal(content, state)
 	if err != nil {
 		return nil, err

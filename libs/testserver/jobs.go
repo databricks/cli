@@ -20,8 +20,7 @@ func (s *FakeWorkspace) JobsCreate(req Request) Response {
 
 	defer s.LockUnlock()()
 
-	jobId := s.nextJobId
-	s.nextJobId++
+	jobId := nextID()
 
 	jobSettings := jobs.JobSettings{}
 	if err := jsonConvert(request, &jobSettings); err != nil {
@@ -113,8 +112,7 @@ func (s *FakeWorkspace) JobsRunNow(req Request) Response {
 		return Response{StatusCode: 404}
 	}
 
-	runId := s.nextJobRunId
-	s.nextJobRunId++
+	runId := nextID()
 	s.JobRuns[runId] = jobs.Run{
 		RunId:      runId,
 		State:      &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
@@ -145,64 +143,6 @@ func (s *FakeWorkspace) JobsGetRun(req Request) Response {
 
 	run.State.LifeCycleState = jobs.RunLifeCycleStateTerminated
 	return Response{Body: run}
-}
-
-func (s *FakeWorkspace) JobsUpdatePermissions(req Request, jobId string) Response {
-	var request jobs.JobPermissionsRequest
-	if err := json.Unmarshal(req.Body, &request); err != nil {
-		return Response{
-			StatusCode: 400,
-			Body:       fmt.Sprintf("request parsing error: %s", err),
-		}
-	}
-
-	defer s.LockUnlock()()
-
-	s.JobPermissions[jobId] = request.AccessControlList
-	var acl []jobs.JobAccessControlResponse
-	for _, accessControlList := range request.AccessControlList {
-		acl = append(acl, jobs.JobAccessControlResponse{
-			UserName:             accessControlList.UserName,
-			ServicePrincipalName: accessControlList.ServicePrincipalName,
-			GroupName:            accessControlList.GroupName,
-			AllPermissions: []jobs.JobPermission{
-				{
-					PermissionLevel: accessControlList.PermissionLevel,
-				},
-			},
-		})
-	}
-
-	return Response{Body: jobs.JobPermissions{
-		AccessControlList: acl,
-		ObjectType:        "job",
-		ObjectId:          jobId,
-	}}
-}
-
-func (s *FakeWorkspace) JobsGetPermissions(req Request, jobId string) Response {
-	jobPermissions := s.JobPermissions[jobId]
-	var acl []jobs.JobAccessControlResponse
-	for _, accessControlList := range jobPermissions {
-		acl = append(acl, jobs.JobAccessControlResponse{
-			UserName:             accessControlList.UserName,
-			DisplayName:          accessControlList.UserName,
-			ServicePrincipalName: accessControlList.ServicePrincipalName,
-			GroupName:            accessControlList.GroupName,
-			AllPermissions: []jobs.JobPermission{
-				{
-					PermissionLevel: accessControlList.PermissionLevel,
-					ForceSendFields: []string{"Inherited"},
-				},
-			},
-		})
-	}
-
-	return Response{Body: jobs.JobPermissions{
-		AccessControlList: acl,
-		ObjectType:        "job",
-		ObjectId:          "/jobs/" + jobId,
-	}}
 }
 
 func setSourceIfNotSet(job jobs.Job) jobs.Job {

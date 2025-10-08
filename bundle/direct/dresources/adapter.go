@@ -66,6 +66,10 @@ type IResourceNoRefresh interface {
 	// Example: func (r *ResourceVolume) DoUpdateWithID(ctx, id string, newState *catalog.CreateVolumeRequestContent) (string, error)
 	DoUpdateWithID(ctx context.Context, id string, newState any) (string, error)
 
+	// [Optional] DoResize resizes the resource. Only supported by clusters
+	// Example: func (r *ResourceCluster) DoResize(ctx context.Context, id string, newState *compute.ClusterSpec) error
+	DoResize(ctx context.Context, id string, newState any) error
+
 	// [Optional] WaitAfterCreate waits for the resource to become ready after creation.
 	// TODO: wait status should be persisted in the state.
 	WaitAfterCreate(ctx context.Context, newState any) error
@@ -115,6 +119,7 @@ type Adapter struct {
 	waitAfterCreate *calladapt.BoundCaller
 	waitAfterUpdate *calladapt.BoundCaller
 	classifyChange  *calladapt.BoundCaller
+	doResize        *calladapt.BoundCaller
 
 	fieldTriggers map[string]deployplan.ActionType
 }
@@ -140,6 +145,7 @@ func NewAdapter(typedNil any, client *databricks.WorkspaceClient) (*Adapter, err
 		doCreate:        nil,
 		doUpdate:        nil,
 		doUpdateWithID:  nil,
+		doResize:        nil,
 		waitAfterCreate: nil,
 		waitAfterUpdate: nil,
 		classifyChange:  nil,
@@ -230,6 +236,16 @@ func (a *Adapter) initMethods(resource any) error {
 		return err
 	}
 
+	a.classifyChange, err = calladapt.PrepareCall(resource, calladapt.TypeOf[IResourceNoRefresh](), "ClassifyChange")
+	if err != nil {
+		return err
+	}
+
+	a.doResize, err = calladapt.PrepareCall(resource, calladapt.TypeOf[IResourceNoRefresh](), "DoResize")
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -290,6 +306,10 @@ func (a *Adapter) validate() error {
 		validations = append(validations, "DoUpdate remoteState return", a.doUpdate.OutTypes[0], remoteType)
 	}
 
+	if a.doResize != nil {
+		validations = append(validations, "DoResize newState", a.doResize.InTypes[2], stateType)
+	}
+
 	if a.doUpdateWithID != nil {
 		validations = append(validations, "DoUpdateWithID newState", a.doUpdateWithID.InTypes[2], stateType)
 		if len(a.doUpdateWithID.OutTypes) == 3 {
@@ -312,7 +332,7 @@ func (a *Adapter) validate() error {
 	}
 
 	if a.classifyChange != nil {
-		validations = append(validations, "ClassifyChange changes", a.classifyChange.InTypes[1], remoteType)
+		validations = append(validations, "ClassifyChange remoteState", a.classifyChange.InTypes[1], remoteType)
 	}
 
 	err = validateTypes(validations...)
@@ -456,6 +476,15 @@ func (a *Adapter) DoUpdateWithID(ctx context.Context, oldID string, newState any
 	}
 }
 
+func (a *Adapter) DoResize(ctx context.Context, id string, newState any) error {
+	if a.doResize == nil {
+		return errors.New("internal error: DoResize not found")
+	}
+
+	_, err := a.doResize.Call(ctx, id, newState)
+	return err
+}
+
 // ClassifyByTriggers classifies a single using FieldTriggers.
 // Defaults to ActionTypeUpdate.
 func (a *Adapter) ClassifyByTriggers(change structdiff.Change) deployplan.ActionType {
@@ -522,6 +551,10 @@ func (a *Adapter) ClassifyChange(change structdiff.Change, remoteState any) (dep
 	}
 
 	actionType := outs[0].(deployplan.ActionType)
+	// If the action type is unset, use FieldTriggers.
+	if actionType == deployplan.ActionTypeUnset {
+		return a.ClassifyByTriggers(change), nil
+	}
 	return actionType, nil
 }
 
