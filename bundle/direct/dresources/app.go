@@ -64,7 +64,13 @@ func (r *ResourceApp) DoDelete(ctx context.Context, id string) error {
 	return err
 }
 
-func (*ResourceApp) FieldTriggers() map[string]deployplan.ActionType {
+func (*ResourceApp) FieldTriggersLocal() map[string]deployplan.ActionType {
+	return map[string]deployplan.ActionType{
+		"name": deployplan.ActionTypeRecreate,
+	}
+}
+
+func (*ResourceApp) FieldTriggersRemote() map[string]deployplan.ActionType {
 	return map[string]deployplan.ActionType{
 		"name": deployplan.ActionTypeRecreate,
 	}

@@ -80,7 +80,19 @@ func (r *ResourceRegisteredModel) DoDelete(ctx context.Context, id string) error
 	})
 }
 
-func (*ResourceRegisteredModel) FieldTriggers() map[string]deployplan.ActionType {
+func (*ResourceRegisteredModel) FieldTriggersLocal() map[string]deployplan.ActionType {
+	return map[string]deployplan.ActionType{
+		// The name can technically be updated without recreated. We recreate for now though
+		// to match TF implementation.
+		"name": deployplan.ActionTypeRecreate,
+
+		"catalog_name":     deployplan.ActionTypeRecreate,
+		"schema_name":      deployplan.ActionTypeRecreate,
+		"storage_location": deployplan.ActionTypeRecreate,
+	}
+}
+
+func (*ResourceRegisteredModel) FieldTriggersRemote() map[string]deployplan.ActionType {
 	return map[string]deployplan.ActionType{
 		// The name can technically be updated without recreated. We recreate for now though
 		// to match TF implementation.

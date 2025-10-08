@@ -226,7 +226,14 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	path, err := structpath.Parse("name")
 	require.NoError(t, err)
 
-	_, err = adapter.ClassifyChange(structdiff.Change{
+	_, err = adapter.ClassifyChangeLocal(structdiff.Change{
+		Path: path,
+		Old:  nil,
+		New:  "mynewname",
+	})
+	require.NoError(t, err)
+
+	_, err = adapter.ClassifyChangeRemote(structdiff.Change{
 		Path: path,
 		Old:  nil,
 		New:  "mynewname",
@@ -258,8 +265,11 @@ func TestFieldTriggers(t *testing.T) {
 		adapter, err := NewAdapter(resource, nil)
 		require.NoError(t, err)
 
-		t.Run(resourceName, func(t *testing.T) {
-			validateFields(t, adapter.InputConfigType(), adapter.fieldTriggers)
+		t.Run(resourceName+"_local", func(t *testing.T) {
+			validateFields(t, adapter.InputConfigType(), adapter.fieldTriggersLocal)
+		})
+		t.Run(resourceName+"_remote", func(t *testing.T) {
+			validateFields(t, adapter.InputConfigType(), adapter.fieldTriggersRemote)
 		})
 	}
 }

@@ -159,7 +159,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			}
 		}
 
-		localAction, localChangeMap := convertChangesToTriggersMap(ctx, adapter, localDiff, remoteState)
+		localAction, localChangeMap := localChangesToTriggers(ctx, adapter, localDiff)
 		if localAction == deployplan.ActionTypeRecreate {
 			entry.Action = localAction.String()
 			if len(localChangeMap) > 0 {
@@ -220,12 +220,12 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 	return plan, nil
 }
 
-func convertChangesToTriggersMap(ctx context.Context, adapter *dresources.Adapter, diff []structdiff.Change, remoteState any) (deployplan.ActionType, map[string]deployplan.Trigger) {
+func localChangesToTriggers(ctx context.Context, adapter *dresources.Adapter, diff []structdiff.Change) (deployplan.ActionType, map[string]deployplan.Trigger) {
 	action := deployplan.ActionTypeSkip
 	var m map[string]deployplan.Trigger
 
 	for _, ch := range diff {
-		fieldAction, err := adapter.ClassifyChange(ch, remoteState)
+		fieldAction, err := adapter.ClassifyChangeLocal(ch)
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("internal error: failed to classify change: %w", err))
 			continue
@@ -257,7 +257,7 @@ func interpretOldStateVsRemoteState(ctx context.Context, adapter *dresources.Ada
 			}
 			continue
 		}
-		fieldAction, err := adapter.ClassifyChange(ch, remoteState)
+		fieldAction, err := adapter.ClassifyChangeRemote(ch, remoteState)
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("internal error: failed to classify change: %w", err))
 			continue

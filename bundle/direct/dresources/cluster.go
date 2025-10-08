@@ -101,7 +101,16 @@ func (r *ResourceCluster) DoDelete(ctx context.Context, id string) error {
 	return r.client.Clusters.PermanentDeleteByClusterId(ctx, id)
 }
 
-func (r *ResourceCluster) ClassifyChange(change structdiff.Change, remoteState *compute.ClusterDetails) (deployplan.ActionType, error) {
+func (r *ResourceCluster) ClassifyChangeLocal(change structdiff.Change) (deployplan.ActionType, error) {
+	changedPath := change.Path.String()
+	if changedPath == "num_workers" || strings.HasPrefix(changedPath, "autoscale") {
+		return deployplan.ActionTypeResize, nil
+	}
+
+	return deployplan.ActionTypeUpdate, nil
+}
+
+func (r *ResourceCluster) ClassifyChangeRemote(change structdiff.Change, remoteState *compute.ClusterDetails) (deployplan.ActionType, error) {
 	// Always update if the cluster is not running.
 	if remoteState.State != compute.StateRunning {
 		return deployplan.ActionTypeUpdate, nil

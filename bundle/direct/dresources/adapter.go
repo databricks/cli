@@ -40,10 +40,15 @@ type IResource interface {
 	// Example: func (r *ResourceJob) DoDelete(ctx context.Context, id string) error
 	DoDelete(ctx context.Context, id string) error
 
-	// [Optional] FieldTriggers returns actions to trigger when given fields are changed.
+	// [Optional] FieldTriggersLocal returns actions to trigger when given fields are changed locally.
 	// Keys are field paths (e.g., "name", "catalog_name"). Values are actions.
 	// Unspecified changed fields default to ActionTypeUpdate.
-	FieldTriggers() map[string]deployplan.ActionType
+	FieldTriggersLocal() map[string]deployplan.ActionType
+
+	// [Optional] FieldTriggersRemote returns actions to trigger when given fields are changed remotely.
+	// Keys are field paths (e.g., "name", "catalog_name"). Values are actions.
+	// Unspecified changed fields default to ActionTypeUpdate.
+	FieldTriggersRemote() map[string]deployplan.ActionType
 }
 
 // IResourceNoRefresh describes additional methods for resource to implement.
@@ -77,8 +82,11 @@ type IResourceNoRefresh interface {
 	// [Optional] WaitAfterUpdate waits for the resource to become ready after update.
 	WaitAfterUpdate(ctx context.Context, newState any) error
 
-	// [Optional] ClassifyChange classifies a set of changes using custom logic.
-	ClassifyChange(change structdiff.Change, remoteState any) (deployplan.ActionType, error)
+	// [Optional] ClassifyChangeLocal classifies a set of local changes using custom logic.
+	ClassifyChangeLocal(change structdiff.Change) (deployplan.ActionType, error)
+
+	// [Optional] ClassifyChangeRemote classifies a set of remote changes using custom logic.
+	ClassifyChangeRemote(change structdiff.Change, remoteState any) (deployplan.ActionType, error)
 }
 
 // IResourceWithRefresh is an alternative to IResourceNoRefresh but every method can return remoteState.
@@ -115,13 +123,15 @@ type Adapter struct {
 	doUpdate     *calladapt.BoundCaller
 
 	// Optional:
-	doUpdateWithID  *calladapt.BoundCaller
-	waitAfterCreate *calladapt.BoundCaller
-	waitAfterUpdate *calladapt.BoundCaller
-	classifyChange  *calladapt.BoundCaller
-	doResize        *calladapt.BoundCaller
+	doUpdateWithID       *calladapt.BoundCaller
+	waitAfterCreate      *calladapt.BoundCaller
+	waitAfterUpdate      *calladapt.BoundCaller
+	classifyChangeLocal  *calladapt.BoundCaller
+	classifyChangeRemote *calladapt.BoundCaller
+	doResize             *calladapt.BoundCaller
 
-	fieldTriggers map[string]deployplan.ActionType
+	fieldTriggersLocal  map[string]deployplan.ActionType
+	fieldTriggersRemote map[string]deployplan.ActionType
 }
 
 func NewAdapter(typedNil any, client *databricks.WorkspaceClient) (*Adapter, error) {
@@ -138,18 +148,20 @@ func NewAdapter(typedNil any, client *databricks.WorkspaceClient) (*Adapter, err
 	}
 	impl := outs[0]
 	adapter := &Adapter{
-		prepareState:    nil,
-		remapState:      nil,
-		doRefresh:       nil,
-		doDelete:        nil,
-		doCreate:        nil,
-		doUpdate:        nil,
-		doUpdateWithID:  nil,
-		doResize:        nil,
-		waitAfterCreate: nil,
-		waitAfterUpdate: nil,
-		classifyChange:  nil,
-		fieldTriggers:   map[string]deployplan.ActionType{},
+		prepareState:         nil,
+		remapState:           nil,
+		doRefresh:            nil,
+		doDelete:             nil,
+		doCreate:             nil,
+		doUpdate:             nil,
+		doUpdateWithID:       nil,
+		doResize:             nil,
+		waitAfterCreate:      nil,
+		waitAfterUpdate:      nil,
+		classifyChangeLocal:  nil,
+		classifyChangeRemote: nil,
+		fieldTriggersLocal:   map[string]deployplan.ActionType{},
+		fieldTriggersRemote:  map[string]deployplan.ActionType{},
 	}
 
 	err = adapter.initMethods(impl)
@@ -157,20 +169,37 @@ func NewAdapter(typedNil any, client *databricks.WorkspaceClient) (*Adapter, err
 		return nil, err
 	}
 
-	// Load optional FieldTriggers method from the unified interface
-	triggerCall, err := calladapt.PrepareCall(impl, calladapt.TypeOf[IResource](), "FieldTriggers")
+	// Load optional FieldTriggersLocal method from the unified interface
+	triggerLocalCall, err := calladapt.PrepareCall(impl, calladapt.TypeOf[IResource](), "FieldTriggersLocal")
 	if err != nil {
 		return nil, err
 	}
-	if triggerCall != nil {
-		outs, err := triggerCall.Call()
+	if triggerLocalCall != nil {
+		outs, err := triggerLocalCall.Call()
 		if err != nil || len(outs) != 1 {
-			return nil, fmt.Errorf("failed to call FieldTriggers: %w", err)
+			return nil, fmt.Errorf("failed to call FieldTriggersLocal: %w", err)
 		}
 		fields := outs[0].(map[string]deployplan.ActionType)
-		adapter.fieldTriggers = make(map[string]deployplan.ActionType, len(fields))
+		adapter.fieldTriggersLocal = make(map[string]deployplan.ActionType, len(fields))
 		for k, v := range fields {
-			adapter.fieldTriggers[k] = v
+			adapter.fieldTriggersLocal[k] = v
+		}
+	}
+
+	// Load optional FieldTriggersRemote method from the unified interface
+	triggerRemoteCall, err := calladapt.PrepareCall(impl, calladapt.TypeOf[IResource](), "FieldTriggersRemote")
+	if err != nil {
+		return nil, err
+	}
+	if triggerRemoteCall != nil {
+		outs, err := triggerRemoteCall.Call()
+		if err != nil || len(outs) != 1 {
+			return nil, fmt.Errorf("failed to call FieldTriggersRemote: %w", err)
+		}
+		fields := outs[0].(map[string]deployplan.ActionType)
+		adapter.fieldTriggersRemote = make(map[string]deployplan.ActionType, len(fields))
+		for k, v := range fields {
+			adapter.fieldTriggersRemote[k] = v
 		}
 	}
 
@@ -236,7 +265,12 @@ func (a *Adapter) initMethods(resource any) error {
 		return err
 	}
 
-	a.classifyChange, err = calladapt.PrepareCall(resource, calladapt.TypeOf[IResourceNoRefresh](), "ClassifyChange")
+	a.classifyChangeLocal, err = calladapt.PrepareCall(resource, calladapt.TypeOf[IResourceNoRefresh](), "ClassifyChangeLocal")
+	if err != nil {
+		return err
+	}
+
+	a.classifyChangeRemote, err = calladapt.PrepareCall(resource, calladapt.TypeOf[IResourceNoRefresh](), "ClassifyChangeRemote")
 	if err != nil {
 		return err
 	}
@@ -331,8 +365,8 @@ func (a *Adapter) validate() error {
 		}
 	}
 
-	if a.classifyChange != nil {
-		validations = append(validations, "ClassifyChange remoteState", a.classifyChange.InTypes[1], remoteType)
+	if a.classifyChangeRemote != nil {
+		validations = append(validations, "ClassifyChangeRemote remoteState", a.classifyChangeRemote.InTypes[1], remoteType)
 	}
 
 	err = validateTypes(validations...)
@@ -342,7 +376,12 @@ func (a *Adapter) validate() error {
 
 	// FieldTriggers validation
 	hasUpdateWithIDTrigger := false
-	for _, action := range a.fieldTriggers {
+	for _, action := range a.fieldTriggersLocal {
+		if action == deployplan.ActionTypeUpdateWithID {
+			hasUpdateWithIDTrigger = true
+		}
+	}
+	for _, action := range a.fieldTriggersRemote {
 		if action == deployplan.ActionTypeUpdateWithID {
 			hasUpdateWithIDTrigger = true
 		}
@@ -485,10 +524,20 @@ func (a *Adapter) DoResize(ctx context.Context, id string, newState any) error {
 	return err
 }
 
-// ClassifyByTriggers classifies a single using FieldTriggers.
+// ClassifyByTriggersLocal classifies a single local change using FieldTriggersLocal.
 // Defaults to ActionTypeUpdate.
-func (a *Adapter) ClassifyByTriggers(change structdiff.Change) deployplan.ActionType {
-	action, ok := a.fieldTriggers[change.Path.String()]
+func (a *Adapter) ClassifyByTriggersLocal(change structdiff.Change) deployplan.ActionType {
+	action, ok := a.fieldTriggersLocal[change.Path.String()]
+	if ok {
+		return action
+	}
+	return deployplan.ActionTypeUpdate
+}
+
+// ClassifyByTriggersRemote classifies a single remote change using FieldTriggersRemote.
+// Defaults to ActionTypeUpdate.
+func (a *Adapter) ClassifyByTriggersRemote(change structdiff.Change) deployplan.ActionType {
+	action, ok := a.fieldTriggersRemote[change.Path.String()]
 	if ok {
 		return action
 	}
@@ -539,21 +588,40 @@ func (a *Adapter) WaitAfterUpdate(ctx context.Context, newState any) (any, error
 	}
 }
 
-func (a *Adapter) ClassifyChange(change structdiff.Change, remoteState any) (deployplan.ActionType, error) {
-	// If ClassifyChange is not implemented, use FieldTriggers.
-	if a.classifyChange == nil {
-		return a.ClassifyByTriggers(change), nil
+func (a *Adapter) ClassifyChangeLocal(change structdiff.Change) (deployplan.ActionType, error) {
+	// If ClassifyChangeLocal is not implemented, use FieldTriggersLocal.
+	if a.classifyChangeLocal == nil {
+		return a.ClassifyByTriggersLocal(change), nil
 	}
 
-	outs, err := a.classifyChange.Call(change, remoteState)
+	outs, err := a.classifyChangeLocal.Call(change)
 	if err != nil {
 		return deployplan.ActionTypeSkip, err
 	}
 
 	actionType := outs[0].(deployplan.ActionType)
-	// If the action type is unset, use FieldTriggers.
+	// If the action type is unset, use FieldTriggersLocal.
 	if actionType == deployplan.ActionTypeUnset {
-		return a.ClassifyByTriggers(change), nil
+		return a.ClassifyByTriggersLocal(change), nil
+	}
+	return actionType, nil
+}
+
+func (a *Adapter) ClassifyChangeRemote(change structdiff.Change, remoteState any) (deployplan.ActionType, error) {
+	// If ClassifyChangeRemote is not implemented, use FieldTriggersRemote.
+	if a.classifyChangeRemote == nil {
+		return a.ClassifyByTriggersRemote(change), nil
+	}
+
+	outs, err := a.classifyChangeRemote.Call(change, remoteState)
+	if err != nil {
+		return deployplan.ActionTypeSkip, err
+	}
+
+	actionType := outs[0].(deployplan.ActionType)
+	// If the action type is unset, use FieldTriggersRemote.
+	if actionType == deployplan.ActionTypeUnset {
+		return a.ClassifyByTriggersRemote(change), nil
 	}
 	return actionType, nil
 }
