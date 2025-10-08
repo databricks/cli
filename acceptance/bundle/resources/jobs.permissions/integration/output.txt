@@ -1,0 +1,55 @@
+
+>>> [CLI] users create --id test-delete-me-[UNIQUE_NAME]@databricks.com --user-name test-delete-me-[UNIQUE_NAME]@databricks.com
+
+>>> [CLI] bundle plan
+create jobs.foo
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests
+
+>>> [CLI] permissions get jobs [JOB_ID]
+{
+  "access_control_list": [
+    {
+      "all_permissions": [
+        {
+          "inherited":false,
+          "permission_level":"CAN_VIEW"
+        }
+      ],
+      "display_name":"test-delete-me-[UNIQUE_NAME]@databricks.com",
+      "user_name":"test-delete-me-[UNIQUE_NAME]@databricks.com"
+    },
+    {
+      "all_permissions": [
+        {
+          "inherited":false,
+          "permission_level":"IS_OWNER"
+        }
+      ],
+      "display_name":"[USERNAME]",
+      "service_principal_name":"[USERNAME]"
+    },
+    {
+      "all_permissions": [
+        {
+          "inherited":true,
+          "inherited_from_object": [
+            "/jobs/"
+          ],
+          "permission_level":"CAN_MANAGE"
+        }
+      ],
+      "group_name":"admins"
+    }
+  ],
+  "object_id":"/jobs/[JOB_ID]",
+  "object_type":"job"
+}

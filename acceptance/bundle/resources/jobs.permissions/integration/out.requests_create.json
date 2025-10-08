@@ -1,0 +1,42 @@
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/create",
+  "body": {
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "test-job-[UNIQUE_NAME]",
+    "queue": {
+      "enabled": true
+    },
+    "tasks": [
+      {
+        "notebook_task": {
+          "notebook_path": "/Workspace/Users/denis.bilenko@databricks.com/notebook",
+          "source": "WORKSPACE"
+        },
+        "task_key": "main"
+      }
+    ]
+  }
+}
+{
+  "method": "PUT",
+  "path": "/api/2.0/permissions/jobs/[JOB_ID]",
+  "body": {
+    "access_control_list": [
+      {
+        "permission_level": "CAN_VIEW",
+        "user_name": "test-delete-me-[UNIQUE_NAME]@databricks.com"
+      },
+      {
+        "permission_level": "IS_OWNER",
+        "user_name": "[USERNAME]"
+      }
+    ]
+  }
+}
