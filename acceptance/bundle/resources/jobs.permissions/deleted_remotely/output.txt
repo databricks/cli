@@ -19,7 +19,6 @@ Deployment complete!
           "permission_level":"CAN_VIEW"
         }
       ],
-      "display_name":"viewer@example.com",
       "user_name":"viewer@example.com"
     },
     {
@@ -38,11 +37,10 @@ Deployment complete!
           "permission_level":"IS_OWNER"
         }
       ],
-      "display_name":"[USERNAME]",
       "user_name":"[USERNAME]"
     }
   ],
-  "object_id":"/jobs/[JOB_ID]",
+  "object_id":"[JOB_ID]",
   "object_type":"job"
 }
 
@@ -62,7 +60,7 @@ Deployment complete!
 
 >>> [CLI] permissions get jobs [JOB_ID]
 {
-  "object_id":"/jobs/[JOB_ID]",
+  "object_id":"[JOB_ID]",
   "object_type":"job"
 }
 
@@ -86,7 +84,6 @@ Deployment complete!
           "permission_level":"CAN_VIEW"
         }
       ],
-      "display_name":"viewer@example.com",
       "user_name":"viewer@example.com"
     },
     {
@@ -105,10 +102,9 @@ Deployment complete!
           "permission_level":"IS_OWNER"
         }
       ],
-      "display_name":"[USERNAME]",
       "user_name":"[USERNAME]"
     }
   ],
-  "object_id":"/jobs/[JOB_ID]",
+  "object_id":"[JOB_ID]",
   "object_type":"job"
 }
