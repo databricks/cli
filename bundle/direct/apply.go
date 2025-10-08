@@ -54,6 +54,8 @@ func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState,
 		return d.Update(ctx, db, oldID, newState)
 	case deployplan.ActionTypeUpdateWithID:
 		return d.UpdateWithID(ctx, db, oldID, newState)
+	case deployplan.ActionTypeResize:
+		return d.Resize(ctx, db, oldID, newState)
 	default:
 		return fmt.Errorf("internal error: unexpected actionType: %#v", actionType)
 	}
@@ -180,6 +182,20 @@ func (d *DeploymentUnit) Delete(ctx context.Context, db *dstate.DeploymentState,
 	err = db.DeleteState(d.ResourceKey)
 	if err != nil {
 		return fmt.Errorf("deleting state id=%s: %w", oldID, err)
+	}
+
+	return nil
+}
+
+func (d *DeploymentUnit) Resize(ctx context.Context, db *dstate.DeploymentState, id string, newState any) error {
+	err := d.Adapter.DoResize(ctx, id, newState)
+	if err != nil {
+		return fmt.Errorf("resizing id=%s: %w", id, err)
+	}
+
+	err = db.SaveState(d.ResourceKey, id, newState)
+	if err != nil {
+		return fmt.Errorf("saving state id=%s: %w", id, err)
 	}
 
 	return nil

@@ -57,8 +57,12 @@ Deployment complete!
           "relative_path": "databricks.yml"
         }
       }
+    },
+    "presets": {
+      "source_linked_deployment": false
     }
-  }
+  },
+  "extra": {}
 }
 === Check that metadata contains created job ids
 >>> cat metadata.json

@@ -1,0 +1,6 @@
+resources:
+  dashboards:
+    foobar:
+      display_name: foobar
+      etag: "1234567890"
+      serialized_dashboard: "{}"

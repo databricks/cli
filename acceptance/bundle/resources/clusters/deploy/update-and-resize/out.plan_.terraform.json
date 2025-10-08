@@ -1,0 +1,28 @@
+{
+  "plan": {
+    "resources.clusters.test_cluster": {
+      "action": "create"
+    }
+  }
+}
+{
+  "plan": {
+    "resources.clusters.test_cluster": {
+      "action": "update"
+    }
+  }
+}
+{
+  "plan": {
+    "resources.clusters.test_cluster": {
+      "action": "update"
+    }
+  }
+}
+{
+  "plan": {
+    "resources.clusters.test_cluster": {
+      "action": "update"
+    }
+  }
+}

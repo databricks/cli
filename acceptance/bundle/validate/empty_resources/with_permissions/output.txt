@@ -146,6 +146,7 @@ Warning: required field "schema_name" is not set
 {
   "clusters": {
     "rname": {
+      "autotermination_minutes": 60,
       "permissions": []
     }
   }

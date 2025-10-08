@@ -5,6 +5,7 @@
     "max_workers": 7,
     "min_workers": 2
   },
+  "autotermination_minutes": 60,
   "cluster_name": "foo",
   "node_type_id": "[NODE_TYPE_ID]",
   "num_workers": 2,
@@ -20,6 +21,7 @@
     "max_workers": 3,
     "min_workers": 1
   },
+  "autotermination_minutes": 60,
   "cluster_name": "foo-override",
   "node_type_id": "m5.xlarge",
   "num_workers": 3,

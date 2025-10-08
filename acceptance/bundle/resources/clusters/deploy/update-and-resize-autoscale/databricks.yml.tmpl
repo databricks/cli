@@ -1,0 +1,13 @@
+bundle:
+  name: test-deploy-cluster-autoscale
+
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME
+
+resources:
+  clusters:
+    test_cluster:
+      cluster_name: test-cluster-$UNIQUE_NAME
+      spark_version: $DEFAULT_SPARK_VERSION
+      node_type_id: $NODE_TYPE_ID
+      num_workers: 2
