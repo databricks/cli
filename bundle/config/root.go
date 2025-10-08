@@ -568,6 +568,11 @@ func (r Root) GetLocations(path string) []dyn.Location {
 	return v.Locations()
 }
 
+// GetNodeAndType and returns parent resource node and type of the resource in direct backend.
+// Examples:
+//
+//	"resources.jobs.foo.name" -> ("resources.jobs.foo", "jobs")
+//	"resources.jobs.foo.permissions[0].level -> ("resources.jobs.foo.permissions", "jobs.permissions")
 func GetNodeAndType(path dyn.Path) (dyn.Path, string) {
 	if len(path) < 3 {
 		return nil, ""
@@ -597,50 +602,6 @@ func GetResourceTypeFromKey(path string) string {
 	_, rType := GetNodeAndType(dp)
 	return rType
 }
-
-/*
-
-func GetResourceNodeFromPath(path *structpath.PathNode) structpath.PathNode {
-	parts := path.AsSlice()
-
-	if len(parts) < 3 {
-		return nil
-	}
-
-	if s, _ := parts[0].StringKey(); s != "resources" {
-		return nil
-	}
-
-	if len(parts) >= 4 {
-		if s, _ := parts[3].StringKey(); s == "permissions" || s == "grants" {
-			return path.Prefix(4)
-		}
-	}
-
-	return path.Prefix(3)
-}
-
-func GetResourceTypeFromPath(path *structpath.PathNode) string {
-	parts := path.AsSlice()
-}
-	if len(parts) < 3 {
-		return ""
-	}
-
-	if s, _ := parts[0].StringKey(); s != "resources" {
-		return ""
-	}
-
-	if len(parts) >= 4 {
-		if s, _ := parts[3].StringKey(); s == "permissions" || s == "grants" {
-			resourceType, ok :=
-			return path.Prefix(4)
-		}
-	}
-
-	return path.Prefix(3)
-}
-*/
 
 // GetResourceConfig returns the configuration object for a given resource path.
 // The path should be in the format "resources.group.name" (e.g., "resources.jobs.foo").
