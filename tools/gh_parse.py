@@ -34,7 +34,9 @@ PANIC = "💥\u200bPANIC"
 KNOWN_FAILURE = "🟨\u200bKNOWN"
 RECOVERED = "💚\u200bRECOVERED"
 
-INTERESTING_ACTIONS = (FAIL, BUG, FLAKY, PANIC, MISSING, KNOWN_FAILURE, RECOVERED)
+# The order is important - in case of ambiguity, earlier one gets preference.
+# For examples, each environment gets a summary icon which is earliest action in this list among all tests.
+INTERESTING_ACTIONS = (PANIC, BUG, FAIL, KNOWN_FAILURE, MISSING, FLAKY, RECOVERED)
 ACTIONS_WITH_ICON = INTERESTING_ACTIONS + (PASS, SKIP)
 
 ACTION_MESSAGES = {
@@ -408,6 +410,7 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False, omi
             per_env_stats.setdefault(env, Counter()).update(stats)
 
     table = []
+    columns = {" ", "Env"}
     for env, stats in sorted(per_env_stats.items()):
         status = "??"
         for action in ACTIONS_WITH_ICON:
@@ -422,7 +425,16 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False, omi
                 **stats,
             }
         )
-    print(format_table(table, markdown=markdown))
+        columns.update(stats)
+
+    def key(column):
+        try:
+            return (ACTIONS_WITH_ICON.index(column), "")
+        except:
+            return (-1, str(column))
+
+    columns = sorted(columns, key=key)
+    print(format_table(table, markdown=markdown, columns=columns))
 
     interesting_envs = set()
     for env, stats in per_env_stats.items():
