@@ -17,5 +17,6 @@ title "Set name_prefix= - out.with_nil_prefix.json\n"
 PREFIX= envsubst < databricks.yml.tmpl > databricks.yml
 trace grep -C 1 prefix: databricks.yml
 trace $CLI bundle validate -o json > out.with_nil_prefix.json
-
 rm databricks.yml
+
+title "The end\n" # prevent dangling empty line
