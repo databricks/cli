@@ -73,11 +73,13 @@ class KnownFailuresRule:
         if not package_match:
             return False
 
-        # Check test pattern
+        # Check test pattern - this matches the Go logic
         if self.test_prefix:
-            return self._matches_path_prefix(test_name, self.test_pattern)
+            return self._matches_path_prefix(test_name, self.test_pattern) or self._matches_path_prefix(
+                self.test_pattern, test_name
+            )
         else:
-            return test_name == self.test_pattern
+            return test_name == self.test_pattern or self._matches_path_prefix(self.test_pattern, test_name)
 
     def _matches_path_prefix(self, s, pattern):
         if pattern == "":
@@ -87,19 +89,85 @@ class KnownFailuresRule:
         return s.startswith(pattern + "/")
 
 
-def parse(content):
+def parse_known_failures(content):
     """
     Parse known failures config content.
 
-    >>> config = parse("libs/ *\\nbundle TestDeploy\\n* TestAccept/")
-    >>> config.matches("libs/auth", "TestSomething")
-    'libs/ *'
+    Test cases from Go testrunner/main_test.go:
+
+    >>> config = parse_known_failures("bundle TestDeploy")
     >>> config.matches("bundle", "TestDeploy")
     'bundle TestDeploy'
-    >>> config.matches("anything", "TestAccept/sub")
-    '* TestAccept/'
-    >>> config.matches("other", "TestOther")
+    >>> config.matches("libs", "TestDeploy")
     ''
+    >>> config.matches("bundle", "TestSomethingElse")
+    ''
+
+    >>> config = parse_known_failures("libs/ TestSomething")
+    >>> config.matches("libs/auth", "TestSomething")
+    'libs/ TestSomething'
+    >>> config.matches("libs", "TestSomething")
+    'libs/ TestSomething'
+    >>> config.matches("libsother", "TestSomething")
+    ''
+
+    >>> config = parse_known_failures("bundle TestAccept/")
+    >>> config.matches("bundle", "TestAcceptDeploy")
+    ''
+    >>> config.matches("bundle", "TestAccept")
+    'bundle TestAccept/'
+    >>> config.matches("bundle", "TestAccept/Deploy")
+    'bundle TestAccept/'
+
+    >>> config = parse_known_failures("* *")
+    >>> config.matches("any/package", "AnyTest")
+    '* *'
+
+    >>> config = parse_known_failures("* TestAccept/")
+    >>> config.matches("any/package", "TestAcceptDeploy")
+    ''
+    >>> config.matches("any/package", "TestAccept/Deploy")
+    '* TestAccept/'
+
+    >>> config = parse_known_failures("libs/ *")
+    >>> config.matches("libs/auth", "AnyTest")
+    'libs/ *'
+
+    >>> config = parse_known_failures("TestAccept/ TestAccept/")
+    >>> config.matches("TestAccept", "TestAccept")
+    'TestAccept/ TestAccept/'
+    >>> config.matches("TestAccept/bundle", "TestAccept/deploy")
+    'TestAccept/ TestAccept/'
+    >>> config.matches("TestAcceptSomething", "TestAcceptSomething")
+    ''
+
+    >>> config = parse_known_failures("* TestDeploy")
+    >>> config.matches("", "TestDeploy")
+    '* TestDeploy'
+
+    >>> config = parse_known_failures("bundle *")
+    >>> config.matches("bundle", "")
+    'bundle *'
+
+    >>> config = parse_known_failures("acceptance TestAccept/bundle/templates/default-python/combinations/classic")
+    >>> config.matches("acceptance", "TestAccept")
+    'acceptance TestAccept/bundle/templates/default-python/combinations/classic'
+    >>> config.matches("acceptance", "TestAnother")
+    ''
+    >>> config.matches("acceptance", "TestAccept/bundle/templates/default-python/combinations/classic/x")
+    ''
+
+    >>> config = parse_known_failures("acceptance TestAccept/bundle/templates/default-python/combinations/classic/")
+    >>> config.matches("acceptance", "TestAccept")
+    'acceptance TestAccept/bundle/templates/default-python/combinations/classic/'
+    >>> config.matches("acceptance", "TestAnother")
+    ''
+    >>> config.matches("acceptance", "TestAccept/bundle/templates/default-python/combinations/classic/x")
+    'acceptance TestAccept/bundle/templates/default-python/combinations/classic/'
+    >>> config.matches("acceptance", "TestAccept/bundle/templates/default-python/combinations/classic")
+    'acceptance TestAccept/bundle/templates/default-python/combinations/classic/'
+    >>> config.matches("acceptance", "TestAccept/bundle/templates/default-python/combinations")
+    'acceptance TestAccept/bundle/templates/default-python/combinations/classic/'
     """
     rules = []
     for line_num, line in enumerate(content.splitlines(), 1):
@@ -140,7 +208,7 @@ def load_known_failures():
         known_failures_path = Path(".gh-logs/known_failures.txt")
         if known_failures_path.exists():
             content = known_failures_path.read_text()
-            return parse(content)
+            return parse_known_failures(content)
     except Exception:
         pass
     return None
