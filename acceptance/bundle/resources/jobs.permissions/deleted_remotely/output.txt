@@ -40,14 +40,14 @@ Deployment complete!
       "user_name":"[USERNAME]"
     }
   ],
-  "object_id":"[JOB_ID]",
+  "object_id":"/jobs/[JOB_ID]",
   "object_type":"job"
 }
 
 === Delete permissions remotely
 >>> [CLI] permissions set jobs [JOB_ID] --json @remote_delete.json
 {
-  "object_id":"[JOB_ID]",
+  "object_id":"/jobs/[JOB_ID]",
   "object_type":"job"
 }
 
@@ -60,7 +60,7 @@ Deployment complete!
 
 >>> [CLI] permissions get jobs [JOB_ID]
 {
-  "object_id":"[JOB_ID]",
+  "object_id":"/jobs/[JOB_ID]",
   "object_type":"job"
 }
 
@@ -105,6 +105,6 @@ Deployment complete!
       "user_name":"[USERNAME]"
     }
   ],
-  "object_id":"[JOB_ID]",
+  "object_id":"/jobs/[JOB_ID]",
   "object_type":"job"
 }
