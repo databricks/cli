@@ -117,7 +117,7 @@ func (r *ResourcePipeline) DoDelete(ctx context.Context, id string) error {
 	return r.client.Pipelines.DeleteByPipelineId(ctx, id)
 }
 
-func (*ResourcePipeline) FieldTriggersLocal() map[string]deployplan.ActionType {
+func (*ResourcePipeline) fieldTriggers() map[string]deployplan.ActionType {
 	return map[string]deployplan.ActionType{
 		"storage":                              deployplan.ActionTypeRecreate,
 		"catalog":                              deployplan.ActionTypeRecreate,
@@ -126,13 +126,12 @@ func (*ResourcePipeline) FieldTriggersLocal() map[string]deployplan.ActionType {
 	}
 }
 
-func (*ResourcePipeline) FieldTriggersRemote() map[string]deployplan.ActionType {
-	return map[string]deployplan.ActionType{
-		"storage":                              deployplan.ActionTypeRecreate,
-		"catalog":                              deployplan.ActionTypeRecreate,
-		"ingestion_definition.connection_name": deployplan.ActionTypeRecreate,
-		"ingestion_definition.ingestion_gateway_id": deployplan.ActionTypeRecreate,
-	}
+func (r *ResourcePipeline) FieldTriggersLocal() map[string]deployplan.ActionType {
+	return r.fieldTriggers()
+}
+
+func (r *ResourcePipeline) FieldTriggersRemote() map[string]deployplan.ActionType {
+	return r.fieldTriggers()
 }
 
 // Note, terraform provider either

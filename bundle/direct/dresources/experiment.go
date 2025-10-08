@@ -71,7 +71,7 @@ func (r *ResourceExperiment) DoDelete(ctx context.Context, id string) error {
 	})
 }
 
-func (*ResourceExperiment) FieldTriggersLocal() map[string]deployplan.ActionType {
+func (*ResourceExperiment) fieldTriggers() map[string]deployplan.ActionType {
 	// TF implementation: https://github.com/databricks/terraform-provider-databricks/blob/6c106e8e7052bb2726148d66309fd460ed444236/mlflow/resource_mlflow_experiment.go#L22
 	return map[string]deployplan.ActionType{
 		"name":              deployplan.ActionTypeUpdate,
@@ -82,13 +82,10 @@ func (*ResourceExperiment) FieldTriggersLocal() map[string]deployplan.ActionType
 	}
 }
 
-func (*ResourceExperiment) FieldTriggersRemote() map[string]deployplan.ActionType {
-	// TF implementation: https://github.com/databricks/terraform-provider-databricks/blob/6c106e8e7052bb2726148d66309fd460ed444236/mlflow/resource_mlflow_experiment.go#L22
-	return map[string]deployplan.ActionType{
-		"name":              deployplan.ActionTypeUpdate,
-		"artifact_location": deployplan.ActionTypeRecreate,
+func (r *ResourceExperiment) FieldTriggersLocal() map[string]deployplan.ActionType {
+	return r.fieldTriggers()
+}
 
-		// Tags updates are not supported by TF. This mirrors that behaviour.
-		"tags": deployplan.ActionTypeSkip,
-	}
+func (r *ResourceExperiment) FieldTriggersRemote() map[string]deployplan.ActionType {
+	return r.fieldTriggers()
 }

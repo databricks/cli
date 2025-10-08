@@ -64,16 +64,18 @@ func (r *ResourceApp) DoDelete(ctx context.Context, id string) error {
 	return err
 }
 
-func (*ResourceApp) FieldTriggersLocal() map[string]deployplan.ActionType {
+func (*ResourceApp) fieldTriggers() map[string]deployplan.ActionType {
 	return map[string]deployplan.ActionType{
 		"name": deployplan.ActionTypeRecreate,
 	}
 }
 
-func (*ResourceApp) FieldTriggersRemote() map[string]deployplan.ActionType {
-	return map[string]deployplan.ActionType{
-		"name": deployplan.ActionTypeRecreate,
-	}
+func (r *ResourceApp) FieldTriggersLocal() map[string]deployplan.ActionType {
+	return r.fieldTriggers()
+}
+
+func (r *ResourceApp) FieldTriggersRemote() map[string]deployplan.ActionType {
+	return r.fieldTriggers()
 }
 
 func (r *ResourceApp) WaitAfterCreate(ctx context.Context, config *apps.App) (*apps.App, error) {

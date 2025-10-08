@@ -112,7 +112,7 @@ func (r *ResourceVolume) DoDelete(ctx context.Context, id string) error {
 	return r.client.Volumes.DeleteByName(ctx, id)
 }
 
-func (*ResourceVolume) FieldTriggersLocal() map[string]deployplan.ActionType {
+func (*ResourceVolume) fieldTriggers() map[string]deployplan.ActionType {
 	return map[string]deployplan.ActionType{
 		"catalog_name":     deployplan.ActionTypeRecreate,
 		"schema_name":      deployplan.ActionTypeRecreate,
@@ -122,14 +122,12 @@ func (*ResourceVolume) FieldTriggersLocal() map[string]deployplan.ActionType {
 	}
 }
 
-func (*ResourceVolume) FieldTriggersRemote() map[string]deployplan.ActionType {
-	return map[string]deployplan.ActionType{
-		"catalog_name":     deployplan.ActionTypeRecreate,
-		"schema_name":      deployplan.ActionTypeRecreate,
-		"storage_location": deployplan.ActionTypeRecreate,
-		"volume_type":      deployplan.ActionTypeRecreate,
-		"name":             deployplan.ActionTypeUpdateWithID,
-	}
+func (r *ResourceVolume) FieldTriggersLocal() map[string]deployplan.ActionType {
+	return r.fieldTriggers()
+}
+
+func (r *ResourceVolume) FieldTriggersRemote() map[string]deployplan.ActionType {
+	return r.fieldTriggers()
 }
 
 func getNameFromID(id string) (string, error) {

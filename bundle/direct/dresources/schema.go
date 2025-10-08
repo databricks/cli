@@ -77,7 +77,7 @@ func (r *ResourceSchema) DoDelete(ctx context.Context, id string) error {
 	})
 }
 
-func (*ResourceSchema) FieldTriggersLocal() map[string]deployplan.ActionType {
+func (*ResourceSchema) fieldTriggers() map[string]deployplan.ActionType {
 	return map[string]deployplan.ActionType{
 		"name":         deployplan.ActionTypeRecreate,
 		"catalog_name": deployplan.ActionTypeRecreate,
@@ -85,10 +85,10 @@ func (*ResourceSchema) FieldTriggersLocal() map[string]deployplan.ActionType {
 	}
 }
 
-func (*ResourceSchema) FieldTriggersRemote() map[string]deployplan.ActionType {
-	return map[string]deployplan.ActionType{
-		"name":         deployplan.ActionTypeRecreate,
-		"catalog_name": deployplan.ActionTypeRecreate,
-		"storage_root": deployplan.ActionTypeRecreate,
-	}
+func (r *ResourceSchema) FieldTriggersLocal() map[string]deployplan.ActionType {
+	return r.fieldTriggers()
+}
+
+func (r *ResourceSchema) FieldTriggersRemote() map[string]deployplan.ActionType {
+	return r.fieldTriggers()
 }
