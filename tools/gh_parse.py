@@ -439,7 +439,7 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False, omi
         for env, counts in items.items():
             for action in INTERESTING_ACTIONS:
                 if action in counts:
-                    per_testkey_result.setdefault(env, action)
+                    per_testkey_result.setdefault(env, short_action(action))
                     break
 
         # Once we know test is interesting, complete the row
@@ -449,7 +449,7 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False, omi
                     continue
                 for action in (PASS, SKIP):
                     if action in counts:
-                        per_testkey_result.setdefault(env, action)
+                        per_testkey_result.setdefault(env, short_action(action))
                         break
 
         if not per_testkey_result:
@@ -493,6 +493,12 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False, omi
                     print()
 
 
+def short_action(action):
+    if len(action) > 2 and action[1] == "\u200b":
+        return action[:2]
+    return action
+
+
 def format_table(table, columns=None, markdown=False):
     """
     Pretty-print a list-of-dicts as an aligned text table.
@@ -526,12 +532,12 @@ def format_table(table, columns=None, markdown=False):
 
     if markdown:
         # Header
-        write("| " + " | ".join(str(col).ljust(w) for col, w in zip(columns, widths)) + " |")
+        write("| " + " | ".join(autojust(str(col), w) for col, w in zip(columns, widths)) + " |")
         # Separator
         write("| " + " | ".join("-" * w for w in widths) + " |")
         # Data rows
         for row in table:
-            write("| " + " | ".join(str(row.get(col, "")).ljust(w) for col, w in zip(columns, widths)) + " |")
+            write("| " + " | ".join(autojust(row.get(col, ""), w) for col, w in zip(columns, widths)) + " |")
     else:
         write(fmt(columns, widths))
         for ind, row in enumerate(table):
@@ -543,7 +549,16 @@ def format_table(table, columns=None, markdown=False):
 
 
 def fmt(cells, widths):
-    return "  ".join(str(cell).ljust(w) for cell, w in zip(cells, widths))
+    return "  ".join(autojust(cell, w) for cell, w in zip(cells, widths))
+
+
+def autojust(value, width):
+    value = str(value)
+    if value.isdigit():
+        return value.rjust(width)
+    if len(value) == 2:  # emoji
+        return value.center(width)
+    return value.ljust(width)
 
 
 def wrap_in_details(txt, summary):
