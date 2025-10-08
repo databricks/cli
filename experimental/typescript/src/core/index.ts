@@ -34,6 +34,9 @@ export { Diagnostics, Severity, type Diagnostic } from "./diagnostics.js";
 // Bundle context
 export { Bundle } from "./bundle.js";
 
+// Workspace
+export { Workspace } from "./workspace.js";
+
 // Resources
 export { Resource } from "./resource.js";
 export { Resources, type ResourceType } from "./resources.js";

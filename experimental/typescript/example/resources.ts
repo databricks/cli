@@ -1,4 +1,4 @@
-import { type Bundle, Resources, Variable, variables } from "@databricks/bundles";
+import { Bundle, Resources, Variable, variables, Workspace } from "@databricks/bundles";
 import { App as BaseApp, type AppParams } from "@databricks/bundles/apps";
 import { Volume as BaseVolume, type VolumeParams } from "@databricks/bundles/volumes";
 import { stringify } from 'yaml'
@@ -15,8 +15,8 @@ const vars = variables<{
 export function loadResources(bundle: Bundle): Resources {
   const resources = new Resources();
 
-  const volume = new Volume({
-    name: `${bundle.target}-landing_zone`,
+  const volume = new Volume(bundle, {
+    name: `landing-zone`,
     comment: "Landing zone for the data",
     catalog_name: vars.catalog.value,
     schema_name: vars.schema.value,
@@ -24,8 +24,8 @@ export function loadResources(bundle: Bundle): Resources {
   });
   resources.addResource("landing_zone", volume);
 
-  const app = new App({
-    name: `${bundle.target}-data-explorer`,
+  const app = new App(bundle, {
+    name: `explorer`,
     description: "Interactive data exploration app",
     source_code_path: "./backend",
     env: {
@@ -63,7 +63,7 @@ interface AppExtraParams {
 }
 
 class App extends BaseApp {
-  constructor(params: AppParams & AppExtraParams) {
+  constructor(bundle: Bundle, params: AppParams & AppExtraParams) {
     const appYmlConfig: { env?: Array<{ name: string; value: string }>, command?: string[] } = {};
     if (params.env || params.command) {
       appYmlConfig.env = Object.entries(params.env || {}).map(([name, value]) => ({ name, value: value as string }));
@@ -77,12 +77,18 @@ class App extends BaseApp {
     delete(params.env);
     delete(params.command);
 
+    if (bundle.mode === "development") {
+      params.name = `dev-${Workspace.currentUser.domainFriendlyName}-${params.name}`;
+    }
     super(params);
   }
 }
 
 export class Volume extends BaseVolume {
-  constructor(params: VolumeParams) {
+  constructor(bundle: Bundle, params: VolumeParams) {
+    if (bundle.mode === "development") {
+      params.name = `dev-${Workspace.currentUser.domainFriendlyName}-${params.name}`;
+    }
     super(params);
   }
 

@@ -34,9 +34,14 @@ export class Bundle {
    */
   readonly variables: Readonly<Record<string, unknown>>;
 
-  constructor(options: { target: string; variables?: Record<string, unknown> }) {
+  readonly mode?: string;
+  readonly name: string;
+
+  constructor(options: { target: string; variables?: Record<string, unknown>, mode?: string, name: string }) {
     this.target = options.target;
     this.variables = Object.freeze({ ...options.variables });
+    this.mode = options.mode;
+    this.name = options.name;
   }
 
   /**

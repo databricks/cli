@@ -12,7 +12,7 @@
 import { readFile, writeFile } from "fs/promises";
 import { pathToFileURL } from "url";
 import { relative, isAbsolute } from "path";
-import type { Bundle } from "../core/bundle.js";
+import { Bundle } from "../core/bundle.js";
 import { Diagnostics } from "../core/diagnostics.js";
 import { Location } from "../core/location.js";
 import { Resources } from "../core/resources.js";
@@ -43,6 +43,8 @@ export interface BuildConfig {
 export interface BundleInput {
   bundle?: {
     target?: string;
+    mode?: string;
+    name: string;
     [key: string]: unknown;
   };
   variables?: Record<string, { value?: unknown; [key: string]: unknown }>;
@@ -147,7 +149,9 @@ export function readConfig(input: BundleInput): [BuildConfig, Diagnostics] {
  * Parse bundle information from input
  */
 export function parseBundleInfo(input: BundleInput): Bundle {
-  const bundleInfo = input.bundle || {};
+  const bundleInfo: BundleInput["bundle"] = input.bundle || {
+    name: "unknown",
+  };
   const variables: Record<string, unknown> = {};
 
   for (const [key, value] of Object.entries(input.variables || {})) {
@@ -156,10 +160,12 @@ export function parseBundleInfo(input: BundleInput): Bundle {
     }
   }
 
-  return {
+  return new Bundle({
     target: bundleInfo.target || "default",
     variables,
-  } as Bundle;
+    mode: bundleInfo.mode as string | undefined,
+    name: bundleInfo.name as string,
+  });
 }
 
 /**
