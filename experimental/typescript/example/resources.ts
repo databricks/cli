@@ -7,46 +7,37 @@ import path from "path";
 import fs from "fs";
 
 const vars = variables<{
-  warehouse_id: Variable;
-  catalog: Variable;
-  schema: Variable;
+  warehouse_id: Variable<string>;
+  catalog: Variable<string>;
+  schema: Variable<string>;
 }>();
 
 export function loadResources(bundle: Bundle): Resources {
   const resources = new Resources();
 
-  // Create variables for configuration
-  const warehouseId = vars.warehouse_id;
-  const catalogName = vars.catalog;
-  const schemaName = vars.schema;
-
   const volume = new Volume({
     name: `${bundle.target}-landing_zone`,
     comment: "Landing zone for the data",
-    catalog_name: catalogName,
-    schema_name: schemaName,
+    catalog_name: vars.catalog.value,
+    schema_name: vars.schema.value,
     volume_type: "MANAGED",
   });
   resources.addResource("landing_zone", volume);
 
-  // Add a Databricks App
-  resources.addResource("my_data_app", createServer(bundle, {
+  const app = new App({
     name: `${bundle.target}-data-explorer`,
     description: "Interactive data exploration app",
-
     source_code_path: "./backend",
     env: {
       FOO: "BAR2",
     },
     command: ["npm", "start"],
-
-    // App resources (permissions to access other Databricks resources)
     resources: [
       {
         name: "warehouse",
         description: `SQL warehouse for querying data ${bundle.target}`,
         sql_warehouse: {
-          id: warehouseId,
+          id: vars.warehouse_id.value,
           permission: "CAN_USE",
         },
       },
@@ -60,32 +51,34 @@ export function loadResources(bundle: Bundle): Resources {
         },
       }
     ],
-  }));
+  });
+  resources.addResource("my_data_app", app);
 
   return resources;
 }
 
-function createServer(_bundle: Bundle, config: AppParams & {
+interface AppExtraParams {
   env?: { [key: string]: string },
   command?: string[],
-}): BaseApp {
+}
+
+class App extends BaseApp {
+  constructor(params: AppParams & AppExtraParams) {
+    const appYmlConfig: { env?: Array<{ name: string; value: string }>, command?: string[] } = {};
+    if (params.env || params.command) {
+      appYmlConfig.env = Object.entries(params.env || {}).map(([name, value]) => ({ name, value: value as string }));
+      appYmlConfig.command = params.command;
+    }
+    
+    if (typeof params.source_code_path === "string") {
+      fs.writeFileSync(path.join(params.source_code_path, "app.yml"), stringify(appYmlConfig));
+    }
   
-  const appYmlConfig: { env?: Array<{ name: string; value: string }>, command?: string[] } = {};
-  if (config.env || config.command) {
-    appYmlConfig.env = Object.entries(config.env || {}).map(([name, value]) => ({ name, value: value as string }));
-    appYmlConfig.command = config.command;
+    delete(params.env);
+    delete(params.command);
+
+    super(params);
   }
-  
-  if (typeof config.source_code_path === "string") {
-    fs.writeFileSync(path.join(config.source_code_path, "app.yml"), stringify(appYmlConfig));
-  }
-
-  delete(config.env);
-  delete(config.command);
-
-  const app = new BaseApp(config);
-
-  return app;
 }
 
 export class Volume extends BaseVolume {
