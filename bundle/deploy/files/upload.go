@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
@@ -29,7 +30,6 @@ func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		return nil
 	}
 
-	cmdio.LogString(ctx, fmt.Sprintf("Uploading bundle files to %s...", b.Config.Workspace.FilePath))
 	opts, err := GetSyncOptions(ctx, b)
 	if err != nil {
 		return diag.FromErr(err)
@@ -41,6 +41,26 @@ func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		return diag.FromErr(err)
 	}
 	defer sync.Close()
+
+	counts, err := sync.GetFileCounts(ctx)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	// Build message showing file counts and exclusions
+	msg := fmt.Sprintf("Uploading %d files", counts.Included)
+	var exclusions []string
+	if counts.ExcludedByGitIgnore > 0 {
+		exclusions = append(exclusions, fmt.Sprintf("%d by .gitignore", counts.ExcludedByGitIgnore))
+	}
+	if counts.ExcludedBySyncExclude > 0 {
+		exclusions = append(exclusions, fmt.Sprintf("%d by sync.exclude", counts.ExcludedBySyncExclude))
+	}
+	if len(exclusions) > 0 {
+		msg += fmt.Sprintf(" (ignoring %s)", strings.Join(exclusions, ", "))
+	}
+	msg += fmt.Sprintf(" to %s...", b.Config.Workspace.FilePath)
+	cmdio.LogString(ctx, msg)
 
 	b.Files, err = sync.RunOnce(ctx)
 	if err != nil {

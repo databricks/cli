@@ -11,6 +11,8 @@ import (
 type FileSet struct {
 	fileset *fileset.FileSet
 	view    *View
+	root    vfs.Path
+	paths   []string
 }
 
 // NewFileSet returns [FileSet] for the directory `root` which is contained within Git worktree located at `worktreeRoot`.
@@ -21,9 +23,17 @@ func NewFileSet(worktreeRoot, root vfs.Path, paths ...[]string) (*FileSet, error
 		return nil, err
 	}
 	fs.SetIgnorer(v)
+
+	var p []string
+	if len(paths) > 0 {
+		p = paths[0]
+	}
+
 	return &FileSet{
 		fileset: fs,
 		view:    v,
+		root:    root,
+		paths:   p,
 	}, nil
 }
 
@@ -42,4 +52,11 @@ func (f *FileSet) IgnoreDirectory(dir string) (bool, error) {
 func (f *FileSet) Files() ([]fileset.File, error) {
 	f.view.repo.taintIgnoreRules()
 	return f.fileset.Files()
+}
+
+// AllFiles returns all files in the fileset without applying gitignore rules.
+func (f *FileSet) AllFiles() ([]fileset.File, error) {
+	// Create a new fileset without the gitignore ignorer to get all files
+	fs := fileset.New(f.root, f.paths)
+	return fs.Files()
 }

@@ -62,6 +62,18 @@ type Sync struct {
 	// WaitGroup is automatically created when an output handler is provided in the SyncOptions.
 	// Close call is required to ensure the output handler goroutine handles all events in time.
 	outputWaitGroup *stdsync.WaitGroup
+
+	// Cached file lists to avoid duplicate tree walks
+	fileListOnce stdsync.Once
+	fileLists    fileLists
+	fileListErr  error
+}
+
+type fileLists struct {
+	all     []fileset.File
+	git     []fileset.File
+	include []fileset.File
+	exclude []fileset.File
 }
 
 // New initializes and returns a new [Sync] instance.
@@ -213,34 +225,120 @@ func (s *Sync) RunOnce(ctx context.Context) ([]fileset.File, error) {
 	return files, nil
 }
 
+// computeFileLists computes and caches the file lists to avoid duplicate tree walks.
+func (s *Sync) computeFileLists(ctx context.Context) (*fileLists, error) {
+	s.fileListOnce.Do(func() {
+		allFiles, err := s.fileSet.AllFiles()
+		if err != nil {
+			log.Errorf(ctx, "cannot list all files: %s", err)
+			s.fileListErr = err
+			return
+		}
+		s.fileLists.all = allFiles
+
+		gitFiles, err := s.fileSet.Files()
+		if err != nil {
+			log.Errorf(ctx, "cannot list files: %s", err)
+			s.fileListErr = err
+			return
+		}
+		s.fileLists.git = gitFiles
+
+		include, err := s.includeFileSet.Files()
+		if err != nil {
+			log.Errorf(ctx, "cannot list include files: %s", err)
+			s.fileListErr = err
+			return
+		}
+		s.fileLists.include = include
+
+		exclude, err := s.excludeFileSet.Files()
+		if err != nil {
+			log.Errorf(ctx, "cannot list exclude files: %s", err)
+			s.fileListErr = err
+			return
+		}
+		s.fileLists.exclude = exclude
+	})
+
+	if s.fileListErr != nil {
+		return nil, s.fileListErr
+	}
+	return &s.fileLists, nil
+}
+
+// FileCounts contains the counts of files by their sync status.
+type FileCounts struct {
+	Included          int
+	ExcludedByGitIgnore int
+	ExcludedBySyncExclude int
+}
+
+// GetFileCounts returns the counts of files that will be synced and files that are excluded.
+func (s *Sync) GetFileCounts(ctx context.Context) (*FileCounts, error) {
+	lists, err := s.computeFileLists(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Build set of all files (without gitignore)
+	allFilesSet := set.NewSetF(func(f fileset.File) string {
+		return f.Relative
+	})
+	allFilesSet.Add(lists.all...)
+
+	// Build set of git-tracked files (with gitignore applied)
+	gitFilesSet := set.NewSetF(func(f fileset.File) string {
+		return f.Relative
+	})
+	gitFilesSet.Add(lists.git...)
+
+	// Count files excluded by gitignore (all files - git files)
+	excludedByGitIgnore := 0
+	for _, f := range lists.all {
+		if !gitFilesSet.Has(f) {
+			excludedByGitIgnore++
+		}
+	}
+
+	// Build set of files to sync (git files + include)
+	syncSet := set.NewSetF(func(f fileset.File) string {
+		return f.Relative
+	})
+	syncSet.Add(lists.git...)
+	syncSet.Add(lists.include...)
+
+	// Count files excluded by sync.exclude
+	excludedBySyncExclude := 0
+	for _, f := range lists.exclude {
+		if syncSet.Has(f) {
+			syncSet.Remove(f)
+			excludedBySyncExclude++
+		}
+	}
+
+	return &FileCounts{
+		Included:              syncSet.Size(),
+		ExcludedByGitIgnore:   excludedByGitIgnore,
+		ExcludedBySyncExclude: excludedBySyncExclude,
+	}, nil
+}
+
 func (s *Sync) GetFileList(ctx context.Context) ([]fileset.File, error) {
+	lists, err := s.computeFileLists(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	// tradeoff: doing portable monitoring only due to macOS max descriptor manual ulimit setting requirement
 	// https://github.com/gorakhargosh/watchdog/blob/master/src/watchdog/observers/kqueue.py#L394-L418
 	all := set.NewSetF(func(f fileset.File) string {
 		return f.Relative
 	})
-	gitFiles, err := s.fileSet.Files()
-	if err != nil {
-		log.Errorf(ctx, "cannot list files: %s", err)
-		return nil, err
-	}
-	all.Add(gitFiles...)
+	all.Add(lists.git...)
+	all.Add(lists.include...)
 
-	include, err := s.includeFileSet.Files()
-	if err != nil {
-		log.Errorf(ctx, "cannot list include files: %s", err)
-		return nil, err
-	}
-
-	all.Add(include...)
-
-	exclude, err := s.excludeFileSet.Files()
-	if err != nil {
-		log.Errorf(ctx, "cannot list exclude files: %s", err)
-		return nil, err
-	}
-
-	for _, f := range exclude {
+	for _, f := range lists.exclude {
 		all.Remove(f)
 	}
 
