@@ -137,43 +137,76 @@ def _test_parse_known_failures():
         ("bundle TestDeploy", "bundle", "TestDeploy", True),
         ("bundle TestDeploy", "libs", "TestDeploy", False),
         ("bundle TestDeploy", "bundle", "TestSomethingElse", False),
-
         # Package prefix matches
         ("libs/ TestSomething", "libs/auth", "TestSomething", True),
         ("libs/ TestSomething", "libs", "TestSomething", True),
         ("libs/ TestSomething", "libsother", "TestSomething", False),
-
         # Test prefix matches
         ("bundle TestAccept/", "bundle", "TestAcceptDeploy", False),
         ("bundle TestAccept/", "bundle", "TestAccept", True),
         ("bundle TestAccept/", "bundle", "TestAccept/Deploy", True),
-
         # Wildcard matches
         ("* *", "any/package", "AnyTest", True),
         ("* TestAccept/", "any/package", "TestAcceptDeploy", False),
         ("* TestAccept/", "any/package", "TestAccept/Deploy", True),
         ("libs/ *", "libs/auth", "AnyTest", True),
-
         # Path prefix edge cases
         ("TestAccept/ TestAccept/", "TestAccept", "TestAccept", True),
         ("TestAccept/ TestAccept/", "TestAccept/bundle", "TestAccept/deploy", True),
         ("TestAccept/ TestAccept/", "TestAcceptSomething", "TestAcceptSomething", False),
-
         # Empty values cases
         ("* TestDeploy", "", "TestDeploy", True),
         ("bundle *", "bundle", "", True),
-
         # Subtest failure results in parent test failure as well
-        ("acceptance TestAccept/bundle/templates/default-python/combinations/classic", "acceptance", "TestAccept", True),
-        ("acceptance TestAccept/bundle/templates/default-python/combinations/classic", "acceptance", "TestAnother", False),
-        ("acceptance TestAccept/bundle/templates/default-python/combinations/classic", "acceptance", "TestAccept/bundle/templates/default-python/combinations/classic/x", False),
-
+        (
+            "acceptance TestAccept/bundle/templates/default-python/combinations/classic",
+            "acceptance",
+            "TestAccept",
+            True,
+        ),
+        (
+            "acceptance TestAccept/bundle/templates/default-python/combinations/classic",
+            "acceptance",
+            "TestAnother",
+            False,
+        ),
+        (
+            "acceptance TestAccept/bundle/templates/default-python/combinations/classic",
+            "acceptance",
+            "TestAccept/bundle/templates/default-python/combinations/classic/x",
+            False,
+        ),
         # Pattern version
-        ("acceptance TestAccept/bundle/templates/default-python/combinations/classic/", "acceptance", "TestAccept", True),
-        ("acceptance TestAccept/bundle/templates/default-python/combinations/classic/", "acceptance", "TestAnother", False),
-        ("acceptance TestAccept/bundle/templates/default-python/combinations/classic/", "acceptance", "TestAccept/bundle/templates/default-python/combinations/classic/x", True),
-        ("acceptance TestAccept/bundle/templates/default-python/combinations/classic/", "acceptance", "TestAccept/bundle/templates/default-python/combinations/classic", True),
-        ("acceptance TestAccept/bundle/templates/default-python/combinations/classic/", "acceptance", "TestAccept/bundle/templates/default-python/combinations", True),
+        (
+            "acceptance TestAccept/bundle/templates/default-python/combinations/classic/",
+            "acceptance",
+            "TestAccept",
+            True,
+        ),
+        (
+            "acceptance TestAccept/bundle/templates/default-python/combinations/classic/",
+            "acceptance",
+            "TestAnother",
+            False,
+        ),
+        (
+            "acceptance TestAccept/bundle/templates/default-python/combinations/classic/",
+            "acceptance",
+            "TestAccept/bundle/templates/default-python/combinations/classic/x",
+            True,
+        ),
+        (
+            "acceptance TestAccept/bundle/templates/default-python/combinations/classic/",
+            "acceptance",
+            "TestAccept/bundle/templates/default-python/combinations/classic",
+            True,
+        ),
+        (
+            "acceptance TestAccept/bundle/templates/default-python/combinations/classic/",
+            "acceptance",
+            "TestAccept/bundle/templates/default-python/combinations",
+            True,
+        ),
     ]
 
     for input_str, package_name, testcase, expected_match in test_cases:
@@ -184,8 +217,10 @@ def _test_parse_known_failures():
         actual_match = bool(result)
 
         if actual_match != expected_match:
-            raise AssertionError(f"Test failed for input='{input_str}', package='{package_name}', test='{testcase}': "
-                               f"expected {expected_match}, got {actual_match} (result: '{result}')")
+            raise AssertionError(
+                f"Test failed for input='{input_str}', package='{package_name}', test='{testcase}': "
+                f"expected {expected_match}, got {actual_match} (result: '{result}')"
+            )
 
 
 def load_known_failures():
