@@ -22,7 +22,6 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
           "permission_level":"CAN_VIEW"
         }
       ],
-      "display_name":"viewer@example.com",
       "user_name":"viewer@example.com"
     },
     {
@@ -41,11 +40,10 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
           "permission_level":"IS_OWNER"
         }
       ],
-      "display_name":"[USERNAME]",
       "user_name":"[USERNAME]"
     }
   ],
-  "object_id":"/jobs/[JOB_ID]",
+  "object_id":"[JOB_ID]",
   "object_type":"job"
 }
 
