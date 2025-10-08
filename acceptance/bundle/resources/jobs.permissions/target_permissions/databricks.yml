@@ -1,0 +1,21 @@
+bundle:
+  name: jobs-permissions-test
+
+resources:
+  jobs:
+    foo:
+      name: foo
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Workspace/Users/user@example.com/notebook
+            source: WORKSPACE
+
+targets:
+  prod:
+    mode: production
+    workspace:
+      root_path: /Workspace/Users/tester@databricks.com/test-bundle
+    permissions:
+      - user_name: tester@databricks.com
+        level: CAN_MANAGE
