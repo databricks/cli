@@ -1,3 +1,7 @@
+trace $CLI workspace mkdirs /Workspace/test-$UNIQUE_NAME
+
+envsubst < dashboard.json.tmpl > dashboard.json
+
 # create a dashboard to import
 dashboard_id=$($CLI lakeview create --json @dashboard.json | jq -r '.dashboard_id')
 

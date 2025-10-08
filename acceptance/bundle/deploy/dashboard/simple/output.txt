@@ -5,7 +5,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> [CLI] lakeview get [DASHBOARD_ID]
+>>> [CLI] lakeview get [NUMID]
 {
   "lifecycle_state": "ACTIVE",
   "parent_path": "/Users/[USERNAME]",
