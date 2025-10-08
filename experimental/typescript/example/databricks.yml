@@ -1,0 +1,41 @@
+bundle:
+  name: typescript-example
+
+variables:
+  catalog:
+    default: "main"
+    description: "Unity Catalog name"
+
+  schema:
+    default: "default"
+    description: "Schema name within the catalog"
+
+  warehouse_id:
+    description: "SQL warehouse ID for the app (required)"
+
+# Configure TypeScript resource loading
+experimental:
+  javascript:
+    resources:
+      - "./dist/resources.js:loadResources"
+
+sync:
+  exclude:
+    - "node_modules"
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: https://adb-1966697730403610.10.azuredatabricks.net/
+    variables:
+      catalog: "main"
+      schema: "fabian_jakobs"
+      warehouse_id: "2afd2845dea667bf"
+
+  prod:
+    mode: production
+    variables:
+      catalog: "prod_catalog"
+      schema: "prod_schema"

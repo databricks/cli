@@ -35,7 +35,6 @@ export interface BuildArgs {
 export interface BuildConfig {
   resources?: string[];
   mutators?: string[];
-  venv_path?: string;
 }
 
 /**
@@ -69,7 +68,12 @@ export interface LocationOutput {
 /**
  * Parse command line arguments
  */
-export function parseArgs(args: string[]): BuildArgs {
+export function parseArgs(args: string[]): BuildArgs | "help" {
+  // Check for help flag
+  if (args.includes("--help") || args.includes("-h")) {
+    return "help";
+  }
+
   const parsed: Partial<BuildArgs> = {};
 
   for (let i = 0; i < args.length; i += 2) {
@@ -114,19 +118,8 @@ export function parseArgs(args: string[]): BuildArgs {
 export function readConfig(input: BundleInput): [BuildConfig, Diagnostics] {
   const experimental = input.experimental || {};
 
-  // Check for deprecated pydabs config
-  if ("pydabs" in experimental && Object.keys(experimental.pydabs as object).length > 0) {
-    return [
-      {},
-      Diagnostics.createError(
-        "'experimental/pydabs' is not supported by '@databricks/bundles', use 'experimental/python' instead",
-        { path: ["experimental", "pydabs"] }
-      ),
-    ];
-  }
-
-  const experimentalConfig = experimental.python || {};
-  const config = input.python || {};
+  const experimentalConfig = experimental.javascript || {};
+  const config = input.javascript || {};
 
   const hasConfig = Object.keys(config).length > 0;
   const hasExperimentalConfig = Object.keys(experimentalConfig).length > 0;
@@ -137,8 +130,8 @@ export function readConfig(input: BundleInput): [BuildConfig, Diagnostics] {
       return [
         {},
         Diagnostics.createError(
-          "Both 'python' and 'experimental/python' sections are present, use 'python' section only",
-          { path: ["experimental", "python"] }
+          "Both 'javascript' and 'experimental/javascript' sections are present, use 'javascript' section only",
+          { path: ["experimental", "javascript"] }
         ),
       ];
     }
@@ -240,9 +233,9 @@ export const loadResources = defineResources((bundle) => {
 /**
  * Load resource functions
  */
-export async function loadFunctions(names: string[]): Promise<[Function[], Diagnostics]> {
+export async function loadFunctions(names: string[]): Promise<[((bundle: Bundle) => Promise<Resources>)[], Diagnostics]> {
   let diagnostics = new Diagnostics();
-  const functions: Function[] = [];
+  const functions: ((bundle: Bundle) => Promise<Resources>)[] = [];
 
   for (const name of names) {
     const [obj, diag] = await loadObject(name);
@@ -260,7 +253,7 @@ export async function loadFunctions(names: string[]): Promise<[Function[], Diagn
       continue;
     }
 
-    functions.push(obj as Function);
+    functions.push(obj as ((bundle: Bundle) => Promise<Resources>));
   }
 
   return [functions, diagnostics];
@@ -317,41 +310,26 @@ function isResourceMutator(obj: unknown): obj is ResourceMutator {
  */
 export async function loadResources(
   bundle: Bundle,
-  functions: Function[]
+  functions: ((bundle: Bundle) => Promise<Resources>)[]
 ): Promise<[Resources, Diagnostics]> {
   let diagnostics = new Diagnostics();
   const resources = new Resources();
 
   for (const func of functions) {
     try {
-      const funcResources = await loadResourcesFromFunction(bundle, func);
+      const funcResources = await func(bundle);
       resources.addResources(funcResources);
+      console.log("funcResources", JSON.stringify(funcResources, null, 2));
+      console.log("resources", resources.toJSON());
     } catch (error) {
+      console.error("Failed to load resources", error);
       const errorMessage = error instanceof Error ? error.message : String(error);
       diagnostics = diagnostics.extend(
         Diagnostics.createError("Failed to load resources", { detail: errorMessage })
       );
     }
   }
-
   return [resources, diagnostics];
-}
-
-/**
- * Load resources from a single function
- */
-async function loadResourcesFromFunction(bundle: Bundle, func: Function): Promise<Resources> {
-  // Check function arity to determine if it takes bundle parameter
-  const result = func.length === 0 ? func() : func(structuredClone(bundle));
-
-  // Handle async functions
-  const resources = result instanceof Promise ? await result : result;
-
-  if (!(resources instanceof Resources)) {
-    throw new Error("Function must return a Resources instance");
-  }
-
-  return resources;
 }
 
 /**
@@ -359,7 +337,7 @@ async function loadResourcesFromFunction(bundle: Bundle, func: Function): Promis
  */
 export function appendResources(input: BundleInput, resources: Resources): BundleInput {
   const output = { ...input };
-
+    
   const resourcesJSON = resources.toJSON();
 
   if (Object.keys(resourcesJSON).length > 0) {
@@ -485,9 +463,10 @@ export async function writeLocations(
 /**
  * Main entry point for the build system
  */
-export async function pythonMutator(
+export async function jsMutator(
   args: BuildArgs
 ): Promise<[BundleInput, Map<string, Location>, Diagnostics]> {
+  
   const inputContent = await readFile(args.input, "utf-8");
   const input: BundleInput = JSON.parse(inputContent);
 
@@ -501,8 +480,7 @@ export async function pythonMutator(
   }
 
   const bundle = parseBundleInfo(input);
-
-  if (args.phase === "load_resources") {
+  if (args.phase === "load_resources") {    
     const [functions, funcDiag] = await loadFunctions(config.resources || []);
     diagnostics = diagnostics.extend(funcDiag);
 
@@ -510,7 +488,7 @@ export async function pythonMutator(
       return [input, new Map(), diagnostics];
     }
 
-    const [resources, resDiag] = await loadResources(bundle, functions);
+    const [resources, resDiag] = await loadResources(bundle, functions);    
     diagnostics = diagnostics.extend(resDiag).extend(resources.diagnostics);
 
     if (diagnostics.hasError()) {
@@ -528,13 +506,58 @@ export async function pythonMutator(
 }
 
 /**
+ * Print help message
+ */
+function printHelp(): void {
+  console.log(`
+Databricks TypeScript Bundle Builder
+
+Usage:
+  databricks-ts-builder [OPTIONS]
+
+Options:
+  --phase <phase>           Phase to execute: load_resources or apply_mutators
+  --input <path>            Path to input JSON file containing bundle configuration
+  --output <path>           Path to output JSON file for processed bundle
+  --diagnostics <path>      Path to diagnostics output file (newline-delimited JSON)
+  --locations <path>        Path to locations output file (newline-delimited JSON, optional)
+  --help, -h                Show this help message
+
+Phases:
+  load_resources            Load resources from TypeScript modules and append to bundle
+  apply_mutators            Apply resource mutators to transform existing resources
+
+Examples:
+  # Load resources phase
+  databricks-ts-builder --phase load_resources \\
+    --input bundle.json \\
+    --output bundle-with-resources.json \\
+    --diagnostics diagnostics.txt
+
+  # With locations tracking
+  databricks-ts-builder --phase load_resources \\
+    --input bundle.json \\
+    --output bundle-with-resources.json \\
+    --diagnostics diagnostics.txt \\
+    --locations locations.txt
+
+For more information, visit: https://docs.databricks.com/dev-tools/bundles/
+`);
+}
+
+/**
  * CLI entry point
  */
 export async function main(argv: string[]): Promise<number> {
   try {
     const args = parseArgs(argv.slice(2));
 
-    const [output, locations, diagnostics] = await pythonMutator(args);
+    if (args === "help") {
+      printHelp();
+      return 0;
+    }
+
+    const [output, locations, diagnostics] = await jsMutator(args);
 
     // Write diagnostics
     await writeDiagnostics(args.diagnostics, diagnostics);

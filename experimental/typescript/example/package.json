@@ -1,0 +1,21 @@
+{
+  "name": "@databricks/bundles-example",
+  "version": "1.0.0",
+  "description": "Example Databricks Asset Bundle using TypeScript",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "deploy": "npm run build && ./databricks bundle deploy",
+    "summary": "npm run build && ./databricks bundle summary",
+    "clean": "rm -rf dist",
+    "rebuild": "npm run clean && npm run build",
+    "watch": "tsc --watch"
+  },
+  "dependencies": {
+    "@databricks/bundles": "file:.."
+  },
+  "devDependencies": {
+    "typescript": "^5.5.3"
+  }
+}
