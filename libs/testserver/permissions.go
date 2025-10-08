@@ -141,7 +141,9 @@ func (s *FakeWorkspace) SetPermissions(req Request) any {
 		// Convert PermissionLevel to Permission
 		if acl.PermissionLevel != "" {
 			response.AllPermissions = append(response.AllPermissions, iam.Permission{
+				Inherited:       false,
 				PermissionLevel: acl.PermissionLevel,
+				ForceSendFields: []string{"Inherited"},
 			})
 		}
 
