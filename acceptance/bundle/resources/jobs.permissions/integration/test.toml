@@ -1,0 +1,7 @@
+Local = false
+Cloud = true
+RecordRequests = true
+Ignore = [".databricks"]
+
+[[Server]]
+Pattern = "POST /api/2.0/preview/scim/v2/Users"
