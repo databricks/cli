@@ -1,0 +1,45 @@
+# Preamble
+
+This file only contains template directives; it is skipped for the actual output.
+
+{{skip "__preamble"}}
+
+{{$pipeline := eq .include_pipeline "yes"}}
+{{$notebook_job := eq .include_job "yes"}}
+{{$python_package := eq .include_python "yes"}}
+{{$sql_language := eq .language "sql"}}
+{{$lakeflow_only := eq .lakeflow_only "yes"}}
+{{$has_python_package_dir := and (or $python_package $notebook_job $pipeline) (not $lakeflow_only)}}
+
+{{if not $notebook_job}}
+  {{skip "{{.project_name}}/src/sample_notebook.ipynb"}}
+{{end}}
+
+{{if not $has_python_package_dir}}
+  {{skip "{{.project_name}}/src/{{.project_name}}"}}
+{{end}}
+
+{{if or $python_package $notebook_job $pipeline}}
+  # Remove .gitkeep files for a non-empty project
+  {{skip "{{.project_name}}/src/.gitkeep"}}
+  {{skip "{{.project_name}}/resources/.gitkeep"}}
+{{else}}
+  # Fully empty project, even remove the sample job
+  {{skip "{{.project_name}}/resources/sample_job.job.yml"}}
+{{end}}
+
+{{if not $pipeline}}
+  {{skip "{{.project_name}}/resources/{{.project_name_short}}_etl.pipeline.yml"}}
+  {{skip "{{.project_name}}/src/{{.project_name_short}}_etl"}}
+{{else if $sql_language}}
+  {{skip "{{.project_name}}/src/{{.project_name_short}}_etl/transformations/*.py"}}
+{{else}}
+  {{skip "{{.project_name}}/src/{{.project_name_short}}_etl/transformations/*.sql"}}
+{{end}}
+
+{{if or $sql_language $lakeflow_only}}
+  # Do not include tests when using SQL or when created from the Lakeflow workspace UI
+  # (until we have better UI support for tests)
+  {{skip "{{.project_name}}/tests"}}
+  {{skip "{{.project_name}}/fixtures"}}
+{{end}}

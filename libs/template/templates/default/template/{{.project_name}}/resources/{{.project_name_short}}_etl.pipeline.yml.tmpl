@@ -24,16 +24,15 @@ resources:
 {{- if $serverless }}
       serverless: true
 {{- end}}
-      root_path: "."
+      root_path: "../src/{{.project_name_short}}_etl"
 
       libraries:
         - glob:
-            include: transformations/**
+            include: ../src/{{.project_name_short}}_etl/transformations/**
 
-{{- if eq .include_python "yes"}}
       environment:
         dependencies:
-          # By default we include the .whl file generated for the project's pyproject.toml
-          # in the root of this project. Any other dependencies can be added there.
-          - ../../dist/*.whl
-{{- end}}
+          # We include every dependency defined by pyproject.toml by defining an editable environment
+          # that points to the folder where pyproject.toml is deployed.
+          {{- /* We avoid a relative path here to work around https://github.com/databricks/cli/issues/3674 */}}
+          - --editable ${workspace.file_path}
