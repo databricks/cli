@@ -43,13 +43,15 @@ const terraformStateFilename = "terraform.tfstate"
 // This struct is used as a communication channel to collect metrics
 // from all over the bundle codebase to finally be emitted as telemetry.
 type Metrics struct {
-	ConfigurationFileCount      int64
-	TargetCount                 int64
-	DeploymentId                uuid.UUID
-	BoolValues                  []protos.BoolMapEntry
-	PythonAddedResourcesCount   int64
-	PythonUpdatedResourcesCount int64
-	ExecutionTimes              []protos.IntMapEntry
+	ConfigurationFileCount          int64
+	TargetCount                     int64
+	DeploymentId                    uuid.UUID
+	BoolValues                      []protos.BoolMapEntry
+	PythonAddedResourcesCount       int64
+	PythonUpdatedResourcesCount     int64
+	JavaScriptAddedResourcesCount   int64
+	JavaScriptUpdatedResourcesCount int64
+	ExecutionTimes                  []protos.IntMapEntry
 }
 
 // SetBoolValue sets the value of a boolean metric.

@@ -30,6 +30,15 @@ type Experimental struct {
 	// Python configures loading of Python code defined with 'databricks-bundles' package.
 	Python Python `json:"python,omitempty"`
 
+	// JavaScript configures loading of JavaScript code for bundle resources.
+	//
+	// Example:
+	//   experimental:
+	//     javascript:
+	//       resources:
+	//         - resources.js
+	JavaScript JavaScript `json:"javascript,omitempty"`
+
 	// SkipArtifactCleanup determines whether to skip cleaning up the .internal folder
 	// containing build artifacts such as wheels. When set to true, the .internal folder
 	// and its contents will be preserved after bundle operations complete.
@@ -42,6 +51,20 @@ type Experimental struct {
 	// Eventually this can be made the default once we have native CRUD in DABs
 	// at which point we can deprecate or remove this field all together.
 	SkipNamePrefixForSchema bool `json:"skip_name_prefix_for_schema,omitempty"`
+}
+
+type JavaScript struct {
+	// Resources contains a list of paths to JavaScript files that define bundle resources.
+	//
+	// The JavaScript files should export resources in a format compatible with bundle configuration.
+	// The mutator will execute the JavaScript files with Node.js and merge their output into the bundle.
+	//
+	// Example: ["resources.js", "jobs/production.js"]
+	Resources []string `json:"resources,omitempty"`
+
+	// Mutators contains a list of paths to JavaScript files that mutate bundle resources.
+	// This feature is not yet implemented.
+	Mutators []string `json:"mutators,omitempty"`
 }
 
 type Python struct {

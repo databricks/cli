@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/bundle/artifacts"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
+	javascriptmutator "github.com/databricks/cli/bundle/config/mutator/javascript"
 	pythonmutator "github.com/databricks/cli/bundle/config/mutator/python"
 	"github.com/databricks/cli/bundle/config/validate"
 	"github.com/databricks/cli/bundle/deploy/metadata"
@@ -130,10 +131,12 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 
 		pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseLoadResources),
 		pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseApplyMutators),
+
+		javascriptmutator.JavaScriptMutator(javascriptmutator.JavaScriptMutatorPhaseLoadResources),
 		// This is the last mutator that can change bundle resources.
 		//
-		// After PythonMutator, mutators must not change bundle resources, or such changes are not
-		// going to be visible in Python code.
+		// After PythonMutator and JavaScriptMutator, mutators must not change bundle resources, or such changes are not
+		// going to be visible in Python or JavaScript code.
 
 		// Validate all required fields are set. This is run after variable interpolation and PyDABs mutators
 		// since they can also set and modify resources.
