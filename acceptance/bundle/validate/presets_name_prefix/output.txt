@@ -3,14 +3,6 @@
   name_prefix: "prefix-"
 
 >>> [CLI] bundle validate -o json
-Warning: unknown field: alerts
-  at resources
-  in databricks.yml:22:3
-
-Warning: required field "catalog_name" is not set
-  at resources.schemas.schema1
-  in databricks.yml:14:7
-
 {
   "jobs": {
     "job1": {
@@ -27,8 +19,14 @@ Warning: required field "catalog_name" is not set
       }
     }
   },
+  "models": {
+    "model1": {
+      "name": "prefix-model 1"
+    }
+  },
   "schemas": {
     "schema1": {
+      "catalog_name": "c",
       "name": "prefixschema1"
     }
   },
@@ -46,14 +44,6 @@ Warning: required field "catalog_name" is not set
   name_prefix: "[prefix]"
 
 >>> [CLI] bundle validate -o json
-Warning: unknown field: alerts
-  at resources
-  in databricks.yml:22:3
-
-Warning: required field "catalog_name" is not set
-  at resources.schemas.schema1
-  in databricks.yml:14:7
-
 {
   "jobs": {
     "job1": {
@@ -70,8 +60,14 @@ Warning: required field "catalog_name" is not set
       }
     }
   },
+  "models": {
+    "model1": {
+      "name": "[prefix]model 1"
+    }
+  },
   "schemas": {
     "schema1": {
+      "catalog_name": "c",
       "name": "prefix_schema1"
     }
   },
@@ -89,14 +85,6 @@ Warning: required field "catalog_name" is not set
   name_prefix: ""
 
 >>> [CLI] bundle validate -o json
-Warning: unknown field: alerts
-  at resources
-  in databricks.yml:22:3
-
-Warning: required field "catalog_name" is not set
-  at resources.schemas.schema1
-  in databricks.yml:14:7
-
 {
   "jobs": {
     "job1": {
@@ -113,8 +101,14 @@ Warning: required field "catalog_name" is not set
       }
     }
   },
+  "models": {
+    "model1": {
+      "name": "model 1"
+    }
+  },
   "schemas": {
     "schema1": {
+      "catalog_name": "c",
       "name": "schema1"
     }
   },
