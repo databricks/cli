@@ -1,0 +1,21 @@
+title "Remove presets: section entirely - out.without_presets.json\n"
+grep -v PRESETS databricks.yml.tmpl > databricks.yml
+trace musterr grep -C 1 prefix: databricks.yml
+$CLI bundle validate -o json > out.without_presets.json
+
+title "Set name_prefix="prefix" - out.with_static_prefix.json\n"
+PREFIX="prefix" envsubst < databricks.yml.tmpl > databricks.yml
+trace grep -C 1 prefix: databricks.yml
+trace musterr $CLI bundle validate -o json > out.with_static_prefix.json
+
+title "Set name_prefix="" - out.with_empty_prefix.json\n"
+PREFIX='""' envsubst < databricks.yml.tmpl > databricks.yml
+trace grep -C 1 prefix: databricks.yml
+trace $CLI bundle validate -o json > out.with_empty_prefix.json
+
+title "Set name_prefix= - out.with_nil_prefix.json\n"
+PREFIX= envsubst < databricks.yml.tmpl > databricks.yml
+trace grep -C 1 prefix: databricks.yml
+trace $CLI bundle validate -o json > out.with_nil_prefix.json
+
+rm databricks.yml

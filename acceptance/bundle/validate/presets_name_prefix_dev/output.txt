@@ -1,0 +1,42 @@
+
+=== Remove presets: section entirely - out.without_presets.json
+
+>>> musterr grep -C 1 prefix: databricks.yml
+
+Exit code (musterr): 1
+
+=== Set name_prefix=prefix - out.with_static_prefix.json
+
+>>> grep -C 1 prefix: databricks.yml
+presets: # PRESETS
+  name_prefix: prefix # PRESETS
+
+
+>>> musterr [CLI] bundle validate -o json
+Error: prefix should contain the current username or ${workspace.current_user.short_name} to ensure uniqueness when using 'mode: development'
+  in databricks.yml:25:16
+
+
+Exit code (musterr): 1
+
+=== Set name_prefix= - out.with_empty_prefix.json
+
+>>> grep -C 1 prefix: databricks.yml
+presets: # PRESETS
+  name_prefix: "" # PRESETS
+
+
+>>> [CLI] bundle validate -o json
+
+=== Set name_prefix= - out.with_nil_prefix.json
+
+>>> grep -C 1 prefix: databricks.yml
+presets: # PRESETS
+  name_prefix:  # PRESETS
+
+
+>>> [CLI] bundle validate -o json
+Warning: expected a string value, found null
+  at presets.name_prefix
+  in databricks.yml:25:15
+
