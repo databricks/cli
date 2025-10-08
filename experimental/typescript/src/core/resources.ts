@@ -27,6 +27,51 @@ import type { Volume } from "../../generated/volumes/index.js";
 export type { App, Cluster, Dashboard, Job, MlflowExperiment, MlflowModel, ModelServingEndpoint, Pipeline, QualityMonitor, RegisteredModel, Schema, Volume };
 
 /**
+ * Enum of all supported resource types for type-safe resource management
+ */
+export enum ResourceType {
+  APPS = "apps",
+  CLUSTERS = "clusters",
+  DASHBOARDS = "dashboards",
+  JOBS = "jobs",
+  MLFLOW_EXPERIMENTS = "mlflow_experiments",
+  MLFLOW_MODELS = "mlflow_models",
+  MODEL_SERVING_ENDPOINTS = "model_serving_endpoints",
+  PIPELINES = "pipelines",
+  QUALITY_MONITORS = "quality_monitors",
+  REGISTERED_MODELS = "registered_models",
+  SCHEMAS = "schemas",
+  VOLUMES = "volumes",
+}
+
+/**
+ * Type mapping from ResourceType enum to actual resource types
+ */
+export type ResourceTypeMap = {
+  [ResourceType.APPS]: App;
+  [ResourceType.CLUSTERS]: Cluster;
+  [ResourceType.DASHBOARDS]: Dashboard;
+  [ResourceType.JOBS]: Job;
+  [ResourceType.MLFLOW_EXPERIMENTS]: MlflowExperiment;
+  [ResourceType.MLFLOW_MODELS]: MlflowModel;
+  [ResourceType.MODEL_SERVING_ENDPOINTS]: ModelServingEndpoint;
+  [ResourceType.PIPELINES]: Pipeline;
+  [ResourceType.QUALITY_MONITORS]: QualityMonitor;
+  [ResourceType.REGISTERED_MODELS]: RegisteredModel;
+  [ResourceType.SCHEMAS]: Schema;
+  [ResourceType.VOLUMES]: Volume;
+};
+
+/**
+ * Metadata for a resource type
+ */
+interface ResourceTypeMetadata<T = unknown> {
+  readonly type: ResourceType;
+  readonly pluralName: string;
+  readonly map: Map<string, T>;
+}
+
+/**
  * Resources is a collection of resources in a bundle.
  *
  * This class is returned by 'loadResources' functions specified in databricks.yml.
@@ -55,103 +100,162 @@ export type { App, Cluster, Dashboard, Job, MlflowExperiment, MlflowModel, Model
  * ```
  */
 export class Resources {
-  private _apps: Map<string, App> = new Map();
-  private _clusters: Map<string, Cluster> = new Map();
-  private _dashboards: Map<string, Dashboard> = new Map();
-  private _jobs: Map<string, Job> = new Map();
-  private _mlflow_experiments: Map<string, MlflowExperiment> = new Map();
-  private _mlflow_models: Map<string, MlflowModel> = new Map();
-  private _model_serving_endpoints: Map<string, ModelServingEndpoint> = new Map();
-  private _pipelines: Map<string, Pipeline> = new Map();
-  private _quality_monitors: Map<string, QualityMonitor> = new Map();
-  private _registered_models: Map<string, RegisteredModel> = new Map();
-  private _schemas: Map<string, Schema> = new Map();
-  private _volumes: Map<string, Volume> = new Map();
+  private readonly registry: Map<ResourceType, ResourceTypeMetadata> = new Map();
   private _locationsMap: Map<string, Location> = new Map();
   private _diagnostics: Diagnostics = new Diagnostics();
+
+  constructor() {
+    // Initialize registry with all resource types
+    this.registerResourceType<App>(ResourceType.APPS);
+    this.registerResourceType<Cluster>(ResourceType.CLUSTERS);
+    this.registerResourceType<Dashboard>(ResourceType.DASHBOARDS);
+    this.registerResourceType<Job>(ResourceType.JOBS);
+    this.registerResourceType<MlflowExperiment>(ResourceType.MLFLOW_EXPERIMENTS);
+    this.registerResourceType<MlflowModel>(ResourceType.MLFLOW_MODELS);
+    this.registerResourceType<ModelServingEndpoint>(ResourceType.MODEL_SERVING_ENDPOINTS);
+    this.registerResourceType<Pipeline>(ResourceType.PIPELINES);
+    this.registerResourceType<QualityMonitor>(ResourceType.QUALITY_MONITORS);
+    this.registerResourceType<RegisteredModel>(ResourceType.REGISTERED_MODELS);
+    this.registerResourceType<Schema>(ResourceType.SCHEMAS);
+    this.registerResourceType<Volume>(ResourceType.VOLUMES);
+  }
+
+  /**
+   * Register a resource type in the registry
+   */
+  private registerResourceType<T>(type: ResourceType): void {
+    this.registry.set(type, {
+      type,
+      pluralName: type,
+      map: new Map<string, T>(),
+    });
+  }
+
+  /**
+   * Get metadata for a resource type
+   */
+  private getMetadata<K extends ResourceType>(type: K): ResourceTypeMetadata<ResourceTypeMap[K]> {
+    const metadata = this.registry.get(type);
+    if (!metadata) {
+      throw new Error(`Resource type not registered: ${type}`);
+    }
+    return metadata as ResourceTypeMetadata<ResourceTypeMap[K]>;
+  }
+
+  /**
+   * Generic method to add a resource
+   */
+  private addResource<K extends ResourceType>(
+    type: K,
+    name: string,
+    resource: ResourceTypeMap[K],
+    location?: Location
+  ): void {
+    const metadata = this.getMetadata(type);
+
+    if (metadata.map.has(name)) {
+      this.addDiagnosticWarning(`Duplicate ${type} resource: ${name}`, {
+        path: ["resources", type, name],
+        location,
+      });
+    }
+
+    metadata.map.set(name, resource);
+
+    if (location) {
+      this.addLocation(["resources", type, name], location);
+    }
+  }
+
+  /**
+   * Generic method to get resources of a type
+   */
+  private getResources<K extends ResourceType>(type: K): ReadonlyMap<string, ResourceTypeMap[K]> {
+    return this.getMetadata(type).map as ReadonlyMap<string, ResourceTypeMap[K]>;
+  }
 
   /**
    * Returns all apps
    */
   get apps(): ReadonlyMap<string, App> {
-    return this._apps;
+    return this.getResources(ResourceType.APPS);
   }
 
   /**
    * Returns all clusters
    */
   get clusters(): ReadonlyMap<string, Cluster> {
-    return this._clusters;
+    return this.getResources(ResourceType.CLUSTERS);
   }
 
   /**
    * Returns all dashboards
    */
   get dashboards(): ReadonlyMap<string, Dashboard> {
-    return this._dashboards;
+    return this.getResources(ResourceType.DASHBOARDS);
   }
 
   /**
    * Returns all jobs
    */
   get jobs(): ReadonlyMap<string, Job> {
-    return this._jobs;
+    return this.getResources(ResourceType.JOBS);
   }
 
   /**
    * Returns all mlflow experiments
    */
   get mlflow_experiments(): ReadonlyMap<string, MlflowExperiment> {
-    return this._mlflow_experiments;
+    return this.getResources(ResourceType.MLFLOW_EXPERIMENTS);
   }
 
   /**
    * Returns all mlflow models
    */
   get mlflow_models(): ReadonlyMap<string, MlflowModel> {
-    return this._mlflow_models;
+    return this.getResources(ResourceType.MLFLOW_MODELS);
   }
 
   /**
    * Returns all model serving endpoints
    */
   get model_serving_endpoints(): ReadonlyMap<string, ModelServingEndpoint> {
-    return this._model_serving_endpoints;
+    return this.getResources(ResourceType.MODEL_SERVING_ENDPOINTS);
   }
 
   /**
    * Returns all pipelines
    */
   get pipelines(): ReadonlyMap<string, Pipeline> {
-    return this._pipelines;
+    return this.getResources(ResourceType.PIPELINES);
   }
 
   /**
    * Returns all quality monitors
    */
   get quality_monitors(): ReadonlyMap<string, QualityMonitor> {
-    return this._quality_monitors;
+    return this.getResources(ResourceType.QUALITY_MONITORS);
   }
 
   /**
    * Returns all registered models
    */
   get registered_models(): ReadonlyMap<string, RegisteredModel> {
-    return this._registered_models;
+    return this.getResources(ResourceType.REGISTERED_MODELS);
   }
 
   /**
    * Returns all schemas
    */
   get schemas(): ReadonlyMap<string, Schema> {
-    return this._schemas;
+    return this.getResources(ResourceType.SCHEMAS);
   }
 
   /**
    * Returns all volumes
    */
   get volumes(): ReadonlyMap<string, Volume> {
-    return this._volumes;
+    return this.getResources(ResourceType.VOLUMES);
   }
 
   /**
@@ -173,233 +277,96 @@ export class Resources {
    * Add an app to the bundle
    */
   addApp(name: string, resource: App, location?: Location): void {
-    if (this._apps.has(name)) {
-      this.addDiagnosticWarning(`Duplicate apps resource: ${name}`, {
-        path: ["resources", "apps", name],
-        location,
-      });
-    }
-    this._apps.set(name, resource);
-    if (location) {
-      this.addLocation(["resources", "apps", name], location);
-    }
+    this.addResource(ResourceType.APPS, name, resource, location);
   }
 
   /**
    * Add a cluster to the bundle
    */
   addCluster(name: string, resource: Cluster, location?: Location): void {
-    if (this._clusters.has(name)) {
-      this.addDiagnosticWarning(`Duplicate clusters resource: ${name}`, {
-        path: ["resources", "clusters", name],
-        location,
-      });
-    }
-    this._clusters.set(name, resource);
-    if (location) {
-      this.addLocation(["resources", "clusters", name], location);
-    }
+    this.addResource(ResourceType.CLUSTERS, name, resource, location);
   }
 
   /**
    * Add a dashboard to the bundle
    */
   addDashboard(name: string, resource: Dashboard, location?: Location): void {
-    if (this._dashboards.has(name)) {
-      this.addDiagnosticWarning(`Duplicate dashboards resource: ${name}`, {
-        path: ["resources", "dashboards", name],
-        location,
-      });
-    }
-    this._dashboards.set(name, resource);
-    if (location) {
-      this.addLocation(["resources", "dashboards", name], location);
-    }
+    this.addResource(ResourceType.DASHBOARDS, name, resource, location);
   }
 
   /**
    * Add a job to the bundle
    */
   addJob(name: string, resource: Job, location?: Location): void {
-    if (this._jobs.has(name)) {
-      this.addDiagnosticWarning(`Duplicate jobs resource: ${name}`, {
-        path: ["resources", "jobs", name],
-        location,
-      });
-    }
-    this._jobs.set(name, resource);
-    if (location) {
-      this.addLocation(["resources", "jobs", name], location);
-    }
+    this.addResource(ResourceType.JOBS, name, resource, location);
   }
 
   /**
    * Add an MLflow experiment to the bundle
    */
   addMlflowExperiment(name: string, resource: MlflowExperiment, location?: Location): void {
-    if (this._mlflow_experiments.has(name)) {
-      this.addDiagnosticWarning(`Duplicate mlflow_experiments resource: ${name}`, {
-        path: ["resources", "mlflow_experiments", name],
-        location,
-      });
-    }
-    this._mlflow_experiments.set(name, resource);
-    if (location) {
-      this.addLocation(["resources", "mlflow_experiments", name], location);
-    }
+    this.addResource(ResourceType.MLFLOW_EXPERIMENTS, name, resource, location);
   }
 
   /**
    * Add an MLflow model to the bundle
    */
   addMlflowModel(name: string, resource: MlflowModel, location?: Location): void {
-    if (this._mlflow_models.has(name)) {
-      this.addDiagnosticWarning(`Duplicate mlflow_models resource: ${name}`, {
-        path: ["resources", "mlflow_models", name],
-        location,
-      });
-    }
-    this._mlflow_models.set(name, resource);
-    if (location) {
-      this.addLocation(["resources", "mlflow_models", name], location);
-    }
+    this.addResource(ResourceType.MLFLOW_MODELS, name, resource, location);
   }
 
   /**
    * Add a model serving endpoint to the bundle
    */
   addModelServingEndpoint(name: string, resource: ModelServingEndpoint, location?: Location): void {
-    if (this._model_serving_endpoints.has(name)) {
-      this.addDiagnosticWarning(`Duplicate model_serving_endpoints resource: ${name}`, {
-        path: ["resources", "model_serving_endpoints", name],
-        location,
-      });
-    }
-    this._model_serving_endpoints.set(name, resource);
-    if (location) {
-      this.addLocation(["resources", "model_serving_endpoints", name], location);
-    }
+    this.addResource(ResourceType.MODEL_SERVING_ENDPOINTS, name, resource, location);
   }
 
   /**
    * Add a pipeline to the bundle
    */
   addPipeline(name: string, resource: Pipeline, location?: Location): void {
-    if (this._pipelines.has(name)) {
-      this.addDiagnosticWarning(`Duplicate pipelines resource: ${name}`, {
-        path: ["resources", "pipelines", name],
-        location,
-      });
-    }
-    this._pipelines.set(name, resource);
-    if (location) {
-      this.addLocation(["resources", "pipelines", name], location);
-    }
+    this.addResource(ResourceType.PIPELINES, name, resource, location);
   }
 
   /**
    * Add a quality monitor to the bundle
    */
   addQualityMonitor(name: string, resource: QualityMonitor, location?: Location): void {
-    if (this._quality_monitors.has(name)) {
-      this.addDiagnosticWarning(`Duplicate quality_monitors resource: ${name}`, {
-        path: ["resources", "quality_monitors", name],
-        location,
-      });
-    }
-    this._quality_monitors.set(name, resource);
-    if (location) {
-      this.addLocation(["resources", "quality_monitors", name], location);
-    }
+    this.addResource(ResourceType.QUALITY_MONITORS, name, resource, location);
   }
 
   /**
    * Add a registered model to the bundle
    */
   addRegisteredModel(name: string, resource: RegisteredModel, location?: Location): void {
-    if (this._registered_models.has(name)) {
-      this.addDiagnosticWarning(`Duplicate registered_models resource: ${name}`, {
-        path: ["resources", "registered_models", name],
-        location,
-      });
-    }
-    this._registered_models.set(name, resource);
-    if (location) {
-      this.addLocation(["resources", "registered_models", name], location);
-    }
+    this.addResource(ResourceType.REGISTERED_MODELS, name, resource, location);
   }
 
   /**
    * Add a schema to the bundle
    */
   addSchema(name: string, resource: Schema, location?: Location): void {
-    if (this._schemas.has(name)) {
-      this.addDiagnosticWarning(`Duplicate schemas resource: ${name}`, {
-        path: ["resources", "schemas", name],
-        location,
-      });
-    }
-    this._schemas.set(name, resource);
-    if (location) {
-      this.addLocation(["resources", "schemas", name], location);
-    }
+    this.addResource(ResourceType.SCHEMAS, name, resource, location);
   }
 
   /**
    * Add a volume to the bundle
    */
   addVolume(name: string, resource: Volume, location?: Location): void {
-    if (this._volumes.has(name)) {
-      this.addDiagnosticWarning(`Duplicate volumes resource: ${name}`, {
-        path: ["resources", "volumes", name],
-        location,
-      });
-    }
-    this._volumes.set(name, resource);
-    if (location) {
-      this.addLocation(["resources", "volumes", name], location);
-    }
+    this.addResource(ResourceType.VOLUMES, name, resource, location);
   }
 
   /**
    * Add resources from another Resources instance
    */
   addResources(other: Resources): void {
-    for (const [name, resource] of other.apps.entries()) {
-      this.addApp(name, resource);
-    }
-    for (const [name, resource] of other.clusters.entries()) {
-      this.addCluster(name, resource);
-    }
-    for (const [name, resource] of other.dashboards.entries()) {
-      this.addDashboard(name, resource);
-    }
-    for (const [name, resource] of other.jobs.entries()) {
-      this.addJob(name, resource);
-    }
-    for (const [name, resource] of other.mlflow_experiments.entries()) {
-      this.addMlflowExperiment(name, resource);
-    }
-    for (const [name, resource] of other.mlflow_models.entries()) {
-      this.addMlflowModel(name, resource);
-    }
-    for (const [name, resource] of other.model_serving_endpoints.entries()) {
-      this.addModelServingEndpoint(name, resource);
-    }
-    for (const [name, resource] of other.pipelines.entries()) {
-      this.addPipeline(name, resource);
-    }
-    for (const [name, resource] of other.quality_monitors.entries()) {
-      this.addQualityMonitor(name, resource);
-    }
-    for (const [name, resource] of other.registered_models.entries()) {
-      this.addRegisteredModel(name, resource);
-    }
-    for (const [name, resource] of other.schemas.entries()) {
-      this.addSchema(name, resource);
-    }
-    for (const [name, resource] of other.volumes.entries()) {
-      this.addVolume(name, resource);
+    // Iterate through all resource types in the registry
+    for (const type of this.registry.keys()) {
+      const otherMetadata = other.getMetadata(type);
+      for (const [name, resource] of otherMetadata.map.entries()) {
+        this.addResource(type, name, resource as ResourceTypeMap[typeof type]);
+      }
     }
 
     // Extend diagnostics
@@ -451,65 +418,13 @@ export class Resources {
   toJSON(): Record<string, Record<string, unknown>> {
     const resources: Record<string, Record<string, unknown>> = {};
 
-    if (this._apps.size > 0) {
-      resources.apps = Object.fromEntries(
-        Array.from(this._apps.entries()).map(([key, value]) => [key, transformToJSON(value)])
-      );
-    }
-    if (this._clusters.size > 0) {
-      resources.clusters = Object.fromEntries(
-        Array.from(this._clusters.entries()).map(([key, value]) => [key, transformToJSON(value)])
-      );
-    }
-    if (this._dashboards.size > 0) {
-      resources.dashboards = Object.fromEntries(
-        Array.from(this._dashboards.entries()).map(([key, value]) => [key, transformToJSON(value)])
-      );
-    }
-    if (this._jobs.size > 0) {
-      resources.jobs = Object.fromEntries(
-        Array.from(this._jobs.entries()).map(([key, value]) => [key, transformToJSON(value)])
-      );
-    }
-    if (this._mlflow_experiments.size > 0) {
-      resources.mlflow_experiments = Object.fromEntries(
-        Array.from(this._mlflow_experiments.entries()).map(([key, value]) => [key, transformToJSON(value)])
-      );
-    }
-    if (this._mlflow_models.size > 0) {
-      resources.mlflow_models = Object.fromEntries(
-        Array.from(this._mlflow_models.entries()).map(([key, value]) => [key, transformToJSON(value)])
-      );
-    }
-    if (this._model_serving_endpoints.size > 0) {
-      resources.model_serving_endpoints = Object.fromEntries(
-        Array.from(this._model_serving_endpoints.entries()).map(([key, value]) => [key, transformToJSON(value)])
-      );
-    }
-    if (this._pipelines.size > 0) {
-      resources.pipelines = Object.fromEntries(
-        Array.from(this._pipelines.entries()).map(([key, value]) => [key, transformToJSON(value)])
-      );
-    }
-    if (this._quality_monitors.size > 0) {
-      resources.quality_monitors = Object.fromEntries(
-        Array.from(this._quality_monitors.entries()).map(([key, value]) => [key, transformToJSON(value)])
-      );
-    }
-    if (this._registered_models.size > 0) {
-      resources.registered_models = Object.fromEntries(
-        Array.from(this._registered_models.entries()).map(([key, value]) => [key, transformToJSON(value)])
-      );
-    }
-    if (this._schemas.size > 0) {
-      resources.schemas = Object.fromEntries(
-        Array.from(this._schemas.entries()).map(([key, value]) => [key, transformToJSON(value)])
-      );
-    }
-    if (this._volumes.size > 0) {
-      resources.volumes = Object.fromEntries(
-        Array.from(this._volumes.entries()).map(([key, value]) => [key, transformToJSON(value)])
-      );
+    // Iterate through all resource types in the registry
+    for (const [type, metadata] of this.registry.entries()) {
+      if (metadata.map.size > 0) {
+        resources[type] = Object.fromEntries(
+          Array.from(metadata.map.entries()).map(([key, value]) => [key, transformToJSON(value)])
+        );
+      }
     }
 
     return resources;

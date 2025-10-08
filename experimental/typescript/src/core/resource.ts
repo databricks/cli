@@ -1,22 +1,29 @@
 /**
- * Base class for all resources
- */
-
-/**
- * Base interface for all Databricks resources.
+ * Base class for all Databricks resources.
  *
- * All resource types (Job, Pipeline, Schema, Volume, etc.) should extend this interface.
+ * All resource types (Job, Pipeline, Schema, Volume, etc.) should extend this class.
  */
-export interface Resource {
-  // Marker interface - specific resource types will add their own properties
+export abstract class Resource {
+  /**
+   * Internal marker to identify Resource instances at runtime
+   * @internal
+   */
+  private readonly __isResource = true;
+
+  /**
+   * Create a new Resource instance
+   * @param data - Resource configuration data
+   */
+  constructor(data?: Record<string, unknown>) {
+    if (data) {
+      Object.assign(this, data);
+    }
+  }
 }
 
 /**
- * Type guard to check if an object is a Resource.
- *
- * In TypeScript, we can't do runtime type checking as easily as Python,
- * so this is a basic implementation that checks for an object.
+ * Type guard to check if an object is a Resource instance.
  */
 export function isResource(value: unknown): value is Resource {
-  return typeof value === "object" && value !== null;
+  return typeof value === "object" && value !== null && "__isResource" in value;
 }

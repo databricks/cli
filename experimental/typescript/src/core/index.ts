@@ -37,8 +37,8 @@ export { Bundle } from "./bundle.js";
 // Resources
 export type { Resource } from "./resource.js";
 export { isResource } from "./resource.js";
-export { Resources } from "./resources.js";
-export type { Job, Pipeline, Schema, Volume } from "./resources.js";
+export { Resources, ResourceType } from "./resources.js";
+export type { ResourceTypeMap, Job, Pipeline, Schema, Volume } from "./resources.js";
 
 // Transform utilities
-export { transformToJSON, deepClone } from "./transform.js";
+export { transformToJSON } from "./transform.js";
