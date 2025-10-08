@@ -67,13 +67,13 @@ func (s *FakeWorkspace) GetPermissions(req Request) any {
 		}
 	}
 
-	permissionKey := fmt.Sprintf("%s:%s", requestObjectType, objectId)
-	permissions, exists := s.Permissions[permissionKey]
+	responseObjectID := fmt.Sprintf("/%s/%s", requestObjectType, objectId)
+	permissions, exists := s.Permissions[responseObjectID]
 
 	if !exists {
 		// Return empty permissions structure if not found
 		permissions = iam.ObjectPermissions{
-			ObjectId:          objectId,
+			ObjectId:          responseObjectID,
 			ObjectType:        objectType,
 			AccessControlList: []iam.AccessControlResponse{},
 		}
@@ -124,13 +124,13 @@ func (s *FakeWorkspace) SetPermissions(req Request) any {
 		}
 	}
 
-	permissionKey := fmt.Sprintf("%s:%s", requestObjectType, objectId)
+	responseObjectID := fmt.Sprintf("/%s/%s", requestObjectType, objectId)
 
 	// Get existing permissions or create new ones
-	existingPermissions, exists := s.Permissions[permissionKey]
+	existingPermissions, exists := s.Permissions[responseObjectID]
 	if !exists {
 		existingPermissions = iam.ObjectPermissions{
-			ObjectId:          objectId,
+			ObjectId:          responseObjectID,
 			ObjectType:        objectType,
 			AccessControlList: []iam.AccessControlResponse{},
 		}
@@ -160,7 +160,7 @@ func (s *FakeWorkspace) SetPermissions(req Request) any {
 
 	// Update the permissions
 	existingPermissions.AccessControlList = newAccessControlList
-	s.Permissions[permissionKey] = existingPermissions
+	s.Permissions[responseObjectID] = existingPermissions
 
 	return Response{
 		Body: existingPermissions,
