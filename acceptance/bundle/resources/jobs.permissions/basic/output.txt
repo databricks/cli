@@ -43,7 +43,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
       "user_name":"[USERNAME]"
     }
   ],
-  "object_id":"[JOB_ID]",
+  "object_id":"/jobs/[JOB_ID]",
   "object_type":"job"
 }
 
