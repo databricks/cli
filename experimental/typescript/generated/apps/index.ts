@@ -82,6 +82,148 @@ export interface App extends Resource {
   user_api_scopes?: VariableOr<string[]>;
 }
 
+export interface AppDeployment extends Resource {
+  create_time?: VariableOr<string>;
+  creator?: VariableOr<string>;
+  deployment_artifacts?: VariableOr<AppDeploymentArtifacts>;
+  deployment_id?: VariableOr<string>;
+  mode?: VariableOr<AppDeploymentMode>;
+  source_code_path?: VariableOr<string>;
+  status?: VariableOr<AppDeploymentStatus>;
+  update_time?: VariableOr<string>;
+}
+
+export interface AppDeploymentArtifacts extends Resource {
+  source_code_path?: VariableOr<string>;
+}
+
+export type AppDeploymentMode =
+  | "SNAPSHOT"
+  | "AUTO_SYNC";
+
+export type AppDeploymentState =
+  | "SUCCEEDED"
+  | "FAILED"
+  | "IN_PROGRESS"
+  | "CANCELLED";
+
+export interface AppDeploymentStatus extends Resource {
+  message?: VariableOr<string>;
+  state?: VariableOr<AppDeploymentState>;
+}
+
+export interface AppResource extends Resource {
+  database?: VariableOr<AppResourceDatabase>;
+  /**
+   * Description of the App Resource.
+   */
+  description?: VariableOr<string>;
+  job?: VariableOr<AppResourceJob>;
+  /**
+   * Name of the App Resource.
+   */
+  name: VariableOr<string>;
+  secret?: VariableOr<AppResourceSecret>;
+  serving_endpoint?: VariableOr<AppResourceServingEndpoint>;
+  sql_warehouse?: VariableOr<AppResourceSqlWarehouse>;
+  uc_securable?: VariableOr<AppResourceUcSecurable>;
+}
+
+export interface AppResourceDatabase extends Resource {
+  database_name: VariableOr<string>;
+  instance_name: VariableOr<string>;
+  permission: VariableOr<AppResourceDatabaseDatabasePermission>;
+}
+
+export type AppResourceDatabaseDatabasePermission =
+  | "CAN_CONNECT_AND_CREATE";
+
+export interface AppResourceJob extends Resource {
+  id: VariableOr<string>;
+  permission: VariableOr<AppResourceJobJobPermission>;
+}
+
+export type AppResourceJobJobPermission =
+  | "CAN_MANAGE"
+  | "IS_OWNER"
+  | "CAN_MANAGE_RUN"
+  | "CAN_VIEW";
+
+export interface AppResourceSecret extends Resource {
+  key: VariableOr<string>;
+  permission: VariableOr<AppResourceSecretSecretPermission>;
+  scope: VariableOr<string>;
+}
+
+/**
+ * Permission to grant on the secret scope. Supported permissions are: "READ", "WRITE", "MANAGE".
+ */
+export type AppResourceSecretSecretPermission =
+  | "READ"
+  | "WRITE"
+  | "MANAGE";
+
+export interface AppResourceServingEndpoint extends Resource {
+  name: VariableOr<string>;
+  permission: VariableOr<AppResourceServingEndpointServingEndpointPermission>;
+}
+
+export type AppResourceServingEndpointServingEndpointPermission =
+  | "CAN_MANAGE"
+  | "CAN_QUERY"
+  | "CAN_VIEW";
+
+export interface AppResourceSqlWarehouse extends Resource {
+  id: VariableOr<string>;
+  permission: VariableOr<AppResourceSqlWarehouseSqlWarehousePermission>;
+}
+
+export type AppResourceSqlWarehouseSqlWarehousePermission =
+  | "CAN_MANAGE"
+  | "CAN_USE"
+  | "IS_OWNER";
+
+export interface AppResourceUcSecurable extends Resource {
+  permission: VariableOr<AppResourceUcSecurableUcSecurablePermission>;
+  securable_full_name: VariableOr<string>;
+  securable_type: VariableOr<AppResourceUcSecurableUcSecurableType>;
+}
+
+export type AppResourceUcSecurableUcSecurablePermission =
+  | "READ_VOLUME"
+  | "WRITE_VOLUME";
+
+export type AppResourceUcSecurableUcSecurableType =
+  | "VOLUME";
+
+export type ApplicationState =
+  | "DEPLOYING"
+  | "RUNNING"
+  | "CRASHED"
+  | "UNAVAILABLE";
+
+export interface ApplicationStatus extends Resource {
+  message?: VariableOr<string>;
+  state?: VariableOr<ApplicationState>;
+}
+
+export type ComputeState =
+  | "ERROR"
+  | "DELETING"
+  | "STARTING"
+  | "STOPPING"
+  | "UPDATING"
+  | "STOPPED"
+  | "ACTIVE";
+
+export interface ComputeStatus extends Resource {
+  message?: VariableOr<string>;
+  /**
+   * State of the app compute.
+   */
+  state?: VariableOr<ComputeState>;
+}
+
 export interface AppPermission extends Resource {
   group_name?: VariableOr<string>;
   level: VariableOr<AppPermissionLevel>;

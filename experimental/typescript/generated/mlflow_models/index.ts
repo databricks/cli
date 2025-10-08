@@ -27,6 +27,20 @@ export interface MlflowModel extends Resource {
   tags?: VariableOr<ModelTag[]>;
 }
 
+/**
+ * Tag for a registered model
+ */
+export interface ModelTag extends Resource {
+  /**
+   * The tag key.
+   */
+  key?: VariableOr<string>;
+  /**
+   * The tag value.
+   */
+  value?: VariableOr<string>;
+}
+
 export interface Lifecycle extends Resource {
   /**
    * Lifecycle setting to prevent the resource from being destroyed.

@@ -57,7 +57,7 @@ export interface Dashboard extends Resource {
    * This field provides the structure of the JSON string that represents the dashboard's
    * layout and components.
    */
-  serialized_dashboard?: VariableOr<interface>;
+  serialized_dashboard?: VariableOr<any>;
   /**
    * The timestamp of when the dashboard was last updated by the user.
    * This field is excluded in List Dashboards responses.
@@ -68,6 +68,10 @@ export interface Dashboard extends Resource {
    */
   warehouse_id?: VariableOr<string>;
 }
+
+export type LifecycleState =
+  | "ACTIVE"
+  | "TRASHED";
 
 export interface DashboardPermission extends Resource {
   group_name?: VariableOr<string>;

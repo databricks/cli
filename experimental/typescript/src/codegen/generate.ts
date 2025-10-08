@@ -30,7 +30,17 @@ const MAIN_RESOURCES = [
 ];
 
 // Namespaces to load from the schema
-const LOADED_NAMESPACES = ["compute", "jobs", "pipelines", "resources", "catalog"];
+const LOADED_NAMESPACES = [
+  "compute",
+  "jobs",
+  "pipelines",
+  "resources",
+  "catalog",
+  "ml",
+  "serving",
+  "dashboards",
+  "apps",
+];
 
 // Type renames
 const TYPE_RENAMES: Record<string, string> = {
@@ -45,6 +55,16 @@ const TYPE_RENAMES: Record<string, string> = {
 };
 
 const PRIMITIVES = ["string", "boolean", "integer", "number", "bool", "int", "int64", "float64"];
+
+// TypeScript reserved words that need to be escaped
+const RESERVED_WORDS = new Set([
+  "interface", "type", "enum", "class", "function", "const", "let", "var",
+  "return", "if", "else", "for", "while", "do", "switch", "case", "break",
+  "continue", "try", "catch", "finally", "throw", "new", "this", "super",
+  "extends", "implements", "import", "export", "default", "as", "from",
+  "typeof", "instanceof", "void", "null", "undefined", "true", "false",
+]);
+
 
 interface Property {
   ref: string;
@@ -203,7 +223,14 @@ function getSchemas(): Map<string, Schema> {
  */
 function getTypeName(ref: string): string {
   const name = ref.split("/").pop()!.split(".").pop()!;
-  return TYPE_RENAMES[name] || name;
+  const renamed = TYPE_RENAMES[name] || name;
+
+  // If the type name is a reserved word, convert it to "any" for simplicity
+  if (RESERVED_WORDS.has(renamed)) {
+    return "any";
+  }
+
+  return renamed;
 }
 
 /**
