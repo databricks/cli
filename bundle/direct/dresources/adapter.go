@@ -43,11 +43,18 @@ type IResource interface {
 	// [Optional] FieldTriggersLocal returns actions to trigger when given fields are changed locally.
 	// Keys are field paths (e.g., "name", "catalog_name"). Values are actions.
 	// Unspecified changed fields default to ActionTypeUpdate.
+	//
+	// These triggers are used to update the remote definition of a resource to the latest local changes
+	// made by the user.
 	FieldTriggersLocal() map[string]deployplan.ActionType
 
 	// [Optional] FieldTriggersRemote returns actions to trigger when given fields are changed remotely.
 	// Keys are field paths (e.g., "name", "catalog_name"). Values are actions.
 	// Unspecified changed fields default to ActionTypeUpdate.
+	//
+	// These triggers are used to detect and reconcile remote drift between what the deployment state records
+	// as the current state of the resource and what the resource definition actually is in the backend.
+	// This is necessary to revert out of band changes made to the resource by bypassing DABs.
 	FieldTriggersRemote() map[string]deployplan.ActionType
 }
 
@@ -85,7 +92,7 @@ type IResourceNoRefresh interface {
 	// [Optional] ClassifyChangeLocal classifies a set of local changes using custom logic.
 	ClassifyChangeLocal(change structdiff.Change) (deployplan.ActionType, error)
 
-	// [Optional] ClassifyChangeRemote classifies a set of remote changes using custom logic.
+	// [Optional] ClassifyChangeRemote classifies a set of remote changes necessary to reconcile remote drift using custom logic.
 	ClassifyChangeRemote(change structdiff.Change, remoteState any) (deployplan.ActionType, error)
 }
 
