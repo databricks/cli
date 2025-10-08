@@ -4,10 +4,10 @@
  * Auto-generated from JSON Schema. Do not edit manually.
  */
 
-import type { Resource } from "../../src/core/resource.js";
+import { Resource } from "../../src/core/resource.js";
 import type { VariableOr } from "../../src/core/variable.js";
 
-export interface QualityMonitor extends Resource {
+export interface QualityMonitorParams {
   /**
    * [Create:REQ Update:IGN] Field for specifying the absolute path to a custom directory to store data-monitoring
    * assets. Normally prepopulated to a default user location via UI and Python APIs.
@@ -77,7 +77,13 @@ export interface QualityMonitor extends Resource {
   warehouse_id?: VariableOr<string>;
 }
 
-export interface MonitorCronSchedule extends Resource {
+export class QualityMonitor extends Resource<QualityMonitorParams> {
+  constructor(params: QualityMonitorParams) {
+    super(params, "quality_monitors");
+  }
+}
+
+export interface MonitorCronSchedule {
   /**
    * Read only field that indicates whether a schedule is paused or not.
    */
@@ -104,21 +110,21 @@ export type MonitorCronSchedulePauseStatus =
 /**
  * Data classification related configuration.
  */
-export interface MonitorDataClassificationConfig extends Resource {
+export interface MonitorDataClassificationConfig {
   /**
    * Whether to enable data classification.
    */
   enabled?: VariableOr<boolean>;
 }
 
-export interface MonitorDestination extends Resource {
+export interface MonitorDestination {
   /**
    * The list of email addresses to send the notification to. A maximum of 5 email addresses is supported.
    */
   email_addresses?: VariableOr<string[]>;
 }
 
-export interface MonitorInferenceLog extends Resource {
+export interface MonitorInferenceLog {
   /**
    * Granularities for aggregating data into time windows based on their timestamp. Valid values are 5 minutes, 30 minutes, 1 hour, 1 day, n weeks, 1 month, or 1 year.
    */
@@ -156,7 +162,7 @@ export type MonitorInferenceLogProblemType =
 /**
  * Custom metric definition.
  */
-export interface MonitorMetric extends Resource {
+export interface MonitorMetric {
   /**
    * Jinja template for a SQL expression that specifies how to compute the metric. See [create metric definition](https://docs.databricks.com/en/lakehouse-monitoring/custom-metrics.html#create-definition).
    */
@@ -200,7 +206,7 @@ export type MonitorMetricType =
   | "CUSTOM_METRIC_TYPE_DERIVED"
   | "CUSTOM_METRIC_TYPE_DRIFT";
 
-export interface MonitorNotifications extends Resource {
+export interface MonitorNotifications {
   /**
    * Destinations to send notifications on failure/timeout.
    */
@@ -214,13 +220,13 @@ export interface MonitorNotifications extends Resource {
 /**
  * Snapshot analysis configuration
  */
-export interface MonitorSnapshot extends Resource {
+export interface MonitorSnapshot {
 }
 
 /**
  * Time series analysis configuration.
  */
-export interface MonitorTimeSeries extends Resource {
+export interface MonitorTimeSeries {
   /**
    * Granularities for aggregating data into time windows based on their timestamp. Valid values are 5 minutes, 30 minutes, 1 hour, 1 day, n weeks, 1 month, or 1 year.
    */
@@ -231,16 +237,9 @@ export interface MonitorTimeSeries extends Resource {
   timestamp_col: VariableOr<string>;
 }
 
-export interface Lifecycle extends Resource {
+export interface Lifecycle {
   /**
    * Lifecycle setting to prevent the resource from being destroyed.
    */
   prevent_destroy?: VariableOr<boolean>;
-}
-
-/**
- * Helper function to create a QualityMonitor with type safety
- */
-export function createQualityMonitor(config: QualityMonitor): QualityMonitor {
-  return config;
 }

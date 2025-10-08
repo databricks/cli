@@ -4,10 +4,10 @@
  * Auto-generated from JSON Schema. Do not edit manually.
  */
 
-import type { Resource } from "../../src/core/resource.js";
+import { Resource } from "../../src/core/resource.js";
 import type { VariableOr } from "../../src/core/variable.js";
 
-export interface Dashboard extends Resource {
+export interface DashboardParams {
   /**
    * The timestamp of when the dashboard was created.
    */
@@ -69,11 +69,17 @@ export interface Dashboard extends Resource {
   warehouse_id?: VariableOr<string>;
 }
 
+export class Dashboard extends Resource<DashboardParams> {
+  constructor(params: DashboardParams) {
+    super(params, "dashboards");
+  }
+}
+
 export type LifecycleState =
   | "ACTIVE"
   | "TRASHED";
 
-export interface DashboardPermission extends Resource {
+export interface DashboardPermission {
   group_name?: VariableOr<string>;
   level: VariableOr<DashboardPermissionLevel>;
   service_principal_name?: VariableOr<string>;
@@ -86,16 +92,9 @@ export type DashboardPermissionLevel =
   | "CAN_EDIT"
   | "CAN_MANAGE";
 
-export interface Lifecycle extends Resource {
+export interface Lifecycle {
   /**
    * Lifecycle setting to prevent the resource from being destroyed.
    */
   prevent_destroy?: VariableOr<boolean>;
-}
-
-/**
- * Helper function to create a Dashboard with type safety
- */
-export function createDashboard(config: Dashboard): Dashboard {
-  return config;
 }

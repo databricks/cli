@@ -4,10 +4,10 @@
  * Auto-generated from JSON Schema. Do not edit manually.
  */
 
-import type { Resource } from "../../src/core/resource.js";
+import { Resource } from "../../src/core/resource.js";
 import type { VariableOr } from "../../src/core/variable.js";
 
-export interface RegisteredModel extends Resource {
+export interface RegisteredModelParams {
   /**
    * The name of the catalog where the schema and the registered model reside
    */
@@ -35,7 +35,13 @@ export interface RegisteredModel extends Resource {
   storage_location?: VariableOr<string>;
 }
 
-export interface Grant extends Resource {
+export class RegisteredModel extends Resource<RegisteredModelParams> {
+  constructor(params: RegisteredModelParams) {
+    super(params, "registered_models");
+  }
+}
+
+export interface Grant {
   /**
    * The name of the principal that will be granted privileges
    */
@@ -46,16 +52,9 @@ export interface Grant extends Resource {
   privileges: VariableOr<string[]>;
 }
 
-export interface Lifecycle extends Resource {
+export interface Lifecycle {
   /**
    * Lifecycle setting to prevent the resource from being destroyed.
    */
   prevent_destroy?: VariableOr<boolean>;
-}
-
-/**
- * Helper function to create a RegisteredModel with type safety
- */
-export function createRegisteredModel(config: RegisteredModel): RegisteredModel {
-  return config;
 }

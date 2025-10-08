@@ -24,7 +24,7 @@ sync:
     - "node_modules"
 
 targets:
-  dev:
+  dev-dais:
     mode: development
     default: true
     workspace:
@@ -33,6 +33,15 @@ targets:
       catalog: "main"
       schema: "fabian_jakobs"
       warehouse_id: "2afd2845dea667bf"
+
+  dev-azure:
+    mode: development
+    workspace:
+      host: https://adb-7064161269814046.2.staging.azuredatabricks.net/
+    variables:
+      catalog: "main"
+      schema: "fabian_jakobs"
+      warehouse_id: "ff57fd655bf05670"
 
   prod:
     mode: production

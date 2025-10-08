@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Sales Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      body {
+        font-family: sans-serif;
+        padding: 2rem;
+      }
+      canvas {
+        max-width: 100%;
+        height: 400px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>📈 Sales Dashboard</h1>
+    <canvas id="salesChart"></canvas>
+
+    <script>
+      async function renderChart() {
+        const response = await fetch('/data');
+        const data = await response.json();
+
+        const ctx = document.getElementById('salesChart').getContext('2d');
+        new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: data.map((d) => d.date),
+            datasets: [
+              {
+                label: 'Daily Sales',
+                data: data.map((d) => d.sales),
+                borderWidth: 2,
+                fill: false,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            scales: {
+              y: {
+                beginAtZero: true,
+              },
+            },
+          },
+        });
+      }
+
+      renderChart();
+    </script>
+  </body>
+</html>

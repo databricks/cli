@@ -4,13 +4,13 @@
  * Auto-generated from JSON Schema. Do not edit manually.
  */
 
-import type { Resource } from "../../src/core/resource.js";
+import { Resource } from "../../src/core/resource.js";
 import type { VariableOr } from "../../src/core/variable.js";
 
 /**
  * An experiment and its metadata.
  */
-export interface MlflowExperiment extends Resource {
+export interface MlflowExperimentParams {
   /**
    * Location where artifacts for the experiment are stored.
    */
@@ -30,10 +30,16 @@ export interface MlflowExperiment extends Resource {
   tags?: VariableOr<ExperimentTag[]>;
 }
 
+export class MlflowExperiment extends Resource<MlflowExperimentParams> {
+  constructor(params: MlflowExperimentParams) {
+    super(params, "mlflow_experiments");
+  }
+}
+
 /**
  * A tag for an experiment.
  */
-export interface ExperimentTag extends Resource {
+export interface ExperimentTag {
   /**
    * The tag key.
    */
@@ -44,14 +50,14 @@ export interface ExperimentTag extends Resource {
   value?: VariableOr<string>;
 }
 
-export interface Lifecycle extends Resource {
+export interface Lifecycle {
   /**
    * Lifecycle setting to prevent the resource from being destroyed.
    */
   prevent_destroy?: VariableOr<boolean>;
 }
 
-export interface MlflowExperimentPermission extends Resource {
+export interface MlflowExperimentPermission {
   group_name?: VariableOr<string>;
   level: VariableOr<MlflowExperimentPermissionLevel>;
   service_principal_name?: VariableOr<string>;
@@ -62,10 +68,3 @@ export type MlflowExperimentPermissionLevel =
   | "CAN_MANAGE"
   | "CAN_EDIT"
   | "CAN_READ";
-
-/**
- * Helper function to create a MlflowExperiment with type safety
- */
-export function createMlflowExperiment(config: MlflowExperiment): MlflowExperiment {
-  return config;
-}

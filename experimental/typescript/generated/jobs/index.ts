@@ -4,10 +4,10 @@
  * Auto-generated from JSON Schema. Do not edit manually.
  */
 
-import type { Resource } from "../../src/core/resource.js";
+import { Resource } from "../../src/core/resource.js";
 import type { VariableOr } from "../../src/core/variable.js";
 
-export interface Job extends Resource {
+export interface JobParams {
   /**
    * The id of the user specified budget policy to use for this job.
    * If not specified, a default budget policy may be applied when creating or modifying the job.
@@ -118,17 +118,23 @@ export interface Job extends Resource {
   webhook_notifications?: VariableOr<WebhookNotifications>;
 }
 
+export class Job extends Resource<JobParams> {
+  constructor(params: JobParams) {
+    super(params, "jobs");
+  }
+}
+
 /**
  * A storage location in Adls Gen2
  */
-export interface Adlsgen2Info extends Resource {
+export interface Adlsgen2Info {
   /**
    * abfss destination, e.g. `abfss://<container-name>@<storage-account-name>.dfs.core.windows.net/<directory-name>`.
    */
   destination: VariableOr<string>;
 }
 
-export interface AutoScale extends Resource {
+export interface AutoScale {
   /**
    * The maximum number of workers to which the cluster can scale up when overloaded.
    * Note that `max_workers` must be strictly greater than `min_workers`.
@@ -144,7 +150,7 @@ export interface AutoScale extends Resource {
 /**
  * Attributes set during cluster creation which are related to Amazon Web Services.
  */
-export interface AwsAttributes extends Resource {
+export interface AwsAttributes {
   availability?: VariableOr<AwsAvailability>;
   /**
    * The number of volumes launched for each instance. Users can choose up to 10 volumes.
@@ -239,7 +245,7 @@ export type AwsAvailability =
 /**
  * Attributes set during cluster creation which are related to Microsoft Azure.
  */
-export interface AzureAttributes extends Resource {
+export interface AzureAttributes {
   availability?: VariableOr<AzureAvailability>;
   /**
    * The first `first_on_demand` nodes of the cluster will be placed on on-demand instances.
@@ -273,7 +279,7 @@ export type AzureAvailability =
   | "ON_DEMAND_AZURE"
   | "SPOT_WITH_FALLBACK_AZURE";
 
-export interface ClientsTypes extends Resource {
+export interface ClientsTypes {
   /**
    * With jobs set, the cluster can be used for jobs
    */
@@ -287,7 +293,7 @@ export interface ClientsTypes extends Resource {
 /**
  * Cluster log delivery config
  */
-export interface ClusterLogConf extends Resource {
+export interface ClusterLogConf {
   /**
    * destination needs to be provided. e.g.
    * `{ "dbfs" : { "destination" : "dbfs:/home/cluster_log" } }`
@@ -310,7 +316,7 @@ export interface ClusterLogConf extends Resource {
 /**
  * Contains a snapshot of the latest user specified settings that were used to create/edit the cluster.
  */
-export interface ClusterSpec extends Resource {
+export interface ClusterSpec {
   /**
    * When set to true, fixed and default values from the policy will be used for fields that are omitted. When set to false, only fixed values from the policy will be applied.
    */
@@ -522,14 +528,14 @@ export type DataSecurityMode =
 /**
  * A storage location in DBFS
  */
-export interface DbfsStorageInfo extends Resource {
+export interface DbfsStorageInfo {
   /**
    * dbfs destination, e.g. `dbfs:/my/path`
    */
   destination: VariableOr<string>;
 }
 
-export interface DockerBasicAuth extends Resource {
+export interface DockerBasicAuth {
   /**
    * Password of the user
    */
@@ -540,7 +546,7 @@ export interface DockerBasicAuth extends Resource {
   username?: VariableOr<string>;
 }
 
-export interface DockerImage extends Resource {
+export interface DockerImage {
   basic_auth?: VariableOr<DockerBasicAuth>;
   /**
    * URL of the docker image.
@@ -560,7 +566,7 @@ export type EbsVolumeType =
  * The environment entity used to preserve serverless environment side panel, jobs' environment for non-notebook task, and DLT's environment for classic and serverless pipelines.
  * In this minimal environment spec, only pip dependencies are supported.
  */
-export interface Environment extends Resource {
+export interface Environment {
   /**
    * Use `environment_version` instead.
    * @deprecated
@@ -590,7 +596,7 @@ export interface Environment extends Resource {
 /**
  * Attributes set during cluster creation which are related to GCP.
  */
-export interface GcpAttributes extends Resource {
+export interface GcpAttributes {
   availability?: VariableOr<GcpAvailability>;
   /**
    * Boot disk size in GB
@@ -650,7 +656,7 @@ export type GcpAvailability =
 /**
  * A storage location in Google Cloud Platform's GCS
  */
-export interface GcsStorageInfo extends Resource {
+export interface GcsStorageInfo {
   /**
    * GCS destination/URI, e.g. `gs://my-bucket/some-prefix`
    */
@@ -661,7 +667,7 @@ export interface GcsStorageInfo extends Resource {
  * Config for an individual init script
  * Next ID: 11
  */
-export interface InitScriptInfo extends Resource {
+export interface InitScriptInfo {
   /**
    * Contains the Azure Data Lake Storage destination path
    */
@@ -704,7 +710,7 @@ export interface InitScriptInfo extends Resource {
 export type Kind =
   | "CLASSIC_PREVIEW";
 
-export interface Library extends Resource {
+export interface Library {
   /**
    * Specification of a CRAN library to be installed as part of the library
    */
@@ -747,14 +753,14 @@ export interface Library extends Resource {
   whl?: VariableOr<string>;
 }
 
-export interface LocalFileInfo extends Resource {
+export interface LocalFileInfo {
   /**
    * local file destination, e.g. `file:/my/local/file.sh`
    */
   destination: VariableOr<string>;
 }
 
-export interface LogAnalyticsInfo extends Resource {
+export interface LogAnalyticsInfo {
   /**
    * The primary key for the Azure Log Analytics agent configuration
    */
@@ -765,7 +771,7 @@ export interface LogAnalyticsInfo extends Resource {
   log_analytics_workspace_id?: VariableOr<string>;
 }
 
-export interface MavenLibrary extends Resource {
+export interface MavenLibrary {
   /**
    * Gradle-style maven coordinates. For example: "org.jsoup:jsoup:1.7.2".
    */
@@ -784,7 +790,7 @@ export interface MavenLibrary extends Resource {
   repo?: VariableOr<string>;
 }
 
-export interface PythonPyPiLibrary extends Resource {
+export interface PythonPyPiLibrary {
   /**
    * The name of the pypi package to install. An optional exact version specification is also
    * supported. Examples: "simplejson" and "simplejson==3.8.0".
@@ -797,7 +803,7 @@ export interface PythonPyPiLibrary extends Resource {
   repo?: VariableOr<string>;
 }
 
-export interface RCranLibrary extends Resource {
+export interface RCranLibrary {
   /**
    * The name of the CRAN package to install.
    */
@@ -816,7 +822,7 @@ export type RuntimeEngine =
 /**
  * A storage location in Amazon S3
  */
-export interface S3StorageInfo extends Resource {
+export interface S3StorageInfo {
   /**
    * (Optional) Set canned access control list for the logs, e.g. `bucket-owner-full-control`.
    * If `canned_cal` is set, please make sure the cluster iam role has `s3:PutObjectAcl` permission on
@@ -861,7 +867,7 @@ export interface S3StorageInfo extends Resource {
 /**
  * A storage location back by UC Volumes.
  */
-export interface VolumesStorageInfo extends Resource {
+export interface VolumesStorageInfo {
   /**
    * UC Volumes destination, e.g. `/Volumes/catalog/schema/vol1/init-scripts/setup-datadog.sh`
    * or `dbfs:/Volumes/catalog/schema/vol1/init-scripts/setup-datadog.sh`
@@ -872,7 +878,7 @@ export interface VolumesStorageInfo extends Resource {
 /**
  * Cluster Attributes showing for clusters workload types.
  */
-export interface WorkloadType extends Resource {
+export interface WorkloadType {
   /**
    * defined what type of clients can use the cluster. E.g. Notebooks, Jobs
    */
@@ -882,7 +888,7 @@ export interface WorkloadType extends Resource {
 /**
  * A storage location in Workspace Filesystem (WSFS)
  */
-export interface WorkspaceStorageInfo extends Resource {
+export interface WorkspaceStorageInfo {
   /**
    * wsfs destination, e.g. `workspace:/cluster-init-scripts/setup-datadog.sh`
    */
@@ -893,7 +899,7 @@ export type AuthenticationMethod =
   | "OAUTH"
   | "PAT";
 
-export interface CleanRoomsNotebookTask extends Resource {
+export interface CleanRoomsNotebookTask {
   /**
    * The clean room that the notebook belongs to.
    */
@@ -913,7 +919,7 @@ export interface CleanRoomsNotebookTask extends Resource {
   notebook_name: VariableOr<string>;
 }
 
-export interface ComputeConfig extends Resource {
+export interface ComputeConfig {
   /**
    * IDof the GPU pool to use.
    */
@@ -932,7 +938,7 @@ export type Condition =
   | "ANY_UPDATED"
   | "ALL_UPDATED";
 
-export interface ConditionTask extends Resource {
+export interface ConditionTask {
   /**
    * The left operand of the condition task. Can be either a string value or a job state or parameter reference.
    */
@@ -964,7 +970,7 @@ export type ConditionTaskOp =
   | "LESS_THAN_OR_EQUAL"
   | "NOT_EQUAL";
 
-export interface Continuous extends Resource {
+export interface Continuous {
   /**
    * Indicate whether the continuous execution of the job is paused or not. Defaults to UNPAUSED.
    */
@@ -975,7 +981,7 @@ export interface Continuous extends Resource {
   task_retry_mode?: VariableOr<TaskRetryMode>;
 }
 
-export interface CronSchedule extends Resource {
+export interface CronSchedule {
   /**
    * Indicate whether this schedule is paused or not.
    */
@@ -993,7 +999,7 @@ export interface CronSchedule extends Resource {
 /**
  * Configures the Lakeview Dashboard job task type.
  */
-export interface DashboardTask extends Resource {
+export interface DashboardTask {
   dashboard_id?: VariableOr<string>;
   subscription?: VariableOr<Subscription>;
   /**
@@ -1006,7 +1012,7 @@ export interface DashboardTask extends Resource {
 /**
  * Deprecated in favor of DbtPlatformTask
  */
-export interface DbtCloudTask extends Resource {
+export interface DbtCloudTask {
   /**
    * The resource name of the UC connection that authenticates the dbt Cloud for this task
    */
@@ -1017,7 +1023,7 @@ export interface DbtCloudTask extends Resource {
   dbt_cloud_job_id?: VariableOr<number>;
 }
 
-export interface DbtPlatformTask extends Resource {
+export interface DbtPlatformTask {
   /**
    * The resource name of the UC connection that authenticates the dbt platform for this task
    */
@@ -1028,7 +1034,7 @@ export interface DbtPlatformTask extends Resource {
   dbt_platform_job_id?: VariableOr<string>;
 }
 
-export interface DbtTask extends Resource {
+export interface DbtTask {
   /**
    * Optional name of the catalog to use. The value is the top level in the 3-level namespace of Unity Catalog (catalog / schema / relation). The catalog value can only be specified if a warehouse_id is specified. Requires dbt-databricks >= 1.1.1.
    */
@@ -1065,7 +1071,7 @@ export interface DbtTask extends Resource {
   warehouse_id?: VariableOr<string>;
 }
 
-export interface FileArrivalTriggerConfiguration extends Resource {
+export interface FileArrivalTriggerConfiguration {
   /**
    * If set, the trigger starts a run only after the specified amount of time passed since
    * the last time the trigger fired. The minimum allowed value is 60 seconds
@@ -1083,7 +1089,7 @@ export interface FileArrivalTriggerConfiguration extends Resource {
   wait_after_last_change_seconds?: VariableOr<number>;
 }
 
-export interface ForEachTask extends Resource {
+export interface ForEachTask {
   /**
    * An optional maximum allowed number of concurrent runs of the task.
    * Set this value if you want to be able to execute multiple runs of the task concurrently.
@@ -1100,7 +1106,7 @@ export interface ForEachTask extends Resource {
   task: VariableOr<Task>;
 }
 
-export interface GenAiComputeTask extends Resource {
+export interface GenAiComputeTask {
   /**
    * Command launcher to run the actual script, e.g. bash, python etc.
    */
@@ -1154,7 +1160,7 @@ export type GitProvider =
  * 
  * Note: dbt and SQL File tasks support only version-controlled sources. If dbt or SQL File tasks are used, `git_source` must be defined on the job.
  */
-export interface GitSource extends Resource {
+export interface GitSource {
   /**
    * Name of the branch to be checked out and used by this job. This field cannot be specified in conjunction with git_tag or git_commit.
    */
@@ -1177,7 +1183,7 @@ export interface GitSource extends Resource {
   git_url: VariableOr<string>;
 }
 
-export interface JobCluster extends Resource {
+export interface JobCluster {
   /**
    * A unique name for the job cluster. This field is required and must be unique within the job.
    * `JobTaskSettings` may refer to this field to determine which cluster to launch for the task execution.
@@ -1189,7 +1195,7 @@ export interface JobCluster extends Resource {
   new_cluster: VariableOr<ClusterSpec>;
 }
 
-export interface JobEmailNotifications extends Resource {
+export interface JobEmailNotifications {
   /**
    * If true, do not send email to recipients specified in `on_failure` if the run is skipped.
    * This field is `deprecated`. Please use the `notification_settings.no_alert_for_skipped_runs` field.
@@ -1220,7 +1226,7 @@ export interface JobEmailNotifications extends Resource {
   on_success?: VariableOr<string[]>;
 }
 
-export interface JobEnvironment extends Resource {
+export interface JobEnvironment {
   /**
    * The key of an environment. It has to be unique within a job.
    */
@@ -1228,7 +1234,7 @@ export interface JobEnvironment extends Resource {
   spec?: VariableOr<Environment>;
 }
 
-export interface JobNotificationSettings extends Resource {
+export interface JobNotificationSettings {
   /**
    * If true, do not send notifications to recipients specified in `on_failure` if the run is canceled.
    */
@@ -1239,7 +1245,7 @@ export interface JobNotificationSettings extends Resource {
   no_alert_for_skipped_runs?: VariableOr<boolean>;
 }
 
-export interface JobParameterDefinition extends Resource {
+export interface JobParameterDefinition {
   /**
    * Default value of the parameter.
    */
@@ -1255,7 +1261,7 @@ export interface JobParameterDefinition extends Resource {
  * 
  * Either `user_name` or `service_principal_name` should be specified. If not, an error is thrown.
  */
-export interface JobRunAs extends Resource {
+export interface JobRunAs {
   /**
    * The application ID of an active service principal. Setting this field requires the `servicePrincipal/user` role.
    */
@@ -1288,7 +1294,7 @@ export type JobsHealthMetric =
 export type JobsHealthOperator =
   | "GREATER_THAN";
 
-export interface JobsHealthRule extends Resource {
+export interface JobsHealthRule {
   metric: VariableOr<JobsHealthMetric>;
   op: VariableOr<JobsHealthOperator>;
   /**
@@ -1300,11 +1306,11 @@ export interface JobsHealthRule extends Resource {
 /**
  * An optional set of health rules that can be defined for this job.
  */
-export interface JobsHealthRules extends Resource {
+export interface JobsHealthRules {
   rules?: VariableOr<JobsHealthRule[]>;
 }
 
-export interface NotebookTask extends Resource {
+export interface NotebookTask {
   /**
    * Base parameters to be used for each run of this job. If the run is initiated by a call to :method:jobs/run
    * Now with parameters specified, the two parameters maps are merged. If the same key is specified in
@@ -1353,7 +1359,7 @@ export type PerformanceTarget =
   | "PERFORMANCE_OPTIMIZED"
   | "STANDARD";
 
-export interface PeriodicTriggerConfiguration extends Resource {
+export interface PeriodicTriggerConfiguration {
   /**
    * The interval at which the trigger should run.
    */
@@ -1369,14 +1375,14 @@ export type PeriodicTriggerConfigurationTimeUnit =
   | "DAYS"
   | "WEEKS";
 
-export interface PipelineParams extends Resource {
+export interface PipelineParams {
   /**
    * If true, triggers a full refresh on the delta live table.
    */
   full_refresh?: VariableOr<boolean>;
 }
 
-export interface PipelineTask extends Resource {
+export interface PipelineTask {
   /**
    * If true, triggers a full refresh on the delta live table.
    */
@@ -1387,7 +1393,7 @@ export interface PipelineTask extends Resource {
   pipeline_id: VariableOr<string>;
 }
 
-export interface PowerBiModel extends Resource {
+export interface PowerBiModel {
   /**
    * How the published Power BI model authenticates to Databricks
    */
@@ -1410,7 +1416,7 @@ export interface PowerBiModel extends Resource {
   workspace_name?: VariableOr<string>;
 }
 
-export interface PowerBiTable extends Resource {
+export interface PowerBiTable {
   /**
    * The catalog name in Databricks
    */
@@ -1429,7 +1435,7 @@ export interface PowerBiTable extends Resource {
   storage_mode?: VariableOr<StorageMode>;
 }
 
-export interface PowerBiTask extends Resource {
+export interface PowerBiTask {
   /**
    * The resource name of the UC connection to authenticate from Databricks to Power BI
    */
@@ -1452,7 +1458,7 @@ export interface PowerBiTask extends Resource {
   warehouse_id?: VariableOr<string>;
 }
 
-export interface PythonWheelTask extends Resource {
+export interface PythonWheelTask {
   /**
    * Named entry point to use, if it does not exist in the metadata of the package it executes the function from the package directly using `$packageName.$entryPoint()`
    */
@@ -1471,7 +1477,7 @@ export interface PythonWheelTask extends Resource {
   parameters?: VariableOr<string[]>;
 }
 
-export interface QueueSettings extends Resource {
+export interface QueueSettings {
   /**
    * If true, enable queueing for the job. This is a required field.
    */
@@ -1497,7 +1503,7 @@ export type RunIf =
   | "ALL_FAILED"
   | "AT_LEAST_ONE_FAILED";
 
-export interface RunJobTask extends Resource {
+export interface RunJobTask {
   /**
    * An array of commands to execute for jobs with the dbt task, for example `"dbt_commands": ["dbt deps", "dbt seed", "dbt deps", "dbt seed", "dbt run"]`
    * @deprecated
@@ -1590,7 +1596,7 @@ export type Source =
   | "WORKSPACE"
   | "GIT";
 
-export interface SparkJarTask extends Resource {
+export interface SparkJarTask {
   /**
    * Deprecated since 04/2016. Provide a `jar` through the `libraries` field instead. For an example, see :method:jobs/create.
    * @deprecated
@@ -1615,7 +1621,7 @@ export interface SparkJarTask extends Resource {
   run_as_repl?: VariableOr<boolean>;
 }
 
-export interface SparkPythonTask extends Resource {
+export interface SparkPythonTask {
   /**
    * Command line parameters passed to the Python file.
    * 
@@ -1637,7 +1643,7 @@ export interface SparkPythonTask extends Resource {
   source?: VariableOr<Source>;
 }
 
-export interface SparkSubmitTask extends Resource {
+export interface SparkSubmitTask {
   /**
    * Command-line parameters passed to spark submit.
    * 
@@ -1646,7 +1652,7 @@ export interface SparkSubmitTask extends Resource {
   parameters?: VariableOr<string[]>;
 }
 
-export interface SqlTask extends Resource {
+export interface SqlTask {
   /**
    * If alert, indicates that this job must refresh a SQL alert.
    */
@@ -1673,7 +1679,7 @@ export interface SqlTask extends Resource {
   warehouse_id: VariableOr<string>;
 }
 
-export interface SqlTaskAlert extends Resource {
+export interface SqlTaskAlert {
   /**
    * The canonical identifier of the SQL alert.
    */
@@ -1688,7 +1694,7 @@ export interface SqlTaskAlert extends Resource {
   subscriptions?: VariableOr<SqlTaskSubscription[]>;
 }
 
-export interface SqlTaskDashboard extends Resource {
+export interface SqlTaskDashboard {
   /**
    * Subject of the email sent to subscribers of this task.
    */
@@ -1707,7 +1713,7 @@ export interface SqlTaskDashboard extends Resource {
   subscriptions?: VariableOr<SqlTaskSubscription[]>;
 }
 
-export interface SqlTaskFile extends Resource {
+export interface SqlTaskFile {
   /**
    * Path of the SQL file. Must be relative if the source is a remote Git repository and absolute for workspace paths.
    */
@@ -1723,14 +1729,14 @@ export interface SqlTaskFile extends Resource {
   source?: VariableOr<Source>;
 }
 
-export interface SqlTaskQuery extends Resource {
+export interface SqlTaskQuery {
   /**
    * The canonical identifier of the SQL query.
    */
   query_id: VariableOr<string>;
 }
 
-export interface SqlTaskSubscription extends Resource {
+export interface SqlTaskSubscription {
   /**
    * The canonical identifier of the destination to receive email notification. This parameter is mutually exclusive with user_name. You cannot set both destination_id and user_name for subscription notifications.
    */
@@ -1746,7 +1752,7 @@ export type StorageMode =
   | "IMPORT"
   | "DUAL";
 
-export interface Subscription extends Resource {
+export interface Subscription {
   /**
    * Optional: Allows users to specify a custom subject line on the email sent
    * to subscribers.
@@ -1759,12 +1765,12 @@ export interface Subscription extends Resource {
   subscribers?: VariableOr<SubscriptionSubscriber[]>;
 }
 
-export interface SubscriptionSubscriber extends Resource {
+export interface SubscriptionSubscriber {
   destination_id?: VariableOr<string>;
   user_name?: VariableOr<string>;
 }
 
-export interface TableUpdateTriggerConfiguration extends Resource {
+export interface TableUpdateTriggerConfiguration {
   /**
    * The table(s) condition based on which to trigger a job run.
    */
@@ -1786,7 +1792,7 @@ export interface TableUpdateTriggerConfiguration extends Resource {
   wait_after_last_change_seconds?: VariableOr<number>;
 }
 
-export interface Task extends Resource {
+export interface Task {
   /**
    * The task runs a [clean rooms](https://docs.databricks.com/clean-rooms/index.html) notebook
    * when the `clean_rooms_notebook_task` field is present.
@@ -1943,7 +1949,7 @@ export interface Task extends Resource {
   webhook_notifications?: VariableOr<WebhookNotifications>;
 }
 
-export interface TaskDependency extends Resource {
+export interface TaskDependency {
   /**
    * Can only be specified on condition task dependencies. The outcome of the dependent task that must be met for this task to run.
    */
@@ -1954,7 +1960,7 @@ export interface TaskDependency extends Resource {
   task_key: VariableOr<string>;
 }
 
-export interface TaskEmailNotifications extends Resource {
+export interface TaskEmailNotifications {
   /**
    * If true, do not send email to recipients specified in `on_failure` if the run is skipped.
    * This field is `deprecated`. Please use the `notification_settings.no_alert_for_skipped_runs` field.
@@ -1985,7 +1991,7 @@ export interface TaskEmailNotifications extends Resource {
   on_success?: VariableOr<string[]>;
 }
 
-export interface TaskNotificationSettings extends Resource {
+export interface TaskNotificationSettings {
   /**
    * If true, do not send notifications to recipients specified in `on_start` for the retried runs and do not send notifications to recipients specified in `on_failure` until the last retry of the run.
    */
@@ -2010,7 +2016,7 @@ export type TaskRetryMode =
   | "NEVER"
   | "ON_FAILURE";
 
-export interface TriggerSettings extends Resource {
+export interface TriggerSettings {
   /**
    * File arrival trigger settings.
    */
@@ -2031,11 +2037,11 @@ export interface TriggerSettings extends Resource {
   table_update?: VariableOr<TableUpdateTriggerConfiguration>;
 }
 
-export interface Webhook extends Resource {
+export interface Webhook {
   id: VariableOr<string>;
 }
 
-export interface WebhookNotifications extends Resource {
+export interface WebhookNotifications {
   /**
    * An optional list of system notification IDs to call when the duration of a run exceeds the threshold specified for the `RUN_DURATION_SECONDS` metric in the `health` field. A maximum of 3 destinations can be specified for the `on_duration_warning_threshold_exceeded` property.
    */
@@ -2061,7 +2067,7 @@ export interface WebhookNotifications extends Resource {
   on_success?: VariableOr<Webhook[]>;
 }
 
-export interface JobPermission extends Resource {
+export interface JobPermission {
   group_name?: VariableOr<string>;
   level: VariableOr<JobPermissionLevel>;
   service_principal_name?: VariableOr<string>;
@@ -2074,16 +2080,9 @@ export type JobPermissionLevel =
   | "CAN_VIEW"
   | "IS_OWNER";
 
-export interface Lifecycle extends Resource {
+export interface Lifecycle {
   /**
    * Lifecycle setting to prevent the resource from being destroyed.
    */
   prevent_destroy?: VariableOr<boolean>;
-}
-
-/**
- * Helper function to create a Job with type safety
- */
-export function createJob(config: Job): Job {
-  return config;
 }

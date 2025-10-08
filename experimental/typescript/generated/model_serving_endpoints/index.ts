@@ -4,10 +4,10 @@
  * Auto-generated from JSON Schema. Do not edit manually.
  */
 
-import type { Resource } from "../../src/core/resource.js";
+import { Resource } from "../../src/core/resource.js";
 import type { VariableOr } from "../../src/core/variable.js";
 
-export interface ModelServingEndpoint extends Resource {
+export interface ModelServingEndpointParams {
   /**
    * The AI Gateway configuration for the serving endpoint. NOTE: External model, provisioned throughput, and pay-per-token endpoints are fully supported; agent endpoints currently only support inference tables.
    */
@@ -50,14 +50,20 @@ export interface ModelServingEndpoint extends Resource {
   tags?: VariableOr<EndpointTag[]>;
 }
 
-export interface Lifecycle extends Resource {
+export class ModelServingEndpoint extends Resource<ModelServingEndpointParams> {
+  constructor(params: ModelServingEndpointParams) {
+    super(params, "model_serving_endpoints");
+  }
+}
+
+export interface Lifecycle {
   /**
    * Lifecycle setting to prevent the resource from being destroyed.
    */
   prevent_destroy?: VariableOr<boolean>;
 }
 
-export interface ModelServingEndpointPermission extends Resource {
+export interface ModelServingEndpointPermission {
   group_name?: VariableOr<string>;
   level: VariableOr<ModelServingEndpointPermissionLevel>;
   service_principal_name?: VariableOr<string>;
@@ -69,7 +75,7 @@ export type ModelServingEndpointPermissionLevel =
   | "CAN_QUERY"
   | "CAN_VIEW";
 
-export interface Ai21LabsConfig extends Resource {
+export interface Ai21LabsConfig {
   /**
    * The Databricks secret key reference for an AI21 Labs API key. If you
    * prefer to paste your API key directly, see `ai21labs_api_key_plaintext`.
@@ -86,7 +92,7 @@ export interface Ai21LabsConfig extends Resource {
   ai21labs_api_key_plaintext?: VariableOr<string>;
 }
 
-export interface AiGatewayConfig extends Resource {
+export interface AiGatewayConfig {
   /**
    * Configuration for traffic fallback which auto fallbacks to other served entities if the request to a served
    * entity fails with certain error codes, to increase availability.
@@ -112,7 +118,7 @@ export interface AiGatewayConfig extends Resource {
   usage_tracking_config?: VariableOr<AiGatewayUsageTrackingConfig>;
 }
 
-export interface AiGatewayGuardrailParameters extends Resource {
+export interface AiGatewayGuardrailParameters {
   /**
    * List of invalid keywords.
    * AI guardrail uses keyword or string matching to decide if the keyword exists in the request or response content.
@@ -135,7 +141,7 @@ export interface AiGatewayGuardrailParameters extends Resource {
   valid_topics?: VariableOr<string[]>;
 }
 
-export interface AiGatewayGuardrailPiiBehavior extends Resource {
+export interface AiGatewayGuardrailPiiBehavior {
   /**
    * Configuration for input guardrail filters.
    */
@@ -147,7 +153,7 @@ export type AiGatewayGuardrailPiiBehaviorBehavior =
   | "BLOCK"
   | "MASK";
 
-export interface AiGatewayGuardrails extends Resource {
+export interface AiGatewayGuardrails {
   /**
    * Configuration for input guardrail filters.
    */
@@ -158,7 +164,7 @@ export interface AiGatewayGuardrails extends Resource {
   output?: VariableOr<AiGatewayGuardrailParameters>;
 }
 
-export interface AiGatewayInferenceTableConfig extends Resource {
+export interface AiGatewayInferenceTableConfig {
   /**
    * The name of the catalog in Unity Catalog. Required when enabling inference tables.
    * NOTE: On update, you have to disable inference table first in order to change the catalog name.
@@ -180,7 +186,7 @@ export interface AiGatewayInferenceTableConfig extends Resource {
   table_name_prefix?: VariableOr<string>;
 }
 
-export interface AiGatewayRateLimit extends Resource {
+export interface AiGatewayRateLimit {
   /**
    * Used to specify how many calls are allowed for a key within the renewal_period.
    */
@@ -213,14 +219,14 @@ export type AiGatewayRateLimitKey =
 export type AiGatewayRateLimitRenewalPeriod =
   | "minute";
 
-export interface AiGatewayUsageTrackingConfig extends Resource {
+export interface AiGatewayUsageTrackingConfig {
   /**
    * Whether to enable usage tracking.
    */
   enabled?: VariableOr<boolean>;
 }
 
-export interface AmazonBedrockConfig extends Resource {
+export interface AmazonBedrockConfig {
   /**
    * The Databricks secret key reference for an AWS access key ID with
    * permissions to interact with Bedrock services. If you prefer to paste
@@ -279,7 +285,7 @@ export type AmazonBedrockConfigBedrockProvider =
   | "ai21labs"
   | "amazon";
 
-export interface AnthropicConfig extends Resource {
+export interface AnthropicConfig {
   /**
    * The Databricks secret key reference for an Anthropic API key. If you
    * prefer to paste your API key directly, see `anthropic_api_key_plaintext`.
@@ -296,7 +302,7 @@ export interface AnthropicConfig extends Resource {
   anthropic_api_key_plaintext?: VariableOr<string>;
 }
 
-export interface ApiKeyAuth extends Resource {
+export interface ApiKeyAuth {
   /**
    * The name of the API key parameter used for authentication.
    */
@@ -313,7 +319,7 @@ export interface ApiKeyAuth extends Resource {
   value_plaintext?: VariableOr<string>;
 }
 
-export interface AutoCaptureConfigInput extends Resource {
+export interface AutoCaptureConfigInput {
   /**
    * The name of the catalog in Unity Catalog. NOTE: On update, you cannot change the catalog name if the inference table is already enabled.
    */
@@ -332,7 +338,7 @@ export interface AutoCaptureConfigInput extends Resource {
   table_name_prefix?: VariableOr<string>;
 }
 
-export interface BearerTokenAuth extends Resource {
+export interface BearerTokenAuth {
   /**
    * The Databricks secret key reference for a token.
    * If you prefer to paste your token directly, see `token_plaintext`.
@@ -345,7 +351,7 @@ export interface BearerTokenAuth extends Resource {
   token_plaintext?: VariableOr<string>;
 }
 
-export interface CohereConfig extends Resource {
+export interface CohereConfig {
   /**
    * This is an optional field to provide a customized base URL for the Cohere
    * API. If left unspecified, the standard Cohere base URL is used.
@@ -370,7 +376,7 @@ export interface CohereConfig extends Resource {
 /**
  * Configs needed to create a custom provider model route.
  */
-export interface CustomProviderConfig extends Resource {
+export interface CustomProviderConfig {
   /**
    * This is a field to provide API key authentication for the custom provider API.
    * You can only specify one authentication method.
@@ -387,7 +393,7 @@ export interface CustomProviderConfig extends Resource {
   custom_provider_url: VariableOr<string>;
 }
 
-export interface DatabricksModelServingConfig extends Resource {
+export interface DatabricksModelServingConfig {
   /**
    * The Databricks secret key reference for a Databricks API token that
    * corresponds to a user or service principal with Can Query access to the
@@ -413,7 +419,7 @@ export interface DatabricksModelServingConfig extends Resource {
   databricks_workspace_url: VariableOr<string>;
 }
 
-export interface EmailNotifications extends Resource {
+export interface EmailNotifications {
   /**
    * A list of email addresses to be notified when an endpoint fails to update its configuration or state.
    */
@@ -424,7 +430,7 @@ export interface EmailNotifications extends Resource {
   on_update_success?: VariableOr<string[]>;
 }
 
-export interface EndpointCoreConfigInput extends Resource {
+export interface EndpointCoreConfigInput {
   /**
    * Configuration for Inference Tables which automatically logs requests and responses to Unity Catalog.
    * Note: this field is deprecated for creating new provisioned throughput endpoints,
@@ -446,7 +452,7 @@ export interface EndpointCoreConfigInput extends Resource {
   traffic_config?: VariableOr<TrafficConfig>;
 }
 
-export interface EndpointTag extends Resource {
+export interface EndpointTag {
   /**
    * Key field for a serving endpoint tag.
    */
@@ -457,7 +463,7 @@ export interface EndpointTag extends Resource {
   value?: VariableOr<string>;
 }
 
-export interface ExternalModel extends Resource {
+export interface ExternalModel {
   /**
    * AI21Labs Config. Only required if the provider is 'ai21labs'.
    */
@@ -519,7 +525,7 @@ export type ExternalModelProvider =
   | "palm"
   | "custom";
 
-export interface FallbackConfig extends Resource {
+export interface FallbackConfig {
   /**
    * Whether to enable traffic fallback. When a served entity in the serving endpoint returns specific error
    * codes (e.g. 500), the request will automatically be round-robin attempted with other served entities in the same
@@ -529,7 +535,7 @@ export interface FallbackConfig extends Resource {
   enabled: VariableOr<boolean>;
 }
 
-export interface GoogleCloudVertexAiConfig extends Resource {
+export interface GoogleCloudVertexAiConfig {
   /**
    * The Databricks secret key reference for a private key for the service
    * account which has access to the Google Cloud Vertex AI Service. See [Best
@@ -570,7 +576,7 @@ export interface GoogleCloudVertexAiConfig extends Resource {
 /**
  * Configs needed to create an OpenAI model route.
  */
-export interface OpenAiConfig extends Resource {
+export interface OpenAiConfig {
   /**
    * This field is only required for Azure AD OpenAI and is the Microsoft
    * Entra Client ID.
@@ -646,7 +652,7 @@ export interface OpenAiConfig extends Resource {
   openai_organization?: VariableOr<string>;
 }
 
-export interface PaLmConfig extends Resource {
+export interface PaLmConfig {
   /**
    * The Databricks secret key reference for a PaLM API key. If you prefer to
    * paste your API key directly, see `palm_api_key_plaintext`. You must
@@ -663,7 +669,7 @@ export interface PaLmConfig extends Resource {
   palm_api_key_plaintext?: VariableOr<string>;
 }
 
-export interface RateLimit extends Resource {
+export interface RateLimit {
   /**
    * Used to specify how many calls are allowed for a key within the renewal_period.
    */
@@ -685,7 +691,7 @@ export type RateLimitKey =
 export type RateLimitRenewalPeriod =
   | "minute";
 
-export interface Route extends Resource {
+export interface Route {
   served_entity_name?: VariableOr<string>;
   /**
    * The name of the served model this route configures traffic for.
@@ -697,7 +703,7 @@ export interface Route extends Resource {
   traffic_percentage: VariableOr<number>;
 }
 
-export interface ServedEntityInput extends Resource {
+export interface ServedEntityInput {
   /**
    * The name of the entity to be served. The entity may be a model in the Databricks Model Registry, a model in the Unity Catalog (UC), or a function of type FEATURE_SPEC in the UC. If it is a UC object, the full name of the object should be given in the form of **catalog_name.schema_name.model_name**.
    */
@@ -753,7 +759,7 @@ export interface ServedEntityInput extends Resource {
   workload_type?: VariableOr<ServingModelWorkloadType>;
 }
 
-export interface ServedModelInput extends Resource {
+export interface ServedModelInput {
   /**
    * An object containing a set of optional, user-specified environment variable key-value pairs used for serving this entity. Note: this is an experimental feature and subject to change. Example entity environment variables that refer to Databricks secrets: `{"OPENAI_API_KEY": "{{secrets/my_scope/my_key}}", "DATABRICKS_TOKEN": "{{secrets/my_scope2/my_key2}}"}`
    */
@@ -822,16 +828,9 @@ export type ServingModelWorkloadType =
   | "GPU_LARGE"
   | "MULTIGPU_MEDIUM";
 
-export interface TrafficConfig extends Resource {
+export interface TrafficConfig {
   /**
    * The list of routes that define traffic to each served entity.
    */
   routes?: VariableOr<Route[]>;
-}
-
-/**
- * Helper function to create a ModelServingEndpoint with type safety
- */
-export function createModelServingEndpoint(config: ModelServingEndpoint): ModelServingEndpoint {
-  return config;
 }

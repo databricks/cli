@@ -2,42 +2,50 @@
   "name": "@databricks/bundles",
   "version": "0.271.0",
   "description": "TypeScript support for Databricks Asset Bundles",
-  "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
-  "types": "./dist/index.d.ts",
+  "type": "module",
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
   "bin": {
-    "databricks-bundles": "./dist/cli.js"
+    "databricks-bundles": "./dist/src/cli.js"
   },
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js"
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/index.js"
     },
     "./core": {
-      "types": "./dist/core/index.d.ts",
-      "import": "./dist/core/index.mjs",
-      "require": "./dist/core/index.js"
+      "types": "./dist/src/core/index.d.ts",
+      "import": "./dist/src/core/index.js"
     },
     "./build": {
-      "types": "./dist/build/index.d.ts",
-      "import": "./dist/build/index.mjs",
-      "require": "./dist/build/index.js"
+      "types": "./dist/src/build/index.d.ts",
+      "import": "./dist/src/build/index.js"
     },
     "./jobs": {
-      "types": "./generated/jobs/index.d.ts",
-      "import": "./generated/jobs/index.mjs",
-      "require": "./generated/jobs/index.js"
+      "types": "./dist/generated/jobs/index.d.ts",
+      "import": "./dist/generated/jobs/index.js"
     },
     "./pipelines": {
-      "types": "./generated/pipelines/index.d.ts",
-      "import": "./generated/pipelines/index.mjs",
-      "require": "./generated/pipelines/index.js"
+      "types": "./dist/generated/pipelines/index.d.ts",
+      "import": "./dist/generated/pipelines/index.js"
+    },
+    "./apps": {
+      "types": "./dist/generated/apps/index.d.ts",
+      "import": "./dist/generated/apps/index.js"
+    },
+    "./volumes": {
+      "types": "./dist/generated/volumes/index.d.ts",
+      "import": "./dist/generated/volumes/index.js"
+    },
+    "./schemas": {
+      "types": "./dist/generated/schemas/index.d.ts",
+      "import": "./dist/generated/schemas/index.js"
     }
   },
   "scripts": {
-    "build": "tsup",
-    "dev": "tsup --watch",
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "dev": "tsc --watch",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
@@ -76,7 +84,6 @@
     "prettier": "^3.3.2",
     "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",
-    "tsup": "^8.1.0",
     "tsx": "^4.16.2",
     "typescript": "^5.5.3"
   },

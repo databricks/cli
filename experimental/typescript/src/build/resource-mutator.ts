@@ -17,7 +17,7 @@ import type { Volume } from "../../generated/volumes/index.js";
  *
  * Stores the resource type and the mutator function.
  */
-export interface ResourceMutator<T extends Resource = Resource> {
+export interface ResourceMutator<T extends Resource<any> = Resource<any>> {
   resourceType: new () => T;
   function: ((bundle: Bundle, resource: T) => T) | ((resource: T) => T);
 }

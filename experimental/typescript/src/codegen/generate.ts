@@ -300,8 +300,9 @@ function resolveRef(ref: string, schemas: Map<string, Schema>): { typeName: stri
 
 /**
  * Generate TypeScript interface from schema
+ * @param isMainResource - If true, generates params interface + class; otherwise generates regular interface
  */
-function generateInterface(name: string, schema: Schema, schemas: Map<string, Schema>): string {
+function generateInterface(name: string, namespace: string, schema: Schema, schemas: Map<string, Schema>, isMainResource: boolean = false): string {
   const lines: string[] = [];
 
   // Add description if present
@@ -325,31 +326,70 @@ function generateInterface(name: string, schema: Schema, schemas: Map<string, Sc
     return lines.join("\n");
   }
 
-  // Generate interface
-  lines.push(`export interface ${name} extends Resource {`);
+  if (isMainResource) {
+    // For main resources: generate params interface + class
+    const paramsName = `${name}Params`;
 
-  if (schema.properties) {
-    for (const [propName, prop] of Object.entries(schema.properties)) {
-      const isRequired = schema.required?.includes(propName);
-      const optional = isRequired ? "" : "?";
+    // Generate params interface
+    lines.push(`export interface ${paramsName} {`);
 
-      // Add property description
-      if (prop.description) {
-        lines.push("  /**");
-        lines.push(`   * ${prop.description.replace(/\n/g, "\n   * ")}`);
-        if (prop.deprecated) {
-          lines.push("   * @deprecated");
+    if (schema.properties) {
+      for (const [propName, prop] of Object.entries(schema.properties)) {
+        const isRequired = schema.required?.includes(propName);
+        const optional = isRequired ? "" : "?";
+
+        // Add property description
+        if (prop.description) {
+          lines.push("  /**");
+          lines.push(`   * ${prop.description.replace(/\n/g, "\n   * ")}`);
+          if (prop.deprecated) {
+            lines.push("   * @deprecated");
+          }
+          lines.push("   */");
         }
-        lines.push("   */");
+
+        const resolved = resolveRef(prop.ref, schemas);
+        lines.push(`  ${propName}${optional}: VariableOr<${resolved.typeName}>;`);
       }
-
-      const resolved = resolveRef(prop.ref, schemas);
-      lines.push(`  ${propName}${optional}: VariableOr<${resolved.typeName}>;`);
     }
-  }
 
-  lines.push("}");
-  lines.push("");
+    lines.push("}");
+    lines.push("");
+
+    // Generate class
+    lines.push(`export class ${name} extends Resource<${paramsName}> {`);
+    lines.push(`  constructor(params: ${paramsName}) {`);
+    lines.push(`    super(params, "${namespace}");`);
+    lines.push(`  }`);
+    lines.push("}");
+    lines.push("");
+  } else {
+    // For supporting types: generate regular interface
+    lines.push(`export interface ${name} {`);
+
+    if (schema.properties) {
+      for (const [propName, prop] of Object.entries(schema.properties)) {
+        const isRequired = schema.required?.includes(propName);
+        const optional = isRequired ? "" : "?";
+
+        // Add property description
+        if (prop.description) {
+          lines.push("  /**");
+          lines.push(`   * ${prop.description.replace(/\n/g, "\n   * ")}`);
+          if (prop.deprecated) {
+            lines.push("   * @deprecated");
+          }
+          lines.push("   */");
+        }
+
+        const resolved = resolveRef(prop.ref, schemas);
+        lines.push(`  ${propName}${optional}: VariableOr<${resolved.typeName}>;`);
+      }
+    }
+
+    lines.push("}");
+    lines.push("");
+  }
 
   return lines.join("\n");
 }
@@ -443,33 +483,24 @@ function generateResourceFile(resourceName: string, namespace: string, schemas: 
   lines.push(" */");
   lines.push("");
 
-  // Imports
-  lines.push('import type { Resource } from "../../src/core/resource.js";');
+  // Imports - need Resource as a value for class extension
+  lines.push('import { Resource } from "../../src/core/resource.js";');
   lines.push('import type { VariableOr } from "../../src/core/variable.js";');
   lines.push("");
 
   // Collect all referenced types recursively
   const referencedTypes = collectReferencedTypes(schema, schemas);
 
-  // Generate main interface
-  lines.push(generateInterface(typeName, schema, schemas));
+  // Generate main resource class (with params interface)
+  lines.push(generateInterface(typeName, namespace, schema, schemas, true));
 
-  // Generate referenced types in sorted order
+  // Generate referenced types in sorted order (regular interfaces)
   for (const refName of Array.from(referencedTypes).sort()) {
     const refSchema = schemas.get(refName);
     if (refSchema) {
-      lines.push(generateInterface(getTypeName(`#/$defs/${refName}`), refSchema, schemas));
+      lines.push(generateInterface(getTypeName(`#/$defs/${refName}`), namespace, refSchema, schemas, false));
     }
   }
-
-  // Generate helper function
-  lines.push(`/**`);
-  lines.push(` * Helper function to create a ${typeName} with type safety`);
-  lines.push(` */`);
-  lines.push(`export function create${typeName}(config: ${typeName}): ${typeName} {`);
-  lines.push(`  return config;`);
-  lines.push(`}`);
-  lines.push("");
 
   // Write file
   const outputDir = join(__dirname, "..", "..", "generated", namespace);

@@ -4,10 +4,10 @@
  * Auto-generated from JSON Schema. Do not edit manually.
  */
 
-import type { Resource } from "../../src/core/resource.js";
+import { Resource } from "../../src/core/resource.js";
 import type { VariableOr } from "../../src/core/variable.js";
 
-export interface MlflowModel extends Resource {
+export interface MlflowModelParams {
   /**
    * Optional description for registered model.
    */
@@ -27,10 +27,16 @@ export interface MlflowModel extends Resource {
   tags?: VariableOr<ModelTag[]>;
 }
 
+export class MlflowModel extends Resource<MlflowModelParams> {
+  constructor(params: MlflowModelParams) {
+    super(params, "mlflow_models");
+  }
+}
+
 /**
  * Tag for a registered model
  */
-export interface ModelTag extends Resource {
+export interface ModelTag {
   /**
    * The tag key.
    */
@@ -41,14 +47,14 @@ export interface ModelTag extends Resource {
   value?: VariableOr<string>;
 }
 
-export interface Lifecycle extends Resource {
+export interface Lifecycle {
   /**
    * Lifecycle setting to prevent the resource from being destroyed.
    */
   prevent_destroy?: VariableOr<boolean>;
 }
 
-export interface MlflowModelPermission extends Resource {
+export interface MlflowModelPermission {
   group_name?: VariableOr<string>;
   level: VariableOr<MlflowModelPermissionLevel>;
   service_principal_name?: VariableOr<string>;
@@ -61,10 +67,3 @@ export type MlflowModelPermissionLevel =
   | "CAN_MANAGE_STAGING_VERSIONS"
   | "CAN_MANAGE_PRODUCTION_VERSIONS"
   | "CAN_READ";
-
-/**
- * Helper function to create a MlflowModel with type safety
- */
-export function createMlflowModel(config: MlflowModel): MlflowModel {
-  return config;
-}

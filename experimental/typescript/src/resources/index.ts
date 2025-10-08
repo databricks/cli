@@ -8,33 +8,19 @@
 import type { Bundle } from "../core/bundle.js";
 import { Resources } from "../core/resources.js";
 
-// Re-export resource types
-export type { App } from "../../generated/apps/index.js";
-export type { Cluster } from "../../generated/clusters/index.js";
-export type { Dashboard } from "../../generated/dashboards/index.js";
-export type { Job } from "../../generated/jobs/index.js";
-export type { MlflowExperiment } from "../../generated/mlflow_experiments/index.js";
-export type { MlflowModel } from "../../generated/mlflow_models/index.js";
-export type { ModelServingEndpoint } from "../../generated/model_serving_endpoints/index.js";
-export type { Pipeline } from "../../generated/pipelines/index.js";
-export type { QualityMonitor } from "../../generated/quality_monitors/index.js";
-export type { RegisteredModel } from "../../generated/registered_models/index.js";
-export type { Schema } from "../../generated/schemas/index.js";
-export type { Volume } from "../../generated/volumes/index.js";
-
-// Re-export helper functions
-export { createApp } from "../../generated/apps/index.js";
-export { createCluster } from "../../generated/clusters/index.js";
-export { createDashboard } from "../../generated/dashboards/index.js";
-export { createJob } from "../../generated/jobs/index.js";
-export { createMlflowExperiment } from "../../generated/mlflow_experiments/index.js";
-export { createMlflowModel } from "../../generated/mlflow_models/index.js";
-export { createModelServingEndpoint } from "../../generated/model_serving_endpoints/index.js";
-export { createPipeline } from "../../generated/pipelines/index.js";
-export { createQualityMonitor } from "../../generated/quality_monitors/index.js";
-export { createRegisteredModel } from "../../generated/registered_models/index.js";
-export { createSchema } from "../../generated/schemas/index.js";
-export { createVolume } from "../../generated/volumes/index.js";
+// Re-export resource classes
+export { App } from "../../generated/apps/index.js";
+export { Cluster } from "../../generated/clusters/index.js";
+export { Dashboard } from "../../generated/dashboards/index.js";
+export { Job } from "../../generated/jobs/index.js";
+export { MlflowExperiment } from "../../generated/mlflow_experiments/index.js";
+export { MlflowModel } from "../../generated/mlflow_models/index.js";
+export { ModelServingEndpoint } from "../../generated/model_serving_endpoints/index.js";
+export { Pipeline } from "../../generated/pipelines/index.js";
+export { QualityMonitor } from "../../generated/quality_monitors/index.js";
+export { RegisteredModel } from "../../generated/registered_models/index.js";
+export { Schema } from "../../generated/schemas/index.js";
+export { Volume } from "../../generated/volumes/index.js";
 
 /**
  * Helper function to create a resources definition

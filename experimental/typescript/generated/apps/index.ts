@@ -4,10 +4,10 @@
  * Auto-generated from JSON Schema. Do not edit manually.
  */
 
-import type { Resource } from "../../src/core/resource.js";
+import { Resource } from "../../src/core/resource.js";
 import type { VariableOr } from "../../src/core/variable.js";
 
-export interface App extends Resource {
+export interface AppParams {
   /**
    * The active deployment of the app. A deployment is considered active when it has been deployed
    * to the app compute.
@@ -82,7 +82,13 @@ export interface App extends Resource {
   user_api_scopes?: VariableOr<string[]>;
 }
 
-export interface AppDeployment extends Resource {
+export class App extends Resource<AppParams> {
+  constructor(params: AppParams) {
+    super(params, "apps");
+  }
+}
+
+export interface AppDeployment {
   create_time?: VariableOr<string>;
   creator?: VariableOr<string>;
   deployment_artifacts?: VariableOr<AppDeploymentArtifacts>;
@@ -93,7 +99,7 @@ export interface AppDeployment extends Resource {
   update_time?: VariableOr<string>;
 }
 
-export interface AppDeploymentArtifacts extends Resource {
+export interface AppDeploymentArtifacts {
   source_code_path?: VariableOr<string>;
 }
 
@@ -107,12 +113,12 @@ export type AppDeploymentState =
   | "IN_PROGRESS"
   | "CANCELLED";
 
-export interface AppDeploymentStatus extends Resource {
+export interface AppDeploymentStatus {
   message?: VariableOr<string>;
   state?: VariableOr<AppDeploymentState>;
 }
 
-export interface AppResource extends Resource {
+export interface AppResource {
   database?: VariableOr<AppResourceDatabase>;
   /**
    * Description of the App Resource.
@@ -129,7 +135,7 @@ export interface AppResource extends Resource {
   uc_securable?: VariableOr<AppResourceUcSecurable>;
 }
 
-export interface AppResourceDatabase extends Resource {
+export interface AppResourceDatabase {
   database_name: VariableOr<string>;
   instance_name: VariableOr<string>;
   permission: VariableOr<AppResourceDatabaseDatabasePermission>;
@@ -138,7 +144,7 @@ export interface AppResourceDatabase extends Resource {
 export type AppResourceDatabaseDatabasePermission =
   | "CAN_CONNECT_AND_CREATE";
 
-export interface AppResourceJob extends Resource {
+export interface AppResourceJob {
   id: VariableOr<string>;
   permission: VariableOr<AppResourceJobJobPermission>;
 }
@@ -149,7 +155,7 @@ export type AppResourceJobJobPermission =
   | "CAN_MANAGE_RUN"
   | "CAN_VIEW";
 
-export interface AppResourceSecret extends Resource {
+export interface AppResourceSecret {
   key: VariableOr<string>;
   permission: VariableOr<AppResourceSecretSecretPermission>;
   scope: VariableOr<string>;
@@ -163,7 +169,7 @@ export type AppResourceSecretSecretPermission =
   | "WRITE"
   | "MANAGE";
 
-export interface AppResourceServingEndpoint extends Resource {
+export interface AppResourceServingEndpoint {
   name: VariableOr<string>;
   permission: VariableOr<AppResourceServingEndpointServingEndpointPermission>;
 }
@@ -173,7 +179,7 @@ export type AppResourceServingEndpointServingEndpointPermission =
   | "CAN_QUERY"
   | "CAN_VIEW";
 
-export interface AppResourceSqlWarehouse extends Resource {
+export interface AppResourceSqlWarehouse {
   id: VariableOr<string>;
   permission: VariableOr<AppResourceSqlWarehouseSqlWarehousePermission>;
 }
@@ -183,7 +189,7 @@ export type AppResourceSqlWarehouseSqlWarehousePermission =
   | "CAN_USE"
   | "IS_OWNER";
 
-export interface AppResourceUcSecurable extends Resource {
+export interface AppResourceUcSecurable {
   permission: VariableOr<AppResourceUcSecurableUcSecurablePermission>;
   securable_full_name: VariableOr<string>;
   securable_type: VariableOr<AppResourceUcSecurableUcSecurableType>;
@@ -202,7 +208,7 @@ export type ApplicationState =
   | "CRASHED"
   | "UNAVAILABLE";
 
-export interface ApplicationStatus extends Resource {
+export interface ApplicationStatus {
   message?: VariableOr<string>;
   state?: VariableOr<ApplicationState>;
 }
@@ -216,7 +222,7 @@ export type ComputeState =
   | "STOPPED"
   | "ACTIVE";
 
-export interface ComputeStatus extends Resource {
+export interface ComputeStatus {
   message?: VariableOr<string>;
   /**
    * State of the app compute.
@@ -224,7 +230,7 @@ export interface ComputeStatus extends Resource {
   state?: VariableOr<ComputeState>;
 }
 
-export interface AppPermission extends Resource {
+export interface AppPermission {
   group_name?: VariableOr<string>;
   level: VariableOr<AppPermissionLevel>;
   service_principal_name?: VariableOr<string>;
@@ -235,16 +241,9 @@ export type AppPermissionLevel =
   | "CAN_MANAGE"
   | "CAN_USE";
 
-export interface Lifecycle extends Resource {
+export interface Lifecycle {
   /**
    * Lifecycle setting to prevent the resource from being destroyed.
    */
   prevent_destroy?: VariableOr<boolean>;
-}
-
-/**
- * Helper function to create a App with type safety
- */
-export function createApp(config: App): App {
-  return config;
 }

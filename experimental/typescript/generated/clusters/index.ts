@@ -4,13 +4,13 @@
  * Auto-generated from JSON Schema. Do not edit manually.
  */
 
-import type { Resource } from "../../src/core/resource.js";
+import { Resource } from "../../src/core/resource.js";
 import type { VariableOr } from "../../src/core/variable.js";
 
 /**
  * Contains a snapshot of the latest user specified settings that were used to create/edit the cluster.
  */
-export interface Cluster extends Resource {
+export interface ClusterParams {
   /**
    * When set to true, fixed and default values from the policy will be used for fields that are omitted. When set to false, only fixed values from the policy will be applied.
    */
@@ -190,17 +190,23 @@ export interface Cluster extends Resource {
   workload_type?: VariableOr<WorkloadType>;
 }
 
+export class Cluster extends Resource<ClusterParams> {
+  constructor(params: ClusterParams) {
+    super(params, "clusters");
+  }
+}
+
 /**
  * A storage location in Adls Gen2
  */
-export interface Adlsgen2Info extends Resource {
+export interface Adlsgen2Info {
   /**
    * abfss destination, e.g. `abfss://<container-name>@<storage-account-name>.dfs.core.windows.net/<directory-name>`.
    */
   destination: VariableOr<string>;
 }
 
-export interface AutoScale extends Resource {
+export interface AutoScale {
   /**
    * The maximum number of workers to which the cluster can scale up when overloaded.
    * Note that `max_workers` must be strictly greater than `min_workers`.
@@ -216,7 +222,7 @@ export interface AutoScale extends Resource {
 /**
  * Attributes set during cluster creation which are related to Amazon Web Services.
  */
-export interface AwsAttributes extends Resource {
+export interface AwsAttributes {
   availability?: VariableOr<AwsAvailability>;
   /**
    * The number of volumes launched for each instance. Users can choose up to 10 volumes.
@@ -311,7 +317,7 @@ export type AwsAvailability =
 /**
  * Attributes set during cluster creation which are related to Microsoft Azure.
  */
-export interface AzureAttributes extends Resource {
+export interface AzureAttributes {
   availability?: VariableOr<AzureAvailability>;
   /**
    * The first `first_on_demand` nodes of the cluster will be placed on on-demand instances.
@@ -345,7 +351,7 @@ export type AzureAvailability =
   | "ON_DEMAND_AZURE"
   | "SPOT_WITH_FALLBACK_AZURE";
 
-export interface ClientsTypes extends Resource {
+export interface ClientsTypes {
   /**
    * With jobs set, the cluster can be used for jobs
    */
@@ -359,7 +365,7 @@ export interface ClientsTypes extends Resource {
 /**
  * Cluster log delivery config
  */
-export interface ClusterLogConf extends Resource {
+export interface ClusterLogConf {
   /**
    * destination needs to be provided. e.g.
    * `{ "dbfs" : { "destination" : "dbfs:/home/cluster_log" } }`
@@ -416,14 +422,14 @@ export type DataSecurityMode =
 /**
  * A storage location in DBFS
  */
-export interface DbfsStorageInfo extends Resource {
+export interface DbfsStorageInfo {
   /**
    * dbfs destination, e.g. `dbfs:/my/path`
    */
   destination: VariableOr<string>;
 }
 
-export interface DockerBasicAuth extends Resource {
+export interface DockerBasicAuth {
   /**
    * Password of the user
    */
@@ -434,7 +440,7 @@ export interface DockerBasicAuth extends Resource {
   username?: VariableOr<string>;
 }
 
-export interface DockerImage extends Resource {
+export interface DockerImage {
   basic_auth?: VariableOr<DockerBasicAuth>;
   /**
    * URL of the docker image.
@@ -453,7 +459,7 @@ export type EbsVolumeType =
 /**
  * Attributes set during cluster creation which are related to GCP.
  */
-export interface GcpAttributes extends Resource {
+export interface GcpAttributes {
   availability?: VariableOr<GcpAvailability>;
   /**
    * Boot disk size in GB
@@ -513,7 +519,7 @@ export type GcpAvailability =
 /**
  * A storage location in Google Cloud Platform's GCS
  */
-export interface GcsStorageInfo extends Resource {
+export interface GcsStorageInfo {
   /**
    * GCS destination/URI, e.g. `gs://my-bucket/some-prefix`
    */
@@ -524,7 +530,7 @@ export interface GcsStorageInfo extends Resource {
  * Config for an individual init script
  * Next ID: 11
  */
-export interface InitScriptInfo extends Resource {
+export interface InitScriptInfo {
   /**
    * Contains the Azure Data Lake Storage destination path
    */
@@ -567,14 +573,14 @@ export interface InitScriptInfo extends Resource {
 export type Kind =
   | "CLASSIC_PREVIEW";
 
-export interface LocalFileInfo extends Resource {
+export interface LocalFileInfo {
   /**
    * local file destination, e.g. `file:/my/local/file.sh`
    */
   destination: VariableOr<string>;
 }
 
-export interface LogAnalyticsInfo extends Resource {
+export interface LogAnalyticsInfo {
   /**
    * The primary key for the Azure Log Analytics agent configuration
    */
@@ -593,7 +599,7 @@ export type RuntimeEngine =
 /**
  * A storage location in Amazon S3
  */
-export interface S3StorageInfo extends Resource {
+export interface S3StorageInfo {
   /**
    * (Optional) Set canned access control list for the logs, e.g. `bucket-owner-full-control`.
    * If `canned_cal` is set, please make sure the cluster iam role has `s3:PutObjectAcl` permission on
@@ -638,7 +644,7 @@ export interface S3StorageInfo extends Resource {
 /**
  * A storage location back by UC Volumes.
  */
-export interface VolumesStorageInfo extends Resource {
+export interface VolumesStorageInfo {
   /**
    * UC Volumes destination, e.g. `/Volumes/catalog/schema/vol1/init-scripts/setup-datadog.sh`
    * or `dbfs:/Volumes/catalog/schema/vol1/init-scripts/setup-datadog.sh`
@@ -649,7 +655,7 @@ export interface VolumesStorageInfo extends Resource {
 /**
  * Cluster Attributes showing for clusters workload types.
  */
-export interface WorkloadType extends Resource {
+export interface WorkloadType {
   /**
    * defined what type of clients can use the cluster. E.g. Notebooks, Jobs
    */
@@ -659,14 +665,14 @@ export interface WorkloadType extends Resource {
 /**
  * A storage location in Workspace Filesystem (WSFS)
  */
-export interface WorkspaceStorageInfo extends Resource {
+export interface WorkspaceStorageInfo {
   /**
    * wsfs destination, e.g. `workspace:/cluster-init-scripts/setup-datadog.sh`
    */
   destination: VariableOr<string>;
 }
 
-export interface ClusterPermission extends Resource {
+export interface ClusterPermission {
   group_name?: VariableOr<string>;
   level: VariableOr<ClusterPermissionLevel>;
   service_principal_name?: VariableOr<string>;
@@ -678,16 +684,9 @@ export type ClusterPermissionLevel =
   | "CAN_RESTART"
   | "CAN_ATTACH_TO";
 
-export interface Lifecycle extends Resource {
+export interface Lifecycle {
   /**
    * Lifecycle setting to prevent the resource from being destroyed.
    */
   prevent_destroy?: VariableOr<boolean>;
-}
-
-/**
- * Helper function to create a Cluster with type safety
- */
-export function createCluster(config: Cluster): Cluster {
-  return config;
 }

@@ -4,10 +4,10 @@
  * Auto-generated from JSON Schema. Do not edit manually.
  */
 
-import type { Resource } from "../../src/core/resource.js";
+import { Resource } from "../../src/core/resource.js";
 import type { VariableOr } from "../../src/core/variable.js";
 
-export interface Volume extends Resource {
+export interface VolumeParams {
   /**
    * The name of the catalog where the schema and the volume are
    */
@@ -36,6 +36,12 @@ export interface Volume extends Resource {
   volume_type?: VariableOr<VolumeType>;
 }
 
+export class Volume extends Resource<VolumeParams> {
+  constructor(params: VolumeParams) {
+    super(params, "volumes");
+  }
+}
+
 /**
  * The type of the volume. An external volume is located in the specified external location. A managed volume is located in the default location which is specified by the parent schema, or the parent catalog, or the Metastore. [Learn more](https://docs.databricks.com/aws/en/volumes/managed-vs-external)
  */
@@ -43,14 +49,14 @@ export type VolumeType =
   | "EXTERNAL"
   | "MANAGED";
 
-export interface Lifecycle extends Resource {
+export interface Lifecycle {
   /**
    * Lifecycle setting to prevent the resource from being destroyed.
    */
   prevent_destroy?: VariableOr<boolean>;
 }
 
-export interface VolumeGrant extends Resource {
+export interface VolumeGrant {
   principal: VariableOr<string>;
   privileges: VariableOr<VolumeGrantPrivilege[]>;
 }
@@ -61,10 +67,3 @@ export type VolumeGrantPrivilege =
   | "MANAGE"
   | "READ_VOLUME"
   | "WRITE_VOLUME";
-
-/**
- * Helper function to create a Volume with type safety
- */
-export function createVolume(config: Volume): Volume {
-  return config;
-}

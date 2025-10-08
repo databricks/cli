@@ -4,10 +4,10 @@
  * Auto-generated from JSON Schema. Do not edit manually.
  */
 
-import type { Resource } from "../../src/core/resource.js";
+import { Resource } from "../../src/core/resource.js";
 import type { VariableOr } from "../../src/core/variable.js";
 
-export interface Schema extends Resource {
+export interface SchemaParams {
   /**
    * Name of parent catalog.
    */
@@ -32,14 +32,20 @@ export interface Schema extends Resource {
   storage_root?: VariableOr<string>;
 }
 
-export interface Lifecycle extends Resource {
+export class Schema extends Resource<SchemaParams> {
+  constructor(params: SchemaParams) {
+    super(params, "schemas");
+  }
+}
+
+export interface Lifecycle {
   /**
    * Lifecycle setting to prevent the resource from being destroyed.
    */
   prevent_destroy?: VariableOr<boolean>;
 }
 
-export interface SchemaGrant extends Resource {
+export interface SchemaGrant {
   principal: VariableOr<string>;
   privileges: VariableOr<SchemaGrantPrivilege[]>;
 }
@@ -58,10 +64,3 @@ export type SchemaGrantPrivilege =
   | "SELECT"
   | "READ_VOLUME"
   | "WRITE_VOLUME";
-
-/**
- * Helper function to create a Schema with type safety
- */
-export function createSchema(config: Schema): Schema {
-  return config;
-}

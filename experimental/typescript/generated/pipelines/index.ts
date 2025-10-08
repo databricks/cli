@@ -4,10 +4,10 @@
  * Auto-generated from JSON Schema. Do not edit manually.
  */
 
-import type { Resource } from "../../src/core/resource.js";
+import { Resource } from "../../src/core/resource.js";
 import type { VariableOr } from "../../src/core/variable.js";
 
-export interface Pipeline extends Resource {
+export interface PipelineParams {
   /**
    * If false, deployment will fail if name conflicts with that of another pipeline.
    */
@@ -130,10 +130,16 @@ export interface Pipeline extends Resource {
   trigger?: VariableOr<PipelineTrigger>;
 }
 
+export class Pipeline extends Resource<PipelineParams> {
+  constructor(params: PipelineParams) {
+    super(params, "pipelines");
+  }
+}
+
 /**
  * A storage location in Adls Gen2
  */
-export interface Adlsgen2Info extends Resource {
+export interface Adlsgen2Info {
   /**
    * abfss destination, e.g. `abfss://<container-name>@<storage-account-name>.dfs.core.windows.net/<directory-name>`.
    */
@@ -143,7 +149,7 @@ export interface Adlsgen2Info extends Resource {
 /**
  * Attributes set during cluster creation which are related to Amazon Web Services.
  */
-export interface AwsAttributes extends Resource {
+export interface AwsAttributes {
   availability?: VariableOr<AwsAvailability>;
   /**
    * The number of volumes launched for each instance. Users can choose up to 10 volumes.
@@ -238,7 +244,7 @@ export type AwsAvailability =
 /**
  * Attributes set during cluster creation which are related to Microsoft Azure.
  */
-export interface AzureAttributes extends Resource {
+export interface AzureAttributes {
   availability?: VariableOr<AzureAvailability>;
   /**
    * The first `first_on_demand` nodes of the cluster will be placed on on-demand instances.
@@ -275,7 +281,7 @@ export type AzureAvailability =
 /**
  * Cluster log delivery config
  */
-export interface ClusterLogConf extends Resource {
+export interface ClusterLogConf {
   /**
    * destination needs to be provided. e.g.
    * `{ "dbfs" : { "destination" : "dbfs:/home/cluster_log" } }`
@@ -298,7 +304,7 @@ export interface ClusterLogConf extends Resource {
 /**
  * A storage location in DBFS
  */
-export interface DbfsStorageInfo extends Resource {
+export interface DbfsStorageInfo {
   /**
    * dbfs destination, e.g. `dbfs:/my/path`
    */
@@ -316,7 +322,7 @@ export type EbsVolumeType =
 /**
  * Attributes set during cluster creation which are related to GCP.
  */
-export interface GcpAttributes extends Resource {
+export interface GcpAttributes {
   availability?: VariableOr<GcpAvailability>;
   /**
    * Boot disk size in GB
@@ -376,7 +382,7 @@ export type GcpAvailability =
 /**
  * A storage location in Google Cloud Platform's GCS
  */
-export interface GcsStorageInfo extends Resource {
+export interface GcsStorageInfo {
   /**
    * GCS destination/URI, e.g. `gs://my-bucket/some-prefix`
    */
@@ -387,7 +393,7 @@ export interface GcsStorageInfo extends Resource {
  * Config for an individual init script
  * Next ID: 11
  */
-export interface InitScriptInfo extends Resource {
+export interface InitScriptInfo {
   /**
    * Contains the Azure Data Lake Storage destination path
    */
@@ -427,14 +433,14 @@ export interface InitScriptInfo extends Resource {
   workspace?: VariableOr<WorkspaceStorageInfo>;
 }
 
-export interface LocalFileInfo extends Resource {
+export interface LocalFileInfo {
   /**
    * local file destination, e.g. `file:/my/local/file.sh`
    */
   destination: VariableOr<string>;
 }
 
-export interface LogAnalyticsInfo extends Resource {
+export interface LogAnalyticsInfo {
   /**
    * The primary key for the Azure Log Analytics agent configuration
    */
@@ -445,7 +451,7 @@ export interface LogAnalyticsInfo extends Resource {
   log_analytics_workspace_id?: VariableOr<string>;
 }
 
-export interface MavenLibrary extends Resource {
+export interface MavenLibrary {
   /**
    * Gradle-style maven coordinates. For example: "org.jsoup:jsoup:1.7.2".
    */
@@ -467,7 +473,7 @@ export interface MavenLibrary extends Resource {
 /**
  * A storage location in Amazon S3
  */
-export interface S3StorageInfo extends Resource {
+export interface S3StorageInfo {
   /**
    * (Optional) Set canned access control list for the logs, e.g. `bucket-owner-full-control`.
    * If `canned_cal` is set, please make sure the cluster iam role has `s3:PutObjectAcl` permission on
@@ -512,7 +518,7 @@ export interface S3StorageInfo extends Resource {
 /**
  * A storage location back by UC Volumes.
  */
-export interface VolumesStorageInfo extends Resource {
+export interface VolumesStorageInfo {
   /**
    * UC Volumes destination, e.g. `/Volumes/catalog/schema/vol1/init-scripts/setup-datadog.sh`
    * or `dbfs:/Volumes/catalog/schema/vol1/init-scripts/setup-datadog.sh`
@@ -523,14 +529,14 @@ export interface VolumesStorageInfo extends Resource {
 /**
  * A storage location in Workspace Filesystem (WSFS)
  */
-export interface WorkspaceStorageInfo extends Resource {
+export interface WorkspaceStorageInfo {
   /**
    * wsfs destination, e.g. `workspace:/cluster-init-scripts/setup-datadog.sh`
    */
   destination: VariableOr<string>;
 }
 
-export interface CronTrigger extends Resource {
+export interface CronTrigger {
   quartz_cron_schedule?: VariableOr<string>;
   timezone_id?: VariableOr<string>;
 }
@@ -551,7 +557,7 @@ export type DayOfWeek =
 /**
  * Configurable event log parameters.
  */
-export interface EventLogSpec extends Resource {
+export interface EventLogSpec {
   /**
    * The UC catalog the event log is published under.
    */
@@ -566,14 +572,14 @@ export interface EventLogSpec extends Resource {
   schema?: VariableOr<string>;
 }
 
-export interface FileLibrary extends Resource {
+export interface FileLibrary {
   /**
    * The absolute path of the source code.
    */
   path?: VariableOr<string>;
 }
 
-export interface Filters extends Resource {
+export interface Filters {
   /**
    * Paths to exclude.
    */
@@ -584,7 +590,7 @@ export interface Filters extends Resource {
   include?: VariableOr<string[]>;
 }
 
-export interface IngestionConfig extends Resource {
+export interface IngestionConfig {
   /**
    * Select a specific source report.
    */
@@ -599,7 +605,7 @@ export interface IngestionConfig extends Resource {
   table?: VariableOr<TableSpec>;
 }
 
-export interface IngestionGatewayPipelineDefinition extends Resource {
+export interface IngestionGatewayPipelineDefinition {
   /**
    * [Deprecated, use connection_name instead] Immutable. The Unity Catalog connection that this gateway pipeline uses to communicate with the source.
    * @deprecated
@@ -625,7 +631,7 @@ export interface IngestionGatewayPipelineDefinition extends Resource {
   gateway_storage_schema: VariableOr<string>;
 }
 
-export interface IngestionPipelineDefinition extends Resource {
+export interface IngestionPipelineDefinition {
   /**
    * Immutable. The Unity Catalog connection that this ingestion pipeline uses to communicate with the source. This is used with connectors for applications like Salesforce, Workday, and so on.
    */
@@ -663,7 +669,7 @@ export interface IngestionPipelineDefinition extends Resource {
 /**
  * Configurations that are only applicable for query-based ingestion connectors.
  */
-export interface IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig extends Resource {
+export interface IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig {
   /**
    * The names of the monotonically increasing columns in the source table that are used to enable
    * the table to be read and ingested incrementally through structured streaming.
@@ -696,7 +702,7 @@ export interface IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnect
   hard_deletion_sync_min_interval_in_seconds?: VariableOr<number>;
 }
 
-export interface IngestionPipelineDefinitionWorkdayReportParameters extends Resource {
+export interface IngestionPipelineDefinitionWorkdayReportParameters {
   /**
    * (Optional) Marks the report as incremental.
    * This field is deprecated and should not be used. Use `parameters` instead. The incremental behavior is now
@@ -722,7 +728,7 @@ export interface IngestionPipelineDefinitionWorkdayReportParameters extends Reso
   report_parameters?: VariableOr<IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue[]>;
 }
 
-export interface IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue extends Resource {
+export interface IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue {
   /**
    * Key for the report parameter, can be a column name or other metadata
    */
@@ -758,17 +764,17 @@ export type IngestionSourceType =
   | "META_MARKETING"
   | "FOREIGN_CATALOG";
 
-export interface ManualTrigger extends Resource {
+export interface ManualTrigger {
 }
 
-export interface NotebookLibrary extends Resource {
+export interface NotebookLibrary {
   /**
    * The absolute path of the source code.
    */
   path?: VariableOr<string>;
 }
 
-export interface Notifications extends Resource {
+export interface Notifications {
   /**
    * A list of alerts that trigger the sending of notifications to the configured
    * destinations. The supported alerts are:
@@ -785,14 +791,14 @@ export interface Notifications extends Resource {
   email_recipients?: VariableOr<string[]>;
 }
 
-export interface PathPattern extends Resource {
+export interface PathPattern {
   /**
    * The source code to include for pipelines
    */
   include?: VariableOr<string>;
 }
 
-export interface PipelineCluster extends Resource {
+export interface PipelineCluster {
   /**
    * Note: This field won't be persisted. Only API users will check this field.
    */
@@ -911,7 +917,7 @@ export interface PipelineCluster extends Resource {
   ssh_public_keys?: VariableOr<string[]>;
 }
 
-export interface PipelineClusterAutoscale extends Resource {
+export interface PipelineClusterAutoscale {
   /**
    * The maximum number of workers to which the cluster can scale up when overloaded. `max_workers` must be strictly greater than `min_workers`.
    */
@@ -942,7 +948,7 @@ export type PipelineClusterAutoscaleMode =
   | "ENHANCED"
   | "LEGACY";
 
-export interface PipelineLibrary extends Resource {
+export interface PipelineLibrary {
   /**
    * The path to a file that defines a pipeline and is stored in the Databricks Repos.
    */
@@ -972,7 +978,7 @@ export interface PipelineLibrary extends Resource {
   whl?: VariableOr<string>;
 }
 
-export interface PipelineTrigger extends Resource {
+export interface PipelineTrigger {
   cron?: VariableOr<CronTrigger>;
   manual?: VariableOr<ManualTrigger>;
 }
@@ -981,7 +987,7 @@ export interface PipelineTrigger extends Resource {
  * The environment entity used to preserve serverless environment side panel, jobs' environment for non-notebook task, and DLT's environment for classic and serverless pipelines.
  * In this minimal environment spec, only pip dependencies are supported.
  */
-export interface PipelinesEnvironment extends Resource {
+export interface PipelinesEnvironment {
   /**
    * List of pip dependencies, as supported by the version of pip in this environment.
    * Each dependency is a pip requirement file line https://pip.pypa.io/en/stable/reference/requirements-file-format/
@@ -993,7 +999,7 @@ export interface PipelinesEnvironment extends Resource {
 /**
  * PG-specific catalog-level configuration parameters
  */
-export interface PostgresCatalogConfig extends Resource {
+export interface PostgresCatalogConfig {
   /**
    * Optional. The Postgres slot configuration to use for logical replication
    */
@@ -1003,7 +1009,7 @@ export interface PostgresCatalogConfig extends Resource {
 /**
  * PostgresSlotConfig contains the configuration for a Postgres logical replication slot
  */
-export interface PostgresSlotConfig extends Resource {
+export interface PostgresSlotConfig {
   /**
    * The name of the publication to use for the Postgres source
    */
@@ -1014,7 +1020,7 @@ export interface PostgresSlotConfig extends Resource {
   slot_name?: VariableOr<string>;
 }
 
-export interface ReportSpec extends Resource {
+export interface ReportSpec {
   /**
    * Required. Destination catalog to store table.
    */
@@ -1037,7 +1043,7 @@ export interface ReportSpec extends Resource {
   table_configuration?: VariableOr<TableSpecificConfig>;
 }
 
-export interface RestartWindow extends Resource {
+export interface RestartWindow {
   /**
    * Days of week in which the restart is allowed to happen (within a five-hour window starting at start_hour).
    * If not specified all days of the week will be used.
@@ -1060,7 +1066,7 @@ export interface RestartWindow extends Resource {
  * 
  * Only `user_name` or `service_principal_name` can be specified. If both are specified, an error is thrown.
  */
-export interface RunAs extends Resource {
+export interface RunAs {
   /**
    * Application ID of an active service principal. Setting this field requires the `servicePrincipal/user` role.
    */
@@ -1071,7 +1077,7 @@ export interface RunAs extends Resource {
   user_name?: VariableOr<string>;
 }
 
-export interface SchemaSpec extends Resource {
+export interface SchemaSpec {
   /**
    * Required. Destination catalog to store tables.
    */
@@ -1097,7 +1103,7 @@ export interface SchemaSpec extends Resource {
 /**
  * SourceCatalogConfig contains catalog-level custom configuration parameters for each source
  */
-export interface SourceCatalogConfig extends Resource {
+export interface SourceCatalogConfig {
   /**
    * Postgres-specific catalog-level configuration parameters
    */
@@ -1108,14 +1114,14 @@ export interface SourceCatalogConfig extends Resource {
   source_catalog?: VariableOr<string>;
 }
 
-export interface SourceConfig extends Resource {
+export interface SourceConfig {
   /**
    * Catalog-level source configuration parameters
    */
   catalog?: VariableOr<SourceCatalogConfig>;
 }
 
-export interface TableSpec extends Resource {
+export interface TableSpec {
   /**
    * Required. Destination catalog to store table.
    */
@@ -1146,7 +1152,7 @@ export interface TableSpec extends Resource {
   table_configuration?: VariableOr<TableSpecificConfig>;
 }
 
-export interface TableSpecificConfig extends Resource {
+export interface TableSpecificConfig {
   /**
    * A list of column names to be excluded for the ingestion.
    * When not specified, include_columns fully controls what columns to be ingested.
@@ -1196,14 +1202,14 @@ export type TableSpecificConfigScdType =
   | "SCD_TYPE_2"
   | "APPEND_ONLY";
 
-export interface Lifecycle extends Resource {
+export interface Lifecycle {
   /**
    * Lifecycle setting to prevent the resource from being destroyed.
    */
   prevent_destroy?: VariableOr<boolean>;
 }
 
-export interface PipelinePermission extends Resource {
+export interface PipelinePermission {
   group_name?: VariableOr<string>;
   level: VariableOr<PipelinePermissionLevel>;
   service_principal_name?: VariableOr<string>;
@@ -1215,10 +1221,3 @@ export type PipelinePermissionLevel =
   | "IS_OWNER"
   | "CAN_RUN"
   | "CAN_VIEW";
-
-/**
- * Helper function to create a Pipeline with type safety
- */
-export function createPipeline(config: Pipeline): Pipeline {
-  return config;
-}

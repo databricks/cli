@@ -3,27 +3,16 @@
  *
  * All resource types (Job, Pipeline, Schema, Volume, etc.) should extend this class.
  */
-export abstract class Resource {
-  /**
-   * Internal marker to identify Resource instances at runtime
-   * @internal
-   */
-  private readonly __isResource = true;
+import { transformToJSON } from "./transform.js";
+import { type ResourceType } from "./resources.js";
 
-  /**
-   * Create a new Resource instance
-   * @param data - Resource configuration data
-   */
-  constructor(data?: Record<string, unknown>) {
-    if (data) {
-      Object.assign(this, data);
-    }
+export class Resource<T> {
+  public readonly type: ResourceType;
+  constructor(public readonly data: T, type: ResourceType) {
+    this.type = type;
   }
-}
 
-/**
- * Type guard to check if an object is a Resource instance.
- */
-export function isResource(value: unknown): value is Resource {
-  return typeof value === "object" && value !== null && "__isResource" in value;
+  toJSON() {
+    return transformToJSON(this.data);
+  }
 }

@@ -6,7 +6,7 @@
   "private": true,
   "scripts": {
     "build": "tsc",
-    "deploy": "npm run build && ./databricks bundle deploy",
+    "deploy": "npm run build && ./databricks bundle deploy && databricks bundle run my_data_app",
     "summary": "npm run build && ./databricks bundle summary",
     "clean": "rm -rf dist",
     "rebuild": "npm run clean && npm run build",
@@ -16,6 +16,7 @@
     "@databricks/bundles": "file:.."
   },
   "devDependencies": {
-    "typescript": "^5.5.3"
+    "typescript": "^5.5.3",
+    "yaml": "^2.8.1"
   }
 }

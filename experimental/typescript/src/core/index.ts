@@ -35,10 +35,8 @@ export { Diagnostics, Severity, type Diagnostic } from "./diagnostics.js";
 export { Bundle } from "./bundle.js";
 
 // Resources
-export type { Resource } from "./resource.js";
-export { isResource } from "./resource.js";
-export { Resources, ResourceType } from "./resources.js";
-export type { ResourceTypeMap, Job, Pipeline, Schema, Volume } from "./resources.js";
+export { Resource } from "./resource.js";
+export { Resources, type ResourceType } from "./resources.js";
 
 // Transform utilities
 export { transformToJSON } from "./transform.js";
