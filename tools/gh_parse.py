@@ -553,10 +553,11 @@ def fmt(cells, widths):
 
 
 def autojust(value, width):
+    # Note, this has no effect on how markdown is rendered, only relevant for terminal output
     value = str(value)
     if value.isdigit():
-        return value.rjust(width)
-    if len(value) == 2:  # emoji
+        return value.center(width)
+    if len(value) <= 2:  # emoji
         return value.center(width)
     return value.ljust(width)
 
