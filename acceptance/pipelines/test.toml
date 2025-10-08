@@ -1,3 +1,7 @@
 # All pipelines tests are local only
 Local = true
 Cloud = false
+
+[[Repls]]
+Old = 'Uploading \d+ files \(ignoring \d+ by .gitignore\)'
+New = 'Uploading [NUMID] files (ignoring [NUMID] by .gitignore)'
