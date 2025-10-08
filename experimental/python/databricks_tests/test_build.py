@@ -15,6 +15,7 @@ from databricks.bundles.build import (
     _parse_bundle_info,
     _read_conf,
     _relativize_location,
+    _relativize_path,
     _write_diagnostics,
     _write_locations,
     _write_output,
@@ -115,6 +116,25 @@ def test_relativize_location():
     location = Location(file=file, line=42, column=1)
 
     assert _relativize_location(location) == Location(file="bar.py", line=42, column=1)
+
+
+def test_relativize_path_relative():
+    assert _relativize_path("bar.py") == "bar.py"
+
+
+def test_relativize_path_absolute_in_cwd():
+    file = Path("bar.py").absolute().as_posix()
+    assert _relativize_path(file) == "bar.py"
+
+
+def test_relativize_path_absolute_outside_cwd():
+    assert _relativize_path("/some/other/path/bar.py") == "/some/other/path/bar.py"
+
+
+def test_relativize_path_different_drive():
+    # On Windows, paths on different drives should return the absolute path
+    # On Unix, this test will still pass as it will be treated as outside cwd
+    assert _relativize_path("C:\\other\\path\\bar.py") == "C:\\other\\path\\bar.py"
 
 
 def test_load_object_common_error():

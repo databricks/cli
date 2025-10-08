@@ -14,6 +14,9 @@ import subprocess
 import argparse
 import json
 import pprint
+import time
+import urllib.request
+import threading
 from pathlib import Path
 
 
@@ -21,6 +24,7 @@ CLI_REPO = "databricks/cli"
 DECO_REPO = os.environ.get("DECO_REPO") or os.environ.get("GITHUB_REPOSITORY")
 DECO_TESTS_PREFIX = "https://go/deco-tests/"
 CLI_TESTS_PREFIX = "https://github.com/databricks/cli/actions/runs/"
+KNOWN_FAILURES_URL = "https://raw.githubusercontent.com/databricks/cli/ciconfig/known_failures.txt"
 DIRECTORY = Path(__file__).parent
 PARSE_SCRIPT = DIRECTORY / "gh_parse.py"
 
@@ -114,6 +118,26 @@ def get_commit_run_id_unit(commit):
     return results[-1]
 
 
+def download_known_failures():
+    """Download known_failures.txt if absent or older than 5 minutes."""
+    logs_dir = Path(".gh-logs")
+    logs_dir.mkdir(exist_ok=True)
+    known_failures_path = logs_dir / "known_failures.txt"
+
+    # Check if file exists and is newer than 5 minutes
+    if known_failures_path.exists():
+        file_age = time.time() - known_failures_path.stat().st_mtime
+        if file_age < 300:  # 5 minutes
+            return
+
+    try:
+        with urllib.request.urlopen(KNOWN_FAILURES_URL) as response:
+            content = response.read().decode("utf-8")
+        known_failures_path.write_text(content)
+    except Exception as e:
+        print(f"Failed to download known_failures.txt: {e}", file=sys.stderr)
+
+
 def download_run_id(run_id, repo, rm):
     target_dir = f".gh-logs/{run_id}"
     if os.path.exists(target_dir):
@@ -172,6 +196,8 @@ def main():
             args.run = get_commit_run_id_unit(args.commit)
         else:
             args.run = get_commit_run_id_integration(args.commit)
+
+    threading.Thread(target=download_known_failures, daemon=True).start()
 
     target_dir = download_run_id(args.run, repo, rm=args.rm)
     print(flush=True)
