@@ -93,81 +93,7 @@ def parse_known_failures(content):
     """
     Parse known failures config content.
 
-    Test cases from Go testrunner/main_test.go:
-
-    >>> config = parse_known_failures("bundle TestDeploy")
-    >>> config.matches("bundle", "TestDeploy")
-    'bundle TestDeploy'
-    >>> config.matches("libs", "TestDeploy")
-    ''
-    >>> config.matches("bundle", "TestSomethingElse")
-    ''
-
-    >>> config = parse_known_failures("libs/ TestSomething")
-    >>> config.matches("libs/auth", "TestSomething")
-    'libs/ TestSomething'
-    >>> config.matches("libs", "TestSomething")
-    'libs/ TestSomething'
-    >>> config.matches("libsother", "TestSomething")
-    ''
-
-    >>> config = parse_known_failures("bundle TestAccept/")
-    >>> config.matches("bundle", "TestAcceptDeploy")
-    ''
-    >>> config.matches("bundle", "TestAccept")
-    'bundle TestAccept/'
-    >>> config.matches("bundle", "TestAccept/Deploy")
-    'bundle TestAccept/'
-
-    >>> config = parse_known_failures("* *")
-    >>> config.matches("any/package", "AnyTest")
-    '* *'
-
-    >>> config = parse_known_failures("* TestAccept/")
-    >>> config.matches("any/package", "TestAcceptDeploy")
-    ''
-    >>> config.matches("any/package", "TestAccept/Deploy")
-    '* TestAccept/'
-
-    >>> config = parse_known_failures("libs/ *")
-    >>> config.matches("libs/auth", "AnyTest")
-    'libs/ *'
-
-    >>> config = parse_known_failures("TestAccept/ TestAccept/")
-    >>> config.matches("TestAccept", "TestAccept")
-    'TestAccept/ TestAccept/'
-    >>> config.matches("TestAccept/bundle", "TestAccept/deploy")
-    'TestAccept/ TestAccept/'
-    >>> config.matches("TestAcceptSomething", "TestAcceptSomething")
-    ''
-
-    >>> config = parse_known_failures("* TestDeploy")
-    >>> config.matches("", "TestDeploy")
-    '* TestDeploy'
-
-    >>> config = parse_known_failures("bundle *")
-    >>> config.matches("bundle", "")
-    'bundle *'
-
-    >>> config = parse_known_failures("acceptance TestAccept/bundle/templates/default-python/combinations/classic")
-    >>> config.matches("acceptance", "TestAccept")
-    'acceptance TestAccept/bundle/templates/default-python/combinations/classic'
-    >>> config.matches("acceptance", "TestAnother")
-    ''
-    >>> config.matches("acceptance", "TestAccept/bundle/templates/default-python/combinations/classic/x")
-    ''
-
-    >>> config = parse_known_failures("acceptance TestAccept/bundle/templates/default-python/combinations/classic/")
-    >>> config.matches("acceptance", "TestAccept")
-    'acceptance TestAccept/bundle/templates/default-python/combinations/classic/'
-    >>> config.matches("acceptance", "TestAnother")
-    ''
-    >>> config.matches("acceptance", "TestAccept/bundle/templates/default-python/combinations/classic/x")
-    'acceptance TestAccept/bundle/templates/default-python/combinations/classic/'
-    >>> config.matches("acceptance", "TestAccept/bundle/templates/default-python/combinations/classic")
-    'acceptance TestAccept/bundle/templates/default-python/combinations/classic/'
-    >>> config.matches("acceptance", "TestAccept/bundle/templates/default-python/combinations")
-    'acceptance TestAccept/bundle/templates/default-python/combinations/classic/'
+    >>> _test_parse_known_failures()
     """
     rules = []
     for line_num, line in enumerate(content.splitlines(), 1):
@@ -201,6 +127,65 @@ def _parse_pattern(pattern):
     if pattern.endswith("/"):
         return pattern[:-1], True
     return pattern, False
+
+
+def _test_parse_known_failures():
+    """Test cases from Go testrunner/main_test.go as table tests."""
+    # Table of test cases: (input, package_name, testcase, expected_match)
+    test_cases = [
+        # Exact matches
+        ("bundle TestDeploy", "bundle", "TestDeploy", True),
+        ("bundle TestDeploy", "libs", "TestDeploy", False),
+        ("bundle TestDeploy", "bundle", "TestSomethingElse", False),
+
+        # Package prefix matches
+        ("libs/ TestSomething", "libs/auth", "TestSomething", True),
+        ("libs/ TestSomething", "libs", "TestSomething", True),
+        ("libs/ TestSomething", "libsother", "TestSomething", False),
+
+        # Test prefix matches
+        ("bundle TestAccept/", "bundle", "TestAcceptDeploy", False),
+        ("bundle TestAccept/", "bundle", "TestAccept", True),
+        ("bundle TestAccept/", "bundle", "TestAccept/Deploy", True),
+
+        # Wildcard matches
+        ("* *", "any/package", "AnyTest", True),
+        ("* TestAccept/", "any/package", "TestAcceptDeploy", False),
+        ("* TestAccept/", "any/package", "TestAccept/Deploy", True),
+        ("libs/ *", "libs/auth", "AnyTest", True),
+
+        # Path prefix edge cases
+        ("TestAccept/ TestAccept/", "TestAccept", "TestAccept", True),
+        ("TestAccept/ TestAccept/", "TestAccept/bundle", "TestAccept/deploy", True),
+        ("TestAccept/ TestAccept/", "TestAcceptSomething", "TestAcceptSomething", False),
+
+        # Empty values cases
+        ("* TestDeploy", "", "TestDeploy", True),
+        ("bundle *", "bundle", "", True),
+
+        # Subtest failure results in parent test failure as well
+        ("acceptance TestAccept/bundle/templates/default-python/combinations/classic", "acceptance", "TestAccept", True),
+        ("acceptance TestAccept/bundle/templates/default-python/combinations/classic", "acceptance", "TestAnother", False),
+        ("acceptance TestAccept/bundle/templates/default-python/combinations/classic", "acceptance", "TestAccept/bundle/templates/default-python/combinations/classic/x", False),
+
+        # Pattern version
+        ("acceptance TestAccept/bundle/templates/default-python/combinations/classic/", "acceptance", "TestAccept", True),
+        ("acceptance TestAccept/bundle/templates/default-python/combinations/classic/", "acceptance", "TestAnother", False),
+        ("acceptance TestAccept/bundle/templates/default-python/combinations/classic/", "acceptance", "TestAccept/bundle/templates/default-python/combinations/classic/x", True),
+        ("acceptance TestAccept/bundle/templates/default-python/combinations/classic/", "acceptance", "TestAccept/bundle/templates/default-python/combinations/classic", True),
+        ("acceptance TestAccept/bundle/templates/default-python/combinations/classic/", "acceptance", "TestAccept/bundle/templates/default-python/combinations", True),
+    ]
+
+    for input_str, package_name, testcase, expected_match in test_cases:
+        config = parse_known_failures(input_str)
+        result = config.matches(package_name, testcase)
+
+        # Convert result to boolean for comparison
+        actual_match = bool(result)
+
+        if actual_match != expected_match:
+            raise AssertionError(f"Test failed for input='{input_str}', package='{package_name}', test='{testcase}': "
+                               f"expected {expected_match}, got {actual_match} (result: '{result}')")
 
 
 def load_known_failures():
