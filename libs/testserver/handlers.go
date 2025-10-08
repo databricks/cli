@@ -528,6 +528,32 @@ func AddDefaultHandlers(server *Server) {
 		return MapDelete(req.Workspace, req.Workspace.SyncedDatabaseTables, req.Vars["name"])
 	})
 
+	// Clusters:
+	server.Handle("POST", "/api/2.1/clusters/resize", func(req Request) any {
+		return req.Workspace.ClustersResize(req)
+	})
+
+	server.Handle("POST", "/api/2.1/clusters/edit", func(req Request) any {
+		return req.Workspace.ClustersEdit(req)
+	})
+
+	server.Handle("GET", "/api/2.1/clusters/get", func(req Request) any {
+		clusterId := req.URL.Query().Get("cluster_id")
+		return req.Workspace.ClustersGet(req, clusterId)
+	})
+
+	server.Handle("POST", "/api/2.1/clusters/create", func(req Request) any {
+		return req.Workspace.ClustersCreate(req)
+	})
+
+	server.Handle("POST", "/api/2.1/clusters/start", func(req Request) any {
+		return req.Workspace.ClustersStart(req)
+	})
+
+	server.Handle("POST", "/api/2.1/clusters/permanent-delete", func(req Request) any {
+		return req.Workspace.ClustersPermanentDelete(req)
+	})
+
 	// MLflow Experiments:
 	server.Handle("GET", "/api/2.0/mlflow/experiments/get", func(req Request) any {
 		experimentId := req.URL.Query().Get("experiment_id")

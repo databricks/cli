@@ -149,8 +149,17 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			return false
 		}
 
-		localAction, localChangeMap := convertChangesToTriggersMap(adapter, localDiff)
+		remoteState, err := adapter.DoRefresh(ctx, dbentry.ID)
+		if err != nil {
+			if isResourceGone(err) {
+				remoteState = nil
+			} else {
+				logdiag.LogError(ctx, fmt.Errorf("%s: failed to read id=%q: %w", errorPrefix, dbentry.ID, err))
+				return false
+			}
+		}
 
+		localAction, localChangeMap := convertChangesToTriggersMap(ctx, adapter, localDiff, remoteState)
 		if localAction == deployplan.ActionTypeRecreate {
 			entry.Action = localAction.String()
 			if len(localChangeMap) > 0 {
@@ -159,16 +168,6 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 				}
 			}
 			return true
-		}
-
-		remoteState, err := adapter.DoRefresh(ctx, dbentry.ID)
-		if err != nil {
-			if isResourceGone(err) {
-				remoteState = nil
-			} else {
-				logdiag.LogError(ctx, fmt.Errorf("%s: failed to read id=%q: %w (localAction=%q)", errorPrefix, dbentry.ID, err, localAction.String()))
-				return false
-			}
 		}
 
 		// We have a choice whether to include remoteState or remoteStateComparable from below.
@@ -221,12 +220,16 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 	return plan, nil
 }
 
-func convertChangesToTriggersMap(adapter *dresources.Adapter, diff []structdiff.Change) (deployplan.ActionType, map[string]deployplan.Trigger) {
+func convertChangesToTriggersMap(ctx context.Context, adapter *dresources.Adapter, diff []structdiff.Change, remoteState any) (deployplan.ActionType, map[string]deployplan.Trigger) {
 	action := deployplan.ActionTypeSkip
 	var m map[string]deployplan.Trigger
 
 	for _, ch := range diff {
-		fieldAction := adapter.ClassifyByTriggers(ch)
+		fieldAction, err := adapter.ClassifyChange(ch, remoteState)
+		if err != nil {
+			logdiag.LogError(ctx, fmt.Errorf("internal error: failed to classify change: %w", err))
+			continue
+		}
 		if fieldAction > action {
 			action = fieldAction
 		}
@@ -256,10 +259,9 @@ func interpretOldStateVsRemoteState(ctx context.Context, adapter *dresources.Ada
 		}
 		fieldAction, err := adapter.ClassifyChange(ch, remoteState)
 		if err != nil {
-			logdiag.LogError(ctx, fmt.Errorf("internal error: failed to classify changes: %w", err))
+			logdiag.LogError(ctx, fmt.Errorf("internal error: failed to classify change: %w", err))
 			continue
 		}
-
 		if fieldAction > action {
 			action = fieldAction
 		}
