@@ -1,9 +1,6 @@
 bundle:
   name: BUNDLE
 
-workspace:
-  resource_path: /foo/bar
-
 resources:
   jobs:
     job1:
@@ -11,7 +8,7 @@ resources:
 
   schemas:
     schema1:
-      catalog_name: c
+      catalog_name: mycatalog
       name: schema1
 
   volumes:
@@ -24,5 +21,9 @@ resources:
     model1:
       name: model 1
 
-presets:
-  name_prefix: "$PREFIX"
+presets: # PRESETS
+  name_prefix: $PREFIX # PRESETS
+
+targets:
+  dev:
+    mode: development
