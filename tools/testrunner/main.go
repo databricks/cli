@@ -188,7 +188,8 @@ func checkFailures(config *Config, jsonFile string, originalExitCode int) int {
 				fmt.Printf("%s %s failure is not allowed\n", result.Package, result.Test)
 				unexpectedFailures[key] = true
 			}
-		} else if result.Action == "pass" {
+		} else if result.Action == "pass" && unexpectedFailures[key] {
+			fmt.Printf("%s %s passed on retry\n", result.Package, result.Test)
 			// We run gotestsum with --rerun-fails, so we need to account for intermittent failures
 			delete(unexpectedFailures, key)
 		}
@@ -328,20 +329,20 @@ func (r ConfigRule) matches(packageName, testName string) bool {
 
 	// Check test pattern
 	if r.TestPrefix {
-		return matchesPathPrefix(testName, r.TestPattern)
+		return matchesPathPrefix(testName, r.TestPattern) || matchesPathPrefix(r.TestPattern, testName)
 	} else {
-		return testName == r.TestPattern
+		return testName == r.TestPattern || matchesPathPrefix(r.TestPattern, testName)
 	}
 }
 
 // matchesPathPrefix returns true if s matches pattern or starts with pattern + "/"
 // If pattern is empty (wildcard "*"), it matches any string
-func matchesPathPrefix(s, pattern string) bool {
-	if pattern == "" {
+func matchesPathPrefix(s, prefix string) bool {
+	if prefix == "" {
 		return true
 	}
-	if s == pattern {
+	if s == prefix {
 		return true
 	}
-	return strings.HasPrefix(s, pattern+"/")
+	return strings.HasPrefix(s, prefix+"/")
 }
