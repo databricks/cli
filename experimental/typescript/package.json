@@ -47,7 +47,7 @@
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.ts\"",
     "codegen": "tsx src/codegen/generate.ts",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run codegen && npm run build"
   },
   "keywords": [
     "databricks",
