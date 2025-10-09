@@ -110,7 +110,7 @@ func (s *FakeWorkspace) DashboardUpdate(req Request) Response {
 	if err != nil {
 		return Response{
 			Body: map[string]string{
-				"message": fmt.Sprintf("Invalid etag: %s", dashboard.Etag),
+				"message": "Invalid etag: " + dashboard.Etag,
 			},
 			StatusCode: 400,
 		}
