@@ -16,10 +16,13 @@ import (
 )
 
 // Generate 32 character hex string for dashboard ID
-func generateDashboardId() string {
+func generateDashboardId() (string, error) {
 	randomBytes := make([]byte, 16)
-	rand.Read(randomBytes)
-	return hex.EncodeToString(randomBytes)
+	_, err := rand.Read(randomBytes)
+	if err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(randomBytes), nil
 }
 
 func (s *FakeWorkspace) DashboardCreate(req Request) Response {
@@ -41,9 +44,16 @@ func (s *FakeWorkspace) DashboardCreate(req Request) Response {
 		}
 	}
 
-	// Generate a random 32-character hex string for dashboard ID
-	// (Lakeview API uses 32-character hex strings without hyphens)
-	dashboard.DashboardId = generateDashboardId()
+	var err error
+	dashboard.DashboardId, err = generateDashboardId()
+	if err != nil {
+		return Response{
+			StatusCode: 500,
+			Body: map[string]string{
+				"message": "Failed to generate dashboard ID",
+			},
+		}
+	}
 
 	// All dashboards are active by default:
 	dashboard.LifecycleState = dashboards.LifecycleStateActive
