@@ -26,7 +26,6 @@ sync:
 targets:
   dev-dais:
     mode: development
-    default: true
     workspace:
       host: https://adb-1966697730403610.10.azuredatabricks.net/
     variables:
@@ -36,6 +35,7 @@ targets:
 
   dev-azure:
     mode: development
+    default: true
     workspace:
       host: https://adb-7064161269814046.2.staging.azuredatabricks.net/
     variables:
