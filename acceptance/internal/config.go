@@ -55,6 +55,11 @@ type TestConfig struct {
 	// If true and Cloud=true, run this test only if a default warehouse is available in the cloud environment
 	RequiresWarehouse *bool
 
+	// If true run this test only if running on DBR with workspace filesystem
+	// Note that this implicitly implies Cloud=true since running on the workspace
+	// file system is only supported for integration tests.
+	RequiresWorkspaceFilesystem *bool
+
 	// If set, current user will be set to a service principal-like UUID instead of email (default is false)
 	IsServicePrincipal *bool
 
