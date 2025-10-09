@@ -1,0 +1,31 @@
+RecordRequests = true
+IncludeRequestHeaders = ["Authorization", "User-Agent"]
+
+[[Server]]
+Pattern = "GET /api/3.0/operations/operations/test-library-op-789"
+Response.Body = '''
+{
+    "name": "operations/test-library-op-789",
+    "done": false,
+    "metadata": {
+        "created_at": 1234567890,
+        "library_name": "test-library-status"
+    }
+}
+'''
+
+[[Repls]]
+Old = "(linux|darwin|windows)"
+New = "[OS]"
+
+[[Repls]]
+Old = " upstream/[A-Za-z0-9.-]+"
+New = ""
+
+[[Repls]]
+Old = " upstream-version/[A-Za-z0-9.-]+"
+New = ""
+
+[[Repls]]
+Old = " cicd/[A-Za-z0-9.-]+"
+New = ""

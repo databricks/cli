@@ -1,0 +1,10 @@
+
+>>> [CLI] quality-monitor-v2 create-library test-library --leg-count 4 --contains-sauce --no-wait
+{
+  "done":false,
+  "metadata": {
+    "created_at":[NUMID],
+    "library_name":"test-library"
+  },
+  "name":"operations/test-library-op-123"
+}

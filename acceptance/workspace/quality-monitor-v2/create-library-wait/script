@@ -1,0 +1,1 @@
+trace $CLI quality-monitor-v2 create-library operations/test-library-op-456 --wait
