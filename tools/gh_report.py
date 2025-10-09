@@ -130,12 +130,18 @@ def download_known_failures():
         if file_age < 300:  # 5 minutes
             return
 
+    temp_path = known_failures_path.with_name(f"{known_failures_path.name}.{os.getpid()}")
+
     try:
         with urllib.request.urlopen(KNOWN_FAILURES_URL) as response:
             content = response.read().decode("utf-8")
-        known_failures_path.write_text(content)
     except Exception as e:
         print(f"Failed to download known_failures.txt: {e}", file=sys.stderr)
+        temp_path.unlink(missing_ok=True)
+        return
+
+    temp_path.write_text(content)
+    temp_path.replace(known_failures_path)
 
 
 def download_run_id(run_id, repo, rm):
