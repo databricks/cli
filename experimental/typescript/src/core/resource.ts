@@ -6,10 +6,14 @@
 import { transformToJSON } from "./transform.js";
 import { type ResourceType } from "./resources.js";
 
-export class Resource<T> {
+export class Resource<T> {  
+  
   public readonly type: ResourceType;
-  constructor(public readonly data: T, type: ResourceType) {
+  public readonly dabsName: string;
+
+  constructor(dabsName: string, public readonly data: T, type: ResourceType) {
     this.type = type;
+    this.dabsName = dabsName;
   }
 
   toJSON() {

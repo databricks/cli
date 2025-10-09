@@ -191,8 +191,8 @@ export interface ClusterParams {
 }
 
 export class Cluster extends Resource<ClusterParams> {
-  constructor(params: ClusterParams) {
-    super(params, "clusters");
+  constructor(name: string, params: ClusterParams) {
+    super(name, params, "clusters");
   }
 }
 

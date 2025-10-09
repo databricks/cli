@@ -31,8 +31,8 @@ export interface MlflowExperimentParams {
 }
 
 export class MlflowExperiment extends Resource<MlflowExperimentParams> {
-  constructor(params: MlflowExperimentParams) {
-    super(params, "mlflow_experiments");
+  constructor(name: string, params: MlflowExperimentParams) {
+    super(name, params, "mlflow_experiments");
   }
 }
 

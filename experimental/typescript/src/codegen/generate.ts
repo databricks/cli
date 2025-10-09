@@ -27,6 +27,8 @@ const MAIN_RESOURCES = [
   "resources.RegisteredModel",
   "resources.Schema",
   "resources.Volume",
+  "resources.DatabaseInstance",
+  "resources.DatabaseCatalog",
 ];
 
 // Namespaces to load from the schema
@@ -40,6 +42,8 @@ const LOADED_NAMESPACES = [
   "serving",
   "dashboards",
   "apps",
+  "database",
+  "database_catalogs",
 ];
 
 // Type renames
@@ -358,8 +362,8 @@ function generateInterface(name: string, namespace: string, schema: Schema, sche
 
     // Generate class
     lines.push(`export class ${name} extends Resource<${paramsName}> {`);
-    lines.push(`  constructor(params: ${paramsName}) {`);
-    lines.push(`    super(params, "${namespace}");`);
+    lines.push(`  constructor(name: string, params: ${paramsName}) {`);
+    lines.push(`    super(name, params, "${namespace}");`);
     lines.push(`  }`);
     lines.push("}");
     lines.push("");

@@ -51,8 +51,8 @@ export interface ModelServingEndpointParams {
 }
 
 export class ModelServingEndpoint extends Resource<ModelServingEndpointParams> {
-  constructor(params: ModelServingEndpointParams) {
-    super(params, "model_serving_endpoints");
+  constructor(name: string, params: ModelServingEndpointParams) {
+    super(name, params, "model_serving_endpoints");
   }
 }
 

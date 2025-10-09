@@ -36,8 +36,8 @@ export interface RegisteredModelParams {
 }
 
 export class RegisteredModel extends Resource<RegisteredModelParams> {
-  constructor(params: RegisteredModelParams) {
-    super(params, "registered_models");
+  constructor(name: string, params: RegisteredModelParams) {
+    super(name, params, "registered_models");
   }
 }
 

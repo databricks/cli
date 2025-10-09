@@ -78,8 +78,8 @@ export interface QualityMonitorParams {
 }
 
 export class QualityMonitor extends Resource<QualityMonitorParams> {
-  constructor(params: QualityMonitorParams) {
-    super(params, "quality_monitors");
+  constructor(name: string, params: QualityMonitorParams) {
+    super(name, params, "quality_monitors");
   }
 }
 

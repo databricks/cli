@@ -33,8 +33,8 @@ export interface SchemaParams {
 }
 
 export class Schema extends Resource<SchemaParams> {
-  constructor(params: SchemaParams) {
-    super(params, "schemas");
+  constructor(name: string, params: SchemaParams) {
+    super(name, params, "schemas");
   }
 }
 

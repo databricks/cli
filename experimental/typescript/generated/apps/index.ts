@@ -83,8 +83,8 @@ export interface AppParams {
 }
 
 export class App extends Resource<AppParams> {
-  constructor(params: AppParams) {
-    super(params, "apps");
+  constructor(name: string, params: AppParams) {
+    super(name, params, "apps");
   }
 }
 

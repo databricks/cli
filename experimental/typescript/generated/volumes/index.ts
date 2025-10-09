@@ -37,8 +37,8 @@ export interface VolumeParams {
 }
 
 export class Volume extends Resource<VolumeParams> {
-  constructor(params: VolumeParams) {
-    super(params, "volumes");
+  constructor(name: string, params: VolumeParams) {
+    super(name, params, "volumes");
   }
 }
 

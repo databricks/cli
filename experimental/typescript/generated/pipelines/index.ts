@@ -131,8 +131,8 @@ export interface PipelineParams {
 }
 
 export class Pipeline extends Resource<PipelineParams> {
-  constructor(params: PipelineParams) {
-    super(params, "pipelines");
+  constructor(name: string, params: PipelineParams) {
+    super(name, params, "pipelines");
   }
 }
 

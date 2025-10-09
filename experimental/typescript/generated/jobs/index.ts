@@ -119,8 +119,8 @@ export interface JobParams {
 }
 
 export class Job extends Resource<JobParams> {
-  constructor(params: JobParams) {
-    super(params, "jobs");
+  constructor(name: string, params: JobParams) {
+    super(name, params, "jobs");
   }
 }
 

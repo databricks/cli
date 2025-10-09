@@ -70,8 +70,8 @@ export interface DashboardParams {
 }
 
 export class Dashboard extends Resource<DashboardParams> {
-  constructor(params: DashboardParams) {
-    super(params, "dashboards");
+  constructor(name: string, params: DashboardParams) {
+    super(name, params, "dashboards");
   }
 }
 

@@ -21,11 +21,27 @@ import type { RegisteredModel } from "../../generated/registered_models/index.js
 import type { Schema } from "../../generated/schemas/index.js";
 import type { Volume } from "../../generated/volumes/index.js";
 import type { Resource } from "./resource.js";
+import type { DatabaseInstance } from "../../generated/database_instances/index.js";
+import type { DatabaseCatalog } from "../../generated/database_catalogs/index.js";
 
 /**
  * Enum of all supported resource types for type-safe resource management
  */
-export type ResourceType = "apps" | "clusters" | "dashboards" | "jobs" | "mlflow_experiments" | "mlflow_models" | "model_serving_endpoints" | "pipelines" | "quality_monitors" | "registered_models" | "schemas" | "volumes";
+export type ResourceType =
+  | "apps"
+  | "clusters"
+  | "dashboards"
+  | "jobs"
+  | "mlflow_experiments"
+  | "mlflow_models"
+  | "model_serving_endpoints"
+  | "pipelines"
+  | "quality_monitors"
+  | "registered_models"
+  | "schemas"
+  | "volumes"
+  | "database_instances"
+  | "database_catalogs";
 
 /**
  * Type mapping from ResourceType enum to actual resource types
@@ -43,6 +59,8 @@ export type ResourceTypeMap = {
   registered_models: RegisteredModel;
   schemas: Schema;
   volumes: Volume;
+  database_instances: DatabaseInstance;
+  database_catalogs: DatabaseCatalog;
 };
 
 /**
@@ -101,6 +119,8 @@ export class Resources {
     this.registerResourceType<RegisteredModel>("registered_models");
     this.registerResourceType<Schema>("schemas");
     this.registerResourceType<Volume>("volumes");
+    this.registerResourceType<DatabaseInstance>("database_instances");
+    this.registerResourceType<DatabaseCatalog>("database_catalogs");
   }
 
   /**
@@ -129,12 +149,12 @@ export class Resources {
    * Generic method to add a resource
    */
   public addResource(
-    name: string,
     resource: ResourceTypeMap[ResourceType],
     location?: Location
   ): void {
     const type = resource.type;
     const metadata = this.getMetadata(type);
+    const name = resource.dabsName;
 
     if (metadata.map.has(name)) {
       this.addDiagnosticWarning(`Duplicate ${type} resource: ${name}`, {
@@ -180,7 +200,7 @@ export class Resources {
     for (const type of this.registry.keys()) {
       const otherMetadata = other.getMetadata(type);
       for (const [name, resource] of otherMetadata.map.entries()) {
-        this.addResource(name, resource as ResourceTypeMap[typeof type]);
+        this.addResource(resource as ResourceTypeMap[typeof type]);
       }
     }
 
@@ -199,9 +219,7 @@ export class Resources {
       path?: readonly string[];
     }
   ): void {
-    this._diagnostics = this._diagnostics.extend(
-      Diagnostics.createError(summary, options)
-    );
+    this._diagnostics = this._diagnostics.extend(Diagnostics.createError(summary, options));
   }
 
   /**
@@ -215,9 +233,7 @@ export class Resources {
       path?: readonly string[];
     }
   ): void {
-    this._diagnostics = this._diagnostics.extend(
-      Diagnostics.createWarning(summary, options)
-    );
+    this._diagnostics = this._diagnostics.extend(Diagnostics.createWarning(summary, options));
   }
 
   /**

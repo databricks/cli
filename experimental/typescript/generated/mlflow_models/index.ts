@@ -28,8 +28,8 @@ export interface MlflowModelParams {
 }
 
 export class MlflowModel extends Resource<MlflowModelParams> {
-  constructor(params: MlflowModelParams) {
-    super(params, "mlflow_models");
+  constructor(name: string, params: MlflowModelParams) {
+    super(name, params, "mlflow_models");
   }
 }
 
