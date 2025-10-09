@@ -225,7 +225,7 @@ func localChangesToTriggers(ctx context.Context, adapter *dresources.Adapter, di
 	var m map[string]deployplan.Trigger
 
 	for _, ch := range diff {
-		fieldAction, err := adapter.ClassifyChangeLocal(ch, remoteState)
+		fieldAction, err := adapter.ClassifyChange(ch, remoteState, true)
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("internal error: failed to classify change: %w", err))
 			continue
@@ -257,7 +257,7 @@ func interpretOldStateVsRemoteState(ctx context.Context, adapter *dresources.Ada
 			}
 			continue
 		}
-		fieldAction, err := adapter.ClassifyChangeRemote(ch, remoteState)
+		fieldAction, err := adapter.ClassifyChange(ch, remoteState, false)
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("internal error: failed to classify change: %w", err))
 			continue

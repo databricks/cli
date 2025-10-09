@@ -101,7 +101,7 @@ func (r *ResourceCluster) DoDelete(ctx context.Context, id string) error {
 	return r.client.Clusters.PermanentDeleteByClusterId(ctx, id)
 }
 
-func (r *ResourceCluster) classifyChange(change structdiff.Change, remoteState *compute.ClusterDetails) (deployplan.ActionType, error) {
+func (r *ResourceCluster) ClassifyChange(change structdiff.Change, remoteState *compute.ClusterDetails, _ bool) (deployplan.ActionType, error) {
 	// Always update if the cluster is not running.
 	if remoteState.State != compute.StateRunning {
 		return deployplan.ActionTypeUpdate, nil
@@ -113,14 +113,6 @@ func (r *ResourceCluster) classifyChange(change structdiff.Change, remoteState *
 	}
 
 	return deployplan.ActionTypeUpdate, nil
-}
-
-func (r *ResourceCluster) ClassifyChangeLocal(change structdiff.Change, remoteState *compute.ClusterDetails) (deployplan.ActionType, error) {
-	return r.classifyChange(change, remoteState)
-}
-
-func (r *ResourceCluster) ClassifyChangeRemote(change structdiff.Change, remoteState *compute.ClusterDetails) (deployplan.ActionType, error) {
-	return r.classifyChange(change, remoteState)
 }
 
 func makeCreateCluster(config *compute.ClusterSpec) compute.CreateCluster {

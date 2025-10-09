@@ -226,18 +226,18 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	path, err := structpath.Parse("name")
 	require.NoError(t, err)
 
-	_, err = adapter.ClassifyChangeLocal(structdiff.Change{
+	_, err = adapter.ClassifyChange(structdiff.Change{
 		Path: path,
 		Old:  nil,
 		New:  "mynewname",
-	}, remote)
+	}, remote, true)
 	require.NoError(t, err)
 
-	_, err = adapter.ClassifyChangeRemote(structdiff.Change{
+	_, err = adapter.ClassifyChange(structdiff.Change{
 		Path: path,
 		Old:  nil,
 		New:  "mynewname",
-	}, remote)
+	}, remote, false)
 	require.NoError(t, err)
 }
 

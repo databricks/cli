@@ -107,7 +107,7 @@ func (r *ResourceMlflowModel) DoDelete(ctx context.Context, id string) error {
 	})
 }
 
-func (*ResourceMlflowModel) fieldTriggers() map[string]deployplan.ActionType {
+func (*ResourceMlflowModel) FieldTriggers(_ bool) map[string]deployplan.ActionType {
 	return map[string]deployplan.ActionType{
 		// Recreate matches current behavior of Terraform. It is possible to rename without recreate
 		// but that would require dynamic select of the method during update since
@@ -124,12 +124,4 @@ func (*ResourceMlflowModel) fieldTriggers() map[string]deployplan.ActionType {
 		// reasonably choose to not fix it here as well.
 		"tags": deployplan.ActionTypeSkip,
 	}
-}
-
-func (r *ResourceMlflowModel) FieldTriggersLocal() map[string]deployplan.ActionType {
-	return r.fieldTriggers()
-}
-
-func (r *ResourceMlflowModel) FieldTriggersRemote() map[string]deployplan.ActionType {
-	return r.fieldTriggers()
 }
