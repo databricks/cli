@@ -9,7 +9,3 @@ Ignore = [
 [[Repls]]
 Old = "[0-9a-f]{32}"
 New = "[DASHBOARD_ID]"
-
-[[Repls]]
-Old = "[0-9]{10,}"
-New = "[DASHBOARD_ID]"

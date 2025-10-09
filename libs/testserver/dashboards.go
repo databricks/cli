@@ -1,6 +1,8 @@
 package testserver
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"path"
@@ -12,6 +14,13 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
+
+// Generate 32 character hex string for dashboard ID
+func generateDashboardId() string {
+	randomBytes := make([]byte, 16)
+	rand.Read(randomBytes)
+	return hex.EncodeToString(randomBytes)
+}
 
 func (s *FakeWorkspace) DashboardCreate(req Request) Response {
 	defer s.LockUnlock()()
@@ -32,8 +41,9 @@ func (s *FakeWorkspace) DashboardCreate(req Request) Response {
 		}
 	}
 
-	// Use nextID() to generate deterministic dashboard IDs for testing
-	dashboard.DashboardId = strconv.FormatInt(nextID(), 10)
+	// Generate a random 32-character hex string for dashboard ID
+	// (Lakeview API uses 32-character hex strings without hyphens)
+	dashboard.DashboardId = generateDashboardId()
 
 	// All dashboards are active by default:
 	dashboard.LifecycleState = dashboards.LifecycleStateActive
