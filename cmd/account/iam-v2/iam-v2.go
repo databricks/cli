@@ -90,6 +90,9 @@ func newCreateGroup() *cobra.Command {
   
   TODO: Write description later when this method is implemented`
 
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -162,6 +165,9 @@ func newCreateServicePrincipal() *cobra.Command {
 	cmd.Long = `Create a service principal in the account.
   
   TODO: Write description later when this method is implemented`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
@@ -237,6 +243,9 @@ func newCreateUser() *cobra.Command {
 
   Arguments:
     USERNAME: Username/email of the user.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
@@ -322,6 +331,9 @@ func newCreateWorkspaceAccessDetail() *cobra.Command {
   Arguments:
     PARENT: Required. The parent path for workspace access detail.`
 
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -390,6 +402,9 @@ func newDeleteGroup() *cobra.Command {
   Arguments:
     INTERNAL_ID: Required. Internal ID of the group in Databricks.`
 
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -449,6 +464,9 @@ func newDeleteServicePrincipal() *cobra.Command {
   Arguments:
     INTERNAL_ID: Required. Internal ID of the service principal in Databricks.`
 
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -507,6 +525,9 @@ func newDeleteUser() *cobra.Command {
 
   Arguments:
     INTERNAL_ID: Required. Internal ID of the user in Databricks.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
@@ -568,6 +589,9 @@ func newDeleteWorkspaceAccessDetail() *cobra.Command {
     WORKSPACE_ID: The workspace ID where the principal has access.
     PRINCIPAL_ID: Required. ID of the principal in Databricks to delete workspace access
       for.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
@@ -632,6 +656,9 @@ func newGetGroup() *cobra.Command {
   Arguments:
     INTERNAL_ID: Required. Internal ID of the group in Databricks.`
 
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -691,6 +718,9 @@ func newGetServicePrincipal() *cobra.Command {
   Arguments:
     INTERNAL_ID: Required. Internal ID of the service principal in Databricks.`
 
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -749,6 +779,9 @@ func newGetUser() *cobra.Command {
 
   Arguments:
     INTERNAL_ID: Required. Internal ID of the user in Databricks.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
@@ -882,6 +915,9 @@ func newListGroups() *cobra.Command {
   
   TODO: Write description later when this method is implemented`
 
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -936,6 +972,9 @@ func newListServicePrincipals() *cobra.Command {
   
   TODO: Write description later when this method is implemented`
 
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -989,6 +1028,9 @@ func newListUsers() *cobra.Command {
 	cmd.Long = `List users in the account.
   
   TODO: Write description later when this method is implemented`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1046,6 +1088,9 @@ func newListWorkspaceAccessDetails() *cobra.Command {
 
   Arguments:
     WORKSPACE_ID: The workspace ID for which the workspace access details are being fetched.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1361,6 +1406,9 @@ func newUpdateGroup() *cobra.Command {
     INTERNAL_ID: Required. Internal ID of the group in Databricks.
     UPDATE_MASK: Optional. The list of fields to update.`
 
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -1443,6 +1491,9 @@ func newUpdateServicePrincipal() *cobra.Command {
     INTERNAL_ID: Required. Internal ID of the service principal in Databricks.
     UPDATE_MASK: Optional. The list of fields to update.`
 
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -1524,6 +1575,9 @@ func newUpdateUser() *cobra.Command {
     INTERNAL_ID: Required. Internal ID of the user in Databricks.
     UPDATE_MASK: Optional. The list of fields to update.
     USERNAME: Username/email of the user.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1617,6 +1671,9 @@ func newUpdateWorkspaceAccessDetail() *cobra.Command {
     PRINCIPAL_ID: Required. ID of the principal in Databricks.
     UPDATE_MASK: Optional. The list of fields to update.`
 
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -1670,4 +1727,4 @@ func newUpdateWorkspaceAccessDetail() *cobra.Command {
 	return cmd
 }
 
-// end service account_iamV2
+// end service AccountIamV2

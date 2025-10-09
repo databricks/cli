@@ -61,6 +61,9 @@ func newGetPublishedDashboardEmbedded() *cobra.Command {
   Arguments:
     DASHBOARD_ID: UUID identifying the published dashboard.`
 
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {

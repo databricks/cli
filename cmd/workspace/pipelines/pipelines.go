@@ -90,6 +90,9 @@ func newApplyEnvironment() *cobra.Command {
   * Applies the current pipeline environment onto the pipeline compute. The
   environment applied can be used by subsequent dev-mode updates.`
 
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
 	cmd.Annotations = make(map[string]string)
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -742,6 +745,9 @@ func newRestorePipeline() *cobra.Command {
 
   Arguments:
     PIPELINE_ID: The ID of the pipeline to restore`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 

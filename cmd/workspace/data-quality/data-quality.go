@@ -726,7 +726,9 @@ func newUpdateMonitor() *cobra.Command {
     OBJECT_TYPE: The type of the monitored object. Can be one of the following: schema or
       table.
     OBJECT_ID: The UUID of the request object. For example, schema id.
-    UPDATE_MASK: The field mask to specify which fields to update.
+    UPDATE_MASK: The field mask to specify which fields to update as a comma-separated
+      list. Example value:
+      data_profiling_config.custom_metrics,data_profiling_config.schedule.quartz_cron_expression
     OBJECT_TYPE: The type of the monitored object. Can be one of the following: schema or
       table.
     OBJECT_ID: The UUID of the request object. For example, schema id.`

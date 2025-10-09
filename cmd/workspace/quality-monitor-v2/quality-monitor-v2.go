@@ -30,8 +30,10 @@ func New() *cobra.Command {
 	}
 
 	// Add methods
+	cmd.AddCommand(newCreateLibrary())
 	cmd.AddCommand(newCreateQualityMonitor())
 	cmd.AddCommand(newDeleteQualityMonitor())
+	cmd.AddCommand(newGetOperation())
 	cmd.AddCommand(newGetQualityMonitor())
 	cmd.AddCommand(newListQualityMonitor())
 	cmd.AddCommand(newUpdateQualityMonitor())
@@ -39,6 +41,91 @@ func New() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
+	}
+
+	return cmd
+}
+
+// start create-library command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createLibraryOverrides []func(
+	*cobra.Command,
+	*qualitymonitorv2.CreateLibraryRequest,
+)
+
+func newCreateLibrary() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createLibraryReq qualitymonitorv2.CreateLibraryRequest
+	createLibraryReq.Library = qualitymonitorv2.Library{}
+	var createLibraryJson flags.JsonFlag
+
+	cmd.Flags().Var(&createLibraryJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().BoolVar(&createLibraryReq.Library.ContainsSauce, "contains-sauce", createLibraryReq.Library.ContainsSauce, `Whether the resource contains sauce.`)
+	cmd.Flags().Int64Var(&createLibraryReq.Library.LegCount, "leg-count", createLibraryReq.Library.LegCount, `Count of legs in the resource.`)
+
+	cmd.Use = "create-library NAME"
+	cmd.Short = `Create a Library Resource.`
+	cmd.Long = `Create a Library Resource.
+
+  Arguments:
+    NAME: Name of the Resource. Must contain only: - alphanumeric characters -
+      underscores - hyphens
+      
+      Note: The name must be unique within the scope of the resource.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := createLibraryJson.Unmarshal(&createLibraryReq.Library)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		if !cmd.Flags().Changed("json") {
+			createLibraryReq.Library.Name = args[0]
+		}
+
+		response, err := w.QualityMonitorV2.CreateLibrary(ctx, createLibraryReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createLibraryOverrides {
+		fn(cmd, &createLibraryReq)
 	}
 
 	return cmd
@@ -184,6 +271,60 @@ func newDeleteQualityMonitor() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range deleteQualityMonitorOverrides {
 		fn(cmd, &deleteQualityMonitorReq)
+	}
+
+	return cmd
+}
+
+// start get-operation command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getOperationOverrides []func(
+	*cobra.Command,
+	*qualitymonitorv2.GetOperationRequest,
+)
+
+func newGetOperation() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getOperationReq qualitymonitorv2.GetOperationRequest
+
+	cmd.Use = "get-operation NAME"
+	cmd.Short = `Get a Library Operation.`
+	cmd.Long = `Get a Library Operation.
+
+  Arguments:
+    NAME: The name of the operation resource.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		getOperationReq.Name = args[0]
+
+		response, err := w.QualityMonitorV2.GetOperation(ctx, getOperationReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getOperationOverrides {
+		fn(cmd, &getOperationReq)
 	}
 
 	return cmd
