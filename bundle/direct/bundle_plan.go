@@ -159,7 +159,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			}
 		}
 
-		localAction, localChangeMap := localChangesToTriggers(ctx, adapter, localDiff)
+		localAction, localChangeMap := localChangesToTriggers(ctx, adapter, localDiff, remoteState)
 		if localAction == deployplan.ActionTypeRecreate {
 			entry.Action = localAction.String()
 			if len(localChangeMap) > 0 {
@@ -220,12 +220,12 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 	return plan, nil
 }
 
-func localChangesToTriggers(ctx context.Context, adapter *dresources.Adapter, diff []structdiff.Change) (deployplan.ActionType, map[string]deployplan.Trigger) {
+func localChangesToTriggers(ctx context.Context, adapter *dresources.Adapter, diff []structdiff.Change, remoteState any) (deployplan.ActionType, map[string]deployplan.Trigger) {
 	action := deployplan.ActionTypeSkip
 	var m map[string]deployplan.Trigger
 
 	for _, ch := range diff {
-		fieldAction, err := adapter.ClassifyChangeLocal(ch)
+		fieldAction, err := adapter.ClassifyChangeLocal(ch, remoteState)
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("internal error: failed to classify change: %w", err))
 			continue

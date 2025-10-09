@@ -90,7 +90,7 @@ type IResourceNoRefresh interface {
 	WaitAfterUpdate(ctx context.Context, newState any) error
 
 	// [Optional] ClassifyChangeLocal classifies a set of local changes using custom logic.
-	ClassifyChangeLocal(change structdiff.Change) (deployplan.ActionType, error)
+	ClassifyChangeLocal(change structdiff.Change, remoteState any) (deployplan.ActionType, error)
 
 	// [Optional] ClassifyChangeRemote classifies a set of remote changes necessary to reconcile remote drift using custom logic.
 	ClassifyChangeRemote(change structdiff.Change, remoteState any) (deployplan.ActionType, error)
@@ -372,6 +372,10 @@ func (a *Adapter) validate() error {
 		}
 	}
 
+	if a.classifyChangeLocal != nil {
+		validations = append(validations, "ClassifyChangeLocal remoteState", a.classifyChangeLocal.InTypes[1], remoteType)
+	}
+
 	if a.classifyChangeRemote != nil {
 		validations = append(validations, "ClassifyChangeRemote remoteState", a.classifyChangeRemote.InTypes[1], remoteType)
 	}
@@ -595,13 +599,13 @@ func (a *Adapter) WaitAfterUpdate(ctx context.Context, newState any) (any, error
 	}
 }
 
-func (a *Adapter) ClassifyChangeLocal(change structdiff.Change) (deployplan.ActionType, error) {
+func (a *Adapter) ClassifyChangeLocal(change structdiff.Change, remoteState any) (deployplan.ActionType, error) {
 	// If ClassifyChangeLocal is not implemented, use FieldTriggersLocal.
 	if a.classifyChangeLocal == nil {
 		return a.ClassifyByTriggersLocal(change), nil
 	}
 
-	outs, err := a.classifyChangeLocal.Call(change)
+	outs, err := a.classifyChangeLocal.Call(change, remoteState)
 	if err != nil {
 		return deployplan.ActionTypeSkip, err
 	}
