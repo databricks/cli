@@ -1,0 +1,30 @@
+#!/bin/bash
+
+printf "=== Verify running on DBR\n"
+if [ -z "$DATABRICKS_RUNTIME_VERSION" ]; then
+  echo "ERROR: DATABRICKS_RUNTIME_VERSION is not set"
+  exit 1
+fi
+echo "DATABRICKS_RUNTIME_VERSION is set: $DATABRICKS_RUNTIME_VERSION"
+
+printf "\n=== Verify current directory is on workspace filesystem\n"
+trace pwd
+
+current_dir=$(pwd)
+if [[ ! "$current_dir" =~ ^/Workspace/Users/ ]]; then
+  echo "ERROR: Current directory is not in /Workspace/Users/"
+  echo "Current directory: $current_dir"
+  exit 1
+fi
+
+echo "SUCCESS: Current directory is in workspace filesystem"
+
+printf "\n=== Verify current user matches directory\n"
+expected_path="/Workspace/Users/$CURRENT_USER_NAME"
+if [[ ! "$current_dir" =~ ^$expected_path ]]; then
+  echo "ERROR: Current directory does not start with $expected_path"
+  echo "Current directory: $current_dir"
+  exit 1
+fi
+
+echo "SUCCESS: Current directory is under $expected_path"

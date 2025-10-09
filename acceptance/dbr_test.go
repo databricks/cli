@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func workspaceTmpDir(ctx context.Context, t *testing.T) (*databricks.WorkspaceClient, filer.Filer, string) {
+func workspaceTmpDir(ctx context.Context, t *testing.T) string {
 	w, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
 
@@ -38,21 +38,17 @@ func workspaceTmpDir(ctx context.Context, t *testing.T) (*databricks.WorkspaceCl
 		uuid.New().String(),
 	)
 
+	// Create the directory using os.MkdirAll (via FUSE)
+	err = os.MkdirAll(tmpDir, 0o755)
+	require.NoError(t, err)
+
 	t.Cleanup(func() {
-		err := w.Workspace.Delete(ctx, workspace.Delete{
-			Path:      tmpDir,
-			Recursive: true,
-		})
+		// Remove the directory using os.RemoveAll (via FUSE)
+		err := os.RemoveAll(tmpDir)
 		assert.NoError(t, err)
 	})
 
-	err = w.Workspace.MkdirsByPath(ctx, tmpDir)
-	require.NoError(t, err)
-
-	f, err := filer.NewWorkspaceFilesClient(w, tmpDir)
-	require.NoError(t, err)
-
-	return w, f, tmpDir
+	return tmpDir
 }
 
 // Stable scratch directory to run and iterate on DBR tests.
