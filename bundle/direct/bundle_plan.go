@@ -289,7 +289,7 @@ func (b *DeploymentBundle) LookupReferenceLocal(ctx context.Context, path *struc
 	}
 
 	targetAction := deployplan.ActionTypeFromString(targetEntry.Action)
-	if targetAction == deployplan.ActionTypeUnset {
+	if targetAction == deployplan.ActionTypeUndefined {
 		return nil, fmt.Errorf("internal error: %s: missing action in the plan", targetResourceKey)
 	}
 

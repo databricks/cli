@@ -600,39 +600,39 @@ func (a *Adapter) WaitAfterUpdate(ctx context.Context, newState any) (any, error
 }
 
 func (a *Adapter) ClassifyChangeLocal(change structdiff.Change, remoteState any) (deployplan.ActionType, error) {
-	// If ClassifyChangeLocal is not implemented, use FieldTriggersLocal.
-	if a.classifyChangeLocal == nil {
-		return a.ClassifyByTriggersLocal(change), nil
+	actionType := deployplan.ActionTypeUndefined
+
+	// If ClassifyChangeLocal is implemented, use it.
+	if a.classifyChangeLocal != nil {
+		outs, err := a.classifyChangeLocal.Call(change, remoteState)
+		if err != nil {
+			return deployplan.ActionTypeSkip, err
+		}
+		actionType = outs[0].(deployplan.ActionType)
 	}
 
-	outs, err := a.classifyChangeLocal.Call(change, remoteState)
-	if err != nil {
-		return deployplan.ActionTypeSkip, err
-	}
-
-	actionType := outs[0].(deployplan.ActionType)
-	// If the action type is unset, use FieldTriggersLocal.
-	if actionType == deployplan.ActionTypeUnset {
+	// If classifyChangeLocal is not implemented or is implemented but returns undefined, use FieldTriggersLocal.
+	if actionType == deployplan.ActionTypeUndefined {
 		return a.ClassifyByTriggersLocal(change), nil
 	}
 	return actionType, nil
 }
 
 func (a *Adapter) ClassifyChangeRemote(change structdiff.Change, remoteState any) (deployplan.ActionType, error) {
-	// If ClassifyChangeRemote is not implemented, use FieldTriggersRemote.
-	if a.classifyChangeRemote == nil {
-		return a.ClassifyByTriggersRemote(change), nil
+	actionType := deployplan.ActionTypeUndefined
+
+	// If ClassifyChangeRemote is implemented, use it.
+	if a.classifyChangeRemote != nil {
+		outs, err := a.classifyChangeRemote.Call(change, remoteState)
+		if err != nil {
+			return deployplan.ActionTypeSkip, err
+		}
+		actionType = outs[0].(deployplan.ActionType)
 	}
 
-	outs, err := a.classifyChangeRemote.Call(change, remoteState)
-	if err != nil {
-		return deployplan.ActionTypeSkip, err
-	}
-
-	actionType := outs[0].(deployplan.ActionType)
-	// If the action type is unset, use FieldTriggersRemote.
-	if actionType == deployplan.ActionTypeUnset {
-		return a.ClassifyByTriggersRemote(change), nil
+	// If classifyChangeRemote is not implemented or is implemented but returns undefined, use FieldTriggersRemote.
+	if actionType == deployplan.ActionTypeUndefined {
+		actionType = a.ClassifyByTriggersRemote(change)
 	}
 	return actionType, nil
 }
