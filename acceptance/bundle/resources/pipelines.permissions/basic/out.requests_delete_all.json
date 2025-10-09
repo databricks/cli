@@ -1,0 +1,12 @@
+{
+  "body": {
+    "access_control_list": [
+      {
+        "permission_level": "IS_OWNER",
+        "user_name": "[USERNAME]"
+      }
+    ]
+  },
+  "method": "PUT",
+  "path": "/api/2.0/permissions/pipelines/[PIPELINE_ID]"
+}

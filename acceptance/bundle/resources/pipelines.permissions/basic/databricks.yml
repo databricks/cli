@@ -1,0 +1,12 @@
+bundle:
+  name: permissions-test
+
+resources:
+  pipelines:
+    foo:
+      name: foo
+      permissions: # PERMISSIONS
+        - level: CAN_VIEW # PERMISSIONS
+          user_name: viewer@example.com # PERMISSIONS
+        - level: CAN_MANAGE # DELETE_ONE
+          group_name: data-team # DELETE_ONE
