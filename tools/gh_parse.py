@@ -505,9 +505,12 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False, omi
                     print()
 
 
+# For test table, use shorter version of action.
+# We have full action name in env table, so that is used as agenda.
 def short_action(action):
-    if len(action) > 2 and action[1] == "\u200b":
-        return action[:2]
+    if len(action) >= 4 and action[1] == "\u200b":
+        # include first non-emoji letter in case emoji rendering is broken
+        return action[:3]
     return action
 
 
@@ -569,7 +572,7 @@ def autojust(value, width):
     value = str(value)
     if value.isdigit():
         return value.center(width)
-    if len(value) <= 2:  # emoji
+    if len(value) <= 3:  # short action name
         return value.center(width)
     return value.ljust(width)
 
