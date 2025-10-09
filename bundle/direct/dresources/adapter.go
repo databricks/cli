@@ -174,6 +174,18 @@ func NewAdapter(typedNil any, client *databricks.WorkspaceClient) (*Adapter, err
 		return nil, err
 	}
 	if triggerCall != nil {
+		// Validate FieldTriggers signature: func(bool) map[string]deployplan.ActionType
+		if len(triggerCall.InTypes) != 1 || triggerCall.InTypes[0] != reflect.TypeOf(false) {
+			return nil, fmt.Errorf("FieldTriggers must take a single bool parameter (isLocal)")
+		}
+		if len(triggerCall.OutTypes) != 1 {
+			return nil, fmt.Errorf("FieldTriggers must return a single value")
+		}
+		expectedReturnType := reflect.TypeOf(map[string]deployplan.ActionType{})
+		if triggerCall.OutTypes[0] != expectedReturnType {
+			return nil, fmt.Errorf("FieldTriggers must return map[string]deployplan.ActionType, got %v", triggerCall.OutTypes[0])
+		}
+
 		// Call with isLocal=true for local triggers
 		outs, err := triggerCall.Call(true)
 		if err != nil || len(outs) != 1 {
@@ -355,7 +367,10 @@ func (a *Adapter) validate() error {
 	}
 
 	if a.classifyChange != nil {
-		validations = append(validations, "ClassifyChange remoteState", a.classifyChange.InTypes[1], remoteType)
+		validations = append(validations,
+			"ClassifyChange remoteState", a.classifyChange.InTypes[1], remoteType,
+			"ClassifyChange isLocal", a.classifyChange.InTypes[2], reflect.TypeOf(false),
+		)
 	}
 
 	err = validateTypes(validations...)
