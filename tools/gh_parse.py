@@ -34,7 +34,9 @@ PANIC = "💥\u200bPANIC"
 KNOWN_FAILURE = "🟨\u200bKNOWN"
 RECOVERED = "💚\u200bRECOVERED"
 
-INTERESTING_ACTIONS = (FAIL, BUG, FLAKY, PANIC, MISSING, KNOWN_FAILURE, RECOVERED)
+# The order is important - in case of ambiguity, earlier one gets preference.
+# For examples, each environment gets a summary icon which is earliest action in this list among all tests.
+INTERESTING_ACTIONS = (PANIC, BUG, FAIL, KNOWN_FAILURE, MISSING, FLAKY, RECOVERED)
 ACTIONS_WITH_ICON = INTERESTING_ACTIONS + (PASS, SKIP)
 
 ACTION_MESSAGES = {
@@ -408,6 +410,7 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False, omi
             per_env_stats.setdefault(env, Counter()).update(stats)
 
     table = []
+    columns = {" ", "Env"}
     for env, stats in sorted(per_env_stats.items()):
         status = "??"
         for action in ACTIONS_WITH_ICON:
@@ -422,7 +425,16 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False, omi
                 **stats,
             }
         )
-    print(format_table(table, markdown=markdown))
+        columns.update(stats)
+
+    def key(column):
+        try:
+            return (ACTIONS_WITH_ICON.index(column), "")
+        except:
+            return (-1, str(column))
+
+    columns = sorted(columns, key=key)
+    print(format_table(table, markdown=markdown, columns=columns))
 
     interesting_envs = set()
     for env, stats in per_env_stats.items():
@@ -439,7 +451,7 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False, omi
         for env, counts in items.items():
             for action in INTERESTING_ACTIONS:
                 if action in counts:
-                    per_testkey_result.setdefault(env, action)
+                    per_testkey_result.setdefault(env, short_action(action))
                     break
 
         # Once we know test is interesting, complete the row
@@ -449,7 +461,7 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False, omi
                     continue
                 for action in (PASS, SKIP):
                     if action in counts:
-                        per_testkey_result.setdefault(env, action)
+                        per_testkey_result.setdefault(env, short_action(action))
                         break
 
         if not per_testkey_result:
@@ -493,6 +505,15 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False, omi
                     print()
 
 
+# For test table, use shorter version of action.
+# We have full action name in env table, so that is used as agenda.
+def short_action(action):
+    if len(action) >= 4 and action[1] == "\u200b":
+        # include first non-emoji letter in case emoji rendering is broken
+        return action[:3]
+    return action
+
+
 def format_table(table, columns=None, markdown=False):
     """
     Pretty-print a list-of-dicts as an aligned text table.
@@ -526,12 +547,12 @@ def format_table(table, columns=None, markdown=False):
 
     if markdown:
         # Header
-        write("| " + " | ".join(str(col).ljust(w) for col, w in zip(columns, widths)) + " |")
+        write("| " + " | ".join(autojust(str(col), w) for col, w in zip(columns, widths)) + " |")
         # Separator
         write("| " + " | ".join("-" * w for w in widths) + " |")
         # Data rows
         for row in table:
-            write("| " + " | ".join(str(row.get(col, "")).ljust(w) for col, w in zip(columns, widths)) + " |")
+            write("| " + " | ".join(autojust(row.get(col, ""), w) for col, w in zip(columns, widths)) + " |")
     else:
         write(fmt(columns, widths))
         for ind, row in enumerate(table):
@@ -543,7 +564,17 @@ def format_table(table, columns=None, markdown=False):
 
 
 def fmt(cells, widths):
-    return "  ".join(str(cell).ljust(w) for cell, w in zip(cells, widths))
+    return "  ".join(autojust(cell, w) for cell, w in zip(cells, widths))
+
+
+def autojust(value, width):
+    # Note, this has no effect on how markdown is rendered, only relevant for terminal output
+    value = str(value)
+    if value.isdigit():
+        return value.center(width)
+    if len(value) <= 3:  # short action name
+        return value.center(width)
+    return value.ljust(width)
 
 
 def wrap_in_details(txt, summary):
