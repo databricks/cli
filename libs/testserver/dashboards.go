@@ -6,7 +6,6 @@ import (
 
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
-	"github.com/google/uuid"
 )
 
 func (s *FakeWorkspace) DashboardCreate(req Request) Response {
@@ -20,7 +19,7 @@ func (s *FakeWorkspace) DashboardCreate(req Request) Response {
 	}
 
 	// Lakeview API strips hyphens from a uuid for dashboards
-	dashboard.DashboardId = strings.ReplaceAll(uuid.New().String(), "-", "")
+	dashboard.DashboardId = strings.ReplaceAll(nextUUID(), "-", "")
 
 	// All dashboards are active by default:
 	dashboard.LifecycleState = dashboards.LifecycleStateActive
@@ -61,7 +60,7 @@ func (s *FakeWorkspace) DashboardCreate(req Request) Response {
 	return Response{
 		Body: dashboards.Dashboard{
 			DashboardId: dashboard.DashboardId,
-			Etag:        uuid.New().String(),
+			Etag:        nextUUID(),
 		},
 	}
 }
@@ -77,7 +76,7 @@ func (s *FakeWorkspace) DashboardUpdate(req Request) Response {
 	}
 
 	// Update the etag for the dashboard.
-	dashboard.Etag = uuid.New().String()
+	dashboard.Etag = nextUUID()
 
 	// All dashboards are active by default:
 	dashboard.LifecycleState = dashboards.LifecycleStateActive
