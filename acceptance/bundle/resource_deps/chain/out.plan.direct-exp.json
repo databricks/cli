@@ -1,0 +1,104 @@
+{
+  "plan": {
+    "resources.jobs.barj": {
+      "depends_on": [
+        {
+          "node": "resources.jobs.fooj",
+          "label": "${resources.jobs.fooj.name}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "config": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/many-permissions-test/default/state/metadata.json"
+          },
+          "edit_mode": "UI_LOCKED",
+          "format": "MULTI_TASK",
+          "max_concurrent_runs": 1,
+          "name": "job bar job foo",
+          "queue": {
+            "enabled": true
+          },
+          "tasks": [
+            {
+              "notebook_task": {
+                "notebook_path": "/Workspace/Users/user@example.com/notebook",
+                "source": "WORKSPACE"
+              },
+              "task_key": "main"
+            }
+          ]
+        }
+      }
+    },
+    "resources.jobs.fooj": {
+      "action": "create",
+      "new_state": {
+        "config": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/many-permissions-test/default/state/metadata.json"
+          },
+          "edit_mode": "UI_LOCKED",
+          "format": "MULTI_TASK",
+          "max_concurrent_runs": 1,
+          "name": "job foo",
+          "queue": {
+            "enabled": true
+          },
+          "tasks": [
+            {
+              "notebook_task": {
+                "notebook_path": "/Workspace/Users/user@example.com/notebook",
+                "source": "WORKSPACE"
+              },
+              "task_key": "main"
+            }
+          ]
+        }
+      }
+    },
+    "resources.pipelines.barp": {
+      "depends_on": [
+        {
+          "node": "resources.pipelines.foop",
+          "label": "${resources.pipelines.foop.name}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "config": {
+          "channel": "CURRENT",
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/many-permissions-test/default/state/metadata.json"
+          },
+          "edition": "ADVANCED",
+          "name": "job bar pipeline foo job bar job foo"
+        }
+      }
+    },
+    "resources.pipelines.foop": {
+      "depends_on": [
+        {
+          "node": "resources.jobs.barj",
+          "label": "${resources.jobs.barj.name}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "config": {
+          "channel": "CURRENT",
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/many-permissions-test/default/state/metadata.json"
+          },
+          "edition": "ADVANCED",
+          "name": "pipeline foo job bar job foo"
+        }
+      }
+    }
+  }
+}

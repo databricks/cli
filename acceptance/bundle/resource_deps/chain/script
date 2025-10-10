@@ -1,0 +1,28 @@
+trace $CLI bundle validate
+jq .path < out.requests.txt | sort > out.requests_paths.validate.txt
+rm out.requests.txt
+
+$CLI bundle debug plan > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+jq .path < out.requests.txt | sort > out.requests_paths.plan.txt
+rm out.requests.txt
+
+trace $CLI bundle deploy
+jq -r '.method + " " + .path' < out.requests.txt | grep -v ^GET | grep -v /import-file/ > out.requests_paths.deploy.txt
+jq -c < out.requests.txt | jq 'select(.method != "GET" and (.path | contains("/import-file/") | not) and (.path | contains("/telemetry-ext") | not))' > out.requests.deploy.txt
+rm out.requests.txt
+
+$CLI bundle summary -o json > out.summary.json
+FOOJ_ID=$(jq -r .resources.jobs.fooj.id out.summary.json)
+BARJ_ID=$(jq -r .resources.jobs.barj.id out.summary.json)
+FOOP_ID=$(jq -r .resources.pipelines.foop.id out.summary.json)
+BARP_ID=$(jq -r .resources.pipelines.barp.id out.summary.json)
+echo "$FOOJ_ID:FOOJ_ID" >> ACC_REPLS
+echo "$BARJ_ID:BARJ_ID" >> ACC_REPLS
+echo "$FOOP_ID:FOOP_ID" >> ACC_REPLS
+echo "$BARP_ID:BARP_ID" >> ACC_REPLS
+rm out.summary.json
+
+trace $CLI bundle destroy --auto-approve
+# TODO: Remove sorting once we implement delete order
+jq -r '.method + " " + .path'  < out.requests.txt | grep -vE '(resources.json|tfstate)' | sort > out.requests_paths.destroy.$DATABRICKS_BUNDLE_ENGINE.txt
+rm out.requests.txt
