@@ -1,4 +1,7 @@
-trace $CLI bundle validate
+export JQ_DELETE='
+  .bundle.terraform
+'
+trace $CLI bundle validate -o json | jq -S "del($JQ_DELETE)" > out.validate.json
 jq .path < out.requests.txt | sort > out.requests_paths.validate.txt
 rm out.requests.txt
 
