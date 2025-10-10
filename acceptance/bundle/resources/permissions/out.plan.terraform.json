@@ -1,0 +1,16 @@
+{
+  "plan": {
+    "resources.jobs.barj": {
+      "action": "create"
+    },
+    "resources.jobs.fooj": {
+      "action": "create"
+    },
+    "resources.pipelines.barp": {
+      "action": "create"
+    },
+    "resources.pipelines.foop": {
+      "action": "create"
+    }
+  }
+}

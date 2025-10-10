@@ -1,0 +1,52 @@
+
+>>> [CLI] bundle validate
+Warning: unknown field: tasks
+  at resources.pipelines.barp
+  in databricks.yml:52:7
+
+Name: many-permissions-test
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/many-permissions-test/default
+
+Found 1 warning
+Warning: unknown field: tasks
+  at resources.pipelines.barp
+  in databricks.yml:52:7
+
+
+>>> [CLI] bundle deploy
+Warning: unknown field: tasks
+  at resources.pipelines.barp
+  in databricks.yml:52:7
+
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/many-permissions-test/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+Warning: unknown field: tasks
+  at resources.pipelines.barp
+  in databricks.yml:52:7
+
+
+>>> [CLI] bundle destroy --auto-approve
+Warning: unknown field: tasks
+  at resources.pipelines.barp
+  in databricks.yml:52:7
+
+The following resources will be deleted:
+  delete job barj
+  delete job fooj
+  delete pipeline barp
+  delete pipeline foop
+
+This action will result in the deletion of the following Lakeflow Declarative Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them:
+  delete pipeline barp
+  delete pipeline foop
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/many-permissions-test/default
+
+Deleting files...
+Destroy complete!
