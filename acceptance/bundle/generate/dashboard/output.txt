@@ -1,6 +1,6 @@
 
 >>> [CLI] workspace mkdirs /Workspace/test-[UNIQUE_NAME]
 
->>> [CLI] bundle generate dashboard --existing-id [NUMID] --dashboard-dir out/dashboard --resource-dir out/resource
+>>> [CLI] bundle generate dashboard --existing-id [DASHBOARD_ID] --dashboard-dir out/dashboard --resource-dir out/resource
 Writing dashboard to "out/dashboard/test_dashboard.lvdash.json"
 Writing configuration to "out/resource/test_dashboard.dashboard.yml"
