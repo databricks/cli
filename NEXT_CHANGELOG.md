@@ -6,6 +6,8 @@
 
 ### CLI
 
+* Add the `--configure-serverless` flag to `databricks auth login` to configure Databricks Connect to use serverless.
+
 ### Dependency updates
 
 ### Bundles
