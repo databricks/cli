@@ -1,16 +1,9 @@
 
->>> [CLI] bundle validate
+>>> [CLI] bundle validate -o json
 Warning: unknown field: tasks
   at resources.pipelines.barp
   in databricks.yml:52:7
 
-Name: many-permissions-test
-Target: default
-Workspace:
-  User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/many-permissions-test/default
-
-Found 1 warning
 Warning: unknown field: tasks
   at resources.pipelines.barp
   in databricks.yml:52:7
