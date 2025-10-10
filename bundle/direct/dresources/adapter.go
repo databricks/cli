@@ -177,10 +177,10 @@ func NewAdapter(typedNil any, client *databricks.WorkspaceClient) (*Adapter, err
 	if triggerCall != nil {
 		// Validate FieldTriggers signature: func(bool) map[string]deployplan.ActionType
 		if len(triggerCall.InTypes) != 1 || triggerCall.InTypes[0] != reflect.TypeOf(false) {
-			return nil, fmt.Errorf("FieldTriggers must take a single bool parameter (isLocal)")
+			return nil, errors.New("FieldTriggers must take a single bool parameter (isLocal)")
 		}
 		if len(triggerCall.OutTypes) != 1 {
-			return nil, fmt.Errorf("FieldTriggers must return a single value")
+			return nil, errors.New("FieldTriggers must return a single value")
 		}
 		expectedReturnType := reflect.TypeOf(map[string]deployplan.ActionType{})
 		if triggerCall.OutTypes[0] != expectedReturnType {
