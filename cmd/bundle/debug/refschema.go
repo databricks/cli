@@ -45,6 +45,15 @@ func dumpRemoteSchemas(out io.Writer) error {
 	for _, resourceName := range utils.SortedKeys(adapters) {
 		adapter := adapters[resourceName]
 
+		var resourcePrefix string
+
+		if strings.Contains(resourceName, ".") {
+			// "jobs.permissions" -> "resources.jobs.*.permissions"
+			resourcePrefix = "resources." + strings.ReplaceAll(resourceName, ".", ".*.")
+		} else {
+			resourcePrefix = "resources." + resourceName + ".*"
+		}
+
 		// TODO: fields with bundle: tag has variety of behaviors
 		// id is REMOTE but it shows up in inputType
 		// "url" is remote on some resources
@@ -58,6 +67,7 @@ func dumpRemoteSchemas(out io.Writer) error {
 				if path == nil {
 					return true
 				}
+
 				p := path.String()
 				p = strings.TrimPrefix(p, ".")
 				t := strings.ReplaceAll(fmt.Sprint(typ), "interface {}", "any")
@@ -91,7 +101,7 @@ func dumpRemoteSchemas(out io.Writer) error {
 			byType := pathTypes[p]
 			for _, t := range utils.SortedKeys(byType) {
 				info := formatTags(byType[t])
-				lines = append(lines, fmt.Sprintf("resources.%s.*.%s\t%s\t%s\n", resourceName, p, t, info))
+				lines = append(lines, fmt.Sprintf("%s.%s\t%s\t%s\n", resourcePrefix, p, t, info))
 			}
 		}
 

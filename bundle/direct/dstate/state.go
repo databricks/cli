@@ -31,16 +31,15 @@ type ResourceEntry struct {
 
 // splitKey parses a canonical key back into group and name.
 func splitKey(key string) (group, name string, ok bool) {
-	const prefix = "resources."
-	if !strings.HasPrefix(key, prefix) {
+	items := strings.Split(key, ".")
+	if len(items) != 3 {
+		// e.g. resources.jobs.foo.permissions
 		return "", "", false
 	}
-	rest := strings.TrimPrefix(key, prefix)
-	idx := strings.IndexByte(rest, '.')
-	if idx <= 0 || idx >= len(rest)-1 {
+	if items[0] != "resources" {
 		return "", "", false
 	}
-	return rest[:idx], rest[idx+1:], true
+	return items[1], items[2], true
 }
 
 func (db *DeploymentState) SaveState(key, newID string, state any) error {
