@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"reflect"
 
 	"github.com/databricks/cli/bundle/deployplan"
@@ -187,25 +188,15 @@ func NewAdapter(typedNil any, client *databricks.WorkspaceClient) (*Adapter, err
 		}
 
 		// Call with isLocal=true for local triggers
-		outs, err := triggerCall.Call(true)
-		if err != nil || len(outs) != 1 {
-			return nil, fmt.Errorf("failed to call FieldTriggers(true): %w", err)
-		}
-		fields := outs[0].(map[string]deployplan.ActionType)
-		adapter.fieldTriggersLocal = make(map[string]deployplan.ActionType, len(fields))
-		for k, v := range fields {
-			adapter.fieldTriggersLocal[k] = v
+		adapter.fieldTriggersLocal, err = loadFieldTriggers(triggerCall, true)
+		if err != nil {
+			return nil, err
 		}
 
 		// Call with isLocal=false for remote triggers
-		outs, err = triggerCall.Call(false)
-		if err != nil || len(outs) != 1 {
-			return nil, fmt.Errorf("failed to call FieldTriggers(false): %w", err)
-		}
-		fields = outs[0].(map[string]deployplan.ActionType)
-		adapter.fieldTriggersRemote = make(map[string]deployplan.ActionType, len(fields))
-		for k, v := range fields {
-			adapter.fieldTriggersRemote[k] = v
+		adapter.fieldTriggersRemote, err = loadFieldTriggers(triggerCall, false)
+		if err != nil {
+			return nil, err
 		}
 	}
 
@@ -215,6 +206,18 @@ func NewAdapter(typedNil any, client *databricks.WorkspaceClient) (*Adapter, err
 	}
 
 	return adapter, nil
+}
+
+// loadFieldTriggers calls FieldTriggers with isLocal parameter and returns the resulting map.
+func loadFieldTriggers(triggerCall *calladapt.BoundCaller, isLocal bool) (map[string]deployplan.ActionType, error) {
+	outs, err := triggerCall.Call(isLocal)
+	if err != nil || len(outs) != 1 {
+		return nil, fmt.Errorf("failed to call FieldTriggers(%v): %w", isLocal, err)
+	}
+	fields := outs[0].(map[string]deployplan.ActionType)
+	result := make(map[string]deployplan.ActionType, len(fields))
+	maps.Copy(result, fields)
+	return result, nil
 }
 
 func (a *Adapter) initMethods(resource any) error {
@@ -603,7 +606,7 @@ func (a *Adapter) ClassifyChange(change structdiff.Change, remoteState any, isLo
 	if a.classifyChange != nil {
 		outs, err := a.classifyChange.Call(change, remoteState, isLocal)
 		if err != nil {
-			return deployplan.ActionTypeSkip, err
+			return deployplan.ActionTypeUndefined, err
 		}
 		actionType = outs[0].(deployplan.ActionType)
 	}
