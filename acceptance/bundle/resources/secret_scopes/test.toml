@@ -1,5 +1,6 @@
 Cloud = true
 Local = true
+RecordRequests = false
 
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform"]  # secret scopes not implemented
 

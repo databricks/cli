@@ -1,3 +1,4 @@
 Cloud = true
 Local = true
+RecordRequests = false
 RequiresUnityCatalog = true

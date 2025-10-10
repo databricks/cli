@@ -4,5 +4,7 @@ RecordRequests = false
 RequiresUnityCatalog = true
 
 Ignore = [
-    "databricks.yml"
+    ".databricks",
+    "databricks.yml",
+    "test-file-*.txt",
 ]
