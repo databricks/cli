@@ -2,6 +2,7 @@ package testserver
 
 import (
 	"bytes"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"path"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/database"
+	"github.com/google/uuid"
 
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -61,6 +63,14 @@ func nextID() int64 {
 	}
 
 	return lastID
+}
+
+func nextUUID() string {
+	var b [16]byte
+	binary.BigEndian.PutUint64(b[0:8], uint64(nextID()))
+	binary.BigEndian.PutUint64(b[8:16], uint64(nextID()))
+	u := uuid.Must(uuid.FromBytes(b[:]))
+	return u.String()
 }
 
 type FileEntry struct {

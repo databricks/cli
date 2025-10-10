@@ -97,14 +97,22 @@ depends on the existing profiles you have set in your configuration file
 
 	var loginTimeout time.Duration
 	var configureCluster bool
+	var configureServerless bool
 	cmd.Flags().DurationVar(&loginTimeout, "timeout", defaultTimeout,
 		"Timeout for completing login challenge in the browser")
 	cmd.Flags().BoolVar(&configureCluster, "configure-cluster", false,
 		"Prompts to configure cluster")
+	cmd.Flags().BoolVar(&configureServerless, "configure-serverless", false,
+		"Prompts to configure serverless")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		profileName := cmd.Flag("profile").Value.String()
+
+		// Cluster and Serverless are mutually exclusive.
+		if configureCluster && configureServerless {
+			return errors.New("please either configure serverless or cluster, not both")
+		}
 
 		// If the user has not specified a profile name, prompt for one.
 		if profileName == "" {
@@ -119,20 +127,14 @@ depends on the existing profiles you have set in your configuration file
 			}
 		}
 
+		// Load parameters from the existing profile if any.
 		existingProfile, err := loadProfileByName(ctx, profileName, profile.DefaultProfiler)
 		if err != nil {
 			return err
 		}
-
-		// Set the host and account-id based on the provided arguments and flags.
 		err = setHostAndAccountId(ctx, existingProfile, authArguments, args)
 		if err != nil {
 			return err
-		}
-
-		clusterID := ""
-		if existingProfile != nil {
-			clusterID = existingProfile.ClusterID
 		}
 
 		oauthArgument, err := authArguments.ToOAuthArgument()
@@ -155,7 +157,6 @@ depends on the existing profiles you have set in your configuration file
 			Host:      authArguments.Host,
 			AccountID: authArguments.AccountID,
 			AuthType:  "databricks-cli",
-			ClusterID: clusterID,
 		}
 		databricksCfgFile := os.Getenv("DATABRICKS_CONFIG_FILE")
 		if databricksCfgFile != "" {
@@ -169,28 +170,44 @@ depends on the existing profiles you have set in your configuration file
 			return err
 		}
 
-		if configureCluster {
+		switch {
+		case configureCluster:
 			w, err := databricks.NewWorkspaceClient((*databricks.Config)(&cfg))
 			if err != nil {
 				return err
 			}
-			ctx := cmd.Context()
 			clusterID, err := cfgpickers.AskForCluster(ctx, w,
 				cfgpickers.WithDatabricksConnect(minimalDbConnectVersion))
 			if err != nil {
 				return err
 			}
 			cfg.ClusterID = clusterID
+		case configureServerless:
+			cfg.ClusterID = ""
+			cfg.ServerlessComputeID = "auto"
+		default:
+			// Respect the existing profile if it exists, even if it has
+			// both cluster and serverless configured. Tools relying on
+			// these fields from the profile will need to handle this case.
+			//
+			// TODO: consider whether we should use this an an opportunity
+			// to clean up the profile under the assumption that serverless
+			// is the preferred option.
+			if existingProfile != nil {
+				cfg.ClusterID = existingProfile.ClusterID
+				cfg.ServerlessComputeID = existingProfile.ServerlessComputeID
+			}
 		}
 
 		if profileName != "" {
 			err = databrickscfg.SaveToProfile(ctx, &config.Config{
-				Profile:    profileName,
-				Host:       cfg.Host,
-				AuthType:   cfg.AuthType,
-				AccountID:  cfg.AccountID,
-				ClusterID:  cfg.ClusterID,
-				ConfigFile: cfg.ConfigFile,
+				Profile:             profileName,
+				Host:                cfg.Host,
+				AuthType:            cfg.AuthType,
+				AccountID:           cfg.AccountID,
+				ClusterID:           cfg.ClusterID,
+				ConfigFile:          cfg.ConfigFile,
+				ServerlessComputeID: cfg.ServerlessComputeID,
 			})
 			if err != nil {
 				return err
