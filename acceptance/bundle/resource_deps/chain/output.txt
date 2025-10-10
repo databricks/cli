@@ -1,0 +1,32 @@
+
+>>> [CLI] bundle validate
+Name: many-permissions-test
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/many-permissions-test/default
+
+Validation OK!
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/many-permissions-test/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete job barj
+  delete job fooj
+  delete pipeline barp
+  delete pipeline foop
+
+This action will result in the deletion of the following Lakeflow Declarative Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them:
+  delete pipeline barp
+  delete pipeline foop
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/many-permissions-test/default
+
+Deleting files...
+Destroy complete!

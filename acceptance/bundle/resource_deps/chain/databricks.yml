@@ -1,0 +1,28 @@
+bundle:
+  name: many-permissions-test
+
+sync:
+  exclude:
+    - out*
+
+resources:
+  jobs:
+    fooj:
+      name: job foo
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Workspace/Users/user@example.com/notebook
+            source: WORKSPACE
+    barj:
+      name: job bar ${resources.jobs.fooj.name}
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Workspace/Users/user@example.com/notebook
+            source: WORKSPACE
+  pipelines:
+    foop:
+      name: pipeline foo ${resources.jobs.barj.name}
+    barp:
+      name: job bar ${resources.pipelines.foop.name}
