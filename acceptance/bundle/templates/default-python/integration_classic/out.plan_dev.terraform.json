@@ -1,0 +1,10 @@
+{
+  "plan": {
+    "resources.jobs.project_name_[UNIQUE_NAME]_job": {
+      "action": "create"
+    },
+    "resources.pipelines.project_name_[UNIQUE_NAME]_pipeline": {
+      "action": "create"
+    }
+  }
+}
