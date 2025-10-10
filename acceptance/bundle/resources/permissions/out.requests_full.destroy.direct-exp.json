@@ -1,0 +1,78 @@
+{
+  "method": "DELETE",
+  "path": "/api/2.0/pipelines/[FOOP_ID]"
+}
+{
+  "method": "DELETE",
+  "path": "/api/2.0/pipelines/[BARP_ID]"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/delete",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/many-permissions-test/default",
+    "recursive": true
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/delete",
+  "body": {
+    "job_id": [FOOJ_ID]
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/delete",
+  "body": {
+    "job_id": [BARJ_ID]
+  }
+}
+{
+  "method": "PUT",
+  "path": "/api/2.0/permissions/jobs/[FOOJ_ID]",
+  "body": {
+    "access_control_list": [
+      {
+        "permission_level": "IS_OWNER",
+        "user_name": "[USERNAME]"
+      }
+    ]
+  }
+}
+{
+  "method": "PUT",
+  "path": "/api/2.0/permissions/jobs/[BARJ_ID]",
+  "body": {
+    "access_control_list": [
+      {
+        "permission_level": "IS_OWNER",
+        "user_name": "[USERNAME]"
+      }
+    ]
+  }
+}
+{
+  "method": "PUT",
+  "path": "/api/2.0/permissions/pipelines/[FOOP_ID]",
+  "body": {
+    "access_control_list": [
+      {
+        "permission_level": "IS_OWNER",
+        "user_name": "[USERNAME]"
+      }
+    ]
+  }
+}
+{
+  "method": "PUT",
+  "path": "/api/2.0/permissions/pipelines/[BARP_ID]",
+  "body": {
+    "access_control_list": [
+      {
+        "permission_level": "IS_OWNER",
+        "user_name": "[USERNAME]"
+      }
+    ]
+  }
+}

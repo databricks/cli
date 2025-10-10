@@ -1,0 +1,3 @@
+"/api/2.0/preview/scim/v2/Me"
+"/api/2.0/workspace/get-status"
+"/api/2.0/workspace/get-status"
