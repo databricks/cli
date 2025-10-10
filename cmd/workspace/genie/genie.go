@@ -36,10 +36,13 @@ func New() *cobra.Command {
 
 	// Add methods
 	cmd.AddCommand(newCreateMessage())
+	cmd.AddCommand(newCreateSpace())
 	cmd.AddCommand(newDeleteConversation())
 	cmd.AddCommand(newDeleteConversationMessage())
 	cmd.AddCommand(newExecuteMessageAttachmentQuery())
 	cmd.AddCommand(newExecuteMessageQuery())
+	cmd.AddCommand(newGenerateDownloadFullQueryResult())
+	cmd.AddCommand(newGetDownloadFullQueryResult())
 	cmd.AddCommand(newGetMessage())
 	cmd.AddCommand(newGetMessageAttachmentQueryResult())
 	cmd.AddCommand(newGetMessageQueryResult())
@@ -51,6 +54,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(newSendMessageFeedback())
 	cmd.AddCommand(newStartConversation())
 	cmd.AddCommand(newTrashSpace())
+	cmd.AddCommand(newUpdateSpace())
 
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
@@ -160,6 +164,97 @@ func newCreateMessage() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range createMessageOverrides {
 		fn(cmd, &createMessageReq)
+	}
+
+	return cmd
+}
+
+// start create-space command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createSpaceOverrides []func(
+	*cobra.Command,
+	*dashboards.GenieCreateSpaceRequest,
+)
+
+func newCreateSpace() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createSpaceReq dashboards.GenieCreateSpaceRequest
+	var createSpaceJson flags.JsonFlag
+
+	cmd.Flags().Var(&createSpaceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&createSpaceReq.Description, "description", createSpaceReq.Description, `Optional description.`)
+	cmd.Flags().StringVar(&createSpaceReq.ParentPath, "parent-path", createSpaceReq.ParentPath, `Parent folder path where the space will be registered.`)
+	cmd.Flags().StringVar(&createSpaceReq.Title, "title", createSpaceReq.Title, `Optional title override.`)
+
+	cmd.Use = "create-space WAREHOUSE_ID SERIALIZED_SPACE"
+	cmd.Short = `Create Genie Space.`
+	cmd.Long = `Create Genie Space.
+  
+  Creates a Genie space from a serialized payload.
+
+  Arguments:
+    WAREHOUSE_ID: Warehouse to associate with the new space
+    SERIALIZED_SPACE: Serialized export model for the space contents`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'warehouse_id', 'serialized_space' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := createSpaceJson.Unmarshal(&createSpaceReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		if !cmd.Flags().Changed("json") {
+			createSpaceReq.WarehouseId = args[0]
+		}
+		if !cmd.Flags().Changed("json") {
+			createSpaceReq.SerializedSpace = args[1]
+		}
+
+		response, err := w.Genie.CreateSpace(ctx, createSpaceReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createSpaceOverrides {
+		fn(cmd, &createSpaceReq)
 	}
 
 	return cmd
@@ -405,6 +500,154 @@ func newExecuteMessageQuery() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range executeMessageQueryOverrides {
 		fn(cmd, &executeMessageQueryReq)
+	}
+
+	return cmd
+}
+
+// start generate-download-full-query-result command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var generateDownloadFullQueryResultOverrides []func(
+	*cobra.Command,
+	*dashboards.GenieGenerateDownloadFullQueryResultRequest,
+)
+
+func newGenerateDownloadFullQueryResult() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var generateDownloadFullQueryResultReq dashboards.GenieGenerateDownloadFullQueryResultRequest
+
+	cmd.Use = "generate-download-full-query-result SPACE_ID CONVERSATION_ID MESSAGE_ID ATTACHMENT_ID"
+	cmd.Short = `Generate full query result download.`
+	cmd.Long = `Generate full query result download.
+  
+  Initiates a new SQL execution and returns a download_id that you can use to
+  track the progress of the download. The query result is stored in an external
+  link and can be retrieved using the [Get Download Full Query
+  Result](:method:genie/getdownloadfullqueryresult) API. Warning: Databricks
+  strongly recommends that you protect the URLs that are returned by the
+  EXTERNAL_LINKS disposition. See [Execute
+  Statement](:method:statementexecution/executestatement) for more details.
+
+  Arguments:
+    SPACE_ID: Genie space ID
+    CONVERSATION_ID: Conversation ID
+    MESSAGE_ID: Message ID
+    ATTACHMENT_ID: Attachment ID`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(4)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		generateDownloadFullQueryResultReq.SpaceId = args[0]
+		generateDownloadFullQueryResultReq.ConversationId = args[1]
+		generateDownloadFullQueryResultReq.MessageId = args[2]
+		generateDownloadFullQueryResultReq.AttachmentId = args[3]
+
+		response, err := w.Genie.GenerateDownloadFullQueryResult(ctx, generateDownloadFullQueryResultReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range generateDownloadFullQueryResultOverrides {
+		fn(cmd, &generateDownloadFullQueryResultReq)
+	}
+
+	return cmd
+}
+
+// start get-download-full-query-result command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getDownloadFullQueryResultOverrides []func(
+	*cobra.Command,
+	*dashboards.GenieGetDownloadFullQueryResultRequest,
+)
+
+func newGetDownloadFullQueryResult() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getDownloadFullQueryResultReq dashboards.GenieGetDownloadFullQueryResultRequest
+
+	cmd.Use = "get-download-full-query-result SPACE_ID CONVERSATION_ID MESSAGE_ID ATTACHMENT_ID DOWNLOAD_ID"
+	cmd.Short = `Get download full query result.`
+	cmd.Long = `Get download full query result.
+  
+  After [Generating a Full Query Result
+  Download](:method:genie/getdownloadfullqueryresult) and successfully receiving
+  a download_id, use this API to poll the download progress. When the download
+  is complete, the API returns one or more external links to the query result
+  files. Warning: Databricks strongly recommends that you protect the URLs that
+  are returned by the EXTERNAL_LINKS disposition. You must not set an
+  Authorization header in download requests. When using the EXTERNAL_LINKS
+  disposition, Databricks returns presigned URLs that grant temporary access to
+  data. See [Execute Statement](:method:statementexecution/executestatement) for
+  more details.
+
+  Arguments:
+    SPACE_ID: Genie space ID
+    CONVERSATION_ID: Conversation ID
+    MESSAGE_ID: Message ID
+    ATTACHMENT_ID: Attachment ID
+    DOWNLOAD_ID: Download ID. This ID is provided by the [Generate Download
+      endpoint](:method:genie/generateDownloadFullQueryResult)`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(5)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		getDownloadFullQueryResultReq.SpaceId = args[0]
+		getDownloadFullQueryResultReq.ConversationId = args[1]
+		getDownloadFullQueryResultReq.MessageId = args[2]
+		getDownloadFullQueryResultReq.AttachmentId = args[3]
+		getDownloadFullQueryResultReq.DownloadId = args[4]
+
+		response, err := w.Genie.GetDownloadFullQueryResult(ctx, getDownloadFullQueryResultReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getDownloadFullQueryResultOverrides {
+		fn(cmd, &getDownloadFullQueryResultReq)
 	}
 
 	return cmd
@@ -914,6 +1157,8 @@ func newSendMessageFeedback() *cobra.Command {
 
 	cmd.Flags().Var(&sendMessageFeedbackJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().StringVar(&sendMessageFeedbackReq.Comment, "comment", sendMessageFeedbackReq.Comment, `Optional text feedback that will be stored as a comment.`)
+
 	cmd.Use = "send-message-feedback SPACE_ID CONVERSATION_ID MESSAGE_ID RATING"
 	cmd.Short = `Send message feedback.`
 	cmd.Long = `Send message feedback.
@@ -1140,6 +1385,85 @@ func newTrashSpace() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range trashSpaceOverrides {
 		fn(cmd, &trashSpaceReq)
+	}
+
+	return cmd
+}
+
+// start update-space command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateSpaceOverrides []func(
+	*cobra.Command,
+	*dashboards.GenieUpdateSpaceRequest,
+)
+
+func newUpdateSpace() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateSpaceReq dashboards.GenieUpdateSpaceRequest
+	var updateSpaceJson flags.JsonFlag
+
+	cmd.Flags().Var(&updateSpaceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&updateSpaceReq.Description, "description", updateSpaceReq.Description, `Optional description.`)
+	cmd.Flags().StringVar(&updateSpaceReq.SerializedSpace, "serialized-space", updateSpaceReq.SerializedSpace, `Serialized export model for the space contents (full replacement).`)
+	cmd.Flags().StringVar(&updateSpaceReq.Title, "title", updateSpaceReq.Title, `Optional title override.`)
+	cmd.Flags().StringVar(&updateSpaceReq.WarehouseId, "warehouse-id", updateSpaceReq.WarehouseId, `Optional warehouse override.`)
+
+	cmd.Use = "update-space SPACE_ID"
+	cmd.Short = `Update Genie Space.`
+	cmd.Long = `Update Genie Space.
+  
+  Updates a Genie space with a serialized payload.
+
+  Arguments:
+    SPACE_ID: Genie space ID`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := updateSpaceJson.Unmarshal(&updateSpaceReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		updateSpaceReq.SpaceId = args[0]
+
+		response, err := w.Genie.UpdateSpace(ctx, updateSpaceReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateSpaceOverrides {
+		fn(cmd, &updateSpaceReq)
 	}
 
 	return cmd

@@ -95,8 +95,8 @@ func newGet() *cobra.Command {
   Arguments:
     REQUEST_OBJECT_TYPE: The type of the request object. Can be one of the following: alerts,
       alertsv2, authorization, clusters, cluster-policies, dashboards,
-      dbsql-dashboards, directories, experiments, files, instance-pools, jobs,
-      notebooks, pipelines, queries, registered-models, repos,
+      dbsql-dashboards, directories, experiments, files, genie, instance-pools,
+      jobs, notebooks, pipelines, queries, registered-models, repos,
       serving-endpoints, or warehouses.
     REQUEST_OBJECT_ID: The id of the request object.`
 
@@ -157,8 +157,8 @@ func newGetPermissionLevels() *cobra.Command {
   Arguments:
     REQUEST_OBJECT_TYPE: The type of the request object. Can be one of the following: alerts,
       alertsv2, authorization, clusters, cluster-policies, dashboards,
-      dbsql-dashboards, directories, experiments, files, instance-pools, jobs,
-      notebooks, pipelines, queries, registered-models, repos,
+      dbsql-dashboards, directories, experiments, files, genie, instance-pools,
+      jobs, notebooks, pipelines, queries, registered-models, repos,
       serving-endpoints, or warehouses.
     REQUEST_OBJECT_ID: `
 
@@ -226,8 +226,8 @@ func newSet() *cobra.Command {
   Arguments:
     REQUEST_OBJECT_TYPE: The type of the request object. Can be one of the following: alerts,
       alertsv2, authorization, clusters, cluster-policies, dashboards,
-      dbsql-dashboards, directories, experiments, files, instance-pools, jobs,
-      notebooks, pipelines, queries, registered-models, repos,
+      dbsql-dashboards, directories, experiments, files, genie, instance-pools,
+      jobs, notebooks, pipelines, queries, registered-models, repos,
       serving-endpoints, or warehouses.
     REQUEST_OBJECT_ID: The id of the request object.`
 
@@ -306,8 +306,8 @@ func newUpdate() *cobra.Command {
   Arguments:
     REQUEST_OBJECT_TYPE: The type of the request object. Can be one of the following: alerts,
       alertsv2, authorization, clusters, cluster-policies, dashboards,
-      dbsql-dashboards, directories, experiments, files, instance-pools, jobs,
-      notebooks, pipelines, queries, registered-models, repos,
+      dbsql-dashboards, directories, experiments, files, genie, instance-pools,
+      jobs, notebooks, pipelines, queries, registered-models, repos,
       serving-endpoints, or warehouses.
     REQUEST_OBJECT_ID: The id of the request object.`
 

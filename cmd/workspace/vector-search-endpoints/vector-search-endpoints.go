@@ -70,6 +70,7 @@ func newCreateEndpoint() *cobra.Command {
 	cmd.Flags().Var(&createEndpointJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createEndpointReq.BudgetPolicyId, "budget-policy-id", createEndpointReq.BudgetPolicyId, `The budget policy id to be applied.`)
+	cmd.Flags().StringVar(&createEndpointReq.UsagePolicyId, "usage-policy-id", createEndpointReq.UsagePolicyId, `The usage policy id to be applied once we've migrated to usage policies.`)
 
 	cmd.Use = "create-endpoint NAME ENDPOINT_TYPE"
 	cmd.Short = `Create an endpoint.`

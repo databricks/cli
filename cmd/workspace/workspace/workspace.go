@@ -180,6 +180,7 @@ func newExport() *cobra.Command {
   R_MARKDOWN,
   SOURCE,
 ]`)
+	cmd.Flags().Var(&exportReq.Outputs, "outputs", `This specifies which cell outputs should be included in the export (if the export format allows it). Supported values: [ALL, NONE]`)
 
 	cmd.Use = "export PATH"
 	cmd.Short = `Export a workspace object.`

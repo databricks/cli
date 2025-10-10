@@ -179,11 +179,11 @@ func newDelete() *cobra.Command {
 
 		deleteReq.CustomerManagedKeyId = args[0]
 
-		err = a.EncryptionKeys.Delete(ctx, deleteReq)
+		response, err := a.EncryptionKeys.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -280,22 +280,10 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	cmd.Use = "list"
-	cmd.Short = `Get all encryption key configurations.`
-	cmd.Long = `Get all encryption key configurations.
+	cmd.Short = `List encryption key configuration.`
+	cmd.Long = `List encryption key configuration.
   
-  Gets all customer-managed key configuration objects for an account. If the key
-  is specified as a workspace's managed services customer-managed key,
-  Databricks uses the key to encrypt the workspace's notebooks and secrets in
-  the control plane, in addition to Databricks SQL queries and query history. If
-  the key is specified as a workspace's storage customer-managed key, the key is
-  used to encrypt the workspace's root S3 bucket and optionally can encrypt
-  cluster EBS volumes data in the data plane.
-  
-  **Important**: Customer-managed keys are supported only for some deployment
-  types, subscription types, and AWS regions.
-  
-  This operation is available only if your account is on the E2 version of the
-  platform.`
+  Lists Databricks customer-managed key configurations for an account.`
 
 	cmd.Annotations = make(map[string]string)
 
