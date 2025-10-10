@@ -80,7 +80,7 @@ func (r *ResourceRegisteredModel) DoDelete(ctx context.Context, id string) error
 	})
 }
 
-func (*ResourceRegisteredModel) FieldTriggers() map[string]deployplan.ActionType {
+func (*ResourceRegisteredModel) FieldTriggers(_ bool) map[string]deployplan.ActionType {
 	return map[string]deployplan.ActionType{
 		// The name can technically be updated without recreated. We recreate for now though
 		// to match TF implementation.

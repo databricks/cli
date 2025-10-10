@@ -30,7 +30,7 @@ type ActionType int
 // If case of several options, action with highest severity wins.
 // Note, Create/Delete are handled explicitly and never compared.
 const (
-	ActionTypeUnset ActionType = iota
+	ActionTypeUndefined ActionType = iota
 	ActionTypeSkip
 	ActionTypeResize
 	ActionTypeUpdate
@@ -86,7 +86,7 @@ func (a ActionType) String() string {
 func ActionTypeFromString(s string) ActionType {
 	actionType, ok := nameToAction[s]
 	if !ok {
-		return ActionTypeUnset
+		return ActionTypeUndefined
 	}
 	return actionType
 }

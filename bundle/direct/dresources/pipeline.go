@@ -117,7 +117,7 @@ func (r *ResourcePipeline) DoDelete(ctx context.Context, id string) error {
 	return r.client.Pipelines.DeleteByPipelineId(ctx, id)
 }
 
-func (*ResourcePipeline) FieldTriggers() map[string]deployplan.ActionType {
+func (*ResourcePipeline) FieldTriggers(_ bool) map[string]deployplan.ActionType {
 	return map[string]deployplan.ActionType{
 		"storage":                              deployplan.ActionTypeRecreate,
 		"catalog":                              deployplan.ActionTypeRecreate,

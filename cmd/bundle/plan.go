@@ -85,7 +85,7 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 				// A recreate counts as both a delete and a create
 				deleteCount++
 				createCount++
-			case deployplan.ActionTypeSkip, deployplan.ActionTypeUnset:
+			case deployplan.ActionTypeSkip, deployplan.ActionTypeUndefined:
 				unchangedCount++
 			}
 		}
