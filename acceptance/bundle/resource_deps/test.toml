@@ -5,3 +5,11 @@ Ignore = [
     ".databricks",
     ".gitignore",
 ]
+
+[[Repls]]
+Old = 'Uploading \d+ files \(ignoring \d+ by .gitignore\)'
+New = 'Uploading [NUMID] files (ignoring [NUMID] by .gitignore)'
+
+[[Repls]]
+Old = 'Uploading \d+ files \(ignoring \d+ by .gitignore, \d+ by sync.exclude\)'
+New = 'Uploading [NUMID] files (ignoring [NUMID] by .gitignore, [NUMID] by sync.exclude)'

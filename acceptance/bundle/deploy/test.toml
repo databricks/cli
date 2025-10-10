@@ -3,3 +3,7 @@ Ignore = [
     '.databricks',
     '__pycache__',
 ]
+
+[[Repls]]
+Old = 'Uploading \d+ files \(ignoring \d+ by .gitignore\)'
+New = 'Uploading [NUMID] files (ignoring [NUMID] by .gitignore)'

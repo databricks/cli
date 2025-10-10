@@ -1,1 +1,5 @@
 EnvMatrix.VARIANT = ["empty_resources.yml", "no_resources.yml"]
+
+[[Repls]]
+Old = 'Uploading \d+ files \(ignoring \d+ by .gitignore\)'
+New = 'Uploading [NUMID] files (ignoring [NUMID] by .gitignore)'

@@ -29,3 +29,7 @@ Response.Body = '''
   "spark_version": "13.3.x-scala2.12"
 }
 '''
+
+[[Repls]]
+Old = 'Uploading \d+ files \(ignoring \d+ by .gitignore\)'
+New = 'Uploading [NUMID] files (ignoring [NUMID] by .gitignore)'

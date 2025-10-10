@@ -3,3 +3,7 @@ RecordRequests = true
 [[Repls]]
 Old = '(resources.json|terraform.tfstate)'
 New = 'STATE_FILENAME'
+
+[[Repls]]
+Old = 'Uploading \d+ files \(ignoring \d+ by .gitignore\)'
+New = 'Uploading [NUMID] files (ignoring [NUMID] by .gitignore)'
