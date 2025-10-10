@@ -14,7 +14,7 @@ cat "./home/.databrickscfg"
 # and follows the redirect back to localhost.
 export BROWSER="browser.py"
 
-title "Run auth login with --configure-serverless\n"
+title "Run auth login with --configure-serverless"
 trace $CLI auth login --host $DATABRICKS_HOST --profile DEFAULT --configure-serverless
 
 title "Profile after auth login with --configure-serverless\n"
