@@ -7,8 +7,6 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/structs/structvar"
-	"github.com/databricks/cli/libs/tfpermissions"
-	"github.com/databricks/cli/libs/tfpermissions/entity"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
@@ -106,32 +104,93 @@ func (*ResourcePermissions) PrepareState(input any) *PermissionsState {
 	}
 }
 
+/*
+// GET returns
+type ObjectPermissions struct {
+	AccessControlList []AccessControlResponse `json:"access_control_list,omitempty"`
+
+	ObjectId string `json:"object_id,omitempty"`
+
+	ObjectType string `json:"object_type,omitempty"`
+
+	ForceSendFields []string `json:"-" url:"-"`
+}
+
+type AccessControlResponse struct {
+	// All permissions.
+	AllPermissions []Permission `json:"all_permissions,omitempty"`
+	// Display name of the user or service principal.
+	DisplayName string `json:"display_name,omitempty"`
+	// name of the group
+	GroupName string `json:"group_name,omitempty"`
+	// Name of the service principal.
+	ServicePrincipalName string `json:"service_principal_name,omitempty"`
+	// name of the user
+	UserName string `json:"user_name,omitempty"`
+
+	ForceSendFields []string `json:"-" url:"-"`
+}
+
+type Permission struct {
+	Inherited bool `json:"inherited,omitempty"`
+
+	InheritedFromObject []string `json:"inherited_from_object,omitempty"`
+
+	PermissionLevel PermissionLevel `json:"permission_level,omitempty"`
+
+	ForceSendFields []string `json:"-" url:"-"`
+}
+
+
+
+
+
+*/
+
 func (r *ResourcePermissions) DoRefresh(ctx context.Context, id string) (*PermissionsState, error) {
-	permConfig, err := tfpermissions.GetResourcePermissionsFromId(id)
+	idParts := strings.Split(id, "/")
+	if len(idParts) != 3 { // "/jobs/123"
+		return nil, fmt.Errorf("cannot parse id: %q", id)
+	}
+
+	extractedType := idParts[1]
+	extractedID := idParts[2]
+
+	acl, err := r.client.Permissions.Get(ctx, iam.GetPermissionRequest{
+		RequestObjectId:   extractedID,
+		RequestObjectType: extractedType,
+	})
+
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO: handle this
-	existing := entity.PermissionsEntity{
-		ObjectType:        "",
-		AccessControlList: nil,
-	}
-	me := " this must never match existing user !@#$%"
-
-	response, err := tfpermissions.NewPermissionsAPI(r.client).Read(ctx, id, permConfig, existing, me)
-	if err != nil {
-		return nil, err
-	}
-
-	return &PermissionsState{
+	result := PermissionsState{
 		ObjectID:    id,
-		Permissions: response.AccessControlList,
-	}, nil
+		Permissions: nil,
+	}
+
+	for _, accessControl := range acl.AccessControlList {
+		for _, permission := range accessControl.AllPermissions {
+			// Inherited permissions can be ignored, as they are not set by the user (following TF)
+			if permission.Inherited {
+				continue
+			}
+			result.Permissions = append(result.Permissions, iam.AccessControlRequest{
+				GroupName:            accessControl.GroupName,
+				UserName:             accessControl.UserName,
+				ServicePrincipalName: accessControl.ServicePrincipalName,
+				PermissionLevel:      permission.PermissionLevel,
+			})
+		}
+	}
+
+	return &result, nil
 }
 
 // DoCreate calls https://docs.databricks.com/api/workspace/jobs/setjobpermissions.
 func (r *ResourcePermissions) DoCreate(ctx context.Context, newState *PermissionsState) (string, error) {
+	// should we remember the default here?
 	err := r.DoUpdate(ctx, newState.ObjectID, newState)
 	if err != nil {
 		return "", err
@@ -141,24 +200,32 @@ func (r *ResourcePermissions) DoCreate(ctx context.Context, newState *Permission
 }
 
 // DoUpdate calls https://docs.databricks.com/api/workspace/jobs/setjobpermissions.
-func (r *ResourcePermissions) DoUpdate(ctx context.Context, id string, newState *PermissionsState) error {
-	permConfig, err := tfpermissions.GetResourcePermissionsFromId(id)
-	if err != nil {
-		return fmt.Errorf("getting permissions config for %q: %w", id, err)
+func (r *ResourcePermissions) DoUpdate(ctx context.Context, _ string, newState *PermissionsState) error {
+	idParts := strings.Split(newState.ObjectID, "/")
+	if len(idParts) != 3 { // "/jobs/123"
+		return fmt.Errorf("cannot parse id: %q", newState.ObjectID)
 	}
 
-	entity := entity.PermissionsEntity{
-		ObjectType:        permConfig.ObjectType(),
+	extractedType := idParts[1]
+	extractedID := idParts[2]
+
+	_, err := r.client.Permissions.Set(ctx, iam.SetObjectPermissions{
+		RequestObjectId:   extractedID,
+		RequestObjectType: extractedType,
 		AccessControlList: newState.Permissions,
-	}
+	})
 
-	return tfpermissions.NewPermissionsAPI(r.client).Update(ctx, id, entity, permConfig)
+	return err
 }
 
-// DoDelete clears ACLs through https://docs.databricks.com/api/workspace/jobs/setjobpermissions.
+// DoDelete is activated in 2 distinct cases:
+// 1) 'permissions' field is deleted in DABs config. In that case terraform would restore the default permissions (IS_OWNER for current user).
+// 2) the parent resource is deleted; in that case there is no need to do anything; parent resource deletion is enough.
+// Let's do nothing in both cases. If user no longer wishes to manage permissions with DABs they can go ahead and manage
+// it themselves. Trying to fix permissions back requires
+// - making assumptions on what it should look like
+// - storing current user somewhere or storing original permissions somewhere
 func (r *ResourcePermissions) DoDelete(ctx context.Context, id string) error {
-	return r.DoUpdate(ctx, id, &PermissionsState{
-		ObjectID:    id,
-		Permissions: nil,
-	})
+	// high performance delete implementation:
+	return nil
 }

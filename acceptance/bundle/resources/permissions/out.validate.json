@@ -26,6 +26,10 @@
           {
             "group_name": "data-team",
             "level": "CAN_MANAGE"
+          },
+          {
+            "level": "IS_OWNER",
+            "user_name": "[USERNAME]"
           }
         ],
         "queue": {
@@ -58,6 +62,10 @@
           {
             "group_name": "data-team",
             "level": "CAN_MANAGE"
+          },
+          {
+            "level": "IS_OWNER",
+            "user_name": "[USERNAME]"
           }
         ],
         "queue": {
@@ -91,6 +99,10 @@
           {
             "group_name": "data-team",
             "level": "CAN_MANAGE"
+          },
+          {
+            "level": "IS_OWNER",
+            "user_name": "[USERNAME]"
           }
         ]
       },
@@ -118,6 +130,10 @@
           {
             "level": "CAN_MANAGE",
             "user_name": "admin@databricks.com"
+          },
+          {
+            "level": "IS_OWNER",
+            "user_name": "[USERNAME]"
           }
         ]
       }
