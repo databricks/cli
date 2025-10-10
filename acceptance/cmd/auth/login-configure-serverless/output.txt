@@ -1,5 +1,6 @@
 
-=== Initial profile with cluster_id[DEFAULT]
+=== Initial profile with cluster_id
+[DEFAULT]
 host = [DATABRICKS_URL]
 cluster_id = existing-cluster-123
 
@@ -7,7 +8,8 @@ cluster_id = existing-cluster-123
 >>> [CLI] auth login --host [DATABRICKS_URL] --profile DEFAULT --configure-serverless
 Profile DEFAULT was successfully saved
 
-=== Profile after auth login with --configure-serverless[DEFAULT]
+=== Profile after auth login with --configure-serverless
+[DEFAULT]
 host                  = [DATABRICKS_URL]
 serverless_compute_id = auto
 auth_type             = databricks-cli

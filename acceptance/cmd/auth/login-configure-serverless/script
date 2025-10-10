@@ -7,17 +7,17 @@ host = $DATABRICKS_HOST
 cluster_id = existing-cluster-123
 EOF
 
-title "Initial profile with cluster_id"
+title "Initial profile with cluster_id\n"
 cat "./home/.databrickscfg"
 
 # Use a fake browser that performs a GET on the authorization URL
 # and follows the redirect back to localhost.
 export BROWSER="browser.py"
 
-title "Run auth login with --configure-serverless"
+title "Run auth login with --configure-serverless\n"
 trace $CLI auth login --host $DATABRICKS_HOST --profile DEFAULT --configure-serverless
 
-title "Profile after auth login with --configure-serverless"
+title "Profile after auth login with --configure-serverless\n"
 cat "./home/.databrickscfg"
 
 # Track the .databrickscfg file that was created to surface changes.
