@@ -1,5 +1,6 @@
 Cloud = true
 Local = true
+RecordRequests = true
 
 [[Repls]]
 Old = '\d{3,}'
