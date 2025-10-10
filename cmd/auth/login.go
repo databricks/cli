@@ -111,7 +111,7 @@ depends on the existing profiles you have set in your configuration file
 
 		// Cluster and Serverless are mutually exclusive.
 		if configureCluster && configureServerless {
-			return errors.New("please either configure serverless (recommended) or cluster, not both")
+			return errors.New("please either configure serverless or cluster, not both")
 		}
 
 		// If the user has not specified a profile name, prompt for one.
