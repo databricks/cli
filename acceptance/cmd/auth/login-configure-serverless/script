@@ -1,6 +1,6 @@
 sethome "./home"
 
-# Create an initial profile with cluster_id
+# Create an initial profile with cluster_id to be cleared out.
 cat > "./home/.databrickscfg" <<EOF
 [DEFAULT]
 host = $DATABRICKS_HOST
