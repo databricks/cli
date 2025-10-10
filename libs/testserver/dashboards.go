@@ -1,12 +1,29 @@
 package testserver
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
+	"fmt"
+	"path"
+	"path/filepath"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
+
+// Generate 32 character hex string for dashboard ID
+func generateDashboardId() (string, error) {
+	randomBytes := make([]byte, 16)
+	_, err := rand.Read(randomBytes)
+	if err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(randomBytes), nil
+}
 
 func (s *FakeWorkspace) DashboardCreate(req Request) Response {
 	defer s.LockUnlock()()
@@ -18,16 +35,41 @@ func (s *FakeWorkspace) DashboardCreate(req Request) Response {
 		}
 	}
 
-	// Lakeview API strips hyphens from a uuid for dashboards
-	dashboard.DashboardId = strings.ReplaceAll(nextUUID(), "-", "")
+	if _, ok := s.directories[dashboard.ParentPath]; !ok {
+		return Response{
+			StatusCode: 404,
+			Body: map[string]string{
+				"message": fmt.Sprintf("Path (%s) doesn't exist.", dashboard.ParentPath),
+			},
+		}
+	}
+
+	var err error
+	dashboard.DashboardId, err = generateDashboardId()
+	if err != nil {
+		return Response{
+			StatusCode: 500,
+			Body: map[string]string{
+				"message": "Failed to generate dashboard ID",
+			},
+		}
+	}
 
 	// All dashboards are active by default:
 	dashboard.LifecycleState = dashboards.LifecycleStateActive
+
+	// Remove /Workspace prefix from parent_path. This matches the remote behavior.
+	if strings.HasPrefix(dashboard.ParentPath, "/Workspace/") {
+		dashboard.ParentPath = strings.TrimPrefix(dashboard.ParentPath, "/Workspace")
+	}
 
 	// Change path field if parent_path is provided
 	if dashboard.ParentPath != "" {
 		dashboard.Path = dashboard.ParentPath + "/" + dashboard.DisplayName + ".lvdash.json"
 	}
+
+	dashboard.CreateTime = strings.TrimSuffix(time.Now().UTC().Format(time.RFC3339), "Z")
+	dashboard.UpdateTime = dashboard.CreateTime
 
 	// Parse serializedDashboard into json and put it back as a string
 	if dashboard.SerializedDashboard != "" {
@@ -42,46 +84,76 @@ func (s *FakeWorkspace) DashboardCreate(req Request) Response {
 				}
 			}
 			if updatedContent, err := json.Marshal(dashboardContent); err == nil {
-				dashboard.SerializedDashboard = string(updatedContent)
+				dashboard.SerializedDashboard = string(updatedContent) + "\n"
 			}
 		}
 	}
+	dashboard.Etag = "80611980"
 
 	s.Dashboards[dashboard.DashboardId] = dashboard
-	s.files[dashboard.Path] = FileEntry{
+	workspacePath := path.Join("/Workspace", dashboard.Path)
+	s.files[workspacePath] = FileEntry{
 		Info: workspace.ObjectInfo{
 			ObjectType: "DASHBOARD",
-			Path:       dashboard.Path,
-			ObjectId:   nextID(),
+			// Include the /Workspace prefix for workspace get-status API.
+			Path:       workspacePath,
+			ResourceId: dashboard.DashboardId,
 		},
 		Data: []byte(dashboard.SerializedDashboard),
 	}
 
 	return Response{
-		Body: dashboards.Dashboard{
-			DashboardId: dashboard.DashboardId,
-			Etag:        nextUUID(),
-		},
+		Body: dashboard,
 	}
 }
 
 func (s *FakeWorkspace) DashboardUpdate(req Request) Response {
 	defer s.LockUnlock()()
 
-	var dashboard dashboards.Dashboard
-	if err := json.Unmarshal(req.Body, &dashboard); err != nil {
+	var updateReq dashboards.Dashboard
+	if err := json.Unmarshal(req.Body, &updateReq); err != nil {
 		return Response{
 			StatusCode: 400,
 		}
 	}
 
-	// Update the etag for the dashboard.
-	dashboard.Etag = nextUUID()
-
-	// All dashboards are active by default:
-	dashboard.LifecycleState = dashboards.LifecycleStateActive
-
 	dashboardId := req.Vars["dashboard_id"]
+	dashboard, ok := s.Dashboards[dashboardId]
+	if !ok {
+		return Response{
+			StatusCode: 404,
+		}
+	}
+
+	// Update etag.
+	prevEtag, err := strconv.Atoi(dashboard.Etag)
+	if err != nil {
+		return Response{
+			Body: map[string]string{
+				"message": "Invalid etag: " + dashboard.Etag,
+			},
+			StatusCode: 400,
+		}
+	}
+	nextEtag := prevEtag + 1
+	dashboard.Etag = strconv.Itoa(nextEtag)
+
+	// Update the dashboard.
+	dashboard.LifecycleState = dashboards.LifecycleStateActive
+	if updateReq.DisplayName != "" {
+		dashboard.DisplayName = updateReq.DisplayName
+		dir := filepath.Dir(dashboard.Path)
+		base := updateReq.DisplayName + ".lvdash.json"
+		dashboard.Path = filepath.Join(dir, base)
+	}
+	if updateReq.SerializedDashboard != "" {
+		dashboard.SerializedDashboard = updateReq.SerializedDashboard
+	}
+	if updateReq.WarehouseId != "" {
+		dashboard.WarehouseId = updateReq.WarehouseId
+	}
+	dashboard.UpdateTime = time.Now().UTC().Format(time.RFC3339)
+
 	s.Dashboards[dashboardId] = dashboard
 
 	return Response{
@@ -92,16 +164,41 @@ func (s *FakeWorkspace) DashboardUpdate(req Request) Response {
 func (s *FakeWorkspace) DashboardPublish(req Request) Response {
 	defer s.LockUnlock()()
 
-	var dashboard dashboards.Dashboard
-	if err := json.Unmarshal(req.Body, &dashboard); err != nil {
+	var publishReq dashboards.PublishRequest
+	if err := json.Unmarshal(req.Body, &publishReq); err != nil {
 		return Response{
 			StatusCode: 400,
 		}
 	}
 
+	dashboardId := req.Vars["dashboard_id"]
+	dashboard, ok := s.Dashboards[dashboardId]
+	if !ok {
+		return Response{
+			StatusCode: 404,
+		}
+	}
+
+	publishedDashboard := dashboards.PublishedDashboard{
+		WarehouseId:      dashboard.WarehouseId,
+		DisplayName:      dashboard.DisplayName,
+		EmbedCredentials: publishReq.EmbedCredentials,
+	}
+
+	if publishReq.WarehouseId != "" {
+		publishedDashboard.WarehouseId = publishReq.WarehouseId
+	}
+	if publishReq.EmbedCredentials {
+		publishedDashboard.EmbedCredentials = publishReq.EmbedCredentials
+	}
+
+	s.PublishedDashboards[dashboardId] = publishedDashboard
+
 	return Response{
 		Body: dashboards.PublishedDashboard{
-			WarehouseId: dashboard.WarehouseId,
+			WarehouseId:      publishedDashboard.WarehouseId,
+			DisplayName:      publishedDashboard.DisplayName,
+			EmbedCredentials: publishedDashboard.EmbedCredentials,
 		},
 	}
 }
