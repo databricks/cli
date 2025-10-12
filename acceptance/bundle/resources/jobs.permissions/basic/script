@@ -3,12 +3,6 @@ print_requests() {
     rm out.requests.txt
 }
 
-print_sorted_requests() {
-    jq -c < out.requests.txt | sort | jq --sort-keys 'select(.path | contains("/jobs/")) | select(.method != "GET")'
-    rm out.requests.txt
-}
-
-
 cp databricks.yml databricks.yml.saved
 trace $CLI bundle debug plan > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
@@ -39,10 +33,12 @@ title "Delete the whole block and deploy again\n"
 grep -v PERMISSIONS databricks.yml > tmp.yml && mv tmp.yml databricks.yml
 trace $CLI bundle debug plan > out.plan_delete_all.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
-trace print_sorted_requests > out.requests_delete_all.json
+trace print_requests > out.requests_delete_all.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle plan
 
 title "Restore original config\n"
+trace diff.py databricks.yml.saved databricks.yml
+
 mv databricks.yml.saved databricks.yml
 trace $CLI bundle debug plan > out.plan_restore.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy

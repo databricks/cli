@@ -80,31 +80,31 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 === Delete the whole block and deploy again
 
 >>> [CLI] bundle debug plan
-Warning: unknown field: level
-  at resources.jobs.job_with_permissions.tasks[1]
-  in databricks.yml:13:11
-
 
 >>> [CLI] bundle deploy
-Warning: unknown field: level
-  at resources.jobs.job_with_permissions.tasks[1]
-  in databricks.yml:13:11
-
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/jobs-permissions-test/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_sorted_requests
+>>> print_requests
 
 >>> [CLI] bundle plan
-Warning: unknown field: level
-  at resources.jobs.job_with_permissions.tasks[1]
-  in databricks.yml:13:11
-
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 === Restore original config
+
+>>> diff.py databricks.yml.saved databricks.yml
+--- databricks.yml.saved
++++ databricks.yml
+@@ -11,7 +11,2 @@
+             notebook_path: /Workspace/Users/user@example.com/notebook
+             source: WORKSPACE # otherwise TF implementation adds this to request and triggers diff
+-      permissions: # PERMISSIONS
+-        - level: CAN_VIEW # PERMISSIONS
+-          user_name: viewer@example.com # PERMISSIONS
+-        - level: CAN_MANAGE # DELETE_ONE
+-          group_name: data-team # DELETE_ONE
 
 >>> [CLI] bundle debug plan
 
