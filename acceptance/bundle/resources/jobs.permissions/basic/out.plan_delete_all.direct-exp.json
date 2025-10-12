@@ -1,34 +1,7 @@
 {
   "plan": {
     "resources.jobs.job_with_permissions": {
-      "action": "update",
-      "new_state": {
-        "config": {
-          "deployment": {
-            "kind": "BUNDLE",
-            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/jobs-permissions-test/default/state/metadata.json"
-          },
-          "edit_mode": "UI_LOCKED",
-          "format": "MULTI_TASK",
-          "max_concurrent_runs": 1,
-          "name": "job with permissions",
-          "queue": {
-            "enabled": true
-          },
-          "tasks": [
-            {
-              "task_key": ""
-            },
-            {
-              "notebook_task": {
-                "notebook_path": "/Workspace/Users/user@example.com/notebook",
-                "source": "WORKSPACE"
-              },
-              "task_key": "main"
-            }
-          ]
-        }
-      },
+      "action": "skip",
       "remote_state": {
         "creator_user_name": "[USERNAME]",
         "job_id": [JOB_ID],
@@ -53,13 +26,6 @@
               "task_key": "main"
             }
           ]
-        }
-      },
-      "changes": {
-        "local": {
-          "tasks": {
-            "action": "update"
-          }
         }
       }
     },

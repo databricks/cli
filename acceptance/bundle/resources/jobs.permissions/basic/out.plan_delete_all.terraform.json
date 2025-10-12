@@ -1,7 +1,7 @@
 {
   "plan": {
     "resources.jobs.job_with_permissions": {
-      "action": "update"
+      "action": "skip"
     }
   }
 }

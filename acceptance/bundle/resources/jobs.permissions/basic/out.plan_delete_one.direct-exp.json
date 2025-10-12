@@ -44,6 +44,10 @@
             {
               "permission_level": "CAN_MANAGE",
               "user_name": "viewer@example.com"
+            },
+            {
+              "permission_level": "IS_OWNER",
+              "user_name": "[USERNAME]"
             }
           ]
         }
@@ -67,11 +71,6 @@
       },
       "changes": {
         "local": {
-          "permissions": {
-            "action": "update"
-          }
-        },
-        "remote": {
           "permissions": {
             "action": "update"
           }

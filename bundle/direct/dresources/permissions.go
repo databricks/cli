@@ -160,7 +160,6 @@ func (r *ResourcePermissions) DoRefresh(ctx context.Context, id string) (*Permis
 		RequestObjectId:   extractedID,
 		RequestObjectType: extractedType,
 	})
-
 	if err != nil {
 		return nil, err
 	}

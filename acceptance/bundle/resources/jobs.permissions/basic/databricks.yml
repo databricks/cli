@@ -11,7 +11,7 @@ resources:
             notebook_path: /Workspace/Users/user@example.com/notebook
             source: WORKSPACE # otherwise TF implementation adds this to request and triggers diff
       permissions: # PERMISSIONS
-        - level: CAN_VIEW # PERMISSONS
+        - level: CAN_VIEW # PERMISSIONS
           user_name: viewer@example.com # PERMISSIONS
         - level: CAN_MANAGE # DELETE_ONE
           group_name: data-team # DELETE_ONE
