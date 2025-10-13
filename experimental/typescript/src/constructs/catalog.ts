@@ -1,6 +1,5 @@
-import { DatabaseCatalogParams } from "@databricks/bundles/database_catalogs";
-import { Variable, VariableOr } from "@databricks/bundles";
-import { DatabaseCatalog as BaseDatabaseCatalog } from "@databricks/bundles/database_catalogs";
+import { DatabaseCatalog as BaseDatabaseCatalog, type DatabaseCatalogParams } from "../../generated/database_catalogs/index.js";
+import { Variable } from "../core/variable.js";
 
 export class DatabaseCatalog extends BaseDatabaseCatalog {
   constructor(name: string, params: DatabaseCatalogParams) {

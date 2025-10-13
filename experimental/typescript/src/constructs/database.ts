@@ -1,5 +1,6 @@
-import { DatabaseInstance as BaseDatabaseInstance, type DatabaseInstanceParams } from "@databricks/bundles/database_instances";
-import { Variable, VariableOr } from "@databricks/bundles";
+import { DatabaseInstance as BaseDatabaseInstance, type DatabaseInstanceParams } from "../../generated/database_instances/index.js";
+import { Variable } from "../core/variable.js";
+import type { VariableOr } from "../core/variable.js";
 
 export class Database extends BaseDatabaseInstance {
   readonly resourceName: VariableOr<string>;

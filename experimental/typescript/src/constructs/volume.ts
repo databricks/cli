@@ -1,5 +1,6 @@
-import { Bundle, VariableOr } from "@databricks/bundles";
-import { Volume as BaseVolume, type VolumeParams } from "@databricks/bundles/volumes";
+import { Bundle } from "../core/bundle.js";
+import type { VariableOr } from "../core/variable.js";
+import { Volume as BaseVolume, type VolumeParams } from "../../generated/volumes/index.js";
 
 export class Volume extends BaseVolume {
   readonly resourceName: VariableOr<string>;

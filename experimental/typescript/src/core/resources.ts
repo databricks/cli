@@ -23,6 +23,7 @@ import type { Volume } from "../../generated/volumes/index.js";
 import type { Resource } from "./resource.js";
 import type { DatabaseInstance } from "../../generated/database_instances/index.js";
 import type { DatabaseCatalog } from "../../generated/database_catalogs/index.js";
+import type { SqlWarehouse } from "../../generated/sql_warehouses/index.js";
 
 /**
  * Enum of all supported resource types for type-safe resource management
@@ -41,7 +42,8 @@ export type ResourceType =
   | "schemas"
   | "volumes"
   | "database_instances"
-  | "database_catalogs";
+  | "database_catalogs"
+  | "sql_warehouses";
 
 /**
  * Type mapping from ResourceType enum to actual resource types
@@ -61,6 +63,7 @@ export type ResourceTypeMap = {
   volumes: Volume;
   database_instances: DatabaseInstance;
   database_catalogs: DatabaseCatalog;
+  sql_warehouses: SqlWarehouse;
 };
 
 /**
@@ -121,6 +124,7 @@ export class Resources {
     this.registerResourceType<Volume>("volumes");
     this.registerResourceType<DatabaseInstance>("database_instances");
     this.registerResourceType<DatabaseCatalog>("database_catalogs");
+    this.registerResourceType<SqlWarehouse>("sql_warehouses");
   }
 
   /**

@@ -29,6 +29,7 @@ const MAIN_RESOURCES = [
   "resources.Volume",
   "resources.DatabaseInstance",
   "resources.DatabaseCatalog",
+  "resources.SqlWarehouse",
 ];
 
 // Namespaces to load from the schema
@@ -44,6 +45,8 @@ const LOADED_NAMESPACES = [
   "apps",
   "database",
   "database_catalogs",
+  "sql_warehouses",
+  "sql",
 ];
 
 // Type renames

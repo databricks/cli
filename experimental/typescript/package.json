@@ -40,6 +40,38 @@
     "./schemas": {
       "types": "./dist/generated/schemas/index.d.ts",
       "import": "./dist/generated/schemas/index.js"
+    },
+    "./database_instances": {
+      "types": "./dist/generated/database_instances/index.d.ts",
+      "import": "./dist/generated/database_instances/index.js"
+    },
+    "./database_catalogs": {
+      "types": "./dist/generated/database_catalogs/index.d.ts",
+      "import": "./dist/generated/database_catalogs/index.js"
+    },
+    "./sql_warehouses": {
+      "types": "./dist/generated/sql_warehouses/index.d.ts",
+      "import": "./dist/generated/sql_warehouses/index.js"
+    },
+    "./constructs/app": {
+      "types": "./dist/src/constructs/app.d.ts",
+      "import": "./dist/src/constructs/app.js"
+    },
+    "./constructs/volume": {
+      "types": "./dist/src/constructs/volume.d.ts",
+      "import": "./dist/src/constructs/volume.js"
+    },
+    "./constructs/database": {
+      "types": "./dist/src/constructs/database.d.ts",
+      "import": "./dist/src/constructs/database.js"
+    },
+    "./constructs/catalog": {
+      "types": "./dist/src/constructs/catalog.d.ts",
+      "import": "./dist/src/constructs/catalog.js"
+    },
+    "./constructs/warehouse": {
+      "types": "./dist/src/constructs/warehouse.d.ts",
+      "import": "./dist/src/constructs/warehouse.js"
     }
   },
   "scripts": {
@@ -69,6 +101,7 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
+    "yaml": "^2.8.1",
     "zod": "^3.23.8"
   },
   "devDependencies": {

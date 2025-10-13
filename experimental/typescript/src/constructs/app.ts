@@ -1,9 +1,9 @@
-import { App as BaseApp, type AppParams } from "@databricks/bundles/apps";
+import { App as BaseApp, type AppParams } from "../../generated/apps/index.js";
 import path from "path";
 import { stringify } from "yaml";
 import fs from "fs";
-import { Bundle } from "@databricks/bundles";
-import { Workspace } from "@databricks/bundles";
+import { Bundle } from "../core/bundle.js";
+import { Workspace } from "../core/workspace.js";
 
 interface AppExtraParams {
   env?: { [key: string]: string };
