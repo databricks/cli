@@ -118,13 +118,9 @@ func newCreateLibrary() *cobra.Command {
 	var createLibraryJson flags.JsonFlag
 
 	var createLibrarySkipWait bool
-	var createLibraryWait bool
-	var createLibraryStatus bool
 	var createLibraryTimeout time.Duration
 
 	cmd.Flags().BoolVar(&createLibrarySkipWait, "no-wait", createLibrarySkipWait, `do not wait to reach DONE state`)
-	cmd.Flags().BoolVar(&createLibraryWait, "wait", createLibraryWait, `wait for an existing operation to complete`)
-	cmd.Flags().BoolVar(&createLibraryStatus, "status", createLibraryStatus, `get the status of an existing operation`)
 	cmd.Flags().DurationVar(&createLibraryTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach DONE state`)
 
 	cmd.Flags().Var(&createLibraryJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -132,27 +128,24 @@ func newCreateLibrary() *cobra.Command {
 	cmd.Flags().BoolVar(&createLibraryReq.Library.ContainsSauce, "contains-sauce", createLibraryReq.Library.ContainsSauce, `Whether the resource contains sauce.`)
 	cmd.Flags().Int64Var(&createLibraryReq.Library.LegCount, "leg-count", createLibraryReq.Library.LegCount, `Count of legs in the resource.`)
 
-	cmd.Use = "create-library NAME [OPERATION_NAME]"
+	cmd.Use = "create-library NAME"
 	cmd.Short = `Create a Library Resource.`
 	cmd.Long = `Create a Library Resource.
+  
+  This is a long-running operation. By default, the command waits for the
+  operation to complete. Use --no-wait to return immediately with the raw
+  operation details. The operation's 'name' field can then be used to poll for
+  completion using the get-operation command.
 
   Arguments:
     NAME: Name of the Resource. Must contain only: - alphanumeric characters -
       underscores - hyphens
 
-      Note: The name must be unique within the scope of the resource.
-    OPERATION_NAME: (Optional) The name of the operation to wait for or check status.
-      Required when using --wait or --status flags.`
+      Note: The name must be unique within the scope of the resource.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		// For --wait or --status, we need exactly 1 arg (operation name)
-		if cmd.Flags().Changed("wait") || cmd.Flags().Changed("status") {
-			check := root.ExactArgs(1)
-			return check(cmd, args)
-		}
-
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
@@ -169,56 +162,26 @@ func newCreateLibrary() *cobra.Command {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
+		// No-wait mode: start operation and return immediately
+		if cmd.Flags().Changed("json") {
+			diags := createLibraryJson.Unmarshal(&createLibraryReq.Library)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		if !cmd.Flags().Changed("json") {
+			createLibraryReq.Library.Name = args[0]
+		}
+
 		// Determine which mode to execute based on flags
 		switch {
-		case createLibraryStatus:
-			// Status mode: get operation status
-			operationName := args[0]
-			operation, err := w.QualityMonitorV2.GetOperation(ctx, qualitymonitorv2.GetOperationRequest{
-				Name: operationName,
-			})
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, operation)
-
-		case createLibraryWait:
-			// Wait mode: wait for existing operation
-			operationName := args[0]
-			// Get the operation first to construct the wait object
-			operation, err := w.QualityMonitorV2.GetOperation(ctx, qualitymonitorv2.GetOperationRequest{
-				Name: operationName,
-			})
-			if err != nil {
-				return err
-			}
-
-			// Manually poll the operation until completion
-			opts := &lro.LroOptions{Timeout: createLibraryTimeout}
-			result, err := pollOperation(ctx, w, operation, opts)
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, result)
-
 		case createLibrarySkipWait:
-			// No-wait mode: start operation and return immediately
-			if cmd.Flags().Changed("json") {
-				diags := createLibraryJson.Unmarshal(&createLibraryReq.Library)
-				if diags.HasError() {
-					return diags.Error()
-				}
-				if len(diags) > 0 {
-					err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
-					if err != nil {
-						return err
-					}
-				}
-			}
-			if !cmd.Flags().Changed("json") {
-				createLibraryReq.Library.Name = args[0]
-			}
-
 			wait, err := w.QualityMonitorV2.CreateLibrary(ctx, createLibraryReq)
 			if err != nil {
 				return err
@@ -234,23 +197,6 @@ func newCreateLibrary() *cobra.Command {
 			return cmdio.Render(ctx, operation)
 
 		default:
-			// Default mode: start operation and wait for completion
-			if cmd.Flags().Changed("json") {
-				diags := createLibraryJson.Unmarshal(&createLibraryReq.Library)
-				if diags.HasError() {
-					return diags.Error()
-				}
-				if len(diags) > 0 {
-					err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
-					if err != nil {
-						return err
-					}
-				}
-			}
-			if !cmd.Flags().Changed("json") {
-				createLibraryReq.Library.Name = args[0]
-			}
-
 			wait, err := w.QualityMonitorV2.CreateLibrary(ctx, createLibraryReq)
 			if err != nil {
 				return err
