@@ -37,7 +37,7 @@ func (v *filesToSync) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 	}
 
 	// If there are files to sync, we don't need to show any warnings.
-	if len(fl) != 0 {
+	if len(fl.Files) != 0 {
 		return nil
 	}
 

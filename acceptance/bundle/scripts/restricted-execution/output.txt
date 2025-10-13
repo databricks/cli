@@ -11,7 +11,8 @@ Executing 'postbuild' script
 postbuild value_from_env
 Executing 'predeploy' script
 predeploy value_from_env
-Uploading 5 files (ignoring 1 by .gitignore) to /Workspace/Users/[USERNAME]/.bundle/scripts_with_restricted_execution/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/scripts_with_restricted_execution/default/files...
+Uploaded 5 files (ignored 1 by .gitignore)
 Deploying resources...
 Deployment complete!
 Executing 'postdeploy' script

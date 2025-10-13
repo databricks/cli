@@ -56,7 +56,7 @@ func TestGetFileSet(t *testing.T) {
 
 	fileList, err := s.GetFileList(ctx)
 	require.NoError(t, err)
-	require.Len(t, fileList, 9)
+	require.Len(t, fileList.Files, 9)
 
 	inc, err = fileset.NewGlobSet(root, []string{})
 	require.NoError(t, err)
@@ -74,7 +74,7 @@ func TestGetFileSet(t *testing.T) {
 
 	fileList, err = s.GetFileList(ctx)
 	require.NoError(t, err)
-	require.Len(t, fileList, 1)
+	require.Len(t, fileList.Files, 1)
 
 	inc, err = fileset.NewGlobSet(root, []string{"./.databricks/*.go"})
 	require.NoError(t, err)
@@ -92,7 +92,7 @@ func TestGetFileSet(t *testing.T) {
 
 	fileList, err = s.GetFileList(ctx)
 	require.NoError(t, err)
-	require.Len(t, fileList, 10)
+	require.Len(t, fileList.Files, 10)
 }
 
 func TestRecursiveExclude(t *testing.T) {
@@ -119,7 +119,7 @@ func TestRecursiveExclude(t *testing.T) {
 
 	fileList, err := s.GetFileList(ctx)
 	require.NoError(t, err)
-	require.Len(t, fileList, 6)
+	require.Len(t, fileList.Files, 6)
 }
 
 func TestNegateExclude(t *testing.T) {
@@ -146,6 +146,6 @@ func TestNegateExclude(t *testing.T) {
 
 	fileList, err := s.GetFileList(ctx)
 	require.NoError(t, err)
-	require.Len(t, fileList, 1)
-	require.Equal(t, "test/sub1/sub2/h.txt", fileList[0].Relative)
+	require.Len(t, fileList.Files, 1)
+	require.Equal(t, "test/sub1/sub2/h.txt", fileList.Files[0].Relative)
 }

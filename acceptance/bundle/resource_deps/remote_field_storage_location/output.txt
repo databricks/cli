@@ -34,7 +34,8 @@ Plan: 3 to add, 0 to change, 0 to delete, 0 unchanged
 >>> print_requests
 
 >>> [CLI] bundle deploy
-Uploading [NUMID] files (ignoring [NUMID] by .gitignore) to /Workspace/Users/[USERNAME]/.bundle/testbundle-[UNIQUE_NAME]/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/testbundle-[UNIQUE_NAME]/default/files...
+Uploaded [NUMID] files (ignored [NUMID] by .gitignore)
 Deploying resources...
 Error: terraform apply: exit status 1
 

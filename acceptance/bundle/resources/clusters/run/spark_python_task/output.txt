@@ -4,7 +4,8 @@
 >>> cp [TESTROOT]/bundle/resources/clusters/run/spark_python_task/../../deploy/simple/databricks.yml.tmpl .
 
 >>> [CLI] bundle deploy
-Uploading [NUMID] files (ignoring [NUMID] by .gitignore) to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Uploading [NUMID] files (ignoring [NUMID] by .gitignore)
 Deploying resources...
 Updating deployment state...
 Deployment complete!
@@ -13,31 +14,8 @@ Deployment complete!
 Run URL: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[NUMID]
 
 [TIMESTAMP] "test-job-with-cluster-[UNIQUE_NAME]" RUNNING
-[TIMESTAMP] "test-job-with-cluster-[UNIQUE_NAME]" INTERNAL_ERROR FAILED Task my_spark_python_task failed with message: Cluster '1008-[NUMID]-y5j9bhl1' was terminated. Reason: AZURE_QUOTA_EXCEEDED_EXCEPTION (CLIENT_ERROR). Parameters: databricks_error_message:The VM size you are specifying is not available. [details] QuotaExceeded: Operation could not be completed as it results in exceeding approved Total Regional Cores quota. Additional details - Deployment Model: Resource Manager, Location: eastus2, Current Limit: 350, Current Usage: 344, Additional Required: 16, (Minimum) New Limit Required: 360. Setup Alerts when Quota reaches threshold. Learn more at https://aka.ms/quotamonitoringalerting . Submit a request for Quota increase at https://aka.ms/ProdportalCRP/#blade/Microsoft_Azure_Capacity/UsageAndQuota.ReactView/Parameters/%7B%22subscriptionId%22:%22[UUID]%22,%22command%22:%22openQuotaApprovalBlade%22,%22quotas%22:[%7B%22loca ...
-***WARNING: message truncated. Skipped 116 bytes of output**
-
-
-Task my_spark_python_task FAILED:
-Run failed with error message
- Cluster '1008-[NUMID]-y5j9bhl1' was terminated. Reason: AZURE_QUOTA_EXCEEDED_EXCEPTION (CLIENT_ERROR). Parameters: databricks_error_message:The VM size you are specifying is not available. [details] QuotaExceeded: Operation could not be completed as it results in exceeding approved Total Regional Cores quota. Additional details - Deployment Model: Resource Manager, Location: eastus2, Current Limit: 350, Current Usage: 344, Additional Required: 16, (Minimum) New Limit Required: 360. Setup Alerts when Quota reaches threshold. Learn more at https://aka.ms/quotamonitoringalerting . Submit a request for Quota increase at https://aka.ms/ProdportalCRP/#blade/Microsoft_Azure_Capacity/UsageAndQuota.ReactView/Parameters/%7B%22subscriptionId%22:%22[UUID]%22,%22command%22:%22openQuotaApprovalBlade%22,%22quotas%22:[%7B%22location%22:%22eastus2%22,%22providerId%22:%22Micro ...
-***WARNING: message truncated. Skipped 1607 bytes of output**
-
-
-
-
-Error: Task my_spark_python_task failed!
-Error:
-Run failed with error message
- Cluster '1008-[NUMID]-y5j9bhl1' was terminated. Reason: AZURE_QUOTA_EXCEEDED_EXCEPTION (CLIENT_ERROR). Parameters: databricks_error_message:The VM size you are specifying is not available. [details] QuotaExceeded: Operation could not be completed as it results in exceeding approved Total Regional Cores quota. Additional details - Deployment Model: Resource Manager, Location: eastus2, Current Limit: 350, Current Usage: 344, Additional Required: 16, (Minimum) New Limit Required: 360. Setup Alerts when Quota reaches threshold. Learn more at https://aka.ms/quotamonitoringalerting . Submit a request for Quota increase at https://aka.ms/ProdportalCRP/#blade/Microsoft_Azure_Capacity/UsageAndQuota.ReactView/Parameters/%7B%22subscriptionId%22:%22[UUID]%22,%22command%22:%22openQuotaApprovalBlade%22,%22quotas%22:[%7B%22location%22:%22eastus2%22,%22providerId%22:%22Micro ...
-***WARNING: message truncated. Skipped 1607 bytes of output**
-
-
-Trace:
-
-Error: failed to reach TERMINATED or SKIPPED, got INTERNAL_ERROR: Task my_spark_python_task failed with message: Cluster '1008-[NUMID]-y5j9bhl1' was terminated. Reason: AZURE_QUOTA_EXCEEDED_EXCEPTION (CLIENT_ERROR). Parameters: databricks_error_message:The VM size you are specifying is not available. [details] QuotaExceeded: Operation could not be completed as it results in exceeding approved Total Regional Cores quota. Additional details - Deployment Model: Resource Manager, Location: eastus2, Current Limit: 350, Current Usage: 344, Additional Required: 16, (Minimum) New Limit Required: 360. Setup Alerts when Quota reaches threshold. Learn more at https://aka.ms/quotamonitoringalerting . Submit a request for Quota increase at https://aka.ms/ProdportalCRP/#blade/Microsoft_Azure_Capacity/UsageAndQuota.ReactView/Parameters/%7B%22subscriptionId%22:%22[UUID]%22,%22command%22:%22openQuotaApprovalBlade%22,%22quotas%22:[%7B%22loca ...
-***WARNING: message truncated. Skipped 116 bytes of output**
-
-
+[TIMESTAMP] "test-job-with-cluster-[UNIQUE_NAME]" TERMINATED SUCCESS
+Hello World!
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -48,5 +26,3 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Deleting files...
 Destroy complete!
-
-Exit code: 1

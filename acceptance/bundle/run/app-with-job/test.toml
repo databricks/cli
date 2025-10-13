@@ -20,5 +20,5 @@ Ignore = [
 MSYS_NO_PATHCONV = "1"
 
 [[Repls]]
-Old = 'Uploading \d+ files \(ignoring \d+ by .gitignore\)'
-New = 'Uploading [NUMID] files (ignoring [NUMID] by .gitignore)'
+Old = 'Uploaded \d+ files \(ignored \d+ by .gitignore\)'
+New = 'Uploaded [NUMID] files (ignored [NUMID] by .gitignore)'

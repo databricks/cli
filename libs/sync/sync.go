@@ -62,18 +62,6 @@ type Sync struct {
 	// WaitGroup is automatically created when an output handler is provided in the SyncOptions.
 	// Close call is required to ensure the output handler goroutine handles all events in time.
 	outputWaitGroup *stdsync.WaitGroup
-
-	// Cached file lists to avoid duplicate tree walks
-	fileListOnce stdsync.Once
-	fileLists    fileLists
-	fileListErr  error
-}
-
-type fileLists struct {
-	all     []fileset.File
-	git     []fileset.File
-	include []fileset.File
-	exclude []fileset.File
 }
 
 // New initializes and returns a new [Sync] instance.
@@ -186,163 +174,124 @@ func (s *Sync) notifyComplete(ctx context.Context, d diff) {
 	s.seq++
 }
 
+// FileList contains the list of files to sync and counts of files by their sync status.
+type FileList struct {
+	Files                 []fileset.File
+	Included              int
+	ExcludedByGitIgnore   int
+	ExcludedBySyncExclude int
+}
+
 // Upload all files in the file tree rooted at the local path configured in the
 // SyncOptions to the remote path configured in the SyncOptions.
 //
-// Returns the list of files tracked (and synchronized) by the syncer during the run,
-// and an error if any occurred.
-func (s *Sync) RunOnce(ctx context.Context) ([]fileset.File, error) {
-	files, err := s.GetFileList(ctx)
+// Returns the file list with counts and an error if any occurred.
+func (s *Sync) RunOnce(ctx context.Context) (*FileList, error) {
+	fileList, err := s.GetFileList(ctx)
 	if err != nil {
-		return files, err
+		return fileList, err
 	}
 
-	change, err := s.snapshot.diff(ctx, files)
+	change, err := s.snapshot.diff(ctx, fileList.Files)
 	if err != nil {
-		return files, err
+		return fileList, err
 	}
 
 	s.notifyStart(ctx, change)
 	if change.IsEmpty() {
 		s.notifyComplete(ctx, change)
-		return files, nil
+		return fileList, nil
 	}
 
 	err = s.applyDiff(ctx, change)
 	if err != nil {
-		return files, err
+		return fileList, err
 	}
 
 	if !s.DryRun {
 		err = s.snapshot.Save(ctx)
 		if err != nil {
 			log.Errorf(ctx, "cannot store snapshot: %s", err)
-			return files, err
+			return fileList, err
 		}
 	}
 
 	s.notifyComplete(ctx, change)
-	return files, nil
+	return fileList, nil
 }
 
-// computeFileLists computes and caches the file lists to avoid duplicate tree walks.
-func (s *Sync) computeFileLists(ctx context.Context) (*fileLists, error) {
-	s.fileListOnce.Do(func() {
-		allFiles, err := s.fileSet.AllFiles()
-		if err != nil {
-			log.Errorf(ctx, "cannot list all files: %s", err)
-			s.fileListErr = err
-			return
-		}
-		s.fileLists.all = allFiles
-
-		gitFiles, err := s.fileSet.Files()
-		if err != nil {
-			log.Errorf(ctx, "cannot list files: %s", err)
-			s.fileListErr = err
-			return
-		}
-		s.fileLists.git = gitFiles
-
-		include, err := s.includeFileSet.Files()
-		if err != nil {
-			log.Errorf(ctx, "cannot list include files: %s", err)
-			s.fileListErr = err
-			return
-		}
-		s.fileLists.include = include
-
-		exclude, err := s.excludeFileSet.Files()
-		if err != nil {
-			log.Errorf(ctx, "cannot list exclude files: %s", err)
-			s.fileListErr = err
-			return
-		}
-		s.fileLists.exclude = exclude
-	})
-
-	if s.fileListErr != nil {
-		return nil, s.fileListErr
-	}
-	return &s.fileLists, nil
-}
-
-// FileCounts contains the counts of files by their sync status.
-type FileCounts struct {
-	Included              int
-	ExcludedByGitIgnore   int
-	ExcludedBySyncExclude int
-}
-
-// GetFileCounts returns the counts of files that will be synced and files that are excluded.
-func (s *Sync) GetFileCounts(ctx context.Context) (*FileCounts, error) {
-	lists, err := s.computeFileLists(ctx)
+func (s *Sync) GetFileList(ctx context.Context) (*FileList, error) {
+	// Get all files in a single filesystem walk
+	allFiles, err := s.fileSet.AllFiles()
 	if err != nil {
+		log.Errorf(ctx, "cannot list all files: %s", err)
 		return nil, err
 	}
 
-	// Build set of all files (without gitignore)
-	allFilesSet := set.NewSetF(func(f fileset.File) string {
-		return f.Relative
-	})
-	allFilesSet.Add(lists.all...)
+	// Taint gitignore rules to ensure they're up-to-date
+	s.fileSet.TaintIgnoreRules()
 
-	// Build set of git-tracked files (with gitignore applied)
-	gitFilesSet := set.NewSetF(func(f fileset.File) string {
-		return f.Relative
-	})
-	gitFilesSet.Add(lists.git...)
+	// Get ignorers for include patterns
+	includeIgnorer := s.includeFileSet.Ignorer()
 
-	// Count files excluded by gitignore (all files - git files)
+	// Filter files: include if (NOT gitignored) OR (matches include patterns)
+	// This allows include patterns to override gitignore
+	syncFiles := make([]fileset.File, 0, len(allFiles))
 	excludedByGitIgnore := 0
-	for _, f := range lists.all {
-		if !gitFilesSet.Has(f) {
+	for _, f := range allFiles {
+		// Check if file is gitignored
+		gitignored, err := s.fileSet.IgnoreFile(f.Relative)
+		if err != nil {
+			log.Errorf(ctx, "cannot check if file is ignored: %s", err)
+			return nil, err
+		}
+
+		// Check if file matches include patterns
+		// Note: Ignorer uses inverted logic - "not ignored" means it matches the pattern
+		ignored, err := includeIgnorer.IgnoreFile(f.Relative)
+		if err != nil {
+			log.Errorf(ctx, "cannot check if file matches include pattern: %s", err)
+			return nil, err
+		}
+		matchesInclude := !ignored
+
+		// Include file if: not gitignored OR matches include pattern
+		if !gitignored || matchesInclude {
+			syncFiles = append(syncFiles, f)
+		} else {
 			excludedByGitIgnore++
 		}
 	}
 
-	// Build set of files to sync (git files + include)
+	// Build set for easier manipulation with exclude patterns
 	syncSet := set.NewSetF(func(f fileset.File) string {
 		return f.Relative
 	})
-	syncSet.Add(lists.git...)
-	syncSet.Add(lists.include...)
+	syncSet.Add(syncFiles...)
 
-	// Count files excluded by sync.exclude
+	// Remove files matching exclude patterns and count them
+	// We can post-filter exclude patterns since they don't affect directory traversal
 	excludedBySyncExclude := 0
-	for _, f := range lists.exclude {
-		if syncSet.Has(f) {
+	excludeIgnorer := s.excludeFileSet.Ignorer()
+	for _, f := range syncSet.Iter() {
+		ignored, err := excludeIgnorer.IgnoreFile(f.Relative)
+		if err != nil {
+			log.Errorf(ctx, "cannot check if file matches exclude pattern: %s", err)
+			return nil, err
+		}
+		// If not ignored by excluder, it means the file matches exclude patterns
+		if !ignored {
 			syncSet.Remove(f)
 			excludedBySyncExclude++
 		}
 	}
 
-	return &FileCounts{
+	return &FileList{
+		Files:                 syncSet.Iter(),
 		Included:              syncSet.Size(),
 		ExcludedByGitIgnore:   excludedByGitIgnore,
 		ExcludedBySyncExclude: excludedBySyncExclude,
 	}, nil
-}
-
-func (s *Sync) GetFileList(ctx context.Context) ([]fileset.File, error) {
-	lists, err := s.computeFileLists(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	// tradeoff: doing portable monitoring only due to macOS max descriptor manual ulimit setting requirement
-	// https://github.com/gorakhargosh/watchdog/blob/master/src/watchdog/observers/kqueue.py#L394-L418
-	all := set.NewSetF(func(f fileset.File) string {
-		return f.Relative
-	})
-	all.Add(lists.git...)
-	all.Add(lists.include...)
-
-	for _, f := range lists.exclude {
-		all.Remove(f)
-	}
-
-	return all.Iter(), nil
 }
 
 func (s *Sync) RunContinuous(ctx context.Context) error {

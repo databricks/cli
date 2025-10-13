@@ -57,6 +57,17 @@ func (f *FileSet) Files() ([]fileset.File, error) {
 // AllFiles returns all files in the fileset without applying gitignore rules.
 func (f *FileSet) AllFiles() ([]fileset.File, error) {
 	// Create a new fileset without the gitignore ignorer to get all files
-	fs := fileset.New(f.root, f.paths)
+	// If paths is empty, pass no arguments to get the default behavior
+	var fs *fileset.FileSet
+	if len(f.paths) == 0 {
+		fs = fileset.New(f.root)
+	} else {
+		fs = fileset.New(f.root, f.paths)
+	}
 	return fs.Files()
+}
+
+// TaintIgnoreRules marks gitignore rules as needing reload on next use.
+func (f *FileSet) TaintIgnoreRules() {
+	f.view.repo.taintIgnoreRules()
 }
