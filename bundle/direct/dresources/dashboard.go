@@ -210,23 +210,23 @@ func (r *ResourceDashboard) DoDelete(ctx context.Context, id string) error {
 	return nil
 }
 
-func (*ResourceDashboard) FieldTriggersLocal() map[string]deployplan.ActionType {
-	return map[string]deployplan.ActionType{
-		// Etags are not relevant to determine if the local configuration changed.
-		"etag": deployplan.ActionTypeSkip,
+func (*ResourceDashboard) FieldTriggers(isLocal bool) map[string]deployplan.ActionType {
+	if isLocal {
+		return map[string]deployplan.ActionType{
+			// Etags are not relevant to determine if the local configuration changed.
+			"etag": deployplan.ActionTypeSkip,
 
-		"parent_path": deployplan.ActionTypeRecreate,
+			"parent_path": deployplan.ActionTypeRecreate,
 
-		// Output only fields that should be ignored for diff computation.
-		"create_time":     deployplan.ActionTypeSkip,
-		"dashboard_id":    deployplan.ActionTypeSkip,
-		"lifecycle_state": deployplan.ActionTypeSkip,
-		"path":            deployplan.ActionTypeSkip,
-		"update_time":     deployplan.ActionTypeSkip,
+			// Output only fields that should be ignored for diff computation.
+			"create_time":     deployplan.ActionTypeSkip,
+			"dashboard_id":    deployplan.ActionTypeSkip,
+			"lifecycle_state": deployplan.ActionTypeSkip,
+			"path":            deployplan.ActionTypeSkip,
+			"update_time":     deployplan.ActionTypeSkip,
+		}
 	}
-}
 
-func (*ResourceDashboard) FieldTriggersRemote() map[string]deployplan.ActionType {
 	return map[string]deployplan.ActionType{
 		// If the etag changes remotely, it means the dashboard has been modified remotely
 		// and needs to be updated to match with the config.
