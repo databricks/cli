@@ -51,6 +51,9 @@ the SSH server and handling the connection proxy.
 		if proxyMode {
 			cmd.SetContext(root.SkipPrompt(cmd.Context()))
 		}
+		// We want to avoid the situation where the connect command works because it pulls the auth config from a bundle,
+		// but fails if it's executed outside of it (which will happen when using remote development IDE features).
+		cmd.SetContext(root.SkipLoadBundle(cmd.Context()))
 		return root.MustWorkspaceClient(cmd, args)
 	}
 

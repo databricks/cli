@@ -55,20 +55,39 @@ func resolveConfigPath(configPath string) (string, error) {
 	return filepath.Join(homeDir, ".ssh", "config"), nil
 }
 
+func GenerateProxyCommand(clusterId string, autoStartCluster bool, shutdownDelay time.Duration, profile, userName string, serverPort int, handoverTimeout time.Duration) (string, error) {
+	executablePath, err := os.Executable()
+	if err != nil {
+		return "", fmt.Errorf("failed to get current executable path: %w", err)
+	}
+
+	proxyCommand := fmt.Sprintf("%q ssh connect --proxy --cluster=%s --auto-start-cluster=%t --shutdown-delay=%s",
+		executablePath, clusterId, autoStartCluster, shutdownDelay.String())
+
+	if userName != "" && serverPort != 0 {
+		proxyCommand += " --metadata=" + userName + "," + fmt.Sprint(serverPort)
+	}
+
+	if handoverTimeout > 0 {
+		proxyCommand += " --handover-timeout=" + handoverTimeout.String()
+	}
+
+	if profile != "" {
+		proxyCommand += " --profile=" + profile
+	}
+
+	return proxyCommand, nil
+}
+
 func generateHostConfig(opts SetupOptions) (string, error) {
 	identityFilePath, err := keys.GetLocalSSHKeyPath(opts.ClusterID, opts.SSHKeysDir)
 	if err != nil {
 		return "", fmt.Errorf("failed to get local keys folder: %w", err)
 	}
 
-	execPath, err := os.Executable()
+	proxyCommand, err := GenerateProxyCommand(opts.ClusterID, opts.AutoStartCluster, opts.ShutdownDelay, opts.Profile, "", 0, 0)
 	if err != nil {
-		return "", fmt.Errorf("failed to get executable path: %w", err)
-	}
-
-	profileOption := ""
-	if opts.Profile != "" {
-		profileOption = "--profile=" + opts.Profile
+		return "", fmt.Errorf("failed to generate ProxyCommand: %w", err)
 	}
 
 	hostConfig := fmt.Sprintf(`
@@ -77,8 +96,8 @@ Host %s
     ConnectTimeout 360
     StrictHostKeyChecking accept-new
     IdentityFile %q
-    ProxyCommand %q ssh connect --proxy --cluster=%s --auto-start-cluster=%t --shutdown-delay=%s %s
-`, opts.HostName, identityFilePath, execPath, opts.ClusterID, opts.AutoStartCluster, opts.ShutdownDelay, profileOption)
+    ProxyCommand %s
+`, opts.HostName, identityFilePath, proxyCommand)
 
 	return hostConfig, nil
 }
