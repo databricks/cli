@@ -238,6 +238,9 @@ func AddDefaultHandlers(server *Server) {
 	server.Handle("DELETE", "/api/2.0/lakeview/dashboards/{dashboard_id}", func(req Request) any {
 		return MapDelete(req.Workspace, req.Workspace.Dashboards, req.Vars["dashboard_id"])
 	})
+	server.Handle("GET", "/api/2.0/lakeview/dashboards/{dashboard_id}/published", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.PublishedDashboards, req.Vars["dashboard_id"])
+	})
 
 	// Pipelines:
 
@@ -526,6 +529,32 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("DELETE", "/api/2.0/database/synced_tables/{name}", func(req Request) any {
 		return MapDelete(req.Workspace, req.Workspace.SyncedDatabaseTables, req.Vars["name"])
+	})
+
+	// Clusters:
+	server.Handle("POST", "/api/2.1/clusters/resize", func(req Request) any {
+		return req.Workspace.ClustersResize(req)
+	})
+
+	server.Handle("POST", "/api/2.1/clusters/edit", func(req Request) any {
+		return req.Workspace.ClustersEdit(req)
+	})
+
+	server.Handle("GET", "/api/2.1/clusters/get", func(req Request) any {
+		clusterId := req.URL.Query().Get("cluster_id")
+		return req.Workspace.ClustersGet(req, clusterId)
+	})
+
+	server.Handle("POST", "/api/2.1/clusters/create", func(req Request) any {
+		return req.Workspace.ClustersCreate(req)
+	})
+
+	server.Handle("POST", "/api/2.1/clusters/start", func(req Request) any {
+		return req.Workspace.ClustersStart(req)
+	})
+
+	server.Handle("POST", "/api/2.1/clusters/permanent-delete", func(req Request) any {
+		return req.Workspace.ClustersPermanentDelete(req)
 	})
 
 	// MLflow Experiments:

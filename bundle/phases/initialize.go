@@ -142,6 +142,9 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Validate that all fields with enum values specified are set to a valid value.
 		validate.Enum(),
 
+		// Validate that no dashboard etags are set. They are purely internal state and should not be set by the user.
+		validate.ValidateDashboardEtags(),
+
 		// Reads (typed): b.Config.Permissions (checks if current user or their groups have CAN_MANAGE permissions)
 		// Reads (typed): b.Config.Workspace.CurrentUser (gets current user information)
 		// Provides diagnostic recommendations if the current deployment identity isn't explicitly granted CAN_MANAGE permissions

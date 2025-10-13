@@ -2,6 +2,7 @@ package testserver
 
 import (
 	"bytes"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"path"
@@ -10,7 +11,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/database"
+	"github.com/google/uuid"
 
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -62,6 +65,14 @@ func nextID() int64 {
 	return lastID
 }
 
+func nextUUID() string {
+	var b [16]byte
+	binary.BigEndian.PutUint64(b[0:8], uint64(nextID()))
+	binary.BigEndian.PutUint64(b[8:16], uint64(nextID()))
+	u := uuid.Must(uuid.FromBytes(b[:]))
+	return u.String()
+}
+
 type FileEntry struct {
 	Info workspace.ObjectInfo
 	Data []byte
@@ -88,10 +99,12 @@ type FakeWorkspace struct {
 	SchemasGrants       map[string][]catalog.PrivilegeAssignment
 	Volumes             map[string]catalog.VolumeInfo
 	Dashboards          map[string]dashboards.Dashboard
+	PublishedDashboards map[string]dashboards.PublishedDashboard
 	SqlWarehouses       map[string]sql.GetWarehouseResponse
 	Alerts              map[string]sql.AlertV2
 	Experiments         map[string]ml.GetExperimentResponse
 	ModelRegistryModels map[string]ml.Model
+	Clusters            map[string]compute.ClusterDetails
 	Catalogs            map[string]catalog.CatalogInfo
 	RegisteredModels    map[string]catalog.RegisteredModelInfo
 
@@ -190,6 +203,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		RegisteredModels:     map[string]catalog.RegisteredModelInfo{},
 		Volumes:              map[string]catalog.VolumeInfo{},
 		Dashboards:           map[string]dashboards.Dashboard{},
+		PublishedDashboards:  map[string]dashboards.PublishedDashboard{},
 		SqlWarehouses:        map[string]sql.GetWarehouseResponse{},
 		Repos:                map[string]workspace.RepoInfo{},
 		Acls:                 map[string][]workspace.AclItem{},
@@ -200,6 +214,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		Alerts:               map[string]sql.AlertV2{},
 		Experiments:          map[string]ml.GetExperimentResponse{},
 		ModelRegistryModels:  map[string]ml.Model{},
+		Clusters:             map[string]compute.ClusterDetails{},
 	}
 }
 

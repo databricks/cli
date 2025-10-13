@@ -129,7 +129,9 @@ Warning: required field "schema_name" is not set
 === resources.clusters.rname ===
 {
   "clusters": {
-    "rname": {}
+    "rname": {
+      "autotermination_minutes": 60
+    }
   }
 }
 

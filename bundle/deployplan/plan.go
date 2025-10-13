@@ -19,14 +19,14 @@ type Plan struct {
 	// - Store a path to state file
 	Plan map[string]*PlanEntry `json:"plan,omitzero"`
 
-	mutex sync.Mutex      `json:"-"`
-	locks map[string]bool `json:"-"`
+	mutex   sync.Mutex `json:"-"`
+	lockmap lockmap    `json:"-"`
 }
 
 func NewPlan() *Plan {
 	return &Plan{
-		Plan:  make(map[string]*PlanEntry),
-		locks: make(map[string]bool),
+		Plan:    make(map[string]*PlanEntry),
+		lockmap: newLockmap(),
 	}
 }
 
@@ -75,31 +75,79 @@ func (p *Plan) GetActions() []Action {
 	return actions
 }
 
-// LockEntry returns *PlanEntry; subsequent calls before UnlockEntry() with the same resourceKey will panic.
-func (p *Plan) LockEntry(resourceKey string) *PlanEntry {
+func (p *Plan) WriteLockEntry(resourceKey string) (*PlanEntry, error) {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 
-	entry, ok := p.Plan[resourceKey]
-	if ok {
-		if p.locks[resourceKey] {
-			panic(fmt.Sprintf("internal DAG error, concurrent access to %q", resourceKey))
-		}
-		p.locks[resourceKey] = true
-		return entry
+	if p.lockmap.TryLock(resourceKey) {
+		return p.Plan[resourceKey], nil
 	}
 
-	return nil
+	return nil, fmt.Errorf("write lock: concurrent access to %q", resourceKey)
 }
 
-func (p *Plan) UnlockEntry(resourceKey string) {
+func (p *Plan) ReadLockEntry(resourceKey string) (*PlanEntry, error) {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
-	p.locks[resourceKey] = false
+
+	if p.lockmap.TryRLock(resourceKey) {
+		return p.Plan[resourceKey], nil
+	}
+	return nil, fmt.Errorf("read lock: concurrent access to %q", resourceKey)
+}
+
+func (p *Plan) WriteUnlockEntry(resourceKey string) {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+	p.lockmap.Unlock(resourceKey)
+}
+
+func (p *Plan) ReadUnlockEntry(resourceKey string) {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+	p.lockmap.RUnlock(resourceKey)
 }
 
 func (p *Plan) RemoveEntry(resourceKey string) {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 	delete(p.Plan, resourceKey)
+}
+
+type lockmap struct {
+	state map[string]int
+}
+
+func newLockmap() lockmap {
+	return lockmap{
+		state: make(map[string]int),
+	}
+}
+
+func (p *lockmap) TryLock(resourceKey string) bool {
+	if p.state[resourceKey] == 0 {
+		p.state[resourceKey] = -1
+		return true
+	}
+	return false
+}
+
+func (p *lockmap) Unlock(resourceKey string) {
+	if p.state[resourceKey] == -1 {
+		p.state[resourceKey] = 0
+	}
+}
+
+func (p *lockmap) TryRLock(resourceKey string) bool {
+	if p.state[resourceKey] >= 0 {
+		p.state[resourceKey] += 1
+		return true
+	}
+	return false
+}
+
+func (p *lockmap) RUnlock(resourceKey string) {
+	if p.state[resourceKey] > 0 {
+		p.state[resourceKey] -= 1
+	}
 }

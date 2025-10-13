@@ -1,15 +1,16 @@
 # NEXT CHANGELOG
 
-## Release v0.272.0
+## Release v0.273.0
 
 ### Notable Changes
 
 ### CLI
 
+* Add the `--configure-serverless` flag to `databricks auth login` to configure Databricks Connect to use serverless.
+
 ### Dependency updates
 
 ### Bundles
-* Fix processing short pip flags in environment dependencies ([#3708](https://github.com/databricks/cli/pull/3708))
-* Add support for referencing local files in -e pip flag for environment dependencies ([#3708](https://github.com/databricks/cli/pull/3708))
+* Updated the internal lakeflow-pipelines template to use an "src" layout ([#3671](https://github.com/databricks/cli/pull/3671)).
 
 ### API Changes

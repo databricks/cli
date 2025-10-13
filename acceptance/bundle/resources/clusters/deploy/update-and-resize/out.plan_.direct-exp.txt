@@ -1,0 +1,12 @@
+create clusters.test_cluster
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+update clusters.test_cluster
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+resize clusters.test_cluster
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+update clusters.test_cluster
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
