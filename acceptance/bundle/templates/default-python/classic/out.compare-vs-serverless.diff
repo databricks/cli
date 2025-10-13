@@ -1,4 +1,3 @@
-Only in [TESTROOT]/bundle/templates/default-python/classic/../serverless/output: my_default_python/.databricks/.gitignore
 --- [TESTROOT]/bundle/templates/default-python/classic/../serverless/output/my_default_python/databricks.yml
 +++ output/my_default_python/databricks.yml
 @@ -25,4 +25,11 @@
