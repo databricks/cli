@@ -6,6 +6,10 @@
 
 import { Diagnostics } from "./diagnostics.js";
 import { Location } from "./location.js";
+import type { Resource } from "./resource.js";
+
+// Import generated manifest
+import { RESOURCE_NAMESPACES } from "../../generated/manifest.js";
 
 // Import actual resource types from generated code (type-only to avoid circular dependency)
 import type { App } from "../../generated/apps/index.js";
@@ -20,30 +24,15 @@ import type { QualityMonitor } from "../../generated/quality_monitors/index.js";
 import type { RegisteredModel } from "../../generated/registered_models/index.js";
 import type { Schema } from "../../generated/schemas/index.js";
 import type { Volume } from "../../generated/volumes/index.js";
-import type { Resource } from "./resource.js";
 import type { DatabaseInstance } from "../../generated/database_instances/index.js";
 import type { DatabaseCatalog } from "../../generated/database_catalogs/index.js";
 import type { SqlWarehouse } from "../../generated/sql_warehouses/index.js";
 
 /**
  * Enum of all supported resource types for type-safe resource management
+ * Generated from manifest
  */
-export type ResourceType =
-  | "apps"
-  | "clusters"
-  | "dashboards"
-  | "jobs"
-  | "mlflow_experiments"
-  | "mlflow_models"
-  | "model_serving_endpoints"
-  | "pipelines"
-  | "quality_monitors"
-  | "registered_models"
-  | "schemas"
-  | "volumes"
-  | "database_instances"
-  | "database_catalogs"
-  | "sql_warehouses";
+export type ResourceType = typeof RESOURCE_NAMESPACES[number];
 
 /**
  * Type mapping from ResourceType enum to actual resource types
@@ -109,22 +98,10 @@ export class Resources {
   private _diagnostics: Diagnostics = new Diagnostics();
 
   constructor() {
-    // Initialize registry with all resource types
-    this.registerResourceType<App>("apps");
-    this.registerResourceType<Cluster>("clusters");
-    this.registerResourceType<Dashboard>("dashboards");
-    this.registerResourceType<Job>("jobs");
-    this.registerResourceType<MlflowExperiment>("mlflow_experiments");
-    this.registerResourceType<MlflowModel>("mlflow_models");
-    this.registerResourceType<ModelServingEndpoint>("model_serving_endpoints");
-    this.registerResourceType<Pipeline>("pipelines");
-    this.registerResourceType<QualityMonitor>("quality_monitors");
-    this.registerResourceType<RegisteredModel>("registered_models");
-    this.registerResourceType<Schema>("schemas");
-    this.registerResourceType<Volume>("volumes");
-    this.registerResourceType<DatabaseInstance>("database_instances");
-    this.registerResourceType<DatabaseCatalog>("database_catalogs");
-    this.registerResourceType<SqlWarehouse>("sql_warehouses");
+    // Initialize registry with all resource types from generated manifest
+    for (const namespace of RESOURCE_NAMESPACES) {
+      this.registerResourceType(namespace);
+    }
   }
 
   /**

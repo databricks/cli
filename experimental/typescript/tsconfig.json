@@ -48,12 +48,8 @@
     "baseUrl": ".",
     "paths": {
       "@databricks/bundles/core": ["./src/core"],
-      "@databricks/bundles/jobs": ["./generated/jobs"],
-      "@databricks/bundles/pipelines": ["./generated/pipelines"],
-      "@databricks/bundles/schemas": ["./generated/schemas"],
-      "@databricks/bundles/volumes": ["./generated/volumes"],
-      "@databricks/bundles/database_instances": ["./generated/database_instances"],
-      "@databricks/bundles/database_catalogs": ["./generated/database_catalogs"],
+      "@databricks/bundles/constructs/*": ["./src/constructs/*"],
+      "@databricks/bundles/*": ["./generated/*/index"]
     }
   },
   "include": [
