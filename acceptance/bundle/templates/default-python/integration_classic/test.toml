@@ -15,10 +15,6 @@ EnvMatrix.UV_PYTHON = [
 
 EnvRepl.UV_PYTHON = true
 
-[[Server]]
-Pattern = "PUT /api/2.0/permissions/directories/0"
-Response.Body = '{}'
-
 [[Repls]]
 # for some reason leading number is lost converting "%H%M%S" 061234 to 61234
 Old = '\d{5,}'

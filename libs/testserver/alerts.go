@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/databricks/databricks-sdk-go/service/sql"
-	"github.com/google/uuid"
 )
 
 func (s *FakeWorkspace) AlertsUpsert(req Request, alertId string) Response {
@@ -29,7 +28,7 @@ func (s *FakeWorkspace) AlertsUpsert(req Request, alertId string) Response {
 			}
 		}
 	} else {
-		alertId = uuid.New().String()
+		alertId = nextUUID()
 	}
 
 	alert.Id = alertId

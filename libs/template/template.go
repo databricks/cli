@@ -24,15 +24,17 @@ type Template struct {
 type TemplateName string
 
 const (
-	DefaultPython          TemplateName = "default-python"
-	DefaultSql             TemplateName = "default-sql"
-	LakeflowPipelines      TemplateName = "lakeflow-pipelines"
-	CLIPipelines           TemplateName = "cli-pipelines"
-	DbtSql                 TemplateName = "dbt-sql"
-	MlopsStacks            TemplateName = "mlops-stacks"
-	DefaultPydabs          TemplateName = "default-pydabs"
-	Custom                 TemplateName = "custom"
-	ExperimentalJobsAsCode TemplateName = "experimental-jobs-as-code"
+	DefaultPython             TemplateName = "default-python"
+	ExperimentalDefaultPython TemplateName = "experimental-default-python-vnext"
+	DefaultSql                TemplateName = "default-sql"
+	LakeflowPipelines         TemplateName = "lakeflow-pipelines"
+	CLIPipelines              TemplateName = "cli-pipelines"
+	DbtSql                    TemplateName = "dbt-sql"
+	MlopsStacks               TemplateName = "mlops-stacks"
+	DefaultPydabs             TemplateName = "default-pydabs"
+	Custom                    TemplateName = "custom"
+	ExperimentalJobsAsCode    TemplateName = "experimental-jobs-as-code"
+	Default                   TemplateName = "default"
 )
 
 var databricksTemplates = []Template{
@@ -41,6 +43,13 @@ var databricksTemplates = []Template{
 		description: "The default Python template for Notebooks and Lakeflow",
 		Reader:      &builtinReader{name: string(DefaultPython)},
 		Writer:      &writerWithFullTelemetry{defaultWriter: defaultWriter{name: DefaultPython}},
+	},
+	{
+		name:        ExperimentalDefaultPython,
+		hidden:      true,
+		description: "The next version of the default Python template (experimental)",
+		Reader:      &builtinReader{name: string(ExperimentalDefaultPython)},
+		Writer:      &writerWithFullTelemetry{defaultWriter: defaultWriter{name: ExperimentalDefaultPython}},
 	},
 	{
 		name:        DefaultSql,

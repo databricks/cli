@@ -77,15 +77,15 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 			switch change.ActionType {
 			case deployplan.ActionTypeCreate:
 				createCount++
-			case deployplan.ActionTypeUpdate, deployplan.ActionTypeUpdateWithID:
+			case deployplan.ActionTypeUpdate, deployplan.ActionTypeUpdateWithID, deployplan.ActionTypeResize:
 				updateCount++
 			case deployplan.ActionTypeDelete:
 				deleteCount++
-			case deployplan.ActionTypeRecreate, deployplan.ActionTypeResize:
+			case deployplan.ActionTypeRecreate:
 				// A recreate counts as both a delete and a create
 				deleteCount++
 				createCount++
-			case deployplan.ActionTypeSkip, deployplan.ActionTypeUnset:
+			case deployplan.ActionTypeSkip, deployplan.ActionTypeUndefined:
 				unchangedCount++
 			}
 		}

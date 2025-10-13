@@ -1,7 +1,0 @@
-Local = true
-Cloud = true
-RequiresUnityCatalog = true
-
-Ignore = [
-    "databricks.yml"
-]

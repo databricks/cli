@@ -528,11 +528,23 @@ def _relativize_location(location: Location) -> Location:
 
 
 def _relativize_path(path: str) -> str:
+    """
+    Attempt to relativize an absolute path to the current working directory.
+
+    If the path is not absolute or cannot be relativized, return it as is.
+    Used to relativize paths in locations to show shorter paths in diagnostics.
+    """
+
     if not os.path.isabs(path):
         return path
 
     cwd = os.getcwd()
-    common = os.path.commonpath([os.getcwd(), path])
+
+    try:
+        common = os.path.commonpath([cwd, path])
+    except ValueError:
+        # On Windows, paths on different drives don't have a common path
+        return path
 
     if common == cwd:
         return os.path.relpath(path, cwd)

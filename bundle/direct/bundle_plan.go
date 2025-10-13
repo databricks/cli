@@ -72,13 +72,18 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 	g.Run(defaultParallelism, func(resourceKey string, failedDependency *string) bool {
 		errorPrefix := "cannot plan " + resourceKey
 
-		entry := plan.LockEntry(resourceKey)
-		defer plan.UnlockEntry(resourceKey)
+		entry, err := plan.WriteLockEntry(resourceKey)
+		if err != nil {
+			logdiag.LogError(ctx, fmt.Errorf("%s: internal error: %w", resourceKey, err))
+			return false
+		}
 
 		if entry == nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: internal error: node not in graph", resourceKey))
 			return false
 		}
+
+		defer plan.WriteUnlockEntry(resourceKey)
 
 		if failedDependency != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: dependency failed: %s", errorPrefix, *failedDependency))
@@ -98,7 +103,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 				return false
 			}
 
-			_, err := adapter.DoRefresh(ctx, dbentry.ID)
+			remoteState, err := adapter.DoRefresh(ctx, dbentry.ID)
 			if err != nil {
 				if isResourceGone(err) {
 					// no such resource
@@ -108,6 +113,8 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 					return false
 				}
 			}
+
+			entry.RemoteState = remoteState
 
 			return true
 		}
@@ -147,8 +154,17 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			return false
 		}
 
-		localAction, localChangeMap := convertChangesToTriggersMap(adapter, localDiff)
+		remoteState, err := adapter.DoRefresh(ctx, dbentry.ID)
+		if err != nil {
+			if isResourceGone(err) {
+				remoteState = nil
+			} else {
+				logdiag.LogError(ctx, fmt.Errorf("%s: failed to read id=%q: %w", errorPrefix, dbentry.ID, err))
+				return false
+			}
+		}
 
+		localAction, localChangeMap := localChangesToTriggers(ctx, adapter, localDiff, remoteState)
 		if localAction == deployplan.ActionTypeRecreate {
 			entry.Action = localAction.String()
 			if len(localChangeMap) > 0 {
@@ -157,16 +173,6 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 				}
 			}
 			return true
-		}
-
-		remoteState, err := adapter.DoRefresh(ctx, dbentry.ID)
-		if err != nil {
-			if isResourceGone(err) {
-				remoteState = nil
-			} else {
-				logdiag.LogError(ctx, fmt.Errorf("%s: failed to read id=%q: %w (localAction=%q)", errorPrefix, dbentry.ID, err, localAction.String()))
-				return false
-			}
 		}
 
 		// We have a choice whether to include remoteState or remoteStateComparable from below.
@@ -219,12 +225,16 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 	return plan, nil
 }
 
-func convertChangesToTriggersMap(adapter *dresources.Adapter, diff []structdiff.Change) (deployplan.ActionType, map[string]deployplan.Trigger) {
+func localChangesToTriggers(ctx context.Context, adapter *dresources.Adapter, diff []structdiff.Change, remoteState any) (deployplan.ActionType, map[string]deployplan.Trigger) {
 	action := deployplan.ActionTypeSkip
 	var m map[string]deployplan.Trigger
 
 	for _, ch := range diff {
-		fieldAction := adapter.ClassifyByTriggers(ch)
+		fieldAction, err := adapter.ClassifyChange(ch, remoteState, true)
+		if err != nil {
+			logdiag.LogError(ctx, fmt.Errorf("internal error: failed to classify change: %w", err))
+			continue
+		}
 		if fieldAction > action {
 			action = fieldAction
 		}
@@ -252,12 +262,11 @@ func interpretOldStateVsRemoteState(ctx context.Context, adapter *dresources.Ada
 			}
 			continue
 		}
-		fieldAction, err := adapter.ClassifyChange(ch, remoteState)
+		fieldAction, err := adapter.ClassifyChange(ch, remoteState, false)
 		if err != nil {
-			logdiag.LogError(ctx, fmt.Errorf("internal error: failed to classify changes: %w", err))
+			logdiag.LogError(ctx, fmt.Errorf("internal error: failed to classify change: %w", err))
 			continue
 		}
-
 		if fieldAction > action {
 			action = fieldAction
 		}
@@ -276,16 +285,19 @@ func (b *DeploymentBundle) LookupReferenceLocal(ctx context.Context, path *struc
 	fieldPath := path.SkipPrefix(3)
 	fieldPathS := fieldPath.String()
 
-	// TODO: this will panic if targetResourceKey == resourceKey
-	targetEntry := b.Plan.LockEntry(targetResourceKey)
-	defer b.Plan.UnlockEntry(targetResourceKey)
+	targetEntry, err := b.Plan.ReadLockEntry(targetResourceKey)
+	if err != nil {
+		return nil, err
+	}
 
 	if targetEntry == nil {
 		return nil, fmt.Errorf("internal error: %s: missing entry in the plan", targetResourceKey)
 	}
 
+	defer b.Plan.ReadUnlockEntry(targetResourceKey)
+
 	targetAction := deployplan.ActionTypeFromString(targetEntry.Action)
-	if targetAction == deployplan.ActionTypeUnset {
+	if targetAction == deployplan.ActionTypeUndefined {
 		return nil, fmt.Errorf("internal error: %s: missing action in the plan", targetResourceKey)
 	}
 

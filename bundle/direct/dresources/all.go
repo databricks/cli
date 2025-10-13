@@ -19,6 +19,7 @@ var SupportedResources = map[string]any{
 	"database_catalogs":      (*ResourceDatabaseCatalog)(nil),
 	"synced_database_tables": (*ResourceSyncedDatabaseTable)(nil),
 	"alerts":                 (*ResourceAlert)(nil),
+	"clusters":               (*ResourceCluster)(nil),
 	"registered_models":      (*ResourceRegisteredModel)(nil),
 }
 
