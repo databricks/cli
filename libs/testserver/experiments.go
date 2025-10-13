@@ -20,12 +20,14 @@ func (s *FakeWorkspace) ExperimentCreate(req Request) Response {
 		}
 	}
 
+	testUser := s.CurrentUser()
+
 	// Server appends these tags automatically to experiments.
 	// We replicate that behaviour in the test server as well.
 	appendTags := []ml.ExperimentTag{
 		{
 			Key:   "mlflow.ownerId",
-			Value: TestUser.Id,
+			Value: testUser.Id,
 		},
 		{
 			Key:   "mlflow.experiment.sourceName",
@@ -33,11 +35,11 @@ func (s *FakeWorkspace) ExperimentCreate(req Request) Response {
 		},
 		{
 			Key:   "mlflow.ownerId",
-			Value: TestUser.Id,
+			Value: testUser.Id,
 		},
 		{
 			Key:   "mlflow.ownerEmail",
-			Value: TestUser.UserName,
+			Value: testUser.UserName,
 		},
 		{
 			Key:   "mlflow.experimentType",
