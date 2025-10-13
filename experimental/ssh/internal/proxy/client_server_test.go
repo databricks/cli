@@ -144,7 +144,7 @@ func TestHandover(t *testing.T) {
 	defer server.Close()
 
 	maxHandoverCount := 3
-	handoverTimeout := 10 * time.Millisecond
+	handoverTimeout := 500 * time.Millisecond
 	createConnChan := make(chan error, 1)
 	clientInputWriter, clientOutput := createTestClient(t, server.URL, handoverTimeout, nil, createConnChan)
 	defer clientInputWriter.Close()
