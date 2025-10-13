@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -65,7 +66,7 @@ func GenerateProxyCommand(clusterId string, autoStartCluster bool, shutdownDelay
 		executablePath, clusterId, autoStartCluster, shutdownDelay.String())
 
 	if userName != "" && serverPort != 0 {
-		proxyCommand += " --metadata=" + userName + "," + fmt.Sprint(serverPort)
+		proxyCommand += " --metadata=" + userName + "," + strconv.Itoa(serverPort)
 	}
 
 	if handoverTimeout > 0 {
