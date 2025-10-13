@@ -14,14 +14,19 @@
       "format": "MULTI_TASK",
       "max_concurrent_runs": 1,
       "name": "prefix-job1",
-      "permissions": [],
       "queue": {
         "enabled": true
       }
     }
   },
+  "models": {
+    "model1": {
+      "name": "prefix-model 1"
+    }
+  },
   "schemas": {
     "schema1": {
+      "catalog_name": "c",
       "name": "prefixschema1"
     }
   },
@@ -50,14 +55,19 @@
       "format": "MULTI_TASK",
       "max_concurrent_runs": 1,
       "name": "[prefix]job1",
-      "permissions": [],
       "queue": {
         "enabled": true
       }
     }
   },
+  "models": {
+    "model1": {
+      "name": "[prefix]model 1"
+    }
+  },
   "schemas": {
     "schema1": {
+      "catalog_name": "c",
       "name": "prefix_schema1"
     }
   },
@@ -86,14 +96,19 @@
       "format": "MULTI_TASK",
       "max_concurrent_runs": 1,
       "name": "job1",
-      "permissions": [],
       "queue": {
         "enabled": true
       }
     }
   },
+  "models": {
+    "model1": {
+      "name": "model 1"
+    }
+  },
   "schemas": {
     "schema1": {
+      "catalog_name": "c",
       "name": "schema1"
     }
   },

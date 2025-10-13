@@ -1,0 +1,4 @@
+trace $PIPELINES deploy
+
+# We deploy the bundle again to check that the deploy is failing if the job is running
+trace errcode $PIPELINES deploy --fail-on-active-runs

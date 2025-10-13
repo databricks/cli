@@ -11,6 +11,7 @@ resources:
 
   schemas:
     schema1:
+      catalog_name: c
       name: schema1
 
   volumes:
@@ -18,6 +19,10 @@ resources:
       name: volume1
       catalog_name: catalog1
       schema_name: schema1
+
+  models:
+    model1:
+      name: model 1
 
 presets:
   name_prefix: "$PREFIX"

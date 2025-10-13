@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.12"
+# ///
 """
 Start integration test jobs for PRs by non-team members that are approved by team members.
 """
@@ -35,7 +38,17 @@ def run_json(cmd):
 
 def get_approved_prs_by_non_team():
     prs = run_json(
-        ["gh", "pr", "-R", CLI_REPO, "list", "--limit", "300", "--json", "number,author,reviews,headRefOid,headRepository,headRepositoryOwner"]
+        [
+            "gh",
+            "pr",
+            "-R",
+            CLI_REPO,
+            "list",
+            "--limit",
+            "300",
+            "--json",
+            "number,author,reviews,headRefOid,headRepository,headRepositoryOwner",
+        ]
     )
     result = []
 
@@ -146,7 +159,15 @@ def main():
         status = get_status(commit_sha)
 
         if not status:
-            start_job(pr_number, commit_sha, pr["author"], approved_by=pr["approved_by"], workflow=args.workflow, repo=args.repo, force=args.yes)
+            start_job(
+                pr_number,
+                commit_sha,
+                pr["author"],
+                approved_by=pr["approved_by"],
+                workflow=args.workflow,
+                repo=args.repo,
+                force=args.yes,
+            )
         else:
             commit_url = f"https://github.com/{CLI_REPO}/pull/{pr_number}/commits/{commit_sha}"
             print(f"Tests already running for PR #{pr_number} {commit_url}")

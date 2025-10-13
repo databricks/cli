@@ -66,7 +66,6 @@ func newCreate() *cobra.Command {
 	var createReq iam.Group
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.DisplayName, "display-name", createReq.DisplayName, `String that represents a human-readable group name.`)
@@ -144,8 +143,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq iam.DeleteAccountGroupRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete ID"
 	cmd.Short = `Delete a group.`
 	cmd.Long = `Delete a group.
@@ -213,8 +210,6 @@ func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getReq iam.GetAccountGroupRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get ID"
 	cmd.Short = `Get group details.`
@@ -284,8 +279,6 @@ func newList() *cobra.Command {
 
 	var listReq iam.ListAccountGroupsRequest
 
-	// TODO: short flags
-
 	cmd.Flags().StringVar(&listReq.Attributes, "attributes", listReq.Attributes, `Comma-separated list of attributes to return in response.`)
 	cmd.Flags().Int64Var(&listReq.Count, "count", listReq.Count, `Desired number of results per page.`)
 	cmd.Flags().StringVar(&listReq.ExcludedAttributes, "excluded-attributes", listReq.ExcludedAttributes, `Comma-separated list of attributes to exclude in response.`)
@@ -298,7 +291,9 @@ func newList() *cobra.Command {
 	cmd.Short = `List group details.`
 	cmd.Long = `List group details.
   
-  Gets all details of the groups associated with the Databricks account.`
+  Gets all details of the groups associated with the Databricks account. As of
+  08/22/2025, this endpoint will not return members. Instead, members should be
+  retrieved by iterating through Get group details.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -343,7 +338,6 @@ func newPatch() *cobra.Command {
 	var patchReq iam.PartialUpdate
 	var patchJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&patchJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: Operations
@@ -430,7 +424,6 @@ func newUpdate() *cobra.Command {
 	var updateReq iam.Group
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateReq.DisplayName, "display-name", updateReq.DisplayName, `String that represents a human-readable group name.`)

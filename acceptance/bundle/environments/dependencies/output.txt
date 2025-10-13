@@ -23,6 +23,9 @@ Deployment complete!
       "client": "1",
       "dependencies": [
         "-r /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/requirements.txt",
+        "-e /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/file.py",
+        "-i http://myindexurl.com",
+        "--index-url http://myindexurl.com",
         "test_package",
         "test_package==2.0.1",
         "test_package>=2.0.1",
@@ -45,6 +48,36 @@ Deployment complete!
   }
 ]
 
+>>> jq -s .[] | select(.path=="/api/2.0/pipelines") out.requests.txt
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines",
+  "body": {
+    "channel": "CURRENT",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dependencies/default/state/metadata.json"
+    },
+    "edition": "ADVANCED",
+    "environment": {
+      "dependencies": [
+        "-r /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/requirements.txt",
+        "-e /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/file.py",
+        "-i http://myindexurl.com",
+        "--index-url http://myindexurl.com",
+        "/Workspace/Users/[USERNAME]/.bundle/dependencies/default/artifacts/.internal/test.whl",
+        "/Workspace/Users/test@databricks.com/test-package.whl",
+        "test_package",
+        "test_package==2.0.1",
+        "test_package>=2.0.1",
+        "beautifulsoup4>=1.0.0,~=1.2.0,<2.0.0",
+        "requests[security] @ https://github.com/psf/requests/archive/refs/heads/main.zip"
+      ]
+    },
+    "name": "Test Pipeline"
+  }
+}
+
 >>> [CLI] bundle validate -o json
 [
   {
@@ -53,6 +86,9 @@ Deployment complete!
       "client": "1",
       "dependencies": [
         "-r /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/requirements.txt",
+        "-e /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/file.py",
+        "-i http://myindexurl.com",
+        "--index-url http://myindexurl.com",
         "test_package",
         "test_package==2.0.1",
         "test_package>=2.0.1",
@@ -74,3 +110,20 @@ Deployment complete!
     }
   }
 ]
+
+>>> [CLI] bundle validate -o json
+{
+  "dependencies": [
+    "-r /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/requirements.txt",
+    "-e /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/file.py",
+    "-i http://myindexurl.com",
+    "--index-url http://myindexurl.com",
+    "./dist/*.whl",
+    "/Workspace/Users/test@databricks.com/test-package.whl",
+    "test_package",
+    "test_package==2.0.1",
+    "test_package>=2.0.1",
+    "beautifulsoup4>=1.0.0,~=1.2.0,<2.0.0",
+    "requests[security] @ https://github.com/psf/requests/archive/refs/heads/main.zip"
+  ]
+}

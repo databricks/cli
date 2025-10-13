@@ -14,15 +14,23 @@ Deployment complete!
 >>> cat out.requests.txt
 [
   {
+    "key": "experimental.use_legacy_run_as",
+    "value": false
+  },
+  {
+    "key": "run_as_set",
+    "value": false
+  },
+  {
     "key": "presets_name_prefix_is_set",
     "value": false
   },
   {
-    "key": "skip_artifact_cleanup",
+    "key": "python_wheel_wrapper_is_set",
     "value": false
   },
   {
-    "key": "python_wheel_wrapper_is_set",
+    "key": "skip_artifact_cleanup",
     "value": false
   },
   {
@@ -40,15 +48,23 @@ Deployment complete!
 ]
 [
   {
+    "key": "experimental.use_legacy_run_as",
+    "value": false
+  },
+  {
+    "key": "run_as_set",
+    "value": false
+  },
+  {
     "key": "presets_name_prefix_is_set",
     "value": false
   },
   {
-    "key": "skip_artifact_cleanup",
+    "key": "python_wheel_wrapper_is_set",
     "value": false
   },
   {
-    "key": "python_wheel_wrapper_is_set",
+    "key": "skip_artifact_cleanup",
     "value": false
   },
   {

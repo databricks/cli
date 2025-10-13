@@ -8,5 +8,5 @@ Ignore = [
 ]
 
 [[Repls]]
-Old = '\\'
-New = '/'
+Old = "aws|azure|gcp"
+New = "[CLOUD_ENV_BASE]"

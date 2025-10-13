@@ -1,0 +1,43 @@
+print_requests() {
+    jq --sort-keys 'select(.method != "GET" and (.path | contains("/jobs")))' < out.requests.txt
+    rm out.requests.txt
+}
+
+print_sorted_requests() {
+    jq -c < out.requests.txt | sort | jq --sort-keys 'select(.method != "GET" and (.path | contains("/jobs")))'
+    rm out.requests.txt
+}
+
+echo "*" > .gitignore
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace print_requests
+
+foo_id=`read_id.py jobs foo`
+echo "$foo_id:FOO_ID" >> ACC_REPLS
+
+bar_id=`read_id.py jobs bar`
+echo "$bar_id:BAR_ID" >> ACC_REPLS
+
+trace $CLI bundle plan  # empty
+
+title "Update trigger.periodic.unit and re-deploy; jobs.bar is unchanged"
+trace update_file.py databricks.yml DAYS HOURS
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace print_requests
+trace $CLI bundle plan
+
+title "Fetch job ID and verify remote state"
+
+trace $CLI jobs get $foo_id
+trace $CLI jobs get $bar_id
+rm out.requests.txt
+
+trace $CLI bundle destroy --auto-approve
+# Sort, because the order of requests is different. TODO: remember deps in order to delete in reverse deployment order.
+trace print_sorted_requests
+
+trace musterr $CLI jobs get $foo_id
+trace musterr $CLI jobs get $bar_id
+rm out.requests.txt

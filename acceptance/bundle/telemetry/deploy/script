@@ -1,6 +1,16 @@
 trace $CLI bundle deploy
 
-trace cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson' > out.telemetry.txt
+trace cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson' > telemetry.json
+
+# Assert that the telemetry mechanism is working and recording mutator execution times.
+# We only check that at least one mutator execution time is recorded to avoid flakiness on fast machines
+# where many mutators may complete in less than 1ms (the threshold for recording in bundle/mutator.go).
+title "Assert that mutator execution times are being recorded"
+trace cat telemetry.json | jq ' .entry.databricks_cli_log.bundle_deploy_event.experimental.bundle_mutator_execution_time_ms | length > 0'
+
+# bundle_mutator_execution_time_ms can have variable number of entries depending upon the runtime of the mutators. Thus we omit it from
+# being asserted here.
+cat telemetry.json | jq 'del(.entry.databricks_cli_log.bundle_deploy_event.experimental.bundle_mutator_execution_time_ms)' > out.telemetry.txt
 
 cmd_exec_id=$(extract_command_exec_id.py)
 deployment_id=$(cat .databricks/bundle/default/deployment.json | jq -r .id)
@@ -10,3 +20,4 @@ update_file.py out.telemetry.txt "11111111-2222-3333-4444-555555555555"  '[BUNDL
 update_file.py out.telemetry.txt $deployment_id  '[DEPLOYMENT_ID]'
 
 rm out.requests.txt
+rm telemetry.json

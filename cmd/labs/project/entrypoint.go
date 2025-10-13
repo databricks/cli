@@ -201,10 +201,8 @@ func (e *Entrypoint) getLoginConfig(cmd *cobra.Command) (*loginConfig, *config.C
 		return lc, cfg, nil
 	}
 	if e.IsBundleAware {
-		b, diags := root.TryConfigureBundle(cmd)
-		if err := diags.Error(); err != nil {
-			return nil, nil, fmt.Errorf("bundle: %w", err)
-		}
+		ctx := cmd.Context()
+		b := root.TryConfigureBundle(cmd)
 		if b != nil {
 			log.Infof(ctx, "Using login configuration from Databricks Asset Bundle")
 			return &loginConfig{}, b.WorkspaceClient().Config, nil
@@ -253,7 +251,7 @@ func (e *Entrypoint) validLogin(cmd *cobra.Command) (*config.Config, error) {
 	isACC := cfg.IsAccountClient()
 	if e.IsAccountLevel && cfg.Profile == "" {
 		if !cmdio.IsPromptSupported(ctx) {
-			return nil, root.ErrCannotConfigureAuth
+			return nil, config.ErrCannotConfigureDefault
 		}
 		replaceCfg, err := e.envAwareConfig(ctx)
 		if err != nil {

@@ -1,0 +1,7 @@
+bundle:
+  name: vermillion
+
+scripts:
+  add:
+    content: |-
+      echo $(( $ARG1 + $ARG2 ))

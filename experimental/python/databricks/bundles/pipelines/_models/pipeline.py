@@ -25,6 +25,10 @@ from databricks.bundles.pipelines._models.ingestion_pipeline_definition import (
     IngestionPipelineDefinition,
     IngestionPipelineDefinitionParam,
 )
+from databricks.bundles.pipelines._models.lifecycle import (
+    Lifecycle,
+    LifecycleParam,
+)
 from databricks.bundles.pipelines._models.notifications import (
     Notifications,
     NotificationsParam,
@@ -41,6 +45,10 @@ from databricks.bundles.pipelines._models.pipeline_permission import (
     PipelinePermission,
     PipelinePermissionParam,
 )
+from databricks.bundles.pipelines._models.pipelines_environment import (
+    PipelinesEnvironment,
+    PipelinesEnvironmentParam,
+)
 from databricks.bundles.pipelines._models.restart_window import (
     RestartWindow,
     RestartWindowParam,
@@ -54,6 +62,11 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class Pipeline(Resource):
     """"""
+
+    allow_duplicate_names: VariableOrOptional[bool] = None
+    """
+    If false, deployment will fail if name conflicts with that of another pipeline.
+    """
 
     budget_policy_id: VariableOrOptional[str] = None
     """
@@ -97,6 +110,11 @@ class Pipeline(Resource):
     Pipeline product edition.
     """
 
+    environment: VariableOrOptional[PipelinesEnvironment] = None
+    """
+    Environment specification for this pipeline used to install dependencies.
+    """
+
     event_log: VariableOrOptional[EventLogSpec] = None
     """
     Event log configuration for this pipeline
@@ -129,6 +147,11 @@ class Pipeline(Resource):
     Libraries or code needed by this deployment.
     """
 
+    lifecycle: VariableOrOptional[Lifecycle] = None
+    """
+    Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+    """
+
     name: VariableOrOptional[str] = None
     """
     Friendly identifier for this pipeline.
@@ -155,17 +178,12 @@ class Pipeline(Resource):
 
     root_path: VariableOrOptional[str] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
     Root path for this pipeline.
     This is used as the root directory when editing the pipeline in the Databricks user interface and it is
     added to sys.path when executing Python sources during pipeline execution.
     """
 
     run_as: VariableOrOptional[RunAs] = None
-    """
-    :meta private: [EXPERIMENTAL]
-    """
 
     schema: VariableOrOptional[str] = None
     """
@@ -191,7 +209,7 @@ class Pipeline(Resource):
 
     target: VariableOrOptional[str] = None
     """
-    Target schema (database) to add tables in this pipeline to. Exactly one of `schema` or `target` must be specified. To publish to Unity Catalog, also specify `catalog`. This legacy field is deprecated for pipeline creation in favor of the `schema` field.
+    [DEPRECATED] Target schema (database) to add tables in this pipeline to. Exactly one of `schema` or `target` must be specified. To publish to Unity Catalog, also specify `catalog`. This legacy field is deprecated for pipeline creation in favor of the `schema` field.
     """
 
     @classmethod
@@ -204,6 +222,11 @@ class Pipeline(Resource):
 
 class PipelineDict(TypedDict, total=False):
     """"""
+
+    allow_duplicate_names: VariableOrOptional[bool]
+    """
+    If false, deployment will fail if name conflicts with that of another pipeline.
+    """
 
     budget_policy_id: VariableOrOptional[str]
     """
@@ -247,6 +270,11 @@ class PipelineDict(TypedDict, total=False):
     Pipeline product edition.
     """
 
+    environment: VariableOrOptional[PipelinesEnvironmentParam]
+    """
+    Environment specification for this pipeline used to install dependencies.
+    """
+
     event_log: VariableOrOptional[EventLogSpecParam]
     """
     Event log configuration for this pipeline
@@ -279,6 +307,11 @@ class PipelineDict(TypedDict, total=False):
     Libraries or code needed by this deployment.
     """
 
+    lifecycle: VariableOrOptional[LifecycleParam]
+    """
+    Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+    """
+
     name: VariableOrOptional[str]
     """
     Friendly identifier for this pipeline.
@@ -305,17 +338,12 @@ class PipelineDict(TypedDict, total=False):
 
     root_path: VariableOrOptional[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
     Root path for this pipeline.
     This is used as the root directory when editing the pipeline in the Databricks user interface and it is
     added to sys.path when executing Python sources during pipeline execution.
     """
 
     run_as: VariableOrOptional[RunAsParam]
-    """
-    :meta private: [EXPERIMENTAL]
-    """
 
     schema: VariableOrOptional[str]
     """
@@ -341,7 +369,7 @@ class PipelineDict(TypedDict, total=False):
 
     target: VariableOrOptional[str]
     """
-    Target schema (database) to add tables in this pipeline to. Exactly one of `schema` or `target` must be specified. To publish to Unity Catalog, also specify `catalog`. This legacy field is deprecated for pipeline creation in favor of the `schema` field.
+    [DEPRECATED] Target schema (database) to add tables in this pipeline to. Exactly one of `schema` or `target` must be specified. To publish to Unity Catalog, also specify `catalog`. This legacy field is deprecated for pipeline creation in favor of the `schema` field.
     """
 
 

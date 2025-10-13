@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"runtime"
 	"strings"
 	"time"
@@ -13,9 +14,12 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/cfgpickers"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
+	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/exec"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
+	browserpkg "github.com/pkg/browser"
 	"github.com/spf13/cobra"
 )
 
@@ -25,10 +29,15 @@ func promptForProfile(ctx context.Context, defaultValue string) (string, error) 
 	}
 
 	prompt := cmdio.Prompt(ctx)
-	prompt.Label = "Databricks profile name"
-	prompt.Default = defaultValue
+	prompt.Label = "Databricks profile name [" + defaultValue + "]"
 	prompt.AllowEdit = true
-	return prompt.Run()
+	result, err := prompt.Run()
+	if result == "" {
+		// Manually return the default value. We could use the prompt.Default
+		// field, but be inconsistent with other prompts in the CLI.
+		return defaultValue, err
+	}
+	return result, err
 }
 
 const (
@@ -88,34 +97,55 @@ depends on the existing profiles you have set in your configuration file
 
 	var loginTimeout time.Duration
 	var configureCluster bool
+	var configureServerless bool
 	cmd.Flags().DurationVar(&loginTimeout, "timeout", defaultTimeout,
 		"Timeout for completing login challenge in the browser")
 	cmd.Flags().BoolVar(&configureCluster, "configure-cluster", false,
 		"Prompts to configure cluster")
+	cmd.Flags().BoolVar(&configureServerless, "configure-serverless", false,
+		"Prompts to configure serverless")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		profileName := cmd.Flag("profile").Value.String()
 
+		// Cluster and Serverless are mutually exclusive.
+		if configureCluster && configureServerless {
+			return errors.New("please either configure serverless or cluster, not both")
+		}
+
 		// If the user has not specified a profile name, prompt for one.
 		if profileName == "" {
 			var err error
-			profileName, err = promptForProfile(ctx, getProfileName(authArguments))
+			profileName = getProfileName(authArguments)
+			if profileName == "" {
+				profileName = "DEFAULT"
+			}
+			profileName, err = promptForProfile(ctx, profileName)
 			if err != nil {
 				return err
 			}
 		}
 
-		// Set the host and account-id based on the provided arguments and flags.
-		err := setHostAndAccountId(ctx, profile.DefaultProfiler, profileName, authArguments, args)
+		// Load parameters from the existing profile if any.
+		existingProfile, err := loadProfileByName(ctx, profileName, profile.DefaultProfiler)
 		if err != nil {
 			return err
 		}
+		err = setHostAndAccountId(ctx, existingProfile, authArguments, args)
+		if err != nil {
+			return err
+		}
+
 		oauthArgument, err := authArguments.ToOAuthArgument()
 		if err != nil {
 			return err
 		}
-		persistentAuth, err := u2m.NewPersistentAuth(ctx, u2m.WithOAuthArgument(oauthArgument))
+		persistentAuthOpts := []u2m.PersistentAuthOption{
+			u2m.WithOAuthArgument(oauthArgument),
+		}
+		persistentAuthOpts = append(persistentAuthOpts, u2m.WithBrowser(getBrowserFunc(cmd)))
+		persistentAuth, err := u2m.NewPersistentAuth(ctx, persistentAuthOpts...)
 		if err != nil {
 			return err
 		}
@@ -128,6 +158,10 @@ depends on the existing profiles you have set in your configuration file
 			AccountID: authArguments.AccountID,
 			AuthType:  "databricks-cli",
 		}
+		databricksCfgFile := os.Getenv("DATABRICKS_CONFIG_FILE")
+		if databricksCfgFile != "" {
+			cfg.ConfigFile = databricksCfgFile
+		}
 
 		ctx, cancel := context.WithTimeout(ctx, loginTimeout)
 		defer cancel()
@@ -136,27 +170,44 @@ depends on the existing profiles you have set in your configuration file
 			return err
 		}
 
-		if configureCluster {
+		switch {
+		case configureCluster:
 			w, err := databricks.NewWorkspaceClient((*databricks.Config)(&cfg))
 			if err != nil {
 				return err
 			}
-			ctx := cmd.Context()
 			clusterID, err := cfgpickers.AskForCluster(ctx, w,
 				cfgpickers.WithDatabricksConnect(minimalDbConnectVersion))
 			if err != nil {
 				return err
 			}
 			cfg.ClusterID = clusterID
+		case configureServerless:
+			cfg.ClusterID = ""
+			cfg.ServerlessComputeID = "auto"
+		default:
+			// Respect the existing profile if it exists, even if it has
+			// both cluster and serverless configured. Tools relying on
+			// these fields from the profile will need to handle this case.
+			//
+			// TODO: consider whether we should use this an an opportunity
+			// to clean up the profile under the assumption that serverless
+			// is the preferred option.
+			if existingProfile != nil {
+				cfg.ClusterID = existingProfile.ClusterID
+				cfg.ServerlessComputeID = existingProfile.ServerlessComputeID
+			}
 		}
 
 		if profileName != "" {
 			err = databrickscfg.SaveToProfile(ctx, &config.Config{
-				Profile:   profileName,
-				Host:      cfg.Host,
-				AuthType:  cfg.AuthType,
-				AccountID: cfg.AccountID,
-				ClusterID: cfg.ClusterID,
+				Profile:             profileName,
+				Host:                cfg.Host,
+				AuthType:            cfg.AuthType,
+				AccountID:           cfg.AccountID,
+				ClusterID:           cfg.ClusterID,
+				ConfigFile:          cfg.ConfigFile,
+				ServerlessComputeID: cfg.ServerlessComputeID,
 			})
 			if err != nil {
 				return err
@@ -182,7 +233,7 @@ depends on the existing profiles you have set in your configuration file
 // 1. --account-id flag.
 // 2. account-id from the specified profile, if available.
 // 3. Prompt the user for the account-id.
-func setHostAndAccountId(ctx context.Context, profiler profile.Profiler, profileName string, authArguments *auth.AuthArguments, args []string) error {
+func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, authArguments *auth.AuthArguments, args []string) error {
 	// If both [HOST] and --host are provided, return an error.
 	host := authArguments.Host
 	if len(args) > 0 && host != "" {
@@ -190,19 +241,13 @@ func setHostAndAccountId(ctx context.Context, profiler profile.Profiler, profile
 	}
 
 	// If the chosen profile has a hostname and the user hasn't specified a host, infer the host from the profile.
-	profiles, err := profiler.LoadProfiles(ctx, profile.WithName(profileName))
-	// Tolerate ErrNoConfiguration here, as we will write out a configuration as part of the login flow.
-	if err != nil && !errors.Is(err, profile.ErrNoConfiguration) {
-		return err
-	}
-
 	if host == "" {
 		if len(args) > 0 {
 			// If [HOST] is provided, set the host to the provided positional argument.
 			authArguments.Host = args[0]
-		} else if len(profiles) > 0 && profiles[0].Host != "" {
+		} else if existingProfile != nil && existingProfile.Host != "" {
 			// If neither [HOST] nor --host are provided, and the profile has a host, use it.
-			authArguments.Host = profiles[0].Host
+			authArguments.Host = existingProfile.Host
 		} else {
 			// If neither [HOST] nor --host are provided, and the profile does not have a host,
 			// then prompt the user for a host.
@@ -219,8 +264,8 @@ func setHostAndAccountId(ctx context.Context, profiler profile.Profiler, profile
 	isAccountClient := (&config.Config{Host: authArguments.Host}).IsAccountClient()
 	accountID := authArguments.AccountID
 	if isAccountClient && accountID == "" {
-		if len(profiles) > 0 && profiles[0].AccountID != "" {
-			authArguments.AccountID = profiles[0].AccountID
+		if existingProfile != nil && existingProfile.AccountID != "" {
+			authArguments.AccountID = existingProfile.AccountID
 		} else {
 			// Prompt user for the account-id if it we could not get it from a
 			// profile.
@@ -244,4 +289,61 @@ func getProfileName(authArguments *auth.AuthArguments) string {
 	host := strings.TrimPrefix(authArguments.Host, "https://")
 	split := strings.Split(host, ".")
 	return split[0]
+}
+
+func loadProfileByName(ctx context.Context, profileName string, profiler profile.Profiler) (*profile.Profile, error) {
+	if profileName == "" {
+		return nil, nil
+	}
+
+	if profiler == nil {
+		return nil, errors.New("profiler cannot be nil")
+	}
+
+	profiles, err := profiler.LoadProfiles(ctx, profile.WithName(profileName))
+	// Tolerate ErrNoConfiguration here, as we will write out a configuration as part of the login flow.
+	if err != nil && !errors.Is(err, profile.ErrNoConfiguration) {
+		return nil, err
+	}
+
+	if len(profiles) > 0 {
+		// LoadProfiles returns only one profile per name, even with multiple profiles in the config file with the same name.
+		return &profiles[0], nil
+	}
+	return nil, nil
+}
+
+// getBrowserFunc returns a function that opens the given URL in the browser.
+// It respects the BROWSER environment variable:
+// - empty string: uses the default browser
+// - "none": prints the URL to stdout without opening a browser
+// - custom command: executes the specified command with the URL as argument
+func getBrowserFunc(cmd *cobra.Command) func(url string) error {
+	browser := env.Get(cmd.Context(), "BROWSER")
+	switch browser {
+	case "":
+		return browserpkg.OpenURL
+	case "none":
+		return func(url string) error {
+			fmt.Fprintf(cmd.OutOrStdout(), "Please open %s in the browser to continue authentication\n", url)
+			return nil
+		}
+	default:
+		return func(url string) error {
+			// Run the browser command via a shell.
+			// It can be a script or a binary and scripts cannot be executed directly on Windows.
+			e, err := exec.NewCommandExecutor(".")
+			if err != nil {
+				return err
+			}
+
+			e.WithInheritOutput()
+			cmd, err := e.StartCommand(cmd.Context(), fmt.Sprintf("%q %q", browser, url))
+			if err != nil {
+				return err
+			}
+
+			return cmd.Wait()
+		}
+	}
 }

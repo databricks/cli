@@ -1,0 +1,4 @@
+scripts:
+  foo:
+    content: |-
+      echo "Hello, world!"

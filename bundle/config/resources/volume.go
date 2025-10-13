@@ -13,18 +13,39 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
+type VolumeGrantPrivilege string
+
+const (
+	VolumeGrantPrivilegeAllPrivileges VolumeGrantPrivilege = "ALL_PRIVILEGES"
+	VolumeGrantPrivilegeApplyTag      VolumeGrantPrivilege = "APPLY_TAG"
+	VolumeGrantPrivilegeManage        VolumeGrantPrivilege = "MANAGE"
+	VolumeGrantPrivilegeReadVolume    VolumeGrantPrivilege = "READ_VOLUME"
+	VolumeGrantPrivilegeWriteVolume   VolumeGrantPrivilege = "WRITE_VOLUME"
+)
+
+// Values returns all valid VolumeGrantPrivilege values
+func (VolumeGrantPrivilege) Values() []VolumeGrantPrivilege {
+	return []VolumeGrantPrivilege{
+		VolumeGrantPrivilegeAllPrivileges,
+		VolumeGrantPrivilegeApplyTag,
+		VolumeGrantPrivilegeManage,
+		VolumeGrantPrivilegeReadVolume,
+		VolumeGrantPrivilegeWriteVolume,
+	}
+}
+
+type VolumeGrant struct {
+	Privileges []VolumeGrantPrivilege `json:"privileges"`
+
+	Principal string `json:"principal"`
+}
+
 type Volume struct {
-	// List of grants to apply on this volume.
-	Grants []Grant `json:"grants,omitempty"`
-
-	// Full name of the volume (catalog_name.schema_name.volume_name). This value is read from
-	// the terraform state after deployment succeeds.
-	ID string `json:"id,omitempty" bundle:"readonly"`
-
+	BaseResource
 	catalog.CreateVolumeRequestContent
 
-	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"internal"`
-	URL            string         `json:"url,omitempty" bundle:"internal"`
+	// List of grants to apply on this volume.
+	Grants []VolumeGrant `json:"grants,omitempty"`
 }
 
 func (v *Volume) UnmarshalJSON(b []byte) error {

@@ -4,8 +4,8 @@ import (
 	"context"
 	"sync"
 
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/logdiag"
 )
 
 type ReadOnlyMutator interface {
@@ -24,11 +24,9 @@ func (*RO) IsRO() {}
 // Run mutators in parallel. Unlike Apply and ApplySeq, this does not perform sync between
 // dynamic and static configuration.
 // Warning: none of the mutators involved must modify bundle directly or indirectly. In particular,
-// they must not call bundle.Apply or bundle.ApplySeq because those include writes to config even if mutator does not.
+// they must not call bundle.ApplyContext or bundle.ApplyContextSeq because those include writes to config even if mutator does not.
 // Deprecated: do not use for new use cases. Refactor your parallel task not to depend on bundle at all.
-func ApplyParallel(ctx context.Context, b *Bundle, mutators ...ReadOnlyMutator) diag.Diagnostics {
-	var allDiags diag.Diagnostics
-	resultsChan := make(chan diag.Diagnostics, len(mutators))
+func ApplyParallel(ctx context.Context, b *Bundle, mutators ...ReadOnlyMutator) {
 	var wg sync.WaitGroup
 
 	contexts := make([]context.Context, len(mutators))
@@ -43,18 +41,13 @@ func ApplyParallel(ctx context.Context, b *Bundle, mutators ...ReadOnlyMutator) 
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			// We're not using bundle.Apply here because we don't do copy between typed and dynamic values
-			resultsChan <- m.Apply(contexts[ind], b)
+			// We're not using bundle.ApplyContext here because we don't do copy between typed and dynamic values
+			diags := m.Apply(contexts[ind], b)
+			for _, d := range diags {
+				logdiag.LogDiag(ctx, d)
+			}
 		}()
 	}
 
 	wg.Wait()
-	close(resultsChan)
-
-	// Collect results into a single slice
-	for diags := range resultsChan {
-		allDiags = append(allDiags, diags...)
-	}
-
-	return allDiags
 }

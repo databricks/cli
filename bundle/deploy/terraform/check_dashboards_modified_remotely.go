@@ -7,7 +7,6 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
-	tfjson "github.com/hashicorp/terraform-json"
 )
 
 type dashboardState struct {
@@ -23,20 +22,12 @@ func collectDashboardsFromState(ctx context.Context, b *bundle.Bundle) ([]dashbo
 	}
 
 	var dashboards []dashboardState
-	for _, resource := range state.Resources {
-		if resource.Mode != tfjson.ManagedResourceMode {
-			continue
-		}
-		for _, instance := range resource.Instances {
-			switch resource.Type {
-			case "databricks_dashboard":
-				dashboards = append(dashboards, dashboardState{
-					Name: resource.Name,
-					ID:   instance.Attributes.ID,
-					ETag: instance.Attributes.ETag,
-				})
-			}
-		}
+	for resourceName, instance := range state["dashboards"] {
+		dashboards = append(dashboards, dashboardState{
+			Name: resourceName,
+			ID:   instance.ID,
+			ETag: instance.ETag,
+		})
 	}
 
 	return dashboards, nil
@@ -51,6 +42,11 @@ func (l *checkDashboardsModifiedRemotely) Name() string {
 func (l *checkDashboardsModifiedRemotely) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// This mutator is relevant only if the bundle includes dashboards.
 	if len(b.Config.Resources.Dashboards) == 0 {
+		return nil
+	}
+
+	if b.DirectDeployment {
+		// TODO: not implemented yet
 		return nil
 	}
 

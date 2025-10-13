@@ -5,8 +5,11 @@ from typing import Literal
 class IngestionSourceType(Enum):
     MYSQL = "MYSQL"
     POSTGRESQL = "POSTGRESQL"
+    REDSHIFT = "REDSHIFT"
+    SQLDW = "SQLDW"
     SQLSERVER = "SQLSERVER"
     SALESFORCE = "SALESFORCE"
+    BIGQUERY = "BIGQUERY"
     NETSUITE = "NETSUITE"
     WORKDAY_RAAS = "WORKDAY_RAAS"
     GA4_RAW_DATA = "GA4_RAW_DATA"
@@ -16,14 +19,20 @@ class IngestionSourceType(Enum):
     TERADATA = "TERADATA"
     SHAREPOINT = "SHAREPOINT"
     DYNAMICS365 = "DYNAMICS365"
+    CONFLUENCE = "CONFLUENCE"
+    META_MARKETING = "META_MARKETING"
+    FOREIGN_CATALOG = "FOREIGN_CATALOG"
 
 
 IngestionSourceTypeParam = (
     Literal[
         "MYSQL",
         "POSTGRESQL",
+        "REDSHIFT",
+        "SQLDW",
         "SQLSERVER",
         "SALESFORCE",
+        "BIGQUERY",
         "NETSUITE",
         "WORKDAY_RAAS",
         "GA4_RAW_DATA",
@@ -33,6 +42,9 @@ IngestionSourceTypeParam = (
         "TERADATA",
         "SHAREPOINT",
         "DYNAMICS365",
+        "CONFLUENCE",
+        "META_MARKETING",
+        "FOREIGN_CATALOG",
     ]
     | IngestionSourceType
 )

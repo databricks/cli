@@ -4,15 +4,21 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/log"
 	"github.com/hashicorp/terraform-exec/tfexec"
 	tfjson "github.com/hashicorp/terraform-json"
 )
 
-// GetActions converts Terraform resource changes into deployplan.Action values.
-// The returned slice can be filtered using deployplan.Filter and FilterGroup helpers.
-func GetActions(changes []*tfjson.ResourceChange) []deployplan.Action {
-	var result []deployplan.Action
+// silentlyUpdatedResources contains resource types that are automatically created by DABs,
+// no need to show them in the plan
+var silentlyUpdatedResources = map[string]bool{
+	"databricks_grants":      true,
+	"databricks_permissions": true,
+	"databricks_secret_acl":  true,
+}
 
+// populatePlan populates a deployplan.Plan from Terraform resource changes.
+func populatePlan(ctx context.Context, plan *deployplan.Plan, changes []*tfjson.ResourceChange) {
 	for _, rc := range changes {
 		if rc.Change == nil {
 			continue
@@ -34,28 +40,27 @@ func GetActions(changes []*tfjson.ResourceChange) []deployplan.Action {
 
 		group, ok := TerraformToGroupName[rc.Type]
 		if !ok {
-			// Happens for databricks_grant, databricks_permissions, databricks_secrets_acl.
-			// These are automatically created by DABs, no need to show them.
+			if !silentlyUpdatedResources[rc.Type] {
+				log.Warnf(ctx, "unknown resource type '%s'", rc.Type)
+			}
 			continue
 		}
 
-		result = append(result, deployplan.Action{
-			Action: actionType,
-			Group:  group,
-			Name:   rc.Name,
-		})
+		key := "resources." + group + "." + rc.Name
+		plan.Plan[key] = &deployplan.PlanEntry{Action: actionType.String()}
 	}
-
-	return result
 }
 
 // ShowPlanFile reads a Terraform plan file located at planPath using the provided tfexec.Terraform handle
-// and converts it into a slice of deployplan.Action.
-func ShowPlanFile(ctx context.Context, tf *tfexec.Terraform, planPath string) ([]deployplan.Action, error) {
-	plan, err := tf.ShowPlanFile(ctx, planPath)
+// and converts it into a deployplan.Plan.
+func ShowPlanFile(ctx context.Context, tf *tfexec.Terraform, planPath string) (*deployplan.Plan, error) {
+	tfPlan, err := tf.ShowPlanFile(ctx, planPath)
 	if err != nil {
 		return nil, err
 	}
 
-	return GetActions(plan.ResourceChanges), nil
+	plan := deployplan.NewPlan()
+	populatePlan(ctx, plan, tfPlan.ResourceChanges)
+
+	return plan, nil
 }

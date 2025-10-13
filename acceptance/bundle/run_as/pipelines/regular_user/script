@@ -1,0 +1,3 @@
+cp -r $TESTDIR/../{databricks.yml,dlt} .
+title "run_as should succeed in all cases"
+source $TESTDIR/../_script

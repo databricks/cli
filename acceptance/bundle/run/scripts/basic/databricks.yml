@@ -1,0 +1,7 @@
+scripts:
+  foo:
+    content: |
+      echo 'hello'
+
+  me:
+    content: $CLI current-user me

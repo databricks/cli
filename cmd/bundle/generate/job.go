@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/yamlsaver"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/spf13/cobra"
@@ -27,6 +28,26 @@ func NewGenerateJobCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "job",
 		Short: "Generate bundle configuration for a job",
+		Long: `Generate bundle configuration for an existing Databricks job.
+
+This command downloads an existing job's configuration and creates bundle files
+that you can use to deploy the job to other environments or manage it as code.
+
+Examples:
+  # Import a production job for version control
+  databricks bundle generate job --existing-job-id 12345 --key my_etl_job
+
+  # Specify custom directories for organization
+  databricks bundle generate job --existing-job-id 67890 \
+    --key data_pipeline --config-dir resources --source-dir src
+
+What gets generated:
+- Job configuration YAML file in the resources directory
+- Any associated notebook or Python files in the source directory
+
+After generation, you can deploy this job to other targets using:
+  databricks bundle deploy --target staging
+  databricks bundle deploy --target prod`,
 	}
 
 	cmd.Flags().Int64Var(&jobId, "existing-job-id", 0, `Job ID of the job to generate config for`)
@@ -37,10 +58,12 @@ func NewGenerateJobCommand() *cobra.Command {
 	cmd.Flags().BoolVarP(&force, "force", "f", false, `Force overwrite existing files in the output directory`)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		ctx := cmd.Context()
-		b, diags := root.MustConfigureBundle(cmd)
-		if err := diags.Error(); err != nil {
-			return diags.Error()
+		ctx := logdiag.InitContext(cmd.Context())
+		cmd.SetContext(ctx)
+
+		b := root.MustConfigureBundle(cmd)
+		if b == nil {
+			return root.ErrAlreadyPrinted
 		}
 
 		w := b.WorkspaceClient()

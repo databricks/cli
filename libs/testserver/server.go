@@ -1,6 +1,8 @@
 package testserver
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -14,7 +16,6 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/databricks/cli/internal/testutil"
-	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
 type Server struct {
@@ -24,6 +25,7 @@ type Server struct {
 	t testutil.TestingT
 
 	fakeWorkspaces map[string]*FakeWorkspace
+	fakeOidc       *FakeOidc
 	mu             sync.Mutex
 
 	RequestCallback  func(request *Request)
@@ -37,6 +39,7 @@ type Request struct {
 	Body      []byte
 	Vars      map[string]string
 	Workspace *FakeWorkspace
+	Context   context.Context
 }
 
 type Response struct {
@@ -54,7 +57,7 @@ type EncodedResponse struct {
 func NewRequest(t testutil.TestingT, r *http.Request, fakeWorkspace *FakeWorkspace) Request {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		t.Fatalf("Failed to read request body: %s", err)
+		t.Logf("Error while reading request body: %s", err)
 	}
 
 	return Request{
@@ -64,6 +67,7 @@ func NewRequest(t testutil.TestingT, r *http.Request, fakeWorkspace *FakeWorkspa
 		Body:      body,
 		Vars:      mux.Vars(r),
 		Workspace: fakeWorkspace,
+		Context:   r.Context(),
 	}
 }
 
@@ -187,6 +191,7 @@ func New(t testutil.TestingT) *Server {
 		Router:         router,
 		t:              t,
 		fakeWorkspaces: map[string]*FakeWorkspace{},
+		fakeOidc:       &FakeOidc{url: server.URL},
 	}
 
 	// Set up the not found handler as fallback
@@ -213,8 +218,8 @@ Response.Body = '<response body here>'
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNotImplemented)
 
-		resp := apierr.APIError{
-			Message: "No stub found for pattern: " + pattern,
+		resp := map[string]string{
+			"message": "No stub found for pattern: " + pattern,
 		}
 
 		respBytes, err := json.Marshal(resp)
@@ -242,7 +247,7 @@ func (s *Server) getWorkspaceForToken(token string) *FakeWorkspace {
 	defer s.mu.Unlock()
 
 	if _, ok := s.fakeWorkspaces[token]; !ok {
-		s.fakeWorkspaces[token] = NewFakeWorkspace(s.Server.URL)
+		s.fakeWorkspaces[token] = NewFakeWorkspace(s.URL, token)
 	}
 
 	return s.fakeWorkspaces[token]
@@ -262,8 +267,20 @@ func (s *Server) Handle(method, path string, handler HandlerFunc) {
 			s.RequestCallback(&request)
 		}
 
-		respAny := handler(request)
-		resp := normalizeResponse(s.t, respAny)
+		var resp EncodedResponse
+
+		if bytes.Contains(request.Body, []byte("INJECT_ERROR")) {
+			resp = EncodedResponse{
+				StatusCode: 500,
+				Body:       []byte("INJECTED"),
+			}
+		} else {
+			respAny := handler(request)
+			if respAny == nil && request.Context.Err() != nil {
+				return
+			}
+			resp = normalizeResponse(s.t, respAny)
+		}
 
 		for k, v := range resp.Headers {
 			w.Header()[k] = v

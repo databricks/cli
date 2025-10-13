@@ -1,0 +1,10 @@
+Local = true
+Cloud = false
+
+[[Server]]
+Pattern = "POST /api/2.0/secrets/scopes/create"
+Response.Body = '''
+{
+    "scope": "xxxxxxxx-xxx"
+}
+'''

@@ -60,7 +60,6 @@ func newCreate() *cobra.Command {
 	var createReq marketplace.CreateListingRequest
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "create"
@@ -123,8 +122,6 @@ func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var deleteReq marketplace.DeleteListingRequest
-
-	// TODO: short flags
 
 	cmd.Use = "delete ID"
 	cmd.Short = `Delete a listing.`
@@ -191,8 +188,6 @@ func newGet() *cobra.Command {
 
 	var getReq marketplace.GetListingRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get ID"
 	cmd.Short = `Get a listing.`
 	cmd.Long = `Get a listing.
@@ -258,8 +253,6 @@ func newList() *cobra.Command {
 
 	var listReq marketplace.GetListingsRequest
 
-	// TODO: short flags
-
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)
 
@@ -312,7 +305,6 @@ func newUpdate() *cobra.Command {
 	var updateReq marketplace.UpdateListingRequest
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "update ID"

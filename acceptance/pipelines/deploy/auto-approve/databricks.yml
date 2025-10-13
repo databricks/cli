@@ -1,0 +1,5 @@
+bundle:
+  name: test-pipeline-auto-approve
+
+include:
+  - "./*.yml"

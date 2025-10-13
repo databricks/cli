@@ -1,0 +1,116 @@
+{
+  "plan": {
+    "resources.jobs.my_default_python_job": {
+      "depends_on": [
+        {
+          "node": "resources.pipelines.my_default_python_pipeline",
+          "label": "${resources.pipelines.my_default_python_pipeline.id}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "config": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/prod/state/metadata.json"
+          },
+          "edit_mode": "UI_LOCKED",
+          "format": "MULTI_TASK",
+          "job_clusters": [
+            {
+              "job_cluster_key": "job_cluster",
+              "new_cluster": {
+                "autoscale": {
+                  "max_workers": 4,
+                  "min_workers": 1
+                },
+                "data_security_mode": "SINGLE_USER",
+                "node_type_id": "[NODE_TYPE_ID]",
+                "num_workers": 0,
+                "spark_version": "15.4.x-scala2.12"
+              }
+            }
+          ],
+          "max_concurrent_runs": 1,
+          "name": "my_default_python_job",
+          "queue": {
+            "enabled": true
+          },
+          "tasks": [
+            {
+              "depends_on": [
+                {
+                  "task_key": "refresh_pipeline"
+                }
+              ],
+              "job_cluster_key": "job_cluster",
+              "libraries": [
+                {
+                  "whl": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/prod/artifacts/.internal/my_default_python-0.0.1-py3-none-any.whl"
+                }
+              ],
+              "python_wheel_task": {
+                "entry_point": "main",
+                "package_name": "my_default_python"
+              },
+              "task_key": "main_task"
+            },
+            {
+              "job_cluster_key": "job_cluster",
+              "notebook_task": {
+                "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/prod/files/src/notebook"
+              },
+              "task_key": "notebook_task"
+            },
+            {
+              "depends_on": [
+                {
+                  "task_key": "notebook_task"
+                }
+              ],
+              "pipeline_task": {
+                "pipeline_id": "${resources.pipelines.my_default_python_pipeline.id}"
+              },
+              "task_key": "refresh_pipeline"
+            }
+          ],
+          "trigger": {
+            "pause_status": "UNPAUSED",
+            "periodic": {
+              "interval": 1,
+              "unit": "DAYS"
+            }
+          }
+        },
+        "vars": {
+          "tasks[2].pipeline_task.pipeline_id": "${resources.pipelines.my_default_python_pipeline.id}"
+        }
+      }
+    },
+    "resources.pipelines.my_default_python_pipeline": {
+      "action": "create",
+      "new_state": {
+        "config": {
+          "channel": "CURRENT",
+          "configuration": {
+            "bundle.sourcePath": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/prod/files/src"
+          },
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/prod/state/metadata.json"
+          },
+          "edition": "ADVANCED",
+          "libraries": [
+            {
+              "notebook": {
+                "path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/prod/files/src/pipeline"
+              }
+            }
+          ],
+          "name": "my_default_python_pipeline",
+          "schema": "my_default_python_prod"
+        }
+      }
+    }
+  }
+}

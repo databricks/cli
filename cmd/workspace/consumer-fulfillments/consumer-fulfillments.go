@@ -52,8 +52,6 @@ func newGet() *cobra.Command {
 
 	var getReq marketplace.GetListingContentMetadataRequest
 
-	// TODO: short flags
-
 	cmd.Flags().IntVar(&getReq.PageSize, "page-size", getReq.PageSize, ``)
 	cmd.Flags().StringVar(&getReq.PageToken, "page-token", getReq.PageToken, ``)
 
@@ -106,8 +104,6 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq marketplace.ListFulfillmentsRequest
-
-	// TODO: short flags
 
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)

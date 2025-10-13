@@ -4,12 +4,15 @@ package schema
 
 type Resources struct {
 	AccessControlRuleSet                         map[string]any `json:"databricks_access_control_rule_set,omitempty"`
+	AccountFederationPolicy                      map[string]any `json:"databricks_account_federation_policy,omitempty"`
 	AccountNetworkPolicy                         map[string]any `json:"databricks_account_network_policy,omitempty"`
+	AccountSettingV2                             map[string]any `json:"databricks_account_setting_v2,omitempty"`
 	AibiDashboardEmbeddingAccessPolicySetting    map[string]any `json:"databricks_aibi_dashboard_embedding_access_policy_setting,omitempty"`
 	AibiDashboardEmbeddingApprovedDomainsSetting map[string]any `json:"databricks_aibi_dashboard_embedding_approved_domains_setting,omitempty"`
 	Alert                                        map[string]any `json:"databricks_alert,omitempty"`
 	AlertV2                                      map[string]any `json:"databricks_alert_v2,omitempty"`
 	App                                          map[string]any `json:"databricks_app,omitempty"`
+	AppsSettingsCustomTemplate                   map[string]any `json:"databricks_apps_settings_custom_template,omitempty"`
 	ArtifactAllowlist                            map[string]any `json:"databricks_artifact_allowlist,omitempty"`
 	AutomaticClusterUpdateWorkspaceSetting       map[string]any `json:"databricks_automatic_cluster_update_workspace_setting,omitempty"`
 	AwsS3Mount                                   map[string]any `json:"databricks_aws_s3_mount,omitempty"`
@@ -20,6 +23,9 @@ type Resources struct {
 	BudgetPolicy                                 map[string]any `json:"databricks_budget_policy,omitempty"`
 	Catalog                                      map[string]any `json:"databricks_catalog,omitempty"`
 	CatalogWorkspaceBinding                      map[string]any `json:"databricks_catalog_workspace_binding,omitempty"`
+	CleanRoomAsset                               map[string]any `json:"databricks_clean_room_asset,omitempty"`
+	CleanRoomAutoApprovalRule                    map[string]any `json:"databricks_clean_room_auto_approval_rule,omitempty"`
+	CleanRoomsCleanRoom                          map[string]any `json:"databricks_clean_rooms_clean_room,omitempty"`
 	Cluster                                      map[string]any `json:"databricks_cluster,omitempty"`
 	ClusterPolicy                                map[string]any `json:"databricks_cluster_policy,omitempty"`
 	ComplianceSecurityProfileWorkspaceSetting    map[string]any `json:"databricks_compliance_security_profile_workspace_setting,omitempty"`
@@ -27,7 +33,9 @@ type Resources struct {
 	Credential                                   map[string]any `json:"databricks_credential,omitempty"`
 	CustomAppIntegration                         map[string]any `json:"databricks_custom_app_integration,omitempty"`
 	Dashboard                                    map[string]any `json:"databricks_dashboard,omitempty"`
+	DatabaseDatabaseCatalog                      map[string]any `json:"databricks_database_database_catalog,omitempty"`
 	DatabaseInstance                             map[string]any `json:"databricks_database_instance,omitempty"`
+	DatabaseSyncedDatabaseTable                  map[string]any `json:"databricks_database_synced_database_table,omitempty"`
 	DbfsFile                                     map[string]any `json:"databricks_dbfs_file,omitempty"`
 	DefaultNamespaceSetting                      map[string]any `json:"databricks_default_namespace_setting,omitempty"`
 	Directory                                    map[string]any `json:"databricks_directory,omitempty"`
@@ -36,7 +44,9 @@ type Resources struct {
 	DisableLegacyFeaturesSetting                 map[string]any `json:"databricks_disable_legacy_features_setting,omitempty"`
 	EnhancedSecurityMonitoringWorkspaceSetting   map[string]any `json:"databricks_enhanced_security_monitoring_workspace_setting,omitempty"`
 	Entitlements                                 map[string]any `json:"databricks_entitlements,omitempty"`
+	EntityTagAssignment                          map[string]any `json:"databricks_entity_tag_assignment,omitempty"`
 	ExternalLocation                             map[string]any `json:"databricks_external_location,omitempty"`
+	ExternalMetadata                             map[string]any `json:"databricks_external_metadata,omitempty"`
 	File                                         map[string]any `json:"databricks_file,omitempty"`
 	GitCredential                                map[string]any `json:"databricks_git_credential,omitempty"`
 	GlobalInitScript                             map[string]any `json:"databricks_global_init_script,omitempty"`
@@ -52,6 +62,7 @@ type Resources struct {
 	Job                                          map[string]any `json:"databricks_job,omitempty"`
 	LakehouseMonitor                             map[string]any `json:"databricks_lakehouse_monitor,omitempty"`
 	Library                                      map[string]any `json:"databricks_library,omitempty"`
+	MaterializedFeaturesFeatureTag               map[string]any `json:"databricks_materialized_features_feature_tag,omitempty"`
 	Metastore                                    map[string]any `json:"databricks_metastore,omitempty"`
 	MetastoreAssignment                          map[string]any `json:"databricks_metastore_assignment,omitempty"`
 	MetastoreDataAccess                          map[string]any `json:"databricks_metastore_data_access,omitempty"`
@@ -76,12 +87,15 @@ type Resources struct {
 	Notebook                                     map[string]any `json:"databricks_notebook,omitempty"`
 	NotificationDestination                      map[string]any `json:"databricks_notification_destination,omitempty"`
 	OboToken                                     map[string]any `json:"databricks_obo_token,omitempty"`
+	OnlineStore                                  map[string]any `json:"databricks_online_store,omitempty"`
 	OnlineTable                                  map[string]any `json:"databricks_online_table,omitempty"`
 	PermissionAssignment                         map[string]any `json:"databricks_permission_assignment,omitempty"`
 	Permissions                                  map[string]any `json:"databricks_permissions,omitempty"`
 	Pipeline                                     map[string]any `json:"databricks_pipeline,omitempty"`
+	PolicyInfo                                   map[string]any `json:"databricks_policy_info,omitempty"`
 	Provider                                     map[string]any `json:"databricks_provider,omitempty"`
 	QualityMonitor                               map[string]any `json:"databricks_quality_monitor,omitempty"`
+	QualityMonitorV2                             map[string]any `json:"databricks_quality_monitor_v2,omitempty"`
 	Query                                        map[string]any `json:"databricks_query,omitempty"`
 	Recipient                                    map[string]any `json:"databricks_recipient,omitempty"`
 	RecipientFederationPolicy                    map[string]any `json:"databricks_recipient_federation_policy,omitempty"`
@@ -93,6 +107,7 @@ type Resources struct {
 	SecretAcl                                    map[string]any `json:"databricks_secret_acl,omitempty"`
 	SecretScope                                  map[string]any `json:"databricks_secret_scope,omitempty"`
 	ServicePrincipal                             map[string]any `json:"databricks_service_principal,omitempty"`
+	ServicePrincipalFederationPolicy             map[string]any `json:"databricks_service_principal_federation_policy,omitempty"`
 	ServicePrincipalRole                         map[string]any `json:"databricks_service_principal_role,omitempty"`
 	ServicePrincipalSecret                       map[string]any `json:"databricks_service_principal_secret,omitempty"`
 	Share                                        map[string]any `json:"databricks_share,omitempty"`
@@ -108,6 +123,7 @@ type Resources struct {
 	StorageCredential                            map[string]any `json:"databricks_storage_credential,omitempty"`
 	SystemSchema                                 map[string]any `json:"databricks_system_schema,omitempty"`
 	Table                                        map[string]any `json:"databricks_table,omitempty"`
+	TagPolicy                                    map[string]any `json:"databricks_tag_policy,omitempty"`
 	Token                                        map[string]any `json:"databricks_token,omitempty"`
 	User                                         map[string]any `json:"databricks_user,omitempty"`
 	UserInstanceProfile                          map[string]any `json:"databricks_user_instance_profile,omitempty"`
@@ -119,17 +135,21 @@ type Resources struct {
 	WorkspaceConf                                map[string]any `json:"databricks_workspace_conf,omitempty"`
 	WorkspaceFile                                map[string]any `json:"databricks_workspace_file,omitempty"`
 	WorkspaceNetworkOption                       map[string]any `json:"databricks_workspace_network_option,omitempty"`
+	WorkspaceSettingV2                           map[string]any `json:"databricks_workspace_setting_v2,omitempty"`
 }
 
 func NewResources() *Resources {
 	return &Resources{
 		AccessControlRuleSet:                         make(map[string]any),
+		AccountFederationPolicy:                      make(map[string]any),
 		AccountNetworkPolicy:                         make(map[string]any),
+		AccountSettingV2:                             make(map[string]any),
 		AibiDashboardEmbeddingAccessPolicySetting:    make(map[string]any),
 		AibiDashboardEmbeddingApprovedDomainsSetting: make(map[string]any),
 		Alert:                                  make(map[string]any),
 		AlertV2:                                make(map[string]any),
 		App:                                    make(map[string]any),
+		AppsSettingsCustomTemplate:             make(map[string]any),
 		ArtifactAllowlist:                      make(map[string]any),
 		AutomaticClusterUpdateWorkspaceSetting: make(map[string]any),
 		AwsS3Mount:                             make(map[string]any),
@@ -140,6 +160,9 @@ func NewResources() *Resources {
 		BudgetPolicy:                           make(map[string]any),
 		Catalog:                                make(map[string]any),
 		CatalogWorkspaceBinding:                make(map[string]any),
+		CleanRoomAsset:                         make(map[string]any),
+		CleanRoomAutoApprovalRule:              make(map[string]any),
+		CleanRoomsCleanRoom:                    make(map[string]any),
 		Cluster:                                make(map[string]any),
 		ClusterPolicy:                          make(map[string]any),
 		ComplianceSecurityProfileWorkspaceSetting: make(map[string]any),
@@ -147,7 +170,9 @@ func NewResources() *Resources {
 		Credential:                   make(map[string]any),
 		CustomAppIntegration:         make(map[string]any),
 		Dashboard:                    make(map[string]any),
+		DatabaseDatabaseCatalog:      make(map[string]any),
 		DatabaseInstance:             make(map[string]any),
+		DatabaseSyncedDatabaseTable:  make(map[string]any),
 		DbfsFile:                     make(map[string]any),
 		DefaultNamespaceSetting:      make(map[string]any),
 		Directory:                    make(map[string]any),
@@ -156,7 +181,9 @@ func NewResources() *Resources {
 		DisableLegacyFeaturesSetting: make(map[string]any),
 		EnhancedSecurityMonitoringWorkspaceSetting: make(map[string]any),
 		Entitlements:                      make(map[string]any),
+		EntityTagAssignment:               make(map[string]any),
 		ExternalLocation:                  make(map[string]any),
+		ExternalMetadata:                  make(map[string]any),
 		File:                              make(map[string]any),
 		GitCredential:                     make(map[string]any),
 		GlobalInitScript:                  make(map[string]any),
@@ -172,6 +199,7 @@ func NewResources() *Resources {
 		Job:                               make(map[string]any),
 		LakehouseMonitor:                  make(map[string]any),
 		Library:                           make(map[string]any),
+		MaterializedFeaturesFeatureTag:    make(map[string]any),
 		Metastore:                         make(map[string]any),
 		MetastoreAssignment:               make(map[string]any),
 		MetastoreDataAccess:               make(map[string]any),
@@ -196,12 +224,15 @@ func NewResources() *Resources {
 		Notebook:                          make(map[string]any),
 		NotificationDestination:           make(map[string]any),
 		OboToken:                          make(map[string]any),
+		OnlineStore:                       make(map[string]any),
 		OnlineTable:                       make(map[string]any),
 		PermissionAssignment:              make(map[string]any),
 		Permissions:                       make(map[string]any),
 		Pipeline:                          make(map[string]any),
+		PolicyInfo:                        make(map[string]any),
 		Provider:                          make(map[string]any),
 		QualityMonitor:                    make(map[string]any),
+		QualityMonitorV2:                  make(map[string]any),
 		Query:                             make(map[string]any),
 		Recipient:                         make(map[string]any),
 		RecipientFederationPolicy:         make(map[string]any),
@@ -213,6 +244,7 @@ func NewResources() *Resources {
 		SecretAcl:                         make(map[string]any),
 		SecretScope:                       make(map[string]any),
 		ServicePrincipal:                  make(map[string]any),
+		ServicePrincipalFederationPolicy:  make(map[string]any),
 		ServicePrincipalRole:              make(map[string]any),
 		ServicePrincipalSecret:            make(map[string]any),
 		Share:                             make(map[string]any),
@@ -228,6 +260,7 @@ func NewResources() *Resources {
 		StorageCredential:                 make(map[string]any),
 		SystemSchema:                      make(map[string]any),
 		Table:                             make(map[string]any),
+		TagPolicy:                         make(map[string]any),
 		Token:                             make(map[string]any),
 		User:                              make(map[string]any),
 		UserInstanceProfile:               make(map[string]any),
@@ -239,5 +272,6 @@ func NewResources() *Resources {
 		WorkspaceConf:                     make(map[string]any),
 		WorkspaceFile:                     make(map[string]any),
 		WorkspaceNetworkOption:            make(map[string]any),
+		WorkspaceSettingV2:                make(map[string]any),
 	}
 }

@@ -1,0 +1,9 @@
+Local = true
+Cloud = false
+
+[GOOS]
+  darwin = false
+  linux = false
+
+[EnvMatrix]
+  DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct-exp"]

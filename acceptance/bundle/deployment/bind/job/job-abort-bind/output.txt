@@ -1,0 +1,32 @@
+
+=== Create a pre-defined job:
+Created job with ID: [NUMID]
+
+=== Expect binding to fail without an auto-approve flag:
+Error: This bind operation requires user confirmation, but the current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed.
+
+=== Deploy bundle:
+>>> [CLI] bundle deploy --force-lock
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-job-[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Check that job is not bound and not updated with config from bundle:
+>>> [CLI] jobs get [NUMID]
+{
+  "job_id": [NUMID],
+  "settings": {
+    "name": "test-unbound-job-[UNIQUE_NAME]",
+    "tasks": [
+      {
+        "task_key": "my_notebook_task",
+        "spark_python_task": {
+          "python_file": "/Workspace/Users/[USERNAME]/initial_hello_world.py"
+        }
+      }
+    ]
+  }
+}
+
+=== Delete the pre-defined job [NUMID]:0

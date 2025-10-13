@@ -116,6 +116,7 @@ func TestConvertPipeline(t *testing.T) {
 				},
 			},
 		},
+		"allow_duplicate_names": true,
 		"cluster": []any{
 			map[string]any{
 				"label":       "default",

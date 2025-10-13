@@ -11,4 +11,5 @@ type ResourceEntitlements struct {
 	ServicePrincipalId      string `json:"service_principal_id,omitempty"`
 	UserId                  string `json:"user_id,omitempty"`
 	WorkspaceAccess         bool   `json:"workspace_access,omitempty"`
+	WorkspaceConsume        bool   `json:"workspace_consume,omitempty"`
 }

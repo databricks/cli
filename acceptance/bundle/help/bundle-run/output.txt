@@ -1,6 +1,6 @@
 
 >>> [CLI] bundle run --help
-Run the job or pipeline identified by KEY.
+Run the job, pipeline or app identified by KEY.
 
 The KEY is the unique identifier of the resource to run. In addition to
 customizing the run using any of the available flags, you can also specify
@@ -38,6 +38,7 @@ Usage:
   databricks bundle run [flags] [KEY]
 
 Job Flags:
+      --only strings            comma separated list of task keys to run
       --params stringToString   comma separated k=v pairs for job parameters (default [])
 
 Job Task Flags:

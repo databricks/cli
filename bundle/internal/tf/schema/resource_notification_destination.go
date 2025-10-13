@@ -16,8 +16,16 @@ type ResourceNotificationDestinationConfigGenericWebhook struct {
 }
 
 type ResourceNotificationDestinationConfigMicrosoftTeams struct {
-	Url    string `json:"url,omitempty"`
-	UrlSet bool   `json:"url_set,omitempty"`
+	AppId         string `json:"app_id,omitempty"`
+	AppIdSet      bool   `json:"app_id_set,omitempty"`
+	AuthSecret    string `json:"auth_secret,omitempty"`
+	AuthSecretSet bool   `json:"auth_secret_set,omitempty"`
+	ChannelUrl    string `json:"channel_url,omitempty"`
+	ChannelUrlSet bool   `json:"channel_url_set,omitempty"`
+	TenantId      string `json:"tenant_id,omitempty"`
+	TenantIdSet   bool   `json:"tenant_id_set,omitempty"`
+	Url           string `json:"url,omitempty"`
+	UrlSet        bool   `json:"url_set,omitempty"`
 }
 
 type ResourceNotificationDestinationConfigPagerduty struct {
@@ -26,8 +34,12 @@ type ResourceNotificationDestinationConfigPagerduty struct {
 }
 
 type ResourceNotificationDestinationConfigSlack struct {
-	Url    string `json:"url,omitempty"`
-	UrlSet bool   `json:"url_set,omitempty"`
+	ChannelId     string `json:"channel_id,omitempty"`
+	ChannelIdSet  bool   `json:"channel_id_set,omitempty"`
+	OauthToken    string `json:"oauth_token,omitempty"`
+	OauthTokenSet bool   `json:"oauth_token_set,omitempty"`
+	Url           string `json:"url,omitempty"`
+	UrlSet        bool   `json:"url_set,omitempty"`
 }
 
 type ResourceNotificationDestinationConfig struct {

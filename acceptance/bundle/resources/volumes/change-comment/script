@@ -1,0 +1,41 @@
+title "Initial summary for resource, before the deployment"
+trace $CLI bundle summary -o json | jq .resources.volumes.volume1
+
+title "Verify volume does not exist"
+trace musterr $CLI volumes read main.myschema.myvolume
+
+trace $CLI bundle deploy
+
+print_requests() {
+    jq 'select(.method != "GET" and (.path | contains("/unity")))' < out.requests.txt
+    rm out.requests.txt
+}
+
+trace print_requests
+
+title "Summary should now show id and url\n"
+$CLI bundle summary -o json | jq .resources.volumes.volume1.id
+$CLI bundle summary -o json | jq .resources.volumes.volume1.url
+
+title "Verify deployment"
+trace $CLI volumes read main.myschema.myvolume
+
+title "Update comment"
+trace update_file.py databricks.yml COMMENT1 COMMENT2
+
+title "Summary should show modified_status=modified and show the same id\n"
+$CLI bundle summary -o json | jq .resources.volumes.volume1
+
+trace $CLI bundle deploy
+trace print_requests
+
+title "Verify updated deployment: should show new comment"
+trace $CLI volumes read main.myschema.myvolume | jq .comment
+
+trace $CLI bundle destroy --auto-approve
+trace print_requests
+
+trace musterr $CLI volumes read main.myschema.myvolume
+$CLI bundle summary -o json | jq .resources.volumes.volume1
+
+rm out.requests.txt

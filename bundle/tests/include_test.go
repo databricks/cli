@@ -7,16 +7,19 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/phases"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestIncludeInvalid(t *testing.T) {
-	ctx := context.Background()
+	ctx := logdiag.InitContext(context.Background())
+	logdiag.SetCollect(ctx, true)
 	b, err := bundle.Load(ctx, "./include_invalid")
 	require.NoError(t, err)
-	diags := phases.Load(ctx, b)
+	phases.Load(ctx, b)
+	diags := logdiag.FlushCollected(ctx)
 	require.Error(t, diags.Error())
 	assert.ErrorContains(t, diags.Error(), "notexists.yml defined in 'include' section does not match any files")
 }

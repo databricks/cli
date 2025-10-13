@@ -58,7 +58,6 @@ func newCreate() *cobra.Command {
 	var createReq catalog.AccountsCreateMetastore
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: metastore_info
@@ -127,8 +126,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq catalog.DeleteAccountMetastoreRequest
 
-	// TODO: short flags
-
 	cmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `Force deletion even if the metastore is not empty.`)
 
 	cmd.Use = "delete METASTORE_ID"
@@ -186,8 +183,6 @@ func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getReq catalog.GetAccountMetastoreRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get METASTORE_ID"
 	cmd.Short = `Get a metastore.`
@@ -285,7 +280,6 @@ func newUpdate() *cobra.Command {
 	var updateReq catalog.AccountsUpdateMetastore
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: metastore_info

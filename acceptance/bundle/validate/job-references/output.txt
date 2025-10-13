@@ -7,10 +7,7 @@
       "bundle_root_path": "."
     },
     "name": "foobar",
-    "target": "default",
-    "terraform": {
-      "exec_path": "[TERRAFORM]"
-    }
+    "target": "default"
   },
   "resources": {
     "jobs": {
@@ -23,7 +20,6 @@
         "format": "MULTI_TASK",
         "max_concurrent_runs": 1,
         "name": "inner loop",
-        "permissions": [],
         "queue": {
           "enabled": true
         }
@@ -37,7 +33,6 @@
         "format": "MULTI_TASK",
         "max_concurrent_runs": 1,
         "name": "outer loop",
-        "permissions": [],
         "queue": {
           "enabled": true
         },
@@ -57,10 +52,10 @@
       "."
     ]
   },
-  "targets": null,
   "workspace": {
     "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/foobar/default/artifacts",
     "current_user": {
+      "domain_friendly_name": "[USERNAME]",
       "id": "[USERID]",
       "short_name": "[USERNAME]",
       "userName": "[USERNAME]"

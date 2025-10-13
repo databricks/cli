@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/databricks/cli/internal/testutil"
@@ -30,9 +31,10 @@ var (
 )
 
 type Replacement struct {
-	Old   *regexp.Regexp
-	New   string
-	Order int
+	Old      *regexp.Regexp
+	New      string
+	Order    int
+	Distinct bool
 }
 
 type ReplacementsContext struct {
@@ -52,29 +54,59 @@ func (r *ReplacementsContext) Replace(s string) string {
 		return repls[i].Order < repls[j].Order
 	})
 	for _, repl := range repls {
-		s = repl.Old.ReplaceAllString(s, repl.New)
+		if !repl.Distinct {
+			s = repl.Old.ReplaceAllString(s, repl.New)
+			continue
+		}
+
+		matches := repl.Old.FindAllString(s, -1)
+		if len(matches) <= 1 {
+			s = repl.Old.ReplaceAllString(s, repl.New)
+			continue
+		}
+
+		nextIndex := 0
+		seen := make(map[string]int)
+		s = repl.Old.ReplaceAllStringFunc(s, func(match string) string {
+			idx, ok := seen[match]
+			if !ok {
+				idx = nextIndex
+				seen[match] = idx
+				nextIndex++
+			}
+
+			submatches := repl.Old.FindStringSubmatchIndex(match)
+			replaced := repl.Old.ExpandString(nil, repl.New, match, submatches)
+			return string(replaced) + "[" + strconv.Itoa(idx) + "]"
+		})
 	}
 	return s
 }
 
-func (r *ReplacementsContext) append(pattern *regexp.Regexp, replacement string) {
+func (r *ReplacementsContext) append(pattern *regexp.Regexp, replacement string, order int) {
 	r.Repls = append(r.Repls, Replacement{
-		Old: pattern,
-		New: replacement,
+		Old:   pattern,
+		New:   replacement,
+		Order: order,
 	})
 }
 
-func (r *ReplacementsContext) appendLiteral(old, new string) {
+func (r *ReplacementsContext) appendLiteral(old, new string, order int) {
 	r.append(
 		// Transform the input strings such that they can be used as literal strings in regular expressions.
 		regexp.MustCompile(regexp.QuoteMeta(old)),
 		// Transform the replacement string such that `$` is interpreted as a literal dollar sign.
 		// For more information about how the replacement string is used, see [regexp.Regexp.Expand].
 		strings.ReplaceAll(new, `$`, `$$`),
+		order,
 	)
 }
 
 func (r *ReplacementsContext) Set(old, new string) {
+	r.SetWithOrder(old, new, 0)
+}
+
+func (r *ReplacementsContext) SetWithOrder(old, new string, order int) {
 	if old == "" || new == "" {
 		return
 	}
@@ -90,12 +122,12 @@ func (r *ReplacementsContext) Set(old, new string) {
 			encodedStrNew := trimQuotes(string(encodedNew))
 			encodedStrOld := trimQuotes(string(encodedOld))
 			if encodedStrNew != new || encodedStrOld != old {
-				r.appendLiteral(encodedStrOld, encodedStrNew)
+				r.appendLiteral(encodedStrOld, encodedStrNew, order)
 			}
 		}
 	}
 
-	r.appendLiteral(old, new)
+	r.appendLiteral(old, new, order)
 }
 
 func trimQuotes(s string) string {
@@ -142,7 +174,6 @@ func (r *ReplacementsContext) SetPathNoEval(old, new string) {
 func (r *ReplacementsContext) SetPathWithParents(old, new string) {
 	r.SetPath(old, new)
 	r.SetPath(filepath.Dir(old), new+"_PARENT")
-	r.SetPath(filepath.Dir(filepath.Dir(old)), new+"_GPARENT")
 }
 
 func PrepareReplacementsWorkspaceConfig(t testutil.TestingT, r *ReplacementsContext, cfg *config.Config) {
@@ -199,22 +230,22 @@ func PrepareReplacementsUser(t testutil.TestingT, r *ReplacementsContext, u iam.
 
 func PrepareReplacementsUUID(t testutil.TestingT, r *ReplacementsContext) {
 	t.Helper()
-	r.append(uuidRegex, "[UUID]")
+	r.append(uuidRegex, "[UUID]", 0)
 }
 
 func PrepareReplacementsNumber(t testutil.TestingT, r *ReplacementsContext) {
 	t.Helper()
-	r.append(numIdRegex, "[NUMID]")
+	r.append(numIdRegex, "[NUMID]", 0)
 }
 
 func PrepareReplacementsTemporaryDirectory(t testutil.TestingT, r *ReplacementsContext) {
 	t.Helper()
-	r.append(privatePathRegex, "/tmp/.../$3")
+	r.append(privatePathRegex, "/tmp/.../$3", 0)
 }
 
 func PrepareReplacementsDevVersion(t testutil.TestingT, r *ReplacementsContext) {
 	t.Helper()
-	r.append(devVersionRegex, "[DEV_VERSION]")
+	r.append(devVersionRegex, "[DEV_VERSION]", 0)
 }
 
 func PrepareReplacementSdkVersion(t testutil.TestingT, r *ReplacementsContext) {

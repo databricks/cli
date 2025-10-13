@@ -48,11 +48,23 @@ __all__ = [
     "IngestionPipelineDefinition",
     "IngestionPipelineDefinitionDict",
     "IngestionPipelineDefinitionParam",
+    "IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig",
+    "IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfigDict",
+    "IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfigParam",
+    "IngestionPipelineDefinitionWorkdayReportParameters",
+    "IngestionPipelineDefinitionWorkdayReportParametersDict",
+    "IngestionPipelineDefinitionWorkdayReportParametersParam",
+    "IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue",
+    "IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValueDict",
+    "IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValueParam",
     "IngestionSourceType",
     "IngestionSourceTypeParam",
     "InitScriptInfo",
     "InitScriptInfoDict",
     "InitScriptInfoParam",
+    "Lifecycle",
+    "LifecycleDict",
+    "LifecycleParam",
     "LocalFileInfo",
     "LocalFileInfoDict",
     "LocalFileInfoParam",
@@ -90,6 +102,15 @@ __all__ = [
     "PipelinePermissionLevel",
     "PipelinePermissionLevelParam",
     "PipelinePermissionParam",
+    "PipelinesEnvironment",
+    "PipelinesEnvironmentDict",
+    "PipelinesEnvironmentParam",
+    "PostgresCatalogConfig",
+    "PostgresCatalogConfigDict",
+    "PostgresCatalogConfigParam",
+    "PostgresSlotConfig",
+    "PostgresSlotConfigDict",
+    "PostgresSlotConfigParam",
     "ReportSpec",
     "ReportSpecDict",
     "ReportSpecParam",
@@ -105,6 +126,12 @@ __all__ = [
     "SchemaSpec",
     "SchemaSpecDict",
     "SchemaSpecParam",
+    "SourceCatalogConfig",
+    "SourceCatalogConfigDict",
+    "SourceCatalogConfigParam",
+    "SourceConfig",
+    "SourceConfigDict",
+    "SourceConfigParam",
     "TableSpec",
     "TableSpecDict",
     "TableSpecParam",
@@ -122,93 +149,44 @@ __all__ = [
 ]
 
 
-from databricks.bundles.compute._models.adlsgen2_info import (
+from databricks.bundles.pipelines._models.adlsgen2_info import (
     Adlsgen2Info,
     Adlsgen2InfoDict,
     Adlsgen2InfoParam,
 )
-from databricks.bundles.compute._models.aws_attributes import (
+from databricks.bundles.pipelines._models.aws_attributes import (
     AwsAttributes,
     AwsAttributesDict,
     AwsAttributesParam,
 )
-from databricks.bundles.compute._models.aws_availability import (
+from databricks.bundles.pipelines._models.aws_availability import (
     AwsAvailability,
     AwsAvailabilityParam,
 )
-from databricks.bundles.compute._models.azure_attributes import (
+from databricks.bundles.pipelines._models.azure_attributes import (
     AzureAttributes,
     AzureAttributesDict,
     AzureAttributesParam,
 )
-from databricks.bundles.compute._models.azure_availability import (
+from databricks.bundles.pipelines._models.azure_availability import (
     AzureAvailability,
     AzureAvailabilityParam,
 )
-from databricks.bundles.compute._models.cluster_log_conf import (
+from databricks.bundles.pipelines._models.cluster_log_conf import (
     ClusterLogConf,
     ClusterLogConfDict,
     ClusterLogConfParam,
 )
-from databricks.bundles.compute._models.dbfs_storage_info import (
+from databricks.bundles.pipelines._models.day_of_week import DayOfWeek, DayOfWeekParam
+from databricks.bundles.pipelines._models.dbfs_storage_info import (
     DbfsStorageInfo,
     DbfsStorageInfoDict,
     DbfsStorageInfoParam,
 )
-from databricks.bundles.compute._models.ebs_volume_type import (
+from databricks.bundles.pipelines._models.ebs_volume_type import (
     EbsVolumeType,
     EbsVolumeTypeParam,
 )
-from databricks.bundles.compute._models.gcp_attributes import (
-    GcpAttributes,
-    GcpAttributesDict,
-    GcpAttributesParam,
-)
-from databricks.bundles.compute._models.gcp_availability import (
-    GcpAvailability,
-    GcpAvailabilityParam,
-)
-from databricks.bundles.compute._models.gcs_storage_info import (
-    GcsStorageInfo,
-    GcsStorageInfoDict,
-    GcsStorageInfoParam,
-)
-from databricks.bundles.compute._models.init_script_info import (
-    InitScriptInfo,
-    InitScriptInfoDict,
-    InitScriptInfoParam,
-)
-from databricks.bundles.compute._models.local_file_info import (
-    LocalFileInfo,
-    LocalFileInfoDict,
-    LocalFileInfoParam,
-)
-from databricks.bundles.compute._models.log_analytics_info import (
-    LogAnalyticsInfo,
-    LogAnalyticsInfoDict,
-    LogAnalyticsInfoParam,
-)
-from databricks.bundles.compute._models.maven_library import (
-    MavenLibrary,
-    MavenLibraryDict,
-    MavenLibraryParam,
-)
-from databricks.bundles.compute._models.s3_storage_info import (
-    S3StorageInfo,
-    S3StorageInfoDict,
-    S3StorageInfoParam,
-)
-from databricks.bundles.compute._models.volumes_storage_info import (
-    VolumesStorageInfo,
-    VolumesStorageInfoDict,
-    VolumesStorageInfoParam,
-)
-from databricks.bundles.compute._models.workspace_storage_info import (
-    WorkspaceStorageInfo,
-    WorkspaceStorageInfoDict,
-    WorkspaceStorageInfoParam,
-)
-from databricks.bundles.pipelines._models.day_of_week import DayOfWeek, DayOfWeekParam
 from databricks.bundles.pipelines._models.event_log_spec import (
     EventLogSpec,
     EventLogSpecDict,
@@ -223,6 +201,20 @@ from databricks.bundles.pipelines._models.filters import (
     Filters,
     FiltersDict,
     FiltersParam,
+)
+from databricks.bundles.pipelines._models.gcp_attributes import (
+    GcpAttributes,
+    GcpAttributesDict,
+    GcpAttributesParam,
+)
+from databricks.bundles.pipelines._models.gcp_availability import (
+    GcpAvailability,
+    GcpAvailabilityParam,
+)
+from databricks.bundles.pipelines._models.gcs_storage_info import (
+    GcsStorageInfo,
+    GcsStorageInfoDict,
+    GcsStorageInfoParam,
 )
 from databricks.bundles.pipelines._models.ingestion_config import (
     IngestionConfig,
@@ -239,9 +231,49 @@ from databricks.bundles.pipelines._models.ingestion_pipeline_definition import (
     IngestionPipelineDefinitionDict,
     IngestionPipelineDefinitionParam,
 )
+from databricks.bundles.pipelines._models.ingestion_pipeline_definition_table_specific_config_query_based_connector_config import (
+    IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig,
+    IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfigDict,
+    IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfigParam,
+)
+from databricks.bundles.pipelines._models.ingestion_pipeline_definition_workday_report_parameters import (
+    IngestionPipelineDefinitionWorkdayReportParameters,
+    IngestionPipelineDefinitionWorkdayReportParametersDict,
+    IngestionPipelineDefinitionWorkdayReportParametersParam,
+)
+from databricks.bundles.pipelines._models.ingestion_pipeline_definition_workday_report_parameters_query_key_value import (
+    IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue,
+    IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValueDict,
+    IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValueParam,
+)
 from databricks.bundles.pipelines._models.ingestion_source_type import (
     IngestionSourceType,
     IngestionSourceTypeParam,
+)
+from databricks.bundles.pipelines._models.init_script_info import (
+    InitScriptInfo,
+    InitScriptInfoDict,
+    InitScriptInfoParam,
+)
+from databricks.bundles.pipelines._models.lifecycle import (
+    Lifecycle,
+    LifecycleDict,
+    LifecycleParam,
+)
+from databricks.bundles.pipelines._models.local_file_info import (
+    LocalFileInfo,
+    LocalFileInfoDict,
+    LocalFileInfoParam,
+)
+from databricks.bundles.pipelines._models.log_analytics_info import (
+    LogAnalyticsInfo,
+    LogAnalyticsInfoDict,
+    LogAnalyticsInfoParam,
+)
+from databricks.bundles.pipelines._models.maven_library import (
+    MavenLibrary,
+    MavenLibraryDict,
+    MavenLibraryParam,
 )
 from databricks.bundles.pipelines._models.notebook_library import (
     NotebookLibrary,
@@ -291,6 +323,21 @@ from databricks.bundles.pipelines._models.pipeline_permission_level import (
     PipelinePermissionLevel,
     PipelinePermissionLevelParam,
 )
+from databricks.bundles.pipelines._models.pipelines_environment import (
+    PipelinesEnvironment,
+    PipelinesEnvironmentDict,
+    PipelinesEnvironmentParam,
+)
+from databricks.bundles.pipelines._models.postgres_catalog_config import (
+    PostgresCatalogConfig,
+    PostgresCatalogConfigDict,
+    PostgresCatalogConfigParam,
+)
+from databricks.bundles.pipelines._models.postgres_slot_config import (
+    PostgresSlotConfig,
+    PostgresSlotConfigDict,
+    PostgresSlotConfigParam,
+)
 from databricks.bundles.pipelines._models.report_spec import (
     ReportSpec,
     ReportSpecDict,
@@ -302,10 +349,25 @@ from databricks.bundles.pipelines._models.restart_window import (
     RestartWindowParam,
 )
 from databricks.bundles.pipelines._models.run_as import RunAs, RunAsDict, RunAsParam
+from databricks.bundles.pipelines._models.s3_storage_info import (
+    S3StorageInfo,
+    S3StorageInfoDict,
+    S3StorageInfoParam,
+)
 from databricks.bundles.pipelines._models.schema_spec import (
     SchemaSpec,
     SchemaSpecDict,
     SchemaSpecParam,
+)
+from databricks.bundles.pipelines._models.source_catalog_config import (
+    SourceCatalogConfig,
+    SourceCatalogConfigDict,
+    SourceCatalogConfigParam,
+)
+from databricks.bundles.pipelines._models.source_config import (
+    SourceConfig,
+    SourceConfigDict,
+    SourceConfigParam,
 )
 from databricks.bundles.pipelines._models.table_spec import (
     TableSpec,
@@ -320,4 +382,14 @@ from databricks.bundles.pipelines._models.table_specific_config import (
 from databricks.bundles.pipelines._models.table_specific_config_scd_type import (
     TableSpecificConfigScdType,
     TableSpecificConfigScdTypeParam,
+)
+from databricks.bundles.pipelines._models.volumes_storage_info import (
+    VolumesStorageInfo,
+    VolumesStorageInfoDict,
+    VolumesStorageInfoParam,
+)
+from databricks.bundles.pipelines._models.workspace_storage_info import (
+    WorkspaceStorageInfo,
+    WorkspaceStorageInfoDict,
+    WorkspaceStorageInfoParam,
 )

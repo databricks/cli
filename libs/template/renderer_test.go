@@ -17,8 +17,8 @@ import (
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/dbr"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/tags"
 	"github.com/databricks/databricks-sdk-go"
 	workspaceConfig "github.com/databricks/databricks-sdk-go/config"
@@ -78,29 +78,36 @@ func assertBuiltinTemplateValid(t *testing.T, template string, settings map[stri
 
 	b, err := bundle.Load(ctx, filepath.Join(tempDir, "my_project"))
 	require.NoError(t, err)
-	diags := phases.LoadNamedTarget(ctx, b, target)
-	require.NoError(t, diags.Error())
+
+	// Initialize logdiag context for phase functions
+	ctx = logdiag.InitContext(ctx)
+	logdiag.SetCollect(ctx, true)
+
+	phases.LoadNamedTarget(ctx, b, target)
+	diags := logdiag.FlushCollected(ctx)
+	require.Empty(t, diags)
 
 	// Apply initialize / validation mutators
-	bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	bundle.ApplyFuncContext(ctx, b, func(ctx context.Context, b *bundle.Bundle) {
 		b.Config.Workspace.CurrentUser = &bundleConfig.User{User: cachedUser}
 		b.Config.Bundle.Terraform = &bundleConfig.Terraform{
 			ExecPath: "sh",
 		}
-		return nil
 	})
 
 	b.Tagging = tags.ForCloud(w.Config)
 	b.SetWorkpaceClient(w)
 	b.WorkspaceClient()
 
-	diags = phases.Initialize(ctx, b)
-	require.NoError(t, diags.Error())
+	phases.Initialize(ctx, b)
+	diags = logdiag.FlushCollected(ctx)
+	require.Empty(t, diags)
 
 	// Apply build mutator
 	if build {
-		diags = phases.Build(ctx, b)
-		require.NoError(t, diags.Error())
+		phases.Build(ctx, b)
+		diags = logdiag.FlushCollected(ctx)
+		require.Empty(t, diags)
 	}
 }
 
@@ -128,15 +135,18 @@ func TestBuiltinDbtTemplateValid(t *testing.T) {
 	for _, personal_schemas := range []string{"yes", "no"} {
 		for _, target := range []string{"dev", "prod"} {
 			for _, isServicePrincipal := range []bool{true, false} {
-				config := map[string]any{
-					"project_name":     "my_project",
-					"http_path":        "/sql/1.0/warehouses/123",
-					"default_catalog":  "hive_metastore",
-					"personal_schemas": personal_schemas,
-					"shared_schema":    "lennart",
+				for _, serverless := range []string{"yes", "no"} {
+					config := map[string]any{
+						"project_name":     "my_project",
+						"http_path":        "/sql/1.0/warehouses/123",
+						"default_catalog":  "hive_metastore",
+						"personal_schemas": personal_schemas,
+						"shared_schema":    "lennart",
+						"serverless":       serverless,
+					}
+					build := false
+					assertBuiltinTemplateValid(t, "dbt-sql", config, target, isServicePrincipal, build, t.TempDir())
 				}
-				build := false
-				assertBuiltinTemplateValid(t, "dbt-sql", config, target, isServicePrincipal, build, t.TempDir())
 			}
 		}
 	}

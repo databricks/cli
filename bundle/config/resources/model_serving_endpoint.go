@@ -23,20 +23,15 @@ type ModelServingEndpointPermission struct {
 }
 
 type ModelServingEndpoint struct {
+	BaseResource
+
 	// This represents the input args for terraform, and will get converted
 	// to a HCL representation for CRUD
 	serving.CreateServingEndpoint
 
-	// This represents the id (ie serving_endpoint_id) that can be used
-	// as a reference in other resources. This value is returned by terraform.
-	ID string `json:"id,omitempty" bundle:"readonly"`
-
 	// This is a resource agnostic implementation of permissions for ACLs.
 	// Implementation could be different based on the resource type.
 	Permissions []ModelServingEndpointPermission `json:"permissions,omitempty"`
-
-	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"internal"`
-	URL            string         `json:"url,omitempty" bundle:"internal"`
 }
 
 func (s *ModelServingEndpoint) UnmarshalJSON(b []byte) error {
@@ -58,7 +53,7 @@ func (s *ModelServingEndpoint) Exists(ctx context.Context, w *databricks.Workspa
 	return true, nil
 }
 
-func (j *ModelServingEndpoint) ResourceDescription() ResourceDescription {
+func (s *ModelServingEndpoint) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "model_serving_endpoint",
 		PluralName:    "model_serving_endpoints",

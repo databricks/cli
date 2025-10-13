@@ -1,0 +1,49 @@
+
+>>> [CLI] bundle validate -t dev -o json
+{
+  "pipelines": {
+    "mypipeline": {
+      "channel": "CURRENT",
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/dev/state/metadata.json"
+      },
+      "development": true,
+      "edition": "ADVANCED",
+      "name": "[dev [USERNAME]] pipeline for ${resources.volumes.foo.catalog_name}.${resources.volumes.foo.schema_name}.${resources.volumes.foo.name}",
+      "tags": {
+        "dev": "[USERNAME]"
+      }
+    }
+  },
+  "volumes": {
+    "bar": {
+      "catalog_name": "mycatalog",
+      "name": "barname",
+      "schema_name": "myschema",
+      "volume_type": "MANAGED"
+    },
+    "foo": {
+      "catalog_name": "${resources.volumes.bar.catalog_name}",
+      "name": "myname",
+      "schema_name": "${resources.volumes.bar.schema_name}",
+      "volume_type": "MANAGED"
+    }
+  }
+}
+
+>>> jq -s .[] | select(.path=="/api/2.0/pipelines") | .body.name out.requests.txt
+"[dev [USERNAME]] pipeline for mycatalog.myschema.myname"
+
+>>> print_telemetry_bool_values
+experimental.use_legacy_run_as false
+has_classic_interactive_compute false
+has_classic_job_compute false
+has_serverless_compute false
+presets_name_prefix_is_set true
+python_wheel_wrapper_is_set false
+resref_volumes.catalog_name true
+resref_volumes.name true
+resref_volumes.schema_name true
+run_as_set false
+skip_artifact_cleanup false

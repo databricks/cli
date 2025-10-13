@@ -38,7 +38,6 @@ Warning: Ignoring Databricks CLI version constraint for development build. Requi
       ],
       "max_concurrent_runs": 4,
       "name": "[dev [USERNAME]] my_jobs_as_code_job",
-      "permissions": [],
       "queue": {
         "enabled": true
       },
@@ -46,13 +45,6 @@ Warning: Ignoring Databricks CLI version constraint for development build. Requi
         "dev": "[USERNAME]"
       },
       "tasks": [
-        {
-          "job_cluster_key": "job_cluster",
-          "notebook_task": {
-            "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/my_jobs_as_code/dev/files/src/notebook"
-          },
-          "task_key": "notebook_task"
-        },
         {
           "depends_on": [
             {
@@ -70,6 +62,13 @@ Warning: Ignoring Databricks CLI version constraint for development build. Requi
             "package_name": "my_jobs_as_code"
           },
           "task_key": "main_task"
+        },
+        {
+          "job_cluster_key": "job_cluster",
+          "notebook_task": {
+            "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/my_jobs_as_code/dev/files/src/notebook"
+          },
+          "task_key": "notebook_task"
         }
       ],
       "trigger": {
@@ -102,7 +101,9 @@ Warning: Ignoring Databricks CLI version constraint for development build. Requi
         }
       ],
       "name": "[dev [USERNAME]] my_jobs_as_code_pipeline",
-      "permissions": [],
+      "tags": {
+        "dev": "[USERNAME]"
+      },
       "target": "my_jobs_as_code_dev"
     }
   }

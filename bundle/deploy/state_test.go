@@ -21,7 +21,7 @@ func TestFromSlice(t *testing.T) {
 	files, err := fileset.Files()
 	require.NoError(t, err)
 
-	f, err := FromSlice(files)
+	f, err := fromSlice(files)
 	require.NoError(t, err)
 	require.Len(t, f, 3)
 
@@ -41,11 +41,11 @@ func TestToSlice(t *testing.T) {
 	files, err := fileset.Files()
 	require.NoError(t, err)
 
-	f, err := FromSlice(files)
+	f, err := fromSlice(files)
 	require.NoError(t, err)
 	require.Len(t, f, 3)
 
-	s := f.ToSlice(root)
+	s := f.toSlice(root)
 	require.Len(t, s, 3)
 
 	for _, file := range s {

@@ -79,16 +79,18 @@ func (f FileProfilerImpl) LoadProfiles(ctx context.Context, fn ProfileMatchFunct
 			continue
 		}
 		profile := Profile{
-			Name:      v.Name(),
-			Host:      host,
-			AccountID: all["account_id"],
+			Name:                v.Name(),
+			Host:                host,
+			AccountID:           all["account_id"],
+			ClusterID:           all["cluster_id"],
+			ServerlessComputeID: all["serverless_compute_id"],
 		}
 		if fn(profile) {
 			profiles = append(profiles, profile)
 		}
 	}
 
-	return
+	return profiles, err
 }
 
 func ProfileCompletion(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {

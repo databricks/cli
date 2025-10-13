@@ -168,10 +168,6 @@ func (i *installer) recordVersion(ctx context.Context) error {
 }
 
 func (i *installer) login(ctx context.Context) (*databricks.WorkspaceClient, error) {
-	if !cmdio.IsPromptSupported(ctx) {
-		log.Debugf(ctx, "Skipping workspace profile prompts in non-interactive mode")
-		return nil, nil
-	}
 	cfg, err := i.metaEntrypoint(ctx).validLogin(i.cmd)
 	if errors.Is(err, ErrNoLoginConfig) {
 		cfg, err = i.Installer.envAwareConfig(ctx)

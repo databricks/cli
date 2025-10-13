@@ -13,7 +13,8 @@ import (
 	custom_app_integration "github.com/databricks/cli/cmd/account/custom-app-integration"
 	encryption_keys "github.com/databricks/cli/cmd/account/encryption-keys"
 	account_federation_policy "github.com/databricks/cli/cmd/account/federation-policy"
-	account_groups "github.com/databricks/cli/cmd/account/groups"
+	account_groups_v2 "github.com/databricks/cli/cmd/account/groups-v2"
+	account_iam_v2 "github.com/databricks/cli/cmd/account/iam-v2"
 	account_ip_access_lists "github.com/databricks/cli/cmd/account/ip-access-lists"
 	log_delivery "github.com/databricks/cli/cmd/account/log-delivery"
 	account_metastore_assignments "github.com/databricks/cli/cmd/account/metastore-assignments"
@@ -26,16 +27,21 @@ import (
 	published_app_integration "github.com/databricks/cli/cmd/account/published-app-integration"
 	service_principal_federation_policy "github.com/databricks/cli/cmd/account/service-principal-federation-policy"
 	service_principal_secrets "github.com/databricks/cli/cmd/account/service-principal-secrets"
-	account_service_principals "github.com/databricks/cli/cmd/account/service-principals"
+	account_service_principals_v2 "github.com/databricks/cli/cmd/account/service-principals-v2"
 	account_settings "github.com/databricks/cli/cmd/account/settings"
+	account_settings_v2 "github.com/databricks/cli/cmd/account/settings-v2"
 	storage "github.com/databricks/cli/cmd/account/storage"
 	account_storage_credentials "github.com/databricks/cli/cmd/account/storage-credentials"
 	usage_dashboards "github.com/databricks/cli/cmd/account/usage-dashboards"
-	account_users "github.com/databricks/cli/cmd/account/users"
+	account_users_v2 "github.com/databricks/cli/cmd/account/users-v2"
 	vpc_endpoints "github.com/databricks/cli/cmd/account/vpc-endpoints"
 	workspace_assignment "github.com/databricks/cli/cmd/account/workspace-assignment"
 	workspace_network_configuration "github.com/databricks/cli/cmd/account/workspace-network-configuration"
 	workspaces "github.com/databricks/cli/cmd/account/workspaces"
+
+	account_groups "github.com/databricks/cli/cmd/account/groups"
+	account_service_principals "github.com/databricks/cli/cmd/account/service-principals"
+	account_users "github.com/databricks/cli/cmd/account/users"
 )
 
 func New() *cobra.Command {
@@ -51,7 +57,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(custom_app_integration.New())
 	cmd.AddCommand(encryption_keys.New())
 	cmd.AddCommand(account_federation_policy.New())
-	cmd.AddCommand(account_groups.New())
+	cmd.AddCommand(account_groups_v2.New())
 	cmd.AddCommand(account_ip_access_lists.New())
 	cmd.AddCommand(log_delivery.New())
 	cmd.AddCommand(account_metastore_assignments.New())
@@ -64,17 +70,23 @@ func New() *cobra.Command {
 	cmd.AddCommand(published_app_integration.New())
 	cmd.AddCommand(service_principal_federation_policy.New())
 	cmd.AddCommand(service_principal_secrets.New())
-	cmd.AddCommand(account_service_principals.New())
+	cmd.AddCommand(account_service_principals_v2.New())
 	cmd.AddCommand(account_settings.New())
+	cmd.AddCommand(account_settings_v2.New())
 	cmd.AddCommand(storage.New())
 	cmd.AddCommand(account_storage_credentials.New())
 	cmd.AddCommand(usage_dashboards.New())
-	cmd.AddCommand(account_users.New())
+	cmd.AddCommand(account_users_v2.New())
 	cmd.AddCommand(vpc_endpoints.New())
 	cmd.AddCommand(workspace_assignment.New())
 	cmd.AddCommand(workspace_network_configuration.New())
 	cmd.AddCommand(workspaces.New())
+	cmd.AddCommand(account_iam_v2.New())
 	cmd.AddCommand(budgets.New())
+
+	cmd.AddCommand(account_groups.New())
+	cmd.AddCommand(account_service_principals.New())
+	cmd.AddCommand(account_users.New())
 
 	// Register all groups with the parent command.
 	groups := Groups()

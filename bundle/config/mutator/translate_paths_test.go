@@ -14,7 +14,6 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/config/variable"
 	"github.com/databricks/cli/bundle/internal/bundletest"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go/service/compute"
@@ -787,13 +786,13 @@ func TestTranslatePathJobEnvironments(t *testing.T) {
 	diags := bundle.ApplySeq(context.Background(), b, mutator.NormalizePaths(), mutator.TranslatePaths())
 	require.NoError(t, diags.Error())
 
-	assert.Equal(t, "./job/dist/env1.whl", b.Config.Resources.Jobs["job"].JobSettings.Environments[0].Spec.Dependencies[0])
-	assert.Equal(t, "./dist/env2.whl", b.Config.Resources.Jobs["job"].JobSettings.Environments[0].Spec.Dependencies[1])
-	assert.Equal(t, "simplejson", b.Config.Resources.Jobs["job"].JobSettings.Environments[0].Spec.Dependencies[2])
-	assert.Equal(t, "/Workspace/Users/foo@bar.com/test.whl", b.Config.Resources.Jobs["job"].JobSettings.Environments[0].Spec.Dependencies[3])
-	assert.Equal(t, "--extra-index-url https://name:token@gitlab.com/api/v4/projects/9876/packages/pypi/simple foobar", b.Config.Resources.Jobs["job"].JobSettings.Environments[0].Spec.Dependencies[4])
-	assert.Equal(t, "foobar --extra-index-url https://name:token@gitlab.com/api/v4/projects/9876/packages/pypi/simple", b.Config.Resources.Jobs["job"].JobSettings.Environments[0].Spec.Dependencies[5])
-	assert.Equal(t, "https://foo@bar.com/packages/pypi/simple", b.Config.Resources.Jobs["job"].JobSettings.Environments[0].Spec.Dependencies[6])
+	assert.Equal(t, "./job/dist/env1.whl", b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies[0])
+	assert.Equal(t, "./dist/env2.whl", b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies[1])
+	assert.Equal(t, "simplejson", b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies[2])
+	assert.Equal(t, "/Workspace/Users/foo@bar.com/test.whl", b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies[3])
+	assert.Equal(t, "--extra-index-url https://name:token@gitlab.com/api/v4/projects/9876/packages/pypi/simple foobar", b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies[4])
+	assert.Equal(t, "foobar --extra-index-url https://name:token@gitlab.com/api/v4/projects/9876/packages/pypi/simple", b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies[5])
+	assert.Equal(t, "https://foo@bar.com/packages/pypi/simple", b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies[6])
 }
 
 func TestTranslatePathWithComplexVariables(t *testing.T) {
@@ -834,16 +833,15 @@ func TestTranslatePathWithComplexVariables(t *testing.T) {
 
 	ctx := context.Background()
 	// Assign the variables to the dynamic configuration.
-	diags := bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	bundle.ApplyFuncContext(ctx, b, func(ctx context.Context, b *bundle.Bundle) {
 		err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 			p := dyn.MustPathFromString("resources.jobs.job.tasks[0]")
 			return dyn.SetByPath(v, p.Append(dyn.Key("libraries")), dyn.V("${var.cluster_libraries}"))
 		})
-		return diag.FromErr(err)
+		require.NoError(t, err)
 	})
-	require.NoError(t, diags.Error())
 
-	diags = bundle.ApplySeq(ctx, b,
+	diags := bundle.ApplySeq(ctx, b,
 		mutator.SetVariables(),
 		mutator.ResolveVariableReferencesOnlyResources("variables"),
 		mutator.NormalizePaths(),

@@ -2,7 +2,7 @@
 """
 Print selected attributes from terraform state.
 
-Usage: <section> <name> [attr...]
+Usage: <group> <name> [attr...]
 """
 
 import sys
@@ -10,29 +10,47 @@ import os
 import json
 
 
-def print_resource_terraform(section, name, *attrs):
-    resource_type = "databricks_" + section[:-1]
+def print_resource_terraform(group, name, *attrs):
+    resource_type = "databricks_" + group[:-1]
     filename = ".databricks/bundle/default/terraform/terraform.tfstate"
-    data = json.load(open(filename))
-    available = []
+    raw = open(filename).read()
+    data = json.loads(raw)
     found = 0
     for r in data["resources"]:
         r_type = r["type"]
         r_name = r["name"]
         if r_type != resource_type:
-            available.append((r_type, r_name))
             continue
         if r_name != name:
-            available.append((r_type, r_name))
             continue
         for inst in r["instances"]:
             attribute_values = inst.get("attributes")
             if attribute_values:
                 values = [f"{x}={attribute_values.get(x)!r}" for x in attrs]
-                print(section, name, " ".join(values))
+                print(group, name, " ".join(values))
                 found += 1
     if not found:
-        print(f"State not found for {section}.{name}")
+        print(f"State not found for {group}.{name}")
 
 
-print_resource_terraform(*sys.argv[1:])
+def print_resource_direct(group, name, *attrs):
+    filename = ".databricks/bundle/default/resources.json"
+    raw = open(filename).read()
+    data = json.loads(raw)
+    state_map = data["state"]
+    result = state_map.get(f"resources.{group}.{name}")
+
+    if result is None:
+        print(f"State not found for {group}.{name}")
+        return
+
+    state = result.get("state", {})
+    state.setdefault("id", result.get("__id__"))
+    values = [f"{x}={state.get(x)!r}" for x in attrs]
+    print(group, name, " ".join(values))
+
+
+if os.environ.get("DATABRICKS_BUNDLE_ENGINE", "").startswith("direct"):
+    print_resource_direct(*sys.argv[1:])
+else:
+    print_resource_terraform(*sys.argv[1:])

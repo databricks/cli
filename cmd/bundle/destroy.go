@@ -1,3 +1,5 @@
+// Copied to cmd/pipelines/destroy.go and adapted for pipelines use.
+// Consider if changes made here should be made to the pipelines counterpart as well.
 package bundle
 
 import (
@@ -13,6 +15,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )
@@ -21,7 +24,19 @@ func newDestroyCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "destroy",
 		Short: "Destroy deployed bundle resources",
-		Args:  root.NoArgs,
+		Long: `Destroy all resources deployed by this bundle from the workspace.
+
+This command removes all Databricks resources that were created by deploying
+this bundle.
+
+Examples:
+  databricks bundle destroy                 # Destroy resources in default target
+  databricks bundle destroy --target prod   # Destroy resources in production target
+
+Typical use cases:
+- Cleaning up development or testing targets
+- Removing resources during environment decommissioning`,
+		Args: root.NoArgs,
 	}
 
 	var autoApprove bool
@@ -30,20 +45,21 @@ func newDestroyCommand() *cobra.Command {
 	cmd.Flags().BoolVar(&forceDestroy, "force-lock", false, "Force acquisition of deployment lock.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		ctx := cmd.Context()
-		b, diags := utils.ConfigureBundleWithVariables(cmd)
-		if err := diags.Error(); err != nil {
-			return diags.Error()
+		ctx := logdiag.InitContext(cmd.Context())
+		cmd.SetContext(ctx)
+		logdiag.SetSeverity(ctx, diag.Warning)
+
+		b := utils.ConfigureBundleWithVariables(cmd)
+		if b == nil || logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
 		}
 
-		bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+		bundle.ApplyFuncContext(ctx, b, func(ctx context.Context, b *bundle.Bundle) {
 			// If `--force-lock` is specified, force acquisition of the deployment lock.
 			b.Config.Bundle.Deployment.Lock.Force = forceDestroy
 
 			// If `--auto-approve`` is specified, we skip confirmation checks
 			b.AutoApprove = autoApprove
-
-			return nil
 		})
 
 		// we require auto-approve for non tty terminals since interactive consent
@@ -61,28 +77,32 @@ func newDestroyCommand() *cobra.Command {
 			return errors.New("please specify --auto-approve since selected logging format is json")
 		}
 
-		diags = phases.Initialize(ctx, b)
-		if err := diags.Error(); err != nil {
-			return err
+		phases.Initialize(ctx, b)
+		if logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
 		}
 
-		diags = diags.Extend(
-			// We need to resolve artifact variable (how we do it in build phase)
-			// because some of the to-be-destroyed resource might use this variable.
-			// Not resolving might lead to terraform "Reference to undeclared resource" error
-			bundle.ApplySeq(ctx, b,
+		// not applicable to direct deployment, we don't need resource configuration there
+		if !b.DirectDeployment {
+			bundle.ApplySeqContext(ctx, b,
+				// We need to resolve artifact variable (how we do it in build phase)
+				// because some of the to-be-destroyed resource might use this variable.
+				// Not resolving might lead to terraform "Reference to undeclared resource" error
 				mutator.ResolveVariableReferencesWithoutResources("artifacts"),
 				mutator.ResolveVariableReferencesOnlyResources("artifacts"),
-			),
-		)
+			)
 
-		if err := diags.Error(); err != nil {
-			return err
+			if logdiag.HasError(ctx) {
+				return root.ErrAlreadyPrinted
+			}
 		}
 
-		diags = diags.Extend(phases.Destroy(ctx, b))
-		// QQQ we're not reporting warnings there. This would be addressed by switching to streaming warnings/errors instead of accumulating.
-		return diags.Error()
+		phases.Destroy(ctx, b)
+		if logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
+		}
+
+		return nil
 	}
 
 	return cmd

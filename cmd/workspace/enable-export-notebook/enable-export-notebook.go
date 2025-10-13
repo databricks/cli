@@ -95,7 +95,6 @@ func newPatchEnableExportNotebook() *cobra.Command {
 	var patchEnableExportNotebookReq settings.UpdateEnableExportNotebookRequest
 	var patchEnableExportNotebookJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&patchEnableExportNotebookJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "patch-enable-export-notebook"

@@ -59,7 +59,6 @@ func newCreate() *cobra.Command {
 	var createReq oauth2.CreateCustomAppIntegration
 	var createJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().BoolVar(&createReq.Confidential, "confidential", createReq.Confidential, `This field indicates whether an OAuth client secret is required to authenticate this client.`)
@@ -136,8 +135,6 @@ func newDelete() *cobra.Command {
 
 	var deleteReq oauth2.DeleteCustomAppIntegrationRequest
 
-	// TODO: short flags
-
 	cmd.Use = "delete INTEGRATION_ID"
 	cmd.Short = `Delete Custom OAuth App Integration.`
 	cmd.Long = `Delete Custom OAuth App Integration.
@@ -191,8 +188,6 @@ func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getReq oauth2.GetCustomAppIntegrationRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get INTEGRATION_ID"
 	cmd.Short = `Get OAuth Custom App Integration.`
@@ -250,8 +245,6 @@ func newList() *cobra.Command {
 
 	var listReq oauth2.ListCustomAppIntegrationsRequest
 
-	// TODO: short flags
-
 	cmd.Flags().BoolVar(&listReq.IncludeCreatorUsername, "include-creator-username", listReq.IncludeCreatorUsername, ``)
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)
@@ -306,7 +299,6 @@ func newUpdate() *cobra.Command {
 	var updateReq oauth2.UpdateCustomAppIntegration
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: redirect_urls

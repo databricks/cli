@@ -25,14 +25,38 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func StartDefaultServer(t *testing.T) {
+func StartDefaultServer(t *testing.T, logRequests bool) {
 	s := testserver.New(t)
-	addDefaultHandlers(s)
+	testserver.AddDefaultHandlers(s)
+
+	// Log API responses if the -logrequests flag is set.
+	if logRequests {
+		s.ResponseCallback = logResponseCallback(t)
+	}
 
 	t.Setenv("DATABRICKS_DEFAULT_HOST", s.URL)
 
-	// Do not read user's ~/.databrickscfg
-	homeDir := t.TempDir()
+	// Do not read user's ~/.databrickscfg.
+	//
+	// We use a custom temporary home directory and cleanup routine here to avoid
+	// issues observed with t.TempDir() on Windows, where Go 1.25's test cleanup
+	// can fail to remove certain directories (e.g., due to locked or system-managed files).
+	// Instead of failing the test, we log any errors encountered during cleanup.
+	// This approach ensures test reliability across platforms.
+	//
+	// See debugging journey in https://github.com/databricks/cli/pull/3575.
+	homeDir, err := os.MkdirTemp("", "acceptance-home-dir")
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		err := os.RemoveAll(homeDir)
+		if err != nil {
+			t.Logf("Failed to remove temporary home directory: %v", err)
+			_ = filepath.Walk(homeDir, func(path string, info os.FileInfo, err error) error {
+				t.Logf("%s", path)
+				return nil
+			})
+		}
+	})
 	t.Setenv(env.HomeEnvVar(), homeDir)
 }
 
@@ -43,6 +67,20 @@ func isTruePtr(value *bool) bool {
 func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, outputDir string) (*sdkconfig.Config, iam.User) {
 	cloudEnv := os.Getenv("CLOUD_ENV")
 	recordRequests := isTruePtr(config.RecordRequests)
+
+	// Use a unique token for each test. This allows us to maintain
+	// separate state for each test in fake workspaces.
+	tokenSuffix := strings.ReplaceAll(uuid.NewString(), "-", "")
+
+	var token string
+	var testUser iam.User
+	if isTruePtr(config.IsServicePrincipal) {
+		token = testserver.ServicePrincipalTokenPrefix + tokenSuffix
+		testUser = testserver.TestUserSP
+	} else {
+		token = testserver.UserNameTokenPrefix + tokenSuffix
+		testUser = testserver.TestUser
+	}
 
 	if cloudEnv != "" {
 		w, err := databricks.NewWorkspaceClient()
@@ -56,7 +94,7 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 		// If we are running in a cloud environment AND we are recording requests,
 		// start a dedicated server to act as a reverse proxy to a real Databricks workspace.
 		if recordRequests {
-			host, token := startProxyServer(t, logRequests, config.IncludeRequestHeaders, outputDir)
+			host := startProxyServer(t, logRequests, config.IncludeRequestHeaders, outputDir)
 			cfg = &sdkconfig.Config{
 				Host:  host,
 				Token: token,
@@ -69,22 +107,17 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 	// If we are not recording requests, and no custom server stubs are configured,
 	// use the default shared server.
 	if len(config.Server) == 0 && !recordRequests {
-		// Use a unique token for each test. This allows us to maintain
-		// separate state for each test in fake workspaces.
-		tokenSuffix := strings.ReplaceAll(uuid.NewString(), "-", "")
-		token := "dbapi" + tokenSuffix
-
 		cfg := &sdkconfig.Config{
 			Host:  os.Getenv("DATABRICKS_DEFAULT_HOST"),
 			Token: token,
 		}
 
-		return cfg, TestUser
+		return cfg, testUser
 	}
 
 	// Default case. Start a dedicated local server for the test with the server stubs configured
 	// as overrides.
-	host, token := startLocalServer(t, config.Server, recordRequests, logRequests, config.IncludeRequestHeaders, outputDir)
+	host := startLocalServer(t, config.Server, recordRequests, logRequests, config.IncludeRequestHeaders, outputDir)
 	cfg := &sdkconfig.Config{
 		Host:  host,
 		Token: token,
@@ -92,7 +125,7 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 
 	// For the purposes of replacements, use testUser for local runs.
 	// Note, users might have overriden /api/2.0/preview/scim/v2/Me but that should not affect the replacement:
-	return cfg, TestUser
+	return cfg, testUser
 }
 
 func recordRequestsCallback(t *testing.T, includeHeaders []string, outputDir string) func(request *testserver.Request) {
@@ -137,7 +170,7 @@ func startLocalServer(t *testing.T,
 	logRequests bool,
 	includeHeaders []string,
 	outputDir string,
-) (string, string) {
+) string {
 	s := testserver.New(t)
 
 	// Record API requests in out.requests.txt if RecordRequests is true
@@ -159,21 +192,37 @@ func startLocalServer(t *testing.T,
 		items := strings.Split(stub.Pattern, " ")
 		require.Len(t, items, 2)
 		s.Handle(items[0], items[1], func(req testserver.Request) any {
-			time.Sleep(stub.Delay)
+			if stub.Delay > 0 {
+				ctx := req.Context
+
+				timer := time.NewTimer(stub.Delay)
+				defer timer.Stop()
+
+				select {
+				case <-timer.C:
+					break
+				case <-ctx.Done():
+					// Client canceled/connection closed; just exit.
+					// Optional: log the reason (context deadline, cancellation, etc.)
+					t.Logf("request canceled: %v", ctx.Err())
+					return nil
+				}
+			}
+
 			return stub.Response
 		})
 	}
 
 	// The earliest handlers take precedence, add default handlers last
-	addDefaultHandlers(s)
-	return s.URL, "dbapi123"
+	testserver.AddDefaultHandlers(s)
+	return s.URL
 }
 
 func startProxyServer(t *testing.T,
 	logRequests bool,
 	includeHeaders []string,
 	outputDir string,
-) (string, string) {
+) string {
 	s := testproxy.New(t)
 
 	// Always record requests for a proxy server.
@@ -184,7 +233,7 @@ func startProxyServer(t *testing.T,
 		s.ResponseCallback = logResponseCallback(t)
 	}
 
-	return s.URL, "dbapi1234"
+	return s.URL
 }
 
 type LoggedRequest struct {

@@ -72,6 +72,10 @@ type User struct {
 	// A short name for the user, based on the user's UserName.
 	ShortName string `json:"short_name,omitempty" bundle:"readonly"`
 
+	// A short name for the user that is stripped off of non-alphanumeric character
+	// Can be used as a prefix for resources that use their name as part of their URL (e.g. Apps, Database Instances)
+	DomainFriendlyName string `json:"domain_friendly_name,omitempty" bundle:"readonly"`
+
 	*iam.User
 }
 
@@ -85,6 +89,15 @@ func (s User) MarshalJSON() ([]byte, error) {
 
 func (w *Workspace) Config() *config.Config {
 	cfg := &config.Config{
+		// Once bundle deploy started, old deployment is partially destroyed, so we should do utmost to complete it.
+		// Having client-side timeouts that kill the deployment seems counter-productive. We should just keep on
+		// trying and the user should be the one interrupting it if they decide so.
+		// Default is 30s
+		HTTPTimeoutSeconds: 90,
+
+		// Default is 5min
+		RetryTimeoutSeconds: 15 * 60,
+
 		// Generic
 		Host:               w.Host,
 		Profile:            w.Profile,

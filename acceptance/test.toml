@@ -3,7 +3,7 @@ Local = true
 Cloud = false
 
 # default timeouts
-Timeout = '20s'
+Timeout = '30s'
 TimeoutWindows = '60s'
 
 # Slowest test I saw:
@@ -13,6 +13,10 @@ TimeoutCloud = '25m'
 
 Env.PYTHONDONTWRITEBYTECODE = "1"
 Env.PYTHONUNBUFFERED = "1"
+Env.PYTHONUTF8 = "1"
+
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct-exp"]
+EnvRepl.DATABRICKS_BUNDLE_ENGINE = false
 
 # >>> datetime.datetime.fromtimestamp(18000000000)
 # datetime.datetime(2027, 1, 15, 9, 0)
@@ -28,6 +32,7 @@ Order = 10
 Old = '1[78]\d{17}'
 New = '[UNIX_TIME_NANOS]'
 Order = 10
+Distinct = true
 
 [[Repls]]
 Old = '\d{17,}'
@@ -49,6 +54,7 @@ Order = 10
 Old = '1[78]\d{11}'
 New = '[UNIX_TIME_MILLIS]'
 Order = 10
+Distinct = true
 
 [[Repls]]
 Old = '\d{11,}'

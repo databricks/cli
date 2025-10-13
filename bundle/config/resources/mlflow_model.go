@@ -23,12 +23,10 @@ type MlflowModelPermission struct {
 }
 
 type MlflowModel struct {
-	ID             string                  `json:"id,omitempty" bundle:"readonly"`
-	Permissions    []MlflowModelPermission `json:"permissions,omitempty"`
-	ModifiedStatus ModifiedStatus          `json:"modified_status,omitempty" bundle:"internal"`
-	URL            string                  `json:"url,omitempty" bundle:"internal"`
-
+	BaseResource
 	ml.CreateModelRequest
+
+	Permissions []MlflowModelPermission `json:"permissions,omitempty"`
 }
 
 func (s *MlflowModel) UnmarshalJSON(b []byte) error {
@@ -50,7 +48,7 @@ func (s *MlflowModel) Exists(ctx context.Context, w *databricks.WorkspaceClient,
 	return true, nil
 }
 
-func (j *MlflowModel) ResourceDescription() ResourceDescription {
+func (s *MlflowModel) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "model",
 		PluralName:    "models",

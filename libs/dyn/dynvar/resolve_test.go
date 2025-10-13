@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/dyn"
-	assert "github.com/databricks/cli/libs/dyn/dynassert"
 	"github.com/databricks/cli/libs/dyn/dynvar"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -107,15 +107,56 @@ func TestResolveWithStringConcatenation(t *testing.T) {
 	assert.Equal(t, "aba", getByPath(t, out, "c").MustString())
 }
 
-func TestResolveWithTypeRetentionFailure(t *testing.T) {
+func TestResolveWithTypeInterpolation(t *testing.T) {
 	in := dyn.V(map[string]dyn.Value{
-		"a": dyn.V(1),
-		"b": dyn.V(2),
-		"c": dyn.V("${a} ${b}"),
+		"a":          dyn.V(1),
+		"b":          dyn.V(2),
+		"c":          dyn.V("${a} ${b}"),
+		"float_val":  dyn.V(3.14),
+		"bool_true":  dyn.V(true),
+		"bool_false": dyn.V(false),
+		"time_val":   dyn.V(dyn.MustTime("2024-01-01")),
+		"nil_val":    dyn.NilValue,
+		// Test interpolation of different types in string templates
+		"float_interp":      dyn.V("Value: ${float_val}"),
+		"bool_true_interp":  dyn.V("Enabled: ${bool_true}"),
+		"bool_false_interp": dyn.V("Disabled: ${bool_false}"),
+		"time_interp":       dyn.V("Date: ${time_val}"),
+		"nil_interp":        dyn.V("Null: ${nil_val}"),
 	})
 
-	_, err := dynvar.Resolve(in, dynvar.DefaultLookup(in))
-	require.ErrorContains(t, err, "cannot interpolate non-string value: ${a}")
+	out, err := dynvar.Resolve(in, dynvar.DefaultLookup(in))
+	require.NoError(t, err)
+
+	// Integer interpolation
+	assert.EqualValues(t, "1 2", getByPath(t, out, "c").MustString())
+
+	// Float interpolation
+	assert.EqualValues(t, "Value: 3.14", getByPath(t, out, "float_interp").MustString())
+
+	// Bool interpolation
+	assert.EqualValues(t, "Enabled: true", getByPath(t, out, "bool_true_interp").MustString())
+	assert.EqualValues(t, "Disabled: false", getByPath(t, out, "bool_false_interp").MustString())
+
+	// Time interpolation should convert to string representation of time.Time
+	// Note: time.Time string representation includes timezone info
+	timeResult := getByPath(t, out, "time_interp").MustString()
+	assert.Contains(t, timeResult, "Date: 2024-01-01")
+	assert.Contains(t, timeResult, "00:00:00")
+
+	// Nil interpolation
+	assert.EqualValues(t, "Null: <nil>", getByPath(t, out, "nil_interp").MustString())
+}
+
+func TestResolveWithTypeRetentionFailure(t *testing.T) {
+	// Test that mapping interpolation fails with an error
+	mappingTest := dyn.V(map[string]dyn.Value{
+		"mapping": dyn.V(map[string]dyn.Value{"key": dyn.V("value")}),
+		"interp":  dyn.V("Config: ${mapping}"),
+	})
+	_, err := dynvar.Resolve(mappingTest, dynvar.DefaultLookup(mappingTest))
+	require.Error(t, err)
+	assert.Equal(t, "cannot interpolate non-primitive value of type map into string", err.Error())
 }
 
 func TestResolveWithTypeRetention(t *testing.T) {
@@ -138,14 +179,14 @@ func TestResolveWithTypeRetention(t *testing.T) {
 	assert.EqualValues(t, 1, getByPath(t, out, "int").MustInt())
 	assert.EqualValues(t, 1, getByPath(t, out, "int_var").MustInt())
 
-	assert.EqualValues(t, true, getByPath(t, out, "bool_true").MustBool())
-	assert.EqualValues(t, true, getByPath(t, out, "bool_true_var").MustBool())
+	assert.True(t, getByPath(t, out, "bool_true").MustBool())
+	assert.True(t, getByPath(t, out, "bool_true_var").MustBool())
 
-	assert.EqualValues(t, false, getByPath(t, out, "bool_false").MustBool())
-	assert.EqualValues(t, false, getByPath(t, out, "bool_false_var").MustBool())
+	assert.False(t, getByPath(t, out, "bool_false").MustBool())
+	assert.False(t, getByPath(t, out, "bool_false_var").MustBool())
 
-	assert.EqualValues(t, 1.0, getByPath(t, out, "float").MustFloat())
-	assert.EqualValues(t, 1.0, getByPath(t, out, "float_var").MustFloat())
+	assert.Zero(t, 1.0-getByPath(t, out, "float").MustFloat())
+	assert.Zero(t, 1.0-getByPath(t, out, "float_var").MustFloat())
 
 	assert.EqualValues(t, "a", getByPath(t, out, "string").MustString())
 	assert.EqualValues(t, "a", getByPath(t, out, "string_var").MustString())

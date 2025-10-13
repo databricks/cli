@@ -15,6 +15,7 @@ resources:
 
       tasks:
         - task_key: dbt
+          environment_key: default
           dbt_task:
             project_directory: ../
             # The default schema, catalog, etc. are defined in ../dbt_profiles/profiles.yml
@@ -25,17 +26,9 @@ resources:
               - 'dbt seed --target=${bundle.target} --vars "{ dev_schema: ${workspace.current_user.short_name} }"'
               - 'dbt run --target=${bundle.target} --vars "{ dev_schema: ${workspace.current_user.short_name} }"'
 
-          libraries:
-            - pypi:
-                package: dbt-databricks>=1.8.0,<2.0.0
-
-          new_cluster:
-            spark_version: 15.4.x-scala2.12
-            node_type_id: [NODE_TYPE_ID]
-            data_security_mode: SINGLE_USER
-            num_workers: 0
-            spark_conf:
-              spark.master: "local[*, 4]"
-              spark.databricks.cluster.profile: singleNode
-            custom_tags:
-              ResourceClass: SingleNode
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "2"
+            dependencies:
+              - dbt-databricks>=1.8.0,<2.0.0

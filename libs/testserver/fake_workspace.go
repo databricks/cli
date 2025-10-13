@@ -2,58 +2,130 @@ package testserver
 
 import (
 	"bytes"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"path"
-	"sort"
-	"strconv"
+	"path/filepath"
 	"strings"
 	"sync"
+	"time"
+
+	"github.com/databricks/databricks-sdk-go/service/compute"
+	"github.com/databricks/databricks-sdk-go/service/database"
+	"github.com/google/uuid"
 
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
-// 4611686018427387911 == 2 ** 62 + 7
-// 2305843009213693969 == 2 ** 61 + 17
-// This values cannot be represented by float64, so they can test incorrect use of json parsing
-// (encoding/json without options parses numbers into float64)
-// These are also easier to spot / replace in test output compared to numbers with one or few digits.
 const (
-	TestJobID = 4611686018427387911
-	TestRunID = 2305843009213693969
+	UserNameTokenPrefix         = "dbapi0"
+	ServicePrincipalTokenPrefix = "dbapi1"
+	UserID                      = "1000012345"
 )
+
+var TestUser = iam.User{
+	Id:       UserID,
+	UserName: "tester@databricks.com",
+}
+
+var TestUserSP = iam.User{
+	Id:       UserID,
+	UserName: "aaaaaaaa-bbbb-4ccc-dddd-eeeeeeeeeeee",
+}
+
+var (
+	idMutex sync.Mutex
+	lastID  int64
+)
+
+// nextID returns nanosecond timestamp but strictly incremental
+// (saves last value, protects with mutex and ensures next value is at least last+1)
+// IDs are prefixed with 7 and padded to avoid matching regex 1[78]\d{14}
+func nextID() int64 {
+	idMutex.Lock()
+	defer idMutex.Unlock()
+
+	// offset enough so that it does not match UNIX_TIME_NANO regex
+	newid := time.Now().UnixNano() + 7000000000000000000
+	if newid <= lastID {
+		lastID++
+	} else {
+		lastID = newid
+	}
+
+	return lastID
+}
+
+func nextUUID() string {
+	var b [16]byte
+	binary.BigEndian.PutUint64(b[0:8], uint64(nextID()))
+	binary.BigEndian.PutUint64(b[8:16], uint64(nextID()))
+	u := uuid.Must(uuid.FromBytes(b[:]))
+	return u.String()
+}
+
+type FileEntry struct {
+	Info workspace.ObjectInfo
+	Data []byte
+}
 
 // FakeWorkspace holds a state of a workspace for acceptance tests.
 type FakeWorkspace struct {
-	mu  sync.Mutex
-	url string
+	mu                 sync.Mutex
+	url                string
+	isServicePrincipal bool
 
-	directories map[string]bool
-	files       map[string][]byte
-	// normally, ids are not sequential, but we make them sequential for deterministic diff
-	nextJobId    int64
-	nextJobRunId int64
-	Jobs         map[int64]jobs.Job
-	JobRuns      map[int64]jobs.Run
+	directories  map[string]workspace.ObjectInfo
+	files        map[string]FileEntry
+	repoIdByPath map[string]int64
 
-	Pipelines  map[string]pipelines.GetPipelineResponse
-	Monitors   map[string]catalog.MonitorInfo
-	Apps       map[string]apps.App
-	Schemas    map[string]catalog.SchemaInfo
-	Dashboards map[string]dashboards.Dashboard
+	Jobs                map[int64]jobs.Job
+	JobRuns             map[int64]jobs.Run
+	JobPermissions      map[string][]jobs.JobAccessControlRequest
+	Pipelines           map[string]pipelines.GetPipelineResponse
+	PipelineUpdates     map[string]bool
+	Monitors            map[string]catalog.MonitorInfo
+	Apps                map[string]apps.App
+	Schemas             map[string]catalog.SchemaInfo
+	SchemasGrants       map[string][]catalog.PrivilegeAssignment
+	Volumes             map[string]catalog.VolumeInfo
+	Dashboards          map[string]dashboards.Dashboard
+	PublishedDashboards map[string]dashboards.PublishedDashboard
+	SqlWarehouses       map[string]sql.GetWarehouseResponse
+	Alerts              map[string]sql.AlertV2
+	Experiments         map[string]ml.GetExperimentResponse
+	ModelRegistryModels map[string]ml.Model
+	Clusters            map[string]compute.ClusterDetails
+	Catalogs            map[string]catalog.CatalogInfo
+	RegisteredModels    map[string]catalog.RegisteredModelInfo
+
+	Acls map[string][]workspace.AclItem
+
+	// Generic permissions storage: key is "{object_type}:{object_id}"
+	Permissions map[string]iam.ObjectPermissions
+
+	Repos map[string]workspace.RepoInfo
+
+	DatabaseInstances    map[string]database.DatabaseInstance
+	DatabaseCatalogs     map[string]database.DatabaseCatalog
+	SyncedDatabaseTables map[string]database.SyncedDatabaseTable
 }
 
-func (w *FakeWorkspace) LockUnlock() func() {
-	if w == nil {
+func (s *FakeWorkspace) LockUnlock() func() {
+	if s == nil {
 		panic("LockUnlock called on nil FakeWorkspace")
 	}
-	w.mu.Lock()
-	return func() { w.mu.Unlock() }
+	s.mu.Lock()
+	return func() { s.mu.Unlock() }
 }
 
 // Generic functions to handle map operations
@@ -64,6 +136,7 @@ func MapGet[T any](w *FakeWorkspace, collection map[string]T, key string) Respon
 	if !ok {
 		return Response{
 			StatusCode: 404,
+			Body:       map[string]string{"message": fmt.Sprintf("Resource %T not found: %v", value, key)},
 		}
 	}
 	return Response{
@@ -103,41 +176,73 @@ func MapDelete[K comparable, V any](w *FakeWorkspace, collection map[K]V, key K)
 	return Response{}
 }
 
-func NewFakeWorkspace(url string) *FakeWorkspace {
+func NewFakeWorkspace(url, token string) *FakeWorkspace {
 	return &FakeWorkspace{
-		url: url,
-		directories: map[string]bool{
-			"/Workspace": true,
+		url:                url,
+		isServicePrincipal: strings.HasPrefix(token, ServicePrincipalTokenPrefix),
+		directories: map[string]workspace.ObjectInfo{
+			"/Workspace": {
+				ObjectType: "DIRECTORY",
+				Path:       "/Workspace",
+				ObjectId:   nextID(),
+			},
 		},
-		files:        map[string][]byte{},
-		Jobs:         map[int64]jobs.Job{},
-		JobRuns:      map[int64]jobs.Run{},
-		nextJobId:    TestJobID,
-		nextJobRunId: TestRunID,
-		Pipelines:    map[string]pipelines.GetPipelineResponse{},
-		Monitors:     map[string]catalog.MonitorInfo{},
-		Apps:         map[string]apps.App{},
-		Schemas:      map[string]catalog.SchemaInfo{},
-		Dashboards:   map[string]dashboards.Dashboard{},
+		files:        make(map[string]FileEntry),
+		repoIdByPath: make(map[string]int64),
+
+		Jobs:                 map[int64]jobs.Job{},
+		JobRuns:              map[int64]jobs.Run{},
+		JobPermissions:       map[string][]jobs.JobAccessControlRequest{},
+		SchemasGrants:        map[string][]catalog.PrivilegeAssignment{},
+		Pipelines:            map[string]pipelines.GetPipelineResponse{},
+		PipelineUpdates:      map[string]bool{},
+		Monitors:             map[string]catalog.MonitorInfo{},
+		Apps:                 map[string]apps.App{},
+		Catalogs:             map[string]catalog.CatalogInfo{},
+		Schemas:              map[string]catalog.SchemaInfo{},
+		RegisteredModels:     map[string]catalog.RegisteredModelInfo{},
+		Volumes:              map[string]catalog.VolumeInfo{},
+		Dashboards:           map[string]dashboards.Dashboard{},
+		PublishedDashboards:  map[string]dashboards.PublishedDashboard{},
+		SqlWarehouses:        map[string]sql.GetWarehouseResponse{},
+		Repos:                map[string]workspace.RepoInfo{},
+		Acls:                 map[string][]workspace.AclItem{},
+		Permissions:          map[string]iam.ObjectPermissions{},
+		DatabaseInstances:    map[string]database.DatabaseInstance{},
+		DatabaseCatalogs:     map[string]database.DatabaseCatalog{},
+		SyncedDatabaseTables: map[string]database.SyncedDatabaseTable{},
+		Alerts:               map[string]sql.AlertV2{},
+		Experiments:          map[string]ml.GetExperimentResponse{},
+		ModelRegistryModels:  map[string]ml.Model{},
+		Clusters:             map[string]compute.ClusterDetails{},
+	}
+}
+
+func (s *FakeWorkspace) CurrentUser() iam.User {
+	if s != nil && s.isServicePrincipal {
+		return TestUserSP
+	} else {
+		return TestUser
 	}
 }
 
 func (s *FakeWorkspace) WorkspaceGetStatus(path string) Response {
 	defer s.LockUnlock()()
 
-	if s.directories[path] {
+	if dirInfo, ok := s.directories[path]; ok {
 		return Response{
-			Body: &workspace.ObjectInfo{
-				ObjectType: "DIRECTORY",
-				Path:       path,
-			},
+			Body: &dirInfo,
 		}
-	} else if _, ok := s.files[path]; ok {
+	} else if entry, ok := s.files[path]; ok {
 		return Response{
-			Body: &workspace.ObjectInfo{
-				ObjectType: "FILE",
+			Body: entry.Info,
+		}
+	} else if repoId, ok := s.repoIdByPath[path]; ok {
+		return Response{
+			Body: workspace.ObjectInfo{
+				ObjectType: "REPO",
 				Path:       path,
-				Language:   "SCALA",
+				ObjectId:   repoId,
 			},
 		}
 	} else {
@@ -150,40 +255,91 @@ func (s *FakeWorkspace) WorkspaceGetStatus(path string) Response {
 
 func (s *FakeWorkspace) WorkspaceMkdirs(request workspace.Mkdirs) {
 	defer s.LockUnlock()()
-	s.directories[request.Path] = true
+	s.directories[request.Path] = workspace.ObjectInfo{
+		ObjectType: "DIRECTORY",
+		Path:       request.Path,
+		ObjectId:   nextID(),
+	}
 }
 
 func (s *FakeWorkspace) WorkspaceExport(path string) []byte {
 	defer s.LockUnlock()()
-	return s.files[path]
+	return s.files[path].Data
 }
 
 func (s *FakeWorkspace) WorkspaceDelete(path string, recursive bool) {
 	defer s.LockUnlock()()
 	if !recursive {
-		s.files[path] = nil
+		delete(s.files, path)
 	} else {
 		for key := range s.files {
 			if strings.HasPrefix(key, path) {
-				s.files[key] = nil
+				delete(s.files, key)
 			}
 		}
 	}
 }
 
-func (s *FakeWorkspace) WorkspaceFilesImportFile(filePath string, body []byte) {
+func (s *FakeWorkspace) WorkspaceFilesImportFile(filePath string, body []byte, overwrite bool) Response {
 	if !strings.HasPrefix(filePath, "/") {
 		filePath = "/" + filePath
 	}
 
 	defer s.LockUnlock()()
 
-	s.files[filePath] = body
+	workspacePath := filePath
+
+	if !overwrite {
+		if _, exists := s.files[workspacePath]; exists {
+			return Response{
+				StatusCode: 409,
+				Body:       map[string]string{"message": fmt.Sprintf("File already exists at (%s).", workspacePath)},
+			}
+		}
+	}
+
+	// Note: Files with .py, .scala, .r or .sql extension can
+	// be notebooks if they contain a magical "Databricks notebook source"
+	// header comment. We omit support non-python extensions for now for simplicity.
+	extension := filepath.Ext(filePath)
+	if extension == ".py" && strings.HasPrefix(string(body), "# Databricks notebook source") {
+		// Notebooks are stripped of their extension by the workspace import API.
+		workspacePath = strings.TrimSuffix(filePath, extension)
+		s.files[workspacePath] = FileEntry{
+			Info: workspace.ObjectInfo{
+				ObjectType: "NOTEBOOK",
+				Path:       workspacePath,
+				Language:   "PYTHON",
+				ObjectId:   nextID(),
+			},
+			Data: body,
+		}
+	} else {
+		// The endpoint does not set language for files, so we omit that
+		// here as well.
+		// ref: https://docs.databricks.com/api/workspace/workspace/getstatus#language
+		s.files[workspacePath] = FileEntry{
+			Info: workspace.ObjectInfo{
+				ObjectType: "FILE",
+				Path:       workspacePath,
+				ObjectId:   nextID(),
+			},
+			Data: body,
+		}
+	}
 
 	// Add all directories in the path to the directories map
-	for dir := path.Dir(filePath); dir != "/"; dir = path.Dir(dir) {
-		s.directories[dir] = true
+	for dir := path.Dir(workspacePath); dir != "/"; dir = path.Dir(dir) {
+		if _, exists := s.directories[dir]; !exists {
+			s.directories[dir] = workspace.ObjectInfo{
+				ObjectType: "DIRECTORY",
+				Path:       dir,
+				ObjectId:   nextID(),
+			}
+		}
 	}
+
+	return Response{}
 }
 
 func (s *FakeWorkspace) WorkspaceFilesExportFile(path string) []byte {
@@ -193,155 +349,7 @@ func (s *FakeWorkspace) WorkspaceFilesExportFile(path string) []byte {
 
 	defer s.LockUnlock()()
 
-	return s.files[path]
-}
-
-func (s *FakeWorkspace) JobsCreate(request jobs.CreateJob) Response {
-	defer s.LockUnlock()()
-
-	jobId := s.nextJobId
-	s.nextJobId++
-
-	jobSettings := jobs.JobSettings{}
-	err := jsonConvert(request, &jobSettings)
-	if err != nil {
-		return Response{
-			StatusCode: 400,
-			Body:       fmt.Sprintf("Cannot convert request to jobSettings: %s", err),
-		}
-	}
-
-	s.Jobs[jobId] = jobs.Job{
-		JobId:    jobId,
-		Settings: &jobSettings,
-	}
-
-	return Response{
-		Body: jobs.CreateResponse{JobId: jobId},
-	}
-}
-
-func (s *FakeWorkspace) JobsReset(request jobs.ResetJob) Response {
-	defer s.LockUnlock()()
-
-	jobId := request.JobId
-
-	_, ok := s.Jobs[request.JobId]
-	if !ok {
-		return Response{
-			StatusCode: 403,
-			Body:       "{}",
-		}
-	}
-
-	s.Jobs[jobId] = jobs.Job{
-		JobId:    jobId,
-		Settings: &request.NewSettings,
-	}
-
-	return Response{
-		Body: "",
-	}
-}
-
-func (s *FakeWorkspace) JobsGet(jobId string) Response {
-	id := jobId
-
-	jobIdInt, err := strconv.ParseInt(id, 10, 64)
-	if err != nil {
-		return Response{
-			StatusCode: 400,
-			Body:       fmt.Sprintf("Failed to parse job id: %s: %v", err, id),
-		}
-	}
-
-	defer s.LockUnlock()()
-
-	job, ok := s.Jobs[jobIdInt]
-	if !ok {
-		return Response{
-			StatusCode: 404,
-		}
-	}
-
-	return Response{
-		Body: job,
-	}
-}
-
-func (s *FakeWorkspace) JobsRunNow(jobId int64) Response {
-	defer s.LockUnlock()()
-
-	_, ok := s.Jobs[jobId]
-	if !ok {
-		return Response{
-			StatusCode: 404,
-		}
-	}
-
-	runId := s.nextJobRunId
-	s.nextJobRunId++
-	s.JobRuns[runId] = jobs.Run{
-		RunId: runId,
-		State: &jobs.RunState{
-			LifeCycleState: jobs.RunLifeCycleStateRunning,
-		},
-		RunPageUrl: fmt.Sprintf("%s/job/run/%d", s.url, runId),
-		RunType:    jobs.RunTypeJobRun,
-		RunName:    "run-name",
-	}
-
-	return Response{
-		Body: jobs.RunNowResponse{
-			RunId: runId,
-		},
-	}
-}
-
-func (s *FakeWorkspace) JobsGetRun(runId int64) Response {
-	defer s.LockUnlock()()
-
-	run, ok := s.JobRuns[runId]
-	if !ok {
-		return Response{
-			StatusCode: 404,
-		}
-	}
-
-	// Mark the run as terminated.
-	run.State.LifeCycleState = jobs.RunLifeCycleStateTerminated
-	return Response{
-		Body: run,
-	}
-}
-
-func (s *FakeWorkspace) JobsList() Response {
-	defer s.LockUnlock()()
-
-	list := make([]jobs.BaseJob, 0, len(s.Jobs))
-	for _, job := range s.Jobs {
-		baseJob := jobs.BaseJob{}
-		err := jsonConvert(job, &baseJob)
-		if err != nil {
-			return Response{
-				StatusCode: 400,
-				Body:       fmt.Sprintf("failed to convert job to base job: %s", err),
-			}
-		}
-
-		list = append(list, baseJob)
-	}
-
-	// sort to have less non-determinism in tests
-	sort.Slice(list, func(i, j int) bool {
-		return list[i].JobId < list[j].JobId
-	})
-
-	return Response{
-		Body: jobs.ListJobsResponse{
-			Jobs: list,
-		},
-	}
+	return s.files[path].Data
 }
 
 // jsonConvert saves input to a value pointed by output

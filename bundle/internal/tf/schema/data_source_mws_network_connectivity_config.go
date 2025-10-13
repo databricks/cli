@@ -17,6 +17,22 @@ type DataSourceMwsNetworkConnectivityConfigEgressConfigDefaultRules struct {
 	AzureServiceEndpointRule *DataSourceMwsNetworkConnectivityConfigEgressConfigDefaultRulesAzureServiceEndpointRule `json:"azure_service_endpoint_rule,omitempty"`
 }
 
+type DataSourceMwsNetworkConnectivityConfigEgressConfigTargetRulesAwsPrivateEndpointRules struct {
+	AccountId                   string   `json:"account_id,omitempty"`
+	ConnectionState             string   `json:"connection_state,omitempty"`
+	CreationTime                int      `json:"creation_time,omitempty"`
+	Deactivated                 bool     `json:"deactivated,omitempty"`
+	DeactivatedAt               int      `json:"deactivated_at,omitempty"`
+	DomainNames                 []string `json:"domain_names,omitempty"`
+	Enabled                     bool     `json:"enabled,omitempty"`
+	EndpointService             string   `json:"endpoint_service,omitempty"`
+	NetworkConnectivityConfigId string   `json:"network_connectivity_config_id,omitempty"`
+	ResourceNames               []string `json:"resource_names,omitempty"`
+	RuleId                      string   `json:"rule_id,omitempty"`
+	UpdatedTime                 int      `json:"updated_time,omitempty"`
+	VpcEndpointId               string   `json:"vpc_endpoint_id,omitempty"`
+}
+
 type DataSourceMwsNetworkConnectivityConfigEgressConfigTargetRulesAzurePrivateEndpointRules struct {
 	ConnectionState             string   `json:"connection_state,omitempty"`
 	CreationTime                int      `json:"creation_time,omitempty"`
@@ -32,6 +48,7 @@ type DataSourceMwsNetworkConnectivityConfigEgressConfigTargetRulesAzurePrivateEn
 }
 
 type DataSourceMwsNetworkConnectivityConfigEgressConfigTargetRules struct {
+	AwsPrivateEndpointRules   []DataSourceMwsNetworkConnectivityConfigEgressConfigTargetRulesAwsPrivateEndpointRules   `json:"aws_private_endpoint_rules,omitempty"`
 	AzurePrivateEndpointRules []DataSourceMwsNetworkConnectivityConfigEgressConfigTargetRulesAzurePrivateEndpointRules `json:"azure_private_endpoint_rules,omitempty"`
 }
 

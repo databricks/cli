@@ -1,0 +1,24 @@
+SECRET_SCOPE_NAME="my-secrets-$(uuid)"
+if [ -z "$CLOUD_ENV" ]; then
+    SECRET_SCOPE_NAME="my-secrets-6260d50f-e8ff-4905-8f28-812345678903"   # use hard-coded uuid when running locally
+fi
+export SECRET_SCOPE_NAME
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+title "Print summary before deploy; it should have modified_status=created and no id"
+trace $CLI bundle summary --output json | jq '.resources.secret_scopes.secret_scope1'
+trace $CLI bundle deploy
+title "Print summary after deploy; it should have id and no modified_status"
+trace $CLI bundle summary --output json | jq '.resources.secret_scopes.secret_scope1'
+trace $CLI secrets list-scopes -o json | jq --arg value ${SECRET_SCOPE_NAME} '.[] | select(.name == $value)'
+
+trace $CLI secrets list-acls ${SECRET_SCOPE_NAME} | jq -c '.[]' | sort
+
+trace $CLI secrets put-secret ${SECRET_SCOPE_NAME} my-key --string-value "my-secret-value"
+trace $CLI secrets get-secret ${SECRET_SCOPE_NAME} my-key

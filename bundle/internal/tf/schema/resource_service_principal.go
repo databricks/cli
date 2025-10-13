@@ -19,4 +19,5 @@ type ResourceServicePrincipal struct {
 	Id                      string `json:"id,omitempty"`
 	Repos                   string `json:"repos,omitempty"`
 	WorkspaceAccess         bool   `json:"workspace_access,omitempty"`
+	WorkspaceConsume        bool   `json:"workspace_consume,omitempty"`
 }

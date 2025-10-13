@@ -1,0 +1,69 @@
+
+>>> [CLI] account --help
+Databricks Account Commands
+
+Usage:
+  databricks account [command]
+
+Identity and Access Management
+  access-control                      These APIs manage access rules on resources in an account.
+  groups                              Groups simplify identity management, making it easier to assign access to Databricks account, data, and other securable objects.
+  groups-v2                           Groups simplify identity management, making it easier to assign access to Databricks account, data, and other securable objects.
+  service-principals                  Identities for use with jobs, automated tools, and systems such as scripts, apps, and CI/CD platforms.
+  service-principals-v2               Identities for use with jobs, automated tools, and systems such as scripts, apps, and CI/CD platforms.
+  users                               User identities recognized by Databricks and represented by email addresses.
+  users-v2                            User identities recognized by Databricks and represented by email addresses.
+  workspace-assignment                The Workspace Permission Assignment API allows you to manage workspace permissions for principals in your account.
+
+Unity Catalog
+  metastore-assignments               These APIs manage metastore assignments to a workspace.
+  metastores                          These APIs manage Unity Catalog metastores for an account.
+  storage-credentials                 These APIs manage storage credentials for a particular metastore.
+
+Settings
+  ip-access-lists                     The Accounts IP Access List API enables account admins to configure IP access lists for access to the account console.
+  network-connectivity                These APIs provide configurations for the network connectivity of your workspaces for serverless compute resources.
+  network-policies                    These APIs manage network policies for this account.
+  settings                            Accounts Settings API allows users to manage settings at the account level.
+  workspace-network-configuration     These APIs allow configuration of network settings for Databricks workspaces by selecting which network policy to associate with the workspace.
+
+Settings (v2)
+  settings-v2                         APIs to manage account level settings.
+
+Provisioning
+  credentials                         These APIs manage credential configurations for this workspace.
+  encryption-keys                     These APIs manage encryption key configurations for this workspace (optional).
+  networks                            These APIs manage network configurations for customer-managed VPCs (optional).
+  private-access                      These APIs manage private access settings for this account.
+  storage                             These APIs manage storage configurations for this workspace.
+  vpc-endpoints                       These APIs manage VPC endpoint configurations for this account.
+  workspaces                          These APIs manage workspaces for this account.
+
+Billing
+  billable-usage                      This API allows you to download billable usage logs for the specified account and date range.
+  budget-policy                       A service serves REST API about Budget policies.
+  budgets                             These APIs manage budget configurations for this account.
+  log-delivery                        These APIs manage log delivery configurations for this account.
+  usage-dashboards                    These APIs manage usage dashboards for this account.
+
+OAuth
+  custom-app-integration              These APIs enable administrators to manage custom OAuth app integrations, which is required for adding/using Custom OAuth App Integration like Tableau Cloud for Databricks in AWS cloud.
+  federation-policy                   These APIs manage account federation policies.
+  o-auth-published-apps               These APIs enable administrators to view all the available published OAuth applications in Databricks.
+  published-app-integration           These APIs enable administrators to manage published OAuth app integrations, which is required for adding/using Published OAuth App Integration like Tableau Desktop for Databricks in AWS cloud.
+  service-principal-federation-policy These APIs manage service principal federation policies.
+  service-principal-secrets           These APIs enable administrators to manage service principal secrets.
+
+Identity and Access Management (v2)
+  iam-v2                              These APIs are used to manage identities and the workspace access of these identities in <Databricks>.
+
+Flags:
+  -h, --help   help for account
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+Use "databricks account [command] --help" for more information about a command.

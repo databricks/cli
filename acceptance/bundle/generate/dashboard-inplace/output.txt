@@ -12,8 +12,15 @@ Deployment complete!
 === update the dashboard
 >>> [CLI] lakeview update [DASHBOARD_ID] --serialized-dashboard {"a":"b"}
 {
-  "etag":"[UUID]",
-  "serialized_dashboard":"{\"a\":\"b\"}"
+  "create_time":"[TIMESTAMP]",
+  "dashboard_id":"[DASHBOARD_ID]",
+  "display_name":"test dashboard",
+  "etag":"[NUMID]",
+  "lifecycle_state":"ACTIVE",
+  "parent_path":"/Users/[USERNAME]/.bundle/dashboard update inplace/default/resources",
+  "path":"/Users/[USERNAME]/.bundle/dashboard update inplace/default/resources/test dashboard.lvdash.json",
+  "serialized_dashboard":"{\"a\":\"b\"}",
+  "update_time":"[TIMESTAMP]Z"
 }
 
 === update the dashboard file using bundle generate

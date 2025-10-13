@@ -23,12 +23,10 @@ type MlflowExperimentPermission struct {
 }
 
 type MlflowExperiment struct {
-	ID             string                       `json:"id,omitempty" bundle:"readonly"`
-	Permissions    []MlflowExperimentPermission `json:"permissions,omitempty"`
-	ModifiedStatus ModifiedStatus               `json:"modified_status,omitempty" bundle:"internal"`
-	URL            string                       `json:"url,omitempty" bundle:"internal"`
+	BaseResource
+	ml.CreateExperiment
 
-	ml.Experiment
+	Permissions []MlflowExperimentPermission `json:"permissions,omitempty"`
 }
 
 func (s *MlflowExperiment) UnmarshalJSON(b []byte) error {
@@ -50,7 +48,7 @@ func (s *MlflowExperiment) Exists(ctx context.Context, w *databricks.WorkspaceCl
 	return true, nil
 }
 
-func (j *MlflowExperiment) ResourceDescription() ResourceDescription {
+func (s *MlflowExperiment) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "experiment",
 		PluralName:    "experiments",

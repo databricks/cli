@@ -1,0 +1,10 @@
+Local = true
+Cloud = true
+RequiresUnityCatalog = true
+
+[CloudEnvs]
+  azure = false
+  gcp = false
+
+[EnvMatrix]
+  DATABRICKS_BUNDLE_ENGINE = ["terraform"]

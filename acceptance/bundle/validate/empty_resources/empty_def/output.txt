@@ -119,3 +119,32 @@ Error: app rname is not defined
     "rname": null
   }
 }
+
+=== resources.sql_warehouses.rname ===
+Error: sql_warehouse rname is not defined
+  at resources.sql_warehouses.rname
+  in databricks.yml:6:11
+
+{
+  "sql_warehouses": {
+    "rname": null
+  }
+}
+
+=== resources.secret_scopes.rname ===
+Error: secret_scope rname is not defined
+  at resources.secret_scopes.rname
+  in databricks.yml:6:11
+
+{
+  "secret_scopes": {
+    "rname": null
+  }
+}
+
+=== resources.alerts.rname ===
+Warning: unknown field: alerts
+  at resources
+  in databricks.yml:5:3
+
+{}

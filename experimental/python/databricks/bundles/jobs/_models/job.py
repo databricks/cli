@@ -44,6 +44,7 @@ from databricks.bundles.jobs._models.jobs_health_rules import (
     JobsHealthRules,
     JobsHealthRulesParam,
 )
+from databricks.bundles.jobs._models.lifecycle import Lifecycle, LifecycleParam
 from databricks.bundles.jobs._models.performance_target import (
     PerformanceTarget,
     PerformanceTargetParam,
@@ -116,6 +117,11 @@ class Job(Resource):
     A list of job cluster specifications that can be shared and reused by tasks of this job. Libraries cannot be declared in a shared job cluster. You must declare dependent libraries in task settings.
     """
 
+    lifecycle: VariableOrOptional[Lifecycle] = None
+    """
+    Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+    """
+
     max_concurrent_runs: VariableOrOptional[int] = None
     """
     An optional maximum allowed number of concurrent runs of the job.
@@ -185,6 +191,15 @@ class Job(Resource):
     A configuration to trigger a run when certain conditions are met. The default behavior is that the job runs only when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.
     """
 
+    usage_policy_id: VariableOrOptional[str] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    The id of the user specified usage policy to use for this job.
+    If not specified, a default usage policy may be applied when creating or modifying the job.
+    See `effective_usage_policy_id` for the usage policy used by this workload.
+    """
+
     webhook_notifications: VariableOrOptional[WebhookNotifications] = None
     """
     A collection of system notification IDs to notify when runs of this job begin or complete.
@@ -245,6 +260,11 @@ class JobDict(TypedDict, total=False):
     job_clusters: VariableOrList[JobClusterParam]
     """
     A list of job cluster specifications that can be shared and reused by tasks of this job. Libraries cannot be declared in a shared job cluster. You must declare dependent libraries in task settings.
+    """
+
+    lifecycle: VariableOrOptional[LifecycleParam]
+    """
+    Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
     """
 
     max_concurrent_runs: VariableOrOptional[int]
@@ -314,6 +334,15 @@ class JobDict(TypedDict, total=False):
     trigger: VariableOrOptional[TriggerSettingsParam]
     """
     A configuration to trigger a run when certain conditions are met. The default behavior is that the job runs only when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.
+    """
+
+    usage_policy_id: VariableOrOptional[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    The id of the user specified usage policy to use for this job.
+    If not specified, a default usage policy may be applied when creating or modifying the job.
+    See `effective_usage_policy_id` for the usage policy used by this workload.
     """
 
     webhook_notifications: VariableOrOptional[WebhookNotificationsParam]

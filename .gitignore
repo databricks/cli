@@ -33,3 +33,9 @@ test-output.json
 # Built by make for 'make fmt' and yamlcheck.py in acceptance tests
 tools/yamlfmt
 tools/yamlfmt.exe
+
+# Cache for tools/gh_report.py
+.gh-logs
+
+# Release artifacts
+dist/

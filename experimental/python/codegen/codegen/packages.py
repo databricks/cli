@@ -1,20 +1,15 @@
 import re
 from typing import Optional
 
-RESOURCE_NAMESPACE_OVERRIDE = {
+# All supported resource types and their namespace
+RESOURCE_NAMESPACE = {
     "resources.Job": "jobs",
     "resources.Pipeline": "pipelines",
-    "resources.JobPermission": "jobs",
-    "resources.JobPermissionLevel": "jobs",
-    "resources.PipelinePermission": "pipelines",
-    "resources.PipelinePermissionLevel": "pipelines",
+    "resources.Schema": "schemas",
+    "resources.Volume": "volumes",
 }
 
-# All supported resource types
-RESOURCE_TYPES = [
-    "resources.Job",
-    "resources.Pipeline",
-]
+RESOURCE_TYPES = list(RESOURCE_NAMESPACE.keys())
 
 # Namespaces to load from OpenAPI spec.
 #
@@ -24,6 +19,7 @@ LOADED_NAMESPACES = [
     "jobs",
     "pipelines",
     "resources",
+    "catalog",
 ]
 
 RENAMES = {
@@ -61,10 +57,6 @@ def is_resource(ref: str) -> bool:
 def should_load_ref(ref: str) -> bool:
     name = ref.split("/")[-1]
 
-    # FIXME doesn't work, looks like enum, but doesn't have any values specified
-    if name == "compute.Kind":
-        return False
-
     for namespace in LOADED_NAMESPACES:
         if name.startswith(f"{namespace}."):
             return True
@@ -72,7 +64,11 @@ def should_load_ref(ref: str) -> bool:
     return name in PRIMITIVES
 
 
-def get_package(ref: str) -> Optional[str]:
+def get_root_package(namespace: str) -> str:
+    return f"databricks.bundles.{namespace}"
+
+
+def get_package(namespace: str, ref: str) -> Optional[str]:
     """
     Returns Python package for a given OpenAPI ref.
     Returns None for builtin types.
@@ -83,11 +79,7 @@ def get_package(ref: str) -> Optional[str]:
     if full_name in PRIMITIVES:
         return None
 
-    [namespace, name] = full_name.split(".")
-
-    if override := RESOURCE_NAMESPACE_OVERRIDE.get(full_name):
-        namespace = override
-
+    [_, name] = full_name.split(".")
     package_name = re.sub(r"(?<!^)(?=[A-Z])", "_", name).lower()
 
-    return f"databricks.bundles.{namespace}._models.{package_name}"
+    return f"{get_root_package(namespace)}._models.{package_name}"

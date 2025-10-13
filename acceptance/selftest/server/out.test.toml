@@ -1,0 +1,7 @@
+Local = true
+Cloud = false
+
+[EnvMatrix]
+  DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct-exp"]
+  VARIABLE_A = ["one", "two"]
+  VARIABLE_B = ["HELLO", "WORLD"]

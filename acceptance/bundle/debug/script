@@ -1,1 +1,1 @@
-$CLI bundle validate --debug 2> out.stderr.txt
+$CLI bundle debug

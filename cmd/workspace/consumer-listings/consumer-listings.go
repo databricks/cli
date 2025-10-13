@@ -57,12 +57,10 @@ func newBatchGet() *cobra.Command {
 
 	var batchGetReq marketplace.BatchGetListingsRequest
 
-	// TODO: short flags
-
 	// TODO: array: ids
 
 	cmd.Use = "batch-get"
-	cmd.Short = `Get one batch of listings.`
+	cmd.Short = `Get one batch of listings. One may specify up to 50 IDs per request.`
 	cmd.Long = `Get one batch of listings. One may specify up to 50 IDs per request.
   
   Batch get a published listing in the Databricks Marketplace that the consumer
@@ -112,8 +110,6 @@ func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getReq marketplace.GetListingRequest
-
-	// TODO: short flags
 
 	cmd.Use = "get ID"
 	cmd.Short = `Get listing.`
@@ -181,8 +177,6 @@ func newList() *cobra.Command {
 
 	var listReq marketplace.ListListingsRequest
 
-	// TODO: short flags
-
 	// TODO: array: assets
 	// TODO: array: categories
 	cmd.Flags().BoolVar(&listReq.IsFree, "is-free", listReq.IsFree, `Filters each listing based on if it is free.`)
@@ -241,8 +235,6 @@ func newSearch() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var searchReq marketplace.SearchListingsRequest
-
-	// TODO: short flags
 
 	// TODO: array: assets
 	// TODO: array: categories

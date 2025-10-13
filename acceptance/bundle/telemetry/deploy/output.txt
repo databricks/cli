@@ -6,3 +6,7 @@ Updating deployment state...
 Deployment complete!
 
 >>> cat out.requests.txt
+
+=== Assert that mutator execution times are being recorded
+>>> cat telemetry.json
+true

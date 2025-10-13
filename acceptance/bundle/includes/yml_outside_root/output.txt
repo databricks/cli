@@ -18,7 +18,6 @@ Validation OK!
   "format": "MULTI_TASK",
   "max_concurrent_runs": 1,
   "name": "include_outside_root",
-  "permissions": [],
   "queue": {
     "enabled": true
   },
@@ -44,8 +43,5 @@ Validation OK!
     "bundle_root_path": "."
   },
   "name": "yml_outside_root",
-  "target": "default",
-  "terraform": {
-    "exec_path": "[TERRAFORM]"
-  }
+  "target": "default"
 }

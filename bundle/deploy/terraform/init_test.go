@@ -194,8 +194,8 @@ func TestSetTempDirEnvVarsForWindowsWithoutAnyTempDirEnvVarsSet(t *testing.T) {
 	err := setTempDirEnvVars(context.Background(), env, b)
 	require.NoError(t, err)
 
-	// assert TMP is set to b.CacheDir("tmp")
-	tmpDir, err := b.CacheDir(context.Background(), "tmp")
+	// assert TMP is set to b.LocalStateDir("tmp")
+	tmpDir, err := b.LocalStateDir(context.Background(), "tmp")
 	require.NoError(t, err)
 	assert.Equal(t, map[string]string{
 		"TMP": tmpDir,
@@ -250,26 +250,6 @@ func TestSetProxyEnvVars(t *testing.T) {
 	assert.ElementsMatch(t, []string{"HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY"}, maps.Keys(env))
 }
 
-func TestSetUserAgentExtra_PyDABs(t *testing.T) {
-	b := &bundle.Bundle{
-		BundleRootPath: t.TempDir(),
-		Config: config.Root{
-			Experimental: &config.Experimental{
-				PyDABs: config.PyDABs{
-					Enabled: true,
-				},
-			},
-		},
-	}
-
-	env := make(map[string]string, 0)
-	err := setUserAgentExtraEnvVar(env, b)
-	require.NoError(t, err)
-	assert.Equal(t, map[string]string{
-		"DATABRICKS_USER_AGENT_EXTRA": "cli/0.0.0-dev databricks-pydabs/0.0.0",
-	}, env)
-}
-
 func TestSetUserAgentExtra_Python(t *testing.T) {
 	b := &bundle.Bundle{
 		BundleRootPath: t.TempDir(),
@@ -305,6 +285,29 @@ func TestInheritEnvVars(t *testing.T) {
 		assert.Equal(t, "/tmp/config.tfrc", env["TF_CLI_CONFIG_FILE"])
 		assert.Equal(t, "/tmp/foo/bar", env["AZURE_CONFIG_DIR"])
 	}
+}
+
+func TestInheritOIDCTokenEnvCustom(t *testing.T) {
+	t.Setenv("DATABRICKS_OIDC_TOKEN_ENV", "custom_DATABRICKS_OIDC_TOKEN")
+	t.Setenv("custom_DATABRICKS_OIDC_TOKEN", "foobar")
+
+	ctx := context.Background()
+	env := map[string]string{}
+	err := inheritEnvVars(ctx, env)
+	require.NoError(t, err)
+	assert.Equal(t, "foobar", env["custom_DATABRICKS_OIDC_TOKEN"])
+	assert.Equal(t, "custom_DATABRICKS_OIDC_TOKEN", env["DATABRICKS_OIDC_TOKEN_ENV"])
+}
+
+func TestInheritOIDCTokenEnv(t *testing.T) {
+	t.Setenv("DATABRICKS_OIDC_TOKEN", "foobar")
+
+	ctx := context.Background()
+	env := map[string]string{}
+	err := inheritEnvVars(ctx, env)
+	require.NoError(t, err)
+	assert.Equal(t, "foobar", env["DATABRICKS_OIDC_TOKEN"])
+	assert.Equal(t, "", env["DATABRICKS_OIDC_TOKEN_ENV"])
 }
 
 func TestSetUserProfileFromInheritEnvVars(t *testing.T) {
@@ -384,11 +387,11 @@ func createFakeTerraformBinaryWindows(t *testing.T, binPath, jsonPayload, versio
 	tmpJsonPath := filepath.Join(t.TempDir(), "payload.json")
 	err = os.WriteFile(tmpJsonPath, []byte(jsonPayload), 0o644)
 	require.NoError(t, err)
-	_, err = f.WriteString(fmt.Sprintf(`@echo off
+	_, err = fmt.Fprintf(f, `@echo off
 REM This is a fake Terraform binary that returns the JSON payload.
 REM It stubs version %s.
 type "%s"
-`, version, tmpJsonPath))
+`, version, tmpJsonPath)
 	require.NoError(t, err)
 	return binPath
 }
@@ -402,12 +405,12 @@ func createFakeTerraformBinaryOther(t *testing.T, binPath, jsonPayload, version 
 	}()
 	err = f.Chmod(0o777)
 	require.NoError(t, err)
-	_, err = f.WriteString(fmt.Sprintf(`#!/bin/sh
+	_, err = fmt.Fprintf(f, `#!/bin/sh
 # This is a fake Terraform binary that returns the JSON payload.
 # It stubs version %s.
 cat <<EOF
 %sEOF
-`, version, jsonPayload))
+`, version, jsonPayload)
 	require.NoError(t, err)
 	return binPath
 }
@@ -453,7 +456,7 @@ func TestFindExecPath_UseExistingBinary(t *testing.T) {
 	}
 
 	// Create a pre-existing Terraform binary to avoid downloading it
-	cacheDir, _ := b.CacheDir(ctx, "bin")
+	cacheDir, _ := b.LocalStateDir(ctx, "bin")
 	createFakeTerraformBinary(t, cacheDir, "1.2.3")
 
 	// Verify that the pre-existing Terraform binary is used.
@@ -482,8 +485,8 @@ func TestFindExecPath_ExecPathWrongVersion(t *testing.T) {
 
 	// Verify that the error is returned.
 	expected := []string{
-		`Terraform binary at ` + execPath + ` (from $DATABRICKS_TF_EXEC_PATH) is ` + version + ` but expected version is ` + defaultTerraformVersion.Version.String() + `.`,
-		`Set DATABRICKS_TF_VERSION to ` + version + ` to continue.`,
+		`terraform binary at ` + execPath + ` (from $DATABRICKS_TF_EXEC_PATH) is ` + version + ` but expected version is ` + defaultTerraformVersion.Version.String() + `.`,
+		`Set DATABRICKS_TF_VERSION to ` + version + ` to continue`,
 	}
 	_, err := m.findExecPath(ctx, b, b.Config.Bundle.Terraform, testInstaller{t})
 	require.ErrorContains(t, err, strings.Join(expected, " "))
@@ -583,8 +586,8 @@ func TestFindExecPath_Version_ExecPathWrongVersion(t *testing.T) {
 
 	// Verify that the error is returned.
 	expected := []string{
-		`Terraform binary at ` + execPath + ` (from $DATABRICKS_TF_EXEC_PATH) is 1.2.4 but expected version is 1.2.3 (from $DATABRICKS_TF_VERSION).`,
-		`Update $DATABRICKS_TF_EXEC_PATH and $DATABRICKS_TF_VERSION so that versions match.`,
+		`terraform binary at ` + execPath + ` (from $DATABRICKS_TF_EXEC_PATH) is 1.2.4 but expected version is 1.2.3 (from $DATABRICKS_TF_VERSION).`,
+		`Update $DATABRICKS_TF_EXEC_PATH and $DATABRICKS_TF_VERSION so that versions match`,
 	}
 	_, err := m.findExecPath(ctx, b, b.Config.Bundle.Terraform, testInstaller{t})
 	require.ErrorContains(t, err, strings.Join(expected, " "))

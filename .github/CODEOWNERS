@@ -1,2 +1,6 @@
-* @pietern @andrewnester @shreyas-goenka @denik @anton-107
-cmd/labs @alexott @nfx
+*                         @andrewnester @anton-107 @denik @pietern @shreyas-goenka
+/cmd/bundle/bundle.go     @andrewnester @anton-107 @denik @pietern @shreyas-goenka @lennartkats-db
+/libs/template/           @andrewnester @anton-107 @denik @pietern @shreyas-goenka @lennartkats-db
+/acceptance/pipelines/    @jefferycheng1 @kanterov @lennartkats-db
+/cmd/pipelines/           @jefferycheng1 @kanterov @lennartkats-db
+/cmd/labs/                @alexott @nfx

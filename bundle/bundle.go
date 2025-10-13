@@ -15,13 +15,14 @@ import (
 	"sync"
 
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/metadata"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/locker"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/logdiag"
 	libsync "github.com/databricks/cli/libs/sync"
 	"github.com/databricks/cli/libs/tags"
 	"github.com/databricks/cli/libs/telemetry/protos"
@@ -33,6 +34,12 @@ import (
 
 const internalFolder = ".internal"
 
+// Filename where resources are stored for DATABRICKS_BUNDLE_ENGINE=direct
+const resourcesFilename = "resources.json"
+
+// Filename where resources are stored for DATABRICKS_BUNDLE_ENGINE=terraform
+const terraformStateFilename = "terraform.tfstate"
+
 // This struct is used as a communication channel to collect metrics
 // from all over the bundle codebase to finally be emitted as telemetry.
 type Metrics struct {
@@ -42,6 +49,21 @@ type Metrics struct {
 	BoolValues                  []protos.BoolMapEntry
 	PythonAddedResourcesCount   int64
 	PythonUpdatedResourcesCount int64
+	ExecutionTimes              []protos.IntMapEntry
+}
+
+// SetBoolValue sets the value of a boolean metric.
+// If the metric does not exist, it is created.
+// If the metric exists, it is updated.
+// Ensures that the metric is unique
+func (m *Metrics) SetBoolValue(key string, value bool) {
+	for i, v := range m.BoolValues {
+		if v.Key == key {
+			m.BoolValues[i].Value = value
+			return
+		}
+	}
+	m.BoolValues = append(m.BoolValues, protos.BoolMapEntry{Key: key, Value: value})
 }
 
 func (m *Metrics) AddBoolValue(key string, value bool) {
@@ -101,7 +123,14 @@ type Bundle struct {
 	// Stores the locker responsible for acquiring/releasing a deployment lock.
 	Locker *locker.Locker
 
-	Plan *deployplan.Plan
+	// TerraformPlanPath is the path to the plan from the terraform CLI
+	TerraformPlanPath string
+
+	// If true, the plan is empty and applying it will not do anything
+	TerraformPlanIsEmpty bool
+
+	// (direct only) deployment implementation and state
+	DeploymentBundle direct.DeploymentBundle
 
 	// if true, we skip approval checks for deploy, destroy resources and delete
 	// files
@@ -112,6 +141,9 @@ type Bundle struct {
 	Tagging tags.Cloud
 
 	Metrics Metrics
+
+	// If true, don't use terraform. Set by DATABRICKS_BUNDLE_ENGINE=direct
+	DirectDeployment bool
 }
 
 func Load(ctx context.Context, path string) (*Bundle, error) {
@@ -128,31 +160,47 @@ func Load(ctx context.Context, path string) (*Bundle, error) {
 }
 
 // MustLoad returns a bundle configuration.
-// It returns an error if a bundle was not found or could not be loaded.
-func MustLoad(ctx context.Context) (*Bundle, error) {
+// The errors are recorded by logdiag, check with logdiag.HasError().
+func MustLoad(ctx context.Context) *Bundle {
 	root, err := mustGetRoot(ctx)
 	if err != nil {
-		return nil, err
+		logdiag.LogError(ctx, err)
+		return nil
 	}
 
-	return Load(ctx, root)
+	logdiag.SetRoot(ctx, root)
+
+	b, err := Load(ctx, root)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return nil
+	}
+	return b
 }
 
 // TryLoad returns a bundle configuration if there is one, but doesn't fail if there isn't one.
-// It returns an error if a bundle was found but could not be loaded.
+// The errors are recorded by logdiag, check with logdiag.HasError().
 // It returns a `nil` bundle if a bundle was not found.
-func TryLoad(ctx context.Context) (*Bundle, error) {
+func TryLoad(ctx context.Context) *Bundle {
 	root, err := tryGetRoot(ctx)
 	if err != nil {
-		return nil, err
+		logdiag.LogError(ctx, err)
+		return nil
 	}
 
 	// No root is fine in this function.
 	if root == "" {
-		return nil, nil
+		return nil
 	}
 
-	return Load(ctx, root)
+	logdiag.SetRoot(ctx, root)
+
+	b, err := Load(ctx, root)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return nil
+	}
+	return b
 }
 
 func (b *Bundle) WorkspaceClientE() (*databricks.WorkspaceClient, error) {
@@ -183,9 +231,9 @@ func (b *Bundle) SetWorkpaceClient(w *databricks.WorkspaceClient) {
 	b.client = w
 }
 
-// CacheDir returns directory to use for temporary files for this bundle.
+// LocalStateDir returns directory to use for temporary files for this bundle.
 // Scoped to the bundle's target.
-func (b *Bundle) CacheDir(ctx context.Context, paths ...string) (string, error) {
+func (b *Bundle) LocalStateDir(ctx context.Context, paths ...string) (string, error) {
 	if b.Config.Bundle.Target == "" {
 		panic("target not set")
 	}
@@ -225,7 +273,7 @@ func (b *Bundle) CacheDir(ctx context.Context, paths ...string) (string, error) 
 // This directory is used to store and automaticaly sync internal bundle files, such as, f.e
 // notebook trampoline files for Python wheel and etc.
 func (b *Bundle) InternalDir(ctx context.Context) (string, error) {
-	cacheDir, err := b.CacheDir(ctx)
+	cacheDir, err := b.LocalStateDir(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -267,4 +315,46 @@ func (b *Bundle) AuthEnv() (map[string]string, error) {
 
 	cfg := b.client.Config
 	return auth.Env(cfg), nil
+}
+
+func (b *Bundle) StateFilename() string {
+	if b.DirectDeployment {
+		return resourcesFilename
+	} else {
+		return terraformStateFilename
+	}
+}
+
+func (b *Bundle) StateLocalPath(ctx context.Context) (string, error) {
+	if b.DirectDeployment {
+		cacheDir, err := b.LocalStateDir(ctx)
+		if err != nil {
+			return "", err
+		}
+		return filepath.Join(cacheDir, resourcesFilename), nil
+	} else {
+		cacheDir, err := b.LocalStateDir(ctx, "terraform")
+		if err != nil {
+			return "", err
+		}
+		return filepath.Join(cacheDir, terraformStateFilename), nil
+	}
+}
+
+func (b *Bundle) OpenStateFile(ctx context.Context) error {
+	if !b.DirectDeployment {
+		panic("internal error: OpenResourceDatabase must be called with DirectDeployment")
+	}
+
+	statePath, err := b.StateLocalPath(ctx)
+	if err != nil {
+		return err
+	}
+
+	err = b.DeploymentBundle.OpenStateFile(statePath)
+	if err != nil {
+		return fmt.Errorf("failed to open/create state file at %s: %s", statePath, err)
+	}
+
+	return nil
 }

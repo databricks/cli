@@ -1,0 +1,23 @@
+
+>>> [CLI] bundle validate
+Error: multiple resources or scripts have been defined with the same key: foo
+  at resources.jobs.foo
+     scripts.foo
+  in databricks.yml:9:5
+     databricks.yml:15:7
+
+Name: test
+
+Found 1 error
+
+Exit code: 1
+
+>>> [CLI] bundle run foo
+Error: multiple resources or scripts have been defined with the same key: foo
+  at resources.jobs.foo
+     scripts.foo
+  in databricks.yml:9:5
+     databricks.yml:15:7
+
+
+Exit code: 1

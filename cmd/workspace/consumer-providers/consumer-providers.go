@@ -55,12 +55,10 @@ func newBatchGet() *cobra.Command {
 
 	var batchGetReq marketplace.BatchGetProvidersRequest
 
-	// TODO: short flags
-
 	// TODO: array: ids
 
 	cmd.Use = "batch-get"
-	cmd.Short = `Get one batch of providers.`
+	cmd.Short = `Get one batch of providers. One may specify up to 50 IDs per request.`
 	cmd.Long = `Get one batch of providers. One may specify up to 50 IDs per request.
   
   Batch get a provider in the Databricks Marketplace with at least one visible
@@ -111,8 +109,6 @@ func newGet() *cobra.Command {
 
 	var getReq marketplace.GetProviderRequest
 
-	// TODO: short flags
-
 	cmd.Use = "get ID"
 	cmd.Short = `Get a provider.`
 	cmd.Long = `Get a provider.
@@ -130,7 +126,7 @@ func newGet() *cobra.Command {
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
 			promptSpinner <- "No ID argument specified. Loading names for Consumer Providers drop-down."
-			names, err := w.ConsumerProviders.ProviderInfoNameToIdMap(ctx, marketplace.ListProvidersRequest{})
+			names, err := w.ConsumerProviders.ProviderInfoNameToIdMap(ctx, marketplace.ListConsumerProvidersRequest{})
 			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Consumer Providers drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -171,15 +167,13 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
-	*marketplace.ListProvidersRequest,
+	*marketplace.ListConsumerProvidersRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var listReq marketplace.ListProvidersRequest
-
-	// TODO: short flags
+	var listReq marketplace.ListConsumerProvidersRequest
 
 	cmd.Flags().BoolVar(&listReq.IsFeatured, "is-featured", listReq.IsFeatured, ``)
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)

@@ -23,11 +23,12 @@ type SecretScopePermission struct {
 }
 
 type SecretScope struct {
+	BaseResource
+
 	// A unique name to identify the secret scope.
 	Name string `json:"name"`
 
-	Permissions    []SecretScopePermission `json:"permissions,omitempty"`
-	ModifiedStatus ModifiedStatus          `json:"modified_status,omitempty" bundle:"internal"`
+	Permissions []SecretScopePermission `json:"permissions,omitempty"`
 
 	// Secret scope configuration is explicitly defined here with individual fields
 	// to maintain API stability and prevent unintended configuration changes.
@@ -82,6 +83,9 @@ func (s SecretScope) ResourceDescription() ResourceDescription {
 }
 
 func (s SecretScope) GetName() string {
+	if s.ID != "" {
+		return s.ID
+	}
 	return s.Name
 }
 

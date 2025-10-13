@@ -20,7 +20,6 @@
         "format": "MULTI_TASK",
         "max_concurrent_runs": 1,
         "name": "Untitled",
-        "permissions": [],
         "queue": {
           "enabled": true
         },

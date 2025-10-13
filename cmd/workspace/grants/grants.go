@@ -64,8 +64,6 @@ func newGet() *cobra.Command {
 
 	var getReq catalog.GetGrantRequest
 
-	// TODO: short flags
-
 	cmd.Flags().IntVar(&getReq.MaxResults, "max-results", getReq.MaxResults, `Specifies the maximum number of privileges to return (page length).`)
 	cmd.Flags().StringVar(&getReq.PageToken, "page-token", getReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
 	cmd.Flags().StringVar(&getReq.Principal, "principal", getReq.Principal, `If provided, only the permissions for the specified principal (user or group) are returned.`)
@@ -127,8 +125,6 @@ func newGetEffective() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getEffectiveReq catalog.GetEffectiveRequest
-
-	// TODO: short flags
 
 	cmd.Flags().IntVar(&getEffectiveReq.MaxResults, "max-results", getEffectiveReq.MaxResults, `Specifies the maximum number of privileges to return (page length).`)
 	cmd.Flags().StringVar(&getEffectiveReq.PageToken, "page-token", getEffectiveReq.PageToken, `Opaque token for the next page of results (pagination).`)
@@ -194,7 +190,6 @@ func newUpdate() *cobra.Command {
 	var updateReq catalog.UpdatePermissions
 	var updateJson flags.JsonFlag
 
-	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: changes

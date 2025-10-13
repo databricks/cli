@@ -52,6 +52,12 @@ type ResourceAppPendingDeployment struct {
 	UpdateTime          string                                           `json:"update_time,omitempty"`
 }
 
+type ResourceAppResourcesDatabase struct {
+	DatabaseName string `json:"database_name"`
+	InstanceName string `json:"instance_name"`
+	Permission   string `json:"permission"`
+}
+
 type ResourceAppResourcesJob struct {
 	Id         string `json:"id"`
 	Permission string `json:"permission"`
@@ -80,6 +86,7 @@ type ResourceAppResourcesUcSecurable struct {
 }
 
 type ResourceAppResources struct {
+	Database        *ResourceAppResourcesDatabase        `json:"database,omitempty"`
 	Description     string                               `json:"description,omitempty"`
 	Job             *ResourceAppResourcesJob             `json:"job,omitempty"`
 	Name            string                               `json:"name"`

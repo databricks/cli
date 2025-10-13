@@ -1,0 +1,10 @@
+bundle:
+  name: test-create-pipeline
+
+resources:
+  pipelines:
+    foo:
+      name: test-pipeline
+      libraries:
+        - notebook:
+            path: ./nb.sql

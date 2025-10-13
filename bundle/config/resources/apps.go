@@ -23,21 +23,14 @@ type AppPermission struct {
 }
 
 type App struct {
+	BaseResource
+	apps.App // nolint App struct also defines Id and URL field with the same json tag "id" and "url"
+
 	// SourceCodePath is a required field used by DABs to point to Databricks app source code
 	// on local disk and to the corresponding workspace path during app deployment.
 	SourceCodePath string `json:"source_code_path"`
 
-	// Config is an optional field which allows configuring the app following Databricks app configuration format like in app.yml.
-	// When this field is set, DABs read the configuration set in this field and write
-	// it to app.yml in the root of the source code folder in Databricks workspace.
-	// If there’s app.yml defined locally, DABs will raise an error.
-	Config map[string]any `json:"config,omitempty"`
-
-	Permissions    []AppPermission `json:"permissions,omitempty"`
-	ModifiedStatus ModifiedStatus  `json:"modified_status,omitempty" bundle:"internal"`
-	URL            string          `json:"url,omitempty" bundle:"internal"`
-
-	apps.App
+	Permissions []AppPermission `json:"permissions,omitempty"`
 }
 
 func (a *App) UnmarshalJSON(b []byte) error {
@@ -70,11 +63,15 @@ func (a *App) InitializeURL(baseURL url.URL) {
 	if a.ModifiedStatus == "" || a.ModifiedStatus == ModifiedStatusCreated {
 		return
 	}
-	baseURL.Path = "apps/" + a.Name
+	baseURL.Path = "apps/" + a.GetName()
 	a.URL = baseURL.String()
 }
 
 func (a *App) GetName() string {
+	// Prefer name from the state - that is what is actually deployed
+	if a.ID != "" {
+		return a.ID
+	}
 	return a.Name
 }
 

@@ -24,9 +24,6 @@ type Experimental struct {
 	// as a top-level permission in the DAB.
 	UseLegacyRunAs bool `json:"use_legacy_run_as,omitempty"`
 
-	// PyDABs determines whether to load the 'databricks-pydabs' package.
-	//
-	// PyDABs allows to define bundle configuration using Python.
 	// PyDABs is deprecated use Python instead.
 	PyDABs PyDABs `json:"pydabs,omitempty"`
 
@@ -70,18 +67,6 @@ type Python struct {
 type PyDABs struct {
 	// Enabled is a flag to enable the feature.
 	Enabled bool `json:"enabled,omitempty"`
-
-	// VEnvPath is path to the virtual environment.
-	//
-	// If enabled, PyDABs will execute code within this environment. If disabled,
-	// it defaults to using the Python interpreter available in the current shell.
-	VEnvPath string `json:"venv_path,omitempty"`
-
-	// Import contains a list Python packages with PyDABs code.
-	//
-	// These packages are imported to discover resources, resource generators, and mutators.
-	// This list can include namespace packages, which causes the import of nested packages.
-	Import []string `json:"import,omitempty"`
 }
 
 type (

@@ -14,6 +14,9 @@ github.com/databricks/cli/bundle/config/resources.App:
   "effective_budget_policy_id":
     "description": |-
       PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
   "oauth2_app_client_id":
     "description": |-
       PLACEHOLDER
@@ -84,6 +87,9 @@ github.com/databricks/cli/bundle/config/resources.Cluster:
   "kind":
     "description": |-
       PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
   "permissions":
     "description": |-
       PLACEHOLDER
@@ -120,15 +126,60 @@ github.com/databricks/cli/bundle/config/resources.Dashboard:
       If you use the UI to modify the dashboard, modifications made through the UI are not applied to the dashboard JSON file in the local bundle unless you explicitly update it using `bundle generate`. You can use the `--watch` option to continuously poll and retrieve changes to the dashboard. See [_](/dev-tools/cli/bundle-commands.md#generate).
 
       In addition, if you attempt to deploy a bundle that contains a dashboard JSON file that is different than the one in the remote workspace, an error will occur. To force the deploy and overwrite the dashboard in the remote workspace with the local one, use the `--force` option. See [_](/dev-tools/cli/bundle-commands.md#deploy).
+  "create_time":
+    "description": |-
+      The timestamp of when the dashboard was created.
+  "dashboard_id":
+    "description": |-
+      UUID identifying the dashboard.
+  "display_name":
+    "description": |-
+      The display name of the dashboard.
   "embed_credentials":
     "description": |-
       PLACEHOLDER
+  "etag":
+    "description": |-
+      The etag for the dashboard. Can be optionally provided on updates to ensure that the dashboard
+      has not been modified since the last read.
+      This field is excluded in List Dashboards responses.
   "file_path":
     "description": |-
       PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+  "lifecycle_state":
+    "description": |-
+      The state of the dashboard resource. Used for tracking trashed status.
+  "parent_path":
+    "description": |-
+      The workspace path of the folder containing the dashboard. Includes leading slash and no
+      trailing slash.
+      This field is excluded in List Dashboards responses.
+  "path":
+    "description": |-
+      The workspace path of the dashboard asset, including the file name.
+      Exported dashboards always have the file extension `.lvdash.json`.
+      This field is excluded in List Dashboards responses.
   "permissions":
     "description": |-
       PLACEHOLDER
+  "serialized_dashboard":
+    "description": |-
+      The contents of the dashboard in serialized string form.
+      This field is excluded in List Dashboards responses.
+      Use the [get dashboard API](https://docs.databricks.com/api/workspace/lakeview/get)
+      to retrieve an example response, which includes the `serialized_dashboard` field.
+      This field provides the structure of the JSON string that represents the dashboard's
+      layout and components.
+  "update_time":
+    "description": |-
+      The timestamp of when the dashboard was last updated by the user.
+      This field is excluded in List Dashboards responses.
+  "warehouse_id":
+    "description": |-
+      The warehouse ID used to run the dashboard.
 github.com/databricks/cli/bundle/config/resources.DashboardPermissionLevel:
   "_":
     "enum":
@@ -138,6 +189,32 @@ github.com/databricks/cli/bundle/config/resources.DashboardPermissionLevel:
         CAN_RUN
       - |-
         CAN_EDIT
+      - |-
+        CAN_MANAGE
+github.com/databricks/cli/bundle/config/resources.DatabaseCatalog:
+  "create_database_if_not_exists":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+  "uid":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.DatabaseInstance:
+  "lifecycle":
+    "description": |-
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.DatabaseInstancePermissionLevel:
+  "_":
+    "enum":
+      - |-
+        CAN_CREATE
+      - |-
+        CAN_USE
       - |-
         CAN_MANAGE
 github.com/databricks/cli/bundle/config/resources.Job:
@@ -162,6 +239,9 @@ github.com/databricks/cli/bundle/config/resources.Job:
   "health":
     "description": |-
       PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
   "permissions":
     "description": |-
       PLACEHOLDER
@@ -196,6 +276,9 @@ github.com/databricks/cli/bundle/config/resources.MlflowExperiment:
                 group_name: users
             description: MLflow experiment used to track runs
       ```
+  "lifecycle":
+    "description": |-
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
   "permissions":
     "description": |-
       PLACEHOLDER
@@ -212,6 +295,9 @@ github.com/databricks/cli/bundle/config/resources.MlflowModel:
   "_":
     "markdown_description": |-
       The model resource allows you to define [legacy models](/api/workspace/modelregistry/createmodel) in bundles. Databricks recommends you use Unity Catalog [registered models](#registered-model) instead.
+  "lifecycle":
+    "description": |-
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
   "permissions":
     "description": |-
       PLACEHOLDER
@@ -254,6 +340,12 @@ github.com/databricks/cli/bundle/config/resources.ModelServingEndpoint:
             - key: "team"
               value: "data science"
       ```
+  "description":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
   "permissions":
     "description": |-
       PLACEHOLDER
@@ -293,15 +385,15 @@ github.com/databricks/cli/bundle/config/resources.Pipeline:
   "dry_run":
     "description": |-
       PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
   "permissions":
     "description": |-
       PLACEHOLDER
   "run_as":
     "description": |-
       PLACEHOLDER
-  "target":
-    "force_not_deprecated": |-
-      true
   "trigger":
     "deprecation_message": |-
       Use continuous instead
@@ -341,6 +433,12 @@ github.com/databricks/cli/bundle/config/resources.QualityMonitor:
               quartz_cron_expression: 0 0 8 * * ? # Run Every day at 8am
               timezone_id: UTC
       ```
+  "inference_log":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
   "table_name":
     "description": |-
       PLACEHOLDER
@@ -367,6 +465,9 @@ github.com/databricks/cli/bundle/config/resources.RegisteredModel:
   "grants":
     "description": |-
       PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
 github.com/databricks/cli/bundle/config/resources.Schema:
   "_":
     "markdown_description": |-
@@ -417,9 +518,41 @@ github.com/databricks/cli/bundle/config/resources.Schema:
   "grants":
     "description": |-
       PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
   "properties":
     "description": |-
       PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.SchemaGrantPrivilege:
+  "_":
+    "enum":
+      - |-
+        ALL_PRIVILEGES
+      - |-
+        APPLY_TAG
+      - |-
+        CREATE_FUNCTION
+      - |-
+        CREATE_TABLE
+      - |-
+        CREATE_VOLUME
+      - |-
+        MANAGE
+      - |-
+        USE_SCHEMA
+      - |-
+        EXECUTE
+      - |-
+        MODIFY
+      - |-
+        REFRESH
+      - |-
+        SELECT
+      - |-
+        READ_VOLUME
+      - |-
+        WRITE_VOLUME
 github.com/databricks/cli/bundle/config/resources.SecretScopePermissionLevel:
   "_":
     "enum":
@@ -429,6 +562,35 @@ github.com/databricks/cli/bundle/config/resources.SecretScopePermissionLevel:
         WRITE
       - |-
         MANAGE
+github.com/databricks/cli/bundle/config/resources.SqlWarehouse:
+  "enable_photon":
+    "description": |-
+      Configures whether the warehouse should use Photon optimized clusters.
+
+      Defaults to true.
+  "lifecycle":
+    "description": |-
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+  "spot_instance_policy":
+    "description": |-
+      PLACEHOLDER
+  "warehouse_type":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.SqlWarehousePermissionLevel:
+  "_":
+    "enum":
+      - |-
+        CAN_MANAGE
+      - |-
+        CAN_USE
+      - |-
+        CAN_MONITOR
+      - |-
+        CAN_VIEW
 github.com/databricks/cli/bundle/config/resources.Volume:
   "_":
     "markdown_description": |-
@@ -453,9 +615,25 @@ github.com/databricks/cli/bundle/config/resources.Volume:
   "grants":
     "description": |-
       PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
   "volume_type":
     "description": |-
       PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.VolumeGrantPrivilege:
+  "_":
+    "enum":
+      - |-
+        ALL_PRIVILEGES
+      - |-
+        APPLY_TAG
+      - |-
+        MANAGE
+      - |-
+        READ_VOLUME
+      - |-
+        WRITE_VOLUME
 github.com/databricks/databricks-sdk-go/service/apps.AppDeployment:
   "create_time":
     "description": |-
@@ -493,6 +671,9 @@ github.com/databricks/databricks-sdk-go/service/apps.AppDeploymentStatus:
     "description": |-
       PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/apps.AppResource:
+  "database":
+    "description": |-
+      PLACEHOLDER
   "job":
     "description": |-
       PLACEHOLDER
@@ -506,6 +687,16 @@ github.com/databricks/databricks-sdk-go/service/apps.AppResource:
     "description": |-
       PLACEHOLDER
   "uc_securable":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/apps.AppResourceDatabase:
+  "database_name":
+    "description": |-
+      PLACEHOLDER
+  "instance_name":
+    "description": |-
+      PLACEHOLDER
+  "permission":
     "description": |-
       PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/apps.AppResourceJob:
@@ -612,6 +803,11 @@ github.com/databricks/databricks-sdk-go/service/compute.InitScriptInfo:
   "abfss":
     "description": |-
       Contains the Azure Data Lake Storage destination path
+github.com/databricks/databricks-sdk-go/service/compute.Kind:
+  "_":
+    "enum":
+      - |-
+        CLASSIC_PREVIEW
 github.com/databricks/databricks-sdk-go/service/compute.LogAnalyticsInfo:
   "log_analytics_primary_key":
     "description": |-
@@ -619,6 +815,10 @@ github.com/databricks/databricks-sdk-go/service/compute.LogAnalyticsInfo:
   "log_analytics_workspace_id":
     "description": |-
       The workspace ID for the Azure Log Analytics agent configuration
+github.com/databricks/databricks-sdk-go/service/database.SyncedTablePosition:
+  "delta_table_sync_info":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/jobs.DashboardTask:
   "dashboard_id":
     "description": |-
@@ -665,6 +865,9 @@ github.com/databricks/databricks-sdk-go/service/jobs.SubscriptionSubscriber:
     "description": |-
       PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/jobs.Task:
+  "dbt_platform_task":
+    "description": |-
+      PLACEHOLDER
   "gen_ai_compute_task":
     "description": |-
       PLACEHOLDER
@@ -697,6 +900,10 @@ github.com/databricks/databricks-sdk-go/service/pipelines.PipelineTrigger:
   "manual":
     "description": |-
       PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/serving.Route:
+  "served_entity_name":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/serving.ServedEntityInput:
   "entity_version":
     "description": |-
@@ -706,5 +913,23 @@ github.com/databricks/databricks-sdk-go/service/serving.ServedModelInput:
     "description": |-
       PLACEHOLDER
   "model_version":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/sql.Channel:
+  "dbsql_version":
+    "description": |-
+      PLACEHOLDER
+  "name":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/sql.EndpointTagPair:
+  "key":
+    "description": |-
+      PLACEHOLDER
+  "value":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/sql.EndpointTags:
+  "custom_tags":
     "description": |-
       PLACEHOLDER
