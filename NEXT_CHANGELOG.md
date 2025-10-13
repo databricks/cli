@@ -1,17 +1,16 @@
 # NEXT CHANGELOG
 
-## Release v0.273.0
+## Release v0.271.0
 
 ### Notable Changes
 
 ### CLI
 
-* Add the `--configure-serverless` flag to `databricks auth login` to configure Databricks Connect to use serverless.
-
 ### Dependency updates
 
 ### Bundles
 * Updated the internal lakeflow-pipelines template to use an "src" layout ([#3671](https://github.com/databricks/cli/pull/3671)).
-* Added support for a "template_dir" option in the databricks_template_schema.json format. ([#3671](https://github.com/databricks/cli/pull/3671)).
+* Remove resources.apps.config section ([#3680](https://github.com/databricks/cli/pull/3680))
+* Prompt for serverless compute in `dbt-sql` template (defaults to `yes`) ([#3668](https://github.com/databricks/cli/pull/3668))
 
 ### API Changes
