@@ -79,6 +79,19 @@ func (s *FakeWorkspace) GetPermissions(req Request) any {
 		}
 	}
 
+	if requestObjectType == "jobs" {
+		permissions.AccessControlList = append(permissions.AccessControlList, iam.AccessControlResponse{
+			AllPermissions: []iam.Permission{
+				{
+					Inherited:           true,
+					InheritedFromObject: []string{"/jobs/"},
+					PermissionLevel:     "CAN_MANAGE",
+				},
+			},
+			GroupName: "admins",
+		})
+	}
+
 	return Response{
 		Body: permissions,
 	}
@@ -139,10 +152,15 @@ func (s *FakeWorkspace) SetPermissions(req Request) any {
 	// Convert AccessControlRequest to AccessControlResponse
 	var newAccessControlList []iam.AccessControlResponse
 	for _, acl := range updateRequest.AccessControlList {
+		display := acl.UserName
+		if display == "" {
+			display = acl.ServicePrincipalName
+		}
 		response := iam.AccessControlResponse{
 			UserName:             acl.UserName,
 			GroupName:            acl.GroupName,
 			ServicePrincipalName: acl.ServicePrincipalName,
+			DisplayName:          display,
 			AllPermissions:       []iam.Permission{},
 		}
 

@@ -39,11 +39,18 @@ trace $CLI bundle plan
 title "Restore original config\n"
 trace diff.py databricks.yml.saved databricks.yml
 
-mv databricks.yml.saved databricks.yml
+cp databricks.yml.saved databricks.yml
 trace $CLI bundle debug plan > out.plan_restore.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 trace print_requests > out.requests_restore_original.json
 trace $CLI bundle plan
+
+title "Set permissions: []\n"
+grep -v '(PERMISSIONS|DELETE_ONE)' databricks.yml > tmp.yml && mv tmp.yml databricks.yml
+update_file.py databricks.yml '# permissions: [] # EXPLICIT_EMPTY' 'permissions: [] # EXPLICIT_EMPTY'
+trace $CLI bundle debug plan > out.plan_set_empty.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle deploy
+trace print_requests > out.requests_set_empty.$DATABRICKS_BUNDLE_ENGINE.json
 
 trace $CLI bundle destroy --auto-approve
 trace print_requests > out.requests_destroy.$DATABRICKS_BUNDLE_ENGINE.json

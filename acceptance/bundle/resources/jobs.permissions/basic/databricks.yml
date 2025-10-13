@@ -15,3 +15,4 @@ resources:
           user_name: viewer@example.com # PERMISSIONS
         - level: CAN_MANAGE # DELETE_ONE
           group_name: data-team # DELETE_ONE
+      # permissions: [] # EXPLICIT_EMPTY

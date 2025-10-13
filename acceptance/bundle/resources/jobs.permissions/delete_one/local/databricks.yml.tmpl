@@ -1,0 +1,20 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+resources:
+  jobs:
+    job_with_permissions:
+      name: job with permissions
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Workspace/Users/tester@databricks.com/notebook
+            source: WORKSPACE # otherwise TF implementation adds this to request and triggers diff
+      permissions:
+        - level: CAN_MANAGE_RUN # DELETE
+          user_name: test-dabs-1@databricks.com # DELETE
+        - level: CAN_MANAGE
+          group_name: test-dabs-group-1
+        - level: CAN_VIEW
+          user_name: test-dabs-2@databricks.com
+
