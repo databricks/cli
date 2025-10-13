@@ -231,8 +231,16 @@ func (s *Sync) GetFileList(ctx context.Context) (*FileList, error) {
 	// Taint gitignore rules to ensure they're up-to-date
 	s.fileSet.TaintIgnoreRules()
 
-	// Get ignorers for include patterns
-	includeIgnorer := s.includeFileSet.Ignorer()
+	// Get ignorers for include and exclude patterns
+	var includeIgnorer fileset.Ignorer
+	if s.includeFileSet != nil {
+		includeIgnorer = s.includeFileSet.Ignorer()
+	}
+
+	var excludeIgnorer fileset.Ignorer
+	if s.excludeFileSet != nil {
+		excludeIgnorer = s.excludeFileSet.Ignorer()
+	}
 
 	// Filter files: include if (NOT gitignored) OR (matches include patterns)
 	// This allows include patterns to override gitignore
@@ -248,12 +256,15 @@ func (s *Sync) GetFileList(ctx context.Context) (*FileList, error) {
 
 		// Check if file matches include patterns
 		// Note: Ignorer uses inverted logic - "not ignored" means it matches the pattern
-		ignored, err := includeIgnorer.IgnoreFile(f.Relative)
-		if err != nil {
-			log.Errorf(ctx, "cannot check if file matches include pattern: %s", err)
-			return nil, err
+		matchesInclude := false
+		if includeIgnorer != nil {
+			ignored, err := includeIgnorer.IgnoreFile(f.Relative)
+			if err != nil {
+				log.Errorf(ctx, "cannot check if file matches include pattern: %s", err)
+				return nil, err
+			}
+			matchesInclude = !ignored
 		}
-		matchesInclude := !ignored
 
 		// Include file if: not gitignored OR matches include pattern
 		if !gitignored || matchesInclude {
@@ -272,17 +283,18 @@ func (s *Sync) GetFileList(ctx context.Context) (*FileList, error) {
 	// Remove files matching exclude patterns and count them
 	// We can post-filter exclude patterns since they don't affect directory traversal
 	excludedBySyncExclude := 0
-	excludeIgnorer := s.excludeFileSet.Ignorer()
-	for _, f := range syncSet.Iter() {
-		ignored, err := excludeIgnorer.IgnoreFile(f.Relative)
-		if err != nil {
-			log.Errorf(ctx, "cannot check if file matches exclude pattern: %s", err)
-			return nil, err
-		}
-		// If not ignored by excluder, it means the file matches exclude patterns
-		if !ignored {
-			syncSet.Remove(f)
-			excludedBySyncExclude++
+	if excludeIgnorer != nil {
+		for _, f := range syncSet.Iter() {
+			ignored, err := excludeIgnorer.IgnoreFile(f.Relative)
+			if err != nil {
+				log.Errorf(ctx, "cannot check if file matches exclude pattern: %s", err)
+				return nil, err
+			}
+			// If not ignored by excluder, it means the file matches exclude patterns
+			if !ignored {
+				syncSet.Remove(f)
+				excludedBySyncExclude++
+			}
 		}
 	}
 
