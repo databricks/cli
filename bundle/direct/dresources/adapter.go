@@ -45,13 +45,14 @@ type IResource interface {
 	// Keys are field paths (e.g., "name", "catalog_name"). Values are actions.
 	// Unspecified changed fields default to ActionTypeUpdate.
 	//
-	// The isLocal parameter determines whether the triggers are for local or remote changes:
-	// - isLocal=true: These triggers are used to update the remote definition of a resource
-	//   to the latest local changes made by the user.
-	// - isLocal=false: These triggers are used to detect and reconcile remote drift between
-	//   what the deployment state records as the current state of the resource and what the
-	//   resource definition actually is in the backend. This is necessary to revert out of
-	//   band changes made to the resource by bypassing DABs.
+	// FieldTriggers(true) is applied on every change between state (last deployed config)
+	// and new state (current config) to determine action based on config changes.
+	//
+	// FieldTriggers(false) is called on every change between state and remote state to
+	// determine action based on remote drift.
+	//
+	// Note: these functions are called once per resource implementation initialization,
+	// not once per resource.
 	FieldTriggers(isLocal bool) map[string]deployplan.ActionType
 }
 
