@@ -3,8 +3,6 @@
 package quality_monitor_v2
 
 import (
-	"context"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -12,11 +10,8 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/common/lro"
 	"github.com/databricks/databricks-sdk-go/service/qualitymonitorv2"
-	"github.com/databricks/databricks-sdk-go/useragent"
 	"github.com/spf13/cobra"
 )
 
@@ -50,59 +45,6 @@ func New() *cobra.Command {
 
 // start create-library command
 
-// pollOperation polls an existing operation until completion, similar to SDK's Wait implementation
-func pollOperation(ctx context.Context, w *databricks.WorkspaceClient, operation *qualitymonitorv2.Operation, opts *lro.LroOptions) (*qualitymonitorv2.Library, error) {
-	timeout := 20 * time.Minute
-	if opts != nil && opts.Timeout > 0 {
-		timeout = opts.Timeout
-	}
-
-	ctx = useragent.InContext(ctx, "sdk-feature", "long-running")
-	return retries.Poll[qualitymonitorv2.Library](ctx, timeout, func() (*qualitymonitorv2.Library, *retries.Err) {
-		op, err := w.QualityMonitorV2.GetOperation(ctx, qualitymonitorv2.GetOperationRequest{
-			Name: operation.Name,
-		})
-		if err != nil {
-			return nil, retries.Halt(err)
-		}
-
-		// Update local operation state
-		operation = op
-
-		if !op.Done {
-			return nil, retries.Continues("operation still in progress")
-		}
-
-		if op.Error != nil {
-			var errorMsg string
-			if op.Error.Message != "" {
-				errorMsg = op.Error.Message
-			} else {
-				errorMsg = "unknown error"
-			}
-
-			if op.Error.ErrorCode != "" {
-				errorMsg = fmt.Sprintf("[%s] %s", op.Error.ErrorCode, errorMsg)
-			}
-
-			return nil, retries.Halt(fmt.Errorf("operation failed: %s", errorMsg))
-		}
-
-		// Operation completed successfully, unmarshal response
-		if op.Response == nil {
-			return nil, retries.Halt(fmt.Errorf("operation completed but no response available"))
-		}
-
-		var library qualitymonitorv2.Library
-		err = json.Unmarshal(op.Response, &library)
-		if err != nil {
-			return nil, retries.Halt(fmt.Errorf("failed to unmarshal library response: %w", err))
-		}
-
-		return &library, nil
-	})
-}
-
 // Slice with functions to override default command behavior.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createLibraryOverrides []func(
@@ -131,7 +73,7 @@ func newCreateLibrary() *cobra.Command {
 	cmd.Use = "create-library NAME"
 	cmd.Short = `Create a Library Resource.`
 	cmd.Long = `Create a Library Resource.
-  
+
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
   operation details. The operation's 'name' field can then be used to poll for
@@ -140,7 +82,7 @@ func newCreateLibrary() *cobra.Command {
   Arguments:
     NAME: Name of the Resource. Must contain only: - alphanumeric characters -
       underscores - hyphens
-
+      
       Note: The name must be unique within the scope of the resource.`
 
 	cmd.Annotations = make(map[string]string)
@@ -162,7 +104,6 @@ func newCreateLibrary() *cobra.Command {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
-		// No-wait mode: start operation and return immediately
 		if cmd.Flags().Changed("json") {
 			diags := createLibraryJson.Unmarshal(&createLibraryReq.Library)
 			if diags.HasError() {
