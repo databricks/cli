@@ -105,49 +105,6 @@ func (*ResourcePermissions) PrepareState(input any) *PermissionsState {
 	}
 }
 
-/*
-// GET returns
-type ObjectPermissions struct {
-	AccessControlList []AccessControlResponse `json:"access_control_list,omitempty"`
-
-	ObjectId string `json:"object_id,omitempty"`
-
-	ObjectType string `json:"object_type,omitempty"`
-
-	ForceSendFields []string `json:"-" url:"-"`
-}
-
-type AccessControlResponse struct {
-	// All permissions.
-	AllPermissions []Permission `json:"all_permissions,omitempty"`
-	// Display name of the user or service principal.
-	DisplayName string `json:"display_name,omitempty"`
-	// name of the group
-	GroupName string `json:"group_name,omitempty"`
-	// Name of the service principal.
-	ServicePrincipalName string `json:"service_principal_name,omitempty"`
-	// name of the user
-	UserName string `json:"user_name,omitempty"`
-
-	ForceSendFields []string `json:"-" url:"-"`
-}
-
-type Permission struct {
-	Inherited bool `json:"inherited,omitempty"`
-
-	InheritedFromObject []string `json:"inherited_from_object,omitempty"`
-
-	PermissionLevel PermissionLevel `json:"permission_level,omitempty"`
-
-	ForceSendFields []string `json:"-" url:"-"`
-}
-
-
-
-
-
-*/
-
 func (r *ResourcePermissions) DoRefresh(ctx context.Context, id string) (*PermissionsState, error) {
 	idParts := strings.Split(id, "/")
 	if len(idParts) != 3 { // "/jobs/123"
@@ -185,11 +142,23 @@ func (r *ResourcePermissions) DoRefresh(ctx context.Context, id string) (*Permis
 		}
 	}
 
-	slices.SortStableFunc(result.Permissions, func(a, b iam.AccessControlRequest) int {
-		return getOrder(a) - getOrder(b)
-	})
-
+	slices.SortStableFunc(result.Permissions, sortKey)
 	return &result, nil
+}
+
+func sortKey(a, b iam.AccessControlRequest) int {
+	// First order by field userd: UserName first, then GroupName then ServicePrincipalName
+	result := getOrder(a) - getOrder(b)
+	if result != 0 {
+		return result
+	}
+	if a.UserName != "" {
+		return strings.Compare(a.UserName, b.UserName)
+	}
+	if b.GroupName != "" {
+		return strings.Compare(a.GroupName, b.GroupName)
+	}
+	return strings.Compare(a.ServicePrincipalName, b.ServicePrincipalName)
 }
 
 func getOrder(a iam.AccessControlRequest) int {
@@ -224,9 +193,10 @@ func (r *ResourcePermissions) DoUpdate(ctx context.Context, _ string, newState *
 	extractedType := idParts[1]
 	extractedID := idParts[2]
 
-	slices.SortStableFunc(newState.Permissions, func(a, b iam.AccessControlRequest) int {
-		return getOrder(a) - getOrder(b)
-	})
+	// Note, this sorts in place and is reflected in new_state. The purpose here is to ensure we're resilient against backend randomising order.
+	// The downside is that we create a different order from what is visible to use in the config. Proper solution would be to keep
+	// user's order and then adapt remote state order to user's order. This is the same issues as with job task_key, so there maybe a common implementation.
+	slices.SortStableFunc(newState.Permissions, sortKey)
 
 	_, err := r.client.Permissions.Set(ctx, iam.SetObjectPermissions{
 		RequestObjectId:   extractedID,
