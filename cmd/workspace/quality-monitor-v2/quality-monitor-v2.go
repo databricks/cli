@@ -143,9 +143,14 @@ func newCreateLibrary() *cobra.Command {
 				return err
 			}
 
+			// Show spinner while waiting for completion
+			spinner := cmdio.Spinner(ctx)
+			spinner <- "Waiting for library creation to complete..."
+
 			// Wait for completion
 			opts := &lro.LroOptions{Timeout: createLibraryTimeout}
 			response, err := wait.Wait(ctx, opts)
+			close(spinner)
 			if err != nil {
 				return err
 			}
