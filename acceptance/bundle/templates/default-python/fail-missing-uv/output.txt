@@ -1,8 +1,12 @@
 
 >>> [CLI] bundle init default-python --config-file ./input.json --output-dir output
-
 Welcome to the default Python template for Databricks Asset Bundles!
-Workspace to use (auto-detected, edit in 'fail_missing_uv/databricks.yml'): [DATABRICKS_URL]
+
+Please answer the below to tailor your project to your preferences.
+You can always change your mind and change your configuration in the databricks.yml file later.
+
+Note that [DATABRICKS_URL] is used for initialization
+(see https://docs.databricks.com/dev-tools/cli/profiles.html for how to change your profile).
 
 ✨ Your new project has been created in the 'fail_missing_uv' directory!
 

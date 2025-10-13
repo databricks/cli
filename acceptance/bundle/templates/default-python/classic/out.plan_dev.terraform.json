@@ -1,9 +1,9 @@
 {
   "plan": {
-    "resources.jobs.my_default_python_job": {
+    "resources.jobs.sample_job": {
       "action": "create"
     },
-    "resources.pipelines.my_default_python_pipeline": {
+    "resources.pipelines.default_python_etl": {
       "action": "create"
     }
   }

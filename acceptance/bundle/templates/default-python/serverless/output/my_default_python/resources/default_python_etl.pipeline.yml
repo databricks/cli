@@ -1,0 +1,21 @@
+# The main pipeline for my_default_python
+
+resources:
+  pipelines:
+    default_python_etl:
+      name: default_python_etl
+      ## Catalog is required for serverless compute
+      catalog: ${var.catalog}
+      schema: ${var.schema}
+      serverless: true
+      root_path: "../src/default_python_etl"
+
+      libraries:
+        - glob:
+            include: ../src/default_python_etl/transformations/**
+
+      environment:
+        dependencies:
+          # We include every dependency defined by pyproject.toml by defining an editable environment
+          # that points to the folder where pyproject.toml is deployed.
+          - --editable ${workspace.file_path}
