@@ -33,13 +33,18 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 	}
 
 	g.Run(defaultParallelism, func(resourceKey string, failedDependency *string) bool {
-		entry := plan.LockEntry(resourceKey)
-		defer plan.UnlockEntry(resourceKey)
-
-		if entry == nil {
-			logdiag.LogError(ctx, fmt.Errorf("internal error: node not in graph: %q", resourceKey))
+		entry, err := plan.WriteLockEntry(resourceKey)
+		if err != nil {
+			logdiag.LogError(ctx, fmt.Errorf("%s: internal error: %w", resourceKey, err))
 			return false
 		}
+
+		if entry == nil {
+			logdiag.LogError(ctx, fmt.Errorf("%s: internal error: node not in graph", resourceKey))
+			return false
+		}
+
+		defer plan.WriteUnlockEntry(resourceKey)
 
 		action := entry.Action
 		errorPrefix := fmt.Sprintf("cannot %s %s", action, resourceKey)
@@ -133,12 +138,16 @@ func (b *DeploymentBundle) LookupReferenceRemote(ctx context.Context, path *stru
 	fieldPath := path.SkipPrefix(3)
 	fieldPathS := fieldPath.String()
 
-	targetEntry := b.Plan.LockEntry(targetResourceKey)
-	defer b.Plan.UnlockEntry(targetResourceKey)
+	targetEntry, err := b.Plan.ReadLockEntry(targetResourceKey)
+	if err != nil {
+		return nil, err
+	}
 
 	if targetEntry == nil {
 		return nil, fmt.Errorf("internal error: %s: missing entry in the plan", targetResourceKey)
 	}
+
+	defer b.Plan.ReadUnlockEntry(targetResourceKey)
 
 	targetAction := deployplan.ActionTypeFromString(targetEntry.Action)
 	if targetAction == deployplan.ActionTypeUnset {
@@ -161,7 +170,7 @@ func (b *DeploymentBundle) LookupReferenceRemote(ctx context.Context, path *stru
 	return structaccess.Get(remoteState, fieldPath)
 }
 
-func jsonDump(obj map[string]string) string {
+func jsonDump(obj any) string {
 	bytes, err := json.MarshalIndent(obj, "", "  ")
 	if err != nil {
 		return err.Error()

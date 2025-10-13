@@ -3,11 +3,13 @@ package metadata
 import (
 	"context"
 	"path/filepath"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/metadata"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/log"
 )
 
 type compute struct{}
@@ -20,7 +22,7 @@ func (m *compute) Name() string {
 	return "metadata.Compute"
 }
 
-func (m *compute) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *compute) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	b.Metadata = metadata.Metadata{
 		Version: metadata.Version,
 		Config:  metadata.Config{},
@@ -40,10 +42,17 @@ func (m *compute) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Compute config file path the job is defined in, relative to the bundle
 		// root
 		l := b.Config.GetLocation("resources.jobs." + name)
+		if l.File == "" {
+			// b.Config.Resources.Jobs may include a job that only exists in state but not in config
+			continue
+		}
+
 		relativePath, err := filepath.Rel(b.BundleRootPath, l.File)
 		if err != nil {
-			return diag.Errorf("failed to compute relative path for job %s: %v", name, err)
+			log.Warnf(ctx, "failed to compute relative path for job %q: %s", name, err)
+			relativePath = ""
 		}
+
 		// Metadata for the job
 		jobsMetadata[name] = &metadata.Resource{
 			ID:           job.ID,
@@ -75,6 +84,13 @@ func (m *compute) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// In source-linked deployment files are not copied and resources use source files, therefore we use sync path as file path in metadata
 	if config.IsExplicitlyEnabled(b.Config.Presets.SourceLinkedDeployment) {
 		b.Metadata.Config.Workspace.FilePath = b.SyncRootPath
+		b.Metadata.Config.Presets.SourceLinkedDeployment = true
 	}
+
+	// Set the git folder path for deployments from the workspace
+	if b.WorktreeRoot != nil && strings.HasPrefix(b.WorktreeRoot.Native(), "/Workspace/") {
+		b.Metadata.Extra.GitFolderPath = b.WorktreeRoot.Native()
+	}
+
 	return nil
 }

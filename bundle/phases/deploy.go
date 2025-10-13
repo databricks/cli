@@ -209,7 +209,7 @@ func planWithoutPrepare(ctx context.Context, b *bundle.Bundle) *deployplan.Plan 
 			logdiag.LogError(ctx, err)
 			return nil
 		}
-		plan, err := b.DeploymentBundle.CalculatePlanForDeploy(ctx, b.WorkspaceClient(), &b.Config)
+		plan, err := b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(), &b.Config)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return nil

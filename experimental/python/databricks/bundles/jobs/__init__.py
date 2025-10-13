@@ -131,6 +131,8 @@ __all__ = [
     "JobsHealthRules",
     "JobsHealthRulesDict",
     "JobsHealthRulesParam",
+    "Kind",
+    "KindParam",
     "Library",
     "LibraryDict",
     "LibraryParam",
@@ -484,6 +486,7 @@ from databricks.bundles.jobs._models.jobs_health_rules import (
     JobsHealthRulesDict,
     JobsHealthRulesParam,
 )
+from databricks.bundles.jobs._models.kind import Kind, KindParam
 from databricks.bundles.jobs._models.library import Library, LibraryDict, LibraryParam
 from databricks.bundles.jobs._models.lifecycle import (
     Lifecycle,

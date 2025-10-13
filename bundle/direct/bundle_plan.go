@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"reflect"
 	"slices"
 	"strings"
@@ -11,6 +12,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
+	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
@@ -21,7 +23,6 @@ import (
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
 var errDelayed = errors.New("must be resolved after apply")
@@ -43,14 +44,14 @@ func (b *DeploymentBundle) Init(client *databricks.WorkspaceClient) error {
 	return err
 }
 
-func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root) (*deployplan.Plan, error) {
+func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root) (*deployplan.Plan, error) {
 	b.StateDB.AssertOpened()
 	err := b.Init(client)
 	if err != nil {
 		return nil, err
 	}
 
-	plan, err := b.makePlan(ctx, configRoot)
+	plan, err := b.makePlan(ctx, configRoot, &b.StateDB.Data)
 	if err != nil {
 		return nil, fmt.Errorf("reading config: %w", err)
 	}
@@ -67,17 +68,22 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 		return nil, err
 	}
 
-	// We're processing resources in DAG order because we're resolving refernces (that can be resolved at plan stage).
+	// We're processing resources in DAG order because we're resolving references (that can be resolved at plan stage).
 	g.Run(defaultParallelism, func(resourceKey string, failedDependency *string) bool {
 		errorPrefix := "cannot plan " + resourceKey
 
-		entry := plan.LockEntry(resourceKey)
-		defer plan.UnlockEntry(resourceKey)
+		entry, err := plan.WriteLockEntry(resourceKey)
+		if err != nil {
+			logdiag.LogError(ctx, fmt.Errorf("%s: internal error: %w", resourceKey, err))
+			return false
+		}
 
 		if entry == nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: internal error: node not in graph", resourceKey))
 			return false
 		}
+
+		defer plan.WriteUnlockEntry(resourceKey)
 
 		if failedDependency != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: dependency failed: %s", errorPrefix, *failedDependency))
@@ -88,6 +94,29 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 			return false
+		}
+
+		if entry.Action == deployplan.ActionTypeDelete.String() {
+			dbentry, hasEntry := b.StateDB.GetResourceEntry(resourceKey)
+			if !hasEntry {
+				logdiag.LogError(ctx, fmt.Errorf("%s: internal error, missing in state", errorPrefix))
+				return false
+			}
+
+			remoteState, err := adapter.DoRefresh(ctx, dbentry.ID)
+			if err != nil {
+				if isResourceGone(err) {
+					// no such resource
+					plan.RemoveEntry(resourceKey)
+				} else {
+					log.Warnf(ctx, "cannot read %s id=%q: %s", resourceKey, dbentry.ID, err)
+					return false
+				}
+			}
+
+			entry.RemoteState = remoteState
+
+			return true
 		}
 
 		// Process all references in the resource using Refs map
@@ -125,8 +154,17 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 			return false
 		}
 
-		localAction, localChangeMap := convertChangesToTriggersMap(adapter, localDiff)
+		remoteState, err := adapter.DoRefresh(ctx, dbentry.ID)
+		if err != nil {
+			if isResourceGone(err) {
+				remoteState = nil
+			} else {
+				logdiag.LogError(ctx, fmt.Errorf("%s: failed to read id=%q: %w", errorPrefix, dbentry.ID, err))
+				return false
+			}
+		}
 
+		localAction, localChangeMap := convertChangesToTriggersMap(ctx, adapter, localDiff, remoteState)
 		if localAction == deployplan.ActionTypeRecreate {
 			entry.Action = localAction.String()
 			if len(localChangeMap) > 0 {
@@ -135,16 +173,6 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 				}
 			}
 			return true
-		}
-
-		remoteState, err := adapter.DoRefresh(ctx, dbentry.ID)
-		if err != nil {
-			if errors.Is(err, apierr.ErrResourceDoesNotExist) || errors.Is(err, apierr.ErrNotFound) {
-				remoteState = nil
-			} else {
-				logdiag.LogError(ctx, fmt.Errorf("%s: failed to read id=%q: %w (localAction=%q)", errorPrefix, dbentry.ID, err, localAction.String()))
-				return false
-			}
 		}
 
 		// We have a choice whether to include remoteState or remoteStateComparable from below.
@@ -188,28 +216,6 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 		return nil, errors.New("planning failed")
 	}
 
-	// Note, we cannot simply remove 'skip' entries here as then we'd need to ensure there are no edges to them
-
-	state := b.StateDB.ExportState(ctx)
-
-	// Remained in state are resources that no longer present in the config
-	for _, group := range utils.SortedKeys(state) {
-		_, ok := b.Adapters[group]
-
-		if !ok {
-			log.Warnf(ctx, "%s: resource type not supported on direct backend", group)
-			continue
-		}
-		for _, key := range utils.SortedKeys(state[group]) {
-			n := "resources." + group + "." + key
-			_, exists := plan.Plan[n]
-			if exists {
-				continue
-			}
-			plan.Plan[n] = &deployplan.PlanEntry{Action: deployplan.ActionTypeDelete.String()}
-		}
-	}
-
 	for _, entry := range plan.Plan {
 		if entry.Action == deployplan.ActionTypeSkipString {
 			entry.NewState = nil
@@ -219,7 +225,7 @@ func (b *DeploymentBundle) CalculatePlanForDeploy(ctx context.Context, client *d
 	return plan, nil
 }
 
-func convertChangesToTriggersMap(adapter *dresources.Adapter, diff []structdiff.Change) (deployplan.ActionType, map[string]deployplan.Trigger) {
+func convertChangesToTriggersMap(ctx context.Context, adapter *dresources.Adapter, diff []structdiff.Change, remoteState any) (deployplan.ActionType, map[string]deployplan.Trigger) {
 	action := deployplan.ActionTypeSkip
 	var m map[string]deployplan.Trigger
 
@@ -254,10 +260,9 @@ func interpretOldStateVsRemoteState(ctx context.Context, adapter *dresources.Ada
 		}
 		fieldAction, err := adapter.ClassifyChange(ch, remoteState)
 		if err != nil {
-			logdiag.LogError(ctx, fmt.Errorf("internal error: failed to classify changes: %w", err))
+			logdiag.LogError(ctx, fmt.Errorf("internal error: failed to classify change: %w", err))
 			continue
 		}
-
 		if fieldAction > action {
 			action = fieldAction
 		}
@@ -271,44 +276,21 @@ func interpretOldStateVsRemoteState(ctx context.Context, adapter *dresources.Ada
 	return action, m
 }
 
-func (b *DeploymentBundle) CalculatePlanForDestroy(ctx context.Context, client *databricks.WorkspaceClient) (*deployplan.Plan, error) {
-	b.StateDB.AssertOpened()
-
-	err := b.Init(client)
-	if err != nil {
-		return nil, err
-	}
-
-	plan := deployplan.NewPlan()
-
-	state := b.StateDB.ExportState(ctx)
-	for group, groupData := range state {
-		_, ok := b.Adapters[group]
-		if !ok {
-			logdiag.LogError(ctx, fmt.Errorf("cannot destroy %s: resource type not supported on direct backend", group))
-			continue
-		}
-		for key := range groupData {
-			n := "resources." + group + "." + key
-			plan.Plan[n] = &deployplan.PlanEntry{Action: deployplan.ActionTypeDelete.String()}
-		}
-	}
-
-	return plan, nil
-}
-
 func (b *DeploymentBundle) LookupReferenceLocal(ctx context.Context, path *structpath.PathNode) (any, error) {
 	targetResourceKey := path.Prefix(3).String()
 	fieldPath := path.SkipPrefix(3)
 	fieldPathS := fieldPath.String()
 
-	// TODO: this will panic if targetResourceKey == resourceKey
-	targetEntry := b.Plan.LockEntry(targetResourceKey)
-	defer b.Plan.UnlockEntry(targetResourceKey)
+	targetEntry, err := b.Plan.ReadLockEntry(targetResourceKey)
+	if err != nil {
+		return nil, err
+	}
 
 	if targetEntry == nil {
 		return nil, fmt.Errorf("internal error: %s: missing entry in the plan", targetResourceKey)
 	}
+
+	defer b.Plan.ReadUnlockEntry(targetResourceKey)
 
 	targetAction := deployplan.ActionTypeFromString(targetEntry.Action)
 	if targetAction == deployplan.ActionTypeUnset {
@@ -432,35 +414,41 @@ func (b *DeploymentBundle) resolveReferences(ctx context.Context, entry *deployp
 	return true
 }
 
-func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root) (*deployplan.Plan, error) {
+func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root, db *dstate.Database) (*deployplan.Plan, error) {
 	p := deployplan.NewPlan()
 
 	// Collect and sort nodes first, because MapByPattern gives them in randomized order
 	var nodes []string
 
+	existingKeys := maps.Clone(db.State)
+
 	// Walk?
-	_, err := dyn.MapByPattern(
-		configRoot.Value(),
-		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()),
-		func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-			group := p[1].Key()
+	if configRoot != nil {
+		_, err := dyn.MapByPattern(
+			configRoot.Value(),
+			dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()),
+			func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+				group := p[1].Key()
 
-			_, ok := dresources.SupportedResources[group]
-			if !ok {
-				return v, fmt.Errorf("unsupported resource: %s", group)
-			}
+				_, ok := dresources.SupportedResources[group]
+				if !ok {
+					return v, fmt.Errorf("unsupported resource: %s", group)
+				}
 
-			nodes = append(nodes, p.String())
-			return dyn.InvalidValue, nil
-		},
-	)
-	if err != nil {
-		return nil, fmt.Errorf("reading config: %w", err)
+				nodes = append(nodes, p.String())
+				return dyn.InvalidValue, nil
+			},
+		)
+		if err != nil {
+			return nil, fmt.Errorf("reading config: %w", err)
+		}
 	}
 
 	slices.Sort(nodes)
 
 	for _, node := range nodes {
+		delete(existingKeys, node)
+
 		prefix := "cannot plan " + node
 		inputConfig, ok := configRoot.GetResourceConfig(node)
 		if !ok {
@@ -539,6 +527,15 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		}
 
 		p.Plan[node] = &e
+	}
+
+	for n := range existingKeys {
+		if p.Plan[n] != nil {
+			panic("unexpected node " + n)
+		}
+		p.Plan[n] = &deployplan.PlanEntry{
+			Action: deployplan.ActionTypeDelete.String(),
+		}
 	}
 
 	return p, nil

@@ -39,6 +39,24 @@ func pipelineRewritePatterns() []pipelineRewritePattern {
 		},
 	}
 
+	pipelineEnvironmentsPatternsWithPipFlags := []pipelineRewritePattern{
+		{
+			dyn.NewPattern(
+				dyn.Key("resources"),
+				dyn.Key("pipelines"),
+				dyn.AnyKey(),
+				dyn.Key("environment"),
+				dyn.Key("dependencies"),
+				dyn.AnyIndex(),
+			),
+			TranslateModeEnvironmentPipFlag,
+			func(s string) bool {
+				_, _, ok := libraries.IsLocalPathInPipFlag(s)
+				return !ok
+			},
+		},
+	}
+
 	// Compile list of configuration paths to rewrite.
 	allPatterns := []pipelineRewritePattern{
 		{
@@ -64,6 +82,7 @@ func pipelineRewritePatterns() []pipelineRewritePattern {
 	}
 
 	allPatterns = append(allPatterns, pipelineEnvironmentsPatterns...)
+	allPatterns = append(allPatterns, pipelineEnvironmentsPatternsWithPipFlags...)
 	return allPatterns
 }
 

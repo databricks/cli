@@ -7,7 +7,6 @@
   "file_path": "dashboard.lvdash.json",
   "modified_status": "created",
   "parent_path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/resources",
-  "permissions": [],
   "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
 }
 
@@ -35,7 +34,6 @@ Deployment complete!
   "file_path": "dashboard.lvdash.json",
   "id": "[ALPHANUMID]",
   "parent_path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/resources",
-  "permissions": [],
   "url": "[DATABRICKS_URL]/dashboardsv3/[ALPHANUMID]/published",
   "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
 }

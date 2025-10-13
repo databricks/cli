@@ -101,7 +101,7 @@ func (s *processStub) Commands() (called []string) {
 	for _, v := range s.calls {
 		called = append(called, s.normCmd(v))
 	}
-	return
+	return called
 }
 
 // CombinedEnvironment returns all enviroment variables used for all commands

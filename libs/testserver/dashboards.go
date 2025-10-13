@@ -1,6 +1,8 @@
 package testserver
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"path"
@@ -11,8 +13,17 @@ import (
 
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
-	"github.com/google/uuid"
 )
+
+// Generate 32 character hex string for dashboard ID
+func generateDashboardId() (string, error) {
+	randomBytes := make([]byte, 16)
+	_, err := rand.Read(randomBytes)
+	if err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(randomBytes), nil
+}
 
 func (s *FakeWorkspace) DashboardCreate(req Request) Response {
 	defer s.LockUnlock()()
@@ -33,8 +44,16 @@ func (s *FakeWorkspace) DashboardCreate(req Request) Response {
 		}
 	}
 
-	// Lakeview API strips hyphens from a uuid for dashboards
-	dashboard.DashboardId = strings.ReplaceAll(uuid.New().String(), "-", "")
+	var err error
+	dashboard.DashboardId, err = generateDashboardId()
+	if err != nil {
+		return Response{
+			StatusCode: 500,
+			Body: map[string]string{
+				"message": "Failed to generate dashboard ID",
+			},
+		}
+	}
 
 	// All dashboards are active by default:
 	dashboard.LifecycleState = dashboards.LifecycleStateActive
@@ -77,7 +96,7 @@ func (s *FakeWorkspace) DashboardCreate(req Request) Response {
 		Info: workspace.ObjectInfo{
 			ObjectType: "DASHBOARD",
 			// Include the /Workspace prefix for workspace get-status API.
-			Path: workspacePath,
+			Path:       workspacePath,
 			ResourceId: dashboard.DashboardId,
 		},
 		Data: []byte(dashboard.SerializedDashboard),
@@ -111,7 +130,7 @@ func (s *FakeWorkspace) DashboardUpdate(req Request) Response {
 	if err != nil {
 		return Response{
 			Body: map[string]string{
-				"message": fmt.Sprintf("Invalid etag: %s", dashboard.Etag),
+				"message": "Invalid etag: " + dashboard.Etag,
 			},
 			StatusCode: 400,
 		}

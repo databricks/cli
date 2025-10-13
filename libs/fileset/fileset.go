@@ -130,5 +130,5 @@ func (w *FileSet) recursiveListFiles(path string, seen map[string]struct{}) (out
 
 		return nil
 	})
-	return
+	return out, err
 }
