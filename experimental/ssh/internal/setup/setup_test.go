@@ -54,6 +54,24 @@ func TestValidateClusterAccess_ClusterNotFound(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to get cluster information for cluster ID 'nonexistent'")
 }
 
+func TestGenerateProxyCommand(t *testing.T) {
+	cmd, err := GenerateProxyCommand("cluster-123", true, 45*time.Second, "", "", 0, 0)
+	assert.NoError(t, err)
+	assert.Contains(t, cmd, "ssh connect --proxy --cluster=cluster-123 --auto-start-cluster=true --shutdown-delay=45s")
+	assert.NotContains(t, cmd, "--metadata")
+	assert.NotContains(t, cmd, "--profile")
+	assert.NotContains(t, cmd, "--handover-timeout")
+}
+
+func TestGenerateProxyCommand_WithExtraArgs(t *testing.T) {
+	cmd, err := GenerateProxyCommand("cluster-123", true, 45*time.Second, "test-profile", "user", 2222, 2*time.Minute)
+	assert.NoError(t, err)
+	assert.Contains(t, cmd, "ssh connect --proxy --cluster=cluster-123 --auto-start-cluster=true --shutdown-delay=45s")
+	assert.Contains(t, cmd, " --metadata=user,2222")
+	assert.Contains(t, cmd, " --handover-timeout=2m0s")
+	assert.Contains(t, cmd, " --profile=test-profile")
+}
+
 func TestGenerateHostConfig_Valid(t *testing.T) {
 	// Create a temporary directory for testing
 	tmpDir := t.TempDir()
