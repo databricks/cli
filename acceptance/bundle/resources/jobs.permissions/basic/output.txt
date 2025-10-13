@@ -97,7 +97,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 >>> diff.py databricks.yml.saved databricks.yml
 --- databricks.yml.saved
 +++ databricks.yml
-@@ -11,7 +11,2 @@
+@@ -11,8 +11,3 @@
              notebook_path: /Workspace/Users/user@example.com/notebook
              source: WORKSPACE # otherwise TF implementation adds this to request and triggers diff
 -      permissions: # PERMISSIONS
@@ -105,6 +105,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 -          user_name: viewer@example.com # PERMISSIONS
 -        - level: CAN_MANAGE # DELETE_ONE
 -          group_name: data-team # DELETE_ONE
+       # permissions: [] # EXPLICIT_EMPTY
 
 >>> [CLI] bundle debug plan
 
@@ -118,6 +119,18 @@ Deployment complete!
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== Set permissions: []
+
+>>> [CLI] bundle debug plan
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/jobs-permissions-test/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

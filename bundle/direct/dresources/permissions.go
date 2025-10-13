@@ -3,6 +3,7 @@ package dresources
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -184,7 +185,22 @@ func (r *ResourcePermissions) DoRefresh(ctx context.Context, id string) (*Permis
 		}
 	}
 
+	slices.SortStableFunc(result.Permissions, func(a, b iam.AccessControlRequest) int {
+		return getOrder(a) - getOrder(b)
+	})
+
 	return &result, nil
+}
+
+func getOrder(a iam.AccessControlRequest) int {
+	if a.UserName != "" {
+		return 1
+	}
+	if a.GroupName != "" {
+		return 2
+	}
+	// a.ServicePrincipalName != ""
+	return 3
 }
 
 // DoCreate calls https://docs.databricks.com/api/workspace/jobs/setjobpermissions.
@@ -207,6 +223,10 @@ func (r *ResourcePermissions) DoUpdate(ctx context.Context, _ string, newState *
 
 	extractedType := idParts[1]
 	extractedID := idParts[2]
+
+	slices.SortStableFunc(newState.Permissions, func(a, b iam.AccessControlRequest) int {
+		return getOrder(a) - getOrder(b)
+	})
 
 	_, err := r.client.Permissions.Set(ctx, iam.SetObjectPermissions{
 		RequestObjectId:   extractedID,

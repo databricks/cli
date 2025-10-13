@@ -2,6 +2,6 @@
   "method": "POST",
   "path": "/api/2.2/jobs/delete",
   "body": {
-    "job_id": [JOB_ID]
+    "job_id": [NUMID]
   }
 }
