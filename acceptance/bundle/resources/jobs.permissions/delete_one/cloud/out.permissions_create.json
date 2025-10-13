@@ -1,0 +1,57 @@
+{
+  "access_control_list": [
+    {
+      "all_permissions": [
+        {
+          "inherited": true,
+          "inherited_from_object": [
+            "/jobs/"
+          ],
+          "permission_level": "CAN_MANAGE"
+        }
+      ],
+      "group_name": "admins"
+    },
+    {
+      "all_permissions": [
+        {
+          "inherited": false,
+          "permission_level": "CAN_MANAGE"
+        }
+      ],
+      "group_name": "test-dabs-group-1"
+    },
+    {
+      "all_permissions": [
+        {
+          "inherited": false,
+          "permission_level": "CAN_MANAGE_RUN"
+        }
+      ],
+      "display_name": "test-dabs-1@databricks.com",
+      "user_name": "test-dabs-1@databricks.com"
+    },
+    {
+      "all_permissions": [
+        {
+          "inherited": false,
+          "permission_level": "CAN_VIEW"
+        }
+      ],
+      "display_name": "test-dabs-2@databricks.com",
+      "user_name": "test-dabs-2@databricks.com"
+    },
+    {
+      "all_permissions": [
+        {
+          "inherited": false,
+          "permission_level": "IS_OWNER"
+        }
+      ],
+      "display_name": "[USERNAME]",
+      "service_principal_name": "[USERNAME]"
+    }
+  ],
+  "object_id": "/jobs/[NUMID]",
+  "object_type": "job"
+}
