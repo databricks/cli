@@ -91,13 +91,11 @@ func TestConnectionsManager_ThreadSafety(t *testing.T) {
 	var wg sync.WaitGroup
 
 	for i := range numGoroutines {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			for j := range numOperationsPerGoroutine {
 				cm.TryAdd(fmt.Sprintf("conn-%d-%d", i, j), &proxyConnection{})
 			}
-		}()
+		})
 	}
 
 	wg.Wait()
@@ -108,33 +106,27 @@ func TestConnectionsManager_ThreadSafety(t *testing.T) {
 
 	// Now do concurrent gets, removes, and counts
 	for i := range numGoroutines {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			for j := range numOperationsPerGoroutine {
 				cm.Get(fmt.Sprintf("conn-%d-%d", i, j))
 			}
-		}()
+		})
 	}
 
 	for i := range numGoroutines {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			for j := range numOperationsPerGoroutine {
 				cm.Remove(fmt.Sprintf("conn-%d-%d", i, j))
 			}
-		}()
+		})
 	}
 
 	for range numGoroutines {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			for range numOperationsPerGoroutine {
 				cm.Count()
 			}
-		}()
+		})
 	}
 
 	wg.Wait()

@@ -115,14 +115,12 @@ func newProfilesCommand() *cobra.Command {
 			if profile.IsEmpty() {
 				continue
 			}
-			wg.Add(1)
-			go func() {
+			wg.Go(func() {
 				ctx := cmd.Context()
 				t := time.Now()
 				profile.Load(ctx, iniFile.Path(), skipValidate)
 				log.Debugf(ctx, "Profile %q took %s to load", profile.Name, time.Since(t))
-				wg.Done()
-			}()
+			})
 			profiles = append(profiles, profile)
 		}
 		wg.Wait()

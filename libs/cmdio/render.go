@@ -227,7 +227,7 @@ func newBufferedFlusher(w io.Writer) writeFlusher {
 	}
 }
 
-func renderWithTemplate(r any, ctx context.Context, outputFormat flags.Output, w io.Writer, headerTemplate, template string) error {
+func renderWithTemplate(ctx context.Context, r any, outputFormat flags.Output, w io.Writer, headerTemplate, template string) error {
 	// TODO: add terminal width & white/dark theme detection
 	switch outputFormat {
 	case flags.OutputJSON:
@@ -260,12 +260,12 @@ func Render(ctx context.Context, v any) error {
 	if _, ok := v.(listingInterface); ok {
 		panic("use RenderIterator instead")
 	}
-	return renderWithTemplate(newRenderer(v), ctx, c.outputFormat, c.out, c.headerTemplate, c.template)
+	return renderWithTemplate(ctx, newRenderer(v), c.outputFormat, c.out, c.headerTemplate, c.template)
 }
 
 func RenderIterator[T any](ctx context.Context, i listing.Iterator[T]) error {
 	c := fromContext(ctx)
-	return renderWithTemplate(newIteratorRenderer(i), ctx, c.outputFormat, c.out, c.headerTemplate, c.template)
+	return renderWithTemplate(ctx, newIteratorRenderer(i), c.outputFormat, c.out, c.headerTemplate, c.template)
 }
 
 func RenderWithTemplate(ctx context.Context, v any, headerTemplate, template string) error {
@@ -273,17 +273,17 @@ func RenderWithTemplate(ctx context.Context, v any, headerTemplate, template str
 	if _, ok := v.(listingInterface); ok {
 		panic("use RenderIteratorWithTemplate instead")
 	}
-	return renderWithTemplate(newRenderer(v), ctx, c.outputFormat, c.out, headerTemplate, template)
+	return renderWithTemplate(ctx, newRenderer(v), c.outputFormat, c.out, headerTemplate, template)
 }
 
 func RenderIteratorWithTemplate[T any](ctx context.Context, i listing.Iterator[T], headerTemplate, template string) error {
 	c := fromContext(ctx)
-	return renderWithTemplate(newIteratorRenderer(i), ctx, c.outputFormat, c.out, headerTemplate, template)
+	return renderWithTemplate(ctx, newIteratorRenderer(i), c.outputFormat, c.out, headerTemplate, template)
 }
 
 func RenderIteratorJson[T any](ctx context.Context, i listing.Iterator[T]) error {
 	c := fromContext(ctx)
-	return renderWithTemplate(newIteratorRenderer(i), ctx, c.outputFormat, c.out, c.headerTemplate, c.template)
+	return renderWithTemplate(ctx, newIteratorRenderer(i), c.outputFormat, c.out, c.headerTemplate, c.template)
 }
 
 var renderFuncMap = template.FuncMap{
