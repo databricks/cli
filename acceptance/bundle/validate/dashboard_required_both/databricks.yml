@@ -1,0 +1,11 @@
+resources:
+  dashboards:
+    # Missing both display_name and warehouse_id
+    my_dashboard_1:
+      serialized_dashboard: "{}"
+
+    # Has both required fields
+    my_dashboard_2:
+      display_name: "My Dashboard"
+      warehouse_id: "test"
+      serialized_dashboard: "{}"

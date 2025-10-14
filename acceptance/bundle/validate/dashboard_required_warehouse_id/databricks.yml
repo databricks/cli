@@ -1,0 +1,6 @@
+resources:
+  dashboards:
+    # Missing warehouse_id
+    my_dashboard:
+      display_name: "My Dashboard"
+      serialized_dashboard: "{}"
