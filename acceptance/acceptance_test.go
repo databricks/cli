@@ -466,6 +466,13 @@ func getSkipReason(config *internal.TestConfig, configPath string) string {
 			return fmt.Sprintf("Disabled via RequiresCluster setting in %s (TEST_DEFAULT_CLUSTER_ID is empty)", configPath)
 		}
 
+		if isTruePtr(config.RequiresWorkspaceFilesystem) {
+			isDBR := os.Getenv("DATABRICKS_RUNTIME_VERSION") != ""
+			if !isDBR || !WorkspaceTmpDir {
+				return fmt.Sprintf("Disabled via RequiresWorkspaceFilesystem setting in %s (DATABRICKS_RUNTIME_VERSION=%s, WorkspaceTmpDir=%v)", configPath, os.Getenv("DATABRICKS_RUNTIME_VERSION"), WorkspaceTmpDir)
+			}
+		}
+
 	} else {
 		// Local run
 		if !isTruePtr(config.Local) {
@@ -516,7 +523,7 @@ func runTest(t *testing.T,
 		// If the test is being run on DBR, auth is already configured
 		// by the dbr_runner notebook by reading a token from the notebook context and
 		// setting DATABRICKS_TOKEN and DATABRICKS_HOST environment variables.
-		_, _, tmpDir = workspaceTmpDir(t.Context(), t)
+		tmpDir = workspaceTmpDir(context.Background(), t)
 
 		// Run DBR tests on the workspace file system to mimic usage from
 		// DABs in the workspace.
