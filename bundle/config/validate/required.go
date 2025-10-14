@@ -87,10 +87,11 @@ func warnForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 // Bespoke code to error for fields that are not marked as required in the Go SDK / OpenAPI spec.
 func errorForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// Dashboards should always have a name and warehouse_id.
-	nameLocations := []dyn.Location{}
-	namePaths := []dyn.Path{}
-	warehouseIdLocations := []dyn.Location{}
-	warehouseIdPaths := []dyn.Path{}
+	var nameLocations []dyn.Location
+	var namePaths []dyn.Path
+	var warehouseIdLocations []dyn.Location
+	var warehouseIdPaths []dyn.Path
+
 	diags := diag.Diagnostics{}
 	for key, dashboard := range b.Config.Resources.Dashboards {
 		if dashboard.DisplayName == "" {
