@@ -1,1 +1,4 @@
-EnvMatrix = { DATABRICKS_BUNDLE_ENGINE = ["direct-exp"] }
+Ignore = [
+    "databricks.yml",
+    "dash.lvdash.json",
+]

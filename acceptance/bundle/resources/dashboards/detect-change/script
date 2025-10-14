@@ -2,6 +2,7 @@ envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
     trace $CLI bundle destroy --auto-approve
+    rm out.requests.txt
 }
 trap cleanup EXIT
 
@@ -32,3 +33,8 @@ trace errcode $CLI bundle deploy
 
 title "Redeploy the bundle with the --force flag and confirm that the out of band modification is ignored:"
 trace errcode $CLI bundle deploy --force
+
+cat out.requests.txt | \
+ jq 'select(.method == "POST" or .method == "PATCH")' | \
+ jq 'select( (.path | contains("/api/2.0/lakeview/dashboards")) or ((.path == "/api/2.0/workspace/mkdirs") and (.body.path | contains("/default/resources"))))' \
+ > out.requests.$DATABRICKS_BUNDLE_ENGINE.txt

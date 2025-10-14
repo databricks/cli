@@ -30,11 +30,11 @@ Deployment complete!
 {
   "display_name": "test-dashboard-[UNIQUE_NAME]",
   "embed_credentials": false,
-  "etag": "[NUMID]",
+  "etag": [ETAG],
   "file_path": "dashboard.lvdash.json",
-  "id": "[ALPHANUMID]",
+  "id": "[DASHBOARD_ID]",
   "parent_path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/resources",
-  "url": "[DATABRICKS_URL]/dashboardsv3/[ALPHANUMID]/published",
+  "url": "[DATABRICKS_URL]/dashboardsv3/[DASHBOARD_ID]/published",
   "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
 }
 
