@@ -37,7 +37,7 @@ func workspaceTmpDir(ctx context.Context, t *testing.T) (*databricks.WorkspaceCl
 		require.NoError(t, err)
 	})
 
-	err = w.Workspace.MkdirsByPath(ctx, tmpDir)
+	err = os.MkdirAll(tmpDir, 0755)
 	require.NoError(t, err)
 
 	f, err := filer.NewWorkspaceFilesClient(w, tmpDir)

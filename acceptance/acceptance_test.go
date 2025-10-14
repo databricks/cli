@@ -48,6 +48,7 @@ var (
 	WorkspaceTmpDir bool
 	UseVersion      string
 	Dbr             bool
+	TerraformDir    string
 )
 
 // In order to debug CLI running under acceptance test, search for TestInprocessMode and update
@@ -71,6 +72,7 @@ func init() {
 	flag.BoolVar(&WorkspaceTmpDir, "workspace-tmp-dir", false, "Run tests on the workspace file system (For DBR testing).")
 	flag.StringVar(&UseVersion, "useversion", "", "Download previously released version of CLI and use it to run the tests")
 	flag.BoolVar(&Dbr, "dbr", false, "Only run the tests on DBR via a Databricks job.")
+	flag.StringVar(&TerraformDir, "terraform-dir", "", "Directory to download the terraform provider to")
 }
 
 const (
