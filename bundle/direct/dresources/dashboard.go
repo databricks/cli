@@ -113,10 +113,9 @@ func (r *ResourceDashboard) DoCreate(ctx context.Context, config *resources.Dash
 	// Persist the etag in state.
 	config.Etag = createResp.Etag
 
-	// TODO: Solve this more generally by adding all fields that have a default
-	// value configured to the ForceSendFields list (see: resourcemutator/resource_mutator.go)
-	// embed_credentials has a client side default value of false. We need to add it to the ForceSendFields list
-	// to ensure that it is sent to the server.
+	// embed_credentials as a zero valued default in resourcemutator/resource_mutator.go.
+	// Thus we always need to include it in the ForceSendFields list to ensure that it is sent to the server.
+	// TODO(followup): A more general solution that does not require this special casing.
 	publishForceSendFields := filterFields[dashboards.PublishRequest](config.ForceSendFields)
 	if !slices.Contains(publishForceSendFields, "EmbedCredentials") {
 		publishForceSendFields = append(publishForceSendFields, "EmbedCredentials")
@@ -167,10 +166,8 @@ func (r *ResourceDashboard) DoUpdate(ctx context.Context, id string, config *res
 		return nil, err
 	}
 
-	// TODO: Solve this more generally by adding all fields that have a default
-	// value configured to the ForceSendFields list (see: resourcemutator/resource_mutator.go)
-	// embed_credentials has a client side default value of false. We need to add it to the ForceSendFields list
-	// to ensure that it is sent to the server.
+	// embed_credentials as a zero valued default in resourcemutator/resource_mutator.go.
+	// Thus we always need to include it in the ForceSendFields list to ensure that it is sent to the server.
 	publishForceSendFields := filterFields[dashboards.PublishRequest](config.ForceSendFields)
 	if !slices.Contains(publishForceSendFields, "EmbedCredentials") {
 		publishForceSendFields = append(publishForceSendFields, "EmbedCredentials")
@@ -181,7 +178,7 @@ func (r *ResourceDashboard) DoUpdate(ctx context.Context, id string, config *res
 		DashboardId:      id,
 		EmbedCredentials: config.EmbedCredentials,
 		WarehouseId:      config.WarehouseId,
-		ForceSendFields:  filterFields[dashboards.PublishRequest](config.ForceSendFields),
+		ForceSendFields:  publishForceSendFields,
 	}
 
 	publishResp, err := r.client.Lakeview.Publish(ctx, publishReq)
@@ -240,7 +237,6 @@ func (*ResourceDashboard) FieldTriggers(isLocal bool) map[string]deployplan.Acti
 		"update_time":     deployplan.ActionTypeSkip,
 	}
 
-	// TODO: Add tests for both cases, etag diffs being ignored, and serialized dashboard diffs being ignored.
 	if isLocal {
 		// Etags are not relevant to determine if the local configuration changed.
 		triggers["etag"] = deployplan.ActionTypeSkip
