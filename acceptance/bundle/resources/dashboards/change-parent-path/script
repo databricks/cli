@@ -1,4 +1,6 @@
-export PARENT_PATH="/Users/$USER_NAME/.bundle/change-parent-path-$UNIQUE_NAME/default/resources"
+export USERNAME=$($CLI current-user me --output json | jq -r '.userName')
+
+export PARENT_PATH="/Users/$USERNAME/.bundle/change-parent-path-$UNIQUE_NAME/default/resources"
 
 cleanup() {
     trace $CLI bundle destroy --auto-approve
@@ -10,7 +12,7 @@ trap cleanup EXIT
 deploy_dashboard() {
     envsubst < databricks.yml.tmpl > databricks.yml
     trace $CLI bundle plan
-    trace $CLI bundle deploy
+    trace $CLI bundle deploy --auto-approve
     dashboard_id=$($CLI bundle summary --output json | jq -r '.resources.dashboards.my_dashboard.id')
     trace $CLI lakeview get $dashboard_id | jq '{display_name, lifecycle_state, parent_path, path, serialized_dashboard, warehouse_id}'
 }
@@ -19,7 +21,7 @@ deploy_dashboard() {
 deploy_dashboard
 
 # Change the parent_path - this should trigger a recreate (delete + create)
-export PARENT_PATH="/Users/$USER_NAME/.bundle/change-parent-path-$UNIQUE_NAME/default/resources2"
+export PARENT_PATH="/Users/$USERNAME/.bundle/change-parent-path-$UNIQUE_NAME/default/resources2"
 deploy_dashboard
 
 # Print API requests made to create parent_path or create / update / delete the dashboard.
