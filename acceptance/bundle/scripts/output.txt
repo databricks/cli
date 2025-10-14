@@ -43,7 +43,7 @@ Executing 'predeploy' script
 from myscript.py 0 predeploy: hello stdout!
 from myscript.py 0 predeploy: hello stderr!
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/scripts/default/files...
-Uploaded 9 files (ignored 1 by .gitignore)
+Uploaded 9 files (ignored 1 directories by .gitignore)
 Deploying resources...
 Deployment complete!
 Executing 'postdeploy' script

@@ -5,7 +5,7 @@ Successfully bound dashboard with an id '[DASHBOARD_ID]'. Run 'bundle deploy' to
 
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
-Uploaded [NUMID] files (ignored [NUMID] by .gitignore)
+Uploaded [NUMID] files (ignored [NUMID] directories by .gitignore)
 
 This action will result in the deletion or recreation of the following dashboards.
 This will result in changed IDs and permanent URLs of the dashboards that will be recreated:
@@ -20,7 +20,7 @@ Updating deployment state...
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
-Uploaded [NUMID] files (ignored [NUMID] by .gitignore)
+Uploaded [NUMID] files (ignored [NUMID] directories by .gitignore)
 Deploying resources...
 Updating deployment state...
 Deployment complete!

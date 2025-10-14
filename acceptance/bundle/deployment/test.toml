@@ -3,5 +3,5 @@ Cloud = true
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform"] # bind,unbind not implemented
 
 [[Repls]]
-Old = 'Uploaded \d+ files \(ignored \d+ by .gitignore\)'
-New = 'Uploaded [NUMID] files (ignored [NUMID] by .gitignore)'
+Old = 'Uploaded \d+ files \(ignored \d+ directories( and files \d+)? by .gitignore\)'
+New = 'Uploaded [NUMID] files (ignored [NUMID] directories by .gitignore)'

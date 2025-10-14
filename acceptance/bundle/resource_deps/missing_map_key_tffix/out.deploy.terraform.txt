@@ -1,5 +1,5 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/state/default/files...
-Uploaded [NUMID] files (ignored [NUMID] by .gitignore)
+Uploaded [NUMID] files (ignored [NUMID] directories by .gitignore)
 Error: exit status 1
 
 Error: Missing map element

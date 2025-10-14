@@ -10,6 +10,15 @@ import (
 	"github.com/databricks/cli/libs/vfs"
 )
 
+// WalkStats tracks statistics about files and directories encountered during walking.
+type WalkStats struct {
+	// SkippedDirectories counts how many directories were skipped due to ignore rules.
+	SkippedDirectories int
+
+	// SkippedFiles counts how many files were skipped due to ignore rules.
+	SkippedFiles int
+}
+
 // FileSet facilitates recursive file listing for paths rooted at a given directory.
 // It optionally takes into account ignore rules through the [Ignorer] interface.
 type FileSet struct {
@@ -78,7 +87,7 @@ func (w *FileSet) SetIgnorer(ignore Ignorer) {
 func (w *FileSet) Files() (out []File, err error) {
 	seen := make(map[string]struct{})
 	for _, p := range w.paths {
-		files, err := w.recursiveListFiles(p, seen)
+		files, _, err := w.recursiveListFiles(p, seen)
 		if err != nil {
 			return nil, err
 		}
@@ -87,10 +96,27 @@ func (w *FileSet) Files() (out []File, err error) {
 	return out, nil
 }
 
+// FilesWithStats performs recursive listing on all configured paths and returns
+// the collection of files it finds (and are not ignored) along with statistics
+// about what was skipped during the walk.
+func (w *FileSet) FilesWithStats() (files []File, stats WalkStats, err error) {
+	seen := make(map[string]struct{})
+	for _, p := range w.paths {
+		pathFiles, pathStats, err := w.recursiveListFiles(p, seen)
+		if err != nil {
+			return nil, WalkStats{}, err
+		}
+		files = append(files, pathFiles...)
+		stats.SkippedDirectories += pathStats.SkippedDirectories
+		stats.SkippedFiles += pathStats.SkippedFiles
+	}
+	return files, stats, nil
+}
+
 // Recursively traverses dir in a depth first manner and returns a list of all files
 // that are being tracked in the FileSet (ie not being ignored for matching one of the
-// patterns in w.ignore)
-func (w *FileSet) recursiveListFiles(path string, seen map[string]struct{}) (out []File, err error) {
+// patterns in w.ignore) along with statistics about what was skipped.
+func (w *FileSet) recursiveListFiles(path string, seen map[string]struct{}) (out []File, stats WalkStats, err error) {
 	err = fs.WalkDir(w.root, path, func(name string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -103,6 +129,7 @@ func (w *FileSet) recursiveListFiles(path string, seen map[string]struct{}) (out
 				return fmt.Errorf("cannot check if %s should be ignored: %w", name, err)
 			}
 			if ign {
+				stats.SkippedDirectories++
 				return fs.SkipDir
 			}
 
@@ -112,6 +139,7 @@ func (w *FileSet) recursiveListFiles(path string, seen map[string]struct{}) (out
 				return fmt.Errorf("cannot check if %s should be ignored: %w", name, err)
 			}
 			if ign {
+				stats.SkippedFiles++
 				return nil
 			}
 
@@ -129,5 +157,5 @@ func (w *FileSet) recursiveListFiles(path string, seen map[string]struct{}) (out
 
 		return nil
 	})
-	return out, err
+	return out, stats, err
 }

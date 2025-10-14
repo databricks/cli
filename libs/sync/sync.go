@@ -178,7 +178,8 @@ func (s *Sync) notifyComplete(ctx context.Context, d diff) {
 type FileList struct {
 	Files                 []fileset.File
 	Included              int
-	ExcludedByGitIgnore   int
+	ExcludedDirectories   int
+	ExcludedFiles         int
 	ExcludedBySyncExclude int
 }
 
@@ -221,64 +222,47 @@ func (s *Sync) RunOnce(ctx context.Context) (*FileList, error) {
 }
 
 func (s *Sync) GetFileList(ctx context.Context) (*FileList, error) {
-	// Get all files in a single filesystem walk
-	allFiles, err := s.fileSet.AllFiles()
-	if err != nil {
-		log.Errorf(ctx, "cannot list all files: %s", err)
-		return nil, err
-	}
-
-	// Taint gitignore rules to ensure they're up-to-date
-	s.fileSet.TaintIgnoreRules()
-
-	// Get ignorers for include and exclude patterns
-	var includeIgnorer fileset.Ignorer
-	if s.includeFileSet != nil {
-		includeIgnorer = s.includeFileSet.Ignorer()
-	}
-
+	// Get ignorer for exclude patterns
 	var excludeIgnorer fileset.Ignorer
 	if s.excludeFileSet != nil {
 		excludeIgnorer = s.excludeFileSet.Ignorer()
 	}
 
-	// Filter files: include if (NOT gitignored) OR (matches include patterns)
-	// This allows include patterns to override gitignore
-	syncFiles := make([]fileset.File, 0, len(allFiles))
-	excludedByGitIgnore := 0
-	for _, f := range allFiles {
-		// Check if file is gitignored
-		gitignored, err := s.fileSet.IgnoreFile(f.Relative)
-		if err != nil {
-			log.Errorf(ctx, "cannot check if file is ignored: %s", err)
-			return nil, err
-		}
-
-		// Check if file matches include patterns
-		// Note: Ignorer uses inverted logic - "not ignored" means it matches the pattern
-		matchesInclude := false
-		if includeIgnorer != nil {
-			ignored, err := includeIgnorer.IgnoreFile(f.Relative)
-			if err != nil {
-				log.Errorf(ctx, "cannot check if file matches include pattern: %s", err)
-				return nil, err
-			}
-			matchesInclude = !ignored
-		}
-
-		// Include file if: not gitignored OR matches include pattern
-		if !gitignored || matchesInclude {
-			syncFiles = append(syncFiles, f)
-		} else {
-			excludedByGitIgnore++
-		}
+	// Check if we have include patterns that might override gitignore
+	hasIncludePatterns := false
+	if s.includeFileSet != nil {
+		ignorer := s.includeFileSet.Ignorer()
+		hasIncludePatterns = ignorer != nil
 	}
 
-	// Build set for easier manipulation with exclude patterns
+	// Build set for easier manipulation
 	syncSet := set.NewSetF(func(f fileset.File) string {
 		return f.Relative
 	})
-	syncSet.Add(syncFiles...)
+
+	var excludedDirs int
+	var excludedFiles int
+
+	// Get files respecting gitignore
+	files, stats, err := s.fileSet.FilesWithStats()
+	if err != nil {
+		log.Errorf(ctx, "cannot list files: %s", err)
+		return nil, err
+	}
+	syncSet.Add(files...)
+	excludedDirs = stats.SkippedDirectories
+	excludedFiles = stats.SkippedFiles
+
+	// If there are include patterns, also add files matching those patterns
+	// (even if they're gitignored). This allows include patterns to override gitignore.
+	if hasIncludePatterns {
+		includeFiles, err := s.includeFileSet.Files()
+		if err != nil {
+			log.Errorf(ctx, "cannot list files matching include patterns: %s", err)
+			return nil, err
+		}
+		syncSet.Add(includeFiles...)
+	}
 
 	// Remove files matching exclude patterns and count them
 	// We can post-filter exclude patterns since they don't affect directory traversal
@@ -301,7 +285,8 @@ func (s *Sync) GetFileList(ctx context.Context) (*FileList, error) {
 	return &FileList{
 		Files:                 syncSet.Iter(),
 		Included:              syncSet.Size(),
-		ExcludedByGitIgnore:   excludedByGitIgnore,
+		ExcludedDirectories:   excludedDirs,
+		ExcludedFiles:         excludedFiles,
 		ExcludedBySyncExclude: excludedBySyncExclude,
 	}, nil
 }

@@ -1,5 +1,5 @@
 Badness = "configs with id and url should be rejected"
 
 [[Repls]]
-Old = 'Uploaded \d+ files \(ignored \d+ by .gitignore\)'
-New = 'Uploaded [NUMID] files (ignored [NUMID] by .gitignore)'
+Old = 'Uploaded \d+ files \(ignored \d+ directories( and files \d+)? by .gitignore\)'
+New = 'Uploaded [NUMID] files (ignored [NUMID] directories by .gitignore)'

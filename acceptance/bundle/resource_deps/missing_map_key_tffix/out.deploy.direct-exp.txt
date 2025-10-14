@@ -1,5 +1,5 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/state/default/files...
-Uploaded [NUMID] files (ignored [NUMID] by .gitignore)
+Uploaded [NUMID] files (ignored [NUMID] directories by .gitignore)
 Error: cannot plan resources.jobs.bar: cannot resolve "${resources.jobs.test.task[0].new_cluster[0].custom_tags.missing_tag}": schema mismatch: task: field "task" not found in jobs.JobSettings; task: field "task" not found in jobs.Job
 
 Error: planning failed

@@ -45,7 +45,7 @@ Exit code: 1
 
 >>> musterr [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/prevent-destroy/default/files...
-Uploaded 10 files (ignored 7 by .gitignore)
+Uploaded 10 files (ignored 1 directories by .gitignore)
 Error: exit status 1
 
 Error: Instance cannot be destroyed
@@ -91,7 +91,7 @@ Exit code: 1
 
 >>> musterr [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/prevent-destroy/default/files...
-Uploaded 10 files (ignored 7 by .gitignore)
+Uploaded 10 files (ignored 1 directories by .gitignore)
 Error: exit status 1
 
 Error: Instance cannot be destroyed
@@ -126,7 +126,7 @@ Plan: 2 to add, 0 to change, 2 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/prevent-destroy/default/files...
-Uploaded 10 files (ignored 7 by .gitignore)
+Uploaded 10 files (ignored 1 directories by .gitignore)
 
 This action will result in the deletion or recreation of the following UC schemas. Any underlying data may be lost:
   recreate schema my_schema
@@ -148,7 +148,7 @@ Plan: 0 to add, 0 to change, 2 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/prevent-destroy/default/files...
-Uploaded 8 files (ignored 8 by .gitignore)
+Uploaded 8 files (ignored 1 directories by .gitignore)
 
 This action will result in the deletion or recreation of the following UC schemas. Any underlying data may be lost:
   delete schema my_schema

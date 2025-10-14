@@ -54,9 +54,20 @@ func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// Build message showing file counts and exclusions
 	msg := fmt.Sprintf("Uploaded %d files", fileList.Included)
 	var exclusions []string
-	if fileList.ExcludedByGitIgnore > 0 {
-		exclusions = append(exclusions, fmt.Sprintf("%d by .gitignore", fileList.ExcludedByGitIgnore))
+
+	// Report gitignore exclusions with breakdown of directories and files
+	gitignoreTotal := fileList.ExcludedDirectories + fileList.ExcludedFiles
+	if gitignoreTotal > 0 {
+		var parts []string
+		if fileList.ExcludedDirectories > 0 {
+			parts = append(parts, fmt.Sprintf("%d directories", fileList.ExcludedDirectories))
+		}
+		if fileList.ExcludedFiles > 0 {
+			parts = append(parts, fmt.Sprintf("%d files", fileList.ExcludedFiles))
+		}
+		exclusions = append(exclusions, fmt.Sprintf("%s by .gitignore", strings.Join(parts, " and ")))
 	}
+
 	if fileList.ExcludedBySyncExclude > 0 {
 		exclusions = append(exclusions, fmt.Sprintf("%d by sync.exclude", fileList.ExcludedBySyncExclude))
 	}

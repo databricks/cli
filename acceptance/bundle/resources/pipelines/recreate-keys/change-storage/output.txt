@@ -21,7 +21,7 @@ Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files...
-Uploaded [NUMID] files (ignored [NUMID] by .gitignore)
+Uploaded [NUMID] files (ignored [NUMID] directories by .gitignore)
 Deploying resources...
 Updating deployment state...
 Deployment complete!
@@ -58,7 +58,7 @@ Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files...
-Uploaded [NUMID] files (ignored [NUMID] by .gitignore)
+Uploaded [NUMID] files (ignored [NUMID] directories by .gitignore)
 
 This action will result in the deletion or recreation of the following Lakeflow Declarative Pipelines along with the
 Streaming Tables (STs) and Materialized Views (MVs) managed by them. Recreating the pipelines will

@@ -54,6 +54,12 @@ func (f *FileSet) Files() ([]fileset.File, error) {
 	return f.fileset.Files()
 }
 
+// FilesWithStats returns files along with statistics about what was skipped during the walk.
+func (f *FileSet) FilesWithStats() ([]fileset.File, fileset.WalkStats, error) {
+	f.view.repo.taintIgnoreRules()
+	return f.fileset.FilesWithStats()
+}
+
 // AllFiles returns all files in the fileset without applying gitignore rules.
 func (f *FileSet) AllFiles() ([]fileset.File, error) {
 	// Create a new fileset without the gitignore ignorer to get all files

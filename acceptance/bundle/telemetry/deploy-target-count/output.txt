@@ -1,7 +1,7 @@
 
 >>> [CLI] bundle deploy -t one
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/one/files...
-Uploaded [NUMID] files (ignored [NUMID] by .gitignore)
+Uploaded [NUMID] files (ignored [NUMID] directories by .gitignore)
 Deploying resources...
 Deployment complete!
 

@@ -9,7 +9,8 @@ Workspace:
 Validation OK!
 
 >>> [CLI] bundle deploy
-Uploaded [NUMID] files (ignored [NUMID] by .gitignore) to /Workspace/Users/[USERNAME]/.bundle/test-uc-volumes-[UNIQUE_NAME]/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-uc-volumes-[UNIQUE_NAME]/default/files...
+Uploaded [NUMID] files (ignored [NUMID] directories by .gitignore)
 Deploying resources...
 Updating deployment state...
 Deployment complete!
@@ -38,7 +39,8 @@ Deployment complete!
 
 === Recreation of the volume without --auto-approve should fail since prompting is not possible
 >>> errcode [CLI] bundle deploy --var=schema_name=${resources.schemas.schema2.name}
-Uploaded [NUMID] files (ignored [NUMID] by .gitignore) to /Workspace/Users/[USERNAME]/.bundle/test-uc-volumes-[UNIQUE_NAME]/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-uc-volumes-[UNIQUE_NAME]/default/files...
+Uploaded [NUMID] files (ignored [NUMID] directories by .gitignore)
 
 This action will result in the deletion or recreation of the following volumes.
 For managed volumes, the files stored in the volume are also deleted from your
@@ -52,7 +54,8 @@ Exit code: 1
 
 === Successfully recreate the volume with --auto-approve
 >>> [CLI] bundle deploy --var=schema_name=${resources.schemas.schema2.name} --auto-approve
-Uploaded [NUMID] files (ignored [NUMID] by .gitignore) to /Workspace/Users/[USERNAME]/.bundle/test-uc-volumes-[UNIQUE_NAME]/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-uc-volumes-[UNIQUE_NAME]/default/files...
+Uploaded [NUMID] files (ignored [NUMID] directories by .gitignore)
 
 This action will result in the deletion or recreation of the following volumes.
 For managed volumes, the files stored in the volume are also deleted from your
