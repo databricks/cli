@@ -137,7 +137,6 @@ def download_known_failures():
             content = response.read().decode("utf-8")
     except Exception as e:
         print(f"Failed to download known_failures.txt: {e}", file=sys.stderr)
-        temp_path.unlink(missing_ok=True)
         return
 
     temp_path.write_text(content)
