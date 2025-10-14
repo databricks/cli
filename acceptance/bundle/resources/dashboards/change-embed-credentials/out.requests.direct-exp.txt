@@ -39,6 +39,7 @@
   "body": {
     "display_name": "test dashboard",
     "parent_path": "/Workspace/Users/[USERNAME]/.bundle/change-embed-credentials-[UNIQUE_NAME]/default/resources",
+    "serialized_dashboard": "{}\n",
     "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
   }
 }

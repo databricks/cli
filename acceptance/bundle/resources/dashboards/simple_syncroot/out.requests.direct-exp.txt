@@ -1,0 +1,28 @@
+{
+  "method": "POST",
+  "path": "/api/2.0/lakeview/dashboards",
+  "body": {
+    "display_name": "test bundle-deploy-dashboard [UUID]",
+    "parent_path": "/Users/[USERNAME]",
+    "serialized_dashboard": "{\"pages\":[{\"name\":\"02724bf2\",\"displayName\":\"Dashboard test bundle-deploy-dashboard\"}]}\n",
+    "warehouse_id": "warehouse-1234"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/lakeview/dashboards",
+  "body": {
+    "display_name": "test bundle-deploy-dashboard [UUID]",
+    "parent_path": "/Users/[USERNAME]",
+    "serialized_dashboard": "{\"pages\":[{\"name\":\"02724bf2\",\"displayName\":\"Dashboard test bundle-deploy-dashboard\"}]}\n",
+    "warehouse_id": "warehouse-1234"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/lakeview/dashboards/[DASHBOARD_ID]/published",
+  "body": {
+    "embed_credentials": true,
+    "warehouse_id": "warehouse-1234"
+  }
+}

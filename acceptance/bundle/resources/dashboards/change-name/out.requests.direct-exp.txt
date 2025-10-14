@@ -39,6 +39,7 @@
   "body": {
     "display_name": "dashboard2",
     "parent_path": "/Workspace/Users/[USERNAME]/.bundle/change-name-[UNIQUE_NAME]/default/resources",
+    "serialized_dashboard": "{}\n",
     "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
   }
 }
@@ -46,6 +47,7 @@
   "method": "POST",
   "path": "/api/2.0/lakeview/dashboards/[DASHBOARD_ID]/published",
   "body": {
+    "embed_credentials": false,
     "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
   }
 }

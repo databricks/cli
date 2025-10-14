@@ -4,24 +4,25 @@ cleanup() {
 }
 trap cleanup EXIT
 
+# Deploy the dashboard and capture the ID
+deploy_dashboard() {
+    envsubst < databricks.yml.tmpl > databricks.yml
+    envsubst < dashboard.tmpl > dash.lvdash.json
+    trace $CLI bundle plan
+    trace $CLI bundle deploy
+    dashboard_id=$($CLI bundle summary --output json | jq -r '.resources.dashboards.my_dashboard.id')
+
+    trace $CLI lakeview get $dashboard_id | jq '{display_name, lifecycle_state, parent_path, path, warehouse_id}'
+    trace $CLI lakeview get $dashboard_id | jq '.serialized_dashboard | fromjson' | jq -S '.pages[0]'
+}
+
 # Create the dashboard with initial serialized_dashboard
 export PAGE_NAME="name1"
-envsubst < databricks.yml.tmpl > databricks.yml
-envsubst < dashboard.tmpl > dash.lvdash.json
-trace $CLI bundle plan
-trace $CLI bundle deploy
-dashboard_id=$($CLI bundle summary --output json | jq -r '.resources.dashboards.my_dashboard.id')
-trace $CLI lakeview get $dashboard_id | jq '{display_name, lifecycle_state, parent_path, path, warehouse_id}'
-trace $CLI lakeview get $dashboard_id | jq '.serialized_dashboard | fromjson' | jq -S '.pages[0]'
+deploy_dashboard
 
 # Change the serialized_dashboard content - this should trigger an update (not recreate)
 export PAGE_NAME="name2"
-envsubst < databricks.yml.tmpl > databricks.yml
-envsubst < dashboard.tmpl > dash.lvdash.json
-trace $CLI bundle plan
-trace $CLI bundle deploy
-trace $CLI lakeview get $dashboard_id | jq '{display_name, lifecycle_state, parent_path, path, warehouse_id}'
-trace $CLI lakeview get $dashboard_id | jq '.serialized_dashboard | fromjson' | jq -S '.pages[0]'
+deploy_dashboard
 
 # Print API requests made to create parent_path or create / update the dashboard.
 cat out.requests.txt | \
