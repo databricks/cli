@@ -1,3 +1,0 @@
-#!/bin/bash
-
-trace $CLI bundle validate
