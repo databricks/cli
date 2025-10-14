@@ -61,9 +61,9 @@ See also the documentation at https://docs.databricks.com/dev-tools/bundles/inde
 +      "defaultValue": "customcatalog",
        "label": "Catalog",
        "name": "catalog",
-@@ -97,5 +97,5 @@
+@@ -96,5 +96,5 @@
+      },
       "widgetInfo": {
-       "widgetType": "text",
 -      "defaultValue": "hive_metastore",
 +      "defaultValue": "customcatalog",
        "label": "Catalog",
