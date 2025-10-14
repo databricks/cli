@@ -61,12 +61,16 @@ func (tb *testBuffer) AssertWrite(expected []byte) error {
 	}
 }
 
-func (tb *testBuffer) WaitForWrite() ([]byte, error) {
-	select {
-	case data := <-tb.OnWrite:
-		return data, nil
-	case <-time.After(2 * time.Second):
-		return nil, errors.New("timeout waiting for write")
+func (tb *testBuffer) WaitForWrite(expected []byte) error {
+	for {
+		select {
+		case <-tb.OnWrite:
+			if bytes.Contains(tb.buff.Bytes(), expected) {
+				return nil
+			}
+		case <-time.After(5 * time.Second):
+			return errors.New("timeout waiting for write")
+		}
 	}
 }
 
