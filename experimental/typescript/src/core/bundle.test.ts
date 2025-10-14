@@ -1,3 +1,4 @@
+import { describe, it, expect } from "@jest/globals";
 import { Bundle } from "./bundle.js";
 import { Variable } from "./variable.js";
 
@@ -6,6 +7,7 @@ describe("Bundle", () => {
     it("should create a bundle with target and variables", () => {
       const bundle = new Bundle({
         target: "development",
+        name: "test-bundle",
         variables: {
           warehouse_id: "abc123",
           job_name: "my-job",
@@ -13,6 +15,7 @@ describe("Bundle", () => {
       });
 
       expect(bundle.target).toBe("development");
+      expect(bundle.name).toBe("test-bundle");
       expect(bundle.variables).toEqual({
         warehouse_id: "abc123",
         job_name: "my-job",
@@ -22,16 +25,110 @@ describe("Bundle", () => {
     it("should freeze variables object", () => {
       const bundle = new Bundle({
         target: "production",
+        name: "prod-bundle",
         variables: { foo: "bar" },
       });
 
       expect(Object.isFrozen(bundle.variables)).toBe(true);
+    });
+
+    it("should accept optional mode", () => {
+      const bundle = new Bundle({
+        target: "dev",
+        name: "test",
+        mode: "development",
+      });
+
+      expect(bundle.mode).toBe("development");
+    });
+  });
+
+  describe("isDevelopment", () => {
+    it("should return true when mode is development", () => {
+      const bundle = new Bundle({
+        target: "dev",
+        name: "test",
+        mode: "development",
+      });
+
+      expect(bundle.isDevelopment).toBe(true);
+    });
+
+    it("should return false when mode is production", () => {
+      const bundle = new Bundle({
+        target: "prod",
+        name: "test",
+        mode: "production",
+      });
+
+      expect(bundle.isDevelopment).toBe(false);
+    });
+
+    it("should return false when mode is undefined", () => {
+      const bundle = new Bundle({
+        target: "test",
+        name: "test",
+      });
+
+      expect(bundle.isDevelopment).toBe(false);
+    });
+
+    it("should return false when mode is other value", () => {
+      const bundle = new Bundle({
+        target: "staging",
+        name: "test",
+        mode: "staging",
+      });
+
+      expect(bundle.isDevelopment).toBe(false);
+    });
+  });
+
+  describe("isProduction", () => {
+    it("should return true when mode is production", () => {
+      const bundle = new Bundle({
+        target: "prod",
+        name: "test",
+        mode: "production",
+      });
+
+      expect(bundle.isProduction).toBe(true);
+    });
+
+    it("should return false when mode is development", () => {
+      const bundle = new Bundle({
+        target: "dev",
+        name: "test",
+        mode: "development",
+      });
+
+      expect(bundle.isProduction).toBe(false);
+    });
+
+    it("should return false when mode is undefined", () => {
+      const bundle = new Bundle({
+        target: "test",
+        name: "test",
+      });
+
+      expect(bundle.isProduction).toBe(false);
+    });
+
+    it("should return false when mode is other value", () => {
+      const bundle = new Bundle({
+        target: "staging",
+        name: "test",
+        mode: "staging",
+      });
+
+      expect(bundle.isProduction).toBe(false);
     });
   });
 
   describe("resolveVariable()", () => {
     it("should return concrete values as-is", () => {
       const bundle = new Bundle({
+        name: "test",
         target: "dev",
         variables: {},
       });
@@ -43,6 +140,7 @@ describe("Bundle", () => {
 
     it("should resolve variable references", () => {
       const bundle = new Bundle({
+        name: "test",
         target: "dev",
         variables: {
           warehouse_id: "abc123",
@@ -59,6 +157,7 @@ describe("Bundle", () => {
 
     it("should throw error for non-var prefix", () => {
       const bundle = new Bundle({
+        name: "test",
         target: "dev",
         variables: {},
       });
@@ -71,6 +170,7 @@ describe("Bundle", () => {
 
     it("should throw error for undefined variable", () => {
       const bundle = new Bundle({
+        name: "test",
         target: "dev",
         variables: {},
       });
@@ -84,6 +184,7 @@ describe("Bundle", () => {
     it("should throw error for nested variable references", () => {
       const bundle = new Bundle({
         target: "dev",
+        name: "test",
         variables: {
           foo: "${var.bar}",
         },
@@ -100,6 +201,7 @@ describe("Bundle", () => {
     it("should resolve a list variable", () => {
       const bundle = new Bundle({
         target: "dev",
+        name: "test",
         variables: {
           my_list: ["a", "b", "c"],
         },
@@ -112,6 +214,7 @@ describe("Bundle", () => {
     it("should resolve variables within a list", () => {
       const bundle = new Bundle({
         target: "dev",
+        name: "test",
         variables: {
           item1: "value1",
           my_list: ["a", "b"],
@@ -125,6 +228,7 @@ describe("Bundle", () => {
     it("should throw error if value is not a list", () => {
       const bundle = new Bundle({
         target: "dev",
+        name: "test",
         variables: {
           not_a_list: "string",
         },

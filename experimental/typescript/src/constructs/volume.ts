@@ -43,7 +43,7 @@ export class Volume extends BaseVolume {
    * @param params - Volume parameters
    */
   constructor(name: string, bundle: Bundle, params: VolumeParams) {
-    if (bundle.mode === "development") {
+    if (bundle.isDevelopment) {
       params.name = `dev-${params.name}`;
     }
     super(name, params);

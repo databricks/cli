@@ -31,5 +31,7 @@ yarn-error.log*
 .env.local
 .env.*.local
 
-# Generated code (optional - uncomment if you want to commit generated code)
-# generated/
+# examples
+my_app/
+example/
+example_bi/

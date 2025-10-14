@@ -84,7 +84,7 @@ export class App extends BaseApp {
     delete params.env;
     delete params.command;
 
-    if (bundle.mode === "development") {
+    if (bundle.isDevelopment) {
       params.name = `dev-${Workspace.currentUser.domainFriendlyName}-${params.name}`;
     }
     super(name, params);

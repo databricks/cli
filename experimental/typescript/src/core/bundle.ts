@@ -34,7 +34,15 @@ export class Bundle {
    */
   readonly variables: Readonly<Record<string, unknown>>;
 
+  /**
+   * Bundle mode (e.g., "development", "production")
+   * Set via the `mode` field in databricks.yml target configuration.
+   */
   readonly mode?: string;
+
+  /**
+   * Bundle name from databricks.yml
+   */
   readonly name: string;
 
   constructor(options: { target: string; variables?: Record<string, unknown>, mode?: string, name: string }) {
@@ -42,6 +50,38 @@ export class Bundle {
     this.variables = Object.freeze({ ...options.variables });
     this.mode = options.mode;
     this.name = options.name;
+  }
+
+  /**
+   * Returns true if the bundle is in development mode.
+   *
+   * @returns true if mode is "development", false otherwise
+   *
+   * @example
+   * ```typescript
+   * if (bundle.isDevelopment) {
+   *   // Add dev-specific configuration
+   * }
+   * ```
+   */
+  get isDevelopment(): boolean {
+    return this.mode === "development";
+  }
+
+  /**
+   * Returns true if the bundle is in production mode.
+   *
+   * @returns true if mode is "production", false otherwise
+   *
+   * @example
+   * ```typescript
+   * if (bundle.isProduction) {
+   *   // Add production-specific configuration
+   * }
+   * ```
+   */
+  get isProduction(): boolean {
+    return this.mode === "production";
   }
 
   /**

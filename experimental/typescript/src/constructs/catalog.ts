@@ -57,7 +57,7 @@ export class DatabaseCatalog extends BaseDatabaseCatalog {
       params.name = name;
     }
 
-    if (bundle.mode === "development") {
+    if (bundle.isDevelopment) {
       params.name = `dev-${Workspace.currentUser.domainFriendlyName}-${params.name}`;
     }
 
