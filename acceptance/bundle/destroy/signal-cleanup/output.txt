@@ -1,0 +1,33 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/signal-test/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Wait until the destroy has started.The following resources will be deleted:
+  delete job job1
+  delete job job2
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/signal-test/default
+
+Destroy in progress, sending interrupt signal...
+
+>>> kill -INT [PID]
+
+>>> wait [PID]
+Operation interrupted. Gracefully shutting down...
+
+Exit code: 130
+
+>>> cat out.requests.txt
+
+=== A deletion request for job2 should be recorded in the requests file. No request for job1 should exist since the process was terminated mid destroy.
+>>> cat out.requests.txt
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/delete",
+  "body": {
+    "job_id": [NUMID]
+  }
+}
+
+=== [CLI]

@@ -1,0 +1,40 @@
+
+=== Wait until the deployment has started.Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/signal-test/default/files...
+Deploying resources...
+Deployment in progress, sending interrupt signal...
+
+>>> kill -INT [PID]
+
+>>> wait [PID]
+Operation interrupted. Gracefully shutting down...
+
+Exit code: 130
+
+>>> cat out.requests.txt
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/delete",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/signal-test/default/state/deploy.lock"
+  }
+}
+
+=== A creation request for job1 should be recorded in the requests file. No request for job2 should exist since the process was terminated mid deployment.
+>>> cat out.requests.txt
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/create",
+  "body": {
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/signal-test/default/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "job1",
+    "queue": {
+      "enabled": true
+    }
+  }
+}
