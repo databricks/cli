@@ -4,7 +4,6 @@ import {
   parseBundleInfo,
   appendResources,
   type BundleInput,
-  type BuildConfig,
 } from "./index.js";
 import { Resources } from "../core/resources.js";
 import { Resource } from "../core/resource.js";
@@ -87,7 +86,14 @@ describe("build/index", () => {
     });
 
     it("should throw on missing phase", () => {
-      const args = ["--input", "input.json", "--output", "output.json", "--diagnostics", "diag.txt"];
+      const args = [
+        "--input",
+        "input.json",
+        "--output",
+        "output.json",
+        "--diagnostics",
+        "diag.txt",
+      ];
 
       expect(() => parseArgs(args)).toThrow("Missing required argument --phase");
     });
@@ -119,7 +125,14 @@ describe("build/index", () => {
     });
 
     it("should throw on missing diagnostics", () => {
-      const args = ["--phase", "load_resources", "--input", "input.json", "--output", "output.json"];
+      const args = [
+        "--phase",
+        "load_resources",
+        "--input",
+        "input.json",
+        "--output",
+        "output.json",
+      ];
 
       expect(() => parseArgs(args)).toThrow("Missing required argument --diagnostics");
     });
@@ -240,6 +253,7 @@ describe("build/index", () => {
           name: "test",
         },
         variables: {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
           foo: "bar" as any, // Not the expected format
         },
       };

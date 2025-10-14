@@ -54,17 +54,12 @@ type Experimental struct {
 }
 
 type JavaScript struct {
-	// Resources contains a list of paths to JavaScript files that define bundle resources.
+	// Main contains a path to the JavaScript file that defines bundle resources.
 	//
-	// The JavaScript files should export resources in a format compatible with bundle configuration.
-	// The mutator will execute the JavaScript files with Node.js and merge their output into the bundle.
+	// The JavaScript file should be executable by Node.js and can be implemented in TypeScript or JavaScript.
 	//
-	// Example: ["resources.js", "jobs/production.js"]
-	Resources []string `json:"resources,omitempty"`
-
-	// Mutators contains a list of paths to JavaScript files that mutate bundle resources.
-	// This feature is not yet implemented.
-	Mutators []string `json:"mutators,omitempty"`
+	// Example: "resources.js" or "src/cli.ts"
+	Main string `json:"main,omitempty"`
 }
 
 type Python struct {

@@ -10,14 +10,13 @@
  */
 
 import { readFile, writeFile } from "fs/promises";
-import { pathToFileURL } from "url";
 import { relative, isAbsolute } from "path";
 import { Bundle } from "../core/bundle.js";
 import { Diagnostics } from "../core/diagnostics.js";
 import { Location } from "../core/location.js";
 import { Resources } from "../core/resources.js";
-import type { ResourceMutator } from "./resource-mutator.js";
 
+export type ResourceFactory = (bundle: Bundle) => Promise<Resources> | Resources;
 /**
  * Command line arguments
  */
@@ -163,152 +162,9 @@ export function parseBundleInfo(input: BundleInput): Bundle {
   return new Bundle({
     target: bundleInfo.target || "default",
     variables,
-    mode: bundleInfo.mode as string | undefined,
-    name: bundleInfo.name as string,
+    mode: bundleInfo.mode ?? undefined,
+    name: bundleInfo.name,
   });
-}
-
-/**
- * Load a function or object from a module
- */
-export async function loadObject(qualifiedName: string): Promise<[unknown, Diagnostics]> {
-  const parts = qualifiedName.split(":");
-  if (parts.length !== 2) {
-    return [
-      null,
-      Diagnostics.createError(
-        `Invalid qualified name '${qualifiedName}', expected format 'module:name'`
-      ),
-    ];
-  }
-
-  const modulePath = parts[0]!;
-  const name = parts[1]!;
-
-  try {
-    // Convert relative path to absolute file URL for ESM import
-    const moduleUrl = modulePath.startsWith("./") || modulePath.startsWith("../")
-      ? pathToFileURL(modulePath).href
-      : modulePath;
-
-    const module = await import(moduleUrl);
-
-    if (!(name in module)) {
-      return [
-        null,
-        Diagnostics.createError(`Name '${name}' not found in module '${modulePath}'`),
-      ];
-    }
-
-    return [module[name], new Diagnostics()];
-  } catch (error) {
-    if (error instanceof Error && error.message.includes("Cannot find module")) {
-      if (qualifiedName === "resources:loadResources") {
-        return [null, explainCommonImportError(error)];
-      }
-    }
-
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    return [
-      null,
-      Diagnostics.createError(`Failed to import module '${modulePath}': ${errorMessage}`),
-    ];
-  }
-}
-
-/**
- * Provide helpful error message for common import errors
- */
-function explainCommonImportError(_error: Error): Diagnostics {
-  const explanation = `Make sure to create a new TypeScript file at resources/index.ts with contents:
-
-import { defineResources } from "@databricks/bundles";
-
-export const loadResources = defineResources((bundle) => {
-  // Define your resources here
-  return new Resources();
-});
-`;
-
-  return Diagnostics.createError(
-    "Can't find function 'loadResources' in module 'resources'",
-    { detail: explanation }
-  );
-}
-
-/**
- * Load resource functions
- */
-export async function loadFunctions(names: string[]): Promise<[((bundle: Bundle) => Promise<Resources>)[], Diagnostics]> {
-  let diagnostics = new Diagnostics();
-  const functions: ((bundle: Bundle) => Promise<Resources>)[] = [];
-
-  for (const name of names) {
-    const [obj, diag] = await loadObject(name);
-    diagnostics = diagnostics.extend(diag);
-
-    if (diag.hasError()) {
-      continue;
-    }
-
-    if (typeof obj !== "function") {
-      const [, funcName] = name.split(":");
-      diagnostics = diagnostics.extend(
-        Diagnostics.createError(`'${funcName}' in module is not a function`)
-      );
-      continue;
-    }
-
-    functions.push(obj as ((bundle: Bundle) => Promise<Resources>));
-  }
-
-  return [functions, diagnostics];
-}
-
-/**
- * Load resource mutators
- */
-export async function loadResourceMutators(
-  names: string[]
-): Promise<[ResourceMutator[], Diagnostics]> {
-  let diagnostics = new Diagnostics();
-  const mutators: ResourceMutator[] = [];
-
-  for (const name of names) {
-    const [obj, diag] = await loadObject(name);
-    diagnostics = diagnostics.extend(diag);
-
-    if (diag.hasError()) {
-      continue;
-    }
-
-    if (!isResourceMutator(obj)) {
-      const [, funcName] = name.split(":");
-      diagnostics = diagnostics.extend(
-        Diagnostics.createError(
-          `'${funcName}' is not a ResourceMutator, did you decorate it with @jobMutator, @pipelineMutator, etc.?`
-        )
-      );
-      continue;
-    }
-
-    mutators.push(obj as ResourceMutator);
-  }
-
-  return [mutators, diagnostics];
-}
-
-/**
- * Type guard for ResourceMutator
- */
-function isResourceMutator(obj: unknown): obj is ResourceMutator {
-  return (
-    typeof obj === "object" &&
-    obj !== null &&
-    "resourceType" in obj &&
-    "function" in obj &&
-    typeof (obj as ResourceMutator).function === "function"
-  );
 }
 
 /**
@@ -316,7 +172,7 @@ function isResourceMutator(obj: unknown): obj is ResourceMutator {
  */
 export async function loadResources(
   bundle: Bundle,
-  functions: ((bundle: Bundle) => Promise<Resources>)[]
+  functions: ResourceFactory[]
 ): Promise<[Resources, Diagnostics]> {
   let diagnostics = new Diagnostics();
   const resources = new Resources();
@@ -325,8 +181,6 @@ export async function loadResources(
     try {
       const funcResources = await func(bundle);
       resources.addResources(funcResources);
-      console.log("funcResources", JSON.stringify(funcResources, null, 2));
-      console.log("resources", resources.toJSON());
     } catch (error) {
       console.error("Failed to load resources", error);
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -343,7 +197,6 @@ export async function loadResources(
  */
 export function appendResources(input: BundleInput, resources: Resources): BundleInput {
   const output = { ...input };
-    
   const resourcesJSON = resources.toJSON();
 
   if (Object.keys(resourcesJSON).length > 0) {
@@ -363,9 +216,7 @@ export function appendResources(input: BundleInput, resources: Resources): Bundl
 /**
  * Relativize file paths in locations
  */
-export function relativizeLocations(
-  locations: Map<string, Location>
-): Map<string, Location> {
+export function relativizeLocations(locations: Map<string, Location>): Map<string, Location> {
   const result = new Map<string, Location>();
 
   for (const [path, location] of locations) {
@@ -470,31 +321,24 @@ export async function writeLocations(
  * Main entry point for the build system
  */
 export async function jsMutator(
-  args: BuildArgs
+  args: BuildArgs,
+  resourceFactories: ResourceFactory[]
 ): Promise<[BundleInput, Map<string, Location>, Diagnostics]> {
-  
   const inputContent = await readFile(args.input, "utf-8");
-  const input: BundleInput = JSON.parse(inputContent);
+  const input = JSON.parse(inputContent) as BundleInput;
 
   let diagnostics = new Diagnostics();
 
-  const [config, configDiag] = readConfig(input);
-  diagnostics = diagnostics.extend(configDiag);
+  // const [config, configDiag] = readConfig(input);
+  // diagnostics = diagnostics.extend(configDiag);
 
-  if (diagnostics.hasError()) {
-    return [input, new Map(), diagnostics];
-  }
+  //   if (diagnostics.hasError()) {
+  //     return [input, new Map(), diagnostics];
+  // }
 
   const bundle = parseBundleInfo(input);
-  if (args.phase === "load_resources") {    
-    const [functions, funcDiag] = await loadFunctions(config.resources || []);
-    diagnostics = diagnostics.extend(funcDiag);
-
-    if (diagnostics.hasError()) {
-      return [input, new Map(), diagnostics];
-    }
-
-    const [resources, resDiag] = await loadResources(bundle, functions);    
+  if (args.phase === "load_resources") {
+    const [resources, resDiag] = await loadResources(bundle, resourceFactories);
     diagnostics = diagnostics.extend(resDiag).extend(resources.diagnostics);
 
     if (diagnostics.hasError()) {
@@ -506,7 +350,6 @@ export async function jsMutator(
 
     return [output, locations, diagnostics];
   } else {
-    // apply_mutators phase
     return [input, new Map(), Diagnostics.createError("apply_mutators phase not yet implemented")];
   }
 }
@@ -554,16 +397,16 @@ For more information, visit: https://docs.databricks.com/dev-tools/bundles/
 /**
  * CLI entry point
  */
-export async function main(argv: string[]): Promise<number> {
+export async function main(argv: string[], resourceFactories: ResourceFactory[]): Promise<number> {
   try {
     const args = parseArgs(argv.slice(2));
 
     if (args === "help") {
       printHelp();
-      return 0;
+      process.exit(0);
     }
 
-    const [output, locations, diagnostics] = await jsMutator(args);
+    const [output, locations, diagnostics] = await jsMutator(args, resourceFactories);
 
     // Write diagnostics
     await writeDiagnostics(args.diagnostics, diagnostics);
@@ -575,10 +418,9 @@ export async function main(argv: string[]): Promise<number> {
 
     // Write output
     await writeFile(args.output, JSON.stringify(output), "utf-8");
-
-    return diagnostics.hasError() ? 1 : 0;
+    process.exit(diagnostics.hasError() ? 1 : 0);
   } catch (error) {
     console.error("Fatal error:", error);
-    return 1;
+    process.exit(1);
   }
 }

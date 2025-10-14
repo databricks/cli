@@ -1,3 +1,4 @@
+import { describe, it, expect } from "@jest/globals";
 import { Variable, variable, variables, isVariable, getVariablePath } from "./variable.js";
 
 describe("Variable", () => {
@@ -41,7 +42,7 @@ describe("variable()", () => {
 
 describe("variables()", () => {
   it("should create a proxy that returns Variables", () => {
-    interface MyVars {
+    interface MyVars extends Record<string, Variable<unknown>> {
       warehouse_id: Variable<string>;
       job_name: Variable<string>;
     }
@@ -57,7 +58,7 @@ describe("variables()", () => {
   });
 
   it("should support custom prefix", () => {
-    interface MyVars {
+    interface MyVars extends Record<string, Variable<unknown>> {
       foo: Variable<string>;
     }
 

@@ -9,8 +9,7 @@ To use the JavaScript mutator, add the following to your `databricks.yml`:
 ```yaml
 experimental:
   javascript:
-    resources:
-      - resources.js
+    main: resources/resources.ts
 ```
 
 ## JavaScript File Format
@@ -68,73 +67,6 @@ Each location should be a JSON object on its own line:
 ```json
 {"path": "resources.jobs.my_job", "file": "resources.js", "line": 10, "column": 5}
 {"path": "resources.jobs.my_job.tasks[0]", "file": "resources.js", "line": 15, "column": 7}
-```
-
-## Example
-
-Here's a simple example of a JavaScript file that generates a job:
-
-```javascript
-#!/usr/bin/env node
-
-const fs = require('fs');
-const path = require('path');
-
-// Parse command-line arguments
-const args = {};
-for (let i = 2; i < process.argv.length; i += 2) {
-  const key = process.argv[i].replace('--', '');
-  args[key] = process.argv[i + 1];
-}
-
-// Read input
-const input = JSON.parse(fs.readFileSync(args.input, 'utf8'));
-
-// Generate resources
-const output = {
-  ...input,
-  resources: {
-    ...input.resources,
-    jobs: {
-      ...input.resources?.jobs,
-      my_javascript_job: {
-        name: "My JavaScript Job",
-        tasks: [
-          {
-            task_key: "main",
-            notebook_task: {
-              notebook_path: "${workspace.file_path}/notebook.py"
-            },
-            new_cluster: {
-              num_workers: 1,
-              spark_version: "13.3.x-scala2.12",
-              node_type_id: "i3.xlarge"
-            }
-          }
-        ]
-      }
-    }
-  }
-};
-
-// Write output
-fs.writeFileSync(args.output, JSON.stringify(output, null, 2));
-
-// Write empty diagnostics (no errors or warnings)
-fs.writeFileSync(args.diagnostics, '');
-
-// Write locations if requested
-if (args.locations) {
-  const locations = [
-    {
-      path: "resources.jobs.my_javascript_job",
-      file: path.join(process.cwd(), "resources.js"),
-      line: 10,
-      column: 5
-    }
-  ];
-  fs.writeFileSync(args.locations, locations.map(l => JSON.stringify(l)).join('\n') + '\n');
-}
 ```
 
 ## Features

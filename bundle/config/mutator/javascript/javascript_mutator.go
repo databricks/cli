@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
 
@@ -236,21 +237,24 @@ func (m *javaScriptMutator) runJavaScriptMutator(ctx context.Context, root dyn.V
 		return dyn.InvalidValue, diag.Errorf("experimental.javascript configuration not found")
 	}
 
-	resources := jsConfig.Get("resources")
-	if resources.Kind() == dyn.KindInvalid || resources.Kind() != dyn.KindSequence {
-		return dyn.InvalidValue, diag.Errorf("experimental.javascript.resources must be an array")
+	jsFilePath := jsConfig.Get("main")
+	if jsFilePath.Kind() == dyn.KindInvalid || jsFilePath.Kind() != dyn.KindString {
+		return dyn.InvalidValue, diag.Errorf("experimental.javascript.main must be a string")
 	}
 
-	resourcesSeq := resources.MustSequence()
-	if len(resourcesSeq) == 0 {
-		return dyn.InvalidValue, diag.Errorf("experimental.javascript.resources must contain at least one file path")
-	}
-
-	jsFilePath := "/Users/fabian.jakobs/Workspaces/cli/experimental/typescript/dist/src/cli.js"
+	jsFilePathStr := jsFilePath.MustString()
 
 	args := []string{
 		opts.nodePath,
-		jsFilePath,
+	}
+
+	// Add TypeScript loader for .ts files
+	if strings.HasSuffix(jsFilePathStr, ".ts") {
+		args = append(args, "--loader", "ts-node/esm")
+	}
+
+	args = append(args,
+		jsFilePathStr,
 		"--phase",
 		string(m.phase),
 		"--input",
@@ -259,7 +263,7 @@ func (m *javaScriptMutator) runJavaScriptMutator(ctx context.Context, root dyn.V
 		outputPath,
 		"--diagnostics",
 		diagnosticsPath,
-	}
+	)
 
 	if opts.loadLocations {
 		args = append(args, "--locations", locationsPath)
@@ -280,6 +284,7 @@ func (m *javaScriptMutator) runJavaScriptMutator(ctx context.Context, root dyn.V
 		ctx,
 		args,
 		process.WithDir(opts.bundleRootPath),
+		process.WithEnv("NODE_NO_WARNINGS", "1"),
 		process.WithStderrWriter(stderrWriter),
 		process.WithStdoutWriter(stdoutWriter),
 	)
