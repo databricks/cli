@@ -2,5 +2,5 @@ GOOS.windows = false
 GOOS.linux = false
 
 [[Repls]]
-Old = 'Uploaded \d+ files \(ignored \d+ directories( and files \d+)? by .gitignore\)'
+Old = 'Uploaded \d+ files \(ignored \d+ directories( and \d+ files)? by .gitignore\)'
 New = 'Uploaded [NUMID] files (ignored [NUMID] directories by .gitignore)'

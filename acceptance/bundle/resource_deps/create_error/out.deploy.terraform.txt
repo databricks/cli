@@ -1,5 +1,5 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Uploaded 0 files (ignored 1 directories and 8 files by .gitignore)
+Uploaded [NUMID] files (ignored [NUMID] directories by .gitignore)
 Deploying resources...
 Error: terraform apply: exit status 1
 

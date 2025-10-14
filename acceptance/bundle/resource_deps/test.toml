@@ -7,9 +7,9 @@ Ignore = [
 ]
 
 [[Repls]]
-Old = 'Uploaded \d+ files \(ignored \d+ directories( and files \d+)? by .gitignore\)'
+Old = 'Uploaded \d+ files \(ignored \d+ directories( and \d+ files)? by .gitignore\)'
 New = 'Uploaded [NUMID] files (ignored [NUMID] directories by .gitignore)'
 
 [[Repls]]
-Old = 'Uploaded \d+ files \(ignored \d+ directories by .gitignore, \d+ by sync.exclude\)'
+Old = 'Uploaded \d+ files \(ignored \d+ directories( and \d+ files)? by .gitignore, \d+ by sync.exclude\)'
 New = 'Uploaded [NUMID] files (ignored [NUMID] directories by .gitignore, [NUMID] by sync.exclude)'

@@ -65,7 +65,7 @@ func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		if fileList.ExcludedFiles > 0 {
 			parts = append(parts, fmt.Sprintf("%d files", fileList.ExcludedFiles))
 		}
-		exclusions = append(exclusions, fmt.Sprintf("%s by .gitignore", strings.Join(parts, " and ")))
+		exclusions = append(exclusions, strings.Join(parts, " and ")+" by .gitignore")
 	}
 
 	if fileList.ExcludedBySyncExclude > 0 {
