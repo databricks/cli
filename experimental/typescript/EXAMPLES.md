@@ -2,18 +2,142 @@
 
 This document provides examples of how to use the TypeScript API for Databricks Asset Bundles.
 
-## Basic Job Definition
+## Using Constructs (High-Level Components)
+
+Constructs provide reusable, high-level components with enhanced functionality:
 
 ```typescript
-import { Bundle, Resources, createJob, createTask, variable } from "@databricks/bundles";
+import { Bundle, Resources } from "@databricks/bundles";
+import { App } from "@databricks/bundles/constructs/app";
+import { SqlWarehouse } from "@databricks/bundles/constructs/warehouse";
+import { Database } from "@databricks/bundles/constructs/database";
+import { DatabaseCatalog } from "@databricks/bundles/constructs/catalog";
+import { Volume } from "@databricks/bundles/constructs/volume";
 
 export function loadResources(bundle: Bundle): Resources {
   const resources = new Resources();
 
-  resources.addJob("my_job", createJob({
+  // Create a SQL warehouse
+  const warehouse = new SqlWarehouse("warehouse", bundle);
+  resources.addResource(warehouse);
+
+  // Create a database instance
+  const postgres = new Database("postgres", bundle);
+  resources.addResource(postgres);
+
+  // Create a catalog connected to the database
+  const catalog = new DatabaseCatalog("catalog", bundle, {
+    database: postgres,
+    database_name: "postgres-catalog",
+    create_database_if_not_exists: true,
+  });
+  resources.addResource(catalog);
+
+  // Create a volume
+  const volume = new Volume("landing-zone", bundle, {
+    name: "landing-zone",
+    catalog_name: "main",
+    schema_name: "default",
+    volume_type: "MANAGED",
+  });
+  resources.addResource(volume);
+
+  // Create an app with resource permissions
+  const app = new App("bi_app", bundle, {
+    name: "bi",
+    description: "BI example",
+    source_code_path: "./backend",
+  });
+
+  // Grant app access to resources
+  app.addResource(warehouse, "CAN_USE");
+  app.addResource(catalog, "CAN_CONNECT_AND_CREATE");
+  app.addResource(volume, "READ_VOLUME");
+
+  resources.addResource(app);
+
+  return resources;
+}
+```
+
+## Using Variables
+
+```typescript
+import { Bundle, Resources, Variable, variables } from "@databricks/bundles";
+import { Volume } from "@databricks/bundles/constructs/volume";
+
+const vars = variables<{
+  catalog: Variable<string>;
+  schema: Variable<string>;
+  warehouse_id: Variable<string>;
+}>();
+
+export function loadResources(bundle: Bundle): Resources {
+  const resources = new Resources();
+
+  const volume = new Volume("data-volume", bundle, {
+    name: "data-volume",
+    catalog_name: vars.catalog.value,
+    schema_name: vars.schema.value,
+    volume_type: "MANAGED",
+  });
+  resources.addResource(volume);
+
+  return resources;
+}
+```
+
+In your `databricks.yml`:
+
+```yaml
+variables:
+  catalog:
+    description: Catalog name
+    default: main
+  schema:
+    description: Schema name
+    default: default
+  warehouse_id:
+    description: SQL warehouse ID
+```
+
+## Using Low-Level Resource Classes
+
+You can also use the generated resource classes directly:
+
+```typescript
+import { Bundle, Resources } from "@databricks/bundles";
+import { Job } from "@databricks/bundles/jobs";
+import { Pipeline } from "@databricks/bundles/pipelines";
+import { Schema } from "@databricks/bundles/schemas";
+import { Volume } from "@databricks/bundles/volumes";
+
+export function loadResources(bundle: Bundle): Resources {
+  const resources = new Resources();
+
+  // Create a schema
+  const schema = new Schema("my_schema", {
+    name: `${bundle.target}_schema`,
+    catalog_name: "main",
+    comment: "Schema for data processing",
+  });
+  resources.addResource(schema);
+
+  // Create a volume
+  const volume = new Volume("my_volume", {
+    name: `${bundle.target}_volume`,
+    catalog_name: "main",
+    schema_name: `${bundle.target}_schema`,
+    volume_type: "MANAGED",
+    comment: "Volume for file storage",
+  });
+  resources.addResource(volume);
+
+  // Create a job
+  const job = new Job("my_job", {
     name: "My TypeScript Job",
     tasks: [
-      createTask({
+      {
         task_key: "main",
         notebook_task: {
           notebook_path: "/path/to/notebook",
@@ -26,58 +150,41 @@ export function loadResources(bundle: Bundle): Resources {
           node_type_id: "i3.xlarge",
           num_workers: 2,
         },
-      }),
+      },
     ],
     max_concurrent_runs: 1,
     timeout_seconds: 3600,
-  }));
+  });
+  resources.addResource(job);
 
-  return resources;
-}
-```
-
-## Job with Variables
-
-```typescript
-import { Bundle, Resources, createJob, variables, variable } from "@databricks/bundles";
-
-// Define variables with type safety
-interface MyVars {
-  warehouse_id: Variable<string>;
-  job_name: Variable<string>;
-  num_workers: Variable<number>;
-}
-
-const vars = variables<MyVars>();
-
-export function loadResources(bundle: Bundle): Resources {
-  const resources = new Resources();
-
-  // Resolve variables from databricks.yml
-  const warehouseId = bundle.resolveVariable(vars.warehouse_id);
-  const jobName = bundle.resolveVariable(vars.job_name);
-
-  resources.addJob("sql_job", createJob({
-    name: jobName,
-    tasks: [{
-      task_key: "run_query",
-      sql_task: {
-        warehouse_id: warehouseId,
-        query: {
-          query_id: "abc123",
-        },
-      },
+  // Create a pipeline
+  const pipeline = new Pipeline("bronze_to_silver", {
+    name: "Bronze to Silver Pipeline",
+    catalog: "main",
+    target: "silver",
+    libraries: [
+      { notebook: { path: "/pipelines/bronze_to_silver" } },
+    ],
+    clusters: [{
+      label: "default",
+      num_workers: 4,
+      node_type_id: "i3.xlarge",
     }],
-  }));
+    continuous: false,
+    development: bundle.target === "development",
+    photon: true,
+  });
+  resources.addResource(pipeline);
 
   return resources;
 }
 ```
 
-## Dynamic Job Creation
+## Dynamic Resource Creation
 
 ```typescript
-import { Bundle, Resources, createJob } from "@databricks/bundles";
+import { Bundle, Resources } from "@databricks/bundles";
+import { Job } from "@databricks/bundles/jobs";
 
 // Configuration data
 const configs = [
@@ -91,7 +198,7 @@ export function loadResources(bundle: Bundle): Resources {
 
   // Create a job for each configuration
   for (const config of configs) {
-    resources.addJob(config.name, createJob({
+    const job = new Job(config.name, {
       name: `ETL ${config.table}`,
       tasks: [{
         task_key: "extract",
@@ -112,65 +219,9 @@ export function loadResources(bundle: Bundle): Resources {
           num_workers: bundle.target === "production" ? 10 : 2,
         },
       }],
-    }));
+    });
+    resources.addResource(job);
   }
-
-  return resources;
-}
-```
-
-## Pipeline Definition
-
-```typescript
-import { Bundle, Resources, createPipeline } from "@databricks/bundles";
-
-export function loadResources(bundle: Bundle): Resources {
-  const resources = new Resources();
-
-  resources.addPipeline("bronze_to_silver", createPipeline({
-    name: "Bronze to Silver Pipeline",
-    catalog: "main",
-    target: "silver",
-    libraries: [
-      { notebook: { path: "/pipelines/bronze_to_silver" } },
-    ],
-    clusters: [{
-      label: "default",
-      num_workers: 4,
-      node_type_id: "i3.xlarge",
-    }],
-    continuous: false,
-    development: bundle.target === "development",
-    photon: true,
-  }));
-
-  return resources;
-}
-```
-
-## Schema and Volume Definition
-
-```typescript
-import { Bundle, Resources, createSchema, createVolume } from "@databricks/bundles";
-
-export function loadResources(bundle: Bundle): Resources {
-  const resources = new Resources();
-
-  // Create a schema
-  resources.addSchema("my_schema", createSchema({
-    name: `${bundle.target}_schema`,
-    catalog_name: "main",
-    comment: "Schema for data processing",
-  }));
-
-  // Create a volume
-  resources.addVolume("my_volume", createVolume({
-    name: `${bundle.target}_volume`,
-    catalog_name: "main",
-    schema_name: `${bundle.target}_schema`,
-    volume_type: "MANAGED",
-    comment: "Volume for file storage",
-  }));
 
   return resources;
 }
@@ -179,12 +230,13 @@ export function loadResources(bundle: Bundle): Resources {
 ## Multi-Task Job with Dependencies
 
 ```typescript
-import { Bundle, Resources, createJob } from "@databricks/bundles";
+import { Bundle, Resources } from "@databricks/bundles";
+import { Job } from "@databricks/bundles/jobs";
 
 export function loadResources(bundle: Bundle): Resources {
   const resources = new Resources();
 
-  resources.addJob("data_pipeline", createJob({
+  const job = new Job("data_pipeline", {
     name: "Data Pipeline",
     tasks: [
       {
@@ -229,32 +281,8 @@ export function loadResources(bundle: Bundle): Resources {
       on_failure: ["team@company.com"],
       no_alert_for_skipped_runs: true,
     },
-  }));
-
-  return resources;
-}
-```
-
-## Using Variables Passed as References
-
-```typescript
-import { Bundle, Resources, createJob, variable } from "@databricks/bundles";
-
-export function loadResources(bundle: Bundle): Resources {
-  const resources = new Resources();
-
-  // Variables can be passed directly without resolution
-  // The CLI will resolve them during deployment
-  resources.addJob("my_job", createJob({
-    name: variable<string>("var.job_name"),
-    tasks: [{
-      task_key: "main",
-      notebook_task: {
-        notebook_path: variable<string>("var.notebook_path"),
-      },
-      existing_cluster_id: variable<string>("var.cluster_id"),
-    }],
-  }));
+  });
+  resources.addResource(job);
 
   return resources;
 }
@@ -263,14 +291,15 @@ export function loadResources(bundle: Bundle): Resources {
 ## Conditional Resource Creation
 
 ```typescript
-import { Bundle, Resources, createJob } from "@databricks/bundles";
+import { Bundle, Resources } from "@databricks/bundles";
+import { Job } from "@databricks/bundles/jobs";
 
 export function loadResources(bundle: Bundle): Resources {
   const resources = new Resources();
 
   // Create different jobs based on target
   if (bundle.target === "production") {
-    resources.addJob("prod_job", createJob({
+    const job = new Job("prod_job", {
       name: "Production Job",
       tasks: [{
         task_key: "main",
@@ -287,9 +316,10 @@ export function loadResources(bundle: Bundle): Resources {
         quartz_cron_expression: "0 0 * * * ?",
         timezone_id: "UTC",
       },
-    }));
+    });
+    resources.addResource(job);
   } else {
-    resources.addJob("dev_job", createJob({
+    const job = new Job("dev_job", {
       name: "Development Job",
       tasks: [{
         task_key: "main",
@@ -302,7 +332,8 @@ export function loadResources(bundle: Bundle): Resources {
           num_workers: 1,
         },
       }],
-    }));
+    });
+    resources.addResource(job);
   }
 
   return resources;
@@ -312,7 +343,8 @@ export function loadResources(bundle: Bundle): Resources {
 ## Error Handling and Diagnostics
 
 ```typescript
-import { Bundle, Resources, createJob, Diagnostics } from "@databricks/bundles";
+import { Bundle, Resources } from "@databricks/bundles";
+import { Job } from "@databricks/bundles/jobs";
 
 export function loadResources(bundle: Bundle): Resources {
   const resources = new Resources();
@@ -321,7 +353,8 @@ export function loadResources(bundle: Bundle): Resources {
     // Attempt to load configuration
     const config = loadConfig(bundle.target);
 
-    resources.addJob("my_job", createJob(config));
+    const job = new Job("my_job", config);
+    resources.addResource(job);
   } catch (error) {
     // Report errors as diagnostics
     resources.addDiagnosticError(
@@ -357,28 +390,27 @@ variables:
   warehouse_id:
     description: SQL warehouse ID
     default: "abc123"
-  job_name:
-    description: Name of the job
-    default: "My Job"
-  num_workers:
-    description: Number of workers
-    default: 2
+  catalog:
+    description: Catalog name
+    default: "main"
+  schema:
+    description: Schema name
+    default: "default"
 
-python:
-  resources:
-    - "resources:loadResources"
+experimental:
+  javascript:
+    resources:
+      - "resources:loadResources"
 
 targets:
   development:
-    variables:
-      num_workers: 1
+    mode: development
 
   production:
-    variables:
-      num_workers: 10
+    mode: production
 ```
 
-Then compile your TypeScript code and reference it:
+Then compile your TypeScript code and deploy:
 
 ```bash
 # Compile TypeScript
