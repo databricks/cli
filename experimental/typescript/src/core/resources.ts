@@ -12,21 +12,22 @@ import type { Resource } from "./resource.js";
 import { RESOURCE_NAMESPACES } from "../../generated/manifest.js";
 
 // Import actual resource types from generated code (type-only to avoid circular dependency)
-import type { App } from "../../generated/apps/index.js";
-import type { Cluster } from "../../generated/clusters/index.js";
-import type { Dashboard } from "../../generated/dashboards/index.js";
-import type { Job } from "../../generated/jobs/index.js";
-import type { MlflowExperiment } from "../../generated/mlflow_experiments/index.js";
-import type { MlflowModel } from "../../generated/mlflow_models/index.js";
-import type { ModelServingEndpoint } from "../../generated/model_serving_endpoints/index.js";
-import type { Pipeline } from "../../generated/pipelines/index.js";
-import type { QualityMonitor } from "../../generated/quality_monitors/index.js";
-import type { RegisteredModel } from "../../generated/registered_models/index.js";
-import type { Schema } from "../../generated/schemas/index.js";
-import type { Volume } from "../../generated/volumes/index.js";
-import type { DatabaseInstance } from "../../generated/database_instances/index.js";
-import type { DatabaseCatalog } from "../../generated/database_catalogs/index.js";
-import type { SqlWarehouse } from "../../generated/sql_warehouses/index.js";
+import type { App } from "../../generated/apps";
+import type { Cluster } from "../../generated/clusters";
+import type { Dashboard } from "../../generated/dashboards";
+import type { Job } from "../../generated/jobs";
+import type { MlflowExperiment } from "../../generated/mlflow_experiments";
+import type { MlflowModel } from "../../generated/mlflow_models";
+import type { ModelServingEndpoint } from "../../generated/model_serving_endpoints";
+import type { Pipeline } from "../../generated/pipelines";
+import type { QualityMonitor } from "../../generated/quality_monitors";
+import type { RegisteredModel } from "../../generated/registered_models";
+import type { Schema } from "../../generated/schemas";
+import type { Volume } from "../../generated/volumes";
+import type { DatabaseInstance } from "../../generated/database_instances";
+import type { DatabaseCatalog } from "../../generated/database_catalogs";
+import type { SqlWarehouse } from "../../generated/sql_warehouses";
+import type { SecretScope } from "../../generated/secret_scopes";
 
 /**
  * Enum of all supported resource types for type-safe resource management
@@ -53,6 +54,7 @@ export type ResourceTypeMap = {
   database_instances: DatabaseInstance;
   database_catalogs: DatabaseCatalog;
   sql_warehouses: SqlWarehouse;
+  secret_scopes: SecretScope;
 };
 
 /**
@@ -151,7 +153,7 @@ export class Resources {
   /**
    * Generic method to get resources of a type
    */
-  public getResources(type: ResourceType) {
+  public getResources(type: ResourceType): Map<string, Resource<unknown>> {
     return this.getMetadata(type).map;
   }
 
@@ -177,7 +179,7 @@ export class Resources {
     // Iterate through all resource types in the registry
     for (const type of this.registry.keys()) {
       const otherMetadata = other.getMetadata(type);
-      for (const [name, resource] of otherMetadata.map.entries()) {
+      for (const resource of otherMetadata.map.values()) {
         this.addResource(resource as ResourceTypeMap[typeof type]);
       }
     }

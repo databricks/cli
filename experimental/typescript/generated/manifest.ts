@@ -26,6 +26,7 @@ export const RESOURCE_TYPES: readonly ResourceTypeInfo[] = [
   { name: "resources.DatabaseInstance", namespace: "database_instances", typeName: "DatabaseInstance" },
   { name: "resources.DatabaseCatalog", namespace: "database_catalogs", typeName: "DatabaseCatalog" },
   { name: "resources.SqlWarehouse", namespace: "sql_warehouses", typeName: "SqlWarehouse" },
+  { name: "resources.SecretScope", namespace: "secret_scopes", typeName: "SecretScope" },
 ] as const;
 
 export const RESOURCE_NAMESPACES = [
@@ -44,6 +45,7 @@ export const RESOURCE_NAMESPACES = [
   "database_instances",
   "database_catalogs",
   "sql_warehouses",
+  "secret_scopes",
 ] as const;
 
 export const RESOURCE_TYPE_NAMES = [
@@ -62,4 +64,5 @@ export const RESOURCE_TYPE_NAMES = [
   "DatabaseInstance",
   "DatabaseCatalog",
   "SqlWarehouse",
+  "SecretScope",
 ] as const;
