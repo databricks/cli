@@ -7,3 +7,6 @@
 
 // Core framework
 export * from "./core/index.js";
+
+// Constructs
+export * from "./constructs/index.js";

@@ -44,7 +44,7 @@ export class Volume extends BaseVolume {
    */
   constructor(name: string, bundle: Bundle, params: VolumeParams) {
     if (bundle.isDevelopment) {
-      params.name = `dev-${params.name}`;
+      params.name = `dev-${params.name.toString()}`;
     }
     super(name, params);
     this.resourceName = params.name;
@@ -58,7 +58,7 @@ export class Volume extends BaseVolume {
    * This can be used to reference the volume in other resources that
    * require a fully qualified Unity Catalog name.
    */
-  get fullName() {
-    return `${this.data.catalog_name}.${this.data.schema_name}.${this.resourceName}`;
+  get fullName(): string {
+    return `${this.data.catalog_name.toString()}.${this.data.schema_name.toString()}.${this.resourceName.toString()}`;
   }
 }

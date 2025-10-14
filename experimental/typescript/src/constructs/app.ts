@@ -73,7 +73,7 @@ export class App extends BaseApp {
     const command = params.command || [];
     appYmlConfig.env = Object.entries(env).map(([name, value]) => ({
       name,
-      value: value as string,
+      value,
     }));
     appYmlConfig.command = command;
 
@@ -85,7 +85,7 @@ export class App extends BaseApp {
     delete params.command;
 
     if (bundle.isDevelopment) {
-      params.name = `dev-${Workspace.currentUser.domainFriendlyName}-${params.name}`;
+      params.name = `dev-${Workspace.currentUser.domainFriendlyName.toString()}-${params.name.toString()}`;
     }
     super(name, params);
   }
@@ -120,7 +120,7 @@ export class App extends BaseApp {
       | AppResourceDatabase["permission"]
       | AppResourceSqlWarehouse["permission"]
       | AppResourceUcSecurable["permission"]
-  ) {
+  ): void {
     if (!this.data.resources) {
       this.data.resources = [];
     }

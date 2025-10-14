@@ -55,7 +55,7 @@ export class Resource<T> {
    *
    * @returns JSON-serializable representation of the resource data
    */
-  toJSON() {
+  toJSON(): string | number | boolean | unknown[] | Record<string, unknown> | null {
     return transformToJSON(this.data);
   }
 }

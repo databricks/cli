@@ -146,7 +146,7 @@ export class Bundle {
       throw new Error("Expected a list value");
     }
 
-    return resolved.map((item) => this.resolveVariable(item as VariableOr<T>));
+    return resolved.map((item) => this.resolveVariable(item));
   }
 }
 

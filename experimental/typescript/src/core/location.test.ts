@@ -66,7 +66,7 @@ describe("Location", () => {
     });
 
     it("should handle different stack depths", () => {
-      function nested() {
+      function nested(): Location | undefined {
         return Location.fromStack(1);
       }
 

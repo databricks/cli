@@ -95,7 +95,7 @@ function shouldIncludeValue(value: unknown): boolean {
     return false;
   }
 
-  if (typeof value === "object" && Object.keys(value as object).length === 0) {
+  if (typeof value === "object" && Object.keys(value).length === 0) {
     return false;
   }
 

@@ -62,7 +62,7 @@ export class SqlWarehouse extends BaseSqlWarehouse {
     }
 
     if (bundle.isDevelopment) {
-      params.name = `dev-${Workspace.currentUser.domainFriendlyName}-${params.name}`;
+      params.name = `dev-${Workspace.currentUser.domainFriendlyName.toString()}-${params.name.toString()}`;
     }
 
     super(name, { ...defaultParams, ...params });
@@ -73,7 +73,7 @@ export class SqlWarehouse extends BaseSqlWarehouse {
    *
    * This can be used to reference the warehouse in other resources.
    */
-  get id() {
+  get id(): Variable<string> {
     return new Variable<string>(`resources.sql_warehouses.${this.dabsName}.id`);
   }
 }

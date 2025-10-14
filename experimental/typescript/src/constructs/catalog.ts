@@ -61,7 +61,7 @@ export class DatabaseCatalog extends BaseDatabaseCatalog {
     }
 
     if (bundle.isDevelopment) {
-      params.name = `dev-${Workspace.currentUser.domainFriendlyName}-${params.name}`;
+      params.name = `dev-${Workspace.currentUser.domainFriendlyName.toString()}-${params.name.toString()}`;
     }
 
     super(name, {
@@ -78,7 +78,7 @@ export class DatabaseCatalog extends BaseDatabaseCatalog {
    *
    * This can be used to reference the database in other resources.
    */
-  get database_name() {
+  get database_name(): Variable<string> {
     return new Variable<string>(`resources.database_catalogs.${this.dabsName}.database_name`);
   }
 
@@ -87,7 +87,7 @@ export class DatabaseCatalog extends BaseDatabaseCatalog {
    *
    * This can be used to reference the database instance in other resources.
    */
-  get database_instance_name() {
+  get database_instance_name(): Variable<string> {
     return new Variable<string>(
       `resources.database_catalogs.${this.dabsName}.database_instance_name`
     );

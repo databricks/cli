@@ -53,7 +53,7 @@ export class Location {
    * @param fn - The function to get location from
    * @returns Location if available, undefined otherwise
    */
-  static fromFunction(_fn: Function): Location | undefined {
+  static fromFunction(_fn: (...args: unknown[]) => unknown): Location | undefined {
     // In JavaScript, we can try to parse the function's toString() or use stack traces
     // but it's not as reliable as Python's inspect.
     // For now, we'll return undefined and rely on explicit location tracking.

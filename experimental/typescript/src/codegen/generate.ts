@@ -1,4 +1,7 @@
 #!/usr/bin/env tsx
+
+/* eslint-disable no-console */
+
 /**
  * Code generator for Databricks Asset Bundles resource types
  *
@@ -126,30 +129,62 @@ interface Schema {
   stage?: string;
 }
 
+interface JsonSchemaProperty {
+  $ref?: string;
+  description?: string;
+  deprecated?: boolean;
+  "x-databricks-preview"?: string;
+  anyOf?: Array<{ type?: string; pattern?: string }>;
+  oneOf?: Array<{ type?: string; pattern?: string }>;
+}
+
+interface JsonSchema {
+  type?: string;
+  enum?: string[];
+  properties?: Record<string, JsonSchemaProperty>;
+  required?: string[];
+  description?: string;
+  deprecated?: boolean;
+  "x-databricks-preview"?: string;
+  anyOf?: Array<JsonSchema>;
+  oneOf?: Array<JsonSchema>;
+  pattern?: string;
+}
+
 /**
  * Load JSON schema from file
  */
-function loadSchema(): any {
+function loadSchema(): Record<string, unknown> {
   const schemaPath = join(__dirname, "..", "..", "..", "..", "bundle", "schema", "jsonschema.json");
-  return JSON.parse(readFileSync(schemaPath, "utf-8"));
+  return JSON.parse(readFileSync(schemaPath, "utf-8")) as Record<string, unknown>;
 }
 
 /**
  * Navigate to a path in the schema
  */
-function getSchemaPath(spec: any, path: string[]): any {
-  let current = spec;
+function getSchemaPath(spec: Record<string, unknown>, path: string[]): Record<string, unknown> {
+  let current: unknown = spec;
   for (const key of path) {
-    current = current[key];
+    if (typeof current !== "object" || current === null) {
+      throw new Error(`Cannot navigate path ${path.join(".")} - not an object at ${key}`);
+    }
+    current = (current as Record<string, unknown>)[key];
   }
-  return current;
+  if (typeof current !== "object" || current === null) {
+    throw new Error(`Path ${path.join(".")} did not resolve to an object`);
+  }
+  return current as Record<string, unknown>;
 }
 
 /**
  * Check if a reference should be loaded
  */
 function shouldLoadRef(ref: string): boolean {
-  const name = ref.split("/").pop()!;
+  const parts = ref.split("/");
+  const name = parts[parts.length - 1];
+  if (!name) {
+    return false;
+  }
 
   for (const namespace of LOADED_NAMESPACES) {
     if (name.startsWith(`${namespace}.`)) {
@@ -164,7 +199,7 @@ function shouldLoadRef(ref: string): boolean {
  * Unwrap variable pattern from schema
  * Schema fields can be either the actual type or a variable reference string
  */
-function unwrapVariable(schema: any): any | null {
+function unwrapVariable(schema: JsonSchema): JsonSchema | null {
   const anyOf = schema.anyOf || schema.oneOf;
 
   if (!anyOf || anyOf.length !== 2) {
@@ -172,10 +207,19 @@ function unwrapVariable(schema: any): any | null {
   }
 
   const [primary, variable] = anyOf;
-  const pattern = variable.pattern || "";
-  const type = variable.type || "";
+  if (!primary || !variable) {
+    return null;
+  }
 
-  if (type === "string" && pattern.startsWith("\\$\\{") && pattern.endsWith("\\}")) {
+  const pattern: unknown = variable.pattern ?? "";
+  const type: unknown = variable.type ?? "";
+
+  if (
+    type === "string" &&
+    typeof pattern === "string" &&
+    pattern.startsWith("\\$\\{") &&
+    pattern.endsWith("\\}")
+  ) {
     return primary;
   }
 
@@ -185,28 +229,27 @@ function unwrapVariable(schema: any): any | null {
 /**
  * Parse a schema definition
  */
-function parseSchema(schema: any): Schema {
+function parseSchema(schema: JsonSchema): Schema {
   const unwrapped = unwrapVariable(schema) || schema;
   const properties: Record<string, Property> = {};
 
-  for (const [key, value] of Object.entries(unwrapped.properties || {})) {
-    const v = value as any;
-
+  const unwrappedProps = unwrapped.properties || {};
+  for (const [key, value] of Object.entries(unwrappedProps)) {
     // Properties should only have $ref
-    if (!v.$ref) {
+    if (!value.$ref) {
       continue;
     }
 
     properties[key] = {
-      ref: v.$ref,
-      description: v.description,
-      deprecated: v.deprecated,
-      stage: v["x-databricks-preview"],
+      ref: value.$ref,
+      description: value.description,
+      deprecated: value.deprecated,
+      stage: value["x-databricks-preview"],
     };
   }
 
   return {
-    type: unwrapped.type,
+    type: (unwrapped.type as "object" | "string") || "object",
     enum: unwrapped.enum,
     properties,
     required: unwrapped.required || [],
@@ -252,7 +295,7 @@ function getSchemas(): Map<string, Schema> {
   // Parse schemas
   for (const [name, schema] of Object.entries(filteredSpec)) {
     try {
-      output.set(name, parseSchema(schema));
+      output.set(name, parseSchema(schema as JsonSchema));
     } catch (error) {
       console.error(`Failed to parse schema for ${name}:`, error);
     }
@@ -265,7 +308,18 @@ function getSchemas(): Map<string, Schema> {
  * Get TypeScript type name from ref
  */
 function getTypeName(ref: string): string {
-  const name = ref.split("/").pop()!.split(".").pop()!;
+  const parts = ref.split("/");
+  const lastPart = parts[parts.length - 1];
+  if (!lastPart) {
+    throw new Error(`Invalid ref: ${ref}`);
+  }
+
+  const nameParts = lastPart.split(".");
+  const name = nameParts[nameParts.length - 1];
+  if (!name) {
+    throw new Error(`Invalid ref format: ${ref}`);
+  }
+
   const renamed = TYPE_RENAMES[name] || name;
 
   // If the type name is a reserved word, convert it to "any" for simplicity
@@ -282,7 +336,11 @@ function getTypeName(ref: string): string {
  * E.g., "resources.MlflowExperiment" -> "mlflow_experiments"
  */
 function getResourceNamespace(resourceName: string): string {
-  const typeName = resourceName.split(".").pop()!;
+  const parts = resourceName.split(".");
+  const typeName = parts[parts.length - 1];
+  if (!typeName) {
+    throw new Error(`Invalid resource name: ${resourceName}`);
+  }
 
   // Convert CamelCase to snake_case
   const snakeCase = typeName
@@ -298,13 +356,6 @@ function getResourceNamespace(resourceName: string): string {
   } else {
     return snakeCase + "s";
   }
-}
-
-/**
- * Convert snake_case to camelCase
- */
-function toCamelCase(str: string): string {
-  return str.replace(/_([a-z])/g, (_match, char) => char.toUpperCase());
 }
 
 /**
@@ -461,7 +512,11 @@ function collectReferencedTypes(
   }
 
   for (const prop of Object.values(schema.properties)) {
-    const refName = prop.ref.split("/").pop()!;
+    const parts = prop.ref.split("/");
+    const refName = parts[parts.length - 1];
+    if (!refName) {
+      continue;
+    }
 
     // Skip primitives and already visited
     if (PRIMITIVES.includes(refName) || visited.has(refName)) {
@@ -528,7 +583,12 @@ function generateResourceFile(
     return;
   }
 
-  const typeName = resourceName.split(".").pop()!;
+  const parts = resourceName.split(".");
+  const typeName = parts[parts.length - 1];
+  if (!typeName) {
+    console.error(`Invalid resource name: ${resourceName}`);
+    return;
+  }
   const lines: string[] = [];
 
   // File header
@@ -579,7 +639,11 @@ function generateManifest(): void {
 
   for (const resourceName of MAIN_RESOURCES) {
     const namespace = getResourceNamespace(resourceName);
-    const typeName = resourceName.split(".").pop()!;
+    const parts = resourceName.split(".");
+    const typeName = parts[parts.length - 1];
+    if (!typeName) {
+      continue;
+    }
     resourceTypes.push({ name: resourceName, namespace, typeName });
   }
 
@@ -632,7 +696,7 @@ function generateManifest(): void {
 /**
  * Main generation function
  */
-function main() {
+function main(): void {
   console.log("Loading JSON schema...");
   const schemas = getSchemas();
   console.log(`Loaded ${schemas.size} schemas`);

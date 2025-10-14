@@ -40,6 +40,3 @@ export { Workspace } from "./workspace.js";
 // Resources
 export { Resource } from "./resource.js";
 export { Resources, type ResourceType } from "./resources.js";
-
-// Transform utilities
-export { transformToJSON } from "./transform.js";

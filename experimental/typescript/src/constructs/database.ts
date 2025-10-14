@@ -58,7 +58,7 @@ export class Database extends BaseDatabaseInstance {
     }
 
     if (bundle.isDevelopment) {
-      params.name = `dev-${Workspace.currentUser.domainFriendlyName}-${params.name}`;
+      params.name = `dev-${Workspace.currentUser.domainFriendlyName.toString()}-${params.name.toString()}`;
     }
 
     super(name, { ...defaultParams, ...params, name: params.name });
@@ -70,7 +70,7 @@ export class Database extends BaseDatabaseInstance {
    *
    * This can be used to reference the database in other resources.
    */
-  get name() {
+  get name(): Variable<string> {
     return new Variable<string>(`resources.database_instances.${this.dabsName}.name`);
   }
 }

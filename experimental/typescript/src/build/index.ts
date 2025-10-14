@@ -358,6 +358,7 @@ export async function jsMutator(
  * Print help message
  */
 function printHelp(): void {
+  // eslint-disable-next-line no-console
   console.log(`
 Databricks TypeScript Bundle Builder
 
