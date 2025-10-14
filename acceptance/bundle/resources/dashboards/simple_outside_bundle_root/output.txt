@@ -21,6 +21,8 @@ Deployment complete!
   }
 }
 
+>>> cat out.requests.txt
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete dashboard dashboard1

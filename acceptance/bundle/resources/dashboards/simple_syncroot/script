@@ -10,6 +10,7 @@ envsubst < databricks.yml.tmpl > databricks.yml
 cleanup() {
     trace $CLI bundle destroy --auto-approve
     rm sample-dashboard.lvdash.json
+    rm out.requests.txt
 }
 trap cleanup EXIT
 

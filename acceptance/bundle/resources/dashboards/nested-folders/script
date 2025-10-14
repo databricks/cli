@@ -9,6 +9,7 @@ envsubst < resources/dashboards.yml.tmpl > resources/dashboards.yml
 
 cleanup() {
     trace $CLI bundle destroy --auto-approve
+    rm out.requests.txt
 }
 trap cleanup EXIT
 
