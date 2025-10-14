@@ -57,6 +57,10 @@ func New(root vfs.Path, args ...[]string) *FileSet {
 	}
 }
 
+func Empty() *FileSet {
+	return &FileSet{}
+}
+
 // Ignorer returns the [FileSet]'s current ignorer.
 func (w *FileSet) Ignorer() Ignorer {
 	return w.ignore
@@ -92,13 +96,8 @@ func (w *FileSet) recursiveListFiles(path string, seen map[string]struct{}) (out
 			return err
 		}
 
-		info, err := d.Info()
-		if err != nil {
-			return err
-		}
-
 		switch {
-		case info.Mode().IsDir():
+		case d.IsDir():
 			ign, err := w.ignore.IgnoreDirectory(name)
 			if err != nil {
 				return fmt.Errorf("cannot check if %s should be ignored: %w", name, err)
@@ -107,7 +106,7 @@ func (w *FileSet) recursiveListFiles(path string, seen map[string]struct{}) (out
 				return fs.SkipDir
 			}
 
-		case info.Mode().IsRegular():
+		case d.Type().IsRegular():
 			ign, err := w.ignore.IgnoreFile(name)
 			if err != nil {
 				return fmt.Errorf("cannot check if %s should be ignored: %w", name, err)

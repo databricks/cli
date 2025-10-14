@@ -47,11 +47,15 @@ type IResource interface {
 	//
 	// The isLocal parameter determines whether the triggers are for local or remote changes:
 	// - isLocal=true: These triggers are used to update the remote definition of a resource
-	//   to the latest local changes made by the user.
+	//   to the latest local changes made by the user. Applied on every change between state
+	//   (last deployed config) and new state (current config).
 	// - isLocal=false: These triggers are used to detect and reconcile remote drift between
 	//   what the deployment state records as the current state of the resource and what the
-	//   resource definition actually is in the backend. This is necessary to revert out of
-	//   band changes made to the resource by bypassing DABs.
+	//   resource definition actually is in the backend. Applied on every change between state
+	//   and remote state.
+	//
+	// Note: these functions are called once per resource implementation initialization,
+	// not once per resource.
 	FieldTriggers(isLocal bool) map[string]deployplan.ActionType
 }
 
