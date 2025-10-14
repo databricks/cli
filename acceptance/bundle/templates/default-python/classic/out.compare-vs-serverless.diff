@@ -1,9 +1,3 @@
---- [TESTROOT]/bundle/templates/default-python/classic/../serverless/output/my_default_python/README.md
-+++ output/my_default_python/README.md
-@@ -69,3 +69,2 @@
-    $ uv run pytest
-    ```
--
 --- [TESTROOT]/bundle/templates/default-python/classic/../serverless/output/my_default_python/databricks.yml
 +++ output/my_default_python/databricks.yml
 @@ -34,4 +34,6 @@
