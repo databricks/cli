@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"path"
 	"slices"
 	"strings"
 	"sync"
@@ -59,6 +60,10 @@ func (r *ResourceDashboard) DoRefresh(ctx context.Context, id string) (*resource
 	if getPublishedErr != nil {
 		return nil, fmt.Errorf("failed to get published dashboard: %w", getPublishedErr)
 	}
+
+	// Add the /Workspace prefix to the parent path. The backend removes this prefix from parent
+	// path, and thus it needs to be added back in to match the local configuration.
+	dashboard.ParentPath = path.Join("/Workspace", dashboard.ParentPath)
 
 	return &resources.DashboardConfig{
 		Dashboard:        *dashboard,
