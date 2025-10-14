@@ -1,3 +1,11 @@
+/**
+ * High-level App construct with enhanced functionality.
+ *
+ * Extends the generated App resource with:
+ * - Automatic app.yml file generation
+ * - Development mode name prefixing
+ * - Simplified resource permission management
+ */
 import {
   App as BaseApp,
   type AppParams,
@@ -15,11 +23,44 @@ import { SqlWarehouse } from "./warehouse.js";
 import { Volume } from "./volume.js";
 import { DatabaseCatalog } from "./catalog.js";
 
+/**
+ * Additional parameters for App construct beyond the base AppParams.
+ */
 interface AppExtraParams {
+  /**
+   * Environment variables to include in app.yml
+   */
   env?: { [key: string]: string };
+
+  /**
+   * Command array to include in app.yml
+   */
   command?: string[];
 }
 
+/**
+ * Enhanced App construct for Databricks Apps.
+ *
+ * Features:
+ * - Automatically generates app.yml file in the source code path
+ * - Adds dev-{user}- prefix to app name in development mode
+ * - Provides type-safe resource permission management
+ *
+ * @example
+ * ```typescript
+ * const app = new App("my_app", bundle, {
+ *   name: "bi",
+ *   description: "BI application",
+ *   source_code_path: "./backend",
+ *   env: { LOG_LEVEL: "info" },
+ *   command: ["python", "app.py"],
+ * });
+ *
+ * // Grant app access to resources
+ * app.addResource(warehouse, "CAN_USE");
+ * app.addResource(catalog, "CAN_CONNECT_AND_CREATE");
+ * ```
+ */
 export class App extends BaseApp {
   constructor(name: string, bundle: Bundle, params: AppParams & AppExtraParams) {
     const appYmlConfig: { env?: Array<{ name: string; value: string }>; command?: string[] } = {};
@@ -49,8 +90,28 @@ export class App extends BaseApp {
     super(name, params);
   }
 
+  /**
+   * Grants the app access to a SQL Warehouse.
+   *
+   * @param resource - The SQL Warehouse to grant access to
+   * @param permission - The permission level (e.g., "CAN_USE")
+   */
   addResource(resource: SqlWarehouse, permission: AppResourceSqlWarehouse["permission"]): void;
+
+  /**
+   * Grants the app access to a Database Catalog.
+   *
+   * @param resource - The Database Catalog to grant access to
+   * @param permission - The permission level (e.g., "CAN_CONNECT_AND_CREATE")
+   */
   addResource(resource: DatabaseCatalog, permission: AppResourceDatabase["permission"]): void;
+
+  /**
+   * Grants the app access to a Volume.
+   *
+   * @param resource - The Volume to grant access to
+   * @param permission - The permission level (e.g., "READ_VOLUME", "WRITE_VOLUME")
+   */
   addResource(resource: Volume, permission: AppResourceUcSecurable["permission"]): void;
 
   addResource(
@@ -61,10 +122,10 @@ export class App extends BaseApp {
       this.data.resources = [];
     }
 
-    const resoues = this.data.resources as AppResource[];
+    const resources = this.data.resources as AppResource[];
 
     if (resource instanceof SqlWarehouse) {
-      resoues.push({
+      resources.push({
         name: resource.dabsName,
         sql_warehouse: {
           id: resource.id,
@@ -72,7 +133,7 @@ export class App extends BaseApp {
         },
       });
     } else if (resource instanceof DatabaseCatalog) {
-      resoues.push({
+      resources.push({
         name: resource.dabsName,
         database: {
           database_name: resource.database_name,
@@ -81,7 +142,7 @@ export class App extends BaseApp {
         },
       });
     } else if (resource instanceof Volume) {
-      resoues.push({
+      resources.push({
         name: resource.dabsName,
         uc_securable: {
           securable_full_name: resource.fullName,
