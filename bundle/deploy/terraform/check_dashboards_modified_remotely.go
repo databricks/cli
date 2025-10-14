@@ -16,19 +16,9 @@ type dashboardState struct {
 }
 
 func collectDashboardsFromState(ctx context.Context, b *bundle.Bundle) ([]dashboardState, error) {
-	var state ExportedResourcesMap
-	var err error
-	if b.DirectDeployment {
-		err := b.OpenStateFile(ctx)
-		if err != nil {
-			return nil, err
-		}
-		state = b.DeploymentBundle.StateDB.ExportState(ctx)
-	} else {
-		state, err = ParseResourcesState(ctx, b)
-		if err != nil && state == nil {
-			return nil, err
-		}
+	state, err := ParseResourcesState(ctx, b)
+	if err != nil && state == nil {
+		return nil, err
 	}
 
 	var dashboards []dashboardState
@@ -54,6 +44,11 @@ func (l *checkDashboardsModifiedRemotely) Name() string {
 func (l *checkDashboardsModifiedRemotely) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// This mutator is relevant only if the bundle includes dashboards.
 	if len(b.Config.Resources.Dashboards) == 0 {
+		return nil
+	}
+
+	if b.DirectDeployment {
+		// TODO: not implemented yet
 		return nil
 	}
 
