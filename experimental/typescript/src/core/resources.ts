@@ -32,7 +32,7 @@ import type { SqlWarehouse } from "../../generated/sql_warehouses/index.js";
  * Enum of all supported resource types for type-safe resource management
  * Generated from manifest
  */
-export type ResourceType = typeof RESOURCE_NAMESPACES[number];
+export type ResourceType = (typeof RESOURCE_NAMESPACES)[number];
 
 /**
  * Type mapping from ResourceType enum to actual resource types
@@ -129,10 +129,7 @@ export class Resources {
   /**
    * Generic method to add a resource
    */
-  public addResource(
-    resource: ResourceTypeMap[ResourceType],
-    location?: Location
-  ): void {
+  public addResource(resource: ResourceTypeMap[ResourceType], location?: Location): void {
     const type = resource.type;
     const metadata = this.getMetadata(type);
     const name = resource.dabsName;

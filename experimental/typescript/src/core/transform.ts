@@ -30,11 +30,7 @@ export function transformToJSON(
   }
 
   // Handle primitives
-  if (
-    typeof value === "string" ||
-    typeof value === "boolean" ||
-    typeof value === "number"
-  ) {
+  if (typeof value === "string" || typeof value === "boolean" || typeof value === "number") {
     return value;
   }
 

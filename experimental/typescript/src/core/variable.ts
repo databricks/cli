@@ -124,9 +124,7 @@ export interface VariablesClass {
  * @param prefix - The variable prefix (typically "var")
  * @returns A proxy that creates Variables on property access
  */
-export function variables<T extends Record<string, Variable<unknown>>>(
-  prefix = "var"
-): T {
+export function variables<T extends Record<string, Variable<unknown>>>(prefix = "var"): T {
   return new Proxy({} as T, {
     get(_target, prop: string | symbol): Variable<unknown> {
       if (typeof prop === "symbol") {

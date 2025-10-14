@@ -65,13 +65,46 @@ const PRIMITIVES = ["string", "boolean", "integer", "number", "bool", "int", "in
 
 // TypeScript reserved words that need to be escaped
 const RESERVED_WORDS = new Set([
-  "interface", "type", "enum", "class", "function", "const", "let", "var",
-  "return", "if", "else", "for", "while", "do", "switch", "case", "break",
-  "continue", "try", "catch", "finally", "throw", "new", "this", "super",
-  "extends", "implements", "import", "export", "default", "as", "from",
-  "typeof", "instanceof", "void", "null", "undefined", "true", "false",
+  "interface",
+  "type",
+  "enum",
+  "class",
+  "function",
+  "const",
+  "let",
+  "var",
+  "return",
+  "if",
+  "else",
+  "for",
+  "while",
+  "do",
+  "switch",
+  "case",
+  "break",
+  "continue",
+  "try",
+  "catch",
+  "finally",
+  "throw",
+  "new",
+  "this",
+  "super",
+  "extends",
+  "implements",
+  "import",
+  "export",
+  "default",
+  "as",
+  "from",
+  "typeof",
+  "instanceof",
+  "void",
+  "null",
+  "undefined",
+  "true",
+  "false",
 ]);
-
 
 interface Property {
   ref: string;
@@ -274,7 +307,10 @@ function toCamelCase(str: string): string {
 /**
  * Convert ref to import path and type name
  */
-function resolveRef(ref: string, schemas: Map<string, Schema>): { typeName: string; import?: string } {
+function resolveRef(
+  ref: string,
+  schemas: Map<string, Schema>
+): { typeName: string; import?: string } {
   // Handle $defs references
   if (ref.startsWith("#/$defs/")) {
     const refName = ref.slice(8); // Remove "#/$defs/"
@@ -309,7 +345,13 @@ function resolveRef(ref: string, schemas: Map<string, Schema>): { typeName: stri
  * Generate TypeScript interface from schema
  * @param isMainResource - If true, generates params interface + class; otherwise generates regular interface
  */
-function generateInterface(name: string, namespace: string, schema: Schema, schemas: Map<string, Schema>, isMainResource: boolean = false): string {
+function generateInterface(
+  name: string,
+  namespace: string,
+  schema: Schema,
+  schemas: Map<string, Schema>,
+  isMainResource: boolean = false
+): string {
   const lines: string[] = [];
 
   // Add description if present
@@ -472,7 +514,11 @@ function collectReferencedTypes(
 /**
  * Generate TypeScript file for a resource namespace
  */
-function generateResourceFile(resourceName: string, namespace: string, schemas: Map<string, Schema>): void {
+function generateResourceFile(
+  resourceName: string,
+  namespace: string,
+  schemas: Map<string, Schema>
+): void {
   const schema = schemas.get(resourceName);
   if (!schema) {
     console.error(`Schema not found for ${resourceName}`);
@@ -505,7 +551,9 @@ function generateResourceFile(resourceName: string, namespace: string, schemas: 
   for (const refName of Array.from(referencedTypes).sort()) {
     const refSchema = schemas.get(refName);
     if (refSchema) {
-      lines.push(generateInterface(getTypeName(`#/$defs/${refName}`), namespace, refSchema, schemas, false));
+      lines.push(
+        generateInterface(getTypeName(`#/$defs/${refName}`), namespace, refSchema, schemas, false)
+      );
     }
   }
 

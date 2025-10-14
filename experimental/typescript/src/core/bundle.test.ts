@@ -191,9 +191,7 @@ describe("Bundle", () => {
       });
 
       const fooVar = new Variable<string>("var.foo");
-      expect(() => bundle.resolveVariable(fooVar)).toThrow(
-        /refers to another variable/
-      );
+      expect(() => bundle.resolveVariable(fooVar)).toThrow(/refers to another variable/);
     });
   });
 

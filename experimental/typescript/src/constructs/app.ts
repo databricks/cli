@@ -116,7 +116,10 @@ export class App extends BaseApp {
 
   addResource(
     resource: DatabaseCatalog | SqlWarehouse | Volume,
-    permission: AppResourceDatabase["permission"] | AppResourceSqlWarehouse["permission"] | AppResourceUcSecurable["permission"]
+    permission:
+      | AppResourceDatabase["permission"]
+      | AppResourceSqlWarehouse["permission"]
+      | AppResourceUcSecurable["permission"]
   ) {
     if (!this.data.resources) {
       this.data.resources = [];

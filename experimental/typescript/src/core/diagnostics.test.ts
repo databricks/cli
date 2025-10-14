@@ -24,12 +24,8 @@ describe("Diagnostics", () => {
 
   describe("extend()", () => {
     it("should combine diagnostics", () => {
-      const diag1 = new Diagnostics([
-        { severity: Severity.ERROR, summary: "Error 1" },
-      ]);
-      const diag2 = new Diagnostics([
-        { severity: Severity.WARNING, summary: "Warning 1" },
-      ]);
+      const diag1 = new Diagnostics([{ severity: Severity.ERROR, summary: "Error 1" }]);
+      const diag2 = new Diagnostics([{ severity: Severity.WARNING, summary: "Warning 1" }]);
 
       const combined = diag1.extend(diag2);
 
@@ -42,9 +38,7 @@ describe("Diagnostics", () => {
   describe("extendTuple()", () => {
     it("should extract value and extend diagnostics", () => {
       const diag1 = new Diagnostics();
-      const diag2 = new Diagnostics([
-        { severity: Severity.ERROR, summary: "Error" },
-      ]);
+      const diag2 = new Diagnostics([{ severity: Severity.ERROR, summary: "Error" }]);
 
       const [value, combined] = diag1.extendTuple([42, diag2]);
 
@@ -55,17 +49,13 @@ describe("Diagnostics", () => {
 
   describe("hasError()", () => {
     it("should return true if diagnostics contains errors", () => {
-      const diag = new Diagnostics([
-        { severity: Severity.ERROR, summary: "Error" },
-      ]);
+      const diag = new Diagnostics([{ severity: Severity.ERROR, summary: "Error" }]);
 
       expect(diag.hasError()).toBe(true);
     });
 
     it("should return false if no errors", () => {
-      const diag = new Diagnostics([
-        { severity: Severity.WARNING, summary: "Warning" },
-      ]);
+      const diag = new Diagnostics([{ severity: Severity.WARNING, summary: "Warning" }]);
 
       expect(diag.hasError()).toBe(false);
     });
@@ -73,17 +63,13 @@ describe("Diagnostics", () => {
 
   describe("hasWarning()", () => {
     it("should return true if diagnostics contains warnings", () => {
-      const diag = new Diagnostics([
-        { severity: Severity.WARNING, summary: "Warning" },
-      ]);
+      const diag = new Diagnostics([{ severity: Severity.WARNING, summary: "Warning" }]);
 
       expect(diag.hasWarning()).toBe(true);
     });
 
     it("should return false if no warnings", () => {
-      const diag = new Diagnostics([
-        { severity: Severity.ERROR, summary: "Error" },
-      ]);
+      const diag = new Diagnostics([{ severity: Severity.ERROR, summary: "Error" }]);
 
       expect(diag.hasWarning()).toBe(false);
     });

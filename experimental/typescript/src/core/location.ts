@@ -85,7 +85,8 @@ export class Location {
 
     // Parse stack trace line
     // Format is typically: "    at functionName (file:line:column)"
-    const match = targetLine.match(/\((.+):(\d+):(\d+)\)/) || targetLine.match(/at (.+):(\d+):(\d+)/);
+    const match =
+      targetLine.match(/\((.+):(\d+):(\d+)\)/) || targetLine.match(/at (.+):(\d+):(\d+)/);
 
     if (!match) {
       return undefined;

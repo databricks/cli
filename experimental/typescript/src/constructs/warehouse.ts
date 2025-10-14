@@ -7,7 +7,10 @@
  * - Variable reference for warehouse ID
  */
 import { Variable } from "../core/variable.js";
-import { SqlWarehouse as BaseSqlWarehouse, type SqlWarehouseParams } from "../../generated/sql_warehouses/index.js";
+import {
+  SqlWarehouse as BaseSqlWarehouse,
+  type SqlWarehouseParams,
+} from "../../generated/sql_warehouses/index.js";
 import { Bundle } from "../core/bundle.js";
 import { Workspace } from "../core/workspace.js";
 
@@ -62,7 +65,7 @@ export class SqlWarehouse extends BaseSqlWarehouse {
       params.name = `dev-${Workspace.currentUser.domainFriendlyName}-${params.name}`;
     }
 
-    super(name, {...defaultParams, ...params});
+    super(name, { ...defaultParams, ...params });
   }
 
   /**

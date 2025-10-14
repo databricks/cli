@@ -59,4 +59,3 @@ export class Workspace {
    */
   static readonly rootPath = new Variable<string>("workspace.root_path");
 }
-

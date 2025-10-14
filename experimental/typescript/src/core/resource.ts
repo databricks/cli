@@ -41,7 +41,11 @@ export class Resource<T> {
    * @param data - The resource parameters/configuration
    * @param type - The resource type namespace
    */
-  constructor(dabsName: string, public readonly data: T, type: ResourceType) {
+  constructor(
+    dabsName: string,
+    public readonly data: T,
+    type: ResourceType
+  ) {
     this.type = type;
     this.dabsName = dabsName;
   }

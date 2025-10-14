@@ -61,8 +61,14 @@ describe("transformToJSON", () => {
     });
 
     it("should transform nested arrays", () => {
-      const arr = [[1, 2], [3, 4]];
-      expect(transformToJSON(arr)).toEqual([[1, 2], [3, 4]]);
+      const arr = [
+        [1, 2],
+        [3, 4],
+      ];
+      expect(transformToJSON(arr)).toEqual([
+        [1, 2],
+        [3, 4],
+      ]);
     });
 
     it("should transform arrays with mixed types", () => {

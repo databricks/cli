@@ -45,14 +45,17 @@ export class DatabaseCatalog extends BaseDatabaseCatalog {
    * @param params.name - Optional catalog name (defaults to bundle resource name)
    * @param params.uid - Optional unique identifier
    */
-  constructor(name: string, bundle: Bundle, params: {
-    database: Database;
-    name?: VariableOr<string>;
-    database_name: VariableOr<string>;
-    create_database_if_not_exists: boolean;
-    uid?: string;
-  }) {
-
+  constructor(
+    name: string,
+    bundle: Bundle,
+    params: {
+      database: Database;
+      name?: VariableOr<string>;
+      database_name: VariableOr<string>;
+      create_database_if_not_exists: boolean;
+      uid?: string;
+    }
+  ) {
     if (!params.name) {
       params.name = name;
     }
@@ -85,6 +88,8 @@ export class DatabaseCatalog extends BaseDatabaseCatalog {
    * This can be used to reference the database instance in other resources.
    */
   get database_instance_name() {
-    return new Variable<string>(`resources.database_catalogs.${this.dabsName}.database_instance_name`);
+    return new Variable<string>(
+      `resources.database_catalogs.${this.dabsName}.database_instance_name`
+    );
   }
 }

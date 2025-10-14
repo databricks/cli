@@ -7,7 +7,10 @@
  * - Variable reference for database name
  */
 import { Bundle, Workspace } from "@databricks/bundles/core";
-import { DatabaseInstance as BaseDatabaseInstance, type DatabaseInstanceParams } from "../../generated/database_instances/index.js";
+import {
+  DatabaseInstance as BaseDatabaseInstance,
+  type DatabaseInstanceParams,
+} from "../../generated/database_instances/index.js";
 import { Variable } from "../core/variable.js";
 import type { VariableOr } from "../core/variable.js";
 
@@ -58,7 +61,7 @@ export class Database extends BaseDatabaseInstance {
       params.name = `dev-${Workspace.currentUser.domainFriendlyName}-${params.name}`;
     }
 
-    super(name, {...defaultParams, ...params, name: params.name});
+    super(name, { ...defaultParams, ...params, name: params.name });
     this.resourceName = params.name;
   }
 
