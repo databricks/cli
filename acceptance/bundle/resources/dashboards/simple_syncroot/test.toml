@@ -1,6 +1,7 @@
 Local = true
 Cloud = true
 RequiresWarehouse = true
+RecordRequests = false
 
 Ignore = [
     "databricks.yml",
@@ -10,10 +11,6 @@ Ignore = [
 [[Repls]]
 Old = "[0-9a-f]{32}"
 New = "[DASHBOARD_ID]"
-
-[[Repls]]
-Old = "warehouse-1234"
-New = "[TEST_DEFAULT_WAREHOUSE_ID]"
 
 [[Repls]]
 # Windows:

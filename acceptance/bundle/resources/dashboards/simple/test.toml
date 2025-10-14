@@ -1,6 +1,7 @@
 Local = true
 Cloud = true
 RequiresWarehouse = true
+RecordRequests = false
 
 Ignore = [
     "databricks.yml",
