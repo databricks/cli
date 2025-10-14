@@ -3,6 +3,9 @@ package phases
 import (
 	"context"
 	"errors"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/artifacts"
@@ -132,6 +135,43 @@ func uploadLibraries(ctx context.Context, b *bundle.Bundle, libs map[string][]li
 	)
 }
 
+// registerGracefulCleanup sets up signal handlers to release the lock
+// before the process terminates. Returns a cleanup function for the normal exit path.
+//
+// Catches SIGINT (Ctrl+C), SIGTERM, SIGHUP, and SIGQUIT.
+// Note: SIGKILL and SIGSTOP cannot be caught - the kernel terminates the process directly.
+func registerGracefulCleanup(ctx context.Context, b *bundle.Bundle, goal lock.Goal) func() {
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGQUIT)
+
+	// Start goroutine to handle signals
+	go func() {
+		sig := <-sigChan
+		// Stop listening for more signals
+		signal.Stop(sigChan)
+
+		cmdio.LogString(ctx, "Operation interrupted. Gracefully shutting down...")
+
+		// Release the lock.
+		bundle.ApplyContext(ctx, b, lock.Release(goal))
+
+		// Exit immediately with standard signal exit code (128 + signal number).
+		// The deferred cleanup function returned below won't run because we exit here.
+		exitCode := 128
+		if s, ok := sig.(syscall.Signal); ok {
+			exitCode += int(s)
+		}
+		os.Exit(exitCode)
+	}()
+
+	// Return cleanup function for normal exit path
+	return func() {
+		signal.Stop(sigChan)
+		// Don't close the channel - it causes the goroutine to receive nil
+		bundle.ApplyContext(ctx, b, lock.Release(goal))
+	}
+}
+
 // The deploy phase deploys artifacts and resources.
 func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHandler, directDeployment bool) {
 	log.Info(ctx, "Phase: deploy")
@@ -148,10 +188,8 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
-	// lock is acquired here
-	defer func() {
-		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDeploy))
-	}()
+	// lock is acquired here - set up signal handlers and defer cleanup
+	defer registerGracefulCleanup(ctx, b, lock.GoalDeploy)()
 
 	libs := deployPrepare(ctx, b, false, directDeployment)
 	if logdiag.HasError(ctx) {

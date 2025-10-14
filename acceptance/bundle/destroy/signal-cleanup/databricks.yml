@@ -1,0 +1,10 @@
+bundle:
+  name: signal-test
+
+resources:
+  jobs:
+    job1:
+      name: job1
+
+    job2:
+      name: job2 (depends on ${resources.jobs.job1.id})

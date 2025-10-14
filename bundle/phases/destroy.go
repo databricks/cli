@@ -125,12 +125,12 @@ func Destroy(ctx context.Context, b *bundle.Bundle, directDeployment bool) {
 
 	bundle.ApplyContext(ctx, b, lock.Acquire())
 	if logdiag.HasError(ctx) {
+		// lock is not acquired here
 		return
 	}
 
-	defer func() {
-		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDestroy))
-	}()
+	// lock is acquired here - set up signal handlers and defer cleanup
+	defer registerGracefulCleanup(ctx, b, lock.GoalDestroy)()
 
 	if !directDeployment {
 		bundle.ApplySeqContext(ctx, b,
