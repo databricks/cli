@@ -1,0 +1,33 @@
+export EMBED_CREDENTIALS="false"
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm out.requests.txt
+}
+trap cleanup EXIT
+
+# Create the dashboard with embed_credentials=false
+envsubst < databricks.yml.tmpl > databricks.yml
+trace $CLI bundle plan
+trace $CLI bundle deploy
+dashboard_id=$($CLI bundle summary --output json | jq -r '.resources.dashboards.my_dashboard.id')
+trace $CLI lakeview get $dashboard_id | jq '{display_name, lifecycle_state, parent_path, path, serialized_dashboard, warehouse_id}'
+
+# Get published dashboard to show embed_credentials
+trace $CLI lakeview get-published $dashboard_id | jq '{warehouse_id, embed_credentials}'
+
+# Change embed_credentials to true - this should trigger an update
+export EMBED_CREDENTIALS="true"
+envsubst < databricks.yml.tmpl > databricks.yml
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace $CLI lakeview get $dashboard_id | jq '{display_name, lifecycle_state, parent_path, path, serialized_dashboard, warehouse_id}'
+
+# Verify embed_credentials was updated
+trace $CLI lakeview get-published $dashboard_id | jq '{warehouse_id, embed_credentials}'
+
+# Print API requests made to create parent_path or create / update the dashboard.
+cat out.requests.txt | \
+ jq 'select(.method == "POST" or .method == "PATCH")' | \
+ jq 'select( (.path | contains("/api/2.0/lakeview/dashboards")) or ((.path == "/api/2.0/workspace/mkdirs") and (.body.path | contains("/default/resources"))))' \
+ > out.requests.$DATABRICKS_BUNDLE_ENGINE.txt

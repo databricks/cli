@@ -183,6 +183,7 @@ func (s *FakeWorkspace) DashboardPublish(req Request) Response {
 		WarehouseId:      dashboard.WarehouseId,
 		DisplayName:      dashboard.DisplayName,
 		EmbedCredentials: publishReq.EmbedCredentials,
+		ForceSendFields:  []string{"EmbedCredentials"},
 	}
 
 	if publishReq.WarehouseId != "" {
@@ -199,6 +200,7 @@ func (s *FakeWorkspace) DashboardPublish(req Request) Response {
 			WarehouseId:      publishedDashboard.WarehouseId,
 			DisplayName:      publishedDashboard.DisplayName,
 			EmbedCredentials: publishedDashboard.EmbedCredentials,
+			ForceSendFields:  []string{"EmbedCredentials"},
 		},
 	}
 }

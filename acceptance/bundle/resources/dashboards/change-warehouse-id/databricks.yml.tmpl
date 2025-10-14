@@ -1,0 +1,9 @@
+bundle:
+  name: change-warehouse-id-$UNIQUE_NAME
+
+resources:
+  dashboards:
+    my_dashboard:
+      display_name: test dashboard
+      file_path: ./dash.lvdash.json
+      warehouse_id: $WAREHOUSE_ID

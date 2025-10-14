@@ -76,8 +76,7 @@ func (r *ResourceDashboard) DoCreate(ctx context.Context, config *resources.Dash
 	// Thus we need to filter such fields out.
 	config.Dashboard.ForceSendFields = filterFields[dashboards.Dashboard](config.Dashboard.ForceSendFields)
 
-	// TODO: Test both cases as well.
-	// TODO: Cover the edge case that denis mentioned.
+	// Set serialized dashboard in the create body request.
 	v := config.SerializedDashboard
 	if _, ok := v.(string); ok {
 		// If serialized dashboard is already a string, we can use it directly.
@@ -139,6 +138,18 @@ func (r *ResourceDashboard) DoUpdate(ctx context.Context, id string, config *res
 	// Fields like "embed_credentials" are part of the bundle configuration but not the create request here.
 	// Thus we need to filter such fields out.
 	config.Dashboard.ForceSendFields = filterFields[dashboards.Dashboard](config.Dashboard.ForceSendFields)
+
+	// Set serialized dashboard in the update body request. We
+	v := config.SerializedDashboard
+	if _, ok := v.(string); ok {
+		config.Dashboard.SerializedDashboard = v.(string)
+	} else {
+		b, err := json.Marshal(v)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal serialized dashboard: %w", err)
+		}
+		config.Dashboard.SerializedDashboard = string(b)
+	}
 
 	// Update the dashboard itself
 	updateReq := dashboards.UpdateDashboardRequest{

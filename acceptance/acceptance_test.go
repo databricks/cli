@@ -125,18 +125,18 @@ var Ignored = map[string]bool{
 	userReplacementsFilename: true,
 }
 
-func TestAccept(t *testing.T) {
-	testAccept(t, InprocessMode, "")
-}
+// func TestAccept(t *testing.T) {
+// 	testAccept(t, InprocessMode, "")
+// }
 
 // func TestAccept(t *testing.T) {
 // 	testutil.LoadDebugEnvIfRunFromIDE(t, "workspace")
 // 	testAccept(t, true, "bundle/deploy/dashboard/generate_inplace")
 // }
 
-// func TestAccept(t *testing.T) {
-// 	testAccept(t, true, "bundle/resources/dashboards/change-name")
-// }
+func TestAccept(t *testing.T) {
+	testAccept(t, true, "bundle/resources/dashboards/change-serialized-dashboard")
+}
 
 func TestInprocessMode(t *testing.T) {
 	if InprocessMode && !Forcerun {

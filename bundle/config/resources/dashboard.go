@@ -42,6 +42,8 @@ type DashboardConfig struct {
 	//
 	// Defaults to false if not set.
 	EmbedCredentials bool `json:"embed_credentials,omitempty"`
+
+	ForceSendFields []string `json:"-" url:"-"`
 }
 
 type Dashboard struct {

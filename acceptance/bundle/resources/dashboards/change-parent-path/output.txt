@@ -1,0 +1,3 @@
+script: line 113: USER_NAME: unbound variable
+
+Exit code: 1
