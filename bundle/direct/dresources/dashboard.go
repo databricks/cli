@@ -222,32 +222,10 @@ func (r *ResourceDashboard) DoDelete(ctx context.Context, id string) error {
 }
 
 func (*ResourceDashboard) FieldTriggers(isLocal bool) map[string]deployplan.ActionType {
-	if isLocal {
-		return map[string]deployplan.ActionType{
-			// Etags are not relevant to determine if the local configuration changed.
-			"etag": deployplan.ActionTypeSkip,
-
-			"parent_path": deployplan.ActionTypeRecreate,
-
-			// Output only fields that should be ignored for diff computation.
-			"create_time":     deployplan.ActionTypeSkip,
-			"dashboard_id":    deployplan.ActionTypeSkip,
-			"lifecycle_state": deployplan.ActionTypeSkip,
-			"path":            deployplan.ActionTypeSkip,
-			"update_time":     deployplan.ActionTypeSkip,
-		}
-	}
-
-	return map[string]deployplan.ActionType{
-		// If the etag changes remotely, it means the dashboard has been modified remotely
-		// and needs to be updated to match with the config.
-		// Even though "update" action type is the default, we explicitly specify it here
-		// to make this relationship clear.
-		"etag": deployplan.ActionTypeUpdate,
-
-		// "serialized_dashboard" locally and remotely will have different diffs. =
-		// We only need to rely on etag here, and can skip this field for diff computation.
-		"serialized_dashboard": deployplan.ActionTypeSkip,
+	// Common triggers for both local and remote.
+	triggers := map[string]deployplan.ActionType{
+		// change in parent_path should trigger a recreate
+		"parent_path": deployplan.ActionTypeRecreate,
 
 		// Output only fields that should be ignored for diff computation.
 		"create_time":     deployplan.ActionTypeSkip,
@@ -256,4 +234,22 @@ func (*ResourceDashboard) FieldTriggers(isLocal bool) map[string]deployplan.Acti
 		"path":            deployplan.ActionTypeSkip,
 		"update_time":     deployplan.ActionTypeSkip,
 	}
+
+	// TODO: Add tests for both cases, etag diffs being ignored, and serialized dashboard diffs being ignored.
+	if isLocal {
+		// Etags are not relevant to determine if the local configuration changed.
+		triggers["etag"] = deployplan.ActionTypeSkip
+	} else {
+		// If the etag changes remotely, it means the dashboard has been modified remotely
+		// and needs to be updated to match with the config.
+		// Even though "update" action type is the default, we explicitly specify it here
+		// to make this relationship clear.
+		triggers["etag"] = deployplan.ActionTypeUpdate
+
+		// "serialized_dashboard" locally and remotely will have different diffs. =
+		// We only need to rely on etag here, and can skip this field for diff computation.
+		triggers["serialized_dashboard"] = deployplan.ActionTypeSkip
+	}
+
+	return triggers
 }
