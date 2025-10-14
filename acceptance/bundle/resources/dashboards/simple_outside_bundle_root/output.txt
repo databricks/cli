@@ -29,6 +29,3 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Deleting files...
 Destroy complete!
-rm: out.requests.txt: No such file or directory
-
-Exit code: 1
