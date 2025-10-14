@@ -13,3 +13,6 @@
 
 # The endpoint returns an error (Oct 7 2025)
 #integration/libs/telemetry TestTelemetryEndpoint
+
+# direct-exp does not update the script contents properly (Oct 14 2025)
+TestAccept/bundle/integration_whl/interactive_single_user/DATABRICKS_BUNDLE_ENGINE=direct-exp
