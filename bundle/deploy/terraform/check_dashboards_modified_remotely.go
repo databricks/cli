@@ -16,9 +16,19 @@ type dashboardState struct {
 }
 
 func collectDashboardsFromState(ctx context.Context, b *bundle.Bundle) ([]dashboardState, error) {
-	state, err := ParseResourcesState(ctx, b)
-	if err != nil && state == nil {
-		return nil, err
+	var state ExportedResourcesMap
+	var err error
+	if b.DirectDeployment {
+		err := b.OpenStateFile(ctx)
+		if err != nil {
+			return nil, err
+		}
+		state = b.DeploymentBundle.StateDB.ExportState(ctx)
+	} else {
+		state, err = ParseResourcesState(ctx, b)
+		if err != nil && state == nil {
+			return nil, err
+		}
 	}
 
 	var dashboards []dashboardState
@@ -33,7 +43,9 @@ func collectDashboardsFromState(ctx context.Context, b *bundle.Bundle) ([]dashbo
 	return dashboards, nil
 }
 
-type checkDashboardsModifiedRemotely struct{}
+type checkDashboardsModifiedRemotely struct {
+	isPlan bool
+}
 
 func (l *checkDashboardsModifiedRemotely) Name() string {
 	return "CheckDashboardsModifiedRemotely"
@@ -42,11 +54,6 @@ func (l *checkDashboardsModifiedRemotely) Name() string {
 func (l *checkDashboardsModifiedRemotely) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// This mutator is relevant only if the bundle includes dashboards.
 	if len(b.Config.Resources.Dashboards) == 0 {
-		return nil
-	}
-
-	if b.DirectDeployment {
-		// TODO: not implemented yet
 		return nil
 	}
 
@@ -87,8 +94,14 @@ func (l *checkDashboardsModifiedRemotely) Apply(ctx context.Context, b *bundle.B
 			continue
 		}
 
+		// Downgrade this to a warning in plan mode.
+		severity := diag.Error
+		if l.isPlan {
+			severity = diag.Warning
+		}
+
 		diags = diags.Append(diag.Diagnostic{
-			Severity: diag.Error,
+			Severity: severity,
 			Summary:  fmt.Sprintf("dashboard %q has been modified remotely", dashboard.Name),
 			Detail: "" +
 				"This dashboard has been modified remotely since the last bundle deployment.\n" +
@@ -107,6 +120,6 @@ func (l *checkDashboardsModifiedRemotely) Apply(ctx context.Context, b *bundle.B
 	return diags
 }
 
-func CheckDashboardsModifiedRemotely() *checkDashboardsModifiedRemotely {
-	return &checkDashboardsModifiedRemotely{}
+func CheckDashboardsModifiedRemotely(isPlan bool) *checkDashboardsModifiedRemotely {
+	return &checkDashboardsModifiedRemotely{isPlan: isPlan}
 }
