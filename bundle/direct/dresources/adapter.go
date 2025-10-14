@@ -45,21 +45,16 @@ type IResource interface {
 	// Keys are field paths (e.g., "name", "catalog_name"). Values are actions.
 	// Unspecified changed fields default to ActionTypeUpdate.
 	//
-	// The isLocal parameter determines whether the triggers are for local or remote changes:
-	// - isLocal=true: These triggers are used to update the remote definition of a resource
-	//   to the latest local changes made by the user. Applied on every change between state
-	//   (last deployed config) and new state (current config).
-	// - isLocal=false: These triggers are used to detect and reconcile remote drift between
-	//   what the deployment state records as the current state of the resource and what the
-	//   resource definition actually is in the backend. Applied on every change between state
-	//   and remote state.
+	// FieldTriggers(true) is applied on every change between state (last deployed config)
+	// and new state (current config) to determine action based on config changes.
+	//
+	// FieldTriggers(false) is called on every change between state and remote state to
+	// determine action based on remote drift.
 	//
 	// Note: these functions are called once per resource implementation initialization,
 	// not once per resource.
 	FieldTriggers(isLocal bool) map[string]deployplan.ActionType
 }
-
-// TODO(question): Does changing the warehouse ID modify the etag?
 
 // IResourceNoRefresh describes additional methods for resource to implement.
 // Each method exists in two forms: NoRefresh (this interface) and WithRefresh (IResourceWithInterface).
@@ -175,7 +170,7 @@ func NewAdapter(typedNil any, client *databricks.WorkspaceClient) (*Adapter, err
 		return nil, err
 	}
 
-	// Load optional FieldTriggers method
+	// Load optional FieldTriggers method from the unified interface
 	triggerCall, err := calladapt.PrepareCall(impl, calladapt.TypeOf[IResource](), "FieldTriggers")
 	if err != nil {
 		return nil, err
