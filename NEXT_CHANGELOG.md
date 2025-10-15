@@ -4,6 +4,10 @@
 
 ### Notable Changes
 
+* (via Terraform v1.92.0) DABs will no longer try to update pipeline permissions upon pipeline deletion. This fixes PERMISSION\_ERROR upon 'bundle destroy'
+  for pipelines that have run\_as setting enabled (described in https://community.databricks.com/t95/data-engineering/dab-dlt-destroy-fails-due-to-ownership-permissions-mismatch/td-p/132101)
+  The downside is that if 'permissions:' block is removed from the resource, DABs will not try anymore to restore permissions to just the owner of the pipeline.
+
 ### CLI
 
 * Add the `--configure-serverless` flag to `databricks auth login` to configure Databricks Connect to use serverless.
@@ -11,6 +15,7 @@
 ### Dependency updates
 * Upgrade Go SDK to 0.82.0 ([#3769](https://github.com/databricks/cli/pull/3769))
 * Upgrade TF provider to 1.92.0 ([#3772](https://github.com/databricks/cli/pull/3772))
+
 
 ### Bundles
 * Updated the internal lakeflow-pipelines template to use an "src" layout ([#3671](https://github.com/databricks/cli/pull/3671)).

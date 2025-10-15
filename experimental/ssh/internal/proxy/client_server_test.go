@@ -165,9 +165,7 @@ func TestHandover(t *testing.T) {
 	}
 
 	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		handoverCount := 0
 		for {
 			select {
@@ -182,7 +180,7 @@ func TestHandover(t *testing.T) {
 				time.Sleep(time.Millisecond)
 			}
 		}
-	}()
+	})
 
 	wg.Wait()
 
