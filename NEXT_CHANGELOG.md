@@ -11,7 +11,7 @@
 ### Dependency updates
 
 ### Bundles
-* Updated the default-python template with improved structure and functionality.
+* Updated the default-python template to follow the Lakeflow conventions: pipelines as source files, pyproject.toml ([#3712](https://github.com/databricks/cli/pull/3712)).
 * Updated the internal lakeflow-pipelines template to use an "src" layout ([#3671](https://github.com/databricks/cli/pull/3671)).
 
 ### API Changes
