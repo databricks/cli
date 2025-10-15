@@ -5,6 +5,9 @@ github.com/databricks/cli/bundle/config/resources.App:
   "budget_policy_id":
     "description": |-
       PLACEHOLDER
+  "compute_size":
+    "description": |-
+      PLACEHOLDER
   "compute_status":
     "description": |-
       PLACEHOLDER
@@ -591,6 +594,10 @@ github.com/databricks/cli/bundle/config/resources.SqlWarehousePermissionLevel:
         CAN_MONITOR
       - |-
         CAN_VIEW
+github.com/databricks/cli/bundle/config/resources.SyncedDatabaseTable:
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.Volume:
   "_":
     "markdown_description": |-
@@ -674,6 +681,9 @@ github.com/databricks/databricks-sdk-go/service/apps.AppResource:
   "database":
     "description": |-
       PLACEHOLDER
+  "genie_space":
+    "description": |-
+      PLACEHOLDER
   "job":
     "description": |-
       PLACEHOLDER
@@ -697,6 +707,16 @@ github.com/databricks/databricks-sdk-go/service/apps.AppResourceDatabase:
     "description": |-
       PLACEHOLDER
   "permission":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/apps.AppResourceGenieSpace:
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "permission":
+    "description": |-
+      PLACEHOLDER
+  "space_id":
     "description": |-
       PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/apps.AppResourceJob:
