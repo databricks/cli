@@ -63,9 +63,15 @@ func TestIsLibraryLocal(t *testing.T) {
 		{path: "-e some/local/path", expected: false},
 		{path: "-i http://myindexurl.com", expected: false},
 		{path: "--index-url http://myindexurl.com", expected: false},
+		{path: "--index-url      http://myindexurl.com", expected: false},
 		{path: "-i", expected: false},
 		{path: "--index-url", expected: false},
 		{path: "-i -e", expected: false},
+		{path: "--find-links=/Workspace/Users/test", expected: false},
+		{path: "--find-links = /Workspace/Users/test.whl", expected: false},
+		{path: "--find-links =/Workspace/Users/test.whl", expected: false},
+		{path: "--find-links    =    /Workspace/Users/test.whl", expected: false},
+		{path: "--find-links /Workspace/Users/test", expected: false},
 
 		// Check the possible version specifiers as in PEP 440
 		// https://peps.python.org/pep-0440/#public-version-identifiers
