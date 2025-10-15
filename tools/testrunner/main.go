@@ -274,7 +274,7 @@ func parseConfig(content string) (*Config, error) {
 		// Parse rule
 		rule, err := parseConfigRule(line, scanner.Text())
 		if err != nil {
-			fmt.Printf("Error parsing config line %d: %q - %v", lineNum, line, err)
+			fmt.Printf("Error parsing config line %d: %q - %v\n", lineNum, line, err)
 			continue
 		}
 
