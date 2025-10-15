@@ -9,6 +9,7 @@
 * Add the `--configure-serverless` flag to `databricks auth login` to configure Databricks Connect to use serverless.
 
 ### Dependency updates
+* Upgrade Go SDK to 0.82.0 ([#3769](https://github.com/databricks/cli/pull/3769))
 
 ### Bundles
 * Updated the internal lakeflow-pipelines template to use an "src" layout ([#3671](https://github.com/databricks/cli/pull/3671)).
