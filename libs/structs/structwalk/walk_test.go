@@ -127,3 +127,153 @@ func TestValueBundleTag(t *testing.T) {
 	assert.Equal(t, []string{"A", "D"}, readonly)
 	assert.Equal(t, []string{"B", "D"}, internal)
 }
+
+func TestEmbeddedStruct(t *testing.T) {
+	type Embedded struct {
+		EmbeddedField string `json:"embedded_field"`
+		EmbeddedInt   int    `json:"embedded_int"`
+	}
+
+	type Parent struct {
+		Embedded
+		ParentField string `json:"parent_field"`
+	}
+
+	parent := Parent{
+		Embedded: Embedded{
+			EmbeddedField: "embedded_value",
+			EmbeddedInt:   42,
+		},
+		ParentField: "parent_value",
+	}
+
+	result := flatten(t, parent)
+
+	// Embedded struct fields should be at the same level as parent fields
+	assert.Equal(t, "embedded_value", result["embedded_field"])
+	assert.Equal(t, 42, result["embedded_int"])
+	assert.Equal(t, "parent_value", result["parent_field"])
+
+	// Ensure there's no nested path like "Embedded.embedded_field"
+	_, hasNested := result["Embedded.embedded_field"]
+	assert.False(t, hasNested, "Embedded fields should not be nested under the embedded struct name")
+}
+
+func TestEmbeddedStructWithOmitempty(t *testing.T) {
+	type Embedded struct {
+		EmbeddedField string `json:"embedded_field,omitempty"`
+		EmbeddedInt   int    `json:"embedded_int,omitempty"`
+	}
+
+	type Parent struct {
+		Embedded
+		ParentField string `json:"parent_field,omitempty"`
+	}
+
+	// Test with zero values
+	emptyParent := Parent{}
+	emptyResult := flatten(t, emptyParent)
+
+	// All omitempty zero fields should be absent
+	assert.Empty(t, emptyResult)
+
+	// Test with non-zero values
+	parent := Parent{
+		Embedded: Embedded{
+			EmbeddedField: "value",
+			EmbeddedInt:   10,
+		},
+		ParentField: "parent",
+	}
+
+	result := flatten(t, parent)
+	assert.Equal(t, "value", result["embedded_field"])
+	assert.Equal(t, 10, result["embedded_int"])
+	assert.Equal(t, "parent", result["parent_field"])
+}
+
+func TestNestedEmbeddedStructs(t *testing.T) {
+	type Level1 struct {
+		Field1 string `json:"field1"`
+	}
+
+	type Level2 struct {
+		Level1
+		Field2 string `json:"field2"`
+	}
+
+	type Level3 struct {
+		Level2
+		Field3 string `json:"field3"`
+	}
+
+	obj := Level3{
+		Level2: Level2{
+			Level1: Level1{
+				Field1: "one",
+			},
+			Field2: "two",
+		},
+		Field3: "three",
+	}
+
+	result := flatten(t, obj)
+
+	// All fields should be at the same level
+	assert.Equal(t, "one", result["field1"])
+	assert.Equal(t, "two", result["field2"])
+	assert.Equal(t, "three", result["field3"])
+}
+
+func TestEmbeddedStructWithPointer(t *testing.T) {
+	type Embedded struct {
+		EmbeddedField string `json:"embedded_field"`
+	}
+
+	type Parent struct {
+		*Embedded
+		ParentField string `json:"parent_field"`
+	}
+
+	parent := Parent{
+		Embedded: &Embedded{
+			EmbeddedField: "embedded_value",
+		},
+		ParentField: "parent_value",
+	}
+
+	result := flatten(t, parent)
+
+	assert.Equal(t, "embedded_value", result["embedded_field"])
+	assert.Equal(t, "parent_value", result["parent_field"])
+}
+
+func TestEmbeddedStructWithJSONTagDash(t *testing.T) {
+	type Embedded struct {
+		SkipField     string `json:"-"`
+		IncludeField  string `json:"included"`
+	}
+
+	type Parent struct {
+		Embedded
+		ParentField string `json:"parent_field"`
+	}
+
+	parent := Parent{
+		Embedded: Embedded{
+			SkipField:    "should_not_appear",
+			IncludeField: "should_appear",
+		},
+		ParentField: "parent",
+	}
+
+	result := flatten(t, parent)
+
+	// SkipField should not appear
+	_, hasSkip := result["SkipField"]
+	assert.False(t, hasSkip, "Fields with json:\"-\" should be skipped")
+
+	// Other fields should appear
+	assert.Equal(t, "should_appear", result["included"])
+	assert.Equal(t, "parent", result["parent_field"])
+}
