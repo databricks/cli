@@ -128,7 +128,7 @@ func newCreateLibrary() *cobra.Command {
 				return err
 			}
 
-			// Return operation immediately without waiting
+			// Return operation immediately without waiting.
 			operation, err := w.QualityMonitorV2.GetOperation(ctx, qualitymonitorv2.GetOperationRequest{
 				Name: wait.Name(),
 			})
@@ -143,17 +143,17 @@ func newCreateLibrary() *cobra.Command {
 				return err
 			}
 
-			// Show spinner while waiting for completion
+			// Show spinner while waiting for completion.
 			spinner := cmdio.Spinner(ctx)
-			spinner <- "Waiting for library creation to complete..."
+			spinner <- "Waiting for create-library to complete..."
 
-			// Wait for completion
+			// Wait for completion.
 			opts := &lro.LroOptions{Timeout: createLibraryTimeout}
 			response, err := wait.Wait(ctx, opts)
-			close(spinner)
 			if err != nil {
 				return err
 			}
+			close(spinner)
 			return cmdio.Render(ctx, response)
 		}
 	}
