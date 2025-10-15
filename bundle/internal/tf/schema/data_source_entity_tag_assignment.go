@@ -3,9 +3,8 @@
 package schema
 
 type DataSourceEntityTagAssignment struct {
-	EntityName  string `json:"entity_name"`
-	EntityType  string `json:"entity_type"`
-	TagKey      string `json:"tag_key"`
-	TagValue    string `json:"tag_value,omitempty"`
-	WorkspaceId string `json:"workspace_id,omitempty"`
+	EntityName string `json:"entity_name"`
+	EntityType string `json:"entity_type"`
+	TagKey     string `json:"tag_key"`
+	TagValue   string `json:"tag_value,omitempty"`
 }

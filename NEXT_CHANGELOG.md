@@ -14,6 +14,8 @@
 
 ### Dependency updates
 * Upgrade Go SDK to 0.82.0 ([#3769](https://github.com/databricks/cli/pull/3769))
+* Upgrade TF provider to 1.92.0 ([#3772](https://github.com/databricks/cli/pull/3772))
+
 
 ### Bundles
 * Updated the internal lakeflow-pipelines template to use an "src" layout ([#3671](https://github.com/databricks/cli/pull/3671)).
