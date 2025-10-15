@@ -1,0 +1,144 @@
+
+>>> [CLI] bundle debug plan
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/jobs-permissions-test/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] permissions get jobs [JOB_ID]
+{
+  "access_control_list": [
+    {
+      "all_permissions": [
+        {
+          "inherited":false,
+          "permission_level":"CAN_VIEW"
+        }
+      ],
+      "user_name":"viewer@example.com"
+    },
+    {
+      "all_permissions": [
+        {
+          "inherited":false,
+          "permission_level":"CAN_MANAGE"
+        }
+      ],
+      "group_name":"data-team"
+    },
+    {
+      "all_permissions": [
+        {
+          "inherited":false,
+          "permission_level":"IS_OWNER"
+        }
+      ],
+      "user_name":"[USERNAME]"
+    }
+  ],
+  "object_id":"/jobs/[JOB_ID]",
+  "object_type":"job"
+}
+
+=== Update one permission and deploy again
+
+>>> [CLI] bundle debug plan
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/jobs-permissions-test/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== Delete one permission and deploy again
+
+>>> [CLI] bundle debug plan
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/jobs-permissions-test/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== Delete the whole block and deploy again
+
+>>> [CLI] bundle debug plan
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/jobs-permissions-test/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== Restore original config
+
+>>> diff.py databricks.yml.saved databricks.yml
+--- databricks.yml.saved
++++ databricks.yml
+@@ -11,8 +11,3 @@
+             notebook_path: /Workspace/Users/user@example.com/notebook
+             source: WORKSPACE # otherwise TF implementation adds this to request and triggers diff
+-      permissions: # PERMISSIONS
+-        - level: CAN_VIEW # PERMISSIONS
+-          user_name: viewer@example.com # PERMISSIONS
+-        - level: CAN_MANAGE # DELETE_ONE
+-          group_name: data-team # DELETE_ONE
+       # permissions: [] # EXPLICIT_EMPTY
+
+>>> [CLI] bundle debug plan
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/jobs-permissions-test/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== Set permissions: []
+
+>>> [CLI] bundle debug plan
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/jobs-permissions-test/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete job job_with_permissions
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/jobs-permissions-test/default
+
+Deleting files...
+Destroy complete!
+
+>>> print_requests
