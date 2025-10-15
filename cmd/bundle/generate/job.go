@@ -62,7 +62,7 @@ After generation, you can deploy this job to other targets using:
 		cmd.SetContext(ctx)
 
 		b := root.MustConfigureBundle(cmd)
-		if b == nil {
+		if b == nil || logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}
 
