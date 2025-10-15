@@ -4,6 +4,10 @@
 
 ### Notable Changes
 
+* (via Terraform v1.92.0) DABs will no longer try to update pipeline permissions upon pipeline deletion. This fixes PERMISSION\_ERROR upon 'bundle destroy'
+  for pipelines that have run\_as setting enabled (described in https://community.databricks.com/t95/data-engineering/dab-dlt-destroy-fails-due-to-ownership-permissions-mismatch/td-p/132101)
+  The downside is that if 'permissions:' block is removed from the resource, DABs will not try anymore to restore permissions to just the owner of the pipeline.
+
 ### CLI
 
 * Add the `--configure-serverless` flag to `databricks auth login` to configure Databricks Connect to use serverless.
