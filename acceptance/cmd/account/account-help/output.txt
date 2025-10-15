@@ -7,11 +7,8 @@ Usage:
 
 Identity and Access Management
   access-control                      These APIs manage access rules on resources in an account.
-  groups                              Groups simplify identity management, making it easier to assign access to Databricks account, data, and other securable objects.
   groups-v2                           Groups simplify identity management, making it easier to assign access to Databricks account, data, and other securable objects.
-  service-principals                  Identities for use with jobs, automated tools, and systems such as scripts, apps, and CI/CD platforms.
   service-principals-v2               Identities for use with jobs, automated tools, and systems such as scripts, apps, and CI/CD platforms.
-  users                               User identities recognized by Databricks and represented by email addresses.
   users-v2                            User identities recognized by Databricks and represented by email addresses.
   workspace-assignment                The Workspace Permission Assignment API allows you to manage workspace permissions for principals in your account.
 

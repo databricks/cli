@@ -15,6 +15,7 @@ var RequiredFields = map[string][]string{
 	"resources.apps.*.permissions[*]":                {"level"},
 	"resources.apps.*.resources[*]":                  {"name"},
 	"resources.apps.*.resources[*].database":         {"database_name", "instance_name", "permission"},
+	"resources.apps.*.resources[*].genie_space":      {"name", "permission", "space_id"},
 	"resources.apps.*.resources[*].job":              {"id", "permission"},
 	"resources.apps.*.resources[*].secret":           {"key", "permission", "scope"},
 	"resources.apps.*.resources[*].serving_endpoint": {"name", "permission"},
@@ -193,7 +194,6 @@ var RequiredFields = map[string][]string{
 	"resources.quality_monitors.*.schedule":          {"quartz_cron_expression", "timezone_id"},
 	"resources.quality_monitors.*.time_series":       {"granularities", "timestamp_col"},
 
-	"resources.registered_models.*":           {"catalog_name", "name", "schema_name"},
 	"resources.registered_models.*.grants[*]": {"privileges", "principal"},
 
 	"resources.schemas.*":           {"catalog_name", "name"},

@@ -31,6 +31,16 @@ func (*ResourceRegisteredModel) RemapState(model *catalog.RegisteredModelInfo) *
 		SchemaName:      model.SchemaName,
 		StorageLocation: model.StorageLocation,
 		ForceSendFields: filterFields[catalog.CreateRegisteredModelRequest](model.ForceSendFields),
+
+		Aliases:     model.Aliases,
+		BrowseOnly:  model.BrowseOnly,
+		CreatedAt:   model.CreatedAt,
+		CreatedBy:   model.CreatedBy,
+		FullName:    model.FullName,
+		MetastoreId: model.MetastoreId,
+		Owner:       model.Owner,
+		UpdatedAt:   model.UpdatedAt,
+		UpdatedBy:   model.UpdatedBy,
 	}
 }
 
@@ -64,6 +74,18 @@ func (r *ResourceRegisteredModel) DoUpdate(ctx context.Context, id string, confi
 		// Name updates are not supported yet without recreating. Can be added as a follow-up.
 		// Note: TF also does not support changing name without a recreate so the current behavior matches TF.
 		NewName: "",
+
+		Aliases:         config.Aliases,
+		BrowseOnly:      config.BrowseOnly,
+		CreatedAt:       config.CreatedAt,
+		CreatedBy:       config.CreatedBy,
+		MetastoreId:     config.MetastoreId,
+		UpdatedAt:       config.UpdatedAt,
+		UpdatedBy:       config.UpdatedBy,
+		SchemaName:      config.SchemaName,
+		StorageLocation: config.StorageLocation,
+		Name:            config.Name,
+		CatalogName:     config.CatalogName,
 	}
 
 	response, err := r.client.RegisteredModels.Update(ctx, updateRequest)
