@@ -1,0 +1,71 @@
+--- output-lakeflow/compare_test/pyproject.toml
++++ output-cli/compare_test/pyproject.toml
+@@ -26,4 +26,7 @@
+ build-backend = "hatchling.build"
+
++[tool.hatch.build.targets.wheel]
++packages = ["transformations", "utilities"]
++
+ [tool.black]
+ line-length = 125
+--- output-lakeflow/compare_test/databricks.yml
++++ output-cli/compare_test/databricks.yml
+@@ -6,6 +6,5 @@
+
+ include:
+-  - resources/*.yml
+-  - resources/*/*.yml
++  - "*.pipeline.yml"
+
+ # Variable declarations. These variables are assigned in the dev/prod targets below.
+@@ -19,6 +18,5 @@
+   dev:
+     # The default target uses 'mode: development' to create a development copy.
+-    # - Deployed resources get prefixed with '[dev my_user_name]'
+-    # - Any job schedules and triggers are paused by default.
++    # - Deployed pipelines get prefixed with '[dev my_user_name]'
+     # See also https://docs.databricks.com/dev-tools/bundles/deployment-modes.html.
+     mode: development
+@@ -35,8 +33,8 @@
+       # We explicitly deploy to /Workspace/Users/[USERNAME] to make sure we only have a single copy.
+       root_path: /Workspace/Users/[USERNAME]/.bundle/${bundle.name}/${bundle.target}
+-    variables:
+-      catalog: main
+-      schema: prod
+     permissions:
+       - user_name: [USERNAME]
+         level: CAN_MANAGE
++    variables:
++      catalog: main
++      schema: default
+--- output-lakeflow/compare_test/resources/compare_test_etl.pipeline.yml
++++ output-cli/compare_test/compare_test.pipeline.yml
+@@ -1,18 +1,10 @@
+-# The main pipeline for compare_test
+-
+ resources:
+   pipelines:
+-    compare_test_etl:
+-      name: compare_test_etl
+-      ## Catalog is required for serverless compute
++    compare_test_pipeline:
++      name: compare_test_pipeline
++      serverless: true
+       catalog: ${var.catalog}
+       schema: ${var.schema}
+-      serverless: true
+-      root_path: "../src/compare_test_etl"
+-
+-      libraries:
+-        - glob:
+-            include: ../src/compare_test_etl/transformations/**
+-
++      root_path: "."
+       environment:
+         dependencies:
+@@ -20,2 +12,5 @@
+           # that points to the folder where pyproject.toml is deployed.
+           - --editable ${workspace.file_path}
++      libraries:
++        - glob:
++            include: transformations/**

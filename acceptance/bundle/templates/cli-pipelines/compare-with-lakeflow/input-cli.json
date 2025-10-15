@@ -1,0 +1,6 @@
+{
+    "project_name": "compare_test",
+    "default_catalog": "main",
+    "personal_schemas": "yes",
+    "language": "python"
+}

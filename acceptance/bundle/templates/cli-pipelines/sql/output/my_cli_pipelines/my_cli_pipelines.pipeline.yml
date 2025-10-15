@@ -1,7 +1,7 @@
 resources:
   pipelines:
-    {{template `pipeline_name` .}}:
-      name: {{template `pipeline_name` .}}
+    my_cli_pipelines_pipeline:
+      name: my_cli_pipelines_pipeline
       serverless: true
       catalog: ${var.catalog}
       schema: ${var.schema}

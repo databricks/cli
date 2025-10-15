@@ -1,8 +1,8 @@
-# This is a Databricks asset bundle definition for {{.project_name}}.
+# This is a Databricks asset bundle definition for my_cli_pipelines.
 # See https://docs.databricks.com/dev-tools/bundles/index.html for documentation.
 bundle:
-  name: {{.project_name}}
-  uuid: {{bundle_uuid}}
+  name: my_cli_pipelines
+  uuid: [UUID]
 
 include:
   - "*.pipeline.yml"
@@ -22,19 +22,19 @@ targets:
     mode: development
     default: true
     workspace:
-      host: {{workspace_host}}
+      host: [DATABRICKS_URL]
     variables:
-      catalog: {{.default_catalog}}
-      schema: {{template `dev_schema` .}}
+      catalog: main
+      schema: default_dev
   prod:
     mode: production
     workspace:
-      host: {{workspace_host}}
-      # We explicitly deploy to /Workspace/Users/{{user_name}} to make sure we only have a single copy.
-      root_path: /Workspace/Users/{{user_name}}/.bundle/${bundle.name}/${bundle.target}
+      host: [DATABRICKS_URL]
+      # We explicitly deploy to /Workspace/Users/[USERNAME] to make sure we only have a single copy.
+      root_path: /Workspace/Users/[USERNAME]/.bundle/${bundle.name}/${bundle.target}
     permissions:
-      - {{if is_service_principal}}service_principal{{else}}user{{end}}_name: {{user_name}}
+      - user_name: [USERNAME]
         level: CAN_MANAGE
     variables:
-      catalog: {{.default_catalog}}
-      schema: {{template `prod_schema` .}}
+      catalog: main
+      schema: default

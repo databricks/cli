@@ -1,0 +1,19 @@
+#!/bin/bash
+# Generate both templates with equivalent settings
+$CLI bundle init cli-pipelines --config-file ./input-cli.json --output-dir output-cli > /dev/null
+$CLI bundle init lakeflow-pipelines --config-file ./input-lakeflow.json --output-dir output-lakeflow > /dev/null
+
+# Compare key files that should be structurally similar
+# We expect minimal differences: paths (root vs src/ layout) and package configuration
+
+# Compare pyproject.toml - should have same structure, just different package paths
+diff.py output-lakeflow/compare_test/pyproject.toml output-cli/compare_test/pyproject.toml > out.compare.diff
+
+# Compare databricks.yml
+diff.py output-lakeflow/compare_test/databricks.yml output-cli/compare_test/databricks.yml >> out.compare.diff
+
+# Compare pipeline yml environment section
+diff.py output-lakeflow/compare_test/resources/compare_test_etl.pipeline.yml output-cli/compare_test/compare_test.pipeline.yml >> out.compare.diff
+
+# Clean up generated files, keeping only the diff
+rm -rf output-cli output-lakeflow
