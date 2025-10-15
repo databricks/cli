@@ -237,6 +237,8 @@ func generateEnumFields(outPath string) error {
 		return fmt.Errorf("failed to execute template: %w", err)
 	}
 
+	// Format the generated source with gofmt-equivalent rules so minor template
+	// whitespace changes don't create noisy diffs in the checked-in artifacts.
 	formatted, err := format.Source(generatedCode.Bytes())
 	if err != nil {
 		return fmt.Errorf("failed to format generated code: %w", err)
