@@ -33,6 +33,7 @@ import (
 	storage "github.com/databricks/cli/cmd/account/storage"
 	account_storage_credentials "github.com/databricks/cli/cmd/account/storage-credentials"
 	usage_dashboards "github.com/databricks/cli/cmd/account/usage-dashboards"
+	usage_policy "github.com/databricks/cli/cmd/account/usage-policy"
 	account_users_v2 "github.com/databricks/cli/cmd/account/users-v2"
 	vpc_endpoints "github.com/databricks/cli/cmd/account/vpc-endpoints"
 	workspace_assignment "github.com/databricks/cli/cmd/account/workspace-assignment"
@@ -53,11 +54,13 @@ func New() *cobra.Command {
 	cmd.AddCommand(account_access_control.New())
 	cmd.AddCommand(billable_usage.New())
 	cmd.AddCommand(budget_policy.New())
+	cmd.AddCommand(budgets.New())
 	cmd.AddCommand(credentials.New())
 	cmd.AddCommand(custom_app_integration.New())
 	cmd.AddCommand(encryption_keys.New())
 	cmd.AddCommand(account_federation_policy.New())
 	cmd.AddCommand(account_groups_v2.New())
+	cmd.AddCommand(account_iam_v2.New())
 	cmd.AddCommand(account_ip_access_lists.New())
 	cmd.AddCommand(log_delivery.New())
 	cmd.AddCommand(account_metastore_assignments.New())
@@ -76,13 +79,12 @@ func New() *cobra.Command {
 	cmd.AddCommand(storage.New())
 	cmd.AddCommand(account_storage_credentials.New())
 	cmd.AddCommand(usage_dashboards.New())
+	cmd.AddCommand(usage_policy.New())
 	cmd.AddCommand(account_users_v2.New())
 	cmd.AddCommand(vpc_endpoints.New())
 	cmd.AddCommand(workspace_assignment.New())
 	cmd.AddCommand(workspace_network_configuration.New())
 	cmd.AddCommand(workspaces.New())
-	cmd.AddCommand(account_iam_v2.New())
-	cmd.AddCommand(budgets.New())
 
 	cmd.AddCommand(account_groups.New())
 	cmd.AddCommand(account_service_principals.New())
