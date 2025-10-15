@@ -47,8 +47,15 @@ func New() *cobra.Command {
 	// Add methods
 	cmd.AddCommand(newAllClusterStatuses())
 	cmd.AddCommand(newClusterStatus())
+	cmd.AddCommand(newCreateDefaultBaseEnvironment())
+	cmd.AddCommand(newDeleteDefaultBaseEnvironment())
+	cmd.AddCommand(newGetDefaultBaseEnvironment())
 	cmd.AddCommand(newInstall())
+	cmd.AddCommand(newListDefaultBaseEnvironments())
+	cmd.AddCommand(newRefreshDefaultBaseEnvironments())
 	cmd.AddCommand(newUninstall())
+	cmd.AddCommand(newUpdateDefaultBaseEnvironment())
+	cmd.AddCommand(newUpdateDefaultDefaultBaseEnvironment())
 
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
@@ -157,6 +164,194 @@ func newClusterStatus() *cobra.Command {
 	return cmd
 }
 
+// start create-default-base-environment command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createDefaultBaseEnvironmentOverrides []func(
+	*cobra.Command,
+	*compute.CreateDefaultBaseEnvironmentRequest,
+)
+
+func newCreateDefaultBaseEnvironment() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createDefaultBaseEnvironmentReq compute.CreateDefaultBaseEnvironmentRequest
+	var createDefaultBaseEnvironmentJson flags.JsonFlag
+
+	cmd.Flags().Var(&createDefaultBaseEnvironmentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&createDefaultBaseEnvironmentReq.RequestId, "request-id", createDefaultBaseEnvironmentReq.RequestId, `A unique identifier for this request.`)
+
+	cmd.Use = "create-default-base-environment"
+	cmd.Short = `Create a default base environment.`
+	cmd.Long = `Create a default base environment.
+  
+  Create a default base environment within workspaces to define the environment
+  version and a list of dependencies to be used in serverless notebooks and
+  jobs. This process will asynchronously generate a cache to optimize dependency
+  resolution.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := createDefaultBaseEnvironmentJson.Unmarshal(&createDefaultBaseEnvironmentReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		} else {
+			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+		}
+
+		response, err := w.Libraries.CreateDefaultBaseEnvironment(ctx, createDefaultBaseEnvironmentReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createDefaultBaseEnvironmentOverrides {
+		fn(cmd, &createDefaultBaseEnvironmentReq)
+	}
+
+	return cmd
+}
+
+// start delete-default-base-environment command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteDefaultBaseEnvironmentOverrides []func(
+	*cobra.Command,
+	*compute.DeleteDefaultBaseEnvironmentRequest,
+)
+
+func newDeleteDefaultBaseEnvironment() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteDefaultBaseEnvironmentReq compute.DeleteDefaultBaseEnvironmentRequest
+
+	cmd.Use = "delete-default-base-environment ID"
+	cmd.Short = `Delete a default base environment.`
+	cmd.Long = `Delete a default base environment.
+  
+  Delete the default base environment given an ID. The default base environment
+  may be used by downstream workloads. Please ensure that the deletion is
+  intentional.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		deleteDefaultBaseEnvironmentReq.Id = args[0]
+
+		err = w.Libraries.DeleteDefaultBaseEnvironment(ctx, deleteDefaultBaseEnvironmentReq)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteDefaultBaseEnvironmentOverrides {
+		fn(cmd, &deleteDefaultBaseEnvironmentReq)
+	}
+
+	return cmd
+}
+
+// start get-default-base-environment command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getDefaultBaseEnvironmentOverrides []func(
+	*cobra.Command,
+	*compute.GetDefaultBaseEnvironmentRequest,
+)
+
+func newGetDefaultBaseEnvironment() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getDefaultBaseEnvironmentReq compute.GetDefaultBaseEnvironmentRequest
+
+	cmd.Flags().StringVar(&getDefaultBaseEnvironmentReq.TraceId, "trace-id", getDefaultBaseEnvironmentReq.TraceId, `Deprecated: use ctx.requestId instead.`)
+
+	cmd.Use = "get-default-base-environment ID"
+	cmd.Short = `get a default base environment.`
+	cmd.Long = `get a default base environment.
+  
+  Return the default base environment details for a given ID.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		getDefaultBaseEnvironmentReq.Id = args[0]
+
+		response, err := w.Libraries.GetDefaultBaseEnvironment(ctx, getDefaultBaseEnvironmentReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getDefaultBaseEnvironmentOverrides {
+		fn(cmd, &getDefaultBaseEnvironmentReq)
+	}
+
+	return cmd
+}
+
 // start install command
 
 // Slice with functions to override default command behavior.
@@ -217,6 +412,130 @@ func newInstall() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range installOverrides {
 		fn(cmd, &installReq)
+	}
+
+	return cmd
+}
+
+// start list-default-base-environments command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listDefaultBaseEnvironmentsOverrides []func(
+	*cobra.Command,
+	*compute.ListDefaultBaseEnvironmentsRequest,
+)
+
+func newListDefaultBaseEnvironments() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listDefaultBaseEnvironmentsReq compute.ListDefaultBaseEnvironmentsRequest
+
+	cmd.Flags().IntVar(&listDefaultBaseEnvironmentsReq.PageSize, "page-size", listDefaultBaseEnvironmentsReq.PageSize, ``)
+	cmd.Flags().StringVar(&listDefaultBaseEnvironmentsReq.PageToken, "page-token", listDefaultBaseEnvironmentsReq.PageToken, ``)
+
+	cmd.Use = "list-default-base-environments"
+	cmd.Short = `List default base environments.`
+	cmd.Long = `List default base environments.
+  
+  List default base environments defined in the workspaces for the requested
+  user.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		response := w.Libraries.ListDefaultBaseEnvironments(ctx, listDefaultBaseEnvironmentsReq)
+		return cmdio.RenderIterator(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listDefaultBaseEnvironmentsOverrides {
+		fn(cmd, &listDefaultBaseEnvironmentsReq)
+	}
+
+	return cmd
+}
+
+// start refresh-default-base-environments command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var refreshDefaultBaseEnvironmentsOverrides []func(
+	*cobra.Command,
+	*compute.RefreshDefaultBaseEnvironmentsRequest,
+)
+
+func newRefreshDefaultBaseEnvironments() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var refreshDefaultBaseEnvironmentsReq compute.RefreshDefaultBaseEnvironmentsRequest
+	var refreshDefaultBaseEnvironmentsJson flags.JsonFlag
+
+	cmd.Flags().Var(&refreshDefaultBaseEnvironmentsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Use = "refresh-default-base-environments"
+	cmd.Short = `.`
+	cmd.Long = `.
+  
+  Refresh the cached default base environments for the given IDs. This process
+  will asynchronously regenerate the caches. The existing caches remains
+  available until it expires.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := refreshDefaultBaseEnvironmentsJson.Unmarshal(&refreshDefaultBaseEnvironmentsReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		} else {
+			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+		}
+
+		err = w.Libraries.RefreshDefaultBaseEnvironments(ctx, refreshDefaultBaseEnvironmentsReq)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range refreshDefaultBaseEnvironmentsOverrides {
+		fn(cmd, &refreshDefaultBaseEnvironmentsReq)
 	}
 
 	return cmd
@@ -283,6 +602,155 @@ func newUninstall() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range uninstallOverrides {
 		fn(cmd, &uninstallReq)
+	}
+
+	return cmd
+}
+
+// start update-default-base-environment command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateDefaultBaseEnvironmentOverrides []func(
+	*cobra.Command,
+	*compute.UpdateDefaultBaseEnvironmentRequest,
+)
+
+func newUpdateDefaultBaseEnvironment() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateDefaultBaseEnvironmentReq compute.UpdateDefaultBaseEnvironmentRequest
+	var updateDefaultBaseEnvironmentJson flags.JsonFlag
+
+	cmd.Flags().Var(&updateDefaultBaseEnvironmentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Use = "update-default-base-environment ID"
+	cmd.Short = `Update a default base environment.`
+	cmd.Long = `Update a default base environment.
+  
+  Update the default base environment for the given ID. This process will
+  asynchronously regenerate the cache. The existing cache remains available
+  until it expires.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := updateDefaultBaseEnvironmentJson.Unmarshal(&updateDefaultBaseEnvironmentReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		} else {
+			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+		}
+		updateDefaultBaseEnvironmentReq.Id = args[0]
+
+		response, err := w.Libraries.UpdateDefaultBaseEnvironment(ctx, updateDefaultBaseEnvironmentReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateDefaultBaseEnvironmentOverrides {
+		fn(cmd, &updateDefaultBaseEnvironmentReq)
+	}
+
+	return cmd
+}
+
+// start update-default-default-base-environment command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateDefaultDefaultBaseEnvironmentOverrides []func(
+	*cobra.Command,
+	*compute.UpdateDefaultDefaultBaseEnvironmentRequest,
+)
+
+func newUpdateDefaultDefaultBaseEnvironment() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateDefaultDefaultBaseEnvironmentReq compute.UpdateDefaultDefaultBaseEnvironmentRequest
+	var updateDefaultDefaultBaseEnvironmentJson flags.JsonFlag
+
+	cmd.Flags().Var(&updateDefaultDefaultBaseEnvironmentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().Var(&updateDefaultDefaultBaseEnvironmentReq.BaseEnvironmentType, "base-environment-type", `Supported values: [CPU, GPU]`)
+	cmd.Flags().StringVar(&updateDefaultDefaultBaseEnvironmentReq.Id, "id", updateDefaultDefaultBaseEnvironmentReq.Id, ``)
+
+	cmd.Use = "update-default-default-base-environment"
+	cmd.Short = `Update the default default base environment.`
+	cmd.Long = `Update the default default base environment.
+  
+  Set the default base environment for the workspace. This marks the specified
+  DBE as the workspace default.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := updateDefaultDefaultBaseEnvironmentJson.Unmarshal(&updateDefaultDefaultBaseEnvironmentReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+
+		response, err := w.Libraries.UpdateDefaultDefaultBaseEnvironment(ctx, updateDefaultDefaultBaseEnvironmentReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateDefaultDefaultBaseEnvironmentOverrides {
+		fn(cmd, &updateDefaultDefaultBaseEnvironmentReq)
 	}
 
 	return cmd

@@ -30,8 +30,10 @@ import (
 	current_user "github.com/databricks/cli/cmd/workspace/current-user"
 	dashboard_widgets "github.com/databricks/cli/cmd/workspace/dashboard-widgets"
 	dashboards "github.com/databricks/cli/cmd/workspace/dashboards"
+	data_quality "github.com/databricks/cli/cmd/workspace/data-quality"
 	data_sources "github.com/databricks/cli/cmd/workspace/data-sources"
 	database "github.com/databricks/cli/cmd/workspace/database"
+	database_project "github.com/databricks/cli/cmd/workspace/database-project"
 	entity_tag_assignments "github.com/databricks/cli/cmd/workspace/entity-tag-assignments"
 	experiments "github.com/databricks/cli/cmd/workspace/experiments"
 	external_lineage "github.com/databricks/cli/cmd/workspace/external-lineage"
@@ -78,6 +80,7 @@ import (
 	quality_monitors "github.com/databricks/cli/cmd/workspace/quality-monitors"
 	queries "github.com/databricks/cli/cmd/workspace/queries"
 	queries_legacy "github.com/databricks/cli/cmd/workspace/queries-legacy"
+	query_execution "github.com/databricks/cli/cmd/workspace/query-execution"
 	query_history "github.com/databricks/cli/cmd/workspace/query-history"
 	query_visualizations "github.com/databricks/cli/cmd/workspace/query-visualizations"
 	query_visualizations_legacy "github.com/databricks/cli/cmd/workspace/query-visualizations-legacy"
@@ -100,6 +103,7 @@ import (
 	system_schemas "github.com/databricks/cli/cmd/workspace/system-schemas"
 	table_constraints "github.com/databricks/cli/cmd/workspace/table-constraints"
 	tables "github.com/databricks/cli/cmd/workspace/tables"
+	tag_assignments "github.com/databricks/cli/cmd/workspace/tag-assignments"
 	tag_policies "github.com/databricks/cli/cmd/workspace/tag-policies"
 	temporary_path_credentials "github.com/databricks/cli/cmd/workspace/temporary-path-credentials"
 	temporary_table_credentials "github.com/databricks/cli/cmd/workspace/temporary-table-credentials"
@@ -152,8 +156,10 @@ func All() []*cobra.Command {
 	out = append(out, current_user.New())
 	out = append(out, dashboard_widgets.New())
 	out = append(out, dashboards.New())
+	out = append(out, data_quality.New())
 	out = append(out, data_sources.New())
 	out = append(out, database.New())
+	out = append(out, database_project.New())
 	out = append(out, entity_tag_assignments.New())
 	out = append(out, experiments.New())
 	out = append(out, external_lineage.New())
@@ -161,6 +167,7 @@ func All() []*cobra.Command {
 	out = append(out, external_metadata.New())
 	out = append(out, feature_engineering.New())
 	out = append(out, feature_store.New())
+	out = append(out, forecasting.New())
 	out = append(out, functions.New())
 	out = append(out, genie.New())
 	out = append(out, git_credentials.New())
@@ -199,6 +206,7 @@ func All() []*cobra.Command {
 	out = append(out, quality_monitors.New())
 	out = append(out, queries.New())
 	out = append(out, queries_legacy.New())
+	out = append(out, query_execution.New())
 	out = append(out, query_history.New())
 	out = append(out, query_visualizations.New())
 	out = append(out, query_visualizations_legacy.New())
@@ -221,6 +229,7 @@ func All() []*cobra.Command {
 	out = append(out, system_schemas.New())
 	out = append(out, table_constraints.New())
 	out = append(out, tables.New())
+	out = append(out, tag_assignments.New())
 	out = append(out, tag_policies.New())
 	out = append(out, temporary_path_credentials.New())
 	out = append(out, temporary_table_credentials.New())
@@ -234,9 +243,8 @@ func All() []*cobra.Command {
 	out = append(out, workspace.New())
 	out = append(out, workspace_bindings.New())
 	out = append(out, workspace_conf.New())
-	out = append(out, workspace_settings_v2.New())
-	out = append(out, forecasting.New())
 	out = append(out, workspace_iam_v2.New())
+	out = append(out, workspace_settings_v2.New())
 
 	out = append(out, groups.New())
 	out = append(out, service_principals.New())

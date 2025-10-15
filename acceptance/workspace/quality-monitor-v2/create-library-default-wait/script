@@ -1,0 +1,1 @@
+trace $CLI quality-monitor-v2 create-library test-library-default --leg-count 6 --contains-sauce

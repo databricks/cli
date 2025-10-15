@@ -47,6 +47,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(newQueryNextPage())
 	cmd.AddCommand(newScanIndex())
 	cmd.AddCommand(newSyncIndex())
+	cmd.AddCommand(newUpdateIndexBudgetPolicy())
 	cmd.AddCommand(newUpsertDataVectorIndex())
 
 	// Apply optional overrides to this command.
@@ -678,6 +679,65 @@ func newSyncIndex() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range syncIndexOverrides {
 		fn(cmd, &syncIndexReq)
+	}
+
+	return cmd
+}
+
+// start update-index-budget-policy command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateIndexBudgetPolicyOverrides []func(
+	*cobra.Command,
+	*vectorsearch.UpdateVectorIndexUsagePolicyRequest,
+)
+
+func newUpdateIndexBudgetPolicy() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateIndexBudgetPolicyReq vectorsearch.UpdateVectorIndexUsagePolicyRequest
+
+	cmd.Use = "update-index-budget-policy INDEX_NAME"
+	cmd.Short = `Update the usage policy of an index.`
+	cmd.Long = `Update the usage policy of an index.
+  
+  Update the budget policy of an index
+
+  Arguments:
+    INDEX_NAME: Name of the vector search index`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		updateIndexBudgetPolicyReq.IndexName = args[0]
+
+		response, err := w.VectorSearchIndexes.UpdateIndexBudgetPolicy(ctx, updateIndexBudgetPolicyReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateIndexBudgetPolicyOverrides {
+		fn(cmd, &updateIndexBudgetPolicyReq)
 	}
 
 	return cmd

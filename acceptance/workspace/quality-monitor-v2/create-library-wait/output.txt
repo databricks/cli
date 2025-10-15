@@ -1,0 +1,8 @@
+
+>>> [CLI] quality-monitor-v2 create-library operations/test-library-op-456 --wait
+{
+  "contains_sauce":true,
+  "created_at":[NUMID],
+  "leg_count":4,
+  "name":"test-library-wait"
+}

@@ -47,9 +47,9 @@ func New() *cobra.Command {
   update permissions on the registered model, users must be owners of the
   registered model.
   
-  Note: The securable type for models is "FUNCTION". When using REST APIs (e.g.
-  tagging, grants) that specify a securable type, use "FUNCTION" as the
-  securable type.`,
+  Note: The securable type for models is FUNCTION. When using REST APIs (e.g.
+  tagging, grants) that specify a securable type, use FUNCTION as the securable
+  type.`,
 		GroupID: "catalog",
 		Annotations: map[string]string{
 			"package": "catalog",
@@ -91,10 +91,22 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	// TODO: array: aliases
+	cmd.Flags().BoolVar(&createReq.BrowseOnly, "browse-only", createReq.BrowseOnly, `Indicates whether the principal is limited to retrieving metadata for the associated object through the BROWSE privilege when include_browse is enabled in the request.`)
+	cmd.Flags().StringVar(&createReq.CatalogName, "catalog-name", createReq.CatalogName, `The name of the catalog where the schema and the registered model reside.`)
 	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `The comment attached to the registered model.`)
+	cmd.Flags().Int64Var(&createReq.CreatedAt, "created-at", createReq.CreatedAt, `Creation timestamp of the registered model in milliseconds since the Unix epoch.`)
+	cmd.Flags().StringVar(&createReq.CreatedBy, "created-by", createReq.CreatedBy, `The identifier of the user who created the registered model.`)
+	cmd.Flags().StringVar(&createReq.FullName, "full-name", createReq.FullName, `The three-level (fully qualified) name of the registered model.`)
+	cmd.Flags().StringVar(&createReq.MetastoreId, "metastore-id", createReq.MetastoreId, `The unique identifier of the metastore.`)
+	cmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `The name of the registered model.`)
+	cmd.Flags().StringVar(&createReq.Owner, "owner", createReq.Owner, `The identifier of the user who owns the registered model.`)
+	cmd.Flags().StringVar(&createReq.SchemaName, "schema-name", createReq.SchemaName, `The name of the schema where the registered model resides.`)
 	cmd.Flags().StringVar(&createReq.StorageLocation, "storage-location", createReq.StorageLocation, `The storage location on the cloud under which model version data files are stored.`)
+	cmd.Flags().Int64Var(&createReq.UpdatedAt, "updated-at", createReq.UpdatedAt, `Last-update timestamp of the registered model in milliseconds since the Unix epoch.`)
+	cmd.Flags().StringVar(&createReq.UpdatedBy, "updated-by", createReq.UpdatedBy, `The identifier of the user who updated the registered model last time.`)
 
-	cmd.Use = "create CATALOG_NAME SCHEMA_NAME NAME"
+	cmd.Use = "create"
 	cmd.Short = `Create a Registered Model.`
 	cmd.Long = `Create a Registered Model.
   
@@ -109,24 +121,12 @@ func newCreate() *cobra.Command {
   parent catalog and schema, or have the **USE_CATALOG** privilege on the parent
   catalog and the **USE_SCHEMA** privilege on the parent schema. - The caller
   must have the **CREATE MODEL** or **CREATE FUNCTION** privilege on the parent
-  schema.
-
-  Arguments:
-    CATALOG_NAME: The name of the catalog where the schema and the registered model reside
-    SCHEMA_NAME: The name of the schema where the registered model resides
-    NAME: The name of the registered model`
+  schema.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		if cmd.Flags().Changed("json") {
-			err := root.ExactArgs(0)(cmd, args)
-			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'catalog_name', 'schema_name', 'name' in your JSON input")
-			}
-			return nil
-		}
-		check := root.ExactArgs(3)
+		check := root.ExactArgs(0)
 		return check(cmd, args)
 	}
 
@@ -146,15 +146,6 @@ func newCreate() *cobra.Command {
 					return err
 				}
 			}
-		}
-		if !cmd.Flags().Changed("json") {
-			createReq.CatalogName = args[0]
-		}
-		if !cmd.Flags().Changed("json") {
-			createReq.SchemaName = args[1]
-		}
-		if !cmd.Flags().Changed("json") {
-			createReq.Name = args[2]
 		}
 
 		response, err := w.RegisteredModels.Create(ctx, createReq)
@@ -483,7 +474,7 @@ func newSetAlias() *cobra.Command {
   schema.
 
   Arguments:
-    FULL_NAME: Full name of the registered model
+    FULL_NAME: The three-level (fully qualified) name of the registered model
     ALIAS: The name of the alias
     VERSION_NUM: The version number of the model version to which the alias points`
 
@@ -563,9 +554,20 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	// TODO: array: aliases
+	cmd.Flags().BoolVar(&updateReq.BrowseOnly, "browse-only", updateReq.BrowseOnly, `Indicates whether the principal is limited to retrieving metadata for the associated object through the BROWSE privilege when include_browse is enabled in the request.`)
+	cmd.Flags().StringVar(&updateReq.CatalogName, "catalog-name", updateReq.CatalogName, `The name of the catalog where the schema and the registered model reside.`)
 	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `The comment attached to the registered model.`)
+	cmd.Flags().Int64Var(&updateReq.CreatedAt, "created-at", updateReq.CreatedAt, `Creation timestamp of the registered model in milliseconds since the Unix epoch.`)
+	cmd.Flags().StringVar(&updateReq.CreatedBy, "created-by", updateReq.CreatedBy, `The identifier of the user who created the registered model.`)
+	cmd.Flags().StringVar(&updateReq.MetastoreId, "metastore-id", updateReq.MetastoreId, `The unique identifier of the metastore.`)
+	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `The name of the registered model.`)
 	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the registered model.`)
 	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `The identifier of the user who owns the registered model.`)
+	cmd.Flags().StringVar(&updateReq.SchemaName, "schema-name", updateReq.SchemaName, `The name of the schema where the registered model resides.`)
+	cmd.Flags().StringVar(&updateReq.StorageLocation, "storage-location", updateReq.StorageLocation, `The storage location on the cloud under which model version data files are stored.`)
+	cmd.Flags().Int64Var(&updateReq.UpdatedAt, "updated-at", updateReq.UpdatedAt, `Last-update timestamp of the registered model in milliseconds since the Unix epoch.`)
+	cmd.Flags().StringVar(&updateReq.UpdatedBy, "updated-by", updateReq.UpdatedBy, `The identifier of the user who updated the registered model last time.`)
 
 	cmd.Use = "update FULL_NAME"
 	cmd.Short = `Update a Registered Model.`

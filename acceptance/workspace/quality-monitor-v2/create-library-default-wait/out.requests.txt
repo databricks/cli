@@ -1,0 +1,29 @@
+{
+  "headers": {
+    "Authorization": [
+      "Bearer [DATABRICKS_TOKEN]"
+    ],
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/quality-monitor-v2_create-library cmd-exec-id/[UUID] auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/3.0/library",
+  "body": {
+    "contains_sauce": true,
+    "leg_count": 6,
+    "name": "test-library-default"
+  }
+}
+{
+  "headers": {
+    "Authorization": [
+      "Bearer [DATABRICKS_TOKEN]"
+    ],
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/quality-monitor-v2_create-library cmd-exec-id/[UUID] sdk-feature/long-running auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/3.0/operations/operations/test-library-default-op"
+}

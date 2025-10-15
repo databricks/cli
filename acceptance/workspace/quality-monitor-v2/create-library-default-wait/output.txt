@@ -1,0 +1,8 @@
+
+>>> [CLI] quality-monitor-v2 create-library test-library-default --leg-count 6 --contains-sauce
+{
+  "contains_sauce":true,
+  "created_at":[NUMID],
+  "leg_count":6,
+  "name":"test-library-default"
+}

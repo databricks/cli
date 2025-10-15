@@ -1,0 +1,1 @@
+trace $CLI quality-monitor-v2 create-library test-library --leg-count 4 --contains-sauce --no-wait

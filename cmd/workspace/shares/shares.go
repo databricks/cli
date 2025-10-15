@@ -68,6 +68,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided free-form text description.`)
+	cmd.Flags().StringVar(&createReq.ServerlessBudgetPolicyId, "serverless-budget-policy-id", createReq.ServerlessBudgetPolicyId, `Serverless budget policy id (can only be created/updated when calling data-sharing service) [Create,Update:IGN].`)
 	cmd.Flags().StringVar(&createReq.StorageRoot, "storage-root", createReq.StorageRoot, `Storage root URL for the share.`)
 
 	cmd.Use = "create NAME"
@@ -329,7 +330,7 @@ func newSharePermissions() *cobra.Command {
   metastore admin or the owner of the share.
 
   Arguments:
-    NAME: The name of the share.`
+    NAME: The name of the Recipient.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -384,6 +385,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `User-provided free-form text description.`)
 	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the share.`)
 	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of share.`)
+	cmd.Flags().StringVar(&updateReq.ServerlessBudgetPolicyId, "serverless-budget-policy-id", updateReq.ServerlessBudgetPolicyId, `Serverless budget policy id (can only be created/updated when calling data-sharing service) [Create,Update:IGN].`)
 	cmd.Flags().StringVar(&updateReq.StorageRoot, "storage-root", updateReq.StorageRoot, `Storage root URL for the share.`)
 	// TODO: array: updates
 
