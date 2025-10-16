@@ -56,7 +56,7 @@
         },
         "personal_schemas": {
             "type": "string",
-            "description": "Use a personal schema for each user working on this project\n(this is recommended, your personal schema will be '{{.default_catalog}}.{{short_name}}')",
+            "description": "Use a personal schema for each user working on this project.\n(This is recommended. Your personal schema will be '{{.default_catalog}}.{{short_name}}'.)",
             "default": "yes",
             "enum": [
                 "yes",
