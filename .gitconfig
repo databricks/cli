@@ -1,2 +1,5 @@
 [merge "ours"]
+    # define merge driver "ours" that will do nothing which will make git
+    # accept the file from the branch the we rebase onto as final version, ignoring local changes.
+    # https://git-scm.com/docs/gitattributes#_defining_a_custom_merge_driver
     driver = true
