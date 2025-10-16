@@ -25,6 +25,32 @@ func generateDashboardId() (string, error) {
 	return hex.EncodeToString(randomBytes), nil
 }
 
+// Transform the serialized dashboard to mimic remote behavior.
+func transformSerializedDashboard(serializedDashboard string) string {
+	var dashboardContent map[string]any
+	err := json.Unmarshal([]byte(serializedDashboard), &dashboardContent)
+	if err != nil {
+		return serializedDashboard
+	}
+
+	// Add pageType to each page in the pages array (as of June 2025, this is an undocumented Lakeview API behaviour)
+	if pages, ok := dashboardContent["pages"].([]any); ok {
+		for _, page := range pages {
+			if pageMap, ok := page.(map[string]any); ok {
+				pageMap["pageType"] = "PAGE_TYPE_CANVAS"
+			}
+		}
+	}
+
+	updatedContent, err := json.Marshal(dashboardContent)
+	if err != nil {
+		return serializedDashboard
+	}
+
+	// Add a newline to the end of the serialized dashboard.
+	return string(updatedContent) + "\n"
+}
+
 func (s *FakeWorkspace) DashboardCreate(req Request) Response {
 	defer s.LockUnlock()()
 
@@ -71,26 +97,19 @@ func (s *FakeWorkspace) DashboardCreate(req Request) Response {
 	dashboard.CreateTime = strings.TrimSuffix(time.Now().UTC().Format(time.RFC3339), "Z")
 	dashboard.UpdateTime = dashboard.CreateTime
 
+	inputSerializedDashboard := dashboard.SerializedDashboard
+
 	// Parse serializedDashboard into json and put it back as a string
 	if dashboard.SerializedDashboard != "" {
-		var dashboardContent map[string]any
-		if err := json.Unmarshal([]byte(dashboard.SerializedDashboard), &dashboardContent); err == nil {
-			// Add pageType to each page in the pages array (as of June 2025, this is an undocumented Lakeview API behaviour)
-			if pages, ok := dashboardContent["pages"].([]any); ok {
-				for _, page := range pages {
-					if pageMap, ok := page.(map[string]any); ok {
-						pageMap["pageType"] = "PAGE_TYPE_CANVAS"
-					}
-				}
-			}
-			if updatedContent, err := json.Marshal(dashboardContent); err == nil {
-				dashboard.SerializedDashboard = string(updatedContent) + "\n"
-			}
-		}
+		dashboard.SerializedDashboard = transformSerializedDashboard(dashboard.SerializedDashboard)
 	}
 	dashboard.Etag = "80611980"
 
-	s.Dashboards[dashboard.DashboardId] = dashboard
+	s.Dashboards[dashboard.DashboardId] = fakeDashboard{
+		Dashboard:                dashboard,
+		InputSerializedDashboard: inputSerializedDashboard,
+	}
+
 	workspacePath := path.Join("/Workspace", dashboard.Path)
 	s.files[workspacePath] = FileEntry{
 		Info: workspace.ObjectInfo{
@@ -125,18 +144,23 @@ func (s *FakeWorkspace) DashboardUpdate(req Request) Response {
 		}
 	}
 
-	// Update etag.
-	prevEtag, err := strconv.Atoi(dashboard.Etag)
-	if err != nil {
-		return Response{
-			Body: map[string]string{
-				"message": "Invalid etag: " + dashboard.Etag,
-			},
-			StatusCode: 400,
+	if updateReq.SerializedDashboard != dashboard.InputSerializedDashboard {
+		// Update etag.
+		prevEtag, err := strconv.Atoi(dashboard.Etag)
+		if err != nil {
+			return Response{
+				Body: map[string]string{
+					"message": "Invalid etag: " + dashboard.Etag,
+				},
+				StatusCode: 400,
+			}
 		}
+		nextEtag := prevEtag + 1
+		dashboard.Etag = strconv.Itoa(nextEtag)
+
+		// Update the input serialized dashboard.
+		dashboard.InputSerializedDashboard = updateReq.SerializedDashboard
 	}
-	nextEtag := prevEtag + 1
-	dashboard.Etag = strconv.Itoa(nextEtag)
 
 	// Update the dashboard.
 	dashboard.LifecycleState = dashboards.LifecycleStateActive
@@ -147,7 +171,7 @@ func (s *FakeWorkspace) DashboardUpdate(req Request) Response {
 		dashboard.Path = filepath.Join(dir, base)
 	}
 	if updateReq.SerializedDashboard != "" {
-		dashboard.SerializedDashboard = updateReq.SerializedDashboard
+		dashboard.SerializedDashboard = transformSerializedDashboard(updateReq.SerializedDashboard)
 	}
 	if updateReq.WarehouseId != "" {
 		dashboard.WarehouseId = updateReq.WarehouseId

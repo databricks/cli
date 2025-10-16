@@ -153,6 +153,14 @@ Warning: required field "schema_name" is not set
 }
 
 === resources.dashboards.rname ===
+Error: name is required for dashboards
+  at resources.dashboards.rname
+  in databricks.yml:7:7
+
+Error: warehouse_id is required for dashboards
+  at resources.dashboards.rname
+  in databricks.yml:7:7
+
 {
   "dashboards": {
     "rname": {

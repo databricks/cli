@@ -114,6 +114,11 @@ var testDeps = map[string]prepareWorkspace{
 	},
 }
 
+func TestSnakeToTitle(t *testing.T) {
+	assert.Equal(t, "MyTitle", snakeToTitle("my_title"))
+	assert.Equal(t, "ABcD", snakeToTitle("a_bc_d"))
+}
+
 func TestAll(t *testing.T) {
 	_, client := setupTestServerClient(t)
 
@@ -165,8 +170,15 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	remote, err = adapter.DoRefresh(ctx, createdID)
 	require.NoError(t, err)
 	require.NotNil(t, remote)
+
+	remappedState, err := adapter.RemapState(remote)
+	require.NoError(t, err)
+	require.NotNil(t, remappedState)
+
 	if remoteStateFromCreate != nil {
-		require.Equal(t, remoteStateFromCreate, remote)
+		remappedRemoteStateFromCreate, err := adapter.RemapState(remoteStateFromCreate)
+		require.NoError(t, err)
+		require.Equal(t, remappedState, remappedRemoteStateFromCreate)
 	}
 
 	remoteStateFromWaitCreate, err := adapter.WaitAfterCreate(ctx, newState)
@@ -174,10 +186,6 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	if remoteStateFromWaitCreate != nil {
 		require.Equal(t, remote, remoteStateFromWaitCreate)
 	}
-
-	remappedState, err := adapter.RemapState(remote)
-	require.NoError(t, err)
-	require.NotNil(t, remappedState)
 
 	remoteStateFromUpdate, err := adapter.DoUpdate(ctx, createdID, newState)
 	require.NoError(t, err, "DoUpdate failed")

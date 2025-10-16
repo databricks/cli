@@ -32,7 +32,7 @@ type Embedded struct {
 }
 
 type D struct {
-	Embedded // Anonymous embedded struct
+	Embedded        // Anonymous embedded struct
 	Name     string `json:"name,omitempty"`
 }
 
