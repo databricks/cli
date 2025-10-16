@@ -85,5 +85,5 @@
             "order": 10
         }
     },
-    "success_message": "\n✨ Your new project has been created in the '{{.project_name}}' directory!\n\nPlease refer to the README.md file for \"getting started\" instructions.\nSee also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html."
+    "success_message": "\n✨ Your new project has been created in the '{{.project_name}}' directory!\n\nTo get started, refer to the project README.md file and the documentation at https://docs.databricks.com/dev-tools/bundles/index.html."
 }
