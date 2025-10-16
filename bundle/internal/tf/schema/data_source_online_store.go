@@ -9,5 +9,4 @@ type DataSourceOnlineStore struct {
 	Name             string `json:"name"`
 	ReadReplicaCount int    `json:"read_replica_count,omitempty"`
 	State            string `json:"state,omitempty"`
-	WorkspaceId      string `json:"workspace_id,omitempty"`
 }

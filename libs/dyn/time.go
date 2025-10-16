@@ -62,5 +62,5 @@ func (t Time) String() string {
 }
 
 func (t Time) IsZero() bool {
-	return t.s == "" && t.IsZero()
+	return t.s == "" && t.t.IsZero()
 }

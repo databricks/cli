@@ -3,8 +3,12 @@
 package schema
 
 type DataSourceRegisteredModelModelInfoAliases struct {
-	AliasName  string `json:"alias_name,omitempty"`
-	VersionNum int    `json:"version_num,omitempty"`
+	AliasName   string `json:"alias_name,omitempty"`
+	CatalogName string `json:"catalog_name,omitempty"`
+	Id          string `json:"id,omitempty"`
+	ModelName   string `json:"model_name,omitempty"`
+	SchemaName  string `json:"schema_name,omitempty"`
+	VersionNum  int    `json:"version_num,omitempty"`
 }
 
 type DataSourceRegisteredModelModelInfo struct {

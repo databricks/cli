@@ -3,6 +3,7 @@
 package schema
 
 type DataSourceNodeType struct {
+	Arm                   bool   `json:"arm,omitempty"`
 	Category              string `json:"category,omitempty"`
 	Fleet                 bool   `json:"fleet,omitempty"`
 	GbPerCore             int    `json:"gb_per_core,omitempty"`

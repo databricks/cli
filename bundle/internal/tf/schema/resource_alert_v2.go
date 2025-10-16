@@ -79,5 +79,4 @@ type ResourceAlertV2 struct {
 	Schedule          *ResourceAlertV2Schedule       `json:"schedule,omitempty"`
 	UpdateTime        string                         `json:"update_time,omitempty"`
 	WarehouseId       string                         `json:"warehouse_id,omitempty"`
-	WorkspaceId       string                         `json:"workspace_id,omitempty"`
 }

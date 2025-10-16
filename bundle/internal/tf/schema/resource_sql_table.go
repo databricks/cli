@@ -27,6 +27,7 @@ type ResourceSqlTable struct {
 	SchemaName            string                   `json:"schema_name"`
 	StorageCredentialName string                   `json:"storage_credential_name,omitempty"`
 	StorageLocation       string                   `json:"storage_location,omitempty"`
+	TableId               string                   `json:"table_id,omitempty"`
 	TableType             string                   `json:"table_type"`
 	ViewDefinition        string                   `json:"view_definition,omitempty"`
 	WarehouseId           string                   `json:"warehouse_id,omitempty"`

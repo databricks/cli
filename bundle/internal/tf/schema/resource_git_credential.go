@@ -4,6 +4,7 @@ package schema
 
 type ResourceGitCredential struct {
 	Force                bool   `json:"force,omitempty"`
+	GitEmail             string `json:"git_email,omitempty"`
 	GitProvider          string `json:"git_provider"`
 	GitUsername          string `json:"git_username,omitempty"`
 	Id                   string `json:"id,omitempty"`

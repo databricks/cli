@@ -58,6 +58,12 @@ type DataSourceAppsAppResourcesDatabase struct {
 	Permission   string `json:"permission"`
 }
 
+type DataSourceAppsAppResourcesGenieSpace struct {
+	Name       string `json:"name"`
+	Permission string `json:"permission"`
+	SpaceId    string `json:"space_id"`
+}
+
 type DataSourceAppsAppResourcesJob struct {
 	Id         string `json:"id"`
 	Permission string `json:"permission"`
@@ -88,6 +94,7 @@ type DataSourceAppsAppResourcesUcSecurable struct {
 type DataSourceAppsAppResources struct {
 	Database        *DataSourceAppsAppResourcesDatabase        `json:"database,omitempty"`
 	Description     string                                     `json:"description,omitempty"`
+	GenieSpace      *DataSourceAppsAppResourcesGenieSpace      `json:"genie_space,omitempty"`
 	Job             *DataSourceAppsAppResourcesJob             `json:"job,omitempty"`
 	Name            string                                     `json:"name"`
 	Secret          *DataSourceAppsAppResourcesSecret          `json:"secret,omitempty"`
@@ -100,6 +107,7 @@ type DataSourceAppsApp struct {
 	ActiveDeployment         *DataSourceAppsAppActiveDeployment  `json:"active_deployment,omitempty"`
 	AppStatus                *DataSourceAppsAppAppStatus         `json:"app_status,omitempty"`
 	BudgetPolicyId           string                              `json:"budget_policy_id,omitempty"`
+	ComputeSize              string                              `json:"compute_size,omitempty"`
 	ComputeStatus            *DataSourceAppsAppComputeStatus     `json:"compute_status,omitempty"`
 	CreateTime               string                              `json:"create_time,omitempty"`
 	Creator                  string                              `json:"creator,omitempty"`

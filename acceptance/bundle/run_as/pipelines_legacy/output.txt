@@ -4,14 +4,6 @@ Warning: You are using the legacy mode of run_as. The support for this mode is e
   at experimental.use_legacy_run_as
   in databricks.yml:8:22
 
-Warning: required field "catalog_name" is not set
-  at resources.registered_models.model_two
-  in databricks.yml:59:7
-
-Warning: required field "schema_name" is not set
-  at resources.registered_models.model_two
-  in databricks.yml:59:7
-
 
 >>> jq .run_as
 {

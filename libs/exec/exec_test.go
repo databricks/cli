@@ -147,11 +147,12 @@ func TestMultipleCommandsRunInParrallel(t *testing.T) {
 	var wg sync.WaitGroup
 
 	for i := range count {
-		wg.Add(1)
 		cmd, err := executor.StartCommand(context.Background(), fmt.Sprintf("echo 'Hello %d'", i))
-		go func(cmd Command, i int) {
-			defer wg.Done()
+		if !assert.NoError(t, err) {
+			continue
+		}
 
+		wg.Go(func() {
 			stdout := cmd.Stdout()
 			out, err := io.ReadAll(stdout)
 			assert.NoError(t, err)
@@ -160,8 +161,7 @@ func TestMultipleCommandsRunInParrallel(t *testing.T) {
 			assert.NoError(t, err)
 
 			assert.Equal(t, fmt.Sprintf("Hello %d\n", i), string(out))
-		}(cmd, i)
-		assert.NoError(t, err)
+		})
 	}
 
 	wg.Wait()

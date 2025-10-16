@@ -11,5 +11,4 @@ type DataSourceQualityMonitorV2 struct {
 	AnomalyDetectionConfig *DataSourceQualityMonitorV2AnomalyDetectionConfig `json:"anomaly_detection_config,omitempty"`
 	ObjectId               string                                            `json:"object_id"`
 	ObjectType             string                                            `json:"object_type"`
-	WorkspaceId            string                                            `json:"workspace_id,omitempty"`
 }

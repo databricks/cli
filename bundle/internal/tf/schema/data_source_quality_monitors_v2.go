@@ -15,5 +15,4 @@ type DataSourceQualityMonitorsV2QualityMonitors struct {
 
 type DataSourceQualityMonitorsV2 struct {
 	QualityMonitors []DataSourceQualityMonitorsV2QualityMonitors `json:"quality_monitors,omitempty"`
-	WorkspaceId     string                                       `json:"workspace_id,omitempty"`
 }

@@ -152,7 +152,50 @@ test case in your responses. I am just interested in the tests.
 - Each test directory contains `databricks.yml`, `script`, and `output.txt`
 - Run with `go test ./acceptance -run TestAccept/bundle/<path>/<to>/<folder> -tail -test.v`
 - Use `-update` flag to regenerate expected output files
-- When you see the test fails because it has an old output, just run it one more time with an `-update` flag instead of changing the `output.txt` directly
+- When a test fails because it has an old output, just run it one more time with an `-update` flag instead of changing the `output.txt` directly
+
+**When asked to update acceptance tests, follow this workflow**:
+
+1. **Run the update command**:
+   - For all acceptance tests: `make test-update`
+   - When asked to update acceptance tests for templates specifically: `make test-update-templates`
+
+2. **Verify code quality**:
+   - Run `make fmt` and `make lint`
+   - **Critical**: If these commands modify any files in `acceptance/`, this indicates an issue in the source files (e.g., in `libs/template/templates/` for template tests)!
+
+3. **Fix the root cause**:
+   - **Never manually edit files in `acceptance/`** - they are auto-generated outputs
+   - Find and fix the corresponding source file that generated the problematic acceptance test output
+   - For template tests: fix files in `libs/template/templates/`
+   - Common issues: trailing whitespace, missing/extra newlines, formatting problems
+
+4. **Regenerate after fixing**:
+   - After fixing the source files, run the update command again (e.g., `make test-update-templates`)
+   - This regenerates the acceptance test outputs from the corrected sources
+   - Now `make fmt` and `make lint` should pass with no changes
+
+**Example workflow**:
+```bash
+# Update acceptance tests
+make test-update  # or make test-update-templates for templates only
+
+# Check for issues - if these modify files in acceptance/, you have a source file problem
+make fmt
+make lint
+
+# If there are modifications in acceptance/:
+# 1. Find the corresponding source file (e.g., in libs/template/templates/ for templates)
+# 2. Fix the issue there (e.g., whitespace, newlines)
+# 3. Regenerate from the fixed source
+make test-update  # or make test-update-templates
+
+# Verify everything is clean
+make fmt    # Should show no changes now
+make lint   # Should show no issues now
+```
+
+**Key principle**: Files in `acceptance/` are outputs, not sources. Always fix the source files and regenerate.
 
 # Logging
 

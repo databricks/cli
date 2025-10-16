@@ -23,9 +23,6 @@ type Resources struct {
 	BudgetPolicy                                 map[string]any `json:"databricks_budget_policy,omitempty"`
 	Catalog                                      map[string]any `json:"databricks_catalog,omitempty"`
 	CatalogWorkspaceBinding                      map[string]any `json:"databricks_catalog_workspace_binding,omitempty"`
-	CleanRoomAsset                               map[string]any `json:"databricks_clean_room_asset,omitempty"`
-	CleanRoomAutoApprovalRule                    map[string]any `json:"databricks_clean_room_auto_approval_rule,omitempty"`
-	CleanRoomsCleanRoom                          map[string]any `json:"databricks_clean_rooms_clean_room,omitempty"`
 	Cluster                                      map[string]any `json:"databricks_cluster,omitempty"`
 	ClusterPolicy                                map[string]any `json:"databricks_cluster_policy,omitempty"`
 	ComplianceSecurityProfileWorkspaceSetting    map[string]any `json:"databricks_compliance_security_profile_workspace_setting,omitempty"`
@@ -33,6 +30,8 @@ type Resources struct {
 	Credential                                   map[string]any `json:"databricks_credential,omitempty"`
 	CustomAppIntegration                         map[string]any `json:"databricks_custom_app_integration,omitempty"`
 	Dashboard                                    map[string]any `json:"databricks_dashboard,omitempty"`
+	DataQualityMonitor                           map[string]any `json:"databricks_data_quality_monitor,omitempty"`
+	DataQualityRefresh                           map[string]any `json:"databricks_data_quality_refresh,omitempty"`
 	DatabaseDatabaseCatalog                      map[string]any `json:"databricks_database_database_catalog,omitempty"`
 	DatabaseInstance                             map[string]any `json:"databricks_database_instance,omitempty"`
 	DatabaseSyncedDatabaseTable                  map[string]any `json:"databricks_database_synced_database_table,omitempty"`
@@ -47,6 +46,7 @@ type Resources struct {
 	EntityTagAssignment                          map[string]any `json:"databricks_entity_tag_assignment,omitempty"`
 	ExternalLocation                             map[string]any `json:"databricks_external_location,omitempty"`
 	ExternalMetadata                             map[string]any `json:"databricks_external_metadata,omitempty"`
+	FeatureEngineeringFeature                    map[string]any `json:"databricks_feature_engineering_feature,omitempty"`
 	File                                         map[string]any `json:"databricks_file,omitempty"`
 	GitCredential                                map[string]any `json:"databricks_git_credential,omitempty"`
 	GlobalInitScript                             map[string]any `json:"databricks_global_init_script,omitempty"`
@@ -102,6 +102,7 @@ type Resources struct {
 	RegisteredModel                              map[string]any `json:"databricks_registered_model,omitempty"`
 	Repo                                         map[string]any `json:"databricks_repo,omitempty"`
 	RestrictWorkspaceAdminsSetting               map[string]any `json:"databricks_restrict_workspace_admins_setting,omitempty"`
+	RfaAccessRequestDestinations                 map[string]any `json:"databricks_rfa_access_request_destinations,omitempty"`
 	Schema                                       map[string]any `json:"databricks_schema,omitempty"`
 	Secret                                       map[string]any `json:"databricks_secret,omitempty"`
 	SecretAcl                                    map[string]any `json:"databricks_secret_acl,omitempty"`
@@ -160,9 +161,6 @@ func NewResources() *Resources {
 		BudgetPolicy:                           make(map[string]any),
 		Catalog:                                make(map[string]any),
 		CatalogWorkspaceBinding:                make(map[string]any),
-		CleanRoomAsset:                         make(map[string]any),
-		CleanRoomAutoApprovalRule:              make(map[string]any),
-		CleanRoomsCleanRoom:                    make(map[string]any),
 		Cluster:                                make(map[string]any),
 		ClusterPolicy:                          make(map[string]any),
 		ComplianceSecurityProfileWorkspaceSetting: make(map[string]any),
@@ -170,6 +168,8 @@ func NewResources() *Resources {
 		Credential:                   make(map[string]any),
 		CustomAppIntegration:         make(map[string]any),
 		Dashboard:                    make(map[string]any),
+		DataQualityMonitor:           make(map[string]any),
+		DataQualityRefresh:           make(map[string]any),
 		DatabaseDatabaseCatalog:      make(map[string]any),
 		DatabaseInstance:             make(map[string]any),
 		DatabaseSyncedDatabaseTable:  make(map[string]any),
@@ -184,6 +184,7 @@ func NewResources() *Resources {
 		EntityTagAssignment:               make(map[string]any),
 		ExternalLocation:                  make(map[string]any),
 		ExternalMetadata:                  make(map[string]any),
+		FeatureEngineeringFeature:         make(map[string]any),
 		File:                              make(map[string]any),
 		GitCredential:                     make(map[string]any),
 		GlobalInitScript:                  make(map[string]any),
@@ -239,6 +240,7 @@ func NewResources() *Resources {
 		RegisteredModel:                   make(map[string]any),
 		Repo:                              make(map[string]any),
 		RestrictWorkspaceAdminsSetting:    make(map[string]any),
+		RfaAccessRequestDestinations:      make(map[string]any),
 		Schema:                            make(map[string]any),
 		Secret:                            make(map[string]any),
 		SecretAcl:                         make(map[string]any),

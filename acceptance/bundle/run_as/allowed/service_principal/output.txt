@@ -1,13 +1,5 @@
 
 >>> [CLI] bundle validate -o json
-Warning: required field "catalog_name" is not set
-  at resources.registered_models.model_two
-  in databricks.yml:50:7
-
-Warning: required field "schema_name" is not set
-  at resources.registered_models.model_two
-  in databricks.yml:50:7
-
 
 >>> jq .run_as
 {
@@ -46,14 +38,6 @@ Warning: required field "schema_name" is not set
 }
 
 >>> [CLI] bundle validate -o json -t development
-Warning: required field "catalog_name" is not set
-  at resources.registered_models.model_two
-  in databricks.yml:50:7
-
-Warning: required field "schema_name" is not set
-  at resources.registered_models.model_two
-  in databricks.yml:50:7
-
 
 >>> jq .run_as
 {

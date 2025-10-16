@@ -52,5 +52,4 @@ type DataSourcePolicyInfos struct {
 	OnSecurableFullname string                          `json:"on_securable_fullname"`
 	OnSecurableType     string                          `json:"on_securable_type"`
 	Policies            []DataSourcePolicyInfosPolicies `json:"policies,omitempty"`
-	WorkspaceId         string                          `json:"workspace_id,omitempty"`
 }

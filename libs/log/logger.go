@@ -19,7 +19,7 @@ func GetLogger(ctx context.Context) *slog.Logger {
 }
 
 // helper function to abstract logging a string message.
-func log(logger *slog.Logger, ctx context.Context, level slog.Level, msg string) {
+func log(ctx context.Context, logger *slog.Logger, level slog.Level, msg string) {
 	var pcs [1]uintptr
 	// skip [runtime.Callers, this function, this function's caller].
 	runtime.Callers(3, pcs[:])
@@ -36,7 +36,7 @@ func Trace(ctx context.Context, msg string) {
 	if !logger.Enabled(ctx, LevelTrace) {
 		return
 	}
-	log(logger, ctx, LevelTrace, msg)
+	log(ctx, logger, LevelTrace, msg)
 }
 
 // Debug logs a string using the context-local or global logger.
@@ -45,7 +45,7 @@ func Debug(ctx context.Context, msg string) {
 	if !logger.Enabled(ctx, LevelDebug) {
 		return
 	}
-	log(logger, ctx, LevelDebug, msg)
+	log(ctx, logger, LevelDebug, msg)
 }
 
 // Info logs a string using the context-local or global logger.
@@ -54,7 +54,7 @@ func Info(ctx context.Context, msg string) {
 	if !logger.Enabled(ctx, LevelInfo) {
 		return
 	}
-	log(logger, ctx, LevelInfo, msg)
+	log(ctx, logger, LevelInfo, msg)
 }
 
 // Warn logs a string using the context-local or global logger.
@@ -63,7 +63,7 @@ func Warn(ctx context.Context, msg string) {
 	if !logger.Enabled(ctx, LevelWarn) {
 		return
 	}
-	log(logger, ctx, LevelWarn, msg)
+	log(ctx, logger, LevelWarn, msg)
 }
 
 // Error logs a string using the context-local or global logger.
@@ -72,7 +72,7 @@ func Error(ctx context.Context, msg string) {
 	if !logger.Enabled(ctx, LevelError) {
 		return
 	}
-	log(logger, ctx, LevelError, msg)
+	log(ctx, logger, LevelError, msg)
 }
 
 // Tracef logs a formatted string using the context-local or global logger.
@@ -81,7 +81,7 @@ func Tracef(ctx context.Context, format string, v ...any) {
 	if !logger.Enabled(ctx, LevelTrace) {
 		return
 	}
-	log(logger, ctx, LevelTrace, fmt.Sprintf(format, v...))
+	log(ctx, logger, LevelTrace, fmt.Sprintf(format, v...))
 }
 
 // Debugf logs a formatted string using the context-local or global logger.
@@ -90,7 +90,7 @@ func Debugf(ctx context.Context, format string, v ...any) {
 	if !logger.Enabled(ctx, LevelDebug) {
 		return
 	}
-	log(logger, ctx, LevelDebug, fmt.Sprintf(format, v...))
+	log(ctx, logger, LevelDebug, fmt.Sprintf(format, v...))
 }
 
 // Infof logs a formatted string using the context-local or global logger.
@@ -99,7 +99,7 @@ func Infof(ctx context.Context, format string, v ...any) {
 	if !logger.Enabled(ctx, LevelInfo) {
 		return
 	}
-	log(logger, ctx, LevelInfo, fmt.Sprintf(format, v...))
+	log(ctx, logger, LevelInfo, fmt.Sprintf(format, v...))
 }
 
 // Warnf logs a formatted string using the context-local or global logger.
@@ -108,7 +108,7 @@ func Warnf(ctx context.Context, format string, v ...any) {
 	if !logger.Enabled(ctx, LevelWarn) {
 		return
 	}
-	log(logger, ctx, LevelWarn, fmt.Sprintf(format, v...))
+	log(ctx, logger, LevelWarn, fmt.Sprintf(format, v...))
 }
 
 // Errorf logs a formatted string using the context-local or global logger.
@@ -117,5 +117,5 @@ func Errorf(ctx context.Context, format string, v ...any) {
 	if !logger.Enabled(ctx, LevelError) {
 		return
 	}
-	log(logger, ctx, LevelError, fmt.Sprintf(format, v...))
+	log(ctx, logger, LevelError, fmt.Sprintf(format, v...))
 }

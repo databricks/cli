@@ -8,5 +8,4 @@ type DataSourceDatabaseDatabaseCatalog struct {
 	DatabaseName              string `json:"database_name"`
 	Name                      string `json:"name"`
 	Uid                       string `json:"uid,omitempty"`
-	WorkspaceId               string `json:"workspace_id,omitempty"`
 }

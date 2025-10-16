@@ -34,7 +34,7 @@ type DataSourceJobJobSettingsSettingsEnvironmentSpec struct {
 	Client             string   `json:"client,omitempty"`
 	Dependencies       []string `json:"dependencies,omitempty"`
 	EnvironmentVersion string   `json:"environment_version,omitempty"`
-	JarDependencies    []string `json:"jar_dependencies,omitempty"`
+	JavaDependencies   []string `json:"java_dependencies,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsEnvironment struct {

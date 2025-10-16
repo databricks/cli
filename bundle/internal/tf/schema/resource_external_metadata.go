@@ -17,5 +17,4 @@ type ResourceExternalMetadata struct {
 	UpdateTime  string            `json:"update_time,omitempty"`
 	UpdatedBy   string            `json:"updated_by,omitempty"`
 	Url         string            `json:"url,omitempty"`
-	WorkspaceId string            `json:"workspace_id,omitempty"`
 }
