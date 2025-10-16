@@ -14,5 +14,5 @@
 # The endpoint returns an error (Oct 7 2025)
 #integration/libs/telemetry TestTelemetryEndpoint
 
-# This is test is consistently failing in nightlies timing out when trying to stop an app (Oct 16 2025):
+# This test is consistently failing in nightlies timing out when trying to stop an app (Oct 16 2025):
 acceptance TestAccept/bundle/run/app-with-job
