@@ -27,7 +27,6 @@ func (*ResourceDashboard) New(client *databricks.WorkspaceClient) *ResourceDashb
 	return &ResourceDashboard{client: client}
 }
 
-// TOOD: Serialize the dashboard from a JSON object to a string. Add a test case for it.
 func (*ResourceDashboard) PrepareState(input *resources.Dashboard) *resources.DashboardConfig {
 	// Unset serialized dashboard in the [dashboards.Dashboard] struct.
 	// Only the serialized_dashboard field in the [dashboard.DashboardConfig] struct should be used.
@@ -97,7 +96,6 @@ func (r *ResourceDashboard) RemapState(state *resources.DashboardConfig) *resour
 	return dashboard
 }
 
-// TODO: Add test ensuring that the detection of serialized dashboard local changes works properly.
 func (r *ResourceDashboard) DoRefresh(ctx context.Context, id string) (*resources.DashboardConfig, error) {
 	wg := sync.WaitGroup{}
 	var dashboard *dashboards.Dashboard
@@ -157,10 +155,8 @@ func isParentDoesntExistError(err error) bool {
 func prepareDashboardRequest(config *resources.DashboardConfig) (dashboards.Dashboard, error) {
 	// Fields like "embed_credentials" are part of the bundle configuration but not the create request here.
 	// Thus we need to filter such fields out.
-	// TODO: Do we need this line?
 	config.Dashboard.ForceSendFields = filterFields[dashboards.Dashboard](config.Dashboard.ForceSendFields)
 
-	// TODO: Add test for inline serialized dashboard. Is there a persistent drift?
 	dashboard := config.Dashboard
 	v := config.SerializedDashboard
 	if _, ok := v.(string); ok {
