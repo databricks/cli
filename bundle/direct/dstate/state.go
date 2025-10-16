@@ -150,7 +150,6 @@ func (db *DeploymentState) ExportState(ctx context.Context) resourcestate.Export
 		// Extract etag for dashboards.
 		var etag string
 		switch dashboard := entry.State.(type) {
-		// TODO(shreyas): Can the state here be collapsed? Look into the root cause of this divergence.
 		// Dashboard state has type map[string]any during bundle deployment.
 		// covered by test case: bundle/deploy/dashboard/detect-change
 		case map[string]any:
