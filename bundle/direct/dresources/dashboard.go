@@ -297,7 +297,7 @@ func (*ResourceDashboard) FieldTriggers(isLocal bool) map[string]deployplan.Acti
 		// to make this relationship clear.
 		triggers["etag"] = deployplan.ActionTypeUpdate
 
-		// "serialized_dashboard" locally and remotely will have different diffs. =
+		// "serialized_dashboard" locally and remotely will have different diffs.
 		// We only need to rely on etag here, and can skip this field for diff computation.
 		triggers["serialized_dashboard"] = deployplan.ActionTypeSkip
 	}

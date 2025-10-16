@@ -30,16 +30,17 @@ func (*ResourceRegisteredModel) RemapState(model *catalog.RegisteredModelInfo) *
 		Name:            model.Name,
 		SchemaName:      model.SchemaName,
 		StorageLocation: model.StorageLocation,
-		Aliases:         model.Aliases,
-		BrowseOnly:      model.BrowseOnly,
-		CreatedAt:       model.CreatedAt,
-		CreatedBy:       model.CreatedBy,
-		FullName:        model.FullName,
-		MetastoreId:     model.MetastoreId,
-		Owner:           model.Owner,
-		UpdatedAt:       model.UpdatedAt,
-		UpdatedBy:       model.UpdatedBy,
 		ForceSendFields: filterFields[catalog.CreateRegisteredModelRequest](model.ForceSendFields),
+
+		Aliases:     model.Aliases,
+		BrowseOnly:  model.BrowseOnly,
+		CreatedAt:   model.CreatedAt,
+		CreatedBy:   model.CreatedBy,
+		FullName:    model.FullName,
+		MetastoreId: model.MetastoreId,
+		Owner:       model.Owner,
+		UpdatedAt:   model.UpdatedAt,
+		UpdatedBy:   model.UpdatedBy,
 	}
 }
 
