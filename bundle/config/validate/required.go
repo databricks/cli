@@ -22,8 +22,7 @@ func (f *required) Name() string {
 	return "validate:required"
 }
 
-// Warn for missing fields, based on annotations in the Go SDK / OpenAPI spec.
-func warnForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (f *required) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
 	// Generate prefix tree for all required fields.
@@ -81,54 +80,5 @@ func warnForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 		return iLocs < jLocs
 	})
 
-	return diags
-}
-
-// Bespoke code to error for fields that are not marked as required in the Go SDK / OpenAPI spec.
-func errorForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	// Dashboards should always have a name and warehouse_id.
-	var nameLocations []dyn.Location
-	var namePaths []dyn.Path
-	var warehouseIdLocations []dyn.Location
-	var warehouseIdPaths []dyn.Path
-
-	diags := diag.Diagnostics{}
-	for key, dashboard := range b.Config.Resources.Dashboards {
-		if dashboard.DisplayName == "" {
-			nameLocations = append(nameLocations, b.Config.GetLocations("resources.dashboards."+key)...)
-			namePaths = append(namePaths, dyn.MustPathFromString("resources.dashboards."+key))
-		}
-		if dashboard.WarehouseId == "" {
-			warehouseIdLocations = append(warehouseIdLocations, b.Config.GetLocations("resources.dashboards."+key)...)
-			warehouseIdPaths = append(warehouseIdPaths, dyn.MustPathFromString("resources.dashboards."+key))
-		}
-	}
-
-	if len(nameLocations) > 0 {
-		diags = diags.Append(diag.Diagnostic{
-			Severity:  diag.Error,
-			Summary:   "name is required for dashboards",
-			Locations: nameLocations,
-			Paths:     namePaths,
-		})
-	}
-	if len(warehouseIdLocations) > 0 {
-		diags = diags.Append(diag.Diagnostic{
-			Severity:  diag.Error,
-			Summary:   "warehouse_id is required for dashboards",
-			Locations: warehouseIdLocations,
-			Paths:     warehouseIdPaths,
-		})
-	}
-
-	return diags
-}
-
-func (f *required) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	diags := errorForMissingFields(ctx, b)
-	if diags.HasError() {
-		return diags
-	}
-	diags = diags.Extend(warnForMissingFields(ctx, b))
 	return diags
 }
