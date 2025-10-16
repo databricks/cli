@@ -1,7 +1,0 @@
-{
-  "plan": {
-    "resources.jobs.job_with_permissions": {
-      "action": "create"
-    }
-  }
-}
