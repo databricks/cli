@@ -1,6 +1,6 @@
 
 >>> [CLI] bundle validate
-Error: warehouse_id is required for dashboards
+Error: dashboard warehouse_id is required
   at resources.dashboards.my_dashboard
   in databricks.yml:6:7
 

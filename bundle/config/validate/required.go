@@ -107,7 +107,7 @@ func errorForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 	if len(nameLocations) > 0 {
 		diags = diags.Append(diag.Diagnostic{
 			Severity:  diag.Error,
-			Summary:   "name is required for dashboards",
+			Summary:   "dashboard display_name is required",
 			Locations: nameLocations,
 			Paths:     namePaths,
 		})
@@ -115,7 +115,7 @@ func errorForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 	if len(warehouseIdLocations) > 0 {
 		diags = diags.Append(diag.Diagnostic{
 			Severity:  diag.Error,
-			Summary:   "warehouse_id is required for dashboards",
+			Summary:   "dashboard warehouse_id is required",
 			Locations: warehouseIdLocations,
 			Paths:     warehouseIdPaths,
 		})

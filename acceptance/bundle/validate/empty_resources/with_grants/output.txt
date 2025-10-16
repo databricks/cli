@@ -169,6 +169,14 @@ Warning: unknown field: grants
   at resources.dashboards.rname
   in databricks.yml:7:7
 
+Error: dashboard display_name is required
+  at resources.dashboards.rname
+  in databricks.yml:7:7
+
+Error: dashboard warehouse_id is required
+  at resources.dashboards.rname
+  in databricks.yml:7:7
+
 {
   "dashboards": {
     "rname": {

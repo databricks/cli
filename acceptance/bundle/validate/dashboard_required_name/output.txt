@@ -1,6 +1,6 @@
 
 >>> [CLI] bundle validate
-Error: name is required for dashboards
+Error: dashboard display_name is required
   at resources.dashboards.my_dashboard
   in databricks.yml:6:7
 
