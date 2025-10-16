@@ -29,16 +29,16 @@ To get started, refer to the project README.md file and the documentation at htt
 +      catalog: customcatalog
        schema: prod
      permissions:
---- [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/output/my_default_python/resources/default_python_etl.pipeline.yml
-+++ output/my_default_python/resources/default_python_etl.pipeline.yml
+--- [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/output/my_default_python/resources/my_default_python_etl.pipeline.yml
++++ output/my_default_python/resources/my_default_python_etl.pipeline.yml
 @@ -5,5 +5,4 @@
-     default_python_etl:
-       name: default_python_etl
+     my_default_python_etl:
+       name: my_default_python_etl
 -      ## Catalog is required for serverless compute
        catalog: ${var.catalog}
        schema: ${var.schema}
---- [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/output/my_default_python/src/default_python_etl/explorations/sample_exploration.ipynb
-+++ output/my_default_python/src/default_python_etl/explorations/sample_exploration.ipynb
+--- [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/output/my_default_python/src/my_default_python_etl/explorations/sample_exploration.ipynb
++++ output/my_default_python/src/my_default_python_etl/explorations/sample_exploration.ipynb
 @@ -38,5 +38,5 @@
      "# !!! Before performing any data analysis, make sure to run the pipeline to materialize the sample datasets. The tables referenced in this notebook depend on that step./n",
      "/n",

@@ -3,8 +3,8 @@
     "resources.jobs.sample_job": {
       "depends_on": [
         {
-          "node": "resources.pipelines.default_python_etl",
-          "label": "${resources.pipelines.default_python_etl.id}"
+          "node": "resources.pipelines.my_default_python_etl",
+          "label": "${resources.pipelines.my_default_python_etl.id}"
         }
       ],
       "action": "create",
@@ -90,7 +90,7 @@
                 }
               ],
               "pipeline_task": {
-                "pipeline_id": "${resources.pipelines.default_python_etl.id}"
+                "pipeline_id": "${resources.pipelines.my_default_python_etl.id}"
               },
               "task_key": "refresh_pipeline"
             }
@@ -104,11 +104,11 @@
           }
         },
         "vars": {
-          "tasks[2].pipeline_task.pipeline_id": "${resources.pipelines.default_python_etl.id}"
+          "tasks[2].pipeline_task.pipeline_id": "${resources.pipelines.my_default_python_etl.id}"
         }
       }
     },
-    "resources.pipelines.default_python_etl": {
+    "resources.pipelines.my_default_python_etl": {
       "action": "create",
       "new_state": {
         "config": {
@@ -126,12 +126,12 @@
           "libraries": [
             {
               "glob": {
-                "include": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/prod/files/src/default_python_etl/transformations/**"
+                "include": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/prod/files/src/my_default_python_etl/transformations/**"
               }
             }
           ],
-          "name": "default_python_etl",
-          "root_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/prod/files/src/default_python_etl",
+          "name": "my_default_python_etl",
+          "root_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/prod/files/src/my_default_python_etl",
           "schema": "prod"
         }
       }

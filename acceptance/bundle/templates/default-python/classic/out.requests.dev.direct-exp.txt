@@ -17,12 +17,12 @@
     "libraries": [
       {
         "glob": {
-          "include": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/files/src/default_python_etl/transformations/**"
+          "include": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/files/src/my_default_python_etl/transformations/**"
         }
       }
     ],
-    "name": "[dev [USERNAME]] default_python_etl",
-    "root_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/files/src/default_python_etl",
+    "name": "[dev [USERNAME]] my_default_python_etl",
+    "root_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/files/src/my_default_python_etl",
     "schema": "[USERNAME]",
     "tags": {
       "dev": "[USERNAME]"
@@ -69,14 +69,14 @@
   "method": "POST",
   "path": "/api/2.0/workspace/mkdirs",
   "body": {
-    "path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/files/src/default_python_etl/transformations"
+    "path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/files/src/my_default_python"
   }
 }
 {
   "method": "POST",
   "path": "/api/2.0/workspace/mkdirs",
   "body": {
-    "path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/files/src/my_default_python"
+    "path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/files/src/my_default_python_etl/transformations"
   }
 }
 {

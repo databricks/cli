@@ -42,7 +42,7 @@ resources:
           depends_on:
             - task_key: notebook_task
           pipeline_task:
-            pipeline_id: ${resources.pipelines.default_python_etl.id}
+            pipeline_id: ${resources.pipelines.my_default_python_etl.id}
 
       environments:
         - environment_key: default

@@ -7,18 +7,18 @@
 +      artifacts_dynamic_version: true
    prod:
      mode: production
---- [TESTROOT]/bundle/templates/default-python/classic/../serverless/output/my_default_python/resources/default_python_etl.pipeline.yml
-+++ output/my_default_python/resources/default_python_etl.pipeline.yml
+--- [TESTROOT]/bundle/templates/default-python/classic/../serverless/output/my_default_python/resources/my_default_python_etl.pipeline.yml
++++ output/my_default_python/resources/my_default_python_etl.pipeline.yml
 @@ -5,8 +5,7 @@
-     default_python_etl:
-       name: default_python_etl
+     my_default_python_etl:
+       name: my_default_python_etl
 -      ## Catalog is required for serverless compute
 -      catalog: ${var.catalog}
 +      ## Specify the 'catalog' field to configure this pipeline to make use of Unity Catalog:
 +      # catalog: ${var.catalog}
        schema: ${var.schema}
 -      serverless: true
-       root_path: "../src/default_python_etl"
+       root_path: "../src/my_default_python_etl"
 
 --- [TESTROOT]/bundle/templates/default-python/classic/../serverless/output/my_default_python/resources/sample_job.job.yml
 +++ output/my_default_python/resources/sample_job.job.yml
@@ -47,7 +47,7 @@
          - task_key: refresh_pipeline
            depends_on:
 @@ -45,11 +55,11 @@
-             pipeline_id: ${resources.pipelines.default_python_etl.id}
+             pipeline_id: ${resources.pipelines.my_default_python_etl.id}
 
 -      environments:
 -        - environment_key: default

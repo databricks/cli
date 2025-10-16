@@ -3,7 +3,7 @@
     "resources.jobs.sample_job": {
       "action": "create"
     },
-    "resources.pipelines.default_python_etl": {
+    "resources.pipelines.my_default_python_etl": {
       "action": "create"
     }
   }

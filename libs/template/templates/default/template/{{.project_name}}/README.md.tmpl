@@ -57,11 +57,11 @@ with this project. It's also possible to interact with it directly using the CLI
     This deploys everything that's defined for this project.
     {{- if eq .include_pipeline "yes"}}
     For example, the default template would deploy a pipeline called
-    `[dev yourname] {{.project_name_short}}_etl` to your workspace.
+    `[dev yourname] {{.project_name}}_etl` to your workspace.
     You can find that resource by opening your workpace and clicking on **Jobs & Pipelines**.
     {{- else if eq .include_job "yes"}}
     For example, the default template would deploy a job called
-    `[dev yourname] {{.project_name_short}}_job` to your workspace.
+    `[dev yourname] {{.project_name}}_job` to your workspace.
     You can find that resource by opening your workpace and clicking on **Jobs & Pipelines**.
     {{- end}}
 

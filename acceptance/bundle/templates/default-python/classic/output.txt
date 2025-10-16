@@ -35,14 +35,14 @@ Validation OK!
 >>> [CLI] bundle plan -t dev
 Building python_artifact...
 create jobs.sample_job
-create pipelines.default_python_etl
+create pipelines.my_default_python_etl
 
 Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle plan -t prod
 Building python_artifact...
 create jobs.sample_job
-create pipelines.default_python_etl
+create pipelines.my_default_python_etl
 
 Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 Building python_artifact...

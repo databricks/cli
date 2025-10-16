@@ -2,17 +2,17 @@
 
 resources:
   pipelines:
-    default_python_etl:
-      name: default_python_etl
+    my_default_python_etl:
+      name: my_default_python_etl
       ## Catalog is required for serverless compute
       catalog: ${var.catalog}
       schema: ${var.schema}
       serverless: true
-      root_path: "../src/default_python_etl"
+      root_path: "../src/my_default_python_etl"
 
       libraries:
         - glob:
-            include: ../src/default_python_etl/transformations/**
+            include: ../src/my_default_python_etl/transformations/**
 
       environment:
         dependencies:

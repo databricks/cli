@@ -85,7 +85,7 @@ resources:
             - task_key: python_wheel_task
   {{- end}}
           pipeline_task:
-            pipeline_id: ${resources.pipelines.{{.project_name_short}}_etl.id}
+            pipeline_id: ${resources.pipelines.{{.project_name}}_etl.id}
 {{- end}}
 
 {{- if $serverless}}
