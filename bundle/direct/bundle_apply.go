@@ -134,6 +134,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 }
 
 func (b *DeploymentBundle) LookupReferenceRemote(ctx context.Context, path *structpath.PathNode) (any, error) {
+	// TODO: Prefix(3) assumes resources.jobs.foo but not resources.jobs.foo.permissions
 	targetResourceKey := path.Prefix(3).String()
 	fieldPath := path.SkipPrefix(3)
 	fieldPathS := fieldPath.String()
