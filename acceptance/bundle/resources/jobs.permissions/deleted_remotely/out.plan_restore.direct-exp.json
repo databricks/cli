@@ -48,6 +48,10 @@
             {
               "group_name": "data-team",
               "permission_level": "CAN_MANAGE"
+            },
+            {
+              "permission_level": "IS_OWNER",
+              "user_name": "[USERNAME]"
             }
           ]
         }
@@ -56,6 +60,32 @@
         "object_id": "/jobs/[JOB_ID]"
       },
       "changes": {
+        "local": {
+          "permissions[0].permission_level": {
+            "action": "update"
+          },
+          "permissions[0].user_name": {
+            "action": "update"
+          },
+          "permissions[1].group_name": {
+            "action": "update"
+          },
+          "permissions[1].permission_level": {
+            "action": "update"
+          },
+          "permissions[1].user_name": {
+            "action": "update"
+          },
+          "permissions[2].group_name": {
+            "action": "update"
+          },
+          "permissions[2].permission_level": {
+            "action": "update"
+          },
+          "permissions[2].user_name": {
+            "action": "update"
+          }
+        },
         "remote": {
           "permissions": {
             "action": "update"
