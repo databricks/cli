@@ -61,7 +61,7 @@ func snakeToTitle(snake string) string {
 func (r *ResourceDashboard) RemapState(state *resources.DashboardConfig) (*resources.DashboardConfig, error) {
 	// Output only fields are marked as skip in dashboards. They need to be cleaned up
 	// before comparing with local configuration.
-	fieldTriggersRemote := s.FieldTriggers(false)
+	fieldTriggersRemote := r.FieldTriggers(false)
 	var configForceSendFields []string
 	var dashboardForceSendFields []string
 	for k, v := range fieldTriggersRemote {
