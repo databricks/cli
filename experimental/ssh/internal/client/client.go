@@ -240,6 +240,7 @@ func spawnSSHClient(ctx context.Context, userName, privateKeyPath string, server
 	}
 
 	sshArgs := []string{
+		"-vv", // FIXME: delete after testing
 		"-l", userName,
 		"-i", privateKeyPath,
 		"-o", "StrictHostKeyChecking=accept-new",
