@@ -1,40 +1,17 @@
-Error: dashboard display_name is required
-  at resources.dashboards.set_to_true
-     resources.dashboards.completely_empty
-     resources.dashboards.empty_string
-     resources.dashboards.non_empty_string
-  in databricks.yml:13:7
-     databricks.yml:5:23
-     databricks.yml:7:7
-     databricks.yml:9:7
-
-Error: dashboard warehouse_id is required
-  at resources.dashboards.other_fields
-     resources.dashboards.set_to_true
-     resources.dashboards.completely_empty
-     resources.dashboards.empty_string
-     resources.dashboards.non_empty_string
-  in databricks.yml:11:7
-     databricks.yml:13:7
-     databricks.yml:5:23
-     databricks.yml:7:7
-     databricks.yml:9:7
-
 {
-  "completely_empty": {
-    "embed_credentials": false,
-    "parent_path": "/Workspace/foo/bar"
-  },
   "empty_string": {
     "embed_credentials": false,
     "parent_path": ""
+  },
+  "neither_parent_path_nor_embed_credentials": {
+    "embed_credentials": false,
+    "parent_path": "/Workspace/foo/bar"
   },
   "non_empty_string": {
     "embed_credentials": false,
     "parent_path": "already-set"
   },
   "other_fields": {
-    "display_name": "hello",
     "embed_credentials": false,
     "parent_path": "/Workspace/foo/bar"
   },
@@ -43,5 +20,3 @@ Error: dashboard warehouse_id is required
     "parent_path": "/Workspace/foo/bar"
   }
 }
-
-Exit code: 1
