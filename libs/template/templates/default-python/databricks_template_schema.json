@@ -36,7 +36,7 @@
             "type": "string",
             "default": "yes",
             "enum": ["yes", "no"],
-            "description": "Include a sample Python package that is built to a wheel file",
+            "description": "Include a sample Python package that builds into a wheel file",
             "order": 5
         },
         "serverless": {
