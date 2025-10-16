@@ -1,5 +1,5 @@
 bundle:
-  name: many-permissions-test
+  name: test-chain
 
 sync:
   exclude:

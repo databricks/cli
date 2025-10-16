@@ -14,7 +14,7 @@ GET /api/2.0/workspace/get-status
 GET /api/2.0/workspace/get-status
 GET /api/2.2/jobs/get
 GET /api/2.2/jobs/get
-POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/many-permissions-test/default/state/deploy.lock
+POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-chain/default/state/deploy.lock
 POST /api/2.0/workspace/delete
 POST /api/2.2/jobs/delete
 POST /api/2.2/jobs/delete

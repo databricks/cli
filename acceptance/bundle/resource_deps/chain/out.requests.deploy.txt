@@ -2,7 +2,7 @@
   "method": "POST",
   "path": "/api/2.0/workspace/delete",
   "body": {
-    "path": "/Workspace/Users/[USERNAME]/.bundle/many-permissions-test/default/artifacts/.internal",
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-chain/default/artifacts/.internal",
     "recursive": true
   }
 }
@@ -10,7 +10,7 @@
   "method": "POST",
   "path": "/api/2.0/workspace/mkdirs",
   "body": {
-    "path": "/Workspace/Users/[USERNAME]/.bundle/many-permissions-test/default/artifacts/.internal"
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-chain/default/artifacts/.internal"
   }
 }
 {
@@ -19,7 +19,7 @@
   "body": {
     "deployment": {
       "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/many-permissions-test/default/state/metadata.json"
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-chain/default/state/metadata.json"
     },
     "edit_mode": "UI_LOCKED",
     "format": "MULTI_TASK",
@@ -45,7 +45,7 @@
   "body": {
     "deployment": {
       "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/many-permissions-test/default/state/metadata.json"
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-chain/default/state/metadata.json"
     },
     "edit_mode": "UI_LOCKED",
     "format": "MULTI_TASK",
@@ -72,7 +72,7 @@
     "channel": "CURRENT",
     "deployment": {
       "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/many-permissions-test/default/state/metadata.json"
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-chain/default/state/metadata.json"
     },
     "edition": "ADVANCED",
     "name": "pipeline foo job bar job foo"
@@ -85,7 +85,7 @@
     "channel": "CURRENT",
     "deployment": {
       "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/many-permissions-test/default/state/metadata.json"
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-chain/default/state/metadata.json"
     },
     "edition": "ADVANCED",
     "name": "job bar pipeline foo job bar job foo"
@@ -95,6 +95,6 @@
   "method": "POST",
   "path": "/api/2.0/workspace/delete",
   "body": {
-    "path": "/Workspace/Users/[USERNAME]/.bundle/many-permissions-test/default/state/deploy.lock"
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-chain/default/state/deploy.lock"
   }
 }
