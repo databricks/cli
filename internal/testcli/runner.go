@@ -45,10 +45,8 @@ type Runner struct {
 
 func consumeLines(ctx context.Context, wg *sync.WaitGroup, r io.Reader) <-chan string {
 	ch := make(chan string, 30000)
-	wg.Add(1)
-	go func() {
+	wg.Go(func() {
 		defer close(ch)
-		defer wg.Done()
 		scanner := bufio.NewScanner(r)
 		for scanner.Scan() {
 			// We expect to be able to always send these lines into the channel.
@@ -63,7 +61,7 @@ func consumeLines(ctx context.Context, wg *sync.WaitGroup, r io.Reader) <-chan s
 				panic("line buffer is full")
 			}
 		}
-	}()
+	})
 	return ch
 }
 
@@ -250,11 +248,9 @@ func (r *Runner) Eventually(condition func() bool, waitFor, tick time.Duration, 
 	defer wg.Wait()
 
 	// Kick off condition check immediately.
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		ch <- condition()
-	}()
+	})
 
 	for tick := ticker.C; ; {
 		select {
@@ -266,11 +262,9 @@ func (r *Runner) Eventually(condition func() bool, waitFor, tick time.Duration, 
 			return
 		case <-tick:
 			tick = nil
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
+			wg.Go(func() {
 				ch <- condition()
-			}()
+			})
 		case v := <-ch:
 			if v {
 				return

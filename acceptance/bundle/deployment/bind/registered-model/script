@@ -13,7 +13,8 @@ cat databricks.yml
 trace $CLI schemas create ${SCHEMA_NAME} ${CATALOG_NAME} | jq '{full_name, catalog_name}'
 
 # Create a pre-defined registered model:
-MODEL_FULL_NAME=$($CLI registered-models create "${CATALOG_NAME}" "${SCHEMA_NAME}" "${MODEL_NAME}" | jq -r '.full_name')
+REGISTERED_MODEL_DEF="{\"name\": \"${MODEL_NAME}\", \"catalog_name\": \"${CATALOG_NAME}\", \"schema_name\": \"${SCHEMA_NAME}\"}"
+MODEL_FULL_NAME=$($CLI registered-models create --json "${REGISTERED_MODEL_DEF}" | jq -r '.full_name')
 
 cleanup() {
     trace $CLI registered-models delete "${MODEL_FULL_NAME}"

@@ -30,6 +30,7 @@ import (
 	current_user "github.com/databricks/cli/cmd/workspace/current-user"
 	dashboard_widgets "github.com/databricks/cli/cmd/workspace/dashboard-widgets"
 	dashboards "github.com/databricks/cli/cmd/workspace/dashboards"
+	data_quality "github.com/databricks/cli/cmd/workspace/data-quality"
 	data_sources "github.com/databricks/cli/cmd/workspace/data-sources"
 	database "github.com/databricks/cli/cmd/workspace/database"
 	entity_tag_assignments "github.com/databricks/cli/cmd/workspace/entity-tag-assignments"
@@ -152,6 +153,7 @@ func All() []*cobra.Command {
 	out = append(out, current_user.New())
 	out = append(out, dashboard_widgets.New())
 	out = append(out, dashboards.New())
+	out = append(out, data_quality.New())
 	out = append(out, data_sources.New())
 	out = append(out, database.New())
 	out = append(out, entity_tag_assignments.New())

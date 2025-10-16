@@ -37,7 +37,7 @@ class Environment:
     """
     :meta private: [EXPERIMENTAL]
     
-    List of jar dependencies, should be string representing volume paths. For example: `/Volumes/path/to/test.jar`.
+    List of java dependencies. Each dependency is a string representing a java library path. For example: `/Volumes/path/to/test.jar`.
     """
 
     @classmethod
@@ -72,7 +72,7 @@ class EnvironmentDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    List of jar dependencies, should be string representing volume paths. For example: `/Volumes/path/to/test.jar`.
+    List of java dependencies. Each dependency is a string representing a java library path. For example: `/Volumes/path/to/test.jar`.
     """
 
 
