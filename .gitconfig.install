@@ -1,0 +1,3 @@
+#!/bin/bash
+set -ex
+git config --local include.path "$(git rev-parse --show-toplevel)/.gitconfig.repo"
