@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http/httptest"
 	"os/exec"
+	"sync"
 	"testing"
 	"time"
 
@@ -152,7 +153,8 @@ func TestHandover(t *testing.T) {
 
 	expectedOutput := ""
 
-	go func() {
+	wg := sync.WaitGroup{}
+	wg.Go(func() {
 		for i := range TOTAL_MESSAGE_COUNT {
 			if i%MESSAGES_PER_CHUNK == 0 {
 				handoverChan <- time.Now()
@@ -164,10 +166,11 @@ func TestHandover(t *testing.T) {
 			}
 			expectedOutput += string(message)
 		}
-	}()
+	})
 
 	err := clientOutput.WaitForWrite(fmt.Appendf(nil, "message %d\n", TOTAL_MESSAGE_COUNT-1))
 	require.NoError(t, err, "failed to receive the last message (%d)", TOTAL_MESSAGE_COUNT-1)
 
+	wg.Wait()
 	assert.Equal(t, expectedOutput, clientOutput.String())
 }
