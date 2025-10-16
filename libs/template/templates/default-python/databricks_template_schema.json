@@ -60,7 +60,7 @@
             "default": "yes",
             "enum": [
                 "yes",
-                "no (advanced: I will customize the schema configuration later in databricks.yml)"
+                "no, I will customize the schema configuration later in databricks.yml"
             ],
             "order": 8
         },
