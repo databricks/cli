@@ -27,13 +27,18 @@ type C struct {
 }
 
 type Embedded struct {
-	EmbeddedField string `json:"embedded_field,omitempty"`
-	Count         int    `json:"count,omitempty"`
+	EmbeddedString string `json:"embedded_field,omitempty"`
+	EmbeddedInt    int    `json:"embedded_int,omitempty"`
 }
 
 type D struct {
 	Embedded        // Anonymous embedded struct
 	Name     string `json:"name,omitempty"`
+}
+
+type E struct {
+	*Embedded        // Pointer to anonymous embedded struct
+	Name      string `json:"name,omitempty"`
 }
 
 // ResolvedChange represents a change with the field path as a string (like the old Change struct)
@@ -274,23 +279,23 @@ func TestGetStructDiff(t *testing.T) {
 		// Embedded struct tests
 		{
 			name: "embedded struct field change",
-			a:    D{Embedded: Embedded{EmbeddedField: "old"}, Name: "test"},
-			b:    D{Embedded: Embedded{EmbeddedField: "new"}, Name: "test"},
+			a:    D{Embedded: Embedded{EmbeddedString: "old"}, Name: "test"},
+			b:    D{Embedded: Embedded{EmbeddedString: "new"}, Name: "test"},
 			want: []ResolvedChange{{Field: "embedded_field", Old: "old", New: "new"}},
 		},
 		{
 			name: "embedded struct multiple field changes",
-			a:    D{Embedded: Embedded{EmbeddedField: "old", Count: 5}, Name: "test"},
-			b:    D{Embedded: Embedded{EmbeddedField: "new", Count: 10}, Name: "test"},
+			a:    D{Embedded: Embedded{EmbeddedString: "old", EmbeddedInt: 5}, Name: "test"},
+			b:    D{Embedded: Embedded{EmbeddedString: "new", EmbeddedInt: 10}, Name: "test"},
 			want: []ResolvedChange{
 				{Field: "embedded_field", Old: "old", New: "new"},
-				{Field: "count", Old: 5, New: 10},
+				{Field: "embedded_int", Old: 5, New: 10},
 			},
 		},
 		{
 			name: "embedded and non-embedded field changes",
-			a:    D{Embedded: Embedded{EmbeddedField: "old"}, Name: "alice"},
-			b:    D{Embedded: Embedded{EmbeddedField: "new"}, Name: "bob"},
+			a:    D{Embedded: Embedded{EmbeddedString: "old"}, Name: "alice"},
+			b:    D{Embedded: Embedded{EmbeddedString: "new"}, Name: "bob"},
 			want: []ResolvedChange{
 				{Field: "embedded_field", Old: "old", New: "new"},
 				{Field: "name", Old: "alice", New: "bob"},
@@ -299,12 +304,12 @@ func TestGetStructDiff(t *testing.T) {
 		{
 			name: "embedded struct zero to non-zero",
 			a:    D{Name: "test"},
-			b:    D{Embedded: Embedded{EmbeddedField: "value"}, Name: "test"},
+			b:    D{Embedded: Embedded{EmbeddedString: "value"}, Name: "test"},
 			want: []ResolvedChange{{Field: "embedded_field", Old: nil, New: "value"}},
 		},
 		{
 			name: "embedded struct non-zero to zero",
-			a:    D{Embedded: Embedded{EmbeddedField: "value"}, Name: "test"},
+			a:    D{Embedded: Embedded{EmbeddedString: "value"}, Name: "test"},
 			b:    D{Name: "test"},
 			want: []ResolvedChange{{Field: "embedded_field", Old: "value", New: nil}},
 		},
@@ -316,9 +321,71 @@ func TestGetStructDiff(t *testing.T) {
 		},
 		{
 			name: "embedded struct only non-embedded field changes",
-			a:    D{Embedded: Embedded{EmbeddedField: "same"}, Name: "alice"},
-			b:    D{Embedded: Embedded{EmbeddedField: "same"}, Name: "bob"},
+			a:    D{Embedded: Embedded{EmbeddedString: "same"}, Name: "alice"},
+			b:    D{Embedded: Embedded{EmbeddedString: "same"}, Name: "bob"},
 			want: []ResolvedChange{{Field: "name", Old: "alice", New: "bob"}},
+		},
+
+		// Pointer embedded struct tests
+		{
+			name: "pointer embedded struct field change",
+			a:    E{Embedded: &Embedded{EmbeddedString: "old"}, Name: "test"},
+			b:    E{Embedded: &Embedded{EmbeddedString: "new"}, Name: "test"},
+			want: []ResolvedChange{{Field: "embedded_field", Old: "old", New: "new"}},
+		},
+		{
+			name: "pointer embedded struct multiple field changes",
+			a:    E{Embedded: &Embedded{EmbeddedString: "old", EmbeddedInt: 5}, Name: "test"},
+			b:    E{Embedded: &Embedded{EmbeddedString: "new", EmbeddedInt: 10}, Name: "test"},
+			want: []ResolvedChange{
+				{Field: "embedded_field", Old: "old", New: "new"},
+				{Field: "embedded_int", Old: 5, New: 10},
+			},
+		},
+		{
+			name: "pointer embedded and non-embedded field changes",
+			a:    E{Embedded: &Embedded{EmbeddedString: "old"}, Name: "alice"},
+			b:    E{Embedded: &Embedded{EmbeddedString: "new"}, Name: "bob"},
+			want: []ResolvedChange{
+				{Field: "embedded_field", Old: "old", New: "new"},
+				{Field: "name", Old: "alice", New: "bob"},
+			},
+		},
+		{
+			name: "pointer embedded struct nil to non-nil",
+			a:    E{Name: "test"},
+			b:    E{Embedded: &Embedded{EmbeddedString: "value"}, Name: "test"},
+			want: []ResolvedChange{{Field: "", Old: (*Embedded)(nil), New: &Embedded{EmbeddedString: "value"}}},
+		},
+		{
+			name: "pointer embedded struct non-nil to nil",
+			a:    E{Embedded: &Embedded{EmbeddedString: "value"}, Name: "test"},
+			b:    E{Name: "test"},
+			want: []ResolvedChange{{Field: "", Old: &Embedded{EmbeddedString: "value"}, New: (*Embedded)(nil)}},
+		},
+		{
+			name: "pointer embedded struct both nil",
+			a:    E{Name: "test"},
+			b:    E{Name: "test"},
+			want: nil,
+		},
+		{
+			name: "pointer embedded struct only non-embedded field changes",
+			a:    E{Embedded: &Embedded{EmbeddedString: "same"}, Name: "alice"},
+			b:    E{Embedded: &Embedded{EmbeddedString: "same"}, Name: "bob"},
+			want: []ResolvedChange{{Field: "name", Old: "alice", New: "bob"}},
+		},
+		{
+			name: "pointer embedded struct zero to non-zero int",
+			a:    E{Name: "test"},
+			b:    E{Embedded: &Embedded{EmbeddedInt: 42}, Name: "test"},
+			want: []ResolvedChange{{Field: "", Old: (*Embedded)(nil), New: &Embedded{EmbeddedInt: 42}}},
+		},
+		{
+			name: "pointer embedded struct non-zero to zero int",
+			a:    E{Embedded: &Embedded{EmbeddedInt: 42}, Name: "test"},
+			b:    E{Name: "test"},
+			want: []ResolvedChange{{Field: "", Old: &Embedded{EmbeddedInt: 42}, New: (*Embedded)(nil)}},
 		},
 	}
 
