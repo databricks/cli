@@ -1,15 +1,15 @@
 
 >>> [CLI] bundle validate
-Name: many-permissions-test
+Name: test-chain
 Target: default
 Workspace:
   User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/many-permissions-test/default
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-chain/default
 
 Validation OK!
 
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/many-permissions-test/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-chain/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
@@ -26,7 +26,7 @@ Streaming Tables (STs) and Materialized Views (MVs) managed by them:
   delete pipeline barp
   delete pipeline foop
 
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/many-permissions-test/default
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-chain/default
 
 Deleting files...
 Destroy complete!
