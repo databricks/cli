@@ -17,28 +17,24 @@ echo "SSH Tunnel CLI: $CLI"
 
 echo "🔍 Testing basic connectivity..."
 
-start_time=$(date +%s.%N)
 set +e
 output=$($CLI ssh connect --cluster="$CLUSTER_ID" --profile="$PROFILE" --releases-dir=./dist -- "echo 'Connection successful'" 2>&1)
 exit_code=$?
 set -e
 
+echo "Output: $output"
+
 if [ $exit_code -ne 0 ]; then
     echo "❌ Failed to establish ssh connection (exit code: $exit_code)"
-    echo "Output: $output"
     exit 1
 fi
 
 if [[ "$output" != *"Connection successful"* ]]; then
     echo "❌ SSH connection established but output doesn't contain expected value"
     echo "Expected to contain: 'Connection successful'"
-    echo "Actual: '$output'"
     exit 1
 fi
 
-end_time=$(date +%s.%N)
-duration=$(echo "$end_time - $start_time" | bc)
-duration_ms=$(echo "$duration * 1000" | bc)
-echo "✅ Basic connectivity OK ($duration_ms ms)"
+echo "✅ Basic connectivity OK"
 
 exit 0
