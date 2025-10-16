@@ -2205,13 +2205,13 @@ resources.jobs.*.webhook_notifications.on_streaming_backlog_exceeded[*].id	strin
 resources.jobs.*.webhook_notifications.on_success	[]jobs.Webhook	INPUT	STATE
 resources.jobs.*.webhook_notifications.on_success[*]	jobs.Webhook	INPUT	STATE
 resources.jobs.*.webhook_notifications.on_success[*].id	string	INPUT	STATE
-resources.jobs.*.permissions.object_id	string	REMOTE	STATE
-resources.jobs.*.permissions.permissions	[]iam.AccessControlRequest	REMOTE	STATE
-resources.jobs.*.permissions.permissions[*]	iam.AccessControlRequest	REMOTE	STATE
-resources.jobs.*.permissions.permissions[*].group_name	string	REMOTE	STATE
-resources.jobs.*.permissions.permissions[*].permission_level	iam.PermissionLevel	REMOTE	STATE
-resources.jobs.*.permissions.permissions[*].service_principal_name	string	REMOTE	STATE
-resources.jobs.*.permissions.permissions[*].user_name	string	REMOTE	STATE
+resources.jobs.*.permissions.object_id	string	ALL
+resources.jobs.*.permissions.permissions	[]iam.AccessControlRequest	ALL
+resources.jobs.*.permissions.permissions[*]	iam.AccessControlRequest	ALL
+resources.jobs.*.permissions.permissions[*].group_name	string	ALL
+resources.jobs.*.permissions.permissions[*].permission_level	iam.PermissionLevel	ALL
+resources.jobs.*.permissions.permissions[*].service_principal_name	string	ALL
+resources.jobs.*.permissions.permissions[*].user_name	string	ALL
 resources.models.*.creation_timestamp	int64	REMOTE
 resources.models.*.description	string	ALL
 resources.models.*.id	string	INPUT	REMOTE
@@ -2845,13 +2845,13 @@ resources.pipelines.*.trigger.cron.quartz_cron_schedule	string	INPUT	STATE
 resources.pipelines.*.trigger.cron.timezone_id	string	INPUT	STATE
 resources.pipelines.*.trigger.manual	*pipelines.ManualTrigger	INPUT	STATE
 resources.pipelines.*.url	string	INPUT
-resources.pipelines.*.permissions.object_id	string	REMOTE	STATE
-resources.pipelines.*.permissions.permissions	[]iam.AccessControlRequest	REMOTE	STATE
-resources.pipelines.*.permissions.permissions[*]	iam.AccessControlRequest	REMOTE	STATE
-resources.pipelines.*.permissions.permissions[*].group_name	string	REMOTE	STATE
-resources.pipelines.*.permissions.permissions[*].permission_level	iam.PermissionLevel	REMOTE	STATE
-resources.pipelines.*.permissions.permissions[*].service_principal_name	string	REMOTE	STATE
-resources.pipelines.*.permissions.permissions[*].user_name	string	REMOTE	STATE
+resources.pipelines.*.permissions.object_id	string	ALL
+resources.pipelines.*.permissions.permissions	[]iam.AccessControlRequest	ALL
+resources.pipelines.*.permissions.permissions[*]	iam.AccessControlRequest	ALL
+resources.pipelines.*.permissions.permissions[*].group_name	string	ALL
+resources.pipelines.*.permissions.permissions[*].permission_level	iam.PermissionLevel	ALL
+resources.pipelines.*.permissions.permissions[*].service_principal_name	string	ALL
+resources.pipelines.*.permissions.permissions[*].user_name	string	ALL
 resources.registered_models.*.aliases	[]catalog.RegisteredModelAlias	ALL
 resources.registered_models.*.aliases[*]	catalog.RegisteredModelAlias	ALL
 resources.registered_models.*.aliases[*].alias_name	string	ALL
