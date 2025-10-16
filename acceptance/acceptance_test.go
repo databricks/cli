@@ -129,10 +129,6 @@ func TestAccept(t *testing.T) {
 	testAccept(t, InprocessMode, "")
 }
 
-// func TestAccept(t *testing.T) {
-// 	testAccept(t, true, "bundle/resources/dashboards/detect-change")
-// }
-
 func TestInprocessMode(t *testing.T) {
 	if InprocessMode && !Forcerun {
 		t.Skip("Already tested by TestAccept")
