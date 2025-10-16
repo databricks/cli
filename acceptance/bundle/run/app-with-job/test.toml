@@ -13,9 +13,6 @@ Ignore = [
     'databricks.yml',
 ]
 
-# As of Oct 16 2025 this test is failing on direct-exp engine - timing out on trying to stop the app
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform"]
-
 [Env]
 # MSYS2 automatically converts absolute paths like /Users/$username/$UNIQUE_NAME to
 # C:/Program Files/Git/Users/$username/UNIQUE_NAME before passing it to the CLI
