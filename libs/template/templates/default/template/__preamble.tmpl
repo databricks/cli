@@ -11,7 +11,7 @@ This file only contains template directives; it is skipped for the actual output
 {{$lakeflow_only := eq .lakeflow_only "yes"}}
 {{$has_python_package_dir := and (or $python_package $notebook_job $pipeline) (not $lakeflow_only)}}
 
-{{if not $notebook_job}}
+{{if or (not $notebook_job) $sql_language}}
   {{skip "{{.project_name}}/src/sample_notebook.ipynb"}}
 {{end}}
 
@@ -28,6 +28,13 @@ This file only contains template directives; it is skipped for the actual output
   {{skip "{{.project_name}}/resources/sample_job.job.yml"}}
 {{end}}
 
+{{if not $notebook_job}}
+  # Skip sample_job if no notebook job is included
+  {{if not $python_package}}
+    {{skip "{{.project_name}}/resources/sample_job.job.yml"}}
+  {{end}}
+{{end}}
+
 {{if not $pipeline}}
   {{skip "{{.project_name}}/resources/{{.project_name_short}}_etl.pipeline.yml"}}
   {{skip "{{.project_name}}/src/{{.project_name_short}}_etl"}}
@@ -42,4 +49,10 @@ This file only contains template directives; it is skipped for the actual output
   # (until we have better UI support for tests)
   {{skip "{{.project_name}}/tests"}}
   {{skip "{{.project_name}}/fixtures"}}
+{{end}}
+
+{{if $sql_language}}
+  # Do not include Python package files for SQL projects
+  {{skip "{{.project_name}}/pyproject.toml"}}
+  {{skip "{{.project_name}}/src/{{.project_name}}"}}
 {{end}}

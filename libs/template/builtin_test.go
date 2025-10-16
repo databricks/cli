@@ -24,11 +24,10 @@ func TestBuiltin(t *testing.T) {
 	assert.Contains(t, templates, "default-python")
 	assert.Contains(t, templates, "default-sql")
 
-	// Verify the filesystems work for each template
 	_, err = fs.Stat(templates["dbt-sql"].FS, `template/{{.project_name}}/dbt_project.yml.tmpl`)
 	assert.NoError(t, err)
 	_, err = fs.Stat(templates["default"].FS, `template/{{.project_name}}/tests/sample_taxis_test.py.tmpl`)
 	assert.NoError(t, err)
-	_, err = fs.Stat(templates["default-sql"].FS, `template/{{.project_name}}/src/orders_daily.sql.tmpl`)
+	_, err = fs.Stat(templates["default-sql"].FS, `databricks_template_schema.json`)
 	assert.NoError(t, err)
 }

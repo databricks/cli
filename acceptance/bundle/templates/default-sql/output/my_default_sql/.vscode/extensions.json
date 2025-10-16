@@ -2,6 +2,6 @@
     "recommendations": [
         "databricks.databricks",
         "redhat.vscode-yaml",
-        "databricks.sqltools-databricks-driver",
+        "ms-python.black-formatter"
     ]
 }

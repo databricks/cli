@@ -1,5 +1,6 @@
 {{$with_classic := (ne .serverless "yes") -}}
 {{$with_python := (eq .include_python "yes") -}}
+{{$is_sql := (eq .language "sql") -}}
 # This is a Databricks asset bundle definition for {{.project_name}}.
 # See https://docs.databricks.com/dev-tools/bundles/index.html for documentation.
 bundle:
@@ -16,6 +17,13 @@ artifacts:
   python_artifact:
     type: whl
     build: uv build --wheel
+{{- end}}
+
+{{- if $is_sql}}
+
+sync:
+  include:
+    - src/**
 {{- end}}
 
 # Variable declarations. These variables are assigned in the dev/prod targets below.

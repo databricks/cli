@@ -2,7 +2,8 @@
 
 {{- $serverless := (eq .serverless "yes")}}
 {{- $python_package := (eq .include_python "yes")}}
-{{- $notebook := (eq .include_job "yes")}}
+{{- $sql_language := (eq .language "sql")}}
+{{- $notebook := and (eq .include_job "yes") (not $sql_language)}}
 {{- $pipeline := (eq .include_pipeline "yes")}}
 
 resources:

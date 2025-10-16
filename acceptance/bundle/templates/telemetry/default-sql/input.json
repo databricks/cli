@@ -1,6 +1,6 @@
 {
     "project_name": "my_default_sql",
-    "http_path": "/sql/2.0/warehouses/f00dcafe",
+    "serverless": "yes",
     "default_catalog": "main",
-    "personal_schemas": "yes, automatically use a schema based on the current user name during development"
+    "personal_schemas": "yes"
 }

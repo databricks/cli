@@ -1,0 +1,14 @@
+# The main pipeline for my_default_sql
+
+resources:
+  pipelines:
+    my_default_sql_etl:
+      name: my_default_sql_etl
+      ## Specify the 'catalog' field to configure this pipeline to make use of Unity Catalog:
+      # catalog: ${var.catalog}
+      schema: ${var.schema}
+      root_path: "../src/my_default_sql_etl"
+
+      libraries:
+        - glob:
+            include: ../src/my_default_sql_etl/transformations/**

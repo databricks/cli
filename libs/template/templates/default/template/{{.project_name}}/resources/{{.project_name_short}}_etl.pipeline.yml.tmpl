@@ -29,6 +29,7 @@ resources:
       libraries:
         - glob:
             include: ../src/{{.project_name_short}}_etl/transformations/**
+{{- if ne .language "sql"}}
 
       environment:
         dependencies:
@@ -36,3 +37,4 @@ resources:
           # that points to the folder where pyproject.toml is deployed.
           {{- /* We avoid a relative path here to work around https://github.com/databricks/cli/issues/3674 */}}
           - --editable ${workspace.file_path}
+{{- end}}

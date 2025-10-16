@@ -1,27 +1,39 @@
 {
-    "python.analysis.stubPath": ".vscode",
     "jupyter.interactiveWindow.cellMarker.codeRegex": "^# COMMAND ----------|^# Databricks notebook source|^(#\\s*%%|#\\s*\\<codecell\\>|#\\s*In\\[\\d*?\\]|#\\s*In\\[ \\])",
     "jupyter.interactiveWindow.cellMarker.default": "# COMMAND ----------",
     "python.testing.pytestArgs": [
         "."
     ],
-    "python.testing.unittestEnabled": false,
-    "python.testing.pytestEnabled": true,
-    "python.analysis.extraPaths": ["src"],
     "files.exclude": {
         "**/*.egg-info": true,
         "**/__pycache__": true,
         ".pytest_cache": true,
+        "dist": true,
     },
-    "sqltools.connections": [
-        {
-            "connectionMethod": "VS Code Extension (beta)",
-            "catalog": "main",
-            "previewLimit": 50,
-            "driver": "Databricks",
-            "name": "databricks",
-            "path": "/sql/2.0/warehouses/f00dcafe"
-        }
-    ],
-    "sqltools.autoConnectTo": "",
+    "files.associations": {
+        "**/.gitkeep": "markdown"
+    },
+
+    // Pylance settings (VS Code)
+    // Set typeCheckingMode to "basic" to enable type checking!
+    "python.analysis.typeCheckingMode": "off",
+    "python.analysis.extraPaths": ["src", "lib", "resources"],
+    "python.analysis.diagnosticMode": "workspace",
+    "python.analysis.stubPath": ".vscode",
+
+    // Pyright settings (Cursor)
+    // Set typeCheckingMode to "basic" to enable type checking!
+    "cursorpyright.analysis.typeCheckingMode": "off",
+    "cursorpyright.analysis.extraPaths": ["src", "lib", "resources"],
+    "cursorpyright.analysis.diagnosticMode": "workspace",
+    "cursorpyright.analysis.stubPath": ".vscode",
+
+    // General Python settings
+    "python.defaultInterpreterPath": "./.venv/bin/python",
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true,
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.black-formatter",
+        "editor.formatOnSave": true,
+    },
 }

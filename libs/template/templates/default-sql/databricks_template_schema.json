@@ -1,52 +1,106 @@
 {
-    "welcome_message": "\nWelcome to the default SQL template for Databricks Asset Bundles!\n\nA workspace was selected based on your current profile. For information about how to change this, see https://docs.databricks.com/dev-tools/cli/profiles.html.\nworkspace_host: {{workspace_host}}",
+    "template_dir": "../default",
+    "welcome_message": "\nWelcome to the default SQL template for Databricks Asset Bundles!\n\nPlease answer the below to tailor your project to your preferences.\nYou can always change your mind and change your configuration in the databricks.yml file later.\n\nNote that {{workspace_host}} is used for initialization\n(see https://docs.databricks.com/dev-tools/cli/profiles.html for how to change your profile).",
     "properties": {
         "project_name": {
             "type": "string",
             "default": "sql_project",
-            "description": "\nPlease provide a unique name for this project.\nproject_name",
+            "description": "\nUnique name for this project",
             "order": 1,
-            "pattern": "^[A-Za-z_][A-Za-z0-9-_]+$",
-            "pattern_match_failure_message": "Name must consist of letters, numbers, dashes, and underscores."
+            "pattern": "^[A-Za-z0-9_]+$",
+            "pattern_match_failure_message": "Name must consist of letters, numbers, and underscores."
         },
-        "http_path": {
+        "project_name_short": {
+            "//": "This is a derived property based on project_name (it replaces sql_project with sample and strips _project|_app|_service)",
+            "skip_prompt_if": {},
             "type": "string",
-            "pattern": "^/sql/.\\../warehouses/[a-z0-9]+$",
-            "pattern_match_failure_message": "Path must be of the form /sql/1.0/warehouses/<warehouse id>",
-            "description": "\nPlease provide the HTTP Path of the SQL warehouse you would like to use during development.\nYou can find this path by clicking on \"Connection details\" for your SQL warehouse.\nhttp_path [example: /sql/1.0/warehouses/abcdef1234567890]",
+            "default": "{{if eq .project_name \"sql_project\"}}sample{{else}}{{with (regexp \"^(sql_)?(.*)(_project|_app|_service)?$\").FindStringSubmatch .project_name}}{{index . 2}}{{else}}{{.project_name}}{{end}}{{end}}",
+            "description": "Short name for the project",
             "order": 2
         },
-        "default_catalog": {
+        "include_job": {
+            "//": "This property is always set to 'yes' for default-sql (job runs the pipeline)",
+            "skip_prompt_if": {},
             "type": "string",
-            "default": "{{if eq (default_catalog) \"\"}}hive_metastore{{else}}{{default_catalog}}{{end}}",
-            "pattern": "^\\w*$",
-            "pattern_match_failure_message": "Invalid catalog name.",
-            "description": "\nPlease provide an initial catalog{{if eq (default_catalog) \"\"}} or metastore{{end}}.\ndefault_catalog",
+            "default": "yes",
+            "description": "Internal flag for including job",
             "order": 3
         },
-        "personal_schemas": {
+        "include_pipeline": {
+            "//": "This property is always set to 'yes' for default-sql (pipeline processes SQL files)",
+            "skip_prompt_if": {},
             "type": "string",
-            "description": "\nWould you like to use a personal schema for each user working on this project? (e.g., 'catalog.{{short_name}}')\npersonal_schemas",
-            "enum": [
-                "yes, automatically use a schema based on the current user name during development",
-                "no, use a single schema for all users during development"
-            ],
+            "default": "yes",
+            "description": "Internal flag for including pipeline",
             "order": 4
         },
-        "shared_schema": {
+        "include_python": {
+            "//": "This property is always set to 'no' for default-sql",
+            "skip_prompt_if": {},
+            "type": "string",
+            "default": "no",
+            "description": "Internal flag for Python package",
+            "order": 5
+        },
+        "serverless": {
+            "type": "string",
+            "default": "yes",
+            "enum": ["yes", "no"],
+            "description": "Use serverless compute",
+            "order": 6
+        },
+        "http_path": {
             "skip_prompt_if": {
                 "properties": {
-                    "personal_schemas": {
-                        "const": "yes, automatically use a schema based on the current user name during development"
+                    "serverless": {
+                        "const": "yes"
                     }
                 }
             },
             "type": "string",
-            "default": "default",
-            "pattern": "^\\w+$",
-            "pattern_match_failure_message": "Invalid schema name.",
-            "description": "\nPlease provide an initial schema during development.\ndefault_schema",
-            "order": 5
+            "default": "",
+            "pattern": "^(/sql/.\\../warehouses/[a-z0-9]+)?$",
+            "pattern_match_failure_message": "Path must be of the form /sql/1.0/warehouses/<warehouse id>",
+            "description": "\nPlease provide the HTTP Path of the SQL warehouse you would like to use during development.\nYou can find this path by clicking on \"Connection details\" for your SQL warehouse.\nhttp_path [example: /sql/1.0/warehouses/abcdef1234567890]",
+            "order": 7
+        },
+        "default_catalog": {
+            "type": "string",
+            "default": "{{default_catalog}}",
+            "pattern": "^\\w*$",
+            "pattern_match_failure_message": "Invalid catalog name.",
+            "description": "Default catalog for any tables created by this project{{if eq (default_catalog) \"\"}} (leave blank when not using Unity Catalog){{end}}",
+            "order": 8
+        },
+        "personal_schemas": {
+            "type": "string",
+            "description": "Use a personal schema for each user working on this project\n(this is recommended, your personal schema will be '{{.default_catalog}}.{{short_name}}')",
+            "default": "yes",
+            "enum": [
+                "yes",
+                "no (advanced: I will customize the schema configuration later in databricks.yml)"
+            ],
+            "order": 9
+        },
+        "language": {
+            "//": "This property is always set to 'sql'",
+            "skip_prompt_if": {},
+            "type": "string",
+            "default": "sql",
+            "description": "Initial language for this project",
+            "enum": [
+                "python",
+                "sql"
+            ],
+            "order": 10
+        },
+        "lakeflow_only": {
+            "//": "This property is always set to 'no' for default-sql",
+            "skip_prompt_if": {},
+            "type": "string",
+            "default": "no",
+            "description": "Internal flag for lakeflow-only templates",
+            "order": 11
         }
     },
     "success_message": "\n✨ Your new project has been created in the '{{.project_name}}' directory!\n\nPlease refer to the README.md file for \"getting started\" instructions.\nSee also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html."

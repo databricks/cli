@@ -111,24 +111,6 @@ func assertBuiltinTemplateValid(t *testing.T, template string, settings map[stri
 	}
 }
 
-func TestBuiltinSQLTemplateValid(t *testing.T) {
-	for _, personal_schemas := range []string{"yes", "no"} {
-		for _, target := range []string{"dev", "prod"} {
-			for _, isServicePrincipal := range []bool{true, false} {
-				config := map[string]any{
-					"project_name":     "my_project",
-					"http_path":        "/sql/1.0/warehouses/123abc",
-					"default_catalog":  "users",
-					"shared_schema":    "lennart",
-					"personal_schemas": personal_schemas,
-				}
-				build := false
-				assertBuiltinTemplateValid(t, "default-sql", config, target, isServicePrincipal, build, t.TempDir())
-			}
-		}
-	}
-}
-
 func TestBuiltinDbtTemplateValid(t *testing.T) {
 	catalog := "hive_metastore"
 	cachedCatalog = &catalog

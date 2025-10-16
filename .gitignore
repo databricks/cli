@@ -39,3 +39,6 @@ tools/yamlfmt.exe
 
 # Release artifacts
 dist/
+
+# Temporary directory for local testing
+tmp/
