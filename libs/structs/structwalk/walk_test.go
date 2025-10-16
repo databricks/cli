@@ -182,12 +182,11 @@ func TestNestedEmbeddedStructs(t *testing.T) {
 		Field3: "three",
 	}
 
-	result := flatten(t, obj)
-
-	// All fields should be at the same level
-	assert.Equal(t, "one", result["field1"])
-	assert.Equal(t, "two", result["field2"])
-	assert.Equal(t, "three", result["field3"])
+	assert.Equal(t, map[string]any{
+		"field1": "one",
+		"field2": "two",
+		"field3": "three",
+	}, flatten(t, obj))
 }
 
 func TestEmbeddedStructWithPointer(t *testing.T) {
@@ -207,10 +206,10 @@ func TestEmbeddedStructWithPointer(t *testing.T) {
 		ParentField: "parent_value",
 	}
 
-	result := flatten(t, parent)
-
-	assert.Equal(t, "embedded_value", result["embedded_field"])
-	assert.Equal(t, "parent_value", result["parent_field"])
+	assert.Equal(t, map[string]any{
+		"embedded_field": "embedded_value",
+		"parent_field":   "parent_value",
+	}, flatten(t, parent))
 }
 
 func TestEmbeddedStructWithJSONTagDash(t *testing.T) {
@@ -232,13 +231,8 @@ func TestEmbeddedStructWithJSONTagDash(t *testing.T) {
 		ParentField: "parent",
 	}
 
-	result := flatten(t, parent)
-
-	// SkipField should not appear
-	_, hasSkip := result["SkipField"]
-	assert.False(t, hasSkip, "Fields with json:\"-\" should be skipped")
-
-	// Other fields should appear
-	assert.Equal(t, "should_appear", result["included"])
-	assert.Equal(t, "parent", result["parent_field"])
+	assert.Equal(t, map[string]any{
+		"included":     "should_appear",
+		"parent_field": "parent",
+	}, flatten(t, parent))
 }
