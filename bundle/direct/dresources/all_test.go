@@ -19,6 +19,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/database"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -132,12 +133,12 @@ var testDeps = map[string]prepareWorkspace{
 			return nil, err
 		}
 
-		return &PermissionsInput[resources.JobPermission]{
+		return &PermissionsState{
 			// XXX jobs or job?
 			ObjectID: "/jobs/" + strconv.FormatInt(resp.JobId, 10),
-			Permissions: []resources.JobPermission{{
-				Level:    "CAN_MANAGE",
-				UserName: "user@example.com",
+			Permissions: []iam.AccessControlRequest{{
+				PermissionLevel: "CAN_MANAGE",
+				UserName:        "user@example.com",
 			}},
 		}, nil
 	},
@@ -150,11 +151,11 @@ var testDeps = map[string]prepareWorkspace{
 			return nil, err
 		}
 
-		return &PermissionsInput[resources.PipelinePermission]{
+		return &PermissionsState{
 			ObjectID: "/pipelines/" + resp.PipelineId,
-			Permissions: []resources.PipelinePermission{{
-				Level:    "CAN_MANAGE",
-				UserName: "user@example.com",
+			Permissions: []iam.AccessControlRequest{{
+				PermissionLevel: "CAN_MANAGE",
+				UserName:        "user@example.com",
 			}},
 		}, nil
 	},

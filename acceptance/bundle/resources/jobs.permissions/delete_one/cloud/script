@@ -5,11 +5,9 @@ print_requests() {
 
 envsubst < databricks.yml.tmpl > databricks.yml
 # I've tried to create unique users but then 'databricks users delete' does not work, so I stopped with that.
-# TODO? Should 'users create' have '--skip-existing' option which makes it not fail on existing user but return it?
-# TODO: Fixtures support where things like user creation can be done once and shared
-#$CLI users create --id test-dabs-1@databricks.com --user-name test-dabs-1@databricks.com &> /dev/null || true
-#$CLI users create --id test-dabs-2@databricks.com --user-name test-dabs-2@databricks.com &> /dev/null || true
-#$CLI groups create --id test-dabs-group-1@databricks.com --display-name test-dabs-group-1 &> /dev/null || true
+$CLI users create --id test-dabs-1@databricks.com --user-name test-dabs-1@databricks.com &> /dev/null || true
+$CLI users create --id test-dabs-2@databricks.com --user-name test-dabs-2@databricks.com &> /dev/null || true
+$CLI groups create --id test-dabs-group-1@databricks.com --display-name test-dabs-group-1 &> /dev/null || true
 rm -f out.requests.txt
 
 trace $CLI bundle debug plan > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
@@ -43,7 +41,6 @@ rm -f out.requests.txt
 
 title "Delete one permission and deploy again\n"
 grep -v DELETE databricks.yml > tmp.yml && mv tmp.yml databricks.yml
-trace $CLI bundle debug plan > out.plan_update.$DATABRICKS_BUNDLE_ENGINE.json # order is different, otherwise it's the same
 trace $CLI bundle deploy
 print_requests | sort_acl_requests > out.requests_update.json
 

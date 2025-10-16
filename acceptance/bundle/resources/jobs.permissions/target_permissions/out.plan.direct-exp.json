@@ -37,7 +37,13 @@
       "action": "create",
       "new_state": {
         "config": {
-          "object_id": ""
+          "object_id": "",
+          "permissions": [
+            {
+              "permission_level": "IS_OWNER",
+              "user_name": "[USERNAME]"
+            }
+          ]
         },
         "vars": {
           "object_id": "/jobs/${resources.jobs.foo.id}"

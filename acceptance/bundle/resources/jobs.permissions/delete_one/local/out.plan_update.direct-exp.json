@@ -64,12 +64,12 @@
             "user_name": "test-dabs-1@databricks.com"
           },
           {
-            "permission_level": "CAN_VIEW",
-            "user_name": "test-dabs-2@databricks.com"
-          },
-          {
             "group_name": "test-dabs-group-1",
             "permission_level": "CAN_MANAGE"
+          },
+          {
+            "permission_level": "CAN_VIEW",
+            "user_name": "test-dabs-2@databricks.com"
           },
           {
             "permission_level": "IS_OWNER",
