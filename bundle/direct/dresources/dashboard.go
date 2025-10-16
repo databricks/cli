@@ -9,7 +9,6 @@ import (
 	"slices"
 	"strings"
 	"sync"
-	"unicode"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
@@ -36,22 +35,6 @@ func (*ResourceDashboard) PrepareState(input *resources.Dashboard) *resources.Da
 
 	input.Dashboard = dashboard
 	return &input.DashboardConfig
-}
-
-func snakeToTitle(snake string) string {
-	out := strings.Builder{}
-	makeUpper := true
-	for _, r := range snake {
-		if makeUpper {
-			out.WriteRune(unicode.ToUpper(r))
-			makeUpper = false
-		} else if r == '_' {
-			makeUpper = true
-		} else {
-			out.WriteRune(r)
-		}
-	}
-	return out.String()
 }
 
 // TODO(followup): do this for all resources automatically to avoid boilerplate code.
