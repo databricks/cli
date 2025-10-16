@@ -13,8 +13,6 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/libs/structs/structaccess"
-	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
@@ -58,42 +56,45 @@ func snakeToTitle(snake string) string {
 }
 
 // TODO(followup): do this for all resources automatically to avoid boilerplate code.
-func (r *ResourceDashboard) RemapState(state *resources.DashboardConfig) (*resources.DashboardConfig, error) {
-	// Output only fields are marked as skip in dashboards. They need to be cleaned up
-	// before comparing with local configuration.
-	fieldTriggersRemote := r.FieldTriggers(false)
-	var configForceSendFields []string
-	var dashboardForceSendFields []string
-	for k, v := range fieldTriggersRemote {
-		path, err := structpath.Parse(k)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse path %s: %w", k, err)
-		}
-		if v == deployplan.ActionTypeSkip {
-			// Remove the field from the state.
-			err := structaccess.Set(state, path, nil)
-			if err != nil {
-				return nil, fmt.Errorf("failed to set field %s to nil: %w", k, err)
-			}
-			continue
-		}
-		titleField := snakeToTitle(k)
-		if state.ForceSendFields != nil && slices.Contains(state.ForceSendFields, titleField) {
-			configForceSendFields = append(configForceSendFields, titleField)
-		}
-		if state.Dashboard.ForceSendFields != nil && slices.Contains(state.Dashboard.ForceSendFields, titleField) {
-			dashboardForceSendFields = append(dashboardForceSendFields, titleField)
-		}
+func (r *ResourceDashboard) RemapState(state *resources.DashboardConfig) *resources.DashboardConfig {
+	dashboard := &resources.DashboardConfig{
+		Dashboard: dashboards.Dashboard{
+			DisplayName: state.DisplayName,
+			Etag:        state.Etag,
+			ParentPath:  state.ParentPath,
+			WarehouseId: state.WarehouseId,
+			ForceSendFields: filterFields[dashboards.Dashboard](state.ForceSendFields, []string{
+				"CreateTime",
+				"DashboardId",
+				"LifecycleState",
+				"Path",
+				"UpdateTime",
+				"SerializedDashboard",
+			}...),
+
+			// Clear output only fields. They should not show up on remote diff computation.
+			CreateTime:     "",
+			DashboardId:    "",
+			LifecycleState: dashboards.LifecycleState(""),
+			Path:           "",
+			UpdateTime:     "",
+
+			// Serialized dashboard is ignored for remote diff changes.
+			// They are only relevant for local diff changes.
+			SerializedDashboard: "",
+		},
+
+		EmbedCredentials: state.EmbedCredentials,
+		ForceSendFields: filterFields[resources.DashboardConfig](state.ForceSendFields, []string{
+			"SerializedDashboard",
+		}...),
+
+		// Serialized dashboard is ignored for remote diff changes.
+		// They are only relevant for local diff changes.
+		SerializedDashboard: "",
 	}
 
-	state.ForceSendFields = configForceSendFields
-	state.Dashboard.ForceSendFields = dashboardForceSendFields
-
-	// Set SerializedDashboard to nil. It's ignored for remote diff computation and thus
-	// should always be nil here. Because it's overridden in [resources.DashboardConfig]
-	// it needs to be set nil explicitly.
-	state.SerializedDashboard = nil
-	return state, nil
+	return dashboard
 }
 
 // TODO: Add test ensuring that the detection of serialized dashboard local changes works properly.
@@ -123,22 +124,28 @@ func (r *ResourceDashboard) DoRefresh(ctx context.Context, id string) (*resource
 		return nil, fmt.Errorf("failed to get published dashboard: %w", getPublishedErr)
 	}
 
-	// Add the /Workspace prefix to the parent path. The backend removes this prefix from parent
-	// path, and thus it needs to be added back in to match the local configuration.
-	dashboard.ParentPath = path.Join("/Workspace", dashboard.ParentPath)
-
-	// Unset serialized dashboard in the [dashboards.Dashboard] struct.
-	// Only the serialized_dashboard field in the [dashboard.DashboardConfig] struct is should be used.
-	dashboard.SerializedDashboard = ""
-	getDashboardForceSendFields := filterFields[dashboards.Dashboard](dashboard.ForceSendFields, "SerializedDashboard")
-
-	getPublishedForceSendFields := filterFields[dashboards.PublishedDashboard](publishedDashboard.ForceSendFields)
-
 	return &resources.DashboardConfig{
-		Dashboard:           *dashboard,
-		EmbedCredentials:    publishedDashboard.EmbedCredentials,
+		Dashboard: dashboards.Dashboard{
+			DisplayName:         dashboard.DisplayName,
+			Etag:                dashboard.Etag,
+			WarehouseId:         dashboard.WarehouseId,
+			SerializedDashboard: dashboard.SerializedDashboard,
+
+			// Add the /Workspace prefix to the parent path. The backend removes this prefix from parent
+			// path, and thus it needs to be added back in to match the local configuration.
+			ParentPath: path.Join("/Workspace", dashboard.ParentPath),
+
+			// Output only fields.
+			CreateTime:      dashboard.CreateTime,
+			DashboardId:     dashboard.DashboardId,
+			LifecycleState:  dashboard.LifecycleState,
+			Path:            dashboard.Path,
+			UpdateTime:      dashboard.UpdateTime,
+			ForceSendFields: filterFields[dashboards.Dashboard](dashboard.ForceSendFields),
+		},
 		SerializedDashboard: dashboard.SerializedDashboard,
-		ForceSendFields:     append(getDashboardForceSendFields, getPublishedForceSendFields...),
+		EmbedCredentials:    publishedDashboard.EmbedCredentials,
+		ForceSendFields:     filterFields[dashboards.PublishedDashboard](publishedDashboard.ForceSendFields),
 	}, nil
 }
 
@@ -147,36 +154,89 @@ func isParentDoesntExistError(err error) bool {
 	return strings.HasPrefix(errStr, "Path (") && strings.HasSuffix(errStr, ") doesn't exist.")
 }
 
-func (r *ResourceDashboard) DoCreate(ctx context.Context, config *resources.DashboardConfig) (string, *resources.DashboardConfig, error) {
+func prepareDashboardRequest(config *resources.DashboardConfig) (dashboards.Dashboard, error) {
 	// Fields like "embed_credentials" are part of the bundle configuration but not the create request here.
 	// Thus we need to filter such fields out.
+	// TODO: Do we need this line?
 	config.Dashboard.ForceSendFields = filterFields[dashboards.Dashboard](config.Dashboard.ForceSendFields)
 
-	// Set serialized dashboard in the create body request.
-	createReq := config.Dashboard
+	// TODO: Add test for inline serialized dashboard. Is there a persistent drift?
+	dashboard := config.Dashboard
 	v := config.SerializedDashboard
 	if _, ok := v.(string); ok {
 		// If serialized dashboard is already a string, we can use it directly.
-		createReq.SerializedDashboard = v.(string)
+		dashboard.SerializedDashboard = v.(string)
 	} else if v != nil {
 		// If it's inlined in the bundle config as a map, we need to marshal it to a string.
 		b, err := json.Marshal(v)
 		if err != nil {
-			return "", nil, fmt.Errorf("failed to marshal serialized dashboard: %w", err)
+			return dashboards.Dashboard{}, fmt.Errorf("failed to marshal serialized dashboard: %w", err)
 		}
-		createReq.SerializedDashboard = string(b)
+		dashboard.SerializedDashboard = string(b)
+	}
+	return dashboard, nil
+}
+
+func (r *ResourceDashboard) publishDashboard(ctx context.Context, id string, config *resources.DashboardConfig) (*dashboards.PublishedDashboard, error) {
+	// embed_credentials as a zero valued default in resourcemutator/resource_mutator.go.
+	// Thus we always need to include it in the ForceSendFields list to ensure that it is sent to the server.
+	// TODO(followup): A more general solution that does not require this special casing.
+	forceSendFields := filterFields[dashboards.PublishRequest](config.ForceSendFields)
+	if !slices.Contains(forceSendFields, "EmbedCredentials") {
+		forceSendFields = append(forceSendFields, "EmbedCredentials")
+	}
+
+	return r.client.Lakeview.Publish(ctx, dashboards.PublishRequest{
+		DashboardId:      id,
+		EmbedCredentials: config.EmbedCredentials,
+		WarehouseId:      config.WarehouseId,
+		ForceSendFields:  forceSendFields,
+	})
+}
+
+func responseToState(createOrUpdateResp *dashboards.Dashboard, publishResp *dashboards.PublishedDashboard) *resources.DashboardConfig {
+	return &resources.DashboardConfig{
+		Dashboard: dashboards.Dashboard{
+			DisplayName:         createOrUpdateResp.DisplayName,
+			Etag:                createOrUpdateResp.Etag,
+			WarehouseId:         createOrUpdateResp.WarehouseId,
+			SerializedDashboard: createOrUpdateResp.SerializedDashboard,
+
+			// Add the /Workspace prefix to the parent path. The backend removes this prefix from parent
+			// path, and thus it needs to be added back in to match the local configuration.
+			ParentPath: path.Join("/Workspace", createOrUpdateResp.ParentPath),
+
+			// Output only fields
+			CreateTime:      createOrUpdateResp.CreateTime,
+			DashboardId:     createOrUpdateResp.DashboardId,
+			LifecycleState:  createOrUpdateResp.LifecycleState,
+			Path:            createOrUpdateResp.Path,
+			UpdateTime:      createOrUpdateResp.UpdateTime,
+			ForceSendFields: filterFields[dashboards.Dashboard](createOrUpdateResp.ForceSendFields),
+		},
+		SerializedDashboard: createOrUpdateResp.SerializedDashboard,
+		EmbedCredentials:    publishResp.EmbedCredentials,
+		ForceSendFields:     filterFields[dashboards.PublishedDashboard](publishResp.ForceSendFields),
+	}
+}
+
+func (r *ResourceDashboard) DoCreate(ctx context.Context, config *resources.DashboardConfig) (string, *resources.DashboardConfig, error) {
+	dashboard, err := prepareDashboardRequest(config)
+	if err != nil {
+		return "", nil, err
 	}
 
 	createResp, err := r.client.Lakeview.Create(ctx, dashboards.CreateDashboardRequest{
-		Dashboard: createReq,
+		Dashboard: dashboard,
 	})
+
 	// If the parent directory doesn't exist, create it and try again.
 	if err != nil && isParentDoesntExistError(err) {
 		err = r.client.Workspace.MkdirsByPath(ctx, config.ParentPath)
 		if err != nil {
 			return "", nil, fmt.Errorf("failed to create parent directory: %w", err)
 		}
-		createResp, err = r.client.Lakeview.Create(ctx, dashboards.CreateDashboardRequest{Dashboard: config.Dashboard})
+		createResp, err = r.client.Lakeview.Create(ctx, dashboards.CreateDashboardRequest{Dashboard: dashboard})
 	}
 	if err != nil {
 		return "", nil, err
@@ -185,119 +245,34 @@ func (r *ResourceDashboard) DoCreate(ctx context.Context, config *resources.Dash
 	// Persist the etag in state.
 	config.Etag = createResp.Etag
 
-	// embed_credentials as a zero valued default in resourcemutator/resource_mutator.go.
-	// Thus we always need to include it in the ForceSendFields list to ensure that it is sent to the server.
-	// TODO(followup): A more general solution that does not require this special casing.
-	publishForceSendFields := filterFields[dashboards.PublishRequest](config.ForceSendFields)
-	if !slices.Contains(publishForceSendFields, "EmbedCredentials") {
-		publishForceSendFields = append(publishForceSendFields, "EmbedCredentials")
-	}
-
-	publishResp, err := r.client.Lakeview.Publish(ctx, dashboards.PublishRequest{
-		DashboardId:      createResp.DashboardId,
-		EmbedCredentials: config.EmbedCredentials,
-		WarehouseId:      config.WarehouseId,
-		ForceSendFields:  publishForceSendFields,
-	})
+	publishResp, err := r.publishDashboard(ctx, createResp.DashboardId, config)
 	if err != nil {
 		return "", nil, err
 	}
 
-	// Add the /Workspace prefix to the parent path. The backend removes this prefix from parent
-	// path, and thus it needs to be added back in to match the local configuration.
-	createResp.ParentPath = path.Join("/Workspace", createResp.ParentPath)
-
-	// Set serialized dashboard to empty string in the [dashboards.Dashboard] struct.
-	// Only the dashboard field in the [dashboard.DashboardConfig] struct is should be used.
-	createResp.SerializedDashboard = ""
-	createForceSendFields := filterFields[dashboards.Dashboard](createResp.ForceSendFields, "SerializedDashboard")
-
-	// TODO: Add test for inline serialized dashboard. Is there a persistent drift?
-	remoteState := &resources.DashboardConfig{
-		Dashboard:        *createResp,
-		EmbedCredentials: publishResp.EmbedCredentials,
-
-		// Always store input serialized dashboard in state.
-		// The serialized_dashboard field is only used for local diff computation
-		// and thus should always be the local value.
-		SerializedDashboard: config.SerializedDashboard,
-
-		ForceSendFields: append(createForceSendFields, publishForceSendFields...),
-	}
-
-	return createResp.DashboardId, remoteState, nil
+	return createResp.DashboardId, responseToState(createResp, publishResp), nil
 }
 
 func (r *ResourceDashboard) DoUpdate(ctx context.Context, id string, config *resources.DashboardConfig) (*resources.DashboardConfig, error) {
-	// Fields like "embed_credentials" are part of the bundle configuration but not the create request here.
-	// Thus we need to filter such fields out.
-	config.Dashboard.ForceSendFields = filterFields[dashboards.Dashboard](config.Dashboard.ForceSendFields)
-
-	// Set serialized dashboard in the update body request.
-	updateReqDashboard := config.Dashboard
-	v := config.SerializedDashboard
-	if _, ok := v.(string); ok {
-		updateReqDashboard.SerializedDashboard = v.(string)
-	} else if v != nil {
-		b, err := json.Marshal(v)
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal serialized dashboard: %w", err)
-		}
-		updateReqDashboard.SerializedDashboard = string(b)
+	dashboard, err := prepareDashboardRequest(config)
+	if err != nil {
+		return nil, err
 	}
 
-	// Update the dashboard itself
-	updateReq := dashboards.UpdateDashboardRequest{
+	updateResp, err := r.client.Lakeview.Update(ctx, dashboards.UpdateDashboardRequest{
 		DashboardId: id,
-		Dashboard:   updateReqDashboard,
-	}
-
-	updateResp, err := r.client.Lakeview.Update(ctx, updateReq)
+		Dashboard:   dashboard,
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	// embed_credentials as a zero valued default in resourcemutator/resource_mutator.go.
-	// Thus we always need to include it in the ForceSendFields list to ensure that it is sent to the server.
-	publishForceSendFields := filterFields[dashboards.PublishRequest](config.ForceSendFields)
-	if !slices.Contains(publishForceSendFields, "EmbedCredentials") {
-		publishForceSendFields = append(publishForceSendFields, "EmbedCredentials")
-	}
-
-	// Republish with potentially updated settings
-	publishReq := dashboards.PublishRequest{
-		DashboardId:      id,
-		EmbedCredentials: config.EmbedCredentials,
-		WarehouseId:      config.WarehouseId,
-		ForceSendFields:  publishForceSendFields,
-	}
-
-	publishResp, err := r.client.Lakeview.Publish(ctx, publishReq)
+	publishResp, err := r.publishDashboard(ctx, id, config)
 	if err != nil {
 		return nil, err
 	}
 
-	// Add the /Workspace prefix to the parent path. The backend removes this prefix from parent
-	// path, and thus it needs to be added back in to match the local configuration.
-	updateResp.ParentPath = path.Join("/Workspace", updateResp.ParentPath)
-
-	// Unset serialized dashboard in the [dashboards.Dashboard] struct.
-	// Only the serialized_dashboard field in the [dashboard.DashboardConfig] struct is should be used.
-	updateResp.SerializedDashboard = ""
-	updateForceSendFields := filterFields[dashboards.Dashboard](updateResp.ForceSendFields, "SerializedDashboard")
-
-	remoteState := &resources.DashboardConfig{
-		Dashboard:        *updateResp,
-		EmbedCredentials: publishResp.EmbedCredentials,
-
-		// Always store input serialized dashboard in state.
-		// The serialized_dashboard field is only used for local diff computation
-		// and thus should always be the local value.
-		SerializedDashboard: config.SerializedDashboard,
-
-		ForceSendFields: append(updateForceSendFields, publishForceSendFields...),
-	}
-	return remoteState, nil
+	return responseToState(updateResp, publishResp), nil
 }
 
 func (r *ResourceDashboard) DoDelete(ctx context.Context, id string) error {
@@ -335,13 +310,6 @@ func (*ResourceDashboard) FieldTriggers(isLocal bool) map[string]deployplan.Acti
 	triggers := map[string]deployplan.ActionType{
 		// change in parent_path should trigger a recreate
 		"parent_path": deployplan.ActionTypeRecreate,
-
-		// Output only fields that should be ignored for diff computation.
-		"create_time":     deployplan.ActionTypeSkip,
-		"dashboard_id":    deployplan.ActionTypeSkip,
-		"lifecycle_state": deployplan.ActionTypeSkip,
-		"path":            deployplan.ActionTypeSkip,
-		"update_time":     deployplan.ActionTypeSkip,
 	}
 
 	if isLocal {

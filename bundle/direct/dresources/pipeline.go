@@ -23,7 +23,7 @@ func (*ResourcePipeline) PrepareState(input *resources.Pipeline) *pipelines.Crea
 	return &input.CreatePipeline
 }
 
-func (*ResourcePipeline) RemapState(p *pipelines.GetPipelineResponse) (*pipelines.CreatePipeline, error) {
+func (*ResourcePipeline) RemapState(p *pipelines.GetPipelineResponse) *pipelines.CreatePipeline {
 	spec := p.Spec
 	return &pipelines.CreatePipeline{
 		// TODO: Fields that are not available in GetPipelineResponse (like AllowDuplicateNames) should be added to resource's ignore_remote_changes list so that they never produce a call to action
@@ -59,7 +59,7 @@ func (*ResourcePipeline) RemapState(p *pipelines.GetPipelineResponse) (*pipeline
 		Target:              spec.Target,
 		Trigger:             spec.Trigger,
 		ForceSendFields:     filterFields[pipelines.CreatePipeline](spec.ForceSendFields, "AllowDuplicateNames", "DryRun", "RunAs", "Id"),
-	}, nil
+	}
 }
 
 func (r *ResourcePipeline) DoRefresh(ctx context.Context, id string) (*pipelines.GetPipelineResponse, error) {

@@ -25,7 +25,7 @@ func (r *ResourceCluster) PrepareState(input *resources.Cluster) *compute.Cluste
 	return &input.ClusterSpec
 }
 
-func (r *ResourceCluster) RemapState(input *compute.ClusterDetails) (*compute.ClusterSpec, error) {
+func (r *ResourceCluster) RemapState(input *compute.ClusterDetails) *compute.ClusterSpec {
 	spec := &compute.ClusterSpec{
 		ApplyPolicyDefaultValues:   false,
 		Autoscale:                  input.Autoscale,
@@ -64,7 +64,7 @@ func (r *ResourceCluster) RemapState(input *compute.ClusterDetails) (*compute.Cl
 	if input.Spec != nil {
 		spec.ApplyPolicyDefaultValues = input.Spec.ApplyPolicyDefaultValues
 	}
-	return spec, nil
+	return spec
 }
 
 func (r *ResourceCluster) DoRefresh(ctx context.Context, id string) (*compute.ClusterDetails, error) {

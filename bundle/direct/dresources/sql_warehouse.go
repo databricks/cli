@@ -23,7 +23,7 @@ func (*ResourceSqlWarehouse) PrepareState(input *resources.SqlWarehouse) *sql.Cr
 	return &input.CreateWarehouseRequest
 }
 
-func (*ResourceSqlWarehouse) RemapState(warehouse *sql.GetWarehouseResponse) (*sql.CreateWarehouseRequest, error) {
+func (*ResourceSqlWarehouse) RemapState(warehouse *sql.GetWarehouseResponse) *sql.CreateWarehouseRequest {
 	return &sql.CreateWarehouseRequest{
 		AutoStopMins:            warehouse.AutoStopMins,
 		Channel:                 warehouse.Channel,
@@ -39,7 +39,7 @@ func (*ResourceSqlWarehouse) RemapState(warehouse *sql.GetWarehouseResponse) (*s
 		Tags:                    warehouse.Tags,
 		WarehouseType:           sql.CreateWarehouseRequestWarehouseType(warehouse.WarehouseType),
 		ForceSendFields:         filterFields[sql.CreateWarehouseRequest](warehouse.ForceSendFields),
-	}, nil
+	}
 }
 
 // DoRefresh reads the warehouse by id.

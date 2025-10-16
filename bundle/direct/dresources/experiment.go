@@ -28,13 +28,13 @@ func (*ResourceExperiment) PrepareState(input *resources.MlflowExperiment) *ml.C
 	}
 }
 
-func (*ResourceExperiment) RemapState(experiment *ml.Experiment) (*ml.CreateExperiment, error) {
+func (*ResourceExperiment) RemapState(experiment *ml.Experiment) *ml.CreateExperiment {
 	return &ml.CreateExperiment{
 		Name:             experiment.Name,
 		ArtifactLocation: experiment.ArtifactLocation,
 		Tags:             experiment.Tags,
 		ForceSendFields:  filterFields[ml.CreateExperiment](experiment.ForceSendFields),
-	}, nil
+	}
 }
 
 func (r *ResourceExperiment) DoRefresh(ctx context.Context, id string) (*ml.Experiment, error) {

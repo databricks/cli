@@ -31,7 +31,7 @@ type IResource interface {
 	// The adapted remote state will then be compared with newState to detect remote drift.
 	// Adaptation is not necessary (but possible) if types already match.
 	// Example: func (*ResourceJob) RemapState(jobs *jobs.Job) *jobs.JobSettings
-	RemapState(input any) (any, error)
+	RemapState(input any) any
 
 	// DoRefresh reads and returns remote state from the backend. The return type defines schema for remote field resolution.
 	// Example: func (r *ResourceJob) DoRefresh(ctx context.Context, id string) (*jobs.Job, error)

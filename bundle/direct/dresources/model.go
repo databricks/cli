@@ -21,13 +21,13 @@ func (*ResourceMlflowModel) PrepareState(input *resources.MlflowModel) *ml.Creat
 	return &input.CreateModelRequest
 }
 
-func (*ResourceMlflowModel) RemapState(model *ml.ModelDatabricks) (*ml.CreateModelRequest, error) {
+func (*ResourceMlflowModel) RemapState(model *ml.ModelDatabricks) *ml.CreateModelRequest {
 	return &ml.CreateModelRequest{
 		Name:            model.Name,
 		Tags:            model.Tags,
 		Description:     model.Description,
 		ForceSendFields: filterFields[ml.CreateModelRequest](model.ForceSendFields),
-	}, nil
+	}
 }
 
 func (r *ResourceMlflowModel) DoRefresh(ctx context.Context, id string) (*ml.ModelDatabricks, error) {
