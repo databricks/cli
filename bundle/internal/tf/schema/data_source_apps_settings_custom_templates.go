@@ -51,6 +51,5 @@ type DataSourceAppsSettingsCustomTemplatesTemplates struct {
 }
 
 type DataSourceAppsSettingsCustomTemplates struct {
-	Templates   []DataSourceAppsSettingsCustomTemplatesTemplates `json:"templates,omitempty"`
-	WorkspaceId string                                           `json:"workspace_id,omitempty"`
+	Templates []DataSourceAppsSettingsCustomTemplatesTemplates `json:"templates,omitempty"`
 }

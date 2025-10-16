@@ -33,7 +33,8 @@ Deployment complete!
         "/Workspace/Users/test@databricks.com/test-package.whl",
         "beautifulsoup4>=1.0.0,~=1.2.0,<2.0.0",
         "beautifulsoup4[security, tests] ~= 4.12.3",
-        "requests[security] @ https://github.com/psf/requests/archive/refs/heads/main.zip"
+        "requests[security] @ https://github.com/psf/requests/archive/refs/heads/main.zip",
+        "--find-links=/Workspace/Users/test"
       ]
     }
   },
@@ -71,7 +72,8 @@ Deployment complete!
         "test_package==2.0.1",
         "test_package>=2.0.1",
         "beautifulsoup4>=1.0.0,~=1.2.0,<2.0.0",
-        "requests[security] @ https://github.com/psf/requests/archive/refs/heads/main.zip"
+        "requests[security] @ https://github.com/psf/requests/archive/refs/heads/main.zip",
+        "--find-links=/Workspace/Users/test"
       ]
     },
     "name": "Test Pipeline"
@@ -96,7 +98,8 @@ Deployment complete!
         "/Workspace/Users/test@databricks.com/test-package.whl",
         "beautifulsoup4>=1.0.0,~=1.2.0,<2.0.0",
         "beautifulsoup4[security, tests] ~= 4.12.3",
-        "requests[security] @ https://github.com/psf/requests/archive/refs/heads/main.zip"
+        "requests[security] @ https://github.com/psf/requests/archive/refs/heads/main.zip",
+        "--find-links=/Workspace/Users/test"
       ]
     }
   },
@@ -124,6 +127,7 @@ Deployment complete!
     "test_package==2.0.1",
     "test_package>=2.0.1",
     "beautifulsoup4>=1.0.0,~=1.2.0,<2.0.0",
-    "requests[security] @ https://github.com/psf/requests/archive/refs/heads/main.zip"
+    "requests[security] @ https://github.com/psf/requests/archive/refs/heads/main.zip",
+    "--find-links=/Workspace/Users/test"
   ]
 }

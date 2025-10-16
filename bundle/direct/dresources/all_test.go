@@ -192,7 +192,17 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	if remoteStateFromUpdate != nil {
 		remappedStateFromUpdate, err := adapter.RemapState(remoteStateFromUpdate)
 		require.NoError(t, err)
-		require.Equal(t, remappedState, remappedStateFromUpdate)
+		changes, err := structdiff.GetStructDiff(remappedState, remappedStateFromUpdate)
+		require.NoError(t, err)
+		// Filter out timestamp fields that are expected to differ in value
+		var relevantChanges []structdiff.Change
+		for _, change := range changes {
+			fieldName := change.Path.String()
+			if fieldName != "updated_at" {
+				relevantChanges = append(relevantChanges, change)
+			}
+		}
+		require.Empty(t, relevantChanges, "unexpected differences found: %v", relevantChanges)
 	}
 
 	remoteStateFromWaitUpdate, err := adapter.WaitAfterUpdate(ctx, newState)

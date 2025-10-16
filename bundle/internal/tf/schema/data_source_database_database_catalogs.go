@@ -12,5 +12,4 @@ type DataSourceDatabaseDatabaseCatalogsDatabaseCatalogs struct {
 
 type DataSourceDatabaseDatabaseCatalogs struct {
 	DatabaseCatalogs []DataSourceDatabaseDatabaseCatalogsDatabaseCatalogs `json:"database_catalogs,omitempty"`
-	WorkspaceId      string                                               `json:"workspace_id,omitempty"`
 }

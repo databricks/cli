@@ -10,6 +10,7 @@ github.com/databricks/cli/bundle/config/resources.App:
     "x-databricks-field-behaviors_output_only": |-
       true
   "budget_policy_id": {}
+  "compute_size": {}
   "compute_status":
     "x-databricks-field-behaviors_output_only": |-
       true
@@ -319,39 +320,51 @@ github.com/databricks/cli/bundle/config/resources.DatabaseInstance:
       The email of the creator of the instance.
     "x-databricks-field-behaviors_output_only": |-
       true
+  "custom_tags":
+    "description": |-
+      Custom tags associated with the instance. This field is only included on create and update responses.
+  "effective_capacity":
+    "description": |-
+      Deprecated. The sku of the instance; this field will always match the value of capacity.
+    "deprecation_message": |-
+      This field is deprecated
+    "x-databricks-field-behaviors_output_only": |-
+      true
+  "effective_custom_tags":
+    "description": |-
+      The recorded custom tags associated with the instance.
+    "x-databricks-field-behaviors_output_only": |-
+      true
   "effective_enable_pg_native_login":
     "description": |-
-      xref AIP-129. `enable_pg_native_login` is owned by the client, while `effective_enable_pg_native_login` is owned by the server.
-      `enable_pg_native_login` will only be set in Create/Update response messages if and only if the user provides the field via the request.
-      `effective_enable_pg_native_login` on the other hand will always bet set in all response messages (Create/Update/Get/List).
+      Whether the instance has PG native password login enabled.
     "x-databricks-field-behaviors_output_only": |-
       true
   "effective_enable_readable_secondaries":
     "description": |-
-      xref AIP-129. `enable_readable_secondaries` is owned by the client, while `effective_enable_readable_secondaries` is owned by the server.
-      `enable_readable_secondaries` will only be set in Create/Update response messages if and only if the user provides the field via the request.
-      `effective_enable_readable_secondaries` on the other hand will always bet set in all response messages (Create/Update/Get/List).
+      Whether secondaries serving read-only traffic are enabled. Defaults to false.
     "x-databricks-field-behaviors_output_only": |-
       true
   "effective_node_count":
     "description": |-
-      xref AIP-129. `node_count` is owned by the client, while `effective_node_count` is owned by the server.
-      `node_count` will only be set in Create/Update response messages if and only if the user provides the field via the request.
-      `effective_node_count` on the other hand will always bet set in all response messages (Create/Update/Get/List).
+      The number of nodes in the instance, composed of 1 primary and 0 or more secondaries. Defaults to
+      1 primary and 0 secondaries.
     "x-databricks-field-behaviors_output_only": |-
       true
   "effective_retention_window_in_days":
     "description": |-
-      xref AIP-129. `retention_window_in_days` is owned by the client, while `effective_retention_window_in_days` is owned by the server.
-      `retention_window_in_days` will only be set in Create/Update response messages if and only if the user provides the field via the request.
-      `effective_retention_window_in_days` on the other hand will always bet set in all response messages (Create/Update/Get/List).
+      The retention window for the instance. This is the time window in days
+      for which the historical data is retained.
     "x-databricks-field-behaviors_output_only": |-
       true
   "effective_stopped":
     "description": |-
-      xref AIP-129. `stopped` is owned by the client, while `effective_stopped` is owned by the server.
-      `stopped` will only be set in Create/Update response messages if and only if the user provides the field via the request.
-      `effective_stopped` on the other hand will always bet set in all response messages (Create/Update/Get/List).
+      Whether the instance is stopped.
+    "x-databricks-field-behaviors_output_only": |-
+      true
+  "effective_usage_policy_id":
+    "description": |-
+      The policy that is applied to the instance.
     "x-databricks-field-behaviors_output_only": |-
       true
   "enable_pg_native_login":
@@ -407,6 +420,9 @@ github.com/databricks/cli/bundle/config/resources.DatabaseInstance:
       An immutable UUID identifier for the instance.
     "x-databricks-field-behaviors_output_only": |-
       true
+  "usage_policy_id":
+    "description": |-
+      The desired usage policy to associate with the instance.
 github.com/databricks/cli/bundle/config/resources.Job:
   "budget_policy_id":
     "description": |-
@@ -514,31 +530,19 @@ github.com/databricks/cli/bundle/config/resources.Job:
     "description": |-
       A collection of system notification IDs to notify when runs of this job begin or complete.
 github.com/databricks/cli/bundle/config/resources.MlflowExperiment:
-  "_":
-    "description": |-
-      An experiment and its metadata.
   "artifact_location":
     "description": |-
-      Location where artifacts for the experiment are stored.
-  "creation_time":
-    "description": |-
-      Creation time
-  "experiment_id":
-    "description": |-
-      Unique identifier for the experiment.
-  "last_update_time":
-    "description": |-
-      Last update time
-  "lifecycle_stage":
-    "description": |-
-      Current life cycle stage of the experiment: "active" or "deleted".
-      Deleted experiments are not returned by APIs.
+      Location where all artifacts for the experiment are stored.
+      If not provided, the remote server will select an appropriate default.
   "name":
     "description": |-
-      Human readable name that identifies the experiment.
+      Experiment name.
   "tags":
     "description": |-
-      Tags: Additional metadata key-value pairs.
+      A collection of tags to set on the experiment. Maximum tag size and number of tags per request
+      depends on the storage backend. All storage backends are guaranteed to support tag keys up
+      to 250 bytes in size and tag values up to 5000 bytes in size. All storage backends are also
+      guaranteed to support up to 20 tags per request.
 github.com/databricks/cli/bundle/config/resources.MlflowModel:
   "description":
     "description": |-
@@ -736,21 +740,48 @@ github.com/databricks/cli/bundle/config/resources.QualityMonitor:
       Optional argument to specify the warehouse for dashboard creation. If not specified, the first running
       warehouse will be used.
 github.com/databricks/cli/bundle/config/resources.RegisteredModel:
+  "aliases":
+    "description": |-
+      List of aliases associated with the registered model
+  "browse_only":
+    "description": |-
+      Indicates whether the principal is limited to retrieving metadata for the associated object through the BROWSE privilege when include_browse is enabled in the request.
   "catalog_name":
     "description": |-
       The name of the catalog where the schema and the registered model reside
   "comment":
     "description": |-
       The comment attached to the registered model
+  "created_at":
+    "description": |-
+      Creation timestamp of the registered model in milliseconds since the Unix epoch
+  "created_by":
+    "description": |-
+      The identifier of the user who created the registered model
+  "full_name":
+    "description": |-
+      The three-level (fully qualified) name of the registered model
+  "metastore_id":
+    "description": |-
+      The unique identifier of the metastore
   "name":
     "description": |-
       The name of the registered model
+  "owner":
+    "description": |-
+      The identifier of the user who owns the registered model
   "schema_name":
     "description": |-
       The name of the schema where the registered model resides
   "storage_location":
     "description": |-
       The storage location on the cloud under which model version data files are stored
+  "updated_at":
+    "description": |-
+      Last-update timestamp of the registered model in milliseconds since the Unix epoch
+  "updated_by":
+    "description": |-
+      The identifier of the user who updated the registered model last time
 github.com/databricks/cli/bundle/config/resources.Schema:
   "catalog_name":
     "description": |-
@@ -768,36 +799,39 @@ github.com/databricks/cli/bundle/config/resources.Schema:
     "description": |-
       Storage root URL for managed tables within schema.
 github.com/databricks/cli/bundle/config/resources.SqlWarehouse:
+  "_":
+    "description": |-
+      Creates a new SQL warehouse.
   "auto_stop_mins":
     "description": |-
-      The amount of time in minutes that a SQL warehouse must be idle (i.e., no RUNNING queries) before
-      it is automatically stopped.
+      The amount of time in minutes that a SQL warehouse must be idle (i.e., no
+      RUNNING queries) before it is automatically stopped.
 
       Supported values:
-        - Must be >= 0 mins for serverless warehouses
-        - Must be == 0 or >= 10 mins for non-serverless warehouses
-       - 0 indicates no autostop.
+      - Must be == 0 or >= 10 mins
+      - 0 indicates no autostop.
 
       Defaults to 120 mins
   "channel":
     "description": |-
       Channel Details
   "cluster_size":
-    "description": |
+    "description": |-
       Size of the clusters allocated for this warehouse.
-      Increasing the size of a spark cluster allows you to run larger queries on it.
-      If you want to increase the number of concurrent queries, please tune max_num_clusters.
+      Increasing the size of a spark cluster allows you to run larger queries on
+      it. If you want to increase the number of concurrent queries, please tune
+      max_num_clusters.
 
       Supported values:
-        - 2X-Small
-        - X-Small
-        - Small
-        - Medium
-        - Large
-        - X-Large
-        - 2X-Large
-        - 3X-Large
-        - 4X-Large
+      - 2X-Small
+      - X-Small
+      - Small
+      - Medium
+      - Large
+      - X-Large
+      - 2X-Large
+      - 3X-Large
+      - 4X-Large
   "creator_name":
     "description": |-
       warehouse creator name
@@ -816,22 +850,25 @@ github.com/databricks/cli/bundle/config/resources.SqlWarehouse:
       This field is deprecated
   "max_num_clusters":
     "description": |-
-      Maximum number of clusters that the autoscaler will create to handle concurrent queries.
+      Maximum number of clusters that the autoscaler will create to handle
+      concurrent queries.
 
       Supported values:
-        - Must be >= min_num_clusters
-        - Must be <= 30.
+      - Must be >= min_num_clusters
+      - Must be <= 40.
 
       Defaults to min_clusters if unset.
   "min_num_clusters":
     "description": |-
-      Minimum number of available clusters that will be maintained for this SQL warehouse.
-      Increasing this will ensure that a larger number of clusters are always running and therefore may reduce
-      the cold start time for new queries. This is similar to reserved vs. revocable cores in a resource manager.
+      Minimum number of available clusters that will be maintained for this SQL
+      warehouse. Increasing this will ensure that a larger number of clusters are
+      always running and therefore may reduce the cold start time for new
+      queries. This is similar to reserved vs. revocable cores in a resource
+      manager.
 
       Supported values:
-        - Must be > 0
-        - Must be <= min(max_num_clusters, 30)
+      - Must be > 0
+      - Must be <= min(max_num_clusters, 30)
 
       Defaults to 1
   "name":
@@ -839,25 +876,26 @@ github.com/databricks/cli/bundle/config/resources.SqlWarehouse:
       Logical name for the cluster.
 
       Supported values:
-        - Must be unique within an org.
-        - Must be less than 100 characters.
+      - Must be unique within an org.
+      - Must be less than 100 characters.
   "spot_instance_policy":
     "description": |-
-      Configurations whether the warehouse should use spot instances.
+      Configurations whether the endpoint should use spot instances.
   "tags":
     "description": |-
       A set of key-value pairs that will be tagged on all resources (e.g., AWS instances and EBS volumes) associated
       with this SQL warehouse.
 
       Supported values:
-        - Number of tags < 45.
+      - Number of tags < 45.
   "warehouse_type":
     "description": |-
-      Warehouse type: `PRO` or `CLASSIC`. If you want to use serverless compute, you must set to `PRO` and also set the field `enable_serverless_compute` to `true`.
+      Warehouse type: `PRO` or `CLASSIC`. If you want to use serverless compute,
+      you must set to `PRO` and also set the field `enable_serverless_compute` to `true`.
 github.com/databricks/cli/bundle/config/resources.SyncedDatabaseTable:
   "_":
     "description": |-
-      Next field marker: 14
+      Next field marker: 18
   "data_synchronization_status":
     "description": |-
       Synced Table data synchronization status
@@ -923,7 +961,9 @@ github.com/databricks/cli/bundle/config/resources.Volume:
       The storage location on the cloud
   "volume_type":
     "description": |-
-      The type of the volume. An external volume is located in the specified external location. A managed volume is located in the default location which is specified by the parent schema, or the parent catalog, or the Metastore. [Learn more](https://docs.databricks.com/aws/en/volumes/managed-vs-external)
+      The type of the volume. An external volume is located in the specified external location.
+      A managed volume is located in the default location which is specified by the parent schema, or the parent catalog, or the Metastore.
+      [Learn more](https://docs.databricks.com/aws/en/volumes/managed-vs-external)
 github.com/databricks/databricks-sdk-go/service/apps.AppDeployment:
   "create_time":
     "description": |-
@@ -1000,6 +1040,7 @@ github.com/databricks/databricks-sdk-go/service/apps.AppResource:
   "description":
     "description": |-
       Description of the App Resource.
+  "genie_space": {}
   "job": {}
   "name":
     "description": |-
@@ -1017,6 +1058,21 @@ github.com/databricks/databricks-sdk-go/service/apps.AppResourceDatabaseDatabase
     "enum":
       - |-
         CAN_CONNECT_AND_CREATE
+github.com/databricks/databricks-sdk-go/service/apps.AppResourceGenieSpace:
+  "name": {}
+  "permission": {}
+  "space_id": {}
+github.com/databricks/databricks-sdk-go/service/apps.AppResourceGenieSpaceGenieSpacePermission:
+  "_":
+    "enum":
+      - |-
+        CAN_MANAGE
+      - |-
+        CAN_EDIT
+      - |-
+        CAN_RUN
+      - |-
+        CAN_VIEW
 github.com/databricks/databricks-sdk-go/service/apps.AppResourceJob:
   "id":
     "description": |-
@@ -1126,6 +1182,15 @@ github.com/databricks/databricks-sdk-go/service/apps.ApplicationStatus:
       State of the application.
     "x-databricks-field-behaviors_output_only": |-
       true
+github.com/databricks/databricks-sdk-go/service/apps.ComputeSize:
+  "_":
+    "enum":
+      - |-
+        MEDIUM
+      - |-
+        LARGE
+      - |-
+        LIQUID
 github.com/databricks/databricks-sdk-go/service/apps.ComputeState:
   "_":
     "enum":
@@ -1284,15 +1349,32 @@ github.com/databricks/databricks-sdk-go/service/catalog.MonitorTimeSeries:
   "timestamp_col":
     "description": |-
       Column for the timestamp.
+github.com/databricks/databricks-sdk-go/service/catalog.RegisteredModelAlias:
+  "alias_name":
+    "description": |-
+      Name of the alias, e.g. 'champion' or 'latest_stable'
+  "catalog_name":
+    "description": |-
+      The name of the catalog containing the model version
+  "id":
+    "description": |-
+      The unique identifier of the alias
+  "model_name":
+    "description": |-
+      The name of the parent registered model of the model version, relative to parent schema
+  "schema_name":
+    "description": |-
+      The name of the schema containing the model version, relative to parent catalog
+  "version_num":
+    "description": |-
+      Integer version number of the model version to which this alias points.
 github.com/databricks/databricks-sdk-go/service/catalog.VolumeType:
   "_":
-    "description": |-
-      The type of the volume. An external volume is located in the specified external location. A managed volume is located in the default location which is specified by the parent schema, or the parent catalog, or the Metastore. [Learn more](https://docs.databricks.com/aws/en/volumes/managed-vs-external)
     "enum":
       - |-
-        EXTERNAL
-      - |-
         MANAGED
+      - |-
+        EXTERNAL
 github.com/databricks/databricks-sdk-go/service/compute.Adlsgen2Info:
   "_":
     "description": |-
@@ -1755,16 +1837,9 @@ github.com/databricks/databricks-sdk-go/service/compute.Environment:
       Required. Environment version used by the environment.
       Each version comes with a specific Python version and a set of Python packages.
       The version is a string, consisting of an integer.
-  "jar_dependencies":
-    "description": |-
-      Use `java_dependencies` instead.
-    "deprecation_message": |-
-      This field is deprecated
-    "x-databricks-preview": |-
-      PRIVATE
   "java_dependencies":
     "description": |-
-      List of jar dependencies, should be string representing volume paths. For example: `/Volumes/path/to/test.jar`.
+      List of java dependencies. Each dependency is a string representing a java library path. For example: `/Volumes/path/to/test.jar`.
     "x-databricks-preview": |-
       PRIVATE
 github.com/databricks/databricks-sdk-go/service/compute.GcpAttributes:
@@ -2016,6 +2091,13 @@ github.com/databricks/databricks-sdk-go/service/dashboards.LifecycleState:
         ACTIVE
       - |-
         TRASHED
+github.com/databricks/databricks-sdk-go/service/database.CustomTag:
+  "key":
+    "description": |-
+      The key of the custom tag.
+  "value":
+    "description": |-
+      The value of the custom tag.
 github.com/databricks/databricks-sdk-go/service/database.DatabaseInstanceRef:
   "_":
     "description": |-
@@ -3226,7 +3308,7 @@ github.com/databricks/databricks-sdk-go/service/jobs.TableUpdateTriggerConfigura
       the last time the trigger fired. The minimum allowed value is 60 seconds.
   "table_names":
     "description": |-
-      A list of Delta tables to monitor for changes. The table name must be in the format `catalog_name.schema_name.table_name`.
+      A list of tables to monitor for changes. The table name must be in the format `catalog_name.schema_name.table_name`.
   "wait_after_last_change_seconds":
     "description": |-
       If set, the trigger starts a run only after no table updates have occurred for the specified time
@@ -3436,9 +3518,7 @@ github.com/databricks/databricks-sdk-go/service/jobs.TriggerSettings:
       This field is deprecated
     "x-databricks-preview": |-
       PRIVATE
-  "table_update":
-    "x-databricks-preview": |-
-      PRIVATE
+  "table_update": {}
 github.com/databricks/databricks-sdk-go/service/jobs.Webhook:
   "id": {}
 github.com/databricks/databricks-sdk-go/service/jobs.WebhookNotifications:
@@ -4722,8 +4802,6 @@ github.com/databricks/databricks-sdk-go/service/sql.ChannelName:
         CHANNEL_NAME_CUSTOM
 github.com/databricks/databricks-sdk-go/service/sql.CreateWarehouseRequestWarehouseType:
   "_":
-    "description": |-
-      Warehouse type: `PRO` or `CLASSIC`. If you want to use serverless compute, you must set to `PRO` and also set the field `enable_serverless_compute` to `true`.
     "enum":
       - |-
         TYPE_UNSPECIFIED
@@ -4739,7 +4817,24 @@ github.com/databricks/databricks-sdk-go/service/sql.EndpointTags:
 github.com/databricks/databricks-sdk-go/service/sql.SpotInstancePolicy:
   "_":
     "description": |-
-      Configurations whether the warehouse should use spot instances.
+      EndpointSpotInstancePolicy configures whether the endpoint should use spot
+      instances.
+
+      The breakdown of how the EndpointSpotInstancePolicy converts to per cloud
+      configurations is:
+
+      +-------+--------------------------------------+--------------------------------+
+      | Cloud |            COST_OPTIMIZED            |     RELIABILITY_OPTIMIZED |
+      +-------+--------------------------------------+--------------------------------+
+      | AWS   | On Demand Driver with Spot Executors | On Demand Driver and
+      Executors | | AZURE | On Demand Driver and Executors       | On Demand Driver
+      and Executors |
+      +-------+--------------------------------------+--------------------------------+
+
+      While including "spot" in the enum name may limit the the future
+      extensibility of this field because it limits this enum to denoting "spot or
+      not", this is the field that PM recommends after discussion with customers
+      per SC-48783.
     "enum":
       - |-
         POLICY_UNSPECIFIED

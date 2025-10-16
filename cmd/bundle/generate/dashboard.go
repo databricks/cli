@@ -390,7 +390,7 @@ func (d *dashboard) RunE(cmd *cobra.Command, args []string) error {
 	cmd.SetContext(ctx)
 
 	b := root.MustConfigureBundle(cmd)
-	if b == nil {
+	if b == nil || logdiag.HasError(ctx) {
 		return root.ErrAlreadyPrinted
 	}
 
