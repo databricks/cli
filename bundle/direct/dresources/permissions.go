@@ -3,7 +3,6 @@ package dresources
 import (
 	"context"
 	"fmt"
-	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -16,9 +15,9 @@ type ResourcePermissions struct {
 	client *databricks.WorkspaceClient
 }
 
-type PermissionsInput[T any] struct {
-	ObjectID    string `json:"object_id"`
-	Permissions []T    `json:"permissions,omitempty"`
+type PermissionsState struct {
+	ObjectID    string                     `json:"object_id"`
+	Permissions []iam.AccessControlRequest `json:"permissions,omitempty"`
 }
 
 func PreparePermissionsInputConfig(inputConfig any, node string) (*structvar.StructVar, error) {
@@ -28,41 +27,48 @@ func PreparePermissionsInputConfig(inputConfig any, node string) (*structvar.Str
 	}
 	switch v := inputConfig.(type) {
 	case *[]resources.JobPermission:
-		return &structvar.StructVar{
-			Config: &PermissionsInput[resources.JobPermission]{
-				ObjectID:    "", // Always a reference, defined in Refs below
-				Permissions: *v,
-			},
-			Refs: map[string]string{
-				"object_id": "/jobs/${" + baseNode + ".id}",
-			},
-		}, nil
+		return initStructVar("/jobs/", baseNode, *v), nil
 	case *[]resources.PipelinePermission:
-		return &structvar.StructVar{
-			Config: &PermissionsInput[resources.PipelinePermission]{
-				ObjectID:    "",
-				Permissions: *v,
-			},
-			Refs: map[string]string{
-				"object_id": "/pipelines/${" + baseNode + ".id}",
-			},
-		}, nil
-
+		return initStructVar("/pipelines/", baseNode, *v), nil
 	default:
 		return nil, fmt.Errorf("unsupported type for permissions: %T", inputConfig)
 	}
 }
 
-type PermissionsState struct {
-	ObjectID    string                     `json:"object_id"`
-	Permissions []iam.AccessControlRequest `json:"permissions,omitempty"`
+func initStructVar[T resources.IPermission](prefix, baseNode string, v []T) *structvar.StructVar {
+	permissions := make([]iam.AccessControlRequest, 0, len(v))
+
+	for _, p := range v {
+		permissions = append(permissions, iam.AccessControlRequest{
+			PermissionLevel:      iam.PermissionLevel(p.GetLevel()),
+			GroupName:            p.GetGroupName(),
+			ServicePrincipalName: p.GetServicePrincipalName(),
+			UserName:             p.GetUserName(),
+			ForceSendFields:      nil,
+		})
+	}
+
+	return &structvar.StructVar{
+		Config: &PermissionsState{
+			ObjectID:    "", // Always a reference, defined in Refs below
+			Permissions: permissions,
+		},
+		Refs: map[string]string{
+			"object_id": prefix + "${" + baseNode + ".id}",
+		},
+	}
 }
 
 func (*ResourcePermissions) New(client *databricks.WorkspaceClient) *ResourcePermissions {
 	return &ResourcePermissions{client: client}
 }
 
-func (*ResourcePermissions) PrepareState(input any) *PermissionsState {
+func (*ResourcePermissions) PrepareState(s *PermissionsState) *PermissionsState {
+	return s
+}
+
+/*
+	// use IPermission interface, add boilerplate everywhere
 	switch v := input.(type) {
 	case *PermissionsInput[resources.JobPermission]:
 		result := PermissionsState{
@@ -84,9 +90,6 @@ func (*ResourcePermissions) PrepareState(input any) *PermissionsState {
 		return &result
 	case *PermissionsInput[resources.PipelinePermission]:
 		result := PermissionsState{
-			// Note PermissionsInput is a StructVar, so it consists of Config and Refs.
-			// We only receive Config there, refs are copied directly in bundle/direct/bundle_plan.go
-			// ObjectID is a reference in bundle_plan.go but all_test.go passes concrete value
 			ObjectID:    v.ObjectID,
 			Permissions: nil,
 		}
@@ -104,6 +107,23 @@ func (*ResourcePermissions) PrepareState(input any) *PermissionsState {
 		return nil
 	}
 }
+
+func toPermissionsState[T resources.JobPermission | resources.PipelinePermission](objectID string, permissions []T) *PermissionsState {
+	result := PermissionsState{
+		ObjectID:    objectID,
+		Permissions: nil,
+	}
+	for _, p := range permissions {
+		result.Permissions = append(result.Permissions, iam.AccessControlRequest{
+			GroupName:            p.GroupName,
+			PermissionLevel:      iam.PermissionLevel(p.Level),
+			ServicePrincipalName: p.ServicePrincipalName,
+			UserName:             p.UserName,
+			ForceSendFields:      nil,
+		})
+	}
+	return &result
+}*/
 
 func (r *ResourcePermissions) DoRefresh(ctx context.Context, id string) (*PermissionsState, error) {
 	idParts := strings.Split(id, "/")
@@ -142,10 +162,11 @@ func (r *ResourcePermissions) DoRefresh(ctx context.Context, id string) (*Permis
 		}
 	}
 
-	slices.SortStableFunc(result.Permissions, sortKey)
+	//slices.SortStableFunc(result.Permissions, sortKey)
 	return &result, nil
 }
 
+/*
 func sortKey(a, b iam.AccessControlRequest) int {
 	// First order by field userd: UserName first, then GroupName then ServicePrincipalName
 	result := getOrder(a) - getOrder(b)
@@ -171,6 +192,7 @@ func getOrder(a iam.AccessControlRequest) int {
 	// a.ServicePrincipalName != ""
 	return 3
 }
+*/
 
 // DoCreate calls https://docs.databricks.com/api/workspace/jobs/setjobpermissions.
 func (r *ResourcePermissions) DoCreate(ctx context.Context, newState *PermissionsState) (string, error) {
@@ -196,7 +218,7 @@ func (r *ResourcePermissions) DoUpdate(ctx context.Context, _ string, newState *
 	// Note, this sorts in place and is reflected in new_state. The purpose here is to ensure we're resilient against backend randomising order.
 	// The downside is that we create a different order from what is visible to use in the config. Proper solution would be to keep
 	// user's order and then adapt remote state order to user's order. This is the same issues as with job task_key, so there maybe a common implementation.
-	slices.SortStableFunc(newState.Permissions, sortKey)
+	//slices.SortStableFunc(newState.Permissions, sortKey)
 
 	_, err := r.client.Permissions.Set(ctx, iam.SetObjectPermissions{
 		RequestObjectId:   extractedID,

@@ -24,3 +24,15 @@
     ]
   }
 }
+{
+  "method": "PUT",
+  "path": "/api/2.0/permissions/jobs/[NUMID]",
+  "body": {
+    "access_control_list": [
+      {
+        "permission_level": "IS_OWNER",
+        "user_name": "[USERNAME]"
+      }
+    ]
+  }
+}
