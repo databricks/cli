@@ -2,16 +2,15 @@
 >>> [CLI] bundle init default-python --config-file ./input.json --output-dir output
 Welcome to the default Python template for Databricks Asset Bundles!
 
-Please answer the below to tailor your project to your preferences.
-You can always change your mind and change your configuration in the databricks.yml file later.
+Answer the following questions to customize your project.
+You can always change your configuration in the databricks.yml file later.
 
-Note that [DATABRICKS_URL] is used for initialization
-(see https://docs.databricks.com/dev-tools/cli/profiles.html for how to change your profile).
+Note that [DATABRICKS_URL] is used for initialization.
+(For information on how to change your profile, see https://docs.databricks.com/dev-tools/cli/profiles.html.)
 
 ✨ Your new project has been created in the 'fail_missing_uv' directory!
 
-Please refer to the README.md file for "getting started" instructions.
-See also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
+To get started, refer to the project README.md file and the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
 
 >>> [CLI] bundle validate
 Name: fail_missing_uv
