@@ -250,8 +250,8 @@ func TestEmbeddedStructWithPointer(t *testing.T) {
 
 func TestEmbeddedStructWithJSONTagDash(t *testing.T) {
 	type Embedded struct {
-		SkipField     string `json:"-"`
-		IncludeField  string `json:"included"`
+		SkipField    string `json:"-"`
+		IncludeField string `json:"included"`
 	}
 
 	type Parent struct {
