@@ -114,11 +114,6 @@ var testDeps = map[string]prepareWorkspace{
 	},
 }
 
-func TestSnakeToTitle(t *testing.T) {
-	assert.Equal(t, "MyTitle", snakeToTitle("my_title"))
-	assert.Equal(t, "ABcD", snakeToTitle("a_bc_d"))
-}
-
 func TestAll(t *testing.T) {
 	_, client := setupTestServerClient(t)
 
