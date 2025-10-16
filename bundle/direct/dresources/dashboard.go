@@ -113,6 +113,8 @@ func (r *ResourceDashboard) DoRefresh(ctx context.Context, id string) (*resource
 
 			// Add the /Workspace prefix to the parent path. The backend removes this prefix from parent
 			// path, and thus it needs to be added back in to match the local configuration.
+			// The default parent_path (i.e. ${workspace.resource_path}) includes the /Workspace prefix,
+			// that's why we need to add it back here.
 			ParentPath: path.Join("/Workspace", dashboard.ParentPath),
 
 			// Output only fields.
@@ -182,6 +184,8 @@ func responseToState(createOrUpdateResp *dashboards.Dashboard, publishResp *dash
 
 			// Add the /Workspace prefix to the parent path. The backend removes this prefix from parent
 			// path, and thus it needs to be added back in to match the local configuration.
+			// The default parent_path (i.e. ${workspace.resource_path}) includes the /Workspace prefix,
+			// that's why we need to add it back here.
 			ParentPath: path.Join("/Workspace", createOrUpdateResp.ParentPath),
 
 			// Output only fields
