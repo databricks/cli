@@ -29,7 +29,7 @@
             "type": "string",
             "default": "yes",
             "enum": ["yes", "no"],
-            "description": "Include a Lakeflow ETL pipeline",
+            "description": "Include an ETL pipeline",
             "order": 4
         },
         "include_python": {
