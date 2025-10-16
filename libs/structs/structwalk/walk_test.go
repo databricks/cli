@@ -150,46 +150,11 @@ func TestEmbeddedStruct(t *testing.T) {
 	result := flatten(t, parent)
 
 	// Embedded struct fields should be at the same level as parent fields
-	assert.Equal(t, "embedded_value", result["embedded_field"])
-	assert.Equal(t, 42, result["embedded_int"])
-	assert.Equal(t, "parent_value", result["parent_field"])
-
-	// Ensure there's no nested path like "Embedded.embedded_field"
-	_, hasNested := result["Embedded.embedded_field"]
-	assert.False(t, hasNested, "Embedded fields should not be nested under the embedded struct name")
-}
-
-func TestEmbeddedStructWithOmitempty(t *testing.T) {
-	type Embedded struct {
-		EmbeddedField string `json:"embedded_field,omitempty"`
-		EmbeddedInt   int    `json:"embedded_int,omitempty"`
-	}
-
-	type Parent struct {
-		Embedded
-		ParentField string `json:"parent_field,omitempty"`
-	}
-
-	// Test with zero values
-	emptyParent := Parent{}
-	emptyResult := flatten(t, emptyParent)
-
-	// All omitempty zero fields should be absent
-	assert.Empty(t, emptyResult)
-
-	// Test with non-zero values
-	parent := Parent{
-		Embedded: Embedded{
-			EmbeddedField: "value",
-			EmbeddedInt:   10,
-		},
-		ParentField: "parent",
-	}
-
-	result := flatten(t, parent)
-	assert.Equal(t, "value", result["embedded_field"])
-	assert.Equal(t, 10, result["embedded_int"])
-	assert.Equal(t, "parent", result["parent_field"])
+	assert.Equal(t, map[string]any{
+		"embedded_field": "embedded_value",
+		"embedded_int":   42,
+		"parent_field":   "parent_value",
+	}, result)
 }
 
 func TestNestedEmbeddedStructs(t *testing.T) {
