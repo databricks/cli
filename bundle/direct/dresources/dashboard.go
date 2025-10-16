@@ -160,7 +160,7 @@ func (r *ResourceDashboard) DoCreate(ctx context.Context, config *resources.Dash
 	if _, ok := v.(string); ok {
 		// If serialized dashboard is already a string, we can use it directly.
 		createReq.SerializedDashboard = v.(string)
-	} else {
+	} else if v != nil {
 		// If it's inlined in the bundle config as a map, we need to marshal it to a string.
 		b, err := json.Marshal(v)
 		if err != nil {
