@@ -281,6 +281,7 @@ func interpretOldStateVsRemoteState(ctx context.Context, adapter *dresources.Ada
 }
 
 func (b *DeploymentBundle) LookupReferenceLocal(ctx context.Context, path *structpath.PathNode) (any, error) {
+	// TODO: Prefix(3) assumes resources.jobs.foo but not resources.jobs.foo.permissions
 	targetResourceKey := path.Prefix(3).String()
 	fieldPath := path.SkipPrefix(3)
 	fieldPathS := fieldPath.String()
@@ -426,7 +427,6 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 
 	existingKeys := maps.Clone(db.State)
 
-	// fmt.Fprintf(os.Stderr, "existingKeys=%s\n", jsonDump(existingKeys))
 	patterns := []dyn.Pattern{
 		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()),
 		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey(), dyn.Key("permissions")),
@@ -464,7 +464,6 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 
 	for _, node := range nodes {
 		delete(existingKeys, node)
-		// fmt.Fprintf(os.Stderr, "%q existingKeys=%s\n", node, jsonDump(existingKeys))
 
 		prefix := "cannot plan " + node
 		inputConfig, err := configRoot.GetResourceConfig(node)
@@ -556,8 +555,6 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		p.Plan[node] = &e
 	}
 
-	// fmt.Fprintf(os.Stderr, "existingKeys=%s\n", jsonDump(existingKeys))
-
 	for n := range existingKeys {
 		if p.Plan[n] != nil {
 			panic("unexpected node " + n)
@@ -588,7 +585,7 @@ func extractReferences(root dyn.Value, node string) (map[string]string, error) {
 		fullPath := append(path, p...)
 		targetType := config.GetResourceTypeFromKey(fullPath.String())
 		if targetType != nodeType {
-			// Make sure these go to different node:
+			// Make sure these are associated with different nodes:
 			// resources.jobs.foo...
 			// resources.jobs.foo.permissions...
 			// resources.jobs.foo.grants...

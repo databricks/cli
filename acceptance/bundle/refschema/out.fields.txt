@@ -2845,8 +2845,13 @@ resources.pipelines.*.trigger.cron.quartz_cron_schedule	string	INPUT	STATE
 resources.pipelines.*.trigger.cron.timezone_id	string	INPUT	STATE
 resources.pipelines.*.trigger.manual	*pipelines.ManualTrigger	INPUT	STATE
 resources.pipelines.*.url	string	INPUT
-<<<<<<< HEAD
-<<<<<<< HEAD
+resources.pipelines.*.permissions.object_id	string	REMOTE	STATE
+resources.pipelines.*.permissions.permissions	[]iam.AccessControlRequest	REMOTE	STATE
+resources.pipelines.*.permissions.permissions[*]	iam.AccessControlRequest	REMOTE	STATE
+resources.pipelines.*.permissions.permissions[*].group_name	string	REMOTE	STATE
+resources.pipelines.*.permissions.permissions[*].permission_level	iam.PermissionLevel	REMOTE	STATE
+resources.pipelines.*.permissions.permissions[*].service_principal_name	string	REMOTE	STATE
+resources.pipelines.*.permissions.permissions[*].user_name	string	REMOTE	STATE
 resources.registered_models.*.aliases	[]catalog.RegisteredModelAlias	ALL
 resources.registered_models.*.aliases[*]	catalog.RegisteredModelAlias	ALL
 resources.registered_models.*.aliases[*].alias_name	string	ALL
@@ -2856,29 +2861,6 @@ resources.registered_models.*.aliases[*].model_name	string	ALL
 resources.registered_models.*.aliases[*].schema_name	string	ALL
 resources.registered_models.*.aliases[*].version_num	int	ALL
 resources.registered_models.*.browse_only	bool	ALL
-=======
-resources.pipelines.permissions.*.object_id	string	REMOTE	STATE
-resources.pipelines.permissions.*.permissions	[]iam.AccessControlRequest	REMOTE	STATE
-resources.pipelines.permissions.*.permissions[*]	iam.AccessControlRequest	REMOTE	STATE
-resources.pipelines.permissions.*.permissions[*].group_name	string	REMOTE	STATE
-resources.pipelines.permissions.*.permissions[*].permission_level	iam.PermissionLevel	REMOTE	STATE
-resources.pipelines.permissions.*.permissions[*].service_principal_name	string	REMOTE	STATE
-resources.pipelines.permissions.*.permissions[*].user_name	string	REMOTE	STATE
-=======
-resources.pipelines.*.permissions.object_id	string	REMOTE	STATE
-resources.pipelines.*.permissions.permissions	[]iam.AccessControlRequest	REMOTE	STATE
-resources.pipelines.*.permissions.permissions[*]	iam.AccessControlRequest	REMOTE	STATE
-resources.pipelines.*.permissions.permissions[*].group_name	string	REMOTE	STATE
-resources.pipelines.*.permissions.permissions[*].permission_level	iam.PermissionLevel	REMOTE	STATE
-resources.pipelines.*.permissions.permissions[*].service_principal_name	string	REMOTE	STATE
-resources.pipelines.*.permissions.permissions[*].user_name	string	REMOTE	STATE
->>>>>>> a0e254fcc (fix refschema)
-resources.registered_models.*.aliases	[]catalog.RegisteredModelAlias	REMOTE
-resources.registered_models.*.aliases[*]	catalog.RegisteredModelAlias	REMOTE
-resources.registered_models.*.aliases[*].alias_name	string	REMOTE
-resources.registered_models.*.aliases[*].version_num	int	REMOTE
-resources.registered_models.*.browse_only	bool	REMOTE
->>>>>>> 225ebc224 (wip - permissions)
 resources.registered_models.*.catalog_name	string	ALL
 resources.registered_models.*.comment	string	ALL
 resources.registered_models.*.created_at	int64	ALL

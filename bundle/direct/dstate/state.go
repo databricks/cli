@@ -29,7 +29,10 @@ type ResourceEntry struct {
 	State any    `json:"state"`
 }
 
-// splitKey parses a canonical key back into group and name.
+// splitKey extracts group and name from the key: 'resources.jobs.foo' -> 'jobs', 'foo', true
+// For sub-resources like permissions it returns "", "", false
+// Note we don't use group/name anywhere in bundle/direct, this is only for ExportState
+// which makes ID available to other parts of DABs
 func splitKey(key string) (group, name string, ok bool) {
 	items := strings.Split(key, ".")
 	if len(items) != 3 {
