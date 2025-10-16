@@ -37,7 +37,6 @@ func (*ResourceDashboard) PrepareState(input *resources.Dashboard) *resources.Da
 	return &input.DashboardConfig
 }
 
-// TODO(followup): do this for all resources automatically to avoid boilerplate code.
 func (r *ResourceDashboard) RemapState(state *resources.DashboardConfig) *resources.DashboardConfig {
 	dashboard := &resources.DashboardConfig{
 		Dashboard: dashboards.Dashboard{
