@@ -46,6 +46,10 @@
             {
               "group_name": "data-team",
               "permission_level": "CAN_MANAGE"
+            },
+            {
+              "permission_level": "IS_OWNER",
+              "user_name": "[USERNAME]"
             }
           ]
         },
