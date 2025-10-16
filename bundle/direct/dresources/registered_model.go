@@ -23,7 +23,7 @@ func (*ResourceRegisteredModel) PrepareState(input *resources.RegisteredModel) *
 	return &input.CreateRegisteredModelRequest
 }
 
-func (*ResourceRegisteredModel) RemapState(model *catalog.RegisteredModelInfo) *catalog.CreateRegisteredModelRequest {
+func (*ResourceRegisteredModel) RemapState(model *catalog.RegisteredModelInfo) (*catalog.CreateRegisteredModelRequest, error) {
 	return &catalog.CreateRegisteredModelRequest{
 		CatalogName:     model.CatalogName,
 		Comment:         model.Comment,
@@ -31,7 +31,7 @@ func (*ResourceRegisteredModel) RemapState(model *catalog.RegisteredModelInfo) *
 		SchemaName:      model.SchemaName,
 		StorageLocation: model.StorageLocation,
 		ForceSendFields: filterFields[catalog.CreateRegisteredModelRequest](model.ForceSendFields),
-	}
+	}, nil
 }
 
 func (r *ResourceRegisteredModel) DoRefresh(ctx context.Context, id string) (*catalog.RegisteredModelInfo, error) {

@@ -24,8 +24,8 @@ func (*ResourceJob) PrepareState(input *resources.Job) *jobs.JobSettings {
 	return &input.JobSettings
 }
 
-func (*ResourceJob) RemapState(jobs *jobs.Job) *jobs.JobSettings {
-	return jobs.Settings
+func (*ResourceJob) RemapState(jobs *jobs.Job) (*jobs.JobSettings, error) {
+	return jobs.Settings, nil
 }
 
 func (r *ResourceJob) DoRefresh(ctx context.Context, id string) (*jobs.Job, error) {

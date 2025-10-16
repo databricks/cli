@@ -29,15 +29,15 @@ func (*ResourceDashboard) New(client *databricks.WorkspaceClient) *ResourceDashb
 	return &ResourceDashboard{client: client}
 }
 
-// TOOD: Serialize the dashboard from a JSON object to a string.
+// TOOD: Serialize the dashboard from a JSON object to a string. Add a test case for it.
 func (*ResourceDashboard) PrepareState(input *resources.Dashboard) *resources.DashboardConfig {
 	// Unset serialized dashboard in the [dashboards.Dashboard] struct.
 	// Only the serialized_dashboard field in the [dashboard.DashboardConfig] struct should be used.
-	dashboard := input.DashboardConfig.Dashboard
+	dashboard := input.Dashboard
 	dashboard.SerializedDashboard = ""
 	dashboard.ForceSendFields = filterFields[dashboards.Dashboard](dashboard.ForceSendFields, "SerializedDashboard")
 
-	input.DashboardConfig.Dashboard = dashboard
+	input.Dashboard = dashboard
 	return &input.DashboardConfig
 }
 
@@ -58,20 +58,23 @@ func snakeToTitle(snake string) string {
 }
 
 // TODO(followup): do this for all resources automatically to avoid boilerplate code.
-func (s *ResourceDashboard) RemapState(state *resources.DashboardConfig) *resources.DashboardConfig {
+func (r *ResourceDashboard) RemapState(state *resources.DashboardConfig) (*resources.DashboardConfig, error) {
 	// Output only fields are marked as skip in dashboards. They need to be cleaned up
 	// before comparing with local configuration.
 	fieldTriggersRemote := s.FieldTriggers(false)
-	configForceSendFields := []string{}
-	dashboardForceSendFields := []string{}
+	var configForceSendFields []string
+	var dashboardForceSendFields []string
 	for k, v := range fieldTriggersRemote {
 		path, err := structpath.Parse(k)
 		if err != nil {
-			continue
+			return nil, fmt.Errorf("failed to parse path %s: %w", k, err)
 		}
 		if v == deployplan.ActionTypeSkip {
 			// Remove the field from the state.
-			structaccess.Set(state, path, nil)
+			err := structaccess.Set(state, path, nil)
+			if err != nil {
+				return nil, fmt.Errorf("failed to set field %s to nil: %w", k, err)
+			}
 			continue
 		}
 		titleField := snakeToTitle(k)
@@ -90,31 +93,26 @@ func (s *ResourceDashboard) RemapState(state *resources.DashboardConfig) *resour
 	// should always be nil here. Because it's overridden in [resources.DashboardConfig]
 	// it needs to be set nil explicitly.
 	state.SerializedDashboard = nil
-	return state
+	return state, nil
 }
 
 // TODO: Add test ensuring that the detection of serialized dashboard local changes works properly.
 func (r *ResourceDashboard) DoRefresh(ctx context.Context, id string) (*resources.DashboardConfig, error) {
 	wg := sync.WaitGroup{}
-	wg.Add(1)
 	var dashboard *dashboards.Dashboard
 	var publishedDashboard *dashboards.PublishedDashboard
 	var getErr, getPublishedErr error
-	go func() {
-		defer wg.Done()
+
+	wg.Go(func() {
 		dashboard, getErr = r.client.Lakeview.Get(ctx, dashboards.GetDashboardRequest{
 			DashboardId: id,
 		})
-	}()
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		// We need a separate GET call to get the embed_credentials field. This edge case is not
-		// handled by TF and does mean that the embed_credentials diffs are not detected in TF.
+	})
+	wg.Go(func() {
 		publishedDashboard, getPublishedErr = r.client.Lakeview.GetPublished(ctx, dashboards.GetPublishedDashboardRequest{
 			DashboardId: id,
 		})
-	}()
+	})
 
 	// Wait for both GET call to complete
 	wg.Wait()
