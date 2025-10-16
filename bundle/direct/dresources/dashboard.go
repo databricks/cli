@@ -27,13 +27,6 @@ func (*ResourceDashboard) New(client *databricks.WorkspaceClient) *ResourceDashb
 }
 
 func (*ResourceDashboard) PrepareState(input *resources.Dashboard) *resources.DashboardConfig {
-	// Unset serialized dashboard in the [dashboards.Dashboard] struct.
-	// Only the serialized_dashboard field in the [dashboard.DashboardConfig] struct should be used.
-	dashboard := input.Dashboard
-	dashboard.SerializedDashboard = ""
-	dashboard.ForceSendFields = filterFields[dashboards.Dashboard](dashboard.ForceSendFields, "SerializedDashboard")
-
-	input.Dashboard = dashboard
 	return &input.DashboardConfig
 }
 
