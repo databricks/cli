@@ -13,6 +13,10 @@
     {
       "level": "READ",
       "user_name": "users"
+    },
+    {
+      "level": "CAN_MANAGE",
+      "user_name": "[USERNAME]"
     }
   ]
 }
@@ -37,6 +41,10 @@ Deployment complete!
     {
       "level": "READ",
       "user_name": "users"
+    },
+    {
+      "level": "CAN_MANAGE",
+      "user_name": "[USERNAME]"
     }
   ]
 }

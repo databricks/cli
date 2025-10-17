@@ -19,9 +19,15 @@ const (
 // user must have one management permission of themselves; if they don't have any,
 // we'll add the first in slice
 var managementPermissions = map[string][]string{
-	"jobs":      {isOwner},
-	"pipelines": {isOwner, canManage},
+	"jobs":           {isOwner},
+	"pipelines":      {isOwner, canManage},
+	"sql_warehouses": {isOwner},
+	// to disable this mutator for a given resource, set slice to nil. Otherwise defaultManagementPermissions is used.
+	// example:
+	//"cluster_policies": nil,
 }
+
+var defaultManagementPermissions = []string{canManage}
 
 type filterCurrentUser struct{}
 
@@ -59,8 +65,13 @@ func ensureCurrentUserPermission(currentUser string) dyn.WalkValueFunc {
 			}
 
 			// Determine the required permission level
-			mgmtPerms := managementPermissions[resourceType]
+			mgmtPerms, ok := managementPermissions[resourceType]
+			if !ok {
+				mgmtPerms = defaultManagementPermissions
+			}
+
 			if len(mgmtPerms) == 0 {
+				// don't have resources like this, but if we need to disable this mutator for a given resource:
 				return v, nil
 			}
 
