@@ -101,6 +101,10 @@
             "level": "CAN_MANAGE"
           },
           {
+            "level": "CAN_MANAGE",
+            "user_name": "[USERNAME]"
+          },
+          {
             "level": "IS_OWNER",
             "user_name": "[USERNAME]"
           }

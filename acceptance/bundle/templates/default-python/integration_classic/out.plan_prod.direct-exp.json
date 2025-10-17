@@ -97,7 +97,13 @@
       "action": "create",
       "new_state": {
         "config": {
-          "object_id": ""
+          "object_id": "",
+          "permissions": [
+            {
+              "permission_level": "IS_OWNER",
+              "service_principal_name": "[USERNAME]"
+            }
+          ]
         },
         "vars": {
           "object_id": "/jobs/${resources.jobs.project_name_[UNIQUE_NAME]_job.id}"
@@ -139,7 +145,13 @@
       "action": "create",
       "new_state": {
         "config": {
-          "object_id": ""
+          "object_id": "",
+          "permissions": [
+            {
+              "permission_level": "IS_OWNER",
+              "service_principal_name": "[USERNAME]"
+            }
+          ]
         },
         "vars": {
           "object_id": "/pipelines/${resources.pipelines.project_name_[UNIQUE_NAME]_pipeline.id}"

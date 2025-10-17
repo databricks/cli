@@ -43,6 +43,10 @@
             {
               "permission_level": "CAN_VIEW",
               "user_name": "different@databricks.com"
+            },
+            {
+              "permission_level": "IS_OWNER",
+              "service_principal_name": "[USERNAME]"
             }
           ]
         },

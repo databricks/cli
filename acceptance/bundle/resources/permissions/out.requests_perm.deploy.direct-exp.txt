@@ -80,6 +80,10 @@
         "permission_level": "CAN_MANAGE"
       },
       {
+        "permission_level": "CAN_MANAGE",
+        "user_name": "[USERNAME]"
+      },
+      {
         "permission_level": "IS_OWNER",
         "user_name": "[USERNAME]"
       }

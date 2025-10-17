@@ -13,6 +13,41 @@
           "name": "foo"
         }
       }
+    },
+    "resources.pipelines.foo.permissions": {
+      "depends_on": [
+        {
+          "node": "resources.pipelines.foo",
+          "label": "${resources.pipelines.foo.id}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "config": {
+          "object_id": "",
+          "permissions": [
+            {
+              "permission_level": "CAN_VIEW",
+              "user_name": "viewer@example.com"
+            },
+            {
+              "group_name": "data-team",
+              "permission_level": "CAN_MANAGE"
+            },
+            {
+              "permission_level": "CAN_MANAGE",
+              "service_principal_name": "[UUID]"
+            },
+            {
+              "permission_level": "IS_OWNER",
+              "user_name": "[USERNAME]"
+            }
+          ]
+        },
+        "vars": {
+          "object_id": "/pipelines/${resources.pipelines.foo.id}"
+        }
+      }
     }
   }
 }

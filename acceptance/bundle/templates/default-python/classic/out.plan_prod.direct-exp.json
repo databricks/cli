@@ -97,7 +97,13 @@
       "action": "create",
       "new_state": {
         "config": {
-          "object_id": ""
+          "object_id": "",
+          "permissions": [
+            {
+              "permission_level": "IS_OWNER",
+              "user_name": "[USERNAME]"
+            }
+          ]
         },
         "vars": {
           "object_id": "/jobs/${resources.jobs.my_default_python_job.id}"
@@ -139,7 +145,13 @@
       "action": "create",
       "new_state": {
         "config": {
-          "object_id": ""
+          "object_id": "",
+          "permissions": [
+            {
+              "permission_level": "IS_OWNER",
+              "user_name": "[USERNAME]"
+            }
+          ]
         },
         "vars": {
           "object_id": "/pipelines/${resources.pipelines.my_default_python_pipeline.id}"
