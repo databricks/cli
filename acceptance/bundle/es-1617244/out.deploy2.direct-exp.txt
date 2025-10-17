@@ -17,6 +17,21 @@ are correctly set in the cluster specification:
   
 
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Error: cannot plan resources.jobs.safety_scrub: failed to read id="[NUMID]": Internal Server Error (500)
+
+Endpoint: GET [DATABRICKS_URL]/api/2.2/jobs/get?job_id=[NUMID]
+HTTP Status: 500 Internal Server Error
+API error_code: 
+API message: Internal Server Error
+
+Error: cannot plan resources.jobs.safety_augment_workflow: failed to read id="[NUMID]": Internal Server Error (500)
+
+Endpoint: GET [DATABRICKS_URL]/api/2.2/jobs/get?job_id=[NUMID]
+HTTP Status: 500 Internal Server Error
+API error_code: 
+API message: Internal Server Error
+
+Error: planning failed
+
+
+Exit code: 1
