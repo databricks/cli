@@ -12,6 +12,10 @@
   {
     "level": "CAN_MANAGE",
     "service_principal_name": "[UUID]"
+  },
+  {
+    "level": "IS_OWNER",
+    "user_name": "[USERNAME]"
   }
 ]
 
