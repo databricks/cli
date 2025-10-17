@@ -14,6 +14,9 @@ resources:
           group_name: data-team
         - level: CAN_MANAGE
           service_principal_name: f37d18cd-98a8-4db5-8112-12dd0a6bfe38
-        # job with explicit CAN_MANAGE matching username, will be filtered out by DABs; terraform will add IS_OWNER
+        # job with explicit CAN_MANAGE matching username, we will upgrade CAN_MANAGE to IS_OWNER
+        # If we don't, then terraform will add IS_OWNER and we will end up with both CAN_MANAGE and IS_OWNER
+        # which can lead to
+        #    Error: cannot create permissions: Permissions being set for UserName([USERNAME]) are ambiguous
         - level: CAN_MANAGE
           user_name: tester@databricks.com
