@@ -1,0 +1,4 @@
+Ignore = [
+    "databricks.yml",
+    "dash.lvdash.json",
+]

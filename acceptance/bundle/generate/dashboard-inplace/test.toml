@@ -3,3 +3,8 @@ EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform"]  # dashboards not supported y
 [[Repls]]
 Old = "[0-9a-f]{32}"
 New = "[DASHBOARD_ID]"
+
+[[Repls]]
+Old = '2\d\d\d-\d\d-\d\d(T| )\d\d:\d\d:\d\d(\.\d+(Z|\+\d\d:\d\d)?)?Z'
+New = "[TIMESTAMP]"
+Order = 9

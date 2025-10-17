@@ -21,6 +21,7 @@ var SupportedResources = map[string]any{
 	"alerts":                 (*ResourceAlert)(nil),
 	"clusters":               (*ResourceCluster)(nil),
 	"registered_models":      (*ResourceRegisteredModel)(nil),
+	"dashboards":             (*ResourceDashboard)(nil),
 }
 
 func InitAll(client *databricks.WorkspaceClient) (map[string]*Adapter, error) {

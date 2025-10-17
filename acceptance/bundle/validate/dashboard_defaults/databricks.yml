@@ -4,18 +4,34 @@ workspace:
 resources:
   dashboards:
     empty_string:
+      warehouse_id: "my-warehouse-1234"
+      display_name: "empty-string"
+
       # unchanged
       parent_path: ""
 
     non_empty_string:
+      warehouse_id: "my-warehouse-1234"
+      display_name: "non-empty-string"
+
       # unchanged
       parent_path: "already-set"
 
     other_fields:
+      warehouse_id: "my-warehouse-1234"
       display_name: hello
+
       # parent_path set default
 
     set_to_true:
+      warehouse_id: "my-warehouse-1234"
+      display_name: "set-to-true"
+
       embed_credentials: true
 
-    completely_empty: {}
+    neither_parent_path_nor_embed_credentials:
+      warehouse_id: "my-warehouse-1234"
+      display_name: "neither-parent-path-nor-embed-credentials"
+
+      # parent_path set default
+      # embed_credentials set default
