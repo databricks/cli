@@ -176,10 +176,6 @@
       {
         "permission_level": "IS_OWNER",
         "user_name": "[USERNAME]"
-      },
-      {
-        "permission_level": "CAN_MANAGE",
-        "user_name": "[USERNAME]"
       }
     ]
   }
@@ -189,10 +185,6 @@
   "path": "/api/2.0/permissions/pipelines/[UUID]",
   "body": {
     "access_control_list": [
-      {
-        "permission_level": "CAN_MANAGE",
-        "user_name": "[USERNAME]"
-      },
       {
         "permission_level": "IS_OWNER",
         "user_name": "[USERNAME]"
