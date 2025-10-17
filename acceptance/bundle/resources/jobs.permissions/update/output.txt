@@ -119,7 +119,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 -          user_name: viewer@example.com # PERMISSIONS
 -        - level: CAN_MANAGE # DELETE_ONE
 -          group_name: data-team # DELETE_ONE
-       # permissions: [] # EXPLICIT_EMPTY
+           # permissions: [] # EXPLICIT_EMPTY
 
 >>> [CLI] bundle debug plan
 
@@ -137,8 +137,16 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 === Set permissions: []
 
 >>> [CLI] bundle debug plan
+Warning: unknown field: permissions
+  at resources.jobs.job_with_permissions.permissions[1]
+  in databricks.yml:18:11
+
 
 >>> [CLI] bundle deploy
+Warning: unknown field: permissions
+  at resources.jobs.job_with_permissions.permissions[1]
+  in databricks.yml:18:11
+
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/jobs-permissions-test/default/files...
 Deploying resources...
 Updating deployment state...
@@ -147,6 +155,10 @@ Deployment complete!
 >>> print_requests
 
 >>> [CLI] bundle destroy --auto-approve
+Warning: unknown field: permissions
+  at resources.jobs.job_with_permissions.permissions[1]
+  in databricks.yml:18:11
+
 The following resources will be deleted:
   delete job job_with_permissions
 

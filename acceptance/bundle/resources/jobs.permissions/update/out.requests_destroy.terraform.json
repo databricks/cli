@@ -1,4 +1,16 @@
 {
+  "method": "PUT",
+  "path": "/api/2.0/permissions/jobs/[JOB_ID]",
+  "body": {
+    "access_control_list": [
+      {
+        "permission_level": "IS_OWNER",
+        "user_name": "[USERNAME]"
+      }
+    ]
+  }
+}
+{
   "method": "POST",
   "path": "/api/2.2/jobs/delete",
   "body": {

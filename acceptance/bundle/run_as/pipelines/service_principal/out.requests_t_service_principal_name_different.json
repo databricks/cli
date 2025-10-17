@@ -34,7 +34,7 @@
       },
       {
         "permission_level": "IS_OWNER",
-        "user_name": "[USERNAME]"
+        "service_principal_name": "[USERNAME]"
       }
     ]
   },

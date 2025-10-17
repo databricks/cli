@@ -30,7 +30,13 @@
       }
     },
     "resources.jobs.job_with_permissions.permissions": {
-      "action": "delete",
+      "depends_on": [
+        {
+          "node": "resources.jobs.job_with_permissions",
+          "label": "${resources.jobs.job_with_permissions.id}"
+        }
+      ],
+      "action": "skip",
       "remote_state": {
         "object_id": "/jobs/[JOB_ID]",
         "permissions": [
