@@ -1,0 +1,13 @@
+{
+  "plan": {
+    "resources.apps.foo": {
+      "action": "create",
+      "new_state": {
+        "config": {
+          "description": "",
+          "name": "foo"
+        }
+      }
+    }
+  }
+}

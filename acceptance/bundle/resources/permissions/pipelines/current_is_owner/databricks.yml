@@ -1,0 +1,8 @@
+resources:
+  pipelines:
+    foo:
+      name: foo
+      permissions:
+        # explicit IS_OWNER matching username, not changed
+        - level: IS_OWNER
+          user_name: tester@databricks.com
