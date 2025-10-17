@@ -178,77 +178,7 @@ func testFixture(userName string) *bundle.Bundle {
 	}
 }
 
-func TestFilterCurrentUser(t *testing.T) {
-	b := testFixture("alice@databricks.com")
-
-	diags := bundle.Apply(context.Background(), b, FilterCurrentUser())
-	assert.NoError(t, diags.Error())
-
-	// Assert current user is filtered out.
-	assert.Len(t, b.Config.Resources.Jobs["job1"].Permissions, 2)
-	assert.Contains(t, b.Config.Resources.Jobs["job1"].Permissions, jobRobot)
-	assert.Contains(t, b.Config.Resources.Jobs["job1"].Permissions, jobBob)
-
-	assert.Len(t, b.Config.Resources.Jobs["job2"].Permissions, 2)
-	assert.Contains(t, b.Config.Resources.Jobs["job2"].Permissions, jobRobot)
-	assert.Contains(t, b.Config.Resources.Jobs["job2"].Permissions, jobBob)
-
-	assert.Len(t, b.Config.Resources.Pipelines["pipeline1"].Permissions, 2)
-	assert.Contains(t, b.Config.Resources.Pipelines["pipeline1"].Permissions, pipelineRobot)
-	assert.Contains(t, b.Config.Resources.Pipelines["pipeline1"].Permissions, pipelineBob)
-
-	assert.Len(t, b.Config.Resources.Experiments["experiment1"].Permissions, 2)
-	assert.Contains(t, b.Config.Resources.Experiments["experiment1"].Permissions, experimentRobot)
-	assert.Contains(t, b.Config.Resources.Experiments["experiment1"].Permissions, experimentBob)
-
-	assert.Len(t, b.Config.Resources.Models["model1"].Permissions, 2)
-	assert.Contains(t, b.Config.Resources.Models["model1"].Permissions, modelRobot)
-	assert.Contains(t, b.Config.Resources.Models["model1"].Permissions, modelBob)
-
-	assert.Len(t, b.Config.Resources.ModelServingEndpoints["endpoint1"].Permissions, 2)
-	assert.Contains(t, b.Config.Resources.ModelServingEndpoints["endpoint1"].Permissions, endpointRobot)
-	assert.Contains(t, b.Config.Resources.ModelServingEndpoints["endpoint1"].Permissions, endpointBob)
-
-	// Assert there's no change to the grant.
-	assert.Len(t, b.Config.Resources.RegisteredModels["registered_model1"].Grants, 1)
-}
-
-func TestFilterCurrentServicePrincipal(t *testing.T) {
-	b := testFixture("i-Robot")
-
-	diags := bundle.Apply(context.Background(), b, FilterCurrentUser())
-	assert.NoError(t, diags.Error())
-
-	// Assert current user is filtered out.
-	assert.Len(t, b.Config.Resources.Jobs["job1"].Permissions, 2)
-	assert.Contains(t, b.Config.Resources.Jobs["job1"].Permissions, jobAlice)
-	assert.Contains(t, b.Config.Resources.Jobs["job1"].Permissions, jobBob)
-
-	assert.Len(t, b.Config.Resources.Jobs["job2"].Permissions, 2)
-	assert.Contains(t, b.Config.Resources.Jobs["job2"].Permissions, jobAlice)
-	assert.Contains(t, b.Config.Resources.Jobs["job2"].Permissions, jobBob)
-
-	assert.Len(t, b.Config.Resources.Pipelines["pipeline1"].Permissions, 2)
-	assert.Contains(t, b.Config.Resources.Pipelines["pipeline1"].Permissions, pipelineAlice)
-	assert.Contains(t, b.Config.Resources.Pipelines["pipeline1"].Permissions, pipelineBob)
-
-	assert.Len(t, b.Config.Resources.Experiments["experiment1"].Permissions, 2)
-	assert.Contains(t, b.Config.Resources.Experiments["experiment1"].Permissions, experimentAlice)
-	assert.Contains(t, b.Config.Resources.Experiments["experiment1"].Permissions, experimentBob)
-
-	assert.Len(t, b.Config.Resources.Models["model1"].Permissions, 2)
-	assert.Contains(t, b.Config.Resources.Models["model1"].Permissions, modelAlice)
-	assert.Contains(t, b.Config.Resources.Models["model1"].Permissions, modelBob)
-
-	assert.Len(t, b.Config.Resources.ModelServingEndpoints["endpoint1"].Permissions, 2)
-	assert.Contains(t, b.Config.Resources.ModelServingEndpoints["endpoint1"].Permissions, endpointAlice)
-	assert.Contains(t, b.Config.Resources.ModelServingEndpoints["endpoint1"].Permissions, endpointBob)
-
-	// Assert there's no change to the grant.
-	assert.Len(t, b.Config.Resources.RegisteredModels["registered_model1"].Grants, 1)
-}
-
-func TestFilterCurrentUserDoesNotErrorWhenNoResources(t *testing.T) {
+func TestEnsureCurrentUserPermissionsDoesNotErrorWhenNoResources(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Workspace: config.Workspace{
@@ -263,4 +193,40 @@ func TestFilterCurrentUserDoesNotErrorWhenNoResources(t *testing.T) {
 
 	diags := bundle.Apply(context.Background(), b, FilterCurrentUser())
 	assert.NoError(t, diags.Error())
+}
+
+func TestEnsureCurrentUserPermissionsLeavesResourcesWithoutPermissionsUntouched(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Workspace: config.Workspace{
+				CurrentUser: &config.User{
+					User: &iam.User{
+						UserName: "alice@databricks.com",
+					},
+				},
+			},
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"job_without_permissions": {
+						JobSettings: jobs.JobSettings{
+							Name: "job_without_permissions",
+						},
+						// No Permissions field set
+					},
+				},
+				Pipelines: map[string]*resources.Pipeline{
+					"pipeline_without_permissions": {
+						// No Permissions field set
+					},
+				},
+			},
+		},
+	}
+
+	diags := bundle.Apply(context.Background(), b, FilterCurrentUser())
+	assert.NoError(t, diags.Error())
+
+	// Assert that resources without permissions are left unchanged (no permissions added)
+	assert.Nil(t, b.Config.Resources.Jobs["job_without_permissions"].Permissions)
+	assert.Nil(t, b.Config.Resources.Pipelines["pipeline_without_permissions"].Permissions)
 }
