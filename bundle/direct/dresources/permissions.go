@@ -30,6 +30,22 @@ func PreparePermissionsInputConfig(inputConfig any, node string) (*structvar.Str
 		return initStructVar("/jobs/", baseNode, *v), nil
 	case *[]resources.PipelinePermission:
 		return initStructVar("/pipelines/", baseNode, *v), nil
+	case *[]resources.AppPermission:
+		return initStructVar("/apps/", baseNode, *v), nil
+	case *[]resources.ClusterPermission:
+		return initStructVar("/clusters/", baseNode, *v), nil
+	case *[]resources.DatabaseInstancePermission:
+		return initStructVar("/database-instances/", baseNode, *v), nil
+	case *[]resources.DashboardPermission:
+		return initStructVar("/dashboards/", baseNode, *v), nil
+	case *[]resources.MlflowExperimentPermission:
+		return initStructVar("/experiments/", baseNode, *v), nil
+	case *[]resources.MlflowModelPermission:
+		return initStructVar("/registered-models/", baseNode, *v), nil
+	case *[]resources.ModelServingEndpointPermission:
+		return initStructVar("/serving-endpoints/", baseNode, *v), nil
+	case *[]resources.SqlWarehousePermission:
+		return initStructVar("/sql/warehouses/", baseNode, *v), nil
 	default:
 		return nil, fmt.Errorf("unsupported type for permissions: %T", inputConfig)
 	}
@@ -67,14 +83,32 @@ func (*ResourcePermissions) PrepareState(s *PermissionsState) *PermissionsState 
 	return s
 }
 
-func (r *ResourcePermissions) DoRefresh(ctx context.Context, id string) (*PermissionsState, error) {
+// parsePermissionsID extracts the object type and ID from a permissions ID string.
+// Handles both 3-part IDs ("/jobs/123") and 4-part IDs ("/sql/warehouses/uuid").
+func parsePermissionsID(id string) (extractedType, extractedID string, err error) {
 	idParts := strings.Split(id, "/")
-	if len(idParts) != 3 { // "/jobs/123"
-		return nil, fmt.Errorf("cannot parse id: %q", id)
+	if len(idParts) < 3 { // need at least "/type/id"
+		return "", "", fmt.Errorf("cannot parse id: %q", id)
 	}
 
-	extractedType := idParts[1]
-	extractedID := idParts[2]
+	if len(idParts) == 3 { // "/jobs/123"
+		extractedType = idParts[1]
+		extractedID = idParts[2]
+	} else if len(idParts) == 4 { // "/sql/warehouses/uuid"
+		extractedType = idParts[1] + "/" + idParts[2] // "sql/warehouses"
+		extractedID = idParts[3]
+	} else {
+		return "", "", fmt.Errorf("cannot parse id: %q", id)
+	}
+
+	return extractedType, extractedID, nil
+}
+
+func (r *ResourcePermissions) DoRefresh(ctx context.Context, id string) (*PermissionsState, error) {
+	extractedType, extractedID, err := parsePermissionsID(id)
+	if err != nil {
+		return nil, err
+	}
 
 	acl, err := r.client.Permissions.Get(ctx, iam.GetPermissionRequest{
 		RequestObjectId:   extractedID,
@@ -121,15 +155,12 @@ func (r *ResourcePermissions) DoCreate(ctx context.Context, newState *Permission
 
 // DoUpdate calls https://docs.databricks.com/api/workspace/jobs/setjobpermissions.
 func (r *ResourcePermissions) DoUpdate(ctx context.Context, _ string, newState *PermissionsState) error {
-	idParts := strings.Split(newState.ObjectID, "/")
-	if len(idParts) != 3 { // "/jobs/123"
-		return fmt.Errorf("cannot parse id: %q", newState.ObjectID)
+	extractedType, extractedID, err := parsePermissionsID(newState.ObjectID)
+	if err != nil {
+		return err
 	}
 
-	extractedType := idParts[1]
-	extractedID := idParts[2]
-
-	_, err := r.client.Permissions.Set(ctx, iam.SetObjectPermissions{
+	_, err = r.client.Permissions.Set(ctx, iam.SetObjectPermissions{
 		RequestObjectId:   extractedID,
 		RequestObjectType: extractedType,
 		AccessControlList: newState.Permissions,

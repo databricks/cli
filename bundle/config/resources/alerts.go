@@ -10,8 +10,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/sql"
 )
 
-type AlertsPermissionLevel string
-
 func (l AlertsPermissionLevel) Values() []string {
 	return []string{
 		"CAN_EDIT",
@@ -19,14 +17,6 @@ func (l AlertsPermissionLevel) Values() []string {
 		"CAN_READ",
 		"CAN_RUN",
 	}
-}
-
-type AlertPermission struct {
-	Level string `json:"level"`
-
-	UserName             string `json:"user_name,omitempty"`
-	ServicePrincipalName string `json:"service_principal_name,omitempty"`
-	GroupName            string `json:"group_name,omitempty"`
 }
 
 type Alert struct {

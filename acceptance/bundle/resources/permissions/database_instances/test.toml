@@ -1,0 +1,1 @@
+Env.RESOURCE = "database_instances"  # for ../_script

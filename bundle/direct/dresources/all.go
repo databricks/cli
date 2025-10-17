@@ -8,9 +8,7 @@ import (
 
 var SupportedResources = map[string]any{
 	"jobs":                   (*ResourceJob)(nil),
-	"jobs.permissions":       (*ResourcePermissions)(nil),
 	"pipelines":              (*ResourcePipeline)(nil),
-	"pipelines.permissions":  (*ResourcePermissions)(nil),
 	"experiments":            (*ResourceExperiment)(nil),
 	"schemas":                (*ResourceSchema)(nil),
 	"volumes":                (*ResourceVolume)(nil),
@@ -23,6 +21,16 @@ var SupportedResources = map[string]any{
 	"alerts":                 (*ResourceAlert)(nil),
 	"clusters":               (*ResourceCluster)(nil),
 	"registered_models":      (*ResourceRegisteredModel)(nil),
+
+	// Permissions
+	"jobs.permissions":               (*ResourcePermissions)(nil),
+	"pipelines.permissions":          (*ResourcePermissions)(nil),
+	"apps.permissions":               (*ResourcePermissions)(nil),
+	"clusters.permissions":           (*ResourcePermissions)(nil),
+	"database_instances.permissions": (*ResourcePermissions)(nil),
+	"experiments.permissions":        (*ResourcePermissions)(nil),
+	"models.permissions":             (*ResourcePermissions)(nil),
+	"sql_warehouses.permissions":     (*ResourcePermissions)(nil),
 }
 
 func InitAll(client *databricks.WorkspaceClient) (map[string]*Adapter, error) {
