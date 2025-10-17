@@ -35,7 +35,7 @@
     "catalog = dbutils.widgets.get(\"catalog\")\n",
     "schema = dbutils.widgets.get(\"schema\")\n",
     "spark.sql(f\"USE CATALOG {catalog}\")\n",
-    "spark.sql(f\"USE SCHEMA {schema}\")\n"
+    "spark.sql(f\"USE SCHEMA {schema}\")"
    ]
   },
   {
@@ -94,21 +94,21 @@
       "label": "Catalog",
       "name": "catalog",
       "options": {
-       "widgetDisplayType": "Text",
-       "validationRegex": null
+       "validationRegex": null,
+       "widgetDisplayType": "Text"
       },
       "parameterDataType": "String"
      },
      "widgetInfo": {
-      "widgetType": "text",
       "defaultValue": "{{.default_catalog}}",
       "label": "Catalog",
       "name": "catalog",
       "options": {
-       "widgetType": "text",
        "autoCreated": false,
-       "validationRegex": null
-      }
+       "validationRegex": null,
+       "widgetType": "text"
+      },
+      "widgetType": "text"
      }
     },
     "schema": {
@@ -120,21 +120,21 @@
       "label": "Schema",
       "name": "schema",
       "options": {
-       "widgetDisplayType": "Text",
-       "validationRegex": null
+       "validationRegex": null,
+       "widgetDisplayType": "Text"
       },
       "parameterDataType": "String"
      },
      "widgetInfo": {
-      "widgetType": "text",
       "defaultValue": "default",
       "label": "Schema",
       "name": "schema",
       "options": {
-       "widgetType": "text",
        "autoCreated": false,
-       "validationRegex": null
-      }
+       "validationRegex": null,
+       "widgetType": "text"
+      },
+      "widgetType": "text"
      }
     }
    }

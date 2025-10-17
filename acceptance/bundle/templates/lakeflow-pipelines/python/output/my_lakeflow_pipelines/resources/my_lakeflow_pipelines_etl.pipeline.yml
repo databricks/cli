@@ -2,17 +2,17 @@
 
 resources:
   pipelines:
-    lakeflow_pipelines_etl:
-      name: lakeflow_pipelines_etl
+    my_lakeflow_pipelines_etl:
+      name: my_lakeflow_pipelines_etl
       ## Catalog is required for serverless compute
       catalog: ${var.catalog}
       schema: ${var.schema}
       serverless: true
-      root_path: "../src/lakeflow_pipelines_etl"
+      root_path: "../src/my_lakeflow_pipelines_etl"
 
       libraries:
         - glob:
-            include: ../src/lakeflow_pipelines_etl/transformations/**
+            include: ../src/my_lakeflow_pipelines_etl/transformations/**
 
       environment:
         dependencies:
