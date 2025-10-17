@@ -4,6 +4,10 @@
   {
     "level": "IS_OWNER",
     "user_name": "other_user@databricks.com"
+  },
+  {
+    "level": "IS_OWNER",
+    "user_name": "[USERNAME]"
   }
 ]
 

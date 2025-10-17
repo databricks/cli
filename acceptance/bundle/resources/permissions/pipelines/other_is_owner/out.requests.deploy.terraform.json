@@ -6,6 +6,10 @@
       {
         "permission_level": "IS_OWNER",
         "user_name": "other_user@databricks.com"
+      },
+      {
+        "permission_level": "IS_OWNER",
+        "user_name": "[USERNAME]"
       }
     ]
   }

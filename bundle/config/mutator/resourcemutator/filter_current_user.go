@@ -17,7 +17,12 @@ const (
 
 // defines which permissions are considered management permissions
 // user must have one management permission of themselves; if they don't have any,
-// we'll add the first in slice
+// we'll add the first in slice;
+// if they end up having both CAN_MANAGE and IS_OWNER, backend may fail with
+// Error: cannot create permissions: Permissions being set for UserName([USERNAME]) are ambiguous
+// Since terraform adds IS_OWNER permission when there is not one, regardless of CAN_MANAGE presence,
+// the above error can occur.
+// We thus add another bit of logic: we upgrade CAN_MANAGE to IS_OWNER when we can.
 var managementPermissions = map[string][]string{
 	"jobs":           {isOwner, canManage},
 	"pipelines":      {isOwner, canManage},
@@ -97,40 +102,37 @@ func readUser(v dyn.Value) string {
 }
 
 func processPermissions(permissions dyn.Value, currentUser string, mgmtPerms []string) (dyn.Value, error) {
-	hasIsOwner := false
+	priorityPermission := mgmtPerms[0]
+	permissionToUpgrade := -1
+
 	permissionArray := permissions.MustSequence()
-	for _, permission := range permissionArray {
+	for ind, permission := range permissionArray {
 		level, ok := dyn.Get1(permission, "level").AsString()
 		if !ok {
 			continue
-		}
-		if level == isOwner {
-			hasIsOwner = true
 		}
 		user := readUser(permission)
 		if user == "" || user != currentUser {
 			continue
 		}
-		if slices.Contains(mgmtPerms, level) {
+		if level == priorityPermission {
+			// already have required permission (IS_OWNER)
 			return permissions, nil
 		}
-	}
-
-	permissionToAdd := mgmtPerms[0]
-	if hasIsOwner && permissionToAdd == isOwner {
-		if len(mgmtPerms) > 1 {
-			permissionToAdd = mgmtPerms[1]
-		} else {
-			// do not add second IS_OWNER, keep existing IS_OWNER
-			permissionToAdd = ""
+		if slices.Contains(mgmtPerms, level) {
+			// has management permission that needs to be upgraded to IS_OWNER
+			// continue the loop; if we is IS_OWNER we will still bail
+			permissionToUpgrade = ind
 		}
 	}
 
-	if permissionToAdd == "" {
-		return permissions, nil
+	if permissionToUpgrade >= 0 {
+		v, _ := dyn.Set(permissionArray[permissionToUpgrade], "level", dyn.V(priorityPermission))
+		permissionArray[permissionToUpgrade] = v
+	} else {
+		permissionArray = append(permissionArray, createPermission(currentUser, priorityPermission))
 	}
 
-	permissionArray = append(permissionArray, createPermission(currentUser, permissionToAdd))
 	return dyn.V(permissionArray), nil
 }
 
