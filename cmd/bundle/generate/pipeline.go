@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle/generate"
+	"github.com/databricks/cli/cmd/bundle/deployment"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dyn"
@@ -41,6 +42,9 @@ Examples:
   # Organize files in custom directories
   databricks bundle generate pipeline --existing-pipeline-id def456 \
     --key data_transformation --config-dir resources --source-dir src
+
+  # Generate and automatically bind to the existing pipeline
+  databricks bundle generate pipeline --existing-pipeline-id abc123 --key etl_pipeline --bind
 
 What gets generated:
 - Pipeline configuration YAML file with settings and libraries
@@ -143,6 +147,16 @@ like catalogs, schemas, and compute configurations per target.`,
 		}
 
 		cmdio.LogString(ctx, "Pipeline configuration successfully saved to "+filename)
+
+		// If --bind flag is set, automatically bind the generated resource
+		bind, err := cmd.Flags().GetBool("bind")
+		if err != nil {
+			return err
+		}
+		if bind {
+			return deployment.BindResource(cmd, pipelineKey, pipelineId, true, false)
+		}
+
 		return nil
 	}
 

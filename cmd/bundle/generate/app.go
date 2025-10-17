@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle/generate"
+	"github.com/databricks/cli/cmd/bundle/deployment"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dyn"
@@ -36,6 +37,9 @@ Examples:
   # Import with custom directory structure
   databricks bundle generate app --existing-app-name data-viewer \
     --key data_app --config-dir resources --source-dir src/apps
+
+  # Generate and automatically bind to the existing app
+  databricks bundle generate app --existing-app-name my-app --key analytics_app --bind
 
 What gets generated:
 - App configuration YAML file with app settings and dependencies
@@ -120,6 +124,16 @@ per target environment.`,
 		}
 
 		cmdio.LogString(ctx, "App configuration successfully saved to "+filename)
+
+		// If --bind flag is set, automatically bind the generated resource
+		bind, err := cmd.Flags().GetBool("bind")
+		if err != nil {
+			return err
+		}
+		if bind {
+			return deployment.BindResource(cmd, appKey, app.Name, true, false)
+		}
+
 		return nil
 	}
 
