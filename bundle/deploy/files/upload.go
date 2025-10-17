@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
@@ -29,7 +30,6 @@ func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		return nil
 	}
 
-	cmdio.LogString(ctx, fmt.Sprintf("Uploading bundle files to %s...", b.Config.Workspace.FilePath))
 	opts, err := GetSyncOptions(ctx, b)
 	if err != nil {
 		return diag.FromErr(err)
@@ -42,13 +42,41 @@ func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	}
 	defer sync.Close()
 
-	b.Files, err = sync.RunOnce(ctx)
+	cmdio.LogString(ctx, fmt.Sprintf("Uploading bundle files to %s...", b.Config.Workspace.FilePath))
+	fileList, err := sync.RunOnce(ctx)
 	if err != nil {
 		if errors.Is(err, fs.ErrPermission) {
 			return permissions.ReportPossiblePermissionDenied(ctx, b, b.Config.Workspace.FilePath)
 		}
 		return diag.FromErr(err)
 	}
+
+	// Build message showing file counts and exclusions
+	msg := fmt.Sprintf("Uploaded %d files", fileList.Included)
+	var exclusions []string
+
+	// Report gitignore exclusions with breakdown of directories and files
+	gitignoreTotal := fileList.ExcludedDirectories + fileList.ExcludedFiles
+	if gitignoreTotal > 0 {
+		var parts []string
+		if fileList.ExcludedDirectories > 0 {
+			parts = append(parts, fmt.Sprintf("%d directories", fileList.ExcludedDirectories))
+		}
+		if fileList.ExcludedFiles > 0 {
+			parts = append(parts, fmt.Sprintf("%d files", fileList.ExcludedFiles))
+		}
+		exclusions = append(exclusions, strings.Join(parts, " and ")+" by .gitignore")
+	}
+
+	if fileList.ExcludedBySyncExclude > 0 {
+		exclusions = append(exclusions, fmt.Sprintf("%d by sync.exclude", fileList.ExcludedBySyncExclude))
+	}
+	if len(exclusions) > 0 {
+		msg += fmt.Sprintf(" (ignored %s)", strings.Join(exclusions, ", "))
+	}
+	cmdio.LogString(ctx, msg)
+
+	b.Files = fileList.Files
 
 	log.Infof(ctx, "Uploaded bundle files")
 	return nil

@@ -18,3 +18,7 @@ Ignore = [
 # C:/Program Files/Git/Users/$username/UNIQUE_NAME before passing it to the CLI
 # Setting this environment variable prevents that conversion on windows.
 MSYS_NO_PATHCONV = "1"
+
+[[Repls]]
+Old = 'Uploaded \d+ files \(ignored \d+ directories( and \d+ files)? by .gitignore\)'
+New = 'Uploaded [NUMID] files (ignored [NUMID] directories by .gitignore)'

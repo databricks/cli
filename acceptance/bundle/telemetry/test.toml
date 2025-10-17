@@ -8,3 +8,7 @@ New = '"execution_time_ms": SMALL_INT,'
 [[Repls]]
 Old = '(linux|darwin|windows)'
 New = '[OS]'
+
+[[Repls]]
+Old = 'Uploaded \d+ files \(ignored \d+ directories( and \d+ files)? by .gitignore\)'
+New = 'Uploaded [NUMID] files (ignored [NUMID] directories by .gitignore)'

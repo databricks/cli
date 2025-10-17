@@ -8,3 +8,7 @@ Response.Body = '''
     "numProtoSuccess": 1
 }
 '''
+
+[[Repls]]
+Old = 'Uploaded \d+ files \(ignored \d+ directories( and \d+ files)? by .gitignore\)'
+New = 'Uploaded [NUMID] files (ignored [NUMID] directories by .gitignore)'
