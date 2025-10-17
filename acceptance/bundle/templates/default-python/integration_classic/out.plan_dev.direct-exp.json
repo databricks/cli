@@ -1,0 +1,123 @@
+{
+  "plan": {
+    "resources.jobs.project_name_[UNIQUE_NAME]_job": {
+      "depends_on": [
+        {
+          "node": "resources.pipelines.project_name_[UNIQUE_NAME]_pipeline",
+          "label": "${resources.pipelines.project_name_[UNIQUE_NAME]_pipeline.id}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "config": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/state/metadata.json"
+          },
+          "edit_mode": "UI_LOCKED",
+          "format": "MULTI_TASK",
+          "job_clusters": [
+            {
+              "job_cluster_key": "job_cluster",
+              "new_cluster": {
+                "autoscale": {
+                  "max_workers": 4,
+                  "min_workers": 1
+                },
+                "data_security_mode": "SINGLE_USER",
+                "node_type_id": "[NODE_TYPE_ID]",
+                "num_workers": 0,
+                "spark_version": "15.4.x-scala2.12"
+              }
+            }
+          ],
+          "max_concurrent_runs": 4,
+          "name": "[dev [USERNAME]] project_name_[UNIQUE_NAME]_job",
+          "queue": {
+            "enabled": true
+          },
+          "tags": {
+            "dev": "[USERNAME]"
+          },
+          "tasks": [
+            {
+              "depends_on": [
+                {
+                  "task_key": "refresh_pipeline"
+                }
+              ],
+              "job_cluster_key": "job_cluster",
+              "libraries": [
+                {
+                  "whl": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/artifacts/.internal/project_name_[UNIQUE_NAME]-0.0.1+[NUMID]-py3-none-any.whl"
+                }
+              ],
+              "python_wheel_task": {
+                "entry_point": "main",
+                "package_name": "project_name_[UNIQUE_NAME]"
+              },
+              "task_key": "main_task"
+            },
+            {
+              "job_cluster_key": "job_cluster",
+              "notebook_task": {
+                "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/notebook"
+              },
+              "task_key": "notebook_task"
+            },
+            {
+              "depends_on": [
+                {
+                  "task_key": "notebook_task"
+                }
+              ],
+              "pipeline_task": {
+                "pipeline_id": "${resources.pipelines.project_name_[UNIQUE_NAME]_pipeline.id}"
+              },
+              "task_key": "refresh_pipeline"
+            }
+          ],
+          "trigger": {
+            "pause_status": "PAUSED",
+            "periodic": {
+              "interval": 1,
+              "unit": "DAYS"
+            }
+          }
+        },
+        "vars": {
+          "tasks[2].pipeline_task.pipeline_id": "${resources.pipelines.project_name_[UNIQUE_NAME]_pipeline.id}"
+        }
+      }
+    },
+    "resources.pipelines.project_name_[UNIQUE_NAME]_pipeline": {
+      "action": "create",
+      "new_state": {
+        "config": {
+          "channel": "CURRENT",
+          "configuration": {
+            "bundle.sourcePath": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src"
+          },
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/state/metadata.json"
+          },
+          "development": true,
+          "edition": "ADVANCED",
+          "libraries": [
+            {
+              "notebook": {
+                "path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/pipeline"
+              }
+            }
+          ],
+          "name": "[dev [USERNAME]] project_name_[UNIQUE_NAME]_pipeline",
+          "schema": "project_name_[UNIQUE_NAME]_dev",
+          "tags": {
+            "dev": "[USERNAME]"
+          }
+        }
+      }
+    }
+  }
+}

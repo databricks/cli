@@ -1,0 +1,59 @@
+{
+  "plan": {
+    "resources.pipelines.nyc_taxi_pipeline": {
+      "action": "create",
+      "new_state": {
+        "config": {
+          "channel": "CURRENT",
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/run_as/t_user_name_different/state/metadata.json"
+          },
+          "edition": "ADVANCED",
+          "libraries": [
+            {
+              "notebook": {
+                "path": "/Workspace/Users/[USERNAME]/.bundle/run_as/t_user_name_different/files/dlt/nyc_taxi_loader"
+              }
+            }
+          ],
+          "name": "nyc taxi loader",
+          "run_as": {
+            "user_name": "different@databricks.com"
+          }
+        }
+      }
+    },
+    "resources.pipelines.nyc_taxi_pipeline.permissions": {
+      "depends_on": [
+        {
+          "node": "resources.pipelines.nyc_taxi_pipeline",
+          "label": "${resources.pipelines.nyc_taxi_pipeline.id}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "config": {
+          "object_id": "",
+          "permissions": [
+            {
+              "permission_level": "CAN_VIEW",
+              "service_principal_name": "my_service_principal"
+            },
+            {
+              "permission_level": "CAN_VIEW",
+              "user_name": "different@databricks.com"
+            },
+            {
+              "permission_level": "IS_OWNER",
+              "service_principal_name": "[USERNAME]"
+            }
+          ]
+        },
+        "vars": {
+          "object_id": "/pipelines/${resources.pipelines.nyc_taxi_pipeline.id}"
+        }
+      }
+    }
+  }
+}
