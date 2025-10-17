@@ -162,37 +162,8 @@ func (r *ResourcePermissions) DoRefresh(ctx context.Context, id string) (*Permis
 		}
 	}
 
-	//slices.SortStableFunc(result.Permissions, sortKey)
 	return &result, nil
 }
-
-/*
-func sortKey(a, b iam.AccessControlRequest) int {
-	// First order by field userd: UserName first, then GroupName then ServicePrincipalName
-	result := getOrder(a) - getOrder(b)
-	if result != 0 {
-		return result
-	}
-	if a.UserName != "" {
-		return strings.Compare(a.UserName, b.UserName)
-	}
-	if b.GroupName != "" {
-		return strings.Compare(a.GroupName, b.GroupName)
-	}
-	return strings.Compare(a.ServicePrincipalName, b.ServicePrincipalName)
-}
-
-func getOrder(a iam.AccessControlRequest) int {
-	if a.UserName != "" {
-		return 1
-	}
-	if a.GroupName != "" {
-		return 2
-	}
-	// a.ServicePrincipalName != ""
-	return 3
-}
-*/
 
 // DoCreate calls https://docs.databricks.com/api/workspace/jobs/setjobpermissions.
 func (r *ResourcePermissions) DoCreate(ctx context.Context, newState *PermissionsState) (string, error) {
@@ -214,11 +185,6 @@ func (r *ResourcePermissions) DoUpdate(ctx context.Context, _ string, newState *
 
 	extractedType := idParts[1]
 	extractedID := idParts[2]
-
-	// Note, this sorts in place and is reflected in new_state. The purpose here is to ensure we're resilient against backend randomising order.
-	// The downside is that we create a different order from what is visible to use in the config. Proper solution would be to keep
-	// user's order and then adapt remote state order to user's order. This is the same issues as with job task_key, so there maybe a common implementation.
-	//slices.SortStableFunc(newState.Permissions, sortKey)
 
 	_, err := r.client.Permissions.Set(ctx, iam.SetObjectPermissions{
 		RequestObjectId:   extractedID,
