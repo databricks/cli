@@ -19,9 +19,9 @@ const (
 // user must have one management permission of themselves; if they don't have any,
 // we'll add the first in slice
 var managementPermissions = map[string][]string{
-	"jobs":           {isOwner},
+	"jobs":           {isOwner, canManage},
 	"pipelines":      {isOwner, canManage},
-	"sql_warehouses": {isOwner},
+	"sql_warehouses": {isOwner, canManage},
 
 	// nil means "do nothing"
 	"secret_scopes": nil,
