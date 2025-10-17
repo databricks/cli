@@ -46,6 +46,7 @@ Flags:
       --watch                  watch for changes to the dashboard and update the configuration
 
 Global Flags:
+      --bind             automatically bind the generated resource to the existing resource
       --debug            enable debug logging
       --key string       resource key to use for the generated configuration
   -o, --output type      output type: text or json (default text)
