@@ -33,10 +33,11 @@ PANIC = "💥\u200bPANIC"
 # These happen if test matches known_failures.txt
 KNOWN_FAILURE = "🟨\u200bKNOWN"
 RECOVERED = "💚\u200bRECOVERED"
+KNOWN_SKIP = "🙈\u200bSKIP"
 
 # The order is important - in case of ambiguity, earlier one gets preference.
 # For examples, each environment gets a summary icon which is earliest action in this list among all tests.
-INTERESTING_ACTIONS = (PANIC, BUG, FAIL, KNOWN_FAILURE, MISSING, FLAKY, RECOVERED)
+INTERESTING_ACTIONS = (PANIC, BUG, FAIL, KNOWN_FAILURE, MISSING, FLAKY, RECOVERED, KNOWN_SKIP)
 ACTIONS_WITH_ICON = INTERESTING_ACTIONS + (PASS, SKIP)
 
 ACTION_MESSAGES = {
@@ -323,12 +324,13 @@ def mark_known_failures(results, known_failures_config):
     marked_results = {}
     for test_key, action in results.items():
         package_name, testname = test_key
-        if known_failures_config and action == FAIL and known_failures_config.matches(package_name, testname):
-            marked_results[test_key] = KNOWN_FAILURE
-        elif known_failures_config and action == PASS and known_failures_config.matches(package_name, testname):
-            marked_results[test_key] = RECOVERED
-        else:
-            marked_results[test_key] = action
+        if known_failures_config and known_failures_config.matches(package_name, testname):
+            action = {
+                FAIL: KNOWN_FAILURE,
+                PASS: RECOVERED,
+                SKIP: KNOWN_SKIP,
+            }.get(action, action)
+        marked_results[test_key] = action
     return marked_results
 
 

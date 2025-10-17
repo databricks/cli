@@ -19,10 +19,10 @@ import (
 
 // deployPrepare is common set of mutators between "bundle plan" and "bundle deploy".
 // This function does not make any mutations in the workspace remotely, only in-memory bundle config mutations
-func deployPrepare(ctx context.Context, b *bundle.Bundle) map[string][]libraries.LocationToUpdate {
+func deployPrepare(ctx context.Context, b *bundle.Bundle, isPlan bool) map[string][]libraries.LocationToUpdate {
 	bundle.ApplySeqContext(ctx, b,
 		statemgmt.StatePull(),
-		terraform.CheckDashboardsModifiedRemotely(),
+		terraform.CheckDashboardsModifiedRemotely(isPlan),
 		deploy.StatePull(),
 		mutator.ValidateGitDetails(),
 		terraform.CheckRunningResource(),

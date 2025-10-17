@@ -33,7 +33,9 @@ func collectDashboardsFromState(ctx context.Context, b *bundle.Bundle) ([]dashbo
 	return dashboards, nil
 }
 
-type checkDashboardsModifiedRemotely struct{}
+type checkDashboardsModifiedRemotely struct {
+	isPlan bool
+}
 
 func (l *checkDashboardsModifiedRemotely) Name() string {
 	return "CheckDashboardsModifiedRemotely"
@@ -87,8 +89,14 @@ func (l *checkDashboardsModifiedRemotely) Apply(ctx context.Context, b *bundle.B
 			continue
 		}
 
+		// Downgrade this to a warning in plan mode.
+		severity := diag.Error
+		if l.isPlan {
+			severity = diag.Warning
+		}
+
 		diags = diags.Append(diag.Diagnostic{
-			Severity: diag.Error,
+			Severity: severity,
 			Summary:  fmt.Sprintf("dashboard %q has been modified remotely", dashboard.Name),
 			Detail: "" +
 				"This dashboard has been modified remotely since the last bundle deployment.\n" +
@@ -107,6 +115,6 @@ func (l *checkDashboardsModifiedRemotely) Apply(ctx context.Context, b *bundle.B
 	return diags
 }
 
-func CheckDashboardsModifiedRemotely() *checkDashboardsModifiedRemotely {
-	return &checkDashboardsModifiedRemotely{}
+func CheckDashboardsModifiedRemotely(isPlan bool) *checkDashboardsModifiedRemotely {
+	return &checkDashboardsModifiedRemotely{isPlan: isPlan}
 }
