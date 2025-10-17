@@ -67,64 +67,6 @@ func (*ResourcePermissions) PrepareState(s *PermissionsState) *PermissionsState 
 	return s
 }
 
-/*
-	// use IPermission interface, add boilerplate everywhere
-	switch v := input.(type) {
-	case *PermissionsInput[resources.JobPermission]:
-		result := PermissionsState{
-			// Note PermissionsInput is a StructVar, so it consists of Config and Refs.
-			// We only receive Config there, refs are copied directly in bundle/direct/bundle_plan.go
-			// ObjectID is a reference in bundle_plan.go but all_test.go passes concrete value
-			ObjectID:    v.ObjectID,
-			Permissions: nil,
-		}
-		for _, p := range v.Permissions {
-			result.Permissions = append(result.Permissions, iam.AccessControlRequest{
-				GroupName:            p.GroupName,
-				PermissionLevel:      iam.PermissionLevel(p.Level),
-				ServicePrincipalName: p.ServicePrincipalName,
-				UserName:             p.UserName,
-				ForceSendFields:      nil,
-			})
-		}
-		return &result
-	case *PermissionsInput[resources.PipelinePermission]:
-		result := PermissionsState{
-			ObjectID:    v.ObjectID,
-			Permissions: nil,
-		}
-		for _, p := range v.Permissions {
-			result.Permissions = append(result.Permissions, iam.AccessControlRequest{
-				GroupName:            p.GroupName,
-				PermissionLevel:      iam.PermissionLevel(p.Level),
-				ServicePrincipalName: p.ServicePrincipalName,
-				UserName:             p.UserName,
-				ForceSendFields:      nil,
-			})
-		}
-		return &result
-	default:
-		return nil
-	}
-}
-
-func toPermissionsState[T resources.JobPermission | resources.PipelinePermission](objectID string, permissions []T) *PermissionsState {
-	result := PermissionsState{
-		ObjectID:    objectID,
-		Permissions: nil,
-	}
-	for _, p := range permissions {
-		result.Permissions = append(result.Permissions, iam.AccessControlRequest{
-			GroupName:            p.GroupName,
-			PermissionLevel:      iam.PermissionLevel(p.Level),
-			ServicePrincipalName: p.ServicePrincipalName,
-			UserName:             p.UserName,
-			ForceSendFields:      nil,
-		})
-	}
-	return &result
-}*/
-
 func (r *ResourcePermissions) DoRefresh(ctx context.Context, id string) (*PermissionsState, error) {
 	idParts := strings.Split(id, "/")
 	if len(idParts) != 3 { // "/jobs/123"
@@ -158,6 +100,7 @@ func (r *ResourcePermissions) DoRefresh(ctx context.Context, id string) (*Permis
 				UserName:             accessControl.UserName,
 				ServicePrincipalName: accessControl.ServicePrincipalName,
 				PermissionLevel:      permission.PermissionLevel,
+				ForceSendFields:      nil,
 			})
 		}
 	}
