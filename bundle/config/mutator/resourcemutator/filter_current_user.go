@@ -47,48 +47,27 @@ func (m *filterCurrentUser) Name() string {
 	return "EnsureCurrentUserPermissions"
 }
 
-func ensureCurrentUserPermission(currentUser string) dyn.WalkValueFunc {
+func ensureCurrentUserPermission(currentUser string) dyn.MapFunc {
 	return func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-		// We're looking for resource collections (jobs, pipelines, etc.)
-		// at depth 1: [resource_type]
-		if len(p) != 1 {
+		// Extract resource type from path: resources.<resource_type>.<resource_name>.permissions
+		if len(p) != 4 || p[0].Key() != "resources" || p[3].Key() != "permissions" {
 			return v, nil
 		}
 
-		resourceType := p[0].Key()
+		resourceType := p[1].Key()
 
-		// Process each resource in the collection using MapByPattern
-		return dyn.MapByPattern(v, dyn.NewPattern(dyn.AnyKey()), func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-			// Get permissions array for this resource
-			permissions, err := dyn.Get(v, "permissions")
-			if dyn.IsNoSuchKeyError(err) {
-				// No permissions defined, leave it alone
-				return v, nil
-			}
-			if err != nil {
-				return dyn.InvalidValue, err
-			}
+		// Determine the required permission level
+		mgmtPerms, ok := managementPermissions[resourceType]
+		if !ok {
+			mgmtPerms = defaultManagementPermissions
+		}
 
-			// Determine the required permission level
-			mgmtPerms, ok := managementPermissions[resourceType]
-			if !ok {
-				mgmtPerms = defaultManagementPermissions
-			}
+		if len(mgmtPerms) == 0 {
+			return v, nil
+		}
 
-			if len(mgmtPerms) == 0 {
-				// don't have resources like this, but if we need to disable this mutator for a given resource:
-				return v, nil
-			}
-
-			// Process permissions array
-			updatedPermissions, err := processPermissions(permissions, currentUser, mgmtPerms)
-			if err != nil {
-				return dyn.InvalidValue, err
-			}
-
-			// Set the updated permissions back
-			return dyn.Set(v, "permissions", updatedPermissions)
-		})
+		// Process permissions array
+		return processPermissions(v, currentUser, mgmtPerms)
 	}
 }
 
@@ -155,24 +134,13 @@ func (m *filterCurrentUser) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 	currentUser := b.Config.Workspace.CurrentUser.UserName
 
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-		rv, err := dyn.Get(v, "resources")
-		if err != nil {
-			// If the resources key is not found, we can skip this mutator.
-			if dyn.IsNoSuchKeyError(err) {
-				return v, nil
-			}
-
-			return dyn.InvalidValue, err
-		}
-
-		// Walk the resources and ensure current user has correct permissions
-		nv, err := dyn.Walk(rv, ensureCurrentUserPermission(currentUser))
-		if err != nil {
-			return dyn.InvalidValue, err
-		}
-
-		// Set the resources with the updated permissions back into the bundle
-		return dyn.Set(v, "resources", nv)
+		// Use MapByPattern to directly process permissions arrays
+		return dyn.MapByPattern(v, dyn.NewPattern(
+			dyn.Key("resources"),
+			dyn.AnyKey(),
+			dyn.AnyKey(),
+			dyn.Key("permissions"),
+		), ensureCurrentUserPermission(currentUser))
 	})
 
 	return diag.FromErr(err)
