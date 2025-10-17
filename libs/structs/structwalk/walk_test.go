@@ -127,3 +127,112 @@ func TestValueBundleTag(t *testing.T) {
 	assert.Equal(t, []string{"A", "D"}, readonly)
 	assert.Equal(t, []string{"B", "D"}, internal)
 }
+
+func TestEmbeddedStruct(t *testing.T) {
+	type Embedded struct {
+		EmbeddedField string `json:"embedded_field"`
+		EmbeddedInt   int    `json:"embedded_int"`
+	}
+
+	type Parent struct {
+		Embedded
+		ParentField string `json:"parent_field"`
+	}
+
+	parent := Parent{
+		Embedded: Embedded{
+			EmbeddedField: "embedded_value",
+			EmbeddedInt:   42,
+		},
+		ParentField: "parent_value",
+	}
+
+	result := flatten(t, parent)
+
+	// Embedded struct fields should be at the same level as parent fields
+	assert.Equal(t, map[string]any{
+		"embedded_field": "embedded_value",
+		"embedded_int":   42,
+		"parent_field":   "parent_value",
+	}, result)
+}
+
+func TestNestedEmbeddedStructs(t *testing.T) {
+	type Level1 struct {
+		Field1 string `json:"field1"`
+	}
+
+	type Level2 struct {
+		Level1
+		Field2 string `json:"field2"`
+	}
+
+	type Level3 struct {
+		Level2
+		Field3 string `json:"field3"`
+	}
+
+	obj := Level3{
+		Level2: Level2{
+			Level1: Level1{
+				Field1: "one",
+			},
+			Field2: "two",
+		},
+		Field3: "three",
+	}
+
+	assert.Equal(t, map[string]any{
+		"field1": "one",
+		"field2": "two",
+		"field3": "three",
+	}, flatten(t, obj))
+}
+
+func TestEmbeddedStructWithPointer(t *testing.T) {
+	type Embedded struct {
+		EmbeddedField string `json:"embedded_field"`
+	}
+
+	type Parent struct {
+		*Embedded
+		ParentField string `json:"parent_field"`
+	}
+
+	parent := Parent{
+		Embedded: &Embedded{
+			EmbeddedField: "embedded_value",
+		},
+		ParentField: "parent_value",
+	}
+
+	assert.Equal(t, map[string]any{
+		"embedded_field": "embedded_value",
+		"parent_field":   "parent_value",
+	}, flatten(t, parent))
+}
+
+func TestEmbeddedStructWithJSONTagDash(t *testing.T) {
+	type Embedded struct {
+		SkipField    string `json:"-"`
+		IncludeField string `json:"included"`
+	}
+
+	type Parent struct {
+		Embedded
+		ParentField string `json:"parent_field"`
+	}
+
+	parent := Parent{
+		Embedded: Embedded{
+			SkipField:    "should_not_appear",
+			IncludeField: "should_appear",
+		},
+		ParentField: "parent",
+	}
+
+	assert.Equal(t, map[string]any{
+		"included":     "should_appear",
+		"parent_field": "parent",
+	}, flatten(t, parent))
+}

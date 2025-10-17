@@ -115,6 +115,12 @@ func walkStruct(path *structpath.PathNode, s reflect.Value, visit VisitFunc) {
 			continue
 		}
 
+		// Directly walk into embedded structs without adding the key to the path.
+		if sf.Anonymous {
+			walkValue(path, s.Field(i), &sf, visit)
+			continue
+		}
+
 		jsonTag := structtag.JSONTag(sf.Tag.Get("json"))
 		if jsonTag.Name() == "-" {
 			continue // skip fields without json name
