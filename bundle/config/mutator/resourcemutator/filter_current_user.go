@@ -22,9 +22,9 @@ var managementPermissions = map[string][]string{
 	"jobs":           {isOwner},
 	"pipelines":      {isOwner, canManage},
 	"sql_warehouses": {isOwner},
-	// to disable this mutator for a given resource, set slice to nil. Otherwise defaultManagementPermissions is used.
-	// example:
-	//"cluster_policies": nil,
+
+	// nil means "do nothing"
+	"secret_scopes": nil,
 }
 
 var defaultManagementPermissions = []string{canManage}
