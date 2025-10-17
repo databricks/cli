@@ -31,6 +31,10 @@ Warning: You are using the legacy mode of run_as. The support for this mode is e
   {
     "level": "IS_OWNER",
     "service_principal_name": "my_service_principal"
+  },
+  {
+    "level": "CAN_MANAGE",
+    "user_name": "[USERNAME]"
   }
 ]
 

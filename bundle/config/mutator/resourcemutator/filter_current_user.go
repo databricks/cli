@@ -2,61 +2,140 @@ package resourcemutator
 
 import (
 	"context"
+	"slices"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/iamutil"
 )
+
+const (
+	isOwner   = "IS_OWNER"
+	canManage = "CAN_MANAGE"
+)
+
+// defines which permissions are considered management permissions
+// user must have one management permission of themselves; if they don't have any,
+// we'll add the first in slice
+var managementPermissions = map[string][]string{
+	"jobs":      {isOwner},
+	"pipelines": {isOwner, canManage},
+}
 
 type filterCurrentUser struct{}
 
-// The databricks terraform provider does not allow changing the permissions of
-// current user. The current user is implied to be the owner of all deployed resources.
-// This mutator removes the current user from the permissions of all resources.
+// This mutator ensures the current user has the correct permissions for deployed resources:
+// - For jobs and pipelines: ensures IS_OWNER permission, removes other permissions of current user
+// - For other resources: ensures CAN_MANAGE permission, removes other permissions of current user
 func FilterCurrentUser() bundle.Mutator {
 	return &filterCurrentUser{}
 }
 
 func (m *filterCurrentUser) Name() string {
-	return "FilterCurrentUserFromPermissions"
+	return "EnsureCurrentUserPermissions"
 }
 
-func filter(currentUser string) dyn.WalkValueFunc {
+func ensureCurrentUserPermission(currentUser string) dyn.WalkValueFunc {
 	return func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-		// Permissions are defined at top level of a resource. We can skip walking
-		// after a depth of 4.
-		// [resource_type].[resource_name].[permissions].[array_index]
-		// Example: pipelines.foo.permissions.0
-		if len(p) > 4 {
-			return v, dyn.ErrSkip
-		}
-
-		// We can skip walking at a depth of 3 if the key is not "permissions".
-		// Example: pipelines.foo.libraries
-		if len(p) == 3 && p[2] != dyn.Key("permissions") {
-			return v, dyn.ErrSkip
-		}
-
-		// We want to be at the level of an individual permission to check it's
-		// user_name and service_principal_name fields.
-		if len(p) != 4 || p[2] != dyn.Key("permissions") {
+		// We're looking for resource collections (jobs, pipelines, etc.)
+		// at depth 1: [resource_type]
+		if len(p) != 1 {
 			return v, nil
 		}
 
-		// Filter if the user_name matches the current user
-		userName, ok := v.Get("user_name").AsString()
-		if ok && userName == currentUser {
-			return v, dyn.ErrDrop
-		}
+		resourceType := p[0].Key()
 
-		// Filter if the service_principal_name matches the current user
-		servicePrincipalName, ok := v.Get("service_principal_name").AsString()
-		if ok && servicePrincipalName == currentUser {
-			return v, dyn.ErrDrop
-		}
+		// Process each resource in the collection using MapByPattern
+		return dyn.MapByPattern(v, dyn.NewPattern(dyn.AnyKey()), func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+			// Get permissions array for this resource
+			permissions, err := dyn.Get(v, "permissions")
+			if dyn.IsNoSuchKeyError(err) {
+				// No permissions defined, leave it alone
+				return v, nil
+			}
+			if err != nil {
+				return dyn.InvalidValue, err
+			}
 
-		return v, nil
+			// Determine the required permission level
+			mgmtPerms := managementPermissions[resourceType]
+			if len(mgmtPerms) == 0 {
+				return v, nil
+			}
+
+			// Process permissions array
+			updatedPermissions, err := processPermissions(permissions, currentUser, mgmtPerms)
+			if err != nil {
+				return dyn.InvalidValue, err
+			}
+
+			// Set the updated permissions back
+			return dyn.Set(v, "permissions", updatedPermissions)
+		})
 	}
+}
+
+func readUser(v dyn.Value) string {
+	userName, _ := dyn.Get1(v, "user_name").AsString()
+	if userName != "" {
+		return userName
+	}
+	servicePrincipalName, _ := dyn.Get1(v, "service_principal_name").AsString()
+	return servicePrincipalName
+}
+
+func processPermissions(permissions dyn.Value, currentUser string, mgmtPerms []string) (dyn.Value, error) {
+	hasIsOwner := false
+	permissionArray := permissions.MustSequence()
+	for _, permission := range permissionArray {
+		level, ok := dyn.Get1(permission, "level").AsString()
+		if !ok {
+			continue
+		}
+		if level == isOwner {
+			hasIsOwner = true
+		}
+		user := readUser(permission)
+		if user == "" || user != currentUser {
+			continue
+		}
+		if slices.Contains(mgmtPerms, level) {
+			return permissions, nil
+		}
+	}
+
+	permissionToAdd := mgmtPerms[0]
+	if hasIsOwner && permissionToAdd == isOwner {
+		if len(mgmtPerms) > 1 {
+			permissionToAdd = mgmtPerms[1]
+		} else {
+			// do not add second IS_OWNER, keep existing IS_OWNER
+			permissionToAdd = ""
+		}
+	}
+
+	if permissionToAdd == "" {
+		return permissions, nil
+	}
+
+	permissionArray = append(permissionArray, createPermission(currentUser, permissionToAdd))
+	return dyn.V(permissionArray), nil
+}
+
+func createPermission(user, level string) dyn.Value {
+	permission := map[string]dyn.Value{
+		"level": dyn.V(level),
+	}
+
+	// Determine if currentUser is a service principal or user
+	if iamutil.IsServicePrincipalName(user) {
+		permission["service_principal_name"] = dyn.V(user)
+	} else {
+		permission["user_name"] = dyn.V(user)
+	}
+
+	return dyn.V(permission)
 }
 
 func (m *filterCurrentUser) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
@@ -73,13 +152,13 @@ func (m *filterCurrentUser) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 			return dyn.InvalidValue, err
 		}
 
-		// Walk the resources and filter out the current user from the permissions
-		nv, err := dyn.Walk(rv, filter(currentUser))
+		// Walk the resources and ensure current user has correct permissions
+		nv, err := dyn.Walk(rv, ensureCurrentUserPermission(currentUser))
 		if err != nil {
 			return dyn.InvalidValue, err
 		}
 
-		// Set the resources with the filtered permissions back into the bundle
+		// Set the resources with the updated permissions back into the bundle
 		return dyn.Set(v, "resources", nv)
 	})
 
