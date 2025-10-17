@@ -6,32 +6,32 @@ Created job with ID: [NUMID]
 
 >>> [CLI] workspace import /Workspace/Users/[USERNAME]/python-[UNIQUE_NAME]/test --file test.py --language PYTHON
 
->>> [CLI] bundle generate job --key test_job_key --existing-job-id [NUMID] --config-dir resources --source-dir src
+=== Generate and bind in one step:
+>>> [CLI] bundle generate job --key test_job --existing-job-id [NUMID] --config-dir resources --source-dir src --bind
 File successfully saved to src/test.py
-Job configuration successfully saved to resources/test_job_key.job.yml
+Job configuration successfully saved to resources/test_job.job.yml
+Updating deployment state...
+Successfully bound job with an id '[NUMID]'
 
 >>> ls src/
 test.py
 
->>> cat resources/test_job_key.job.yml
-      name: generate-job-[UNIQUE_NAME]
+>>> cat resources/test_job.job.yml
+      name: auto-bind-job-[UNIQUE_NAME]
 
->>> [CLI] bundle deployment bind test_job_key [NUMID] --auto-approve
-Updating deployment state...
-Successfully bound job with an id '[NUMID]'
-Run 'bundle deploy' to deploy changes to your workspace
-
+=== Deploy the bound job:
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-generate-bind-[UNIQUE_NAME]/files...
+Uploading bundle files to /Workspace/tmp/[UNIQUE_NAME]/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
 
+=== Destroy the bundle:
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete job test_job_key
+  delete job test_job
 
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-generate-bind-[UNIQUE_NAME]
+All files and directories at the following location will be deleted: /Workspace/tmp/[UNIQUE_NAME]
 
 Deleting files...
 Destroy complete!

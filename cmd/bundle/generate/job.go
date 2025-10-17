@@ -6,8 +6,10 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/databricks/cli/bundle/generate"
+	"github.com/databricks/cli/cmd/bundle/deployment"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dyn"
@@ -40,6 +42,9 @@ Examples:
   # Specify custom directories for organization
   databricks bundle generate job --existing-job-id 67890 \
     --key data_pipeline --config-dir resources --source-dir src
+
+  # Generate and automatically bind to the existing job
+  databricks bundle generate job --existing-job-id 12345 --key my_etl_job --bind
 
 What gets generated:
 - Job configuration YAML file in the resources directory
@@ -138,6 +143,16 @@ After generation, you can deploy this job to other targets using:
 		}
 
 		cmdio.LogString(ctx, "Job configuration successfully saved to "+filename)
+
+		// If --bind flag is set, automatically bind the generated resource
+		bind, err := cmd.Flags().GetBool("bind")
+		if err != nil {
+			return err
+		}
+		if bind {
+			return deployment.BindResource(cmd, jobKey, strconv.FormatInt(jobId, 10), true, false)
+		}
+
 		return nil
 	}
 
