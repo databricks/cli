@@ -1,4 +1,3 @@
-echo "*" > .gitignore
 trace $CLI bundle plan
 trace $CLI bundle deploy
 job_id=`$CLI bundle summary -o json | jq -r .resources.jobs.foo.id`
