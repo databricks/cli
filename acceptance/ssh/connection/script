@@ -1,0 +1,10 @@
+errcode $CLI ssh connect --shutdown-delay=10s --cluster="$TEST_DEFAULT_CLUSTER_ID" --releases-dir=$TEST_DATABRICKS_CLI_RELEASES_DIR -- "echo 'Connection successful'" >tmp.stdout 2>tmp.stderr
+
+cat tmp.stdout
+
+if ! grep -q "Connection successful" tmp.stdout; then
+  echo "Connection was not successful, stderr:"
+  cat tmp.stderr
+fi
+
+rm tmp.stdout tmp.stderr
