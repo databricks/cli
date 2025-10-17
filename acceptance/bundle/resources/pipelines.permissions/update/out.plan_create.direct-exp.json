@@ -1,32 +1,16 @@
 {
   "plan": {
     "resources.pipelines.foo": {
-      "action": "skip",
-      "remote_state": {
-        "creator_user_name": "[USERNAME]",
-        "last_modified": [UNIX_TIME_MILLIS],
-        "name": "foo",
-        "pipeline_id": "[PIPELINE_ID]",
-        "run_as_user_name": "[USERNAME]",
-        "spec": {
+      "action": "create",
+      "new_state": {
+        "config": {
           "channel": "CURRENT",
           "deployment": {
             "kind": "BUNDLE",
             "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/permissions-test/default/state/metadata.json"
           },
           "edition": "ADVANCED",
-          "id": "[PIPELINE_ID]",
-          "name": "foo",
-          "storage": "dbfs:/pipelines/[PIPELINE_ID]"
-        },
-        "state": "IDLE"
-      },
-      "changes": {
-        "remote": {
-          "storage": {
-            "action": "skip",
-            "reason": "server_side_default"
-          }
+          "name": "foo"
         }
       }
     },
@@ -40,7 +24,7 @@
       "action": "create",
       "new_state": {
         "config": {
-          "object_id": "/pipelines/[PIPELINE_ID]",
+          "object_id": "",
           "permissions": [
             {
               "permission_level": "CAN_VIEW",
@@ -49,8 +33,15 @@
             {
               "group_name": "data-team",
               "permission_level": "CAN_MANAGE"
+            },
+            {
+              "permission_level": "IS_OWNER",
+              "user_name": "[USERNAME]"
             }
           ]
+        },
+        "vars": {
+          "object_id": "/pipelines/${resources.pipelines.foo.id}"
         }
       }
     }
