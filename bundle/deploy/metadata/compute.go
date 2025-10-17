@@ -46,6 +46,7 @@ func (m *compute) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 			// b.Config.Resources.Jobs may include a job that only exists in state but not in config
 			continue
 		}
+
 		relativePath, err := filepath.Rel(b.BundleRootPath, l.File)
 		if err != nil {
 			log.Warnf(ctx, "failed to compute relative path for job %q: %s", name, err)
