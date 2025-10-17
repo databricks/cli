@@ -128,7 +128,7 @@ def run_ssh_server():
     binary_path = f"/Workspace/Users/{user_name}/.databricks/ssh-tunnel/{version}/{cli_name}/databricks"
 
     try:
-        subprocess.run(
+        p = subprocess.run(
             [
                 binary_path,
                 "ssh",
@@ -148,7 +148,16 @@ def run_ssh_server():
                 # TODO: file with log rotation
                 "--log-file=stdout",
             ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             check=True,
+        )
+        kill_all_children()
+        dbutils.notebook.exit(
+            "stdout:\n"
+            + p.stdout.decode(errors="replace")
+            + "\n\nstderr:\n"
+            + p.stderr.decode(errors="replace")
         )
     finally:
         kill_all_children()
