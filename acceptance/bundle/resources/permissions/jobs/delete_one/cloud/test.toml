@@ -1,4 +1,5 @@
 Local = false
 Cloud = true
+RequiresUnityCatalog = true
 RecordRequests = true
 Ignore = ['.databricks']
