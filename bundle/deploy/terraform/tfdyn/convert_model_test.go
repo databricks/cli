@@ -63,7 +63,7 @@ func TestConvertModel(t *testing.T) {
 
 	// Assert equality on the permissions
 	assert.Equal(t, &schema.ResourcePermissions{
-		RegisteredModelId: "${databricks_mlflow_model.my_model.registered_model_id}",
+		RegisteredModelId: "${databricks_mlflow_model.my_model.id}",
 		AccessControl: []schema.ResourcePermissionsAccessControl{
 			{
 				PermissionLevel: "CAN_READ",
