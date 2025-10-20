@@ -6,6 +6,7 @@ import (
 	"math"
 	"reflect"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -134,7 +135,6 @@ var testDeps = map[string]prepareWorkspace{
 		}
 
 		return &PermissionsState{
-			// XXX jobs or job?
 			ObjectID: "/jobs/" + strconv.FormatInt(resp.JobId, 10),
 			Permissions: []iam.AccessControlRequest{{
 				PermissionLevel: "CAN_MANAGE",
@@ -252,19 +252,6 @@ var testDeps = map[string]prepareWorkspace{
 			}},
 		}, nil
 	},
-}
-
-var fakeDelete = map[string]bool{
-	// Permissions inherit the lifecycle of their parent resource, so the delete step only clears ACLs.
-	// The helper expects resources to disappear entirely, so we skip that assertion for permissions.
-	"jobs.permissions":               true,
-	"pipelines.permissions":          true,
-	"models.permissions":             true,
-	"experiments.permissions":        true,
-	"clusters.permissions":           true,
-	"apps.permissions":               true,
-	"sql_warehouses.permissions":     true,
-	"database_instances.permissions": true,
 }
 
 func TestAll(t *testing.T) {
@@ -406,8 +393,10 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	}, remote, false)
 	require.NoError(t, err)
 
+	deleteIsNoop := strings.HasSuffix(group, "permissions")
+
 	remoteAfterDelete, err := adapter.DoRefresh(ctx, createdID)
-	if fakeDelete[group] {
+	if deleteIsNoop {
 		require.NoError(t, err)
 	} else {
 		require.Error(t, err)

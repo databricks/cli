@@ -170,6 +170,6 @@ func (r *ResourcePermissions) DoUpdate(ctx context.Context, _ string, newState *
 // - making assumptions on what it should look like
 // - storing current user somewhere or storing original permissions somewhere
 func (r *ResourcePermissions) DoDelete(ctx context.Context, id string) error {
-	// high performance delete implementation:
+	// intentional noop
 	return nil
 }

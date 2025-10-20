@@ -38,7 +38,7 @@ func (modelConverter) Convert(ctx context.Context, key string, vin dyn.Value, ou
 
 	// Configure permissions for this resource.
 	if permissions := convertPermissionsResource(ctx, vin); permissions != nil {
-		permissions.RegisteredModelId = fmt.Sprintf("${databricks_mlflow_model.%s.id}", key)
+		permissions.RegisteredModelId = fmt.Sprintf("${databricks_mlflow_model.%s.registered_model_id}", key)
 		out.Permissions["mlflow_model_"+key] = permissions
 	}
 
