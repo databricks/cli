@@ -1,17 +1,7 @@
-print_requests() {
-    jq --sort-keys 'select(.method != "GET" and (.path | contains("/jobs")))' < out.requests.txt
-    rm out.requests.txt
-}
-
-print_sorted_requests() {
-    jq -c < out.requests.txt | sort | jq --sort-keys 'select(.method != "GET" and (.path | contains("/jobs")))'
-    rm out.requests.txt
-}
-
 echo "*" > .gitignore
 trace $CLI bundle plan 2>&1
 musterr $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
-trace print_sorted_requests
+trace print_requests.py --sort /jobs
 
 trace $CLI bundle summary
 
@@ -26,7 +16,7 @@ musterr $CLI bundle deploy &> out.deploy2.$DATABRICKS_BUNDLE_ENGINE.txt
 title "Expecting no difference in the output between first and second deploy"
 diff.py out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt out.deploy2.$DATABRICKS_BUNDLE_ENGINE.txt
 rm out.deploy2.$DATABRICKS_BUNDLE_ENGINE.txt
-trace print_requests
+trace print_requests.py /jobs
 
 trace $CLI bundle destroy --auto-approve
-trace print_requests
+trace print_requests.py /jobs

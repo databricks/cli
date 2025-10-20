@@ -1,18 +1,9 @@
-print_requests() {
-    jq --sort-keys 'select(.method != "GET" and (.path | (contains("/jobs") or contains("/pipelines"))))' < out.requests.txt
-    rm out.requests.txt
-}
-
-print_sorted_requests() {
-    jq -c < out.requests.txt | sort | jq --sort-keys 'select(.method != "GET" and (.path | (contains("/jobs") or contains("/pipelines"))))'
-    rm out.requests.txt
-}
 
 echo "*" > .gitignore
 trace $CLI bundle plan
 $CLI bundle debug plan > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
-trace print_requests
+trace print_requests.py /jobs /pipelines
 
 foo_id=`read_id.py pipelines foo`
 echo "$foo_id:FOO_ID" >> ACC_REPLS
@@ -27,7 +18,7 @@ trace update_file.py databricks.yml mycatalog mynewcatalog
 trace $CLI bundle plan
 $CLI bundle debug plan > out.plan_update.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy --auto-approve
-trace print_requests
+trace print_requests.py /jobs /pipelines
 
 foo_id_2=`read_id.py pipelines foo`
 echo "$foo_id:FOO_ID_2" >> ACC_REPLS
@@ -43,11 +34,11 @@ title "Follow up plan & deploy do nothing"
 trace $CLI bundle plan
 $CLI bundle debug plan > out.plan_noop.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
-trace print_requests
+trace print_requests.py /jobs /pipelines
 
 trace $CLI bundle destroy --auto-approve
 # Sort, because the order of requests is different. TODO: remember deps in order to delete in reverse deployment order.
-trace print_sorted_requests
+trace print_requests.py --sort /jobs /pipelines
 
 trace musterr $CLI pipelines get $foo_id
 trace musterr $CLI pipelines get $foo_id_2

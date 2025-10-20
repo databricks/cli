@@ -5,8 +5,10 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests
+>>> print_requests.py /jobs
 {
+  "method": "POST",
+  "path": "/api/2.2/jobs/create",
   "body": {
     "deployment": {
       "kind": "BUNDLE",
@@ -35,11 +37,11 @@ Deployment complete!
         "unit": "DAYS"
       }
     }
-  },
-  "method": "POST",
-  "path": "/api/2.2/jobs/create"
+  }
 }
 {
+  "method": "POST",
+  "path": "/api/2.2/jobs/create",
   "body": {
     "deployment": {
       "kind": "BUNDLE",
@@ -53,9 +55,7 @@ Deployment complete!
     "queue": {
       "enabled": true
     }
-  },
-  "method": "POST",
-  "path": "/api/2.2/jobs/create"
+  }
 }
 
 === Update trigger.periodic.unit remotely and re-deploy; jobs.bar is unchanged
@@ -73,22 +73,24 @@ All files and directories at the following location will be deleted: /Workspace/
 Deleting files...
 Destroy complete!
 
->>> print_sorted_requests
+>>> print_requests.py --sort /jobs
 {
+  "method": "POST",
+  "path": "/api/2.2/jobs/delete",
   "body": {
     "job_id": [FOO_ID]
-  },
-  "method": "POST",
-  "path": "/api/2.2/jobs/delete"
+  }
 }
 {
+  "method": "POST",
+  "path": "/api/2.2/jobs/delete",
   "body": {
     "job_id": [BAR_ID]
-  },
-  "method": "POST",
-  "path": "/api/2.2/jobs/delete"
+  }
 }
 {
+  "method": "POST",
+  "path": "/api/2.2/jobs/reset",
   "body": {
     "job_id": [FOO_ID],
     "new_settings": {
@@ -120,7 +122,5 @@ Destroy complete!
         }
       }
     }
-  },
-  "method": "POST",
-  "path": "/api/2.2/jobs/reset"
+  }
 }

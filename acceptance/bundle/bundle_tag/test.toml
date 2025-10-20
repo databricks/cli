@@ -1,1 +1,3 @@
+Local = true
 Badness = "configs with id and url should be rejected"
+Env.DATABRICKS_CLI_DISABLE_TELEMETRY = "1"

@@ -12,12 +12,10 @@ $CLI bundle debug plan -t prod > ../../out.plan_prod.$DATABRICKS_BUNDLE_ENGINE.j
 
 rm ../../out.requests.txt
 trace $CLI bundle deploy -t dev
-jq -c < ../../out.requests.txt | sort | jq 'select(.method != "GET" and (.path | contains("/import-file/") | not) and (.path | contains("/telemetry-ext") | not))' > ../../out.requests.dev.$DATABRICKS_BUNDLE_ENGINE.txt
+print_requests.py --sort '^/import-file/' '^/telemetry-ext' > ../../out.requests.dev.$DATABRICKS_BUNDLE_ENGINE.txt
 
-rm ../../out.requests.txt
 trace $CLI bundle deploy -t prod
-jq -c < ../../out.requests.txt | sort | jq 'select(.method != "GET" and (.path | contains("/import-file/") | not) and (.path | contains("/telemetry-ext") | not))' > ../../out.requests.prod.$DATABRICKS_BUNDLE_ENGINE.txt
-rm ../../out.requests.txt
+print_requests.py --sort '^/import-file/' '^/telemetry-ext' > ../../out.requests.prod.$DATABRICKS_BUNDLE_ENGINE.txt
 
 # Do not affect this repository's git behaviour #2318
 mv .gitignore out.gitignore

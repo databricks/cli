@@ -1,14 +1,9 @@
-print_requests() {
-    jq --sort-keys 'select(.method != "GET" and (.path | contains("/apps")))' < out.requests.txt
-    rm out.requests.txt
-}
-
 trace $CLI bundle validate
 trace $CLI bundle plan
 trace $CLI bundle deploy
 trace jq 'select(.path | test("app.yml"))' out.requests.txt | sed 's/\\r//g'  > out.app.yml.txt
-#trace print_requests  # currently fails due to TF inserting description=""
+#trace print_requests.py /apps  # currently fails due to TF inserting description=""
 rm out.requests.txt
 
 trace $CLI bundle destroy --auto-approve
-trace print_requests
+trace print_requests.py /apps

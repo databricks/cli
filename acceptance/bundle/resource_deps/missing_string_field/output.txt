@@ -28,14 +28,16 @@ create pipelines.foo
 
 Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 
->>> print_requests
+>>> print_requests.py /pipeline
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests
+>>> print_requests.py /pipeline
 {
+  "method": "POST",
+  "path": "/api/2.0/pipelines",
   "body": {
     "channel": "CURRENT",
     "deployment": {
@@ -44,11 +46,11 @@ Deployment complete!
     },
     "edition": "ADVANCED",
     "name": "pfoo"
-  },
-  "method": "POST",
-  "path": "/api/2.0/pipelines"
+  }
 }
 {
+  "method": "POST",
+  "path": "/api/2.0/pipelines",
   "body": {
     "channel": "CURRENT",
     "deployment": {
@@ -57,7 +59,5 @@ Deployment complete!
     },
     "edition": "ADVANCED",
     "name": "pbar"
-  },
-  "method": "POST",
-  "path": "/api/2.0/pipelines"
+  }
 }
