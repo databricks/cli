@@ -67,7 +67,6 @@ func dumpRemoteSchemas(out io.Writer) error {
 				if path == nil {
 					return true
 				}
-
 				p := path.String()
 				p = strings.TrimPrefix(p, ".")
 				t := strings.ReplaceAll(fmt.Sprint(typ), "interface {}", "any")
