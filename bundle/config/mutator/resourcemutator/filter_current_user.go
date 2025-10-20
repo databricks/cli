@@ -84,7 +84,11 @@ func processPermissions(permissions dyn.Value, currentUser string, mgmtPerms []s
 	priorityPermission := mgmtPerms[0]
 	permissionToUpgrade := -1
 
-	permissionArray := permissions.MustSequence()
+	permissionArray, ok := permissions.AsSequence()
+	if !ok {
+		return permissions, nil
+	}
+
 	for ind, permission := range permissionArray {
 		level, ok := dyn.GetValue(permission, "level").AsString()
 		if !ok {
