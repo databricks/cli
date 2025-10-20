@@ -1,6 +1,11 @@
 
 >>> [CLI] bundle validate -o json
-[]
+[
+  {
+    "level": "IS_OWNER",
+    "user_name": "[USERNAME]"
+  }
+]
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
