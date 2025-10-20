@@ -26,6 +26,7 @@ func PreparePermissionsInputConfig(inputConfig any, node string) (*structvar.Str
 		return nil, fmt.Errorf("internal error: node %q does not end with .permissions", node)
 	}
 	switch v := inputConfig.(type) {
+	// QQQ Alternative to this switch would be to have each resource with permissions to define a method GetPermissionsObjectType().
 	case *[]resources.JobPermission:
 		return initStructVar("/jobs/", baseNode, *v), nil
 	case *[]resources.PipelinePermission:
