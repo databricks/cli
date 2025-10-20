@@ -1,0 +1,37 @@
+[project]
+name = "pydabs_notebook_dlt_serverless"
+version = "0.0.1"
+authors = [{ name = "[USERNAME]" }]
+requires-python = ">=3.10,<=3.13"
+
+[dependency-groups]
+dev = [
+    "pytest",
+
+    # Code completion support for Lakeflow Declarative Pipelines, also install databricks-connect
+    "databricks-dlt",
+
+    # databricks-connect can be used to run parts of this project locally.
+    # Note that for local development, you should use a version that is not newer
+    # than the remote cluster or serverless compute you connect to.
+    # See also https://docs.databricks.com/dev-tools/databricks-connect.html.
+    "databricks-connect>=15.4,<15.5",
+    # Python support for Databricks Asset Bundles
+    "databricks-bundles==x.y.z",
+]
+
+[tool.pytest.ini_options]
+pythonpath = "src"
+testpaths = [
+    "tests",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pydabs_notebook_dlt_serverless"]
+
+[project.scripts]
+main = "pydabs_notebook_dlt_serverless.main:main"

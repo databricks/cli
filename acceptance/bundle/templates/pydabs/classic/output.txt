@@ -1,0 +1,47 @@
+
+>>> [CLI] bundle init default-python --config-file ./input.json --output-dir output
+
+Welcome to the default Python template for Databricks Asset Bundles!
+Workspace to use (auto-detected, edit in 'my_pydabs/databricks.yml'): [DATABRICKS_URL]
+
+✨ Your new project has been created in the 'my_pydabs' directory!
+
+Please refer to the README.md file for "getting started" instructions.
+See also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
+
+>>> uv venv --quiet
+
+>>> uv pip install --quiet [DATABRICKS_BUNDLES_WHEEL]
+
+>>> databricks bundle validate --output json
+{
+  "bundle": {
+    "environment": "default",
+    "git": {
+      "bundle_root_path": "."
+    },
+    "name": "test-bundle",
+    "target": "default",
+    "terraform": {
+      "exec_path": "[TERRAFORM]"
+    }
+  },
+  "sync": {
+    "paths": [
+      "."
+    ]
+  },
+  "workspace": {
+    "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts",
+    "current_user": {
+      "domain_friendly_name": "[USERNAME]",
+      "id": "[USERID]",
+      "short_name": "[USERNAME]",
+      "userName": "[USERNAME]"
+    },
+    "file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files",
+    "resource_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/resources",
+    "root_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default",
+    "state_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state"
+  }
+}

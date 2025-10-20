@@ -1,0 +1,304 @@
+== pydabs_notebook_python_dlt_serverless ==
+
+>>> [CLI] bundle init default-python --config-file ./input.json
+
+Welcome to the default Python template for Databricks Asset Bundles!
+Workspace to use (auto-detected, edit in 'pydabs_notebook_python_dlt_serverless/databricks.yml'): [DATABRICKS_URL]
+
+✨ Your new project has been created in the 'pydabs_notebook_python_dlt_serverless' directory!
+
+Please refer to the README.md file for "getting started" instructions.
+See also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
+
+>>> cd pydabs_notebook_python_dlt_serverless
+
+>>> uv venv --quiet
+
+>>> uv pip install --quiet [DATABRICKS_BUNDLES_WHEEL]
+
+>>> databricks bundle validate --output json
+== pydabs_notebook_python_dlt ==
+
+>>> [CLI] bundle init default-python --config-file ./input.json
+
+Welcome to the default Python template for Databricks Asset Bundles!
+Workspace to use (auto-detected, edit in 'pydabs_notebook_python_dlt/databricks.yml'): [DATABRICKS_URL]
+
+✨ Your new project has been created in the 'pydabs_notebook_python_dlt' directory!
+
+Please refer to the README.md file for "getting started" instructions.
+See also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
+
+>>> cd pydabs_notebook_python_dlt
+
+>>> uv venv --quiet
+
+>>> uv pip install --quiet [DATABRICKS_BUNDLES_WHEEL]
+
+>>> databricks bundle validate --output json
+== pydabs_notebook_python_serverless ==
+
+>>> [CLI] bundle init default-python --config-file ./input.json
+
+Welcome to the default Python template for Databricks Asset Bundles!
+Workspace to use (auto-detected, edit in 'pydabs_notebook_python_serverless/databricks.yml'): [DATABRICKS_URL]
+
+✨ Your new project has been created in the 'pydabs_notebook_python_serverless' directory!
+
+Please refer to the README.md file for "getting started" instructions.
+See also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
+
+>>> cd pydabs_notebook_python_serverless
+
+>>> uv venv --quiet
+
+>>> uv pip install --quiet [DATABRICKS_BUNDLES_WHEEL]
+
+>>> databricks bundle validate --output json
+== pydabs_notebook_python ==
+
+>>> [CLI] bundle init default-python --config-file ./input.json
+
+Welcome to the default Python template for Databricks Asset Bundles!
+Workspace to use (auto-detected, edit in 'pydabs_notebook_python/databricks.yml'): [DATABRICKS_URL]
+
+✨ Your new project has been created in the 'pydabs_notebook_python' directory!
+
+Please refer to the README.md file for "getting started" instructions.
+See also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
+
+>>> cd pydabs_notebook_python
+
+>>> uv venv --quiet
+
+>>> uv pip install --quiet [DATABRICKS_BUNDLES_WHEEL]
+
+>>> databricks bundle validate --output json
+== pydabs_notebook_dlt_serverless ==
+
+>>> [CLI] bundle init default-python --config-file ./input.json
+
+Welcome to the default Python template for Databricks Asset Bundles!
+Workspace to use (auto-detected, edit in 'pydabs_notebook_dlt_serverless/databricks.yml'): [DATABRICKS_URL]
+
+✨ Your new project has been created in the 'pydabs_notebook_dlt_serverless' directory!
+
+Please refer to the README.md file for "getting started" instructions.
+See also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
+
+>>> cd pydabs_notebook_dlt_serverless
+
+>>> uv venv --quiet
+
+>>> uv pip install --quiet [DATABRICKS_BUNDLES_WHEEL]
+
+>>> databricks bundle validate --output json
+== pydabs_notebook_dlt ==
+
+>>> [CLI] bundle init default-python --config-file ./input.json
+
+Welcome to the default Python template for Databricks Asset Bundles!
+Workspace to use (auto-detected, edit in 'pydabs_notebook_dlt/databricks.yml'): [DATABRICKS_URL]
+
+✨ Your new project has been created in the 'pydabs_notebook_dlt' directory!
+
+Please refer to the README.md file for "getting started" instructions.
+See also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
+
+>>> cd pydabs_notebook_dlt
+
+>>> uv venv --quiet
+
+>>> uv pip install --quiet [DATABRICKS_BUNDLES_WHEEL]
+
+>>> databricks bundle validate --output json
+== pydabs_notebook_serverless ==
+
+>>> [CLI] bundle init default-python --config-file ./input.json
+
+Welcome to the default Python template for Databricks Asset Bundles!
+Workspace to use (auto-detected, edit in 'pydabs_notebook_serverless/databricks.yml'): [DATABRICKS_URL]
+
+✨ Your new project has been created in the 'pydabs_notebook_serverless' directory!
+
+Please refer to the README.md file for "getting started" instructions.
+See also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
+
+>>> cd pydabs_notebook_serverless
+
+>>> uv venv --quiet
+
+>>> uv pip install --quiet [DATABRICKS_BUNDLES_WHEEL]
+
+>>> databricks bundle validate --output json
+== pydabs_notebook ==
+
+>>> [CLI] bundle init default-python --config-file ./input.json
+
+Welcome to the default Python template for Databricks Asset Bundles!
+Workspace to use (auto-detected, edit in 'pydabs_notebook/databricks.yml'): [DATABRICKS_URL]
+
+✨ Your new project has been created in the 'pydabs_notebook' directory!
+
+Please refer to the README.md file for "getting started" instructions.
+See also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
+
+>>> cd pydabs_notebook
+
+>>> uv venv --quiet
+
+>>> uv pip install --quiet [DATABRICKS_BUNDLES_WHEEL]
+
+>>> databricks bundle validate --output json
+== pydabs_python_dlt_serverless ==
+
+>>> [CLI] bundle init default-python --config-file ./input.json
+
+Welcome to the default Python template for Databricks Asset Bundles!
+Workspace to use (auto-detected, edit in 'pydabs_python_dlt_serverless/databricks.yml'): [DATABRICKS_URL]
+
+✨ Your new project has been created in the 'pydabs_python_dlt_serverless' directory!
+
+Please refer to the README.md file for "getting started" instructions.
+See also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
+
+>>> cd pydabs_python_dlt_serverless
+
+>>> uv venv --quiet
+
+>>> uv pip install --quiet [DATABRICKS_BUNDLES_WHEEL]
+
+>>> databricks bundle validate --output json
+== pydabs_python_dlt ==
+
+>>> [CLI] bundle init default-python --config-file ./input.json
+
+Welcome to the default Python template for Databricks Asset Bundles!
+Workspace to use (auto-detected, edit in 'pydabs_python_dlt/databricks.yml'): [DATABRICKS_URL]
+
+✨ Your new project has been created in the 'pydabs_python_dlt' directory!
+
+Please refer to the README.md file for "getting started" instructions.
+See also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
+
+>>> cd pydabs_python_dlt
+
+>>> uv venv --quiet
+
+>>> uv pip install --quiet [DATABRICKS_BUNDLES_WHEEL]
+
+>>> databricks bundle validate --output json
+== pydabs_python_serverless ==
+
+>>> [CLI] bundle init default-python --config-file ./input.json
+
+Welcome to the default Python template for Databricks Asset Bundles!
+Workspace to use (auto-detected, edit in 'pydabs_python_serverless/databricks.yml'): [DATABRICKS_URL]
+
+✨ Your new project has been created in the 'pydabs_python_serverless' directory!
+
+Please refer to the README.md file for "getting started" instructions.
+See also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
+
+>>> cd pydabs_python_serverless
+
+>>> uv venv --quiet
+
+>>> uv pip install --quiet [DATABRICKS_BUNDLES_WHEEL]
+
+>>> databricks bundle validate --output json
+== pydabs_python ==
+
+>>> [CLI] bundle init default-python --config-file ./input.json
+
+Welcome to the default Python template for Databricks Asset Bundles!
+Workspace to use (auto-detected, edit in 'pydabs_python/databricks.yml'): [DATABRICKS_URL]
+
+✨ Your new project has been created in the 'pydabs_python' directory!
+
+Please refer to the README.md file for "getting started" instructions.
+See also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
+
+>>> cd pydabs_python
+
+>>> uv venv --quiet
+
+>>> uv pip install --quiet [DATABRICKS_BUNDLES_WHEEL]
+
+>>> databricks bundle validate --output json
+== pydabs_dlt_serverless ==
+
+>>> [CLI] bundle init default-python --config-file ./input.json
+
+Welcome to the default Python template for Databricks Asset Bundles!
+Workspace to use (auto-detected, edit in 'pydabs_dlt_serverless/databricks.yml'): [DATABRICKS_URL]
+
+✨ Your new project has been created in the 'pydabs_dlt_serverless' directory!
+
+Please refer to the README.md file for "getting started" instructions.
+See also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
+
+>>> cd pydabs_dlt_serverless
+
+>>> uv venv --quiet
+
+>>> uv pip install --quiet [DATABRICKS_BUNDLES_WHEEL]
+
+>>> databricks bundle validate --output json
+== pydabs_dlt ==
+
+>>> [CLI] bundle init default-python --config-file ./input.json
+
+Welcome to the default Python template for Databricks Asset Bundles!
+Workspace to use (auto-detected, edit in 'pydabs_dlt/databricks.yml'): [DATABRICKS_URL]
+
+✨ Your new project has been created in the 'pydabs_dlt' directory!
+
+Please refer to the README.md file for "getting started" instructions.
+See also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
+
+>>> cd pydabs_dlt
+
+>>> uv venv --quiet
+
+>>> uv pip install --quiet [DATABRICKS_BUNDLES_WHEEL]
+
+>>> databricks bundle validate --output json
+== pydabs_serverless ==
+
+>>> [CLI] bundle init default-python --config-file ./input.json
+
+Welcome to the default Python template for Databricks Asset Bundles!
+Workspace to use (auto-detected, edit in 'pydabs_serverless/databricks.yml'): [DATABRICKS_URL]
+
+✨ Your new project has been created in the 'pydabs_serverless' directory!
+
+Please refer to the README.md file for "getting started" instructions.
+See also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
+
+>>> cd pydabs_serverless
+
+>>> uv venv --quiet
+
+>>> uv pip install --quiet [DATABRICKS_BUNDLES_WHEEL]
+
+>>> databricks bundle validate --output json
+== pydabs ==
+
+>>> [CLI] bundle init default-python --config-file ./input.json
+
+Welcome to the default Python template for Databricks Asset Bundles!
+Workspace to use (auto-detected, edit in 'pydabs/databricks.yml'): [DATABRICKS_URL]
+
+✨ Your new project has been created in the 'pydabs' directory!
+
+Please refer to the README.md file for "getting started" instructions.
+See also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
+
+>>> cd pydabs
+
+>>> uv venv --quiet
+
+>>> uv pip install --quiet [DATABRICKS_BUNDLES_WHEEL]
+
+>>> databricks bundle validate --output json
