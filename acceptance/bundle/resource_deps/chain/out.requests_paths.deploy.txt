@@ -1,8 +1,0 @@
-POST /api/2.0/workspace/delete
-POST /api/2.0/workspace/mkdirs
-POST /api/2.2/jobs/create
-POST /api/2.2/jobs/create
-POST /api/2.0/pipelines
-POST /api/2.0/pipelines
-POST /api/2.0/workspace/delete
-POST /telemetry-ext
