@@ -3,6 +3,7 @@ package dresources
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -25,42 +26,33 @@ func PreparePermissionsInputConfig(inputConfig any, node string) (*structvar.Str
 	if !ok {
 		return nil, fmt.Errorf("internal error: node %q does not end with .permissions", node)
 	}
-	switch v := inputConfig.(type) {
-	// QQQ Alternative to this switch would be to have each resource with permissions to define a method GetPermissionsObjectType().
-	case *[]resources.JobPermission:
-		return initStructVar("/jobs/", baseNode, *v), nil
-	case *[]resources.PipelinePermission:
-		return initStructVar("/pipelines/", baseNode, *v), nil
-	case *[]resources.AppPermission:
-		return initStructVar("/apps/", baseNode, *v), nil
-	case *[]resources.ClusterPermission:
-		return initStructVar("/clusters/", baseNode, *v), nil
-	case *[]resources.DatabaseInstancePermission:
-		return initStructVar("/database-instances/", baseNode, *v), nil
-	case *[]resources.DashboardPermission:
-		return initStructVar("/dashboards/", baseNode, *v), nil
-	case *[]resources.MlflowExperimentPermission:
-		return initStructVar("/experiments/", baseNode, *v), nil
-	case *[]resources.MlflowModelPermission:
-		return initStructVar("/registered-models/", baseNode, *v), nil
-	case *[]resources.ModelServingEndpointPermission:
-		return initStructVar("/serving-endpoints/", baseNode, *v), nil
-	case *[]resources.SqlWarehousePermission:
-		return initStructVar("/sql/warehouses/", baseNode, *v), nil
-	default:
-		return nil, fmt.Errorf("unsupported type for permissions: %T", inputConfig)
+
+	// Use reflection to get the slice from the pointer
+	rv := reflect.ValueOf(inputConfig)
+	if rv.Kind() != reflect.Ptr || rv.Elem().Kind() != reflect.Slice {
+		return nil, fmt.Errorf("inputConfig must be a pointer to a slice, got: %T", inputConfig)
 	}
-}
 
-func initStructVar[T resources.IPermission](prefix, baseNode string, v []T) *structvar.StructVar {
-	permissions := make([]iam.AccessControlRequest, 0, len(v))
+	sliceValue := rv.Elem()
 
-	for _, p := range v {
+	// Get the element type from the slice type and create zero value to get the object type
+	elemType := sliceValue.Type().Elem()
+	zeroValue := reflect.Zero(elemType)
+	firstPermission, ok := zeroValue.Interface().(resources.IPermission)
+	if !ok {
+		return nil, fmt.Errorf("slice elements do not implement IPermission interface: %v", elemType)
+	}
+	prefix := firstPermission.GetAPIRequestObjectType()
+
+	// Convert slice to []resources.IPermission
+	permissions := make([]iam.AccessControlRequest, 0, sliceValue.Len())
+	for i := range sliceValue.Len() {
+		elem := sliceValue.Index(i).Interface().(resources.IPermission)
 		permissions = append(permissions, iam.AccessControlRequest{
-			PermissionLevel:      iam.PermissionLevel(p.GetLevel()),
-			GroupName:            p.GetGroupName(),
-			ServicePrincipalName: p.GetServicePrincipalName(),
-			UserName:             p.GetUserName(),
+			PermissionLevel:      iam.PermissionLevel(elem.GetLevel()),
+			GroupName:            elem.GetGroupName(),
+			ServicePrincipalName: elem.GetServicePrincipalName(),
+			UserName:             elem.GetUserName(),
 			ForceSendFields:      nil,
 		})
 	}
@@ -73,7 +65,7 @@ func initStructVar[T resources.IPermission](prefix, baseNode string, v []T) *str
 		Refs: map[string]string{
 			"object_id": prefix + "${" + baseNode + ".id}",
 		},
-	}
+	}, nil
 }
 
 func (*ResourcePermissions) New(client *databricks.WorkspaceClient) *ResourcePermissions {

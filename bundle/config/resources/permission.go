@@ -32,6 +32,7 @@ type IPermission interface {
 	GetUserName() string
 	GetServicePrincipalName() string
 	GetGroupName() string
+	GetAPIRequestObjectType() string
 }
 
 // Permission level types
@@ -171,12 +172,24 @@ type SqlWarehousePermission struct {
 	GroupName            string `json:"group_name,omitempty"`
 }
 
-// IPermission interface implementations
+// GetAPIRequestObjectType is used by direct to construct a request to permissions API:
+// Untested, since we don't have alerts
+// https://github.com/databricks/terraform-provider-databricks/blob/430902d/permissions/permission_definitions.go#L775C24-L775C32
+func (p AlertPermission) GetAPIRequestObjectType() string            { return "/alertsv2/" }
+func (p AppPermission) GetAPIRequestObjectType() string              { return "/apps/" }
+func (p ClusterPermission) GetAPIRequestObjectType() string          { return "/clusters/" }
+func (p DashboardPermission) GetAPIRequestObjectType() string        { return "/dashboards/" }
+func (p DatabaseInstancePermission) GetAPIRequestObjectType() string { return "/database-instances/" }
+func (p JobPermission) GetAPIRequestObjectType() string              { return "/jobs/" }
+func (p MlflowExperimentPermission) GetAPIRequestObjectType() string { return "/experiments/" }
+func (p MlflowModelPermission) GetAPIRequestObjectType() string      { return "/registered-models/" }
+func (p ModelServingEndpointPermission) GetAPIRequestObjectType() string {
+	return "/serving-endpoints/"
+}
+func (p PipelinePermission) GetAPIRequestObjectType() string     { return "/pipelines/" }
+func (p SqlWarehousePermission) GetAPIRequestObjectType() string { return "/sql/warehouses/" }
 
-func (p Permission) GetLevel() string                { return p.Level }
-func (p Permission) GetUserName() string             { return p.UserName }
-func (p Permission) GetServicePrincipalName() string { return p.ServicePrincipalName }
-func (p Permission) GetGroupName() string            { return p.GroupName }
+// IPermission interface implementations boilerplate
 
 func (p AlertPermission) GetLevel() string                { return p.Level }
 func (p AlertPermission) GetUserName() string             { return p.UserName }
@@ -229,11 +242,6 @@ func (p PipelinePermission) GetLevel() string                { return string(p.L
 func (p PipelinePermission) GetUserName() string             { return p.UserName }
 func (p PipelinePermission) GetServicePrincipalName() string { return p.ServicePrincipalName }
 func (p PipelinePermission) GetGroupName() string            { return p.GroupName }
-
-func (p SecretScopePermission) GetLevel() string                { return string(p.Level) }
-func (p SecretScopePermission) GetUserName() string             { return p.UserName }
-func (p SecretScopePermission) GetServicePrincipalName() string { return p.ServicePrincipalName }
-func (p SecretScopePermission) GetGroupName() string            { return p.GroupName }
 
 func (p SqlWarehousePermission) GetLevel() string                { return string(p.Level) }
 func (p SqlWarehousePermission) GetUserName() string             { return p.UserName }
