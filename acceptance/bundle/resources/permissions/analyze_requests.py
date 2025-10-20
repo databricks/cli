@@ -12,7 +12,7 @@ def read_json_many(file):
         s = fobj.read()
 
     # fix invalid json due to replacement: x: [NUMID]  -->  x: "[NUMID]"
-    s = re.sub(r': \[(.*?)\]', r': "[\1]"', s)
+    s = re.sub(r": \[(.*?)\]", r': "[\1]"', s)
 
     result = []
 
@@ -70,13 +70,15 @@ def compare_files(file1, file2):
     json1_str = json.dumps(normalized1, indent=2, sort_keys=True)
     json2_str = json.dumps(normalized2, indent=2, sort_keys=True)
 
-    diff_lines = list(unified_diff(
-        json1_str.splitlines(keepends=True),
-        json2_str.splitlines(keepends=True),
-        fromfile=str(file1),
-        tofile=str(file2),
-        n=3
-    ))
+    diff_lines = list(
+        unified_diff(
+            json1_str.splitlines(keepends=True),
+            json2_str.splitlines(keepends=True),
+            fromfile=str(file1),
+            tofile=str(file2),
+            n=3,
+        )
+    )
 
     return "DIFF ", "\n" + "".join(diff_lines)
 
