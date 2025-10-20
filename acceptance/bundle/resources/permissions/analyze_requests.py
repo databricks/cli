@@ -2,6 +2,7 @@
 """
 Analyze all requests recorded in subtests to highlight differences between direct and terraform.
 """
+
 import os
 import re
 import json
