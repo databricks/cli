@@ -80,7 +80,7 @@ def compare_files(file1, file2):
         )
     )
 
-    return "DIFF ", "\n" + "".join(diff_lines)
+    return "DIFF ", "\n" + "".join(diff_lines).rstrip()
 
 
 def main():

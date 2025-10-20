@@ -144,7 +144,6 @@ DIFF  jobs/delete_one/cloud/out.requests_destroy.direct-exp.json
    {
      "body": {
        "job_id": "[NUMID]"
-
 MATCH jobs/delete_one/local/out.permissions_create.direct-exp.json
 MATCH jobs/delete_one/local/out.permissions_update.direct-exp.json
 MATCH jobs/delete_one/local/out.requests_create.direct-exp.json
@@ -168,7 +167,6 @@ DIFF  jobs/delete_one/local/out.requests_destroy.direct-exp.json
    {
      "body": {
        "job_id": "[NUMID]"
-
 MATCH jobs/delete_one/local/out.requests_update.direct-exp.json
 EXACT jobs/empty_list/out.requests.deploy.direct-exp.json
 EXACT jobs/empty_list/out.requests.destroy.direct-exp.json
@@ -248,7 +246,6 @@ DIFF  jobs/update/out.requests_destroy.direct-exp.json
    {
      "body": {
        "job_id": "[JOB_ID]"
-
 EXACT jobs/update/out.requests_set_empty.direct-exp.json
 MATCH jobs/viewers/out.requests.deploy.direct-exp.json
 DIFF  jobs/viewers/out.requests.destroy.direct-exp.json
@@ -304,4 +301,3 @@ DIFF  target_permissions/out.requests_delete.direct-exp.json
    {
      "body": {
        "job_id": "[NUMID]"
-
