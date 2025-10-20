@@ -1065,6 +1065,7 @@ func newUpdateRefresh() *cobra.Command {
 		if err != nil {
 			return fmt.Errorf("invalid REFRESH_ID: %s", args[2])
 		}
+
 		updateRefreshReq.UpdateMask = args[3]
 		if !cmd.Flags().Changed("json") {
 			updateRefreshReq.Refresh.ObjectType = args[4]

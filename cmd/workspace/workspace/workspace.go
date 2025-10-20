@@ -136,6 +136,7 @@ func newDelete() *cobra.Command {
 				return fmt.Errorf("expected to have the absolute path of the notebook or directory")
 			}
 			deleteReq.Path = args[0]
+
 		}
 
 		err = w.Workspace.Delete(ctx, deleteReq)

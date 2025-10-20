@@ -148,6 +148,7 @@ func newCreate() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid LIST_TYPE: %s", args[1])
 			}
+
 		}
 
 		response, err := a.IpAccessLists.Create(ctx, createReq)
@@ -425,12 +426,14 @@ func newReplace() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid LIST_TYPE: %s", args[2])
 			}
+
 		}
 		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[3], &replaceReq.Enabled)
 			if err != nil {
 				return fmt.Errorf("invalid ENABLED: %s", args[3])
 			}
+
 		}
 
 		err = a.IpAccessLists.Replace(ctx, replaceReq)

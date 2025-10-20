@@ -167,18 +167,21 @@ func newCreatePolicy() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid TO_PRINCIPALS: %s", args[0])
 			}
+
 		}
 		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[1], &createPolicyReq.PolicyInfo.ForSecurableType)
 			if err != nil {
 				return fmt.Errorf("invalid FOR_SECURABLE_TYPE: %s", args[1])
 			}
+
 		}
 		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[2], &createPolicyReq.PolicyInfo.PolicyType)
 			if err != nil {
 				return fmt.Errorf("invalid POLICY_TYPE: %s", args[2])
 			}
+
 		}
 
 		response, err := w.Policies.CreatePolicy(ctx, createPolicyReq)
@@ -504,18 +507,21 @@ func newUpdatePolicy() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid TO_PRINCIPALS: %s", args[3])
 			}
+
 		}
 		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[4], &updatePolicyReq.PolicyInfo.ForSecurableType)
 			if err != nil {
 				return fmt.Errorf("invalid FOR_SECURABLE_TYPE: %s", args[4])
 			}
+
 		}
 		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[5], &updatePolicyReq.PolicyInfo.PolicyType)
 			if err != nil {
 				return fmt.Errorf("invalid POLICY_TYPE: %s", args[5])
 			}
+
 		}
 
 		response, err := w.Policies.UpdatePolicy(ctx, updatePolicyReq)

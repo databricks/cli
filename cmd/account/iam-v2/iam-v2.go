@@ -93,6 +93,7 @@ func newGetWorkspaceAccessDetail() *cobra.Command {
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
+
 		_, err = fmt.Sscan(args[1], &getWorkspaceAccessDetailReq.PrincipalId)
 		if err != nil {
 			return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[1])

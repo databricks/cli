@@ -128,6 +128,7 @@ func newAssign() *cobra.Command {
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
+
 		if !cmd.Flags().Changed("json") {
 			assignReq.MetastoreId = args[1]
 		}
@@ -543,6 +544,7 @@ func newUnassign() *cobra.Command {
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
+
 		unassignReq.MetastoreId = args[1]
 
 		err = w.Metastores.Unassign(ctx, unassignReq)
