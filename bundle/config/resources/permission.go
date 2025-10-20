@@ -47,7 +47,6 @@ type (
 	MlflowModelPermissionLevel          string
 	ModelServingEndpointPermissionLevel string
 	PipelinePermissionLevel             string
-	SecretScopePermissionLevel          string
 	SqlWarehousePermissionLevel         string
 )
 
@@ -61,8 +60,6 @@ type AlertPermission struct {
 	GroupName            string `json:"group_name,omitempty"`
 }
 
-// AppPermission holds the permission level setting for a single principal.
-// Multiple of these can be defined on any app.
 type AppPermission struct {
 	Level AppPermissionLevel `json:"level"`
 
@@ -71,8 +68,6 @@ type AppPermission struct {
 	GroupName            string `json:"group_name,omitempty"`
 }
 
-// ClusterPermission holds the permission level setting for a single principal.
-// Multiple of these can be defined on any cluster.
 type ClusterPermission struct {
 	Level ClusterPermissionLevel `json:"level"`
 
@@ -81,8 +76,6 @@ type ClusterPermission struct {
 	GroupName            string `json:"group_name,omitempty"`
 }
 
-// DashboardPermission holds the permission level setting for a single principal.
-// Multiple of these can be defined on any dashboard.
 type DashboardPermission struct {
 	Level DashboardPermissionLevel `json:"level"`
 
@@ -91,8 +84,6 @@ type DashboardPermission struct {
 	GroupName            string `json:"group_name,omitempty"`
 }
 
-// DatabaseInstancePermission holds the permission level setting for a single principal.
-// Multiple of these can be defined on any database instance.
 type DatabaseInstancePermission struct {
 	Level DatabaseInstancePermissionLevel `json:"level"`
 
@@ -101,8 +92,6 @@ type DatabaseInstancePermission struct {
 	GroupName            string `json:"group_name,omitempty"`
 }
 
-// JobPermission holds the permission level setting for a single principal.
-// Multiple of these can be defined on any job.
 type JobPermission struct {
 	Level JobPermissionLevel `json:"level"`
 
@@ -111,8 +100,6 @@ type JobPermission struct {
 	GroupName            string `json:"group_name,omitempty"`
 }
 
-// MlflowExperimentPermission holds the permission level setting for a single principal.
-// Multiple of these can be defined on any experiment.
 type MlflowExperimentPermission struct {
 	Level MlflowExperimentPermissionLevel `json:"level"`
 
@@ -121,8 +108,6 @@ type MlflowExperimentPermission struct {
 	GroupName            string `json:"group_name,omitempty"`
 }
 
-// MlflowModelPermission holds the permission level setting for a single principal.
-// Multiple of these can be defined on any model.
 type MlflowModelPermission struct {
 	Level MlflowModelPermissionLevel `json:"level"`
 
@@ -131,8 +116,6 @@ type MlflowModelPermission struct {
 	GroupName            string `json:"group_name,omitempty"`
 }
 
-// ModelServingEndpointPermission holds the permission level setting for a single principal.
-// Multiple of these can be defined on any serving endpoint.
 type ModelServingEndpointPermission struct {
 	Level ModelServingEndpointPermissionLevel `json:"level"`
 
@@ -141,8 +124,6 @@ type ModelServingEndpointPermission struct {
 	GroupName            string `json:"group_name,omitempty"`
 }
 
-// PipelinePermission holds the permission level setting for a single principal.
-// Multiple of these can be defined on any pipeline.
 type PipelinePermission struct {
 	Level PipelinePermissionLevel `json:"level"`
 
@@ -151,19 +132,6 @@ type PipelinePermission struct {
 	GroupName            string `json:"group_name,omitempty"`
 }
 
-// SecretScopePermission holds the permission level setting for a single principal.
-// Multiple of these can be defined on any secret scope.
-// Secret scopes permissions are mapped to Secret ACLs
-type SecretScopePermission struct {
-	Level SecretScopePermissionLevel `json:"level"`
-
-	UserName             string `json:"user_name,omitempty"`
-	ServicePrincipalName string `json:"service_principal_name,omitempty"`
-	GroupName            string `json:"group_name,omitempty"`
-}
-
-// SqlWarehousePermission holds the permission level setting for a single principal.
-// Multiple of these can be defined on any SQL warehouse.
 type SqlWarehousePermission struct {
 	Level SqlWarehousePermissionLevel `json:"level"`
 

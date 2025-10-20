@@ -9,6 +9,16 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
+type SecretScopePermissionLevel string
+
+type SecretScopePermission struct {
+	Level SecretScopePermissionLevel `json:"level"`
+
+	UserName             string `json:"user_name,omitempty"`
+	ServicePrincipalName string `json:"service_principal_name,omitempty"`
+	GroupName            string `json:"group_name,omitempty"`
+}
+
 type SecretScope struct {
 	BaseResource
 
