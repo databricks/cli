@@ -109,7 +109,7 @@ def main():
             result, diff = compare_files(direct_file, terraform_file)
             print(result + " " + fname + diff)
         else:
-            print(f"ERROR {fname}: Missing terraform file {terraform_file}")
+            print(f"ERROR {fname}: Missing terraform file {to_slash(terraform_file)}")
 
 
 if __name__ == "__main__":
