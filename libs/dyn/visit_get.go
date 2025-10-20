@@ -10,8 +10,8 @@ func Get(v Value, path string) (Value, error) {
 	return GetByPath(v, p)
 }
 
-// Get1 returns the value without the error (InvalidValue indicates that error did happen)
-func Get1(v Value, path string) Value {
+// GetValue returns the value without the error (InvalidValue indicates that error did happen)
+func GetValue(v Value, path string) Value {
 	val, _ := Get(v, path)
 	return val
 }

@@ -72,11 +72,11 @@ func ensureCurrentUserPermission(currentUser string) dyn.MapFunc {
 }
 
 func readUser(v dyn.Value) string {
-	userName, _ := dyn.Get1(v, "user_name").AsString()
+	userName, _ := dyn.GetValue(v, "user_name").AsString()
 	if userName != "" {
 		return userName
 	}
-	servicePrincipalName, _ := dyn.Get1(v, "service_principal_name").AsString()
+	servicePrincipalName, _ := dyn.GetValue(v, "service_principal_name").AsString()
 	return servicePrincipalName
 }
 
@@ -86,7 +86,7 @@ func processPermissions(permissions dyn.Value, currentUser string, mgmtPerms []s
 
 	permissionArray := permissions.MustSequence()
 	for ind, permission := range permissionArray {
-		level, ok := dyn.Get1(permission, "level").AsString()
+		level, ok := dyn.GetValue(permission, "level").AsString()
 		if !ok {
 			continue
 		}
