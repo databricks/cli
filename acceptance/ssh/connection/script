@@ -5,6 +5,10 @@ cat tmp.stdout
 if ! grep -q "Connection successful" tmp.stdout; then
   echo "Connection was not successful, stderr:"
   cat tmp.stderr
+
+  run_id=$(cat tmp.stdout | grep -o "Job submitted successfully with run ID: [0-9]*" | grep -o "[0-9]*$")
+  echo "Fetching job run details..."
+  errcode trace $CLI jobs get-run "$run_id"
 fi
 
 rm tmp.stdout tmp.stderr
