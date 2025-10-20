@@ -15,11 +15,13 @@ const (
 	canManage = "CAN_MANAGE"
 )
 
-// defines which permissions are considered management permissions
-// user must have one management permission of themselves; if they don't have any,
+// This defines which permissions are considered management permissions.
+// Current user must have one management permission of themselves; if they don't have any,
 // we'll add the first in slice;
 // if they end up having both CAN_MANAGE and IS_OWNER, backend may fail with
-// Error: cannot create permissions: Permissions being set for UserName([USERNAME]) are ambiguous
+//
+//	Error: cannot create permissions: Permissions being set for UserName([USERNAME]) are ambiguous
+//
 // Since terraform adds IS_OWNER permission when there is not one, regardless of CAN_MANAGE presence,
 // the above error can occur.
 // We thus add another bit of logic: we upgrade CAN_MANAGE to IS_OWNER when we can.
@@ -36,15 +38,13 @@ var defaultManagementPermissions = []string{canManage}
 
 type filterCurrentUser struct{}
 
-// This mutator ensures the current user has the correct permissions for deployed resources:
-// - For jobs and pipelines: ensures IS_OWNER permission, removes other permissions of current user
-// - For other resources: ensures CAN_MANAGE permission, removes other permissions of current user
-func FilterCurrentUser() bundle.Mutator {
+// This mutator ensures the current user has the correct permissions for deployed resources.
+func EnsureOwnerPermissions() bundle.Mutator {
 	return &filterCurrentUser{}
 }
 
 func (m *filterCurrentUser) Name() string {
-	return "EnsureCurrentUserPermissions"
+	return "EnsureOwnerPermissions"
 }
 
 func ensureCurrentUserPermission(currentUser string) dyn.MapFunc {
