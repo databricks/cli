@@ -36,14 +36,14 @@ var managementPermissions = map[string][]string{
 
 var defaultManagementPermissions = []string{canManage}
 
-type filterCurrentUser struct{}
+type ensureOwnerPermissions struct{}
 
 // This mutator ensures the current user has the correct permissions for deployed resources.
 func EnsureOwnerPermissions() bundle.Mutator {
-	return &filterCurrentUser{}
+	return &ensureOwnerPermissions{}
 }
 
-func (m *filterCurrentUser) Name() string {
+func (m *ensureOwnerPermissions) Name() string {
 	return "EnsureOwnerPermissions"
 }
 
@@ -134,7 +134,7 @@ func createPermission(user, level string) dyn.Value {
 	return dyn.V(permission)
 }
 
-func (m *filterCurrentUser) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *ensureOwnerPermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	currentUser := b.Config.Workspace.CurrentUser.UserName
 
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
