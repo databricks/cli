@@ -99,11 +99,13 @@ def main():
 
         terraform_file = direct_file.parent / direct_file.name.replace(".direct-exp.", ".terraform.")
 
+        fname = str(direct_file).replace("\\", "/")
+
         if terraform_file.exists():
             result, diff = compare_files(direct_file, terraform_file)
-            print(result + " " + str(direct_file) + diff)
+            print(result + " " + fname + diff)
         else:
-            print(f"ERROR {direct_file}: Missing terraform file {terraform_file}")
+            print(f"ERROR {fname}: Missing terraform file {terraform_file}")
 
 
 if __name__ == "__main__":
