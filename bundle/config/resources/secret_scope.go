@@ -11,6 +11,9 @@ import (
 
 type SecretScopePermissionLevel string
 
+// SecretScopePermission holds the permission level setting for a single principal.
+// Multiple of these can be defined on any secret scope.
+// Secret scopes permissions are mapped to Secret ACLs
 type SecretScopePermission struct {
 	Level SecretScopePermissionLevel `json:"level"`
 
