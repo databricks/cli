@@ -1,0 +1,7 @@
+{
+  "plan": {
+    "resources.models.foo": {
+      "action": "create"
+    }
+  }
+}

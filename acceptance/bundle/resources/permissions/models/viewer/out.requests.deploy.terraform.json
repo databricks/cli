@@ -1,0 +1,16 @@
+{
+  "method": "PUT",
+  "path": "/api/2.0/permissions/registered-models/test-model",
+  "body": {
+    "access_control_list": [
+      {
+        "permission_level": "CAN_READ",
+        "user_name": "viewer@example.com"
+      },
+      {
+        "permission_level": "CAN_MANAGE",
+        "user_name": "[USERNAME]"
+      }
+    ]
+  }
+}
