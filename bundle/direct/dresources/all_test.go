@@ -159,13 +159,112 @@ var testDeps = map[string]prepareWorkspace{
 			}},
 		}, nil
 	},
+
+	"models.permissions": func(client *databricks.WorkspaceClient) (any, error) {
+		resp, err := client.ModelRegistry.CreateModel(context.Background(), ml.CreateModelRequest{
+			Name:        "model-permissions",
+			Description: "model for permissions testing",
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &PermissionsState{
+			ObjectID: "/registered-models/" + resp.RegisteredModel.Name,
+			Permissions: []iam.AccessControlRequest{{
+				PermissionLevel: "CAN_MANAGE",
+				UserName:        "user@example.com",
+			}},
+		}, nil
+	},
+
+	"experiments.permissions": func(client *databricks.WorkspaceClient) (any, error) {
+		resp, err := client.Experiments.CreateExperiment(context.Background(), ml.CreateExperiment{
+			Name: "experiment-permissions",
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &PermissionsState{
+			ObjectID: "/experiments/" + resp.ExperimentId,
+			Permissions: []iam.AccessControlRequest{{
+				PermissionLevel: "CAN_MANAGE",
+				UserName:        "user@example.com",
+			}},
+		}, nil
+	},
+
+	"clusters.permissions": func(client *databricks.WorkspaceClient) (any, error) {
+		return &PermissionsState{
+			ObjectID: "/clusters/cluster-permissions",
+			Permissions: []iam.AccessControlRequest{{
+				PermissionLevel: "CAN_MANAGE",
+				UserName:        "user@example.com",
+			}},
+		}, nil
+	},
+
+	"apps.permissions": func(client *databricks.WorkspaceClient) (any, error) {
+		waiter, err := client.Apps.Create(context.Background(), apps.CreateAppRequest{
+			App: apps.App{
+				Name: "app-permissions",
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &PermissionsState{
+			ObjectID: "/apps/" + waiter.Response.Name,
+			Permissions: []iam.AccessControlRequest{{
+				PermissionLevel: "CAN_MANAGE",
+				UserName:        "user@example.com",
+			}},
+		}, nil
+	},
+
+	"sql_warehouses.permissions": func(client *databricks.WorkspaceClient) (any, error) {
+		return &PermissionsState{
+			ObjectID: "/sql/warehouses/warehouse-permissions",
+			Permissions: []iam.AccessControlRequest{{
+				PermissionLevel: "CAN_MANAGE",
+				UserName:        "user@example.com",
+			}},
+		}, nil
+	},
+
+	"database_instances.permissions": func(client *databricks.WorkspaceClient) (any, error) {
+		waiter, err := client.Database.CreateDatabaseInstance(context.Background(), database.CreateDatabaseInstanceRequest{
+			DatabaseInstance: database.DatabaseInstance{
+				Name: "dbinstance-permissions",
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &PermissionsState{
+			ObjectID: "/database-instances/" + waiter.Response.Name,
+			Permissions: []iam.AccessControlRequest{{
+				PermissionLevel: "CAN_MANAGE",
+				UserName:        "user@example.com",
+			}},
+		}, nil
+	},
 }
 
 var fakeDelete = map[string]bool{
-	// Permissions inherit the lifecycle of their parent job, so the delete step only clears ACLs.
+	// Permissions inherit the lifecycle of their parent resource, so the delete step only clears ACLs.
 	// The helper expects resources to disappear entirely, so we skip that assertion for permissions.
-	"jobs.permissions":      true,
-	"pipelines.permissions": true,
+	"jobs.permissions":               true,
+	"pipelines.permissions":          true,
+	"models.permissions":             true,
+	"experiments.permissions":        true,
+	"clusters.permissions":           true,
+	"apps.permissions":               true,
+	"sql_warehouses.permissions":     true,
+	"database_instances.permissions": true,
 }
 
 func TestAll(t *testing.T) {
