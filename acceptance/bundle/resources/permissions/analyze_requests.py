@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+"""
+Analyze all requests recorded in subtests to highlight differences between direct and terraform.
+"""
 import os
 import re
 import json
