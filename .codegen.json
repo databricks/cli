@@ -8,6 +8,7 @@
         "experimental/python/pyproject.toml": "version = \"$VERSION\"",
         "experimental/python/uv.lock": "name = \"databricks-bundles\"\nversion = \"$VERSION\"",
         "libs/template/templates/experimental-jobs-as-code/library/versions.tmpl": "{{define \"latest_databricks_bundles_version\" -}}$VERSION{{- end}}"
+        "libs/template/templates/default-python/library/versions.tmpl": "{{define \"latest_databricks_bundles_version\" -}}$VERSION{{- end}}"
     },
     "toolchain": {
         "required": [

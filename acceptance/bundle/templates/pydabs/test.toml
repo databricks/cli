@@ -1,0 +1,14 @@
+Ignore = [
+    '.ruff_cache',
+    'input.json'
+]
+
+Timeout = '40s'
+TimeoutWindows = '120s'
+
+Local = true
+Cloud = false
+
+[[Repls]]
+Old = '"databricks-bundles==0.\d+.\d+"'
+New = '"databricks-bundles==x.y.z"'

@@ -1,0 +1,7 @@
+trace $CLI bundle init default-python --config-file ./input.json --output-dir output
+
+# we don't do uv sync because it installs other dev dependencies that we don't need
+trace uv venv --quiet
+trace uv pip install --quiet $DATABRICKS_BUNDLES_WHEEL
+
+trace databricks bundle validate --output json
