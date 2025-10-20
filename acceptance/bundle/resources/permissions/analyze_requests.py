@@ -84,7 +84,11 @@ def compare_files(file1, file2):
         )
     )
 
-    return "DIFF ", "\n" + "".join(diff_lines).rstrip()
+    return "DIFF ", "\n" + to_slash("".join(diff_lines).rstrip())
+
+
+def to_slash(x):
+    return str(x).replace("\\", "/")
 
 
 def main():
@@ -99,7 +103,7 @@ def main():
 
         terraform_file = direct_file.parent / direct_file.name.replace(".direct-exp.", ".terraform.")
 
-        fname = str(direct_file).replace("\\", "/")
+        fname = to_slash(direct_file)
 
         if terraform_file.exists():
             result, diff = compare_files(direct_file, terraform_file)
