@@ -8,9 +8,9 @@ If argument starts with ! then it's a negation filter.
 
 Examples:
   print_requests.py //jobs                     # Show non-GET requests with /jobs in path
-  print_requests.py --get //jobs              # Show all requests with /jobs in path
-  print_requests.py --sort '^/import-file/'   # Show non-GET requests, exclude /import-file/, sort output
-  print_requests.py --keep //jobs             # Show requests and do not delete out.requests.json afterwards
+  print_requests.py --get //jobs               # Show all requests with /jobs in path
+  print_requests.py --sort '^//import-file/'   # Show non-GET requests, exclude /import-file/, sort output
+  print_requests.py --keep //jobs              # Show requests and do not delete out.requests.json afterwards
 
 This replaces custom jq wrappers like:
   jq --sort-keys 'select(.method != "GET" and (.path | contains("/jobs")))' < out.requests.txt
@@ -43,7 +43,7 @@ R2 GET
 R3 PUT
 R5 DELETE
 
->>> test(test_requests, ["^/import-file/"], False, False)
+>>> test(test_requests, ["^//import-file/"], False, False)
 R1 POST
 R3 PUT
 R5 DELETE
@@ -65,12 +65,11 @@ import argparse
 from pathlib import Path
 
 
-# I've originally tried ADD_CHAR to be empty, so you can just do "print_requests.py /jobs"
+# I've originally tried ADD_PREFIX to be empty, so you can just do "print_requests.py /jobs"
 # However, that causes test to fail on Windows CI because "/jobs" becomes "C:/Program Files/Git/jobs"
 # This behaviour can be disabled with MSYS_NO_PATHCONV=1 but that causes other failures, so we require extra slash here.
-ADD_CHAR = "/"
-# "!" does not work on Windows
-NEGATE_CHAR = "^"
+ADD_PREFIX = "/"
+NEGATE_PREFIX = "^/"
 
 
 def read_json_many(s):
@@ -111,10 +110,10 @@ def filter_requests(requests, path_filters, include_get, should_sort):
     negative_filters = []
 
     for f in path_filters:
-        if f.startswith(ADD_CHAR):
-            positive_filters.append(f[1:])
-        elif f.startswith(NEGATE_CHAR):
-            negative_filters.append(f[1:])
+        if f.startswith(ADD_PREFIX):
+            positive_filters.append(f.removeprefix(ADD_PREFIX))
+        elif f.startswith(NEGATE_PREFIX):
+            negative_filters.append(f.removeprefix(NEGATE_PREFIX))
         else:
             sys.exit(f"Unrecognized filter: {f!r}")
 
@@ -151,9 +150,7 @@ def filter_requests(requests, path_filters, include_get, should_sort):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "path_filters", nargs="*", help=f"Path substring filters (prefix with {NEGATE_CHAR!r} for negation)"
-    )
+    parser.add_argument( "path_filters", nargs="*", help=f"Path substring filters")
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable diagnostic messages")
     parser.add_argument("--get", action="store_true", help="Include GET requests (excluded by default)")
     parser.add_argument("--keep", action="store_true", help="Keep out.requests.json file after processing")
