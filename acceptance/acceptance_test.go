@@ -714,6 +714,17 @@ func runTest(t *testing.T,
 		if config.CompiledIgnoreObject.MatchesPath(relPath) {
 			continue
 		}
+		if strings.HasPrefix(relPath, "LOG") {
+			prefix := relPath + ": "
+			messages := testutil.ReadFile(t, filepath.Join(tmpDir, relPath))
+			messages = strings.TrimRight(messages, "\r\n \t")
+			messages = prefix + strings.ReplaceAll(messages, "\n", "\n"+prefix)
+			if strings.Contains(messages, "\n") {
+				messages = "\n" + messages
+			}
+			t.Log(messages)
+			continue
+		}
 		unexpected = append(unexpected, relPath)
 		if strings.HasPrefix(relPath, "out") {
 			// We have a new file starting with "out"

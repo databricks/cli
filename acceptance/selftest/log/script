@@ -1,0 +1,10 @@
+# If logs are visible (go test -v), this will produce this:
+#     acceptance_test.go:725:
+#        LOG: main log
+#        LOG: another line
+#   acceptance_test.go:725: LOG.extra: extra log
+
+
+echo "main log" >> LOG
+echo "another line" >> LOG
+echo "extra log" >> LOG.extra
