@@ -23,6 +23,9 @@ EnvRepl.DATABRICKS_BUNDLE_ENGINE = false
 # >>> datetime.datetime.fromtimestamp(1900000000)
 # datetime.datetime(2030, 3, 17, 18, 46, 40)
 
+# Without this arguments get converted, e.g. "/jobs" becomes "C:/Program Files/Git/jobs"
+Env.MSYS_NO_PATHCONV = "1"
+
 [[Repls]]
 Old = '\d{20,}'
 New = "[NUMID]"
