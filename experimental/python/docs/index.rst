@@ -14,3 +14,4 @@ See `What is Python support for Databricks Asset Bundles? (TBD) <#>`_.
    databricks.bundles.pipelines
    databricks.bundles.schemas
    databricks.bundles.volumes
+   databricks.bundles.apps

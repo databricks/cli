@@ -7,6 +7,7 @@ RESOURCE_NAMESPACE = {
     "resources.Pipeline": "pipelines",
     "resources.Schema": "schemas",
     "resources.Volume": "volumes",
+    "resources.App": "apps",
 }
 
 RESOURCE_TYPES = list(RESOURCE_NAMESPACE.keys())
