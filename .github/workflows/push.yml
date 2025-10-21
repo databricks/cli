@@ -75,7 +75,8 @@ jobs:
         uses: astral-sh/ruff-action@57714a7c8a2e59f32539362ba31877a1957dded1 # v3.5.1
         with:
           version: "0.9.1"
-
+          args: "--version"
+          
       - name: Pull external libraries
         run: |
           go mod download
