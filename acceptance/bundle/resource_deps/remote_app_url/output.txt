@@ -14,7 +14,7 @@ create pipelines.mypipeline
 
 Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 
->>> print_requests.py ^/import-file/
+>>> print_requests.py ^//import-file/
 {
   "method": "POST",
   "path": "/api/2.0/workspace/mkdirs",
@@ -29,7 +29,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests.py ^/import-file/
+>>> print_requests.py ^//import-file/
 {
   "method": "POST",
   "path": "/api/2.0/workspace/delete",
@@ -88,7 +88,7 @@ All files and directories at the following location will be deleted: /Workspace/
 Deleting files...
 Destroy complete!
 
->>> print_requests.py --sort ^/import-file/
+>>> print_requests.py --sort ^//import-file/
 {
   "method": "DELETE",
   "path": "/api/2.0/apps/myapp"

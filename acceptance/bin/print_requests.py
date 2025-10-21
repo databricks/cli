@@ -150,7 +150,7 @@ def filter_requests(requests, path_filters, include_get, should_sort):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument( "path_filters", nargs="*", help=f"Path substring filters")
+    parser.add_argument("path_filters", nargs="*", help=f"Path substring filters")
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable diagnostic messages")
     parser.add_argument("--get", action="store_true", help="Include GET requests (excluded by default)")
     parser.add_argument("--keep", action="store_true", help="Keep out.requests.json file after processing")
