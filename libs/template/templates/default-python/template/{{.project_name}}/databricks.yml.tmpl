@@ -6,7 +6,7 @@
 bundle:
   name: {{.project_name}}
   uuid: {{bundle_uuid}}
-{{ if $with_pydabs }}
+{{- if $with_pydabs }}
 experimental:
   python:
     # Activate virtual environment before loading resources defined in Python.
@@ -15,7 +15,8 @@ experimental:
     # Functions called to load resources defined in Python. See resources/__init__.py
     resources:
       - "resources:load_resources"
-{{ end }}
+
+{{- end }}
 {{ if $with_python }}
 artifacts:
   python_artifact:

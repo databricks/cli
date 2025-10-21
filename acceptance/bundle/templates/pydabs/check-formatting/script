@@ -6,5 +6,6 @@ trace $CLI bundle init default-python --config-file ./input.json
 trace find my_pydabs -mindepth 1 ! -name 'pyproject.toml' ! -regex '.*/resources.*' -delete
 
 trace ruff format --quiet --diff --check my_pydabs
+trace yamlcheck.py
 
 rm -rf my_pydabs input.json
