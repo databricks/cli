@@ -1,10 +1,11 @@
 # If logs are visible (go test -v), this will produce this:
-#     acceptance_test.go:725:
+#    acceptance_test.go:725:
 #        LOG: main log
-#        LOG: another line
-#   acceptance_test.go:725: LOG.extra: extra log
-
+#        LOG: no replacements: 123456789
+#        LOG: Tue Oct 21 12:00:43 CEST 2025
+#    acceptance_test.go:725: LOG.extra: extra log
 
 echo "main log" >> LOG
-echo "another line" >> LOG
+echo "no replacements: 123456789" >> LOG
+date >> LOG
 echo "extra log" >> LOG.extra
