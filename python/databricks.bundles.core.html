@@ -5,17 +5,17 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Core &#8212; databricks-bundles beta documentation</title>
+    <title>Core &#8212; databricks-bundles  documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="_static/basic.css?v=c058f7c8" />
     <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=5fa5b382" />
-    <script src="_static/documentation_options.js?v=f0d2c090"></script>
+    <script src="_static/documentation_options.js?v=5929fcd5"></script>
     <script src="_static/doctools.js?v=9a2dae69"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Jobs" href="databricks.bundles.jobs.html" />
-    <link rel="prev" title="databricks-bundles (Beta)" href="index.html" />
+    <link rel="prev" title="databricks-bundles" href="index.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
   
@@ -70,13 +70,15 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.jobs.html">Jobs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.pipelines.html">Pipelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.schemas.html">Schemas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.volumes.html">Volumes</a></li>
 </ul>
 
 <div class="relations">
 <h3>Related Topics</h3>
 <ul>
   <li><a href="index.html">Documentation overview</a><ul>
-      <li>Previous: <a href="index.html" title="previous chapter">databricks-bundles (Beta)</a></li>
+      <li>Previous: <a href="index.html" title="previous chapter">databricks-bundles</a></li>
       <li>Next: <a href="databricks.bundles.jobs.html" title="next chapter">Jobs</a></li>
   </ul></li>
 </ul>
@@ -145,6 +147,16 @@ are combined into a single Resources object.</p>
 <dl class="py property">
 <dt class="sig sig-object py" id="databricks.bundles.core.Resources.pipelines">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">pipelines</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.Pipeline" title="databricks.bundles.pipelines.Pipeline"><span class="pre">Pipeline</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.core.Resources.pipelines" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="databricks.bundles.core.Resources.schemas">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">schemas</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="databricks.bundles.schemas.html#databricks.bundles.schemas.Schema" title="databricks.bundles.schemas.Schema"><span class="pre">Schema</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.core.Resources.schemas" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="databricks.bundles.core.Resources.volumes">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">volumes</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="databricks.bundles.volumes.html#databricks.bundles.volumes.Volume" title="databricks.bundles.volumes.Volume"><span class="pre">Volume</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.core.Resources.volumes" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py property">
@@ -221,6 +233,54 @@ resources of the same type.</p>
 <li><p><strong>resource_name</strong> – unique identifier for the pipeline</p></li>
 <li><p><strong>pipeline</strong> – the pipeline to add, can be Pipeline or dict</p></li>
 <li><p><strong>location</strong> – optional location of the pipeline in the source code</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.core.Resources.add_schema">
+<span class="sig-name descname"><span class="pre">add_schema</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">resource_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">schema</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="databricks.bundles.schemas.html#databricks.bundles.schemas.Schema" title="databricks.bundles.schemas._models.schema.Schema"><span class="pre">SchemaParam</span></a></span></em>,</dd>
+<dd><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">location</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#databricks.bundles.core.Location" title="databricks.bundles.core._location.Location"><span class="pre">Location</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></span></span><a class="headerlink" href="#databricks.bundles.core.Resources.add_schema" title="Link to this definition">¶</a></dt>
+<dd><p>Adds a schema to the collection of resources. Resource name must be unique across all schemas.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>resource_name</strong> – unique identifier for the schema</p></li>
+<li><p><strong>schema</strong> – the schema to add, can be Schema or dict</p></li>
+<li><p><strong>location</strong> – optional location of the schema in the source code</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.core.Resources.add_volume">
+<span class="sig-name descname"><span class="pre">add_volume</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">resource_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">volume</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="databricks.bundles.volumes.html#databricks.bundles.volumes.Volume" title="databricks.bundles.volumes._models.volume.Volume"><span class="pre">VolumeParam</span></a></span></em>,</dd>
+<dd><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">location</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#databricks.bundles.core.Location" title="databricks.bundles.core._location.Location"><span class="pre">Location</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></span></span><a class="headerlink" href="#databricks.bundles.core.Resources.add_volume" title="Link to this definition">¶</a></dt>
+<dd><p>Adds a volume to the collection of resources. Resource name must be unique across all volumes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>resource_name</strong> – unique identifier for the volume</p></li>
+<li><p><strong>volume</strong> – the volume to add, can be Volume or dict</p></li>
+<li><p><strong>location</strong> – optional location of the volume in the source code</p></li>
 </ul>
 </dd>
 </dl>
@@ -506,6 +566,12 @@ to accumulate errors and warnings.</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.core.Diagnostics.has_warning">
+<span class="sig-name descname"><span class="pre">has_warning</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#bool" title="(in Python v3.10)"><span class="pre">bool</span></a></span></span><a class="headerlink" href="#databricks.bundles.core.Diagnostics.has_warning" title="Link to this definition">¶</a></dt>
+<dd><p>Returns True if there is at least one warning in diagnostics.</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="databricks.bundles.core.Diagnostics.create_error">
 <em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">create_error</span></span><span class="sig-paren">(</span>
 
@@ -618,12 +684,14 @@ to accumulate errors and warnings.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.core.Location.line">
 <span class="sig-name descname"><span class="pre">line</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#int" title="(in Python v3.10)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.core.Location.line" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Line number in the file. Line numbers are 1-based and should be greater than 0.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.core.Location.column">
 <span class="sig-name descname"><span class="pre">column</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#int" title="(in Python v3.10)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.core.Location.column" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Column number in the line. Column numbers are 1-based and should be greater than 0.</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="databricks.bundles.core.Location.from_callable">
@@ -752,6 +820,39 @@ diagnostics of decorated functions.</p>
 </dl>
 
 <span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#databricks.bundles.core.ResourceMutator" title="databricks.bundles.core._resource_mutator.ResourceMutator"><span class="pre">ResourceMutator</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="databricks.bundles.jobs.html#databricks.bundles.jobs.Job" title="databricks.bundles.jobs.Job"><span class="pre">Job</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#databricks.bundles.core.job_mutator" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="databricks.bundles.core.pipeline_mutator">
+<span class="sig-prename descclassname"><span class="pre">&#64;</span></span><span class="sig-name descname"><span class="pre">pipeline_mutator</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">function</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/collections.abc.html#collections.abc.Callable" title="(in Python v3.10)"><span class="pre">Callable</span></a><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.core.Bundle" title="databricks.bundles.core._bundle.Bundle"><span class="pre">Bundle</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.Pipeline" title="databricks.bundles.pipelines.Pipeline"><span class="pre">Pipeline</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.Pipeline" title="databricks.bundles.pipelines.Pipeline"><span class="pre">Pipeline</span></a><span class="p"><span class="pre">]</span></span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#databricks.bundles.core.ResourceMutator" title="databricks.bundles.core._resource_mutator.ResourceMutator"><span class="pre">ResourceMutator</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.Pipeline" title="databricks.bundles.pipelines.Pipeline"><span class="pre">Pipeline</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#databricks.bundles.core.pipeline_mutator" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="databricks.bundles.core.schema_mutator">
+<span class="sig-prename descclassname"><span class="pre">&#64;</span></span><span class="sig-name descname"><span class="pre">schema_mutator</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">function</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/collections.abc.html#collections.abc.Callable" title="(in Python v3.10)"><span class="pre">Callable</span></a><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.core.Bundle" title="databricks.bundles.core._bundle.Bundle"><span class="pre">Bundle</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="databricks.bundles.schemas.html#databricks.bundles.schemas.Schema" title="databricks.bundles.schemas.Schema"><span class="pre">Schema</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="databricks.bundles.schemas.html#databricks.bundles.schemas.Schema" title="databricks.bundles.schemas.Schema"><span class="pre">Schema</span></a><span class="p"><span class="pre">]</span></span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#databricks.bundles.core.ResourceMutator" title="databricks.bundles.core._resource_mutator.ResourceMutator"><span class="pre">ResourceMutator</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="databricks.bundles.schemas.html#databricks.bundles.schemas.Schema" title="databricks.bundles.schemas.Schema"><span class="pre">Schema</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#databricks.bundles.core.schema_mutator" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="databricks.bundles.core.volume_mutator">
+<span class="sig-prename descclassname"><span class="pre">&#64;</span></span><span class="sig-name descname"><span class="pre">volume_mutator</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">function</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/collections.abc.html#collections.abc.Callable" title="(in Python v3.10)"><span class="pre">Callable</span></a><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.core.Bundle" title="databricks.bundles.core._bundle.Bundle"><span class="pre">Bundle</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="databricks.bundles.volumes.html#databricks.bundles.volumes.Volume" title="databricks.bundles.volumes.Volume"><span class="pre">Volume</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="databricks.bundles.volumes.html#databricks.bundles.volumes.Volume" title="databricks.bundles.volumes.Volume"><span class="pre">Volume</span></a><span class="p"><span class="pre">]</span></span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#databricks.bundles.core.ResourceMutator" title="databricks.bundles.core._resource_mutator.ResourceMutator"><span class="pre">ResourceMutator</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="databricks.bundles.volumes.html#databricks.bundles.volumes.Volume" title="databricks.bundles.volumes.Volume"><span class="pre">Volume</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#databricks.bundles.core.volume_mutator" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
