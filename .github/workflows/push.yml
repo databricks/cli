@@ -76,7 +76,7 @@ jobs:
         with:
           version: "0.9.1"
           args: "--version"
-          
+
       - name: Pull external libraries
         run: |
           go mod download
