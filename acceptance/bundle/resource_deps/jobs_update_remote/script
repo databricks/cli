@@ -1,7 +1,7 @@
 echo "*" > .gitignore
 $CLI bundle debug plan > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
-trace print_requests.py +/jobs
+trace print_requests.py //jobs
 
 foo_id=`read_id.py jobs foo`
 echo "$foo_id:FOO_ID" >> ACC_REPLS
@@ -17,4 +17,4 @@ $CLI bundle debug plan > out.plan_update.$DATABRICKS_BUNDLE_ENGINE.json
 
 trace $CLI bundle destroy --auto-approve
 # Sort, because the order of requests is different. TODO: remember deps in order to delete in reverse deployment order.
-trace print_requests.py --sort +/jobs
+trace print_requests.py --sort //jobs

@@ -11,7 +11,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests.py +/jobs
+>>> print_requests.py //jobs
 {
   "method": "POST",
   "path": "/api/2.2/jobs/create",
@@ -81,7 +81,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests.py +/jobs
+>>> print_requests.py //jobs
 {
   "method": "POST",
   "path": "/api/2.2/jobs/reset",
@@ -187,7 +187,7 @@ All files and directories at the following location will be deleted: /Workspace/
 Deleting files...
 Destroy complete!
 
->>> print_requests.py --sort +/jobs
+>>> print_requests.py --sort //jobs
 {
   "method": "POST",
   "path": "/api/2.2/jobs/delete",

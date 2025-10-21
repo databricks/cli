@@ -7,7 +7,7 @@ create jobs.independent
 
 Plan: 4 to add, 0 to change, 0 to delete, 0 unchanged
 
->>> print_requests.py --sort +/jobs
+>>> print_requests.py --sort //jobs
 {
   "method": "POST",
   "path": "/api/2.2/jobs/create",
@@ -75,7 +75,7 @@ create jobs.foo
 Plan: 3 to add, 0 to change, 0 to delete, 1 unchanged
 
 === Expecting no difference in the output between first and second deploy
->>> print_requests.py +/jobs
+>>> print_requests.py //jobs
 {
   "method": "POST",
   "path": "/api/2.2/jobs/create",
@@ -104,7 +104,7 @@ All files and directories at the following location will be deleted: /Workspace/
 Deleting files...
 Destroy complete!
 
->>> print_requests.py +/jobs
+>>> print_requests.py //jobs
 {
   "method": "POST",
   "path": "/api/2.2/jobs/delete",

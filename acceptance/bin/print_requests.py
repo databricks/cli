@@ -32,12 +32,12 @@ This replaces custom jq wrappers like:
 ...   for x in r:
 ...      print(short_name(x))
 
->>> test(test_requests, ["+/jobs"], False, False)
+>>> test(test_requests, ["//jobs"], False, False)
 R1 POST
 R3 PUT
 R5 DELETE
 
->>> test(test_requests, ["+/jobs"], True, False)
+>>> test(test_requests, ["//jobs"], True, False)
 R1 POST
 R2 GET
 R3 PUT
@@ -49,12 +49,12 @@ R3 PUT
 R5 DELETE
 
 >>> # Test multiple positive filters (OR logic)
->>> test(test_requests, ["+/clusters", "+/import-file"], True, False)
+>>> test(test_requests, ["//clusters", "//import-file"], True, False)
 R0 GET
 R4 POST
 
 >>> # Test positive + negative filters (AND logic)
->>> test(test_requests, ["+/api", "^/jobs"], False, False)
+>>> test(test_requests, ["//api", "^/jobs"], False, False)
 R4 POST
 """
 
@@ -67,8 +67,8 @@ from pathlib import Path
 
 # I've originally tried ADD_CHAR to be empty, so you can just do "print_requests.py /jobs"
 # However, that causes test to fail on Windows CI because "/jobs" becomes "C:/Program Files/Git/jobs"
-# This behaviour can be disabled with MSYS_NO_PATHCONV=1 but that causes other failures, so we requiring "+" here.
-ADD_CHAR = "+"
+# This behaviour can be disabled with MSYS_NO_PATHCONV=1 but that causes other failures, so we require extra slash here.
+ADD_CHAR = "/"
 # "!" does not work on Windows
 NEGATE_CHAR = "^"
 

@@ -2,7 +2,7 @@
 trace $CLI bundle plan
 trace $CLI bundle debug plan > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
-trace print_requests.py +/jobs
+trace print_requests.py //jobs
 
 foo_id=`read_id.py jobs foo`
 echo "$foo_id:FOO_ID" >> ACC_REPLS
@@ -14,7 +14,7 @@ cp empty.yml databricks.yml
 trace $CLI bundle debug plan > out.plan_delete.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 # TODO sorting requests should not be needed one we persist depends_on in state
-trace print_requests.py --sort +/jobs
+trace print_requests.py --sort //jobs
 
 trace $CLI bundle destroy --auto-approve
-trace print_requests.py +/jobs
+trace print_requests.py //jobs

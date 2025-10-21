@@ -1,6 +1,6 @@
 trace $CLI bundle validate -o json | jq .resources
 errcode $CLI bundle plan
-trace print_requests.py +/pipeline
+trace print_requests.py //pipeline
 
 errcode $CLI bundle deploy
-trace print_requests.py +/pipeline
+trace print_requests.py //pipeline
