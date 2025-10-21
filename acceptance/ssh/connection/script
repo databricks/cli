@@ -1,13 +1,10 @@
-errcode $CLI ssh connect --shutdown-delay=10s --cluster=$TEST_DEFAULT_CLUSTER_ID --releases-dir=$CLI_RELEASES_DIR -- "echo 'Connection successful'" >tmp.stdout 2>tmp.stderr
+errcode $CLI ssh connect --shutdown-delay=10s --cluster=$TEST_DEFAULT_CLUSTER_ID --releases-dir=$CLI_RELEASES_DIR -- "echo 'Connection successful'" >LOG.stdout 2>LOG.stderr
 
-cat tmp.stdout
+cat LOG.stdout
 
-if ! grep -q "Connection successful" tmp.stdout; then
+if ! grep -q "Connection successful" LOG.stdout; then
   echo "Connection was not successful, stderr:"
-  cat tmp.stderr
 
-  run_id=$(cat tmp.stderr | grep -o "Job submitted successfully with run ID: [0-9]*" | grep -o "[0-9]*$")
-  trace $CLI jobs get-run "$run_id"
+  run_id=$(cat LOG.stderr | grep -o "Job submitted successfully with run ID: [0-9]*" | grep -o "[0-9]*$")
+  trace $CLI jobs get-run "$run_id" > LOG.job
 fi
-
-rm tmp.stdout tmp.stderr
