@@ -14,7 +14,7 @@ See also the documentation at https://docs.databricks.com/dev-tools/bundles/inde
 
 >>> uv pip install --quiet [DATABRICKS_BUNDLES_WHEEL]
 
->>> databricks bundle validate --output json
+>>> [CLI] bundle validate --output json
 == Collecting resources into ./enable_pydabs=no
 
 >>> [CLI] bundle init default-python --config-file ./input.json
@@ -31,6 +31,6 @@ See also the documentation at https://docs.databricks.com/dev-tools/bundles/inde
 
 >>> uv pip install --quiet [DATABRICKS_BUNDLES_WHEEL]
 
->>> databricks bundle validate --output json
+>>> [CLI] bundle validate --output json
 
 >>> diff -Naur enable_pydabs=yes enable_pydabs=no
