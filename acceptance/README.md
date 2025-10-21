@@ -20,7 +20,7 @@ For more complex tests one can also use:
 
 Any file starting with "LOG" will be logged to test log (visible with go test -v).
 
-See [selftest](./selftest) for more features.
+See [selftest](./selftest) for more examples.
 
 ## Running acceptance tests on Windows
 
