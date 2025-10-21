@@ -182,6 +182,9 @@ def main():
             flush=True,
         )
 
+    with open("LOG.requests", "a") as f:
+        f.write(f"{requests_file=}\n{args=!r}\n{data=!r}\n{requests=!r}\n{filtered_requests=!r}\n\n\n")
+
     for req in filtered_requests:
         print(json.dumps(req, indent=2), flush=True)
 
