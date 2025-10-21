@@ -11,7 +11,7 @@ for enable_pydabs in yes no; do
         trace uv venv --quiet
         trace uv pip install --quiet $DATABRICKS_BUNDLES_WHEEL
 
-        trace databricks bundle validate --output json | jq "pick(.resources)" > ../enable_pydabs=$enable_pydabs
+        trace $CLI bundle validate --output json | jq "pick(.resources)" > ../enable_pydabs=$enable_pydabs
     )
 
     rm -rf my_pydabs input.json
