@@ -172,5 +172,7 @@ func TestHandover(t *testing.T) {
 	require.NoError(t, err, "failed to receive the last message (%d)", TOTAL_MESSAGE_COUNT-1)
 
 	wg.Wait()
+
+	// clientOutput is created by appending incoming messages as they arrive, so we are also test correct order here
 	assert.Equal(t, expectedOutput, clientOutput.String())
 }
