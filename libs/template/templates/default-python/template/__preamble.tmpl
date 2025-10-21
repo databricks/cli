@@ -29,6 +29,8 @@ This file only template directives; it is skipped for the actual output.
 {{if (and $notDLT $notNotebook $notPython)}}
   {{skip "{{.project_name}}/resources/{{.project_name}}.job.yml"}}
   {{skip "{{.project_name}}/resources/{{.project_name}}_job.py"}}
+{{else}}
+  {{skip "{{.project_name}}/resources/.gitkeep"}}
 {{end}}
 
 {{if (eq .enable_pydabs "yes")}}
