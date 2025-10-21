@@ -9,6 +9,6 @@ Workspace to use (auto-detected, edit in 'my_pydabs/databricks.yml'): [DATABRICK
 Please refer to the README.md file for "getting started" instructions.
 See also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
 
->>> find my_pydabs -mindepth 1 -maxdepth 2 ! -name pyproject.toml ! -regex .*/resources/.* -delete
+>>> find my_pydabs -mindepth 1 ! -name pyproject.toml ! -regex .*/resources.* -delete
 
 >>> ruff format --quiet --diff --check my_pydabs
