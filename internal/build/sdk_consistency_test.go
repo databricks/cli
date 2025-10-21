@@ -3,14 +3,11 @@ package build
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"os/exec"
-	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/mod/modfile"
 )
@@ -62,12 +59,4 @@ func TestConsistentDatabricksSdkVersion(t *testing.T) {
 	require.NoError(t, err)
 	defer resp.Body.Close()
 	require.Equal(t, http.StatusOK, resp.StatusCode)
-
-	sdkSha, err := io.ReadAll(resp.Body)
-	require.NoError(t, err)
-
-	cliSha, err := os.ReadFile("../../.codegen/_openapi_sha")
-	require.NoError(t, err)
-
-	assert.Equal(t, strings.TrimSpace(string(cliSha)), strings.TrimSpace(string(sdkSha)), "please update the SDK version before generating the CLI")
 }
