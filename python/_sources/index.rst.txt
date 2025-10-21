@@ -1,9 +1,10 @@
-databricks-bundles (Beta)
+databricks-bundles
 --------------------------------
 
 `databricks-bundles` package implements Python support for Databricks Asset Bundles.
 
-For getting started see `Configuration in Python <https://docs.databricks.com/aws/en/dev-tools/bundles/python>`_.
+See `What is Python support for Databricks Asset Bundles? (TBD) <#>`_.
+
 
 .. toctree::
    :maxdepth: 7
@@ -11,3 +12,5 @@ For getting started see `Configuration in Python <https://docs.databricks.com/aw
    databricks.bundles.core
    databricks.bundles.jobs
    databricks.bundles.pipelines
+   databricks.bundles.schemas
+   databricks.bundles.volumes
