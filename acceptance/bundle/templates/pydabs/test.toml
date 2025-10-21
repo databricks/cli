@@ -1,8 +1,3 @@
-Ignore = [
-    '.ruff_cache',
-    'input.json'
-]
-
 Timeout = '40s'
 TimeoutWindows = '120s'
 

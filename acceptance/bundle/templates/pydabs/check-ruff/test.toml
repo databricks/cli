@@ -1,3 +1,7 @@
+Ignore = [
+    '.ruff_cache',
+]
+
 [EnvMatrix]
 INCLUDE_NOTEBOOK = ["yes", "no"]
 INCLUDE_DLT = ["yes", "no"]
