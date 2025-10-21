@@ -32,12 +32,12 @@ This replaces custom jq wrappers like:
 ...   for x in r:
 ...      print(short_name(x))
 
->>> test(test_requests, ["/jobs"], False, False)
+>>> test(test_requests, ["+/jobs"], False, False)
 R1 POST
 R3 PUT
 R5 DELETE
 
->>> test(test_requests, ["/jobs"], True, False)
+>>> test(test_requests, ["+/jobs"], True, False)
 R1 POST
 R2 GET
 R3 PUT
@@ -49,12 +49,12 @@ R3 PUT
 R5 DELETE
 
 >>> # Test multiple positive filters (OR logic)
->>> test(test_requests, ["/clusters", "/import-file"], True, False)
+>>> test(test_requests, ["+/clusters", "+/import-file"], True, False)
 R0 GET
 R4 POST
 
 >>> # Test positive + negative filters (AND logic)
->>> test(test_requests, ["/api", "-/jobs"], False, False)
+>>> test(test_requests, ["+/api", "^/jobs"], False, False)
 R4 POST
 """
 
@@ -65,6 +65,10 @@ import argparse
 from pathlib import Path
 
 
+# I've originally tried ADD_CHAR to be empty, so you can just do "print_requests.py /jobs"
+# However, that causes test to fail on Windows CI because "/jobs" becomes "C:/Program Files/Git/jobs"
+# This behaviour can be disabled with MSYS_NO_PATHCONV=1 but that causes other failures, so we requiring "+" here.
+ADD_CHAR = "+"
 # "!" does not work on Windows
 NEGATE_CHAR = "^"
 
@@ -103,6 +107,17 @@ assert result == [{"method": "GET"}, {"method": "POST"}], result
 
 def filter_requests(requests, path_filters, include_get, should_sort):
     """Filter requests based on method and path filters."""
+    positive_filters = []
+    negative_filters = []
+
+    for f in path_filters:
+        if f.startswith(ADD_CHAR):
+            positive_filters.append(f[1:])
+        elif f.startswith(NEGATE_CHAR):
+            negative_filters.append(f[1:])
+        else:
+            sys.exit(f"Unrecognized filter: {f!r}")
+
     filtered_requests = []
     for req in requests:
         # Skip GET requests unless include_get is True
@@ -112,10 +127,6 @@ def filter_requests(requests, path_filters, include_get, should_sort):
         # Apply path filters
         path = req.get("path", "")
         should_include = True
-
-        # Separate positive and negative filters
-        positive_filters = [f for f in path_filters if not f.startswith(NEGATE_CHAR)]
-        negative_filters = [f[1:] for f in path_filters if f.startswith(NEGATE_CHAR)]
 
         # Check positive filters - if any exist, at least one must match (OR logic)
         if positive_filters:
@@ -173,9 +184,6 @@ def main():
             file=sys.stderr,
             flush=True,
         )
-
-    with open("LOG.requests", "a") as f:
-        f.write(f"{requests_file=}\n{args=!r}\n{data=!r}\n{requests=!r}\n{filtered_requests=!r}\n\n\n")
 
     for req in filtered_requests:
         print(json.dumps(req, indent=2), flush=True)

@@ -30,7 +30,7 @@ All files and directories at the following location will be deleted: /Workspace/
 Deleting files...
 Destroy complete!
 
->>> print_requests.py /apps
+>>> print_requests.py +/apps
 {
   "method": "DELETE",
   "path": "/api/2.0/apps/myapp"

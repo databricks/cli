@@ -2,7 +2,7 @@
 echo "*" > .gitignore
 trace $CLI bundle plan
 trace $CLI bundle deploy
-trace print_requests.py /jobs
+trace print_requests.py +/jobs
 
 foo_id=`read_id.py jobs foo`
 echo "$foo_id:FOO_ID" >> ACC_REPLS
@@ -16,7 +16,7 @@ title "Update trigger.periodic.unit and re-deploy; jobs.bar is unchanged"
 trace update_file.py databricks.yml DAYS HOURS
 trace $CLI bundle plan
 trace $CLI bundle deploy
-trace print_requests.py /jobs
+trace print_requests.py +/jobs
 trace $CLI bundle plan
 
 title "Fetch job ID and verify remote state"
@@ -27,7 +27,7 @@ rm out.requests.txt
 
 trace $CLI bundle destroy --auto-approve
 # Sort, because the order of requests is different. TODO: remember deps in order to delete in reverse deployment order.
-trace print_requests.py --sort /jobs
+trace print_requests.py --sort +/jobs
 
 trace musterr $CLI jobs get $foo_id
 trace musterr $CLI jobs get $bar_id

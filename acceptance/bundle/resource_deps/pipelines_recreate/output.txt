@@ -11,7 +11,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests.py /jobs /pipelines
+>>> print_requests.py +/jobs +/pipelines
 {
   "method": "POST",
   "path": "/api/2.0/pipelines",
@@ -69,7 +69,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests.py /jobs /pipelines
+>>> print_requests.py +/jobs +/pipelines
 {
   "method": "DELETE",
   "path": "/api/2.0/pipelines/[FOO_ID]"
@@ -166,7 +166,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests.py /jobs /pipelines
+>>> print_requests.py +/jobs +/pipelines
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -182,7 +182,7 @@ All files and directories at the following location will be deleted: /Workspace/
 Deleting files...
 Destroy complete!
 
->>> print_requests.py --sort /jobs /pipelines
+>>> print_requests.py --sort +/jobs +/pipelines
 {
   "method": "DELETE",
   "path": "/api/2.0/pipelines/[UUID]"

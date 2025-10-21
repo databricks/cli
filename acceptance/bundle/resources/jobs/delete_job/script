@@ -2,4 +2,4 @@ trace $CLI bundle deploy
 cp empty.yml databricks.yml
 $CLI bundle debug plan > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
-print_requests.py /jobs
+print_requests.py +/jobs
