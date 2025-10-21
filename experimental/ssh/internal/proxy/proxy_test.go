@@ -79,7 +79,7 @@ func (tb *testBuffer) WaitForWrite(expected []byte) error {
 			if tb.Contains(expected) {
 				return nil
 			}
-		case <-time.After(5 * time.Second):
+		case <-time.After(2 * time.Second):
 			return errors.New("timeout waiting for write")
 		}
 	}
