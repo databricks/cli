@@ -199,7 +199,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		return
 	}
 
-	if !b.DirectDeployment {
+	if !*b.DirectDeployment {
 		// Reads (typed): b.Config.Bundle.Terraform (checks terraform configuration)
 		// Updates (typed): b.Config.Bundle.Terraform (sets default values if not already set)
 		// Updates (typed): b.Terraform (initializes Terraform executor with proper environment variables and paths)

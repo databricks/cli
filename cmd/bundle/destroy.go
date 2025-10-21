@@ -73,7 +73,7 @@ Typical use cases:
 		}
 
 		// not applicable to direct deployment, we don't need resource configuration there
-		if !b.DirectDeployment {
+		if !*b.DirectDeployment {
 			bundle.ApplySeqContext(ctx, b,
 				// We need to resolve artifact variable (how we do it in build phase)
 				// because some of the to-be-destroyed resource might use this variable.

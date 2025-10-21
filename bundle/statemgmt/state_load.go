@@ -34,7 +34,7 @@ func (l *load) Name() string {
 func (l *load) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	var state ExportedResourcesMap
 
-	if b.DirectDeployment {
+	if *b.DirectDeployment {
 		err := b.OpenStateFile(ctx)
 		if err != nil {
 			return diag.FromErr(err)

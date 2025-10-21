@@ -90,7 +90,7 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 }
 
 func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) {
-	if b.DirectDeployment {
+	if *b.DirectDeployment {
 		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(), &b.Config, plan)
 	} else {
 		// Core destructive mutators for destroy. These require informed user consent.
@@ -137,7 +137,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle) {
 		return
 	}
 
-	if !b.DirectDeployment {
+	if !*b.DirectDeployment {
 		bundle.ApplySeqContext(ctx, b,
 			terraform.Interpolate(),
 			terraform.Write(),
@@ -150,7 +150,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle) {
 	}
 
 	var plan *deployplan.Plan
-	if b.DirectDeployment {
+	if *b.DirectDeployment {
 		err := b.OpenStateFile(ctx)
 		if err != nil {
 			logdiag.LogError(ctx, err)
