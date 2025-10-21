@@ -1,0 +1,13 @@
+bundle:
+  name: sync_build_folder
+
+artifacts:
+  test:
+    type: whl
+    build: echo "Creating .build folder" && mkdir .build && touch .build/app.whl
+    files:
+      - source: .build/*.whl
+
+sync:
+  include:
+    - .build

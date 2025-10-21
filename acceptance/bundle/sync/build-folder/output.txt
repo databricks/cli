@@ -1,0 +1,20 @@
+
+>>> [CLI] bundle validate
+Warning: Pattern .build does not match any files
+  at sync.include[0]
+  in databricks.yml:13:7
+
+Name: sync_build_folder
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/sync_build_folder/default
+
+Found 1 warning
+
+>>> [CLI] bundle deploy
+Building test...
+Uploading .build/app.whl...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/sync_build_folder/default/files...
+Deploying resources...
+Deployment complete!
