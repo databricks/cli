@@ -139,6 +139,7 @@ func newCreate() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid AUTHENTICATION_TYPE: %s", args[1])
 			}
+
 		}
 
 		response, err := w.Recipients.Create(ctx, createReq)
@@ -398,6 +399,7 @@ func newRotateToken() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid EXISTING_TOKEN_EXPIRE_IN_SECONDS: %s", args[1])
 			}
+
 		}
 
 		response, err := w.Recipients.RotateToken(ctx, rotateTokenReq)

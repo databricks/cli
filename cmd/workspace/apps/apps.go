@@ -3,13 +3,17 @@
 package apps
 
 import (
+	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
+	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/spf13/cobra"
 )
@@ -88,10 +92,14 @@ func newCreate() *cobra.Command {
 	cmd.Flags().StringVar(&createReq.App.BudgetPolicyId, "budget-policy-id", createReq.App.BudgetPolicyId, ``)
 	cmd.Flags().Var(&createReq.App.ComputeSize, "compute-size", `Supported values: [LARGE, LIQUID, MEDIUM]`)
 	// TODO: complex arg: compute_status
+	var createTimeParam string
+	cmd.Flags().StringVar(&createTimeParam, "create-time", createTimeParam, `The creation time of the app.`)
 	cmd.Flags().StringVar(&createReq.App.Description, "description", createReq.App.Description, `The description of the app.`)
 	// TODO: array: effective_user_api_scopes
 	// TODO: complex arg: pending_deployment
 	// TODO: array: resources
+	var updateTimeParam string
+	cmd.Flags().StringVar(&updateTimeParam, "update-time", updateTimeParam, `The update time of the app.`)
 	// TODO: array: user_api_scopes
 
 	cmd.Use = "create NAME"
@@ -137,6 +145,26 @@ func newCreate() *cobra.Command {
 		}
 		if !cmd.Flags().Changed("json") {
 			createReq.App.Name = args[0]
+		}
+
+		if createTimeParam != "" {
+			createTimeFieldBytes := []byte(fmt.Sprintf("\"%s\"", createTimeParam))
+			var createTimeField sdktime.Time
+			err = json.Unmarshal(createTimeFieldBytes, &createTimeField)
+			if err != nil {
+				return fmt.Errorf("invalid CREATE_TIME: %s", createTimeParam)
+			}
+			createReq.App.CreateTime = &createTimeField
+		}
+
+		if updateTimeParam != "" {
+			updateTimeFieldBytes := []byte(fmt.Sprintf("\"%s\"", updateTimeParam))
+			var updateTimeField sdktime.Time
+			err = json.Unmarshal(updateTimeFieldBytes, &updateTimeField)
+			if err != nil {
+				return fmt.Errorf("invalid UPDATE_TIME: %s", updateTimeParam)
+			}
+			createReq.App.UpdateTime = &updateTimeField
 		}
 
 		wait, err := w.Apps.Create(ctx, createReq)
@@ -257,7 +285,8 @@ func newCreateUpdate() *cobra.Command {
 		}
 		createUpdateReq.AppName = args[0]
 		if !cmd.Flags().Changed("json") {
-			createUpdateReq.UpdateMask = args[1]
+			updateMaskArray := strings.Split(args[1], ",")
+			createUpdateReq.UpdateMask = *fieldmask.New(updateMaskArray)
 		}
 
 		wait, err := w.Apps.CreateUpdate(ctx, createUpdateReq)
@@ -378,11 +407,15 @@ func newDeploy() *cobra.Command {
 
 	cmd.Flags().Var(&deployJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	var createTimeParam string
+	cmd.Flags().StringVar(&createTimeParam, "create-time", createTimeParam, `The creation time of the deployment.`)
 	// TODO: complex arg: deployment_artifacts
 	cmd.Flags().StringVar(&deployReq.AppDeployment.DeploymentId, "deployment-id", deployReq.AppDeployment.DeploymentId, `The unique id of the deployment.`)
 	cmd.Flags().Var(&deployReq.AppDeployment.Mode, "mode", `The mode of which the deployment will manage the source code. Supported values: [AUTO_SYNC, SNAPSHOT]`)
 	cmd.Flags().StringVar(&deployReq.AppDeployment.SourceCodePath, "source-code-path", deployReq.AppDeployment.SourceCodePath, `The workspace file system path of the source code used to create the app deployment.`)
 	// TODO: complex arg: status
+	var updateTimeParam string
+	cmd.Flags().StringVar(&updateTimeParam, "update-time", updateTimeParam, `The update time of the deployment.`)
 
 	cmd.Use = "deploy APP_NAME"
 	cmd.Short = `Create an app deployment.`
@@ -418,6 +451,26 @@ func newDeploy() *cobra.Command {
 			}
 		}
 		deployReq.AppName = args[0]
+
+		if createTimeParam != "" {
+			createTimeFieldBytes := []byte(fmt.Sprintf("\"%s\"", createTimeParam))
+			var createTimeField sdktime.Time
+			err = json.Unmarshal(createTimeFieldBytes, &createTimeField)
+			if err != nil {
+				return fmt.Errorf("invalid CREATE_TIME: %s", createTimeParam)
+			}
+			deployReq.AppDeployment.CreateTime = &createTimeField
+		}
+
+		if updateTimeParam != "" {
+			updateTimeFieldBytes := []byte(fmt.Sprintf("\"%s\"", updateTimeParam))
+			var updateTimeField sdktime.Time
+			err = json.Unmarshal(updateTimeFieldBytes, &updateTimeField)
+			if err != nil {
+				return fmt.Errorf("invalid UPDATE_TIME: %s", updateTimeParam)
+			}
+			deployReq.AppDeployment.UpdateTime = &updateTimeField
+		}
 
 		wait, err := w.Apps.Deploy(ctx, deployReq)
 		if err != nil {
@@ -1108,10 +1161,14 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().StringVar(&updateReq.App.BudgetPolicyId, "budget-policy-id", updateReq.App.BudgetPolicyId, ``)
 	cmd.Flags().Var(&updateReq.App.ComputeSize, "compute-size", `Supported values: [LARGE, LIQUID, MEDIUM]`)
 	// TODO: complex arg: compute_status
+	var createTimeParam string
+	cmd.Flags().StringVar(&createTimeParam, "create-time", createTimeParam, `The creation time of the app.`)
 	cmd.Flags().StringVar(&updateReq.App.Description, "description", updateReq.App.Description, `The description of the app.`)
 	// TODO: array: effective_user_api_scopes
 	// TODO: complex arg: pending_deployment
 	// TODO: array: resources
+	var updateTimeParam string
+	cmd.Flags().StringVar(&updateTimeParam, "update-time", updateTimeParam, `The update time of the app.`)
 	// TODO: array: user_api_scopes
 
 	cmd.Use = "update NAME"
@@ -1149,6 +1206,26 @@ func newUpdate() *cobra.Command {
 			}
 		}
 		updateReq.Name = args[0]
+
+		if createTimeParam != "" {
+			createTimeFieldBytes := []byte(fmt.Sprintf("\"%s\"", createTimeParam))
+			var createTimeField sdktime.Time
+			err = json.Unmarshal(createTimeFieldBytes, &createTimeField)
+			if err != nil {
+				return fmt.Errorf("invalid CREATE_TIME: %s", createTimeParam)
+			}
+			updateReq.App.CreateTime = &createTimeField
+		}
+
+		if updateTimeParam != "" {
+			updateTimeFieldBytes := []byte(fmt.Sprintf("\"%s\"", updateTimeParam))
+			var updateTimeField sdktime.Time
+			err = json.Unmarshal(updateTimeFieldBytes, &updateTimeField)
+			if err != nil {
+				return fmt.Errorf("invalid UPDATE_TIME: %s", updateTimeParam)
+			}
+			updateReq.App.UpdateTime = &updateTimeField
+		}
 
 		response, err := w.Apps.Update(ctx, updateReq)
 		if err != nil {

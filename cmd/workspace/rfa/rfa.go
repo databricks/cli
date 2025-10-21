@@ -278,12 +278,14 @@ func newUpdateAccessRequestDestinations() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid DESTINATIONS: %s", args[1])
 			}
+
 		}
 		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[2], &updateAccessRequestDestinationsReq.AccessRequestDestinations.Securable)
 			if err != nil {
 				return fmt.Errorf("invalid SECURABLE: %s", args[2])
 			}
+
 		}
 
 		response, err := w.Rfa.UpdateAccessRequestDestinations(ctx, updateAccessRequestDestinationsReq)

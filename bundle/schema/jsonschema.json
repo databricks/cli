@@ -6295,7 +6295,7 @@
                   "type": "object",
                   "properties": {
                     "dbt_commands": {
-                      "description": "An array of commands to execute for jobs with the dbt task, for example `\"dbt_commands\": [\"dbt deps\", \"dbt seed\", \"dbt deps\", \"dbt seed\", \"dbt run\"]`",
+                      "description": "An array of commands to execute for jobs with the dbt task, for example `\"dbt_commands\": [\"dbt deps\", \"dbt seed\", \"dbt deps\", \"dbt seed\", \"dbt run\"]`\n\n⚠ **Deprecation note** Use [job parameters](https://docs.databricks.com/jobs/job-parameters.html#job-parameter-pushdown) to pass information down to tasks.",
                       "$ref": "#/$defs/slice/string",
                       "x-databricks-preview": "PRIVATE",
                       "deprecationMessage": "This field is deprecated",
@@ -6303,7 +6303,7 @@
                       "deprecated": true
                     },
                     "jar_params": {
-                      "description": "A list of parameters for jobs with Spark JAR tasks, for example `\"jar_params\": [\"john doe\", \"35\"]`.\nThe parameters are used to invoke the main function of the main class specified in the Spark JAR task.\nIf not specified upon `run-now`, it defaults to an empty list.\njar_params cannot be specified in conjunction with notebook_params.\nThe JSON representation of this field (for example `{\"jar_params\":[\"john doe\",\"35\"]}`) cannot exceed 10,000 bytes.\n\nUse [Task parameter variables](https://docs.databricks.com/jobs.html#parameter-variables) to set parameters containing information about job runs.",
+                      "description": "A list of parameters for jobs with Spark JAR tasks, for example `\"jar_params\": [\"john doe\", \"35\"]`.\nThe parameters are used to invoke the main function of the main class specified in the Spark JAR task.\nIf not specified upon `run-now`, it defaults to an empty list.\njar_params cannot be specified in conjunction with notebook_params.\nThe JSON representation of this field (for example `{\"jar_params\":[\"john doe\",\"35\"]}`) cannot exceed 10,000 bytes.\n\n⚠ **Deprecation note** Use [job parameters](https://docs.databricks.com/jobs/job-parameters.html#job-parameter-pushdown) to pass information down to tasks.",
                       "$ref": "#/$defs/slice/string",
                       "x-databricks-preview": "PRIVATE",
                       "deprecationMessage": "This field is deprecated",
@@ -6319,7 +6319,7 @@
                       "$ref": "#/$defs/map/string"
                     },
                     "notebook_params": {
-                      "description": "A map from keys to values for jobs with notebook task, for example `\"notebook_params\": {\"name\": \"john doe\", \"age\": \"35\"}`.\nThe map is passed to the notebook and is accessible through the [dbutils.widgets.get](https://docs.databricks.com/dev-tools/databricks-utils.html) function.\n\nIf not specified upon `run-now`, the triggered run uses the job’s base parameters.\n\nnotebook_params cannot be specified in conjunction with jar_params.\n\nUse [Task parameter variables](https://docs.databricks.com/jobs.html#parameter-variables) to set parameters containing information about job runs.\n\nThe JSON representation of this field (for example `{\"notebook_params\":{\"name\":\"john doe\",\"age\":\"35\"}}`) cannot exceed 10,000 bytes.",
+                      "description": "A map from keys to values for jobs with notebook task, for example `\"notebook_params\": {\"name\": \"john doe\", \"age\": \"35\"}`.\nThe map is passed to the notebook and is accessible through the [dbutils.widgets.get](https://docs.databricks.com/dev-tools/databricks-utils.html) function.\n\nIf not specified upon `run-now`, the triggered run uses the job’s base parameters.\n\nnotebook_params cannot be specified in conjunction with jar_params.\n\n⚠ **Deprecation note** Use [job parameters](https://docs.databricks.com/jobs/job-parameters.html#job-parameter-pushdown) to pass information down to tasks.\n\nThe JSON representation of this field (for example `{\"notebook_params\":{\"name\":\"john doe\",\"age\":\"35\"}}`) cannot exceed 10,000 bytes.",
                       "$ref": "#/$defs/map/string",
                       "x-databricks-preview": "PRIVATE",
                       "deprecationMessage": "This field is deprecated",
@@ -6338,7 +6338,7 @@
                       "deprecated": true
                     },
                     "python_params": {
-                      "description": "A list of parameters for jobs with Python tasks, for example `\"python_params\": [\"john doe\", \"35\"]`.\nThe parameters are passed to Python file as command-line parameters. If specified upon `run-now`, it would overwrite\nthe parameters specified in job setting. The JSON representation of this field (for example `{\"python_params\":[\"john doe\",\"35\"]}`)\ncannot exceed 10,000 bytes.\n\nUse [Task parameter variables](https://docs.databricks.com/jobs.html#parameter-variables) to set parameters containing information about job runs.\n\nImportant\n\nThese parameters accept only Latin characters (ASCII character set). Using non-ASCII characters returns an error.\nExamples of invalid, non-ASCII characters are Chinese, Japanese kanjis, and emojis.",
+                      "description": "A list of parameters for jobs with Python tasks, for example `\"python_params\": [\"john doe\", \"35\"]`.\nThe parameters are passed to Python file as command-line parameters. If specified upon `run-now`, it would overwrite\nthe parameters specified in job setting. The JSON representation of this field (for example `{\"python_params\":[\"john doe\",\"35\"]}`)\ncannot exceed 10,000 bytes.\n\n⚠ **Deprecation note** Use [job parameters](https://docs.databricks.com/jobs/job-parameters.html#job-parameter-pushdown) to pass information down to tasks.\n\nImportant\n\nThese parameters accept only Latin characters (ASCII character set). Using non-ASCII characters returns an error.\nExamples of invalid, non-ASCII characters are Chinese, Japanese kanjis, and emojis.",
                       "$ref": "#/$defs/slice/string",
                       "x-databricks-preview": "PRIVATE",
                       "deprecationMessage": "This field is deprecated",
@@ -6346,7 +6346,7 @@
                       "deprecated": true
                     },
                     "spark_submit_params": {
-                      "description": "A list of parameters for jobs with spark submit task, for example `\"spark_submit_params\": [\"--class\", \"org.apache.spark.examples.SparkPi\"]`.\nThe parameters are passed to spark-submit script as command-line parameters. If specified upon `run-now`, it would overwrite the\nparameters specified in job setting. The JSON representation of this field (for example `{\"python_params\":[\"john doe\",\"35\"]}`)\ncannot exceed 10,000 bytes.\n\nUse [Task parameter variables](https://docs.databricks.com/jobs.html#parameter-variables) to set parameters containing information about job runs\n\nImportant\n\nThese parameters accept only Latin characters (ASCII character set). Using non-ASCII characters returns an error.\nExamples of invalid, non-ASCII characters are Chinese, Japanese kanjis, and emojis.",
+                      "description": "A list of parameters for jobs with spark submit task, for example `\"spark_submit_params\": [\"--class\", \"org.apache.spark.examples.SparkPi\"]`.\nThe parameters are passed to spark-submit script as command-line parameters. If specified upon `run-now`, it would overwrite the\nparameters specified in job setting. The JSON representation of this field (for example `{\"python_params\":[\"john doe\",\"35\"]}`)\ncannot exceed 10,000 bytes.\n\n⚠ **Deprecation note** Use [job parameters](https://docs.databricks.com/jobs/job-parameters.html#job-parameter-pushdown) to pass information down to tasks.\n\nImportant\n\nThese parameters accept only Latin characters (ASCII character set). Using non-ASCII characters returns an error.\nExamples of invalid, non-ASCII characters are Chinese, Japanese kanjis, and emojis.",
                       "$ref": "#/$defs/slice/string",
                       "x-databricks-preview": "PRIVATE",
                       "deprecationMessage": "This field is deprecated",
@@ -6354,7 +6354,7 @@
                       "deprecated": true
                     },
                     "sql_params": {
-                      "description": "A map from keys to values for jobs with SQL task, for example `\"sql_params\": {\"name\": \"john doe\", \"age\": \"35\"}`. The SQL alert task does not support custom parameters.",
+                      "description": "A map from keys to values for jobs with SQL task, for example `\"sql_params\": {\"name\": \"john doe\", \"age\": \"35\"}`. The SQL alert task does not support custom parameters.\n\n⚠ **Deprecation note** Use [job parameters](https://docs.databricks.com/jobs/job-parameters.html#job-parameter-pushdown) to pass information down to tasks.",
                       "$ref": "#/$defs/map/string",
                       "x-databricks-preview": "PRIVATE",
                       "deprecationMessage": "This field is deprecated",
@@ -7170,7 +7170,7 @@
               "oneOf": [
                 {
                   "type": "string",
-                  "description": "Days of week in which the restart is allowed to happen (within a five-hour window starting at start_hour).\nIf not specified all days of the week will be used.",
+                  "description": "Days of week in which the window is allowed to happen.\nIf not specified all days of the week will be used.",
                   "enum": [
                     "MONDAY",
                     "TUESDAY",

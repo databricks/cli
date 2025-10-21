@@ -199,12 +199,14 @@ func newCreate() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid TABLE_TYPE: %s", args[3])
 			}
+
 		}
 		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[4], &createReq.DataSourceFormat)
 			if err != nil {
 				return fmt.Errorf("invalid DATA_SOURCE_FORMAT: %s", args[4])
 			}
+
 		}
 		if !cmd.Flags().Changed("json") {
 			createReq.StorageLocation = args[5]

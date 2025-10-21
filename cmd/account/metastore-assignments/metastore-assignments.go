@@ -101,6 +101,7 @@ func newCreate() *cobra.Command {
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
+
 		createReq.MetastoreId = args[1]
 
 		response, err := a.MetastoreAssignments.Create(ctx, createReq)
@@ -163,6 +164,7 @@ func newDelete() *cobra.Command {
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
+
 		deleteReq.MetastoreId = args[1]
 
 		response, err := a.MetastoreAssignments.Delete(ctx, deleteReq)
@@ -358,6 +360,7 @@ func newUpdate() *cobra.Command {
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
+
 		updateReq.MetastoreId = args[1]
 
 		response, err := a.MetastoreAssignments.Update(ctx, updateReq)

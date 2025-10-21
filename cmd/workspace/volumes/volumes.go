@@ -151,6 +151,7 @@ func newCreate() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid VOLUME_TYPE: %s", args[3])
 			}
+
 		}
 
 		response, err := w.Volumes.Create(ctx, createReq)

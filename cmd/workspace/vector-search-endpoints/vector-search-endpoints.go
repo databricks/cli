@@ -121,6 +121,7 @@ func newCreateEndpoint() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid ENDPOINT_TYPE: %s", args[1])
 			}
+
 		}
 
 		wait, err := w.VectorSearchEndpoints.CreateEndpoint(ctx, createEndpointReq)

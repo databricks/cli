@@ -117,12 +117,14 @@ func newCreateExternalLineageRelationship() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid SOURCE: %s", args[0])
 			}
+
 		}
 		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[1], &createExternalLineageRelationshipReq.ExternalLineageRelationship.Target)
 			if err != nil {
 				return fmt.Errorf("invalid TARGET: %s", args[1])
 			}
+
 		}
 
 		response, err := w.ExternalLineage.CreateExternalLineageRelationship(ctx, createExternalLineageRelationshipReq)
@@ -354,12 +356,14 @@ func newUpdateExternalLineageRelationship() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid SOURCE: %s", args[1])
 			}
+
 		}
 		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[2], &updateExternalLineageRelationshipReq.ExternalLineageRelationship.Target)
 			if err != nil {
 				return fmt.Errorf("invalid TARGET: %s", args[2])
 			}
+
 		}
 
 		response, err := w.ExternalLineage.UpdateExternalLineageRelationship(ctx, updateExternalLineageRelationshipReq)

@@ -516,6 +516,7 @@ func newSetAlias() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid VERSION_NUM: %s", args[2])
 			}
+
 		}
 
 		response, err := w.RegisteredModels.SetAlias(ctx, setAliasReq)

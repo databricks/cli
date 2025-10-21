@@ -129,6 +129,7 @@ func newCreateCustomTemplate() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid MANIFEST: %s", args[3])
 			}
+
 		}
 		if !cmd.Flags().Changed("json") {
 			createCustomTemplateReq.Template.GitProvider = args[4]
@@ -396,6 +397,7 @@ func newUpdateCustomTemplate() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid MANIFEST: %s", args[3])
 			}
+
 		}
 		if !cmd.Flags().Changed("json") {
 			updateCustomTemplateReq.Template.GitProvider = args[4]

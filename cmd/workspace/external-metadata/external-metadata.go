@@ -151,6 +151,7 @@ func newCreateExternalMetadata() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid SYSTEM_TYPE: %s", args[1])
 			}
+
 		}
 		if !cmd.Flags().Changed("json") {
 			createExternalMetadataReq.ExternalMetadata.EntityType = args[2]
@@ -453,6 +454,7 @@ func newUpdateExternalMetadata() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid SYSTEM_TYPE: %s", args[2])
 			}
+
 		}
 		if !cmd.Flags().Changed("json") {
 			updateExternalMetadataReq.ExternalMetadata.EntityType = args[3]

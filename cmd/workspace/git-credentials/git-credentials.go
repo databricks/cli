@@ -394,6 +394,7 @@ func newUpdate() *cobra.Command {
 		if err != nil {
 			return fmt.Errorf("invalid CREDENTIAL_ID: %s", args[0])
 		}
+
 		if !cmd.Flags().Changed("json") {
 			updateReq.GitProvider = args[1]
 		}

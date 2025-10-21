@@ -966,6 +966,7 @@ func newSendMessageFeedback() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid RATING: %s", args[3])
 			}
+
 		}
 
 		err = w.Genie.SendMessageFeedback(ctx, sendMessageFeedbackReq)

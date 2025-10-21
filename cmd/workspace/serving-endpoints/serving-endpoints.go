@@ -715,6 +715,7 @@ func newHttpRequest() *cobra.Command {
 		if err != nil {
 			return fmt.Errorf("invalid METHOD: %s", args[1])
 		}
+
 		httpRequestReq.Path = args[2]
 
 		response, err := w.ServingEndpoints.HttpRequest(ctx, httpRequestReq)

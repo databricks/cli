@@ -678,6 +678,7 @@ func newDeleteRuns() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid MAX_TIMESTAMP_MILLIS: %s", args[1])
 			}
+
 		}
 
 		response, err := w.Experiments.DeleteRuns(ctx, deleteRunsReq)
@@ -849,6 +850,7 @@ func newFinalizeLoggedModel() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid STATUS: %s", args[1])
 			}
+
 		}
 
 		response, err := w.Experiments.FinalizeLoggedModel(ctx, finalizeLoggedModelReq)
@@ -1737,12 +1739,14 @@ func newLogMetric() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid VALUE: %s", args[1])
 			}
+
 		}
 		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[2], &logMetricReq.Timestamp)
 			if err != nil {
 				return fmt.Errorf("invalid TIMESTAMP: %s", args[2])
 			}
+
 		}
 
 		err = w.Experiments.LogMetric(ctx, logMetricReq)
@@ -2251,6 +2255,7 @@ func newRestoreRuns() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid MIN_TIMESTAMP_MILLIS: %s", args[1])
 			}
+
 		}
 
 		response, err := w.Experiments.RestoreRuns(ctx, restoreRunsReq)

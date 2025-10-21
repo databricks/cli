@@ -199,6 +199,7 @@ func newCreateSchedule() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid CRON_SCHEDULE: %s", args[1])
 			}
+
 		}
 
 		response, err := w.Lakeview.CreateSchedule(ctx, createScheduleReq)
@@ -286,6 +287,7 @@ func newCreateSubscription() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid SUBSCRIBER: %s", args[2])
 			}
+
 		}
 
 		response, err := w.Lakeview.CreateSubscription(ctx, createSubscriptionReq)
@@ -1228,6 +1230,7 @@ func newUpdateSchedule() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid CRON_SCHEDULE: %s", args[2])
 			}
+
 		}
 
 		response, err := w.Lakeview.UpdateSchedule(ctx, updateScheduleReq)

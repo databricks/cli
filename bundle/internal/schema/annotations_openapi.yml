@@ -3060,6 +3060,8 @@ github.com/databricks/databricks-sdk-go/service/jobs.RunJobTask:
   "dbt_commands":
     "description": |-
       An array of commands to execute for jobs with the dbt task, for example `"dbt_commands": ["dbt deps", "dbt seed", "dbt deps", "dbt seed", "dbt run"]`
+
+      ⚠ **Deprecation note** Use [job parameters](https://docs.databricks.com/jobs/job-parameters.html#job-parameter-pushdown) to pass information down to tasks.
     "deprecation_message": |-
       This field is deprecated
     "x-databricks-preview": |-
@@ -3072,7 +3074,7 @@ github.com/databricks/databricks-sdk-go/service/jobs.RunJobTask:
       jar_params cannot be specified in conjunction with notebook_params.
       The JSON representation of this field (for example `{"jar_params":["john doe","35"]}`) cannot exceed 10,000 bytes.
 
-      Use [Task parameter variables](https://docs.databricks.com/jobs.html#parameter-variables) to set parameters containing information about job runs.
+      ⚠ **Deprecation note** Use [job parameters](https://docs.databricks.com/jobs/job-parameters.html#job-parameter-pushdown) to pass information down to tasks.
     "deprecation_message": |-
       This field is deprecated
     "x-databricks-preview": |-
@@ -3092,7 +3094,7 @@ github.com/databricks/databricks-sdk-go/service/jobs.RunJobTask:
 
       notebook_params cannot be specified in conjunction with jar_params.
 
-      Use [Task parameter variables](https://docs.databricks.com/jobs.html#parameter-variables) to set parameters containing information about job runs.
+      ⚠ **Deprecation note** Use [job parameters](https://docs.databricks.com/jobs/job-parameters.html#job-parameter-pushdown) to pass information down to tasks.
 
       The JSON representation of this field (for example `{"notebook_params":{"name":"john doe","age":"35"}}`) cannot exceed 10,000 bytes.
     "deprecation_message": |-
@@ -3114,7 +3116,7 @@ github.com/databricks/databricks-sdk-go/service/jobs.RunJobTask:
       the parameters specified in job setting. The JSON representation of this field (for example `{"python_params":["john doe","35"]}`)
       cannot exceed 10,000 bytes.
 
-      Use [Task parameter variables](https://docs.databricks.com/jobs.html#parameter-variables) to set parameters containing information about job runs.
+      ⚠ **Deprecation note** Use [job parameters](https://docs.databricks.com/jobs/job-parameters.html#job-parameter-pushdown) to pass information down to tasks.
 
       Important
 
@@ -3131,7 +3133,7 @@ github.com/databricks/databricks-sdk-go/service/jobs.RunJobTask:
       parameters specified in job setting. The JSON representation of this field (for example `{"python_params":["john doe","35"]}`)
       cannot exceed 10,000 bytes.
 
-      Use [Task parameter variables](https://docs.databricks.com/jobs.html#parameter-variables) to set parameters containing information about job runs
+      ⚠ **Deprecation note** Use [job parameters](https://docs.databricks.com/jobs/job-parameters.html#job-parameter-pushdown) to pass information down to tasks.
 
       Important
 
@@ -3144,6 +3146,8 @@ github.com/databricks/databricks-sdk-go/service/jobs.RunJobTask:
   "sql_params":
     "description": |-
       A map from keys to values for jobs with SQL task, for example `"sql_params": {"name": "john doe", "age": "35"}`. The SQL alert task does not support custom parameters.
+
+      ⚠ **Deprecation note** Use [job parameters](https://docs.databricks.com/jobs/job-parameters.html#job-parameter-pushdown) to pass information down to tasks.
     "deprecation_message": |-
       This field is deprecated
     "x-databricks-preview": |-
@@ -3566,7 +3570,7 @@ github.com/databricks/databricks-sdk-go/service/pipelines.CronTrigger:
 github.com/databricks/databricks-sdk-go/service/pipelines.DayOfWeek:
   "_":
     "description": |-
-      Days of week in which the restart is allowed to happen (within a five-hour window starting at start_hour).
+      Days of week in which the window is allowed to happen.
       If not specified all days of the week will be used.
     "enum":
       - |-

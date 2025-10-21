@@ -232,6 +232,7 @@ func newCancelRun() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid RUN_ID: %s", args[0])
 			}
+
 		}
 
 		wait, err := w.Jobs.CancelRun(ctx, cancelRunReq)
@@ -441,6 +442,7 @@ func newDelete() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid JOB_ID: %s", args[0])
 			}
+
 		}
 
 		err = w.Jobs.Delete(ctx, deleteReq)
@@ -539,6 +541,7 @@ func newDeleteRun() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid RUN_ID: %s", args[0])
 			}
+
 		}
 
 		err = w.Jobs.DeleteRun(ctx, deleteRunReq)
@@ -1231,6 +1234,7 @@ func newRepairRun() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid RUN_ID: %s", args[0])
 			}
+
 		}
 
 		wait, err := w.Jobs.RepairRun(ctx, repairRunReq)
@@ -1433,6 +1437,7 @@ func newRunNow() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid JOB_ID: %s", args[0])
 			}
+
 		}
 
 		wait, err := w.Jobs.RunNow(ctx, runNowReq)
@@ -1752,6 +1757,7 @@ func newUpdate() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid JOB_ID: %s", args[0])
 			}
+
 		}
 
 		err = w.Jobs.Update(ctx, updateReq)

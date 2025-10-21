@@ -143,6 +143,7 @@ func newGenerateTemporaryPathCredentials() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid OPERATION: %s", args[1])
 			}
+
 		}
 
 		response, err := w.TemporaryPathCredentials.GenerateTemporaryPathCredentials(ctx, generateTemporaryPathCredentialsReq)
