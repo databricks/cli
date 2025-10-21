@@ -71,6 +71,11 @@ jobs:
         with:
           version: "0.8.9"
 
+      - name: Install ruff (Python linter and formatter)
+        uses: astral-sh/ruff-action@57714a7c8a2e59f32539362ba31877a1957dded1 # v3.5.1
+        with:
+          version: "0.9.1"
+
       - name: Pull external libraries
         run: |
           go mod download
