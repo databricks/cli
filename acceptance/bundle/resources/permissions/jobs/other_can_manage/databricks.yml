@@ -1,0 +1,17 @@
+resources:
+  jobs:
+    foo:
+      name: job1
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Workspace/Users/user@example.com/notebook
+            source: WORKSPACE
+      permissions:
+        - level: CAN_VIEW
+          user_name: viewer@example.com
+        - level: CAN_MANAGE
+          group_name: data-team
+        - level: CAN_MANAGE
+          service_principal_name: f37d18cd-98a8-4db5-8112-12dd0a6bfe38
+          # should have IS_OWNER added

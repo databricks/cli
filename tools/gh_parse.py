@@ -453,7 +453,7 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False, omi
         for env, counts in items.items():
             for action in INTERESTING_ACTIONS:
                 if action in counts:
-                    per_testkey_result.setdefault(env, short_action(action))
+                    per_testkey_result.setdefault(env, action)
                     break
 
         # Once we know test is interesting, complete the row
@@ -463,7 +463,7 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False, omi
                     continue
                 for action in (PASS, SKIP):
                     if action in counts:
-                        per_testkey_result.setdefault(env, short_action(action))
+                        per_testkey_result.setdefault(env, action)
                         break
 
         if not per_testkey_result:
@@ -472,10 +472,11 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False, omi
     table = []
     for test_key, items in simplified_results.items():
         package_name, testname = test_key
+        items_proc = dict((k, short_action(v)) for (k, v) in items.items())
         table.append(
             {
                 "Test Name": testname,
-                **items,
+                **items_proc,
             }
         )
     table_txt = format_table(table, markdown=markdown)
