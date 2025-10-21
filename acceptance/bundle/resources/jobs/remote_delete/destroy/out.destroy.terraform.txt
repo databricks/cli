@@ -1,0 +1,14 @@
+
+>>> errcode [CLI] bundle destroy --auto-approve
+Error: exit status 1
+
+Error: cannot read job: panic: runtime error: invalid memory address or nil pointer dereference
+
+  with databricks_job.foo,
+  on bundle.tf.json line 43, in resource.databricks_job.foo:
+  43:       }
+
+
+
+
+Exit code: 1
