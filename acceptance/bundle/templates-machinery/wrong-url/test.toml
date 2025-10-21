@@ -7,7 +7,7 @@ Old = '/world-[0-9]+'
 New = '/world-123456'
 
 [[Repls]]
-Old = 'SSL: certificate subject name (*.cloud.databricks.com) does not match target host name'
+Old = 'SSL: certificate subject name (\*.cloud.databricks.com) does not match target host name'
 New = 'SSL: no alternative certificate subject name matches target host name'
 
 [[Repls]]
