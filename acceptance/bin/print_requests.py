@@ -7,10 +7,10 @@ Free standing arguments are substrings matching path.
 If argument starts with ! then it's a negation filter.
 
 Examples:
-  print_requests.py /jobs                    # Show non-GET requests with /jobs in path
-  print_requests.py --get /jobs              # Show all requests with /jobs in path
-  print_requests.py --sort '^/import-file/'  # Show non-GET requests, exclude /import-file/, sort output
-  print_requests.py --keep /jobs             # Show requests and keep out.requests.json file
+  print_requests.py //jobs                     # Show non-GET requests with /jobs in path
+  print_requests.py --get //jobs              # Show all requests with /jobs in path
+  print_requests.py --sort '^/import-file/'   # Show non-GET requests, exclude /import-file/, sort output
+  print_requests.py --keep //jobs             # Show requests and do not delete out.requests.json afterwards
 
 This replaces custom jq wrappers like:
   jq --sort-keys 'select(.method != "GET" and (.path | contains("/jobs")))' < out.requests.txt
