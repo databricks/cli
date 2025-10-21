@@ -31,6 +31,7 @@ func mockStateFilerForPull(t *testing.T, contents map[string]any, merr error) fi
 }
 
 func statePullTestBundle(t *testing.T) *bundle.Bundle {
+	falseBool := false
 	return &bundle.Bundle{
 		BundleRootPath: t.TempDir(),
 		Config: config.Root{
@@ -38,6 +39,7 @@ func statePullTestBundle(t *testing.T) *bundle.Bundle {
 				Target: "default",
 			},
 		},
+		DirectDeployment: &falseBool,
 	}
 }
 

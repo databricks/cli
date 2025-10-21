@@ -97,7 +97,7 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) {
 	// mutators need informed consent if they are potentially destructive.
 	cmdio.LogString(ctx, "Deploying resources...")
 
-	if b.DirectDeployment {
+	if *b.DirectDeployment {
 		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(), &b.Config, plan)
 	} else {
 		bundle.ApplyContext(ctx, b, terraform.Apply())
@@ -204,7 +204,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 // planWithoutPrepare builds a deployment plan without running deployPrepare.
 // This is used when deployPrepare has already been called.
 func planWithoutPrepare(ctx context.Context, b *bundle.Bundle) *deployplan.Plan {
-	if b.DirectDeployment {
+	if *b.DirectDeployment {
 		if err := b.OpenStateFile(ctx); err != nil {
 			logdiag.LogError(ctx, err)
 			return nil

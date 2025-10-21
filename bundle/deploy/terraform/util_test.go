@@ -12,8 +12,10 @@ import (
 )
 
 func TestParseResourcesStateWithNoFile(t *testing.T) {
+	falseBool := false
 	b := &bundle.Bundle{
-		BundleRootPath: t.TempDir(),
+		DirectDeployment: &falseBool,
+		BundleRootPath:   t.TempDir(),
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "whatever",

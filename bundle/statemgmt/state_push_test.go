@@ -28,6 +28,7 @@ func mockStateFilerForPush(t *testing.T, fn func(body io.Reader)) filer.Filer {
 }
 
 func statePushTestBundle(t *testing.T) *bundle.Bundle {
+	falseBool := false
 	return &bundle.Bundle{
 		BundleRootPath: t.TempDir(),
 		Config: config.Root{
@@ -35,6 +36,7 @@ func statePushTestBundle(t *testing.T) *bundle.Bundle {
 				Target: "default",
 			},
 		},
+		DirectDeployment: &falseBool,
 	}
 }
 

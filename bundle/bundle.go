@@ -19,6 +19,7 @@ import (
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/metadata"
 	"github.com/databricks/cli/libs/auth"
+	libenv "github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/locker"
 	"github.com/databricks/cli/libs/log"
@@ -142,8 +143,8 @@ type Bundle struct {
 
 	Metrics Metrics
 
-	// If true, don't use terraform. Set by DATABRICKS_BUNDLE_ENGINE=direct
-	DirectDeployment bool
+	// If true, don't use terraform. Set by DATABRICKS_BUNDLE_ENGINE=direct-exp
+	DirectDeployment *bool
 }
 
 func Load(ctx context.Context, path string) (*Bundle, error) {
@@ -318,7 +319,7 @@ func (b *Bundle) AuthEnv() (map[string]string, error) {
 }
 
 func (b *Bundle) StateFilename() string {
-	if b.DirectDeployment {
+	if *b.DirectDeployment {
 		return resourcesFilename
 	} else {
 		return terraformStateFilename
@@ -326,7 +327,7 @@ func (b *Bundle) StateFilename() string {
 }
 
 func (b *Bundle) StateLocalPath(ctx context.Context) (string, error) {
-	if b.DirectDeployment {
+	if *b.DirectDeployment {
 		cacheDir, err := b.LocalStateDir(ctx)
 		if err != nil {
 			return "", err
@@ -342,7 +343,7 @@ func (b *Bundle) StateLocalPath(ctx context.Context) (string, error) {
 }
 
 func (b *Bundle) OpenStateFile(ctx context.Context) error {
-	if !b.DirectDeployment {
+	if !*b.DirectDeployment {
 		panic("internal error: OpenResourceDatabase must be called with DirectDeployment")
 	}
 
@@ -357,4 +358,28 @@ func (b *Bundle) OpenStateFile(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func (b *Bundle) ConfigureEngine(ctx context.Context) (string, error) {
+	engine := libenv.Get(ctx, "DATABRICKS_BUNDLE_ENGINE")
+
+	// By default, use Terraform
+	switch engine {
+	case "":
+		engine = "terraform"
+		fallthrough
+	case "terraform":
+		falseBool := false
+		b.DirectDeployment = &falseBool
+	case "direct-exp":
+		// We use "direct-exp" while direct backend is not suitable for end users.
+		// Once we consider it usable we'll change the value to "direct".
+		// This is to prevent accidentally running direct backend with older CLI versions where it was still considered experimental.
+		trueBool := true
+		b.DirectDeployment = &trueBool
+	default:
+		return "", fmt.Errorf("unexpected setting for DATABRICKS_BUNDLE_ENGINE=%#v (expected 'terraform' or 'direct-exp' or absent/empty which means 'terraform')", engine)
+	}
+
+	return engine, nil
 }
