@@ -10,6 +10,8 @@ experimental/python/docs/images/databricks-logo.svg
 # Binary files
 **/*.zip
 **/*.whl
+tools/golangci-lint
+tools/yamlfmt
 
 # new lines are recorded differently on windows and unix.
 # In unix: "raw_body": "hello, world\n"

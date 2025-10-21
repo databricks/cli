@@ -3,13 +3,18 @@
 package jobs
 
 import (
+	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/databricks-sdk-go/common/types/duration"
+	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
+	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/spf13/cobra"
 )
@@ -232,6 +237,7 @@ func newCancelRun() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid RUN_ID: %s", args[0])
 			}
+
 		}
 
 		wait, err := w.Jobs.CancelRun(ctx, cancelRunReq)
@@ -311,19 +317,42 @@ func newCreate() *cobra.Command {
 	// TODO: complex arg: schedule
 	// TODO: map via StringToStringVar: tags
 	// TODO: array: tasks
+	var testOptDurParam string
+	cmd.Flags().StringVar(&testOptDurParam, "test-opt-dur", testOptDurParam, ``)
+	var testOptFmParam string
+	cmd.Flags().StringVar(&testOptFmParam, "test-opt-fm", testOptFmParam, `The field mask must be a single string, with multiple fields separated by commas (no spaces).`)
+	var testOptTimeParam string
+	cmd.Flags().StringVar(&testOptTimeParam, "test-opt-time", testOptTimeParam, ``)
 	cmd.Flags().IntVar(&createReq.TimeoutSeconds, "timeout-seconds", createReq.TimeoutSeconds, `An optional timeout applied to each run of this job.`)
 	// TODO: complex arg: trigger
 	cmd.Flags().StringVar(&createReq.UsagePolicyId, "usage-policy-id", createReq.UsagePolicyId, `The id of the user specified usage policy to use for this job.`)
 	// TODO: complex arg: webhook_notifications
 
-	cmd.Use = "create"
+	cmd.Use = "create TEST_REQ_FM TEST_REQ_DUR TEST_REQ_TIME"
 	cmd.Short = `Create a new job.`
-	cmd.Long = `Create a new job.`
+	cmd.Long = `Create a new job.
+
+  Arguments:
+    TEST_REQ_FM: The field mask must be a single string, with multiple fields separated by
+      commas (no spaces). The field path is relative to the resource object,
+      using a dot (.) to navigate sub-fields (e.g., author.given_name).
+      Specification of elements in sequence or map fields is not allowed, as
+      only the entire collection field can be specified. Field names must
+      exactly match the resource field names.
+    TEST_REQ_DUR: 
+    TEST_REQ_TIME: `
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(0)
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'test_req_fm', 'test_req_dur', 'test_req_time' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(3)
 		return check(cmd, args)
 	}
 
@@ -343,6 +372,54 @@ func newCreate() *cobra.Command {
 					return err
 				}
 			}
+		}
+		if !cmd.Flags().Changed("json") {
+			testReqFmArray := strings.Split(args[0], ",")
+			createReq.TestReqFm = *fieldmask.New(testReqFmArray)
+		}
+		if !cmd.Flags().Changed("json") {
+			if args[1] != "" {
+				testReqDurBytes := []byte(fmt.Sprintf("\"%s\"", args[1]))
+				var testReqDurField duration.Duration
+				err = json.Unmarshal(testReqDurBytes, &testReqDurField)
+				if err != nil {
+					return fmt.Errorf("invalid TEST_REQ_DUR: %s", args[1])
+				}
+				createReq.TestReqDur = testReqDurField
+			}
+
+		}
+		if !cmd.Flags().Changed("json") {
+			if args[2] != "" {
+				testReqTimeBytes := []byte(fmt.Sprintf("\"%s\"", args[2]))
+				var testReqTimeField sdktime.Time
+				err = json.Unmarshal(testReqTimeBytes, &testReqTimeField)
+				if err != nil {
+					return fmt.Errorf("invalid TEST_REQ_TIME: %s", args[2])
+				}
+				createReq.TestReqTime = testReqTimeField
+			}
+
+		}
+
+		if testOptDurParam != "" {
+			testOptDurBytes := []byte(fmt.Sprintf("\"%s\"", testOptDurParam))
+			var testOptDurField duration.Duration
+			err = json.Unmarshal(testOptDurBytes, &testOptDurField)
+			if err != nil {
+				return fmt.Errorf("invalid TEST_OPT_DUR: %s", testOptDurParam)
+			}
+			createReq.TestOptDur = &testOptDurField
+		}
+
+		if testOptTimeParam != "" {
+			testOptTimeBytes := []byte(fmt.Sprintf("\"%s\"", testOptTimeParam))
+			var testOptTimeField sdktime.Time
+			err = json.Unmarshal(testOptTimeBytes, &testOptTimeField)
+			if err != nil {
+				return fmt.Errorf("invalid TEST_OPT_TIME: %s", testOptTimeParam)
+			}
+			createReq.TestOptTime = &testOptTimeField
 		}
 
 		response, err := w.Jobs.Create(ctx, createReq)
@@ -441,6 +518,7 @@ func newDelete() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid JOB_ID: %s", args[0])
 			}
+
 		}
 
 		err = w.Jobs.Delete(ctx, deleteReq)
@@ -539,6 +617,7 @@ func newDeleteRun() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid RUN_ID: %s", args[0])
 			}
+
 		}
 
 		err = w.Jobs.DeleteRun(ctx, deleteRunReq)
@@ -1231,6 +1310,7 @@ func newRepairRun() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid RUN_ID: %s", args[0])
 			}
+
 		}
 
 		wait, err := w.Jobs.RepairRun(ctx, repairRunReq)
@@ -1433,6 +1513,7 @@ func newRunNow() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid JOB_ID: %s", args[0])
 			}
+
 		}
 
 		wait, err := w.Jobs.RunNow(ctx, runNowReq)
@@ -1752,6 +1833,7 @@ func newUpdate() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid JOB_ID: %s", args[0])
 			}
+
 		}
 
 		err = w.Jobs.Update(ctx, updateReq)
