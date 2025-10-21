@@ -958,7 +958,7 @@ func CreateReleaseArtifact(t *testing.T, cwd, releasesDir, osName, arch string) 
 	_, err = io.Copy(writer, binaryFile)
 	require.NoError(t, err)
 
-	t.Logf("Created Linux %s release: %s", arch, zipPath)
+	t.Logf("Created %s %s release: %s", osName, arch, zipPath)
 }
 
 // DownloadCLI downloads a released CLI binary archive for the given version,
