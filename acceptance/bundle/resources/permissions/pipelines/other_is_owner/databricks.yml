@@ -1,0 +1,8 @@
+resources:
+  pipelines:
+    foo:
+      name: foo
+      permissions:
+        # explicit IS_OWNER different from current
+        - level: IS_OWNER
+          user_name: other_user@databricks.com

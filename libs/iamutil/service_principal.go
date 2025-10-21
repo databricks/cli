@@ -11,6 +11,10 @@ import (
 // slow for our purposes. And the "users" and "service principals get" APIs
 // only allow access by workspace admins.
 func IsServicePrincipal(user *iam.User) bool {
-	_, err := uuid.Parse(user.UserName)
+	return IsServicePrincipalName(user.UserName)
+}
+
+func IsServicePrincipalName(userName string) bool {
+	_, err := uuid.Parse(userName)
 	return err == nil
 }

@@ -1,0 +1,12 @@
+{
+  "method": "PUT",
+  "path": "/api/2.0/permissions/apps/foo",
+  "body": {
+    "access_control_list": [
+      {
+        "permission_level": "CAN_MANAGE",
+        "user_name": "[USERNAME]"
+      }
+    ]
+  }
+}
