@@ -65,7 +65,7 @@ func newCreateFeature() *cobra.Command {
 
 	cmd.Flags().Var(&createFeatureJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createFeatureReq.Feature.Description, "description", createFeatureReq.Feature.Description, `The description of the feature.`)
+	cmd.Flags().StringVar(&createFeatureReq.Feature.Description, "description", createFeatureReq.Feature.Description, `The description of the feature. Wire name: 'description'.`)
 
 	cmd.Use = "create-feature FULL_NAME SOURCE INPUTS FUNCTION TIME_WINDOW"
 	cmd.Short = `Create a feature.`
@@ -119,24 +119,28 @@ func newCreateFeature() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid SOURCE: %s", args[1])
 			}
+
 		}
 		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[2], &createFeatureReq.Feature.Inputs)
 			if err != nil {
 				return fmt.Errorf("invalid INPUTS: %s", args[2])
 			}
+
 		}
 		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[3], &createFeatureReq.Feature.Function)
 			if err != nil {
 				return fmt.Errorf("invalid FUNCTION: %s", args[3])
 			}
+
 		}
 		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[4], &createFeatureReq.Feature.TimeWindow)
 			if err != nil {
 				return fmt.Errorf("invalid TIME_WINDOW: %s", args[4])
 			}
+
 		}
 
 		response, err := w.FeatureEngineering.CreateFeature(ctx, createFeatureReq)
@@ -284,8 +288,8 @@ func newListFeatures() *cobra.Command {
 
 	var listFeaturesReq ml.ListFeaturesRequest
 
-	cmd.Flags().IntVar(&listFeaturesReq.PageSize, "page-size", listFeaturesReq.PageSize, `The maximum number of results to return.`)
-	cmd.Flags().StringVar(&listFeaturesReq.PageToken, "page-token", listFeaturesReq.PageToken, `Pagination token to go to the next page based on a previous query.`)
+	cmd.Flags().IntVar(&listFeaturesReq.PageSize, "page-size", listFeaturesReq.PageSize, `The maximum number of results to return. Wire name: 'page_size'.`)
+	cmd.Flags().StringVar(&listFeaturesReq.PageToken, "page-token", listFeaturesReq.PageToken, `Pagination token to go to the next page based on a previous query. Wire name: 'page_token'.`)
 
 	cmd.Use = "list-features"
 	cmd.Short = `List features.`
@@ -339,7 +343,7 @@ func newUpdateFeature() *cobra.Command {
 
 	cmd.Flags().Var(&updateFeatureJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateFeatureReq.Feature.Description, "description", updateFeatureReq.Feature.Description, `The description of the feature.`)
+	cmd.Flags().StringVar(&updateFeatureReq.Feature.Description, "description", updateFeatureReq.Feature.Description, `The description of the feature. Wire name: 'description'.`)
 
 	cmd.Use = "update-feature FULL_NAME UPDATE_MASK SOURCE INPUTS FUNCTION TIME_WINDOW"
 	cmd.Short = `Update a feature's description (all other fields are immutable).`
@@ -393,24 +397,28 @@ func newUpdateFeature() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid SOURCE: %s", args[2])
 			}
+
 		}
 		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[3], &updateFeatureReq.Feature.Inputs)
 			if err != nil {
 				return fmt.Errorf("invalid INPUTS: %s", args[3])
 			}
+
 		}
 		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[4], &updateFeatureReq.Feature.Function)
 			if err != nil {
 				return fmt.Errorf("invalid FUNCTION: %s", args[4])
 			}
+
 		}
 		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[5], &updateFeatureReq.Feature.TimeWindow)
 			if err != nil {
 				return fmt.Errorf("invalid TIME_WINDOW: %s", args[5])
 			}
+
 		}
 
 		response, err := w.FeatureEngineering.UpdateFeature(ctx, updateFeatureReq)

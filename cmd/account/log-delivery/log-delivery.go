@@ -277,10 +277,10 @@ func newList() *cobra.Command {
 
 	var listReq billing.ListLogDeliveryRequest
 
-	cmd.Flags().StringVar(&listReq.CredentialsId, "credentials-id", listReq.CredentialsId, `The Credentials id to filter the search results with.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `A page token received from a previous get all budget configurations call.`)
-	cmd.Flags().Var(&listReq.Status, "status", `The log delivery status to filter the search results with. Supported values: [DISABLED, ENABLED]`)
-	cmd.Flags().StringVar(&listReq.StorageConfigurationId, "storage-configuration-id", listReq.StorageConfigurationId, `The Storage Configuration id to filter the search results with.`)
+	cmd.Flags().StringVar(&listReq.CredentialsId, "credentials-id", listReq.CredentialsId, `The Credentials id to filter the search results with. Wire name: 'credentials_id'.`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `A page token received from a previous get all budget configurations call. Wire name: 'page_token'.`)
+	cmd.Flags().Var(&listReq.Status, "status", `The log delivery status to filter the search results with. Supported values: [DISABLED, ENABLED]. Wire name: 'status'.`)
+	cmd.Flags().StringVar(&listReq.StorageConfigurationId, "storage-configuration-id", listReq.StorageConfigurationId, `The Storage Configuration id to filter the search results with. Wire name: 'storage_configuration_id'.`)
 
 	cmd.Use = "list"
 	cmd.Short = `Get all log delivery configurations.`
@@ -390,6 +390,7 @@ func newPatchStatus() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid STATUS: %s", args[1])
 			}
+
 		}
 
 		err = a.LogDelivery.PatchStatus(ctx, patchStatusReq)

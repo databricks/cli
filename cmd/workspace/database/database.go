@@ -82,7 +82,7 @@ func newCreateDatabaseCatalog() *cobra.Command {
 
 	cmd.Flags().Var(&createDatabaseCatalogJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&createDatabaseCatalogReq.Catalog.CreateDatabaseIfNotExists, "create-database-if-not-exists", createDatabaseCatalogReq.Catalog.CreateDatabaseIfNotExists, ``)
+	cmd.Flags().BoolVar(&createDatabaseCatalogReq.Catalog.CreateDatabaseIfNotExists, "create-database-if-not-exists", createDatabaseCatalogReq.Catalog.CreateDatabaseIfNotExists, `Wire name: 'create_database_if_not_exists'.`)
 
 	cmd.Use = "create-database-catalog NAME DATABASE_INSTANCE_NAME DATABASE_NAME"
 	cmd.Short = `Create a Database Catalog.`
@@ -177,17 +177,17 @@ func newCreateDatabaseInstance() *cobra.Command {
 
 	cmd.Flags().Var(&createDatabaseInstanceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createDatabaseInstanceReq.DatabaseInstance.Capacity, "capacity", createDatabaseInstanceReq.DatabaseInstance.Capacity, `The sku of the instance.`)
+	cmd.Flags().StringVar(&createDatabaseInstanceReq.DatabaseInstance.Capacity, "capacity", createDatabaseInstanceReq.DatabaseInstance.Capacity, `The sku of the instance. Wire name: 'capacity'.`)
 	// TODO: array: child_instance_refs
 	// TODO: array: custom_tags
 	// TODO: array: effective_custom_tags
-	cmd.Flags().BoolVar(&createDatabaseInstanceReq.DatabaseInstance.EnablePgNativeLogin, "enable-pg-native-login", createDatabaseInstanceReq.DatabaseInstance.EnablePgNativeLogin, `Whether to enable PG native password login on the instance.`)
-	cmd.Flags().BoolVar(&createDatabaseInstanceReq.DatabaseInstance.EnableReadableSecondaries, "enable-readable-secondaries", createDatabaseInstanceReq.DatabaseInstance.EnableReadableSecondaries, `Whether to enable secondaries to serve read-only traffic.`)
-	cmd.Flags().IntVar(&createDatabaseInstanceReq.DatabaseInstance.NodeCount, "node-count", createDatabaseInstanceReq.DatabaseInstance.NodeCount, `The number of nodes in the instance, composed of 1 primary and 0 or more secondaries.`)
+	cmd.Flags().BoolVar(&createDatabaseInstanceReq.DatabaseInstance.EnablePgNativeLogin, "enable-pg-native-login", createDatabaseInstanceReq.DatabaseInstance.EnablePgNativeLogin, `Whether to enable PG native password login on the instance. Wire name: 'enable_pg_native_login'.`)
+	cmd.Flags().BoolVar(&createDatabaseInstanceReq.DatabaseInstance.EnableReadableSecondaries, "enable-readable-secondaries", createDatabaseInstanceReq.DatabaseInstance.EnableReadableSecondaries, `Whether to enable secondaries to serve read-only traffic. Wire name: 'enable_readable_secondaries'.`)
+	cmd.Flags().IntVar(&createDatabaseInstanceReq.DatabaseInstance.NodeCount, "node-count", createDatabaseInstanceReq.DatabaseInstance.NodeCount, `The number of nodes in the instance, composed of 1 primary and 0 or more secondaries. Wire name: 'node_count'.`)
 	// TODO: complex arg: parent_instance_ref
-	cmd.Flags().IntVar(&createDatabaseInstanceReq.DatabaseInstance.RetentionWindowInDays, "retention-window-in-days", createDatabaseInstanceReq.DatabaseInstance.RetentionWindowInDays, `The retention window for the instance.`)
-	cmd.Flags().BoolVar(&createDatabaseInstanceReq.DatabaseInstance.Stopped, "stopped", createDatabaseInstanceReq.DatabaseInstance.Stopped, `Whether to stop the instance.`)
-	cmd.Flags().StringVar(&createDatabaseInstanceReq.DatabaseInstance.UsagePolicyId, "usage-policy-id", createDatabaseInstanceReq.DatabaseInstance.UsagePolicyId, `The desired usage policy to associate with the instance.`)
+	cmd.Flags().IntVar(&createDatabaseInstanceReq.DatabaseInstance.RetentionWindowInDays, "retention-window-in-days", createDatabaseInstanceReq.DatabaseInstance.RetentionWindowInDays, `The retention window for the instance. Wire name: 'retention_window_in_days'.`)
+	cmd.Flags().BoolVar(&createDatabaseInstanceReq.DatabaseInstance.Stopped, "stopped", createDatabaseInstanceReq.DatabaseInstance.Stopped, `Whether to stop the instance. Wire name: 'stopped'.`)
+	cmd.Flags().StringVar(&createDatabaseInstanceReq.DatabaseInstance.UsagePolicyId, "usage-policy-id", createDatabaseInstanceReq.DatabaseInstance.UsagePolicyId, `The desired usage policy to associate with the instance. Wire name: 'usage_policy_id'.`)
 
 	cmd.Use = "create-database-instance NAME"
 	cmd.Short = `Create a Database Instance.`
@@ -281,12 +281,12 @@ func newCreateDatabaseInstanceRole() *cobra.Command {
 
 	cmd.Flags().Var(&createDatabaseInstanceRoleJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createDatabaseInstanceRoleReq.DatabaseInstanceName, "database-instance-name", createDatabaseInstanceRoleReq.DatabaseInstanceName, ``)
+	cmd.Flags().StringVar(&createDatabaseInstanceRoleReq.DatabaseInstanceName, "database-instance-name", createDatabaseInstanceRoleReq.DatabaseInstanceName, `Wire name: 'database_instance_name'.`)
 	// TODO: complex arg: attributes
 	// TODO: complex arg: effective_attributes
-	cmd.Flags().Var(&createDatabaseInstanceRoleReq.DatabaseInstanceRole.IdentityType, "identity-type", `The type of the role. Supported values: [GROUP, PG_ONLY, SERVICE_PRINCIPAL, USER]`)
-	cmd.Flags().StringVar(&createDatabaseInstanceRoleReq.DatabaseInstanceRole.InstanceName, "instance-name", createDatabaseInstanceRoleReq.DatabaseInstanceRole.InstanceName, ``)
-	cmd.Flags().Var(&createDatabaseInstanceRoleReq.DatabaseInstanceRole.MembershipRole, "membership-role", `An enum value for a standard role that this role is a member of. Supported values: [DATABRICKS_SUPERUSER]`)
+	cmd.Flags().Var(&createDatabaseInstanceRoleReq.DatabaseInstanceRole.IdentityType, "identity-type", `The type of the role. Supported values: [GROUP, PG_ONLY, SERVICE_PRINCIPAL, USER]. Wire name: 'identity_type'.`)
+	cmd.Flags().StringVar(&createDatabaseInstanceRoleReq.DatabaseInstanceRole.InstanceName, "instance-name", createDatabaseInstanceRoleReq.DatabaseInstanceRole.InstanceName, `Wire name: 'instance_name'.`)
+	cmd.Flags().Var(&createDatabaseInstanceRoleReq.DatabaseInstanceRole.MembershipRole, "membership-role", `An enum value for a standard role that this role is a member of. Supported values: [DATABRICKS_SUPERUSER]. Wire name: 'membership_role'.`)
 
 	cmd.Use = "create-database-instance-role INSTANCE_NAME NAME"
 	cmd.Short = `Create a role for a Database Instance.`
@@ -373,8 +373,8 @@ func newCreateDatabaseTable() *cobra.Command {
 
 	cmd.Flags().Var(&createDatabaseTableJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createDatabaseTableReq.Table.DatabaseInstanceName, "database-instance-name", createDatabaseTableReq.Table.DatabaseInstanceName, `Name of the target database instance.`)
-	cmd.Flags().StringVar(&createDatabaseTableReq.Table.LogicalDatabaseName, "logical-database-name", createDatabaseTableReq.Table.LogicalDatabaseName, `Target Postgres database object (logical database) name for this table.`)
+	cmd.Flags().StringVar(&createDatabaseTableReq.Table.DatabaseInstanceName, "database-instance-name", createDatabaseTableReq.Table.DatabaseInstanceName, `Name of the target database instance. Wire name: 'database_instance_name'.`)
+	cmd.Flags().StringVar(&createDatabaseTableReq.Table.LogicalDatabaseName, "logical-database-name", createDatabaseTableReq.Table.LogicalDatabaseName, `Target Postgres database object (logical database) name for this table. Wire name: 'logical_database_name'.`)
 
 	cmd.Use = "create-database-table NAME"
 	cmd.Short = `Create a Database Table.`
@@ -460,8 +460,8 @@ func newCreateSyncedDatabaseTable() *cobra.Command {
 	cmd.Flags().Var(&createSyncedDatabaseTableJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: data_synchronization_status
-	cmd.Flags().StringVar(&createSyncedDatabaseTableReq.SyncedTable.DatabaseInstanceName, "database-instance-name", createSyncedDatabaseTableReq.SyncedTable.DatabaseInstanceName, `Name of the target database instance.`)
-	cmd.Flags().StringVar(&createSyncedDatabaseTableReq.SyncedTable.LogicalDatabaseName, "logical-database-name", createSyncedDatabaseTableReq.SyncedTable.LogicalDatabaseName, `Target Postgres database object (logical database) name for this table.`)
+	cmd.Flags().StringVar(&createSyncedDatabaseTableReq.SyncedTable.DatabaseInstanceName, "database-instance-name", createSyncedDatabaseTableReq.SyncedTable.DatabaseInstanceName, `Name of the target database instance. Wire name: 'database_instance_name'.`)
+	cmd.Flags().StringVar(&createSyncedDatabaseTableReq.SyncedTable.LogicalDatabaseName, "logical-database-name", createSyncedDatabaseTableReq.SyncedTable.LogicalDatabaseName, `Target Postgres database object (logical database) name for this table. Wire name: 'logical_database_name'.`)
 	// TODO: complex arg: spec
 
 	cmd.Use = "create-synced-database-table NAME"
@@ -590,8 +590,8 @@ func newDeleteDatabaseInstance() *cobra.Command {
 
 	var deleteDatabaseInstanceReq database.DeleteDatabaseInstanceRequest
 
-	cmd.Flags().BoolVar(&deleteDatabaseInstanceReq.Force, "force", deleteDatabaseInstanceReq.Force, `By default, a instance cannot be deleted if it has descendant instances created via PITR.`)
-	cmd.Flags().BoolVar(&deleteDatabaseInstanceReq.Purge, "purge", deleteDatabaseInstanceReq.Purge, `Deprecated.`)
+	cmd.Flags().BoolVar(&deleteDatabaseInstanceReq.Force, "force", deleteDatabaseInstanceReq.Force, `By default, a instance cannot be deleted if it has descendant instances created via PITR. Wire name: 'force'.`)
+	cmd.Flags().BoolVar(&deleteDatabaseInstanceReq.Purge, "purge", deleteDatabaseInstanceReq.Purge, `Deprecated. Wire name: 'purge'.`)
 
 	cmd.Use = "delete-database-instance NAME"
 	cmd.Short = `Delete a Database Instance.`
@@ -647,8 +647,8 @@ func newDeleteDatabaseInstanceRole() *cobra.Command {
 
 	var deleteDatabaseInstanceRoleReq database.DeleteDatabaseInstanceRoleRequest
 
-	cmd.Flags().BoolVar(&deleteDatabaseInstanceRoleReq.AllowMissing, "allow-missing", deleteDatabaseInstanceRoleReq.AllowMissing, `This is the AIP standard name for the equivalent of Postgres' IF EXISTS option.`)
-	cmd.Flags().StringVar(&deleteDatabaseInstanceRoleReq.ReassignOwnedTo, "reassign-owned-to", deleteDatabaseInstanceRoleReq.ReassignOwnedTo, ``)
+	cmd.Flags().BoolVar(&deleteDatabaseInstanceRoleReq.AllowMissing, "allow-missing", deleteDatabaseInstanceRoleReq.AllowMissing, `This is the AIP standard name for the equivalent of Postgres' IF EXISTS option. Wire name: 'allow_missing'.`)
+	cmd.Flags().StringVar(&deleteDatabaseInstanceRoleReq.ReassignOwnedTo, "reassign-owned-to", deleteDatabaseInstanceRoleReq.ReassignOwnedTo, `Wire name: 'reassign_owned_to'.`)
 
 	cmd.Use = "delete-database-instance-role INSTANCE_NAME NAME"
 	cmd.Short = `Delete a role for a Database Instance.`
@@ -809,7 +809,7 @@ func newFindDatabaseInstanceByUid() *cobra.Command {
 
 	var findDatabaseInstanceByUidReq database.FindDatabaseInstanceByUidRequest
 
-	cmd.Flags().StringVar(&findDatabaseInstanceByUidReq.Uid, "uid", findDatabaseInstanceByUidReq.Uid, `UID of the cluster to get.`)
+	cmd.Flags().StringVar(&findDatabaseInstanceByUidReq.Uid, "uid", findDatabaseInstanceByUidReq.Uid, `UID of the cluster to get. Wire name: 'uid'.`)
 
 	cmd.Use = "find-database-instance-by-uid"
 	cmd.Short = `Find a Database Instance by uid.`
@@ -865,7 +865,7 @@ func newGenerateDatabaseCredential() *cobra.Command {
 
 	// TODO: array: claims
 	// TODO: array: instance_names
-	cmd.Flags().StringVar(&generateDatabaseCredentialReq.RequestId, "request-id", generateDatabaseCredentialReq.RequestId, ``)
+	cmd.Flags().StringVar(&generateDatabaseCredentialReq.RequestId, "request-id", generateDatabaseCredentialReq.RequestId, `Wire name: 'request_id'.`)
 
 	cmd.Use = "generate-database-credential"
 	cmd.Short = `Generates a credential that can be used to access database instances.`
@@ -1193,8 +1193,8 @@ func newListDatabaseCatalogs() *cobra.Command {
 
 	var listDatabaseCatalogsReq database.ListDatabaseCatalogsRequest
 
-	cmd.Flags().IntVar(&listDatabaseCatalogsReq.PageSize, "page-size", listDatabaseCatalogsReq.PageSize, `Upper bound for items returned.`)
-	cmd.Flags().StringVar(&listDatabaseCatalogsReq.PageToken, "page-token", listDatabaseCatalogsReq.PageToken, `Pagination token to go to the next page of synced database tables.`)
+	cmd.Flags().IntVar(&listDatabaseCatalogsReq.PageSize, "page-size", listDatabaseCatalogsReq.PageSize, `Upper bound for items returned. Wire name: 'page_size'.`)
+	cmd.Flags().StringVar(&listDatabaseCatalogsReq.PageToken, "page-token", listDatabaseCatalogsReq.PageToken, `Pagination token to go to the next page of synced database tables. Wire name: 'page_token'.`)
 
 	cmd.Use = "list-database-catalogs INSTANCE_NAME"
 	cmd.Short = `List all Database Catalogs in a Database Instance.`
@@ -1252,8 +1252,8 @@ func newListDatabaseInstanceRoles() *cobra.Command {
 
 	var listDatabaseInstanceRolesReq database.ListDatabaseInstanceRolesRequest
 
-	cmd.Flags().IntVar(&listDatabaseInstanceRolesReq.PageSize, "page-size", listDatabaseInstanceRolesReq.PageSize, `Upper bound for items returned.`)
-	cmd.Flags().StringVar(&listDatabaseInstanceRolesReq.PageToken, "page-token", listDatabaseInstanceRolesReq.PageToken, `Pagination token to go to the next page of Database Instances.`)
+	cmd.Flags().IntVar(&listDatabaseInstanceRolesReq.PageSize, "page-size", listDatabaseInstanceRolesReq.PageSize, `Upper bound for items returned. Wire name: 'page_size'.`)
+	cmd.Flags().StringVar(&listDatabaseInstanceRolesReq.PageToken, "page-token", listDatabaseInstanceRolesReq.PageToken, `Pagination token to go to the next page of Database Instances. Wire name: 'page_token'.`)
 
 	cmd.Use = "list-database-instance-roles INSTANCE_NAME"
 	cmd.Short = `List roles for a Database Instance.`
@@ -1312,8 +1312,8 @@ func newListDatabaseInstances() *cobra.Command {
 
 	var listDatabaseInstancesReq database.ListDatabaseInstancesRequest
 
-	cmd.Flags().IntVar(&listDatabaseInstancesReq.PageSize, "page-size", listDatabaseInstancesReq.PageSize, `Upper bound for items returned.`)
-	cmd.Flags().StringVar(&listDatabaseInstancesReq.PageToken, "page-token", listDatabaseInstancesReq.PageToken, `Pagination token to go to the next page of Database Instances.`)
+	cmd.Flags().IntVar(&listDatabaseInstancesReq.PageSize, "page-size", listDatabaseInstancesReq.PageSize, `Upper bound for items returned. Wire name: 'page_size'.`)
+	cmd.Flags().StringVar(&listDatabaseInstancesReq.PageToken, "page-token", listDatabaseInstancesReq.PageToken, `Pagination token to go to the next page of Database Instances. Wire name: 'page_token'.`)
 
 	cmd.Use = "list-database-instances"
 	cmd.Short = `List Database Instances.`
@@ -1361,8 +1361,8 @@ func newListSyncedDatabaseTables() *cobra.Command {
 
 	var listSyncedDatabaseTablesReq database.ListSyncedDatabaseTablesRequest
 
-	cmd.Flags().IntVar(&listSyncedDatabaseTablesReq.PageSize, "page-size", listSyncedDatabaseTablesReq.PageSize, `Upper bound for items returned.`)
-	cmd.Flags().StringVar(&listSyncedDatabaseTablesReq.PageToken, "page-token", listSyncedDatabaseTablesReq.PageToken, `Pagination token to go to the next page of synced database tables.`)
+	cmd.Flags().IntVar(&listSyncedDatabaseTablesReq.PageSize, "page-size", listSyncedDatabaseTablesReq.PageSize, `Upper bound for items returned. Wire name: 'page_size'.`)
+	cmd.Flags().StringVar(&listSyncedDatabaseTablesReq.PageToken, "page-token", listSyncedDatabaseTablesReq.PageToken, `Pagination token to go to the next page of synced database tables. Wire name: 'page_token'.`)
 
 	cmd.Use = "list-synced-database-tables INSTANCE_NAME"
 	cmd.Short = `List all synced database tables in a Database Instance.`
@@ -1424,7 +1424,7 @@ func newUpdateDatabaseCatalog() *cobra.Command {
 
 	cmd.Flags().Var(&updateDatabaseCatalogJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&updateDatabaseCatalogReq.DatabaseCatalog.CreateDatabaseIfNotExists, "create-database-if-not-exists", updateDatabaseCatalogReq.DatabaseCatalog.CreateDatabaseIfNotExists, ``)
+	cmd.Flags().BoolVar(&updateDatabaseCatalogReq.DatabaseCatalog.CreateDatabaseIfNotExists, "create-database-if-not-exists", updateDatabaseCatalogReq.DatabaseCatalog.CreateDatabaseIfNotExists, `Wire name: 'create_database_if_not_exists'.`)
 
 	cmd.Use = "update-database-catalog NAME UPDATE_MASK DATABASE_INSTANCE_NAME DATABASE_NAME"
 	cmd.Short = `Update a Database Catalog.`
@@ -1518,17 +1518,17 @@ func newUpdateDatabaseInstance() *cobra.Command {
 
 	cmd.Flags().Var(&updateDatabaseInstanceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateDatabaseInstanceReq.DatabaseInstance.Capacity, "capacity", updateDatabaseInstanceReq.DatabaseInstance.Capacity, `The sku of the instance.`)
+	cmd.Flags().StringVar(&updateDatabaseInstanceReq.DatabaseInstance.Capacity, "capacity", updateDatabaseInstanceReq.DatabaseInstance.Capacity, `The sku of the instance. Wire name: 'capacity'.`)
 	// TODO: array: child_instance_refs
 	// TODO: array: custom_tags
 	// TODO: array: effective_custom_tags
-	cmd.Flags().BoolVar(&updateDatabaseInstanceReq.DatabaseInstance.EnablePgNativeLogin, "enable-pg-native-login", updateDatabaseInstanceReq.DatabaseInstance.EnablePgNativeLogin, `Whether to enable PG native password login on the instance.`)
-	cmd.Flags().BoolVar(&updateDatabaseInstanceReq.DatabaseInstance.EnableReadableSecondaries, "enable-readable-secondaries", updateDatabaseInstanceReq.DatabaseInstance.EnableReadableSecondaries, `Whether to enable secondaries to serve read-only traffic.`)
-	cmd.Flags().IntVar(&updateDatabaseInstanceReq.DatabaseInstance.NodeCount, "node-count", updateDatabaseInstanceReq.DatabaseInstance.NodeCount, `The number of nodes in the instance, composed of 1 primary and 0 or more secondaries.`)
+	cmd.Flags().BoolVar(&updateDatabaseInstanceReq.DatabaseInstance.EnablePgNativeLogin, "enable-pg-native-login", updateDatabaseInstanceReq.DatabaseInstance.EnablePgNativeLogin, `Whether to enable PG native password login on the instance. Wire name: 'enable_pg_native_login'.`)
+	cmd.Flags().BoolVar(&updateDatabaseInstanceReq.DatabaseInstance.EnableReadableSecondaries, "enable-readable-secondaries", updateDatabaseInstanceReq.DatabaseInstance.EnableReadableSecondaries, `Whether to enable secondaries to serve read-only traffic. Wire name: 'enable_readable_secondaries'.`)
+	cmd.Flags().IntVar(&updateDatabaseInstanceReq.DatabaseInstance.NodeCount, "node-count", updateDatabaseInstanceReq.DatabaseInstance.NodeCount, `The number of nodes in the instance, composed of 1 primary and 0 or more secondaries. Wire name: 'node_count'.`)
 	// TODO: complex arg: parent_instance_ref
-	cmd.Flags().IntVar(&updateDatabaseInstanceReq.DatabaseInstance.RetentionWindowInDays, "retention-window-in-days", updateDatabaseInstanceReq.DatabaseInstance.RetentionWindowInDays, `The retention window for the instance.`)
-	cmd.Flags().BoolVar(&updateDatabaseInstanceReq.DatabaseInstance.Stopped, "stopped", updateDatabaseInstanceReq.DatabaseInstance.Stopped, `Whether to stop the instance.`)
-	cmd.Flags().StringVar(&updateDatabaseInstanceReq.DatabaseInstance.UsagePolicyId, "usage-policy-id", updateDatabaseInstanceReq.DatabaseInstance.UsagePolicyId, `The desired usage policy to associate with the instance.`)
+	cmd.Flags().IntVar(&updateDatabaseInstanceReq.DatabaseInstance.RetentionWindowInDays, "retention-window-in-days", updateDatabaseInstanceReq.DatabaseInstance.RetentionWindowInDays, `The retention window for the instance. Wire name: 'retention_window_in_days'.`)
+	cmd.Flags().BoolVar(&updateDatabaseInstanceReq.DatabaseInstance.Stopped, "stopped", updateDatabaseInstanceReq.DatabaseInstance.Stopped, `Whether to stop the instance. Wire name: 'stopped'.`)
+	cmd.Flags().StringVar(&updateDatabaseInstanceReq.DatabaseInstance.UsagePolicyId, "usage-policy-id", updateDatabaseInstanceReq.DatabaseInstance.UsagePolicyId, `The desired usage policy to associate with the instance. Wire name: 'usage_policy_id'.`)
 
 	cmd.Use = "update-database-instance NAME UPDATE_MASK"
 	cmd.Short = `Update a Database Instance.`
@@ -1605,8 +1605,8 @@ func newUpdateSyncedDatabaseTable() *cobra.Command {
 	cmd.Flags().Var(&updateSyncedDatabaseTableJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: data_synchronization_status
-	cmd.Flags().StringVar(&updateSyncedDatabaseTableReq.SyncedTable.DatabaseInstanceName, "database-instance-name", updateSyncedDatabaseTableReq.SyncedTable.DatabaseInstanceName, `Name of the target database instance.`)
-	cmd.Flags().StringVar(&updateSyncedDatabaseTableReq.SyncedTable.LogicalDatabaseName, "logical-database-name", updateSyncedDatabaseTableReq.SyncedTable.LogicalDatabaseName, `Target Postgres database object (logical database) name for this table.`)
+	cmd.Flags().StringVar(&updateSyncedDatabaseTableReq.SyncedTable.DatabaseInstanceName, "database-instance-name", updateSyncedDatabaseTableReq.SyncedTable.DatabaseInstanceName, `Name of the target database instance. Wire name: 'database_instance_name'.`)
+	cmd.Flags().StringVar(&updateSyncedDatabaseTableReq.SyncedTable.LogicalDatabaseName, "logical-database-name", updateSyncedDatabaseTableReq.SyncedTable.LogicalDatabaseName, `Target Postgres database object (logical database) name for this table. Wire name: 'logical_database_name'.`)
 	// TODO: complex arg: spec
 
 	cmd.Use = "update-synced-database-table NAME UPDATE_MASK"

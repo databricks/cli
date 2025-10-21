@@ -3,13 +3,18 @@
 package jobs
 
 import (
+	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/databricks-sdk-go/common/types/duration"
+	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
+	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/spf13/cobra"
 )
@@ -23,7 +28,7 @@ func New() *cobra.Command {
 		Use:   "jobs",
 		Short: `The Jobs API allows you to create, edit, and delete jobs.`,
 		Long: `The Jobs API allows you to create, edit, and delete jobs.
-  
+
   You can use a Databricks job to run a data processing or data analysis task in
   a Databricks cluster with scalable resources. Your job can consist of a single
   task or can be a large, multi-task workflow with complex dependencies.
@@ -32,11 +37,11 @@ func New() *cobra.Command {
   periodically through an easy-to-use scheduling system. You can implement job
   tasks using notebooks, JARS, Delta Live Tables pipelines, or Python, Scala,
   Spark submit, and Java applications.
-  
+
   You should never hard code secrets or store them in plain text. Use the
   [Secrets CLI] to manage secrets in the [Databricks CLI]. Use the [Secrets
   utility] to reference secrets in notebooks and jobs.
-  
+
   [Databricks CLI]: https://docs.databricks.com/dev-tools/cli/index.html
   [Secrets CLI]: https://docs.databricks.com/dev-tools/cli/secrets-cli.html
   [Secrets utility]: https://docs.databricks.com/dev-tools/databricks-utils.html#dbutils-secrets`,
@@ -94,13 +99,13 @@ func newCancelAllRuns() *cobra.Command {
 
 	cmd.Flags().Var(&cancelAllRunsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&cancelAllRunsReq.AllQueuedRuns, "all-queued-runs", cancelAllRunsReq.AllQueuedRuns, `Optional boolean parameter to cancel all queued runs.`)
-	cmd.Flags().Int64Var(&cancelAllRunsReq.JobId, "job-id", cancelAllRunsReq.JobId, `The canonical identifier of the job to cancel all runs of.`)
+	cmd.Flags().BoolVar(&cancelAllRunsReq.AllQueuedRuns, "all-queued-runs", cancelAllRunsReq.AllQueuedRuns, `Optional boolean parameter to cancel all queued runs. Wire name: 'all_queued_runs'.`)
+	cmd.Flags().Int64Var(&cancelAllRunsReq.JobId, "job-id", cancelAllRunsReq.JobId, `The canonical identifier of the job to cancel all runs of. Wire name: 'job_id'.`)
 
 	cmd.Use = "cancel-all-runs"
 	cmd.Short = `Cancel all runs of a job.`
 	cmd.Long = `Cancel all runs of a job.
-  
+
   Cancels all active runs of a job. The runs are canceled asynchronously, so it
   doesn't prevent new runs from being started.`
 
@@ -174,7 +179,7 @@ func newCancelRun() *cobra.Command {
 	cmd.Use = "cancel-run RUN_ID"
 	cmd.Short = `Cancel a run.`
 	cmd.Long = `Cancel a run.
-  
+
   Cancels a job run or a task run. The run is canceled asynchronously, so it may
   still be running when this request completes.
 
@@ -232,6 +237,7 @@ func newCancelRun() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid RUN_ID: %s", args[0])
 			}
+
 		}
 
 		wait, err := w.Jobs.CancelRun(ctx, cancelRunReq)
@@ -290,30 +296,36 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: access_control_list
-	cmd.Flags().StringVar(&createReq.BudgetPolicyId, "budget-policy-id", createReq.BudgetPolicyId, `The id of the user specified budget policy to use for this job.`)
+	cmd.Flags().StringVar(&createReq.BudgetPolicyId, "budget-policy-id", createReq.BudgetPolicyId, `The id of the user specified budget policy to use for this job. Wire name: 'budget_policy_id'.`)
 	// TODO: complex arg: continuous
 	// TODO: complex arg: deployment
-	cmd.Flags().StringVar(&createReq.Description, "description", createReq.Description, `An optional description for the job.`)
-	cmd.Flags().Var(&createReq.EditMode, "edit-mode", `Edit mode of the job. Supported values: [EDITABLE, UI_LOCKED]`)
+	cmd.Flags().StringVar(&createReq.Description, "description", createReq.Description, `An optional description for the job. Wire name: 'description'.`)
+	cmd.Flags().Var(&createReq.EditMode, "edit-mode", `Edit mode of the job. Supported values: [EDITABLE, UI_LOCKED]. Wire name: 'edit_mode'.`)
 	// TODO: complex arg: email_notifications
 	// TODO: array: environments
-	cmd.Flags().Var(&createReq.Format, "format", `Used to tell what is the format of the job. Supported values: [MULTI_TASK, SINGLE_TASK]`)
+	cmd.Flags().Var(&createReq.Format, "format", `Used to tell what is the format of the job. Supported values: [MULTI_TASK, SINGLE_TASK]. Wire name: 'format'.`)
 	// TODO: complex arg: git_source
 	// TODO: complex arg: health
 	// TODO: array: job_clusters
-	cmd.Flags().IntVar(&createReq.MaxConcurrentRuns, "max-concurrent-runs", createReq.MaxConcurrentRuns, `An optional maximum allowed number of concurrent runs of the job.`)
-	cmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `An optional name for the job.`)
+	cmd.Flags().IntVar(&createReq.MaxConcurrentRuns, "max-concurrent-runs", createReq.MaxConcurrentRuns, `An optional maximum allowed number of concurrent runs of the job. Wire name: 'max_concurrent_runs'.`)
+	cmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `An optional name for the job. Wire name: 'name'.`)
 	// TODO: complex arg: notification_settings
 	// TODO: array: parameters
-	cmd.Flags().Var(&createReq.PerformanceTarget, "performance-target", `The performance mode on a serverless job. Supported values: [PERFORMANCE_OPTIMIZED, STANDARD]`)
+	cmd.Flags().Var(&createReq.PerformanceTarget, "performance-target", `The performance mode on a serverless job. Supported values: [PERFORMANCE_OPTIMIZED, STANDARD]. Wire name: 'performance_target'.`)
 	// TODO: complex arg: queue
 	// TODO: complex arg: run_as
 	// TODO: complex arg: schedule
 	// TODO: map via StringToStringVar: tags
 	// TODO: array: tasks
-	cmd.Flags().IntVar(&createReq.TimeoutSeconds, "timeout-seconds", createReq.TimeoutSeconds, `An optional timeout applied to each run of this job.`)
+	var testwnDurParam string
+	cmd.Flags().StringVar(&testwnDurParam, "testwn-dur", testwnDurParam, `Wire name: 'testwn_dur'.`)
+	var testwnFmParam string
+	cmd.Flags().StringVar(&testwnFmParam, "testwn-fm", testwnFmParam, `The field mask must be a single string, with multiple fields separated by commas (no spaces). Wire name: 'testwn_fm'.`)
+	var testwnTimestampParam string
+	cmd.Flags().StringVar(&testwnTimestampParam, "testwn-timestamp", testwnTimestampParam, `Wire name: 'testwn_timestamp'.`)
+	cmd.Flags().IntVar(&createReq.TimeoutSeconds, "timeout-seconds", createReq.TimeoutSeconds, `An optional timeout applied to each run of this job. Wire name: 'timeout_seconds'.`)
 	// TODO: complex arg: trigger
-	cmd.Flags().StringVar(&createReq.UsagePolicyId, "usage-policy-id", createReq.UsagePolicyId, `The id of the user specified usage policy to use for this job.`)
+	cmd.Flags().StringVar(&createReq.UsagePolicyId, "usage-policy-id", createReq.UsagePolicyId, `The id of the user specified usage policy to use for this job. Wire name: 'usage_policy_id'.`)
 	// TODO: complex arg: webhook_notifications
 
 	cmd.Use = "create"
@@ -343,6 +355,31 @@ func newCreate() *cobra.Command {
 					return err
 				}
 			}
+		}
+
+		if testwnDurParam != "" {
+			testwnDurBytes := []byte(fmt.Sprintf("\"%s\"", testwnDurParam))
+			var testwnDurField duration.Duration
+			err = json.Unmarshal(testwnDurBytes, &testwnDurField)
+			if err != nil {
+				return fmt.Errorf("invalid TESTWN_DUR: %s", testwnDurParam)
+			}
+			createReq.TestwnDur = &testwnDurField
+		}
+
+		if testwnFmParam != "" {
+			testwnFmArray := strings.Split(testwnFmParam, ",")
+			createReq.TestwnFm = fieldmask.New(testwnFmArray)
+		}
+
+		if testwnTimestampParam != "" {
+			testwnTimestampBytes := []byte(fmt.Sprintf("\"%s\"", testwnTimestampParam))
+			var testwnTimestampField sdktime.Time
+			err = json.Unmarshal(testwnTimestampBytes, &testwnTimestampField)
+			if err != nil {
+				return fmt.Errorf("invalid TESTWN_TIMESTAMP: %s", testwnTimestampParam)
+			}
+			createReq.TestwnTimestamp = &testwnTimestampField
 		}
 
 		response, err := w.Jobs.Create(ctx, createReq)
@@ -384,7 +421,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete JOB_ID"
 	cmd.Short = `Delete a job.`
 	cmd.Long = `Delete a job.
-  
+
   Deletes a job.
 
   Arguments:
@@ -441,6 +478,7 @@ func newDelete() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid JOB_ID: %s", args[0])
 			}
+
 		}
 
 		err = w.Jobs.Delete(ctx, deleteReq)
@@ -482,7 +520,7 @@ func newDeleteRun() *cobra.Command {
 	cmd.Use = "delete-run RUN_ID"
 	cmd.Short = `Delete a job run.`
 	cmd.Long = `Delete a job run.
-  
+
   Deletes a non-active run. Returns an error if the run is active.
 
   Arguments:
@@ -539,6 +577,7 @@ func newDeleteRun() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid RUN_ID: %s", args[0])
 			}
+
 		}
 
 		err = w.Jobs.DeleteRun(ctx, deleteRunReq)
@@ -574,12 +613,12 @@ func newExportRun() *cobra.Command {
 
 	var exportRunReq jobs.ExportRunRequest
 
-	cmd.Flags().Var(&exportRunReq.ViewsToExport, "views-to-export", `Which views to export (CODE, DASHBOARDS, or ALL). Supported values: [ALL, CODE, DASHBOARDS]`)
+	cmd.Flags().Var(&exportRunReq.ViewsToExport, "views-to-export", `Which views to export (CODE, DASHBOARDS, or ALL). Supported values: [ALL, CODE, DASHBOARDS]. Wire name: 'views_to_export'.`)
 
 	cmd.Use = "export-run RUN_ID"
 	cmd.Short = `Export and retrieve a job run.`
 	cmd.Long = `Export and retrieve a job run.
-  
+
   Export and retrieve the job run task.
 
   Arguments:
@@ -647,14 +686,14 @@ func newGet() *cobra.Command {
 
 	var getReq jobs.GetJobRequest
 
-	cmd.Flags().StringVar(&getReq.PageToken, "page-token", getReq.PageToken, `Use next_page_token returned from the previous GetJob response to request the next page of the job's array properties.`)
+	cmd.Flags().StringVar(&getReq.PageToken, "page-token", getReq.PageToken, `Use next_page_token returned from the previous GetJob response to request the next page of the job's array properties. Wire name: 'page_token'.`)
 
 	cmd.Use = "get JOB_ID"
 	cmd.Short = `Get a single job.`
 	cmd.Long = `Get a single job.
-  
+
   Retrieves the details for a single job.
-  
+
   Large arrays in the results will be paginated when they exceed 100 elements. A
   request for a single job will return all properties for that job, and the
   first 100 elements of array properties (tasks, job_clusters,
@@ -733,7 +772,7 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd.Use = "get-permission-levels JOB_ID"
 	cmd.Short = `Get job permission levels.`
 	cmd.Long = `Get job permission levels.
-  
+
   Gets the permission levels that a user can have on an object.
 
   Arguments:
@@ -801,7 +840,7 @@ func newGetPermissions() *cobra.Command {
 	cmd.Use = "get-permissions JOB_ID"
 	cmd.Short = `Get job permissions.`
 	cmd.Long = `Get job permissions.
-  
+
   Gets the permissions of a job. Jobs can inherit permissions from their root
   object.
 
@@ -867,16 +906,16 @@ func newGetRun() *cobra.Command {
 
 	var getRunReq jobs.GetRunRequest
 
-	cmd.Flags().BoolVar(&getRunReq.IncludeHistory, "include-history", getRunReq.IncludeHistory, `Whether to include the repair history in the response.`)
-	cmd.Flags().BoolVar(&getRunReq.IncludeResolvedValues, "include-resolved-values", getRunReq.IncludeResolvedValues, `Whether to include resolved parameter values in the response.`)
-	cmd.Flags().StringVar(&getRunReq.PageToken, "page-token", getRunReq.PageToken, `Use next_page_token returned from the previous GetRun response to request the next page of the run's array properties.`)
+	cmd.Flags().BoolVar(&getRunReq.IncludeHistory, "include-history", getRunReq.IncludeHistory, `Whether to include the repair history in the response. Wire name: 'include_history'.`)
+	cmd.Flags().BoolVar(&getRunReq.IncludeResolvedValues, "include-resolved-values", getRunReq.IncludeResolvedValues, `Whether to include resolved parameter values in the response. Wire name: 'include_resolved_values'.`)
+	cmd.Flags().StringVar(&getRunReq.PageToken, "page-token", getRunReq.PageToken, `Use next_page_token returned from the previous GetRun response to request the next page of the run's array properties. Wire name: 'page_token'.`)
 
 	cmd.Use = "get-run RUN_ID"
 	cmd.Short = `Get a single job run.`
 	cmd.Long = `Get a single job run.
-  
+
   Retrieves the metadata of a run.
-  
+
   Large arrays in the results will be paginated when they exceed 100 elements. A
   request for a single run will return all properties for that run, and the
   first 100 elements of array properties (tasks, job_clusters,
@@ -955,13 +994,13 @@ func newGetRunOutput() *cobra.Command {
 	cmd.Use = "get-run-output RUN_ID"
 	cmd.Short = `Get the output for a single run.`
 	cmd.Long = `Get the output for a single run.
-  
+
   Retrieve the output and metadata of a single task run. When a notebook task
   returns a value through the dbutils.notebook.exit() call, you can use this
   endpoint to retrieve that value. Databricks restricts this API to returning
   the first 5 MB of the output. To return a larger result, you can store job
   results in a cloud storage service.
-  
+
   This endpoint validates that the __run_id__ parameter is valid and returns an
   HTTP status code 400 if the __run_id__ parameter is invalid. Runs are
   automatically removed after 60 days. If you to want to reference them beyond
@@ -1032,16 +1071,16 @@ func newList() *cobra.Command {
 
 	var listReq jobs.ListJobsRequest
 
-	cmd.Flags().BoolVar(&listReq.ExpandTasks, "expand-tasks", listReq.ExpandTasks, `Whether to include task and cluster details in the response.`)
-	cmd.Flags().IntVar(&listReq.Limit, "limit", listReq.Limit, `The number of jobs to return.`)
-	cmd.Flags().StringVar(&listReq.Name, "name", listReq.Name, `A filter on the list based on the exact (case insensitive) job name.`)
-	cmd.Flags().IntVar(&listReq.Offset, "offset", listReq.Offset, `The offset of the first job to return, relative to the most recently created job.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Use next_page_token or prev_page_token returned from the previous request to list the next or previous page of jobs respectively.`)
+	cmd.Flags().BoolVar(&listReq.ExpandTasks, "expand-tasks", listReq.ExpandTasks, `Whether to include task and cluster details in the response. Wire name: 'expand_tasks'.`)
+	cmd.Flags().IntVar(&listReq.Limit, "limit", listReq.Limit, `The number of jobs to return. Wire name: 'limit'.`)
+	cmd.Flags().StringVar(&listReq.Name, "name", listReq.Name, `A filter on the list based on the exact (case insensitive) job name. Wire name: 'name'.`)
+	cmd.Flags().IntVar(&listReq.Offset, "offset", listReq.Offset, `The offset of the first job to return, relative to the most recently created job. Wire name: 'offset'.`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Use next_page_token or prev_page_token returned from the previous request to list the next or previous page of jobs respectively. Wire name: 'page_token'.`)
 
 	cmd.Use = "list"
 	cmd.Short = `List jobs.`
 	cmd.Long = `List jobs.
-  
+
   Retrieves a list of jobs.`
 
 	cmd.Annotations = make(map[string]string)
@@ -1086,21 +1125,21 @@ func newListRuns() *cobra.Command {
 
 	var listRunsReq jobs.ListRunsRequest
 
-	cmd.Flags().BoolVar(&listRunsReq.ActiveOnly, "active-only", listRunsReq.ActiveOnly, `If active_only is true, only active runs are included in the results; otherwise, lists both active and completed runs.`)
-	cmd.Flags().BoolVar(&listRunsReq.CompletedOnly, "completed-only", listRunsReq.CompletedOnly, `If completed_only is true, only completed runs are included in the results; otherwise, lists both active and completed runs.`)
-	cmd.Flags().BoolVar(&listRunsReq.ExpandTasks, "expand-tasks", listRunsReq.ExpandTasks, `Whether to include task and cluster details in the response.`)
-	cmd.Flags().Int64Var(&listRunsReq.JobId, "job-id", listRunsReq.JobId, `The job for which to list runs.`)
-	cmd.Flags().IntVar(&listRunsReq.Limit, "limit", listRunsReq.Limit, `The number of runs to return.`)
-	cmd.Flags().IntVar(&listRunsReq.Offset, "offset", listRunsReq.Offset, `The offset of the first run to return, relative to the most recent run.`)
-	cmd.Flags().StringVar(&listRunsReq.PageToken, "page-token", listRunsReq.PageToken, `Use next_page_token or prev_page_token returned from the previous request to list the next or previous page of runs respectively.`)
-	cmd.Flags().Var(&listRunsReq.RunType, "run-type", `The type of runs to return. Supported values: [JOB_RUN, SUBMIT_RUN, WORKFLOW_RUN]`)
-	cmd.Flags().Int64Var(&listRunsReq.StartTimeFrom, "start-time-from", listRunsReq.StartTimeFrom, `Show runs that started _at or after_ this value.`)
-	cmd.Flags().Int64Var(&listRunsReq.StartTimeTo, "start-time-to", listRunsReq.StartTimeTo, `Show runs that started _at or before_ this value.`)
+	cmd.Flags().BoolVar(&listRunsReq.ActiveOnly, "active-only", listRunsReq.ActiveOnly, `If active_only is true, only active runs are included in the results; otherwise, lists both active and completed runs. Wire name: 'active_only'.`)
+	cmd.Flags().BoolVar(&listRunsReq.CompletedOnly, "completed-only", listRunsReq.CompletedOnly, `If completed_only is true, only completed runs are included in the results; otherwise, lists both active and completed runs. Wire name: 'completed_only'.`)
+	cmd.Flags().BoolVar(&listRunsReq.ExpandTasks, "expand-tasks", listRunsReq.ExpandTasks, `Whether to include task and cluster details in the response. Wire name: 'expand_tasks'.`)
+	cmd.Flags().Int64Var(&listRunsReq.JobId, "job-id", listRunsReq.JobId, `The job for which to list runs. Wire name: 'job_id'.`)
+	cmd.Flags().IntVar(&listRunsReq.Limit, "limit", listRunsReq.Limit, `The number of runs to return. Wire name: 'limit'.`)
+	cmd.Flags().IntVar(&listRunsReq.Offset, "offset", listRunsReq.Offset, `The offset of the first run to return, relative to the most recent run. Wire name: 'offset'.`)
+	cmd.Flags().StringVar(&listRunsReq.PageToken, "page-token", listRunsReq.PageToken, `Use next_page_token or prev_page_token returned from the previous request to list the next or previous page of runs respectively. Wire name: 'page_token'.`)
+	cmd.Flags().Var(&listRunsReq.RunType, "run-type", `The type of runs to return. Supported values: [JOB_RUN, SUBMIT_RUN, WORKFLOW_RUN]. Wire name: 'run_type'.`)
+	cmd.Flags().Int64Var(&listRunsReq.StartTimeFrom, "start-time-from", listRunsReq.StartTimeFrom, `Show runs that started _at or after_ this value. Wire name: 'start_time_from'.`)
+	cmd.Flags().Int64Var(&listRunsReq.StartTimeTo, "start-time-to", listRunsReq.StartTimeTo, `Show runs that started _at or before_ this value. Wire name: 'start_time_to'.`)
 
 	cmd.Use = "list-runs"
 	cmd.Short = `List job runs.`
 	cmd.Long = `List job runs.
-  
+
   List runs in descending order by start time.`
 
 	cmd.Annotations = make(map[string]string)
@@ -1157,14 +1196,14 @@ func newRepairRun() *cobra.Command {
 	// TODO: array: dbt_commands
 	// TODO: array: jar_params
 	// TODO: map via StringToStringVar: job_parameters
-	cmd.Flags().Int64Var(&repairRunReq.LatestRepairId, "latest-repair-id", repairRunReq.LatestRepairId, `The ID of the latest repair.`)
+	cmd.Flags().Int64Var(&repairRunReq.LatestRepairId, "latest-repair-id", repairRunReq.LatestRepairId, `The ID of the latest repair. Wire name: 'latest_repair_id'.`)
 	// TODO: map via StringToStringVar: notebook_params
-	cmd.Flags().Var(&repairRunReq.PerformanceTarget, "performance-target", `The performance mode on a serverless job. Supported values: [PERFORMANCE_OPTIMIZED, STANDARD]`)
+	cmd.Flags().Var(&repairRunReq.PerformanceTarget, "performance-target", `The performance mode on a serverless job. Supported values: [PERFORMANCE_OPTIMIZED, STANDARD]. Wire name: 'performance_target'.`)
 	// TODO: complex arg: pipeline_params
 	// TODO: map via StringToStringVar: python_named_params
 	// TODO: array: python_params
-	cmd.Flags().BoolVar(&repairRunReq.RerunAllFailedTasks, "rerun-all-failed-tasks", repairRunReq.RerunAllFailedTasks, `If true, repair all failed tasks.`)
-	cmd.Flags().BoolVar(&repairRunReq.RerunDependentTasks, "rerun-dependent-tasks", repairRunReq.RerunDependentTasks, `If true, repair all tasks that depend on the tasks in rerun_tasks, even if they were previously successful.`)
+	cmd.Flags().BoolVar(&repairRunReq.RerunAllFailedTasks, "rerun-all-failed-tasks", repairRunReq.RerunAllFailedTasks, `If true, repair all failed tasks. Wire name: 'rerun_all_failed_tasks'.`)
+	cmd.Flags().BoolVar(&repairRunReq.RerunDependentTasks, "rerun-dependent-tasks", repairRunReq.RerunDependentTasks, `If true, repair all tasks that depend on the tasks in rerun_tasks, even if they were previously successful. Wire name: 'rerun_dependent_tasks'.`)
 	// TODO: array: rerun_tasks
 	// TODO: array: spark_submit_params
 	// TODO: map via StringToStringVar: sql_params
@@ -1172,7 +1211,7 @@ func newRepairRun() *cobra.Command {
 	cmd.Use = "repair-run RUN_ID"
 	cmd.Short = `Repair a job run.`
 	cmd.Long = `Repair a job run.
-  
+
   Re-run one or more tasks. Tasks are re-run as part of the original job run.
   They use the current job and task settings, and can be viewed in the history
   for the original job run.
@@ -1231,6 +1270,7 @@ func newRepairRun() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid RUN_ID: %s", args[0])
 			}
+
 		}
 
 		wait, err := w.Jobs.RepairRun(ctx, repairRunReq)
@@ -1291,7 +1331,7 @@ func newReset() *cobra.Command {
 	cmd.Use = "reset"
 	cmd.Short = `Update all job settings (reset).`
 	cmd.Long = `Update all job settings (reset).
-  
+
   Overwrite all settings for the given job. Use the [_Update_
   endpoint](:method:jobs/update) to update job settings partially.`
 
@@ -1360,12 +1400,12 @@ func newRunNow() *cobra.Command {
 	cmd.Flags().Var(&runNowJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: dbt_commands
-	cmd.Flags().StringVar(&runNowReq.IdempotencyToken, "idempotency-token", runNowReq.IdempotencyToken, `An optional token to guarantee the idempotency of job run requests.`)
+	cmd.Flags().StringVar(&runNowReq.IdempotencyToken, "idempotency-token", runNowReq.IdempotencyToken, `An optional token to guarantee the idempotency of job run requests. Wire name: 'idempotency_token'.`)
 	// TODO: array: jar_params
 	// TODO: map via StringToStringVar: job_parameters
 	// TODO: map via StringToStringVar: notebook_params
 	// TODO: array: only
-	cmd.Flags().Var(&runNowReq.PerformanceTarget, "performance-target", `The performance mode on a serverless job. Supported values: [PERFORMANCE_OPTIMIZED, STANDARD]`)
+	cmd.Flags().Var(&runNowReq.PerformanceTarget, "performance-target", `The performance mode on a serverless job. Supported values: [PERFORMANCE_OPTIMIZED, STANDARD]. Wire name: 'performance_target'.`)
 	// TODO: complex arg: pipeline_params
 	// TODO: map via StringToStringVar: python_named_params
 	// TODO: array: python_params
@@ -1376,7 +1416,7 @@ func newRunNow() *cobra.Command {
 	cmd.Use = "run-now JOB_ID"
 	cmd.Short = `Trigger a new job run.`
 	cmd.Long = `Trigger a new job run.
-  
+
   Run a job and return the run_id of the triggered run.
 
   Arguments:
@@ -1433,6 +1473,7 @@ func newRunNow() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid JOB_ID: %s", args[0])
 			}
+
 		}
 
 		wait, err := w.Jobs.RunNow(ctx, runNowReq)
@@ -1495,7 +1536,7 @@ func newSetPermissions() *cobra.Command {
 	cmd.Use = "set-permissions JOB_ID"
 	cmd.Short = `Set job permissions.`
 	cmd.Long = `Set job permissions.
-  
+
   Sets permissions on an object, replacing existing permissions if they exist.
   Deletes all direct permissions if none are specified. Objects can inherit
   permissions from their root object.
@@ -1584,25 +1625,25 @@ func newSubmit() *cobra.Command {
 	cmd.Flags().Var(&submitJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: access_control_list
-	cmd.Flags().StringVar(&submitReq.BudgetPolicyId, "budget-policy-id", submitReq.BudgetPolicyId, `The user specified id of the budget policy to use for this one-time run.`)
+	cmd.Flags().StringVar(&submitReq.BudgetPolicyId, "budget-policy-id", submitReq.BudgetPolicyId, `The user specified id of the budget policy to use for this one-time run. Wire name: 'budget_policy_id'.`)
 	// TODO: complex arg: email_notifications
 	// TODO: array: environments
 	// TODO: complex arg: git_source
 	// TODO: complex arg: health
-	cmd.Flags().StringVar(&submitReq.IdempotencyToken, "idempotency-token", submitReq.IdempotencyToken, `An optional token that can be used to guarantee the idempotency of job run requests.`)
+	cmd.Flags().StringVar(&submitReq.IdempotencyToken, "idempotency-token", submitReq.IdempotencyToken, `An optional token that can be used to guarantee the idempotency of job run requests. Wire name: 'idempotency_token'.`)
 	// TODO: complex arg: notification_settings
 	// TODO: complex arg: queue
 	// TODO: complex arg: run_as
-	cmd.Flags().StringVar(&submitReq.RunName, "run-name", submitReq.RunName, `An optional name for the run.`)
+	cmd.Flags().StringVar(&submitReq.RunName, "run-name", submitReq.RunName, `An optional name for the run. Wire name: 'run_name'.`)
 	// TODO: array: tasks
-	cmd.Flags().IntVar(&submitReq.TimeoutSeconds, "timeout-seconds", submitReq.TimeoutSeconds, `An optional timeout applied to each run of this job.`)
-	cmd.Flags().StringVar(&submitReq.UsagePolicyId, "usage-policy-id", submitReq.UsagePolicyId, `The user specified id of the usage policy to use for this one-time run.`)
+	cmd.Flags().IntVar(&submitReq.TimeoutSeconds, "timeout-seconds", submitReq.TimeoutSeconds, `An optional timeout applied to each run of this job. Wire name: 'timeout_seconds'.`)
+	cmd.Flags().StringVar(&submitReq.UsagePolicyId, "usage-policy-id", submitReq.UsagePolicyId, `The user specified id of the usage policy to use for this one-time run. Wire name: 'usage_policy_id'.`)
 	// TODO: complex arg: webhook_notifications
 
 	cmd.Use = "submit"
 	cmd.Short = `Create and trigger a one-time run.`
 	cmd.Long = `Create and trigger a one-time run.
-  
+
   Submit a one-time run. This endpoint allows you to submit a workload directly
   without creating a job. Runs submitted using this endpoint don’t display in
   the UI. Use the jobs/runs/get API to check the run state after the job is
@@ -1694,7 +1735,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update JOB_ID"
 	cmd.Short = `Update job settings partially.`
 	cmd.Long = `Update job settings partially.
-  
+
   Add, update, or remove specific settings of an existing job. Use the [_Reset_
   endpoint](:method:jobs/reset) to overwrite all job settings.
 
@@ -1752,6 +1793,7 @@ func newUpdate() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid JOB_ID: %s", args[0])
 			}
+
 		}
 
 		err = w.Jobs.Update(ctx, updateReq)
@@ -1795,7 +1837,7 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.Use = "update-permissions JOB_ID"
 	cmd.Short = `Update job permissions.`
 	cmd.Long = `Update job permissions.
-  
+
   Updates the permissions on a job. Jobs can inherit permissions from their root
   object.
 

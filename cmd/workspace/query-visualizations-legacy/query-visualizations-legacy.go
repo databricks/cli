@@ -69,8 +69,8 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.Description, "description", createReq.Description, `A short description of this visualization.`)
-	cmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `The name of the visualization that appears on dashboards and the query screen.`)
+	cmd.Flags().StringVar(&createReq.Description, "description", createReq.Description, `A short description of this visualization. Wire name: 'description'.`)
+	cmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `The name of the visualization that appears on dashboards and the query screen. Wire name: 'name'.`)
 
 	cmd.Use = "create"
 	cmd.Short = `Add visualization to a query.`
@@ -202,14 +202,14 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.CreatedAt, "created-at", updateReq.CreatedAt, ``)
-	cmd.Flags().StringVar(&updateReq.Description, "description", updateReq.Description, `A short description of this visualization.`)
-	cmd.Flags().StringVar(&updateReq.Id, "id", updateReq.Id, `The UUID for this visualization.`)
-	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `The name of the visualization that appears on dashboards and the query screen.`)
+	cmd.Flags().StringVar(&updateReq.CreatedAt, "created-at", updateReq.CreatedAt, `Wire name: 'created_at'.`)
+	cmd.Flags().StringVar(&updateReq.Description, "description", updateReq.Description, `A short description of this visualization. Wire name: 'description'.`)
+	cmd.Flags().StringVar(&updateReq.Id, "id", updateReq.Id, `The UUID for this visualization. Wire name: 'id'.`)
+	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `The name of the visualization that appears on dashboards and the query screen. Wire name: 'name'.`)
 	// TODO: any: options
 	// TODO: complex arg: query
-	cmd.Flags().StringVar(&updateReq.Type, "type", updateReq.Type, `The type of visualization: chart, table, pivot table, and so on.`)
-	cmd.Flags().StringVar(&updateReq.UpdatedAt, "updated-at", updateReq.UpdatedAt, ``)
+	cmd.Flags().StringVar(&updateReq.Type, "type", updateReq.Type, `The type of visualization: chart, table, pivot table, and so on. Wire name: 'type'.`)
+	cmd.Flags().StringVar(&updateReq.UpdatedAt, "updated-at", updateReq.UpdatedAt, `Wire name: 'updated_at'.`)
 
 	cmd.Use = "update ID"
 	cmd.Short = `Edit existing visualization.`

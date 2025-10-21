@@ -64,7 +64,7 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.Asset.CleanRoomName, "clean-room-name", createReq.Asset.CleanRoomName, `The name of the clean room this asset belongs to.`)
+	cmd.Flags().StringVar(&createReq.Asset.CleanRoomName, "clean-room-name", createReq.Asset.CleanRoomName, `The name of the clean room this asset belongs to. Wire name: 'clean_room_name'.`)
 	// TODO: complex arg: foreign_table
 	// TODO: complex arg: foreign_table_local_details
 	// TODO: complex arg: notebook
@@ -138,6 +138,7 @@ func newCreate() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid ASSET_TYPE: %s", args[2])
 			}
+
 		}
 
 		response, err := w.CleanRoomAssets.Create(ctx, createReq)
@@ -219,6 +220,7 @@ func newCreateCleanRoomAssetReview() *cobra.Command {
 		if err != nil {
 			return fmt.Errorf("invalid ASSET_TYPE: %s", args[1])
 		}
+
 		createCleanRoomAssetReviewReq.Name = args[2]
 
 		response, err := w.CleanRoomAssets.CreateCleanRoomAssetReview(ctx, createCleanRoomAssetReviewReq)
@@ -284,6 +286,7 @@ func newDelete() *cobra.Command {
 		if err != nil {
 			return fmt.Errorf("invalid ASSET_TYPE: %s", args[1])
 		}
+
 		deleteReq.Name = args[2]
 
 		err = w.CleanRoomAssets.Delete(ctx, deleteReq)
@@ -349,6 +352,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return fmt.Errorf("invalid ASSET_TYPE: %s", args[1])
 		}
+
 		getReq.Name = args[2]
 
 		response, err := w.CleanRoomAssets.Get(ctx, getReq)
@@ -384,7 +388,7 @@ func newList() *cobra.Command {
 
 	var listReq cleanrooms.ListCleanRoomAssetsRequest
 
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query. Wire name: 'page_token'.`)
 
 	cmd.Use = "list CLEAN_ROOM_NAME"
 	cmd.Short = `List assets.`
@@ -441,7 +445,7 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.Asset.CleanRoomName, "clean-room-name", updateReq.Asset.CleanRoomName, `The name of the clean room this asset belongs to.`)
+	cmd.Flags().StringVar(&updateReq.Asset.CleanRoomName, "clean-room-name", updateReq.Asset.CleanRoomName, `The name of the clean room this asset belongs to. Wire name: 'clean_room_name'.`)
 	// TODO: complex arg: foreign_table
 	// TODO: complex arg: foreign_table_local_details
 	// TODO: complex arg: notebook
@@ -500,6 +504,7 @@ func newUpdate() *cobra.Command {
 		if err != nil {
 			return fmt.Errorf("invalid ASSET_TYPE: %s", args[1])
 		}
+
 		updateReq.Name = args[2]
 
 		response, err := w.CleanRoomAssets.Update(ctx, updateReq)

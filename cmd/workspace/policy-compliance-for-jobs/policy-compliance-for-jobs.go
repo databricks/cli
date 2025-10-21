@@ -71,7 +71,7 @@ func newEnforceCompliance() *cobra.Command {
 
 	cmd.Flags().Var(&enforceComplianceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&enforceComplianceReq.ValidateOnly, "validate-only", enforceComplianceReq.ValidateOnly, `If set, previews changes made to the job to comply with its policy, but does not update the job.`)
+	cmd.Flags().BoolVar(&enforceComplianceReq.ValidateOnly, "validate-only", enforceComplianceReq.ValidateOnly, `If set, previews changes made to the job to comply with its policy, but does not update the job. Wire name: 'validate_only'.`)
 
 	cmd.Use = "enforce-compliance JOB_ID"
 	cmd.Short = `Enforce job policy compliance.`
@@ -121,6 +121,7 @@ func newEnforceCompliance() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid JOB_ID: %s", args[0])
 			}
+
 		}
 
 		response, err := w.PolicyComplianceForJobs.EnforceCompliance(ctx, enforceComplianceReq)
@@ -217,8 +218,8 @@ func newListCompliance() *cobra.Command {
 
 	var listComplianceReq jobs.ListJobComplianceRequest
 
-	cmd.Flags().IntVar(&listComplianceReq.PageSize, "page-size", listComplianceReq.PageSize, `Use this field to specify the maximum number of results to be returned by the server.`)
-	cmd.Flags().StringVar(&listComplianceReq.PageToken, "page-token", listComplianceReq.PageToken, `A page token that can be used to navigate to the next page or previous page as returned by next_page_token or prev_page_token.`)
+	cmd.Flags().IntVar(&listComplianceReq.PageSize, "page-size", listComplianceReq.PageSize, `Use this field to specify the maximum number of results to be returned by the server. Wire name: 'page_size'.`)
+	cmd.Flags().StringVar(&listComplianceReq.PageToken, "page-token", listComplianceReq.PageToken, `A page token that can be used to navigate to the next page or previous page as returned by next_page_token or prev_page_token. Wire name: 'page_token'.`)
 
 	cmd.Use = "list-compliance POLICY_ID"
 	cmd.Short = `List job policy compliance.`

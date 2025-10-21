@@ -58,10 +58,10 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.AwsVpcEndpointId, "aws-vpc-endpoint-id", createReq.AwsVpcEndpointId, `The ID of the VPC endpoint object in AWS.`)
+	cmd.Flags().StringVar(&createReq.AwsVpcEndpointId, "aws-vpc-endpoint-id", createReq.AwsVpcEndpointId, `The ID of the VPC endpoint object in AWS. Wire name: 'aws_vpc_endpoint_id'.`)
 	// TODO: complex arg: gcp_vpc_endpoint_info
-	cmd.Flags().StringVar(&createReq.Region, "region", createReq.Region, `The region in which this VPC endpoint object exists.`)
-	cmd.Flags().StringVar(&createReq.VpcEndpointName, "vpc-endpoint-name", createReq.VpcEndpointName, `The human-readable name of the storage configuration.`)
+	cmd.Flags().StringVar(&createReq.Region, "region", createReq.Region, `The region in which this VPC endpoint object exists. Wire name: 'region'.`)
+	cmd.Flags().StringVar(&createReq.VpcEndpointName, "vpc-endpoint-name", createReq.VpcEndpointName, `The human-readable name of the storage configuration. Wire name: 'vpc_endpoint_name'.`)
 
 	cmd.Use = "create"
 	cmd.Short = `Create a VPC endpoint configuration.`

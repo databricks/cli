@@ -54,7 +54,7 @@ func newDelete() *cobra.Command {
 
 	var deleteReq settings.DeleteSqlResultsDownloadRequest
 
-	cmd.Flags().StringVar(&deleteReq.Etag, "etag", deleteReq.Etag, `etag used for versioning.`)
+	cmd.Flags().StringVar(&deleteReq.Etag, "etag", deleteReq.Etag, `etag used for versioning. Wire name: 'etag'.`)
 
 	cmd.Use = "delete"
 	cmd.Short = `Delete the SQL Results Download setting.`
@@ -107,7 +107,7 @@ func newGet() *cobra.Command {
 
 	var getReq settings.GetSqlResultsDownloadRequest
 
-	cmd.Flags().StringVar(&getReq.Etag, "etag", getReq.Etag, `etag used for versioning.`)
+	cmd.Flags().StringVar(&getReq.Etag, "etag", getReq.Etag, `etag used for versioning. Wire name: 'etag'.`)
 
 	cmd.Use = "get"
 	cmd.Short = `Get the SQL Results Download setting.`

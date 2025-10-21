@@ -66,8 +66,8 @@ func newCreateOboToken() *cobra.Command {
 
 	cmd.Flags().Var(&createOboTokenJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createOboTokenReq.Comment, "comment", createOboTokenReq.Comment, `Comment that describes the purpose of the token.`)
-	cmd.Flags().Int64Var(&createOboTokenReq.LifetimeSeconds, "lifetime-seconds", createOboTokenReq.LifetimeSeconds, `The number of seconds before the token expires.`)
+	cmd.Flags().StringVar(&createOboTokenReq.Comment, "comment", createOboTokenReq.Comment, `Comment that describes the purpose of the token. Wire name: 'comment'.`)
+	cmd.Flags().Int64Var(&createOboTokenReq.LifetimeSeconds, "lifetime-seconds", createOboTokenReq.LifetimeSeconds, `The number of seconds before the token expires. Wire name: 'lifetime_seconds'.`)
 
 	cmd.Use = "create-obo-token APPLICATION_ID"
 	cmd.Short = `Create on-behalf token.`
@@ -126,6 +126,7 @@ func newCreateOboToken() *cobra.Command {
 				return fmt.Errorf("expected to have application id of the service principal")
 			}
 			createOboTokenReq.ApplicationId = args[0]
+
 		}
 
 		response, err := w.TokenManagement.CreateOboToken(ctx, createOboTokenReq)
@@ -382,8 +383,8 @@ func newList() *cobra.Command {
 
 	var listReq settings.ListTokenManagementRequest
 
-	cmd.Flags().Int64Var(&listReq.CreatedById, "created-by-id", listReq.CreatedById, `User ID of the user that created the token.`)
-	cmd.Flags().StringVar(&listReq.CreatedByUsername, "created-by-username", listReq.CreatedByUsername, `Username of the user that created the token.`)
+	cmd.Flags().Int64Var(&listReq.CreatedById, "created-by-id", listReq.CreatedById, `User ID of the user that created the token. Wire name: 'created_by_id'.`)
+	cmd.Flags().StringVar(&listReq.CreatedByUsername, "created-by-username", listReq.CreatedByUsername, `Username of the user that created the token. Wire name: 'created_by_username'.`)
 
 	cmd.Use = "list"
 	cmd.Short = `List all tokens.`

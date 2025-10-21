@@ -62,17 +62,17 @@ func newCreateAlert() *cobra.Command {
 
 	cmd.Flags().Var(&createAlertJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createAlertReq.Alert.CustomDescription, "custom-description", createAlertReq.Alert.CustomDescription, `Custom description for the alert.`)
-	cmd.Flags().StringVar(&createAlertReq.Alert.CustomSummary, "custom-summary", createAlertReq.Alert.CustomSummary, `Custom summary for the alert.`)
-	cmd.Flags().StringVar(&createAlertReq.Alert.DisplayName, "display-name", createAlertReq.Alert.DisplayName, `The display name of the alert.`)
+	cmd.Flags().StringVar(&createAlertReq.Alert.CustomDescription, "custom-description", createAlertReq.Alert.CustomDescription, `Custom description for the alert. Wire name: 'custom_description'.`)
+	cmd.Flags().StringVar(&createAlertReq.Alert.CustomSummary, "custom-summary", createAlertReq.Alert.CustomSummary, `Custom summary for the alert. Wire name: 'custom_summary'.`)
+	cmd.Flags().StringVar(&createAlertReq.Alert.DisplayName, "display-name", createAlertReq.Alert.DisplayName, `The display name of the alert. Wire name: 'display_name'.`)
 	// TODO: complex arg: effective_run_as
 	// TODO: complex arg: evaluation
-	cmd.Flags().StringVar(&createAlertReq.Alert.ParentPath, "parent-path", createAlertReq.Alert.ParentPath, `The workspace path of the folder containing the alert.`)
-	cmd.Flags().StringVar(&createAlertReq.Alert.QueryText, "query-text", createAlertReq.Alert.QueryText, `Text of the query to be run.`)
+	cmd.Flags().StringVar(&createAlertReq.Alert.ParentPath, "parent-path", createAlertReq.Alert.ParentPath, `The workspace path of the folder containing the alert. Wire name: 'parent_path'.`)
+	cmd.Flags().StringVar(&createAlertReq.Alert.QueryText, "query-text", createAlertReq.Alert.QueryText, `Text of the query to be run. Wire name: 'query_text'.`)
 	// TODO: complex arg: run_as
-	cmd.Flags().StringVar(&createAlertReq.Alert.RunAsUserName, "run-as-user-name", createAlertReq.Alert.RunAsUserName, `The run as username or application ID of service principal.`)
+	cmd.Flags().StringVar(&createAlertReq.Alert.RunAsUserName, "run-as-user-name", createAlertReq.Alert.RunAsUserName, `The run as username or application ID of service principal. Wire name: 'run_as_user_name'.`)
 	// TODO: complex arg: schedule
-	cmd.Flags().StringVar(&createAlertReq.Alert.WarehouseId, "warehouse-id", createAlertReq.Alert.WarehouseId, `ID of the SQL warehouse attached to the alert.`)
+	cmd.Flags().StringVar(&createAlertReq.Alert.WarehouseId, "warehouse-id", createAlertReq.Alert.WarehouseId, `ID of the SQL warehouse attached to the alert. Wire name: 'warehouse_id'.`)
 
 	cmd.Use = "create-alert"
 	cmd.Short = `Create an alert.`
@@ -203,8 +203,8 @@ func newListAlerts() *cobra.Command {
 
 	var listAlertsReq sql.ListAlertsV2Request
 
-	cmd.Flags().IntVar(&listAlertsReq.PageSize, "page-size", listAlertsReq.PageSize, ``)
-	cmd.Flags().StringVar(&listAlertsReq.PageToken, "page-token", listAlertsReq.PageToken, ``)
+	cmd.Flags().IntVar(&listAlertsReq.PageSize, "page-size", listAlertsReq.PageSize, `Wire name: 'page_size'.`)
+	cmd.Flags().StringVar(&listAlertsReq.PageToken, "page-token", listAlertsReq.PageToken, `Wire name: 'page_token'.`)
 
 	cmd.Use = "list-alerts"
 	cmd.Short = `List alerts.`
@@ -325,17 +325,17 @@ func newUpdateAlert() *cobra.Command {
 
 	cmd.Flags().Var(&updateAlertJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateAlertReq.Alert.CustomDescription, "custom-description", updateAlertReq.Alert.CustomDescription, `Custom description for the alert.`)
-	cmd.Flags().StringVar(&updateAlertReq.Alert.CustomSummary, "custom-summary", updateAlertReq.Alert.CustomSummary, `Custom summary for the alert.`)
-	cmd.Flags().StringVar(&updateAlertReq.Alert.DisplayName, "display-name", updateAlertReq.Alert.DisplayName, `The display name of the alert.`)
+	cmd.Flags().StringVar(&updateAlertReq.Alert.CustomDescription, "custom-description", updateAlertReq.Alert.CustomDescription, `Custom description for the alert. Wire name: 'custom_description'.`)
+	cmd.Flags().StringVar(&updateAlertReq.Alert.CustomSummary, "custom-summary", updateAlertReq.Alert.CustomSummary, `Custom summary for the alert. Wire name: 'custom_summary'.`)
+	cmd.Flags().StringVar(&updateAlertReq.Alert.DisplayName, "display-name", updateAlertReq.Alert.DisplayName, `The display name of the alert. Wire name: 'display_name'.`)
 	// TODO: complex arg: effective_run_as
 	// TODO: complex arg: evaluation
-	cmd.Flags().StringVar(&updateAlertReq.Alert.ParentPath, "parent-path", updateAlertReq.Alert.ParentPath, `The workspace path of the folder containing the alert.`)
-	cmd.Flags().StringVar(&updateAlertReq.Alert.QueryText, "query-text", updateAlertReq.Alert.QueryText, `Text of the query to be run.`)
+	cmd.Flags().StringVar(&updateAlertReq.Alert.ParentPath, "parent-path", updateAlertReq.Alert.ParentPath, `The workspace path of the folder containing the alert. Wire name: 'parent_path'.`)
+	cmd.Flags().StringVar(&updateAlertReq.Alert.QueryText, "query-text", updateAlertReq.Alert.QueryText, `Text of the query to be run. Wire name: 'query_text'.`)
 	// TODO: complex arg: run_as
-	cmd.Flags().StringVar(&updateAlertReq.Alert.RunAsUserName, "run-as-user-name", updateAlertReq.Alert.RunAsUserName, `The run as username or application ID of service principal.`)
+	cmd.Flags().StringVar(&updateAlertReq.Alert.RunAsUserName, "run-as-user-name", updateAlertReq.Alert.RunAsUserName, `The run as username or application ID of service principal. Wire name: 'run_as_user_name'.`)
 	// TODO: complex arg: schedule
-	cmd.Flags().StringVar(&updateAlertReq.Alert.WarehouseId, "warehouse-id", updateAlertReq.Alert.WarehouseId, `ID of the SQL warehouse attached to the alert.`)
+	cmd.Flags().StringVar(&updateAlertReq.Alert.WarehouseId, "warehouse-id", updateAlertReq.Alert.WarehouseId, `ID of the SQL warehouse attached to the alert. Wire name: 'warehouse_id'.`)
 
 	cmd.Use = "update-alert ID UPDATE_MASK"
 	cmd.Short = `Update an alert.`

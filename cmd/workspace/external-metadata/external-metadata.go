@@ -69,10 +69,10 @@ func newCreateExternalMetadata() *cobra.Command {
 	cmd.Flags().Var(&createExternalMetadataJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: columns
-	cmd.Flags().StringVar(&createExternalMetadataReq.ExternalMetadata.Description, "description", createExternalMetadataReq.ExternalMetadata.Description, `User-provided free-form text description.`)
-	cmd.Flags().StringVar(&createExternalMetadataReq.ExternalMetadata.Owner, "owner", createExternalMetadataReq.ExternalMetadata.Owner, `Owner of the external metadata object.`)
+	cmd.Flags().StringVar(&createExternalMetadataReq.ExternalMetadata.Description, "description", createExternalMetadataReq.ExternalMetadata.Description, `User-provided free-form text description. Wire name: 'description'.`)
+	cmd.Flags().StringVar(&createExternalMetadataReq.ExternalMetadata.Owner, "owner", createExternalMetadataReq.ExternalMetadata.Owner, `Owner of the external metadata object. Wire name: 'owner'.`)
 	// TODO: map via StringToStringVar: properties
-	cmd.Flags().StringVar(&createExternalMetadataReq.ExternalMetadata.Url, "url", createExternalMetadataReq.ExternalMetadata.Url, `URL associated with the external metadata object.`)
+	cmd.Flags().StringVar(&createExternalMetadataReq.ExternalMetadata.Url, "url", createExternalMetadataReq.ExternalMetadata.Url, `URL associated with the external metadata object. Wire name: 'url'.`)
 
 	cmd.Use = "create-external-metadata NAME SYSTEM_TYPE ENTITY_TYPE"
 	cmd.Short = `Create an external metadata object.`
@@ -151,6 +151,7 @@ func newCreateExternalMetadata() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid SYSTEM_TYPE: %s", args[1])
 			}
+
 		}
 		if !cmd.Flags().Changed("json") {
 			createExternalMetadataReq.ExternalMetadata.EntityType = args[2]
@@ -299,8 +300,8 @@ func newListExternalMetadata() *cobra.Command {
 
 	var listExternalMetadataReq catalog.ListExternalMetadataRequest
 
-	cmd.Flags().IntVar(&listExternalMetadataReq.PageSize, "page-size", listExternalMetadataReq.PageSize, `Specifies the maximum number of external metadata objects to return in a single response.`)
-	cmd.Flags().StringVar(&listExternalMetadataReq.PageToken, "page-token", listExternalMetadataReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
+	cmd.Flags().IntVar(&listExternalMetadataReq.PageSize, "page-size", listExternalMetadataReq.PageSize, `Specifies the maximum number of external metadata objects to return in a single response. Wire name: 'page_size'.`)
+	cmd.Flags().StringVar(&listExternalMetadataReq.PageToken, "page-token", listExternalMetadataReq.PageToken, `Opaque pagination token to go to next page based on previous query. Wire name: 'page_token'.`)
 
 	cmd.Use = "list-external-metadata"
 	cmd.Short = `List external metadata objects.`
@@ -359,10 +360,10 @@ func newUpdateExternalMetadata() *cobra.Command {
 	cmd.Flags().Var(&updateExternalMetadataJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: columns
-	cmd.Flags().StringVar(&updateExternalMetadataReq.ExternalMetadata.Description, "description", updateExternalMetadataReq.ExternalMetadata.Description, `User-provided free-form text description.`)
-	cmd.Flags().StringVar(&updateExternalMetadataReq.ExternalMetadata.Owner, "owner", updateExternalMetadataReq.ExternalMetadata.Owner, `Owner of the external metadata object.`)
+	cmd.Flags().StringVar(&updateExternalMetadataReq.ExternalMetadata.Description, "description", updateExternalMetadataReq.ExternalMetadata.Description, `User-provided free-form text description. Wire name: 'description'.`)
+	cmd.Flags().StringVar(&updateExternalMetadataReq.ExternalMetadata.Owner, "owner", updateExternalMetadataReq.ExternalMetadata.Owner, `Owner of the external metadata object. Wire name: 'owner'.`)
 	// TODO: map via StringToStringVar: properties
-	cmd.Flags().StringVar(&updateExternalMetadataReq.ExternalMetadata.Url, "url", updateExternalMetadataReq.ExternalMetadata.Url, `URL associated with the external metadata object.`)
+	cmd.Flags().StringVar(&updateExternalMetadataReq.ExternalMetadata.Url, "url", updateExternalMetadataReq.ExternalMetadata.Url, `URL associated with the external metadata object. Wire name: 'url'.`)
 
 	cmd.Use = "update-external-metadata NAME UPDATE_MASK SYSTEM_TYPE ENTITY_TYPE"
 	cmd.Short = `Update an external metadata object.`
@@ -453,6 +454,7 @@ func newUpdateExternalMetadata() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid SYSTEM_TYPE: %s", args[2])
 			}
+
 		}
 		if !cmd.Flags().Changed("json") {
 			updateExternalMetadataReq.ExternalMetadata.EntityType = args[3]

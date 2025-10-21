@@ -64,9 +64,9 @@ func newGet() *cobra.Command {
 
 	var getReq catalog.GetGrantRequest
 
-	cmd.Flags().IntVar(&getReq.MaxResults, "max-results", getReq.MaxResults, `Specifies the maximum number of privileges to return (page length).`)
-	cmd.Flags().StringVar(&getReq.PageToken, "page-token", getReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
-	cmd.Flags().StringVar(&getReq.Principal, "principal", getReq.Principal, `If provided, only the permissions for the specified principal (user or group) are returned.`)
+	cmd.Flags().IntVar(&getReq.MaxResults, "max-results", getReq.MaxResults, `Specifies the maximum number of privileges to return (page length). Wire name: 'max_results'.`)
+	cmd.Flags().StringVar(&getReq.PageToken, "page-token", getReq.PageToken, `Opaque pagination token to go to next page based on previous query. Wire name: 'page_token'.`)
+	cmd.Flags().StringVar(&getReq.Principal, "principal", getReq.Principal, `If provided, only the permissions for the specified principal (user or group) are returned. Wire name: 'principal'.`)
 
 	cmd.Use = "get SECURABLE_TYPE FULL_NAME"
 	cmd.Short = `Get permissions.`
@@ -126,9 +126,9 @@ func newGetEffective() *cobra.Command {
 
 	var getEffectiveReq catalog.GetEffectiveRequest
 
-	cmd.Flags().IntVar(&getEffectiveReq.MaxResults, "max-results", getEffectiveReq.MaxResults, `Specifies the maximum number of privileges to return (page length).`)
-	cmd.Flags().StringVar(&getEffectiveReq.PageToken, "page-token", getEffectiveReq.PageToken, `Opaque token for the next page of results (pagination).`)
-	cmd.Flags().StringVar(&getEffectiveReq.Principal, "principal", getEffectiveReq.Principal, `If provided, only the effective permissions for the specified principal (user or group) are returned.`)
+	cmd.Flags().IntVar(&getEffectiveReq.MaxResults, "max-results", getEffectiveReq.MaxResults, `Specifies the maximum number of privileges to return (page length). Wire name: 'max_results'.`)
+	cmd.Flags().StringVar(&getEffectiveReq.PageToken, "page-token", getEffectiveReq.PageToken, `Opaque token for the next page of results (pagination). Wire name: 'page_token'.`)
+	cmd.Flags().StringVar(&getEffectiveReq.Principal, "principal", getEffectiveReq.Principal, `If provided, only the effective permissions for the specified principal (user or group) are returned. Wire name: 'principal'.`)
 
 	cmd.Use = "get-effective SECURABLE_TYPE FULL_NAME"
 	cmd.Short = `Get effective permissions.`

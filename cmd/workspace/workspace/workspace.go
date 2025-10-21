@@ -70,7 +70,7 @@ func newDelete() *cobra.Command {
 
 	cmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&deleteReq.Recursive, "recursive", deleteReq.Recursive, `The flag that specifies whether to delete the object recursively.`)
+	cmd.Flags().BoolVar(&deleteReq.Recursive, "recursive", deleteReq.Recursive, `The flag that specifies whether to delete the object recursively. Wire name: 'recursive'.`)
 
 	cmd.Use = "delete PATH"
 	cmd.Short = `Delete a workspace object.`
@@ -136,6 +136,7 @@ func newDelete() *cobra.Command {
 				return fmt.Errorf("expected to have the absolute path of the notebook or directory")
 			}
 			deleteReq.Path = args[0]
+
 		}
 
 		err = w.Workspace.Delete(ctx, deleteReq)
@@ -179,7 +180,7 @@ func newExport() *cobra.Command {
   RAW,
   R_MARKDOWN,
   SOURCE,
-]`)
+]. Wire name: 'format'.`)
 
 	cmd.Use = "export PATH"
 	cmd.Short = `Export a workspace object.`
@@ -434,7 +435,7 @@ func newImport() *cobra.Command {
 
 	cmd.Flags().Var(&importJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&importReq.Content, "content", importReq.Content, `The base64-encoded content.`)
+	cmd.Flags().StringVar(&importReq.Content, "content", importReq.Content, `The base64-encoded content. Wire name: 'content'.`)
 	cmd.Flags().Var(&importReq.Format, "format", `This specifies the format of the file to be imported. Supported values: [
   AUTO,
   DBC,
@@ -443,9 +444,9 @@ func newImport() *cobra.Command {
   RAW,
   R_MARKDOWN,
   SOURCE,
-]`)
-	cmd.Flags().Var(&importReq.Language, "language", `The language of the object. Supported values: [PYTHON, R, SCALA, SQL]`)
-	cmd.Flags().BoolVar(&importReq.Overwrite, "overwrite", importReq.Overwrite, `The flag that specifies whether to overwrite existing object.`)
+]. Wire name: 'format'.`)
+	cmd.Flags().Var(&importReq.Language, "language", `The language of the object. Supported values: [PYTHON, R, SCALA, SQL]. Wire name: 'language'.`)
+	cmd.Flags().BoolVar(&importReq.Overwrite, "overwrite", importReq.Overwrite, `The flag that specifies whether to overwrite existing object. Wire name: 'overwrite'.`)
 
 	cmd.Use = "import PATH"
 	cmd.Short = `Import a workspace object.`
@@ -530,7 +531,7 @@ func newList() *cobra.Command {
 
 	var listReq workspace.ListWorkspaceRequest
 
-	cmd.Flags().Int64Var(&listReq.NotebooksModifiedAfter, "notebooks-modified-after", listReq.NotebooksModifiedAfter, `UTC timestamp in milliseconds.`)
+	cmd.Flags().Int64Var(&listReq.NotebooksModifiedAfter, "notebooks-modified-after", listReq.NotebooksModifiedAfter, `UTC timestamp in milliseconds. Wire name: 'notebooks_modified_after'.`)
 
 	cmd.Use = "list PATH"
 	cmd.Short = `List contents.`

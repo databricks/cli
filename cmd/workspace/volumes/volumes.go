@@ -68,8 +68,8 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `The comment attached to the volume.`)
-	cmd.Flags().StringVar(&createReq.StorageLocation, "storage-location", createReq.StorageLocation, `The storage location on the cloud.`)
+	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `The comment attached to the volume. Wire name: 'comment'.`)
+	cmd.Flags().StringVar(&createReq.StorageLocation, "storage-location", createReq.StorageLocation, `The storage location on the cloud. Wire name: 'storage_location'.`)
 
 	cmd.Use = "create CATALOG_NAME SCHEMA_NAME NAME VOLUME_TYPE"
 	cmd.Short = `Create a Volume.`
@@ -151,6 +151,7 @@ func newCreate() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid VOLUME_TYPE: %s", args[3])
 			}
+
 		}
 
 		response, err := w.Volumes.Create(ctx, createReq)
@@ -258,9 +259,9 @@ func newList() *cobra.Command {
 
 	var listReq catalog.ListVolumesRequest
 
-	cmd.Flags().BoolVar(&listReq.IncludeBrowse, "include-browse", listReq.IncludeBrowse, `Whether to include volumes in the response for which the principal can only access selective metadata for.`)
-	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of volumes to return (page length).`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque token returned by a previous request.`)
+	cmd.Flags().BoolVar(&listReq.IncludeBrowse, "include-browse", listReq.IncludeBrowse, `Whether to include volumes in the response for which the principal can only access selective metadata for. Wire name: 'include_browse'.`)
+	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of volumes to return (page length). Wire name: 'max_results'.`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque token returned by a previous request. Wire name: 'page_token'.`)
 
 	cmd.Use = "list CATALOG_NAME SCHEMA_NAME"
 	cmd.Short = `List Volumes.`
@@ -327,7 +328,7 @@ func newRead() *cobra.Command {
 
 	var readReq catalog.ReadVolumeRequest
 
-	cmd.Flags().BoolVar(&readReq.IncludeBrowse, "include-browse", readReq.IncludeBrowse, `Whether to include volumes in the response for which the principal can only access selective metadata for.`)
+	cmd.Flags().BoolVar(&readReq.IncludeBrowse, "include-browse", readReq.IncludeBrowse, `Whether to include volumes in the response for which the principal can only access selective metadata for. Wire name: 'include_browse'.`)
 
 	cmd.Use = "read NAME"
 	cmd.Short = `Get a Volume.`
@@ -405,9 +406,9 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `The comment attached to the volume.`)
-	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the volume.`)
-	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `The identifier of the user who owns the volume.`)
+	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `The comment attached to the volume. Wire name: 'comment'.`)
+	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the volume. Wire name: 'new_name'.`)
+	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `The identifier of the user who owns the volume. Wire name: 'owner'.`)
 
 	cmd.Use = "update NAME"
 	cmd.Short = `Update a Volume.`

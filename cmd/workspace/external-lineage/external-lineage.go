@@ -117,12 +117,14 @@ func newCreateExternalLineageRelationship() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid SOURCE: %s", args[0])
 			}
+
 		}
 		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[1], &createExternalLineageRelationshipReq.ExternalLineageRelationship.Target)
 			if err != nil {
 				return fmt.Errorf("invalid TARGET: %s", args[1])
 			}
+
 		}
 
 		response, err := w.ExternalLineage.CreateExternalLineageRelationship(ctx, createExternalLineageRelationshipReq)
@@ -226,8 +228,8 @@ func newListExternalLineageRelationships() *cobra.Command {
 
 	cmd.Flags().Var(&listExternalLineageRelationshipsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().IntVar(&listExternalLineageRelationshipsReq.PageSize, "page-size", listExternalLineageRelationshipsReq.PageSize, `Specifies the maximum number of external lineage relationships to return in a single response.`)
-	cmd.Flags().StringVar(&listExternalLineageRelationshipsReq.PageToken, "page-token", listExternalLineageRelationshipsReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
+	cmd.Flags().IntVar(&listExternalLineageRelationshipsReq.PageSize, "page-size", listExternalLineageRelationshipsReq.PageSize, `Specifies the maximum number of external lineage relationships to return in a single response. Wire name: 'page_size'.`)
+	cmd.Flags().StringVar(&listExternalLineageRelationshipsReq.PageToken, "page-token", listExternalLineageRelationshipsReq.PageToken, `Opaque pagination token to go to next page based on previous query. Wire name: 'page_token'.`)
 
 	cmd.Use = "list-external-lineage-relationships"
 	cmd.Short = `List external lineage relationships.`
@@ -354,12 +356,14 @@ func newUpdateExternalLineageRelationship() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid SOURCE: %s", args[1])
 			}
+
 		}
 		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[2], &updateExternalLineageRelationshipReq.ExternalLineageRelationship.Target)
 			if err != nil {
 				return fmt.Errorf("invalid TARGET: %s", args[2])
 			}
+
 		}
 
 		response, err := w.ExternalLineage.UpdateExternalLineageRelationship(ctx, updateExternalLineageRelationshipReq)

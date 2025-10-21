@@ -148,6 +148,7 @@ func newCreate() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid LIST_TYPE: %s", args[1])
 			}
+
 		}
 
 		response, err := a.IpAccessLists.Create(ctx, createReq)
@@ -425,12 +426,14 @@ func newReplace() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid LIST_TYPE: %s", args[2])
 			}
+
 		}
 		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[3], &replaceReq.Enabled)
 			if err != nil {
 				return fmt.Errorf("invalid ENABLED: %s", args[3])
 			}
+
 		}
 
 		err = a.IpAccessLists.Replace(ctx, replaceReq)
@@ -469,10 +472,10 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&updateReq.Enabled, "enabled", updateReq.Enabled, `Specifies whether this IP access list is enabled.`)
+	cmd.Flags().BoolVar(&updateReq.Enabled, "enabled", updateReq.Enabled, `Specifies whether this IP access list is enabled. Wire name: 'enabled'.`)
 	// TODO: array: ip_addresses
-	cmd.Flags().StringVar(&updateReq.Label, "label", updateReq.Label, `Label for the IP access list.`)
-	cmd.Flags().Var(&updateReq.ListType, "list-type", `Supported values: [ALLOW, BLOCK]`)
+	cmd.Flags().StringVar(&updateReq.Label, "label", updateReq.Label, `Label for the IP access list. Wire name: 'label'.`)
+	cmd.Flags().Var(&updateReq.ListType, "list-type", `Supported values: [ALLOW, BLOCK]. Wire name: 'list_type'.`)
 
 	cmd.Use = "update IP_ACCESS_LIST_ID"
 	cmd.Short = `Update access list.`

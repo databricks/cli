@@ -79,13 +79,13 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `Description about the recipient.`)
-	cmd.Flags().StringVar(&createReq.DataRecipientGlobalMetastoreId, "data-recipient-global-metastore-id", createReq.DataRecipientGlobalMetastoreId, `The global Unity Catalog metastore id provided by the data recipient.`)
-	cmd.Flags().Int64Var(&createReq.ExpirationTime, "expiration-time", createReq.ExpirationTime, `Expiration timestamp of the token, in epoch milliseconds.`)
+	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `Description about the recipient. Wire name: 'comment'.`)
+	cmd.Flags().StringVar(&createReq.DataRecipientGlobalMetastoreId, "data-recipient-global-metastore-id", createReq.DataRecipientGlobalMetastoreId, `The global Unity Catalog metastore id provided by the data recipient. Wire name: 'data_recipient_global_metastore_id'.`)
+	cmd.Flags().Int64Var(&createReq.ExpirationTime, "expiration-time", createReq.ExpirationTime, `Expiration timestamp of the token, in epoch milliseconds. Wire name: 'expiration_time'.`)
 	// TODO: complex arg: ip_access_list
-	cmd.Flags().StringVar(&createReq.Owner, "owner", createReq.Owner, `Username of the recipient owner.`)
+	cmd.Flags().StringVar(&createReq.Owner, "owner", createReq.Owner, `Username of the recipient owner. Wire name: 'owner'.`)
 	// TODO: complex arg: properties_kvpairs
-	cmd.Flags().StringVar(&createReq.SharingCode, "sharing-code", createReq.SharingCode, `The one-time sharing code provided by the data recipient.`)
+	cmd.Flags().StringVar(&createReq.SharingCode, "sharing-code", createReq.SharingCode, `The one-time sharing code provided by the data recipient. Wire name: 'sharing_code'.`)
 
 	cmd.Use = "create NAME AUTHENTICATION_TYPE"
 	cmd.Short = `Create a share recipient.`
@@ -139,6 +139,7 @@ func newCreate() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid AUTHENTICATION_TYPE: %s", args[1])
 			}
+
 		}
 
 		response, err := w.Recipients.Create(ctx, createReq)
@@ -289,9 +290,9 @@ func newList() *cobra.Command {
 
 	var listReq sharing.ListRecipientsRequest
 
-	cmd.Flags().StringVar(&listReq.DataRecipientGlobalMetastoreId, "data-recipient-global-metastore-id", listReq.DataRecipientGlobalMetastoreId, `If not provided, all recipients will be returned.`)
-	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of recipients to return.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
+	cmd.Flags().StringVar(&listReq.DataRecipientGlobalMetastoreId, "data-recipient-global-metastore-id", listReq.DataRecipientGlobalMetastoreId, `If not provided, all recipients will be returned. Wire name: 'data_recipient_global_metastore_id'.`)
+	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of recipients to return. Wire name: 'max_results'.`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query. Wire name: 'page_token'.`)
 
 	cmd.Use = "list"
 	cmd.Short = `List share recipients.`
@@ -398,6 +399,7 @@ func newRotateToken() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid EXISTING_TOKEN_EXPIRE_IN_SECONDS: %s", args[1])
 			}
+
 		}
 
 		response, err := w.Recipients.RotateToken(ctx, rotateTokenReq)
@@ -433,8 +435,8 @@ func newSharePermissions() *cobra.Command {
 
 	var sharePermissionsReq sharing.SharePermissionsRequest
 
-	cmd.Flags().IntVar(&sharePermissionsReq.MaxResults, "max-results", sharePermissionsReq.MaxResults, `Maximum number of permissions to return.`)
-	cmd.Flags().StringVar(&sharePermissionsReq.PageToken, "page-token", sharePermissionsReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
+	cmd.Flags().IntVar(&sharePermissionsReq.MaxResults, "max-results", sharePermissionsReq.MaxResults, `Maximum number of permissions to return. Wire name: 'max_results'.`)
+	cmd.Flags().StringVar(&sharePermissionsReq.PageToken, "page-token", sharePermissionsReq.PageToken, `Opaque pagination token to go to next page based on previous query. Wire name: 'page_token'.`)
 
 	cmd.Use = "share-permissions NAME"
 	cmd.Short = `Get recipient share permissions.`
@@ -496,11 +498,11 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `Description about the recipient.`)
-	cmd.Flags().Int64Var(&updateReq.ExpirationTime, "expiration-time", updateReq.ExpirationTime, `Expiration timestamp of the token, in epoch milliseconds.`)
+	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `Description about the recipient. Wire name: 'comment'.`)
+	cmd.Flags().Int64Var(&updateReq.ExpirationTime, "expiration-time", updateReq.ExpirationTime, `Expiration timestamp of the token, in epoch milliseconds. Wire name: 'expiration_time'.`)
 	// TODO: complex arg: ip_access_list
-	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the recipient.`)
-	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of the recipient owner.`)
+	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the recipient. Wire name: 'new_name'.`)
+	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of the recipient owner. Wire name: 'owner'.`)
 	// TODO: complex arg: properties_kvpairs
 
 	cmd.Use = "update NAME"
