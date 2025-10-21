@@ -714,7 +714,7 @@ func runTest(t *testing.T,
 		if config.CompiledIgnoreObject.MatchesPath(relPath) {
 			continue
 		}
-		if strings.HasPrefix(relPath, "LOG") {
+		if strings.HasPrefix(filepath.Base(relPath), "LOG") {
 			prefix := relPath + ": "
 			messages := testutil.ReadFile(t, filepath.Join(tmpDir, relPath))
 			messages = strings.TrimRight(messages, "\r\n \t")
