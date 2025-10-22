@@ -22,10 +22,9 @@
 
 --- [TESTROOT]/bundle/templates/default-python/classic/../serverless/output/my_default_python/resources/sample_job.job.yml
 +++ output/my_default_python/resources/sample_job.job.yml
-@@ -26,5 +26,10 @@
+@@ -26,4 +26,10 @@
            notebook_task:
              notebook_path: ../src/sample_notebook.ipynb
--          environment_key: default
 +          job_cluster_key: job_cluster
 +          libraries:
 +            # By default we just include the .whl file generated for the my_default_python package.
@@ -34,7 +33,7 @@
 +            - whl: ../dist/*.whl
          - task_key: python_wheel_task
            depends_on:
-@@ -38,5 +43,10 @@
+@@ -37,5 +43,10 @@
                - "--schema"
                - "${var.schema}"
 -          environment_key: default
@@ -46,7 +45,7 @@
 +            - whl: ../dist/*.whl
          - task_key: refresh_pipeline
            depends_on:
-@@ -45,11 +55,11 @@
+@@ -44,11 +55,11 @@
              pipeline_id: ${resources.pipelines.my_default_python_etl.id}
 
 -      environments:
