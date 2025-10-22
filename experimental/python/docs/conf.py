@@ -16,7 +16,6 @@ sys.path.append(os.path.abspath("ext"))
 project = "databricks-bundles"
 copyright = "2024, Databricks"
 author = "Gleb Kanterov"
-release = "beta"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

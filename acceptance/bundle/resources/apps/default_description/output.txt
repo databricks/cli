@@ -5,12 +5,12 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests
+>>> print_requests.py //apps
 {
+  "method": "POST",
+  "path": "/api/2.0/apps",
   "body": {
     "description": "",
     "name": "myappname"
-  },
-  "method": "POST",
-  "path": "/api/2.0/apps"
+  }
 }

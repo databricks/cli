@@ -1,5 +1,5 @@
 Error: git clone failed: git clone https://invalid-domain-123.databricks.com/hello/world (redacted) --no-tags --depth=1: exit status 128. Cloning into '(redacted)'...
-fatal: unable to access 'https://invalid-domain-123.databricks.com/hello/world/': Could not resolve host: invalid-domain-123.databricks.com
+fatal: unable to access 'https://invalid-domain-123.databricks.com/hello/world/': SSL: no alternative certificate subject name matches target host name 'invalid-domain-123.databricks.com'
 
 
 Exit code: 1

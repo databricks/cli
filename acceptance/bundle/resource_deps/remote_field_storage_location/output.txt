@@ -31,7 +31,7 @@ create volumes.foo
 
 Plan: 3 to add, 0 to change, 0 to delete, 0 unchanged
 
->>> print_requests
+>>> print_requests.py --get //unity
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/testbundle-[UNIQUE_NAME]/default/files...

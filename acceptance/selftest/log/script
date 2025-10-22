@@ -1,0 +1,13 @@
+# If logs are visible (go test -v), this will produce this:
+#    acceptance_test.go:725:
+#        LOG: main log
+#        LOG: no replacements: 123456789
+#        LOG: Tue Oct 21 12:07:45 CEST 2025
+#    acceptance_test.go:725: subdir/LOG.extra: extra log
+
+echo "main log" >> LOG
+echo "no replacements: 123456789" >> LOG
+date >> LOG
+
+mkdir subdir
+echo "extra log" >> subdir/LOG.extra
