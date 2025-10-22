@@ -25,7 +25,6 @@ resources:
         - task_key: notebook_task
           notebook_task:
             notebook_path: ../src/sample_notebook.ipynb
-          environment_key: default
         - task_key: python_wheel_task
           depends_on:
             - task_key: notebook_task

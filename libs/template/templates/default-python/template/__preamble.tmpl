@@ -4,8 +4,8 @@ This file only template directives; it is skipped for the actual output.
 
 {{skip "__preamble"}}
 
-{{$notDLT := not (eq .include_dlt "yes")}}
-{{$notNotebook := not (eq .include_notebook "yes")}}
+{{$notPipeline := not (eq .include_pipeline "yes")}}
+{{$notJob := not (eq .include_job "yes")}}
 {{$notPython := not (eq .include_python "yes")}}
 
 {{if $notPython}}
@@ -16,16 +16,16 @@ This file only template directives; it is skipped for the actual output.
   {{skip "{{.project_name}}/requirements-dev.txt"}}
 {{end}}
 
-{{if $notDLT}}
+{{if $notPipeline}}
   {{skip "{{.project_name}}/src/pipeline.ipynb"}}
   {{skip "{{.project_name}}/resources/{{.project_name}}.pipeline.yml"}}
 {{end}}
 
-{{if $notNotebook}}
+{{if $notJob}}
   {{skip "{{.project_name}}/src/notebook.ipynb"}}
 {{end}}
 
-{{if (and $notDLT $notNotebook $notPython)}}
+{{if (and $notPipeline $notJob $notPython)}}
   {{skip "{{.project_name}}/resources/{{.project_name}}.job.yml"}}
 {{else}}
   {{skip "{{.project_name}}/resources/.gitkeep"}}
