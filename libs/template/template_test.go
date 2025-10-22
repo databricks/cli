@@ -56,7 +56,7 @@ func TestTemplateGetDatabricksTemplate(t *testing.T) {
 		DefaultSql,
 		DbtSql,
 		MlopsStacks,
-		DefaultPydabs,
+		Pydabs,
 	}
 
 	for _, name := range names {
