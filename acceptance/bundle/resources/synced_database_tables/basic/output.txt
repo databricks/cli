@@ -1,4 +1,24 @@
 
+>>> [CLI] bundle summary
+Name: deploy-lakebase-synced-table-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-synced-table-[UNIQUE_NAME]/default
+Resources:
+  Database catalogs:
+    my_catalog:
+      Name: my_catalog_[UNIQUE_NAME]
+      URL:  [DATABRICKS_URL]/explore/data/my_catalog_[UNIQUE_NAME]
+  Database instances:
+    my_instance:
+      Name: test-db-synced-table-[UNIQUE_NAME]
+      URL:  (not deployed)
+  Synced database tables:
+    my_synced_table:
+      Name: ${resources.database_catalogs.my_catalog.name}.${resources.database_catalogs.my_catalog.database_name}.my_synced_table
+      URL:  [DATABRICKS_URL]/explore/data/$%7Bresources.database_catalogs.my_catalog.name%7D.$%7Bresources.database_catalogs.my_catalog.database_name%7D.my_synced_table
+
 >>> [CLI] bundle validate
 Name: deploy-lakebase-synced-table-[UNIQUE_NAME]
 Target: default

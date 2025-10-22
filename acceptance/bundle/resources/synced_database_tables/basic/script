@@ -5,6 +5,9 @@ cleanup() {
 }
  trap cleanup EXIT
 
+# test on fresh bundles
+trace $CLI bundle summary
+
 trace $CLI bundle validate
 trace $CLI bundle deploy
 trace $CLI bundle summary > out.summary.txt
