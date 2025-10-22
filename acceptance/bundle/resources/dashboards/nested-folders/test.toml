@@ -2,6 +2,7 @@ Badness = "Cannot read dashboard, expecting deployment to succeed"
 Local = true
 Cloud = true
 RequiresWarehouse = true
+RecordRequests = false
 
 Ignore = [
     "databricks.yml",

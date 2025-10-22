@@ -1,1 +1,1 @@
-$CLI bundle validate -o json | jq .resources.dashboards
+$CLI bundle validate -o json | jq '.resources.dashboards | map_values({embed_credentials: .embed_credentials, parent_path: .parent_path})'
