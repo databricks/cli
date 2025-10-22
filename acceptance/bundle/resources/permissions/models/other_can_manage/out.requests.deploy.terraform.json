@@ -1,0 +1,16 @@
+{
+  "method": "PUT",
+  "path": "/api/2.0/permissions/registered-models/test-model",
+  "body": {
+    "access_control_list": [
+      {
+        "permission_level": "CAN_MANAGE",
+        "service_principal_name": "[UUID]"
+      },
+      {
+        "permission_level": "CAN_MANAGE",
+        "user_name": "[USERNAME]"
+      }
+    ]
+  }
+}

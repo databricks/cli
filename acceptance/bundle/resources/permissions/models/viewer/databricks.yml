@@ -1,0 +1,7 @@
+resources:
+  models:
+    foo:
+      name: test-model
+      permissions:
+        - level: CAN_READ
+          user_name: viewer@example.com

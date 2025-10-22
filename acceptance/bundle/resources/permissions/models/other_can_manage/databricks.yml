@@ -1,0 +1,7 @@
+resources:
+  models:
+    foo:
+      name: test-model
+      permissions:
+        - level: CAN_MANAGE
+          service_principal_name: f37d18cd-98a8-4db5-8112-12dd0a6bfe38
