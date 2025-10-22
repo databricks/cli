@@ -1,8 +1,8 @@
 [project]
-name = "{{.project_name}}"
+name = "my_pydabs"
 version = "0.0.1"
-authors = [{ name = "{{user_name}}" }]
-requires-python = "{{template "conservative_db_connect_python_version_spec"}}"
+authors = [{ name = "[USERNAME]" }]
+requires-python = ">=3.10,<=3.13"
 
 [dependency-groups]
 dev = [
@@ -15,11 +15,9 @@ dev = [
     # Note that for local development, you should use a version that is not newer
     # than the remote cluster or serverless compute you connect to.
     # See also https://docs.databricks.com/dev-tools/databricks-connect.html.
-    "databricks-connect{{template "conservative_db_connect_version_spec"}}",
-    {{- if eq .enable_pydabs "yes" }}
+    "databricks-connect>=15.4,<15.5",
     # Python support for Databricks Asset Bundles
-    "databricks-bundles=={{template "latest_databricks_bundles_version"}}",
-    {{- end }}
+    "databricks-bundles==x.y.z",
 ]
 
 [tool.pytest.ini_options]
@@ -33,7 +31,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/{{.project_name}}"]
+packages = ["src/my_pydabs"]
 
 [project.scripts]
-main = "{{.project_name}}.main:main"
+main = "my_pydabs.main:main"

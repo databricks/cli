@@ -1,0 +1,5 @@
+[EnvMatrix]
+INCLUDE_NOTEBOOK = ["yes", "no"]
+INCLUDE_DLT = ["yes", "no"]
+INCLUDE_PYTHON = ["yes", "no"]
+SERVERLESS = ["yes", "no"]
