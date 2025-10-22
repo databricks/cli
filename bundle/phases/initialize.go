@@ -13,12 +13,10 @@ import (
 	pythonmutator "github.com/databricks/cli/bundle/config/mutator/python"
 	"github.com/databricks/cli/bundle/config/validate"
 	"github.com/databricks/cli/bundle/deploy/metadata"
-	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/bundle/scripts"
 	"github.com/databricks/cli/bundle/trampoline"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/logdiag"
 )
 
 // The initialize phase fills in defaults and connects to the workspace.
@@ -193,26 +191,9 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Updates (typed): b.Config.Resources.Pipelines[].CreatePipeline.Deployment (sets deployment metadata for bundle deployments)
 		// Annotates pipelines with bundle deployment metadata
 		metadata.AnnotatePipelines(),
+
+		// Reads (typed): b.Config.Experimental.Scripts["post_init"] (checks if script is defined)
+		// Executes the post_init script hook defined in the bundle configuration
+		scripts.Execute(config.ScriptPostInit),
 	)
-
-	if logdiag.HasError(ctx) {
-		return
-	}
-
-	if !*b.DirectDeployment {
-		// Reads (typed): b.Config.Bundle.Terraform (checks terraform configuration)
-		// Updates (typed): b.Config.Bundle.Terraform (sets default values if not already set)
-		// Updates (typed): b.Terraform (initializes Terraform executor with proper environment variables and paths)
-		// Initializes Terraform with the correct binary, working directory, and environment variables for authentication
-
-		bundle.ApplyContext(ctx, b, terraform.Initialize())
-	}
-
-	if logdiag.HasError(ctx) {
-		return
-	}
-
-	// Reads (typed): b.Config.Experimental.Scripts["post_init"] (checks if script is defined)
-	// Executes the post_init script hook defined in the bundle configuration
-	bundle.ApplyContext(ctx, b, scripts.Execute(config.ScriptPostInit))
 }
