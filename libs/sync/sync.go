@@ -174,77 +174,121 @@ func (s *Sync) notifyComplete(ctx context.Context, d diff) {
 	s.seq++
 }
 
+// FileList contains the list of files to sync and counts of files by their sync status.
+type FileList struct {
+	Files                 []fileset.File
+	Included              int
+	ExcludedDirectories   int
+	ExcludedFiles         int
+	ExcludedBySyncExclude int
+}
+
 // Upload all files in the file tree rooted at the local path configured in the
 // SyncOptions to the remote path configured in the SyncOptions.
 //
-// Returns the list of files tracked (and synchronized) by the syncer during the run,
-// and an error if any occurred.
-func (s *Sync) RunOnce(ctx context.Context) ([]fileset.File, error) {
-	files, err := s.GetFileList(ctx)
+// Returns the file list with counts and an error if any occurred.
+func (s *Sync) RunOnce(ctx context.Context) (*FileList, error) {
+	fileList, err := s.GetFileList(ctx)
 	if err != nil {
-		return files, err
+		return fileList, err
 	}
 
-	change, err := s.snapshot.diff(ctx, files)
+	change, err := s.snapshot.diff(ctx, fileList.Files)
 	if err != nil {
-		return files, err
+		return fileList, err
 	}
 
 	s.notifyStart(ctx, change)
 	if change.IsEmpty() {
 		s.notifyComplete(ctx, change)
-		return files, nil
+		return fileList, nil
 	}
 
 	err = s.applyDiff(ctx, change)
 	if err != nil {
-		return files, err
+		return fileList, err
 	}
 
 	if !s.DryRun {
 		err = s.snapshot.Save(ctx)
 		if err != nil {
 			log.Errorf(ctx, "cannot store snapshot: %s", err)
-			return files, err
+			return fileList, err
 		}
 	}
 
 	s.notifyComplete(ctx, change)
-	return files, nil
+	return fileList, nil
 }
 
-func (s *Sync) GetFileList(ctx context.Context) ([]fileset.File, error) {
-	// tradeoff: doing portable monitoring only due to macOS max descriptor manual ulimit setting requirement
-	// https://github.com/gorakhargosh/watchdog/blob/master/src/watchdog/observers/kqueue.py#L394-L418
-	all := set.NewSetF(func(f fileset.File) string {
+func (s *Sync) GetFileList(ctx context.Context) (*FileList, error) {
+	// Get ignorer for exclude patterns
+	var excludeIgnorer fileset.Ignorer
+	if s.excludeFileSet != nil {
+		excludeIgnorer = s.excludeFileSet.Ignorer()
+	}
+
+	// Check if we have include patterns that might override gitignore
+	hasIncludePatterns := false
+	if s.includeFileSet != nil {
+		ignorer := s.includeFileSet.Ignorer()
+		hasIncludePatterns = ignorer != nil
+	}
+
+	// Build set for easier manipulation
+	syncSet := set.NewSetF(func(f fileset.File) string {
 		return f.Relative
 	})
-	gitFiles, err := s.fileSet.Files()
+
+	var excludedDirs int
+	var excludedFiles int
+
+	// Get files respecting gitignore
+	files, stats, err := s.fileSet.FilesWithStats()
 	if err != nil {
 		log.Errorf(ctx, "cannot list files: %s", err)
 		return nil, err
 	}
-	all.Add(gitFiles...)
+	syncSet.Add(files...)
+	excludedDirs = stats.SkippedDirectories
+	excludedFiles = stats.SkippedFiles
 
-	include, err := s.includeFileSet.Files()
-	if err != nil {
-		log.Errorf(ctx, "cannot list include files: %s", err)
-		return nil, err
+	// If there are include patterns, also add files matching those patterns
+	// (even if they're gitignored). This allows include patterns to override gitignore.
+	if hasIncludePatterns {
+		includeFiles, err := s.includeFileSet.Files()
+		if err != nil {
+			log.Errorf(ctx, "cannot list files matching include patterns: %s", err)
+			return nil, err
+		}
+		syncSet.Add(includeFiles...)
 	}
 
-	all.Add(include...)
-
-	exclude, err := s.excludeFileSet.Files()
-	if err != nil {
-		log.Errorf(ctx, "cannot list exclude files: %s", err)
-		return nil, err
+	// Remove files matching exclude patterns and count them
+	// We can post-filter exclude patterns since they don't affect directory traversal
+	excludedBySyncExclude := 0
+	if excludeIgnorer != nil {
+		for _, f := range syncSet.Iter() {
+			ignored, err := excludeIgnorer.IgnoreFile(f.Relative)
+			if err != nil {
+				log.Errorf(ctx, "cannot check if file matches exclude pattern: %s", err)
+				return nil, err
+			}
+			// If not ignored by excluder, it means the file matches exclude patterns
+			if !ignored {
+				syncSet.Remove(f)
+				excludedBySyncExclude++
+			}
+		}
 	}
 
-	for _, f := range exclude {
-		all.Remove(f)
-	}
-
-	return all.Iter(), nil
+	return &FileList{
+		Files:                 syncSet.Iter(),
+		Included:              syncSet.Size(),
+		ExcludedDirectories:   excludedDirs,
+		ExcludedFiles:         excludedFiles,
+		ExcludedBySyncExclude: excludedBySyncExclude,
+	}, nil
 }
 
 func (s *Sync) RunContinuous(ctx context.Context) error {
