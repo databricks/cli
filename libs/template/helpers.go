@@ -33,6 +33,29 @@ type pair struct {
 	v any
 }
 
+type asyncResult[T any] struct {
+	value T
+	err   error
+	done  chan struct{}
+}
+
+func newAsyncResult[T any]() *asyncResult[T] {
+	return &asyncResult[T]{
+		done: make(chan struct{}),
+	}
+}
+
+func (r *asyncResult[T]) set(value T, err error) {
+	r.value = value
+	r.err = err
+	close(r.done)
+}
+
+func (r *asyncResult[T]) get() (T, error) {
+	<-r.done
+	return r.value, r.err
+}
+
 var (
 	cachedUser               *iam.User
 	cachedIsServicePrincipal *bool
@@ -54,6 +77,54 @@ var bundleUuid = uuid.New().String()
 
 func loadHelpers(ctx context.Context) template.FuncMap {
 	w := cmdctx.WorkspaceClient(ctx)
+
+	// Start async fetches for user info and catalog
+	userResult := newAsyncResult[*iam.User]()
+	catalogResult := newAsyncResult[string]()
+
+	// Track whether async fetches were started
+	hasUserAPI := w != nil && w.CurrentUser != nil
+	hasCatalogAPI := w != nil && w.Metastores != nil
+
+	// Only start async fetches if workspace client and APIs are available
+	if hasUserAPI && hasCatalogAPI {
+		// Fetch user asynchronously
+		go func() {
+			if cachedUser != nil {
+				userResult.set(cachedUser, nil)
+				return
+			}
+			user, err := w.CurrentUser.Me(ctx)
+			if err == nil {
+				cachedUser = user
+			}
+			userResult.set(user, err)
+		}()
+
+		// Fetch catalog asynchronously
+		go func() {
+			if cachedCatalog != nil {
+				catalogResult.set(*cachedCatalog, nil)
+				return
+			}
+			metastore, err := w.Metastores.Current(ctx)
+			if err != nil {
+				var aerr *apierr.APIError
+				if errors.As(err, &aerr) && slices.Contains(metastoreDisabledErrorCodes, aerr.ErrorCode) {
+					// Ignore: access denied or workspace doesn't have a metastore assigned
+					empty_default := ""
+					cachedCatalog = &empty_default
+					catalogResult.set("", nil)
+					return
+				}
+				catalogResult.set("", err)
+				return
+			}
+			cachedCatalog = &metastore.DefaultCatalogName
+			catalogResult.set(metastore.DefaultCatalogName, nil)
+		}()
+	}
+
 	return template.FuncMap{
 		"fail": func(format string, args ...any) (any, error) {
 			return nil, ErrFail{fmt.Sprintf(format, args...)}
@@ -118,12 +189,19 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 			return w.Config.Host, nil
 		},
 		"user_name": func() (string, error) {
-			if cachedUser == nil {
-				var err error
-				cachedUser, err = w.CurrentUser.Me(ctx)
+			if hasUserAPI {
+				user, err := userResult.get()
 				if err != nil {
 					return "", err
 				}
+				result := user.UserName
+				if result == "" {
+					result = user.Id
+				}
+				return result, nil
+			}
+			if cachedUser == nil {
+				return "", errors.New("workspace client not configured")
 			}
 			result := cachedUser.UserName
 			if result == "" {
@@ -132,31 +210,26 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 			return result, nil
 		},
 		"short_name": func() (string, error) {
-			if cachedUser == nil {
-				var err error
-				cachedUser, err = w.CurrentUser.Me(ctx)
+			if hasUserAPI {
+				user, err := userResult.get()
 				if err != nil {
 					return "", err
 				}
+				return iamutil.GetShortUserName(user), nil
+			}
+			if cachedUser == nil {
+				return "", errors.New("workspace client not configured")
 			}
 			return iamutil.GetShortUserName(cachedUser), nil
 		},
 		// Get the default workspace catalog. If there is no default, or if
 		// Unity Catalog is not enabled, return an empty string.
 		"default_catalog": func() (string, error) {
+			if hasCatalogAPI {
+				return catalogResult.get()
+			}
 			if cachedCatalog == nil {
-				metastore, err := w.Metastores.Current(ctx)
-				if err != nil {
-					var aerr *apierr.APIError
-					if errors.As(err, &aerr) && slices.Contains(metastoreDisabledErrorCodes, aerr.ErrorCode) {
-						// Ignore: access denied or workspace doesn't have a metastore assigned
-						empty_default := ""
-						cachedCatalog = &empty_default
-						return "", nil
-					}
-					return "", err
-				}
-				cachedCatalog = &metastore.DefaultCatalogName
+				return "", errors.New("workspace client not configured")
 			}
 			return *cachedCatalog, nil
 		},
@@ -164,12 +237,17 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 			if cachedIsServicePrincipal != nil {
 				return *cachedIsServicePrincipal, nil
 			}
-			if cachedUser == nil {
-				var err error
-				cachedUser, err = w.CurrentUser.Me(ctx)
+			if hasUserAPI {
+				user, err := userResult.get()
 				if err != nil {
 					return false, err
 				}
+				result := iamutil.IsServicePrincipal(user)
+				cachedIsServicePrincipal = &result
+				return result, nil
+			}
+			if cachedUser == nil {
+				return false, errors.New("workspace client not configured")
 			}
 			result := iamutil.IsServicePrincipal(cachedUser)
 			cachedIsServicePrincipal = &result
