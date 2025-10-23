@@ -25,15 +25,25 @@ func (p *plan) Name() string {
 	return "terraform.Plan"
 }
 
-func (p *plan) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	tf := b.Terraform
-	if tf == nil {
-		return diag.Errorf("terraform not initialized")
+func initTF(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	diags := Initialize(ctx, b)
+	if diags.HasError() {
+		return diags
 	}
 
+	tf := b.Terraform
 	err := tf.Init(ctx, tfexec.Upgrade(true))
 	if err != nil {
 		return diag.Errorf("terraform init: %v", err)
+	}
+
+	return nil
+}
+
+func (p *plan) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	diags := Initialize(ctx, b)
+	if diags.HasError() {
+		return diags
 	}
 
 	// Persist computed plan
@@ -44,7 +54,7 @@ func (p *plan) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	planPath := filepath.Join(tfDir, "plan")
 	destroy := p.goal == PlanDestroy
 
-	notEmpty, err := tf.Plan(ctx, tfexec.Destroy(destroy), tfexec.Out(planPath))
+	notEmpty, err := b.Terraform.Plan(ctx, tfexec.Destroy(destroy), tfexec.Out(planPath))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -54,7 +64,7 @@ func (p *plan) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	b.TerraformPlanIsEmpty = !notEmpty
 
 	log.Debugf(ctx, "Planning complete and persisted at %s\n", planPath)
-	return nil
+	return diags
 }
 
 // Plan returns a [bundle.Mutator] that runs the equivalent of `terraform plan -out ./plan`
