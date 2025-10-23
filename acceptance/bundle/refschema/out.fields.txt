@@ -40,7 +40,7 @@ resources.alerts.*.parent_path	string	ALL
 resources.alerts.*.permissions	[]resources.AlertPermission	INPUT
 resources.alerts.*.permissions[*]	resources.AlertPermission	INPUT
 resources.alerts.*.permissions[*].group_name	string	INPUT
-resources.alerts.*.permissions[*].level	string	INPUT
+resources.alerts.*.permissions[*].level	resources.AlertPermissionLevel	INPUT
 resources.alerts.*.permissions[*].service_principal_name	string	INPUT
 resources.alerts.*.permissions[*].user_name	string	INPUT
 resources.alerts.*.query_text	string	ALL
