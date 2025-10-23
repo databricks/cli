@@ -8,7 +8,6 @@ import (
 	"os"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
@@ -70,21 +69,6 @@ Typical use cases:
 		phases.Initialize(ctx, b)
 		if logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
-		}
-
-		// not applicable to direct deployment, we don't need resource configuration there
-		if !*b.DirectDeployment {
-			bundle.ApplySeqContext(ctx, b,
-				// We need to resolve artifact variable (how we do it in build phase)
-				// because some of the to-be-destroyed resource might use this variable.
-				// Not resolving might lead to terraform "Reference to undeclared resource" error
-				mutator.ResolveVariableReferencesWithoutResources("artifacts"),
-				mutator.ResolveVariableReferencesOnlyResources("artifacts"),
-			)
-
-			if logdiag.HasError(ctx) {
-				return root.ErrAlreadyPrinted
-			}
 		}
 
 		phases.Destroy(ctx, b)

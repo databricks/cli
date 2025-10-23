@@ -205,11 +205,8 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 // This is used when deployPrepare has already been called.
 func planWithoutPrepare(ctx context.Context, b *bundle.Bundle) *deployplan.Plan {
 	if *b.DirectDeployment {
-		if err := b.OpenStateFile(ctx); err != nil {
-			logdiag.LogError(ctx, err)
-			return nil
-		}
-		plan, err := b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(), &b.Config)
+		_, localPath := b.StateFilenameDirect(ctx)
+		plan, err := b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(), &b.Config, localPath)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return nil

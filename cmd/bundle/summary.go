@@ -2,13 +2,9 @@ package bundle
 
 import (
 	"context"
-	"errors"
-	"os"
-	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/mutator"
-	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/render"
 	"github.com/databricks/cli/bundle/statemgmt"
@@ -122,17 +118,19 @@ func prepareBundleForSummary(cmd *cobra.Command, forcePull, includeLocations boo
 		return nil
 	}
 
-	cacheDir, err := terraform.Dir(ctx, b)
-	if err != nil {
-		logdiag.LogError(ctx, err)
-		return nil
-	}
-	_, stateFileErr := os.Stat(filepath.Join(cacheDir, b.StateFilename()))
-	_, configFileErr := os.Stat(filepath.Join(cacheDir, terraform.TerraformConfigFileName))
-	noCache := errors.Is(stateFileErr, os.ErrNotExist) || errors.Is(configFileErr, os.ErrNotExist)
+	//cacheDir, err := terraform.Dir(ctx, b)
+	//if err != nil {
+	//	logdiag.LogError(ctx, err)
+	//	return nil
+	//}
+	//_, stateFileErr := os.Stat(filepath.Join(cacheDir, b.StateFilename()))
+	//_, configFileErr := os.Stat(filepath.Join(cacheDir, terraform.TerraformConfigFileName))
+	//noCache := errors.Is(stateFileErr, os.ErrNotExist) || errors.Is(configFileErr, os.ErrNotExist)
+	noCache := true
 
 	if forcePull || noCache {
 		bundle.ApplyContext(ctx, b, statemgmt.StatePull())
+
 		if logdiag.HasError(ctx) {
 			return nil
 		}

@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deploy/terraform"
@@ -139,6 +140,12 @@ func Destroy(ctx context.Context, b *bundle.Bundle) {
 
 	if !*b.DirectDeployment {
 		bundle.ApplySeqContext(ctx, b,
+			// We need to resolve artifact variable (how we do it in build phase)
+			// because some of the to-be-destroyed resource might use this variable.
+			// Not resolving might lead to terraform "Reference to undeclared resource" error
+			mutator.ResolveVariableReferencesWithoutResources("artifacts"),
+			mutator.ResolveVariableReferencesOnlyResources("artifacts"),
+
 			terraform.Interpolate(),
 			terraform.Write(),
 			terraform.Plan(terraform.PlanGoal("destroy")),
@@ -151,12 +158,8 @@ func Destroy(ctx context.Context, b *bundle.Bundle) {
 
 	var plan *deployplan.Plan
 	if *b.DirectDeployment {
-		err := b.OpenStateFile(ctx)
-		if err != nil {
-			logdiag.LogError(ctx, err)
-			return
-		}
-		plan, err = b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(), nil)
+		_, localPath := b.StateFilenameDirect(ctx)
+		plan, err = b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(), nil, localPath)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return

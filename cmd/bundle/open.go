@@ -6,8 +6,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/mutator"
@@ -92,13 +90,14 @@ Use after deployment to quickly navigate to your resources in the workspace.`,
 			return err
 		}
 
-		cacheDir, err := terraform.Dir(ctx, b)
-		if err != nil {
-			return err
-		}
-		_, stateFileErr := os.Stat(filepath.Join(cacheDir, b.StateFilename()))
-		_, configFileErr := os.Stat(filepath.Join(cacheDir, terraform.TerraformConfigFileName))
-		noCache := errors.Is(stateFileErr, os.ErrNotExist) || errors.Is(configFileErr, os.ErrNotExist)
+		//cacheDir, err := terraform.Dir(ctx, b)
+		//if err != nil {
+		//	return err
+		//}
+		//_, stateFileErr := os.Stat(filepath.Join(cacheDir, b.StateFilename()))
+		//_, configFileErr := os.Stat(filepath.Join(cacheDir, terraform.TerraformConfigFileName))
+		//noCache := errors.Is(stateFileErr, os.ErrNotExist) || errors.Is(configFileErr, os.ErrNotExist)
+		noCache := true // TODO
 
 		if forcePull || noCache {
 			bundle.ApplyContext(ctx, b, statemgmt.StatePull())

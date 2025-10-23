@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	envlib "github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/logdiag"
-	"github.com/databricks/databricks-sdk-go/useragent"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/maps"
 )
@@ -115,20 +114,9 @@ func MustConfigureBundle(cmd *cobra.Command) *bundle.Bundle {
 	}
 
 	b = bundle.MustLoad(cmd.Context())
-	if b == nil {
-		return b
+	if b != nil {
+		configureBundle(cmd, b)
 	}
-
-	configureBundle(cmd, b)
-	engine, err := b.ConfigureEngine(cmd.Context())
-	if err != nil {
-		logdiag.LogError(cmd.Context(), err)
-		return b
-	}
-
-	ctx := useragent.InContext(cmd.Context(), "engine", engine)
-	cmd.SetContext(ctx)
-
 	return b
 }
 
