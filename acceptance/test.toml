@@ -71,7 +71,7 @@ Old = '\d{8,}'
 New = "[NUMID]"
 Order = 10
 
-[[Repls]]
-Old = '2\d\d\d-\d\d-\d\d(T| )\d\d:\d\d:\d\d(\.\d+(Z|\+\d\d:\d\d)?)?(\d+)?Z?'
-New = "[TIMESTAMP]"
-Order = 10
+#[[Repls]]
+#Old = '2\d\d\d-\d\d-\d\d(T| )\d\d:\d\d:\d\d(\.\d+(Z|\+\d\d:\d\d)?)?(\d+)?Z?'
+#New = "[TIMESTAMP]"
+#Order = 10
