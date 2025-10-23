@@ -156,7 +156,7 @@ func TestHandover(t *testing.T) {
 	wg := sync.WaitGroup{}
 	wg.Go(func() {
 		for i := range TOTAL_MESSAGE_COUNT {
-			if i%MESSAGES_PER_CHUNK == 0 {
+			if i > 0 && i%MESSAGES_PER_CHUNK == 0 {
 				handoverChan <- time.Now()
 			}
 			message := fmt.Appendf(nil, "message %d\n", i)
