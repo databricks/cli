@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 	"time"
 
@@ -18,6 +19,7 @@ import (
 
 type testBuffer struct {
 	t       *testing.T
+	m       sync.Mutex
 	buff    *bytes.Buffer
 	OnWrite chan []byte
 }
@@ -31,6 +33,7 @@ const (
 func newTestBuffer(t *testing.T) *testBuffer {
 	return &testBuffer{
 		t:       t,
+		m:       sync.Mutex{},
 		buff:    new(bytes.Buffer),
 		OnWrite: make(chan []byte, TOTAL_MESSAGE_COUNT),
 	}
@@ -45,7 +48,9 @@ func (tb *testBuffer) Read(p []byte) (n int, err error) {
 }
 
 func (tb *testBuffer) Write(p []byte) (n int, err error) {
+	tb.m.Lock()
 	n, err = tb.buff.Write(p)
+	tb.m.Unlock()
 	require.NoError(tb.t, err)
 	tb.OnWrite <- p
 	return n, err
@@ -61,12 +66,22 @@ func (tb *testBuffer) AssertWrite(expected []byte) error {
 	}
 }
 
-func (tb *testBuffer) WaitForWrite() ([]byte, error) {
-	select {
-	case data := <-tb.OnWrite:
-		return data, nil
-	case <-time.After(2 * time.Second):
-		return nil, errors.New("timeout waiting for write")
+func (tb *testBuffer) Contains(data []byte) bool {
+	tb.m.Lock()
+	defer tb.m.Unlock()
+	return bytes.Contains(tb.buff.Bytes(), data)
+}
+
+func (tb *testBuffer) WaitForWrite(expected []byte) error {
+	for {
+		select {
+		case <-tb.OnWrite:
+			if tb.Contains(expected) {
+				return nil
+			}
+		case <-time.After(2 * time.Second):
+			return errors.New("timeout waiting for write")
+		}
 	}
 }
 
