@@ -1,14 +1,5 @@
 
 >>> errcode [CLI] bundle plan
-Error: exit status 1
+create jobs.foo
 
-Error: cannot read job: panic: runtime error: invalid memory address or nil pointer dereference
-
-  with databricks_job.foo,
-  on bundle.tf.json line 43, in resource.databricks_job.foo:
-  43:       }
-
-
-
-
-Exit code: 1
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged

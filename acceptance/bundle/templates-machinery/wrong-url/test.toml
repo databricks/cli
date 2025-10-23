@@ -7,6 +7,15 @@ Old = '/world-[0-9]+'
 New = '/world-123456'
 
 [[Repls]]
+Old = 'SSL: certificate subject name .*'
+New = "SSL: no alternative certificate subject name matches target host name 'invalid-domain-123.databricks.com'"
+
+[[Repls]]
+Old = 'schannel: SNI or certificate check failed: .*'
+New = "SSL: no alternative certificate subject name matches target host name 'invalid-domain-123.databricks.com'"
+
+
+[[Repls]]
 Old = '''Cloning into '[^']+''''
 New = '''Cloning into '(redacted)''''
 

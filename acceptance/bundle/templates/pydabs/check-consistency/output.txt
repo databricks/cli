@@ -1,0 +1,36 @@
+== Collecting resources into ./enable_pydabs=yes
+
+>>> [CLI] bundle init default-python --config-file ./input.json
+
+Welcome to the default Python template for Databricks Asset Bundles!
+Workspace to use (auto-detected, edit in 'my_pydabs/databricks.yml'): [DATABRICKS_URL]
+
+✨ Your new project has been created in the 'my_pydabs' directory!
+
+Please refer to the README.md file for "getting started" instructions.
+See also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
+
+>>> uv venv --quiet
+
+>>> uv pip install --quiet [DATABRICKS_BUNDLES_WHEEL]
+
+>>> [CLI] bundle validate --output json
+== Collecting resources into ./enable_pydabs=no
+
+>>> [CLI] bundle init default-python --config-file ./input.json
+
+Welcome to the default Python template for Databricks Asset Bundles!
+Workspace to use (auto-detected, edit in 'my_pydabs/databricks.yml'): [DATABRICKS_URL]
+
+✨ Your new project has been created in the 'my_pydabs' directory!
+
+Please refer to the README.md file for "getting started" instructions.
+See also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
+
+>>> uv venv --quiet
+
+>>> uv pip install --quiet [DATABRICKS_BUNDLES_WHEEL]
+
+>>> [CLI] bundle validate --output json
+
+>>> diff -Naur enable_pydabs=yes enable_pydabs=no

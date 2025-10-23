@@ -3,6 +3,5 @@
 package schema
 
 type DataSourceShares struct {
-	Id     string   `json:"id,omitempty"`
 	Shares []string `json:"shares,omitempty"`
 }

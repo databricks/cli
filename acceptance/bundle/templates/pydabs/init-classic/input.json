@@ -1,0 +1,8 @@
+{
+  "project_name": "my_pydabs",
+  "include_notebook": "yes",
+  "include_dlt": "yes",
+  "include_python": "yes",
+  "serverless": "no",
+  "enable_pydabs": "yes"
+}
