@@ -1,5 +1,6 @@
 Local = true
 Cloud = true
+Badness = "post deployment, bundle summary should print actual name that is fully resolved"
 
 RecordRequests = false
 
