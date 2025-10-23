@@ -16,11 +16,11 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/deploy/terraform"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/databricks-sdk-go/useragent"
 )
 
 type state struct {
@@ -43,14 +43,6 @@ func (s *state) String() string {
 		source = "remote"
 	}
 	return fmt.Sprintf("<%s %s state serial=%d lineage=%q>", source, kind, s.Serial, s.Lineage)
-}
-
-type statePull struct {
-	filerFactory deploy.FilerFactory
-}
-
-func (l *statePull) Name() string {
-	return "statemgmt.Pull"
 }
 
 func localRead(ctx context.Context, fullPath string, isDirect bool) *state {
@@ -111,11 +103,110 @@ func filerRead(ctx context.Context, f filer.Filer, path string, isDirect bool) *
 	return state
 }
 
-func (l *statePull) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func PullResourcesState(ctx context.Context, b *bundle.Bundle) context.Context {
+	_, localPathDirect := b.StateFilenameDirect(ctx)
+	_, localPathTerraform := b.StateFilenameTerraform(ctx)
+
+	states := readOrderedStates(ctx, b)
+
+	if logdiag.HasError(ctx) {
+		return ctx
+	}
+
+	winner := states[3]
+
+	if winner == nil {
+		// no local or remote state; set b.DirectDeployment based on env vars
+		isDirect, err := getDirectDeploymentEnv(ctx)
+		if err != nil {
+			logdiag.LogError(ctx, err)
+			return nil
+		}
+		b.DirectDeployment = &isDirect
+	} else {
+		b.DirectDeployment = ptrBool(winner.isDirect)
+	}
+
+	engine := "direct"
+
+	if !*b.DirectDeployment {
+		engine = "terraform"
+		// XXX move this close to tf.Init()
+		bundle.ApplyContext(ctx, b, terraform.Initialize())
+	}
+
+	// Set the engine in the user agent
+	ctx = useragent.InContext(ctx, "engine", engine)
+
+	if winner == nil {
+		log.Infof(ctx, "No existing resource state found")
+		return ctx
+	}
+
+	var stateStrs []string
+	for _, state := range states {
+		if state == nil {
+			continue
+		}
+		stateStrs = append(stateStrs, state.String())
+	}
+
+	log.Infof(ctx, "Available resource state files (from least to most preferred): %s", strings.Join(stateStrs, ", "))
+
+	var lastLineage *state
+
+	for _, state := range states {
+		if state == nil {
+			continue
+		}
+		if lastLineage == nil {
+			lastLineage = state
+		} else if lastLineage.Lineage != state.Lineage {
+			logdiag.LogError(ctx, fmt.Errorf("lineage mismatch in state files: %s vs %s", lastLineage.String(), state.String()))
+		}
+	}
+
+	if logdiag.HasError(ctx) {
+		return ctx
+	}
+
+	if winner.isLocal {
+		// local state is fresh, nothing to do
+		return ctx
+	}
+
+	if !winner.isLocal {
+		log.Info(ctx, "Remote state is newer than local state. Using remote resources state.")
+
+		localStatePath := localPathTerraform
+		if winner.isDirect {
+			localStatePath = localPathDirect
+		}
+
+		localStateDir := filepath.Dir(localStatePath)
+
+		err := os.MkdirAll(localStateDir, 0o700)
+		if err != nil {
+			logdiag.LogError(ctx, err)
+			return ctx
+		}
+
+		// TODO: write + rename
+		err = os.WriteFile(localStatePath, winner.content, 0o600)
+		if err != nil {
+			logdiag.LogError(ctx, err)
+			return ctx
+		}
+	}
+
+	return ctx
+}
+
+func readOrderedStates(ctx context.Context, b *bundle.Bundle) []*state {
 	remotePathDirect, localPathDirect := b.StateFilenameDirect(ctx)
 	remotePathTerraform, localPathTerraform := b.StateFilenameTerraform(ctx)
 
-	f, err := l.filerFactory(b)
+	f, err := deploy.StateFiler(b)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return nil
@@ -143,10 +234,6 @@ func (l *statePull) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 
 	wg.Wait()
 
-	if logdiag.HasError(ctx) {
-		return nil
-	}
-
 	// find highest serial across all state files
 	// sorting is stable, so initial setting represents preference:
 	states := []*state{terraformRemoteState, terraformLocalState, directRemoteState, directLocalState}
@@ -165,86 +252,7 @@ func (l *statePull) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 		return int(a.Serial - b.Serial)
 	})
 
-	winner := states[3]
-
-	if winner == nil {
-		// no local or remote state; set b.DirectDeployment based on env vars
-		isDirect, err := getDirectDeploymentEnv(ctx)
-		if err != nil {
-			logdiag.LogError(ctx, err)
-			return nil
-		}
-		b.DirectDeployment = &isDirect
-	} else {
-		b.DirectDeployment = ptrBool(winner.isDirect)
-	}
-
-	if !*b.DirectDeployment {
-		bundle.ApplyContext(ctx, b, terraform.Initialize())
-	}
-
-	if winner == nil {
-		log.Infof(ctx, "No existing resource state found")
-		return nil
-	}
-
-	var stateStrs []string
-	for _, state := range states {
-		if state == nil {
-			continue
-		}
-		stateStrs = append(stateStrs, state.String())
-	}
-
-	log.Infof(ctx, "Available resource state files (from least to most preferred): %s", strings.Join(stateStrs, ", "))
-
-	var lastLineage *state
-
-	for _, state := range states {
-		if state == nil {
-			continue
-		}
-		if lastLineage == nil {
-			lastLineage = state
-		} else if lastLineage.Lineage != state.Lineage {
-			logdiag.LogError(ctx, fmt.Errorf("Lineage mismatch in state files: %s vs %s", lastLineage.String(), state.String()))
-		}
-	}
-
-	if logdiag.HasError(ctx) {
-		return nil
-	}
-
-	if winner.isLocal {
-		// local state is fresh, nothing to do
-		return nil
-	}
-
-	if !winner.isLocal {
-		log.Info(ctx, "Remote state is newer than local state. Using remote resources state.")
-
-		localStatePath := localPathTerraform
-		if winner.isDirect {
-			localStatePath = localPathDirect
-		}
-
-		localStateDir := filepath.Dir(localStatePath)
-
-		err = os.MkdirAll(localStateDir, 0o700)
-		if err != nil {
-			logdiag.LogError(ctx, err)
-			return nil
-		}
-
-		// TODO: write + rename
-		err := os.WriteFile(localStatePath, winner.content, 0o600)
-		if err != nil {
-			logdiag.LogError(ctx, err)
-			return nil
-		}
-	}
-
-	return nil
+	return states
 }
 
 func getDirectDeploymentEnv(ctx context.Context) (bool, error) {
@@ -264,10 +272,6 @@ func getDirectDeploymentEnv(ctx context.Context) (bool, error) {
 	default:
 		return false, fmt.Errorf("unexpected setting for DATABRICKS_BUNDLE_ENGINE=%#v (expected 'terraform' or 'direct-exp' or absent/empty which means 'terraform')", engine)
 	}
-}
-
-func StatePull() bundle.Mutator {
-	return &statePull{deploy.StateFiler}
 }
 
 func ptrBool(x bool) *bool { return &x }

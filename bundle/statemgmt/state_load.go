@@ -36,7 +36,7 @@ func (l *load) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	var state ExportedResourcesMap
 
 	if b.DirectDeployment == nil {
-		return diag.Errorf("internal error: statemgmt.Load() called without statemgmt.StatePull()")
+		return diag.Errorf("internal error: statemgmt.Load() called without statemgmt.PullResourcesState()")
 	}
 
 	if *b.DirectDeployment {
