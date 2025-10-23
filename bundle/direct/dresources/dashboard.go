@@ -242,6 +242,9 @@ func (r *ResourceDashboard) DoUpdate(ctx context.Context, id string, config *res
 		return nil, err
 	}
 
+	// Persist the etag in state.
+	config.Etag = updateResp.Etag
+
 	publishResp, err := r.publishDashboard(ctx, id, config)
 	if err != nil {
 		return nil, err
