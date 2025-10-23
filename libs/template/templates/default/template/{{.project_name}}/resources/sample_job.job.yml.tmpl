@@ -33,10 +33,11 @@ resources:
           notebook_task:
             notebook_path: ../src/sample_notebook.ipynb
   {{- if $serverless}}
-    {{- /* Environments for notebooks are still in private preview */}}
-    {{- if $python_package}}
+    {{- /* Environments for notebooks are still in private preview
+    - if $python_package
           environment_key: default
-    {{- end}}
+    - end
+    */}}
   {{- else}}
           job_cluster_key: job_cluster
     {{- if $python_package}}
@@ -85,7 +86,7 @@ resources:
             - task_key: python_wheel_task
   {{- end}}
           pipeline_task:
-            pipeline_id: ${resources.pipelines.{{.project_name_short}}_etl.id}
+            pipeline_id: ${resources.pipelines.{{.project_name}}_etl.id}
 {{- end}}
 
 {{- if $serverless}}
