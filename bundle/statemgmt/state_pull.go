@@ -202,41 +202,6 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle) context.Context {
 	return ctx
 }
 
-// Guess engine based on local state alone and set it on context User-Agent as engine/direct or engine/terraform
-// This guess might be overriden later when we pull remote state.
-func GuessEngine(ctx context.Context, b *bundle.Bundle) context.Context {
-	states := readLocalStates(ctx, b)
-
-	if logdiag.HasError(ctx) {
-		log.Warnf(ctx, "Error reading state")
-		return ctx
-	}
-
-	winner := states[1]
-	var isDirect bool
-
-	if winner == nil {
-		// no local or remote state; set b.DirectDeployment based on env vars
-		var err error
-		isDirect, err = getDirectDeploymentEnv(ctx)
-		if err != nil {
-			logdiag.LogError(ctx, err)
-			return ctx
-		}
-	} else {
-		isDirect = winner.isDirect
-	}
-
-	engine := "direct"
-
-	if !isDirect {
-		engine = "terraform"
-	}
-
-	log.Warnf(ctx, "Setting engine=%v", engine)
-	return useragent.InContext(ctx, "engine", engine)
-}
-
 func readStates(ctx context.Context, b *bundle.Bundle) []*state {
 	remotePathDirect, localPathDirect := b.StateFilenameDirect(ctx)
 	remotePathTerraform, localPathTerraform := b.StateFilenameTerraform(ctx)
@@ -291,30 +256,6 @@ func sortStates(states []*state) {
 		// otherwise sort by serial
 		return int(a.Serial - b.Serial)
 	})
-}
-
-func readLocalStates(ctx context.Context, b *bundle.Bundle) []*state {
-	_, localPathDirect := b.StateFilenameDirect(ctx)
-	_, localPathTerraform := b.StateFilenameTerraform(ctx)
-
-	var wg sync.WaitGroup
-	var directLocalState, terraformLocalState *state
-
-	wg.Go(func() {
-		directLocalState = localRead(ctx, localPathDirect, true)
-	})
-
-	wg.Go(func() {
-		terraformLocalState = localRead(ctx, localPathTerraform, false)
-	})
-
-	wg.Wait()
-
-	// find highest serial across all state files
-	// sorting is stable, so initial setting represents preference:
-	states := []*state{terraformLocalState, directLocalState}
-	sortStates(states)
-	return states
 }
 
 func getDirectDeploymentEnv(ctx context.Context) (bool, error) {
