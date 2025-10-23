@@ -25,21 +25,6 @@ func (p *plan) Name() string {
 	return "terraform.Plan"
 }
 
-func initTF(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	diags := Initialize(ctx, b)
-	if diags.HasError() {
-		return diags
-	}
-
-	tf := b.Terraform
-	err := tf.Init(ctx, tfexec.Upgrade(true))
-	if err != nil {
-		return diag.Errorf("terraform init: %v", err)
-	}
-
-	return nil
-}
-
 func (p *plan) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diags := Initialize(ctx, b)
 	if diags.HasError() {
