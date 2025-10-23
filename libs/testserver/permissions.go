@@ -40,6 +40,10 @@ func (s *FakeWorkspace) GetPermissions(req Request) any {
 
 	objectId := req.Vars["object_id"]
 	requestObjectType := req.Vars["object_type"]
+	prefix := req.Vars["prefix"]
+	if prefix != "" {
+		requestObjectType = prefix + "/" + requestObjectType
+	}
 
 	if requestObjectType == "" {
 		return Response{
@@ -83,8 +87,12 @@ func (s *FakeWorkspace) GetPermissions(req Request) any {
 func (s *FakeWorkspace) SetPermissions(req Request) any {
 	defer s.LockUnlock()()
 
-	requestObjectType := req.Vars["object_type"]
 	objectId := req.Vars["object_id"]
+	requestObjectType := req.Vars["object_type"]
+	prefix := req.Vars["prefix"]
+	if prefix != "" {
+		requestObjectType = prefix + "/" + requestObjectType
+	}
 
 	if requestObjectType == "" {
 		return Response{

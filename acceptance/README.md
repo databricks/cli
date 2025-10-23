@@ -18,7 +18,9 @@ For more complex tests one can also use:
 - `trace` helper: prints the arguments before executing the command.
 - custom output files: redirect output to custom file (it must start with `out`), e.g. `$CLI bundle validate > out.txt 2> out.error.txt`.
 
-See [selftest](./selftest) for a toy test.
+Any file starting with "LOG" will be logged to test log (visible with go test -v).
+
+See [selftest](./selftest) for more examples.
 
 ## Running acceptance tests on Windows
 

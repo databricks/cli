@@ -48,5 +48,4 @@ type ResourceAppsSettingsCustomTemplate struct {
 	Manifest    *ResourceAppsSettingsCustomTemplateManifest `json:"manifest,omitempty"`
 	Name        string                                      `json:"name"`
 	Path        string                                      `json:"path"`
-	WorkspaceId string                                      `json:"workspace_id,omitempty"`
 }

@@ -153,7 +153,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDeploy))
 	}()
 
-	libs := deployPrepare(ctx, b)
+	libs := deployPrepare(ctx, b, false)
 	if logdiag.HasError(ctx) {
 		return
 	}
@@ -243,7 +243,7 @@ func planWithoutPrepare(ctx context.Context, b *bundle.Bundle) *deployplan.Plan 
 }
 
 func Plan(ctx context.Context, b *bundle.Bundle) *deployplan.Plan {
-	deployPrepare(ctx, b)
+	deployPrepare(ctx, b, true)
 	if logdiag.HasError(ctx) {
 		return nil
 	}

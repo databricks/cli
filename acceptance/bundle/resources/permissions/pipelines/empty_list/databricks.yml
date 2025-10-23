@@ -1,0 +1,6 @@
+resources:
+  pipelines:
+    foo:
+      name: foo
+      # this is interpreted the same as nil, but it's IMO a bug; it should do default IS_OWNER setting
+      permissions: []

@@ -43,10 +43,6 @@ type ResourceAccountSettingV2BooleanVal struct {
 	Value bool `json:"value,omitempty"`
 }
 
-type ResourceAccountSettingV2DefaultDataSecurityMode struct {
-	Status string `json:"status"`
-}
-
 type ResourceAccountSettingV2EffectiveAibiDashboardEmbeddingAccessPolicy struct {
 	AccessPolicyType string `json:"access_policy_type"`
 }
@@ -88,10 +84,6 @@ type ResourceAccountSettingV2EffectiveBooleanVal struct {
 	Value bool `json:"value,omitempty"`
 }
 
-type ResourceAccountSettingV2EffectiveDefaultDataSecurityMode struct {
-	Status string `json:"status"`
-}
-
 type ResourceAccountSettingV2EffectiveIntegerVal struct {
 	Value int `json:"value,omitempty"`
 }
@@ -129,12 +121,10 @@ type ResourceAccountSettingV2 struct {
 	AibiDashboardEmbeddingApprovedDomains          *ResourceAccountSettingV2AibiDashboardEmbeddingApprovedDomains          `json:"aibi_dashboard_embedding_approved_domains,omitempty"`
 	AutomaticClusterUpdateWorkspace                *ResourceAccountSettingV2AutomaticClusterUpdateWorkspace                `json:"automatic_cluster_update_workspace,omitempty"`
 	BooleanVal                                     *ResourceAccountSettingV2BooleanVal                                     `json:"boolean_val,omitempty"`
-	DefaultDataSecurityMode                        *ResourceAccountSettingV2DefaultDataSecurityMode                        `json:"default_data_security_mode,omitempty"`
 	EffectiveAibiDashboardEmbeddingAccessPolicy    *ResourceAccountSettingV2EffectiveAibiDashboardEmbeddingAccessPolicy    `json:"effective_aibi_dashboard_embedding_access_policy,omitempty"`
 	EffectiveAibiDashboardEmbeddingApprovedDomains *ResourceAccountSettingV2EffectiveAibiDashboardEmbeddingApprovedDomains `json:"effective_aibi_dashboard_embedding_approved_domains,omitempty"`
 	EffectiveAutomaticClusterUpdateWorkspace       *ResourceAccountSettingV2EffectiveAutomaticClusterUpdateWorkspace       `json:"effective_automatic_cluster_update_workspace,omitempty"`
 	EffectiveBooleanVal                            *ResourceAccountSettingV2EffectiveBooleanVal                            `json:"effective_boolean_val,omitempty"`
-	EffectiveDefaultDataSecurityMode               *ResourceAccountSettingV2EffectiveDefaultDataSecurityMode               `json:"effective_default_data_security_mode,omitempty"`
 	EffectiveIntegerVal                            *ResourceAccountSettingV2EffectiveIntegerVal                            `json:"effective_integer_val,omitempty"`
 	EffectivePersonalCompute                       *ResourceAccountSettingV2EffectivePersonalCompute                       `json:"effective_personal_compute,omitempty"`
 	EffectiveRestrictWorkspaceAdmins               *ResourceAccountSettingV2EffectiveRestrictWorkspaceAdmins               `json:"effective_restrict_workspace_admins,omitempty"`

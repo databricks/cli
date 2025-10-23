@@ -1,0 +1,21 @@
+for enable_pydabs in yes no; do
+    echo "== Collecting resources into ./enable_pydabs=$enable_pydabs"
+
+    enable_pydabs=$enable_pydabs envsubst < input.json.tmpl > input.json
+
+    trace $CLI bundle init default-python --config-file ./input.json
+
+    (
+        cd my_pydabs
+
+        trace uv venv --quiet
+        trace uv pip install --quiet $DATABRICKS_BUNDLES_WHEEL
+
+        trace $CLI bundle validate --output json | jq "pick(.resources)" > ../enable_pydabs=$enable_pydabs
+    )
+
+    rm -rf my_pydabs input.json
+done
+
+trace diff -Naur enable_pydabs=yes enable_pydabs=no
+rm enable_pydabs=yes enable_pydabs=no

@@ -48,6 +48,23 @@ Deployment complete!
 }
 
 === Try to redeploy the bundle and confirm that the out of band modification is detected:
+>>> [CLI] bundle plan
+Warning: dashboard "file_reference" has been modified remotely
+  at resources.dashboards.file_reference
+  in databricks.yml:10:7
+
+This dashboard has been modified remotely since the last bundle deployment.
+These modifications are untracked and will be overwritten on deploy.
+
+Make sure that the local dashboard definition matches what you intend to deploy
+before proceeding with the deployment.
+
+Run `databricks bundle deploy --force` to bypass this error.
+
+update dashboards.file_reference
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
 >>> errcode [CLI] bundle deploy
 Error: dashboard "file_reference" has been modified remotely
   at resources.dashboards.file_reference
