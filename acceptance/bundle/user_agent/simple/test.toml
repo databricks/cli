@@ -17,3 +17,7 @@ New = 'os/OS'
 [[Repls]]
 Old = 'os/linux'
 New = 'os/OS'
+
+[[Repls]]
+Old = ' cicd/github'
+New = ''
