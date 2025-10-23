@@ -6,6 +6,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/phases"
+	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/libs/cmdctx"
 	envlib "github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/logdiag"
@@ -117,6 +118,10 @@ func MustConfigureBundle(cmd *cobra.Command) *bundle.Bundle {
 	if b != nil {
 		configureBundle(cmd, b)
 	}
+
+	ctx := statemgmt.GuessEngine(cmd.Context(), b)
+	cmd.SetContext(ctx)
+
 	return b
 }
 
