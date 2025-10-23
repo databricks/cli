@@ -1,4 +1,4 @@
-trace $CLI bundle init default-python --config-file ./input.json --output-dir output
+trace $CLI bundle init pydabs --config-file ./input.json --output-dir output
 
 # only keep relevant files for snapshots
 trace find output/my_pydabs -mindepth 1 ! -name 'pyproject.toml' ! -regex '.*/resources.*' -delete

@@ -1,4 +1,4 @@
-trace $CLI bundle init default-python --config-file ./input.json
+trace $CLI bundle init pydabs --config-file ./input.json
 
 (
     cd my_pydabs
