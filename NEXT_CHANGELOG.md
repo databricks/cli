@@ -6,6 +6,8 @@
 
 ### CLI
 
+* Remove `inplace` mode for the `--progress-format` flag. ([#3811](https://github.com/databricks/cli/pull/3811))
+
 ### Dependency updates
 
 ### Bundles
