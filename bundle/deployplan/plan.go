@@ -60,6 +60,7 @@ func (p *Plan) GetActions() []Action {
 		at := ActionTypeFromString(entry.Action)
 		parts := strings.Split(key, ".")
 		if len(parts) == 4 {
+			// Example: "resources.jobs.foo.permissions"
 			// For compatibility between terraform and direct output filter out permissions and grants
 			continue
 		}
