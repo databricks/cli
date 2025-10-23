@@ -137,11 +137,6 @@ func (r *ResourceDashboard) DoRefresh(ctx context.Context, id string) (*resource
 	}, nil
 }
 
-func isParentDoesntExistError(err error) bool {
-	errStr := err.Error()
-	return strings.HasPrefix(errStr, "Path (") && strings.HasSuffix(errStr, ") doesn't exist.")
-}
-
 func prepareDashboardRequest(config *resources.DashboardConfig) (dashboards.Dashboard, error) {
 	// Fields like "embed_credentials" are part of the bundle configuration but not the create request here.
 	// Thus we need to filter such fields out.
@@ -218,8 +213,9 @@ func (r *ResourceDashboard) DoCreate(ctx context.Context, config *resources.Dash
 		Dashboard: dashboard,
 	})
 
+	// The API returns 404 if the parent directory doesn't exist.
 	// If the parent directory doesn't exist, create it and try again.
-	if err != nil && isParentDoesntExistError(err) {
+	if err != nil && apierr.IsMissing(err) {
 		err = r.client.Workspace.MkdirsByPath(ctx, config.ParentPath)
 		if err != nil {
 			return "", nil, fmt.Errorf("failed to create parent directory: %w", err)
