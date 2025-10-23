@@ -7,23 +7,6 @@ Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> print_requests
 
->>> musterr [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/testbundle-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Error: terraform apply: exit status 1
-
-Error: cannot create volume: CreateVolume storage_location can not be provided.
-
-  with databricks_volume.volume1,
-  on bundle.tf.json line 29, in resource.databricks_volume.volume1:
-  29:       }
-
-
-
-Updating deployment state...
-
-Exit code (musterr): 1
-
 >>> print_requests
 {
   "method": "POST",
