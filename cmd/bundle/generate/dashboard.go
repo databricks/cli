@@ -377,8 +377,12 @@ func (d *dashboard) runForResource(ctx context.Context, b *bundle.Bundle) {
 		return
 	}
 
+	ctx = statemgmt.PullResourcesState(ctx, b)
+	if logdiag.HasError(ctx) {
+		return
+	}
+
 	bundle.ApplySeqContext(ctx, b,
-		statemgmt.StatePull(),
 		statemgmt.Load(),
 	)
 	if logdiag.HasError(ctx) {

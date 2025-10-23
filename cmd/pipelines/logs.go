@@ -102,8 +102,12 @@ Example usage:
 		}
 
 		// Load the deployment state to get pipeline IDs from resource
+		ctx = statemgmt.PullResourcesState(ctx, b)
+		if logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
+		}
+
 		bundle.ApplySeqContext(ctx, b,
-			statemgmt.StatePull(),
 			statemgmt.Load(),
 		)
 		if logdiag.HasError(ctx) {

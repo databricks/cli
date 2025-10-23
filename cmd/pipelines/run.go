@@ -274,8 +274,12 @@ Refreshes all tables in the pipeline unless otherwise specified.`,
 			return err
 		}
 
+		ctx = statemgmt.PullResourcesState(ctx, b)
+		if logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
+		}
+
 		bundle.ApplySeqContext(ctx, b,
-			statemgmt.StatePull(),
 			statemgmt.Load(statemgmt.ErrorOnEmptyState),
 		)
 		if logdiag.HasError(ctx) {

@@ -129,7 +129,7 @@ func prepareBundleForSummary(cmd *cobra.Command, forcePull, includeLocations boo
 	noCache := true
 
 	if forcePull || noCache {
-		bundle.ApplyContext(ctx, b, statemgmt.StatePull())
+		ctx = statemgmt.PullResourcesState(ctx, b)
 
 		if logdiag.HasError(ctx) {
 			return nil

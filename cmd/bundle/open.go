@@ -100,7 +100,7 @@ Use after deployment to quickly navigate to your resources in the workspace.`,
 		noCache := true // TODO
 
 		if forcePull || noCache {
-			bundle.ApplyContext(ctx, b, statemgmt.StatePull())
+			ctx = statemgmt.PullResourcesState(ctx, b)
 			if logdiag.HasError(ctx) {
 				return root.ErrAlreadyPrinted
 			}

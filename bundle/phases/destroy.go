@@ -133,7 +133,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle) {
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDestroy))
 	}()
 
-	bundle.ApplyContext(ctx, b, statemgmt.StatePull())
+	ctx = statemgmt.PullResourcesState(ctx, b)
 	if logdiag.HasError(ctx) {
 		return
 	}

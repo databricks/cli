@@ -24,7 +24,7 @@ func (l *statePush) Name() string {
 
 func (l *statePush) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	if b.DirectDeployment == nil {
-		return diag.Errorf("internal error: statemgmt.Load() called without statemgmt.StatePull()")
+		return diag.Errorf("internal error: statemgmt.Load() called without statemgmt.PullResourcesState()")
 	}
 
 	f, err := l.filerFactory(b)

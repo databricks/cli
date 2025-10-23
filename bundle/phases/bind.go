@@ -23,8 +23,12 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions) {
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalBind))
 	}()
 
+	ctx = statemgmt.PullResourcesState(ctx, b)
+	if logdiag.HasError(ctx) {
+		return
+	}
+
 	bundle.ApplySeqContext(ctx, b,
-		statemgmt.StatePull(),
 		terraform.Interpolate(),
 		terraform.Write(),
 		terraform.Import(opts),
@@ -44,8 +48,12 @@ func Unbind(ctx context.Context, b *bundle.Bundle, bundleType, tfResourceType, r
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalUnbind))
 	}()
 
+	ctx = statemgmt.PullResourcesState(ctx, b)
+	if logdiag.HasError(ctx) {
+		return
+	}
+
 	bundle.ApplySeqContext(ctx, b,
-		statemgmt.StatePull(),
 		terraform.Interpolate(),
 		terraform.Write(),
 		terraform.Unbind(bundleType, tfResourceType, resourceKey),
