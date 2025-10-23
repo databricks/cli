@@ -55,7 +55,9 @@ func ParseResourcesState(ctx context.Context, b *bundle.Bundle) (ExportedResourc
 	if err != nil {
 		return nil, err
 	}
-	rawState, err := os.ReadFile(filepath.Join(cacheDir, b.StateFilename()))
+	relPath, _ := b.StateFilenameTerraform(ctx)
+
+	rawState, err := os.ReadFile(filepath.Join(cacheDir, filepath.Base(relPath)))
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return nil, nil

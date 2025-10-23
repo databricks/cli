@@ -19,7 +19,6 @@ import (
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/metadata"
 	"github.com/databricks/cli/libs/auth"
-	libenv "github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/locker"
 	"github.com/databricks/cli/libs/log"
@@ -232,9 +231,9 @@ func (b *Bundle) SetWorkpaceClient(w *databricks.WorkspaceClient) {
 	b.client = w
 }
 
-// LocalStateDir returns directory to use for temporary files for this bundle.
+// LocalStateDir returns directory to use for temporary files for this bundle without creating
 // Scoped to the bundle's target.
-func (b *Bundle) LocalStateDir(ctx context.Context, paths ...string) (string, error) {
+func (b *Bundle) GetLocalStateDir(ctx context.Context, paths ...string) string {
 	if b.Config.Bundle.Target == "" {
 		panic("target not set")
 	}
@@ -262,6 +261,14 @@ func (b *Bundle) LocalStateDir(ctx context.Context, paths ...string) (string, er
 
 	// Make directory if it doesn't exist yet.
 	dir := filepath.Join(parts...)
+	return dir
+}
+
+// LocalStateDir returns directory to use for temporary files for this bundle.
+// Directory is created and initialized with .gitignore
+// Scoped to the bundle's target.
+func (b *Bundle) LocalStateDir(ctx context.Context, paths ...string) (string, error) {
+	dir := b.GetLocalStateDir(ctx, paths...)
 	err := os.MkdirAll(dir, 0o700)
 	if err != nil {
 		return "", err
@@ -318,68 +325,11 @@ func (b *Bundle) AuthEnv() (map[string]string, error) {
 	return auth.Env(cfg), nil
 }
 
-func (b *Bundle) StateFilename() string {
-	if *b.DirectDeployment {
-		return resourcesFilename
-	} else {
-		return terraformStateFilename
-	}
+// StateFilenameDirect returns (relative remote path, relative local path) for direct engine resource state
+func (b *Bundle) StateFilenameDirect(ctx context.Context) (string, string) {
+	return resourcesFilename, filepath.Join(b.GetLocalStateDir(ctx), resourcesFilename)
 }
 
-func (b *Bundle) StateLocalPath(ctx context.Context) (string, error) {
-	if *b.DirectDeployment {
-		cacheDir, err := b.LocalStateDir(ctx)
-		if err != nil {
-			return "", err
-		}
-		return filepath.Join(cacheDir, resourcesFilename), nil
-	} else {
-		cacheDir, err := b.LocalStateDir(ctx, "terraform")
-		if err != nil {
-			return "", err
-		}
-		return filepath.Join(cacheDir, terraformStateFilename), nil
-	}
-}
-
-func (b *Bundle) OpenStateFile(ctx context.Context) error {
-	if !*b.DirectDeployment {
-		panic("internal error: OpenResourceDatabase must be called with DirectDeployment")
-	}
-
-	statePath, err := b.StateLocalPath(ctx)
-	if err != nil {
-		return err
-	}
-
-	err = b.DeploymentBundle.OpenStateFile(statePath)
-	if err != nil {
-		return fmt.Errorf("failed to open/create state file at %s: %s", statePath, err)
-	}
-
-	return nil
-}
-
-func (b *Bundle) ConfigureEngine(ctx context.Context) (string, error) {
-	engine := libenv.Get(ctx, "DATABRICKS_BUNDLE_ENGINE")
-
-	// By default, use Terraform
-	switch engine {
-	case "":
-		engine = "terraform"
-		fallthrough
-	case "terraform":
-		falseBool := false
-		b.DirectDeployment = &falseBool
-	case "direct-exp":
-		// We use "direct-exp" while direct backend is not suitable for end users.
-		// Once we consider it usable we'll change the value to "direct".
-		// This is to prevent accidentally running direct backend with older CLI versions where it was still considered experimental.
-		trueBool := true
-		b.DirectDeployment = &trueBool
-	default:
-		return "", fmt.Errorf("unexpected setting for DATABRICKS_BUNDLE_ENGINE=%#v (expected 'terraform' or 'direct-exp' or absent/empty which means 'terraform')", engine)
-	}
-
-	return engine, nil
+func (b *Bundle) StateFilenameTerraform(ctx context.Context) (string, string) {
+	return terraformStateFilename, filepath.Join(b.GetLocalStateDir(ctx), "terraform", terraformStateFilename)
 }

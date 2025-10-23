@@ -27,14 +27,6 @@ import (
 
 var errDelayed = errors.New("must be resolved after apply")
 
-func (b *DeploymentBundle) OpenStateFile(statePath string) error {
-	err := b.StateDB.Open(statePath)
-	if err != nil {
-		return fmt.Errorf("failed to read state from %s: %w", statePath, err)
-	}
-	return nil
-}
-
 func (b *DeploymentBundle) Init(client *databricks.WorkspaceClient) error {
 	if b.Adapters != nil {
 		return nil
@@ -44,9 +36,13 @@ func (b *DeploymentBundle) Init(client *databricks.WorkspaceClient) error {
 	return err
 }
 
-func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root) (*deployplan.Plan, error) {
-	b.StateDB.AssertOpened()
-	err := b.Init(client)
+func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root, statePath string) (*deployplan.Plan, error) {
+	err := b.StateDB.Open(statePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read state from %s: %w", statePath, err)
+	}
+
+	err = b.Init(client)
 	if err != nil {
 		return nil, err
 	}

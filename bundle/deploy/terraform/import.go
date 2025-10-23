@@ -50,7 +50,8 @@ func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	if err != nil {
 		return diag.Errorf("terraform init: %v", err)
 	}
-	tmpState := filepath.Join(tmpDir, b.StateFilename())
+	relPath, _ := b.StateFilenameTerraform(ctx)
+	tmpState := filepath.Join(tmpDir, filepath.Base(relPath))
 
 	importAddress := fmt.Sprintf("%s.%s", m.opts.ResourceType, m.opts.ResourceKey)
 	err = tf.Import(ctx, importAddress, m.opts.ResourceId, tfexec.StateOut(tmpState))
@@ -91,7 +92,7 @@ func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	}
 
 	// If user confirmed changes, move the state file from temp dir to state location
-	f, err := os.Create(filepath.Join(dir, b.StateFilename()))
+	f, err := os.Create(filepath.Join(dir, relPath))
 	if err != nil {
 		return diag.FromErr(err)
 	}
