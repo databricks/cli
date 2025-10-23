@@ -77,7 +77,9 @@ def run_ssh_server():
     try:
         client = WorkspaceClient()
     except Exception as e:
-        client = WorkspaceClient(host=ctx.workspaceUrl or spark.conf.get("spark.databricks.workspaceUrl"), token=ctx.apiToken)
+        client = WorkspaceClient(
+            host=ctx.workspaceUrl or spark.conf.get("spark.databricks.workspaceUrl"), token=ctx.apiToken
+        )
 
     workspace_url = ctx.workspaceUrl or client.config.host or spark.conf.get("spark.databricks.workspaceUrl")
     user_name = client.current_user.me().user_name
