@@ -38,11 +38,11 @@ func PreparePermissionsInputConfig(inputConfig any, node string) (*structvar.Str
 	// Get the element type from the slice type and create zero value to get the object type
 	elemType := sliceValue.Type().Elem()
 	zeroValue := reflect.Zero(elemType)
-	firstPermission, ok := zeroValue.Interface().(resources.IPermission)
+	zeroValueInterface, ok := zeroValue.Interface().(resources.IPermission)
 	if !ok {
 		return nil, fmt.Errorf("slice elements do not implement IPermission interface: %v", elemType)
 	}
-	prefix := firstPermission.GetAPIRequestObjectType()
+	prefix := zeroValueInterface.GetAPIRequestObjectType()
 
 	// Convert slice to []resources.IPermission
 	permissions := make([]iam.AccessControlRequest, 0, sliceValue.Len())

@@ -479,12 +479,12 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		baseRefs := map[string]string{}
 
 		if strings.HasSuffix(node, ".permissions") {
-			inputConfigSV, err := dresources.PreparePermissionsInputConfig(inputConfig, node)
+			inputConfigStructVar, err := dresources.PreparePermissionsInputConfig(inputConfig, node)
 			if err != nil {
 				return nil, err
 			}
-			inputConfig = inputConfigSV.Config
-			baseRefs = inputConfigSV.Refs
+			inputConfig = inputConfigStructVar.Config
+			baseRefs = inputConfigStructVar.Refs
 		}
 
 		newStateConfig, err := adapter.PrepareState(inputConfig)
