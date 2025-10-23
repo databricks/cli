@@ -10,15 +10,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/sql"
 )
 
-func (l AlertsPermissionLevel) Values() []string {
-	return []string{
-		"CAN_EDIT",
-		"CAN_MANAGE",
-		"CAN_READ",
-		"CAN_RUN",
-	}
-}
-
 type Alert struct {
 	BaseResource
 	sql.AlertV2 //nolint AlertV2 also defines Id and URL field with the same json tag "id" and "url"

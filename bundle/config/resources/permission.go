@@ -37,7 +37,7 @@ type IPermission interface {
 
 // Permission level types
 type (
-	AlertsPermissionLevel               string
+	AlertPermissionLevel                string
 	AppPermissionLevel                  string
 	ClusterPermissionLevel              string
 	DashboardPermissionLevel            string
@@ -50,10 +50,17 @@ type (
 	SqlWarehousePermissionLevel         string
 )
 
-// AlertPermission holds the permission level setting for a single principal.
-// Multiple of these can be defined on any alert.
+func (l AlertPermissionLevel) Values() []string {
+	return []string{
+		"CAN_EDIT",
+		"CAN_MANAGE",
+		"CAN_READ",
+		"CAN_RUN",
+	}
+}
+
 type AlertPermission struct {
-	Level string `json:"level"`
+	Level AlertPermissionLevel `json:"level"`
 
 	UserName             string `json:"user_name,omitempty"`
 	ServicePrincipalName string `json:"service_principal_name,omitempty"`
@@ -159,7 +166,7 @@ func (p SqlWarehousePermission) GetAPIRequestObjectType() string { return "/sql/
 
 // IPermission interface implementations boilerplate
 
-func (p AlertPermission) GetLevel() string                { return p.Level }
+func (p AlertPermission) GetLevel() string                { return string(p.Level) }
 func (p AlertPermission) GetUserName() string             { return p.UserName }
 func (p AlertPermission) GetServicePrincipalName() string { return p.ServicePrincipalName }
 func (p AlertPermission) GetGroupName() string            { return p.GroupName }
