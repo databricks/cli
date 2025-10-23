@@ -1,0 +1,20 @@
+{
+  "method": "PUT",
+  "path": "/api/2.0/permissions/jobs/[NUMID]",
+  "body": {
+    "access_control_list": [
+      {
+        "group_name": "test-dabs-group-1",
+        "permission_level": "CAN_MANAGE"
+      },
+      {
+        "permission_level": "CAN_VIEW",
+        "user_name": "test-dabs-2@databricks.com"
+      },
+      {
+        "permission_level": "IS_OWNER",
+        "service_principal_name": "[USERNAME]"
+      }
+    ]
+  }
+}
