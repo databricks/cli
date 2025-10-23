@@ -86,10 +86,10 @@ func TestParseResourcesStateWithExistingStateFile(t *testing.T) {
 		  }
 		]
 	}`)
-	_, path := b.StateFilenameTerraform(ctx)
-	err := os.WriteFile(path, data, os.ModePerm)
+	name, _ := b.StateFilenameTerraform(ctx)
+	err := os.WriteFile(name, data, os.ModePerm)
 	assert.NoError(t, err)
-	state, err := ParseResourcesState(ctx, b)
+	state, err := parseResourcesState(ctx, name)
 	assert.NoError(t, err)
 	expected := ExportedResourcesMap{
 		"pipelines": map[string]ResourceState{

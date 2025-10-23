@@ -50,14 +50,8 @@ type stateInstanceAttributes struct {
 }
 
 // Returns a mapping group -> name -> stateInstanceAttributes
-func ParseResourcesState(ctx context.Context, b *bundle.Bundle) (ExportedResourcesMap, error) {
-	cacheDir, err := Dir(ctx, b)
-	if err != nil {
-		return nil, err
-	}
-	relPath, _ := b.StateFilenameTerraform(ctx)
-
-	rawState, err := os.ReadFile(filepath.Join(cacheDir, filepath.Base(relPath)))
+func parseResourcesState(ctx context.Context, path string) (ExportedResourcesMap, error) {
+	rawState, err := os.ReadFile(path)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return nil, nil
@@ -107,4 +101,14 @@ func ParseResourcesState(ctx context.Context, b *bundle.Bundle) (ExportedResourc
 	}
 
 	return result, nil
+}
+
+// Returns a mapping group -> name -> stateInstanceAttributes
+func ParseResourcesState(ctx context.Context, b *bundle.Bundle) (ExportedResourcesMap, error) {
+	cacheDir, err := Dir(ctx, b)
+	if err != nil {
+		return nil, err
+	}
+	filename, _ := b.StateFilenameTerraform(ctx)
+	return parseResourcesState(ctx, filepath.Join(cacheDir, filename))
 }
