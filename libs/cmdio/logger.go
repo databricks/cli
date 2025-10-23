@@ -17,7 +17,7 @@ import (
 
 // This is the interface for all io interactions with a user
 type Logger struct {
-	// Mode for the logger. One of (append, inplace, json).
+	// Mode for the logger. One of (append, json).
 	Mode flags.ProgressLogFormat
 
 	// Input stream (eg. stdin). Answers to questions prompted using the Ask() method
@@ -27,28 +27,22 @@ type Logger struct {
 	// Output stream where the logger writes to
 	Writer io.Writer
 
-	// If true, indicates no events have been printed by the logger yet. Used
-	// by inplace logging for formatting
-	isFirstEvent bool
-
 	mutex sync.Mutex
 }
 
 func NewLogger(mode flags.ProgressLogFormat) *Logger {
 	return &Logger{
-		Mode:         mode,
-		Writer:       os.Stderr,
-		Reader:       *bufio.NewReader(os.Stdin),
-		isFirstEvent: true,
+		Mode:   mode,
+		Writer: os.Stderr,
+		Reader: *bufio.NewReader(os.Stdin),
 	}
 }
 
 func Default() *Logger {
 	return &Logger{
-		Mode:         flags.ModeAppend,
-		Writer:       os.Stderr,
-		Reader:       *bufio.NewReader(os.Stdin),
-		isFirstEvent: true,
+		Mode:   flags.ModeAppend,
+		Writer: os.Stderr,
+		Reader: *bufio.NewReader(os.Stdin),
 	}
 }
 
@@ -201,34 +195,10 @@ func (l *Logger) writeAppend(event Event) {
 	_, _ = l.Writer.Write([]byte("\n"))
 }
 
-func (l *Logger) writeInplace(event Event) {
-	if l.isFirstEvent {
-		// save cursor location
-		_, _ = l.Writer.Write([]byte("\033[s"))
-	}
-
-	// move cursor to saved location
-	_, _ = l.Writer.Write([]byte("\033[u"))
-
-	// clear from cursor to end of screen
-	_, _ = l.Writer.Write([]byte("\033[0J"))
-
-	_, _ = l.Writer.Write([]byte(event.String()))
-	_, _ = l.Writer.Write([]byte("\n"))
-	l.isFirstEvent = false
-}
-
 func (l *Logger) Log(event Event) {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
 	switch l.Mode {
-	case flags.ModeInplace:
-		if event.IsInplaceSupported() {
-			l.writeInplace(event)
-		} else {
-			l.writeAppend(event)
-		}
-
 	case flags.ModeJson:
 		l.writeJson(event)
 
