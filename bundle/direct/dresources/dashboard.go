@@ -8,13 +8,13 @@ import (
 	"path"
 	"slices"
 	"strings"
-	"sync"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
+	"golang.org/x/sync/errgroup"
 )
 
 // Terraform implementation reference: https://github.com/databricks/terraform-provider-databricks/blob/main/dashboards/resource_dashboard.go
@@ -72,29 +72,35 @@ func (r *ResourceDashboard) RemapState(state *resources.DashboardConfig) *resour
 }
 
 func (r *ResourceDashboard) DoRefresh(ctx context.Context, id string) (*resources.DashboardConfig, error) {
-	wg := sync.WaitGroup{}
 	var dashboard *dashboards.Dashboard
 	var publishedDashboard *dashboards.PublishedDashboard
-	var getErr, getPublishedErr error
 
-	wg.Go(func() {
-		dashboard, getErr = r.client.Lakeview.Get(ctx, dashboards.GetDashboardRequest{
+	g, ctx := errgroup.WithContext(ctx)
+
+	g.Go(func() error {
+		var err error
+		dashboard, err = r.client.Lakeview.Get(ctx, dashboards.GetDashboardRequest{
 			DashboardId: id,
 		})
-	})
-	wg.Go(func() {
-		publishedDashboard, getPublishedErr = r.client.Lakeview.GetPublished(ctx, dashboards.GetPublishedDashboardRequest{
-			DashboardId: id,
-		})
+		if err != nil {
+			return fmt.Errorf("failed to get draft dashboard: %w", err)
+		}
+		return nil
 	})
 
-	// Wait for both GET call to complete
-	wg.Wait()
-	if getErr != nil {
-		return nil, fmt.Errorf("failed to get draft dashboard: %w", getErr)
-	}
-	if getPublishedErr != nil {
-		return nil, fmt.Errorf("failed to get published dashboard: %w", getPublishedErr)
+	g.Go(func() error {
+		var err error
+		publishedDashboard, err = r.client.Lakeview.GetPublished(ctx, dashboards.GetPublishedDashboardRequest{
+			DashboardId: id,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to get published dashboard: %w", err)
+		}
+		return nil
+	})
+
+	if err := g.Wait(); err != nil {
+		return nil, err
 	}
 
 	// Add the /Workspace prefix to the parent path. The backend removes this prefix from parent
@@ -115,7 +121,7 @@ func (r *ResourceDashboard) DoRefresh(ctx context.Context, id string) (*resource
 			Etag:                dashboard.Etag,
 			WarehouseId:         dashboard.WarehouseId,
 			SerializedDashboard: dashboard.SerializedDashboard,
-			ParentPath: parentPath,
+			ParentPath:          parentPath,
 
 			// Output only fields.
 			CreateTime:      dashboard.CreateTime,
@@ -127,7 +133,7 @@ func (r *ResourceDashboard) DoRefresh(ctx context.Context, id string) (*resource
 		},
 		SerializedDashboard: dashboard.SerializedDashboard,
 		EmbedCredentials:    publishedDashboard.EmbedCredentials,
-		ForceSendFields:     filterFields[dashboards.PublishedDashboard](publishedDashboard.ForceSendFields),
+		ForceSendFields:     filterFields[resources.DashboardConfig](publishedDashboard.ForceSendFields),
 	}, nil
 }
 
@@ -198,7 +204,7 @@ func responseToState(createOrUpdateResp *dashboards.Dashboard, publishResp *dash
 		},
 		SerializedDashboard: createOrUpdateResp.SerializedDashboard,
 		EmbedCredentials:    publishResp.EmbedCredentials,
-		ForceSendFields:     filterFields[dashboards.PublishedDashboard](publishResp.ForceSendFields),
+		ForceSendFields:     filterFields[resources.DashboardConfig](publishResp.ForceSendFields),
 	}
 }
 
@@ -301,11 +307,9 @@ func (*ResourceDashboard) FieldTriggers(isLocal bool) map[string]deployplan.Acti
 		// Etags are not relevant to determine if the local configuration changed.
 		triggers["etag"] = deployplan.ActionTypeSkip
 	} else {
-		// If the etag changes remotely, it means the dashboard has been modified remotely
-		// and needs to be updated to match with the config.
-		// Even though "update" action type is the default, we explicitly specify it here
-		// to make this relationship clear.
-		triggers["etag"] = deployplan.ActionTypeUpdate
+		// Note: If the etag changes remotely, it means the dashboard has been modified remotely
+		// and needs to be updated to match with the config. Since update is the default action type,
+		// we don't need to explicitly specify it here.
 
 		// "serialized_dashboard" locally and remotely will have different diffs.
 		// We only need to rely on etag here, and can skip this field for diff computation.
