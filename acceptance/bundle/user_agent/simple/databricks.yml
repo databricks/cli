@@ -1,0 +1,12 @@
+bundle:
+  name: test-bundle
+
+resources:
+  schemas:
+    foo:
+      catalog_name: mycatalog
+      name: myschema
+
+sync:
+  paths:
+    - databricks.yml
