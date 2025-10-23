@@ -21,8 +21,8 @@ Update ID: test-update-123
 Update for pipeline test-pipeline completed successfully.
 
 Pipeline ID: test-pipeline-789
-Update start time: [TIMESTAMP]Z
-Update end time: [TIMESTAMP]Z
+Update start time: [TIMESTAMP]
+Update end time: [TIMESTAMP]
 
 Pipeline configurations for this update:
 • All tables are fully refreshed
