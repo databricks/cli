@@ -25,7 +25,7 @@ def check_user_agent(fname):
     if ".terraform." in fname:
         expected = "engine/terraform"
     elif ".direct" in fname:
-        expected = "engine/direct-exp"
+        expected = "engine/direct"
     else:
         return
 
