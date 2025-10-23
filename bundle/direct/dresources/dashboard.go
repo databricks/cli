@@ -97,18 +97,25 @@ func (r *ResourceDashboard) DoRefresh(ctx context.Context, id string) (*resource
 		return nil, fmt.Errorf("failed to get published dashboard: %w", getPublishedErr)
 	}
 
+	// Add the /Workspace prefix to the parent path. The backend removes this prefix from parent
+	// path, and thus it needs to be added back in to match the local configuration.
+	// The default parent_path (i.e. ${workspace.resource_path}) includes the /Workspace prefix,
+	// that's why we need to add it back here.
+	//
+	// If in the future `parent_path` from GET includes the /Workspace prefix, this logic
+	// will still be correct because creating "/Workspace/Workspace" is not allowed.
+	parentPath := dashboard.ParentPath
+	if !strings.HasPrefix(parentPath, "/Workspace") {
+		parentPath = path.Join("/Workspace", parentPath)
+	}
+
 	return &resources.DashboardConfig{
 		Dashboard: dashboards.Dashboard{
 			DisplayName:         dashboard.DisplayName,
 			Etag:                dashboard.Etag,
 			WarehouseId:         dashboard.WarehouseId,
 			SerializedDashboard: dashboard.SerializedDashboard,
-
-			// Add the /Workspace prefix to the parent path. The backend removes this prefix from parent
-			// path, and thus it needs to be added back in to match the local configuration.
-			// The default parent_path (i.e. ${workspace.resource_path}) includes the /Workspace prefix,
-			// that's why we need to add it back here.
-			ParentPath: path.Join("/Workspace", dashboard.ParentPath),
+			ParentPath: parentPath,
 
 			// Output only fields.
 			CreateTime:      dashboard.CreateTime,
