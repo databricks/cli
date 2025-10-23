@@ -28,24 +28,17 @@ type importResource struct {
 
 // Apply implements bundle.Mutator.
 func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	if *b.DirectDeployment {
-		return diag.Errorf("import is not implemented for DATABRICKS_BUNDLE_ENGINE=direct")
-	}
-
 	dir, err := Dir(ctx, b)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	tf := b.Terraform
-	if tf == nil {
-		return diag.Errorf("terraform not initialized")
+	diags := Initialize(ctx, b)
+	if diags.HasError() {
+		return diags
 	}
 
-	err = tf.Init(ctx, tfexec.Upgrade(true))
-	if err != nil {
-		return diag.Errorf("terraform init: %v", err)
-	}
+	tf := b.Terraform
 	tmpDir, err := os.MkdirTemp("", "state-*")
 	if err != nil {
 		return diag.Errorf("terraform init: %v", err)
@@ -109,7 +102,7 @@ func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 		return diag.FromErr(err)
 	}
 
-	return nil
+	return diags
 }
 
 // Name implements bundle.Mutator.

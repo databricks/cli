@@ -46,11 +46,6 @@ func (l *load) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 			return diag.FromErr(err)
 		}
 	} else {
-		tf := b.Terraform
-		if tf == nil {
-			return diag.Errorf("terraform not initialized")
-		}
-
 		var err error
 		state, err = terraform.ParseResourcesState(ctx, b)
 		if err != nil {

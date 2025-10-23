@@ -15,7 +15,6 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy"
-	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
@@ -131,8 +130,6 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle) context.Context {
 
 	if !*b.DirectDeployment {
 		engine = "terraform"
-		// XXX move this close to tf.Init()
-		bundle.ApplyContext(ctx, b, terraform.Initialize())
 	}
 
 	// Set the engine in the user agent
