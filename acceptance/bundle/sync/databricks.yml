@@ -2,6 +2,7 @@ resources:
   dashboards:
     dashboard1:
       display_name: My dashboard
+      warehouse_id: "my-warehouse-1234"
 
 sync:
   exclude:
