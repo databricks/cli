@@ -252,6 +252,8 @@ func getLoggedRequest(req *testserver.Request, includedHeaders []string) LoggedR
 		Headers: filterHeaders(req.Headers, includedHeaders),
 	}
 
+	// Log query separately for readability (some values are paths which don't look great when % encoded)
+	// and for easier parsing/filtering with jq.
 	if req.URL.RawQuery != "" {
 		queryParams := req.URL.Query()
 		result.Q = make(map[string]any)
