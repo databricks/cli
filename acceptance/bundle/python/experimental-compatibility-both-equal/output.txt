@@ -19,7 +19,6 @@
         "format": "MULTI_TASK",
         "max_concurrent_runs": 1,
         "name": "My Job",
-        "permissions": [],
         "queue": {
           "enabled": true
         }
@@ -58,14 +57,14 @@
         [
           0,
           1,
-          846
+          880
         ]
       ],
       "resources.jobs": [
         [
           0,
           1,
-          855
+          889
         ]
       ],
       "resources.jobs.my_job": [
