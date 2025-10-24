@@ -43,6 +43,7 @@ func prepareSSHDConfig(ctx context.Context, client *databricks.WorkspaceClient, 
 
 	sshdConfig := filepath.Join(sshDir, "sshd_config")
 	authKeysPath := filepath.Join(sshDir, "authorized_keys")
+	// Prepare an empty authorized_keys file, it will be updated each time a new client connects
 	if err := os.WriteFile(authKeysPath, []byte(""), 0o600); err != nil {
 		return "", "", err
 	}
@@ -84,22 +85,6 @@ func prepareSSHDConfig(ctx context.Context, client *databricks.WorkspaceClient, 
 	}
 
 	return sshdConfig, authKeysPath, nil
-}
-
-func updateAuthorizedKeys(ctx context.Context, client *databricks.WorkspaceClient, authKeysPath, secretScopeName, publicKeyName string) error {
-	log.Info(ctx, "Using public key secret name:"+publicKeyName)
-	clientPublicKey, err := keys.GetSecret(ctx, client, secretScopeName, publicKeyName)
-	if err != nil {
-		return fmt.Errorf("failed to get client public key: %w", err)
-	}
-	authKeys, err := os.OpenFile(authKeysPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
-	if err != nil {
-		return fmt.Errorf("failed to open authorized keys file: %w", err)
-	}
-	defer authKeys.Close()
-	content := strings.TrimSpace(string(clientPublicKey))
-	_, err = authKeys.WriteString("\n" + content)
-	return err
 }
 
 func createSSHDProcess(ctx context.Context, configPath string) *exec.Cmd {

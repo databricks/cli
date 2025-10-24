@@ -69,14 +69,15 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOpt
 		return fmt.Errorf("failed to save Jupyter init script: %w", err)
 	}
 
-	connections := proxy.NewConnectionsManager(opts.MaxClients, opts.ShutdownDelay)
+	authKeysManager := NewAuthorizedKeysManager(client, authKeysPath, opts.SecretScopeName)
 	createServerCommand := func(ctx context.Context, publicKeyName string) (*exec.Cmd, error) {
-		err := updateAuthorizedKeys(ctx, client, authKeysPath, opts.SecretScopeName, publicKeyName)
+		err := authKeysManager.AddKey(ctx, publicKeyName)
 		if err != nil {
 			return nil, fmt.Errorf("failed to store auth key: %w", err)
 		}
 		return createSSHDProcess(ctx, sshdConfigPath), nil
 	}
+	connections := proxy.NewConnectionsManager(opts.MaxClients, opts.ShutdownDelay)
 	http.Handle("/ssh", proxy.NewProxyServer(ctx, connections, createServerCommand))
 	http.HandleFunc("/metadata", serveMetadata)
 	go handleTimeout(ctx, connections.TimedOut, opts.ShutdownDelay)
