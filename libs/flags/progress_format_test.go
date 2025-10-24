@@ -16,7 +16,7 @@ func TestProgressFormatSet(t *testing.T) {
 
 	// invalid arg
 	err := p.Set("foo")
-	assert.ErrorContains(t, err, "accepted arguments are [append, inplace, json]")
+	assert.ErrorContains(t, err, "accepted arguments are [append, json]")
 
 	// set json
 	err = p.Set("json")
@@ -43,17 +43,4 @@ func TestProgressFormatSet(t *testing.T) {
 	err = p.Set("APPEND")
 	assert.NoError(t, err)
 	assert.Equal(t, "append", p.String())
-
-	// set inplace
-	err = p.Set("inplace")
-	assert.NoError(t, err)
-	assert.Equal(t, "inplace", p.String())
-
-	err = p.Set("Inplace")
-	assert.NoError(t, err)
-	assert.Equal(t, "inplace", p.String())
-
-	err = p.Set("INPLACE")
-	assert.NoError(t, err)
-	assert.Equal(t, "inplace", p.String())
 }
