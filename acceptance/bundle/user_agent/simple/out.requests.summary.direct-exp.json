@@ -1,0 +1,27 @@
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/OS cmd/bundle_summary cmd-exec-id/[UUID] engine/direct-exp auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/preview/scim/v2/Me"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/OS cmd/bundle_summary cmd-exec-id/[UUID] engine/direct-exp auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/OS cmd/bundle_summary cmd-exec-id/[UUID] engine/direct-exp auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/preview/scim/v2/Me"
+}
