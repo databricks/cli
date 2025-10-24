@@ -11,7 +11,6 @@ for line in sys.stdin:
         if t in line:
             found.add(t)
 
-
 not_found = set(targets) - found
 for item in sorted(not_found):
     sys.stderr.write(f"contains error: {item!r} not found in the output.\n")
