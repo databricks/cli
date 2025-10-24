@@ -24,5 +24,8 @@ Deployment complete!
 >>> cat out.requests.txt
 {
   "method": "POST",
-  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/outside_of_bundle_root/default/artifacts/.internal/test.whl"
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/outside_of_bundle_root/default/artifacts/.internal/test.whl",
+  "q": {
+    "overwrite": "true"
+  }
 }
