@@ -73,20 +73,9 @@ If there is only one pipeline in the project, KEY is optional and the pipeline w
 			return err
 		}
 
-		//cacheDir, err := terraform.Dir(ctx, b)
-		//if err != nil {
-		//	return err
-		//}
-		//_, stateFileErr := os.Stat(filepath.Join(cacheDir, b.StateFilename()))
-		//_, configFileErr := os.Stat(filepath.Join(cacheDir, terraform.TerraformConfigFileName))
-		//noCache := errors.Is(stateFileErr, os.ErrNotExist) || errors.Is(configFileErr, os.ErrNotExist)
-		noCache := true
-
-		if forcePull || noCache {
-			ctx = statemgmt.PullResourcesState(ctx, b)
-			if logdiag.HasError(ctx) {
-				return root.ErrAlreadyPrinted
-			}
+		ctx = statemgmt.PullResourcesStateOpt(ctx, b, forcePull)
+		if logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
 		}
 
 		bundle.ApplySeqContext(ctx, b,

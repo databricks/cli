@@ -118,22 +118,10 @@ func prepareBundleForSummary(cmd *cobra.Command, forcePull, includeLocations boo
 		return nil
 	}
 
-	//cacheDir, err := terraform.Dir(ctx, b)
-	//if err != nil {
-	//	logdiag.LogError(ctx, err)
-	//	return nil
-	//}
-	//_, stateFileErr := os.Stat(filepath.Join(cacheDir, b.StateFilename()))
-	//_, configFileErr := os.Stat(filepath.Join(cacheDir, terraform.TerraformConfigFileName))
-	//noCache := errors.Is(stateFileErr, os.ErrNotExist) || errors.Is(configFileErr, os.ErrNotExist)
-	noCache := true
+	ctx = statemgmt.PullResourcesStateOpt(ctx, b, forcePull)
 
-	if forcePull || noCache {
-		ctx = statemgmt.PullResourcesState(ctx, b)
-
-		if logdiag.HasError(ctx) {
-			return nil
-		}
+	if logdiag.HasError(ctx) {
+		return nil
 	}
 
 	bundle.ApplySeqContext(ctx, b,
