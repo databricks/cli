@@ -51,7 +51,7 @@ func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipV
 		return
 	}
 
-	if cfg.IsAccountClient() {
+	if cfg.GetHostType() != config.WorkspaceHost {
 		a, err := databricks.NewAccountClient((*databricks.Config)(cfg))
 		if err != nil {
 			return

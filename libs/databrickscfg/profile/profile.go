@@ -10,11 +10,13 @@ import (
 // It should only be used for prompting and filtering.
 // Use its name to construct a config.Config.
 type Profile struct {
-	Name                string
-	Host                string
-	AccountID           string
-	ClusterID           string
-	ServerlessComputeID string
+	Name                       string
+	Host                       string
+	AccountID                  string
+	WorkspaceId                string
+	ClusterID                  string
+	ServerlessComputeID        string
+	Experimental_IsUnifiedHost bool
 }
 
 func (p Profile) Cloud() string {
