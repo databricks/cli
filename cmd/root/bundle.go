@@ -107,7 +107,6 @@ func configureBundle(cmd *cobra.Command, b *bundle.Bundle) {
 func MustConfigureBundle(cmd *cobra.Command) *bundle.Bundle {
 	// A bundle may be configured on the context when testing.
 	// If it is, return it immediately.
-
 	b := bundle.GetOrNil(cmd.Context())
 	if b != nil {
 		return b
@@ -117,7 +116,6 @@ func MustConfigureBundle(cmd *cobra.Command) *bundle.Bundle {
 	if b != nil {
 		configureBundle(cmd, b)
 	}
-
 	return b
 }
 
