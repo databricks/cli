@@ -14,7 +14,10 @@
     ]
   },
   "method": "GET",
-  "path": "/api/2.0/workspace/get-status"
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default"
+  }
 }
 {
   "headers": {
@@ -24,6 +27,9 @@
   },
   "method": "POST",
   "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock",
+  "q": {
+    "overwrite": "false"
+  },
   "body": {
     "ID": "[UUID]",
     "AcquisitionTime": "[TIMESTAMP]",
@@ -38,7 +44,11 @@
     ]
   },
   "method": "GET",
-  "path": "/api/2.0/workspace/get-status"
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock",
+    "return_export_info": "true"
+  }
 }
 {
   "headers": {
@@ -47,7 +57,11 @@
     ]
   },
   "method": "GET",
-  "path": "/api/2.0/workspace/export"
+  "path": "/api/2.0/workspace/export",
+  "q": {
+    "direct_download": "true",
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock"
+  }
 }
 {
   "headers": {
@@ -56,7 +70,11 @@
     ]
   },
   "method": "GET",
-  "path": "/api/2.0/workspace/get-status"
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json",
+    "return_export_info": "true"
+  }
 }
 {
   "headers": {
@@ -83,7 +101,10 @@
     ]
   },
   "method": "DELETE",
-  "path": "/api/2.1/unity-catalog/schemas/mycatalog.myschema"
+  "path": "/api/2.1/unity-catalog/schemas/mycatalog.myschema",
+  "q": {
+    "force": "true"
+  }
 }
 {
   "headers": {
@@ -105,5 +126,9 @@
     ]
   },
   "method": "GET",
-  "path": "/api/2.0/workspace/get-status"
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock",
+    "return_export_info": "true"
+  }
 }

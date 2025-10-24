@@ -44,5 +44,8 @@ Destroy complete!
 >>> print_requests
 {
   "method": "DELETE",
-  "path": "/api/2.1/unity-catalog/schemas/main.testschema-[UNIQUE_NAME]"
+  "path": "/api/2.1/unity-catalog/schemas/main.testschema-[UNIQUE_NAME]",
+  "q": {
+    "force": "true"
+  }
 }

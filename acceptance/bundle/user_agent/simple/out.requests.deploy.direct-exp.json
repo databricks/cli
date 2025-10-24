@@ -15,6 +15,9 @@
   },
   "method": "POST",
   "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock",
+  "q": {
+    "overwrite": "false"
+  },
   "body": {
     "ID": "[UUID]",
     "AcquisitionTime": "[TIMESTAMP]",
@@ -29,7 +32,11 @@
     ]
   },
   "method": "GET",
-  "path": "/api/2.0/workspace/get-status"
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock",
+    "return_export_info": "true"
+  }
 }
 {
   "headers": {
@@ -38,7 +45,11 @@
     ]
   },
   "method": "GET",
-  "path": "/api/2.0/workspace/export"
+  "path": "/api/2.0/workspace/export",
+  "q": {
+    "direct_download": "true",
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock"
+  }
 }
 {
   "headers": {
@@ -47,7 +58,11 @@
     ]
   },
   "method": "GET",
-  "path": "/api/2.0/workspace/get-status"
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json",
+    "return_export_info": "true"
+  }
 }
 {
   "headers": {
@@ -56,7 +71,11 @@
     ]
   },
   "method": "GET",
-  "path": "/api/2.0/workspace/get-status"
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json",
+    "return_export_info": "true"
+  }
 }
 {
   "headers": {
@@ -90,7 +109,10 @@
     ]
   },
   "method": "GET",
-  "path": "/api/2.0/workspace/get-status"
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files"
+  }
 }
 {
   "headers": {
@@ -99,7 +121,10 @@
     ]
   },
   "method": "POST",
-  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/empty.py"
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/empty.py",
+  "q": {
+    "overwrite": "true"
+  }
 }
 {
   "headers": {
@@ -109,6 +134,9 @@
   },
   "method": "POST",
   "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json",
+  "q": {
+    "overwrite": "true"
+  },
   "body": {
     "version": 1,
     "seq": 1,
@@ -144,6 +172,9 @@
   },
   "method": "POST",
   "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json",
+  "q": {
+    "overwrite": "true"
+  },
   "body": {
     "lineage": "[UUID]",
     "serial": 0,
@@ -166,6 +197,9 @@
   },
   "method": "POST",
   "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json",
+  "q": {
+    "overwrite": "true"
+  },
   "body": {
     "version": 1,
     "config": {
@@ -192,7 +226,11 @@
     ]
   },
   "method": "GET",
-  "path": "/api/2.0/workspace/get-status"
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock",
+    "return_export_info": "true"
+  }
 }
 {
   "headers": {
@@ -201,7 +239,11 @@
     ]
   },
   "method": "GET",
-  "path": "/api/2.0/workspace/get-status"
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock",
+    "return_export_info": "true"
+  }
 }
 {
   "headers": {
@@ -210,7 +252,11 @@
     ]
   },
   "method": "GET",
-  "path": "/api/2.0/workspace/export"
+  "path": "/api/2.0/workspace/export",
+  "q": {
+    "direct_download": "true",
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock"
+  }
 }
 {
   "headers": {
