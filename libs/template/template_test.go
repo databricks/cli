@@ -12,7 +12,7 @@ func TestTemplateHelpDescriptions(t *testing.T) {
 - default-sql: The default SQL template for .sql files that run with Databricks SQL
 - dbt-sql: The dbt SQL template (databricks.com/blog/delivering-cost-effective-data-real-time-dbt-and-databricks)
 - mlops-stacks: The Databricks MLOps Stacks template (github.com/databricks/mlops-stacks)
-- experimental-jobs-as-code: Jobs as code template (experimental)`
+- pydabs: A variant of 'default-python' template that defines resources in Python instead of YAML`
 	assert.Equal(t, expected, HelpDescriptions())
 }
 
