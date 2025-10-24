@@ -3,8 +3,9 @@
 ## Release v0.275.0
 
 ### Notable Changes
-* Python support for Databricks Asset Bundles is now generally available### CLI
+* Python support for Databricks Asset Bundles is now generally available
 
+### CLI
 * Remove `inplace` mode for the `--progress-format` flag. ([#3811](https://github.com/databricks/cli/pull/3811))
 
 ### Dependency updates
