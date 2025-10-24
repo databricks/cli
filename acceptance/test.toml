@@ -72,6 +72,14 @@ New = "[NUMID]"
 Order = 10
 
 [[Repls]]
-Old = '2\d\d\d-\d\d-\d\d(T| )\d\d:\d\d:\d\d(\.\d+(Z|\+\d\d:\d\d)?)?'
+# "2025-10-23T14:26:43.499488Z"
+Old = '2\d\d\d-\d\d-\d\d(T| )\d\d:\d\d:\d\d\.\d+(Z|\+\d\d:\d\d)?'
 New = "[TIMESTAMP]"
-Order = 10
+Order = 9
+
+[[Repls]]
+# "2025-10-23T14:26:43"
+# "2025-10-23T14:26:43Z"
+Old = '2\d\d\d-\d\d-\d\d(T| )\d\d:\d\d:\d\dZ?'
+New = "[TIMESTAMP]"
+Order = 9

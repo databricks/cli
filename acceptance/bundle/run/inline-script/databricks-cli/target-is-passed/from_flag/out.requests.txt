@@ -32,7 +32,10 @@
     ]
   },
   "method": "GET",
-  "path": "/api/2.0/workspace/get-status"
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/oauth/files"
+  }
 }
 {
   "headers": {
@@ -53,5 +56,8 @@
     ]
   },
   "method": "GET",
-  "path": "/api/2.0/workspace/get-status"
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/oauth/files"
+  }
 }

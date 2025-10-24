@@ -1,2 +1,4 @@
+Local = true
 Cloud = false
-Local = false
+RecordRequests = false
+Ignore = [".databricks"]
