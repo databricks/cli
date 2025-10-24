@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"io"
 	"os"
-	"sync"
 
 	"github.com/databricks/cli/libs/flags"
 )
@@ -20,8 +19,6 @@ type Logger struct {
 
 	// Output stream where the logger writes to
 	Writer io.Writer
-
-	mutex sync.Mutex
 }
 
 func NewLogger(mode flags.ProgressLogFormat) *Logger {
