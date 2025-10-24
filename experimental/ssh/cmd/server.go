@@ -27,15 +27,12 @@ and proxies them to local SSH daemon processes.
 	var shutdownDelay time.Duration
 	var clusterID string
 	var version string
-	var keysSecretScopeName string
-	var authorizedKeyName string
+	var secretScopeName string
 
 	cmd.Flags().StringVar(&clusterID, "cluster", "", "Databricks cluster ID")
 	cmd.MarkFlagRequired("cluster")
-	cmd.Flags().StringVar(&keysSecretScopeName, "keys-secret-scope-name", "", "Databricks secret scope name to store SSH keys")
-	cmd.MarkFlagRequired("keys-secret-scope-name")
-	cmd.Flags().StringVar(&authorizedKeyName, "authorized-key-secret-name", "", "Authorized key secret name in the secret scope")
-	cmd.MarkFlagRequired("authorized-key-secret-name")
+	cmd.Flags().StringVar(&secretScopeName, "secret-scope-name", "", "Databricks secret scope name to store SSH keys")
+	cmd.MarkFlagRequired("secret-scope-name")
 
 	cmd.Flags().IntVar(&maxClients, "max-clients", defaultMaxClients, "Maximum number of SSH clients")
 	cmd.Flags().DurationVar(&shutdownDelay, "shutdown-delay", defaultShutdownDelay, "Delay before shutting down after no pings from clients")
@@ -60,8 +57,7 @@ and proxies them to local SSH daemon processes.
 			ShutdownDelay:        shutdownDelay,
 			Version:              version,
 			ConfigDir:            serverConfigDir,
-			KeysSecretScopeName:  keysSecretScopeName,
-			AuthorizedKeyName:    authorizedKeyName,
+			SecretScopeName:      secretScopeName,
 			ServerPrivateKeyName: serverPrivateKeyName,
 			ServerPublicKeyName:  serverPublicKeyName,
 			DefaultPort:          defaultServerPort,

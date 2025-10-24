@@ -34,9 +34,7 @@ type ServerOptions struct {
 	// The directory to store sshd configuration
 	ConfigDir string
 	// The name of the secrets scope to use for client and server keys
-	KeysSecretScopeName string
-	// The name of a secret containing the client's public key value
-	AuthorizedKeyName string
+	SecretScopeName string
 	// The name of a secret containing the server's private key value
 	ServerPrivateKeyName string
 	// The name of a secret containing the server's public key value
@@ -61,7 +59,7 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOpt
 		return fmt.Errorf("failed to save metadata to the workspace: %w", err)
 	}
 
-	sshdConfigPath, err := prepareSSHDConfig(ctx, client, opts)
+	sshdConfigPath, authKeysPath, err := prepareSSHDConfig(ctx, client, opts)
 	if err != nil {
 		return fmt.Errorf("failed to setup SSH configuration: %w", err)
 	}
@@ -72,8 +70,12 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOpt
 	}
 
 	connections := proxy.NewConnectionsManager(opts.MaxClients, opts.ShutdownDelay)
-	createServerCommand := func(ctx context.Context) *exec.Cmd {
-		return createSSHDProcess(ctx, sshdConfigPath)
+	createServerCommand := func(ctx context.Context, publicKeyName string) (*exec.Cmd, error) {
+		err := updateAuthorizedKeys(ctx, client, authKeysPath, opts.SecretScopeName, publicKeyName)
+		if err != nil {
+			return nil, fmt.Errorf("failed to store auth key: %w", err)
+		}
+		return createSSHDProcess(ctx, sshdConfigPath), nil
 	}
 	http.Handle("/ssh", proxy.NewProxyServer(ctx, connections, createServerCommand))
 	http.HandleFunc("/metadata", serveMetadata)

@@ -14,42 +14,37 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 )
 
-func prepareSSHDConfig(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOptions) (string, error) {
-	clientPublicKey, err := keys.GetSecret(ctx, client, opts.KeysSecretScopeName, opts.AuthorizedKeyName)
-	if err != nil {
-		return "", fmt.Errorf("failed to get client public key: %w", err)
-	}
-
+func prepareSSHDConfig(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOptions) (string, string, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		return "", fmt.Errorf("failed to get home directory: %w", err)
+		return "", "", fmt.Errorf("failed to get home directory: %w", err)
 	}
 	sshDir := path.Join(homeDir, opts.ConfigDir)
 
 	err = os.RemoveAll(sshDir)
 	if err != nil && !os.IsNotExist(err) {
-		return "", fmt.Errorf("failed to remove existing SSH directory: %w", err)
+		return "", "", fmt.Errorf("failed to remove existing SSH directory: %w", err)
 	}
 
 	err = os.MkdirAll(sshDir, 0o700)
 	if err != nil {
-		return "", fmt.Errorf("failed to create SSH directory: %w", err)
+		return "", "", fmt.Errorf("failed to create SSH directory: %w", err)
 	}
 
-	privateKeyBytes, publicKeyBytes, err := keys.CheckAndGenerateSSHKeyPairFromSecrets(ctx, client, opts.ClusterID, opts.KeysSecretScopeName, opts.ServerPrivateKeyName, opts.ServerPublicKeyName)
+	privateKeyBytes, publicKeyBytes, err := keys.CheckAndGenerateSSHKeyPairFromSecrets(ctx, client, opts.ClusterID, opts.SecretScopeName, opts.ServerPrivateKeyName, opts.ServerPublicKeyName)
 	if err != nil {
-		return "", fmt.Errorf("failed to get SSH key pair from secrets: %w", err)
+		return "", "", fmt.Errorf("failed to get SSH key pair from secrets: %w", err)
 	}
 
 	keyPath := filepath.Join(sshDir, "keys", opts.ServerPrivateKeyName)
 	if err := keys.SaveSSHKeyPair(keyPath, privateKeyBytes, publicKeyBytes); err != nil {
-		return "", fmt.Errorf("failed to save SSH key pair: %w", err)
+		return "", "", fmt.Errorf("failed to save SSH key pair: %w", err)
 	}
 
 	sshdConfig := filepath.Join(sshDir, "sshd_config")
-	authKeys := filepath.Join(sshDir, "authorized_keys")
-	if err := os.WriteFile(authKeys, clientPublicKey, 0o600); err != nil {
-		return "", err
+	authKeysPath := filepath.Join(sshDir, "authorized_keys")
+	if err := os.WriteFile(authKeysPath, []byte(""), 0o600); err != nil {
+		return "", "", err
 	}
 
 	// Set all available env vars, wrapping values in quotes and escaping quotes inside values
@@ -75,11 +70,11 @@ func prepareSSHDConfig(ctx context.Context, client *databricks.WorkspaceClient, 
 		"ChallengeResponseAuthentication no\n" +
 		"Subsystem sftp internal-sftp\n" +
 		"HostKey " + keyPath + "\n" +
-		"AuthorizedKeysFile " + authKeys + "\n" +
+		"AuthorizedKeysFile " + authKeysPath + "\n" +
 		setEnv + "\n"
 
 	if err := os.WriteFile(sshdConfig, []byte(sshdConfigContent), 0o600); err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	if err := os.MkdirAll("/run/sshd", 0o755); err != nil {
@@ -88,7 +83,21 @@ func prepareSSHDConfig(ctx context.Context, client *databricks.WorkspaceClient, 
 		log.Warn(ctx, "Failed to create /run/sshd directory, SSHD may not work properly")
 	}
 
-	return sshdConfig, nil
+	return sshdConfig, authKeysPath, nil
+}
+
+func updateAuthorizedKeys(ctx context.Context, client *databricks.WorkspaceClient, authKeysPath, secretScopeName, publicKeyName string) error {
+	clientPublicKey, err := keys.GetSecret(ctx, client, secretScopeName, publicKeyName)
+	if err != nil {
+		return fmt.Errorf("failed to get client public key: %w", err)
+	}
+	authKeys, err := os.OpenFile(authKeysPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
+	if err != nil {
+		return fmt.Errorf("failed to open authorized keys file: %w", err)
+	}
+	defer authKeys.Close()
+	_, err = authKeys.WriteString("\n" + string(clientPublicKey))
+	return err
 }
 
 func createSSHDProcess(ctx context.Context, configPath string) *exec.Cmd {
