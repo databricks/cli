@@ -9,4 +9,6 @@ resources:
 
 sync:
   paths:
-    - databricks.yml
+    - empty.py
+    # on windows, this is checked out with \r\n
+    #- databricks.yml

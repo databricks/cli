@@ -99,8 +99,7 @@
     ]
   },
   "method": "POST",
-  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/databricks.yml",
-  "raw_body": "bundle:\n  name: test-bundle\n\nresources:\n  schemas:\n    foo:\n      catalog_name: mycatalog\n      name: myschema\n\nsync:\n  paths:\n    - databricks.yml\n"
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/empty.py"
 }
 {
   "headers": {
@@ -117,7 +116,7 @@
     "timestamp": "[TIMESTAMP]",
     "files": [
       {
-        "local_path": "databricks.yml",
+        "local_path": "empty.py",
         "is_notebook": false
       }
     ],
