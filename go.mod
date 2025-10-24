@@ -75,5 +75,3 @@ require (
 	google.golang.org/grpc v1.75.1 // indirect
 	google.golang.org/protobuf v1.36.9 // indirect
 )
-
-replace github.com/databricks/databricks-sdk-go => ../databricks-sdk-go
