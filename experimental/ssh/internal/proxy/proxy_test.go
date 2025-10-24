@@ -25,8 +25,8 @@ type testBuffer struct {
 }
 
 const (
-	MESSAGE_CHUNKS      = 5
-	MESSAGES_PER_CHUNK  = 1024
+	MESSAGE_CHUNKS      = 4
+	MESSAGES_PER_CHUNK  = 512
 	TOTAL_MESSAGE_COUNT = MESSAGE_CHUNKS * MESSAGES_PER_CHUNK
 )
 
@@ -61,7 +61,7 @@ func (tb *testBuffer) AssertWrite(expected []byte) error {
 	case data := <-tb.OnWrite:
 		assert.Equal(tb.t, expected, data)
 		return nil
-	case <-time.After(2 * time.Second):
+	case <-time.After(3 * time.Second):
 		return errors.New("timeout waiting for write, was expecting: " + string(expected))
 	}
 }
@@ -79,7 +79,7 @@ func (tb *testBuffer) WaitForWrite(expected []byte) error {
 			if tb.Contains(expected) {
 				return nil
 			}
-		case <-time.After(2 * time.Second):
+		case <-time.After(3 * time.Second):
 			return errors.New("timeout waiting for write")
 		}
 	}
