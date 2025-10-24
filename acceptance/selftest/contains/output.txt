@@ -6,9 +6,9 @@ contains error: 'not_found' not found in the output.
 
 === This should complain about not_found not found, but errcode is propagated
 >>> musterr python3 ./failure.py
+Failed script
 
 Exit code (musterr): 3
-Failed script
 contains error: 'not_found' not found in the output.
 
 === This should not complain
@@ -17,6 +17,6 @@ Hello world
 
 === This should not complain, but errcode is propagated
 >>> musterr python3 ./failure.py
+Failed script
 
 Exit code (musterr): 3
-Failed script
