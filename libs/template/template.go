@@ -86,7 +86,7 @@ var databricksTemplates = []Template{
 	},
 	{
 		name:        Pydabs,
-		hidden:      true,
+		hidden:      false,
 		description: "A variant of 'default-python' template that defines resources in Python instead of YAML",
 		Reader: &overridingReader{
 			underlying: &builtinReader{name: string(DefaultPython)},
@@ -101,6 +101,7 @@ var databricksTemplates = []Template{
 	},
 	{
 		name:        ExperimentalJobsAsCode,
+		hidden:      true,
 		description: "Jobs as code template (experimental)",
 		Reader:      &builtinReader{name: string(ExperimentalJobsAsCode)},
 		Writer:      &writerWithFullTelemetry{defaultWriter: defaultWriter{name: ExperimentalJobsAsCode}},

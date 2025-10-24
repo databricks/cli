@@ -3,10 +3,9 @@ bundle:
 
 sync: {paths: []} # don't need to copy files
 
-experimental:
-  python:
-    resources:
-      - "resources:load_resources"
+python:
+  resources:
+    - "resources:load_resources"
 
 resources:
   jobs:

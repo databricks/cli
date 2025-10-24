@@ -82,6 +82,9 @@ type Root struct {
 	Locations *dynloc.Locations `json:"__locations,omitempty" bundle:"internal"`
 
 	Scripts map[string]Script `json:"scripts,omitempty"`
+
+	// Python configures loading of Python code defined with 'databricks-bundles' package.
+	Python Python `json:"python,omitempty"`
 }
 
 // Load loads the bundle configuration file at the specified path.

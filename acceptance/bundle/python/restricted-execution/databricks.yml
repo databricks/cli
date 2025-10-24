@@ -3,10 +3,9 @@ bundle:
 
 sync: {paths: []} # don't need to copy files
 
-experimental:
-  python:
-    mutators:
-      - "mutators:read_envs"
+python:
+  mutators:
+    - "mutators:read_envs"
 
 resources:
   jobs:
