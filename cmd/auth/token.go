@@ -43,6 +43,7 @@ using a client ID and secret is not supported.`,
 		}
 
 		t, err := loadToken(ctx, loadTokenArgs{
+			cmd:                cmd,
 			authArguments:      authArguments,
 			profileName:        profileName,
 			args:               args,
@@ -65,6 +66,9 @@ using a client ID and secret is not supported.`,
 }
 
 type loadTokenArgs struct {
+	// cmd is the cobra command, used to access flags like experimental-is-unified-host.
+	cmd *cobra.Command
+
 	// authArguments is the parsed auth arguments, including the host and optionally the account ID.
 	authArguments *auth.AuthArguments
 
@@ -98,7 +102,7 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 		return nil, err
 	}
 
-	err = setHostAndAccountId(ctx, existingProfile, args.authArguments, args.args)
+	err = setHostAndAccountId(ctx, args.cmd, existingProfile, args.authArguments, args.args)
 	if err != nil {
 		return nil, err
 	}
