@@ -80,5 +80,32 @@ func TestLoadProfilesMatchAccount(t *testing.T) {
 	profiler := FileProfilerImpl{}
 	profiles, err := profiler.LoadProfiles(ctx, MatchAccountProfiles)
 	require.NoError(t, err)
-	assert.Equal(t, []string{"acc"}, profiles.Names())
+	assert.Equal(t, []string{"acc", "unified", "unified-with-workspace"}, profiles.Names())
+}
+
+func TestLoadProfilesWithExperimentalIsUnifiedHost(t *testing.T) {
+	ctx := context.Background()
+	ctx = env.Set(ctx, "DATABRICKS_CONFIG_FILE", "./testdata/databrickscfg")
+	profiler := FileProfilerImpl{}
+	profiles, err := profiler.LoadProfiles(ctx, WithName("unified"))
+	require.NoError(t, err)
+	require.Len(t, profiles, 1)
+	assert.Equal(t, "unified", profiles[0].Name)
+	assert.Equal(t, "https://unified.databricks.com", profiles[0].Host)
+	assert.Equal(t, "def", profiles[0].AccountID)
+	assert.True(t, profiles[0].Experimental_IsUnifiedHost)
+}
+
+func TestLoadProfilesWithWorkspaceId(t *testing.T) {
+	ctx := context.Background()
+	ctx = env.Set(ctx, "DATABRICKS_CONFIG_FILE", "./testdata/databrickscfg")
+	profiler := FileProfilerImpl{}
+	profiles, err := profiler.LoadProfiles(ctx, WithName("unified-with-workspace"))
+	require.NoError(t, err)
+	require.Len(t, profiles, 1)
+	assert.Equal(t, "unified-with-workspace", profiles[0].Name)
+	assert.Equal(t, "https://unified.databricks.com", profiles[0].Host)
+	assert.Equal(t, "def", profiles[0].AccountID)
+	assert.Equal(t, "123456789", profiles[0].WorkspaceId)
+	assert.True(t, profiles[0].Experimental_IsUnifiedHost)
 }

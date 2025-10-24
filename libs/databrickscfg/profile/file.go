@@ -79,11 +79,13 @@ func (f FileProfilerImpl) LoadProfiles(ctx context.Context, fn ProfileMatchFunct
 			continue
 		}
 		profile := Profile{
-			Name:                v.Name(),
-			Host:                host,
-			AccountID:           all["account_id"],
-			ClusterID:           all["cluster_id"],
-			ServerlessComputeID: all["serverless_compute_id"],
+			Name:                       v.Name(),
+			Host:                       host,
+			AccountID:                  all["account_id"],
+			WorkspaceId:                all["workspace_id"],
+			ClusterID:                  all["cluster_id"],
+			ServerlessComputeID:        all["serverless_compute_id"],
+			Experimental_IsUnifiedHost: all["experimental_is_unified_host"] == "true",
 		}
 		if fn(profile) {
 			profiles = append(profiles, profile)

@@ -13,7 +13,7 @@ import (
 func RewriteAuthError(ctx context.Context, host, accountId, profile string, err error) (bool, error) {
 	target := &u2m.InvalidRefreshTokenError{}
 	if errors.As(err, &target) {
-		oauthArgument, err := AuthArguments{host, accountId}.ToOAuthArgument()
+		oauthArgument, err := AuthArguments{host, accountId, false}.ToOAuthArgument() // TODO: pass the IsUnifiedHost flag
 		if err != nil {
 			return false, err
 		}

@@ -132,7 +132,7 @@ depends on the existing profiles you have set in your configuration file
 		if err != nil {
 			return err
 		}
-		err = setHostAndAccountId(ctx, existingProfile, authArguments, args)
+		err = setHostAndAccountId(ctx, cmd, existingProfile, authArguments, args)
 		if err != nil {
 			return err
 		}
@@ -170,6 +170,12 @@ depends on the existing profiles you have set in your configuration file
 			return err
 		}
 
+		// Prompt for workspace_id if the host is unified
+		workspaceId, err := promptForWorkspaceIdIfUnified(ctx, authArguments, existingProfile)
+		if err != nil {
+			return err
+		}
+
 		switch {
 		case configureCluster:
 			w, err := databricks.NewWorkspaceClient((*databricks.Config)(&cfg))
@@ -201,13 +207,15 @@ depends on the existing profiles you have set in your configuration file
 
 		if profileName != "" {
 			err = databrickscfg.SaveToProfile(ctx, &config.Config{
-				Profile:             profileName,
-				Host:                cfg.Host,
-				AuthType:            cfg.AuthType,
-				AccountID:           cfg.AccountID,
-				ClusterID:           cfg.ClusterID,
-				ConfigFile:          cfg.ConfigFile,
-				ServerlessComputeID: cfg.ServerlessComputeID,
+				Profile:                    profileName,
+				Host:                       cfg.Host,
+				AuthType:                   cfg.AuthType,
+				AccountID:                  cfg.AccountID,
+				WorkspaceId:                workspaceId,
+				ClusterID:                  cfg.ClusterID,
+				ConfigFile:                 cfg.ConfigFile,
+				ServerlessComputeID:        cfg.ServerlessComputeID,
+				Experimental_IsUnifiedHost: authArguments.IsUnifiedHost,
 			})
 			if err != nil {
 				return err
@@ -233,7 +241,7 @@ depends on the existing profiles you have set in your configuration file
 // 1. --account-id flag.
 // 2. account-id from the specified profile, if available.
 // 3. Prompt the user for the account-id.
-func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, authArguments *auth.AuthArguments, args []string) error {
+func setHostAndAccountId(ctx context.Context, cmd *cobra.Command, existingProfile *profile.Profile, authArguments *auth.AuthArguments, args []string) error {
 	// If both [HOST] and --host are provided, return an error.
 	host := authArguments.Host
 	if len(args) > 0 && host != "" {
@@ -259,11 +267,21 @@ func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, 
 		}
 	}
 
+	// Determine if the host is a unified host in the following order of precedence:
+	// 1. --experimental-is-unified-host flag (if explicitly set)
+	// 2. experimental_is_unified_host from the specified profile, if available
+	// 3. default to false if neither is provided.
+	if !cmd.Flag("experimental-is-unified-host").Changed {
+		if existingProfile != nil {
+			authArguments.IsUnifiedHost = existingProfile.Experimental_IsUnifiedHost
+		}
+	}
+
 	// If the account-id was not provided as a cmd line flag, try to read it from
 	// the specified profile.
-	isAccountClient := (&config.Config{Host: authArguments.Host}).IsAccountClient()
+	isAccountHost := (&config.Config{Host: authArguments.Host, Experimental_IsUnifiedHost: authArguments.IsUnifiedHost}).GetHostType() != config.WorkspaceHost
 	accountID := authArguments.AccountID
-	if isAccountClient && accountID == "" {
+	if isAccountHost && accountID == "" {
 		if existingProfile != nil && existingProfile.AccountID != "" {
 			authArguments.AccountID = existingProfile.AccountID
 		} else {
@@ -277,6 +295,28 @@ func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, 
 		}
 	}
 	return nil
+}
+
+// promptForWorkspaceIdIfUnified prompts for workspace ID if the host is unified.
+// Returns the workspace ID from the profile if available, otherwise prompts the user.
+func promptForWorkspaceIdIfUnified(ctx context.Context, authArguments *auth.AuthArguments, existingProfile *profile.Profile) (string, error) {
+	// Only prompt for workspace_id if the host is a unified host
+	if !authArguments.IsUnifiedHost {
+		return "", nil
+	}
+
+	// If the existing profile has a workspace_id, use it
+	if existingProfile != nil && existingProfile.WorkspaceId != "" {
+		return existingProfile.WorkspaceId, nil
+	}
+
+	// Prompt the user for workspace_id
+	workspaceId, err := promptForWorkspaceId(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	return workspaceId, nil
 }
 
 // getProfileName returns the default profile name for a given host/account ID.
