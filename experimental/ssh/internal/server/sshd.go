@@ -87,6 +87,7 @@ func prepareSSHDConfig(ctx context.Context, client *databricks.WorkspaceClient, 
 }
 
 func updateAuthorizedKeys(ctx context.Context, client *databricks.WorkspaceClient, authKeysPath, secretScopeName, publicKeyName string) error {
+	log.Info(ctx, "Using public key secret name:"+publicKeyName)
 	clientPublicKey, err := keys.GetSecret(ctx, client, secretScopeName, publicKeyName)
 	if err != nil {
 		return fmt.Errorf("failed to get client public key: %w", err)
@@ -96,7 +97,8 @@ func updateAuthorizedKeys(ctx context.Context, client *databricks.WorkspaceClien
 		return fmt.Errorf("failed to open authorized keys file: %w", err)
 	}
 	defer authKeys.Close()
-	_, err = authKeys.WriteString("\n" + string(clientPublicKey))
+	content := strings.TrimSpace(string(clientPublicKey))
+	_, err = authKeys.WriteString("\n" + content)
 	return err
 }
 
