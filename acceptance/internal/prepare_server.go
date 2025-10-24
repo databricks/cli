@@ -237,11 +237,12 @@ func startProxyServer(t *testing.T,
 }
 
 type LoggedRequest struct {
-	Headers http.Header `json:"headers,omitempty"`
-	Method  string      `json:"method"`
-	Path    string      `json:"path"`
-	Body    any         `json:"body,omitempty"`
-	RawBody string      `json:"raw_body,omitempty"`
+	Headers http.Header            `json:"headers,omitempty"`
+	Method  string                 `json:"method"`
+	Path    string                 `json:"path"`
+	Q       map[string]interface{} `json:"q,omitempty"`
+	Body    any                    `json:"body,omitempty"`
+	RawBody string                 `json:"raw_body,omitempty"`
 }
 
 func getLoggedRequest(req *testserver.Request, includedHeaders []string) LoggedRequest {
@@ -249,6 +250,18 @@ func getLoggedRequest(req *testserver.Request, includedHeaders []string) LoggedR
 		Method:  req.Method,
 		Path:    req.URL.Path,
 		Headers: filterHeaders(req.Headers, includedHeaders),
+	}
+
+	if req.URL.RawQuery != "" {
+		queryParams := req.URL.Query()
+		result.Q = make(map[string]interface{})
+		for key, values := range queryParams {
+			if len(values) == 1 {
+				result.Q[key] = values[0]
+			} else {
+				result.Q[key] = values
+			}
+		}
 	}
 
 	if json.Valid(req.Body) {
