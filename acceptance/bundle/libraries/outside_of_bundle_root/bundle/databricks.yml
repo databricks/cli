@@ -26,3 +26,9 @@ resources:
             package_name: my_default_python
           libraries:
             - whl: ../*.whl
+  pipelines:
+    pipeline:
+      name: "test"
+      environment:
+        dependencies:
+          - ../*.whl

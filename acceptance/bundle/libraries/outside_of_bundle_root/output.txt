@@ -6,6 +6,11 @@
   }
 ]
 
+>>> [CLI] bundle validate -o json
+[
+  "../*.whl"
+]
+
 >>> [CLI] bundle deploy
 Uploading ../test.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/outside_of_bundle_root/default/files...
@@ -19,6 +24,11 @@ Deployment complete!
   {
     "whl": "/Workspace/Users/[USERNAME]/.bundle/outside_of_bundle_root/default/artifacts/.internal/test.whl"
   }
+]
+
+>>> cat out.requests.txt
+[
+  "/Workspace/Users/[USERNAME]/.bundle/outside_of_bundle_root/default/artifacts/.internal/test.whl"
 ]
 
 >>> cat out.requests.txt
