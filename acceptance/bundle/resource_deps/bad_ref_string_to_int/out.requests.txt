@@ -6,7 +6,7 @@
   "method": "GET",
   "path": "/api/2.0/workspace/get-status",
   "q": {
-    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate",
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json",
     "return_export_info": "true"
   }
 }
