@@ -1,0 +1,10 @@
+bundle:
+  name: signal-test
+
+resources:
+  jobs:
+    job1:
+      name: job1
+
+    job2:
+      name: job2 (deploy after ${resources.jobs.job1.id})
