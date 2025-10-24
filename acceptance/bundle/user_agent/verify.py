@@ -3,11 +3,14 @@
 Summarize requests logs. For each log write OK if User-Agent has the right engine/ tag and MISS if not.
 """
 
+import os
 import sys
 import json
-import shutil
 import subprocess
 from pathlib import Path
+
+
+TESTROOT = Path(os.environ["TESTROOT"])
 
 
 def extract_engine(s):
@@ -26,7 +29,7 @@ def check_user_agent(fname):
     else:
         return
 
-    printer = shutil.which("print_requests.py")
+    printer = TESTROOT / "bin" / "print_requests.py"
 
     result = subprocess.run(
         [sys.executable, printer, "--get", "--oneline", "--fname", fname, "--keep"], capture_output=True, text=True
