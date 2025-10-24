@@ -8,12 +8,13 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestParseResourcesStateWithNoFile(t *testing.T) {
+	falseBool := false
 	b := &bundle.Bundle{
-		BundleRootPath: t.TempDir(),
+		DirectDeployment: &falseBool,
+		BundleRootPath:   t.TempDir(),
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "whatever",
@@ -29,9 +30,11 @@ func TestParseResourcesStateWithNoFile(t *testing.T) {
 }
 
 func TestParseResourcesStateWithExistingStateFile(t *testing.T) {
+	falseBool := false
 	ctx := context.Background()
 	b := &bundle.Bundle{
-		BundleRootPath: t.TempDir(),
+		DirectDeployment: &falseBool,
+		BundleRootPath:   t.TempDir(),
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "whatever",
@@ -83,11 +86,10 @@ func TestParseResourcesStateWithExistingStateFile(t *testing.T) {
 		  }
 		]
 	}`)
-	path, err := b.StateLocalPath(ctx)
-	require.NoError(t, err)
-	err = os.WriteFile(path, data, os.ModePerm)
+	name, _ := b.StateFilenameTerraform(ctx)
+	err := os.WriteFile(name, data, os.ModePerm)
 	assert.NoError(t, err)
-	state, err := ParseResourcesState(ctx, b)
+	state, err := parseResourcesState(ctx, name)
 	assert.NoError(t, err)
 	expected := ExportedResourcesMap{
 		"pipelines": map[string]ResourceState{

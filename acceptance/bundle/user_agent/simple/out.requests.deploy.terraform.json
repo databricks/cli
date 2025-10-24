@@ -93,7 +93,7 @@
   "method": "GET",
   "path": "/api/2.0/workspace/get-status",
   "q": {
-    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json",
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json",
     "return_export_info": "true"
   }
 }
@@ -278,6 +278,19 @@
   "path": "/api/2.0/workspace/mkdirs",
   "body": {
     "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/OS cmd/bundle_deploy cmd-exec-id/[UUID] engine/terraform auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json",
+    "return_export_info": "true"
   }
 }
 {

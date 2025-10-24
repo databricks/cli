@@ -6,12 +6,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/mutator"
-	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/statemgmt"
@@ -91,19 +88,9 @@ Use after deployment to quickly navigate to your resources in the workspace.`,
 			return err
 		}
 
-		cacheDir, err := terraform.Dir(ctx, b)
-		if err != nil {
-			return err
-		}
-		_, stateFileErr := os.Stat(filepath.Join(cacheDir, b.StateFilename()))
-		_, configFileErr := os.Stat(filepath.Join(cacheDir, terraform.TerraformConfigFileName))
-		noCache := errors.Is(stateFileErr, os.ErrNotExist) || errors.Is(configFileErr, os.ErrNotExist)
-
-		if forcePull || noCache {
-			bundle.ApplyContext(ctx, b, statemgmt.StatePull())
-			if logdiag.HasError(ctx) {
-				return root.ErrAlreadyPrinted
-			}
+		ctx = statemgmt.PullResourcesStateOpt(ctx, b, forcePull)
+		if logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
 		}
 
 		bundle.ApplySeqContext(ctx, b,

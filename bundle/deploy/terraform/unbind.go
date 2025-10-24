@@ -6,7 +6,6 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/hashicorp/terraform-exec/tfexec"
 )
 
 type unbind struct {
@@ -16,17 +15,13 @@ type unbind struct {
 }
 
 func (m *unbind) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	diags := Initialize(ctx, b)
+	if diags.HasError() {
+		return diags
+	}
 	tf := b.Terraform
-	if tf == nil {
-		return diag.Errorf("terraform not initialized")
-	}
 
-	err := tf.Init(ctx, tfexec.Upgrade(true))
-	if err != nil {
-		return diag.Errorf("terraform init: %v", err)
-	}
-
-	err = tf.StateRm(ctx, fmt.Sprintf("%s.%s", m.tfResourceType, m.resourceKey))
+	err := tf.StateRm(ctx, fmt.Sprintf("%s.%s", m.tfResourceType, m.resourceKey))
 	if err != nil {
 		return diag.Errorf("terraform state rm: %v", err)
 	}

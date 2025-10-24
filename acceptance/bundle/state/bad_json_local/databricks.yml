@@ -1,0 +1,8 @@
+bundle:
+  name: test-bundle
+
+resources:
+  schemas:
+    foo:
+      catalog_name: c
+      name: s
