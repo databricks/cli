@@ -1,0 +1,14 @@
+{
+  "method": "POST",
+  "path": "/api/2.0/mlflow/experiments/create",
+  "body": {
+    "artifact_location": "s3://original-[UNIQUE_NAME]",
+    "name": "/Users/[USERNAME]/original-[UNIQUE_NAME]",
+    "tags": [
+      {
+        "key": "k1",
+        "value": "v1"
+      }
+    ]
+  }
+}
