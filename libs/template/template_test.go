@@ -22,7 +22,7 @@ func TestTemplateOptions(t *testing.T) {
 		{Name: "default-sql", Id: "The default SQL template for .sql files that run with Databricks SQL"},
 		{Name: "dbt-sql", Id: "The dbt SQL template (databricks.com/blog/delivering-cost-effective-data-real-time-dbt-and-databricks)"},
 		{Name: "mlops-stacks", Id: "The Databricks MLOps Stacks template (github.com/databricks/mlops-stacks)"},
-		{Name: "experimental-jobs-as-code", Id: "Jobs as code template (experimental)"},
+		{Name: "pydabs", Id: "A variant of 'default-python' template that defines resources in Python instead of YAML"},
 		{Name: "custom...", Id: "Bring your own template"},
 	}
 	assert.Equal(t, expected, options())
