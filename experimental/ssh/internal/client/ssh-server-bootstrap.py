@@ -13,8 +13,7 @@ import time
 SSH_TUNNEL_BASENAME = "databricks_cli"
 
 dbutils.widgets.text("version", "")
-dbutils.widgets.text("keysSecretScopeName", "")
-dbutils.widgets.text("authorizedKeySecretName", "")
+dbutils.widgets.text("secretScopeName", "")
 dbutils.widgets.text("maxClients", "10")
 dbutils.widgets.text("shutdownDelay", "10m")
 
@@ -95,15 +94,9 @@ def run_ssh_server():
     if os.environ.get("VIRTUAL_ENV") is None:
         os.environ["VIRTUAL_ENV"] = sys.executable
 
-    secrets_scope = dbutils.widgets.get("keysSecretScopeName")
+    secrets_scope = dbutils.widgets.get("secretScopeName")
     if not secrets_scope:
-        raise RuntimeError("Secrets scope is required. Please provide it using the 'keysSecretScopeName' widget.")
-
-    public_key_secret_name = dbutils.widgets.get("authorizedKeySecretName")
-    if not public_key_secret_name:
-        raise RuntimeError(
-            "Public key secret name is required. Please provide it using the 'authorizedKeySecretName' widget."
-        )
+        raise RuntimeError("Secrets scope is required. Please provide it using the 'secretScopeName' widget.")
 
     version = dbutils.widgets.get("version")
     if not version:
@@ -134,8 +127,7 @@ def run_ssh_server():
                 "ssh",
                 "server",
                 f"--cluster={ctx.clusterId}",
-                f"--keys-secret-scope-name={secrets_scope}",
-                f"--authorized-key-secret-name={public_key_secret_name}",
+                f"--secret-scope-name={secrets_scope}",
                 f"--max-clients={max_clients}",
                 f"--shutdown-delay={shutdown_delay}",
                 f"--version={version}",
