@@ -333,18 +333,3 @@ func (b *Bundle) StateFilenameDirect(ctx context.Context) (string, string) {
 func (b *Bundle) StateFilenameTerraform(ctx context.Context) (string, string) {
 	return terraformStateFilename, filepath.Join(b.GetLocalStateDir(ctx), "terraform", terraformStateFilename)
 }
-
-func (b *Bundle) HasLocalState(ctx context.Context) bool {
-	_, directState := b.StateFilenameDirect(ctx)
-	if fileExists(directState) {
-		return true
-	}
-
-	_, terraformState := b.StateFilenameTerraform(ctx)
-	return fileExists(terraformState)
-}
-
-func fileExists(path string) bool {
-	_, err := os.Stat(path)
-	return err == nil
-}
