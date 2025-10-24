@@ -1,0 +1,22 @@
+{
+  "method": "POST",
+  "path": "/api/2.0/mlflow/registered-models/create",
+  "body": {
+    "description": "original-description-[UNIQUE_NAME]",
+    "name": "original-name-[UNIQUE_NAME]",
+    "tags": [
+      {
+        "key": "k1",
+        "value": "v1"
+      }
+    ]
+  }
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/mlflow/registered-models/update",
+  "body": {
+    "description": "new-description-[UNIQUE_NAME]",
+    "name": "original-name-[UNIQUE_NAME]"
+  }
+}

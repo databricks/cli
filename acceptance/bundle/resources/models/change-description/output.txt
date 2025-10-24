@@ -1,0 +1,66 @@
+
+=== create the model
+>>> export MODEL_DESCRIPTION=original-description-[UNIQUE_NAME]
+
+>>> export MODEL_NAME=original-name-[UNIQUE_NAME]
+
+>>> [CLI] bundle plan
+create models.my_model
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/model-change-description-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] model-registry get-model original-name-[UNIQUE_NAME]
+{
+  "name": "original-name-[UNIQUE_NAME]",
+  "description": "original-description-[UNIQUE_NAME]",
+  "tags": [
+    {
+      "key": "k1",
+      "value": "v1"
+    }
+  ]
+}
+
+=== update the description
+>>> export MODEL_DESCRIPTION=new-description-[UNIQUE_NAME]
+
+>>> [CLI] bundle plan
+update models.my_model
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/model-change-description-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] model-registry get-model original-name-[UNIQUE_NAME]
+{
+  "name": "original-name-[UNIQUE_NAME]",
+  "description": "new-description-[UNIQUE_NAME]",
+  "tags": [
+    {
+      "key": "k1",
+      "value": "v1"
+    }
+  ]
+}
+
+=== Print all POST API requests made the the models service.
+>>> cat out.requests.txt
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete model my_model
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/model-change-description-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
