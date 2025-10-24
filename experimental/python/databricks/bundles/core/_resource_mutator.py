@@ -6,6 +6,7 @@ from databricks.bundles.core._bundle import Bundle
 from databricks.bundles.core._resource import Resource
 
 if TYPE_CHECKING:
+    from databricks.bundles.apps._models.app import App
     from databricks.bundles.jobs._models.job import Job
     from databricks.bundles.pipelines._models.pipeline import Pipeline
     from databricks.bundles.schemas._models.schema import Schema
@@ -193,3 +194,35 @@ def volume_mutator(function: Callable) -> ResourceMutator["Volume"]:
     from databricks.bundles.volumes._models.volume import Volume
 
     return ResourceMutator(resource_type=Volume, function=function)
+
+
+@overload
+def app_mutator(
+    function: Callable[[Bundle, "App"], "App"],
+) -> ResourceMutator["App"]: ...
+
+
+@overload
+def app_mutator(
+    function: Callable[["App"], "App"],
+) -> ResourceMutator["App"]: ...
+
+
+def app_mutator(function: Callable) -> ResourceMutator["App"]:
+    """
+    Decorator for defining an app mutator. Function should return a new instance of the app with the desired changes,
+    instead of mutating the input app.
+
+    Example:
+
+    .. code-block:: python
+
+        @app_mutator
+        def my_app_mutator(bundle: Bundle, app: App) -> App:
+            return replace(app, name="my_app")
+
+    :param function: Function that mutates an app.
+    """
+    from databricks.bundles.apps._models.app import App
+
+    return ResourceMutator(resource_type=App, function=function)
