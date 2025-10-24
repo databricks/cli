@@ -1,0 +1,8 @@
+export DATABRICKS_BUNDLE_ENGINE=""
+mkdir -p .databricks/bundle/default/terraform
+echo "{" > .databricks/bundle/default/terraform/terraform.tfstate
+trace musterr $CLI bundle plan
+
+rm .databricks/bundle/default/terraform/terraform.tfstate
+echo "{" > .databricks/bundle/default/resources.json
+trace musterr $CLI bundle plan

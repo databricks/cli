@@ -1,0 +1,16 @@
+title 'Terraform state is present, env var does not matter, we select terraform\n'
+mkdir -p .databricks/bundle/default/terraform
+echo '{"version": 4}' > .databricks/bundle/default/terraform/terraform.tfstate
+trace $CLI bundle deploy
+trace print_requests.py //api/2.1/unity-catalog/schemas | jq '.headers["User-Agent"][0]' # must contain 'terraform'
+
+title 'Adding resources.json with lower serial does not change anything'
+rm .databricks/bundle/default/terraform/terraform.tfstate
+echo "{}" > .databricks/bundle/default/resources.json
+trace $CLI bundle plan
+
+title 'Adding resources.json with higher serial make engine/direct preferred'
+echo '{"serial": 10}' > .databricks/bundle/default/resources.json
+trace $CLI bundle plan # show 1 create
+trace $CLI bundle deploy
+trace print_requests.py //api/2.1/unity-catalog/schemas | jq '.headers["User-Agent"][0]' # must contain 'engine/direct'
