@@ -7,14 +7,13 @@ bundle:
   name: {{.project_name}}
   uuid: {{bundle_uuid}}
 {{- if $with_pydabs }}
-experimental:
-  python:
-    # Activate virtual environment before loading resources defined in Python.
-    # If disabled, defaults to using the Python interpreter available in the current shell.
-    venv_path: .venv
-    # Functions called to load resources defined in Python. See resources/__init__.py
-    resources:
-      - "resources:load_resources"
+python:
+  # Activate virtual environment before loading resources defined in Python.
+  # If disabled, defaults to using the Python interpreter available in the current shell.
+  venv_path: .venv
+  # Functions called to load resources defined in Python. See resources/__init__.py
+  resources:
+    - "resources:load_resources"
 
 {{- end }}
 {{ if $with_python }}
