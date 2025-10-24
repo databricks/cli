@@ -103,16 +103,22 @@ func filerRead(ctx context.Context, f filer.Filer, path string, isDirect bool) *
 }
 
 func PullResourcesState(ctx context.Context, b *bundle.Bundle) context.Context {
+	return PullResourcesStateOpt(ctx, b, true)
+}
+
+// if forceRemote is true, we always read remoteState.
+// if forceRemote is false, we only read it if local state is absent.
+func PullResourcesStateOpt(ctx context.Context, b *bundle.Bundle, forceRemote bool) context.Context {
 	_, localPathDirect := b.StateFilenameDirect(ctx)
 	_, localPathTerraform := b.StateFilenameTerraform(ctx)
 
-	states := readStates(ctx, b)
+	states := readStates(ctx, b, forceRemote)
 
 	if logdiag.HasError(ctx) {
 		return ctx
 	}
 
-	winner := states[3]
+	winner := states[len(states)-1]
 
 	if winner == nil {
 		// no local or remote state; set b.DirectDeployment based on env vars
@@ -199,41 +205,45 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle) context.Context {
 	return ctx
 }
 
-func readStates(ctx context.Context, b *bundle.Bundle) []*state {
+func readStates(ctx context.Context, b *bundle.Bundle, forceRemote bool) []*state {
+	var states []*state
+
 	remotePathDirect, localPathDirect := b.StateFilenameDirect(ctx)
 	remotePathTerraform, localPathTerraform := b.StateFilenameTerraform(ctx)
 
-	f, err := deploy.StateFiler(b)
-	if err != nil {
-		logdiag.LogError(ctx, err)
+	if logdiag.HasError(ctx) {
 		return nil
 	}
 
-	var wg sync.WaitGroup
-	var directLocalState, terraformLocalState *state
-	var directRemoteState, terraformRemoteState *state
+	directLocalState := localRead(ctx, localPathDirect, true)
+	terraformLocalState := localRead(ctx, localPathTerraform, false)
 
-	wg.Go(func() {
-		directRemoteState = filerRead(ctx, f, remotePathDirect, true)
-	})
+	if (directLocalState == nil && terraformLocalState == nil) || forceRemote {
+		f, err := deploy.StateFiler(b)
+		if err != nil {
+			logdiag.LogError(ctx, err)
+			return nil
+		}
 
-	wg.Go(func() {
-		terraformRemoteState = filerRead(ctx, f, remotePathTerraform, false)
-	})
+		var wg sync.WaitGroup
+		var directRemoteState, terraformRemoteState *state
 
-	wg.Go(func() {
-		directLocalState = localRead(ctx, localPathDirect, true)
-	})
+		wg.Go(func() {
+			directRemoteState = filerRead(ctx, f, remotePathDirect, true)
+		})
 
-	wg.Go(func() {
-		terraformLocalState = localRead(ctx, localPathTerraform, false)
-	})
+		wg.Go(func() {
+			terraformRemoteState = filerRead(ctx, f, remotePathTerraform, false)
+		})
 
-	wg.Wait()
+		wg.Wait()
 
-	// find highest serial across all state files
-	// sorting is stable, so initial setting represents preference:
-	states := []*state{terraformRemoteState, terraformLocalState, directRemoteState, directLocalState}
+		// find highest serial across all state files
+		// sorting is stable, so initial setting represents preference:
+		states = []*state{terraformRemoteState, terraformLocalState, directRemoteState, directLocalState}
+	} else {
+		states = []*state{terraformLocalState, directLocalState}
+	}
 	sortStates(states)
 	return states
 }
