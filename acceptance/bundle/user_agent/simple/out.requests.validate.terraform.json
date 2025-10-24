@@ -25,9 +25,9 @@
       "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/OS cmd/bundle_validate cmd-exec-id/[UUID] engine/terraform auth/pat"
     ]
   },
-  "method": "POST",
-  "path": "/api/2.0/workspace/mkdirs",
-  "body": {
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
     "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files"
   }
 }
@@ -37,9 +37,9 @@
       "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/OS cmd/bundle_validate cmd-exec-id/[UUID] engine/terraform auth/pat"
     ]
   },
-  "method": "GET",
-  "path": "/api/2.0/workspace/get-status",
-  "q": {
+  "method": "POST",
+  "path": "/api/2.0/workspace/mkdirs",
+  "body": {
     "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files"
   }
 }
