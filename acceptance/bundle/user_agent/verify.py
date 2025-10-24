@@ -51,6 +51,7 @@ def check_user_agent(fname):
         else:
             status = "MISS"
 
+        fname = fname.replace("\\", "/")
         short_fname = fname.removeprefix("simple/out.requests.").removesuffix(".json")
         print(f"{status}\t{short_fname}\t{path}\t{engine or repr(user_agent)}")
 
