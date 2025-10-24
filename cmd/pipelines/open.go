@@ -88,17 +88,6 @@ If there is only one pipeline in the project, KEY is optional and the pipeline w
 			if logdiag.HasError(ctx) {
 				return root.ErrAlreadyPrinted
 			}
-
-			if !b.DirectDeployment {
-				bundle.ApplySeqContext(ctx, b,
-					terraform.Interpolate(),
-					terraform.Write(),
-				)
-			}
-
-			if logdiag.HasError(ctx) {
-				return root.ErrAlreadyPrinted
-			}
 		}
 
 		bundle.ApplySeqContext(ctx, b,

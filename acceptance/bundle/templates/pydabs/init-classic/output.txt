@@ -1,5 +1,5 @@
 
->>> [CLI] bundle init default-python --config-file ./input.json --output-dir output
+>>> [CLI] bundle init pydabs --config-file ./input.json --output-dir output
 
 Welcome to the default Python template for Databricks Asset Bundles!
 Workspace to use (auto-detected, edit in 'my_pydabs/databricks.yml'): [DATABRICKS_URL]

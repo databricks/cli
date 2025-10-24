@@ -13,7 +13,6 @@ import (
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/hashicorp/terraform-exec/tfexec"
 )
 
 type (
@@ -47,11 +46,7 @@ func (l *load) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 			return diag.Errorf("terraform not initialized")
 		}
 
-		err := tf.Init(ctx, tfexec.Upgrade(true))
-		if err != nil {
-			return diag.Errorf("terraform init: %v", err)
-		}
-
+		var err error
 		state, err = terraform.ParseResourcesState(ctx, b)
 		if err != nil {
 			return diag.FromErr(err)

@@ -12,7 +12,6 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/phases"
 	bundleresources "github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/run"
@@ -272,16 +271,6 @@ Refreshes all tables in the pipeline unless otherwise specified.`,
 		key, _, err := resolveRunArgument(ctx, b, args)
 		if err != nil {
 			return err
-		}
-
-		if !b.DirectDeployment {
-			bundle.ApplySeqContext(ctx, b,
-				terraform.Interpolate(),
-				terraform.Write(),
-			)
-			if logdiag.HasError(ctx) {
-				return root.ErrAlreadyPrinted
-			}
 		}
 
 		bundle.ApplySeqContext(ctx, b,

@@ -1,4 +1,0 @@
-engine/direct-exp
-engine/direct-exp
-engine/direct-exp
-engine/direct-exp

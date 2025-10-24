@@ -7,7 +7,3 @@ type ErrorEvent struct {
 func (event *ErrorEvent) String() string {
 	return "Error: " + event.Error
 }
-
-func (event *ErrorEvent) IsInplaceSupported() bool {
-	return false
-}

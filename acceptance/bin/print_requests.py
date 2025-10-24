@@ -155,6 +155,7 @@ def main():
     parser.add_argument("--get", action="store_true", help="Include GET requests (excluded by default)")
     parser.add_argument("--keep", action="store_true", help="Keep out.requests.json file after processing")
     parser.add_argument("--sort", action="store_true", help="Sort requests before output")
+    parser.add_argument("--oneline", action="store_true", help="Print output with one request per line")
     parser.add_argument("--fname", default="out.requests.txt")
     args = parser.parse_args()
 
@@ -183,7 +184,10 @@ def main():
         )
 
     for req in filtered_requests:
-        print(json.dumps(req, indent=2), flush=True)
+        if args.oneline:
+            print(json.dumps(req))
+        else:
+            print(json.dumps(req, indent=2))
 
     if not args.keep:
         requests_file.unlink()

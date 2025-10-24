@@ -11,18 +11,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 )
 
-type DashboardPermissionLevel string
-
-// DashboardPermission holds the permission level setting for a single principal.
-// Multiple of these can be defined on any dashboard.
-type DashboardPermission struct {
-	Level DashboardPermissionLevel `json:"level"`
-
-	UserName             string `json:"user_name,omitempty"`
-	ServicePrincipalName string `json:"service_principal_name,omitempty"`
-	GroupName            string `json:"group_name,omitempty"`
-}
-
 type DashboardConfig struct {
 	dashboards.Dashboard
 

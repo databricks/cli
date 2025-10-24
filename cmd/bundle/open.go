@@ -104,17 +104,6 @@ Use after deployment to quickly navigate to your resources in the workspace.`,
 			if logdiag.HasError(ctx) {
 				return root.ErrAlreadyPrinted
 			}
-
-			if !b.DirectDeployment {
-				bundle.ApplySeqContext(ctx, b,
-					terraform.Interpolate(),
-					terraform.Write(),
-				)
-			}
-
-			if logdiag.HasError(ctx) {
-				return root.ErrAlreadyPrinted
-			}
 		}
 
 		bundle.ApplySeqContext(ctx, b,

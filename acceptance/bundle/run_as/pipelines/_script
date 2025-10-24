@@ -1,4 +1,24 @@
-trace errcode $CLI bundle validate -t t_user_name
-trace errcode $CLI bundle validate -t t_user_name_different
-trace errcode $CLI bundle validate -t t_service_principal_name
-trace errcode $CLI bundle validate -t t_service_principal_name_different
+print_requests() {
+    jq --sort-keys 'select(.method != "GET" and (.path | contains("/pipelines")))' < out.requests.txt
+    rm out.requests.txt
+}
+
+targets=("t_user_name" "t_user_name_different" "t_service_principal_name" "t_service_principal_name_different")
+
+for target in "${targets[@]}"; do
+    echo "\nProcessing target: $target"
+
+    # Validate
+    trace $CLI bundle validate -t $target
+
+    # Plan
+    trace $CLI bundle plan -t $target
+
+    # Debug plan
+    $CLI bundle debug plan -t $target > out.plan_$target.$DATABRICKS_BUNDLE_ENGINE.json
+
+    # Deploy
+    rm -f out.requests.txt
+    trace $CLI bundle deploy -t $target
+    print_requests > out.requests_$target.json
+done

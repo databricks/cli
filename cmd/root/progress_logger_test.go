@@ -19,8 +19,6 @@ type progressLoggerTest struct {
 
 func initializeProgressLoggerTest(t *testing.T) (
 	*progressLoggerTest,
-	*flags.LogLevelFlag,
-	*flags.LogFileFlag,
 	*flags.ProgressLogFormat,
 ) {
 	plt := &progressLoggerTest{
@@ -28,38 +26,11 @@ func initializeProgressLoggerTest(t *testing.T) (
 	}
 	plt.logFlags = initLogFlags(plt.Command)
 	plt.progressLoggerFlag = initProgressLoggerFlag(plt.Command, plt.logFlags)
-	return plt, &plt.level, &plt.file, &plt.ProgressLogFormat
-}
-
-func TestInitializeErrorOnIncompatibleConfig(t *testing.T) {
-	plt, logLevel, logFile, progressFormat := initializeProgressLoggerTest(t)
-	require.NoError(t, logLevel.Set("info"))
-	require.NoError(t, logFile.Set("stderr"))
-	require.NoError(t, progressFormat.Set("inplace"))
-	_, err := plt.progressLoggerFlag.initializeContext(context.Background())
-	assert.ErrorContains(t, err, "inplace progress logging cannot be used when log-file is stderr")
-}
-
-func TestNoErrorOnDisabledLogLevel(t *testing.T) {
-	plt, logLevel, logFile, progressFormat := initializeProgressLoggerTest(t)
-	require.NoError(t, logLevel.Set("disabled"))
-	require.NoError(t, logFile.Set("stderr"))
-	require.NoError(t, progressFormat.Set("inplace"))
-	_, err := plt.progressLoggerFlag.initializeContext(context.Background())
-	assert.NoError(t, err)
-}
-
-func TestNoErrorOnNonStderrLogFile(t *testing.T) {
-	plt, logLevel, logFile, progressFormat := initializeProgressLoggerTest(t)
-	require.NoError(t, logLevel.Set("info"))
-	require.NoError(t, logFile.Set("stdout"))
-	require.NoError(t, progressFormat.Set("inplace"))
-	_, err := plt.progressLoggerFlag.initializeContext(context.Background())
-	assert.NoError(t, err)
+	return plt, &plt.ProgressLogFormat
 }
 
 func TestDefaultLoggerModeResolution(t *testing.T) {
-	plt, _, _, progressFormat := initializeProgressLoggerTest(t)
+	plt, progressFormat := initializeProgressLoggerTest(t)
 	require.Equal(t, *progressFormat, flags.ModeDefault)
 	ctx, err := plt.progressLoggerFlag.initializeContext(context.Background())
 	require.NoError(t, err)

@@ -3,7 +3,7 @@ for enable_pydabs in yes no; do
 
     enable_pydabs=$enable_pydabs envsubst < input.json.tmpl > input.json
 
-    trace $CLI bundle init default-python --config-file ./input.json
+    trace $CLI bundle init pydabs --config-file ./input.json
 
     (
         cd my_pydabs

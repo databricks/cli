@@ -9,6 +9,9 @@ Deployment complete!
 {
   "method": "POST",
   "path": "/api/2.0/apps",
+  "q": {
+    "no_compute": "true"
+  },
   "body": {
     "description": "",
     "name": "myappname"

@@ -40,7 +40,7 @@ resources.alerts.*.parent_path	string	ALL
 resources.alerts.*.permissions	[]resources.AlertPermission	INPUT
 resources.alerts.*.permissions[*]	resources.AlertPermission	INPUT
 resources.alerts.*.permissions[*].group_name	string	INPUT
-resources.alerts.*.permissions[*].level	string	INPUT
+resources.alerts.*.permissions[*].level	resources.AlertPermissionLevel	INPUT
 resources.alerts.*.permissions[*].service_principal_name	string	INPUT
 resources.alerts.*.permissions[*].user_name	string	INPUT
 resources.alerts.*.query_text	string	ALL
@@ -145,6 +145,13 @@ resources.apps.*.updater	string	ALL
 resources.apps.*.url	string	ALL
 resources.apps.*.user_api_scopes	[]string	ALL
 resources.apps.*.user_api_scopes[*]	string	ALL
+resources.apps.*.permissions.object_id	string	ALL
+resources.apps.*.permissions.permissions	[]iam.AccessControlRequest	ALL
+resources.apps.*.permissions.permissions[*]	iam.AccessControlRequest	ALL
+resources.apps.*.permissions.permissions[*].group_name	string	ALL
+resources.apps.*.permissions.permissions[*].permission_level	iam.PermissionLevel	ALL
+resources.apps.*.permissions.permissions[*].service_principal_name	string	ALL
+resources.apps.*.permissions.permissions[*].user_name	string	ALL
 resources.clusters.*.apply_policy_default_values	bool	INPUT	STATE
 resources.clusters.*.autoscale	*compute.AutoScale	ALL
 resources.clusters.*.autoscale.max_workers	int	ALL
@@ -401,6 +408,13 @@ resources.clusters.*.workload_type	*compute.WorkloadType	ALL
 resources.clusters.*.workload_type.clients	compute.ClientsTypes	ALL
 resources.clusters.*.workload_type.clients.jobs	bool	ALL
 resources.clusters.*.workload_type.clients.notebooks	bool	ALL
+resources.clusters.*.permissions.object_id	string	ALL
+resources.clusters.*.permissions.permissions	[]iam.AccessControlRequest	ALL
+resources.clusters.*.permissions.permissions[*]	iam.AccessControlRequest	ALL
+resources.clusters.*.permissions.permissions[*].group_name	string	ALL
+resources.clusters.*.permissions.permissions[*].permission_level	iam.PermissionLevel	ALL
+resources.clusters.*.permissions.permissions[*].service_principal_name	string	ALL
+resources.clusters.*.permissions.permissions[*].user_name	string	ALL
 resources.database_catalogs.*.create_database_if_not_exists	bool	ALL
 resources.database_catalogs.*.database_instance_name	string	ALL
 resources.database_catalogs.*.database_name	string	ALL
@@ -465,6 +479,13 @@ resources.database_instances.*.stopped	bool	ALL
 resources.database_instances.*.uid	string	ALL
 resources.database_instances.*.url	string	INPUT
 resources.database_instances.*.usage_policy_id	string	ALL
+resources.database_instances.*.permissions.object_id	string	ALL
+resources.database_instances.*.permissions.permissions	[]iam.AccessControlRequest	ALL
+resources.database_instances.*.permissions.permissions[*]	iam.AccessControlRequest	ALL
+resources.database_instances.*.permissions.permissions[*].group_name	string	ALL
+resources.database_instances.*.permissions.permissions[*].permission_level	iam.PermissionLevel	ALL
+resources.database_instances.*.permissions.permissions[*].service_principal_name	string	ALL
+resources.database_instances.*.permissions.permissions[*].user_name	string	ALL
 resources.experiments.*.artifact_location	string	ALL
 resources.experiments.*.creation_time	int64	REMOTE
 resources.experiments.*.experiment_id	string	REMOTE
@@ -486,6 +507,13 @@ resources.experiments.*.tags[*]	ml.ExperimentTag	ALL
 resources.experiments.*.tags[*].key	string	ALL
 resources.experiments.*.tags[*].value	string	ALL
 resources.experiments.*.url	string	INPUT
+resources.experiments.*.permissions.object_id	string	ALL
+resources.experiments.*.permissions.permissions	[]iam.AccessControlRequest	ALL
+resources.experiments.*.permissions.permissions[*]	iam.AccessControlRequest	ALL
+resources.experiments.*.permissions.permissions[*].group_name	string	ALL
+resources.experiments.*.permissions.permissions[*].permission_level	iam.PermissionLevel	ALL
+resources.experiments.*.permissions.permissions[*].service_principal_name	string	ALL
+resources.experiments.*.permissions.permissions[*].user_name	string	ALL
 resources.jobs.*.budget_policy_id	string	INPUT	STATE
 resources.jobs.*.continuous	*jobs.Continuous	INPUT	STATE
 resources.jobs.*.continuous.pause_status	jobs.PauseStatus	INPUT	STATE
@@ -2205,6 +2233,13 @@ resources.jobs.*.webhook_notifications.on_streaming_backlog_exceeded[*].id	strin
 resources.jobs.*.webhook_notifications.on_success	[]jobs.Webhook	INPUT	STATE
 resources.jobs.*.webhook_notifications.on_success[*]	jobs.Webhook	INPUT	STATE
 resources.jobs.*.webhook_notifications.on_success[*].id	string	INPUT	STATE
+resources.jobs.*.permissions.object_id	string	ALL
+resources.jobs.*.permissions.permissions	[]iam.AccessControlRequest	ALL
+resources.jobs.*.permissions.permissions[*]	iam.AccessControlRequest	ALL
+resources.jobs.*.permissions.permissions[*].group_name	string	ALL
+resources.jobs.*.permissions.permissions[*].permission_level	iam.PermissionLevel	ALL
+resources.jobs.*.permissions.permissions[*].service_principal_name	string	ALL
+resources.jobs.*.permissions.permissions[*].user_name	string	ALL
 resources.models.*.creation_timestamp	int64	REMOTE
 resources.models.*.description	string	ALL
 resources.models.*.id	string	INPUT	REMOTE
@@ -2244,6 +2279,13 @@ resources.models.*.tags[*].key	string	ALL
 resources.models.*.tags[*].value	string	ALL
 resources.models.*.url	string	INPUT
 resources.models.*.user_id	string	REMOTE
+resources.models.*.permissions.object_id	string	ALL
+resources.models.*.permissions.permissions	[]iam.AccessControlRequest	ALL
+resources.models.*.permissions.permissions[*]	iam.AccessControlRequest	ALL
+resources.models.*.permissions.permissions[*].group_name	string	ALL
+resources.models.*.permissions.permissions[*].permission_level	iam.PermissionLevel	ALL
+resources.models.*.permissions.permissions[*].service_principal_name	string	ALL
+resources.models.*.permissions.permissions[*].user_name	string	ALL
 resources.pipelines.*.allow_duplicate_names	bool	INPUT	STATE
 resources.pipelines.*.budget_policy_id	string	INPUT	STATE
 resources.pipelines.*.catalog	string	INPUT	STATE
@@ -2838,6 +2880,13 @@ resources.pipelines.*.trigger.cron.quartz_cron_schedule	string	INPUT	STATE
 resources.pipelines.*.trigger.cron.timezone_id	string	INPUT	STATE
 resources.pipelines.*.trigger.manual	*pipelines.ManualTrigger	INPUT	STATE
 resources.pipelines.*.url	string	INPUT
+resources.pipelines.*.permissions.object_id	string	ALL
+resources.pipelines.*.permissions.permissions	[]iam.AccessControlRequest	ALL
+resources.pipelines.*.permissions.permissions[*]	iam.AccessControlRequest	ALL
+resources.pipelines.*.permissions.permissions[*].group_name	string	ALL
+resources.pipelines.*.permissions.permissions[*].permission_level	iam.PermissionLevel	ALL
+resources.pipelines.*.permissions.permissions[*].service_principal_name	string	ALL
+resources.pipelines.*.permissions.permissions[*].user_name	string	ALL
 resources.registered_models.*.aliases	[]catalog.RegisteredModelAlias	ALL
 resources.registered_models.*.aliases[*]	catalog.RegisteredModelAlias	ALL
 resources.registered_models.*.aliases[*].alias_name	string	ALL
@@ -2951,6 +3000,13 @@ resources.sql_warehouses.*.tags.custom_tags[*].value	string	ALL
 resources.sql_warehouses.*.url	string	INPUT
 resources.sql_warehouses.*.warehouse_type	sql.CreateWarehouseRequestWarehouseType	INPUT	STATE
 resources.sql_warehouses.*.warehouse_type	sql.GetWarehouseResponseWarehouseType	REMOTE
+resources.sql_warehouses.*.permissions.object_id	string	ALL
+resources.sql_warehouses.*.permissions.permissions	[]iam.AccessControlRequest	ALL
+resources.sql_warehouses.*.permissions.permissions[*]	iam.AccessControlRequest	ALL
+resources.sql_warehouses.*.permissions.permissions[*].group_name	string	ALL
+resources.sql_warehouses.*.permissions.permissions[*].permission_level	iam.PermissionLevel	ALL
+resources.sql_warehouses.*.permissions.permissions[*].service_principal_name	string	ALL
+resources.sql_warehouses.*.permissions.permissions[*].user_name	string	ALL
 resources.synced_database_tables.*.data_synchronization_status	*database.SyncedTableStatus	ALL
 resources.synced_database_tables.*.data_synchronization_status.continuous_update_status	*database.SyncedTableContinuousUpdateStatus	ALL
 resources.synced_database_tables.*.data_synchronization_status.continuous_update_status.initial_pipeline_sync_progress	*database.SyncedTablePipelineProgress	ALL

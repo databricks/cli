@@ -1,0 +1,7 @@
+{
+  "plan": {
+    "resources.database_instances.foo": {
+      "action": "create"
+    }
+  }
+}

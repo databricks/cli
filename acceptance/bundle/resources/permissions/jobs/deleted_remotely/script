@@ -1,0 +1,28 @@
+print_requests() {
+    jq 'select(.path | contains("/jobs/")) | select(.method != "GET")' < out.requests.txt
+    rm out.requests.txt
+}
+
+trace $CLI bundle debug plan > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle deploy
+trace print_requests > out.requests_create.json
+
+job_id="$(read_id.py jobs job_with_permissions)"
+echo "$job_id:JOB_ID" >> ACC_REPLS
+
+trace $CLI permissions get jobs "$job_id"
+rm -f out.requests.txt
+
+title "Delete permissions remotely"
+trace $CLI permissions set jobs "$job_id" --json @remote_delete.json
+trace print_requests
+
+trace $CLI permissions get jobs "$job_id"
+rm -f out.requests.txt
+
+trace $CLI bundle debug plan > out.plan_restore.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle deploy
+trace print_requests > out.requests_restore.json
+
+trace $CLI permissions get jobs "$job_id"
+rm -f out.requests.txt

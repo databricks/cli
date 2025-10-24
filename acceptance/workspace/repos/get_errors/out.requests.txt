@@ -1,6 +1,9 @@
 {
   "method": "GET",
-  "path": "/api/2.0/workspace/get-status"
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Repos/me@databricks.com/doesnotexist"
+  }
 }
 {
   "method": "POST",
@@ -11,5 +14,8 @@
 }
 {
   "method": "GET",
-  "path": "/api/2.0/workspace/get-status"
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/not-a-repo"
+  }
 }
