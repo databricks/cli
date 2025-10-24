@@ -13,29 +13,11 @@
       "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/OS cmd/bundle_deploy cmd-exec-id/[UUID] auth/pat"
     ]
   },
-  "method": "POST",
-  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock",
-  "q": {
-    "overwrite": "false"
-  },
-  "body": {
-    "ID": "[UUID]",
-    "AcquisitionTime": "[TIMESTAMP]",
-    "IsForced": false,
-    "User": "[USERNAME]"
-  }
-}
-{
-  "headers": {
-    "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/OS cmd/bundle_deploy cmd-exec-id/[UUID] auth/pat"
-    ]
-  },
   "method": "GET",
-  "path": "/api/2.0/workspace/get-status",
+  "path": "/api/2.0/workspace/export",
   "q": {
-    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock",
-    "return_export_info": "true"
+    "direct_download": "true",
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock"
   }
 }
 {
@@ -60,7 +42,45 @@
   "method": "GET",
   "path": "/api/2.0/workspace/get-status",
   "q": {
-    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json",
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/OS cmd/bundle_deploy cmd-exec-id/[UUID] auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock",
+    "return_export_info": "true"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/OS cmd/bundle_deploy cmd-exec-id/[UUID] auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock",
+    "return_export_info": "true"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/OS cmd/bundle_deploy cmd-exec-id/[UUID] auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock",
     "return_export_info": "true"
   }
 }
@@ -83,35 +103,11 @@
       "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/OS cmd/bundle_deploy cmd-exec-id/[UUID] auth/pat"
     ]
   },
-  "method": "POST",
-  "path": "/api/2.0/workspace/delete",
-  "body": {
-    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal",
-    "recursive": true
-  }
-}
-{
-  "headers": {
-    "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/OS cmd/bundle_deploy cmd-exec-id/[UUID] auth/pat"
-    ]
-  },
-  "method": "POST",
-  "path": "/api/2.0/workspace/mkdirs",
-  "body": {
-    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal"
-  }
-}
-{
-  "headers": {
-    "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/OS cmd/bundle_deploy cmd-exec-id/[UUID] auth/pat"
-    ]
-  },
   "method": "GET",
   "path": "/api/2.0/workspace/get-status",
   "q": {
-    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files"
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json",
+    "return_export_info": "true"
   }
 }
 {
@@ -124,6 +120,24 @@
   "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/empty.py",
   "q": {
     "overwrite": "true"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/OS cmd/bundle_deploy cmd-exec-id/[UUID] auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock",
+  "q": {
+    "overwrite": "false"
+  },
+  "body": {
+    "ID": "[UUID]",
+    "AcquisitionTime": "[TIMESTAMP]",
+    "IsForced": false,
+    "User": "[USERNAME]"
   }
 }
 {
@@ -149,44 +163,6 @@
       }
     ],
     "id": "[UUID]"
-  }
-}
-{
-  "headers": {
-    "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/OS cmd/bundle_deploy cmd-exec-id/[UUID] auth/pat"
-    ]
-  },
-  "method": "POST",
-  "path": "/api/2.1/unity-catalog/schemas",
-  "body": {
-    "catalog_name": "mycatalog",
-    "name": "myschema"
-  }
-}
-{
-  "headers": {
-    "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/OS cmd/bundle_deploy cmd-exec-id/[UUID] auth/pat"
-    ]
-  },
-  "method": "POST",
-  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json",
-  "q": {
-    "overwrite": "true"
-  },
-  "body": {
-    "lineage": "[UUID]",
-    "serial": 0,
-    "state": {
-      "resources.schemas.foo": {
-        "__id__": "mycatalog.myschema",
-        "state": {
-          "catalog_name": "mycatalog",
-          "name": "myschema"
-        }
-      }
-    }
   }
 }
 {
@@ -225,11 +201,23 @@
       "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/OS cmd/bundle_deploy cmd-exec-id/[UUID] auth/pat"
     ]
   },
-  "method": "GET",
-  "path": "/api/2.0/workspace/get-status",
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json",
   "q": {
-    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock",
-    "return_export_info": "true"
+    "overwrite": "true"
+  },
+  "body": {
+    "lineage": "[UUID]",
+    "serial": 0,
+    "state": {
+      "resources.schemas.foo": {
+        "__id__": "mycatalog.myschema",
+        "state": {
+          "catalog_name": "mycatalog",
+          "name": "myschema"
+        }
+      }
+    }
   }
 }
 {
@@ -238,24 +226,11 @@
       "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/OS cmd/bundle_deploy cmd-exec-id/[UUID] auth/pat"
     ]
   },
-  "method": "GET",
-  "path": "/api/2.0/workspace/get-status",
-  "q": {
-    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock",
-    "return_export_info": "true"
-  }
-}
-{
-  "headers": {
-    "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/OS cmd/bundle_deploy cmd-exec-id/[UUID] auth/pat"
-    ]
-  },
-  "method": "GET",
-  "path": "/api/2.0/workspace/export",
-  "q": {
-    "direct_download": "true",
-    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock"
+  "method": "POST",
+  "path": "/api/2.0/workspace/delete",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal",
+    "recursive": true
   }
 }
 {
@@ -268,5 +243,30 @@
   "path": "/api/2.0/workspace/delete",
   "body": {
     "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/OS cmd/bundle_deploy cmd-exec-id/[UUID] auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace/mkdirs",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/OS cmd/bundle_deploy cmd-exec-id/[UUID] auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.1/unity-catalog/schemas",
+  "body": {
+    "catalog_name": "mycatalog",
+    "name": "myschema"
   }
 }

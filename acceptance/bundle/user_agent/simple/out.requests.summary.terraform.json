@@ -14,11 +14,7 @@
     ]
   },
   "method": "GET",
-  "path": "/api/2.0/workspace/get-status",
-  "q": {
-    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate",
-    "return_export_info": "true"
-  }
+  "path": "/api/2.0/preview/scim/v2/Me"
 }
 {
   "headers": {
@@ -27,5 +23,9 @@
     ]
   },
   "method": "GET",
-  "path": "/api/2.0/preview/scim/v2/Me"
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate",
+    "return_export_info": "true"
+  }
 }
