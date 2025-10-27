@@ -240,6 +240,7 @@ func (s *FakeWorkspace) DashboardTrash(req Request) Response {
 		}
 	}
 
+	// The dashboard is marked as trashed and moved to the trash.
 	s.Dashboards[dashboardId] = fakeDashboard{
 		Dashboard: dashboards.Dashboard{
 			DashboardId:    dashboardId,
@@ -247,6 +248,9 @@ func (s *FakeWorkspace) DashboardTrash(req Request) Response {
 			ParentPath:     path.Join("/Users", s.CurrentUser().UserName, "Trash"),
 		},
 	}
+
+	// The published dashboard is deleted.
+	delete(s.PublishedDashboards, dashboardId)
 
 	return Response{
 		Body: dashboard,
