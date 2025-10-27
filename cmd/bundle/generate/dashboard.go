@@ -500,6 +500,9 @@ bundle files automatically, useful during active dashboard development.`,
 	cmd.MarkFlagsMutuallyExclusive("watch", "existing-path")
 	cmd.MarkFlagsMutuallyExclusive("watch", "existing-id")
 
+	// Make sure the bind flag is only used with the existing-resource flag.
+	cmd.MarkFlagsMutuallyExclusive("bind", "resource")
+
 	// Completion for the resource flag.
 	cmd.RegisterFlagCompletionFunc("resource", dashboardResourceCompletion)
 
