@@ -280,13 +280,12 @@ func (*ResourceDashboard) FieldTriggers(isLocal bool) map[string]deployplan.Acti
 		"parent_path": deployplan.ActionTypeRecreate,
 	}
 
-	if isLocal {
-		// Etags are not relevant to determine if the local configuration changed.
-		triggers["etag"] = deployplan.ActionTypeSkip
-	} else {
+	if !isLocal {
 		// Note: If the etag changes remotely, it means the dashboard has been modified remotely
 		// and needs to be updated to match with the config. Since update is the default action type,
 		// we don't need to explicitly specify it here.
+		//
+		// Note: etags cannot be specified in the bundle config since we error if they are set.
 
 		// "serialized_dashboard" locally and remotely will have different diffs.
 		// We only need to rely on etag here, and can skip this field for diff computation.
