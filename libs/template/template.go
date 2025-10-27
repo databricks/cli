@@ -31,7 +31,7 @@ const (
 	CLIPipelines              TemplateName = "cli-pipelines"
 	DbtSql                    TemplateName = "dbt-sql"
 	MlopsStacks               TemplateName = "mlops-stacks"
-	DefaultPydabs             TemplateName = "default-pydabs"
+	Pydabs                    TemplateName = "pydabs"
 	Custom                    TemplateName = "custom"
 	ExperimentalJobsAsCode    TemplateName = "experimental-jobs-as-code"
 	Default                   TemplateName = "default"
@@ -85,11 +85,19 @@ var databricksTemplates = []Template{
 		Writer:      &writerWithFullTelemetry{defaultWriter: defaultWriter{name: MlopsStacks}},
 	},
 	{
-		name:        DefaultPydabs,
+		name:        Pydabs,
 		hidden:      true,
-		description: "The default PyDABs template",
-		Reader:      &gitReader{gitUrl: "https://databricks.github.io/workflows-authoring-toolkit/pydabs-template.git", cloneFunc: git.Clone},
-		Writer:      &writerWithFullTelemetry{defaultWriter: defaultWriter{name: DefaultPydabs}},
+		description: "A variant of 'default-python' template that defines resources in Python instead of YAML",
+		Reader: &overridingReader{
+			underlying: &builtinReader{name: string(DefaultPython)},
+			propertyDefaultOverrides: map[string]any{
+				// In 'default-python' template 'enable_pydabs' prompt is hidden with default of 'no'.
+				// We want a separate template called 'pydabs' to reuse 'default-python' but have
+				// the 'enable_pydabs' property enabled by default that switches from YAML to Python.
+				"enable_pydabs": "yes",
+			},
+		},
+		Writer: &writerWithFullTelemetry{defaultWriter: defaultWriter{name: Pydabs}},
 	},
 	{
 		name:        ExperimentalJobsAsCode,

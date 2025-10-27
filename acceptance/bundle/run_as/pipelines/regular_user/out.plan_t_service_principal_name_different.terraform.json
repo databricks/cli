@@ -1,0 +1,7 @@
+{
+  "plan": {
+    "resources.pipelines.nyc_taxi_pipeline": {
+      "action": "create"
+    }
+  }
+}

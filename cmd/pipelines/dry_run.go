@@ -7,7 +7,6 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/run"
@@ -52,16 +51,6 @@ If there is only one pipeline in the project, KEY is optional and the pipeline w
 		key, _, err := resolveRunArgument(ctx, b, args)
 		if err != nil {
 			return err
-		}
-
-		if !b.DirectDeployment {
-			bundle.ApplySeqContext(ctx, b,
-				terraform.Interpolate(),
-				terraform.Write(),
-			)
-			if logdiag.HasError(ctx) {
-				return root.ErrAlreadyPrinted
-			}
 		}
 
 		bundle.ApplySeqContext(ctx, b,

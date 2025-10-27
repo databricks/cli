@@ -16,6 +16,10 @@ dev = [
     # than the remote cluster or serverless compute you connect to.
     # See also https://docs.databricks.com/dev-tools/databricks-connect.html.
     "databricks-connect{{template "conservative_db_connect_version_spec"}}",
+    {{- if eq .enable_pydabs "yes" }}
+    # Python support for Databricks Asset Bundles
+    "databricks-bundles=={{template "latest_databricks_bundles_version"}}",
+    {{- end }}
 ]
 
 [tool.pytest.ini_options]

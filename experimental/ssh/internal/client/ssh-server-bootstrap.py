@@ -71,9 +71,16 @@ def setup_exit_handler():
 
 
 def run_ssh_server():
-    # Start the SSH tunnel
     ctx = get_context()
-    client = WorkspaceClient()
+
+    # Old DBRs require explicit WorkspaceClient arguments
+    try:
+        client = WorkspaceClient()
+    except Exception as e:
+        client = WorkspaceClient(
+            host=ctx.workspaceUrl or spark.conf.get("spark.databricks.workspaceUrl"), token=ctx.apiToken
+        )
+
     workspace_url = ctx.workspaceUrl or client.config.host or spark.conf.get("spark.databricks.workspaceUrl")
     user_name = client.current_user.me().user_name
 

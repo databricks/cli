@@ -3,8 +3,6 @@ package cmdio
 import (
 	"bufio"
 	"context"
-	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -17,7 +15,7 @@ import (
 
 // This is the interface for all io interactions with a user
 type Logger struct {
-	// Mode for the logger. One of (append, inplace, json).
+	// Mode for the logger. One of (append).
 	Mode flags.ProgressLogFormat
 
 	// Input stream (eg. stdin). Answers to questions prompted using the Ask() method
@@ -27,28 +25,22 @@ type Logger struct {
 	// Output stream where the logger writes to
 	Writer io.Writer
 
-	// If true, indicates no events have been printed by the logger yet. Used
-	// by inplace logging for formatting
-	isFirstEvent bool
-
 	mutex sync.Mutex
 }
 
 func NewLogger(mode flags.ProgressLogFormat) *Logger {
 	return &Logger{
-		Mode:         mode,
-		Writer:       os.Stderr,
-		Reader:       *bufio.NewReader(os.Stdin),
-		isFirstEvent: true,
+		Mode:   mode,
+		Writer: os.Stderr,
+		Reader: *bufio.NewReader(os.Stdin),
 	}
 }
 
 func Default() *Logger {
 	return &Logger{
-		Mode:         flags.ModeAppend,
-		Writer:       os.Stderr,
-		Reader:       *bufio.NewReader(os.Stdin),
-		isFirstEvent: true,
+		Mode:   flags.ModeAppend,
+		Writer: os.Stderr,
+		Reader: *bufio.NewReader(os.Stdin),
 	}
 }
 
@@ -127,10 +119,6 @@ func splitAtLastNewLine(s string) (string, string) {
 }
 
 func (l *Logger) AskSelect(question string, choices []string) (string, error) {
-	if l.Mode == flags.ModeJson {
-		return "", errors.New("question prompts are not supported in json mode")
-	}
-
 	// Promptui does not support multiline prompts. So we split the question.
 	first, last := splitAtLastNewLine(question)
 	_, err := l.Writer.Write([]byte(first))
@@ -156,10 +144,6 @@ func (l *Logger) AskSelect(question string, choices []string) (string, error) {
 }
 
 func (l *Logger) Ask(question, defaultVal string) (string, error) {
-	if l.Mode == flags.ModeJson {
-		return "", errors.New("question prompts are not supported in json mode")
-	}
-
 	// Add default value to question prompt.
 	if defaultVal != "" {
 		question += fmt.Sprintf(` [%s]`, defaultVal)
@@ -186,58 +170,9 @@ func (l *Logger) Ask(question, defaultVal string) (string, error) {
 	return ans, nil
 }
 
-func (l *Logger) writeJson(event Event) {
-	b, err := json.MarshalIndent(event, "", "  ")
-	if err != nil {
-		// we panic because there we cannot catch this in jobs.RunNowAndWait
-		panic(err)
-	}
-	_, _ = l.Writer.Write(b)
-	_, _ = l.Writer.Write([]byte("\n"))
-}
-
-func (l *Logger) writeAppend(event Event) {
-	_, _ = l.Writer.Write([]byte(event.String()))
-	_, _ = l.Writer.Write([]byte("\n"))
-}
-
-func (l *Logger) writeInplace(event Event) {
-	if l.isFirstEvent {
-		// save cursor location
-		_, _ = l.Writer.Write([]byte("\033[s"))
-	}
-
-	// move cursor to saved location
-	_, _ = l.Writer.Write([]byte("\033[u"))
-
-	// clear from cursor to end of screen
-	_, _ = l.Writer.Write([]byte("\033[0J"))
-
-	_, _ = l.Writer.Write([]byte(event.String()))
-	_, _ = l.Writer.Write([]byte("\n"))
-	l.isFirstEvent = false
-}
-
 func (l *Logger) Log(event Event) {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
-	switch l.Mode {
-	case flags.ModeInplace:
-		if event.IsInplaceSupported() {
-			l.writeInplace(event)
-		} else {
-			l.writeAppend(event)
-		}
-
-	case flags.ModeJson:
-		l.writeJson(event)
-
-	case flags.ModeAppend:
-		l.writeAppend(event)
-
-	default:
-		// we panic because errors are not captured in some log sides like
-		// jobs.RunNowAndWait
-		panic("unknown progress logger mode: " + l.Mode.String())
-	}
+	_, _ = l.Writer.Write([]byte(event.String()))
+	_, _ = l.Writer.Write([]byte("\n"))
 }

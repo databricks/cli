@@ -1,0 +1,31 @@
+
+>>> [CLI] bundle validate -o json
+[
+  {
+    "level": "IS_OWNER",
+    "user_name": "other_user@databricks.com"
+  },
+  {
+    "level": "IS_OWNER",
+    "user_name": "[USERNAME]"
+  }
+]
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete pipeline foo
+
+This action will result in the deletion of the following Lakeflow Declarative Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them:
+  delete pipeline foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Deleting files...
+Destroy complete!

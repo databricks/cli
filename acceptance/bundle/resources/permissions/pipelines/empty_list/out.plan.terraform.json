@@ -1,0 +1,7 @@
+{
+  "plan": {
+    "resources.pipelines.foo": {
+      "action": "create"
+    }
+  }
+}

@@ -69,5 +69,8 @@ Deployment complete!
 {
   "method": "PUT",
   "path": "/api/2.0/fs/files/Volumes/foo/bar/artifacts/.internal/source.whl",
+  "q": {
+    "overwrite": "true"
+  },
   "raw_body": "test wheel content\n"
 }
