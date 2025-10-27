@@ -145,6 +145,26 @@ func makeVolumeTypeOptional(typ reflect.Type, s jsonschema.Schema) jsonschema.Sc
 	return s
 }
 
+// embed_credentials has a client side default value of false. The Go struct [resource.DashboardConfig]
+// does not contain the "omitempty" flag for this field since we always want to serialize it to the server.
+//
+// However, the lack of the "omitempty" flag causes the schema to be marked as required. This function
+// thus removes "embed_credentials" from the required fields.
+func makeDashboardEmbedCredentialsOptional(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
+	if typ != reflect.TypeOf(resources.Dashboard{}) {
+		return s
+	}
+
+	var res []string
+	for _, r := range s.Required {
+		if r != "embed_credentials" {
+			res = append(res, r)
+		}
+	}
+	s.Required = res
+	return s
+}
+
 func main() {
 	if len(os.Args) != 3 {
 		fmt.Println("Usage: go run main.go <work-dir> <output-file>")
@@ -188,6 +208,7 @@ func generateSchema(workdir, outputFile string) {
 		removeJobsFields,
 		removePipelineFields,
 		makeVolumeTypeOptional,
+		makeDashboardEmbedCredentialsOptional,
 		a.addAnnotations,
 		addInterpolationPatterns,
 	})

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"path"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -127,7 +128,7 @@ func (r *ResourceDashboard) DoRefresh(ctx context.Context, id string) (*resource
 func prepareDashboardRequest(config *resources.DashboardConfig) (dashboards.Dashboard, error) {
 	// Fields like "embed_credentials" are part of the bundle configuration but not the create request here.
 	// Thus we need to filter such fields out.
-	config.Dashboard.ForceSendFields = filterFields[dashboards.Dashboard](config.Dashboard.ForceSendFields)
+	config.ForceSendFields = filterFields[dashboards.Dashboard](config.ForceSendFields)
 
 	dashboard := config.Dashboard
 	v := config.SerializedDashboard
@@ -146,11 +147,18 @@ func prepareDashboardRequest(config *resources.DashboardConfig) (dashboards.Dash
 }
 
 func (r *ResourceDashboard) publishDashboard(ctx context.Context, id string, config *resources.DashboardConfig) (*dashboards.PublishedDashboard, error) {
+	// embed_credentials as a zero valued default in resourcemutator/resource_mutator.go.
+	// Thus we always need to include it in the ForceSendFields list to ensure that it is sent to the server.
+	forceSendFields := filterFields[dashboards.PublishRequest](config.ForceSendFields)
+	if !slices.Contains(forceSendFields, "EmbedCredentials") {
+		forceSendFields = append(forceSendFields, "EmbedCredentials")
+	}
+
 	return r.client.Lakeview.Publish(ctx, dashboards.PublishRequest{
 		DashboardId:      id,
 		EmbedCredentials: config.EmbedCredentials,
 		WarehouseId:      config.WarehouseId,
-		ForceSendFields:  filterFields[dashboards.PublishRequest](config.ForceSendFields),
+		ForceSendFields:  forceSendFields,
 	})
 }
 
