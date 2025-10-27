@@ -46,6 +46,7 @@ func TestVisitPipelinePaths(t *testing.T) {
 	}
 
 	actual := collectVisitedPaths(t, root, VisitPipelinePaths)
+	actual = append(actual, collectVisitedPaths(t, root, VisitPipelineLibrariesPaths)...)
 	expected := []dyn.Path{
 		dyn.MustPathFromString("resources.pipelines.pipeline0.libraries[0].file.path"),
 		dyn.MustPathFromString("resources.pipelines.pipeline0.libraries[1].notebook.path"),
