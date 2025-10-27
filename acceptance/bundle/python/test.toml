@@ -1,12 +1,13 @@
-# Tests don't interact with APIs
-
 Ignore = [
-  # created by scripts to install the latest wheel with UV_ARGS
+  # requirements-latest.txt is created by scripts to install databricks-bundles from the same commit
   "requirements-latest.txt",
 ]
 
 [EnvMatrix]
 UV_ARGS = [
-  "--with databricks-bundles==0.7.3",
+  # pin to a specific version from the past to avoid issues with unintended breaking changes
+  # we can't expect CLI and databricks-bundles versions to be always in sync
+  "--with databricks-bundles==0.266.0",
+  # requirements-latest.txt is created by scripts install databricks-bundles from the same commit
   "--with-requirements requirements-latest.txt --no-cache",
 ]

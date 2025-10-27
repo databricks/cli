@@ -1,0 +1,20 @@
+
+>>> uv run [UV_ARGS] -q [CLI] bundle validate --output json --include-locations
+Error: failed to apply python mutator: 'experimental/python' and 'python' configuration properties are mutually exclusive, use only 'python'
+
+{
+  "experimental": {
+    "python": {
+      "resources": [
+        "resources:load_resources_1"
+      ]
+    }
+  },
+  "resources": null,
+  "__locations": {
+    "files": null,
+    "locations": null
+  }
+}
+
+Exit code: 1
