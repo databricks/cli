@@ -44,7 +44,7 @@ func initProgressLoggerFlag(cmd *cobra.Command, logFlags *logFlags) *progressLog
 	}
 
 	flags := cmd.PersistentFlags()
-	flags.Var(&f.ProgressLogFormat, "progress-format", "format for progress logs (append, json)")
+	flags.Var(&f.ProgressLogFormat, "progress-format", "format for progress logs (append)")
 	flags.MarkHidden("progress-format")
 	cmd.RegisterFlagCompletionFunc("progress-format", f.Complete)
 	return &f

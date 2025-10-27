@@ -3,8 +3,6 @@ package cmdio
 import (
 	"bufio"
 	"context"
-	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -17,7 +15,7 @@ import (
 
 // This is the interface for all io interactions with a user
 type Logger struct {
-	// Mode for the logger. One of (append, json).
+	// Mode for the logger. One of (append).
 	Mode flags.ProgressLogFormat
 
 	// Input stream (eg. stdin). Answers to questions prompted using the Ask() method
@@ -121,10 +119,6 @@ func splitAtLastNewLine(s string) (string, string) {
 }
 
 func (l *Logger) AskSelect(question string, choices []string) (string, error) {
-	if l.Mode == flags.ModeJson {
-		return "", errors.New("question prompts are not supported in json mode")
-	}
-
 	// Promptui does not support multiline prompts. So we split the question.
 	first, last := splitAtLastNewLine(question)
 	_, err := l.Writer.Write([]byte(first))
@@ -150,10 +144,6 @@ func (l *Logger) AskSelect(question string, choices []string) (string, error) {
 }
 
 func (l *Logger) Ask(question, defaultVal string) (string, error) {
-	if l.Mode == flags.ModeJson {
-		return "", errors.New("question prompts are not supported in json mode")
-	}
-
 	// Add default value to question prompt.
 	if defaultVal != "" {
 		question += fmt.Sprintf(` [%s]`, defaultVal)
@@ -180,34 +170,9 @@ func (l *Logger) Ask(question, defaultVal string) (string, error) {
 	return ans, nil
 }
 
-func (l *Logger) writeJson(event Event) {
-	b, err := json.MarshalIndent(event, "", "  ")
-	if err != nil {
-		// we panic because there we cannot catch this in jobs.RunNowAndWait
-		panic(err)
-	}
-	_, _ = l.Writer.Write(b)
-	_, _ = l.Writer.Write([]byte("\n"))
-}
-
-func (l *Logger) writeAppend(event Event) {
-	_, _ = l.Writer.Write([]byte(event.String()))
-	_, _ = l.Writer.Write([]byte("\n"))
-}
-
 func (l *Logger) Log(event Event) {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
-	switch l.Mode {
-	case flags.ModeJson:
-		l.writeJson(event)
-
-	case flags.ModeAppend:
-		l.writeAppend(event)
-
-	default:
-		// we panic because errors are not captured in some log sides like
-		// jobs.RunNowAndWait
-		panic("unknown progress logger mode: " + l.Mode.String())
-	}
+	_, _ = l.Writer.Write([]byte(event.String()))
+	_, _ = l.Writer.Write([]byte("\n"))
 }

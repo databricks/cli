@@ -11,7 +11,6 @@ type ProgressLogFormat string
 
 var (
 	ModeAppend  = ProgressLogFormat("append")
-	ModeJson    = ProgressLogFormat("json")
 	ModeDefault = ProgressLogFormat("default")
 )
 
@@ -28,19 +27,13 @@ func (p *ProgressLogFormat) Set(s string) error {
 	switch lower {
 	case ModeAppend.String():
 		*p = ProgressLogFormat(ModeAppend.String())
-	case ModeJson.String():
-		*p = ProgressLogFormat(ModeJson.String())
 	case ModeDefault.String():
 		// We include ModeDefault here for symmetry reasons so this flag value
 		// can be unset after test runs. We should not point this value in error
 		// messages though since it's internal only
-		*p = ProgressLogFormat(ModeJson.String())
+		*p = ProgressLogFormat(ModeAppend.String())
 	default:
-		valid := []string{
-			ModeAppend.String(),
-			ModeJson.String(),
-		}
-		return fmt.Errorf("accepted arguments are [%s]", strings.Join(valid, ", "))
+		return fmt.Errorf("accepted arguments are [%s]", ModeAppend.String())
 	}
 	return nil
 }
@@ -53,6 +46,5 @@ func (p *ProgressLogFormat) Type() string {
 func (p *ProgressLogFormat) Complete(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	return []string{
 		"append",
-		"json",
 	}, cobra.ShellCompDirectiveNoFileComp
 }
