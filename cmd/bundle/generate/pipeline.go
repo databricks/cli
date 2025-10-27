@@ -25,6 +25,7 @@ func NewGeneratePipelineCommand() *cobra.Command {
 	var sourceDir string
 	var pipelineId string
 	var force bool
+	var bind bool
 
 	cmd := &cobra.Command{
 		Use:   "pipeline",
@@ -60,6 +61,7 @@ like catalogs, schemas, and compute configurations per target.`,
 	cmd.Flags().StringVarP(&configDir, "config-dir", "d", "resources", `Dir path where the output config will be stored`)
 	cmd.Flags().StringVarP(&sourceDir, "source-dir", "s", "src", `Dir path where the downloaded files will be stored`)
 	cmd.Flags().BoolVarP(&force, "force", "f", false, `Force overwrite existing files in the output directory`)
+	cmd.Flags().BoolVarP(&bind, "bind", "b", false, `automatically bind the generated resource to the existing resource`)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := logdiag.InitContext(cmd.Context())
@@ -148,11 +150,6 @@ like catalogs, schemas, and compute configurations per target.`,
 
 		cmdio.LogString(ctx, "Pipeline configuration successfully saved to "+filename)
 
-		// If --bind flag is set, automatically bind the generated resource
-		bind, err := cmd.Flags().GetBool("bind")
-		if err != nil {
-			return err
-		}
 		if bind {
 			return deployment.BindResource(cmd, pipelineKey, pipelineId, true, false)
 		}

@@ -18,6 +18,7 @@ import (
 // This function is shared between the bind command and generate commands with --bind flag.
 func BindResource(cmd *cobra.Command, resourceKey, resourceId string, autoApprove, forceLock bool) error {
 	ctx := cmd.Context()
+	// Reload the bundle configuration to ensure we're using the latest configuration.
 	b := utils.ConfigureBundleWithVariables(cmd)
 	if b == nil || logdiag.HasError(ctx) {
 		return root.ErrAlreadyPrinted

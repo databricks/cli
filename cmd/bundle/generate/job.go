@@ -26,6 +26,7 @@ func NewGenerateJobCommand() *cobra.Command {
 	var sourceDir string
 	var jobId int64
 	var force bool
+	var bind bool
 
 	cmd := &cobra.Command{
 		Use:   "job",
@@ -61,6 +62,7 @@ After generation, you can deploy this job to other targets using:
 	cmd.Flags().StringVarP(&configDir, "config-dir", "d", "resources", `Dir path where the output config will be stored`)
 	cmd.Flags().StringVarP(&sourceDir, "source-dir", "s", "src", `Dir path where the downloaded files will be stored`)
 	cmd.Flags().BoolVarP(&force, "force", "f", false, `Force overwrite existing files in the output directory`)
+	cmd.Flags().BoolVarP(&bind, "bind", "b", false, `automatically bind the generated resource to the existing resource`)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := logdiag.InitContext(cmd.Context())
@@ -144,11 +146,6 @@ After generation, you can deploy this job to other targets using:
 
 		cmdio.LogString(ctx, "Job configuration successfully saved to "+filename)
 
-		// If --bind flag is set, automatically bind the generated resource
-		bind, err := cmd.Flags().GetBool("bind")
-		if err != nil {
-			return err
-		}
 		if bind {
 			return deployment.BindResource(cmd, jobKey, strconv.FormatInt(jobId, 10), true, false)
 		}

@@ -21,6 +21,7 @@ func NewGenerateAppCommand() *cobra.Command {
 	var sourceDir string
 	var appName string
 	var force bool
+	var bind bool
 
 	cmd := &cobra.Command{
 		Use:   "app",
@@ -57,6 +58,7 @@ per target environment.`,
 	cmd.Flags().StringVarP(&configDir, "config-dir", "d", "resources", `Directory path where the output bundle config will be stored`)
 	cmd.Flags().StringVarP(&sourceDir, "source-dir", "s", "src/app", `Directory path where the app files will be stored`)
 	cmd.Flags().BoolVarP(&force, "force", "f", false, `Force overwrite existing files in the output directory`)
+	cmd.Flags().BoolVarP(&bind, "bind", "b", false, `automatically bind the generated app config to the existing app`)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := logdiag.InitContext(cmd.Context())
@@ -125,11 +127,6 @@ per target environment.`,
 
 		cmdio.LogString(ctx, "App configuration successfully saved to "+filename)
 
-		// If --bind flag is set, automatically bind the generated resource
-		bind, err := cmd.Flags().GetBool("bind")
-		if err != nil {
-			return err
-		}
 		if bind {
 			return deployment.BindResource(cmd, appKey, app.Name, true, false)
 		}

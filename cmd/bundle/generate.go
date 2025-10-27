@@ -7,7 +7,6 @@ import (
 
 func newGenerateCommand() *cobra.Command {
 	var key string
-	var bind bool
 
 	cmd := &cobra.Command{
 		Use:   "generate",
@@ -41,6 +40,5 @@ Use --bind to automatically bind the generated resource to the existing workspac
 	cmd.AddCommand(generate.NewGenerateDashboardCommand())
 	cmd.AddCommand(generate.NewGenerateAppCommand())
 	cmd.PersistentFlags().StringVar(&key, "key", "", `resource key to use for the generated configuration`)
-	cmd.PersistentFlags().BoolVar(&bind, "bind", false, `automatically bind the generated resource to the existing resource`)
 	return cmd
 }
