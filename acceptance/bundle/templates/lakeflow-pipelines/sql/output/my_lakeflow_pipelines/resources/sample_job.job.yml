@@ -24,7 +24,7 @@ resources:
       tasks:
         - task_key: refresh_pipeline
           pipeline_task:
-            pipeline_id: ${resources.pipelines.lakeflow_pipelines_etl.id}
+            pipeline_id: ${resources.pipelines.my_lakeflow_pipelines_etl.id}
 
       environments:
         - environment_key: default
