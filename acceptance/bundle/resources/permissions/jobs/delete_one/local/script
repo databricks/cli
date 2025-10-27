@@ -1,0 +1,32 @@
+print_requests() {
+    jq 'select(.path | contains("/jobs/")) | select(.method != "GET")' < out.requests.txt
+    rm out.requests.txt
+}
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+trace $CLI bundle debug plan > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
+
+cleanup() {
+    trace errcode $CLI bundle destroy --auto-approve
+    trace print_requests > out.requests_destroy.$DATABRICKS_BUNDLE_ENGINE.json
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+print_requests > out.requests_create.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan
+
+job_id=$($CLI bundle summary --output json | jq -r '.resources.jobs.job_with_permissions.id')
+
+$CLI permissions get jobs "$job_id" > out.permissions_create.$DATABRICKS_BUNDLE_ENGINE.json
+rm -f out.requests.txt
+
+title "Delete one permission and deploy again\n"
+grep -v DELETE databricks.yml > tmp.yml && mv tmp.yml databricks.yml
+trace $CLI bundle debug plan > out.plan_update.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle deploy
+print_requests > out.requests_update.$DATABRICKS_BUNDLE_ENGINE.json
+
+$CLI permissions get jobs "$job_id" > out.permissions_update.$DATABRICKS_BUNDLE_ENGINE.json
+rm out.requests.txt

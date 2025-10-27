@@ -1,0 +1,48 @@
+print_requests() {
+    jq 'select(.path | contains("/jobs/")) | select(.method != "GET")' < out.requests.txt
+    rm out.requests.txt
+}
+
+envsubst < databricks.yml.tmpl > databricks.yml
+# I've tried to create unique users but then 'databricks users delete' does not work, so I stopped with that.
+$CLI users create --id test-dabs-1@databricks.com --user-name test-dabs-1@databricks.com &> /dev/null || true
+$CLI users create --id test-dabs-2@databricks.com --user-name test-dabs-2@databricks.com &> /dev/null || true
+$CLI groups create --id test-dabs-group-1@databricks.com --display-name test-dabs-group-1 &> /dev/null || true
+rm -f out.requests.txt
+
+trace $CLI bundle debug plan > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
+
+cleanup() {
+    trace errcode $CLI bundle destroy --auto-approve
+    trace print_requests > out.requests_destroy.$DATABRICKS_BUNDLE_ENGINE.json
+}
+trap cleanup EXIT
+
+sort_acl_requests() {
+    # ideally we would not need this, but I cannot figure out why terraform does this order for create:
+    # CAN_MANAGE_RUN, IS_OWNER, CAN_VIEW, CAN_MANAGE
+    jq '.body.access_control_list |= if . != null then sort_by(.permission_level, (.group_name // ""), (.user_name != null), (.service_principal_name != null)) else . end'
+}
+
+sort_acl() {
+    jq '.access_control_list |= if . != null then sort_by(.all_permissions[0].permission_level, (.group_name // ""), (.user_name != null), (.service_principal_name != null)) else . end'
+}
+
+trace $CLI bundle deploy
+# Terraform always puts group permissions after user permissions in the request, so we store requests in a different file
+# although they are semantically the same. We're not doing the same transformation in direct, because permissions get endpoint uses a different order.
+print_requests | sort_acl_requests > out.requests_create.json
+trace $CLI bundle plan
+
+job_id=$($CLI bundle summary --output json | jq -r '.resources.jobs.job_with_permissions.id')
+
+$CLI permissions get jobs "$job_id" | sort_acl > out.permissions_create.json
+rm -f out.requests.txt
+
+title "Delete one permission and deploy again\n"
+grep -v DELETE databricks.yml > tmp.yml && mv tmp.yml databricks.yml
+trace $CLI bundle deploy
+print_requests | sort_acl_requests > out.requests_update.json
+
+$CLI permissions get jobs "$job_id" | sort_acl > out.permissions_update.json
+rm out.requests.txt

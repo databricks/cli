@@ -29,18 +29,20 @@ type ResourceEntry struct {
 	State any    `json:"state"`
 }
 
-// splitKey parses a canonical key back into group and name.
+// splitKey extracts group and name from the key: 'resources.jobs.foo' -> 'jobs', 'foo', true
+// For sub-resources like permissions it returns "", "", false
+// Note we don't use group/name anywhere in bundle/direct, this is only for ExportState
+// which makes ID available to other parts of DABs
 func splitKey(key string) (group, name string, ok bool) {
-	const prefix = "resources."
-	if !strings.HasPrefix(key, prefix) {
+	items := strings.Split(key, ".")
+	if len(items) != 3 {
+		// e.g. resources.jobs.foo.permissions
 		return "", "", false
 	}
-	rest := strings.TrimPrefix(key, prefix)
-	idx := strings.IndexByte(rest, '.')
-	if idx <= 0 || idx >= len(rest)-1 {
+	if items[0] != "resources" {
 		return "", "", false
 	}
-	return rest[:idx], rest[idx+1:], true
+	return items[1], items[2], true
 }
 
 func (db *DeploymentState) SaveState(key, newID string, state any) error {

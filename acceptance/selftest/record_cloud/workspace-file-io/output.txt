@@ -39,7 +39,10 @@
 >>> print_requests
 {
   "method": "GET",
-  "path": "/api/2.0/workspace/list"
+  "path": "/api/2.0/workspace/list",
+  "q": {
+    "path": "/Users/[USERNAME]/[UNIQUE_NAME]"
+  }
 }
 
 === stat the file
@@ -52,7 +55,10 @@
 >>> print_requests
 {
   "method": "GET",
-  "path": "/api/2.0/workspace/get-status"
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Users/[USERNAME]/[UNIQUE_NAME]/hello.txt"
+  }
 }
 
 === download the file
@@ -64,7 +70,11 @@ hello, world
 >>> print_requests
 {
   "method": "GET",
-  "path": "/api/2.0/workspace/export"
+  "path": "/api/2.0/workspace/export",
+  "q": {
+    "format": "AUTO",
+    "path": "/Users/[USERNAME]/[UNIQUE_NAME]/hello.txt"
+  }
 }
 
 === delete the file
@@ -88,7 +98,10 @@ Exit code: 1
 >>> print_requests
 {
   "method": "GET",
-  "path": "/api/2.0/workspace/get-status"
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Users/[USERNAME]/[UNIQUE_NAME]/hello.txt"
+  }
 }
 
 === list the folder
@@ -101,7 +114,10 @@ ID  Type  Language  Path
 >>> print_requests
 {
   "method": "GET",
-  "path": "/api/2.0/workspace/list"
+  "path": "/api/2.0/workspace/list",
+  "q": {
+    "path": "/Users/[USERNAME]/[UNIQUE_NAME]"
+  }
 }
 {
   "method": "POST",
@@ -120,5 +136,8 @@ Exit code: 1
 >>> print_requests
 {
   "method": "GET",
-  "path": "/api/2.0/workspace/list"
+  "path": "/api/2.0/workspace/list",
+  "q": {
+    "path": "/Users/[USERNAME]/[UNIQUE_NAME]"
+  }
 }

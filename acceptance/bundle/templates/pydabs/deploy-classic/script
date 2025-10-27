@@ -1,0 +1,12 @@
+trace $CLI bundle init pydabs --config-file ./input.json
+
+(
+    cd my_pydabs
+
+    trace uv venv --quiet
+    trace uv pip install --quiet $DATABRICKS_BUNDLES_WHEEL
+
+    trace $CLI bundle deploy
+)
+
+rm -rf my_pydabs

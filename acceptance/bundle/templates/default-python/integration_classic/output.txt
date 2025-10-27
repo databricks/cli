@@ -23,6 +23,7 @@ Workspace:
 Validation OK!
 
 >>> [CLI] bundle validate -t dev -o json
+Building python_artifact...
 
 >>> [CLI] bundle deploy -t dev
 Building python_artifact...
@@ -252,6 +253,7 @@ Validation OK!
 +    "state_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/state"
    }
  }
+Building python_artifact...
 
 >>> [CLI] bundle deploy -t prod
 Building python_artifact...

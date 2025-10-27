@@ -7,7 +7,3 @@ type MessageEvent struct {
 func (event *MessageEvent) String() string {
 	return event.Message
 }
-
-func (event *MessageEvent) IsInplaceSupported() bool {
-	return false
-}
