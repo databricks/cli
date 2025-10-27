@@ -1,0 +1,11 @@
+trace $CLI bundle init default-minimal --config-file ./input.json --output-dir output
+
+cd output/my_default_minimal
+trace $CLI bundle validate -t dev
+trace $CLI bundle validate -t prod
+
+# Do not affect this repository's git behaviour #2318
+mv .gitignore out.gitignore
+rm -r .databricks
+
+cd ../../

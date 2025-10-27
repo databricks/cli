@@ -1,0 +1,35 @@
+
+>>> [CLI] bundle init default-minimal --config-file ./input.json --output-dir output
+Welcome to the minimal Databricks Asset Bundle template!
+
+NOTE: this minimal template is intended for starting from scratch for advanced users.
+Use the default-python and default-sql templates for getting started, they include (optional) sample code!
+
+Your workspace at [DATABRICKS_URL] is used for initialization
+(see https://docs.databricks.com/dev-tools/cli/profiles.html for how to change your profile).
+Workspace to use (auto-detected, edit in 'my_default_minimal/databricks.yml'): [DATABRICKS_URL]
+
+✨ Your new project has been created in the 'my_default_minimal' directory!
+
+Please refer to the README.md file for "getting started" instructions.
+See also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
+
+>>> [CLI] bundle validate -t dev
+Name: my_default_minimal
+Target: dev
+Workspace:
+  Host: [DATABRICKS_URL]
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/my_default_minimal/dev
+
+Validation OK!
+
+>>> [CLI] bundle validate -t prod
+Name: my_default_minimal
+Target: prod
+Workspace:
+  Host: [DATABRICKS_URL]
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/my_default_minimal/prod
+
+Validation OK!
