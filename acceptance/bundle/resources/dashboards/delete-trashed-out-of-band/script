@@ -18,5 +18,4 @@ trace $CLI lakeview get $DASHBOARD_ID | jq '{lifecycle_state, parent_path}'
 trace $CLI lakeview trash $DASHBOARD_ID
 
 # Run destroy - should succeed even though dashboard is already trashed
-# This tests the idempotent delete behavior in DoDelete
 trace $CLI bundle destroy --auto-approve
