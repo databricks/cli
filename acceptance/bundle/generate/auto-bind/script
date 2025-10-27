@@ -38,7 +38,7 @@ trace $CLI workspace import "${PYTHON_NOTEBOOK}" --file test.py --language PYTHO
 title "Generate and bind in one step:"
 trace $CLI bundle generate job --key test_job --existing-job-id $JOB_ID --config-dir resources --source-dir src --bind
 trace ls src/
-trace cat resources/test_job.job.yml | grep "name: auto-bind-job-${UNIQUE_NAME}"
+trace cat resources/test_job.job.yml
 
 title "Deploy the bound job:"
 trace $CLI bundle deploy

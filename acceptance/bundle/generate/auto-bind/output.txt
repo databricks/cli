@@ -17,7 +17,31 @@ Successfully bound job with an id '[NUMID]'
 test.py
 
 >>> cat resources/test_job.job.yml
+resources:
+  jobs:
+    test_job:
       name: auto-bind-job-[UNIQUE_NAME]
+      tasks:
+        - task_key: test
+          new_cluster:
+            azure_attributes:
+              availability: ON_DEMAND_AZURE
+            enable_elastic_disk: true
+            node_type_id: [NODE_TYPE_ID]
+            num_workers: 1
+            spark_version: 13.3.x-snapshot-scala2.12
+          email_notifications: {}
+          notebook_task:
+            notebook_path: ../src/test.py
+            source: WORKSPACE
+          run_if: ALL_SUCCESS
+          timeout_seconds: 0
+      email_notifications: {}
+      max_concurrent_runs: 1
+      queue:
+        enabled: true
+      timeout_seconds: 0
+      webhook_notifications: {}
 
 === Deploy the bound job:
 >>> [CLI] bundle deploy
