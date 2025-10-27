@@ -1,6 +1,0 @@
-Local = false
-Cloud = true
-RequiresCluster = true
-
-[EnvMatrix]
-  DATABRICKS_BUNDLE_ENGINE = ["direct-exp"]
