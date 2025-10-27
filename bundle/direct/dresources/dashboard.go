@@ -82,7 +82,7 @@ func (r *ResourceDashboard) DoRefresh(ctx context.Context, id string) (*resource
 			DashboardId: id,
 		})
 		if err != nil {
-			return fmt.Errorf("failed to get draft dashboard: %w", err)
+			return fmt.Errorf("reading draft dashboard: %w", err)
 		}
 		return nil
 	})
@@ -93,7 +93,7 @@ func (r *ResourceDashboard) DoRefresh(ctx context.Context, id string) (*resource
 			DashboardId: id,
 		})
 		if err != nil {
-			return fmt.Errorf("failed to get published dashboard: %w", err)
+			return fmt.Errorf("reading published dashboard: %w", err)
 		}
 		return nil
 	})
