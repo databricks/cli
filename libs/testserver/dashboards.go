@@ -228,3 +228,27 @@ func (s *FakeWorkspace) DashboardPublish(req Request) Response {
 		},
 	}
 }
+
+func (s *FakeWorkspace) DashboardTrash(req Request) Response {
+	defer s.LockUnlock()()
+
+	dashboardId := req.Vars["dashboard_id"]
+	dashboard, ok := s.Dashboards[dashboardId]
+	if !ok {
+		return Response{
+			StatusCode: 404,
+		}
+	}
+
+	s.Dashboards[dashboardId] = fakeDashboard{
+		Dashboard: dashboards.Dashboard{
+			DashboardId:    dashboardId,
+			LifecycleState: dashboards.LifecycleStateTrashed,
+			ParentPath:     path.Join("/Users", s.CurrentUser().UserName, "Trash"),
+		},
+	}
+
+	return Response{
+		Body: dashboard,
+	}
+}

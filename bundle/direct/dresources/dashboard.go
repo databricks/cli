@@ -3,7 +3,6 @@ package dresources
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"path"
 	"slices"
@@ -228,9 +227,15 @@ func (r *ResourceDashboard) DoCreate(ctx context.Context, config *resources.Dash
 
 	// Persist the etag in state.
 	config.Etag = createResp.Etag
-
 	publishResp, err := r.publishDashboard(ctx, createResp.DashboardId, config)
 	if err != nil {
+		// If the publish fails, we should delete the dashboard to avoid leaving it in a bad state.
+		deleteErr := r.client.Lakeview.Trash(ctx, dashboards.TrashDashboardRequest{
+			DashboardId: createResp.DashboardId,
+		})
+		if deleteErr != nil {
+			return "", nil, deleteErr
+		}
 		return "", nil, err
 	}
 
@@ -263,33 +268,9 @@ func (r *ResourceDashboard) DoUpdate(ctx context.Context, id string, config *res
 }
 
 func (r *ResourceDashboard) DoDelete(ctx context.Context, id string) error {
-	trashErr := r.client.Lakeview.Trash(ctx, dashboards.TrashDashboardRequest{
+	return r.client.Lakeview.Trash(ctx, dashboards.TrashDashboardRequest{
 		DashboardId: id,
 	})
-
-	// Successfully deleted the dashboard. Return nil.
-	if trashErr == nil {
-		return nil
-	}
-
-	// If the dashboard was already trashed, we'll get a 403 (Permission Denied) error.
-	// There may be other cases where we get a 403, so we first confirm that the
-	// dashboard state is actually trashed, and if so, return success.
-	if !errors.Is(trashErr, apierr.ErrPermissionDenied) {
-		return trashErr
-	}
-
-	dashboard, err := r.client.Lakeview.Get(ctx, dashboards.GetDashboardRequest{
-		DashboardId: id,
-	})
-
-	// If we can't get the dashboard state or the dashboard is not trashed, return the original error.
-	if err != nil || dashboard.LifecycleState != dashboards.LifecycleStateTrashed {
-		return trashErr
-	}
-
-	// Confirmed that the dashboard is indeed trashed. Return success.
-	return nil
 }
 
 func (*ResourceDashboard) FieldTriggers(isLocal bool) map[string]deployplan.ActionType {
