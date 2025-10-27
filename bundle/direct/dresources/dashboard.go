@@ -143,9 +143,9 @@ func prepareDashboardRequest(config *resources.DashboardConfig) (dashboards.Dash
 
 	dashboard := config.Dashboard
 	v := config.SerializedDashboard
-	if _, ok := v.(string); ok {
+	if serializedDashboard, ok := v.(string); ok {
 		// If serialized dashboard is already a string, we can use it directly.
-		dashboard.SerializedDashboard = v.(string)
+		dashboard.SerializedDashboard = serializedDashboard
 	} else if v != nil {
 		// If it's inlined in the bundle config as a map, we need to marshal it to a string.
 		b, err := json.Marshal(v)
