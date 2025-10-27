@@ -51,6 +51,7 @@ Typical use cases:
 		if b == nil || logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}
+		ctx = cmd.Context()
 
 		bundle.ApplyFuncContext(ctx, b, func(ctx context.Context, b *bundle.Bundle) {
 			// If `--force-lock` is specified, force acquisition of the deployment lock.

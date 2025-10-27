@@ -65,6 +65,7 @@ Any manual changes made in the workspace UI may be overwritten on deployment.`,
 		if b == nil || logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}
+		ctx = cmd.Context()
 
 		phases.Initialize(ctx, b)
 		if logdiag.HasError(ctx) {
