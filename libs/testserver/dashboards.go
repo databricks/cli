@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"path"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -166,9 +165,9 @@ func (s *FakeWorkspace) DashboardUpdate(req Request) Response {
 	dashboard.LifecycleState = dashboards.LifecycleStateActive
 	if updateReq.DisplayName != "" {
 		dashboard.DisplayName = updateReq.DisplayName
-		dir := filepath.Dir(dashboard.Path)
+		dir := path.Dir(dashboard.Path)
 		base := updateReq.DisplayName + ".lvdash.json"
-		dashboard.Path = filepath.Join(dir, base)
+		dashboard.Path = path.Join(dir, base)
 	}
 	if updateReq.SerializedDashboard != "" {
 		dashboard.SerializedDashboard = transformSerializedDashboard(updateReq.SerializedDashboard)
