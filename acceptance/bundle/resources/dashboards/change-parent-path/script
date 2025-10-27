@@ -1,6 +1,7 @@
 export USERNAME=$($CLI current-user me --output json | jq -r '.userName')
 
 export PARENT_PATH="/Users/$USERNAME/.bundle/change-parent-path-$UNIQUE_NAME/default/resources"
+export MSYS_NO_PATHCONV="1"
 
 cleanup() {
     trace $CLI bundle destroy --auto-approve
