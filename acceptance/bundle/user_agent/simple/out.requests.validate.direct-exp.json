@@ -1,7 +1,7 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/OS cmd/bundle_validate cmd-exec-id/[UUID] upstream/databricks-vscode-terminal upstream-version/2.10.3 engine/direct-exp auth/pat"
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/OS cmd/bundle_validate cmd-exec-id/[UUID] engine/direct-exp auth/pat"
     ]
   },
   "method": "GET",
@@ -10,7 +10,7 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/OS cmd/bundle_validate cmd-exec-id/[UUID] upstream/databricks-vscode-terminal upstream-version/2.10.3 engine/direct-exp auth/pat"
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/OS cmd/bundle_validate cmd-exec-id/[UUID] engine/direct-exp auth/pat"
     ]
   },
   "method": "GET",
@@ -22,7 +22,7 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/OS cmd/bundle_validate cmd-exec-id/[UUID] upstream/databricks-vscode-terminal upstream-version/2.10.3 engine/direct-exp auth/pat"
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/OS cmd/bundle_validate cmd-exec-id/[UUID] engine/direct-exp auth/pat"
     ]
   },
   "method": "GET",
@@ -34,7 +34,7 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/OS cmd/bundle_validate cmd-exec-id/[UUID] upstream/databricks-vscode-terminal upstream-version/2.10.3 engine/direct-exp auth/pat"
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/OS cmd/bundle_validate cmd-exec-id/[UUID] engine/direct-exp auth/pat"
     ]
   },
   "method": "POST",
