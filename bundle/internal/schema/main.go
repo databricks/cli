@@ -146,7 +146,7 @@ func makeVolumeTypeOptional(typ reflect.Type, s jsonschema.Schema) jsonschema.Sc
 }
 
 // embed_credentials has a client side default value of false. The Go struct [resource.DashboardConfig]
-// does not contain the "omitempty" flag for this field since we always want to serialize it to the server.
+// does not contain the "omitempty" flag for this field since we always want to serialize it in state.
 //
 // However, the lack of the "omitempty" flag causes the schema to be marked as required. This function
 // thus removes "embed_credentials" from the required fields.

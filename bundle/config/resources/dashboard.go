@@ -29,7 +29,7 @@ type DashboardConfig struct {
 	// to execute the published dashboard's queries.
 	//
 	// Defaults to false if not set.
-	EmbedCredentials bool `json:"embed_credentials"`
+	EmbedCredentials bool `json:"embed_credentials,omitempty"`
 }
 
 type Dashboard struct {
