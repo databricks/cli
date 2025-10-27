@@ -36,6 +36,7 @@ Usage:
   databricks bundle generate dashboard [flags]
 
 Flags:
+  -b, --bind                   automatically bind the generated dashboard config to the existing dashboard
   -s, --dashboard-dir string   directory to write the dashboard representation to (default "src")
       --existing-id string     ID of the dashboard to generate configuration for
       --existing-path string   workspace path of the dashboard to generate configuration for
@@ -46,7 +47,6 @@ Flags:
       --watch                  watch for changes to the dashboard and update the configuration
 
 Global Flags:
-      --bind             automatically bind the generated resource to the existing resource
       --debug            enable debug logging
       --key string       resource key to use for the generated configuration
   -o, --output type      output type: text or json (default text)

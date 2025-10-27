@@ -33,7 +33,6 @@ Available Commands:
   pipeline    Generate bundle configuration for a pipeline
 
 Flags:
-      --bind         automatically bind the generated resource to the existing resource
   -h, --help         help for generate
       --key string   resource key to use for the generated configuration
 
