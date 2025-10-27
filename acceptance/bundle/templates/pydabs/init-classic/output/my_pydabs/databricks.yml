@@ -1,12 +1,8 @@
-{{$with_classic := (ne .serverless "yes") -}}
-{{$with_python := (eq .include_python "yes") -}}
-{{$with_pydabs := (eq .enable_pydabs "yes") -}}
-# This is a Databricks asset bundle definition for {{.project_name}}.
+# This is a Databricks asset bundle definition for my_pydabs.
 # See https://docs.databricks.com/dev-tools/bundles/index.html for documentation.
 bundle:
-  name: {{.project_name}}
-  uuid: {{bundle_uuid}}
-{{- if $with_pydabs }}
+  name: my_pydabs
+  uuid: [UUID]
 
 python:
   # Activate virtual environment before loading resources defined in Python.
@@ -16,13 +12,11 @@ python:
   resources:
     - "resources:load_resources"
 
-{{- end }}
-{{ if $with_python }}
 artifacts:
   python_artifact:
     type: whl
     build: uv build --wheel
-{{ end }}
+
 include:
   - resources/*.yml
   - resources/*/*.yml
@@ -36,21 +30,21 @@ targets:
     mode: development
     default: true
     workspace:
-      host: {{workspace_host}}
-{{ if ($with_classic) }}
+      host: [DATABRICKS_URL]
+
     presets:
       # Set dynamic_version: true on all artifacts of type "whl".
       # This makes "bundle deploy" add a timestamp to wheel's version before uploading,
       # new wheel takes over the previous installation even if actual wheel version is unchanged.
       # See https://docs.databricks.com/aws/en/dev-tools/bundles/settings
       artifacts_dynamic_version: true
-{{ end }}
+
   prod:
     mode: production
     workspace:
-      host: {{workspace_host}}
-      # We explicitly deploy to /Workspace/Users/{{user_name}} to make sure we only have a single copy.
-      root_path: /Workspace/Users/{{user_name}}/.bundle/${bundle.name}/${bundle.target}
+      host: [DATABRICKS_URL]
+      # We explicitly deploy to /Workspace/Users/[USERNAME] to make sure we only have a single copy.
+      root_path: /Workspace/Users/[USERNAME]/.bundle/${bundle.name}/${bundle.target}
     permissions:
-      - {{if is_service_principal}}service_principal{{else}}user{{end}}_name: {{user_name}}
+      - user_name: [USERNAME]
         level: CAN_MANAGE

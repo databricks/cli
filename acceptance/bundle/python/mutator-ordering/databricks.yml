@@ -3,11 +3,10 @@ bundle:
 
 sync: {paths: []} # don't need to copy files
 
-experimental:
-  python:
-    mutators:
-      - "mutators:add_task_1"
-      - "mutators:add_task_2"
+python:
+  mutators:
+    - "mutators:add_task_1"
+    - "mutators:add_task_2"
 
 resources:
   jobs:
