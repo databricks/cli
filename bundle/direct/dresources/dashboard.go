@@ -5,11 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"path"
-	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
@@ -30,7 +30,7 @@ func (*ResourceDashboard) PrepareState(input *resources.Dashboard) *resources.Da
 }
 
 func (r *ResourceDashboard) RemapState(state *resources.DashboardConfig) *resources.DashboardConfig {
-	dashboard := &resources.DashboardConfig{
+	return &resources.DashboardConfig{
 		Dashboard: dashboards.Dashboard{
 			DisplayName: state.DisplayName,
 			Etag:        state.Etag,
@@ -58,16 +58,11 @@ func (r *ResourceDashboard) RemapState(state *resources.DashboardConfig) *resour
 		},
 
 		EmbedCredentials: state.EmbedCredentials,
-		ForceSendFields: filterFields[resources.DashboardConfig](state.ForceSendFields, []string{
-			"SerializedDashboard",
-		}...),
 
 		// Serialized dashboard is ignored for remote diff changes.
 		// They are only relevant for local diff changes.
 		SerializedDashboard: "",
 	}
-
-	return dashboard
 }
 
 func (r *ResourceDashboard) DoRefresh(ctx context.Context, id string) (*resources.DashboardConfig, error) {
@@ -81,10 +76,7 @@ func (r *ResourceDashboard) DoRefresh(ctx context.Context, id string) (*resource
 		dashboard, err = r.client.Lakeview.Get(ctx, dashboards.GetDashboardRequest{
 			DashboardId: id,
 		})
-		if err != nil {
-			return err
-		}
-		return nil
+		return err
 	})
 
 	g.Go(func() error {
@@ -92,10 +84,7 @@ func (r *ResourceDashboard) DoRefresh(ctx context.Context, id string) (*resource
 		publishedDashboard, err = r.client.Lakeview.GetPublished(ctx, dashboards.GetPublishedDashboardRequest{
 			DashboardId: id,
 		})
-		if err != nil {
-			return err
-		}
-		return nil
+		return err
 	})
 
 	if err := g.Wait(); err != nil {
@@ -132,7 +121,6 @@ func (r *ResourceDashboard) DoRefresh(ctx context.Context, id string) (*resource
 		},
 		SerializedDashboard: dashboard.SerializedDashboard,
 		EmbedCredentials:    publishedDashboard.EmbedCredentials,
-		ForceSendFields:     filterFields[resources.DashboardConfig](publishedDashboard.ForceSendFields),
 	}, nil
 }
 
@@ -158,35 +146,34 @@ func prepareDashboardRequest(config *resources.DashboardConfig) (dashboards.Dash
 }
 
 func (r *ResourceDashboard) publishDashboard(ctx context.Context, id string, config *resources.DashboardConfig) (*dashboards.PublishedDashboard, error) {
-	// embed_credentials as a zero valued default in resourcemutator/resource_mutator.go.
-	// Thus we always need to include it in the ForceSendFields list to ensure that it is sent to the server.
-	// TODO(followup): A more general solution that does not require this special casing.
-	forceSendFields := filterFields[dashboards.PublishRequest](config.ForceSendFields)
-	if !slices.Contains(forceSendFields, "EmbedCredentials") {
-		forceSendFields = append(forceSendFields, "EmbedCredentials")
-	}
-
 	return r.client.Lakeview.Publish(ctx, dashboards.PublishRequest{
 		DashboardId:      id,
 		EmbedCredentials: config.EmbedCredentials,
 		WarehouseId:      config.WarehouseId,
-		ForceSendFields:  forceSendFields,
+		ForceSendFields:  filterFields[dashboards.PublishRequest](config.ForceSendFields),
 	})
 }
 
 func responseToState(createOrUpdateResp *dashboards.Dashboard, publishResp *dashboards.PublishedDashboard) *resources.DashboardConfig {
+	// Add the /Workspace prefix to the parent path. The backend removes this prefix from parent
+	// path, and thus it needs to be added back in to match the local configuration.
+	// The default parent_path (i.e. ${workspace.resource_path}) includes the /Workspace prefix,
+	// that's why we need to add it back here.
+	//
+	// If in the future `parent_path` from GET includes the /Workspace prefix, this logic
+	// will still be correct because creating "/Workspace/Workspace" is not allowed.
+	parentPath := createOrUpdateResp.ParentPath
+	if !strings.HasPrefix(parentPath, "/Workspace") {
+		parentPath = path.Join("/Workspace", parentPath)
+	}
+
 	return &resources.DashboardConfig{
 		Dashboard: dashboards.Dashboard{
 			DisplayName:         createOrUpdateResp.DisplayName,
 			Etag:                createOrUpdateResp.Etag,
 			WarehouseId:         createOrUpdateResp.WarehouseId,
 			SerializedDashboard: createOrUpdateResp.SerializedDashboard,
-
-			// Add the /Workspace prefix to the parent path. The backend removes this prefix from parent
-			// path, and thus it needs to be added back in to match the local configuration.
-			// The default parent_path (i.e. ${workspace.resource_path}) includes the /Workspace prefix,
-			// that's why we need to add it back here.
-			ParentPath: path.Join("/Workspace", createOrUpdateResp.ParentPath),
+			ParentPath:          parentPath,
 
 			// Output only fields
 			CreateTime:      createOrUpdateResp.CreateTime,
@@ -198,7 +185,6 @@ func responseToState(createOrUpdateResp *dashboards.Dashboard, publishResp *dash
 		},
 		SerializedDashboard: createOrUpdateResp.SerializedDashboard,
 		EmbedCredentials:    publishResp.EmbedCredentials,
-		ForceSendFields:     filterFields[resources.DashboardConfig](publishResp.ForceSendFields),
 	}
 }
 
@@ -234,6 +220,7 @@ func (r *ResourceDashboard) DoCreate(ctx context.Context, config *resources.Dash
 			DashboardId: createResp.DashboardId,
 		})
 		if deleteErr != nil {
+			log.Warnf(ctx, "failed to delete draft dashboard %s after publish failed: %v", createResp.DashboardId, deleteErr)
 			return "", nil, deleteErr
 		}
 		return "", nil, err
