@@ -29,5 +29,6 @@ func ConvertPipelineToValue(pipeline *pipelines.PipelineSpec, rootPath, remoteRo
 	// - id: this is a read-only field
 	// - storage: changes to this field are rare because changing the storage recreates pipeline-related resources
 	// - edition: this field is rarely changed
-	return yamlsaver.ConvertToMapValue(pipeline, pipelineOrder, []string{"id", "storage", "edition"}, value)
+	// - development: this field is specific to the mode where it's used and does not need to be saved to the bundle configuration.
+	return yamlsaver.ConvertToMapValue(pipeline, pipelineOrder, []string{"id", "storage", "edition", "development"}, value)
 }

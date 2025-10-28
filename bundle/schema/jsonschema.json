@@ -10595,6 +10595,9 @@
       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Presets",
       "markdownDescription": "Defines bundle deployment presets. See [presets](https://docs.databricks.com/dev-tools/bundles/deployment-modes.html#presets)."
     },
+    "python": {
+      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Python"
+    },
     "resources": {
       "description": "A Map that defines the resources for the bundle, where each key is the name of the resource, and the value is a Map that defines the resource.",
       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Resources",

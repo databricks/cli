@@ -1,0 +1,13 @@
+bundle:
+  name: my_project
+
+sync: {paths: []} # don't need to copy files
+
+# We keep support for experimental section for backward-compatibility until it's fully deprecated.
+#
+# The next step until deletion is returning an error when 'experimental/python' is used.
+
+experimental:
+  python:
+    resources:
+      - "resources:load_resources"
