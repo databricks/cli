@@ -69,8 +69,6 @@ func deployBundle(t testutil.TestingT, ctx context.Context, path string) {
 
 func runResource(t testutil.TestingT, ctx context.Context, path, key string) (string, error) {
 	ctx = env.Set(ctx, "BUNDLE_ROOT", path)
-	ctx = cmdio.NewContext(ctx, cmdio.Default())
-
 	c := testcli.NewRunner(t, ctx, "bundle", "run", key)
 	stdout, _, err := c.Run()
 	return stdout.String(), err

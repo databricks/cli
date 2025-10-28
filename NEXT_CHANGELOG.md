@@ -8,6 +8,7 @@
 ### CLI
 * Remove `inplace` mode for the `--progress-format` flag. ([#3811](https://github.com/databricks/cli/pull/3811))
 * Remove `json` mode for the `--progress-format` flag. ([#3812](https://github.com/databricks/cli/pull/3812))
+* Deprecate the `--progress-format` flag. ([#3819](https://github.com/databricks/cli/pull/3819))
 
 ### Dependency updates
 
