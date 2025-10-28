@@ -35,13 +35,13 @@ type state struct {
 }
 
 func (s *state) String() string {
-	kind := "direct"
-	if !s.isDirect {
-		kind = "terraform"
+	kind := "terraform"
+	if s.isDirect {
+		kind = "direct"
 	}
-	source := "local"
-	if !s.isLocal {
-		source = "remote"
+	source := "remote"
+	if s.isLocal {
+		source = "local"
 	}
 	return fmt.Sprintf("<%s %s state serial=%d lineage=%q>", source, kind, s.Serial, s.Lineage)
 }
@@ -114,9 +114,9 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 		return ctx
 	}
 
-	winner := states[len(states)-1]
+	var winner *state
 
-	if winner == nil {
+	if len(states) == 0 {
 		// no local or remote state; set b.DirectDeployment based on env vars
 		isDirect, err := getDirectDeploymentEnv(ctx)
 		if err != nil {
@@ -125,6 +125,7 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 		}
 		b.DirectDeployment = &isDirect
 	} else {
+		winner = states[len(states)-1]
 		b.DirectDeployment = ptrBool(winner.isDirect)
 	}
 
@@ -144,9 +145,6 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 
 	var stateStrs []string
 	for _, state := range states {
-		if state == nil {
-			continue
-		}
 		stateStrs = append(stateStrs, state.String())
 	}
 
@@ -155,9 +153,6 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 	var lastLineage *state
 
 	for _, state := range states {
-		if state == nil {
-			continue
-		}
 		if lastLineage == nil {
 			lastLineage = state
 		} else if lastLineage.Lineage != state.Lineage {
@@ -240,25 +235,12 @@ func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) []
 	} else {
 		states = []*state{terraformLocalState, directLocalState}
 	}
-	sortStates(states)
-	return states
-}
-
-func sortStates(states []*state) {
+	states = slices.DeleteFunc(states, func(p *state) bool { return p == nil })
 	slices.SortStableFunc(states, func(a, b *state) int {
-		if b == nil && a == nil {
-			return 0
-		}
-		// put nils first
-		if a == nil {
-			return -1
-		}
-		if b == nil {
-			return 1
-		}
-		// otherwise sort by serial
 		return int(a.Serial - b.Serial)
 	})
+
+	return states
 }
 
 func getDirectDeploymentEnv(ctx context.Context) (bool, error) {
