@@ -29,7 +29,14 @@ type DashboardConfig struct {
 	// to execute the published dashboard's queries.
 	//
 	// Defaults to false if not set.
-	EmbedCredentials bool `json:"embed_credentials,omitempty"`
+	EmbedCredentials bool `json:"embed_credentials"`
+
+	// Direct deployment uses ForceSendFields to serialize zero values in the bundle configuration.
+	// This struct [DashboardConfig] is the config representation of a dashboard. So it's
+	// necessary to override the ForceSendFields from the [dashboards.Dashboard] struct here.
+	//
+	// This is necessary to serialize the zero value of EmbedCredentials in the local
+	ForceSendFields []string `json:"-" url:"-"`
 }
 
 type Dashboard struct {

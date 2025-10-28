@@ -29,4 +29,4 @@ deploy_dashboard
 cat out.requests.txt | \
  jq 'select(.method == "POST" or .method == "PATCH" or .method == "DELETE")' | \
  jq 'select( (.path | contains("/api/2.0/lakeview/dashboards")) or ((.path == "/api/2.0/workspace/mkdirs") and (.body.path | contains("/default/resources"))))' \
- > out.requests.$DATABRICKS_BUNDLE_ENGINE.txt
+ > out.dashboardrequests.txt

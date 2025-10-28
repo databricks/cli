@@ -34,22 +34,6 @@
   }
 }
 {
-  "method": "PATCH",
-  "path": "/api/2.0/lakeview/dashboards/[DASHBOARD_ID]",
-  "body": {
-    "create_time": "[TIMESTAMP]",
-    "dashboard_id": "[DASHBOARD_ID]",
-    "display_name": "test dashboard",
-    "etag": [ETAG],
-    "lifecycle_state": "ACTIVE",
-    "parent_path": "/Users/[USERNAME]/.bundle/change-serialized-dashboard-[UNIQUE_NAME]/default/resources",
-    "path": "/Users/[USERNAME]/.bundle/change-serialized-dashboard-[UNIQUE_NAME]/default/resources/test dashboard.lvdash.json",
-    "serialized_dashboard": "{\"pages\":[{\"name\":\"name2\",\"displayName\":\"name2\",\"pageType\":\"PAGE_TYPE_CANVAS\"}]}\n",
-    "update_time": "[TIMESTAMP]",
-    "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
-  }
-}
-{
   "method": "POST",
   "path": "/api/2.0/lakeview/dashboards/[DASHBOARD_ID]/published",
   "body": {
