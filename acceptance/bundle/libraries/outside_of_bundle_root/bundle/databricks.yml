@@ -1,6 +1,9 @@
 bundle:
   name: outside_of_bundle_root
 
+include:
+  - resources/*.yml
+
 variables:
   cluster:
     default:
@@ -25,10 +28,9 @@ resources:
             entry_point: main
             package_name: my_default_python
           libraries:
-            - whl: ../*.whl
-  pipelines:
-    pipeline:
-      name: "test"
-      environment:
-        dependencies:
-          - ../*.whl
+            - whl: ../lib/*.whl
+      environments:
+        - environment_key: default
+          spec:
+            dependencies:
+              - ../lib/*.whl
