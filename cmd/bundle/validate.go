@@ -2,12 +2,8 @@ package bundle
 
 import (
 	"encoding/json"
-	"errors"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config/mutator"
-	"github.com/databricks/cli/bundle/config/validate"
-	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/render"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
@@ -51,18 +47,14 @@ Please run this command before deploying to ensure configuration quality.`,
 	cmd.Flags().MarkHidden("include-locations")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		ctx := logdiag.InitContext(cmd.Context())
-		cmd.SetContext(ctx)
-
-		b := prepareBundleForValidate(cmd, includeLocations)
-
-		if b == nil {
-			if logdiag.HasError(ctx) {
-				return root.ErrAlreadyPrinted
-			} else {
-				return errors.New("invariant failed: returned bundle is nil")
-			}
+		b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
+			Validate:         true,
+			IncludeLocations: includeLocations,
+		})
+		if err != nil {
+			return err
 		}
+		ctx := cmd.Context()
 
 		if root.OutputType(cmd) == flags.OutputText {
 			err := render.RenderDiagnosticsSummary(ctx, cmd.OutOrStdout(), b)
@@ -86,33 +78,4 @@ Please run this command before deploying to ensure configuration quality.`,
 	}
 
 	return cmd
-}
-
-func prepareBundleForValidate(cmd *cobra.Command, includeLocations bool) *bundle.Bundle {
-	b := utils.ConfigureBundleWithVariables(cmd)
-	ctx := cmd.Context()
-
-	if b == nil || logdiag.HasError(ctx) {
-		return b
-	}
-	ctx = cmd.Context()
-
-	phases.Initialize(ctx, b)
-
-	if logdiag.HasError(ctx) {
-		return b
-	}
-
-	validate.Validate(ctx, b)
-
-	if logdiag.HasError(ctx) {
-		return b
-	}
-
-	// Include location information in the output if the flag is set.
-	if includeLocations {
-		bundle.ApplyContext(ctx, b, mutator.PopulateLocations())
-	}
-
-	return b
 }

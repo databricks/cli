@@ -3,7 +3,6 @@
 package bundle
 
 import (
-	"context"
 	"errors"
 	"os"
 
@@ -11,7 +10,6 @@ import (
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
@@ -42,42 +40,38 @@ Typical use cases:
 	cmd.Flags().BoolVar(&forceDestroy, "force-lock", false, "Force acquisition of deployment lock.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		ctx := logdiag.InitContext(cmd.Context())
-		cmd.SetContext(ctx)
-		logdiag.SetSeverity(ctx, diag.Warning)
+		return CommandBundleDestroy(cmd, args, autoApprove, forceDestroy)
+	}
 
-		b := utils.ConfigureBundleWithVariables(cmd)
-		if b == nil || logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
-		}
-		ctx = cmd.Context()
+	return cmd
+}
 
-		bundle.ApplyFuncContext(ctx, b, func(ctx context.Context, b *bundle.Bundle) {
+func CommandBundleDestroy(cmd *cobra.Command, args []string, autoApprove, forceDestroy bool) error {
+	// we require auto-approve for non tty terminals since interactive consent
+	// is not possible
+	if !term.IsTerminal(int(os.Stderr.Fd())) && !autoApprove {
+		return errors.New("please specify --auto-approve to skip interactive confirmation checks for non tty consoles")
+	}
+
+	b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
+		InitFunc: func(b *bundle.Bundle) {
 			// If `--force-lock` is specified, force acquisition of the deployment lock.
 			b.Config.Bundle.Deployment.Lock.Force = forceDestroy
 
 			// If `--auto-approve`` is specified, we skip confirmation checks
 			b.AutoApprove = autoApprove
-		})
-
-		// we require auto-approve for non tty terminals since interactive consent
-		// is not possible
-		if !term.IsTerminal(int(os.Stderr.Fd())) && !autoApprove {
-			return errors.New("please specify --auto-approve to skip interactive confirmation checks for non tty consoles")
-		}
-
-		phases.Initialize(ctx, b)
-		if logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
-		}
-
-		phases.Destroy(ctx, b)
-		if logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
-		}
-
-		return nil
+		},
+		AlwaysPull: true,
+		// Do we need initialize phase here?
+	})
+	if err != nil {
+		return err
 	}
 
-	return cmd
+	phases.Destroy(cmd.Context(), b)
+	if logdiag.HasError(cmd.Context()) {
+		return root.ErrAlreadyPrinted
+	}
+
+	return nil
 }

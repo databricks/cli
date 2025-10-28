@@ -18,13 +18,13 @@ import (
 type (
 	ExportedResourcesMap = resourcestate.ExportedResourcesMap
 	ResourceState        = resourcestate.ResourceState
-	loadMode             int
+	LoadMode             int
 )
 
-const ErrorOnEmptyState loadMode = 0
+const ErrorOnEmptyState LoadMode = 0
 
 type load struct {
-	modes []loadMode
+	modes []LoadMode
 }
 
 func (l *load) Name() string {
@@ -137,6 +137,6 @@ func (l *load) validateState(state ExportedResourcesMap) error {
 	return nil
 }
 
-func Load(modes ...loadMode) bundle.Mutator {
+func Load(modes ...LoadMode) bundle.Mutator {
 	return &load{modes: modes}
 }

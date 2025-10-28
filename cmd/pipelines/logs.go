@@ -4,14 +4,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/phases"
-	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdgroup"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/logdiag"
 
 	"github.com/spf13/cobra"
 )
@@ -87,32 +83,13 @@ Example usage:
 	wrappedCmd.AddFlagGroup(filterGroup)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		ctx := logdiag.InitContext(cmd.Context())
-		cmd.SetContext(ctx)
-
-		b := utils.ConfigureBundleWithVariables(cmd)
-		if b == nil || logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
+		b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
+			InitIDs: true,
+		})
+		if err != nil {
+			return err
 		}
-		ctx = cmd.Context()
-
-		phases.Initialize(ctx, b)
-		if logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
-		}
-
-		// Load the deployment state to get pipeline IDs from resource
-		ctx = statemgmt.PullResourcesState(ctx, b)
-		if logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
-		}
-
-		bundle.ApplySeqContext(ctx, b,
-			statemgmt.Load(),
-		)
-		if logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
-		}
+		ctx := cmd.Context()
 
 		key, err := resolvePipelineArgument(ctx, b, args)
 		if err != nil {

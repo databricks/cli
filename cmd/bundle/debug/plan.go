@@ -17,13 +17,16 @@ func NewPlanCommand() *cobra.Command {
 		Long:  "Show the deployment plan for the current bundle configuration. This command is experimental and may change without notice.",
 		Args:  root.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := logdiag.InitContext(cmd.Context())
-			cmd.SetContext(ctx)
-			b := utils.ConfigureBundleWithVariables(cmd)
-			if b == nil || logdiag.HasError(ctx) {
-				return root.ErrAlreadyPrinted
+			b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
+				//Verbose:      verbose,
+				AlwaysPull:   true,
+				FastValidate: true,
+				Build:        true,
+			})
+			if err != nil {
+				return err
 			}
-			ctx = cmd.Context()
+			ctx := cmd.Context()
 			plan, err := utils.GetPlan(ctx, b)
 			if err != nil {
 				return err

@@ -11,7 +11,6 @@ import (
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/libraries"
-	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/bundle/trampoline"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/logdiag"
@@ -20,11 +19,6 @@ import (
 // deployPrepare is common set of mutators between "bundle plan" and "bundle deploy".
 // This function does not make any mutations in the workspace remotely, only in-memory bundle config mutations
 func deployPrepare(ctx context.Context, b *bundle.Bundle, isPlan bool) map[string][]libraries.LocationToUpdate {
-	ctx = statemgmt.PullResourcesState(ctx, b)
-	if logdiag.HasError(ctx) {
-		return nil
-	}
-
 	bundle.ApplySeqContext(ctx, b,
 		terraform.CheckDashboardsModifiedRemotely(isPlan),
 		deploy.StatePull(),

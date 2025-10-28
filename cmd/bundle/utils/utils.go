@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config/validate"
 	"github.com/databricks/cli/bundle/deployplan"
 	bundleenv "github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/phases"
@@ -135,21 +134,6 @@ func ConfigureBundleWithVariables(cmd *cobra.Command) *bundle.Bundle {
 }
 
 func GetPlan(ctx context.Context, b *bundle.Bundle) (*deployplan.Plan, error) {
-	phases.Initialize(ctx, b)
-	if logdiag.HasError(ctx) {
-		return nil, root.ErrAlreadyPrinted
-	}
-
-	bundle.ApplyContext(ctx, b, validate.FastValidate())
-	if logdiag.HasError(ctx) {
-		return nil, root.ErrAlreadyPrinted
-	}
-
-	phases.Build(ctx, b)
-	if logdiag.HasError(ctx) {
-		return nil, root.ErrAlreadyPrinted
-	}
-
 	plan := phases.Plan(ctx, b)
 	if logdiag.HasError(ctx) {
 		return nil, root.ErrAlreadyPrinted

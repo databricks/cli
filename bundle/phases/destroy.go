@@ -11,7 +11,6 @@ import (
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
@@ -132,11 +131,6 @@ func Destroy(ctx context.Context, b *bundle.Bundle) {
 	defer func() {
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDestroy))
 	}()
-
-	ctx = statemgmt.PullResourcesState(ctx, b)
-	if logdiag.HasError(ctx) {
-		return
-	}
 
 	if !*b.DirectDeployment {
 		bundle.ApplySeqContext(ctx, b,

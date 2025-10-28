@@ -22,6 +22,8 @@ import (
 	"github.com/databricks/databricks-sdk-go/useragent"
 )
 
+type AlwaysPull bool
+
 type state struct {
 	Serial  int64  `json:"serial"`
 	Lineage string `json:"lineage"`
@@ -102,17 +104,11 @@ func filerRead(ctx context.Context, f filer.Filer, path string, isDirect bool) *
 	return state
 }
 
-func PullResourcesState(ctx context.Context, b *bundle.Bundle) context.Context {
-	return PullResourcesStateOpt(ctx, b, true)
-}
-
-// if forceRemote is true, we always read remoteState.
-// if forceRemote is false, we only read it if local state is absent.
-func PullResourcesStateOpt(ctx context.Context, b *bundle.Bundle, forceRemote bool) context.Context {
+func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) context.Context {
 	_, localPathDirect := b.StateFilenameDirect(ctx)
 	_, localPathTerraform := b.StateFilenameTerraform(ctx)
 
-	states := readStates(ctx, b, forceRemote)
+	states := readStates(ctx, b, alwaysPull)
 
 	if logdiag.HasError(ctx) {
 		return ctx
@@ -205,7 +201,7 @@ func PullResourcesStateOpt(ctx context.Context, b *bundle.Bundle, forceRemote bo
 	return ctx
 }
 
-func readStates(ctx context.Context, b *bundle.Bundle, forceRemote bool) []*state {
+func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) []*state {
 	var states []*state
 
 	remotePathDirect, localPathDirect := b.StateFilenameDirect(ctx)
@@ -218,7 +214,7 @@ func readStates(ctx context.Context, b *bundle.Bundle, forceRemote bool) []*stat
 	directLocalState := localRead(ctx, localPathDirect, true)
 	terraformLocalState := localRead(ctx, localPathTerraform, false)
 
-	if (directLocalState == nil && terraformLocalState == nil) || forceRemote {
+	if (directLocalState == nil && terraformLocalState == nil) || alwaysPull {
 		f, err := deploy.StateFiler(b)
 		if err != nil {
 			logdiag.LogError(ctx, err)

@@ -377,7 +377,7 @@ func (d *dashboard) runForResource(ctx context.Context, b *bundle.Bundle) {
 		return
 	}
 
-	ctx = statemgmt.PullResourcesState(ctx, b)
+	ctx = statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(true))
 	if logdiag.HasError(ctx) {
 		return
 	}
