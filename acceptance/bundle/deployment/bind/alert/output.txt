@@ -3,7 +3,8 @@
 
 >>> [CLI] bundle deployment bind my_alert [UUID] --auto-approve
 Updating deployment state...
-Successfully bound alert with an id '[UUID]'. Run 'bundle deploy' to deploy changes to your workspace
+Successfully bound alert with an id '[UUID]'
+Run 'bundle deploy' to deploy changes to your workspace
 
 >>> [CLI] bundle summary
 Name: test-bundle-$UNIQUE_NAME

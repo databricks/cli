@@ -13,6 +13,7 @@
 ### Dependency updates
 
 ### Bundles
+* Added support for --bind flag in `bundle generate` ([#3782](https://github.com/databricks/cli/pull/3782))
 * Add `pydabs` template replacing `experimental-jobs-as-code` template ([#3806](https://github.com/databricks/cli/pull/3806))
 * You can now use `python` section instead of `experimental/python` ([#3540](https://github.com/databricks/cli/pull/3540))
 
