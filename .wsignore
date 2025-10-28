@@ -17,7 +17,7 @@ experimental/python/docs/images/databricks-logo.svg
 # In order to prevent that difference, hello.txt does not have a trailing newline.
 acceptance/selftest/record_cloud/volume-io/hello.txt
 
-# error output when artifact build fails contains trailing whitespace:
+# bundle commands leave empty lines at the end; too many to list individually:
 acceptance/**/out*.txt
 
 # Extra whitespace in generated commands:
