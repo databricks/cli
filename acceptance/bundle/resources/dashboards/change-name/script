@@ -18,6 +18,10 @@ deploy_dashboard() {
 # Create the dashboard
 deploy_dashboard
 
+# Capture the dashboard ID as a replacement.
+dashboard_id=$($CLI bundle summary --output json | jq -r '.resources.dashboards.my_dashboard.id')
+echo "$dashboard_id:DASHBOARD_ID" >> ACC_REPLS
+
 # Change the name
 export NAME="dashboard2"
 deploy_dashboard

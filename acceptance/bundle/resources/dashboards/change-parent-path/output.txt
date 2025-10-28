@@ -10,7 +10,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> [CLI] lakeview get [DASHBOARD_ID]
+>>> [CLI] lakeview get [ORIGINAL_DASHBOARD_ID]
 {
   "display_name": "test dashboard",
   "lifecycle_state": "ACTIVE",
@@ -35,7 +35,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> [CLI] lakeview get [DASHBOARD_ID]
+>>> [CLI] lakeview get [NEW_DASHBOARD_ID]
 {
   "display_name": "test dashboard",
   "lifecycle_state": "ACTIVE",

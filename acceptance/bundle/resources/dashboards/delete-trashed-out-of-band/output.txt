@@ -14,11 +14,35 @@ Deployment complete!
 >>> [CLI] lakeview trash [DASHBOARD_ID]
 
 >>> [CLI] bundle plan
+Warning: dashboard "dashboard1" has been modified remotely
+  at resources.dashboards.dashboard1
+  in databricks.yml:7:7
+
+This dashboard has been modified remotely since the last bundle deployment.
+These modifications are untracked and will be overwritten on deploy.
+
+Make sure that the local dashboard definition matches what you intend to deploy
+before proceeding with the deployment.
+
+Run `databricks bundle deploy --force` to bypass this error.
+
 create dashboards.dashboard1
 
 Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle debug plan
+Warning: dashboard "dashboard1" has been modified remotely
+  at resources.dashboards.dashboard1
+  in databricks.yml:7:7
+
+This dashboard has been modified remotely since the last bundle deployment.
+These modifications are untracked and will be overwritten on deploy.
+
+Make sure that the local dashboard definition matches what you intend to deploy
+before proceeding with the deployment.
+
+Run `databricks bundle deploy --force` to bypass this error.
+
 
 >>> [CLI] bundle destroy --auto-approve
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/delete-trashed-out-of-band-[UNIQUE_NAME]/default

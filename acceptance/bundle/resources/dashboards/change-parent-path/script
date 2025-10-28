@@ -21,9 +21,17 @@ deploy_dashboard() {
 # Create the dashboard with initial parent_path
 deploy_dashboard
 
+# Capture the dashboard ID as a replacement.
+dashboard_id=$($CLI bundle summary --output json | jq -r '.resources.dashboards.my_dashboard.id')
+echo "$dashboard_id:ORIGINAL_DASHBOARD_ID" >> ACC_REPLS
+
 # Change the parent_path - this should trigger a recreate (delete + create)
 export PARENT_PATH="/Users/$USERNAME/.bundle/change-parent-path-$UNIQUE_NAME/default/resources2"
 deploy_dashboard
+
+# Capture the new dashboard ID as a replacement.
+new_dashboard_id=$($CLI bundle summary --output json | jq -r '.resources.dashboards.my_dashboard.id')
+echo "$new_dashboard_id:NEW_DASHBOARD_ID" >> ACC_REPLS
 
 # Print API requests made to create parent_path or create / update / delete the dashboard.
 cat out.requests.txt | \

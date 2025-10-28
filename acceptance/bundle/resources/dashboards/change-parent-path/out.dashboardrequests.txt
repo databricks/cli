@@ -27,7 +27,7 @@
 }
 {
   "method": "POST",
-  "path": "/api/2.0/lakeview/dashboards/[DASHBOARD_ID]/published",
+  "path": "/api/2.0/lakeview/dashboards/[ORIGINAL_DASHBOARD_ID]/published",
   "body": {
     "embed_credentials": false,
     "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
@@ -35,7 +35,7 @@
 }
 {
   "method": "DELETE",
-  "path": "/api/2.0/lakeview/dashboards/[DASHBOARD_ID]"
+  "path": "/api/2.0/lakeview/dashboards/[ORIGINAL_DASHBOARD_ID]"
 }
 {
   "method": "POST",
@@ -66,7 +66,7 @@
 }
 {
   "method": "POST",
-  "path": "/api/2.0/lakeview/dashboards/[DASHBOARD_ID]/published",
+  "path": "/api/2.0/lakeview/dashboards/[NEW_DASHBOARD_ID]/published",
   "body": {
     "embed_credentials": false,
     "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
