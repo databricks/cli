@@ -14,13 +14,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func createTestServer(t *testing.T, maxClients int, shutdownDelay time.Duration) *httptest.Server {
-	ctx := t.Context()
+	ctx := cmdio.MockDiscard(t.Context())
 	connections := NewConnectionsManager(maxClients, shutdownDelay)
 	proxyServer := NewProxyServer(ctx, connections, func(ctx context.Context) *exec.Cmd {
 		// 'cat' command reads each line from stdin and sends it to stdout, so we can test end-to-end proxying.
@@ -31,7 +32,7 @@ func createTestServer(t *testing.T, maxClients int, shutdownDelay time.Duration)
 }
 
 func createTestClient(t *testing.T, serverURL string, requestHandoverTick func() <-chan time.Time, errChan chan error) (io.WriteCloser, *testBuffer) {
-	ctx := t.Context()
+	ctx := cmdio.MockDiscard(t.Context())
 	clientInput, clientInputWriter := io.Pipe()
 	clientOutput := newTestBuffer(t)
 	wsURL := "ws" + serverURL[4:]

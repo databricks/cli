@@ -80,6 +80,7 @@ Use after deployment to quickly navigate to your resources in the workspace.`,
 		if b == nil || logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}
+		ctx = cmd.Context()
 
 		phases.Initialize(ctx, b)
 		if logdiag.HasError(ctx) {

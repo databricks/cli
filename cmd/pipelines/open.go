@@ -64,6 +64,7 @@ If there is only one pipeline in the project, KEY is optional and the pipeline w
 		if b == nil || logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}
+		ctx = cmd.Context()
 
 		phases.Initialize(ctx, b)
 		if logdiag.HasError(ctx) {
