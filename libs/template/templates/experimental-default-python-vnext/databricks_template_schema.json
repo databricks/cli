@@ -84,6 +84,14 @@
                 "sql"
             ],
             "order": 9
+        },
+        "enable_pydabs": {
+            "//": "This property is always set to 'no' for experimental-default-python-vnext",
+            "skip_prompt_if": {},
+            "type": "string",
+            "default": "no",
+            "description": "Use Python instead of YAML for resource definitions",
+            "order": 10
         }
     },
     "success_message": "\n✨ Your new project has been created in the '{{.project_name}}' directory!\n\nPlease refer to the README.md file for \"getting started\" instructions.\nSee also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html."

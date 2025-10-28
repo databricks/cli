@@ -36,14 +36,6 @@
             "enum": ["yes", "no"],
             "description": "Use serverless compute",
             "order": 5
-        },
-        "enable_pydabs": {
-            "type": "string",
-            "default": "no",
-            "enum": ["yes", "no"],
-            "skip_prompt_if": {},
-            "description": "Enable PyDABs (Python for Databricks Asset Bundles)",
-            "order": 6
         }
     },
     "success_message": "Workspace to use (auto-detected, edit in '{{.project_name}}/databricks.yml'): {{workspace_host}}\n\n✨ Your new project has been created in the '{{.project_name}}' directory!\n\nPlease refer to the README.md file for \"getting started\" instructions.\nSee also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html."
