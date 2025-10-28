@@ -95,6 +95,7 @@ func prepareBundleForValidate(cmd *cobra.Command, includeLocations bool) *bundle
 	if b == nil || logdiag.HasError(ctx) {
 		return b
 	}
+	ctx = cmd.Context()
 
 	phases.Initialize(ctx, b)
 

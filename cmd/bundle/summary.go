@@ -115,6 +115,7 @@ func prepareBundleForSummary(cmd *cobra.Command, forcePull, includeLocations boo
 	if b == nil || logdiag.HasError(ctx) {
 		return nil
 	}
+	ctx = cmd.Context()
 
 	phases.Initialize(ctx, b)
 	if logdiag.HasError(ctx) {
