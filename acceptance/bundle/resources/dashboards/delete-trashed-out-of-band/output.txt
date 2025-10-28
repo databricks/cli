@@ -13,6 +13,13 @@ Deployment complete!
 
 >>> [CLI] lakeview trash [DASHBOARD_ID]
 
+>>> [CLI] bundle plan
+create dashboards.dashboard1
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle debug plan
+
 >>> [CLI] bundle destroy --auto-approve
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/delete-trashed-out-of-band-[UNIQUE_NAME]/default
 
