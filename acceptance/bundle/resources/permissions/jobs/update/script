@@ -1,0 +1,57 @@
+print_requests() {
+    jq 'select(.path | contains("/jobs/")) | select(.method != "GET")' < out.requests.txt
+    rm out.requests.txt
+}
+
+cp databricks.yml databricks.yml.saved
+trace $CLI bundle debug plan > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle deploy
+trace print_requests > out.requests_create.json
+trace $CLI bundle plan
+
+job_id="$(read_id.py jobs job_with_permissions)"
+echo "$job_id:JOB_ID" >> ACC_REPLS
+
+trace $CLI permissions get jobs "$job_id"
+rm -f out.requests.txt
+
+title "Update one permission and deploy again\n"
+update_file.py databricks.yml CAN_VIEW CAN_MANAGE
+trace $CLI bundle debug plan > out.plan_update.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle deploy
+trace print_requests > out.requests_update.json
+trace $CLI bundle plan
+
+title "Delete one permission and deploy again\n"
+grep -v DELETE_ONE databricks.yml > tmp.yml && mv tmp.yml databricks.yml
+trace $CLI bundle debug plan > out.plan_delete_one.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle deploy
+trace print_requests > out.requests_delete_one.json
+trace $CLI bundle plan
+
+title "Delete the whole block and deploy again\n"
+grep -v PERMISSIONS databricks.yml > tmp.yml && mv tmp.yml databricks.yml
+trace $CLI bundle debug plan > out.plan_delete_all.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle deploy
+trace print_requests > out.requests_delete_all.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan
+
+title "Restore original config\n"
+trace diff.py databricks.yml.saved databricks.yml
+
+mv databricks.yml.saved databricks.yml
+trace $CLI bundle debug plan > out.plan_restore.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle deploy
+trace print_requests > out.requests_restore_original.json
+trace $CLI bundle plan
+
+title "Set permissions: []\n"
+grep -v '(PERMISSIONS|DELETE_ONE)' databricks.yml > tmp.yml && mv tmp.yml databricks.yml
+update_file.py databricks.yml '# permissions: [] # EXPLICIT_EMPTY' 'permissions: [] # EXPLICIT_EMPTY'
+trace $CLI bundle debug plan > out.plan_set_empty.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle deploy
+trace print_requests > out.requests_set_empty.$DATABRICKS_BUNDLE_ENGINE.json
+
+trace $CLI bundle destroy --auto-approve
+trace print_requests > out.requests_destroy.$DATABRICKS_BUNDLE_ENGINE.json
+#rm -fr .databricks

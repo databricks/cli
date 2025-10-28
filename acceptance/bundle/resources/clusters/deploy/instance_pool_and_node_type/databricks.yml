@@ -1,0 +1,17 @@
+bundle:
+  name: test-deploy-cluster-instance-pool
+
+resources:
+  clusters:
+    cluster1:
+      cluster_name: test-cluster
+      spark_version: 13.3.x-scala2.12
+      node_type_id: i3.xlarge
+      instance_pool_id: ip-1234567890
+      enable_elastic_disk: true
+      aws_attributes:
+        availability: "ON_DEMAND"
+        ebs_volume_type: "GENERAL_PURPOSE_SSD"
+      num_workers: 2
+      spark_conf:
+        "spark.executor.memory": "2g"

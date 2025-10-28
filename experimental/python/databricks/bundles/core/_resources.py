@@ -27,10 +27,9 @@ class Resources:
 
     .. code-block:: yaml
 
-        experimental:
-          python:
-            resources:
-              - "resources:load_resources"
+        python:
+          resources:
+            - "resources:load_resources"
 
     `load_resources` function can be implemented using built-in functions:
 

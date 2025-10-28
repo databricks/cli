@@ -17,7 +17,10 @@ Deployment complete!
     "name": "myappname"
   },
   "method": "POST",
-  "path": "/api/2.0/apps"
+  "path": "/api/2.0/apps",
+  "q": {
+    "no_compute": "true"
+  }
 }
 
 >>> [CLI] bundle summary
@@ -106,7 +109,10 @@ Deployment complete!
     "name": "mynewappname"
   },
   "method": "POST",
-  "path": "/api/2.0/apps"
+  "path": "/api/2.0/apps",
+  "q": {
+    "no_compute": "true"
+  }
 }
 
 >>> [CLI] bundle plan

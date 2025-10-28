@@ -139,6 +139,7 @@ Example usage:
 		if b == nil || logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}
+		ctx = cmd.Context()
 
 		// If user runs the bundle run command as:
 		// databricks bundle run -- <command> <args>

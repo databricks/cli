@@ -12,9 +12,7 @@ import (
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
@@ -53,6 +51,7 @@ Typical use cases:
 		if b == nil || logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}
+		ctx = cmd.Context()
 
 		bundle.ApplyFuncContext(ctx, b, func(ctx context.Context, b *bundle.Bundle) {
 			// If `--force-lock` is specified, force acquisition of the deployment lock.
@@ -66,15 +65,6 @@ Typical use cases:
 		// is not possible
 		if !term.IsTerminal(int(os.Stderr.Fd())) && !autoApprove {
 			return errors.New("please specify --auto-approve to skip interactive confirmation checks for non tty consoles")
-		}
-
-		// Check auto-approve is selected for json logging
-		logger, ok := cmdio.FromContext(ctx)
-		if !ok {
-			return errors.New("progress logger not found")
-		}
-		if logger.Mode == flags.ModeJson && !autoApprove {
-			return errors.New("please specify --auto-approve since selected logging format is json")
 		}
 
 		phases.Initialize(ctx, b)

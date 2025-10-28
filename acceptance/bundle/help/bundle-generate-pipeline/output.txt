@@ -14,6 +14,9 @@ Examples:
   databricks bundle generate pipeline --existing-pipeline-id def456 \
     --key data_transformation --config-dir resources --source-dir src
 
+  # Generate and automatically bind to the existing pipeline
+  databricks bundle generate pipeline --existing-pipeline-id abc123 --key etl_pipeline --bind
+
 What gets generated:
 - Pipeline configuration YAML file with settings and libraries
 - Pipeline notebooks downloaded to the source directory
@@ -25,6 +28,7 @@ Usage:
   databricks bundle generate pipeline [flags]
 
 Flags:
+  -b, --bind                          automatically bind the generated resource to the existing resource
   -d, --config-dir string             Dir path where the output config will be stored (default "resources")
       --existing-pipeline-id string   ID of the pipeline to generate config for
   -f, --force                         Force overwrite existing files in the output directory

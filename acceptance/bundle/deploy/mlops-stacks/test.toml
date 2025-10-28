@@ -7,6 +7,14 @@ Ignore = [
     "config.json"
 ]
 
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform"]
+# On direct, this fails with
+#        +Endpoint: PUT [DATABRICKS_URL]/api/2.0/permissions/registered-models/%5Bdev%20[USERNAME]%5D%20dev-project_name_[UNIQUE_NAME]-model
+#        +HTTP Status: 400 Bad Request
+#        +API error_code: INVALID_PARAMETER_VALUE
+#        +API message: '[dev [USERNAME]] dev-project_name_[UNIQUE_NAME]-model' is not a valid registered model ID.
+
+
 [[Repls]]
 Old = "aws|azure|gcp"
 New = "[CLOUD_ENV_BASE]"

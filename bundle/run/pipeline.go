@@ -106,13 +106,9 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (output.RunOutp
 
 	// setup progress logger and tracker to query events
 	updateTracker := progress.NewUpdateTracker(pipelineID, updateID, w)
-	progressLogger, ok := cmdio.FromContext(ctx)
-	if !ok {
-		return nil, errors.New("no progress logger found")
-	}
 
 	// Log the pipeline update URL as soon as it is available.
-	progressLogger.Log(progress.NewPipelineUpdateUrlEvent(w.Config.Host, updateID, pipelineID))
+	cmdio.Log(ctx, progress.NewPipelineUpdateUrlEvent(w.Config.Host, updateID, pipelineID))
 
 	if opts.NoWait {
 		return &output.PipelineOutput{
@@ -129,7 +125,7 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (output.RunOutp
 			return nil, err
 		}
 		for _, event := range events {
-			progressLogger.Log(&event)
+			cmdio.Log(ctx, &event)
 			log.Info(ctx, event.String())
 		}
 

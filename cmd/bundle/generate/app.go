@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle/generate"
+	"github.com/databricks/cli/cmd/bundle/deployment"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dyn"
@@ -20,6 +21,7 @@ func NewGenerateAppCommand() *cobra.Command {
 	var sourceDir string
 	var appName string
 	var force bool
+	var bind bool
 
 	cmd := &cobra.Command{
 		Use:   "app",
@@ -37,6 +39,9 @@ Examples:
   databricks bundle generate app --existing-app-name data-viewer \
     --key data_app --config-dir resources --source-dir src/apps
 
+  # Generate and automatically bind to the existing app
+  databricks bundle generate app --existing-app-name my-app --key analytics_app --bind
+
 What gets generated:
 - App configuration YAML file with app settings and dependencies
 - App source files downloaded to the specified source directory
@@ -53,6 +58,7 @@ per target environment.`,
 	cmd.Flags().StringVarP(&configDir, "config-dir", "d", "resources", `Directory path where the output bundle config will be stored`)
 	cmd.Flags().StringVarP(&sourceDir, "source-dir", "s", "src/app", `Directory path where the app files will be stored`)
 	cmd.Flags().BoolVarP(&force, "force", "f", false, `Force overwrite existing files in the output directory`)
+	cmd.Flags().BoolVarP(&bind, "bind", "b", false, `automatically bind the generated app config to the existing app`)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := logdiag.InitContext(cmd.Context())
@@ -120,6 +126,11 @@ per target environment.`,
 		}
 
 		cmdio.LogString(ctx, "App configuration successfully saved to "+filename)
+
+		if bind {
+			return deployment.BindResource(cmd, appKey, app.Name, true, false)
+		}
+
 		return nil
 	}
 

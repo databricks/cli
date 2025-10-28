@@ -64,6 +64,7 @@ If there is only one pipeline in the project, KEY is optional and the pipeline w
 		if b == nil || logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}
+		ctx = cmd.Context()
 
 		phases.Initialize(ctx, b)
 		if logdiag.HasError(ctx) {
@@ -85,17 +86,6 @@ If there is only one pipeline in the project, KEY is optional and the pipeline w
 
 		if forcePull || noCache {
 			bundle.ApplyContext(ctx, b, statemgmt.StatePull())
-			if logdiag.HasError(ctx) {
-				return root.ErrAlreadyPrinted
-			}
-
-			if !b.DirectDeployment {
-				bundle.ApplySeqContext(ctx, b,
-					terraform.Interpolate(),
-					terraform.Write(),
-				)
-			}
-
 			if logdiag.HasError(ctx) {
 				return root.ErrAlreadyPrinted
 			}

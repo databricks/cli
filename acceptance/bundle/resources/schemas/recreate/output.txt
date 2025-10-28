@@ -47,7 +47,10 @@ Deployment complete!
 >>> print_requests
 {
   "method": "DELETE",
-  "path": "/api/2.1/unity-catalog/schemas/main.myschema"
+  "path": "/api/2.1/unity-catalog/schemas/main.myschema",
+  "q": {
+    "force": "true"
+  }
 }
 {
   "method": "POST",

@@ -115,6 +115,7 @@ func prepareBundleForSummary(cmd *cobra.Command, forcePull, includeLocations boo
 	if b == nil || logdiag.HasError(ctx) {
 		return nil
 	}
+	ctx = cmd.Context()
 
 	phases.Initialize(ctx, b)
 	if logdiag.HasError(ctx) {
@@ -132,18 +133,6 @@ func prepareBundleForSummary(cmd *cobra.Command, forcePull, includeLocations boo
 
 	if forcePull || noCache {
 		bundle.ApplyContext(ctx, b, statemgmt.StatePull())
-
-		if logdiag.HasError(ctx) {
-			return nil
-		}
-
-		if !b.DirectDeployment {
-			bundle.ApplySeqContext(ctx, b,
-				terraform.Interpolate(),
-				terraform.Write(),
-			)
-		}
-
 		if logdiag.HasError(ctx) {
 			return nil
 		}

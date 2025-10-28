@@ -85,6 +85,7 @@ Use 'databricks bundle deploy' for full resource deployment.`,
 		if b == nil || logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}
+		ctx = cmd.Context()
 
 		// Run initialize phase to make sure paths are set.
 		phases.Initialize(ctx, b)

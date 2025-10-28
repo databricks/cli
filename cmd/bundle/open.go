@@ -80,6 +80,7 @@ Use after deployment to quickly navigate to your resources in the workspace.`,
 		if b == nil || logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}
+		ctx = cmd.Context()
 
 		phases.Initialize(ctx, b)
 		if logdiag.HasError(ctx) {
@@ -101,17 +102,6 @@ Use after deployment to quickly navigate to your resources in the workspace.`,
 
 		if forcePull || noCache {
 			bundle.ApplyContext(ctx, b, statemgmt.StatePull())
-			if logdiag.HasError(ctx) {
-				return root.ErrAlreadyPrinted
-			}
-
-			if !b.DirectDeployment {
-				bundle.ApplySeqContext(ctx, b,
-					terraform.Interpolate(),
-					terraform.Write(),
-				)
-			}
-
 			if logdiag.HasError(ctx) {
 				return root.ErrAlreadyPrinted
 			}

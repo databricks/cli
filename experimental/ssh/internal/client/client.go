@@ -264,7 +264,10 @@ func runSSHProxy(ctx context.Context, client *databricks.WorkspaceClient, server
 	createConn := func(ctx context.Context, connID string) (*websocket.Conn, error) {
 		return createWebsocketConnection(ctx, client, connID, opts.ClusterID, serverPort)
 	}
-	return proxy.RunClientProxy(ctx, os.Stdin, os.Stdout, opts.HandoverTimeout, createConn)
+	requestHandoverTick := func() <-chan time.Time {
+		return time.After(opts.HandoverTimeout)
+	}
+	return proxy.RunClientProxy(ctx, os.Stdin, os.Stdout, requestHandoverTick, createConn)
 }
 
 func checkClusterState(ctx context.Context, client *databricks.WorkspaceClient, clusterID string, autoStart bool) error {

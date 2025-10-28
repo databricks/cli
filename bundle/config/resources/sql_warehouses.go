@@ -10,16 +10,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/sql"
 )
 
-type SqlWarehousePermissionLevel string
-
-type SqlWarehousePermission struct {
-	Level SqlWarehousePermissionLevel `json:"level"`
-
-	UserName             string `json:"user_name,omitempty"`
-	ServicePrincipalName string `json:"service_principal_name,omitempty"`
-	GroupName            string `json:"group_name,omitempty"`
-}
-
 type SqlWarehouse struct {
 	BaseResource
 	sql.CreateWarehouseRequest

@@ -3,7 +3,7 @@ Cloud = false
 
 [EnvMatrix]
   DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct-exp"]
-  INCLUDE_DLT = ["yes", "no"]
-  INCLUDE_NOTEBOOK = ["yes", "no"]
+  INCLUDE_JOB = ["yes", "no"]
+  INCLUDE_PIPELINE = ["yes", "no"]
   INCLUDE_PYTHON = ["yes", "no"]
   SERVERLESS = ["yes", "no"]

@@ -1,0 +1,16 @@
+{
+  "method": "PUT",
+  "path": "/api/2.0/permissions/pipelines/[PIPELINE_ID]",
+  "body": {
+    "access_control_list": [
+      {
+        "permission_level": "CAN_MANAGE",
+        "user_name": "viewer@example.com"
+      },
+      {
+        "permission_level": "IS_OWNER",
+        "user_name": "[USERNAME]"
+      }
+    ]
+  }
+}

@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/stretchr/testify/assert"
@@ -16,7 +17,7 @@ import (
 )
 
 func TestValidateClusterAccess_SingleUser(t *testing.T) {
-	ctx := context.Background()
+	ctx := cmdio.MockDiscard(context.Background())
 	m := mocks.NewMockWorkspaceClient(t)
 	clustersAPI := m.GetMockClustersAPI()
 
@@ -29,7 +30,7 @@ func TestValidateClusterAccess_SingleUser(t *testing.T) {
 }
 
 func TestValidateClusterAccess_InvalidAccessMode(t *testing.T) {
-	ctx := context.Background()
+	ctx := cmdio.MockDiscard(context.Background())
 	m := mocks.NewMockWorkspaceClient(t)
 	clustersAPI := m.GetMockClustersAPI()
 
@@ -43,7 +44,7 @@ func TestValidateClusterAccess_InvalidAccessMode(t *testing.T) {
 }
 
 func TestValidateClusterAccess_ClusterNotFound(t *testing.T) {
-	ctx := context.Background()
+	ctx := cmdio.MockDiscard(context.Background())
 	m := mocks.NewMockWorkspaceClient(t)
 	clustersAPI := m.GetMockClustersAPI()
 
@@ -315,7 +316,7 @@ func TestUpdateSSHConfigFile_HandlesReadError(t *testing.T) {
 }
 
 func TestSetup_SuccessfulWithNewConfigFile(t *testing.T) {
-	ctx := context.Background()
+	ctx := cmdio.MockDiscard(context.Background())
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, "ssh_config")
 
@@ -349,7 +350,7 @@ func TestSetup_SuccessfulWithNewConfigFile(t *testing.T) {
 }
 
 func TestSetup_SuccessfulWithExistingConfigFile(t *testing.T) {
-	ctx := context.Background()
+	ctx := cmdio.MockDiscard(context.Background())
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, "ssh_config")
 
@@ -393,7 +394,7 @@ func TestSetup_SuccessfulWithExistingConfigFile(t *testing.T) {
 }
 
 func TestSetup_DoesNotOverrideExistingHost(t *testing.T) {
-	ctx := context.Background()
+	ctx := cmdio.MockDiscard(context.Background())
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, "ssh_config")
 

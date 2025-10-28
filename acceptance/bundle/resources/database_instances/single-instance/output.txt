@@ -29,7 +29,7 @@ Deployment complete!
 >>> [CLI] database get-database-instance test-db-instance-single-[UNIQUE_NAME]
 {
   "capacity": "CU_1",
-  "creation_time": "[TIMESTAMP]Z",
+  "creation_time": "[TIMESTAMP]",
   "creator": "[USERNAME]",
   "effective_capacity": "CU_1",
   "effective_enable_pg_native_login": false,

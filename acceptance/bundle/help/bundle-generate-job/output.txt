@@ -13,6 +13,9 @@ Examples:
   databricks bundle generate job --existing-job-id 67890 \
     --key data_pipeline --config-dir resources --source-dir src
 
+  # Generate and automatically bind to the existing job
+  databricks bundle generate job --existing-job-id 12345 --key my_etl_job --bind
+
 What gets generated:
 - Job configuration YAML file in the resources directory
 - Any associated notebook or Python files in the source directory
@@ -25,6 +28,7 @@ Usage:
   databricks bundle generate job [flags]
 
 Flags:
+  -b, --bind                  automatically bind the generated resource to the existing resource
   -d, --config-dir string     Dir path where the output config will be stored (default "resources")
       --existing-job-id int   Job ID of the job to generate config for
   -f, --force                 Force overwrite existing files in the output directory

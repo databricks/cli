@@ -23,6 +23,7 @@ func NewPlanCommand() *cobra.Command {
 			if b == nil || logdiag.HasError(ctx) {
 				return root.ErrAlreadyPrinted
 			}
+			ctx = cmd.Context()
 			plan, err := utils.GetPlan(ctx, b)
 			if err != nil {
 				return err

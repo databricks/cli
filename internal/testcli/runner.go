@@ -16,7 +16,6 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/flags"
 )
 
 // Helper for running the root command in the background.
@@ -101,13 +100,8 @@ func (r *Runner) RunBackground() {
 	var stdoutW, stderrW io.WriteCloser
 	stdoutR, stdoutW = io.Pipe()
 	stderrR, stderrW = io.Pipe()
-	ctx := cmdio.NewContext(r.ctx, &cmdio.Logger{
-		Mode:   flags.ModeAppend,
-		Reader: bufio.Reader{},
-		Writer: stderrW,
-	})
 
-	cli := cmd.New(ctx)
+	cli := cmd.New(r.ctx)
 	cli.SetOut(stdoutW)
 	cli.SetErr(stderrW)
 	cli.SetArgs(r.args)
@@ -116,7 +110,7 @@ func (r *Runner) RunBackground() {
 	}
 
 	errch := make(chan error)
-	ctx, cancel := context.WithCancel(ctx)
+	ctx, cancel := context.WithCancel(r.ctx)
 
 	// Tee stdout/stderr to buffers.
 	stdoutR = io.TeeReader(stdoutR, &r.stdout)
@@ -183,13 +177,8 @@ func (r *Runner) RunBackground() {
 func (r *Runner) Run() (bytes.Buffer, bytes.Buffer, error) {
 	r.Helper()
 	var stdout, stderr bytes.Buffer
-	ctx := cmdio.NewContext(r.ctx, &cmdio.Logger{
-		Mode:   flags.ModeAppend,
-		Reader: bufio.Reader{},
-		Writer: &stderr,
-	})
 
-	cli := cmd.New(ctx)
+	cli := cmd.New(r.ctx)
 	cli.SetOut(&stdout)
 	cli.SetErr(&stderr)
 	cli.SetArgs(r.args)
@@ -198,7 +187,7 @@ func (r *Runner) Run() (bytes.Buffer, bytes.Buffer, error) {
 		r.Logf("  args: %s", strings.Join(r.args, ", "))
 	}
 
-	err := root.Execute(ctx, cli)
+	err := root.Execute(r.ctx, cli)
 	if err != nil {
 		if r.Verbose {
 			r.Logf(" error: %s", err)

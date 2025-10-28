@@ -57,6 +57,7 @@ See https://docs.databricks.com/en/dev-tools/bundles/index.html for more informa
 		if b == nil || logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}
+		ctx = cmd.Context()
 
 		bundle.ApplyFuncContext(ctx, b, func(context.Context, *bundle.Bundle) {
 			b.Config.Bundle.Force = force

@@ -7,13 +7,13 @@ Old = '/world-[0-9]+'
 New = '/world-123456'
 
 [[Repls]]
-Old = 'SSL: certificate subject name .*'
-New = "SSL: no alternative certificate subject name matches target host name 'invalid-domain-123.databricks.com'"
-
-[[Repls]]
-Old = 'schannel: SNI or certificate check failed: .*'
-New = "SSL: no alternative certificate subject name matches target host name 'invalid-domain-123.databricks.com'"
-
+# Depends on system configuration and git version.
+# Examples:
+# - fatal: unable to access 'https://invalid-domain-123.databricks.com/hello/world/': SSL: no alternative certificate ...
+# - fatal: unable to access 'https://invalid-domain-123.databricks.com/hello/world/': SSL: certificate subject name ...
+# - fatal: repository 'https://invalid-domain-123.databricks.com/hello/world/' not found
+Old = "fatal: unable to access 'https://invalid-domain-123.databricks.com/hello/world/': .*"
+New = "fatal: repository 'https://invalid-domain-123.databricks.com/hello/world/' not found"
 
 [[Repls]]
 Old = '''Cloning into '[^']+''''

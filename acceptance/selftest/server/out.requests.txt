@@ -4,9 +4,15 @@
 }
 {
   "method": "GET",
-  "path": "/custom/endpoint"
+  "path": "/custom/endpoint",
+  "q": {
+    "query": "param"
+  }
 }
 {
   "method": "GET",
-  "path": "/api/2.0/workspace/get-status"
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/a/b/c"
+  }
 }

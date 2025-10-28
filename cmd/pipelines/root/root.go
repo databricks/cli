@@ -36,10 +36,12 @@ func New(ctx context.Context) *cobra.Command {
 
 	// Initialize flags
 	logFlags := initLogFlags(cmd)
-	progressLoggerFlag := initProgressLoggerFlag(cmd, logFlags)
 	outputFlag := initOutputFlag(cmd)
 	initProfileFlag(cmd)
 	initTargetFlag(cmd)
+
+	// Deprecated flag. Warn if it is specified.
+	initProgressLoggerFlag(cmd, logFlags)
 
 	cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
@@ -55,11 +57,6 @@ func New(ctx context.Context) *cobra.Command {
 			slog.String("version", build.GetInfo().Version),
 			slog.String("args", strings.Join(os.Args, ", ")))
 
-		// Configure progress logger
-		ctx, err = progressLoggerFlag.initializeContext(ctx)
-		if err != nil {
-			return err
-		}
 		// set context, so that initializeIO can have the current context
 		cmd.SetContext(ctx)
 

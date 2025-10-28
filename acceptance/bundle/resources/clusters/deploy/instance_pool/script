@@ -1,0 +1,3 @@
+trace $CLI bundle deploy
+
+trace print_requests.py //clusters/create | jq -s 'sort_by(.body.cluster_name)[]'

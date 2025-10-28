@@ -1,0 +1,42 @@
+bundle:
+  name: test-deploy-cluster-instance-pool
+
+resources:
+  clusters:
+    # expecting aws_attributes to be empty since instance_pool_id is specified
+    # expecting enable_elastic_disk to be false since instance_pool_id is specified
+    cluster1:
+      cluster_name: test-cluster-1
+      spark_version: 13.3.x-scala2.12
+      instance_pool_id: ip-1234567890
+      enable_elastic_disk: true
+      aws_attributes:
+        availability: "ON_DEMAND"
+        ebs_volume_type: "GENERAL_PURPOSE_SSD"
+      num_workers: 2
+      spark_conf:
+        "spark.executor.memory": "2g"
+    # expecting azure_attributes to be empty since instance_pool_id is specified
+    # expecting enable_elastic_disk to be false since instance_pool_id is specified
+    cluster2:
+      cluster_name: test-cluster-2
+      spark_version: 13.3.x-scala2.12
+      instance_pool_id: ip-1234567890
+      enable_elastic_disk: true
+      azure_attributes:
+        spot_bid_max_price: 20
+      num_workers: 2
+      spark_conf:
+        "spark.executor.memory": "2g"
+    # expecting gcp_attributes to be empty since instance_pool_id is specified
+    # expecting enable_elastic_disk to be false since instance_pool_id is specified
+    cluster3:
+      cluster_name: test-cluster-3
+      spark_version: 13.3.x-scala2.12
+      instance_pool_id: ip-1234567890
+      enable_elastic_disk: true
+      gcp_attributes:
+        local_ssd_count: 2
+      num_workers: 2
+      spark_conf:
+        "spark.executor.memory": "2g"

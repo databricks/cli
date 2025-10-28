@@ -1,0 +1,14 @@
+bundle:
+  name: test-bundle
+
+resources:
+  schemas:
+    foo:
+      catalog_name: mycatalog
+      name: myschema
+
+sync:
+  paths:
+    - empty.py
+    # on windows, this is checked out with \r\n
+    #- databricks.yml

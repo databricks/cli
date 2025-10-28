@@ -13,7 +13,10 @@
 }
 {
   "method": "GET",
-  "path": "/api/2.0/workspace/get-status"
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Repos/me@databricks.com/test-repo"
+  }
 }
 {
   "method": "GET",
