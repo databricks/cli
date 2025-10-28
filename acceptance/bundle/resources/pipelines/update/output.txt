@@ -88,5 +88,3 @@ State not found for pipelines.my
 
 >>> musterr [CLI] pipelines get [PIPELINE_ID]
 Error: The specified pipeline [PIPELINE_ID] was not found.
-
-Exit code (musterr): 1

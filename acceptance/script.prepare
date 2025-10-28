@@ -23,7 +23,10 @@ musterr() {
         >&2 printf "\nUnexpected success\n"
         exit 1
     fi
-    >&2 printf "\nExit code (musterr): $exit_code\n"
+    # This can add a race in output, for example:
+    # musterr some_script | contains.py some_some_string
+    # both musterr and contains.py write to stderr at the same time
+    #>&2 printf "\nExit code (musterr): $exit_code\n"
 }
 
 trace() {
