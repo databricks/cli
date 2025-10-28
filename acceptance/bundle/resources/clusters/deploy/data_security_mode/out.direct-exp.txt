@@ -1,0 +1,114 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle debug plan
+{
+  "plan": {
+    "resources.clusters.test_cluster": {
+      "action": "update",
+      "new_state": {
+        "config": {
+          "autotermination_minutes": 60,
+          "cluster_name": "test-cluster-[UNIQUE_NAME]",
+          "data_security_mode": "DATA_SECURITY_MODE_STANDARD",
+          "kind": "CLASSIC_PREVIEW",
+          "node_type_id": "[NODE_TYPE_ID]",
+          "num_workers": 2,
+          "spark_conf": {
+            "spark.executor.memory": "2g"
+          },
+          "spark_version": "13.3.x-snapshot-scala2.12"
+        }
+      },
+      "remote_state": {
+        "autotermination_minutes": 60,
+        "azure_attributes": {
+          "availability": "ON_DEMAND_AZURE",
+          "first_on_demand": 1,
+          "spot_bid_max_price": -1
+        },
+        "cluster_id": "[CLUSTER-ID]",
+        "cluster_name": "test-cluster-[UNIQUE_NAME]",
+        "cluster_source": "UI",
+        "creator_user_name": "[USERNAME]",
+        "data_security_mode": "USER_ISOLATION",
+        "default_tags": {
+          "Budget": "opex.eng.deco",
+          "ClusterId": "[CLUSTER-ID]",
+          "ClusterName": "test-cluster-[UNIQUE_NAME]",
+          "Creator": "[USERNAME]",
+          "Owner": "eng-dev-ecosystem-team@databricks.com",
+          "Vendor": "Databricks"
+        },
+        "driver_node_type_id": "[NODE_TYPE_ID]",
+        "enable_elastic_disk": true,
+        "enable_local_disk_encryption": false,
+        "kind": "CLASSIC_PREVIEW",
+        "last_restarted_time": [UNIX_TIME_MILLIS][0],
+        "last_state_loss_time": 0,
+        "node_type_id": "[NODE_TYPE_ID]",
+        "num_workers": 2,
+        "spark_conf": {
+          "spark.executor.memory": "2g"
+        },
+        "spark_version": "13.3.x-snapshot-scala2.12",
+        "spec": {
+          "autotermination_minutes": 60,
+          "cluster_name": "test-cluster-[UNIQUE_NAME]",
+          "data_security_mode": "DATA_SECURITY_MODE_STANDARD",
+          "kind": "CLASSIC_PREVIEW",
+          "node_type_id": "[NODE_TYPE_ID]",
+          "num_workers": 2,
+          "spark_conf": {
+            "spark.executor.memory": "2g"
+          },
+          "spark_version": "13.3.x-snapshot-scala2.12"
+        },
+        "start_time": [UNIX_TIME_MILLIS][0],
+        "state": "PENDING",
+        "state_message": "Finding instances for new nodes, acquiring more instances if necessary"
+      },
+      "changes": {
+        "remote": {
+          "azure_attributes": {
+            "action": "skip",
+            "reason": "server_side_default"
+          },
+          "data_security_mode": {
+            "action": "update"
+          },
+          "driver_node_type_id": {
+            "action": "skip",
+            "reason": "server_side_default"
+          },
+          "enable_elastic_disk": {
+            "action": "skip",
+            "reason": "server_side_default"
+          },
+          "enable_local_disk_encryption": {
+            "action": "skip",
+            "reason": "server_side_default"
+          }
+        }
+      }
+    }
+  }
+}
+
+>>> errcode [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Error: cannot update resources.clusters.test_cluster: updating id=[CLUSTER-ID]: Cluster [CLUSTER-ID] is in unexpected state Pending. (400 INVALID_STATE)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.1/clusters/edit
+HTTP Status: 400 Bad Request
+API error_code: INVALID_STATE
+API message: Cluster [CLUSTER-ID] is in unexpected state Pending.
+
+Updating deployment state...
+
+Exit code: 1
