@@ -49,6 +49,7 @@ func deployCommand() *cobra.Command {
 		if b == nil || logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}
+		ctx = cmd.Context()
 		logdiag.SetCollect(ctx, false)
 
 		diags := logdiag.FlushCollected(ctx)
