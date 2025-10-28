@@ -87,7 +87,7 @@ var databricksTemplates = []Template{
 	{
 		name:        Pydabs,
 		hidden:      false,
-		description: "A variant of 'default-python' template that defines resources in Python instead of YAML",
+		description: "A variant of the 'default-python' template that defines resources in Python instead of YAML",
 		Reader:      &builtinReader{name: string(Pydabs)},
 		Writer:      &writerWithFullTelemetry{defaultWriter: defaultWriter{name: Pydabs}},
 	},
