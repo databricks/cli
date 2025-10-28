@@ -5,14 +5,8 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> [CLI] bundle debug plan
-{
-  "plan": {
-    "resources.clusters.test_cluster": {
-      "action": "skip"
-    }
-  }
-}
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
