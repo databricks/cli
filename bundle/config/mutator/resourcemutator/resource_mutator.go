@@ -172,6 +172,7 @@ func applyNormalizeMutators(ctx context.Context, b *bundle.Bundle) {
 
 		// Reads and updates (typed): resources.jobs.*.**
 		JobClustersFixups(),
+		ClusterFixups(),
 	)
 }
 
