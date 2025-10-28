@@ -17,3 +17,6 @@
 # This test is consistently failing in nightlies timing out when trying to stop an app (Oct 16 2025):
 acceptance TestAccept/bundle/run/app-with-job/DATABRICKS_BUNDLE_ENGINE=direct-exp
 acceptance TestAccept/bundle/run/app-with-job/DATABRICKS_BUNDLE_ENGINE=terraform
+
+# Runaway creation of pipelines for online tables in Azure
+acceptance TestAccept/bundle/resources/synced_database_tables/basic
