@@ -5,7 +5,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> jq select(.method == "POST" and (.path | contains("/clusters/create"))) out.requests.txt
+>>> print_requests.py //clusters/create
 {
   "method": "POST",
   "path": "/api/2.1/clusters/create",
