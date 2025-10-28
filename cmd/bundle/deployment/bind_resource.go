@@ -24,6 +24,7 @@ func BindResource(cmd *cobra.Command, resourceKey, resourceId string, autoApprov
 		return root.ErrAlreadyPrinted
 	}
 
+	ctx = cmd.Context()
 	phases.Initialize(ctx, b)
 	if logdiag.HasError(ctx) {
 		return root.ErrAlreadyPrinted
