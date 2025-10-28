@@ -9,6 +9,7 @@ This file only contains template directives; it is skipped for the actual output
 {{$python_package := eq .include_python "yes"}}
 {{$sql_language := eq .language "sql"}}
 {{$lakeflow_only := eq .lakeflow_only "yes"}}
+{{$pydabs := eq .enable_pydabs "yes"}}
 {{$has_python_package_dir := and (or $python_package $notebook_job $pipeline) (not $lakeflow_only)}}
 
 {{if not $notebook_job}}
@@ -46,7 +47,7 @@ This file only contains template directives; it is skipped for the actual output
   {{skip "{{.project_name}}/fixtures"}}
 {{end}}
 
-{{if (eq .enable_pydabs "yes")}}
+{{if $pydabs}}
   # When PyDABs is enabled, there is always resources/__init__.py and we don't need .gitkeep
   {{skip "{{.project_name}}/resources/.gitkeep"}}
   {{skip "{{.project_name}}/resources/sample_job.job.yml"}}

@@ -1,6 +1,6 @@
 
 >>> [CLI] bundle init pydabs --config-file ./input.json
-Welcome to the default Python template for Databricks Asset Bundles!
+Welcome to PyDABs template for Databricks Asset Bundles!
 
 Answer the following questions to customize your project.
 You can always change your configuration in the databricks.yml file later.
@@ -10,7 +10,7 @@ Note that [DATABRICKS_URL] is used for initialization.
 
 ✨ Your new project has been created in the 'my_pydabs' directory!
 
-To get started, refer to the project README.md file and the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
+To get started, refer to the project README.md file and the documentation at https://docs.databricks.com/dev-tools/bundles/python/index.html.
 
 >>> find my_pydabs -mindepth 1 ! -name pyproject.toml ! -regex .*/resources.* -delete
 

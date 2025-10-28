@@ -9,8 +9,6 @@ bundle:
 {{- if $with_pydabs }}
 
 python:
-  # Activate virtual environment before loading resources defined in Python.
-  # If disabled, defaults to using the Python interpreter available in the current shell.
   venv_path: .venv
   # Functions called to load resources defined in Python. See resources/__init__.py
   resources:

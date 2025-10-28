@@ -1,6 +1,6 @@
 {
     "template_dir": "../default",
-    "welcome_message": "Welcome to the default Python template for Databricks Asset Bundles!\n\nAnswer the following questions to customize your project.\nYou can always change your configuration in the databricks.yml file later.\n\nNote that {{workspace_host}} is used for initialization.\n(For information on how to change your profile, see https://docs.databricks.com/dev-tools/cli/profiles.html.)",
+    "welcome_message": "Welcome to PyDABs template for Databricks Asset Bundles!\n\nAnswer the following questions to customize your project.\nYou can always change your configuration in the databricks.yml file later.\n\nNote that {{workspace_host}} is used for initialization.\n(For information on how to change your profile, see https://docs.databricks.com/dev-tools/cli/profiles.html.)",
     "properties": {
         "project_name": {
             "type": "string",
@@ -85,5 +85,5 @@
             "order": 10
         }
     },
-    "success_message": "\n✨ Your new project has been created in the '{{.project_name}}' directory!\n\nTo get started, refer to the project README.md file and the documentation at https://docs.databricks.com/dev-tools/bundles/index.html."
+    "success_message": "\n✨ Your new project has been created in the '{{.project_name}}' directory!\n\nTo get started, refer to the project README.md file and the documentation at https://docs.databricks.com/dev-tools/bundles/python/index.html."
 }
