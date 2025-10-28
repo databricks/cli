@@ -8,7 +8,6 @@ import (
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
 )
 
@@ -51,30 +50,23 @@ Please run this command before deploying to ensure configuration quality.`,
 			Validate:         true,
 			IncludeLocations: includeLocations,
 		})
-		if err != nil {
-			return err
-		}
 		ctx := cmd.Context()
 
 		if root.OutputType(cmd) == flags.OutputText {
-			err := render.RenderDiagnosticsSummary(ctx, cmd.OutOrStdout(), b)
-			if err != nil {
-				return err
+			err1 := render.RenderDiagnosticsSummary(ctx, cmd.OutOrStdout(), b)
+			if err1 != nil {
+				return err1
 			}
 		}
 
 		if root.OutputType(cmd) == flags.OutputJSON {
-			err := renderJsonOutput(cmd, b)
-			if err != nil {
-				return err
+			err1 := renderJsonOutput(cmd, b)
+			if err1 != nil {
+				return err1
 			}
 		}
 
-		if logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
-		}
-
-		return nil
+		return err
 	}
 
 	return cmd

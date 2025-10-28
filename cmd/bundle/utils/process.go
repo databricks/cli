@@ -19,6 +19,7 @@ import (
 type ProcessOptions struct {
 	InitFunc          func(b *bundle.Bundle)
 	PostInitFunc      func(context context.Context, b *bundle.Bundle) error
+	SkipInitialize    bool
 	ReadState         bool
 	AlwaysPull        bool
 	InitIDs           bool
@@ -36,8 +37,9 @@ func ProcessBundle(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, err
 	cmd.SetContext(ctx)
 
 	b := ConfigureBundleWithVariables(cmd)
+
 	if b == nil || logdiag.HasError(ctx) {
-		return nil, root.ErrAlreadyPrinted
+		return b, root.ErrAlreadyPrinted
 	}
 	ctx = cmd.Context()
 
@@ -45,28 +47,34 @@ func ProcessBundle(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, err
 		bundle.ApplyFuncContext(ctx, b, func(context.Context, *bundle.Bundle) { opts.InitFunc(b) })
 	}
 
-	var outputHandler sync.OutputHandler
-	if opts.Verbose {
-		outputHandler = func(ctx context.Context, c <-chan sync.Event) {
-			sync.TextOutput(ctx, c, cmd.OutOrStdout())
+	if !opts.SkipInitialize {
+		t0 := time.Now()
+		phases.Initialize(ctx, b)
+		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
+			Key:   "phases.Initialize",
+			Value: time.Since(t0).Milliseconds(),
+		})
+		// not checking error right away here, add locations first
+	}
+
+	if b != nil {
+		// Include location information in the output if the flag is set.
+		if opts.IncludeLocations {
+			bundle.ApplyContext(ctx, b, mutator.PopulateLocations())
+			if logdiag.HasError(ctx) {
+				return b, root.ErrAlreadyPrinted
+			}
 		}
 	}
 
-	t0 := time.Now()
-	phases.Initialize(ctx, b)
-	b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
-		Key:   "phases.Initialize",
-		Value: time.Since(t0).Milliseconds(),
-	})
-
 	if logdiag.HasError(ctx) {
-		return nil, root.ErrAlreadyPrinted
+		return b, root.ErrAlreadyPrinted
 	}
 
 	if opts.PostInitFunc != nil {
 		err := opts.PostInitFunc(ctx, b)
 		if err != nil {
-			return nil, err
+			return b, err
 		}
 	}
 
@@ -74,12 +82,12 @@ func ProcessBundle(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, err
 		// PullResourcesState depends on stateFiler which needs b.Config.Workspace.StatePath which is set in phases.Initialize
 		ctx = statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(opts.AlwaysPull))
 		if logdiag.HasError(ctx) {
-			return nil, root.ErrAlreadyPrinted
+			return b, root.ErrAlreadyPrinted
 		}
 		cmd.SetContext(ctx)
 
 		// These are not safe in plan/deploy because they insert empty config settings for deleted resources.
-		if opts.InitIDs {
+		if opts.InitIDs || opts.ErrorOnEmptyState {
 			var modes []statemgmt.LoadMode
 			if opts.ErrorOnEmptyState {
 				modes = append(modes, statemgmt.ErrorOnEmptyState)
@@ -89,17 +97,10 @@ func ProcessBundle(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, err
 				mutator.InitializeURLs(),
 			)
 			if logdiag.HasError(ctx) {
-				return nil, root.ErrAlreadyPrinted
+				return b, root.ErrAlreadyPrinted
 			}
 		}
 
-		// Include location information in the output if the flag is set.
-		if opts.IncludeLocations {
-			bundle.ApplyContext(ctx, b, mutator.PopulateLocations())
-			if logdiag.HasError(ctx) {
-				return nil, root.ErrAlreadyPrinted
-			}
-		}
 	}
 
 	if opts.FastValidate {
@@ -111,14 +112,14 @@ func ProcessBundle(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, err
 		})
 
 		if logdiag.HasError(ctx) {
-			return nil, root.ErrAlreadyPrinted
+			return b, root.ErrAlreadyPrinted
 		}
 	}
 
 	if opts.Validate {
 		validate.Validate(ctx, b)
 		if logdiag.HasError(ctx) {
-			return nil, root.ErrAlreadyPrinted
+			return b, root.ErrAlreadyPrinted
 		}
 	}
 
@@ -131,11 +132,18 @@ func ProcessBundle(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, err
 		})
 
 		if logdiag.HasError(ctx) {
-			return nil, root.ErrAlreadyPrinted
+			return b, root.ErrAlreadyPrinted
 		}
 	}
 
 	if opts.Deploy {
+		var outputHandler sync.OutputHandler
+		if opts.Verbose {
+			outputHandler = func(ctx context.Context, c <-chan sync.Event) {
+				sync.TextOutput(ctx, c, cmd.OutOrStdout())
+			}
+		}
+
 		t3 := time.Now()
 		phases.Deploy(ctx, b, outputHandler)
 		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
@@ -144,7 +152,7 @@ func ProcessBundle(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, err
 		})
 
 		if logdiag.HasError(ctx) {
-			return nil, root.ErrAlreadyPrinted
+			return b, root.ErrAlreadyPrinted
 		}
 	}
 

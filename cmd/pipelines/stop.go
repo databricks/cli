@@ -47,18 +47,19 @@ If there is only one pipeline in the project, KEY is optional and the pipeline w
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		var key string
 		b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
 			ErrorOnEmptyState: true,
+			PostInitFunc: func(ctx context.Context, b *bundle.Bundle) error {
+				var err error
+				key, err = resolveStopArgument(ctx, b, args)
+				return err
+			},
 		})
 		if err != nil {
 			return err
 		}
 		ctx := cmd.Context()
-
-		key, err := resolveStopArgument(ctx, b, args)
-		if err != nil {
-			return err
-		}
 
 		runner, err := keyToRunner(b, key)
 		if err != nil {

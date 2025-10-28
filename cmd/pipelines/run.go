@@ -10,10 +10,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/resources"
 	bundleresources "github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/run"
 	bundlerunoutput "github.com/databricks/cli/bundle/run/output"
+	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdgroup"
@@ -252,9 +254,7 @@ Refreshes all tables in the pipeline unless otherwise specified.`,
 	cmd.Flags().BoolVar(&restart, "restart", false, "Restart the run if it is already running.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
-			ErrorOnEmptyState: true,
-		})
+		b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{})
 		if err != nil {
 			return err
 		}
@@ -263,6 +263,17 @@ Refreshes all tables in the pipeline unless otherwise specified.`,
 		key, _, err := resolveRunArgument(ctx, b, args)
 		if err != nil {
 			return err
+		}
+
+		ctx = statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(true))
+		if logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
+		}
+		cmd.SetContext(ctx)
+
+		bundle.Apply(ctx, b, statemgmt.Load(statemgmt.ErrorOnEmptyState))
+		if logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
 		}
 
 		runner, err := keyToRunner(b, key)
