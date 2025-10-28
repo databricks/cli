@@ -116,7 +116,7 @@ func (r *ResourceCluster) ClassifyChange(change structdiff.Change, remoteState *
 }
 
 func makeCreateCluster(config *compute.ClusterSpec) compute.CreateCluster {
-	return compute.CreateCluster{
+	create := compute.CreateCluster{
 		ApplyPolicyDefaultValues:   config.ApplyPolicyDefaultValues,
 		Autoscale:                  config.Autoscale,
 		AutoterminationMinutes:     config.AutoterminationMinutes,
@@ -152,10 +152,16 @@ func makeCreateCluster(config *compute.ClusterSpec) compute.CreateCluster {
 		WorkloadType:               config.WorkloadType,
 		ForceSendFields:            filterFields[compute.CreateCluster](config.ForceSendFields),
 	}
+
+	if config.Autoscale == nil {
+		create.ForceSendFields = append(create.ForceSendFields, "NumWorkers")
+	}
+
+	return create
 }
 
 func makeEditCluster(id string, config *compute.ClusterSpec) compute.EditCluster {
-	return compute.EditCluster{
+	edit := compute.EditCluster{
 		ClusterId:                  id,
 		ApplyPolicyDefaultValues:   config.ApplyPolicyDefaultValues,
 		Autoscale:                  config.Autoscale,
@@ -191,4 +197,10 @@ func makeEditCluster(id string, config *compute.ClusterSpec) compute.EditCluster
 		WorkloadType:               config.WorkloadType,
 		ForceSendFields:            filterFields[compute.EditCluster](config.ForceSendFields),
 	}
+
+	if config.Autoscale == nil {
+		edit.ForceSendFields = append(edit.ForceSendFields, "NumWorkers")
+	}
+
+	return edit
 }
