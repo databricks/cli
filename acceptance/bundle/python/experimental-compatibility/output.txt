@@ -3,9 +3,8 @@
 {
   "experimental": {
     "python": {
-      "mutators": [
-        "mutators:add_task_1",
-        "mutators:add_task_2"
+      "resources": [
+        "resources:load_resources"
       ]
     }
   },
@@ -19,86 +18,58 @@
         "edit_mode": "UI_LOCKED",
         "format": "MULTI_TASK",
         "max_concurrent_runs": 1,
-        "name": "Untitled",
+        "name": "My Job",
         "queue": {
           "enabled": true
-        },
-        "tasks": [
-          {
-            "task_key": "task_1"
-          },
-          {
-            "task_key": "task_2"
-          }
-        ]
+        }
       }
     }
   },
   "__locations": {
     "files": [
+      "__generated_by_python__.yml",
       "databricks.yml",
-      "mutators.py"
+      "resources.py"
     ],
     "locations": {
       "bundle": [
         [
-          0,
+          1,
           2,
           3
         ]
       ],
-      "python": [
+      "experimental": [
         [
-          0,
-          7,
+          1,
+          11,
           3
         ]
       ],
       "resources": [
         [
           0,
-          12,
-          3
+          1,
+          825
         ]
       ],
       "resources.jobs": [
         [
           0,
-          13,
-          5
+          1,
+          834
         ]
       ],
       "resources.jobs.my_job": [
         [
-          0,
-          14,
-          7
-        ]
-      ],
-      "resources.jobs.my_job.tasks": [
-        [
-          0,
-          14,
-          14
-        ]
-      ],
-      "resources.jobs.my_job.tasks[0]": [
-        [
-          1,
-          8,
-          1
-        ]
-      ],
-      "resources.jobs.my_job.tasks[1]": [
-        [
-          1,
-          8,
+          2,
+          6,
           1
         ]
       ],
       "sync": [
         [
-          0,
+          1,
           4,
           7
         ]
