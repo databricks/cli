@@ -1,0 +1,4 @@
+trace $CLI bundle deploy
+
+trace jq 'select(.method == "POST" and (.path | contains("/clusters/create")))' out.requests.txt  | jq -s 'sort_by(.body.cluster_name)[]'
+rm out.requests.txt
