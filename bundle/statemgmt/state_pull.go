@@ -156,12 +156,9 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 		if lastLineage == nil {
 			lastLineage = state
 		} else if lastLineage.Lineage != state.Lineage {
-			logdiag.LogError(ctx, fmt.Errorf("lineage mismatch in state files: %s vs %s", lastLineage.String(), state.String()))
+			logdiag.LogError(ctx, fmt.Errorf("lineage mismatch in state files: %s", strings.Join(stateStrs, ", ")))
+			return ctx
 		}
-	}
-
-	if logdiag.HasError(ctx) {
-		return ctx
 	}
 
 	if winner.isLocal {
