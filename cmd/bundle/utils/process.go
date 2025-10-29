@@ -17,20 +17,44 @@ import (
 )
 
 type ProcessOptions struct {
-	InitFunc          func(b *bundle.Bundle)
-	PostInitFunc      func(context context.Context, b *bundle.Bundle) error
-	SkipInitContext   bool
-	SkipInitialize    bool
-	ReadState         bool
-	AlwaysPull        bool
-	InitIDs           bool
+	// If true, do not call logdiag.InitContext(); will panic if logdiag context is not initialized
+	SkipInitContext bool
+
+	// Function to call after bundle is loaded but before phases.Initialize() is called
+	InitFunc func(b *bundle.Bundle)
+
+	// If true, phases.Initialize() is not called
+	SkipInitialize bool
+
+	// If true, call PopulateLocations()
+	IncludeLocations bool
+
+	// Function to call after phases.Initialize()
+	PostInitFunc func(context context.Context, b *bundle.Bundle) error
+
+	// If true, call PullResourcesState() to read state
+	ReadState bool
+
+	// AlwaysPull parameter to PullResourcesState()
+	// Implies ReadState
+	AlwaysPull bool
+
+	// If true, calls statemgmt.Load() to read the state and update resources with IDs; also calls InitializeURLs()
+	// Implies ReadState
+	InitIDs bool
+
+	// if true, pass ErrorOnEmptyState to statemgmt.Load
+	// Implies ReadState
 	ErrorOnEmptyState bool
-	IncludeLocations  bool
-	Verbose           bool
-	FastValidate      bool
-	Validate          bool
-	Build             bool
-	Deploy            bool
+
+	// If true, configure outputHandler for phases.Deploy
+	Verbose bool
+
+	// If true, call corresponding phase:
+	FastValidate bool
+	Validate     bool
+	Build        bool
+	Deploy       bool
 }
 
 func ProcessBundle(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, error) {
