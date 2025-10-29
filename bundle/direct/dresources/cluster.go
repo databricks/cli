@@ -122,6 +122,8 @@ func (r *ResourceCluster) DoDelete(ctx context.Context, id string) error {
 func (r *ResourceCluster) ClassifyChange(change structdiff.Change, remoteState *compute.ClusterDetails, _ bool) (deployplan.ActionType, error) {
 	changedPath := change.Path.String()
 	if changedPath == "data_security_mode" {
+		// We do change skip here in the same way TF provider does suppress diff if the alias is used.
+		// https://github.com/databricks/terraform-provider-databricks/blob/main/clusters/resource_cluster.go#L109-L117
 		if change.Old == compute.DataSecurityModeDataSecurityModeStandard && change.New == compute.DataSecurityModeUserIsolation {
 			return deployplan.ActionTypeSkip, nil
 		}
