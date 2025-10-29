@@ -127,8 +127,6 @@ Deployment complete!
 >>> musterr [CLI] pipelines get [PIPELINE_ID_1]
 Error: The specified pipeline [PIPELINE_ID_1] was not found.
 
-Exit code (musterr): 1
-
 === Destroy the pipeline and verify that it's removed from the state and from remote
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -151,5 +149,3 @@ Destroy complete!
 
 >>> musterr [CLI] pipelines get [PIPELINE_ID_2]
 Error: The specified pipeline [PIPELINE_ID_2] was not found.
-
-Exit code (musterr): 1

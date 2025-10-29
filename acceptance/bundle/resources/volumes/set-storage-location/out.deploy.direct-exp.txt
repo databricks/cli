@@ -10,5 +10,3 @@ API error_code: INVALID_PARAMETER_VALUE
 API message: CreateVolume storage_location can not be provided.
 
 Updating deployment state...
-
-Exit code (musterr): 1

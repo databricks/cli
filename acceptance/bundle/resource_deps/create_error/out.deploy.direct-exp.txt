@@ -12,5 +12,3 @@ Error: cannot create resources.jobs.bar: dependency failed: resources.jobs.foo
 Error: cannot create resources.jobs.baz: dependency failed: resources.jobs.foo
 
 Updating deployment state...
-
-Exit code (musterr): 1

@@ -3,5 +3,3 @@ Error: cannot plan resources.jobs.bar: cannot resolve "${resources.jobs.test.tas
 
 Error: planning failed
 
-
-Exit code (musterr): 1

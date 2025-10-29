@@ -28,7 +28,6 @@ Usage:
   databricks bundle generate pipeline [flags]
 
 Flags:
-  -b, --bind                          automatically bind the generated resource to the existing resource
   -d, --config-dir string             Dir path where the output config will be stored (default "resources")
       --existing-pipeline-id string   ID of the pipeline to generate config for
   -f, --force                         Force overwrite existing files in the output directory

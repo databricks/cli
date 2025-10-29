@@ -2,5 +2,3 @@ Error: cannot plan resources.pipelines.bar: cannot resolve "${resources.pipeline
 
 Error: planning failed
 
-
-Exit code (musterr): 1

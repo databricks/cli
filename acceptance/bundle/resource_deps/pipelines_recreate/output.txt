@@ -114,8 +114,6 @@ Deployment complete!
 >>> musterr [CLI] pipelines get [FOO_ID]
 Error: The specified pipeline [FOO_ID] was not found.
 
-Exit code (musterr): 1
-
 >>> [CLI] pipelines get [UUID]
 {
   "creator_user_name":"[USERNAME]",
@@ -198,14 +196,8 @@ Destroy complete!
 >>> musterr [CLI] pipelines get [FOO_ID]
 Error: The specified pipeline [FOO_ID] was not found.
 
-Exit code (musterr): 1
-
 >>> musterr [CLI] pipelines get [UUID]
 Error: The specified pipeline [UUID] was not found.
 
-Exit code (musterr): 1
-
 >>> musterr [CLI] jobs get [BAR_ID]
 Error: Not Found
-
-Exit code (musterr): 1

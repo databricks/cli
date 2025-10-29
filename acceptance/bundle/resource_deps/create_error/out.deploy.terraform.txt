@@ -11,5 +11,3 @@ Error: cannot create job: INJECTED
 
 
 Updating deployment state...
-
-Exit code (musterr): 1

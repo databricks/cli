@@ -28,6 +28,4 @@ Error: volume main.schema-[UNIQUE_NAME].doesnotexist does not exist
   in databricks.yml:6:18
 
 
-Exit code (musterr): 1
-
 >>> [CLI] schemas delete main.schema-[UNIQUE_NAME]

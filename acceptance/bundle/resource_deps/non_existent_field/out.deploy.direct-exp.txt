@@ -3,5 +3,3 @@ Error: cannot plan resources.volumes.foo: cannot resolve "${resources.volumes.ba
 
 Error: planning failed
 
-
-Exit code (musterr): 1

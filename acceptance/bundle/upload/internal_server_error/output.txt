@@ -6,5 +6,3 @@ HTTP Status: 500 Internal Server Error
 API error_code: 
 API message: Internal Server Error
 
-
-Exit code (musterr): 1

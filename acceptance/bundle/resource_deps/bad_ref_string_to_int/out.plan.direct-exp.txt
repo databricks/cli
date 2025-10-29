@@ -4,5 +4,3 @@ Error: cannot plan resources.jobs.foo: cannot update tasks[0].run_job_task.job_i
 
 Error: planning failed
 
-
-Exit code (musterr): 1

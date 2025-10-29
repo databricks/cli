@@ -65,8 +65,6 @@ Deployment complete!
 >>> musterr [CLI] schemas get main.myschema
 Error: Resource catalog.SchemaInfo not found: main.myschema
 
-Exit code (musterr): 1
-
 >>> [CLI] schemas get newmain.myschema
 {
   "catalog_name":"newmain",

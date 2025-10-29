@@ -1,5 +1,3 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Error: cycle detected: resources.jobs.foo refers to itself via ${resources.jobs.foo.id}
 
-
-Exit code (musterr): 1

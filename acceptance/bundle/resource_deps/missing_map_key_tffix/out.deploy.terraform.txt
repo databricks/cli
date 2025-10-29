@@ -11,5 +11,3 @@ Error: Missing map element
 This map does not have an element with the key "missing_tag".
 
 
-
-Exit code (musterr): 1
