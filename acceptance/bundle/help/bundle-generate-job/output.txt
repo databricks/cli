@@ -28,7 +28,6 @@ Usage:
   databricks bundle generate job [flags]
 
 Flags:
-  -b, --bind                  automatically bind the generated resource to the existing resource
   -d, --config-dir string     Dir path where the output config will be stored (default "resources")
       --existing-job-id int   Job ID of the job to generate config for
   -f, --force                 Force overwrite existing files in the output directory

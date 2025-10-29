@@ -63,6 +63,7 @@ After generation, you can deploy this job to other targets using:
 	cmd.Flags().StringVarP(&sourceDir, "source-dir", "s", "src", `Dir path where the downloaded files will be stored`)
 	cmd.Flags().BoolVarP(&force, "force", "f", false, `Force overwrite existing files in the output directory`)
 	cmd.Flags().BoolVarP(&bind, "bind", "b", false, `automatically bind the generated resource to the existing resource`)
+	cmd.Flags().MarkHidden("bind")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := logdiag.InitContext(cmd.Context())

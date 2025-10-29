@@ -504,6 +504,7 @@ bundle files automatically, useful during active dashboard development.`,
 	cmd.Flags().BoolVarP(&d.force, "force", "f", false, `force overwrite existing files in the output directory`)
 
 	cmd.Flags().BoolVarP(&d.bind, "bind", "b", false, `automatically bind the generated dashboard config to the existing dashboard`)
+	cmd.Flags().MarkHidden("bind")
 
 	// Exactly one of the lookup flags must be provided.
 	cmd.MarkFlagsOneRequired(
