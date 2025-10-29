@@ -59,6 +59,7 @@ per target environment.`,
 	cmd.Flags().StringVarP(&sourceDir, "source-dir", "s", "src/app", `Directory path where the app files will be stored`)
 	cmd.Flags().BoolVarP(&force, "force", "f", false, `Force overwrite existing files in the output directory`)
 	cmd.Flags().BoolVarP(&bind, "bind", "b", false, `automatically bind the generated app config to the existing app`)
+	cmd.Flags().MarkHidden("bind")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := logdiag.InitContext(cmd.Context())
