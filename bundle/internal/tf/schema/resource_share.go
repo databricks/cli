@@ -39,6 +39,7 @@ type ResourceShare struct {
 	CreatedAt       int                   `json:"created_at,omitempty"`
 	CreatedBy       string                `json:"created_by,omitempty"`
 	EffectiveOwner  string                `json:"effective_owner,omitempty"`
+	Id              string                `json:"id,omitempty"`
 	Name            string                `json:"name"`
 	Owner           string                `json:"owner,omitempty"`
 	StorageLocation string                `json:"storage_location,omitempty"`

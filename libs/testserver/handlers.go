@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
@@ -161,71 +160,31 @@ func AddDefaultHandlers(server *Server) {
 		return TestMetastore
 	})
 
-	server.Handle("GET", "/api/2.0/permissions/directories/{objectId}", func(req Request) any {
-		objectId := req.Vars["objectId"]
-		return workspace.WorkspaceObjectPermissions{
-			ObjectId:   objectId,
-			ObjectType: "DIRECTORY",
-			AccessControlList: []workspace.WorkspaceObjectAccessControlResponse{
-				{
-					UserName: "tester@databricks.com",
-					AllPermissions: []workspace.WorkspaceObjectPermission{
-						{
-							PermissionLevel: "CAN_MANAGE",
-						},
-					},
-				},
-			},
-		}
-	})
-
 	server.Handle("POST", "/api/2.2/jobs/create", func(req Request) any {
-		var request jobs.CreateJob
-		if err := json.Unmarshal(req.Body, &request); err != nil {
-			return Response{
-				Body:       fmt.Sprintf("internal error: %s", err),
-				StatusCode: 500,
-			}
-		}
-
-		return req.Workspace.JobsCreate(request)
+		return req.Workspace.JobsCreate(req)
 	})
 
 	server.Handle("POST", "/api/2.2/jobs/delete", func(req Request) any {
 		var request jobs.DeleteJob
 		if err := json.Unmarshal(req.Body, &request); err != nil {
 			return Response{
-				Body:       fmt.Sprintf("internal error: %s", err),
-				StatusCode: 500,
+				StatusCode: 400,
+				Body:       fmt.Sprintf("request parsing error: %s", err),
 			}
 		}
 		return MapDelete(req.Workspace, req.Workspace.Jobs, request.JobId)
 	})
 
 	server.Handle("POST", "/api/2.2/jobs/reset", func(req Request) any {
-		var request jobs.ResetJob
-		if err := json.Unmarshal(req.Body, &request); err != nil {
-			return Response{
-				Body:       fmt.Sprintf("internal error: %s", err),
-				StatusCode: 500,
-			}
-		}
-
-		return req.Workspace.JobsReset(request)
+		return req.Workspace.JobsReset(req)
 	})
 
 	server.Handle("GET", "/api/2.0/jobs/get", func(req Request) any {
-		jobId := req.URL.Query().Get("job_id")
-		return req.Workspace.JobsGet(jobId)
+		return req.Workspace.JobsGet(req)
 	})
 
 	server.Handle("GET", "/api/2.2/jobs/get", func(req Request) any {
-		jobId := req.URL.Query().Get("job_id")
-		return req.Workspace.JobsGet(jobId)
-	})
-
-	server.Handle("GET", "/api/2.2/jobs/list", func(req Request) any {
-		return req.Workspace.JobsList()
+		return req.Workspace.JobsGet(req)
 	})
 
 	server.Handle("GET", "/api/2.2/jobs/list", func(req Request) any {
@@ -233,28 +192,11 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("POST", "/api/2.2/jobs/run-now", func(req Request) any {
-		var request jobs.RunNow
-		if err := json.Unmarshal(req.Body, &request); err != nil {
-			return Response{
-				Body:       fmt.Sprintf("internal error: %s", err),
-				StatusCode: 500,
-			}
-		}
-
-		return req.Workspace.JobsRunNow(request.JobId)
+		return req.Workspace.JobsRunNow(req)
 	})
 
 	server.Handle("GET", "/api/2.2/jobs/runs/get", func(req Request) any {
-		runId := req.URL.Query().Get("run_id")
-		runIdInt, err := strconv.ParseInt(runId, 10, 64)
-		if err != nil {
-			return Response{
-				Body:       fmt.Sprintf("internal error: %s", err),
-				StatusCode: 500,
-			}
-		}
-
-		return req.Workspace.JobsGetRun(runIdInt)
+		return req.Workspace.JobsGetRun(req)
 	})
 
 	server.Handle("GET", "/api/2.2/jobs/runs/list", func(req Request) any {
@@ -262,19 +204,15 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("GET", "/oidc/.well-known/oauth-authorization-server", func(_ Request) any {
-		return map[string]string{
-			"authorization_endpoint": server.URL + "oidc/v1/authorize",
-			"token_endpoint":         server.URL + "/oidc/v1/token",
-		}
+		return server.fakeOidc.OidcEndpoints()
 	})
 
-	server.Handle("POST", "/oidc/v1/token", func(_ Request) any {
-		return map[string]string{
-			"access_token": "oauth-token",
-			"expires_in":   "3600",
-			"scope":        "all-apis",
-			"token_type":   "Bearer",
-		}
+	server.Handle("GET", "/oidc/v1/authorize", func(req Request) any {
+		return server.fakeOidc.OidcAuthorize(req)
+	})
+
+	server.Handle("POST", "/oidc/v1/token", func(req Request) any {
+		return server.fakeOidc.OidcToken(req)
 	})
 
 	server.Handle("POST", "/telemetry-ext", func(_ Request) any {
@@ -299,6 +237,9 @@ func AddDefaultHandlers(server *Server) {
 	})
 	server.Handle("DELETE", "/api/2.0/lakeview/dashboards/{dashboard_id}", func(req Request) any {
 		return MapDelete(req.Workspace, req.Workspace.Dashboards, req.Vars["dashboard_id"])
+	})
+	server.Handle("GET", "/api/2.0/lakeview/dashboards/{dashboard_id}/published", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.PublishedDashboards, req.Vars["dashboard_id"])
 	})
 
 	// Pipelines:
@@ -389,6 +330,50 @@ func AddDefaultHandlers(server *Server) {
 		return MapDelete(req.Workspace, req.Workspace.Schemas, req.Vars["full_name"])
 	})
 
+	server.Handle("PATCH", "/api/2.1/unity-catalog/permissions/schema/{full_name}", func(req Request) any {
+		return req.Workspace.SchemasUpdateGrants(req, req.Vars["full_name"])
+	})
+
+	server.Handle("GET", "/api/2.1/unity-catalog/permissions/schema/{full_name}", func(req Request) any {
+		return req.Workspace.SchemasGetGrants(req, req.Vars["full_name"])
+	})
+
+	// Catalogs:
+
+	server.Handle("GET", "/api/2.1/unity-catalog/catalogs/{name}", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.Catalogs, req.Vars["name"])
+	})
+
+	server.Handle("POST", "/api/2.1/unity-catalog/catalogs", func(req Request) any {
+		return req.Workspace.CatalogsCreate(req)
+	})
+
+	server.Handle("PATCH", "/api/2.1/unity-catalog/catalogs/{name}", func(req Request) any {
+		return req.Workspace.CatalogsUpdate(req, req.Vars["name"])
+	})
+
+	server.Handle("DELETE", "/api/2.1/unity-catalog/catalogs/{name}", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.Catalogs, req.Vars["name"])
+	})
+
+	// Registered Models:
+
+	server.Handle("GET", "/api/2.1/unity-catalog/models/{full_name}", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.RegisteredModels, req.Vars["full_name"])
+	})
+
+	server.Handle("POST", "/api/2.1/unity-catalog/models", func(req Request) any {
+		return req.Workspace.RegisteredModelsCreate(req)
+	})
+
+	server.Handle("PATCH", "/api/2.1/unity-catalog/models/{full_name}", func(req Request) any {
+		return req.Workspace.RegisteredModelsUpdate(req, req.Vars["full_name"])
+	})
+
+	server.Handle("DELETE", "/api/2.1/unity-catalog/models/{full_name}", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.RegisteredModels, req.Vars["full_name"])
+	})
+
 	// Volumes:
 
 	server.Handle("GET", "/api/2.1/unity-catalog/volumes/{full_name}", func(req Request) any {
@@ -398,6 +383,8 @@ func AddDefaultHandlers(server *Server) {
 	server.Handle("POST", "/api/2.1/unity-catalog/volumes", func(req Request) any {
 		return req.Workspace.VolumesCreate(req)
 	})
+
+	// Repos:
 
 	server.Handle("POST", "/api/2.0/repos", func(req Request) any {
 		return req.Workspace.ReposCreate(req)
@@ -424,6 +411,7 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	// SQL Warehouses:
+
 	server.Handle("GET", "/api/2.0/sql/warehouses/{warehouse_id}", func(req Request) any {
 		return MapGet(req.Workspace, req.Workspace.SqlWarehouses, req.Vars["warehouse_id"])
 	})
@@ -448,54 +436,44 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.SqlDataSourcesList(req)
 	})
 
+	// Alerts v2:
+	server.Handle("GET", "/api/2.0/alerts/{id}", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.Alerts, req.Vars["id"])
+	})
+
+	server.Handle("GET", "/api/2.0/alerts", func(req Request) any {
+		return MapList(req.Workspace, req.Workspace.Alerts, "alerts")
+	})
+
+	server.Handle("POST", "/api/2.0/alerts", func(req Request) any {
+		return req.Workspace.AlertsUpsert(req, "")
+	})
+
+	server.Handle("PATCH", "/api/2.0/alerts/{id}", func(req Request) any {
+		return req.Workspace.AlertsUpsert(req, req.Vars["id"])
+	})
+
+	server.Handle("DELETE", "/api/2.0/alerts/{id}", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.Alerts, req.Vars["id"])
+	})
+
+	// Secrets ACLs:
 	server.Handle("GET", "/api/2.0/secrets/acls/get", func(req Request) any {
-		scope := req.URL.Query().Get("scope")
-		principal := req.URL.Query().Get("principal")
-		scopeAcls := req.Workspace.Acls[scope]
-		for _, acl := range scopeAcls {
-			if acl.Principal == principal {
-				return acl
-			}
-		}
-		return Response{StatusCode: 404}
+		return req.Workspace.SecretsAclsGet(req)
 	})
 
 	server.Handle("GET", "/api/2.0/secrets/acls/list", func(req Request) any {
-		return MapGet(req.Workspace, req.Workspace.Acls, req.Vars["scope"])
+		return MapGet(req.Workspace, req.Workspace.Acls, req.URL.Query().Get("scope"))
 	})
 
 	server.Handle("POST", "/api/2.0/secrets/acls/put", func(req Request) any {
-		var request workspace.PutAcl
-		if err := json.Unmarshal(req.Body, &request); err != nil {
-			return Response{
-				Body:       fmt.Sprintf("internal error: %s", err),
-				StatusCode: 500,
-			}
-		}
-		req.Workspace.Acls[request.Scope] = append(req.Workspace.Acls[request.Scope], workspace.AclItem{
-			Principal:  request.Principal,
-			Permission: request.Permission,
-		})
-		return ""
+		return req.Workspace.SecretsAclsPut(req)
 	})
 
 	server.Handle("POST", "/api/2.0/secrets/acls/delete", func(req Request) any {
-		var request workspace.DeleteAcl
-		if err := json.Unmarshal(req.Body, &request); err != nil {
-			return Response{
-				Body:       fmt.Sprintf("internal error: %s", err),
-				StatusCode: 500,
-			}
-		}
-		scopeAcls := req.Workspace.Acls[request.Scope]
-		for i, acl := range scopeAcls {
-			if acl.Principal == request.Principal {
-				req.Workspace.Acls[request.Scope] = append(scopeAcls[:i], scopeAcls[i+1:]...)
-				return ""
-			}
-		}
-		return Response{StatusCode: 404}
+		return req.Workspace.SecretsAclsDelete(req)
 	})
+	// Database Instances:
 
 	server.Handle("POST", "/api/2.0/database/instances", func(req Request) any {
 		return req.Workspace.DatabaseInstanceCreate(req)
@@ -509,9 +487,15 @@ func AddDefaultHandlers(server *Server) {
 		return DatabaseInstanceMapGet(req.Workspace, req.Workspace.DatabaseInstances, req.Vars["name"])
 	})
 
+	server.Handle("PATCH", "/api/2.0/database/instances/{name}", func(req Request) any {
+		return req.Workspace.DatabaseInstanceUpdate(req, req.Vars["name"])
+	})
+
 	server.Handle("DELETE", "/api/2.0/database/instances/{name}", func(req Request) any {
 		return DatabaseInstanceMapDelete(req)
 	})
+
+	// Database Catalogs:
 
 	server.Handle("POST", "/api/2.0/database/catalogs", func(req Request) any {
 		return req.Workspace.DatabaseCatalogCreate(req)
@@ -521,12 +505,22 @@ func AddDefaultHandlers(server *Server) {
 		return MapGet(req.Workspace, req.Workspace.DatabaseCatalogs, req.Vars["name"])
 	})
 
+	server.Handle("PATCH", "/api/2.0/database/catalogs/{name}", func(req Request) any {
+		return req.Workspace.DatabaseCatalogUpdate(req, req.Vars["name"])
+	})
+
 	server.Handle("DELETE", "/api/2.0/database/catalogs/{name}", func(req Request) any {
 		return MapDelete(req.Workspace, req.Workspace.DatabaseCatalogs, req.Vars["name"])
 	})
 
+	// Synced Database Tables:
+
 	server.Handle("POST", "/api/2.0/database/synced_tables", func(req Request) any {
 		return req.Workspace.SyncedDatabaseTableCreate(req)
+	})
+
+	server.Handle("PATCH", "/api/2.0/database/synced_tables/{name}", func(req Request) any {
+		return req.Workspace.SyncedDatabaseTableUpdate(req, req.Vars["name"])
 	})
 
 	server.Handle("GET", "/api/2.0/database/synced_tables/{name}", func(req Request) any {
@@ -535,5 +529,90 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("DELETE", "/api/2.0/database/synced_tables/{name}", func(req Request) any {
 		return MapDelete(req.Workspace, req.Workspace.SyncedDatabaseTables, req.Vars["name"])
+	})
+
+	// Clusters:
+	server.Handle("POST", "/api/2.1/clusters/resize", func(req Request) any {
+		return req.Workspace.ClustersResize(req)
+	})
+
+	server.Handle("POST", "/api/2.1/clusters/edit", func(req Request) any {
+		return req.Workspace.ClustersEdit(req)
+	})
+
+	server.Handle("GET", "/api/2.1/clusters/get", func(req Request) any {
+		clusterId := req.URL.Query().Get("cluster_id")
+		return req.Workspace.ClustersGet(req, clusterId)
+	})
+
+	server.Handle("POST", "/api/2.1/clusters/create", func(req Request) any {
+		return req.Workspace.ClustersCreate(req)
+	})
+
+	server.Handle("POST", "/api/2.1/clusters/start", func(req Request) any {
+		return req.Workspace.ClustersStart(req)
+	})
+
+	server.Handle("POST", "/api/2.1/clusters/permanent-delete", func(req Request) any {
+		return req.Workspace.ClustersPermanentDelete(req)
+	})
+
+	// MLflow Experiments:
+	server.Handle("GET", "/api/2.0/mlflow/experiments/get", func(req Request) any {
+		experimentId := req.URL.Query().Get("experiment_id")
+		if experimentId == "" {
+			return Response{
+				StatusCode: http.StatusBadRequest,
+				Body:       map[string]string{"message": "experiment_id is required"},
+			}
+		}
+
+		return MapGet(req.Workspace, req.Workspace.Experiments, experimentId)
+	})
+
+	server.Handle("POST", "/api/2.0/mlflow/experiments/create", func(req Request) any {
+		return req.Workspace.ExperimentCreate(req)
+	})
+
+	server.Handle("POST", "/api/2.0/mlflow/experiments/update", func(req Request) any {
+		return req.Workspace.ExperimentUpdate(req)
+	})
+
+	server.Handle("POST", "/api/2.0/mlflow/experiments/delete", func(req Request) any {
+		return req.Workspace.ExperimentDelete(req)
+	})
+
+	// Model registry models.
+	server.Handle("POST", "/api/2.0/mlflow/registered-models/create", func(req Request) any {
+		return req.Workspace.ModelRegistryCreateModel(req)
+	})
+
+	server.Handle("GET", "/api/2.0/mlflow/databricks/registered-models/get", func(req Request) any {
+		return req.Workspace.ModelRegistryGetModel(req)
+	})
+
+	server.Handle("PATCH", "/api/2.0/mlflow/registered-models/update", func(req Request) any {
+		return req.Workspace.ModelRegistryUpdateModel(req)
+	})
+
+	server.Handle("DELETE", "/api/2.0/mlflow/registered-models/delete", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.ModelRegistryModels, req.URL.Query().Get("name"))
+	})
+
+	// Generic permissions endpoints
+	server.Handle("GET", "/api/2.0/permissions/{object_type}/{object_id}", func(req Request) any {
+		return req.Workspace.GetPermissions(req)
+	})
+
+	server.Handle("GET", "/api/2.0/permissions/{prefix}/{object_type}/{object_id}", func(req Request) any {
+		return req.Workspace.GetPermissions(req)
+	})
+
+	server.Handle("PUT", "/api/2.0/permissions/{object_type}/{object_id}", func(req Request) any {
+		return req.Workspace.SetPermissions(req)
+	})
+
+	server.Handle("PUT", "/api/2.0/permissions/{prefix}/{object_type}/{object_id}", func(req Request) any {
+		return req.Workspace.SetPermissions(req)
 	})
 }

@@ -2,6 +2,7 @@ package testserver
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -24,6 +25,7 @@ type Server struct {
 	t testutil.TestingT
 
 	fakeWorkspaces map[string]*FakeWorkspace
+	fakeOidc       *FakeOidc
 	mu             sync.Mutex
 
 	RequestCallback  func(request *Request)
@@ -37,6 +39,7 @@ type Request struct {
 	Body      []byte
 	Vars      map[string]string
 	Workspace *FakeWorkspace
+	Context   context.Context
 }
 
 type Response struct {
@@ -54,7 +57,7 @@ type EncodedResponse struct {
 func NewRequest(t testutil.TestingT, r *http.Request, fakeWorkspace *FakeWorkspace) Request {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		t.Fatalf("Failed to read request body: %s", err)
+		t.Logf("Error while reading request body: %s", err)
 	}
 
 	return Request{
@@ -64,6 +67,7 @@ func NewRequest(t testutil.TestingT, r *http.Request, fakeWorkspace *FakeWorkspa
 		Body:      body,
 		Vars:      mux.Vars(r),
 		Workspace: fakeWorkspace,
+		Context:   r.Context(),
 	}
 }
 
@@ -187,6 +191,7 @@ func New(t testutil.TestingT) *Server {
 		Router:         router,
 		t:              t,
 		fakeWorkspaces: map[string]*FakeWorkspace{},
+		fakeOidc:       &FakeOidc{url: server.URL},
 	}
 
 	// Set up the not found handler as fallback
@@ -271,6 +276,9 @@ func (s *Server) Handle(method, path string, handler HandlerFunc) {
 			}
 		} else {
 			respAny := handler(request)
+			if respAny == nil && request.Context.Err() != nil {
+				return
+			}
 			resp = normalizeResponse(s.t, respAny)
 		}
 

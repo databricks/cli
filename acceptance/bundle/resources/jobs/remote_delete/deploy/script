@@ -1,0 +1,6 @@
+trace $CLI bundle plan
+trace $CLI bundle deploy
+job_id=`$CLI bundle summary -o json | jq -r .resources.jobs.foo.id`
+trace $CLI jobs delete $job_id
+trace errcode $CLI bundle plan &> out.plan.$DATABRICKS_BUNDLE_ENGINE.txt
+trace errcode $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt

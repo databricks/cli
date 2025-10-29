@@ -8,6 +8,7 @@ from databricks.bundles.core._transform import _transform
 if TYPE_CHECKING:
     from databricks.bundles.jobs._models.job import Job, JobParam
     from databricks.bundles.pipelines._models.pipeline import Pipeline, PipelineParam
+    from databricks.bundles.schemas._models.schema import Schema, SchemaParam
     from databricks.bundles.volumes._models.volume import Volume, VolumeParam
 
 __all__ = ["Resources"]
@@ -26,10 +27,9 @@ class Resources:
 
     .. code-block:: yaml
 
-        experimental:
-          python:
-            resources:
-              - "resources:load_resources"
+        python:
+          resources:
+            - "resources:load_resources"
 
     `load_resources` function can be implemented using built-in functions:
 
@@ -58,6 +58,7 @@ class Resources:
     def __init__(self):
         self._jobs = dict[str, "Job"]()
         self._pipelines = dict[str, "Pipeline"]()
+        self._schemas = dict[str, "Schema"]()
         self._volumes = dict[str, "Volume"]()
         self._locations = dict[tuple[str, ...], Location]()
         self._diagnostics = Diagnostics()
@@ -69,6 +70,10 @@ class Resources:
     @property
     def pipelines(self) -> dict[str, "Pipeline"]:
         return self._pipelines
+
+    @property
+    def schemas(self) -> dict[str, "Schema"]:
+        return self._schemas
 
     @property
     def volumes(self) -> dict[str, "Volume"]:
@@ -99,6 +104,7 @@ class Resources:
 
         from databricks.bundles.jobs import Job
         from databricks.bundles.pipelines import Pipeline
+        from databricks.bundles.schemas import Schema
         from databricks.bundles.volumes import Volume
 
         location = location or Location.from_stack_frame(depth=1)
@@ -108,6 +114,8 @@ class Resources:
                 self.add_job(resource_name, resource, location=location)
             case Pipeline():
                 self.add_pipeline(resource_name, resource, location=location)
+            case Schema():
+                self.add_schema(resource_name, resource, location=location)
             case Volume():
                 self.add_volume(resource_name, resource, location=location)
             case _:
@@ -176,6 +184,38 @@ class Resources:
                 self.add_location(path, location)
 
             self._pipelines[resource_name] = pipeline
+
+    def add_schema(
+        self,
+        resource_name: str,
+        schema: "SchemaParam",
+        *,
+        location: Optional[Location] = None,
+    ) -> None:
+        """
+        Adds a schema to the collection of resources. Resource name must be unique across all schemas.
+
+        :param resource_name: unique identifier for the schema
+        :param schema: the schema to add, can be Schema or dict
+        :param location: optional location of the schema in the source code
+        """
+        from databricks.bundles.schemas import Schema
+
+        schema = _transform(Schema, schema)
+        path = ("resources", "schemas", resource_name)
+        location = location or Location.from_stack_frame(depth=1)
+
+        if self._schemas.get(resource_name):
+            self.add_diagnostic_error(
+                msg=f"Duplicate resource name '{resource_name}' for a schema. Resource names must be unique.",
+                location=location,
+                path=path,
+            )
+        else:
+            if location:
+                self.add_location(path, location)
+
+            self._schemas[resource_name] = schema
 
     def add_volume(
         self,
@@ -284,6 +324,9 @@ class Resources:
 
         for name, pipeline in other.pipelines.items():
             self.add_pipeline(name, pipeline)
+
+        for name, schema in other.schemas.items():
+            self.add_schema(name, schema)
 
         for name, volume in other.volumes.items():
             self.add_volume(name, volume)

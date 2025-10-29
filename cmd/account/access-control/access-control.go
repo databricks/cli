@@ -73,7 +73,9 @@ func newGetAssignableRolesForResource() *cobra.Command {
       resource name for the account.
       resource=accounts/<ACCOUNT_ID>/groups/<GROUP_ID> | A resource name for
       the group. resource=accounts/<ACCOUNT_ID>/servicePrincipals/<SP_ID> | A
-      resource name for the service principal.`
+      resource name for the service principal.
+      resource=accounts/<ACCOUNT_ID>/tagPolicies/<TAG_POLICY_ID> | A resource
+      name for the tag policy.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -140,6 +142,8 @@ func newGetRuleSet() *cobra.Command {
       for a rule set on the group.
       name=accounts/<ACCOUNT_ID>/servicePrincipals/<SERVICE_PRINCIPAL_APPLICATION_ID>/ruleSets/default
       | A name for a rule set on the service principal.
+      name=accounts/<ACCOUNT_ID>/tagPolicies/<TAG_POLICY_ID>/ruleSets/default
+      | A name for a rule set on the tag policy.
     ETAG: Etag used for versioning. The response is at least as fresh as the eTag
       provided. Etag is used for optimistic concurrency control as a way to help
       prevent simultaneous updates of a rule set from overwriting each other. It

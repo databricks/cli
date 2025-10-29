@@ -6,8 +6,10 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/databricks/cli/bundle/generate"
+	"github.com/databricks/cli/cmd/bundle/deployment"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dyn"
@@ -24,6 +26,7 @@ func NewGenerateJobCommand() *cobra.Command {
 	var sourceDir string
 	var jobId int64
 	var force bool
+	var bind bool
 
 	cmd := &cobra.Command{
 		Use:   "job",
@@ -41,6 +44,9 @@ Examples:
   databricks bundle generate job --existing-job-id 67890 \
     --key data_pipeline --config-dir resources --source-dir src
 
+  # Generate and automatically bind to the existing job
+  databricks bundle generate job --existing-job-id 12345 --key my_etl_job --bind
+
 What gets generated:
 - Job configuration YAML file in the resources directory
 - Any associated notebook or Python files in the source directory
@@ -56,13 +62,14 @@ After generation, you can deploy this job to other targets using:
 	cmd.Flags().StringVarP(&configDir, "config-dir", "d", "resources", `Dir path where the output config will be stored`)
 	cmd.Flags().StringVarP(&sourceDir, "source-dir", "s", "src", `Dir path where the downloaded files will be stored`)
 	cmd.Flags().BoolVarP(&force, "force", "f", false, `Force overwrite existing files in the output directory`)
+	cmd.Flags().BoolVarP(&bind, "bind", "b", false, `automatically bind the generated resource to the existing resource`)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := logdiag.InitContext(cmd.Context())
 		cmd.SetContext(ctx)
 
 		b := root.MustConfigureBundle(cmd)
-		if b == nil {
+		if b == nil || logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}
 
@@ -138,6 +145,11 @@ After generation, you can deploy this job to other targets using:
 		}
 
 		cmdio.LogString(ctx, "Job configuration successfully saved to "+filename)
+
+		if bind {
+			return deployment.BindResource(cmd, jobKey, strconv.FormatInt(jobId, 10), true, false)
+		}
+
 		return nil
 	}
 

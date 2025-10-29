@@ -10,25 +10,11 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/compute"
 )
 
-type ClusterPermissionLevel string
-
-// ClusterPermission holds the permission level setting for a single principal.
-// Multiple of these can be defined on any cluster.
-type ClusterPermission struct {
-	Level ClusterPermissionLevel `json:"level"`
-
-	UserName             string `json:"user_name,omitempty"`
-	ServicePrincipalName string `json:"service_principal_name,omitempty"`
-	GroupName            string `json:"group_name,omitempty"`
-}
-
 type Cluster struct {
-	ID             string              `json:"id,omitempty" bundle:"readonly"`
-	Permissions    []ClusterPermission `json:"permissions,omitempty"`
-	ModifiedStatus ModifiedStatus      `json:"modified_status,omitempty" bundle:"internal"`
-	URL            string              `json:"url,omitempty" bundle:"internal"`
-
+	BaseResource
 	compute.ClusterSpec
+
+	Permissions []ClusterPermission `json:"permissions,omitempty"`
 }
 
 func (s *Cluster) UnmarshalJSON(b []byte) error {

@@ -29,7 +29,7 @@ type importResource struct {
 // Apply implements bundle.Mutator.
 func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	if b.DirectDeployment {
-		return diag.Errorf("import is not implemented for DATABRICKS_CLI_DEPLOYMENT=direct")
+		return diag.Errorf("import is not implemented for DATABRICKS_BUNDLE_ENGINE=direct")
 	}
 
 	dir, err := Dir(ctx, b)
@@ -71,8 +71,10 @@ func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 
 	if changed && !m.opts.AutoApprove {
 		output := buf.String()
-		// Remove output starting from Warning until end of output
-		output = output[:strings.Index(output, "Warning:")]
+		// Remove output starting from Warning until end of output, if present.
+		if idx := strings.Index(output, "Warning:"); idx != -1 {
+			output = output[:idx]
+		}
 		cmdio.LogString(ctx, output)
 
 		if !cmdio.IsPromptSupported(ctx) {

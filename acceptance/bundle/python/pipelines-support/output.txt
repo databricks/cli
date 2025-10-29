@@ -1,5 +1,5 @@
 
->>> uv run --with-requirements requirements-latest.txt --no-cache -q [CLI] bundle validate --output json
+>>> uv run [UV_ARGS] -q [CLI] bundle validate --output json
 {
   "experimental": {
     "python": {
@@ -20,8 +20,7 @@
           "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_project/default/state/metadata.json"
         },
         "edition": "ADVANCED",
-        "name": "My Pipeline 1 (updated)",
-        "permissions": []
+        "name": "My Pipeline 1 (updated)"
       },
       "my_pipeline_2": {
         "channel": "CURRENT",
@@ -30,8 +29,7 @@
           "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_project/default/state/metadata.json"
         },
         "edition": "ADVANCED",
-        "name": "My Pipeline 2 (updated)",
-        "permissions": []
+        "name": "My Pipeline 2 (updated)"
       }
     }
   }

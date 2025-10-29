@@ -25,14 +25,38 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func StartDefaultServer(t *testing.T) {
+func StartDefaultServer(t *testing.T, logRequests bool) {
 	s := testserver.New(t)
 	testserver.AddDefaultHandlers(s)
 
+	// Log API responses if the -logrequests flag is set.
+	if logRequests {
+		s.ResponseCallback = logResponseCallback(t)
+	}
+
 	t.Setenv("DATABRICKS_DEFAULT_HOST", s.URL)
 
-	// Do not read user's ~/.databrickscfg
-	homeDir := t.TempDir()
+	// Do not read user's ~/.databrickscfg.
+	//
+	// We use a custom temporary home directory and cleanup routine here to avoid
+	// issues observed with t.TempDir() on Windows, where Go 1.25's test cleanup
+	// can fail to remove certain directories (e.g., due to locked or system-managed files).
+	// Instead of failing the test, we log any errors encountered during cleanup.
+	// This approach ensures test reliability across platforms.
+	//
+	// See debugging journey in https://github.com/databricks/cli/pull/3575.
+	homeDir, err := os.MkdirTemp("", "acceptance-home-dir")
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		err := os.RemoveAll(homeDir)
+		if err != nil {
+			t.Logf("Failed to remove temporary home directory: %v", err)
+			_ = filepath.Walk(homeDir, func(path string, info os.FileInfo, err error) error {
+				t.Logf("%s", path)
+				return nil
+			})
+		}
+	})
 	t.Setenv(env.HomeEnvVar(), homeDir)
 }
 
@@ -168,7 +192,23 @@ func startLocalServer(t *testing.T,
 		items := strings.Split(stub.Pattern, " ")
 		require.Len(t, items, 2)
 		s.Handle(items[0], items[1], func(req testserver.Request) any {
-			time.Sleep(stub.Delay)
+			if stub.Delay > 0 {
+				ctx := req.Context
+
+				timer := time.NewTimer(stub.Delay)
+				defer timer.Stop()
+
+				select {
+				case <-timer.C:
+					break
+				case <-ctx.Done():
+					// Client canceled/connection closed; just exit.
+					// Optional: log the reason (context deadline, cancellation, etc.)
+					t.Logf("request canceled: %v", ctx.Err())
+					return nil
+				}
+			}
+
 			return stub.Response
 		})
 	}
@@ -197,11 +237,12 @@ func startProxyServer(t *testing.T,
 }
 
 type LoggedRequest struct {
-	Headers http.Header `json:"headers,omitempty"`
-	Method  string      `json:"method"`
-	Path    string      `json:"path"`
-	Body    any         `json:"body,omitempty"`
-	RawBody string      `json:"raw_body,omitempty"`
+	Headers http.Header    `json:"headers,omitempty"`
+	Method  string         `json:"method"`
+	Path    string         `json:"path"`
+	Q       map[string]any `json:"q,omitempty"`
+	Body    any            `json:"body,omitempty"`
+	RawBody string         `json:"raw_body,omitempty"`
 }
 
 func getLoggedRequest(req *testserver.Request, includedHeaders []string) LoggedRequest {
@@ -209,6 +250,20 @@ func getLoggedRequest(req *testserver.Request, includedHeaders []string) LoggedR
 		Method:  req.Method,
 		Path:    req.URL.Path,
 		Headers: filterHeaders(req.Headers, includedHeaders),
+	}
+
+	// Log query separately for readability (some values are paths which don't look great when % encoded)
+	// and for easier parsing/filtering with jq.
+	if req.URL.RawQuery != "" {
+		queryParams := req.URL.Query()
+		result.Q = make(map[string]any)
+		for key, values := range queryParams {
+			if len(values) == 1 {
+				result.Q[key] = values[0]
+			} else {
+				result.Q[key] = values
+			}
+		}
 	}
 
 	if json.Valid(req.Body) {

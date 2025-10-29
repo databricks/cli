@@ -33,6 +33,8 @@ Deployment complete!
 >>> [CLI] bundle plan
 recreate schemas.schema1
 
+Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
+
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 
@@ -45,7 +47,10 @@ Deployment complete!
 >>> print_requests
 {
   "method": "DELETE",
-  "path": "/api/2.1/unity-catalog/schemas/main.myschema"
+  "path": "/api/2.1/unity-catalog/schemas/main.myschema",
+  "q": {
+    "force": "true"
+  }
 }
 {
   "method": "POST",
@@ -59,8 +64,6 @@ Deployment complete!
 
 >>> musterr [CLI] schemas get main.myschema
 Error: Resource catalog.SchemaInfo not found: main.myschema
-
-Exit code (musterr): 1
 
 >>> [CLI] schemas get newmain.myschema
 {

@@ -36,6 +36,9 @@ type TestConfig struct {
 	// If true, run this test when running locally with a testserver
 	Local *bool
 
+	// If true, this test will not be run in -short mode (which is default for make test / PR)
+	Slow *bool
+
 	// If true, run this test when running with cloud env configured
 	Cloud *bool
 
@@ -130,6 +133,9 @@ type TestConfig struct {
 	// Target config for BundleConfig updates. Empty string disables BundleConfig updates.
 	// Null means "databricks.yml"
 	BundleConfigTarget *string
+
+	// If true, skip this test when running on DBR / workspace file system.
+	SkipOnDbr *bool
 
 	// To be added:
 	// BundleConfigMatrix is to BundleConfig what EnvMatrix is to Env

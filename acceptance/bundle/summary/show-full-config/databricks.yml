@@ -1,0 +1,15 @@
+include:
+  - targets/*.yml
+
+variables:
+  mode:
+    default: development
+  default:
+    default: false
+
+targets:
+  also_default:
+    mode: development
+    default: true
+    workspace:
+      host: https://example.com

@@ -1,0 +1,6 @@
+; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.
+[DEFAULT]
+
+[test]
+host      = [DATABRICKS_URL]
+auth_type = databricks-cli

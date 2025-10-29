@@ -23,7 +23,6 @@ musterr() {
         >&2 printf "\nUnexpected success\n"
         exit 1
     fi
-    >&2 printf "\nExit code (musterr): $exit_code\n"
 }
 
 trace() {
@@ -92,4 +91,19 @@ envsubst() {
     # This is because the python interpreter is otherwise unable to find the python script
     # when MSYS_NO_PATHCONV is enabled.
     env -u MSYS_NO_PATHCONV envsubst.py
+}
+
+print_telemetry_bool_values() {
+    jq -r 'select(.path? == "/telemetry-ext") | (.body.protoLogs // [])[] | fromjson | ( (.entry // .) | (.databricks_cli_log.bundle_deploy_event.experimental.bool_values // []) ) | map("\(.key) \(.value)") | .[]' out.requests.txt | sort
+}
+
+sethome() {
+    local home="$1"
+    mkdir -p "$home"
+
+    # For macOS and Linux, use HOME.
+    export HOME="$home"
+
+    # For Windows, use USERPROFILE.
+    export USERPROFILE="$home"
 }

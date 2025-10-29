@@ -1,15 +1,20 @@
 # NEXT CHANGELOG
 
-## Release v0.267.0
+## Release v0.275.0
 
 ### Notable Changes
+* Python support for Databricks Asset Bundles is now generally available
 
 ### CLI
-* Introduce retries to `databricks psql` command ([#3492](https://github.com/databricks/cli/pull/3492))
-* Add rule files for coding agents working on the CLI code base ([#3245](https://github.com/databricks/cli/pull/3245))
+* Remove `inplace` mode for the `--progress-format` flag. ([#3811](https://github.com/databricks/cli/pull/3811))
+* Remove `json` mode for the `--progress-format` flag. ([#3812](https://github.com/databricks/cli/pull/3812))
+* Deprecate the `--progress-format` flag. ([#3819](https://github.com/databricks/cli/pull/3819))
 
 ### Dependency updates
 
 ### Bundles
+* Added support for --bind flag in `bundle generate` ([#3782](https://github.com/databricks/cli/pull/3782))
+* Add `pydabs` template replacing `experimental-jobs-as-code` template ([#3806](https://github.com/databricks/cli/pull/3806))
+* You can now use `python` section instead of `experimental/python` ([#3540](https://github.com/databricks/cli/pull/3540))
 
 ### API Changes

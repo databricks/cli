@@ -1,5 +1,103 @@
 # Version changelog
 
+## Release v0.274.0
+
+### Bundles
+* Fix a panic in TF when it fails to read the job ([#3799](https://github.com/databricks/cli/pull/3799))
+* For secret scopes, no longer remove current user's permissions ([#3780](https://github.com/databricks/cli/pull/3780))
+* Automatically add owner permissions during bundle initialization, this makes final permissions visible in 'bundle validate -o json' ([#3780](https://github.com/databricks/cli/pull/3780))
+
+
+## Release v0.273.0
+
+### Notable Changes
+
+* (via Terraform v1.92.0) DABs will no longer try to update pipeline permissions upon pipeline deletion. This fixes PERMISSION\_ERROR upon 'bundle destroy'
+  for pipelines that have run\_as setting enabled (described in https://community.databricks.com/t95/data-engineering/dab-dlt-destroy-fails-due-to-ownership-permissions-mismatch/td-p/132101)
+  The downside is that if 'permissions:' block is removed from the resource, DABs will not try anymore to restore permissions to just the owner of the pipeline.
+
+### CLI
+
+* Add the `--configure-serverless` flag to `databricks auth login` to configure Databricks Connect to use serverless.
+
+### Dependency updates
+* Upgrade Go SDK to 0.82.0 ([#3769](https://github.com/databricks/cli/pull/3769))
+* Upgrade TF provider to 1.92.0 ([#3772](https://github.com/databricks/cli/pull/3772))
+
+### Bundles
+* Updated the internal lakeflow-pipelines template to use an "src" layout ([#3671](https://github.com/databricks/cli/pull/3671)).
+* Fix for pip flags with equal sign being incorrectly treated as local file names ([#3766](https://github.com/databricks/cli/pull/3766))
+
+
+## Release v0.272.0
+
+### Bundles
+* Fix processing short pip flags in environment dependencies ([#3708](https://github.com/databricks/cli/pull/3708))
+* Add support for referencing local files in -e pip flag for environment dependencies ([#3708](https://github.com/databricks/cli/pull/3708))
+* Add error for when an etag is specified in dashboard configuration. Setting etags was never supported / valid in bundles but now users will see this error during validation rather than deployment. ([#3723](https://github.com/databricks/cli/pull/3723))
+* Fix PIP flag processing in pipeline environment dependencies ([#3734](https://github.com/databricks/cli/pull/3734))
+
+
+## Release v0.271.0
+
+### Bundles
+* Added support for a "template_dir" option in the databricks_template_schema.json format. ([#3671](https://github.com/databricks/cli/pull/3671)).
+* Remove resources.apps.config section ([#3680](https://github.com/databricks/cli/pull/3680))
+* Prompt for serverless compute in `dbt-sql` template (defaults to `yes`) ([#3668](https://github.com/databricks/cli/pull/3668))
+
+### API Changes
+* Added `databricks account account-groups-v2` command group.
+* Added `databricks account account-iam-v2` command group.
+* Added `databricks feature-engineering` command group.
+* Added `databricks shares list-shares` command.
+
+
+## Release v0.270.0
+
+### Notable Changes
+* Add 'databricks bundle plan' command. This command shows the deployment plan for the current bundle configuration without making any changes. ([#3530](https://github.com/databricks/cli/pull/3530))
+
+### Bundles
+* Add 'databricks bundle plan' command ([#3530](https://github.com/databricks/cli/pull/3530))
+* Add new Lakeflow Pipelines support for bundle generate ([#3568](https://github.com/databricks/cli/pull/3568))
+* Fix bundle deploy to not update permissions or grants for unbound resources ([#3642](https://github.com/databricks/cli/pull/3642))
+* Introduce new bundle variable: `${workspace.current_user.domain_friendly_name}` ([#3623](https://github.com/databricks/cli/pull/3623))
+* Improve the output of bundle run when bundle is not deployed ([#3652](https://github.com/databricks/cli/pull/3652))
+
+
+## Release v0.269.0
+
+### Bundles
+* Fix checkForPreventDestroy to check all resources if some does not have prevent_destroy set ([#3615](https://github.com/databricks/cli/pull/3615))
+
+
+## Release v0.268.0
+
+### Bundles
+* Add support for schemas in Python support ([#3389])(https://github.com/databricks/cli/pull/3389))
+
+* Updated templates to use the new "environment_version" property instead of the deprecated "client" property ([#3554](https://github.com/databricks/cli/pull/3554)).
+
+
+## Release v0.267.0
+
+### CLI
+* Introduce retries to `databricks psql` command ([#3492](https://github.com/databricks/cli/pull/3492))
+* Add rule files for coding agents working on the CLI code base ([#3245](https://github.com/databricks/cli/pull/3245))
+
+### Dependency updates
+* Upgrade TF provider to 1.88.0 ([#3529](https://github.com/databricks/cli/pull/3529))
+* Upgrade Go SDK to 0.82.0
+
+### Bundles
+* Update default-python template to make DB Connect work out of the box for unit tests, using uv to install dependencies ([#3254](https://github.com/databricks/cli/pull/3254))
+* Add support for `TaskRetryMode` for continuous jobs ([#3529](https://github.com/databricks/cli/pull/3529))
+* Add support for specifying database instance as an application resource ([#3529](https://github.com/databricks/cli/pull/3529))
+* Allow referencing job libraries outside bundle root without the need to specify sync root ([#2842](https://github.com/databricks/cli/pull/2842))
+* Add top level `run_as` support for Lakeflow Declarative Pipelines ([#3307](https://github.com/databricks/cli/pull/3307))
+* Add support for `lifecycle prevent_destroy` option ([#3448](https://github.com/databricks/cli/pull/3448))
+
+
 ## Release v0.266.0
 
 ### Notable Changes

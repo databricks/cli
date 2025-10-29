@@ -360,7 +360,7 @@ func TestBundleToTerraformModelPermissions(t *testing.T) {
 
 func TestBundleToTerraformExperiment(t *testing.T) {
 	src := resources.MlflowExperiment{
-		Experiment: ml.Experiment{
+		CreateExperiment: ml.CreateExperiment{
 			Name: "name",
 		},
 	}
@@ -383,7 +383,7 @@ func TestBundleToTerraformExperiment(t *testing.T) {
 
 func TestBundleToTerraformExperimentPermissions(t *testing.T) {
 	src := resources.MlflowExperiment{
-		Experiment: ml.Experiment{
+		CreateExperiment: ml.CreateExperiment{
 			Name: "name",
 		},
 		Permissions: []resources.MlflowExperimentPermission{
@@ -575,8 +575,8 @@ func TestBundleToTerraformDeletedResources(t *testing.T) {
 		JobSettings: jobs.JobSettings{},
 	}
 	job2 := resources.Job{
-		ModifiedStatus: resources.ModifiedStatusDeleted,
-		JobSettings:    jobs.JobSettings{},
+		BaseResource: resources.BaseResource{ModifiedStatus: resources.ModifiedStatusDeleted},
+		JobSettings:  jobs.JobSettings{},
 	}
 	config := config.Root{
 		Resources: config.Resources{

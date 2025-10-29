@@ -61,6 +61,7 @@ To re-bind the resource later, use:
 		if b == nil || logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}
+		ctx = cmd.Context()
 
 		phases.Initialize(ctx, b)
 		if logdiag.HasError(ctx) {
@@ -76,8 +77,9 @@ To re-bind the resource later, use:
 			b.Config.Bundle.Deployment.Lock.Force = forceLock
 		})
 
-		tfName := terraform.GroupToTerraformName[resource.ResourceDescription().PluralName]
-		phases.Unbind(ctx, b, tfName, args[0])
+		rd := resource.ResourceDescription()
+		tfName := terraform.GroupToTerraformName[rd.PluralName]
+		phases.Unbind(ctx, b, rd.SingularName, tfName, args[0])
 		if logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}

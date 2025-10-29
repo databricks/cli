@@ -1,0 +1,9 @@
+trace $CLI bundle validate
+trace $CLI bundle plan
+trace print_requests.py '^//import-file/'
+
+trace $CLI bundle deploy
+trace print_requests.py '^//import-file/'
+
+trace $CLI bundle destroy --auto-approve
+trace print_requests.py --sort '^//import-file/'

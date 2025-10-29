@@ -1,5 +1,3 @@
-EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["terraform"]  # clusters not implemented
-
 [EnvMatrix]
 DATA_SECURITY_MODE = [
     "USER_ISOLATION",

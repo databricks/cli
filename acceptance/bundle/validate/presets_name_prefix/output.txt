@@ -3,10 +3,6 @@
   name_prefix: "prefix-"
 
 >>> [CLI] bundle validate -o json
-Warning: required field "catalog_name" is not set
-  at resources.schemas.schema1
-  in databricks.yml:14:7
-
 {
   "jobs": {
     "job1": {
@@ -18,14 +14,19 @@ Warning: required field "catalog_name" is not set
       "format": "MULTI_TASK",
       "max_concurrent_runs": 1,
       "name": "prefix-job1",
-      "permissions": [],
       "queue": {
         "enabled": true
       }
     }
   },
+  "models": {
+    "model1": {
+      "name": "prefix-model 1"
+    }
+  },
   "schemas": {
     "schema1": {
+      "catalog_name": "c",
       "name": "prefixschema1"
     }
   },
@@ -43,10 +44,6 @@ Warning: required field "catalog_name" is not set
   name_prefix: "[prefix]"
 
 >>> [CLI] bundle validate -o json
-Warning: required field "catalog_name" is not set
-  at resources.schemas.schema1
-  in databricks.yml:14:7
-
 {
   "jobs": {
     "job1": {
@@ -58,14 +55,19 @@ Warning: required field "catalog_name" is not set
       "format": "MULTI_TASK",
       "max_concurrent_runs": 1,
       "name": "[prefix]job1",
-      "permissions": [],
       "queue": {
         "enabled": true
       }
     }
   },
+  "models": {
+    "model1": {
+      "name": "[prefix]model 1"
+    }
+  },
   "schemas": {
     "schema1": {
+      "catalog_name": "c",
       "name": "prefix_schema1"
     }
   },
@@ -83,10 +85,6 @@ Warning: required field "catalog_name" is not set
   name_prefix: ""
 
 >>> [CLI] bundle validate -o json
-Warning: required field "catalog_name" is not set
-  at resources.schemas.schema1
-  in databricks.yml:14:7
-
 {
   "jobs": {
     "job1": {
@@ -98,14 +96,19 @@ Warning: required field "catalog_name" is not set
       "format": "MULTI_TASK",
       "max_concurrent_runs": 1,
       "name": "job1",
-      "permissions": [],
       "queue": {
         "enabled": true
       }
     }
   },
+  "models": {
+    "model1": {
+      "name": "model 1"
+    }
+  },
   "schemas": {
     "schema1": {
+      "catalog_name": "c",
       "name": "schema1"
     }
   },

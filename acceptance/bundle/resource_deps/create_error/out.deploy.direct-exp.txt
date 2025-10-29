@@ -1,16 +1,14 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
-Error: cannot create jobs.foo: INJECTED (500 UNKNOWN)
+Error: cannot create resources.jobs.foo: INJECTED (500 UNKNOWN)
 
 Endpoint: POST [DATABRICKS_URL]/api/2.2/jobs/create
 HTTP Status: 500 Internal Server Error
 API error_code: UNKNOWN
 API message: INJECTED
 
-Error: cannot create jobs.bar: dependency failed: jobs.foo
+Error: cannot create resources.jobs.bar: dependency failed: resources.jobs.foo
 
-Error: cannot create jobs.baz: dependency failed: jobs.foo
+Error: cannot create resources.jobs.baz: dependency failed: resources.jobs.foo
 
 Updating deployment state...
-
-Exit code (musterr): 1

@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/mock"
@@ -58,7 +57,7 @@ func TestConvertPythonParams(t *testing.T) {
 
 func TestJobRunnerCancel(t *testing.T) {
 	job := &resources.Job{
-		ID: "123",
+		BaseResource: resources.BaseResource{ID: "123"},
 	}
 	b := &bundle.Bundle{
 		Config: config.Root{
@@ -102,7 +101,7 @@ func TestJobRunnerCancel(t *testing.T) {
 
 func TestJobRunnerCancelWithNoActiveRuns(t *testing.T) {
 	job := &resources.Job{
-		ID: "123",
+		BaseResource: resources.BaseResource{ID: "123"},
 	}
 	b := &bundle.Bundle{
 		Config: config.Root{
@@ -141,8 +140,8 @@ func TestJobRunnerRestart(t *testing.T) {
 		},
 	} {
 		job := &resources.Job{
-			ID:          "123",
-			JobSettings: jobSettings,
+			BaseResource: resources.BaseResource{ID: "123"},
+			JobSettings:  jobSettings,
 		}
 		b := &bundle.Bundle{
 			Config: config.Root{
@@ -160,7 +159,6 @@ func TestJobRunnerRestart(t *testing.T) {
 		b.SetWorkpaceClient(m.WorkspaceClient)
 
 		ctx := cmdio.MockDiscard(context.Background())
-		ctx = cmdio.NewContext(ctx, cmdio.NewLogger(flags.ModeAppend))
 
 		jobApi := m.GetMockJobsAPI()
 		jobApi.EXPECT().ListRunsAll(mock.Anything, jobs.ListRunsRequest{
@@ -208,7 +206,7 @@ func TestJobRunnerRestart(t *testing.T) {
 
 func TestJobRunnerRestartForContinuousUnpausedJobs(t *testing.T) {
 	job := &resources.Job{
-		ID: "123",
+		BaseResource: resources.BaseResource{ID: "123"},
 		JobSettings: jobs.JobSettings{
 			Continuous: &jobs.Continuous{
 				PauseStatus: jobs.PauseStatusUnpaused,
@@ -231,7 +229,6 @@ func TestJobRunnerRestartForContinuousUnpausedJobs(t *testing.T) {
 	b.SetWorkpaceClient(m.WorkspaceClient)
 
 	ctx := cmdio.MockDiscard(context.Background())
-	ctx = cmdio.NewContext(ctx, cmdio.NewLogger(flags.ModeAppend))
 
 	jobApi := m.GetMockJobsAPI()
 

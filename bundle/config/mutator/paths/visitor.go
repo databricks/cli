@@ -10,10 +10,12 @@ type VisitFunc func(path dyn.Path, mode TranslateMode, value dyn.Value) (dyn.Val
 func VisitPaths(root dyn.Value, fn VisitFunc) (dyn.Value, error) {
 	visitors := []func(dyn.Value, VisitFunc) (dyn.Value, error){
 		VisitJobPaths,
+		VisitJobLibrariesPaths,
 		VisitAppPaths,
 		VisitArtifactPaths,
 		VisitDashboardPaths,
 		VisitPipelinePaths,
+		VisitPipelineLibrariesPaths,
 	}
 
 	newRoot := root

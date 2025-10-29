@@ -10,25 +10,11 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/database"
 )
 
-type DatabaseInstancePermissionLevel string
-
-// DatabaseInstancePermission holds the permission level setting for a single principal.
-// Multiple of these can be defined on any database instance.
-type DatabaseInstancePermission struct {
-	Level DatabaseInstancePermissionLevel `json:"level"`
-
-	UserName             string `json:"user_name,omitempty"`
-	ServicePrincipalName string `json:"service_principal_name,omitempty"`
-	GroupName            string `json:"group_name,omitempty"`
-}
-
 type DatabaseInstance struct {
-	ID             string                       `json:"id,omitempty" bundle:"readonly"`
-	URL            string                       `json:"url,omitempty" bundle:"internal"`
-	Permissions    []DatabaseInstancePermission `json:"permissions,omitempty"`
-	ModifiedStatus ModifiedStatus               `json:"modified_status,omitempty" bundle:"internal"`
-
+	BaseResource
 	database.DatabaseInstance
+
+	Permissions []DatabaseInstancePermission `json:"permissions,omitempty"`
 }
 
 func (d *DatabaseInstance) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {

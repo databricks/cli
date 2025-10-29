@@ -23,6 +23,9 @@ Deployment complete!
       "client": "1",
       "dependencies": [
         "-r /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/requirements.txt",
+        "-e /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/file.py",
+        "-i http://myindexurl.com",
+        "--index-url http://myindexurl.com",
         "test_package",
         "test_package==2.0.1",
         "test_package>=2.0.1",
@@ -30,7 +33,8 @@ Deployment complete!
         "/Workspace/Users/test@databricks.com/test-package.whl",
         "beautifulsoup4>=1.0.0,~=1.2.0,<2.0.0",
         "beautifulsoup4[security, tests] ~= 4.12.3",
-        "requests[security] @ https://github.com/psf/requests/archive/refs/heads/main.zip"
+        "requests[security] @ https://github.com/psf/requests/archive/refs/heads/main.zip",
+        "--find-links=/Workspace/Users/test"
       ]
     }
   },
@@ -58,13 +62,18 @@ Deployment complete!
     "edition": "ADVANCED",
     "environment": {
       "dependencies": [
+        "-r /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/requirements.txt",
+        "-e /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/file.py",
+        "-i http://myindexurl.com",
+        "--index-url http://myindexurl.com",
         "/Workspace/Users/[USERNAME]/.bundle/dependencies/default/artifacts/.internal/test.whl",
         "/Workspace/Users/test@databricks.com/test-package.whl",
         "test_package",
         "test_package==2.0.1",
         "test_package>=2.0.1",
         "beautifulsoup4>=1.0.0,~=1.2.0,<2.0.0",
-        "requests[security] @ https://github.com/psf/requests/archive/refs/heads/main.zip"
+        "requests[security] @ https://github.com/psf/requests/archive/refs/heads/main.zip",
+        "--find-links=/Workspace/Users/test"
       ]
     },
     "name": "Test Pipeline"
@@ -79,6 +88,9 @@ Deployment complete!
       "client": "1",
       "dependencies": [
         "-r /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/requirements.txt",
+        "-e /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/file.py",
+        "-i http://myindexurl.com",
+        "--index-url http://myindexurl.com",
         "test_package",
         "test_package==2.0.1",
         "test_package>=2.0.1",
@@ -86,7 +98,8 @@ Deployment complete!
         "/Workspace/Users/test@databricks.com/test-package.whl",
         "beautifulsoup4>=1.0.0,~=1.2.0,<2.0.0",
         "beautifulsoup4[security, tests] ~= 4.12.3",
-        "requests[security] @ https://github.com/psf/requests/archive/refs/heads/main.zip"
+        "requests[security] @ https://github.com/psf/requests/archive/refs/heads/main.zip",
+        "--find-links=/Workspace/Users/test"
       ]
     }
   },
@@ -104,12 +117,17 @@ Deployment complete!
 >>> [CLI] bundle validate -o json
 {
   "dependencies": [
+    "-r /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/requirements.txt",
+    "-e /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/file.py",
+    "-i http://myindexurl.com",
+    "--index-url http://myindexurl.com",
     "./dist/*.whl",
     "/Workspace/Users/test@databricks.com/test-package.whl",
     "test_package",
     "test_package==2.0.1",
     "test_package>=2.0.1",
     "beautifulsoup4>=1.0.0,~=1.2.0,<2.0.0",
-    "requests[security] @ https://github.com/psf/requests/archive/refs/heads/main.zip"
+    "requests[security] @ https://github.com/psf/requests/archive/refs/heads/main.zip",
+    "--find-links=/Workspace/Users/test"
   ]
 }

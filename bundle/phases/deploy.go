@@ -5,10 +5,8 @@ import (
 	"errors"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/apps"
 	"github.com/databricks/cli/bundle/artifacts"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/bundle/deploy/lock"
@@ -20,42 +18,25 @@ import (
 	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/bundle/scripts"
 	"github.com/databricks/cli/bundle/statemgmt"
-	"github.com/databricks/cli/bundle/terranova"
-	"github.com/databricks/cli/bundle/trampoline"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/sync"
 )
 
-func getActions(ctx context.Context, b *bundle.Bundle) ([]deployplan.Action, error) {
-	if b.DirectDeployment {
-		err := terranova.CalculatePlanForDeploy(ctx, b)
-		if err != nil {
-			return nil, err
-		}
-		return terranova.GetDeployActions(ctx, b), nil
-	} else {
-		tf := b.Terraform
-		if tf == nil {
-			return nil, errors.New("terraform not initialized")
-		}
-		actions, err := terraform.ShowPlanFile(ctx, tf, b.TerraformPlanPath)
-		return actions, err
-	}
-}
+func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (bool, error) {
+	actions := plan.GetActions()
 
-func approvalForDeploy(ctx context.Context, b *bundle.Bundle) (bool, error) {
-	actions, err := getActions(ctx, b)
+	err := checkForPreventDestroy(b, actions)
 	if err != nil {
 		return false, err
 	}
 
 	types := []deployplan.ActionType{deployplan.ActionTypeRecreate, deployplan.ActionTypeDelete}
-	schemaActions := deployplan.FilterGroup(actions, "schemas", types...)
-	dltActions := deployplan.FilterGroup(actions, "pipelines", types...)
-	volumeActions := deployplan.FilterGroup(actions, "volumes", types...)
-	dashboardActions := deployplan.FilterGroup(actions, "dashboards", types...)
+	schemaActions := filterGroup(actions, "schemas", types...)
+	dltActions := filterGroup(actions, "pipelines", types...)
+	volumeActions := filterGroup(actions, "volumes", types...)
+	dashboardActions := filterGroup(actions, "dashboards", types...)
 
 	// We don't need to display any prompts in this case.
 	if len(schemaActions) == 0 && len(dltActions) == 0 && len(volumeActions) == 0 && len(dashboardActions) == 0 {
@@ -111,13 +92,13 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	return approved, nil
 }
 
-func deployCore(ctx context.Context, b *bundle.Bundle) {
+func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) {
 	// Core mutators that CRUD resources and modify deployment state. These
 	// mutators need informed consent if they are potentially destructive.
 	cmdio.LogString(ctx, "Deploying resources...")
 
 	if b.DirectDeployment {
-		bundle.ApplyContext(ctx, b, terranova.TerranovaApply())
+		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(), &b.Config, plan)
 	} else {
 		bundle.ApplyContext(ctx, b, terraform.Apply())
 	}
@@ -132,8 +113,6 @@ func deployCore(ctx context.Context, b *bundle.Bundle) {
 
 	bundle.ApplySeqContext(ctx, b,
 		statemgmt.Load(),
-		apps.InterpolateVariables(),
-		apps.UploadConfig(),
 		metadata.Compute(),
 		metadata.Upload(),
 	)
@@ -143,36 +122,13 @@ func deployCore(ctx context.Context, b *bundle.Bundle) {
 	}
 }
 
-// deployPrepare is common set of mutators between "bundle plan" and "bundle deploy".
-// Ideally it should not modify the remote, only in-memory bundle config.
-// TODO: currently it does affect remote, via artifacts.CleanUp() and libraries.Upload().
-// We should refactor deployment so that it consists of two stages:
-// 1. Preparation: only local config is changed. This will be used by both "bundle deploy" and "bundle plan"
-// 2. Deployment: this does all the uploads. Only used by "deploy", not "plan".
-func deployPrepare(ctx context.Context, b *bundle.Bundle) {
+// uploadLibraries uploads libraries to the workspace.
+// It also cleans up the artifacts directory and transforms wheel tasks.
+// It is called by only "bundle deploy".
+func uploadLibraries(ctx context.Context, b *bundle.Bundle, libs map[string][]libraries.LocationToUpdate) {
 	bundle.ApplySeqContext(ctx, b,
-		statemgmt.StatePull(),
-		terraform.CheckDashboardsModifiedRemotely(),
-		deploy.StatePull(),
-		mutator.ValidateGitDetails(),
-		terraform.CheckRunningResource(),
-
-		// artifacts.CleanUp() is there because I'm not sure if it's safe to move to later stage.
 		artifacts.CleanUp(),
-
-		// libraries.CheckForSameNameLibraries() needs to be run after we expand glob references so we
-		// know what are the actual library paths.
-		// libraries.ExpandGlobReferences() has to be run after the libraries are built and thus this
-		// mutator is part of the deploy step rather than validate.
-		libraries.ExpandGlobReferences(),
-		libraries.CheckForSameNameLibraries(),
-		// SwitchToPatchedWheels must be run after ExpandGlobReferences and after build phase because it Artifact.Source and Artifact.Patched populated
-		libraries.SwitchToPatchedWheels(),
-
-		// libraries.Upload() not just uploads but also replaces local paths with remote paths.
-		// TransformWheelTask depends on it and planning also depends on it.
-		libraries.Upload(),
-		trampoline.TransformWheelTask(),
+		libraries.Upload(libs),
 	)
 }
 
@@ -197,7 +153,12 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDeploy))
 	}()
 
-	deployPrepare(ctx, b)
+	libs := deployPrepare(ctx, b, false)
+	if logdiag.HasError(ctx) {
+		return
+	}
+
+	uploadLibraries(ctx, b, libs)
 	if logdiag.HasError(ctx) {
 		return
 	}
@@ -208,34 +169,28 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		deploy.StatePush(),
 		permissions.ApplyWorkspaceRootPermissions(),
 		metrics.TrackUsedCompute(),
+		deploy.ResourcePathMkdir(),
 	)
 
 	if logdiag.HasError(ctx) {
 		return
 	}
 
-	if !b.DirectDeployment {
-		bundle.ApplySeqContext(ctx, b,
-			terraform.Interpolate(),
-			terraform.Write(),
-			terraform.Plan(terraform.PlanGoal("deploy")),
-		)
-	}
-
+	plan := planWithoutPrepare(ctx, b)
 	if logdiag.HasError(ctx) {
 		return
 	}
 
-	haveApproval, err := approvalForDeploy(ctx, b)
+	haveApproval, err := approvalForDeploy(ctx, b, plan)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return
 	}
-
 	if haveApproval {
-		deployCore(ctx, b)
+		deployCore(ctx, b, plan)
 	} else {
 		cmdio.LogString(ctx, "Deployment cancelled!")
+		return
 	}
 
 	if logdiag.HasError(ctx) {
@@ -246,30 +201,54 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	bundle.ApplyContext(ctx, b, scripts.Execute(config.ScriptPostDeploy))
 }
 
-func Diff(ctx context.Context, b *bundle.Bundle) []deployplan.Action {
-	deployPrepare(ctx, b)
+// planWithoutPrepare builds a deployment plan without running deployPrepare.
+// This is used when deployPrepare has already been called.
+func planWithoutPrepare(ctx context.Context, b *bundle.Bundle) *deployplan.Plan {
+	if b.DirectDeployment {
+		if err := b.OpenStateFile(ctx); err != nil {
+			logdiag.LogError(ctx, err)
+			return nil
+		}
+		plan, err := b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(), &b.Config)
+		if err != nil {
+			logdiag.LogError(ctx, err)
+			return nil
+		}
+		return plan
+	}
+
+	bundle.ApplySeqContext(ctx, b,
+		terraform.Interpolate(),
+		terraform.Write(),
+		terraform.Plan(terraform.PlanGoal("deploy")),
+	)
+
 	if logdiag.HasError(ctx) {
 		return nil
 	}
 
-	if !b.DirectDeployment {
-		bundle.ApplySeqContext(ctx, b,
-			terraform.Interpolate(),
-			terraform.Write(),
-			terraform.Plan(terraform.PlanGoal("deploy")),
-		)
-	}
-
-	if logdiag.HasError(ctx) {
+	tf := b.Terraform
+	if tf == nil {
+		logdiag.LogError(ctx, errors.New("terraform not initialized"))
 		return nil
 	}
 
-	actions, err := getActions(ctx, b)
+	plan, err := terraform.ShowPlanFile(ctx, tf, b.TerraformPlanPath)
 	if err != nil {
 		logdiag.LogError(ctx, err)
+		return nil
 	}
 
-	return actions
+	return plan
+}
+
+func Plan(ctx context.Context, b *bundle.Bundle) *deployplan.Plan {
+	deployPrepare(ctx, b, true)
+	if logdiag.HasError(ctx) {
+		return nil
+	}
+
+	return planWithoutPrepare(ctx, b)
 }
 
 // If there are more than 1 thousand of a resource type, do not

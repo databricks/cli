@@ -84,7 +84,7 @@ const (
 	EntryPointScript = "script"
 	CleanupScript    = "script.cleanup"
 	PrepareScript    = "script.prepare"
-	MaxFileSize      = 100_000
+	MaxFileSize      = 1_000_000
 	// Filename to save replacements to (used by diff.py)
 	ReplsFile = "repls.json"
 	// Filename for materialized config (used as golden file)
@@ -228,7 +228,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	cloudEnv := os.Getenv("CLOUD_ENV")
 
 	if cloudEnv == "" {
-		internal.StartDefaultServer(t)
+		internal.StartDefaultServer(t, LogRequests)
 		if os.Getenv("TEST_DEFAULT_WAREHOUSE_ID") == "" {
 			t.Setenv("TEST_DEFAULT_WAREHOUSE_ID", "8ec9edc1-db0c-40df-af8d-7580020fe61e")
 		}
@@ -367,7 +367,7 @@ func getEnvFilters(t *testing.T) []string {
 		// Clear it just to be sure, since it's going to be part of os.Environ() and we're going to add different value based on settings.
 		os.Unsetenv(key)
 
-		if key == "DATABRICKS_CLI_DEPLOYMENT" && items[1] == "direct" {
+		if key == "DATABRICKS_BUNDLE_ENGINE" && items[1] == "direct" {
 			// CLI only recognizes "direct-exp" at the moment, but in the future will recognize "direct" as well.
 			// On CI we set "direct". To avoid renaming jobs in CI on the future, we correct direct -> direct-exp here
 			items[1] = "direct-exp"
@@ -413,6 +413,14 @@ func getSkipReason(config *internal.TestConfig, configPath string) string {
 
 	if Forcerun {
 		return ""
+	}
+
+	if isTruePtr(config.SkipOnDbr) && WorkspaceTmpDir {
+		return "Disabled via SkipOnDbr setting in " + configPath
+	}
+
+	if isTruePtr(config.Slow) && testing.Short() {
+		return "Disabled via Slow setting in " + configPath
 	}
 
 	isEnabled, isPresent := config.GOOS[runtime.GOOS]
@@ -573,6 +581,16 @@ func runTest(t *testing.T,
 	testdiff.PrepareReplacementsWorkspaceConfig(t, &repls, cfg)
 
 	cmd.Env = auth.ProcessEnv(cfg)
+
+	rateLimit := os.Getenv("DATABRICKS_RATE_LIMIT")
+	if rateLimit == "" {
+		if isRunningOnCloud {
+			rateLimit = "100"
+		} else {
+			rateLimit = "1000000000"
+		}
+	}
+	cmd.Env = append(cmd.Env, "DATABRICKS_RATE_LIMIT="+rateLimit)
 	cmd.Env = append(cmd.Env, "UNIQUE_NAME="+uniqueName)
 	cmd.Env = append(cmd.Env, "TEST_TMP_DIR="+tmpDir)
 
@@ -694,6 +712,17 @@ func runTest(t *testing.T,
 			continue
 		}
 		if config.CompiledIgnoreObject.MatchesPath(relPath) {
+			continue
+		}
+		if strings.HasPrefix(filepath.Base(relPath), "LOG") {
+			prefix := relPath + ": "
+			messages := testutil.ReadFile(t, filepath.Join(tmpDir, relPath))
+			messages = strings.TrimRight(messages, "\r\n \t")
+			messages = prefix + strings.ReplaceAll(messages, "\n", "\n"+prefix)
+			if strings.Contains(messages, "\n") {
+				messages = "\n" + messages
+			}
+			t.Log(messages)
 			continue
 		}
 		unexpected = append(unexpected, relPath)
@@ -1375,7 +1404,7 @@ func loadUserReplacements(t *testing.T, repls *testdiff.ReplacementsContext, tmp
 
 type pathFilter struct {
 	// contains substrings from the variants other than current.
-	// E.g. if EnvVaryOutput is DATABRICKS_CLI_DEPLOYMENT and current test running DATABRICKS_CLI_DEPLOYMENT="terraform" then
+	// E.g. if EnvVaryOutput is DATABRICKS_BUNDLE_ENGINE and current test running DATABRICKS_BUNDLE_ENGINE="terraform" then
 	// notSelected contains ".direct-exp." meaning if filename contains that (e.g. out.deploy.direct-exp.txt) then we ignore it here.
 	notSelected []string
 }

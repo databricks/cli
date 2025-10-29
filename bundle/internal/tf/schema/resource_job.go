@@ -3,7 +3,8 @@
 package schema
 
 type ResourceJobContinuous struct {
-	PauseStatus string `json:"pause_status,omitempty"`
+	PauseStatus   string `json:"pause_status,omitempty"`
+	TaskRetryMode string `json:"task_retry_mode,omitempty"`
 }
 
 type ResourceJobDbtTask struct {
@@ -34,7 +35,7 @@ type ResourceJobEnvironmentSpec struct {
 	Client             string   `json:"client,omitempty"`
 	Dependencies       []string `json:"dependencies,omitempty"`
 	EnvironmentVersion string   `json:"environment_version,omitempty"`
-	JarDependencies    []string `json:"jar_dependencies,omitempty"`
+	JavaDependencies   []string `json:"java_dependencies,omitempty"`
 }
 
 type ResourceJobEnvironment struct {
@@ -1110,6 +1111,7 @@ type ResourceJobTaskForEachTaskTaskWebhookNotifications struct {
 type ResourceJobTaskForEachTaskTask struct {
 	Description             string                                                `json:"description,omitempty"`
 	DisableAutoOptimization bool                                                  `json:"disable_auto_optimization,omitempty"`
+	Disabled                bool                                                  `json:"disabled,omitempty"`
 	EnvironmentKey          string                                                `json:"environment_key,omitempty"`
 	ExistingClusterId       string                                                `json:"existing_cluster_id,omitempty"`
 	JobClusterKey           string                                                `json:"job_cluster_key,omitempty"`
@@ -1560,6 +1562,7 @@ type ResourceJobTaskWebhookNotifications struct {
 type ResourceJobTask struct {
 	Description             string                                 `json:"description,omitempty"`
 	DisableAutoOptimization bool                                   `json:"disable_auto_optimization,omitempty"`
+	Disabled                bool                                   `json:"disabled,omitempty"`
 	EnvironmentKey          string                                 `json:"environment_key,omitempty"`
 	ExistingClusterId       string                                 `json:"existing_cluster_id,omitempty"`
 	JobClusterKey           string                                 `json:"job_cluster_key,omitempty"`

@@ -1,0 +1,19 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py //apps
+{
+  "method": "POST",
+  "path": "/api/2.0/apps",
+  "q": {
+    "no_compute": "true"
+  },
+  "body": {
+    "description": "",
+    "name": "myappname"
+  }
+}

@@ -1,0 +1,14 @@
+resources:
+  sql_warehouses:
+    foo:
+      name: foo
+      cluster_size: Small
+      permissions:
+        - level: CAN_VIEW
+          user_name: viewer@example.com
+        - level: CAN_MANAGE
+          group_name: data-team
+        - level: CAN_MANAGE
+          service_principal_name: f37d18cd-98a8-4db5-8112-12dd0a6bfe38
+        - level: CAN_MANAGE
+          user_name: tester@databricks.com

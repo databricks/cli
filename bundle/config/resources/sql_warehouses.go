@@ -10,24 +10,11 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/sql"
 )
 
-type SqlWarehousePermissionLevel string
-
-type SqlWarehousePermission struct {
-	Level SqlWarehousePermissionLevel `json:"level"`
-
-	UserName             string `json:"user_name,omitempty"`
-	ServicePrincipalName string `json:"service_principal_name,omitempty"`
-	GroupName            string `json:"group_name,omitempty"`
-}
-
 type SqlWarehouse struct {
-	ID string `json:"id,omitempty" bundle:"readonly"`
-
-	Permissions    []SqlWarehousePermission `json:"permissions,omitempty"`
-	ModifiedStatus ModifiedStatus           `json:"modified_status,omitempty" bundle:"internal"`
-	URL            string                   `json:"url,omitempty" bundle:"internal"`
-
+	BaseResource
 	sql.CreateWarehouseRequest
+
+	Permissions []SqlWarehousePermission `json:"permissions,omitempty"`
 }
 
 func (sw *SqlWarehouse) UnmarshalJSON(b []byte) error {

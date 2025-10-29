@@ -7,9 +7,9 @@ Usage:
 
 Identity and Access Management
   access-control                      These APIs manage access rules on resources in an account.
-  groups                              Groups simplify identity management, making it easier to assign access to Databricks account, data, and other securable objects.
-  service-principals                  Identities for use with jobs, automated tools, and systems such as scripts, apps, and CI/CD platforms.
-  users                               User identities recognized by Databricks and represented by email addresses.
+  groups-v2                           Groups simplify identity management, making it easier to assign access to Databricks account, data, and other securable objects.
+  service-principals-v2               Identities for use with jobs, automated tools, and systems such as scripts, apps, and CI/CD platforms.
+  users-v2                            User identities recognized by Databricks and represented by email addresses.
   workspace-assignment                The Workspace Permission Assignment API allows you to manage workspace permissions for principals in your account.
 
 Unity Catalog
@@ -23,6 +23,9 @@ Settings
   network-policies                    These APIs manage network policies for this account.
   settings                            Accounts Settings API allows users to manage settings at the account level.
   workspace-network-configuration     These APIs allow configuration of network settings for Databricks workspaces by selecting which network policy to associate with the workspace.
+
+Settings (v2)
+  settings-v2                         APIs to manage account level settings.
 
 Provisioning
   credentials                         These APIs manage credential configurations for this workspace.
@@ -47,6 +50,9 @@ OAuth
   published-app-integration           These APIs enable administrators to manage published OAuth app integrations, which is required for adding/using Published OAuth App Integration like Tableau Desktop for Databricks in AWS cloud.
   service-principal-federation-policy These APIs manage service principal federation policies.
   service-principal-secrets           These APIs enable administrators to manage service principal secrets.
+
+Identity and Access Management (v2)
+  iam-v2                              These APIs are used to manage identities and the workspace access of these identities in <Databricks>.
 
 Flags:
   -h, --help   help for account

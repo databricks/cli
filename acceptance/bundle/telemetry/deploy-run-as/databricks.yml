@@ -1,0 +1,7 @@
+run_as:
+  service_principal_name: "sp_test"
+
+resources:
+  jobs:
+    test_job:
+      name: Test Job

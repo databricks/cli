@@ -21,6 +21,9 @@ resources:
             client: "1"
             dependencies:
               - "-r ./requirements.txt"
+              - "-e ./file.py"
+              - "-i http://myindexurl.com"
+              - "--index-url http://myindexurl.com"
               - "test_package"
               - "test_package==2.0.1"
               - "test_package>=2.0.1"
@@ -29,12 +32,17 @@ resources:
               - "beautifulsoup4>=1.0.0,~=1.2.0,<2.0.0"
               - "beautifulsoup4[security, tests] ~= 4.12.3"
               - "requests[security] @ https://github.com/psf/requests/archive/refs/heads/main.zip"
+              - "--find-links=/Workspace/Users/test"
 
   pipelines:
     test_pipeline:
       name: "Test Pipeline"
       environment:
         dependencies:
+          - "-r ./requirements.txt"
+          - "-e ./file.py"
+          - "-i http://myindexurl.com"
+          - "--index-url http://myindexurl.com"
           - "dist/*.whl"
           - "/Workspace/Users/test@databricks.com/test-package.whl"
           - "test_package"
@@ -42,3 +50,4 @@ resources:
           - "test_package>=2.0.1"
           - "beautifulsoup4>=1.0.0,~=1.2.0,<2.0.0"
           - "requests[security] @ https://github.com/psf/requests/archive/refs/heads/main.zip"
+          - "--find-links=/Workspace/Users/test"

@@ -56,6 +56,8 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 		{"resources.dashboards.*.embed_credentials", false},
 		{"resources.volumes.*.volume_type", "MANAGED"},
 
+		{"resources.alerts.*.parent_path", b.Config.Workspace.ResourcePath},
+
 		// Jobs:
 
 		// The defaults are the same as for terraform provider latest version (v1.75.0)
@@ -87,6 +89,13 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 		{"resources.sql_warehouses.*.enable_photon", true},
 		{"resources.sql_warehouses.*.max_num_clusters", 1},
 		{"resources.sql_warehouses.*.spot_instance_policy", "COST_OPTIMIZED"},
+
+		// Apps:
+		{"resources.apps.*.description", ""},
+
+		// Clusters (same as terraform)
+		// https://github.com/databricks/terraform-provider-databricks/blob/v1.75.0/clusters/resource_cluster.go#L315
+		{"resources.clusters.*.autotermination_minutes", 60},
 	}
 
 	for _, defaultDef := range defaults {
@@ -109,11 +118,8 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 		ApplyBundlePermissions(),
 
 		// Reads (typed): b.Config.Workspace.CurrentUser.UserName (gets current user name)
-		// Updates (dynamic): resources.*.*.permissions (removes permissions entries where user_name or service_principal_name matches current user)
-		// Removes the current user from all resource permissions as the Terraform provider implicitly grants ownership
-		FilterCurrentUser(),
-
-		ApplyDefaultTaskSource(),
+		// Updates (dynamic): resources.*.*.permissions
+		EnsureOwnerPermissions(),
 	)
 }
 
@@ -166,6 +172,7 @@ func applyNormalizeMutators(ctx context.Context, b *bundle.Bundle) {
 
 		// Reads and updates (typed): resources.jobs.*.**
 		JobClustersFixups(),
+		ClusterFixups(),
 	)
 }
 

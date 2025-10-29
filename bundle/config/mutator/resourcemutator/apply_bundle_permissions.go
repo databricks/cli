@@ -55,6 +55,11 @@ var (
 			permissions.CAN_MANAGE: "MANAGE",
 			permissions.CAN_VIEW:   "READ",
 		},
+		"alerts": {
+			permissions.CAN_MANAGE: "CAN_MANAGE",
+			permissions.CAN_VIEW:   "CAN_READ",
+			permissions.CAN_RUN:    "CAN_RUN",
+		},
 		"sql_warehouses": {
 			permissions.CAN_MANAGE: "CAN_MANAGE",
 			permissions.CAN_VIEW:   "CAN_VIEW",
@@ -110,6 +115,10 @@ func (m *bundlePermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 					key,
 					levelsMap[key],
 				)...)
+
+				if len(permissions) == 0 {
+					permissions = nil
+				}
 
 				pv, err = convert.FromTyped(permissions, dyn.NilValue)
 				if err != nil {

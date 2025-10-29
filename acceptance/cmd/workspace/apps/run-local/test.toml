@@ -1,5 +1,5 @@
 Cloud = false
-Local = false
+Local = true
 RecordRequests = false
 Timeout = '2m'
 TimeoutWindows = '10m'
@@ -20,3 +20,6 @@ New='127.0.0.1:$(port)'
 [[Repls]]
 Old='To debug your app, attach a debugger to port [0-9]+'
 New='To debug your app, attach a debugger to port $(debug_port)'
+
+[EnvMatrix]
+  DATABRICKS_BUNDLE_ENGINE = ["terraform"]

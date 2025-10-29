@@ -84,6 +84,37 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().BoolVar(&createReq.AllowDuplicateNames, "allow-duplicate-names", createReq.AllowDuplicateNames, `If false, deployment will fail if name conflicts with that of another pipeline.`)
+	cmd.Flags().StringVar(&createReq.BudgetPolicyId, "budget-policy-id", createReq.BudgetPolicyId, `Budget policy of this pipeline.`)
+	cmd.Flags().StringVar(&createReq.Catalog, "catalog", createReq.Catalog, `A catalog in Unity Catalog to publish data from this pipeline to.`)
+	cmd.Flags().StringVar(&createReq.Channel, "channel", createReq.Channel, `DLT Release Channel that specifies which version to use.`)
+	// TODO: array: clusters
+	// TODO: map via StringToStringVar: configuration
+	cmd.Flags().BoolVar(&createReq.Continuous, "continuous", createReq.Continuous, `Whether the pipeline is continuous or triggered.`)
+	// TODO: complex arg: deployment
+	cmd.Flags().BoolVar(&createReq.Development, "development", createReq.Development, `Whether the pipeline is in Development mode.`)
+	cmd.Flags().BoolVar(&createReq.DryRun, "dry-run", createReq.DryRun, ``)
+	cmd.Flags().StringVar(&createReq.Edition, "edition", createReq.Edition, `Pipeline product edition.`)
+	// TODO: complex arg: environment
+	// TODO: complex arg: event_log
+	// TODO: complex arg: filters
+	// TODO: complex arg: gateway_definition
+	cmd.Flags().StringVar(&createReq.Id, "id", createReq.Id, `Unique identifier for this pipeline.`)
+	// TODO: complex arg: ingestion_definition
+	// TODO: array: libraries
+	cmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `Friendly identifier for this pipeline.`)
+	// TODO: array: notifications
+	cmd.Flags().BoolVar(&createReq.Photon, "photon", createReq.Photon, `Whether Photon is enabled for this pipeline.`)
+	// TODO: complex arg: restart_window
+	cmd.Flags().StringVar(&createReq.RootPath, "root-path", createReq.RootPath, `Root path for this pipeline.`)
+	// TODO: complex arg: run_as
+	cmd.Flags().StringVar(&createReq.Schema, "schema", createReq.Schema, `The default schema (database) where tables are read from or published to.`)
+	cmd.Flags().BoolVar(&createReq.Serverless, "serverless", createReq.Serverless, `Whether serverless compute is enabled for this pipeline.`)
+	cmd.Flags().StringVar(&createReq.Storage, "storage", createReq.Storage, `DBFS root directory for storing checkpoints and tables.`)
+	// TODO: map via StringToStringVar: tags
+	cmd.Flags().StringVar(&createReq.Target, "target", createReq.Target, `Target schema (database) to add tables in this pipeline to.`)
+	// TODO: complex arg: trigger
+
 	cmd.Use = "create"
 	cmd.Short = `Create a pipeline.`
 	cmd.Long = `Create a pipeline.
@@ -92,6 +123,11 @@ func newCreate() *cobra.Command {
   If successful, this method returns the ID of the new pipeline.`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -109,8 +145,6 @@ func newCreate() *cobra.Command {
 					return err
 				}
 			}
-		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response, err := w.Pipelines.Create(ctx, createReq)

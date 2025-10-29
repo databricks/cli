@@ -78,6 +78,14 @@ func TestNormalizePath_requirementsFile(t *testing.T) {
 	assert.Equal(t, "-r requirements.txt", value)
 }
 
+func TestNormalizePath_environmentDependency(t *testing.T) {
+	tmpDir := t.TempDir()
+	location := dyn.Location{File: filepath.Join(tmpDir, "resources", "job_1.yml")}
+	value, err := normalizePath("-e ../file.py", location, tmpDir)
+	assert.NoError(t, err)
+	assert.Equal(t, "-e file.py", value)
+}
+
 func TestLocationDirectory(t *testing.T) {
 	loc := dyn.Location{File: "file", Line: 1, Column: 2}
 	dir, err := locationDirectory(loc)

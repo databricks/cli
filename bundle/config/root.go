@@ -3,7 +3,6 @@ package config
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"reflect"
@@ -83,6 +82,9 @@ type Root struct {
 	Locations *dynloc.Locations `json:"__locations,omitempty" bundle:"internal"`
 
 	Scripts map[string]Script `json:"scripts,omitempty"`
+
+	// Python configures loading of Python code defined with 'databricks-bundles' package.
+	Python Python `json:"python,omitempty"`
 }
 
 // Load loads the bundle configuration file at the specified path.
@@ -569,37 +571,80 @@ func (r Root) GetLocations(path string) []dyn.Location {
 	return v.Locations()
 }
 
-// GetResourceConfig returns the configuration object for a given resource group/name pair.
+// GetNodeAndType and returns parent resource node and type of the resource in direct backend.
+// Examples:
+//
+//	"resources.jobs.foo.name" -> ("resources.jobs.foo", "jobs")
+//	"resources.jobs.foo.permissions[0].level -> ("resources.jobs.foo.permissions", "jobs.permissions")
+func GetNodeAndType(path dyn.Path) (dyn.Path, string) {
+	if len(path) < 3 {
+		return nil, ""
+	}
+
+	if path[0].Key() != "resources" {
+		return nil, ""
+	}
+
+	if len(path) >= 4 {
+		if path[3].Key() == "permissions" || path[3].Key() == "grants" {
+			return path[:4], path[1].Key() + "." + path[3].Key()
+		}
+	}
+
+	return path[:3], path[1].Key()
+}
+
+// GetResourceTypeFromKey extracts the resource group from a resource path.
+// For example, "resources.jobs.foo" returns "jobs".
+// Returns empty string if the path is not in the expected format.
+func GetResourceTypeFromKey(path string) string {
+	dp, err := dyn.NewPathFromString(path)
+	if err != nil {
+		return ""
+	}
+	_, rType := GetNodeAndType(dp)
+	return rType
+}
+
+// GetResourceConfig returns the configuration object for a given resource path.
+// The path should be in the format "resources.group.name" (e.g., "resources.jobs.foo").
 // The returned value is a pointer to the concrete struct that represents that resource type.
-// When the group or name is not found the second return value is false.
-func (r *Root) GetResourceConfig(group, name string) (any, bool) {
+// When the path is invalid or resource is not found, the second return value is false.
+func (r *Root) GetResourceConfig(path string) (any, error) {
+	dynPath, err := dyn.NewPathFromString(path)
+	if err != nil {
+		return nil, err
+	}
+
+	// Extract and validate the resource group from the path
+	node, resourceType := GetNodeAndType(dynPath)
+	if resourceType == "" {
+		return nil, fmt.Errorf("path does not correspond to resource: %q", path)
+	}
+
 	// Resolve the Go type that represents a single resource in this group.
-	typ, ok := ResourcesTypes[group]
+	typ, ok := ResourcesTypes[resourceType]
 	if !ok {
-		return nil, false
+		return nil, fmt.Errorf("no such resource type in the config: %q", resourceType)
 	}
 
 	// Fetch the raw value from the dynamic representation of the bundle config.
-	v, err := dyn.GetByPath(
-		r.Value(),
-		dyn.NewPath(dyn.Key("resources"), dyn.Key(group), dyn.Key(name)),
-	)
+	v, err := dyn.GetByPath(r.Value(), node)
 	if err != nil {
-		return nil, false
-	}
-
-	// json-round-trip into a value of the concrete resource type to ensure proper handling of ForceSendFields
-	bytes, err := json.Marshal(v.AsAny())
-	if err != nil {
-		return nil, false
+		if dyn.IsNoSuchKeyError(err) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("cannot fetch config for %s: %w", node, err)
 	}
 
 	typedConfigPtr := reflect.New(typ)
-	if err := json.Unmarshal(bytes, typedConfigPtr.Interface()); err != nil {
-		return nil, false
+
+	err = convert.ToTyped(typedConfigPtr.Interface(), v)
+	if err != nil {
+		return nil, fmt.Errorf("cannot convert config to %s: %w", typ.String(), err)
 	}
 
-	return typedConfigPtr.Interface(), true
+	return typedConfigPtr.Interface(), nil
 }
 
 // Value returns the dynamic configuration value of the root object. This value

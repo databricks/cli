@@ -13,7 +13,9 @@ from databricks.bundles.build import (
     _load_resources_from_input,
     _parse_args,
     _parse_bundle_info,
+    _read_conf,
     _relativize_location,
+    _relativize_path,
     _write_diagnostics,
     _write_locations,
     _write_output,
@@ -114,6 +116,25 @@ def test_relativize_location():
     location = Location(file=file, line=42, column=1)
 
     assert _relativize_location(location) == Location(file="bar.py", line=42, column=1)
+
+
+def test_relativize_path_relative():
+    assert _relativize_path("bar.py") == "bar.py"
+
+
+def test_relativize_path_absolute_in_cwd():
+    file = Path("bar.py").absolute().as_posix()
+    assert _relativize_path(file) == "bar.py"
+
+
+def test_relativize_path_absolute_outside_cwd():
+    assert _relativize_path("/some/other/path/bar.py") == "/some/other/path/bar.py"
+
+
+def test_relativize_path_different_drive():
+    # On Windows, paths on different drives should return the absolute path
+    # On Unix, this test will still pass as it will be treated as outside cwd
+    assert _relativize_path("C:\\other\\path\\bar.py") == "C:\\other\\path\\bar.py"
 
 
 def test_load_object_common_error():
@@ -487,3 +508,99 @@ def test_load_resources():
             file="my_job_2.py", line=42, column=1
         ),
     }
+
+
+def test_parse_conf_empty():
+    actual, diagnostics = _read_conf({})
+
+    assert actual == _Conf()
+    assert diagnostics == Diagnostics()
+
+
+def test_parse_conf_both_equal():
+    conf, diagnostics = _read_conf(
+        {
+            "python": {
+                "venv_path": "venv",
+                "resources": ["my_package:load_resources"],
+                "mutators": ["my_package:mutator_1"],
+            },
+            "experimental": {
+                "python": {
+                    "venv_path": "venv",
+                    "resources": ["my_package:load_resources"],
+                    "mutators": ["my_package:mutator_1"],
+                },
+            },
+        }
+    )
+
+    assert not diagnostics.has_warning()
+    assert not diagnostics.has_error()
+    assert conf == _Conf(
+        venv_path="venv",
+        resources=["my_package:load_resources"],
+        mutators=["my_package:mutator_1"],
+    )
+
+
+def test_parse_conf_both_incompatible():
+    _, diagnostics = _read_conf(
+        {
+            "python": {
+                "venv_path": "venv",
+                "resources": ["my_package:load_resources"],
+                "mutators": ["my_package:mutator_1"],
+            },
+            "experimental": {
+                "python": {
+                    "venv_path": "venv",
+                    "resources": ["my_package:load_resources"],
+                },
+            },
+        }
+    )
+
+    assert not diagnostics.has_warning()
+    assert diagnostics.has_error()
+
+
+def test_parse_conf_experimental():
+    conf, diagnostics = _read_conf(
+        {
+            "experimental": {
+                "python": {
+                    "venv_path": "venv",
+                    "resources": ["my_package:load_resources"],
+                    "mutators": ["my_package:mutator_1"],
+                },
+            },
+        }
+    )
+
+    assert not diagnostics.has_warning()
+    assert not diagnostics.has_error()
+    assert conf == _Conf(
+        venv_path="venv",
+        resources=["my_package:load_resources"],
+        mutators=["my_package:mutator_1"],
+    )
+
+
+def test_parse_conf():
+    conf, diagnostics = _read_conf(
+        {
+            "python": {
+                "venv_path": "venv",
+                "resources": ["my_package:load_resources"],
+                "mutators": ["my_package:mutator_1"],
+            },
+        }
+    )
+
+    assert diagnostics == Diagnostics()
+    assert conf == _Conf(
+        venv_path="venv",
+        resources=["my_package:load_resources"],
+        mutators=["my_package:mutator_1"],
+    )

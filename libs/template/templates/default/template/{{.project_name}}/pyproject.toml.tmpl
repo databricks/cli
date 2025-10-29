@@ -1,0 +1,32 @@
+[project]
+name = "{{.project_name}}"
+version = "0.0.1"
+authors = [{ name = "{{user_name}}" }]
+requires-python = "{{template "conservative_db_connect_python_version_spec"}}"
+dependencies = [
+    # Any dependencies for jobs and pipelines in this project can be added here
+    # See also https://docs.databricks.com/dev-tools/bundles/library-dependencies
+    #
+    # LIMITATION: for pipelines, dependencies are cached during development;
+    # add dependencies to the 'environment' section of pipeline.yml file instead
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "databricks-dlt",
+    "databricks-connect{{template "conservative_db_connect_version_spec"}}",
+{{- if eq .enable_pydabs "yes" }}
+    "databricks-bundles=={{template "latest_databricks_bundles_version"}}",
+{{- end }}
+]
+
+[project.scripts]
+main = "{{.project_name}}.main:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.black]
+line-length = 125

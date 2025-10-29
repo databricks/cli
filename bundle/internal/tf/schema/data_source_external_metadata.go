@@ -8,7 +8,7 @@ type DataSourceExternalMetadata struct {
 	CreatedBy   string            `json:"created_by,omitempty"`
 	Description string            `json:"description,omitempty"`
 	EntityType  string            `json:"entity_type"`
-	Id          string            `json:"id,omitempty"`
+	Id          string            `json:"id"`
 	MetastoreId string            `json:"metastore_id,omitempty"`
 	Name        string            `json:"name"`
 	Owner       string            `json:"owner,omitempty"`

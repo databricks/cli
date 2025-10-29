@@ -1,0 +1,10 @@
+resources:
+  pipelines:
+    foo1:
+      name: foo1 name
+    foo2:
+      name: foo2 foo1.creator_user_name=${resources.pipelines.foo1.creator_user_name}
+    foo3:
+      name: foo3 foo2.state=${resources.pipelines.foo2.state}
+    foo4:
+      name: foo4 foo3.last_modified=${resources.pipelines.foo3.last_modified}

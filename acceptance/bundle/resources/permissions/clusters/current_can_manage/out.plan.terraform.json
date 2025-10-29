@@ -1,0 +1,7 @@
+{
+  "plan": {
+    "resources.clusters.foo": {
+      "action": "create"
+    }
+  }
+}

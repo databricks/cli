@@ -1,11 +1,6 @@
-print_requests() {
-    jq --sort-keys 'select(.method != "GET" and (.path | contains("/pipeline")))' < out.requests.txt
-    rm out.requests.txt
-}
-
 trace $CLI bundle validate -o json | jq .resources
-errcode $CLI bundle plan &> out.plan.$DATABRICKS_CLI_DEPLOYMENT.txt
-trace print_requests
+errcode $CLI bundle plan
+trace print_requests.py //pipeline
 
-errcode $CLI bundle deploy &> out.deploy.$DATABRICKS_CLI_DEPLOYMENT.txt
-trace print_requests &> out.deploy-requests.$DATABRICKS_CLI_DEPLOYMENT.txt
+errcode $CLI bundle deploy
+trace print_requests.py //pipeline

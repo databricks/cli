@@ -103,11 +103,11 @@ func newCreate() *cobra.Command {
 		}
 		createReq.MetastoreId = args[1]
 
-		err = a.MetastoreAssignments.Create(ctx, createReq)
+		response, err := a.MetastoreAssignments.Create(ctx, createReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -165,11 +165,11 @@ func newDelete() *cobra.Command {
 		}
 		deleteReq.MetastoreId = args[1]
 
-		err = a.MetastoreAssignments.Delete(ctx, deleteReq)
+		response, err := a.MetastoreAssignments.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -203,7 +203,7 @@ func newGet() *cobra.Command {
 	cmd.Long = `Gets the metastore assignment for a workspace.
   
   Gets the metastore assignment, if any, for the workspace specified by ID. If
-  the workspace is assigned a metastore, the mappig will be returned. If no
+  the workspace is assigned a metastore, the mapping will be returned. If no
   metastore is assigned to the workspace, the assignment will not be found and a
   404 returned.
 
@@ -320,8 +320,8 @@ func newUpdate() *cobra.Command {
 	// TODO: complex arg: metastore_assignment
 
 	cmd.Use = "update WORKSPACE_ID METASTORE_ID"
-	cmd.Short = `Updates a metastore assignment to a workspaces.`
-	cmd.Long = `Updates a metastore assignment to a workspaces.
+	cmd.Short = `Updates a metastore assignment to a workspace.`
+	cmd.Long = `Updates a metastore assignment to a workspace.
   
   Updates an assignment to a metastore for a workspace. Currently, only the
   default catalog may be updated.
@@ -360,11 +360,11 @@ func newUpdate() *cobra.Command {
 		}
 		updateReq.MetastoreId = args[1]
 
-		err = a.MetastoreAssignments.Update(ctx, updateReq)
+		response, err := a.MetastoreAssignments.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

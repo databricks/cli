@@ -1,0 +1,13 @@
+resources:
+  jobs:
+    foo:
+      name: job1
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Workspace/Users/user@example.com/notebook
+            source: WORKSPACE
+      permissions:
+        # job with explicit IS_OWNER different from current one; not touched by DABs or terraform
+        - level: IS_OWNER
+          user_name: other_user@databricks.com

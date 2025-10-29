@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	mockfiler "github.com/databricks/cli/internal/mocks/libs/filer"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -51,7 +52,7 @@ func TestStatePush(t *testing.T) {
 		identityFiler(mock),
 	}
 
-	ctx := context.Background()
+	ctx := cmdio.MockDiscard(context.Background())
 	b := statePushTestBundle(t)
 
 	// Write a stale local state file.

@@ -25,6 +25,10 @@ from databricks.bundles.pipelines._models.ingestion_pipeline_definition import (
     IngestionPipelineDefinition,
     IngestionPipelineDefinitionParam,
 )
+from databricks.bundles.pipelines._models.lifecycle import (
+    Lifecycle,
+    LifecycleParam,
+)
 from databricks.bundles.pipelines._models.notifications import (
     Notifications,
     NotificationsParam,
@@ -143,6 +147,11 @@ class Pipeline(Resource):
     Libraries or code needed by this deployment.
     """
 
+    lifecycle: VariableOrOptional[Lifecycle] = None
+    """
+    Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+    """
+
     name: VariableOrOptional[str] = None
     """
     Friendly identifier for this pipeline.
@@ -175,9 +184,6 @@ class Pipeline(Resource):
     """
 
     run_as: VariableOrOptional[RunAs] = None
-    """
-    :meta private: [EXPERIMENTAL]
-    """
 
     schema: VariableOrOptional[str] = None
     """
@@ -203,7 +209,7 @@ class Pipeline(Resource):
 
     target: VariableOrOptional[str] = None
     """
-    Target schema (database) to add tables in this pipeline to. Exactly one of `schema` or `target` must be specified. To publish to Unity Catalog, also specify `catalog`. This legacy field is deprecated for pipeline creation in favor of the `schema` field.
+    [DEPRECATED] Target schema (database) to add tables in this pipeline to. Exactly one of `schema` or `target` must be specified. To publish to Unity Catalog, also specify `catalog`. This legacy field is deprecated for pipeline creation in favor of the `schema` field.
     """
 
     @classmethod
@@ -301,6 +307,11 @@ class PipelineDict(TypedDict, total=False):
     Libraries or code needed by this deployment.
     """
 
+    lifecycle: VariableOrOptional[LifecycleParam]
+    """
+    Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+    """
+
     name: VariableOrOptional[str]
     """
     Friendly identifier for this pipeline.
@@ -333,9 +344,6 @@ class PipelineDict(TypedDict, total=False):
     """
 
     run_as: VariableOrOptional[RunAsParam]
-    """
-    :meta private: [EXPERIMENTAL]
-    """
 
     schema: VariableOrOptional[str]
     """
@@ -361,7 +369,7 @@ class PipelineDict(TypedDict, total=False):
 
     target: VariableOrOptional[str]
     """
-    Target schema (database) to add tables in this pipeline to. Exactly one of `schema` or `target` must be specified. To publish to Unity Catalog, also specify `catalog`. This legacy field is deprecated for pipeline creation in favor of the `schema` field.
+    [DEPRECATED] Target schema (database) to add tables in this pipeline to. Exactly one of `schema` or `target` must be specified. To publish to Unity Catalog, also specify `catalog`. This legacy field is deprecated for pipeline creation in favor of the `schema` field.
     """
 
 

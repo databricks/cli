@@ -87,5 +87,6 @@ type DataSourceCleanRoomsCleanRoomsCleanRooms struct {
 }
 
 type DataSourceCleanRoomsCleanRooms struct {
-	CleanRooms []DataSourceCleanRoomsCleanRoomsCleanRooms `json:"clean_rooms,omitempty"`
+	CleanRooms  []DataSourceCleanRoomsCleanRoomsCleanRooms `json:"clean_rooms,omitempty"`
+	WorkspaceId string                                     `json:"workspace_id,omitempty"`
 }

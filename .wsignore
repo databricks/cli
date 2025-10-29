@@ -17,22 +17,8 @@ experimental/python/docs/images/databricks-logo.svg
 # In order to prevent that difference, hello.txt does not have a trailing newline.
 acceptance/selftest/record_cloud/volume-io/hello.txt
 
-# error output when artifact build fails contains trailing whitespace:
-acceptance/bundle/artifacts/shell/err-bash/output.txt
-acceptance/bundle/artifacts/shell/err-sh/output.txt
-
-# "bundle init" has trailing whitespace:
-acceptance/bundle/templates-machinery/helpers-error/output.txt
-
-# "bundle deploy" with apps has trailing whitespace:
-acceptance/bundle/apps/config_section/output.txt
-integration/bundle/testdata/apps/bundle_deploy.txt
-
-# Extra whitespace in test output:
-acceptance/bundle/resource_deps/bad_syntax/out.plan.terraform.txt
-
-# Extra whitespace in command help:
-acceptance/cmd/workspace/apps/output.txt
+# bundle commands leave empty lines at the end; too many to list individually:
+acceptance/**/out*.txt
 
 # Extra whitespace in generated commands:
 cmd/workspace/**/*.go

@@ -1,0 +1,22 @@
+
+>>> [CLI] bundle deploy
+Warning: unknown field: alerts
+  at resources
+  in databricks.yml:5:3
+
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/alerts-basic-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Deployment complete!
+Warning: unknown field: alerts
+  at resources
+  in databricks.yml:5:3
+
+
+>>> [CLI] alerts-v2 get-alert null
+Warning: unknown field: alerts
+  at resources
+  in databricks.yml:5:3
+
+Error: Resource sql.AlertV2 not found: null
+
+Exit code: 1

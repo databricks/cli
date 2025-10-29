@@ -13,7 +13,6 @@ import (
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/hashicorp/terraform-exec/tfexec"
 )
 
 type (
@@ -34,32 +33,27 @@ func (l *load) Name() string {
 
 func (l *load) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	var state ExportedResourcesMap
-	var err error
 
 	if b.DirectDeployment {
-		err = b.OpenResourceDatabase(ctx)
+		err := b.OpenStateFile(ctx)
 		if err != nil {
 			return diag.FromErr(err)
 		}
-		state = b.ResourceDatabase.ExportState(ctx)
+		state = b.DeploymentBundle.StateDB.ExportState(ctx)
 	} else {
 		tf := b.Terraform
 		if tf == nil {
 			return diag.Errorf("terraform not initialized")
 		}
 
-		err = tf.Init(ctx, tfexec.Upgrade(true))
-		if err != nil {
-			return diag.Errorf("terraform init: %v", err)
-		}
-
+		var err error
 		state, err = terraform.ParseResourcesState(ctx, b)
-	}
-	if err != nil {
-		return diag.FromErr(err)
+		if err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
-	err = l.validateState(state)
+	err := l.validateState(state)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -137,7 +131,7 @@ func StateToBundle(ctx context.Context, state ExportedResourcesMap, config *conf
 
 func (l *load) validateState(state ExportedResourcesMap) error {
 	if len(state) == 0 && slices.Contains(l.modes, ErrorOnEmptyState) {
-		return errors.New("no deployment state. Did you forget to run 'databricks bundle deploy'?")
+		return errors.New("resource not found or not yet deployed. Did you forget to run 'databricks bundle deploy'?")
 	}
 
 	return nil

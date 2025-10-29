@@ -1,0 +1,153 @@
+
+>>> musterr [CLI] bundle destroy --auto-approve
+Error: exit status 1
+
+Error: Instance cannot be destroyed
+
+  on bundle.tf.json line 15, in resource.databricks_pipeline:
+  15:       "my_pipelines": {
+
+Resource databricks_pipeline.my_pipelines has lifecycle.prevent_destroy set,
+but the plan calls for this resource to be destroyed. To avoid this error and
+continue with the plan, either disable lifecycle.prevent_destroy or reduce
+the scope of the plan using the -target flag.
+
+Error: Instance cannot be destroyed
+
+  on bundle.tf.json line 38, in resource.databricks_schema:
+  38:       "my_schema": {
+
+Resource databricks_schema.my_schema has lifecycle.prevent_destroy set, but
+the plan calls for this resource to be destroyed. To avoid this error and
+continue with the plan, either disable lifecycle.prevent_destroy or reduce
+the scope of the plan using the -target flag.
+
+
+
+>>> errcode [CLI] bundle plan
+Error: exit status 1
+
+Error: Instance cannot be destroyed
+
+  on bundle.tf.json line 15, in resource.databricks_pipeline:
+  15:       "my_pipelines": {
+
+Resource databricks_pipeline.my_pipelines has lifecycle.prevent_destroy set,
+but the plan calls for this resource to be destroyed. To avoid this error and
+continue with the plan, either disable lifecycle.prevent_destroy or reduce
+the scope of the plan using the -target flag.
+
+
+
+Exit code: 1
+
+>>> musterr [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/prevent-destroy/default/files...
+Error: exit status 1
+
+Error: Instance cannot be destroyed
+
+  on bundle.tf.json line 15, in resource.databricks_pipeline:
+  15:       "my_pipelines": {
+
+Resource databricks_pipeline.my_pipelines has lifecycle.prevent_destroy set,
+but the plan calls for this resource to be destroyed. To avoid this error and
+continue with the plan, either disable lifecycle.prevent_destroy or reduce
+the scope of the plan using the -target flag.
+
+
+
+>>> errcode [CLI] bundle plan
+Error: exit status 1
+
+Error: Instance cannot be destroyed
+
+  on bundle.tf.json line 15, in resource.databricks_pipeline:
+  15:       "my_pipelines": {
+
+Resource databricks_pipeline.my_pipelines has lifecycle.prevent_destroy set,
+but the plan calls for this resource to be destroyed. To avoid this error and
+continue with the plan, either disable lifecycle.prevent_destroy or reduce
+the scope of the plan using the -target flag.
+
+Error: Instance cannot be destroyed
+
+  on bundle.tf.json line 38, in resource.databricks_schema:
+  38:       "my_schema": {
+
+Resource databricks_schema.my_schema has lifecycle.prevent_destroy set, but
+the plan calls for this resource to be destroyed. To avoid this error and
+continue with the plan, either disable lifecycle.prevent_destroy or reduce
+the scope of the plan using the -target flag.
+
+
+
+Exit code: 1
+
+>>> musterr [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/prevent-destroy/default/files...
+Error: exit status 1
+
+Error: Instance cannot be destroyed
+
+  on bundle.tf.json line 15, in resource.databricks_pipeline:
+  15:       "my_pipelines": {
+
+Resource databricks_pipeline.my_pipelines has lifecycle.prevent_destroy set,
+but the plan calls for this resource to be destroyed. To avoid this error and
+continue with the plan, either disable lifecycle.prevent_destroy or reduce
+the scope of the plan using the -target flag.
+
+Error: Instance cannot be destroyed
+
+  on bundle.tf.json line 38, in resource.databricks_schema:
+  38:       "my_schema": {
+
+Resource databricks_schema.my_schema has lifecycle.prevent_destroy set, but
+the plan calls for this resource to be destroyed. To avoid this error and
+continue with the plan, either disable lifecycle.prevent_destroy or reduce
+the scope of the plan using the -target flag.
+
+
+
+>>> errcode [CLI] bundle plan
+recreate pipelines.my_pipelines
+recreate schemas.my_schema
+
+Plan: 2 to add, 0 to change, 2 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/prevent-destroy/default/files...
+
+This action will result in the deletion or recreation of the following UC schemas. Any underlying data may be lost:
+  recreate schema my_schema
+
+This action will result in the deletion or recreation of the following Lakeflow Declarative Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them. Recreating the pipelines will
+restore the defined STs and MVs through full refresh. Note that recreation is necessary when pipeline
+properties such as the 'catalog' or 'storage' are changed:
+  recreate pipeline my_pipelines
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> errcode [CLI] bundle plan
+delete pipelines.my_pipelines
+delete schemas.my_schema
+
+Plan: 0 to add, 0 to change, 2 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/prevent-destroy/default/files...
+
+This action will result in the deletion or recreation of the following UC schemas. Any underlying data may be lost:
+  delete schema my_schema
+
+This action will result in the deletion or recreation of the following Lakeflow Declarative Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them. Recreating the pipelines will
+restore the defined STs and MVs through full refresh. Note that recreation is necessary when pipeline
+properties such as the 'catalog' or 'storage' are changed:
+  delete pipeline my_pipelines
+Deploying resources...
+Updating deployment state...
+Deployment complete!

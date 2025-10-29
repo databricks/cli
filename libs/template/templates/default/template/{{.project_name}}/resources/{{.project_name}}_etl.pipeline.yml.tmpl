@@ -1,0 +1,38 @@
+# The main pipeline for {{.project_name}}
+
+{{- $serverless := (eq .serverless "yes")}}
+
+resources:
+  pipelines:
+    {{.project_name}}_etl:
+      {{- /* Note that pipeline names must be unique in a worskspace,
+           * so we use the project name as part as the name.
+           */}}
+      name: {{.project_name}}_etl
+{{- if or (eq default_catalog "") (eq default_catalog "hive_metastore")}}
+  {{- if $serverless }}
+      ## Catalog is required for serverless compute
+      catalog: ${var.catalog}
+  {{- else}}
+      ## Specify the 'catalog' field to configure this pipeline to make use of Unity Catalog:
+      # catalog: ${var.catalog}
+  {{- end}}
+{{- else}}
+      catalog: ${var.catalog}
+{{- end}}
+      schema: ${var.schema}
+{{- if $serverless }}
+      serverless: true
+{{- end}}
+      root_path: "../src/{{.project_name}}_etl"
+
+      libraries:
+        - glob:
+            include: ../src/{{.project_name}}_etl/transformations/**
+
+      environment:
+        dependencies:
+          # We include every dependency defined by pyproject.toml by defining an editable environment
+          # that points to the folder where pyproject.toml is deployed.
+          {{- /* We avoid a relative path here to work around https://github.com/databricks/cli/issues/3674 */}}
+          - --editable ${workspace.file_path}

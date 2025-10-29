@@ -58,17 +58,11 @@ func IsLibraryLocal(dep string) bool {
 		}
 	}
 
-	// If the dependency starts with --, it's a pip flag option which is a valid
-	// entry for environment dependencies but not a local path
-	if containsPipFlag(dep) {
-		return false
-	}
-
-	// If the dependency is a requirements file, it can either be a local path or a remote path.
-	// Even though the path to requirements.txt can be local we don't return true in this function anyway
+	// If the dependency starts with - or --, it's a pip flag option which is a valid
+	// entry for environment dependencies. Even though the path in the flag can be local we don't return true in this function anyway
 	// and don't treat such path as a local library path.
 	// Instead we handle translation of these paths in a separate code path in TranslatePath mutator.
-	if strings.HasPrefix(dep, "-r") {
+	if containsPipFlag(dep) {
 		return false
 	}
 
@@ -80,18 +74,28 @@ func IsLibraryLocal(dep string) bool {
 	return IsLocalPath(dep)
 }
 
-func IsLocalRequirementsFile(dep string) (string, bool) {
-	dep, ok := strings.CutPrefix(dep, "-r ")
-	if !ok {
-		return "", false
+var PipFlagsWithLocalPaths = []string{
+	"-r",
+	"-e",
+}
+
+func IsLocalPathInPipFlag(dep string) (string, string, bool) {
+	for _, flag := range PipFlagsWithLocalPaths {
+		depWithoutFlag, ok := strings.CutPrefix(dep, flag+" ")
+		if ok {
+			depWithoutFlag = strings.TrimSpace(depWithoutFlag)
+			return depWithoutFlag, flag, IsLocalPath(depWithoutFlag)
+		}
 	}
 
-	dep = strings.TrimSpace(dep)
-	return dep, IsLocalPath(dep)
+	return "", "", false
 }
 
 func containsPipFlag(input string) bool {
-	re := regexp.MustCompile(`--[a-zA-Z0-9-]+`)
+	// Trailing space means the the flag takes an argument or there's multiple arguments in input
+	// Alternatively it could be a flag with no argument and no space after it
+	// For example: -r myfile.txt or --index-url http://myindexurl.com or -i
+	re := regexp.MustCompile(`(^|\s+)--?[a-zA-Z0-9-]+(([\s|=]+)|$)`)
 	return re.MatchString(input)
 }
 
