@@ -52,6 +52,8 @@ Please run this command before deploying to ensure configuration quality.`,
 		})
 		ctx := cmd.Context()
 
+		// output before checking the error on purpose
+
 		if root.OutputType(cmd) == flags.OutputText {
 			err1 := render.RenderDiagnosticsSummary(ctx, cmd.OutOrStdout(), b)
 			if err1 != nil {
