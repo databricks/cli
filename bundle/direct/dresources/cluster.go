@@ -2,12 +2,17 @@ package dresources
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"strings"
+	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 )
 
@@ -80,11 +85,24 @@ func (r *ResourceCluster) DoCreate(ctx context.Context, config *compute.ClusterS
 }
 
 func (r *ResourceCluster) DoUpdate(ctx context.Context, id string, config *compute.ClusterSpec) error {
-	_, err := r.client.Clusters.Edit(ctx, makeEditCluster(id, config))
-	if err != nil {
-		return err
-	}
-	return nil
+	// Same retry as in TF provider logic
+	// https://github.com/databricks/terraform-provider-databricks/blob/3eecd0f90cf99d7777e79a3d03c41f9b2aafb004/clusters/resource_cluster.go#L624
+	timeout := 15 * time.Minute
+	_, err := retries.Poll(ctx, timeout, func() (*compute.WaitGetClusterRunning[struct{}], *retries.Err) {
+		wait, err := r.client.Clusters.Edit(ctx, makeEditCluster(id, config))
+		if err == nil {
+			return wait, nil
+		}
+
+		var apiErr *apierr.APIError
+		// Only Running and Terminated clusters can be modified. In particular, autoscaling clusters cannot be modified
+		// while the resizing is ongoing. We retry in this case. Scaling can take several minutes.
+		if errors.As(err, &apiErr) && apiErr.ErrorCode == "INVALID_STATE" {
+			return nil, retries.Continues(fmt.Sprintf("cluster %s cannot be modified in its current state", id))
+		}
+		return nil, retries.Halt(err)
+	})
+	return err
 }
 
 func (r *ResourceCluster) DoResize(ctx context.Context, id string, config *compute.ClusterSpec) error {
