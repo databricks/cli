@@ -134,7 +134,7 @@ func (r *ResourceCluster) ClassifyChange(change structdiff.Change, remoteState *
 }
 
 func makeCreateCluster(config *compute.ClusterSpec) compute.CreateCluster {
-	return compute.CreateCluster{
+	create := compute.CreateCluster{
 		ApplyPolicyDefaultValues:   config.ApplyPolicyDefaultValues,
 		Autoscale:                  config.Autoscale,
 		AutoterminationMinutes:     config.AutoterminationMinutes,
@@ -170,10 +170,18 @@ func makeCreateCluster(config *compute.ClusterSpec) compute.CreateCluster {
 		WorkloadType:               config.WorkloadType,
 		ForceSendFields:            filterFields[compute.CreateCluster](config.ForceSendFields),
 	}
+
+	// If autoscale is not set, we need to send NumWorkers because one of them is required.
+	// If NumWorkers is not nil, we don't need to set it to ForceSendFields as it will be sent anyway.
+	if config.Autoscale == nil && config.NumWorkers == 0 {
+		create.ForceSendFields = append(create.ForceSendFields, "NumWorkers")
+	}
+
+	return create
 }
 
 func makeEditCluster(id string, config *compute.ClusterSpec) compute.EditCluster {
-	return compute.EditCluster{
+	edit := compute.EditCluster{
 		ClusterId:                  id,
 		ApplyPolicyDefaultValues:   config.ApplyPolicyDefaultValues,
 		Autoscale:                  config.Autoscale,
@@ -209,4 +217,12 @@ func makeEditCluster(id string, config *compute.ClusterSpec) compute.EditCluster
 		WorkloadType:               config.WorkloadType,
 		ForceSendFields:            filterFields[compute.EditCluster](config.ForceSendFields),
 	}
+
+	// If autoscale is not set, we need to send NumWorkers because one of them is required.
+	// If NumWorkers is not nil, we don't need to set it to ForceSendFields as it will be sent anyway.
+	if config.Autoscale == nil && config.NumWorkers == 0 {
+		edit.ForceSendFields = append(edit.ForceSendFields, "NumWorkers")
+	}
+
+	return edit
 }
