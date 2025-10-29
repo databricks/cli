@@ -72,33 +72,6 @@ func (r *builtinReader) LoadSchemaAndTemplateFS(ctx context.Context) (*jsonschem
 
 func (r *builtinReader) Cleanup(ctx context.Context) {}
 
-// overridingReader wraps another Reader and overrides their properties
-type overridingReader struct {
-	underlying               Reader
-	propertyDefaultOverrides map[string]any
-}
-
-func (r *overridingReader) LoadSchemaAndTemplateFS(ctx context.Context) (*jsonschema.Schema, fs.FS, error) {
-	schema, schemaFS, err := r.underlying.LoadSchemaAndTemplateFS(ctx)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	for propName, newDefault := range r.propertyDefaultOverrides {
-		if propSchema, ok := schema.Properties[propName]; ok {
-			propSchema.Default = newDefault
-		} else {
-			return nil, nil, fmt.Errorf("cannot override default for non-existing property %s", propName)
-		}
-	}
-
-	return schema, schemaFS, nil
-}
-
-func (r *overridingReader) Cleanup(ctx context.Context) {
-	r.underlying.Cleanup(ctx)
-}
-
 // gitReader reads a template from a git repository.
 type gitReader struct {
 	gitUrl string

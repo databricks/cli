@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle/generate"
+	"github.com/databricks/cli/cmd/bundle/deployment"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dyn"
@@ -24,6 +25,7 @@ func NewGeneratePipelineCommand() *cobra.Command {
 	var sourceDir string
 	var pipelineId string
 	var force bool
+	var bind bool
 
 	cmd := &cobra.Command{
 		Use:   "pipeline",
@@ -42,6 +44,9 @@ Examples:
   databricks bundle generate pipeline --existing-pipeline-id def456 \
     --key data_transformation --config-dir resources --source-dir src
 
+  # Generate and automatically bind to the existing pipeline
+  databricks bundle generate pipeline --existing-pipeline-id abc123 --key etl_pipeline --bind
+
 What gets generated:
 - Pipeline configuration YAML file with settings and libraries
 - Pipeline notebooks downloaded to the source directory
@@ -56,6 +61,7 @@ like catalogs, schemas, and compute configurations per target.`,
 	cmd.Flags().StringVarP(&configDir, "config-dir", "d", "resources", `Dir path where the output config will be stored`)
 	cmd.Flags().StringVarP(&sourceDir, "source-dir", "s", "src", `Dir path where the downloaded files will be stored`)
 	cmd.Flags().BoolVarP(&force, "force", "f", false, `Force overwrite existing files in the output directory`)
+	cmd.Flags().BoolVarP(&bind, "bind", "b", false, `automatically bind the generated resource to the existing resource`)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := logdiag.InitContext(cmd.Context())
@@ -143,6 +149,11 @@ like catalogs, schemas, and compute configurations per target.`,
 		}
 
 		cmdio.LogString(ctx, "Pipeline configuration successfully saved to "+filename)
+
+		if bind {
+			return deployment.BindResource(cmd, pipelineKey, pipelineId, true, false)
+		}
+
 		return nil
 	}
 

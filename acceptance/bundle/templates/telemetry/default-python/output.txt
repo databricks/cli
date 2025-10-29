@@ -25,10 +25,6 @@ See also the documentation at https://docs.databricks.com/dev-tools/bundles/inde
         "template_name": "default-python",
         "template_enum_args": [
           {
-            "key": "enable_pydabs",
-            "value": "no"
-          },
-          {
             "key": "include_dlt",
             "value": "no"
           },

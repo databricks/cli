@@ -12,5 +12,3 @@ Error: Incorrect attribute value type
 Inappropriate value for attribute "job_id": a number is required.
 
 
-
-Exit code (musterr): 1

@@ -9,6 +9,7 @@ This file only contains template directives; it is skipped for the actual output
 {{$python_package := eq .include_python "yes"}}
 {{$sql_language := eq .language "sql"}}
 {{$lakeflow_only := eq .lakeflow_only "yes"}}
+{{$pydabs := eq .enable_pydabs "yes"}}
 {{$has_python_package_dir := and (or $python_package $notebook_job $pipeline) (not $lakeflow_only)}}
 
 {{if not $notebook_job}}
@@ -26,15 +27,17 @@ This file only contains template directives; it is skipped for the actual output
 {{else}}
   # Fully empty project, even remove the sample job
   {{skip "{{.project_name}}/resources/sample_job.job.yml"}}
+  {{skip "{{.project_name}}/resources/sample_job.py"}}
 {{end}}
 
 {{if not $pipeline}}
-  {{skip "{{.project_name}}/resources/{{.project_name_short}}_etl.pipeline.yml"}}
-  {{skip "{{.project_name}}/src/{{.project_name_short}}_etl"}}
+  {{skip "{{.project_name}}/resources/{{.project_name}}_etl.pipeline.yml"}}
+  {{skip "{{.project_name}}/resources/{{.project_name}}_etl_pipeline.py"}}
+  {{skip "{{.project_name}}/src/{{.project_name}}_etl"}}
 {{else if $sql_language}}
-  {{skip "{{.project_name}}/src/{{.project_name_short}}_etl/transformations/*.py"}}
+  {{skip "{{.project_name}}/src/{{.project_name}}_etl/transformations/*.py"}}
 {{else}}
-  {{skip "{{.project_name}}/src/{{.project_name_short}}_etl/transformations/*.sql"}}
+  {{skip "{{.project_name}}/src/{{.project_name}}_etl/transformations/*.sql"}}
 {{end}}
 
 {{if or $sql_language $lakeflow_only}}
@@ -42,4 +45,15 @@ This file only contains template directives; it is skipped for the actual output
   # (until we have better UI support for tests)
   {{skip "{{.project_name}}/tests"}}
   {{skip "{{.project_name}}/fixtures"}}
+{{end}}
+
+{{if $pydabs}}
+  # When PyDABs is enabled, there is always resources/__init__.py and we don't need .gitkeep
+  {{skip "{{.project_name}}/resources/.gitkeep"}}
+  {{skip "{{.project_name}}/resources/sample_job.job.yml"}}
+  {{skip "{{.project_name}}/resources/{{.project_name}}_etl.pipeline.yml"}}
+{{else}}
+  {{skip "{{.project_name}}/resources/__init__.py"}}
+  {{skip "{{.project_name}}/resources/sample_job.py"}}
+  {{skip "{{.project_name}}/resources/{{.project_name}}_etl_pipeline.py"}}
 {{end}}

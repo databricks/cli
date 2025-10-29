@@ -1,0 +1,20 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> errcode [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Error: cannot update resources.clusters.test_cluster: updating id=[CLUSTER-ID]: Cluster [CLUSTER-ID] is in unexpected state Pending. (400 INVALID_STATE)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.1/clusters/edit
+HTTP Status: 400 Bad Request
+API error_code: INVALID_STATE
+API message: Cluster [CLUSTER-ID] is in unexpected state Pending.
+
+Updating deployment state...
+
+Exit code: 1
