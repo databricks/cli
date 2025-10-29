@@ -3,6 +3,7 @@ package phases
 import (
 	"context"
 	"errors"
+	"path/filepath"
 
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
 
@@ -212,7 +213,7 @@ func rejectDefinitions(ctx context.Context, b *bundle.Bundle) {
 		loc := v.Locations()
 		filename := "input yaml"
 		if len(loc) > 0 {
-			filename = loc[0].File
+			filename = filepath.ToSlash(loc[0].File)
 		}
 		logdiag.LogError(ctx, errors.New(filename+` seems to be formatted for open-source Spark Declarative Pipelines.
 Pipelines CLI currently only supports Lakeflow Declarative Pipelines development.

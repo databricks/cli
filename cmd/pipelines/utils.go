@@ -13,7 +13,6 @@ import (
 	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/run"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/diag"
 	databricks "github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -138,18 +137,6 @@ func keyToRunner(b *bundle.Bundle, arg string) (run.Runner, error) {
 	}
 
 	return runner, nil
-}
-
-// formatOSSTemplateWarningMessage formats the warning message for OSS template pipeline YAML files.
-func formatOSSTemplateWarningMessage(d diag.Diagnostic) string {
-	fileName := "A pipeline YAML file"
-	if len(d.Locations) > 0 && d.Locations[0].File != "" {
-		fileName = d.Locations[0].File
-	}
-
-	return fileName + ` seems to be formatted for open-source Spark Declarative Pipelines.
-Pipelines CLI currently only supports Lakeflow Declarative Pipelines development.
-To see an example of a supported pipelines template, create a new Pipelines CLI project with "pipelines init".`
 }
 
 type PipelineEventsResponse struct {
