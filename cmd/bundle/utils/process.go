@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/sync"
 	"github.com/databricks/cli/libs/telemetry/protos"
@@ -68,7 +69,20 @@ func ProcessBundle(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, err
 		cmd.SetContext(ctx)
 	}
 
-	b := ConfigureBundleWithVariables(cmd)
+	// Load bundle config and apply target
+	b := root.MustConfigureBundle(cmd)
+	if logdiag.HasError(ctx) {
+		return b, root.ErrAlreadyPrinted
+	}
+
+	variables, err := cmd.Flags().GetStringSlice("var")
+	if err != nil {
+		logdiag.LogDiag(ctx, diag.FromErr(err)[0])
+		return b, err
+	}
+
+	// Initialize variables by assigning them values passed as command line flags
+	configureVariables(cmd, b, variables)
 
 	if b == nil || logdiag.HasError(ctx) {
 		return b, root.ErrAlreadyPrinted

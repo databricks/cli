@@ -105,26 +105,6 @@ func getProfileFromCmd(cmd *cobra.Command) string {
 	return env.Get(cmd.Context(), "DATABRICKS_CONFIG_PROFILE")
 }
 
-func ConfigureBundleWithVariables(cmd *cobra.Command) *bundle.Bundle {
-	// Load bundle config and apply target
-	b := root.MustConfigureBundle(cmd)
-	ctx := cmd.Context()
-	if logdiag.HasError(ctx) {
-		return b
-	}
-
-	variables, err := cmd.Flags().GetStringSlice("var")
-	if err != nil {
-		logdiag.LogDiag(ctx, diag.FromErr(err)[0])
-		return b
-	}
-
-	// Initialize variables by assigning them values passed as command line flags
-	configureVariables(cmd, b, variables)
-
-	return b
-}
-
 func GetPlan(ctx context.Context, b *bundle.Bundle) (*deployplan.Plan, error) {
 	plan := phases.Plan(ctx, b)
 	if logdiag.HasError(ctx) {
