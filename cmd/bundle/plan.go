@@ -53,7 +53,7 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 					b.Config.Bundle.ClusterId = clusterId
 				}
 			},
-			//Verbose:      verbose,
+			// Verbose:      verbose,
 			AlwaysPull:   true,
 			FastValidate: true,
 			Build:        true,

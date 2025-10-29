@@ -3,7 +3,6 @@ package deployment
 import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
 )
 
@@ -51,15 +50,12 @@ Any manual changes made in the workspace UI may be overwritten on deployment.`,
 	cmd.Flags().BoolVar(&forceLock, "force-lock", false, "Force acquisition of deployment lock.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		ctx := logdiag.InitContext(cmd.Context())
-		cmd.SetContext(ctx)
-
 		err := BindResource(cmd, args[0], args[1], autoApprove, forceLock)
 		if err != nil {
 			return err
 		}
 
-		cmdio.LogString(ctx, "Run 'bundle deploy' to deploy changes to your workspace")
+		cmdio.LogString(cmd.Context(), "Run 'bundle deploy' to deploy changes to your workspace")
 		return nil
 	}
 

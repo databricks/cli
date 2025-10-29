@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"slices"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/databricks/cli/bundle"
@@ -15,8 +14,6 @@ import (
 	"github.com/databricks/cli/bundle/run"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/logdiag"
 	databricks "github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -153,28 +150,6 @@ func formatOSSTemplateWarningMessage(d diag.Diagnostic) string {
 	return fileName + ` seems to be formatted for open-source Spark Declarative Pipelines.
 Pipelines CLI currently only supports Lakeflow Declarative Pipelines development.
 To see an example of a supported pipelines template, create a new Pipelines CLI project with "pipelines init".`
-}
-
-// checkForOSSTemplateWarning checks for a warning in the logs that suggests a pipelines YAML file
-// is formatted for open-source Spark Declarative Pipelines and returns an error if found.
-// For the Spark Declarative Pipelines template, see: https://github.com/apache/spark/blob/master/python/pyspark/pipelines/init_cli.py
-// Logs all collected diagnostics to expose them.
-func checkForOSSTemplateWarning(ctx context.Context, diags diag.Diagnostics) error {
-	var ossWarning *diag.Diagnostic
-
-	for _, d := range diags {
-		// The "definitions" field in the root is expected in OSS Spark Declarative Pipelines templates but is not supported in the Pipelines CLI.
-		if d.Severity == diag.Warning && strings.Contains(d.Summary, "unknown field: definitions") && len(d.Paths) == 1 && d.Paths[0].Equal(dyn.EmptyPath) {
-			ossWarning = &d
-		}
-		logdiag.LogDiag(ctx, d)
-	}
-
-	if ossWarning != nil {
-		return errors.New(formatOSSTemplateWarningMessage(*ossWarning))
-	}
-
-	return nil
 }
 
 type PipelineEventsResponse struct {

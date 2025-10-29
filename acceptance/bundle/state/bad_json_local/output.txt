@@ -3,10 +3,6 @@
 Error: parsing [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: unexpected end of JSON input
 
 
-Exit code (musterr): 1
-
 >>> musterr [CLI] bundle plan
 Error: parsing [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: unexpected end of JSON input
 
-
-Exit code (musterr): 1

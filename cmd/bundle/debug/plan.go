@@ -18,7 +18,7 @@ func NewPlanCommand() *cobra.Command {
 		Args:  root.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
-				//Verbose:      verbose,
+				// Verbose:      verbose,
 				AlwaysPull:   true,
 				FastValidate: true,
 				Build:        true,

@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
 )
@@ -76,15 +77,6 @@ func ReloadBundle(cmd *cobra.Command) *bundle.Bundle {
 		return b
 	}
 	configureVariables(cmd, b, variables)
-
-	// Set DirectDeployment flag based on environment
-	engine, err := deploymentEngine(ctx)
-	if err != nil {
-		logdiag.LogError(ctx, err)
-		return b
-	}
-	b.DirectDeployment = engine == "direct-exp"
-
 	return b
 }
 
