@@ -1,4 +1,0 @@
-# Required to make tests work both on Windows and Linux.
-# Otherwise, in recorded requests, the serialized_dashboard field in windows contains \r\n
-# instead of \n, which causes the test to fail.
-dashboard.tmpl eol=lf
