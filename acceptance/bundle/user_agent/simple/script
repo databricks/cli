@@ -10,6 +10,9 @@ trace print_requests.py --sort --get > out.requests.plan.$DATABRICKS_BUNDLE_ENGI
 trace $CLI bundle deploy
 trace print_requests.py --sort --get '^//telemetry-ext' > out.requests.deploy.$DATABRICKS_BUNDLE_ENGINE.json
 
+trace $CLI bundle plan
+trace print_requests.py --sort --get > out.requests.plan2.$DATABRICKS_BUNDLE_ENGINE.json
+
 musterr trace $CLI bundle run foo
 trace print_requests.py --sort --get > out.requests.run.$DATABRICKS_BUNDLE_ENGINE.json
 
