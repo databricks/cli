@@ -1,2 +1,2 @@
 title "Fail to deploy OSS Spark pipelines-formatted YAML file"
-trace errcode $PIPELINES deploy
+trace musterr $PIPELINES deploy
