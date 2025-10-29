@@ -82,7 +82,7 @@ func ReloadBundle(cmd *cobra.Command) *bundle.Bundle {
 	configureVariables(cmd, b, variables)
 
 	// Set DirectDeployment flag based on environment
-	engine, err := deploymentEngine(ctx)
+	engine, err := DeploymentEngine(ctx)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return b
