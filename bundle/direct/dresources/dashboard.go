@@ -63,6 +63,10 @@ func (r *ResourceDashboard) RemapState(state *resources.DashboardConfig) *resour
 		// Serialized dashboard is ignored for remote diff changes.
 		// They are only relevant for local diff changes.
 		SerializedDashboard: "",
+
+		ForceSendFields: filterFields[dashboards.Dashboard](state.ForceSendFields, []string{
+			"SerializedDashboard",
+		}...),
 	}
 }
 
@@ -122,6 +126,7 @@ func (r *ResourceDashboard) DoRefresh(ctx context.Context, id string) (*resource
 		},
 		SerializedDashboard: dashboard.SerializedDashboard,
 		EmbedCredentials:    publishedDashboard.EmbedCredentials,
+		ForceSendFields:     filterFields[dashboards.PublishedDashboard](publishedDashboard.ForceSendFields),
 	}, nil
 }
 
@@ -193,6 +198,7 @@ func responseToState(createOrUpdateResp *dashboards.Dashboard, publishResp *dash
 		},
 		SerializedDashboard: createOrUpdateResp.SerializedDashboard,
 		EmbedCredentials:    publishResp.EmbedCredentials,
+		ForceSendFields:     filterFields[dashboards.PublishedDashboard](publishResp.ForceSendFields),
 	}
 }
 
