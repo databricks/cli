@@ -35,6 +35,4 @@ the volume using 'bundle deploy' and then switch over to using it in
 the artifact_path.
 
 
-Exit code (musterr): 1
-
 >>> [CLI] schemas delete main.schema-[UNIQUE_NAME]
