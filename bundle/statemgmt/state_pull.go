@@ -50,7 +50,7 @@ func localRead(ctx context.Context, fullPath string, isDirect bool) *state {
 	content, err := os.ReadFile(fullPath)
 	if err != nil {
 		if !os.IsNotExist(err) {
-			logdiag.LogError(ctx, fmt.Errorf("reading %s: %w", fullPath, err))
+			logdiag.LogError(ctx, fmt.Errorf("reading %s: %w", filepath.ToSlash(fullPath), err))
 		}
 		return nil
 	}
@@ -58,7 +58,7 @@ func localRead(ctx context.Context, fullPath string, isDirect bool) *state {
 	state := &state{}
 	err = json.Unmarshal(content, state)
 	if err != nil {
-		logdiag.LogError(ctx, fmt.Errorf("parsing %s: %w", fullPath, err))
+		logdiag.LogError(ctx, fmt.Errorf("parsing %s: %w", filepath.ToSlash(fullPath), err))
 	}
 
 	state.isDirect = isDirect
