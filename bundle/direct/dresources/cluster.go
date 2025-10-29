@@ -153,7 +153,9 @@ func makeCreateCluster(config *compute.ClusterSpec) compute.CreateCluster {
 		ForceSendFields:            filterFields[compute.CreateCluster](config.ForceSendFields),
 	}
 
-	if config.Autoscale == nil {
+	// If autoscale is not set, we need to send NumWorkers because one of them is required.
+	// If NumWorkers is not nil, we don't need to set it to ForceSendFields as it will be sent anyway.
+	if config.Autoscale == nil && config.NumWorkers == 0 {
 		create.ForceSendFields = append(create.ForceSendFields, "NumWorkers")
 	}
 
@@ -198,7 +200,9 @@ func makeEditCluster(id string, config *compute.ClusterSpec) compute.EditCluster
 		ForceSendFields:            filterFields[compute.EditCluster](config.ForceSendFields),
 	}
 
-	if config.Autoscale == nil {
+	// If autoscale is not set, we need to send NumWorkers because one of them is required.
+	// If NumWorkers is not nil, we don't need to set it to ForceSendFields as it will be sent anyway.
+	if config.Autoscale == nil && config.NumWorkers == 0 {
 		edit.ForceSendFields = append(edit.ForceSendFields, "NumWorkers")
 	}
 
