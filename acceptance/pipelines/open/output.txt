@@ -18,14 +18,10 @@ View your pipeline test-pipelines-open here: [DATABRICKS_URL]/pipelines/[UUID]?o
 Opening browser at [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
 Error: exec: "open": cannot run executable found relative to current directory
 
-Exit code (musterr): 1
-
 === open with KEY, expect same output as opening without KEY
 >>> [PIPELINES] open test-pipelines-open
 Opening browser at [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
 Error: exec: "open": cannot run executable found relative to current directory
-
-Exit code (musterr): 1
 
 === test auto-completion handler
 >>> [PIPELINES] __complete open ,
