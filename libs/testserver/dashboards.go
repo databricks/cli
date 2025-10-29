@@ -242,6 +242,7 @@ func (s *FakeWorkspace) DashboardTrash(req Request) Response {
 	// The dashboard is marked as trashed and moved to the trash.
 	s.Dashboards[dashboardId] = fakeDashboard{
 		Dashboard: dashboards.Dashboard{
+			Etag:           dashboard.Etag,
 			DashboardId:    dashboardId,
 			LifecycleState: dashboards.LifecycleStateTrashed,
 			ParentPath:     path.Join("/Users", s.CurrentUser().UserName, "Trash"),
