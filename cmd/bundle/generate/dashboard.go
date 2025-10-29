@@ -343,7 +343,7 @@ func (d *dashboard) generateForExisting(ctx context.Context, b *bundle.Bundle, d
 	}
 
 	if d.bind {
-		err = deployment.BindResource(d.cmd, key, dashboardID, true, false)
+		err = deployment.BindResource(d.cmd, key, dashboardID, true, false, true)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return

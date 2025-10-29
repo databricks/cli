@@ -50,7 +50,7 @@ Any manual changes made in the workspace UI may be overwritten on deployment.`,
 	cmd.Flags().BoolVar(&forceLock, "force-lock", false, "Force acquisition of deployment lock.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		err := BindResource(cmd, args[0], args[1], autoApprove, forceLock)
+		err := BindResource(cmd, args[0], args[1], autoApprove, forceLock, false)
 		if err != nil {
 			return err
 		}

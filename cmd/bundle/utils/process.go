@@ -19,6 +19,7 @@ import (
 type ProcessOptions struct {
 	InitFunc          func(b *bundle.Bundle)
 	PostInitFunc      func(context context.Context, b *bundle.Bundle) error
+	SkipInitContext   bool
 	SkipInitialize    bool
 	ReadState         bool
 	AlwaysPull        bool
@@ -33,8 +34,15 @@ type ProcessOptions struct {
 }
 
 func ProcessBundle(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, error) {
-	ctx := logdiag.InitContext(cmd.Context())
-	cmd.SetContext(ctx)
+	ctx := cmd.Context()
+	if opts.SkipInitContext {
+		if !logdiag.IsSetup(ctx) {
+			panic("SkipInitContext=true but InitContext was not called")
+		}
+	} else {
+		ctx = logdiag.InitContext(ctx)
+		cmd.SetContext(ctx)
+	}
 
 	b := ConfigureBundleWithVariables(cmd)
 

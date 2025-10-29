@@ -15,9 +15,10 @@ import (
 
 // BindResource binds a bundle resource to an existing workspace resource.
 // This function is shared between the bind command and generate commands with --bind flag.
-func BindResource(cmd *cobra.Command, resourceKey, resourceId string, autoApprove, forceLock bool) error {
+func BindResource(cmd *cobra.Command, resourceKey, resourceId string, autoApprove, forceLock, skipInitContext bool) error {
 	b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
-		ReadState: true,
+		SkipInitContext: skipInitContext,
+		ReadState:       true,
 		InitFunc: func(b *bundle.Bundle) {
 			b.Config.Bundle.Deployment.Lock.Force = forceLock
 		},
