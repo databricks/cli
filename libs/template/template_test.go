@@ -12,7 +12,7 @@ func TestTemplateHelpDescriptions(t *testing.T) {
 - default-sql: The default SQL template for .sql files that run with Databricks SQL
 - dbt-sql: The dbt SQL template (databricks.com/blog/delivering-cost-effective-data-real-time-dbt-and-databricks)
 - mlops-stacks: The Databricks MLOps Stacks template (github.com/databricks/mlops-stacks)
-- pydabs: A variant of 'default-python' template that defines resources in Python instead of YAML`
+- pydabs: A variant of the 'default-python' template that defines resources in Python instead of YAML`
 	assert.Equal(t, expected, HelpDescriptions())
 }
 
@@ -22,7 +22,7 @@ func TestTemplateOptions(t *testing.T) {
 		{Name: "default-sql", Id: "The default SQL template for .sql files that run with Databricks SQL"},
 		{Name: "dbt-sql", Id: "The dbt SQL template (databricks.com/blog/delivering-cost-effective-data-real-time-dbt-and-databricks)"},
 		{Name: "mlops-stacks", Id: "The Databricks MLOps Stacks template (github.com/databricks/mlops-stacks)"},
-		{Name: "pydabs", Id: "A variant of 'default-python' template that defines resources in Python instead of YAML"},
+		{Name: "pydabs", Id: "A variant of the 'default-python' template that defines resources in Python instead of YAML"},
 		{Name: "custom...", Id: "Bring your own template"},
 	}
 	assert.Equal(t, expected, options())

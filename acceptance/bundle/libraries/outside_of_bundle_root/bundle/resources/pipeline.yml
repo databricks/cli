@@ -1,0 +1,7 @@
+resources:
+  pipelines:
+    pipeline:
+      name: "test"
+      environment:
+        dependencies:
+          - ../../lib/*.whl

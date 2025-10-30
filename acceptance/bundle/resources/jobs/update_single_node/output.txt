@@ -180,5 +180,3 @@ State not found for jobs.foo
 
 >>> musterr [CLI] jobs get [JOB_ID]
 Error: Not Found
-
-Exit code (musterr): 1

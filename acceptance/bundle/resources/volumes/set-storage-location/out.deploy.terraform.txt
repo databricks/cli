@@ -13,5 +13,3 @@ Error: cannot create volume: CreateVolume storage_location can not be provided.
 
 
 Updating deployment state...
-
-Exit code (musterr): 1

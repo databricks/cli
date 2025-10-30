@@ -14,5 +14,3 @@ API error_code: INVALID_PARAMETER_VALUE
 API message: Shared job cluster feature is only supported in multi-task jobs.
 
 Updating deployment state...
-
-Exit code (musterr): 1

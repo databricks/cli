@@ -1,0 +1,15 @@
+bundle:
+  name: test-deploy-cluster-workload-type
+
+resources:
+  clusters:
+    cluster1:
+      cluster_name: test-cluster
+      spark_version: 13.3.x-scala2.12
+      node_type_id: i3.xlarge
+      num_workers: 2
+      workload_type:
+        clients:
+          jobs: false
+      spark_conf:
+        "spark.executor.memory": "2g"

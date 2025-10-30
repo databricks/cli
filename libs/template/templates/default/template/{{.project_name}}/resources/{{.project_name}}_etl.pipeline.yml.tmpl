@@ -4,11 +4,11 @@
 
 resources:
   pipelines:
-    {{.project_name_short}}_etl:
+    {{.project_name}}_etl:
       {{- /* Note that pipeline names must be unique in a worskspace,
            * so we use the project name as part as the name.
            */}}
-      name: {{.project_name_short}}_etl
+      name: {{.project_name}}_etl
 {{- if or (eq default_catalog "") (eq default_catalog "hive_metastore")}}
   {{- if $serverless }}
       ## Catalog is required for serverless compute
@@ -24,11 +24,11 @@ resources:
 {{- if $serverless }}
       serverless: true
 {{- end}}
-      root_path: "../src/{{.project_name_short}}_etl"
+      root_path: "../src/{{.project_name}}_etl"
 
       libraries:
         - glob:
-            include: ../src/{{.project_name_short}}_etl/transformations/**
+            include: ../src/{{.project_name}}_etl/transformations/**
 
       environment:
         dependencies:

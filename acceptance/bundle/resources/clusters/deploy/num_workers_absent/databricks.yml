@@ -1,0 +1,23 @@
+bundle:
+  name: test-deploy-cluster-num-workers-absent
+
+resources:
+  clusters:
+    # Expecting num_workers to be sent as zero
+    cluster1:
+      cluster_name: test-cluster-1
+      spark_version: 13.3.x-scala2.12
+      node_type_id: i3.xlarge
+      spark_conf:
+        "spark.executor.memory": "2g"
+
+    # Expecting num_workers to be sent as absent
+    cluster2:
+      cluster_name: test-cluster-2
+      spark_version: 13.3.x-scala2.12
+      node_type_id: i3.xlarge
+      autoscale:
+        min_workers: 2
+        max_workers: 7
+      spark_conf:
+        "spark.executor.memory": "2g"
