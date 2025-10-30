@@ -7,5 +7,5 @@ errcode trace $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
 trace $CLI bundle summary
 
 # API should record a DELETE call to clean up the draft dashboard that was not published.
-trace cat out.requests.txt | jq 'select(.method == "POST" or .method == "PATCH" or .method == "DELETE")' | jq 'select( (.path | contains("/api/2.0/lakeview/dashboards")) or ((.path == "/api/2.0/workspace/mkdirs") and (.body.path | contains("/default/resources"))))' > out.dashboardrequests.$DATABRICKS_BUNDLE_ENGINE.txt
-rm out.requests.txt
+# Request sequence is identical across terraform and direct modes.
+print_requests.py //lakeview/dashboards //workspace/mkdirs > out.dashboardrequests.txt

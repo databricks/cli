@@ -22,6 +22,20 @@ type ResourceDashboard struct {
 	client *databricks.WorkspaceClient
 }
 
+// ensureWorkspacePrefix adds the /Workspace prefix to the parent path if it's not already present.
+// The backend removes this prefix from parent path, and thus it needs to be added back
+// to match the local configuration. The default parent_path (i.e. ${workspace.resource_path})
+// includes the /Workspace prefix, that's why we need to add it back here.
+//
+// If in the future `parent_path` from GET includes the /Workspace prefix, this logic
+// will still be correct because creating "/Workspace/Workspace" is not allowed.
+func ensureWorkspacePrefix(parentPath string) string {
+	if parentPath == "/Workspace" || strings.HasPrefix(parentPath, "/Workspace/") {
+		return parentPath
+	}
+	return path.Join("/Workspace", parentPath)
+}
+
 func (*ResourceDashboard) New(client *databricks.WorkspaceClient) *ResourceDashboard {
 	return &ResourceDashboard{client: client}
 }
@@ -96,25 +110,13 @@ func (r *ResourceDashboard) DoRefresh(ctx context.Context, id string) (*resource
 		return nil, err
 	}
 
-	// Add the /Workspace prefix to the parent path. The backend removes this prefix from parent
-	// path, and thus it needs to be added back in to match the local configuration.
-	// The default parent_path (i.e. ${workspace.resource_path}) includes the /Workspace prefix,
-	// that's why we need to add it back here.
-	//
-	// If in the future `parent_path` from GET includes the /Workspace prefix, this logic
-	// will still be correct because creating "/Workspace/Workspace" is not allowed.
-	parentPath := dashboard.ParentPath
-	if !strings.HasPrefix(parentPath, "/Workspace") {
-		parentPath = path.Join("/Workspace", parentPath)
-	}
-
 	return &resources.DashboardConfig{
 		Dashboard: dashboards.Dashboard{
 			DisplayName:         dashboard.DisplayName,
 			Etag:                dashboard.Etag,
 			WarehouseId:         dashboard.WarehouseId,
 			SerializedDashboard: dashboard.SerializedDashboard,
-			ParentPath:          parentPath,
+			ParentPath:          ensureWorkspacePrefix(dashboard.ParentPath),
 
 			// Output only fields.
 			CreateTime:      dashboard.CreateTime,
@@ -168,25 +170,13 @@ func (r *ResourceDashboard) publishDashboard(ctx context.Context, id string, con
 }
 
 func responseToState(createOrUpdateResp *dashboards.Dashboard, publishResp *dashboards.PublishedDashboard) *resources.DashboardConfig {
-	// Add the /Workspace prefix to the parent path. The backend removes this prefix from parent
-	// path, and thus it needs to be added back in to match the local configuration.
-	// The default parent_path (i.e. ${workspace.resource_path}) includes the /Workspace prefix,
-	// that's why we need to add it back here.
-	//
-	// If in the future `parent_path` from GET includes the /Workspace prefix, this logic
-	// will still be correct because creating "/Workspace/Workspace" is not allowed.
-	parentPath := createOrUpdateResp.ParentPath
-	if !strings.HasPrefix(parentPath, "/Workspace") {
-		parentPath = path.Join("/Workspace", parentPath)
-	}
-
 	return &resources.DashboardConfig{
 		Dashboard: dashboards.Dashboard{
 			DisplayName:         createOrUpdateResp.DisplayName,
 			Etag:                createOrUpdateResp.Etag,
 			WarehouseId:         createOrUpdateResp.WarehouseId,
 			SerializedDashboard: createOrUpdateResp.SerializedDashboard,
-			ParentPath:          parentPath,
+			ParentPath:          ensureWorkspacePrefix(createOrUpdateResp.ParentPath),
 
 			// Output only fields
 			CreateTime:      createOrUpdateResp.CreateTime,

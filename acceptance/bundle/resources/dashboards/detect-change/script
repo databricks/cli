@@ -39,11 +39,15 @@ trace errcode $CLI bundle deploy
 title "Redeploy the bundle with the --force flag and confirm that the out of band modification is ignored:"
 trace errcode $CLI bundle deploy --force
 
+# Extract PATCH requests. These differ between terraform and direct modes:
+# - Terraform includes output-only fields (create_time, dashboard_id, etag, lifecycle_state, path, update_time)
+# - Direct mode only sends input fields (display_name, parent_path, serialized_dashboard, warehouse_id)
 cat out.requests.txt | \
  jq 'select(.method == "PATCH")' | \
  jq 'select( (.path | contains("/api/2.0/lakeview/dashboards")) or ((.path == "/api/2.0/workspace/mkdirs") and (.body.path | contains("/default/resources"))))' \
  > out.patch.requests.$DATABRICKS_BUNDLE_ENGINE.txt
 
+# POST requests are the same across both modes
 cat out.requests.txt | \
  jq 'select(.method == "POST")' | \
  jq 'select( (.path | contains("/api/2.0/lakeview/dashboards")) or ((.path == "/api/2.0/workspace/mkdirs") and (.body.path | contains("/default/resources"))))' \

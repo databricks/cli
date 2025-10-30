@@ -10,5 +10,3 @@ Resources:
     dashboard1:
       Name: my dashboard
       URL:  (not deployed)
-
->>> cat out.requests.txt
