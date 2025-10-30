@@ -4,8 +4,8 @@ resources:
   pipelines:
     my_default_python_etl:
       name: my_default_python_etl
-      ## Catalog is required for serverless compute
-      catalog: ${var.catalog}
+      ## Serverless compute requires Unity Catalog
+      # catalog: ${var.catalog}
       schema: ${var.schema}
       serverless: true
       root_path: "../src/my_default_python_etl"
