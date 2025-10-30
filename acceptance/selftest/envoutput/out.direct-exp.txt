@@ -1,1 +1,1 @@
-myvalue=direct-exp
+myvalue=direct

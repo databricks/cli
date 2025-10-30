@@ -1,7 +1,7 @@
 trace $CLI bundle deploy
 
 # For terraform we expect the task source to be explicitly set always
-# For direct-exp we do not expect it to be set unless explicitly specified in the bundle config
+# For direct we do not expect it to be set unless explicitly specified in the bundle config
 trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | select(.body.name=="git_job") | .body' out.requests.txt | jq --sort-keys > out.git_job.$DATABRICKS_BUNDLE_ENGINE.txt
 trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | select(.body.name=="workspace_job") | .body' out.requests.txt | jq --sort-keys > out.workspace_job.$DATABRICKS_BUNDLE_ENGINE.txt
 rm out.requests.txt

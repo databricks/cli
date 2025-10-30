@@ -4,4 +4,4 @@ IncludeRequestHeaders = ["User-Agent"]
 Ignore = [".databricks"]
 
 [EnvMatrix]
-DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct-exp"]
+DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]

@@ -249,13 +249,10 @@ func getDirectDeploymentEnv(ctx context.Context) (bool, error) {
 		return false, nil
 	case "terraform":
 		return false, nil
-	case "direct-exp":
-		// We use "direct-exp" while direct backend is not suitable for end users.
-		// Once we consider it usable we'll change the value to "direct".
-		// This is to prevent accidentally running direct backend with older CLI versions where it was still considered experimental.
+	case "direct":
 		return true, nil
 	default:
-		return false, fmt.Errorf("unexpected setting for DATABRICKS_BUNDLE_ENGINE=%#v (expected 'terraform' or 'direct-exp' or absent/empty which means 'terraform')", engine)
+		return false, fmt.Errorf("unexpected setting for DATABRICKS_BUNDLE_ENGINE=%#v (expected 'terraform' or 'direct' or absent/empty which means 'terraform')", engine)
 	}
 }
 
