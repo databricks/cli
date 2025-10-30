@@ -343,7 +343,7 @@ func (d *dashboard) generateForExisting(ctx context.Context, b *bundle.Bundle, d
 	}
 
 	if d.bind {
-		err = deployment.BindResource(d.cmd, key, dashboardID, true, false)
+		err = deployment.BindResource(d.cmd, key, dashboardID, true, false, true)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return
@@ -377,8 +377,12 @@ func (d *dashboard) runForResource(ctx context.Context, b *bundle.Bundle) {
 		return
 	}
 
+	ctx = statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(true))
+	if logdiag.HasError(ctx) {
+		return
+	}
+
 	bundle.ApplySeqContext(ctx, b,
-		statemgmt.StatePull(),
 		statemgmt.Load(),
 	)
 	if logdiag.HasError(ctx) {

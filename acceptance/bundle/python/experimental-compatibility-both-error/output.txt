@@ -12,8 +12,39 @@ Error: failed to apply python mutator: 'experimental/python' and 'python' config
   },
   "resources": null,
   "__locations": {
-    "files": null,
-    "locations": null
+    "files": [
+      "databricks.yml"
+    ],
+    "locations": {
+      "bundle": [
+        [
+          0,
+          2,
+          3
+        ]
+      ],
+      "experimental": [
+        [
+          0,
+          9,
+          3
+        ]
+      ],
+      "python": [
+        [
+          0,
+          14,
+          3
+        ]
+      ],
+      "sync": [
+        [
+          0,
+          4,
+          7
+        ]
+      ]
+    }
   }
 }
 
