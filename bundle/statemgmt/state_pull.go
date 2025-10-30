@@ -24,7 +24,7 @@ import (
 
 type AlwaysPull bool
 
-type state struct {
+type StateDesc struct {
 	Serial  int64  `json:"serial"`
 	Lineage string `json:"lineage"`
 
@@ -34,7 +34,7 @@ type state struct {
 	isLocal  bool `json:"-"`
 }
 
-func (s *state) String() string {
+func (s *StateDesc) String() string {
 	kind := "terraform"
 	if s.isDirect {
 		kind = "direct"
@@ -46,7 +46,7 @@ func (s *state) String() string {
 	return fmt.Sprintf("<%s %s state serial=%d lineage=%q>", source, kind, s.Serial, s.Lineage)
 }
 
-func localRead(ctx context.Context, fullPath string, isDirect bool) *state {
+func localRead(ctx context.Context, fullPath string, isDirect bool) *StateDesc {
 	content, err := os.ReadFile(fullPath)
 	if err != nil {
 		if !os.IsNotExist(err) {
@@ -55,7 +55,7 @@ func localRead(ctx context.Context, fullPath string, isDirect bool) *state {
 		return nil
 	}
 
-	state := &state{}
+	state := &StateDesc{}
 	err = json.Unmarshal(content, state)
 	if err != nil {
 		logdiag.LogError(ctx, fmt.Errorf("parsing %s: %w", filepath.ToSlash(fullPath), err))
@@ -68,7 +68,7 @@ func localRead(ctx context.Context, fullPath string, isDirect bool) *state {
 	return state
 }
 
-func _filerRead(ctx context.Context, f filer.Filer, path string) (*state, error) {
+func _filerRead(ctx context.Context, f filer.Filer, path string) (*StateDesc, error) {
 	r, err := f.Read(ctx, path)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
@@ -82,7 +82,7 @@ func _filerRead(ctx context.Context, f filer.Filer, path string) (*state, error)
 		return nil, fmt.Errorf("reading data: %w", err)
 	}
 
-	state := &state{}
+	state := &StateDesc{}
 	err = json.Unmarshal(content, state)
 	if err != nil {
 		return nil, fmt.Errorf("parsing state: %w", err)
@@ -93,7 +93,7 @@ func _filerRead(ctx context.Context, f filer.Filer, path string) (*state, error)
 	return state, nil
 }
 
-func filerRead(ctx context.Context, f filer.Filer, path string, isDirect bool) *state {
+func filerRead(ctx context.Context, f filer.Filer, path string, isDirect bool) *StateDesc {
 	state, err := _filerRead(ctx, f, path)
 	if err != nil {
 		logdiag.LogError(ctx, fmt.Errorf("reading %s: %w", path, err))
@@ -114,7 +114,7 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 		return ctx, false
 	}
 
-	var winner *state
+	var winner *StateDesc
 	var directDeployment bool
 
 	if len(states) == 0 {
@@ -151,7 +151,7 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 
 	log.Infof(ctx, "Available resource state files (from least to most preferred): %s", strings.Join(stateStrs, ", "))
 
-	var lastLineage *state
+	var lastLineage *StateDesc
 
 	for _, state := range states {
 		if lastLineage == nil {
@@ -194,8 +194,8 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 	return ctx, directDeployment
 }
 
-func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) []*state {
-	var states []*state
+func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) []*StateDesc {
+	var states []*StateDesc
 
 	remotePathDirect, localPathDirect := b.StateFilenameDirect(ctx)
 	remotePathTerraform, localPathTerraform := b.StateFilenameTerraform(ctx)
@@ -215,7 +215,7 @@ func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) []
 		}
 
 		var wg sync.WaitGroup
-		var directRemoteState, terraformRemoteState *state
+		var directRemoteState, terraformRemoteState *StateDesc
 
 		wg.Go(func() {
 			directRemoteState = filerRead(ctx, f, remotePathDirect, true)
@@ -229,12 +229,12 @@ func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) []
 
 		// find highest serial across all state files
 		// sorting is stable, so initial setting represents preference:
-		states = []*state{terraformRemoteState, terraformLocalState, directRemoteState, directLocalState}
+		states = []*StateDesc{terraformRemoteState, terraformLocalState, directRemoteState, directLocalState}
 	} else {
-		states = []*state{terraformLocalState, directLocalState}
+		states = []*StateDesc{terraformLocalState, directLocalState}
 	}
-	states = slices.DeleteFunc(states, func(p *state) bool { return p == nil })
-	slices.SortStableFunc(states, func(a, b *state) int {
+	states = slices.DeleteFunc(states, func(p *StateDesc) bool { return p == nil })
+	slices.SortStableFunc(states, func(a, b *StateDesc) int {
 		return int(a.Serial - b.Serial)
 	})
 

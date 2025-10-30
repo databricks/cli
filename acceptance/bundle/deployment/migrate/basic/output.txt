@@ -1,0 +1,103 @@
+
+>>> musterr [CLI] bundle deployment migrate
+Error: no existing state found
+
+>>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> head -n 5 .databricks/bundle/default/terraform/terraform.tfstate
+{
+  "version": 4,
+  "terraform_version": "1.5.5",
+  "serial": 3,
+  "lineage": "[UUID]",
+
+>>> [CLI] bundle deployment migrate
+Migrated 2 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/default/resources.json
+deployment.json
+resources.json
+sync-snapshots
+terraform
+
+>>> cat .databricks/bundle/default/resources.json
+{
+ "lineage": "[UUID]",
+ "serial": 4,
+ "state": {
+  "resources.jobs.test_job": {
+   "__id__": "[NUMID]",
+   "state": {
+    "deployment": {
+     "kind": "BUNDLE",
+     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/default/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "Test Migration Job",
+    "queue": {
+     "enabled": true
+    },
+    "tasks": [
+     {
+      "notebook_task": {
+       "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/default/files/notebook"
+      },
+      "task_key": "main"
+     }
+    ]
+   }
+  },
+  "resources.pipelines.test_pipeline": {
+   "__id__": "[UUID]",
+   "state": {
+    "channel": "CURRENT",
+    "deployment": {
+     "kind": "BUNDLE",
+     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/default/state/metadata.json"
+    },
+    "edition": "ADVANCED",
+    "libraries": [
+     {
+      "notebook": {
+       "path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/default/files/pipeline"
+      }
+     }
+    ],
+    "name": "Test Migration Pipeline"
+   }
+  }
+ }
+}
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+>>> print_requests.py --get //jobs/get
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] engine/direct auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.2/jobs/get",
+  "q": {
+    "job_id": "[NUMID]"
+  }
+}
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py --get //jobs/get
+"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] engine/direct auth/pat"
+
+=== Should show that it's already migrated
+>>> musterr [CLI] bundle deployment migrate
+Error: already using direct engine

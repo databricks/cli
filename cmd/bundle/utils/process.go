@@ -56,6 +56,9 @@ type ProcessOptions struct {
 	Validate     bool
 	Build        bool
 	Deploy       bool
+
+	// Output:
+	Winner *statemgmt.StateDesc
 }
 
 func ProcessBundle(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, error) {
