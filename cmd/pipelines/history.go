@@ -34,7 +34,7 @@ func historyCommand() *cobra.Command {
 	wrappedCmd.AddFlagGroup(historyGroup)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
+		b, err := utils.ProcessBundle(cmd, &utils.ProcessOptions{
 			InitIDs: true,
 		})
 		if err != nil {

@@ -83,7 +83,7 @@ Example usage:
 	wrappedCmd.AddFlagGroup(filterGroup)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
+		b, err := utils.ProcessBundle(cmd, &utils.ProcessOptions{
 			InitIDs: true,
 		})
 		if err != nil {

@@ -41,7 +41,7 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		opts := &utils.ProcessOptions{
+		opts := utils.ProcessOptions{
 			InitFunc: func(b *bundle.Bundle) {
 				b.Config.Bundle.Force = force
 
@@ -53,13 +53,12 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 					b.Config.Bundle.ClusterId = clusterId
 				}
 			},
-			// Verbose:      verbose,
 			AlwaysPull:   true,
 			FastValidate: true,
 			Build:        true,
 		}
 
-		b, err := utils.ProcessBundleWithOut(cmd, opts)
+		b, err := utils.ProcessBundle(cmd, &opts)
 		if err != nil {
 			return err
 		}

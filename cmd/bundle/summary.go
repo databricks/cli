@@ -44,7 +44,7 @@ Useful after deployment to see what was created and where to find it.`,
 				return err
 			}
 		} else {
-			b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
+			b, err := utils.ProcessBundle(cmd, &utils.ProcessOptions{
 				ReadState:        true,
 				IncludeLocations: includeLocations,
 				InitIDs:          true,

@@ -68,7 +68,7 @@ Use after deployment to quickly navigate to your resources in the workspace.`,
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		var arg string
-		b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
+		b, err := utils.ProcessBundle(cmd, &utils.ProcessOptions{
 			PostInitFunc: func(ctx context.Context, b *bundle.Bundle) error {
 				var err error
 				arg, err = resolveOpenArgument(ctx, b, args)
