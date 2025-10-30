@@ -59,7 +59,7 @@ type ProcessOptions struct {
 	DirectDeployment bool
 }
 
-func ProcessBundle(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, error) {
+func ProcessBundle(cmd *cobra.Command, opts *ProcessOptions) (*bundle.Bundle, error) {
 	ctx := cmd.Context()
 	if opts.SkipInitContext {
 		if !logdiag.IsSetup(ctx) {

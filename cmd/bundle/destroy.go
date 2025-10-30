@@ -53,7 +53,7 @@ func CommandBundleDestroy(cmd *cobra.Command, args []string, autoApprove, forceD
 		return errors.New("please specify --auto-approve to skip interactive confirmation checks for non tty consoles")
 	}
 
-	opts := &utils.ProcessOptions{
+	opts := utils.ProcessOptions{
 		InitFunc: func(b *bundle.Bundle) {
 			// If `--force-lock` is specified, force acquisition of the deployment lock.
 			b.Config.Bundle.Deployment.Lock.Force = forceDestroy
@@ -65,7 +65,7 @@ func CommandBundleDestroy(cmd *cobra.Command, args []string, autoApprove, forceD
 		// Do we need initialize phase here?
 	}
 
-	b, err := utils.ProcessBundleWithOut(cmd, opts)
+	b, err := utils.ProcessBundle(cmd, &opts)
 	if err != nil {
 		return err
 	}

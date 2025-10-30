@@ -35,7 +35,7 @@ func deployCommand() *cobra.Command {
 	cmd.Flags().MarkHidden("verbose")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
+		b, err := utils.ProcessBundle(cmd, &utils.ProcessOptions{
 			InitFunc: func(b *bundle.Bundle) {
 				b.Config.Bundle.Deployment.Lock.Force = forceLock
 				b.AutoApprove = autoApprove
