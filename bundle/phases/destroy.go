@@ -6,11 +6,11 @@ import (
 	"net/http"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
@@ -90,7 +90,7 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 }
 
 func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) {
-	if b.DirectDeployment {
+	if *b.DirectDeployment {
 		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(), &b.Config, plan)
 	} else {
 		// Core destructive mutators for destroy. These require informed user consent.
@@ -132,13 +132,14 @@ func Destroy(ctx context.Context, b *bundle.Bundle) {
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDestroy))
 	}()
 
-	bundle.ApplyContext(ctx, b, statemgmt.StatePull())
-	if logdiag.HasError(ctx) {
-		return
-	}
-
-	if !b.DirectDeployment {
+	if !*b.DirectDeployment {
 		bundle.ApplySeqContext(ctx, b,
+			// We need to resolve artifact variable (how we do it in build phase)
+			// because some of the to-be-destroyed resource might use this variable.
+			// Not resolving might lead to terraform "Reference to undeclared resource" error
+			mutator.ResolveVariableReferencesWithoutResources("artifacts"),
+			mutator.ResolveVariableReferencesOnlyResources("artifacts"),
+
 			terraform.Interpolate(),
 			terraform.Write(),
 			terraform.Plan(terraform.PlanGoal("destroy")),
@@ -150,13 +151,9 @@ func Destroy(ctx context.Context, b *bundle.Bundle) {
 	}
 
 	var plan *deployplan.Plan
-	if b.DirectDeployment {
-		err := b.OpenStateFile(ctx)
-		if err != nil {
-			logdiag.LogError(ctx, err)
-			return
-		}
-		plan, err = b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(), nil)
+	if *b.DirectDeployment {
+		_, localPath := b.StateFilenameDirect(ctx)
+		plan, err = b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(), nil, localPath)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return

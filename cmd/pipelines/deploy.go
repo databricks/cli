@@ -3,18 +3,14 @@
 package pipelines
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/mutator"
-	"github.com/databricks/cli/bundle/config/validate"
-	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/logdiag"
-	"github.com/databricks/cli/libs/sync"
 	libsutils "github.com/databricks/cli/libs/utils"
 	"github.com/spf13/cobra"
 )
@@ -39,64 +35,25 @@ func deployCommand() *cobra.Command {
 	cmd.Flags().MarkHidden("verbose")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		ctx := logdiag.InitContext(cmd.Context())
-		cmd.SetContext(ctx)
+		b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
+			InitFunc: func(b *bundle.Bundle) {
+				b.Config.Bundle.Deployment.Lock.Force = forceLock
+				b.AutoApprove = autoApprove
 
-		// Enable collection of diagnostics to check for OSS template warning in ConfigureBundleWithVariables
-		logdiag.SetCollect(ctx, true)
-
-		b := utils.ConfigureBundleWithVariables(cmd)
-		if b == nil || logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
-		}
-		ctx = cmd.Context()
-		logdiag.SetCollect(ctx, false)
-
-		diags := logdiag.FlushCollected(ctx)
-		// Prevent deploying open-source Spark Declarative Pipelines YAML files with the Pipelines CLI.
-		if err := checkForOSSTemplateWarning(ctx, diags); err != nil {
+				if cmd.Flag("fail-on-active-runs").Changed {
+					b.Config.Bundle.Deployment.FailOnActiveRuns = failOnActiveRuns
+				}
+			},
+			Verbose:      verbose,
+			AlwaysPull:   true,
+			FastValidate: true,
+			Build:        true,
+			Deploy:       true,
+		})
+		if err != nil {
 			return err
 		}
-
-		bundle.ApplyFuncContext(ctx, b, func(context.Context, *bundle.Bundle) {
-			b.Config.Bundle.Deployment.Lock.Force = forceLock
-			b.AutoApprove = autoApprove
-
-			if cmd.Flag("fail-on-active-runs").Changed {
-				b.Config.Bundle.Deployment.FailOnActiveRuns = failOnActiveRuns
-			}
-		})
-
-		var outputHandler sync.OutputHandler
-		if verbose {
-			outputHandler = func(ctx context.Context, c <-chan sync.Event) {
-				sync.TextOutput(ctx, c, cmd.OutOrStdout())
-			}
-		}
-
-		phases.Initialize(ctx, b)
-
-		if logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
-		}
-
-		bundle.ApplyContext(ctx, b, validate.FastValidate())
-
-		if logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
-		}
-
-		phases.Build(ctx, b)
-
-		if logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
-		}
-
-		phases.Deploy(ctx, b, outputHandler)
-
-		if logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
-		}
+		ctx := cmd.Context()
 
 		bundle.ApplyContext(ctx, b, mutator.InitializeURLs())
 		if logdiag.HasError(ctx) {

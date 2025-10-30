@@ -1,6 +1,7 @@
 package direct
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"sync"
@@ -8,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
+	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 )
 
 // How many parallel operations (API calls) are allowed
@@ -55,4 +57,12 @@ func (d *DeploymentUnit) SetRemoteState(remoteState any) error {
 
 	d.RemoteState = remoteState
 	return nil
+}
+
+func (b *DeploymentBundle) ExportState(ctx context.Context, path string) (resourcestate.ExportedResourcesMap, error) {
+	err := b.StateDB.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	return b.StateDB.ExportState(ctx), nil
 }

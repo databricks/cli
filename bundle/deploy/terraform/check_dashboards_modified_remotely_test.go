@@ -14,13 +14,14 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
 )
 
 func mockDashboardBundle(t *testing.T) *bundle.Bundle {
+	falseBool := false
 	dir := t.TempDir()
 	b := &bundle.Bundle{
-		BundleRootPath: dir,
+		DirectDeployment: &falseBool,
+		BundleRootPath:   dir,
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "test",
@@ -162,8 +163,7 @@ func TestCheckDashboardsModifiedRemotely_ExistingStateChangePlanMode(t *testing.
 }
 
 func writeFakeDashboardState(t *testing.T, ctx context.Context, b *bundle.Bundle) {
-	path, err := b.StateLocalPath(ctx)
-	require.NoError(t, err)
+	_, path := b.StateFilenameTerraform(ctx)
 
 	// Write fake state file.
 	testutil.WriteFile(t, path, `

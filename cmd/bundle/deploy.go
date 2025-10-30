@@ -3,17 +3,9 @@
 package bundle
 
 import (
-	"context"
-	"time"
-
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config/validate"
-	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/libs/logdiag"
-	"github.com/databricks/cli/libs/sync"
-	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/spf13/cobra"
 )
 
@@ -50,84 +42,31 @@ See https://docs.databricks.com/en/dev-tools/bundles/index.html for more informa
 	cmd.Flags().MarkHidden("verbose")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		ctx := logdiag.InitContext(cmd.Context())
-		cmd.SetContext(ctx)
+		_, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
+			InitFunc: func(b *bundle.Bundle) {
+				b.Config.Bundle.Force = force
+				b.Config.Bundle.Deployment.Lock.Force = forceLock
+				b.AutoApprove = autoApprove
 
-		b := utils.ConfigureBundleWithVariables(cmd)
-		if b == nil || logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
-		}
-		ctx = cmd.Context()
+				if cmd.Flag("compute-id").Changed {
+					b.Config.Bundle.ClusterId = clusterId
+				}
 
-		bundle.ApplyFuncContext(ctx, b, func(context.Context, *bundle.Bundle) {
-			b.Config.Bundle.Force = force
-			b.Config.Bundle.Deployment.Lock.Force = forceLock
-			b.AutoApprove = autoApprove
-
-			if cmd.Flag("compute-id").Changed {
-				b.Config.Bundle.ClusterId = clusterId
-			}
-
-			if cmd.Flag("cluster-id").Changed {
-				b.Config.Bundle.ClusterId = clusterId
-			}
-			if cmd.Flag("fail-on-active-runs").Changed {
-				b.Config.Bundle.Deployment.FailOnActiveRuns = failOnActiveRuns
-			}
+				if cmd.Flag("cluster-id").Changed {
+					b.Config.Bundle.ClusterId = clusterId
+				}
+				if cmd.Flag("fail-on-active-runs").Changed {
+					b.Config.Bundle.Deployment.FailOnActiveRuns = failOnActiveRuns
+				}
+			},
+			Verbose:      verbose,
+			AlwaysPull:   true,
+			FastValidate: true,
+			Build:        true,
+			Deploy:       true,
 		})
 
-		var outputHandler sync.OutputHandler
-		if verbose {
-			outputHandler = func(ctx context.Context, c <-chan sync.Event) {
-				sync.TextOutput(ctx, c, cmd.OutOrStdout())
-			}
-		}
-
-		t0 := time.Now()
-		phases.Initialize(ctx, b)
-		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
-			Key:   "phases.Initialize",
-			Value: time.Since(t0).Milliseconds(),
-		})
-
-		if logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
-		}
-
-		t1 := time.Now()
-		bundle.ApplyContext(ctx, b, validate.FastValidate())
-		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
-			Key:   "validate.FastValidate",
-			Value: time.Since(t1).Milliseconds(),
-		})
-
-		if logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
-		}
-
-		t2 := time.Now()
-		phases.Build(ctx, b)
-		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
-			Key:   "phases.Build",
-			Value: time.Since(t2).Milliseconds(),
-		})
-
-		if logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
-		}
-
-		t3 := time.Now()
-		phases.Deploy(ctx, b, outputHandler)
-		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
-			Key:   "phases.Deploy",
-			Value: time.Since(t3).Milliseconds(),
-		})
-
-		if logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
-		}
-
-		return nil
+		return err
 	}
 
 	return cmd
