@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy/metadata"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/bundle/permissions"
@@ -102,7 +103,7 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, ta
 	cmdio.LogString(ctx, "Deploying resources...")
 
 	if targetEngine.IsDirect() {
-		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(), &b.Config, plan)
+		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(), &b.Config, plan, direct.MigrateMode(false))
 	} else {
 		bundle.ApplyContext(ctx, b, terraform.Apply())
 	}

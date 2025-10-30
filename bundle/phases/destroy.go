@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
@@ -95,7 +96,7 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 
 func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType) {
 	if engine.IsDirect() {
-		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(), &b.Config, plan)
+		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(), &b.Config, plan, direct.MigrateMode(false))
 	} else {
 		// Core destructive mutators for destroy. These require informed user consent.
 		bundle.ApplyContext(ctx, b, terraform.Apply())

@@ -21,6 +21,7 @@ Usage:
 
 Available Commands:
   bind        Bind bundle-defined resources to existing resources
+  migrate     Migrate from Terraform to Direct deployment engine
   unbind      Unbind bundle-defined resources from its managed remote resource
 
 Flags:

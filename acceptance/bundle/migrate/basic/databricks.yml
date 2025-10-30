@@ -1,0 +1,45 @@
+bundle:
+  name: migrate-basic-test
+
+resources:
+  jobs:
+    test_job:
+      name: "Test Migration Job"
+      tasks:
+        - task_key: "main"
+          notebook_task:
+            notebook_path: "./notebook.py"
+            # permissions dont work yet
+            #permissions:
+            #  - level: CAN_VIEW
+            #    user_name: viewer@databricks.com
+  volumes:
+    test_volume:
+      catalog_name: "mycat"
+      schema_name: "myschema"
+      name: "myvol"
+
+  pipelines:
+    test_pipeline:
+      name: "Test Migration Pipeline"
+      tags:
+        # ids
+        myjob_id: ${resources.jobs.test_job.id}
+        myvolume_id: ${resources.volumes.test_volume.id}
+
+        # local field, string:
+        myjob_name: ${resources.jobs.test_job.name}
+        volume_catalog_name: ${resources.volumes.test_volume.catalog_name}
+
+        # Remote fields cause permanent drift (unrelated to migration)
+        # remote field, int, null
+        myjob_timeout: ${resources.jobs.test_job.timeout_seconds}
+
+        # remote field, string:
+        volume_storage_location: ${resources.volumes.test_volume.storage_location}
+      libraries:
+        - notebook:
+            path: "./pipeline.py"
+            #permissions:
+            #  - level: CAN_MANAGE
+            #    user_name: manager@databricks.com
