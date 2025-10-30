@@ -34,7 +34,8 @@ func collectDashboardsFromState(ctx context.Context, b *bundle.Bundle) ([]dashbo
 }
 
 type checkDashboardsModifiedRemotely struct {
-	isPlan bool
+	isPlan           bool
+	directDeployment bool
 }
 
 func (l *checkDashboardsModifiedRemotely) Name() string {
@@ -47,7 +48,7 @@ func (l *checkDashboardsModifiedRemotely) Apply(ctx context.Context, b *bundle.B
 		return nil
 	}
 
-	if *b.DirectDeployment {
+	if l.directDeployment {
 		// TODO: not implemented yet
 		return nil
 	}
@@ -115,6 +116,6 @@ func (l *checkDashboardsModifiedRemotely) Apply(ctx context.Context, b *bundle.B
 	return diags
 }
 
-func CheckDashboardsModifiedRemotely(isPlan bool) *checkDashboardsModifiedRemotely {
-	return &checkDashboardsModifiedRemotely{isPlan: isPlan}
+func CheckDashboardsModifiedRemotely(isPlan, directDeployment bool) *checkDashboardsModifiedRemotely {
+	return &checkDashboardsModifiedRemotely{isPlan: isPlan, directDeployment: directDeployment}
 }

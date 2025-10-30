@@ -17,11 +17,9 @@ import (
 )
 
 func mockDashboardBundle(t *testing.T) *bundle.Bundle {
-	falseBool := false
 	dir := t.TempDir()
 	b := &bundle.Bundle{
-		DirectDeployment: &falseBool,
-		BundleRootPath:   dir,
+		BundleRootPath: dir,
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "test",

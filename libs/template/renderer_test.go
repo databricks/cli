@@ -90,8 +90,6 @@ func assertBuiltinTemplateValid(t *testing.T, template string, settings map[stri
 	// Apply initialize / validation mutators
 	bundle.ApplyFuncContext(ctx, b, func(ctx context.Context, b *bundle.Bundle) {
 		b.Config.Workspace.CurrentUser = &bundleConfig.User{User: cachedUser}
-		trueBool := true
-		b.DirectDeployment = &trueBool
 	})
 
 	b.Tagging = tags.ForCloud(w.Config)

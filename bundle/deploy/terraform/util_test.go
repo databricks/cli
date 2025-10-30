@@ -12,10 +12,8 @@ import (
 )
 
 func TestParseResourcesStateWithNoFile(t *testing.T) {
-	falseBool := false
 	b := &bundle.Bundle{
-		DirectDeployment: &falseBool,
-		BundleRootPath:   t.TempDir(),
+		BundleRootPath: t.TempDir(),
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "whatever",
@@ -31,11 +29,9 @@ func TestParseResourcesStateWithNoFile(t *testing.T) {
 }
 
 func TestParseResourcesStateWithExistingStateFile(t *testing.T) {
-	falseBool := false
 	ctx := context.Background()
 	b := &bundle.Bundle{
-		DirectDeployment: &falseBool,
-		BundleRootPath:   t.TempDir(),
+		BundleRootPath: t.TempDir(),
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "whatever",

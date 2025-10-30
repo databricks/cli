@@ -105,14 +105,14 @@ func getProfileFromCmd(cmd *cobra.Command) string {
 	return env.Get(cmd.Context(), "DATABRICKS_CONFIG_PROFILE")
 }
 
-func GetPlan(ctx context.Context, b *bundle.Bundle) (*deployplan.Plan, error) {
-	plan := phases.Plan(ctx, b)
+func GetPlan(ctx context.Context, b *bundle.Bundle, directDeployment bool) (*deployplan.Plan, error) {
+	plan := phases.Plan(ctx, b, directDeployment)
 	if logdiag.HasError(ctx) {
 		return nil, root.ErrAlreadyPrinted
 	}
 
 	// Direct engine includes noop actions, TF does not. This adds no-op actions for consistency:
-	if !*b.DirectDeployment {
+	if !directDeployment {
 		for _, group := range b.Config.Resources.AllResources() {
 			for rKey := range group.Resources {
 				resourceKey := "resources." + group.Description.PluralName + "." + rKey

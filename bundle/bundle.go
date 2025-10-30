@@ -141,9 +141,6 @@ type Bundle struct {
 	Tagging tags.Cloud
 
 	Metrics Metrics
-
-	// If true, don't use terraform. Set by DATABRICKS_BUNDLE_ENGINE=direct
-	DirectDeployment *bool
 }
 
 func Load(ctx context.Context, path string) (*Bundle, error) {
