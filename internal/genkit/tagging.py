@@ -282,9 +282,7 @@ def write_changelog(tag_info: TagInfo) -> None:
     # Add current date to the release header
     current_date = datetime.now(tz=timezone.utc).strftime("%Y-%m-%d")
     content_with_date = re.sub(
-        r"## Release v(\d+\.\d+\.\d+)",
-        rf"## Release v\1 ({current_date})",
-        tag_info.content.strip()
+        r"## Release v(\d+\.\d+\.\d+)", rf"## Release v\1 ({current_date})", tag_info.content.strip()
     )
 
     updated_changelog = re.sub(r"(# Version changelog\n\n)", f"\\1{content_with_date}\n\n\n", changelog)
