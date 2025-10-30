@@ -11,6 +11,9 @@
       },
       "changes": {
         "local": {
+          "embed_credentials": {
+            "action": "update"
+          },
           "etag": {
             "action": "update"
           },
