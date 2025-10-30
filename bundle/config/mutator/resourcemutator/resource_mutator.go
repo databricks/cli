@@ -96,6 +96,8 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 		// Clusters (same as terraform)
 		// https://github.com/databricks/terraform-provider-databricks/blob/v1.75.0/clusters/resource_cluster.go#L315
 		{"resources.clusters.*.autotermination_minutes", 60},
+		{"resources.clusters.*.workload_type.clients.notebooks", true},
+		{"resources.clusters.*.workload_type.clients.jobs", true},
 	}
 
 	for _, defaultDef := range defaults {

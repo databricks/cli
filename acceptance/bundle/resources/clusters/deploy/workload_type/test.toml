@@ -1,6 +1,6 @@
-Local = false
-Cloud = true
-RecordRequests = false
+Local = true
+Cloud = false
+RecordRequests = true
 
 Ignore = [
     "databricks.yml",
