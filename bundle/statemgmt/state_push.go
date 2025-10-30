@@ -15,7 +15,8 @@ import (
 )
 
 type statePush struct {
-	filerFactory deploy.FilerFactory
+	filerFactory     deploy.FilerFactory
+	directDeployment bool
 }
 
 func (l *statePush) Name() string {
@@ -30,7 +31,7 @@ func (l *statePush) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 
 	var remotePath, localPath string
 
-	if *b.DirectDeployment {
+	if l.directDeployment {
 		remotePath, localPath = b.StateFilenameDirect(ctx)
 	} else {
 		remotePath, localPath = b.StateFilenameTerraform(ctx)
@@ -58,6 +59,6 @@ func (l *statePush) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 	return nil
 }
 
-func StatePush() bundle.Mutator {
-	return &statePush{deploy.StateFiler}
+func StatePush(directDeployment bool) bundle.Mutator {
+	return &statePush{filerFactory: deploy.StateFiler, directDeployment: directDeployment}
 }

@@ -92,12 +92,12 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 	return approved, nil
 }
 
-func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) {
+func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, directDeployment bool) {
 	// Core mutators that CRUD resources and modify deployment state. These
 	// mutators need informed consent if they are potentially destructive.
 	cmdio.LogString(ctx, "Deploying resources...")
 
-	if *b.DirectDeployment {
+	if directDeployment {
 		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(), &b.Config, plan)
 	} else {
 		bundle.ApplyContext(ctx, b, terraform.Apply())
@@ -105,14 +105,14 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) {
 
 	// Even if deployment failed, there might be updates in states that we need to upload
 	bundle.ApplyContext(ctx, b,
-		statemgmt.StatePush(),
+		statemgmt.StatePush(directDeployment),
 	)
 	if logdiag.HasError(ctx) {
 		return
 	}
 
 	bundle.ApplySeqContext(ctx, b,
-		statemgmt.Load(),
+		statemgmt.Load(directDeployment),
 		metadata.Compute(),
 		metadata.Upload(),
 	)
@@ -133,7 +133,7 @@ func uploadLibraries(ctx context.Context, b *bundle.Bundle, libs map[string][]li
 }
 
 // The deploy phase deploys artifacts and resources.
-func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHandler) {
+func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHandler, directDeployment bool) {
 	log.Info(ctx, "Phase: deploy")
 
 	// Core mutators that CRUD resources and modify deployment state. These
@@ -153,7 +153,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDeploy))
 	}()
 
-	libs := deployPrepare(ctx, b, false)
+	libs := deployPrepare(ctx, b, false, directDeployment)
 	if logdiag.HasError(ctx) {
 		return
 	}
@@ -176,7 +176,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
-	plan := planWithoutPrepare(ctx, b)
+	plan := planWithoutPrepare(ctx, b, directDeployment)
 	if logdiag.HasError(ctx) {
 		return
 	}
@@ -187,7 +187,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 	if haveApproval {
-		deployCore(ctx, b, plan)
+		deployCore(ctx, b, plan, directDeployment)
 	} else {
 		cmdio.LogString(ctx, "Deployment cancelled!")
 		return
@@ -203,8 +203,8 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 
 // planWithoutPrepare builds a deployment plan without running deployPrepare.
 // This is used when deployPrepare has already been called.
-func planWithoutPrepare(ctx context.Context, b *bundle.Bundle) *deployplan.Plan {
-	if *b.DirectDeployment {
+func planWithoutPrepare(ctx context.Context, b *bundle.Bundle, directDeployment bool) *deployplan.Plan {
+	if directDeployment {
 		_, localPath := b.StateFilenameDirect(ctx)
 		plan, err := b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(), &b.Config, localPath)
 		if err != nil {
@@ -239,13 +239,13 @@ func planWithoutPrepare(ctx context.Context, b *bundle.Bundle) *deployplan.Plan 
 	return plan
 }
 
-func Plan(ctx context.Context, b *bundle.Bundle) *deployplan.Plan {
-	deployPrepare(ctx, b, true)
+func Plan(ctx context.Context, b *bundle.Bundle, directDeployment bool) *deployplan.Plan {
+	deployPrepare(ctx, b, true, directDeployment)
 	if logdiag.HasError(ctx) {
 		return nil
 	}
 
-	return planWithoutPrepare(ctx, b)
+	return planWithoutPrepare(ctx, b, directDeployment)
 }
 
 // If there are more than 1 thousand of a resource type, do not

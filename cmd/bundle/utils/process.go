@@ -52,10 +52,11 @@ type ProcessOptions struct {
 	Verbose bool
 
 	// If true, call corresponding phase:
-	FastValidate bool
-	Validate     bool
-	Build        bool
-	Deploy       bool
+	FastValidate     bool
+	Validate         bool
+	Build            bool
+	Deploy           bool
+	DirectDeployment bool
 }
 
 func ProcessBundle(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, error) {
@@ -126,7 +127,7 @@ func ProcessBundle(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, err
 
 	if opts.ReadState || opts.AlwaysPull || opts.InitIDs || opts.ErrorOnEmptyState {
 		// PullResourcesState depends on stateFiler which needs b.Config.Workspace.StatePath which is set in phases.Initialize
-		ctx = statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(opts.AlwaysPull))
+		ctx, opts.DirectDeployment = statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(opts.AlwaysPull))
 		if logdiag.HasError(ctx) {
 			return b, root.ErrAlreadyPrinted
 		}
@@ -139,7 +140,7 @@ func ProcessBundle(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, err
 				modes = append(modes, statemgmt.ErrorOnEmptyState)
 			}
 			bundle.ApplySeqContext(ctx, b,
-				statemgmt.Load(modes...),
+				statemgmt.Load(opts.DirectDeployment, modes...),
 				mutator.InitializeURLs(),
 			)
 			if logdiag.HasError(ctx) {
@@ -191,7 +192,7 @@ func ProcessBundle(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, err
 		}
 
 		t3 := time.Now()
-		phases.Deploy(ctx, b, outputHandler)
+		phases.Deploy(ctx, b, outputHandler, opts.DirectDeployment)
 		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
 			Key:   "phases.Deploy",
 			Value: time.Since(t3).Milliseconds(),
