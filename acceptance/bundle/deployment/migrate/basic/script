@@ -1,0 +1,21 @@
+# Migrating without state, should print a message about missing state.
+trace musterr $CLI bundle deployment migrate
+
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+trace head -n 5 .databricks/bundle/default/terraform/terraform.tfstate
+
+trace $CLI bundle deployment migrate
+
+ls -1 .databricks/bundle/default/ | contains.py "resources.json"
+trace cat .databricks/bundle/default/resources.json
+
+rm out.requests.txt
+trace $CLI bundle plan
+trace print_requests.py --get //jobs/get | contains.py 'engine/direct'
+
+trace $CLI bundle deploy
+trace print_requests.py --get //jobs/get | jq '.headers["User-Agent"][0]' | contains.py 'engine/direct'
+
+title "Should show that it's already migrated"
+trace musterr $CLI bundle deployment migrate
+rm out.requests.txt

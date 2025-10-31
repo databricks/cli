@@ -24,29 +24,30 @@ import (
 
 type AlwaysPull bool
 
-type state struct {
+type StateDesc struct {
 	Serial  int64  `json:"serial"`
 	Lineage string `json:"lineage"`
 
 	// additional fields describing state:
-	content  []byte
-	isDirect bool `json:"-"`
-	isLocal  bool `json:"-"`
+	Content []byte
+
+	IsDirect bool `json:"-"`
+	IsLocal  bool `json:"-"`
 }
 
-func (s *state) String() string {
+func (s *StateDesc) String() string {
 	kind := "terraform"
-	if s.isDirect {
+	if s.IsDirect {
 		kind = "direct"
 	}
 	source := "remote"
-	if s.isLocal {
+	if s.IsLocal {
 		source = "local"
 	}
 	return fmt.Sprintf("<%s %s state serial=%d lineage=%q>", source, kind, s.Serial, s.Lineage)
 }
 
-func localRead(ctx context.Context, fullPath string, isDirect bool) *state {
+func localRead(ctx context.Context, fullPath string, isDirect bool) *StateDesc {
 	content, err := os.ReadFile(fullPath)
 	if err != nil {
 		if !os.IsNotExist(err) {
@@ -55,20 +56,20 @@ func localRead(ctx context.Context, fullPath string, isDirect bool) *state {
 		return nil
 	}
 
-	state := &state{}
+	state := &StateDesc{}
 	err = json.Unmarshal(content, state)
 	if err != nil {
 		logdiag.LogError(ctx, fmt.Errorf("parsing %s: %w", filepath.ToSlash(fullPath), err))
 	}
 
-	state.isDirect = isDirect
-	state.isLocal = true
+	state.IsDirect = isDirect
+	state.IsLocal = true
 	// not populating .content, not needed for local
 
 	return state
 }
 
-func _filerRead(ctx context.Context, f filer.Filer, path string) (*state, error) {
+func _filerRead(ctx context.Context, f filer.Filer, path string) (*StateDesc, error) {
 	r, err := f.Read(ctx, path)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
@@ -82,65 +83,70 @@ func _filerRead(ctx context.Context, f filer.Filer, path string) (*state, error)
 		return nil, fmt.Errorf("reading data: %w", err)
 	}
 
-	state := &state{}
+	state := &StateDesc{}
 	err = json.Unmarshal(content, state)
 	if err != nil {
 		return nil, fmt.Errorf("parsing state: %w", err)
 	}
 
-	state.isLocal = false
-	state.content = content
+	state.IsLocal = false
+	state.Content = content
 	return state, nil
 }
 
-func filerRead(ctx context.Context, f filer.Filer, path string, isDirect bool) *state {
+func filerRead(ctx context.Context, f filer.Filer, path string, isDirect bool) *StateDesc {
 	state, err := _filerRead(ctx, f, path)
 	if err != nil {
 		logdiag.LogError(ctx, fmt.Errorf("reading %s: %w", path, err))
 	} else if state != nil {
 		log.Debugf(ctx, "read %s: %s", path, state.String())
-		state.isDirect = isDirect
+		state.IsDirect = isDirect
 	}
 	return state
 }
 
-func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) context.Context {
+func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) (context.Context, *StateDesc) {
 	_, localPathDirect := b.StateFilenameDirect(ctx)
 	_, localPathTerraform := b.StateFilenameTerraform(ctx)
 
 	states := readStates(ctx, b, alwaysPull)
 
 	if logdiag.HasError(ctx) {
-		return ctx
+		return ctx, nil
 	}
 
-	var winner *state
+	var winner *StateDesc
+	var directDeployment bool
 
 	if len(states) == 0 {
-		// no local or remote state; set b.DirectDeployment based on env vars
+		// no local or remote state; set directDeployment based on env vars
 		isDirect, err := getDirectDeploymentEnv(ctx)
 		if err != nil {
 			logdiag.LogError(ctx, err)
-			return nil
+			return ctx, nil
 		}
-		b.DirectDeployment = &isDirect
+		winner = &StateDesc{
+			IsDirect: isDirect,
+			IsLocal:  true,
+			// Lineage and Serial are empty
+		}
 	} else {
 		winner = states[len(states)-1]
-		b.DirectDeployment = ptrBool(winner.isDirect)
+		directDeployment = winner.IsDirect
 	}
 
 	engine := "direct"
 
-	if !*b.DirectDeployment {
+	if !directDeployment {
 		engine = "terraform"
 	}
 
 	// Set the engine in the user agent
 	ctx = useragent.InContext(ctx, "engine", engine)
 
-	if winner == nil {
-		log.Infof(ctx, "No existing resource state found")
-		return ctx
+	if len(states) == 0 {
+		// nothing to migrate, return
+		return ctx, winner
 	}
 
 	var stateStrs []string
@@ -150,27 +156,27 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 
 	log.Infof(ctx, "Available resource state files (from least to most preferred): %s", strings.Join(stateStrs, ", "))
 
-	var lastLineage *state
+	var lastLineage *StateDesc
 
 	for _, state := range states {
 		if lastLineage == nil {
 			lastLineage = state
 		} else if lastLineage.Lineage != state.Lineage {
 			logdiag.LogError(ctx, fmt.Errorf("lineage mismatch in state files: %s", strings.Join(stateStrs, ", ")))
-			return ctx
+			return ctx, winner
 		}
 	}
 
-	if winner.isLocal {
+	if winner.IsLocal {
 		// local state is fresh, nothing to do
-		return ctx
+		return ctx, winner
 	}
 
-	if !winner.isLocal {
+	if !winner.IsLocal {
 		log.Info(ctx, "Remote state is newer than local state. Using remote resources state.")
 
 		localStatePath := localPathTerraform
-		if winner.isDirect {
+		if winner.IsDirect {
 			localStatePath = localPathDirect
 		}
 
@@ -179,22 +185,22 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 		err := os.MkdirAll(localStateDir, 0o700)
 		if err != nil {
 			logdiag.LogError(ctx, err)
-			return ctx
+			return ctx, winner
 		}
 
 		// TODO: write + rename
-		err = os.WriteFile(localStatePath, winner.content, 0o600)
+		err = os.WriteFile(localStatePath, winner.Content, 0o600)
 		if err != nil {
 			logdiag.LogError(ctx, err)
-			return ctx
+			return ctx, winner
 		}
 	}
 
-	return ctx
+	return ctx, winner
 }
 
-func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) []*state {
-	var states []*state
+func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) []*StateDesc {
+	var states []*StateDesc
 
 	remotePathDirect, localPathDirect := b.StateFilenameDirect(ctx)
 	remotePathTerraform, localPathTerraform := b.StateFilenameTerraform(ctx)
@@ -214,7 +220,7 @@ func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) []
 		}
 
 		var wg sync.WaitGroup
-		var directRemoteState, terraformRemoteState *state
+		var directRemoteState, terraformRemoteState *StateDesc
 
 		wg.Go(func() {
 			directRemoteState = filerRead(ctx, f, remotePathDirect, true)
@@ -228,12 +234,12 @@ func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) []
 
 		// find highest serial across all state files
 		// sorting is stable, so initial setting represents preference:
-		states = []*state{terraformRemoteState, terraformLocalState, directRemoteState, directLocalState}
+		states = []*StateDesc{terraformRemoteState, terraformLocalState, directRemoteState, directLocalState}
 	} else {
-		states = []*state{terraformLocalState, directLocalState}
+		states = []*StateDesc{terraformLocalState, directLocalState}
 	}
-	states = slices.DeleteFunc(states, func(p *state) bool { return p == nil })
-	slices.SortStableFunc(states, func(a, b *state) int {
+	states = slices.DeleteFunc(states, func(p *StateDesc) bool { return p == nil })
+	slices.SortStableFunc(states, func(a, b *StateDesc) int {
 		return int(a.Serial - b.Serial)
 	})
 
@@ -255,5 +261,3 @@ func getDirectDeploymentEnv(ctx context.Context) (bool, error) {
 		return false, fmt.Errorf("unexpected setting for DATABRICKS_BUNDLE_ENGINE=%#v (expected 'terraform' or 'direct' or absent/empty which means 'terraform')", engine)
 	}
 }
-
-func ptrBool(x bool) *bool { return &x }

@@ -89,8 +89,8 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 	return approved, nil
 }
 
-func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) {
-	if *b.DirectDeployment {
+func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, directDeployment bool) {
+	if directDeployment {
 		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(), &b.Config, plan)
 	} else {
 		// Core destructive mutators for destroy. These require informed user consent.
@@ -109,7 +109,7 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) {
 }
 
 // The destroy phase deletes artifacts and resources.
-func Destroy(ctx context.Context, b *bundle.Bundle) {
+func Destroy(ctx context.Context, b *bundle.Bundle, directDeployment bool) {
 	log.Info(ctx, "Phase: destroy")
 
 	ok, err := assertRootPathExists(ctx, b)
@@ -132,7 +132,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle) {
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDestroy))
 	}()
 
-	if !*b.DirectDeployment {
+	if !directDeployment {
 		bundle.ApplySeqContext(ctx, b,
 			// We need to resolve artifact variable (how we do it in build phase)
 			// because some of the to-be-destroyed resource might use this variable.
@@ -151,7 +151,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle) {
 	}
 
 	var plan *deployplan.Plan
-	if *b.DirectDeployment {
+	if directDeployment {
 		_, localPath := b.StateFilenameDirect(ctx)
 		plan, err = b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(), nil, localPath)
 		if err != nil {
@@ -179,7 +179,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle) {
 	}
 
 	if hasApproval {
-		destroyCore(ctx, b, plan)
+		destroyCore(ctx, b, plan, directDeployment)
 	} else {
 		cmdio.LogString(ctx, "Destroy cancelled!")
 	}

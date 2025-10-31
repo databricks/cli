@@ -27,7 +27,7 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions) {
 		terraform.Interpolate(),
 		terraform.Write(),
 		terraform.Import(opts),
-		statemgmt.StatePush(),
+		statemgmt.StatePush(false),
 	)
 }
 
@@ -47,6 +47,6 @@ func Unbind(ctx context.Context, b *bundle.Bundle, bundleType, tfResourceType, r
 		terraform.Interpolate(),
 		terraform.Write(),
 		terraform.Unbind(bundleType, tfResourceType, resourceKey),
-		statemgmt.StatePush(),
+		statemgmt.StatePush(false),
 	)
 }
