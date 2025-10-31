@@ -29,4 +29,4 @@ fi
 go tool -modfile=tools/go.mod yamlfmt .github/workflows/tagging.yml
 
 # Generate PyDABs code.
-make -C experimental/python codegen
+make -C python codegen

@@ -173,7 +173,7 @@ def _read_conf(input: dict) -> tuple[_Conf, Diagnostics]:
         return (
             _Conf(),
             Diagnostics.create_error(
-                "'experimental/pydabs' is not supported by 'databricks-bundles', use 'experimental/python' instead",
+                "'experimental/pydabs' is not supported by 'databricks-bundles', use 'python' instead",
                 detail="",
                 location=None,
                 path=("experimental", "pydabs"),

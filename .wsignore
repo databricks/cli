@@ -3,7 +3,7 @@
 .codegen/_openapi_sha
 .release_metadata.json
 bundle/schema/jsonschema.json
-experimental/python/docs/images/databricks-logo.svg
+python/docs/images/databricks-logo.svg
 **/*.dist-info/METADATA
 **/*.dist-info/WHEEL
 
@@ -25,7 +25,7 @@ cmd/workspace/**/*.go
 cmd/account/**/*.go
 
 # Extra whitespace in generated Python models
-experimental/python/databricks/bundles/*/_models/*.py
+python/databricks/bundles/*/_models/*.py
 
 # Developed elsewhere:
 internal/genkit/tagging.py
