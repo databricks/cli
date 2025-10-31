@@ -49,6 +49,20 @@ func (m *applySourceLinkedDeploymentPreset) Apply(ctx context.Context, b *bundle
 			b.Config.Presets.SourceLinkedDeployment = &disabled
 			return diags
 		}
+
+		if b.Config.Bundle.Mode != config.Development {
+			path := dyn.NewPath(dyn.Key("targets"), dyn.Key(target), dyn.Key("presets"), dyn.Key("source_linked_deployment"))
+			diags = diags.Append(
+				diag.Diagnostic{
+					Severity: diag.Warning,
+					Summary:  "source-linked deployment in non-development mode is deprecated and will not be supported in a future release",
+					Paths: []dyn.Path{
+						path,
+					},
+					Locations: b.Config.GetLocations(path[2:].String()),
+				},
+			)
+		}
 	}
 
 	if isDatabricksWorkspace && b.Config.Bundle.Mode == config.Development {
