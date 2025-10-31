@@ -3,7 +3,7 @@ Cloud = true
 RequiresWarehouse = true
 
 [EnvMatrix]
-  DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct-exp"]
+  DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
 
 [Env]
 # MSYS2 automatically converts absolute paths like /Users/$username/$UNIQUE_NAME to

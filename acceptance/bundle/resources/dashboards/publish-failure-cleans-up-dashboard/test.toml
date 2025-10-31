@@ -3,7 +3,7 @@ Local = true
 RecordRequests = true
 
 [EnvMatrix]
-  DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct-exp"]
+  DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
 
 [[Server]]
 Pattern = "POST /api/2.0/lakeview/dashboards/{dashboard_id}/published"

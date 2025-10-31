@@ -29,7 +29,7 @@ export PAGE_NAME="name2"
 deploy_dashboard
 
 # Print API requests made to create parent_path or create / update the dashboard.
-# Terraform serialized OUTPUT_ONLY fields in the request body while direct-exp does not.
+# Terraform serialized OUTPUT_ONLY fields in the request body while direct does not.
 # That's why we write the requests to separate files.
 # Normalize \r\n to \n in the serialized_dashboard field to handle Windows line endings.
 cat out.requests.txt | \
