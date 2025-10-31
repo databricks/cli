@@ -394,7 +394,7 @@ func TestGetOps_PyDABs(t *testing.T) {
 		},
 	}, PythonMutatorPhaseLoadResources)
 
-	assert.Error(t, err, "experimental/pydabs is deprecated, use experimental/python instead (https://docs.databricks.com/dev-tools/bundles/python)")
+	assert.Error(t, err, "experimental/pydabs is deprecated, use python instead (https://docs.databricks.com/dev-tools/bundles/python)")
 }
 
 func TestGetOps_empty(t *testing.T) {
