@@ -1,0 +1,4 @@
+$CLI --version
+trace $CLI bundle validate &> out.validate.$DATABRICKS_BUNDLE_ENGINE.txt
+trace errcode $CLI bundle deploy &> out.deploy1.$DATABRICKS_BUNDLE_ENGINE.txt
+trace errcode $CLI bundle deploy &> out.deploy2.$DATABRICKS_BUNDLE_ENGINE.txt
