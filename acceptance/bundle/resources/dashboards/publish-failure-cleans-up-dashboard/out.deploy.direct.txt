@@ -1,0 +1,14 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/publish-failure-cleans-up-dashboard/default/files...
+Deploying resources...
+Error: cannot create resources.dashboards.dashboard1: Warehouse doesnotexist does not exist (400 RESOURCE_DOES_NOT_EXIST)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.0/lakeview/dashboards/[DASHBOARD_ID]/published
+HTTP Status: 400 Bad Request
+API error_code: RESOURCE_DOES_NOT_EXIST
+API message: Warehouse doesnotexist does not exist
+
+Updating deployment state...
+
+Exit code: 1

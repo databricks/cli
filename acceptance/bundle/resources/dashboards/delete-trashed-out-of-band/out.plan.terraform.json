@@ -1,0 +1,7 @@
+{
+  "plan": {
+    "resources.dashboards.dashboard1": {
+      "action": "create"
+    }
+  }
+}

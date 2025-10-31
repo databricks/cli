@@ -236,7 +236,9 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.DashboardUpdate(req)
 	})
 	server.Handle("DELETE", "/api/2.0/lakeview/dashboards/{dashboard_id}", func(req Request) any {
-		return MapDelete(req.Workspace, req.Workspace.Dashboards, req.Vars["dashboard_id"])
+		// Calling DELETE on a dashboard does not delete the record immediately. Instead, the dashboard
+		// is marked as trashed and moved to the trash.
+		return req.Workspace.DashboardTrash(req)
 	})
 	server.Handle("GET", "/api/2.0/lakeview/dashboards/{dashboard_id}/published", func(req Request) any {
 		return MapGet(req.Workspace, req.Workspace.PublishedDashboards, req.Vars["dashboard_id"])

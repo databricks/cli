@@ -1,0 +1,17 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/publish-failure-cleans-up-dashboard/default/files...
+Deploying resources...
+Error: terraform apply: exit status 1
+
+Error: cannot create dashboard: Warehouse doesnotexist does not exist
+
+  with databricks_dashboard.dashboard1,
+  on bundle.tf.json line 21, in resource.databricks_dashboard.dashboard1:
+  21:       }
+
+
+
+Updating deployment state...
+
+Exit code: 1

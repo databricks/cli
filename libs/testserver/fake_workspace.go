@@ -12,12 +12,12 @@ import (
 	"time"
 
 	"github.com/databricks/databricks-sdk-go/service/compute"
+	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/database"
 	"github.com/google/uuid"
 
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
-	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
@@ -78,6 +78,14 @@ type FileEntry struct {
 	Data []byte
 }
 
+type fakeDashboard struct {
+	dashboards.Dashboard
+
+	// Input value of the serialized dashboard provided. This is used
+	// to detect if the etag needs to be updated.
+	InputSerializedDashboard string `json:"-"`
+}
+
 // FakeWorkspace holds a state of a workspace for acceptance tests.
 type FakeWorkspace struct {
 	mu                 sync.Mutex
@@ -98,7 +106,7 @@ type FakeWorkspace struct {
 	Schemas             map[string]catalog.SchemaInfo
 	SchemasGrants       map[string][]catalog.PrivilegeAssignment
 	Volumes             map[string]catalog.VolumeInfo
-	Dashboards          map[string]dashboards.Dashboard
+	Dashboards          map[string]fakeDashboard
 	PublishedDashboards map[string]dashboards.PublishedDashboard
 	SqlWarehouses       map[string]sql.GetWarehouseResponse
 	Alerts              map[string]sql.AlertV2
@@ -202,7 +210,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		Schemas:              map[string]catalog.SchemaInfo{},
 		RegisteredModels:     map[string]catalog.RegisteredModelInfo{},
 		Volumes:              map[string]catalog.VolumeInfo{},
-		Dashboards:           map[string]dashboards.Dashboard{},
+		Dashboards:           map[string]fakeDashboard{},
 		PublishedDashboards:  map[string]dashboards.PublishedDashboard{},
 		SqlWarehouses:        map[string]sql.GetWarehouseResponse{},
 		Repos:                map[string]workspace.RepoInfo{},

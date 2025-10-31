@@ -1,0 +1,16 @@
+{
+  "method": "PATCH",
+  "path": "/api/2.0/lakeview/dashboards/[DASHBOARD_ID]",
+  "body": {
+    "create_time": "[TIMESTAMP]",
+    "dashboard_id": "[DASHBOARD_ID]",
+    "display_name": "dashboard2",
+    "etag": [ETAG],
+    "lifecycle_state": "ACTIVE",
+    "parent_path": "/Users/[USERNAME]/.bundle/change-name-[UNIQUE_NAME]/default/resources",
+    "path": "/Users/[USERNAME]/.bundle/change-name-[UNIQUE_NAME]/default/resources/dashboard1.lvdash.json",
+    "serialized_dashboard": "{}\n",
+    "update_time": "[TIMESTAMP]",
+    "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+  }
+}
