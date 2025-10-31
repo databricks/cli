@@ -1,3 +1,6 @@
+# Without this arguments get converted, e.g. "/jobs" becomes "C:/Program Files/Git/jobs"
+Env.MSYS_NO_PATHCONV = "1"
+
 # Default settings that apply to all tests unless overriden by test.toml files in inner directories.
 Local = true
 Cloud = false
