@@ -22,7 +22,7 @@ import (
 func createTestServer(t *testing.T, maxClients int, shutdownDelay time.Duration) *httptest.Server {
 	ctx := t.Context()
 	connections := NewConnectionsManager(maxClients, shutdownDelay)
-	proxyServer := NewProxyServer(ctx, connections, func(ctx context.Context, publicKeyName string) (*exec.Cmd, error) {
+	proxyServer := NewProxyServer(ctx, connections, func(ctx context.Context) (*exec.Cmd, error) {
 		// 'cat' command reads each line from stdin and sends it to stdout, so we can test end-to-end proxying.
 		return exec.CommandContext(ctx, "cat"), nil
 	})
@@ -35,7 +35,7 @@ func createTestClient(t *testing.T, serverURL string, requestHandoverTick func()
 	clientOutput := newTestBuffer(t)
 	wsURL := "ws" + serverURL[4:]
 	createConn := func(ctx context.Context, connID string) (*websocket.Conn, error) {
-		url := fmt.Sprintf("%s?id=%s&keyName=%s", wsURL, connID, "test-key-name")
+		url := fmt.Sprintf("%s?id=%s", wsURL, connID)
 		conn, _, err := websocket.DefaultDialer.Dial(url, nil) // nolint:bodyclose
 		return conn, err
 	}

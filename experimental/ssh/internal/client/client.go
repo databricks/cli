@@ -2,10 +2,8 @@ package client
 
 import (
 	"context"
-	"crypto/sha256"
 	_ "embed"
 	"encoding/base64"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -60,9 +58,10 @@ type ClientOptions struct {
 	ReleasesDir string
 	// Directory for local SSH keys. Defaults to ~/.databricks/ssh-tunnel-keys
 	SSHKeysDir string
-	// Prefix for the client public key name to be used in the ssh-tunnel secrets scope.
-	// The actual key name will be this prefix combined with a hash of the key path.
-	ClientPublicKeyNamePrefix string
+	// Client public key name located in the ssh-tunnel secrets scope.
+	ClientPublicKeyName string
+	// Client private key name located in the ssh-tunnel secrets scope.
+	ClientPrivateKeyName string
 	// If true, the CLI will attempt to start the cluster if it is not running.
 	AutoStartCluster bool
 	// Optional auth profile name. If present, will be added as --profile flag to the ProxyCommand while spawning ssh client.
@@ -88,22 +87,27 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		return err
 	}
 
+	secretScopeName, err := keys.CreateKeysSecretScope(ctx, client, opts.ClusterID)
+	if err != nil {
+		return fmt.Errorf("failed to create secret scope: %w", err)
+	}
+
+	privateKeyBytes, publicKeyBytes, err := keys.CheckAndGenerateSSHKeyPairFromSecrets(ctx, client, opts.ClusterID, secretScopeName, opts.ClientPrivateKeyName, opts.ClientPublicKeyName)
+	if err != nil {
+		return fmt.Errorf("failed to get or generate SSH key pair from secrets: %w", err)
+	}
+
 	keyPath, err := keys.GetLocalSSHKeyPath(opts.ClusterID, opts.SSHKeysDir)
 	if err != nil {
 		return fmt.Errorf("failed to get local keys folder: %w", err)
 	}
-	privateKeyPath, publicKey, err := keys.CheckAndGenerateSSHKeyPair(ctx, keyPath)
-	if err != nil {
-		return fmt.Errorf("failed to check or generate SSH key pair: %w", err)
-	}
-	cmdio.LogString(ctx, "Using SSH key: "+privateKeyPath)
 
-	publicKeyName := generateClientPublicKeyName(keyPath, opts.ClientPublicKeyNamePrefix)
-	secretScopeName, err := keys.PutSecretInScope(ctx, client, opts.ClusterID, publicKeyName, publicKey)
+	err = keys.SaveSSHKeyPair(keyPath, privateKeyBytes, publicKeyBytes)
 	if err != nil {
-		return fmt.Errorf("failed to store public key in secret scope: %w", err)
+		return fmt.Errorf("failed to save SSH key pair locally: %w", err)
 	}
-	cmdio.LogString(ctx, fmt.Sprintf("Secrets scope: %s, key name: %s", secretScopeName, publicKeyName))
+	cmdio.LogString(ctx, "Using SSH key: "+keyPath)
+	cmdio.LogString(ctx, fmt.Sprintf("Secrets scope: %s, key name: %s", secretScopeName, opts.ClientPublicKeyName))
 
 	var userName string
 	var serverPort int
@@ -138,17 +142,11 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 	cmdio.LogString(ctx, fmt.Sprintf("Server port: %d", serverPort))
 
 	if opts.ProxyMode {
-		return runSSHProxy(ctx, client, serverPort, publicKeyName, opts)
+		return runSSHProxy(ctx, client, serverPort, opts)
 	} else {
 		cmdio.LogString(ctx, fmt.Sprintf("Additional SSH arguments: %v", opts.AdditionalArgs))
-		return spawnSSHClient(ctx, userName, privateKeyPath, serverPort, opts)
+		return spawnSSHClient(ctx, userName, keyPath, serverPort, opts)
 	}
-}
-
-func generateClientPublicKeyName(keyPath, prefix string) string {
-	hash := sha256.Sum256([]byte(keyPath))
-	hashStr := hex.EncodeToString(hash[:])
-	return prefix + "-" + hashStr[:8]
 }
 
 func getServerMetadata(ctx context.Context, client *databricks.WorkspaceClient, clusterID, version string) (int, string, error) {
@@ -221,10 +219,11 @@ func submitSSHTunnelJob(ctx context.Context, client *databricks.WorkspaceClient,
 				NotebookTask: &jobs.NotebookTask{
 					NotebookPath: jobNotebookPath,
 					BaseParameters: map[string]string{
-						"version":         version,
-						"secretScopeName": secretScopeName,
-						"shutdownDelay":   opts.ShutdownDelay.String(),
-						"maxClients":      strconv.Itoa(opts.MaxClients),
+						"version":                 version,
+						"secretScopeName":         secretScopeName,
+						"authorizedKeySecretName": opts.ClientPublicKeyName,
+						"shutdownDelay":           opts.ShutdownDelay.String(),
+						"maxClients":              strconv.Itoa(opts.MaxClients),
 					},
 				},
 				TimeoutSeconds:    int(opts.ServerTimeout.Seconds()),
@@ -269,9 +268,9 @@ func spawnSSHClient(ctx context.Context, userName, privateKeyPath string, server
 	return sshCmd.Run()
 }
 
-func runSSHProxy(ctx context.Context, client *databricks.WorkspaceClient, serverPort int, publicKeyName string, opts ClientOptions) error {
+func runSSHProxy(ctx context.Context, client *databricks.WorkspaceClient, serverPort int, opts ClientOptions) error {
 	createConn := func(ctx context.Context, connID string) (*websocket.Conn, error) {
-		return createWebsocketConnection(ctx, client, connID, opts.ClusterID, publicKeyName, serverPort)
+		return createWebsocketConnection(ctx, client, connID, opts.ClusterID, serverPort)
 	}
 	requestHandoverTick := func() <-chan time.Time {
 		return time.After(opts.HandoverTimeout)

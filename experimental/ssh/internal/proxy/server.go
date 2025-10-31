@@ -14,7 +14,7 @@ import (
 
 const serverProcessTerminationTimeout = 10 * time.Second
 
-type createServerCommandFunc func(ctx context.Context, publicKeyName string) (*exec.Cmd, error)
+type createServerCommandFunc func(ctx context.Context) (*exec.Cmd, error)
 
 type proxyServer struct {
 	ctx                 context.Context
@@ -36,16 +36,11 @@ func (server *proxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Missing 'id' query parameter", http.StatusBadRequest)
 		return
 	}
-	publicKeyName := r.URL.Query().Get("keyName")
-	if publicKeyName == "" {
-		http.Error(w, "Missing 'keyName' query parameter", http.StatusBadRequest)
-		return
-	}
 	ctx := log.NewContext(server.ctx, log.GetLogger(server.ctx).With("session", id))
 	if conn, exists := server.connections.Get(id); exists && conn != nil {
 		server.handleExistingConnection(ctx, w, r, conn)
 	} else {
-		server.handleNewConnection(ctx, w, r, id, publicKeyName)
+		server.handleNewConnection(ctx, w, r, id)
 	}
 }
 
@@ -60,7 +55,7 @@ func (server *proxyServer) handleExistingConnection(ctx context.Context, w http.
 	}
 }
 
-func (server *proxyServer) handleNewConnection(ctx context.Context, w http.ResponseWriter, r *http.Request, id, publicKeyName string) {
+func (server *proxyServer) handleNewConnection(ctx context.Context, w http.ResponseWriter, r *http.Request, id string) {
 	conn := newProxyConnection(nil)
 	if !server.connections.TryAdd(id, conn) {
 		log.Info(ctx, "Maximum clients reached, rejecting connection")
@@ -70,7 +65,7 @@ func (server *proxyServer) handleNewConnection(ctx context.Context, w http.Respo
 	defer server.connections.Remove(id)
 
 	log.Infof(ctx, "Starting proxy server for new connection, count: %d", server.connections.Count())
-	err := runServerProxy(ctx, conn, server.createServerCommand, w, r, publicKeyName)
+	err := runServerProxy(ctx, conn, server.createServerCommand, w, r)
 	if err != nil {
 		log.Errorf(ctx, "Proxy server error: %v", err)
 	} else {
@@ -78,7 +73,7 @@ func (server *proxyServer) handleNewConnection(ctx context.Context, w http.Respo
 	}
 }
 
-func runServerProxy(ctx context.Context, proxy *proxyConnection, createServerCommand createServerCommandFunc, w http.ResponseWriter, r *http.Request, publicKeyName string) error {
+func runServerProxy(ctx context.Context, proxy *proxyConnection, createServerCommand createServerCommandFunc, w http.ResponseWriter, r *http.Request) error {
 	err := proxy.accept(w, r)
 	if err != nil {
 		return fmt.Errorf("failed to upgrade to websockets: %v", err)
@@ -88,7 +83,7 @@ func runServerProxy(ctx context.Context, proxy *proxyConnection, createServerCom
 
 	cmdCtx, cancelServerCommand := context.WithCancel(ctx)
 	defer cancelServerCommand()
-	serverCmd, err := createServerCommand(cmdCtx, publicKeyName)
+	serverCmd, err := createServerCommand(cmdCtx)
 	if err != nil {
 		return fmt.Errorf("failed to create server command: %v", err)
 	}

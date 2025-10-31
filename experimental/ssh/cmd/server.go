@@ -28,11 +28,14 @@ and proxies them to local SSH daemon processes.
 	var clusterID string
 	var version string
 	var secretScopeName string
+	var authorizedKeySecretName string
 
 	cmd.Flags().StringVar(&clusterID, "cluster", "", "Databricks cluster ID")
 	cmd.MarkFlagRequired("cluster")
 	cmd.Flags().StringVar(&secretScopeName, "secret-scope-name", "", "Databricks secret scope name to store SSH keys")
 	cmd.MarkFlagRequired("secret-scope-name")
+	cmd.Flags().StringVar(&authorizedKeySecretName, "authorized-key-secret-name", "", "Name of the secret containing the client public key")
+	cmd.MarkFlagRequired("authorized-key-secret-name")
 
 	cmd.Flags().IntVar(&maxClients, "max-clients", defaultMaxClients, "Maximum number of SSH clients")
 	cmd.Flags().DurationVar(&shutdownDelay, "shutdown-delay", defaultShutdownDelay, "Delay before shutting down after no pings from clients")
@@ -52,16 +55,17 @@ and proxies them to local SSH daemon processes.
 		ctx := cmd.Context()
 		wsc := cmdctx.WorkspaceClient(ctx)
 		opts := server.ServerOptions{
-			ClusterID:            clusterID,
-			MaxClients:           maxClients,
-			ShutdownDelay:        shutdownDelay,
-			Version:              version,
-			ConfigDir:            serverConfigDir,
-			SecretScopeName:      secretScopeName,
-			ServerPrivateKeyName: serverPrivateKeyName,
-			ServerPublicKeyName:  serverPublicKeyName,
-			DefaultPort:          defaultServerPort,
-			PortRange:            serverPortRange,
+			ClusterID:               clusterID,
+			MaxClients:              maxClients,
+			ShutdownDelay:           shutdownDelay,
+			Version:                 version,
+			ConfigDir:               serverConfigDir,
+			SecretScopeName:         secretScopeName,
+			ServerPrivateKeyName:    serverPrivateKeyName,
+			ServerPublicKeyName:     serverPublicKeyName,
+			AuthorizedKeySecretName: authorizedKeySecretName,
+			DefaultPort:             defaultServerPort,
+			PortRange:               serverPortRange,
 		}
 		return server.Run(ctx, wsc, opts)
 	}

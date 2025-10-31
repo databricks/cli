@@ -4,14 +4,13 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"net/url"
 
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/gorilla/websocket"
 )
 
-func createWebsocketConnection(ctx context.Context, client *databricks.WorkspaceClient, connID, clusterID, publicKeyName string, serverPort int) (*websocket.Conn, error) {
-	url, err := getProxyURL(ctx, client, connID, clusterID, publicKeyName, serverPort)
+func createWebsocketConnection(ctx context.Context, client *databricks.WorkspaceClient, connID, clusterID string, serverPort int) (*websocket.Conn, error) {
+	url, err := getProxyURL(ctx, client, connID, clusterID, serverPort)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get proxy URL: %w", err)
 	}
@@ -35,19 +34,12 @@ func createWebsocketConnection(ctx context.Context, client *databricks.Workspace
 	return conn, nil
 }
 
-func getProxyURL(ctx context.Context, client *databricks.WorkspaceClient, connID, clusterID, publicKeyName string, serverPort int) (string, error) {
+func getProxyURL(ctx context.Context, client *databricks.WorkspaceClient, connID, clusterID string, serverPort int) (string, error) {
 	workspaceID, err := client.CurrentWorkspaceID(ctx)
 	if err != nil {
 		return "", fmt.Errorf("failed to get current workspace ID: %w", err)
 	}
-	u, err := url.Parse(client.Config.Host)
-	if err != nil {
-		return "", fmt.Errorf("failed to parse host URL: %w", err)
-	}
-	u.Path = fmt.Sprintf("/driver-proxy-api/o/%d/%s/%d/ssh", workspaceID, clusterID, serverPort)
-	query := u.Query()
-	query.Set("id", connID)
-	query.Set("keyName", publicKeyName)
-	u.RawQuery = query.Encode()
-	return u.String(), nil
+	host := client.Config.Host
+	url := fmt.Sprintf("%s/driver-proxy-api/o/%d/%s/%d/ssh?id=%s", host, workspaceID, clusterID, serverPort, connID)
+	return url, nil
 }

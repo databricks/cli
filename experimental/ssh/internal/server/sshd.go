@@ -14,38 +14,42 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 )
 
-func prepareSSHDConfig(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOptions) (string, string, error) {
+func prepareSSHDConfig(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOptions) (string, error) {
+	clientPublicKey, err := keys.GetSecret(ctx, client, opts.SecretScopeName, opts.AuthorizedKeySecretName)
+	if err != nil {
+		return "", fmt.Errorf("failed to get client public key: %w", err)
+	}
+
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		return "", "", fmt.Errorf("failed to get home directory: %w", err)
+		return "", fmt.Errorf("failed to get home directory: %w", err)
 	}
 	sshDir := path.Join(homeDir, opts.ConfigDir)
 
 	err = os.RemoveAll(sshDir)
 	if err != nil && !os.IsNotExist(err) {
-		return "", "", fmt.Errorf("failed to remove existing SSH directory: %w", err)
+		return "", fmt.Errorf("failed to remove existing SSH directory: %w", err)
 	}
 
 	err = os.MkdirAll(sshDir, 0o700)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to create SSH directory: %w", err)
+		return "", fmt.Errorf("failed to create SSH directory: %w", err)
 	}
 
 	privateKeyBytes, publicKeyBytes, err := keys.CheckAndGenerateSSHKeyPairFromSecrets(ctx, client, opts.ClusterID, opts.SecretScopeName, opts.ServerPrivateKeyName, opts.ServerPublicKeyName)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to get SSH key pair from secrets: %w", err)
+		return "", fmt.Errorf("failed to get SSH key pair from secrets: %w", err)
 	}
 
 	keyPath := filepath.Join(sshDir, "keys", opts.ServerPrivateKeyName)
 	if err := keys.SaveSSHKeyPair(keyPath, privateKeyBytes, publicKeyBytes); err != nil {
-		return "", "", fmt.Errorf("failed to save SSH key pair: %w", err)
+		return "", fmt.Errorf("failed to save SSH key pair: %w", err)
 	}
 
 	sshdConfig := filepath.Join(sshDir, "sshd_config")
 	authKeysPath := filepath.Join(sshDir, "authorized_keys")
-	// Prepare an empty authorized_keys file, it will be updated each time a new client connects
-	if err := os.WriteFile(authKeysPath, []byte(""), 0o600); err != nil {
-		return "", "", err
+	if err := os.WriteFile(authKeysPath, clientPublicKey, 0o600); err != nil {
+		return "", err
 	}
 
 	// Set all available env vars, wrapping values in quotes and escaping quotes inside values
@@ -75,7 +79,7 @@ func prepareSSHDConfig(ctx context.Context, client *databricks.WorkspaceClient, 
 		setEnv + "\n"
 
 	if err := os.WriteFile(sshdConfig, []byte(sshdConfigContent), 0o600); err != nil {
-		return "", "", err
+		return "", err
 	}
 
 	if err := os.MkdirAll("/run/sshd", 0o755); err != nil {
@@ -84,7 +88,7 @@ func prepareSSHDConfig(ctx context.Context, client *databricks.WorkspaceClient, 
 		log.Warn(ctx, "Failed to create /run/sshd directory, SSHD may not work properly")
 	}
 
-	return sshdConfig, authKeysPath, nil
+	return sshdConfig, nil
 }
 
 func createSSHDProcess(ctx context.Context, configPath string) *exec.Cmd {

@@ -8,10 +8,11 @@ const (
 	defaultShutdownDelay   = 10 * time.Minute
 	defaultHandoverTimeout = 30 * time.Minute
 
-	serverTimeout             = 24 * time.Hour
-	serverPortRange           = 100
-	serverConfigDir           = ".ssh-tunnel"
-	serverPrivateKeyName      = "server-private-key"
-	serverPublicKeyName       = "server-public-key"
-	clientPublicKeyNamePrefix = "client-public-key"
+	serverTimeout        = 24 * time.Hour
+	serverPortRange      = 100
+	serverConfigDir      = ".ssh-tunnel"
+	serverPrivateKeyName = "server-private-key"
+	serverPublicKeyName  = "server-public-key"
+	clientPrivateKeyName = "client-private-key"
+	clientPublicKeyName  = "client-public-key"
 )

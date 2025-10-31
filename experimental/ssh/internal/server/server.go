@@ -39,6 +39,8 @@ type ServerOptions struct {
 	ServerPrivateKeyName string
 	// The name of a secret containing the server's public key value
 	ServerPublicKeyName string
+	// The name of a secret containing the client's public key (authorized key)
+	AuthorizedKeySecretName string
 	// The default port to listen on (for /ssh and /metadata requests from the clients)
 	DefaultPort int
 	// If the default port is taken, the server will try to listen on the first free port in the DefaultPort + PortRange range
@@ -59,7 +61,7 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOpt
 		return fmt.Errorf("failed to save metadata to the workspace: %w", err)
 	}
 
-	sshdConfigPath, authKeysPath, err := prepareSSHDConfig(ctx, client, opts)
+	sshdConfigPath, err := prepareSSHDConfig(ctx, client, opts)
 	if err != nil {
 		return fmt.Errorf("failed to setup SSH configuration: %w", err)
 	}
@@ -69,12 +71,7 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOpt
 		return fmt.Errorf("failed to save Jupyter init script: %w", err)
 	}
 
-	authKeysManager := NewAuthorizedKeysManager(client, authKeysPath, opts.SecretScopeName)
-	createServerCommand := func(ctx context.Context, publicKeyName string) (*exec.Cmd, error) {
-		err := authKeysManager.AddKey(ctx, publicKeyName)
-		if err != nil {
-			return nil, fmt.Errorf("failed to store auth key: %w", err)
-		}
+	createServerCommand := func(ctx context.Context) (*exec.Cmd, error) {
 		return createSSHDProcess(ctx, sshdConfigPath), nil
 	}
 	connections := proxy.NewConnectionsManager(opts.MaxClients, opts.ShutdownDelay)
