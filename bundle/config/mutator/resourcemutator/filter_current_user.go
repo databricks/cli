@@ -14,35 +14,26 @@ const (
 	canManage = "CAN_MANAGE"
 )
 
-// IS_OWNER is special: only one user can be IS_OWNER
-// If user specify IS_OWNER explicitly we don't add current user automatically.
-// If user don't specify IS_OWNER we'll add current user.
+// Which resources support IS_OWNER permission.
 var hasIsOwner = map[string]bool{
 	"jobs":           true,
 	"pipelines":      true,
 	"sql_warehouses": true,
 }
 
-// This defines which permissions are considered management permissions.
-// Current user must have one management permission of themselves; if they don't have any,
-// we'll add the first in slice;
-// if they end up having both CAN_MANAGE and IS_OWNER, backend may fail with
-//
-//	Error: cannot create permissions: Permissions being set for UserName([USERNAME]) are ambiguous
-//
-// Since terraform adds IS_OWNER permission when there is not one, regardless of CAN_MANAGE presence,
-// the above error can occur.
-// We thus add another bit of logic: we upgrade CAN_MANAGE to IS_OWNER when we can.
-var managementPermissions = map[string][]string{
-	"jobs":           {isOwner, canManage},
-	"pipelines":      {isOwner, canManage},
-	"sql_warehouses": {isOwner, canManage},
-
-	// nil means "do nothing"
-	"secret_scopes": nil,
+var ignoredResources = map[string]bool{
+	"secret_scopes": true,
 }
 
-var defaultManagementPermissions = []string{canManage}
+// When processing permissions, we need to implement these constraints:
+// 1. There should be no more than one IS_OWNER settings for a given resource.
+// 2. We should automatically add IS_OWNER for current user (for resources that support it) or CAN_MANAGE permission.
+//    Terraform will do this, so doing this early makes request equal between terraform and direct.
+// 3. We prefer to add IS_OWNER, unless there already is one, in which case we fallback to CAN_MANAGE.
+// 4. Current user cannot have both CAN_MANAGE and IS_OWNER, we've seen backend failing with
+//    "Error: cannot create permissions: Permissions being set for UserName([USERNAME]) are ambiguous"
+//    Since terraform adds IS_OWNER permission when there is not one, regardless of CAN_MANAGE presence,
+//    he above error can occur. We thus add another bit of logic: we upgrade CAN_MANAGE to IS_OWNER when we can.
 
 type ensureOwnerPermissions struct{}
 
@@ -63,6 +54,10 @@ func ensureCurrentUserPermission(currentUser string) dyn.MapFunc {
 		}
 
 		resourceType := p[1].Key()
+		if ignoredResources[resourceType] {
+			return v, nil
+		}
+
 		return processPermissions(v, currentUser, resourceType)
 	}
 }
