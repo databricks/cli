@@ -236,6 +236,17 @@ func planWithoutPrepare(ctx context.Context, b *bundle.Bundle, directDeployment 
 		return nil
 	}
 
+	for _, group := range b.Config.Resources.AllResources() {
+		for rKey := range group.Resources {
+			resourceKey := "resources." + group.Description.PluralName + "." + rKey
+			if _, ok := plan.Plan[resourceKey]; !ok {
+				plan.Plan[resourceKey] = &deployplan.PlanEntry{
+					Action: deployplan.ActionTypeSkip.String(),
+				}
+			}
+		}
+	}
+
 	return plan
 }
 
