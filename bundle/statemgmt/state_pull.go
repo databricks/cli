@@ -111,14 +111,7 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 	states := readStates(ctx, b, alwaysPull)
 
 	if logdiag.HasError(ctx) {
-		// Even if there are errors reading state, we still need to determine
-		// the deployment mode from environment variables
-		isDirect, err := getDirectDeploymentEnv(ctx)
-		if err != nil {
-			logdiag.LogError(ctx, err)
-			return ctx, false
-		}
-		return ctx, isDirect
+		return ctx, false
 	}
 
 	var winner *state
