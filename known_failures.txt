@@ -12,5 +12,4 @@
 #
 
 # This test is consistently failing in nightlies timing out when trying to stop an app (Oct 16 2025):
-acceptance TestAccept/bundle/run/app-with-job/DATABRICKS_BUNDLE_ENGINE=direct-exp
-acceptance TestAccept/bundle/run/app-with-job/DATABRICKS_BUNDLE_ENGINE=terraform
+acceptance TestAccept/bundle/run/app-with-job/
