@@ -5,8 +5,8 @@ cleanup() {
 }
 trap cleanup EXIT
 
-trace $CLI bundle deploy > out.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
+trace $CLI bundle deploy > out.deploy1.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
 
 trace $CLI bundle plan >> out.plan.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
 
-trace errcode $CLI bundle deploy >> out.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
+trace errcode $CLI bundle deploy >> out.deploy2.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
