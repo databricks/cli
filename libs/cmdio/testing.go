@@ -14,13 +14,26 @@ type Test struct {
 	Stderr *bufio.Reader
 }
 
-func SetupTest(ctx context.Context) (context.Context, *Test) {
+type TestOptions struct {
+	// PromptSupported indicates whether IsPromptSupported should return true
+	// for the test context. If false (default), prompting will fail as it would
+	// in a non-interactive environment (e.g., CI).
+	PromptSupported bool
+}
+
+// SetupTest creates a cmdio context with pipes for stdin/stdout/stderr.
+// This is useful for testing interactive I/O operations.
+//
+// By default, IsPromptSupported returns false for the test context because
+// pipes are not TTYs. To test prompt logic, pass TestOptions{PromptSupported: true}.
+func SetupTest(ctx context.Context, opts TestOptions) (context.Context, *Test) {
 	rin, win := io.Pipe()
 	rout, wout := io.Pipe()
 	rerr, werr := io.Pipe()
 
 	cmdio := &cmdIO{
 		interactive: true,
+		prompt:      opts.PromptSupported,
 		in:          rin,
 		out:         wout,
 		err:         werr,

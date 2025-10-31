@@ -35,7 +35,7 @@ GCP: https://docs.gcp.databricks.com/dev-tools/auth/index.html`,
 }
 
 func promptForHost(ctx context.Context) (string, error) {
-	if !cmdio.IsInTTY(ctx) {
+	if !cmdio.IsPromptSupported(ctx) {
 		return "", errors.New("the command is being run in a non-interactive environment, please specify a host using --host")
 	}
 
@@ -45,7 +45,7 @@ func promptForHost(ctx context.Context) (string, error) {
 }
 
 func promptForAccountID(ctx context.Context) (string, error) {
-	if !cmdio.IsInTTY(ctx) {
+	if !cmdio.IsPromptSupported(ctx) {
 		return "", errors.New("the command is being run in a non-interactive environment, please specify an account ID using --account-id")
 	}
 
