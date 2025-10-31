@@ -21,9 +21,9 @@ func (a AuthArguments) ToOAuthArgument() (u2m.OAuthArgument, error) {
 		Experimental_IsUnifiedHost: a.IsUnifiedHost,
 	}
 	host := cfg.CanonicalHostName()
-	if cfg.GetHostType() == config.AccountHost {
+	if cfg.HostType() == config.AccountHost {
 		return u2m.NewBasicAccountOAuthArgument(host, cfg.AccountID)
-	} else if cfg.GetHostType() == config.UnifiedHost {
+	} else if cfg.HostType() == config.UnifiedHost {
 		return u2m.NewBasicUnifiedOAuthArgument(host, cfg.AccountID)
 	}
 	return u2m.NewBasicWorkspaceOAuthArgument(host)

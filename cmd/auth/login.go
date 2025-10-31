@@ -279,7 +279,7 @@ func setHostAndAccountId(ctx context.Context, cmd *cobra.Command, existingProfil
 
 	// If the account-id was not provided as a cmd line flag, try to read it from
 	// the specified profile.
-	isAccountHost := (&config.Config{Host: authArguments.Host, Experimental_IsUnifiedHost: authArguments.IsUnifiedHost}).GetHostType() != config.WorkspaceHost
+	isAccountHost := (&config.Config{Host: authArguments.Host, Experimental_IsUnifiedHost: authArguments.IsUnifiedHost}).HostType() != config.WorkspaceHost
 	accountID := authArguments.AccountID
 	if isAccountHost && accountID == "" {
 		if existingProfile != nil && existingProfile.AccountID != "" {
