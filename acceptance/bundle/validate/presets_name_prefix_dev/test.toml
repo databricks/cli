@@ -9,4 +9,4 @@ Badness = "Setting name_prefix to empty string has no effect, setting to nil rai
 #                +    }
 #                   },
 # Disabling terraform since we're not planning or deploying there, one is enough.
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct-exp"]
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

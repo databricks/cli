@@ -142,7 +142,7 @@ type Bundle struct {
 
 	Metrics Metrics
 
-	// If true, don't use terraform. Set by DATABRICKS_BUNDLE_ENGINE=direct-exp
+	// If true, don't use terraform. Set by DATABRICKS_BUNDLE_ENGINE=direct
 	DirectDeployment *bool
 }
 
