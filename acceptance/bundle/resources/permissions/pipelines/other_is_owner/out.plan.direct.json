@@ -31,7 +31,7 @@
               "user_name": "other_user@databricks.com"
             },
             {
-              "permission_level": "IS_OWNER",
+              "permission_level": "CAN_MANAGE",
               "user_name": "[USERNAME]"
             }
           ]
