@@ -16,19 +16,9 @@ type dashboardState struct {
 }
 
 func collectDashboardsFromState(ctx context.Context, b *bundle.Bundle) ([]dashboardState, error) {
-	var state ExportedResourcesMap
-	var err error
-	if b.DirectDeployment {
-		err := b.OpenStateFile(ctx)
-		if err != nil {
-			return nil, err
-		}
-		state = b.DeploymentBundle.StateDB.ExportState(ctx)
-	} else {
-		state, err = ParseResourcesState(ctx, b)
-		if err != nil && state == nil {
-			return nil, err
-		}
+	state, err := ParseResourcesState(ctx, b)
+	if err != nil && state == nil {
+		return nil, err
 	}
 
 	var dashboards []dashboardState
