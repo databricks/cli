@@ -24,7 +24,7 @@ func NewPlanCommand() *cobra.Command {
 				Build:        true,
 			}
 
-			b, isDirectEngine, err := utils.ProcessBundleRet(cmd, &opts)
+			b, isDirectEngine, err := utils.ProcessBundleRet(cmd, opts)
 			if err != nil {
 				return err
 			}

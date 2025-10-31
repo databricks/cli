@@ -76,7 +76,7 @@ Use 'databricks bundle deploy' for full resource deployment.`,
 	cmd.Flags().BoolVar(&f.dryRun, "dry-run", false, "simulate sync execution without making actual changes")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		b, err := utils.ProcessBundle(cmd, &utils.ProcessOptions{})
+		b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{})
 		if err != nil {
 			return err
 		}

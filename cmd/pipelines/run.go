@@ -254,7 +254,7 @@ Refreshes all tables in the pipeline unless otherwise specified.`,
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		var key string
-		b, err := utils.ProcessBundle(cmd, &utils.ProcessOptions{
+		b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
 			PostInitFunc: func(ctx context.Context, b *bundle.Bundle) error {
 				var err error
 				key, _, err = resolveRunArgument(ctx, b, args)

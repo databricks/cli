@@ -59,7 +59,7 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 			Build:        true,
 		}
 
-		b, isDirectEngine, err := utils.ProcessBundleRet(cmd, &opts)
+		b, isDirectEngine, err := utils.ProcessBundleRet(cmd, opts)
 		if err != nil {
 			return err
 		}
