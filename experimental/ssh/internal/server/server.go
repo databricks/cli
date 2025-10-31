@@ -71,8 +71,8 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOpt
 		return fmt.Errorf("failed to save Jupyter init script: %w", err)
 	}
 
-	createServerCommand := func(ctx context.Context) (*exec.Cmd, error) {
-		return createSSHDProcess(ctx, sshdConfigPath), nil
+	createServerCommand := func(ctx context.Context) *exec.Cmd {
+		return createSSHDProcess(ctx, sshdConfigPath)
 	}
 	connections := proxy.NewConnectionsManager(opts.MaxClients, opts.ShutdownDelay)
 	http.Handle("/ssh", proxy.NewProxyServer(ctx, connections, createServerCommand))

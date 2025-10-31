@@ -22,9 +22,9 @@ import (
 func createTestServer(t *testing.T, maxClients int, shutdownDelay time.Duration) *httptest.Server {
 	ctx := t.Context()
 	connections := NewConnectionsManager(maxClients, shutdownDelay)
-	proxyServer := NewProxyServer(ctx, connections, func(ctx context.Context) (*exec.Cmd, error) {
+	proxyServer := NewProxyServer(ctx, connections, func(ctx context.Context) *exec.Cmd {
 		// 'cat' command reads each line from stdin and sends it to stdout, so we can test end-to-end proxying.
-		return exec.CommandContext(ctx, "cat"), nil
+		return exec.CommandContext(ctx, "cat")
 	})
 	return httptest.NewServer(proxyServer)
 }

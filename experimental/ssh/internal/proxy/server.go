@@ -14,7 +14,7 @@ import (
 
 const serverProcessTerminationTimeout = 10 * time.Second
 
-type createServerCommandFunc func(ctx context.Context) (*exec.Cmd, error)
+type createServerCommandFunc func(ctx context.Context) *exec.Cmd
 
 type proxyServer struct {
 	ctx                 context.Context
@@ -83,10 +83,7 @@ func runServerProxy(ctx context.Context, proxy *proxyConnection, createServerCom
 
 	cmdCtx, cancelServerCommand := context.WithCancel(ctx)
 	defer cancelServerCommand()
-	serverCmd, err := createServerCommand(cmdCtx)
-	if err != nil {
-		return fmt.Errorf("failed to create server command: %v", err)
-	}
+	serverCmd := createServerCommand(cmdCtx)
 	// Fail-safe that ensures we aren't blocked waiting for a stuck sshd process to terminate (in releaseServerCommand)
 	serverCmd.WaitDelay = serverProcessTerminationTimeout
 	serverCmd.Stderr = os.Stderr
