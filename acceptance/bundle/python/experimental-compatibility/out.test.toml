@@ -2,5 +2,5 @@ Local = true
 Cloud = false
 
 [EnvMatrix]
-  DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct-exp"]
+  DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
   UV_ARGS = ["--with databricks-bundles==0.266.0", "--with-requirements requirements-latest.txt --no-cache"]

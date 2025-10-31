@@ -1,24 +1,37 @@
 {
   "plan": {
-    "resources.pipelines.foo": {
+    "resources.jobs.foo": {
       "action": "create",
       "new_state": {
         "config": {
-          "channel": "CURRENT",
           "deployment": {
             "kind": "BUNDLE",
             "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
           },
-          "edition": "ADVANCED",
-          "name": "foo"
+          "edit_mode": "UI_LOCKED",
+          "format": "MULTI_TASK",
+          "max_concurrent_runs": 1,
+          "name": "job1",
+          "queue": {
+            "enabled": true
+          },
+          "tasks": [
+            {
+              "notebook_task": {
+                "notebook_path": "/Workspace/Users/user@example.com/notebook",
+                "source": "WORKSPACE"
+              },
+              "task_key": "main"
+            }
+          ]
         }
       }
     },
-    "resources.pipelines.foo.permissions": {
+    "resources.jobs.foo.permissions": {
       "depends_on": [
         {
-          "node": "resources.pipelines.foo",
-          "label": "${resources.pipelines.foo.id}"
+          "node": "resources.jobs.foo",
+          "label": "${resources.jobs.foo.id}"
         }
       ],
       "action": "create",
@@ -31,13 +44,13 @@
               "user_name": "other_user@databricks.com"
             },
             {
-              "permission_level": "IS_OWNER",
+              "permission_level": "CAN_MANAGE",
               "user_name": "[USERNAME]"
             }
           ]
         },
         "vars": {
-          "object_id": "/pipelines/${resources.pipelines.foo.id}"
+          "object_id": "/jobs/${resources.jobs.foo.id}"
         }
       }
     }
