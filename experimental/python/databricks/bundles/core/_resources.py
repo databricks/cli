@@ -6,6 +6,7 @@ from databricks.bundles.core._resource import Resource
 from databricks.bundles.core._transform import _transform
 
 if TYPE_CHECKING:
+    from databricks.bundles.apps._models.app import App, AppParam
     from databricks.bundles.jobs._models.job import Job, JobParam
     from databricks.bundles.pipelines._models.pipeline import Pipeline, PipelineParam
     from databricks.bundles.schemas._models.schema import Schema, SchemaParam
@@ -60,6 +61,7 @@ class Resources:
         self._pipelines = dict[str, "Pipeline"]()
         self._schemas = dict[str, "Schema"]()
         self._volumes = dict[str, "Volume"]()
+        self._apps = dict[str, "App"]()
         self._locations = dict[tuple[str, ...], Location]()
         self._diagnostics = Diagnostics()
 
@@ -78,6 +80,10 @@ class Resources:
     @property
     def volumes(self) -> dict[str, "Volume"]:
         return self._volumes
+
+    @property
+    def apps(self) -> dict[str, "App"]:
+        return self._apps
 
     @property
     def diagnostics(self) -> Diagnostics:
@@ -102,6 +108,7 @@ class Resources:
         :param location: optional location of the resource in the source code
         """
 
+        from databricks.bundles.apps import App
         from databricks.bundles.jobs import Job
         from databricks.bundles.pipelines import Pipeline
         from databricks.bundles.schemas import Schema
@@ -118,6 +125,8 @@ class Resources:
                 self.add_schema(resource_name, resource, location=location)
             case Volume():
                 self.add_volume(resource_name, resource, location=location)
+            case App():
+                self.add_app(resource_name, resource, location=location)
             case _:
                 raise ValueError(f"Unsupported resource type: {type(resource)}")
 
@@ -249,6 +258,38 @@ class Resources:
 
             self._volumes[resource_name] = volume
 
+    def add_app(
+        self,
+        resource_name: str,
+        app: "AppParam",
+        *,
+        location: Optional[Location] = None,
+    ) -> None:
+        """
+        Adds an app to the collection of resources. Resource name must be unique across all apps.
+
+        :param resource_name: unique identifier for the app
+        :param app: the app to add, can be App or dict
+        :param location: optional location of the app in the source code
+        """
+        from databricks.bundles.apps import App
+
+        app = _transform(App, app)
+        path = ("resources", "apps", resource_name)
+        location = location or Location.from_stack_frame(depth=1)
+
+        if self._apps.get(resource_name):
+            self.add_diagnostic_error(
+                msg=f"Duplicate resource name '{resource_name}' for a app. Resource names must be unique.",
+                location=location,
+                path=path,
+            )
+        else:
+            if location:
+                self.add_location(path, location)
+
+            self._apps[resource_name] = app
+
     def add_location(self, path: tuple[str, ...], location: Location) -> None:
         """
         Associate source code location with a path in the bundle configuration.
@@ -330,6 +371,9 @@ class Resources:
 
         for name, volume in other.volumes.items():
             self.add_volume(name, volume)
+
+        for name, app in other.apps.items():
+            self.add_app(name, app)
 
         for path, location in other._locations.items():
             self.add_location(path, location)

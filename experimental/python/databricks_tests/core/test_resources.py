@@ -3,11 +3,13 @@ from typing import Callable
 
 import pytest
 
+from databricks.bundles.apps._models.app import App
 from databricks.bundles.core import Location, Resources, Severity
 from databricks.bundles.core._bundle import Bundle
 from databricks.bundles.core._resource import Resource
 from databricks.bundles.core._resource_mutator import (
     ResourceMutator,
+    app_mutator,
     job_mutator,
     pipeline_mutator,
     schema_mutator,
@@ -73,6 +75,15 @@ test_cases = [
             mutator=schema_mutator,
         ),
         resource_types[Schema],
+    ),
+    (
+        TestCase(
+            add_resource=Resources.add_app,
+            dict_example={"name": "my_app"},
+            dataclass_example=App(name="my_app"),
+            mutator=app_mutator,
+        ),
+        resource_types[App],
     ),
 ]
 test_case_ids = [tpe.plural_name for _, tpe in test_cases]
