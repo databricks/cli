@@ -8,6 +8,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/flags"
@@ -41,7 +42,7 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
+		opts := utils.ProcessOptions{
 			InitFunc: func(b *bundle.Bundle) {
 				b.Config.Bundle.Force = force
 
@@ -53,19 +54,20 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 					b.Config.Bundle.ClusterId = clusterId
 				}
 			},
-			// Verbose:      verbose,
 			AlwaysPull:   true,
 			FastValidate: true,
 			Build:        true,
-		})
+		}
+
+		b, isDirectEngine, err := utils.ProcessBundleRet(cmd, opts)
 		if err != nil {
 			return err
 		}
 		ctx := cmd.Context()
 
-		plan, err := utils.GetPlan(ctx, b)
-		if err != nil {
-			return err
+		plan := phases.Plan(ctx, b, isDirectEngine)
+		if logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
 		}
 
 		// Count actions by type and collect formatted actions

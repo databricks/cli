@@ -104,34 +104,35 @@ func filerRead(ctx context.Context, f filer.Filer, path string, isDirect bool) *
 	return state
 }
 
-func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) context.Context {
+func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) (context.Context, bool) {
 	_, localPathDirect := b.StateFilenameDirect(ctx)
 	_, localPathTerraform := b.StateFilenameTerraform(ctx)
 
 	states := readStates(ctx, b, alwaysPull)
 
 	if logdiag.HasError(ctx) {
-		return ctx
+		return ctx, false
 	}
 
 	var winner *state
+	var directDeployment bool
 
 	if len(states) == 0 {
-		// no local or remote state; set b.DirectDeployment based on env vars
+		// no local or remote state; set directDeployment based on env vars
 		isDirect, err := getDirectDeploymentEnv(ctx)
 		if err != nil {
 			logdiag.LogError(ctx, err)
-			return nil
+			return ctx, false
 		}
-		b.DirectDeployment = &isDirect
+		directDeployment = isDirect
 	} else {
 		winner = states[len(states)-1]
-		b.DirectDeployment = ptrBool(winner.isDirect)
+		directDeployment = winner.isDirect
 	}
 
 	engine := "direct"
 
-	if !*b.DirectDeployment {
+	if !directDeployment {
 		engine = "terraform"
 	}
 
@@ -140,7 +141,7 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 
 	if winner == nil {
 		log.Infof(ctx, "No existing resource state found")
-		return ctx
+		return ctx, directDeployment
 	}
 
 	var stateStrs []string
@@ -157,13 +158,13 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 			lastLineage = state
 		} else if lastLineage.Lineage != state.Lineage {
 			logdiag.LogError(ctx, fmt.Errorf("lineage mismatch in state files: %s", strings.Join(stateStrs, ", ")))
-			return ctx
+			return ctx, directDeployment
 		}
 	}
 
 	if winner.isLocal {
 		// local state is fresh, nothing to do
-		return ctx
+		return ctx, directDeployment
 	}
 
 	if !winner.isLocal {
@@ -179,18 +180,18 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 		err := os.MkdirAll(localStateDir, 0o700)
 		if err != nil {
 			logdiag.LogError(ctx, err)
-			return ctx
+			return ctx, directDeployment
 		}
 
 		// TODO: write + rename
 		err = os.WriteFile(localStatePath, winner.content, 0o600)
 		if err != nil {
 			logdiag.LogError(ctx, err)
-			return ctx
+			return ctx, directDeployment
 		}
 	}
 
-	return ctx
+	return ctx, directDeployment
 }
 
 func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) []*state {
@@ -255,5 +256,3 @@ func getDirectDeploymentEnv(ctx context.Context) (bool, error) {
 		return false, fmt.Errorf("unexpected setting for DATABRICKS_BUNDLE_ENGINE=%#v (expected 'terraform' or 'direct' or absent/empty which means 'terraform')", engine)
 	}
 }
-
-func ptrBool(x bool) *bool { return &x }

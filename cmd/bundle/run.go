@@ -166,14 +166,14 @@ Example usage:
 			return executeScript(content, cmd, b)
 		}
 
-		ctx = statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(true))
+		ctx, directDeployment := statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(true))
 		if logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}
 		cmd.SetContext(ctx)
 
 		bundle.ApplySeqContext(ctx, b,
-			statemgmt.Load(statemgmt.ErrorOnEmptyState),
+			statemgmt.Load(directDeployment, statemgmt.ErrorOnEmptyState),
 		)
 		if logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted

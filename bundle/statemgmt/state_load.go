@@ -24,7 +24,8 @@ type (
 const ErrorOnEmptyState LoadMode = 0
 
 type load struct {
-	modes []LoadMode
+	modes            []LoadMode
+	directDeployment bool
 }
 
 func (l *load) Name() string {
@@ -35,11 +36,7 @@ func (l *load) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	var err error
 	var state ExportedResourcesMap
 
-	if b.DirectDeployment == nil {
-		return diag.Errorf("internal error: statemgmt.Load() called without statemgmt.PullResourcesState()")
-	}
-
-	if *b.DirectDeployment {
+	if l.directDeployment {
 		_, fullPathDirect := b.StateFilenameDirect(ctx)
 		state, err = b.DeploymentBundle.ExportState(ctx, fullPathDirect)
 		if err != nil {
@@ -137,6 +134,6 @@ func (l *load) validateState(state ExportedResourcesMap) error {
 	return nil
 }
 
-func Load(modes ...LoadMode) bundle.Mutator {
-	return &load{modes: modes}
+func Load(directDeployment bool, modes ...LoadMode) bundle.Mutator {
+	return &load{modes: modes, directDeployment: directDeployment}
 }
