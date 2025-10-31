@@ -34,13 +34,13 @@ type ServerOptions struct {
 	// The directory to store sshd configuration
 	ConfigDir string
 	// The name of the secrets scope to use for client and server keys
-	KeysSecretScopeName string
-	// The name of a secret containing the client's public key value
-	AuthorizedKeyName string
+	SecretScopeName string
 	// The name of a secret containing the server's private key value
 	ServerPrivateKeyName string
 	// The name of a secret containing the server's public key value
 	ServerPublicKeyName string
+	// The name of a secret containing the client's public key (authorized key)
+	AuthorizedKeySecretName string
 	// The default port to listen on (for /ssh and /metadata requests from the clients)
 	DefaultPort int
 	// If the default port is taken, the server will try to listen on the first free port in the DefaultPort + PortRange range
@@ -71,10 +71,10 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOpt
 		return fmt.Errorf("failed to save Jupyter init script: %w", err)
 	}
 
-	connections := proxy.NewConnectionsManager(opts.MaxClients, opts.ShutdownDelay)
 	createServerCommand := func(ctx context.Context) *exec.Cmd {
 		return createSSHDProcess(ctx, sshdConfigPath)
 	}
+	connections := proxy.NewConnectionsManager(opts.MaxClients, opts.ShutdownDelay)
 	http.Handle("/ssh", proxy.NewProxyServer(ctx, connections, createServerCommand))
 	http.HandleFunc("/metadata", serveMetadata)
 	go handleTimeout(ctx, connections.TimedOut, opts.ShutdownDelay)

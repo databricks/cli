@@ -15,7 +15,7 @@ import (
 )
 
 func prepareSSHDConfig(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOptions) (string, error) {
-	clientPublicKey, err := keys.GetSecret(ctx, client, opts.KeysSecretScopeName, opts.AuthorizedKeyName)
+	clientPublicKey, err := keys.GetSecret(ctx, client, opts.SecretScopeName, opts.AuthorizedKeySecretName)
 	if err != nil {
 		return "", fmt.Errorf("failed to get client public key: %w", err)
 	}
@@ -36,7 +36,7 @@ func prepareSSHDConfig(ctx context.Context, client *databricks.WorkspaceClient, 
 		return "", fmt.Errorf("failed to create SSH directory: %w", err)
 	}
 
-	privateKeyBytes, publicKeyBytes, err := keys.CheckAndGenerateSSHKeyPairFromSecrets(ctx, client, opts.ClusterID, opts.KeysSecretScopeName, opts.ServerPrivateKeyName, opts.ServerPublicKeyName)
+	privateKeyBytes, publicKeyBytes, err := keys.CheckAndGenerateSSHKeyPairFromSecrets(ctx, client, opts.ClusterID, opts.SecretScopeName, opts.ServerPrivateKeyName, opts.ServerPublicKeyName)
 	if err != nil {
 		return "", fmt.Errorf("failed to get SSH key pair from secrets: %w", err)
 	}
@@ -47,8 +47,8 @@ func prepareSSHDConfig(ctx context.Context, client *databricks.WorkspaceClient, 
 	}
 
 	sshdConfig := filepath.Join(sshDir, "sshd_config")
-	authKeys := filepath.Join(sshDir, "authorized_keys")
-	if err := os.WriteFile(authKeys, clientPublicKey, 0o600); err != nil {
+	authKeysPath := filepath.Join(sshDir, "authorized_keys")
+	if err := os.WriteFile(authKeysPath, clientPublicKey, 0o600); err != nil {
 		return "", err
 	}
 
@@ -75,7 +75,7 @@ func prepareSSHDConfig(ctx context.Context, client *databricks.WorkspaceClient, 
 		"ChallengeResponseAuthentication no\n" +
 		"Subsystem sftp internal-sftp\n" +
 		"HostKey " + keyPath + "\n" +
-		"AuthorizedKeysFile " + authKeys + "\n" +
+		"AuthorizedKeysFile " + authKeysPath + "\n" +
 		setEnv + "\n"
 
 	if err := os.WriteFile(sshdConfig, []byte(sshdConfigContent), 0o600); err != nil {
