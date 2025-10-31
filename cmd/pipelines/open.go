@@ -51,7 +51,7 @@ If there is only one pipeline in the project, KEY is optional and the pipeline w
 	cmd.Flags().BoolVar(&forcePull, "force-pull", false, "Skip local cache and load the state from the remote workspace")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		b, err := utils.ProcessBundle(cmd, &utils.ProcessOptions{
+		b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
 			AlwaysPull: forcePull,
 			InitIDs:    true,
 		})

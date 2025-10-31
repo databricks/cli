@@ -132,7 +132,7 @@ Example usage:
 	cmd.Flags().BoolVar(&restart, "restart", false, "Restart the run if it is already running.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		b, err := utils.ProcessBundle(cmd, &utils.ProcessOptions{
+		b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
 			SkipInitialize: true,
 		})
 		if err != nil {

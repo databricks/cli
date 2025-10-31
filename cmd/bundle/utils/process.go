@@ -58,12 +58,12 @@ type ProcessOptions struct {
 	Deploy       bool
 }
 
-func ProcessBundle(cmd *cobra.Command, opts *ProcessOptions) (*bundle.Bundle, error) {
+func ProcessBundle(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, error) {
 	b, _, err := ProcessBundleRet(cmd, opts)
 	return b, err
 }
 
-func ProcessBundleRet(cmd *cobra.Command, opts *ProcessOptions) (*bundle.Bundle, bool, error) {
+func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, bool, error) {
 	isDirectEngine := false
 	ctx := cmd.Context()
 	if opts.SkipInitContext {

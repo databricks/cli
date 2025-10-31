@@ -46,7 +46,7 @@ Please run this command before deploying to ensure configuration quality.`,
 	cmd.Flags().MarkHidden("include-locations")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		b, err := utils.ProcessBundle(cmd, &utils.ProcessOptions{
+		b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
 			Validate:         true,
 			IncludeLocations: includeLocations,
 		})
