@@ -3,6 +3,7 @@ from typing import Optional
 
 # All supported resource types and their namespace
 RESOURCE_NAMESPACE = {
+    "resources.App": "apps",
     "resources.Job": "jobs",
     "resources.Pipeline": "pipelines",
     "resources.Schema": "schemas",
@@ -15,11 +16,12 @@ RESOURCE_TYPES = list(RESOURCE_NAMESPACE.keys())
 #
 # We can't load all types because of errors while loading some of them.
 LOADED_NAMESPACES = [
+    "apps",
+    "catalog",
     "compute",
     "jobs",
     "pipelines",
     "resources",
-    "catalog",
 ]
 
 RENAMES = {
