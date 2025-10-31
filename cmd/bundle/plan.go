@@ -8,6 +8,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/flags"
@@ -58,15 +59,15 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 			Build:        true,
 		}
 
-		b, err := utils.ProcessBundle(cmd, &opts)
+		b, isDirectEngine, err := utils.ProcessBundleRet(cmd, &opts)
 		if err != nil {
 			return err
 		}
 		ctx := cmd.Context()
 
-		plan, err := utils.GetPlan(ctx, b, opts.DirectDeployment)
-		if err != nil {
-			return err
+		plan := phases.Plan(ctx, b, isDirectEngine)
+		if logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
 		}
 
 		// Count actions by type and collect formatted actions

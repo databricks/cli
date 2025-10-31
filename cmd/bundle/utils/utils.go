@@ -4,10 +4,8 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/deployplan"
 	bundleenv "github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/phases"
-	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/logdiag"
@@ -103,27 +101,4 @@ func getProfileFromCmd(cmd *cobra.Command) string {
 
 	// Fall back to environment variable
 	return env.Get(cmd.Context(), "DATABRICKS_CONFIG_PROFILE")
-}
-
-func GetPlan(ctx context.Context, b *bundle.Bundle, directDeployment bool) (*deployplan.Plan, error) {
-	plan := phases.Plan(ctx, b, directDeployment)
-	if logdiag.HasError(ctx) {
-		return nil, root.ErrAlreadyPrinted
-	}
-
-	// Direct engine includes noop actions, TF does not. This adds no-op actions for consistency:
-	if !directDeployment {
-		for _, group := range b.Config.Resources.AllResources() {
-			for rKey := range group.Resources {
-				resourceKey := "resources." + group.Description.PluralName + "." + rKey
-				if _, ok := plan.Plan[resourceKey]; !ok {
-					plan.Plan[resourceKey] = &deployplan.PlanEntry{
-						Action: deployplan.ActionTypeSkip.String(),
-					}
-				}
-			}
-		}
-	}
-
-	return plan, nil
 }
