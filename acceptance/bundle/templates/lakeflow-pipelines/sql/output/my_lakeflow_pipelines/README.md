@@ -13,7 +13,7 @@ Choose how you want to work on this project:
     https://docs.databricks.com/dev-tools/bundles/workspace.
 
 (b) Locally with an IDE like Cursor or VS Code, see
-    https://docs.databricks.com/vscode-ext.
+    https://docs.databricks.com/dev-tools/vscode-ext.html.
 
 (c) With command line tools, see https://docs.databricks.com/dev-tools/cli/databricks-cli.html
 

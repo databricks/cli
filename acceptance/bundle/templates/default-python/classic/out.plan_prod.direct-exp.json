@@ -1,10 +1,10 @@
 {
   "plan": {
-    "resources.jobs.my_default_python_job": {
+    "resources.jobs.sample_job": {
       "depends_on": [
         {
-          "node": "resources.pipelines.my_default_python_pipeline",
-          "label": "${resources.pipelines.my_default_python_pipeline.id}"
+          "node": "resources.pipelines.my_default_python_etl",
+          "label": "${resources.pipelines.my_default_python_etl.id}"
         }
       ],
       "action": "create",
@@ -27,20 +27,42 @@
                 "data_security_mode": "SINGLE_USER",
                 "node_type_id": "[NODE_TYPE_ID]",
                 "num_workers": 0,
-                "spark_version": "15.4.x-scala2.12"
+                "spark_version": "16.4.x-scala2.12"
               }
             }
           ],
           "max_concurrent_runs": 1,
-          "name": "my_default_python_job",
+          "name": "sample_job",
+          "parameters": [
+            {
+              "default": "hive_metastore",
+              "name": "catalog"
+            },
+            {
+              "default": "prod",
+              "name": "schema"
+            }
+          ],
           "queue": {
             "enabled": true
           },
           "tasks": [
             {
+              "job_cluster_key": "job_cluster",
+              "libraries": [
+                {
+                  "whl": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/prod/artifacts/.internal/my_default_python-0.0.1-py3-none-any.whl"
+                }
+              ],
+              "notebook_task": {
+                "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/prod/files/src/sample_notebook"
+              },
+              "task_key": "notebook_task"
+            },
+            {
               "depends_on": [
                 {
-                  "task_key": "refresh_pipeline"
+                  "task_key": "notebook_task"
                 }
               ],
               "job_cluster_key": "job_cluster",
@@ -51,16 +73,15 @@
               ],
               "python_wheel_task": {
                 "entry_point": "main",
-                "package_name": "my_default_python"
+                "package_name": "my_default_python",
+                "parameters": [
+                  "--catalog",
+                  "hive_metastore",
+                  "--schema",
+                  "prod"
+                ]
               },
-              "task_key": "main_task"
-            },
-            {
-              "job_cluster_key": "job_cluster",
-              "notebook_task": {
-                "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/prod/files/src/notebook"
-              },
-              "task_key": "notebook_task"
+              "task_key": "python_wheel_task"
             },
             {
               "depends_on": [
@@ -69,7 +90,7 @@
                 }
               ],
               "pipeline_task": {
-                "pipeline_id": "${resources.pipelines.my_default_python_pipeline.id}"
+                "pipeline_id": "${resources.pipelines.my_default_python_etl.id}"
               },
               "task_key": "refresh_pipeline"
             }
@@ -83,15 +104,15 @@
           }
         },
         "vars": {
-          "tasks[2].pipeline_task.pipeline_id": "${resources.pipelines.my_default_python_pipeline.id}"
+          "tasks[2].pipeline_task.pipeline_id": "${resources.pipelines.my_default_python_etl.id}"
         }
       }
     },
-    "resources.jobs.my_default_python_job.permissions": {
+    "resources.jobs.sample_job.permissions": {
       "depends_on": [
         {
-          "node": "resources.jobs.my_default_python_job",
-          "label": "${resources.jobs.my_default_python_job.id}"
+          "node": "resources.jobs.sample_job",
+          "label": "${resources.jobs.sample_job.id}"
         }
       ],
       "action": "create",
@@ -106,40 +127,43 @@
           ]
         },
         "vars": {
-          "object_id": "/jobs/${resources.jobs.my_default_python_job.id}"
+          "object_id": "/jobs/${resources.jobs.sample_job.id}"
         }
       }
     },
-    "resources.pipelines.my_default_python_pipeline": {
+    "resources.pipelines.my_default_python_etl": {
       "action": "create",
       "new_state": {
         "config": {
           "channel": "CURRENT",
-          "configuration": {
-            "bundle.sourcePath": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/prod/files/src"
-          },
           "deployment": {
             "kind": "BUNDLE",
             "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/prod/state/metadata.json"
           },
           "edition": "ADVANCED",
+          "environment": {
+            "dependencies": [
+              "--editable /Workspace/Users/[USERNAME]/.bundle/my_default_python/prod/files"
+            ]
+          },
           "libraries": [
             {
-              "notebook": {
-                "path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/prod/files/src/pipeline"
+              "glob": {
+                "include": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/prod/files/src/my_default_python_etl/transformations/**"
               }
             }
           ],
-          "name": "my_default_python_pipeline",
-          "schema": "my_default_python_prod"
+          "name": "my_default_python_etl",
+          "root_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/prod/files/src/my_default_python_etl",
+          "schema": "prod"
         }
       }
     },
-    "resources.pipelines.my_default_python_pipeline.permissions": {
+    "resources.pipelines.my_default_python_etl.permissions": {
       "depends_on": [
         {
-          "node": "resources.pipelines.my_default_python_pipeline",
-          "label": "${resources.pipelines.my_default_python_pipeline.id}"
+          "node": "resources.pipelines.my_default_python_etl",
+          "label": "${resources.pipelines.my_default_python_etl.id}"
         }
       ],
       "action": "create",
@@ -154,7 +178,7 @@
           ]
         },
         "vars": {
-          "object_id": "/pipelines/${resources.pipelines.my_default_python_pipeline.id}"
+          "object_id": "/pipelines/${resources.pipelines.my_default_python_etl.id}"
         }
       }
     }

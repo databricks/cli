@@ -45,13 +45,6 @@ var databricksTemplates = []Template{
 		Writer:      &writerWithFullTelemetry{defaultWriter: defaultWriter{name: DefaultPython}},
 	},
 	{
-		name:        ExperimentalDefaultPython,
-		hidden:      true,
-		description: "The next version of the default Python template (experimental)",
-		Reader:      &builtinReader{name: string(ExperimentalDefaultPython)},
-		Writer:      &writerWithFullTelemetry{defaultWriter: defaultWriter{name: ExperimentalDefaultPython}},
-	},
-	{
 		name:        DefaultSql,
 		description: "The default SQL template for .sql files that run with Databricks SQL",
 		Reader:      &builtinReader{name: string(DefaultSql)},
