@@ -1,7 +1,6 @@
 package deployment
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/bundle/deploy/terraform"
@@ -50,18 +49,21 @@ proper state management as it may cause resource conflicts.`,
 			Build:        true,
 		}
 
-		b, err := utils.ProcessBundleWithOut(cmd, &opts)
+		b, stateDesc, err := utils.ProcessBundleRet(cmd, opts)
 		if err != nil {
 			return err
 		}
 		ctx := cmd.Context()
 
-		if opts.Winner == nil {
-			return errors.New("no existing state found")
+		if stateDesc.Lineage == "" {
+			cmdio.LogString(ctx, `This command migrate existing terraform state file to direct deployment engine state. However, no existing local or remote state found.
+
+To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env var or bundle.engine="direct" in databricks.yml.`)
+			return root.ErrAlreadyPrinted
 		}
 
-		if *b.DirectDeployment {
-			return errors.New("already using direct engine")
+		if stateDesc.IsDirect {
+			return fmt.Errorf("already using direct engine\nDetails: %s", stateDesc.String())
 		}
 
 		terraformResources, err := terraform.ParseResourcesState(ctx, b)
@@ -88,10 +90,9 @@ proper state management as it may cause resource conflicts.`,
 			return fmt.Errorf("failed to create deployment plan: %w", err)
 		}
 
-		// Create direct state with resource IDs from terraform
 		directDB := dstate.Database{
-			Serial:  int(opts.Winner.Serial + 1), // Increment serial (convert int64 to int)
-			Lineage: opts.Winner.Lineage,         // Same lineage
+			Serial:  int(stateDesc.Serial + 1),
+			Lineage: stateDesc.Lineage,
 			State:   make(map[string]dstate.ResourceEntry),
 		}
 

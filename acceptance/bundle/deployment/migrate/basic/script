@@ -1,4 +1,4 @@
-# Migrating without state, should fail
+# Migrating without state, should print a message about missing state.
 trace musterr $CLI bundle deployment migrate
 
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy

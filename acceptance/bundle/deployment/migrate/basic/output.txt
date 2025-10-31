@@ -1,6 +1,8 @@
 
 >>> musterr [CLI] bundle deployment migrate
-Error: no existing state found
+This command migrate existing terraform state file to direct deployment engine state. However, no existing local or remote state found.
+
+To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env var or bundle.engine="direct" in databricks.yml.
 
 >>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/default/files...
@@ -101,3 +103,4 @@ Deployment complete!
 === Should show that it's already migrated
 >>> musterr [CLI] bundle deployment migrate
 Error: already using direct engine
+Details: <local direct state serial=4 lineage="[UUID]">

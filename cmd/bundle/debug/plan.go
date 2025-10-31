@@ -24,12 +24,12 @@ func NewPlanCommand() *cobra.Command {
 				Build:        true,
 			}
 
-			b, isDirectEngine, err := utils.ProcessBundleRet(cmd, opts)
+			b, stateDesc, err := utils.ProcessBundleRet(cmd, opts)
 			if err != nil {
 				return err
 			}
 			ctx := cmd.Context()
-			plan := phases.Plan(ctx, b, isDirectEngine)
+			plan := phases.Plan(ctx, b, stateDesc.IsDirect)
 			if logdiag.HasError(ctx) {
 				return root.ErrAlreadyPrinted
 			}

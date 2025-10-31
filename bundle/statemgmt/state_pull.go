@@ -29,18 +29,19 @@ type StateDesc struct {
 	Lineage string `json:"lineage"`
 
 	// additional fields describing state:
-	content  []byte
-	isDirect bool `json:"-"`
-	isLocal  bool `json:"-"`
+	Content []byte
+
+	IsDirect bool `json:"-"`
+	IsLocal  bool `json:"-"`
 }
 
 func (s *StateDesc) String() string {
 	kind := "terraform"
-	if s.isDirect {
+	if s.IsDirect {
 		kind = "direct"
 	}
 	source := "remote"
-	if s.isLocal {
+	if s.IsLocal {
 		source = "local"
 	}
 	return fmt.Sprintf("<%s %s state serial=%d lineage=%q>", source, kind, s.Serial, s.Lineage)
@@ -61,8 +62,8 @@ func localRead(ctx context.Context, fullPath string, isDirect bool) *StateDesc {
 		logdiag.LogError(ctx, fmt.Errorf("parsing %s: %w", filepath.ToSlash(fullPath), err))
 	}
 
-	state.isDirect = isDirect
-	state.isLocal = true
+	state.IsDirect = isDirect
+	state.IsLocal = true
 	// not populating .content, not needed for local
 
 	return state
@@ -88,8 +89,8 @@ func _filerRead(ctx context.Context, f filer.Filer, path string) (*StateDesc, er
 		return nil, fmt.Errorf("parsing state: %w", err)
 	}
 
-	state.isLocal = false
-	state.content = content
+	state.IsLocal = false
+	state.Content = content
 	return state, nil
 }
 
@@ -99,19 +100,19 @@ func filerRead(ctx context.Context, f filer.Filer, path string, isDirect bool) *
 		logdiag.LogError(ctx, fmt.Errorf("reading %s: %w", path, err))
 	} else if state != nil {
 		log.Debugf(ctx, "read %s: %s", path, state.String())
-		state.isDirect = isDirect
+		state.IsDirect = isDirect
 	}
 	return state
 }
 
-func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) (context.Context, bool) {
+func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) (context.Context, *StateDesc) {
 	_, localPathDirect := b.StateFilenameDirect(ctx)
 	_, localPathTerraform := b.StateFilenameTerraform(ctx)
 
 	states := readStates(ctx, b, alwaysPull)
 
 	if logdiag.HasError(ctx) {
-		return ctx, false
+		return ctx, nil
 	}
 
 	var winner *StateDesc
@@ -122,12 +123,16 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 		isDirect, err := getDirectDeploymentEnv(ctx)
 		if err != nil {
 			logdiag.LogError(ctx, err)
-			return ctx, false
+			return ctx, nil
 		}
-		directDeployment = isDirect
+		winner = &StateDesc{
+			IsDirect: isDirect,
+			IsLocal:  true,
+			// Lineage and Serial are empty
+		}
 	} else {
 		winner = states[len(states)-1]
-		directDeployment = winner.isDirect
+		directDeployment = winner.IsDirect
 	}
 
 	engine := "direct"
@@ -139,9 +144,9 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 	// Set the engine in the user agent
 	ctx = useragent.InContext(ctx, "engine", engine)
 
-	if winner == nil {
-		log.Infof(ctx, "No existing resource state found")
-		return ctx, directDeployment
+	if len(states) == 0 {
+		// nothing to migrate, return
+		return ctx, winner
 	}
 
 	var stateStrs []string
@@ -158,20 +163,20 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 			lastLineage = state
 		} else if lastLineage.Lineage != state.Lineage {
 			logdiag.LogError(ctx, fmt.Errorf("lineage mismatch in state files: %s", strings.Join(stateStrs, ", ")))
-			return ctx, directDeployment
+			return ctx, winner
 		}
 	}
 
-	if winner.isLocal {
+	if winner.IsLocal {
 		// local state is fresh, nothing to do
-		return ctx, directDeployment
+		return ctx, winner
 	}
 
-	if !winner.isLocal {
+	if !winner.IsLocal {
 		log.Info(ctx, "Remote state is newer than local state. Using remote resources state.")
 
 		localStatePath := localPathTerraform
-		if winner.isDirect {
+		if winner.IsDirect {
 			localStatePath = localPathDirect
 		}
 
@@ -180,18 +185,18 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 		err := os.MkdirAll(localStateDir, 0o700)
 		if err != nil {
 			logdiag.LogError(ctx, err)
-			return ctx, directDeployment
+			return ctx, winner
 		}
 
 		// TODO: write + rename
-		err = os.WriteFile(localStatePath, winner.content, 0o600)
+		err = os.WriteFile(localStatePath, winner.Content, 0o600)
 		if err != nil {
 			logdiag.LogError(ctx, err)
-			return ctx, directDeployment
+			return ctx, winner
 		}
 	}
 
-	return ctx, directDeployment
+	return ctx, winner
 }
 
 func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) []*StateDesc {

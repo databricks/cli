@@ -56,9 +56,6 @@ type ProcessOptions struct {
 	Validate     bool
 	Build        bool
 	Deploy       bool
-
-	// Output:
-	Winner *statemgmt.StateDesc
 }
 
 func ProcessBundle(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, error) {
@@ -66,8 +63,7 @@ func ProcessBundle(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, err
 	return b, err
 }
 
-func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, bool, error) {
-	isDirectEngine := false
+func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, *statemgmt.StateDesc, error) {
 	ctx := cmd.Context()
 	if opts.SkipInitContext {
 		if !logdiag.IsSetup(ctx) {
@@ -81,20 +77,20 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 	// Load bundle config and apply target
 	b := root.MustConfigureBundle(cmd)
 	if logdiag.HasError(ctx) {
-		return b, isDirectEngine, root.ErrAlreadyPrinted
+		return b, nil, root.ErrAlreadyPrinted
 	}
 
 	variables, err := cmd.Flags().GetStringSlice("var")
 	if err != nil {
 		logdiag.LogDiag(ctx, diag.FromErr(err)[0])
-		return b, isDirectEngine, err
+		return b, nil, err
 	}
 
 	// Initialize variables by assigning them values passed as command line flags
 	configureVariables(cmd, b, variables)
 
 	if b == nil || logdiag.HasError(ctx) {
-		return b, isDirectEngine, root.ErrAlreadyPrinted
+		return b, nil, root.ErrAlreadyPrinted
 	}
 	ctx = cmd.Context()
 
@@ -117,27 +113,29 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 		if opts.IncludeLocations {
 			bundle.ApplyContext(ctx, b, mutator.PopulateLocations())
 			if logdiag.HasError(ctx) {
-				return b, isDirectEngine, root.ErrAlreadyPrinted
+				return b, nil, root.ErrAlreadyPrinted
 			}
 		}
 	}
 
 	if logdiag.HasError(ctx) {
-		return b, isDirectEngine, root.ErrAlreadyPrinted
+		return b, nil, root.ErrAlreadyPrinted
 	}
 
 	if opts.PostInitFunc != nil {
 		err := opts.PostInitFunc(ctx, b)
 		if err != nil {
-			return b, isDirectEngine, err
+			return b, nil, err
 		}
 	}
 
+	var stateDesc *statemgmt.StateDesc
+
 	if opts.ReadState || opts.AlwaysPull || opts.InitIDs || opts.ErrorOnEmptyState {
 		// PullResourcesState depends on stateFiler which needs b.Config.Workspace.StatePath which is set in phases.Initialize
-		ctx, isDirectEngine = statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(opts.AlwaysPull))
+		ctx, stateDesc = statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(opts.AlwaysPull))
 		if logdiag.HasError(ctx) {
-			return b, isDirectEngine, root.ErrAlreadyPrinted
+			return b, stateDesc, root.ErrAlreadyPrinted
 		}
 		cmd.SetContext(ctx)
 
@@ -148,11 +146,11 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 				modes = append(modes, statemgmt.ErrorOnEmptyState)
 			}
 			bundle.ApplySeqContext(ctx, b,
-				statemgmt.Load(isDirectEngine, modes...),
+				statemgmt.Load(stateDesc.IsDirect, modes...),
 				mutator.InitializeURLs(),
 			)
 			if logdiag.HasError(ctx) {
-				return b, isDirectEngine, root.ErrAlreadyPrinted
+				return b, stateDesc, root.ErrAlreadyPrinted
 			}
 		}
 
@@ -167,14 +165,14 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 		})
 
 		if logdiag.HasError(ctx) {
-			return b, isDirectEngine, root.ErrAlreadyPrinted
+			return b, stateDesc, root.ErrAlreadyPrinted
 		}
 	}
 
 	if opts.Validate {
 		validate.Validate(ctx, b)
 		if logdiag.HasError(ctx) {
-			return b, isDirectEngine, root.ErrAlreadyPrinted
+			return b, stateDesc, root.ErrAlreadyPrinted
 		}
 	}
 
@@ -187,7 +185,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 		})
 
 		if logdiag.HasError(ctx) {
-			return b, isDirectEngine, root.ErrAlreadyPrinted
+			return b, stateDesc, root.ErrAlreadyPrinted
 		}
 	}
 
@@ -200,16 +198,16 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 		}
 
 		t3 := time.Now()
-		phases.Deploy(ctx, b, outputHandler, isDirectEngine)
+		phases.Deploy(ctx, b, outputHandler, stateDesc.IsDirect)
 		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
 			Key:   "phases.Deploy",
 			Value: time.Since(t3).Milliseconds(),
 		})
 
 		if logdiag.HasError(ctx) {
-			return b, isDirectEngine, root.ErrAlreadyPrinted
+			return b, stateDesc, root.ErrAlreadyPrinted
 		}
 	}
 
-	return b, isDirectEngine, nil
+	return b, stateDesc, nil
 }
