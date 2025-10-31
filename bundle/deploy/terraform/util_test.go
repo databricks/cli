@@ -3,6 +3,7 @@ package terraform
 import (
 	"context"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -86,10 +87,12 @@ func TestParseResourcesStateWithExistingStateFile(t *testing.T) {
 		  }
 		]
 	}`)
-	name, _ := b.StateFilenameTerraform(ctx)
-	err := os.WriteFile(name, data, os.ModePerm)
+	_, localPath := b.StateFilenameTerraform(ctx)
+	err := os.MkdirAll(filepath.Dir(localPath), 0o700)
 	assert.NoError(t, err)
-	state, err := parseResourcesState(ctx, name)
+	err = os.WriteFile(localPath, data, 0o600)
+	assert.NoError(t, err)
+	state, err := parseResourcesState(ctx, localPath)
 	assert.NoError(t, err)
 	expected := ExportedResourcesMap{
 		"pipelines": map[string]ResourceState{
