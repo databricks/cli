@@ -17,7 +17,7 @@
             "description": "\nUnique name for this project",
             "order": 1,
             "pattern": "^[a-z0-9_]+$",
-            "pattern_match_failure_message": "Name must consist of letters, numbers, and underscores."
+            "pattern_match_failure_message": "Name must consist of lower case letters, numbers, and underscores."
         },
         "project_name_short": {
             "//": "This is a derived property based on project_name (it replaces lakeflow_project with lakeflow and strips _project|_app|_service)",
