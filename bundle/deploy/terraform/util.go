@@ -105,6 +105,13 @@ func parseResourcesState(ctx context.Context, path string) (ExportedResourcesMap
 
 // Returns a mapping group -> name -> stateInstanceAttributes
 func ParseResourcesState(ctx context.Context, b *bundle.Bundle) (ExportedResourcesMap, error) {
+	// For direct deployment, export state from the direct state file
+	if b.DirectDeployment != nil && *b.DirectDeployment {
+		_, localPath := b.StateFilenameDirect(ctx)
+		return b.DeploymentBundle.ExportState(ctx, localPath)
+	}
+
+	// For terraform deployment, parse the terraform state file
 	cacheDir, err := Dir(ctx, b)
 	if err != nil {
 		return nil, err
