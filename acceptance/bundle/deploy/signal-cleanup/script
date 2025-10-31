@@ -1,0 +1,30 @@
+#!/bin/bash
+
+# Start deployment in background, redirecting stderr to capture when deployment starts
+$CLI bundle deploy 2>&1 &
+DEPLOY_PID=$!
+
+# Wait for deployment to start by monitoring the requests file
+# Once we see the job creation request starting, we know deployment is in progress
+title "Wait until the deployment has started."
+for i in {1..30}; do
+  if [ -f out.requests.txt ] && jq -e 'select(.method == "POST" and (.path | contains("/api/2.2/jobs/create")))' out.requests.txt >/dev/null 2>&1; then
+    echo "Deployment in progress, sending interrupt signal..."
+    break
+  fi
+  sleep 0.1
+done
+
+# Send interrupt signal
+trace kill -INT $DEPLOY_PID
+
+# Wait for process to complete
+errcode trace wait $DEPLOY_PID
+
+# A deletion request for deploy.lock should have been recorded in the requests file
+trace cat out.requests.txt | jq 'select(.method == "POST" and (.path | contains("workspace/delete")) and (.body.path | contains("deploy.lock")))'
+
+title "A creation request for job1 should be recorded in the requests file. No request for job2 should exist since the process was terminated mid deployment."
+trace cat out.requests.txt | jq 'select(.method == "POST" and (.path | contains("/api/2.2/jobs/create")))'
+
+rm out.requests.txt
