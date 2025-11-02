@@ -66,8 +66,6 @@ test-update:
 # Updates acceptance test output for template tests only
 test-update-templates:
 	-go test ./acceptance -run '^TestAccept/bundle/templates' -update -timeout=${LOCAL_TIMEOUT}
-	@# at the moment second pass is required because some tests show diff against output of another test for easier review
-	-go test ./acceptance -run '^TestAccept/bundle/templates' -update -timeout=${LOCAL_TIMEOUT}
 
 # Updates acceptance test output (integration tests, requires access)
 test-update-aws:
