@@ -1,0 +1,9 @@
+Local = true
+Cloud = false
+
+[EnvMatrix]
+  DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
+  INCLUDE_JOB = ["yes", "no"]
+  INCLUDE_PIPELINE = ["yes", "no"]
+  INCLUDE_PYTHON = ["yes", "no"]
+  SERVERLESS = ["yes", "no"]

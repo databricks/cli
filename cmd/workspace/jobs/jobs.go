@@ -289,11 +289,43 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	// TODO: array: access_control_list
+	cmd.Flags().StringVar(&createReq.BudgetPolicyId, "budget-policy-id", createReq.BudgetPolicyId, `The id of the user specified budget policy to use for this job.`)
+	// TODO: complex arg: continuous
+	// TODO: complex arg: deployment
+	cmd.Flags().StringVar(&createReq.Description, "description", createReq.Description, `An optional description for the job.`)
+	cmd.Flags().Var(&createReq.EditMode, "edit-mode", `Edit mode of the job. Supported values: [EDITABLE, UI_LOCKED]`)
+	// TODO: complex arg: email_notifications
+	// TODO: array: environments
+	cmd.Flags().Var(&createReq.Format, "format", `Used to tell what is the format of the job. Supported values: [MULTI_TASK, SINGLE_TASK]`)
+	// TODO: complex arg: git_source
+	// TODO: complex arg: health
+	// TODO: array: job_clusters
+	cmd.Flags().IntVar(&createReq.MaxConcurrentRuns, "max-concurrent-runs", createReq.MaxConcurrentRuns, `An optional maximum allowed number of concurrent runs of the job.`)
+	cmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `An optional name for the job.`)
+	// TODO: complex arg: notification_settings
+	// TODO: array: parameters
+	cmd.Flags().Var(&createReq.PerformanceTarget, "performance-target", `The performance mode on a serverless job. Supported values: [PERFORMANCE_OPTIMIZED, STANDARD]`)
+	// TODO: complex arg: queue
+	// TODO: complex arg: run_as
+	// TODO: complex arg: schedule
+	// TODO: map via StringToStringVar: tags
+	// TODO: array: tasks
+	cmd.Flags().IntVar(&createReq.TimeoutSeconds, "timeout-seconds", createReq.TimeoutSeconds, `An optional timeout applied to each run of this job.`)
+	// TODO: complex arg: trigger
+	cmd.Flags().StringVar(&createReq.UsagePolicyId, "usage-policy-id", createReq.UsagePolicyId, `The id of the user specified usage policy to use for this job.`)
+	// TODO: complex arg: webhook_notifications
+
 	cmd.Use = "create"
 	cmd.Short = `Create a new job.`
 	cmd.Long = `Create a new job.`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -311,8 +343,6 @@ func newCreate() *cobra.Command {
 					return err
 				}
 			}
-		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response, err := w.Jobs.Create(ctx, createReq)

@@ -27,14 +27,6 @@ import (
 
 var errDelayed = errors.New("must be resolved after apply")
 
-func (b *DeploymentBundle) OpenStateFile(statePath string) error {
-	err := b.StateDB.Open(statePath)
-	if err != nil {
-		return fmt.Errorf("failed to read state from %s: %w", statePath, err)
-	}
-	return nil
-}
-
 func (b *DeploymentBundle) Init(client *databricks.WorkspaceClient) error {
 	if b.Adapters != nil {
 		return nil
@@ -44,9 +36,13 @@ func (b *DeploymentBundle) Init(client *databricks.WorkspaceClient) error {
 	return err
 }
 
-func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root) (*deployplan.Plan, error) {
-	b.StateDB.AssertOpened()
-	err := b.Init(client)
+func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root, statePath string) (*deployplan.Plan, error) {
+	err := b.StateDB.Open(statePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read state from %s: %w", statePath, err)
+	}
+
+	err = b.Init(client)
 	if err != nil {
 		return nil, err
 	}
@@ -281,6 +277,7 @@ func interpretOldStateVsRemoteState(ctx context.Context, adapter *dresources.Ada
 }
 
 func (b *DeploymentBundle) LookupReferenceLocal(ctx context.Context, path *structpath.PathNode) (any, error) {
+	// TODO: Prefix(3) assumes resources.jobs.foo but not resources.jobs.foo.permissions
 	targetResourceKey := path.Prefix(3).String()
 	fieldPath := path.SkipPrefix(3)
 	fieldPathS := fieldPath.String()
@@ -426,25 +423,36 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 
 	existingKeys := maps.Clone(db.State)
 
+	patterns := []dyn.Pattern{
+		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()),
+		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey(), dyn.Key("permissions")),
+		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey(), dyn.Key("grants")),
+	}
+
 	// Walk?
 	if configRoot != nil {
-		_, err := dyn.MapByPattern(
-			configRoot.Value(),
-			dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()),
-			func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-				group := p[1].Key()
+		for _, pat := range patterns {
+			_, err := dyn.MapByPattern(
+				configRoot.Value(),
+				pat,
+				func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+					s := p.String()
+					resourceType := config.GetResourceTypeFromKey(s)
+					if resourceType == "" {
+						return v, fmt.Errorf("cannot parse resource key: %q", s)
+					}
+					_, ok := dresources.SupportedResources[resourceType]
+					if !ok {
+						return v, fmt.Errorf("unsupported resource type: %s", resourceType)
+					}
 
-				_, ok := dresources.SupportedResources[group]
-				if !ok {
-					return v, fmt.Errorf("unsupported resource: %s", group)
-				}
-
-				nodes = append(nodes, p.String())
-				return dyn.InvalidValue, nil
-			},
-		)
-		if err != nil {
-			return nil, fmt.Errorf("reading config: %w", err)
+					nodes = append(nodes, s)
+					return dyn.InvalidValue, nil
+				},
+			)
+			if err != nil {
+				return nil, fmt.Errorf("reading config: %w", err)
+			}
 		}
 	}
 
@@ -454,9 +462,9 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		delete(existingKeys, node)
 
 		prefix := "cannot plan " + node
-		inputConfig, ok := configRoot.GetResourceConfig(node)
-		if !ok {
-			return nil, fmt.Errorf("%s: failed to read config", prefix)
+		inputConfig, err := configRoot.GetResourceConfig(node)
+		if err != nil {
+			return nil, fmt.Errorf("%s: reading config: %s", prefix, err)
 		}
 
 		adapter, err := b.getAdapterForKey(node)
@@ -464,12 +472,23 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 			return nil, fmt.Errorf("%s: %w", prefix, err)
 		}
 
+		baseRefs := map[string]string{}
+
+		if strings.HasSuffix(node, ".permissions") {
+			inputConfigStructVar, err := dresources.PreparePermissionsInputConfig(inputConfig, node)
+			if err != nil {
+				return nil, err
+			}
+			inputConfig = inputConfigStructVar.Config
+			baseRefs = inputConfigStructVar.Refs
+		}
+
 		newStateConfig, err := adapter.PrepareState(inputConfig)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", prefix, err)
 		}
 
-		// Note, we're extracting references in input config but resolving them in newStateConfig
+		// Note, we're extracting references in input config but resolving them in newState.Config which is PrepareState(inputConfig)
 		// This means input and state must be compatible: input can have more fields, but existing fields should not be moved
 		// This means one cannot refer to fields not present in state (e.g. ${resources.jobs.foo.permissions})
 
@@ -478,26 +497,26 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 			return nil, fmt.Errorf("failed to read references from config for %s: %w", node, err)
 		}
 
-		// Extract dependencies from references and populate depends_on
+		maps.Copy(refs, baseRefs)
+
 		var dependsOn []deployplan.DependsOnEntry
 		for _, reference := range refs {
-			// Use NewRef to extract all references from the string
 			ref, ok := dynvar.NewRef(dyn.V(reference))
 			if !ok {
 				continue
 			}
 
-			// Process each reference in the string
-			for _, refStr := range ref.References() {
-				path, err := structpath.Parse(refStr)
+			for _, targetPath := range ref.References() {
+				targetPathParsed, err := dyn.NewPathFromString(targetPath)
 				if err != nil {
-					return nil, fmt.Errorf("failed to parse reference %q: %w", refStr, err)
+					return nil, fmt.Errorf("parsing %q: %w", targetPath, err)
 				}
 
-				targetNode := path.Prefix(3).String()
-				fullRef := "${" + refStr + "}"
+				targetNodeDP, _ := config.GetNodeAndType(targetPathParsed)
+				targetNode := targetNodeDP.String()
 
-				// Add to depends_on if not already present
+				fullRef := "${" + targetPath + "}"
+
 				found := false
 				for _, dep := range dependsOn {
 					if dep.Node == targetNode && dep.Label == fullRef {
@@ -514,7 +533,6 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 			}
 		}
 
-		// Sort dependsOn for consistent ordering
 		slices.SortFunc(dependsOn, func(a, b deployplan.DependsOnEntry) int {
 			if a.Node != b.Node {
 				return strings.Compare(a.Node, b.Node)
@@ -546,6 +564,7 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 }
 
 func extractReferences(root dyn.Value, node string) (map[string]string, error) {
+	nodeType := config.GetResourceTypeFromKey(node)
 	refs := make(map[string]string)
 
 	path, err := dyn.NewPathFromString(node)
@@ -559,6 +578,15 @@ func extractReferences(root dyn.Value, node string) (map[string]string, error) {
 	}
 
 	err = dyn.WalkReadOnly(val, func(p dyn.Path, v dyn.Value) error {
+		fullPath := append(path, p...)
+		targetType := config.GetResourceTypeFromKey(fullPath.String())
+		if targetType != nodeType {
+			// Make sure these are associated with different nodes:
+			// resources.jobs.foo...
+			// resources.jobs.foo.permissions...
+			// resources.jobs.foo.grants...
+			return nil
+		}
 		ref, ok := dynvar.NewRef(v)
 		if !ok {
 			return nil

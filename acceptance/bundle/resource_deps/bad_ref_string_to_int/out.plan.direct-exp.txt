@@ -1,8 +1,0 @@
-
->>> musterr [CLI] bundle plan
-Error: cannot plan resources.jobs.foo: cannot update tasks[0].run_job_task.job_id with value of "${resources.jobs.bar.name}": cannot set (*jobs.JobSettings).tasks[0].run_job_task.job_id to string ("job bar"): cannot parse "job bar" as int64: strconv.ParseInt: parsing "job bar": invalid syntax
-
-Error: planning failed
-
-
-Exit code (musterr): 1

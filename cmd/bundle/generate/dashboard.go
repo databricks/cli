@@ -14,12 +14,13 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/generate"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/statemgmt"
+	"github.com/databricks/cli/cmd/bundle/deployment"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/yamlsaver"
@@ -54,6 +55,12 @@ type dashboard struct {
 
 	// Relative path from the resource directory to the dashboard directory.
 	relativeDashboardDir string
+
+	// Command.
+	cmd *cobra.Command
+
+	// Automatically bind the generated resource to the existing resource.
+	bind bool
 
 	// Output and error streams.
 	out io.Writer
@@ -334,6 +341,15 @@ func (d *dashboard) generateForExisting(ctx context.Context, b *bundle.Bundle, d
 	if err != nil {
 		logdiag.LogError(ctx, err)
 	}
+
+	if d.bind {
+		err = deployment.BindResource(d.cmd, key, dashboardID, true, false, true)
+		if err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
+		cmdio.LogString(ctx, fmt.Sprintf("Successfully bound dashboard with an id '%s'", dashboardID))
+	}
 }
 
 func (d *dashboard) initialize(ctx context.Context, b *bundle.Bundle) {
@@ -361,10 +377,12 @@ func (d *dashboard) runForResource(ctx context.Context, b *bundle.Bundle) {
 		return
 	}
 
+	ctx = statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(true))
+	if logdiag.HasError(ctx) {
+		return
+	}
+
 	bundle.ApplySeqContext(ctx, b,
-		terraform.Interpolate(),
-		terraform.Write(),
-		statemgmt.StatePull(),
 		statemgmt.Load(),
 	)
 	if logdiag.HasError(ctx) {
@@ -389,7 +407,7 @@ func (d *dashboard) RunE(cmd *cobra.Command, args []string) error {
 	cmd.SetContext(ctx)
 
 	b := root.MustConfigureBundle(cmd)
-	if b == nil {
+	if b == nil || logdiag.HasError(ctx) {
 		return root.ErrAlreadyPrinted
 	}
 
@@ -489,6 +507,9 @@ bundle files automatically, useful during active dashboard development.`,
 	cmd.Flags().StringVarP(&d.dashboardDir, "dashboard-dir", "s", "src", `directory to write the dashboard representation to`)
 	cmd.Flags().BoolVarP(&d.force, "force", "f", false, `force overwrite existing files in the output directory`)
 
+	cmd.Flags().BoolVarP(&d.bind, "bind", "b", false, `automatically bind the generated dashboard config to the existing dashboard`)
+	cmd.Flags().MarkHidden("bind")
+
 	// Exactly one of the lookup flags must be provided.
 	cmd.MarkFlagsOneRequired(
 		"existing-path",
@@ -503,9 +524,13 @@ bundle files automatically, useful during active dashboard development.`,
 	cmd.MarkFlagsMutuallyExclusive("watch", "existing-path")
 	cmd.MarkFlagsMutuallyExclusive("watch", "existing-id")
 
+	// Make sure the bind flag is only used with the existing-resource flag.
+	cmd.MarkFlagsMutuallyExclusive("bind", "resource")
+
 	// Completion for the resource flag.
 	cmd.RegisterFlagCompletionFunc("resource", dashboardResourceCompletion)
 
 	cmd.RunE = d.RunE
+	d.cmd = cmd
 	return cmd
 }

@@ -33,10 +33,11 @@ PANIC = "💥\u200bPANIC"
 # These happen if test matches known_failures.txt
 KNOWN_FAILURE = "🟨\u200bKNOWN"
 RECOVERED = "💚\u200bRECOVERED"
+KNOWN_SKIP = "🙈\u200bSKIP"
 
 # The order is important - in case of ambiguity, earlier one gets preference.
 # For examples, each environment gets a summary icon which is earliest action in this list among all tests.
-INTERESTING_ACTIONS = (PANIC, BUG, FAIL, KNOWN_FAILURE, MISSING, FLAKY, RECOVERED)
+INTERESTING_ACTIONS = (PANIC, BUG, FAIL, KNOWN_FAILURE, MISSING, FLAKY, RECOVERED, KNOWN_SKIP)
 ACTIONS_WITH_ICON = INTERESTING_ACTIONS + (PASS, SKIP)
 
 ACTION_MESSAGES = {
@@ -323,12 +324,13 @@ def mark_known_failures(results, known_failures_config):
     marked_results = {}
     for test_key, action in results.items():
         package_name, testname = test_key
-        if known_failures_config and action == FAIL and known_failures_config.matches(package_name, testname):
-            marked_results[test_key] = KNOWN_FAILURE
-        elif known_failures_config and action == PASS and known_failures_config.matches(package_name, testname):
-            marked_results[test_key] = RECOVERED
-        else:
-            marked_results[test_key] = action
+        if known_failures_config and known_failures_config.matches(package_name, testname):
+            action = {
+                FAIL: KNOWN_FAILURE,
+                PASS: RECOVERED,
+                SKIP: KNOWN_SKIP,
+            }.get(action, action)
+        marked_results[test_key] = action
     return marked_results
 
 
@@ -451,7 +453,7 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False, omi
         for env, counts in items.items():
             for action in INTERESTING_ACTIONS:
                 if action in counts:
-                    per_testkey_result.setdefault(env, short_action(action))
+                    per_testkey_result.setdefault(env, action)
                     break
 
         # Once we know test is interesting, complete the row
@@ -461,7 +463,7 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False, omi
                     continue
                 for action in (PASS, SKIP):
                     if action in counts:
-                        per_testkey_result.setdefault(env, short_action(action))
+                        per_testkey_result.setdefault(env, action)
                         break
 
         if not per_testkey_result:
@@ -470,10 +472,11 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False, omi
     table = []
     for test_key, items in simplified_results.items():
         package_name, testname = test_key
+        items_proc = dict((k, short_action(v)) for (k, v) in items.items())
         table.append(
             {
                 "Test Name": testname,
-                **items,
+                **items_proc,
             }
         )
     table_txt = format_table(table, markdown=markdown)

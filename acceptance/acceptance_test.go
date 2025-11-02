@@ -366,13 +366,6 @@ func getEnvFilters(t *testing.T) []string {
 		key := items[0]
 		// Clear it just to be sure, since it's going to be part of os.Environ() and we're going to add different value based on settings.
 		os.Unsetenv(key)
-
-		if key == "DATABRICKS_BUNDLE_ENGINE" && items[1] == "direct" {
-			// CLI only recognizes "direct-exp" at the moment, but in the future will recognize "direct" as well.
-			// On CI we set "direct". To avoid renaming jobs in CI on the future, we correct direct -> direct-exp here
-			items[1] = "direct-exp"
-		}
-
 		outFilters = append(outFilters, key+"="+items[1])
 	}
 
@@ -712,6 +705,17 @@ func runTest(t *testing.T,
 			continue
 		}
 		if config.CompiledIgnoreObject.MatchesPath(relPath) {
+			continue
+		}
+		if strings.HasPrefix(filepath.Base(relPath), "LOG") {
+			prefix := relPath + ": "
+			messages := testutil.ReadFile(t, filepath.Join(tmpDir, relPath))
+			messages = strings.TrimRight(messages, "\r\n \t")
+			messages = prefix + strings.ReplaceAll(messages, "\n", "\n"+prefix)
+			if strings.Contains(messages, "\n") {
+				messages = "\n" + messages
+			}
+			t.Log(messages)
 			continue
 		}
 		unexpected = append(unexpected, relPath)
@@ -1394,7 +1398,7 @@ func loadUserReplacements(t *testing.T, repls *testdiff.ReplacementsContext, tmp
 type pathFilter struct {
 	// contains substrings from the variants other than current.
 	// E.g. if EnvVaryOutput is DATABRICKS_BUNDLE_ENGINE and current test running DATABRICKS_BUNDLE_ENGINE="terraform" then
-	// notSelected contains ".direct-exp." meaning if filename contains that (e.g. out.deploy.direct-exp.txt) then we ignore it here.
+	// notSelected contains ".direct." meaning if filename contains that (e.g. out.deploy.direct.txt) then we ignore it here.
 	notSelected []string
 }
 

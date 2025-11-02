@@ -24,7 +24,6 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions) {
 	}()
 
 	bundle.ApplySeqContext(ctx, b,
-		statemgmt.StatePull(),
 		terraform.Interpolate(),
 		terraform.Write(),
 		terraform.Import(opts),
@@ -45,7 +44,6 @@ func Unbind(ctx context.Context, b *bundle.Bundle, bundleType, tfResourceType, r
 	}()
 
 	bundle.ApplySeqContext(ctx, b,
-		statemgmt.StatePull(),
 		terraform.Interpolate(),
 		terraform.Write(),
 		terraform.Unbind(bundleType, tfResourceType, resourceKey),

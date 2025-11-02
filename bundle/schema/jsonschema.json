@@ -76,6 +76,9 @@
                       "budget_policy_id": {
                         "$ref": "#/$defs/string"
                       },
+                      "compute_size": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.ComputeSize"
+                      },
                       "compute_status": {
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.ComputeStatus",
                         "doNotSuggest": true
@@ -603,32 +606,49 @@
                         "$ref": "#/$defs/string",
                         "doNotSuggest": true
                       },
+                      "custom_tags": {
+                        "description": "Custom tags associated with the instance. This field is only included on create and update responses.",
+                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/database.CustomTag"
+                      },
                       "effective_capacity": {
-                        "$ref": "#/$defs/string"
+                        "$ref": "#/$defs/string",
+                        "deprecationMessage": "This field is deprecated",
+                        "doNotSuggest": true,
+                        "deprecated": true
+                      },
+                      "effective_custom_tags": {
+                        "description": "The recorded custom tags associated with the instance.",
+                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/database.CustomTag",
+                        "doNotSuggest": true
                       },
                       "effective_enable_pg_native_login": {
-                        "description": "xref AIP-129. `enable_pg_native_login` is owned by the client, while `effective_enable_pg_native_login` is owned by the server.\n`enable_pg_native_login` will only be set in Create/Update response messages if and only if the user provides the field via the request.\n`effective_enable_pg_native_login` on the other hand will always bet set in all response messages (Create/Update/Get/List).",
+                        "description": "Whether the instance has PG native password login enabled.",
                         "$ref": "#/$defs/bool",
                         "doNotSuggest": true
                       },
                       "effective_enable_readable_secondaries": {
-                        "description": "xref AIP-129. `enable_readable_secondaries` is owned by the client, while `effective_enable_readable_secondaries` is owned by the server.\n`enable_readable_secondaries` will only be set in Create/Update response messages if and only if the user provides the field via the request.\n`effective_enable_readable_secondaries` on the other hand will always bet set in all response messages (Create/Update/Get/List).",
+                        "description": "Whether secondaries serving read-only traffic are enabled. Defaults to false.",
                         "$ref": "#/$defs/bool",
                         "doNotSuggest": true
                       },
                       "effective_node_count": {
-                        "description": "xref AIP-129. `node_count` is owned by the client, while `effective_node_count` is owned by the server.\n`node_count` will only be set in Create/Update response messages if and only if the user provides the field via the request.\n`effective_node_count` on the other hand will always bet set in all response messages (Create/Update/Get/List).",
+                        "description": "The number of nodes in the instance, composed of 1 primary and 0 or more secondaries. Defaults to\n1 primary and 0 secondaries.",
                         "$ref": "#/$defs/int",
                         "doNotSuggest": true
                       },
                       "effective_retention_window_in_days": {
-                        "description": "xref AIP-129. `retention_window_in_days` is owned by the client, while `effective_retention_window_in_days` is owned by the server.\n`retention_window_in_days` will only be set in Create/Update response messages if and only if the user provides the field via the request.\n`effective_retention_window_in_days` on the other hand will always bet set in all response messages (Create/Update/Get/List).",
+                        "description": "The retention window for the instance. This is the time window in days\nfor which the historical data is retained.",
                         "$ref": "#/$defs/int",
                         "doNotSuggest": true
                       },
                       "effective_stopped": {
-                        "description": "xref AIP-129. `stopped` is owned by the client, while `effective_stopped` is owned by the server.\n`stopped` will only be set in Create/Update response messages if and only if the user provides the field via the request.\n`effective_stopped` on the other hand will always bet set in all response messages (Create/Update/Get/List).",
+                        "description": "Whether the instance is stopped.",
                         "$ref": "#/$defs/bool",
+                        "doNotSuggest": true
+                      },
+                      "effective_usage_policy_id": {
+                        "description": "The policy that is applied to the instance.",
+                        "$ref": "#/$defs/string",
                         "doNotSuggest": true
                       },
                       "enable_pg_native_login": {
@@ -690,6 +710,10 @@
                         "description": "An immutable UUID identifier for the instance.",
                         "$ref": "#/$defs/string",
                         "doNotSuggest": true
+                      },
+                      "usage_policy_id": {
+                        "description": "The desired usage policy to associate with the instance.",
+                        "$ref": "#/$defs/string"
                       }
                     },
                     "additionalProperties": false,
@@ -952,10 +976,9 @@
                 "oneOf": [
                   {
                     "type": "object",
-                    "description": "An experiment and its metadata.",
                     "properties": {
                       "artifact_location": {
-                        "description": "Location where artifacts for the experiment are stored.",
+                        "description": "Location where all artifacts for the experiment are stored.\nIf not provided, the remote server will select an appropriate default.",
                         "$ref": "#/$defs/string"
                       },
                       "lifecycle": {
@@ -963,14 +986,14 @@
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
-                        "description": "Human readable name that identifies the experiment.",
+                        "description": "Experiment name.",
                         "$ref": "#/$defs/string"
                       },
                       "permissions": {
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.MlflowExperimentPermission"
                       },
                       "tags": {
-                        "description": "Tags: Additional metadata key-value pairs.",
+                        "description": "A collection of tags to set on the experiment. Maximum tag size and number of tags per request\ndepends on the storage backend. All storage backends are guaranteed to support tag keys up\nto 250 bytes in size and tag values up to 5000 bytes in size. All storage backends are also\nguaranteed to support up to 20 tags per request.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/ml.ExperimentTag"
                       }
                     },
@@ -1533,12 +1556,32 @@
                   {
                     "type": "object",
                     "properties": {
+                      "aliases": {
+                        "description": "List of aliases associated with the registered model",
+                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.RegisteredModelAlias"
+                      },
+                      "browse_only": {
+                        "description": "Indicates whether the principal is limited to retrieving metadata for the associated object through the BROWSE privilege when include_browse is enabled in the request.",
+                        "$ref": "#/$defs/bool"
+                      },
                       "catalog_name": {
                         "description": "The name of the catalog where the schema and the registered model reside",
                         "$ref": "#/$defs/string"
                       },
                       "comment": {
                         "description": "The comment attached to the registered model",
+                        "$ref": "#/$defs/string"
+                      },
+                      "created_at": {
+                        "description": "Creation timestamp of the registered model in milliseconds since the Unix epoch",
+                        "$ref": "#/$defs/int64"
+                      },
+                      "created_by": {
+                        "description": "The identifier of the user who created the registered model",
+                        "$ref": "#/$defs/string"
+                      },
+                      "full_name": {
+                        "description": "The three-level (fully qualified) name of the registered model",
                         "$ref": "#/$defs/string"
                       },
                       "grants": {
@@ -1548,8 +1591,16 @@
                         "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
+                      "metastore_id": {
+                        "description": "The unique identifier of the metastore",
+                        "$ref": "#/$defs/string"
+                      },
                       "name": {
                         "description": "The name of the registered model",
+                        "$ref": "#/$defs/string"
+                      },
+                      "owner": {
+                        "description": "The identifier of the user who owns the registered model",
                         "$ref": "#/$defs/string"
                       },
                       "schema_name": {
@@ -1559,14 +1610,17 @@
                       "storage_location": {
                         "description": "The storage location on the cloud under which model version data files are stored",
                         "$ref": "#/$defs/string"
+                      },
+                      "updated_at": {
+                        "description": "Last-update timestamp of the registered model in milliseconds since the Unix epoch",
+                        "$ref": "#/$defs/int64"
+                      },
+                      "updated_by": {
+                        "description": "The identifier of the user who updated the registered model last time",
+                        "$ref": "#/$defs/string"
                       }
                     },
                     "additionalProperties": false,
-                    "required": [
-                      "catalog_name",
-                      "name",
-                      "schema_name"
-                    ],
                     "markdownDescription": "The registered model resource allows you to define models in Unity Catalog. For information about Unity Catalog [registered models](https://docs.databricks.com/api/workspace/registeredmodels/create), see [link](https://docs.databricks.com/machine-learning/manage-model-lifecycle/index.html)."
                   },
                   {
@@ -1760,9 +1814,10 @@
                 "oneOf": [
                   {
                     "type": "object",
+                    "description": "Creates a new SQL warehouse.",
                     "properties": {
                       "auto_stop_mins": {
-                        "description": "The amount of time in minutes that a SQL warehouse must be idle (i.e., no RUNNING queries) before\nit is automatically stopped.\n\nSupported values:\n  - Must be \u003e= 0 mins for serverless warehouses\n  - Must be == 0 or \u003e= 10 mins for non-serverless warehouses\n - 0 indicates no autostop.\n\nDefaults to 120 mins",
+                        "description": "The amount of time in minutes that a SQL warehouse must be idle (i.e., no\nRUNNING queries) before it is automatically stopped.\n\nSupported values:\n- Must be == 0 or \u003e= 10 mins\n- 0 indicates no autostop.\n\nDefaults to 120 mins",
                         "$ref": "#/$defs/int"
                       },
                       "channel": {
@@ -1770,7 +1825,7 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.Channel"
                       },
                       "cluster_size": {
-                        "description": "Size of the clusters allocated for this warehouse.\nIncreasing the size of a spark cluster allows you to run larger queries on it.\nIf you want to increase the number of concurrent queries, please tune max_num_clusters.\n\nSupported values:\n  - 2X-Small\n  - X-Small\n  - Small\n  - Medium\n  - Large\n  - X-Large\n  - 2X-Large\n  - 3X-Large\n  - 4X-Large\n",
+                        "description": "Size of the clusters allocated for this warehouse.\nIncreasing the size of a spark cluster allows you to run larger queries on\nit. If you want to increase the number of concurrent queries, please tune\nmax_num_clusters.\n\nSupported values:\n- 2X-Small\n- X-Small\n- Small\n- Medium\n- Large\n- X-Large\n- 2X-Large\n- 3X-Large\n- 4X-Large",
                         "$ref": "#/$defs/string"
                       },
                       "creator_name": {
@@ -1796,15 +1851,15 @@
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "max_num_clusters": {
-                        "description": "Maximum number of clusters that the autoscaler will create to handle concurrent queries.\n\nSupported values:\n  - Must be \u003e= min_num_clusters\n  - Must be \u003c= 30.\n\nDefaults to min_clusters if unset.",
+                        "description": "Maximum number of clusters that the autoscaler will create to handle\nconcurrent queries.\n\nSupported values:\n- Must be \u003e= min_num_clusters\n- Must be \u003c= 40.\n\nDefaults to min_clusters if unset.",
                         "$ref": "#/$defs/int"
                       },
                       "min_num_clusters": {
-                        "description": "Minimum number of available clusters that will be maintained for this SQL warehouse.\nIncreasing this will ensure that a larger number of clusters are always running and therefore may reduce\nthe cold start time for new queries. This is similar to reserved vs. revocable cores in a resource manager.\n\nSupported values:\n  - Must be \u003e 0\n  - Must be \u003c= min(max_num_clusters, 30)\n\nDefaults to 1",
+                        "description": "Minimum number of available clusters that will be maintained for this SQL\nwarehouse. Increasing this will ensure that a larger number of clusters are\nalways running and therefore may reduce the cold start time for new\nqueries. This is similar to reserved vs. revocable cores in a resource\nmanager.\n\nSupported values:\n- Must be \u003e 0\n- Must be \u003c= min(max_num_clusters, 30)\n\nDefaults to 1",
                         "$ref": "#/$defs/int"
                       },
                       "name": {
-                        "description": "Logical name for the cluster.\n\nSupported values:\n  - Must be unique within an org.\n  - Must be less than 100 characters.",
+                        "description": "Logical name for the cluster.\n\nSupported values:\n- Must be unique within an org.\n- Must be less than 100 characters.",
                         "$ref": "#/$defs/string"
                       },
                       "permissions": {
@@ -1814,7 +1869,7 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.SpotInstancePolicy"
                       },
                       "tags": {
-                        "description": "A set of key-value pairs that will be tagged on all resources (e.g., AWS instances and EBS volumes) associated\nwith this SQL warehouse.\n\nSupported values:\n  - Number of tags \u003c 45.",
+                        "description": "A set of key-value pairs that will be tagged on all resources (e.g., AWS instances and EBS volumes) associated\nwith this SQL warehouse.\n\nSupported values:\n- Number of tags \u003c 45.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.EndpointTags"
                       },
                       "warehouse_type": {
@@ -1879,7 +1934,7 @@
                 "oneOf": [
                   {
                     "type": "object",
-                    "description": "Next field marker: 14",
+                    "description": "Next field marker: 18",
                     "properties": {
                       "data_synchronization_status": {
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTableStatus",
@@ -2877,6 +2932,9 @@
                       "description": "Description of the App Resource.",
                       "$ref": "#/$defs/string"
                     },
+                    "genie_space": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceGenieSpace"
+                    },
                     "job": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceJob"
                     },
@@ -2942,6 +3000,51 @@
                   "type": "string",
                   "enum": [
                     "CAN_CONNECT_AND_CREATE"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "apps.AppResourceGenieSpace": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "permission": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceGenieSpaceGenieSpacePermission"
+                    },
+                    "space_id": {
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "name",
+                    "permission",
+                    "space_id"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "apps.AppResourceGenieSpaceGenieSpacePermission": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "CAN_MANAGE",
+                    "CAN_EDIT",
+                    "CAN_RUN",
+                    "CAN_VIEW"
                   ]
                 },
                 {
@@ -3205,6 +3308,22 @@
                     }
                   },
                   "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "apps.ComputeSize": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "MEDIUM",
+                    "LARGE",
+                    "LIQUID"
+                  ]
                 },
                 {
                   "type": "string",
@@ -3526,14 +3645,51 @@
                 }
               ]
             },
+            "catalog.RegisteredModelAlias": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "alias_name": {
+                      "description": "Name of the alias, e.g. 'champion' or 'latest_stable'",
+                      "$ref": "#/$defs/string"
+                    },
+                    "catalog_name": {
+                      "description": "The name of the catalog containing the model version",
+                      "$ref": "#/$defs/string"
+                    },
+                    "id": {
+                      "description": "The unique identifier of the alias",
+                      "$ref": "#/$defs/string"
+                    },
+                    "model_name": {
+                      "description": "The name of the parent registered model of the model version, relative to parent schema",
+                      "$ref": "#/$defs/string"
+                    },
+                    "schema_name": {
+                      "description": "The name of the schema containing the model version, relative to parent catalog",
+                      "$ref": "#/$defs/string"
+                    },
+                    "version_num": {
+                      "description": "Integer version number of the model version to which this alias points.",
+                      "$ref": "#/$defs/int"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "catalog.VolumeType": {
               "oneOf": [
                 {
                   "type": "string",
-                  "description": "The type of the volume. An external volume is located in the specified external location. A managed volume is located in the default location which is specified by the parent schema, or the parent catalog, or the Metastore. [Learn more](https://docs.databricks.com/aws/en/volumes/managed-vs-external)",
                   "enum": [
-                    "EXTERNAL",
-                    "MANAGED"
+                    "MANAGED",
+                    "EXTERNAL"
                   ]
                 },
                 {
@@ -4015,16 +4171,8 @@
                       "description": "Required. Environment version used by the environment.\nEach version comes with a specific Python version and a set of Python packages.\nThe version is a string, consisting of an integer.",
                       "$ref": "#/$defs/string"
                     },
-                    "jar_dependencies": {
-                      "description": "Use `java_dependencies` instead.",
-                      "$ref": "#/$defs/slice/string",
-                      "x-databricks-preview": "PRIVATE",
-                      "deprecationMessage": "This field is deprecated",
-                      "doNotSuggest": true,
-                      "deprecated": true
-                    },
                     "java_dependencies": {
-                      "description": "List of jar dependencies, should be string representing volume paths. For example: `/Volumes/path/to/test.jar`.",
+                      "description": "List of java dependencies. Each dependency is a string representing a java library path. For example: `/Volumes/path/to/test.jar`.",
                       "$ref": "#/$defs/slice/string",
                       "x-databricks-preview": "PRIVATE",
                       "doNotSuggest": true
@@ -4482,6 +4630,28 @@
                     "ACTIVE",
                     "TRASHED"
                   ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "database.CustomTag": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "key": {
+                      "description": "The key of the custom tag.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "value": {
+                      "description": "The value of the custom tag.",
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false
                 },
                 {
                   "type": "string",
@@ -6546,7 +6716,7 @@
                       "$ref": "#/$defs/int"
                     },
                     "table_names": {
-                      "description": "A list of Delta tables to monitor for changes. The table name must be in the format `catalog_name.schema_name.table_name`.",
+                      "description": "A list of tables to monitor for changes. The table name must be in the format `catalog_name.schema_name.table_name`.",
                       "$ref": "#/$defs/slice/string"
                     },
                     "wait_after_last_change_seconds": {
@@ -6865,9 +7035,7 @@
                       "deprecated": true
                     },
                     "table_update": {
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.TableUpdateTriggerConfiguration",
-                      "x-databricks-preview": "PRIVATE",
-                      "doNotSuggest": true
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.TableUpdateTriggerConfiguration"
                     }
                   },
                   "additionalProperties": false
@@ -9127,7 +9295,6 @@
               "oneOf": [
                 {
                   "type": "string",
-                  "description": "Warehouse type: `PRO` or `CLASSIC`. If you want to use serverless compute, you must set to `PRO` and also set the field `enable_serverless_compute` to `true`.",
                   "enum": [
                     "TYPE_UNSPECIFIED",
                     "CLASSIC",
@@ -9181,7 +9348,7 @@
               "oneOf": [
                 {
                   "type": "string",
-                  "description": "Configurations whether the warehouse should use spot instances.",
+                  "description": "EndpointSpotInstancePolicy configures whether the endpoint should use spot\ninstances.\n\nThe breakdown of how the EndpointSpotInstancePolicy converts to per cloud\nconfigurations is:\n\n+-------+--------------------------------------+--------------------------------+\n| Cloud |            COST_OPTIMIZED            |     RELIABILITY_OPTIMIZED |\n+-------+--------------------------------------+--------------------------------+\n| AWS   | On Demand Driver with Spot Executors | On Demand Driver and\nExecutors | | AZURE | On Demand Driver and Executors       | On Demand Driver\nand Executors |\n+-------+--------------------------------------+--------------------------------+\n\nWhile including \"spot\" in the enum name may limit the the future\nextensibility of this field because it limits this enum to denoting \"spot or\nnot\", this is the field that PM recommends after discussion with customers\nper SC-48783.",
                   "enum": [
                     "POLICY_UNSPECIFIED",
                     "COST_OPTIMIZED",
@@ -9935,6 +10102,20 @@
                   }
                 ]
               },
+              "catalog.RegisteredModelAlias": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.RegisteredModelAlias"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "compute.InitScriptInfo": {
                 "oneOf": [
                   {
@@ -9955,6 +10136,20 @@
                     "type": "array",
                     "items": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.Library"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "database.CustomTag": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.CustomTag"
                     }
                   },
                   {
@@ -10399,6 +10594,9 @@
       "description": "Defines bundle deployment presets.",
       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Presets",
       "markdownDescription": "Defines bundle deployment presets. See [presets](https://docs.databricks.com/dev-tools/bundles/deployment-modes.html#presets)."
+    },
+    "python": {
+      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Python"
     },
     "resources": {
       "description": "A Map that defines the resources for the bundle, where each key is the name of the resource, and the value is a Map that defines the resource.",

@@ -3,8 +3,6 @@
 Error: resource not found or not yet deployed. Did you forget to run 'databricks bundle deploy'?
 
 
-Exit code (musterr): 1
-
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/caterpillar/default/files...
 Deploying resources...

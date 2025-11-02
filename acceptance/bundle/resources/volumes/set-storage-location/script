@@ -15,5 +15,5 @@ trace print_requests
 
 trap cleanup EXIT
 
-trace musterr $CLI bundle deploy
+trace musterr $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
 trace print_requests

@@ -1,0 +1,5 @@
+[EnvMatrix]
+INCLUDE_JOB = ["yes", "no"]
+INCLUDE_PIPELINE = ["yes", "no"]
+INCLUDE_PYTHON = ["yes", "no"]
+SERVERLESS = ["yes", "no"]

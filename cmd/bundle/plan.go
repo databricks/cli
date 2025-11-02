@@ -1,7 +1,6 @@
 package bundle
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -42,25 +41,27 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		ctx := logdiag.InitContext(cmd.Context())
-		cmd.SetContext(ctx)
+		b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
+			InitFunc: func(b *bundle.Bundle) {
+				b.Config.Bundle.Force = force
 
-		b := utils.ConfigureBundleWithVariables(cmd)
-		if b == nil || logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
-		}
+				if cmd.Flag("compute-id").Changed {
+					b.Config.Bundle.ClusterId = clusterId
+				}
 
-		bundle.ApplyFuncContext(ctx, b, func(context.Context, *bundle.Bundle) {
-			b.Config.Bundle.Force = force
-
-			if cmd.Flag("compute-id").Changed {
-				b.Config.Bundle.ClusterId = clusterId
-			}
-
-			if cmd.Flag("cluster-id").Changed {
-				b.Config.Bundle.ClusterId = clusterId
-			}
+				if cmd.Flag("cluster-id").Changed {
+					b.Config.Bundle.ClusterId = clusterId
+				}
+			},
+			// Verbose:      verbose,
+			AlwaysPull:   true,
+			FastValidate: true,
+			Build:        true,
 		})
+		if err != nil {
+			return err
+		}
+		ctx := cmd.Context()
 
 		plan, err := utils.GetPlan(ctx, b)
 		if err != nil {

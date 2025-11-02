@@ -40,6 +40,10 @@ func (s *FakeWorkspace) GetPermissions(req Request) any {
 
 	objectId := req.Vars["object_id"]
 	requestObjectType := req.Vars["object_type"]
+	prefix := req.Vars["prefix"]
+	if prefix != "" {
+		requestObjectType = prefix + "/" + requestObjectType
+	}
 
 	if requestObjectType == "" {
 		return Response{
@@ -63,16 +67,30 @@ func (s *FakeWorkspace) GetPermissions(req Request) any {
 		}
 	}
 
-	permissionKey := fmt.Sprintf("%s:%s", requestObjectType, objectId)
-	permissions, exists := s.Permissions[permissionKey]
+	responseObjectID := fmt.Sprintf("/%s/%s", requestObjectType, objectId)
+	permissions, exists := s.Permissions[responseObjectID]
 
 	if !exists {
 		// Return empty permissions structure if not found
 		permissions = iam.ObjectPermissions{
-			ObjectId:          objectId,
+			ObjectId:          responseObjectID,
 			ObjectType:        objectType,
 			AccessControlList: []iam.AccessControlResponse{},
 		}
+	}
+
+	if requestObjectType == "jobs" {
+		// Better match cloud env:
+		permissions.AccessControlList = append(permissions.AccessControlList, iam.AccessControlResponse{
+			AllPermissions: []iam.Permission{
+				{
+					Inherited:           true,
+					InheritedFromObject: []string{"/jobs/"},
+					PermissionLevel:     "CAN_MANAGE",
+				},
+			},
+			GroupName: "admins",
+		})
 	}
 
 	return Response{
@@ -83,8 +101,12 @@ func (s *FakeWorkspace) GetPermissions(req Request) any {
 func (s *FakeWorkspace) SetPermissions(req Request) any {
 	defer s.LockUnlock()()
 
-	requestObjectType := req.Vars["object_type"]
 	objectId := req.Vars["object_id"]
+	requestObjectType := req.Vars["object_type"]
+	prefix := req.Vars["prefix"]
+	if prefix != "" {
+		requestObjectType = prefix + "/" + requestObjectType
+	}
 
 	if requestObjectType == "" {
 		return Response{
@@ -116,13 +138,13 @@ func (s *FakeWorkspace) SetPermissions(req Request) any {
 		}
 	}
 
-	permissionKey := fmt.Sprintf("%s:%s", requestObjectType, objectId)
+	responseObjectID := fmt.Sprintf("/%s/%s", requestObjectType, objectId)
 
 	// Get existing permissions or create new ones
-	existingPermissions, exists := s.Permissions[permissionKey]
+	existingPermissions, exists := s.Permissions[responseObjectID]
 	if !exists {
 		existingPermissions = iam.ObjectPermissions{
-			ObjectId:          objectId,
+			ObjectId:          responseObjectID,
 			ObjectType:        objectType,
 			AccessControlList: []iam.AccessControlResponse{},
 		}
@@ -131,10 +153,15 @@ func (s *FakeWorkspace) SetPermissions(req Request) any {
 	// Convert AccessControlRequest to AccessControlResponse
 	var newAccessControlList []iam.AccessControlResponse
 	for _, acl := range updateRequest.AccessControlList {
+		display := acl.UserName
+		if display == "" {
+			display = acl.ServicePrincipalName
+		}
 		response := iam.AccessControlResponse{
 			UserName:             acl.UserName,
 			GroupName:            acl.GroupName,
 			ServicePrincipalName: acl.ServicePrincipalName,
+			DisplayName:          display,
 			AllPermissions:       []iam.Permission{},
 		}
 
@@ -152,7 +179,7 @@ func (s *FakeWorkspace) SetPermissions(req Request) any {
 
 	// Update the permissions
 	existingPermissions.AccessControlList = newAccessControlList
-	s.Permissions[permissionKey] = existingPermissions
+	s.Permissions[responseObjectID] = existingPermissions
 
 	return Response{
 		Body: existingPermissions,

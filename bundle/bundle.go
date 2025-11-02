@@ -143,7 +143,7 @@ type Bundle struct {
 	Metrics Metrics
 
 	// If true, don't use terraform. Set by DATABRICKS_BUNDLE_ENGINE=direct
-	DirectDeployment bool
+	DirectDeployment *bool
 }
 
 func Load(ctx context.Context, path string) (*Bundle, error) {
@@ -231,9 +231,9 @@ func (b *Bundle) SetWorkpaceClient(w *databricks.WorkspaceClient) {
 	b.client = w
 }
 
-// LocalStateDir returns directory to use for temporary files for this bundle.
+// LocalStateDir returns directory to use for temporary files for this bundle without creating
 // Scoped to the bundle's target.
-func (b *Bundle) LocalStateDir(ctx context.Context, paths ...string) (string, error) {
+func (b *Bundle) GetLocalStateDir(ctx context.Context, paths ...string) string {
 	if b.Config.Bundle.Target == "" {
 		panic("target not set")
 	}
@@ -261,6 +261,14 @@ func (b *Bundle) LocalStateDir(ctx context.Context, paths ...string) (string, er
 
 	// Make directory if it doesn't exist yet.
 	dir := filepath.Join(parts...)
+	return dir
+}
+
+// LocalStateDir returns directory to use for temporary files for this bundle.
+// Directory is created and initialized with .gitignore
+// Scoped to the bundle's target.
+func (b *Bundle) LocalStateDir(ctx context.Context, paths ...string) (string, error) {
+	dir := b.GetLocalStateDir(ctx, paths...)
 	err := os.MkdirAll(dir, 0o700)
 	if err != nil {
 		return "", err
@@ -317,44 +325,11 @@ func (b *Bundle) AuthEnv() (map[string]string, error) {
 	return auth.Env(cfg), nil
 }
 
-func (b *Bundle) StateFilename() string {
-	if b.DirectDeployment {
-		return resourcesFilename
-	} else {
-		return terraformStateFilename
-	}
+// StateFilenameDirect returns (relative remote path, relative local path) for direct engine resource state
+func (b *Bundle) StateFilenameDirect(ctx context.Context) (string, string) {
+	return resourcesFilename, filepath.Join(b.GetLocalStateDir(ctx), resourcesFilename)
 }
 
-func (b *Bundle) StateLocalPath(ctx context.Context) (string, error) {
-	if b.DirectDeployment {
-		cacheDir, err := b.LocalStateDir(ctx)
-		if err != nil {
-			return "", err
-		}
-		return filepath.Join(cacheDir, resourcesFilename), nil
-	} else {
-		cacheDir, err := b.LocalStateDir(ctx, "terraform")
-		if err != nil {
-			return "", err
-		}
-		return filepath.Join(cacheDir, terraformStateFilename), nil
-	}
-}
-
-func (b *Bundle) OpenStateFile(ctx context.Context) error {
-	if !b.DirectDeployment {
-		panic("internal error: OpenResourceDatabase must be called with DirectDeployment")
-	}
-
-	statePath, err := b.StateLocalPath(ctx)
-	if err != nil {
-		return err
-	}
-
-	err = b.DeploymentBundle.OpenStateFile(statePath)
-	if err != nil {
-		return fmt.Errorf("failed to open/create state file at %s: %s", statePath, err)
-	}
-
-	return nil
+func (b *Bundle) StateFilenameTerraform(ctx context.Context) (string, string) {
+	return terraformStateFilename, filepath.Join(b.GetLocalStateDir(ctx), "terraform", terraformStateFilename)
 }

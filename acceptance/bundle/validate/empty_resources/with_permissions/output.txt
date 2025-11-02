@@ -57,18 +57,6 @@ Warning: unknown field: permissions
   at resources.registered_models.rname
   in databricks.yml:7:7
 
-Warning: required field "catalog_name" is not set
-  at resources.registered_models.rname
-  in databricks.yml:7:7
-
-Warning: required field "name" is not set
-  at resources.registered_models.rname
-  in databricks.yml:7:7
-
-Warning: required field "schema_name" is not set
-  at resources.registered_models.rname
-  in databricks.yml:7:7
-
 {
   "registered_models": {
     "rname": {}
@@ -147,12 +135,25 @@ Warning: required field "schema_name" is not set
   "clusters": {
     "rname": {
       "autotermination_minutes": 60,
-      "permissions": []
+      "permissions": [
+        {
+          "level": "CAN_MANAGE",
+          "user_name": "[USERNAME]"
+        }
+      ]
     }
   }
 }
 
 === resources.dashboards.rname ===
+Error: dashboard display_name is required
+  at resources.dashboards.rname
+  in databricks.yml:7:7
+
+Error: dashboard warehouse_id is required
+  at resources.dashboards.rname
+  in databricks.yml:7:7
+
 {
   "dashboards": {
     "rname": {

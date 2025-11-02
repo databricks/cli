@@ -34,8 +34,12 @@ test-output.json
 tools/yamlfmt
 tools/yamlfmt.exe
 
+# Built by make for 'make lint'
+tools/golangci-lint
+
 # Cache for tools/gh_report.py
 .gh-logs
 
 # Release artifacts
 dist/
+pr-*

@@ -127,6 +127,12 @@ func diffStruct(path *structpath.PathNode, s1, s2 reflect.Value, changes *[]Chan
 			continue
 		}
 
+		// Continue traversing embedded structs. Do not add the key to the path though.
+		if sf.Anonymous {
+			diffValues(path, s1.Field(i), s2.Field(i), changes)
+			continue
+		}
+
 		jsonTag := structtag.JSONTag(sf.Tag.Get("json"))
 
 		// Resolve field name from JSON tag or fall back to Go field name

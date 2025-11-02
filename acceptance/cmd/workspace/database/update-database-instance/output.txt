@@ -14,6 +14,7 @@ Flags:
       --node-count int                 The number of nodes in the instance, composed of 1 primary and 0 or more secondaries.
       --retention-window-in-days int   The retention window for the instance.
       --stopped                        Whether to stop the instance.
+      --usage-policy-id string         The desired usage policy to associate with the instance.
 
 Global Flags:
       --debug            enable debug logging

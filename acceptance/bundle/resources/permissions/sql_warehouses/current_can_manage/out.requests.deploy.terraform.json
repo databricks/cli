@@ -1,0 +1,24 @@
+{
+  "method": "PUT",
+  "path": "/api/2.0/permissions/sql/warehouses/[UUID]",
+  "body": {
+    "access_control_list": [
+      {
+        "permission_level": "CAN_VIEW",
+        "user_name": "viewer@example.com"
+      },
+      {
+        "permission_level": "CAN_MANAGE",
+        "service_principal_name": "[UUID]"
+      },
+      {
+        "group_name": "data-team",
+        "permission_level": "CAN_MANAGE"
+      },
+      {
+        "permission_level": "IS_OWNER",
+        "user_name": "[USERNAME]"
+      }
+    ]
+  }
+}

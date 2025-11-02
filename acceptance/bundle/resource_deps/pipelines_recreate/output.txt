@@ -11,8 +11,10 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests
+>>> print_requests.py //jobs //pipelines
 {
+  "method": "POST",
+  "path": "/api/2.0/pipelines",
   "body": {
     "catalog": "mycatalog",
     "channel": "CURRENT",
@@ -22,11 +24,11 @@ Deployment complete!
     },
     "edition": "ADVANCED",
     "name": "pipeline foo"
-  },
-  "method": "POST",
-  "path": "/api/2.0/pipelines"
+  }
 }
 {
+  "method": "POST",
+  "path": "/api/2.2/jobs/create",
   "body": {
     "deployment": {
       "kind": "BUNDLE",
@@ -40,9 +42,7 @@ Deployment complete!
     "queue": {
       "enabled": true
     }
-  },
-  "method": "POST",
-  "path": "/api/2.2/jobs/create"
+  }
 }
 
 >>> [CLI] bundle plan
@@ -69,12 +69,14 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests
+>>> print_requests.py //jobs //pipelines
 {
   "method": "DELETE",
   "path": "/api/2.0/pipelines/[FOO_ID]"
 }
 {
+  "method": "POST",
+  "path": "/api/2.0/pipelines",
   "body": {
     "catalog": "mynewcatalog",
     "channel": "CURRENT",
@@ -84,11 +86,11 @@ Deployment complete!
     },
     "edition": "ADVANCED",
     "name": "pipeline foo"
-  },
-  "method": "POST",
-  "path": "/api/2.0/pipelines"
+  }
 }
 {
+  "method": "POST",
+  "path": "/api/2.2/jobs/reset",
   "body": {
     "job_id": [BAR_ID],
     "new_settings": {
@@ -105,16 +107,12 @@ Deployment complete!
         "enabled": true
       }
     }
-  },
-  "method": "POST",
-  "path": "/api/2.2/jobs/reset"
+  }
 }
 
 === Fetch resource IDs and verify remote state
 >>> musterr [CLI] pipelines get [FOO_ID]
 Error: The specified pipeline [FOO_ID] was not found.
-
-Exit code (musterr): 1
 
 >>> [CLI] pipelines get [UUID]
 {
@@ -166,7 +164,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests
+>>> print_requests.py //jobs //pipelines
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -182,30 +180,24 @@ All files and directories at the following location will be deleted: /Workspace/
 Deleting files...
 Destroy complete!
 
->>> print_sorted_requests
+>>> print_requests.py --sort //jobs //pipelines
 {
   "method": "DELETE",
   "path": "/api/2.0/pipelines/[UUID]"
 }
 {
+  "method": "POST",
+  "path": "/api/2.2/jobs/delete",
   "body": {
     "job_id": [BAR_ID]
-  },
-  "method": "POST",
-  "path": "/api/2.2/jobs/delete"
+  }
 }
 
 >>> musterr [CLI] pipelines get [FOO_ID]
 Error: The specified pipeline [FOO_ID] was not found.
 
-Exit code (musterr): 1
-
 >>> musterr [CLI] pipelines get [UUID]
 Error: The specified pipeline [UUID] was not found.
 
-Exit code (musterr): 1
-
 >>> musterr [CLI] jobs get [BAR_ID]
 Error: Not Found
-
-Exit code (musterr): 1

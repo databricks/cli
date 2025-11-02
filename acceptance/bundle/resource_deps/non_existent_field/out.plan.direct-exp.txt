@@ -1,6 +1,0 @@
-Error: cannot plan resources.volumes.foo: cannot resolve "${resources.volumes.bar.non_existent}": schema mismatch: non_existent: field "non_existent" not found in catalog.CreateVolumeRequestContent; non_existent: field "non_existent" not found in catalog.VolumeInfo
-
-Error: planning failed
-
-
-Exit code (musterr): 1

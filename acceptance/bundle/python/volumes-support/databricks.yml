@@ -3,12 +3,11 @@ bundle:
 
 sync: {paths: []} # don't need to copy files
 
-experimental:
-  python:
-    resources:
-      - "resources:load_resources"
-    mutators:
-      - "mutators:update_volume"
+python:
+  resources:
+    - "resources:load_resources"
+  mutators:
+    - "mutators:update_volume"
 
 resources:
   volumes:

@@ -1,0 +1,5 @@
+Local = true
+Cloud = false
+RecordRequests = true
+IsServicePrincipal = true
+Ignore = ['.databricks']
