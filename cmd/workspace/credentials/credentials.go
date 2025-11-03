@@ -378,7 +378,12 @@ func newListCredentials() *cobra.Command {
   The array is limited to only the credentials that the caller has permission to
   access. If the caller is a metastore admin, retrieval of credentials is
   unrestricted. There is no guarantee of a specific ordering of the elements in
-  the array.`
+  the array.
+  
+  PAGINATION BEHAVIOR: The API is by default paginated, a page may contain zero
+  results while still providing a next_page_token. Clients must continue reading
+  pages until next_page_token is absent, which is the only indication that the
+  end of results has been reached.`
 
 	cmd.Annotations = make(map[string]string)
 

@@ -39,6 +39,10 @@ import (
 	workspace_assignment "github.com/databricks/cli/cmd/account/workspace-assignment"
 	workspace_network_configuration "github.com/databricks/cli/cmd/account/workspace-network-configuration"
 	workspaces "github.com/databricks/cli/cmd/account/workspaces"
+
+	account_groups "github.com/databricks/cli/cmd/account/groups"
+	account_service_principals "github.com/databricks/cli/cmd/account/service-principals"
+	account_users "github.com/databricks/cli/cmd/account/users"
 )
 
 func New() *cobra.Command {
@@ -50,11 +54,13 @@ func New() *cobra.Command {
 	cmd.AddCommand(account_access_control.New())
 	cmd.AddCommand(billable_usage.New())
 	cmd.AddCommand(budget_policy.New())
+	cmd.AddCommand(budgets.New())
 	cmd.AddCommand(credentials.New())
 	cmd.AddCommand(custom_app_integration.New())
 	cmd.AddCommand(encryption_keys.New())
 	cmd.AddCommand(account_federation_policy.New())
 	cmd.AddCommand(account_groups_v2.New())
+	cmd.AddCommand(account_iam_v2.New())
 	cmd.AddCommand(account_ip_access_lists.New())
 	cmd.AddCommand(log_delivery.New())
 	cmd.AddCommand(account_metastore_assignments.New())
@@ -78,8 +84,10 @@ func New() *cobra.Command {
 	cmd.AddCommand(workspace_assignment.New())
 	cmd.AddCommand(workspace_network_configuration.New())
 	cmd.AddCommand(workspaces.New())
-	cmd.AddCommand(account_iam_v2.New())
-	cmd.AddCommand(budgets.New())
+
+	cmd.AddCommand(account_groups.New())
+	cmd.AddCommand(account_service_principals.New())
+	cmd.AddCommand(account_users.New())
 
 	// Register command groups, filtering out empty groups or groups with only hidden commands.
 	allGroups := Groups()

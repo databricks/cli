@@ -15,7 +15,10 @@ if TYPE_CHECKING:
 
 @dataclass(kw_only=True)
 class CleanRoomsNotebookTask:
-    """"""
+    """
+    Clean Rooms notebook task for V1 Clean Room service (GA).
+    Replaces the deprecated CleanRoomNotebookTask (defined above) which was for V0 service.
+    """
 
     clean_room_name: VariableOr[str]
     """
