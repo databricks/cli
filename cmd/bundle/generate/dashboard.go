@@ -377,13 +377,13 @@ func (d *dashboard) runForResource(ctx context.Context, b *bundle.Bundle) {
 		return
 	}
 
-	ctx = statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(true))
+	ctx, directDeployment := statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(true))
 	if logdiag.HasError(ctx) {
 		return
 	}
 
 	bundle.ApplySeqContext(ctx, b,
-		statemgmt.Load(),
+		statemgmt.Load(directDeployment),
 	)
 	if logdiag.HasError(ctx) {
 		return
