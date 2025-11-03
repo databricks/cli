@@ -7,6 +7,7 @@ RESOURCE_NAMESPACE = {
     "resources.Pipeline": "pipelines",
     "resources.Schema": "schemas",
     "resources.Volume": "volumes",
+    "resources.DatabaseInstance": "databaseinstances",
 }
 
 RESOURCE_TYPES = list(RESOURCE_NAMESPACE.keys())
@@ -15,11 +16,12 @@ RESOURCE_TYPES = list(RESOURCE_NAMESPACE.keys())
 #
 # We can't load all types because of errors while loading some of them.
 LOADED_NAMESPACES = [
+    "catalog",
     "compute",
+    "database",
     "jobs",
     "pipelines",
     "resources",
-    "catalog",
 ]
 
 RENAMES = {

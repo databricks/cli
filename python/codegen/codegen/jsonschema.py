@@ -124,10 +124,9 @@ def _parse_schema(schema: dict) -> Schema:
 
 def _load_spec() -> dict:
     path = (
-        Path(__file__).parent  # ./experimental/python/codegen/codegen
-        / ".."  # ./experimental/python/codegen
-        / ".."  # ./experimental/python/
-        / ".."  # ./experimental
+        Path(__file__).parent  # ./python/codegen/codegen
+        / ".."  # ./python/codegen
+        / ".."  # ./python/
         / ".."  # ./
         / "./bundle/schema/jsonschema.json"
     )

@@ -214,12 +214,12 @@ jobs:
           version: "0.6.5"
 
       - name: Verify that python/codegen is up to date
-        working-directory: experimental/python
+        working-directory: python
         run: |-
           make codegen
 
           if ! ( git diff --exit-code ); then
-            echo "Generated Python code is not up-to-date. Please run 'pushd experimental/python && make codegen' and commit the changes."
+            echo "Generated Python code is not up-to-date. Please run 'pushd python && make codegen' and commit the changes."
 
             exit 1
           fi
