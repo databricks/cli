@@ -4,5 +4,8 @@ trace $CLI bundle validate -t green -o json | jq .resources
 trace errcode $CLI bundle deploy -t green &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
 print_requests.py //jobs &> out.deploy.requests.$DATABRICKS_BUNDLE_ENGINE.json
 
+# check plan to ensure there is not drift
+trace $CLI bundle debug plan -t green > out.plan.$DATABRICKS_BUNDLE_ENGINE.txt
+
 trace errcode $CLI bundle destroy -t green --auto-approve &> out.destroy.$DATABRICKS_BUNDLE_ENGINE.txt
 print_requests.py //jobs &> out.destroy.requests.$DATABRICKS_BUNDLE_ENGINE.json

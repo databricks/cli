@@ -27,3 +27,5 @@
     }
   }
 }
+
+>>> [CLI] bundle debug plan -t green
