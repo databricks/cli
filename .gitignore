@@ -43,3 +43,7 @@ tools/golangci-lint
 # Release artifacts
 dist/
 pr-*
+
+# Terraform state files
+bundle/deploy/terraform/terraform.tfstate
+bundle/deploy/terraform/terraform.tfstate.backup
