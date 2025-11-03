@@ -58,7 +58,7 @@ func promptForAccountID(ctx context.Context) (string, error) {
 }
 
 func promptForWorkspaceId(ctx context.Context) (string, error) {
-	if !cmdio.IsInTTY(ctx) {
+	if !cmdio.IsPromptSupported(ctx) {
 		return "", nil
 	}
 

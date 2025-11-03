@@ -102,7 +102,12 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 		return nil, err
 	}
 
-	err = setHostAndAccountId(ctx, args.cmd, existingProfile, args.authArguments, args.args)
+	// Set IsUnifiedHost from the profile if the flag wasn't explicitly set.
+	if !args.cmd.Flag("experimental-is-unified-host").Changed && existingProfile != nil {
+		args.authArguments.IsUnifiedHost = existingProfile.Experimental_IsUnifiedHost
+	}
+
+	err = setHostAndAccountId(ctx, existingProfile, args.authArguments, args.args)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +138,7 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 			// This is captured in an acceptance test under "cmd/auth/token".
 			err = errors.New("cache: databricks OAuth is not configured for this host")
 		}
-		if rewritten, rewrittenErr := auth.RewriteAuthError(ctx, args.authArguments.Host, args.authArguments.AccountID, args.profileName, err); rewritten {
+		if rewritten, rewrittenErr := auth.RewriteAuthError(ctx, args.authArguments.Host, args.authArguments.AccountID, args.profileName, args.authArguments.IsUnifiedHost, err); rewritten {
 			return nil, rewrittenErr
 		}
 		helpMsg := helpfulError(ctx, args.profileName, oauthArgument)

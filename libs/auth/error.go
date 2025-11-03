@@ -10,10 +10,10 @@ import (
 
 // RewriteAuthError rewrites the error message for invalid refresh token error.
 // It returns whether the error was rewritten and the rewritten error.
-func RewriteAuthError(ctx context.Context, host, accountId, profile string, err error) (bool, error) {
+func RewriteAuthError(ctx context.Context, host, accountId, profile string, isUnifiedHost bool, err error) (bool, error) {
 	target := &u2m.InvalidRefreshTokenError{}
 	if errors.As(err, &target) {
-		oauthArgument, err := AuthArguments{host, accountId, false}.ToOAuthArgument() // TODO: pass the IsUnifiedHost flag
+		oauthArgument, err := AuthArguments{Host: host, AccountID: accountId, IsUnifiedHost: isUnifiedHost}.ToOAuthArgument()
 		if err != nil {
 			return false, err
 		}

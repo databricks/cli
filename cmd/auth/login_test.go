@@ -26,8 +26,7 @@ func TestSetHostDoesNotFailWithNoDatabrickscfg(t *testing.T) {
 	existingProfile, err := loadProfileByName(ctx, "foo", profile.DefaultProfiler)
 	assert.NoError(t, err)
 
-	cmd := newLoginCommand(&auth.AuthArguments{})
-	err = setHostAndAccountId(ctx, cmd, existingProfile, &auth.AuthArguments{Host: "test"}, []string{})
+	err = setHostAndAccountId(ctx, existingProfile, &auth.AuthArguments{Host: "test"}, []string{})
 	assert.NoError(t, err)
 }
 
@@ -39,34 +38,32 @@ func TestSetHost(t *testing.T) {
 	profile1 := loadTestProfile(t, ctx, "profile-1")
 	profile2 := loadTestProfile(t, ctx, "profile-2")
 
-	cmd := newLoginCommand(&auth.AuthArguments{})
-
 	// Test error when both flag and argument are provided
 	authArguments.Host = "val from --host"
-	err := setHostAndAccountId(ctx, cmd, profile1, &authArguments, []string{"val from [HOST]"})
+	err := setHostAndAccountId(ctx, profile1, &authArguments, []string{"val from [HOST]"})
 	assert.EqualError(t, err, "please only provide a host as an argument or a flag, not both")
 
 	// Test setting host from flag
 	authArguments.Host = "val from --host"
-	err = setHostAndAccountId(ctx, cmd, profile1, &authArguments, []string{})
+	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{})
 	assert.NoError(t, err)
 	assert.Equal(t, "val from --host", authArguments.Host)
 
 	// Test setting host from argument
 	authArguments.Host = ""
-	err = setHostAndAccountId(ctx, cmd, profile1, &authArguments, []string{"val from [HOST]"})
+	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{"val from [HOST]"})
 	assert.NoError(t, err)
 	assert.Equal(t, "val from [HOST]", authArguments.Host)
 
 	// Test setting host from profile
 	authArguments.Host = ""
-	err = setHostAndAccountId(ctx, cmd, profile1, &authArguments, []string{})
+	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{})
 	assert.NoError(t, err)
 	assert.Equal(t, "https://www.host1.com", authArguments.Host)
 
 	// Test setting host from profile
 	authArguments.Host = ""
-	err = setHostAndAccountId(ctx, cmd, profile2, &authArguments, []string{})
+	err = setHostAndAccountId(ctx, profile2, &authArguments, []string{})
 	assert.NoError(t, err)
 	assert.Equal(t, "https://www.host2.com", authArguments.Host)
 
@@ -83,18 +80,16 @@ func TestSetAccountId(t *testing.T) {
 
 	accountProfile := loadTestProfile(t, ctx, "account-profile")
 
-	cmd := newLoginCommand(&auth.AuthArguments{})
-
 	// Test setting account-id from flag
 	authArguments.AccountID = "val from --account-id"
-	err := setHostAndAccountId(ctx, cmd, accountProfile, &authArguments, []string{})
+	err := setHostAndAccountId(ctx, accountProfile, &authArguments, []string{})
 	assert.NoError(t, err)
 	assert.Equal(t, "https://accounts.cloud.databricks.com", authArguments.Host)
 	assert.Equal(t, "val from --account-id", authArguments.AccountID)
 
 	// Test setting account_id from profile
 	authArguments.AccountID = ""
-	err = setHostAndAccountId(ctx, cmd, accountProfile, &authArguments, []string{})
+	err = setHostAndAccountId(ctx, accountProfile, &authArguments, []string{})
 	require.NoError(t, err)
 	assert.Equal(t, "https://accounts.cloud.databricks.com", authArguments.Host)
 	assert.Equal(t, "id-from-profile", authArguments.AccountID)

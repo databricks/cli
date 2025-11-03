@@ -132,7 +132,11 @@ depends on the existing profiles you have set in your configuration file
 		if err != nil {
 			return err
 		}
-		err = setHostAndAccountId(ctx, cmd, existingProfile, authArguments, args)
+		// Set IsUnifiedHost from the profile if the flag wasn't explicitly set.
+		if !cmd.Flag("experimental-is-unified-host").Changed && existingProfile != nil {
+			authArguments.IsUnifiedHost = existingProfile.Experimental_IsUnifiedHost
+		}
+		err = setHostAndAccountId(ctx, existingProfile, authArguments, args)
 		if err != nil {
 			return err
 		}
@@ -241,7 +245,7 @@ depends on the existing profiles you have set in your configuration file
 // 1. --account-id flag.
 // 2. account-id from the specified profile, if available.
 // 3. Prompt the user for the account-id.
-func setHostAndAccountId(ctx context.Context, cmd *cobra.Command, existingProfile *profile.Profile, authArguments *auth.AuthArguments, args []string) error {
+func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, authArguments *auth.AuthArguments, args []string) error {
 	// If both [HOST] and --host are provided, return an error.
 	host := authArguments.Host
 	if len(args) > 0 && host != "" {
@@ -264,16 +268,6 @@ func setHostAndAccountId(ctx context.Context, cmd *cobra.Command, existingProfil
 				return err
 			}
 			authArguments.Host = hostName
-		}
-	}
-
-	// Determine if the host is a unified host in the following order of precedence:
-	// 1. --experimental-is-unified-host flag (if explicitly set)
-	// 2. experimental_is_unified_host from the specified profile, if available
-	// 3. default to false if neither is provided.
-	if !cmd.Flag("experimental-is-unified-host").Changed {
-		if existingProfile != nil {
-			authArguments.IsUnifiedHost = existingProfile.Experimental_IsUnifiedHost
 		}
 	}
 
