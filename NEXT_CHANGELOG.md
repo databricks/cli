@@ -12,3 +12,5 @@
 * Fix a permissions bug adding second IS\_OWNER and causing "The job must have exactly one owner." error. Introduced in 0.274.0. ([#3850](https://github.com/databricks/cli/pull/3850))
 
 ### API Changes
+* Add `databricks feature-engineering create-materialized-feature` command.
+* Remove `databricks recipient-federation-policies update` command.

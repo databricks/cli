@@ -118,7 +118,7 @@ func newEnable() *cobra.Command {
 
 	cmd.Flags().Var(&enableJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&enableReq.CatalogName, "catalog-name", enableReq.CatalogName, `the catalog for which the system schema is to enabled in.`)
+	cmd.Flags().StringVar(&enableReq.CatalogName, "catalog-name", enableReq.CatalogName, `the catalog for which the system schema is to enabled in. Wire name: 'catalog_name'.`)
 
 	cmd.Use = "enable METASTORE_ID SCHEMA_NAME"
 	cmd.Short = `Enable a system schema.`
@@ -191,8 +191,8 @@ func newList() *cobra.Command {
 
 	var listReq catalog.ListSystemSchemasRequest
 
-	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of schemas to return.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
+	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of schemas to return. Wire name: 'max_results'.`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query. Wire name: 'page_token'.`)
 
 	cmd.Use = "list METASTORE_ID"
 	cmd.Short = `List system schemas.`
@@ -207,8 +207,7 @@ func newList() *cobra.Command {
   PAGINATION BEHAVIOR: When using pagination (max_results >= 0), a page may
   contain zero results while still providing a next_page_token. Clients must
   continue reading pages until next_page_token is absent, which is the only
-  indication that the end of results has been reached. This behavior follows
-  Google AIP-158 guidelines.
+  indication that the end of results has been reached.
 
   Arguments:
     METASTORE_ID: The ID for the metastore in which the system schema resides.`

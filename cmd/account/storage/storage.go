@@ -65,7 +65,7 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.RoleArn, "role-arn", createReq.RoleArn, `Optional IAM role that is used to access the workspace catalog which is created during workspace creation for UC by Default.`)
+	cmd.Flags().StringVar(&createReq.RoleArn, "role-arn", createReq.RoleArn, `Optional IAM role that is used to access the workspace catalog which is created during workspace creation for UC by Default. Wire name: 'role_arn'.`)
 
 	cmd.Use = "create"
 	cmd.Short = `Create a storage configuration.`

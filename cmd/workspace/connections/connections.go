@@ -71,9 +71,9 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided free-form text description.`)
+	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided free-form text description. Wire name: 'comment'.`)
 	// TODO: map via StringToStringVar: properties
-	cmd.Flags().BoolVar(&createReq.ReadOnly, "read-only", createReq.ReadOnly, `If the connection is read only.`)
+	cmd.Flags().BoolVar(&createReq.ReadOnly, "read-only", createReq.ReadOnly, `If the connection is read only. Wire name: 'read_only'.`)
 
 	cmd.Use = "create"
 	cmd.Short = `Create a connection.`
@@ -276,8 +276,8 @@ func newList() *cobra.Command {
 
 	var listReq catalog.ListConnectionsRequest
 
-	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of connections to return.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
+	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of connections to return. Wire name: 'max_results'.`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query. Wire name: 'page_token'.`)
 
 	cmd.Use = "list"
 	cmd.Short = `List connections.`
@@ -291,8 +291,7 @@ func newList() *cobra.Command {
   PAGINATION BEHAVIOR: When using pagination (max_results >= 0), a page may
   contain zero results while still providing a next_page_token. Clients must
   continue reading pages until next_page_token is absent, which is the only
-  indication that the end of results has been reached. This behavior follows
-  Google AIP-158 guidelines.`
+  indication that the end of results has been reached.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -339,8 +338,8 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the connection.`)
-	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of the connection.`)
+	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the connection. Wire name: 'new_name'.`)
+	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of the connection. Wire name: 'owner'.`)
 
 	cmd.Use = "update NAME"
 	cmd.Short = `Update a connection.`

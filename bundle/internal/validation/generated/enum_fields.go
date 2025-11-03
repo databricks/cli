@@ -94,7 +94,6 @@ var EnumFields = map[string][]string{
 	"resources.jobs.*.tasks[*].sql_task.file.source":                                                  {"GIT", "WORKSPACE"},
 	"resources.jobs.*.trigger.pause_status":                                                           {"PAUSED", "UNPAUSED"},
 	"resources.jobs.*.trigger.periodic.unit":                                                          {"DAYS", "HOURS", "WEEKS"},
-	"resources.jobs.*.trigger.table.condition":                                                        {"ALL_UPDATED", "ANY_UPDATED"},
 	"resources.jobs.*.trigger.table_update.condition":                                                 {"ALL_UPDATED", "ANY_UPDATED"},
 
 	"resources.model_serving_endpoints.*.ai_gateway.guardrails.input.pii.behavior":                                        {"BLOCK", "MASK", "NONE"},
@@ -117,7 +116,7 @@ var EnumFields = map[string][]string{
 	"resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.scd_type": {"APPEND_ONLY", "SCD_TYPE_1", "SCD_TYPE_2"},
 	"resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.scd_type": {"APPEND_ONLY", "SCD_TYPE_1", "SCD_TYPE_2"},
 	"resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.scd_type":  {"APPEND_ONLY", "SCD_TYPE_1", "SCD_TYPE_2"},
-	"resources.pipelines.*.ingestion_definition.source_type":                                    {"BIGQUERY", "CONFLUENCE", "DYNAMICS365", "FOREIGN_CATALOG", "GA4_RAW_DATA", "MANAGED_POSTGRESQL", "META_MARKETING", "MYSQL", "NETSUITE", "ORACLE", "POSTGRESQL", "REDSHIFT", "SALESFORCE", "SERVICENOW", "SHAREPOINT", "SQLDW", "SQLSERVER", "TERADATA", "WORKDAY_RAAS"},
+	"resources.pipelines.*.ingestion_definition.source_type":                                    {"BIGQUERY", "CONFLUENCE", "DYNAMICS365", "FOREIGN_CATALOG", "GA4_RAW_DATA", "GOOGLE_ADS", "GUIDEWIRE", "HUBSPOT", "MANAGED_POSTGRESQL", "META_MARKETING", "MYSQL", "NETSUITE", "ORACLE", "POSTGRESQL", "REDSHIFT", "SALESFORCE", "SALESFORCE_MARKETING_CLOUD", "SERVICENOW", "SHAREPOINT", "SQLDW", "SQLSERVER", "TERADATA", "TIKTOK_ADS", "WORKDAY_HCM", "WORKDAY_RAAS", "ZENDESK"},
 	"resources.pipelines.*.ingestion_definition.table_configuration.scd_type":                   {"APPEND_ONLY", "SCD_TYPE_1", "SCD_TYPE_2"},
 	"resources.pipelines.*.restart_window.days_of_week[*]":                                      {"FRIDAY", "MONDAY", "SATURDAY", "SUNDAY", "THURSDAY", "TUESDAY", "WEDNESDAY"},
 

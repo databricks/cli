@@ -241,8 +241,8 @@ func newList() *cobra.Command {
 
 	var listReq cleanrooms.ListCleanRoomAutoApprovalRulesRequest
 
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Maximum number of auto-approval rules to return.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
+	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Maximum number of auto-approval rules to return. Wire name: 'page_size'.`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query. Wire name: 'page_token'.`)
 
 	cmd.Use = "list CLEAN_ROOM_NAME"
 	cmd.Short = `List auto-approval rules.`
@@ -298,10 +298,10 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.AutoApprovalRule.AuthorCollaboratorAlias, "author-collaborator-alias", updateReq.AutoApprovalRule.AuthorCollaboratorAlias, `Collaborator alias of the author covered by the rule.`)
-	cmd.Flags().Var(&updateReq.AutoApprovalRule.AuthorScope, "author-scope", `Scope of authors covered by the rule. Supported values: [ANY_AUTHOR]`)
-	cmd.Flags().StringVar(&updateReq.AutoApprovalRule.CleanRoomName, "clean-room-name", updateReq.AutoApprovalRule.CleanRoomName, `The name of the clean room this auto-approval rule belongs to.`)
-	cmd.Flags().StringVar(&updateReq.AutoApprovalRule.RunnerCollaboratorAlias, "runner-collaborator-alias", updateReq.AutoApprovalRule.RunnerCollaboratorAlias, `Collaborator alias of the runner covered by the rule.`)
+	cmd.Flags().StringVar(&updateReq.AutoApprovalRule.AuthorCollaboratorAlias, "author-collaborator-alias", updateReq.AutoApprovalRule.AuthorCollaboratorAlias, `Collaborator alias of the author covered by the rule. Wire name: 'author_collaborator_alias'.`)
+	cmd.Flags().Var(&updateReq.AutoApprovalRule.AuthorScope, "author-scope", `Scope of authors covered by the rule. Supported values: [ANY_AUTHOR]. Wire name: 'author_scope'.`)
+	cmd.Flags().StringVar(&updateReq.AutoApprovalRule.CleanRoomName, "clean-room-name", updateReq.AutoApprovalRule.CleanRoomName, `The name of the clean room this auto-approval rule belongs to. Wire name: 'clean_room_name'.`)
+	cmd.Flags().StringVar(&updateReq.AutoApprovalRule.RunnerCollaboratorAlias, "runner-collaborator-alias", updateReq.AutoApprovalRule.RunnerCollaboratorAlias, `Collaborator alias of the runner covered by the rule. Wire name: 'runner_collaborator_alias'.`)
 
 	cmd.Use = "update CLEAN_ROOM_NAME RULE_ID"
 	cmd.Short = `Update an auto-approval rule.`

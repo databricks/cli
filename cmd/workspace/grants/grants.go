@@ -64,15 +64,23 @@ func newGet() *cobra.Command {
 
 	var getReq catalog.GetGrantRequest
 
-	cmd.Flags().IntVar(&getReq.MaxResults, "max-results", getReq.MaxResults, `Specifies the maximum number of privileges to return (page length).`)
-	cmd.Flags().StringVar(&getReq.PageToken, "page-token", getReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
-	cmd.Flags().StringVar(&getReq.Principal, "principal", getReq.Principal, `If provided, only the permissions for the specified principal (user or group) are returned.`)
+	cmd.Flags().IntVar(&getReq.MaxResults, "max-results", getReq.MaxResults, `Specifies the maximum number of privileges to return (page length). Wire name: 'max_results'.`)
+	cmd.Flags().StringVar(&getReq.PageToken, "page-token", getReq.PageToken, `Opaque pagination token to go to next page based on previous query. Wire name: 'page_token'.`)
+	cmd.Flags().StringVar(&getReq.Principal, "principal", getReq.Principal, `If provided, only the permissions for the specified principal (user or group) are returned. Wire name: 'principal'.`)
 
 	cmd.Use = "get SECURABLE_TYPE FULL_NAME"
 	cmd.Short = `Get permissions.`
 	cmd.Long = `Get permissions.
   
   Gets the permissions for a securable. Does not include inherited permissions.
+  
+  NOTE: we recommend using max_results=0 to use the paginated version of this
+  API. Unpaginated calls will be deprecated soon.
+  
+  PAGINATION BEHAVIOR: When using pagination (max_results >= 0), a page may
+  contain zero results while still providing a next_page_token. Clients must
+  continue reading pages until next_page_token is absent, which is the only
+  indication that the end of results has been reached.
 
   Arguments:
     SECURABLE_TYPE: Type of securable.
@@ -126,9 +134,9 @@ func newGetEffective() *cobra.Command {
 
 	var getEffectiveReq catalog.GetEffectiveRequest
 
-	cmd.Flags().IntVar(&getEffectiveReq.MaxResults, "max-results", getEffectiveReq.MaxResults, `Specifies the maximum number of privileges to return (page length).`)
-	cmd.Flags().StringVar(&getEffectiveReq.PageToken, "page-token", getEffectiveReq.PageToken, `Opaque token for the next page of results (pagination).`)
-	cmd.Flags().StringVar(&getEffectiveReq.Principal, "principal", getEffectiveReq.Principal, `If provided, only the effective permissions for the specified principal (user or group) are returned.`)
+	cmd.Flags().IntVar(&getEffectiveReq.MaxResults, "max-results", getEffectiveReq.MaxResults, `Specifies the maximum number of privileges to return (page length). Wire name: 'max_results'.`)
+	cmd.Flags().StringVar(&getEffectiveReq.PageToken, "page-token", getEffectiveReq.PageToken, `Opaque token for the next page of results (pagination). Wire name: 'page_token'.`)
+	cmd.Flags().StringVar(&getEffectiveReq.Principal, "principal", getEffectiveReq.Principal, `If provided, only the effective permissions for the specified principal (user or group) are returned. Wire name: 'principal'.`)
 
 	cmd.Use = "get-effective SECURABLE_TYPE FULL_NAME"
 	cmd.Short = `Get effective permissions.`
@@ -136,6 +144,14 @@ func newGetEffective() *cobra.Command {
   
   Gets the effective permissions for a securable. Includes inherited permissions
   from any parent securables.
+  
+  NOTE: we recommend using max_results=0 to use the paginated version of this
+  API. Unpaginated calls will be deprecated soon.
+  
+  PAGINATION BEHAVIOR: When using pagination (max_results >= 0), a page may
+  contain zero results while still providing a next_page_token. Clients must
+  continue reading pages until next_page_token is absent, which is the only
+  indication that the end of results has been reached.
 
   Arguments:
     SECURABLE_TYPE: Type of securable.

@@ -61,7 +61,7 @@ func newMigratePermissions() *cobra.Command {
 
 	cmd.Flags().Var(&migratePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().IntVar(&migratePermissionsReq.Size, "size", migratePermissionsReq.Size, `The maximum number of permissions that will be migrated.`)
+	cmd.Flags().IntVar(&migratePermissionsReq.Size, "size", migratePermissionsReq.Size, `The maximum number of permissions that will be migrated. Wire name: 'size'.`)
 
 	cmd.Use = "migrate-permissions WORKSPACE_ID FROM_WORKSPACE_GROUP_NAME TO_ACCOUNT_GROUP_NAME"
 	cmd.Short = `Migrate Permissions.`
@@ -109,6 +109,7 @@ func newMigratePermissions() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 			}
+
 		}
 		if !cmd.Flags().Changed("json") {
 			migratePermissionsReq.FromWorkspaceGroupName = args[1]

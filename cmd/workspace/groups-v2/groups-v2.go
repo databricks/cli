@@ -66,11 +66,11 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.DisplayName, "display-name", createReq.DisplayName, `String that represents a human-readable group name.`)
+	cmd.Flags().StringVar(&createReq.DisplayName, "display-name", createReq.DisplayName, `String that represents a human-readable group name. Wire name: 'displayName'.`)
 	// TODO: array: entitlements
-	cmd.Flags().StringVar(&createReq.ExternalId, "external-id", createReq.ExternalId, ``)
+	cmd.Flags().StringVar(&createReq.ExternalId, "external-id", createReq.ExternalId, `Wire name: 'externalId'.`)
 	// TODO: array: groups
-	cmd.Flags().StringVar(&createReq.Id, "id", createReq.Id, `Databricks group ID.`)
+	cmd.Flags().StringVar(&createReq.Id, "id", createReq.Id, `Databricks group ID. Wire name: 'id'.`)
 	// TODO: array: members
 	// TODO: complex arg: meta
 	// TODO: array: roles
@@ -253,13 +253,13 @@ func newList() *cobra.Command {
 
 	var listReq iam.ListGroupsRequest
 
-	cmd.Flags().StringVar(&listReq.Attributes, "attributes", listReq.Attributes, `Comma-separated list of attributes to return in response.`)
-	cmd.Flags().Int64Var(&listReq.Count, "count", listReq.Count, `Desired number of results per page.`)
-	cmd.Flags().StringVar(&listReq.ExcludedAttributes, "excluded-attributes", listReq.ExcludedAttributes, `Comma-separated list of attributes to exclude in response.`)
-	cmd.Flags().StringVar(&listReq.Filter, "filter", listReq.Filter, `Query by which the results have to be filtered.`)
-	cmd.Flags().StringVar(&listReq.SortBy, "sort-by", listReq.SortBy, `Attribute to sort the results.`)
-	cmd.Flags().Var(&listReq.SortOrder, "sort-order", `The order to sort the results. Supported values: [ascending, descending]`)
-	cmd.Flags().Int64Var(&listReq.StartIndex, "start-index", listReq.StartIndex, `Specifies the index of the first result.`)
+	cmd.Flags().StringVar(&listReq.Attributes, "attributes", listReq.Attributes, `Comma-separated list of attributes to return in response. Wire name: 'attributes'.`)
+	cmd.Flags().Int64Var(&listReq.Count, "count", listReq.Count, `Desired number of results per page. Wire name: 'count'.`)
+	cmd.Flags().StringVar(&listReq.ExcludedAttributes, "excluded-attributes", listReq.ExcludedAttributes, `Comma-separated list of attributes to exclude in response. Wire name: 'excludedAttributes'.`)
+	cmd.Flags().StringVar(&listReq.Filter, "filter", listReq.Filter, `Query by which the results have to be filtered. Wire name: 'filter'.`)
+	cmd.Flags().StringVar(&listReq.SortBy, "sort-by", listReq.SortBy, `Attribute to sort the results. Wire name: 'sortBy'.`)
+	cmd.Flags().Var(&listReq.SortOrder, "sort-order", `The order to sort the results. Supported values: [ascending, descending]. Wire name: 'sortOrder'.`)
+	cmd.Flags().Int64Var(&listReq.StartIndex, "start-index", listReq.StartIndex, `Specifies the index of the first result. Wire name: 'startIndex'.`)
 
 	cmd.Use = "list"
 	cmd.Short = `List group details.`
@@ -386,9 +386,9 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.DisplayName, "display-name", updateReq.DisplayName, `String that represents a human-readable group name.`)
+	cmd.Flags().StringVar(&updateReq.DisplayName, "display-name", updateReq.DisplayName, `String that represents a human-readable group name. Wire name: 'displayName'.`)
 	// TODO: array: entitlements
-	cmd.Flags().StringVar(&updateReq.ExternalId, "external-id", updateReq.ExternalId, ``)
+	cmd.Flags().StringVar(&updateReq.ExternalId, "external-id", updateReq.ExternalId, `Wire name: 'externalId'.`)
 	// TODO: array: groups
 	// TODO: array: members
 	// TODO: complex arg: meta

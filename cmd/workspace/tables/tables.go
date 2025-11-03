@@ -199,12 +199,14 @@ func newCreate() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid TABLE_TYPE: %s", args[3])
 			}
+
 		}
 		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[4], &createReq.DataSourceFormat)
 			if err != nil {
 				return fmt.Errorf("invalid DATA_SOURCE_FORMAT: %s", args[4])
 			}
+
 		}
 		if !cmd.Flags().Changed("json") {
 			createReq.StorageLocation = args[5]
@@ -366,9 +368,9 @@ func newGet() *cobra.Command {
 
 	var getReq catalog.GetTableRequest
 
-	cmd.Flags().BoolVar(&getReq.IncludeBrowse, "include-browse", getReq.IncludeBrowse, `Whether to include tables in the response for which the principal can only access selective metadata for.`)
-	cmd.Flags().BoolVar(&getReq.IncludeDeltaMetadata, "include-delta-metadata", getReq.IncludeDeltaMetadata, `Whether delta metadata should be included in the response.`)
-	cmd.Flags().BoolVar(&getReq.IncludeManifestCapabilities, "include-manifest-capabilities", getReq.IncludeManifestCapabilities, `Whether to include a manifest containing table capabilities in the response.`)
+	cmd.Flags().BoolVar(&getReq.IncludeBrowse, "include-browse", getReq.IncludeBrowse, `Whether to include tables in the response for which the principal can only access selective metadata for. Wire name: 'include_browse'.`)
+	cmd.Flags().BoolVar(&getReq.IncludeDeltaMetadata, "include-delta-metadata", getReq.IncludeDeltaMetadata, `Whether delta metadata should be included in the response. Wire name: 'include_delta_metadata'.`)
+	cmd.Flags().BoolVar(&getReq.IncludeManifestCapabilities, "include-manifest-capabilities", getReq.IncludeManifestCapabilities, `Whether to include a manifest containing table capabilities in the response. Wire name: 'include_manifest_capabilities'.`)
 
 	cmd.Use = "get FULL_NAME"
 	cmd.Short = `Get a table.`
@@ -432,13 +434,13 @@ func newList() *cobra.Command {
 
 	var listReq catalog.ListTablesRequest
 
-	cmd.Flags().BoolVar(&listReq.IncludeBrowse, "include-browse", listReq.IncludeBrowse, `Whether to include tables in the response for which the principal can only access selective metadata for.`)
-	cmd.Flags().BoolVar(&listReq.IncludeManifestCapabilities, "include-manifest-capabilities", listReq.IncludeManifestCapabilities, `Whether to include a manifest containing table capabilities in the response.`)
-	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of tables to return.`)
-	cmd.Flags().BoolVar(&listReq.OmitColumns, "omit-columns", listReq.OmitColumns, `Whether to omit the columns of the table from the response or not.`)
-	cmd.Flags().BoolVar(&listReq.OmitProperties, "omit-properties", listReq.OmitProperties, `Whether to omit the properties of the table from the response or not.`)
-	cmd.Flags().BoolVar(&listReq.OmitUsername, "omit-username", listReq.OmitUsername, `Whether to omit the username of the table (e.g.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque token to send for the next page of results (pagination).`)
+	cmd.Flags().BoolVar(&listReq.IncludeBrowse, "include-browse", listReq.IncludeBrowse, `Whether to include tables in the response for which the principal can only access selective metadata for. Wire name: 'include_browse'.`)
+	cmd.Flags().BoolVar(&listReq.IncludeManifestCapabilities, "include-manifest-capabilities", listReq.IncludeManifestCapabilities, `Whether to include a manifest containing table capabilities in the response. Wire name: 'include_manifest_capabilities'.`)
+	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of tables to return. Wire name: 'max_results'.`)
+	cmd.Flags().BoolVar(&listReq.OmitColumns, "omit-columns", listReq.OmitColumns, `Whether to omit the columns of the table from the response or not. Wire name: 'omit_columns'.`)
+	cmd.Flags().BoolVar(&listReq.OmitProperties, "omit-properties", listReq.OmitProperties, `Whether to omit the properties of the table from the response or not. Wire name: 'omit_properties'.`)
+	cmd.Flags().BoolVar(&listReq.OmitUsername, "omit-username", listReq.OmitUsername, `Whether to omit the username of the table (e.g. Wire name: 'omit_username'.`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque token to send for the next page of results (pagination). Wire name: 'page_token'.`)
 
 	cmd.Use = "list CATALOG_NAME SCHEMA_NAME"
 	cmd.Short = `List tables.`
@@ -457,8 +459,7 @@ func newList() *cobra.Command {
   PAGINATION BEHAVIOR: When using pagination (max_results >= 0), a page may
   contain zero results while still providing a next_page_token. Clients must
   continue reading pages until next_page_token is absent, which is the only
-  indication that the end of results has been reached. This behavior follows
-  Google AIP-158 guidelines.
+  indication that the end of results has been reached.
 
   Arguments:
     CATALOG_NAME: Name of parent catalog for tables of interest.
@@ -509,11 +510,11 @@ func newListSummaries() *cobra.Command {
 
 	var listSummariesReq catalog.ListSummariesRequest
 
-	cmd.Flags().BoolVar(&listSummariesReq.IncludeManifestCapabilities, "include-manifest-capabilities", listSummariesReq.IncludeManifestCapabilities, `Whether to include a manifest containing table capabilities in the response.`)
-	cmd.Flags().IntVar(&listSummariesReq.MaxResults, "max-results", listSummariesReq.MaxResults, `Maximum number of summaries for tables to return.`)
-	cmd.Flags().StringVar(&listSummariesReq.PageToken, "page-token", listSummariesReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
-	cmd.Flags().StringVar(&listSummariesReq.SchemaNamePattern, "schema-name-pattern", listSummariesReq.SchemaNamePattern, `A sql LIKE pattern (% and _) for schema names.`)
-	cmd.Flags().StringVar(&listSummariesReq.TableNamePattern, "table-name-pattern", listSummariesReq.TableNamePattern, `A sql LIKE pattern (% and _) for table names.`)
+	cmd.Flags().BoolVar(&listSummariesReq.IncludeManifestCapabilities, "include-manifest-capabilities", listSummariesReq.IncludeManifestCapabilities, `Whether to include a manifest containing table capabilities in the response. Wire name: 'include_manifest_capabilities'.`)
+	cmd.Flags().IntVar(&listSummariesReq.MaxResults, "max-results", listSummariesReq.MaxResults, `Maximum number of summaries for tables to return. Wire name: 'max_results'.`)
+	cmd.Flags().StringVar(&listSummariesReq.PageToken, "page-token", listSummariesReq.PageToken, `Opaque pagination token to go to next page based on previous query. Wire name: 'page_token'.`)
+	cmd.Flags().StringVar(&listSummariesReq.SchemaNamePattern, "schema-name-pattern", listSummariesReq.SchemaNamePattern, `A sql LIKE pattern (% and _) for schema names. Wire name: 'schema_name_pattern'.`)
+	cmd.Flags().StringVar(&listSummariesReq.TableNamePattern, "table-name-pattern", listSummariesReq.TableNamePattern, `A sql LIKE pattern (% and _) for table names. Wire name: 'table_name_pattern'.`)
 
 	cmd.Use = "list-summaries CATALOG_NAME"
 	cmd.Short = `List table summaries.`
@@ -530,6 +531,11 @@ func newListSummaries() *cobra.Command {
   ownership or the **USE_CATALOG** privilege on the parent catalog.
   
   There is no guarantee of a specific ordering of the elements in the array.
+  
+  PAGINATION BEHAVIOR: The API is by default paginated, a page may contain zero
+  results while still providing a next_page_token. Clients must continue reading
+  pages until next_page_token is absent, which is the only indication that the
+  end of results has been reached.
 
   Arguments:
     CATALOG_NAME: Name of parent catalog for tables of interest.`
@@ -581,7 +587,7 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of table.`)
+	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of table. Wire name: 'owner'.`)
 
 	cmd.Use = "update FULL_NAME"
 	cmd.Short = `Update a table owner.`

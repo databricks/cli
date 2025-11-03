@@ -67,8 +67,8 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided free-form text description.`)
-	cmd.Flags().StringVar(&createReq.StorageRoot, "storage-root", createReq.StorageRoot, `Storage root URL for the share.`)
+	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided free-form text description. Wire name: 'comment'.`)
+	cmd.Flags().StringVar(&createReq.StorageRoot, "storage-root", createReq.StorageRoot, `Storage root URL for the share. Wire name: 'storage_root'.`)
 
 	cmd.Use = "create NAME"
 	cmd.Short = `Create a share.`
@@ -206,14 +206,14 @@ func newGet() *cobra.Command {
 
 	var getReq sharing.GetShareRequest
 
-	cmd.Flags().BoolVar(&getReq.IncludeSharedData, "include-shared-data", getReq.IncludeSharedData, `Query for data to include in the share.`)
+	cmd.Flags().BoolVar(&getReq.IncludeSharedData, "include-shared-data", getReq.IncludeSharedData, `Query for data to include in the share. Wire name: 'include_shared_data'.`)
 
 	cmd.Use = "get NAME"
 	cmd.Short = `Get a share.`
 	cmd.Long = `Get a share.
   
-  Gets a data object share from the metastore. The caller must be a metastore
-  admin or the owner of the share.
+  Gets a data object share from the metastore. The caller must have the
+  USE_SHARE privilege on the metastore or be the owner of the share.
 
   Arguments:
     NAME: The name of the share.`
@@ -265,15 +265,16 @@ func newListShares() *cobra.Command {
 
 	var listSharesReq sharing.SharesListRequest
 
-	cmd.Flags().IntVar(&listSharesReq.MaxResults, "max-results", listSharesReq.MaxResults, `Maximum number of shares to return.`)
-	cmd.Flags().StringVar(&listSharesReq.PageToken, "page-token", listSharesReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
+	cmd.Flags().IntVar(&listSharesReq.MaxResults, "max-results", listSharesReq.MaxResults, `Maximum number of shares to return. Wire name: 'max_results'.`)
+	cmd.Flags().StringVar(&listSharesReq.PageToken, "page-token", listSharesReq.PageToken, `Opaque pagination token to go to next page based on previous query. Wire name: 'page_token'.`)
 
 	cmd.Use = "list-shares"
 	cmd.Short = `List shares.`
 	cmd.Long = `List shares.
   
-  Gets an array of data object shares from the metastore. The caller must be a
-  metastore admin or the owner of the share. There is no guarantee of a specific
+  Gets an array of data object shares from the metastore. If the caller has the
+  USE_SHARE privilege on the metastore, all shares are returned. Otherwise, only
+  shares owned by the caller are returned. There is no guarantee of a specific
   ordering of the elements in the array.`
 
 	cmd.Annotations = make(map[string]string)
@@ -318,18 +319,18 @@ func newSharePermissions() *cobra.Command {
 
 	var sharePermissionsReq sharing.SharePermissionsRequest
 
-	cmd.Flags().IntVar(&sharePermissionsReq.MaxResults, "max-results", sharePermissionsReq.MaxResults, `Maximum number of permissions to return.`)
-	cmd.Flags().StringVar(&sharePermissionsReq.PageToken, "page-token", sharePermissionsReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
+	cmd.Flags().IntVar(&sharePermissionsReq.MaxResults, "max-results", sharePermissionsReq.MaxResults, `Maximum number of permissions to return. Wire name: 'max_results'.`)
+	cmd.Flags().StringVar(&sharePermissionsReq.PageToken, "page-token", sharePermissionsReq.PageToken, `Opaque pagination token to go to next page based on previous query. Wire name: 'page_token'.`)
 
 	cmd.Use = "share-permissions NAME"
 	cmd.Short = `Get permissions.`
 	cmd.Long = `Get permissions.
   
-  Gets the permissions for a data share from the metastore. The caller must be a
-  metastore admin or the owner of the share.
+  Gets the permissions for a data share from the metastore. The caller must have
+  the USE_SHARE privilege on the metastore or be the owner of the share.
 
   Arguments:
-    NAME: The name of the share.`
+    NAME: The name of the Recipient.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -381,10 +382,10 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `User-provided free-form text description.`)
-	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the share.`)
-	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of share.`)
-	cmd.Flags().StringVar(&updateReq.StorageRoot, "storage-root", updateReq.StorageRoot, `Storage root URL for the share.`)
+	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `User-provided free-form text description. Wire name: 'comment'.`)
+	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the share. Wire name: 'new_name'.`)
+	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of share. Wire name: 'owner'.`)
+	cmd.Flags().StringVar(&updateReq.StorageRoot, "storage-root", updateReq.StorageRoot, `Storage root URL for the share. Wire name: 'storage_root'.`)
 	// TODO: array: updates
 
 	cmd.Use = "update NAME"
@@ -475,17 +476,18 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.Flags().Var(&updatePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: changes
-	cmd.Flags().BoolVar(&updatePermissionsReq.OmitPermissionsList, "omit-permissions-list", updatePermissionsReq.OmitPermissionsList, `Optional.`)
+	cmd.Flags().BoolVar(&updatePermissionsReq.OmitPermissionsList, "omit-permissions-list", updatePermissionsReq.OmitPermissionsList, `Optional. Wire name: 'omit_permissions_list'.`)
 
 	cmd.Use = "update-permissions NAME"
 	cmd.Short = `Update permissions.`
 	cmd.Long = `Update permissions.
   
-  Updates the permissions for a data share in the metastore. The caller must be
-  a metastore admin or an owner of the share.
+  Updates the permissions for a data share in the metastore. The caller must
+  have both the USE_SHARE and SET_SHARE_PERMISSION privileges on the metastore,
+  or be the owner of the share.
   
-  For new recipient grants, the user must also be the recipient owner or
-  metastore admin. recipient revocations do not require additional privileges.
+  For new recipient grants, the user must also be the owner of the recipients.
+  recipient revocations do not require additional privileges.
 
   Arguments:
     NAME: The name of the share.`

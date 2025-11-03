@@ -54,7 +54,7 @@ func newDelete() *cobra.Command {
 
 	var deleteReq settings.DeleteAibiDashboardEmbeddingApprovedDomainsSettingRequest
 
-	cmd.Flags().StringVar(&deleteReq.Etag, "etag", deleteReq.Etag, `etag used for versioning.`)
+	cmd.Flags().StringVar(&deleteReq.Etag, "etag", deleteReq.Etag, `etag used for versioning. Wire name: 'etag'.`)
 
 	cmd.Use = "delete"
 	cmd.Short = `Delete AI/BI dashboard embedding approved domains.`
@@ -108,7 +108,7 @@ func newGet() *cobra.Command {
 
 	var getReq settings.GetAibiDashboardEmbeddingApprovedDomainsSettingRequest
 
-	cmd.Flags().StringVar(&getReq.Etag, "etag", getReq.Etag, `etag used for versioning.`)
+	cmd.Flags().StringVar(&getReq.Etag, "etag", getReq.Etag, `etag used for versioning. Wire name: 'etag'.`)
 
 	cmd.Use = "get"
 	cmd.Short = `Retrieve the list of domains approved to host embedded AI/BI dashboards.`

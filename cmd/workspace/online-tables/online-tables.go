@@ -68,7 +68,7 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.Table.Name, "name", createReq.Table.Name, `Full three-part (catalog, schema, table) name of the table.`)
+	cmd.Flags().StringVar(&createReq.Table.Name, "name", createReq.Table.Name, `Full three-part (catalog, schema, table) name of the table. Wire name: 'name'.`)
 	// TODO: complex arg: spec
 	// TODO: complex arg: status
 

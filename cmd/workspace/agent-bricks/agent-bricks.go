@@ -117,7 +117,7 @@ func newCreateCustomLlm() *cobra.Command {
 
 	cmd.Flags().Var(&createCustomLlmJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createCustomLlmReq.AgentArtifactPath, "agent-artifact-path", createCustomLlmReq.AgentArtifactPath, `This will soon be deprecated!! Optional: UC path for agent artifacts.`)
+	cmd.Flags().StringVar(&createCustomLlmReq.AgentArtifactPath, "agent-artifact-path", createCustomLlmReq.AgentArtifactPath, `This will soon be deprecated!! Optional: UC path for agent artifacts. Wire name: 'agent_artifact_path'.`)
 	// TODO: array: datasets
 	// TODO: array: guidelines
 

@@ -124,8 +124,8 @@ func newListQuotas() *cobra.Command {
 
 	var listQuotasReq catalog.ListQuotasRequest
 
-	cmd.Flags().IntVar(&listQuotasReq.MaxResults, "max-results", listQuotasReq.MaxResults, `The number of quotas to return.`)
-	cmd.Flags().StringVar(&listQuotasReq.PageToken, "page-token", listQuotasReq.PageToken, `Opaque token for the next page of results.`)
+	cmd.Flags().IntVar(&listQuotasReq.MaxResults, "max-results", listQuotasReq.MaxResults, `The number of quotas to return. Wire name: 'max_results'.`)
+	cmd.Flags().StringVar(&listQuotasReq.PageToken, "page-token", listQuotasReq.PageToken, `Opaque token for the next page of results. Wire name: 'page_token'.`)
 
 	cmd.Use = "list-quotas"
 	cmd.Short = `List all resource quotas under a metastore.`
@@ -133,7 +133,12 @@ func newListQuotas() *cobra.Command {
   
   ListQuotas returns all quota values under the metastore. There are no SLAs on
   the freshness of the counts returned. This API does not trigger a refresh of
-  quota counts.`
+  quota counts.
+  
+  PAGINATION BEHAVIOR: The API is by default paginated, a page may contain zero
+  results while still providing a next_page_token. Clients must continue reading
+  pages until next_page_token is absent, which is the only indication that the
+  end of results has been reached.`
 
 	cmd.Annotations = make(map[string]string)
 

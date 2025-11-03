@@ -86,6 +86,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return fmt.Errorf("invalid ASSET_TYPE: %s", args[1])
 		}
+
 		getReq.Name = args[2]
 		getReq.Etag = args[3]
 
@@ -122,8 +123,8 @@ func newList() *cobra.Command {
 
 	var listReq cleanrooms.ListCleanRoomAssetRevisionsRequest
 
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Maximum number of asset revisions to return.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on the previous query.`)
+	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Maximum number of asset revisions to return. Wire name: 'page_size'.`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on the previous query. Wire name: 'page_token'.`)
 
 	cmd.Use = "list CLEAN_ROOM_NAME ASSET_TYPE NAME"
 	cmd.Short = `List asset revisions.`
@@ -154,6 +155,7 @@ func newList() *cobra.Command {
 		if err != nil {
 			return fmt.Errorf("invalid ASSET_TYPE: %s", args[1])
 		}
+
 		listReq.Name = args[2]
 
 		response := w.CleanRoomAssetRevisions.List(ctx, listReq)

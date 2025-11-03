@@ -75,18 +75,19 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.AwsRegion, "aws-region", createReq.AwsRegion, ``)
-	cmd.Flags().StringVar(&createReq.Cloud, "cloud", createReq.Cloud, `The cloud name.`)
+	cmd.Flags().StringVar(&createReq.AwsRegion, "aws-region", createReq.AwsRegion, `Wire name: 'aws_region'.`)
+	cmd.Flags().StringVar(&createReq.Cloud, "cloud", createReq.Cloud, `The cloud name. Wire name: 'cloud'.`)
 	// TODO: complex arg: cloud_resource_container
-	cmd.Flags().Var(&createReq.ComputeMode, "compute-mode", `If the compute mode is SERVERLESS, a serverless workspace is created that comes pre-configured with serverless compute and default storage, providing a fully-managed, enterprise-ready SaaS experience. Supported values: [HYBRID, SERVERLESS]`)
-	cmd.Flags().StringVar(&createReq.CredentialsId, "credentials-id", createReq.CredentialsId, `ID of the workspace's credential configuration object.`)
+	cmd.Flags().Var(&createReq.ComputeMode, "compute-mode", `If the compute mode is SERVERLESS, a serverless workspace is created that comes pre-configured with serverless compute and default storage, providing a fully-managed, enterprise-ready SaaS experience. Supported values: [HYBRID, SERVERLESS]. Wire name: 'compute_mode'.`)
+	cmd.Flags().StringVar(&createReq.CredentialsId, "credentials-id", createReq.CredentialsId, `ID of the workspace's credential configuration object. Wire name: 'credentials_id'.`)
 	// TODO: map via StringToStringVar: custom_tags
-	cmd.Flags().StringVar(&createReq.DeploymentName, "deployment-name", createReq.DeploymentName, `The deployment name defines part of the subdomain for the workspace.`)
+	cmd.Flags().StringVar(&createReq.DeploymentName, "deployment-name", createReq.DeploymentName, `The deployment name defines part of the subdomain for the workspace. Wire name: 'deployment_name'.`)
 	// TODO: complex arg: gcp_managed_network_config
 	// TODO: complex arg: gke_config
-	cmd.Flags().StringVar(&createReq.Location, "location", createReq.Location, `The Google Cloud region of the workspace data plane in your Google account (for example, us-east4).`)
-	cmd.Flags().StringVar(&createReq.ManagedServicesCustomerManagedKeyId, "managed-services-customer-managed-key-id", createReq.ManagedServicesCustomerManagedKeyId, `The ID of the workspace's managed services encryption key configuration object.`)
-	cmd.Flags().StringVar(&createReq.NetworkId, "network-id", createReq.NetworkId, `The ID of the workspace's network configuration object.`)
+	cmd.Flags().StringVar(&createReq.Location, "location", createReq.Location, `The Google Cloud region of the workspace data plane in your Google account (for example, us-east4). Wire name: 'location'.`)
+	cmd.Flags().StringVar(&createReq.ManagedServicesCustomerManagedKeyId, "managed-services-customer-managed-key-id", createReq.ManagedServicesCustomerManagedKeyId, `The ID of the workspace's managed services encryption key configuration object. Wire name: 'managed_services_customer_managed_key_id'.`)
+	cmd.Flags().StringVar(&createReq.NetworkConnectivityConfigId, "network-connectivity-config-id", createReq.NetworkConnectivityConfigId, `The object ID of network connectivity config. Wire name: 'network_connectivity_config_id'.`)
+	cmd.Flags().StringVar(&createReq.NetworkId, "network-id", createReq.NetworkId, `The ID of the workspace's network configuration object. Wire name: 'network_id'.`)
 	cmd.Flags().Var(&createReq.PricingTier, "pricing-tier", `Supported values: [
   COMMUNITY_EDITION,
   DEDICATED,
@@ -94,11 +95,11 @@ func newCreate() *cobra.Command {
   PREMIUM,
   STANDARD,
   UNKNOWN,
-]`)
-	cmd.Flags().StringVar(&createReq.PrivateAccessSettingsId, "private-access-settings-id", createReq.PrivateAccessSettingsId, `ID of the workspace's private access settings object.`)
-	cmd.Flags().StringVar(&createReq.StorageConfigurationId, "storage-configuration-id", createReq.StorageConfigurationId, `ID of the workspace's storage configuration object.`)
-	cmd.Flags().StringVar(&createReq.StorageCustomerManagedKeyId, "storage-customer-managed-key-id", createReq.StorageCustomerManagedKeyId, `The ID of the workspace's storage encryption key configuration object.`)
-	cmd.Flags().StringVar(&createReq.WorkspaceName, "workspace-name", createReq.WorkspaceName, `The human-readable name of the workspace.`)
+]. Wire name: 'pricing_tier'.`)
+	cmd.Flags().StringVar(&createReq.PrivateAccessSettingsId, "private-access-settings-id", createReq.PrivateAccessSettingsId, `ID of the workspace's private access settings object. Wire name: 'private_access_settings_id'.`)
+	cmd.Flags().StringVar(&createReq.StorageConfigurationId, "storage-configuration-id", createReq.StorageConfigurationId, `ID of the workspace's storage configuration object. Wire name: 'storage_configuration_id'.`)
+	cmd.Flags().StringVar(&createReq.StorageCustomerManagedKeyId, "storage-customer-managed-key-id", createReq.StorageCustomerManagedKeyId, `The ID of the workspace's storage encryption key configuration object. Wire name: 'storage_customer_managed_key_id'.`)
+	cmd.Flags().StringVar(&createReq.WorkspaceName, "workspace-name", createReq.WorkspaceName, `The human-readable name of the workspace. Wire name: 'workspace_name'.`)
 
 	cmd.Use = "create"
 	cmd.Short = `Create a workspace.`
@@ -383,14 +384,14 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.UpdateMask, "update-mask", updateReq.UpdateMask, `The field mask must be a single string, with multiple fields separated by commas (no spaces).`)
-	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.AwsRegion, "aws-region", updateReq.CustomerFacingWorkspace.AwsRegion, ``)
+	cmd.Flags().StringVar(&updateReq.UpdateMask, "update-mask", updateReq.UpdateMask, `The field mask must be a single string, with multiple fields separated by commas (no spaces). Wire name: 'update_mask'.`)
+	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.AwsRegion, "aws-region", updateReq.CustomerFacingWorkspace.AwsRegion, `Wire name: 'aws_region'.`)
 	// TODO: complex arg: azure_workspace_info
-	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.Cloud, "cloud", updateReq.CustomerFacingWorkspace.Cloud, `The cloud name.`)
+	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.Cloud, "cloud", updateReq.CustomerFacingWorkspace.Cloud, `The cloud name. Wire name: 'cloud'.`)
 	// TODO: complex arg: cloud_resource_container
-	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.CredentialsId, "credentials-id", updateReq.CustomerFacingWorkspace.CredentialsId, `ID of the workspace's credential configuration object.`)
+	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.CredentialsId, "credentials-id", updateReq.CustomerFacingWorkspace.CredentialsId, `ID of the workspace's credential configuration object. Wire name: 'credentials_id'.`)
 	// TODO: map via StringToStringVar: custom_tags
-	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.DeploymentName, "deployment-name", updateReq.CustomerFacingWorkspace.DeploymentName, ``)
+	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.DeploymentName, "deployment-name", updateReq.CustomerFacingWorkspace.DeploymentName, `Wire name: 'deployment_name'.`)
 	cmd.Flags().Var(&updateReq.CustomerFacingWorkspace.ExpectedWorkspaceStatus, "expected-workspace-status", `A client owned field used to indicate the workspace status that the client expects to be in. Supported values: [
   BANNED,
   CANCELLING,
@@ -398,18 +399,18 @@ func newUpdate() *cobra.Command {
   NOT_PROVISIONED,
   PROVISIONING,
   RUNNING,
-]`)
+]. Wire name: 'expected_workspace_status'.`)
 	// TODO: complex arg: gcp_managed_network_config
 	// TODO: complex arg: gke_config
-	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.Location, "location", updateReq.CustomerFacingWorkspace.Location, `The Google Cloud region of the workspace data plane in your Google account (for example, us-east4).`)
-	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.ManagedServicesCustomerManagedKeyId, "managed-services-customer-managed-key-id", updateReq.CustomerFacingWorkspace.ManagedServicesCustomerManagedKeyId, `ID of the key configuration for encrypting managed services.`)
+	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.Location, "location", updateReq.CustomerFacingWorkspace.Location, `The Google Cloud region of the workspace data plane in your Google account (for example, us-east4). Wire name: 'location'.`)
+	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.ManagedServicesCustomerManagedKeyId, "managed-services-customer-managed-key-id", updateReq.CustomerFacingWorkspace.ManagedServicesCustomerManagedKeyId, `ID of the key configuration for encrypting managed services. Wire name: 'managed_services_customer_managed_key_id'.`)
 	// TODO: complex arg: network
-	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.NetworkConnectivityConfigId, "network-connectivity-config-id", updateReq.CustomerFacingWorkspace.NetworkConnectivityConfigId, `The object ID of network connectivity config.`)
-	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.NetworkId, "network-id", updateReq.CustomerFacingWorkspace.NetworkId, `If this workspace is BYO VPC, then the network_id will be populated.`)
-	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.PrivateAccessSettingsId, "private-access-settings-id", updateReq.CustomerFacingWorkspace.PrivateAccessSettingsId, `ID of the workspace's private access settings object.`)
-	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.StorageConfigurationId, "storage-configuration-id", updateReq.CustomerFacingWorkspace.StorageConfigurationId, `ID of the workspace's storage configuration object.`)
-	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.StorageCustomerManagedKeyId, "storage-customer-managed-key-id", updateReq.CustomerFacingWorkspace.StorageCustomerManagedKeyId, `ID of the key configuration for encrypting workspace storage.`)
-	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.WorkspaceName, "workspace-name", updateReq.CustomerFacingWorkspace.WorkspaceName, `The human-readable name of the workspace.`)
+	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.NetworkConnectivityConfigId, "network-connectivity-config-id", updateReq.CustomerFacingWorkspace.NetworkConnectivityConfigId, `The object ID of network connectivity config. Wire name: 'network_connectivity_config_id'.`)
+	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.NetworkId, "network-id", updateReq.CustomerFacingWorkspace.NetworkId, `If this workspace is BYO VPC, then the network_id will be populated. Wire name: 'network_id'.`)
+	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.PrivateAccessSettingsId, "private-access-settings-id", updateReq.CustomerFacingWorkspace.PrivateAccessSettingsId, `ID of the workspace's private access settings object. Wire name: 'private_access_settings_id'.`)
+	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.StorageConfigurationId, "storage-configuration-id", updateReq.CustomerFacingWorkspace.StorageConfigurationId, `ID of the workspace's storage configuration object. Wire name: 'storage_configuration_id'.`)
+	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.StorageCustomerManagedKeyId, "storage-customer-managed-key-id", updateReq.CustomerFacingWorkspace.StorageCustomerManagedKeyId, `ID of the key configuration for encrypting workspace storage. Wire name: 'storage_customer_managed_key_id'.`)
+	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.WorkspaceName, "workspace-name", updateReq.CustomerFacingWorkspace.WorkspaceName, `The human-readable name of the workspace. Wire name: 'workspace_name'.`)
 
 	cmd.Use = "update WORKSPACE_ID"
 	cmd.Short = `Update a workspace.`

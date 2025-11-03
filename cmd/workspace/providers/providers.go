@@ -65,8 +65,8 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `Description about the provider.`)
-	cmd.Flags().StringVar(&createReq.RecipientProfileStr, "recipient-profile-str", createReq.RecipientProfileStr, `This field is required when the __authentication_type__ is **TOKEN**, **OAUTH_CLIENT_CREDENTIALS** or not provided.`)
+	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `Description about the provider. Wire name: 'comment'.`)
+	cmd.Flags().StringVar(&createReq.RecipientProfileStr, "recipient-profile-str", createReq.RecipientProfileStr, `This field is required when the __authentication_type__ is **TOKEN**, **OAUTH_CLIENT_CREDENTIALS** or not provided. Wire name: 'recipient_profile_str'.`)
 
 	cmd.Use = "create NAME AUTHENTICATION_TYPE"
 	cmd.Short = `Create an auth provider.`
@@ -119,6 +119,7 @@ func newCreate() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid AUTHENTICATION_TYPE: %s", args[1])
 			}
+
 		}
 
 		response, err := w.Providers.Create(ctx, createReq)
@@ -293,9 +294,9 @@ func newList() *cobra.Command {
 
 	var listReq sharing.ListProvidersRequest
 
-	cmd.Flags().StringVar(&listReq.DataProviderGlobalMetastoreId, "data-provider-global-metastore-id", listReq.DataProviderGlobalMetastoreId, `If not provided, all providers will be returned.`)
-	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of providers to return.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
+	cmd.Flags().StringVar(&listReq.DataProviderGlobalMetastoreId, "data-provider-global-metastore-id", listReq.DataProviderGlobalMetastoreId, `If not provided, all providers will be returned. Wire name: 'data_provider_global_metastore_id'.`)
+	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of providers to return. Wire name: 'max_results'.`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query. Wire name: 'page_token'.`)
 
 	cmd.Use = "list"
 	cmd.Short = `List providers.`
@@ -348,10 +349,10 @@ func newListProviderShareAssets() *cobra.Command {
 
 	var listProviderShareAssetsReq sharing.ListProviderShareAssetsRequest
 
-	cmd.Flags().IntVar(&listProviderShareAssetsReq.FunctionMaxResults, "function-max-results", listProviderShareAssetsReq.FunctionMaxResults, `Maximum number of functions to return.`)
-	cmd.Flags().IntVar(&listProviderShareAssetsReq.NotebookMaxResults, "notebook-max-results", listProviderShareAssetsReq.NotebookMaxResults, `Maximum number of notebooks to return.`)
-	cmd.Flags().IntVar(&listProviderShareAssetsReq.TableMaxResults, "table-max-results", listProviderShareAssetsReq.TableMaxResults, `Maximum number of tables to return.`)
-	cmd.Flags().IntVar(&listProviderShareAssetsReq.VolumeMaxResults, "volume-max-results", listProviderShareAssetsReq.VolumeMaxResults, `Maximum number of volumes to return.`)
+	cmd.Flags().IntVar(&listProviderShareAssetsReq.FunctionMaxResults, "function-max-results", listProviderShareAssetsReq.FunctionMaxResults, `Maximum number of functions to return. Wire name: 'function_max_results'.`)
+	cmd.Flags().IntVar(&listProviderShareAssetsReq.NotebookMaxResults, "notebook-max-results", listProviderShareAssetsReq.NotebookMaxResults, `Maximum number of notebooks to return. Wire name: 'notebook_max_results'.`)
+	cmd.Flags().IntVar(&listProviderShareAssetsReq.TableMaxResults, "table-max-results", listProviderShareAssetsReq.TableMaxResults, `Maximum number of tables to return. Wire name: 'table_max_results'.`)
+	cmd.Flags().IntVar(&listProviderShareAssetsReq.VolumeMaxResults, "volume-max-results", listProviderShareAssetsReq.VolumeMaxResults, `Maximum number of volumes to return. Wire name: 'volume_max_results'.`)
 
 	cmd.Use = "list-provider-share-assets PROVIDER_NAME SHARE_NAME"
 	cmd.Short = `List assets by provider share.`
@@ -412,8 +413,8 @@ func newListShares() *cobra.Command {
 
 	var listSharesReq sharing.ListSharesRequest
 
-	cmd.Flags().IntVar(&listSharesReq.MaxResults, "max-results", listSharesReq.MaxResults, `Maximum number of shares to return.`)
-	cmd.Flags().StringVar(&listSharesReq.PageToken, "page-token", listSharesReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
+	cmd.Flags().IntVar(&listSharesReq.MaxResults, "max-results", listSharesReq.MaxResults, `Maximum number of shares to return. Wire name: 'max_results'.`)
+	cmd.Flags().StringVar(&listSharesReq.PageToken, "page-token", listSharesReq.PageToken, `Opaque pagination token to go to next page based on previous query. Wire name: 'page_token'.`)
 
 	cmd.Use = "list-shares NAME"
 	cmd.Short = `List shares by Provider.`
@@ -485,10 +486,10 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `Description about the provider.`)
-	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the provider.`)
-	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of Provider owner.`)
-	cmd.Flags().StringVar(&updateReq.RecipientProfileStr, "recipient-profile-str", updateReq.RecipientProfileStr, `This field is required when the __authentication_type__ is **TOKEN**, **OAUTH_CLIENT_CREDENTIALS** or not provided.`)
+	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `Description about the provider. Wire name: 'comment'.`)
+	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the provider. Wire name: 'new_name'.`)
+	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of Provider owner. Wire name: 'owner'.`)
+	cmd.Flags().StringVar(&updateReq.RecipientProfileStr, "recipient-profile-str", updateReq.RecipientProfileStr, `This field is required when the __authentication_type__ is **TOKEN**, **OAUTH_CLIENT_CREDENTIALS** or not provided. Wire name: 'recipient_profile_str'.`)
 
 	cmd.Use = "update NAME"
 	cmd.Short = `Update a provider.`

@@ -58,7 +58,7 @@ func newGetWorkspaceAccessDetailLocal() *cobra.Command {
 
 	var getWorkspaceAccessDetailLocalReq iamv2.GetWorkspaceAccessDetailLocalRequest
 
-	cmd.Flags().Var(&getWorkspaceAccessDetailLocalReq.View, "view", `Controls what fields are returned. Supported values: [BASIC, FULL]`)
+	cmd.Flags().Var(&getWorkspaceAccessDetailLocalReq.View, "view", `Controls what fields are returned. Supported values: [BASIC, FULL]. Wire name: 'view'.`)
 
 	cmd.Use = "get-workspace-access-detail-local PRINCIPAL_ID"
 	cmd.Short = `Get workspace access details for a principal.`
@@ -358,4 +358,4 @@ func newResolveUserProxy() *cobra.Command {
 	return cmd
 }
 
-// end service workspace_iamV2
+// end service WorkspaceIamV2

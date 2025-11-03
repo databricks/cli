@@ -27,10 +27,7 @@ func New() *cobra.Command {
 		Annotations: map[string]string{
 			"package": "dataquality",
 		},
-
-		// This service is being previewed; hide from help output.
-		Hidden: true,
-		RunE:   root.ReportUnknownSubcommand,
+		RunE: root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -73,12 +70,33 @@ func newCancelRefresh() *cobra.Command {
 	cmd.Long = `Cancel a refresh.
   
   Cancels a data quality monitor refresh. Currently only supported for the
-  table object_type.
+  table object_type. The call must be made in the same workspace as where
+  the monitor was created.
+  
+  The caller must have either of the following sets of permissions: 1.
+  **MANAGE** and **USE_CATALOG** on the table's parent catalog. 2.
+  **USE_CATALOG** on the table's parent catalog, and **MANAGE** and
+  **USE_SCHEMA** on the table's parent schema. 3. **USE_CATALOG** on the table's
+  parent catalog, **USE_SCHEMA** on the table's parent schema, and **MANAGE** on
+  the table.
 
   Arguments:
     OBJECT_TYPE: The type of the monitored object. Can be one of the following: schema or
       table.
-    OBJECT_ID: The UUID of the request object. For example, schema id.
+    OBJECT_ID: The UUID of the request object. It is schema_id for schema, and
+      table_id for table.
+      
+      Find the schema_id from either: 1. The [schema_id] of the Schemas
+      resource. 2. In [Catalog Explorer] > select the schema > go to the
+      Details tab > the Schema ID field.
+      
+      Find the table_id from either: 1. The [table_id] of the Tables
+      resource. 2. In [Catalog Explorer] > select the table > go to the
+      Details tab > the Table ID field.
+      
+      [Catalog Explorer]: https://docs.databricks.com/aws/en/catalog-explorer/
+      [schema_id]: https://docs.databricks.com/api/workspace/schemas/get#schema_id
+      [table_id]: https://docs.databricks.com/api/workspace/tables/get#table_id
     REFRESH_ID: Unique id of the refresh operation.`
 
 	cmd.Annotations = make(map[string]string)
@@ -148,21 +166,39 @@ func newCreateMonitor() *cobra.Command {
   provide either anomaly_detection_config for a schema monitor or
   data_profiling_config for a table monitor.
   
-  For the table object_type, the caller must either: 1. be an owner of the
-  table's parent catalog, have **USE_SCHEMA** on the table's parent schema, and
-  have **SELECT** access on the table 2. have **USE_CATALOG** on the table's
-  parent catalog, be an owner of the table's parent schema, and have **SELECT**
-  access on the table. 3. have the following permissions: - **USE_CATALOG** on
-  the table's parent catalog - **USE_SCHEMA** on the table's parent schema - be
-  an owner of the table.
+  For the table object_type, the caller must have either of the following
+  sets of permissions: 1. **MANAGE** and **USE_CATALOG** on the table's parent
+  catalog, **USE_SCHEMA** on the table's parent schema, and **SELECT** on the
+  table 2. **USE_CATALOG** on the table's parent catalog, **MANAGE** and
+  **USE_SCHEMA** on the table's parent schema, and **SELECT** on the table. 3.
+  **USE_CATALOG** on the table's parent catalog, **USE_SCHEMA** on the table's
+  parent schema, and **MANAGE** and **SELECT** on the table.
   
   Workspace assets, such as the dashboard, will be created in the workspace
   where this call was made.
+  
+  For the schema object_type, the caller must have either of the following
+  sets of permissions: 1. **MANAGE** and **USE_CATALOG** on the schema's parent
+  catalog. 2. **USE_CATALOG** on the schema's parent catalog, and **MANAGE** and
+  **USE_SCHEMA** on the schema.
 
   Arguments:
     OBJECT_TYPE: The type of the monitored object. Can be one of the following: schema or
       table.
-    OBJECT_ID: The UUID of the request object. For example, schema id.`
+    OBJECT_ID: The UUID of the request object. It is schema_id for schema, and
+      table_id for table.
+      
+      Find the schema_id from either: 1. The [schema_id] of the Schemas
+      resource. 2. In [Catalog Explorer] > select the schema > go to the
+      Details tab > the Schema ID field.
+      
+      Find the table_id from either: 1. The [table_id] of the Tables
+      resource. 2. In [Catalog Explorer] > select the table > go to the
+      Details tab > the Table ID field.
+      
+      [Catalog Explorer]: https://docs.databricks.com/aws/en/catalog-explorer/
+      [schema_id]: https://docs.databricks.com/api/workspace/schemas/get#schema_id
+      [table_id]: https://docs.databricks.com/api/workspace/tables/get#table_id`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -243,18 +279,33 @@ func newCreateRefresh() *cobra.Command {
 	cmd.Short = `Create a refresh.`
 	cmd.Long = `Create a refresh.
   
-  Creates a refresh. Currently only supported for the table object_type.
+  Creates a refresh. Currently only supported for the table object_type. The
+  call must be made in the same workspace as where the monitor was created.
   
-  The caller must either: 1. be an owner of the table's parent catalog 2. have
-  **USE_CATALOG** on the table's parent catalog and be an owner of the table's
-  parent schema 3. have the following permissions: - **USE_CATALOG** on the
-  table's parent catalog - **USE_SCHEMA** on the table's parent schema - be an
-  owner of the table
+  The caller must have either of the following sets of permissions: 1.
+  **MANAGE** and **USE_CATALOG** on the table's parent catalog. 2.
+  **USE_CATALOG** on the table's parent catalog, and **MANAGE** and
+  **USE_SCHEMA** on the table's parent schema. 3. **USE_CATALOG** on the table's
+  parent catalog, **USE_SCHEMA** on the table's parent schema, and **MANAGE** on
+  the table.
 
   Arguments:
     OBJECT_TYPE: The type of the monitored object. Can be one of the following: schemaor
       table.
-    OBJECT_ID: The UUID of the request object. For example, table id.`
+    OBJECT_ID: The UUID of the request object. It is schema_id for schema, and
+      table_id for table.
+      
+      Find the schema_id from either: 1. The [schema_id] of the Schemas
+      resource. 2. In [Catalog Explorer] > select the schema > go to the
+      Details tab > the Schema ID field.
+      
+      Find the table_id from either: 1. The [table_id] of the Tables
+      resource. 2. In [Catalog Explorer] > select the table > go to the
+      Details tab > the Table ID field.
+      
+      [Catalog Explorer]: https://docs.databricks.com/aws/en/catalog-explorer/
+      [schema_id]: https://docs.databricks.com/api/workspace/schemas/get#schema_id
+      [table_id]: https://docs.databricks.com/api/workspace/tables/get#table_id`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -322,19 +373,38 @@ func newDeleteMonitor() *cobra.Command {
   
   Delete a data quality monitor on Unity Catalog object.
   
-  For the table object_type, the caller must either: 1. be an owner of the
-  table's parent catalog 2. have **USE_CATALOG** on the table's parent catalog
-  and be an owner of the table's parent schema 3. have the following
-  permissions: - **USE_CATALOG** on the table's parent catalog - **USE_SCHEMA**
-  on the table's parent schema - be an owner of the table.
+  For the table object_type, the caller must have either of the following
+  sets of permissions: **MANAGE** and **USE_CATALOG** on the table's parent
+  catalog. **USE_CATALOG** on the table's parent catalog, and **MANAGE** and
+  **USE_SCHEMA** on the table's parent schema. **USE_CATALOG** on the table's
+  parent catalog, **USE_SCHEMA** on the table's parent schema, and **MANAGE** on
+  the table.
   
   Note that the metric tables and dashboard will not be deleted as part of this
   call; those assets must be manually cleaned up (if desired).
+  
+  For the schema object_type, the caller must have either of the following
+  sets of permissions: 1. **MANAGE** and **USE_CATALOG** on the schema's parent
+  catalog. 2. **USE_CATALOG** on the schema's parent catalog, and **MANAGE** and
+  **USE_SCHEMA** on the schema.
 
   Arguments:
     OBJECT_TYPE: The type of the monitored object. Can be one of the following: schema or
       table.
-    OBJECT_ID: The UUID of the request object. For example, schema id.`
+    OBJECT_ID: The UUID of the request object. It is schema_id for schema, and
+      table_id for table.
+      
+      Find the schema_id from either: 1. The [schema_id] of the Schemas
+      resource. 2. In [Catalog Explorer] > select the schema > go to the
+      Details tab > the Schema ID field.
+      
+      Find the table_id from either: 1. The [table_id] of the Tables
+      resource. 2. In [Catalog Explorer] > select the table > go to the
+      Details tab > the Table ID field.
+      
+      [Catalog Explorer]: https://docs.databricks.com/aws/en/catalog-explorer/
+      [schema_id]: https://docs.databricks.com/api/workspace/schemas/get#schema_id
+      [table_id]: https://docs.databricks.com/api/workspace/tables/get#table_id`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -393,7 +463,20 @@ func newDeleteRefresh() *cobra.Command {
   Arguments:
     OBJECT_TYPE: The type of the monitored object. Can be one of the following: schema or
       table.
-    OBJECT_ID: The UUID of the request object. For example, schema id.
+    OBJECT_ID: The UUID of the request object. It is schema_id for schema, and
+      table_id for table.
+      
+      Find the schema_id from either: 1. The [schema_id] of the Schemas
+      resource. 2. In [Catalog Explorer] > select the schema > go to the
+      Details tab > the Schema ID field.
+      
+      Find the table_id from either: 1. The [table_id] of the Tables
+      resource. 2. In [Catalog Explorer] > select the table > go to the
+      Details tab > the Table ID field.
+      
+      [Catalog Explorer]: https://docs.databricks.com/aws/en/catalog-explorer/
+      [schema_id]: https://docs.databricks.com/api/workspace/schemas/get#schema_id
+      [table_id]: https://docs.databricks.com/api/workspace/tables/get#table_id
     REFRESH_ID: Unique id of the refresh operation.`
 
 	cmd.Annotations = make(map[string]string)
@@ -452,23 +535,42 @@ func newGetMonitor() *cobra.Command {
 	cmd.Short = `Read a monitor.`
 	cmd.Long = `Read a monitor.
   
-  Read a data quality monitor on Unity Catalog object.
+  Read a data quality monitor on a Unity Catalog object.
   
-  For the table object_type, the caller must either: 1. be an owner of the
-  table's parent catalog 2. have **USE_CATALOG** on the table's parent catalog
-  and be an owner of the table's parent schema. 3. have the following
-  permissions: - **USE_CATALOG** on the table's parent catalog - **USE_SCHEMA**
-  on the table's parent schema - **SELECT** privilege on the table.
+  For the table object_type, the caller must have either of the following
+  sets of permissions: 1. **MANAGE** and **USE_CATALOG** on the table's parent
+  catalog. 2. **USE_CATALOG** on the table's parent catalog, and **MANAGE** and
+  **USE_SCHEMA** on the table's parent schema. 3. **USE_CATALOG** on the table's
+  parent catalog, **USE_SCHEMA** on the table's parent schema, and **SELECT** on
+  the table.
   
-  The returned information includes configuration values, as well as information
-  on assets created by the monitor. Some information (e.g., dashboard) may be
-  filtered out if the caller is in a different workspace than where the monitor
-  was created.
+  For the schema object_type, the caller must have either of the following
+  sets of permissions: 1. **MANAGE** and **USE_CATALOG** on the schema's parent
+  catalog. 2. **USE_CATALOG** on the schema's parent catalog, and **USE_SCHEMA**
+  on the schema.
+  
+  The returned information includes configuration values on the entity and
+  parent entity as well as information on assets created by the monitor. Some
+  information (e.g. dashboard) may be filtered out if the caller is in a
+  different workspace than where the monitor was created.
 
   Arguments:
     OBJECT_TYPE: The type of the monitored object. Can be one of the following: schema or
       table.
-    OBJECT_ID: The UUID of the request object. For example, schema id.`
+    OBJECT_ID: The UUID of the request object. It is schema_id for schema, and
+      table_id for table.
+      
+      Find the schema_id from either: 1. The [schema_id] of the Schemas
+      resource. 2. In [Catalog Explorer] > select the schema > go to the
+      Details tab > the Schema ID field.
+      
+      Find the table_id from either: 1. The [table_id] of the Tables
+      resource. 2. In [Catalog Explorer] > select the table > go to the
+      Details tab > the Table ID field.
+      
+      [Catalog Explorer]: https://docs.databricks.com/aws/en/catalog-explorer/
+      [schema_id]: https://docs.databricks.com/api/workspace/schemas/get#schema_id
+      [table_id]: https://docs.databricks.com/api/workspace/tables/get#table_id`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -522,18 +624,38 @@ func newGetRefresh() *cobra.Command {
 	cmd.Short = `Get a refresh.`
 	cmd.Long = `Get a refresh.
   
-  Get data quality monitor refresh.
+  Get data quality monitor refresh. The call must be made in the same workspace
+  as where the monitor was created.
   
-  For the table object_type, the caller must either: 1. be an owner of the
-  table's parent catalog 2. have **USE_CATALOG** on the table's parent catalog
-  and be an owner of the table's parent schema 3. have the following
-  permissions: - **USE_CATALOG** on the table's parent catalog - **USE_SCHEMA**
-  on the table's parent schema - **SELECT** privilege on the table.
+  For the table object_type, the caller must have either of the following
+  sets of permissions: 1. **MANAGE** and **USE_CATALOG** on the table's parent
+  catalog. 2. **USE_CATALOG** on the table's parent catalog, and **MANAGE** and
+  **USE_SCHEMA** on the table's parent schema. 3. **USE_CATALOG** on the table's
+  parent catalog, **USE_SCHEMA** on the table's parent schema, and **SELECT** on
+  the table.
+  
+  For the schema object_type, the caller must have either of the following
+  sets of permissions: 1. **MANAGE** and **USE_CATALOG** on the schema's parent
+  catalog. 2. **USE_CATALOG** on the schema's parent catalog, and **USE_SCHEMA**
+  on the schema.
 
   Arguments:
     OBJECT_TYPE: The type of the monitored object. Can be one of the following: schema or
       table.
-    OBJECT_ID: The UUID of the request object. For example, schema id.
+    OBJECT_ID: The UUID of the request object. It is schema_id for schema, and
+      table_id for table.
+      
+      Find the schema_id from either: 1. The [schema_id] of the Schemas
+      resource. 2. In [Catalog Explorer] > select the schema > go to the
+      Details tab > the Schema ID field.
+      
+      Find the table_id from either: 1. The [table_id] of the Tables
+      resource. 2. In [Catalog Explorer] > select the table > go to the
+      Details tab > the Table ID field.
+      
+      [Catalog Explorer]: https://docs.databricks.com/aws/en/catalog-explorer/
+      [schema_id]: https://docs.databricks.com/api/workspace/schemas/get#schema_id
+      [table_id]: https://docs.databricks.com/api/workspace/tables/get#table_id
     REFRESH_ID: Unique id of the refresh operation.`
 
 	cmd.Annotations = make(map[string]string)
@@ -588,8 +710,8 @@ func newListMonitor() *cobra.Command {
 
 	var listMonitorReq dataquality.ListMonitorRequest
 
-	cmd.Flags().IntVar(&listMonitorReq.PageSize, "page-size", listMonitorReq.PageSize, ``)
-	cmd.Flags().StringVar(&listMonitorReq.PageToken, "page-token", listMonitorReq.PageToken, ``)
+	cmd.Flags().IntVar(&listMonitorReq.PageSize, "page-size", listMonitorReq.PageSize, `Wire name: 'page_size'.`)
+	cmd.Flags().StringVar(&listMonitorReq.PageToken, "page-token", listMonitorReq.PageToken, `Wire name: 'page_token'.`)
 
 	cmd.Use = "list-monitor"
 	cmd.Short = `List monitors.`
@@ -639,25 +761,45 @@ func newListRefresh() *cobra.Command {
 
 	var listRefreshReq dataquality.ListRefreshRequest
 
-	cmd.Flags().IntVar(&listRefreshReq.PageSize, "page-size", listRefreshReq.PageSize, ``)
-	cmd.Flags().StringVar(&listRefreshReq.PageToken, "page-token", listRefreshReq.PageToken, ``)
+	cmd.Flags().IntVar(&listRefreshReq.PageSize, "page-size", listRefreshReq.PageSize, `Wire name: 'page_size'.`)
+	cmd.Flags().StringVar(&listRefreshReq.PageToken, "page-token", listRefreshReq.PageToken, `Wire name: 'page_token'.`)
 
 	cmd.Use = "list-refresh OBJECT_TYPE OBJECT_ID"
 	cmd.Short = `List refreshes.`
 	cmd.Long = `List refreshes.
   
-  List data quality monitor refreshes.
+  List data quality monitor refreshes. The call must be made in the same
+  workspace as where the monitor was created.
   
-  For the table object_type, the caller must either: 1. be an owner of the
-  table's parent catalog 2. have **USE_CATALOG** on the table's parent catalog
-  and be an owner of the table's parent schema 3. have the following
-  permissions: - **USE_CATALOG** on the table's parent catalog - **USE_SCHEMA**
-  on the table's parent schema - **SELECT** privilege on the table.
+  For the table object_type, the caller must have either of the following
+  sets of permissions: 1. **MANAGE** and **USE_CATALOG** on the table's parent
+  catalog. 2. **USE_CATALOG** on the table's parent catalog, and **MANAGE** and
+  **USE_SCHEMA** on the table's parent schema. 3. **USE_CATALOG** on the table's
+  parent catalog, **USE_SCHEMA** on the table's parent schema, and **SELECT** on
+  the table.
+  
+  For the schema object_type, the caller must have either of the following
+  sets of permissions: 1. **MANAGE** and **USE_CATALOG** on the schema's parent
+  catalog. 2. **USE_CATALOG** on the schema's parent catalog, and **USE_SCHEMA**
+  on the schema.
 
   Arguments:
     OBJECT_TYPE: The type of the monitored object. Can be one of the following: schema or
       table.
-    OBJECT_ID: The UUID of the request object. For example, schema id.`
+    OBJECT_ID: The UUID of the request object. It is schema_id for schema, and
+      table_id for table.
+      
+      Find the schema_id from either: 1. The [schema_id] of the Schemas
+      resource. 2. In [Catalog Explorer] > select the schema > go to the
+      Details tab > the Schema ID field.
+      
+      Find the table_id from either: 1. The [table_id] of the Tables
+      resource. 2. In [Catalog Explorer] > select the table > go to the
+      Details tab > the Table ID field.
+      
+      [Catalog Explorer]: https://docs.databricks.com/aws/en/catalog-explorer/
+      [schema_id]: https://docs.databricks.com/api/workspace/schemas/get#schema_id
+      [table_id]: https://docs.databricks.com/api/workspace/tables/get#table_id`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -717,22 +859,54 @@ func newUpdateMonitor() *cobra.Command {
   
   Update a data quality monitor on Unity Catalog object.
   
-  For the table object_type, The caller must either: 1. be an owner of the
-  table's parent catalog 2. have **USE_CATALOG** on the table's parent catalog
-  and be an owner of the table's parent schema 3. have the following
-  permissions: - **USE_CATALOG** on the table's parent catalog - **USE_SCHEMA**
-  on the table's parent schema - be an owner of the table.
+  For the table object_type, the caller must have either of the following
+  sets of permissions: 1. **MANAGE** and **USE_CATALOG** on the table's parent
+  catalog. 2. **USE_CATALOG** on the table's parent catalog, and **MANAGE** and
+  **USE_SCHEMA** on the table's parent schema. 3. **USE_CATALOG** on the table's
+  parent catalog, **USE_SCHEMA** on the table's parent schema, and **MANAGE** on
+  the table.
+  
+  For the schema object_type, the caller must have either of the following
+  sets of permissions: 1. **MANAGE** and **USE_CATALOG** on the schema's parent
+  catalog. 2. **USE_CATALOG** on the schema's parent catalog, and **MANAGE** and
+  **USE_SCHEMA** on the schema.
 
   Arguments:
     OBJECT_TYPE: The type of the monitored object. Can be one of the following: schema or
       table.
-    OBJECT_ID: The UUID of the request object. For example, schema id.
+    OBJECT_ID: The UUID of the request object. It is schema_id for schema, and
+      table_id for table.
+      
+      Find the schema_id from either: 1. The [schema_id] of the Schemas
+      resource. 2. In [Catalog Explorer] > select the schema > go to the
+      Details tab > the Schema ID field.
+      
+      Find the table_id from either: 1. The [table_id] of the Tables
+      resource. 2. In [Catalog Explorer] > select the table > go to the
+      Details tab > the Table ID field.
+      
+      [Catalog Explorer]: https://docs.databricks.com/aws/en/catalog-explorer/
+      [schema_id]: https://docs.databricks.com/api/workspace/schemas/get#schema_id
+      [table_id]: https://docs.databricks.com/api/workspace/tables/get#table_id
     UPDATE_MASK: The field mask to specify which fields to update as a comma-separated
       list. Example value:
       data_profiling_config.custom_metrics,data_profiling_config.schedule.quartz_cron_expression
     OBJECT_TYPE: The type of the monitored object. Can be one of the following: schema or
       table.
-    OBJECT_ID: The UUID of the request object. For example, schema id.`
+    OBJECT_ID: The UUID of the request object. It is schema_id for schema, and
+      table_id for table.
+      
+      Find the schema_id from either: 1. The [schema_id] of the Schemas
+      resource. 2. In [Catalog Explorer] > select the schema > go to the
+      Details tab > the Schema ID field.
+      
+      Find the table_id from either: 1. The [table_id] of the Tables
+      resource. 2. In [Catalog Explorer] > select the table > go to the
+      Details tab > the Table ID field.
+      
+      [Catalog Explorer]: https://docs.databricks.com/aws/en/catalog-explorer/
+      [schema_id]: https://docs.databricks.com/api/workspace/schemas/get#schema_id
+      [table_id]: https://docs.databricks.com/api/workspace/tables/get#table_id`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -821,12 +995,38 @@ func newUpdateRefresh() *cobra.Command {
   Arguments:
     OBJECT_TYPE: The type of the monitored object. Can be one of the following: schema or
       table.
-    OBJECT_ID: The UUID of the request object. For example, schema id.
+    OBJECT_ID: The UUID of the request object. It is schema_id for schema, and
+      table_id for table.
+      
+      Find the schema_id from either: 1. The [schema_id] of the Schemas
+      resource. 2. In [Catalog Explorer] > select the schema > go to the
+      Details tab > the Schema ID field.
+      
+      Find the table_id from either: 1. The [table_id] of the Tables
+      resource. 2. In [Catalog Explorer] > select the table > go to the
+      Details tab > the Table ID field.
+      
+      [Catalog Explorer]: https://docs.databricks.com/aws/en/catalog-explorer/
+      [schema_id]: https://docs.databricks.com/api/workspace/schemas/get#schema_id
+      [table_id]: https://docs.databricks.com/api/workspace/tables/get#table_id
     REFRESH_ID: Unique id of the refresh operation.
     UPDATE_MASK: The field mask to specify which fields to update.
     OBJECT_TYPE: The type of the monitored object. Can be one of the following: schemaor
       table.
-    OBJECT_ID: The UUID of the request object. For example, table id.`
+    OBJECT_ID: The UUID of the request object. It is schema_id for schema, and
+      table_id for table.
+      
+      Find the schema_id from either: 1. The [schema_id] of the Schemas
+      resource. 2. In [Catalog Explorer] > select the schema > go to the
+      Details tab > the Schema ID field.
+      
+      Find the table_id from either: 1. The [table_id] of the Tables
+      resource. 2. In [Catalog Explorer] > select the table > go to the
+      Details tab > the Table ID field.
+      
+      [Catalog Explorer]: https://docs.databricks.com/aws/en/catalog-explorer/
+      [schema_id]: https://docs.databricks.com/api/workspace/schemas/get#schema_id
+      [table_id]: https://docs.databricks.com/api/workspace/tables/get#table_id`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -865,6 +1065,7 @@ func newUpdateRefresh() *cobra.Command {
 		if err != nil {
 			return fmt.Errorf("invalid REFRESH_ID: %s", args[2])
 		}
+
 		updateRefreshReq.UpdateMask = args[3]
 		if !cmd.Flags().Changed("json") {
 			updateRefreshReq.Refresh.ObjectType = args[4]

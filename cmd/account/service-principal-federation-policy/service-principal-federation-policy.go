@@ -115,8 +115,8 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.PolicyId, "policy-id", createReq.PolicyId, `The identifier for the federation policy.`)
-	cmd.Flags().StringVar(&createReq.Policy.Description, "description", createReq.Policy.Description, `Description of the federation policy.`)
+	cmd.Flags().StringVar(&createReq.PolicyId, "policy-id", createReq.PolicyId, `The identifier for the federation policy. Wire name: 'policy_id'.`)
+	cmd.Flags().StringVar(&createReq.Policy.Description, "description", createReq.Policy.Description, `Description of the federation policy. Wire name: 'description'.`)
 	// TODO: complex arg: oidc_policy
 
 	cmd.Use = "create SERVICE_PRINCIPAL_ID"
@@ -216,6 +216,7 @@ func newDelete() *cobra.Command {
 		if err != nil {
 			return fmt.Errorf("invalid SERVICE_PRINCIPAL_ID: %s", args[0])
 		}
+
 		deleteReq.PolicyId = args[1]
 
 		err = a.ServicePrincipalFederationPolicy.Delete(ctx, deleteReq)
@@ -277,6 +278,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return fmt.Errorf("invalid SERVICE_PRINCIPAL_ID: %s", args[0])
 		}
+
 		getReq.PolicyId = args[1]
 
 		response, err := a.ServicePrincipalFederationPolicy.Get(ctx, getReq)
@@ -312,8 +314,8 @@ func newList() *cobra.Command {
 
 	var listReq oauth2.ListServicePrincipalFederationPoliciesRequest
 
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)
+	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Wire name: 'page_size'.`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Wire name: 'page_token'.`)
 
 	cmd.Use = "list SERVICE_PRINCIPAL_ID"
 	cmd.Short = `List service principal federation policies.`
@@ -375,8 +377,8 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.UpdateMask, "update-mask", updateReq.UpdateMask, `The field mask specifies which fields of the policy to update.`)
-	cmd.Flags().StringVar(&updateReq.Policy.Description, "description", updateReq.Policy.Description, `Description of the federation policy.`)
+	cmd.Flags().StringVar(&updateReq.UpdateMask, "update-mask", updateReq.UpdateMask, `The field mask specifies which fields of the policy to update. Wire name: 'update_mask'.`)
+	cmd.Flags().StringVar(&updateReq.Policy.Description, "description", updateReq.Policy.Description, `Description of the federation policy. Wire name: 'description'.`)
 	// TODO: complex arg: oidc_policy
 
 	cmd.Use = "update SERVICE_PRINCIPAL_ID POLICY_ID"
@@ -417,6 +419,7 @@ func newUpdate() *cobra.Command {
 		if err != nil {
 			return fmt.Errorf("invalid SERVICE_PRINCIPAL_ID: %s", args[0])
 		}
+
 		updateReq.PolicyId = args[1]
 
 		response, err := a.ServicePrincipalFederationPolicy.Update(ctx, updateReq)

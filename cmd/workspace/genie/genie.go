@@ -736,8 +736,8 @@ func newListConversationMessages() *cobra.Command {
 
 	var listConversationMessagesReq dashboards.GenieListConversationMessagesRequest
 
-	cmd.Flags().IntVar(&listConversationMessagesReq.PageSize, "page-size", listConversationMessagesReq.PageSize, `Maximum number of messages to return per page.`)
-	cmd.Flags().StringVar(&listConversationMessagesReq.PageToken, "page-token", listConversationMessagesReq.PageToken, `Token to get the next page of results.`)
+	cmd.Flags().IntVar(&listConversationMessagesReq.PageSize, "page-size", listConversationMessagesReq.PageSize, `Maximum number of messages to return per page. Wire name: 'page_size'.`)
+	cmd.Flags().StringVar(&listConversationMessagesReq.PageToken, "page-token", listConversationMessagesReq.PageToken, `Token to get the next page of results. Wire name: 'page_token'.`)
 
 	cmd.Use = "list-conversation-messages SPACE_ID CONVERSATION_ID"
 	cmd.Short = `List conversation messages.`
@@ -797,9 +797,9 @@ func newListConversations() *cobra.Command {
 
 	var listConversationsReq dashboards.GenieListConversationsRequest
 
-	cmd.Flags().BoolVar(&listConversationsReq.IncludeAll, "include-all", listConversationsReq.IncludeAll, `Include all conversations in the space across all users.`)
-	cmd.Flags().IntVar(&listConversationsReq.PageSize, "page-size", listConversationsReq.PageSize, `Maximum number of conversations to return per page.`)
-	cmd.Flags().StringVar(&listConversationsReq.PageToken, "page-token", listConversationsReq.PageToken, `Token to get the next page of results.`)
+	cmd.Flags().BoolVar(&listConversationsReq.IncludeAll, "include-all", listConversationsReq.IncludeAll, `Include all conversations in the space across all users. Wire name: 'include_all'.`)
+	cmd.Flags().IntVar(&listConversationsReq.PageSize, "page-size", listConversationsReq.PageSize, `Maximum number of conversations to return per page. Wire name: 'page_size'.`)
+	cmd.Flags().StringVar(&listConversationsReq.PageToken, "page-token", listConversationsReq.PageToken, `Token to get the next page of results. Wire name: 'page_token'.`)
 
 	cmd.Use = "list-conversations SPACE_ID"
 	cmd.Short = `List conversations in a Genie Space.`
@@ -857,8 +857,8 @@ func newListSpaces() *cobra.Command {
 
 	var listSpacesReq dashboards.GenieListSpacesRequest
 
-	cmd.Flags().IntVar(&listSpacesReq.PageSize, "page-size", listSpacesReq.PageSize, `Maximum number of spaces to return per page.`)
-	cmd.Flags().StringVar(&listSpacesReq.PageToken, "page-token", listSpacesReq.PageToken, `Pagination token for getting the next page of results.`)
+	cmd.Flags().IntVar(&listSpacesReq.PageSize, "page-size", listSpacesReq.PageSize, `Maximum number of spaces to return per page. Wire name: 'page_size'.`)
+	cmd.Flags().StringVar(&listSpacesReq.PageToken, "page-token", listSpacesReq.PageToken, `Pagination token for getting the next page of results. Wire name: 'page_token'.`)
 
 	cmd.Use = "list-spaces"
 	cmd.Short = `List Genie spaces.`
@@ -966,6 +966,7 @@ func newSendMessageFeedback() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid RATING: %s", args[3])
 			}
+
 		}
 
 		err = w.Genie.SendMessageFeedback(ctx, sendMessageFeedbackReq)
