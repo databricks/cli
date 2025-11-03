@@ -1,0 +1,12 @@
+# https://github.com/databricks/cli/issues/3864
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+targets:
+  green:
+    resources:
+      jobs:
+        interim_gold_layer_job:
+          permissions:
+          - user_name: $USERNAME
+            level: CAN_MANAGE_RUN

@@ -1,0 +1,9 @@
+
+>>> errcode [CLI] bundle destroy -t green --auto-approve
+The following resources will be deleted:
+  delete job interim_gold_layer_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/green
+
+Deleting files...
+Destroy complete!

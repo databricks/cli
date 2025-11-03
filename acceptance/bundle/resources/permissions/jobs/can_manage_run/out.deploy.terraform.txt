@@ -1,0 +1,17 @@
+
+>>> errcode [CLI] bundle deploy -t green
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/green/files...
+Deploying resources...
+Error: terraform apply: exit status 1
+
+Error: cannot create permissions: cannot remove management permissions for the current user for job, allowed levels: CAN_MANAGE, IS_OWNER
+
+  with databricks_permissions.job_interim_gold_layer_job,
+  on bundle.tf.json line 42, in resource.databricks_permissions.job_interim_gold_layer_job:
+  42:       }
+
+
+
+Updating deployment state...
+
+Exit code: 1
