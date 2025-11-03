@@ -9,9 +9,9 @@ resources:
            * so we use the project name as part as the name.
            */}}
       name: {{.project_name}}_etl
-{{- if or (eq default_catalog "") (eq default_catalog "hive_metastore")}}
-  {{- if $serverless }}
-      ## Catalog is required for serverless compute
+{{- if or (eq .default_catalog "") (eq .default_catalog "hive_metastore")}}
+  {{- if $serverless}}
+      # Serverless compute requires Unity Catalog
       catalog: ${var.catalog}
   {{- else}}
       ## Specify the 'catalog' field to configure this pipeline to make use of Unity Catalog:

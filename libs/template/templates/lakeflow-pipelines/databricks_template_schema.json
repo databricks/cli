@@ -65,7 +65,7 @@
         },
         "default_catalog": {
             "type": "string",
-            "default": "{{default_catalog}}",
+            "default": "{{if eq (default_catalog) \"\"}}hive_metastore{{else}}{{default_catalog}}{{end}}",
             "pattern": "^\\w*$",
             "pattern_match_failure_message": "Invalid catalog name.",
             "description": "Default catalog for any tables created by this project{{if eq (default_catalog) \"\"}} (leave blank when not using Unity Catalog){{end}}",

@@ -1,10 +1,10 @@
 {
   "plan": {
-    "resources.jobs.project_name_[UNIQUE_NAME]_job": {
+    "resources.jobs.sample_job": {
       "depends_on": [
         {
-          "node": "resources.pipelines.project_name_[UNIQUE_NAME]_pipeline",
-          "label": "${resources.pipelines.project_name_[UNIQUE_NAME]_pipeline.id}"
+          "node": "resources.pipelines.project_name_[UNIQUE_NAME]_etl",
+          "label": "${resources.pipelines.project_name_[UNIQUE_NAME]_etl.id}"
         }
       ],
       "action": "create",
@@ -27,20 +27,42 @@
                 "data_security_mode": "SINGLE_USER",
                 "node_type_id": "[NODE_TYPE_ID]",
                 "num_workers": 0,
-                "spark_version": "15.4.x-scala2.12"
+                "spark_version": "16.4.x-scala2.12"
               }
             }
           ],
           "max_concurrent_runs": 1,
-          "name": "project_name_[UNIQUE_NAME]_job",
+          "name": "sample_job",
+          "parameters": [
+            {
+              "default": "hive_metastore",
+              "name": "catalog"
+            },
+            {
+              "default": "prod",
+              "name": "schema"
+            }
+          ],
           "queue": {
             "enabled": true
           },
           "tasks": [
             {
+              "job_cluster_key": "job_cluster",
+              "libraries": [
+                {
+                  "whl": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/artifacts/.internal/project_name_[UNIQUE_NAME]-0.0.1-py3-none-any.whl"
+                }
+              ],
+              "notebook_task": {
+                "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/files/src/sample_notebook"
+              },
+              "task_key": "notebook_task"
+            },
+            {
               "depends_on": [
                 {
-                  "task_key": "refresh_pipeline"
+                  "task_key": "notebook_task"
                 }
               ],
               "job_cluster_key": "job_cluster",
@@ -51,16 +73,15 @@
               ],
               "python_wheel_task": {
                 "entry_point": "main",
-                "package_name": "project_name_[UNIQUE_NAME]"
+                "package_name": "project_name_[UNIQUE_NAME]",
+                "parameters": [
+                  "--catalog",
+                  "hive_metastore",
+                  "--schema",
+                  "prod"
+                ]
               },
-              "task_key": "main_task"
-            },
-            {
-              "job_cluster_key": "job_cluster",
-              "notebook_task": {
-                "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/files/src/notebook"
-              },
-              "task_key": "notebook_task"
+              "task_key": "python_wheel_task"
             },
             {
               "depends_on": [
@@ -69,7 +90,7 @@
                 }
               ],
               "pipeline_task": {
-                "pipeline_id": "${resources.pipelines.project_name_[UNIQUE_NAME]_pipeline.id}"
+                "pipeline_id": "${resources.pipelines.project_name_[UNIQUE_NAME]_etl.id}"
               },
               "task_key": "refresh_pipeline"
             }
@@ -83,15 +104,15 @@
           }
         },
         "vars": {
-          "tasks[2].pipeline_task.pipeline_id": "${resources.pipelines.project_name_[UNIQUE_NAME]_pipeline.id}"
+          "tasks[2].pipeline_task.pipeline_id": "${resources.pipelines.project_name_[UNIQUE_NAME]_etl.id}"
         }
       }
     },
-    "resources.jobs.project_name_[UNIQUE_NAME]_job.permissions": {
+    "resources.jobs.sample_job.permissions": {
       "depends_on": [
         {
-          "node": "resources.jobs.project_name_[UNIQUE_NAME]_job",
-          "label": "${resources.jobs.project_name_[UNIQUE_NAME]_job.id}"
+          "node": "resources.jobs.sample_job",
+          "label": "${resources.jobs.sample_job.id}"
         }
       ],
       "action": "create",
@@ -106,40 +127,43 @@
           ]
         },
         "vars": {
-          "object_id": "/jobs/${resources.jobs.project_name_[UNIQUE_NAME]_job.id}"
+          "object_id": "/jobs/${resources.jobs.sample_job.id}"
         }
       }
     },
-    "resources.pipelines.project_name_[UNIQUE_NAME]_pipeline": {
+    "resources.pipelines.project_name_[UNIQUE_NAME]_etl": {
       "action": "create",
       "new_state": {
         "config": {
           "channel": "CURRENT",
-          "configuration": {
-            "bundle.sourcePath": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/files/src"
-          },
           "deployment": {
             "kind": "BUNDLE",
             "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/state/metadata.json"
           },
           "edition": "ADVANCED",
+          "environment": {
+            "dependencies": [
+              "--editable /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/files"
+            ]
+          },
           "libraries": [
             {
-              "notebook": {
-                "path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/files/src/pipeline"
+              "glob": {
+                "include": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/files/src/project_name_[UNIQUE_NAME]_etl/transformations/**"
               }
             }
           ],
-          "name": "project_name_[UNIQUE_NAME]_pipeline",
-          "schema": "project_name_[UNIQUE_NAME]_prod"
+          "name": "project_name_[UNIQUE_NAME]_etl",
+          "root_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/files/src/project_name_[UNIQUE_NAME]_etl",
+          "schema": "prod"
         }
       }
     },
-    "resources.pipelines.project_name_[UNIQUE_NAME]_pipeline.permissions": {
+    "resources.pipelines.project_name_[UNIQUE_NAME]_etl.permissions": {
       "depends_on": [
         {
-          "node": "resources.pipelines.project_name_[UNIQUE_NAME]_pipeline",
-          "label": "${resources.pipelines.project_name_[UNIQUE_NAME]_pipeline.id}"
+          "node": "resources.pipelines.project_name_[UNIQUE_NAME]_etl",
+          "label": "${resources.pipelines.project_name_[UNIQUE_NAME]_etl.id}"
         }
       ],
       "action": "create",
@@ -154,7 +178,7 @@
           ]
         },
         "vars": {
-          "object_id": "/pipelines/${resources.pipelines.project_name_[UNIQUE_NAME]_pipeline.id}"
+          "object_id": "/pipelines/${resources.pipelines.project_name_[UNIQUE_NAME]_etl.id}"
         }
       }
     }
