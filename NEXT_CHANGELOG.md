@@ -9,6 +9,7 @@
 ### Dependency updates
 
 ### Bundles
+* Updated the default-python template to follow the Lakeflow conventions: pipelines as source files, pyproject.toml ([#3712](https://github.com/databricks/cli/pull/3712)).
 * Fix a permissions bug adding second IS\_OWNER and causing "The job must have exactly one owner." error. Introduced in 0.274.0. ([#3850](https://github.com/databricks/cli/pull/3850))
 
 ### API Changes

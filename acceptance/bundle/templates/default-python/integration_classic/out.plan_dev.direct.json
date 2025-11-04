@@ -1,10 +1,10 @@
 {
   "plan": {
-    "resources.jobs.project_name_[UNIQUE_NAME]_job": {
+    "resources.jobs.sample_job": {
       "depends_on": [
         {
-          "node": "resources.pipelines.project_name_[UNIQUE_NAME]_pipeline",
-          "label": "${resources.pipelines.project_name_[UNIQUE_NAME]_pipeline.id}"
+          "node": "resources.pipelines.project_name_[UNIQUE_NAME]_etl",
+          "label": "${resources.pipelines.project_name_[UNIQUE_NAME]_etl.id}"
         }
       ],
       "action": "create",
@@ -27,12 +27,22 @@
                 "data_security_mode": "SINGLE_USER",
                 "node_type_id": "[NODE_TYPE_ID]",
                 "num_workers": 0,
-                "spark_version": "15.4.x-scala2.12"
+                "spark_version": "16.4.x-scala2.12"
               }
             }
           ],
           "max_concurrent_runs": 4,
-          "name": "[dev [USERNAME]] project_name_[UNIQUE_NAME]_job",
+          "name": "[dev [USERNAME]] sample_job",
+          "parameters": [
+            {
+              "default": "hive_metastore",
+              "name": "catalog"
+            },
+            {
+              "default": "[USERNAME]",
+              "name": "schema"
+            }
+          ],
           "queue": {
             "enabled": true
           },
@@ -41,9 +51,21 @@
           },
           "tasks": [
             {
+              "job_cluster_key": "job_cluster",
+              "libraries": [
+                {
+                  "whl": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/artifacts/.internal/project_name_[UNIQUE_NAME]-0.0.1+[NUMID]-py3-none-any.whl"
+                }
+              ],
+              "notebook_task": {
+                "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/sample_notebook"
+              },
+              "task_key": "notebook_task"
+            },
+            {
               "depends_on": [
                 {
-                  "task_key": "refresh_pipeline"
+                  "task_key": "notebook_task"
                 }
               ],
               "job_cluster_key": "job_cluster",
@@ -54,16 +76,15 @@
               ],
               "python_wheel_task": {
                 "entry_point": "main",
-                "package_name": "project_name_[UNIQUE_NAME]"
+                "package_name": "project_name_[UNIQUE_NAME]",
+                "parameters": [
+                  "--catalog",
+                  "hive_metastore",
+                  "--schema",
+                  "[USERNAME]"
+                ]
               },
-              "task_key": "main_task"
-            },
-            {
-              "job_cluster_key": "job_cluster",
-              "notebook_task": {
-                "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/notebook"
-              },
-              "task_key": "notebook_task"
+              "task_key": "python_wheel_task"
             },
             {
               "depends_on": [
@@ -72,7 +93,7 @@
                 }
               ],
               "pipeline_task": {
-                "pipeline_id": "${resources.pipelines.project_name_[UNIQUE_NAME]_pipeline.id}"
+                "pipeline_id": "${resources.pipelines.project_name_[UNIQUE_NAME]_etl.id}"
               },
               "task_key": "refresh_pipeline"
             }
@@ -86,33 +107,36 @@
           }
         },
         "vars": {
-          "tasks[2].pipeline_task.pipeline_id": "${resources.pipelines.project_name_[UNIQUE_NAME]_pipeline.id}"
+          "tasks[2].pipeline_task.pipeline_id": "${resources.pipelines.project_name_[UNIQUE_NAME]_etl.id}"
         }
       }
     },
-    "resources.pipelines.project_name_[UNIQUE_NAME]_pipeline": {
+    "resources.pipelines.project_name_[UNIQUE_NAME]_etl": {
       "action": "create",
       "new_state": {
         "config": {
           "channel": "CURRENT",
-          "configuration": {
-            "bundle.sourcePath": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src"
-          },
           "deployment": {
             "kind": "BUNDLE",
             "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/state/metadata.json"
           },
           "development": true,
           "edition": "ADVANCED",
+          "environment": {
+            "dependencies": [
+              "--editable /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files"
+            ]
+          },
           "libraries": [
             {
-              "notebook": {
-                "path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/pipeline"
+              "glob": {
+                "include": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/project_name_[UNIQUE_NAME]_etl/transformations/**"
               }
             }
           ],
-          "name": "[dev [USERNAME]] project_name_[UNIQUE_NAME]_pipeline",
-          "schema": "project_name_[UNIQUE_NAME]_dev",
+          "name": "[dev [USERNAME]] project_name_[UNIQUE_NAME]_etl",
+          "root_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files/src/project_name_[UNIQUE_NAME]_etl",
+          "schema": "[USERNAME]",
           "tags": {
             "dev": "[USERNAME]"
           }
