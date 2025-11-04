@@ -78,7 +78,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().StringVar(&createReq.AwsRegion, "aws-region", createReq.AwsRegion, ``)
 	cmd.Flags().StringVar(&createReq.Cloud, "cloud", createReq.Cloud, `The cloud name.`)
 	// TODO: complex arg: cloud_resource_container
-	cmd.Flags().Var(&createReq.ComputeMode, "compute-mode", `If the compute mode is SERVERLESS, a serverless workspace is created that comes pre-configured with serverless compute and default storage, providing a fully-managed, enterprise-ready SaaS experience. Supported values: [HYBRID, SERVERLESS]`)
+	cmd.Flags().Var(&createReq.ComputeMode, "compute-mode", `If the compute mode is SERVERLESS, a serverless workspace is created that comes pre-configured with serverless compute and default storage, providing a fully-managed, enterprise-ready SaaS experience. Supported values: [HYBRID, SERVERLESS].`)
 	cmd.Flags().StringVar(&createReq.CredentialsId, "credentials-id", createReq.CredentialsId, `ID of the workspace's credential configuration object.`)
 	// TODO: map via StringToStringVar: custom_tags
 	cmd.Flags().StringVar(&createReq.DeploymentName, "deployment-name", createReq.DeploymentName, `The deployment name defines part of the subdomain for the workspace.`)
@@ -94,7 +94,7 @@ func newCreate() *cobra.Command {
   PREMIUM,
   STANDARD,
   UNKNOWN,
-]`)
+].`)
 	cmd.Flags().StringVar(&createReq.PrivateAccessSettingsId, "private-access-settings-id", createReq.PrivateAccessSettingsId, `ID of the workspace's private access settings object.`)
 	cmd.Flags().StringVar(&createReq.StorageConfigurationId, "storage-configuration-id", createReq.StorageConfigurationId, `ID of the workspace's storage configuration object.`)
 	cmd.Flags().StringVar(&createReq.StorageCustomerManagedKeyId, "storage-customer-managed-key-id", createReq.StorageCustomerManagedKeyId, `The ID of the workspace's storage encryption key configuration object.`)
@@ -398,7 +398,7 @@ func newUpdate() *cobra.Command {
   NOT_PROVISIONED,
   PROVISIONING,
   RUNNING,
-]`)
+].`)
 	// TODO: complex arg: gcp_managed_network_config
 	// TODO: complex arg: gke_config
 	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.Location, "location", updateReq.CustomerFacingWorkspace.Location, `The Google Cloud region of the workspace data plane in your Google account (for example, us-east4).`)

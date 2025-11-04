@@ -169,7 +169,7 @@ func newList() *cobra.Command {
 
 	var listReq sql.ListDashboardsRequest
 
-	cmd.Flags().Var(&listReq.Order, "order", `Name of dashboard attribute to order by. Supported values: [created_at, name]`)
+	cmd.Flags().Var(&listReq.Order, "order", `Name of dashboard attribute to order by. Supported values: [created_at, name].`)
 	cmd.Flags().IntVar(&listReq.Page, "page", listReq.Page, `Page number to retrieve.`)
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Number of dashboards to return per page.`)
 	cmd.Flags().StringVar(&listReq.Q, "q", listReq.Q, `Full text search term.`)
@@ -282,7 +282,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `The title of this dashboard that appears in list views and at the top of the dashboard page.`)
-	cmd.Flags().Var(&updateReq.RunAsRole, "run-as-role", `Sets the **Run as** role for the object. Supported values: [owner, viewer]`)
+	cmd.Flags().Var(&updateReq.RunAsRole, "run-as-role", `Sets the **Run as** role for the object. Supported values: [owner, viewer].`)
 	// TODO: array: tags
 
 	cmd.Use = "update DASHBOARD_ID"

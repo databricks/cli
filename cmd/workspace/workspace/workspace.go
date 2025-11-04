@@ -136,6 +136,7 @@ func newDelete() *cobra.Command {
 				return fmt.Errorf("expected to have the absolute path of the notebook or directory")
 			}
 			deleteReq.Path = args[0]
+
 		}
 
 		err = w.Workspace.Delete(ctx, deleteReq)
@@ -179,7 +180,7 @@ func newExport() *cobra.Command {
   RAW,
   R_MARKDOWN,
   SOURCE,
-]`)
+].`)
 
 	cmd.Use = "export PATH"
 	cmd.Short = `Export a workspace object.`
@@ -443,8 +444,8 @@ func newImport() *cobra.Command {
   RAW,
   R_MARKDOWN,
   SOURCE,
-]`)
-	cmd.Flags().Var(&importReq.Language, "language", `The language of the object. Supported values: [PYTHON, R, SCALA, SQL]`)
+].`)
+	cmd.Flags().Var(&importReq.Language, "language", `The language of the object. Supported values: [PYTHON, R, SCALA, SQL].`)
 	cmd.Flags().BoolVar(&importReq.Overwrite, "overwrite", importReq.Overwrite, `The flag that specifies whether to overwrite existing object.`)
 
 	cmd.Use = "import PATH"

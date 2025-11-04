@@ -58,7 +58,7 @@ func newGetWorkspaceAccessDetail() *cobra.Command {
 
 	var getWorkspaceAccessDetailReq iamv2.GetWorkspaceAccessDetailRequest
 
-	cmd.Flags().Var(&getWorkspaceAccessDetailReq.View, "view", `Controls what fields are returned. Supported values: [BASIC, FULL]`)
+	cmd.Flags().Var(&getWorkspaceAccessDetailReq.View, "view", `Controls what fields are returned. Supported values: [BASIC, FULL].`)
 
 	cmd.Use = "get-workspace-access-detail WORKSPACE_ID PRINCIPAL_ID"
 	cmd.Short = `Get workspace access details for a principal.`
@@ -93,6 +93,7 @@ func newGetWorkspaceAccessDetail() *cobra.Command {
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
+
 		_, err = fmt.Sscan(args[1], &getWorkspaceAccessDetailReq.PrincipalId)
 		if err != nil {
 			return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[1])
@@ -364,4 +365,4 @@ func newResolveUser() *cobra.Command {
 	return cmd
 }
 
-// end service account_iamV2
+// end service AccountIamV2

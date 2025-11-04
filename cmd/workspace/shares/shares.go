@@ -329,7 +329,7 @@ func newSharePermissions() *cobra.Command {
   metastore admin or the owner of the share.
 
   Arguments:
-    NAME: The name of the share.`
+    NAME: The name of the Recipient.`
 
 	cmd.Annotations = make(map[string]string)
 

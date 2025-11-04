@@ -86,7 +86,7 @@ func newCreate() *cobra.Command {
 	// TODO: complex arg: active_deployment
 	// TODO: complex arg: app_status
 	cmd.Flags().StringVar(&createReq.App.BudgetPolicyId, "budget-policy-id", createReq.App.BudgetPolicyId, ``)
-	cmd.Flags().Var(&createReq.App.ComputeSize, "compute-size", `Supported values: [LARGE, LIQUID, MEDIUM]`)
+	cmd.Flags().Var(&createReq.App.ComputeSize, "compute-size", `Supported values: [LARGE, LIQUID, MEDIUM].`)
 	// TODO: complex arg: compute_status
 	cmd.Flags().StringVar(&createReq.App.Description, "description", createReq.App.Description, `The description of the app.`)
 	// TODO: array: effective_user_api_scopes
@@ -380,7 +380,7 @@ func newDeploy() *cobra.Command {
 
 	// TODO: complex arg: deployment_artifacts
 	cmd.Flags().StringVar(&deployReq.AppDeployment.DeploymentId, "deployment-id", deployReq.AppDeployment.DeploymentId, `The unique id of the deployment.`)
-	cmd.Flags().Var(&deployReq.AppDeployment.Mode, "mode", `The mode of which the deployment will manage the source code. Supported values: [AUTO_SYNC, SNAPSHOT]`)
+	cmd.Flags().Var(&deployReq.AppDeployment.Mode, "mode", `The mode of which the deployment will manage the source code. Supported values: [AUTO_SYNC, SNAPSHOT].`)
 	cmd.Flags().StringVar(&deployReq.AppDeployment.SourceCodePath, "source-code-path", deployReq.AppDeployment.SourceCodePath, `The workspace file system path of the source code used to create the app deployment.`)
 	// TODO: complex arg: status
 
@@ -1106,7 +1106,7 @@ func newUpdate() *cobra.Command {
 	// TODO: complex arg: active_deployment
 	// TODO: complex arg: app_status
 	cmd.Flags().StringVar(&updateReq.App.BudgetPolicyId, "budget-policy-id", updateReq.App.BudgetPolicyId, ``)
-	cmd.Flags().Var(&updateReq.App.ComputeSize, "compute-size", `Supported values: [LARGE, LIQUID, MEDIUM]`)
+	cmd.Flags().Var(&updateReq.App.ComputeSize, "compute-size", `Supported values: [LARGE, LIQUID, MEDIUM].`)
 	// TODO: complex arg: compute_status
 	cmd.Flags().StringVar(&updateReq.App.Description, "description", updateReq.App.Description, `The description of the app.`)
 	// TODO: array: effective_user_api_scopes

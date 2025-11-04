@@ -79,7 +79,7 @@ func newCreateScope() *cobra.Command {
 
 	// TODO: complex arg: backend_azure_keyvault
 	cmd.Flags().StringVar(&createScopeReq.InitialManagePrincipal, "initial-manage-principal", createScopeReq.InitialManagePrincipal, `The principal that is initially granted MANAGE permission to the created scope.`)
-	cmd.Flags().Var(&createScopeReq.ScopeBackendType, "scope-backend-type", `The backend type the scope will be created with. Supported values: [AZURE_KEYVAULT, DATABRICKS]`)
+	cmd.Flags().Var(&createScopeReq.ScopeBackendType, "scope-backend-type", `The backend type the scope will be created with. Supported values: [AZURE_KEYVAULT, DATABRICKS].`)
 
 	cmd.Use = "create-scope SCOPE"
 	cmd.Short = `Create a new secret scope.`
@@ -906,6 +906,7 @@ func newPutAcl() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid PERMISSION: %s", args[2])
 			}
+
 		}
 
 		err = w.Secrets.PutAcl(ctx, putAclReq)

@@ -324,6 +324,7 @@ func newEdit() *cobra.Command {
 				return fmt.Errorf("expected to have the id of the policy to update")
 			}
 			editReq.PolicyId = args[0]
+
 		}
 
 		err = w.ClusterPolicies.Edit(ctx, editReq)
@@ -564,8 +565,8 @@ func newList() *cobra.Command {
 
 	var listReq compute.ListClusterPoliciesRequest
 
-	cmd.Flags().Var(&listReq.SortColumn, "sort-column", `The cluster policy attribute to sort by. Supported values: [POLICY_CREATION_TIME, POLICY_NAME]`)
-	cmd.Flags().Var(&listReq.SortOrder, "sort-order", `The order in which the policies get listed. Supported values: [ASC, DESC]`)
+	cmd.Flags().Var(&listReq.SortColumn, "sort-column", `The cluster policy attribute to sort by. Supported values: [POLICY_CREATION_TIME, POLICY_NAME].`)
+	cmd.Flags().Var(&listReq.SortOrder, "sort-order", `The order in which the policies get listed. Supported values: [ASC, DESC].`)
 
 	cmd.Use = "list"
 	cmd.Short = `List cluster policies.`

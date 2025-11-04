@@ -74,7 +74,7 @@ func newCreate() *cobra.Command {
 	// TODO: any: options
 	cmd.Flags().StringVar(&createReq.Parent, "parent", createReq.Parent, `The identifier of the workspace folder containing the object.`)
 	cmd.Flags().StringVar(&createReq.Query, "query", createReq.Query, `The text of the query to be run.`)
-	cmd.Flags().Var(&createReq.RunAsRole, "run-as-role", `Sets the **Run as** role for the object. Supported values: [owner, viewer]`)
+	cmd.Flags().Var(&createReq.RunAsRole, "run-as-role", `Sets the **Run as** role for the object. Supported values: [owner, viewer].`)
 	// TODO: array: tags
 
 	cmd.Use = "create"
@@ -402,7 +402,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `The title of this query that appears in list views, widget headings, and on the query page.`)
 	// TODO: any: options
 	cmd.Flags().StringVar(&updateReq.Query, "query", updateReq.Query, `The text of the query to be run.`)
-	cmd.Flags().Var(&updateReq.RunAsRole, "run-as-role", `Sets the **Run as** role for the object. Supported values: [owner, viewer]`)
+	cmd.Flags().Var(&updateReq.RunAsRole, "run-as-role", `Sets the **Run as** role for the object. Supported values: [owner, viewer].`)
 	// TODO: array: tags
 
 	cmd.Use = "update QUERY_ID"

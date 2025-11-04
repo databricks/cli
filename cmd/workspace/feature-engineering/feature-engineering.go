@@ -119,24 +119,28 @@ func newCreateFeature() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid SOURCE: %s", args[1])
 			}
+
 		}
 		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[2], &createFeatureReq.Feature.Inputs)
 			if err != nil {
 				return fmt.Errorf("invalid INPUTS: %s", args[2])
 			}
+
 		}
 		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[3], &createFeatureReq.Feature.Function)
 			if err != nil {
 				return fmt.Errorf("invalid FUNCTION: %s", args[3])
 			}
+
 		}
 		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[4], &createFeatureReq.Feature.TimeWindow)
 			if err != nil {
 				return fmt.Errorf("invalid TIME_WINDOW: %s", args[4])
 			}
+
 		}
 
 		response, err := w.FeatureEngineering.CreateFeature(ctx, createFeatureReq)
@@ -393,24 +397,28 @@ func newUpdateFeature() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid SOURCE: %s", args[2])
 			}
+
 		}
 		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[3], &updateFeatureReq.Feature.Inputs)
 			if err != nil {
 				return fmt.Errorf("invalid INPUTS: %s", args[3])
 			}
+
 		}
 		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[4], &updateFeatureReq.Feature.Function)
 			if err != nil {
 				return fmt.Errorf("invalid FUNCTION: %s", args[4])
 			}
+
 		}
 		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[5], &updateFeatureReq.Feature.TimeWindow)
 			if err != nil {
 				return fmt.Errorf("invalid TIME_WINDOW: %s", args[5])
 			}
+
 		}
 
 		response, err := w.FeatureEngineering.UpdateFeature(ctx, updateFeatureReq)

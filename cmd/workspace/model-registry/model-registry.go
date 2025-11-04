@@ -167,6 +167,7 @@ func newApproveTransitionRequest() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid ARCHIVE_EXISTING_VERSIONS: %s", args[3])
 			}
+
 		}
 
 		response, err := w.ModelRegistry.ApproveTransitionRequest(ctx, approveTransitionRequestReq)
@@ -571,7 +572,7 @@ func newCreateWebhook() *cobra.Command {
 	// TODO: complex arg: http_url_spec
 	// TODO: complex arg: job_spec
 	cmd.Flags().StringVar(&createWebhookReq.ModelName, "model-name", createWebhookReq.ModelName, `If model name is not specified, a registry-wide webhook is created that listens for the specified events across all versions of all registered models.`)
-	cmd.Flags().Var(&createWebhookReq.Status, "status", `Enable or disable triggering the webhook, or put the webhook into test mode. Supported values: [ACTIVE, DISABLED, TEST_MODE]`)
+	cmd.Flags().Var(&createWebhookReq.Status, "status", `Enable or disable triggering the webhook, or put the webhook into test mode. Supported values: [ACTIVE, DISABLED, TEST_MODE].`)
 
 	cmd.Use = "create-webhook"
 	cmd.Short = `Create a webhook.`
@@ -2147,7 +2148,7 @@ func newTestRegistryWebhook() *cobra.Command {
   TRANSITION_REQUEST_TO_ARCHIVED_CREATED,
   TRANSITION_REQUEST_TO_PRODUCTION_CREATED,
   TRANSITION_REQUEST_TO_STAGING_CREATED,
-]`)
+].`)
 
 	cmd.Use = "test-registry-webhook ID"
 	cmd.Short = `Test a webhook.`
@@ -2301,6 +2302,7 @@ func newTransitionStage() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid ARCHIVE_EXISTING_VERSIONS: %s", args[3])
 			}
+
 		}
 
 		response, err := w.ModelRegistry.TransitionStage(ctx, transitionStageReq)
@@ -2669,7 +2671,7 @@ func newUpdateWebhook() *cobra.Command {
 	// TODO: array: events
 	// TODO: complex arg: http_url_spec
 	// TODO: complex arg: job_spec
-	cmd.Flags().Var(&updateWebhookReq.Status, "status", `Supported values: [ACTIVE, DISABLED, TEST_MODE]`)
+	cmd.Flags().Var(&updateWebhookReq.Status, "status", `Supported values: [ACTIVE, DISABLED, TEST_MODE].`)
 
 	cmd.Use = "update-webhook ID"
 	cmd.Short = `Update a webhook.`

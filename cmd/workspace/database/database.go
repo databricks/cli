@@ -284,9 +284,9 @@ func newCreateDatabaseInstanceRole() *cobra.Command {
 	cmd.Flags().StringVar(&createDatabaseInstanceRoleReq.DatabaseInstanceName, "database-instance-name", createDatabaseInstanceRoleReq.DatabaseInstanceName, ``)
 	// TODO: complex arg: attributes
 	// TODO: complex arg: effective_attributes
-	cmd.Flags().Var(&createDatabaseInstanceRoleReq.DatabaseInstanceRole.IdentityType, "identity-type", `The type of the role. Supported values: [GROUP, PG_ONLY, SERVICE_PRINCIPAL, USER]`)
+	cmd.Flags().Var(&createDatabaseInstanceRoleReq.DatabaseInstanceRole.IdentityType, "identity-type", `The type of the role. Supported values: [GROUP, PG_ONLY, SERVICE_PRINCIPAL, USER].`)
 	cmd.Flags().StringVar(&createDatabaseInstanceRoleReq.DatabaseInstanceRole.InstanceName, "instance-name", createDatabaseInstanceRoleReq.DatabaseInstanceRole.InstanceName, ``)
-	cmd.Flags().Var(&createDatabaseInstanceRoleReq.DatabaseInstanceRole.MembershipRole, "membership-role", `An enum value for a standard role that this role is a member of. Supported values: [DATABRICKS_SUPERUSER]`)
+	cmd.Flags().Var(&createDatabaseInstanceRoleReq.DatabaseInstanceRole.MembershipRole, "membership-role", `An enum value for a standard role that this role is a member of. Supported values: [DATABRICKS_SUPERUSER].`)
 
 	cmd.Use = "create-database-instance-role INSTANCE_NAME NAME"
 	cmd.Short = `Create a role for a Database Instance.`
