@@ -14,7 +14,7 @@
             "type": "string",
             "default": "yes",
             "enum": ["yes", "no"],
-            "description": "Include a Lakeflow job that runs a notebook",
+            "description": "Include a job that runs a notebook",
             "order": 2
         },
         "include_pipeline": {

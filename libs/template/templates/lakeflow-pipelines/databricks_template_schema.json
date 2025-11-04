@@ -33,7 +33,7 @@
             "default": "no",
             "type": "string",
             "enum": ["yes", "no"],
-            "description": "Include a Lakeflow job that runs a notebook",
+            "description": "Include a job that runs a notebook",
             "order": 3
         },
         "include_pipeline": {
