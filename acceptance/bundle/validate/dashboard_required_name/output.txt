@@ -1,0 +1,15 @@
+
+>>> [CLI] bundle validate
+Error: dashboard display_name is required
+  at resources.dashboards.my_dashboard
+  in databricks.yml:6:7
+
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Found 1 error
+
+Exit code: 1

@@ -47,7 +47,7 @@ func populatePlan(ctx context.Context, plan *deployplan.Plan, changes []*tfjson.
 		}
 
 		key := "resources." + group + "." + rc.Name
-		plan.Plan[key] = deployplan.PlanEntry{Action: actionType.StringFull()}
+		plan.Plan[key] = &deployplan.PlanEntry{Action: actionType.String()}
 	}
 }
 
@@ -59,10 +59,7 @@ func ShowPlanFile(ctx context.Context, tf *tfexec.Terraform, planPath string) (*
 		return nil, err
 	}
 
-	plan := &deployplan.Plan{
-		Plan: make(map[string]deployplan.PlanEntry),
-	}
-
+	plan := deployplan.NewPlan()
 	populatePlan(ctx, plan, tfPlan.ResourceChanges)
 
 	return plan, nil

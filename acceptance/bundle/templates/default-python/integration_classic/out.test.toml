@@ -2,5 +2,5 @@ Local = true
 Cloud = true
 
 [EnvMatrix]
-  DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct-exp"]
+  DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
   UV_PYTHON = ["3.9", "3.10", "3.11", "3.12", "3.13"]

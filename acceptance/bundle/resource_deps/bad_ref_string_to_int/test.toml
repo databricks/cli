@@ -1,0 +1,3 @@
+[[Repls]]
+Old = 'terraform.tfstate'
+New = 'resources.json'

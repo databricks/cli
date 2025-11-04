@@ -34,7 +34,3 @@ func (event *JobProgressEvent) String() string {
 
 	return result.String()
 }
-
-func (event *JobProgressEvent) IsInplaceSupported() bool {
-	return true
-}

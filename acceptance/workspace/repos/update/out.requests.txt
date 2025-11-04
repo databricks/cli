@@ -9,27 +9,30 @@
 }
 {
   "method": "PATCH",
-  "path": "/api/2.0/repos/1",
+  "path": "/api/2.0/repos/[NUMID]",
   "body": {
     "branch": "update-by-id"
   }
 }
 {
   "method": "GET",
-  "path": "/api/2.0/repos/1"
+  "path": "/api/2.0/repos/[NUMID]"
 }
 {
   "method": "GET",
-  "path": "/api/2.0/workspace/get-status"
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Repos/me@databricks.com/test-repo"
+  }
 }
 {
   "method": "PATCH",
-  "path": "/api/2.0/repos/1",
+  "path": "/api/2.0/repos/[NUMID]",
   "body": {
     "branch": "update-by-path"
   }
 }
 {
   "method": "GET",
-  "path": "/api/2.0/repos/1"
+  "path": "/api/2.0/repos/[NUMID]"
 }

@@ -1,9 +1,0 @@
-Local = false
-Cloud = true
-RequiresUnityCatalog = true
-
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform"]  # needs volume recreation, grants
-
-Ignore = [
-    "databricks.yml",
-]

@@ -75,18 +75,19 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.AwsRegion, "aws-region", createReq.AwsRegion, `The AWS region of the workspace's data plane.`)
-	cmd.Flags().StringVar(&createReq.Cloud, "cloud", createReq.Cloud, `The cloud provider which the workspace uses.`)
+	cmd.Flags().StringVar(&createReq.AwsRegion, "aws-region", createReq.AwsRegion, ``)
+	cmd.Flags().StringVar(&createReq.Cloud, "cloud", createReq.Cloud, `The cloud name.`)
 	// TODO: complex arg: cloud_resource_container
+	cmd.Flags().Var(&createReq.ComputeMode, "compute-mode", `If the compute mode is SERVERLESS, a serverless workspace is created that comes pre-configured with serverless compute and default storage, providing a fully-managed, enterprise-ready SaaS experience. Supported values: [HYBRID, SERVERLESS]`)
 	cmd.Flags().StringVar(&createReq.CredentialsId, "credentials-id", createReq.CredentialsId, `ID of the workspace's credential configuration object.`)
 	// TODO: map via StringToStringVar: custom_tags
 	cmd.Flags().StringVar(&createReq.DeploymentName, "deployment-name", createReq.DeploymentName, `The deployment name defines part of the subdomain for the workspace.`)
 	// TODO: complex arg: gcp_managed_network_config
 	// TODO: complex arg: gke_config
-	cmd.Flags().BoolVar(&createReq.IsNoPublicIpEnabled, "is-no-public-ip-enabled", createReq.IsNoPublicIpEnabled, `Whether no public IP is enabled for the workspace.`)
-	cmd.Flags().StringVar(&createReq.Location, "location", createReq.Location, `The Google Cloud region of the workspace data plane in your Google account.`)
+	cmd.Flags().StringVar(&createReq.Location, "location", createReq.Location, `The Google Cloud region of the workspace data plane in your Google account (for example, us-east4).`)
 	cmd.Flags().StringVar(&createReq.ManagedServicesCustomerManagedKeyId, "managed-services-customer-managed-key-id", createReq.ManagedServicesCustomerManagedKeyId, `The ID of the workspace's managed services encryption key configuration object.`)
-	cmd.Flags().StringVar(&createReq.NetworkId, "network-id", createReq.NetworkId, ``)
+	cmd.Flags().StringVar(&createReq.NetworkConnectivityConfigId, "network-connectivity-config-id", createReq.NetworkConnectivityConfigId, `The object ID of network connectivity config.`)
+	cmd.Flags().StringVar(&createReq.NetworkId, "network-id", createReq.NetworkId, `The ID of the workspace's network configuration object.`)
 	cmd.Flags().Var(&createReq.PricingTier, "pricing-tier", `Supported values: [
   COMMUNITY_EDITION,
   DEDICATED,
@@ -96,37 +97,55 @@ func newCreate() *cobra.Command {
   UNKNOWN,
 ]`)
 	cmd.Flags().StringVar(&createReq.PrivateAccessSettingsId, "private-access-settings-id", createReq.PrivateAccessSettingsId, `ID of the workspace's private access settings object.`)
-	cmd.Flags().StringVar(&createReq.StorageConfigurationId, "storage-configuration-id", createReq.StorageConfigurationId, `The ID of the workspace's storage configuration object.`)
+	cmd.Flags().StringVar(&createReq.StorageConfigurationId, "storage-configuration-id", createReq.StorageConfigurationId, `ID of the workspace's storage configuration object.`)
 	cmd.Flags().StringVar(&createReq.StorageCustomerManagedKeyId, "storage-customer-managed-key-id", createReq.StorageCustomerManagedKeyId, `The ID of the workspace's storage encryption key configuration object.`)
+	cmd.Flags().StringVar(&createReq.WorkspaceName, "workspace-name", createReq.WorkspaceName, `The human-readable name of the workspace.`)
 
-	cmd.Use = "create WORKSPACE_NAME"
-	cmd.Short = `Create a new workspace.`
-	cmd.Long = `Create a new workspace.
+	cmd.Use = "create"
+	cmd.Short = `Create a workspace.`
+	cmd.Long = `Create a workspace.
   
-  Creates a new workspace.
+  Creates a new workspace using a credential configuration and a storage
+  configuration, an optional network configuration (if using a customer-managed
+  VPC), an optional managed services key configuration (if using
+  customer-managed keys for managed services), and an optional storage key
+  configuration (if using customer-managed keys for storage). The key
+  configurations used for managed services and storage encryption can be the
+  same or different.
   
-  **Important**: This operation is asynchronous. A response with HTTP status
-  code 200 means the request has been accepted and is in progress, but does not
-  mean that the workspace deployed successfully and is running. The initial
-  workspace status is typically PROVISIONING. Use the workspace ID
-  (workspace_id) field in the response to identify the new workspace and make
-  repeated GET requests with the workspace ID and check its status. The
-  workspace becomes available when the status changes to RUNNING.
-
-  Arguments:
-    WORKSPACE_NAME: The workspace's human-readable name.`
+  Important: This operation is asynchronous. A response with HTTP status code
+  200 means the request has been accepted and is in progress, but does not mean
+  that the workspace deployed successfully and is running. The initial workspace
+  status is typically PROVISIONING. Use the workspace ID (workspace_id) field in
+  the response to identify the new workspace and make repeated GET requests with
+  the workspace ID and check its status. The workspace becomes available when
+  the status changes to RUNNING.
+  
+  You can share one customer-managed VPC with multiple workspaces in a single
+  account. It is not required to create a new VPC for each workspace. However,
+  you cannot reuse subnets or Security Groups between workspaces. If you plan to
+  share one VPC with multiple workspaces, make sure you size your VPC and
+  subnets accordingly. Because a Databricks Account API network configuration
+  encapsulates this information, you cannot reuse a Databricks Account API
+  network configuration across workspaces.
+  
+  For information about how to create a new workspace with this API including
+  error handling, see [Create a new workspace using the Account API].
+  
+  Important: Customer-managed VPCs, PrivateLink, and customer-managed keys are
+  supported on a limited set of deployment and subscription types. If you have
+  questions about availability, contact your Databricks representative.
+  
+  This operation is available only if your account is on the E2 version of the
+  platform or on a select custom plan that allows multiple workspaces per
+  account.
+  
+  [Create a new workspace using the Account API]: http://docs.databricks.com/administration-guide/account-api/new-workspace.html`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		if cmd.Flags().Changed("json") {
-			err := root.ExactArgs(0)(cmd, args)
-			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'workspace_name' in your JSON input")
-			}
-			return nil
-		}
-		check := root.ExactArgs(1)
+		check := root.ExactArgs(0)
 		return check(cmd, args)
 	}
 
@@ -146,9 +165,6 @@ func newCreate() *cobra.Command {
 					return err
 				}
 			}
-		}
-		if !cmd.Flags().Changed("json") {
-			createReq.WorkspaceName = args[0]
 		}
 
 		wait, err := a.Workspaces.Create(ctx, createReq)
@@ -200,52 +216,30 @@ func newDelete() *cobra.Command {
 	cmd.Short = `Delete a workspace.`
 	cmd.Long = `Delete a workspace.
   
-  Terminates and deletes a Databricks workspace. From an API perspective,
-  deletion is immediate. However, it might take a few minutes for all workspaces
-  resources to be deleted, depending on the size and number of workspace
-  resources.
-  
-  This operation is available only if your account is on the E2 version of the
-  platform or on a select custom plan that allows multiple workspaces per
-  account.
-
-  Arguments:
-    WORKSPACE_ID: Workspace ID.`
+  Deletes a Databricks workspace, both specified by ID.`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
 
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No WORKSPACE_ID argument specified. Loading names for Workspaces drop-down."
-			names, err := a.Workspaces.WorkspaceWorkspaceNameToWorkspaceIdMap(ctx)
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Workspaces drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "Workspace ID")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have workspace id")
-		}
 		_, err = fmt.Sscan(args[0], &deleteReq.WorkspaceId)
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
 
-		err = a.Workspaces.Delete(ctx, deleteReq)
+		response, err := a.Workspaces.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -282,44 +276,24 @@ func newGet() *cobra.Command {
   In the response, the workspace_status field indicates the current status.
   After initial workspace creation (which is asynchronous), make repeated GET
   requests with the workspace ID and check its status. The workspace becomes
-  available when the status changes to RUNNING.
+  available when the status changes to RUNNING. For information about how to
+  create a new workspace with this API **including error handling**, see [Create
+  a new workspace using the Account API].
   
-  For information about how to create a new workspace with this API **including
-  error handling**, see [Create a new workspace using the Account API].
-  
-  This operation is available only if your account is on the E2 version of the
-  platform or on a select custom plan that allows multiple workspaces per
-  account.
-  
-  [Create a new workspace using the Account API]: http://docs.databricks.com/administration-guide/account-api/new-workspace.html
-
-  Arguments:
-    WORKSPACE_ID: Workspace ID.`
+  [Create a new workspace using the Account API]: http://docs.databricks.com/administration-guide/account-api/new-workspace.html`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
 
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No WORKSPACE_ID argument specified. Loading names for Workspaces drop-down."
-			names, err := a.Workspaces.WorkspaceWorkspaceNameToWorkspaceIdMap(ctx)
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Workspaces drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "Workspace ID")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have workspace id")
-		}
 		_, err = fmt.Sscan(args[0], &getReq.WorkspaceId)
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
@@ -356,14 +330,10 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	cmd.Use = "list"
-	cmd.Short = `Get all workspaces.`
-	cmd.Long = `Get all workspaces.
+	cmd.Short = `List workspaces.`
+	cmd.Long = `List workspaces.
   
-  Gets a list of all workspaces associated with an account, specified by ID.
-  
-  This operation is available only if your account is on the E2 version of the
-  platform or on a select custom plan that allows multiple workspaces per
-  account.`
+  Lists Databricks workspaces for an account.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -403,6 +373,7 @@ func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var updateReq provisioning.UpdateWorkspaceRequest
+	updateReq.CustomerFacingWorkspace = provisioning.Workspace{}
 	var updateJson flags.JsonFlag
 
 	var updateSkipWait bool
@@ -413,143 +384,49 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.AwsRegion, "aws-region", updateReq.AwsRegion, `The AWS region of the workspace's data plane (for example, us-west-2).`)
-	cmd.Flags().StringVar(&updateReq.CredentialsId, "credentials-id", updateReq.CredentialsId, `ID of the workspace's credential configuration object.`)
+	cmd.Flags().StringVar(&updateReq.UpdateMask, "update-mask", updateReq.UpdateMask, `The field mask must be a single string, with multiple fields separated by commas (no spaces).`)
+	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.AwsRegion, "aws-region", updateReq.CustomerFacingWorkspace.AwsRegion, ``)
+	// TODO: complex arg: azure_workspace_info
+	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.Cloud, "cloud", updateReq.CustomerFacingWorkspace.Cloud, `The cloud name.`)
+	// TODO: complex arg: cloud_resource_container
+	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.CredentialsId, "credentials-id", updateReq.CustomerFacingWorkspace.CredentialsId, `ID of the workspace's credential configuration object.`)
 	// TODO: map via StringToStringVar: custom_tags
-	cmd.Flags().StringVar(&updateReq.ManagedServicesCustomerManagedKeyId, "managed-services-customer-managed-key-id", updateReq.ManagedServicesCustomerManagedKeyId, `The ID of the workspace's managed services encryption key configuration object.`)
-	cmd.Flags().StringVar(&updateReq.NetworkConnectivityConfigId, "network-connectivity-config-id", updateReq.NetworkConnectivityConfigId, ``)
-	cmd.Flags().StringVar(&updateReq.NetworkId, "network-id", updateReq.NetworkId, `The ID of the workspace's network configuration object.`)
-	cmd.Flags().StringVar(&updateReq.PrivateAccessSettingsId, "private-access-settings-id", updateReq.PrivateAccessSettingsId, `The ID of the workspace's private access settings configuration object.`)
-	cmd.Flags().StringVar(&updateReq.StorageConfigurationId, "storage-configuration-id", updateReq.StorageConfigurationId, `The ID of the workspace's storage configuration object.`)
-	cmd.Flags().StringVar(&updateReq.StorageCustomerManagedKeyId, "storage-customer-managed-key-id", updateReq.StorageCustomerManagedKeyId, `The ID of the key configuration object for workspace storage.`)
+	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.DeploymentName, "deployment-name", updateReq.CustomerFacingWorkspace.DeploymentName, ``)
+	cmd.Flags().Var(&updateReq.CustomerFacingWorkspace.ExpectedWorkspaceStatus, "expected-workspace-status", `A client owned field used to indicate the workspace status that the client expects to be in. Supported values: [
+  BANNED,
+  CANCELLING,
+  FAILED,
+  NOT_PROVISIONED,
+  PROVISIONING,
+  RUNNING,
+]`)
+	// TODO: complex arg: gcp_managed_network_config
+	// TODO: complex arg: gke_config
+	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.Location, "location", updateReq.CustomerFacingWorkspace.Location, `The Google Cloud region of the workspace data plane in your Google account (for example, us-east4).`)
+	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.ManagedServicesCustomerManagedKeyId, "managed-services-customer-managed-key-id", updateReq.CustomerFacingWorkspace.ManagedServicesCustomerManagedKeyId, `ID of the key configuration for encrypting managed services.`)
+	// TODO: complex arg: network
+	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.NetworkConnectivityConfigId, "network-connectivity-config-id", updateReq.CustomerFacingWorkspace.NetworkConnectivityConfigId, `The object ID of network connectivity config.`)
+	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.NetworkId, "network-id", updateReq.CustomerFacingWorkspace.NetworkId, `If this workspace is BYO VPC, then the network_id will be populated.`)
+	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.PrivateAccessSettingsId, "private-access-settings-id", updateReq.CustomerFacingWorkspace.PrivateAccessSettingsId, `ID of the workspace's private access settings object.`)
+	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.StorageConfigurationId, "storage-configuration-id", updateReq.CustomerFacingWorkspace.StorageConfigurationId, `ID of the workspace's storage configuration object.`)
+	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.StorageCustomerManagedKeyId, "storage-customer-managed-key-id", updateReq.CustomerFacingWorkspace.StorageCustomerManagedKeyId, `ID of the key configuration for encrypting workspace storage.`)
+	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.WorkspaceName, "workspace-name", updateReq.CustomerFacingWorkspace.WorkspaceName, `The human-readable name of the workspace.`)
 
 	cmd.Use = "update WORKSPACE_ID"
-	cmd.Short = `Update workspace configuration.`
-	cmd.Long = `Update workspace configuration.
+	cmd.Short = `Update a workspace.`
+	cmd.Long = `Update a workspace.
   
-  Updates a workspace configuration for either a running workspace or a failed
-  workspace. The elements that can be updated varies between these two use
-  cases.
-  
-  ### Update a failed workspace You can update a Databricks workspace
-  configuration for failed workspace deployment for some fields, but not all
-  fields. For a failed workspace, this request supports updates to the following
-  fields only: - Credential configuration ID - Storage configuration ID -
-  Network configuration ID. Used only to add or change a network configuration
-  for a customer-managed VPC. For a failed workspace only, you can convert a
-  workspace with Databricks-managed VPC to use a customer-managed VPC by adding
-  this ID. You cannot downgrade a workspace with a customer-managed VPC to be a
-  Databricks-managed VPC. You can update the network configuration for a failed
-  or running workspace to add PrivateLink support, though you must also add a
-  private access settings object. - Key configuration ID for managed services
-  (control plane storage, such as notebook source and Databricks SQL queries).
-  Used only if you use customer-managed keys for managed services. - Key
-  configuration ID for workspace storage (root S3 bucket and, optionally, EBS
-  volumes). Used only if you use customer-managed keys for workspace storage.
-  **Important**: If the workspace was ever in the running state, even if briefly
-  before becoming a failed workspace, you cannot add a new key configuration ID
-  for workspace storage. - Private access settings ID to add PrivateLink
-  support. You can add or update the private access settings ID to upgrade a
-  workspace to add support for front-end, back-end, or both types of
-  connectivity. You cannot remove (downgrade) any existing front-end or back-end
-  PrivateLink support on a workspace. - Custom tags. Given you provide an empty
-  custom tags, the update would not be applied. - Network connectivity
-  configuration ID to add serverless stable IP support. You can add or update
-  the network connectivity configuration ID to ensure the workspace uses the
-  same set of stable IP CIDR blocks to access your resources. You cannot remove
-  a network connectivity configuration from the workspace once attached, you can
-  only switch to another one.
-  
-  After calling the PATCH operation to update the workspace configuration,
-  make repeated GET requests with the workspace ID and check the workspace
-  status. The workspace is successful if the status changes to RUNNING.
-  
-  For information about how to create a new workspace with this API **including
-  error handling**, see [Create a new workspace using the Account API].
-  
-  ### Update a running workspace You can update a Databricks workspace
-  configuration for running workspaces for some fields, but not all fields. For
-  a running workspace, this request supports updating the following fields only:
-  - Credential configuration ID - Network configuration ID. Used only if you
-  already use a customer-managed VPC. You cannot convert a running workspace
-  from a Databricks-managed VPC to a customer-managed VPC. You can use a network
-  configuration update in this API for a failed or running workspace to add
-  support for PrivateLink, although you also need to add a private access
-  settings object. - Key configuration ID for managed services (control plane
-  storage, such as notebook source and Databricks SQL queries). Databricks does
-  not directly encrypt the data with the customer-managed key (CMK). Databricks
-  uses both the CMK and the Databricks managed key (DMK) that is unique to your
-  workspace to encrypt the Data Encryption Key (DEK). Databricks uses the DEK to
-  encrypt your workspace's managed services persisted data. If the workspace
-  does not already have a CMK for managed services, adding this ID enables
-  managed services encryption for new or updated data. Existing managed services
-  data that existed before adding the key remains not encrypted with the DEK
-  until it is modified. If the workspace already has customer-managed keys for
-  managed services, this request rotates (changes) the CMK keys and the DEK is
-  re-encrypted with the DMK and the new CMK. - Key configuration ID for
-  workspace storage (root S3 bucket and, optionally, EBS volumes). You can set
-  this only if the workspace does not already have a customer-managed key
-  configuration for workspace storage. - Private access settings ID to add
-  PrivateLink support. You can add or update the private access settings ID to
-  upgrade a workspace to add support for front-end, back-end, or both types of
-  connectivity. You cannot remove (downgrade) any existing front-end or back-end
-  PrivateLink support on a workspace. - Custom tags. Given you provide an empty
-  custom tags, the update would not be applied. - Network connectivity
-  configuration ID to add serverless stable IP support. You can add or update
-  the network connectivity configuration ID to ensure the workspace uses the
-  same set of stable IP CIDR blocks to access your resources. You cannot remove
-  a network connectivity configuration from the workspace once attached, you can
-  only switch to another one.
-  
-  **Important**: To update a running workspace, your workspace must have no
-  running compute resources that run in your workspace's VPC in the Classic data
-  plane. For example, stop all all-purpose clusters, job clusters, pools with
-  running clusters, and Classic SQL warehouses. If you do not terminate all
-  cluster instances in the workspace before calling this API, the request will
-  fail.
-  
-  ### Wait until changes take effect. After calling the PATCH operation to
-  update the workspace configuration, make repeated GET requests with the
-  workspace ID and check the workspace status and the status of the fields. *
-  For workspaces with a Databricks-managed VPC, the workspace status becomes
-  PROVISIONING temporarily (typically under 20 minutes). If the workspace
-  update is successful, the workspace status changes to RUNNING. Note that you
-  can also check the workspace status in the [Account Console]. However, you
-  cannot use or create clusters for another 20 minutes after that status change.
-  This results in a total of up to 40 minutes in which you cannot create
-  clusters. If you create or use clusters before this time interval elapses,
-  clusters do not launch successfully, fail, or could cause other unexpected
-  behavior. * For workspaces with a customer-managed VPC, the workspace status
-  stays at status RUNNING and the VPC change happens immediately. A change to
-  the storage customer-managed key configuration ID might take a few minutes to
-  update, so continue to check the workspace until you observe that it has been
-  updated. If the update fails, the workspace might revert silently to its
-  original configuration. After the workspace has been updated, you cannot use
-  or create clusters for another 20 minutes. If you create or use clusters
-  before this time interval elapses, clusters do not launch successfully, fail,
-  or could cause other unexpected behavior.
-  
-  If you update the _storage_ customer-managed key configurations, it takes 20
-  minutes for the changes to fully take effect. During the 20 minute wait, it is
-  important that you stop all REST API calls to the DBFS API. If you are
-  modifying _only the managed services key configuration_, you can omit the 20
-  minute wait.
-  
-  **Important**: Customer-managed keys and customer-managed VPCs are supported
-  by only some deployment types and subscription types. If you have questions
-  about availability, contact your Databricks representative.
-  
-  This operation is available only if your account is on the E2 version of the
-  platform or on a select custom plan that allows multiple workspaces per
-  account.
-  
-  [Account Console]: https://docs.databricks.com/administration-guide/account-settings-e2/account-console-e2.html
-  [Create a new workspace using the Account API]: http://docs.databricks.com/administration-guide/account-api/new-workspace.html
+  Updates a workspace.
 
   Arguments:
-    WORKSPACE_ID: Workspace ID.`
+    WORKSPACE_ID: A unique integer ID for the workspace`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -557,7 +434,7 @@ func newUpdate() *cobra.Command {
 		a := cmdctx.AccountClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			diags := updateJson.Unmarshal(&updateReq)
+			diags := updateJson.Unmarshal(&updateReq.CustomerFacingWorkspace)
 			if diags.HasError() {
 				return diags.Error()
 			}
@@ -567,23 +444,6 @@ func newUpdate() *cobra.Command {
 					return err
 				}
 			}
-		}
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No WORKSPACE_ID argument specified. Loading names for Workspaces drop-down."
-			names, err := a.Workspaces.WorkspaceWorkspaceNameToWorkspaceIdMap(ctx)
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Workspaces drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "Workspace ID")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have workspace id")
 		}
 		_, err = fmt.Sscan(args[0], &updateReq.WorkspaceId)
 		if err != nil {
@@ -595,7 +455,7 @@ func newUpdate() *cobra.Command {
 			return err
 		}
 		if updateSkipWait {
-			return nil
+			return cmdio.Render(ctx, wait.Response)
 		}
 		spinner := cmdio.Spinner(ctx)
 		info, err := wait.OnProgress(func(i *provisioning.Workspace) {

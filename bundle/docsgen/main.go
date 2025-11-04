@@ -141,6 +141,9 @@ func assignAnnotation(s *jsonschema.Schema, a annotation.Descriptor) {
 		s.DoNotSuggest = true
 		s.Preview = a.Preview
 	}
+	if a.OutputOnly != nil && *a.OutputOnly {
+		s.DoNotSuggest = true
+	}
 }
 
 func fillTemplateVariables(s string) string {

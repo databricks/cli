@@ -136,6 +136,7 @@ func newDelete() *cobra.Command {
 				return fmt.Errorf("expected to have the absolute path of the notebook or directory")
 			}
 			deleteReq.Path = args[0]
+
 		}
 
 		err = w.Workspace.Delete(ctx, deleteReq)
@@ -456,7 +457,7 @@ func newImport() *cobra.Command {
   false, this call returns an error RESOURCE_ALREADY_EXISTS. To import a
   directory, you can use either the DBC format or the SOURCE format with the
   language field unset. To import a single file as SOURCE, you must set the
-  language field.
+  language field. Zip files within directories are not supported.
 
   Arguments:
     PATH: The absolute path of the object or directory. Importing a directory is

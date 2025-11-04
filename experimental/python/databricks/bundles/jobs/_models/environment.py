@@ -33,11 +33,11 @@ class Environment:
     The version is a string, consisting of an integer.
     """
 
-    jar_dependencies: VariableOrList[str] = field(default_factory=list)
+    java_dependencies: VariableOrList[str] = field(default_factory=list)
     """
     :meta private: [EXPERIMENTAL]
     
-    List of jar dependencies, should be string representing volume paths. For example: `/Volumes/path/to/test.jar`.
+    List of java dependencies. Each dependency is a string representing a java library path. For example: `/Volumes/path/to/test.jar`.
     """
 
     @classmethod
@@ -68,11 +68,11 @@ class EnvironmentDict(TypedDict, total=False):
     The version is a string, consisting of an integer.
     """
 
-    jar_dependencies: VariableOrList[str]
+    java_dependencies: VariableOrList[str]
     """
     :meta private: [EXPERIMENTAL]
     
-    List of jar dependencies, should be string representing volume paths. For example: `/Volumes/path/to/test.jar`.
+    List of java dependencies. Each dependency is a string representing a java library path. For example: `/Volumes/path/to/test.jar`.
     """
 
 

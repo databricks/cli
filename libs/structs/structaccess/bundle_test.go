@@ -52,14 +52,6 @@ func TestGet_ConfigRoot_JobTagsAccess(t *testing.T) {
 	require.Error(t, ValidateByString(reflect.TypeOf(root), "resources.jobs.my_job.tags.env.inner"))
 	require.Error(t, ValidateByString(reflect.TypeOf(root), "resources.jobs.my_job.tags1"))
 
-	// Leading dot is allowed
-	v, err = GetByString(root, ".resources.jobs.my_job.tags.team")
-	require.NoError(t, err)
-	require.Equal(t, "platform", v)
-	require.NoError(t, ValidateByString(reflect.TypeOf(root), ".resources.jobs.my_job.tags.team"))
-	require.Error(t, ValidateByString(reflect.TypeOf(root), ".resources.jobs.my_job.tags.team.inner"))
-	require.Error(t, ValidateByString(reflect.TypeOf(root), ".resources.jobs.my_job.tags1"))
-
 	// Array indexing test (1)
 	v, err = GetByString(root, "resources.jobs.my_job.tasks[0].task_key")
 	require.NoError(t, err)

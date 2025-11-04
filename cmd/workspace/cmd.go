@@ -30,6 +30,7 @@ import (
 	current_user "github.com/databricks/cli/cmd/workspace/current-user"
 	dashboard_widgets "github.com/databricks/cli/cmd/workspace/dashboard-widgets"
 	dashboards "github.com/databricks/cli/cmd/workspace/dashboards"
+	data_quality "github.com/databricks/cli/cmd/workspace/data-quality"
 	data_sources "github.com/databricks/cli/cmd/workspace/data-sources"
 	database "github.com/databricks/cli/cmd/workspace/database"
 	entity_tag_assignments "github.com/databricks/cli/cmd/workspace/entity-tag-assignments"
@@ -37,6 +38,7 @@ import (
 	external_lineage "github.com/databricks/cli/cmd/workspace/external-lineage"
 	external_locations "github.com/databricks/cli/cmd/workspace/external-locations"
 	external_metadata "github.com/databricks/cli/cmd/workspace/external-metadata"
+	feature_engineering "github.com/databricks/cli/cmd/workspace/feature-engineering"
 	feature_store "github.com/databricks/cli/cmd/workspace/feature-store"
 	forecasting "github.com/databricks/cli/cmd/workspace/forecasting"
 	functions "github.com/databricks/cli/cmd/workspace/functions"
@@ -44,7 +46,7 @@ import (
 	git_credentials "github.com/databricks/cli/cmd/workspace/git-credentials"
 	global_init_scripts "github.com/databricks/cli/cmd/workspace/global-init-scripts"
 	grants "github.com/databricks/cli/cmd/workspace/grants"
-	groups "github.com/databricks/cli/cmd/workspace/groups"
+	groups_v2 "github.com/databricks/cli/cmd/workspace/groups-v2"
 	instance_pools "github.com/databricks/cli/cmd/workspace/instance-pools"
 	instance_profiles "github.com/databricks/cli/cmd/workspace/instance-profiles"
 	ip_access_lists "github.com/databricks/cli/cmd/workspace/ip-access-lists"
@@ -91,7 +93,7 @@ import (
 	schemas "github.com/databricks/cli/cmd/workspace/schemas"
 	secrets "github.com/databricks/cli/cmd/workspace/secrets"
 	service_principal_secrets_proxy "github.com/databricks/cli/cmd/workspace/service-principal-secrets-proxy"
-	service_principals "github.com/databricks/cli/cmd/workspace/service-principals"
+	service_principals_v2 "github.com/databricks/cli/cmd/workspace/service-principals-v2"
 	serving_endpoints "github.com/databricks/cli/cmd/workspace/serving-endpoints"
 	settings "github.com/databricks/cli/cmd/workspace/settings"
 	shares "github.com/databricks/cli/cmd/workspace/shares"
@@ -104,7 +106,7 @@ import (
 	temporary_table_credentials "github.com/databricks/cli/cmd/workspace/temporary-table-credentials"
 	token_management "github.com/databricks/cli/cmd/workspace/token-management"
 	tokens "github.com/databricks/cli/cmd/workspace/tokens"
-	users "github.com/databricks/cli/cmd/workspace/users"
+	users_v2 "github.com/databricks/cli/cmd/workspace/users-v2"
 	vector_search_endpoints "github.com/databricks/cli/cmd/workspace/vector-search-endpoints"
 	vector_search_indexes "github.com/databricks/cli/cmd/workspace/vector-search-indexes"
 	volumes "github.com/databricks/cli/cmd/workspace/volumes"
@@ -112,8 +114,13 @@ import (
 	workspace "github.com/databricks/cli/cmd/workspace/workspace"
 	workspace_bindings "github.com/databricks/cli/cmd/workspace/workspace-bindings"
 	workspace_conf "github.com/databricks/cli/cmd/workspace/workspace-conf"
+	workspace_iam_v2 "github.com/databricks/cli/cmd/workspace/workspace-iam-v2"
 	workspace_settings_v2 "github.com/databricks/cli/cmd/workspace/workspace-settings-v2"
 	"github.com/spf13/cobra"
+
+	groups "github.com/databricks/cli/cmd/workspace/groups"
+	service_principals "github.com/databricks/cli/cmd/workspace/service-principals"
+	users "github.com/databricks/cli/cmd/workspace/users"
 )
 
 func All() []*cobra.Command {
@@ -146,6 +153,7 @@ func All() []*cobra.Command {
 	out = append(out, current_user.New())
 	out = append(out, dashboard_widgets.New())
 	out = append(out, dashboards.New())
+	out = append(out, data_quality.New())
 	out = append(out, data_sources.New())
 	out = append(out, database.New())
 	out = append(out, entity_tag_assignments.New())
@@ -153,13 +161,15 @@ func All() []*cobra.Command {
 	out = append(out, external_lineage.New())
 	out = append(out, external_locations.New())
 	out = append(out, external_metadata.New())
+	out = append(out, feature_engineering.New())
 	out = append(out, feature_store.New())
+	out = append(out, forecasting.New())
 	out = append(out, functions.New())
 	out = append(out, genie.New())
 	out = append(out, git_credentials.New())
 	out = append(out, global_init_scripts.New())
 	out = append(out, grants.New())
-	out = append(out, groups.New())
+	out = append(out, groups_v2.New())
 	out = append(out, instance_pools.New())
 	out = append(out, instance_profiles.New())
 	out = append(out, ip_access_lists.New())
@@ -206,7 +216,7 @@ func All() []*cobra.Command {
 	out = append(out, schemas.New())
 	out = append(out, secrets.New())
 	out = append(out, service_principal_secrets_proxy.New())
-	out = append(out, service_principals.New())
+	out = append(out, service_principals_v2.New())
 	out = append(out, serving_endpoints.New())
 	out = append(out, settings.New())
 	out = append(out, shares.New())
@@ -219,7 +229,7 @@ func All() []*cobra.Command {
 	out = append(out, temporary_table_credentials.New())
 	out = append(out, token_management.New())
 	out = append(out, tokens.New())
-	out = append(out, users.New())
+	out = append(out, users_v2.New())
 	out = append(out, vector_search_endpoints.New())
 	out = append(out, vector_search_indexes.New())
 	out = append(out, volumes.New())
@@ -227,8 +237,12 @@ func All() []*cobra.Command {
 	out = append(out, workspace.New())
 	out = append(out, workspace_bindings.New())
 	out = append(out, workspace_conf.New())
+	out = append(out, workspace_iam_v2.New())
 	out = append(out, workspace_settings_v2.New())
-	out = append(out, forecasting.New())
+
+	out = append(out, groups.New())
+	out = append(out, service_principals.New())
+	out = append(out, users.New())
 
 	return out
 }

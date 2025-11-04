@@ -10,11 +10,13 @@ linters:
     - intrange
     - mirror
     - perfsprint
+    - revive
     - staticcheck
     - testifylint
     - unconvert
     - unused
     - exhaustruct
+    - exhaustive
     - copyloopvar
     - forbidigo
   settings:
@@ -26,10 +28,29 @@ linters:
         - (*github.com/spf13/cobra.Command).MarkFlagRequired
         - (*github.com/spf13/pflag.FlagSet).MarkDeprecated
         - (*github.com/spf13/pflag.FlagSet).MarkHidden
+    revive:
+      rules:
+        - name: blank-imports
+        - name: context-as-argument
+          exclude:
+            - TEST
+            - "**/integration/**"
+            - "**/internal/testcli/**"
+            - "**/internal/testutil/**"
+            - "**/libs/testdiff/**"
+            - "**/libs/python/pythontest/**"
+        - name: context-keys-type
+        - name: error-return
+        - name: errorf
+        - name: range-val-in-closure
+        - name: waitgroup-by-value
+        - name: unconditional-recursion
+        - name: use-waitgroup-go
     gocritic:
       disable-all: true
       enabled-checks:
         - ruleguard
+        - offBy1
       settings:
         ruleguard:
           failOn: all
@@ -59,6 +80,8 @@ linters:
         - len
         - equal-values
         - encoded-compare # Always replaces Equal() with JSONEq, but sometimes exact string match is wanted for JSON
+    exhaustive:
+      default-signifies-exhaustive: true
   exclusions:
     generated: lax
     presets:

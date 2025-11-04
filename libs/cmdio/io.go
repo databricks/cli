@@ -23,6 +23,7 @@ type cmdIO struct {
 	// states if we are in the interactive mode
 	// e.g. if stdout is a terminal
 	interactive    bool
+	prompt         bool
 	outputFormat   flags.Output
 	headerTemplate string
 	template       string
@@ -37,8 +38,21 @@ func NewIO(ctx context.Context, outputFormat flags.Output, in io.Reader, out, er
 	if f, ok := err.(*os.File); ok && !dumb {
 		dumb = !isatty.IsTerminal(f.Fd()) && !isatty.IsCygwinTerminal(f.Fd())
 	}
+
+	// Interactive mode is the opposite of "dumb" mode.
+	// TODO(@pietern): Clean this up later. Don't want to change more logic in this PR.
+	interactive := !dumb
+
+	// Prompting requires:
+	// - "interactive" mode (i.e. the terminal to not be dumb or use NO_COLOR (because promptui uses both)
+	// - stdin to be a TTY (for reading input)
+	// - stdout to be a TTY (for showing prompts)
+	// - not to be running in Git Bash on Windows
+	prompt := interactive && IsTTY(in) && IsTTY(out) && !isGitBash(ctx)
+
 	return &cmdIO{
-		interactive:    !dumb,
+		interactive:    interactive,
+		prompt:         prompt,
 		outputFormat:   outputFormat,
 		headerTemplate: headerTemplate,
 		template:       template,
@@ -53,6 +67,11 @@ func IsInteractive(ctx context.Context) bool {
 	return c.interactive
 }
 
+func IsPromptSupported(ctx context.Context) bool {
+	c := fromContext(ctx)
+	return c.prompt
+}
+
 // IsTTY detects if io.Writer is a terminal.
 func IsTTY(w any) bool {
 	f, ok := w.(*os.File)
@@ -63,47 +82,13 @@ func IsTTY(w any) bool {
 	return isatty.IsTerminal(fd) || isatty.IsCygwinTerminal(fd)
 }
 
-// IsInTTY detects if the input reader is a terminal.
-func IsInTTY(ctx context.Context) bool {
-	c := fromContext(ctx)
-	return IsTTY(c.in)
-}
-
-// IsOutTTY detects if the output writer is a terminal.
-func IsOutTTY(ctx context.Context) bool {
-	c := fromContext(ctx)
-	return IsTTY(c.out)
-}
-
-// IsErrTTY detects if the error writer is a terminal.
-func IsErrTTY(ctx context.Context) bool {
-	c := fromContext(ctx)
-	return IsTTY(c.err)
-}
-
-// IsTTY detects if stdout is a terminal. It assumes that stderr is terminal as well
-func (c *cmdIO) IsTTY() bool {
-	f, ok := c.out.(*os.File)
-	if !ok {
-		return false
-	}
-	fd := f.Fd()
-	return isatty.IsTerminal(fd) || isatty.IsCygwinTerminal(fd)
-}
-
-func IsPromptSupported(ctx context.Context) bool {
-	// We do not allow prompting in non-interactive mode and in Git Bash on Windows.
-	// Likely due to fact that Git Bash does not (correctly support ANSI escape sequences,
-	// we cannot use promptui package there.
-	// See known issues:
-	// - https://github.com/manifoldco/promptui/issues/208
-	// - https://github.com/chzyer/readline/issues/191
-	// We also do not allow prompting in non-interactive mode,
-	// because it's not possible to read from stdin in non-interactive mode.
-	return (IsInteractive(ctx) || (IsOutTTY(ctx) && IsInTTY(ctx))) && !IsGitBash(ctx)
-}
-
-func IsGitBash(ctx context.Context) bool {
+// We do not allow prompting in non-interactive mode and in Git Bash on Windows.
+// Likely due to fact that Git Bash does not (correctly support ANSI escape sequences,
+// we cannot use promptui package there.
+// See known issues:
+// - https://github.com/manifoldco/promptui/issues/208
+// - https://github.com/chzyer/readline/issues/191
+func isGitBash(ctx context.Context) bool {
 	// Check if the MSYSTEM environment variable is set to "MINGW64"
 	msystem := env.Get(ctx, "MSYSTEM")
 	if strings.EqualFold(msystem, "MINGW64") {
@@ -138,10 +123,10 @@ func (c *cmdIO) Select(items []Tuple, label string) (id string, err error) {
 		Stdin: io.NopCloser(c.in),
 	}).Run()
 	if err != nil {
-		return
+		return id, err
 	}
 	id = items[idx].Id
-	return
+	return id, err
 }
 
 // Show a selection prompt where the user can pick one of the name/id items.
@@ -201,35 +186,6 @@ func RunSelect(ctx context.Context, prompt *promptui.Select) (int, string, error
 	prompt.Stdin = io.NopCloser(c.in)
 	prompt.Stdout = nopWriteCloser{c.err}
 	return prompt.Run()
-}
-
-func (c *cmdIO) simplePrompt(label string) *promptui.Prompt {
-	return &promptui.Prompt{
-		Label:  label,
-		Stdin:  io.NopCloser(c.in),
-		Stdout: nopWriteCloser{c.out},
-	}
-}
-
-func (c *cmdIO) SimplePrompt(label string) (value string, err error) {
-	return c.simplePrompt(label).Run()
-}
-
-func SimplePrompt(ctx context.Context, label string) (value string, err error) {
-	c := fromContext(ctx)
-	return c.SimplePrompt(label)
-}
-
-func (c *cmdIO) DefaultPrompt(label, defaultValue string) (value string, err error) {
-	prompt := c.simplePrompt(label)
-	prompt.Default = defaultValue
-	prompt.AllowEdit = true
-	return prompt.Run()
-}
-
-func DefaultPrompt(ctx context.Context, label, defaultValue string) (value string, err error) {
-	c := fromContext(ctx)
-	return c.DefaultPrompt(label, defaultValue)
 }
 
 func (c *cmdIO) Spinner(ctx context.Context) chan string {

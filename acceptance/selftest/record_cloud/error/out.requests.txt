@@ -1,4 +1,7 @@
 {
   "method": "GET",
-  "path": "/api/2.2/jobs/get"
+  "path": "/api/2.2/jobs/get",
+  "q": {
+    "job_id": "1234"
+  }
 }

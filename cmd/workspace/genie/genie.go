@@ -248,9 +248,6 @@ func newDeleteConversationMessage() *cobra.Command {
     CONVERSATION_ID: The ID associated with the conversation.
     MESSAGE_ID: The ID associated with the message to delete.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -752,9 +749,6 @@ func newListConversationMessages() *cobra.Command {
     SPACE_ID: The ID associated with the Genie space where the conversation is located
     CONVERSATION_ID: The ID of the conversation to list messages from`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -920,8 +914,6 @@ func newSendMessageFeedback() *cobra.Command {
 
 	cmd.Flags().Var(&sendMessageFeedbackJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&sendMessageFeedbackReq.Comment, "comment", sendMessageFeedbackReq.Comment, `Optional text feedback that will be stored as a comment.`)
-
 	cmd.Use = "send-message-feedback SPACE_ID CONVERSATION_ID MESSAGE_ID RATING"
 	cmd.Short = `Send message feedback.`
 	cmd.Long = `Send message feedback.
@@ -934,9 +926,6 @@ func newSendMessageFeedback() *cobra.Command {
     MESSAGE_ID: The ID associated with the message to provide feedback for.
     RATING: The rating (POSITIVE, NEGATIVE, or NONE). 
       Supported values: [NEGATIVE, NONE, POSITIVE]`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
@@ -977,6 +966,7 @@ func newSendMessageFeedback() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid RATING: %s", args[3])
 			}
+
 		}
 
 		err = w.Genie.SendMessageFeedback(ctx, sendMessageFeedbackReq)

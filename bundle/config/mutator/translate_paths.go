@@ -104,8 +104,10 @@ func (t *translateContext) rewritePath(
 	opts translateOptions,
 ) (string, error) {
 	// If the input is a local requirements file, we need to translate it to an absolute path.
-	if reqPath, ok := libraries.IsLocalRequirementsFile(input); ok {
+	var flag string
+	if reqPath, flagPrefix, ok := libraries.IsLocalPathInPipFlag(input); ok {
 		input = reqPath
+		flag = flagPrefix
 	}
 
 	// We assume absolute paths point to a location in the workspace
@@ -160,10 +162,10 @@ func (t *translateContext) rewritePath(
 		interp, err = t.translateLocalRelativePath(ctx, input, localPath, localRelPath)
 	case paths.TranslateModeLocalRelativeWithPrefix:
 		interp, err = t.translateLocalRelativeWithPrefixPath(ctx, input, localPath, localRelPath)
-	case paths.TranslateModeEnvironmentRequirements:
+	case paths.TranslateModeEnvironmentPipFlag:
 		interp, err = t.translateFilePath(ctx, input, localPath, localRelPath)
-		// Add the -r flag to the path to indicate it's a requirements file used for environment dependencies.
-		interp = "-r " + interp
+		// Add the flag prefix to the path to indicate it's a local file used in pip flags for environment dependencies.
+		interp = flag + " " + interp
 	default:
 		return "", fmt.Errorf("unsupported translate mode: %d", opts.Mode)
 	}
@@ -324,7 +326,8 @@ func (m *translatePaths) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	return applyTranslations(ctx, b, t, []func(context.Context, dyn.Value) (dyn.Value, error){
 		t.applyJobTranslations(paths.VisitJobPaths, false),
 		t.applyJobTranslations(paths.VisitJobLibrariesPaths, true),
-		t.applyPipelineTranslations,
+		t.applyPipelineTranslations(paths.VisitPipelinePaths, false),
+		t.applyPipelineTranslations(paths.VisitPipelineLibrariesPaths, true),
 		t.applyArtifactTranslations,
 		t.applyAppsTranslations,
 	})

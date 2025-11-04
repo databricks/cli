@@ -10,41 +10,44 @@ import (
 	"io"
 	"net/http/httptest"
 	"os/exec"
-	"strings"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func createTestServer(t *testing.T, maxClients int, shutdownDelay time.Duration) *httptest.Server {
-	ctx := t.Context()
+	ctx := cmdio.MockDiscard(t.Context())
 	connections := NewConnectionsManager(maxClients, shutdownDelay)
 	proxyServer := NewProxyServer(ctx, connections, func(ctx context.Context) *exec.Cmd {
 		// 'cat' command reads each line from stdin and sends it to stdout, so we can test end-to-end proxying.
-		return exec.CommandContext(ctx, "cat")
+		// '-u' option is used to disable output buffering.
+		return exec.CommandContext(ctx, "cat", "-u")
 	})
 	return httptest.NewServer(proxyServer)
 }
 
-func createTestClient(t *testing.T, serverURL string, handoverTimeout time.Duration, errChan, createConnChan chan error) (io.WriteCloser, *testBuffer) {
-	ctx := t.Context()
+func createTestClient(t *testing.T, serverURL string, requestHandoverTick func() <-chan time.Time, errChan chan error) (io.WriteCloser, *testBuffer) {
+	ctx := cmdio.MockDiscard(t.Context())
 	clientInput, clientInputWriter := io.Pipe()
 	clientOutput := newTestBuffer(t)
 	wsURL := "ws" + serverURL[4:]
 	createConn := func(ctx context.Context, connID string) (*websocket.Conn, error) {
 		url := fmt.Sprintf("%s?id=%s", wsURL, connID)
 		conn, _, err := websocket.DefaultDialer.Dial(url, nil) // nolint:bodyclose
-		if createConnChan != nil {
-			createConnChan <- err
-		}
 		return conn, err
 	}
+	if requestHandoverTick == nil {
+		requestHandoverTick = func() <-chan time.Time {
+			return time.After(time.Hour)
+		}
+	}
 	go func() {
-		err := RunClientProxy(ctx, clientInput, clientOutput, handoverTimeout, createConn)
+		err := RunClientProxy(ctx, clientInput, clientOutput, requestHandoverTick, createConn)
 		if err != nil && !isNormalClosure(err) && !errors.Is(err, context.Canceled) {
 			if errChan != nil {
 				errChan <- err
@@ -59,7 +62,7 @@ func createTestClient(t *testing.T, serverURL string, handoverTimeout time.Durat
 func TestClientServerEcho(t *testing.T) {
 	server := createTestServer(t, 2, time.Hour)
 	defer server.Close()
-	clientInputWriter, clientOutput := createTestClient(t, server.URL, time.Hour, nil, nil)
+	clientInputWriter, clientOutput := createTestClient(t, server.URL, nil, nil)
 	defer clientInputWriter.Close()
 
 	testMsg1 := []byte("test message 1\n")
@@ -81,9 +84,9 @@ func TestClientServerEcho(t *testing.T) {
 func TestMultipleClients(t *testing.T) {
 	server := createTestServer(t, 2, time.Hour)
 	defer server.Close()
-	clientInputWriter1, clientOutput1 := createTestClient(t, server.URL, time.Hour, nil, nil)
+	clientInputWriter1, clientOutput1 := createTestClient(t, server.URL, nil, nil)
 	defer clientInputWriter1.Close()
-	clientInputWriter2, clientOutput2 := createTestClient(t, server.URL, time.Hour, nil, nil)
+	clientInputWriter2, clientOutput2 := createTestClient(t, server.URL, nil, nil)
 	defer clientInputWriter2.Close()
 
 	messageCount := 10
@@ -113,9 +116,9 @@ func TestMaxClients(t *testing.T) {
 	maxClients := 2
 	server := createTestServer(t, maxClients, time.Hour)
 	defer server.Close()
-	clientInputWriter1, clientOutput1 := createTestClient(t, server.URL, time.Hour, nil, nil)
+	clientInputWriter1, clientOutput1 := createTestClient(t, server.URL, nil, nil)
 	defer clientInputWriter1.Close()
-	clientInputWriter2, clientOutput2 := createTestClient(t, server.URL, time.Hour, nil, nil)
+	clientInputWriter2, clientOutput2 := createTestClient(t, server.URL, nil, nil)
 	defer clientInputWriter2.Close()
 
 	testMsg1 := []byte("test message 1\n")
@@ -129,7 +132,7 @@ func TestMaxClients(t *testing.T) {
 	require.NoError(t, err)
 
 	errChan := make(chan error, 1)
-	clientInputWriter3, _ := createTestClient(t, server.URL, time.Hour, errChan, nil)
+	clientInputWriter3, _ := createTestClient(t, server.URL, nil, errChan)
 	defer clientInputWriter3.Close()
 	select {
 	case err = <-errChan:
@@ -143,62 +146,35 @@ func TestHandover(t *testing.T) {
 	server := createTestServer(t, 2, time.Hour)
 	defer server.Close()
 
-	maxHandoverCount := 3
-	handoverTimeout := 10 * time.Millisecond
-	createConnChan := make(chan error, 1)
-	clientInputWriter, clientOutput := createTestClient(t, server.URL, handoverTimeout, nil, createConnChan)
+	handoverChan := make(chan time.Time)
+	requestHandoverTick := func() <-chan time.Time {
+		return handoverChan
+	}
+	clientInputWriter, clientOutput := createTestClient(t, server.URL, requestHandoverTick, nil)
 	defer clientInputWriter.Close()
 
-	messageCount := 0
 	expectedOutput := ""
-	sendMessage := func() {
-		message := fmt.Appendf(nil, "message %d\n", messageCount)
-		_, err := clientInputWriter.Write(message)
-		if err != nil {
-			t.Errorf("failed to write message %d: %v", messageCount, err)
-		}
-		messageCount++
-		if messageCount > TOTAL_MESSAGE_COUNT {
-			t.Errorf("exceeded total message count, test buffer won't work correctly")
-		}
-		expectedOutput += string(message)
-	}
 
 	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		handoverCount := 0
-		for {
-			select {
-			case <-createConnChan:
-				sendMessage()
-				handoverCount++
-				if handoverCount >= maxHandoverCount {
-					return
-				}
-			default:
-				sendMessage()
-				time.Sleep(time.Millisecond)
+	wg.Go(func() {
+		for i := range TOTAL_MESSAGE_COUNT {
+			if i > 0 && i%MESSAGES_PER_CHUNK == 0 {
+				handoverChan <- time.Now()
 			}
+			message := fmt.Appendf(nil, "message %d\n", i)
+			_, err := clientInputWriter.Write(message)
+			if err != nil {
+				t.Errorf("failed to write message %d: %v", i, err)
+			}
+			expectedOutput += string(message)
 		}
-	}()
+	})
+
+	err := clientOutput.WaitForWrite(fmt.Appendf(nil, "message %d\n", TOTAL_MESSAGE_COUNT-1))
+	require.NoError(t, err, "failed to receive the last message (%d)", TOTAL_MESSAGE_COUNT-1)
 
 	wg.Wait()
 
-	for i := 0; i < messageCount; {
-		// Client can receive multiple echo messages in one response,
-		// so we split them again and verify each one.
-		data, err := clientOutput.WaitForWrite()
-		require.NoError(t, err, "failed to receive message %d", i)
-		lines := strings.SplitSeq(string(data), "\n")
-		for line := range lines {
-			if line != "" {
-				assert.Equal(t, fmt.Sprintf("message %d\n", i), line+"\n")
-				i++
-			}
-		}
-	}
-
+	// clientOutput is created by appending incoming messages as they arrive, so we are also test correct order here
 	assert.Equal(t, expectedOutput, clientOutput.String())
 }

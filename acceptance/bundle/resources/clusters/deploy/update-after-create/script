@@ -1,0 +1,18 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+
+title "Cluster should exist after bundle deployment:\n"
+CLUSTER_ID=$($CLI bundle summary -o json | jq -r '.resources.clusters.test_cluster.id')
+$CLI clusters get "${CLUSTER_ID}" | jq '{cluster_name,num_workers}'
+
+title "Updating cluster should call update API\n"
+update_file.py databricks.yml "\"spark.executor.memory\": \"2g\"" "\"spark.executor.memory\": \"4g\""
+trace $CLI bundle plan
+trace $CLI bundle deploy

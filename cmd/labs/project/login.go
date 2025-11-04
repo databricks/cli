@@ -48,23 +48,29 @@ func (lc *loginConfig) askWorkspace(ctx context.Context, cfg *config.Config) (*d
 func (lc *loginConfig) askWorkspaceProfile(ctx context.Context, cfg *config.Config) (err error) {
 	if cfg.Profile != "" {
 		lc.WorkspaceProfile = cfg.Profile
-		return
+		return err
+	}
+	// Check if authentication is already configured (e.g., via environment variables).
+	// This is consistent with askCluster() and askWarehouse() which check if their
+	// values are already set before prompting.
+	if lc.isAuthConfigured(cfg) {
+		return err
 	}
 	if !cmdio.IsPromptSupported(ctx) {
 		return ErrNotInTTY
 	}
 	lc.WorkspaceProfile, err = root.AskForWorkspaceProfile(ctx)
 	cfg.Profile = lc.WorkspaceProfile
-	return
+	return err
 }
 
 func (lc *loginConfig) askCluster(ctx context.Context, w *databricks.WorkspaceClient) (err error) {
 	if !lc.NeedsCluster() {
-		return
+		return err
 	}
 	if w.Config.ClusterID != "" {
 		lc.ClusterID = w.Config.ClusterID
-		return
+		return err
 	}
 	if !cmdio.IsPromptSupported(ctx) {
 		return ErrNotInTTY
@@ -76,23 +82,23 @@ func (lc *loginConfig) askCluster(ctx context.Context, w *databricks.WorkspaceCl
 	}
 	w.Config.ClusterID = clusterID
 	lc.ClusterID = clusterID
-	return
+	return err
 }
 
 func (lc *loginConfig) askWarehouse(ctx context.Context, w *databricks.WorkspaceClient) (err error) {
 	if !lc.NeedsWarehouse() {
-		return
+		return err
 	}
 	if w.Config.WarehouseID != "" {
 		lc.WarehouseID = w.Config.WarehouseID
-		return
+		return err
 	}
 	if !cmdio.IsPromptSupported(ctx) {
 		return ErrNotInTTY
 	}
 	lc.WarehouseID, err = cfgpickers.AskForWarehouse(ctx, w,
 		cfgpickers.WithWarehouseTypes(lc.Installer.WarehouseTypes...))
-	return
+	return err
 }
 
 func (lc *loginConfig) askAccountProfile(ctx context.Context, cfg *config.Config) (err error) {
@@ -104,7 +110,7 @@ func (lc *loginConfig) askAccountProfile(ctx context.Context, cfg *config.Config
 	}
 	lc.AccountProfile, err = root.AskForAccountProfile(ctx)
 	cfg.Profile = lc.AccountProfile
-	return
+	return err
 }
 
 func (lc *loginConfig) save(ctx context.Context) error {

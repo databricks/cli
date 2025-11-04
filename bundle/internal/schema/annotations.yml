@@ -289,6 +289,9 @@ github.com/databricks/cli/bundle/config.Root:
       Defines bundle deployment presets.
     "markdown_description": |-
       Defines bundle deployment presets. See [\_](/dev-tools/bundles/deployment-modes.md#presets).
+  "python":
+    "description": |-
+      PLACEHOLDER
   "resources":
     "description": |-
       A Map that defines the resources for the bundle, where each key is the name of the resource, and the value is a Map that defines the resource.
@@ -476,6 +479,10 @@ github.com/databricks/cli/bundle/config/resources.DashboardPermission:
     "description": |-
       PLACEHOLDER
   "user_name":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.DatabaseInstance:
+  "effective_capacity":
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.DatabaseInstancePermission:

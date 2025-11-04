@@ -2,7 +2,7 @@ Local = true
 Cloud = true
 
 [EnvMatrix]
-  DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct-exp"]
+  DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
   DLT = ["yes", "no"]
   NBOOK = ["yes", "no"]
   PY = ["yes", "no"]

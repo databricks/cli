@@ -1,9 +1,9 @@
 {
-    "//": "This template is based on an upcoming version of the default-python template, but comes with a SQL variation + certain defaults that are specific to Lakeflow Pipelines.",
+    "template_dir": "../default",
     "welcome_message": "Welcome to the template for Lakeflow Declarative Pipelines!\n\nPlease answer the below to tailor your project to your preferences.\nYou can always change your mind and change your configuration in the databricks.yml file later.\n\nNote that {{workspace_host}} is used for initialization\n(see https://docs.databricks.com/dev-tools/cli/profiles.html for how to change your profile).",
     "properties": {
         "lakeflow_only": {
-            "//": "This property is set by default adjust this template for Lakeflow Pipelines",
+            "//": "This property is set by default to adjust this template for Lakeflow Pipelines",
             "skip_prompt_if": {},
             "default": "yes",
             "type": "string",
@@ -17,13 +17,13 @@
             "description": "\nUnique name for this project",
             "order": 1,
             "pattern": "^[a-z0-9_]+$",
-            "pattern_match_failure_message": "Name must consist of letters, numbers, and underscores."
+            "pattern_match_failure_message": "Name must consist of lower case letters, numbers, and underscores."
         },
         "project_name_short": {
-            "//": "This is a derived property based on project_name (it replaces my_project with sample and strips _project|_app|_service)",
+            "//": "This is a derived property based on project_name (it replaces lakeflow_project with lakeflow and strips _project|_app|_service)",
             "skip_prompt_if": {},
             "type": "string",
-            "default": "{{if or (eq .project_name \"lakeflow_project\") (eq .project_name \"my_project\")}}sample{{else}}{{with (regexp \"^(my_|lakeflow_)?(.*)(_project|_app|_service)?$\").FindStringSubmatch .project_name}}{{index . 2}}{{else}}{{.project_name}}{{end}}{{end}}",
+            "default": "{{if or (eq .project_name \"lakeflow_project\") (eq .project_name \"my_project\")}}lakeflow{{else}}{{with (regexp \"^(my_|lakeflow_)?(.*)(_project|_app|_service)?$\").FindStringSubmatch .project_name}}{{index . 2}}{{else}}{{.project_name}}{{end}}{{end}}",
             "description": "Short name for the project",
             "order": 2
         },
@@ -33,7 +33,7 @@
             "default": "no",
             "type": "string",
             "enum": ["yes", "no"],
-            "description": "Include a Lakeflow job that runs a notebook",
+            "description": "Include a job that runs a notebook",
             "order": 3
         },
         "include_pipeline": {
@@ -65,7 +65,7 @@
         },
         "default_catalog": {
             "type": "string",
-            "default": "{{default_catalog}}",
+            "default": "{{if eq (default_catalog) \"\"}}hive_metastore{{else}}{{default_catalog}}{{end}}",
             "pattern": "^\\w*$",
             "pattern_match_failure_message": "Invalid catalog name.",
             "description": "Default catalog for any tables created by this project{{if eq (default_catalog) \"\"}} (leave blank when not using Unity Catalog){{end}}",
@@ -90,6 +90,14 @@
                 "sql"
             ],
             "order": 9
+        },
+        "enable_pydabs": {
+            "//": "This property is always set to 'no' for lakeflow-pipelines",
+            "skip_prompt_if": {},
+            "type": "string",
+            "default": "no",
+            "description": "Use Python instead of YAML for resource definitions",
+            "order": 10
         }
     },
     "success_message": "\n✨ Your new project has been created in the '{{.project_name}}' directory!\n\nPlease refer to the README.md file for \"getting started\" instructions."

@@ -1,41 +1,47 @@
 default: checks fmt lint
 
-PACKAGES=./acceptance/... ./libs/... ./internal/... ./cmd/... ./bundle/... ./experimental/ssh/... .
+# gotestsum: when go test args are used with --rerun-fails the list of packages to test must be specified by the --packages flag
+PACKAGES=--packages "./acceptance/... ./libs/... ./internal/... ./cmd/... ./bundle/... ./experimental/ssh/... ."
 
+GO_TOOL ?= go tool -modfile=tools/go.mod
 GOTESTSUM_FORMAT ?= pkgname-and-test-fails
-GOTESTSUM_CMD ?= go tool gotestsum --format ${GOTESTSUM_FORMAT} --no-summary=skipped --jsonfile test-output.json
+GOTESTSUM_CMD ?= ${GO_TOOL} gotestsum --format ${GOTESTSUM_FORMAT} --no-summary=skipped --jsonfile test-output.json --rerun-fails
 LOCAL_TIMEOUT ?= 30m
 
 
-lintfull:
-	golangci-lint run --fix
+lintfull: ./tools/golangci-lint
+	./tools/golangci-lint run --fix
 
-lint:
-	./tools/lintdiff.py run --fix
+lint: ./tools/golangci-lint
+	./tools/lintdiff.py ./tools/golangci-lint run --fix
 
 tidy:
 	@# not part of golangci-lint, apparently
 	go mod tidy
 
-lintcheck:
-	golangci-lint run ./...
+lintcheck: ./tools/golangci-lint
+	./tools/golangci-lint run ./...
 
-fmtfull: tools/yamlfmt
+fmtfull: ./tools/golangci-lint ./tools/yamlfmt
 	ruff format -n
-	golangci-lint fmt
+	./tools/golangci-lint fmt
 	./tools/yamlfmt .
 
-fmt: tools/yamlfmt
+fmt: ./tools/golangci-lint ./tools/yamlfmt
 	ruff format -n
-	./tools/lintdiff.py fmt
+	./tools/lintdiff.py ./tools/golangci-lint fmt
 	./tools/yamlfmt .
 
-# pre-building yamlfmt because I also want to call it from tests
-tools/yamlfmt: go.mod
-	go build -o tools/yamlfmt github.com/google/yamlfmt/cmd/yamlfmt
+# pre-building yamlfmt because it is invoked from tests and scripts
+tools/yamlfmt: tools/go.mod tools/go.sum
+	go build -modfile=tools/go.mod -o tools/yamlfmt github.com/google/yamlfmt/cmd/yamlfmt
 
-tools/yamlfmt.exe: go.mod
-	go build -o tools/yamlfmt.exe github.com/google/yamlfmt/cmd/yamlfmt
+tools/yamlfmt.exe: tools/go.mod tools/go.sum
+	go build -modfile=tools/go.mod -o tools/yamlfmt.exe github.com/google/yamlfmt/cmd/yamlfmt
+
+# pre-building golangci-lint because it's faster to run pre-built version
+tools/golangci-lint: tools/go.mod tools/go.sum
+	go build -modfile=tools/go.mod -o tools/golangci-lint github.com/golangci/golangci-lint/v2/cmd/golangci-lint
 
 ws:
 	./tools/validate_whitespace.py
@@ -47,16 +53,20 @@ links:
 checks: tidy ws links
 
 test:
-	${GOTESTSUM_CMD} -- ${PACKAGES} -timeout=${LOCAL_TIMEOUT} -short
+	${GOTESTSUM_CMD} ${PACKAGES} -- -timeout=${LOCAL_TIMEOUT} -short
 
 test-slow:
-	${GOTESTSUM_CMD} -- ${PACKAGES} -timeout=${LOCAL_TIMEOUT}
+	${GOTESTSUM_CMD} ${PACKAGES} -- -timeout=${LOCAL_TIMEOUT}
 
 # Updates acceptance test output (local tests)
 test-update:
 	-go test ./acceptance -run '^TestAccept$$' -update -timeout=${LOCAL_TIMEOUT}
 	@# at the moment second pass is required because some tests show diff against output of another test for easier review
 	-go test ./acceptance -run '^TestAccept$$' -update -timeout=${LOCAL_TIMEOUT}
+
+# Updates acceptance test output for template tests only
+test-update-templates:
+	-go test ./acceptance -run '^TestAccept/bundle/templates' -update -timeout=${LOCAL_TIMEOUT}
 
 # Updates acceptance test output (integration tests, requires access)
 test-update-aws:
@@ -65,11 +75,11 @@ test-update-aws:
 test-update-all: test-update test-update-aws
 
 slowest:
-	go tool gotestsum tool slowest --jsonfile test-output.json --threshold 1s --num 50
+	${GO_TOOL} gotestsum tool slowest --jsonfile test-output.json --threshold 1s --num 50
 
 cover:
 	rm -fr ./acceptance/build/cover/
-	VERBOSE_TEST=1 CLI_GOCOVERDIR=build/cover ${GOTESTSUM_CMD} -- -coverprofile=coverage.txt ${PACKAGES} -timeout=${LOCAL_TIMEOUT}
+	VERBOSE_TEST=1 CLI_GOCOVERDIR=build/cover ${GOTESTSUM_CMD} ${PACKAGES} -- -coverprofile=coverage.txt -timeout=${LOCAL_TIMEOUT}
 	rm -fr ./acceptance/build/cover-merged/
 	mkdir -p acceptance/build/cover-merged/
 	go tool covdata merge -i $$(printf '%s,' acceptance/build/cover/* | sed 's/,$$//') -o acceptance/build/cover-merged/
@@ -102,7 +112,7 @@ schema:
 docs:
 	go run ./bundle/docsgen ./bundle/internal/schema ./bundle/docsgen
 
-INTEGRATION = go tool gotestsum --format github-actions --rerun-fails --jsonfile output.json --packages "./acceptance ./integration/..." -- -parallel 4 -timeout=2h
+INTEGRATION = go run -modfile=tools/go.mod ./tools/testrunner/main.go ${GO_TOOL} gotestsum --format github-actions --rerun-fails --jsonfile output.json --packages "./acceptance ./integration/..." -- -parallel 4 -timeout=2h
 
 integration:
 	$(INTEGRATION)
@@ -137,4 +147,4 @@ generate:
 	$(GENKIT_BINARY) update-sdk
 
 
-.PHONY: lint lintfull tidy lintcheck fmt fmtfull test cover showcover build snapshot snapshot-release schema integration integration-short acc-cover acc-showcover docs ws links checks test-update test-update-aws test-update-all generate-validation
+.PHONY: lint lintfull tidy lintcheck fmt fmtfull test cover showcover build snapshot snapshot-release schema integration integration-short acc-cover acc-showcover docs ws links checks test-update test-update-templates test-update-aws test-update-all generate-validation

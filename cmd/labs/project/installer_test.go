@@ -297,6 +297,7 @@ func TestInstallerWorksForDevelopment(t *testing.T) {
 					{
 						ClusterId:        "abc-id",
 						ClusterName:      "first shared",
+						ClusterSource:    compute.ClusterSourceApi,
 						DataSecurityMode: compute.DataSecurityModeUserIsolation,
 						SparkVersion:     "12.2.x-whatever",
 						State:            compute.StateRunning,
@@ -304,6 +305,7 @@ func TestInstallerWorksForDevelopment(t *testing.T) {
 					{
 						ClusterId:        "bcd-id",
 						ClusterName:      "second personal",
+						ClusterSource:    compute.ClusterSourceApi,
 						DataSecurityMode: compute.DataSecurityModeSingleUser,
 						SparkVersion:     "14.5.x-whatever",
 						State:            compute.StateRunning,
@@ -369,6 +371,13 @@ func TestInstallerWorksForDevelopment(t *testing.T) {
 
 	// development installer assumes it's in the active virtualenv
 	ctx = env.Set(ctx, "PYTHON_BIN", py)
+
+	// Set up authentication via environment variables to avoid prompting in non-interactive mode
+	ctx = env.Set(ctx, "DATABRICKS_HOST", server.URL)
+	ctx = env.Set(ctx, "DATABRICKS_TOKEN", "...")
+	ctx = env.Set(ctx, "DATABRICKS_CLUSTER_ID", "abc-id")
+	ctx = env.Set(ctx, "DATABRICKS_WAREHOUSE_ID", "efg-id")
+
 	home, _ := env.UserHomeDir(ctx)
 	err = os.WriteFile(filepath.Join(home, ".databrickscfg"), []byte(fmt.Sprintf(`
 [profile-one]

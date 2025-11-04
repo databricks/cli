@@ -4,9 +4,14 @@ cd app
 # so we don't need to start it in background. It will install the dependencies as part of the command
 trace $CLI apps run-local --prepare-environment --entry-point test.yml 2>&1 | grep -w "Hello, world"
 
-PORT=8080
-DEBUG_PORT=5252
-PROXY_PORT=8081
+# Function to find a free port in safe range
+get_free_port() {
+    python3 -c "import socket,random; port=random.randint(49152,65535); s=socket.socket(); s.bind(('',port)); print(port); s.close()" 2>/dev/null || python3 -c "import socket; s=socket.socket(); s.bind(('',0)); print(s.getsockname()[1]); s.close()"
+}
+
+PORT=$(get_free_port)
+DEBUG_PORT=$(get_free_port)
+PROXY_PORT=$(get_free_port)
 
 cleanup() {
     # Kill any still running processes on these ports when the script exits

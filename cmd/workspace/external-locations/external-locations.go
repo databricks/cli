@@ -288,6 +288,7 @@ func newList() *cobra.Command {
 	var listReq catalog.ListExternalLocationsRequest
 
 	cmd.Flags().BoolVar(&listReq.IncludeBrowse, "include-browse", listReq.IncludeBrowse, `Whether to include external locations in the response for which the principal can only access selective metadata for.`)
+	cmd.Flags().BoolVar(&listReq.IncludeUnbound, "include-unbound", listReq.IncludeUnbound, `Whether to include external locations not bound to the workspace.`)
 	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of external locations to return.`)
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
 
@@ -298,7 +299,15 @@ func newList() *cobra.Command {
   Gets an array of external locations (__ExternalLocationInfo__ objects) from
   the metastore. The caller must be a metastore admin, the owner of the external
   location, or a user that has some privilege on the external location. There is
-  no guarantee of a specific ordering of the elements in the array.`
+  no guarantee of a specific ordering of the elements in the array.
+  
+  NOTE: we recommend using max_results=0 to use the paginated version of this
+  API. Unpaginated calls will be deprecated soon.
+  
+  PAGINATION BEHAVIOR: When using pagination (max_results >= 0), a page may
+  contain zero results while still providing a next_page_token. Clients must
+  continue reading pages until next_page_token is absent, which is the only
+  indication that the end of results has been reached.`
 
 	cmd.Annotations = make(map[string]string)
 

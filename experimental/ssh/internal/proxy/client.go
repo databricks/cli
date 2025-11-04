@@ -10,7 +10,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func RunClientProxy(ctx context.Context, src io.Reader, dst io.Writer, handoverTimeout time.Duration, createConn createWebsocketConnectionFunc) error {
+func RunClientProxy(ctx context.Context, src io.Reader, dst io.Writer, requestHandoverTick func() <-chan time.Time, createConn createWebsocketConnectionFunc) error {
 	proxy := newProxyConnection(createConn)
 	cmdio.LogString(ctx, "Establishing SSH proxy connection...")
 	g, gCtx := errgroup.WithContext(ctx)
@@ -20,16 +20,12 @@ func RunClientProxy(ctx context.Context, src io.Reader, dst io.Writer, handoverT
 	defer proxy.close()
 	cmdio.LogString(ctx, "SSH proxy connection established")
 
-	cmdio.LogString(ctx, fmt.Sprintf("Connection handover timeout: %v", handoverTimeout))
-	handoverTicker := time.NewTicker(handoverTimeout)
-	defer handoverTicker.Stop()
-
 	g.Go(func() error {
 		for {
 			select {
 			case <-gCtx.Done():
 				return gCtx.Err()
-			case <-handoverTicker.C:
+			case <-requestHandoverTick():
 				err := proxy.initiateHandover(gCtx)
 				if err != nil {
 					return err

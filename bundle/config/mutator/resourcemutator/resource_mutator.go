@@ -92,6 +92,12 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 
 		// Apps:
 		{"resources.apps.*.description", ""},
+
+		// Clusters (same as terraform)
+		// https://github.com/databricks/terraform-provider-databricks/blob/v1.75.0/clusters/resource_cluster.go#L315
+		{"resources.clusters.*.autotermination_minutes", 60},
+		{"resources.clusters.*.workload_type.clients.notebooks", true},
+		{"resources.clusters.*.workload_type.clients.jobs", true},
 	}
 
 	for _, defaultDef := range defaults {
@@ -114,9 +120,8 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 		ApplyBundlePermissions(),
 
 		// Reads (typed): b.Config.Workspace.CurrentUser.UserName (gets current user name)
-		// Updates (dynamic): resources.*.*.permissions (removes permissions entries where user_name or service_principal_name matches current user)
-		// Removes the current user from all resource permissions as the Terraform provider implicitly grants ownership
-		FilterCurrentUser(),
+		// Updates (dynamic): resources.*.*.permissions
+		EnsureOwnerPermissions(),
 	)
 }
 
@@ -169,6 +174,7 @@ func applyNormalizeMutators(ctx context.Context, b *bundle.Bundle) {
 
 		// Reads and updates (typed): resources.jobs.*.**
 		JobClustersFixups(),
+		ClusterFixups(),
 	)
 }
 

@@ -153,6 +153,7 @@ func newCreateExperiment() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid FORECAST_HORIZON: %s", args[4])
 			}
+
 		}
 
 		wait, err := w.Forecasting.CreateExperiment(ctx, createExperimentReq)
@@ -243,4 +244,4 @@ func newGetExperiment() *cobra.Command {
 	return cmd
 }
 
-// end service forecasting
+// end service Forecasting

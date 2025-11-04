@@ -1,0 +1,11 @@
+title 'Terraform state is present, env var does not matter, we select terraform\n'
+mkdir -p .databricks/bundle/default/terraform
+echo '{"version": 4, "lineage": "111"}' > .databricks/bundle/default/terraform/terraform.tfstate
+trace $CLI bundle deploy
+
+title 'Adding resources.json with different lineage'
+echo '{"lineage": "222"}' > .databricks/bundle/default/resources.json
+trace musterr $CLI bundle plan
+trace musterr $CLI bundle deploy
+trace musterr $CLI bundle summary
+trace musterr $CLI bundle destroy --auto-approve

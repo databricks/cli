@@ -48,10 +48,7 @@ func New() *cobra.Command {
 		Annotations: map[string]string{
 			"package": "sharing",
 		},
-
-		// This service is being previewed; hide from help output.
-		Hidden: true,
-		RunE:   root.ReportUnknownSubcommand,
+		RunE: root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -59,7 +56,6 @@ func New() *cobra.Command {
 	cmd.AddCommand(newDelete())
 	cmd.AddCommand(newGetFederationPolicy())
 	cmd.AddCommand(newList())
-	cmd.AddCommand(newUpdate())
 
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
@@ -346,87 +342,6 @@ func newList() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range listOverrides {
 		fn(cmd, &listReq)
-	}
-
-	return cmd
-}
-
-// start update command
-
-// Slice with functions to override default command behavior.
-// Functions can be added from the `init()` function in manually curated files in this directory.
-var updateOverrides []func(
-	*cobra.Command,
-	*sharing.UpdateFederationPolicyRequest,
-)
-
-func newUpdate() *cobra.Command {
-	cmd := &cobra.Command{}
-
-	var updateReq sharing.UpdateFederationPolicyRequest
-	updateReq.Policy = sharing.FederationPolicy{}
-	var updateJson flags.JsonFlag
-
-	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
-
-	cmd.Flags().StringVar(&updateReq.UpdateMask, "update-mask", updateReq.UpdateMask, `The field mask specifies which fields of the policy to update.`)
-	cmd.Flags().StringVar(&updateReq.Policy.Comment, "comment", updateReq.Policy.Comment, `Description of the policy.`)
-	cmd.Flags().StringVar(&updateReq.Policy.Name, "name", updateReq.Policy.Name, `Name of the federation policy.`)
-	// TODO: complex arg: oidc_policy
-
-	cmd.Use = "update RECIPIENT_NAME NAME"
-	cmd.Short = `Update recipient federation policy.`
-	cmd.Long = `Update recipient federation policy.
-  
-  Updates an existing federation policy for an OIDC_RECIPIENT. The caller must
-  be the owner of the recipient.
-
-  Arguments:
-    RECIPIENT_NAME: Name of the recipient. This is the name of the recipient for which the
-      policy is being updated.
-    NAME: Name of the policy. This is the name of the current name of the policy.`
-
-	cmd.Annotations = make(map[string]string)
-
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(2)
-		return check(cmd, args)
-	}
-
-	cmd.PreRunE = root.MustWorkspaceClient
-	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
-		ctx := cmd.Context()
-		w := cmdctx.WorkspaceClient(ctx)
-
-		if cmd.Flags().Changed("json") {
-			diags := updateJson.Unmarshal(&updateReq.Policy)
-			if diags.HasError() {
-				return diags.Error()
-			}
-			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
-				if err != nil {
-					return err
-				}
-			}
-		}
-		updateReq.RecipientName = args[0]
-		updateReq.Name = args[1]
-
-		response, err := w.RecipientFederationPolicies.Update(ctx, updateReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
-	}
-
-	// Disable completions since they are not applicable.
-	// Can be overridden by manual implementation in `override.go`.
-	cmd.ValidArgsFunction = cobra.NoFileCompletions
-
-	// Apply optional overrides to this command.
-	for _, fn := range updateOverrides {
-		fn(cmd, &updateReq)
 	}
 
 	return cmd

@@ -96,5 +96,4 @@ type ResourceDatabaseSyncedDatabaseTable struct {
 	Name                          string                                                        `json:"name"`
 	Spec                          *ResourceDatabaseSyncedDatabaseTableSpec                      `json:"spec,omitempty"`
 	UnityCatalogProvisioningState string                                                        `json:"unity_catalog_provisioning_state,omitempty"`
-	WorkspaceId                   string                                                        `json:"workspace_id,omitempty"`
 }

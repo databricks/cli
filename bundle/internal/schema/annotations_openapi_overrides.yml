@@ -5,6 +5,9 @@ github.com/databricks/cli/bundle/config/resources.App:
   "budget_policy_id":
     "description": |-
       PLACEHOLDER
+  "compute_size":
+    "description": |-
+      PLACEHOLDER
   "compute_status":
     "description": |-
       PLACEHOLDER
@@ -674,6 +677,9 @@ github.com/databricks/databricks-sdk-go/service/apps.AppResource:
   "database":
     "description": |-
       PLACEHOLDER
+  "genie_space":
+    "description": |-
+      PLACEHOLDER
   "job":
     "description": |-
       PLACEHOLDER
@@ -697,6 +703,16 @@ github.com/databricks/databricks-sdk-go/service/apps.AppResourceDatabase:
     "description": |-
       PLACEHOLDER
   "permission":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/apps.AppResourceGenieSpace:
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "permission":
+    "description": |-
+      PLACEHOLDER
+  "space_id":
     "description": |-
       PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/apps.AppResourceJob:
@@ -803,6 +819,11 @@ github.com/databricks/databricks-sdk-go/service/compute.InitScriptInfo:
   "abfss":
     "description": |-
       Contains the Azure Data Lake Storage destination path
+github.com/databricks/databricks-sdk-go/service/compute.Kind:
+  "_":
+    "enum":
+      - |-
+        CLASSIC_PREVIEW
 github.com/databricks/databricks-sdk-go/service/compute.LogAnalyticsInfo:
   "log_analytics_primary_key":
     "description": |-

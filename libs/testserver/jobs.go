@@ -20,8 +20,7 @@ func (s *FakeWorkspace) JobsCreate(req Request) Response {
 
 	defer s.LockUnlock()()
 
-	jobId := s.nextJobId
-	s.nextJobId++
+	jobId := nextID()
 
 	jobSettings := jobs.JobSettings{}
 	if err := jsonConvert(request, &jobSettings); err != nil {
@@ -31,7 +30,13 @@ func (s *FakeWorkspace) JobsCreate(req Request) Response {
 		}
 	}
 
-	s.Jobs[jobId] = jobs.Job{JobId: jobId, Settings: &jobSettings}
+	// CreatorUserName field is used by TF to check if the resource exists or not. CreatorUserName should be non-empty for the resource to be considered as "exists"
+	// https://github.com/databricks/terraform-provider-databricks/blob/main/permissions/permission_definitions.go#L108
+	s.Jobs[jobId] = jobs.Job{
+		JobId:           jobId,
+		Settings:        &jobSettings,
+		CreatorUserName: s.CurrentUser().UserName,
+	}
 	return Response{Body: jobs.CreateResponse{JobId: jobId}}
 }
 
@@ -111,8 +116,7 @@ func (s *FakeWorkspace) JobsRunNow(req Request) Response {
 		return Response{StatusCode: 404}
 	}
 
-	runId := s.nextJobRunId
-	s.nextJobRunId++
+	runId := nextID()
 	s.JobRuns[runId] = jobs.Run{
 		RunId:      runId,
 		State:      &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},

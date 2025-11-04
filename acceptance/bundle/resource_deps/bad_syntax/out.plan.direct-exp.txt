@@ -1,2 +1,0 @@
-create volumes.bar
-create volumes.foo

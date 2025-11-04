@@ -1,0 +1,29 @@
+bundle:
+  name: BUNDLE
+
+resources:
+  jobs:
+    job1:
+      name: job1
+
+  schemas:
+    schema1:
+      catalog_name: mycatalog
+      name: schema1
+
+  volumes:
+    volume1:
+      name: volume1
+      catalog_name: catalog1
+      schema_name: schema1
+
+  models:
+    model1:
+      name: model 1
+
+presets: # PRESETS
+  name_prefix: $PREFIX # PRESETS
+
+targets:
+  dev:
+    mode: development

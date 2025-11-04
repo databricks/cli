@@ -1,13 +1,8 @@
-print_requests() {
-    jq --sort-keys 'select(.method != "GET" and (.path | contains("/jobs")))' < out.requests.txt
-    rm out.requests.txt
-}
-
 trace $CLI bundle validate
 trace $CLI bundle validate -o json | jq .resources
 trace $CLI bundle plan
 trace $CLI bundle deploy
-trace print_requests
+trace print_requests.py //jobs
 trace $CLI bundle summary
 trace $CLI bundle destroy --auto-approve
-trace print_requests
+trace print_requests.py //jobs

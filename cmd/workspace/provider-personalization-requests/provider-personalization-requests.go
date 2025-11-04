@@ -159,6 +159,7 @@ func newUpdate() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid STATUS: %s", args[2])
 			}
+
 		}
 
 		response, err := w.ProviderPersonalizationRequests.Update(ctx, updateReq)

@@ -98,19 +98,19 @@ func (v compatibleCluster) State() string {
 
 type clusterFilter func(cluster *compute.ClusterDetails, me *iam.User) bool
 
+// Filter function to check if a cluster is created through the UI or an API call.
+func isUsableCluster(cluster *compute.ClusterDetails) bool {
+	return cluster.ClusterSource == compute.ClusterSourceUi || cluster.ClusterSource == compute.ClusterSourceApi
+}
+
 func WithDatabricksConnect(minVersion string) func(*compute.ClusterDetails, *iam.User) bool {
 	return func(cluster *compute.ClusterDetails, me *iam.User) bool {
 		if !IsCompatibleWithUC(*cluster, minVersion) {
 			return false
 		}
-		switch cluster.ClusterSource {
-		case compute.ClusterSourceJob,
-			compute.ClusterSourceModels,
-			compute.ClusterSourcePipeline,
-			compute.ClusterSourcePipelineMaintenance,
-			compute.ClusterSourceSql:
-			// only UI and API clusters are usable for DBConnect.
-			// `CanUseClient: "NOTEBOOKS"`` didn't seem to have an effect.
+		// Only clusters created through the UI or an API call are usable for DBConnect.
+		// `CanUseClient: "NOTEBOOKS"`` didn't seem to have an effect.
+		if !isUsableCluster(cluster) {
 			return false
 		}
 		if cluster.SingleUserName != "" && cluster.SingleUserName != me.UserName {
@@ -124,11 +124,7 @@ func WithDatabricksConnect(minVersion string) func(*compute.ClusterDetails, *iam
 // It does this by keeping only clusters created through the UI or an API call.
 func WithoutSystemClusters() func(*compute.ClusterDetails, *iam.User) bool {
 	return func(cluster *compute.ClusterDetails, me *iam.User) bool {
-		switch cluster.ClusterSource {
-		case compute.ClusterSourceApi, compute.ClusterSourceUi:
-			return true
-		}
-		return false
+		return isUsableCluster(cluster)
 	}
 }
 

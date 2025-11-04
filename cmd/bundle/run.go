@@ -19,7 +19,7 @@ import (
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/exec"
+	"github.com/databricks/cli/libs/execv"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
@@ -132,13 +132,13 @@ Example usage:
 	cmd.Flags().BoolVar(&restart, "restart", false, "Restart the run if it is already running.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		ctx := logdiag.InitContext(cmd.Context())
-		cmd.SetContext(ctx)
-
-		b := utils.ConfigureBundleWithVariables(cmd)
-		if b == nil || logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
+		b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
+			SkipInitialize: true,
+		})
+		if err != nil {
+			return err
 		}
+		ctx := cmd.Context()
 
 		// If user runs the bundle run command as:
 		// databricks bundle run -- <command> <args>
@@ -166,9 +166,14 @@ Example usage:
 			return executeScript(content, cmd, b)
 		}
 
+		ctx, directDeployment := statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(true))
+		if logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
+		}
+		cmd.SetContext(ctx)
+
 		bundle.ApplySeqContext(ctx, b,
-			statemgmt.StatePull(),
-			statemgmt.Load(statemgmt.ErrorOnEmptyState),
+			statemgmt.Load(directDeployment, statemgmt.ErrorOnEmptyState),
 		)
 		if logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
@@ -278,7 +283,7 @@ func scriptEnv(cmd *cobra.Command, b *bundle.Bundle) []string {
 }
 
 func executeScript(content string, cmd *cobra.Command, b *bundle.Bundle) error {
-	return exec.ShellExecv(content, b.BundleRootPath, scriptEnv(cmd, b))
+	return execv.Shell(content, b.BundleRootPath, scriptEnv(cmd, b))
 }
 
 func executeInline(cmd *cobra.Command, args []string, b *bundle.Bundle) error {
@@ -287,7 +292,7 @@ func executeInline(cmd *cobra.Command, args []string, b *bundle.Bundle) error {
 		return err
 	}
 
-	return exec.Execv(exec.ExecvOptions{
+	return execv.Execv(execv.Options{
 		Args: args,
 		Env:  scriptEnv(cmd, b),
 		Dir:  dir,
