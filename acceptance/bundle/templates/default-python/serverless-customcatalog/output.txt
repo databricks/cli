@@ -31,12 +31,14 @@ To get started, refer to the project README.md file and the documentation at htt
      permissions:
 --- [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/output/my_default_python/resources/my_default_python_etl.pipeline.yml
 +++ output/my_default_python/resources/my_default_python_etl.pipeline.yml
-@@ -5,5 +5,4 @@
+@@ -5,6 +5,5 @@
      my_default_python_etl:
        name: my_default_python_etl
--      # Serverless compute requires Unity Catalog
-       catalog: ${var.catalog}
+-      # Catalog is required for serverless compute
+-      catalog: main
++      catalog: ${var.catalog}
        schema: ${var.schema}
+       serverless: true
 --- [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/output/my_default_python/src/my_default_python_etl/explorations/sample_exploration.ipynb
 +++ output/my_default_python/src/my_default_python_etl/explorations/sample_exploration.ipynb
 @@ -38,5 +38,5 @@

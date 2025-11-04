@@ -12,8 +12,8 @@
 @@ -5,8 +5,7 @@
      my_default_python_etl:
        name: my_default_python_etl
--      # Serverless compute requires Unity Catalog
--      catalog: ${var.catalog}
+-      # Catalog is required for serverless compute
+-      catalog: main
 +      ## Specify the 'catalog' field to configure this pipeline to make use of Unity Catalog:
 +      # catalog: ${var.catalog}
        schema: ${var.schema}
