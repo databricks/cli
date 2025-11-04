@@ -32,7 +32,7 @@ func (s *FakeWorkspace) AlertsUpsert(req Request, alertId string) Response {
 	}
 
 	alert.Id = alertId
-	alert.LifecycleState = sql.LifecycleStateActive
+	alert.LifecycleState = sql.AlertLifecycleStateActive
 	s.Alerts[alertId] = alert
 
 	return Response{

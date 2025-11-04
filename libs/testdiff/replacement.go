@@ -12,7 +12,6 @@ import (
 
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/iamutil"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"golang.org/x/mod/semver"
@@ -28,6 +27,8 @@ var (
 	privatePathRegex = regexp.MustCompile(`(/tmp|/private)(/.*)/([a-zA-Z0-9]+)`)
 	// Version could v0.0.0-dev+21e1aacf518a or just v0.0.0-dev (the latter is currently the case on Windows)
 	devVersionRegex = regexp.MustCompile(`0\.0\.0-dev(\+[a-f0-9]{10,16})?`)
+	// Matches databricks-sdk-go/0.90.0
+	sdkVersionRegex = regexp.MustCompile(`databricks-sdk-go/[0-9]+\.[0-9]+\.[0-9]+`)
 )
 
 type Replacement struct {
@@ -250,7 +251,7 @@ func PrepareReplacementsDevVersion(t testutil.TestingT, r *ReplacementsContext) 
 
 func PrepareReplacementSdkVersion(t testutil.TestingT, r *ReplacementsContext) {
 	t.Helper()
-	r.Set(databricks.Version(), "[SDK_VERSION]")
+	r.append(sdkVersionRegex, "databricks-sdk-go/[SDK_VERSION]", 0)
 }
 
 func goVersion() string {

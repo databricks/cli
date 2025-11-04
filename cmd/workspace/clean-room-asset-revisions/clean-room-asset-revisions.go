@@ -86,6 +86,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return fmt.Errorf("invalid ASSET_TYPE: %s", args[1])
 		}
+
 		getReq.Name = args[2]
 		getReq.Etag = args[3]
 
@@ -154,6 +155,7 @@ func newList() *cobra.Command {
 		if err != nil {
 			return fmt.Errorf("invalid ASSET_TYPE: %s", args[1])
 		}
+
 		listReq.Name = args[2]
 
 		response := w.CleanRoomAssetRevisions.List(ctx, listReq)
