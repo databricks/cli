@@ -7,7 +7,7 @@ type DataSourceDataQualityRefreshesRefreshes struct {
 	Message     string `json:"message,omitempty"`
 	ObjectId    string `json:"object_id"`
 	ObjectType  string `json:"object_type"`
-	RefreshId   int    `json:"refresh_id,omitempty"`
+	RefreshId   int    `json:"refresh_id"`
 	StartTimeMs int    `json:"start_time_ms,omitempty"`
 	State       string `json:"state,omitempty"`
 	Trigger     string `json:"trigger,omitempty"`
@@ -16,5 +16,6 @@ type DataSourceDataQualityRefreshesRefreshes struct {
 type DataSourceDataQualityRefreshes struct {
 	ObjectId   string                                    `json:"object_id"`
 	ObjectType string                                    `json:"object_type"`
+	PageSize   int                                       `json:"page_size,omitempty"`
 	Refreshes  []DataSourceDataQualityRefreshesRefreshes `json:"refreshes,omitempty"`
 }

@@ -59,7 +59,12 @@ type DataSourceRegisteredModelVersionsModelVersions struct {
 	Version                  int                                                                      `json:"version,omitempty"`
 }
 
+type DataSourceRegisteredModelVersionsProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourceRegisteredModelVersions struct {
-	FullName      string                                           `json:"full_name"`
-	ModelVersions []DataSourceRegisteredModelVersionsModelVersions `json:"model_versions,omitempty"`
+	FullName       string                                           `json:"full_name"`
+	ModelVersions  []DataSourceRegisteredModelVersionsModelVersions `json:"model_versions,omitempty"`
+	ProviderConfig *DataSourceRegisteredModelVersionsProviderConfig `json:"provider_config,omitempty"`
 }

@@ -100,9 +100,14 @@ type DataSourceFunctionsFunctions struct {
 	UpdatedBy           string                                           `json:"updated_by,omitempty"`
 }
 
+type DataSourceFunctionsProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourceFunctions struct {
-	CatalogName   string                         `json:"catalog_name"`
-	Functions     []DataSourceFunctionsFunctions `json:"functions,omitempty"`
-	IncludeBrowse bool                           `json:"include_browse,omitempty"`
-	SchemaName    string                         `json:"schema_name"`
+	CatalogName    string                             `json:"catalog_name"`
+	Functions      []DataSourceFunctionsFunctions     `json:"functions,omitempty"`
+	IncludeBrowse  bool                               `json:"include_browse,omitempty"`
+	ProviderConfig *DataSourceFunctionsProviderConfig `json:"provider_config,omitempty"`
+	SchemaName     string                             `json:"schema_name"`
 }

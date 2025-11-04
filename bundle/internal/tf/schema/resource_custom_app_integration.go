@@ -3,8 +3,10 @@
 package schema
 
 type ResourceCustomAppIntegrationTokenAccessPolicy struct {
-	AccessTokenTtlInMinutes  int `json:"access_token_ttl_in_minutes,omitempty"`
-	RefreshTokenTtlInMinutes int `json:"refresh_token_ttl_in_minutes,omitempty"`
+	AbsoluteSessionLifetimeInMinutes int  `json:"absolute_session_lifetime_in_minutes,omitempty"`
+	AccessTokenTtlInMinutes          int  `json:"access_token_ttl_in_minutes,omitempty"`
+	EnableSingleUseRefreshTokens     bool `json:"enable_single_use_refresh_tokens,omitempty"`
+	RefreshTokenTtlInMinutes         int  `json:"refresh_token_ttl_in_minutes,omitempty"`
 }
 
 type ResourceCustomAppIntegration struct {

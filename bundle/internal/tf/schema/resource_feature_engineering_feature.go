@@ -22,16 +22,32 @@ type ResourceFeatureEngineeringFeatureSource struct {
 	DeltaTableSource *ResourceFeatureEngineeringFeatureSourceDeltaTableSource `json:"delta_table_source,omitempty"`
 }
 
+type ResourceFeatureEngineeringFeatureTimeWindowContinuous struct {
+	Offset         string `json:"offset,omitempty"`
+	WindowDuration string `json:"window_duration"`
+}
+
+type ResourceFeatureEngineeringFeatureTimeWindowSliding struct {
+	SlideDuration  string `json:"slide_duration"`
+	WindowDuration string `json:"window_duration"`
+}
+
+type ResourceFeatureEngineeringFeatureTimeWindowTumbling struct {
+	WindowDuration string `json:"window_duration"`
+}
+
 type ResourceFeatureEngineeringFeatureTimeWindow struct {
-	Duration string `json:"duration"`
-	Offset   string `json:"offset,omitempty"`
+	Continuous *ResourceFeatureEngineeringFeatureTimeWindowContinuous `json:"continuous,omitempty"`
+	Sliding    *ResourceFeatureEngineeringFeatureTimeWindowSliding    `json:"sliding,omitempty"`
+	Tumbling   *ResourceFeatureEngineeringFeatureTimeWindowTumbling   `json:"tumbling,omitempty"`
 }
 
 type ResourceFeatureEngineeringFeature struct {
-	Description string                                       `json:"description,omitempty"`
-	FullName    string                                       `json:"full_name"`
-	Function    *ResourceFeatureEngineeringFeatureFunction   `json:"function,omitempty"`
-	Inputs      []string                                     `json:"inputs"`
-	Source      *ResourceFeatureEngineeringFeatureSource     `json:"source,omitempty"`
-	TimeWindow  *ResourceFeatureEngineeringFeatureTimeWindow `json:"time_window,omitempty"`
+	Description     string                                       `json:"description,omitempty"`
+	FilterCondition string                                       `json:"filter_condition,omitempty"`
+	FullName        string                                       `json:"full_name"`
+	Function        *ResourceFeatureEngineeringFeatureFunction   `json:"function,omitempty"`
+	Inputs          []string                                     `json:"inputs"`
+	Source          *ResourceFeatureEngineeringFeatureSource     `json:"source,omitempty"`
+	TimeWindow      *ResourceFeatureEngineeringFeatureTimeWindow `json:"time_window,omitempty"`
 }
