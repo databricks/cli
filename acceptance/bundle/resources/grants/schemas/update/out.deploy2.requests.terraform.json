@@ -1,0 +1,27 @@
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/permissions/schema/main.schema_grants_[UNIQUE_NAME]",
+  "body": {
+    "changes": [
+      {
+        "add": [
+          "APPLY_TAG"
+        ],
+        "principal": "denis.bilenko@databricks.com",
+        "remove": [
+          "USE_SCHEMA"
+        ]
+      },
+      {
+        "add": [
+          "CREATE_VOLUME",
+          "MANAGE"
+        ],
+        "principal": "pieter.noordhuis@databricks.com",
+        "remove": [
+          "USE_SCHEMA"
+        ]
+      }
+    ]
+  }
+}

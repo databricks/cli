@@ -1,0 +1,21 @@
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/permissions/schema/main.schema_grants_[UNIQUE_NAME]",
+  "body": {
+    "changes": [
+      {
+        "add": [
+          "CREATE_TABLE",
+          "USE_SCHEMA"
+        ],
+        "principal": "denis.bilenko@databricks.com"
+      },
+      {
+        "add": [
+          "USE_SCHEMA"
+        ],
+        "principal": "pieter.noordhuis@databricks.com"
+      }
+    ]
+  }
+}

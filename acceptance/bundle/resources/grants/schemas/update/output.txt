@@ -1,27 +1,27 @@
 
->>> [CLI] bundle deploy --auto-approve
+>>> [CLI] bundle debug plan
+
+>>> print_requests.py /permissions
+
+>>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-grants-[UNIQUE_NAME]/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests
+>>> print_requests.py /permissions
 
->>> [CLI] bundle deploy --auto-approve
+>>> [CLI] bundle debug plan
+
+>>> print_requests.py /permissions
+
+>>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-grants-[UNIQUE_NAME]/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests
-
->>> [CLI] bundle deploy --auto-approve
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-grants-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
-
->>> print_requests
+>>> print_requests.py /permissions
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -35,10 +35,4 @@ All files and directories at the following location will be deleted: /Workspace/
 Deleting files...
 Destroy complete!
 
->>> print_requests
-
->>> [CLI] bundle destroy --auto-approve
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/schema-grants-[UNIQUE_NAME]/default
-
-Deleting files...
-Destroy complete!
+>>> print_requests.py /permissions

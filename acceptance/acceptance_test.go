@@ -574,6 +574,7 @@ func runTest(t *testing.T,
 	testdiff.PrepareReplacementsWorkspaceConfig(t, &repls, cfg)
 
 	cmd.Env = auth.ProcessEnv(cfg)
+	cmd.Env = append(cmd.Env, "USERNAME="+user.UserName)
 
 	rateLimit := os.Getenv("DATABRICKS_RATE_LIMIT")
 	if rateLimit == "" {

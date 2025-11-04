@@ -86,7 +86,7 @@ func PrepareGrantsInputConfig(inputConfig any, node string) (*structvar.StructVa
 			privileges = append(privileges, catalog.Privilege(item.String()))
 		}
 
-		//normalizePrivileges(privileges)
+		// normalizePrivileges(privileges)
 		grants = append(grants, GrantAssignment{
 			Principal:  principal,
 			Privileges: privileges,
@@ -247,7 +247,7 @@ func (r *ResourceGrants) listGrants(ctx context.Context, securableType, fullName
 			}
 			privs := make([]catalog.Privilege, len(assignment.Privileges))
 			copy(privs, assignment.Privileges)
-			//normalizePrivileges(privs)
+			// normalizePrivileges(privs)
 			assignments = append(assignments, GrantAssignment{
 				Principal:  assignment.Principal,
 				Privileges: privs,

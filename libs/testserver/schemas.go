@@ -61,6 +61,7 @@ func (s *FakeWorkspace) SchemasUpdate(req Request, name string) Response {
 	}
 }
 
+/*
 func (s *FakeWorkspace) SchemasUpdateGrants(req Request, fullName string) Response {
 	var request catalog.UpdatePermissions
 	if err := json.Unmarshal(req.Body, &request); err != nil {
@@ -100,3 +101,4 @@ func (s *FakeWorkspace) SchemasGetGrants(req Request, fullName string) Response 
 		},
 	}
 }
+*/

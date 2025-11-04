@@ -104,7 +104,7 @@ type FakeWorkspace struct {
 	Monitors            map[string]catalog.MonitorInfo
 	Apps                map[string]apps.App
 	Schemas             map[string]catalog.SchemaInfo
-	SchemasGrants       map[string][]catalog.PrivilegeAssignment
+	Grants              map[string][]catalog.PrivilegeAssignment
 	Volumes             map[string]catalog.VolumeInfo
 	Dashboards          map[string]fakeDashboard
 	PublishedDashboards map[string]dashboards.PublishedDashboard
@@ -201,7 +201,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		Jobs:                 map[int64]jobs.Job{},
 		JobRuns:              map[int64]jobs.Run{},
 		JobPermissions:       map[string][]jobs.JobAccessControlRequest{},
-		SchemasGrants:        map[string][]catalog.PrivilegeAssignment{},
+		Grants:               map[string][]catalog.PrivilegeAssignment{},
 		Pipelines:            map[string]pipelines.GetPipelineResponse{},
 		PipelineUpdates:      map[string]bool{},
 		Monitors:             map[string]catalog.MonitorInfo{},
