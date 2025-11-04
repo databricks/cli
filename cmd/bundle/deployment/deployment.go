@@ -27,6 +27,5 @@ After binding, the existing workspace resource will be managed by your bundle.`,
 
 	cmd.AddCommand(newBindCommand())
 	cmd.AddCommand(newUnbindCommand())
-	cmd.AddCommand(newMigrateCommand())
 	return cmd
 }
