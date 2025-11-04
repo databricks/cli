@@ -28,9 +28,14 @@ type DataSourceRegisteredModelModelInfo struct {
 	UpdatedBy       string                                      `json:"updated_by,omitempty"`
 }
 
+type DataSourceRegisteredModelProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourceRegisteredModel struct {
-	FullName       string                               `json:"full_name"`
-	IncludeAliases bool                                 `json:"include_aliases,omitempty"`
-	IncludeBrowse  bool                                 `json:"include_browse,omitempty"`
-	ModelInfo      []DataSourceRegisteredModelModelInfo `json:"model_info,omitempty"`
+	FullName       string                                   `json:"full_name"`
+	IncludeAliases bool                                     `json:"include_aliases,omitempty"`
+	IncludeBrowse  bool                                     `json:"include_browse,omitempty"`
+	ModelInfo      []DataSourceRegisteredModelModelInfo     `json:"model_info,omitempty"`
+	ProviderConfig *DataSourceRegisteredModelProviderConfig `json:"provider_config,omitempty"`
 }

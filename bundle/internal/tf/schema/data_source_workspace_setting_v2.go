@@ -130,7 +130,7 @@ type DataSourceWorkspaceSettingV2 struct {
 	EffectiveRestrictWorkspaceAdmins               *DataSourceWorkspaceSettingV2EffectiveRestrictWorkspaceAdmins               `json:"effective_restrict_workspace_admins,omitempty"`
 	EffectiveStringVal                             *DataSourceWorkspaceSettingV2EffectiveStringVal                             `json:"effective_string_val,omitempty"`
 	IntegerVal                                     *DataSourceWorkspaceSettingV2IntegerVal                                     `json:"integer_val,omitempty"`
-	Name                                           string                                                                      `json:"name,omitempty"`
+	Name                                           string                                                                      `json:"name"`
 	PersonalCompute                                *DataSourceWorkspaceSettingV2PersonalCompute                                `json:"personal_compute,omitempty"`
 	RestrictWorkspaceAdmins                        *DataSourceWorkspaceSettingV2RestrictWorkspaceAdmins                        `json:"restrict_workspace_admins,omitempty"`
 	StringVal                                      *DataSourceWorkspaceSettingV2StringVal                                      `json:"string_val,omitempty"`
