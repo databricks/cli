@@ -1,0 +1,34 @@
+{
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/permissions/schema/[SCHEMA_FULL_NAME]"
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/permissions/schema/[SCHEMA_FULL_NAME]",
+  "body": {
+    "changes": [
+      {
+        "add": [
+          "CREATE_TABLE",
+          "USE_SCHEMA"
+        ],
+        "principal": "account users"
+      },
+      {
+        "add": [
+          "USE_SCHEMA"
+        ],
+        "principal": "analysts"
+      }
+    ]
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.1/unity-catalog/schemas",
+  "body": {
+    "catalog_name": "main",
+    "comment": "Schema with managed grants for testing",
+    "name": "[SCHEMA_NAME]"
+  }
+}

@@ -1,0 +1,44 @@
+
+>>> [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-grants-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests
+
+>>> [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-grants-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests
+
+>>> [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-grants-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete schema grants_schema
+
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete schema grants_schema
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/schema-grants-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
+
+>>> print_requests
+
+>>> [CLI] bundle destroy --auto-approve
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/schema-grants-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
