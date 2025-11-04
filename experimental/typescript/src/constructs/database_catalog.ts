@@ -9,7 +9,7 @@
 import { Bundle, Workspace } from "@databricks/bundles/core";
 import { DatabaseCatalog as BaseDatabaseCatalog } from "../../generated/database_catalogs/index.js";
 import { Variable, type VariableOr } from "../core/variable.js";
-import type { Database } from "./database.js";
+import type { DatabaseInstance } from "./database_instance.js";
 
 /**
  * Enhanced DatabaseCatalog construct.
@@ -49,7 +49,7 @@ export class DatabaseCatalog extends BaseDatabaseCatalog {
     name: string,
     bundle: Bundle,
     params: {
-      database: Database;
+      database: DatabaseInstance;
       name?: VariableOr<string>;
       database_name: VariableOr<string>;
       create_database_if_not_exists: boolean;

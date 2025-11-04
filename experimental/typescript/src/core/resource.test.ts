@@ -35,15 +35,15 @@ describe("Resource", () => {
   });
 
   describe("toJSON()", () => {
-    it("should serialize resource data", () => {
+    it("should serialize resource data", async () => {
       const params: TestParams = { name: "test", value: 42 };
       const resource = new TestResource("my_resource", params);
 
-      const json = resource.toJSON();
+      const json = await resource.toDabsResources();
       expect(json).toEqual({ name: "test", value: 42 });
     });
 
-    it("should handle nested objects", () => {
+    it("should handle nested objects", async () => {
       const params: TestParams = {
         name: "test",
         value: 42,
@@ -51,7 +51,7 @@ describe("Resource", () => {
       };
       const resource = new TestResource("my_resource", params);
 
-      const json = resource.toJSON();
+      const json = await resource.toDabsResources();
       expect(json).toEqual({
         name: "test",
         nested: { foo: "bar" },
@@ -59,7 +59,7 @@ describe("Resource", () => {
       });
     });
 
-    it("should omit undefined values", () => {
+    it("should omit undefined values", async () => {
       const params: TestParams = {
         name: "test",
         value: 42,
@@ -67,7 +67,7 @@ describe("Resource", () => {
       };
       const resource = new TestResource("my_resource", params);
 
-      const json = resource.toJSON();
+      const json = await resource.toDabsResources();
       expect(json).toEqual({ name: "test", value: 42 });
     });
   });

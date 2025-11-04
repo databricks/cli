@@ -226,14 +226,18 @@ export class Resources {
   /**
    * Convert to JSON representation
    */
-  toJSON(): Record<string, Record<string, unknown>> {
+  async toDabsResources(): Promise<Record<string, Record<string, unknown>>> {
     const resources: Record<string, Record<string, unknown>> = {};
 
     // Iterate through all resource types in the registry
     for (const [type, metadata] of this.registry.entries()) {
       if (metadata.map.size > 0) {
         resources[type] = Object.fromEntries(
-          Array.from(metadata.map.entries()).map(([key, value]) => [key, value.toJSON()])
+          await Promise.all(
+            Array.from(metadata.map.entries()).map(async ([key, value]) => {
+              return [key, await value.toDabsResources()];
+            })
+          )
         );
       }
     }

@@ -264,12 +264,12 @@ describe("build/index", () => {
   });
 
   describe("appendResources", () => {
-    it("should append resources to empty input", () => {
+    it("should append resources to empty input", async () => {
       const input: BundleInput = {};
       const resources = new Resources();
       resources.addResource(new MockResource("app1", { name: "app1" }));
 
-      const result = appendResources(input, resources);
+      const result = await appendResources(input, resources);
 
       expect(result.resources).toEqual({
         apps: {
@@ -278,7 +278,7 @@ describe("build/index", () => {
       });
     });
 
-    it("should merge with existing resources", () => {
+    it("should merge with existing resources", async () => {
       const input: BundleInput = {
         resources: {
           jobs: {
@@ -290,7 +290,7 @@ describe("build/index", () => {
       const resources = new Resources();
       resources.addResource(new MockResource("app1", { name: "app1" }));
 
-      const result = appendResources(input, resources);
+      const result = await appendResources(input, resources);
 
       expect(result.resources).toEqual({
         jobs: {
@@ -302,7 +302,7 @@ describe("build/index", () => {
       });
     });
 
-    it("should merge resources of the same type", () => {
+    it("should merge resources of the same type", async () => {
       const input: BundleInput = {
         resources: {
           apps: {
@@ -314,7 +314,7 @@ describe("build/index", () => {
       const resources = new Resources();
       resources.addResource(new MockResource("app2", { name: "app2" }));
 
-      const result = appendResources(input, resources);
+      const result = await appendResources(input, resources);
 
       expect(result.resources).toEqual({
         apps: {
@@ -324,7 +324,7 @@ describe("build/index", () => {
       });
     });
 
-    it("should not modify input when resources empty", () => {
+    it("should not modify input when resources empty", async () => {
       const input: BundleInput = {
         resources: {
           jobs: {
@@ -334,7 +334,7 @@ describe("build/index", () => {
       };
 
       const resources = new Resources();
-      const result = appendResources(input, resources);
+      const result = await appendResources(input, resources);
 
       expect(result.resources).toEqual({
         jobs: {

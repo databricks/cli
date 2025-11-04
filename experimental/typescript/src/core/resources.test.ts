@@ -17,9 +17,9 @@ class MockResource extends Resource<MockParams> {
 
 describe("Resources", () => {
   describe("constructor", () => {
-    it("should create an empty resources container", () => {
+    it("should create an empty resources container", async () => {
       const resources = new Resources();
-      expect(resources.toJSON()).toEqual({});
+      expect(await resources.toDabsResources()).toEqual({});
     });
 
     it("should initialize diagnostics", () => {
@@ -29,19 +29,19 @@ describe("Resources", () => {
   });
 
   describe("addResource", () => {
-    it("should add a resource", () => {
+    it("should add a resource", async () => {
       const resources = new Resources();
       const resource = new MockResource("test_resource", { name: "test" });
 
       resources.addResource(resource);
 
-      const json = resources.toJSON();
+      const json = await resources.toDabsResources();
       expect(json.apps).toEqual({
         test_resource: { name: "test" },
       });
     });
 
-    it("should add multiple resources of the same type", () => {
+    it("should add multiple resources of the same type", async () => {
       const resources = new Resources();
       const resource1 = new MockResource("resource1", { name: "test1" });
       const resource2 = new MockResource("resource2", { name: "test2" });
@@ -49,14 +49,14 @@ describe("Resources", () => {
       resources.addResource(resource1);
       resources.addResource(resource2);
 
-      const json = resources.toJSON();
+      const json = await resources.toDabsResources();
       expect(json.apps).toEqual({
         resource1: { name: "test1" },
         resource2: { name: "test2" },
       });
     });
 
-    it("should add resources of different types", () => {
+    it("should add resources of different types", async () => {
       const resources = new Resources();
       const appResource = new MockResource("app1", { name: "app" }, "apps");
       const jobResource = new MockResource("job1", { name: "job" }, "jobs");
@@ -64,7 +64,7 @@ describe("Resources", () => {
       resources.addResource(appResource);
       resources.addResource(jobResource);
 
-      const json = resources.toJSON();
+      const json = await resources.toDabsResources();
       expect(json.apps).toEqual({ app1: { name: "app" } });
       expect(json.jobs).toEqual({ job1: { name: "job" } });
     });
@@ -115,7 +115,7 @@ describe("Resources", () => {
   });
 
   describe("addResources", () => {
-    it("should merge resources from another Resources instance", () => {
+    it("should merge resources from another Resources instance", async () => {
       const resources1 = new Resources();
       const resources2 = new Resources();
 
@@ -124,7 +124,7 @@ describe("Resources", () => {
 
       resources1.addResources(resources2);
 
-      const json = resources1.toJSON();
+      const json = await resources1.toDabsResources();
       expect(json.apps).toEqual({
         app1: { name: "app1" },
         app2: { name: "app2" },
@@ -180,26 +180,26 @@ describe("Resources", () => {
   describe("toJSON", () => {
     it("should return empty object when no resources", () => {
       const resources = new Resources();
-      expect(resources.toJSON()).toEqual({});
+      expect(resources.toDabsResources()).toEqual({});
     });
 
-    it("should serialize all resources", () => {
+    it("should serialize all resources", async () => {
       const resources = new Resources();
       resources.addResource(new MockResource("app1", { name: "app1", value: 1 }));
       resources.addResource(new MockResource("job1", { name: "job1" }, "jobs"));
 
-      const json = resources.toJSON();
+      const json = await resources.toDabsResources();
       expect(json).toEqual({
         apps: { app1: { name: "app1", value: 1 } },
         jobs: { job1: { name: "job1" } },
       });
     });
 
-    it("should not include resource types with no resources", () => {
+    it("should not include resource types with no resources", async () => {
       const resources = new Resources();
       resources.addResource(new MockResource("app1", { name: "app1" }));
 
-      const json = resources.toJSON();
+      const json = await resources.toDabsResources();
       expect(json.apps).toBeDefined();
       expect(json.jobs).toBeUndefined();
     });

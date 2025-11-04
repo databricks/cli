@@ -42,11 +42,23 @@ export class Volume extends BaseVolume {
    * @param bundle - The bundle context
    * @param params - Volume parameters
    */
-  constructor(name: string, bundle: Bundle, params: VolumeParams) {
+  constructor(
+    name: string,
+    bundle: Bundle,
+    params: Omit<VolumeParams, "name"> & { name?: VariableOr<string> }
+  ) {
+    const defaultParams: Partial<VolumeParams> = {
+      volume_type: "MANAGED",
+    };
+
+    if (!params.name) {
+      params.name = name;
+    }
+
     if (bundle.isDevelopment) {
       params.name = `dev-${params.name.toString()}`;
     }
-    super(name, params);
+    super(name, { ...defaultParams, ...params, name: params.name });
     this.resourceName = params.name;
   }
 

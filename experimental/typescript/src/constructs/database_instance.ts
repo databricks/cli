@@ -35,7 +35,7 @@ import type { VariableOr } from "../core/variable.js";
  * });
  * ```
  */
-export class Database extends BaseDatabaseInstance {
+export class DatabaseInstance extends BaseDatabaseInstance {
   /**
    * The resource name (possibly a variable reference)
    */

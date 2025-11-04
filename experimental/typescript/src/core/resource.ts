@@ -50,12 +50,19 @@ export class Resource<T> {
     this.dabsName = dabsName;
   }
 
+  async onBeforeCreate(): Promise<void> {
+    return Promise.resolve();
+  }
+
   /**
    * Converts the resource to JSON format for serialization.
    *
    * @returns JSON-serializable representation of the resource data
    */
-  toJSON(): string | number | boolean | unknown[] | Record<string, unknown> | null {
+  async toDabsResources(): Promise<
+    string | number | boolean | unknown[] | Record<string, unknown> | null
+  > {
+    await this.onBeforeCreate();
     return transformToJSON(this.data);
   }
 }

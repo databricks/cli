@@ -195,9 +195,12 @@ export async function loadResources(
 /**
  * Append resources to bundle input
  */
-export function appendResources(input: BundleInput, resources: Resources): BundleInput {
+export async function appendResources(
+  input: BundleInput,
+  resources: Resources
+): Promise<BundleInput> {
   const output = { ...input };
-  const resourcesJSON = resources.toJSON();
+  const resourcesJSON = await resources.toDabsResources();
 
   if (Object.keys(resourcesJSON).length > 0) {
     output.resources = output.resources || {};
@@ -345,7 +348,7 @@ export async function jsMutator(
       return [input, new Map(), diagnostics];
     }
 
-    const output = appendResources(input, resources);
+    const output = await appendResources(input, resources);
     const locations = relativizeLocations(resources._locations);
 
     return [output, locations, diagnostics];
