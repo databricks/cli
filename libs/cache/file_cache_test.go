@@ -21,7 +21,7 @@ func TestNewFileCache(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, cache)
 	assert.Equal(t, cacheDir, cache.baseDir)
-	assert.NotNil(t, cache.pending)
+	assert.NotNil(t, cache.computeOnce)
 
 	// Verify directory was created
 	info, err := os.Stat(cacheDir)
@@ -170,8 +170,8 @@ func TestFileCacheGetOrComputeConcurrency(t *testing.T) {
 		assert.Equal(t, expectedValue, result)
 	}
 
-	// Compute is called 10 times while cache layer is no-op:
-	assert.Equal(t, int32(10), atomic.LoadInt32(&computeCalls))
+	// With sync.Once, compute should only be called once even with concurrent requests
+	assert.Equal(t, int32(1), atomic.LoadInt32(&computeCalls))
 
 	// Allow time for async writes to complete before test cleanup
 	time.Sleep(50 * time.Millisecond)

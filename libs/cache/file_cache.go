@@ -3,7 +3,6 @@ package cache
 import (
 	"context"
 	"crypto/rand"
-	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -22,10 +21,10 @@ type FileCache[T any] struct {
 	baseDir       string
 	expiryMinutes int
 	mu            sync.RWMutex
-	pending       map[string]chan struct{} // Track pending writes
-	memCache      map[string]T             // In-memory cache for immediate access
-	cleanupMgr    *CleanupManager          // Background cleanup manager
-	metrics       *bundle.Metrics          // Telemetry metrics
+	computeOnce   map[string]*sync.Once // Ensure only one goroutine computes per key
+	memCache      map[string]T          // In-memory cache for immediate access
+	cleanupMgr    *CleanupManager       // Background cleanup manager
+	metrics       *bundle.Metrics       // Telemetry metrics
 }
 
 // newFileCacheWithBaseDir creates a new file-based cache that stores data in the specified directory.
@@ -39,7 +38,7 @@ func newFileCacheWithBaseDir[T any](baseDir string, expiryMinutes int) (*FileCac
 	fc := &FileCache[T]{
 		baseDir:       baseDir,
 		expiryMinutes: expiryMinutes,
-		pending:       make(map[string]chan struct{}),
+		computeOnce:   make(map[string]*sync.Once),
 		memCache:      make(map[string]T),
 		cleanupMgr:    cleanupMgr,
 	}
@@ -96,11 +95,10 @@ func (fc *FileCache[T]) addTelemetryMetric(key string) {
 // GetOrCompute retrieves cached content or computes it using the provided function.
 func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compute func(ctx context.Context) (T, error)) (T, error) {
 	var zero T
-	isCacheHit := false
 
-	// Convert fingerprint to deterministic string
-	fingerprintHash, err := fingerprintToHash(fingerprint)
-	log.Debugf(ctx, "[Local Cache] using fingerprint with hash: %s\n", fingerprintHash)
+	// Convert fingerprint to deterministic hash - this is our cache key
+	cacheKey, err := fingerprintToHash(fingerprint)
+	log.Debugf(ctx, "[Local Cache] using cache key: %s\n", cacheKey)
 
 	fc.addTelemetryMetric("local.cache.attempt")
 
@@ -108,9 +106,6 @@ func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compu
 		log.Debugf(ctx, "[Local Cache] cache miss: non-compliant fingerprint\n")
 		return zero, fmt.Errorf("failed to convert fingerprint to string: %w", err)
 	}
-
-	cacheKey := fc.getCacheKey(fingerprintHash)
-	log.Debugf(ctx, "[Local Cache] using cache key: %s\n", cacheKey)
 
 	cachePath := fc.getCachePath(cacheKey)
 	log.Debugf(ctx, "[Local Cache] using cache path: %s\n", cachePath)
@@ -121,7 +116,6 @@ func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compu
 		fc.mu.RUnlock()
 		log.Debugf(ctx, "[Local Cache] cache hit: in-memory\n")
 		fc.addTelemetryMetric("local.cache.hit")
-		isCacheHit = true
 		// return data, nil	// cache layer is currently no-op
 	} else {
 		fc.mu.RUnlock()
@@ -135,89 +129,75 @@ func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compu
 		fc.mu.Unlock()
 		log.Debugf(ctx, "[Local Cache] cache hit: disk-read\n")
 		fc.addTelemetryMetric("local.cache.hit")
-		isCacheHit = true
 		// return data, nil // cache layer is currently no-op
 	}
 
-	// Check if there's a pending write for this key
+	// Get or create sync.Once for this cache key
 	fc.mu.Lock()
-	if pendingCh, exists := fc.pending[cacheKey]; exists {
-		fc.mu.Unlock()
-		// Wait for pending write to complete
-		select {
-		case <-pendingCh:
-			// Try reading from memory cache again
-			fc.mu.RLock()
-			if _, found := fc.memCache[cacheKey]; found {
-				fc.mu.RUnlock()
-				log.Debugf(ctx, "[Local Cache] cache hit: in-memory from pending write\n")
-				fc.addTelemetryMetric("local.cache.hit")
-				isCacheHit = true
-				// return data, nil // cache layer is currently no-op
-			} else {
-				fc.mu.RUnlock()
-			}
-		case <-ctx.Done():
-			log.Debugf(ctx, "[Local Cache] cache miss: no hit while waiting for pending write\n")
-			fc.addTelemetryMetric("local.cache.miss")
-			return zero, ctx.Err()
-		}
-	} else {
-		// Mark this key as pending
-		pendingCh := make(chan struct{})
-		fc.pending[cacheKey] = pendingCh
-		fc.mu.Unlock()
-
-		defer func() {
-			fc.mu.Lock()
-			delete(fc.pending, cacheKey)
-			close(pendingCh)
-			fc.mu.Unlock()
-		}()
+	once, exists := fc.computeOnce[cacheKey]
+	if !exists {
+		once = &sync.Once{}
+		fc.computeOnce[cacheKey] = once
 	}
-
-	// Check if context is already cancelled before computing
-	select {
-	case <-ctx.Done():
-		log.Debugf(ctx, "[Local Cache] cache miss: context is already cancelled\n")
-		if !isCacheHit {
-			fc.addTelemetryMetric("local.cache.miss")
-		}
-		return zero, ctx.Err()
-	default:
-	}
-
-	// Compute the value
-	result, err := compute(ctx)
-	if err != nil {
-		log.Debugf(ctx, "[Local Cache] error while caching: %v\n", err)
-		fc.addTelemetryMetric("local.cache.error")
-		return zero, err
-	}
-
-	// Store in memory cache immediately
-	fc.mu.Lock()
-	fc.memCache[cacheKey] = result
 	fc.mu.Unlock()
 
-	// Async write to disk cache
-	log.Debugf(ctx, "[Local Cache] async writing to cache path: %s\n", cachePath)
-	go fc.writeToCache(cachePath, result)
+	// Use sync.Once to ensure only one goroutine computes the value
+	var result T
+	var computeErr error
+	once.Do(func() {
+		// Check if context is already cancelled before computing
+		select {
+		case <-ctx.Done():
+			log.Debugf(ctx, "[Local Cache] cache miss: context is already cancelled\n")
+			fc.addTelemetryMetric("local.cache.miss")
+			computeErr = ctx.Err()
+			return
+		default:
+		}
 
-	log.Debugf(ctx, "[Local Cache] cache miss, but stored the compute result for future calls\n")
+		// Compute the value
+		result, computeErr = compute(ctx)
+		if computeErr != nil {
+			log.Debugf(ctx, "[Local Cache] error while caching: %v\n", computeErr)
+			fc.addTelemetryMetric("local.cache.error")
+			return
+		}
 
-	if !isCacheHit {
+		// Store in memory cache immediately
+		fc.mu.Lock()
+		fc.memCache[cacheKey] = result
+		fc.mu.Unlock()
+
+		// Async write to disk cache
+		log.Debugf(ctx, "[Local Cache] async writing to cache path: %s\n", cachePath)
+		go fc.writeToCache(cachePath, result)
+
+		log.Debugf(ctx, "[Local Cache] cache miss, but stored the compute result for future calls\n")
 		fc.addTelemetryMetric("local.cache.miss")
+	})
+
+	// Clean up the sync.Once instance after use to prevent memory leaks
+	fc.mu.Lock()
+	delete(fc.computeOnce, cacheKey)
+	fc.mu.Unlock()
+
+	if computeErr != nil {
+		return zero, computeErr
 	}
+
+	// If another goroutine computed the value, retrieve it from memory cache
+	fc.mu.RLock()
+	if data, found := fc.memCache[cacheKey]; found {
+		result = data
+	}
+	fc.mu.RUnlock()
+
 	return result, nil
 }
 
 // readFromCache attempts to read and deserialize data from the cache file.
 func (fc *FileCache[T]) readFromCache(cachePath string) (T, bool) {
 	var zero T
-
-	fc.mu.RLock()
-	defer fc.mu.RUnlock()
 
 	data, err := os.ReadFile(cachePath)
 	if err != nil {
@@ -287,12 +267,6 @@ func generateTempPath(cachePath string) (string, error) {
 	}
 	randomSuffix := hex.EncodeToString(randomBytes)
 	return cachePath + ".tmp." + randomSuffix, nil
-}
-
-// getCacheKey generates a safe cache key from the fingerprint.
-func (fc *FileCache[T]) getCacheKey(fingerprint string) string {
-	hash := sha256.Sum256([]byte(fingerprint))
-	return hex.EncodeToString(hash[:])
 }
 
 // getCachePath returns the full path to the cache file for a given cache key.
