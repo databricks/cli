@@ -98,28 +98,24 @@ func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compu
 
 	// Convert fingerprint to deterministic hash - this is our cache key
 	cacheKey, err := fingerprintToHash(fingerprint)
-	log.Debugf(ctx, "[Local Cache] using cache key: %s\n", cacheKey)
-
-	fc.addTelemetryMetric("local.cache.attempt")
-
 	if err != nil {
-		log.Debugf(ctx, "[Local Cache] cache miss: non-compliant fingerprint\n")
 		return zero, fmt.Errorf("failed to convert fingerprint to string: %w", err)
 	}
 
-	cachePath := fc.getCachePath(cacheKey)
-	log.Debugf(ctx, "[Local Cache] using cache path: %s\n", cachePath)
+	log.Debugf(ctx, "[Local Cache] using cache key: %s\n", cacheKey)
+	fc.addTelemetryMetric("local.cache.attempt")
 
-	// Check in-memory cache first
+	cachePath := fc.getCachePath(cacheKey)
+
+	// Check in-memory cache first (fast path)
 	fc.mu.RLock()
-	if _, found := fc.memCache[cacheKey]; found {
+	if data, found := fc.memCache[cacheKey]; found {
 		fc.mu.RUnlock()
 		log.Debugf(ctx, "[Local Cache] cache hit: in-memory\n")
 		fc.addTelemetryMetric("local.cache.hit")
-		// return data, nil	// cache layer is currently no-op
-	} else {
-		fc.mu.RUnlock()
+		return data, nil
 	}
+	fc.mu.RUnlock()
 
 	// Try to read from disk cache
 	if data, found := fc.readFromCache(cachePath); found {
@@ -129,11 +125,18 @@ func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compu
 		fc.mu.Unlock()
 		log.Debugf(ctx, "[Local Cache] cache hit: disk-read\n")
 		fc.addTelemetryMetric("local.cache.hit")
-		// return data, nil // cache layer is currently no-op
+		return data, nil
 	}
 
 	// Get or create sync.Once for this cache key
+	// Check cache again under write lock to avoid race condition
 	fc.mu.Lock()
+	if data, found := fc.memCache[cacheKey]; found {
+		fc.mu.Unlock()
+		log.Debugf(ctx, "[Local Cache] cache hit: in-memory (race avoided)\n")
+		fc.addTelemetryMetric("local.cache.hit")
+		return data, nil
+	}
 	once, exists := fc.computeOnce[cacheKey]
 	if !exists {
 		once = &sync.Once{}
@@ -142,24 +145,24 @@ func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compu
 	fc.mu.Unlock()
 
 	// Use sync.Once to ensure only one goroutine computes the value
-	var result T
+	// Store error in a separate variable that all goroutines can access
 	var computeErr error
 	once.Do(func() {
 		// Check if context is already cancelled before computing
 		select {
 		case <-ctx.Done():
-			log.Debugf(ctx, "[Local Cache] cache miss: context is already cancelled\n")
-			fc.addTelemetryMetric("local.cache.miss")
+			log.Debugf(ctx, "[Local Cache] context cancelled before compute\n")
 			computeErr = ctx.Err()
 			return
 		default:
 		}
 
 		// Compute the value
-		result, computeErr = compute(ctx)
-		if computeErr != nil {
-			log.Debugf(ctx, "[Local Cache] error while caching: %v\n", computeErr)
+		result, err := compute(ctx)
+		if err != nil {
+			log.Debugf(ctx, "[Local Cache] error while computing: %v\n", err)
 			fc.addTelemetryMetric("local.cache.error")
+			computeErr = err
 			return
 		}
 
@@ -169,28 +172,27 @@ func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compu
 		fc.mu.Unlock()
 
 		// Async write to disk cache
-		log.Debugf(ctx, "[Local Cache] async writing to cache path: %s\n", cachePath)
+		log.Debugf(ctx, "[Local Cache] async writing to cache\n")
 		go fc.writeToCache(cachePath, result)
 
-		log.Debugf(ctx, "[Local Cache] cache miss, but stored the compute result for future calls\n")
+		log.Debugf(ctx, "[Local Cache] cache miss, computed and stored result\n")
 		fc.addTelemetryMetric("local.cache.miss")
 	})
 
-	// Clean up the sync.Once instance after use to prevent memory leaks
-	fc.mu.Lock()
-	delete(fc.computeOnce, cacheKey)
-	fc.mu.Unlock()
-
+	// Check if computation failed
 	if computeErr != nil {
 		return zero, computeErr
 	}
 
-	// If another goroutine computed the value, retrieve it from memory cache
+	// All goroutines retrieve the result from memCache after sync.Once completes
 	fc.mu.RLock()
-	if data, found := fc.memCache[cacheKey]; found {
-		result = data
-	}
+	result, found := fc.memCache[cacheKey]
 	fc.mu.RUnlock()
+
+	if !found {
+		// This should never happen unless there was an error
+		return zero, fmt.Errorf("cache inconsistency: value not found after computation")
+	}
 
 	return result, nil
 }

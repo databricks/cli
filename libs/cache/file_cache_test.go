@@ -93,17 +93,15 @@ func TestFileCacheGetOrCompute(t *testing.T) {
 	assert.Equal(t, expectedValue, result)
 	assert.Equal(t, int32(1), atomic.LoadInt32(&computeCalls))
 
-	// Second call should return cached value
+	// Second call should return cached value without computing
 	result2, err := cache.GetOrCompute(ctx, fingerprint, func(ctx context.Context) (string, error) {
 		atomic.AddInt32(&computeCalls, 1)
 		return "should-not-be-called", nil
 	})
 
 	require.NoError(t, err)
-	// File cache makes the second call while cache layer is no-op:
-	assert.Equal(t, "should-not-be-called", result2)
-	// assert.Equal(t, expectedValue, result2)
-	assert.Equal(t, int32(2), atomic.LoadInt32(&computeCalls))
+	assert.Equal(t, expectedValue, result2)
+	assert.Equal(t, int32(1), atomic.LoadInt32(&computeCalls))
 
 	// Allow time for async writes to complete before test cleanup
 	time.Sleep(50 * time.Millisecond)
@@ -238,16 +236,15 @@ func TestFingerprintDeterministic(t *testing.T) {
 	assert.Equal(t, expectedValue, result1)
 	assert.Equal(t, int32(1), atomic.LoadInt32(&computeCalls))
 
-	// Second call with fingerprint2 (should hit cache, not compute again)
+	// Second call with fingerprint2 (should hit cache due to deterministic hashing, not compute again)
 	result2, err := cache.GetOrCompute(ctx, fingerprint2, func(ctx context.Context) (string, error) {
 		atomic.AddInt32(&computeCalls, 1)
 		return "should-not-be-called", nil
 	})
 	require.NoError(t, err)
 
-	// File cache makes the second call while cache layer is no-op:
-	assert.Equal(t, "should-not-be-called", result2)
-	assert.Equal(t, int32(2), atomic.LoadInt32(&computeCalls)) // Should still be 1
+	assert.Equal(t, expectedValue, result2)
+	assert.Equal(t, int32(1), atomic.LoadInt32(&computeCalls)) // Should still be 1
 
 	// Allow time for async writes to complete before test cleanup
 	time.Sleep(50 * time.Millisecond)
