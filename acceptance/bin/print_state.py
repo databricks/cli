@@ -2,7 +2,7 @@
 """
 Print resources state from default target.
 
-Note, this intentionally has no logic on guessing what is the right stat file (e.g. via DATABRICKS_BUNDLE_ENGINE)
+Note, this intentionally has no logic on guessing what is the right state file (e.g. via DATABRICKS_BUNDLE_ENGINE),
 the goal is to record all states that are available.
 """
 
