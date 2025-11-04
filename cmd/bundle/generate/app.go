@@ -129,7 +129,7 @@ per target environment.`,
 		cmdio.LogString(ctx, "App configuration successfully saved to "+filename)
 
 		if bind {
-			return deployment.BindResource(cmd, appKey, app.Name, true, false)
+			return deployment.BindResource(cmd, appKey, app.Name, true, false, true)
 		}
 
 		return nil

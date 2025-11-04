@@ -167,18 +167,21 @@ func newCreatePolicy() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid TO_PRINCIPALS: %s", args[0])
 			}
+
 		}
 		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[1], &createPolicyReq.PolicyInfo.ForSecurableType)
 			if err != nil {
 				return fmt.Errorf("invalid FOR_SECURABLE_TYPE: %s", args[1])
 			}
+
 		}
 		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[2], &createPolicyReq.PolicyInfo.PolicyType)
 			if err != nil {
 				return fmt.Errorf("invalid POLICY_TYPE: %s", args[2])
 			}
+
 		}
 
 		response, err := w.Policies.CreatePolicy(ctx, createPolicyReq)
@@ -345,6 +348,11 @@ func newListPolicies() *cobra.Command {
   
   List all policies defined on a securable. Optionally, the list can include
   inherited policies defined on the securable's parent schema or catalog.
+  
+  PAGINATION BEHAVIOR: The API is by default paginated, a page may contain zero
+  results while still providing a next_page_token. Clients must continue reading
+  pages until next_page_token is absent, which is the only indication that the
+  end of results has been reached.
 
   Arguments:
     ON_SECURABLE_TYPE: Required. The type of the securable to list policies for.
@@ -504,18 +512,21 @@ func newUpdatePolicy() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid TO_PRINCIPALS: %s", args[3])
 			}
+
 		}
 		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[4], &updatePolicyReq.PolicyInfo.ForSecurableType)
 			if err != nil {
 				return fmt.Errorf("invalid FOR_SECURABLE_TYPE: %s", args[4])
 			}
+
 		}
 		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[5], &updatePolicyReq.PolicyInfo.PolicyType)
 			if err != nil {
 				return fmt.Errorf("invalid POLICY_TYPE: %s", args[5])
 			}
+
 		}
 
 		response, err := w.Policies.UpdatePolicy(ctx, updatePolicyReq)

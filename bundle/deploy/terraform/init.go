@@ -23,13 +23,7 @@ import (
 	"golang.org/x/exp/maps"
 )
 
-type initialize struct{}
-
-func (m *initialize) Name() string {
-	return "terraform.Initialize"
-}
-
-func (m *initialize) findExecPath(ctx context.Context, b *bundle.Bundle, tf *config.Terraform, installer Installer) (string, error) {
+func findExecPath(ctx context.Context, b *bundle.Bundle, tf *config.Terraform, installer Installer) (string, error) {
 	// If set, pass it through [exec.LookPath] to resolve its absolute path.
 	if tf.ExecPath != "" {
 		execPath, err := exec.LookPath(tf.ExecPath)
@@ -303,14 +297,14 @@ func getTerraformExec(ctx context.Context, b *bundle.Bundle, execPath string) (*
 	return tfexec.NewTerraform(workingDir, execPath)
 }
 
-func (m *initialize) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	tfConfig := b.Config.Bundle.Terraform
 	if tfConfig == nil {
 		tfConfig = &config.Terraform{}
 		b.Config.Bundle.Terraform = tfConfig
 	}
 
-	execPath, err := m.findExecPath(ctx, b, tfConfig, tfInstaller{})
+	execPath, err := findExecPath(ctx, b, tfConfig, tfInstaller{})
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -354,10 +348,12 @@ func (m *initialize) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 		return diag.FromErr(err)
 	}
 
-	b.Terraform = tfe
-	return nil
-}
+	err = tfe.Init(ctx, tfexec.Upgrade(true))
+	if err != nil {
+		return diag.Errorf("terraform init: %v", err)
+	}
 
-func Initialize() bundle.Mutator {
-	return &initialize{}
+	b.Terraform = tfe
+
+	return nil
 }

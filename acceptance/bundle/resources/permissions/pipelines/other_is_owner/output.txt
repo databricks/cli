@@ -6,7 +6,7 @@
     "user_name": "other_user@databricks.com"
   },
   {
-    "level": "IS_OWNER",
+    "level": "CAN_MANAGE",
     "user_name": "[USERNAME]"
   }
 ]

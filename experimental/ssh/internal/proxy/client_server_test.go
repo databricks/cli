@@ -25,7 +25,8 @@ func createTestServer(t *testing.T, maxClients int, shutdownDelay time.Duration)
 	connections := NewConnectionsManager(maxClients, shutdownDelay)
 	proxyServer := NewProxyServer(ctx, connections, func(ctx context.Context) *exec.Cmd {
 		// 'cat' command reads each line from stdin and sends it to stdout, so we can test end-to-end proxying.
-		return exec.CommandContext(ctx, "cat")
+		// '-u' option is used to disable output buffering.
+		return exec.CommandContext(ctx, "cat", "-u")
 	})
 	return httptest.NewServer(proxyServer)
 }

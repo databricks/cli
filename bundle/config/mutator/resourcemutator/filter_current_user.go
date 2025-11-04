@@ -2,7 +2,6 @@ package resourcemutator
 
 import (
 	"context"
-	"slices"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
@@ -15,26 +14,26 @@ const (
 	canManage = "CAN_MANAGE"
 )
 
-// This defines which permissions are considered management permissions.
-// Current user must have one management permission of themselves; if they don't have any,
-// we'll add the first in slice;
-// if they end up having both CAN_MANAGE and IS_OWNER, backend may fail with
-//
-//	Error: cannot create permissions: Permissions being set for UserName([USERNAME]) are ambiguous
-//
-// Since terraform adds IS_OWNER permission when there is not one, regardless of CAN_MANAGE presence,
-// the above error can occur.
-// We thus add another bit of logic: we upgrade CAN_MANAGE to IS_OWNER when we can.
-var managementPermissions = map[string][]string{
-	"jobs":           {isOwner, canManage},
-	"pipelines":      {isOwner, canManage},
-	"sql_warehouses": {isOwner, canManage},
-
-	// nil means "do nothing"
-	"secret_scopes": nil,
+// Which resources support IS_OWNER permission.
+var hasIsOwner = map[string]bool{
+	"jobs":           true,
+	"pipelines":      true,
+	"sql_warehouses": true,
 }
 
-var defaultManagementPermissions = []string{canManage}
+var ignoredResources = map[string]bool{
+	"secret_scopes": true,
+}
+
+// When processing permissions, we need to implement these constraints:
+// 1. There should be no more than one IS_OWNER settings for a given resource.
+// 2. We should automatically add IS_OWNER for current user (for resources that support it) or CAN_MANAGE permission.
+//    Terraform will do this, so doing this early makes request equal between terraform and direct.
+// 3. We prefer to add IS_OWNER, unless there already is one, in which case we fallback to CAN_MANAGE.
+// 4. Current user cannot have both CAN_MANAGE and IS_OWNER, we've seen backend failing with
+//    "Error: cannot create permissions: Permissions being set for UserName([USERNAME]) are ambiguous"
+//    Since terraform adds IS_OWNER permission when there is not one, regardless of CAN_MANAGE presence,
+//    he above error can occur. We thus add another bit of logic: we upgrade CAN_MANAGE to IS_OWNER when we can.
 
 type ensureOwnerPermissions struct{}
 
@@ -55,19 +54,11 @@ func ensureCurrentUserPermission(currentUser string) dyn.MapFunc {
 		}
 
 		resourceType := p[1].Key()
-
-		// Determine the required permission level
-		mgmtPerms, ok := managementPermissions[resourceType]
-		if !ok {
-			mgmtPerms = defaultManagementPermissions
-		}
-
-		if len(mgmtPerms) == 0 {
+		if ignoredResources[resourceType] {
 			return v, nil
 		}
 
-		// Process permissions array
-		return processPermissions(v, currentUser, mgmtPerms)
+		return processPermissions(v, currentUser, resourceType)
 	}
 }
 
@@ -80,9 +71,10 @@ func readUser(v dyn.Value) string {
 	return servicePrincipalName
 }
 
-func processPermissions(permissions dyn.Value, currentUser string, mgmtPerms []string) (dyn.Value, error) {
-	priorityPermission := mgmtPerms[0]
-	permissionToUpgrade := -1
+func processPermissions(permissions dyn.Value, currentUser, resourceType string) (dyn.Value, error) {
+	currentUserHasIsOwner := false
+	currentUserIndCanManage := -1
+	canAddIsOwner := hasIsOwner[resourceType]
 
 	permissionArray, ok := permissions.AsSequence()
 	if !ok {
@@ -95,25 +87,35 @@ func processPermissions(permissions dyn.Value, currentUser string, mgmtPerms []s
 			continue
 		}
 		user := readUser(permission)
-		if user == "" || user != currentUser {
-			continue
+		if level == isOwner {
+			canAddIsOwner = false
+			if user == currentUser {
+				currentUserHasIsOwner = true
+			}
 		}
-		if level == priorityPermission {
-			// already have required permission (IS_OWNER)
-			return permissions, nil
-		}
-		if slices.Contains(mgmtPerms, level) {
-			// has management permission that needs to be upgraded to IS_OWNER
-			// continue the loop; if we is IS_OWNER we will still bail
-			permissionToUpgrade = ind
+		if user == currentUser && level == canManage {
+			currentUserIndCanManage = ind
 		}
 	}
 
-	if permissionToUpgrade >= 0 {
-		v, _ := dyn.Set(permissionArray[permissionToUpgrade], "level", dyn.V(priorityPermission))
-		permissionArray[permissionToUpgrade] = v
-	} else {
-		permissionArray = append(permissionArray, createPermission(currentUser, priorityPermission))
+	if currentUserHasIsOwner {
+		return dyn.V(permissionArray), nil
+	}
+
+	if canAddIsOwner {
+		if currentUserIndCanManage >= 0 {
+			// Upgrade current user's CAN_MANAGE to IS_OWNER. We do this because terraform will add IS_OWNER if it does not see one
+			// and that may confuse backend. We can stop doing it when removed terraform.
+			v, _ := dyn.Set(permissionArray[currentUserIndCanManage], "level", dyn.V(isOwner))
+			permissionArray[currentUserIndCanManage] = v
+		} else {
+			permissionArray = append(permissionArray, createPermission(currentUser, isOwner))
+		}
+		return dyn.V(permissionArray), nil
+	}
+
+	if currentUserIndCanManage < 0 {
+		permissionArray = append(permissionArray, createPermission(currentUser, canManage))
 	}
 
 	return dyn.V(permissionArray), nil

@@ -2,6 +2,8 @@ package phases
 
 import (
 	"context"
+	"errors"
+	"path/filepath"
 
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
 
@@ -13,10 +15,10 @@ import (
 	pythonmutator "github.com/databricks/cli/bundle/config/mutator/python"
 	"github.com/databricks/cli/bundle/config/validate"
 	"github.com/databricks/cli/bundle/deploy/metadata"
-	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/bundle/scripts"
 	"github.com/databricks/cli/bundle/trampoline"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 )
@@ -26,6 +28,11 @@ import (
 // happens upon completion of this phase.
 func Initialize(ctx context.Context, b *bundle.Bundle) {
 	log.Info(ctx, "Phase: initialize")
+
+	rejectDefinitions(ctx, b)
+	if logdiag.HasError(ctx) {
+		return
+	}
 
 	bundle.ApplySeqContext(ctx, b,
 		// Reads (dynamic): resource.*.*
@@ -193,26 +200,23 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Updates (typed): b.Config.Resources.Pipelines[].CreatePipeline.Deployment (sets deployment metadata for bundle deployments)
 		// Annotates pipelines with bundle deployment metadata
 		metadata.AnnotatePipelines(),
+
+		// Reads (typed): b.Config.Experimental.Scripts["post_init"] (checks if script is defined)
+		// Executes the post_init script hook defined in the bundle configuration
+		scripts.Execute(config.ScriptPostInit),
 	)
+}
 
-	if logdiag.HasError(ctx) {
-		return
+func rejectDefinitions(ctx context.Context, b *bundle.Bundle) {
+	if b.Config.Definitions != nil {
+		v := dyn.GetValue(b.Config.Value(), "definitions")
+		loc := v.Locations()
+		filename := "input yaml"
+		if len(loc) > 0 {
+			filename = filepath.ToSlash(loc[0].File)
+		}
+		logdiag.LogError(ctx, errors.New(filename+` seems to be formatted for open-source Spark Declarative Pipelines.
+Pipelines CLI currently only supports Lakeflow Declarative Pipelines development.
+To see an example of a supported pipelines template, create a new Pipelines CLI project with "pipelines init".`))
 	}
-
-	if !b.DirectDeployment {
-		// Reads (typed): b.Config.Bundle.Terraform (checks terraform configuration)
-		// Updates (typed): b.Config.Bundle.Terraform (sets default values if not already set)
-		// Updates (typed): b.Terraform (initializes Terraform executor with proper environment variables and paths)
-		// Initializes Terraform with the correct binary, working directory, and environment variables for authentication
-
-		bundle.ApplyContext(ctx, b, terraform.Initialize())
-	}
-
-	if logdiag.HasError(ctx) {
-		return
-	}
-
-	// Reads (typed): b.Config.Experimental.Scripts["post_init"] (checks if script is defined)
-	// Executes the post_init script hook defined in the bundle configuration
-	bundle.ApplyContext(ctx, b, scripts.Execute(config.ScriptPostInit))
 }

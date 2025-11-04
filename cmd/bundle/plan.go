@@ -1,7 +1,6 @@
 package bundle
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,6 +8,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/flags"
@@ -42,30 +42,32 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		ctx := logdiag.InitContext(cmd.Context())
-		cmd.SetContext(ctx)
+		opts := utils.ProcessOptions{
+			InitFunc: func(b *bundle.Bundle) {
+				b.Config.Bundle.Force = force
 
-		b := utils.ConfigureBundleWithVariables(cmd)
-		if b == nil || logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
+				if cmd.Flag("compute-id").Changed {
+					b.Config.Bundle.ClusterId = clusterId
+				}
+
+				if cmd.Flag("cluster-id").Changed {
+					b.Config.Bundle.ClusterId = clusterId
+				}
+			},
+			AlwaysPull:   true,
+			FastValidate: true,
+			Build:        true,
 		}
-		ctx = cmd.Context()
 
-		bundle.ApplyFuncContext(ctx, b, func(context.Context, *bundle.Bundle) {
-			b.Config.Bundle.Force = force
-
-			if cmd.Flag("compute-id").Changed {
-				b.Config.Bundle.ClusterId = clusterId
-			}
-
-			if cmd.Flag("cluster-id").Changed {
-				b.Config.Bundle.ClusterId = clusterId
-			}
-		})
-
-		plan, err := utils.GetPlan(ctx, b)
+		b, isDirectEngine, err := utils.ProcessBundleRet(cmd, opts)
 		if err != nil {
 			return err
+		}
+		ctx := cmd.Context()
+
+		plan := phases.Plan(ctx, b, isDirectEngine)
+		if logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
 		}
 
 		// Count actions by type and collect formatted actions

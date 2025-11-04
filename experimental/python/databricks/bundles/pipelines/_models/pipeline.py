@@ -70,8 +70,6 @@ class Pipeline(Resource):
 
     budget_policy_id: VariableOrOptional[str] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
     Budget policy of this pipeline.
     """
 
@@ -212,6 +210,13 @@ class Pipeline(Resource):
     [DEPRECATED] Target schema (database) to add tables in this pipeline to. Exactly one of `schema` or `target` must be specified. To publish to Unity Catalog, also specify `catalog`. This legacy field is deprecated for pipeline creation in favor of the `schema` field.
     """
 
+    usage_policy_id: VariableOrOptional[str] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    Usage policy of this pipeline.
+    """
+
     @classmethod
     def from_dict(cls, value: "PipelineDict") -> "Self":
         return _transform(cls, value)
@@ -230,8 +235,6 @@ class PipelineDict(TypedDict, total=False):
 
     budget_policy_id: VariableOrOptional[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
     Budget policy of this pipeline.
     """
 
@@ -370,6 +373,13 @@ class PipelineDict(TypedDict, total=False):
     target: VariableOrOptional[str]
     """
     [DEPRECATED] Target schema (database) to add tables in this pipeline to. Exactly one of `schema` or `target` must be specified. To publish to Unity Catalog, also specify `catalog`. This legacy field is deprecated for pipeline creation in favor of the `schema` field.
+    """
+
+    usage_policy_id: VariableOrOptional[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    Usage policy of this pipeline.
     """
 
 
