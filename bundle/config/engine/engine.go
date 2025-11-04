@@ -39,7 +39,7 @@ func FromEnv(ctx context.Context) (EngineType, error) {
 	value := env.Get(ctx, EnvVar)
 	engine, ok := Parse(value)
 	if !ok {
-		return EngineNotSet, fmt.Errorf("unexpected setting for %s=%#v (expected 'terraform' or 'direct' or absent/empty which means 'terraform')", EnvVar, value)
+		return EngineNotSet, fmt.Errorf("unexpected setting for %s=%#v (expected 'terraform' or 'direct')", EnvVar, value)
 	}
 	return engine, nil
 }
