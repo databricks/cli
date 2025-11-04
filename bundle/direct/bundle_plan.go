@@ -27,7 +27,7 @@ import (
 
 var errDelayed = errors.New("must be resolved after apply")
 
-func (b *DeploymentBundle) Init(client *databricks.WorkspaceClient) error {
+func (b *DeploymentBundle) init(client *databricks.WorkspaceClient) error {
 	if b.Adapters != nil {
 		return nil
 	}
@@ -42,12 +42,12 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		return nil, fmt.Errorf("failed to read state from %s: %w", statePath, err)
 	}
 
-	err = b.Init(client)
+	err = b.init(client)
 	if err != nil {
 		return nil, err
 	}
 
-	plan, err := b.makePlan(ctx, configRoot, &b.StateDB.Data)
+	plan, err := b.MakePlan(ctx, configRoot, &b.StateDB.Data)
 	if err != nil {
 		return nil, fmt.Errorf("reading config: %w", err)
 	}
@@ -415,7 +415,7 @@ func (b *DeploymentBundle) resolveReferences(ctx context.Context, entry *deployp
 	return true
 }
 
-func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root, db *dstate.Database) (*deployplan.Plan, error) {
+func (b *DeploymentBundle) MakePlan(ctx context.Context, configRoot *config.Root, db *dstate.Database) (*deployplan.Plan, error) {
 	p := deployplan.NewPlan()
 
 	// Collect and sort nodes first, because MapByPattern gives them in randomized order

@@ -14,8 +14,9 @@ import (
 	"sync"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/deploy"
-	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
@@ -24,29 +25,29 @@ import (
 
 type AlwaysPull bool
 
-type state struct {
-	Serial  int64  `json:"serial"`
+type StateDesc struct {
+	Serial  int    `json:"serial"`
 	Lineage string `json:"lineage"`
 
 	// additional fields describing state:
-	content  []byte
-	isDirect bool `json:"-"`
-	isLocal  bool `json:"-"`
+	SourcePath string
+	Content    []byte
+
+	Engine  engine.EngineType `json:"-"`
+	IsLocal bool              `json:"-"`
+
+	AllStates []*StateDesc
 }
 
-func (s *state) String() string {
-	kind := "terraform"
-	if s.isDirect {
-		kind = "direct"
-	}
+func (s *StateDesc) String() string {
 	source := "remote"
-	if s.isLocal {
+	if s.IsLocal {
 		source = "local"
 	}
-	return fmt.Sprintf("<%s %s state serial=%d lineage=%q>", source, kind, s.Serial, s.Lineage)
+	return fmt.Sprintf("%s: %s %s state serial=%d lineage=%q", s.SourcePath, source, s.Engine, s.Serial, s.Lineage)
 }
 
-func localRead(ctx context.Context, fullPath string, isDirect bool) *state {
+func localRead(ctx context.Context, fullPath string, engine engine.EngineType) *StateDesc {
 	content, err := os.ReadFile(fullPath)
 	if err != nil {
 		if !os.IsNotExist(err) {
@@ -55,20 +56,21 @@ func localRead(ctx context.Context, fullPath string, isDirect bool) *state {
 		return nil
 	}
 
-	state := &state{}
+	state := &StateDesc{}
 	err = json.Unmarshal(content, state)
 	if err != nil {
 		logdiag.LogError(ctx, fmt.Errorf("parsing %s: %w", filepath.ToSlash(fullPath), err))
 	}
 
-	state.isDirect = isDirect
-	state.isLocal = true
+	state.SourcePath = filepath.ToSlash(fullPath)
+	state.Engine = engine
+	state.IsLocal = true
 	// not populating .content, not needed for local
 
 	return state
 }
 
-func _filerRead(ctx context.Context, f filer.Filer, path string) (*state, error) {
+func _filerRead(ctx context.Context, f filer.Filer, path string) (*StateDesc, error) {
 	r, err := f.Read(ctx, path)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
@@ -82,96 +84,90 @@ func _filerRead(ctx context.Context, f filer.Filer, path string) (*state, error)
 		return nil, fmt.Errorf("reading data: %w", err)
 	}
 
-	state := &state{}
+	state := &StateDesc{}
 	err = json.Unmarshal(content, state)
 	if err != nil {
 		return nil, fmt.Errorf("parsing state: %w", err)
 	}
 
-	state.isLocal = false
-	state.content = content
+	// QQQ: would be nice to merge with filer root
+	state.SourcePath = filepath.ToSlash(path)
+	state.IsLocal = false
+	state.Content = content
 	return state, nil
 }
 
-func filerRead(ctx context.Context, f filer.Filer, path string, isDirect bool) *state {
+func filerRead(ctx context.Context, f filer.Filer, path string, engine engine.EngineType) *StateDesc {
 	state, err := _filerRead(ctx, f, path)
 	if err != nil {
 		logdiag.LogError(ctx, fmt.Errorf("reading %s: %w", path, err))
 	} else if state != nil {
 		log.Debugf(ctx, "read %s: %s", path, state.String())
-		state.isDirect = isDirect
+		state.Engine = engine
 	}
 	return state
 }
 
-func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) (context.Context, bool) {
+// PullResourcesState determines correct state to use by reading all 4 states (terraform/direct, local/remote).
+// It will also ensure that if there is state present and env var set then they do not disagree.
+func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull, requiredEngine engine.EngineType) (context.Context, *StateDesc) {
+	var err error
+
+	// We read all 4 possible states: terraform/direct X local/remote and then use env var to validate that correct one is used.
+	// However, states and env var cannot disagree.
 	_, localPathDirect := b.StateFilenameDirect(ctx)
 	_, localPathTerraform := b.StateFilenameTerraform(ctx)
 
 	states := readStates(ctx, b, alwaysPull)
 
 	if logdiag.HasError(ctx) {
-		return ctx, false
+		return ctx, nil
 	}
 
-	var winner *state
-	var directDeployment bool
+	var winner *StateDesc
 
 	if len(states) == 0 {
-		// no local or remote state; set directDeployment based on env vars
-		isDirect, err := getDirectDeploymentEnv(ctx)
-		if err != nil {
-			logdiag.LogError(ctx, err)
-			return ctx, false
+		winner = &StateDesc{
+			// No state, go with user-provided or default
+			Engine:  requiredEngine.ThisOrDefault(),
+			IsLocal: true,
+			// Lineage and Serial are empty
 		}
-		directDeployment = isDirect
 	} else {
 		winner = states[len(states)-1]
-		directDeployment = winner.isDirect
+		winner.AllStates = states
 	}
 
-	engine := "direct"
+	log.Infof(ctx, "Available resource state files (from least to most preferred): %v", states)
 
-	if !directDeployment {
-		engine = "terraform"
+	err = validateStates(states)
+	if err != nil {
+		logStatesError(ctx, err.Error(), states)
+		return ctx, winner
+	}
+
+	if requiredEngine != engine.EngineNotSet && requiredEngine != winner.Engine {
+		logStatesError(ctx, fmt.Sprintf("Required engine %q does not match present state files. Set required engine via %q env var.", requiredEngine, engine.EnvVar), states)
 	}
 
 	// Set the engine in the user agent
-	ctx = useragent.InContext(ctx, "engine", engine)
+	// XXX move this outside this function to bundle/config/engine
+	ctx = useragent.InContext(ctx, "engine", string(winner.Engine))
 
-	if winner == nil {
-		log.Infof(ctx, "No existing resource state found")
-		return ctx, directDeployment
+	if len(states) == 0 {
+		return ctx, winner
 	}
 
-	var stateStrs []string
-	for _, state := range states {
-		stateStrs = append(stateStrs, state.String())
-	}
-
-	log.Infof(ctx, "Available resource state files (from least to most preferred): %s", strings.Join(stateStrs, ", "))
-
-	var lastLineage *state
-
-	for _, state := range states {
-		if lastLineage == nil {
-			lastLineage = state
-		} else if lastLineage.Lineage != state.Lineage {
-			logdiag.LogError(ctx, fmt.Errorf("lineage mismatch in state files: %s", strings.Join(stateStrs, ", ")))
-			return ctx, directDeployment
-		}
-	}
-
-	if winner.isLocal {
+	if winner.IsLocal {
 		// local state is fresh, nothing to do
-		return ctx, directDeployment
+		return ctx, winner
 	}
 
-	if !winner.isLocal {
+	if !winner.IsLocal {
 		log.Info(ctx, "Remote state is newer than local state. Using remote resources state.")
 
 		localStatePath := localPathTerraform
-		if winner.isDirect {
+		if winner.Engine == engine.EngineDirect {
 			localStatePath = localPathDirect
 		}
 
@@ -180,22 +176,22 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 		err := os.MkdirAll(localStateDir, 0o700)
 		if err != nil {
 			logdiag.LogError(ctx, err)
-			return ctx, directDeployment
+			return ctx, winner
 		}
 
 		// TODO: write + rename
-		err = os.WriteFile(localStatePath, winner.content, 0o600)
+		err = os.WriteFile(localStatePath, winner.Content, 0o600)
 		if err != nil {
 			logdiag.LogError(ctx, err)
-			return ctx, directDeployment
+			return ctx, winner
 		}
 	}
 
-	return ctx, directDeployment
+	return ctx, winner
 }
 
-func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) []*state {
-	var states []*state
+func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) []*StateDesc {
+	var states []*StateDesc
 
 	remotePathDirect, localPathDirect := b.StateFilenameDirect(ctx)
 	remotePathTerraform, localPathTerraform := b.StateFilenameTerraform(ctx)
@@ -204,8 +200,8 @@ func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) []
 		return nil
 	}
 
-	directLocalState := localRead(ctx, localPathDirect, true)
-	terraformLocalState := localRead(ctx, localPathTerraform, false)
+	directLocalState := localRead(ctx, localPathDirect, engine.EngineDirect)
+	terraformLocalState := localRead(ctx, localPathTerraform, engine.EngineTerraform)
 
 	if (directLocalState == nil && terraformLocalState == nil) || alwaysPull {
 		f, err := deploy.StateFiler(b)
@@ -215,44 +211,73 @@ func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) []
 		}
 
 		var wg sync.WaitGroup
-		var directRemoteState, terraformRemoteState *state
+		var directRemoteState, terraformRemoteState *StateDesc
 
 		wg.Go(func() {
-			directRemoteState = filerRead(ctx, f, remotePathDirect, true)
+			directRemoteState = filerRead(ctx, f, remotePathDirect, engine.EngineDirect)
 		})
 
 		wg.Go(func() {
-			terraformRemoteState = filerRead(ctx, f, remotePathTerraform, false)
+			terraformRemoteState = filerRead(ctx, f, remotePathTerraform, engine.EngineTerraform)
 		})
 
 		wg.Wait()
 
 		// find highest serial across all state files
-		// sorting is stable, so initial setting represents preference:
-		states = []*state{terraformRemoteState, terraformLocalState, directRemoteState, directLocalState}
+		// sorting is stable, so initial setting represents preference (later is preferred):
+		states = []*StateDesc{terraformRemoteState, terraformLocalState, directRemoteState, directLocalState}
 	} else {
-		states = []*state{terraformLocalState, directLocalState}
+		states = []*StateDesc{terraformLocalState, directLocalState}
 	}
-	states = slices.DeleteFunc(states, func(p *state) bool { return p == nil })
-	slices.SortStableFunc(states, func(a, b *state) int {
-		return int(a.Serial - b.Serial)
+	states = slices.DeleteFunc(states, func(p *StateDesc) bool { return p == nil })
+	slices.SortStableFunc(states, func(a, b *StateDesc) int {
+		return a.Serial - b.Serial
 	})
 
 	return states
 }
 
-func getDirectDeploymentEnv(ctx context.Context) (bool, error) {
-	engine := env.Get(ctx, "DATABRICKS_BUNDLE_ENGINE")
-
-	switch engine {
-	case "":
-		// By default, use Terraform
-		return false, nil
-	case "terraform":
-		return false, nil
-	case "direct":
-		return true, nil
-	default:
-		return false, fmt.Errorf("unexpected setting for DATABRICKS_BUNDLE_ENGINE=%#v (expected 'terraform' or 'direct' or absent/empty which means 'terraform')", engine)
+func validateStates(states []*StateDesc) error {
+	if len(states) == 0 {
+		return nil
 	}
+
+	var lastLineage *StateDesc
+
+	for _, state := range states {
+		if lastLineage == nil {
+			lastLineage = state
+		} else if lastLineage.Lineage != state.Lineage {
+			return errors.New("lineage mismatch in state files")
+		}
+	}
+
+	terraformSerial := -1
+	directSerial := -1
+
+	for _, state := range states {
+		if state.Engine.IsDirect() {
+			directSerial = max(directSerial, state.Serial)
+		} else {
+			terraformSerial = max(terraformSerial, state.Serial)
+		}
+	}
+
+	if directSerial == terraformSerial {
+		return errors.New("same serial number in terraform and direct states")
+	}
+
+	return nil
+}
+
+func logStatesError(ctx context.Context, msg string, states []*StateDesc) {
+	var stateStrs []string
+	for _, state := range states {
+		stateStrs = append(stateStrs, state.String())
+	}
+	logdiag.LogDiag(ctx, diag.Diagnostic{
+		Summary:  msg,
+		Severity: diag.Error,
+		Detail:   "Available state files:\n- " + strings.Join(stateStrs, "\n- "),
+	})
 }
