@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -191,7 +192,7 @@ func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compu
 
 	if !found {
 		// This should never happen unless there was an error
-		return zero, fmt.Errorf("cache inconsistency: value not found after computation")
+		return zero, errors.New("cache inconsistency: value not found after computation")
 	}
 
 	return result, nil
