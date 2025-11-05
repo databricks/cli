@@ -57,8 +57,6 @@ __all__ = [
     "IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue",
     "IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValueDict",
     "IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValueParam",
-    "IngestionSourceType",
-    "IngestionSourceTypeParam",
     "InitScriptInfo",
     "InitScriptInfoDict",
     "InitScriptInfoParam",
@@ -245,10 +243,6 @@ from databricks.bundles.pipelines._models.ingestion_pipeline_definition_workday_
     IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue,
     IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValueDict,
     IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValueParam,
-)
-from databricks.bundles.pipelines._models.ingestion_source_type import (
-    IngestionSourceType,
-    IngestionSourceTypeParam,
 )
 from databricks.bundles.pipelines._models.init_script_info import (
     InitScriptInfo,

@@ -167,6 +167,7 @@ func newApproveTransitionRequest() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid ARCHIVE_EXISTING_VERSIONS: %s", args[3])
 			}
+
 		}
 
 		response, err := w.ModelRegistry.ApproveTransitionRequest(ctx, approveTransitionRequestReq)
@@ -2301,6 +2302,7 @@ func newTransitionStage() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid ARCHIVE_EXISTING_VERSIONS: %s", args[3])
 			}
+
 		}
 
 		response, err := w.ModelRegistry.TransitionStage(ctx, transitionStageReq)

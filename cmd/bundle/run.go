@@ -132,14 +132,13 @@ Example usage:
 	cmd.Flags().BoolVar(&restart, "restart", false, "Restart the run if it is already running.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		ctx := logdiag.InitContext(cmd.Context())
-		cmd.SetContext(ctx)
-
-		b := utils.ConfigureBundleWithVariables(cmd)
-		if b == nil || logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
+		b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
+			SkipInitialize: true,
+		})
+		if err != nil {
+			return err
 		}
-		ctx = cmd.Context()
+		ctx := cmd.Context()
 
 		// If user runs the bundle run command as:
 		// databricks bundle run -- <command> <args>
@@ -167,9 +166,14 @@ Example usage:
 			return executeScript(content, cmd, b)
 		}
 
+		ctx, directDeployment := statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(true))
+		if logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
+		}
+		cmd.SetContext(ctx)
+
 		bundle.ApplySeqContext(ctx, b,
-			statemgmt.StatePull(),
-			statemgmt.Load(statemgmt.ErrorOnEmptyState),
+			statemgmt.Load(directDeployment, statemgmt.ErrorOnEmptyState),
 		)
 		if logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted

@@ -216,6 +216,7 @@ func newDelete() *cobra.Command {
 		if err != nil {
 			return fmt.Errorf("invalid SERVICE_PRINCIPAL_ID: %s", args[0])
 		}
+
 		deleteReq.PolicyId = args[1]
 
 		err = a.ServicePrincipalFederationPolicy.Delete(ctx, deleteReq)
@@ -277,6 +278,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return fmt.Errorf("invalid SERVICE_PRINCIPAL_ID: %s", args[0])
 		}
+
 		getReq.PolicyId = args[1]
 
 		response, err := a.ServicePrincipalFederationPolicy.Get(ctx, getReq)
@@ -417,6 +419,7 @@ func newUpdate() *cobra.Command {
 		if err != nil {
 			return fmt.Errorf("invalid SERVICE_PRINCIPAL_ID: %s", args[0])
 		}
+
 		updateReq.PolicyId = args[1]
 
 		response, err := a.ServicePrincipalFederationPolicy.Update(ctx, updateReq)

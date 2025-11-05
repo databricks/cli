@@ -34,16 +34,21 @@ type DataSourceShareObject struct {
 	StringSharedAs                    string                           `json:"string_shared_as,omitempty"`
 }
 
+type DataSourceShareProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourceShare struct {
-	Comment         string                  `json:"comment,omitempty"`
-	CreatedAt       int                     `json:"created_at,omitempty"`
-	CreatedBy       string                  `json:"created_by,omitempty"`
-	EffectiveOwner  string                  `json:"effective_owner,omitempty"`
-	Name            string                  `json:"name,omitempty"`
-	Object          []DataSourceShareObject `json:"object,omitempty"`
-	Owner           string                  `json:"owner,omitempty"`
-	StorageLocation string                  `json:"storage_location,omitempty"`
-	StorageRoot     string                  `json:"storage_root,omitempty"`
-	UpdatedAt       int                     `json:"updated_at,omitempty"`
-	UpdatedBy       string                  `json:"updated_by,omitempty"`
+	Comment         string                         `json:"comment,omitempty"`
+	CreatedAt       int                            `json:"created_at,omitempty"`
+	CreatedBy       string                         `json:"created_by,omitempty"`
+	EffectiveOwner  string                         `json:"effective_owner,omitempty"`
+	Name            string                         `json:"name,omitempty"`
+	Object          []DataSourceShareObject        `json:"object,omitempty"`
+	Owner           string                         `json:"owner,omitempty"`
+	ProviderConfig  *DataSourceShareProviderConfig `json:"provider_config,omitempty"`
+	StorageLocation string                         `json:"storage_location,omitempty"`
+	StorageRoot     string                         `json:"storage_root,omitempty"`
+	UpdatedAt       int                            `json:"updated_at,omitempty"`
+	UpdatedBy       string                         `json:"updated_by,omitempty"`
 }

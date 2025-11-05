@@ -163,6 +163,7 @@ func All() []*cobra.Command {
 	out = append(out, external_metadata.New())
 	out = append(out, feature_engineering.New())
 	out = append(out, feature_store.New())
+	out = append(out, forecasting.New())
 	out = append(out, functions.New())
 	out = append(out, genie.New())
 	out = append(out, git_credentials.New())
@@ -236,9 +237,8 @@ func All() []*cobra.Command {
 	out = append(out, workspace.New())
 	out = append(out, workspace_bindings.New())
 	out = append(out, workspace_conf.New())
-	out = append(out, workspace_settings_v2.New())
-	out = append(out, forecasting.New())
 	out = append(out, workspace_iam_v2.New())
+	out = append(out, workspace_settings_v2.New())
 
 	out = append(out, groups.New())
 	out = append(out, service_principals.New())
