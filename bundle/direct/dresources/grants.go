@@ -274,19 +274,23 @@ func (r *ResourceGrants) createIdempotentGrantChanges(state *GrantsState) []cata
 		// ADD: all privileges specified in config for this principal
 		add = append(add, desiredPrivs...)
 
-		// REMOVE: all other possible privileges not in config
-		for _, priv := range allPrivileges {
-			found := false
-			for _, desired := range desiredPrivs {
-				if priv == desired {
-					found = true
-					break
+		remove = append(remove, catalog.PrivilegeAllPrivileges)
+		/*
+
+			// REMOVE: all other possible privileges not in config
+			for _, priv := range allPrivileges {
+				found := false
+				for _, desired := range desiredPrivs {
+					if priv == desired {
+						found = true
+						break
+					}
+				}
+				if !found {
+					remove = append(remove, priv)
 				}
 			}
-			if !found {
-				remove = append(remove, priv)
-			}
-		}
+		*/
 
 		// No need to sort since privileges maintain order from input
 

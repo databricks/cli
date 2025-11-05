@@ -11,16 +11,6 @@
         "remove": [
           "USE_SCHEMA"
         ]
-      },
-      {
-        "add": [
-          "CREATE_VOLUME",
-          "MANAGE"
-        ],
-        "principal": "pieter.noordhuis@databricks.com",
-        "remove": [
-          "USE_SCHEMA"
-        ]
       }
     ]
   }

@@ -5,7 +5,10 @@ trace print_requests.py /permissions > out.plan1.requests.$DATABRICKS_BUNDLE_ENG
 trace $CLI bundle deploy
 trace print_requests.py /permissions > out.deploy1.requests.$DATABRICKS_BUNDLE_ENGINE.json
 
-update_file.py databricks.yml '["USE_SCHEMA"]' '["CREATE_VOLUME", "MANAGE"]'
+# Since we're sending different requests between terraform and direct, assert that the end result is the same:
+trace $CLI grants get schema main.schema_grants_$UNIQUE_NAME | jq --sort-keys
+
+#update_file.py databricks.yml '["USE_SCHEMA"]' '["CREATE_VOLUME", "MANAGE"]'
 update_file.py databricks.yml USE_SCHEMA APPLY_TAG
 
 # different on cloud vs local due to remote state
@@ -14,6 +17,8 @@ jq 'walk(if type == "object" then del(.effective_predictive_optimization_flag, .
 trace print_requests.py /permissions > out.plan2.requests.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 trace print_requests.py /permissions > out.deploy2.requests.$DATABRICKS_BUNDLE_ENGINE.json
+
+trace $CLI grants get schema main.schema_grants_$UNIQUE_NAME | jq --sort-keys
 
 trace $CLI bundle destroy --auto-approve
 trace print_requests.py /permissions > out.destroy.requests.$DATABRICKS_BUNDLE_ENGINE.json

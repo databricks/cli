@@ -9,12 +9,6 @@
           "USE_SCHEMA"
         ],
         "principal": "denis.bilenko@databricks.com"
-      },
-      {
-        "add": [
-          "USE_SCHEMA"
-        ],
-        "principal": "pieter.noordhuis@databricks.com"
       }
     ]
   }

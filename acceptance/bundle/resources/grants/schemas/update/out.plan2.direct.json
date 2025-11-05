@@ -32,13 +32,6 @@
                 "CREATE_TABLE",
                 "APPLY_TAG"
               ]
-            },
-            {
-              "principal": "pieter.noordhuis@databricks.com",
-              "privileges": [
-                "CREATE_VOLUME",
-                "MANAGE"
-              ]
             }
           ]
         }
@@ -53,21 +46,12 @@
               "CREATE_TABLE",
               "USE_SCHEMA"
             ]
-          },
-          {
-            "principal": "pieter.noordhuis@databricks.com",
-            "privileges": [
-              "USE_SCHEMA"
-            ]
           }
         ]
       },
       "changes": {
         "local": {
           "grants[0].privileges[1]": {
-            "action": "update"
-          },
-          "grants[1].privileges": {
             "action": "update"
           }
         }

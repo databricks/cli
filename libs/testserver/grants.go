@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"slices"
 	"strings"
 
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -25,82 +26,61 @@ func (s *FakeWorkspace) GrantsUpdate(req Request, securableType, fullName string
 	key := grantsKey(securableType, fullName)
 
 	defer s.LockUnlock()()
-	// Use ordered structures to preserve insertion order
-	type principalPrivs struct {
-		principal  string
-		privileges []string
-	}
-	var orderedCurrent []principalPrivs
-	principalIndex := make(map[string]int)
 
+	// Build a simple map of principals to privileges
+	principalPrivs := make(map[string]map[string]bool)
+
+	// Load current grants
 	for _, assignment := range s.Grants[key] {
-		if idx, exists := principalIndex[assignment.Principal]; exists {
-			// Principal exists, append privileges
-			for _, privilege := range assignment.Privileges {
-				orderedCurrent[idx].privileges = append(orderedCurrent[idx].privileges, string(privilege))
-			}
-		} else {
-			// New principal
-			principalIndex[assignment.Principal] = len(orderedCurrent)
-			privileges := make([]string, len(assignment.Privileges))
-			for i, privilege := range assignment.Privileges {
-				privileges[i] = string(privilege)
-			}
-			orderedCurrent = append(orderedCurrent, principalPrivs{
-				principal:  assignment.Principal,
-				privileges: privileges,
-			})
+		if principalPrivs[assignment.Principal] == nil {
+			principalPrivs[assignment.Principal] = make(map[string]bool)
+		}
+		for _, privilege := range assignment.Privileges {
+			principalPrivs[assignment.Principal][string(privilege)] = true
 		}
 	}
 
+	// Apply changes
 	for _, change := range request.Changes {
 		if change.Principal == "" {
 			continue
 		}
-		if idx, exists := principalIndex[change.Principal]; exists {
-			// Principal exists, modify their privileges
-			privs := &orderedCurrent[idx].privileges
+		if principalPrivs[change.Principal] == nil {
+			principalPrivs[change.Principal] = make(map[string]bool)
+		}
 
-			// Remove privileges
-			for _, privilege := range change.Remove {
-				privilegeStr := string(privilege)
-				for i := 0; i < len(*privs); i++ {
-					if (*privs)[i] == privilegeStr {
-						*privs = append((*privs)[:i], (*privs)[i+1:]...)
-						i-- // Adjust index after removal
-					}
-				}
-			}
+		// Remove privileges
+		for _, privilege := range change.Remove {
+			delete(principalPrivs[change.Principal], string(privilege))
+		}
 
-			// Add privileges
-			for _, privilege := range change.Add {
-				*privs = append(*privs, string(privilege))
-			}
-		} else {
-			// New principal
-			principalIndex[change.Principal] = len(orderedCurrent)
-			privileges := make([]string, len(change.Add))
-			for i, privilege := range change.Add {
-				privileges[i] = string(privilege)
-			}
-			orderedCurrent = append(orderedCurrent, principalPrivs{
-				principal:  change.Principal,
-				privileges: privileges,
-			})
+		// Add privileges
+		for _, privilege := range change.Add {
+			principalPrivs[change.Principal][string(privilege)] = true
 		}
 	}
 
+	// Convert back to assignments with sorted privileges
 	var assignments []catalog.PrivilegeAssignment
-	for _, entry := range orderedCurrent {
-		if len(entry.privileges) == 0 {
+	for principal, privs := range principalPrivs {
+		if len(privs) == 0 {
 			continue
 		}
-		privileges := make([]catalog.Privilege, len(entry.privileges))
-		for i, privilege := range entry.privileges {
-			privileges[i] = catalog.Privilege(privilege)
+
+		// Sort privileges alphabetically
+		var privilegeStrs []string
+		for priv := range privs {
+			privilegeStrs = append(privilegeStrs, priv)
 		}
+		slices.Sort(privilegeStrs)
+
+		privileges := make([]catalog.Privilege, len(privilegeStrs))
+		for i, priv := range privilegeStrs {
+			privileges[i] = catalog.Privilege(priv)
+		}
+
 		assignments = append(assignments, catalog.PrivilegeAssignment{
-			Principal:  entry.principal,
+			Principal:  principal,
 			Privileges: privileges,
 		})
 	}

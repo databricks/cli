@@ -9,13 +9,6 @@
           "CREATE_TABLE",
           "APPLY_TAG"
         ]
-      },
-      {
-        "principal": "pieter.noordhuis@databricks.com",
-        "remove": [
-          "CREATE_VOLUME",
-          "MANAGE"
-        ]
       }
     ]
   }

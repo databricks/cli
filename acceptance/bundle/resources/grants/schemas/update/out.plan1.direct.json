@@ -28,12 +28,6 @@
                 "CREATE_TABLE",
                 "USE_SCHEMA"
               ]
-            },
-            {
-              "principal": "pieter.noordhuis@databricks.com",
-              "privileges": [
-                "USE_SCHEMA"
-              ]
             }
           ]
         },

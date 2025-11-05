@@ -11,6 +11,19 @@ Deployment complete!
 
 >>> print_requests.py /permissions
 
+>>> [CLI] grants get schema main.schema_grants_[UNIQUE_NAME]
+{
+  "privilege_assignments": [
+    {
+      "principal": "denis.bilenko@databricks.com",
+      "privileges": [
+        "CREATE_TABLE",
+        "USE_SCHEMA"
+      ]
+    }
+  ]
+}
+
 >>> [CLI] bundle debug plan
 
 >>> print_requests.py /permissions
@@ -22,6 +35,19 @@ Updating deployment state...
 Deployment complete!
 
 >>> print_requests.py /permissions
+
+>>> [CLI] grants get schema main.schema_grants_[UNIQUE_NAME]
+{
+  "privilege_assignments": [
+    {
+      "principal": "denis.bilenko@databricks.com",
+      "privileges": [
+        "APPLY_TAG",
+        "CREATE_TABLE"
+      ]
+    }
+  ]
+}
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
