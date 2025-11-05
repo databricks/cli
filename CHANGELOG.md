@@ -1,5 +1,15 @@
 # Version changelog
 
+## Release v0.276.0 (2025-11-05)
+
+### CLI
+* Remove previously added flags from the `jobs create` and `pipelines create` commands. ([#3870](https://github.com/databricks/cli/pull/3870))
+
+### Bundles
+* Updated the default-python template to follow the Lakeflow conventions: pipelines as source files, pyproject.toml ([#3712](https://github.com/databricks/cli/pull/3712)).
+* Fix a permissions bug adding second IS\_OWNER and causing "The job must have exactly one owner." error. Introduced in 0.274.0. ([#3850](https://github.com/databricks/cli/pull/3850))
+
+
 ## Release v0.275.0 (2025-10-29)
 
 ### Notable Changes

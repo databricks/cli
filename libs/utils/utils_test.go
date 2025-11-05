@@ -1,4 +1,4 @@
-package dresources
+package utils
 
 import (
 	"testing"
@@ -9,7 +9,7 @@ import (
 
 func TestFilterFields(t *testing.T) {
 	fields := []string{"Comment", "NewName", "Owner", "Name", "NotExistingField"}
-	result := filterFields[catalog.UpdateVolumeRequestContent](fields, "NewName", "Owner")
+	result := FilterFields[catalog.UpdateVolumeRequestContent](fields, "NewName", "Owner")
 	expected := []string{"Comment", "Name"}
 	assert.Equal(t, expected, result)
 }
