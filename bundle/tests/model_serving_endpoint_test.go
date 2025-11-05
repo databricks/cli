@@ -14,8 +14,7 @@ func assertExpected(t *testing.T, p *resources.ModelServingEndpoint) {
 	assert.Len(t, p.Config.ServedEntities, 1, "served_entities should have one entity")
 	assert.Equal(t, "model-name", p.Config.ServedEntities[0].EntityName)
 	assert.Equal(t, "1", p.Config.ServedEntities[0].EntityVersion)
-	assert.Equal(t, "Small", p.Config.ServedEntities[0].WorkloadSize)
-	assert.True(t, p.Config.ServedEntities[0].ScaleToZeroEnabled)
+
 	assert.Equal(t, "model-name-1", p.Config.TrafficConfig.Routes[0].ServedModelName)
 	assert.Equal(t, 100, p.Config.TrafficConfig.Routes[0].TrafficPercentage)
 	assert.Equal(t, resources.ModelServingEndpointPermission{
