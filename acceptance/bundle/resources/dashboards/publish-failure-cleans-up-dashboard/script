@@ -8,4 +8,5 @@ trace $CLI bundle summary
 
 # API should record a DELETE call to clean up the draft dashboard that was not published.
 # Request sequence is identical across terraform and direct modes.
+unset MSYS_NO_PATHCONV
 print_requests.py //lakeview/dashboards //workspace/mkdirs > out.dashboardrequests.txt
