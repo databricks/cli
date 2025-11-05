@@ -1,0 +1,71 @@
+
+>>> [CLI] bundle plan
+create secret_scopes.my_scope
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+{
+  "method": "POST",
+  "path": "/api/2.0/secrets/scopes/create",
+  "body": {
+    "scope": "test-scope-[UNIQUE_NAME]-1",
+    "scope_backend_type": "DATABRICKS"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/secrets/acls/put",
+  "body": {
+    "permission": "READ",
+    "principal": "test-user-[UUID]@example.com",
+    "scope": "test-scope-[UNIQUE_NAME]-1"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/secrets/acls/put",
+  "body": {
+    "permission": "WRITE",
+    "principal": "test-group-[UUID]",
+    "scope": "test-scope-[UNIQUE_NAME]-1"
+  }
+}
+
+>>> [CLI] secrets list-scopes -o json
+{
+  "backend_type": "DATABRICKS",
+  "name": "test-scope-[UNIQUE_NAME]-1"
+}
+
+>>> [CLI] bundle plan
+recreate secret_scopes.my_scope
+
+Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Error: cannot update resources.secret_scopes.my_scope.permissions: updating id=test-scope-[UNIQUE_NAME]-1: failed to list current ACLs: Scope test-scope-[UNIQUE_NAME]-1 does not exist (404 <nil>)
+
+Endpoint: GET [DATABRICKS_URL]/api/2.0/secrets/acls/list?scope=test-scope-[UNIQUE_NAME]-1
+HTTP Status: 404 Not Found
+API error_code: <nil>
+API message: Scope test-scope-[UNIQUE_NAME]-1 does not exist
+
+Updating deployment state...
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete secret_scope my_scope
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
+
+Exit code: 1

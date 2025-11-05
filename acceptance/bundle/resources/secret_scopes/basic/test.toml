@@ -1,0 +1,10 @@
+Cloud = true
+Local = true
+RecordRequests = true
+
+# Only test direct mode
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct-exp"]
+
+[[Repls]]
+Old = 'test-scope-\w+'
+New = "test-scope-[UNIQUEID]"

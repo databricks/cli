@@ -2950,6 +2950,35 @@ resources.schemas.*.storage_root	string	ALL
 resources.schemas.*.updated_at	int64	REMOTE
 resources.schemas.*.updated_by	string	REMOTE
 resources.schemas.*.url	string	INPUT
+resources.secret_scopes.*.backend_azure_keyvault	*workspace.AzureKeyVaultSecretScopeMetadata	STATE
+resources.secret_scopes.*.backend_azure_keyvault.dns_name	string	STATE
+resources.secret_scopes.*.backend_azure_keyvault.resource_id	string	STATE
+resources.secret_scopes.*.backend_type	workspace.ScopeBackendType	INPUT	REMOTE
+resources.secret_scopes.*.id	string	INPUT
+resources.secret_scopes.*.initial_manage_principal	string	STATE
+resources.secret_scopes.*.keyvault_metadata	*workspace.AzureKeyVaultSecretScopeMetadata	INPUT	REMOTE
+resources.secret_scopes.*.keyvault_metadata.dns_name	string	INPUT	REMOTE
+resources.secret_scopes.*.keyvault_metadata.resource_id	string	INPUT	REMOTE
+resources.secret_scopes.*.lifecycle	resources.Lifecycle	INPUT
+resources.secret_scopes.*.lifecycle.prevent_destroy	bool	INPUT
+resources.secret_scopes.*.modified_status	string	INPUT
+resources.secret_scopes.*.name	string	INPUT	REMOTE
+resources.secret_scopes.*.permissions	[]resources.SecretScopePermission	INPUT
+resources.secret_scopes.*.permissions[*]	resources.SecretScopePermission	INPUT
+resources.secret_scopes.*.permissions[*].group_name	string	INPUT
+resources.secret_scopes.*.permissions[*].level	resources.SecretScopePermissionLevel	INPUT
+resources.secret_scopes.*.permissions[*].service_principal_name	string	INPUT
+resources.secret_scopes.*.permissions[*].user_name	string	INPUT
+resources.secret_scopes.*.scope	string	STATE
+resources.secret_scopes.*.scope_backend_type	workspace.ScopeBackendType	STATE
+resources.secret_scopes.*.url	string	INPUT
+resources.secret_scopes.*.permissions.acls	[]resources.SecretScopePermission	ALL
+resources.secret_scopes.*.permissions.acls[*]	resources.SecretScopePermission	ALL
+resources.secret_scopes.*.permissions.acls[*].group_name	string	ALL
+resources.secret_scopes.*.permissions.acls[*].level	resources.SecretScopePermissionLevel	ALL
+resources.secret_scopes.*.permissions.acls[*].service_principal_name	string	ALL
+resources.secret_scopes.*.permissions.acls[*].user_name	string	ALL
+resources.secret_scopes.*.permissions.scope_name	string	ALL
 resources.sql_warehouses.*.auto_stop_mins	int	ALL
 resources.sql_warehouses.*.channel	*sql.Channel	ALL
 resources.sql_warehouses.*.channel.dbsql_version	string	ALL

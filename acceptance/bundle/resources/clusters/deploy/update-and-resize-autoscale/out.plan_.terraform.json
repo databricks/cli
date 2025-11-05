@@ -26,10 +26,3 @@
     }
   }
 }
-{
-  "plan": {
-    "resources.clusters.test_cluster": {
-      "action": "update"
-    }
-  }
-}

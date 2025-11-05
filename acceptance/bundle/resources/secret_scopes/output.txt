@@ -48,7 +48,6 @@ Deployment complete!
 }
 
 >>> [CLI] secrets list-acls my-secrets-[UUID]
-{"permission":"MANAGE","principal":"[USERNAME]"}
 {"permission":"READ","principal":"users"}
 {"permission":"WRITE","principal":"admins"}
 

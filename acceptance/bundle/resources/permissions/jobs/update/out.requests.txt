@@ -1,0 +1,71 @@
+{
+  "method": "GET",
+  "path": "/api/2.0/preview/scim/v2/Me"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/jobs-permissions-test/default/state/terraform.tfstate",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/jobs-permissions-test/default/state/terraform.tfstate"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/jobs-permissions-test/default/state/deployment.json",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/jobs-permissions-test/default/state/deployment.json"
+}
+{
+  "method": "GET",
+  "path": "/api/2.2/jobs/get",
+  "q": {
+    "job_id": "[JOB_ID]"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/preview/scim/v2/Me"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/permissions/jobs/[JOB_ID]"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/preview/scim/v2/Me"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/jobs-permissions-test/default/state/terraform.tfstate",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/jobs-permissions-test/default/state/terraform.tfstate"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/jobs-permissions-test/default/state/deployment.json",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/jobs-permissions-test/default/state/deployment.json"
+}

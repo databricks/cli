@@ -479,7 +479,15 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		baseRefs := map[string]string{}
 
 		if strings.HasSuffix(node, ".permissions") {
-			inputConfigStructVar, err := dresources.PreparePermissionsInputConfig(inputConfig, node)
+			var inputConfigStructVar *structvar.StructVar
+			var err error
+
+			if strings.Contains(node, ".secret_scopes.") {
+				inputConfigStructVar, err = dresources.PrepareSecretScopeAclsInputConfig(inputConfig, node)
+			} else {
+				inputConfigStructVar, err = dresources.PreparePermissionsInputConfig(inputConfig, node)
+			}
+
 			if err != nil {
 				return nil, err
 			}

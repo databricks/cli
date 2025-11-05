@@ -1,0 +1,12 @@
+bundle:
+  name: secret-scope-acls-$UNIQUE_NAME
+
+resources:
+  secret_scopes:
+    my_scope:
+      name: test-scope-acls-$UNIQUE_NAME
+      permissions:
+        - level: READ
+          user_name: viewer@example.com
+        - level: MANAGE
+          group_name: data-team

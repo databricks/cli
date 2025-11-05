@@ -21,6 +21,7 @@ var SupportedResources = map[string]any{
 	"alerts":                 (*ResourceAlert)(nil),
 	"clusters":               (*ResourceCluster)(nil),
 	"registered_models":      (*ResourceRegisteredModel)(nil),
+	"secret_scopes":          (*ResourceSecretScope)(nil),
 
 	// Permissions
 	"jobs.permissions":               (*ResourcePermissions)(nil),
@@ -31,6 +32,7 @@ var SupportedResources = map[string]any{
 	"experiments.permissions":        (*ResourcePermissions)(nil),
 	"models.permissions":             (*ResourcePermissions)(nil),
 	"sql_warehouses.permissions":     (*ResourcePermissions)(nil),
+	"secret_scopes.permissions":      (*ResourceSecretScopeAcls)(nil),
 }
 
 func InitAll(client *databricks.WorkspaceClient) (map[string]*Adapter, error) {

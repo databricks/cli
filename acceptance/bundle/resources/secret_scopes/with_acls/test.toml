@@ -1,0 +1,10 @@
+Cloud = true
+Local = true
+RecordRequests = false
+
+# Only test direct mode
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct-exp"]
+
+[[Repls]]
+Old = 'test-scope-acls-\w+'
+New = "test-scope-acls-[UNIQUEID]"

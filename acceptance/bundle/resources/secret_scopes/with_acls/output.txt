@@ -1,0 +1,61 @@
+
+=== create the secret scope with ACLs
+>>> cat databricks.yml
+bundle:
+  name: secret-scope-acls-$UNIQUE_NAME
+
+resources:
+  secret_scopes:
+    my_scope:
+      name: test-scope-acls-$UNIQUE_NAME
+      permissions:
+        - level: READ
+          user_name: viewer@example.com
+        - level: MANAGE
+          group_name: data-team
+
+>>> [CLI] bundle plan
+create secret_scopes.my_scope
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/secret-scope-acls-$UNIQUE_NAME/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+Created scope: test-scope-acls-$UNIQUE_NAME
+
+=== verify scope exists with ACLs
+>>> [CLI] secrets list-scopes -o json
+{
+  "backend_type": "DATABRICKS",
+  "name": "test-scope-acls-$UNIQUE_NAME"
+}
+
+>>> [CLI] secrets list-acls --scope test-scope-acls-$UNIQUE_NAME -o json
+Error: unknown flag: --scope
+
+Usage:
+  databricks secrets list-acls SCOPE [flags]
+
+Flags:
+  -h, --help   help for list-acls
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete secret_scope my_scope
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/secret-scope-acls-$UNIQUE_NAME/default
+
+Deleting files...
+Destroy complete!
+
+Exit code: 1

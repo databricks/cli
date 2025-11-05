@@ -1,0 +1,415 @@
+{
+  "method": "GET",
+  "path": "/api/2.0/preview/scim/v2/Me"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/state/resources.json",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/state/resources.json"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/preview/scim/v2/Me"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/secrets/scopes/list"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/preview/scim/v2/Me"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/state/resources.json",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/state/resources.json"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/state/deployment.json",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/state/deployment.json"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/secrets/scopes/list"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/secrets/acls/list",
+  "q": {
+    "scope": "test-scope-[UNIQUE_NAME]-1"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/preview/scim/v2/Me"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/state/deploy.lock",
+  "q": {
+    "overwrite": "false"
+  },
+  "body": {
+    "ID": "[UUID]",
+    "AcquisitionTime": "[TIMESTAMP]",
+    "IsForced": false,
+    "User": "[USERNAME]"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/state/deploy.lock",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/export",
+  "q": {
+    "direct_download": "true",
+    "path": "/Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/state/deploy.lock"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/state/resources.json",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/state/resources.json"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/state/deployment.json",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/state/deployment.json"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/delete",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/artifacts/.internal",
+    "recursive": true
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/mkdirs",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/artifacts/.internal"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/files"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/files/databricks.yml",
+  "q": {
+    "overwrite": "true"
+  },
+  "raw_body": "bundle:\n  name: secret-scope-basic-[UNIQUE_NAME]\n\nresources:\n  secret_scopes:\n    my_scope:\n      name: test-scope-[UNIQUE_NAME]-2\n      backend_type: \"DATABRICKS\"\n      permissions:\n        - user_name: test-group-[UUID]\n          level: WRITE\n        - user_name: test-user-[UUID]@example.com\n          level: READ\n"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/files/out.requests.txt",
+  "q": {
+    "overwrite": "true"
+  },
+  "raw_body": "{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/preview/scim/v2/Me\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/state/resources.json\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/state/resources.json\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/preview/scim/v2/Me\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/secrets/scopes/list\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/preview/scim/v2/Me\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/state/resources.json\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/state/resources.json\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/state/deployment.json\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/state/deployment.json\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/secrets/scopes/list\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/secrets/acls/list\",\n  \"q\": {\n    \"scope\": \"test-scope-[UNIQUE_NAME]-1\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/preview/scim/v2/Me\"\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/state/deploy.lock\",\n  \"q\": {\n    \"overwrite\": \"false\"\n  },\n  \"body\": {\n    \"ID\": \"[UUID]\",\n    \"AcquisitionTime\": \"[TIMESTAMP]\",\n    \"IsForced\": false,\n    \"User\": \"[USERNAME]\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/state/deploy.lock\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/export\",\n  \"q\": {\n    \"direct_download\": \"true\",\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/state/deploy.lock\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/state/resources.json\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/state/resources.json\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/state/deployment.json\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/state/deployment.json\"\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace/delete\",\n  \"body\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/artifacts/.internal\",\n    \"recursive\": true\n  }\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace/mkdirs\",\n  \"body\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/artifacts/.internal\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/files\"\n  }\n}\n"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/files/output.txt",
+  "q": {
+    "overwrite": "true"
+  },
+  "raw_body": "\n\u003e\u003e\u003e [CLI] bundle plan\ncreate secret_scopes.my_scope\n\nPlan: 1 to add, 0 to change, 0 to delete, 0 unchanged\n\n\u003e\u003e\u003e [CLI] bundle deploy\nUploading bundle files to /Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/files...\nDeploying resources...\nUpdating deployment state...\nDeployment complete!\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/secrets/scopes/create\",\n  \"body\": {\n    \"scope\": \"test-scope-[UNIQUE_NAME]-1\",\n    \"scope_backend_type\": \"DATABRICKS\"\n  }\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/secrets/acls/put\",\n  \"body\": {\n    \"permission\": \"READ\",\n    \"principal\": \"test-user-[UUID]@example.com\",\n    \"scope\": \"test-scope-[UNIQUE_NAME]-1\"\n  }\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/secrets/acls/put\",\n  \"body\": {\n    \"permission\": \"WRITE\",\n    \"principal\": \"test-group-[UUID]\",\n    \"scope\": \"test-scope-[UNIQUE_NAME]-1\"\n  }\n}\n\n\u003e\u003e\u003e [CLI] secrets list-scopes -o json\n{\n  \"backend_type\": \"DATABRICKS\",\n  \"name\": \"test-scope-[UNIQUE_NAME]-1\"\n}\n\n\u003e\u003e\u003e [CLI] bundle plan\nrecreate secret_scopes.my_scope\n\nPlan: 1 to add, 0 to change, 1 to delete, 0 unchanged\n\n\u003e\u003e\u003e [CLI] bundle deploy\nUploading bundle files to /Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/files...\n"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/state/deployment.json",
+  "q": {
+    "overwrite": "true"
+  },
+  "body": {
+    "version": 1,
+    "seq": 2,
+    "cli_version": "[DEV_VERSION]",
+    "timestamp": "[TIMESTAMP]",
+    "files": [
+      {
+        "local_path": "repls.json",
+        "is_notebook": false
+      },
+      {
+        "local_path": "script",
+        "is_notebook": false
+      },
+      {
+        "local_path": "test.toml",
+        "is_notebook": false
+      },
+      {
+        "local_path": "databricks.yml",
+        "is_notebook": false
+      },
+      {
+        "local_path": "databricks.yml.tmpl",
+        "is_notebook": false
+      },
+      {
+        "local_path": "out.requests.txt",
+        "is_notebook": false
+      },
+      {
+        "local_path": "out.test.toml",
+        "is_notebook": false
+      },
+      {
+        "local_path": "output.txt",
+        "is_notebook": false
+      }
+    ],
+    "id": "[UUID]"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/secrets/scopes/list"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/secrets/acls/list",
+  "q": {
+    "scope": "test-scope-[UNIQUE_NAME]-1"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/secrets/scopes/delete",
+  "body": {
+    "scope": "test-scope-[UNIQUE_NAME]-1"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/secrets/scopes/create",
+  "body": {
+    "scope": "test-scope-[UNIQUE_NAME]-2",
+    "scope_backend_type": "DATABRICKS"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/secrets/scopes/list"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/secrets/acls/list",
+  "q": {
+    "scope": "test-scope-[UNIQUE_NAME]-1"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/state/resources.json",
+  "q": {
+    "overwrite": "true"
+  },
+  "body": {
+    "lineage": "[UUID]",
+    "serial": 0,
+    "state": {
+      "resources.secret_scopes.my_scope": {
+        "__id__": "test-scope-[UNIQUE_NAME]-2",
+        "state": {
+          "scope": "test-scope-[UNIQUE_NAME]-2",
+          "scope_backend_type": "DATABRICKS"
+        }
+      },
+      "resources.secret_scopes.my_scope.permissions": {
+        "__id__": "test-scope-[UNIQUE_NAME]-1",
+        "state": {
+          "acls": [
+            {
+              "level": "WRITE",
+              "user_name": "test-group-[UUID]"
+            },
+            {
+              "level": "READ",
+              "user_name": "test-user-[UUID]@example.com"
+            }
+          ],
+          "scope_name": "test-scope-[UNIQUE_NAME]-1"
+        }
+      }
+    }
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/state/deploy.lock",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/state/deploy.lock",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/export",
+  "q": {
+    "direct_download": "true",
+    "path": "/Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/state/deploy.lock"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/delete",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/state/deploy.lock"
+  }
+}
+{
+  "method": "POST",
+  "path": "/telemetry-ext",
+  "body": {
+    "uploadTime": [UNIX_TIME_MILLIS],
+    "items": [],
+    "protoLogs": [
+      "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"execution_context\":{\"cmd_exec_id\":\"[UUID]\",\"version\":\"[DEV_VERSION]\",\"command\":\"bundle_deploy\",\"operating_system\":\"darwin\",\"execution_time_ms\":20,\"exit_code\":1},\"bundle_deploy_event\":{\"resource_count\":0,\"resource_job_count\":0,\"resource_pipeline_count\":0,\"resource_model_count\":0,\"resource_experiment_count\":0,\"resource_model_serving_endpoint_count\":0,\"resource_registered_model_count\":0,\"resource_quality_monitor_count\":0,\"resource_schema_count\":0,\"resource_volume_count\":0,\"resource_cluster_count\":0,\"resource_dashboard_count\":0,\"resource_app_count\":0}}}}"
+    ]
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/preview/scim/v2/Me"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/state/deploy.lock",
+  "q": {
+    "overwrite": "false"
+  },
+  "body": {
+    "ID": "[UUID]",
+    "AcquisitionTime": "[TIMESTAMP]",
+    "IsForced": false,
+    "User": "[USERNAME]"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/state/deploy.lock",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/export",
+  "q": {
+    "direct_download": "true",
+    "path": "/Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/state/deploy.lock"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/state/resources.json",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/state/resources.json"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/secrets/scopes/list"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/secrets/acls/list",
+  "q": {
+    "scope": "test-scope-[UNIQUE_NAME]-1"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/secrets/scopes/delete",
+  "body": {
+    "scope": "test-scope-[UNIQUE_NAME]-2"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/delete",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default",
+    "recursive": true
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/state/deploy.lock",
+    "return_export_info": "true"
+  }
+}

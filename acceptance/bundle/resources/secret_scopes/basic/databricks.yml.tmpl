@@ -1,0 +1,13 @@
+bundle:
+  name: secret-scope-basic-$UNIQUE_NAME
+
+resources:
+  secret_scopes:
+    my_scope:
+      name: $SECRET_SCOPE_NAME
+      backend_type: "DATABRICKS"
+      permissions:
+        - user_name: $TEST_GROUP_NAME
+          level: WRITE
+        - user_name: $TEST_USER_EMAIL
+          level: READ
