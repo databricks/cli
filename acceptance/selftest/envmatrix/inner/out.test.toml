@@ -1,6 +1,13 @@
 Local = true
 Cloud = false
 
+[Env]
+  A_REGULAR_VAR = "yes"
+  B_REGULAR_VAR = "answer:$A_REGULAR_VAR"
+  PYTHONDONTWRITEBYTECODE = "1"
+  PYTHONUNBUFFERED = "1"
+  PYTHONUTF8 = "1"
+
 [EnvMatrix]
   B_REGULAR_VAR = ["hello"]
   DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct-exp"]

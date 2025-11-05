@@ -1,5 +1,10 @@
 Local = true
 Cloud = false
 
+[Env]
+  PYTHONDONTWRITEBYTECODE = "1"
+  PYTHONUNBUFFERED = "1"
+  PYTHONUTF8 = "1"
+
 [EnvMatrix]
   DATABRICKS_BUNDLE_ENGINE = ["direct-exp"]

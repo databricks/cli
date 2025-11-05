@@ -2,6 +2,12 @@ Local = false
 Cloud = true
 CloudSlow = true
 
+[Env]
+  PYTHONDONTWRITEBYTECODE = "1"
+  PYTHONUNBUFFERED = "1"
+  PYTHONUTF8 = "1"
+  UV_PYTHON = "3.10"
+
 [EnvMatrix]
   DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct-exp"]
   DATA_SECURITY_MODE = ["USER_ISOLATION", "SINGLE_USER"]
