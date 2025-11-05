@@ -11,14 +11,6 @@ Updating deployment state...
 Deployment complete!
 {
   "method": "POST",
-  "path": "/api/2.0/secrets/scopes/create",
-  "body": {
-    "scope": "test-scope-[UNIQUE_NAME]-1",
-    "scope_backend_type": "DATABRICKS"
-  }
-}
-{
-  "method": "POST",
   "path": "/api/2.0/secrets/acls/put",
   "body": {
     "permission": "READ",
@@ -33,6 +25,14 @@ Deployment complete!
     "permission": "WRITE",
     "principal": "test-group-[UUID]",
     "scope": "test-scope-[UNIQUE_NAME]-1"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/secrets/scopes/create",
+  "body": {
+    "scope": "test-scope-[UNIQUE_NAME]-1",
+    "scope_backend_type": "DATABRICKS"
   }
 }
 
@@ -54,21 +54,6 @@ Updating deployment state...
 Deployment complete!
 {
   "method": "POST",
-  "path": "/api/2.0/secrets/scopes/delete",
-  "body": {
-    "scope": "test-scope-[UNIQUE_NAME]-1"
-  }
-}
-{
-  "method": "POST",
-  "path": "/api/2.0/secrets/scopes/create",
-  "body": {
-    "scope": "test-scope-[UNIQUE_NAME]-2",
-    "scope_backend_type": "DATABRICKS"
-  }
-}
-{
-  "method": "POST",
   "path": "/api/2.0/secrets/acls/put",
   "body": {
     "permission": "READ",
@@ -83,6 +68,21 @@ Deployment complete!
     "permission": "WRITE",
     "principal": "test-group-[UUID]",
     "scope": "test-scope-[UNIQUE_NAME]-2"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/secrets/scopes/create",
+  "body": {
+    "scope": "test-scope-[UNIQUE_NAME]-2",
+    "scope_backend_type": "DATABRICKS"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/secrets/scopes/delete",
+  "body": {
+    "scope": "test-scope-[UNIQUE_NAME]-1"
   }
 }
 

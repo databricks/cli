@@ -14,7 +14,7 @@ trap cleanup EXIT
 
 trace $CLI bundle plan
 trace $CLI bundle deploy
-print_requests.py //secrets
+print_requests.py --sort //secrets
 
 scope_name=$($CLI bundle summary --output json | jq -r '.resources.secret_scopes.my_scope.name')
 trace $CLI secrets list-scopes -o json | jq ".[] | select(.name == \"$scope_name\")"
@@ -25,7 +25,7 @@ envsubst < databricks.yml.tmpl > databricks.yml
 
 trace $CLI bundle plan
 trace $CLI bundle deploy
-print_requests.py //secrets
+print_requests.py --sort //secrets
 
 scope_name=$($CLI bundle summary --output json | jq -r '.resources.secret_scopes.my_scope.name')
 trace $CLI secrets list-scopes -o json | jq ".[] | select(.name == \"$scope_name\")"

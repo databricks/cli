@@ -45,6 +45,11 @@ func PrepareSecretScopeAclsInputConfig(inputConfig any, node string) (*structvar
 		acls = append(acls, elem)
 	}
 
+	// Sort ACLs by principal for deterministic ordering
+	slices.SortFunc(acls, func(a, b resources.SecretScopePermission) int {
+		return strings.Compare(getPrincipal(a), getPrincipal(b))
+	})
+
 	return &structvar.StructVar{
 		Config: &SecretScopeAclsState{
 			ScopeName: "", // Always a reference, defined in Refs below
@@ -72,6 +77,11 @@ func (r *ResourceSecretScopeAcls) DoRefresh(ctx context.Context, id string) (*Se
 	if err != nil {
 		return nil, fmt.Errorf("failed to list ACLs: %w", err)
 	}
+
+	// Sort ACLs by principal for deterministic ordering
+	slices.SortFunc(currentAcls, func(a, b workspace.AclItem) int {
+		return strings.Compare(a.Principal, b.Principal)
+	})
 
 	acls := make([]resources.SecretScopePermission, 0, len(currentAcls))
 	for _, acl := range currentAcls {
@@ -102,6 +112,13 @@ func (r *ResourceSecretScopeAcls) RemapState(remote *SecretScopeAclsState) *Secr
 
 func (r *ResourceSecretScopeAcls) DoCreate(ctx context.Context, state *SecretScopeAclsState) (string, error) {
 	return r.setACLs(ctx, state.ScopeName, state.Acls)
+}
+
+func (r *ResourceSecretScopeAcls) DoUpdate(ctx context.Context, id string, state *SecretScopeAclsState) error {
+	// This method is required by the adapter interface, but we always use DoUpdateWithID
+	// because the ID can change when the parent scope is recreated
+	_, err := r.setACLs(ctx, state.ScopeName, state.Acls)
+	return err
 }
 
 // TODO: We need a more general solution for this.  This is a problem for all types of resources.

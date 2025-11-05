@@ -86,13 +86,6 @@
   }
 }
 {
-  "method": "GET",
-  "path": "/api/2.0/secrets/acls/list",
-  "q": {
-    "scope": "test-scope-[UNIQUE_NAME]-2"
-  }
-}
-{
   "method": "POST",
   "path": "/api/2.0/secrets/scopes/delete",
   "body": {
@@ -100,18 +93,9 @@
   }
 }
 {
-  "method": "POST",
-  "path": "/api/2.0/secrets/acls/delete",
-  "body": {
-    "principal": "test-user-[UUID]@example.com",
-    "scope": "test-scope-[UNIQUE_NAME]-2"
-  }
-}
-{
-  "method": "POST",
-  "path": "/api/2.0/secrets/acls/delete",
-  "body": {
-    "principal": "test-group-[UUID]",
+  "method": "GET",
+  "path": "/api/2.0/secrets/acls/list",
+  "q": {
     "scope": "test-scope-[UNIQUE_NAME]-2"
   }
 }
