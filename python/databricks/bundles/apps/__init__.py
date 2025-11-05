@@ -1,18 +1,5 @@
 __all__ = [
     "App",
-    "AppDeployment",
-    "AppDeploymentArtifacts",
-    "AppDeploymentArtifactsDict",
-    "AppDeploymentArtifactsParam",
-    "AppDeploymentDict",
-    "AppDeploymentMode",
-    "AppDeploymentModeParam",
-    "AppDeploymentParam",
-    "AppDeploymentState",
-    "AppDeploymentStateParam",
-    "AppDeploymentStatus",
-    "AppDeploymentStatusDict",
-    "AppDeploymentStatusParam",
     "AppDict",
     "AppParam",
     "AppPermission",
@@ -60,18 +47,8 @@ __all__ = [
     "AppResourceUcSecurableUcSecurablePermissionParam",
     "AppResourceUcSecurableUcSecurableType",
     "AppResourceUcSecurableUcSecurableTypeParam",
-    "ApplicationState",
-    "ApplicationStateParam",
-    "ApplicationStatus",
-    "ApplicationStatusDict",
-    "ApplicationStatusParam",
     "ComputeSize",
     "ComputeSizeParam",
-    "ComputeState",
-    "ComputeStateParam",
-    "ComputeStatus",
-    "ComputeStatusDict",
-    "ComputeStatusParam",
     "Lifecycle",
     "LifecycleDict",
     "LifecycleParam",
@@ -79,29 +56,6 @@ __all__ = [
 
 
 from databricks.bundles.apps._models.app import App, AppDict, AppParam
-from databricks.bundles.apps._models.app_deployment import (
-    AppDeployment,
-    AppDeploymentDict,
-    AppDeploymentParam,
-)
-from databricks.bundles.apps._models.app_deployment_artifacts import (
-    AppDeploymentArtifacts,
-    AppDeploymentArtifactsDict,
-    AppDeploymentArtifactsParam,
-)
-from databricks.bundles.apps._models.app_deployment_mode import (
-    AppDeploymentMode,
-    AppDeploymentModeParam,
-)
-from databricks.bundles.apps._models.app_deployment_state import (
-    AppDeploymentState,
-    AppDeploymentStateParam,
-)
-from databricks.bundles.apps._models.app_deployment_status import (
-    AppDeploymentStatus,
-    AppDeploymentStatusDict,
-    AppDeploymentStatusParam,
-)
 from databricks.bundles.apps._models.app_permission import (
     AppPermission,
     AppPermissionDict,
@@ -183,25 +137,7 @@ from databricks.bundles.apps._models.app_resource_uc_securable_uc_securable_type
     AppResourceUcSecurableUcSecurableType,
     AppResourceUcSecurableUcSecurableTypeParam,
 )
-from databricks.bundles.apps._models.application_state import (
-    ApplicationState,
-    ApplicationStateParam,
-)
-from databricks.bundles.apps._models.application_status import (
-    ApplicationStatus,
-    ApplicationStatusDict,
-    ApplicationStatusParam,
-)
 from databricks.bundles.apps._models.compute_size import ComputeSize, ComputeSizeParam
-from databricks.bundles.apps._models.compute_state import (
-    ComputeState,
-    ComputeStateParam,
-)
-from databricks.bundles.apps._models.compute_status import (
-    ComputeStatus,
-    ComputeStatusDict,
-    ComputeStatusParam,
-)
 from databricks.bundles.apps._models.lifecycle import (
     Lifecycle,
     LifecycleDict,
