@@ -1,0 +1,15 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+
+trace print_requests.py //serving-endpoints
+
+endpoint_name=$($CLI bundle summary -o json | jq -r '.resources.model_serving_endpoints.my_endpoint.name')
+echo "$endpoint_name:ENDPOINT_ID" >> ACC_REPLS
+
+trace $CLI serving-endpoints get $endpoint_name

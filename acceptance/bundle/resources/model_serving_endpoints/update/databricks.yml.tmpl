@@ -1,0 +1,14 @@
+bundle:
+  name: acc-$UNIQUE_NAME
+
+resources:
+  model_serving_endpoints:
+    my_endpoint:
+      name: test-endpoint-$UNIQUE_NAME
+      config:
+        served_entities:
+          - name: test-entity
+            entity_name: my-model
+            entity_version: "1"
+            workload_size: Small
+            scale_to_zero_enabled: true

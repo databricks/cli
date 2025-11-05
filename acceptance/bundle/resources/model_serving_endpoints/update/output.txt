@@ -1,0 +1,113 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Initial deployment
+>>> print_requests
+{
+  "body": {
+    "config": {
+      "served_entities": [
+        {
+          "entity_name": "my-model",
+          "entity_version": "1",
+          "name": "test-entity",
+          "scale_to_zero_enabled": true,
+          "workload_size": "Small"
+        }
+      ]
+    },
+    "name": "[ENDPOINT_ID]"
+  },
+  "method": "POST",
+  "path": "/api/2.0/serving-endpoints"
+}
+
+=== Update the endpoint configuration (change model version)
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests
+{
+  "body": {
+    "served_entities": [
+      {
+        "entity_name": "my-model",
+        "entity_version": "2",
+        "name": "test-entity",
+        "scale_to_zero_enabled": true,
+        "workload_size": "Small"
+      }
+    ]
+  },
+  "method": "PUT",
+  "path": "/api/2.0/serving-endpoints/[ENDPOINT_ID]/config"
+}
+
+=== Verify the endpoint was updated (not recreated)
+>>> [CLI] serving-endpoints get [ENDPOINT_ID]
+{
+  "config": {
+    "served_entities": [
+      {
+        "entity_name":"my-model",
+        "entity_version":"2",
+        "name":"test-entity",
+        "scale_to_zero_enabled":true,
+        "workload_size":"Small"
+      }
+    ]
+  },
+  "creator":"[USERNAME]",
+  "id":"[UUID]",
+  "name":"[ENDPOINT_ID]",
+  "state": {
+    "config_update":"NOT_UPDATING"
+  }
+}
+
+=== Verify endpoint is in NOT_UPDATING state after update
+Endpoint is in NOT_UPDATING state
+
+=== Verify the model version was updated
+Model version updated to 2
+
+=== Destroy the endpoint
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete model_serving_endpoint my_endpoint
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
+
+>>> print_requests
+{
+  "body": {
+    "served_entities": [
+      {
+        "entity_name": "my-model",
+        "entity_version": "2",
+        "name": "test-entity",
+        "scale_to_zero_enabled": true,
+        "workload_size": "Small"
+      }
+    ]
+  },
+  "method": "PUT",
+  "path": "/api/2.0/serving-endpoints/[ENDPOINT_ID]/config"
+}
+{
+  "method": "DELETE",
+  "path": "/api/2.0/serving-endpoints/[ENDPOINT_ID]"
+}
+
+>>> musterr [CLI] serving-endpoints get [ENDPOINT_ID]
+Error: Serving endpoint with name [ENDPOINT_ID] not found
