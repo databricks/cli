@@ -94,7 +94,7 @@ func makeCreateJob(config jobs.JobSettings) (jobs.CreateJob, error) {
 		Trigger:              config.Trigger,
 		UsagePolicyId:        config.UsagePolicyId,
 		WebhookNotifications: config.WebhookNotifications,
-		ForceSendFields:      filterFields[jobs.CreateJob](config.ForceSendFields, "AccessControlList"),
+		ForceSendFields:      FilterFields[jobs.CreateJob](config.ForceSendFields, "AccessControlList"),
 	}
 
 	return result, nil

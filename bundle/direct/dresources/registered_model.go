@@ -30,7 +30,7 @@ func (*ResourceRegisteredModel) RemapState(model *catalog.RegisteredModelInfo) *
 		Name:            model.Name,
 		SchemaName:      model.SchemaName,
 		StorageLocation: model.StorageLocation,
-		ForceSendFields: filterFields[catalog.CreateRegisteredModelRequest](model.ForceSendFields),
+		ForceSendFields: FilterFields[catalog.CreateRegisteredModelRequest](model.ForceSendFields),
 
 		Aliases:     model.Aliases,
 		BrowseOnly:  model.BrowseOnly,
@@ -66,7 +66,7 @@ func (r *ResourceRegisteredModel) DoUpdate(ctx context.Context, id string, confi
 	updateRequest := catalog.UpdateRegisteredModelRequest{
 		FullName:        id,
 		Comment:         config.Comment,
-		ForceSendFields: filterFields[catalog.UpdateRegisteredModelRequest](config.ForceSendFields, "Owner", "NewName"),
+		ForceSendFields: FilterFields[catalog.UpdateRegisteredModelRequest](config.ForceSendFields, "Owner", "NewName"),
 
 		// Owner is not part of the configuration tree
 		Owner: "",

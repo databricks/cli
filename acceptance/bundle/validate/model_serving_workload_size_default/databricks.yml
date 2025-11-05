@@ -1,0 +1,14 @@
+bundle:
+  name: "model_serving_workload_size"
+
+resources:
+  model_serving_endpoints:
+    endpoint1:
+      name: "test-endpoint"
+      config:
+        served_entities:
+          - entity_name: "entity-without-size"
+            entity_version: "1"
+          - entity_name: "entity-with-size"
+            entity_version: "2"
+            workload_size: "Large"

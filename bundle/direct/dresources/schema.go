@@ -29,7 +29,7 @@ func (*ResourceSchema) RemapState(info *catalog.SchemaInfo) *catalog.CreateSchem
 		Name:            info.Name,
 		Properties:      info.Properties,
 		StorageRoot:     info.StorageRoot,
-		ForceSendFields: filterFields[catalog.CreateSchema](info.ForceSendFields),
+		ForceSendFields: FilterFields[catalog.CreateSchema](info.ForceSendFields),
 	}
 }
 
@@ -54,7 +54,7 @@ func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, config *catalo
 		NewName:                      "", // We recreate schemas on name change intentionally.
 		Owner:                        "", // Not supported by DABs
 		Properties:                   config.Properties,
-		ForceSendFields:              filterFields[catalog.UpdateSchema](config.ForceSendFields, "EnablePredictiveOptimization", "NewName", "Owner"),
+		ForceSendFields:              FilterFields[catalog.UpdateSchema](config.ForceSendFields, "EnablePredictiveOptimization", "NewName", "Owner"),
 	}
 
 	response, err := r.client.Schemas.Update(ctx, updateRequest)

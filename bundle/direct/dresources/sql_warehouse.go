@@ -38,7 +38,7 @@ func (*ResourceSqlWarehouse) RemapState(warehouse *sql.GetWarehouseResponse) *sq
 		SpotInstancePolicy:      warehouse.SpotInstancePolicy,
 		Tags:                    warehouse.Tags,
 		WarehouseType:           sql.CreateWarehouseRequestWarehouseType(warehouse.WarehouseType),
-		ForceSendFields:         filterFields[sql.CreateWarehouseRequest](warehouse.ForceSendFields),
+		ForceSendFields:         FilterFields[sql.CreateWarehouseRequest](warehouse.ForceSendFields),
 	}
 }
 
@@ -73,7 +73,7 @@ func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, id string, config *
 		SpotInstancePolicy:      config.SpotInstancePolicy,
 		Tags:                    config.Tags,
 		WarehouseType:           sql.EditWarehouseRequestWarehouseType(config.WarehouseType),
-		ForceSendFields:         filterFields[sql.EditWarehouseRequest](config.ForceSendFields),
+		ForceSendFields:         FilterFields[sql.EditWarehouseRequest](config.ForceSendFields),
 	}
 
 	waiter, err := r.client.Warehouses.Edit(ctx, request)

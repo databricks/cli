@@ -32,7 +32,7 @@ func (*ResourceVolume) RemapState(info *catalog.VolumeInfo) *catalog.CreateVolum
 		SchemaName:      info.SchemaName,
 		StorageLocation: info.StorageLocation,
 		VolumeType:      info.VolumeType,
-		ForceSendFields: filterFields[catalog.CreateVolumeRequestContent](info.ForceSendFields),
+		ForceSendFields: FilterFields[catalog.CreateVolumeRequestContent](info.ForceSendFields),
 	}
 }
 
@@ -55,7 +55,7 @@ func (r *ResourceVolume) DoUpdate(ctx context.Context, id string, config *catalo
 		NewName: "", // Not supported by Update(). Needs DoUpdateWithID()
 		Owner:   "", // Not supported by DABs
 
-		ForceSendFields: filterFields[catalog.UpdateVolumeRequestContent](config.ForceSendFields, "NewName", "Owner"),
+		ForceSendFields: FilterFields[catalog.UpdateVolumeRequestContent](config.ForceSendFields, "NewName", "Owner"),
 	}
 
 	nameFromID, err := getNameFromID(id)
@@ -87,7 +87,7 @@ func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string, config *
 		NewName: "", // Initialized below if needed
 		Owner:   "", // Not supported by DABs
 
-		ForceSendFields: filterFields[catalog.UpdateVolumeRequestContent](config.ForceSendFields, "Owner"),
+		ForceSendFields: FilterFields[catalog.UpdateVolumeRequestContent](config.ForceSendFields, "Owner"),
 	}
 
 	items := strings.Split(id, ".")

@@ -58,7 +58,7 @@ func (*ResourcePipeline) RemapState(p *pipelines.GetPipelineResponse) *pipelines
 		Tags:                spec.Tags,
 		Target:              spec.Target,
 		Trigger:             spec.Trigger,
-		ForceSendFields:     filterFields[pipelines.CreatePipeline](spec.ForceSendFields, "AllowDuplicateNames", "DryRun", "RunAs", "Id"),
+		ForceSendFields:     FilterFields[pipelines.CreatePipeline](spec.ForceSendFields, "AllowDuplicateNames", "DryRun", "RunAs", "Id"),
 	}
 }
 
@@ -107,7 +107,7 @@ func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string, config *pipe
 		Target:               config.Target,
 		Trigger:              config.Trigger,
 		PipelineId:           id,
-		ForceSendFields:      filterFields[pipelines.EditPipeline](config.ForceSendFields),
+		ForceSendFields:      FilterFields[pipelines.EditPipeline](config.ForceSendFields),
 	}
 
 	return r.client.Pipelines.Update(ctx, request)

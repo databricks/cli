@@ -6,10 +6,10 @@ import (
 	"github.com/databricks/databricks-sdk-go/retries"
 )
 
-// filterFields creates a new slice with fields present only in the provided type,
+// FilterFields creates a new slice with fields present only in the provided type,
 // excluding any fields specified in the excludeFields list.
 // We must use that when copying structs because JSON marshaller in SDK crashes if it sees unknown field.
-func filterFields[T any](fields []string, excludeFields ...string) []string {
+func FilterFields[T any](fields []string, excludeFields ...string) []string {
 	var result []string
 	typeOfT := reflect.TypeOf((*T)(nil)).Elem()
 
