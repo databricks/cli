@@ -17,7 +17,6 @@ def write(filename):
         print()
 
 
-
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-t", "--target", default="default")
