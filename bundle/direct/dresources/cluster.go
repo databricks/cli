@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/structs/structdiff"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/retries"
@@ -64,7 +65,7 @@ func (r *ResourceCluster) RemapState(input *compute.ClusterDetails) *compute.Clu
 		TotalInitialRemoteDiskSize: input.TotalInitialRemoteDiskSize,
 		UseMlRuntime:               input.UseMlRuntime,
 		WorkloadType:               input.WorkloadType,
-		ForceSendFields:            FilterFields[compute.ClusterSpec](input.ForceSendFields),
+		ForceSendFields:            utils.FilterFields[compute.ClusterSpec](input.ForceSendFields),
 	}
 	if input.Spec != nil {
 		spec.ApplyPolicyDefaultValues = input.Spec.ApplyPolicyDefaultValues
@@ -110,7 +111,7 @@ func (r *ResourceCluster) DoResize(ctx context.Context, id string, config *compu
 		ClusterId:       id,
 		NumWorkers:      config.NumWorkers,
 		Autoscale:       config.Autoscale,
-		ForceSendFields: FilterFields[compute.ResizeCluster](config.ForceSendFields),
+		ForceSendFields: utils.FilterFields[compute.ResizeCluster](config.ForceSendFields),
 	})
 	return err
 }
@@ -168,7 +169,7 @@ func makeCreateCluster(config *compute.ClusterSpec) compute.CreateCluster {
 		TotalInitialRemoteDiskSize: config.TotalInitialRemoteDiskSize,
 		UseMlRuntime:               config.UseMlRuntime,
 		WorkloadType:               config.WorkloadType,
-		ForceSendFields:            FilterFields[compute.CreateCluster](config.ForceSendFields),
+		ForceSendFields:            utils.FilterFields[compute.CreateCluster](config.ForceSendFields),
 	}
 
 	// If autoscale is not set, we need to send NumWorkers because one of them is required.
@@ -215,7 +216,7 @@ func makeEditCluster(id string, config *compute.ClusterSpec) compute.EditCluster
 		TotalInitialRemoteDiskSize: config.TotalInitialRemoteDiskSize,
 		UseMlRuntime:               config.UseMlRuntime,
 		WorkloadType:               config.WorkloadType,
-		ForceSendFields:            FilterFields[compute.EditCluster](config.ForceSendFields),
+		ForceSendFields:            utils.FilterFields[compute.EditCluster](config.ForceSendFields),
 	}
 
 	// If autoscale is not set, we need to send NumWorkers because one of them is required.

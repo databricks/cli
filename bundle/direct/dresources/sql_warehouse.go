@@ -5,6 +5,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 )
@@ -38,7 +39,7 @@ func (*ResourceSqlWarehouse) RemapState(warehouse *sql.GetWarehouseResponse) *sq
 		SpotInstancePolicy:      warehouse.SpotInstancePolicy,
 		Tags:                    warehouse.Tags,
 		WarehouseType:           sql.CreateWarehouseRequestWarehouseType(warehouse.WarehouseType),
-		ForceSendFields:         FilterFields[sql.CreateWarehouseRequest](warehouse.ForceSendFields),
+		ForceSendFields:         utils.FilterFields[sql.CreateWarehouseRequest](warehouse.ForceSendFields),
 	}
 }
 
@@ -73,7 +74,7 @@ func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, id string, config *
 		SpotInstancePolicy:      config.SpotInstancePolicy,
 		Tags:                    config.Tags,
 		WarehouseType:           sql.EditWarehouseRequestWarehouseType(config.WarehouseType),
-		ForceSendFields:         FilterFields[sql.EditWarehouseRequest](config.ForceSendFields),
+		ForceSendFields:         utils.FilterFields[sql.EditWarehouseRequest](config.ForceSendFields),
 	}
 
 	waiter, err := r.client.Warehouses.Edit(ctx, request)

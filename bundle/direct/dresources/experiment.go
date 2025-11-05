@@ -5,6 +5,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 )
@@ -24,7 +25,7 @@ func (*ResourceExperiment) PrepareState(input *resources.MlflowExperiment) *ml.C
 		Name:             input.Name,
 		ArtifactLocation: input.ArtifactLocation,
 		Tags:             input.Tags,
-		ForceSendFields:  FilterFields[ml.CreateExperiment](input.ForceSendFields),
+		ForceSendFields:  utils.FilterFields[ml.CreateExperiment](input.ForceSendFields),
 	}
 }
 
@@ -33,7 +34,7 @@ func (*ResourceExperiment) RemapState(experiment *ml.Experiment) *ml.CreateExper
 		Name:             experiment.Name,
 		ArtifactLocation: experiment.ArtifactLocation,
 		Tags:             experiment.Tags,
-		ForceSendFields:  FilterFields[ml.CreateExperiment](experiment.ForceSendFields),
+		ForceSendFields:  utils.FilterFields[ml.CreateExperiment](experiment.ForceSendFields),
 	}
 }
 
@@ -59,7 +60,7 @@ func (r *ResourceExperiment) DoUpdate(ctx context.Context, id string, config *ml
 	updateReq := ml.UpdateExperiment{
 		ExperimentId:    id,
 		NewName:         config.Name,
-		ForceSendFields: FilterFields[ml.UpdateExperiment](config.ForceSendFields),
+		ForceSendFields: utils.FilterFields[ml.UpdateExperiment](config.ForceSendFields),
 	}
 
 	return r.client.Experiments.UpdateExperiment(ctx, updateReq)

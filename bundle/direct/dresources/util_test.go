@@ -3,13 +3,19 @@ package dresources
 import (
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go/service/catalog"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestFilterFields(t *testing.T) {
-	fields := []string{"Comment", "NewName", "Owner", "Name", "NotExistingField"}
-	result := FilterFields[catalog.UpdateVolumeRequestContent](fields, "NewName", "Owner")
-	expected := []string{"Comment", "Name"}
+	type Foo struct {
+		A string `json:"a"`
+		B string `json:"b"`
+		C string `json:"c"`
+		D string `json:"d"`
+	}
+	fields := []string{"A", "B", "C", "NotExistingField"}
+	result := utils.FilterFields[Foo](fields, "A", "D")
+	expected := []string{"B", "C"}
 	assert.Equal(t, expected, result)
 }

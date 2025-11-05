@@ -5,6 +5,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 )
@@ -59,7 +60,7 @@ func (*ResourcePipeline) RemapState(p *pipelines.GetPipelineResponse) *pipelines
 		Target:              spec.Target,
 		Trigger:             spec.Trigger,
 		UsagePolicyId:       spec.UsagePolicyId,
-		ForceSendFields:     FilterFields[pipelines.CreatePipeline](spec.ForceSendFields, "AllowDuplicateNames", "DryRun", "RunAs", "Id"),
+		ForceSendFields:     utils.FilterFields[pipelines.CreatePipeline](spec.ForceSendFields, "AllowDuplicateNames", "DryRun", "RunAs", "Id"),
 	}
 }
 
@@ -109,7 +110,7 @@ func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string, config *pipe
 		Trigger:              config.Trigger,
 		UsagePolicyId:        config.UsagePolicyId,
 		PipelineId:           id,
-		ForceSendFields:      FilterFields[pipelines.EditPipeline](config.ForceSendFields),
+		ForceSendFields:      utils.FilterFields[pipelines.EditPipeline](config.ForceSendFields),
 	}
 
 	return r.client.Pipelines.Update(ctx, request)

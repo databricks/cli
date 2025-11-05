@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
@@ -32,7 +33,7 @@ func (*ResourceVolume) RemapState(info *catalog.VolumeInfo) *catalog.CreateVolum
 		SchemaName:      info.SchemaName,
 		StorageLocation: info.StorageLocation,
 		VolumeType:      info.VolumeType,
-		ForceSendFields: FilterFields[catalog.CreateVolumeRequestContent](info.ForceSendFields),
+		ForceSendFields: utils.FilterFields[catalog.CreateVolumeRequestContent](info.ForceSendFields),
 	}
 }
 
@@ -55,7 +56,7 @@ func (r *ResourceVolume) DoUpdate(ctx context.Context, id string, config *catalo
 		NewName: "", // Not supported by Update(). Needs DoUpdateWithID()
 		Owner:   "", // Not supported by DABs
 
-		ForceSendFields: FilterFields[catalog.UpdateVolumeRequestContent](config.ForceSendFields, "NewName", "Owner"),
+		ForceSendFields: utils.FilterFields[catalog.UpdateVolumeRequestContent](config.ForceSendFields, "NewName", "Owner"),
 	}
 
 	nameFromID, err := getNameFromID(id)
@@ -87,7 +88,7 @@ func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string, config *
 		NewName: "", // Initialized below if needed
 		Owner:   "", // Not supported by DABs
 
-		ForceSendFields: FilterFields[catalog.UpdateVolumeRequestContent](config.ForceSendFields, "Owner"),
+		ForceSendFields: utils.FilterFields[catalog.UpdateVolumeRequestContent](config.ForceSendFields, "Owner"),
 	}
 
 	items := strings.Split(id, ".")

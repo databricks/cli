@@ -4,9 +4,9 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go/service/serving"
 )
 
@@ -38,7 +38,7 @@ func servedModelToServedEntity(model serving.ServedModelInput) serving.ServedEnt
 		WorkloadType:              serving.ServingModelWorkloadType(model.WorkloadType),
 		MaxProvisionedConcurrency: model.MaxProvisionedConcurrency,
 		MinProvisionedConcurrency: model.MinProvisionedConcurrency,
-		ForceSendFields:           dresources.FilterFields[serving.ServedEntityInput](model.ForceSendFields),
+		ForceSendFields:           utils.FilterFields[serving.ServedEntityInput](model.ForceSendFields),
 	}
 }
 
