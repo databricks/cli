@@ -9,9 +9,7 @@ on:
 
 jobs:
   goreleaser:
-    runs-on:
-      group: databricks-deco-testing-runner-group
-      labels: ubuntu-latest-deco
+    runs-on: windows-latest
 
     outputs:
       artifacts: ${{ steps.releaser.outputs.artifacts }}
