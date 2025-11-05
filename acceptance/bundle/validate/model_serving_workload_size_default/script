@@ -1,1 +1,0 @@
-$CLI bundle validate -o json | jq .resources.model_serving_endpoints.endpoint1.config.served_entities

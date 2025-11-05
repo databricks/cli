@@ -83,15 +83,6 @@ func (m *modelServingEndpointFixups) Apply(ctx context.Context, b *bundle.Bundle
 			// Clear ServedModels after conversion
 			endpoint.Config.ServedModels = nil
 		}
-
-		// Apply default workload_size of "Small" if not specified. workload_size has a server side default of
-		// "Small" if not specified. Setting it also as a client side default makes diff comparisons straightforward
-		// during deployment.
-		for i := range endpoint.Config.ServedEntities {
-			if endpoint.Config.ServedEntities[i].WorkloadSize == "" {
-				endpoint.Config.ServedEntities[i].WorkloadSize = "Small"
-			}
-		}
 	}
 
 	return diags
