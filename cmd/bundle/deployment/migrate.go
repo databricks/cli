@@ -111,6 +111,10 @@ To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env va
 		}
 
 		cmdio.LogString(ctx, fmt.Sprintf(`Migrated %d resources to direct engine state file: %s
+Validate the migration by running "bundle debug plan", there should be no actions.
+
+The state file is not synchronized to the workspace yet. To do that, run "bundle deploy".
+
 To finalize deployment, run "bundle deploy".`, len(deploymentBundle.StateDB.Data.State), localPath))
 		return nil
 	}

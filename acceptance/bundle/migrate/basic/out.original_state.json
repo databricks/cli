@@ -46,6 +46,7 @@
             "parameter": [],
             "performance_target": null,
             "pipeline_task": [],
+            "provider_config": [],
             "python_wheel_task": [],
             "queue": [
               {
@@ -192,7 +193,8 @@
             "target": null,
             "timeouts": null,
             "trigger": [],
-            "url": "[DATABRICKS_URL]/#joblist/pipelines/[UUID]"
+            "url": "[DATABRICKS_URL]/#joblist/pipelines/[UUID]",
+            "usage_policy_id": null
           },
           "sensitive_attributes": [],
           "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWZhdWx0IjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjEyMDAwMDAwMDAwMDAsInJlYWQiOjEyMDAwMDAwMDAwMDAsInVwZGF0ZSI6MTIwMDAwMDAwMDAwMH19",
