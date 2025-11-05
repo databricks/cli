@@ -56,7 +56,7 @@ func newDelete() *cobra.Command {
 
 	var deleteReq settings.DeleteDefaultWarehouseIdRequest
 
-	cmd.Flags().StringVar(&deleteReq.Etag, "etag", deleteReq.Etag, `etag used for versioning.`)
+	cmd.Flags().StringVar(&deleteReq.Etag, "etag", deleteReq.Etag, `etag used for versioning. Wire name: 'etag'.`)
 
 	cmd.Use = "delete"
 	cmd.Short = `Delete the Default Warehouse Id setting.`
@@ -109,7 +109,7 @@ func newGet() *cobra.Command {
 
 	var getReq settings.GetDefaultWarehouseIdRequest
 
-	cmd.Flags().StringVar(&getReq.Etag, "etag", getReq.Etag, `etag used for versioning.`)
+	cmd.Flags().StringVar(&getReq.Etag, "etag", getReq.Etag, `etag used for versioning. Wire name: 'etag'.`)
 
 	cmd.Use = "get"
 	cmd.Short = `Get the Default Warehouse Id setting.`

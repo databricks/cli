@@ -133,7 +133,7 @@ func newDelete() *cobra.Command {
 
 	var deleteReq catalog.DeleteFunctionRequest
 
-	cmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `Force deletion even if the function is notempty.`)
+	cmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `Force deletion even if the function is notempty. Wire name: 'force'.`)
 
 	cmd.Use = "delete NAME"
 	cmd.Short = `Delete a function.`
@@ -209,7 +209,7 @@ func newGet() *cobra.Command {
 
 	var getReq catalog.GetFunctionRequest
 
-	cmd.Flags().BoolVar(&getReq.IncludeBrowse, "include-browse", getReq.IncludeBrowse, `Whether to include functions in the response for which the principal can only access selective metadata for.`)
+	cmd.Flags().BoolVar(&getReq.IncludeBrowse, "include-browse", getReq.IncludeBrowse, `Whether to include functions in the response for which the principal can only access selective metadata for. Wire name: 'include_browse'.`)
 
 	cmd.Use = "get NAME"
 	cmd.Short = `Get a function.`
@@ -286,9 +286,9 @@ func newList() *cobra.Command {
 
 	var listReq catalog.ListFunctionsRequest
 
-	cmd.Flags().BoolVar(&listReq.IncludeBrowse, "include-browse", listReq.IncludeBrowse, `Whether to include functions in the response for which the principal can only access selective metadata for.`)
-	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of functions to return.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
+	cmd.Flags().BoolVar(&listReq.IncludeBrowse, "include-browse", listReq.IncludeBrowse, `Whether to include functions in the response for which the principal can only access selective metadata for. Wire name: 'include_browse'.`)
+	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of functions to return. Wire name: 'max_results'.`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query. Wire name: 'page_token'.`)
 
 	cmd.Use = "list CATALOG_NAME SCHEMA_NAME"
 	cmd.Short = `List functions.`
@@ -362,7 +362,7 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of the function.`)
+	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of the function. Wire name: 'owner'.`)
 
 	cmd.Use = "update NAME"
 	cmd.Short = `Update a function.`

@@ -83,8 +83,8 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.Policy.Comment, "comment", createReq.Policy.Comment, `Description of the policy.`)
-	cmd.Flags().StringVar(&createReq.Policy.Name, "name", createReq.Policy.Name, `Name of the federation policy.`)
+	cmd.Flags().StringVar(&createReq.Policy.Comment, "comment", createReq.Policy.Comment, `Description of the policy. Wire name: 'comment'.`)
+	cmd.Flags().StringVar(&createReq.Policy.Name, "name", createReq.Policy.Name, `Name of the federation policy. Wire name: 'name'.`)
 	// TODO: complex arg: oidc_policy
 
 	cmd.Use = "create RECIPIENT_NAME"
@@ -302,8 +302,8 @@ func newList() *cobra.Command {
 
 	var listReq sharing.ListFederationPoliciesRequest
 
-	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, ``)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)
+	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Wire name: 'max_results'.`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Wire name: 'page_token'.`)
 
 	cmd.Use = "list RECIPIENT_NAME"
 	cmd.Short = `List recipient federation policies.`

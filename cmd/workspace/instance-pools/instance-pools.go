@@ -86,15 +86,15 @@ func newCreate() *cobra.Command {
 	// TODO: complex arg: azure_attributes
 	// TODO: map via StringToStringVar: custom_tags
 	// TODO: complex arg: disk_spec
-	cmd.Flags().BoolVar(&createReq.EnableElasticDisk, "enable-elastic-disk", createReq.EnableElasticDisk, `Autoscaling Local Storage: when enabled, this instances in this pool will dynamically acquire additional disk space when its Spark workers are running low on disk space.`)
+	cmd.Flags().BoolVar(&createReq.EnableElasticDisk, "enable-elastic-disk", createReq.EnableElasticDisk, `Autoscaling Local Storage: when enabled, this instances in this pool will dynamically acquire additional disk space when its Spark workers are running low on disk space. Wire name: 'enable_elastic_disk'.`)
 	// TODO: complex arg: gcp_attributes
-	cmd.Flags().IntVar(&createReq.IdleInstanceAutoterminationMinutes, "idle-instance-autotermination-minutes", createReq.IdleInstanceAutoterminationMinutes, `Automatically terminates the extra instances in the pool cache after they are inactive for this time in minutes if min_idle_instances requirement is already met.`)
-	cmd.Flags().IntVar(&createReq.MaxCapacity, "max-capacity", createReq.MaxCapacity, `Maximum number of outstanding instances to keep in the pool, including both instances used by clusters and idle instances.`)
-	cmd.Flags().IntVar(&createReq.MinIdleInstances, "min-idle-instances", createReq.MinIdleInstances, `Minimum number of idle instances to keep in the instance pool.`)
+	cmd.Flags().IntVar(&createReq.IdleInstanceAutoterminationMinutes, "idle-instance-autotermination-minutes", createReq.IdleInstanceAutoterminationMinutes, `Automatically terminates the extra instances in the pool cache after they are inactive for this time in minutes if min_idle_instances requirement is already met. Wire name: 'idle_instance_autotermination_minutes'.`)
+	cmd.Flags().IntVar(&createReq.MaxCapacity, "max-capacity", createReq.MaxCapacity, `Maximum number of outstanding instances to keep in the pool, including both instances used by clusters and idle instances. Wire name: 'max_capacity'.`)
+	cmd.Flags().IntVar(&createReq.MinIdleInstances, "min-idle-instances", createReq.MinIdleInstances, `Minimum number of idle instances to keep in the instance pool. Wire name: 'min_idle_instances'.`)
 	// TODO: array: preloaded_docker_images
 	// TODO: array: preloaded_spark_versions
-	cmd.Flags().IntVar(&createReq.RemoteDiskThroughput, "remote-disk-throughput", createReq.RemoteDiskThroughput, `If set, what the configurable throughput (in Mb/s) for the remote disk is.`)
-	cmd.Flags().IntVar(&createReq.TotalInitialRemoteDiskSize, "total-initial-remote-disk-size", createReq.TotalInitialRemoteDiskSize, `If set, what the total initial volume size (in GB) of the remote disks should be.`)
+	cmd.Flags().IntVar(&createReq.RemoteDiskThroughput, "remote-disk-throughput", createReq.RemoteDiskThroughput, `If set, what the configurable throughput (in Mb/s) for the remote disk is. Wire name: 'remote_disk_throughput'.`)
+	cmd.Flags().IntVar(&createReq.TotalInitialRemoteDiskSize, "total-initial-remote-disk-size", createReq.TotalInitialRemoteDiskSize, `If set, what the total initial volume size (in GB) of the remote disks should be. Wire name: 'total_initial_remote_disk_size'.`)
 
 	cmd.Use = "create INSTANCE_POOL_NAME NODE_TYPE_ID"
 	cmd.Short = `Create a new instance pool.`
@@ -282,11 +282,11 @@ func newEdit() *cobra.Command {
 	cmd.Flags().Var(&editJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: map via StringToStringVar: custom_tags
-	cmd.Flags().IntVar(&editReq.IdleInstanceAutoterminationMinutes, "idle-instance-autotermination-minutes", editReq.IdleInstanceAutoterminationMinutes, `Automatically terminates the extra instances in the pool cache after they are inactive for this time in minutes if min_idle_instances requirement is already met.`)
-	cmd.Flags().IntVar(&editReq.MaxCapacity, "max-capacity", editReq.MaxCapacity, `Maximum number of outstanding instances to keep in the pool, including both instances used by clusters and idle instances.`)
-	cmd.Flags().IntVar(&editReq.MinIdleInstances, "min-idle-instances", editReq.MinIdleInstances, `Minimum number of idle instances to keep in the instance pool.`)
-	cmd.Flags().IntVar(&editReq.RemoteDiskThroughput, "remote-disk-throughput", editReq.RemoteDiskThroughput, `If set, what the configurable throughput (in Mb/s) for the remote disk is.`)
-	cmd.Flags().IntVar(&editReq.TotalInitialRemoteDiskSize, "total-initial-remote-disk-size", editReq.TotalInitialRemoteDiskSize, `If set, what the total initial volume size (in GB) of the remote disks should be.`)
+	cmd.Flags().IntVar(&editReq.IdleInstanceAutoterminationMinutes, "idle-instance-autotermination-minutes", editReq.IdleInstanceAutoterminationMinutes, `Automatically terminates the extra instances in the pool cache after they are inactive for this time in minutes if min_idle_instances requirement is already met. Wire name: 'idle_instance_autotermination_minutes'.`)
+	cmd.Flags().IntVar(&editReq.MaxCapacity, "max-capacity", editReq.MaxCapacity, `Maximum number of outstanding instances to keep in the pool, including both instances used by clusters and idle instances. Wire name: 'max_capacity'.`)
+	cmd.Flags().IntVar(&editReq.MinIdleInstances, "min-idle-instances", editReq.MinIdleInstances, `Minimum number of idle instances to keep in the instance pool. Wire name: 'min_idle_instances'.`)
+	cmd.Flags().IntVar(&editReq.RemoteDiskThroughput, "remote-disk-throughput", editReq.RemoteDiskThroughput, `If set, what the configurable throughput (in Mb/s) for the remote disk is. Wire name: 'remote_disk_throughput'.`)
+	cmd.Flags().IntVar(&editReq.TotalInitialRemoteDiskSize, "total-initial-remote-disk-size", editReq.TotalInitialRemoteDiskSize, `If set, what the total initial volume size (in GB) of the remote disks should be. Wire name: 'total_initial_remote_disk_size'.`)
 
 	cmd.Use = "edit INSTANCE_POOL_ID INSTANCE_POOL_NAME NODE_TYPE_ID"
 	cmd.Short = `Edit an existing instance pool.`

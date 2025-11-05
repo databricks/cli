@@ -69,7 +69,7 @@ func newCreateEndpoint() *cobra.Command {
 
 	cmd.Flags().Var(&createEndpointJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createEndpointReq.BudgetPolicyId, "budget-policy-id", createEndpointReq.BudgetPolicyId, `The budget policy id to be applied.`)
+	cmd.Flags().StringVar(&createEndpointReq.BudgetPolicyId, "budget-policy-id", createEndpointReq.BudgetPolicyId, `The budget policy id to be applied. Wire name: 'budget_policy_id'.`)
 
 	cmd.Use = "create-endpoint NAME ENDPOINT_TYPE"
 	cmd.Short = `Create an endpoint.`
@@ -288,7 +288,7 @@ func newListEndpoints() *cobra.Command {
 
 	var listEndpointsReq vectorsearch.ListEndpointsRequest
 
-	cmd.Flags().StringVar(&listEndpointsReq.PageToken, "page-token", listEndpointsReq.PageToken, `Token for pagination.`)
+	cmd.Flags().StringVar(&listEndpointsReq.PageToken, "page-token", listEndpointsReq.PageToken, `Token for pagination. Wire name: 'page_token'.`)
 
 	cmd.Use = "list-endpoints"
 	cmd.Short = `List all endpoints.`

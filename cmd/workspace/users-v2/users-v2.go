@@ -74,17 +74,17 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&createReq.Active, "active", createReq.Active, `If this user is active.`)
-	cmd.Flags().StringVar(&createReq.DisplayName, "display-name", createReq.DisplayName, `String that represents a concatenation of given and family names.`)
+	cmd.Flags().BoolVar(&createReq.Active, "active", createReq.Active, `If this user is active. Wire name: 'active'.`)
+	cmd.Flags().StringVar(&createReq.DisplayName, "display-name", createReq.DisplayName, `String that represents a concatenation of given and family names. Wire name: 'displayName'.`)
 	// TODO: array: emails
 	// TODO: array: entitlements
-	cmd.Flags().StringVar(&createReq.ExternalId, "external-id", createReq.ExternalId, `External ID is not currently supported.`)
+	cmd.Flags().StringVar(&createReq.ExternalId, "external-id", createReq.ExternalId, `External ID is not currently supported. Wire name: 'externalId'.`)
 	// TODO: array: groups
-	cmd.Flags().StringVar(&createReq.Id, "id", createReq.Id, `Databricks user ID.`)
+	cmd.Flags().StringVar(&createReq.Id, "id", createReq.Id, `Databricks user ID. Wire name: 'id'.`)
 	// TODO: complex arg: name
 	// TODO: array: roles
 	// TODO: array: schemas
-	cmd.Flags().StringVar(&createReq.UserName, "user-name", createReq.UserName, `Email address of the Databricks user.`)
+	cmd.Flags().StringVar(&createReq.UserName, "user-name", createReq.UserName, `Email address of the Databricks user. Wire name: 'userName'.`)
 
 	cmd.Use = "create"
 	cmd.Short = `Create a new user.`
@@ -208,13 +208,13 @@ func newGet() *cobra.Command {
 
 	var getReq iam.GetUserRequest
 
-	cmd.Flags().StringVar(&getReq.Attributes, "attributes", getReq.Attributes, `Comma-separated list of attributes to return in response.`)
-	cmd.Flags().IntVar(&getReq.Count, "count", getReq.Count, `Desired number of results per page.`)
-	cmd.Flags().StringVar(&getReq.ExcludedAttributes, "excluded-attributes", getReq.ExcludedAttributes, `Comma-separated list of attributes to exclude in response.`)
-	cmd.Flags().StringVar(&getReq.Filter, "filter", getReq.Filter, `Query by which the results have to be filtered.`)
-	cmd.Flags().StringVar(&getReq.SortBy, "sort-by", getReq.SortBy, `Attribute to sort the results.`)
-	cmd.Flags().Var(&getReq.SortOrder, "sort-order", `The order to sort the results. Supported values: [ascending, descending]`)
-	cmd.Flags().IntVar(&getReq.StartIndex, "start-index", getReq.StartIndex, `Specifies the index of the first result.`)
+	cmd.Flags().StringVar(&getReq.Attributes, "attributes", getReq.Attributes, `Comma-separated list of attributes to return in response. Wire name: 'attributes'.`)
+	cmd.Flags().IntVar(&getReq.Count, "count", getReq.Count, `Desired number of results per page. Wire name: 'count'.`)
+	cmd.Flags().StringVar(&getReq.ExcludedAttributes, "excluded-attributes", getReq.ExcludedAttributes, `Comma-separated list of attributes to exclude in response. Wire name: 'excludedAttributes'.`)
+	cmd.Flags().StringVar(&getReq.Filter, "filter", getReq.Filter, `Query by which the results have to be filtered. Wire name: 'filter'.`)
+	cmd.Flags().StringVar(&getReq.SortBy, "sort-by", getReq.SortBy, `Attribute to sort the results. Wire name: 'sortBy'.`)
+	cmd.Flags().Var(&getReq.SortOrder, "sort-order", `The order to sort the results. Supported values: [ascending, descending]. Wire name: 'sortOrder'.`)
+	cmd.Flags().IntVar(&getReq.StartIndex, "start-index", getReq.StartIndex, `Specifies the index of the first result. Wire name: 'startIndex'.`)
 
 	cmd.Use = "get ID"
 	cmd.Short = `Get user details.`
@@ -365,13 +365,13 @@ func newList() *cobra.Command {
 
 	var listReq iam.ListUsersRequest
 
-	cmd.Flags().StringVar(&listReq.Attributes, "attributes", listReq.Attributes, `Comma-separated list of attributes to return in response.`)
-	cmd.Flags().Int64Var(&listReq.Count, "count", listReq.Count, `Desired number of results per page.`)
-	cmd.Flags().StringVar(&listReq.ExcludedAttributes, "excluded-attributes", listReq.ExcludedAttributes, `Comma-separated list of attributes to exclude in response.`)
-	cmd.Flags().StringVar(&listReq.Filter, "filter", listReq.Filter, `Query by which the results have to be filtered.`)
-	cmd.Flags().StringVar(&listReq.SortBy, "sort-by", listReq.SortBy, `Attribute to sort the results.`)
-	cmd.Flags().Var(&listReq.SortOrder, "sort-order", `The order to sort the results. Supported values: [ascending, descending]`)
-	cmd.Flags().Int64Var(&listReq.StartIndex, "start-index", listReq.StartIndex, `Specifies the index of the first result.`)
+	cmd.Flags().StringVar(&listReq.Attributes, "attributes", listReq.Attributes, `Comma-separated list of attributes to return in response. Wire name: 'attributes'.`)
+	cmd.Flags().Int64Var(&listReq.Count, "count", listReq.Count, `Desired number of results per page. Wire name: 'count'.`)
+	cmd.Flags().StringVar(&listReq.ExcludedAttributes, "excluded-attributes", listReq.ExcludedAttributes, `Comma-separated list of attributes to exclude in response. Wire name: 'excludedAttributes'.`)
+	cmd.Flags().StringVar(&listReq.Filter, "filter", listReq.Filter, `Query by which the results have to be filtered. Wire name: 'filter'.`)
+	cmd.Flags().StringVar(&listReq.SortBy, "sort-by", listReq.SortBy, `Attribute to sort the results. Wire name: 'sortBy'.`)
+	cmd.Flags().Var(&listReq.SortOrder, "sort-order", `The order to sort the results. Supported values: [ascending, descending]. Wire name: 'sortOrder'.`)
+	cmd.Flags().Int64Var(&listReq.StartIndex, "start-index", listReq.StartIndex, `Specifies the index of the first result. Wire name: 'startIndex'.`)
 
 	cmd.Use = "list"
 	cmd.Short = `List users.`
@@ -570,16 +570,16 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&updateReq.Active, "active", updateReq.Active, `If this user is active.`)
-	cmd.Flags().StringVar(&updateReq.DisplayName, "display-name", updateReq.DisplayName, `String that represents a concatenation of given and family names.`)
+	cmd.Flags().BoolVar(&updateReq.Active, "active", updateReq.Active, `If this user is active. Wire name: 'active'.`)
+	cmd.Flags().StringVar(&updateReq.DisplayName, "display-name", updateReq.DisplayName, `String that represents a concatenation of given and family names. Wire name: 'displayName'.`)
 	// TODO: array: emails
 	// TODO: array: entitlements
-	cmd.Flags().StringVar(&updateReq.ExternalId, "external-id", updateReq.ExternalId, `External ID is not currently supported.`)
+	cmd.Flags().StringVar(&updateReq.ExternalId, "external-id", updateReq.ExternalId, `External ID is not currently supported. Wire name: 'externalId'.`)
 	// TODO: array: groups
 	// TODO: complex arg: name
 	// TODO: array: roles
 	// TODO: array: schemas
-	cmd.Flags().StringVar(&updateReq.UserName, "user-name", updateReq.UserName, `Email address of the Databricks user.`)
+	cmd.Flags().StringVar(&updateReq.UserName, "user-name", updateReq.UserName, `Email address of the Databricks user. Wire name: 'userName'.`)
 
 	cmd.Use = "update ID"
 	cmd.Short = `Replace a user.`

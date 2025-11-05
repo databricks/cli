@@ -67,7 +67,7 @@ func newCreateFeatureTag() *cobra.Command {
 
 	cmd.Flags().Var(&createFeatureTagJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createFeatureTagReq.FeatureTag.Value, "value", createFeatureTagReq.FeatureTag.Value, ``)
+	cmd.Flags().StringVar(&createFeatureTagReq.FeatureTag.Value, "value", createFeatureTagReq.FeatureTag.Value, `Wire name: 'value'.`)
 
 	cmd.Use = "create-feature-tag TABLE_NAME FEATURE_NAME KEY"
 	cmd.Short = `Create a feature tag.`
@@ -316,8 +316,8 @@ func newListFeatureTags() *cobra.Command {
 
 	var listFeatureTagsReq ml.ListFeatureTagsRequest
 
-	cmd.Flags().IntVar(&listFeatureTagsReq.PageSize, "page-size", listFeatureTagsReq.PageSize, `The maximum number of results to return.`)
-	cmd.Flags().StringVar(&listFeatureTagsReq.PageToken, "page-token", listFeatureTagsReq.PageToken, `Pagination token to go to the next page based on a previous query.`)
+	cmd.Flags().IntVar(&listFeatureTagsReq.PageSize, "page-size", listFeatureTagsReq.PageSize, `The maximum number of results to return. Wire name: 'page_size'.`)
+	cmd.Flags().StringVar(&listFeatureTagsReq.PageToken, "page-token", listFeatureTagsReq.PageToken, `Pagination token to go to the next page based on a previous query. Wire name: 'page_token'.`)
 
 	cmd.Use = "list-feature-tags TABLE_NAME FEATURE_NAME"
 	cmd.Short = `List all feature tags.`
@@ -374,8 +374,8 @@ func newUpdateFeatureTag() *cobra.Command {
 
 	cmd.Flags().Var(&updateFeatureTagJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateFeatureTagReq.UpdateMask, "update-mask", updateFeatureTagReq.UpdateMask, `The list of fields to update.`)
-	cmd.Flags().StringVar(&updateFeatureTagReq.FeatureTag.Value, "value", updateFeatureTagReq.FeatureTag.Value, ``)
+	cmd.Flags().StringVar(&updateFeatureTagReq.UpdateMask, "update-mask", updateFeatureTagReq.UpdateMask, `The list of fields to update. Wire name: 'update_mask'.`)
+	cmd.Flags().StringVar(&updateFeatureTagReq.FeatureTag.Value, "value", updateFeatureTagReq.FeatureTag.Value, `Wire name: 'value'.`)
 
 	cmd.Use = "update-feature-tag TABLE_NAME FEATURE_NAME KEY"
 	cmd.Short = `Update a feature tag.`
