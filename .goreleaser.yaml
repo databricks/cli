@@ -102,3 +102,27 @@ changelog:
     exclude:
       - '^docs:'
       - '^test:'
+
+signs:
+  - cmd: azuresign
+    signature: "${artifact}.sig"
+    certificate: "${artifact}.pem"
+    artifacts: checksum
+    args:
+      - sign
+      - -kvu
+      - "https://deco-sign.vault.azure.net"
+      - -kvi
+      - "${AZURE_CLIENT_ID}"
+      - -kvt
+      - "${AZURE_TENANT_ID}"
+      - -kvs
+      - "${AZURE_CLIENT_SECRET}"
+      - -kvc
+      - "deco-sign"
+      - -v
+      - -tr
+      - "http://timestamp.digicert.com"
+      - "${artifact}"
+    ids:
+      - databricks
