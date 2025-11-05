@@ -8,8 +8,7 @@ The served_models field is deprecated. Please use served_entities instead.
     {
       "entity_name": "my-model",
       "entity_version": "1",
-      "scale_to_zero_enabled": true,
-      "workload_size": "Small"
+      "scale_to_zero_enabled": true
     }
   ]
 }
