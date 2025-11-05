@@ -7,6 +7,7 @@ the goal is to record all states that are available.
 """
 
 import os
+import argparse
 
 
 def write(filename):
@@ -16,10 +17,20 @@ def write(filename):
         print()
 
 
-filename = ".databricks/bundle/default/terraform/terraform.tfstate"
-if os.path.exists(filename):
-    write(filename)
 
-filename = ".databricks/bundle/default/resources.json"
-if os.path.exists(filename):
-    write(filename)
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-t", "--target", default="default")
+    args = parser.parse_args()
+
+    filename = f".databricks/bundle/{args.target}/terraform/terraform.tfstate"
+    if os.path.exists(filename):
+        write(filename)
+
+    filename = f".databricks/bundle/{args.target}/resources.json"
+    if os.path.exists(filename):
+        write(filename)
+
+
+if __name__ == "__main__":
+    main()

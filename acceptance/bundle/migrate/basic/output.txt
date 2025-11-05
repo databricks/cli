@@ -5,24 +5,18 @@ This command migrates the existing Terraform state file (terraform.tfstate) to a
 To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env var set.
 
 >>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
 
 >>> [CLI] bundle deployment migrate
-Migrated 3 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/default/resources.json
+Migrated 3 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json
 Validate the migration by running "bundle debug plan", there should be no actions.
 
 The state file is not synchronized to the workspace yet. To do that, run "bundle deploy".
 
 To finalize deployment, run "bundle deploy".
-
->>> ls -1 .databricks/bundle/default/
-deployment.json
-resources.json
-sync-snapshots
-terraform
 
 >>> jq .state."resources.pipelines.test_pipeline".state.tags.volume_storage_location out.new_state.json
 "s3://deco-uc-prod-isolated-aws-us-east-1/metastore/[UUID]/volumes/[UUID]"
@@ -32,7 +26,7 @@ Error: Required engine "terraform" does not match present state files. Set requi
 
 Available state files:
 - terraform.tfstate: remote terraform state serial=4 lineage="[UUID]"
-- [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=5 lineage="[UUID]"
+- [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=5 lineage="[UUID]"
 
 
 >>> DATABRICKS_BUNDLE_ENGINE=terraform musterr [CLI] bundle deploy
@@ -40,7 +34,7 @@ Error: Required engine "terraform" does not match present state files. Set requi
 
 Available state files:
 - terraform.tfstate: remote terraform state serial=4 lineage="[UUID]"
-- [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=5 lineage="[UUID]"
+- [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=5 lineage="[UUID]"
 
 
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle plan
@@ -80,7 +74,7 @@ Plan: 0 to add, 1 to change, 0 to delete, 2 unchanged
 }
 
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
@@ -92,12 +86,26 @@ Deployment complete!
 === Should show that it's already migrated
 >>> musterr [CLI] bundle deployment migrate
 Error: already using direct engine
-Details: [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=5 lineage="[UUID]"
+Details: [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=5 lineage="[UUID]"
 
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states
-[TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=5 lineage="[UUID]"
+[TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=5 lineage="[UUID]"
 
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states --force-pull
 terraform.tfstate: remote terraform state serial=4 lineage="[UUID]"
 resources.json: remote direct state serial=5 lineage="[UUID]"
-[TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=5 lineage="[UUID]"
+[TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=5 lineage="[UUID]"
+
+=== Different target, still on terraform
+>>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle deploy -t prod
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/prod/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states -t prod
+[TEST_TMP_DIR]/.databricks/bundle/prod/terraform/terraform.tfstate: local terraform state serial=5 lineage="[UUID]"
+
+>>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states -t prod --force-pull
+terraform.tfstate: remote terraform state serial=5 lineage="[UUID]"
+[TEST_TMP_DIR]/.databricks/bundle/prod/terraform/terraform.tfstate: local terraform state serial=5 lineage="[UUID]"

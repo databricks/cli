@@ -43,3 +43,13 @@ resources:
             #permissions:
             #  - level: CAN_MANAGE
             #    user_name: manager@databricks.com
+
+targets:
+  dev:
+    default: true
+  prod:
+    resources:
+      schemas:
+        test_schema:
+          catalog_name: mycat
+          name: myschema

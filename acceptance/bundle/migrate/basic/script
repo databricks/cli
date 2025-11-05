@@ -2,11 +2,10 @@
 trace musterr $CLI bundle deployment migrate
 
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
-print_state.py > out.original_state.json
+print_state.py -t dev > out.original_state.json
 
 trace $CLI bundle deployment migrate 2>&1 | contains.py 'Migrated 3 resources'
-print_state.py > out.new_state.json
-trace ls -1 .databricks/bundle/default/ | contains.py "resources.json"
+print_state.py -t dev > out.new_state.json
 # check that this is stored as resolved value, not as reference:
 trace jq '.state."resources.pipelines.test_pipeline".state.tags.volume_storage_location' out.new_state.json | contains.py 's3://'
 
@@ -29,3 +28,8 @@ trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle debug states
 trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle debug states --force-pull
 
 rm out.requests.txt
+
+title "Different target, still on terraform"
+trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle deploy -t prod
+trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle debug states -t prod
+trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle debug states -t prod --force-pull
