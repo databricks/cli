@@ -61,6 +61,19 @@ func (l *load) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		return diag.FromErr(err)
 	}
 
+	// Merge dashboard etags into configuration.
+	for k, dstate := range state["dashboards"] {
+		dconfig, ok := b.Config.Resources.Dashboards[k]
+
+		// Case: A dashboard is defined in state but not in configuration.
+		// In this case the dashboard has been deleted and we do not need to load the etag.
+		if !ok {
+			continue
+		}
+
+		dconfig.Etag = dstate.ETag
+	}
+
 	return nil
 }
 

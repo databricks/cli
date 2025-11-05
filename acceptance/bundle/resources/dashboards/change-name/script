@@ -1,0 +1,40 @@
+export NAME="dashboard1"
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm out.requests.txt
+}
+trap cleanup EXIT
+
+# Deploy the dashboard and capture the ID
+deploy_dashboard() {
+    envsubst < databricks.yml.tmpl > databricks.yml
+    trace $CLI bundle plan
+    trace $CLI bundle deploy
+    dashboard_id=$($CLI bundle summary --output json | jq -r '.resources.dashboards.my_dashboard.id')
+    trace $CLI lakeview get $dashboard_id | jq '{display_name, lifecycle_state, parent_path, path, serialized_dashboard, warehouse_id}'
+}
+
+# Create the dashboard
+deploy_dashboard
+
+# Capture the dashboard ID as a replacement.
+dashboard_id=$($CLI bundle summary --output json | jq -r '.resources.dashboards.my_dashboard.id')
+echo "$dashboard_id:DASHBOARD_ID" >> ACC_REPLS
+
+# Change the name
+export NAME="dashboard2"
+deploy_dashboard
+
+# Print API requests made to create parent_path or create / update the dashboard.
+# Terraform serialized OUTPUT_ONLY fields in the request body while direct does not.
+# That's why we write the requests to separate files.
+cat out.requests.txt | \
+ jq 'select(.method == "PATCH")' | \
+ jq 'select( (.path | contains("/api/2.0/lakeview/dashboards")) or ((.path == "/api/2.0/workspace/mkdirs") and (.body.path | contains("/default/resources"))))' \
+ > out.patch.requests.$DATABRICKS_BUNDLE_ENGINE.txt
+
+cat out.requests.txt | \
+ jq 'select(.method == "POST")' | \
+ jq 'select( (.path | contains("/api/2.0/lakeview/dashboards")) or ((.path == "/api/2.0/workspace/mkdirs") and (.body.path | contains("/default/resources"))))' \
+ > out.post.requests.txt
