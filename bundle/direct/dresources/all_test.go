@@ -373,7 +373,6 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		// t.Logf("Testing %s v=%#v, remoteValue=%#v", path.String(), val, remoteValue)
 		// We expect fields set explicitly to be preserved by testserver, which is true for all resources as of today.
 		// If not true for your resource, add exception here:
-
 		assert.Equal(t, val, remoteValue, "path=%q\nnewState=%s\nremappedState=%s", path.String(), jsonDump(newState), jsonDump(remappedState))
 	}))
 
