@@ -68,13 +68,13 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.DataSourceId, "data-source-id", createReq.DataSourceId, `Data source ID maps to the ID of the data source used by the resource and is distinct from the warehouse ID.`)
-	cmd.Flags().StringVar(&createReq.Description, "description", createReq.Description, `General description that conveys additional information about this query such as usage notes.`)
-	cmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `The title of this query that appears in list views, widget headings, and on the query page.`)
+	cmd.Flags().StringVar(&createReq.DataSourceId, "data-source-id", createReq.DataSourceId, `Data source ID maps to the ID of the data source used by the resource and is distinct from the warehouse ID. Wire name: 'data_source_id'.`)
+	cmd.Flags().StringVar(&createReq.Description, "description", createReq.Description, `General description that conveys additional information about this query such as usage notes. Wire name: 'description'.`)
+	cmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `The title of this query that appears in list views, widget headings, and on the query page. Wire name: 'name'.`)
 	// TODO: any: options
-	cmd.Flags().StringVar(&createReq.Parent, "parent", createReq.Parent, `The identifier of the workspace folder containing the object.`)
-	cmd.Flags().StringVar(&createReq.Query, "query", createReq.Query, `The text of the query to be run.`)
-	cmd.Flags().Var(&createReq.RunAsRole, "run-as-role", `Sets the **Run as** role for the object. Supported values: [owner, viewer]`)
+	cmd.Flags().StringVar(&createReq.Parent, "parent", createReq.Parent, `The identifier of the workspace folder containing the object. Wire name: 'parent'.`)
+	cmd.Flags().StringVar(&createReq.Query, "query", createReq.Query, `The text of the query to be run. Wire name: 'query'.`)
+	cmd.Flags().Var(&createReq.RunAsRole, "run-as-role", `Sets the **Run as** role for the object. Supported values: [owner, viewer]. Wire name: 'run_as_role'.`)
 	// TODO: array: tags
 
 	cmd.Use = "create"
@@ -273,10 +273,10 @@ func newList() *cobra.Command {
 
 	var listReq sql.ListQueriesLegacyRequest
 
-	cmd.Flags().StringVar(&listReq.Order, "order", listReq.Order, `Name of query attribute to order by.`)
-	cmd.Flags().IntVar(&listReq.Page, "page", listReq.Page, `Page number to retrieve.`)
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Number of queries to return per page.`)
-	cmd.Flags().StringVar(&listReq.Q, "q", listReq.Q, `Full text search term.`)
+	cmd.Flags().StringVar(&listReq.Order, "order", listReq.Order, `Name of query attribute to order by. Wire name: 'order'.`)
+	cmd.Flags().IntVar(&listReq.Page, "page", listReq.Page, `Page number to retrieve. Wire name: 'page'.`)
+	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Number of queries to return per page. Wire name: 'page_size'.`)
+	cmd.Flags().StringVar(&listReq.Q, "q", listReq.Q, `Full text search term. Wire name: 'q'.`)
 
 	cmd.Use = "list"
 	cmd.Short = `Get a list of queries.`
@@ -397,12 +397,12 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.DataSourceId, "data-source-id", updateReq.DataSourceId, `Data source ID maps to the ID of the data source used by the resource and is distinct from the warehouse ID.`)
-	cmd.Flags().StringVar(&updateReq.Description, "description", updateReq.Description, `General description that conveys additional information about this query such as usage notes.`)
-	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `The title of this query that appears in list views, widget headings, and on the query page.`)
+	cmd.Flags().StringVar(&updateReq.DataSourceId, "data-source-id", updateReq.DataSourceId, `Data source ID maps to the ID of the data source used by the resource and is distinct from the warehouse ID. Wire name: 'data_source_id'.`)
+	cmd.Flags().StringVar(&updateReq.Description, "description", updateReq.Description, `General description that conveys additional information about this query such as usage notes. Wire name: 'description'.`)
+	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `The title of this query that appears in list views, widget headings, and on the query page. Wire name: 'name'.`)
 	// TODO: any: options
-	cmd.Flags().StringVar(&updateReq.Query, "query", updateReq.Query, `The text of the query to be run.`)
-	cmd.Flags().Var(&updateReq.RunAsRole, "run-as-role", `Sets the **Run as** role for the object. Supported values: [owner, viewer]`)
+	cmd.Flags().StringVar(&updateReq.Query, "query", updateReq.Query, `The text of the query to be run. Wire name: 'query'.`)
+	cmd.Flags().Var(&updateReq.RunAsRole, "run-as-role", `Sets the **Run as** role for the object. Supported values: [owner, viewer]. Wire name: 'run_as_role'.`)
 	// TODO: array: tags
 
 	cmd.Use = "update QUERY_ID"

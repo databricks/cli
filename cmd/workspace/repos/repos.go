@@ -74,7 +74,7 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.Path, "path", createReq.Path, `Desired path for the repo in the workspace.`)
+	cmd.Flags().StringVar(&createReq.Path, "path", createReq.Path, `Desired path for the repo in the workspace. Wire name: 'path'.`)
 	// TODO: complex arg: sparse_checkout
 
 	cmd.Use = "create URL PROVIDER"
@@ -442,8 +442,8 @@ func newList() *cobra.Command {
 
 	var listReq workspace.ListReposRequest
 
-	cmd.Flags().StringVar(&listReq.NextPageToken, "next-page-token", listReq.NextPageToken, `Token used to get the next page of results.`)
-	cmd.Flags().StringVar(&listReq.PathPrefix, "path-prefix", listReq.PathPrefix, `Filters repos that have paths starting with the given path prefix.`)
+	cmd.Flags().StringVar(&listReq.NextPageToken, "next-page-token", listReq.NextPageToken, `Token used to get the next page of results. Wire name: 'next_page_token'.`)
+	cmd.Flags().StringVar(&listReq.PathPrefix, "path-prefix", listReq.PathPrefix, `Filters repos that have paths starting with the given path prefix. Wire name: 'path_prefix'.`)
 
 	cmd.Use = "list"
 	cmd.Short = `Get repos.`
@@ -584,9 +584,9 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.Branch, "branch", updateReq.Branch, `Branch that the local version of the repo is checked out to.`)
+	cmd.Flags().StringVar(&updateReq.Branch, "branch", updateReq.Branch, `Branch that the local version of the repo is checked out to. Wire name: 'branch'.`)
 	// TODO: complex arg: sparse_checkout
-	cmd.Flags().StringVar(&updateReq.Tag, "tag", updateReq.Tag, `Tag that the local version of the repo is checked out to.`)
+	cmd.Flags().StringVar(&updateReq.Tag, "tag", updateReq.Tag, `Tag that the local version of the repo is checked out to. Wire name: 'tag'.`)
 
 	cmd.Use = "update REPO_ID"
 	cmd.Short = `Update a repo.`

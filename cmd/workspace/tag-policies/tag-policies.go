@@ -66,7 +66,7 @@ func newCreateTagPolicy() *cobra.Command {
 
 	cmd.Flags().Var(&createTagPolicyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createTagPolicyReq.TagPolicy.Description, "description", createTagPolicyReq.TagPolicy.Description, ``)
+	cmd.Flags().StringVar(&createTagPolicyReq.TagPolicy.Description, "description", createTagPolicyReq.TagPolicy.Description, `Wire name: 'description'.`)
 	// TODO: array: values
 
 	cmd.Use = "create-tag-policy TAG_KEY"
@@ -250,8 +250,8 @@ func newListTagPolicies() *cobra.Command {
 
 	var listTagPoliciesReq tags.ListTagPoliciesRequest
 
-	cmd.Flags().IntVar(&listTagPoliciesReq.PageSize, "page-size", listTagPoliciesReq.PageSize, `The maximum number of results to return in this request.`)
-	cmd.Flags().StringVar(&listTagPoliciesReq.PageToken, "page-token", listTagPoliciesReq.PageToken, `An optional page token received from a previous list tag policies call.`)
+	cmd.Flags().IntVar(&listTagPoliciesReq.PageSize, "page-size", listTagPoliciesReq.PageSize, `The maximum number of results to return in this request. Wire name: 'page_size'.`)
+	cmd.Flags().StringVar(&listTagPoliciesReq.PageToken, "page-token", listTagPoliciesReq.PageToken, `An optional page token received from a previous list tag policies call. Wire name: 'page_token'.`)
 
 	cmd.Use = "list-tag-policies"
 	cmd.Short = `List tag policies.`
@@ -305,7 +305,7 @@ func newUpdateTagPolicy() *cobra.Command {
 
 	cmd.Flags().Var(&updateTagPolicyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateTagPolicyReq.TagPolicy.Description, "description", updateTagPolicyReq.TagPolicy.Description, ``)
+	cmd.Flags().StringVar(&updateTagPolicyReq.TagPolicy.Description, "description", updateTagPolicyReq.TagPolicy.Description, `Wire name: 'description'.`)
 	// TODO: array: values
 
 	cmd.Use = "update-tag-policy TAG_KEY UPDATE_MASK"

@@ -64,7 +64,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: config
-	cmd.Flags().StringVar(&createReq.DisplayName, "display-name", createReq.DisplayName, `The display name for the notification destination.`)
+	cmd.Flags().StringVar(&createReq.DisplayName, "display-name", createReq.DisplayName, `The display name for the notification destination. Wire name: 'display_name'.`)
 
 	cmd.Use = "create"
 	cmd.Short = `Create a notification destination.`
@@ -236,8 +236,8 @@ func newList() *cobra.Command {
 
 	var listReq settings.ListNotificationDestinationsRequest
 
-	cmd.Flags().Int64Var(&listReq.PageSize, "page-size", listReq.PageSize, ``)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)
+	cmd.Flags().Int64Var(&listReq.PageSize, "page-size", listReq.PageSize, `Wire name: 'page_size'.`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Wire name: 'page_token'.`)
 
 	cmd.Use = "list"
 	cmd.Short = `List notification destinations.`
@@ -291,7 +291,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: config
-	cmd.Flags().StringVar(&updateReq.DisplayName, "display-name", updateReq.DisplayName, `The display name for the notification destination.`)
+	cmd.Flags().StringVar(&updateReq.DisplayName, "display-name", updateReq.DisplayName, `The display name for the notification destination. Wire name: 'display_name'.`)
 
 	cmd.Use = "update ID"
 	cmd.Short = `Update a notification destination.`

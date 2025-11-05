@@ -67,8 +67,8 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided free-form text description.`)
-	cmd.Flags().StringVar(&createReq.StorageRoot, "storage-root", createReq.StorageRoot, `Storage root URL for the share.`)
+	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided free-form text description. Wire name: 'comment'.`)
+	cmd.Flags().StringVar(&createReq.StorageRoot, "storage-root", createReq.StorageRoot, `Storage root URL for the share. Wire name: 'storage_root'.`)
 
 	cmd.Use = "create NAME"
 	cmd.Short = `Create a share.`
@@ -206,7 +206,7 @@ func newGet() *cobra.Command {
 
 	var getReq sharing.GetShareRequest
 
-	cmd.Flags().BoolVar(&getReq.IncludeSharedData, "include-shared-data", getReq.IncludeSharedData, `Query for data to include in the share.`)
+	cmd.Flags().BoolVar(&getReq.IncludeSharedData, "include-shared-data", getReq.IncludeSharedData, `Query for data to include in the share. Wire name: 'include_shared_data'.`)
 
 	cmd.Use = "get NAME"
 	cmd.Short = `Get a share.`
@@ -265,8 +265,8 @@ func newListShares() *cobra.Command {
 
 	var listSharesReq sharing.SharesListRequest
 
-	cmd.Flags().IntVar(&listSharesReq.MaxResults, "max-results", listSharesReq.MaxResults, `Maximum number of shares to return.`)
-	cmd.Flags().StringVar(&listSharesReq.PageToken, "page-token", listSharesReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
+	cmd.Flags().IntVar(&listSharesReq.MaxResults, "max-results", listSharesReq.MaxResults, `Maximum number of shares to return. Wire name: 'max_results'.`)
+	cmd.Flags().StringVar(&listSharesReq.PageToken, "page-token", listSharesReq.PageToken, `Opaque pagination token to go to next page based on previous query. Wire name: 'page_token'.`)
 
 	cmd.Use = "list-shares"
 	cmd.Short = `List shares.`
@@ -319,8 +319,8 @@ func newSharePermissions() *cobra.Command {
 
 	var sharePermissionsReq sharing.SharePermissionsRequest
 
-	cmd.Flags().IntVar(&sharePermissionsReq.MaxResults, "max-results", sharePermissionsReq.MaxResults, `Maximum number of permissions to return.`)
-	cmd.Flags().StringVar(&sharePermissionsReq.PageToken, "page-token", sharePermissionsReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
+	cmd.Flags().IntVar(&sharePermissionsReq.MaxResults, "max-results", sharePermissionsReq.MaxResults, `Maximum number of permissions to return. Wire name: 'max_results'.`)
+	cmd.Flags().StringVar(&sharePermissionsReq.PageToken, "page-token", sharePermissionsReq.PageToken, `Opaque pagination token to go to next page based on previous query. Wire name: 'page_token'.`)
 
 	cmd.Use = "share-permissions NAME"
 	cmd.Short = `Get permissions.`
@@ -382,10 +382,10 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `User-provided free-form text description.`)
-	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the share.`)
-	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of share.`)
-	cmd.Flags().StringVar(&updateReq.StorageRoot, "storage-root", updateReq.StorageRoot, `Storage root URL for the share.`)
+	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `User-provided free-form text description. Wire name: 'comment'.`)
+	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the share. Wire name: 'new_name'.`)
+	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of share. Wire name: 'owner'.`)
+	cmd.Flags().StringVar(&updateReq.StorageRoot, "storage-root", updateReq.StorageRoot, `Storage root URL for the share. Wire name: 'storage_root'.`)
 	// TODO: array: updates
 
 	cmd.Use = "update NAME"
@@ -476,7 +476,7 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.Flags().Var(&updatePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: changes
-	cmd.Flags().BoolVar(&updatePermissionsReq.OmitPermissionsList, "omit-permissions-list", updatePermissionsReq.OmitPermissionsList, `Optional.`)
+	cmd.Flags().BoolVar(&updatePermissionsReq.OmitPermissionsList, "omit-permissions-list", updatePermissionsReq.OmitPermissionsList, `Optional. Wire name: 'omit_permissions_list'.`)
 
 	cmd.Use = "update-permissions NAME"
 	cmd.Short = `Update permissions.`

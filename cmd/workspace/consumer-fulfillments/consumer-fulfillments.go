@@ -52,8 +52,8 @@ func newGet() *cobra.Command {
 
 	var getReq marketplace.GetListingContentMetadataRequest
 
-	cmd.Flags().IntVar(&getReq.PageSize, "page-size", getReq.PageSize, ``)
-	cmd.Flags().StringVar(&getReq.PageToken, "page-token", getReq.PageToken, ``)
+	cmd.Flags().IntVar(&getReq.PageSize, "page-size", getReq.PageSize, `Wire name: 'page_size'.`)
+	cmd.Flags().StringVar(&getReq.PageToken, "page-token", getReq.PageToken, `Wire name: 'page_token'.`)
 
 	cmd.Use = "get LISTING_ID"
 	cmd.Short = `Get listing content metadata.`
@@ -105,8 +105,8 @@ func newList() *cobra.Command {
 
 	var listReq marketplace.ListFulfillmentsRequest
 
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)
+	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Wire name: 'page_size'.`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Wire name: 'page_token'.`)
 
 	cmd.Use = "list LISTING_ID"
 	cmd.Short = `List all listing fulfillments.`
