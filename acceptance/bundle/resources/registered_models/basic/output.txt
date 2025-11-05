@@ -119,5 +119,14 @@ Deployment complete!
 }
 
 >>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete registered_model my_registered_model
 
-Error: Test script killed due to a timeout
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-registered-models-basic-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
+
+>>> [CLI] schemas delete mycatalog-[UNIQUE_NAME].myschema-[UNIQUE_NAME] --force
+
+>>> [CLI] catalogs delete mycatalog-[UNIQUE_NAME] --force

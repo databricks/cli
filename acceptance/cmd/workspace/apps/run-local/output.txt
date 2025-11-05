@@ -8,4 +8,17 @@ Hello, world
 
 === Starting the app in background...
 === Waiting
-Error: Test script killed due to a timeout
+=== Checking app is running...
+=== Checking the proxy is running...
+>>> curl -s -o - http://127.0.0.1:$(port)
+{"Accept":"*/*","Accept-Encoding":"gzip","Host":"127.0.0.1:$(port)","User-Agent":"curl/(version)","X-Forwarded-Email":"[USERNAME]","X-Forwarded-Host":"localhost","X-Forwarded-Preferred-Username":"","X-Forwarded-User":"[USERNAME]","X-Real-Ip":"127.0.0.1","X-Request-Id":"[UUID]"}
+
+=== Sending shutdown request...
+>>> curl -s -o /dev/null http://127.0.0.1:$(port)/shutdown
+
+=== Checking CLI command output...
+>>> grep To debug your app, attach a debugger to port ./out.run.txt
+To debug your app, attach a debugger to port $(debug_port)
+
+>>> grep -o Python Flask app has started with: test ./out.run.txt
+Python Flask app has started with: test

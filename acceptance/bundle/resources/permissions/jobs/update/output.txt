@@ -142,4 +142,29 @@ Warning: unknown field: permissions
   in databricks.yml:18:11
 
 
-Error: Test script killed due to a timeout
+>>> [CLI] bundle deploy
+Warning: unknown field: permissions
+  at resources.jobs.job_with_permissions.permissions[1]
+  in databricks.yml:18:11
+
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/jobs-permissions-test/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests
+
+>>> [CLI] bundle destroy --auto-approve
+Warning: unknown field: permissions
+  at resources.jobs.job_with_permissions.permissions[1]
+  in databricks.yml:18:11
+
+The following resources will be deleted:
+  delete job job_with_permissions
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/jobs-permissions-test/default
+
+Deleting files...
+Destroy complete!
+
+>>> print_requests

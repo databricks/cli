@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
@@ -102,9 +104,18 @@ func (r *ResourceSecretScopeAcls) DoCreate(ctx context.Context, state *SecretSco
 	return r.setACLs(ctx, state.ScopeName, state.Acls)
 }
 
-func (r *ResourceSecretScopeAcls) DoUpdate(ctx context.Context, id string, state *SecretScopeAclsState) error {
-	_, err := r.setACLs(ctx, id, state.Acls)
-	return err
+// TODO: We need a more general solution for this.  This is a problem for all types of resources.
+func (r *ResourceSecretScopeAcls) DoUpdateWithID(ctx context.Context, oldID string, state *SecretScopeAclsState) (string, error) {
+	// Use state.ScopeName instead of oldID because when the parent scope is recreated,
+	// state.ScopeName will have the new (resolved) scope name, while oldID still has the old name
+	return r.setACLs(ctx, state.ScopeName, state.Acls)
+}
+
+func (r *ResourceSecretScopeAcls) FieldTriggers(_ bool) map[string]deployplan.ActionType {
+	return map[string]deployplan.ActionType{
+		"scope_name": deployplan.ActionTypeUpdateWithID, // When scope name changes, ID changes
+		"acls":       deployplan.ActionTypeUpdate,       // When ACLs change, just update
+	}
 }
 
 func (r *ResourceSecretScopeAcls) DoDelete(ctx context.Context, id string) error {
@@ -116,8 +127,14 @@ func (r *ResourceSecretScopeAcls) DoDelete(ctx context.Context, id string) error
 		return fmt.Errorf("failed to list current ACLs: %w", err)
 	}
 
+	// Sort ACLs for deterministic ordering
+	slices.SortFunc(currentAcls, func(a, b workspace.AclItem) int {
+		return strings.Compare(a.Principal, b.Principal)
+	})
+
 	g, ctx := errgroup.WithContext(ctx)
 	for _, acl := range currentAcls {
+		acl := acl // Capture loop variable for closure
 		g.Go(func() error {
 			return r.client.Secrets.DeleteAcl(ctx, workspace.DeleteAcl{
 				Scope:     id,
@@ -175,6 +192,14 @@ func (r *ResourceSecretScopeAcls) setACLs(ctx context.Context, scopeName string,
 			})
 		}
 	}
+
+	// Sort operations for deterministic ordering
+	slices.SortFunc(toSet, func(a, b workspace.PutAcl) int {
+		return strings.Compare(a.Principal, b.Principal)
+	})
+	slices.SortFunc(toDelete, func(a, b workspace.DeleteAcl) int {
+		return strings.Compare(a.Principal, b.Principal)
+	})
 
 	// Execute all operations in parallel using errgroup
 	g, ctx := errgroup.WithContext(ctx)

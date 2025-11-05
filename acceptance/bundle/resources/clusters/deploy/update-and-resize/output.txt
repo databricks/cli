@@ -86,5 +86,39 @@ Deployment complete!
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Deploying resources...
 Updating deployment state...
+Deployment complete!
 
-Error: Test script killed due to a timeout
+>>> jq select(.method == "POST" and (.path | contains("/clusters/edit"))) out.requests.txt
+{
+  "method": "POST",
+  "path": "/api/2.1/clusters/edit",
+  "body": {
+    "autotermination_minutes": 60,
+    "cluster_id": "[CLUSTER_ID]",
+    "cluster_name": "test-cluster-[UNIQUE_NAME]",
+    "node_type_id": "[NODE_TYPE_ID]",
+    "num_workers": 5,
+    "spark_conf": {
+      "spark.executor.memory": "4g"
+    },
+    "spark_version": "13.3.x-snapshot-scala2.12"
+  }
+}
+
+=== Cluster should have new num_workers and spark_conf
+{
+  "cluster_name": "test-cluster-[UNIQUE_NAME]",
+  "num_workers": 5,
+  "spark_conf": {
+    "spark.executor.memory": "4g"
+  }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete cluster test_cluster
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Deleting files...
+Destroy complete!
