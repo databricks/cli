@@ -906,6 +906,7 @@ func newPutAcl() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid PERMISSION: %s", args[2])
 			}
+
 		}
 
 		err = w.Secrets.PutAcl(ctx, putAclReq)

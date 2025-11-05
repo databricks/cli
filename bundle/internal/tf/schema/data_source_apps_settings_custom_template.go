@@ -43,9 +43,9 @@ type DataSourceAppsSettingsCustomTemplateManifest struct {
 type DataSourceAppsSettingsCustomTemplate struct {
 	Creator     string                                        `json:"creator,omitempty"`
 	Description string                                        `json:"description,omitempty"`
-	GitProvider string                                        `json:"git_provider"`
-	GitRepo     string                                        `json:"git_repo"`
+	GitProvider string                                        `json:"git_provider,omitempty"`
+	GitRepo     string                                        `json:"git_repo,omitempty"`
 	Manifest    *DataSourceAppsSettingsCustomTemplateManifest `json:"manifest,omitempty"`
 	Name        string                                        `json:"name"`
-	Path        string                                        `json:"path"`
+	Path        string                                        `json:"path,omitempty"`
 }

@@ -3,6 +3,7 @@ package terraform
 import (
 	"context"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -11,10 +12,8 @@ import (
 )
 
 func TestParseResourcesStateWithNoFile(t *testing.T) {
-	falseBool := false
 	b := &bundle.Bundle{
-		DirectDeployment: &falseBool,
-		BundleRootPath:   t.TempDir(),
+		BundleRootPath: t.TempDir(),
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "whatever",
@@ -30,11 +29,9 @@ func TestParseResourcesStateWithNoFile(t *testing.T) {
 }
 
 func TestParseResourcesStateWithExistingStateFile(t *testing.T) {
-	falseBool := false
 	ctx := context.Background()
 	b := &bundle.Bundle{
-		DirectDeployment: &falseBool,
-		BundleRootPath:   t.TempDir(),
+		BundleRootPath: t.TempDir(),
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "whatever",
@@ -86,10 +83,12 @@ func TestParseResourcesStateWithExistingStateFile(t *testing.T) {
 		  }
 		]
 	}`)
-	name, _ := b.StateFilenameTerraform(ctx)
-	err := os.WriteFile(name, data, os.ModePerm)
+	_, localPath := b.StateFilenameTerraform(ctx)
+	err := os.MkdirAll(filepath.Dir(localPath), 0o700)
 	assert.NoError(t, err)
-	state, err := parseResourcesState(ctx, name)
+	err = os.WriteFile(localPath, data, 0o600)
+	assert.NoError(t, err)
+	state, err := parseResourcesState(ctx, localPath)
 	assert.NoError(t, err)
 	expected := ExportedResourcesMap{
 		"pipelines": map[string]ResourceState{

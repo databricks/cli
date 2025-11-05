@@ -83,6 +83,7 @@ func TestApplyPresetsSourceLinkedDeployment(t *testing.T) {
 			ctx:  dbr.MockRuntime(testContext, dbr.Environment{IsDbr: true, Version: "15.4"}),
 			mutateBundle: func(b *bundle.Bundle) {
 				b.Config.Workspace.FilePath = "file_path"
+				b.Config.Bundle.Mode = config.Development
 			},
 			initialValue:    &enabled,
 			expectedValue:   &enabled,
@@ -95,10 +96,21 @@ func TestApplyPresetsSourceLinkedDeployment(t *testing.T) {
 				b.Config.Resources.Apps = map[string]*resources.App{
 					"app": {},
 				}
+				b.Config.Bundle.Mode = config.Development
 			},
 			initialValue:  &enabled,
 			expectedValue: &enabled,
 			expectedError: "source-linked deployment is not supported for apps",
+		},
+		{
+			name: "preset enabled, production mode, bundle in Workspace, databricks runtime",
+			ctx:  dbr.MockRuntime(testContext, dbr.Environment{IsDbr: true, Version: "15.4"}),
+			mutateBundle: func(b *bundle.Bundle) {
+				b.Config.Bundle.Mode = config.Production
+			},
+			initialValue:    &enabled,
+			expectedValue:   &enabled,
+			expectedWarning: "source-linked deployment in non-development mode is deprecated and will not be supported in a future release",
 		},
 	}
 

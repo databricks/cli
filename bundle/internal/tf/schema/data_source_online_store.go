@@ -3,7 +3,7 @@
 package schema
 
 type DataSourceOnlineStore struct {
-	Capacity         string `json:"capacity"`
+	Capacity         string `json:"capacity,omitempty"`
 	CreationTime     string `json:"creation_time,omitempty"`
 	Creator          string `json:"creator,omitempty"`
 	Name             string `json:"name"`

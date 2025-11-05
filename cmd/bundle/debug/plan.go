@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/logdiag"
@@ -17,21 +18,21 @@ func NewPlanCommand() *cobra.Command {
 		Long:  "Show the deployment plan for the current bundle configuration. This command is experimental and may change without notice.",
 		Args:  root.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
-				// Verbose:      verbose,
+			opts := utils.ProcessOptions{
 				AlwaysPull:   true,
 				FastValidate: true,
 				Build:        true,
-			})
+			}
+
+			b, isDirectEngine, err := utils.ProcessBundleRet(cmd, opts)
 			if err != nil {
 				return err
 			}
 			ctx := cmd.Context()
-			plan, err := utils.GetPlan(ctx, b)
-			if err != nil {
-				return err
+			plan := phases.Plan(ctx, b, isDirectEngine)
+			if logdiag.HasError(ctx) {
+				return root.ErrAlreadyPrinted
 			}
-
 			out := cmd.OutOrStdout()
 
 			buf, err := json.MarshalIndent(plan, "", "  ")

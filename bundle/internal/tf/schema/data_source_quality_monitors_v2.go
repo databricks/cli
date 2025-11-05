@@ -14,5 +14,6 @@ type DataSourceQualityMonitorsV2QualityMonitors struct {
 }
 
 type DataSourceQualityMonitorsV2 struct {
+	PageSize        int                                          `json:"page_size,omitempty"`
 	QualityMonitors []DataSourceQualityMonitorsV2QualityMonitors `json:"quality_monitors,omitempty"`
 }

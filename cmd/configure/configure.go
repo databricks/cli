@@ -128,7 +128,7 @@ The host must be specified with the --host flag or the DATABRICKS_HOST environme
 		}
 
 		ctx := cmd.Context()
-		if cmdio.IsInTTY(ctx) && cmdio.IsOutTTY(ctx) {
+		if cmdio.IsPromptSupported(ctx) {
 			err = configureInteractive(cmd, &flags, &cfg)
 		} else {
 			err = configureNonInteractive(cmd, &flags, &cfg)

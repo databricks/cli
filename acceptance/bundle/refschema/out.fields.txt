@@ -5,7 +5,7 @@ resources.alerts.*.display_name	string	ALL
 resources.alerts.*.effective_run_as	*sql.AlertV2RunAs	ALL
 resources.alerts.*.effective_run_as.service_principal_name	string	ALL
 resources.alerts.*.effective_run_as.user_name	string	ALL
-resources.alerts.*.evaluation	*sql.AlertV2Evaluation	ALL
+resources.alerts.*.evaluation	sql.AlertV2Evaluation	ALL
 resources.alerts.*.evaluation.comparison_operator	sql.ComparisonOperator	ALL
 resources.alerts.*.evaluation.empty_result_state	sql.AlertEvaluationState	ALL
 resources.alerts.*.evaluation.last_evaluated_at	string	ALL
@@ -16,7 +16,7 @@ resources.alerts.*.evaluation.notification.subscriptions	[]sql.AlertV2Subscripti
 resources.alerts.*.evaluation.notification.subscriptions[*]	sql.AlertV2Subscription	ALL
 resources.alerts.*.evaluation.notification.subscriptions[*].destination_id	string	ALL
 resources.alerts.*.evaluation.notification.subscriptions[*].user_email	string	ALL
-resources.alerts.*.evaluation.source	*sql.AlertV2OperandColumn	ALL
+resources.alerts.*.evaluation.source	sql.AlertV2OperandColumn	ALL
 resources.alerts.*.evaluation.source.aggregation	sql.Aggregation	ALL
 resources.alerts.*.evaluation.source.display	string	ALL
 resources.alerts.*.evaluation.source.name	string	ALL
@@ -33,7 +33,7 @@ resources.alerts.*.evaluation.threshold.value.string_value	string	ALL
 resources.alerts.*.id	string	ALL
 resources.alerts.*.lifecycle	resources.Lifecycle	INPUT
 resources.alerts.*.lifecycle.prevent_destroy	bool	INPUT
-resources.alerts.*.lifecycle_state	sql.LifecycleState	ALL
+resources.alerts.*.lifecycle_state	sql.AlertLifecycleState	ALL
 resources.alerts.*.modified_status	string	INPUT
 resources.alerts.*.owner_user_name	string	ALL
 resources.alerts.*.parent_path	string	ALL
@@ -48,7 +48,7 @@ resources.alerts.*.run_as	*sql.AlertV2RunAs	ALL
 resources.alerts.*.run_as.service_principal_name	string	ALL
 resources.alerts.*.run_as.user_name	string	ALL
 resources.alerts.*.run_as_user_name	string	ALL
-resources.alerts.*.schedule	*sql.CronSchedule	ALL
+resources.alerts.*.schedule	sql.CronSchedule	ALL
 resources.alerts.*.schedule.pause_status	sql.SchedulePauseStatus	ALL
 resources.alerts.*.schedule.quartz_cron_schedule	string	ALL
 resources.alerts.*.schedule.timezone_id	string	ALL
@@ -1547,12 +1547,6 @@ resources.jobs.*.settings.trigger.pause_status	jobs.PauseStatus	REMOTE
 resources.jobs.*.settings.trigger.periodic	*jobs.PeriodicTriggerConfiguration	REMOTE
 resources.jobs.*.settings.trigger.periodic.interval	int	REMOTE
 resources.jobs.*.settings.trigger.periodic.unit	jobs.PeriodicTriggerConfigurationTimeUnit	REMOTE
-resources.jobs.*.settings.trigger.table	*jobs.TableUpdateTriggerConfiguration	REMOTE
-resources.jobs.*.settings.trigger.table.condition	jobs.Condition	REMOTE
-resources.jobs.*.settings.trigger.table.min_time_between_triggers_seconds	int	REMOTE
-resources.jobs.*.settings.trigger.table.table_names	[]string	REMOTE
-resources.jobs.*.settings.trigger.table.table_names[*]	string	REMOTE
-resources.jobs.*.settings.trigger.table.wait_after_last_change_seconds	int	REMOTE
 resources.jobs.*.settings.trigger.table_update	*jobs.TableUpdateTriggerConfiguration	REMOTE
 resources.jobs.*.settings.trigger.table_update.condition	jobs.Condition	REMOTE
 resources.jobs.*.settings.trigger.table_update.min_time_between_triggers_seconds	int	REMOTE
@@ -2218,12 +2212,6 @@ resources.jobs.*.trigger.pause_status	jobs.PauseStatus	INPUT	STATE
 resources.jobs.*.trigger.periodic	*jobs.PeriodicTriggerConfiguration	INPUT	STATE
 resources.jobs.*.trigger.periodic.interval	int	INPUT	STATE
 resources.jobs.*.trigger.periodic.unit	jobs.PeriodicTriggerConfigurationTimeUnit	INPUT	STATE
-resources.jobs.*.trigger.table	*jobs.TableUpdateTriggerConfiguration	INPUT	STATE
-resources.jobs.*.trigger.table.condition	jobs.Condition	INPUT	STATE
-resources.jobs.*.trigger.table.min_time_between_triggers_seconds	int	INPUT	STATE
-resources.jobs.*.trigger.table.table_names	[]string	INPUT	STATE
-resources.jobs.*.trigger.table.table_names[*]	string	INPUT	STATE
-resources.jobs.*.trigger.table.wait_after_last_change_seconds	int	INPUT	STATE
 resources.jobs.*.trigger.table_update	*jobs.TableUpdateTriggerConfiguration	INPUT	STATE
 resources.jobs.*.trigger.table_update.condition	jobs.Condition	INPUT	STATE
 resources.jobs.*.trigger.table_update.min_time_between_triggers_seconds	int	INPUT	STATE
@@ -2893,6 +2881,7 @@ resources.pipelines.*.spec.trigger.cron	*pipelines.CronTrigger	REMOTE
 resources.pipelines.*.spec.trigger.cron.quartz_cron_schedule	string	REMOTE
 resources.pipelines.*.spec.trigger.cron.timezone_id	string	REMOTE
 resources.pipelines.*.spec.trigger.manual	*pipelines.ManualTrigger	REMOTE
+resources.pipelines.*.spec.usage_policy_id	string	REMOTE
 resources.pipelines.*.state	pipelines.PipelineState	REMOTE
 resources.pipelines.*.storage	string	INPUT	STATE
 resources.pipelines.*.tags	map[string]string	INPUT	STATE
@@ -2904,6 +2893,7 @@ resources.pipelines.*.trigger.cron.quartz_cron_schedule	string	INPUT	STATE
 resources.pipelines.*.trigger.cron.timezone_id	string	INPUT	STATE
 resources.pipelines.*.trigger.manual	*pipelines.ManualTrigger	INPUT	STATE
 resources.pipelines.*.url	string	INPUT
+resources.pipelines.*.usage_policy_id	string	INPUT	STATE
 resources.pipelines.*.permissions.object_id	string	ALL
 resources.pipelines.*.permissions.permissions	[]iam.AccessControlRequest	ALL
 resources.pipelines.*.permissions.permissions[*]	iam.AccessControlRequest	ALL

@@ -420,6 +420,7 @@ type ResourcePipeline struct {
 	Tags                 map[string]string                    `json:"tags,omitempty"`
 	Target               string                               `json:"target,omitempty"`
 	Url                  string                               `json:"url,omitempty"`
+	UsagePolicyId        string                               `json:"usage_policy_id,omitempty"`
 	Cluster              []ResourcePipelineCluster            `json:"cluster,omitempty"`
 	Deployment           *ResourcePipelineDeployment          `json:"deployment,omitempty"`
 	Environment          *ResourcePipelineEnvironment         `json:"environment,omitempty"`
