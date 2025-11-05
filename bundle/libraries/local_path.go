@@ -24,9 +24,14 @@ import (
 // - s3:/mybucket/myfile.txt
 // - /Users/jane@doe.com/myfile.txt
 func IsLocalPath(p string) bool {
-	// If the path has the explicit file scheme, it's a local path.
+	// If the path has the explicit file scheme, check if it's an absolute path.
+	// file:///absolute/path is a runtime container path (remote).
+	// file://relative/path is a local path to be uploaded.
 	if strings.HasPrefix(p, "file://") {
-		return true
+		// Extract the path after file://
+		pathAfterScheme := strings.TrimPrefix(p, "file://")
+		// If it's an absolute path (starts with /), it's a runtime path, not local
+		return !path.IsAbs(pathAfterScheme)
 	}
 
 	// If the path has another scheme, it's a remote path.
