@@ -11,11 +11,9 @@ import (
 )
 
 var OverwriteMode = false
-var OnlyOutTestTomlMode = false
 
 func init() {
 	flag.BoolVar(&OverwriteMode, "update", false, "Overwrite golden files")
-	flag.BoolVar(&OnlyOutTestTomlMode, "only-out-test-toml", false, "Only regenerate out.test.toml files without running tests")
 }
 
 func ReadFile(t testutil.TestingT, ctx context.Context, filename string) string {
