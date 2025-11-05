@@ -2,9 +2,6 @@ Cloud = false
 Local = true
 RecordRequests = true
 
-[EnvMatrix]
-  DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
-
 [[Server]]
 Pattern = "POST /api/2.0/lakeview/dashboards/{dashboard_id}/published"
 Response.StatusCode = 400
