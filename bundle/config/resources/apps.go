@@ -10,18 +10,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/apps"
 )
 
-type AppPermissionLevel string
-
-// AppPermission holds the permission level setting for a single principal.
-// Multiple of these can be defined on any app.
-type AppPermission struct {
-	Level AppPermissionLevel `json:"level"`
-
-	UserName             string `json:"user_name,omitempty"`
-	ServicePrincipalName string `json:"service_principal_name,omitempty"`
-	GroupName            string `json:"group_name,omitempty"`
-}
-
 type App struct {
 	BaseResource
 	apps.App // nolint App struct also defines Id and URL field with the same json tag "id" and "url"

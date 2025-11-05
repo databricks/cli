@@ -1,0 +1,4 @@
+Error: cannot plan resources.pipelines.bar: cannot resolve "${resources.pipelines.foo.ingestion_definition.connection_name}": field not set: ingestion_definition: cannot access nil value
+
+Error: planning failed
+

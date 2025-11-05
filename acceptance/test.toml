@@ -15,7 +15,7 @@ Env.PYTHONDONTWRITEBYTECODE = "1"
 Env.PYTHONUNBUFFERED = "1"
 Env.PYTHONUTF8 = "1"
 
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct-exp"]
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
 EnvRepl.DATABRICKS_BUNDLE_ENGINE = false
 
 # >>> datetime.datetime.fromtimestamp(18000000000)
@@ -72,6 +72,14 @@ New = "[NUMID]"
 Order = 10
 
 [[Repls]]
-Old = '2\d\d\d-\d\d-\d\d(T| )\d\d:\d\d:\d\d(\.\d+(Z|\+\d\d:\d\d)?)?'
+# "2025-10-23T14:26:43.499488Z"
+Old = '2\d\d\d-\d\d-\d\d(T| )\d\d:\d\d:\d\d\.\d+(Z|\+\d\d:\d\d)?'
 New = "[TIMESTAMP]"
-Order = 10
+Order = 9
+
+[[Repls]]
+# "2025-10-23T14:26:43"
+# "2025-10-23T14:26:43Z"
+Old = '2\d\d\d-\d\d-\d\d(T| )\d\d:\d\d:\d\dZ?'
+New = "[TIMESTAMP]"
+Order = 9

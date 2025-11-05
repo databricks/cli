@@ -165,6 +165,17 @@ type ResourcePipelineIngestionDefinitionObjectsReportTableConfigurationQueryBase
 	HardDeletionSyncMinIntervalInSeconds int      `json:"hard_deletion_sync_min_interval_in_seconds,omitempty"`
 }
 
+type ResourcePipelineIngestionDefinitionObjectsReportTableConfigurationWorkdayReportParametersReportParameters struct {
+	Key   string `json:"key,omitempty"`
+	Value string `json:"value,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsReportTableConfigurationWorkdayReportParameters struct {
+	Incremental      bool                                                                                                        `json:"incremental,omitempty"`
+	Parameters       map[string]string                                                                                           `json:"parameters,omitempty"`
+	ReportParameters []ResourcePipelineIngestionDefinitionObjectsReportTableConfigurationWorkdayReportParametersReportParameters `json:"report_parameters,omitempty"`
+}
+
 type ResourcePipelineIngestionDefinitionObjectsReportTableConfiguration struct {
 	ExcludeColumns                 []string                                                                                     `json:"exclude_columns,omitempty"`
 	IncludeColumns                 []string                                                                                     `json:"include_columns,omitempty"`
@@ -173,6 +184,7 @@ type ResourcePipelineIngestionDefinitionObjectsReportTableConfiguration struct {
 	ScdType                        string                                                                                       `json:"scd_type,omitempty"`
 	SequenceBy                     []string                                                                                     `json:"sequence_by,omitempty"`
 	QueryBasedConnectorConfig      *ResourcePipelineIngestionDefinitionObjectsReportTableConfigurationQueryBasedConnectorConfig `json:"query_based_connector_config,omitempty"`
+	WorkdayReportParameters        *ResourcePipelineIngestionDefinitionObjectsReportTableConfigurationWorkdayReportParameters   `json:"workday_report_parameters,omitempty"`
 }
 
 type ResourcePipelineIngestionDefinitionObjectsReport struct {
@@ -189,6 +201,17 @@ type ResourcePipelineIngestionDefinitionObjectsSchemaTableConfigurationQueryBase
 	HardDeletionSyncMinIntervalInSeconds int      `json:"hard_deletion_sync_min_interval_in_seconds,omitempty"`
 }
 
+type ResourcePipelineIngestionDefinitionObjectsSchemaTableConfigurationWorkdayReportParametersReportParameters struct {
+	Key   string `json:"key,omitempty"`
+	Value string `json:"value,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchemaTableConfigurationWorkdayReportParameters struct {
+	Incremental      bool                                                                                                        `json:"incremental,omitempty"`
+	Parameters       map[string]string                                                                                           `json:"parameters,omitempty"`
+	ReportParameters []ResourcePipelineIngestionDefinitionObjectsSchemaTableConfigurationWorkdayReportParametersReportParameters `json:"report_parameters,omitempty"`
+}
+
 type ResourcePipelineIngestionDefinitionObjectsSchemaTableConfiguration struct {
 	ExcludeColumns                 []string                                                                                     `json:"exclude_columns,omitempty"`
 	IncludeColumns                 []string                                                                                     `json:"include_columns,omitempty"`
@@ -197,6 +220,7 @@ type ResourcePipelineIngestionDefinitionObjectsSchemaTableConfiguration struct {
 	ScdType                        string                                                                                       `json:"scd_type,omitempty"`
 	SequenceBy                     []string                                                                                     `json:"sequence_by,omitempty"`
 	QueryBasedConnectorConfig      *ResourcePipelineIngestionDefinitionObjectsSchemaTableConfigurationQueryBasedConnectorConfig `json:"query_based_connector_config,omitempty"`
+	WorkdayReportParameters        *ResourcePipelineIngestionDefinitionObjectsSchemaTableConfigurationWorkdayReportParameters   `json:"workday_report_parameters,omitempty"`
 }
 
 type ResourcePipelineIngestionDefinitionObjectsSchema struct {
@@ -213,6 +237,17 @@ type ResourcePipelineIngestionDefinitionObjectsTableTableConfigurationQueryBased
 	HardDeletionSyncMinIntervalInSeconds int      `json:"hard_deletion_sync_min_interval_in_seconds,omitempty"`
 }
 
+type ResourcePipelineIngestionDefinitionObjectsTableTableConfigurationWorkdayReportParametersReportParameters struct {
+	Key   string `json:"key,omitempty"`
+	Value string `json:"value,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsTableTableConfigurationWorkdayReportParameters struct {
+	Incremental      bool                                                                                                       `json:"incremental,omitempty"`
+	Parameters       map[string]string                                                                                          `json:"parameters,omitempty"`
+	ReportParameters []ResourcePipelineIngestionDefinitionObjectsTableTableConfigurationWorkdayReportParametersReportParameters `json:"report_parameters,omitempty"`
+}
+
 type ResourcePipelineIngestionDefinitionObjectsTableTableConfiguration struct {
 	ExcludeColumns                 []string                                                                                    `json:"exclude_columns,omitempty"`
 	IncludeColumns                 []string                                                                                    `json:"include_columns,omitempty"`
@@ -221,6 +256,7 @@ type ResourcePipelineIngestionDefinitionObjectsTableTableConfiguration struct {
 	ScdType                        string                                                                                      `json:"scd_type,omitempty"`
 	SequenceBy                     []string                                                                                    `json:"sequence_by,omitempty"`
 	QueryBasedConnectorConfig      *ResourcePipelineIngestionDefinitionObjectsTableTableConfigurationQueryBasedConnectorConfig `json:"query_based_connector_config,omitempty"`
+	WorkdayReportParameters        *ResourcePipelineIngestionDefinitionObjectsTableTableConfigurationWorkdayReportParameters   `json:"workday_report_parameters,omitempty"`
 }
 
 type ResourcePipelineIngestionDefinitionObjectsTable struct {
@@ -263,6 +299,17 @@ type ResourcePipelineIngestionDefinitionTableConfigurationQueryBasedConnectorCon
 	HardDeletionSyncMinIntervalInSeconds int      `json:"hard_deletion_sync_min_interval_in_seconds,omitempty"`
 }
 
+type ResourcePipelineIngestionDefinitionTableConfigurationWorkdayReportParametersReportParameters struct {
+	Key   string `json:"key,omitempty"`
+	Value string `json:"value,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionTableConfigurationWorkdayReportParameters struct {
+	Incremental      bool                                                                                           `json:"incremental,omitempty"`
+	Parameters       map[string]string                                                                              `json:"parameters,omitempty"`
+	ReportParameters []ResourcePipelineIngestionDefinitionTableConfigurationWorkdayReportParametersReportParameters `json:"report_parameters,omitempty"`
+}
+
 type ResourcePipelineIngestionDefinitionTableConfiguration struct {
 	ExcludeColumns                 []string                                                                        `json:"exclude_columns,omitempty"`
 	IncludeColumns                 []string                                                                        `json:"include_columns,omitempty"`
@@ -271,11 +318,13 @@ type ResourcePipelineIngestionDefinitionTableConfiguration struct {
 	ScdType                        string                                                                          `json:"scd_type,omitempty"`
 	SequenceBy                     []string                                                                        `json:"sequence_by,omitempty"`
 	QueryBasedConnectorConfig      *ResourcePipelineIngestionDefinitionTableConfigurationQueryBasedConnectorConfig `json:"query_based_connector_config,omitempty"`
+	WorkdayReportParameters        *ResourcePipelineIngestionDefinitionTableConfigurationWorkdayReportParameters   `json:"workday_report_parameters,omitempty"`
 }
 
 type ResourcePipelineIngestionDefinition struct {
 	ConnectionName       string                                                    `json:"connection_name,omitempty"`
 	IngestionGatewayId   string                                                    `json:"ingestion_gateway_id,omitempty"`
+	NetsuiteJarPath      string                                                    `json:"netsuite_jar_path,omitempty"`
 	SourceType           string                                                    `json:"source_type,omitempty"`
 	Objects              []ResourcePipelineIngestionDefinitionObjects              `json:"objects,omitempty"`
 	SourceConfigurations []ResourcePipelineIngestionDefinitionSourceConfigurations `json:"source_configurations,omitempty"`
@@ -371,6 +420,7 @@ type ResourcePipeline struct {
 	Tags                 map[string]string                    `json:"tags,omitempty"`
 	Target               string                               `json:"target,omitempty"`
 	Url                  string                               `json:"url,omitempty"`
+	UsagePolicyId        string                               `json:"usage_policy_id,omitempty"`
 	Cluster              []ResourcePipelineCluster            `json:"cluster,omitempty"`
 	Deployment           *ResourcePipelineDeployment          `json:"deployment,omitempty"`
 	Environment          *ResourcePipelineEnvironment         `json:"environment,omitempty"`

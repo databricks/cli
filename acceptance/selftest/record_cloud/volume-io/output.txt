@@ -72,6 +72,9 @@
 {
   "method": "PUT",
   "path": "/api/2.0/fs/files/Volumes/main/schema-[UNIQUE_NAME]/volume-[UNIQUE_NAME]/hello.txt",
+  "q": {
+    "overwrite": "false"
+  },
   "raw_body": "hello, world"
 }
 

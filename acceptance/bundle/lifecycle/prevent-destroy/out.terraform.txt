@@ -24,8 +24,6 @@ the scope of the plan using the -target flag.
 
 
 
-Exit code (musterr): 1
-
 >>> errcode [CLI] bundle plan
 Error: exit status 1
 
@@ -58,8 +56,6 @@ continue with the plan, either disable lifecycle.prevent_destroy or reduce
 the scope of the plan using the -target flag.
 
 
-
-Exit code (musterr): 1
 
 >>> errcode [CLI] bundle plan
 Error: exit status 1
@@ -113,8 +109,6 @@ continue with the plan, either disable lifecycle.prevent_destroy or reduce
 the scope of the plan using the -target flag.
 
 
-
-Exit code (musterr): 1
 
 >>> errcode [CLI] bundle plan
 recreate pipelines.my_pipelines

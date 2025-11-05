@@ -129,8 +129,8 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 			// This is captured in an acceptance test under "cmd/auth/token".
 			err = errors.New("cache: databricks OAuth is not configured for this host")
 		}
-		if err, ok := auth.RewriteAuthError(ctx, args.authArguments.Host, args.authArguments.AccountID, args.profileName, err); ok {
-			return nil, err
+		if rewritten, rewrittenErr := auth.RewriteAuthError(ctx, args.authArguments.Host, args.authArguments.AccountID, args.profileName, err); rewritten {
+			return nil, rewrittenErr
 		}
 		helpMsg := helpfulError(ctx, args.profileName, oauthArgument)
 		return nil, fmt.Errorf("%w. %s", err, helpMsg)

@@ -8,4 +8,4 @@ Cloud = true
   UV_PYTHON = "3.10"
 
 [EnvMatrix]
-  DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct-exp"]
+  DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]

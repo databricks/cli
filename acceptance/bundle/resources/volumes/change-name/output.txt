@@ -70,5 +70,3 @@ Deployment complete!
 
 >>> musterr [CLI] volumes read main.myschema.myvolume
 Error: Resource catalog.VolumeInfo not found: main.myschema.myvolume
-
-Exit code (musterr): 1

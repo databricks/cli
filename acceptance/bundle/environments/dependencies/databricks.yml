@@ -32,6 +32,7 @@ resources:
               - "beautifulsoup4>=1.0.0,~=1.2.0,<2.0.0"
               - "beautifulsoup4[security, tests] ~= 4.12.3"
               - "requests[security] @ https://github.com/psf/requests/archive/refs/heads/main.zip"
+              - "--find-links=/Workspace/Users/test"
 
   pipelines:
     test_pipeline:
@@ -49,3 +50,4 @@ resources:
           - "test_package>=2.0.1"
           - "beautifulsoup4>=1.0.0,~=1.2.0,<2.0.0"
           - "requests[security] @ https://github.com/psf/requests/archive/refs/heads/main.zip"
+          - "--find-links=/Workspace/Users/test"

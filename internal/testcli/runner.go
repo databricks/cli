@@ -16,7 +16,6 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/flags"
 )
 
 // Helper for running the root command in the background.
@@ -45,10 +44,8 @@ type Runner struct {
 
 func consumeLines(ctx context.Context, wg *sync.WaitGroup, r io.Reader) <-chan string {
 	ch := make(chan string, 30000)
-	wg.Add(1)
-	go func() {
+	wg.Go(func() {
 		defer close(ch)
-		defer wg.Done()
 		scanner := bufio.NewScanner(r)
 		for scanner.Scan() {
 			// We expect to be able to always send these lines into the channel.
@@ -63,7 +60,7 @@ func consumeLines(ctx context.Context, wg *sync.WaitGroup, r io.Reader) <-chan s
 				panic("line buffer is full")
 			}
 		}
-	}()
+	})
 	return ch
 }
 
@@ -103,13 +100,8 @@ func (r *Runner) RunBackground() {
 	var stdoutW, stderrW io.WriteCloser
 	stdoutR, stdoutW = io.Pipe()
 	stderrR, stderrW = io.Pipe()
-	ctx := cmdio.NewContext(r.ctx, &cmdio.Logger{
-		Mode:   flags.ModeAppend,
-		Reader: bufio.Reader{},
-		Writer: stderrW,
-	})
 
-	cli := cmd.New(ctx)
+	cli := cmd.New(r.ctx)
 	cli.SetOut(stdoutW)
 	cli.SetErr(stderrW)
 	cli.SetArgs(r.args)
@@ -118,7 +110,7 @@ func (r *Runner) RunBackground() {
 	}
 
 	errch := make(chan error)
-	ctx, cancel := context.WithCancel(ctx)
+	ctx, cancel := context.WithCancel(r.ctx)
 
 	// Tee stdout/stderr to buffers.
 	stdoutR = io.TeeReader(stdoutR, &r.stdout)
@@ -185,13 +177,8 @@ func (r *Runner) RunBackground() {
 func (r *Runner) Run() (bytes.Buffer, bytes.Buffer, error) {
 	r.Helper()
 	var stdout, stderr bytes.Buffer
-	ctx := cmdio.NewContext(r.ctx, &cmdio.Logger{
-		Mode:   flags.ModeAppend,
-		Reader: bufio.Reader{},
-		Writer: &stderr,
-	})
 
-	cli := cmd.New(ctx)
+	cli := cmd.New(r.ctx)
 	cli.SetOut(&stdout)
 	cli.SetErr(&stderr)
 	cli.SetArgs(r.args)
@@ -200,7 +187,7 @@ func (r *Runner) Run() (bytes.Buffer, bytes.Buffer, error) {
 		r.Logf("  args: %s", strings.Join(r.args, ", "))
 	}
 
-	err := root.Execute(ctx, cli)
+	err := root.Execute(r.ctx, cli)
 	if err != nil {
 		if r.Verbose {
 			r.Logf(" error: %s", err)
@@ -250,11 +237,9 @@ func (r *Runner) Eventually(condition func() bool, waitFor, tick time.Duration, 
 	defer wg.Wait()
 
 	// Kick off condition check immediately.
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		ch <- condition()
-	}()
+	})
 
 	for tick := ticker.C; ; {
 		select {
@@ -266,11 +251,9 @@ func (r *Runner) Eventually(condition func() bool, waitFor, tick time.Duration, 
 			return
 		case <-tick:
 			tick = nil
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
+			wg.Go(func() {
 				ch <- condition()
-			}()
+			})
 		case v := <-ch:
 			if v {
 				return

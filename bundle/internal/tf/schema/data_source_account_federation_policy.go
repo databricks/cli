@@ -16,7 +16,7 @@ type DataSourceAccountFederationPolicy struct {
 	Description        string                                       `json:"description,omitempty"`
 	Name               string                                       `json:"name,omitempty"`
 	OidcPolicy         *DataSourceAccountFederationPolicyOidcPolicy `json:"oidc_policy,omitempty"`
-	PolicyId           string                                       `json:"policy_id,omitempty"`
+	PolicyId           string                                       `json:"policy_id"`
 	ServicePrincipalId int                                          `json:"service_principal_id,omitempty"`
 	Uid                string                                       `json:"uid,omitempty"`
 	UpdateTime         string                                       `json:"update_time,omitempty"`

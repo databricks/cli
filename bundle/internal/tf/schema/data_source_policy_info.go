@@ -34,17 +34,16 @@ type DataSourcePolicyInfo struct {
 	CreatedAt           int                                `json:"created_at,omitempty"`
 	CreatedBy           string                             `json:"created_by,omitempty"`
 	ExceptPrincipals    []string                           `json:"except_principals,omitempty"`
-	ForSecurableType    string                             `json:"for_securable_type"`
+	ForSecurableType    string                             `json:"for_securable_type,omitempty"`
 	Id                  string                             `json:"id,omitempty"`
 	MatchColumns        []DataSourcePolicyInfoMatchColumns `json:"match_columns,omitempty"`
-	Name                string                             `json:"name,omitempty"`
-	OnSecurableFullname string                             `json:"on_securable_fullname,omitempty"`
-	OnSecurableType     string                             `json:"on_securable_type,omitempty"`
-	PolicyType          string                             `json:"policy_type"`
+	Name                string                             `json:"name"`
+	OnSecurableFullname string                             `json:"on_securable_fullname"`
+	OnSecurableType     string                             `json:"on_securable_type"`
+	PolicyType          string                             `json:"policy_type,omitempty"`
 	RowFilter           *DataSourcePolicyInfoRowFilter     `json:"row_filter,omitempty"`
-	ToPrincipals        []string                           `json:"to_principals"`
+	ToPrincipals        []string                           `json:"to_principals,omitempty"`
 	UpdatedAt           int                                `json:"updated_at,omitempty"`
 	UpdatedBy           string                             `json:"updated_by,omitempty"`
 	WhenCondition       string                             `json:"when_condition,omitempty"`
-	WorkspaceId         string                             `json:"workspace_id,omitempty"`
 }

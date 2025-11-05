@@ -212,8 +212,8 @@ func newGet() *cobra.Command {
 	cmd.Short = `Get a share.`
 	cmd.Long = `Get a share.
   
-  Gets a data object share from the metastore. The caller must be a metastore
-  admin or the owner of the share.
+  Gets a data object share from the metastore. The caller must have the
+  USE_SHARE privilege on the metastore or be the owner of the share.
 
   Arguments:
     NAME: The name of the share.`
@@ -272,8 +272,9 @@ func newListShares() *cobra.Command {
 	cmd.Short = `List shares.`
 	cmd.Long = `List shares.
   
-  Gets an array of data object shares from the metastore. The caller must be a
-  metastore admin or the owner of the share. There is no guarantee of a specific
+  Gets an array of data object shares from the metastore. If the caller has the
+  USE_SHARE privilege on the metastore, all shares are returned. Otherwise, only
+  shares owned by the caller are returned. There is no guarantee of a specific
   ordering of the elements in the array.`
 
 	cmd.Annotations = make(map[string]string)
@@ -325,11 +326,11 @@ func newSharePermissions() *cobra.Command {
 	cmd.Short = `Get permissions.`
 	cmd.Long = `Get permissions.
   
-  Gets the permissions for a data share from the metastore. The caller must be a
-  metastore admin or the owner of the share.
+  Gets the permissions for a data share from the metastore. The caller must have
+  the USE_SHARE privilege on the metastore or be the owner of the share.
 
   Arguments:
-    NAME: The name of the share.`
+    NAME: The name of the Recipient.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -481,11 +482,12 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.Short = `Update permissions.`
 	cmd.Long = `Update permissions.
   
-  Updates the permissions for a data share in the metastore. The caller must be
-  a metastore admin or an owner of the share.
+  Updates the permissions for a data share in the metastore. The caller must
+  have both the USE_SHARE and SET_SHARE_PERMISSION privileges on the metastore,
+  or be the owner of the share.
   
-  For new recipient grants, the user must also be the recipient owner or
-  metastore admin. recipient revocations do not require additional privileges.
+  For new recipient grants, the user must also be the owner of the recipients.
+  recipient revocations do not require additional privileges.
 
   Arguments:
     NAME: The name of the share.`

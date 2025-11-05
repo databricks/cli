@@ -24,7 +24,12 @@ type DataSourceCurrentMetastoreMetastoreInfo struct {
 	UpdatedBy                                   string `json:"updated_by,omitempty"`
 }
 
+type DataSourceCurrentMetastoreProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourceCurrentMetastore struct {
-	Id            string                                   `json:"id,omitempty"`
-	MetastoreInfo *DataSourceCurrentMetastoreMetastoreInfo `json:"metastore_info,omitempty"`
+	Id             string                                    `json:"id,omitempty"`
+	MetastoreInfo  *DataSourceCurrentMetastoreMetastoreInfo  `json:"metastore_info,omitempty"`
+	ProviderConfig *DataSourceCurrentMetastoreProviderConfig `json:"provider_config,omitempty"`
 }

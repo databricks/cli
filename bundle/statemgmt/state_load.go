@@ -13,19 +13,19 @@ import (
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/hashicorp/terraform-exec/tfexec"
 )
 
 type (
 	ExportedResourcesMap = resourcestate.ExportedResourcesMap
 	ResourceState        = resourcestate.ResourceState
-	loadMode             int
+	LoadMode             int
 )
 
-const ErrorOnEmptyState loadMode = 0
+const ErrorOnEmptyState LoadMode = 0
 
 type load struct {
-	modes []loadMode
+	modes            []LoadMode
+	directDeployment bool
 }
 
 func (l *load) Name() string {
@@ -33,32 +33,24 @@ func (l *load) Name() string {
 }
 
 func (l *load) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	var err error
 	var state ExportedResourcesMap
 
-	if b.DirectDeployment {
-		err := b.OpenStateFile(ctx)
+	if l.directDeployment {
+		_, fullPathDirect := b.StateFilenameDirect(ctx)
+		state, err = b.DeploymentBundle.ExportState(ctx, fullPathDirect)
 		if err != nil {
 			return diag.FromErr(err)
 		}
-		state = b.DeploymentBundle.StateDB.ExportState(ctx)
 	} else {
-		tf := b.Terraform
-		if tf == nil {
-			return diag.Errorf("terraform not initialized")
-		}
-
-		err := tf.Init(ctx, tfexec.Upgrade(true))
-		if err != nil {
-			return diag.Errorf("terraform init: %v", err)
-		}
-
+		var err error
 		state, err = terraform.ParseResourcesState(ctx, b)
 		if err != nil {
 			return diag.FromErr(err)
 		}
 	}
 
-	err := l.validateState(state)
+	err = l.validateState(state)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -67,6 +59,19 @@ func (l *load) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	err = StateToBundle(ctx, state, &b.Config)
 	if err != nil {
 		return diag.FromErr(err)
+	}
+
+	// Merge dashboard etags into configuration.
+	for k, dstate := range state["dashboards"] {
+		dconfig, ok := b.Config.Resources.Dashboards[k]
+
+		// Case: A dashboard is defined in state but not in configuration.
+		// In this case the dashboard has been deleted and we do not need to load the etag.
+		if !ok {
+			continue
+		}
+
+		dconfig.Etag = dstate.ETag
 	}
 
 	return nil
@@ -142,6 +147,6 @@ func (l *load) validateState(state ExportedResourcesMap) error {
 	return nil
 }
 
-func Load(modes ...loadMode) bundle.Mutator {
-	return &load{modes: modes}
+func Load(directDeployment bool, modes ...LoadMode) bundle.Mutator {
+	return &load{modes: modes, directDeployment: directDeployment}
 }

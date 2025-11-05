@@ -2,6 +2,7 @@ package testserver
 
 import (
 	"bytes"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"path"
@@ -11,11 +12,12 @@ import (
 	"time"
 
 	"github.com/databricks/databricks-sdk-go/service/compute"
+	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/database"
+	"github.com/google/uuid"
 
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
-	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
@@ -63,9 +65,25 @@ func nextID() int64 {
 	return lastID
 }
 
+func nextUUID() string {
+	var b [16]byte
+	binary.BigEndian.PutUint64(b[0:8], uint64(nextID()))
+	binary.BigEndian.PutUint64(b[8:16], uint64(nextID()))
+	u := uuid.Must(uuid.FromBytes(b[:]))
+	return u.String()
+}
+
 type FileEntry struct {
 	Info workspace.ObjectInfo
 	Data []byte
+}
+
+type fakeDashboard struct {
+	dashboards.Dashboard
+
+	// Input value of the serialized dashboard provided. This is used
+	// to detect if the etag needs to be updated.
+	InputSerializedDashboard string `json:"-"`
 }
 
 // FakeWorkspace holds a state of a workspace for acceptance tests.
@@ -88,7 +106,8 @@ type FakeWorkspace struct {
 	Schemas             map[string]catalog.SchemaInfo
 	SchemasGrants       map[string][]catalog.PrivilegeAssignment
 	Volumes             map[string]catalog.VolumeInfo
-	Dashboards          map[string]dashboards.Dashboard
+	Dashboards          map[string]fakeDashboard
+	PublishedDashboards map[string]dashboards.PublishedDashboard
 	SqlWarehouses       map[string]sql.GetWarehouseResponse
 	Alerts              map[string]sql.AlertV2
 	Experiments         map[string]ml.GetExperimentResponse
@@ -191,7 +210,8 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		Schemas:              map[string]catalog.SchemaInfo{},
 		RegisteredModels:     map[string]catalog.RegisteredModelInfo{},
 		Volumes:              map[string]catalog.VolumeInfo{},
-		Dashboards:           map[string]dashboards.Dashboard{},
+		Dashboards:           map[string]fakeDashboard{},
+		PublishedDashboards:  map[string]dashboards.PublishedDashboard{},
 		SqlWarehouses:        map[string]sql.GetWarehouseResponse{},
 		Repos:                map[string]workspace.RepoInfo{},
 		Acls:                 map[string][]workspace.AclItem{},

@@ -12,8 +12,9 @@ resources:
       catalog_name: main
       schema_name: myschema-${UNIQUE_NAME}
       name: volumebar-${UNIQUE_NAME}
+
     foo:
       catalog_name: main
       schema_name: myschema-${UNIQUE_NAME}
       name: volumefoo-${UNIQUE_NAME}
-      storage_location: ${resources.volumes.bar.storage_location}
+      comment: ${resources.volumes.bar.storage_location}

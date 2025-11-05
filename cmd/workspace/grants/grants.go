@@ -73,6 +73,14 @@ func newGet() *cobra.Command {
 	cmd.Long = `Get permissions.
   
   Gets the permissions for a securable. Does not include inherited permissions.
+  
+  NOTE: we recommend using max_results=0 to use the paginated version of this
+  API. Unpaginated calls will be deprecated soon.
+  
+  PAGINATION BEHAVIOR: When using pagination (max_results >= 0), a page may
+  contain zero results while still providing a next_page_token. Clients must
+  continue reading pages until next_page_token is absent, which is the only
+  indication that the end of results has been reached.
 
   Arguments:
     SECURABLE_TYPE: Type of securable.
@@ -136,6 +144,14 @@ func newGetEffective() *cobra.Command {
   
   Gets the effective permissions for a securable. Includes inherited permissions
   from any parent securables.
+  
+  NOTE: we recommend using max_results=0 to use the paginated version of this
+  API. Unpaginated calls will be deprecated soon.
+  
+  PAGINATION BEHAVIOR: When using pagination (max_results >= 0), a page may
+  contain zero results while still providing a next_page_token. Clients must
+  continue reading pages until next_page_token is absent, which is the only
+  indication that the end of results has been reached.
 
   Arguments:
     SECURABLE_TYPE: Type of securable.

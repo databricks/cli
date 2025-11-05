@@ -12,9 +12,7 @@ if TYPE_CHECKING:
 
 @dataclass(kw_only=True)
 class TableUpdateTriggerConfiguration:
-    """
-    :meta private: [EXPERIMENTAL]
-    """
+    """"""
 
     condition: VariableOrOptional[Condition] = None
     """
@@ -29,7 +27,7 @@ class TableUpdateTriggerConfiguration:
 
     table_names: VariableOrList[str] = field(default_factory=list)
     """
-    A list of Delta tables to monitor for changes. The table name must be in the format `catalog_name.schema_name.table_name`.
+    A list of tables to monitor for changes. The table name must be in the format `catalog_name.schema_name.table_name`.
     """
 
     wait_after_last_change_seconds: VariableOrOptional[int] = None
@@ -63,7 +61,7 @@ class TableUpdateTriggerConfigurationDict(TypedDict, total=False):
 
     table_names: VariableOrList[str]
     """
-    A list of Delta tables to monitor for changes. The table name must be in the format `catalog_name.schema_name.table_name`.
+    A list of tables to monitor for changes. The table name must be in the format `catalog_name.schema_name.table_name`.
     """
 
     wait_after_last_change_seconds: VariableOrOptional[int]

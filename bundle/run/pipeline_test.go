@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/flags"
 	sdk_config "github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -76,7 +75,6 @@ func TestPipelineRunnerRestart(t *testing.T) {
 	b.SetWorkpaceClient(m.WorkspaceClient)
 
 	ctx := cmdio.MockDiscard(context.Background())
-	ctx = cmdio.NewContext(ctx, cmdio.NewLogger(flags.ModeAppend))
 
 	mockWait := &pipelines.WaitGetPipelineIdle[struct{}]{
 		Poll: func(time.Duration, func(*pipelines.GetPipelineResponse)) (*pipelines.GetPipelineResponse, error) {

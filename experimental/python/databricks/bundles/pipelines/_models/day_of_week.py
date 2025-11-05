@@ -6,7 +6,7 @@ class DayOfWeek(Enum):
     """
     :meta private: [EXPERIMENTAL]
 
-    Days of week in which the restart is allowed to happen (within a five-hour window starting at start_hour).
+    Days of week in which the window is allowed to happen.
     If not specified all days of the week will be used.
     """
 

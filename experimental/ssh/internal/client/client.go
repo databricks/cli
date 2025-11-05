@@ -19,6 +19,7 @@ import (
 
 	"github.com/databricks/cli/experimental/ssh/internal/keys"
 	"github.com/databricks/cli/experimental/ssh/internal/proxy"
+	"github.com/databricks/cli/experimental/ssh/internal/setup"
 	sshWorkspace "github.com/databricks/cli/experimental/ssh/internal/workspace"
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/cmdio"
@@ -61,6 +62,8 @@ type ClientOptions struct {
 	ClientPublicKeyName string
 	// If true, the CLI will attempt to start the cluster if it is not running.
 	AutoStartCluster bool
+	// Optional auth profile name. If present, will be added as --profile flag to the ProxyCommand while spawning ssh client.
+	Profile string
 	// Additional arguments to pass to the SSH client in the non proxy mode.
 	AdditionalArgs []string
 }
@@ -231,13 +234,10 @@ func submitSSHTunnelJob(ctx context.Context, client *databricks.WorkspaceClient,
 }
 
 func spawnSSHClient(ctx context.Context, userName, privateKeyPath string, serverPort int, opts ClientOptions) error {
-	executablePath, err := os.Executable()
+	proxyCommand, err := setup.GenerateProxyCommand(opts.ClusterID, opts.AutoStartCluster, opts.ShutdownDelay, opts.Profile, userName, serverPort, opts.HandoverTimeout)
 	if err != nil {
-		return fmt.Errorf("failed to get current executable path: %w", err)
+		return fmt.Errorf("failed to generate ProxyCommand: %w", err)
 	}
-
-	proxyCommand := fmt.Sprintf("%s ssh connect --proxy --cluster=%s --handover-timeout=%s --metadata=%s,%d --auto-start-cluster=%t",
-		executablePath, opts.ClusterID, opts.HandoverTimeout.String(), userName, serverPort, opts.AutoStartCluster)
 
 	sshArgs := []string{
 		"-l", userName,
@@ -264,7 +264,10 @@ func runSSHProxy(ctx context.Context, client *databricks.WorkspaceClient, server
 	createConn := func(ctx context.Context, connID string) (*websocket.Conn, error) {
 		return createWebsocketConnection(ctx, client, connID, opts.ClusterID, serverPort)
 	}
-	return proxy.RunClientProxy(ctx, os.Stdin, os.Stdout, opts.HandoverTimeout, createConn)
+	requestHandoverTick := func() <-chan time.Time {
+		return time.After(opts.HandoverTimeout)
+	}
+	return proxy.RunClientProxy(ctx, os.Stdin, os.Stdout, requestHandoverTick, createConn)
 }
 
 func checkClusterState(ctx context.Context, client *databricks.WorkspaceClient, clusterID string, autoStart bool) error {

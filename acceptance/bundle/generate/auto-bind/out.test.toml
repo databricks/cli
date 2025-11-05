@@ -1,0 +1,12 @@
+Local = false
+Cloud = true
+
+[Env]
+  MSYS_NO_PATHCONV = "1"
+  PYTHONDONTWRITEBYTECODE = "1"
+  PYTHONUNBUFFERED = "1"
+  PYTHONUTF8 = "1"
+  UV_PYTHON = "3.10"
+
+[EnvMatrix]
+  DATABRICKS_BUNDLE_ENGINE = ["terraform"]

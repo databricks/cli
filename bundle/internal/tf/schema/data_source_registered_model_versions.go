@@ -3,8 +3,12 @@
 package schema
 
 type DataSourceRegisteredModelVersionsModelVersionsAliases struct {
-	AliasName  string `json:"alias_name,omitempty"`
-	VersionNum int    `json:"version_num,omitempty"`
+	AliasName   string `json:"alias_name,omitempty"`
+	CatalogName string `json:"catalog_name,omitempty"`
+	Id          string `json:"id,omitempty"`
+	ModelName   string `json:"model_name,omitempty"`
+	SchemaName  string `json:"schema_name,omitempty"`
+	VersionNum  int    `json:"version_num,omitempty"`
 }
 
 type DataSourceRegisteredModelVersionsModelVersionsModelVersionDependenciesDependenciesConnection struct {
@@ -36,7 +40,6 @@ type DataSourceRegisteredModelVersionsModelVersionsModelVersionDependencies stru
 
 type DataSourceRegisteredModelVersionsModelVersions struct {
 	Aliases                  []DataSourceRegisteredModelVersionsModelVersionsAliases                  `json:"aliases,omitempty"`
-	BrowseOnly               bool                                                                     `json:"browse_only,omitempty"`
 	CatalogName              string                                                                   `json:"catalog_name,omitempty"`
 	Comment                  string                                                                   `json:"comment,omitempty"`
 	CreatedAt                int                                                                      `json:"created_at,omitempty"`
@@ -56,7 +59,12 @@ type DataSourceRegisteredModelVersionsModelVersions struct {
 	Version                  int                                                                      `json:"version,omitempty"`
 }
 
+type DataSourceRegisteredModelVersionsProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourceRegisteredModelVersions struct {
-	FullName      string                                           `json:"full_name"`
-	ModelVersions []DataSourceRegisteredModelVersionsModelVersions `json:"model_versions,omitempty"`
+	FullName       string                                           `json:"full_name"`
+	ModelVersions  []DataSourceRegisteredModelVersionsModelVersions `json:"model_versions,omitempty"`
+	ProviderConfig *DataSourceRegisteredModelVersionsProviderConfig `json:"provider_config,omitempty"`
 }

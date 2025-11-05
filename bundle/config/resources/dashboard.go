@@ -11,18 +11,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 )
 
-type DashboardPermissionLevel string
-
-// DashboardPermission holds the permission level setting for a single principal.
-// Multiple of these can be defined on any dashboard.
-type DashboardPermission struct {
-	Level DashboardPermissionLevel `json:"level"`
-
-	UserName             string `json:"user_name,omitempty"`
-	ServicePrincipalName string `json:"service_principal_name,omitempty"`
-	GroupName            string `json:"group_name,omitempty"`
-}
-
 type DashboardConfig struct {
 	dashboards.Dashboard
 
@@ -42,6 +30,13 @@ type DashboardConfig struct {
 	//
 	// Defaults to false if not set.
 	EmbedCredentials bool `json:"embed_credentials,omitempty"`
+
+	// Direct deployment uses ForceSendFields to serialize zero values in the bundle configuration.
+	// This struct [DashboardConfig] is the config representation of a dashboard. So it's
+	// necessary to override the ForceSendFields from the [dashboards.Dashboard] struct here.
+	//
+	// This is necessary to serialize the zero value of EmbedCredentials in the local
+	ForceSendFields []string `json:"-" url:"-"`
 }
 
 type Dashboard struct {

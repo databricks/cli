@@ -145,6 +145,43 @@ func makeVolumeTypeOptional(typ reflect.Type, s jsonschema.Schema) jsonschema.Sc
 	return s
 }
 
+func removeOutputOnlyFields(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
+	// Only process object types with properties
+	if s.Type != jsonschema.ObjectType || s.Properties == nil {
+		return s
+	}
+
+	// Collect property names to remove
+	var toRemove []string
+	for name, prop := range s.Properties {
+		// Check if this property is marked as output-only via FieldBehaviors
+		if prop.FieldBehaviors != nil {
+			for _, behavior := range prop.FieldBehaviors {
+				if behavior == "OUTPUT_ONLY" {
+					toRemove = append(toRemove, name)
+					break
+				}
+			}
+		}
+	}
+
+	// Remove output-only properties
+	for _, name := range toRemove {
+		delete(s.Properties, name)
+
+		// Also remove from required list if present
+		var newRequired []string
+		for _, r := range s.Required {
+			if r != name {
+				newRequired = append(newRequired, r)
+			}
+		}
+		s.Required = newRequired
+	}
+
+	return s
+}
+
 func main() {
 	if len(os.Args) != 3 {
 		fmt.Println("Usage: go run main.go <work-dir> <output-file>")
@@ -189,6 +226,7 @@ func generateSchema(workdir, outputFile string) {
 		removePipelineFields,
 		makeVolumeTypeOptional,
 		a.addAnnotations,
+		removeOutputOnlyFields,
 		addInterpolationPatterns,
 	})
 

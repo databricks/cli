@@ -7,4 +7,4 @@ Cloud = true
   PYTHONUTF8 = "1"
 
 [EnvMatrix]
-  DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct-exp"]
+  DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]

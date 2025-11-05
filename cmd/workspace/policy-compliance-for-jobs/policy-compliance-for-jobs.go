@@ -121,6 +121,7 @@ func newEnforceCompliance() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid JOB_ID: %s", args[0])
 			}
+
 		}
 
 		response, err := w.PolicyComplianceForJobs.EnforceCompliance(ctx, enforceComplianceReq)

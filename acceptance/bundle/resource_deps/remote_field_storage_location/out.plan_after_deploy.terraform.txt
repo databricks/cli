@@ -1,0 +1,3 @@
+create volumes.foo
+
+Plan: 1 to add, 0 to change, 0 to delete, 2 unchanged

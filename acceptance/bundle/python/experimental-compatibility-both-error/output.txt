@@ -1,0 +1,51 @@
+
+>>> uv run [UV_ARGS] -q [CLI] bundle validate --output json --include-locations
+Error: failed to apply python mutator: 'experimental/python' and 'python' configuration properties are mutually exclusive, use only 'python'
+
+{
+  "experimental": {
+    "python": {
+      "resources": [
+        "resources:load_resources_1"
+      ]
+    }
+  },
+  "resources": null,
+  "__locations": {
+    "files": [
+      "databricks.yml"
+    ],
+    "locations": {
+      "bundle": [
+        [
+          0,
+          2,
+          3
+        ]
+      ],
+      "experimental": [
+        [
+          0,
+          9,
+          3
+        ]
+      ],
+      "python": [
+        [
+          0,
+          14,
+          3
+        ]
+      ],
+      "sync": [
+        [
+          0,
+          4,
+          7
+        ]
+      ]
+    }
+  }
+}
+
+Exit code: 1

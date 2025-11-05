@@ -19,18 +19,13 @@ func (a Action) String() string {
 	return fmt.Sprintf("  %s %s", a.ActionType.StringShort(), key)
 }
 
-// Implements cmdio.Event for cmdio.Log
-func (a Action) IsInplaceSupported() bool {
-	return false
-}
-
 type ActionType int
 
 // Actions are ordered in increasing severity.
 // If case of several options, action with highest severity wins.
 // Note, Create/Delete are handled explicitly and never compared.
 const (
-	ActionTypeUnset ActionType = iota
+	ActionTypeUndefined ActionType = iota
 	ActionTypeSkip
 	ActionTypeResize
 	ActionTypeUpdate
@@ -86,7 +81,7 @@ func (a ActionType) String() string {
 func ActionTypeFromString(s string) ActionType {
 	actionType, ok := nameToAction[s]
 	if !ok {
-		return ActionTypeUnset
+		return ActionTypeUndefined
 	}
 	return actionType
 }

@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/databricks/databricks-sdk-go/service/catalog"
-	"github.com/google/uuid"
 )
 
 func (s *FakeWorkspace) RegisteredModelsCreate(req Request) Response {
@@ -35,7 +34,7 @@ func (s *FakeWorkspace) RegisteredModelsCreate(req Request) Response {
 		CreatedBy:       s.CurrentUser().UserName,
 		UpdatedAt:       time.Now().UnixMilli(),
 		UpdatedBy:       s.CurrentUser().UserName,
-		MetastoreId:     uuid.New().String(),
+		MetastoreId:     nextUUID(),
 		Owner:           s.CurrentUser().UserName,
 	}
 

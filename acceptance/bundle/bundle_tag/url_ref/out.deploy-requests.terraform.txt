@@ -1,4 +1,6 @@
 {
+  "method": "POST",
+  "path": "/api/2.2/jobs/create",
   "body": {
     "deployment": {
       "kind": "BUNDLE",
@@ -11,11 +13,11 @@
     "queue": {
       "enabled": true
     }
-  },
-  "method": "POST",
-  "path": "/api/2.2/jobs/create"
+  }
 }
 {
+  "method": "POST",
+  "path": "/api/2.2/jobs/create",
   "body": {
     "deployment": {
       "kind": "BUNDLE",
@@ -28,7 +30,5 @@
     "queue": {
       "enabled": true
     }
-  },
-  "method": "POST",
-  "path": "/api/2.2/jobs/create"
+  }
 }

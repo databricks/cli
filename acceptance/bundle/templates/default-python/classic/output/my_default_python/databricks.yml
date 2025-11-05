@@ -4,14 +4,21 @@ bundle:
   name: my_default_python
   uuid: [UUID]
 
+include:
+  - resources/*.yml
+  - resources/*/*.yml
+
 artifacts:
   python_artifact:
     type: whl
     build: uv build --wheel
 
-include:
-  - resources/*.yml
-  - resources/*/*.yml
+# Variable declarations. These variables are assigned in the dev/prod targets below.
+variables:
+  catalog:
+    description: The catalog to use
+  schema:
+    description: The schema to use
 
 targets:
   dev:
@@ -23,20 +30,20 @@ targets:
     default: true
     workspace:
       host: [DATABRICKS_URL]
-
+    variables:
+      catalog: hive_metastore
+      schema: ${workspace.current_user.short_name}
     presets:
-      # Set dynamic_version: true on all artifacts of type "whl".
-      # This makes "bundle deploy" add a timestamp to wheel's version before uploading,
-      # new wheel takes over the previous installation even if actual wheel version is unchanged.
-      # See https://docs.databricks.com/aws/en/dev-tools/bundles/settings
       artifacts_dynamic_version: true
-
   prod:
     mode: production
     workspace:
       host: [DATABRICKS_URL]
       # We explicitly deploy to /Workspace/Users/[USERNAME] to make sure we only have a single copy.
       root_path: /Workspace/Users/[USERNAME]/.bundle/${bundle.name}/${bundle.target}
+    variables:
+      catalog: hive_metastore
+      schema: prod
     permissions:
       - user_name: [USERNAME]
         level: CAN_MANAGE

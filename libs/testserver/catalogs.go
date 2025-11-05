@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/databricks/databricks-sdk-go/service/catalog"
-	"github.com/google/uuid"
 )
 
 func (s *FakeWorkspace) CatalogsCreate(req Request) Response {
@@ -34,7 +33,7 @@ func (s *FakeWorkspace) CatalogsCreate(req Request) Response {
 		CreatedBy:    s.CurrentUser().UserName,
 		UpdatedAt:    time.Now().UnixMilli(),
 		UpdatedBy:    s.CurrentUser().UserName,
-		MetastoreId:  uuid.New().String(),
+		MetastoreId:  nextUUID(),
 		Owner:        s.CurrentUser().UserName,
 		CatalogType:  catalog.CatalogTypeManagedCatalog,
 	}

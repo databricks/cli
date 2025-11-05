@@ -1,0 +1,28 @@
+
+>>> errcode [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-deploy-cluster-workload-type/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py //clusters/create
+{
+  "method": "POST",
+  "path": "/api/2.1/clusters/create",
+  "body": {
+    "autotermination_minutes": 60,
+    "cluster_name": "test-cluster",
+    "node_type_id": "[NODE_TYPE_ID]",
+    "num_workers": 2,
+    "spark_conf": {
+      "spark.executor.memory": "2g"
+    },
+    "spark_version": "13.3.x-scala2.12",
+    "workload_type": {
+      "clients": {
+        "jobs": false,
+        "notebooks": true
+      }
+    }
+  }
+}

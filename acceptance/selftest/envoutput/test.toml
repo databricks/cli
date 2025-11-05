@@ -1,4 +1,4 @@
 EnvVaryOutput = "DATABRICKS_BUNDLE_ENGINE"
 
 [EnvMatrix]
-DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct-exp"]
+DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]

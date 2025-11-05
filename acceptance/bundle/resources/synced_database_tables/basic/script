@@ -1,0 +1,18 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+  trace $CLI bundle destroy --auto-approve
+}
+ trap cleanup EXIT
+
+# test on fresh bundles
+trace $CLI bundle summary
+
+trace $CLI bundle validate
+trace $CLI bundle deploy
+trace $CLI bundle summary > out.summary.txt
+
+# once again to test --force-pull flag (expect the same output; used to produce different output due to terraform.Interpolate() call)
+trace $CLI bundle summary --force-pull > tmp.summary.txt
+trace diff.py out.summary.txt tmp.summary.txt
+rm tmp.summary.txt

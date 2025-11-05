@@ -9,19 +9,19 @@ import (
 )
 
 // RewriteAuthError rewrites the error message for invalid refresh token error.
-// It returns the rewritten error and a boolean indicating whether the error was rewritten.
-func RewriteAuthError(ctx context.Context, host, accountId, profile string, err error) (error, bool) {
+// It returns whether the error was rewritten and the rewritten error.
+func RewriteAuthError(ctx context.Context, host, accountId, profile string, err error) (bool, error) {
 	target := &u2m.InvalidRefreshTokenError{}
 	if errors.As(err, &target) {
 		oauthArgument, err := AuthArguments{host, accountId}.ToOAuthArgument()
 		if err != nil {
-			return err, false
+			return false, err
 		}
 		msg := `A new access token could not be retrieved because the refresh token is invalid. To reauthenticate, run the following command:
   $ ` + BuildLoginCommand(ctx, profile, oauthArgument)
-		return errors.New(msg), true
+		return true, errors.New(msg)
 	}
-	return err, false
+	return false, err
 }
 
 // BuildLoginCommand builds the login command for the given OAuth argument or profile.

@@ -5,5 +5,5 @@ resources:
   dashboards:
     test_dashboard:
       display_name: "test dashboard"
-      warehouse_id: ""
+      warehouse_id: "my-warehouse-1234"
       file_path: ./dash.lvdash.json

@@ -10,6 +10,6 @@ type DataSourceBudgetPolicyCustomTags struct {
 type DataSourceBudgetPolicy struct {
 	BindingWorkspaceIds []int                              `json:"binding_workspace_ids,omitempty"`
 	CustomTags          []DataSourceBudgetPolicyCustomTags `json:"custom_tags,omitempty"`
-	PolicyId            string                             `json:"policy_id,omitempty"`
+	PolicyId            string                             `json:"policy_id"`
 	PolicyName          string                             `json:"policy_name,omitempty"`
 }

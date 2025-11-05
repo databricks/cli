@@ -199,12 +199,14 @@ func newCreate() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid TABLE_TYPE: %s", args[3])
 			}
+
 		}
 		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[4], &createReq.DataSourceFormat)
 			if err != nil {
 				return fmt.Errorf("invalid DATA_SOURCE_FORMAT: %s", args[4])
 			}
+
 		}
 		if !cmd.Flags().Changed("json") {
 			createReq.StorageLocation = args[5]
@@ -450,6 +452,14 @@ func newList() *cobra.Command {
   be the owner or have the **USE_CATALOG** privilege on the parent catalog and
   the **USE_SCHEMA** privilege on the parent schema. There is no guarantee of a
   specific ordering of the elements in the array.
+  
+  NOTE: we recommend using max_results=0 to use the paginated version of this
+  API. Unpaginated calls will be deprecated soon.
+  
+  PAGINATION BEHAVIOR: When using pagination (max_results >= 0), a page may
+  contain zero results while still providing a next_page_token. Clients must
+  continue reading pages until next_page_token is absent, which is the only
+  indication that the end of results has been reached.
 
   Arguments:
     CATALOG_NAME: Name of parent catalog for tables of interest.
@@ -521,6 +531,11 @@ func newListSummaries() *cobra.Command {
   ownership or the **USE_CATALOG** privilege on the parent catalog.
   
   There is no guarantee of a specific ordering of the elements in the array.
+  
+  PAGINATION BEHAVIOR: The API is by default paginated, a page may contain zero
+  results while still providing a next_page_token. Clients must continue reading
+  pages until next_page_token is absent, which is the only indication that the
+  end of results has been reached.
 
   Arguments:
     CATALOG_NAME: Name of parent catalog for tables of interest.`

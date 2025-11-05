@@ -61,6 +61,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(newQuery())
 	cmd.AddCommand(newSetPermissions())
 	cmd.AddCommand(newUpdateConfig())
+	cmd.AddCommand(newUpdateNotifications())
 	cmd.AddCommand(newUpdatePermissions())
 	cmd.AddCommand(newUpdateProvisionedThroughputEndpointConfig())
 
@@ -714,6 +715,7 @@ func newHttpRequest() *cobra.Command {
 		if err != nil {
 			return fmt.Errorf("invalid METHOD: %s", args[1])
 		}
+
 		httpRequestReq.Path = args[2]
 
 		response, err := w.ServingEndpoints.HttpRequest(ctx, httpRequestReq)
@@ -1319,6 +1321,80 @@ func newUpdateConfig() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range updateConfigOverrides {
 		fn(cmd, &updateConfigReq)
+	}
+
+	return cmd
+}
+
+// start update-notifications command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateNotificationsOverrides []func(
+	*cobra.Command,
+	*serving.UpdateInferenceEndpointNotifications,
+)
+
+func newUpdateNotifications() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateNotificationsReq serving.UpdateInferenceEndpointNotifications
+	var updateNotificationsJson flags.JsonFlag
+
+	cmd.Flags().Var(&updateNotificationsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: complex arg: email_notifications
+
+	cmd.Use = "update-notifications NAME"
+	cmd.Short = `Update the email and webhook notification settings for an endpoint.`
+	cmd.Long = `Update the email and webhook notification settings for an endpoint.
+  
+  Updates the email and webhook notification settings for an endpoint.
+
+  Arguments:
+    NAME: The name of the serving endpoint whose notifications are being updated.
+      This field is required.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := updateNotificationsJson.Unmarshal(&updateNotificationsReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		updateNotificationsReq.Name = args[0]
+
+		response, err := w.ServingEndpoints.UpdateNotifications(ctx, updateNotificationsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateNotificationsOverrides {
+		fn(cmd, &updateNotificationsReq)
 	}
 
 	return cmd

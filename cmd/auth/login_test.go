@@ -33,7 +33,7 @@ func TestSetHostDoesNotFailWithNoDatabrickscfg(t *testing.T) {
 func TestSetHost(t *testing.T) {
 	var authArguments auth.AuthArguments
 	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/.databrickscfg")
-	ctx, _ := cmdio.SetupTest(context.Background())
+	ctx, _ := cmdio.SetupTest(context.Background(), cmdio.TestOptions{})
 
 	profile1 := loadTestProfile(t, ctx, "profile-1")
 	profile2 := loadTestProfile(t, ctx, "profile-2")
@@ -76,7 +76,7 @@ func TestSetHost(t *testing.T) {
 func TestSetAccountId(t *testing.T) {
 	var authArguments auth.AuthArguments
 	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/.databrickscfg")
-	ctx, _ := cmdio.SetupTest(context.Background())
+	ctx, _ := cmdio.SetupTest(context.Background(), cmdio.TestOptions{})
 
 	accountProfile := loadTestProfile(t, ctx, "account-profile")
 

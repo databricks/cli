@@ -10,5 +10,3 @@ Workspace:
   Path: /Workspace/Users/[USERNAME]/.bundle/run_as/default
 
 Found 1 error
-
-Exit code (musterr): 1

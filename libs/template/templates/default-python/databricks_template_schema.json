@@ -1,33 +1,34 @@
 {
-    "welcome_message": "\nWelcome to the default Python template for Databricks Asset Bundles!",
+    "template_dir": "../default",
+    "welcome_message": "Welcome to the default Python template for Databricks Asset Bundles!\n\nAnswer the following questions to customize your project.\nYou can always change your configuration in the databricks.yml file later.\n\nNote that {{workspace_host}} is used for initialization.\n(For information on how to change your profile, see https://docs.databricks.com/dev-tools/cli/profiles.html.)",
     "properties": {
         "project_name": {
             "type": "string",
             "default": "my_project",
-            "description": "Please provide the following details to tailor the template to your preferences.\n\nUnique name for this project",
+            "description": "\nUnique name for this project",
             "order": 1,
             "pattern": "^[A-Za-z0-9_]+$",
             "pattern_match_failure_message": "Name must consist of letters, numbers, and underscores."
         },
-        "include_notebook": {
+        "include_job": {
             "type": "string",
             "default": "yes",
             "enum": ["yes", "no"],
-            "description": "Include a stub (sample) notebook in '{{.project_name}}{{path_separator}}src'",
+            "description": "Include a job that runs a notebook",
             "order": 2
         },
-        "include_dlt": {
+        "include_pipeline": {
             "type": "string",
             "default": "yes",
             "enum": ["yes", "no"],
-            "description": "Include a stub (sample) Lakeflow Declarative Pipeline in '{{.project_name}}{{path_separator}}src'",
+            "description": "Include an ETL pipeline",
             "order": 3
         },
         "include_python": {
             "type": "string",
             "default": "yes",
             "enum": ["yes", "no"],
-            "description": "Include a stub (sample) Python package in '{{.project_name}}{{path_separator}}src'",
+            "description": "Include a sample Python package that builds into a wheel file",
             "order": 4
         },
         "serverless": {
@@ -36,7 +37,53 @@
             "enum": ["yes", "no"],
             "description": "Use serverless compute",
             "order": 5
+        },
+        "default_catalog": {
+            "type": "string",
+            "default": "{{if eq (default_catalog) \"\"}}hive_metastore{{else}}{{default_catalog}}{{end}}",
+            "pattern": "^\\w*$",
+            "pattern_match_failure_message": "Invalid catalog name.",
+            "description": "Default catalog for any tables created by this project{{if eq (default_catalog) \"\"}} (leave blank when not using Unity Catalog){{end}}",
+            "order": 6
+        },
+        "personal_schemas": {
+            "type": "string",
+            "description": "Use a personal schema for each user working on this project.\n(This is recommended. Your personal schema will be '{{.default_catalog}}.{{short_name}}'.)",
+            "default": "yes",
+            "enum": [
+                "yes",
+                "no, I will customize the schema configuration later in databricks.yml"
+            ],
+            "order": 7
+        },
+        "language": {
+            "//": "This property is always set to 'python'",
+            "skip_prompt_if": {},
+            "type": "string",
+            "default": "python",
+            "description": "Initial language for this project",
+            "enum": [
+                "python",
+                "sql"
+            ],
+            "order": 8
+        },
+        "lakeflow_only": {
+            "//": "This property is always set to 'no' for default-python",
+            "skip_prompt_if": {},
+            "type": "string",
+            "default": "no",
+            "description": "Internal flag for lakeflow-only templates",
+            "order": 9
+        },
+        "enable_pydabs": {
+            "//": "This property is always set to 'no' for default-python",
+            "skip_prompt_if": {},
+            "type": "string",
+            "default": "no",
+            "description": "Use Python instead of YAML for resource definitions",
+            "order": 10
         }
     },
-    "success_message": "Workspace to use (auto-detected, edit in '{{.project_name}}/databricks.yml'): {{workspace_host}}\n\n✨ Your new project has been created in the '{{.project_name}}' directory!\n\nPlease refer to the README.md file for \"getting started\" instructions.\nSee also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html."
+    "success_message": "\n✨ Your new project has been created in the '{{.project_name}}' directory!\n\nTo get started, refer to the project README.md file and the documentation at https://docs.databricks.com/dev-tools/bundles/index.html."
 }

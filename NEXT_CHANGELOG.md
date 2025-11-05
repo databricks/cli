@@ -1,16 +1,16 @@
 # NEXT CHANGELOG
 
-## Release v0.272.0
+## Release v0.276.0
 
 ### Notable Changes
 
 ### CLI
+* Remove previously added flags from the `jobs create` and `pipelines create` commands. ([#3870](https://github.com/databricks/cli/pull/3870))
 
 ### Dependency updates
 
 ### Bundles
-* Fix processing short pip flags in environment dependencies ([#3708](https://github.com/databricks/cli/pull/3708))
-* Add support for referencing local files in -e pip flag for environment dependencies ([#3708](https://github.com/databricks/cli/pull/3708))
-* Fix PIP flag processing in pipeline environment dependencies ([#3734](https://github.com/databricks/cli/pull/3734))
+* Updated the default-python template to follow the Lakeflow conventions: pipelines as source files, pyproject.toml ([#3712](https://github.com/databricks/cli/pull/3712)).
+* Fix a permissions bug adding second IS\_OWNER and causing "The job must have exactly one owner." error. Introduced in 0.274.0. ([#3850](https://github.com/databricks/cli/pull/3850))
 
 ### API Changes

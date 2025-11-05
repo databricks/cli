@@ -1,0 +1,24 @@
+{
+  "method": "PUT",
+  "path": "/api/2.0/permissions/clusters/[UUID]",
+  "body": {
+    "access_control_list": [
+      {
+        "permission_level": "CAN_ATTACH_TO",
+        "user_name": "viewer@example.com"
+      },
+      {
+        "group_name": "data-team",
+        "permission_level": "CAN_MANAGE"
+      },
+      {
+        "permission_level": "CAN_MANAGE",
+        "service_principal_name": "[UUID]"
+      },
+      {
+        "permission_level": "CAN_MANAGE",
+        "user_name": "[USERNAME]"
+      }
+    ]
+  }
+}

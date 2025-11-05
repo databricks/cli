@@ -53,18 +53,6 @@ Warning: required field "name" is not set
 }
 
 === resources.registered_models.rname ===
-Warning: required field "catalog_name" is not set
-  at resources.registered_models.rname
-  in databricks.yml:6:12
-
-Warning: required field "name" is not set
-  at resources.registered_models.rname
-  in databricks.yml:6:12
-
-Warning: required field "schema_name" is not set
-  at resources.registered_models.rname
-  in databricks.yml:6:12
-
 {
   "registered_models": {
     "rname": {}
@@ -136,6 +124,14 @@ Warning: required field "schema_name" is not set
 }
 
 === resources.dashboards.rname ===
+Error: dashboard display_name is required
+  at resources.dashboards.rname
+  in databricks.yml:6:12
+
+Error: dashboard warehouse_id is required
+  at resources.dashboards.rname
+  in databricks.yml:6:12
+
 {
   "dashboards": {
     "rname": {

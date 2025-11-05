@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/databricks/databricks-sdk-go/service/compute"
-	"github.com/google/uuid"
 )
 
 func (s *FakeWorkspace) ClustersCreate(req Request) any {
@@ -19,7 +18,7 @@ func (s *FakeWorkspace) ClustersCreate(req Request) any {
 
 	defer s.LockUnlock()()
 
-	clusterId := uuid.New().String()
+	clusterId := nextUUID()
 	request.ClusterId = clusterId
 	s.Clusters[clusterId] = request
 

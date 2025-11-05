@@ -14,8 +14,6 @@
 >>> musterr [CLI] volumes read main.myschema.myvolume
 Error: Resource catalog.VolumeInfo not found: main.myschema.myvolume
 
-Exit code (musterr): 1
-
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
@@ -107,8 +105,6 @@ Destroy complete!
 
 >>> musterr [CLI] volumes read main.myschema.myvolume
 Error: Resource catalog.VolumeInfo not found: main.myschema.myvolume
-
-Exit code (musterr): 1
 {
   "catalog_name": "main",
   "comment": "COMMENT2",

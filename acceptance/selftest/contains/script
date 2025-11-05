@@ -1,0 +1,17 @@
+title "This should complain about not_found not found"
+trace python3 ./success.py | contains.py not_found
+
+title "This should complain about not_found not found"
+trace musterr python3 ./failure.py | contains.py not_found
+
+title "This should not complain"
+trace python3 ./success.py | contains.py world Hello
+
+title "This should not complain"
+trace musterr python3 ./failure.py | contains.py Failed
+
+title "This should complain about Hello present in output"
+trace python3 ./success.py | contains.py !Hello
+
+title "This should not complain"
+trace python3 ./success.py | contains.py !not_found

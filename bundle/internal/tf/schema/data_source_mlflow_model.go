@@ -23,6 +23,10 @@ type DataSourceMlflowModelLatestVersions struct {
 	Tags                 []DataSourceMlflowModelLatestVersionsTags `json:"tags,omitempty"`
 }
 
+type DataSourceMlflowModelProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourceMlflowModelTags struct {
 	Key   string `json:"key,omitempty"`
 	Value string `json:"value,omitempty"`
@@ -35,5 +39,6 @@ type DataSourceMlflowModel struct {
 	PermissionLevel string                                `json:"permission_level,omitempty"`
 	UserId          string                                `json:"user_id,omitempty"`
 	LatestVersions  []DataSourceMlflowModelLatestVersions `json:"latest_versions,omitempty"`
+	ProviderConfig  *DataSourceMlflowModelProviderConfig  `json:"provider_config,omitempty"`
 	Tags            []DataSourceMlflowModelTags           `json:"tags,omitempty"`
 }

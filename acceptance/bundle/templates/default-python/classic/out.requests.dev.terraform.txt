@@ -3,24 +3,27 @@
   "path": "/api/2.0/pipelines",
   "body": {
     "channel": "CURRENT",
-    "configuration": {
-      "bundle.sourcePath": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/files/src"
-    },
     "deployment": {
       "kind": "BUNDLE",
       "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/state/metadata.json"
     },
     "development": true,
     "edition": "ADVANCED",
+    "environment": {
+      "dependencies": [
+        "--editable /Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/files"
+      ]
+    },
     "libraries": [
       {
-        "notebook": {
-          "path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/files/src/pipeline"
+        "glob": {
+          "include": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/files/src/my_default_python_etl/transformations/**"
         }
       }
     ],
-    "name": "[dev [USERNAME]] my_default_python_pipeline",
-    "schema": "my_default_python_dev",
+    "name": "[dev [USERNAME]] my_default_python_etl",
+    "root_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/files/src/my_default_python_etl",
+    "schema": "[USERNAME]",
     "tags": {
       "dev": "[USERNAME]"
     }
@@ -73,6 +76,13 @@
   "method": "POST",
   "path": "/api/2.0/workspace/mkdirs",
   "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/files/src/my_default_python_etl/transformations"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/mkdirs",
+  "body": {
     "path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/files/tests"
   }
 }
@@ -96,12 +106,22 @@
           },
           "data_security_mode": "SINGLE_USER",
           "node_type_id": "[NODE_TYPE_ID]",
-          "spark_version": "15.4.x-scala2.12"
+          "spark_version": "16.4.x-scala2.12"
         }
       }
     ],
     "max_concurrent_runs": 4,
-    "name": "[dev [USERNAME]] my_default_python_job",
+    "name": "[dev [USERNAME]] sample_job",
+    "parameters": [
+      {
+        "default": "hive_metastore",
+        "name": "catalog"
+      },
+      {
+        "default": "[USERNAME]",
+        "name": "schema"
+      }
+    ],
     "queue": {
       "enabled": true
     },
@@ -110,30 +130,41 @@
     },
     "tasks": [
       {
+        "job_cluster_key": "job_cluster",
+        "libraries": [
+          {
+            "whl": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/artifacts/.internal/my_default_python-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl"
+          }
+        ],
+        "notebook_task": {
+          "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/files/src/sample_notebook",
+          "source": "WORKSPACE"
+        },
+        "task_key": "notebook_task"
+      },
+      {
         "depends_on": [
           {
-            "task_key": "refresh_pipeline"
+            "task_key": "notebook_task"
           }
         ],
         "job_cluster_key": "job_cluster",
         "libraries": [
           {
-            "whl": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/artifacts/.internal/my_default_python-0.0.1+[UNIX_TIME_NANOS]-py3-none-any.whl"
+            "whl": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/artifacts/.internal/my_default_python-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl"
           }
         ],
         "python_wheel_task": {
           "entry_point": "main",
-          "package_name": "my_default_python"
+          "package_name": "my_default_python",
+          "parameters": [
+            "--catalog",
+            "hive_metastore",
+            "--schema",
+            "[USERNAME]"
+          ]
         },
-        "task_key": "main_task"
-      },
-      {
-        "job_cluster_key": "job_cluster",
-        "notebook_task": {
-          "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/files/src/notebook",
-          "source": "WORKSPACE"
-        },
-        "task_key": "notebook_task"
+        "task_key": "python_wheel_task"
       },
       {
         "depends_on": [

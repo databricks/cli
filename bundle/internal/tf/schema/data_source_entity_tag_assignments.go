@@ -12,6 +12,6 @@ type DataSourceEntityTagAssignmentsTagAssignments struct {
 type DataSourceEntityTagAssignments struct {
 	EntityName     string                                         `json:"entity_name"`
 	EntityType     string                                         `json:"entity_type"`
+	MaxResults     int                                            `json:"max_results,omitempty"`
 	TagAssignments []DataSourceEntityTagAssignmentsTagAssignments `json:"tag_assignments,omitempty"`
-	WorkspaceId    string                                         `json:"workspace_id,omitempty"`
 }

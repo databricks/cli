@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/databricks/databricks-sdk-go/service/catalog"
-	"github.com/google/uuid"
 )
 
 func (s *FakeWorkspace) VolumesCreate(req Request) Response {
@@ -31,7 +30,7 @@ func (s *FakeWorkspace) VolumesCreate(req Request) Response {
 		}
 	}
 	// QQQ first UUID should be constant per workspace?
-	volume.StorageLocation = fmt.Sprintf("s3://deco-uc-prod-isolated-aws-us-east-1/metastore/%s/volumes/%s", uuid.New().String(), uuid.New().String())
+	volume.StorageLocation = fmt.Sprintf("s3://deco-uc-prod-isolated-aws-us-east-1/metastore/%s/volumes/%s", nextUUID(), nextUUID())
 
 	defer s.LockUnlock()()
 

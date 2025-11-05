@@ -6,3 +6,20 @@ Env.UV_PYTHON = "3.10"
 
 [BundleConfig.default_name]
 bundle.name = "test-bundle"
+
+# User-agent:
+[[Repls]]
+Old = 'os/darwin'
+New = 'os/[OS]'
+
+[[Repls]]
+Old = 'os/windows'
+New = 'os/[OS]'
+
+[[Repls]]
+Old = 'os/linux'
+New = 'os/[OS]'
+
+[[Repls]]
+Old = ' cicd/github'
+New = ''

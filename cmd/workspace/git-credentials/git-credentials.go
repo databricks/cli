@@ -66,7 +66,8 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.GitUsername, "git-username", createReq.GitUsername, `The username or email provided with your Git provider account, depending on which provider you are using.`)
+	cmd.Flags().StringVar(&createReq.GitEmail, "git-email", createReq.GitEmail, `The authenticating email associated with your Git provider user account.`)
+	cmd.Flags().StringVar(&createReq.GitUsername, "git-username", createReq.GitUsername, `The username provided with your Git provider account and associated with the credential.`)
 	cmd.Flags().BoolVar(&createReq.IsDefaultForProvider, "is-default-for-provider", createReq.IsDefaultForProvider, `if the credential is the default for the given provider.`)
 	cmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `the name of the git credential, used for identification and ease of lookup.`)
 	cmd.Flags().StringVar(&createReq.PersonalAccessToken, "personal-access-token", createReq.PersonalAccessToken, `The personal access token used to authenticate to the corresponding Git provider.`)
@@ -339,7 +340,8 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.GitUsername, "git-username", updateReq.GitUsername, `The username or email provided with your Git provider account, depending on which provider you are using.`)
+	cmd.Flags().StringVar(&updateReq.GitEmail, "git-email", updateReq.GitEmail, `The authenticating email associated with your Git provider user account.`)
+	cmd.Flags().StringVar(&updateReq.GitUsername, "git-username", updateReq.GitUsername, `The username provided with your Git provider account and associated with the credential.`)
 	cmd.Flags().BoolVar(&updateReq.IsDefaultForProvider, "is-default-for-provider", updateReq.IsDefaultForProvider, `if the credential is the default for the given provider.`)
 	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `the name of the git credential, used for identification and ease of lookup.`)
 	cmd.Flags().StringVar(&updateReq.PersonalAccessToken, "personal-access-token", updateReq.PersonalAccessToken, `The personal access token used to authenticate to the corresponding Git provider.`)
@@ -392,6 +394,7 @@ func newUpdate() *cobra.Command {
 		if err != nil {
 			return fmt.Errorf("invalid CREDENTIAL_ID: %s", args[0])
 		}
+
 		if !cmd.Flags().Changed("json") {
 			updateReq.GitProvider = args[1]
 		}

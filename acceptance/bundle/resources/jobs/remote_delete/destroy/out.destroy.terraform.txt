@@ -1,0 +1,6 @@
+
+>>> errcode [CLI] bundle destroy --auto-approve
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Deleting files...
+Destroy complete!

@@ -75,8 +75,13 @@ type DataSourceExternalLocationExternalLocationInfo struct {
 	FileEventQueue    *DataSourceExternalLocationExternalLocationInfoFileEventQueue    `json:"file_event_queue,omitempty"`
 }
 
+type DataSourceExternalLocationProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourceExternalLocation struct {
 	Id                   string                                          `json:"id,omitempty"`
 	Name                 string                                          `json:"name"`
 	ExternalLocationInfo *DataSourceExternalLocationExternalLocationInfo `json:"external_location_info,omitempty"`
+	ProviderConfig       *DataSourceExternalLocationProviderConfig       `json:"provider_config,omitempty"`
 }

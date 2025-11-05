@@ -58,6 +58,7 @@ func (*ResourcePipeline) RemapState(p *pipelines.GetPipelineResponse) *pipelines
 		Tags:                spec.Tags,
 		Target:              spec.Target,
 		Trigger:             spec.Trigger,
+		UsagePolicyId:       spec.UsagePolicyId,
 		ForceSendFields:     filterFields[pipelines.CreatePipeline](spec.ForceSendFields, "AllowDuplicateNames", "DryRun", "RunAs", "Id"),
 	}
 }
@@ -106,6 +107,7 @@ func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string, config *pipe
 		Tags:                 config.Tags,
 		Target:               config.Target,
 		Trigger:              config.Trigger,
+		UsagePolicyId:        config.UsagePolicyId,
 		PipelineId:           id,
 		ForceSendFields:      filterFields[pipelines.EditPipeline](config.ForceSendFields),
 	}
@@ -117,7 +119,7 @@ func (r *ResourcePipeline) DoDelete(ctx context.Context, id string) error {
 	return r.client.Pipelines.DeleteByPipelineId(ctx, id)
 }
 
-func (*ResourcePipeline) FieldTriggers() map[string]deployplan.ActionType {
+func (*ResourcePipeline) FieldTriggers(_ bool) map[string]deployplan.ActionType {
 	return map[string]deployplan.ActionType{
 		"storage":                              deployplan.ActionTypeRecreate,
 		"catalog":                              deployplan.ActionTypeRecreate,

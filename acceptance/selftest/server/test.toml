@@ -1,5 +1,7 @@
 RecordRequests = true
 
+Env.MSYS_NO_PATHCONV = "1"
+
 # Ensure that server configuration works with EnvMatrix (regression test for https://github.com/databricks/cli/pull/2758)
 [EnvMatrix]
 VARIABLE_A = ["one", "two"]

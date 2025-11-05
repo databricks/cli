@@ -38,4 +38,7 @@ Methods
 Decorators
 -----------
 .. autodecorator:: databricks.bundles.core.job_mutator
+.. autodecorator:: databricks.bundles.core.pipeline_mutator
+.. autodecorator:: databricks.bundles.core.schema_mutator
+.. autodecorator:: databricks.bundles.core.volume_mutator
 .. autodecorator:: databricks.bundles.core.variables

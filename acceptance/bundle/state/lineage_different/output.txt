@@ -1,0 +1,25 @@
+
+=== Terraform state is present, env var does not matter, we select terraform
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Adding resources.json with different lineage
+>>> musterr [CLI] bundle plan
+Error: lineage mismatch in state files: <local direct state serial=0 lineage="222">, <remote terraform state serial=2 lineage="111">, <local terraform state serial=2 lineage="111">
+
+
+>>> musterr [CLI] bundle deploy
+Error: lineage mismatch in state files: <local direct state serial=0 lineage="222">, <remote terraform state serial=2 lineage="111">, <local terraform state serial=2 lineage="111">
+
+
+>>> musterr [CLI] bundle summary
+Error: lineage mismatch in state files: <local direct state serial=0 lineage="222">, <local terraform state serial=2 lineage="111">
+
+
+>>> musterr [CLI] bundle destroy --auto-approve
+Error: lineage mismatch in state files: <local direct state serial=0 lineage="222">, <remote terraform state serial=2 lineage="111">, <local terraform state serial=2 lineage="111">
+

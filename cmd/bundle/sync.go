@@ -8,12 +8,10 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy/files"
-	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/sync"
 	"github.com/spf13/cobra"
 )
@@ -78,19 +76,11 @@ Use 'databricks bundle deploy' for full resource deployment.`,
 	cmd.Flags().BoolVar(&f.dryRun, "dry-run", false, "simulate sync execution without making actual changes")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		ctx := logdiag.InitContext(cmd.Context())
-		cmd.SetContext(ctx)
-
-		b := utils.ConfigureBundleWithVariables(cmd)
-		if b == nil || logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
+		b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{})
+		if err != nil {
+			return err
 		}
-
-		// Run initialize phase to make sure paths are set.
-		phases.Initialize(ctx, b)
-		if logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
-		}
+		ctx := cmd.Context()
 
 		opts, err := f.syncOptionsFromBundle(cmd, b)
 		if err != nil {

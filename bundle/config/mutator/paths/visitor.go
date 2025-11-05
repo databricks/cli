@@ -15,6 +15,7 @@ func VisitPaths(root dyn.Value, fn VisitFunc) (dyn.Value, error) {
 		VisitArtifactPaths,
 		VisitDashboardPaths,
 		VisitPipelinePaths,
+		VisitPipelineLibrariesPaths,
 	}
 
 	newRoot := root

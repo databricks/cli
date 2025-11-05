@@ -138,6 +138,7 @@ func newCreate() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid ASSET_TYPE: %s", args[2])
 			}
+
 		}
 
 		response, err := w.CleanRoomAssets.Create(ctx, createReq)
@@ -219,6 +220,7 @@ func newCreateCleanRoomAssetReview() *cobra.Command {
 		if err != nil {
 			return fmt.Errorf("invalid ASSET_TYPE: %s", args[1])
 		}
+
 		createCleanRoomAssetReviewReq.Name = args[2]
 
 		response, err := w.CleanRoomAssets.CreateCleanRoomAssetReview(ctx, createCleanRoomAssetReviewReq)
@@ -284,6 +286,7 @@ func newDelete() *cobra.Command {
 		if err != nil {
 			return fmt.Errorf("invalid ASSET_TYPE: %s", args[1])
 		}
+
 		deleteReq.Name = args[2]
 
 		err = w.CleanRoomAssets.Delete(ctx, deleteReq)
@@ -349,6 +352,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return fmt.Errorf("invalid ASSET_TYPE: %s", args[1])
 		}
+
 		getReq.Name = args[2]
 
 		response, err := w.CleanRoomAssets.Get(ctx, getReq)
@@ -500,6 +504,7 @@ func newUpdate() *cobra.Command {
 		if err != nil {
 			return fmt.Errorf("invalid ASSET_TYPE: %s", args[1])
 		}
+
 		updateReq.Name = args[2]
 
 		response, err := w.CleanRoomAssets.Update(ctx, updateReq)

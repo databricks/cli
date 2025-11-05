@@ -7,13 +7,13 @@ type DataSourceExternalMetadatasExternalMetadata struct {
 	CreateTime  string            `json:"create_time,omitempty"`
 	CreatedBy   string            `json:"created_by,omitempty"`
 	Description string            `json:"description,omitempty"`
-	EntityType  string            `json:"entity_type"`
+	EntityType  string            `json:"entity_type,omitempty"`
 	Id          string            `json:"id,omitempty"`
 	MetastoreId string            `json:"metastore_id,omitempty"`
 	Name        string            `json:"name"`
 	Owner       string            `json:"owner,omitempty"`
 	Properties  map[string]string `json:"properties,omitempty"`
-	SystemType  string            `json:"system_type"`
+	SystemType  string            `json:"system_type,omitempty"`
 	UpdateTime  string            `json:"update_time,omitempty"`
 	UpdatedBy   string            `json:"updated_by,omitempty"`
 	Url         string            `json:"url,omitempty"`
@@ -21,5 +21,5 @@ type DataSourceExternalMetadatasExternalMetadata struct {
 
 type DataSourceExternalMetadatas struct {
 	ExternalMetadata []DataSourceExternalMetadatasExternalMetadata `json:"external_metadata,omitempty"`
-	WorkspaceId      string                                        `json:"workspace_id,omitempty"`
+	PageSize         int                                           `json:"page_size,omitempty"`
 }

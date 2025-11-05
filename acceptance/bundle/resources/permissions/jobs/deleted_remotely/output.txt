@@ -1,0 +1,152 @@
+
+>>> [CLI] bundle debug plan
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/jobs-permissions-deleted-remotely/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests
+
+>>> [CLI] permissions get jobs [JOB_ID]
+{
+  "access_control_list": [
+    {
+      "all_permissions": [
+        {
+          "inherited":false,
+          "permission_level":"CAN_VIEW"
+        }
+      ],
+      "display_name":"viewer@example.com",
+      "user_name":"viewer@example.com"
+    },
+    {
+      "all_permissions": [
+        {
+          "inherited":false,
+          "permission_level":"CAN_MANAGE"
+        }
+      ],
+      "group_name":"data-team"
+    },
+    {
+      "all_permissions": [
+        {
+          "inherited":false,
+          "permission_level":"IS_OWNER"
+        }
+      ],
+      "display_name":"[USERNAME]",
+      "user_name":"[USERNAME]"
+    },
+    {
+      "all_permissions": [
+        {
+          "inherited":true,
+          "inherited_from_object": [
+            "/jobs/"
+          ],
+          "permission_level":"CAN_MANAGE"
+        }
+      ],
+      "group_name":"admins"
+    }
+  ],
+  "object_id":"/jobs/[JOB_ID]",
+  "object_type":"job"
+}
+
+=== Delete permissions remotely
+>>> [CLI] permissions set jobs [JOB_ID] --json @remote_delete.json
+{
+  "object_id":"/jobs/[JOB_ID]",
+  "object_type":"job"
+}
+
+>>> print_requests
+{
+  "method": "PUT",
+  "path": "/api/2.0/permissions/jobs/[JOB_ID]",
+  "body": {}
+}
+
+>>> [CLI] permissions get jobs [JOB_ID]
+{
+  "access_control_list": [
+    {
+      "all_permissions": [
+        {
+          "inherited":true,
+          "inherited_from_object": [
+            "/jobs/"
+          ],
+          "permission_level":"CAN_MANAGE"
+        }
+      ],
+      "group_name":"admins"
+    }
+  ],
+  "object_id":"/jobs/[JOB_ID]",
+  "object_type":"job"
+}
+
+>>> [CLI] bundle debug plan
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/jobs-permissions-deleted-remotely/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests
+
+>>> [CLI] permissions get jobs [JOB_ID]
+{
+  "access_control_list": [
+    {
+      "all_permissions": [
+        {
+          "inherited":false,
+          "permission_level":"CAN_VIEW"
+        }
+      ],
+      "display_name":"viewer@example.com",
+      "user_name":"viewer@example.com"
+    },
+    {
+      "all_permissions": [
+        {
+          "inherited":false,
+          "permission_level":"CAN_MANAGE"
+        }
+      ],
+      "group_name":"data-team"
+    },
+    {
+      "all_permissions": [
+        {
+          "inherited":false,
+          "permission_level":"IS_OWNER"
+        }
+      ],
+      "display_name":"[USERNAME]",
+      "user_name":"[USERNAME]"
+    },
+    {
+      "all_permissions": [
+        {
+          "inherited":true,
+          "inherited_from_object": [
+            "/jobs/"
+          ],
+          "permission_level":"CAN_MANAGE"
+        }
+      ],
+      "group_name":"admins"
+    }
+  ],
+  "object_id":"/jobs/[JOB_ID]",
+  "object_type":"job"
+}

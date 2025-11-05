@@ -1,0 +1,10 @@
+{
+  "plan": {
+    "resources.jobs.sample_job": {
+      "action": "create"
+    },
+    "resources.pipelines.project_name_[UNIQUE_NAME]_etl": {
+      "action": "create"
+    }
+  }
+}

@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/stretchr/testify/assert"
@@ -16,7 +17,7 @@ import (
 )
 
 func TestValidateClusterAccess_SingleUser(t *testing.T) {
-	ctx := context.Background()
+	ctx := cmdio.MockDiscard(context.Background())
 	m := mocks.NewMockWorkspaceClient(t)
 	clustersAPI := m.GetMockClustersAPI()
 
@@ -29,7 +30,7 @@ func TestValidateClusterAccess_SingleUser(t *testing.T) {
 }
 
 func TestValidateClusterAccess_InvalidAccessMode(t *testing.T) {
-	ctx := context.Background()
+	ctx := cmdio.MockDiscard(context.Background())
 	m := mocks.NewMockWorkspaceClient(t)
 	clustersAPI := m.GetMockClustersAPI()
 
@@ -43,7 +44,7 @@ func TestValidateClusterAccess_InvalidAccessMode(t *testing.T) {
 }
 
 func TestValidateClusterAccess_ClusterNotFound(t *testing.T) {
-	ctx := context.Background()
+	ctx := cmdio.MockDiscard(context.Background())
 	m := mocks.NewMockWorkspaceClient(t)
 	clustersAPI := m.GetMockClustersAPI()
 
@@ -52,6 +53,24 @@ func TestValidateClusterAccess_ClusterNotFound(t *testing.T) {
 	err := validateClusterAccess(ctx, m.WorkspaceClient, "nonexistent")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to get cluster information for cluster ID 'nonexistent'")
+}
+
+func TestGenerateProxyCommand(t *testing.T) {
+	cmd, err := GenerateProxyCommand("cluster-123", true, 45*time.Second, "", "", 0, 0)
+	assert.NoError(t, err)
+	assert.Contains(t, cmd, "ssh connect --proxy --cluster=cluster-123 --auto-start-cluster=true --shutdown-delay=45s")
+	assert.NotContains(t, cmd, "--metadata")
+	assert.NotContains(t, cmd, "--profile")
+	assert.NotContains(t, cmd, "--handover-timeout")
+}
+
+func TestGenerateProxyCommand_WithExtraArgs(t *testing.T) {
+	cmd, err := GenerateProxyCommand("cluster-123", true, 45*time.Second, "test-profile", "user", 2222, 2*time.Minute)
+	assert.NoError(t, err)
+	assert.Contains(t, cmd, "ssh connect --proxy --cluster=cluster-123 --auto-start-cluster=true --shutdown-delay=45s")
+	assert.Contains(t, cmd, " --metadata=user,2222")
+	assert.Contains(t, cmd, " --handover-timeout=2m0s")
+	assert.Contains(t, cmd, " --profile=test-profile")
 }
 
 func TestGenerateHostConfig_Valid(t *testing.T) {
@@ -297,7 +316,7 @@ func TestUpdateSSHConfigFile_HandlesReadError(t *testing.T) {
 }
 
 func TestSetup_SuccessfulWithNewConfigFile(t *testing.T) {
-	ctx := context.Background()
+	ctx := cmdio.MockDiscard(context.Background())
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, "ssh_config")
 
@@ -331,7 +350,7 @@ func TestSetup_SuccessfulWithNewConfigFile(t *testing.T) {
 }
 
 func TestSetup_SuccessfulWithExistingConfigFile(t *testing.T) {
-	ctx := context.Background()
+	ctx := cmdio.MockDiscard(context.Background())
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, "ssh_config")
 
@@ -375,7 +394,7 @@ func TestSetup_SuccessfulWithExistingConfigFile(t *testing.T) {
 }
 
 func TestSetup_DoesNotOverrideExistingHost(t *testing.T) {
-	ctx := context.Background()
+	ctx := cmdio.MockDiscard(context.Background())
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, "ssh_config")
 

@@ -34,7 +34,13 @@ an SSH host configuration to your SSH config file.
 	cmd.Flags().StringVar(&sshConfigPath, "ssh-config", "", "Path to SSH config file (default ~/.ssh/config)")
 	cmd.Flags().DurationVar(&shutdownDelay, "shutdown-delay", defaultShutdownDelay, "SSH server will terminate after this delay if there are no active connections")
 
-	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
+		// We want to avoid the situation where the setup command works because it pulls the auth config from a bundle,
+		// but later on the `ssh host-name` command fails when executed outside of the bundle directory.
+		cmd.SetContext(root.SkipLoadBundle(cmd.Context()))
+		return root.MustWorkspaceClient(cmd, args)
+	}
+
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		client := cmdctx.WorkspaceClient(ctx)

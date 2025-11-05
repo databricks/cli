@@ -30,6 +30,7 @@ type ResourceSqlEndpoint struct {
 	MaxNumClusters          int                         `json:"max_num_clusters,omitempty"`
 	MinNumClusters          int                         `json:"min_num_clusters,omitempty"`
 	Name                    string                      `json:"name"`
+	NoWait                  bool                        `json:"no_wait,omitempty"`
 	NumActiveSessions       int                         `json:"num_active_sessions,omitempty"`
 	NumClusters             int                         `json:"num_clusters,omitempty"`
 	OdbcParams              []any                       `json:"odbc_params,omitempty"`

@@ -88,9 +88,9 @@ func newCreate() *cobra.Command {
 	cmd.Flags().IntVar(&createReq.MaxNumClusters, "max-num-clusters", createReq.MaxNumClusters, `Maximum number of clusters that the autoscaler will create to handle concurrent queries.`)
 	cmd.Flags().IntVar(&createReq.MinNumClusters, "min-num-clusters", createReq.MinNumClusters, `Minimum number of available clusters that will be maintained for this SQL warehouse.`)
 	cmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `Logical name for the cluster.`)
-	cmd.Flags().Var(&createReq.SpotInstancePolicy, "spot-instance-policy", `Supported values: [COST_OPTIMIZED, POLICY_UNSPECIFIED, RELIABILITY_OPTIMIZED]`)
+	cmd.Flags().Var(&createReq.SpotInstancePolicy, "spot-instance-policy", `Configurations whether the endpoint should use spot instances. Supported values: [COST_OPTIMIZED, POLICY_UNSPECIFIED, RELIABILITY_OPTIMIZED]`)
 	// TODO: complex arg: tags
-	cmd.Flags().Var(&createReq.WarehouseType, "warehouse-type", `Supported values: [CLASSIC, PRO, TYPE_UNSPECIFIED]`)
+	cmd.Flags().Var(&createReq.WarehouseType, "warehouse-type", `Warehouse type: PRO or CLASSIC. Supported values: [CLASSIC, PRO, TYPE_UNSPECIFIED]`)
 
 	cmd.Use = "create"
 	cmd.Short = `Create a warehouse.`
@@ -262,9 +262,9 @@ func newEdit() *cobra.Command {
 	cmd.Flags().IntVar(&editReq.MaxNumClusters, "max-num-clusters", editReq.MaxNumClusters, `Maximum number of clusters that the autoscaler will create to handle concurrent queries.`)
 	cmd.Flags().IntVar(&editReq.MinNumClusters, "min-num-clusters", editReq.MinNumClusters, `Minimum number of available clusters that will be maintained for this SQL warehouse.`)
 	cmd.Flags().StringVar(&editReq.Name, "name", editReq.Name, `Logical name for the cluster.`)
-	cmd.Flags().Var(&editReq.SpotInstancePolicy, "spot-instance-policy", `Supported values: [COST_OPTIMIZED, POLICY_UNSPECIFIED, RELIABILITY_OPTIMIZED]`)
+	cmd.Flags().Var(&editReq.SpotInstancePolicy, "spot-instance-policy", `Configurations whether the endpoint should use spot instances. Supported values: [COST_OPTIMIZED, POLICY_UNSPECIFIED, RELIABILITY_OPTIMIZED]`)
 	// TODO: complex arg: tags
-	cmd.Flags().Var(&editReq.WarehouseType, "warehouse-type", `Supported values: [CLASSIC, PRO, TYPE_UNSPECIFIED]`)
+	cmd.Flags().Var(&editReq.WarehouseType, "warehouse-type", `Warehouse type: PRO or CLASSIC. Supported values: [CLASSIC, PRO, TYPE_UNSPECIFIED]`)
 
 	cmd.Use = "edit ID"
 	cmd.Short = `Update a warehouse.`
@@ -613,7 +613,9 @@ func newList() *cobra.Command {
 
 	var listReq sql.ListWarehousesRequest
 
-	cmd.Flags().IntVar(&listReq.RunAsUserId, "run-as-user-id", listReq.RunAsUserId, `Service Principal which will be used to fetch the list of warehouses.`)
+	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `The max number of warehouses to return.`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `A page token, received from a previous ListWarehouses call.`)
+	cmd.Flags().IntVar(&listReq.RunAsUserId, "run-as-user-id", listReq.RunAsUserId, `Service Principal which will be used to fetch the list of endpoints.`)
 
 	cmd.Use = "list"
 	cmd.Short = `List warehouses.`
@@ -756,10 +758,11 @@ func newSetWorkspaceWarehouseConfig() *cobra.Command {
 	// TODO: complex arg: channel
 	// TODO: complex arg: config_param
 	// TODO: array: data_access_config
+	cmd.Flags().BoolVar(&setWorkspaceWarehouseConfigReq.EnableServerlessCompute, "enable-serverless-compute", setWorkspaceWarehouseConfigReq.EnableServerlessCompute, `Enable Serverless compute for SQL warehouses.`)
 	// TODO: array: enabled_warehouse_types
 	// TODO: complex arg: global_param
 	cmd.Flags().StringVar(&setWorkspaceWarehouseConfigReq.GoogleServiceAccount, "google-service-account", setWorkspaceWarehouseConfigReq.GoogleServiceAccount, `GCP only: Google Service Account used to pass to cluster to access Google Cloud Storage.`)
-	cmd.Flags().StringVar(&setWorkspaceWarehouseConfigReq.InstanceProfileArn, "instance-profile-arn", setWorkspaceWarehouseConfigReq.InstanceProfileArn, `AWS Only: Instance profile used to pass IAM role to the cluster.`)
+	cmd.Flags().StringVar(&setWorkspaceWarehouseConfigReq.InstanceProfileArn, "instance-profile-arn", setWorkspaceWarehouseConfigReq.InstanceProfileArn, `AWS Only: The instance profile used to pass an IAM role to the SQL warehouses.`)
 	cmd.Flags().Var(&setWorkspaceWarehouseConfigReq.SecurityPolicy, "security-policy", `Security policy for warehouses. Supported values: [DATA_ACCESS_CONTROL, NONE, PASSTHROUGH]`)
 	// TODO: complex arg: sql_configuration_parameters
 

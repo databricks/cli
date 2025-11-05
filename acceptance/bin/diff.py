@@ -31,8 +31,8 @@ def main():
             print(f"Regex error for pattern {r}: {e}", file=sys.stderr)
 
     if d1.is_dir() and d2.is_dir():
-        files1 = [str(p.relative_to(d1)) for p in d1.rglob("*") if p.is_file()]
-        files2 = [str(p.relative_to(d2)) for p in d2.rglob("*") if p.is_file()]
+        files1 = [str(p.relative_to(d1)) for p in d1.rglob("*") if p.is_file() and not p.name.startswith("LOG")]
+        files2 = [str(p.relative_to(d2)) for p in d2.rglob("*") if p.is_file() and not p.name.startswith("LOG")]
     else:
         assert d1.is_file(), d1
         assert d2.is_file(), d2

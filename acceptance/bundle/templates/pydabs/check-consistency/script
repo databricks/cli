@@ -1,0 +1,46 @@
+for enable_pydabs in yes no; do
+    echo "== Collecting resources into ./enable_pydabs=$enable_pydabs"
+
+    enable_pydabs=$enable_pydabs envsubst < input.json.tmpl > input.json
+
+    trace $CLI bundle init pydabs --config-file ./input.json
+
+    (
+        cd my_pydabs
+
+        trace uv venv --quiet
+        trace uv pip install --quiet $DATABRICKS_BUNDLES_WHEEL
+
+        trace $CLI bundle validate --output json | jq "pick(.resources)" > ../enable_pydabs=$enable_pydabs
+    )
+
+    rm -rf my_pydabs input.json
+done
+
+if ! trace diff -Naur enable_pydabs=yes enable_pydabs=no; then
+    cat <<'EOF'
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+❌ PyDABs Template Consistency Check Failed
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Python and YAML resource templates are generating different configurations!
+
+📁 Check ALL template files in:
+  libs/template/templates/default/template/{{.project_name}}/resources/
+    • *.py.tmpl      (Python resource definitions)
+    • *.yml.tmpl     (YAML resource definitions)
+
+🐛 Example issue: Field is ACTIVE in one format but COMMENTED in the other
+   "catalog": "${var.catalog}" vs # "catalog": "${var.catalog}"
+
+💡 Steps to fix:
+   1. Look at the diff above to identify which field differs
+   2. Find which *.py.tmpl file contains that field
+   3. Compare it to the corresponding *.yml.tmpl file
+   4. Ensure the field has the same active/commented state in both formats
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+EOF
+fi
+rm enable_pydabs=yes enable_pydabs=no

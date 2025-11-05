@@ -1,0 +1,27 @@
+
+=== This should complain about not_found not found
+>>> python3 ./success.py
+Hello world
+contains error: 'not_found' not found in the output.
+
+=== This should complain about not_found not found
+>>> musterr python3 ./failure.py
+Failed script
+contains error: 'not_found' not found in the output.
+
+=== This should not complain
+>>> python3 ./success.py
+Hello world
+
+=== This should not complain
+>>> musterr python3 ./failure.py
+Failed script
+
+=== This should complain about Hello present in output
+>>> python3 ./success.py
+Hello world
+contains error: 'Hello' was not expected
+
+=== This should not complain
+>>> python3 ./success.py
+Hello world

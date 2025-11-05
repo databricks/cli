@@ -2,9 +2,14 @@
 
 package schema
 
+type DataSourceViewsProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourceViews struct {
-	CatalogName string   `json:"catalog_name"`
-	Id          string   `json:"id,omitempty"`
-	Ids         []string `json:"ids,omitempty"`
-	SchemaName  string   `json:"schema_name"`
+	CatalogName    string                         `json:"catalog_name"`
+	Id             string                         `json:"id,omitempty"`
+	Ids            []string                       `json:"ids,omitempty"`
+	SchemaName     string                         `json:"schema_name"`
+	ProviderConfig *DataSourceViewsProviderConfig `json:"provider_config,omitempty"`
 }

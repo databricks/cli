@@ -179,12 +179,15 @@ func newCreateDatabaseInstance() *cobra.Command {
 
 	cmd.Flags().StringVar(&createDatabaseInstanceReq.DatabaseInstance.Capacity, "capacity", createDatabaseInstanceReq.DatabaseInstance.Capacity, `The sku of the instance.`)
 	// TODO: array: child_instance_refs
+	// TODO: array: custom_tags
+	// TODO: array: effective_custom_tags
 	cmd.Flags().BoolVar(&createDatabaseInstanceReq.DatabaseInstance.EnablePgNativeLogin, "enable-pg-native-login", createDatabaseInstanceReq.DatabaseInstance.EnablePgNativeLogin, `Whether to enable PG native password login on the instance.`)
 	cmd.Flags().BoolVar(&createDatabaseInstanceReq.DatabaseInstance.EnableReadableSecondaries, "enable-readable-secondaries", createDatabaseInstanceReq.DatabaseInstance.EnableReadableSecondaries, `Whether to enable secondaries to serve read-only traffic.`)
 	cmd.Flags().IntVar(&createDatabaseInstanceReq.DatabaseInstance.NodeCount, "node-count", createDatabaseInstanceReq.DatabaseInstance.NodeCount, `The number of nodes in the instance, composed of 1 primary and 0 or more secondaries.`)
 	// TODO: complex arg: parent_instance_ref
 	cmd.Flags().IntVar(&createDatabaseInstanceReq.DatabaseInstance.RetentionWindowInDays, "retention-window-in-days", createDatabaseInstanceReq.DatabaseInstance.RetentionWindowInDays, `The retention window for the instance.`)
 	cmd.Flags().BoolVar(&createDatabaseInstanceReq.DatabaseInstance.Stopped, "stopped", createDatabaseInstanceReq.DatabaseInstance.Stopped, `Whether to stop the instance.`)
+	cmd.Flags().StringVar(&createDatabaseInstanceReq.DatabaseInstance.UsagePolicyId, "usage-policy-id", createDatabaseInstanceReq.DatabaseInstance.UsagePolicyId, `The desired usage policy to associate with the instance.`)
 
 	cmd.Use = "create-database-instance NAME"
 	cmd.Short = `Create a Database Instance.`
@@ -278,14 +281,21 @@ func newCreateDatabaseInstanceRole() *cobra.Command {
 
 	cmd.Flags().Var(&createDatabaseInstanceRoleJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().StringVar(&createDatabaseInstanceRoleReq.DatabaseInstanceName, "database-instance-name", createDatabaseInstanceRoleReq.DatabaseInstanceName, ``)
 	// TODO: complex arg: attributes
+	// TODO: complex arg: effective_attributes
 	cmd.Flags().Var(&createDatabaseInstanceRoleReq.DatabaseInstanceRole.IdentityType, "identity-type", `The type of the role. Supported values: [GROUP, PG_ONLY, SERVICE_PRINCIPAL, USER]`)
+	cmd.Flags().StringVar(&createDatabaseInstanceRoleReq.DatabaseInstanceRole.InstanceName, "instance-name", createDatabaseInstanceRoleReq.DatabaseInstanceRole.InstanceName, ``)
 	cmd.Flags().Var(&createDatabaseInstanceRoleReq.DatabaseInstanceRole.MembershipRole, "membership-role", `An enum value for a standard role that this role is a member of. Supported values: [DATABRICKS_SUPERUSER]`)
-	cmd.Flags().StringVar(&createDatabaseInstanceRoleReq.DatabaseInstanceRole.Name, "name", createDatabaseInstanceRoleReq.DatabaseInstanceRole.Name, `The name of the role.`)
 
-	cmd.Use = "create-database-instance-role INSTANCE_NAME"
+	cmd.Use = "create-database-instance-role INSTANCE_NAME NAME"
 	cmd.Short = `Create a role for a Database Instance.`
-	cmd.Long = `Create a role for a Database Instance.`
+	cmd.Long = `Create a role for a Database Instance.
+
+  Arguments:
+    INSTANCE_NAME: 
+    NAME: The name of the role. This is the unique identifier for the role in an
+      instance.`
 
 	// This command is being previewed; hide from help output.
 	cmd.Hidden = true
@@ -293,7 +303,14 @@ func newCreateDatabaseInstanceRole() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(1)
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(1)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, provide only INSTANCE_NAME as positional arguments. Provide 'name' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(2)
 		return check(cmd, args)
 	}
 
@@ -315,6 +332,9 @@ func newCreateDatabaseInstanceRole() *cobra.Command {
 			}
 		}
 		createDatabaseInstanceRoleReq.InstanceName = args[0]
+		if !cmd.Flags().Changed("json") {
+			createDatabaseInstanceRoleReq.DatabaseInstanceRole.Name = args[1]
+		}
 
 		response, err := w.Database.CreateDatabaseInstanceRole(ctx, createDatabaseInstanceRoleReq)
 		if err != nil {
@@ -1500,12 +1520,15 @@ func newUpdateDatabaseInstance() *cobra.Command {
 
 	cmd.Flags().StringVar(&updateDatabaseInstanceReq.DatabaseInstance.Capacity, "capacity", updateDatabaseInstanceReq.DatabaseInstance.Capacity, `The sku of the instance.`)
 	// TODO: array: child_instance_refs
+	// TODO: array: custom_tags
+	// TODO: array: effective_custom_tags
 	cmd.Flags().BoolVar(&updateDatabaseInstanceReq.DatabaseInstance.EnablePgNativeLogin, "enable-pg-native-login", updateDatabaseInstanceReq.DatabaseInstance.EnablePgNativeLogin, `Whether to enable PG native password login on the instance.`)
 	cmd.Flags().BoolVar(&updateDatabaseInstanceReq.DatabaseInstance.EnableReadableSecondaries, "enable-readable-secondaries", updateDatabaseInstanceReq.DatabaseInstance.EnableReadableSecondaries, `Whether to enable secondaries to serve read-only traffic.`)
 	cmd.Flags().IntVar(&updateDatabaseInstanceReq.DatabaseInstance.NodeCount, "node-count", updateDatabaseInstanceReq.DatabaseInstance.NodeCount, `The number of nodes in the instance, composed of 1 primary and 0 or more secondaries.`)
 	// TODO: complex arg: parent_instance_ref
 	cmd.Flags().IntVar(&updateDatabaseInstanceReq.DatabaseInstance.RetentionWindowInDays, "retention-window-in-days", updateDatabaseInstanceReq.DatabaseInstance.RetentionWindowInDays, `The retention window for the instance.`)
 	cmd.Flags().BoolVar(&updateDatabaseInstanceReq.DatabaseInstance.Stopped, "stopped", updateDatabaseInstanceReq.DatabaseInstance.Stopped, `Whether to stop the instance.`)
+	cmd.Flags().StringVar(&updateDatabaseInstanceReq.DatabaseInstance.UsagePolicyId, "usage-policy-id", updateDatabaseInstanceReq.DatabaseInstance.UsagePolicyId, `The desired usage policy to associate with the instance.`)
 
 	cmd.Use = "update-database-instance NAME UPDATE_MASK"
 	cmd.Short = `Update a Database Instance.`

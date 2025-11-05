@@ -21,7 +21,3 @@ func NewPipelineUpdateUrlEvent(host, updateId, pipelineId string) *PipelineUpdat
 func (event *PipelineUpdateUrlEvent) String() string {
 	return fmt.Sprintf("Update URL: %s\n", event.Url)
 }
-
-func (event *PipelineUpdateUrlEvent) IsInplaceSupported() bool {
-	return false
-}

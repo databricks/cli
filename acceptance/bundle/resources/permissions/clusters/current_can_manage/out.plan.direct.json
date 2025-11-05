@@ -1,0 +1,51 @@
+{
+  "plan": {
+    "resources.clusters.foo": {
+      "action": "create",
+      "new_state": {
+        "config": {
+          "autotermination_minutes": 60,
+          "cluster_name": "test-cluster",
+          "node_type_id": "[NODE_TYPE_ID]",
+          "num_workers": 1,
+          "spark_version": "15.4.x-scala2.12"
+        }
+      }
+    },
+    "resources.clusters.foo.permissions": {
+      "depends_on": [
+        {
+          "node": "resources.clusters.foo",
+          "label": "${resources.clusters.foo.id}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "config": {
+          "object_id": "",
+          "permissions": [
+            {
+              "permission_level": "CAN_ATTACH_TO",
+              "user_name": "viewer@example.com"
+            },
+            {
+              "group_name": "data-team",
+              "permission_level": "CAN_MANAGE"
+            },
+            {
+              "permission_level": "CAN_MANAGE",
+              "service_principal_name": "[UUID]"
+            },
+            {
+              "permission_level": "CAN_MANAGE",
+              "user_name": "[USERNAME]"
+            }
+          ]
+        },
+        "vars": {
+          "object_id": "/clusters/${resources.clusters.foo.id}"
+        }
+      }
+    }
+  }
+}

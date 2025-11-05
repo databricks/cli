@@ -38,8 +38,13 @@ type DataSourceCatalogCatalogInfo struct {
 	ProvisioningInfo                    *DataSourceCatalogCatalogInfoProvisioningInfo                    `json:"provisioning_info,omitempty"`
 }
 
+type DataSourceCatalogProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourceCatalog struct {
-	Id          string                        `json:"id,omitempty"`
-	Name        string                        `json:"name"`
-	CatalogInfo *DataSourceCatalogCatalogInfo `json:"catalog_info,omitempty"`
+	Id             string                           `json:"id,omitempty"`
+	Name           string                           `json:"name"`
+	CatalogInfo    *DataSourceCatalogCatalogInfo    `json:"catalog_info,omitempty"`
+	ProviderConfig *DataSourceCatalogProviderConfig `json:"provider_config,omitempty"`
 }

@@ -2,6 +2,10 @@
 
 package schema
 
+type DataSourceStorageCredentialProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourceStorageCredentialStorageCredentialInfoAwsIamRole struct {
 	ExternalId         string `json:"external_id,omitempty"`
 	RoleArn            string `json:"role_arn"`
@@ -55,5 +59,6 @@ type DataSourceStorageCredentialStorageCredentialInfo struct {
 type DataSourceStorageCredential struct {
 	Id                    string                                            `json:"id,omitempty"`
 	Name                  string                                            `json:"name"`
+	ProviderConfig        *DataSourceStorageCredentialProviderConfig        `json:"provider_config,omitempty"`
 	StorageCredentialInfo *DataSourceStorageCredentialStorageCredentialInfo `json:"storage_credential_info,omitempty"`
 }

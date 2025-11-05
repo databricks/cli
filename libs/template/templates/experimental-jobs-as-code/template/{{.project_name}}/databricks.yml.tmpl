@@ -5,14 +5,13 @@ bundle:
   uuid: {{bundle_uuid}}
   databricks_cli_version: ">= 0.248.0"
 
-experimental:
-  python:
-    # Activate virtual environment before loading resources defined in Python.
-    # If disabled, defaults to using the Python interpreter available in the current shell.
-    venv_path: .venv
-    # Functions called to load resources defined in Python. See resources/__init__.py
-    resources:
-      - "resources:load_resources"
+python:
+  # Activate virtual environment before loading resources defined in Python.
+  # If disabled, defaults to using the Python interpreter available in the current shell.
+  venv_path: .venv
+  # Functions called to load resources defined in Python. See resources/__init__.py
+  resources:
+    - "resources:load_resources"
 
 {{ if .include_python -}}
 artifacts:

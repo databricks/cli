@@ -1,0 +1,13 @@
+bundle:
+  name: acc-$UNIQUE_NAME
+
+resources:
+  pipelines:
+    my:
+      name: test-pipeline-$UNIQUE_NAME
+      $STORAGE_KEY: dbfs:/pipelines/custom
+      $CATALOG_KEY: mycatalog1
+      $ING_KEY: {"connection_name": "my_connection", "objects": [{}]}
+      libraries:
+        - file:
+            path: "./foo.py"

@@ -31,7 +31,7 @@ func (s slogAdapter) Enabled(ctx context.Context, level sdk.Level) bool {
 	}
 }
 
-func (s slogAdapter) log(logger *slog.Logger, ctx context.Context, level slog.Level, msg string) {
+func (s slogAdapter) log(ctx context.Context, logger *slog.Logger, level slog.Level, msg string) {
 	var pcs [1]uintptr
 	// skip [runtime.Callers, this function, this function's caller, the caller in the SDK].
 	runtime.Callers(4, pcs[:])
@@ -48,7 +48,7 @@ func (s slogAdapter) Tracef(ctx context.Context, format string, v ...any) {
 	if !logger.Enabled(ctx, LevelTrace) {
 		return
 	}
-	s.log(logger, ctx, LevelTrace, fmt.Sprintf(format, v...))
+	s.log(ctx, logger, LevelTrace, fmt.Sprintf(format, v...))
 }
 
 func (s slogAdapter) Debugf(ctx context.Context, format string, v ...any) {
@@ -56,7 +56,7 @@ func (s slogAdapter) Debugf(ctx context.Context, format string, v ...any) {
 	if !logger.Enabled(ctx, LevelDebug) {
 		return
 	}
-	s.log(logger, ctx, LevelDebug, fmt.Sprintf(format, v...))
+	s.log(ctx, logger, LevelDebug, fmt.Sprintf(format, v...))
 }
 
 func (s slogAdapter) Infof(ctx context.Context, format string, v ...any) {
@@ -64,7 +64,7 @@ func (s slogAdapter) Infof(ctx context.Context, format string, v ...any) {
 	if !logger.Enabled(ctx, LevelInfo) {
 		return
 	}
-	s.log(logger, ctx, LevelInfo, fmt.Sprintf(format, v...))
+	s.log(ctx, logger, LevelInfo, fmt.Sprintf(format, v...))
 }
 
 func (s slogAdapter) Warnf(ctx context.Context, format string, v ...any) {
@@ -72,7 +72,7 @@ func (s slogAdapter) Warnf(ctx context.Context, format string, v ...any) {
 	if !logger.Enabled(ctx, LevelWarn) {
 		return
 	}
-	s.log(logger, ctx, LevelWarn, fmt.Sprintf(format, v...))
+	s.log(ctx, logger, LevelWarn, fmt.Sprintf(format, v...))
 }
 
 func (s slogAdapter) Errorf(ctx context.Context, format string, v ...any) {
@@ -80,7 +80,7 @@ func (s slogAdapter) Errorf(ctx context.Context, format string, v ...any) {
 	if !logger.Enabled(ctx, LevelError) {
 		return
 	}
-	s.log(logger, ctx, LevelError, fmt.Sprintf(format, v...))
+	s.log(ctx, logger, LevelError, fmt.Sprintf(format, v...))
 }
 
 func init() {

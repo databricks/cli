@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/databricks/databricks-sdk-go/service/database"
-	"github.com/google/uuid"
 )
 
 var ForceSendFields []string = []string{
@@ -29,7 +28,7 @@ func (s *FakeWorkspace) DatabaseInstanceCreate(req Request) Response {
 	}
 
 	// set default fields:
-	databaseInstance.Uid = uuid.New().String()
+	databaseInstance.Uid = nextUUID()
 	databaseInstance.State = database.DatabaseInstanceStateAvailable
 	databaseInstance.PgVersion = "PG_VERSION_16"
 	databaseInstance.EffectiveNodeCount = 1

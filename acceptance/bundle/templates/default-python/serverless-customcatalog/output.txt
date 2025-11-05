@@ -1,22 +1,71 @@
 
 >>> [CLI] bundle init default-python --config-file [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/input.json --output-dir output
-
 Welcome to the default Python template for Databricks Asset Bundles!
-Workspace to use (auto-detected, edit in 'my_default_python/databricks.yml'): [DATABRICKS_URL]
+
+Answer the following questions to customize your project.
+You can always change your configuration in the databricks.yml file later.
+
+Note that [DATABRICKS_URL] is used for initialization.
+(For information on how to change your profile, see https://docs.databricks.com/dev-tools/cli/profiles.html.)
 
 ✨ Your new project has been created in the 'my_default_python' directory!
 
-Please refer to the README.md file for "getting started" instructions.
-See also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
+To get started, refer to the project README.md file and the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
 
 >>> diff.py [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/output output/
---- [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/output/my_default_python/resources/my_default_python.pipeline.yml
-+++ output/my_default_python/resources/my_default_python.pipeline.yml
-@@ -4,6 +4,5 @@
-     my_default_python_pipeline:
-       name: my_default_python_pipeline
--      ## Catalog is required for serverless compute
--      catalog: main
+--- [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/output/my_default_python/databricks.yml
++++ output/my_default_python/databricks.yml
+@@ -32,5 +32,5 @@
+       host: [DATABRICKS_URL]
+     variables:
+-      catalog: hive_metastore
 +      catalog: customcatalog
-       schema: my_default_python_${bundle.target}
+       schema: ${workspace.current_user.short_name}
+   prod:
+@@ -41,5 +41,5 @@
+       root_path: /Workspace/Users/[USERNAME]/.bundle/${bundle.name}/${bundle.target}
+     variables:
+-      catalog: hive_metastore
++      catalog: customcatalog
+       schema: prod
+     permissions:
+--- [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/output/my_default_python/resources/my_default_python_etl.pipeline.yml
++++ output/my_default_python/resources/my_default_python_etl.pipeline.yml
+@@ -5,6 +5,5 @@
+     my_default_python_etl:
+       name: my_default_python_etl
+-      # Catalog is required for serverless compute
+-      catalog: main
++      catalog: ${var.catalog}
+       schema: ${var.schema}
        serverless: true
+--- [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/output/my_default_python/src/my_default_python_etl/explorations/sample_exploration.ipynb
++++ output/my_default_python/src/my_default_python_etl/explorations/sample_exploration.ipynb
+@@ -38,5 +38,5 @@
+     "# !!! Before performing any data analysis, make sure to run the pipeline to materialize the sample datasets. The tables referenced in this notebook depend on that step./n",
+     "/n",
+-    "display(spark.sql(/"SELECT * FROM hive_metastore.[USERNAME].sample_trips_my_default_python/"))"
++    "display(spark.sql(/"SELECT * FROM customcatalog.[USERNAME].sample_trips_my_default_python/"))"
+    ]
+   }
+--- [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/output/my_default_python/src/sample_notebook.ipynb
++++ output/my_default_python/src/sample_notebook.ipynb
+@@ -82,9 +82,9 @@
+    "widgets": {
+     "catalog": {
+-     "currentValue": "hive_metastore",
++     "currentValue": "customcatalog",
+      "nuid": "c4t4l0g-w1dg-3t12-3456-[NUMID]",
+      "typedWidgetInfo": {
+       "autoCreated": false,
+-      "defaultValue": "hive_metastore",
++      "defaultValue": "customcatalog",
+       "label": "Catalog",
+       "name": "catalog",
+@@ -96,5 +96,5 @@
+      },
+      "widgetInfo": {
+-      "defaultValue": "hive_metastore",
++      "defaultValue": "customcatalog",
+       "label": "Catalog",
+       "name": "catalog",

@@ -1,0 +1,9 @@
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete cluster test_cluster
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Deleting files...
+Destroy complete!

@@ -8,10 +8,6 @@ from databricks.bundles.pipelines._models.ingestion_config import (
     IngestionConfig,
     IngestionConfigParam,
 )
-from databricks.bundles.pipelines._models.ingestion_source_type import (
-    IngestionSourceType,
-    IngestionSourceTypeParam,
-)
 from databricks.bundles.pipelines._models.source_config import (
     SourceConfig,
     SourceConfigParam,
@@ -60,13 +56,6 @@ class IngestionPipelineDefinition:
     Top-level source configurations
     """
 
-    source_type: VariableOrOptional[IngestionSourceType] = None
-    """
-    The type of the foreign source.
-    The source type will be inferred from the source connection or ingestion gateway.
-    This field is output only and will be ignored if provided.
-    """
-
     table_configuration: VariableOrOptional[TableSpecificConfig] = None
     """
     Configuration settings to control the ingestion of tables. These settings are applied to all tables in the pipeline.
@@ -112,13 +101,6 @@ class IngestionPipelineDefinitionDict(TypedDict, total=False):
     :meta private: [EXPERIMENTAL]
     
     Top-level source configurations
-    """
-
-    source_type: VariableOrOptional[IngestionSourceTypeParam]
-    """
-    The type of the foreign source.
-    The source type will be inferred from the source connection or ingestion gateway.
-    This field is output only and will be ignored if provided.
     """
 
     table_configuration: VariableOrOptional[TableSpecificConfigParam]

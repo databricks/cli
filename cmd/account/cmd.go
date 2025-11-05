@@ -3,6 +3,7 @@
 package account
 
 import (
+	"github.com/databricks/cli/libs/cmdgroup"
 	"github.com/spf13/cobra"
 
 	account_access_control "github.com/databricks/cli/cmd/account/access-control"
@@ -53,11 +54,13 @@ func New() *cobra.Command {
 	cmd.AddCommand(account_access_control.New())
 	cmd.AddCommand(billable_usage.New())
 	cmd.AddCommand(budget_policy.New())
+	cmd.AddCommand(budgets.New())
 	cmd.AddCommand(credentials.New())
 	cmd.AddCommand(custom_app_integration.New())
 	cmd.AddCommand(encryption_keys.New())
 	cmd.AddCommand(account_federation_policy.New())
 	cmd.AddCommand(account_groups_v2.New())
+	cmd.AddCommand(account_iam_v2.New())
 	cmd.AddCommand(account_ip_access_lists.New())
 	cmd.AddCommand(log_delivery.New())
 	cmd.AddCommand(account_metastore_assignments.New())
@@ -81,17 +84,17 @@ func New() *cobra.Command {
 	cmd.AddCommand(workspace_assignment.New())
 	cmd.AddCommand(workspace_network_configuration.New())
 	cmd.AddCommand(workspaces.New())
-	cmd.AddCommand(account_iam_v2.New())
-	cmd.AddCommand(budgets.New())
 
 	cmd.AddCommand(account_groups.New())
 	cmd.AddCommand(account_service_principals.New())
 	cmd.AddCommand(account_users.New())
 
-	// Register all groups with the parent command.
-	groups := Groups()
-	for i := range groups {
-		cmd.AddGroup(&groups[i])
+	// Register command groups, filtering out empty groups or groups with only hidden commands.
+	allGroups := Groups()
+	allCommands := cmd.Commands()
+	filteredGroups := cmdgroup.FilterGroups(allGroups, allCommands)
+	for i := range filteredGroups {
+		cmd.AddGroup(&filteredGroups[i])
 	}
 
 	return cmd

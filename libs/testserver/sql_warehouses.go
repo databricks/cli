@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/databricks/databricks-sdk-go/service/sql"
-	"github.com/google/uuid"
 )
 
 func (s *FakeWorkspace) SqlWarehousesUpsert(req Request, warehouseId string) Response {
@@ -29,7 +28,7 @@ func (s *FakeWorkspace) SqlWarehousesUpsert(req Request, warehouseId string) Res
 			}
 		}
 	} else {
-		warehouseId = uuid.New().String()
+		warehouseId = nextUUID()
 	}
 	warehouse.Id = warehouseId
 	warehouse.Name = warehouseId

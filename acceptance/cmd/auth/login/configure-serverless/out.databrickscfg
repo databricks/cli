@@ -1,0 +1,4 @@
+[DEFAULT]
+host                  = [DATABRICKS_URL]
+serverless_compute_id = auto
+auth_type             = databricks-cli

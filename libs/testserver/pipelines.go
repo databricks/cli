@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
-	"github.com/google/uuid"
 )
 
 func (s *FakeWorkspace) PipelineGet(pipelineId string) Response {
@@ -39,7 +38,7 @@ func (s *FakeWorkspace) PipelineCreate(req Request) Response {
 	var r pipelines.GetPipelineResponse
 	r.Spec = &spec
 
-	pipelineId := uuid.New().String()
+	pipelineId := nextUUID()
 	r.PipelineId = pipelineId
 	r.CreatorUserName = "tester@databricks.com"
 	r.LastModified = time.Now().UnixMilli()
@@ -104,7 +103,7 @@ func (s *FakeWorkspace) PipelineStartUpdate(pipelineId string) Response {
 		}
 	}
 
-	updateId := uuid.New().String()
+	updateId := nextUUID()
 	s.PipelineUpdates[updateId] = true
 
 	return Response{

@@ -1,0 +1,82 @@
+{
+  "bundle": {
+    "deployment": {
+      "lock": {
+        "enabled": false
+      }
+    },
+    "environment": "dev",
+    "git": {
+      "bundle_root_path": "."
+    },
+    "mode": "development",
+    "name": "BUNDLE",
+    "target": "dev"
+  },
+  "presets": {
+    "jobs_max_concurrent_runs": 4,
+    "name_prefix": "prefix",
+    "pipelines_development": true,
+    "tags": {
+      "dev": "[USERNAME]"
+    },
+    "trigger_pause_status": "PAUSED"
+  },
+  "resources": {
+    "jobs": {
+      "job1": {
+        "max_concurrent_runs": 4,
+        "name": "prefixjob1",
+        "queue": {
+          "enabled": true
+        },
+        "tags": {
+          "dev": "[USERNAME]"
+        }
+      }
+    },
+    "models": {
+      "model1": {
+        "name": "prefixmodel 1",
+        "tags": [
+          {
+            "key": "dev",
+            "value": "[USERNAME]"
+          }
+        ]
+      }
+    },
+    "schemas": {
+      "schema1": {
+        "catalog_name": "mycatalog",
+        "name": "prefixschema1"
+      }
+    },
+    "volumes": {
+      "volume1": {
+        "catalog_name": "catalog1",
+        "name": "volume1",
+        "schema_name": "schema1",
+        "volume_type": "MANAGED"
+      }
+    }
+  },
+  "sync": {
+    "paths": [
+      "."
+    ]
+  },
+  "workspace": {
+    "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/BUNDLE/dev/artifacts",
+    "current_user": {
+      "domain_friendly_name": "[USERNAME]",
+      "id": "[USERID]",
+      "short_name": "[USERNAME]",
+      "userName": "[USERNAME]"
+    },
+    "file_path": "/Workspace/Users/[USERNAME]/.bundle/BUNDLE/dev/files",
+    "resource_path": "/Workspace/Users/[USERNAME]/.bundle/BUNDLE/dev/resources",
+    "root_path": "/Workspace/Users/[USERNAME]/.bundle/BUNDLE/dev",
+    "state_path": "/Workspace/Users/[USERNAME]/.bundle/BUNDLE/dev/state"
+  }
+}

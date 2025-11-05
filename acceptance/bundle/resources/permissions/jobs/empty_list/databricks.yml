@@ -1,0 +1,11 @@
+resources:
+  jobs:
+    foo:
+      name: job1
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Workspace/Users/user@example.com/notebook
+            source: WORKSPACE
+      # this is interpreted the same as nil, but it's IMO a bug; it should do default IS_OWNER setting
+      permissions: []

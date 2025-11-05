@@ -35,7 +35,7 @@ type ResourceJobEnvironmentSpec struct {
 	Client             string   `json:"client,omitempty"`
 	Dependencies       []string `json:"dependencies,omitempty"`
 	EnvironmentVersion string   `json:"environment_version,omitempty"`
-	JarDependencies    []string `json:"jar_dependencies,omitempty"`
+	JavaDependencies   []string `json:"java_dependencies,omitempty"`
 }
 
 type ResourceJobEnvironment struct {
@@ -213,19 +213,28 @@ type ResourceJobJobClusterNewClusterLibraryMaven struct {
 	Repo        string   `json:"repo,omitempty"`
 }
 
+type ResourceJobJobClusterNewClusterLibraryProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourceJobJobClusterNewClusterLibraryPypi struct {
 	Package string `json:"package"`
 	Repo    string `json:"repo,omitempty"`
 }
 
 type ResourceJobJobClusterNewClusterLibrary struct {
-	Egg          string                                       `json:"egg,omitempty"`
-	Jar          string                                       `json:"jar,omitempty"`
-	Requirements string                                       `json:"requirements,omitempty"`
-	Whl          string                                       `json:"whl,omitempty"`
-	Cran         *ResourceJobJobClusterNewClusterLibraryCran  `json:"cran,omitempty"`
-	Maven        *ResourceJobJobClusterNewClusterLibraryMaven `json:"maven,omitempty"`
-	Pypi         *ResourceJobJobClusterNewClusterLibraryPypi  `json:"pypi,omitempty"`
+	Egg            string                                                `json:"egg,omitempty"`
+	Jar            string                                                `json:"jar,omitempty"`
+	Requirements   string                                                `json:"requirements,omitempty"`
+	Whl            string                                                `json:"whl,omitempty"`
+	Cran           *ResourceJobJobClusterNewClusterLibraryCran           `json:"cran,omitempty"`
+	Maven          *ResourceJobJobClusterNewClusterLibraryMaven          `json:"maven,omitempty"`
+	ProviderConfig *ResourceJobJobClusterNewClusterLibraryProviderConfig `json:"provider_config,omitempty"`
+	Pypi           *ResourceJobJobClusterNewClusterLibraryPypi           `json:"pypi,omitempty"`
+}
+
+type ResourceJobJobClusterNewClusterProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
 }
 
 type ResourceJobJobClusterNewClusterWorkloadTypeClients struct {
@@ -273,6 +282,7 @@ type ResourceJobJobClusterNewCluster struct {
 	GcpAttributes                     *ResourceJobJobClusterNewClusterGcpAttributes     `json:"gcp_attributes,omitempty"`
 	InitScripts                       []ResourceJobJobClusterNewClusterInitScripts      `json:"init_scripts,omitempty"`
 	Library                           []ResourceJobJobClusterNewClusterLibrary          `json:"library,omitempty"`
+	ProviderConfig                    *ResourceJobJobClusterNewClusterProviderConfig    `json:"provider_config,omitempty"`
 	WorkloadType                      *ResourceJobJobClusterNewClusterWorkloadType      `json:"workload_type,omitempty"`
 }
 
@@ -292,19 +302,24 @@ type ResourceJobLibraryMaven struct {
 	Repo        string   `json:"repo,omitempty"`
 }
 
+type ResourceJobLibraryProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourceJobLibraryPypi struct {
 	Package string `json:"package"`
 	Repo    string `json:"repo,omitempty"`
 }
 
 type ResourceJobLibrary struct {
-	Egg          string                   `json:"egg,omitempty"`
-	Jar          string                   `json:"jar,omitempty"`
-	Requirements string                   `json:"requirements,omitempty"`
-	Whl          string                   `json:"whl,omitempty"`
-	Cran         *ResourceJobLibraryCran  `json:"cran,omitempty"`
-	Maven        *ResourceJobLibraryMaven `json:"maven,omitempty"`
-	Pypi         *ResourceJobLibraryPypi  `json:"pypi,omitempty"`
+	Egg            string                            `json:"egg,omitempty"`
+	Jar            string                            `json:"jar,omitempty"`
+	Requirements   string                            `json:"requirements,omitempty"`
+	Whl            string                            `json:"whl,omitempty"`
+	Cran           *ResourceJobLibraryCran           `json:"cran,omitempty"`
+	Maven          *ResourceJobLibraryMaven          `json:"maven,omitempty"`
+	ProviderConfig *ResourceJobLibraryProviderConfig `json:"provider_config,omitempty"`
+	Pypi           *ResourceJobLibraryPypi           `json:"pypi,omitempty"`
 }
 
 type ResourceJobNewClusterAutoscale struct {
@@ -447,19 +462,28 @@ type ResourceJobNewClusterLibraryMaven struct {
 	Repo        string   `json:"repo,omitempty"`
 }
 
+type ResourceJobNewClusterLibraryProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourceJobNewClusterLibraryPypi struct {
 	Package string `json:"package"`
 	Repo    string `json:"repo,omitempty"`
 }
 
 type ResourceJobNewClusterLibrary struct {
-	Egg          string                             `json:"egg,omitempty"`
-	Jar          string                             `json:"jar,omitempty"`
-	Requirements string                             `json:"requirements,omitempty"`
-	Whl          string                             `json:"whl,omitempty"`
-	Cran         *ResourceJobNewClusterLibraryCran  `json:"cran,omitempty"`
-	Maven        *ResourceJobNewClusterLibraryMaven `json:"maven,omitempty"`
-	Pypi         *ResourceJobNewClusterLibraryPypi  `json:"pypi,omitempty"`
+	Egg            string                                      `json:"egg,omitempty"`
+	Jar            string                                      `json:"jar,omitempty"`
+	Requirements   string                                      `json:"requirements,omitempty"`
+	Whl            string                                      `json:"whl,omitempty"`
+	Cran           *ResourceJobNewClusterLibraryCran           `json:"cran,omitempty"`
+	Maven          *ResourceJobNewClusterLibraryMaven          `json:"maven,omitempty"`
+	ProviderConfig *ResourceJobNewClusterLibraryProviderConfig `json:"provider_config,omitempty"`
+	Pypi           *ResourceJobNewClusterLibraryPypi           `json:"pypi,omitempty"`
+}
+
+type ResourceJobNewClusterProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
 }
 
 type ResourceJobNewClusterWorkloadTypeClients struct {
@@ -506,6 +530,7 @@ type ResourceJobNewCluster struct {
 	GcpAttributes              *ResourceJobNewClusterGcpAttributes     `json:"gcp_attributes,omitempty"`
 	InitScripts                []ResourceJobNewClusterInitScripts      `json:"init_scripts,omitempty"`
 	Library                    []ResourceJobNewClusterLibrary          `json:"library,omitempty"`
+	ProviderConfig             *ResourceJobNewClusterProviderConfig    `json:"provider_config,omitempty"`
 	WorkloadType               *ResourceJobNewClusterWorkloadType      `json:"workload_type,omitempty"`
 }
 
@@ -529,6 +554,10 @@ type ResourceJobParameter struct {
 type ResourceJobPipelineTask struct {
 	FullRefresh bool   `json:"full_refresh,omitempty"`
 	PipelineId  string `json:"pipeline_id"`
+}
+
+type ResourceJobProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
 }
 
 type ResourceJobPythonWheelTask struct {
@@ -740,19 +769,24 @@ type ResourceJobTaskForEachTaskTaskLibraryMaven struct {
 	Repo        string   `json:"repo,omitempty"`
 }
 
+type ResourceJobTaskForEachTaskTaskLibraryProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourceJobTaskForEachTaskTaskLibraryPypi struct {
 	Package string `json:"package"`
 	Repo    string `json:"repo,omitempty"`
 }
 
 type ResourceJobTaskForEachTaskTaskLibrary struct {
-	Egg          string                                      `json:"egg,omitempty"`
-	Jar          string                                      `json:"jar,omitempty"`
-	Requirements string                                      `json:"requirements,omitempty"`
-	Whl          string                                      `json:"whl,omitempty"`
-	Cran         *ResourceJobTaskForEachTaskTaskLibraryCran  `json:"cran,omitempty"`
-	Maven        *ResourceJobTaskForEachTaskTaskLibraryMaven `json:"maven,omitempty"`
-	Pypi         *ResourceJobTaskForEachTaskTaskLibraryPypi  `json:"pypi,omitempty"`
+	Egg            string                                               `json:"egg,omitempty"`
+	Jar            string                                               `json:"jar,omitempty"`
+	Requirements   string                                               `json:"requirements,omitempty"`
+	Whl            string                                               `json:"whl,omitempty"`
+	Cran           *ResourceJobTaskForEachTaskTaskLibraryCran           `json:"cran,omitempty"`
+	Maven          *ResourceJobTaskForEachTaskTaskLibraryMaven          `json:"maven,omitempty"`
+	ProviderConfig *ResourceJobTaskForEachTaskTaskLibraryProviderConfig `json:"provider_config,omitempty"`
+	Pypi           *ResourceJobTaskForEachTaskTaskLibraryPypi           `json:"pypi,omitempty"`
 }
 
 type ResourceJobTaskForEachTaskTaskNewClusterAutoscale struct {
@@ -895,19 +929,28 @@ type ResourceJobTaskForEachTaskTaskNewClusterLibraryMaven struct {
 	Repo        string   `json:"repo,omitempty"`
 }
 
+type ResourceJobTaskForEachTaskTaskNewClusterLibraryProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourceJobTaskForEachTaskTaskNewClusterLibraryPypi struct {
 	Package string `json:"package"`
 	Repo    string `json:"repo,omitempty"`
 }
 
 type ResourceJobTaskForEachTaskTaskNewClusterLibrary struct {
-	Egg          string                                                `json:"egg,omitempty"`
-	Jar          string                                                `json:"jar,omitempty"`
-	Requirements string                                                `json:"requirements,omitempty"`
-	Whl          string                                                `json:"whl,omitempty"`
-	Cran         *ResourceJobTaskForEachTaskTaskNewClusterLibraryCran  `json:"cran,omitempty"`
-	Maven        *ResourceJobTaskForEachTaskTaskNewClusterLibraryMaven `json:"maven,omitempty"`
-	Pypi         *ResourceJobTaskForEachTaskTaskNewClusterLibraryPypi  `json:"pypi,omitempty"`
+	Egg            string                                                         `json:"egg,omitempty"`
+	Jar            string                                                         `json:"jar,omitempty"`
+	Requirements   string                                                         `json:"requirements,omitempty"`
+	Whl            string                                                         `json:"whl,omitempty"`
+	Cran           *ResourceJobTaskForEachTaskTaskNewClusterLibraryCran           `json:"cran,omitempty"`
+	Maven          *ResourceJobTaskForEachTaskTaskNewClusterLibraryMaven          `json:"maven,omitempty"`
+	ProviderConfig *ResourceJobTaskForEachTaskTaskNewClusterLibraryProviderConfig `json:"provider_config,omitempty"`
+	Pypi           *ResourceJobTaskForEachTaskTaskNewClusterLibraryPypi           `json:"pypi,omitempty"`
+}
+
+type ResourceJobTaskForEachTaskTaskNewClusterProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
 }
 
 type ResourceJobTaskForEachTaskTaskNewClusterWorkloadTypeClients struct {
@@ -954,6 +997,7 @@ type ResourceJobTaskForEachTaskTaskNewCluster struct {
 	GcpAttributes              *ResourceJobTaskForEachTaskTaskNewClusterGcpAttributes     `json:"gcp_attributes,omitempty"`
 	InitScripts                []ResourceJobTaskForEachTaskTaskNewClusterInitScripts      `json:"init_scripts,omitempty"`
 	Library                    []ResourceJobTaskForEachTaskTaskNewClusterLibrary          `json:"library,omitempty"`
+	ProviderConfig             *ResourceJobTaskForEachTaskTaskNewClusterProviderConfig    `json:"provider_config,omitempty"`
 	WorkloadType               *ResourceJobTaskForEachTaskTaskNewClusterWorkloadType      `json:"workload_type,omitempty"`
 }
 
@@ -1111,6 +1155,7 @@ type ResourceJobTaskForEachTaskTaskWebhookNotifications struct {
 type ResourceJobTaskForEachTaskTask struct {
 	Description             string                                                `json:"description,omitempty"`
 	DisableAutoOptimization bool                                                  `json:"disable_auto_optimization,omitempty"`
+	Disabled                bool                                                  `json:"disabled,omitempty"`
 	EnvironmentKey          string                                                `json:"environment_key,omitempty"`
 	ExistingClusterId       string                                                `json:"existing_cluster_id,omitempty"`
 	JobClusterKey           string                                                `json:"job_cluster_key,omitempty"`
@@ -1189,19 +1234,24 @@ type ResourceJobTaskLibraryMaven struct {
 	Repo        string   `json:"repo,omitempty"`
 }
 
+type ResourceJobTaskLibraryProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourceJobTaskLibraryPypi struct {
 	Package string `json:"package"`
 	Repo    string `json:"repo,omitempty"`
 }
 
 type ResourceJobTaskLibrary struct {
-	Egg          string                       `json:"egg,omitempty"`
-	Jar          string                       `json:"jar,omitempty"`
-	Requirements string                       `json:"requirements,omitempty"`
-	Whl          string                       `json:"whl,omitempty"`
-	Cran         *ResourceJobTaskLibraryCran  `json:"cran,omitempty"`
-	Maven        *ResourceJobTaskLibraryMaven `json:"maven,omitempty"`
-	Pypi         *ResourceJobTaskLibraryPypi  `json:"pypi,omitempty"`
+	Egg            string                                `json:"egg,omitempty"`
+	Jar            string                                `json:"jar,omitempty"`
+	Requirements   string                                `json:"requirements,omitempty"`
+	Whl            string                                `json:"whl,omitempty"`
+	Cran           *ResourceJobTaskLibraryCran           `json:"cran,omitempty"`
+	Maven          *ResourceJobTaskLibraryMaven          `json:"maven,omitempty"`
+	ProviderConfig *ResourceJobTaskLibraryProviderConfig `json:"provider_config,omitempty"`
+	Pypi           *ResourceJobTaskLibraryPypi           `json:"pypi,omitempty"`
 }
 
 type ResourceJobTaskNewClusterAutoscale struct {
@@ -1344,19 +1394,28 @@ type ResourceJobTaskNewClusterLibraryMaven struct {
 	Repo        string   `json:"repo,omitempty"`
 }
 
+type ResourceJobTaskNewClusterLibraryProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourceJobTaskNewClusterLibraryPypi struct {
 	Package string `json:"package"`
 	Repo    string `json:"repo,omitempty"`
 }
 
 type ResourceJobTaskNewClusterLibrary struct {
-	Egg          string                                 `json:"egg,omitempty"`
-	Jar          string                                 `json:"jar,omitempty"`
-	Requirements string                                 `json:"requirements,omitempty"`
-	Whl          string                                 `json:"whl,omitempty"`
-	Cran         *ResourceJobTaskNewClusterLibraryCran  `json:"cran,omitempty"`
-	Maven        *ResourceJobTaskNewClusterLibraryMaven `json:"maven,omitempty"`
-	Pypi         *ResourceJobTaskNewClusterLibraryPypi  `json:"pypi,omitempty"`
+	Egg            string                                          `json:"egg,omitempty"`
+	Jar            string                                          `json:"jar,omitempty"`
+	Requirements   string                                          `json:"requirements,omitempty"`
+	Whl            string                                          `json:"whl,omitempty"`
+	Cran           *ResourceJobTaskNewClusterLibraryCran           `json:"cran,omitempty"`
+	Maven          *ResourceJobTaskNewClusterLibraryMaven          `json:"maven,omitempty"`
+	ProviderConfig *ResourceJobTaskNewClusterLibraryProviderConfig `json:"provider_config,omitempty"`
+	Pypi           *ResourceJobTaskNewClusterLibraryPypi           `json:"pypi,omitempty"`
+}
+
+type ResourceJobTaskNewClusterProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
 }
 
 type ResourceJobTaskNewClusterWorkloadTypeClients struct {
@@ -1404,6 +1463,7 @@ type ResourceJobTaskNewCluster struct {
 	GcpAttributes                     *ResourceJobTaskNewClusterGcpAttributes     `json:"gcp_attributes,omitempty"`
 	InitScripts                       []ResourceJobTaskNewClusterInitScripts      `json:"init_scripts,omitempty"`
 	Library                           []ResourceJobTaskNewClusterLibrary          `json:"library,omitempty"`
+	ProviderConfig                    *ResourceJobTaskNewClusterProviderConfig    `json:"provider_config,omitempty"`
 	WorkloadType                      *ResourceJobTaskNewClusterWorkloadType      `json:"workload_type,omitempty"`
 }
 
@@ -1561,6 +1621,7 @@ type ResourceJobTaskWebhookNotifications struct {
 type ResourceJobTask struct {
 	Description             string                                 `json:"description,omitempty"`
 	DisableAutoOptimization bool                                   `json:"disable_auto_optimization,omitempty"`
+	Disabled                bool                                   `json:"disabled,omitempty"`
 	EnvironmentKey          string                                 `json:"environment_key,omitempty"`
 	ExistingClusterId       string                                 `json:"existing_cluster_id,omitempty"`
 	JobClusterKey           string                                 `json:"job_cluster_key,omitempty"`
@@ -1607,13 +1668,6 @@ type ResourceJobTriggerPeriodic struct {
 	Unit     string `json:"unit"`
 }
 
-type ResourceJobTriggerTable struct {
-	Condition                     string   `json:"condition,omitempty"`
-	MinTimeBetweenTriggersSeconds int      `json:"min_time_between_triggers_seconds,omitempty"`
-	TableNames                    []string `json:"table_names,omitempty"`
-	WaitAfterLastChangeSeconds    int      `json:"wait_after_last_change_seconds,omitempty"`
-}
-
 type ResourceJobTriggerTableUpdate struct {
 	Condition                     string   `json:"condition,omitempty"`
 	MinTimeBetweenTriggersSeconds int      `json:"min_time_between_triggers_seconds,omitempty"`
@@ -1625,7 +1679,6 @@ type ResourceJobTrigger struct {
 	PauseStatus string                         `json:"pause_status,omitempty"`
 	FileArrival *ResourceJobTriggerFileArrival `json:"file_arrival,omitempty"`
 	Periodic    *ResourceJobTriggerPeriodic    `json:"periodic,omitempty"`
-	Table       *ResourceJobTriggerTable       `json:"table,omitempty"`
 	TableUpdate *ResourceJobTriggerTableUpdate `json:"table_update,omitempty"`
 }
 
@@ -1690,6 +1743,7 @@ type ResourceJob struct {
 	NotificationSettings   *ResourceJobNotificationSettings `json:"notification_settings,omitempty"`
 	Parameter              []ResourceJobParameter           `json:"parameter,omitempty"`
 	PipelineTask           *ResourceJobPipelineTask         `json:"pipeline_task,omitempty"`
+	ProviderConfig         *ResourceJobProviderConfig       `json:"provider_config,omitempty"`
 	PythonWheelTask        *ResourceJobPythonWheelTask      `json:"python_wheel_task,omitempty"`
 	Queue                  *ResourceJobQueue                `json:"queue,omitempty"`
 	RunAs                  *ResourceJobRunAs                `json:"run_as,omitempty"`
