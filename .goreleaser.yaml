@@ -104,7 +104,7 @@ changelog:
       - '^test:'
 
 signs:
-  - cmd: azuresign
+  - cmd: azuresigntool
     signature: "${artifact}.sig"
     certificate: "${artifact}.pem"
     artifacts: checksum
