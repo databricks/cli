@@ -22,7 +22,7 @@
             "deployment": [
               {
                 "kind": "BUNDLE",
-                "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/default/state/metadata.json"
+                "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/metadata.json"
               }
             ],
             "description": null,
@@ -87,7 +87,7 @@
                 "notebook_task": [
                   {
                     "base_parameters": null,
-                    "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/default/files/notebook",
+                    "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files/notebook",
                     "source": "WORKSPACE",
                     "warehouse_id": ""
                   }
@@ -142,7 +142,7 @@
             "deployment": [
               {
                 "kind": "BUNDLE",
-                "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/default/state/metadata.json"
+                "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/metadata.json"
               }
             ],
             "development": false,
@@ -165,7 +165,7 @@
                 "maven": [],
                 "notebook": [
                   {
-                    "path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/default/files/pipeline"
+                    "path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files/pipeline"
                   }
                 ],
                 "whl": ""

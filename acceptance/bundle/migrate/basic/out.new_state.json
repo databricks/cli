@@ -7,7 +7,7 @@
    "state": {
     "deployment": {
      "kind": "BUNDLE",
-     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/default/state/metadata.json"
+     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/metadata.json"
     },
     "edit_mode": "UI_LOCKED",
     "format": "MULTI_TASK",
@@ -19,7 +19,7 @@
     "tasks": [
      {
       "notebook_task": {
-       "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/default/files/notebook"
+       "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files/notebook"
       },
       "task_key": "main"
      }
@@ -32,13 +32,13 @@
     "channel": "CURRENT",
     "deployment": {
      "kind": "BUNDLE",
-     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/default/state/metadata.json"
+     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/metadata.json"
     },
     "edition": "ADVANCED",
     "libraries": [
      {
       "notebook": {
-       "path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/default/files/pipeline"
+       "path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files/pipeline"
       }
      }
     ],
