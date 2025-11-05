@@ -19,7 +19,6 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
-	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/database"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -95,16 +94,6 @@ var testConfig map[string]any = map[string]any{
 					Key:   "k1",
 					Value: "v1",
 				},
-			},
-		},
-	},
-
-	"dashboards": &resources.Dashboard{
-		DashboardConfig: resources.DashboardConfig{
-			Dashboard: dashboards.Dashboard{
-				DisplayName:         "my_dashboard",
-				SerializedDashboard: `{"pages":[{"name":"page1","displayName":"Page 1"}]}`,
-				WarehouseId:         "warehouse123",
 			},
 		},
 	},
@@ -263,27 +252,6 @@ var testDeps = map[string]prepareWorkspace{
 			}},
 		}, nil
 	},
-
-	"dashboards.permissions": func(client *databricks.WorkspaceClient) (any, error) {
-		resp, err := client.Lakeview.Create(context.Background(), dashboards.CreateDashboardRequest{
-			Dashboard: dashboards.Dashboard{
-				DisplayName:         "dashboard-permissions",
-				SerializedDashboard: `{"pages":[{"name":"page1","displayName":"Page 1"}]}`,
-				WarehouseId:         "warehouse123",
-			},
-		})
-		if err != nil {
-			return nil, err
-		}
-
-		return &PermissionsState{
-			ObjectID: "/dashboards/" + resp.DashboardId,
-			Permissions: []iam.AccessControlRequest{{
-				PermissionLevel: "CAN_MANAGE",
-				UserName:        "user@example.com",
-			}},
-		}, nil
-	},
 }
 
 func TestAll(t *testing.T) {
@@ -372,13 +340,7 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		var relevantChanges []structdiff.Change
 		for _, change := range changes {
 			fieldName := change.Path.String()
-			// Filter out fields that are expected to change between DoRefresh and DoUpdate
-			// - updated_at, update_time: timestamps that change on updates
-			// - etag: version field that changes on updates
-			// - path: computed field for dashboards
-			// - serialized_dashboard: test server adds pageType and formatting
-			if fieldName != "updated_at" && fieldName != "update_time" && fieldName != "etag" &&
-				fieldName != "path" && fieldName != "serialized_dashboard" {
+			if fieldName != "updated_at" {
 				relevantChanges = append(relevantChanges, change)
 			}
 		}
@@ -411,11 +373,6 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		// t.Logf("Testing %s v=%#v, remoteValue=%#v", path.String(), val, remoteValue)
 		// We expect fields set explicitly to be preserved by testserver, which is true for all resources as of today.
 		// If not true for your resource, add exception here:
-
-		// Dashboard serialized_dashboard is modified by the server (adds pageType, reorders keys, adds newline)
-		if path.String() == "serialized_dashboard" {
-			return
-		}
 
 		assert.Equal(t, val, remoteValue, "path=%q\nnewState=%s\nremappedState=%s", path.String(), jsonDump(newState), jsonDump(remappedState))
 	}))
