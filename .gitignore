@@ -32,6 +32,7 @@ test-output.json
 
 # Built by make for 'make fmt' and yamlcheck.py in acceptance tests
 tools/yamlfmt
+tools/golangci-lint
 tools/yamlfmt.exe
 
 # Built by make for 'make lint'

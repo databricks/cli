@@ -31,6 +31,7 @@ class _ResourceType:
         # intentionally lazily load all resource types to avoid imports from databricks.bundles.core to
         # be imported in databricks.bundles.<resource_type>
 
+        from databricks.bundles.apps._models.app import App
         from databricks.bundles.jobs._models.job import Job
         from databricks.bundles.pipelines._models.pipeline import Pipeline
         from databricks.bundles.schemas._models.schema import Schema
@@ -56,5 +57,10 @@ class _ResourceType:
                 resource_type=Schema,
                 plural_name="schemas",
                 singular_name="schema",
+            ),
+            _ResourceType(
+                resource_type=App,
+                plural_name="apps",
+                singular_name="app",
             ),
         )

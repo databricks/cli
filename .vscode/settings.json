@@ -22,5 +22,6 @@
         "script": "shellscript",
         "script.prepare": "shellscript",
         "script.cleanup": "shellscript"
-    }
+    },
+    "cursorpyright.analysis.stubPath": ".vscode"
 }
