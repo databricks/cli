@@ -2,6 +2,11 @@
 
 package schema
 
+type DataSourceSharesProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourceShares struct {
-	Shares []string `json:"shares,omitempty"`
+	ProviderConfig *DataSourceSharesProviderConfig `json:"provider_config,omitempty"`
+	Shares         []string                        `json:"shares,omitempty"`
 }

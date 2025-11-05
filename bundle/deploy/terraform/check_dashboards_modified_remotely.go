@@ -15,9 +15,16 @@ type dashboardState struct {
 	ETag string
 }
 
-func collectDashboardsFromState(ctx context.Context, b *bundle.Bundle) ([]dashboardState, error) {
-	state, err := ParseResourcesState(ctx, b)
-	if err != nil && state == nil {
+func collectDashboardsFromState(ctx context.Context, b *bundle.Bundle, directDeployment bool) ([]dashboardState, error) {
+	var state ExportedResourcesMap
+	var err error
+	if directDeployment {
+		_, localPath := b.StateFilenameDirect(ctx)
+		state, err = b.DeploymentBundle.ExportState(ctx, localPath)
+	} else {
+		state, err = ParseResourcesState(ctx, b)
+	}
+	if err != nil {
 		return nil, err
 	}
 
@@ -34,7 +41,8 @@ func collectDashboardsFromState(ctx context.Context, b *bundle.Bundle) ([]dashbo
 }
 
 type checkDashboardsModifiedRemotely struct {
-	isPlan bool
+	isPlan           bool
+	directDeployment bool
 }
 
 func (l *checkDashboardsModifiedRemotely) Name() string {
@@ -47,17 +55,12 @@ func (l *checkDashboardsModifiedRemotely) Apply(ctx context.Context, b *bundle.B
 		return nil
 	}
 
-	if b.DirectDeployment {
-		// TODO: not implemented yet
-		return nil
-	}
-
 	// If the user has forced the deployment, skip this check.
 	if b.Config.Bundle.Force {
 		return nil
 	}
 
-	dashboards, err := collectDashboardsFromState(ctx, b)
+	dashboards, err := collectDashboardsFromState(ctx, b, l.directDeployment)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -115,6 +118,6 @@ func (l *checkDashboardsModifiedRemotely) Apply(ctx context.Context, b *bundle.B
 	return diags
 }
 
-func CheckDashboardsModifiedRemotely(isPlan bool) *checkDashboardsModifiedRemotely {
-	return &checkDashboardsModifiedRemotely{isPlan: isPlan}
+func CheckDashboardsModifiedRemotely(isPlan, directDeployment bool) *checkDashboardsModifiedRemotely {
+	return &checkDashboardsModifiedRemotely{isPlan: isPlan, directDeployment: directDeployment}
 }

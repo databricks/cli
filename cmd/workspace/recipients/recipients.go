@@ -139,6 +139,7 @@ func newCreate() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid AUTHENTICATION_TYPE: %s", args[1])
 			}
+
 		}
 
 		response, err := w.Recipients.Create(ctx, createReq)
@@ -398,6 +399,7 @@ func newRotateToken() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid EXISTING_TOKEN_EXPIRE_IN_SECONDS: %s", args[1])
 			}
+
 		}
 
 		response, err := w.Recipients.RotateToken(ctx, rotateTokenReq)
@@ -440,8 +442,8 @@ func newSharePermissions() *cobra.Command {
 	cmd.Short = `Get recipient share permissions.`
 	cmd.Long = `Get recipient share permissions.
   
-  Gets the share permissions for the specified Recipient. The caller must be a
-  metastore admin or the owner of the Recipient.
+  Gets the share permissions for the specified Recipient. The caller must have
+  the USE_RECIPIENT privilege on the metastore or be the owner of the Recipient.
 
   Arguments:
     NAME: The name of the Recipient.`

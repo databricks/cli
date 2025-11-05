@@ -51,6 +51,7 @@ func loadTargetWithDiags(path, env string) (*bundle.Bundle, diag.Diagnostics) {
 		resourcemutator.MergeJobTasks(),
 		resourcemutator.MergePipelineClusters(),
 		resourcemutator.MergeApps(),
+		resourcemutator.ModelServingEndpointFixups(),
 	))
 	return b, diags
 }

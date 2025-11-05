@@ -4,6 +4,7 @@ package schema
 
 type ResourceInstancePoolAwsAttributes struct {
 	Availability        string `json:"availability,omitempty"`
+	InstanceProfileArn  string `json:"instance_profile_arn,omitempty"`
 	SpotBidPricePercent int    `json:"spot_bid_price_percent,omitempty"`
 	ZoneId              string `json:"zone_id,omitempty"`
 }

@@ -2,6 +2,10 @@
 
 package schema
 
+type DataSourceSchemaProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourceSchemaSchemaInfoEffectivePredictiveOptimizationFlag struct {
 	InheritedFromName string `json:"inherited_from_name,omitempty"`
 	InheritedFromType string `json:"inherited_from_type,omitempty"`
@@ -30,7 +34,8 @@ type DataSourceSchemaSchemaInfo struct {
 }
 
 type DataSourceSchema struct {
-	Id         string                      `json:"id,omitempty"`
-	Name       string                      `json:"name"`
-	SchemaInfo *DataSourceSchemaSchemaInfo `json:"schema_info,omitempty"`
+	Id             string                          `json:"id,omitempty"`
+	Name           string                          `json:"name"`
+	ProviderConfig *DataSourceSchemaProviderConfig `json:"provider_config,omitempty"`
+	SchemaInfo     *DataSourceSchemaSchemaInfo     `json:"schema_info,omitempty"`
 }

@@ -148,7 +148,7 @@ After generation, you can deploy this job to other targets using:
 		cmdio.LogString(ctx, "Job configuration successfully saved to "+filename)
 
 		if bind {
-			return deployment.BindResource(cmd, jobKey, strconv.FormatInt(jobId, 10), true, false)
+			return deployment.BindResource(cmd, jobKey, strconv.FormatInt(jobId, 10), true, false, true)
 		}
 
 		return nil

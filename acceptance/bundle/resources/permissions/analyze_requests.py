@@ -94,14 +94,14 @@ def to_slash(x):
 def main():
     current_dir = Path(".")
 
-    direct_files = list(current_dir.glob("**/*.direct-exp.json"))
+    direct_files = list(current_dir.glob("**/*.direct.json"))
 
     for direct_file in sorted(direct_files):
         if direct_file.name.startswith("out.plan"):
             # expected difference
             continue
 
-        terraform_file = direct_file.parent / direct_file.name.replace(".direct-exp.", ".terraform.")
+        terraform_file = direct_file.parent / direct_file.name.replace(".direct.", ".terraform.")
 
         fname = to_slash(direct_file)
 

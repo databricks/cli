@@ -1,0 +1,14 @@
+bundle:
+  name: "model_serving_error"
+
+resources:
+  model_serving_endpoints:
+    endpoint1:
+      name: "test-endpoint"
+      config:
+        served_models:
+          - model_name: "my-model"
+            model_version: "1"
+        served_entities:
+          - entity_name: "my-entity"
+            entity_version: "2"

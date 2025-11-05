@@ -207,8 +207,7 @@ func newList() *cobra.Command {
   PAGINATION BEHAVIOR: When using pagination (max_results >= 0), a page may
   contain zero results while still providing a next_page_token. Clients must
   continue reading pages until next_page_token is absent, which is the only
-  indication that the end of results has been reached. This behavior follows
-  Google AIP-158 guidelines.
+  indication that the end of results has been reached.
 
   Arguments:
     METASTORE_ID: The ID for the metastore in which the system schema resides.`

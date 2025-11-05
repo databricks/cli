@@ -293,19 +293,28 @@ type DataSourceClusterClusterInfoSpecLibraryMaven struct {
 	Repo        string   `json:"repo,omitempty"`
 }
 
+type DataSourceClusterClusterInfoSpecLibraryProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourceClusterClusterInfoSpecLibraryPypi struct {
 	Package string `json:"package"`
 	Repo    string `json:"repo,omitempty"`
 }
 
 type DataSourceClusterClusterInfoSpecLibrary struct {
-	Egg          string                                        `json:"egg,omitempty"`
-	Jar          string                                        `json:"jar,omitempty"`
-	Requirements string                                        `json:"requirements,omitempty"`
-	Whl          string                                        `json:"whl,omitempty"`
-	Cran         *DataSourceClusterClusterInfoSpecLibraryCran  `json:"cran,omitempty"`
-	Maven        *DataSourceClusterClusterInfoSpecLibraryMaven `json:"maven,omitempty"`
-	Pypi         *DataSourceClusterClusterInfoSpecLibraryPypi  `json:"pypi,omitempty"`
+	Egg            string                                                 `json:"egg,omitempty"`
+	Jar            string                                                 `json:"jar,omitempty"`
+	Requirements   string                                                 `json:"requirements,omitempty"`
+	Whl            string                                                 `json:"whl,omitempty"`
+	Cran           *DataSourceClusterClusterInfoSpecLibraryCran           `json:"cran,omitempty"`
+	Maven          *DataSourceClusterClusterInfoSpecLibraryMaven          `json:"maven,omitempty"`
+	ProviderConfig *DataSourceClusterClusterInfoSpecLibraryProviderConfig `json:"provider_config,omitempty"`
+	Pypi           *DataSourceClusterClusterInfoSpecLibraryPypi           `json:"pypi,omitempty"`
+}
+
+type DataSourceClusterClusterInfoSpecProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
 }
 
 type DataSourceClusterClusterInfoSpecWorkloadTypeClients struct {
@@ -352,6 +361,7 @@ type DataSourceClusterClusterInfoSpec struct {
 	GcpAttributes              *DataSourceClusterClusterInfoSpecGcpAttributes     `json:"gcp_attributes,omitempty"`
 	InitScripts                []DataSourceClusterClusterInfoSpecInitScripts      `json:"init_scripts,omitempty"`
 	Library                    []DataSourceClusterClusterInfoSpecLibrary          `json:"library,omitempty"`
+	ProviderConfig             *DataSourceClusterClusterInfoSpecProviderConfig    `json:"provider_config,omitempty"`
 	WorkloadType               *DataSourceClusterClusterInfoSpecWorkloadType      `json:"workload_type,omitempty"`
 }
 
@@ -423,9 +433,14 @@ type DataSourceClusterClusterInfo struct {
 	WorkloadType               *DataSourceClusterClusterInfoWorkloadType      `json:"workload_type,omitempty"`
 }
 
+type DataSourceClusterProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourceCluster struct {
-	ClusterId   string                        `json:"cluster_id,omitempty"`
-	ClusterName string                        `json:"cluster_name,omitempty"`
-	Id          string                        `json:"id,omitempty"`
-	ClusterInfo *DataSourceClusterClusterInfo `json:"cluster_info,omitempty"`
+	ClusterId      string                           `json:"cluster_id,omitempty"`
+	ClusterName    string                           `json:"cluster_name,omitempty"`
+	Id             string                           `json:"id,omitempty"`
+	ClusterInfo    *DataSourceClusterClusterInfo    `json:"cluster_info,omitempty"`
+	ProviderConfig *DataSourceClusterProviderConfig `json:"provider_config,omitempty"`
 }

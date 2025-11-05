@@ -1,7 +1,7 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/OS cmd/bundle_destroy cmd-exec-id/[UUID] engine/terraform auth/pat"
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_destroy cmd-exec-id/[UUID] auth/pat"
     ]
   },
   "method": "GET",
@@ -10,7 +10,7 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/OS cmd/bundle_destroy cmd-exec-id/[UUID] engine/terraform auth/pat"
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_destroy cmd-exec-id/[UUID] auth/pat"
     ]
   },
   "method": "GET",
@@ -19,58 +19,20 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/OS cmd/bundle_destroy cmd-exec-id/[UUID] engine/terraform auth/pat"
-    ]
-  },
-  "method": "GET",
-  "path": "/api/2.0/workspace/export",
-  "q": {
-    "direct_download": "true",
-    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock"
-  }
-}
-{
-  "headers": {
-    "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/OS cmd/bundle_destroy cmd-exec-id/[UUID] engine/terraform auth/pat"
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_destroy cmd-exec-id/[UUID] auth/pat"
     ]
   },
   "method": "GET",
   "path": "/api/2.0/workspace/get-status",
   "q": {
-    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default"
-  }
-}
-{
-  "headers": {
-    "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/OS cmd/bundle_destroy cmd-exec-id/[UUID] engine/terraform auth/pat"
-    ]
-  },
-  "method": "GET",
-  "path": "/api/2.0/workspace/get-status",
-  "q": {
-    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock",
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json",
     "return_export_info": "true"
   }
 }
 {
   "headers": {
     "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/OS cmd/bundle_destroy cmd-exec-id/[UUID] engine/terraform auth/pat"
-    ]
-  },
-  "method": "GET",
-  "path": "/api/2.0/workspace/get-status",
-  "q": {
-    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock",
-    "return_export_info": "true"
-  }
-}
-{
-  "headers": {
-    "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/OS cmd/bundle_destroy cmd-exec-id/[UUID] engine/terraform auth/pat"
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_destroy cmd-exec-id/[UUID] auth/pat"
     ]
   },
   "method": "GET",
@@ -83,7 +45,58 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/OS cmd/bundle_destroy cmd-exec-id/[UUID] engine/terraform auth/pat"
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_destroy cmd-exec-id/[UUID] engine/terraform auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/export",
+  "q": {
+    "direct_download": "true",
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_destroy cmd-exec-id/[UUID] engine/terraform auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_destroy cmd-exec-id/[UUID] engine/terraform auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock",
+    "return_export_info": "true"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_destroy cmd-exec-id/[UUID] engine/terraform auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock",
+    "return_export_info": "true"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_destroy cmd-exec-id/[UUID] engine/terraform auth/pat"
     ]
   },
   "method": "POST",
@@ -101,7 +114,7 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/OS cmd/bundle_destroy cmd-exec-id/[UUID] engine/terraform auth/pat"
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_destroy cmd-exec-id/[UUID] engine/terraform auth/pat"
     ]
   },
   "method": "POST",
@@ -114,7 +127,7 @@
 {
   "headers": {
     "User-Agent": [
-      "databricks-tf-provider/1.94.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/OS cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat"
+      "databricks-tf-provider/1.96.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat"
     ]
   },
   "method": "DELETE",
@@ -126,7 +139,7 @@
 {
   "headers": {
     "User-Agent": [
-      "databricks-tf-provider/1.94.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/OS cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat"
+      "databricks-tf-provider/1.96.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat"
     ]
   },
   "method": "GET",

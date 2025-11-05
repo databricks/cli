@@ -3,7 +3,7 @@
 package schema
 
 type DataSourceOnlineStoresOnlineStores struct {
-	Capacity         string `json:"capacity"`
+	Capacity         string `json:"capacity,omitempty"`
 	CreationTime     string `json:"creation_time,omitempty"`
 	Creator          string `json:"creator,omitempty"`
 	Name             string `json:"name"`
@@ -13,4 +13,5 @@ type DataSourceOnlineStoresOnlineStores struct {
 
 type DataSourceOnlineStores struct {
 	OnlineStores []DataSourceOnlineStoresOnlineStores `json:"online_stores,omitempty"`
+	PageSize     int                                  `json:"page_size,omitempty"`
 }
