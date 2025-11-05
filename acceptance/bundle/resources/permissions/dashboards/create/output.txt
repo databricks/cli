@@ -19,6 +19,8 @@
   }
 ]
 
+>>> [CLI] workspace mkdirs /Users/[USERNAME]/folder1
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...

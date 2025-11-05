@@ -1,3 +1,0 @@
-RequiresWarehouse = true
-
-Env.RESOURCE = "dashboards"  # for ../_script

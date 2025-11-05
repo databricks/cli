@@ -3,7 +3,7 @@ resources:
     foo:
       display_name: test-dashboard
       warehouse_id: 123abc
-      parent_path: /Users/tester@databricks.com
+      parent_path: /Users/tester@databricks.com/folder1
       serialized_dashboard: '{"pages":[{"name":"page1","displayName":"Page 1"}]}'
       permissions:
         - level: CAN_READ
