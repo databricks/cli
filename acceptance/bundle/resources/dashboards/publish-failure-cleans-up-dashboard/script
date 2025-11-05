@@ -1,0 +1,12 @@
+export DASHBOARD_DISPLAY_NAME="test bundle-deploy-dashboard $UNIQUE_NAME)"
+envsubst < databricks.yml.tmpl > databricks.yml
+
+# Deploy the dashboard. The dashboard will be created but publish will fail because the warehouse does not exist.
+errcode trace $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
+
+trace $CLI bundle summary
+
+# API should record a DELETE call to clean up the draft dashboard that was not published.
+# Request sequence is identical across terraform and direct modes.
+unset MSYS_NO_PATHCONV
+print_requests.py //lakeview/dashboards //workspace/mkdirs > out.dashboardrequests.txt

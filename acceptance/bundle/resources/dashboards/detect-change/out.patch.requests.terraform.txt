@@ -1,0 +1,23 @@
+{
+  "method": "PATCH",
+  "path": "/api/2.0/lakeview/dashboards/[DASHBOARD_ID]",
+  "body": {
+    "serialized_dashboard": "{}"
+  }
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/lakeview/dashboards/[DASHBOARD_ID]",
+  "body": {
+    "create_time": "[TIMESTAMP]",
+    "dashboard_id": "[DASHBOARD_ID]",
+    "display_name": "test-dashboard-[UNIQUE_NAME]",
+    "etag": [ETAG],
+    "lifecycle_state": "ACTIVE",
+    "parent_path": "/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/resources",
+    "path": "/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/resources/test-dashboard-[UNIQUE_NAME].lvdash.json",
+    "serialized_dashboard": "{\n  \"pages\": [\n    {\n      \"displayName\": \"New Page\",\n      \"layout\": [\n        {\n          \"position\": {\n            \"height\": 2,\n            \"width\": 6,\n            \"x\": 0,\n            \"y\": 0\n          },\n          \"widget\": {\n            \"name\": \"82eb9107\",\n            \"textbox_spec\": \"# I'm a title\"\n          }\n        },\n        {\n          \"position\": {\n            \"height\": 2,\n            \"width\": 6,\n            \"x\": 0,\n            \"y\": 2\n          },\n          \"widget\": {\n            \"name\": \"ffa6de4f\",\n            \"textbox_spec\": \"Text\"\n          }\n        }\n      ],\n      \"name\": \"fdd21a3c\"\n    }\n  ]\n}\n",
+    "update_time": "[TIMESTAMP]",
+    "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+  }
+}

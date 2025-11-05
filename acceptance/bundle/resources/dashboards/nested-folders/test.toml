@@ -2,15 +2,13 @@ Badness = "Cannot read dashboard, expecting deployment to succeed"
 Local = true
 Cloud = true
 RequiresWarehouse = true
+RecordRequests = false
 
 Ignore = [
     "databricks.yml",
     "resources/dashboards.yml",
 ]
 
-[[Repls]]
-Old = "[0-9a-f]{32}"
-New = "[DASHBOARD_ID]"
 
 [[Repls]]
 # Windows:

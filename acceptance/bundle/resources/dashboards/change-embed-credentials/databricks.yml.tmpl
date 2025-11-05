@@ -1,0 +1,10 @@
+bundle:
+  name: change-embed-credentials-$UNIQUE_NAME
+
+resources:
+  dashboards:
+    my_dashboard:
+      display_name: test dashboard
+      file_path: ./dash.lvdash.json
+      warehouse_id: $TEST_DEFAULT_WAREHOUSE_ID
+      embed_credentials: $EMBED_CREDENTIALS
