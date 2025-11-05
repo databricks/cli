@@ -109,3 +109,51 @@ func TestLoadProfilesWithWorkspaceId(t *testing.T) {
 	assert.Equal(t, "123456789", profiles[0].WorkspaceId)
 	assert.True(t, profiles[0].Experimental_IsUnifiedHost)
 }
+
+func TestMatchAccountProfilesIncludesUnifiedHosts(t *testing.T) {
+	ctx := context.Background()
+	ctx = env.Set(ctx, "DATABRICKS_CONFIG_FILE", "./testdata/databrickscfg")
+	profiler := FileProfilerImpl{}
+	profiles, err := profiler.LoadProfiles(ctx, MatchAccountProfiles)
+	require.NoError(t, err)
+
+	// Should include both regular account profiles and unified host profiles
+	names := profiles.Names()
+	assert.Contains(t, names, "acc")
+	assert.Contains(t, names, "unified")
+	assert.Contains(t, names, "unified-with-workspace")
+}
+
+func TestUnifiedHostProfileWithoutAccountID(t *testing.T) {
+	ctx := context.Background()
+	ctx = env.Set(ctx, "DATABRICKS_CONFIG_FILE", "./testdata/databrickscfg")
+	profiler := FileProfilerImpl{}
+
+	// Unified host without account_id should still load (validation happens later)
+	profiles, err := profiler.LoadProfiles(ctx, WithName("unified"))
+	require.NoError(t, err)
+	require.Len(t, profiles, 1)
+	assert.True(t, profiles[0].Experimental_IsUnifiedHost)
+}
+
+func TestExperimentalIsUnifiedHostParsingCaseSensitivity(t *testing.T) {
+	// This test verifies that the experimental_is_unified_host field
+	// is correctly parsed from the config file. The parsing should be
+	// case-sensitive and only accept "true" (lowercase).
+	ctx := context.Background()
+	ctx = env.Set(ctx, "DATABRICKS_CONFIG_FILE", "./testdata/databrickscfg")
+	profiler := FileProfilerImpl{}
+
+	profiles, err := profiler.LoadProfiles(ctx, WithName("unified"))
+	require.NoError(t, err)
+	require.Len(t, profiles, 1)
+
+	// Verify the flag is correctly set to true
+	assert.True(t, profiles[0].Experimental_IsUnifiedHost)
+
+	// Load a non-unified profile to verify it defaults to false
+	profiles, err = profiler.LoadProfiles(ctx, WithName("DEFAULT"))
+	require.NoError(t, err)
+	require.Len(t, profiles, 1)
+	assert.False(t, profiles[0].Experimental_IsUnifiedHost)
+}

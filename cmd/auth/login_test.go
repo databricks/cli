@@ -101,6 +101,82 @@ func TestSetAccountId(t *testing.T) {
 	assert.EqualError(t, err, "the command is being run in a non-interactive environment, please specify an account ID using --account-id")
 }
 
+func TestSetHostAndAccountIdUnifiedHost(t *testing.T) {
+	var authArguments auth.AuthArguments
+	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/.databrickscfg")
+	ctx, _ := cmdio.SetupTest(context.Background(), cmdio.TestOptions{})
+
+	unifiedProfile := loadTestProfile(t, ctx, "unified-profile")
+
+	// Test unified host requires account ID from flag
+	authArguments.Host = "https://unified.databricks.com"
+	authArguments.IsUnifiedHost = true
+	authArguments.AccountID = "val-from-flag"
+	err := setHostAndAccountId(ctx, unifiedProfile, &authArguments, []string{})
+	assert.NoError(t, err)
+	assert.Equal(t, "https://unified.databricks.com", authArguments.Host)
+	assert.Equal(t, "val-from-flag", authArguments.AccountID)
+
+	// Test unified host uses account_id from profile
+	authArguments.AccountID = ""
+	err = setHostAndAccountId(ctx, unifiedProfile, &authArguments, []string{})
+	require.NoError(t, err)
+	assert.Equal(t, "https://unified.databricks.com", authArguments.Host)
+	assert.Equal(t, "unified-account-id", authArguments.AccountID)
+
+	// Test unified host without account ID should prompt
+	authArguments.AccountID = ""
+	authArguments.Host = "https://unified.databricks.com"
+	authArguments.IsUnifiedHost = true
+	err = setHostAndAccountId(ctx, nil, &authArguments, []string{})
+	assert.EqualError(t, err, "the command is being run in a non-interactive environment, please specify an account ID using --account-id")
+}
+
+func TestPromptForWorkspaceIdIfUnified(t *testing.T) {
+	ctx, _ := cmdio.SetupTest(context.Background(), cmdio.TestOptions{})
+	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/.databrickscfg")
+
+	// Test non-unified host doesn't prompt for workspace ID
+	authArgs := &auth.AuthArguments{
+		Host:          "https://workspace.cloud.databricks.com",
+		IsUnifiedHost: false,
+	}
+	workspaceId, err := promptForWorkspaceIdIfUnified(ctx, authArgs, nil)
+	require.NoError(t, err)
+	assert.Equal(t, "", workspaceId)
+
+	// Test unified host with existing profile workspace_id
+	unifiedProfile := loadTestProfile(t, ctx, "unified-with-workspace")
+	authArgs = &auth.AuthArguments{
+		Host:          "https://unified.databricks.com",
+		IsUnifiedHost: true,
+	}
+	workspaceId, err = promptForWorkspaceIdIfUnified(ctx, authArgs, unifiedProfile)
+	require.NoError(t, err)
+	assert.Equal(t, "123456789", workspaceId)
+
+	// Test unified host without profile should prompt (will error in non-interactive)
+	authArgs = &auth.AuthArguments{
+		Host:          "https://unified.databricks.com",
+		IsUnifiedHost: true,
+	}
+	workspaceId, err = promptForWorkspaceIdIfUnified(ctx, authArgs, nil)
+	// In non-interactive mode, this should return empty string, not error
+	require.NoError(t, err)
+	assert.Equal(t, "", workspaceId)
+}
+
+func TestLoadProfilePreservesUnifiedHostFlag(t *testing.T) {
+	ctx := context.Background()
+	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/.databrickscfg")
+
+	profile, err := loadProfileByName(ctx, "unified-profile", profile.DefaultProfiler)
+	require.NoError(t, err)
+	require.NotNil(t, profile)
+	assert.True(t, profile.Experimental_IsUnifiedHost)
+	assert.Equal(t, "unified-account-id", profile.AccountID)
+}
+
 func TestLoadProfileByNameAndClusterID(t *testing.T) {
 	testCases := []struct {
 		name              string

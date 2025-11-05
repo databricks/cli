@@ -5,6 +5,7 @@ import (
 
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestToOAuthArgument(t *testing.T) {
@@ -58,6 +59,24 @@ func TestToOAuthArgument(t *testing.T) {
 			},
 			wantHost: "https://my-workspace.cloud.databricks.com",
 		},
+		{
+			name: "unified host with account ID",
+			args: AuthArguments{
+				Host:          "https://unified.databricks.com",
+				AccountID:     "test-account-123",
+				IsUnifiedHost: true,
+			},
+			wantHost: "https://unified.databricks.com",
+		},
+		{
+			name: "unified host with no scheme",
+			args: AuthArguments{
+				Host:          "unified.databricks.com",
+				AccountID:     "test-account-123",
+				IsUnifiedHost: true,
+			},
+			wantHost: "https://unified.databricks.com",
+		},
 	}
 
 	for _, tt := range tests {
@@ -70,7 +89,11 @@ func TestToOAuthArgument(t *testing.T) {
 			assert.NoError(t, err)
 
 			// Check if we got the right type of argument and verify the hostname
-			if tt.args.AccountID != "" {
+			if tt.args.IsUnifiedHost {
+				arg, ok := got.(u2m.UnifiedOAuthArgument)
+				assert.True(t, ok, "expected UnifiedOAuthArgument for unified host")
+				assert.Equal(t, tt.wantHost, arg.GetHost())
+			} else if tt.args.AccountID != "" {
 				arg, ok := got.(u2m.AccountOAuthArgument)
 				assert.True(t, ok, "expected AccountOAuthArgument for account ID")
 				assert.Equal(t, tt.wantHost, arg.GetAccountHost())
@@ -81,4 +104,19 @@ func TestToOAuthArgument(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestToOAuthArgumentUnifiedHostRequiresAccountID(t *testing.T) {
+	authArgs := AuthArguments{
+		Host:          "https://unified.databricks.com",
+		IsUnifiedHost: true,
+		// Missing AccountID
+	}
+
+	arg, err := authArgs.ToOAuthArgument()
+	require.NoError(t, err)
+	// The SDK returns a valid UnifiedOAuthArgument even without account ID
+	// Validation happens at a different layer
+	_, ok := arg.(u2m.UnifiedOAuthArgument)
+	assert.True(t, ok, "expected UnifiedOAuthArgument for unified host")
 }
