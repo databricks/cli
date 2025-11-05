@@ -51,7 +51,7 @@ func (r *ResourceDashboard) RemapState(state *resources.DashboardConfig) *resour
 			Etag:        state.Etag,
 			ParentPath:  state.ParentPath,
 			WarehouseId: state.WarehouseId,
-			ForceSendFields: filterFields[dashboards.Dashboard](state.ForceSendFields, []string{
+			ForceSendFields: FilterFields[dashboards.Dashboard](state.ForceSendFields, []string{
 				"CreateTime",
 				"DashboardId",
 				"LifecycleState",
@@ -78,7 +78,7 @@ func (r *ResourceDashboard) RemapState(state *resources.DashboardConfig) *resour
 		// They are only relevant for local diff changes.
 		SerializedDashboard: "",
 
-		ForceSendFields: filterFields[dashboards.Dashboard](state.ForceSendFields, []string{
+		ForceSendFields: FilterFields[dashboards.Dashboard](state.ForceSendFields, []string{
 			"SerializedDashboard",
 		}...),
 	}
@@ -124,18 +124,18 @@ func (r *ResourceDashboard) DoRefresh(ctx context.Context, id string) (*resource
 			LifecycleState:  dashboard.LifecycleState,
 			Path:            dashboard.Path,
 			UpdateTime:      dashboard.UpdateTime,
-			ForceSendFields: filterFields[dashboards.Dashboard](dashboard.ForceSendFields),
+			ForceSendFields: FilterFields[dashboards.Dashboard](dashboard.ForceSendFields),
 		},
 		SerializedDashboard: dashboard.SerializedDashboard,
 		EmbedCredentials:    publishedDashboard.EmbedCredentials,
-		ForceSendFields:     filterFields[dashboards.PublishedDashboard](publishedDashboard.ForceSendFields),
+		ForceSendFields:     FilterFields[dashboards.PublishedDashboard](publishedDashboard.ForceSendFields),
 	}, nil
 }
 
 func prepareDashboardRequest(config *resources.DashboardConfig) (dashboards.Dashboard, error) {
 	// Fields like "embed_credentials" are part of the bundle configuration but not the create request here.
 	// Thus we need to filter such fields out.
-	config.ForceSendFields = filterFields[dashboards.Dashboard](config.ForceSendFields)
+	config.ForceSendFields = FilterFields[dashboards.Dashboard](config.ForceSendFields)
 
 	dashboard := config.Dashboard
 	v := config.SerializedDashboard
@@ -156,7 +156,7 @@ func prepareDashboardRequest(config *resources.DashboardConfig) (dashboards.Dash
 func (r *ResourceDashboard) publishDashboard(ctx context.Context, id string, config *resources.DashboardConfig) (*dashboards.PublishedDashboard, error) {
 	// embed_credentials as a zero valued default in resourcemutator/resource_mutator.go.
 	// Thus we always need to include it in the ForceSendFields list to ensure that it is sent to the server.
-	forceSendFields := filterFields[dashboards.PublishRequest](config.ForceSendFields)
+	forceSendFields := FilterFields[dashboards.PublishRequest](config.ForceSendFields)
 	if !slices.Contains(forceSendFields, "EmbedCredentials") {
 		forceSendFields = append(forceSendFields, "EmbedCredentials")
 	}
@@ -184,11 +184,11 @@ func responseToState(createOrUpdateResp *dashboards.Dashboard, publishResp *dash
 			LifecycleState:  createOrUpdateResp.LifecycleState,
 			Path:            createOrUpdateResp.Path,
 			UpdateTime:      createOrUpdateResp.UpdateTime,
-			ForceSendFields: filterFields[dashboards.Dashboard](createOrUpdateResp.ForceSendFields),
+			ForceSendFields: FilterFields[dashboards.Dashboard](createOrUpdateResp.ForceSendFields),
 		},
 		SerializedDashboard: createOrUpdateResp.SerializedDashboard,
 		EmbedCredentials:    publishResp.EmbedCredentials,
-		ForceSendFields:     filterFields[dashboards.PublishedDashboard](publishResp.ForceSendFields),
+		ForceSendFields:     FilterFields[dashboards.PublishedDashboard](publishResp.ForceSendFields),
 	}
 }
 
