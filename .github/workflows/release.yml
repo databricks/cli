@@ -9,7 +9,9 @@ on:
 
 jobs:
   goreleaser:
-    runs-on: windows-latest
+    runs-on:
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
 
     outputs:
       artifacts: ${{ steps.releaser.outputs.artifacts }}
@@ -46,10 +48,11 @@ jobs:
       - name: Set up QEMU dependency
         uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # v3.6.0
 
-      - name: Install AzureSignTool
-        run: |
-          dotnet tool install --global AzureSignTool --version 5.0.0
-          echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
+      - name: Setup Java for jsign
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
 
       - name: Run GoReleaser
         id: releaser
@@ -62,6 +65,8 @@ jobs:
           AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
           AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_KEY_VAULT_NAME: deco-sign
+          AZURE_CERTIFICATE_NAME: deco-sign
 
   create-setup-cli-release-pr:
     runs-on:
