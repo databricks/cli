@@ -1,0 +1,16 @@
+resources:
+  dashboards:
+    foo:
+      display_name: test-dashboard
+      warehouse_id: 123abc
+      parent_path: /Users/tester@databricks.com
+      serialized_dashboard: '{"pages":[{"name":"page1","displayName":"Page 1"}]}'
+      permissions:
+        - level: CAN_READ
+          user_name: viewer@example.com
+        - level: CAN_MANAGE
+          group_name: data-team
+        - level: CAN_MANAGE
+          service_principal_name: f37d18cd-98a8-4db5-8112-12dd0a6bfe38
+        - level: CAN_MANAGE
+          user_name: tester@databricks.com

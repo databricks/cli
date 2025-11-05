@@ -19,14 +19,15 @@ var SupportedResources = map[string]any{
 	"database_catalogs":      (*ResourceDatabaseCatalog)(nil),
 	"synced_database_tables": (*ResourceSyncedDatabaseTable)(nil),
 	"alerts":                 (*ResourceAlert)(nil),
+	"dashboards":             (*ResourceDashboard)(nil),
 	"clusters":               (*ResourceCluster)(nil),
 	"registered_models":      (*ResourceRegisteredModel)(nil),
-	"dashboards":             (*ResourceDashboard)(nil),
 
 	// Permissions
 	"jobs.permissions":               (*ResourcePermissions)(nil),
 	"pipelines.permissions":          (*ResourcePermissions)(nil),
 	"apps.permissions":               (*ResourcePermissions)(nil),
+	"dashboards.permissions":         (*ResourcePermissions)(nil),
 	"clusters.permissions":           (*ResourcePermissions)(nil),
 	"database_instances.permissions": (*ResourcePermissions)(nil),
 	"experiments.permissions":        (*ResourcePermissions)(nil),

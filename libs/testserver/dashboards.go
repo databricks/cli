@@ -4,7 +4,6 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"path"
 	"strconv"
 	"strings"
@@ -60,12 +59,16 @@ func (s *FakeWorkspace) DashboardCreate(req Request) Response {
 		}
 	}
 
+	// Auto-create parent directory if it doesn't exist (matching WorkspaceFilesImportFile behavior)
 	if _, ok := s.directories[dashboard.ParentPath]; !ok {
-		return Response{
-			StatusCode: 404,
-			Body: map[string]string{
-				"message": fmt.Sprintf("Path (%s) doesn't exist.", dashboard.ParentPath),
-			},
+		for dir := dashboard.ParentPath; dir != "/" && dir != ""; dir = path.Dir(dir) {
+			if _, exists := s.directories[dir]; !exists {
+				s.directories[dir] = workspace.ObjectInfo{
+					ObjectType: "DIRECTORY",
+					Path:       dir,
+					ObjectId:   nextID(),
+				}
+			}
 		}
 	}
 

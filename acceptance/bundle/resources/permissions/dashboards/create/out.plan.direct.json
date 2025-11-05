@@ -1,0 +1,49 @@
+{
+  "plan": {
+    "resources.dashboards.foo": {
+      "action": "create",
+      "new_state": {
+        "config": {
+          "display_name": "test-dashboard",
+          "parent_path": "/Users/[USERNAME]",
+          "warehouse_id": "123abc"
+        }
+      }
+    },
+    "resources.dashboards.foo.permissions": {
+      "depends_on": [
+        {
+          "node": "resources.dashboards.foo",
+          "label": "${resources.dashboards.foo.id}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "config": {
+          "object_id": "",
+          "permissions": [
+            {
+              "permission_level": "CAN_READ",
+              "user_name": "viewer@example.com"
+            },
+            {
+              "group_name": "data-team",
+              "permission_level": "CAN_MANAGE"
+            },
+            {
+              "permission_level": "CAN_MANAGE",
+              "service_principal_name": "[UUID]"
+            },
+            {
+              "permission_level": "CAN_MANAGE",
+              "user_name": "[USERNAME]"
+            }
+          ]
+        },
+        "vars": {
+          "object_id": "/dashboards/${resources.dashboards.foo.id}"
+        }
+      }
+    }
+  }
+}
