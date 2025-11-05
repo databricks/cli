@@ -323,3 +323,65 @@ func TestMustAnyClientWithEmptyDatabricksCfg(t *testing.T) {
 	_, err = MustAnyClient(cmd, []string{})
 	require.ErrorContains(t, err, "does not contain account profiles")
 }
+
+func TestMustAccountClientWithUnifiedHost(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+
+	dir := t.TempDir()
+	configFile := filepath.Join(dir, ".databrickscfg")
+	err := os.WriteFile(
+		configFile,
+		[]byte(`
+			[unified-account]
+			host = https://unified.databricks.com
+			account_id = test-unified-account
+			token = foobar
+			experimental_is_unified_host = true
+			`),
+		0o755)
+	require.NoError(t, err)
+
+	cmd := New(context.Background())
+
+	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
+	t.Setenv("PATH", "/nothing")
+	err = MustAccountClient(cmd, []string{})
+	require.NoError(t, err)
+
+	// Verify account client was created
+	a := cmdctx.AccountClient(cmd.Context())
+	require.NotNil(t, a)
+}
+
+func TestMustAnyClientWithUnifiedHostAccountProfile(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+
+	dir := t.TempDir()
+	configFile := filepath.Join(dir, ".databrickscfg")
+	err := os.WriteFile(
+		configFile,
+		[]byte(`
+			[unified-account]
+			host = https://unified.databricks.com
+			account_id = test-unified-account
+			token = foobar
+			experimental_is_unified_host = true
+			`),
+		0o755)
+	require.NoError(t, err)
+
+	ctx, tt := cmdio.SetupTest(context.Background(), cmdio.TestOptions{PromptSupported: true})
+	t.Cleanup(tt.Done)
+	cmd := New(ctx)
+
+	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
+	t.Setenv("PATH", "/nothing")
+	isAccount, err := MustAnyClient(cmd, []string{})
+	require.NoError(t, err)
+	// Unified hosts without workspace_id should create account clients
+	require.True(t, isAccount)
+
+	// Verify account client was created
+	a := cmdctx.AccountClient(cmd.Context())
+	require.NotNil(t, a)
+}

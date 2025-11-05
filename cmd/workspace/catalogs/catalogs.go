@@ -68,13 +68,13 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided free-form text description.`)
-	cmd.Flags().StringVar(&createReq.ConnectionName, "connection-name", createReq.ConnectionName, `The name of the connection to an external data source.`)
+	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided free-form text description. Wire name: 'comment'.`)
+	cmd.Flags().StringVar(&createReq.ConnectionName, "connection-name", createReq.ConnectionName, `The name of the connection to an external data source. Wire name: 'connection_name'.`)
 	// TODO: map via StringToStringVar: options
 	// TODO: map via StringToStringVar: properties
-	cmd.Flags().StringVar(&createReq.ProviderName, "provider-name", createReq.ProviderName, `The name of delta sharing provider.`)
-	cmd.Flags().StringVar(&createReq.ShareName, "share-name", createReq.ShareName, `The name of the share under the share provider.`)
-	cmd.Flags().StringVar(&createReq.StorageRoot, "storage-root", createReq.StorageRoot, `Storage root URL for managed tables within catalog.`)
+	cmd.Flags().StringVar(&createReq.ProviderName, "provider-name", createReq.ProviderName, `The name of delta sharing provider. Wire name: 'provider_name'.`)
+	cmd.Flags().StringVar(&createReq.ShareName, "share-name", createReq.ShareName, `The name of the share under the share provider. Wire name: 'share_name'.`)
+	cmd.Flags().StringVar(&createReq.StorageRoot, "storage-root", createReq.StorageRoot, `Storage root URL for managed tables within catalog. Wire name: 'storage_root'.`)
 
 	cmd.Use = "create NAME"
 	cmd.Short = `Create a catalog.`
@@ -154,7 +154,7 @@ func newDelete() *cobra.Command {
 
 	var deleteReq catalog.DeleteCatalogRequest
 
-	cmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `Force deletion even if the catalog is not empty.`)
+	cmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `Force deletion even if the catalog is not empty. Wire name: 'force'.`)
 
 	cmd.Use = "delete NAME"
 	cmd.Short = `Delete a catalog.`
@@ -213,7 +213,7 @@ func newGet() *cobra.Command {
 
 	var getReq catalog.GetCatalogRequest
 
-	cmd.Flags().BoolVar(&getReq.IncludeBrowse, "include-browse", getReq.IncludeBrowse, `Whether to include catalogs in the response for which the principal can only access selective metadata for.`)
+	cmd.Flags().BoolVar(&getReq.IncludeBrowse, "include-browse", getReq.IncludeBrowse, `Whether to include catalogs in the response for which the principal can only access selective metadata for. Wire name: 'include_browse'.`)
 
 	cmd.Use = "get NAME"
 	cmd.Short = `Get a catalog.`
@@ -273,10 +273,10 @@ func newList() *cobra.Command {
 
 	var listReq catalog.ListCatalogsRequest
 
-	cmd.Flags().BoolVar(&listReq.IncludeBrowse, "include-browse", listReq.IncludeBrowse, `Whether to include catalogs in the response for which the principal can only access selective metadata for.`)
-	cmd.Flags().BoolVar(&listReq.IncludeUnbound, "include-unbound", listReq.IncludeUnbound, `Whether to include catalogs not bound to the workspace.`)
-	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of catalogs to return.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
+	cmd.Flags().BoolVar(&listReq.IncludeBrowse, "include-browse", listReq.IncludeBrowse, `Whether to include catalogs in the response for which the principal can only access selective metadata for. Wire name: 'include_browse'.`)
+	cmd.Flags().BoolVar(&listReq.IncludeUnbound, "include-unbound", listReq.IncludeUnbound, `Whether to include catalogs not bound to the workspace. Wire name: 'include_unbound'.`)
+	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of catalogs to return. Wire name: 'max_results'.`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query. Wire name: 'page_token'.`)
 
 	cmd.Use = "list"
 	cmd.Short = `List catalogs.`
@@ -341,12 +341,12 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `User-provided free-form text description.`)
-	cmd.Flags().Var(&updateReq.EnablePredictiveOptimization, "enable-predictive-optimization", `Whether predictive optimization should be enabled for this object and objects under it. Supported values: [DISABLE, ENABLE, INHERIT]`)
-	cmd.Flags().Var(&updateReq.IsolationMode, "isolation-mode", `Whether the current securable is accessible from all workspaces or a specific set of workspaces. Supported values: [ISOLATED, OPEN]`)
-	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the catalog.`)
+	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `User-provided free-form text description. Wire name: 'comment'.`)
+	cmd.Flags().Var(&updateReq.EnablePredictiveOptimization, "enable-predictive-optimization", `Whether predictive optimization should be enabled for this object and objects under it. Supported values: [DISABLE, ENABLE, INHERIT]. Wire name: 'enable_predictive_optimization'.`)
+	cmd.Flags().Var(&updateReq.IsolationMode, "isolation-mode", `Whether the current securable is accessible from all workspaces or a specific set of workspaces. Supported values: [ISOLATED, OPEN]. Wire name: 'isolation_mode'.`)
+	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the catalog. Wire name: 'new_name'.`)
 	// TODO: map via StringToStringVar: options
-	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of catalog.`)
+	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of catalog. Wire name: 'owner'.`)
 	// TODO: map via StringToStringVar: properties
 
 	cmd.Use = "update NAME"

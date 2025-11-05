@@ -21,6 +21,13 @@ class IngestionSourceType(Enum):
     DYNAMICS365 = "DYNAMICS365"
     CONFLUENCE = "CONFLUENCE"
     META_MARKETING = "META_MARKETING"
+    GOOGLE_ADS = "GOOGLE_ADS"
+    TIKTOK_ADS = "TIKTOK_ADS"
+    SALESFORCE_MARKETING_CLOUD = "SALESFORCE_MARKETING_CLOUD"
+    HUBSPOT = "HUBSPOT"
+    WORKDAY_HCM = "WORKDAY_HCM"
+    GUIDEWIRE = "GUIDEWIRE"
+    ZENDESK = "ZENDESK"
     FOREIGN_CATALOG = "FOREIGN_CATALOG"
 
 
@@ -44,6 +51,13 @@ IngestionSourceTypeParam = (
         "DYNAMICS365",
         "CONFLUENCE",
         "META_MARKETING",
+        "GOOGLE_ADS",
+        "TIKTOK_ADS",
+        "SALESFORCE_MARKETING_CLOUD",
+        "HUBSPOT",
+        "WORKDAY_HCM",
+        "GUIDEWIRE",
+        "ZENDESK",
         "FOREIGN_CATALOG",
     ]
     | IngestionSourceType

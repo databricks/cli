@@ -78,8 +78,8 @@ func newCreateScope() *cobra.Command {
 	cmd.Flags().Var(&createScopeJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: backend_azure_keyvault
-	cmd.Flags().StringVar(&createScopeReq.InitialManagePrincipal, "initial-manage-principal", createScopeReq.InitialManagePrincipal, `The principal that is initially granted MANAGE permission to the created scope.`)
-	cmd.Flags().Var(&createScopeReq.ScopeBackendType, "scope-backend-type", `The backend type the scope will be created with. Supported values: [AZURE_KEYVAULT, DATABRICKS]`)
+	cmd.Flags().StringVar(&createScopeReq.InitialManagePrincipal, "initial-manage-principal", createScopeReq.InitialManagePrincipal, `The principal that is initially granted MANAGE permission to the created scope. Wire name: 'initial_manage_principal'.`)
+	cmd.Flags().Var(&createScopeReq.ScopeBackendType, "scope-backend-type", `The backend type the scope will be created with. Supported values: [AZURE_KEYVAULT, DATABRICKS]. Wire name: 'scope_backend_type'.`)
 
 	cmd.Use = "create-scope SCOPE"
 	cmd.Short = `Create a new secret scope.`

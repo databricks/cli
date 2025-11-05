@@ -109,8 +109,8 @@ func newListWorkspaceSettingsMetadata() *cobra.Command {
 
 	var listWorkspaceSettingsMetadataReq settingsv2.ListWorkspaceSettingsMetadataRequest
 
-	cmd.Flags().IntVar(&listWorkspaceSettingsMetadataReq.PageSize, "page-size", listWorkspaceSettingsMetadataReq.PageSize, `The maximum number of settings to return.`)
-	cmd.Flags().StringVar(&listWorkspaceSettingsMetadataReq.PageToken, "page-token", listWorkspaceSettingsMetadataReq.PageToken, `A page token, received from a previous ListWorkspaceSettingsMetadataRequest call.`)
+	cmd.Flags().IntVar(&listWorkspaceSettingsMetadataReq.PageSize, "page-size", listWorkspaceSettingsMetadataReq.PageSize, `The maximum number of settings to return. Wire name: 'page_size'.`)
+	cmd.Flags().StringVar(&listWorkspaceSettingsMetadataReq.PageToken, "page-token", listWorkspaceSettingsMetadataReq.PageToken, `A page token, received from a previous ListWorkspaceSettingsMetadataRequest call. Wire name: 'page_token'.`)
 
 	cmd.Use = "list-workspace-settings-metadata"
 	cmd.Short = `List valid setting keys and their metadata.`
@@ -179,7 +179,7 @@ func newPatchPublicWorkspaceSetting() *cobra.Command {
 	// TODO: complex arg: effective_restrict_workspace_admins
 	// TODO: complex arg: effective_string_val
 	// TODO: complex arg: integer_val
-	cmd.Flags().StringVar(&patchPublicWorkspaceSettingReq.Setting.Name, "name", patchPublicWorkspaceSettingReq.Setting.Name, `Name of the setting.`)
+	cmd.Flags().StringVar(&patchPublicWorkspaceSettingReq.Setting.Name, "name", patchPublicWorkspaceSettingReq.Setting.Name, `Name of the setting. Wire name: 'name'.`)
 	// TODO: complex arg: personal_compute
 	// TODO: complex arg: restrict_workspace_admins
 	// TODO: complex arg: string_val

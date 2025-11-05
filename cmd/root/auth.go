@@ -314,7 +314,7 @@ func emptyHttpRequest(ctx context.Context) *http.Request {
 }
 
 func renderError(ctx context.Context, cfg *config.Config, err error) error {
-	if rewritten, newErr := auth.RewriteAuthError(ctx, cfg.Host, cfg.AccountID, cfg.Profile, err); rewritten {
+	if rewritten, newErr := auth.RewriteAuthError(ctx, cfg.Host, cfg.AccountID, cfg.Profile, cfg.Experimental_IsUnifiedHost, err); rewritten {
 		return newErr
 	}
 	return err

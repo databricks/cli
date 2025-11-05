@@ -175,9 +175,9 @@ func newList() *cobra.Command {
 
 	var listReq marketplace.ListConsumerProvidersRequest
 
-	cmd.Flags().BoolVar(&listReq.IsFeatured, "is-featured", listReq.IsFeatured, ``)
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)
+	cmd.Flags().BoolVar(&listReq.IsFeatured, "is-featured", listReq.IsFeatured, `Wire name: 'is_featured'.`)
+	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Wire name: 'page_size'.`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Wire name: 'page_token'.`)
 
 	cmd.Use = "list"
 	cmd.Short = `List providers.`

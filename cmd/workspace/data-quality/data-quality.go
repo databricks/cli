@@ -710,8 +710,8 @@ func newListMonitor() *cobra.Command {
 
 	var listMonitorReq dataquality.ListMonitorRequest
 
-	cmd.Flags().IntVar(&listMonitorReq.PageSize, "page-size", listMonitorReq.PageSize, ``)
-	cmd.Flags().StringVar(&listMonitorReq.PageToken, "page-token", listMonitorReq.PageToken, ``)
+	cmd.Flags().IntVar(&listMonitorReq.PageSize, "page-size", listMonitorReq.PageSize, `Wire name: 'page_size'.`)
+	cmd.Flags().StringVar(&listMonitorReq.PageToken, "page-token", listMonitorReq.PageToken, `Wire name: 'page_token'.`)
 
 	cmd.Use = "list-monitor"
 	cmd.Short = `List monitors.`
@@ -761,8 +761,8 @@ func newListRefresh() *cobra.Command {
 
 	var listRefreshReq dataquality.ListRefreshRequest
 
-	cmd.Flags().IntVar(&listRefreshReq.PageSize, "page-size", listRefreshReq.PageSize, ``)
-	cmd.Flags().StringVar(&listRefreshReq.PageToken, "page-token", listRefreshReq.PageToken, ``)
+	cmd.Flags().IntVar(&listRefreshReq.PageSize, "page-size", listRefreshReq.PageSize, `Wire name: 'page_size'.`)
+	cmd.Flags().StringVar(&listRefreshReq.PageToken, "page-token", listRefreshReq.PageToken, `Wire name: 'page_token'.`)
 
 	cmd.Use = "list-refresh OBJECT_TYPE OBJECT_ID"
 	cmd.Short = `List refreshes.`

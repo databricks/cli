@@ -77,9 +77,9 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.Dashboard.DisplayName, "display-name", createReq.Dashboard.DisplayName, `The display name of the dashboard.`)
-	cmd.Flags().StringVar(&createReq.Dashboard.SerializedDashboard, "serialized-dashboard", createReq.Dashboard.SerializedDashboard, `The contents of the dashboard in serialized string form.`)
-	cmd.Flags().StringVar(&createReq.Dashboard.WarehouseId, "warehouse-id", createReq.Dashboard.WarehouseId, `The warehouse ID used to run the dashboard.`)
+	cmd.Flags().StringVar(&createReq.Dashboard.DisplayName, "display-name", createReq.Dashboard.DisplayName, `The display name of the dashboard. Wire name: 'display_name'.`)
+	cmd.Flags().StringVar(&createReq.Dashboard.SerializedDashboard, "serialized-dashboard", createReq.Dashboard.SerializedDashboard, `The contents of the dashboard in serialized string form. Wire name: 'serialized_dashboard'.`)
+	cmd.Flags().StringVar(&createReq.Dashboard.WarehouseId, "warehouse-id", createReq.Dashboard.WarehouseId, `The warehouse ID used to run the dashboard. Wire name: 'warehouse_id'.`)
 
 	cmd.Use = "create"
 	cmd.Short = `Create dashboard.`
@@ -149,9 +149,9 @@ func newCreateSchedule() *cobra.Command {
 
 	cmd.Flags().Var(&createScheduleJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createScheduleReq.Schedule.DisplayName, "display-name", createScheduleReq.Schedule.DisplayName, `The display name for schedule.`)
-	cmd.Flags().Var(&createScheduleReq.Schedule.PauseStatus, "pause-status", `The status indicates whether this schedule is paused or not. Supported values: [PAUSED, UNPAUSED]`)
-	cmd.Flags().StringVar(&createScheduleReq.Schedule.WarehouseId, "warehouse-id", createScheduleReq.Schedule.WarehouseId, `The warehouse id to run the dashboard with for the schedule.`)
+	cmd.Flags().StringVar(&createScheduleReq.Schedule.DisplayName, "display-name", createScheduleReq.Schedule.DisplayName, `The display name for schedule. Wire name: 'display_name'.`)
+	cmd.Flags().Var(&createScheduleReq.Schedule.PauseStatus, "pause-status", `The status indicates whether this schedule is paused or not. Supported values: [PAUSED, UNPAUSED]. Wire name: 'pause_status'.`)
+	cmd.Flags().StringVar(&createScheduleReq.Schedule.WarehouseId, "warehouse-id", createScheduleReq.Schedule.WarehouseId, `The warehouse id to run the dashboard with for the schedule. Wire name: 'warehouse_id'.`)
 
 	cmd.Use = "create-schedule DASHBOARD_ID CRON_SCHEDULE"
 	cmd.Short = `Create dashboard schedule.`
@@ -323,7 +323,7 @@ func newDeleteSchedule() *cobra.Command {
 
 	var deleteScheduleReq dashboards.DeleteScheduleRequest
 
-	cmd.Flags().StringVar(&deleteScheduleReq.Etag, "etag", deleteScheduleReq.Etag, `The etag for the schedule.`)
+	cmd.Flags().StringVar(&deleteScheduleReq.Etag, "etag", deleteScheduleReq.Etag, `The etag for the schedule. Wire name: 'etag'.`)
 
 	cmd.Use = "delete-schedule DASHBOARD_ID SCHEDULE_ID"
 	cmd.Short = `Delete dashboard schedule.`
@@ -381,7 +381,7 @@ func newDeleteSubscription() *cobra.Command {
 
 	var deleteSubscriptionReq dashboards.DeleteSubscriptionRequest
 
-	cmd.Flags().StringVar(&deleteSubscriptionReq.Etag, "etag", deleteSubscriptionReq.Etag, `The etag for the subscription.`)
+	cmd.Flags().StringVar(&deleteSubscriptionReq.Etag, "etag", deleteSubscriptionReq.Etag, `The etag for the subscription. Wire name: 'etag'.`)
 
 	cmd.Use = "delete-subscription DASHBOARD_ID SCHEDULE_ID SUBSCRIPTION_ID"
 	cmd.Short = `Delete schedule subscription.`
@@ -667,10 +667,10 @@ func newList() *cobra.Command {
 
 	var listReq dashboards.ListDashboardsRequest
 
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `The number of dashboards to return per page.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `A page token, received from a previous ListDashboards call.`)
-	cmd.Flags().BoolVar(&listReq.ShowTrashed, "show-trashed", listReq.ShowTrashed, `The flag to include dashboards located in the trash.`)
-	cmd.Flags().Var(&listReq.View, "view", `DASHBOARD_VIEW_BASIConly includes summary metadata from the dashboard. Supported values: [DASHBOARD_VIEW_BASIC]`)
+	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `The number of dashboards to return per page. Wire name: 'page_size'.`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `A page token, received from a previous ListDashboards call. Wire name: 'page_token'.`)
+	cmd.Flags().BoolVar(&listReq.ShowTrashed, "show-trashed", listReq.ShowTrashed, `The flag to include dashboards located in the trash. Wire name: 'show_trashed'.`)
+	cmd.Flags().Var(&listReq.View, "view", `DASHBOARD_VIEW_BASIConly includes summary metadata from the dashboard. Supported values: [DASHBOARD_VIEW_BASIC]. Wire name: 'view'.`)
 
 	cmd.Use = "list"
 	cmd.Short = `List dashboards.`
@@ -718,8 +718,8 @@ func newListSchedules() *cobra.Command {
 
 	var listSchedulesReq dashboards.ListSchedulesRequest
 
-	cmd.Flags().IntVar(&listSchedulesReq.PageSize, "page-size", listSchedulesReq.PageSize, `The number of schedules to return per page.`)
-	cmd.Flags().StringVar(&listSchedulesReq.PageToken, "page-token", listSchedulesReq.PageToken, `A page token, received from a previous ListSchedules call.`)
+	cmd.Flags().IntVar(&listSchedulesReq.PageSize, "page-size", listSchedulesReq.PageSize, `The number of schedules to return per page. Wire name: 'page_size'.`)
+	cmd.Flags().StringVar(&listSchedulesReq.PageToken, "page-token", listSchedulesReq.PageToken, `A page token, received from a previous ListSchedules call. Wire name: 'page_token'.`)
 
 	cmd.Use = "list-schedules DASHBOARD_ID"
 	cmd.Short = `List dashboard schedules.`
@@ -772,8 +772,8 @@ func newListSubscriptions() *cobra.Command {
 
 	var listSubscriptionsReq dashboards.ListSubscriptionsRequest
 
-	cmd.Flags().IntVar(&listSubscriptionsReq.PageSize, "page-size", listSubscriptionsReq.PageSize, `The number of subscriptions to return per page.`)
-	cmd.Flags().StringVar(&listSubscriptionsReq.PageToken, "page-token", listSubscriptionsReq.PageToken, `A page token, received from a previous ListSubscriptions call.`)
+	cmd.Flags().IntVar(&listSubscriptionsReq.PageSize, "page-size", listSubscriptionsReq.PageSize, `The number of subscriptions to return per page. Wire name: 'page_size'.`)
+	cmd.Flags().StringVar(&listSubscriptionsReq.PageToken, "page-token", listSubscriptionsReq.PageToken, `A page token, received from a previous ListSubscriptions call. Wire name: 'page_token'.`)
 
 	cmd.Use = "list-subscriptions DASHBOARD_ID SCHEDULE_ID"
 	cmd.Short = `List schedule subscriptions.`
@@ -831,9 +831,9 @@ func newMigrate() *cobra.Command {
 
 	cmd.Flags().Var(&migrateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&migrateReq.DisplayName, "display-name", migrateReq.DisplayName, `Display name for the new Lakeview dashboard.`)
-	cmd.Flags().StringVar(&migrateReq.ParentPath, "parent-path", migrateReq.ParentPath, `The workspace path of the folder to contain the migrated Lakeview dashboard.`)
-	cmd.Flags().BoolVar(&migrateReq.UpdateParameterSyntax, "update-parameter-syntax", migrateReq.UpdateParameterSyntax, `Flag to indicate if mustache parameter syntax ({{ param }}) should be auto-updated to named syntax (:param) when converting datasets in the dashboard.`)
+	cmd.Flags().StringVar(&migrateReq.DisplayName, "display-name", migrateReq.DisplayName, `Display name for the new Lakeview dashboard. Wire name: 'display_name'.`)
+	cmd.Flags().StringVar(&migrateReq.ParentPath, "parent-path", migrateReq.ParentPath, `The workspace path of the folder to contain the migrated Lakeview dashboard. Wire name: 'parent_path'.`)
+	cmd.Flags().BoolVar(&migrateReq.UpdateParameterSyntax, "update-parameter-syntax", migrateReq.UpdateParameterSyntax, `Flag to indicate if mustache parameter syntax ({{ param }}) should be auto-updated to named syntax (:param) when converting datasets in the dashboard. Wire name: 'update_parameter_syntax'.`)
 
 	cmd.Use = "migrate SOURCE_DASHBOARD_ID"
 	cmd.Short = `Migrate dashboard.`
@@ -915,8 +915,8 @@ func newPublish() *cobra.Command {
 
 	cmd.Flags().Var(&publishJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&publishReq.EmbedCredentials, "embed-credentials", publishReq.EmbedCredentials, `Flag to indicate if the publisher's credentials should be embedded in the published dashboard.`)
-	cmd.Flags().StringVar(&publishReq.WarehouseId, "warehouse-id", publishReq.WarehouseId, `The ID of the warehouse that can be used to override the warehouse which was set in the draft.`)
+	cmd.Flags().BoolVar(&publishReq.EmbedCredentials, "embed-credentials", publishReq.EmbedCredentials, `Flag to indicate if the publisher's credentials should be embedded in the published dashboard. Wire name: 'embed_credentials'.`)
+	cmd.Flags().StringVar(&publishReq.WarehouseId, "warehouse-id", publishReq.WarehouseId, `The ID of the warehouse that can be used to override the warehouse which was set in the draft. Wire name: 'warehouse_id'.`)
 
 	cmd.Use = "publish DASHBOARD_ID"
 	cmd.Short = `Publish dashboard.`
@@ -1102,9 +1102,9 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.Dashboard.DisplayName, "display-name", updateReq.Dashboard.DisplayName, `The display name of the dashboard.`)
-	cmd.Flags().StringVar(&updateReq.Dashboard.SerializedDashboard, "serialized-dashboard", updateReq.Dashboard.SerializedDashboard, `The contents of the dashboard in serialized string form.`)
-	cmd.Flags().StringVar(&updateReq.Dashboard.WarehouseId, "warehouse-id", updateReq.Dashboard.WarehouseId, `The warehouse ID used to run the dashboard.`)
+	cmd.Flags().StringVar(&updateReq.Dashboard.DisplayName, "display-name", updateReq.Dashboard.DisplayName, `The display name of the dashboard. Wire name: 'display_name'.`)
+	cmd.Flags().StringVar(&updateReq.Dashboard.SerializedDashboard, "serialized-dashboard", updateReq.Dashboard.SerializedDashboard, `The contents of the dashboard in serialized string form. Wire name: 'serialized_dashboard'.`)
+	cmd.Flags().StringVar(&updateReq.Dashboard.WarehouseId, "warehouse-id", updateReq.Dashboard.WarehouseId, `The warehouse ID used to run the dashboard. Wire name: 'warehouse_id'.`)
 
 	cmd.Use = "update DASHBOARD_ID"
 	cmd.Short = `Update dashboard.`
@@ -1178,9 +1178,9 @@ func newUpdateSchedule() *cobra.Command {
 
 	cmd.Flags().Var(&updateScheduleJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateScheduleReq.Schedule.DisplayName, "display-name", updateScheduleReq.Schedule.DisplayName, `The display name for schedule.`)
-	cmd.Flags().Var(&updateScheduleReq.Schedule.PauseStatus, "pause-status", `The status indicates whether this schedule is paused or not. Supported values: [PAUSED, UNPAUSED]`)
-	cmd.Flags().StringVar(&updateScheduleReq.Schedule.WarehouseId, "warehouse-id", updateScheduleReq.Schedule.WarehouseId, `The warehouse id to run the dashboard with for the schedule.`)
+	cmd.Flags().StringVar(&updateScheduleReq.Schedule.DisplayName, "display-name", updateScheduleReq.Schedule.DisplayName, `The display name for schedule. Wire name: 'display_name'.`)
+	cmd.Flags().Var(&updateScheduleReq.Schedule.PauseStatus, "pause-status", `The status indicates whether this schedule is paused or not. Supported values: [PAUSED, UNPAUSED]. Wire name: 'pause_status'.`)
+	cmd.Flags().StringVar(&updateScheduleReq.Schedule.WarehouseId, "warehouse-id", updateScheduleReq.Schedule.WarehouseId, `The warehouse id to run the dashboard with for the schedule. Wire name: 'warehouse_id'.`)
 
 	cmd.Use = "update-schedule DASHBOARD_ID SCHEDULE_ID CRON_SCHEDULE"
 	cmd.Short = `Update dashboard schedule.`

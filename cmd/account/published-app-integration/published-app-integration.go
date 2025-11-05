@@ -61,7 +61,7 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.AppId, "app-id", createReq.AppId, `App id of the OAuth published app integration.`)
+	cmd.Flags().StringVar(&createReq.AppId, "app-id", createReq.AppId, `App id of the OAuth published app integration. Wire name: 'app_id'.`)
 	// TODO: complex arg: token_access_policy
 
 	cmd.Use = "create"
@@ -238,8 +238,8 @@ func newList() *cobra.Command {
 
 	var listReq oauth2.ListPublishedAppIntegrationsRequest
 
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)
+	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Wire name: 'page_size'.`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Wire name: 'page_token'.`)
 
 	cmd.Use = "list"
 	cmd.Short = `Get published oauth app integrations.`

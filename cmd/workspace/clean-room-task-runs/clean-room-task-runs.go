@@ -51,9 +51,9 @@ func newList() *cobra.Command {
 
 	var listReq cleanrooms.ListCleanRoomNotebookTaskRunsRequest
 
-	cmd.Flags().StringVar(&listReq.NotebookName, "notebook-name", listReq.NotebookName, `Notebook name.`)
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `The maximum number of task runs to return.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
+	cmd.Flags().StringVar(&listReq.NotebookName, "notebook-name", listReq.NotebookName, `Notebook name. Wire name: 'notebook_name'.`)
+	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `The maximum number of task runs to return. Wire name: 'page_size'.`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query. Wire name: 'page_token'.`)
 
 	cmd.Use = "list CLEAN_ROOM_NAME"
 	cmd.Short = `List notebook task runs.`

@@ -43,6 +43,7 @@ using a client ID and secret is not supported.`,
 		}
 
 		t, err := loadToken(ctx, loadTokenArgs{
+			cmd:                cmd,
 			authArguments:      authArguments,
 			profileName:        profileName,
 			args:               args,
@@ -65,6 +66,9 @@ using a client ID and secret is not supported.`,
 }
 
 type loadTokenArgs struct {
+	// cmd is the cobra command, used to access flags like experimental-is-unified-host.
+	cmd *cobra.Command
+
 	// authArguments is the parsed auth arguments, including the host and optionally the account ID.
 	authArguments *auth.AuthArguments
 
@@ -98,6 +102,11 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 		return nil, err
 	}
 
+	// Set IsUnifiedHost from the profile if the flag wasn't explicitly set.
+	if !args.cmd.Flag("experimental-is-unified-host").Changed && existingProfile != nil {
+		args.authArguments.IsUnifiedHost = existingProfile.Experimental_IsUnifiedHost
+	}
+
 	err = setHostAndAccountId(ctx, existingProfile, args.authArguments, args.args)
 	if err != nil {
 		return nil, err
@@ -129,7 +138,7 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 			// This is captured in an acceptance test under "cmd/auth/token".
 			err = errors.New("cache: databricks OAuth is not configured for this host")
 		}
-		if rewritten, rewrittenErr := auth.RewriteAuthError(ctx, args.authArguments.Host, args.authArguments.AccountID, args.profileName, err); rewritten {
+		if rewritten, rewrittenErr := auth.RewriteAuthError(ctx, args.authArguments.Host, args.authArguments.AccountID, args.profileName, args.authArguments.IsUnifiedHost, err); rewritten {
 			return nil, rewrittenErr
 		}
 		helpMsg := helpfulError(ctx, args.profileName, oauthArgument)

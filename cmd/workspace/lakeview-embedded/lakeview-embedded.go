@@ -51,8 +51,8 @@ func newGetPublishedDashboardTokenInfo() *cobra.Command {
 
 	var getPublishedDashboardTokenInfoReq dashboards.GetPublishedDashboardTokenInfoRequest
 
-	cmd.Flags().StringVar(&getPublishedDashboardTokenInfoReq.ExternalValue, "external-value", getPublishedDashboardTokenInfoReq.ExternalValue, `Provided external value to be included in the custom claim.`)
-	cmd.Flags().StringVar(&getPublishedDashboardTokenInfoReq.ExternalViewerId, "external-viewer-id", getPublishedDashboardTokenInfoReq.ExternalViewerId, `Provided external viewer id to be included in the custom claim.`)
+	cmd.Flags().StringVar(&getPublishedDashboardTokenInfoReq.ExternalValue, "external-value", getPublishedDashboardTokenInfoReq.ExternalValue, `Provided external value to be included in the custom claim. Wire name: 'external_value'.`)
+	cmd.Flags().StringVar(&getPublishedDashboardTokenInfoReq.ExternalViewerId, "external-viewer-id", getPublishedDashboardTokenInfoReq.ExternalViewerId, `Provided external viewer id to be included in the custom claim. Wire name: 'external_viewer_id'.`)
 
 	cmd.Use = "get-published-dashboard-token-info DASHBOARD_ID"
 	cmd.Short = `Read information of a published dashboard to mint an OAuth token.`

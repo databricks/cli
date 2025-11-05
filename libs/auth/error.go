@@ -10,10 +10,10 @@ import (
 
 // RewriteAuthError rewrites the error message for invalid refresh token error.
 // It returns whether the error was rewritten and the rewritten error.
-func RewriteAuthError(ctx context.Context, host, accountId, profile string, err error) (bool, error) {
+func RewriteAuthError(ctx context.Context, host, accountId, profile string, isUnifiedHost bool, err error) (bool, error) {
 	target := &u2m.InvalidRefreshTokenError{}
 	if errors.As(err, &target) {
-		oauthArgument, err := AuthArguments{host, accountId}.ToOAuthArgument()
+		oauthArgument, err := AuthArguments{Host: host, AccountID: accountId, IsUnifiedHost: isUnifiedHost}.ToOAuthArgument()
 		if err != nil {
 			return false, err
 		}
@@ -35,6 +35,8 @@ func BuildLoginCommand(ctx context.Context, profile string, arg u2m.OAuthArgumen
 		cmd = append(cmd, "--profile", profile)
 	} else {
 		switch arg := arg.(type) {
+		case u2m.UnifiedOAuthArgument:
+			cmd = append(cmd, "--host", arg.GetHost(), "--account-id", arg.GetAccountId(), "--experimental-is-unified-host")
 		case u2m.AccountOAuthArgument:
 			cmd = append(cmd, "--host", arg.GetAccountHost(), "--account-id", arg.GetAccountId())
 		case u2m.WorkspaceOAuthArgument:

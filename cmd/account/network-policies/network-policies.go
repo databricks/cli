@@ -66,9 +66,9 @@ func newCreateNetworkPolicyRpc() *cobra.Command {
 
 	cmd.Flags().Var(&createNetworkPolicyRpcJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createNetworkPolicyRpcReq.NetworkPolicy.AccountId, "account-id", createNetworkPolicyRpcReq.NetworkPolicy.AccountId, `The associated account ID for this Network Policy object.`)
+	cmd.Flags().StringVar(&createNetworkPolicyRpcReq.NetworkPolicy.AccountId, "account-id", createNetworkPolicyRpcReq.NetworkPolicy.AccountId, `The associated account ID for this Network Policy object. Wire name: 'account_id'.`)
 	// TODO: complex arg: egress
-	cmd.Flags().StringVar(&createNetworkPolicyRpcReq.NetworkPolicy.NetworkPolicyId, "network-policy-id", createNetworkPolicyRpcReq.NetworkPolicy.NetworkPolicyId, `The unique identifier for the network policy.`)
+	cmd.Flags().StringVar(&createNetworkPolicyRpcReq.NetworkPolicy.NetworkPolicyId, "network-policy-id", createNetworkPolicyRpcReq.NetworkPolicy.NetworkPolicyId, `The unique identifier for the network policy. Wire name: 'network_policy_id'.`)
 
 	cmd.Use = "create-network-policy-rpc"
 	cmd.Short = `Create a network policy.`
@@ -247,7 +247,7 @@ func newListNetworkPoliciesRpc() *cobra.Command {
 
 	var listNetworkPoliciesRpcReq settings.ListNetworkPoliciesRequest
 
-	cmd.Flags().StringVar(&listNetworkPoliciesRpcReq.PageToken, "page-token", listNetworkPoliciesRpcReq.PageToken, `Pagination token to go to next page based on previous query.`)
+	cmd.Flags().StringVar(&listNetworkPoliciesRpcReq.PageToken, "page-token", listNetworkPoliciesRpcReq.PageToken, `Pagination token to go to next page based on previous query. Wire name: 'page_token'.`)
 
 	cmd.Use = "list-network-policies-rpc"
 	cmd.Short = `List network policies.`
@@ -301,9 +301,9 @@ func newUpdateNetworkPolicyRpc() *cobra.Command {
 
 	cmd.Flags().Var(&updateNetworkPolicyRpcJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateNetworkPolicyRpcReq.NetworkPolicy.AccountId, "account-id", updateNetworkPolicyRpcReq.NetworkPolicy.AccountId, `The associated account ID for this Network Policy object.`)
+	cmd.Flags().StringVar(&updateNetworkPolicyRpcReq.NetworkPolicy.AccountId, "account-id", updateNetworkPolicyRpcReq.NetworkPolicy.AccountId, `The associated account ID for this Network Policy object. Wire name: 'account_id'.`)
 	// TODO: complex arg: egress
-	cmd.Flags().StringVar(&updateNetworkPolicyRpcReq.NetworkPolicy.NetworkPolicyId, "network-policy-id", updateNetworkPolicyRpcReq.NetworkPolicy.NetworkPolicyId, `The unique identifier for the network policy.`)
+	cmd.Flags().StringVar(&updateNetworkPolicyRpcReq.NetworkPolicy.NetworkPolicyId, "network-policy-id", updateNetworkPolicyRpcReq.NetworkPolicy.NetworkPolicyId, `The unique identifier for the network policy. Wire name: 'network_policy_id'.`)
 
 	cmd.Use = "update-network-policy-rpc NETWORK_POLICY_ID"
 	cmd.Short = `Update a network policy.`

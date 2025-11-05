@@ -78,19 +78,19 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().IntVar(&createReq.AutoStopMins, "auto-stop-mins", createReq.AutoStopMins, `The amount of time in minutes that a SQL warehouse must be idle (i.e., no RUNNING queries) before it is automatically stopped.`)
+	cmd.Flags().IntVar(&createReq.AutoStopMins, "auto-stop-mins", createReq.AutoStopMins, `The amount of time in minutes that a SQL warehouse must be idle (i.e., no RUNNING queries) before it is automatically stopped. Wire name: 'auto_stop_mins'.`)
 	// TODO: complex arg: channel
-	cmd.Flags().StringVar(&createReq.ClusterSize, "cluster-size", createReq.ClusterSize, `Size of the clusters allocated for this warehouse.`)
-	cmd.Flags().StringVar(&createReq.CreatorName, "creator-name", createReq.CreatorName, `warehouse creator name.`)
-	cmd.Flags().BoolVar(&createReq.EnablePhoton, "enable-photon", createReq.EnablePhoton, `Configures whether the warehouse should use Photon optimized clusters.`)
-	cmd.Flags().BoolVar(&createReq.EnableServerlessCompute, "enable-serverless-compute", createReq.EnableServerlessCompute, `Configures whether the warehouse should use serverless compute.`)
-	cmd.Flags().StringVar(&createReq.InstanceProfileArn, "instance-profile-arn", createReq.InstanceProfileArn, `Deprecated.`)
-	cmd.Flags().IntVar(&createReq.MaxNumClusters, "max-num-clusters", createReq.MaxNumClusters, `Maximum number of clusters that the autoscaler will create to handle concurrent queries.`)
-	cmd.Flags().IntVar(&createReq.MinNumClusters, "min-num-clusters", createReq.MinNumClusters, `Minimum number of available clusters that will be maintained for this SQL warehouse.`)
-	cmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `Logical name for the cluster.`)
-	cmd.Flags().Var(&createReq.SpotInstancePolicy, "spot-instance-policy", `Configurations whether the endpoint should use spot instances. Supported values: [COST_OPTIMIZED, POLICY_UNSPECIFIED, RELIABILITY_OPTIMIZED]`)
+	cmd.Flags().StringVar(&createReq.ClusterSize, "cluster-size", createReq.ClusterSize, `Size of the clusters allocated for this warehouse. Wire name: 'cluster_size'.`)
+	cmd.Flags().StringVar(&createReq.CreatorName, "creator-name", createReq.CreatorName, `warehouse creator name. Wire name: 'creator_name'.`)
+	cmd.Flags().BoolVar(&createReq.EnablePhoton, "enable-photon", createReq.EnablePhoton, `Configures whether the warehouse should use Photon optimized clusters. Wire name: 'enable_photon'.`)
+	cmd.Flags().BoolVar(&createReq.EnableServerlessCompute, "enable-serverless-compute", createReq.EnableServerlessCompute, `Configures whether the warehouse should use serverless compute. Wire name: 'enable_serverless_compute'.`)
+	cmd.Flags().StringVar(&createReq.InstanceProfileArn, "instance-profile-arn", createReq.InstanceProfileArn, `Deprecated. Wire name: 'instance_profile_arn'.`)
+	cmd.Flags().IntVar(&createReq.MaxNumClusters, "max-num-clusters", createReq.MaxNumClusters, `Maximum number of clusters that the autoscaler will create to handle concurrent queries. Wire name: 'max_num_clusters'.`)
+	cmd.Flags().IntVar(&createReq.MinNumClusters, "min-num-clusters", createReq.MinNumClusters, `Minimum number of available clusters that will be maintained for this SQL warehouse. Wire name: 'min_num_clusters'.`)
+	cmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `Logical name for the cluster. Wire name: 'name'.`)
+	cmd.Flags().Var(&createReq.SpotInstancePolicy, "spot-instance-policy", `Configurations whether the endpoint should use spot instances. Supported values: [COST_OPTIMIZED, POLICY_UNSPECIFIED, RELIABILITY_OPTIMIZED]. Wire name: 'spot_instance_policy'.`)
 	// TODO: complex arg: tags
-	cmd.Flags().Var(&createReq.WarehouseType, "warehouse-type", `Warehouse type: PRO or CLASSIC. Supported values: [CLASSIC, PRO, TYPE_UNSPECIFIED]`)
+	cmd.Flags().Var(&createReq.WarehouseType, "warehouse-type", `Warehouse type: PRO or CLASSIC. Supported values: [CLASSIC, PRO, TYPE_UNSPECIFIED]. Wire name: 'warehouse_type'.`)
 
 	cmd.Use = "create"
 	cmd.Short = `Create a warehouse.`
@@ -252,19 +252,19 @@ func newEdit() *cobra.Command {
 
 	cmd.Flags().Var(&editJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().IntVar(&editReq.AutoStopMins, "auto-stop-mins", editReq.AutoStopMins, `The amount of time in minutes that a SQL warehouse must be idle (i.e., no RUNNING queries) before it is automatically stopped.`)
+	cmd.Flags().IntVar(&editReq.AutoStopMins, "auto-stop-mins", editReq.AutoStopMins, `The amount of time in minutes that a SQL warehouse must be idle (i.e., no RUNNING queries) before it is automatically stopped. Wire name: 'auto_stop_mins'.`)
 	// TODO: complex arg: channel
-	cmd.Flags().StringVar(&editReq.ClusterSize, "cluster-size", editReq.ClusterSize, `Size of the clusters allocated for this warehouse.`)
-	cmd.Flags().StringVar(&editReq.CreatorName, "creator-name", editReq.CreatorName, `warehouse creator name.`)
-	cmd.Flags().BoolVar(&editReq.EnablePhoton, "enable-photon", editReq.EnablePhoton, `Configures whether the warehouse should use Photon optimized clusters.`)
-	cmd.Flags().BoolVar(&editReq.EnableServerlessCompute, "enable-serverless-compute", editReq.EnableServerlessCompute, `Configures whether the warehouse should use serverless compute.`)
-	cmd.Flags().StringVar(&editReq.InstanceProfileArn, "instance-profile-arn", editReq.InstanceProfileArn, `Deprecated.`)
-	cmd.Flags().IntVar(&editReq.MaxNumClusters, "max-num-clusters", editReq.MaxNumClusters, `Maximum number of clusters that the autoscaler will create to handle concurrent queries.`)
-	cmd.Flags().IntVar(&editReq.MinNumClusters, "min-num-clusters", editReq.MinNumClusters, `Minimum number of available clusters that will be maintained for this SQL warehouse.`)
-	cmd.Flags().StringVar(&editReq.Name, "name", editReq.Name, `Logical name for the cluster.`)
-	cmd.Flags().Var(&editReq.SpotInstancePolicy, "spot-instance-policy", `Configurations whether the endpoint should use spot instances. Supported values: [COST_OPTIMIZED, POLICY_UNSPECIFIED, RELIABILITY_OPTIMIZED]`)
+	cmd.Flags().StringVar(&editReq.ClusterSize, "cluster-size", editReq.ClusterSize, `Size of the clusters allocated for this warehouse. Wire name: 'cluster_size'.`)
+	cmd.Flags().StringVar(&editReq.CreatorName, "creator-name", editReq.CreatorName, `warehouse creator name. Wire name: 'creator_name'.`)
+	cmd.Flags().BoolVar(&editReq.EnablePhoton, "enable-photon", editReq.EnablePhoton, `Configures whether the warehouse should use Photon optimized clusters. Wire name: 'enable_photon'.`)
+	cmd.Flags().BoolVar(&editReq.EnableServerlessCompute, "enable-serverless-compute", editReq.EnableServerlessCompute, `Configures whether the warehouse should use serverless compute. Wire name: 'enable_serverless_compute'.`)
+	cmd.Flags().StringVar(&editReq.InstanceProfileArn, "instance-profile-arn", editReq.InstanceProfileArn, `Deprecated. Wire name: 'instance_profile_arn'.`)
+	cmd.Flags().IntVar(&editReq.MaxNumClusters, "max-num-clusters", editReq.MaxNumClusters, `Maximum number of clusters that the autoscaler will create to handle concurrent queries. Wire name: 'max_num_clusters'.`)
+	cmd.Flags().IntVar(&editReq.MinNumClusters, "min-num-clusters", editReq.MinNumClusters, `Minimum number of available clusters that will be maintained for this SQL warehouse. Wire name: 'min_num_clusters'.`)
+	cmd.Flags().StringVar(&editReq.Name, "name", editReq.Name, `Logical name for the cluster. Wire name: 'name'.`)
+	cmd.Flags().Var(&editReq.SpotInstancePolicy, "spot-instance-policy", `Configurations whether the endpoint should use spot instances. Supported values: [COST_OPTIMIZED, POLICY_UNSPECIFIED, RELIABILITY_OPTIMIZED]. Wire name: 'spot_instance_policy'.`)
 	// TODO: complex arg: tags
-	cmd.Flags().Var(&editReq.WarehouseType, "warehouse-type", `Warehouse type: PRO or CLASSIC. Supported values: [CLASSIC, PRO, TYPE_UNSPECIFIED]`)
+	cmd.Flags().Var(&editReq.WarehouseType, "warehouse-type", `Warehouse type: PRO or CLASSIC. Supported values: [CLASSIC, PRO, TYPE_UNSPECIFIED]. Wire name: 'warehouse_type'.`)
 
 	cmd.Use = "edit ID"
 	cmd.Short = `Update a warehouse.`
@@ -613,9 +613,9 @@ func newList() *cobra.Command {
 
 	var listReq sql.ListWarehousesRequest
 
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `The max number of warehouses to return.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `A page token, received from a previous ListWarehouses call.`)
-	cmd.Flags().IntVar(&listReq.RunAsUserId, "run-as-user-id", listReq.RunAsUserId, `Service Principal which will be used to fetch the list of endpoints.`)
+	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `The max number of warehouses to return. Wire name: 'page_size'.`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `A page token, received from a previous ListWarehouses call. Wire name: 'page_token'.`)
+	cmd.Flags().IntVar(&listReq.RunAsUserId, "run-as-user-id", listReq.RunAsUserId, `Service Principal which will be used to fetch the list of endpoints. Wire name: 'run_as_user_id'.`)
 
 	cmd.Use = "list"
 	cmd.Short = `List warehouses.`
@@ -758,12 +758,12 @@ func newSetWorkspaceWarehouseConfig() *cobra.Command {
 	// TODO: complex arg: channel
 	// TODO: complex arg: config_param
 	// TODO: array: data_access_config
-	cmd.Flags().BoolVar(&setWorkspaceWarehouseConfigReq.EnableServerlessCompute, "enable-serverless-compute", setWorkspaceWarehouseConfigReq.EnableServerlessCompute, `Enable Serverless compute for SQL warehouses.`)
+	cmd.Flags().BoolVar(&setWorkspaceWarehouseConfigReq.EnableServerlessCompute, "enable-serverless-compute", setWorkspaceWarehouseConfigReq.EnableServerlessCompute, `Enable Serverless compute for SQL warehouses. Wire name: 'enable_serverless_compute'.`)
 	// TODO: array: enabled_warehouse_types
 	// TODO: complex arg: global_param
-	cmd.Flags().StringVar(&setWorkspaceWarehouseConfigReq.GoogleServiceAccount, "google-service-account", setWorkspaceWarehouseConfigReq.GoogleServiceAccount, `GCP only: Google Service Account used to pass to cluster to access Google Cloud Storage.`)
-	cmd.Flags().StringVar(&setWorkspaceWarehouseConfigReq.InstanceProfileArn, "instance-profile-arn", setWorkspaceWarehouseConfigReq.InstanceProfileArn, `AWS Only: The instance profile used to pass an IAM role to the SQL warehouses.`)
-	cmd.Flags().Var(&setWorkspaceWarehouseConfigReq.SecurityPolicy, "security-policy", `Security policy for warehouses. Supported values: [DATA_ACCESS_CONTROL, NONE, PASSTHROUGH]`)
+	cmd.Flags().StringVar(&setWorkspaceWarehouseConfigReq.GoogleServiceAccount, "google-service-account", setWorkspaceWarehouseConfigReq.GoogleServiceAccount, `GCP only: Google Service Account used to pass to cluster to access Google Cloud Storage. Wire name: 'google_service_account'.`)
+	cmd.Flags().StringVar(&setWorkspaceWarehouseConfigReq.InstanceProfileArn, "instance-profile-arn", setWorkspaceWarehouseConfigReq.InstanceProfileArn, `AWS Only: The instance profile used to pass an IAM role to the SQL warehouses. Wire name: 'instance_profile_arn'.`)
+	cmd.Flags().Var(&setWorkspaceWarehouseConfigReq.SecurityPolicy, "security-policy", `Security policy for warehouses. Supported values: [DATA_ACCESS_CONTROL, NONE, PASSTHROUGH]. Wire name: 'security_policy'.`)
 	// TODO: complex arg: sql_configuration_parameters
 
 	cmd.Use = "set-workspace-warehouse-config"

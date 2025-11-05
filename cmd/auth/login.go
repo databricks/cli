@@ -132,6 +132,10 @@ depends on the existing profiles you have set in your configuration file
 		if err != nil {
 			return err
 		}
+		// Set IsUnifiedHost from the profile if the flag wasn't explicitly set.
+		if !cmd.Flag("experimental-is-unified-host").Changed && existingProfile != nil {
+			authArguments.IsUnifiedHost = existingProfile.Experimental_IsUnifiedHost
+		}
 		err = setHostAndAccountId(ctx, existingProfile, authArguments, args)
 		if err != nil {
 			return err
@@ -170,6 +174,12 @@ depends on the existing profiles you have set in your configuration file
 			return err
 		}
 
+		// Prompt for workspace_id if the host is unified
+		workspaceId, err := promptForWorkspaceIdIfUnified(ctx, authArguments, existingProfile)
+		if err != nil {
+			return err
+		}
+
 		switch {
 		case configureCluster:
 			w, err := databricks.NewWorkspaceClient((*databricks.Config)(&cfg))
@@ -201,13 +211,15 @@ depends on the existing profiles you have set in your configuration file
 
 		if profileName != "" {
 			err = databrickscfg.SaveToProfile(ctx, &config.Config{
-				Profile:             profileName,
-				Host:                cfg.Host,
-				AuthType:            cfg.AuthType,
-				AccountID:           cfg.AccountID,
-				ClusterID:           cfg.ClusterID,
-				ConfigFile:          cfg.ConfigFile,
-				ServerlessComputeID: cfg.ServerlessComputeID,
+				Profile:                    profileName,
+				Host:                       cfg.Host,
+				AuthType:                   cfg.AuthType,
+				AccountID:                  cfg.AccountID,
+				WorkspaceId:                workspaceId,
+				ClusterID:                  cfg.ClusterID,
+				ConfigFile:                 cfg.ConfigFile,
+				ServerlessComputeID:        cfg.ServerlessComputeID,
+				Experimental_IsUnifiedHost: authArguments.IsUnifiedHost,
 			})
 			if err != nil {
 				return err
@@ -261,9 +273,9 @@ func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, 
 
 	// If the account-id was not provided as a cmd line flag, try to read it from
 	// the specified profile.
-	isAccountClient := (&config.Config{Host: authArguments.Host}).IsAccountClient()
+	isAccountHost := (&config.Config{Host: authArguments.Host, Experimental_IsUnifiedHost: authArguments.IsUnifiedHost}).HostType() != config.WorkspaceHost
 	accountID := authArguments.AccountID
-	if isAccountClient && accountID == "" {
+	if isAccountHost && accountID == "" {
 		if existingProfile != nil && existingProfile.AccountID != "" {
 			authArguments.AccountID = existingProfile.AccountID
 		} else {
@@ -277,6 +289,28 @@ func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, 
 		}
 	}
 	return nil
+}
+
+// promptForWorkspaceIdIfUnified prompts for workspace ID if the host is unified.
+// Returns the workspace ID from the profile if available, otherwise prompts the user.
+func promptForWorkspaceIdIfUnified(ctx context.Context, authArguments *auth.AuthArguments, existingProfile *profile.Profile) (string, error) {
+	// Only prompt for workspace_id if the host is a unified host
+	if !authArguments.IsUnifiedHost {
+		return "", nil
+	}
+
+	// If the existing profile has a workspace_id, use it
+	if existingProfile != nil && existingProfile.WorkspaceId != "" {
+		return existingProfile.WorkspaceId, nil
+	}
+
+	// Prompt the user for workspace_id
+	workspaceId, err := promptForWorkspaceId(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	return workspaceId, nil
 }
 
 // getProfileName returns the default profile name for a given host/account ID.

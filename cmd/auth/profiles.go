@@ -51,7 +51,7 @@ func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipV
 		return
 	}
 
-	if cfg.IsAccountClient() {
+	if cfg.ConfigType() == config.AccountConfig {
 		a, err := databricks.NewAccountClient((*databricks.Config)(cfg))
 		if err != nil {
 			return
