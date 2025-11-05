@@ -22,7 +22,14 @@ func (s *FakeWorkspace) SchemasCreate(req Request) Response {
 	}
 
 	schema.FullName = schema.CatalogName + "." + schema.Name
+	schema.ForceSendFields = []string{"BrowseOnly"}
+	schema.CatalogType = "MANAGED_CATALOG"
+	schema.CreatedAt = nowMilli()
+	schema.UpdatedAt = schema.CreatedAt
+	schema.CreatedBy = s.CurrentUser().UserName
+	schema.Owner = s.CurrentUser().UserName
 	s.Schemas[schema.FullName] = schema
+
 	return Response{
 		Body: schema,
 	}
@@ -55,7 +62,9 @@ func (s *FakeWorkspace) SchemasUpdate(req Request, name string) Response {
 		}
 	}
 
+	existing.UpdatedAt = nowMilli()
 	s.Schemas[name] = existing
+
 	return Response{
 		Body: existing,
 	}

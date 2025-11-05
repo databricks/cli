@@ -3,9 +3,15 @@
     "resources.schemas.grants_schema": {
       "action": "skip",
       "remote_state": {
+        "browse_only": false,
         "catalog_name": "main",
+        "catalog_type": "MANAGED_CATALOG",
+        "created_at": [UNIX_TIME_MILLIS][0],
+        "created_by": "[USERNAME]",
         "full_name": "main.schema_grants_[UNIQUE_NAME]",
-        "name": "schema_grants_[UNIQUE_NAME]"
+        "name": "schema_grants_[UNIQUE_NAME]",
+        "owner": "[USERNAME]",
+        "updated_at": [UNIX_TIME_MILLIS][0]
       }
     },
     "resources.schemas.grants_schema.grants": {

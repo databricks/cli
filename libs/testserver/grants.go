@@ -25,15 +25,31 @@ func (s *FakeWorkspace) GrantsUpdate(req Request, securableType, fullName string
 	key := grantsKey(securableType, fullName)
 
 	defer s.LockUnlock()()
-	current := make(map[string]map[string]struct{})
+	// Use ordered structures to preserve insertion order
+	type principalPrivs struct {
+		principal  string
+		privileges []string
+	}
+	var orderedCurrent []principalPrivs
+	principalIndex := make(map[string]int)
+
 	for _, assignment := range s.Grants[key] {
-		privs := current[assignment.Principal]
-		if privs == nil {
-			privs = make(map[string]struct{})
-			current[assignment.Principal] = privs
-		}
-		for _, privilege := range assignment.Privileges {
-			privs[string(privilege)] = struct{}{}
+		if idx, exists := principalIndex[assignment.Principal]; exists {
+			// Principal exists, append privileges
+			for _, privilege := range assignment.Privileges {
+				orderedCurrent[idx].privileges = append(orderedCurrent[idx].privileges, string(privilege))
+			}
+		} else {
+			// New principal
+			principalIndex[assignment.Principal] = len(orderedCurrent)
+			privileges := make([]string, len(assignment.Privileges))
+			for i, privilege := range assignment.Privileges {
+				privileges[i] = string(privilege)
+			}
+			orderedCurrent = append(orderedCurrent, principalPrivs{
+				principal:  assignment.Principal,
+				privileges: privileges,
+			})
 		}
 	}
 
@@ -41,30 +57,50 @@ func (s *FakeWorkspace) GrantsUpdate(req Request, securableType, fullName string
 		if change.Principal == "" {
 			continue
 		}
-		privs := current[change.Principal]
-		if privs == nil {
-			privs = make(map[string]struct{})
-			current[change.Principal] = privs
-		}
-		for _, privilege := range change.Remove {
-			delete(privs, string(privilege))
-		}
-		for _, privilege := range change.Add {
-			privs[string(privilege)] = struct{}{}
+		if idx, exists := principalIndex[change.Principal]; exists {
+			// Principal exists, modify their privileges
+			privs := &orderedCurrent[idx].privileges
+
+			// Remove privileges
+			for _, privilege := range change.Remove {
+				privilegeStr := string(privilege)
+				for i := 0; i < len(*privs); i++ {
+					if (*privs)[i] == privilegeStr {
+						*privs = append((*privs)[:i], (*privs)[i+1:]...)
+						i-- // Adjust index after removal
+					}
+				}
+			}
+
+			// Add privileges
+			for _, privilege := range change.Add {
+				*privs = append(*privs, string(privilege))
+			}
+		} else {
+			// New principal
+			principalIndex[change.Principal] = len(orderedCurrent)
+			privileges := make([]string, len(change.Add))
+			for i, privilege := range change.Add {
+				privileges[i] = string(privilege)
+			}
+			orderedCurrent = append(orderedCurrent, principalPrivs{
+				principal:  change.Principal,
+				privileges: privileges,
+			})
 		}
 	}
 
 	var assignments []catalog.PrivilegeAssignment
-	for principal, privs := range current {
-		if len(privs) == 0 {
+	for _, entry := range orderedCurrent {
+		if len(entry.privileges) == 0 {
 			continue
 		}
-		privileges := make([]catalog.Privilege, 0, len(privs))
-		for privilege := range privs {
-			privileges = append(privileges, catalog.Privilege(privilege))
+		privileges := make([]catalog.Privilege, len(entry.privileges))
+		for i, privilege := range entry.privileges {
+			privileges[i] = catalog.Privilege(privilege)
 		}
 		assignments = append(assignments, catalog.PrivilegeAssignment{
-			Principal:  principal,
+			Principal:  entry.principal,
 			Privileges: privileges,
 		})
 	}

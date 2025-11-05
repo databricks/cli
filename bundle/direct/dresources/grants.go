@@ -205,25 +205,107 @@ func (r *ResourceGrants) applyGrants(ctx context.Context, state *GrantsState) er
 	}
 	normalizeGrantAssignments(state.Grants)
 
-	assignments, err := r.listGrants(ctx, state.SecurableType, state.FullName)
-	if err != nil {
-		return err
-	}
-
-	current := grantsToMap(assignments)
-	desired := grantsToMap(state.Grants)
-
-	changes := diffGrants(desired, current)
+	changes := r.createIdempotentGrantChanges(state)
 	if len(changes) == 0 {
 		return nil
 	}
 
-	_, err = r.client.Grants.Update(ctx, catalog.UpdatePermissions{
+	_, err := r.client.Grants.Update(ctx, catalog.UpdatePermissions{
 		SecurableType: state.SecurableType,
 		FullName:      state.FullName,
 		Changes:       changes,
 	})
 	return err
+}
+
+// getAllPossiblePrivileges returns all possible privileges for a given securable type
+func getAllPossiblePrivileges(securableType string) []catalog.Privilege {
+	switch securableType {
+	case "schema":
+		return []catalog.Privilege{
+			catalog.PrivilegeAllPrivileges,
+			catalog.PrivilegeApplyTag,
+			catalog.PrivilegeCreateFunction,
+			catalog.PrivilegeCreateTable,
+			catalog.PrivilegeCreateVolume,
+			catalog.PrivilegeExecute,
+			catalog.PrivilegeManage,
+			catalog.PrivilegeModify,
+			catalog.PrivilegeReadVolume,
+			catalog.PrivilegeRefresh,
+			catalog.PrivilegeSelect,
+			catalog.PrivilegeUseSchema,
+			catalog.PrivilegeWriteVolume,
+		}
+	// Add other resource types as needed
+	default:
+		return nil
+	}
+}
+
+// createIdempotentGrantChanges creates permission changes where ADD contains grants from config
+// and REMOVE contains all other privileges not in the config
+func (r *ResourceGrants) createIdempotentGrantChanges(state *GrantsState) []catalog.PermissionsChange {
+	var changes []catalog.PermissionsChange
+
+	// Get all possible privileges for this securable type
+	allPrivileges := getAllPossiblePrivileges(state.SecurableType)
+	if allPrivileges == nil {
+		// Fallback to empty list if securable type not supported
+		allPrivileges = []catalog.Privilege{}
+	}
+
+	// Create a set of all possible privileges for quick lookup
+	allPrivilegesSet := make(map[catalog.Privilege]struct{})
+	for _, priv := range allPrivileges {
+		allPrivilegesSet[priv] = struct{}{}
+	}
+
+	// Group configured grants by principal
+	desiredPrivileges, principals := grantsToMap(state.Grants)
+
+	// For each principal in the config, add their grants and remove everything else
+	for i, principal := range principals {
+		desiredPrivs := desiredPrivileges[i]
+
+		var add []catalog.Privilege
+		var remove []catalog.Privilege
+
+		// ADD: all privileges specified in config for this principal
+		add = append(add, desiredPrivs...)
+
+		// REMOVE: all other possible privileges not in config
+		for _, priv := range allPrivileges {
+			found := false
+			for _, desired := range desiredPrivs {
+				if priv == desired {
+					found = true
+					break
+				}
+			}
+			if !found {
+				remove = append(remove, priv)
+			}
+		}
+
+		// No need to sort since privileges maintain order from input
+
+		// Only create a change if there's something to add or remove
+		if len(add) > 0 || len(remove) > 0 {
+			changes = append(changes, catalog.PermissionsChange{
+				Principal: principal,
+				Add:       add,
+				Remove:    remove,
+			})
+		}
+	}
+
+	// Sort changes by principal for consistent output
+	sort.Slice(changes, func(i, j int) bool {
+		return changes[i].Principal < changes[j].Principal
+	})
+
+	return changes
 }
 
 func (r *ResourceGrants) listGrants(ctx context.Context, securableType, fullName string) ([]GrantAssignment, error) {
@@ -256,91 +338,33 @@ func (r *ResourceGrants) listGrants(ctx context.Context, securableType, fullName
 		if resp.NextPageToken == "" {
 			break
 		}
+		// XXX is it necessary?
 		pageToken = resp.NextPageToken
 	}
 	normalizeGrantAssignments(assignments)
 	return assignments, nil
 }
 
-func diffGrants(desired, current map[string]map[catalog.Privilege]struct{}) []catalog.PermissionsChange {
-	var changes []catalog.PermissionsChange
+func grantsToMap(grants []GrantAssignment) ([][]catalog.Privilege, []string) {
+	// Internal map for quick principal to index lookup
+	principalToIndex := make(map[string]int)
+	var privileges [][]catalog.Privilege
+	var principals []string
 
-	desiredPrincipals := make([]string, 0, len(desired))
-	for principal := range desired {
-		desiredPrincipals = append(desiredPrincipals, principal)
-	}
-	sort.Strings(desiredPrincipals)
-	for _, principal := range desiredPrincipals {
-		desiredPrivs := desired[principal]
-		currentPrivs := current[principal]
-		add := privilegesDiff(desiredPrivs, currentPrivs)
-		remove := privilegesDiff(currentPrivs, desiredPrivs)
-		if len(add) == 0 && len(remove) == 0 {
-			continue
-		}
-		changes = append(changes, catalog.PermissionsChange{
-			Add:             add,
-			Principal:       principal,
-			Remove:          remove,
-			ForceSendFields: nil,
-		})
-	}
-
-	var removals []catalog.PermissionsChange
-	currentPrincipals := make([]string, 0, len(current))
-	for principal := range current {
-		currentPrincipals = append(currentPrincipals, principal)
-	}
-	sort.Strings(currentPrincipals)
-	for _, principal := range currentPrincipals {
-		currentPrivs := current[principal]
-		if _, ok := desired[principal]; ok {
-			continue
-		}
-		remove := privilegesDiff(currentPrivs, nil)
-		if len(remove) == 0 {
-			continue
-		}
-		removals = append(removals, catalog.PermissionsChange{
-			Add:             nil,
-			Principal:       principal,
-			Remove:          remove,
-			ForceSendFields: nil,
-		})
-	}
-
-	changes = append(changes, removals...)
-	return changes
-}
-
-func privilegesDiff(a, b map[catalog.Privilege]struct{}) []catalog.Privilege {
-	if len(a) == 0 {
-		return nil
-	}
-
-	var diff []catalog.Privilege
-	for privilege := range a {
-		if b != nil {
-			if _, ok := b[privilege]; ok {
-				continue
-			}
-		}
-		diff = append(diff, privilege)
-	}
-	sort.Slice(diff, func(i, j int) bool { return diff[i] < diff[j] })
-	return diff
-}
-
-func grantsToMap(grants []GrantAssignment) map[string]map[catalog.Privilege]struct{} {
-	result := make(map[string]map[catalog.Privilege]struct{}, len(grants))
 	for _, grant := range grants {
-		privs := make(map[catalog.Privilege]struct{}, len(grant.Privileges))
-		for _, privilege := range grant.Privileges {
-			privs[privilege] = struct{}{}
+		if idx, exists := principalToIndex[grant.Principal]; exists {
+			// Principal already exists, append privileges
+			privileges[idx] = append(privileges[idx], grant.Privileges...)
+		} else {
+			// New principal
+			principalToIndex[grant.Principal] = len(principals)
+			principals = append(principals, grant.Principal)
+			privileges = append(privileges, make([]catalog.Privilege, len(grant.Privileges)))
+			copy(privileges[len(privileges)-1], grant.Privileges)
 		}
-		result[grant.Principal] = privs
 	}
-	return result
+
+	return privileges, principals
 }
 
 func parseGrantsID(id string) (string, string, error) {

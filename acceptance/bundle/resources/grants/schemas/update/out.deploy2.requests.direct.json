@@ -5,11 +5,22 @@
     "changes": [
       {
         "add": [
-          "APPLY_TAG"
+          "APPLY_TAG",
+          "CREATE_TABLE"
         ],
         "principal": "denis.bilenko@databricks.com",
         "remove": [
-          "USE_SCHEMA"
+          "ALL_PRIVILEGES",
+          "CREATE_FUNCTION",
+          "CREATE_VOLUME",
+          "EXECUTE",
+          "MANAGE",
+          "MODIFY",
+          "READ_VOLUME",
+          "REFRESH",
+          "SELECT",
+          "USE_SCHEMA",
+          "WRITE_VOLUME"
         ]
       },
       {
@@ -19,7 +30,17 @@
         ],
         "principal": "pieter.noordhuis@databricks.com",
         "remove": [
-          "USE_SCHEMA"
+          "ALL_PRIVILEGES",
+          "APPLY_TAG",
+          "CREATE_FUNCTION",
+          "CREATE_TABLE",
+          "EXECUTE",
+          "MODIFY",
+          "READ_VOLUME",
+          "REFRESH",
+          "SELECT",
+          "USE_SCHEMA",
+          "WRITE_VOLUME"
         ]
       }
     ]

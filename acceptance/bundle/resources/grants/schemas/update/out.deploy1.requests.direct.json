@@ -8,13 +8,40 @@
           "CREATE_TABLE",
           "USE_SCHEMA"
         ],
-        "principal": "denis.bilenko@databricks.com"
+        "principal": "denis.bilenko@databricks.com",
+        "remove": [
+          "ALL_PRIVILEGES",
+          "APPLY_TAG",
+          "CREATE_FUNCTION",
+          "CREATE_VOLUME",
+          "EXECUTE",
+          "MANAGE",
+          "MODIFY",
+          "READ_VOLUME",
+          "REFRESH",
+          "SELECT",
+          "WRITE_VOLUME"
+        ]
       },
       {
         "add": [
           "USE_SCHEMA"
         ],
-        "principal": "pieter.noordhuis@databricks.com"
+        "principal": "pieter.noordhuis@databricks.com",
+        "remove": [
+          "ALL_PRIVILEGES",
+          "APPLY_TAG",
+          "CREATE_FUNCTION",
+          "CREATE_TABLE",
+          "CREATE_VOLUME",
+          "EXECUTE",
+          "MANAGE",
+          "MODIFY",
+          "READ_VOLUME",
+          "REFRESH",
+          "SELECT",
+          "WRITE_VOLUME"
+        ]
       }
     ]
   }
