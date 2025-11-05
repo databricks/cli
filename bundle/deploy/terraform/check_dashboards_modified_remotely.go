@@ -15,10 +15,10 @@ type dashboardState struct {
 	ETag string
 }
 
-func collectDashboardsFromState(ctx context.Context, b *bundle.Bundle) ([]dashboardState, error) {
+func collectDashboardsFromState(ctx context.Context, b *bundle.Bundle, directDeployment bool) ([]dashboardState, error) {
 	var state ExportedResourcesMap
 	var err error
-	if b.DirectDeployment != nil && *b.DirectDeployment {
+	if directDeployment {
 		_, localPath := b.StateFilenameDirect(ctx)
 		state, err = b.DeploymentBundle.ExportState(ctx, localPath)
 	} else {
@@ -60,7 +60,7 @@ func (l *checkDashboardsModifiedRemotely) Apply(ctx context.Context, b *bundle.B
 		return nil
 	}
 
-	dashboards, err := collectDashboardsFromState(ctx, b)
+	dashboards, err := collectDashboardsFromState(ctx, b, l.directDeployment)
 	if err != nil {
 		return diag.FromErr(err)
 	}
