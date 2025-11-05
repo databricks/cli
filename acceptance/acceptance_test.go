@@ -145,6 +145,22 @@ func TestInprocessMode(t *testing.T) {
 	require.Equal(t, 1, testAccept(t, true, "selftest/server"))
 }
 
+// Configure replacements for environment variables we read from test environments.
+func setReplsForTestEnvVars(t *testing.T, repls *testdiff.ReplacementsContext) {
+	envVars := []string{
+		"TEST_USER_EMAIL",
+		"TEST_GROUP_NAME",
+		"TEST_SP_APPLICATION_ID",
+		"TEST_DEFAULT_WAREHOUSE_ID",
+		"TEST_INSTANCE_POOL_ID",
+	}
+	for _, envVar := range envVars {
+		if value := os.Getenv(envVar); value != "" {
+			repls.Set(value, "["+envVar+"]")
+		}
+	}
+}
+
 func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	repls := testdiff.ReplacementsContext{}
 	cwd, err := os.Getwd()
@@ -234,10 +250,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		}
 	}
 
-	testDefaultWarehouseId := os.Getenv("TEST_DEFAULT_WAREHOUSE_ID")
-	if testDefaultWarehouseId != "" {
-		repls.Set(testDefaultWarehouseId, "[TEST_DEFAULT_WAREHOUSE_ID]")
-	}
+	setReplsForTestEnvVars(t, &repls)
 
 	terraformrcPath := filepath.Join(terraformDir, ".terraformrc")
 	t.Setenv("TF_CLI_CONFIG_FILE", terraformrcPath)
@@ -251,8 +264,6 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 
 	// do it last so that full paths match first:
 	repls.SetPath(buildDir, "[BUILD_DIR]")
-
-	repls.Set(os.Getenv("TEST_INSTANCE_POOL_ID"), "[TEST_INSTANCE_POOL_ID]")
 
 	testdiff.PrepareReplacementsDevVersion(t, &repls)
 	testdiff.PrepareReplacementSdkVersion(t, &repls)

@@ -4,9 +4,9 @@
       "action": "create",
       "new_state": {
         "config": {
-          "display_name": "test-dashboard",
+          "display_name": "test-dashboard-[UNIQUE_NAME]",
           "parent_path": "/Users/[USERNAME]/folder1",
-          "warehouse_id": "123abc"
+          "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
         }
       }
     },
@@ -24,15 +24,15 @@
           "permissions": [
             {
               "permission_level": "CAN_READ",
-              "user_name": "viewer@example.com"
+              "user_name": "[TEST_USER_EMAIL]"
             },
             {
-              "group_name": "data-team",
+              "group_name": "[TEST_GROUP_NAME]",
               "permission_level": "CAN_MANAGE"
             },
             {
               "permission_level": "CAN_MANAGE",
-              "service_principal_name": "[UUID]"
+              "service_principal_name": "[TEST_SP_APPLICATION_ID]"
             },
             {
               "permission_level": "CAN_MANAGE",

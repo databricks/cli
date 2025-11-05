@@ -5,15 +5,15 @@
     "access_control_list": [
       {
         "permission_level": "CAN_READ",
-        "user_name": "viewer@example.com"
+        "user_name": "[TEST_USER_EMAIL]"
       },
       {
-        "group_name": "data-team",
+        "group_name": "[TEST_GROUP_NAME]",
         "permission_level": "CAN_MANAGE"
       },
       {
         "permission_level": "CAN_MANAGE",
-        "service_principal_name": "[UUID]"
+        "service_principal_name": "[TEST_SP_APPLICATION_ID]"
       },
       {
         "permission_level": "CAN_MANAGE",

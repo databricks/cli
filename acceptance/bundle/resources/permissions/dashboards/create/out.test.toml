@@ -1,5 +1,6 @@
-Local = true
-Cloud = false
+Local = false
+Cloud = true
+RequiresWarehouse = true
 
 [EnvMatrix]
   DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]

@@ -3,15 +3,15 @@
 [
   {
     "level": "CAN_READ",
-    "user_name": "viewer@example.com"
+    "user_name": "[TEST_USER_EMAIL]"
   },
   {
-    "group_name": "data-team",
+    "group_name": "[TEST_GROUP_NAME]",
     "level": "CAN_MANAGE"
   },
   {
     "level": "CAN_MANAGE",
-    "service_principal_name": "[UUID]"
+    "service_principal_name": "[TEST_SP_APPLICATION_ID]"
   },
   {
     "level": "CAN_MANAGE",
@@ -19,10 +19,8 @@
   }
 ]
 
->>> [CLI] workspace mkdirs /Users/[USERNAME]/folder1
-
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dashboard-perm-[UNIQUE_NAME]/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
@@ -31,7 +29,7 @@ Deployment complete!
 The following resources will be deleted:
   delete dashboard foo
 
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dashboard-perm-[UNIQUE_NAME]/default
 
 Deleting files...
 Destroy complete!
