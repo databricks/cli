@@ -44,14 +44,22 @@ func TestResourceSchema_DoUpdate_WithUnsupportedForceSendFields(t *testing.T) {
 	result, err := adapter.DoRefresh(ctx, id)
 	require.NoError(t, err)
 
+	result.CreatedAt = 0
+	result.UpdatedAt = 0
+
 	resultJSON, err := json.Marshal(result)
 	require.NoError(t, err)
 	expected := `{
 		"catalog_name": "main",
+		"catalog_type": "MANAGED_CATALOG",
+		"created_at": 0,
+		"created_by": "tester@databricks.com",
 		"comment": "updated comment",
 		"properties": {"key": "updated_value"},
 		"full_name": "main.test_schema",
-		"name": "test_schema"
+		"name": "test_schema",
+		"owner": "tester@databricks.com",
+		"updated_at": 0
 	}`
 	assert.JSONEq(t, expected, string(resultJSON))
 }

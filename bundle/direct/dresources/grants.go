@@ -297,9 +297,10 @@ func (r *ResourceGrants) createIdempotentGrantChanges(state *GrantsState) []cata
 		// Only create a change if there's something to add or remove
 		if len(add) > 0 || len(remove) > 0 {
 			changes = append(changes, catalog.PermissionsChange{
-				Principal: principal,
-				Add:       add,
-				Remove:    remove,
+				Principal:       principal,
+				Add:             add,
+				Remove:          remove,
+				ForceSendFields: nil,
 			})
 		}
 	}
