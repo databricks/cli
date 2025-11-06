@@ -3,6 +3,9 @@ package phases
 import (
 	"context"
 	"errors"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/artifacts"
@@ -104,7 +107,10 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, di
 	}
 
 	// Even if deployment failed, there might be updates in states that we need to upload
-	bundle.ApplyContext(ctx, b,
+	// Use context.WithoutCancel to ensure state push completes even if context was cancelled
+	// (e.g., due to signal interruption). We want to save the current state before exiting.
+	statePushCtx := context.WithoutCancel(ctx)
+	bundle.ApplyContext(statePushCtx, b,
 		statemgmt.StatePush(directDeployment),
 	)
 	if logdiag.HasError(ctx) {
@@ -132,6 +138,101 @@ func uploadLibraries(ctx context.Context, b *bundle.Bundle, libs map[string][]li
 	)
 }
 
+// registerGracefulCleanup sets up signal handlers to release the lock
+// before the process terminates. Returns a new context that will be cancelled
+// when a signal is received, and a cleanup function for the exit path.
+//
+// This follows idiomatic Go patterns for graceful shutdown:
+// 1. Use context cancellation to signal shutdown to the main routine
+// 2. Use a done channel to wait for the main routine to complete
+// 3. Only exit after confirming the main routine has terminated
+//
+// Catches SIGINT (Ctrl+C), SIGTERM, SIGHUP, and SIGQUIT.
+// Note: SIGKILL and SIGSTOP cannot be caught - the kernel terminates the process directly.
+func registerGracefulCleanup(ctx context.Context, b *bundle.Bundle) (context.Context, func()) {
+	// Create a cancellable context to propagate cancellation to the main routine
+	ctx, cancel := context.WithCancel(ctx)
+
+	// Channel to signal that the main + cleanup routine has completed
+	cleanupDone := make(chan struct{})
+
+	// Channel to signal that a signal was received and handled
+	signalReceived := make(chan struct{})
+
+	// Channel to receive OS signals
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGQUIT)
+
+	signalHandler := func() {
+		// Wait for a signal to be received.
+		sig := <-sigChan
+
+		// Stop listening for more signals. This allows for multiple interrupts
+		// to cause the program to force exit.
+		signal.Stop(sigChan)
+
+		// Signal that we received an interrupt
+		close(signalReceived)
+
+		cmdio.LogString(ctx, "Operation interrupted. Gracefully shutting down...")
+
+		// Cancel the context to signal the main routine to stop
+		cancel()
+
+		// Wait for the main routine to complete before releasing the lock
+		// This ensures we don't exit while operations are still in progress
+		<-cleanupDone
+
+		// Release the lock using a context without cancellation to avoid cancellation issues
+		// We use context.WithoutCancel to preserve context values (like user agent)
+		// but remove the cancellation signal so the lock release can complete
+		releaseCtx := context.WithoutCancel(ctx)
+		bundle.ApplyContext(releaseCtx, b, lock.Release())
+
+		// Calculate exit code (128 + signal number)
+		exitCode := 128
+		if s, ok := sig.(syscall.Signal); ok {
+			exitCode += int(s)
+		}
+
+		// Exit with the appropriate signal exit code
+		os.Exit(exitCode)
+	}
+
+	// Start goroutine to handle signals
+	go signalHandler()
+
+	// Return cleanup function for the exit path
+	// This should be called via defer to ensure it runs even if there's a panic
+	cleanup := func() {
+		// Stop listening for signals
+		signal.Stop(sigChan)
+
+		// Release the lock (idempotent)
+		// Use context.WithoutCancel to preserve context values but remove cancellation
+		releaseCtx := context.WithoutCancel(ctx)
+		bundle.ApplyContext(releaseCtx, b, lock.Release())
+
+		// Signal that the main routine has completed.
+		// Once the signal is recieved,
+		// This must be done AFTER all cleanup is complete
+		close(cleanupDone)
+
+		// If a signal was received, wait indefinitely for the signal handler to exit
+		// This prevents the main function from returning and exiting with a different code
+		// If no signal was received, signalReceived will never be closed, so we just return
+		select {
+		case <-signalReceived:
+			// Signal was received, wait forever for os.Exit() in signal handler
+			select {}
+		default:
+			// No signal received, proceed with normal exit
+		}
+	}
+
+	return ctx, cleanup
+}
+
 // The deploy phase deploys artifacts and resources.
 func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHandler, directDeployment bool) {
 	log.Info(ctx, "Phase: deploy")
@@ -148,10 +249,9 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
-	// lock is acquired here
-	defer func() {
-		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDeploy))
-	}()
+	// lock is acquired here - set up signal handlers and defer cleanup
+	ctx, cleanup := registerGracefulCleanup(ctx, b)
+	defer cleanup()
 
 	libs := deployPrepare(ctx, b, false, directDeployment)
 	if logdiag.HasError(ctx) {

@@ -5,25 +5,13 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/locker"
 	"github.com/databricks/cli/libs/log"
 )
 
-type Goal string
+type release struct{}
 
-const (
-	GoalBind    = Goal("bind")
-	GoalUnbind  = Goal("unbind")
-	GoalDeploy  = Goal("deploy")
-	GoalDestroy = Goal("destroy")
-)
-
-type release struct {
-	goal Goal
-}
-
-func Release(goal Goal) bundle.Mutator {
-	return &release{goal}
+func Release() bundle.Mutator {
+	return &release{}
 }
 
 func (m *release) Name() string {
@@ -45,14 +33,6 @@ func (m *release) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 	}
 
 	log.Infof(ctx, "Releasing deployment lock")
-	switch m.goal {
-	case GoalDeploy:
-		return diag.FromErr(b.Locker.Unlock(ctx))
-	case GoalBind, GoalUnbind:
-		return diag.FromErr(b.Locker.Unlock(ctx))
-	case GoalDestroy:
-		return diag.FromErr(b.Locker.Unlock(ctx, locker.AllowLockFileNotExist))
-	default:
-		return diag.Errorf("unknown goal for lock release: %s", m.goal)
-	}
+	err := b.Locker.Unlock(ctx)
+	return diag.FromErr(err)
 }

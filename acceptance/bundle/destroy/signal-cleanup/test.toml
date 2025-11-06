@@ -1,0 +1,20 @@
+Local = true
+Cloud = false
+RecordRequests = true
+
+# Test only direct engine (signal handling is the same for terraform)
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+# Add delay to first job deletion to ensure we can interrupt during destroy
+[[Server]]
+Pattern = "POST /api/2.2/jobs/delete"
+Response.StatusCode = 200
+Response.Body = '{}'
+
+# Large time to ensure destroy gets stuck when deleting the first job.
+Delay = "300s"
+
+# Replace PID numbers in kill/wait commands
+[[Repls]]
+Old = "(kill -INT |wait )\\d+"
+New = "$1[PID]"

@@ -1,0 +1,34 @@
+#!/bin/bash
+
+# First deploy the bundle so we have something to destroy
+$CLI bundle deploy --auto-approve
+rm out.requests.txt
+
+# Start destroy in background, redirecting stderr to capture when destroy starts
+$CLI bundle destroy --auto-approve 2>&1 &
+DESTROY_PID=$!
+
+# Wait for destroy to start by monitoring for job deletion request
+title "Wait until the destroy has started."
+for i in {1..30}; do
+  if [ -f out.requests.txt ] && jq -e 'select(.method == "POST" and (.path | contains("/api/2.2/jobs/delete")))' out.requests.txt >/dev/null 2>&1; then
+    echo "Destroy in progress, sending interrupt signal..."
+    break
+  fi
+  sleep 0.1
+done
+
+# Send interrupt signal
+trace kill -INT $DESTROY_PID
+
+# Wait for process to complete
+errcode trace wait $DESTROY_PID
+
+title "A deletion request for deploy.lock should have been recorded in the requests file"
+trace cat out.requests.txt | jq 'select(.method == "POST" and (.path | contains("workspace/delete")) and (.body.path | contains("deploy.lock")))'
+
+title "No deletion request for resources.json should be recorded. We still need state to complete the destroy."
+trace cat out.requests.txt | jq 'select(.method == "POST" and (.path | contains("workspace/delete")) and (.body.path | contains("resources.json")))'
+
+trace $CLI bundle debug plan
+rm out.requests.txt

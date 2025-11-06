@@ -1,0 +1,20 @@
+Local = true
+Cloud = false
+RecordRequests = true
+
+# Test only terraform engine (signal handling is the same for direct)
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform"]
+
+# Add delay to first job creation to ensure we can interrupt during deployment
+[[Server]]
+Pattern = "POST /api/2.2/jobs/create"
+Response.StatusCode = 200
+Response.Body = '{"job_id": 1111}'
+
+# Large time to ensure deployment gets stuck when trying to create the first job.
+Delay = "300s"
+
+# Replace PID numbers in kill/wait commands
+[[Repls]]
+Old = "(kill -INT |wait )\\d+"
+New = "$1[PID]"

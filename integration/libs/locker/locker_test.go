@@ -186,8 +186,8 @@ func TestLockUnlockWithAllowsLockFileNotExist(t *testing.T) {
 	err = f.Delete(ctx, "deploy.lock")
 	assert.NoError(t, err)
 
-	// Assert error, because lock file does not exist
-	err = locker.Unlock(ctx, lockpkg.AllowLockFileNotExist)
+	// Unlock should succeed even though lock file does not exist
+	err = locker.Unlock(ctx)
 	assert.NoError(t, err)
 	assert.False(t, locker.Active)
 }

@@ -1,0 +1,83 @@
+
+=== Wait until the deployment has started.Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/signal-test/default/files...
+Deploying resources...
+Deployment in progress, sending interrupt signal...
+
+>>> kill -INT [PID]
+
+>>> wait [PID]
+Operation interrupted. Gracefully shutting down...
+Error: terraform apply: exit status 1
+
+Updating deployment state...
+
+Exit code: 130
+
+=== A deletion request for deploy.lock should have been recorded in the requests file
+>>> cat out.requests.txt
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/delete",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/signal-test/default/state/deploy.lock"
+  }
+}
+
+=== An upload request for the state file should have been recorded in the requests file
+>>> cat out.requests.txt
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/signal-test/default/state/terraform.tfstate",
+  "q": {
+    "overwrite": "true"
+  },
+  "body": {
+    "version": 4,
+    "terraform_version": "1.5.5",
+    "serial": 1,
+    "lineage": "[UUID]",
+    "outputs": {},
+    "resources": [
+      {
+        "mode": "managed",
+        "type": "databricks_job",
+        "name": "job2",
+        "provider": "provider[\"registry.terraform.io/databricks/databricks\"]",
+        "instances": []
+      }
+    ],
+    "check_results": null
+  }
+}
+
+=== A creation request for job1 should be recorded in the requests file. No request for job2 should exist since the process was terminated mid deployment.
+>>> cat out.requests.txt
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/create",
+  "body": {
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/signal-test/default/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "job1",
+    "queue": {
+      "enabled": true
+    }
+  }
+}
+
+>>> [CLI] bundle debug plan
+{
+  "plan": {
+    "resources.jobs.job1": {
+      "action": "create"
+    },
+    "resources.jobs.job2": {
+      "action": "create"
+    }
+  }
+}
