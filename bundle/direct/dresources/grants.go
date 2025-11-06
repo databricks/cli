@@ -86,7 +86,7 @@ func PrepareGrantsInputConfig(inputConfig any, node string) (*structvar.StructVa
 			privileges = append(privileges, catalog.Privilege(item.String()))
 		}
 
-		// sorting, because they come back from backend as sorted
+		// Backend sorts privileges, so we sort here as well.
 		sortPriviliges(privileges)
 
 		grants = append(grants, GrantAssignment{
@@ -105,24 +105,6 @@ func PrepareGrantsInputConfig(inputConfig any, node string) (*structvar.StructVa
 			"full_name": "${" + baseNode + ".id}",
 		},
 	}, nil
-}
-
-func sortPriviliges(privileges []catalog.Privilege) {
-	sort.Slice(privileges, func(i, j int) bool {
-		return privileges[i] < privileges[j]
-	})
-}
-
-func extractGrantResourceType(node string) (string, error) {
-	rest, ok := strings.CutPrefix(node, "resources.")
-	if !ok {
-		return "", fmt.Errorf("cannot extract resource type from %q", node)
-	}
-	parts := strings.Split(rest, ".")
-	if len(parts) < 2 {
-		return "", fmt.Errorf("cannot extract resource type from %q", node)
-	}
-	return parts[0], nil
 }
 
 type ResourceGrants struct {
@@ -168,8 +150,9 @@ func (r *ResourceGrants) DoUpdate(ctx context.Context, _ string, state *GrantsSt
 	return r.applyGrants(ctx, state)
 }
 
-func (r *ResourceGrants) DoDelete(ctx context.Context, _ string) error {
-	// Leaving grants untouched on delete. Users can manage them manually afterwards.
+func (r *ResourceGrants) DoDelete(ctx context.Context, id string) error {
+	// Similar to permissions, we do nothing there.
+	// We could delete all grants there, but it would be confusing to explain wrt permissions.
 	return nil
 }
 
@@ -230,6 +213,24 @@ func (r *ResourceGrants) listGrants(ctx context.Context, securableType, fullName
 		pageToken = resp.NextPageToken
 	}
 	return assignments, nil
+}
+
+func sortPriviliges(privileges []catalog.Privilege) {
+	sort.Slice(privileges, func(i, j int) bool {
+		return privileges[i] < privileges[j]
+	})
+}
+
+func extractGrantResourceType(node string) (string, error) {
+	rest, ok := strings.CutPrefix(node, "resources.")
+	if !ok {
+		return "", fmt.Errorf("cannot extract resource type from %q", node)
+	}
+	parts := strings.Split(rest, ".")
+	if len(parts) < 2 {
+		return "", fmt.Errorf("cannot extract resource type from %q", node)
+	}
+	return parts[0], nil
 }
 
 func parseGrantsID(id string) (string, string, error) {
