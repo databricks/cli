@@ -5,17 +5,11 @@ package pipelines
 import (
 	"context"
 	"errors"
-	"os"
-	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config/mutator"
 
-	"github.com/databricks/cli/bundle/deploy/terraform"
-	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/resources"
 
-	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
@@ -57,45 +51,18 @@ If there is only one pipeline in the project, KEY is optional and the pipeline w
 	cmd.Flags().BoolVar(&forcePull, "force-pull", false, "Skip local cache and load the state from the remote workspace")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		ctx := logdiag.InitContext(cmd.Context())
-		cmd.SetContext(ctx)
-
-		b := utils.ConfigureBundleWithVariables(cmd)
-		if b == nil || logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
+		b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
+			AlwaysPull: forcePull,
+			InitIDs:    true,
+		})
+		if err != nil {
+			return err
 		}
-
-		phases.Initialize(ctx, b)
-		if logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
-		}
+		ctx := cmd.Context()
 
 		arg, err := resolveOpenArgument(ctx, b, args)
 		if err != nil {
 			return err
-		}
-
-		cacheDir, err := terraform.Dir(ctx, b)
-		if err != nil {
-			return err
-		}
-		_, stateFileErr := os.Stat(filepath.Join(cacheDir, b.StateFilename()))
-		_, configFileErr := os.Stat(filepath.Join(cacheDir, terraform.TerraformConfigFileName))
-		noCache := errors.Is(stateFileErr, os.ErrNotExist) || errors.Is(configFileErr, os.ErrNotExist)
-
-		if forcePull || noCache {
-			bundle.ApplyContext(ctx, b, statemgmt.StatePull())
-			if logdiag.HasError(ctx) {
-				return root.ErrAlreadyPrinted
-			}
-		}
-
-		bundle.ApplySeqContext(ctx, b,
-			statemgmt.Load(),
-			mutator.InitializeURLs(),
-		)
-		if logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
 		}
 
 		// Locate resource to open.

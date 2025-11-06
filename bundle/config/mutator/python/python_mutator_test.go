@@ -306,6 +306,22 @@ experimental:
 func TestGetOps_Python(t *testing.T) {
 	actual, err := getOpts(&bundle.Bundle{
 		Config: config.Root{
+			Python: config.Python{
+				VEnvPath: ".venv",
+				Resources: []string{
+					"resources:load_resources",
+				},
+			},
+		},
+	}, PythonMutatorPhaseLoadResources)
+
+	assert.NoError(t, err)
+	assert.Equal(t, opts{venvPath: ".venv", enabled: true, loadLocations: true}, actual)
+}
+
+func TestGetOps_ExperimentalPython(t *testing.T) {
+	actual, err := getOpts(&bundle.Bundle{
+		Config: config.Root{
 			Experimental: &config.Experimental{
 				Python: config.Python{
 					VEnvPath: ".venv",
@@ -321,6 +337,52 @@ func TestGetOps_Python(t *testing.T) {
 	assert.Equal(t, opts{venvPath: ".venv", enabled: true, loadLocations: true}, actual)
 }
 
+func TestGetOps_BothPythonEqual(t *testing.T) {
+	actual, err := getOpts(&bundle.Bundle{
+		Config: config.Root{
+			Python: config.Python{
+				VEnvPath: ".venv",
+				Resources: []string{
+					"resources:load_resources",
+				},
+			},
+			Experimental: &config.Experimental{
+				Python: config.Python{
+					VEnvPath: ".venv",
+					Resources: []string{
+						"resources:load_resources",
+					},
+				},
+			},
+		},
+	}, PythonMutatorPhaseLoadResources)
+
+	assert.NoError(t, err)
+	assert.Equal(t, opts{venvPath: ".venv", enabled: true, loadLocations: true}, actual)
+}
+
+func TestGetOps_BothPythonNotEqual(t *testing.T) {
+	_, err := getOpts(&bundle.Bundle{
+		Config: config.Root{
+			Python: config.Python{
+				VEnvPath: ".venv",
+				Resources: []string{
+					"resources:load_resources",
+				},
+			},
+			Experimental: &config.Experimental{
+				Python: config.Python{
+					Resources: []string{
+						"resources:load_resources",
+					},
+				},
+			},
+		},
+	}, PythonMutatorPhaseLoadResources)
+
+	assert.Error(t, err)
+}
+
 func TestGetOps_PyDABs(t *testing.T) {
 	_, err := getOpts(&bundle.Bundle{
 		Config: config.Root{
@@ -332,7 +394,7 @@ func TestGetOps_PyDABs(t *testing.T) {
 		},
 	}, PythonMutatorPhaseLoadResources)
 
-	assert.Error(t, err, "experimental/pydabs is deprecated, use experimental/python instead (https://docs.databricks.com/dev-tools/bundles/python)")
+	assert.Error(t, err, "experimental/pydabs is deprecated, use python instead (https://docs.databricks.com/dev-tools/bundles/python)")
 }
 
 func TestGetOps_empty(t *testing.T) {
@@ -340,6 +402,41 @@ func TestGetOps_empty(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, opts{enabled: false}, actual)
+}
+
+func TestApplyBackwardCompatibilityFixes(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Python: config.Python{
+				VEnvPath: ".venv",
+			},
+		},
+	}
+
+	err := applyBackwardsCompatibilityFixes(b)
+
+	assert.NoError(t, err)
+	assert.Equal(t, config.Python{VEnvPath: ".venv"}, b.Config.Experimental.Python)
+}
+
+func TestApplyBackwardCompatibilityFixes_unchanged(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Python: config.Python{
+				VEnvPath: ".venv",
+			},
+			Experimental: &config.Experimental{
+				Python: config.Python{
+					VEnvPath: "should_remain_unchanged",
+				},
+			},
+		},
+	}
+
+	err := applyBackwardsCompatibilityFixes(b)
+
+	assert.NoError(t, err)
+	assert.Equal(t, config.Python{VEnvPath: "should_remain_unchanged"}, b.Config.Experimental.Python)
 }
 
 func TestLoadDiagnosticsFile_nonExistent(t *testing.T) {

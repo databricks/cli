@@ -24,7 +24,7 @@ Choose how you want to work on this project:
     https://docs.databricks.com/dev-tools/bundles/workspace.
 
 (b) Locally with an IDE like Cursor or VS Code, see
-    https://docs.databricks.com/vscode-ext.
+    https://docs.databricks.com/dev-tools/vscode-ext.html.
 
 (c) With command line tools, see https://docs.databricks.com/dev-tools/cli/databricks-cli.html
 
@@ -57,11 +57,11 @@ with this project. It's also possible to interact with it directly using the CLI
     This deploys everything that's defined for this project.
     {{- if eq .include_pipeline "yes"}}
     For example, the default template would deploy a pipeline called
-    `[dev yourname] {{.project_name_short}}_etl` to your workspace.
+    `[dev yourname] {{.project_name}}_etl` to your workspace.
     You can find that resource by opening your workpace and clicking on **Jobs & Pipelines**.
     {{- else if eq .include_job "yes"}}
     For example, the default template would deploy a job called
-    `[dev yourname] {{.project_name_short}}_job` to your workspace.
+    `[dev yourname] {{.project_name}}_job` to your workspace.
     You can find that resource by opening your workpace and clicking on **Jobs & Pipelines**.
     {{- end}}
 
@@ -92,4 +92,4 @@ with this project. It's also possible to interact with it directly using the CLI
    ```
    $ uv run pytest
    ```
-{{end}}
+{{- end}}

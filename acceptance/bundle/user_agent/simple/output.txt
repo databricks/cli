@@ -39,10 +39,13 @@ Deployment complete!
 
 >>> print_requests.py --sort --get ^//telemetry-ext
 
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> print_requests.py --sort --get
+
 >>> [CLI] bundle run foo
 Error: resource with key "foo" not found
-
-Exit code (musterr): 1
 
 >>> print_requests.py --sort --get
 

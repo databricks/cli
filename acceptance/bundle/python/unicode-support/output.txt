@@ -1,5 +1,5 @@
 
->>> uv run --with-requirements requirements-latest.txt --no-cache -q [CLI] bundle validate --output json
+>>> uv run [UV_ARGS] -q [CLI] bundle validate --output json
 Warning: This is a warning message with unicode characters: 🔥🔥🔥
 
 {

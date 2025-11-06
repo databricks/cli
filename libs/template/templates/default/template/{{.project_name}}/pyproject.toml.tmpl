@@ -8,7 +8,7 @@ dependencies = [
     # See also https://docs.databricks.com/dev-tools/bundles/library-dependencies
     #
     # LIMITATION: for pipelines, dependencies are cached during development;
-    # add dependencies to the 'environment' section of pipeline.yml file instead
+    # add dependencies to the 'environment' section of your pipeline.yml file instead
 ]
 
 [dependency-groups]
@@ -16,6 +16,9 @@ dev = [
     "pytest",
     "databricks-dlt",
     "databricks-connect{{template "conservative_db_connect_version_spec"}}",
+{{- if eq .enable_pydabs "yes" }}
+    "databricks-bundles=={{template "latest_databricks_bundles_version"}}",
+{{- end }}
 ]
 
 [project.scripts]

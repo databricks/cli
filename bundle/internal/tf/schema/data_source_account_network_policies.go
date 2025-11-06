@@ -34,7 +34,7 @@ type DataSourceAccountNetworkPoliciesItemsEgress struct {
 type DataSourceAccountNetworkPoliciesItems struct {
 	AccountId       string                                       `json:"account_id,omitempty"`
 	Egress          *DataSourceAccountNetworkPoliciesItemsEgress `json:"egress,omitempty"`
-	NetworkPolicyId string                                       `json:"network_policy_id,omitempty"`
+	NetworkPolicyId string                                       `json:"network_policy_id"`
 }
 
 type DataSourceAccountNetworkPolicies struct {

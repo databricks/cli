@@ -17,7 +17,7 @@
             "description": "\nUnique name for this project",
             "order": 1,
             "pattern": "^[a-z0-9_]+$",
-            "pattern_match_failure_message": "Name must consist of letters, numbers, and underscores."
+            "pattern_match_failure_message": "Name must consist of lower case letters, numbers, and underscores."
         },
         "project_name_short": {
             "//": "This is a derived property based on project_name (it replaces lakeflow_project with lakeflow and strips _project|_app|_service)",
@@ -33,7 +33,7 @@
             "default": "no",
             "type": "string",
             "enum": ["yes", "no"],
-            "description": "Include a Lakeflow job that runs a notebook",
+            "description": "Include a job that runs a notebook",
             "order": 3
         },
         "include_pipeline": {
@@ -65,7 +65,7 @@
         },
         "default_catalog": {
             "type": "string",
-            "default": "{{default_catalog}}",
+            "default": "{{if eq (default_catalog) \"\"}}hive_metastore{{else}}{{default_catalog}}{{end}}",
             "pattern": "^\\w*$",
             "pattern_match_failure_message": "Invalid catalog name.",
             "description": "Default catalog for any tables created by this project{{if eq (default_catalog) \"\"}} (leave blank when not using Unity Catalog){{end}}",
@@ -90,6 +90,14 @@
                 "sql"
             ],
             "order": 9
+        },
+        "enable_pydabs": {
+            "//": "This property is always set to 'no' for lakeflow-pipelines",
+            "skip_prompt_if": {},
+            "type": "string",
+            "default": "no",
+            "description": "Use Python instead of YAML for resource definitions",
+            "order": 10
         }
     },
     "success_message": "\n✨ Your new project has been created in the '{{.project_name}}' directory!\n\nPlease refer to the README.md file for \"getting started\" instructions."

@@ -6,15 +6,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config/mutator"
-	"github.com/databricks/cli/bundle/deploy/terraform"
-	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/resources"
-	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
@@ -73,45 +67,17 @@ Use after deployment to quickly navigate to your resources in the workspace.`,
 	cmd.Flags().BoolVar(&forcePull, "force-pull", false, "Skip local cache and load the state from the remote workspace")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		ctx := logdiag.InitContext(cmd.Context())
-		cmd.SetContext(ctx)
-
-		b := utils.ConfigureBundleWithVariables(cmd)
-		if b == nil || logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
-		}
-
-		phases.Initialize(ctx, b)
-		if logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
-		}
-
-		arg, err := resolveOpenArgument(ctx, b, args)
+		var arg string
+		b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
+			PostInitFunc: func(ctx context.Context, b *bundle.Bundle) error {
+				var err error
+				arg, err = resolveOpenArgument(ctx, b, args)
+				return err
+			},
+			InitIDs: true,
+		})
 		if err != nil {
 			return err
-		}
-
-		cacheDir, err := terraform.Dir(ctx, b)
-		if err != nil {
-			return err
-		}
-		_, stateFileErr := os.Stat(filepath.Join(cacheDir, b.StateFilename()))
-		_, configFileErr := os.Stat(filepath.Join(cacheDir, terraform.TerraformConfigFileName))
-		noCache := errors.Is(stateFileErr, os.ErrNotExist) || errors.Is(configFileErr, os.ErrNotExist)
-
-		if forcePull || noCache {
-			bundle.ApplyContext(ctx, b, statemgmt.StatePull())
-			if logdiag.HasError(ctx) {
-				return root.ErrAlreadyPrinted
-			}
-		}
-
-		bundle.ApplySeqContext(ctx, b,
-			statemgmt.Load(),
-			mutator.InitializeURLs(),
-		)
-		if logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
 		}
 
 		// Locate resource to open.
@@ -126,7 +92,7 @@ Use after deployment to quickly navigate to your resources in the workspace.`,
 			return errors.New("resource does not have a URL associated with it (has it been deployed?)")
 		}
 
-		cmdio.LogString(ctx, "Opening browser at "+url)
+		cmdio.LogString(cmd.Context(), "Opening browser at "+url)
 		return browser.OpenURL(url)
 	}
 

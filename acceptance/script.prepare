@@ -23,7 +23,6 @@ musterr() {
         >&2 printf "\nUnexpected success\n"
         exit 1
     fi
-    >&2 printf "\nExit code (musterr): $exit_code\n"
 }
 
 trace() {

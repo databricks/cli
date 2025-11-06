@@ -96,6 +96,8 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 		// Clusters (same as terraform)
 		// https://github.com/databricks/terraform-provider-databricks/blob/v1.75.0/clusters/resource_cluster.go#L315
 		{"resources.clusters.*.autotermination_minutes", 60},
+		{"resources.clusters.*.workload_type.clients.notebooks", true},
+		{"resources.clusters.*.workload_type.clients.jobs", true},
 	}
 
 	for _, defaultDef := range defaults {
@@ -172,6 +174,14 @@ func applyNormalizeMutators(ctx context.Context, b *bundle.Bundle) {
 
 		// Reads and updates (typed): resources.jobs.*.**
 		JobClustersFixups(),
+		ClusterFixups(),
+
+		// Reads (typed): resources.model_serving_endpoints.*.config.{served_models,served_entities}
+		// Validates: Cannot use both served_models and served_entities at the same time
+		// Updates (typed): resources.model_serving_endpoints.*.config.served_entities (converts served_models to served_entities)
+		// Updates (typed): resources.model_serving_endpoints.*.config.served_entities[*].workload_size (sets default "Small" if not specified)
+		// Drops: resources.model_serving_endpoints.*.config.served_models (after conversion)
+		ModelServingEndpointFixups(),
 	)
 }
 

@@ -13,7 +13,7 @@ Choose how you want to work on this project:
     https://docs.databricks.com/dev-tools/bundles/workspace.
 
 (b) Locally with an IDE like Cursor or VS Code, see
-    https://docs.databricks.com/vscode-ext.
+    https://docs.databricks.com/dev-tools/vscode-ext.html.
 
 (c) With command line tools, see https://docs.databricks.com/dev-tools/cli/databricks-cli.html
 
@@ -36,7 +36,7 @@ with this project. It's also possible to interact with it directly using the CLI
 
     This deploys everything that's defined for this project.
     For example, the default template would deploy a pipeline called
-    `[dev yourname] lakeflow_pipelines_etl` to your workspace.
+    `[dev yourname] my_lakeflow_pipelines_etl` to your workspace.
     You can find that resource by opening your workpace and clicking on **Jobs & Pipelines**.
 
 3. Similarly, to deploy a production copy, type:

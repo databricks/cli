@@ -7,10 +7,8 @@ import (
 
 	"github.com/databricks/cli/bundle"
 
-	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/run"
-	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
@@ -49,31 +47,19 @@ If there is only one pipeline in the project, KEY is optional and the pipeline w
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		ctx := logdiag.InitContext(cmd.Context())
-		cmd.SetContext(ctx)
-
-		b := utils.ConfigureBundleWithVariables(cmd)
-		if b == nil || logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
-		}
-
-		phases.Initialize(ctx, b)
-		if logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
-		}
-
-		key, err := resolveStopArgument(ctx, b, args)
+		var key string
+		b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
+			ErrorOnEmptyState: true,
+			PostInitFunc: func(ctx context.Context, b *bundle.Bundle) error {
+				var err error
+				key, err = resolveStopArgument(ctx, b, args)
+				return err
+			},
+		})
 		if err != nil {
 			return err
 		}
-
-		bundle.ApplySeqContext(ctx, b,
-			statemgmt.StatePull(),
-			statemgmt.Load(statemgmt.ErrorOnEmptyState),
-		)
-		if logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
-		}
+		ctx := cmd.Context()
 
 		runner, err := keyToRunner(b, key)
 		if err != nil {

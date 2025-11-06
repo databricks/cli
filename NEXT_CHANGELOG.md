@@ -1,16 +1,14 @@
 # NEXT CHANGELOG
 
-## Release v0.275.0
+## Release v0.277.0
 
 ### Notable Changes
 
 ### CLI
 
-* Remove `inplace` mode for the `--progress-format` flag. ([#3811](https://github.com/databricks/cli/pull/3811))
-* Remove `json` mode for the `--progress-format` flag. ([#3812](https://github.com/databricks/cli/pull/3812))
-
 ### Dependency updates
 
 ### Bundles
+* Add validation that served_models and served_entities are not used at the same time. Add client side translation logic. ([#3880](https://github.com/databricks/cli/pull/3880))
 
 ### API Changes

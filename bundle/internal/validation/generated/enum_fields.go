@@ -94,7 +94,6 @@ var EnumFields = map[string][]string{
 	"resources.jobs.*.tasks[*].sql_task.file.source":                                                  {"GIT", "WORKSPACE"},
 	"resources.jobs.*.trigger.pause_status":                                                           {"PAUSED", "UNPAUSED"},
 	"resources.jobs.*.trigger.periodic.unit":                                                          {"DAYS", "HOURS", "WEEKS"},
-	"resources.jobs.*.trigger.table.condition":                                                        {"ALL_UPDATED", "ANY_UPDATED"},
 	"resources.jobs.*.trigger.table_update.condition":                                                 {"ALL_UPDATED", "ANY_UPDATED"},
 
 	"resources.model_serving_endpoints.*.ai_gateway.guardrails.input.pii.behavior":                                        {"BLOCK", "MASK", "NONE"},

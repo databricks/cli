@@ -45,13 +45,6 @@ var databricksTemplates = []Template{
 		Writer:      &writerWithFullTelemetry{defaultWriter: defaultWriter{name: DefaultPython}},
 	},
 	{
-		name:        ExperimentalDefaultPython,
-		hidden:      true,
-		description: "The next version of the default Python template (experimental)",
-		Reader:      &builtinReader{name: string(ExperimentalDefaultPython)},
-		Writer:      &writerWithFullTelemetry{defaultWriter: defaultWriter{name: ExperimentalDefaultPython}},
-	},
-	{
 		name:        DefaultSql,
 		description: "The default SQL template for .sql files that run with Databricks SQL",
 		Reader:      &builtinReader{name: string(DefaultSql)},
@@ -86,21 +79,14 @@ var databricksTemplates = []Template{
 	},
 	{
 		name:        Pydabs,
-		hidden:      true,
-		description: "A variant of 'default-python' template that defines resources in Python instead of YAML",
-		Reader: &overridingReader{
-			underlying: &builtinReader{name: string(DefaultPython)},
-			propertyDefaultOverrides: map[string]any{
-				// In 'default-python' template 'enable_pydabs' prompt is hidden with default of 'no'.
-				// We want a separate template called 'pydabs' to reuse 'default-python' but have
-				// the 'enable_pydabs' property enabled by default that switches from YAML to Python.
-				"enable_pydabs": "yes",
-			},
-		},
-		Writer: &writerWithFullTelemetry{defaultWriter: defaultWriter{name: Pydabs}},
+		hidden:      false,
+		description: "A variant of the 'default-python' template that defines resources in Python instead of YAML",
+		Reader:      &builtinReader{name: string(Pydabs)},
+		Writer:      &writerWithFullTelemetry{defaultWriter: defaultWriter{name: Pydabs}},
 	},
 	{
 		name:        ExperimentalJobsAsCode,
+		hidden:      true,
 		description: "Jobs as code template (experimental)",
 		Reader:      &builtinReader{name: string(ExperimentalJobsAsCode)},
 		Writer:      &writerWithFullTelemetry{defaultWriter: defaultWriter{name: ExperimentalJobsAsCode}},

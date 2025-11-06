@@ -21,6 +21,7 @@ var SupportedResources = map[string]any{
 	"alerts":                 (*ResourceAlert)(nil),
 	"clusters":               (*ResourceCluster)(nil),
 	"registered_models":      (*ResourceRegisteredModel)(nil),
+	"dashboards":             (*ResourceDashboard)(nil),
 
 	// Permissions
 	"jobs.permissions":               (*ResourcePermissions)(nil),

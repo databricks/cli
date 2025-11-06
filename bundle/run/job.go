@@ -74,9 +74,7 @@ func (r *jobRunner) logFailedTasks(ctx context.Context, runId int64) {
 				log.Errorf(ctx, "task %s failed. Unable to fetch error trace: %s", red(task.TaskKey), err)
 				continue
 			}
-			if progressLogger, ok := cmdio.FromContext(ctx); ok {
-				progressLogger.Log(progress.NewTaskErrorEvent(task.TaskKey, taskInfo.Error, taskInfo.ErrorTrace))
-			}
+			cmdio.Log(ctx, progress.NewTaskErrorEvent(task.TaskKey, taskInfo.Error, taskInfo.ErrorTrace))
 			log.Errorf(ctx, "Task %s failed!\nError:\n%s\nTrace:\n%s",
 				red(task.TaskKey), taskInfo.Error, taskInfo.ErrorTrace)
 		} else {
@@ -89,9 +87,8 @@ func (r *jobRunner) logFailedTasks(ctx context.Context, runId int64) {
 // jobRunMonitor tracks state for a single job run and provides callbacks
 // for monitoring progress.
 type jobRunMonitor struct {
-	ctx            context.Context
-	prevState      *jobs.RunState
-	progressLogger *cmdio.Logger
+	ctx       context.Context
+	prevState *jobs.RunState
 }
 
 // onProgress is the single callback that handles all state tracking and logging.
@@ -104,7 +101,7 @@ func (m *jobRunMonitor) onProgress(info *jobs.Run) {
 	// First time we see this run.
 	if m.prevState == nil {
 		log.Infof(m.ctx, "Run available at %s", info.RunPageUrl)
-		m.progressLogger.Log(progress.NewJobRunUrlEvent(info.RunPageUrl))
+		cmdio.Log(m.ctx, progress.NewJobRunUrlEvent(info.RunPageUrl))
 	}
 
 	// No state change: do not log.
@@ -125,7 +122,7 @@ func (m *jobRunMonitor) onProgress(info *jobs.Run) {
 		RunName:   info.RunName,
 		State:     *info.State,
 	}
-	m.progressLogger.Log(event)
+	cmdio.Log(m.ctx, event)
 	log.Info(m.ctx, event.String())
 }
 
@@ -151,15 +148,8 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, e
 
 	w := r.bundle.WorkspaceClient()
 
-	// callback to log progress events. Called on every poll request
-	progressLogger, ok := cmdio.FromContext(ctx)
-	if !ok {
-		return nil, errors.New("no progress logger found")
-	}
-
 	monitor := &jobRunMonitor{
-		ctx:            ctx,
-		progressLogger: progressLogger,
+		ctx: ctx,
 	}
 
 	waiter, err := w.Jobs.RunNow(ctx, *req)
@@ -171,7 +161,7 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, e
 		details, err := w.Jobs.GetRun(ctx, jobs.GetRunRequest{
 			RunId: waiter.RunId,
 		})
-		progressLogger.Log(progress.NewJobRunUrlEvent(details.RunPageUrl))
+		cmdio.Log(ctx, progress.NewJobRunUrlEvent(details.RunPageUrl))
 		return nil, err
 	}
 

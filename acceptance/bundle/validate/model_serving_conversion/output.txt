@@ -1,0 +1,14 @@
+Warning: Using served_models is deprecated
+  in databricks.yml:10:11
+
+The served_models field is deprecated. Please use served_entities instead.
+
+{
+  "served_entities": [
+    {
+      "entity_name": "my-model",
+      "entity_version": "1",
+      "scale_to_zero_enabled": true
+    }
+  ]
+}

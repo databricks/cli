@@ -6,8 +6,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/databricks/cli/libs/jsonschema"
-
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/stretchr/testify/assert"
@@ -216,40 +214,4 @@ func TestGitReaderWithTemplateDir(t *testing.T) {
 
 	// Cleanup
 	r.Cleanup(ctx)
-}
-
-func TestOverridingReader_LoadSchemaAndTemplateFS(t *testing.T) {
-	tmpDir := t.TempDir()
-	content := `{
-		"welcome_message": "test",
-		"properties": {
-			"enable_feature_x": {
-				"type": "string",
-				"default": "no"
-			}
-		}
-	}`
-
-	testutil.WriteFile(t, filepath.Join(tmpDir, "databricks_template_schema.json"), content)
-	ctx := context.Background()
-
-	r := overridingReader{
-		underlying: &localReader{path: tmpDir},
-		propertyDefaultOverrides: map[string]any{
-			"enable_feature_x": "yes",
-		},
-	}
-
-	schema, fsys, err := r.LoadSchemaAndTemplateFS(ctx)
-
-	require.NoError(t, err)
-	require.NotNil(t, schema)
-	require.NotNil(t, fsys)
-
-	assert.Equal(t, map[string]*jsonschema.Schema{
-		"enable_feature_x": {
-			Type:    "string",
-			Default: "yes",
-		},
-	}, schema.Properties)
 }

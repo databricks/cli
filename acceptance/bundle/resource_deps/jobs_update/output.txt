@@ -206,9 +206,5 @@ Destroy complete!
 >>> musterr [CLI] jobs get [FOO_ID]
 Error: Not Found
 
-Exit code (musterr): 1
-
 >>> musterr [CLI] jobs get [BAR_ID]
 Error: Not Found
-
-Exit code (musterr): 1
