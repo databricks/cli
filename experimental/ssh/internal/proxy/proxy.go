@@ -27,6 +27,7 @@ const (
 type proxyConnection struct {
 	connID                    string
 	conn                      atomic.Value // *websocket.Conn
+	connChanged               sync.Cond
 	createWebsocketConnection createWebsocketConnectionFunc
 
 	handoverMutex           sync.Mutex
@@ -39,6 +40,7 @@ type createWebsocketConnectionFunc func(ctx context.Context, connID string) (*we
 func newProxyConnection(createConn createWebsocketConnectionFunc) *proxyConnection {
 	return &proxyConnection{
 		connID:                    uuid.NewString(),
+		connChanged:               sync.Cond{L: &sync.Mutex{}},
 		currentConnectionClosed:   make(chan error),
 		createWebsocketConnection: createConn,
 	}
@@ -65,6 +67,7 @@ func (pc *proxyConnection) connect(ctx context.Context) error {
 		return err
 	}
 	pc.conn.Store(conn)
+	pc.connChanged.Broadcast()
 	return nil
 }
 
@@ -74,6 +77,7 @@ func (pc *proxyConnection) accept(w http.ResponseWriter, r *http.Request) error 
 		return err
 	}
 	pc.conn.Store(conn)
+	pc.connChanged.Broadcast()
 	return nil
 }
 
@@ -138,9 +142,7 @@ func (pc *proxyConnection) runReceivingLoop(ctx context.Context, dst io.Writer) 
 				// Next time we read, we want to read from the new connection.
 				// While we wait for the handover to complete, the new connection might be getting incoming messages.
 				// They will be buffered by the TCP stack and will be read by us after the handover is complete.
-				if err := pc.blockUntilHandoverComplete(conn); err != nil {
-					return err
-				}
+				pc.waitForNewConnection(conn)
 				// Continue with the receiving loop, pc.conn is now the new connection.
 				continue
 			} else {
@@ -170,14 +172,12 @@ func (pc *proxyConnection) signalClosedConnection(err error) error {
 	}
 }
 
-func (pc *proxyConnection) blockUntilHandoverComplete(conn *websocket.Conn) error {
-	pc.handoverMutex.Lock()
-	defer pc.handoverMutex.Unlock()
-	// Sanity check to ensure we are not in the middle of a handover - this should not happen.
-	if pc.conn.Load() == conn {
-		return errors.New("handover mutex acquired while the old connection is still active")
+func (pc *proxyConnection) waitForNewConnection(conn *websocket.Conn) {
+	pc.connChanged.L.Lock()
+	defer pc.connChanged.L.Unlock()
+	for pc.conn.Load() == conn {
+		pc.connChanged.Wait()
 	}
-	return nil
 }
 
 func (pc *proxyConnection) close() error {
@@ -226,6 +226,7 @@ func (pc *proxyConnection) initiateHandover(ctx context.Context) error {
 	}
 
 	pc.conn.Store(newConn)
+	pc.connChanged.Broadcast()
 
 	return nil
 }
@@ -272,6 +273,7 @@ func (pc *proxyConnection) acceptHandover(ctx context.Context, w http.ResponseWr
 	}
 
 	pc.conn.Store(newConn)
+	pc.connChanged.Broadcast()
 
 	return nil
 }
