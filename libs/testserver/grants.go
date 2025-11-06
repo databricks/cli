@@ -51,7 +51,11 @@ func (s *FakeWorkspace) GrantsUpdate(req Request, securableType, fullName string
 
 		// Remove privileges
 		for _, privilege := range change.Remove {
-			delete(principalPrivs[change.Principal], string(privilege))
+			if privilege == catalog.PrivilegeAllPrivileges {
+				principalPrivs[change.Principal] = make(map[string]bool)
+			} else {
+				delete(principalPrivs[change.Principal], string(privilege))
+			}
 		}
 
 		// Add privileges
