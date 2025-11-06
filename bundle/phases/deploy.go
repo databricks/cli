@@ -146,7 +146,7 @@ func uploadLibraries(ctx context.Context, b *bundle.Bundle, libs map[string][]li
 //
 // Catches SIGINT (Ctrl+C), SIGTERM, SIGHUP, and SIGQUIT.
 // Note: SIGKILL and SIGSTOP cannot be caught - the kernel terminates the process directly.
-func registerGracefulCleanup(ctx context.Context, b *bundle.Bundle, goal lock.Goal) (context.Context, func()) {
+func registerGracefulCleanup(ctx context.Context, b *bundle.Bundle) (context.Context, func()) {
 	// Create a cancellable context to propagate cancellation to the main routine
 	ctx, cancel := context.WithCancel(ctx)
 
@@ -184,7 +184,7 @@ func registerGracefulCleanup(ctx context.Context, b *bundle.Bundle, goal lock.Go
 		// We use context.WithoutCancel to preserve context values (like user agent)
 		// but remove the cancellation signal so the lock release can complete
 		releaseCtx := context.WithoutCancel(ctx)
-		bundle.ApplyContext(releaseCtx, b, lock.Release(goal))
+		bundle.ApplyContext(releaseCtx, b, lock.Release())
 
 		// Calculate exit code (128 + signal number)
 		exitCode := 128
@@ -205,10 +205,10 @@ func registerGracefulCleanup(ctx context.Context, b *bundle.Bundle, goal lock.Go
 		// Stop listening for signals
 		signal.Stop(sigChan)
 
-		// Release the lock (idempotent thanks to sync.Once in lock.Release)
+		// Release the lock (idempotent)
 		// Use context.WithoutCancel to preserve context values but remove cancellation
 		releaseCtx := context.WithoutCancel(ctx)
-		bundle.ApplyContext(releaseCtx, b, lock.Release(goal))
+		bundle.ApplyContext(releaseCtx, b, lock.Release())
 
 		// Signal that the main routine has completed.
 		// Once the signal is recieved,
@@ -247,7 +247,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	}
 
 	// lock is acquired here - set up signal handlers and defer cleanup
-	ctx, cleanup := registerGracefulCleanup(ctx, b, lock.GoalDeploy)
+	ctx, cleanup := registerGracefulCleanup(ctx, b)
 	defer cleanup()
 
 	libs := deployPrepare(ctx, b, false, directDeployment)

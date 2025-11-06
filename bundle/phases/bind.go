@@ -20,7 +20,7 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions) {
 	}
 
 	defer func() {
-		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalBind))
+		bundle.ApplyContext(ctx, b, lock.Release())
 	}()
 
 	bundle.ApplySeqContext(ctx, b,
@@ -40,7 +40,7 @@ func Unbind(ctx context.Context, b *bundle.Bundle, bundleType, tfResourceType, r
 	}
 
 	defer func() {
-		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalUnbind))
+		bundle.ApplyContext(ctx, b, lock.Release())
 	}()
 
 	bundle.ApplySeqContext(ctx, b,

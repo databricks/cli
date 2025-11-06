@@ -130,7 +130,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle, directDeployment bool) {
 	}
 
 	// lock is acquired here - set up signal handlers and defer cleanup
-	ctx, cleanup := registerGracefulCleanup(ctx, b, lock.GoalDestroy)
+	ctx, cleanup := registerGracefulCleanup(ctx, b)
 	defer cleanup()
 
 	if !directDeployment {

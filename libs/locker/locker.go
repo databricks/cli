@@ -8,18 +8,11 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"slices"
 	"time"
 
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/google/uuid"
-)
-
-type UnlockOption int
-
-const (
-	AllowLockFileNotExist UnlockOption = iota
 )
 
 const LockFileName = "deploy.lock"
@@ -171,15 +164,18 @@ func (locker *Locker) Lock(ctx context.Context, isForced bool) error {
 	return nil
 }
 
-func (locker *Locker) Unlock(ctx context.Context, opts ...UnlockOption) error {
+func (locker *Locker) Unlock(ctx context.Context) error {
+	// If locker is already inactive, return without an error.
+	// This keeps the locker idempotent in the face of multiple unlock calls.
 	if !locker.Active {
-		return errors.New("unlock called when lock is not held")
+		return nil
 	}
 
-	// if allowLockFileNotExist is set, do not throw an error if the lock file does
-	// not exist. This is helpful when destroying a bundle in which case the lock
-	// file will be deleted before we have a chance to unlock
-	if _, err := locker.filer.Stat(ctx, LockFileName); errors.Is(err, fs.ErrNotExist) && slices.Contains(opts, AllowLockFileNotExist) {
+	// Check if the lock file exists. If it doesn't exist, this is not an error
+	// as it makes unlock idempotent. This is helpful in several scenarios:
+	// 1. When destroying a bundle, the lock file may be deleted before unlock
+	// 2. When unlock is called multiple times, which is possible when handling signals like SIGINT, SIGTERM, SIGHUP, SIGQUIT
+	if _, err := locker.filer.Stat(ctx, LockFileName); errors.Is(err, fs.ErrNotExist) {
 		locker.Active = false
 		return nil
 	}

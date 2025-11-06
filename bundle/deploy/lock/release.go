@@ -5,25 +5,13 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/locker"
 	"github.com/databricks/cli/libs/log"
 )
 
-type Goal string
+type release struct{}
 
-const (
-	GoalBind    = Goal("bind")
-	GoalUnbind  = Goal("unbind")
-	GoalDeploy  = Goal("deploy")
-	GoalDestroy = Goal("destroy")
-)
-
-type release struct {
-	goal Goal
-}
-
-func Release(goal Goal) bundle.Mutator {
-	return &release{goal}
+func Release() bundle.Mutator {
+	return &release{}
 }
 
 func (m *release) Name() string {
@@ -44,22 +32,7 @@ func (m *release) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 		return nil
 	}
 
-	// Make lock release idempotent using sync.Once to prevent race conditions
-	// This ensures the lock is only released once even if called multiple times
-	var diags diag.Diagnostics
-	b.LockReleaseOnce.Do(func() {
-		log.Infof(ctx, "Releasing deployment lock")
-		switch m.goal {
-		case GoalDeploy:
-			diags = diag.FromErr(b.Locker.Unlock(ctx))
-		case GoalBind, GoalUnbind:
-			diags = diag.FromErr(b.Locker.Unlock(ctx))
-		case GoalDestroy:
-			diags = diag.FromErr(b.Locker.Unlock(ctx, locker.AllowLockFileNotExist))
-		default:
-			diags = diag.Errorf("unknown goal for lock release: %s", m.goal)
-		}
-	})
-
-	return diags
+	log.Infof(ctx, "Releasing deployment lock")
+	err := b.Locker.Unlock(ctx)
+	return diag.FromErr(err)
 }
