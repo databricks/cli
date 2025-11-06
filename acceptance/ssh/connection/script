@@ -1,0 +1,8 @@
+errcode $CLI ssh connect --cluster=$TEST_DEFAULT_CLUSTER_ID --releases-dir=$CLI_RELEASES_DIR -- "echo 'Connection successful'" >LOG.stdout 2>LOG.stderr
+
+cat LOG.stdout
+
+if ! grep -q "Connection successful" LOG.stdout; then
+  run_id=$(cat LOG.stderr | grep -o "Job submitted successfully with run ID: [0-9]*" | grep -o "[0-9]*$")
+  trace $CLI jobs get-run "$run_id" > LOG.job
+fi
