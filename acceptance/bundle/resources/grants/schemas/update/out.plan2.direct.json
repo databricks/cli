@@ -29,8 +29,8 @@
             {
               "principal": "denis.bilenko@databricks.com",
               "privileges": [
-                "CREATE_TABLE",
-                "APPLY_TAG"
+                "APPLY_TAG",
+                "CREATE_TABLE"
               ]
             }
           ]
@@ -51,6 +51,9 @@
       },
       "changes": {
         "local": {
+          "grants[0].privileges[0]": {
+            "action": "update"
+          },
           "grants[0].privileges[1]": {
             "action": "update"
           }

@@ -86,14 +86,14 @@ func PrepareGrantsInputConfig(inputConfig any, node string) (*structvar.StructVa
 			privileges = append(privileges, catalog.Privilege(item.String()))
 		}
 
-		// normalizePrivileges(privileges)
+		// sorting, because they come back from backend as sorted
+		sortPriviliges(privileges)
+
 		grants = append(grants, GrantAssignment{
 			Principal:  principal,
 			Privileges: privileges,
 		})
 	}
-
-	normalizeGrantAssignments(grants)
 
 	return &structvar.StructVar{
 		Config: &GrantsState{
@@ -107,42 +107,22 @@ func PrepareGrantsInputConfig(inputConfig any, node string) (*structvar.StructVa
 	}, nil
 }
 
-func extractGrantResourceType(node string) (string, error) {
-	// XXX use CutPrefix
-	idx := strings.Index(node, "resources.")
-	if idx == -1 {
-		return "", fmt.Errorf("cannot extract resource type from %q", node)
-	}
-	rest := node[idx+len("resources."):]
-	parts := strings.Split(rest, ".")
-	if len(parts) < 2 {
-		return "", fmt.Errorf("cannot extract resource type from %q", node)
-	}
-	return parts[0], nil
-}
-
-func normalizePrivileges(privileges []catalog.Privilege) {
+func sortPriviliges(privileges []catalog.Privilege) {
 	sort.Slice(privileges, func(i, j int) bool {
 		return privileges[i] < privileges[j]
 	})
 }
 
-func normalizeGrantAssignments(assignments []GrantAssignment) {
-	sort.Slice(assignments, func(i, j int) bool {
-		if assignments[i].Principal == assignments[j].Principal {
-			if len(assignments[i].Privileges) != len(assignments[j].Privileges) {
-				return len(assignments[i].Privileges) < len(assignments[j].Privileges)
-			}
-			for k := range assignments[i].Privileges {
-				if assignments[i].Privileges[k] == assignments[j].Privileges[k] {
-					continue
-				}
-				return assignments[i].Privileges[k] < assignments[j].Privileges[k]
-			}
-			return false
-		}
-		return assignments[i].Principal < assignments[j].Principal
-	})
+func extractGrantResourceType(node string) (string, error) {
+	rest, ok := strings.CutPrefix(node, "resources.")
+	if !ok {
+		return "", fmt.Errorf("cannot extract resource type from %q", node)
+	}
+	parts := strings.Split(rest, ".")
+	if len(parts) < 2 {
+		return "", fmt.Errorf("cannot extract resource type from %q", node)
+	}
+	return parts[0], nil
 }
 
 type ResourceGrants struct {
@@ -167,8 +147,6 @@ func (r *ResourceGrants) DoRefresh(ctx context.Context, id string) (*GrantsState
 	if err != nil {
 		return nil, err
 	}
-
-	normalizeGrantAssignments(assignments)
 
 	return &GrantsState{
 		SecurableType: securableType,
@@ -199,11 +177,6 @@ func (r *ResourceGrants) applyGrants(ctx context.Context, state *GrantsState) er
 	if state.FullName == "" {
 		return errors.New("internal error: grants full_name must be resolved before deployment")
 	}
-
-	for i := range state.Grants {
-		normalizePrivileges(state.Grants[i].Privileges)
-	}
-	normalizeGrantAssignments(state.Grants)
 
 	changes := r.createIdempotentGrantChanges(state)
 	if len(changes) == 0 {
@@ -248,67 +221,18 @@ func getAllPossiblePrivileges(securableType string) []catalog.Privilege {
 func (r *ResourceGrants) createIdempotentGrantChanges(state *GrantsState) []catalog.PermissionsChange {
 	var changes []catalog.PermissionsChange
 
-	// Get all possible privileges for this securable type
-	allPrivileges := getAllPossiblePrivileges(state.SecurableType)
-	if allPrivileges == nil {
-		// Fallback to empty list if securable type not supported
-		allPrivileges = []catalog.Privilege{}
-	}
-
-	// Create a set of all possible privileges for quick lookup
-	allPrivilegesSet := make(map[catalog.Privilege]struct{})
-	for _, priv := range allPrivileges {
-		allPrivilegesSet[priv] = struct{}{}
-	}
-
 	// Group configured grants by principal
 	desiredPrivileges, principals := grantsToMap(state.Grants)
 
 	// For each principal in the config, add their grants and remove everything else
 	for i, principal := range principals {
-		desiredPrivs := desiredPrivileges[i]
-
-		var add []catalog.Privilege
-		var remove []catalog.Privilege
-
-		// ADD: all privileges specified in config for this principal
-		add = append(add, desiredPrivs...)
-
-		remove = append(remove, catalog.PrivilegeAllPrivileges)
-		/*
-
-			// REMOVE: all other possible privileges not in config
-			for _, priv := range allPrivileges {
-				found := false
-				for _, desired := range desiredPrivs {
-					if priv == desired {
-						found = true
-						break
-					}
-				}
-				if !found {
-					remove = append(remove, priv)
-				}
-			}
-		*/
-
-		// No need to sort since privileges maintain order from input
-
-		// Only create a change if there's something to add or remove
-		if len(add) > 0 || len(remove) > 0 {
-			changes = append(changes, catalog.PermissionsChange{
-				Principal:       principal,
-				Add:             add,
-				Remove:          remove,
-				ForceSendFields: nil,
-			})
-		}
+		changes = append(changes, catalog.PermissionsChange{
+			Principal:       principal,
+			Add:             desiredPrivileges[i],
+			Remove:          []catalog.Privilege{catalog.PrivilegeAllPrivileges},
+			ForceSendFields: nil,
+		})
 	}
-
-	// Sort changes by principal for consistent output
-	sort.Slice(changes, func(i, j int) bool {
-		return changes[i].Principal < changes[j].Principal
-	})
 
 	return changes
 }
@@ -334,7 +258,6 @@ func (r *ResourceGrants) listGrants(ctx context.Context, securableType, fullName
 			}
 			privs := make([]catalog.Privilege, len(assignment.Privileges))
 			copy(privs, assignment.Privileges)
-			// normalizePrivileges(privs)
 			assignments = append(assignments, GrantAssignment{
 				Principal:  assignment.Principal,
 				Privileges: privs,
@@ -346,7 +269,6 @@ func (r *ResourceGrants) listGrants(ctx context.Context, securableType, fullName
 		// XXX is it necessary?
 		pageToken = resp.NextPageToken
 	}
-	normalizeGrantAssignments(assignments)
 	return assignments, nil
 }
 
