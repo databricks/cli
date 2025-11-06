@@ -27,16 +27,16 @@ func (s *FakeWorkspace) GrantsUpdate(req Request, securableType, fullName string
 
 	defer s.LockUnlock()()
 
-	// Build a simple map of principals to privileges
-	principalPrivs := make(map[string]map[string]bool)
+	// Build a map of principals to privileges (using Privilege type directly)
+	principalPrivs := make(map[string]map[catalog.Privilege]bool)
 
 	// Load current grants
 	for _, assignment := range s.Grants[key] {
 		if principalPrivs[assignment.Principal] == nil {
-			principalPrivs[assignment.Principal] = make(map[string]bool)
+			principalPrivs[assignment.Principal] = make(map[catalog.Privilege]bool)
 		}
 		for _, privilege := range assignment.Privileges {
-			principalPrivs[assignment.Principal][string(privilege)] = true
+			principalPrivs[assignment.Principal][privilege] = true
 		}
 	}
 
@@ -46,21 +46,21 @@ func (s *FakeWorkspace) GrantsUpdate(req Request, securableType, fullName string
 			continue
 		}
 		if principalPrivs[change.Principal] == nil {
-			principalPrivs[change.Principal] = make(map[string]bool)
+			principalPrivs[change.Principal] = make(map[catalog.Privilege]bool)
 		}
 
 		// Remove privileges
 		for _, privilege := range change.Remove {
 			if privilege == catalog.PrivilegeAllPrivileges {
-				principalPrivs[change.Principal] = make(map[string]bool)
+				principalPrivs[change.Principal] = make(map[catalog.Privilege]bool)
 			} else {
-				delete(principalPrivs[change.Principal], string(privilege))
+				delete(principalPrivs[change.Principal], privilege)
 			}
 		}
 
 		// Add privileges
 		for _, privilege := range change.Add {
-			principalPrivs[change.Principal][string(privilege)] = true
+			principalPrivs[change.Principal][privilege] = true
 		}
 	}
 
@@ -71,17 +71,14 @@ func (s *FakeWorkspace) GrantsUpdate(req Request, securableType, fullName string
 			continue
 		}
 
-		// Sort privileges alphabetically
-		var privilegeStrs []string
+		// Collect and sort privileges directly
+		privileges := make([]catalog.Privilege, 0, len(privs))
 		for priv := range privs {
-			privilegeStrs = append(privilegeStrs, priv)
+			privileges = append(privileges, priv)
 		}
-		slices.Sort(privilegeStrs)
-
-		privileges := make([]catalog.Privilege, len(privilegeStrs))
-		for i, priv := range privilegeStrs {
-			privileges[i] = catalog.Privilege(priv)
-		}
+		slices.SortFunc(privileges, func(a, b catalog.Privilege) int {
+			return strings.Compare(string(a), string(b))
+		})
 
 		assignments = append(assignments, catalog.PrivilegeAssignment{
 			Principal:  principal,
