@@ -4,11 +4,11 @@ on:
   pull_request:
     types: [opened, synchronize]
     paths:
-      - experimental/python/**
+      - python/**
   merge_group:
     types: [checks_requested]
     paths:
-      - experimental/python/**
+      - python/**
   push:
     # Always run on push to main. The build cache can only be reused
     # if it was saved by a run from the repository's default branch.
@@ -39,7 +39,7 @@ jobs:
           version: "0.6.5"
 
       - name: Run tests
-        working-directory: experimental/python
+        working-directory: python
         run: make test
 
   python_linters:
@@ -56,7 +56,7 @@ jobs:
           version: "0.6.5"
 
       - name: Run lint
-        working-directory: experimental/python
+        working-directory: python
         run: make lint
 
   python_docs:
@@ -73,5 +73,5 @@ jobs:
           version: "0.6.5"
 
       - name: Run docs
-        working-directory: experimental/python
+        working-directory: python
         run: make docs

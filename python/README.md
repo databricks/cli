@@ -7,7 +7,7 @@ Python for Databricks Asset Bundles extends [Databricks Asset Bundles](https://d
 
 Documentation is available at https://docs.databricks.com/dev-tools/cli/databricks-cli.html.
 
-Reference documentation is available at https://databricks.github.io/cli/experimental/python/
+Reference documentation is available at https://databricks.github.io/cli/python/
 
 ## Getting started
 
