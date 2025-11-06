@@ -13,21 +13,23 @@ type DataSourceAlertsV2AlertsEvaluationNotificationSubscriptions struct {
 }
 
 type DataSourceAlertsV2AlertsEvaluationNotification struct {
-	NotifyOnOk       bool                                                          `json:"notify_on_ok,omitempty"`
-	RetriggerSeconds int                                                           `json:"retrigger_seconds,omitempty"`
-	Subscriptions    []DataSourceAlertsV2AlertsEvaluationNotificationSubscriptions `json:"subscriptions,omitempty"`
+	EffectiveNotifyOnOk       bool                                                          `json:"effective_notify_on_ok,omitempty"`
+	EffectiveRetriggerSeconds int                                                           `json:"effective_retrigger_seconds,omitempty"`
+	NotifyOnOk                bool                                                          `json:"notify_on_ok,omitempty"`
+	RetriggerSeconds          int                                                           `json:"retrigger_seconds,omitempty"`
+	Subscriptions             []DataSourceAlertsV2AlertsEvaluationNotificationSubscriptions `json:"subscriptions,omitempty"`
 }
 
 type DataSourceAlertsV2AlertsEvaluationSource struct {
 	Aggregation string `json:"aggregation,omitempty"`
 	Display     string `json:"display,omitempty"`
-	Name        string `json:"name,omitempty"`
+	Name        string `json:"name"`
 }
 
 type DataSourceAlertsV2AlertsEvaluationThresholdColumn struct {
 	Aggregation string `json:"aggregation,omitempty"`
 	Display     string `json:"display,omitempty"`
-	Name        string `json:"name,omitempty"`
+	Name        string `json:"name"`
 }
 
 type DataSourceAlertsV2AlertsEvaluationThresholdValue struct {
@@ -42,7 +44,7 @@ type DataSourceAlertsV2AlertsEvaluationThreshold struct {
 }
 
 type DataSourceAlertsV2AlertsEvaluation struct {
-	ComparisonOperator string                                          `json:"comparison_operator,omitempty"`
+	ComparisonOperator string                                          `json:"comparison_operator"`
 	EmptyResultState   string                                          `json:"empty_result_state,omitempty"`
 	LastEvaluatedAt    string                                          `json:"last_evaluated_at,omitempty"`
 	Notification       *DataSourceAlertsV2AlertsEvaluationNotification `json:"notification,omitempty"`
@@ -58,8 +60,8 @@ type DataSourceAlertsV2AlertsRunAs struct {
 
 type DataSourceAlertsV2AlertsSchedule struct {
 	PauseStatus        string `json:"pause_status,omitempty"`
-	QuartzCronSchedule string `json:"quartz_cron_schedule,omitempty"`
-	TimezoneId         string `json:"timezone_id,omitempty"`
+	QuartzCronSchedule string `json:"quartz_cron_schedule"`
+	TimezoneId         string `json:"timezone_id"`
 }
 
 type DataSourceAlertsV2Alerts struct {
@@ -82,5 +84,6 @@ type DataSourceAlertsV2Alerts struct {
 }
 
 type DataSourceAlertsV2 struct {
-	Alerts []DataSourceAlertsV2Alerts `json:"alerts,omitempty"`
+	Alerts   []DataSourceAlertsV2Alerts `json:"alerts,omitempty"`
+	PageSize int                        `json:"page_size,omitempty"`
 }

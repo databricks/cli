@@ -23,8 +23,7 @@ func Log(ctx context.Context, str fmt.Stringer) {
 // It writes the string to the error writer.
 func LogString(ctx context.Context, str string) {
 	c := fromContext(ctx)
-	_, _ = io.WriteString(c.err, str)
-	_, _ = io.WriteString(c.err, "\n")
+	_, _ = io.WriteString(c.err, str+"\n")
 }
 
 // readLine reads a line from the reader and returns it without the trailing newline characters.

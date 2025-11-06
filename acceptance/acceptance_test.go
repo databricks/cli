@@ -366,13 +366,6 @@ func getEnvFilters(t *testing.T) []string {
 		key := items[0]
 		// Clear it just to be sure, since it's going to be part of os.Environ() and we're going to add different value based on settings.
 		os.Unsetenv(key)
-
-		if key == "DATABRICKS_BUNDLE_ENGINE" && items[1] == "direct" {
-			// CLI only recognizes "direct-exp" at the moment, but in the future will recognize "direct" as well.
-			// On CI we set "direct". To avoid renaming jobs in CI on the future, we correct direct -> direct-exp here
-			items[1] = "direct-exp"
-		}
-
 		outFilters = append(outFilters, key+"="+items[1])
 	}
 
@@ -1248,7 +1241,7 @@ func buildDatabricksBundlesWheel(t *testing.T, buildDir string) string {
 	// so we prepare here by keeping only one.
 	_ = prepareWheelBuildDirectory(t, buildDir)
 
-	RunCommand(t, []string{"uv", "build", "--no-cache", "-q", "--wheel", "--out-dir", buildDir}, "../experimental/python")
+	RunCommand(t, []string{"uv", "build", "--no-cache", "-q", "--wheel", "--out-dir", buildDir}, "../python")
 
 	latestWheel := prepareWheelBuildDirectory(t, buildDir)
 	if latestWheel == "" {
@@ -1405,7 +1398,7 @@ func loadUserReplacements(t *testing.T, repls *testdiff.ReplacementsContext, tmp
 type pathFilter struct {
 	// contains substrings from the variants other than current.
 	// E.g. if EnvVaryOutput is DATABRICKS_BUNDLE_ENGINE and current test running DATABRICKS_BUNDLE_ENGINE="terraform" then
-	// notSelected contains ".direct-exp." meaning if filename contains that (e.g. out.deploy.direct-exp.txt) then we ignore it here.
+	// notSelected contains ".direct." meaning if filename contains that (e.g. out.deploy.direct.txt) then we ignore it here.
 	notSelected []string
 }
 

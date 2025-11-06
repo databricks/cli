@@ -1,0 +1,14 @@
+Error: Cannot use both served_models and served_entities
+  in databricks.yml:7:7
+
+Model serving endpoint cannot specify both served_models and served_entities at the same time.
+
+Name: model_serving_error
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/model_serving_error/default
+
+Found 1 error
+
+Exit code: 1

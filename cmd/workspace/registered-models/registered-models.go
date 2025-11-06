@@ -415,7 +415,12 @@ func newList() *cobra.Command {
   privilege on the parent catalog and the **USE_SCHEMA** privilege on the parent
   schema.
   
-  There is no guarantee of a specific ordering of the elements in the response.`
+  There is no guarantee of a specific ordering of the elements in the response.
+  
+  PAGINATION BEHAVIOR: The API is by default paginated, a page may contain zero
+  results while still providing a next_page_token. Clients must continue reading
+  pages until next_page_token is absent, which is the only indication that the
+  end of results has been reached.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -516,6 +521,7 @@ func newSetAlias() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid VERSION_NUM: %s", args[2])
 			}
+
 		}
 
 		response, err := w.RegisteredModels.SetAlias(ctx, setAliasReq)

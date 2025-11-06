@@ -87,6 +87,7 @@ Unity Catalog
 Delta Sharing
   providers                              A data provider is an object representing the organization in the real world who shares the data.
   recipient-activation                   The Recipient Activation API is only applicable in the open sharing model where the recipient object has the authentication type of TOKEN.
+  recipient-federation-policies          The Recipient Federation Policies APIs are only applicable in the open sharing model where the recipient object has the authentication type of OIDC_RECIPIENT, enabling data sharing from Databricks to non-Databricks recipients.
   recipients                             A recipient is an object you create using :method:recipients/create to represent an organization which you want to allow access shares.
   shares                                 A share is a container instantiated with :method:shares/create.
 
@@ -154,6 +155,7 @@ Additional Commands:
   auth                                   Authentication related commands
   completion                             Generate the autocompletion script for the specified shell
   configure                              Configure authentication
+  data-quality                           Manage the data quality of Unity Catalog objects (currently support schema and table).
   help                                   Help about any command
   labs                                   Manage Databricks Labs installations
   tag-policies                           The Tag Policy API allows you to manage policies for governed tags in Databricks.

@@ -42,3 +42,7 @@ tools/golangci-lint
 
 # Release artifacts
 dist/
+
+# Local development notes, tmp
+/pr-*
+/tmp/

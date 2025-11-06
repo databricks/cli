@@ -52,6 +52,10 @@ type ResourceAppPendingDeployment struct {
 	UpdateTime          string                                           `json:"update_time,omitempty"`
 }
 
+type ResourceAppProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourceAppResourcesDatabase struct {
 	DatabaseName string `json:"database_name"`
 	InstanceName string `json:"instance_name"`
@@ -121,6 +125,7 @@ type ResourceApp struct {
 	Oauth2AppClientId        string                        `json:"oauth2_app_client_id,omitempty"`
 	Oauth2AppIntegrationId   string                        `json:"oauth2_app_integration_id,omitempty"`
 	PendingDeployment        *ResourceAppPendingDeployment `json:"pending_deployment,omitempty"`
+	ProviderConfig           *ResourceAppProviderConfig    `json:"provider_config,omitempty"`
 	Resources                []ResourceAppResources        `json:"resources,omitempty"`
 	ServicePrincipalClientId string                        `json:"service_principal_client_id,omitempty"`
 	ServicePrincipalId       int                           `json:"service_principal_id,omitempty"`

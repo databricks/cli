@@ -1,7 +1,6 @@
 package deployment
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
@@ -16,19 +15,18 @@ import (
 
 // BindResource binds a bundle resource to an existing workspace resource.
 // This function is shared between the bind command and generate commands with --bind flag.
-func BindResource(cmd *cobra.Command, resourceKey, resourceId string, autoApprove, forceLock bool) error {
+func BindResource(cmd *cobra.Command, resourceKey, resourceId string, autoApprove, forceLock, skipInitContext bool) error {
+	b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
+		SkipInitContext: skipInitContext,
+		ReadState:       true,
+		InitFunc: func(b *bundle.Bundle) {
+			b.Config.Bundle.Deployment.Lock.Force = forceLock
+		},
+	})
+	if err != nil {
+		return err
+	}
 	ctx := cmd.Context()
-	// Reload the bundle configuration to ensure we're using the latest configuration.
-	b := utils.ReloadBundle(cmd)
-	if b == nil || logdiag.HasError(ctx) {
-		return root.ErrAlreadyPrinted
-	}
-
-	ctx = cmd.Context()
-	phases.Initialize(ctx, b)
-	if logdiag.HasError(ctx) {
-		return root.ErrAlreadyPrinted
-	}
 
 	resource, err := b.Config.Resources.FindResourceByConfigKey(resourceKey)
 	if err != nil {
@@ -44,10 +42,6 @@ func BindResource(cmd *cobra.Command, resourceKey, resourceId string, autoApprov
 	if !exists {
 		return fmt.Errorf("%s with an id '%s' is not found", resource.ResourceDescription().SingularName, resourceId)
 	}
-
-	bundle.ApplyFuncContext(ctx, b, func(context.Context, *bundle.Bundle) {
-		b.Config.Bundle.Deployment.Lock.Force = forceLock
-	})
 
 	tfName := terraform.GroupToTerraformName[resource.ResourceDescription().PluralName]
 	phases.Bind(ctx, b, &terraform.BindOptions{

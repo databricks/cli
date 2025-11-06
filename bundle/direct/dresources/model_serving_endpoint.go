@@ -6,6 +6,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/serving"
 )
@@ -33,7 +34,7 @@ func autoCaptureConfigOutputToInput(output *serving.AutoCaptureConfigOutput) *se
 		SchemaName:      output.SchemaName,
 		TableNamePrefix: output.TableNamePrefix,
 		Enabled:         output.Enabled,
-		ForceSendFields: filterFields[serving.AutoCaptureConfigInput](output.ForceSendFields),
+		ForceSendFields: utils.FilterFields[serving.AutoCaptureConfigInput](output.ForceSendFields),
 	}
 }
 
@@ -58,7 +59,7 @@ func servedEntitiesOutputToInput(output []serving.ServedEntityOutput) []serving.
 			ScaleToZeroEnabled:        entity.ScaleToZeroEnabled,
 			WorkloadSize:              entity.WorkloadSize,
 			WorkloadType:              entity.WorkloadType,
-			ForceSendFields:           filterFields[serving.ServedEntityInput](entity.ForceSendFields),
+			ForceSendFields:           utils.FilterFields[serving.ServedEntityInput](entity.ForceSendFields),
 		}
 	}
 
@@ -88,7 +89,7 @@ func (*ResourceModelServingEndpoint) RemapState(endpoint *serving.ServingEndpoin
 		Name:               endpoint.Name,
 		RouteOptimized:     endpoint.RouteOptimized,
 		Tags:               endpoint.Tags,
-		ForceSendFields:    filterFields[serving.CreateServingEndpoint](endpoint.ForceSendFields),
+		ForceSendFields:    utils.FilterFields[serving.CreateServingEndpoint](endpoint.ForceSendFields),
 	}
 }
 

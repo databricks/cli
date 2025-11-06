@@ -151,6 +151,7 @@ func newCreate() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid VOLUME_TYPE: %s", args[3])
 			}
+
 		}
 
 		response, err := w.Volumes.Create(ctx, createReq)
@@ -277,6 +278,11 @@ func newList() *cobra.Command {
   and the **USE_SCHEMA** privilege on the parent schema.
   
   There is no guarantee of a specific ordering of the elements in the array.
+  
+  PAGINATION BEHAVIOR: The API is by default paginated, a page may contain zero
+  results while still providing a next_page_token. Clients must continue reading
+  pages until next_page_token is absent, which is the only indication that the
+  end of results has been reached.
 
   Arguments:
     CATALOG_NAME: The identifier of the catalog

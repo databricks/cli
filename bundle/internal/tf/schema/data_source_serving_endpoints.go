@@ -202,6 +202,11 @@ type DataSourceServingEndpointsEndpoints struct {
 	UsagePolicyId        string                                         `json:"usage_policy_id,omitempty"`
 }
 
+type DataSourceServingEndpointsProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourceServingEndpoints struct {
-	Endpoints []DataSourceServingEndpointsEndpoints `json:"endpoints,omitempty"`
+	Endpoints      []DataSourceServingEndpointsEndpoints     `json:"endpoints,omitempty"`
+	ProviderConfig *DataSourceServingEndpointsProviderConfig `json:"provider_config,omitempty"`
 }

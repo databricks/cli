@@ -2,6 +2,10 @@
 
 package schema
 
+type DataSourceVolumeProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourceVolumeVolumeInfoEncryptionDetailsSseEncryptionDetails struct {
 	Algorithm    string `json:"algorithm,omitempty"`
 	AwsKmsKeyArn string `json:"aws_kms_key_arn,omitempty"`
@@ -32,7 +36,8 @@ type DataSourceVolumeVolumeInfo struct {
 }
 
 type DataSourceVolume struct {
-	Id         string                      `json:"id,omitempty"`
-	Name       string                      `json:"name"`
-	VolumeInfo *DataSourceVolumeVolumeInfo `json:"volume_info,omitempty"`
+	Id             string                          `json:"id,omitempty"`
+	Name           string                          `json:"name"`
+	ProviderConfig *DataSourceVolumeProviderConfig `json:"provider_config,omitempty"`
+	VolumeInfo     *DataSourceVolumeVolumeInfo     `json:"volume_info,omitempty"`
 }

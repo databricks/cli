@@ -16,5 +16,6 @@ type DataSourceTagPoliciesTagPolicies struct {
 }
 
 type DataSourceTagPolicies struct {
+	PageSize    int                                `json:"page_size,omitempty"`
 	TagPolicies []DataSourceTagPoliciesTagPolicies `json:"tag_policies,omitempty"`
 }
