@@ -153,8 +153,8 @@ func registerGracefulCleanup(ctx context.Context, b *bundle.Bundle) (context.Con
 	// Create a cancellable context to propagate cancellation to the main routine
 	ctx, cancel := context.WithCancel(ctx)
 
-	// Channel to signal that the main routine has completed
-	done := make(chan struct{})
+	// Channel to signal that the main + cleanup routine has completed
+	cleanupDone := make(chan struct{})
 
 	// Channel to signal that a signal was received and handled
 	signalReceived := make(chan struct{})
@@ -181,7 +181,7 @@ func registerGracefulCleanup(ctx context.Context, b *bundle.Bundle) (context.Con
 
 		// Wait for the main routine to complete before releasing the lock
 		// This ensures we don't exit while operations are still in progress
-		<-done
+		<-cleanupDone
 
 		// Release the lock using a context without cancellation to avoid cancellation issues
 		// We use context.WithoutCancel to preserve context values (like user agent)
@@ -216,7 +216,7 @@ func registerGracefulCleanup(ctx context.Context, b *bundle.Bundle) (context.Con
 		// Signal that the main routine has completed.
 		// Once the signal is recieved,
 		// This must be done AFTER all cleanup is complete
-		close(done)
+		close(cleanupDone)
 
 		// If a signal was received, wait indefinitely for the signal handler to exit
 		// This prevents the main function from returning and exiting with a different code
