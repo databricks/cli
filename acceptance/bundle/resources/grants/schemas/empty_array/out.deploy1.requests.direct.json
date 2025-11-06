@@ -1,0 +1,14 @@
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/permissions/schema/main.schema_grants_[UNIQUE_NAME]",
+  "body": {
+    "changes": [
+      {
+        "principal": "denis.bilenko@databricks.com",
+        "remove": [
+          "ALL_PRIVILEGES"
+        ]
+      }
+    ]
+  }
+}

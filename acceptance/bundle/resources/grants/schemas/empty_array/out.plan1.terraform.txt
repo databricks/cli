@@ -1,0 +1,18 @@
+Error: exit status 1
+
+Error: Missing required argument
+
+  with databricks_grants.schema_grants_schema,
+  on bundle.tf.json line 17, in resource.databricks_grants.schema_grants_schema:
+  17:         "grant": [
+  18:           {
+  19:             "principal": "denis.bilenko@databricks.com",
+  20:             "privileges": null
+  21:           }
+  22:         ]
+
+The argument "grant.0.privileges" is required, but no definition was found.
+
+
+
+Exit code: 1
