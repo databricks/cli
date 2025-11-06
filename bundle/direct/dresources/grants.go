@@ -178,9 +178,16 @@ func (r *ResourceGrants) applyGrants(ctx context.Context, state *GrantsState) er
 		return errors.New("internal error: grants full_name must be resolved before deployment")
 	}
 
-	changes := r.createIdempotentGrantChanges(state)
-	if len(changes) == 0 {
-		return nil
+	var changes []catalog.PermissionsChange
+
+	// For each principal in the config, add their grants and remove everything else
+	for _, grantAssignment := range state.Grants {
+		changes = append(changes, catalog.PermissionsChange{
+			Principal:       grantAssignment.Principal,
+			Add:             grantAssignment.Privileges,
+			Remove:          []catalog.Privilege{catalog.PrivilegeAllPrivileges},
+			ForceSendFields: nil,
+		})
 	}
 
 	_, err := r.client.Grants.Update(ctx, catalog.UpdatePermissions{
@@ -189,52 +196,6 @@ func (r *ResourceGrants) applyGrants(ctx context.Context, state *GrantsState) er
 		Changes:       changes,
 	})
 	return err
-}
-
-// getAllPossiblePrivileges returns all possible privileges for a given securable type
-func getAllPossiblePrivileges(securableType string) []catalog.Privilege {
-	switch securableType {
-	case "schema":
-		return []catalog.Privilege{
-			catalog.PrivilegeAllPrivileges,
-			catalog.PrivilegeApplyTag,
-			catalog.PrivilegeCreateFunction,
-			catalog.PrivilegeCreateTable,
-			catalog.PrivilegeCreateVolume,
-			catalog.PrivilegeExecute,
-			catalog.PrivilegeManage,
-			catalog.PrivilegeModify,
-			catalog.PrivilegeReadVolume,
-			catalog.PrivilegeRefresh,
-			catalog.PrivilegeSelect,
-			catalog.PrivilegeUseSchema,
-			catalog.PrivilegeWriteVolume,
-		}
-	// Add other resource types as needed
-	default:
-		return nil
-	}
-}
-
-// createIdempotentGrantChanges creates permission changes where ADD contains grants from config
-// and REMOVE contains all other privileges not in the config
-func (r *ResourceGrants) createIdempotentGrantChanges(state *GrantsState) []catalog.PermissionsChange {
-	var changes []catalog.PermissionsChange
-
-	// Group configured grants by principal
-	desiredPrivileges, principals := grantsToMap(state.Grants)
-
-	// For each principal in the config, add their grants and remove everything else
-	for i, principal := range principals {
-		changes = append(changes, catalog.PermissionsChange{
-			Principal:       principal,
-			Add:             desiredPrivileges[i],
-			Remove:          []catalog.Privilege{catalog.PrivilegeAllPrivileges},
-			ForceSendFields: nil,
-		})
-	}
-
-	return changes
 }
 
 func (r *ResourceGrants) listGrants(ctx context.Context, securableType, fullName string) ([]GrantAssignment, error) {
@@ -266,32 +227,9 @@ func (r *ResourceGrants) listGrants(ctx context.Context, securableType, fullName
 		if resp.NextPageToken == "" {
 			break
 		}
-		// XXX is it necessary?
 		pageToken = resp.NextPageToken
 	}
 	return assignments, nil
-}
-
-func grantsToMap(grants []GrantAssignment) ([][]catalog.Privilege, []string) {
-	// Internal map for quick principal to index lookup
-	principalToIndex := make(map[string]int)
-	var privileges [][]catalog.Privilege
-	var principals []string
-
-	for _, grant := range grants {
-		if idx, exists := principalToIndex[grant.Principal]; exists {
-			// Principal already exists, append privileges
-			privileges[idx] = append(privileges[idx], grant.Privileges...)
-		} else {
-			// New principal
-			principalToIndex[grant.Principal] = len(principals)
-			principals = append(principals, grant.Principal)
-			privileges = append(privileges, make([]catalog.Privilege, len(grant.Privileges)))
-			copy(privileges[len(privileges)-1], grant.Privileges)
-		}
-	}
-
-	return privileges, principals
 }
 
 func parseGrantsID(id string) (string, string, error) {
