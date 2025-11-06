@@ -1,0 +1,50 @@
+
+>>> [CLI] bundle debug plan
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] serving-endpoints get [ENDPOINT_ID]
+[
+  {
+    "key": "env",
+    "value": "test"
+  },
+  {
+    "key": "team",
+    "value": "ml"
+  }
+]
+
+>>> update_file.py databricks.yml value: test value: prod
+
+>>> [CLI] bundle debug plan
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Error: terraform apply: exit status 1
+
+Error: cannot update model serving: No stub found for pattern: PATCH /api/2.0/serving-endpoints/[ENDPOINT_ID]/tags
+
+  with databricks_model_serving.test_endpoint,
+  on bundle.tf.json line 42, in resource.databricks_model_serving.test_endpoint:
+  42:       }
+
+
+
+Updating deployment state...
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete model_serving_endpoint test_endpoint
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Deleting files...
+Destroy complete!
+
+Exit code: 1

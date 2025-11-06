@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/serving"
 )
@@ -141,4 +142,15 @@ func (r *ResourceModelServingEndpoint) WaitAfterUpdate(ctx context.Context, conf
 
 func (r *ResourceModelServingEndpoint) DoDelete(ctx context.Context, id string) error {
 	return r.client.ServingEndpoints.DeleteByName(ctx, id)
+}
+
+func (*ResourceModelServingEndpoint) FieldTriggers(_ bool) map[string]deployplan.ActionType {
+	// TF implementation: https://github.com/databricks/terraform-provider-databricks/blob/6c106e8e7052bb2726148d66309fd460ed444236/mlflow/resource_mlflow_experiment.go#L22
+	return map[string]deployplan.ActionType{
+		"name": deployplan.ActionTypeRecreate,
+		"config.auto_capture_config.catalog_name":      deployplan.ActionTypeRecreate,
+		"config.auto_capture_config.schema_name":       deployplan.ActionTypeRecreate,
+		"config.auto_capture_config.table_name_prefix": deployplan.ActionTypeRecreate,
+		"route_optimized":                              deployplan.ActionTypeRecreate,
+	}
 }

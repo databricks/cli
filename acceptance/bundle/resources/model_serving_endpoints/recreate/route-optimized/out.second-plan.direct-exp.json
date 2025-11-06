@@ -1,0 +1,35 @@
+{
+  "plan": {
+    "resources.model_serving_endpoints.test_endpoint": {
+      "action": "recreate",
+      "new_state": {
+        "config": {
+          "config": {
+            "served_entities": [
+              {
+                "external_model": {
+                  "name": "gpt-4o-mini",
+                  "openai_config": {
+                    "openai_api_key": "{{secrets/test-scope/openai-key}}"
+                  },
+                  "provider": "openai",
+                  "task": "llm/v1/chat"
+                },
+                "name": "prod"
+              }
+            ]
+          },
+          "name": "[ORIGINAL_ENDPOINT_ID]",
+          "route_optimized": true
+        }
+      },
+      "changes": {
+        "local": {
+          "route_optimized": {
+            "action": "recreate"
+          }
+        }
+      }
+    }
+  }
+}

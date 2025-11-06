@@ -1,4 +1,18 @@
 
+>>> [CLI] bundle debug plan
+{
+  "plan": {
+    "resources.model_serving_endpoints.my_endpoint": {
+      "action": "create",
+      "new_state": {
+        "config": {
+          "name": "[ENDPOINT_NAME_1]"
+        }
+      }
+    }
+  }
+}
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files...
 Deploying resources...
@@ -10,18 +24,60 @@ Deployment complete!
   "method": "POST",
   "path": "/api/2.0/serving-endpoints",
   "body": {
-    "name": "[ENDPOINT_ID]"
+    "name": "[ENDPOINT_NAME_1]"
   }
 }
 
->>> [CLI] serving-endpoints get [ENDPOINT_ID]
+>>> [CLI] serving-endpoints get [ENDPOINT_NAME_1]
 {
-  "creator":"[USERNAME]",
-  "id":"[UUID]",
-  "name":"[ENDPOINT_ID]",
-  "state": {
-    "config_update":"NOT_UPDATING"
+  "name": "[ENDPOINT_NAME_1]",
+  "creator": "[USERNAME]"
+}
+
+>>> [CLI] bundle debug plan
+{
+  "plan": {
+    "resources.model_serving_endpoints.my_endpoint": {
+      "action": "recreate",
+      "new_state": {
+        "config": {
+          "name": "[ENDPOINT_NAME_2]"
+        }
+      },
+      "changes": {
+        "local": {
+          "name": {
+            "action": "recreate"
+          }
+        }
+      }
+    }
   }
+}
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py //serving-endpoints
+{
+  "method": "DELETE",
+  "path": "/api/2.0/serving-endpoints/[ENDPOINT_NAME_1]"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/serving-endpoints",
+  "body": {
+    "name": "[ENDPOINT_NAME_2]"
+  }
+}
+
+>>> [CLI] serving-endpoints get [ENDPOINT_NAME_2]
+{
+  "name": "[ENDPOINT_NAME_2]",
+  "creator": "[USERNAME]"
 }
 
 >>> [CLI] bundle destroy --auto-approve

@@ -1,0 +1,17 @@
+export VERSION=$($CLI model-versions list system.ai.llama_v3_2_1b_instruct | jq '.[0].version')
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm out.requests.txt
+}
+trap cleanup EXIT
+
+trace $CLI bundle debug plan > out.plan.$DATABRICKS_BUNDLE_ENGINE.txt
+trace $CLI bundle deploy
+
+trace print_requests.py //serving-endpoints
+
+endpoint_name=$($CLI bundle summary -o json | jq -r '.resources.model_serving_endpoints.my_endpoint.name')
+trace $CLI serving-endpoints get $endpoint_name | jq '{name, creator}'

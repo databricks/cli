@@ -1,0 +1,25 @@
+#!/bin/bash
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+trace $CLI bundle debug plan > out.first-plan.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle deploy
+
+ENDPOINT_ID=$($CLI bundle summary -o json | jq -r '.resources.model_serving_endpoints.test_endpoint.id')
+echo "$ENDPOINT_ID:ORIGINAL_ENDPOINT_ID" >> ACC_REPLS
+trace $CLI serving-endpoints get "${ENDPOINT_ID}" | jq '.config.auto_capture_config.table_name_prefix'
+
+trace update_file.py databricks.yml "table_name_prefix: my_table" "table_name_prefix: other_table"
+trace $CLI bundle debug plan > out.second-plan.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle deploy
+
+trace print_requests.py //serving-endpoints
+
+NEW_ENDPOINT_ID=$($CLI bundle summary -o json | jq -r '.resources.model_serving_endpoints.test_endpoint.id')
+echo "$NEW_ENDPOINT_ID:NEW_ENDPOINT_ID" >> ACC_REPLS
+trace $CLI serving-endpoints get "${NEW_ENDPOINT_ID}" | jq '.config.auto_capture_config.table_name_prefix'

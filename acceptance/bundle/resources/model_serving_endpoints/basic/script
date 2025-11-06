@@ -1,15 +1,27 @@
+export ENDPOINT_NAME="test-endpoint-$UNIQUE_NAME-1"
+
 envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
     trace $CLI bundle destroy --auto-approve
+    rm out.requests.txt
 }
 trap cleanup EXIT
 
+trace $CLI bundle debug plan
 trace $CLI bundle deploy
 
 trace print_requests.py //serving-endpoints
 
-endpoint_name=$($CLI bundle summary -o json | jq -r '.resources.model_serving_endpoints.my_endpoint.name')
-echo "$endpoint_name:ENDPOINT_ID" >> ACC_REPLS
+echo "$ENDPOINT_NAME:ENDPOINT_NAME_1" >> ACC_REPLS
+trace $CLI serving-endpoints get $ENDPOINT_NAME | jq '{name, creator}'
 
-trace $CLI serving-endpoints get $endpoint_name
+export ENDPOINT_NAME="test-endpoint-$UNIQUE_NAME-2"
+envsubst < databricks.yml.tmpl > databricks.yml
+trace $CLI bundle debug plan
+trace $CLI bundle deploy
+
+trace print_requests.py //serving-endpoints
+
+echo "$ENDPOINT_NAME:ENDPOINT_NAME_2" >> ACC_REPLS
+trace $CLI serving-endpoints get $ENDPOINT_NAME | jq '{name, creator}'
