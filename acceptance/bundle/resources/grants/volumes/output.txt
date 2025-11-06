@@ -1,8 +1,6 @@
 
 >>> [CLI] bundle debug plan
 
->>> print_requests.py /permissions
-
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-grants-[UNIQUE_NAME]/default/files...
 Deploying resources...
@@ -25,8 +23,6 @@ Deployment complete!
 }
 
 >>> [CLI] bundle debug plan
-
->>> print_requests.py /permissions
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-grants-[UNIQUE_NAME]/default/files...
