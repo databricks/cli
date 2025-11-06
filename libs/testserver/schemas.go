@@ -27,6 +27,7 @@ func (s *FakeWorkspace) SchemasCreate(req Request) Response {
 	schema.CreatedAt = nowMilli()
 	schema.UpdatedAt = schema.CreatedAt
 	schema.CreatedBy = s.CurrentUser().UserName
+	schema.UpdatedBy = s.CurrentUser().UserName
 	schema.Owner = s.CurrentUser().UserName
 	s.Schemas[schema.FullName] = schema
 
@@ -63,6 +64,8 @@ func (s *FakeWorkspace) SchemasUpdate(req Request, name string) Response {
 	}
 
 	existing.UpdatedAt = nowMilli()
+	existing.UpdatedBy = s.CurrentUser().UserName
+
 	s.Schemas[name] = existing
 
 	return Response{

@@ -1,0 +1,18 @@
+bundle:
+  name: schema-grants-$UNIQUE_NAME
+
+resources:
+  schemas:
+    grants_schema:
+      catalog_name: main
+      name: schema_grants_$UNIQUE_NAME
+  volumes:
+    grants_volume:
+      catalog_name: main
+      schema_name: schema_grants_$UNIQUE_NAME
+      name: volume_name
+      grants:
+        - principal: denis.bilenko@databricks.com
+          privileges:
+            - READ_VOLUME
+            - WRITE_VOLUME

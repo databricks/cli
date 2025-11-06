@@ -1,0 +1,15 @@
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/permissions/volume/main.schema_grants_[UNIQUE_NAME].volume_name",
+  "body": {
+    "changes": [
+      {
+        "add": [
+          "READ_VOLUME",
+          "WRITE_VOLUME"
+        ],
+        "principal": "denis.bilenko@databricks.com"
+      }
+    ]
+  }
+}
