@@ -9,6 +9,33 @@
           "name": "[ENDPOINT_NAME_1]"
         }
       }
+    },
+    "resources.model_serving_endpoints.my_endpoint.permissions": {
+      "depends_on": [
+        {
+          "node": "resources.model_serving_endpoints.my_endpoint",
+          "label": "${resources.model_serving_endpoints.my_endpoint.endpoint_id}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "config": {
+          "object_id": "",
+          "permissions": [
+            {
+              "permission_level": "CAN_VIEW",
+              "user_name": "[TEST_USER_EMAIL]"
+            },
+            {
+              "permission_level": "CAN_MANAGE",
+              "user_name": "[USERNAME]"
+            }
+          ]
+        },
+        "vars": {
+          "object_id": "/serving-endpoints/${resources.model_serving_endpoints.my_endpoint.endpoint_id}"
+        }
+      }
     }
   }
 }
@@ -27,8 +54,24 @@ Deployment complete!
     "name": "[ENDPOINT_NAME_1]"
   }
 }
+{
+  "method": "PUT",
+  "path": "/api/2.0/permissions/serving-endpoints/[ENDPOINT_ID_1]",
+  "body": {
+    "access_control_list": [
+      {
+        "permission_level": "CAN_VIEW",
+        "user_name": "[TEST_USER_EMAIL]"
+      },
+      {
+        "permission_level": "CAN_MANAGE",
+        "user_name": "[USERNAME]"
+      }
+    ]
+  }
+}
 
->>> [CLI] serving-endpoints get [ENDPOINT_NAME_1]
+=== Print the GET endpoint details
 {
   "name": "[ENDPOINT_NAME_1]",
   "creator": "[USERNAME]"
@@ -48,6 +91,62 @@ Deployment complete!
         "local": {
           "name": {
             "action": "recreate"
+          }
+        }
+      }
+    },
+    "resources.model_serving_endpoints.my_endpoint.permissions": {
+      "depends_on": [
+        {
+          "node": "resources.model_serving_endpoints.my_endpoint",
+          "label": "${resources.model_serving_endpoints.my_endpoint.endpoint_id}"
+        }
+      ],
+      "action": "update",
+      "new_state": {
+        "config": {
+          "object_id": "",
+          "permissions": [
+            {
+              "permission_level": "CAN_VIEW",
+              "user_name": "[TEST_USER_EMAIL]"
+            },
+            {
+              "permission_level": "CAN_MANAGE",
+              "user_name": "[USERNAME]"
+            }
+          ]
+        },
+        "vars": {
+          "object_id": "/serving-endpoints/${resources.model_serving_endpoints.my_endpoint.endpoint_id}"
+        }
+      },
+      "remote_state": {
+        "object_id": "/serving-endpoints/[ENDPOINT_ID_1]",
+        "permissions": [
+          {
+            "permission_level": "CAN_VIEW",
+            "user_name": "[TEST_USER_EMAIL]"
+          },
+          {
+            "permission_level": "CAN_MANAGE",
+            "service_principal_name": "[USERNAME]"
+          }
+        ]
+      },
+      "changes": {
+        "local": {
+          "object_id": {
+            "action": "update"
+          }
+        },
+        "remote": {
+          "permissions[1].service_principal_name": {
+            "action": "skip",
+            "reason": "server_side_default"
+          },
+          "permissions[1].user_name": {
+            "action": "update"
           }
         }
       }
@@ -73,8 +172,24 @@ Deployment complete!
     "name": "[ENDPOINT_NAME_2]"
   }
 }
+{
+  "method": "PUT",
+  "path": "/api/2.0/permissions/serving-endpoints/[ENDPOINT_ID_2]",
+  "body": {
+    "access_control_list": [
+      {
+        "permission_level": "CAN_VIEW",
+        "user_name": "[TEST_USER_EMAIL]"
+      },
+      {
+        "permission_level": "CAN_MANAGE",
+        "user_name": "[USERNAME]"
+      }
+    ]
+  }
+}
 
->>> [CLI] serving-endpoints get [ENDPOINT_NAME_2]
+=== Print the GET endpoint details
 {
   "name": "[ENDPOINT_NAME_2]",
   "creator": "[USERNAME]"

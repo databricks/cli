@@ -1,5 +1,6 @@
 Local = true
 Cloud = true
+RecordRequests = true
 
 [EnvMatrix]
-  DATABRICKS_BUNDLE_ENGINE = ["direct-exp"]
+  DATABRICKS_BUNDLE_ENGINE = ["direct"]

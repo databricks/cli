@@ -77,24 +77,37 @@ func configOutputToInput(output *serving.EndpointCoreConfigOutput) *serving.Endp
 }
 
 // TODO: Remap served_models to served_entities.
-func (*ResourceModelServingEndpoint) RemapState(endpoint *serving.ServingEndpointDetailed) *serving.CreateServingEndpoint {
+func (*ResourceModelServingEndpoint) RemapState(state *RefreshOutput) *serving.CreateServingEndpoint {
+	details := state.EndpointDetails
 	// Map the remote state (ServingEndpointDetailed) to the local state (CreateServingEndpoint)
 	// for proper comparison during diff calculation
 	return &serving.CreateServingEndpoint{
-		AiGateway:          endpoint.AiGateway,
-		BudgetPolicyId:     endpoint.BudgetPolicyId,
-		Config:             configOutputToInput(endpoint.Config),
-		Description:        endpoint.Description,
-		EmailNotifications: endpoint.EmailNotifications,
-		Name:               endpoint.Name,
-		RouteOptimized:     endpoint.RouteOptimized,
-		Tags:               endpoint.Tags,
-		ForceSendFields:    utils.FilterFields[serving.CreateServingEndpoint](endpoint.ForceSendFields),
+		AiGateway:          details.AiGateway,
+		BudgetPolicyId:     details.BudgetPolicyId,
+		Config:             configOutputToInput(details.Config),
+		Description:        details.Description,
+		EmailNotifications: details.EmailNotifications,
+		Name:               details.Name,
+		RouteOptimized:     details.RouteOptimized,
+		Tags:               details.Tags,
+		ForceSendFields:    utils.FilterFields[serving.CreateServingEndpoint](details.ForceSendFields),
 	}
 }
 
-func (r *ResourceModelServingEndpoint) DoRefresh(ctx context.Context, id string) (*serving.ServingEndpointDetailed, error) {
-	return r.client.ServingEndpoints.GetByName(ctx, id)
+type RefreshOutput struct {
+	EndpointDetails *serving.ServingEndpointDetailed `json:"endpoint_details"`
+	EndpointId      string                           `json:"endpoint_id"`
+}
+
+func (r *ResourceModelServingEndpoint) DoRefresh(ctx context.Context, id string) (*RefreshOutput, error) {
+	endpoint, err := r.client.ServingEndpoints.GetByName(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return &RefreshOutput{
+		EndpointDetails: endpoint,
+		EndpointId:      endpoint.Id,
+	}, nil
 }
 
 func (r *ResourceModelServingEndpoint) DoCreate(ctx context.Context, config *serving.CreateServingEndpoint) (string, error) {
@@ -107,7 +120,7 @@ func (r *ResourceModelServingEndpoint) DoCreate(ctx context.Context, config *ser
 }
 
 // waitForEndpointReady waits for the serving endpoint to be ready (not updating)
-func (r *ResourceModelServingEndpoint) waitForEndpointReady(ctx context.Context, name string) (*serving.ServingEndpointDetailed, error) {
+func (r *ResourceModelServingEndpoint) waitForEndpointReady(ctx context.Context, name string) (*RefreshOutput, error) {
 	waiter := &serving.WaitGetServingEndpointNotUpdating[serving.ServingEndpointDetailed]{
 		Response: &serving.ServingEndpointDetailed{Name: name},
 		Name:     name,
@@ -117,10 +130,17 @@ func (r *ResourceModelServingEndpoint) waitForEndpointReady(ctx context.Context,
 	}
 
 	// Model serving endpoints can take a long time to spin up. We match the timeout from TF here (35 minutes).
-	return waiter.GetWithTimeout(35 * time.Minute)
+	details, err := waiter.GetWithTimeout(35 * time.Minute)
+	if err != nil {
+		return nil, err
+	}
+	return &RefreshOutput{
+		EndpointDetails: details,
+		EndpointId:      details.Id,
+	}, nil
 }
 
-func (r *ResourceModelServingEndpoint) WaitAfterCreate(ctx context.Context, config *serving.CreateServingEndpoint) (*serving.ServingEndpointDetailed, error) {
+func (r *ResourceModelServingEndpoint) WaitAfterCreate(ctx context.Context, config *serving.CreateServingEndpoint) (*RefreshOutput, error) {
 	return r.waitForEndpointReady(ctx, config.Name)
 }
 
@@ -137,7 +157,7 @@ func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, id string, 
 	return err
 }
 
-func (r *ResourceModelServingEndpoint) WaitAfterUpdate(ctx context.Context, config *serving.CreateServingEndpoint) (*serving.ServingEndpointDetailed, error) {
+func (r *ResourceModelServingEndpoint) WaitAfterUpdate(ctx context.Context, config *serving.CreateServingEndpoint) (*RefreshOutput, error) {
 	return r.waitForEndpointReady(ctx, config.Name)
 }
 
