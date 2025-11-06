@@ -7,6 +7,11 @@ Deployment in progress, sending interrupt signal...
 
 >>> wait [PID]
 Operation interrupted. Gracefully shutting down...
+Error: terraform apply: exit status 1
+
+Updating deployment state...
+Error: failed in rate limiter: context canceled
+
 
 Exit code: 130
 
@@ -35,6 +40,18 @@ Exit code: 130
     "name": "job1",
     "queue": {
       "enabled": true
+    }
+  }
+}
+
+>>> [CLI] bundle debug plan
+{
+  "plan": {
+    "resources.jobs.job1": {
+      "action": "create"
+    },
+    "resources.jobs.job2": {
+      "action": "create"
     }
   }
 }

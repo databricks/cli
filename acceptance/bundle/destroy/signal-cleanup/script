@@ -29,4 +29,6 @@ trace cat out.requests.txt | jq 'select(.method == "POST" and (.path | contains(
 title "A deletion request for job2 should be recorded in the requests file. No request for job1 should exist since the process was terminated mid destroy."
 trace cat out.requests.txt | jq 'select(.method == "POST" and (.path | contains("/api/2.2/jobs/delete")))'
 
+trace $CLI bundle debug plan
+
 rm out.requests.txt

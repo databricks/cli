@@ -123,6 +123,9 @@ type Bundle struct {
 	// Stores the locker responsible for acquiring/releasing a deployment lock.
 	Locker *locker.Locker
 
+	// LockReleaseOnce ensures the lock is only released once
+	LockReleaseOnce sync.Once
+
 	// TerraformPlanPath is the path to the plan from the terraform CLI
 	TerraformPlanPath string
 

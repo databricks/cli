@@ -44,15 +44,22 @@ func (m *release) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 		return nil
 	}
 
-	log.Infof(ctx, "Releasing deployment lock")
-	switch m.goal {
-	case GoalDeploy:
-		return diag.FromErr(b.Locker.Unlock(ctx))
-	case GoalBind, GoalUnbind:
-		return diag.FromErr(b.Locker.Unlock(ctx))
-	case GoalDestroy:
-		return diag.FromErr(b.Locker.Unlock(ctx, locker.AllowLockFileNotExist))
-	default:
-		return diag.Errorf("unknown goal for lock release: %s", m.goal)
-	}
+	// Make lock release idempotent using sync.Once to prevent race conditions
+	// This ensures the lock is only released once even if called multiple times
+	var diags diag.Diagnostics
+	b.LockReleaseOnce.Do(func() {
+		log.Infof(ctx, "Releasing deployment lock")
+		switch m.goal {
+		case GoalDeploy:
+			diags = diag.FromErr(b.Locker.Unlock(ctx))
+		case GoalBind, GoalUnbind:
+			diags = diag.FromErr(b.Locker.Unlock(ctx))
+		case GoalDestroy:
+			diags = diag.FromErr(b.Locker.Unlock(ctx, locker.AllowLockFileNotExist))
+		default:
+			diags = diag.Errorf("unknown goal for lock release: %s", m.goal)
+		}
+	})
+
+	return diags
 }

@@ -2,6 +2,9 @@ Local = true
 Cloud = false
 RecordRequests = true
 
+# Test only terraform engine (signal handling is the same for direct)
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform"]
+
 # Add delay to first job creation to ensure we can interrupt during deployment
 [[Server]]
 Pattern = "POST /api/2.2/jobs/create"

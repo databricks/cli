@@ -130,7 +130,8 @@ func Destroy(ctx context.Context, b *bundle.Bundle, directDeployment bool) {
 	}
 
 	// lock is acquired here - set up signal handlers and defer cleanup
-	defer registerGracefulCleanup(ctx, b, lock.GoalDestroy)()
+	ctx, cleanup := registerGracefulCleanup(ctx, b, lock.GoalDestroy)
+	defer cleanup()
 
 	if !directDeployment {
 		bundle.ApplySeqContext(ctx, b,
