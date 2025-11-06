@@ -13,3 +13,7 @@ Response.Body = '''
   ]
 }
 '''
+
+[[Repls]]
+Old = '"entity_version": "1",'
+New = '"entity_version": "[VERSION]",'
