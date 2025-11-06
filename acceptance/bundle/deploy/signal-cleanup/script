@@ -21,8 +21,11 @@ trace kill -INT $DEPLOY_PID
 # Wait for process to complete
 errcode trace wait $DEPLOY_PID
 
-# A deletion request for deploy.lock should have been recorded in the requests file
+title "A deletion request for deploy.lock should have been recorded in the requests file"
 trace cat out.requests.txt | jq 'select(.method == "POST" and (.path | contains("workspace/delete")) and (.body.path | contains("deploy.lock")))'
+
+title "An upload request for the state file should have been recorded in the requests file"
+trace cat out.requests.txt | jq 'select(.method == "POST" and (.path | contains("workspace-files/import-file")) and (.path | contains("terraform.tfstate")))'
 
 title "A creation request for job1 should be recorded in the requests file. No request for job2 should exist since the process was terminated mid deployment."
 trace cat out.requests.txt | jq 'select(.method == "POST" and (.path | contains("/api/2.2/jobs/create")))'

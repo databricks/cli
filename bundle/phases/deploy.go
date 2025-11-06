@@ -107,7 +107,10 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, di
 	}
 
 	// Even if deployment failed, there might be updates in states that we need to upload
-	bundle.ApplyContext(ctx, b,
+	// Use context.WithoutCancel to ensure state push completes even if context was cancelled
+	// (e.g., due to signal interruption). We want to save the current state before exiting.
+	statePushCtx := context.WithoutCancel(ctx)
+	bundle.ApplyContext(statePushCtx, b,
 		statemgmt.StatePush(directDeployment),
 	)
 	if logdiag.HasError(ctx) {

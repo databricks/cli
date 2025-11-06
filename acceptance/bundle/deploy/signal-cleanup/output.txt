@@ -10,17 +10,43 @@ Operation interrupted. Gracefully shutting down...
 Error: terraform apply: exit status 1
 
 Updating deployment state...
-Error: failed in rate limiter: context canceled
-
 
 Exit code: 130
 
+=== A deletion request for deploy.lock should have been recorded in the requests file
 >>> cat out.requests.txt
 {
   "method": "POST",
   "path": "/api/2.0/workspace/delete",
   "body": {
     "path": "/Workspace/Users/[USERNAME]/.bundle/signal-test/default/state/deploy.lock"
+  }
+}
+
+=== An upload request for the state file should have been recorded in the requests file
+>>> cat out.requests.txt
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/signal-test/default/state/terraform.tfstate",
+  "q": {
+    "overwrite": "true"
+  },
+  "body": {
+    "version": 4,
+    "terraform_version": "1.5.5",
+    "serial": 1,
+    "lineage": "[UUID]",
+    "outputs": {},
+    "resources": [
+      {
+        "mode": "managed",
+        "type": "databricks_job",
+        "name": "job2",
+        "provider": "provider[\"registry.terraform.io/databricks/databricks\"]",
+        "instances": []
+      }
+    ],
+    "check_results": null
   }
 }
 
