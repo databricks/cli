@@ -2,6 +2,7 @@
 
 # First deploy the bundle so we have something to destroy
 $CLI bundle deploy --auto-approve
+rm out.requests.txt
 
 # Start destroy in background, redirecting stderr to capture when destroy starts
 $CLI bundle destroy --auto-approve 2>&1 &
@@ -23,12 +24,11 @@ trace kill -INT $DESTROY_PID
 # Wait for process to complete
 errcode trace wait $DESTROY_PID
 
-# A deletion request for destroy.lock should have been recorded in the requests file
-trace cat out.requests.txt | jq 'select(.method == "POST" and (.path | contains("workspace/delete")) and (.body.path | contains("destroy.lock")))'
+title "A deletion request for deploy.lock should have been recorded in the requests file"
+trace cat out.requests.txt | jq 'select(.method == "POST" and (.path | contains("workspace/delete")) and (.body.path | contains("deploy.lock")))'
 
-title "A deletion request for job2 should be recorded in the requests file. No request for job1 should exist since the process was terminated mid destroy."
-trace cat out.requests.txt | jq 'select(.method == "POST" and (.path | contains("/api/2.2/jobs/delete")))'
+title "No deletion request for resources.json should be recorded. We still need state to complete the destroy."
+trace cat out.requests.txt | jq 'select(.method == "POST" and (.path | contains("workspace/delete")) and (.body.path | contains("resources.json")))'
 
 trace $CLI bundle debug plan
-
 rm out.requests.txt

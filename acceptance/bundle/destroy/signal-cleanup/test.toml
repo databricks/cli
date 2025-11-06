@@ -2,8 +2,8 @@ Local = true
 Cloud = false
 RecordRequests = true
 
-# Test only terraform engine (signal handling is the same for direct)
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform"]
+# Test only direct engine (signal handling is the same for terraform)
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
 # Add delay to first job deletion to ensure we can interrupt during destroy
 [[Server]]

@@ -5,7 +5,6 @@ Deployment complete!
 
 === Wait until the destroy has started.The following resources will be deleted:
   delete job job1
-  delete job job2
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/signal-test/default
 
@@ -15,31 +14,46 @@ Destroy in progress, sending interrupt signal...
 
 >>> wait [PID]
 Operation interrupted. Gracefully shutting down...
-Error: terraform apply: exit status 1
+Error: cannot delete resources.jobs.job1: deleting id=[NUMID]: Post "[DATABRICKS_URL]/api/2.2/jobs/delete": context canceled
 
 
 Exit code: 130
 
->>> cat out.requests.txt
-
-=== A deletion request for job2 should be recorded in the requests file. No request for job1 should exist since the process was terminated mid destroy.
+=== A deletion request for deploy.lock should have been recorded in the requests file
 >>> cat out.requests.txt
 {
   "method": "POST",
-  "path": "/api/2.2/jobs/delete",
+  "path": "/api/2.0/workspace/delete",
   "body": {
-    "job_id": [NUMID]
+    "path": "/Workspace/Users/[USERNAME]/.bundle/signal-test/default/state/deploy.lock"
   }
 }
+
+=== No deletion request for resources.json should be recorded. We still need state to complete the destroy.
+>>> cat out.requests.txt
 
 >>> [CLI] bundle debug plan
 {
   "plan": {
     "resources.jobs.job1": {
-      "action": "skip"
-    },
-    "resources.jobs.job2": {
-      "action": "skip"
+      "action": "skip",
+      "remote_state": {
+        "creator_user_name": "[USERNAME]",
+        "job_id": [NUMID],
+        "settings": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/signal-test/default/state/metadata.json"
+          },
+          "edit_mode": "UI_LOCKED",
+          "format": "MULTI_TASK",
+          "max_concurrent_runs": 1,
+          "name": "job1",
+          "queue": {
+            "enabled": true
+          }
+        }
+      }
     }
   }
 }
