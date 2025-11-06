@@ -28,7 +28,7 @@
             },
             {
               "permission_level": "CAN_MANAGE",
-              "user_name": "[USERNAME]"
+              "service_principal_name": "[USERNAME]"
             }
           ]
         },
@@ -65,7 +65,7 @@ Deployment complete!
       },
       {
         "permission_level": "CAN_MANAGE",
-        "user_name": "[USERNAME]"
+        "service_principal_name": "[USERNAME]"
       }
     ]
   }
@@ -113,7 +113,7 @@ Deployment complete!
             },
             {
               "permission_level": "CAN_MANAGE",
-              "user_name": "[USERNAME]"
+              "service_principal_name": "[USERNAME]"
             }
           ]
         },
@@ -137,15 +137,6 @@ Deployment complete!
       "changes": {
         "local": {
           "object_id": {
-            "action": "update"
-          }
-        },
-        "remote": {
-          "permissions[1].service_principal_name": {
-            "action": "skip",
-            "reason": "server_side_default"
-          },
-          "permissions[1].user_name": {
             "action": "update"
           }
         }
@@ -183,7 +174,7 @@ Deployment complete!
       },
       {
         "permission_level": "CAN_MANAGE",
-        "user_name": "[USERNAME]"
+        "service_principal_name": "[USERNAME]"
       }
     ]
   }
