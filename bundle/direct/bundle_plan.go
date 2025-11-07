@@ -481,6 +481,13 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 			}
 			inputConfig = inputConfigStructVar.Config
 			baseRefs = inputConfigStructVar.Refs
+		} else if strings.HasSuffix(node, ".grants") {
+			inputConfigStructVar, err := dresources.PrepareGrantsInputConfig(inputConfig, node)
+			if err != nil {
+				return nil, err
+			}
+			inputConfig = inputConfigStructVar.Config
+			baseRefs = inputConfigStructVar.Refs
 		}
 
 		newStateConfig, err := adapter.PrepareState(inputConfig)

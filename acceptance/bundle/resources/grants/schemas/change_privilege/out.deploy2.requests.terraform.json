@@ -1,0 +1,17 @@
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/permissions/schema/main.schema_grants_[UNIQUE_NAME]",
+  "body": {
+    "changes": [
+      {
+        "add": [
+          "APPLY_TAG"
+        ],
+        "principal": "deco-test-user@databricks.com",
+        "remove": [
+          "USE_SCHEMA"
+        ]
+      }
+    ]
+  }
+}

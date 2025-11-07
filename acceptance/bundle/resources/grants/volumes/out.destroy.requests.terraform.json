@@ -1,0 +1,15 @@
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/permissions/volume/main.schema_grants_[UNIQUE_NAME].volume_name",
+  "body": {
+    "changes": [
+      {
+        "principal": "deco-test-user@databricks.com",
+        "remove": [
+          "READ_VOLUME",
+          "MANAGE"
+        ]
+      }
+    ]
+  }
+}
