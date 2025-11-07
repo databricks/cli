@@ -31,7 +31,7 @@
           "full_name": "",
           "grants": [
             {
-              "principal": "denis.bilenko@databricks.com",
+              "principal": "deco-test-user@databricks.com",
               "privileges": [
                 "APPLY_TAG"
               ]

@@ -15,5 +15,5 @@ resources:
       #schema_name: myschema_$UNIQUE_NAME
       schema_name: ${resources.schemas.my_schema.name}
       grants:
-        - principal: denis.bilenko@databricks.com
+        - principal: deco-test-user@databricks.com
           privileges: ["APPLY_TAG"]

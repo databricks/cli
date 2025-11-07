@@ -7,7 +7,7 @@
         "add": [
           "APPLY_TAG"
         ],
-        "principal": "denis.bilenko@databricks.com",
+        "principal": "deco-test-user@databricks.com",
         "remove": [
           "ALL_PRIVILEGES"
         ]

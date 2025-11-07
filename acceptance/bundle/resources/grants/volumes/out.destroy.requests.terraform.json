@@ -4,7 +4,7 @@
   "body": {
     "changes": [
       {
-        "principal": "denis.bilenko@databricks.com",
+        "principal": "deco-test-user@databricks.com",
         "remove": [
           "READ_VOLUME",
           "MANAGE"

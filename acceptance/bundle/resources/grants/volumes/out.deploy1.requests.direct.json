@@ -8,7 +8,7 @@
           "READ_VOLUME",
           "WRITE_VOLUME"
         ],
-        "principal": "denis.bilenko@databricks.com",
+        "principal": "deco-test-user@databricks.com",
         "remove": [
           "ALL_PRIVILEGES"
         ]

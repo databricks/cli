@@ -40,7 +40,7 @@
           "full_name": "",
           "grants": [
             {
-              "principal": "denis.bilenko@databricks.com",
+              "principal": "deco-test-user@databricks.com",
               "privileges": [
                 "READ_VOLUME",
                 "WRITE_VOLUME"

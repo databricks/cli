@@ -4,7 +4,7 @@
   "body": {
     "changes": [
       {
-        "principal": "denis.bilenko@databricks.com",
+        "principal": "deco-test-user@databricks.com",
         "remove": [
           "CREATE_TABLE",
           "APPLY_TAG"

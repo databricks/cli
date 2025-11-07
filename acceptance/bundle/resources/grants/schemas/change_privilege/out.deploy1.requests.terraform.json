@@ -8,7 +8,7 @@
           "CREATE_TABLE",
           "USE_SCHEMA"
         ],
-        "principal": "denis.bilenko@databricks.com"
+        "principal": "deco-test-user@databricks.com"
       }
     ]
   }
