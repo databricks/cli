@@ -7,7 +7,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests.py /permissions
+>>> print_requests.py //permissions
 
 >>> [CLI] grants get volume main.schema_grants_[UNIQUE_NAME].volume_name
 {
@@ -30,7 +30,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests.py /permissions
+>>> print_requests.py //permissions
 
 >>> [CLI] grants get volume main.schema_grants_[UNIQUE_NAME].volume_name
 {
@@ -64,4 +64,4 @@ All files and directories at the following location will be deleted: /Workspace/
 Deleting files...
 Destroy complete!
 
->>> print_requests.py /permissions
+>>> print_requests.py //permissions

@@ -1,2 +1,3 @@
+RequiresUnityCatalog = true
 RecordRequests = true
 Ignore = ['.databricks']

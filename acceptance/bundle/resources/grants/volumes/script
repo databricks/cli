@@ -2,7 +2,7 @@ envsubst < databricks.yml.tmpl > databricks.yml
 
 trace $CLI bundle debug plan > out.plan1.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
-trace print_requests.py /permissions > out.deploy1.requests.$DATABRICKS_BUNDLE_ENGINE.json
+trace print_requests.py //permissions > out.deploy1.requests.$DATABRICKS_BUNDLE_ENGINE.json
 
 # Since we're sending different requests between terraform and direct, assert that the end result is the same:
 trace $CLI grants get volume main.schema_grants_$UNIQUE_NAME.volume_name | jq --sort-keys
@@ -13,9 +13,9 @@ update_file.py databricks.yml WRITE_VOLUME MANAGE
 trace $CLI bundle debug plan > out.plan2.$DATABRICKS_BUNDLE_ENGINE.json
 jq 'walk(if type == "object" then del(.effective_predictive_optimization_flag, .enable_predictive_optimization, .metastore_id, .schema_id, .updated_at, .updated_by, .volume_id) else . end)' out.plan2.$DATABRICKS_BUNDLE_ENGINE.json > tmp.json && mv tmp.json out.plan2.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
-trace print_requests.py /permissions > out.deploy2.requests.$DATABRICKS_BUNDLE_ENGINE.json
+trace print_requests.py //permissions > out.deploy2.requests.$DATABRICKS_BUNDLE_ENGINE.json
 
 trace $CLI grants get volume main.schema_grants_$UNIQUE_NAME.volume_name | jq --sort-keys
 
 trace $CLI bundle destroy --auto-approve
-trace print_requests.py /permissions > out.destroy.requests.$DATABRICKS_BUNDLE_ENGINE.json
+trace print_requests.py //permissions > out.destroy.requests.$DATABRICKS_BUNDLE_ENGINE.json

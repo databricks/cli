@@ -1,7 +1,7 @@
 
 >>> [CLI] bundle debug plan
 
->>> print_requests.py --get /permissions
+>>> print_requests.py --get //permissions
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-grants-[UNIQUE_NAME]/default/files...
@@ -9,7 +9,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests.py /permissions
+>>> print_requests.py //permissions
 
 >>> [CLI] grants get schema main.schema_grants_[UNIQUE_NAME]
 {
@@ -26,7 +26,7 @@ Deployment complete!
 
 >>> [CLI] bundle debug plan
 
->>> print_requests.py --get /permissions
+>>> print_requests.py --get //permissions
 {
   "method": "GET",
   "path": "/api/2.1/unity-catalog/permissions/schema/main.schema_grants_[UNIQUE_NAME]"
@@ -42,7 +42,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests.py /permissions
+>>> print_requests.py //permissions
 
 >>> [CLI] grants get schema main.schema_grants_[UNIQUE_NAME]
 {
@@ -69,4 +69,4 @@ All files and directories at the following location will be deleted: /Workspace/
 Deleting files...
 Destroy complete!
 
->>> print_requests.py /permissions
+>>> print_requests.py //permissions
