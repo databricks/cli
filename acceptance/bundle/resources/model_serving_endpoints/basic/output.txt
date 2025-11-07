@@ -1,44 +1,5 @@
 
 >>> [CLI] bundle debug plan
-{
-  "plan": {
-    "resources.model_serving_endpoints.my_endpoint": {
-      "action": "create",
-      "new_state": {
-        "config": {
-          "name": "[ENDPOINT_NAME_1]"
-        }
-      }
-    },
-    "resources.model_serving_endpoints.my_endpoint.permissions": {
-      "depends_on": [
-        {
-          "node": "resources.model_serving_endpoints.my_endpoint",
-          "label": "${resources.model_serving_endpoints.my_endpoint.endpoint_id}"
-        }
-      ],
-      "action": "create",
-      "new_state": {
-        "config": {
-          "object_id": "",
-          "permissions": [
-            {
-              "permission_level": "CAN_VIEW",
-              "user_name": "[TEST_USER_EMAIL]"
-            },
-            {
-              "permission_level": "CAN_MANAGE",
-              "service_principal_name": "[USERNAME]"
-            }
-          ]
-        },
-        "vars": {
-          "object_id": "/serving-endpoints/${resources.model_serving_endpoints.my_endpoint.endpoint_id}"
-        }
-      }
-    }
-  }
-}
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files...
@@ -48,15 +9,13 @@ Deployment complete!
 
 >>> print_requests.py //serving-endpoints
 {
-  "method": "POST",
-  "path": "/api/2.0/serving-endpoints",
   "body": {
     "name": "[ENDPOINT_NAME_1]"
-  }
+  },
+  "method": "POST",
+  "path": "/api/2.0/serving-endpoints"
 }
 {
-  "method": "PUT",
-  "path": "/api/2.0/permissions/serving-endpoints/[ENDPOINT_ID_1]",
   "body": {
     "access_control_list": [
       {
@@ -68,7 +27,9 @@ Deployment complete!
         "service_principal_name": "[USERNAME]"
       }
     ]
-  }
+  },
+  "method": "PUT",
+  "path": "/api/2.0/permissions/serving-endpoints/[ENDPOINT_ID_1]"
 }
 
 === Print the GET endpoint details
@@ -78,72 +39,6 @@ Deployment complete!
 }
 
 >>> [CLI] bundle debug plan
-{
-  "plan": {
-    "resources.model_serving_endpoints.my_endpoint": {
-      "action": "recreate",
-      "new_state": {
-        "config": {
-          "name": "[ENDPOINT_NAME_2]"
-        }
-      },
-      "changes": {
-        "local": {
-          "name": {
-            "action": "recreate"
-          }
-        }
-      }
-    },
-    "resources.model_serving_endpoints.my_endpoint.permissions": {
-      "depends_on": [
-        {
-          "node": "resources.model_serving_endpoints.my_endpoint",
-          "label": "${resources.model_serving_endpoints.my_endpoint.endpoint_id}"
-        }
-      ],
-      "action": "update",
-      "new_state": {
-        "config": {
-          "object_id": "",
-          "permissions": [
-            {
-              "permission_level": "CAN_VIEW",
-              "user_name": "[TEST_USER_EMAIL]"
-            },
-            {
-              "permission_level": "CAN_MANAGE",
-              "service_principal_name": "[USERNAME]"
-            }
-          ]
-        },
-        "vars": {
-          "object_id": "/serving-endpoints/${resources.model_serving_endpoints.my_endpoint.endpoint_id}"
-        }
-      },
-      "remote_state": {
-        "object_id": "/serving-endpoints/[ENDPOINT_ID_1]",
-        "permissions": [
-          {
-            "permission_level": "CAN_VIEW",
-            "user_name": "[TEST_USER_EMAIL]"
-          },
-          {
-            "permission_level": "CAN_MANAGE",
-            "service_principal_name": "[USERNAME]"
-          }
-        ]
-      },
-      "changes": {
-        "local": {
-          "object_id": {
-            "action": "update"
-          }
-        }
-      }
-    }
-  }
-}
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files...
@@ -157,15 +52,13 @@ Deployment complete!
   "path": "/api/2.0/serving-endpoints/[ENDPOINT_NAME_1]"
 }
 {
-  "method": "POST",
-  "path": "/api/2.0/serving-endpoints",
   "body": {
     "name": "[ENDPOINT_NAME_2]"
-  }
+  },
+  "method": "POST",
+  "path": "/api/2.0/serving-endpoints"
 }
 {
-  "method": "PUT",
-  "path": "/api/2.0/permissions/serving-endpoints/[ENDPOINT_ID_2]",
   "body": {
     "access_control_list": [
       {
@@ -177,7 +70,9 @@ Deployment complete!
         "service_principal_name": "[USERNAME]"
       }
     ]
-  }
+  },
+  "method": "PUT",
+  "path": "/api/2.0/permissions/serving-endpoints/[ENDPOINT_ID_2]"
 }
 
 === Print the GET endpoint details
