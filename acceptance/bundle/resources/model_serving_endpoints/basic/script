@@ -1,11 +1,5 @@
 export ENDPOINT_NAME="test-endpoint-$UNIQUE_NAME-1"
 
-if [ -z "$CLOUD_ENV" ]; then
-    export TEST_USER_EMAIL="viewer@databricks.com"
-fi
-
-echo "$TEST_USER_EMAIL:TEST_USER_EMAIL" >> ACC_REPLS
-
 envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
@@ -16,7 +10,7 @@ trap cleanup EXIT
 
 trace $CLI bundle debug plan > out.first-plan.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
-trace print_requests.py //serving-endpoints | jq --sort-keys
+trace print_requests.py //serving-endpoints | jq --sort-keys > out.first-requests.$DATABRICKS_BUNDLE_ENGINE.json
 
 echo "$ENDPOINT_NAME:ENDPOINT_NAME_1" >> ACC_REPLS
 
@@ -32,7 +26,7 @@ export ENDPOINT_NAME="test-endpoint-$UNIQUE_NAME-2"
 envsubst < databricks.yml.tmpl > databricks.yml
 trace $CLI bundle debug plan > out.second-plan.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
-trace print_requests.py //serving-endpoints | jq --sort-keys
+trace print_requests.py //serving-endpoints | jq --sort-keys > out.second-requests.$DATABRICKS_BUNDLE_ENGINE.json
 
 echo "$ENDPOINT_NAME:ENDPOINT_NAME_2" >> ACC_REPLS
 

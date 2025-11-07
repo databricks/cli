@@ -1,6 +1,6 @@
-Local = true
+Local = false
 Cloud = true
 RecordRequests = true
 
 [EnvMatrix]
-  DATABRICKS_BUNDLE_ENGINE = ["direct"]
+  DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
