@@ -2,6 +2,7 @@ package dresources
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -9,6 +10,7 @@ import (
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/serving"
+	"golang.org/x/sync/errgroup"
 )
 
 type ResourceModelServingEndpoint struct {
@@ -144,17 +146,122 @@ func (r *ResourceModelServingEndpoint) WaitAfterCreate(ctx context.Context, conf
 	return r.waitForEndpointReady(ctx, config.Name)
 }
 
-func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, id string, config *serving.CreateServingEndpoint) error {
-	if config.Config == nil {
-		return nil
+func (r *ResourceModelServingEndpoint) updateAiGateway(ctx context.Context, id string, aiGateway *serving.AiGatewayConfig) error {
+	if aiGateway == nil {
+		req := serving.PutAiGatewayRequest{
+			Name: id,
+		}
+		_, err := r.client.ServingEndpoints.PutAiGateway(ctx, req)
+		return err
 	}
 
-	// UpdateConfig expects an EndpointCoreConfigInput with the Name field set
-	updateConfig := *config.Config
-	updateConfig.Name = id
+	req := serving.PutAiGatewayRequest{
+		Name:                 id,
+		FallbackConfig:       aiGateway.FallbackConfig,
+		Guardrails:           aiGateway.Guardrails,
+		InferenceTableConfig: aiGateway.InferenceTableConfig,
+		RateLimits:           aiGateway.RateLimits,
+		UsageTrackingConfig:  aiGateway.UsageTrackingConfig,
+	}
+	_, err := r.client.ServingEndpoints.PutAiGateway(ctx, req)
+	return fmt.Errorf("failed to update AI gateway: %w", err)
+}
 
-	_, err := r.client.ServingEndpoints.UpdateConfig(ctx, updateConfig)
-	return err
+// TODO: does unsetting config work properly?
+func (r *ResourceModelServingEndpoint) updateConfig(ctx context.Context, id string, config *serving.EndpointCoreConfigInput) error {
+	if config == nil {
+		// Unset config in resource.
+		req := serving.EndpointCoreConfigInput{Name: id}
+		_, err := r.client.ServingEndpoints.UpdateConfig(ctx, req)
+		return err
+	}
+	req := serving.EndpointCoreConfigInput{
+		Name:              id,
+		AutoCaptureConfig: config.AutoCaptureConfig,
+		ServedEntities:    config.ServedEntities,
+		TrafficConfig:     config.TrafficConfig,
+		ServedModels:      config.ServedModels,
+	}
+	_, err := r.client.ServingEndpoints.UpdateConfig(ctx, req)
+	return fmt.Errorf("failed to update config: %w", err)
+}
+
+func (r *ResourceModelServingEndpoint) updateNotifications(ctx context.Context, id string, notifications *serving.EmailNotifications) error {
+	req := serving.UpdateInferenceEndpointNotifications{
+		Name:               id,
+		EmailNotifications: notifications,
+	}
+	_, err := r.client.ServingEndpoints.UpdateNotifications(ctx, req)
+	return fmt.Errorf("failed to update notifications: %w", err)
+}
+
+func diffTags(currentTags []serving.EndpointTag, desiredTags []serving.EndpointTag) (addTags []serving.EndpointTag, deleteTags []string) {
+	addTags = make([]serving.EndpointTag, 0)
+
+	// build maps for easy lookup.
+	currentTagsMap := make(map[string]string)
+	desiredTagsMap := make(map[string]string)
+	for _, tag := range currentTags {
+		currentTagsMap[tag.Key] = tag.Value
+	}
+	for _, tag := range desiredTags {
+		desiredTagsMap[tag.Key] = tag.Value
+	}
+
+	// Compute keys to be added.
+	for key, desiredValue := range desiredTagsMap {
+		v, ok := currentTagsMap[key]
+		if !ok {
+			addTags = append(addTags, serving.EndpointTag{Key: key, Value: desiredValue})
+			continue
+		}
+		if v != desiredValue {
+			addTags = append(addTags, serving.EndpointTag{Key: key, Value: desiredValue})
+		}
+	}
+
+	// Compute keys to be deleted.
+	for key := range currentTagsMap {
+		if _, ok := desiredTagsMap[key]; !ok {
+			deleteTags = append(deleteTags, key)
+		}
+	}
+
+	return addTags, deleteTags
+}
+
+func (r *ResourceModelServingEndpoint) updateTags(ctx context.Context, id string, tags []serving.EndpointTag) error {
+	endpoint, err := r.client.ServingEndpoints.GetByName(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	addTags, deleteTags := diffTags(endpoint.Tags, tags)
+
+	req := serving.PatchServingEndpointTags{
+		Name:       id,
+		AddTags:    addTags,
+		DeleteTags: deleteTags,
+	}
+	_, err = r.client.ServingEndpoints.Patch(ctx, req)
+	return fmt.Errorf("failed to update tags: %w", err)
+}
+
+func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, id string, config *serving.CreateServingEndpoint) error {
+	errGroup := errgroup.Group{}
+	errGroup.Go(func() error {
+		return r.updateAiGateway(ctx, id, config.AiGateway)
+	})
+	errGroup.Go(func() error {
+		return r.updateConfig(ctx, id, config.Config)
+	})
+	errGroup.Go(func() error {
+		return r.updateNotifications(ctx, id, config.EmailNotifications)
+	})
+	errGroup.Go(func() error {
+		return r.updateTags(ctx, id, config.Tags)
+	})
+	return errGroup.Wait()
 }
 
 func (r *ResourceModelServingEndpoint) WaitAfterUpdate(ctx context.Context, config *serving.CreateServingEndpoint) (*RefreshOutput, error) {
