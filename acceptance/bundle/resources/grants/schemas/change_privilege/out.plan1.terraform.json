@@ -1,0 +1,7 @@
+{
+  "plan": {
+    "resources.schemas.grants_schema": {
+      "action": "create"
+    }
+  }
+}

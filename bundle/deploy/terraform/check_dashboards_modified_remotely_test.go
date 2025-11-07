@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/diag"
@@ -52,13 +53,13 @@ func TestCheckDashboardsModifiedRemotely_NoDashboards(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(context.Background(), b, CheckDashboardsModifiedRemotely(false, false))
+	diags := bundle.Apply(context.Background(), b, CheckDashboardsModifiedRemotely(false, engine.EngineTerraform))
 	assert.Empty(t, diags)
 }
 
 func TestCheckDashboardsModifiedRemotely_FirstDeployment(t *testing.T) {
 	b := mockDashboardBundle(t)
-	diags := bundle.Apply(context.Background(), b, CheckDashboardsModifiedRemotely(false, false))
+	diags := bundle.Apply(context.Background(), b, CheckDashboardsModifiedRemotely(false, engine.EngineTerraform))
 	assert.Empty(t, diags)
 }
 
@@ -81,7 +82,7 @@ func TestCheckDashboardsModifiedRemotely_ExistingStateNoChange(t *testing.T) {
 	b.SetWorkpaceClient(m.WorkspaceClient)
 
 	// No changes, so no diags.
-	diags := bundle.Apply(ctx, b, CheckDashboardsModifiedRemotely(false, false))
+	diags := bundle.Apply(ctx, b, CheckDashboardsModifiedRemotely(false, engine.EngineTerraform))
 	assert.Empty(t, diags)
 }
 
@@ -104,7 +105,7 @@ func TestCheckDashboardsModifiedRemotely_ExistingStateChange(t *testing.T) {
 	b.SetWorkpaceClient(m.WorkspaceClient)
 
 	// The dashboard has changed, so expect an error.
-	diags := bundle.Apply(ctx, b, CheckDashboardsModifiedRemotely(false, false))
+	diags := bundle.Apply(ctx, b, CheckDashboardsModifiedRemotely(false, engine.EngineTerraform))
 	if assert.Len(t, diags, 1) {
 		assert.Equal(t, diag.Error, diags[0].Severity)
 		assert.Equal(t, `dashboard "dash1" has been modified remotely`, diags[0].Summary)
@@ -127,7 +128,7 @@ func TestCheckDashboardsModifiedRemotely_ExistingStateFailureToGet(t *testing.T)
 	b.SetWorkpaceClient(m.WorkspaceClient)
 
 	// Unable to get the dashboard, so expect an error.
-	diags := bundle.Apply(ctx, b, CheckDashboardsModifiedRemotely(false, false))
+	diags := bundle.Apply(ctx, b, CheckDashboardsModifiedRemotely(false, engine.EngineTerraform))
 	if assert.Len(t, diags, 1) {
 		assert.Equal(t, diag.Error, diags[0].Severity)
 		assert.Equal(t, `failed to get dashboard "dash1"`, diags[0].Summary)
@@ -153,7 +154,7 @@ func TestCheckDashboardsModifiedRemotely_ExistingStateChangePlanMode(t *testing.
 	b.SetWorkpaceClient(m.WorkspaceClient)
 
 	// The dashboard has changed, but in plan mode expect a warning instead of an error.
-	diags := bundle.Apply(ctx, b, CheckDashboardsModifiedRemotely(true, false))
+	diags := bundle.Apply(ctx, b, CheckDashboardsModifiedRemotely(true, engine.EngineTerraform))
 	if assert.Len(t, diags, 1) {
 		assert.Equal(t, diag.Warning, diags[0].Severity)
 		assert.Equal(t, `dashboard "dash1" has been modified remotely`, diags[0].Summary)

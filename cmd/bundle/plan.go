@@ -54,18 +54,19 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 					b.Config.Bundle.ClusterId = clusterId
 				}
 			},
-			AlwaysPull:   true,
-			FastValidate: true,
-			Build:        true,
+			AlwaysPull:    true,
+			FastValidate:  true,
+			Build:         true,
+			DeployPrepare: true,
 		}
 
-		b, isDirectEngine, err := utils.ProcessBundleRet(cmd, opts)
+		b, stateDesc, err := utils.ProcessBundleRet(cmd, opts)
 		if err != nil {
 			return err
 		}
 		ctx := cmd.Context()
 
-		plan := phases.Plan(ctx, b, isDirectEngine)
+		plan := phases.RunPlan(ctx, b, stateDesc.Engine)
 		if logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}

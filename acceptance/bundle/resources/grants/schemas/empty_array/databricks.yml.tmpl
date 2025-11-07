@@ -1,0 +1,11 @@
+bundle:
+  name: schema-grants-$UNIQUE_NAME
+
+resources:
+  schemas:
+    grants_schema:
+      name: schema_grants_$UNIQUE_NAME
+      catalog_name: main
+      grants:
+        - principal: deco-test-user@databricks.com
+          privileges: []
