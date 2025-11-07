@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/google/uuid"
 )
@@ -148,9 +149,26 @@ func (db *DeploymentState) ExportState(ctx context.Context) resourcestate.Export
 			resultGroup = make(map[string]resourcestate.ResourceState)
 			result[groupName] = resultGroup
 		}
+		// Extract etag for dashboards.
+		var etag string
+		switch dashboard := entry.State.(type) {
+		// Dashboard state has type map[string]any during bundle deployment.
+		// covered by test case: bundle/deploy/dashboard/detect-change
+		case map[string]any:
+			v, ok := dashboard["etag"].(string)
+			if ok {
+				etag = v
+			}
+
+		// Dashboard state has type *resources.DashboardConfig during bundle generation.
+		// covered by test case: bundle/deploy/dashboard/generate_inplace
+		case *resources.DashboardConfig:
+			etag = dashboard.Etag
+		}
+
 		resultGroup[resourceName] = resourcestate.ResourceState{
-			ID: entry.ID,
-			// TODO: extract Etag
+			ID:   entry.ID,
+			ETag: etag,
 		}
 	}
 	return result

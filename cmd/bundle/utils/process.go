@@ -2,6 +2,8 @@ package utils
 
 import (
 	"context"
+	"errors"
+	"path/filepath"
 	"time"
 
 	"github.com/databricks/cli/bundle"
@@ -11,6 +13,7 @@ import (
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/sync"
 	"github.com/databricks/cli/libs/telemetry/protos"
@@ -56,6 +59,9 @@ type ProcessOptions struct {
 	Validate     bool
 	Build        bool
 	Deploy       bool
+
+	// Indicate whether the bundle operation originates from the pipelines CLI
+	IsPipelinesCLI bool
 }
 
 func ProcessBundle(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, error) {
@@ -166,6 +172,14 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 		if logdiag.HasError(ctx) {
 			return b, isDirectEngine, root.ErrAlreadyPrinted
 		}
+
+		// Pipeline CLI only validation.
+		if opts.IsPipelinesCLI {
+			rejectDefinitions(ctx, b)
+			if logdiag.HasError(ctx) {
+				return b, isDirectEngine, root.ErrAlreadyPrinted
+			}
+		}
 	}
 
 	if opts.Validate {
@@ -209,4 +223,18 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 	}
 
 	return b, isDirectEngine, nil
+}
+
+func rejectDefinitions(ctx context.Context, b *bundle.Bundle) {
+	if b.Config.Definitions != nil {
+		v := dyn.GetValue(b.Config.Value(), "definitions")
+		loc := v.Locations()
+		filename := "input yaml"
+		if len(loc) > 0 {
+			filename = filepath.ToSlash(loc[0].File)
+		}
+		logdiag.LogError(ctx, errors.New(filename+` seems to be formatted for open-source Spark Declarative Pipelines.
+Pipelines CLI currently only supports Lakeflow Declarative Pipelines development.
+To see an example of a supported pipelines template, create a new Pipelines CLI project with "pipelines init".`))
+	}
 }

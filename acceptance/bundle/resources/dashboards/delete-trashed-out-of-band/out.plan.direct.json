@@ -1,0 +1,27 @@
+{
+  "plan": {
+    "resources.dashboards.dashboard1": {
+      "action": "create",
+      "new_state": {
+        "config": {
+          "display_name": "test bundle-deploy-dashboard [UNIQUE_NAME])",
+          "parent_path": "/Workspace/Users/[USERNAME]/.bundle/delete-trashed-out-of-band-[UNIQUE_NAME]/default/resources",
+          "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+        }
+      },
+      "changes": {
+        "local": {
+          "embed_credentials": {
+            "action": "update"
+          },
+          "etag": {
+            "action": "update"
+          },
+          "serialized_dashboard": {
+            "action": "update"
+          }
+        }
+      }
+    }
+  }
+}
