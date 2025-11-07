@@ -29,6 +29,6 @@ resources:
       environments:
         - environment_key: default
           spec:
-            environment_version: "2"
+            environment_version: "4"
             dependencies:
               - dbt-databricks>=1.8.0,<2.0.0

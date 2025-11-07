@@ -1,4 +1,5 @@
 {{/* The latest LTS DBR version; this should be updated a few months after each LTS.
+   * See https://docs.databricks.com/release-notes/runtime/index.html for available versions.
    */}}
 {{define "latest_lts_dbr_version" -}}
   16.4.x-scala2.12
@@ -11,6 +12,9 @@
    * only connect to compute of that same version and higher. If the version is
    * deemed too old, customers can update the version themselves after initializing
    * the template.
+   *
+   * See https://docs.databricks.com/dev-tools/databricks-connect/python/index.html#requirements
+   * for DB Connect release notes and version compatibility.
    */}}
 {{define "conservative_db_connect_version_spec" -}}
   >=15.4,<15.5
@@ -18,9 +22,27 @@
 
 {{/* DB Connect 15 only supports versions up to 3.13 because of a limitation in
    * pyarrow: https://arrow.apache.org/docs/python/install.html#python-compatibility
+   *
+   * Python version must be compatible with both serverless_environment_version and
+   * conservative_db_connect_version_spec defined in this file.
    */}}
 {{define "conservative_db_connect_python_version_spec" -}}
   >=3.10,<=3.13
 {{- end}}
 
 {{define "latest_databricks_bundles_version" -}}0.276.0{{- end}}
+
+{{/* The default Python version for notebooks and local development.
+   * This should match the Python version available in the latest LTS DBR and
+   * the latest serverless environment version.
+   */}}
+{{define "default_python_version" -}}
+  3.12
+{{- end}}
+
+{{/* The serverless environment version to use.
+   * See https://docs.databricks.com/release-notes/runtime/index.html for available versions.
+   */}}
+{{define "serverless_environment_version" -}}
+  4
+{{- end}}

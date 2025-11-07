@@ -46,7 +46,7 @@ resources:
       environments:
         - environment_key: default
           spec:
-            environment_version: "2"
+            environment_version: "4"
             dependencies:
               # By default we just include the .whl file generated for the my_default_python package.
               # See https://docs.databricks.com/dev-tools/bundles/library-dependencies.html
