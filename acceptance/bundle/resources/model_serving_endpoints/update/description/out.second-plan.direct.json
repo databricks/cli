@@ -24,28 +24,31 @@
         }
       },
       "remote_state": {
-        "config": {
-          "served_entities": [
-            {
-              "external_model": {
-                "name": "gpt-4o-mini",
-                "openai_config": {
-                  "openai_api_key": "{{secrets/test-scope/openai-key}}"
+        "endpoint_details": {
+          "config": {
+            "served_entities": [
+              {
+                "external_model": {
+                  "name": "gpt-4o-mini",
+                  "openai_config": {
+                    "openai_api_key": "{{secrets/test-scope/openai-key}}"
+                  },
+                  "provider": "openai",
+                  "task": "llm/v1/chat"
                 },
-                "provider": "openai",
-                "task": "llm/v1/chat"
-              },
-              "name": "prod"
-            }
-          ]
+                "name": "prod"
+              }
+            ]
+          },
+          "creator": "[USERNAME]",
+          "description": "Initial description",
+          "id": "[UUID]",
+          "name": "[ENDPOINT_ID]",
+          "state": {
+            "config_update": "NOT_UPDATING"
+          }
         },
-        "creator": "[USERNAME]",
-        "description": "Initial description",
-        "id": "[UUID]",
-        "name": "[ENDPOINT_ID]",
-        "state": {
-          "config_update": "NOT_UPDATING"
-        }
+        "endpoint_id": "[UUID]"
       },
       "changes": {
         "local": {
