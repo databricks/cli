@@ -2,17 +2,15 @@
 === First call in a session is expected to be a cache miss:
 [DEBUG_TIMESTAMP] Debug: [Local Cache] found authorization header with length: 45
 [DEBUG_TIMESTAMP] Debug: [Local Cache] local cache is enabled
-[DEBUG_TIMESTAMP] Debug: [Local Cache] using fingerprint with hash: [SHA256_HASH]
 [DEBUG_TIMESTAMP] Debug: [Local Cache] using cache key: [SHA256_HASH]
-[DEBUG_TIMESTAMP] Debug: [Local Cache] cache miss, but stored the compute result for future calls
+[DEBUG_TIMESTAMP] Debug: [Local Cache] async writing to cache
+[DEBUG_TIMESTAMP] Debug: [Local Cache] cache miss, computed and stored result
 
 === Second call in a session is expected to be a cache hit
 [DEBUG_TIMESTAMP] Debug: [Local Cache] found authorization header with length: 45
 [DEBUG_TIMESTAMP] Debug: [Local Cache] local cache is enabled
-[DEBUG_TIMESTAMP] Debug: [Local Cache] using fingerprint with hash: [SHA256_HASH]
 [DEBUG_TIMESTAMP] Debug: [Local Cache] using cache key: [SHA256_HASH]
 [DEBUG_TIMESTAMP] Debug: [Local Cache] cache hit: disk-read
-[DEBUG_TIMESTAMP] Debug: [Local Cache] cache miss, but stored the compute result for future calls
 
 === Bundle deploy should send telemetry values
 
