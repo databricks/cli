@@ -16,7 +16,7 @@ import (
 var grantResourceToSecurableType = map[string]string{
 	"schemas":           "schema",
 	"volumes":           "volume",
-	"registered_models": "registered-model",
+	"registered_models": "function",
 }
 
 type GrantAssignment struct {
@@ -30,7 +30,6 @@ type GrantsState struct {
 	Grants        []GrantAssignment `json:"grants,omitempty"`
 }
 
-// PrepareGrantsInputConfig converts the grants slice in bundle configuration into a StructVar the planner can resolve.
 func PrepareGrantsInputConfig(inputConfig any, node string) (*structvar.StructVar, error) {
 	baseNode, ok := strings.CutSuffix(node, ".grants")
 	if !ok {

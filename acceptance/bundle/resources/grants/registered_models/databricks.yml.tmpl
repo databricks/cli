@@ -1,0 +1,19 @@
+bundle:
+  name: deploy-registered-models-basic-$UNIQUE_NAME
+
+resources:
+  schemas:
+    my_schema:
+      catalog_name: main
+      name: myschema_$UNIQUE_NAME
+  registered_models:
+    my_registered_model:
+      name: mymodel
+      comment: mycomment
+      catalog_name: main
+      # this does not work because we don't create implicit dependency like we do with volumes:
+      #schema_name: myschema_$UNIQUE_NAME
+      schema_name: ${resources.schemas.my_schema.name}
+      grants:
+        - principal: denis.bilenko@databricks.com
+          privileges: ["APPLY_TAG"]

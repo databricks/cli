@@ -1,0 +1,14 @@
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/permissions/function/main.myschema_[UNIQUE_NAME].mymodel",
+  "body": {
+    "changes": [
+      {
+        "add": [
+          "APPLY_TAG"
+        ],
+        "principal": "denis.bilenko@databricks.com"
+      }
+    ]
+  }
+}
