@@ -65,6 +65,7 @@
                     "node_type_id": "",
                     "num_workers": 0,
                     "policy_id": "",
+                    "provider_config": [],
                     "remote_disk_throughput": 0,
                     "runtime_engine": "",
                     "single_user_name": "",
@@ -90,6 +91,7 @@
             "parameter": [],
             "performance_target": null,
             "pipeline_task": [],
+            "provider_config": [],
             "python_wheel_task": [],
             "queue": [
               {
@@ -117,7 +119,6 @@
                     "unit": "DAYS"
                   }
                 ],
-                "table": [],
                 "table_update": []
               }
             ],
