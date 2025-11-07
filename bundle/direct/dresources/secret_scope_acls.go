@@ -86,7 +86,10 @@ func (r *ResourceSecretScopeAcls) DoRefresh(ctx context.Context, id string) (*Se
 	acls := make([]resources.SecretScopePermission, 0, len(currentAcls))
 	for _, acl := range currentAcls {
 		perm := resources.SecretScopePermission{
-			Level: resources.SecretScopePermissionLevel(acl.Permission),
+			Level:                resources.SecretScopePermissionLevel(acl.Permission),
+			UserName:             "",
+			ServicePrincipalName: "",
+			GroupName:            "",
 		}
 
 		// Set the appropriate principal field
@@ -135,32 +138,9 @@ func (r *ResourceSecretScopeAcls) FieldTriggers(_ bool) map[string]deployplan.Ac
 	}
 }
 
+// Removing ACLs is a no-op, to match the behavior for permissions and grants.
 func (r *ResourceSecretScopeAcls) DoDelete(ctx context.Context, id string) error {
-	// When deleting ACLs resource, we need to remove all ACLs
-	currentAcls, err := r.client.Secrets.ListAclsAll(ctx, workspace.ListAclsRequest{
-		Scope: id,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to list current ACLs: %w", err)
-	}
-
-	// Sort ACLs for deterministic ordering
-	slices.SortFunc(currentAcls, func(a, b workspace.AclItem) int {
-		return strings.Compare(a.Principal, b.Principal)
-	})
-
-	g, ctx := errgroup.WithContext(ctx)
-	for _, acl := range currentAcls {
-		acl := acl // Capture loop variable for closure
-		g.Go(func() error {
-			return r.client.Secrets.DeleteAcl(ctx, workspace.DeleteAcl{
-				Scope:     id,
-				Principal: acl.Principal,
-			})
-		})
-	}
-
-	return g.Wait()
+	return nil
 }
 
 // setACLs reconciles the desired ACLs with the current state

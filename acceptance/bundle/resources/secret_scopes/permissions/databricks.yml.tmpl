@@ -1,22 +1,15 @@
 bundle:
-  name: deploy-secret-scope-with-permissions
+  name: secret-scope-permissions-$UNIQUE_NAME
 
 resources:
   secret_scopes:
-    secret_scope_azure:
-      name: test-secrets-permissions
+    my_scope:
+      name: $SECRET_SCOPE_NAME
+      backend_type: "DATABRICKS"
       permissions:
-        - group_name: resource_level_users
+        - user_name: $TEST_USER_1
           level: READ
-        - group_name: resource_level_writers
+        - user_name: $TEST_USER_2
           level: WRITE
-        - group_name: resource_level_admins
+        - group_name: $TEST_GROUP
           level: MANAGE
-
-permissions:
-  - user_name: $CURRENT_USER_NAME
-    level: CAN_MANAGE
-  - group_name: users
-    level: CAN_VIEW # this is mapped to READ
-  - group_name: admins
-    level: CAN_MANAGE # this is mapped to MANAGE

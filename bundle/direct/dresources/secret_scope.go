@@ -2,10 +2,12 @@ package dresources
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
@@ -43,7 +45,7 @@ func (*ResourceSecretScope) RemapState(remote *workspace.SecretScope) *SecretSco
 			ScopeBackendType:       remote.BackendType,
 			BackendAzureKeyvault:   remote.KeyvaultMetadata,
 			InitialManagePrincipal: "",
-			ForceSendFields:        filterFields[workspace.CreateScope](remote.ForceSendFields),
+			ForceSendFields:        utils.FilterFields[workspace.CreateScope](remote.ForceSendFields),
 		},
 	}
 }
@@ -74,7 +76,7 @@ func (r *ResourceSecretScope) DoCreate(ctx context.Context, state *SecretScopeCo
 
 func (r *ResourceSecretScope) DoUpdate(ctx context.Context, id string, state *SecretScopeConfig) error {
 	// Secret scopes themselves are immutable
-	return fmt.Errorf("secret scopes cannot be updated, they must be recreated")
+	return errors.New("secret scopes cannot be updated, they must be recreated")
 }
 
 func (r *ResourceSecretScope) DoDelete(ctx context.Context, id string) error {

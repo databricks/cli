@@ -9,31 +9,24 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/secret-scope-basic
 Deploying resources...
 Updating deployment state...
 Deployment complete!
+
+>>> print_requests.py //secrets
 {
-  "method": "POST",
-  "path": "/api/2.0/secrets/acls/put",
-  "body": {
-    "permission": "READ",
-    "principal": "test-user-[UUID]@example.com",
-    "scope": "test-scope-[UNIQUE_NAME]-1"
-  }
-}
-{
-  "method": "POST",
-  "path": "/api/2.0/secrets/acls/put",
-  "body": {
-    "permission": "WRITE",
-    "principal": "test-group-[UUID]",
-    "scope": "test-scope-[UNIQUE_NAME]-1"
-  }
-}
-{
-  "method": "POST",
-  "path": "/api/2.0/secrets/scopes/create",
   "body": {
     "scope": "test-scope-[UNIQUE_NAME]-1",
     "scope_backend_type": "DATABRICKS"
-  }
+  },
+  "method": "POST",
+  "path": "/api/2.0/secrets/scopes/create"
+}
+{
+  "body": {
+    "permission": "WRITE",
+    "principal": "deco-test-user@databricks.com",
+    "scope": "test-scope-[UNIQUE_NAME]-1"
+  },
+  "method": "POST",
+  "path": "/api/2.0/secrets/acls/put"
 }
 
 >>> [CLI] secrets list-scopes -o json
@@ -52,39 +45,8 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/secret-scope-basic
 Deploying resources...
 Updating deployment state...
 Deployment complete!
-{
-  "method": "POST",
-  "path": "/api/2.0/secrets/acls/put",
-  "body": {
-    "permission": "READ",
-    "principal": "test-user-[UUID]@example.com",
-    "scope": "test-scope-[UNIQUE_NAME]-2"
-  }
-}
-{
-  "method": "POST",
-  "path": "/api/2.0/secrets/acls/put",
-  "body": {
-    "permission": "WRITE",
-    "principal": "test-group-[UUID]",
-    "scope": "test-scope-[UNIQUE_NAME]-2"
-  }
-}
-{
-  "method": "POST",
-  "path": "/api/2.0/secrets/scopes/create",
-  "body": {
-    "scope": "test-scope-[UNIQUE_NAME]-2",
-    "scope_backend_type": "DATABRICKS"
-  }
-}
-{
-  "method": "POST",
-  "path": "/api/2.0/secrets/scopes/delete",
-  "body": {
-    "scope": "test-scope-[UNIQUE_NAME]-1"
-  }
-}
+
+>>> print_requests.py //secrets
 
 >>> [CLI] secrets list-scopes -o json
 {

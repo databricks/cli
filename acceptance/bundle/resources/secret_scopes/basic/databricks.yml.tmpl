@@ -7,7 +7,5 @@ resources:
       name: $SECRET_SCOPE_NAME
       backend_type: "DATABRICKS"
       permissions:
-        - user_name: $TEST_GROUP_NAME
+        - user_name: deco-test-user@databricks.com
           level: WRITE
-        - user_name: $TEST_USER_EMAIL
-          level: READ

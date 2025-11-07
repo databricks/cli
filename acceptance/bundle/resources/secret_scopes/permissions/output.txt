@@ -1,14 +1,66 @@
 
+=== create secret scope with permissions
+>>> [CLI] bundle plan
+create secret_scopes.my_scope
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-secret-scope-with-permissions/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/secret-scope-permissions-[UNIQUE_NAME]/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> jq -s -c .[] | select(.path=="/api/2.0/secrets/acls/put") | .body out.requests.txt
-{"permission":"MANAGE","principal":"admins","scope":"test-secrets-permissions"}
-{"permission":"MANAGE","principal":"resource_level_admins","scope":"test-secrets-permissions"}
-{"permission":"MANAGE","principal":"[USERNAME]","scope":"test-secrets-permissions"}
-{"permission":"READ","principal":"resource_level_users","scope":"test-secrets-permissions"}
-{"permission":"READ","principal":"users","scope":"test-secrets-permissions"}
-{"permission":"WRITE","principal":"resource_level_writers","scope":"test-secrets-permissions"}
+>>> [CLI] secrets list-scopes -o json
+{
+  "backend_type": "DATABRICKS",
+  "name": "test-scope-permissions-[UNIQUE_NAME]"
+}
+
+>>> [CLI] secrets list-acls test-scope-permissions-[UNIQUE_NAME]
+{"permission":"MANAGE","principal":"test-group-[UUID]"}
+{"permission":"READ","principal":"user1-[UUID]@example.com"}
+{"permission":"WRITE","principal":"user2-[UUID]@example.com"}
+
+=== update permissions (remove one user, change another)
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/secret-scope-permissions-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] secrets list-acls test-scope-permissions-[UNIQUE_NAME]
+{"permission":"MANAGE","principal":"test-group-[UUID]"}
+{"permission":"WRITE","principal":"newuser-[UUID]@example.com"}
+
+=== change scope name (should recreate scope and update permissions)
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/secret-scope-permissions-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] secrets list-scopes -o json
+{
+  "backend_type": "DATABRICKS",
+  "name": "test-scope-permissions-[UNIQUE_NAME]"
+}
+
+>>> [CLI] secrets list-acls test-scope-permissions-[UNIQUE_NAME]
+{"permission":"MANAGE","principal":"test-group-[UUID]"}
+{"permission":"WRITE","principal":"newuser-[UUID]@example.com"}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete secret_scope my_scope
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/secret-scope-permissions-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

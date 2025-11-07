@@ -1,4 +1,51 @@
+if [ -z "$CLOUD_ENV" ]; then
+    export TEST_USER_1="user1-$(uuid)@example.com"
+    export TEST_USER_2="user2-$(uuid)@example.com"
+    export TEST_GROUP="test-group-$(uuid)"
+fi
+
+export SECRET_SCOPE_NAME="test-scope-permissions-$UNIQUE_NAME"
 envsubst < databricks.yml.tmpl > databricks.yml
-trace $CLI bundle deploy #--log-level TRACE
-trace jq -s -c '.[] | select(.path=="/api/2.0/secrets/acls/put") | .body' out.requests.txt | sort
-rm out.requests.txt
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+title "create secret scope with permissions"
+trace $CLI bundle plan
+trace $CLI bundle deploy
+scope_name=$($CLI bundle summary --output json | jq -r '.resources.secret_scopes.my_scope.name')
+trace $CLI secrets list-scopes -o json | jq ".[] | select(.name == \"$scope_name\")"
+trace $CLI secrets list-acls $scope_name | jq -c '.[]' | sort
+
+title "update permissions (remove one user, change another)"
+export TEST_USER_1="newuser-$(uuid)@example.com"
+cat > databricks.yml.tmpl <<EOF
+bundle:
+  name: secret-scope-permissions-$UNIQUE_NAME
+
+resources:
+  secret_scopes:
+    my_scope:
+      name: $SECRET_SCOPE_NAME
+      backend_type: "DATABRICKS"
+      permissions:
+        - user_name: $TEST_USER_1
+          level: WRITE
+        - group_name: $TEST_GROUP
+          level: MANAGE
+EOF
+envsubst < databricks.yml.tmpl > databricks.yml
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace $CLI secrets list-acls $scope_name | jq -c '.[]' | sort
+
+title "change scope name (should recreate scope and update permissions)"
+export SECRET_SCOPE_NAME="test-scope-permissions-$UNIQUE_NAME-2"
+envsubst < databricks.yml.tmpl > databricks.yml
+trace $CLI bundle plan
+trace $CLI bundle deploy
+scope_name=$($CLI bundle summary --output json | jq -r '.resources.secret_scopes.my_scope.name')
+trace $CLI secrets list-scopes -o json | jq ".[] | select(.name == \"$scope_name\")"
+trace $CLI secrets list-acls $scope_name | jq -c '.[]' | sort
