@@ -76,5 +76,6 @@ Error: Resource catalog.SchemaInfo not found: main.myschema
   "full_name":"newmain.myschema",
   "name":"myschema",
   "owner":"[USERNAME]",
-  "updated_at":[UNIX_TIME_MILLIS][0]
+  "updated_at":[UNIX_TIME_MILLIS][0],
+  "updated_by":"[USERNAME]"
 }
