@@ -3,6 +3,7 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
 
 	"github.com/databricks/databricks-sdk-go/service/serving"
 )
@@ -208,5 +209,132 @@ func (s *FakeWorkspace) ServingEndpointUpdate(req Request, name string) Response
 
 	return Response{
 		Body: endpoint,
+	}
+}
+
+func (s *FakeWorkspace) ServingEndpointPutAiGateway(req Request, name string) Response {
+	defer s.LockUnlock()()
+
+	var putReq serving.PutAiGatewayRequest
+	err := json.Unmarshal(req.Body, &putReq)
+	if err != nil {
+		return Response{
+			Body:       fmt.Sprintf("cannot unmarshal request body: %s", err),
+			StatusCode: 400,
+		}
+	}
+
+	endpoint, exists := s.ServingEndpoints[name]
+	if !exists {
+		return Response{
+			StatusCode: 404,
+			Body:       map[string]string{"error_code": "RESOURCE_DOES_NOT_EXIST", "message": fmt.Sprintf("Serving endpoint with name %s not found", name)},
+		}
+	}
+
+	// Update AI gateway config
+	if putReq.FallbackConfig != nil || putReq.Guardrails != nil || putReq.InferenceTableConfig != nil || putReq.RateLimits != nil || putReq.UsageTrackingConfig != nil {
+		endpoint.AiGateway = &serving.AiGatewayConfig{
+			FallbackConfig:       putReq.FallbackConfig,
+			Guardrails:           putReq.Guardrails,
+			InferenceTableConfig: putReq.InferenceTableConfig,
+			RateLimits:           putReq.RateLimits,
+			UsageTrackingConfig:  putReq.UsageTrackingConfig,
+		}
+	} else {
+		// Unset AI gateway if no fields provided
+		endpoint.AiGateway = nil
+	}
+
+	s.ServingEndpoints[name] = endpoint
+
+	return Response{
+		Body: endpoint.AiGateway,
+	}
+}
+
+func (s *FakeWorkspace) ServingEndpointUpdateNotifications(req Request, name string) Response {
+	defer s.LockUnlock()()
+
+	var updateReq serving.UpdateInferenceEndpointNotifications
+	err := json.Unmarshal(req.Body, &updateReq)
+	if err != nil {
+		return Response{
+			Body:       fmt.Sprintf("cannot unmarshal request body: %s", err),
+			StatusCode: 400,
+		}
+	}
+
+	endpoint, exists := s.ServingEndpoints[name]
+	if !exists {
+		return Response{
+			StatusCode: 404,
+			Body:       map[string]string{"error_code": "RESOURCE_DOES_NOT_EXIST", "message": fmt.Sprintf("Serving endpoint with name %s not found", name)},
+		}
+	}
+
+	endpoint.EmailNotifications = updateReq.EmailNotifications
+	s.ServingEndpoints[name] = endpoint
+
+	return Response{
+		Body: endpoint,
+	}
+}
+
+func (s *FakeWorkspace) ServingEndpointPatchTags(req Request, name string) Response {
+	defer s.LockUnlock()()
+
+	var patchReq serving.PatchServingEndpointTags
+	err := json.Unmarshal(req.Body, &patchReq)
+	if err != nil {
+		return Response{
+			Body:       fmt.Sprintf("cannot unmarshal request body: %s", err),
+			StatusCode: 400,
+		}
+	}
+
+	endpoint, exists := s.ServingEndpoints[name]
+	if !exists {
+		return Response{
+			StatusCode: 404,
+			Body:       map[string]string{"error_code": "RESOURCE_DOES_NOT_EXIST", "message": fmt.Sprintf("Serving endpoint with name %s not found", name)},
+		}
+	}
+
+	// Build map of current tags
+	tagMap := make(map[string]string)
+	for _, tag := range endpoint.Tags {
+		tagMap[tag.Key] = tag.Value
+	}
+
+	// Add or update tags
+	for _, tag := range patchReq.AddTags {
+		tagMap[tag.Key] = tag.Value
+	}
+
+	// Delete tags
+	for _, key := range patchReq.DeleteTags {
+		delete(tagMap, key)
+	}
+
+	// Convert back to slice sorted by key for stable output
+	tags := make([]serving.EndpointTag, 0, len(tagMap))
+	keys := make([]string, 0, len(tagMap))
+	for key := range tagMap {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		tags = append(tags, serving.EndpointTag{Key: key, Value: tagMap[key]})
+	}
+
+	endpoint.Tags = tags
+	s.ServingEndpoints[name] = endpoint
+
+	// Return the tags as EndpointTags struct, not as array
+	return Response{
+		Body: serving.EndpointTags{
+			Tags: tags,
+		},
 	}
 }

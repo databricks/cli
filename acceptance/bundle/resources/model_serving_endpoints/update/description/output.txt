@@ -44,9 +44,36 @@ Deployment complete!
     "name": "[ENDPOINT_ID]"
   }
 }
+{
+  "method": "DELETE",
+  "path": "/api/2.0/serving-endpoints/[ENDPOINT_ID]"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/serving-endpoints",
+  "body": {
+    "config": {
+      "served_entities": [
+        {
+          "external_model": {
+            "name": "gpt-4o-mini",
+            "openai_config": {
+              "openai_api_key": "{{secrets/test-scope/openai-key}}"
+            },
+            "provider": "openai",
+            "task": "llm/v1/chat"
+          },
+          "name": "prod"
+        }
+      ]
+    },
+    "description": "Updated description",
+    "name": "[ENDPOINT_ID]"
+  }
+}
 
 >>> [CLI] serving-endpoints get [ENDPOINT_ID]
-"Initial description"
+"Updated description"
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

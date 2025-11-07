@@ -620,6 +620,18 @@ func AddDefaultHandlers(server *Server) {
 		return MapDelete(req.Workspace, req.Workspace.ServingEndpoints, req.Vars["name"])
 	})
 
+	server.Handle("PUT", "/api/2.0/serving-endpoints/{name}/ai-gateway", func(req Request) any {
+		return req.Workspace.ServingEndpointPutAiGateway(req, req.Vars["name"])
+	})
+
+	server.Handle("PATCH", "/api/2.0/serving-endpoints/{name}/notifications", func(req Request) any {
+		return req.Workspace.ServingEndpointUpdateNotifications(req, req.Vars["name"])
+	})
+
+	server.Handle("PATCH", "/api/2.0/serving-endpoints/{name}/tags", func(req Request) any {
+		return req.Workspace.ServingEndpointPatchTags(req, req.Vars["name"])
+	})
+
 	// Generic permissions endpoints
 	server.Handle("GET", "/api/2.0/permissions/{object_type}/{object_id}", func(req Request) any {
 		return req.Workspace.GetPermissions(req)

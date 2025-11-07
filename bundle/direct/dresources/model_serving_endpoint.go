@@ -161,7 +161,10 @@ func (r *ResourceModelServingEndpoint) updateAiGateway(ctx context.Context, id s
 		UsageTrackingConfig:  aiGateway.UsageTrackingConfig,
 	}
 	_, err := r.client.ServingEndpoints.PutAiGateway(ctx, req)
-	return fmt.Errorf("failed to update AI gateway: %w", err)
+	if err != nil {
+		return fmt.Errorf("failed to update AI gateway: %w", err)
+	}
+	return nil
 }
 
 // TODO: does unsetting config work properly?
@@ -180,7 +183,10 @@ func (r *ResourceModelServingEndpoint) updateConfig(ctx context.Context, id stri
 		ServedModels:      config.ServedModels,
 	}
 	_, err := r.client.ServingEndpoints.UpdateConfig(ctx, req)
-	return fmt.Errorf("failed to update config: %w", err)
+	if err != nil {
+		return fmt.Errorf("failed to update config: %w", err)
+	}
+	return nil
 }
 
 func (r *ResourceModelServingEndpoint) updateNotifications(ctx context.Context, id string, notifications *serving.EmailNotifications) error {
@@ -189,7 +195,10 @@ func (r *ResourceModelServingEndpoint) updateNotifications(ctx context.Context, 
 		EmailNotifications: notifications,
 	}
 	_, err := r.client.ServingEndpoints.UpdateNotifications(ctx, req)
-	return fmt.Errorf("failed to update notifications: %w", err)
+	if err != nil {
+		return fmt.Errorf("failed to update notifications: %w", err)
+	}
+	return nil
 }
 
 func diffTags(currentTags []serving.EndpointTag, desiredTags []serving.EndpointTag) (addTags []serving.EndpointTag, deleteTags []string) {
@@ -241,7 +250,10 @@ func (r *ResourceModelServingEndpoint) updateTags(ctx context.Context, id string
 		DeleteTags: deleteTags,
 	}
 	_, err = r.client.ServingEndpoints.Patch(ctx, req)
-	return fmt.Errorf("failed to update tags: %w", err)
+	if err != nil {
+		return fmt.Errorf("failed to update tags: %w", err)
+	}
+	return nil
 }
 
 func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, id string, config *serving.CreateServingEndpoint) error {
@@ -272,7 +284,8 @@ func (r *ResourceModelServingEndpoint) DoDelete(ctx context.Context, id string) 
 func (*ResourceModelServingEndpoint) FieldTriggers(_ bool) map[string]deployplan.ActionType {
 	// TF implementation: https://github.com/databricks/terraform-provider-databricks/blob/6c106e8e7052bb2726148d66309fd460ed444236/mlflow/resource_mlflow_experiment.go#L22
 	return map[string]deployplan.ActionType{
-		"name": deployplan.ActionTypeRecreate,
+		"name":        deployplan.ActionTypeRecreate,
+		"description": deployplan.ActionTypeRecreate, // description is immutable, can't be updated via API
 		"config.auto_capture_config.catalog_name":      deployplan.ActionTypeRecreate,
 		"config.auto_capture_config.schema_name":       deployplan.ActionTypeRecreate,
 		"config.auto_capture_config.table_name_prefix": deployplan.ActionTypeRecreate,

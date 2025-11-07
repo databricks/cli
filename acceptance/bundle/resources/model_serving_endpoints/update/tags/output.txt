@@ -26,17 +26,85 @@ Deployment complete!
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Deploying resources...
-Error: terraform apply: exit status 1
-
-Error: cannot update model serving: No stub found for pattern: PATCH /api/2.0/serving-endpoints/[ENDPOINT_ID]/tags
-
-  with databricks_model_serving.test_endpoint,
-  on bundle.tf.json line 42, in resource.databricks_model_serving.test_endpoint:
-  42:       }
-
-
-
 Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py //serving-endpoints
+{
+  "method": "POST",
+  "path": "/api/2.0/serving-endpoints",
+  "body": {
+    "config": {
+      "served_entities": [
+        {
+          "external_model": {
+            "name": "gpt-4o-mini",
+            "openai_config": {
+              "openai_api_key": "{{secrets/test-scope/openai-key}}"
+            },
+            "provider": "openai",
+            "task": "llm/v1/chat"
+          },
+          "name": "prod"
+        }
+      ]
+    },
+    "name": "[ENDPOINT_ID]",
+    "tags": [
+      {
+        "key": "env",
+        "value": "test"
+      },
+      {
+        "key": "team",
+        "value": "ml"
+      }
+    ]
+  }
+}
+{
+  "method": "PUT",
+  "path": "/api/2.0/serving-endpoints/[ENDPOINT_ID]/config",
+  "body": {
+    "served_entities": [
+      {
+        "external_model": {
+          "name": "gpt-4o-mini",
+          "openai_config": {
+            "openai_api_key": "{{secrets/test-scope/openai-key}}"
+          },
+          "provider": "openai",
+          "task": "llm/v1/chat"
+        },
+        "name": "prod"
+      }
+    ]
+  }
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/serving-endpoints/[ENDPOINT_ID]/tags",
+  "body": {
+    "add_tags": [
+      {
+        "key": "env",
+        "value": "prod"
+      }
+    ]
+  }
+}
+
+>>> [CLI] serving-endpoints get [ENDPOINT_ID]
+[
+  {
+    "key": "env",
+    "value": "prod"
+  },
+  {
+    "key": "team",
+    "value": "ml"
+  }
+]
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -46,5 +114,3 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Deleting files...
 Destroy complete!
-
-Exit code: 1
