@@ -27,7 +27,7 @@ import (
 
 var errDelayed = errors.New("must be resolved after apply")
 
-func (b *DeploymentBundle) Init(client *databricks.WorkspaceClient) error {
+func (b *DeploymentBundle) init(client *databricks.WorkspaceClient) error {
 	if b.Adapters != nil {
 		return nil
 	}
@@ -42,7 +42,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		return nil, fmt.Errorf("failed to read state from %s: %w", statePath, err)
 	}
 
-	err = b.Init(client)
+	err = b.init(client)
 	if err != nil {
 		return nil, err
 	}
