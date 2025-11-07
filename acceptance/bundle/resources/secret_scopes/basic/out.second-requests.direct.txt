@@ -22,11 +22,3 @@
   "method": "POST",
   "path": "/api/2.0/secrets/acls/put"
 }
-{
-  "body": {
-    "principal": "[USERNAME]",
-    "scope": "test-scope-[UNIQUE_NAME]-2"
-  },
-  "method": "POST",
-  "path": "/api/2.0/secrets/acls/delete"
-}
