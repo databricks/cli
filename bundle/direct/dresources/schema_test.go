@@ -59,7 +59,8 @@ func TestResourceSchema_DoUpdate_WithUnsupportedForceSendFields(t *testing.T) {
 		"full_name": "main.test_schema",
 		"name": "test_schema",
 		"owner": "tester@databricks.com",
-		"updated_at": 0
+		"updated_at": 0,
+		"updated_by": "tester@databricks.com"
 	}`
 	assert.JSONEq(t, expected, string(resultJSON))
 }
