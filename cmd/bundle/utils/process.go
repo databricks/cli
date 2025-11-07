@@ -194,7 +194,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 		if opts.IsPipelinesCLI {
 			rejectDefinitions(ctx, b)
 			if logdiag.HasError(ctx) {
-				return b, isDirectEngine, root.ErrAlreadyPrinted
+				return b, stateDesc, root.ErrAlreadyPrinted
 			}
 		}
 	}
