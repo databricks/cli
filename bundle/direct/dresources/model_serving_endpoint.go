@@ -41,9 +41,6 @@ func autoCaptureConfigOutputToInput(output *serving.AutoCaptureConfigOutput) *se
 }
 
 func servedEntitiesOutputToInput(output []serving.ServedEntityOutput) []serving.ServedEntityInput {
-	if len(output) == 0 {
-		return nil
-	}
 	entities := make([]serving.ServedEntityInput, len(output))
 	for i, entity := range output {
 		entities[i] = serving.ServedEntityInput{
