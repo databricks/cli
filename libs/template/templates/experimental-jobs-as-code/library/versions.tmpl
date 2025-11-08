@@ -7,3 +7,11 @@
 {{- end}}
 
 {{define "latest_databricks_bundles_version" -}}0.276.0{{- end}}
+
+{{/* Python version specification for the template.
+   * This is a legacy template - supports Python 3.10 through 3.12 for compatibility.
+   * See https://docs.databricks.com/release-notes/runtime/index.html for DBR Python versions.
+   */}}
+{{define "python_version_spec" -}}
+  >=3.10,<3.13
+{{- end}}

@@ -20,14 +20,13 @@
   >=15.4,<15.5
 {{- end}}
 
-{{/* DB Connect 15 only supports versions up to 3.13 because of a limitation in
-   * pyarrow: https://arrow.apache.org/docs/python/install.html#python-compatibility
-   *
-   * Python version must be compatible with both serverless_environment_version and
-   * conservative_db_connect_version_spec defined in this file.
+{{/* Python version specification for the template.
+   * Supports Python 3.10 through 3.12 for compatibility with various DBR versions.
+   * Python 3.12 is used in serverless environment version 4 and DBR 16.4 LTS.
+   * See https://docs.databricks.com/release-notes/runtime/index.html for DBR Python versions.
    */}}
-{{define "conservative_db_connect_python_version_spec" -}}
-  >=3.10,<=3.13
+{{define "python_version_spec" -}}
+  >=3.10,<3.13
 {{- end}}
 
 {{define "latest_databricks_bundles_version" -}}0.276.0{{- end}}
