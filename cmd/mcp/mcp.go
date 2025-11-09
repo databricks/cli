@@ -7,6 +7,9 @@ import (
 )
 
 func New() *cobra.Command {
+	var tool string
+	var configFile string
+
 	cmd := &cobra.Command{
 		Use:   "mcp",
 		Short: "Manage the Databricks CLI MCP server for coding agents",
@@ -25,6 +28,11 @@ Online documentation: https://docs.databricks.com/dev-tools/cli/mcp.html`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
+			// Hidden --tool flag for acceptance testing
+			if tool != "" {
+				return runTool(ctx, tool, configFile)
+			}
+
 			// Check subcommand
 			if len(args) > 0 {
 				switch args[0] {
@@ -41,6 +49,12 @@ Online documentation: https://docs.databricks.com/dev-tools/cli/mcp.html`,
 			return runInstall(ctx)
 		},
 	}
+
+	// Hidden flags for acceptance testing
+	cmd.Flags().StringVar(&tool, "tool", "", "Run a specific MCP tool for testing (hidden)")
+	cmd.Flags().StringVar(&configFile, "config-file", "", "JSON config file for tool arguments (hidden)")
+	cmd.Flags().MarkHidden("tool")
+	cmd.Flags().MarkHidden("config-file")
 
 	return cmd
 }

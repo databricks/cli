@@ -8,6 +8,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+
+	"github.com/databricks/cli/cmd/mcp/auth"
 )
 
 // InitProjectArgs represents the arguments for the init_project tool.
@@ -26,6 +28,11 @@ func InitProject(ctx context.Context, args InitProjectArgs) (string, error) {
 	// Validate project name
 	if args.ProjectName == "" {
 		return "", errors.New("project_name is required")
+	}
+
+	// Check authentication
+	if err := auth.CheckAuthentication(ctx); err != nil {
+		return "", err
 	}
 
 	// Check if the project path exists or needs to be created
@@ -50,15 +57,15 @@ func InitProject(ctx context.Context, args InitProjectArgs) (string, error) {
 	}
 
 	// Filter out .git and other hidden files for the empty check
-	nonHiddenEntries := 0
+	var nonHiddenFiles []string
 	for _, entry := range entries {
 		if entry.Name() != ".git" && entry.Name()[0] != '.' {
-			nonHiddenEntries++
+			nonHiddenFiles = append(nonHiddenFiles, entry.Name())
 		}
 	}
 
-	if nonHiddenEntries > 0 {
-		return "", fmt.Errorf("project directory is not empty: %s\nPlease use an empty directory or specify a new subdirectory", args.ProjectPath)
+	if len(nonHiddenFiles) > 0 {
+		return "", fmt.Errorf("project directory is not empty: %s\n\nFound files/directories: %v\n\nPlease either:\n1. Use an empty directory, or\n2. Specify a new subdirectory path that doesn't exist yet", args.ProjectPath, nonHiddenFiles)
 	}
 
 	// Create a temporary config file for the template
@@ -82,9 +89,7 @@ func InitProject(ctx context.Context, args InitProjectArgs) (string, error) {
 	defer os.Remove(configFile)
 
 	// Run bundle init with default-minimal template
-	// Use the current executable path to support development testing with ./cli
-	cliPath := os.Args[0]
-	cmd := exec.CommandContext(ctx, cliPath, "bundle", "init",
+	cmd := exec.CommandContext(ctx, GetCLIPath(), "bundle", "init",
 		"--config-file", configFile,
 		"--output-dir", args.ProjectPath,
 		"default-minimal")
@@ -95,15 +100,37 @@ func InitProject(ctx context.Context, args InitProjectArgs) (string, error) {
 	}
 
 	// The template creates a subdirectory with the project name
-	actualProjectPath := filepath.Join(args.ProjectPath, args.ProjectName)
+	// We need to move everything up one level to args.ProjectPath
+	nestedPath := filepath.Join(args.ProjectPath, args.ProjectName)
 
-	// Read the README.md from the created project
-	readmePath := filepath.Join(actualProjectPath, "README.md")
+	// Move all contents from nestedPath to args.ProjectPath
+	entries, err = os.ReadDir(nestedPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to read nested project directory: %w", err)
+	}
+
+	for _, entry := range entries {
+		srcPath := filepath.Join(nestedPath, entry.Name())
+		dstPath := filepath.Join(args.ProjectPath, entry.Name())
+
+		if err := os.Rename(srcPath, dstPath); err != nil {
+			return "", fmt.Errorf("failed to move %s to project root: %w", entry.Name(), err)
+		}
+	}
+
+	// Remove the now-empty nested directory
+	if err := os.Remove(nestedPath); err != nil {
+		return "", fmt.Errorf("failed to remove nested directory: %w", err)
+	}
+
+	// Read the README.md from the project root
+	readmePath := filepath.Join(args.ProjectPath, "README.md")
 	readmeContent, err := os.ReadFile(readmePath)
 	if err != nil {
 		readmeContent = []byte("Project initialized successfully")
 	}
 
+	cliPath := GetCLIPath()
 	result := fmt.Sprintf(`Project '%s' initialized successfully at: %s
 
 %s
@@ -116,7 +143,7 @@ Next steps:
 
 To add resources to your project, use: %s bundle generate
 For more information, visit: https://docs.databricks.com/dev-tools/bundles/index.html`,
-		args.ProjectName, actualProjectPath, string(readmeContent), actualProjectPath, cliPath, cliPath, cliPath)
+		args.ProjectName, args.ProjectPath, string(readmeContent), args.ProjectPath, cliPath, cliPath, cliPath)
 
 	return result, nil
 }

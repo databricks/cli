@@ -12,6 +12,11 @@ import (
 // CheckAuthentication checks if the user is authenticated to a Databricks workspace.
 // It does this by trying to run a simple API call.
 func CheckAuthentication(ctx context.Context) error {
+	// Skip authentication check if running in test mode
+	if os.Getenv("DATABRICKS_MCP_SKIP_AUTH_CHECK") == "1" {
+		return nil
+	}
+
 	// Try to run a simple API call to check authentication
 	// We use a non-existent job ID intentionally - we just want to see if we get an auth error
 	// Use the current executable path to support development testing with ./cli

@@ -33,3 +33,13 @@ Getting Started
 5. Optionally, install developer tools such as the Databricks extension for Visual
    Studio Code from:
    https://docs.databricks.com/dev-tools/vscode-ext.html
+
+Example Prompts to Get Started
+------------------------------
+
+Here are some example prompts you can try to extend your project:
+
+- "Create an app that shows a chart with taxi fares by city"
+- "Create a job that summarizes all taxi data using a notebook"
+- "Add a SQL pipeline to transform and aggregate customer data"
+- "Add a Python job to analyze NYC taxi trip patterns"

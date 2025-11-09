@@ -1,0 +1,24 @@
+#!/bin/bash
+
+# Initialize a test project first
+mkdir -p output
+cat > output/init_input.json <<EOF
+{
+  "project_name": "test_project",
+  "project_path": "./output/test_project"
+}
+EOF
+
+trace $CLI mcp --tool init_project --config-file output/init_input.json
+
+# Now analyze the project
+cat > output/analyze_input.json <<EOF
+{
+  "project_path": "./output/test_project"
+}
+EOF
+
+trace $CLI mcp --tool analyze_project --config-file output/analyze_input.json
+
+# Clean up temporary input files
+rm -rf output

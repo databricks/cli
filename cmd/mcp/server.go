@@ -35,6 +35,15 @@ type RPCError struct {
 	Data    any    `json:"data,omitempty"`
 }
 
+// JSON-RPC 2.0 error codes.
+const (
+	jsonRPCParseError     = -32700
+	jsonRPCInvalidRequest = -32600
+	jsonRPCMethodNotFound = -32601
+	jsonRPCInvalidParams  = -32602
+	jsonRPCInternalError  = -32603
+)
+
 // MCPServer implements the Model Context Protocol server.
 type MCPServer struct {
 	ctx         context.Context
@@ -65,7 +74,7 @@ func (s *MCPServer) Start() error {
 
 		var req JSONRPCRequest
 		if err := json.Unmarshal([]byte(line), &req); err != nil {
-			s.sendError(nil, -32700, "Parse error", nil)
+			s.sendError(nil, jsonRPCParseError, "Parse error", nil)
 			continue
 		}
 
@@ -91,7 +100,7 @@ func (s *MCPServer) handleRequest(req *JSONRPCRequest) {
 	case "tools/call":
 		s.handleToolsCall(req)
 	default:
-		s.sendError(req.ID, -32601, "Method not found", nil)
+		s.sendError(req.ID, jsonRPCMethodNotFound, "Method not found", nil)
 	}
 }
 
@@ -115,6 +124,24 @@ func (s *MCPServer) handleInitialize(req *JSONRPCRequest) {
 func (s *MCPServer) handleToolsList(req *JSONRPCRequest) {
 	tools := []map[string]any{
 		{
+			"name":        "invoke_databricks_cli",
+			"description": "Run any Databricks CLI command. Use this tool whenever you need to run databricks CLI commands like 'bundle deploy', 'bundle validate', 'bundle run', 'auth login', etc. The reason this tool exists (instead of invoking the databricks CLI directly) is to make it easier for users to allow-list commands.",
+			"inputSchema": map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"command": map[string]any{
+						"type":        "string",
+						"description": "The full Databricks CLI command to run, e.g. 'bundle deploy' or 'bundle validate'. Do not include the 'databricks' prefix.",
+					},
+					"working_directory": map[string]any{
+						"type":        "string",
+						"description": "Optional. The directory to run the command in. Defaults to the current directory.",
+					},
+				},
+				"required": []string{"command"},
+			},
+		},
+		{
 			"name":        "init_project",
 			"description": "Initialize a new Databricks project (an app, dashboard, job, pipeline, ETL application, etc.). Use to create a new project and to get information about how to adjust it.",
 			"inputSchema": map[string]any{
@@ -126,7 +153,7 @@ func (s *MCPServer) handleToolsList(req *JSONRPCRequest) {
 					},
 					"project_path": map[string]any{
 						"type":        "string",
-						"description": "A fully qualified path for the directory to create the new project in. If the current directory is fully empty it may make sense to just put it in the current directory; otherwise it could be a subdirectory.",
+						"description": "A fully qualified path of the project directory. Files will be created directly at this path, not in a subdirectory.",
 					},
 				},
 				"required": []string{"project_name", "project_path"},
@@ -146,6 +173,33 @@ func (s *MCPServer) handleToolsList(req *JSONRPCRequest) {
 				"required": []string{"project_path"},
 			},
 		},
+		{
+			"name":        "extend_project",
+			"description": "Extend the current Databricks project with a new app, job, pipeline, or dashboard. Use this when the user wants to add a new resource to an existing project.",
+			"inputSchema": map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"project_path": map[string]any{
+						"type":        "string",
+						"description": "A fully qualified path of the project to extend.",
+					},
+					"type": map[string]any{
+						"type":        "string",
+						"description": "The type of resource to add: 'app', 'job', 'pipeline', or 'dashboard'",
+						"enum":        []string{"app", "job", "pipeline", "dashboard"},
+					},
+					"name": map[string]any{
+						"type":        "string",
+						"description": "The name of the new resource in snake_case (e.g., 'process_data'). This name should not already exist in the resources/ directory.",
+					},
+					"template": map[string]any{
+						"type":        "string",
+						"description": "Optional template specification. For apps: template name from https://github.com/databricks/app-templates (e.g., 'e2e-chatbot-app-next'). For jobs/pipelines: 'python' or 'sql'. Leave empty to get guidance on available options.",
+					},
+				},
+				"required": []string{"project_path", "type", "name"},
+			},
+		},
 	}
 
 	result := map[string]any{
@@ -163,17 +217,21 @@ func (s *MCPServer) handleToolsCall(req *JSONRPCRequest) {
 	}
 
 	if err := json.Unmarshal(req.Params, &params); err != nil {
-		s.sendError(req.ID, -32602, "Invalid params", err.Error())
+		s.sendError(req.ID, jsonRPCInvalidParams, "Invalid params", err.Error())
 		return
 	}
 
 	switch params.Name {
+	case "invoke_databricks_cli":
+		s.handleInvokeDatabricksCLI(req.ID, params.Arguments)
 	case "init_project":
 		s.handleInitProject(req.ID, params.Arguments)
 	case "analyze_project":
 		s.handleAnalyzeProject(req.ID, params.Arguments)
+	case "extend_project":
+		s.handleExtendProject(req.ID, params.Arguments)
 	default:
-		s.sendError(req.ID, -32602, "Unknown tool", params.Name)
+		s.sendError(req.ID, jsonRPCInvalidParams, "Unknown tool", params.Name)
 	}
 }
 
@@ -215,17 +273,46 @@ func (s *MCPServer) sendError(id any, code int, message string, data any) {
 	_, _ = s.out.Write(append(respData, '\n'))
 }
 
+// handleInvokeDatabricksCLI implements the invoke_databricks_cli tool.
+func (s *MCPServer) handleInvokeDatabricksCLI(id any, args map[string]any) {
+	command, ok := args["command"].(string)
+	if !ok {
+		s.sendError(id, jsonRPCInvalidParams, "Missing or invalid command parameter", nil)
+		return
+	}
+
+	workingDirectory, _ := args["working_directory"].(string) // Optional
+
+	result, err := tools.InvokeDatabricksCLI(s.ctx, tools.InvokeDatabricksCLIArgs{
+		Command:          command,
+		WorkingDirectory: workingDirectory,
+	})
+	if err != nil {
+		s.sendError(id, jsonRPCInternalError, "Failed to run command: "+err.Error(), nil)
+		return
+	}
+
+	s.sendResponse(id, map[string]any{
+		"content": []map[string]any{
+			{
+				"type": "text",
+				"text": result,
+			},
+		},
+	})
+}
+
 // handleInitProject implements the init_project tool.
 func (s *MCPServer) handleInitProject(id any, args map[string]any) {
 	projectName, ok := args["project_name"].(string)
 	if !ok {
-		s.sendError(id, -32602, "Missing or invalid project_name parameter", nil)
+		s.sendError(id, jsonRPCInvalidParams, "Missing or invalid project_name parameter", nil)
 		return
 	}
 
 	projectPath, ok := args["project_path"].(string)
 	if !ok {
-		s.sendError(id, -32602, "Missing or invalid project_path parameter", nil)
+		s.sendError(id, jsonRPCInvalidParams, "Missing or invalid project_path parameter", nil)
 		return
 	}
 
@@ -234,7 +321,7 @@ func (s *MCPServer) handleInitProject(id any, args map[string]any) {
 		ProjectPath: projectPath,
 	})
 	if err != nil {
-		s.sendError(id, -32603, "Failed to initialize project", err.Error())
+		s.sendError(id, jsonRPCInternalError, "Failed to initialize project: "+err.Error(), nil)
 		return
 	}
 
@@ -252,7 +339,7 @@ func (s *MCPServer) handleInitProject(id any, args map[string]any) {
 func (s *MCPServer) handleAnalyzeProject(id any, args map[string]any) {
 	projectPath, ok := args["project_path"].(string)
 	if !ok {
-		s.sendError(id, -32602, "Missing or invalid project_path parameter", nil)
+		s.sendError(id, jsonRPCInvalidParams, "Missing or invalid project_path parameter", nil)
 		return
 	}
 
@@ -260,7 +347,50 @@ func (s *MCPServer) handleAnalyzeProject(id any, args map[string]any) {
 		ProjectPath: projectPath,
 	})
 	if err != nil {
-		s.sendError(id, -32603, "Failed to analyze project", err.Error())
+		s.sendError(id, jsonRPCInternalError, "Failed to analyze project: "+err.Error(), nil)
+		return
+	}
+
+	s.sendResponse(id, map[string]any{
+		"content": []map[string]any{
+			{
+				"type": "text",
+				"text": result,
+			},
+		},
+	})
+}
+
+// handleExtendProject implements the extend_project tool.
+func (s *MCPServer) handleExtendProject(id any, args map[string]any) {
+	projectPath, ok := args["project_path"].(string)
+	if !ok {
+		s.sendError(id, jsonRPCInvalidParams, "Missing or invalid project_path parameter", nil)
+		return
+	}
+
+	resourceType, ok := args["type"].(string)
+	if !ok {
+		s.sendError(id, jsonRPCInvalidParams, "Missing or invalid type parameter", nil)
+		return
+	}
+
+	name, ok := args["name"].(string)
+	if !ok {
+		s.sendError(id, jsonRPCInvalidParams, "Missing or invalid name parameter", nil)
+		return
+	}
+
+	template, _ := args["template"].(string) // Optional
+
+	result, err := tools.ExtendProject(s.ctx, tools.ExtendProjectArgs{
+		ProjectPath: projectPath,
+		Type:        resourceType,
+		Name:        name,
+		Template:    template,
+	})
+	if err != nil {
+		s.sendError(id, jsonRPCInternalError, "Failed to extend project: "+err.Error(), nil)
 		return
 	}
 

@@ -1,0 +1,6 @@
+{
+  "project_path": ".",
+  "type": "job",
+  "name": "test_job",
+  "template": "python"
+}

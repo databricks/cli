@@ -3,17 +3,20 @@ package tools
 import (
 	"context"
 	_ "embed"
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/databricks/cli/cmd/mcp/auth"
 )
 
 //go:embed guidance.txt
 var guidanceText string
+
+//go:embed default_readme.txt
+var defaultReadmeText string
 
 // AnalyzeProjectArgs represents the arguments for the analyze_project tool.
 type AnalyzeProjectArgs struct {
@@ -22,28 +25,9 @@ type AnalyzeProjectArgs struct {
 
 // AnalyzeProject analyzes a Databricks project and returns information about it.
 func AnalyzeProject(ctx context.Context, args AnalyzeProjectArgs) (string, error) {
-	// Validate project path
-	if args.ProjectPath == "" {
-		return "", errors.New("project_path is required")
-	}
-
-	// Check if the project path exists
-	pathInfo, err := os.Stat(args.ProjectPath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return "", fmt.Errorf("project directory does not exist: %s", args.ProjectPath)
-		}
-		return "", fmt.Errorf("failed to access project path: %w", err)
-	}
-
-	if !pathInfo.IsDir() {
-		return "", fmt.Errorf("project path is not a directory: %s", args.ProjectPath)
-	}
-
-	// Check if databricks.yml exists
-	databricksYml := filepath.Join(args.ProjectPath, "databricks.yml")
-	if _, err := os.Stat(databricksYml); os.IsNotExist(err) {
-		return "", fmt.Errorf("not a Databricks project: databricks.yml not found in %s\n\nUse the init_project tool to create a new project first", args.ProjectPath)
+	// Validate project path and ensure it's a Databricks project
+	if err := ValidateDatabricksProject(args.ProjectPath); err != nil {
+		return "", err
 	}
 
 	// Check authentication
@@ -52,23 +36,34 @@ func AnalyzeProject(ctx context.Context, args AnalyzeProjectArgs) (string, error
 	}
 
 	// Run bundle summary
-	// Use the current executable path to support development testing with ./cli
-	cliPath := os.Args[0]
-	cmd := exec.CommandContext(ctx, cliPath, "bundle", "summary")
+	cmd := exec.CommandContext(ctx, GetCLIPath(), "bundle", "summary")
 	cmd.Dir = args.ProjectPath
 
 	output, err := cmd.CombinedOutput()
+	var summary string
 	if err != nil {
-		return "", fmt.Errorf("failed to run bundle summary: %w\nOutput: %s", err, string(output))
+		// Include the failure output instead of erroring out
+		summary = "Bundle summary failed:\n" + string(output)
+	} else {
+		summary = string(output)
 	}
 
-	summary := string(output)
+	// Get README content (heading + first paragraph)
+	readmeContent := getProjectReadme(args.ProjectPath)
 
-	// Build the result with summary and guidance
+	// Build the result with summary, readme, and guidance
 	result := fmt.Sprintf(`Project Analysis
 ================
 
 %s
+
+%s
+
+Guidance for Working with this Project
+--------------------------------------
+
+IMPORTANT: Note that most interactions are done with the Databricks CLI; see databricks bundle --help.
+IMPORTANT: To add new resources to a project, use the 'extend_project' MCP tool.
 
 %s
 
@@ -77,7 +72,7 @@ Additional Resources
 - Bundle documentation: https://docs.databricks.com/dev-tools/bundles/index.html
 - Bundle settings reference: https://docs.databricks.com/dev-tools/bundles/settings
 - CLI reference: https://docs.databricks.com/dev-tools/cli/index.html`,
-		summary, guidanceText)
+		summary, readmeContent, guidanceText)
 
 	return result, nil
 }
@@ -85,4 +80,54 @@ Additional Resources
 // GetGuidanceText returns the embedded guidance text for testing.
 func GetGuidanceText() string {
 	return guidanceText
+}
+
+// getReadmeHeadingAndParagraph extracts the first heading and first paragraph from a README.
+// It returns the heading (with #) and the first non-empty paragraph after it.
+func getReadmeHeadingAndParagraph(content string) string {
+	lines := strings.Split(content, "\n")
+	var result []string
+	var foundHeading bool
+	var foundParagraph bool
+
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+
+		// Look for first heading
+		if !foundHeading && strings.HasPrefix(trimmed, "#") {
+			result = append(result, line)
+			foundHeading = true
+			continue
+		}
+
+		// After heading, look for first non-empty paragraph
+		if foundHeading && !foundParagraph {
+			if trimmed == "" {
+				continue
+			}
+			// Found first paragraph - add it
+			result = append(result, "")
+			result = append(result, line)
+			break
+		}
+	}
+
+	if len(result) == 0 {
+		return defaultReadmeText
+	}
+
+	return strings.Join(result, "\n")
+}
+
+// getProjectReadme reads the project's README.md and extracts heading + first paragraph.
+// Falls back to default README if the file doesn't exist.
+func getProjectReadme(projectPath string) string {
+	readmePath := filepath.Join(projectPath, "README.md")
+	content, err := os.ReadFile(readmePath)
+	if err != nil {
+		// README doesn't exist, use default
+		return defaultReadmeText
+	}
+
+	return getReadmeHeadingAndParagraph(string(content))
 }
