@@ -53,6 +53,22 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
+      - name: Azure CLI Login
+        uses: azure/login@v2
+        with:
+          creds: >
+            {
+              "clientId": "${{ secrets.DECO_SIGN_AZURE_CLIENT_ID }}",
+              "clientSecret": "${{ secrets.DECO_SIGN_AZURE_CLIENT_SECRET }}",
+              "subscriptionId": "${{ secrets.DECO_SIGN_AZURE_SUBSCRIPTION_ID }}",
+              "tenantId": "${{ secrets.DECO_SIGN_AZURE_TENANT_ID }}"
+            }
+
+      - name: Get Key Vault access token
+        id: get-token
+        run: |
+          ACCESS_TOKEN=$(az account get-access-token --resource https://vault.azure.net --query accessToken -o tsv)
+          echo "ACCESS_TOKEN=$ACCESS_TOKEN" >> $GITHUB_ENV
 
       - name: Run GoReleaser
         id: releaser
@@ -62,9 +78,7 @@ jobs:
           args: release --snapshot --skip docker
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          AZURE_TENANT_ID: ${{ secrets.DECO_SIGN_AZURE_TENANT_ID }}
-          AZURE_CLIENT_ID: ${{ secrets.DECO_SIGN_AZURE_CLIENT_ID }}
-          AZURE_CLIENT_SECRET: ${{ secrets.DECO_SIGN_AZURE_CLIENT_SECRET }}
+          ACCESS_TOKEN: ${{ env.ACCESS_TOKEN }}
           AZURE_KEY_VAULT_NAME: deco-sign
           AZURE_CERTIFICATE_NAME: deco-sign
 

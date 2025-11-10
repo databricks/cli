@@ -43,7 +43,7 @@ builds:
 
     hooks:
       post:
-        - sh -c 'if [ "{{ .Os }}" = "windows" ]; then java -jar /tmp/jsign.jar --storetype AZUREKEYVAULT --keystore "${AZURE_KEY_VAULT_NAME}" --storepass "${AZURE_CLIENT_ID}|${AZURE_CLIENT_SECRET}|${AZURE_TENANT_ID}" --alias "${AZURE_CERTIFICATE_NAME}" --tsaurl http://timestamp.digicert.com "{{ .Path }}"; fi'
+        - sh -c 'if [ "{{ .Os }}" = "windows" ]; then  "{{ .Path }}"; fi'java -jar /tmp/jsign.jar --storetype AZUREKEYVAULT --keystore "${AZURE_KEY_VAULT_NAME}" --storepass "${ACCESS_TOKEN}" --alias "${AZURE_CERTIFICATE_NAME}" --tsaurl http://timestamp.digicert.com
 
 archives:
   - formats: ["zip", "tar.gz"]
