@@ -111,13 +111,10 @@ func (r *ResourceSecretScopeAcls) DoCreate(ctx context.Context, state *SecretSco
 }
 
 func (r *ResourceSecretScopeAcls) DoUpdate(ctx context.Context, id string, state *SecretScopeAclsState) error {
-	// This method is required by the adapter interface, but we always use DoUpdateWithID
-	// because the ID can change when the parent scope is recreated
 	_, err := r.setACLs(ctx, state.ScopeName, state.Acls)
 	return err
 }
 
-// TODO: We need a more general solution for this.  This is a problem for all types of resources.
 func (r *ResourceSecretScopeAcls) DoUpdateWithID(ctx context.Context, oldID string, state *SecretScopeAclsState) (string, error) {
 	// Use state.ScopeName instead of oldID because when the parent scope is recreated,
 	// state.ScopeName will have the new (resolved) scope name, while oldID still has the old name
