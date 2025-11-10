@@ -30,7 +30,7 @@ var InvokeDatabricksCLITool = Tool{
 	},
 	Handler: func(ctx context.Context, args map[string]any) (string, error) {
 		var typedArgs InvokeDatabricksCLIArgs
-		if err := unmarshalArgs(args, &typedArgs); err != nil {
+		if err := UnmarshalArgs(args, &typedArgs); err != nil {
 			return "", err
 		}
 		return InvokeDatabricksCLI(ctx, typedArgs)

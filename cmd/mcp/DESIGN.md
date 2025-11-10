@@ -15,6 +15,10 @@ non-functional requirements:
 - take AGENTS.md into account when building this
 - MANDATORY: never invoke the databricks cli directly, instead use the invoke_databricks_cli tool!
 - MANDATORY: always deploy with invoke_databricks_cli 'bundle deploy', never with 'apps deploy'
+- Resource-specific code is modularized in cmd/mcp/tools/resources/ directory. Each resource type (app, job, pipeline, dashboard) has its own file (apps.go, jobs.go, etc.) that implements:
+  - Add* function: handles adding the resource to a project
+  - AnalyzeGuidance* function: returns resource-specific guidance for the AI agent
+  This structure makes it easy for teams (e.g., the apps team) to customize how the agent works with their specific resource type by editing the corresponding resource file.
 - MANDATORY: you need to experiment locally with the claude cli and cursor cli to make sure this actually works as expected.
   The testing approach should be:
 
@@ -115,8 +119,7 @@ the system as a whole a bit (btw each tool should be defined in a separate .go f
     - further implementation guidance: i want an acceptance test for this command. it should just call the 'help' command.
 
 - the "init_project" tool:
-    - description: initializes a new databricks project (an app, dashboard, job, pipeline, etl application, etc.).
-    use to create a new project and to get information about how to adjust it.
+    - description: initializes a new databricks project structure. Use this to create a new project. After initialization, use add_project_resource to add resources such as apps, jobs, dashboards, pipelines, etc.
     - parameter: project_name - a name for this project in snake_case; ask the user about this if it's not clear from the context
     - parameter: project_path - a fully qualified path for the directory to create the new project in. if the current directory is fully empty it may make sense to just put it in the current directory; otherwise it could be a sub directory.
     - action to perform when this runs: use the invoke_databricks_cli tool to run
@@ -126,7 +129,7 @@ the system as a whole a bit (btw each tool should be defined in a separate .go f
       (recursively) in that subdirectory to the target directory from project_path.
     - guidance on how to implement this: do some trial and error to make the init command work.
       do a non-forward merge of origin/add-default-minimal to get the minimal template!
-    - output: returns a success message followed by the same guidance as the analyze_project tool (calls analyze_project internally)
+    - output: returns a success message with a WARNING that this is an EMPTY project with NO resources, and that add_project_resource MUST be called if the user asked for a specific resource. followed by the same guidance as the analyze_project tool (calls analyze_project internally)
     - further implementation guidance: i want an acceptance test for this command. it should lead to a project
       that can pass a 'bundle validate' command!
 
@@ -146,8 +149,8 @@ the system as a whole a bit (btw each tool should be defined in a separate .go f
              - MANDATORY: always deploy with invoke_databricks_cli 'bundle deploy', never with 'apps deploy'
              - Note that Databricks resources are defined in resources/*.yml files. See https://docs.databricks.com/dev-tools/bundles/settings for a reference!
 
-          - <contents of the <project-dir>/README.md (if it exists, if not  of the acceptance/bundle/templates/default-sql/output/my_default_sql/README.md file,
-            heading and first paragraph). <implementation guidance: you need to import the acceptance readme file in the go file and strip the first part programmatically at runtime>
+          - Common guidance about getting started and using the CLI (should draw inspiration from the original default_python_template_readme.md file, extracting common instructions that are not app-specific)
+          - <contents of the <project-dir>/README.md (if it exists), skipping heading + first paragraph. This provides project-specific guidance that complements the common guidance>
 
 - the "add_project_resource" tool:
    - description: extend the current project with a new app, job, pipeline, or dashboard

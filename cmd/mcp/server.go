@@ -66,9 +66,19 @@ type MCPServer struct {
 	toolsMap map[string]tools.ToolHandler
 }
 
+// getAllTools returns all tools (definitions + handlers) for the MCP server.
+func getAllTools() []tools.Tool {
+	return []tools.Tool{
+		tools.InvokeDatabricksCLITool,
+		tools.InitProjectTool,
+		tools.AnalyzeProjectTool,
+		tools.AddProjectResourceTool,
+	}
+}
+
 // NewMCPServer creates a new MCP server instance.
 func NewMCPServer(ctx context.Context) *MCPServer {
-	allTools := tools.GetAllTools()
+	allTools := getAllTools()
 	toolsMap := make(map[string]tools.ToolHandler, len(allTools))
 	for _, tool := range allTools {
 		toolsMap[tool.Definition.Name] = tool.Handler
@@ -140,7 +150,7 @@ func (s *MCPServer) handleInitialize(req *JSONRPCRequest) {
 
 // handleToolsList handles the tools/list request.
 func (s *MCPServer) handleToolsList(req *JSONRPCRequest) {
-	allTools := tools.GetAllTools()
+	allTools := getAllTools()
 	mcpTools := make([]map[string]any, len(allTools))
 	for i, tool := range allTools {
 		mcpTools[i] = map[string]any{

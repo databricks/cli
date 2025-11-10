@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/databricks/cli/cmd/mcp/tools"
+	"github.com/databricks/cli/cmd/mcp/tools/resources"
 	"github.com/spf13/cobra"
 )
 
@@ -75,7 +76,7 @@ func runInitProjectTool(ctx context.Context, configData []byte) (string, error) 
 }
 
 func runAddProjectResourceTool(ctx context.Context, configData []byte) (string, error) {
-	var args tools.AddProjectResourceArgs
+	var args resources.AddProjectResourceArgs
 	if err := json.Unmarshal(configData, &args); err != nil {
 		return "", fmt.Errorf("failed to parse config: %w", err)
 	}

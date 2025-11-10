@@ -16,7 +16,7 @@ import (
 var InitProjectTool = Tool{
 	Definition: ToolDefinition{
 		Name:        "init_project",
-		Description: "Initialize a new Databricks project (an app, dashboard, job, pipeline, ETL application, etc.). Use to create a new project and to get information about how to adjust it.",
+		Description: "Initialize a new Databricks project structure. Use this to create a new project. After initialization, use add_project_resource to add specific resources (apps, jobs, pipelines, dashboards) as needed.",
 		InputSchema: map[string]any{
 			"type": "object",
 			"properties": map[string]any{
@@ -34,7 +34,7 @@ var InitProjectTool = Tool{
 	},
 	Handler: func(ctx context.Context, args map[string]any) (string, error) {
 		var typedArgs InitProjectArgs
-		if err := unmarshalArgs(args, &typedArgs); err != nil {
+		if err := UnmarshalArgs(args, &typedArgs); err != nil {
 			return "", err
 		}
 		return InitProject(ctx, typedArgs)
@@ -145,7 +145,13 @@ func InitProject(ctx context.Context, args InitProjectArgs) (string, error) {
 	// Return the same guidance as analyze_project
 	result := fmt.Sprintf(`Project '%s' initialized successfully at: %s
 
-`, args.ProjectName, args.ProjectPath)
+⚠️  IMPORTANT: This is an EMPTY project with NO resources (no apps, jobs, pipelines, or dashboards)!
+
+If the user asked you to create a specific resource (like "create an app" or "create a job"), you MUST now call the add_project_resource tool to add it!
+
+Example: add_project_resource(project_path="%s", type="app", name="my_app", template="nodejs-fastapi-hello-world-app")
+
+`, args.ProjectName, args.ProjectPath, args.ProjectPath)
 
 	// Get project analysis and guidance
 	analysis, err := AnalyzeProject(ctx, AnalyzeProjectArgs{ProjectPath: args.ProjectPath})

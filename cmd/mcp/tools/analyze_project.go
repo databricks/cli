@@ -2,7 +2,6 @@ package tools
 
 import (
 	"context"
-	_ "embed"
 	"fmt"
 	"os"
 	"os/exec"
@@ -10,10 +9,8 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/cmd/mcp/auth"
+	"github.com/databricks/cli/cmd/mcp/tools/resources"
 )
-
-//go:embed embedded/default_python_template_readme.md
-var defaultReadmeContent string
 
 // AnalyzeProjectTool analyzes a Databricks project and returns guidance.
 // It uses hardcoded guidance + guidance from the project's README.md file for this.
@@ -34,7 +31,7 @@ var AnalyzeProjectTool = Tool{
 	},
 	Handler: func(ctx context.Context, args map[string]any) (string, error) {
 		var typedArgs AnalyzeProjectArgs
-		if err := unmarshalArgs(args, &typedArgs); err != nil {
+		if err := UnmarshalArgs(args, &typedArgs); err != nil {
 			return "", err
 		}
 		return AnalyzeProject(ctx, typedArgs)
@@ -68,6 +65,60 @@ func AnalyzeProject(ctx context.Context, args AnalyzeProjectArgs) (string, error
 	}
 
 	readmeContent := getProjectReadme(args.ProjectPath)
+	if readmeContent != "" {
+		readmeContent = "\n\nProject-Specific Guidance\n" +
+			"-------------------------\n" +
+			readmeContent
+	}
+
+	resourceGuidance := getResourceGuidance(args.ProjectPath)
+
+	const commonGuidance = `
+Getting Started
+---------------
+Choose how you want to work on this project:
+
+(a) Directly in your Databricks workspace, see
+    https://docs.databricks.com/dev-tools/bundles/workspace.
+
+(b) Locally with an IDE like Cursor or VS Code, see
+    https://docs.databricks.com/dev-tools/vscode-ext.html.
+
+(c) With command line tools, see https://docs.databricks.com/dev-tools/cli/databricks-cli.html
+
+If you're developing with an IDE, dependencies for this project should be installed using uv:
+
+*  Make sure you have the UV package manager installed.
+   It's an alternative to tools like pip: https://docs.astral.sh/uv/getting-started/installation/.
+*  Run ` + "`uv sync --dev`" + ` to install the project's dependencies.
+
+Using this Project with the CLI
+--------------------------------
+The Databricks workspace and IDE extensions provide a graphical interface for working
+with this project. It's also possible to interact with it directly using the CLI:
+
+1. Authenticate to your Databricks workspace, if you have not done so already:
+   Use invoke_databricks_cli(command="auth login --profile DEFAULT --host <workspace_host>")
+   The AI needs to ask the user for the workspace host URL, it cannot guess it.
+
+2. To deploy a development copy of this project:
+   Use invoke_databricks_cli(command="bundle deploy --target dev", working_directory="<project_path>")
+   (Note that "dev" is the default target, so the --target parameter is optional here.)
+
+   This deploys everything that's defined for this project.
+
+3. Similarly, to deploy a production copy:
+   Use invoke_databricks_cli(command="bundle deploy --target prod", working_directory="<project_path>")
+   Note that schedules are paused when deploying in development mode (see
+   https://docs.databricks.com/dev-tools/bundles/deployment-modes.html).
+
+4. To run a job or pipeline:
+   Use invoke_databricks_cli(command="bundle run", working_directory="<project_path>")
+
+5. To run tests locally:
+   Use invoke_databricks_cli(command="bundle run <test_command>", working_directory="<project_path>")
+   For Python projects, tests can be run with: ` + "`uv run pytest`" + `
+`
 
 	result := fmt.Sprintf(`Project Analysis
 ================
@@ -95,14 +146,14 @@ MANDATORY: Always deploy with invoke_databricks_cli 'bundle deploy', never with 
 
 Note that Databricks resources are defined in resources/*.yml files. See https://docs.databricks.com/dev-tools/bundles/settings for a reference!
 
-%s
+%s%s%s
 
 Additional Resources
 -------------------
 - Bundle documentation: https://docs.databricks.com/dev-tools/bundles/index.html
 - Bundle settings reference: https://docs.databricks.com/dev-tools/bundles/settings
 - CLI reference: https://docs.databricks.com/dev-tools/cli/index.html`,
-		summary, readmeContent)
+		summary, commonGuidance, readmeContent, resourceGuidance)
 
 	return result, nil
 }
@@ -134,12 +185,55 @@ func skipReadmeHeadingAndParagraph(content string) string {
 }
 
 // getProjectReadme reads the project's README.md and skips heading + first paragraph.
-// Falls back to default README if the file doesn't exist.
+// Returns empty string if the file doesn't exist (common guidance is already included).
 func getProjectReadme(projectPath string) string {
 	readmePath := filepath.Join(projectPath, "README.md")
 	content, err := os.ReadFile(readmePath)
 	if err != nil {
-		return skipReadmeHeadingAndParagraph(defaultReadmeContent)
+		return ""
 	}
 	return skipReadmeHeadingAndParagraph(string(content))
+}
+
+// getResourceGuidance scans the resources directory and collects guidance for detected resource types.
+func getResourceGuidance(projectPath string) string {
+	var guidance strings.Builder
+	resourcesDir := filepath.Join(projectPath, "resources")
+	entries, err := os.ReadDir(resourcesDir)
+	if err != nil {
+		return ""
+	}
+
+	detected := make(map[string]bool)
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		name := entry.Name()
+		var resourceType string
+		switch {
+		case strings.HasSuffix(name, ".app.yml") || strings.HasSuffix(name, ".app.yaml"):
+			resourceType = "app"
+		case strings.HasSuffix(name, ".job.yml") || strings.HasSuffix(name, ".job.yaml"):
+			resourceType = "job"
+		case strings.HasSuffix(name, ".pipeline.yml") || strings.HasSuffix(name, ".pipeline.yaml"):
+			resourceType = "pipeline"
+		case strings.HasSuffix(name, ".dashboard.yml") || strings.HasSuffix(name, ".dashboard.yaml"):
+			resourceType = "dashboard"
+		default:
+			continue
+		}
+		if !detected[resourceType] {
+			detected[resourceType] = true
+			handler := resources.GetResourceHandler(resourceType)
+			if handler != nil {
+				guidanceText := handler.GetGuidancePrompt(projectPath)
+				if guidanceText != "" {
+					guidance.WriteString(guidanceText)
+					guidance.WriteString("\n")
+				}
+			}
+		}
+	}
+	return guidance.String()
 }
