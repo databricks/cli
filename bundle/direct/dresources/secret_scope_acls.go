@@ -2,6 +2,7 @@ package dresources
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"slices"
@@ -9,8 +10,10 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"golang.org/x/sync/errgroup"
 )
@@ -194,8 +197,14 @@ func (r *ResourceSecretScopeAcls) setACLs(ctx context.Context, scopeName string,
 
 	// Delete ACLs in parallel
 	for _, acl := range toDelete {
+		cmdio.LogString(ctx, fmt.Sprintf("Deleting ACL %v for principal %q", acl, acl.Principal))
 		g.Go(func() error {
-			if err := r.client.Secrets.DeleteAcl(ctx, acl); err != nil {
+			err := r.client.Secrets.DeleteAcl(ctx, acl)
+			// Ignore not found errors for ACLs.
+			if errors.Is(err, apierr.ErrNotFound) {
+				return nil
+			}
+			if err != nil {
 				return fmt.Errorf("failed to delete ACL %v for principal %q: %w", acl, acl.Principal, err)
 			}
 			return nil

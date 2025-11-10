@@ -15,14 +15,6 @@
 }
 {
   "body": {
-    "principal": "[USERNAME]",
-    "scope": "test-scope-[UNIQUE_NAME]-2"
-  },
-  "method": "POST",
-  "path": "/api/2.0/secrets/acls/delete"
-}
-{
-  "body": {
     "permission": "WRITE",
     "principal": "deco-test-user@databricks.com",
     "scope": "test-scope-[UNIQUE_NAME]-2"

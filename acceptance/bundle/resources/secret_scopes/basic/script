@@ -19,8 +19,7 @@ title "put and get secret in first scope"
 trace $CLI secrets put-secret $scope_name my-key --string-value "my-secret-value"
 trace $CLI secrets get-secret $scope_name my-key
 
-# Capture API requests for verification (engine-specific)
-print_requests.py //secrets | jq --sort-keys > out.first-requests.$DATABRICKS_BUNDLE_ENGINE.txt
+trace print_requests.py //secrets
 
 title "update the name of the scope (should recreate)"
 export SECRET_SCOPE_NAME="test-scope-$UNIQUE_NAME-2"
@@ -36,5 +35,5 @@ title "put and get secret in recreated scope"
 trace $CLI secrets put-secret $scope_name another-key --string-value "another-secret-value"
 trace $CLI secrets get-secret $scope_name another-key
 
-# Capture API requests for verification (engine-specific)
-print_requests.py //secrets | jq --sort-keys > out.second-requests.$DATABRICKS_BUNDLE_ENGINE.txt
+# Capture API requests for verification. Terraform cleans up ACLs before deleting the scope, but direct does not, hence the difference in requests.
+trace print_requests.py //secrets | jq --sort-keys > out.second-requests.$DATABRICKS_BUNDLE_ENGINE.txt

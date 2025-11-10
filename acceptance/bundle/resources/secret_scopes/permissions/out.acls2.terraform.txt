@@ -1,3 +1,0 @@
-{"permission":"MANAGE","principal":"test-group-[UUID]"}
-{"permission":"MANAGE","principal":"[USERNAME]"}
-{"permission":"WRITE","principal":"newuser-[UUID]@example.com"}
