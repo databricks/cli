@@ -72,10 +72,12 @@ func configOutputToInput(output *serving.EndpointCoreConfigOutput) *serving.Endp
 	return &serving.EndpointCoreConfigInput{
 		AutoCaptureConfig: autoCaptureConfigOutputToInput(output.AutoCaptureConfig),
 		ServedEntities:    servedEntitiesOutputToInput(output.ServedEntities),
+		ServedModels:      nil,
+		TrafficConfig:     output.TrafficConfig,
+		Name:              "",
 	}
 }
 
-// TODO: Remap served_models to served_entities.
 func (*ResourceModelServingEndpoint) RemapState(state *RefreshOutput) *serving.CreateServingEndpoint {
 	details := state.EndpointDetails
 	// Map the remote state (ServingEndpointDetailed) to the local state (CreateServingEndpoint)
