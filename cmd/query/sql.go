@@ -118,16 +118,15 @@ func runSQLCommand(cmd *cobra.Command, opts *sqlOptions) error {
 
 	client := cmdctx.WorkspaceClient(ctx)
 	return executor.Run(executor.Options{
-		Context:        ctx,
-		Client:         client,
-		Statements:     statements,
-		WarehouseID:    opts.warehouseID,
-		WaitTimeout:    waitTimeout,
-		Format:         format,
-		Output:         output,
-		Stderr:         cmd.ErrOrStderr(),
-		SpinnerFactory: cmdio.Spinner,
-		LogString:      cmdio.LogString,
+		Context:     ctx,
+		Client:      client,
+		Statements:  statements,
+		WarehouseID: opts.warehouseID,
+		WaitTimeout: waitTimeout,
+		Format:      format,
+		Output:      output,
+		Stderr:      cmd.ErrOrStderr(),
+		LogString:   cmdio.LogString,
 	})
 }
 

@@ -31,16 +31,15 @@ const (
 
 // Options configures statement execution.
 type Options struct {
-	Context        context.Context
-	Client         *databricks.WorkspaceClient
-	Statements     []sqlsafe.Statement
-	WarehouseID    string
-	WaitTimeout    string
-	Format         Format
-	Output         io.Writer
-	Stderr         io.Writer
-	SpinnerFactory func(context.Context) chan string
-	LogString      func(context.Context, string)
+	Context     context.Context
+	Client      *databricks.WorkspaceClient
+	Statements  []sqlsafe.Statement
+	WarehouseID string
+	WaitTimeout string
+	Format      Format
+	Output      io.Writer
+	Stderr      io.Writer
+	LogString   func(context.Context, string)
 }
 
 // Run executes statements according to the provided options.
@@ -64,34 +63,15 @@ func Run(opts Options) error {
 	if logFn == nil {
 		logFn = func(context.Context, string) {}
 	}
-	spinnerFactory := opts.SpinnerFactory
-	if spinnerFactory == nil {
-		spinnerFactory = func(context.Context) chan string { return nil }
-	}
-
 	downloader := newExternalLinkDownloader(opts.Client.Config)
 
-	stopSpinner := func(ch chan string) {
-		if ch != nil {
-			close(ch)
-		}
-	}
-
 	for idx, stmt := range opts.Statements {
-		var spinner chan string
-		if opts.WaitTimeout != "0s" {
-			spinner = spinnerFactory(ctx)
-		}
 		text := stmt.OriginalText
 		if strings.TrimSpace(text) == "" {
 			text = stmt.Text
 		}
 		if strings.TrimSpace(text) == "" {
 			continue
-		}
-
-		if spinner != nil {
-			spinner <- fmt.Sprintf("Submitting statement %d", idx+1)
 		}
 
 		resp, err := opts.Client.StatementExecution.ExecuteStatement(ctx, sqlapi.ExecuteStatementRequest{
@@ -102,18 +82,15 @@ func Run(opts Options) error {
 			Disposition:   sqlapi.DispositionExternalLinks,
 		})
 		if err != nil {
-			stopSpinner(spinner)
 			return err
 		}
 
 		if opts.WaitTimeout == "0s" {
 			logFn(ctx, fmt.Sprintf("Statement %d submitted (id: %s). Poll via GET /api/2.0/sql/statements/%s", idx+1, resp.StatementId, resp.StatementId))
-			stopSpinner(spinner)
 			continue
 		}
 
-		finalResp, err := waitForCompletion(ctx, opts.Client, resp, spinner)
-		stopSpinner(spinner)
+		finalResp, err := waitForCompletion(ctx, opts.Client, resp)
 		if err != nil {
 			return err
 		}
@@ -151,16 +128,13 @@ func Run(opts Options) error {
 	return nil
 }
 
-func waitForCompletion(ctx context.Context, client *databricks.WorkspaceClient, resp *sqlapi.StatementResponse, spinner chan string) (*sqlapi.StatementResponse, error) {
+func waitForCompletion(ctx context.Context, client *databricks.WorkspaceClient, resp *sqlapi.StatementResponse) (*sqlapi.StatementResponse, error) {
 	current := resp
 	state := getState(current)
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 
 	for state == sqlapi.StatementStatePending || state == sqlapi.StatementStateRunning {
-		if spinner != nil {
-			spinner <- fmt.Sprintf("Statement %s is %s", current.StatementId, strings.ToLower(state.String()))
-		}
 		select {
 		case <-ctx.Done():
 			return nil, ctx.Err()
