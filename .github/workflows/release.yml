@@ -9,6 +9,7 @@ on:
 
 jobs:
   goreleaser:
+    environment: sign
     runs-on:
       group: databricks-deco-testing-runner-group
       labels: ubuntu-latest-deco
@@ -53,23 +54,16 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-
-      - name: Build Azure creds JSON
-        id: creds
-        run: |
-          echo "Building Azure credentials JSON..."
-          CREDS_JSON=$(jq -n \
-            --arg clientId "${{ secrets.DECO_SIGN_AZURE_CLIENT_ID }}" \
-            --arg clientSecret "${{ secrets.DECO_SIGN_AZURE_CLIENT_SECRET }}" \
-            --arg subscriptionId "${{ secrets.DECO_SIGN_AZURE_SUBSCRIPTION_ID }}" \
-            --arg tenantId "${{ secrets.DECO_SIGN_AZURE_TENANT_ID }}" \
-            '{clientId:$clientId, clientSecret:$clientSecret, subscriptionId:$subscriptionId, tenantId:$tenantId}')
-          echo "creds=$CREDS_JSON" >> $GITHUB_OUTPUT
-
       - name: Azure CLI Login
         uses: azure/login@v2
         with:
-          creds: ${{ steps.creds.outputs.creds }}
+          creds: >
+            {
+              "clientId": "${{ secrets.DECO_SIGN_AZURE_CLIENT_ID }}",
+              "clientSecret": "${{ secrets.DECO_SIGN_AZURE_CLIENT_SECRET }}",
+              "subscriptionId": "${{ secrets.DECO_SIGN_AZURE_SUBSCRIPTION_ID }}",
+              "tenantId": "${{ secrets.DECO_SIGN_AZURE_TENANT_ID }}"
+            }
 
       - name: Get Key Vault access token
         id: get-token
