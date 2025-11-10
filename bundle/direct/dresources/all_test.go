@@ -24,6 +24,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -95,6 +96,21 @@ var testConfig map[string]any = map[string]any{
 					Value: "v1",
 				},
 			},
+		},
+	},
+
+	"secret_scopes": &resources.SecretScope{
+		Name:        "my_secret_scope",
+		BackendType: workspace.ScopeBackendTypeAzureKeyvault,
+		Permissions: []resources.SecretScopePermission{
+			{
+				Level:    resources.SecretScopePermissionLevelManage,
+				UserName: "user@example.com",
+			},
+		},
+		KeyvaultMetadata: &workspace.AzureKeyVaultSecretScopeMetadata{
+			DnsName:    "https://my-keyvault.vault.azure.net/",
+			ResourceId: "my-keyvault-resource-id",
 		},
 	},
 }
@@ -283,6 +299,30 @@ var testDeps = map[string]prepareWorkspace{
 				Privileges: []catalog.Privilege{catalog.PrivilegeCreateView},
 				Principal:  "user@example.com",
 			}},
+		}, nil
+	},
+
+	"secret_scopes.permissions": func(client *databricks.WorkspaceClient) (any, error) {
+		err := client.Secrets.CreateScope(context.Background(), workspace.CreateScope{
+			Scope:            "permissions_test_scope",
+			ScopeBackendType: workspace.ScopeBackendTypeAzureKeyvault,
+			BackendAzureKeyvault: &workspace.AzureKeyVaultSecretScopeMetadata{
+				DnsName:    "https://my-keyvault.vault.azure.net/",
+				ResourceId: "my-keyvault-resource-id",
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &SecretScopeAclsState{
+			ScopeName: "permissions_test_scope",
+			Acls: []workspace.AclItem{
+				{
+					Principal:  "user@example.com",
+					Permission: workspace.AclPermissionManage,
+				},
+			},
 		}, nil
 	},
 }

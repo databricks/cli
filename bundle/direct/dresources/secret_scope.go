@@ -2,7 +2,6 @@ package dresources
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -75,8 +74,8 @@ func (r *ResourceSecretScope) DoCreate(ctx context.Context, state *SecretScopeCo
 }
 
 func (r *ResourceSecretScope) DoUpdate(ctx context.Context, id string, state *SecretScopeConfig) error {
-	// Secret scopes themselves are immutable
-	return errors.New("secret scopes cannot be updated, they must be recreated")
+	// Secret scopes themselves are immutable. All fields are set to a recreate trigger.
+	return nil
 }
 
 func (r *ResourceSecretScope) DoDelete(ctx context.Context, id string) error {
