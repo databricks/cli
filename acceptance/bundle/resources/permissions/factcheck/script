@@ -1,0 +1,31 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+
+trace $CLI bundle deploy
+
+job_id=$($CLI bundle summary --output json | jq -r '.resources.jobs.job.id')
+echo "$job_id:JOB_ID" >> ACC_REPLS
+
+sql_warehouse_id=$($CLI bundle summary --output json | jq -r '.resources.sql_warehouses.warehouse.id')
+echo "$sql_warehouse_id:SQL_WAREHOUSE_ID" >> ACC_REPLS
+
+user=deco-test-user@databricks.com
+
+title "Permissions API simple takes the latest level in the request for a given principal\n"
+python3 check_permissions.py $user jobs $job_id CAN_VIEW,CAN_MANAGE_RUN CAN_MANAGE_RUN
+python3 check_permissions.py $user jobs $job_id CAN_MANAGE_RUN,CAN_VIEW CAN_VIEW
+python3 check_permissions.py $user jobs $job_id CAN_VIEW,CAN_MANAGE_RUN,CAN_MANAGE CAN_MANAGE
+python3 check_permissions.py $user jobs $job_id CAN_MANAGE,CAN_MANAGE_RUN CAN_MANAGE_RUN
+
+python3 check_permissions.py $USERNAME jobs $job_id CAN_MANAGE,IS_OWNER IS_OWNER
+
+title "Since we take the most recent level, IS_OWNER is lost, which results in the error due to lack of owner defined\n"
+musterr python3 check_permissions.py $USERNAME jobs $job_id IS_OWNER,CAN_MANAGE CAN_MANAGE
+
+python3 check_permissions.py $user sql/warehouses $sql_warehouse_id CAN_VIEW,CAN_USE CAN_USE
+python3 check_permissions.py $user sql/warehouses $sql_warehouse_id CAN_USE,CAN_VIEW CAN_VIEW

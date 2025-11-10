@@ -1,0 +1,16 @@
+bundle:
+  name: test_bundle_$UNIQUE_NAME
+
+resources:
+  jobs:
+    job:
+      name: job1
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Workspace/Users/user@example.com/notebook
+            source: WORKSPACE
+  sql_warehouses:
+    warehouse:
+      name: foo
+      cluster_size: Small
