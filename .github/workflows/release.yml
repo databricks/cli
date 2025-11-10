@@ -62,9 +62,9 @@ jobs:
           args: release --snapshot --skip docker
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_TENANT_ID: ${{ secrets.DECO_SIGN_AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.DECO_SIGN_AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.DECO_SIGN_AZURE_CLIENT_SECRET }}
           AZURE_KEY_VAULT_NAME: deco-sign
           AZURE_CERTIFICATE_NAME: deco-sign
 
