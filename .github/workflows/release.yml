@@ -56,13 +56,7 @@ jobs:
       - name: Azure CLI Login
         uses: azure/login@v2
         with:
-          creds: >
-            {
-              "clientId": "${{ secrets.DECO_SIGN_AZURE_CLIENT_ID }}",
-              "clientSecret": "${{ secrets.DECO_SIGN_AZURE_CLIENT_SECRET }}",
-              "subscriptionId": "${{ secrets.DECO_SIGN_AZURE_SUBSCRIPTION_ID }}",
-              "tenantId": "${{ secrets.DECO_SIGN_AZURE_TENANT_ID }}"
-            }
+          creds: '{"clientId":"${{ secrets.DECO_SIGN_AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.DECO_SIGN_AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.DECO_SIGN_AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.DECO_SIGN_AZURE_TENANT_ID }}"}'
 
       - name: Get Key Vault access token
         id: get-token
