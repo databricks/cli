@@ -20,28 +20,24 @@
   >=15.4,<15.5
 {{- end}}
 
-{{/* Python version specification for the template.
-   * Supports Python 3.10 through 3.12 for compatibility with various DBR versions.
-   * Python 3.12 is used in serverless environment version 4 and DBR 16.4 LTS.
-   * See https://docs.databricks.com/release-notes/runtime/index.html for DBR Python versions.
-   */}}
-{{define "python_version_spec" -}}
-  >=3.10,<3.13
-{{- end}}
-
 {{define "latest_databricks_bundles_version" -}}0.276.0{{- end}}
-
-{{/* The default Python version for notebooks and local development.
-   * This should match the Python version available in the latest LTS DBR and
-   * the latest serverless environment version.
-   */}}
-{{define "default_python_version" -}}
-  3.12
-{{- end}}
 
 {{/* The serverless environment version to use.
    * See https://docs.databricks.com/release-notes/runtime/index.html for available versions.
    */}}
 {{define "serverless_environment_version" -}}
   4
+{{- end}}
+
+{{/* Python version specification for the template.
+   * This needs to be compatible with the version of DB Connect and the serverless_environment_version.
+   */}}
+{{define "python_version_spec" -}}
+  >=3.10,<3.13
+{{- end}}
+
+{{/* The default Python version used in notebook metadata.
+   */}}
+{{define "default_python_version" -}}
+  3.12
 {{- end}}
