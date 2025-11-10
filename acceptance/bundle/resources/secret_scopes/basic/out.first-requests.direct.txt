@@ -1,13 +1,6 @@
 {
   "body": {
-    "scope": "test-scope-[UNIQUE_NAME]-1"
-  },
-  "method": "POST",
-  "path": "/api/2.0/secrets/scopes/delete"
-}
-{
-  "body": {
-    "scope": "test-scope-[UNIQUE_NAME]-2",
+    "scope": "test-scope-[UNIQUE_NAME]-1",
     "scope_backend_type": "DATABRICKS"
   },
   "method": "POST",
@@ -16,7 +9,7 @@
 {
   "body": {
     "principal": "[USERNAME]",
-    "scope": "test-scope-[UNIQUE_NAME]-2"
+    "scope": "test-scope-[UNIQUE_NAME]-1"
   },
   "method": "POST",
   "path": "/api/2.0/secrets/acls/delete"
@@ -25,7 +18,7 @@
   "body": {
     "permission": "WRITE",
     "principal": "deco-test-user@databricks.com",
-    "scope": "test-scope-[UNIQUE_NAME]-2"
+    "scope": "test-scope-[UNIQUE_NAME]-1"
   },
   "method": "POST",
   "path": "/api/2.0/secrets/acls/put"

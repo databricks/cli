@@ -1,0 +1,4 @@
+{"permission":"MANAGE","principal":"test-group-[UUID]"}
+{"permission":"MANAGE","principal":"[USERNAME]"}
+{"permission":"READ","principal":"user1-[UUID]@example.com"}
+{"permission":"WRITE","principal":"user2-[UUID]@example.com"}

@@ -17,7 +17,8 @@ trace $CLI bundle plan
 trace $CLI bundle deploy
 scope_name=$($CLI bundle summary --output json | jq -r '.resources.secret_scopes.my_scope.name')
 trace $CLI secrets list-scopes -o json | jq ".[] | select(.name == \"$scope_name\")"
-trace $CLI secrets list-acls $scope_name | jq -c '.[]' | sort
+# Verify ACLs (engine-specific since terraform keeps default [USERNAME] ACL, direct-exp removes it)
+$CLI secrets list-acls $scope_name | jq -c '.[]' | sort > out.acls1.$DATABRICKS_BUNDLE_ENGINE.txt
 
 title "update permissions (remove one user, change another)"
 export TEST_USER_1="newuser-$(uuid)@example.com"
@@ -39,7 +40,8 @@ EOF
 envsubst < databricks.yml.tmpl > databricks.yml
 trace $CLI bundle plan
 trace $CLI bundle deploy
-trace $CLI secrets list-acls $scope_name | jq -c '.[]' | sort
+# Verify ACLs (engine-specific)
+$CLI secrets list-acls $scope_name | jq -c '.[]' | sort > out.acls2.$DATABRICKS_BUNDLE_ENGINE.txt
 
 title "change scope name (should recreate scope and update permissions)"
 export SECRET_SCOPE_NAME="test-scope-permissions-$UNIQUE_NAME-2"
@@ -48,4 +50,5 @@ trace $CLI bundle plan
 trace $CLI bundle deploy
 scope_name=$($CLI bundle summary --output json | jq -r '.resources.secret_scopes.my_scope.name')
 trace $CLI secrets list-scopes -o json | jq ".[] | select(.name == \"$scope_name\")"
-trace $CLI secrets list-acls $scope_name | jq -c '.[]' | sort
+# Verify ACLs (engine-specific)
+$CLI secrets list-acls $scope_name | jq -c '.[]' | sort > out.acls3.$DATABRICKS_BUNDLE_ENGINE.txt

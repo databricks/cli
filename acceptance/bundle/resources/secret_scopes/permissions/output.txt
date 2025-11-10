@@ -17,11 +17,6 @@ Deployment complete!
   "name": "test-scope-permissions-[UNIQUE_NAME]"
 }
 
->>> [CLI] secrets list-acls test-scope-permissions-[UNIQUE_NAME]
-{"permission":"MANAGE","principal":"test-group-[UUID]"}
-{"permission":"READ","principal":"user1-[UUID]@example.com"}
-{"permission":"WRITE","principal":"user2-[UUID]@example.com"}
-
 === update permissions (remove one user, change another)
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
@@ -31,10 +26,6 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/secret-scope-permi
 Deploying resources...
 Updating deployment state...
 Deployment complete!
-
->>> [CLI] secrets list-acls test-scope-permissions-[UNIQUE_NAME]
-{"permission":"MANAGE","principal":"test-group-[UUID]"}
-{"permission":"WRITE","principal":"newuser-[UUID]@example.com"}
 
 === change scope name (should recreate scope and update permissions)
 >>> [CLI] bundle plan
@@ -51,10 +42,6 @@ Deployment complete!
   "backend_type": "DATABRICKS",
   "name": "test-scope-permissions-[UNIQUE_NAME]"
 }
-
->>> [CLI] secrets list-acls test-scope-permissions-[UNIQUE_NAME]
-{"permission":"MANAGE","principal":"test-group-[UUID]"}
-{"permission":"WRITE","principal":"newuser-[UUID]@example.com"}
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

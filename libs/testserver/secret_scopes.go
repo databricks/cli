@@ -40,6 +40,18 @@ func (s *FakeWorkspace) SecretsCreateScope(req Request) Response {
 
 	s.SecretScopes[request.Scope] = scope
 
+	// Automatically grant MANAGE permission to the creator (current user)
+	// This matches real Databricks behavior
+	if s.Acls == nil {
+		s.Acls = make(map[string][]workspace.AclItem)
+	}
+	s.Acls[request.Scope] = []workspace.AclItem{
+		{
+			Principal:  s.CurrentUser().UserName,
+			Permission: workspace.AclPermissionManage,
+		},
+	}
+
 	return Response{}
 }
 
