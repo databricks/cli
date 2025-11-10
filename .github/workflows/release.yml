@@ -54,21 +54,14 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-      - name: Azure CLI Login
-        uses: azure/login@v2
-        with:
-          environment: azuregermancloud
-          creds: >
-            {
-              "clientId": "${{ secrets.DECO_SIGN_AZURE_CLIENT_ID }}",
-              "clientSecret": "${{ secrets.DECO_SIGN_AZURE_CLIENT_SECRET }}",
-              "subscriptionId": "${{ secrets.DECO_SIGN_AZURE_SUBSCRIPTION_ID }}",
-              "tenantId": "${{ secrets.DECO_SIGN_AZURE_TENANT_ID }}"
-            }
 
       - name: Get Key Vault access token
         id: get-token
         run: |
+          az login --service-principal \
+            -u ${{ secrets.DECO_SIGN_AZURE_CLIENT_ID }} \
+            -p ${{ secrets.DECO_SIGN_AZURE_CLIENT_SECRET }} \
+            --tenant ${{ secrets.DECO_SIGN_AZURE_TENANT_ID }}
           ACCESS_TOKEN=$(az account get-access-token --resource https://vault.azure.net --query accessToken -o tsv)
           echo "ACCESS_TOKEN=$ACCESS_TOKEN" >> $GITHUB_ENV
 
