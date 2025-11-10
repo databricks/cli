@@ -1,5 +1,5 @@
 
->>> CLI bundle debug plan
+>>> [CLI] bundle debug plan
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...

@@ -1,12 +1,12 @@
 {
   "plan": {
     "resources.model_serving_endpoints.test_endpoint": {
-      "action": "create",
+      "action": "recreate",
       "new_state": {
         "config": {
           "config": {
             "auto_capture_config": {
-              "catalog_name": "main",
+              "catalog_name": "other_catalog",
               "schema_name": "default",
               "table_name_prefix": "my_table"
             },
@@ -25,6 +25,13 @@
             ]
           },
           "name": "[ORIGINAL_ENDPOINT_ID]"
+        }
+      },
+      "changes": {
+        "local": {
+          "config.auto_capture_config.catalog_name": {
+            "action": "recreate"
+          }
         }
       }
     }
