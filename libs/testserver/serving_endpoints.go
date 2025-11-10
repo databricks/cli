@@ -54,12 +54,13 @@ func servedModelsInputToOutput(input []serving.ServedModelInput) []serving.Serve
 
 func autoCaptureConfigInputToOutput(input *serving.AutoCaptureConfigInput) *serving.AutoCaptureConfigOutput {
 	return &serving.AutoCaptureConfigOutput{
-		CatalogName: input.CatalogName,
-		SchemaName: input.SchemaName,
+		CatalogName:     input.CatalogName,
+		SchemaName:      input.SchemaName,
 		TableNamePrefix: input.TableNamePrefix,
-		Enabled: input.Enabled,
+		Enabled:         input.Enabled,
 		ForceSendFields: input.ForceSendFields,
 	}
+}
 
 func (s *FakeWorkspace) ServingEndpointCreate(req Request) Response {
 	defer s.LockUnlock()()
