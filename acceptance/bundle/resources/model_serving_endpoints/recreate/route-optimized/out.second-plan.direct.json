@@ -7,15 +7,11 @@
           "config": {
             "served_entities": [
               {
-                "external_model": {
-                  "name": "gpt-4o-mini",
-                  "openai_config": {
-                    "openai_api_key": "{{secrets/test-scope/openai-key}}"
-                  },
-                  "provider": "openai",
-                  "task": "llm/v1/chat"
-                },
-                "name": "prod"
+                "entity_name": "system.ai.llama_v3_2_1b_instruct",
+                "entity_version": "1",
+                "name": "llama",
+                "scale_to_zero_enabled": true,
+                "workload_size": "Small"
               }
             ]
           },

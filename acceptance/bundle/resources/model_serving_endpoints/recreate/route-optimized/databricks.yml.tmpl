@@ -10,11 +10,9 @@ resources:
       name: test-endpoint-$UNIQUE_NAME
       config:
         served_entities:
-          - name: prod
-            external_model:
-              name: gpt-4o-mini
-              provider: openai
-              task: llm/v1/chat
-              openai_config:
-                openai_api_key: "{{secrets/test-scope/openai-key}}"
+          - name: "llama"
+            entity_name: system.ai.llama_v3_2_1b_instruct
+            entity_version: 1
+            workload_size: Small
+            scale_to_zero_enabled: true
       route_optimized: false
