@@ -46,6 +46,7 @@ func PrepareSecretScopeAclsInputConfig(inputConfig any, node string) (*structvar
 		elem := sliceValue.Index(i).Interface().(resources.SecretScopePermission)
 		acl := workspace.AclItem{
 			Permission: workspace.AclPermission(elem.Level),
+			Principal:  "",
 		}
 		if elem.UserName != "" {
 			acl.Principal = elem.UserName
