@@ -16,6 +16,7 @@ import (
 var defaultReadmeContent string
 
 // AnalyzeProjectTool analyzes a Databricks project and returns guidance.
+// It uses hardcoded guidance + guidance from the project's README.md file for this.
 var AnalyzeProjectTool = Tool{
 	Definition: ToolDefinition{
 		Name:        "analyze_project",
