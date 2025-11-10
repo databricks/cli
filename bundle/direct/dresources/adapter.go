@@ -73,7 +73,6 @@ type IResourceNoRefresh interface {
 	DoUpdate(ctx context.Context, id string, newState any) error
 
 	// [Optional] DoUpdateWithChanges updates the resource with information about changes computed during plan.
-	// Example: func (r *ResourceJob) DoUpdateWithChanges(ctx context.Context, id string, newState *jobs.JobSettings, changes *deployplan.Changes) error
 	DoUpdateWithChanges(ctx context.Context, id string, newState any, changes *deployplan.Changes) error
 
 	// [Optional] DoUpdateWithID performs an update that may result in resource having a new ID
@@ -109,8 +108,7 @@ type IResourceWithRefresh interface {
 	DoUpdate(ctx context.Context, id string, newState any) (remoteState any, e error)
 
 	// [Optional] DoUpdateWithChanges updates the resource with information about changes computed during plan. Returns remote state.
-	// Example: func (r *ResourceJob) DoUpdateWithChanges(ctx context.Context, id string, newState *jobs.JobSettings, changes *deployplan.Changes) (*jobs.Job, error)
-	DoUpdateWithChanges(ctx context.Context, id string, newState any, changes *deployplan.Changes) (remoteState any, e error)
+	// Example: func (r *ResourceModelServingEndpoint) DoUpdateWithChanges(ctx context.Context, id string, newState *serving.CreateServingEndpoint, changes *deployplan.Changes) (*serving.ServingEndpointInfo, error)	DoUpdateWithChanges(ctx context.Context, id string, newState any, changes *deployplan.Changes) (remoteState any, e error)
 
 	// Optional: updates that may change ID. Returns new id and remote state when available.
 	DoUpdateWithID(ctx context.Context, id string, newState any) (newID string, remoteState any, e error)
