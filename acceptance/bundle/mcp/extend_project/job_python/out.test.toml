@@ -1,8 +1,0 @@
-Local = true
-Cloud = false
-
-[Env]
-DATABRICKS_MCP_SKIP_AUTH_CHECK = "1"
-
-[EnvMatrix]
-  DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]

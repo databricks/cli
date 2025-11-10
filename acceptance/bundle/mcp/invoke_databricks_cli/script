@@ -1,4 +1,0 @@
-#!/bin/bash
-
-# Test invoke_databricks_cli with the help command
-trace $CLI mcp --tool invoke_databricks_cli --config-file input.json

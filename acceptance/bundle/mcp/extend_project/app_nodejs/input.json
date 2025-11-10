@@ -1,6 +1,0 @@
-{
-  "project_path": ".",
-  "type": "app",
-  "name": "test_app",
-  "template": "nodejs-fastapi-hello-world-app"
-}

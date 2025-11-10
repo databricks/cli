@@ -1,6 +1,0 @@
-{
-  "project_path": ".",
-  "type": "pipeline",
-  "name": "test_pipeline",
-  "template": "sql"
-}

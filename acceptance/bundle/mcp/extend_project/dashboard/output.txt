@@ -1,7 +1,0 @@
-
->>> [CLI] mcp --tool init_project --config-file init_input.json
-Error: failed to check authentication: exit status 1
-Output: Error: Not Found
-
-
-Exit code: 1
