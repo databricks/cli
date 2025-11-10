@@ -44,15 +44,15 @@ To illustrate how the install command should work:
 ```
 $ databricks mcp install
 
+  ▄▄▄▄▄▄▄▄   Databricks CLI
+  ██▌  ▐██   MCP Server
+  ▀▀▀▀▀▀▀▀
+
 Welcome to the Databricks CLI MCP server!
 
-< the above should come with a cute brick figure logo, just like how claude code has:
-  ▐▛███▜▌   Claude Code v2.0.29
-▝▜█████▛▘  Sonnet 4.5 · Claude Enterprise
-  ▘▘ ▝▝    /Users/lennart.kats/projects/cli-add-mcp>
-
-<add some ascii art to add a box around this warning>:
-The databricks mcp command is experimental and may change in the future!
+╔════════════════════════════════════════════════════════════════╗
+║  ⚠️  EXPERIMENTAL: This command may change in future versions  ║
+╚════════════════════════════════════════════════════════════════╝
 
 <we should do a sanity check to see if 'databricks' is on the system path => if it is not we should ask the user to go to https://docs.databricks.com/dev-tools/cli/install and fatally error>
 
