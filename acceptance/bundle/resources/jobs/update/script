@@ -2,6 +2,7 @@ echo "*" > .gitignore
 trace $CLI bundle plan
 $CLI bundle debug plan > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
+print_state.py > out.state.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle plan
 trace $CLI bundle debug plan > out.plan_skip.$DATABRICKS_BUNDLE_ENGINE.json
 

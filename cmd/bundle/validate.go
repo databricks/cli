@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
 )
 
@@ -51,6 +52,11 @@ Please run this command before deploying to ensure configuration quality.`,
 			IncludeLocations: includeLocations,
 		})
 		ctx := cmd.Context()
+
+		if err != nil && err != root.ErrAlreadyPrinted {
+			logdiag.LogError(ctx, err)
+			err = root.ErrAlreadyPrinted
+		}
 
 		// output before checking the error on purpose
 

@@ -332,12 +332,14 @@ func AddDefaultHandlers(server *Server) {
 		return MapDelete(req.Workspace, req.Workspace.Schemas, req.Vars["full_name"])
 	})
 
-	server.Handle("PATCH", "/api/2.1/unity-catalog/permissions/schema/{full_name}", func(req Request) any {
-		return req.Workspace.SchemasUpdateGrants(req, req.Vars["full_name"])
+	// Grants:
+
+	server.Handle("PATCH", "/api/2.1/unity-catalog/permissions/{securable_type}/{full_name}", func(req Request) any {
+		return req.Workspace.GrantsUpdate(req, req.Vars["securable_type"], req.Vars["full_name"])
 	})
 
-	server.Handle("GET", "/api/2.1/unity-catalog/permissions/schema/{full_name}", func(req Request) any {
-		return req.Workspace.SchemasGetGrants(req, req.Vars["full_name"])
+	server.Handle("GET", "/api/2.1/unity-catalog/permissions/{securable_type}/{full_name}", func(req Request) any {
+		return req.Workspace.GrantsGet(req, req.Vars["securable_type"], req.Vars["full_name"])
 	})
 
 	// Catalogs:

@@ -324,9 +324,9 @@ func (b *Bundle) AuthEnv() (map[string]string, error) {
 
 // StateFilenameDirect returns (relative remote path, relative local path) for direct engine resource state
 func (b *Bundle) StateFilenameDirect(ctx context.Context) (string, string) {
-	return resourcesFilename, filepath.Join(b.GetLocalStateDir(ctx), resourcesFilename)
+	return resourcesFilename, filepath.ToSlash(filepath.Join(b.GetLocalStateDir(ctx), resourcesFilename))
 }
 
 func (b *Bundle) StateFilenameTerraform(ctx context.Context) (string, string) {
-	return terraformStateFilename, filepath.Join(b.GetLocalStateDir(ctx), "terraform", terraformStateFilename)
+	return terraformStateFilename, filepath.ToSlash(filepath.Join(b.GetLocalStateDir(ctx), "terraform", terraformStateFilename))
 }
