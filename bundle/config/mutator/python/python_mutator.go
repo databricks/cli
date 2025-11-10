@@ -73,6 +73,21 @@ const (
 	// Resources can't be added or removed, and CLI rejects such changes. Python code is
 	// allowed to modify existing resources, but not other parts of bundle configuration.
 	PythonMutatorPhaseApplyMutators phase = "apply_mutators"
+
+	// PythonMutatorPhasePostDeploy is the phase in which resources have been successfully
+	// deployed to Databricks.
+	//
+	// At this stage, we execute Python code to perform post-deployment tasks.
+	//
+	// During this process, Python code can access:
+	// - selected deployment target
+	// - bundle variable values
+	// - deployed resource IDs (job IDs, pipeline IDs, etc.)
+	// - workspace client for API calls
+	//
+	// Python code in this phase cannot modify bundle configuration. It is meant for
+	// side effects such as triggering jobs, sending notifications, or running validations.
+	PythonMutatorPhasePostDeploy phase = "post_deploy"
 )
 
 type pythonMutator struct {
@@ -106,103 +121,51 @@ type runPythonMutatorOpts struct {
 	loadLocations  bool
 }
 
-// getOpts adapts deprecated PyDABs and upcoming Python configuration
+// getOpts adapts deprecated PyDABs and Python configuration
 // into a common structure.
 func getOpts(b *bundle.Bundle, phase phase) (opts, error) {
-	experimental := b.Config.Experimental
-	if experimental == nil {
-		experimental = &config.Experimental{}
-	}
-
-	// using reflect.DeepEquals in case we add more fields
-	pydabsEnabled := !reflect.DeepEqual(experimental.PyDABs, config.PyDABs{})
-	experimentalPythonEnabled := !reflect.DeepEqual(experimental.Python, config.Python{})
+	// Check root-level python configuration first (preferred)
 	pythonEnabled := !reflect.DeepEqual(b.Config.Python, config.Python{})
 
-	if pydabsEnabled {
-		return opts{}, errors.New("experimental/pydabs is deprecated, use python instead (https://docs.databricks.com/dev-tools/bundles/python)")
+	// Fall back to experimental.python for backward compatibility
+	experimental := b.Config.Experimental
+	if experimental != nil {
+		// using reflect.DeepEquals in case we add more fields
+		pydabsEnabled := !reflect.DeepEqual(experimental.PyDABs, config.PyDABs{})
+		experimentalPythonEnabled := !reflect.DeepEqual(experimental.Python, config.Python{})
+
+		if pydabsEnabled {
+			return opts{}, errors.New("experimental/pydabs is deprecated, use experimental/python instead (https://docs.databricks.com/dev-tools/bundles/python)")
+		}
+
+		if experimentalPythonEnabled {
+			pythonEnabled = true
+		}
 	}
 
-	if experimentalPythonEnabled && pythonEnabled {
-		if !reflect.DeepEqual(experimental.Python, b.Config.Python) {
-			return opts{}, errors.New("'experimental/python' and 'python' configuration properties are mutually exclusive, use only 'python'")
-		} else {
+	if pythonEnabled {
+		// Get the Python configuration (prefer root-level, fall back to experimental)
+		pythonConfig := b.Config.Python
+		if experimental != nil && !reflect.DeepEqual(experimental.Python, config.Python{}) {
+			pythonConfig = experimental.Python
+		}
+
+		// don't execute for phases for 'pydabs' section
+		if phase == PythonMutatorPhaseLoadResources || phase == PythonMutatorPhaseApplyMutators || phase == PythonMutatorPhasePostDeploy {
 			return opts{
 				enabled:       true,
-				venvPath:      b.Config.Python.VEnvPath,
+				venvPath:      pythonConfig.VEnvPath,
 				loadLocations: true,
 			}, nil
+		} else {
+			return opts{}, nil
 		}
-	} else if pythonEnabled {
-		return opts{
-			enabled:       true,
-			venvPath:      b.Config.Python.VEnvPath,
-			loadLocations: true,
-		}, nil
-	} else if experimentalPythonEnabled {
-		return opts{
-			enabled:       true,
-			venvPath:      experimental.Python.VEnvPath,
-			loadLocations: true,
-		}, nil
 	} else {
 		return opts{}, nil
 	}
 }
 
-// applyBackwardsCompatibilityFixes applies fixes to bundle configuration
-// so that older version of databricks-bundles Python library continue to see
-// 'experimental.python' section even if bundle configuration uses 'python' section.
-//
-// This way upgrades are less risky if CLI version doesn't match Python package version.
-//
-// Later version of Python package should reject 'experimental.python' unless 'python' section
-// is set to equivalent value, and after that reject 'experimental.python' altogether.
-func applyBackwardsCompatibilityFixes(b *bundle.Bundle) error {
-	return b.Config.Mutate(func(value dyn.Value) (dyn.Value, error) {
-		outValue := value
-
-		pythonValue, _ := dyn.Get(outValue, "python")
-		if !pythonValue.IsValid() {
-			// if 'python' section doesn't exist, nothing to do
-			return value, nil
-		}
-
-		experimentalPythonValue, _ := dyn.Get(outValue, "experimental.python")
-
-		if experimentalPythonValue.IsValid() {
-			// if 'experimental.python' section exists, nothing to do
-			return value, nil
-		}
-
-		experimentalValue, _ := dyn.Get(outValue, "experimental")
-		if !experimentalValue.IsValid() {
-			updated, err := dyn.Set(outValue, "experimental", dyn.NewValue(map[string]dyn.Value{}, nil))
-			if err != nil {
-				return dyn.InvalidValue, fmt.Errorf("failed to create 'experimental' section: %w", err)
-			} else {
-				outValue = updated
-			}
-		}
-
-		// move 'python' section to 'experimental.python'
-		updated, err := dyn.Set(outValue, "experimental.python", pythonValue)
-		if err != nil {
-			return dyn.InvalidValue, fmt.Errorf("failed to set 'experimental.python' section: %w", err)
-		} else {
-			outValue = updated
-		}
-
-		return outValue, nil
-	})
-}
-
 func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	err := applyBackwardsCompatibilityFixes(b)
-	if err != nil {
-		return diag.FromErr(fmt.Errorf("failed to apply backwards compatibility fixes: %w", err))
-	}
-
 	opts, err := getOpts(b, m.phase)
 	if err != nil {
 		return diag.Errorf("failed to apply python mutator: %s", err)
@@ -215,6 +178,11 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 	// Don't run any arbitrary code when restricted execution is enabled.
 	if _, ok := env.RestrictedExecution(ctx); ok {
 		return diag.Errorf("Running Python code is not allowed when DATABRICKS_BUNDLE_RESTRICTED_CODE_EXECUTION is set")
+	}
+
+	// Post-deploy phase doesn't modify bundle configuration
+	if m.phase == PythonMutatorPhasePostDeploy {
+		return m.runPostDeploy(ctx, b, opts)
 	}
 
 	// mutateDiags is used because Mutate returns 'error' instead of 'diag.Diagnostics'
@@ -302,6 +270,33 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 
 	resourcemutator.NormalizeResources(ctx, b, result.UpdatedResources)
 	return mutateDiags
+}
+
+// runPostDeploy executes Python post-deploy callbacks without modifying bundle configuration
+func (m *pythonMutator) runPostDeploy(ctx context.Context, b *bundle.Bundle, opts opts) diag.Diagnostics {
+	pythonPath, err := detectExecutable(ctx, opts.venvPath)
+	if err != nil {
+		return diag.Errorf("failed to get Python interpreter path: %s", err)
+	}
+
+	cacheDir, err := createCacheDir(ctx)
+	if err != nil {
+		return diag.Errorf("failed to create cache dir: %s", err)
+	}
+
+	// For post-deploy, we pass the current bundle config to Python
+	// Python code can read deployed resource IDs but cannot modify the bundle
+	root := b.Config.Value()
+
+	_, diags := m.runPythonMutator(ctx, root, runPythonMutatorOpts{
+		cacheDir:       cacheDir,
+		bundleRootPath: b.BundleRootPath,
+		pythonPath:     pythonPath,
+		loadLocations:  opts.loadLocations,
+	})
+
+	// We ignore the output for post-deploy phase as it shouldn't modify bundle
+	return diags
 }
 
 func createCacheDir(ctx context.Context) (string, error) {

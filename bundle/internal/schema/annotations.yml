@@ -141,6 +141,11 @@ github.com/databricks/cli/bundle/config.Python:
       Mutators contains a list of fully qualified function paths to mutator functions.
 
       Example: ["my_project.mutators:add_default_cluster"]
+  "post_deploy":
+    "description": |-
+      PostDeploy contains a list of fully qualified function paths to post-deploy functions.
+
+      Example: ["my_project.post_deploy:notify_team"]
   "resources":
     "description": |-
       Resources contains a list of fully qualified function paths to load resources

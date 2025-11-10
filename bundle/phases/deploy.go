@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle/artifacts"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
+	"github.com/databricks/cli/bundle/config/mutator/python"
 	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/bundle/deploy/lock"
@@ -199,7 +200,10 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	}
 
 	logDeployTelemetry(ctx, b)
-	bundle.ApplyContext(ctx, b, scripts.Execute(config.ScriptPostDeploy))
+	bundle.ApplySeqContext(ctx, b,
+		scripts.Execute(config.ScriptPostDeploy),
+		python.PythonMutator(python.PythonMutatorPhasePostDeploy),
+	)
 }
 
 func RunPlan(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) *deployplan.Plan {

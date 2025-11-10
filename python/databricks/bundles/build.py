@@ -35,6 +35,7 @@ class _Args:
 class _Conf:
     resources: list[str] = field(default_factory=list)
     mutators: list[str] = field(default_factory=list)
+    post_deploy: list[str] = field(default_factory=list)
     venv_path: Optional[str] = None
 
     @classmethod
@@ -263,6 +264,17 @@ def python_mutator(
         locations = _relativize_locations(resources._locations)
 
         return new_bundle, locations, diagnostics.extend(resources.diagnostics)
+    elif args.phase == "post_deploy":
+        callback_functions, diagnostics = _load_functions(conf.post_deploy)
+        if diagnostics.has_error():
+            return input, {}, diagnostics
+
+        # Execute post-deploy callbacks
+        # Note: callbacks receive the bundle but don't modify it
+        diagnostics = diagnostics.extend(_run_post_deploy_callbacks(bundle, callback_functions))
+
+        # Return input unchanged (post-deploy doesn't modify bundle config)
+        return input, {}, diagnostics
     else:
         return input, {}, Diagnostics.create_error(f"Unknown phase: {args.phase}")
 
@@ -274,6 +286,7 @@ def _parse_bundle_info(input: dict) -> Bundle:
     return Bundle(
         target=bundle["target"],
         variables=variables,
+        _resource_state=input.get("resources", {}),
     )
 
 
@@ -329,6 +342,32 @@ def _load_resources(
             )
 
     return resources, diagnostics
+
+
+def _run_post_deploy_callbacks(
+    bundle: Bundle,
+    functions: list[Callable],
+) -> Diagnostics:
+    """Execute post-deploy callback functions."""
+    diagnostics = Diagnostics()
+
+    for function in functions:
+        try:
+            if _get_num_args(function) == 0:
+                function()
+            else:
+                # Pass a copy of the bundle to the callback
+                function(deepcopy(bundle))
+        except Exception as exc:
+            diagnostics = diagnostics.extend(
+                Diagnostics.from_exception(
+                    exc=exc,
+                    summary="Failed to execute post-deploy callback",
+                    location=Location.from_callable(function),
+                )
+            )
+
+    return diagnostics
 
 
 def _load_functions(names: list[str]) -> tuple[list[Callable], Diagnostics]:
