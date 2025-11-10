@@ -32,7 +32,7 @@ func (d *DeploymentUnit) Destroy(ctx context.Context, db *dstate.DeploymentState
 	return nil
 }
 
-func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState, newState any, actionType deployplan.ActionType) error {
+func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState, newState any, actionType deployplan.ActionType, changes *deployplan.Changes) error {
 	if actionType == deployplan.ActionTypeCreate {
 		return d.Create(ctx, db, newState)
 	}
@@ -51,7 +51,7 @@ func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState,
 	case deployplan.ActionTypeRecreate:
 		return d.Recreate(ctx, db, oldID, newState)
 	case deployplan.ActionTypeUpdate:
-		return d.Update(ctx, db, oldID, newState)
+		return d.Update(ctx, db, oldID, newState, changes)
 	case deployplan.ActionTypeUpdateWithID:
 		return d.UpdateWithID(ctx, db, oldID, newState)
 	case deployplan.ActionTypeResize:
@@ -107,8 +107,16 @@ func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentStat
 	return d.Create(ctx, db, newState)
 }
 
-func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState, id string, newState any) error {
-	remoteState, err := d.Adapter.DoUpdate(ctx, id, newState)
+func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState, id string, newState any, changes *deployplan.Changes) error {
+	var remoteState any
+	var err error
+
+	if d.Adapter.HasDoUpdateWithChanges() && changes != nil {
+		remoteState, err = d.Adapter.DoUpdateWithChanges(ctx, id, newState, changes)
+	} else {
+		remoteState, err = d.Adapter.DoUpdate(ctx, id, newState)
+	}
+
 	if err != nil {
 		return fmt.Errorf("updating id=%s: %w", id, err)
 	}
