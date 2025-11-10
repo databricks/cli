@@ -72,7 +72,6 @@ def test_permissions(target_user, resource_type, resource_id, levels, expected):
         print()
 
 
-
 def main():
     test_permissions(*sys.argv[1:])
 
