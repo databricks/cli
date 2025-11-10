@@ -1,0 +1,2 @@
+title "Preserves optimizer hints in submitted SQL"
+trace $CLI query sql --warehouse-id wh-123 --sql "SELECT /*+ BROADCAST(dim) */ * FROM fact JOIN dim" --format json

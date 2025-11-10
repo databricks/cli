@@ -1,0 +1,15 @@
+{
+  "method": "POST",
+  "path": "/api/2.0/sql/statements",
+  "body": {
+    "disposition": "EXTERNAL_LINKS",
+    "on_wait_timeout": "CONTINUE",
+    "statement": "SELECT /*+ BROADCAST(dim) */ * FROM fact JOIN dim",
+    "wait_timeout": "10s",
+    "warehouse_id": "wh-123"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/sql/statements/stmt-hint/result/chunks/0"
+}
