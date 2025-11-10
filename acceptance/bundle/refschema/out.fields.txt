@@ -3000,12 +3000,10 @@ resources.secret_scopes.*.permissions[*].user_name	string	INPUT
 resources.secret_scopes.*.scope	string	STATE
 resources.secret_scopes.*.scope_backend_type	workspace.ScopeBackendType	STATE
 resources.secret_scopes.*.url	string	INPUT
-resources.secret_scopes.*.permissions.acls	[]resources.SecretScopePermission	ALL
-resources.secret_scopes.*.permissions.acls[*]	resources.SecretScopePermission	ALL
-resources.secret_scopes.*.permissions.acls[*].group_name	string	ALL
-resources.secret_scopes.*.permissions.acls[*].level	resources.SecretScopePermissionLevel	ALL
-resources.secret_scopes.*.permissions.acls[*].service_principal_name	string	ALL
-resources.secret_scopes.*.permissions.acls[*].user_name	string	ALL
+resources.secret_scopes.*.permissions.acls	[]workspace.AclItem	ALL
+resources.secret_scopes.*.permissions.acls[*]	workspace.AclItem	ALL
+resources.secret_scopes.*.permissions.acls[*].permission	workspace.AclPermission	ALL
+resources.secret_scopes.*.permissions.acls[*].principal	string	ALL
 resources.secret_scopes.*.permissions.scope_name	string	ALL
 resources.sql_warehouses.*.auto_stop_mins	int	ALL
 resources.sql_warehouses.*.channel	*sql.Channel	ALL
