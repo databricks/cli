@@ -7,19 +7,6 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> [CLI] serving-endpoints get [ORIGINAL_ENDPOINT_ID]
-"[ORIGINAL_ENDPOINT_ID]"
-
->>> update_file.py databricks.yml name: [ORIGINAL_ENDPOINT_ID] name: [NEW_ENDPOINT_ID]
-
->>> [CLI] bundle debug plan
-
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
-
 >>> print_requests.py //serving-endpoints
 {
   "method": "POST",
@@ -43,6 +30,21 @@ Deployment complete!
     "name": "[ORIGINAL_ENDPOINT_ID]"
   }
 }
+
+>>> [CLI] serving-endpoints get [ORIGINAL_ENDPOINT_ID]
+"[ORIGINAL_ENDPOINT_ID]"
+
+>>> update_file.py databricks.yml name: [ORIGINAL_ENDPOINT_ID] name: [NEW_ENDPOINT_ID]
+
+>>> [CLI] bundle debug plan
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py //serving-endpoints
 {
   "method": "DELETE",
   "path": "/api/2.0/serving-endpoints/[ORIGINAL_ENDPOINT_ID]"
