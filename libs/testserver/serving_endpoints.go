@@ -8,6 +8,59 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/serving"
 )
 
+func servedEntitiesInputToOutput(input []serving.ServedEntityInput) []serving.ServedEntityOutput {
+	entities := make([]serving.ServedEntityOutput, len(input))
+	for i, entity := range input {
+		entities[i] = serving.ServedEntityOutput{
+			EntityName:                entity.EntityName,
+			EntityVersion:             entity.EntityVersion,
+			EnvironmentVars:           entity.EnvironmentVars,
+			ExternalModel:             entity.ExternalModel,
+			InstanceProfileArn:        entity.InstanceProfileArn,
+			MaxProvisionedConcurrency: entity.MaxProvisionedConcurrency,
+			MaxProvisionedThroughput:  entity.MaxProvisionedThroughput,
+			MinProvisionedConcurrency: entity.MinProvisionedConcurrency,
+			MinProvisionedThroughput:  entity.MinProvisionedThroughput,
+			Name:                      entity.Name,
+			ProvisionedModelUnits:     entity.ProvisionedModelUnits,
+			ScaleToZeroEnabled:        entity.ScaleToZeroEnabled,
+			WorkloadSize:              entity.WorkloadSize,
+			WorkloadType:              entity.WorkloadType,
+			ForceSendFields:           entity.ForceSendFields,
+		}
+	}
+	return entities
+}
+
+func servedModelsInputToOutput(input []serving.ServedModelInput) []serving.ServedModelOutput {
+	models := make([]serving.ServedModelOutput, len(input))
+	for i, model := range input {
+		models[i] = serving.ServedModelOutput{
+			ModelName:                 model.ModelName,
+			ModelVersion:              model.ModelVersion,
+			EnvironmentVars:           model.EnvironmentVars,
+			InstanceProfileArn:        model.InstanceProfileArn,
+			MaxProvisionedConcurrency: model.MaxProvisionedConcurrency,
+			MinProvisionedConcurrency: model.MinProvisionedConcurrency,
+			ProvisionedModelUnits:     model.ProvisionedModelUnits,
+			ScaleToZeroEnabled:        model.ScaleToZeroEnabled,
+			WorkloadSize:              model.WorkloadSize,
+			WorkloadType:              serving.ServingModelWorkloadType(model.WorkloadType),
+			ForceSendFields:           model.ForceSendFields,
+		}
+	}
+	return models
+}
+
+func autoCaptureConfigInputToOutput(input *serving.AutoCaptureConfigInput) *serving.AutoCaptureConfigOutput {
+	return &serving.AutoCaptureConfigOutput{
+		CatalogName: input.CatalogName,
+		SchemaName: input.SchemaName,
+		TableNamePrefix: input.TableNamePrefix,
+		Enabled: input.Enabled,
+		ForceSendFields: input.ForceSendFields,
+	}
+
 func (s *FakeWorkspace) ServingEndpointCreate(req Request) Response {
 	defer s.LockUnlock()()
 
@@ -37,58 +90,17 @@ func (s *FakeWorkspace) ServingEndpointCreate(req Request) Response {
 
 		// Convert ServedEntityInput to ServedEntityOutput
 		if len(createReq.Config.ServedEntities) > 0 {
-			config.ServedEntities = make([]serving.ServedEntityOutput, len(createReq.Config.ServedEntities))
-			for i, entity := range createReq.Config.ServedEntities {
-				config.ServedEntities[i] = serving.ServedEntityOutput{
-					EntityName:                entity.EntityName,
-					EntityVersion:             entity.EntityVersion,
-					EnvironmentVars:           entity.EnvironmentVars,
-					ExternalModel:             entity.ExternalModel,
-					InstanceProfileArn:        entity.InstanceProfileArn,
-					MaxProvisionedConcurrency: entity.MaxProvisionedConcurrency,
-					MaxProvisionedThroughput:  entity.MaxProvisionedThroughput,
-					MinProvisionedConcurrency: entity.MinProvisionedConcurrency,
-					MinProvisionedThroughput:  entity.MinProvisionedThroughput,
-					Name:                      entity.Name,
-					ProvisionedModelUnits:     entity.ProvisionedModelUnits,
-					ScaleToZeroEnabled:        entity.ScaleToZeroEnabled,
-					WorkloadSize:              entity.WorkloadSize,
-					WorkloadType:              entity.WorkloadType,
-					ForceSendFields:           entity.ForceSendFields,
-				}
-			}
+			config.ServedEntities = servedEntitiesInputToOutput(createReq.Config.ServedEntities)
 		}
 
 		// Convert ServedModelInput to ServedModelOutput
 		if len(createReq.Config.ServedModels) > 0 {
-			config.ServedModels = make([]serving.ServedModelOutput, len(createReq.Config.ServedModels))
-			for i, model := range createReq.Config.ServedModels {
-				config.ServedModels[i] = serving.ServedModelOutput{
-					EnvironmentVars:           model.EnvironmentVars,
-					InstanceProfileArn:        model.InstanceProfileArn,
-					MaxProvisionedConcurrency: model.MaxProvisionedConcurrency,
-					MinProvisionedConcurrency: model.MinProvisionedConcurrency,
-					ModelName:                 model.ModelName,
-					ModelVersion:              model.ModelVersion,
-					Name:                      model.Name,
-					ProvisionedModelUnits:     model.ProvisionedModelUnits,
-					ScaleToZeroEnabled:        model.ScaleToZeroEnabled,
-					WorkloadSize:              model.WorkloadSize,
-					WorkloadType:              serving.ServingModelWorkloadType(model.WorkloadType),
-					ForceSendFields:           model.ForceSendFields,
-				}
-			}
+			config.ServedModels = servedModelsInputToOutput(createReq.Config.ServedModels)
 		}
 
 		// Convert AutoCaptureConfig if present
 		if createReq.Config.AutoCaptureConfig != nil {
-			config.AutoCaptureConfig = &serving.AutoCaptureConfigOutput{
-				CatalogName:     createReq.Config.AutoCaptureConfig.CatalogName,
-				SchemaName:      createReq.Config.AutoCaptureConfig.SchemaName,
-				TableNamePrefix: createReq.Config.AutoCaptureConfig.TableNamePrefix,
-				Enabled:         createReq.Config.AutoCaptureConfig.Enabled,
-				ForceSendFields: createReq.Config.AutoCaptureConfig.ForceSendFields,
-			}
+			config.AutoCaptureConfig = autoCaptureConfigInputToOutput(createReq.Config.AutoCaptureConfig)
 		}
 	}
 
@@ -145,58 +157,17 @@ func (s *FakeWorkspace) ServingEndpointUpdate(req Request, name string) Response
 
 		// Convert ServedEntityInput to ServedEntityOutput
 		if len(updateReq.ServedEntities) > 0 {
-			config.ServedEntities = make([]serving.ServedEntityOutput, len(updateReq.ServedEntities))
-			for i, entity := range updateReq.ServedEntities {
-				config.ServedEntities[i] = serving.ServedEntityOutput{
-					EntityName:                entity.EntityName,
-					EntityVersion:             entity.EntityVersion,
-					EnvironmentVars:           entity.EnvironmentVars,
-					ExternalModel:             entity.ExternalModel,
-					InstanceProfileArn:        entity.InstanceProfileArn,
-					MaxProvisionedConcurrency: entity.MaxProvisionedConcurrency,
-					MaxProvisionedThroughput:  entity.MaxProvisionedThroughput,
-					MinProvisionedConcurrency: entity.MinProvisionedConcurrency,
-					MinProvisionedThroughput:  entity.MinProvisionedThroughput,
-					Name:                      entity.Name,
-					ProvisionedModelUnits:     entity.ProvisionedModelUnits,
-					ScaleToZeroEnabled:        entity.ScaleToZeroEnabled,
-					WorkloadSize:              entity.WorkloadSize,
-					WorkloadType:              entity.WorkloadType,
-					ForceSendFields:           entity.ForceSendFields,
-				}
-			}
+			config.ServedEntities = servedEntitiesInputToOutput(updateReq.ServedEntities)
 		}
 
 		// Convert ServedModelInput to ServedModelOutput
 		if len(updateReq.ServedModels) > 0 {
-			config.ServedModels = make([]serving.ServedModelOutput, len(updateReq.ServedModels))
-			for i, model := range updateReq.ServedModels {
-				config.ServedModels[i] = serving.ServedModelOutput{
-					EnvironmentVars:           model.EnvironmentVars,
-					InstanceProfileArn:        model.InstanceProfileArn,
-					MaxProvisionedConcurrency: model.MaxProvisionedConcurrency,
-					MinProvisionedConcurrency: model.MinProvisionedConcurrency,
-					ModelName:                 model.ModelName,
-					ModelVersion:              model.ModelVersion,
-					Name:                      model.Name,
-					ProvisionedModelUnits:     model.ProvisionedModelUnits,
-					ScaleToZeroEnabled:        model.ScaleToZeroEnabled,
-					WorkloadSize:              model.WorkloadSize,
-					WorkloadType:              serving.ServingModelWorkloadType(model.WorkloadType),
-					ForceSendFields:           model.ForceSendFields,
-				}
-			}
+			config.ServedModels = servedModelsInputToOutput(updateReq.ServedModels)
 		}
 
 		// Convert AutoCaptureConfig if present
 		if updateReq.AutoCaptureConfig != nil {
-			config.AutoCaptureConfig = &serving.AutoCaptureConfigOutput{
-				CatalogName:     updateReq.AutoCaptureConfig.CatalogName,
-				SchemaName:      updateReq.AutoCaptureConfig.SchemaName,
-				TableNamePrefix: updateReq.AutoCaptureConfig.TableNamePrefix,
-				Enabled:         updateReq.AutoCaptureConfig.Enabled,
-				ForceSendFields: updateReq.AutoCaptureConfig.ForceSendFields,
-			}
+			config.AutoCaptureConfig = autoCaptureConfigInputToOutput(updateReq.AutoCaptureConfig)
 		}
 	}
 
