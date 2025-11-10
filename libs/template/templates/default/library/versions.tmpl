@@ -31,6 +31,13 @@
 
 {{/* Python version specification for the template.
    * This needs to be compatible with the version of DB Connect and the serverless_environment_version.
+   *
+   * Serverless environment version 4 (and upcoming v5), DBR 16, and DBR 17 all use Python 3.12.
+   * DB Connect 15 supports all of these and is compatible with Python 3.10-3.12.
+   *
+   * We use >=3.10,<3.13 rather than pinning to 3.12 specifically because overly narrow pinning
+   * means users always need to use uv or similar tools to install the exact version. A broader
+   * range improves usability while maintaining compatibility with both DB Connect and serverless.
    */}}
 {{define "python_version_spec" -}}
   >=3.10,<3.13
