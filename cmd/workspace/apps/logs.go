@@ -1,0 +1,260 @@
+package apps
+
+import (
+	"context"
+	"crypto/tls"
+	"errors"
+	"fmt"
+	"io"
+	"net/http"
+	"net/url"
+	"os"
+	"path"
+	"strings"
+	"time"
+
+	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgroup"
+	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/logstream"
+	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/service/apps"
+	"github.com/gorilla/websocket"
+	"github.com/spf13/cobra"
+)
+
+const (
+	defaultTailLines      = 200
+	defaultPrefetchWindow = 2 * time.Second
+	tokenAcquireTimeout   = time.Minute
+)
+
+func newLogsCommand() *cobra.Command {
+	var (
+		tailLines     int
+		follow        bool
+		outputPath    string
+		streamTimeout time.Duration
+		searchTerm    string
+		sourceFilters []string
+	)
+
+	cmd := &cobra.Command{
+		Use:   "logs NAME",
+		Short: "Show Databricks app logs",
+		Long: `Show stdout/stderr logs for a Databricks app by connecting to its log stream.
+
+By default this command fetches the most recent logs (up to --tail-lines) and exits.
+Use --follow to continue streaming logs until cancelled.`,
+		Args:    root.ExactArgs(1),
+		PreRunE: root.MustWorkspaceClient,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
+
+			if tailLines < 0 {
+				return errors.New("--tail-lines cannot be negative")
+			}
+
+			if follow && streamTimeout > 0 {
+				var cancel context.CancelFunc
+				ctx, cancel = context.WithTimeout(ctx, streamTimeout)
+				defer cancel()
+			}
+
+			name := args[0]
+			w := cmdctx.WorkspaceClient(ctx)
+			app, err := w.Apps.Get(ctx, apps.GetAppRequest{Name: name})
+			if err != nil {
+				return err
+			}
+			if app.Url == "" {
+				return fmt.Errorf("app %s does not have a public URL; deploy and start it before streaming logs", name)
+			}
+
+			wsURL, err := buildLogsURL(app.Url)
+			if err != nil {
+				return err
+			}
+
+			cfg := cmdctx.ConfigUsed(ctx)
+			if cfg == nil {
+				return errors.New("missing workspace configuration")
+			}
+			authArgs := &auth.AuthArguments{Host: cfg.Host, AccountID: cfg.AccountID}
+			oauthArg, err := authArgs.ToOAuthArgument()
+			if err != nil {
+				return err
+			}
+
+			tokenRequest := auth.AcquireTokenRequest{
+				OAuthArgument: oauthArg,
+				Host:          authArgs.Host,
+				AccountID:     authArgs.AccountID,
+				ProfileName:   cfg.Profile,
+				Timeout:       tokenAcquireTimeout,
+			}
+			token, err := auth.AcquireToken(ctx, tokenRequest)
+			if err != nil {
+				return err
+			}
+			tokenProvider := func(ctx context.Context) (string, error) {
+				tok, err := auth.AcquireToken(ctx, tokenRequest)
+				if err != nil {
+					return "", err
+				}
+				return tok.AccessToken, nil
+			}
+
+			var writer io.Writer = cmd.OutOrStdout()
+			var file *os.File
+			if outputPath != "" {
+				file, err = os.OpenFile(outputPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o600)
+				if err != nil {
+					return err
+				}
+				defer file.Close()
+				writer = io.MultiWriter(writer, file)
+			}
+
+			sourceMap, err := buildSourceFilter(sourceFilters)
+			if err != nil {
+				return err
+			}
+
+			log.Infof(ctx, "Streaming logs for %s (%s)", name, wsURL)
+			return logstream.Run(ctx, logstream.Config{
+				Dialer:        newLogStreamDialer(cfg),
+				URL:           wsURL,
+				Origin:        normalizeOrigin(app.Url),
+				Token:         token.AccessToken,
+				TokenProvider: tokenProvider,
+				Search:        searchTerm,
+				Sources:       sourceMap,
+				Tail:          tailLines,
+				Follow:        follow,
+				Prefetch:      defaultPrefetchWindow,
+				Writer:        writer,
+				UserAgent:     "databricks-cli apps logs",
+			})
+		},
+	}
+
+	streamGroup := cmdgroup.NewFlagGroup("Streaming")
+	streamGroup.FlagSet().IntVar(&tailLines, "tail-lines", defaultTailLines, "Number of recent log lines to show before streaming. Set to 0 to show everything.")
+	streamGroup.FlagSet().BoolVarP(&follow, "follow", "f", false, "Continue streaming logs until interrupted.")
+	streamGroup.FlagSet().DurationVar(&streamTimeout, "timeout", 0, "Maximum time to stream when --follow is set. 0 disables the timeout.")
+
+	filterGroup := cmdgroup.NewFlagGroup("Filtering")
+	filterGroup.FlagSet().StringVar(&searchTerm, "search", "", "Send a search term to the log service before streaming.")
+	filterGroup.FlagSet().StringSliceVar(&sourceFilters, "source", nil, "Restrict logs to APP and/or SYSTEM sources (repeat for multiple).")
+
+	wrappedCmd := cmdgroup.NewCommandWithGroupFlag(cmd)
+	wrappedCmd.AddFlagGroup(streamGroup)
+	wrappedCmd.AddFlagGroup(filterGroup)
+
+	cmd.Flags().StringVar(&outputPath, "output-file", "", "Optional file path to write logs in addition to stdout.")
+
+	return cmd
+}
+
+func buildLogsURL(appURL string) (string, error) {
+	parsed, err := url.Parse(appURL)
+	if err != nil {
+		return "", err
+	}
+
+	switch strings.ToLower(parsed.Scheme) {
+	case "https":
+		parsed.Scheme = "wss"
+	case "http":
+		parsed.Scheme = "ws"
+	case "wss", "ws":
+	default:
+		return "", fmt.Errorf("unsupported app URL scheme: %s", parsed.Scheme)
+	}
+
+	parsed.Path = path.Join(parsed.Path, "logz/stream")
+	if !strings.HasPrefix(parsed.Path, "/") {
+		parsed.Path = "/" + parsed.Path
+	}
+
+	return parsed.String(), nil
+}
+
+func normalizeOrigin(appURL string) string {
+	parsed, err := url.Parse(appURL)
+	if err != nil {
+		return ""
+	}
+	switch strings.ToLower(parsed.Scheme) {
+	case "http", "https":
+		return parsed.Scheme + "://" + parsed.Host
+	case "ws":
+		parsed.Scheme = "http"
+	case "wss":
+		parsed.Scheme = "https"
+	default:
+		return ""
+	}
+	parsed.Path = ""
+	parsed.RawQuery = ""
+	parsed.Fragment = ""
+	return parsed.String()
+}
+
+func buildSourceFilter(values []string) (map[string]struct{}, error) {
+	if len(values) == 0 {
+		return nil, nil
+	}
+	filter := make(map[string]struct{})
+	for _, v := range values {
+		trimmed := strings.ToUpper(strings.TrimSpace(v))
+		switch trimmed {
+		case "", "ANY":
+			continue
+		case "APP", "SYSTEM":
+			filter[trimmed] = struct{}{}
+		default:
+			return nil, fmt.Errorf("invalid --source value %q (valid: APP, SYSTEM)", v)
+		}
+	}
+	if len(filter) == 0 {
+		return nil, nil
+	}
+	return filter, nil
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newLogsCommand())
+	})
+}
+
+func newLogStreamDialer(cfg *config.Config) *websocket.Dialer {
+	dialer := &websocket.Dialer{
+		Proxy:            http.ProxyFromEnvironment,
+		HandshakeTimeout: 30 * time.Second,
+	}
+
+	if cfg == nil {
+		return dialer
+	}
+
+	if transport, ok := cfg.HTTPTransport.(*http.Transport); ok && transport != nil {
+		clone := transport.Clone()
+		dialer.Proxy = clone.Proxy
+		dialer.NetDialContext = clone.DialContext
+		if clone.TLSClientConfig != nil {
+			dialer.TLSClientConfig = clone.TLSClientConfig.Clone()
+		}
+		return dialer
+	}
+
+	if cfg.InsecureSkipVerify {
+		dialer.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	}
+
+	return dialer
+}
