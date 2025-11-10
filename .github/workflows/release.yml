@@ -57,6 +57,7 @@ jobs:
       - name: Azure CLI Login
         uses: azure/login@v2
         with:
+          environment: azuregermancloud
           creds: >
             {
               "clientId": "${{ secrets.DECO_SIGN_AZURE_CLIENT_ID }}",
