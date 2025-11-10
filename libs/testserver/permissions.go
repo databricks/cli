@@ -79,20 +79,6 @@ func (s *FakeWorkspace) GetPermissions(req Request) any {
 		}
 	}
 
-	if requestObjectType == "jobs" {
-		// Better match cloud env:
-		permissions.AccessControlList = append(permissions.AccessControlList, iam.AccessControlResponse{
-			AllPermissions: []iam.Permission{
-				{
-					Inherited:           true,
-					InheritedFromObject: []string{"/jobs/"},
-					PermissionLevel:     "CAN_MANAGE",
-				},
-			},
-			GroupName: "admins",
-		})
-	}
-
 	return Response{
 		Body: permissions,
 	}
@@ -151,12 +137,29 @@ func (s *FakeWorkspace) SetPermissions(req Request) any {
 	}
 
 	// Convert AccessControlRequest to AccessControlResponse
-	var newAccessControlList []iam.AccessControlResponse
+	// Use map to ensure only one permission level per principal (last wins)
+	principalPermissions := make(map[string]iam.AccessControlResponse)
+
 	for _, acl := range updateRequest.AccessControlList {
+		// Determine principal key - use the non-empty field as the unique identifier
+		var principalKey string
+		if acl.UserName != "" {
+			principalKey = "user:" + acl.UserName
+		} else if acl.GroupName != "" {
+			principalKey = "group:" + acl.GroupName
+		} else if acl.ServicePrincipalName != "" {
+			principalKey = "sp:" + acl.ServicePrincipalName
+		}
+
+		if principalKey == "" {
+			continue // Skip invalid entries
+		}
+
 		display := acl.UserName
 		if display == "" {
 			display = acl.ServicePrincipalName
 		}
+
 		response := iam.AccessControlResponse{
 			UserName:             acl.UserName,
 			GroupName:            acl.GroupName,
@@ -174,11 +177,56 @@ func (s *FakeWorkspace) SetPermissions(req Request) any {
 			})
 		}
 
+		// Store in map - last entry for same principal wins
+		principalPermissions[principalKey] = response
+	}
+
+	// Convert map back to slice
+	var newAccessControlList []iam.AccessControlResponse
+	for _, response := range principalPermissions {
 		newAccessControlList = append(newAccessControlList, response)
 	}
 
 	// Update the permissions
 	existingPermissions.AccessControlList = newAccessControlList
+
+	// Apply cloud environment fixups - better match cloud env
+	if requestObjectType == "jobs" {
+		existingPermissions.AccessControlList = append(existingPermissions.AccessControlList, iam.AccessControlResponse{
+			AllPermissions: []iam.Permission{
+				{
+					Inherited:           true,
+					InheritedFromObject: []string{"/jobs/"},
+					PermissionLevel:     "CAN_MANAGE",
+				},
+			},
+			GroupName: "admins",
+		})
+	}
+
+	// Validate job ownership requirements
+	if requestObjectType == "jobs" {
+		hasOwner := false
+		for _, acl := range existingPermissions.AccessControlList {
+			for _, perm := range acl.AllPermissions {
+				if perm.PermissionLevel == "IS_OWNER" {
+					hasOwner = true
+					break
+				}
+			}
+			if hasOwner {
+				break
+			}
+		}
+
+		if !hasOwner {
+			return Response{
+				StatusCode: 400,
+				Body:       map[string]string{"message": "The job must have exactly one owner."},
+			}
+		}
+	}
+
 	s.Permissions[responseObjectID] = existingPermissions
 
 	return Response{
