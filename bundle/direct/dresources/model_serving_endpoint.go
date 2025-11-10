@@ -169,7 +169,7 @@ func (r *ResourceModelServingEndpoint) updateAiGateway(ctx context.Context, id s
 	return nil
 }
 
-// TODO: does unsetting config work properly?
+// TODO(shreyas): Add acceptance tests for unsetting. Will be done once we add selective updates for these fields.
 func (r *ResourceModelServingEndpoint) updateConfig(ctx context.Context, id string, config *serving.EndpointCoreConfigInput) error {
 	if config == nil {
 		// Unset config in resource.
