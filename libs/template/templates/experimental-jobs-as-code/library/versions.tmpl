@@ -7,10 +7,3 @@
 {{- end}}
 
 {{define "latest_databricks_bundles_version" -}}0.276.0{{- end}}
-
-{{/* Python version specification for the template.
-   * This needs to be compatible with the version of DB Connect and the serverless_environment_version.
-   */}}
-{{define "python_version_spec" -}}
-  >=3.10,<3.13
-{{- end}}

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "{{.project_name}}"
-requires-python = "{{template "python_version_spec"}}"
+requires-python = ">=3.10"
 description = "wheel file based on {{.project_name}}"
 
 # Dependencies in case the output wheel file is used as a library dependency.
