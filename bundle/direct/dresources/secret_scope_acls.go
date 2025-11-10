@@ -20,8 +20,8 @@ type ResourceSecretScopeAcls struct {
 }
 
 type SecretScopeAclsState struct {
-	ScopeName string                            `json:"scope_name"`
-	Acls      []resources.SecretScopePermission `json:"acls,omitempty"`
+	ScopeName string              `json:"scope_name"`
+	Acls      []workspace.AclItem `json:"acls,omitempty"`
 }
 
 func PrepareSecretScopeAclsInputConfig(inputConfig any, node string) (*structvar.StructVar, error) {
@@ -39,15 +39,25 @@ func PrepareSecretScopeAclsInputConfig(inputConfig any, node string) (*structvar
 	sliceValue := rv.Elem()
 
 	// Convert slice to []resources.SecretScopePermission
-	acls := make([]resources.SecretScopePermission, 0, sliceValue.Len())
+	acls := make([]workspace.AclItem, 0, sliceValue.Len())
 	for i := range sliceValue.Len() {
 		elem := sliceValue.Index(i).Interface().(resources.SecretScopePermission)
-		acls = append(acls, elem)
+		acl := workspace.AclItem{
+			Permission: workspace.AclPermission(elem.Level),
+		}
+		if elem.UserName != "" {
+			acl.Principal = elem.UserName
+		} else if elem.GroupName != "" {
+			acl.Principal = elem.GroupName
+		} else if elem.ServicePrincipalName != "" {
+			acl.Principal = elem.ServicePrincipalName
+		}
+		acls = append(acls, acl)
 	}
 
 	// Sort ACLs by principal for deterministic ordering
-	slices.SortFunc(acls, func(a, b resources.SecretScopePermission) int {
-		return strings.Compare(getPrincipal(a), getPrincipal(b))
+	slices.SortFunc(acls, func(a, b workspace.AclItem) int {
+		return strings.Compare(a.Principal, b.Principal)
 	})
 
 	return &structvar.StructVar{
@@ -83,29 +93,9 @@ func (r *ResourceSecretScopeAcls) DoRefresh(ctx context.Context, id string) (*Se
 		return strings.Compare(a.Principal, b.Principal)
 	})
 
-	acls := make([]resources.SecretScopePermission, 0, len(currentAcls))
-	for _, acl := range currentAcls {
-		perm := resources.SecretScopePermission{
-			Level:                resources.SecretScopePermissionLevel(acl.Permission),
-			UserName:             "",
-			ServicePrincipalName: "",
-			GroupName:            "",
-		}
-
-		// Set the appropriate principal field
-		if strings.Contains(acl.Principal, "@") {
-			perm.UserName = acl.Principal
-		} else {
-			// Assume it's a group if it doesn't look like an email
-			perm.GroupName = acl.Principal
-		}
-
-		acls = append(acls, perm)
-	}
-
 	return &SecretScopeAclsState{
 		ScopeName: id,
-		Acls:      acls,
+		Acls:      currentAcls,
 	}, nil
 }
 
@@ -144,7 +134,7 @@ func (r *ResourceSecretScopeAcls) DoDelete(ctx context.Context, id string) error
 }
 
 // setACLs reconciles the desired ACLs with the current state
-func (r *ResourceSecretScopeAcls) setACLs(ctx context.Context, scopeName string, desiredAcls []resources.SecretScopePermission) (string, error) {
+func (r *ResourceSecretScopeAcls) setACLs(ctx context.Context, scopeName string, desiredAcls []workspace.AclItem) (string, error) {
 	// Get current ACLs
 	currentAcls, err := r.client.Secrets.ListAclsAll(ctx, workspace.ListAclsRequest{
 		Scope: scopeName,
@@ -156,8 +146,7 @@ func (r *ResourceSecretScopeAcls) setACLs(ctx context.Context, scopeName string,
 	// Build maps for reconciliation
 	desired := make(map[string]workspace.AclPermission)
 	for _, perm := range desiredAcls {
-		principal := getPrincipal(perm)
-		desired[principal] = workspace.AclPermission(perm.Level)
+		desired[perm.Principal] = perm.Permission
 	}
 
 	current := make(map[string]workspace.AclPermission)
@@ -190,14 +179,6 @@ func (r *ResourceSecretScopeAcls) setACLs(ctx context.Context, scopeName string,
 		}
 	}
 
-	// Sort operations for deterministic ordering
-	slices.SortFunc(toSet, func(a, b workspace.PutAcl) int {
-		return strings.Compare(a.Principal, b.Principal)
-	})
-	slices.SortFunc(toDelete, func(a, b workspace.DeleteAcl) int {
-		return strings.Compare(a.Principal, b.Principal)
-	})
-
 	// Execute all operations in parallel using errgroup
 	g, ctx := errgroup.WithContext(ctx)
 
@@ -205,7 +186,7 @@ func (r *ResourceSecretScopeAcls) setACLs(ctx context.Context, scopeName string,
 	for _, acl := range toSet {
 		g.Go(func() error {
 			if err := r.client.Secrets.PutAcl(ctx, acl); err != nil {
-				return fmt.Errorf("failed to set ACL for principal %q: %w", acl.Principal, err)
+				return fmt.Errorf("failed to set ACL %v for principal %q: %w", acl, acl.Principal, err)
 			}
 			return nil
 		})
@@ -215,7 +196,7 @@ func (r *ResourceSecretScopeAcls) setACLs(ctx context.Context, scopeName string,
 	for _, acl := range toDelete {
 		g.Go(func() error {
 			if err := r.client.Secrets.DeleteAcl(ctx, acl); err != nil {
-				return fmt.Errorf("failed to delete ACL for principal %q: %w", acl.Principal, err)
+				return fmt.Errorf("failed to delete ACL %v for principal %q: %w", acl, acl.Principal, err)
 			}
 			return nil
 		})
@@ -226,18 +207,4 @@ func (r *ResourceSecretScopeAcls) setACLs(ctx context.Context, scopeName string,
 	}
 
 	return scopeName, nil
-}
-
-// getPrincipal extracts the principal from a SecretScopePermission
-func getPrincipal(perm resources.SecretScopePermission) string {
-	if perm.UserName != "" {
-		return perm.UserName
-	}
-	if perm.ServicePrincipalName != "" {
-		return perm.ServicePrincipalName
-	}
-	if perm.GroupName != "" {
-		return perm.GroupName
-	}
-	return ""
 }

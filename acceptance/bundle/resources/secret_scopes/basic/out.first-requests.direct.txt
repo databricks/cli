@@ -23,3 +23,12 @@
   "method": "POST",
   "path": "/api/2.0/secrets/acls/put"
 }
+{
+  "body": {
+    "key": "my-key",
+    "scope": "test-scope-[UNIQUE_NAME]-1",
+    "string_value": "my-secret-value"
+  },
+  "method": "POST",
+  "path": "/api/2.0/secrets/put"
+}

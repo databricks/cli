@@ -17,6 +17,15 @@ Deployment complete!
   "name": "test-scope-[UNIQUE_NAME]-1"
 }
 
+=== put and get secret in first scope
+>>> [CLI] secrets put-secret test-scope-[UNIQUE_NAME]-1 my-key --string-value my-secret-value
+
+>>> [CLI] secrets get-secret test-scope-[UNIQUE_NAME]-1 my-key
+{
+  "key":"my-key",
+  "value":"bXktc2VjcmV0LXZhbHVl"
+}
+
 === update the name of the scope (should recreate)
 >>> [CLI] bundle plan
 recreate secret_scopes.my_scope
@@ -33,6 +42,15 @@ Deployment complete!
 {
   "backend_type": "DATABRICKS",
   "name": "test-scope-[UNIQUE_NAME]-2"
+}
+
+=== put and get secret in recreated scope
+>>> [CLI] secrets put-secret test-scope-[UNIQUE_NAME]-2 another-key --string-value another-secret-value
+
+>>> [CLI] secrets get-secret test-scope-[UNIQUE_NAME]-2 another-key
+{
+  "key":"another-key",
+  "value":"YW5vdGhlci1zZWNyZXQtdmFsdWU="
 }
 
 >>> [CLI] bundle destroy --auto-approve
