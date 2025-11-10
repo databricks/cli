@@ -478,7 +478,7 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 			var inputConfigStructVar *structvar.StructVar
 			var err error
 
-			if strings.Contains(node, ".secret_scopes.") {
+			if strings.HasPrefix(node, "resources.secret_scopes.") {
 				inputConfigStructVar, err = dresources.PrepareSecretScopeAclsInputConfig(inputConfig, node)
 			} else {
 				inputConfigStructVar, err = dresources.PreparePermissionsInputConfig(inputConfig, node)
