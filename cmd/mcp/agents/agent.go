@@ -3,8 +3,6 @@ package agents
 import (
 	"os"
 	"os/exec"
-	"path/filepath"
-	"runtime"
 )
 
 // Agent represents a coding agent that can have MCP servers installed.
@@ -34,21 +32,4 @@ func GetHomeDir() (string, error) {
 		return "", err
 	}
 	return home, nil
-}
-
-// GetCursorConfigPath returns the path to Cursor's MCP config file based on OS.
-func GetCursorConfigPath() (string, error) {
-	if runtime.GOOS == "windows" {
-		userProfile := os.Getenv("USERPROFILE")
-		if userProfile == "" {
-			return "", os.ErrNotExist
-		}
-		return filepath.Join(userProfile, ".cursor", "mcp.json"), nil
-	}
-
-	home, err := GetHomeDir()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(home, ".cursor", "mcp.json"), nil
 }

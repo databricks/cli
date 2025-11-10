@@ -17,12 +17,12 @@ func InstallClaude() error {
 		return errors.New("claude Code CLI is not installed or not on PATH\n\nPlease install Claude Code and ensure 'claude' is available on your system PATH.\nFor installation instructions, visit: https://docs.anthropic.com/en/docs/claude-code")
 	}
 
-	// First, try to remove any existing installation to make this idempotent
-	removeCmd := exec.Command("claude", "mcp", "remove", "databricks-cli")
-	_ = removeCmd.Run() // Ignore errors - it's OK if it doesn't exist
+	// First, try to remove any existing installation to make this idempotent (ignore errors if it doesn't exist)
+	removeCmd := exec.Command("claude", "mcp", "remove", "--scope", "user", "databricks-cli")
+	_ = removeCmd.Run()
 
-	// Use claude mcp add to add the Databricks MCP server
 	cmd := exec.Command("claude", "mcp", "add",
+		"--scope", "user",
 		"--transport", "stdio",
 		"databricks-cli",              // server name
 		"--",                          // separator for command

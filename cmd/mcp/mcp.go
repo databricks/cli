@@ -1,60 +1,35 @@
 package mcp
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 )
 
 func New() *cobra.Command {
-	var tool string
-	var configFile string
-
 	cmd := &cobra.Command{
-		Use:   "mcp",
-		Short: "Manage the Databricks CLI MCP server for coding agents",
-		Long: `Manage the Databricks CLI MCP (Model Context Protocol) server for coding agents.
+		Use:    "mcp",
+		Short:  "[Experimental] Manage the Databricks CLI MCP server for coding agents",
+		Hidden: true,
+		Long: `Manage the Databricks CLI MCP (Model Context Protocol) server.
 
-The MCP server enables coding agents like Claude Code and Cursor to interact with
-Databricks directly, allowing them to create projects, deploy bundles, and run jobs.
+The MCP server enables coding agents like Claude Code and Cursor to interact
+with Databricks, create projects, deploy bundles, run jobs, etc.
+
+╔════════════════════════════════════════════════════════════════╗
+║  ⚠️  EXPERIMENTAL: This command may change in future versions  ║
+╚════════════════════════════════════════════════════════════════╝
 
 Common workflows:
-  databricks mcp           # Install MCP server in coding agents
-  databricks mcp server    # Start the MCP server (used by coding agents)
-  databricks mcp uninstall # Uninstall instructions
+  databricks mcp install   # Install in Claude Code or Cursor
+  databricks mcp server    # Start server (used by agents)
 
 Online documentation: https://docs.databricks.com/dev-tools/cli/mcp.html`,
 		GroupID: "development",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := cmd.Context()
-
-			// Hidden --tool flag for acceptance testing
-			if tool != "" {
-				return runTool(ctx, tool, configFile)
-			}
-
-			// Check subcommand
-			if len(args) > 0 {
-				switch args[0] {
-				case "server":
-					return runServer(ctx)
-				case "uninstall":
-					return runUninstall(ctx)
-				default:
-					return fmt.Errorf("unknown subcommand: %s", args[0])
-				}
-			}
-
-			// Default: install
-			return runInstall(ctx)
-		},
 	}
 
-	// Hidden flags for acceptance testing
-	cmd.Flags().StringVar(&tool, "tool", "", "Run a specific MCP tool for testing (hidden)")
-	cmd.Flags().StringVar(&configFile, "config-file", "", "JSON config file for tool arguments (hidden)")
-	cmd.Flags().MarkHidden("tool")
-	cmd.Flags().MarkHidden("config-file")
+	cmd.AddCommand(newInstallCmd())
+	cmd.AddCommand(newServerCmd())
+	cmd.AddCommand(newUninstallCmd())
+	cmd.AddCommand(newToolCmd())
 
 	return cmd
 }

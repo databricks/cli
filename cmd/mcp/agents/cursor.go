@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 )
 
 // CursorConfig represents the structure of Cursor's mcp.json file.
@@ -17,6 +18,23 @@ type McpServer struct {
 	Command string            `json:"command"`
 	Args    []string          `json:"args,omitempty"`
 	Env     map[string]string `json:"env,omitempty"`
+}
+
+// GetCursorConfigPath returns the path to Cursor's MCP config file based on OS.
+func GetCursorConfigPath() (string, error) {
+	if runtime.GOOS == "windows" {
+		userProfile := os.Getenv("USERPROFILE")
+		if userProfile == "" {
+			return "", os.ErrNotExist
+		}
+		return filepath.Join(userProfile, ".cursor", "mcp.json"), nil
+	}
+
+	home, err := GetHomeDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(home, ".cursor", "mcp.json"), nil
 }
 
 // DetectCursor checks if Cursor is installed by looking for its config directory.

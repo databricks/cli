@@ -8,6 +8,35 @@ import (
 	"strings"
 )
 
+// InvokeDatabricksCLITool runs databricks CLI commands via MCP.
+var InvokeDatabricksCLITool = Tool{
+	Definition: ToolDefinition{
+		Name:        "invoke_databricks_cli",
+		Description: "Run any Databricks CLI command. Use this tool whenever you need to run databricks CLI commands like 'bundle deploy', 'bundle validate', 'bundle run', 'auth login', etc. The reason this tool exists (instead of invoking the databricks CLI directly) is to make it easier for users to allow-list commands.",
+		InputSchema: map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"command": map[string]any{
+					"type":        "string",
+					"description": "The full Databricks CLI command to run, e.g. 'bundle deploy' or 'bundle validate'. Do not include the 'databricks' prefix.",
+				},
+				"working_directory": map[string]any{
+					"type":        "string",
+					"description": "Optional. The directory to run the command in. Defaults to the current directory.",
+				},
+			},
+			"required": []string{"command"},
+		},
+	},
+	Handler: func(ctx context.Context, args map[string]any) (string, error) {
+		var typedArgs InvokeDatabricksCLIArgs
+		if err := unmarshalArgs(args, &typedArgs); err != nil {
+			return "", err
+		}
+		return InvokeDatabricksCLI(ctx, typedArgs)
+	},
+}
+
 // InvokeDatabricksCLIArgs represents the arguments for the invoke_databricks_cli tool.
 type InvokeDatabricksCLIArgs struct {
 	Command          string `json:"command"`
@@ -16,29 +45,21 @@ type InvokeDatabricksCLIArgs struct {
 
 // InvokeDatabricksCLI runs a Databricks CLI command and returns the output.
 func InvokeDatabricksCLI(ctx context.Context, args InvokeDatabricksCLIArgs) (string, error) {
-	// Validate command
 	if args.Command == "" {
 		return "", errors.New("command is required")
 	}
 
-	// Split command into arguments
 	cmdArgs := strings.Fields(args.Command)
-
-	// Create command
 	cmd := exec.CommandContext(ctx, GetCLIPath(), cmdArgs...)
 
-	// Set working directory if provided
 	if args.WorkingDirectory != "" {
 		cmd.Dir = args.WorkingDirectory
 	}
 
-	// Run command and capture output
 	output, err := cmd.CombinedOutput()
 
-	// Build result with stdout/stderr and exit code
 	result := string(output)
 	if err != nil {
-		// Include exit code in error
 		if exitErr, ok := err.(*exec.ExitError); ok {
 			result += fmt.Sprintf("\n\nExit code: %d", exitErr.ExitCode())
 		}

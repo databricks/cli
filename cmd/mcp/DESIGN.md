@@ -1,9 +1,11 @@
 Add a top-level 'databricks mcp' command that behaves as follows:
 
 * databricks mcp --help: shows help
-* databricks mcp server: starts the mcp server
-* databricks mcp uninstall: uninstalls the server from coding agents (not implemented; errors out and tells the user to ask their local coding agent to uninstall the Databricks CLI MCP server)
+* databricks mcp: shows help (like other command groups)
 * databricks mcp install: installs the server in coding agents
+* databricks mcp server: starts the mcp server (subcommand)
+* databricks mcp uninstall: uninstalls the server from coding agents (subcommand - not implemented; errors out and tells the user to ask their local coding agent to uninstall the Databricks CLI MCP server)
+* databricks mcp tool <tool_name> --config-file <file>: runs a specific MCP tool for acceptance testing (hidden subcommand)
 
 non-functional requirements:
 - any errors that these commands give should be friendly, concise, actionable.
@@ -33,10 +35,10 @@ non-functional requirements:
 - MANDATORY: at the very end, compare what you built again to the instructions in this doc; go over each point, does it work, is it complete?
 
 
-To illustrate how the first command should work:
+To illustrate how the install command should work:
 
 ```
-$ databricks mcp
+$ databricks mcp install
 
 Welcome to the Databricks CLI MCP server!
 
@@ -50,31 +52,31 @@ The databricks mcp command is experimental and may change in the future!
 
 <we should do a sanity check to see if 'databricks' is on the system path => if it is not we should ask the user to go to https://docs.databricks.com/dev-tools/cli/install and fatally error>
 
-<multi select prompt:>
+<prompts for each coding agent:>
 
 Install the server in the following coding agents:
-- Claude Code
-- Cursor
-- Another coding agent
+- Claude Code (defaults to "yes" if detected)
+- Cursor (defaults to "yes" if detected)
+- Another coding agent (defaults to "no")
 
-<we should detect if claude code is installed by checking if it is on the path. if it is, then it should be preselected above!! if it is not, and the user still selected it, we fatally error out: the user needs to make sure claude code is installed and may ask claude code about installing itself on the system PATH.
+<we should detect if claude code is installed by checking if it is on the path. if it is, then it should default to "yes" and be preselected! if it is not detected, we don't prompt for it. if the user still selected it manually somehow, we fatally error out: the user needs to make sure claude code is installed and may ask claude code about installing itself on the system PATH.
 
 note that if the mcp is already installed, the command should gracefully accept that and not throw an error>
 
 <we should detect that cursor is installed, but it may not be on the path. so instead we check
 if the config files exist, t ~/.cursor/mcp.json on macOS/Linux or %USERPROFILE%\.cursor\mcp.json on Windows.
-if it is installed, it should be preselected above!! if it is not, and the user still selected it, we fatally error out: the user needs to make sure cursor is installed
+if it is installed, it should default to "yes" and be preselected! if it is not detected, we don't prompt for it. if the user still selected it manually somehow, we fatally error out: the user needs to make sure cursor is installed
 
 note that if the mcp is already installed, the command should gracefully accept that and not throw an error>
 
 <if they selected claude code: use the claude cli to install the server in claude code. it should start
-databricks mcp --server; no env vars needed>
+databricks mcp server; no env vars needed>
 
 <if they selected cursor: use the cursor cli to install the server in cursor. it should start
-databricks mcp --server; no env vars needed>
+databricks mcp server; no env vars needed>
 
 <if they selected custom: we just tell them that they can install the databricks cli mcp server
-      by adding a new mcp server to their coding agent, using 'databricks mcp --server' as the command.
+      by adding a new mcp server to their coding agent, using 'databricks mcp server' as the command.
 no environment variables or other configuration is needed. we should ask them to acknowledge these instructions
 >
 
@@ -83,7 +85,7 @@ no environment variables or other configuration is needed. we should ask them to
 ✨ The Databricks CLI MCP has been installed successfully for <Claude Code and/or Cursor>!
 ```
 
-Now databricks mcp --server should actually start an MCP server that we actually use to describe
+Now databricks mcp server should actually start an MCP server that we actually use to describe
 the system as a whole a bit (btw each tool should be defined in a separate .go file, right!):
 - when starting up it should do a the 'roots/list' to the agent.
   - if that doesn't work or if there is more than one root => error out
@@ -110,6 +112,7 @@ the system as a whole a bit (btw each tool should be defined in a separate .go f
     - output: the stdout and stderr from the command, plus the exit code
     - implementation guidance: this should just invoke the databricks CLI and return the output.
       make sure to properly handle the working directory if provided.
+    - further implementation guidance: i want an acceptance test for this command. it should just call the 'help' command.
 
 - the "init_project" tool:
     - description: initializes a new databricks project (an app, dashboard, job, pipeline, etl application, etc.).
@@ -123,11 +126,12 @@ the system as a whole a bit (btw each tool should be defined in a separate .go f
       (recursively) in that subdirectory to the target directory from project_path.
     - guidance on how to implement this: do some trial and error to make the init command work.
       do a non-forward merge of origin/add-default-minimal to get the minimal template!
+    - output: returns a success message followed by the same guidance as the analyze_project tool (calls analyze_project internally)
     - further implementation guidance: i want an acceptance test for this command. it should lead to a project
       that can pass a 'bundle validate' command!
 
 - the "analyze_project" tool:
-    - description: determine what the current project is about and what actions can be performed on it. Mandatory: use this for more guidance whenever the user asks things like 'run or deploy ...' or 'add ..., like add a pipeline or a job or an app' or 'change the app/dashboard/pipeline job to ...' or 'open ... in my browser' or 'preview ...'.
+    - description: determine what the current project is about and what actions can be performed on it. MANDATORY: Run this tool at least once per session when you see a databricks.yml file in the workspace. Also mandatory to use this for more guidance whenever the user asks things like 'run or deploy ...' or 'add ..., like add a pipeline or a job or an app' or 'change the app/dashboard/pipeline job to ...' or 'open ... in my browser' or 'preview ...'.
     - parameter: project_path - a fully qualified path of the project to operate on. <if we determined there is a project in /: "by default, the current directory", if not: this must be a directory with a databricks.yml file>
     - output:
       - summary: contents of the 'bundle summary' command run in this dir using the invoke_databricks_cli tool.
@@ -137,14 +141,15 @@ the system as a whole a bit (btw each tool should be defined in a separate .go f
              - IMPORTANT: you want to give the user some idea of how to get started; you can suggest
                prompts such as "Create an app that shows a chart with taxi fares by city"
                or "Create a job that summarizes all taxi data using a notebook"
-             - IMPORTANT: Note that most interactions are done with the Databricks CLI using the invoke_databricks_cli tool; see the output of running 'bundle --help'.
-             - IMPORTANT: to add new resources to a project, use the 'extend_project' mcp tool.
+             - IMPORTANT: Most interactions are done with the Databricks CLI. YOU (the AI) must use the invoke_databricks_cli tool to run commands - never suggest the user runs CLI commands directly!
+             - IMPORTANT: to add new resources to a project, use the 'add_project_resource' mcp tool.
+             - MANDATORY: always deploy with invoke_databricks_cli 'bundle deploy', never with 'apps deploy'
              - Note that Databricks resources are defined in resources/*.yml files. See https://docs.databricks.com/dev-tools/bundles/settings for a reference!
 
           - <contents of the <project-dir>/README.md (if it exists, if not  of the acceptance/bundle/templates/default-sql/output/my_default_sql/README.md file,
             heading and first paragraph). <implementation guidance: you need to import the acceptance readme file in the go file and strip the first part programmatically at runtime>
 
-- the "extend_project" tool:
+- the "add_project_resource" tool:
    - description: extend the current project with a new app, job, pipeline, or dashboard
    - parameter: type - app, job, pipeline, or dashboard
    - parameter: name - the name of the new resource (for example: new_app); should not exist yet in resources/
@@ -184,4 +189,4 @@ the system as a whole a bit (btw each tool should be defined in a separate .go f
             for a pipeline, it can also use the invoke_databricks_cli tool to run 'bundle run <pipeline_name> --validate-only' to
             validate that the pipeline is correct.
   - further implementation guidance: i want acceptance tests for each of these project types (app, dashboard, job, pipeline);
-    this means they should be exposed as a hidden command like 'databricks mcp --tool extend_project --config-file <file which ahs the tool parametrs in json format>'. having these tests will be instrumental for iterating on them; the initing should not fail! note that --tool should just assume that the cwd is the current project dir.
+    this means they should be exposed as a hidden command like 'databricks mcp tool add_project_resource --config-file <file which has the tool parameters in json format>'. having these tests will be instrumental for iterating on them; the initing should not fail! note that the tool subcommand should just assume that the cwd is the current project dir.

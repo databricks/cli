@@ -40,10 +40,8 @@ func CheckAuthentication(ctx context.Context) error {
 			return nil
 		}
 
-		// Some other error occurred
 		return fmt.Errorf("failed to check authentication: %w\nOutput: %s", err, outputStr)
 	}
 
-	// Command succeeded (shouldn't happen with a fake job ID, but just in case)
 	return nil
 }

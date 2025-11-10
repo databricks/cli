@@ -12,6 +12,35 @@ import (
 	"github.com/databricks/cli/cmd/mcp/auth"
 )
 
+// InitProjectTool initializes a new Databricks project.
+var InitProjectTool = Tool{
+	Definition: ToolDefinition{
+		Name:        "init_project",
+		Description: "Initialize a new Databricks project (an app, dashboard, job, pipeline, ETL application, etc.). Use to create a new project and to get information about how to adjust it.",
+		InputSchema: map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"project_name": map[string]any{
+					"type":        "string",
+					"description": "A name for this project in snake_case. Ask the user about this if it's not clear from the context.",
+				},
+				"project_path": map[string]any{
+					"type":        "string",
+					"description": "A fully qualified path of the project directory. Files will be created directly at this path, not in a subdirectory.",
+				},
+			},
+			"required": []string{"project_name", "project_path"},
+		},
+	},
+	Handler: func(ctx context.Context, args map[string]any) (string, error) {
+		var typedArgs InitProjectArgs
+		if err := unmarshalArgs(args, &typedArgs); err != nil {
+			return "", err
+		}
+		return InitProject(ctx, typedArgs)
+	},
+}
+
 // InitProjectArgs represents the arguments for the init_project tool.
 type InitProjectArgs struct {
 	ProjectName string `json:"project_name"`
@@ -20,26 +49,21 @@ type InitProjectArgs struct {
 
 // InitProject initializes a new Databricks project using the default-minimal template.
 func InitProject(ctx context.Context, args InitProjectArgs) (string, error) {
-	// Validate project path
 	if args.ProjectPath == "" {
 		return "", errors.New("project_path is required")
 	}
 
-	// Validate project name
 	if args.ProjectName == "" {
 		return "", errors.New("project_name is required")
 	}
 
-	// Check authentication
 	if err := auth.CheckAuthentication(ctx); err != nil {
 		return "", err
 	}
 
-	// Check if the project path exists or needs to be created
 	pathInfo, err := os.Stat(args.ProjectPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			// Create the directory
 			if err := os.MkdirAll(args.ProjectPath, 0o755); err != nil {
 				return "", fmt.Errorf("failed to create project directory: %w", err)
 			}
@@ -56,7 +80,6 @@ func InitProject(ctx context.Context, args InitProjectArgs) (string, error) {
 		return "", fmt.Errorf("failed to read project directory: %w", err)
 	}
 
-	// Filter out .git and other hidden files for the empty check
 	var nonHiddenFiles []string
 	for _, entry := range entries {
 		if entry.Name() != ".git" && entry.Name()[0] != '.' {
@@ -68,7 +91,6 @@ func InitProject(ctx context.Context, args InitProjectArgs) (string, error) {
 		return "", fmt.Errorf("project directory is not empty: %s\n\nFound files/directories: %v\n\nPlease either:\n1. Use an empty directory, or\n2. Specify a new subdirectory path that doesn't exist yet", args.ProjectPath, nonHiddenFiles)
 	}
 
-	// Create a temporary config file for the template
 	configData := map[string]string{
 		"project_name":     args.ProjectName,
 		"default_catalog":  "main",
@@ -80,7 +102,6 @@ func InitProject(ctx context.Context, args InitProjectArgs) (string, error) {
 		return "", fmt.Errorf("failed to create config JSON: %w", err)
 	}
 
-	// Write config to a temp file
 	tmpDir := os.TempDir()
 	configFile := filepath.Join(tmpDir, fmt.Sprintf("databricks-init-%s.json", args.ProjectName))
 	if err := os.WriteFile(configFile, configJSON, 0o644); err != nil {
@@ -88,7 +109,6 @@ func InitProject(ctx context.Context, args InitProjectArgs) (string, error) {
 	}
 	defer os.Remove(configFile)
 
-	// Run bundle init with default-minimal template
 	cmd := exec.CommandContext(ctx, GetCLIPath(), "bundle", "init",
 		"--config-file", configFile,
 		"--output-dir", args.ProjectPath,
@@ -118,32 +138,20 @@ func InitProject(ctx context.Context, args InitProjectArgs) (string, error) {
 		}
 	}
 
-	// Remove the now-empty nested directory
 	if err := os.Remove(nestedPath); err != nil {
 		return "", fmt.Errorf("failed to remove nested directory: %w", err)
 	}
 
-	// Read the README.md from the project root
-	readmePath := filepath.Join(args.ProjectPath, "README.md")
-	readmeContent, err := os.ReadFile(readmePath)
-	if err != nil {
-		readmeContent = []byte("Project initialized successfully")
-	}
-
-	cliPath := GetCLIPath()
+	// Return the same guidance as analyze_project
 	result := fmt.Sprintf(`Project '%s' initialized successfully at: %s
 
-%s
+`, args.ProjectName, args.ProjectPath)
 
-Next steps:
-1. Navigate to the project: cd %s
-2. Review the databricks.yml configuration
-3. Authenticate to Databricks: %s auth login --host <your-workspace-url>
-4. Deploy to development: %s bundle deploy --target dev
+	// Get project analysis and guidance
+	analysis, err := AnalyzeProject(ctx, AnalyzeProjectArgs{ProjectPath: args.ProjectPath})
+	if err != nil {
+		return "", fmt.Errorf("failed to analyze initialized project: %w", err)
+	}
 
-To add resources to your project, use: %s bundle generate
-For more information, visit: https://docs.databricks.com/dev-tools/bundles/index.html`,
-		args.ProjectName, args.ProjectPath, string(readmeContent), args.ProjectPath, cliPath, cliPath, cliPath)
-
-	return result, nil
+	return result + analysis, nil
 }
