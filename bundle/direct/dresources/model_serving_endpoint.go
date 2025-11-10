@@ -92,6 +92,10 @@ func (*ResourceModelServingEndpoint) RemapState(state *RefreshOutput) *serving.C
 		RouteOptimized:     details.RouteOptimized,
 		Tags:               details.Tags,
 		ForceSendFields:    utils.FilterFields[serving.CreateServingEndpoint](details.ForceSendFields),
+
+		// Rate limits are a deprecated field that are not returned by the API on GET calls. Thus we map them to nil.
+		// TODO(shreyas): Add a warning when users try setting top level rate limits.
+		RateLimits: nil,
 	}
 }
 
@@ -122,19 +126,11 @@ func (r *ResourceModelServingEndpoint) DoCreate(ctx context.Context, config *ser
 
 // waitForEndpointReady waits for the serving endpoint to be ready (not updating)
 func (r *ResourceModelServingEndpoint) waitForEndpointReady(ctx context.Context, name string) (*RefreshOutput, error) {
-	waiter := &serving.WaitGetServingEndpointNotUpdating[serving.ServingEndpointDetailed]{
-		Response: &serving.ServingEndpointDetailed{Name: name},
-		Name:     name,
-		Poll: func(timeout time.Duration, callback func(*serving.ServingEndpointDetailed)) (*serving.ServingEndpointDetailed, error) {
-			return r.client.ServingEndpoints.WaitGetServingEndpointNotUpdating(ctx, name, timeout, callback)
-		},
-	}
-
-	// Model serving endpoints can take a long time to spin up. We match the timeout from TF here (35 minutes).
-	details, err := waiter.GetWithTimeout(35 * time.Minute)
+	details, err := r.client.ServingEndpoints.WaitGetServingEndpointNotUpdating(ctx, name, 35*time.Minute, nil)
 	if err != nil {
 		return nil, err
 	}
+
 	return &RefreshOutput{
 		EndpointDetails: details,
 		EndpointId:      details.Id,
@@ -148,7 +144,12 @@ func (r *ResourceModelServingEndpoint) WaitAfterCreate(ctx context.Context, conf
 func (r *ResourceModelServingEndpoint) updateAiGateway(ctx context.Context, id string, aiGateway *serving.AiGatewayConfig) error {
 	if aiGateway == nil {
 		req := serving.PutAiGatewayRequest{
-			Name: id,
+			Name:                 id,
+			FallbackConfig:       nil,
+			Guardrails:           nil,
+			InferenceTableConfig: nil,
+			RateLimits:           nil,
+			UsageTrackingConfig:  nil,
 		}
 		_, err := r.client.ServingEndpoints.PutAiGateway(ctx, req)
 		return err
@@ -169,11 +170,17 @@ func (r *ResourceModelServingEndpoint) updateAiGateway(ctx context.Context, id s
 	return nil
 }
 
-// TODO(shreyas): Add acceptance tests for unsetting. Will be done once we add selective updates for these fields.
+// TODO(shreyas): Add acceptance tests for update and for unsetting. Will be done once we add selective updates for these fields.
 func (r *ResourceModelServingEndpoint) updateConfig(ctx context.Context, id string, config *serving.EndpointCoreConfigInput) error {
 	if config == nil {
 		// Unset config in resource.
-		req := serving.EndpointCoreConfigInput{Name: id}
+		req := serving.EndpointCoreConfigInput{
+			Name:              id,
+			AutoCaptureConfig: nil,
+			ServedEntities:    nil,
+			TrafficConfig:     nil,
+			ServedModels:      nil,
+		}
 		_, err := r.client.ServingEndpoints.UpdateConfig(ctx, req)
 		return err
 	}
@@ -203,7 +210,7 @@ func (r *ResourceModelServingEndpoint) updateNotifications(ctx context.Context, 
 	return nil
 }
 
-func diffTags(currentTags []serving.EndpointTag, desiredTags []serving.EndpointTag) (addTags []serving.EndpointTag, deleteTags []string) {
+func diffTags(currentTags, desiredTags []serving.EndpointTag) (addTags []serving.EndpointTag, deleteTags []string) {
 	addTags = make([]serving.EndpointTag, 0)
 
 	// build maps for easy lookup.
@@ -220,11 +227,19 @@ func diffTags(currentTags []serving.EndpointTag, desiredTags []serving.EndpointT
 	for key, desiredValue := range desiredTagsMap {
 		v, ok := currentTagsMap[key]
 		if !ok {
-			addTags = append(addTags, serving.EndpointTag{Key: key, Value: desiredValue})
+			addTags = append(addTags, serving.EndpointTag{
+				Key:             key,
+				Value:           desiredValue,
+				ForceSendFields: nil,
+			})
 			continue
 		}
 		if v != desiredValue {
-			addTags = append(addTags, serving.EndpointTag{Key: key, Value: desiredValue})
+			addTags = append(addTags, serving.EndpointTag{
+				Key:             key,
+				Value:           desiredValue,
+				ForceSendFields: nil,
+			})
 		}
 	}
 
