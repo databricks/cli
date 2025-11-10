@@ -36,4 +36,4 @@ trace $CLI secrets put-secret $scope_name another-key --string-value "another-se
 trace $CLI secrets get-secret $scope_name another-key
 
 # Capture API requests for verification. Terraform cleans up ACLs before deleting the scope, but direct does not, hence the difference in requests.
-trace print_requests.py //secrets | jq --sort-keys > out.second-requests.$DATABRICKS_BUNDLE_ENGINE.txt
+trace print_requests.py //secrets > out.second-requests.$DATABRICKS_BUNDLE_ENGINE.txt
