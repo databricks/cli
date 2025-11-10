@@ -72,10 +72,6 @@ type IResourceNoRefresh interface {
 	// Example: func (r *ResourceJob) DoUpdate(ctx context.Context, id string, newState *jobs.JobSettings) error
 	DoUpdate(ctx context.Context, id string, newState any) error
 
-	// [Optional] DoUpdateWithChanges updates the resource with information about changes computed during plan.
-	// Example: func (r *ResourceModelServingEndpoint) DoUpdateWithChanges(ctx context.Context, id string, newState *serving.ServingEndpointSettings, changes *deployplan.Changes) (*serving.ServingEndpointInfo, error)
-	DoUpdateWithChanges(ctx context.Context, id string, newState any, changes *deployplan.Changes) error
-
 	// [Optional] DoUpdateWithID performs an update that may result in resource having a new ID
 	// Example: func (r *ResourceVolume) DoUpdateWithID(ctx, id string, newState *catalog.CreateVolumeRequestContent) (string, error)
 	DoUpdateWithID(ctx context.Context, id string, newState any) (string, error)
@@ -107,6 +103,10 @@ type IResourceWithRefresh interface {
 	// DoUpdate updates the resource. ID must not change as a result of this operation. Returns remote state.
 	// Example: func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, newState *catalog.CreateSchema) (*catalog.SchemaInfo, error)
 	DoUpdate(ctx context.Context, id string, newState any) (remoteState any, e error)
+
+	// [Optional] DoUpdateWithChanges updates the resource with information about changes computed during plan. Returns remote state.
+	// Example: func (r *ResourceModelServingEndpoint) DoUpdateWithChanges(ctx context.Context, id string, newState *serving.CreateServingEndpoint, changes *deployplan.Changes) (*serving.ServingEndpointInfo, error)
+	DoUpdateWithChanges(ctx context.Context, id string, newState any, changes *deployplan.Changes) (remoteState any, e error)
 
 	// Optional: updates that may change ID. Returns new id and remote state when available.
 	DoUpdateWithID(ctx context.Context, id string, newState any) (newID string, remoteState any, e error)
@@ -527,13 +527,18 @@ func (a *Adapter) DoUpdateWithChanges(ctx context.Context, id string, newState a
 		return nil, errors.New("internal error: DoUpdateWithChanges not found")
 	}
 
-	_, err := a.doUpdateWithChanges.Call(ctx, id, newState, changes)
+	outs, err := a.doUpdateWithChanges.Call(ctx, id, newState, changes)
 	if err != nil {
 		return nil, err
 	}
 
-	// No refresh variant only. Add the return value for refresh variant if and when needed.
-	return nil, err
+	if len(outs) == 1 {
+		// WithRefresh version
+		return outs[0], nil
+	} else {
+		// NoRefresh version
+		return nil, nil
+	}
 }
 
 // HasDoUpdateWithID returns true if the resource implements DoUpdateWithID method.
