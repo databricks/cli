@@ -52,7 +52,7 @@ jobs:
           urls=$(
             gh api https://api.github.com/repos/databricks/cli/releases/tags/${{ inputs.tag || github.ref_name }} | \
             jq -r .assets[].browser_download_url | \
-            grep -E '_windows_.*-signed\.zip$' | \
+            grep -E '_windows_.*\.zip$' | \
             tr '\n' ' '
           )
           if [ -z "$urls" ]; then
