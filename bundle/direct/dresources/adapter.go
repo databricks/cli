@@ -108,7 +108,8 @@ type IResourceWithRefresh interface {
 	DoUpdate(ctx context.Context, id string, newState any) (remoteState any, e error)
 
 	// [Optional] DoUpdateWithChanges updates the resource with information about changes computed during plan. Returns remote state.
-	// Example: func (r *ResourceModelServingEndpoint) DoUpdateWithChanges(ctx context.Context, id string, newState *serving.CreateServingEndpoint, changes *deployplan.Changes) (*serving.ServingEndpointInfo, error)	DoUpdateWithChanges(ctx context.Context, id string, newState any, changes *deployplan.Changes) (remoteState any, e error)
+	// Example: func (r *ResourceModelServingEndpoint) DoUpdateWithChanges(ctx context.Context, id string, newState *serving.CreateServingEndpoint, changes *deployplan.Changes) (*serving.ServingEndpointInfo, error)
+	DoUpdateWithChanges(ctx context.Context, id string, newState any, changes *deployplan.Changes) (remoteState any, e error)
 
 	// Optional: updates that may change ID. Returns new id and remote state when available.
 	DoUpdateWithID(ctx context.Context, id string, newState any) (newID string, remoteState any, e error)
