@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/databricks/cli/cmd/mcp/auth"
-	"github.com/databricks/cli/cmd/mcp/tools/resources"
+	"github.com/databricks/cli/experimental/mcp/auth"
+	"github.com/databricks/cli/experimental/mcp/tools/resources"
 )
 
 // AnalyzeProjectTool analyzes a Databricks project and returns guidance.

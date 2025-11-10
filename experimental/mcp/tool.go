@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/databricks/cli/cmd/mcp/tools"
-	"github.com/databricks/cli/cmd/mcp/tools/resources"
+	"github.com/databricks/cli/experimental/mcp/tools"
+	"github.com/databricks/cli/experimental/mcp/tools/resources"
 	"github.com/spf13/cobra"
 )
 

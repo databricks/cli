@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/databricks/cli/cmd/mcp/agents"
+	"github.com/databricks/cli/experimental/mcp/agents"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"

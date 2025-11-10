@@ -9,7 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/databricks/cli/cmd/mcp/auth"
+	"github.com/databricks/cli/experimental/mcp/auth"
 )
 
 // InitProjectTool initializes a new Databricks project.

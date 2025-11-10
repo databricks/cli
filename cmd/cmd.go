@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/cmd/psql"
+	"github.com/databricks/cli/experimental/mcp"
 	ssh "github.com/databricks/cli/experimental/ssh/cmd"
 
 	"github.com/databricks/cli/cmd/account"
@@ -14,7 +15,6 @@ import (
 	"github.com/databricks/cli/cmd/configure"
 	"github.com/databricks/cli/cmd/fs"
 	"github.com/databricks/cli/cmd/labs"
-	"github.com/databricks/cli/cmd/mcp"
 	"github.com/databricks/cli/cmd/pipelines"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/cmd/selftest"

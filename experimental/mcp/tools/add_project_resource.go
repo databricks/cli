@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"slices"
 
-	"github.com/databricks/cli/cmd/mcp/auth"
-	"github.com/databricks/cli/cmd/mcp/tools/resources"
+	"github.com/databricks/cli/experimental/mcp/auth"
+	"github.com/databricks/cli/experimental/mcp/tools/resources"
 )
 
 // AddProjectResourceTool adds a resource (app, job, pipeline, dashboard, ...) to a project.

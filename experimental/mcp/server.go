@@ -8,7 +8,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/databricks/cli/cmd/mcp/tools"
+	"github.com/databricks/cli/experimental/mcp/tools"
 	"github.com/databricks/cli/libs/log"
 	"github.com/spf13/cobra"
 )
