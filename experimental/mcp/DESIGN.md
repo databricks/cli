@@ -127,6 +127,11 @@ the system as a whole a bit (btw each tool should be defined in a separate .go f
       parameters. use personal schemas and the default catalog.
       note that default-minimal creates a subdirectory called 'project_name'! this is not needed. just move everything
       (recursively) in that subdirectory to the target directory from project_path.
+      after initialization, creates a CLAUDE.md file (if the calling MCP client is Claude Code) or AGENTS.md file (otherwise)
+      with project-specific agent instructions. The file includes:
+      - Installation instructions for the Databricks CLI MCP server (if not yet installed)
+      - Guidance to use the mcp__databricks-cli__analyze_project tool when opening the project
+      The client is detected at runtime from the MCP initialize request's clientInfo field.
     - guidance on how to implement this: do some trial and error to make the init command work.
       do a non-forward merge of origin/add-default-minimal to get the minimal template!
     - output: returns a success message with a WARNING that this is an EMPTY project with NO resources, and that add_project_resource MUST be called if the user asked for a specific resource. followed by the same guidance as the analyze_project tool (calls analyze_project internally)
@@ -134,7 +139,7 @@ the system as a whole a bit (btw each tool should be defined in a separate .go f
       that can pass a 'bundle validate' command!
 
 - the "analyze_project" tool:
-    - description: determine what the current project is about and what actions can be performed on it. MANDATORY: Run this tool at least once per session when you see a databricks.yml file in the workspace. Also mandatory to use this for more guidance whenever the user asks things like 'run or deploy ...' or 'add ..., like add a pipeline or a job or an app' or 'change the app/dashboard/pipeline job to ...' or 'open ... in my browser' or 'preview ...'.
+    - description: REQUIRED FIRST STEP: If databricks.yml exists in the directory, you MUST call this tool before using Read, Glob, or any other tools. Databricks projects require specialized commands that differ from standard Python/Node.js workflows - attempting standard approaches will fail. This tool is fast and provides the correct commands for preview/deploy/run operations.
     - parameter: project_path - a fully qualified path of the project to operate on. <if we determined there is a project in /: "by default, the current directory", if not: this must be a directory with a databricks.yml file>
     - output:
       - summary: contents of the 'bundle summary' command run in this dir using the invoke_databricks_cli tool.

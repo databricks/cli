@@ -9,6 +9,21 @@ import (
 	"path/filepath"
 )
 
+type clientNameKey struct{}
+
+// SetClientName stores the MCP client name in the context.
+func SetClientName(ctx context.Context, name string) context.Context {
+	return context.WithValue(ctx, clientNameKey{}, name)
+}
+
+// GetClientName returns the MCP client name from the context, or empty string if not available.
+func GetClientName(ctx context.Context) string {
+	if name, ok := ctx.Value(clientNameKey{}).(string); ok {
+		return name
+	}
+	return ""
+}
+
 // ToolDefinition defines the schema for an MCP tool.
 type ToolDefinition struct {
 	Name        string

@@ -60,10 +60,11 @@ const (
 
 // MCPServer implements the Model Context Protocol server.
 type MCPServer struct {
-	ctx      context.Context
-	in       io.Reader
-	out      io.Writer
-	toolsMap map[string]tools.ToolHandler
+	ctx        context.Context
+	in         io.Reader
+	out        io.Writer
+	toolsMap   map[string]tools.ToolHandler
+	clientName string
 }
 
 // getAllTools returns all tools (definitions + handlers) for the MCP server.
@@ -134,6 +135,18 @@ func (s *MCPServer) handleRequest(req *JSONRPCRequest) {
 
 // handleInitialize handles the initialize request.
 func (s *MCPServer) handleInitialize(req *JSONRPCRequest) {
+	// Parse clientInfo from the request
+	var params struct {
+		ClientInfo struct {
+			Name    string `json:"name"`
+			Version string `json:"version"`
+		} `json:"clientInfo"`
+	}
+	if req.Params != nil {
+		_ = json.Unmarshal(req.Params, &params)
+		s.clientName = params.ClientInfo.Name
+	}
+
 	result := map[string]any{
 		"protocolVersion": "2024-11-05",
 		"serverInfo": map[string]string{
@@ -181,7 +194,10 @@ func (s *MCPServer) handleToolsCall(req *JSONRPCRequest) {
 		return
 	}
 
-	result, err := handler(s.ctx, params.Arguments)
+	// Add client name to context
+	ctx := tools.SetClientName(s.ctx, s.clientName)
+
+	result, err := handler(ctx, params.Arguments)
 	if err != nil {
 		s.sendError(req.ID, jsonRPCInternalError, "Tool execution failed: "+err.Error(), nil)
 		return

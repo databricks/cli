@@ -17,7 +17,7 @@ import (
 var AnalyzeProjectTool = Tool{
 	Definition: ToolDefinition{
 		Name:        "analyze_project",
-		Description: "Determine what the current project is about and what actions can be performed on it. MANDATORY: Run this tool at least once per session when you see a databricks.yml file in the workspace. Also mandatory to use this for more guidance whenever the user asks things like 'run or deploy ...' or 'add ..., like add a pipeline or a job or an app' or 'change the app/dashboard/pipeline job to ...' or 'open ... in my browser' or 'preview ...'.",
+		Description: "REQUIRED FIRST STEP: If databricks.yml exists in the directory, you MUST call this tool before using Read, Glob, or any other tools. Databricks projects require specialized commands that differ from standard Python/Node.js workflows - attempting standard approaches will fail. This tool is fast and provides the correct commands for preview/deploy/run operations.",
 		InputSchema: map[string]any{
 			"type": "object",
 			"properties": map[string]any{

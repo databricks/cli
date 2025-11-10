@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/databricks/cli/experimental/mcp/auth"
 )
@@ -140,6 +141,32 @@ func InitProject(ctx context.Context, args InitProjectArgs) (string, error) {
 
 	if err := os.Remove(nestedPath); err != nil {
 		return "", fmt.Errorf("failed to remove nested directory: %w", err)
+	}
+
+	// Create agent instructions file based on the calling client
+	filename := "AGENTS.md"
+	clientName := GetClientName(ctx)
+	if strings.Contains(strings.ToLower(clientName), "claude") {
+		filename = "CLAUDE.md"
+	}
+	instructionsContent := `# Agent instructions
+
+This file can be used for any project-specific instructions!
+
+## Prerequisites
+
+If the Databricks CLI MCP server is not yet installed, install it by:
+1. Installing the Databricks CLI: https://docs.databricks.com/dev-tools/cli/install
+2. Running: ` + "`databricks mcp install`" + `
+
+## Working with this project
+
+General agent guidance: always use the mcp__databricks-cli__analyze_project tool whenever you open this project!
+It makes sure you have more context on the current project and what actions you can perform on it.
+`
+	instructionsPath := filepath.Join(args.ProjectPath, filename)
+	if err := os.WriteFile(instructionsPath, []byte(instructionsContent), 0o644); err != nil {
+		return "", fmt.Errorf("failed to create %s: %w", filename, err)
 	}
 
 	// Return the same guidance as analyze_project
