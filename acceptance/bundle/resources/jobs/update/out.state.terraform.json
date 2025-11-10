@@ -1,0 +1,136 @@
+{
+  "version": 4,
+  "terraform_version": "1.5.5",
+  "serial": 1,
+  "lineage": "[UUID]",
+  "outputs": {},
+  "resources": [
+    {
+      "mode": "managed",
+      "type": "databricks_job",
+      "name": "foo",
+      "provider": "provider[\"registry.terraform.io/databricks/databricks\"]",
+      "instances": [
+        {
+          "schema_version": 2,
+          "attributes": {
+            "always_running": false,
+            "budget_policy_id": null,
+            "continuous": [],
+            "control_run_state": false,
+            "dbt_task": [],
+            "deployment": [
+              {
+                "kind": "BUNDLE",
+                "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+              }
+            ],
+            "description": null,
+            "edit_mode": "UI_LOCKED",
+            "email_notifications": [],
+            "environment": [],
+            "existing_cluster_id": null,
+            "format": "MULTI_TASK",
+            "git_source": [],
+            "health": [],
+            "id": "[JOB_ID]",
+            "job_cluster": [
+              {
+                "job_cluster_key": "key",
+                "new_cluster": [
+                  {
+                    "__apply_policy_default_values_allow_list": null,
+                    "apply_policy_default_values": false,
+                    "autoscale": [],
+                    "aws_attributes": [],
+                    "azure_attributes": [],
+                    "cluster_id": "",
+                    "cluster_log_conf": [],
+                    "cluster_mount_info": [],
+                    "cluster_name": "",
+                    "custom_tags": null,
+                    "data_security_mode": "",
+                    "docker_image": [],
+                    "driver_instance_pool_id": "",
+                    "driver_node_type_id": "",
+                    "enable_elastic_disk": false,
+                    "enable_local_disk_encryption": false,
+                    "gcp_attributes": [],
+                    "idempotency_token": "",
+                    "init_scripts": [],
+                    "instance_pool_id": "",
+                    "is_single_node": false,
+                    "kind": "",
+                    "library": [],
+                    "node_type_id": "",
+                    "num_workers": 0,
+                    "policy_id": "",
+                    "provider_config": [],
+                    "remote_disk_throughput": 0,
+                    "runtime_engine": "",
+                    "single_user_name": "",
+                    "spark_conf": null,
+                    "spark_env_vars": null,
+                    "spark_version": "13.3.x-scala2.12",
+                    "ssh_public_keys": null,
+                    "total_initial_remote_disk_size": 0,
+                    "use_ml_runtime": false,
+                    "workload_type": []
+                  }
+                ]
+              }
+            ],
+            "library": [],
+            "max_concurrent_runs": 1,
+            "max_retries": 0,
+            "min_retry_interval_millis": 0,
+            "name": "foo",
+            "new_cluster": [],
+            "notebook_task": [],
+            "notification_settings": [],
+            "parameter": [],
+            "performance_target": null,
+            "pipeline_task": [],
+            "provider_config": [],
+            "python_wheel_task": [],
+            "queue": [
+              {
+                "enabled": true
+              }
+            ],
+            "retry_on_timeout": false,
+            "run_as": null,
+            "run_job_task": [],
+            "schedule": [],
+            "spark_jar_task": [],
+            "spark_python_task": [],
+            "spark_submit_task": [],
+            "tags": null,
+            "task": [],
+            "timeout_seconds": 0,
+            "timeouts": null,
+            "trigger": [
+              {
+                "file_arrival": [],
+                "pause_status": "UNPAUSED",
+                "periodic": [
+                  {
+                    "interval": 1,
+                    "unit": "DAYS"
+                  }
+                ],
+                "table_update": []
+              }
+            ],
+            "url": "[DATABRICKS_URL]/#job/[JOB_ID]",
+            "usage_policy_id": null,
+            "webhook_notifications": []
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJ1cGRhdGUiOjE4MDAwMDAwMDAwMDB9LCJzY2hlbWFfdmVyc2lvbiI6IjIifQ=="
+        }
+      ]
+    }
+  ],
+  "check_results": null
+}
