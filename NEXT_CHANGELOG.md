@@ -6,8 +6,6 @@
 
 ### CLI
 * Add `databricks query sql` for running SQL statements with NDJSON/CSV/table output, read-only safety gate, and Statement Execution polling.
-* Improve `--format table` output for `databricks query sql` by adding header dividers so wide result sets stay easier to scan.
-* Honor profile settings over env vars and CLI flags for `--allow-destructive`, with env vars now taking precedence over flags.
 
 ### Dependency updates
 
