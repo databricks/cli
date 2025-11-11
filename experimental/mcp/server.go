@@ -1,4 +1,4 @@
-package aitools
+package mcp
 
 import (
 	"bufio"
@@ -8,7 +8,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/databricks/cli/experimental/aitools/tools"
+	"github.com/databricks/cli/experimental/mcp/tools"
 	"github.com/databricks/cli/libs/log"
 	"github.com/spf13/cobra"
 )
@@ -16,8 +16,8 @@ import (
 func newServerCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "server",
-		Short: "Start the AI tools server (used by coding agents)",
-		Long:  `Start the Databricks CLI AI tools server. This command is typically invoked by coding agents.`,
+		Short: "Start the MCP server (used by coding agents)",
+		Long:  `Start the Databricks CLI MCP server. This command is typically invoked by coding agents.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runServer(cmd.Context())
 		},
@@ -151,7 +151,7 @@ func (s *MCPServer) handleInitialize(req *JSONRPCRequest) {
 	result := map[string]any{
 		"protocolVersion": "2024-11-05",
 		"serverInfo": map[string]string{
-			"name":    "databricks-aitools",
+			"name":    "databricks-cli",
 			"version": "1.0.0",
 		},
 		"capabilities": map[string]any{

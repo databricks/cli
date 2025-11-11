@@ -1,10 +1,10 @@
-package aitools
+package mcp
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/databricks/cli/experimental/aitools/agents"
+	"github.com/databricks/cli/experimental/mcp/agents"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
@@ -13,8 +13,8 @@ import (
 func newInstallCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "install",
-		Short: "Install the AI tools server in coding agents",
-		Long:  `Install the Databricks CLI AI tools server in coding agents like Claude Code and Cursor.`,
+		Short: "Install the MCP server in coding agents",
+		Long:  `Install the Databricks CLI MCP server in coding agents like Claude Code and Cursor.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runInstall(cmd.Context())
 		},
@@ -27,10 +27,10 @@ func runInstall(ctx context.Context) error {
 	// Show welcome message with databricks brick logo
 	cmdio.LogString(ctx, "")
 	cmdio.LogString(ctx, "  ▄▄▄▄▄▄▄▄   Databricks CLI")
-	cmdio.LogString(ctx, "  ██▌  ▐██   AI Tools Server")
+	cmdio.LogString(ctx, "  ██▌  ▐██   MCP Server")
 	cmdio.LogString(ctx, "  ▀▀▀▀▀▀▀▀")
 	cmdio.LogString(ctx, "")
-	cmdio.LogString(ctx, "Welcome to the Databricks CLI AI tools server!")
+	cmdio.LogString(ctx, "Welcome to the Databricks CLI MCP server!")
 	cmdio.LogString(ctx, "")
 
 	// ASCII art warning box
@@ -45,7 +45,7 @@ func runInstall(ctx context.Context) error {
 	cursorAgent := agents.NewCursorAgent()
 
 	// Ask about each detected agent
-	cmdio.LogString(ctx, "Which coding agents would you like to install the AI tools server for?")
+	cmdio.LogString(ctx, "Which coding agents would you like to install the MCP server for?")
 	cmdio.LogString(ctx, "")
 
 	var selectedAgents []*agents.Agent
@@ -92,7 +92,7 @@ func runInstall(ctx context.Context) error {
 	cmdio.LogString(ctx, "")
 	anySuccess := false
 	for _, agent := range selectedAgents {
-		cmdio.LogString(ctx, fmt.Sprintf("Installing AI tools server for %s...", agent.DisplayName))
+		cmdio.LogString(ctx, fmt.Sprintf("Installing MCP server for %s...", agent.DisplayName))
 		if err := agent.Installer(); err != nil {
 			cmdio.LogString(ctx, color.RedString(fmt.Sprintf("✗ Failed to install for %s: %v", agent.DisplayName, err)))
 			cmdio.LogString(ctx, "")

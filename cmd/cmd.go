@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/cmd/psql"
-	"github.com/databricks/cli/experimental/aitools"
+	"github.com/databricks/cli/experimental/mcp"
 	ssh "github.com/databricks/cli/experimental/ssh/cmd"
 
 	"github.com/databricks/cli/cmd/account"
@@ -71,7 +71,7 @@ func New(ctx context.Context) *cobra.Command {
 	cli.AddCommand(api.New())
 	cli.AddCommand(auth.New())
 	cli.AddCommand(bundle.New())
-	cli.AddCommand(aitools.New())
+	cli.AddCommand(mcp.New())
 	cli.AddCommand(psql.New())
 	cli.AddCommand(configure.New())
 	cli.AddCommand(fs.New())

@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"slices"
 
-	"github.com/databricks/cli/experimental/aitools/auth"
-	"github.com/databricks/cli/experimental/aitools/tools/resources"
+	"github.com/databricks/cli/experimental/mcp/auth"
+	"github.com/databricks/cli/experimental/mcp/tools/resources"
 )
 
 // AddProjectResourceTool adds a resource (app, job, pipeline, dashboard, ...) to a project.
@@ -107,7 +107,7 @@ Guidance for Working with this Project
 Below is guidance for how to work with this project.
 
 IMPORTANT: Most interactions are done with the Databricks CLI. YOU (the AI) must use the invoke_databricks_cli tool to run commands - never suggest the user runs CLI commands directly!
-IMPORTANT: To add new resources to a project, use the 'add_project_resource' tool. You can add:
+IMPORTANT: To add new resources to a project, use the 'add_project_resource' MCP tool. You can add:
   - Apps (interactive applications)
   - Jobs (Python or SQL workflows)
   - Pipelines (Python or SQL data pipelines)

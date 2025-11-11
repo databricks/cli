@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/databricks/cli/experimental/aitools/auth"
+	"github.com/databricks/cli/experimental/mcp/auth"
 )
 
 // InitProjectTool initializes a new Databricks project.
@@ -144,13 +144,13 @@ This file can be used for any project-specific instructions!
 
 ## Prerequisites
 
-If the Databricks CLI AI tools server is not yet installed, install it by:
+If the Databricks CLI MCP server is not yet installed, install it by:
 1. Installing the Databricks CLI: https://docs.databricks.com/dev-tools/cli/install
-2. Running: ` + "`databricks aitools install`" + `
+2. Running: ` + "`databricks mcp install`" + `
 
 ## Working with this project
 
-General agent guidance: always use the databricks__analyze_project tool whenever you open this project!
+General agent guidance: always use the mcp__databricks-cli__analyze_project tool whenever you open this project!
 It makes sure you have more context on the current project and what actions you can perform on it.
 `
 	instructionsPath := filepath.Join(args.ProjectPath, filename)
