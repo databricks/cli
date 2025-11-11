@@ -40,12 +40,12 @@ var ignoredResources = map[string]bool{
 type fixPermissions struct{}
 
 // This mutator ensures the current user has the correct permissions for deployed resources.
-func ProcessPermissions() bundle.Mutator {
+func FixPermissions() bundle.Mutator {
 	return &fixPermissions{}
 }
 
 func (m *fixPermissions) Name() string {
-	return "ProcessPermissions"
+	return "FixPermissions"
 }
 
 func processPermissions(currentUser string) dyn.MapFunc {
@@ -203,6 +203,8 @@ var PermissionOrder = map[string]int{
 	"CAN_MANAGE_PRODUCTION_VERSIONS": 16,
 	"CAN_MANAGE":                     17,
 	"IS_OWNER":                       18,
+	// One known exception from this order: for SQL Warehouses, CAN_USE and CAN_RUN cannot be ordered and must be upgraded to CAN_MONITOR.
+	// We're not doing that currently.
 }
 
 func getLevelScore(a string) int {
