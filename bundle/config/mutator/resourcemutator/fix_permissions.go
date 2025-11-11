@@ -212,16 +212,12 @@ func getLevelScore(a string) int {
 	if ok {
 		return score
 	}
-	if strings.Contains(a, "MANAGE") {
-		return PermissionOrder["CAN_MANAGE_RUN"]
+	for levelName, levelScore := range PermissionOrder {
+		if strings.HasPrefix(a, levelName) && levelScore > score {
+			score = levelScore
+		}
 	}
-	if strings.Contains(a, "EDIT") {
-		return PermissionOrder["CAN_EDIT"]
-	}
-	if strings.Contains(a, "VIEW") {
-		return PermissionOrder["CAN_VIEW"]
-	}
-	return 0
+	return score
 }
 
 func compareLevels(a, b string) int {
