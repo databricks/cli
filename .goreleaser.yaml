@@ -94,7 +94,7 @@ checksum:
   algorithm: sha256
 
 snapshot:
-  version_template: '{{ incpatch .Version }}-dev+{{ .ShortCommit }}'
+  version_template: "v0.0.0-dev+{{ .ShortCommit }}"
 
 changelog:
   sort: asc
