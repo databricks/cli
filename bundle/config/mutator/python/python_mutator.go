@@ -121,51 +121,103 @@ type runPythonMutatorOpts struct {
 	loadLocations  bool
 }
 
-// getOpts adapts deprecated PyDABs and Python configuration
+// getOpts adapts deprecated PyDABs and upcoming Python configuration
 // into a common structure.
 func getOpts(b *bundle.Bundle, phase phase) (opts, error) {
-	// Check root-level python configuration first (preferred)
-	pythonEnabled := !reflect.DeepEqual(b.Config.Python, config.Python{})
-
-	// Fall back to experimental.python for backward compatibility
 	experimental := b.Config.Experimental
-	if experimental != nil {
-		// using reflect.DeepEquals in case we add more fields
-		pydabsEnabled := !reflect.DeepEqual(experimental.PyDABs, config.PyDABs{})
-		experimentalPythonEnabled := !reflect.DeepEqual(experimental.Python, config.Python{})
-
-		if pydabsEnabled {
-			return opts{}, errors.New("experimental/pydabs is deprecated, use experimental/python instead (https://docs.databricks.com/dev-tools/bundles/python)")
-		}
-
-		if experimentalPythonEnabled {
-			pythonEnabled = true
-		}
+	if experimental == nil {
+		experimental = &config.Experimental{}
 	}
 
-	if pythonEnabled {
-		// Get the Python configuration (prefer root-level, fall back to experimental)
-		pythonConfig := b.Config.Python
-		if experimental != nil && !reflect.DeepEqual(experimental.Python, config.Python{}) {
-			pythonConfig = experimental.Python
-		}
+	// using reflect.DeepEquals in case we add more fields
+	pydabsEnabled := !reflect.DeepEqual(experimental.PyDABs, config.PyDABs{})
+	experimentalPythonEnabled := !reflect.DeepEqual(experimental.Python, config.Python{})
+	pythonEnabled := !reflect.DeepEqual(b.Config.Python, config.Python{})
 
-		// don't execute for phases for 'pydabs' section
-		if phase == PythonMutatorPhaseLoadResources || phase == PythonMutatorPhaseApplyMutators || phase == PythonMutatorPhasePostDeploy {
+	if pydabsEnabled {
+		return opts{}, errors.New("experimental/pydabs is deprecated, use python instead (https://docs.databricks.com/dev-tools/bundles/python)")
+	}
+
+	if experimentalPythonEnabled && pythonEnabled {
+		if !reflect.DeepEqual(experimental.Python, b.Config.Python) {
+			return opts{}, errors.New("'experimental/python' and 'python' configuration properties are mutually exclusive, use only 'python'")
+		} else {
 			return opts{
 				enabled:       true,
-				venvPath:      pythonConfig.VEnvPath,
+				venvPath:      b.Config.Python.VEnvPath,
 				loadLocations: true,
 			}, nil
-		} else {
-			return opts{}, nil
 		}
+	} else if pythonEnabled {
+		return opts{
+			enabled:       true,
+			venvPath:      b.Config.Python.VEnvPath,
+			loadLocations: true,
+		}, nil
+	} else if experimentalPythonEnabled {
+		return opts{
+			enabled:       true,
+			venvPath:      experimental.Python.VEnvPath,
+			loadLocations: true,
+		}, nil
 	} else {
 		return opts{}, nil
 	}
 }
 
+// applyBackwardsCompatibilityFixes applies fixes to bundle configuration
+// so that older version of databricks-bundles Python library continue to see
+// 'experimental.python' section even if bundle configuration uses 'python' section.
+//
+// This way upgrades are less risky if CLI version doesn't match Python package version.
+//
+// Later version of Python package should reject 'experimental.python' unless 'python' section
+// is set to equivalent value, and after that reject 'experimental.python' altogether.
+func applyBackwardsCompatibilityFixes(b *bundle.Bundle) error {
+	return b.Config.Mutate(func(value dyn.Value) (dyn.Value, error) {
+		outValue := value
+
+		pythonValue, _ := dyn.Get(outValue, "python")
+		if !pythonValue.IsValid() {
+			// if 'python' section doesn't exist, nothing to do
+			return value, nil
+		}
+
+		experimentalPythonValue, _ := dyn.Get(outValue, "experimental.python")
+
+		if experimentalPythonValue.IsValid() {
+			// if 'experimental.python' section exists, nothing to do
+			return value, nil
+		}
+
+		experimentalValue, _ := dyn.Get(outValue, "experimental")
+		if !experimentalValue.IsValid() {
+			updated, err := dyn.Set(outValue, "experimental", dyn.NewValue(map[string]dyn.Value{}, nil))
+			if err != nil {
+				return dyn.InvalidValue, fmt.Errorf("failed to create 'experimental' section: %w", err)
+			} else {
+				outValue = updated
+			}
+		}
+
+		// move 'python' section to 'experimental.python'
+		updated, err := dyn.Set(outValue, "experimental.python", pythonValue)
+		if err != nil {
+			return dyn.InvalidValue, fmt.Errorf("failed to set 'experimental.python' section: %w", err)
+		} else {
+			outValue = updated
+		}
+
+		return outValue, nil
+	})
+}
+
 func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	err := applyBackwardsCompatibilityFixes(b)
+	if err != nil {
+		return diag.FromErr(fmt.Errorf("failed to apply backwards compatibility fixes: %w", err))
+	}
+
 	opts, err := getOpts(b, m.phase)
 	if err != nil {
 		return diag.Errorf("failed to apply python mutator: %s", err)
