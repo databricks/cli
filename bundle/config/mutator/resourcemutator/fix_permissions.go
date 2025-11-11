@@ -2,6 +2,7 @@ package resourcemutator
 
 import (
 	"context"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
@@ -34,19 +35,20 @@ var ignoredResources = map[string]bool{
 //    "Error: cannot create permissions: Permissions being set for UserName([USERNAME]) are ambiguous"
 //    Since terraform adds IS_OWNER permission when there is not one, regardless of CAN_MANAGE presence,
 //    he above error can occur. We thus add another bit of logic: we upgrade CAN_MANAGE to IS_OWNER when we can.
+// 5. Any principal should not have more than permission set; backend simply takes the latest in the list and ignores the rest.
 
-type ensureOwnerPermissions struct{}
+type fixPermissions struct{}
 
 // This mutator ensures the current user has the correct permissions for deployed resources.
-func EnsureOwnerPermissions() bundle.Mutator {
-	return &ensureOwnerPermissions{}
+func ProcessPermissions() bundle.Mutator {
+	return &fixPermissions{}
 }
 
-func (m *ensureOwnerPermissions) Name() string {
-	return "EnsureOwnerPermissions"
+func (m *fixPermissions) Name() string {
+	return "ProcessPermissions"
 }
 
-func ensureCurrentUserPermission(currentUser string) dyn.MapFunc {
+func processPermissions(currentUser string) dyn.MapFunc {
 	return func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 		// Extract resource type from path: resources.<resource_type>.<resource_name>.permissions
 		if len(p) != 4 || p[0].Key() != "resources" || p[3].Key() != "permissions" {
@@ -58,7 +60,12 @@ func ensureCurrentUserPermission(currentUser string) dyn.MapFunc {
 			return v, nil
 		}
 
-		return processPermissions(v, currentUser, resourceType)
+		v, err := ensureCurrentUserMgmtPermissions(v, currentUser, resourceType)
+		if err != nil {
+			return v, err
+		}
+
+		return useMaximumLevel(v, resourceType)
 	}
 }
 
@@ -71,7 +78,23 @@ func readUser(v dyn.Value) string {
 	return servicePrincipalName
 }
 
-func processPermissions(permissions dyn.Value, currentUser, resourceType string) (dyn.Value, error) {
+func readPrincipal(v dyn.Value) string {
+	value, _ := dyn.GetValue(v, "user_name").AsString()
+	if value != "" {
+		return "user_name:" + value
+	}
+	value, _ = dyn.GetValue(v, "service_principal_name").AsString()
+	if value != "" {
+		return "service_principal_name:" + value
+	}
+	value, _ = dyn.GetValue(v, "group_name").AsString()
+	if value != "" {
+		return "group_name:" + value
+	}
+	return ""
+}
+
+func ensureCurrentUserMgmtPermissions(permissions dyn.Value, currentUser, resourceType string) (dyn.Value, error) {
 	currentUserHasIsOwner := false
 	currentUserIndCanManage := -1
 	canAddIsOwner := hasIsOwner[resourceType]
@@ -121,6 +144,100 @@ func processPermissions(permissions dyn.Value, currentUser, resourceType string)
 	return dyn.V(permissionArray), nil
 }
 
+func useMaximumLevel(permissions dyn.Value, resourceType string) (dyn.Value, error) {
+	permissionArray, ok := permissions.AsSequence()
+	if !ok {
+		return permissions, nil
+	}
+
+	levelPerPrincipal := make(map[string]string)
+	principalIndex := make(map[string]int)
+	principals := []string{}
+
+	for _, permission := range permissionArray {
+		level, ok := dyn.GetValue(permission, "level").AsString()
+		if level == "" {
+			continue
+		}
+
+		principal := readPrincipal(permission)
+		if principal == "" {
+			continue
+		}
+		_, ok = principalIndex[principal]
+		if !ok {
+			ind := len(principalIndex)
+			principalIndex[principal] = ind
+			principals = append(principals, principal)
+		}
+		levelPerPrincipal[principal] = getMaxLevel(levelPerPrincipal[principal], level)
+	}
+
+	var newPermissions []dyn.Value
+
+	for _, principal := range principals {
+		newPermissions = append(newPermissions, createPermissionFromPrincipal(principal, levelPerPrincipal[principal]))
+	}
+
+	return dyn.V(newPermissions), nil
+}
+
+// Unified permission order map
+// Based on https://docs.databricks.com/aws/en/security/auth/access-control/#dashboard-acls
+var PermissionOrder = map[string]int{
+	"":                               -1,
+	"CAN_VIEW":                       2,
+	"CAN_READ":                       3,
+	"CAN_VIEW_METADATA":              4,
+	"CAN_RUN":                        5,
+	"CAN_QUERY":                      6,
+	"CAN_USE":                        7,
+	"CAN_EDIT":                       8,
+	"CAN_EDIT_METADATA":              9,
+	"CAN_CREATE":                     10,
+	"CAN_ATTACH_TO":                  11,
+	"CAN_RESTART":                    12,
+	"CAN_MONITOR":                    13,
+	"CAN_MANAGE_RUN":                 14,
+	"CAN_MANAGE_STAGING_VERSIONS":    15,
+	"CAN_MANAGE_PRODUCTION_VERSIONS": 16,
+	"CAN_MANAGE":                     17,
+	"IS_OWNER":                       18,
+}
+
+func getLevelScore(a string) int {
+	score, ok := PermissionOrder[a]
+	if ok {
+		return score
+	}
+	if strings.Contains(a, "MANAGE") {
+		return PermissionOrder["CAN_MANAGE_RUN"]
+	}
+	if strings.Contains(a, "EDIT") {
+		return PermissionOrder["CAN_EDIT"]
+	}
+	if strings.Contains(a, "VIEW") {
+		return PermissionOrder["CAN_VIEW"]
+	}
+	return 0
+}
+
+func compareLevels(a, b string) int {
+	s1 := getLevelScore(a)
+	s2 := getLevelScore(b)
+	if s1 == s2 {
+		return strings.Compare(a, b)
+	}
+	return s1 - s2
+}
+
+func getMaxLevel(a, b string) string {
+	if compareLevels(a, b) >= 0 {
+		return a
+	}
+	return b
+}
+
 func createPermission(user, level string) dyn.Value {
 	permission := map[string]dyn.Value{
 		"level": dyn.V(level),
@@ -136,7 +253,19 @@ func createPermission(user, level string) dyn.Value {
 	return dyn.V(permission)
 }
 
-func (m *ensureOwnerPermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func createPermissionFromPrincipal(principal, level string) dyn.Value {
+	permission := map[string]dyn.Value{
+		"level": dyn.V(level),
+	}
+
+	items := strings.SplitN(principal, ":", 2)
+	field := items[0]
+	value := items[1]
+	permission[field] = dyn.V(value)
+	return dyn.V(permission)
+}
+
+func (m *fixPermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	currentUser := b.Config.Workspace.CurrentUser.UserName
 
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
@@ -146,7 +275,7 @@ func (m *ensureOwnerPermissions) Apply(ctx context.Context, b *bundle.Bundle) di
 			dyn.AnyKey(),
 			dyn.AnyKey(),
 			dyn.Key("permissions"),
-		), ensureCurrentUserPermission(currentUser))
+		), processPermissions(currentUser))
 	})
 
 	return diag.FromErr(err)
