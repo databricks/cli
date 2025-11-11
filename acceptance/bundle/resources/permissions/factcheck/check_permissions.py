@@ -44,7 +44,7 @@ def test_permissions(target_user, resource_type, resource_id, levels, expected):
     get_result = run_json([cli, "permissions", "get", resource_type, resource_id])
 
     if set_result != get_result:
-        print("set response is different from set response")
+        print("set() response is different from get() response")
         print("set:")
         pprint.pprint(set_result)
         print("get:")
