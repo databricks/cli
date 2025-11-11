@@ -28,7 +28,7 @@ jobs:
             .goreleaser-windows.yaml
 
       - name: Azure Login
-        uses: azure/login@e0db49e98c564cc35b6c06fc4c423ab28c39c27a # v2.4.0
+        uses: azure/login@v2
         with:
           creds: '{"clientId":"${{ secrets.DECO_SIGN_AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.DECO_SIGN_AZURE_CLIENT_SECRET }}","tenantId":"${{ secrets.DECO_SIGN_AZURE_TENANT_ID }}","subscriptionId":"${{ secrets.DECO_SIGN_AZURE_SUBSCRIPTION_ID }}"}'
 
