@@ -16,7 +16,7 @@ echo "$sql_warehouse_id:SQL_WAREHOUSE_ID" >> ACC_REPLS
 
 user=deco-test-user@databricks.com
 
-title "Permissions API simple takes the latest level in the request for a given principal\n"
+title "Permissions API simply takes the latest level in the request for a given principal\n"
 python3 check_permissions.py $user jobs $job_id CAN_VIEW,CAN_MANAGE_RUN CAN_MANAGE_RUN
 python3 check_permissions.py $user jobs $job_id CAN_MANAGE_RUN,CAN_VIEW CAN_VIEW
 python3 check_permissions.py $user jobs $job_id CAN_VIEW,CAN_MANAGE_RUN,CAN_MANAGE CAN_MANAGE
