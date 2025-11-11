@@ -28,10 +28,14 @@ jobs:
             .goreleaser-windows.yaml
 
       - name: Azure Login
-        uses: azure/login@v2
-        with:
-          creds: '{"clientId":"${{ secrets.DECO_SIGN_AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.DECO_SIGN_AZURE_CLIENT_SECRET }}","tenantId":"${{ secrets.DECO_SIGN_AZURE_TENANT_ID }}","subscriptionId":"${{ secrets.DECO_SIGN_AZURE_SUBSCRIPTION_ID }}"}'
-          environment: AzureGermanCloud
+        shell: pwsh
+        run: |
+          az cloud set --name AzureGermanCloud
+          az login --service-principal `
+            -u ${{ secrets.DECO_SIGN_AZURE_CLIENT_ID }} `
+            -p ${{ secrets.DECO_SIGN_AZURE_CLIENT_SECRET }} `
+            --tenant ${{ secrets.DECO_SIGN_AZURE_TENANT_ID }}
+          az account set --subscription ${{ secrets.DECO_SIGN_AZURE_SUBSCRIPTION_ID }}
 
       - name: Setup Azure Trusted Signing
         uses: azure/trusted-signing-action@v0.5.0
