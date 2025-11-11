@@ -3,7 +3,6 @@ version: 2
 before:
   hooks:
     - go mod download
-    - sh -c 'wget -q https://github.com/ebourg/jsign/releases/download/6.0/jsign-6.0.jar -O /tmp/jsign.jar'
 
 builds:
   - env:
@@ -40,10 +39,6 @@ builds:
       - amd64
       - arm64
     binary: databricks
-
-    hooks:
-      post:
-        - sh -c 'if [ "{{ .Os }}" = "windows" ]; then java -jar /tmp/jsign.jar --storetype AZUREKEYVAULT --keystore "${AZURE_KEY_VAULT_NAME}" --storepass "${ACCESS_TOKEN}" --alias "${AZURE_CERTIFICATE_NAME}" --tsaurl http://timestamp.digicert.com "{{ .Path }}"; fi'
 
 archives:
   - formats: ["zip", "tar.gz"]

@@ -48,10 +48,6 @@ signs:
       - http://timestamp.digicert.com
       - /td
       - SHA256
-      - /dlib
-      - Azure.CodeSigning.Dlib.dll
-      - /dmdf
-      - metadata.json
       - ${artifact}
     artifacts: binary
 
@@ -69,7 +65,7 @@ checksum:
   algorithm: sha256
 
 snapshot:
-  version_template: 'v0.0.0-dev+{{ .ShortCommit }}'
+  version_template: '{{ incpatch .Version }}-dev+{{ .ShortCommit }}'
 
 changelog:
   sort: asc
