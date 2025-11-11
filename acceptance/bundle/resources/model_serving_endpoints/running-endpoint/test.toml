@@ -2,6 +2,7 @@ Timeout = '30m'
 Cloud = true
 Local = true
 CloudSlow = true
+RequiresUnityCatalog = true
 
 [[Server]]
 Pattern = "GET /api/2.1/unity-catalog/models/system.ai.llama_v3_2_1b_instruct/versions"
