@@ -41,4 +41,3 @@ resources:
           group_name: can_manage@example.com
         - level: CAN_VIEW
           group_name: can_manage@example.com
-
