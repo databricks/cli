@@ -61,20 +61,17 @@ Deployment complete!
 === Delete permissions remotely
 >>> [CLI] permissions set jobs [JOB_ID] --json @remote_delete.json
 {
-  "object_id":"/jobs/[JOB_ID]",
-  "object_type":"job"
-}
-
->>> print_requests
-{
-  "method": "PUT",
-  "path": "/api/2.0/permissions/jobs/[JOB_ID]",
-  "body": {}
-}
-
->>> [CLI] permissions get jobs [JOB_ID]
-{
   "access_control_list": [
+    {
+      "all_permissions": [
+        {
+          "inherited":false,
+          "permission_level":"IS_OWNER"
+        }
+      ],
+      "display_name":"[USERNAME]",
+      "user_name":"[USERNAME]"
+    },
     {
       "all_permissions": [
         {
@@ -90,6 +87,20 @@ Deployment complete!
   ],
   "object_id":"/jobs/[JOB_ID]",
   "object_type":"job"
+}
+
+>>> print_requests
+{
+  "method": "PUT",
+  "path": "/api/2.0/permissions/jobs/[JOB_ID]",
+  "body": {
+    "access_control_list": [
+      {
+        "permission_level": "IS_OWNER",
+        "user_name": "[USERNAME]"
+      }
+    ]
+  }
 }
 
 >>> [CLI] bundle debug plan

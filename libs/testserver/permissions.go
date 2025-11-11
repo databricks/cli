@@ -137,8 +137,9 @@ func (s *FakeWorkspace) SetPermissions(req Request) any {
 	}
 
 	// Convert AccessControlRequest to AccessControlResponse
-	// Use map to ensure only one permission level per principal (last wins)
-	principalPermissions := make(map[string]iam.AccessControlResponse)
+	// Use map to track principal indices and slice to preserve order
+	principalIndices := make(map[string]int)
+	var newAccessControlList []iam.AccessControlResponse
 
 	for _, acl := range updateRequest.AccessControlList {
 		// Determine principal key - use the non-empty field as the unique identifier
@@ -177,14 +178,15 @@ func (s *FakeWorkspace) SetPermissions(req Request) any {
 			})
 		}
 
-		// Store in map - last entry for same principal wins
-		principalPermissions[principalKey] = response
-	}
-
-	// Convert map back to slice
-	var newAccessControlList []iam.AccessControlResponse
-	for _, response := range principalPermissions {
-		newAccessControlList = append(newAccessControlList, response)
+		// Check if principal already exists in our list
+		if index, exists := principalIndices[principalKey]; exists {
+			// Update existing entry (last entry for same principal wins)
+			newAccessControlList[index] = response
+		} else {
+			// Add new entry and track its index
+			principalIndices[principalKey] = len(newAccessControlList)
+			newAccessControlList = append(newAccessControlList, response)
+		}
 	}
 
 	// Update the permissions
