@@ -200,7 +200,7 @@ the system as a whole a bit (btw each tool should be defined in a separate .go f
     this means they should be exposed as a hidden command like 'databricks aitools tool add_project_resource --config-file <file which has the tool parameters in json format>'. having these tests will be instrumental for iterating on them; the initing should not fail! note that the tool subcommand should just assume that the cwd is the current project dir.
 
 - the "explore" tool:
-    - description: Get guidance on exploring Databricks catalogs, data assets, and Genie. Call this when you need to understand what data is available in the workspace or run queries.
+    - description: CALL THIS FIRST when user mentions a workspace by name or asks about workspace resources. Shows available workspaces/profiles, default warehouse, and provides guidance on exploring jobs, clusters, catalogs, and other Databricks resources. Use this to discover what's available before running CLI commands.
     - no parameters needed
     - implementation:
       - Determines a default SQL warehouse for queries using GetDefaultWarehouse():
@@ -208,17 +208,30 @@ the system as a whole a bit (btw each tool should be defined in a separate .go f
         2. Prefers RUNNING warehouses (pick first one found)
         3. If none running, picks first STOPPED warehouse (warehouses auto-start when queried)
         4. If no warehouses available, returns error directing user to create one
+      - Shows workspace/profile information:
+        1. Reads available profiles from ~/.databrickscfg using libs/databrickscfg/profile package
+        2. Shows current profile (from DATABRICKS_CONFIG_PROFILE env var or DEFAULT)
+        3. Lists all available workspaces with their host URLs and cloud providers
+        4. Provides guidance on using --profile flag to switch workspaces:
+           - Example: invoke_databricks_cli '--profile prod catalogs list'
+        5. Only shows profile list if multiple profiles exist (saves tokens for single-profile setups)
       - Checks if Genie spaces are available using checkGenieAvailable()
       - Returns concise guidance text that explains:
-        1. The warehouse ID that can be used for queries
-        2. How to explore Unity Catalog structure:
-           - List catalogs: invoke_databricks_cli 'catalogs list'
-           - List schemas in a catalog: invoke_databricks_cli 'schemas list <catalog_name>'
-           - List tables in a schema: invoke_databricks_cli 'tables list <catalog_name> <schema_name>'
-           - Get table details: invoke_databricks_cli 'tables get <catalog>.<schema>.<table>'
-        3. How to work with notebooks and jobs for data manipulation
-        4. If Genie spaces exist: One-line note that Genie is available (not detailed commands)
+        1. Current workspace profile and host
+        2. Available workspace profiles (if multiple exist)
+        3. The warehouse ID that can be used for queries
+        4. How to execute SQL queries using Statement Execution API:
+           - invoke_databricks_cli 'api post /api/2.0/sql/statements --json {"warehouse_id":"...","statement":"SELECT ...","wait_timeout":"30s"}'
+           - Mentions using the warehouse ID shown above
+        5. How to explore workspace resources:
+           - Jobs: invoke_databricks_cli 'jobs list', 'jobs get <job_id>'
+           - Clusters: invoke_databricks_cli 'clusters list', 'clusters get <cluster_id>'
+           - Unity Catalog: invoke_databricks_cli 'catalogs list', 'schemas list', 'tables list', 'tables get'
+           - Workspace files: invoke_databricks_cli 'workspace list <path>'
+        6. Reminder to use --profile flag for non-default workspaces
+        7. If Genie spaces exist: One-line note that Genie is available (not detailed commands)
       - Key design: Single concise endpoint that provides guidance, not many separate tools
       - Genie approach: Only mention it exists if spaces are available; don't show commands unless user asks
-    - output: Guidance text with warehouse info and commands for exploring data
-    - implementation: Single explore.go file with GetDefaultWarehouse and checkGenieAvailable helpers
+    - output: Guidance text with workspace/profile info, warehouse info, and commands for exploring jobs, clusters, data, and other resources
+    - implementation: Single explore.go file with GetDefaultWarehouse, getCurrentProfile, getAvailableProfiles, and checkGenieAvailable helpers
+    - key use case: When user asks about a specific workspace (e.g., "what jobs do I have in my dogfood workspace"), agent should call this FIRST to see available workspaces and get the correct profile name

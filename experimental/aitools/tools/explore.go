@@ -7,14 +7,16 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/databricks/cli/libs/databrickscfg/profile"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/exec"
 )
 
-// ExploreTool provides guidance on exploring Databricks data assets.
+// ExploreTool provides guidance on exploring Databricks workspaces and resources.
 var ExploreTool = Tool{
 	Definition: ToolDefinition{
 		Name:        "explore",
-		Description: "Get guidance on exploring Databricks catalogs, data assets, and Genie. Call this when you need to understand what data is available in the workspace or run queries. This is a read-only tool for data exploration.",
+		Description: "CALL THIS FIRST when user mentions a workspace by name or asks about workspace resources. Shows available workspaces/profiles, default warehouse, and provides guidance on exploring jobs, clusters, catalogs, and other Databricks resources. Use this to discover what's available before running CLI commands.",
 		InputSchema: map[string]any{
 			"type":       "object",
 			"properties": map[string]any{},
@@ -27,7 +29,10 @@ var ExploreTool = Tool{
 		}
 
 		hasGenie := checkGenieAvailable(ctx)
-		return generateExploreGuidance(warehouse, hasGenie), nil
+		currentProfile := getCurrentProfile(ctx)
+		profiles := getAvailableProfiles(ctx)
+
+		return generateExploreGuidance(warehouse, hasGenie, currentProfile, profiles), nil
 	},
 }
 
@@ -110,8 +115,28 @@ func GetDefaultWarehouse(ctx context.Context) (*Warehouse, error) {
 	return &warehouses[0], nil
 }
 
+// getCurrentProfile returns the currently active profile name.
+func getCurrentProfile(ctx context.Context) string {
+	// Check DATABRICKS_CONFIG_PROFILE env var
+	profileName := env.Get(ctx, "DATABRICKS_CONFIG_PROFILE")
+	if profileName == "" {
+		return "DEFAULT"
+	}
+	return profileName
+}
+
+// getAvailableProfiles returns all available profiles from ~/.databrickscfg.
+func getAvailableProfiles(ctx context.Context) profile.Profiles {
+	profiles, err := profile.DefaultProfiler.LoadProfiles(ctx, profile.MatchAllProfiles)
+	if err != nil {
+		// If we can't load profiles, return empty list (config file might not exist)
+		return profile.Profiles{}
+	}
+	return profiles
+}
+
 // generateExploreGuidance creates comprehensive guidance for data exploration.
-func generateExploreGuidance(warehouse *Warehouse, hasGenie bool) string {
+func generateExploreGuidance(warehouse *Warehouse, hasGenie bool, currentProfile string, profiles profile.Profiles) string {
 	stateNote := ""
 	if strings.ToUpper(warehouse.State) == "STOPPED" {
 		stateNote = " (currently stopped, will auto-start when you use it)"
@@ -124,15 +149,85 @@ func generateExploreGuidance(warehouse *Warehouse, hasGenie bool) string {
 		genieNote = "\n\nNote: Genie spaces are available for natural language queries if the user requests them."
 	}
 
+	// Build workspace/profile information
+	workspaceInfo := "Current Workspace Profile: " + currentProfile
+	if len(profiles) > 0 {
+		// Find current profile details
+		var currentHost string
+		for _, p := range profiles {
+			if p.Name == currentProfile {
+				currentHost = p.Host
+				if cloud := p.Cloud(); cloud != "" {
+					currentHost = fmt.Sprintf("%s (%s)", currentHost, cloud)
+				}
+				break
+			}
+		}
+		if currentHost != "" {
+			workspaceInfo = fmt.Sprintf("Current Workspace Profile: %s - %s", currentProfile, currentHost)
+		}
+	}
+
+	// Build available profiles list
+	profilesInfo := ""
+	if len(profiles) > 1 {
+		profilesInfo = "\n\nAvailable Workspace Profiles:\n"
+		for _, p := range profiles {
+			marker := ""
+			if p.Name == currentProfile {
+				marker = " (current)"
+			}
+			cloud := p.Cloud()
+			if cloud != "" {
+				profilesInfo += fmt.Sprintf("  - %s: %s (%s)%s\n", p.Name, p.Host, cloud, marker)
+			} else {
+				profilesInfo += fmt.Sprintf("  - %s: %s%s\n", p.Name, p.Host, marker)
+			}
+		}
+		profilesInfo += "\n  To use a different workspace, add --profile <name> to any command:\n"
+		profilesInfo += "    invoke_databricks_cli '--profile prod catalogs list'\n"
+	}
+
 	return fmt.Sprintf(`Databricks Data Exploration Guide
 =====================================
 
-Default SQL Warehouse: %s (%s)%s%s
+%s
+Default SQL Warehouse: %s (%s)%s%s%s
 
 IMPORTANT: Use the invoke_databricks_cli tool to run all commands below!
 
 
-1. EXPLORING UNITY CATALOG
+1. EXECUTING SQL QUERIES
+   Run SQL queries using the Statement Execution API with inline JSON:
+     invoke_databricks_cli 'api post /api/2.0/sql/statements --json {"warehouse_id":"<warehouse_id>","statement":"SELECT * FROM <catalog>.<schema>.<table> LIMIT 10","wait_timeout":"30s"}'
+
+   Examples:
+     - Simple query: {"warehouse_id":"<id>","statement":"SELECT 42 as answer","wait_timeout":"10s"}
+     - Table query: {"warehouse_id":"<id>","statement":"SELECT * FROM catalog.schema.table LIMIT 10","wait_timeout":"30s"}
+
+   Note: Use the warehouse ID shown above. Results are returned in JSON format.
+
+
+2. EXPLORING JOBS AND WORKFLOWS
+   List all jobs:
+     invoke_databricks_cli 'jobs list'
+
+   Get job details:
+     invoke_databricks_cli 'jobs get <job_id>'
+
+   List job runs:
+     invoke_databricks_cli 'jobs list-runs --job-id <job_id>'
+
+
+3. EXPLORING CLUSTERS
+   List all clusters:
+     invoke_databricks_cli 'clusters list'
+
+   Get cluster details:
+     invoke_databricks_cli 'clusters get <cluster_id>'
+
+
+4. EXPLORING UNITY CATALOG DATA
    Unity Catalog uses a three-level namespace: catalog.schema.table
 
    List all catalogs:
@@ -144,27 +239,21 @@ IMPORTANT: Use the invoke_databricks_cli tool to run all commands below!
    List tables in a schema:
      invoke_databricks_cli 'tables list <catalog_name> <schema_name>'
 
-   Get table details (schema, properties, location):
+   Get table details (schema, columns, properties):
      invoke_databricks_cli 'tables get <catalog>.<schema>.<table>'
 
 
-2. WORKING WITH NOTEBOOKS AND JOBS
-   For data manipulation, use notebooks in jobs or pipelines:
-
-   List available notebooks:
+5. EXPLORING WORKSPACE FILES
+   List workspace files and notebooks:
      invoke_databricks_cli 'workspace list <path>'
 
-   Create and run jobs:
-     invoke_databricks_cli 'jobs create ...'
-     invoke_databricks_cli 'jobs run-now ...'
-
-   Note: Notebooks can execute SQL, Python, Scala, or R code.
-   For ad-hoc SQL queries, create a notebook with SQL cells.
+   Export a notebook:
+     invoke_databricks_cli 'workspace export <path>'
 
 
 Getting Started:
-1. Start with: invoke_databricks_cli 'catalogs list'
-2. Explore table metadata to understand data structure
-3. Use notebooks in jobs or pipelines for data manipulation
-`, warehouse.Name, warehouse.ID, stateNote, genieNote)
+- Use the commands above to explore what resources exist in the workspace
+- All commands support --output json for programmatic access
+- Remember to add --profile <name> when working with non-default workspaces
+`, workspaceInfo, warehouse.Name, warehouse.ID, stateNote, profilesInfo, genieNote)
 }
