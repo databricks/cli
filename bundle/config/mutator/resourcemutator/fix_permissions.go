@@ -183,7 +183,7 @@ func useMaximumLevel(permissions dyn.Value, resourceType string) (dyn.Value, err
 }
 
 // Unified permission order map
-// Based on https://docs.databricks.com/aws/en/security/auth/access-control/#dashboard-acls
+// Based on https://docs.databricks.com/aws/en/security/auth/access-control
 var PermissionOrder = map[string]int{
 	"":                               -1,
 	"CAN_VIEW":                       2,
