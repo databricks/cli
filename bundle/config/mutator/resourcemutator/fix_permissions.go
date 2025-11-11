@@ -35,7 +35,7 @@ var ignoredResources = map[string]bool{
 //    "Error: cannot create permissions: Permissions being set for UserName([USERNAME]) are ambiguous"
 //    Since terraform adds IS_OWNER permission when there is not one, regardless of CAN_MANAGE presence,
 //    he above error can occur. We thus add another bit of logic: we upgrade CAN_MANAGE to IS_OWNER when we can.
-// 5. Any principal should not have more than permission set; backend simply takes the latest in the list and ignores the rest.
+// 5. Any given principal should have at most one permission level set.
 
 type fixPermissions struct{}
 
