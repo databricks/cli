@@ -26,9 +26,10 @@ def run_json(cmd):
 
 
 def test_permissions(target_user, resource_type, resource_id, levels, expected):
+    """Set permissions on a given resource/principal with a given set of levels. Verify that resulting levels match expected."""
     acls = []
     if resource_type == "jobs" and target_user != os.environ["CURRENT_USER_NAME"]:
-        # make sure we keep IS_OWNER
+        # make sure we have IS_OWNER, otherwise backend returns an error
         acls.append({"service_principal_name": os.environ["CURRENT_USER_NAME"], "permission_level": "IS_OWNER"})
 
     for level in levels.split(","):
