@@ -2,7 +2,6 @@ package mcp
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/experimental/mcp/agents"
@@ -40,15 +39,6 @@ func runInstall(ctx context.Context) error {
 	cmdio.LogString(ctx, yellow("║  ⚠️  EXPERIMENTAL: This command may change in future versions  ║"))
 	cmdio.LogString(ctx, yellow("╚════════════════════════════════════════════════════════════════╝"))
 	cmdio.LogString(ctx, "")
-
-	// Sanity check: verify databricks is on system PATH
-	if !agents.IsOnPath("databricks") {
-		cmdio.LogString(ctx, color.RedString("✗ Error: 'databricks' command not found on system PATH"))
-		cmdio.LogString(ctx, "")
-		cmdio.LogString(ctx, "Please install the Databricks CLI from:")
-		cmdio.LogString(ctx, "https://docs.databricks.com/dev-tools/cli/install")
-		return errors.New("databricks CLI not found on PATH")
-	}
 
 	// Detect available agents
 	claudeAgent := agents.NewClaudeAgent()

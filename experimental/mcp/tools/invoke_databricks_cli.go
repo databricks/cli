@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os/exec"
-	"strings"
+
+	"github.com/databricks/cli/libs/exec"
 )
 
 // InvokeDatabricksCLITool runs databricks CLI commands via MCP.
@@ -49,21 +49,23 @@ func InvokeDatabricksCLI(ctx context.Context, args InvokeDatabricksCLIArgs) (str
 		return "", errors.New("command is required")
 	}
 
-	cmdArgs := strings.Fields(args.Command)
-	cmd := exec.CommandContext(ctx, GetCLIPath(), cmdArgs...)
-
-	if args.WorkingDirectory != "" {
-		cmd.Dir = args.WorkingDirectory
+	workDir := args.WorkingDirectory
+	if workDir == "" {
+		workDir = "."
 	}
 
-	output, err := cmd.CombinedOutput()
+	executor, err := exec.NewCommandExecutor(workDir)
+	if err != nil {
+		return "", fmt.Errorf("failed to create command executor: %w", err)
+	}
+
+	fullCommand := fmt.Sprintf(`"%s" %s`, GetCLIPath(), args.Command)
+	output, err := executor.Exec(ctx, fullCommand)
 
 	result := string(output)
 	if err != nil {
-		if exitErr, ok := err.(*exec.ExitError); ok {
-			result += fmt.Sprintf("\n\nExit code: %d", exitErr.ExitCode())
-		}
-		return result, nil // Return output even on error
+		result += fmt.Sprintf("\n\nCommand failed with error: %v", err)
+		return result, nil
 	}
 
 	return result, nil
