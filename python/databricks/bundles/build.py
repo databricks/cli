@@ -283,10 +283,13 @@ def _parse_bundle_info(input: dict) -> Bundle:
     bundle = input.get("bundle", {})
     variables = {k: v.get("value") for k, v in input.get("variables", {}).items()}
 
+    # Wrap resources in the expected structure for get_resource_id
+    resource_state = {"resources": input.get("resources", {})}
+
     return Bundle(
         target=bundle["target"],
         variables=variables,
-        _resource_state=input.get("resources", {}),
+        _resource_state=resource_state,
     )
 
 
