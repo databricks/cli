@@ -151,7 +151,7 @@ func (s *MCPServer) handleInitialize(req *JSONRPCRequest) {
 	result := map[string]any{
 		"protocolVersion": "2024-11-05",
 		"serverInfo": map[string]string{
-			"name":    "databricks-cli",
+			"name":    "databricks-mcp",
 			"version": "1.0.0",
 		},
 		"capabilities": map[string]any{

@@ -24,13 +24,13 @@ func InstallClaude() error {
 		return err
 	}
 
-	removeCmd := exec.Command("claude", "mcp", "remove", "--scope", "user", "databricks-cli")
+	removeCmd := exec.Command("claude", "mcp", "remove", "--scope", "user", "databricks-mcp")
 	_ = removeCmd.Run()
 
 	cmd := exec.Command("claude", "mcp", "add",
 		"--scope", "user",
 		"--transport", "stdio",
-		"databricks-cli",
+		"databricks-mcp",
 		"--",
 		databricksPath, "mcp", "server")
 

@@ -25,7 +25,7 @@ non-functional requirements:
   Example test command:
   ```bash
   rm -rf /tmp/blank; mkdir -p /tmp/blank; cd /tmp/blank;
-  claude --allow-all-unsafe-things "Create a new Databricks app that shows a dashboard with taxi trip fares per city, then preview it and open it in my browser. If the databricks-cli MCP fails, stop immediately and ask for my guidance."
+  claude --allow-dangerously-skip-permissions "Create a new Databricks app that shows a dashboard with taxi trip fares per city, then preview it and open it in my browser. If the databricks-mcp MCP fails, stop immediately and ask for my guidance."
   ```
 
   You should test multiple scenarios:
@@ -130,7 +130,7 @@ the system as a whole a bit (btw each tool should be defined in a separate .go f
       after initialization, creates a CLAUDE.md file (if the calling MCP client is Claude Code) or AGENTS.md file (otherwise)
       with project-specific agent instructions. The file includes:
       - Installation instructions for the Databricks CLI MCP server (if not yet installed)
-      - Guidance to use the mcp__databricks-cli__analyze_project tool when opening the project
+      - Guidance to use the mcp__databricks-mcp__analyze_project tool when opening the project
       The client is detected at runtime from the MCP initialize request's clientInfo field.
     - guidance on how to implement this: do some trial and error to make the init command work.
       do a non-forward merge of origin/add-default-minimal to get the minimal template!

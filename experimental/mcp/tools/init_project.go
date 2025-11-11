@@ -150,7 +150,7 @@ If the Databricks CLI MCP server is not yet installed, install it by:
 
 ## Working with this project
 
-General agent guidance: always use the mcp__databricks-cli__analyze_project tool whenever you open this project!
+General agent guidance: always use the mcp__databricks-mcp__analyze_project tool whenever you open this project!
 It makes sure you have more context on the current project and what actions you can perform on it.
 `
 	instructionsPath := filepath.Join(args.ProjectPath, filename)
