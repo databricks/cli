@@ -5,7 +5,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== Permissions API simple takes the latest level in the request for a given principal
+=== Permissions API simply takes the latest level in the request for a given principal
 jobs CAN_VIEW,CAN_MANAGE_RUN => CAN_MANAGE_RUN
 jobs CAN_MANAGE_RUN,CAN_VIEW => CAN_VIEW
 jobs CAN_VIEW,CAN_MANAGE_RUN,CAN_MANAGE => CAN_MANAGE
