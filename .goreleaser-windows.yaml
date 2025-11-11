@@ -48,6 +48,10 @@ signs:
       - http://timestamp.digicert.com
       - /td
       - SHA256
+      - /dlib
+      - Azure.CodeSigning.Dlib.dll
+      - /dmdf
+      - metadata.json
       - ${artifact}
     artifacts: binary
 

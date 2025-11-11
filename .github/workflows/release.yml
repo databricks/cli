@@ -27,6 +27,17 @@ jobs:
             go.sum
             .goreleaser-windows.yaml
 
+      - name: Install Azure Code Signing tools
+        shell: pwsh
+        run: |
+          # Download and install Azure Code Signing tools
+          Invoke-WebRequest -Uri "https://www.nuget.org/api/v2/package/Microsoft.Trusted.Signing.Client" -OutFile "$env:TEMP\TrustedSigning.zip"
+          Expand-Archive -Path "$env:TEMP\TrustedSigning.zip" -DestinationPath "$env:TEMP\TrustedSigning" -Force
+
+          # Add to PATH so signtool can find the dlib
+          $dllPath = (Get-ChildItem -Path "$env:TEMP\TrustedSigning" -Recurse -Filter "Azure.CodeSigning.Dlib.dll" | Select-Object -First 1).DirectoryName
+          echo "$dllPath" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
       - name: Azure Login
         shell: pwsh
         run: |
@@ -35,15 +46,15 @@ jobs:
             -p ${{ secrets.DECO_SIGN_AZURE_CLIENT_SECRET }} `
             --tenant ${{ secrets.DECO_SIGN_AZURE_TENANT_ID }}
 
-      - name: Setup Azure Trusted Signing
-        uses: azure/trusted-signing-action@v0.5.0
-        with:
-          azure-tenant-id: ${{ secrets.DECO_SIGN_AZURE_TENANT_ID }}
-          azure-client-id: ${{ secrets.DECO_SIGN_AZURE_CLIENT_ID }}
-          azure-client-secret: ${{ secrets.DECO_SIGN_AZURE_CLIENT_SECRET }}
-          endpoint: https://eus.codesigning.azure.net/
-          trusted-signing-account-name: deco-sign
-          certificate-profile-name: deco-sign
+      - name: Create Azure Code Signing metadata
+        shell: pwsh
+        run: |
+          $metadata = @{
+            "Endpoint" = "https://eus.codesigning.azure.net/"
+            "CodeSigningAccountName" = "deco-sign"
+            "CertificateProfileName" = "deco-sign"
+          }
+          $metadata | ConvertTo-Json | Out-File -FilePath "metadata.json" -Encoding utf8
 
       - name: Run GoReleaser for Windows
         uses: goreleaser/goreleaser-action@e435ccd777264be153ace6237001ef4d979d3a7a # v6.4.0
