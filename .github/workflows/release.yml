@@ -31,6 +31,7 @@ jobs:
         uses: azure/login@v2
         with:
           creds: '{"clientId":"${{ secrets.DECO_SIGN_AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.DECO_SIGN_AZURE_CLIENT_SECRET }}","tenantId":"${{ secrets.DECO_SIGN_AZURE_TENANT_ID }}","subscriptionId":"${{ secrets.DECO_SIGN_AZURE_SUBSCRIPTION_ID }}"}'
+          environment: AzureGermanCloud
 
       - name: Setup Azure Trusted Signing
         uses: azure/trusted-signing-action@v0.5.0
