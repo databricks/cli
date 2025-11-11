@@ -10,7 +10,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
-func createKeysSecretScope(ctx context.Context, client *databricks.WorkspaceClient, clusterID string) (string, error) {
+func CreateKeysSecretScope(ctx context.Context, client *databricks.WorkspaceClient, clusterID string) (string, error) {
 	me, err := client.CurrentUser.Me(ctx)
 	if err != nil {
 		return "", fmt.Errorf("failed to get current user: %w", err)
@@ -54,7 +54,7 @@ func putSecret(ctx context.Context, client *databricks.WorkspaceClient, scope, k
 }
 
 func PutSecretInScope(ctx context.Context, client *databricks.WorkspaceClient, clusterID, key, value string) (string, error) {
-	scopeName, err := createKeysSecretScope(ctx, client, clusterID)
+	scopeName, err := CreateKeysSecretScope(ctx, client, clusterID)
 	if err != nil {
 		return "", err
 	}

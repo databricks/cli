@@ -8,20 +8,30 @@ Deployment complete!
 >>> [CLI] volumes update mycatalog.myschema.myname --json {"new_name": "my_new_name"}
 {
   "catalog_name":"mycatalog",
+  "created_at":[UNIX_TIME_MILLIS][0],
+  "created_by":"[USERNAME]",
   "full_name":"mycatalog.myschema.my_new_name",
   "name":"my_new_name",
+  "owner":"[USERNAME]",
   "schema_name":"myschema",
   "storage_location":"s3://deco-uc-prod-isolated-aws-us-east-1/metastore/[UUID]/volumes/[UUID]",
+  "updated_at":[UNIX_TIME_MILLIS][1],
+  "updated_by":"[USERNAME]",
   "volume_type":"MANAGED"
 }
 
 >>> [CLI] volumes read mycatalog.myschema.my_new_name
 {
   "catalog_name":"mycatalog",
+  "created_at":[UNIX_TIME_MILLIS][0],
+  "created_by":"[USERNAME]",
   "full_name":"mycatalog.myschema.my_new_name",
   "name":"my_new_name",
+  "owner":"[USERNAME]",
   "schema_name":"myschema",
   "storage_location":"s3://deco-uc-prod-isolated-aws-us-east-1/metastore/[UUID]/volumes/[UUID]",
+  "updated_at":[UNIX_TIME_MILLIS][1],
+  "updated_by":"[USERNAME]",
   "volume_type":"MANAGED"
 }
 

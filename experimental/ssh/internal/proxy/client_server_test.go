@@ -158,7 +158,7 @@ func TestHandover(t *testing.T) {
 	wg := sync.WaitGroup{}
 	wg.Go(func() {
 		for i := range TOTAL_MESSAGE_COUNT {
-			if i > 0 && i%MESSAGES_PER_CHUNK == 0 {
+			if i > 0 && i%MESSAGES_PER_CHUNK == 0 && i < TOTAL_MESSAGE_COUNT-1 {
 				handoverChan <- time.Now()
 			}
 			message := fmt.Appendf(nil, "message %d\n", i)
@@ -176,5 +176,43 @@ func TestHandover(t *testing.T) {
 	wg.Wait()
 
 	// clientOutput is created by appending incoming messages as they arrive, so we are also test correct order here
+	assert.Equal(t, expectedOutput, clientOutput.String())
+}
+
+// Tests handovers in quick succession with few messages in between.
+// Not a real world scenario, but it can help uncover potential race conditions or deadlocks.
+func TestQuickHandover(t *testing.T) {
+	server := createTestServer(t, 2, time.Hour)
+	defer server.Close()
+
+	handoverChan := make(chan time.Time)
+	requestHandoverTick := func() <-chan time.Time {
+		return handoverChan
+	}
+	clientInputWriter, clientOutput := createTestClient(t, server.URL, requestHandoverTick, nil)
+	defer clientInputWriter.Close()
+
+	expectedOutput := ""
+
+	wg := sync.WaitGroup{}
+	wg.Go(func() {
+		for i := range 16 {
+			if i == 4 || i == 8 || i == 12 {
+				handoverChan <- time.Now()
+			}
+			message := fmt.Appendf(nil, "message %d\n", i)
+			_, err := clientInputWriter.Write(message)
+			if err != nil {
+				t.Errorf("failed to write message %d: %v", i, err)
+			}
+			expectedOutput += string(message)
+		}
+	})
+
+	err := clientOutput.WaitForWrite(fmt.Appendf(nil, "message %d\n", 15))
+	require.NoError(t, err, "failed to receive the last message (%d)", 15)
+
+	wg.Wait()
+
 	assert.Equal(t, expectedOutput, clientOutput.String())
 }

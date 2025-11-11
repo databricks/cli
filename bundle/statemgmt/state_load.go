@@ -8,6 +8,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
@@ -24,8 +25,8 @@ type (
 const ErrorOnEmptyState LoadMode = 0
 
 type load struct {
-	modes            []LoadMode
-	directDeployment bool
+	modes  []LoadMode
+	engine engine.EngineType
 }
 
 func (l *load) Name() string {
@@ -36,7 +37,7 @@ func (l *load) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	var err error
 	var state ExportedResourcesMap
 
-	if l.directDeployment {
+	if l.engine.IsDirect() {
 		_, fullPathDirect := b.StateFilenameDirect(ctx)
 		state, err = b.DeploymentBundle.ExportState(ctx, fullPathDirect)
 		if err != nil {
@@ -59,6 +60,19 @@ func (l *load) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	err = StateToBundle(ctx, state, &b.Config)
 	if err != nil {
 		return diag.FromErr(err)
+	}
+
+	// Merge dashboard etags into configuration.
+	for k, dstate := range state["dashboards"] {
+		dconfig, ok := b.Config.Resources.Dashboards[k]
+
+		// Case: A dashboard is defined in state but not in configuration.
+		// In this case the dashboard has been deleted and we do not need to load the etag.
+		if !ok {
+			continue
+		}
+
+		dconfig.Etag = dstate.ETag
 	}
 
 	return nil
@@ -134,6 +148,6 @@ func (l *load) validateState(state ExportedResourcesMap) error {
 	return nil
 }
 
-func Load(directDeployment bool, modes ...LoadMode) bundle.Mutator {
-	return &load{modes: modes, directDeployment: directDeployment}
+func Load(engine engine.EngineType, modes ...LoadMode) bundle.Mutator {
+	return &load{modes: modes, engine: engine}
 }

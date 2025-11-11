@@ -5,6 +5,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 )
@@ -26,7 +27,7 @@ func (*ResourceMlflowModel) RemapState(model *ml.ModelDatabricks) *ml.CreateMode
 		Name:            model.Name,
 		Tags:            model.Tags,
 		Description:     model.Description,
-		ForceSendFields: filterFields[ml.CreateModelRequest](model.ForceSendFields),
+		ForceSendFields: utils.FilterFields[ml.CreateModelRequest](model.ForceSendFields),
 	}
 }
 
@@ -51,7 +52,7 @@ func (r *ResourceMlflowModel) DoCreate(ctx context.Context, config *ml.CreateMod
 		Name:            response.RegisteredModel.Name,
 		Description:     response.RegisteredModel.Description,
 		Tags:            response.RegisteredModel.Tags,
-		ForceSendFields: filterFields[ml.ModelDatabricks](response.RegisteredModel.ForceSendFields, "CreationTimestamp", "Id", "LastUpdatedTimestamp", "LatestVersions", "PermissionLevel", "UserId"),
+		ForceSendFields: utils.FilterFields[ml.ModelDatabricks](response.RegisteredModel.ForceSendFields, "CreationTimestamp", "Id", "LastUpdatedTimestamp", "LatestVersions", "PermissionLevel", "UserId"),
 
 		// Coping the fields only to satisfy the linter. These fields are not
 		// part of the configuration tree so they don't need to be copied.
@@ -71,7 +72,7 @@ func (r *ResourceMlflowModel) DoUpdate(ctx context.Context, id string, config *m
 	updateRequest := ml.UpdateModelRequest{
 		Name:            id,
 		Description:     config.Description,
-		ForceSendFields: filterFields[ml.UpdateModelRequest](config.ForceSendFields),
+		ForceSendFields: utils.FilterFields[ml.UpdateModelRequest](config.ForceSendFields),
 	}
 
 	response, err := r.client.ModelRegistry.UpdateModel(ctx, updateRequest)
@@ -85,7 +86,7 @@ func (r *ResourceMlflowModel) DoUpdate(ctx context.Context, id string, config *m
 		Name:            response.RegisteredModel.Name,
 		Description:     response.RegisteredModel.Description,
 		Tags:            response.RegisteredModel.Tags,
-		ForceSendFields: filterFields[ml.ModelDatabricks](response.RegisteredModel.ForceSendFields, "CreationTimestamp", "Id", "LastUpdatedTimestamp", "LatestVersions", "PermissionLevel", "UserId"),
+		ForceSendFields: utils.FilterFields[ml.ModelDatabricks](response.RegisteredModel.ForceSendFields, "CreationTimestamp", "Id", "LastUpdatedTimestamp", "LatestVersions", "PermissionLevel", "UserId"),
 
 		// Coping the fields only to satisfy the linter. These fields are not
 		// part of the configuration tree so they don't need to be copied.

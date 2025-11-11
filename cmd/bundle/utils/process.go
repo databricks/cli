@@ -2,15 +2,19 @@ package utils
 
 import (
 	"context"
+	"errors"
+	"path/filepath"
 	"time"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/validate"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/sync"
 	"github.com/databricks/cli/libs/telemetry/protos"
@@ -51,11 +55,18 @@ type ProcessOptions struct {
 	// If true, configure outputHandler for phases.Deploy
 	Verbose bool
 
+	// If true, do not read DATABRICKS_BUNDLE_ENGINE env var (for migrate command, which ignores this env var)
+	SkipEngineEnvVar bool
+
 	// If true, call corresponding phase:
-	FastValidate bool
-	Validate     bool
-	Build        bool
-	Deploy       bool
+	FastValidate  bool
+	Validate      bool
+	Build         bool
+	DeployPrepare bool
+	Deploy        bool
+
+	// Indicate whether the bundle operation originates from the pipelines CLI
+	IsPipelinesCLI bool
 }
 
 func ProcessBundle(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, error) {
@@ -63,8 +74,8 @@ func ProcessBundle(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, err
 	return b, err
 }
 
-func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, bool, error) {
-	isDirectEngine := false
+func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, *statemgmt.StateDesc, error) {
+	var err error
 	ctx := cmd.Context()
 	if opts.SkipInitContext {
 		if !logdiag.IsSetup(ctx) {
@@ -75,23 +86,32 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 		cmd.SetContext(ctx)
 	}
 
+	requiredEngine := engine.EngineNotSet
+
+	if !opts.SkipEngineEnvVar {
+		requiredEngine, err = engine.FromEnv(ctx)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+
 	// Load bundle config and apply target
 	b := root.MustConfigureBundle(cmd)
 	if logdiag.HasError(ctx) {
-		return b, isDirectEngine, root.ErrAlreadyPrinted
+		return b, nil, root.ErrAlreadyPrinted
 	}
 
 	variables, err := cmd.Flags().GetStringSlice("var")
 	if err != nil {
 		logdiag.LogDiag(ctx, diag.FromErr(err)[0])
-		return b, isDirectEngine, err
+		return b, nil, err
 	}
 
 	// Initialize variables by assigning them values passed as command line flags
 	configureVariables(cmd, b, variables)
 
 	if b == nil || logdiag.HasError(ctx) {
-		return b, isDirectEngine, root.ErrAlreadyPrinted
+		return b, nil, root.ErrAlreadyPrinted
 	}
 	ctx = cmd.Context()
 
@@ -114,27 +134,31 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 		if opts.IncludeLocations {
 			bundle.ApplyContext(ctx, b, mutator.PopulateLocations())
 			if logdiag.HasError(ctx) {
-				return b, isDirectEngine, root.ErrAlreadyPrinted
+				return b, nil, root.ErrAlreadyPrinted
 			}
 		}
 	}
 
 	if logdiag.HasError(ctx) {
-		return b, isDirectEngine, root.ErrAlreadyPrinted
+		return b, nil, root.ErrAlreadyPrinted
 	}
 
 	if opts.PostInitFunc != nil {
 		err := opts.PostInitFunc(ctx, b)
 		if err != nil {
-			return b, isDirectEngine, err
+			return b, nil, err
 		}
 	}
 
-	if opts.ReadState || opts.AlwaysPull || opts.InitIDs || opts.ErrorOnEmptyState {
+	var stateDesc *statemgmt.StateDesc
+
+	shouldReadState := opts.ReadState || opts.AlwaysPull || opts.InitIDs || opts.ErrorOnEmptyState || opts.DeployPrepare || opts.Deploy
+
+	if shouldReadState {
 		// PullResourcesState depends on stateFiler which needs b.Config.Workspace.StatePath which is set in phases.Initialize
-		ctx, isDirectEngine = statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(opts.AlwaysPull))
+		ctx, stateDesc = statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(opts.AlwaysPull), requiredEngine)
 		if logdiag.HasError(ctx) {
-			return b, isDirectEngine, root.ErrAlreadyPrinted
+			return b, stateDesc, root.ErrAlreadyPrinted
 		}
 		cmd.SetContext(ctx)
 
@@ -145,14 +169,13 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 				modes = append(modes, statemgmt.ErrorOnEmptyState)
 			}
 			bundle.ApplySeqContext(ctx, b,
-				statemgmt.Load(isDirectEngine, modes...),
+				statemgmt.Load(stateDesc.Engine, modes...),
 				mutator.InitializeURLs(),
 			)
 			if logdiag.HasError(ctx) {
-				return b, isDirectEngine, root.ErrAlreadyPrinted
+				return b, stateDesc, root.ErrAlreadyPrinted
 			}
 		}
-
 	}
 
 	if opts.FastValidate {
@@ -164,14 +187,22 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 		})
 
 		if logdiag.HasError(ctx) {
-			return b, isDirectEngine, root.ErrAlreadyPrinted
+			return b, stateDesc, root.ErrAlreadyPrinted
+		}
+
+		// Pipeline CLI only validation.
+		if opts.IsPipelinesCLI {
+			rejectDefinitions(ctx, b)
+			if logdiag.HasError(ctx) {
+				return b, stateDesc, root.ErrAlreadyPrinted
+			}
 		}
 	}
 
 	if opts.Validate {
 		validate.Validate(ctx, b)
 		if logdiag.HasError(ctx) {
-			return b, isDirectEngine, root.ErrAlreadyPrinted
+			return b, stateDesc, root.ErrAlreadyPrinted
 		}
 	}
 
@@ -184,8 +215,16 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 		})
 
 		if logdiag.HasError(ctx) {
-			return b, isDirectEngine, root.ErrAlreadyPrinted
+			return b, stateDesc, root.ErrAlreadyPrinted
 		}
+	}
+
+	if opts.DeployPrepare {
+		if opts.Deploy {
+			panic("Deploy already calls DeployPrepare internally")
+		}
+		downgradeWarningToError := !opts.Deploy
+		_ = phases.DeployPrepare(ctx, b, downgradeWarningToError, stateDesc.Engine)
 	}
 
 	if opts.Deploy {
@@ -197,16 +236,30 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 		}
 
 		t3 := time.Now()
-		phases.Deploy(ctx, b, outputHandler, isDirectEngine)
+		phases.Deploy(ctx, b, outputHandler, stateDesc.Engine)
 		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
 			Key:   "phases.Deploy",
 			Value: time.Since(t3).Milliseconds(),
 		})
 
 		if logdiag.HasError(ctx) {
-			return b, isDirectEngine, root.ErrAlreadyPrinted
+			return b, stateDesc, root.ErrAlreadyPrinted
 		}
 	}
 
-	return b, isDirectEngine, nil
+	return b, stateDesc, nil
+}
+
+func rejectDefinitions(ctx context.Context, b *bundle.Bundle) {
+	if b.Config.Definitions != nil {
+		v := dyn.GetValue(b.Config.Value(), "definitions")
+		loc := v.Locations()
+		filename := "input yaml"
+		if len(loc) > 0 {
+			filename = filepath.ToSlash(loc[0].File)
+		}
+		logdiag.LogError(ctx, errors.New(filename+` seems to be formatted for open-source Spark Declarative Pipelines.
+Pipelines CLI currently only supports Lakeflow Declarative Pipelines development.
+To see an example of a supported pipelines template, create a new Pipelines CLI project with "pipelines init".`))
+	}
 }

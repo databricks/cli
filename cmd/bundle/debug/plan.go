@@ -19,17 +19,18 @@ func NewPlanCommand() *cobra.Command {
 		Args:  root.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opts := utils.ProcessOptions{
-				AlwaysPull:   true,
-				FastValidate: true,
-				Build:        true,
+				AlwaysPull:    true,
+				FastValidate:  true,
+				Build:         true,
+				DeployPrepare: true,
 			}
 
-			b, isDirectEngine, err := utils.ProcessBundleRet(cmd, opts)
+			b, stateDesc, err := utils.ProcessBundleRet(cmd, opts)
 			if err != nil {
 				return err
 			}
 			ctx := cmd.Context()
-			plan := phases.Plan(ctx, b, isDirectEngine)
+			plan := phases.RunPlan(ctx, b, stateDesc.Engine)
 			if logdiag.HasError(ctx) {
 				return root.ErrAlreadyPrinted
 			}

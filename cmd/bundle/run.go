@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/resources"
@@ -132,6 +133,11 @@ Example usage:
 	cmd.Flags().BoolVar(&restart, "restart", false, "Restart the run if it is already running.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		engine, err := engine.FromEnv(cmd.Context())
+		if err != nil {
+			return err
+		}
+
 		b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
 			SkipInitialize: true,
 		})
@@ -166,14 +172,14 @@ Example usage:
 			return executeScript(content, cmd, b)
 		}
 
-		ctx, directDeployment := statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(true))
+		ctx, stateDesc := statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(true), engine)
 		if logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}
 		cmd.SetContext(ctx)
 
 		bundle.ApplySeqContext(ctx, b,
-			statemgmt.Load(directDeployment, statemgmt.ErrorOnEmptyState),
+			statemgmt.Load(stateDesc.Engine, statemgmt.ErrorOnEmptyState),
 		)
 		if logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted

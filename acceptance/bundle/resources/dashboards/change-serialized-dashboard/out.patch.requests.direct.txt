@@ -1,0 +1,10 @@
+{
+  "method": "PATCH",
+  "path": "/api/2.0/lakeview/dashboards/[DASHBOARD_ID]",
+  "body": {
+    "display_name": "test dashboard",
+    "parent_path": "/Workspace/Users/[USERNAME]/.bundle/change-serialized-dashboard-[UNIQUE_NAME]/default/resources",
+    "serialized_dashboard": "{\"pages\":[{\"name\":\"name2\",\"displayName\":\"name2\",\"pageType\":\"PAGE_TYPE_CANVAS\"}]}\n",
+    "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+  }
+}
