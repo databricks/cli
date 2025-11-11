@@ -446,18 +446,7 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False, omi
 
         # Find slowest test, mean duration, and time span for this environment
         env_durations = durations_by_env.get(env, {})
-        slowest_test = ""
-        mean_duration = ""
         time_span = ""
-
-        if env_durations:
-            slowest_test_key, slowest_duration = max(env_durations.items(), key=lambda x: x[1])
-            package_name, testname = slowest_test_key
-            slowest_test = f"{format_duration(slowest_duration)} {testname}"
-
-            # Calculate mean duration
-            total_duration = sum(env_durations.values())
-            mean_duration = format_duration(total_duration / len(env_durations))
 
         # Calculate time span (max timestamp - min timestamp)
         env_timestamps = timestamps_by_env.get(env, [])
@@ -469,7 +458,7 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False, omi
             for ts in env_timestamps:
                 try:
                     parsed_timestamps.append(datetime.fromisoformat(ts.replace("Z", "+00:00")))
-                except:
+                except Exception:
                     continue
 
             if parsed_timestamps:
@@ -481,8 +470,6 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False, omi
                 " ": status,
                 "Env": env,
                 "Time": time_span,
-                "Avg time": mean_duration,
-                "Slowest": slowest_test,
                 **stats,
             }
         )
@@ -491,13 +478,11 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False, omi
     def key(column):
         try:
             return (ACTIONS_WITH_ICON.index(column), "")
-        except:
+        except Exception:
             return (-1, str(column))
 
     columns = sorted(columns, key=key)
     columns.append("Time")
-    columns.append("Avg time")
-    columns.append("Slowest")
 
     print(format_table(table, markdown=markdown, columns=columns))
 
