@@ -13,7 +13,6 @@ class Error(Exception):
 
 
 def run_json(cmd):
-    # print("+ " + " ".join(shlex.quote(x) for x in cmd), file=sys.stderr)
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding="utf-8")
     if result.returncode != 0:
         if result.stderr.strip():
