@@ -97,7 +97,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 
 			// TODO: redo calcDiff to downgrade planned action if possible (?)
 
-			err = d.Deploy(ctx, &b.StateDB, entry.NewState.Config, at)
+			err = d.Deploy(ctx, &b.StateDB, entry.NewState.Config, at, entry.Changes)
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
