@@ -49,22 +49,6 @@ jobs:
       - name: Set up QEMU dependency
         uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # v3.6.0
 
-      - name: Setup Java for jsign
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
-      - name: Get Key Vault access token
-        id: get-token
-        run: |
-          az login --service-principal \
-            -u ${{ secrets.DECO_SIGN_AZURE_CLIENT_ID }} \
-            -p ${{ secrets.DECO_SIGN_AZURE_CLIENT_SECRET }} \
-            --tenant ${{ secrets.DECO_SIGN_AZURE_TENANT_ID }}
-          ACCESS_TOKEN=$(az account get-access-token --resource https://vault.azure.net --query accessToken -o tsv)
-          echo "ACCESS_TOKEN=$ACCESS_TOKEN" >> $GITHUB_ENV
-
       - name: Run GoReleaser
         id: releaser
         uses: goreleaser/goreleaser-action@e435ccd777264be153ace6237001ef4d979d3a7a # v6.4.0
@@ -73,9 +57,76 @@ jobs:
           args: release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ACCESS_TOKEN: ${{ env.ACCESS_TOKEN }}
-          AZURE_KEY_VAULT_NAME: deco-sign
-          AZURE_CERTIFICATE_NAME: deco-sign
+
+  sign-windows:
+    environment: sign
+    runs-on: windows-latest
+    needs: goreleaser
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Download Windows artifacts
+        run: |
+          gh release download ${{ github.ref_name }} --pattern '*windows*.zip' --dir artifacts
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Windows binaries from archives
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path binaries -Force
+          Get-ChildItem artifacts -Filter *.zip | ForEach-Object {
+            $archiveName = $_.BaseName
+            Expand-Archive -Path $_.FullName -DestinationPath "binaries\$archiveName"
+          }
+
+      - name: Azure Login
+        uses: azure/login@e0db49e98c564cc35b6c06fc4c423ab28c39c27a # v2.4.0
+        with:
+          creds: '{"clientId":"${{ secrets.DECO_SIGN_AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.DECO_SIGN_AZURE_CLIENT_SECRET }}","tenantId":"${{ secrets.DECO_SIGN_AZURE_TENANT_ID }}","subscriptionId":"${{ secrets.DECO_SIGN_AZURE_SUBSCRIPTION_ID }}"}'
+
+      - name: Setup Azure Trusted Signing
+        uses: azure/trusted-signing-action@v0.5.0
+        with:
+          azure-tenant-id: ${{ secrets.DECO_SIGN_AZURE_TENANT_ID }}
+          azure-client-id: ${{ secrets.DECO_SIGN_AZURE_CLIENT_ID }}
+          azure-client-secret: ${{ secrets.DECO_SIGN_AZURE_CLIENT_SECRET }}
+          endpoint: https://eus.codesigning.azure.net/
+          trusted-signing-account-name: deco-sign
+          certificate-profile-name: deco-sign
+
+      - name: Sign Windows binaries
+        shell: pwsh
+        run: |
+          Get-ChildItem binaries -Recurse -Filter *.exe | ForEach-Object {
+            Write-Host "Signing $($_.FullName)"
+            & signtool sign /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 $_.FullName
+            if ($LASTEXITCODE -ne 0) {
+              throw "Failed to sign $($_.FullName)"
+            }
+          }
+
+      - name: Repackage signed binaries
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path signed-artifacts -Force
+          Get-ChildItem binaries -Directory | ForEach-Object {
+            $archiveName = $_.Name
+            $signedArchivePath = "signed-artifacts\$archiveName-signed.zip"
+            Compress-Archive -Path "$($_.FullName)\*" -DestinationPath $signedArchivePath
+          }
+
+      - name: Upload signed Windows artifacts to release
+        shell: pwsh
+        run: |
+          Get-ChildItem signed-artifacts -Filter *.zip | ForEach-Object {
+            Write-Host "Uploading $($_.Name)"
+            gh release upload ${{ github.ref_name }} $_.FullName
+          }
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   create-setup-cli-release-pr:
     runs-on:
@@ -216,7 +267,7 @@ jobs:
       group: databricks-deco-testing-runner-group
       labels: ubuntu-latest-deco
 
-    needs: goreleaser
+    needs: sign-windows
 
     environment: release
 
@@ -257,7 +308,7 @@ jobs:
           urls=$(
             gh api https://api.github.com/repos/databricks/cli/releases/tags/${{ github.ref_name }} | \
             jq -r .assets[].browser_download_url | \
-            grep -E '_windows_.*\.zip$' | \
+            grep -E '_windows_.*-signed\.zip$' | \
             tr '\n' ' '
           )
           if [ -z "$urls" ]; then
