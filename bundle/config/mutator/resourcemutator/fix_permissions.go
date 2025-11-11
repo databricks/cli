@@ -152,10 +152,10 @@ func useMaximumLevel(permissions dyn.Value, resourceType string) (dyn.Value, err
 
 	levelPerPrincipal := make(map[string]string)
 	principalIndex := make(map[string]int)
-	principals := []string{}
+	var principals []string
 
 	for _, permission := range permissionArray {
-		level, ok := dyn.GetValue(permission, "level").AsString()
+		level, _ := dyn.GetValue(permission, "level").AsString()
 		if level == "" {
 			continue
 		}

@@ -24,7 +24,6 @@ resources:
         - level: CAN_VIEW
           user_name: can_manage_run@example.com
 
-
   pipelines:
     can_run_wins:
       permissions:
