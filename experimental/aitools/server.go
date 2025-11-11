@@ -74,6 +74,7 @@ func getAllTools() []tools.Tool {
 		tools.InitProjectTool,
 		tools.AnalyzeProjectTool,
 		tools.AddProjectResourceTool,
+		tools.ExploreTool,
 	}
 }
 

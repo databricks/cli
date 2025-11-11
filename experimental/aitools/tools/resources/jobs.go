@@ -99,7 +99,7 @@ func (h *JobHandler) AddToProject(ctx context.Context, args AddProjectResourceAr
 	return "", nil
 }
 
-func (h *JobHandler) GetGuidancePrompt(projectPath string) string {
+func (h *JobHandler) GetGuidancePrompt(projectPath string, warehouse *Warehouse) string {
 	return `
 Working with Jobs
 -----------------

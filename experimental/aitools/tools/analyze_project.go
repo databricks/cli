@@ -71,7 +71,23 @@ func AnalyzeProject(ctx context.Context, args AnalyzeProjectArgs) (string, error
 			readmeContent
 	}
 
-	resourceGuidance := getResourceGuidance(args.ProjectPath)
+	// Get default warehouse for apps and other resources that need it
+	warehouseInfo := ""
+	warehouse, err := GetDefaultWarehouse(ctx)
+	if err == nil {
+		warehouseInfo = fmt.Sprintf(`
+
+Default SQL Warehouse
+---------------------
+For apps and data queries, you can use this SQL warehouse as a reasonable default:
+  Warehouse ID: %s
+  Warehouse Name: %s
+
+Users can change this in their resource/*.yml files if needed.
+`, warehouse.ID, warehouse.Name)
+	}
+
+	resourceGuidance := getResourceGuidance(args.ProjectPath, warehouse)
 
 	const commonGuidance = `
 Getting Started
@@ -145,7 +161,7 @@ IMPORTANT: To add new resources to a project, use the 'add_project_resource' too
 MANDATORY: Always deploy with invoke_databricks_cli 'bundle deploy', never with 'apps deploy'
 
 Note that Databricks resources are defined in resources/*.yml files. See https://docs.databricks.com/dev-tools/bundles/settings for a reference!
-
+%s
 %s%s%s
 
 Additional Resources
@@ -153,7 +169,7 @@ Additional Resources
 - Bundle documentation: https://docs.databricks.com/dev-tools/bundles/index.html
 - Bundle settings reference: https://docs.databricks.com/dev-tools/bundles/settings
 - CLI reference: https://docs.databricks.com/dev-tools/cli/index.html`,
-		summary, commonGuidance, readmeContent, resourceGuidance)
+		summary, warehouseInfo, commonGuidance, readmeContent, resourceGuidance)
 
 	return result, nil
 }
@@ -196,12 +212,21 @@ func getProjectReadme(projectPath string) string {
 }
 
 // getResourceGuidance scans the resources directory and collects guidance for detected resource types.
-func getResourceGuidance(projectPath string) string {
+func getResourceGuidance(projectPath string, warehouse *Warehouse) string {
 	var guidance strings.Builder
 	resourcesDir := filepath.Join(projectPath, "resources")
 	entries, err := os.ReadDir(resourcesDir)
 	if err != nil {
 		return ""
+	}
+
+	// Convert tools.Warehouse to resources.Warehouse to avoid import cycle
+	var resWarehouse *resources.Warehouse
+	if warehouse != nil {
+		resWarehouse = &resources.Warehouse{
+			ID:   warehouse.ID,
+			Name: warehouse.Name,
+		}
 	}
 
 	detected := make(map[string]bool)
@@ -227,7 +252,7 @@ func getResourceGuidance(projectPath string) string {
 			detected[resourceType] = true
 			handler := resources.GetResourceHandler(resourceType)
 			if handler != nil {
-				guidanceText := handler.GetGuidancePrompt(projectPath)
+				guidanceText := handler.GetGuidancePrompt(projectPath, resWarehouse)
 				if guidanceText != "" {
 					guidance.WriteString(guidanceText)
 					guidance.WriteString("\n")

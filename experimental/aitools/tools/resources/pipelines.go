@@ -65,7 +65,7 @@ func (h *PipelineHandler) AddToProject(ctx context.Context, args AddProjectResou
 	return "", nil
 }
 
-func (h *PipelineHandler) GetGuidancePrompt(projectPath string) string {
+func (h *PipelineHandler) GetGuidancePrompt(projectPath string, warehouse *Warehouse) string {
 	return `
 Working with Pipelines
 ----------------------

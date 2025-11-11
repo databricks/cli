@@ -54,8 +54,10 @@ func runTool(ctx context.Context, toolName, configFile string) error {
 		result, err = runAddProjectResourceTool(ctx, configData)
 	case "analyze_project":
 		result, err = runAnalyzeProjectTool(ctx, configData)
+	case "explore":
+		result, err = runExploreTool(ctx, configData)
 	default:
-		return fmt.Errorf("unknown tool: %s. Valid tools: invoke_databricks_cli, init_project, add_project_resource, analyze_project", toolName)
+		return fmt.Errorf("unknown tool: %s. Valid tools: invoke_databricks_cli, init_project, add_project_resource, analyze_project, explore", toolName)
 	}
 
 	if err != nil {
@@ -118,4 +120,9 @@ func runInvokeDatabricksCLITool(ctx context.Context, configData []byte) (string,
 	}
 
 	return tools.InvokeDatabricksCLI(ctx, args)
+}
+
+func runExploreTool(ctx context.Context, configData []byte) (string, error) {
+	// Explore tool has no arguments, just call the handler with empty params
+	return tools.ExploreTool.Handler(ctx, make(map[string]any))
 }

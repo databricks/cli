@@ -198,3 +198,27 @@ the system as a whole a bit (btw each tool should be defined in a separate .go f
             validate that the pipeline is correct.
   - further implementation guidance: i want acceptance tests for each of these project types (app, dashboard, job, pipeline);
     this means they should be exposed as a hidden command like 'databricks aitools tool add_project_resource --config-file <file which has the tool parameters in json format>'. having these tests will be instrumental for iterating on them; the initing should not fail! note that the tool subcommand should just assume that the cwd is the current project dir.
+
+- the "explore" tool:
+    - description: Get guidance on exploring Databricks catalogs, data assets, and Genie. Call this when you need to understand what data is available in the workspace or run queries.
+    - no parameters needed
+    - implementation:
+      - Determines a default SQL warehouse for queries using GetDefaultWarehouse():
+        1. Lists all warehouses using 'databricks warehouses list --output json'
+        2. Prefers RUNNING warehouses (pick first one found)
+        3. If none running, picks first STOPPED warehouse (warehouses auto-start when queried)
+        4. If no warehouses available, returns error directing user to create one
+      - Checks if Genie spaces are available using checkGenieAvailable()
+      - Returns concise guidance text that explains:
+        1. The warehouse ID that can be used for queries
+        2. How to explore Unity Catalog structure:
+           - List catalogs: invoke_databricks_cli 'catalogs list'
+           - List schemas in a catalog: invoke_databricks_cli 'schemas list <catalog_name>'
+           - List tables in a schema: invoke_databricks_cli 'tables list <catalog_name> <schema_name>'
+           - Get table details: invoke_databricks_cli 'tables get <catalog>.<schema>.<table>'
+        3. How to work with notebooks and jobs for data manipulation
+        4. If Genie spaces exist: One-line note that Genie is available (not detailed commands)
+      - Key design: Single concise endpoint that provides guidance, not many separate tools
+      - Genie approach: Only mention it exists if spaces are available; don't show commands unless user asks
+    - output: Guidance text with warehouse info and commands for exploring data
+    - implementation: Single explore.go file with GetDefaultWarehouse and checkGenieAvailable helpers

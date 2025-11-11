@@ -22,7 +22,14 @@ type ResourceHandler interface {
 	// AddToProject adds the resource to a project.
 	AddToProject(ctx context.Context, args AddProjectResourceArgs) (string, error)
 	// GetGuidancePrompt returns resource-specific guidance for the AI agent.
-	GetGuidancePrompt(projectPath string) string
+	// warehouse parameter is optional (can be nil) - used by apps to suggest default warehouse.
+	GetGuidancePrompt(projectPath string, warehouse *Warehouse) string
+}
+
+// Warehouse represents a SQL warehouse (re-exported from tools package to avoid import cycle).
+type Warehouse struct {
+	ID   string
+	Name string
 }
 
 // CloneTemplateRepo clones a GitHub repository to a temporary directory.

@@ -71,14 +71,19 @@ func (h *AppHandler) AddToProject(ctx context.Context, args AddProjectResourceAr
 	return "", nil
 }
 
-func (h *AppHandler) GetGuidancePrompt(projectPath string) string {
-	return `
+func (h *AppHandler) GetGuidancePrompt(projectPath string, warehouse *Warehouse) string {
+	warehouseNote := ""
+	if warehouse != nil {
+		warehouseNote = fmt.Sprintf(`
+- For apps that need a SQL warehouse, use warehouse ID: %s (%s) as a reasonable default
+  (users can change this in resources/*.yml files if needed)`, warehouse.ID, warehouse.Name)
+	}
+	return fmt.Sprintf(`
 Working with Apps
 ----------------
 - Apps are interactive applications that can be deployed to Databricks workspaces
 - App source code is typically in a subdirectory matching the app name
-- Before deployment, test apps locally using: invoke_databricks_cli(command="apps run-local --source-dir <app_dir>", working_directory="<project_path>")
-- Validate warehouse references in resources/*.yml files are valid before deployment
+- Before deployment, test apps locally using: invoke_databricks_cli(command="apps run-local --source-dir <app_dir>", working_directory="<project_path>")%s
 - MANDATORY: Always deploy apps using: invoke_databricks_cli(command="bundle deploy --target dev", working_directory="<project_path>")
-- MANDATORY: Never use 'apps deploy' directly - always use 'bundle deploy'`
+- MANDATORY: Never use 'apps deploy' directly - always use 'bundle deploy'`, warehouseNote)
 }

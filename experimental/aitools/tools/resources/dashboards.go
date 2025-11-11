@@ -72,7 +72,7 @@ func (h *DashboardHandler) AddToProject(ctx context.Context, args AddProjectReso
 	return "", nil
 }
 
-func (h *DashboardHandler) GetGuidancePrompt(projectPath string) string {
+func (h *DashboardHandler) GetGuidancePrompt(projectPath string, warehouse *Warehouse) string {
 	return `
 Working with Dashboards
 ------------------------
