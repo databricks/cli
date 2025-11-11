@@ -121,7 +121,7 @@ the system as a whole a bit (btw each tool should be defined in a separate .go f
 - the "init_project" tool:
     - description: initializes a new databricks project structure. Use this to create a new project. After initialization, use add_project_resource to add resources such as apps, jobs, dashboards, pipelines, etc.
     - parameter: project_name - a name for this project in snake_case; ask the user about this if it's not clear from the context
-    - parameter: project_path - a fully qualified path for the directory to create the new project in. if the current directory is fully empty it may make sense to just put it in the current directory; otherwise it could be a sub directory.
+    - parameter: project_path - a fully qualified path for the directory to create the new project in. Usually this should be in the current directory! But if it already has a lot of other things then it should be a subdirectory.
     - action to perform when this runs: use the invoke_databricks_cli tool to run
       'bundle init default-minimal --config-file /tmp/...' where you set the 'project_name' and other
       parameters. use personal schemas and the default catalog.

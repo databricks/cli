@@ -27,7 +27,7 @@ var InitProjectTool = Tool{
 				},
 				"project_path": map[string]any{
 					"type":        "string",
-					"description": "A fully qualified path of the project directory. Files will be created directly at this path, not in a subdirectory.",
+					"description": "A fully qualified path of the project directory. Usually this should be in the current directory! But if it already has a lot of other things then it should be a subdirectory. Files will be created directly at this path.",
 				},
 			},
 			"required": []string{"project_name", "project_path"},
@@ -75,21 +75,10 @@ func InitProject(ctx context.Context, args InitProjectArgs) (string, error) {
 		return "", fmt.Errorf("project path exists but is not a directory: %s", args.ProjectPath)
 	}
 
-	// Check if directory is empty (or nearly empty, allowing .git)
-	entries, err := os.ReadDir(args.ProjectPath)
-	if err != nil {
-		return "", fmt.Errorf("failed to read project directory: %w", err)
-	}
-
-	var nonHiddenFiles []string
-	for _, entry := range entries {
-		if entry.Name() != ".git" && entry.Name()[0] != '.' {
-			nonHiddenFiles = append(nonHiddenFiles, entry.Name())
-		}
-	}
-
-	if len(nonHiddenFiles) > 0 {
-		return "", fmt.Errorf("project directory is not empty: %s\n\nFound files/directories: %v\n\nPlease either:\n1. Use an empty directory, or\n2. Specify a new subdirectory path that doesn't exist yet", args.ProjectPath, nonHiddenFiles)
+	// Check if a Databricks project already exists
+	databricksYml := filepath.Join(args.ProjectPath, "databricks.yml")
+	if _, err := os.Stat(databricksYml); err == nil {
+		return "", fmt.Errorf("project already initialized: databricks.yml exists in %s\n\nUse the add_project_resource tool to add resources to this existing project", args.ProjectPath)
 	}
 
 	configData := map[string]string{
@@ -125,7 +114,7 @@ func InitProject(ctx context.Context, args InitProjectArgs) (string, error) {
 	nestedPath := filepath.Join(args.ProjectPath, args.ProjectName)
 
 	// Move all contents from nestedPath to args.ProjectPath
-	entries, err = os.ReadDir(nestedPath)
+	entries, err := os.ReadDir(nestedPath)
 	if err != nil {
 		return "", fmt.Errorf("failed to read nested project directory: %w", err)
 	}
