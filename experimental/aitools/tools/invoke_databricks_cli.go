@@ -8,7 +8,7 @@ import (
 	"github.com/databricks/cli/libs/exec"
 )
 
-// InvokeDatabricksCLITool runs databricks CLI commands via MCP.
+// InvokeDatabricksCLITool runs databricks CLI commands via AI tools server.
 var InvokeDatabricksCLITool = Tool{
 	Definition: ToolDefinition{
 		Name:        "invoke_databricks_cli",

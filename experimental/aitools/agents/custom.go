@@ -6,20 +6,20 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 )
 
-// ShowCustomInstructions displays instructions for manually installing the MCP server.
+// ShowCustomInstructions displays instructions for manually installing the AI tools server.
 func ShowCustomInstructions(ctx context.Context) error {
-	cmdio.LogString(ctx, "\nTo install the Databricks CLI MCP server in your coding agent:")
+	cmdio.LogString(ctx, "\nTo install the Databricks CLI AI tools server in your coding agent:")
 	cmdio.LogString(ctx, "")
-	cmdio.LogString(ctx, "1. Add a new MCP server to your coding agent's configuration")
-	cmdio.LogString(ctx, "2. Set the command to: databricks mcp server")
+	cmdio.LogString(ctx, "1. Add a new AI tools server to your coding agent's configuration")
+	cmdio.LogString(ctx, "2. Set the command to: databricks aitools server")
 	cmdio.LogString(ctx, "3. No environment variables or additional configuration needed")
 	cmdio.LogString(ctx, "")
-	cmdio.LogString(ctx, "Example MCP server configuration:")
+	cmdio.LogString(ctx, "Example AI tools server configuration:")
 	cmdio.LogString(ctx, `{
   "mcpServers": {
     "databricks": {
       "command": "databricks",
-      "args": ["mcp", "server"]
+      "args": ["aitools", "server"]
     }
   }
 }`)

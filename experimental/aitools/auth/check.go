@@ -13,7 +13,7 @@ import (
 // It does this by trying to run a simple API call.
 func CheckAuthentication(ctx context.Context) error {
 	// Skip authentication check if running in test mode
-	if os.Getenv("DATABRICKS_MCP_SKIP_AUTH_CHECK") == "1" {
+	if os.Getenv("DATABRICKS_AITOOLS_SKIP_AUTH_CHECK") == "1" {
 		return nil
 	}
 

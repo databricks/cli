@@ -1,11 +1,11 @@
-Add a top-level 'databricks mcp' command that behaves as follows:
+Add a top-level 'databricks aitools' command that behaves as follows:
 
-* databricks mcp --help: shows help
-* databricks mcp: shows help (like other command groups)
-* databricks mcp install: installs the server in coding agents
-* databricks mcp server: starts the mcp server (subcommand)
-* databricks mcp uninstall: uninstalls the server from coding agents (subcommand - not implemented; errors out and tells the user to ask their local coding agent to uninstall the Databricks CLI MCP server)
-* databricks mcp tool <tool_name> --config-file <file>: runs a specific MCP tool for acceptance testing (hidden subcommand)
+* databricks aitools --help: shows help
+* databricks aitools: shows help (like other command groups)
+* databricks aitools install: installs the server in coding agents
+* databricks aitools server: starts the MCP server (subcommand)
+* databricks aitools uninstall: uninstalls the server from coding agents (subcommand - not implemented; errors out and tells the user to ask their local coding agent to uninstall the Databricks CLI AI tools server)
+* databricks aitools tool <tool_name> --config-file <file>: runs a specific AI tool for acceptance testing (hidden subcommand)
 
 non-functional requirements:
 - any errors that these commands give should be friendly, concise, actionable.
@@ -15,7 +15,7 @@ non-functional requirements:
 - take AGENTS.md into account when building this
 - MANDATORY: never invoke the databricks cli directly, instead use the invoke_databricks_cli tool!
 - MANDATORY: always deploy with invoke_databricks_cli 'bundle deploy', never with 'apps deploy'
-- Resource-specific code is modularized in cmd/mcp/tools/resources/ directory. Each resource type (app, job, pipeline, dashboard) has its own file (apps.go, jobs.go, etc.) that implements:
+- Resource-specific code is modularized in experimental/aitools/tools/resources/ directory. Each resource type (app, job, pipeline, dashboard) has its own file (apps.go, jobs.go, etc.) that implements:
   - Add* function: handles adding the resource to a project
   - AnalyzeGuidance* function: returns resource-specific guidance for the AI agent
   This structure makes it easy for teams (e.g., the apps team) to customize how the agent works with their specific resource type by editing the corresponding resource file.
@@ -25,30 +25,30 @@ non-functional requirements:
   Example test command:
   ```bash
   rm -rf /tmp/blank; mkdir -p /tmp/blank; cd /tmp/blank;
-  claude --allow-all-unsafe-things "Create a new Databricks app that shows a dashboard with taxi trip fares per city, then preview it and open it in my browser. If the databricks-cli MCP fails, stop immediately and ask for my guidance."
+  claude --allow-all-unsafe-things "Create a new Databricks app that shows a dashboard with taxi trip fares per city, then preview it and open it in my browser. If the databricks-aitools AI tools server fails, stop immediately and ask for my guidance."
   ```
 
   You should test multiple scenarios:
   - Creating a project with a simple job that lists taxis and running it
   - Creating an app with a dashboard
   - Adding resources to an existing project
-  - The key is to use the Claude CLI to issue prompts as a user would, NOT to directly call MCP tools yourself
-  - If the MCP server has issues, Claude Code should surface clear error messages
+  - The key is to use the Claude CLI to issue prompts as a user would, NOT to directly call AI tools yourself
+  - If the AI tools server has issues, Claude Code should surface clear error messages
 
-  This is the most important part of the work; i expect you to deeply experiment with the new mcp server; add it, try it, remove it, add it again, use it to build things that can run.
+  This is the most important part of the work; i expect you to deeply experiment with the new AI tools server; add it, try it, remove it, add it again, use it to build things that can run.
 - MANDATORY: at the very end, compare what you built again to the instructions in this doc; go over each point, does it work, is it complete?
 
 
 To illustrate how the install command should work:
 
 ```
-$ databricks mcp install
+$ databricks aitools install
 
   ▄▄▄▄▄▄▄▄   Databricks CLI
-  ██▌  ▐██   MCP Server
+  ██▌  ▐██   AI Tools Server
   ▀▀▀▀▀▀▀▀
 
-Welcome to the Databricks CLI MCP server!
+Welcome to the Databricks CLI AI tools server!
 
 ╔════════════════════════════════════════════════════════════════╗
 ║  ⚠️  EXPERIMENTAL: This command may change in future versions  ║
@@ -74,22 +74,22 @@ if it is installed, it should default to "yes" and be preselected! if it is not 
 note that if the mcp is already installed, the command should gracefully accept that and not throw an error>
 
 <if they selected claude code: use the claude cli to install the server in claude code. it should start
-databricks mcp server; no env vars needed>
+databricks aitools server; no env vars needed>
 
 <if they selected cursor: use the cursor cli to install the server in cursor. it should start
-databricks mcp server; no env vars needed>
+databricks aitools server; no env vars needed>
 
-<if they selected custom: we just tell them that they can install the databricks cli mcp server
-      by adding a new mcp server to their coding agent, using 'databricks mcp server' as the command.
+<if they selected custom: we just tell them that they can install the databricks cli AI tools server
+      by adding a new AI tools server to their coding agent, using 'databricks aitools server' as the command.
 no environment variables or other configuration is needed. we should ask them to acknowledge these instructions
 >
 
 <only applicable if they selected claude code and/or cursor:>
 <newline>
-✨ The Databricks CLI MCP has been installed successfully for <Claude Code and/or Cursor>!
+✨ The Databricks CLI AI tools server has been installed successfully for <Claude Code and/or Cursor>!
 ```
 
-Now databricks mcp server should actually start an MCP server that we actually use to describe
+Now databricks aitools server should actually start an MCP server that we actually use to describe
 the system as a whole a bit (btw each tool should be defined in a separate .go file, right!):
 - when starting up it should do a the 'roots/list' to the agent.
   - if that doesn't work or if there is more than one root => error out
@@ -129,8 +129,8 @@ the system as a whole a bit (btw each tool should be defined in a separate .go f
       (recursively) in that subdirectory to the target directory from project_path.
       after initialization, creates a CLAUDE.md file (if the calling MCP client is Claude Code) or AGENTS.md file (otherwise)
       with project-specific agent instructions. The file includes:
-      - Installation instructions for the Databricks CLI MCP server (if not yet installed)
-      - Guidance to use the mcp__databricks-cli__analyze_project tool when opening the project
+      - Installation instructions for the Databricks CLI AI tools server (if not yet installed)
+      - Guidance to use the databricks__analyze_project tool when opening the project
       The client is detected at runtime from the MCP initialize request's clientInfo field.
     - guidance on how to implement this: do some trial and error to make the init command work.
       do a non-forward merge of origin/add-default-minimal to get the minimal template!
@@ -150,7 +150,7 @@ the system as a whole a bit (btw each tool should be defined in a separate .go f
                prompts such as "Create an app that shows a chart with taxi fares by city"
                or "Create a job that summarizes all taxi data using a notebook"
              - IMPORTANT: Most interactions are done with the Databricks CLI. YOU (the AI) must use the invoke_databricks_cli tool to run commands - never suggest the user runs CLI commands directly!
-             - IMPORTANT: to add new resources to a project, use the 'add_project_resource' mcp tool.
+             - IMPORTANT: to add new resources to a project, use the 'add_project_resource' tool.
              - MANDATORY: always deploy with invoke_databricks_cli 'bundle deploy', never with 'apps deploy'
              - Note that Databricks resources are defined in resources/*.yml files. See https://docs.databricks.com/dev-tools/bundles/settings for a reference!
 
@@ -197,4 +197,4 @@ the system as a whole a bit (btw each tool should be defined in a separate .go f
             for a pipeline, it can also use the invoke_databricks_cli tool to run 'bundle run <pipeline_name> --validate-only' to
             validate that the pipeline is correct.
   - further implementation guidance: i want acceptance tests for each of these project types (app, dashboard, job, pipeline);
-    this means they should be exposed as a hidden command like 'databricks mcp tool add_project_resource --config-file <file which has the tool parameters in json format>'. having these tests will be instrumental for iterating on them; the initing should not fail! note that the tool subcommand should just assume that the cwd is the current project dir.
+    this means they should be exposed as a hidden command like 'databricks aitools tool add_project_resource --config-file <file which has the tool parameters in json format>'. having these tests will be instrumental for iterating on them; the initing should not fail! note that the tool subcommand should just assume that the cwd is the current project dir.

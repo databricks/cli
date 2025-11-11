@@ -10,8 +10,8 @@ import (
 
 func TestCheckAuthentication_SkipWhenEnvVarSet(t *testing.T) {
 	// Set the skip auth check environment variable
-	os.Setenv("DATABRICKS_MCP_SKIP_AUTH_CHECK", "1")
-	defer os.Unsetenv("DATABRICKS_MCP_SKIP_AUTH_CHECK")
+	os.Setenv("DATABRICKS_AITOOLS_SKIP_AUTH_CHECK", "1")
+	defer os.Unsetenv("DATABRICKS_AITOOLS_SKIP_AUTH_CHECK")
 
 	// Should not return an error when env var is set
 	err := CheckAuthentication(context.Background())

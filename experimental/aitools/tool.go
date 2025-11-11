@@ -1,4 +1,4 @@
-package mcp
+package aitools
 
 import (
 	"context"
@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/databricks/cli/experimental/mcp/tools"
-	"github.com/databricks/cli/experimental/mcp/tools/resources"
+	"github.com/databricks/cli/experimental/aitools/tools"
+	"github.com/databricks/cli/experimental/aitools/tools/resources"
 	"github.com/spf13/cobra"
 )
 
@@ -17,7 +17,7 @@ func newToolCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:    "tool <tool_name>",
-		Short:  "Run a specific MCP tool for testing (hidden)",
+		Short:  "Run a specific AI tool for testing (hidden)",
 		Hidden: true,
 		Args:   cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -32,8 +32,8 @@ func newToolCmd() *cobra.Command {
 	return cmd
 }
 
-// runTool executes a specific MCP tool for acceptance testing.
-// This is a hidden command accessed via 'databricks mcp tool <tool_name> --config-file <file>'.
+// runTool executes a specific AI tool for acceptance testing.
+// This is a hidden command accessed via 'databricks aitools tool <tool_name> --config-file <file>'.
 func runTool(ctx context.Context, toolName, configFile string) error {
 	if configFile == "" {
 		return errors.New("--config-file is required")

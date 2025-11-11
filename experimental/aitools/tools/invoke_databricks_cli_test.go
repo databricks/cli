@@ -11,7 +11,7 @@ import (
 
 func TestInvokeDatabricksCLI(t *testing.T) {
 	// Skip authentication check for tests
-	t.Setenv("DATABRICKS_MCP_SKIP_AUTH_CHECK", "1")
+	t.Setenv("DATABRICKS_AITOOLS_SKIP_AUTH_CHECK", "1")
 
 	tests := []struct {
 		name        string

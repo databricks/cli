@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/databricks/cli/experimental/mcp/auth"
-	"github.com/databricks/cli/experimental/mcp/tools/resources"
+	"github.com/databricks/cli/experimental/aitools/auth"
+	"github.com/databricks/cli/experimental/aitools/tools/resources"
 )
 
 // AnalyzeProjectTool analyzes a Databricks project and returns guidance.
@@ -137,7 +137,7 @@ IMPORTANT: You can suggest prompts to help users get started, such as:
   - "Add a dashboard to visualize NYC taxi trip patterns"
 
 IMPORTANT: Most interactions are done with the Databricks CLI. YOU (the AI) must use the invoke_databricks_cli tool to run commands - never suggest the user runs CLI commands directly!
-IMPORTANT: To add new resources to a project, use the 'add_project_resource' MCP tool. You can add:
+IMPORTANT: To add new resources to a project, use the 'add_project_resource' tool. You can add:
   - Apps (interactive applications)
   - Jobs (Python or SQL workflows)
   - Pipelines (Python or SQL data pipelines)
