@@ -22,7 +22,8 @@ trace $CLI bundle plan
 
 title "Fetch job ID and verify remote state"
 
-trace $CLI jobs get $foo_id
+# Badness: output should not be different per engine; investigate if it's the same on cloud
+trace $CLI jobs get $foo_id > out.get_foo.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI jobs get $bar_id
 rm out.requests.txt
 

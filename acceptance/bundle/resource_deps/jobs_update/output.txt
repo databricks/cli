@@ -37,51 +37,10 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 === Fetch job ID and verify remote state
 >>> [CLI] jobs get [FOO_ID]
-{
-  "created_time":[UNIX_TIME_MILLIS][0],
-  "creator_user_name":"[USERNAME]",
-  "job_id":[FOO_ID],
-  "run_as_user_name":"[USERNAME]",
-  "settings": {
-    "deployment": {
-      "kind":"BUNDLE",
-      "metadata_file_path":"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-    },
-    "edit_mode":"UI_LOCKED",
-    "email_notifications": {},
-    "format":"MULTI_TASK",
-    "job_clusters": [
-      {
-        "job_cluster_key":"key",
-        "new_cluster": {
-          "num_workers":0,
-          "spark_version":"13.3.x-scala2.12"
-        }
-      }
-    ],
-    "max_concurrent_runs":1,
-    "name":"foo",
-    "queue": {
-      "enabled":true
-    },
-    "run_as": {
-      "user_name":"[USERNAME]"
-    },
-    "timeout_seconds":0,
-    "trigger": {
-      "pause_status":"UNPAUSED",
-      "periodic": {
-        "interval":1,
-        "unit":"HOURS"
-      }
-    },
-    "webhook_notifications": {}
-  }
-}
 
 >>> [CLI] jobs get [BAR_ID]
 {
-  "created_time":[UNIX_TIME_MILLIS][1],
+  "created_time":[UNIX_TIME_MILLIS],
   "creator_user_name":"[USERNAME]",
   "job_id":[BAR_ID],
   "run_as_user_name":"[USERNAME]",
