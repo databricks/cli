@@ -14,7 +14,7 @@ trace $CLI bundle plan
 $CLI bundle debug plan > out.plan_update.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 trace $CLI bundle plan
-trace print_requests.py //jobs > out.update.requests.$DATABRICKS_BUNDLE_ENGINE.json
+trace print_requests.py //jobs | jq 'del(.body.new_settings.run_as, .body.new_settings.webhook_notifications, .body.new_settings.email_notifications)' > out.update.requests.json
 
 title "Fetch job ID and verify remote state"
 
