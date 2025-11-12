@@ -66,7 +66,7 @@ func (p *Provider) Name() string {
 }
 
 func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
-	log.Infof(p.ctx, "Registering deployment tools")
+	log.Info(p.ctx, "Registering deployment tools")
 
 	mcpsdk.AddTool(server,
 		&mcpsdk.Tool{
@@ -74,11 +74,8 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 			Description: "Deploy a generated app to Databricks Apps. Creates the app if it doesn't exist, syncs local files to workspace, and deploys the app. Returns deployment status and app URL. Only use after direct user request and running validation.",
 		},
 		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcpsdk.CallToolRequest, args DeployDatabricksAppInput) (*mcpsdk.CallToolResult, any, error) {
-			log.Debugf(ctx, "deploy_databricks_app called",
-				"work_dir", args.WorkDir,
-				"name", args.Name,
-				"force", args.Force,
-			)
+			log.Debugf(ctx, "deploy_databricks_app called: work_dir=%s, name=%s, force=%v",
+				args.WorkDir, args.Name, args.Force)
 
 			if !filepath.IsAbs(args.WorkDir) {
 				return nil, nil, fmt.Errorf("work_dir must be an absolute path, got: '%s'. Relative paths are not supported", args.WorkDir)
@@ -185,7 +182,7 @@ func (p *Provider) deployDatabricksApp(ctx context.Context, args *DeployDatabric
 		}, nil
 	}
 
-	log.Infof(ctx, "Installing dependencies", "work_dir", workPath)
+	log.Infof(ctx, "Installing dependencies: work_dir=%s", workPath)
 	if err := p.runCommand(workPath, "npm", "install"); err != nil {
 		return &DeployResult{
 			Success: false,
@@ -194,7 +191,7 @@ func (p *Provider) deployDatabricksApp(ctx context.Context, args *DeployDatabric
 		}, nil
 	}
 
-	log.Infof(ctx, "Building frontend", "work_dir", workPath)
+	log.Infof(ctx, "Building frontend: work_dir=%s", workPath)
 	if err := p.runCommand(workPath, "npm", "run", "build"); err != nil {
 		return &DeployResult{
 			Success: false,
@@ -214,7 +211,7 @@ func (p *Provider) deployDatabricksApp(ctx context.Context, args *DeployDatabric
 
 	serverDir := filepath.Join(workPath, "server")
 	syncStart := time.Now()
-	log.Infof(ctx, "Syncing workspace", "source", serverDir, "target", appInfo.SourcePath())
+	log.Infof(ctx, "Syncing workspace: source=%s, target=%s", serverDir, appInfo.SourcePath())
 
 	if err := databricks.SyncWorkspace(appInfo, serverDir); err != nil {
 		return &DeployResult{
@@ -224,10 +221,10 @@ func (p *Provider) deployDatabricksApp(ctx context.Context, args *DeployDatabric
 		}, nil
 	}
 
-	log.Infof(ctx, "Workspace sync completed", "duration_seconds", time.Since(syncStart).Seconds())
+	log.Infof(ctx, "Workspace sync completed: duration_seconds=%.2f", time.Since(syncStart).Seconds())
 
 	deployStart := time.Now()
-	log.Infof(ctx, "Deploying app", "name", args.Name)
+	log.Infof(ctx, "Deploying app: name=%s", args.Name)
 
 	var deployErr error
 	for attempt := 1; attempt <= deployRetries; attempt++ {
@@ -237,10 +234,8 @@ func (p *Provider) deployDatabricksApp(ctx context.Context, args *DeployDatabric
 		}
 
 		if attempt < deployRetries {
-			log.Warnf(ctx, "Deploy attempt failed, retrying",
-				"attempt", attempt,
-				"error", deployErr.Error(),
-			)
+			log.Warnf(ctx, "Deploy attempt failed, retrying: attempt=%d, error=%s",
+				attempt, deployErr.Error())
 		}
 	}
 
@@ -252,7 +247,7 @@ func (p *Provider) deployDatabricksApp(ctx context.Context, args *DeployDatabric
 		}, nil
 	}
 
-	log.Infof(ctx, "App deployment completed", "duration_seconds", time.Since(deployStart).Seconds())
+	log.Infof(ctx, "App deployment completed: duration_seconds=%.2f", time.Since(deployStart).Seconds())
 
 	deployedState, err := projectState.Deploy()
 	if err != nil {
@@ -264,14 +259,12 @@ func (p *Provider) deployDatabricksApp(ctx context.Context, args *DeployDatabric
 	}
 
 	if err := io.SaveState(workPath, deployedState); err != nil {
-		log.Warnf(ctx, "Failed to save deployed state", "error", err)
+		log.Warnf(ctx, "Failed to save deployed state: error=%v", err)
 	}
 
 	totalDuration := time.Since(startTime)
-	log.Infof(ctx, "Full deployment completed",
-		"duration_seconds", totalDuration.Seconds(),
-		"app_url", appInfo.URL,
-	)
+	log.Infof(ctx, "Full deployment completed: duration_seconds=%.2f, app_url=%s",
+		totalDuration.Seconds(), appInfo.URL)
 
 	return &DeployResult{
 		Success: true,
@@ -284,7 +277,7 @@ func (p *Provider) deployDatabricksApp(ctx context.Context, args *DeployDatabric
 func (p *Provider) getOrCreateApp(ctx context.Context, name, description string, force bool) (*databricks.AppInfo, error) {
 	appInfo, err := databricks.GetAppInfo(ctx, p.client, name)
 	if err == nil {
-		log.Infof(ctx, "Found existing app", "name", name)
+		log.Infof(ctx, "Found existing app: name=%s", name)
 
 		if !force {
 			userInfo, err := databricks.GetUserInfo(ctx, p.client)
@@ -304,7 +297,7 @@ func (p *Provider) getOrCreateApp(ctx context.Context, name, description string,
 		return appInfo, nil
 	}
 
-	log.Infof(ctx, "App not found, creating new app", "name", name)
+	log.Infof(ctx, "App not found, creating new app: name=%s", name)
 
 	resources, err := databricks.ResourcesFromEnv()
 	if err != nil {

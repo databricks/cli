@@ -4,12 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 	"os"
 	"path/filepath"
 
-	"github.com/databricks/cli/libs/mcp/templates"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/mcp/templates"
 )
 
 // ScaffoldArgs contains arguments for scaffolding operation
@@ -88,10 +87,8 @@ func (p *Provider) Scaffold(ctx context.Context, args *ScaffoldArgs) (*ScaffoldR
 		filesCopied++
 	}
 
-	log.Infof(ctx, "scaffolded project",
-		slog.String("template", template.Name()),
-		slog.String("work_dir", workDir),
-		slog.Int("files", filesCopied))
+	log.Infof(ctx, "scaffolded project (template=%s, work_dir=%s, files=%d)",
+		template.Name(), workDir, filesCopied)
 
 	return &ScaffoldResult{
 		FilesCopied:         filesCopied,

@@ -25,15 +25,15 @@ const (
 // Application-specific error codes (extending JSON-RPC 2.0).
 const (
 	// Configuration errors (-32100 to -32109)
-	CodeConfigInvalid  = -32100
-	CodeConfigMissing  = -32101
-	CodeConfigWorkDir  = -32102
+	CodeConfigInvalid = -32100
+	CodeConfigMissing = -32101
+	CodeConfigWorkDir = -32102
 
 	// Sandbox errors (-32110 to -32119)
-	CodeSandboxFailed    = -32110
-	CodeSandboxNotFound  = -32111
-	CodeSandboxExec      = -32112
-	CodeSandboxDocker    = -32113
+	CodeSandboxFailed   = -32110
+	CodeSandboxNotFound = -32111
+	CodeSandboxExec     = -32112
+	CodeSandboxDocker   = -32113
 
 	// Databricks errors (-32120 to -32129)
 	CodeDatabricksAuth      = -32120
@@ -42,10 +42,10 @@ const (
 	CodeDatabricksConnect   = -32123
 
 	// Validation errors (-32130 to -32139)
-	CodeValidationFailed  = -32130
-	CodeValidationState   = -32131
-	CodeValidationBuild   = -32132
-	CodeValidationTest    = -32133
+	CodeValidationFailed = -32130
+	CodeValidationState  = -32131
+	CodeValidationBuild  = -32132
+	CodeValidationTest   = -32133
 
 	// Deployment errors (-32140 to -32149)
 	CodeDeploymentFailed = -32140

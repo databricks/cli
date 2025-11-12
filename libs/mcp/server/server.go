@@ -55,7 +55,7 @@ func NewServer(cfg *mcp.Config, ctx context.Context) *Server {
 // Databricks and IO providers are always registered, while workspace and deployment
 // providers are conditional based on configuration flags.
 func (s *Server) RegisterTools(ctx context.Context) error {
-	log.Infof(ctx, "Registering tools")
+	log.Info(ctx, "Registering tools")
 
 	// Always register databricks provider
 	if err := s.registerDatabricksProvider(ctx); err != nil {
@@ -76,12 +76,12 @@ func (s *Server) RegisterTools(ctx context.Context) error {
 
 	// Register deployment provider if enabled
 	if s.config.AllowDeployment {
-		log.Infof(ctx, "Deployment provider enabled")
+		log.Info(ctx, "Deployment provider enabled")
 		if err := s.registerDeploymentProvider(ctx); err != nil {
 			return err
 		}
 	} else {
-		log.Infof(ctx, "Deployment provider disabled (enable with allow_deployment: true)")
+		log.Info(ctx, "Deployment provider disabled (enable with allow_deployment: true)")
 	}
 
 	return nil
@@ -89,7 +89,7 @@ func (s *Server) RegisterTools(ctx context.Context) error {
 
 // registerDatabricksProvider registers the Databricks provider
 func (s *Server) registerDatabricksProvider(ctx context.Context) error {
-	log.Infof(ctx, "Registering Databricks provider")
+	log.Info(ctx, "Registering Databricks provider")
 
 	// Add session to context
 	ctx = session.WithSession(ctx, s.session)
@@ -108,7 +108,7 @@ func (s *Server) registerDatabricksProvider(ctx context.Context) error {
 
 // registerIOProvider registers the I/O provider
 func (s *Server) registerIOProvider(ctx context.Context) error {
-	log.Infof(ctx, "Registering I/O provider")
+	log.Info(ctx, "Registering I/O provider")
 
 	// Add session to context
 	ctx = session.WithSession(ctx, s.session)
@@ -127,7 +127,7 @@ func (s *Server) registerIOProvider(ctx context.Context) error {
 
 // registerWorkspaceProvider registers the workspace provider
 func (s *Server) registerWorkspaceProvider(ctx context.Context) error {
-	log.Infof(ctx, "Registering workspace provider")
+	log.Info(ctx, "Registering workspace provider")
 
 	// Add session to context
 	ctx = session.WithSession(ctx, s.session)
@@ -146,7 +146,7 @@ func (s *Server) registerWorkspaceProvider(ctx context.Context) error {
 
 // registerDeploymentProvider registers the deployment provider
 func (s *Server) registerDeploymentProvider(ctx context.Context) error {
-	log.Infof(ctx, "Registering deployment provider")
+	log.Info(ctx, "Registering deployment provider")
 
 	// Add session to context
 	ctx = session.WithSession(ctx, s.session)
@@ -166,11 +166,11 @@ func (s *Server) registerDeploymentProvider(ctx context.Context) error {
 // Run starts the MCP server with STDIO transport and blocks until the context is cancelled.
 // The server communicates via standard input/output following the MCP protocol.
 func (s *Server) Run(ctx context.Context) error {
-	log.Infof(ctx, "Starting MCP server with STDIO transport")
+	log.Info(ctx, "Starting MCP server with STDIO transport")
 
 	transport := &mcpsdk.StdioTransport{}
 	if err := s.server.Run(ctx, transport); err != nil {
-		log.Errorf(ctx, "Server failed", "error", err)
+		log.Errorf(ctx, "Server failed: error=%v", err)
 		return err
 	}
 
@@ -179,11 +179,11 @@ func (s *Server) Run(ctx context.Context) error {
 
 // Shutdown gracefully shuts down the server, closing the trajectory tracker and releasing resources.
 func (s *Server) Shutdown(ctx context.Context) error {
-	log.Infof(ctx, "Shutting down MCP server")
+	log.Info(ctx, "Shutting down MCP server")
 
 	if s.tracker != nil {
 		if err := s.tracker.Close(); err != nil {
-			log.Warnf(ctx, "failed to close trajectory tracker", "error", err)
+			log.Warnf(ctx, "failed to close trajectory tracker: error=%v", err)
 		}
 	}
 

@@ -45,7 +45,7 @@ func (p *Provider) Name() string {
 
 // RegisterTools registers all I/O tools with the MCP server
 func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
-	log.Infof(p.ctx, "Registering I/O tools")
+	log.Info(p.ctx, "Registering I/O tools")
 
 	// Register scaffold_data_app
 	type ScaffoldInput struct {
@@ -59,7 +59,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 			Description: "Initialize a project by copying template files from the default TypeScript (tRPC + React) template to a work directory. Supports force rewrite to wipe and recreate the directory. It sets up a basic project structure, and should be ALWAYS used as the first step in creating a new data or web app.",
 		},
 		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcpsdk.CallToolRequest, args ScaffoldInput) (*mcpsdk.CallToolResult, any, error) {
-			log.Debugfctx, "scaffold_data_app called%s", "work_dir", args.WorkDir)
+			log.Debugf(ctx, "scaffold_data_app called: work_dir=%s", args.WorkDir)
 
 			scaffoldArgs := &ScaffoldArgs{
 				WorkDir:      args.WorkDir,
@@ -73,9 +73,9 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 
 			// Set work directory in session for workspace tools
 			if err := session.SetWorkDir(ctx, result.WorkDir); err != nil {
-				log.Warnfctx, "Failed to set work directory in session%s", "error", err)
+				log.Warnf(ctx, "Failed to set work directory in session: error=%v", err)
 			} else {
-				log.Infofctx, "Work directory set in session%s", "work_dir", result.WorkDir)
+				log.Infof(ctx, "Work directory set in session: work_dir=%s", result.WorkDir)
 			}
 
 			text := formatScaffoldResult(result)
@@ -98,7 +98,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 			Description: "Validate a project by copying files to a sandbox and running validation checks. Project should be scaffolded first. Returns validation result with success status and details.",
 		},
 		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcpsdk.CallToolRequest, args ValidateInput) (*mcpsdk.CallToolResult, any, error) {
-			log.Debugfctx, "validate_data_app called%s", "work_dir", args.WorkDir)
+			log.Debugf(ctx, "validate_data_app called: work_dir=%s", args.WorkDir)
 
 			validateArgs := &ValidateArgs{
 				WorkDir: args.WorkDir,
@@ -119,6 +119,6 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 		}),
 	)
 
-	log.Infofp.ctx, "Registered I/O tools%s", "count", 2)
+	log.Infof(p.ctx, "Registered I/O tools: count=%d", 2)
 	return nil
 }

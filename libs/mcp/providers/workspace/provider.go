@@ -55,7 +55,7 @@ func (p *Provider) getWorkDir(ctx context.Context) (string, error) {
 
 // RegisterTools registers all workspace tools with the MCP server
 func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
-	log.Infof(p.ctx, "Registering workspace tools")
+	log.Info(p.ctx, "Registering workspace tools")
 
 	// Register read_file
 	type ReadFileInput struct {
@@ -70,7 +70,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 			Description: "Read file contents with line numbers. Default: reads up to 2000 lines from beginning. Lines >2000 chars truncated.",
 		},
 		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcpsdk.CallToolRequest, args ReadFileInput) (*mcpsdk.CallToolResult, any, error) {
-			log.Debugf(ctx, "read_file called", "file_path", args.FilePath)
+			log.Debugf(ctx, "read_file called: file_path=%s", args.FilePath)
 
 			readArgs := &ReadFileArgs{
 				FilePath: args.FilePath,
@@ -103,7 +103,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 			Description: "Write content to a file",
 		},
 		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcpsdk.CallToolRequest, args WriteFileInput) (*mcpsdk.CallToolResult, any, error) {
-			log.Debugf(ctx, "write_file called", "file_path", args.FilePath)
+			log.Debugf(ctx, "write_file called: file_path=%s", args.FilePath)
 
 			writeArgs := &WriteFileArgs{
 				FilePath: args.FilePath,
@@ -136,7 +136,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 			Description: "Edit file by replacing old_string with new_string. Fails if old_string not unique unless replace_all=true.",
 		},
 		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcpsdk.CallToolRequest, args EditFileInput) (*mcpsdk.CallToolResult, any, error) {
-			log.Debugf(ctx, "edit_file called", "file_path", args.FilePath)
+			log.Debugf(ctx, "edit_file called: file_path=%s", args.FilePath)
 
 			editArgs := &EditFileArgs{
 				FilePath:  args.FilePath,
@@ -169,7 +169,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 			Description: "Execute bash command in workspace directory. Use for terminal operations (npm, git, etc). Output truncated at 30000 chars.",
 		},
 		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcpsdk.CallToolRequest, args BashInput) (*mcpsdk.CallToolResult, any, error) {
-			log.Debugf(ctx, "bash called", "command", args.Command)
+			log.Debugf(ctx, "bash called: command=%s", args.Command)
 
 			bashArgs := &BashArgs{
 				Command: args.Command,
@@ -206,7 +206,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 			Description: "Search file contents with regex. Returns file:line:content by default. Limit results with head_limit.",
 		},
 		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcpsdk.CallToolRequest, args GrepInput) (*mcpsdk.CallToolResult, any, error) {
-			log.Debugf(ctx, "grep called", "pattern", args.Pattern)
+			log.Debugf(ctx, "grep called: pattern=%s", args.Pattern)
 
 			grepArgs := &GrepArgs{
 				Pattern:    args.Pattern,
@@ -242,7 +242,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 			Description: "Find files matching a glob pattern",
 		},
 		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcpsdk.CallToolRequest, args GlobInput) (*mcpsdk.CallToolResult, any, error) {
-			log.Debugf(ctx, "glob called", "pattern", args.Pattern)
+			log.Debugf(ctx, "glob called: pattern=%s", args.Pattern)
 
 			globArgs := &GlobArgs{
 				Pattern: args.Pattern,
@@ -264,6 +264,6 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 		}),
 	)
 
-	log.Infof(p.ctx, "Registered workspace tools", "count", 6)
+	log.Infof(p.ctx, "Registered workspace tools: count=%d", 6)
 	return nil
 }
