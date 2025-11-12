@@ -78,7 +78,13 @@
         }
       },
       "remote_state": {
-        "object_id": "/jobs/[JOB_ID]"
+        "object_id": "/jobs/[JOB_ID]",
+        "permissions": [
+          {
+            "permission_level": "IS_OWNER",
+            "user_name": "[USERNAME]"
+          }
+        ]
       },
       "changes": {
         "remote": {
