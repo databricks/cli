@@ -10,6 +10,7 @@ func TestGetLevelScore(t *testing.T) {
 	assert.Equal(t, 17, getLevelScore("CAN_MANAGE"))
 	assert.Equal(t, 0, getLevelScore("UNKNOWN_PERMISSION"))
 	assert.Equal(t, getLevelScore("CAN_MANAGE"), getLevelScore("CAN_MANAGE_SOMETHING_ELSE"))
+	assert.Equal(t, getLevelScore("CAN_MANAGE_RUN"), getLevelScore("CAN_MANAGE_RUN1"))
 }
 
 func TestGetMaxLevel(t *testing.T) {

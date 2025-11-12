@@ -212,9 +212,11 @@ func getLevelScore(a string) int {
 	if ok {
 		return score
 	}
+	maxPrefixLength := 0
 	for levelName, levelScore := range PermissionOrder {
-		if strings.HasPrefix(a, levelName) && levelScore > score {
+		if strings.HasPrefix(a, levelName) && len(levelName) > maxPrefixLength {
 			score = levelScore
+			maxPrefixLength = len(levelName)
 		}
 	}
 	return score
