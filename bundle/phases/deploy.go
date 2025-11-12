@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy/metadata"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/resourcesnapshot"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/bundle/permissions"
@@ -116,6 +117,7 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, ta
 		statemgmt.Load(targetEngine),
 		metadata.Compute(),
 		metadata.Upload(),
+		resourcesnapshot.Save(),
 	)
 
 	if !logdiag.HasError(ctx) {
