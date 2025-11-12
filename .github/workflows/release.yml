@@ -125,6 +125,9 @@ jobs:
           args: release -f .goreleaser-windows.yaml --snapshot --skip=publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AZURE_TENANT_ID: ${{ secrets.DECO_SIGN_AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.DECO_SIGN_AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.DECO_SIGN_AZURE_CLIENT_SECRET }}
 
       - name: Upload Windows artifacts to release
         if: false  # Temporarily disabled for testing
