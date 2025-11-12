@@ -77,6 +77,7 @@ Deployment complete!
         "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
       },
       "edit_mode": "UI_LOCKED",
+      "email_notifications": {},
       "format": "MULTI_TASK",
       "job_clusters": [
         {
@@ -99,13 +100,17 @@ Deployment complete!
       "queue": {
         "enabled": true
       },
+      "run_as": {
+        "user_name": "[USERNAME]"
+      },
       "trigger": {
         "pause_status": "UNPAUSED",
         "periodic": {
           "interval": 1,
           "unit": "HOURS"
         }
-      }
+      },
+      "webhook_notifications": {}
     }
   },
   "method": "POST",
@@ -119,13 +124,17 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 === Fetch job ID and verify remote state
 >>> [CLI] jobs get [JOB_ID]
 {
+  "created_time":[UNIX_TIME_MILLIS],
+  "creator_user_name":"[USERNAME]",
   "job_id":[JOB_ID],
+  "run_as_user_name":"[USERNAME]",
   "settings": {
     "deployment": {
       "kind":"BUNDLE",
       "metadata_file_path":"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
     },
     "edit_mode":"UI_LOCKED",
+    "email_notifications": {},
     "format":"MULTI_TASK",
     "job_clusters": [
       {
@@ -148,13 +157,18 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
     "queue": {
       "enabled":true
     },
+    "run_as": {
+      "user_name":"[USERNAME]"
+    },
+    "timeout_seconds":0,
     "trigger": {
       "pause_status":"UNPAUSED",
       "periodic": {
         "interval":1,
         "unit":"HOURS"
       }
-    }
+    },
+    "webhook_notifications": {}
   }
 }
 

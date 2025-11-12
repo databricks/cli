@@ -100,12 +100,17 @@ Deployment complete!
       },
       "description": "depends on foo id [UUID]",
       "edit_mode": "UI_LOCKED",
+      "email_notifications": {},
       "format": "MULTI_TASK",
       "max_concurrent_runs": 1,
       "name": "job bar",
       "queue": {
         "enabled": true
-      }
+      },
+      "run_as": {
+        "user_name": "[USERNAME]"
+      },
+      "webhook_notifications": {}
     }
   }
 }
@@ -117,7 +122,7 @@ Error: The specified pipeline [FOO_ID] was not found.
 >>> [CLI] pipelines get [UUID]
 {
   "creator_user_name":"[USERNAME]",
-  "last_modified":[UNIX_TIME_MILLIS],
+  "last_modified":[UNIX_TIME_MILLIS][0],
   "name":"pipeline foo",
   "pipeline_id":"[UUID]",
   "run_as_user_name":"[USERNAME]",
@@ -137,7 +142,10 @@ Error: The specified pipeline [FOO_ID] was not found.
 
 >>> [CLI] jobs get [BAR_ID]
 {
+  "created_time":[UNIX_TIME_MILLIS][1],
+  "creator_user_name":"[USERNAME]",
   "job_id":[BAR_ID],
+  "run_as_user_name":"[USERNAME]",
   "settings": {
     "deployment": {
       "kind":"BUNDLE",
@@ -145,12 +153,18 @@ Error: The specified pipeline [FOO_ID] was not found.
     },
     "description":"depends on foo id [UUID]",
     "edit_mode":"UI_LOCKED",
+    "email_notifications": {},
     "format":"MULTI_TASK",
     "max_concurrent_runs":1,
     "name":"job bar",
     "queue": {
       "enabled":true
-    }
+    },
+    "run_as": {
+      "user_name":"[USERNAME]"
+    },
+    "timeout_seconds":0,
+    "webhook_notifications": {}
   }
 }
 
