@@ -62,7 +62,6 @@ jobs:
   goreleaser-windows:
     environment: sign
     runs-on: windows-latest
-    needs: goreleaser-unix
 
     steps:
       - name: Checkout repository and submodules
@@ -124,7 +123,7 @@ jobs:
     runs-on:
       group: databricks-deco-testing-runner-group
       labels: ubuntu-latest-deco
-    needs: goreleaser-windows
+    needs: [goreleaser-windows, goreleaser-unix]
 
     steps:
       - name: Download Windows artifacts
