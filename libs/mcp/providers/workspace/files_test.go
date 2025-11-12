@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/cli/libs/mcp/session"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"log/slog"
 )
 
 func setupTestProvider(t *testing.T) (*Provider, string) {

@@ -2,16 +2,16 @@ package databricks
 
 import (
 	"context"
-	"log/slog"
 
 	"github.com/databricks/cli/libs/mcp"
 	"github.com/databricks/cli/libs/mcp/providers"
 	"github.com/databricks/cli/libs/mcp/session"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/databricks/cli/libs/log"
 )
 
 func init() {
-	providers.Register("databricks", func(cfg *mcp.Config, sess *session.Session, logger *slog.Logger) (providers.Provider, error) {
+	providers.Register("databricks", func(cfg *mcp.Config, sess *session.Session, ctx context.Context) (providers.Provider, error) {
 		return NewProvider(cfg, sess, logger)
 	}, providers.ProviderConfig{
 		Always: true,
@@ -22,11 +22,10 @@ func init() {
 type Provider struct {
 	client  *Client
 	session *session.Session
-	logger  *slog.Logger
 }
 
 // NewProvider creates a new Databricks provider
-func NewProvider(cfg *mcp.Config, sess *session.Session, logger *slog.Logger) (*Provider, error) {
+func NewProvider(cfg *mcp.Config, sess *session.Session, ctx context.Context) (*Provider, error) {
 	client, err := NewClient(cfg, logger)
 	if err != nil {
 		return nil, err
@@ -46,7 +45,7 @@ func (p *Provider) Name() string {
 
 // RegisterTools registers all Databricks tools with the MCP server
 func (p *Provider) RegisterTools(server *mcp.Server) error {
-	p.logger.Info("Registering Databricks tools")
+	log.Infof(ctx, "Registering Databricks tools")
 
 	// Register databricks_list_catalogs
 	mcp.AddTool(server,
@@ -55,7 +54,7 @@ func (p *Provider) RegisterTools(server *mcp.Server) error {
 			Description: "List all available Databricks catalogs",
 		},
 		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcp.CallToolRequest, args struct{}) (*mcp.CallToolResult, any, error) {
-			p.logger.Debug("databricks_list_catalogs called")
+			log.Debugf(ctx, "databricks_list_catalogs called")
 
 			result, err := p.client.ListCatalogs(ctx)
 			if err != nil {
@@ -85,7 +84,7 @@ func (p *Provider) RegisterTools(server *mcp.Server) error {
 			Description: "List all schemas in a Databricks catalog with pagination support",
 		},
 		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcp.CallToolRequest, args ListSchemasInput) (*mcp.CallToolResult, any, error) {
-			p.logger.Debug("databricks_list_schemas called", "catalog", args.CatalogName)
+			log.Debugf(ctx, "databricks_list_schemas called", "catalog", args.CatalogName)
 
 			listArgs := &ListSchemasArgs{
 				CatalogName: args.CatalogName,
@@ -121,7 +120,7 @@ func (p *Provider) RegisterTools(server *mcp.Server) error {
 			Description: "List tables in a Databricks catalog and schema",
 		},
 		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcp.CallToolRequest, args ListTablesInput) (*mcp.CallToolResult, any, error) {
-			p.logger.Debug("databricks_list_tables called", "catalog", args.CatalogName, "schema", args.SchemaName)
+			log.Debugf(ctx, "databricks_list_tables called", "catalog", args.CatalogName, "schema", args.SchemaName)
 
 			listArgs := &ListTablesArgs{
 				CatalogName:         args.CatalogName,
@@ -155,7 +154,7 @@ func (p *Provider) RegisterTools(server *mcp.Server) error {
 			Description: "Get detailed information about a Databricks table including schema and optional sample data",
 		},
 		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcp.CallToolRequest, args DescribeTableInput) (*mcp.CallToolResult, any, error) {
-			p.logger.Debug("databricks_describe_table called", "table", args.TableFullName)
+			log.Debugf(ctx, "databricks_describe_table called", "table", args.TableFullName)
 
 			descArgs := &DescribeTableArgs{
 				TableFullName: args.TableFullName,
@@ -187,7 +186,7 @@ func (p *Provider) RegisterTools(server *mcp.Server) error {
 			Description: "Execute SQL query in Databricks. Only single SQL statements are supported - do not send multiple statements separated by semicolons. For multiple statements, call this tool separately for each one. DO NOT create catalogs, schemas or tables - requires metastore admin privileges. Query existing data instead. Timeout: 60 seconds for query execution.",
 		},
 		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcp.CallToolRequest, args ExecuteQueryInput) (*mcp.CallToolResult, any, error) {
-			p.logger.Debug("databricks_execute_query called", "query", args.Query)
+			log.Debugf(ctx, "databricks_execute_query called", "query", args.Query)
 
 			result, err := p.client.ExecuteQuery(ctx, args.Query)
 			if err != nil {
@@ -203,6 +202,6 @@ func (p *Provider) RegisterTools(server *mcp.Server) error {
 		}),
 	)
 
-	p.logger.Info("Registered Databricks tools")
+	log.Infof(ctx, "Registered Databricks tools")
 	return nil
 }

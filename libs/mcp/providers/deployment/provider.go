@@ -3,7 +3,6 @@ package deployment
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -15,11 +14,12 @@ import (
 	"github.com/databricks/cli/libs/mcp/providers/io"
 	"github.com/databricks/cli/libs/mcp/session"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/databricks/cli/libs/log"
 )
 
 func init() {
 	// Register deployment provider with conditional enablement based on AllowDeployment
-	providers.Register("deployment", func(cfg *mcp.Config, sess *session.Session, logger *slog.Logger) (providers.Provider, error) {
+	providers.Register("deployment", func(cfg *mcp.Config, sess *session.Session, ctx context.Context) (providers.Provider, error) {
 		return NewProvider(cfg, sess, logger)
 	}, providers.ProviderConfig{
 		EnabledWhen: func(cfg *mcp.Config) bool {
@@ -35,7 +35,6 @@ type Provider struct {
 	config  *mcp.Config
 	session *session.Session
 	client  *databricks.Client
-	logger  *slog.Logger
 }
 
 // DeployDatabricksAppInput contains parameters for deploying a Databricks app.
@@ -46,7 +45,7 @@ type DeployDatabricksAppInput struct {
 	Force       bool   `json:"force,omitempty" jsonschema_description:"Force re-deployment if the app already exists"`
 }
 
-func NewProvider(cfg *mcp.Config, sess *session.Session, logger *slog.Logger) (*Provider, error) {
+func NewProvider(cfg *mcp.Config, sess *session.Session, ctx context.Context) (*Provider, error) {
 	client, err := databricks.NewClient(cfg, logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create databricks client: %w", err)
@@ -66,7 +65,7 @@ func (p *Provider) Name() string {
 }
 
 func (p *Provider) RegisterTools(server *mcp.Server) error {
-	p.logger.Info("Registering deployment tools")
+	log.Infof(ctx, "Registering deployment tools")
 
 	mcp.AddTool(server,
 		&mcp.Tool{
@@ -74,7 +73,7 @@ func (p *Provider) RegisterTools(server *mcp.Server) error {
 			Description: "Deploy a generated app to Databricks Apps. Creates the app if it doesn't exist, syncs local files to workspace, and deploys the app. Returns deployment status and app URL. Only use after direct user request and running validation.",
 		},
 		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcp.CallToolRequest, args DeployDatabricksAppInput) (*mcp.CallToolResult, any, error) {
-			p.logger.Debug("deploy_databricks_app called",
+			log.Debugf(ctx, "deploy_databricks_app called",
 				"work_dir", args.WorkDir,
 				"name", args.Name,
 				"force", args.Force,
@@ -185,7 +184,7 @@ func (p *Provider) deployDatabricksApp(ctx context.Context, args *DeployDatabric
 		}, nil
 	}
 
-	p.logger.Info("Installing dependencies", "work_dir", workPath)
+	log.Infof(ctx, "Installing dependencies", "work_dir", workPath)
 	if err := p.runCommand(workPath, "npm", "install"); err != nil {
 		return &DeployResult{
 			Success: false,
@@ -194,7 +193,7 @@ func (p *Provider) deployDatabricksApp(ctx context.Context, args *DeployDatabric
 		}, nil
 	}
 
-	p.logger.Info("Building frontend", "work_dir", workPath)
+	log.Infof(ctx, "Building frontend", "work_dir", workPath)
 	if err := p.runCommand(workPath, "npm", "run", "build"); err != nil {
 		return &DeployResult{
 			Success: false,
@@ -214,7 +213,7 @@ func (p *Provider) deployDatabricksApp(ctx context.Context, args *DeployDatabric
 
 	serverDir := filepath.Join(workPath, "server")
 	syncStart := time.Now()
-	p.logger.Info("Syncing workspace", "source", serverDir, "target", appInfo.SourcePath())
+	log.Infof(ctx, "Syncing workspace", "source", serverDir, "target", appInfo.SourcePath())
 
 	if err := databricks.SyncWorkspace(appInfo, serverDir); err != nil {
 		return &DeployResult{
@@ -224,10 +223,10 @@ func (p *Provider) deployDatabricksApp(ctx context.Context, args *DeployDatabric
 		}, nil
 	}
 
-	p.logger.Info("Workspace sync completed", "duration_seconds", time.Since(syncStart).Seconds())
+	log.Infof(ctx, "Workspace sync completed", "duration_seconds", time.Since(syncStart).Seconds())
 
 	deployStart := time.Now()
-	p.logger.Info("Deploying app", "name", args.Name)
+	log.Infof(ctx, "Deploying app", "name", args.Name)
 
 	var deployErr error
 	for attempt := 1; attempt <= deployRetries; attempt++ {
@@ -237,7 +236,7 @@ func (p *Provider) deployDatabricksApp(ctx context.Context, args *DeployDatabric
 		}
 
 		if attempt < deployRetries {
-			p.logger.Warn("Deploy attempt failed, retrying",
+			log.Warnf(ctx, "Deploy attempt failed, retrying",
 				"attempt", attempt,
 				"error", deployErr.Error(),
 			)
@@ -252,7 +251,7 @@ func (p *Provider) deployDatabricksApp(ctx context.Context, args *DeployDatabric
 		}, nil
 	}
 
-	p.logger.Info("App deployment completed", "duration_seconds", time.Since(deployStart).Seconds())
+	log.Infof(ctx, "App deployment completed", "duration_seconds", time.Since(deployStart).Seconds())
 
 	deployedState, err := projectState.Deploy()
 	if err != nil {
@@ -264,11 +263,11 @@ func (p *Provider) deployDatabricksApp(ctx context.Context, args *DeployDatabric
 	}
 
 	if err := io.SaveState(workPath, deployedState); err != nil {
-		p.logger.Warn("Failed to save deployed state", "error", err)
+		log.Warnf(ctx, "Failed to save deployed state", "error", err)
 	}
 
 	totalDuration := time.Since(startTime)
-	p.logger.Info("Full deployment completed",
+	log.Infof(ctx, "Full deployment completed",
 		"duration_seconds", totalDuration.Seconds(),
 		"app_url", appInfo.URL,
 	)
@@ -284,7 +283,7 @@ func (p *Provider) deployDatabricksApp(ctx context.Context, args *DeployDatabric
 func (p *Provider) getOrCreateApp(ctx context.Context, name, description string, force bool) (*databricks.AppInfo, error) {
 	appInfo, err := databricks.GetAppInfo(ctx, p.client, name)
 	if err == nil {
-		p.logger.Info("Found existing app", "name", name)
+		log.Infof(ctx, "Found existing app", "name", name)
 
 		if !force {
 			userInfo, err := databricks.GetUserInfo(ctx, p.client)
@@ -304,7 +303,7 @@ func (p *Provider) getOrCreateApp(ctx context.Context, name, description string,
 		return appInfo, nil
 	}
 
-	p.logger.Info("App not found, creating new app", "name", name)
+	log.Infof(ctx, "App not found, creating new app", "name", name)
 
 	resources, err := databricks.ResourcesFromEnv()
 	if err != nil {

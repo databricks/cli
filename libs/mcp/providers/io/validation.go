@@ -3,10 +3,10 @@ package io
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"time"
 
 	"github.com/databricks/cli/libs/mcp/sandbox"
+	"github.com/databricks/cli/libs/log"
 )
 
 // ValidationDetail contains detailed output from a failed validation.
@@ -56,7 +56,7 @@ func (vr *ValidateResult) String() string {
 
 // Validation defines the interface for project validation strategies.
 type Validation interface {
-	Validate(ctx context.Context, sb sandbox.Sandbox, logger *slog.Logger) (*ValidateResult, error)
+	Validate(ctx context.Context, sb sandbox.Sandbox, ctx context.Context) (*ValidateResult, error)
 	DockerImage() string
 }
 
@@ -71,7 +71,7 @@ func (v *ValidationTRPC) DockerImage() string {
 	return "node:20-alpine3.22"
 }
 
-func (v *ValidationTRPC) Validate(ctx context.Context, sb sandbox.Sandbox, logger *slog.Logger) (*ValidateResult, error) {
+func (v *ValidationTRPC) Validate(ctx context.Context, sb sandbox.Sandbox, ctx context.Context) (*ValidateResult, error) {
 	logger.Info("starting tRPC validation (build + type check + tests)")
 	startTime := time.Now()
 	var progressLog []string
@@ -228,7 +228,7 @@ func (v *ValidationCmd) DockerImage() string {
 	return v.DockerImg
 }
 
-func (v *ValidationCmd) Validate(ctx context.Context, sb sandbox.Sandbox, logger *slog.Logger) (*ValidateResult, error) {
+func (v *ValidationCmd) Validate(ctx context.Context, sb sandbox.Sandbox, ctx context.Context) (*ValidateResult, error) {
 	logger.Info("starting custom validation", slog.String("command", v.Command))
 	startTime := time.Now()
 	var progressLog []string

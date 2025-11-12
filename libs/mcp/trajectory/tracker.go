@@ -10,7 +10,7 @@ import (
 
 	"github.com/databricks/cli/libs/mcp"
 	"github.com/databricks/cli/libs/mcp/session"
-	"github.com/modelcontextprotocol/go-sdk/mcp"
+	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 type Tracker struct {
@@ -76,7 +76,7 @@ func (t *Tracker) writeSessionEntry(cfg *mcp.Config) error {
 	return t.writer.WriteEntry(entry)
 }
 
-func (t *Tracker) RecordToolCall(toolName string, args interface{}, result *mcp.CallToolResult, err error) {
+func (t *Tracker) RecordToolCall(toolName string, args interface{}, result *mcpsdk.CallToolResult, err error) {
 	if !t.enabled {
 		return
 	}
@@ -123,9 +123,9 @@ func (t *Tracker) Close() error {
 func WrapToolHandlerWithTrajectory[T any](
 	tracker *Tracker,
 	toolName string,
-	handler func(ctx context.Context, req *mcp.CallToolRequest, args T) (*mcp.CallToolResult, any, error),
-) func(ctx context.Context, req *mcp.CallToolRequest, args T) (*mcp.CallToolResult, any, error) {
-	return func(ctx context.Context, req *mcp.CallToolRequest, args T) (*mcp.CallToolResult, any, error) {
+	handler func(ctx context.Context, req *mcpsdk.CallToolRequest, args T) (*mcpsdk.CallToolResult, any, error),
+) func(ctx context.Context, req *mcpsdk.CallToolRequest, args T) (*mcpsdk.CallToolResult, any, error) {
+	return func(ctx context.Context, req *mcpsdk.CallToolRequest, args T) (*mcpsdk.CallToolResult, any, error) {
 		result, data, err := handler(ctx, req, args)
 
 		if tracker != nil && tracker.enabled {

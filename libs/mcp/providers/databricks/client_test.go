@@ -2,7 +2,6 @@ package databricks
 
 import (
 	"context"
-	"log/slog"
 	"os"
 	"testing"
 

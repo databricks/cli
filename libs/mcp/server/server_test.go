@@ -7,12 +7,12 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/mcp"
-	"github.com/databricks/cli/libs/mcp/logging"
+	"github.com/databricks/cli/libs/log"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 func TestServer_Initialize(t *testing.T) {
-	logger, err := logging.NewLogger("test", false)
+	logger, err := log.NewLogger("test", false)
 	if err != nil {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
@@ -54,7 +54,7 @@ func TestServer_Initialize(t *testing.T) {
 }
 
 func TestNewServer(t *testing.T) {
-	logger, err := logging.NewLogger("test-newsrv", false)
+	logger, err := log.NewLogger("test-newsrv", false)
 	if err != nil {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
@@ -84,7 +84,7 @@ func TestNewServer(t *testing.T) {
 }
 
 func TestRegisterTools_WithWorkspaceTools(t *testing.T) {
-	logger, err := logging.NewLogger("test-workspace", false)
+	logger, err := log.NewLogger("test-workspace", false)
 	if err != nil {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
@@ -104,7 +104,7 @@ func TestRegisterTools_WithDeployment(t *testing.T) {
 		t.Skip("Skipping test: DATABRICKS_HOST and DATABRICKS_TOKEN required")
 	}
 
-	logger, err := logging.NewLogger("test-deployment", false)
+	logger, err := log.NewLogger("test-deployment", false)
 	if err != nil {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
@@ -124,7 +124,7 @@ func TestRegisterTools_AllProviders(t *testing.T) {
 		t.Skip("Skipping test: DATABRICKS_HOST and DATABRICKS_TOKEN required")
 	}
 
-	logger, err := logging.NewLogger("test-all", false)
+	logger, err := log.NewLogger("test-all", false)
 	if err != nil {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
@@ -141,7 +141,7 @@ func TestRegisterTools_AllProviders(t *testing.T) {
 }
 
 func TestGetServer(t *testing.T) {
-	logger, err := logging.NewLogger("test-getserver", false)
+	logger, err := log.NewLogger("test-getserver", false)
 	if err != nil {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
@@ -160,7 +160,7 @@ func TestGetServer(t *testing.T) {
 }
 
 func TestGetTracker(t *testing.T) {
-	logger, err := logging.NewLogger("test-gettracker", false)
+	logger, err := log.NewLogger("test-gettracker", false)
 	if err != nil {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
@@ -175,7 +175,7 @@ func TestGetTracker(t *testing.T) {
 }
 
 func TestShutdown(t *testing.T) {
-	logger, err := logging.NewLogger("test-shutdown", false)
+	logger, err := log.NewLogger("test-shutdown", false)
 	if err != nil {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
@@ -195,7 +195,7 @@ func TestShutdown_WithTracker(t *testing.T) {
 	os.Setenv("HOME", tempDir)
 	defer os.Setenv("HOME", originalHome)
 
-	logger, err := logging.NewLogger("test-shutdown-tracker", false)
+	logger, err := log.NewLogger("test-shutdown-tracker", false)
 	if err != nil {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
@@ -214,7 +214,7 @@ func TestShutdown_WithTracker(t *testing.T) {
 }
 
 func TestCheckHealth_Minimal(t *testing.T) {
-	logger, err := logging.NewLogger("test-health", false)
+	logger, err := log.NewLogger("test-health", false)
 	if err != nil {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
@@ -251,7 +251,7 @@ func TestCheckHealth_Minimal(t *testing.T) {
 }
 
 func TestCheckHealth_WithWorkspace(t *testing.T) {
-	logger, err := logging.NewLogger("test-health-ws", false)
+	logger, err := log.NewLogger("test-health-ws", false)
 	if err != nil {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
@@ -270,7 +270,7 @@ func TestCheckHealth_WithWorkspace(t *testing.T) {
 }
 
 func TestCheckHealth_WithDeployment(t *testing.T) {
-	logger, err := logging.NewLogger("test-health-deploy", false)
+	logger, err := log.NewLogger("test-health-deploy", false)
 	if err != nil {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
@@ -289,7 +289,7 @@ func TestCheckHealth_WithDeployment(t *testing.T) {
 }
 
 func TestCheckHealth_CancelledContext(t *testing.T) {
-	logger, err := logging.NewLogger("test-health-cancel", false)
+	logger, err := log.NewLogger("test-health-cancel", false)
 	if err != nil {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
@@ -318,7 +318,7 @@ func TestNewServer_WithTrajectoryFailure(t *testing.T) {
 	os.Setenv("HOME", invalidDir)
 	defer os.Setenv("HOME", originalHome)
 
-	logger, err := logging.NewLogger("test-trajectory-fail", false)
+	logger, err := log.NewLogger("test-trajectory-fail", false)
 	if err != nil {
 		t.Fatalf("Failed to create logger: %v", err)
 	}

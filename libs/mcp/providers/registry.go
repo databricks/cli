@@ -2,8 +2,8 @@
 package providers
 
 import (
+	"context"
 	"fmt"
-	"log/slog"
 	"sync"
 
 	"github.com/databricks/cli/libs/mcp"
@@ -21,7 +21,7 @@ type Provider interface {
 
 // ProviderFactory is a function that creates a new provider instance.
 // It receives configuration, session, and logger instances.
-type ProviderFactory func(cfg *mcp.Config, sess *session.Session, logger *slog.Logger) (Provider, error)
+type ProviderFactory func(cfg *mcp.Config, sess *session.Session, ctx context.Context) (Provider, error)
 
 // Registry manages provider registration and creation.
 type Registry struct {
@@ -75,7 +75,7 @@ func (r *Registry) RegisterProvider(name string, factory ProviderFactory, cfg Pr
 }
 
 // Create creates a provider instance by name.
-func (r *Registry) Create(name string, cfg *mcp.Config, sess *session.Session, logger *slog.Logger) (Provider, error) {
+func (r *Registry) Create(name string, cfg *mcp.Config, sess *session.Session, ctx context.Context) (Provider, error) {
 	r.mu.RLock()
 	factory, exists := r.factories[name]
 	r.mu.RUnlock()
@@ -84,11 +84,11 @@ func (r *Registry) Create(name string, cfg *mcp.Config, sess *session.Session, l
 		return nil, fmt.Errorf("provider %q not registered", name)
 	}
 
-	return factory(cfg, sess, logger)
+	return factory(cfg, sess, ctx)
 }
 
 // CreateAll creates all registered providers that are enabled according to their configuration.
-func (r *Registry) CreateAll(cfg *mcp.Config, sess *session.Session, logger *slog.Logger) ([]Provider, error) {
+func (r *Registry) CreateAll(cfg *mcp.Config, sess *session.Session, ctx context.Context) ([]Provider, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -103,12 +103,10 @@ func (r *Registry) CreateAll(cfg *mcp.Config, sess *session.Session, logger *slo
 		}
 
 		if !shouldEnable {
-			logger.Debug("skipping provider (disabled by configuration)", "provider", name)
 			continue
 		}
 
-		logger.Info("creating provider", "provider", name)
-		provider, err := factory(cfg, sess, logger)
+		provider, err := factory(cfg, sess, ctx)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create provider %q: %w", name, err)
 		}
@@ -132,6 +130,6 @@ func (r *Registry) List() []string {
 }
 
 // CreateAll is a convenience function that uses the global registry.
-func CreateAll(cfg *mcp.Config, sess *session.Session, logger *slog.Logger) ([]Provider, error) {
-	return GetRegistry().CreateAll(cfg, sess, logger)
+func CreateAll(cfg *mcp.Config, sess *session.Session, ctx context.Context) ([]Provider, error) {
+	return GetRegistry().CreateAll(cfg, sess, ctx)
 }

@@ -3,7 +3,6 @@ package io
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"os"
 	"testing"
 

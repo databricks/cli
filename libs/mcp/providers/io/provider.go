@@ -2,7 +2,6 @@ package io
 
 import (
 	"context"
-	"log/slog"
 
 	"github.com/databricks/cli/internal/mcp/templates"
 	"github.com/databricks/cli/libs/mcp"
@@ -10,10 +9,11 @@ import (
 	"github.com/databricks/cli/libs/mcp/session"
 	pkgtemplates "github.com/databricks/cli/libs/mcp/templates"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/databricks/cli/libs/log"
 )
 
 func init() {
-	providers.Register("io", func(cfg *mcp.Config, sess *session.Session, logger *slog.Logger) (providers.Provider, error) {
+	providers.Register("io", func(cfg *mcp.Config, sess *session.Session, ctx context.Context) (providers.Provider, error) {
 		return NewProvider(cfg.IoConfig, sess, logger)
 	}, providers.ProviderConfig{
 		Always: true,
@@ -24,12 +24,11 @@ func init() {
 type Provider struct {
 	config          *mcp.IoConfig
 	session         *session.Session
-	logger          *slog.Logger
 	defaultTemplate pkgtemplates.Template
 }
 
 // NewProvider creates a new I/O provider
-func NewProvider(cfg *mcp.IoConfig, sess *session.Session, logger *slog.Logger) (*Provider, error) {
+func NewProvider(cfg *mcp.IoConfig, sess *session.Session, ctx context.Context) (*Provider, error) {
 	return &Provider{
 		config:          cfg,
 		session:         sess,
@@ -45,7 +44,7 @@ func (p *Provider) Name() string {
 
 // RegisterTools registers all I/O tools with the MCP server
 func (p *Provider) RegisterTools(server *mcp.Server) error {
-	p.logger.Info("Registering I/O tools")
+	log.Infof(ctx, "Registering I/O tools")
 
 	// Register scaffold_data_app
 	type ScaffoldInput struct {
@@ -59,7 +58,7 @@ func (p *Provider) RegisterTools(server *mcp.Server) error {
 			Description: "Initialize a project by copying template files from the default TypeScript (tRPC + React) template to a work directory. Supports force rewrite to wipe and recreate the directory. It sets up a basic project structure, and should be ALWAYS used as the first step in creating a new data or web app.",
 		},
 		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcp.CallToolRequest, args ScaffoldInput) (*mcp.CallToolResult, any, error) {
-			p.logger.Debug("scaffold_data_app called", "work_dir", args.WorkDir)
+			log.Debugf(ctx, "scaffold_data_app called", "work_dir", args.WorkDir)
 
 			scaffoldArgs := &ScaffoldArgs{
 				WorkDir:      args.WorkDir,
@@ -73,9 +72,9 @@ func (p *Provider) RegisterTools(server *mcp.Server) error {
 
 			// Set work directory in session for workspace tools
 			if err := p.session.SetWorkDir(result.WorkDir); err != nil {
-				p.logger.Warn("Failed to set work directory in session", "error", err)
+				log.Warnf(ctx, "Failed to set work directory in session", "error", err)
 			} else {
-				p.logger.Info("Work directory set in session", "work_dir", result.WorkDir)
+				log.Infof(ctx, "Work directory set in session", "work_dir", result.WorkDir)
 			}
 
 			text := formatScaffoldResult(result)
@@ -98,7 +97,7 @@ func (p *Provider) RegisterTools(server *mcp.Server) error {
 			Description: "Validate a project by copying files to a sandbox and running validation checks. Project should be scaffolded first. Returns validation result with success status and details.",
 		},
 		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcp.CallToolRequest, args ValidateInput) (*mcp.CallToolResult, any, error) {
-			p.logger.Debug("validate_data_app called", "work_dir", args.WorkDir)
+			log.Debugf(ctx, "validate_data_app called", "work_dir", args.WorkDir)
 
 			validateArgs := &ValidateArgs{
 				WorkDir: args.WorkDir,
@@ -119,6 +118,6 @@ func (p *Provider) RegisterTools(server *mcp.Server) error {
 		}),
 	)
 
-	p.logger.Info("Registered I/O tools", "count", 2)
+	log.Infof(ctx, "Registered I/O tools", "count", 2)
 	return nil
 }
