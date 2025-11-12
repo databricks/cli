@@ -146,7 +146,7 @@ This file can be used for any project-specific instructions!
 
 If the Databricks CLI MCP server is not yet installed, install it by:
 1. Installing the Databricks CLI: https://docs.databricks.com/dev-tools/cli/install
-2. Running: ` + "`databricks mcp install`" + `
+2. Running: ` + "`databricks experimental mcp install`" + `
 
 ## Working with this project
 

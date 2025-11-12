@@ -1,11 +1,11 @@
-Add a top-level 'databricks mcp' command that behaves as follows:
+Add a 'databricks experimental mcp' command that behaves as follows:
 
-* databricks mcp --help: shows help
-* databricks mcp: shows help (like other command groups)
-* databricks mcp install: installs the server in coding agents
-* databricks mcp server: starts the mcp server (subcommand)
-* databricks mcp uninstall: uninstalls the server from coding agents (subcommand - not implemented; errors out and tells the user to ask their local coding agent to uninstall the Databricks CLI MCP server)
-* databricks mcp tool <tool_name> --config-file <file>: runs a specific MCP tool for acceptance testing (hidden subcommand)
+* databricks experimental mcp --help: shows help
+* databricks experimental mcp: shows help (like other command groups)
+* databricks experimental mcp install: installs the server in coding agents
+* databricks experimental mcp server: starts the mcp server (subcommand)
+* databricks experimental mcp uninstall: uninstalls the server from coding agents (subcommand - not implemented; errors out and tells the user to ask their local coding agent to uninstall the Databricks CLI MCP server)
+* databricks experimental mcp tool <tool_name> --config-file <file>: runs a specific MCP tool for acceptance testing (hidden subcommand)
 
 non-functional requirements:
 - any errors that these commands give should be friendly, concise, actionable.
@@ -42,7 +42,7 @@ non-functional requirements:
 To illustrate how the install command should work:
 
 ```
-$ databricks mcp install
+$ databricks experimental mcp install
 
   ▄▄▄▄▄▄▄▄   Databricks CLI
   ██▌  ▐██   MCP Server
@@ -74,13 +74,13 @@ if it is installed, it should default to "yes" and be preselected! if it is not 
 note that if the mcp is already installed, the command should gracefully accept that and not throw an error>
 
 <if they selected claude code: use the claude cli to install the server in claude code. it should start
-databricks mcp server; no env vars needed>
+databricks experimental mcp server; no env vars needed>
 
 <if they selected cursor: use the cursor cli to install the server in cursor. it should start
-databricks mcp server; no env vars needed>
+databricks experimental mcp server; no env vars needed>
 
 <if they selected custom: we just tell them that they can install the databricks cli mcp server
-      by adding a new mcp server to their coding agent, using 'databricks mcp server' as the command.
+      by adding a new mcp server to their coding agent, using 'databricks experimental mcp server' as the command.
 no environment variables or other configuration is needed. we should ask them to acknowledge these instructions
 >
 
@@ -89,7 +89,7 @@ no environment variables or other configuration is needed. we should ask them to
 ✨ The Databricks CLI MCP has been installed successfully for <Claude Code and/or Cursor>!
 ```
 
-Now databricks mcp server should actually start an MCP server that we actually use to describe
+Now databricks experimental mcp server should actually start an MCP server that we actually use to describe
 the system as a whole a bit (btw each tool should be defined in a separate .go file, right!):
 - when starting up it should do a the 'roots/list' to the agent.
   - if that doesn't work or if there is more than one root => error out
@@ -197,7 +197,7 @@ the system as a whole a bit (btw each tool should be defined in a separate .go f
             for a pipeline, it can also use the invoke_databricks_cli tool to run 'bundle run <pipeline_name> --validate-only' to
             validate that the pipeline is correct.
   - further implementation guidance: i want acceptance tests for each of these project types (app, dashboard, job, pipeline);
-    this means they should be exposed as a hidden command like 'databricks mcp tool add_project_resource --config-file <file which has the tool parameters in json format>'. having these tests will be instrumental for iterating on them; the initing should not fail! note that the tool subcommand should just assume that the cwd is the current project dir.
+    this means they should be exposed as a hidden command like 'databricks experimental mcp tool add_project_resource --config-file <file which has the tool parameters in json format>'. having these tests will be instrumental for iterating on them; the initing should not fail! note that the tool subcommand should just assume that the cwd is the current project dir.
 
 - the "explore" tool:
     - description: CALL THIS FIRST when user mentions a workspace by name or asks about workspace resources. Shows available workspaces/profiles, default warehouse, and provides guidance on exploring jobs, clusters, catalogs, and other Databricks resources. Use this to discover what's available before running CLI commands.

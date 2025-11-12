@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/cmd/psql"
-	"github.com/databricks/cli/experimental/mcp"
 	ssh "github.com/databricks/cli/experimental/ssh/cmd"
 
 	"github.com/databricks/cli/cmd/account"
@@ -13,6 +12,7 @@ import (
 	"github.com/databricks/cli/cmd/auth"
 	"github.com/databricks/cli/cmd/bundle"
 	"github.com/databricks/cli/cmd/configure"
+	"github.com/databricks/cli/cmd/experimental"
 	"github.com/databricks/cli/cmd/fs"
 	"github.com/databricks/cli/cmd/labs"
 	"github.com/databricks/cli/cmd/pipelines"
@@ -71,7 +71,7 @@ func New(ctx context.Context) *cobra.Command {
 	cli.AddCommand(api.New())
 	cli.AddCommand(auth.New())
 	cli.AddCommand(bundle.New())
-	cli.AddCommand(mcp.New())
+	cli.AddCommand(experimental.New())
 	cli.AddCommand(psql.New())
 	cli.AddCommand(configure.New())
 	cli.AddCommand(fs.New())

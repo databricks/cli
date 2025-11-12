@@ -33,7 +33,7 @@ func newToolCmd() *cobra.Command {
 }
 
 // runTool executes a specific MCP tool for acceptance testing.
-// This is a hidden command accessed via 'databricks mcp tool <tool_name> --config-file <file>'.
+// This is a hidden command accessed via 'databricks experimental mcp tool <tool_name> --config-file <file>'.
 func runTool(ctx context.Context, toolName, configFile string) error {
 	if configFile == "" {
 		return errors.New("--config-file is required")
