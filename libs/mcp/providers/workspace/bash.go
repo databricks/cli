@@ -23,7 +23,7 @@ type BashResult struct {
 
 // Bash executes a bash command in the workspace directory
 func (p *Provider) Bash(ctx context.Context, args *BashArgs) (*BashResult, error) {
-	workDir, err := p.getWorkDir()
+	workDir, err := p.getWorkDir(ctx)
 	if err != nil {
 		return nil, err
 	}

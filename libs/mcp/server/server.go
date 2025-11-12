@@ -91,6 +91,9 @@ func (s *Server) RegisterTools(ctx context.Context) error {
 func (s *Server) registerDatabricksProvider(ctx context.Context) error {
 	log.Infof(ctx, "Registering Databricks provider")
 
+	// Add session to context
+	ctx = session.WithSession(ctx, s.session)
+
 	provider, err := databricks.NewProvider(s.config, s.session, ctx)
 	if err != nil {
 		return err
@@ -106,6 +109,9 @@ func (s *Server) registerDatabricksProvider(ctx context.Context) error {
 // registerIOProvider registers the I/O provider
 func (s *Server) registerIOProvider(ctx context.Context) error {
 	log.Infof(ctx, "Registering I/O provider")
+
+	// Add session to context
+	ctx = session.WithSession(ctx, s.session)
 
 	provider, err := io.NewProvider(s.config.IoConfig, s.session, ctx)
 	if err != nil {
@@ -123,6 +129,9 @@ func (s *Server) registerIOProvider(ctx context.Context) error {
 func (s *Server) registerWorkspaceProvider(ctx context.Context) error {
 	log.Infof(ctx, "Registering workspace provider")
 
+	// Add session to context
+	ctx = session.WithSession(ctx, s.session)
+
 	provider, err := workspace.NewProvider(s.session, ctx)
 	if err != nil {
 		return err
@@ -138,6 +147,9 @@ func (s *Server) registerWorkspaceProvider(ctx context.Context) error {
 // registerDeploymentProvider registers the deployment provider
 func (s *Server) registerDeploymentProvider(ctx context.Context) error {
 	log.Infof(ctx, "Registering deployment provider")
+
+	// Add session to context
+	ctx = session.WithSession(ctx, s.session)
 
 	provider, err := deployment.NewProvider(s.config, s.session, ctx)
 	if err != nil {

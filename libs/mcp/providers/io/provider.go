@@ -72,7 +72,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 			}
 
 			// Set work directory in session for workspace tools
-			if err := p.session.SetWorkDir(result.WorkDir); err != nil {
+			if err := session.SetWorkDir(ctx, result.WorkDir); err != nil {
 				log.Warnf(ctx, "Failed to set work directory in session", "error", err)
 			} else {
 				log.Infof(ctx, "Work directory set in session", "work_dir", result.WorkDir)

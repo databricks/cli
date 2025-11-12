@@ -9,6 +9,7 @@ import (
 
 	"github.com/databricks/cli/cmd/account"
 	"github.com/databricks/cli/cmd/api"
+	"github.com/databricks/cli/cmd/apps/mcp"
 	"github.com/databricks/cli/cmd/auth"
 	"github.com/databricks/cli/cmd/bundle"
 	"github.com/databricks/cli/cmd/configure"
@@ -69,6 +70,7 @@ func New(ctx context.Context) *cobra.Command {
 
 	// Add other subcommands.
 	cli.AddCommand(api.New())
+	cli.AddCommand(mcp.NewMcpCmd())
 	cli.AddCommand(auth.New())
 	cli.AddCommand(bundle.New())
 	cli.AddCommand(experimental.New())

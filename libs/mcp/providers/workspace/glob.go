@@ -20,7 +20,7 @@ type GlobResult struct {
 
 // Glob matches files against a pattern in the workspace
 func (p *Provider) Glob(ctx context.Context, args *GlobArgs) (*GlobResult, error) {
-	workDir, err := p.getWorkDir()
+	workDir, err := p.getWorkDir(ctx)
 	if err != nil {
 		return nil, err
 	}

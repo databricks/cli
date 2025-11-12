@@ -33,7 +33,7 @@ type GrepMatch struct {
 
 // Grep searches for a pattern in files within the workspace
 func (p *Provider) Grep(ctx context.Context, args *GrepArgs) (*GrepResult, error) {
-	workDir, err := p.getWorkDir()
+	workDir, err := p.getWorkDir(ctx)
 	if err != nil {
 		return nil, err
 	}

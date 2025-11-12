@@ -20,7 +20,7 @@ type ReadFileArgs struct {
 
 // ReadFile reads a file from the workspace
 func (p *Provider) ReadFile(ctx context.Context, args *ReadFileArgs) (string, error) {
-	workDir, err := p.getWorkDir()
+	workDir, err := p.getWorkDir(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -53,7 +53,7 @@ type WriteFileArgs struct {
 
 // WriteFile writes a file to the workspace
 func (p *Provider) WriteFile(ctx context.Context, args *WriteFileArgs) error {
-	workDir, err := p.getWorkDir()
+	workDir, err := p.getWorkDir(ctx)
 	if err != nil {
 		return err
 	}
@@ -80,7 +80,7 @@ type EditFileArgs struct {
 
 // EditFile edits a file in the workspace by replacing old_string with new_string
 func (p *Provider) EditFile(ctx context.Context, args *EditFileArgs) error {
-	workDir, err := p.getWorkDir()
+	workDir, err := p.getWorkDir(ctx)
 	if err != nil {
 		return err
 	}

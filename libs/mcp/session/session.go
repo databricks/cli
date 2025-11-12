@@ -1,6 +1,7 @@
 package session
 
 import (
+	"context"
 	"crypto/rand"
 	"errors"
 	"fmt"
@@ -9,10 +10,18 @@ import (
 	"time"
 )
 
+// contextKey is the type for context keys
+type contextKey int
+
+const (
+	workDirKey contextKey = iota
+	sessionKey
+)
+
 // Session represents an MCP session with state tracking
 type Session struct {
 	ID        string
-	WorkDir   string
+	workDir   string
 	mu        sync.RWMutex
 	startTime time.Time
 	firstTool bool
@@ -29,29 +38,52 @@ func NewSession() *Session {
 	}
 }
 
-// SetWorkDir sets the working directory for this session
-func (s *Session) SetWorkDir(dir string) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+// WithSession adds session to context
+func WithSession(ctx context.Context, s *Session) context.Context {
+	return context.WithValue(ctx, sessionKey, s)
+}
 
-	if s.WorkDir != "" {
+// GetSession retrieves session from context
+func GetSession(ctx context.Context) (*Session, error) {
+	if v := ctx.Value(sessionKey); v != nil {
+		return v.(*Session), nil
+	}
+	return nil, errors.New("session not found in context")
+}
+
+// SetWorkDir sets the working directory via context
+func SetWorkDir(ctx context.Context, dir string) error {
+	sess, err := GetSession(ctx)
+	if err != nil {
+		return err
+	}
+
+	sess.mu.Lock()
+	defer sess.mu.Unlock()
+
+	if sess.workDir != "" {
 		return errors.New("work directory already set")
 	}
 
-	s.WorkDir = dir
+	sess.workDir = dir
 	return nil
 }
 
-// GetWorkDir returns the working directory for this session
-func (s *Session) GetWorkDir() (string, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+// GetWorkDir retrieves work directory via context
+func GetWorkDir(ctx context.Context) (string, error) {
+	sess, err := GetSession(ctx)
+	if err != nil {
+		return "", err
+	}
 
-	if s.WorkDir == "" {
+	sess.mu.RLock()
+	defer sess.mu.RUnlock()
+
+	if sess.workDir == "" {
 		return "", errors.New("work directory not set")
 	}
 
-	return s.WorkDir, nil
+	return sess.workDir, nil
 }
 
 // IsFirstTool returns true if this is the first tool call in the session

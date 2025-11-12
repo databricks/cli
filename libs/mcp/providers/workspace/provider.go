@@ -41,9 +41,9 @@ func (p *Provider) Name() string {
 	return "workspace"
 }
 
-// getWorkDir retrieves the working directory from the session
-func (p *Provider) getWorkDir() (string, error) {
-	workDir, err := p.session.GetWorkDir()
+// getWorkDir retrieves the working directory from the session via context
+func (p *Provider) getWorkDir(ctx context.Context) (string, error) {
+	workDir, err := session.GetWorkDir(ctx)
 	if err != nil {
 		return "", fmt.Errorf(
 			"workspace directory not set - please run scaffold_data_app first to initialize your project: %w",
