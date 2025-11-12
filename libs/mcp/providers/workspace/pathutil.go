@@ -1,7 +1,7 @@
 package workspace
 
 import (
-	"github.com/appdotbuild/go-mcp/pkg/pathutil"
+	"github.com/databricks/cli/libs/mcp/pathutil"
 )
 
 // validatePath ensures the given user path is safe and within the base directory

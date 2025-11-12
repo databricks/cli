@@ -9,11 +9,11 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/appdotbuild/go-mcp/pkg/config"
-	"github.com/appdotbuild/go-mcp/pkg/providers"
-	"github.com/appdotbuild/go-mcp/pkg/providers/databricks"
-	"github.com/appdotbuild/go-mcp/pkg/providers/io"
-	"github.com/appdotbuild/go-mcp/pkg/session"
+	"github.com/databricks/cli/libs/mcp/config"
+	"github.com/databricks/cli/libs/mcp/providers"
+	"github.com/databricks/cli/libs/mcp/providers/databricks"
+	"github.com/databricks/cli/libs/mcp/providers/io"
+	"github.com/databricks/cli/libs/mcp/session"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 

@@ -8,10 +8,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/appdotbuild/go-mcp/pkg/config"
-	"github.com/appdotbuild/go-mcp/pkg/sandbox"
-	"github.com/appdotbuild/go-mcp/pkg/sandbox/dagger"
-	"github.com/appdotbuild/go-mcp/pkg/sandbox/local"
+	"github.com/databricks/cli/libs/mcp/config"
+	"github.com/databricks/cli/libs/mcp/sandbox"
+	"github.com/databricks/cli/libs/mcp/sandbox/dagger"
+	"github.com/databricks/cli/libs/mcp/sandbox/local"
 )
 
 type ValidateArgs struct {

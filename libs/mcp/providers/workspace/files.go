@@ -8,7 +8,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/appdotbuild/go-mcp/pkg/fileutil"
+	"github.com/databricks/cli/libs/mcp/fileutil"
 )
 
 // ReadFileArgs contains arguments for reading a file

@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/appdotbuild/go-mcp/pkg/config"
+	"github.com/databricks/cli/libs/mcp/config"
 )
 
 // TestIntegration_RealWorkspace runs integration tests against a real Databricks workspace

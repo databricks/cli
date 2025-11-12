@@ -5,14 +5,14 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/appdotbuild/go-mcp/pkg/config"
-	"github.com/appdotbuild/go-mcp/pkg/providers/databricks"
-	"github.com/appdotbuild/go-mcp/pkg/providers/deployment"
-	"github.com/appdotbuild/go-mcp/pkg/providers/io"
-	"github.com/appdotbuild/go-mcp/pkg/providers/workspace"
-	"github.com/appdotbuild/go-mcp/pkg/session"
-	"github.com/appdotbuild/go-mcp/pkg/trajectory"
-	"github.com/appdotbuild/go-mcp/pkg/version"
+	"github.com/databricks/cli/libs/mcp/config"
+	"github.com/databricks/cli/libs/mcp/providers/databricks"
+	"github.com/databricks/cli/libs/mcp/providers/deployment"
+	"github.com/databricks/cli/libs/mcp/providers/io"
+	"github.com/databricks/cli/libs/mcp/providers/workspace"
+	"github.com/databricks/cli/libs/mcp/session"
+	"github.com/databricks/cli/libs/mcp/trajectory"
+	"github.com/databricks/cli/libs/mcp/version"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 

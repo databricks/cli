@@ -8,7 +8,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/appdotbuild/go-mcp/pkg/fileutil"
+	"github.com/databricks/cli/libs/mcp/fileutil"
 	"github.com/zeebo/blake3"
 )
 

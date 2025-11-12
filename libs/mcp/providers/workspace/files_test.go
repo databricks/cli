@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/appdotbuild/go-mcp/pkg/session"
+	"github.com/databricks/cli/libs/mcp/session"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"log/slog"

@@ -6,8 +6,8 @@ import (
 	"log/slog"
 	"sync"
 
-	"github.com/appdotbuild/go-mcp/pkg/config"
-	"github.com/appdotbuild/go-mcp/pkg/session"
+	"github.com/databricks/cli/libs/mcp/config"
+	"github.com/databricks/cli/libs/mcp/session"
 )
 
 // Provider is the interface that all MCP providers must implement.

@@ -7,15 +7,15 @@ import (
 
 var (
 	// Version is the current version of the application
-	// Set during build with -ldflags "-X github.com/appdotbuild/go-mcp/pkg/version.Version=x.y.z"
+	// Set during build with -ldflags "-X github.com/databricks/cli/libs/mcp/version.Version=x.y.z"
 	Version = "dev"
 
 	// Commit is the git commit hash
-	// Set during build with -ldflags "-X github.com/appdotbuild/go-mcp/pkg/version.Commit=..."
+	// Set during build with -ldflags "-X github.com/databricks/cli/libs/mcp/version.Commit=..."
 	Commit = "unknown"
 
 	// BuildTime is the time when the binary was built
-	// Set during build with -ldflags "-X github.com/appdotbuild/go-mcp/pkg/version.BuildTime=..."
+	// Set during build with -ldflags "-X github.com/databricks/cli/libs/mcp/version.BuildTime=..."
 	BuildTime = "unknown"
 )
 

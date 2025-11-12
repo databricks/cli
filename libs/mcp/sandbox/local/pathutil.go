@@ -1,7 +1,7 @@
 package local
 
 import (
-	"github.com/appdotbuild/go-mcp/pkg/pathutil"
+	"github.com/databricks/cli/libs/mcp/pathutil"
 )
 
 // ValidatePath ensures that the user-provided path is within baseDir and

@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"dagger.io/dagger"
-	"github.com/appdotbuild/go-mcp/pkg/sandbox"
+	"github.com/databricks/cli/libs/mcp/sandbox"
 )
 
 var (

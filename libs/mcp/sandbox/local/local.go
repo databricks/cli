@@ -12,8 +12,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/appdotbuild/go-mcp/pkg/fileutil"
-	"github.com/appdotbuild/go-mcp/pkg/sandbox"
+	"github.com/databricks/cli/libs/mcp/fileutil"
+	"github.com/databricks/cli/libs/mcp/sandbox"
 )
 
 func init() {

@@ -7,7 +7,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/appdotbuild/go-mcp/pkg/sandbox"
+	"github.com/databricks/cli/libs/mcp/sandbox"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

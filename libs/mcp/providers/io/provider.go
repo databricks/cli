@@ -4,11 +4,11 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/appdotbuild/go-mcp/internal/templates"
-	"github.com/appdotbuild/go-mcp/pkg/config"
-	"github.com/appdotbuild/go-mcp/pkg/providers"
-	"github.com/appdotbuild/go-mcp/pkg/session"
-	pkgtemplates "github.com/appdotbuild/go-mcp/pkg/templates"
+	"github.com/databricks/cli/internal/mcp/templates"
+	"github.com/databricks/cli/libs/mcp/config"
+	"github.com/databricks/cli/libs/mcp/providers"
+	"github.com/databricks/cli/libs/mcp/session"
+	pkgtemplates "github.com/databricks/cli/libs/mcp/templates"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 

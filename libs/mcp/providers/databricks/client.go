@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/appdotbuild/go-mcp/pkg/config"
+	"github.com/databricks/cli/libs/mcp/config"
 	"github.com/databricks/databricks-sdk-go"
 )
 

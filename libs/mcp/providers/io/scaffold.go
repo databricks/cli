@@ -8,7 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/appdotbuild/go-mcp/pkg/templates"
+	"github.com/databricks/cli/libs/mcp/templates"
 )
 
 // ScaffoldArgs contains arguments for scaffolding operation

@@ -3,7 +3,7 @@ package templates
 import (
 	"embed"
 
-	"github.com/appdotbuild/go-mcp/pkg/templates"
+	"github.com/databricks/cli/libs/mcp/templates"
 )
 
 //go:embed trpc/*

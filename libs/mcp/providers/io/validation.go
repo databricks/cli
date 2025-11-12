@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/appdotbuild/go-mcp/pkg/sandbox"
+	"github.com/databricks/cli/libs/mcp/sandbox"
 )
 
 // ValidationDetail contains detailed output from a failed validation.
