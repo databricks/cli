@@ -71,14 +71,17 @@
         }
       },
       "remote_state": {
+        "created_time": [UNIX_TIME_MILLIS],
         "creator_user_name": "[USERNAME]",
         "job_id": [NUMID],
+        "run_as_user_name": "[USERNAME]",
         "settings": {
           "deployment": {
             "kind": "BUNDLE",
             "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
           },
           "edit_mode": "UI_LOCKED",
+          "email_notifications": {},
           "environments": [
             {
               "environment_key": "test_env",
@@ -137,7 +140,9 @@
               },
               "task_key": "TestTask"
             }
-          ]
+          ],
+          "timeout_seconds": 0,
+          "webhook_notifications": {}
         }
       },
       "changes": {
@@ -150,6 +155,20 @@
           },
           "tasks[1].libraries[0].whl": {
             "action": "update"
+          }
+        },
+        "remote": {
+          "email_notifications": {
+            "action": "skip",
+            "reason": "server_side_default"
+          },
+          "timeout_seconds": {
+            "action": "skip",
+            "reason": "server_side_default"
+          },
+          "webhook_notifications": {
+            "action": "skip",
+            "reason": "server_side_default"
           }
         }
       }
