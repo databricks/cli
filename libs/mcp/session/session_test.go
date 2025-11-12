@@ -1,6 +1,7 @@
 package session
 
 import (
+	"context"
 	"testing"
 	"time"
 )
@@ -12,8 +13,8 @@ func TestNewSession(t *testing.T) {
 		t.Error("Session ID should not be empty")
 	}
 
-	if s.WorkDir != "" {
-		t.Error("WorkDir should be empty initially")
+	if s.workDir != "" {
+		t.Error("workDir should be empty initially")
 	}
 
 	if !s.firstTool {
@@ -27,21 +28,22 @@ func TestNewSession(t *testing.T) {
 
 func TestSession_SetWorkDir(t *testing.T) {
 	s := NewSession()
+	ctx := WithSession(context.Background(), s)
 
 	// First set should succeed
-	err := s.SetWorkDir("/tmp/test")
+	err := SetWorkDir(ctx, "/tmp/test")
 	if err != nil {
 		t.Fatalf("First SetWorkDir failed: %v", err)
 	}
 
 	// Second set should fail
-	err = s.SetWorkDir("/tmp/test2")
+	err = SetWorkDir(ctx, "/tmp/test2")
 	if err == nil {
 		t.Error("Second SetWorkDir should fail")
 	}
 
 	// Verify the work dir is set correctly
-	workDir, err := s.GetWorkDir()
+	workDir, err := GetWorkDir(ctx)
 	if err != nil {
 		t.Fatalf("GetWorkDir failed: %v", err)
 	}
@@ -53,8 +55,9 @@ func TestSession_SetWorkDir(t *testing.T) {
 
 func TestSession_GetWorkDir_NotSet(t *testing.T) {
 	s := NewSession()
+	ctx := WithSession(context.Background(), s)
 
-	_, err := s.GetWorkDir()
+	_, err := GetWorkDir(ctx)
 	if err == nil {
 		t.Error("GetWorkDir should fail when work dir is not set")
 	}

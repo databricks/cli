@@ -93,7 +93,7 @@ func (v *ValidationTRPC) Validate(ctx context.Context, sb sandbox.Sandbox) (*Val
 		}, nil
 	}
 	buildDuration := time.Since(buildStart)
-	log.Infof(ctx, "✓ build passed (duration: %.1fs)", buildDuration.Seconds())
+	log.Infofctx, "✓ build passed (duration: %.1fs)%s", buildDuration.Seconds())
 	progressLog = append(progressLog, fmt.Sprintf("✅ Build passed (%.1fs)", buildDuration.Seconds()))
 
 	log.Infof(ctx, "step 2/3: running type check...")
@@ -111,7 +111,7 @@ func (v *ValidationTRPC) Validate(ctx context.Context, sb sandbox.Sandbox) (*Val
 		}, nil
 	}
 	typeCheckDuration := time.Since(typeCheckStart)
-	log.Infof(ctx, "✓ type check passed", "duration", typeCheckDuration.Seconds())
+	log.Infofctx, "✓ type check passed%s", "duration", typeCheckDuration.Seconds())
 	progressLog = append(progressLog, fmt.Sprintf("✅ Type check passed (%.1fs)", typeCheckDuration.Seconds()))
 
 	log.Infof(ctx, "step 3/3: running tests...")
@@ -129,7 +129,7 @@ func (v *ValidationTRPC) Validate(ctx context.Context, sb sandbox.Sandbox) (*Val
 		}, nil
 	}
 	testDuration := time.Since(testStart)
-	log.Infof(ctx, "✓ tests passed", "duration", testDuration.Seconds())
+	log.Infofctx, "✓ tests passed%s", "duration", testDuration.Seconds())
 	progressLog = append(progressLog, fmt.Sprintf("✅ Tests passed (%.1fs)", testDuration.Seconds()))
 
 	totalDuration := time.Since(startTime)
@@ -229,7 +229,7 @@ func (v *ValidationCmd) DockerImage() string {
 }
 
 func (v *ValidationCmd) Validate(ctx context.Context, sb sandbox.Sandbox) (*ValidateResult, error) {
-	log.Infof(ctx, "starting custom validation", "command", v.Command)
+	log.Infofctx, "starting custom validation%s", "command", v.Command)
 	startTime := time.Now()
 	var progressLog []string
 
@@ -270,7 +270,7 @@ func (v *ValidationCmd) Validate(ctx context.Context, sb sandbox.Sandbox) (*Vali
 	}
 
 	duration := time.Since(startTime)
-	log.Infof(ctx, "✓ custom validation passed", "duration", duration.Seconds())
+	log.Infofctx, "✓ custom validation passed%s", "duration", duration.Seconds())
 	progressLog = append(progressLog, fmt.Sprintf("✅ Custom validation passed (%.1fs)", duration.Seconds()))
 	return &ValidateResult{
 		Success:     true,

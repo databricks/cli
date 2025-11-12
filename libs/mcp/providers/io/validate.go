@@ -35,19 +35,19 @@ func (p *Provider) Validate(ctx context.Context, args *ValidateArgs) (*ValidateR
 
 	state, err := LoadState(workDir)
 	if err != nil {
-		log.Warnf(ctx, "failed to load project state (error: %v)", err)
+		log.Warnfctx, "failed to load project state (error: %v)%s", err)
 	}
 	if state == nil {
 		state = NewProjectState()
 	}
 
-	log.Infof(ctx, "starting validation (work_dir: %s, state: %s)", workDir, string(state.State))
+	log.Infofctx, "starting validation (work_dir: %s, state: %s)%s", workDir, string(state.State))
 
 	var validation Validation
 	if p.config != nil && p.config.Validation != nil {
 		valConfig := p.config.Validation
 		if valConfig.Command != "" {
-			log.Infof(ctx, "using custom validation command (command: %s)", valConfig.Command)
+			log.Infofctx, "using custom validation command (command: %s)%s", valConfig.Command)
 			validation = NewValidationCmd(valConfig.Command, valConfig.DockerImage)
 		}
 	}
@@ -100,7 +100,7 @@ func (p *Provider) Validate(ctx context.Context, args *ValidateArgs) (*ValidateR
 
 	defer func() {
 		if closeErr := sb.Close(); closeErr != nil {
-			log.Warnf(ctx, "failed to close sandbox", "error", closeErr.Error())
+			log.Warnfctx, "failed to close sandbox%s", "error", closeErr.Error())
 		}
 	}()
 
@@ -110,13 +110,13 @@ func (p *Provider) Validate(ctx context.Context, args *ValidateArgs) (*ValidateR
 	}
 
 	if !result.Success {
-		log.Warnf(ctx, "validation failed", "message", result.Message)
+		log.Warnfctx, "validation failed%s", "message", result.Message)
 		return result, nil
 	}
 
 	checksum, err := ComputeChecksum(workDir)
 	if err != nil {
-		log.Warnf(ctx, "failed to compute checksum", "error", err.Error())
+		log.Warnfctx, "failed to compute checksum%s", "error", err.Error())
 		return &ValidateResult{
 			Success: false,
 			Message: fmt.Sprintf("Validation passed but failed to compute checksum: %v", err),
@@ -125,7 +125,7 @@ func (p *Provider) Validate(ctx context.Context, args *ValidateArgs) (*ValidateR
 
 	validatedState := state.Validate(checksum)
 	if err := SaveState(workDir, validatedState); err != nil {
-		log.Warnf(ctx, "failed to save state", "error", err.Error())
+		log.Warnfctx, "failed to save state%s", "error", err.Error())
 		return &ValidateResult{
 			Success: false,
 			Message: fmt.Sprintf("Validation passed but failed to save state: %v", err),
@@ -166,7 +166,7 @@ func (p *Provider) createDaggerSandbox(ctx context.Context, workDir string, cfg 
 		return nil, fmt.Errorf("failed to set environment: %w", err)
 	}
 
-	log.Debugf(p.ctx, "syncing files from host to container", "workDir", workDir)
+	log.Debugfp.ctx, "syncing files from host to container%s", "workDir", workDir)
 	if err := sb.RefreshFromHost(ctx, workDir, "/workspace"); err != nil {
 		log.Errorf(ctx, "failed to sync files", "error", err.Error())
 		sb.Close()
@@ -178,7 +178,7 @@ func (p *Provider) createDaggerSandbox(ctx context.Context, workDir string, cfg 
 }
 
 func (p *Provider) createLocalSandbox(workDir string) (sandbox.Sandbox, error) {
-	log.Infof(p.ctx, "creating local sandbox", "workDir", workDir)
+	log.Infofp.ctx, "creating local sandbox%s", "workDir", workDir)
 	return local.NewLocalSandbox(workDir)
 }
 
@@ -197,7 +197,7 @@ func (p *Provider) propagateEnvironment(sb sandbox.Sandbox) error {
 	for _, key := range envVars {
 		if value := os.Getenv(key); value != "" {
 			daggerSb.WithEnv(key, value)
-			log.Debugf(p.ctx, "propagated environment variable", "key", key)
+			log.Debugfp.ctx, "propagated environment variable%s", "key", key)
 		}
 	}
 
