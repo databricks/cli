@@ -2,7 +2,7 @@
 echo "*" > .gitignore
 trace $CLI bundle plan
 trace $CLI bundle deploy
-trace print_requests.py //jobs
+trace print_requests.py //jobs > out.deploy1.requests.json
 
 foo_id=`read_id.py jobs foo`
 echo "$foo_id:FOO_ID" >> ACC_REPLS
@@ -16,7 +16,8 @@ title "Update trigger.periodic.unit and re-deploy; jobs.bar is unchanged"
 trace update_file.py databricks.yml DAYS HOURS
 trace $CLI bundle plan
 trace $CLI bundle deploy
-trace print_requests.py //jobs
+# per-engine output file because terraform adds output-only and server-side defaults fields into request and direct does not
+trace print_requests.py //jobs > out.deploy2.requests.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle plan
 
 title "Fetch job ID and verify remote state"
