@@ -1,0 +1,37 @@
+package io
+
+import "fmt"
+
+// formatScaffoldResult formats a ScaffoldResult for display
+func formatScaffoldResult(result *ScaffoldResult) string {
+	return fmt.Sprintf(
+		"Successfully scaffolded %s template to %s\n\n"+
+			"Files copied: %d\n\n"+
+			"Template: %s\n\n"+
+			"%s",
+		result.TemplateName,
+		result.WorkDir,
+		result.FilesCopied,
+		result.TemplateName,
+		result.TemplateDescription,
+	)
+}
+
+// formatValidateResult formats a ValidateResult for display
+func formatValidateResult(result *ValidateResult) string {
+	if result.Success {
+		return fmt.Sprintf("✓ %s", result.Message)
+	}
+
+	if result.Details == nil {
+		return fmt.Sprintf("✗ %s", result.Message)
+	}
+
+	return fmt.Sprintf(
+		"✗ %s\n\nExit code: %d\n\nStdout:\n%s\n\nStderr:\n%s",
+		result.Message,
+		result.Details.ExitCode,
+		result.Details.Stdout,
+		result.Details.Stderr,
+	)
+}
