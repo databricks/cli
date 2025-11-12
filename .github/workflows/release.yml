@@ -103,6 +103,7 @@ jobs:
       - name: Azure Login
         shell: pwsh
         run: |
+          # Login to public Azure (not Germany) for Code Signing service
           az login --service-principal `
             -u ${{ secrets.DECO_SIGN_AZURE_CLIENT_ID }} `
             -p ${{ secrets.DECO_SIGN_AZURE_CLIENT_SECRET }} `
@@ -129,18 +130,37 @@ jobs:
           AZURE_CLIENT_ID: ${{ secrets.DECO_SIGN_AZURE_CLIENT_ID }}
           AZURE_CLIENT_SECRET: ${{ secrets.DECO_SIGN_AZURE_CLIENT_SECRET }}
 
-      - name: Upload Windows artifacts to release
-        if: false  # Temporarily disabled for testing
-        shell: pwsh
+      - name: Upload Windows artifacts to GitHub Actions
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-artifacts
+          path: |
+            dist/*.zip
+            dist/*SHA256SUMS*
+          retention-days: 1
+
+  upload-windows-to-release:
+    if: false  # Temporarily disabled for testing
+    runs-on:
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
+    needs: goreleaser-windows
+
+    steps:
+      - name: Download Windows artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-artifacts
+          path: dist
+
+      - name: Upload to GitHub release
         run: |
-          Get-ChildItem dist -Filter *.zip | ForEach-Object {
-            Write-Host "Uploading $($_.Name)"
-            gh release upload ${{ github.ref_name }} $_.FullName
-          }
-          Get-ChildItem dist -Filter *SHA256SUMS* | ForEach-Object {
-            Write-Host "Uploading $($_.Name)"
-            gh release upload ${{ github.ref_name }} $_.FullName
-          }
+          for file in dist/*.zip dist/*SHA256SUMS*; do
+            if [ -f "$file" ]; then
+              echo "Uploading $(basename $file)"
+              gh release upload ${{ github.ref_name }} "$file"
+            fi
+          done
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
