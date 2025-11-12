@@ -15,7 +15,7 @@ import (
 // temporary file on error.
 func AtomicWriteFile(path string, content []byte, perm os.FileMode) error {
 	parentDir := filepath.Dir(path)
-	if err := os.MkdirAll(parentDir, 0755); err != nil {
+	if err := os.MkdirAll(parentDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create parent directory: %w", err)
 	}
 

@@ -26,7 +26,7 @@ type Session struct {
 	startTime time.Time
 	firstTool bool
 	toolCalls int
-	Tracker   interface{} // trajectory tracker (to avoid import cycle)
+	Tracker   any // trajectory tracker (to avoid import cycle)
 }
 
 // NewSession creates a new session

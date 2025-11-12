@@ -13,8 +13,8 @@ import (
 )
 
 func init() {
-	providers.Register("workspace", func(cfg *mcp.Config, sess *session.Session, ctx context.Context) (providers.Provider, error) {
-		return NewProvider(sess, ctx)
+	providers.Register("workspace", func(ctx context.Context, cfg *mcp.Config, sess *session.Session) (providers.Provider, error) {
+		return NewProvider(ctx, sess)
 	}, providers.ProviderConfig{
 		EnabledWhen: func(cfg *mcp.Config) bool {
 			return cfg.WithWorkspaceTools
@@ -29,7 +29,7 @@ type Provider struct {
 }
 
 // NewProvider creates a new workspace provider
-func NewProvider(sess *session.Session, ctx context.Context) (*Provider, error) {
+func NewProvider(ctx context.Context, sess *session.Session) (*Provider, error) {
 	return &Provider{
 		session: sess,
 		ctx:     ctx,
@@ -117,7 +117,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 
 			return &mcpsdk.CallToolResult{
 				Content: []mcpsdk.Content{
-					&mcpsdk.TextContent{Text: fmt.Sprintf("File written successfully: %s", args.FilePath)},
+					&mcpsdk.TextContent{Text: "File written successfully: " + args.FilePath},
 				},
 			}, nil, nil
 		}),
@@ -151,7 +151,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 
 			return &mcpsdk.CallToolResult{
 				Content: []mcpsdk.Content{
-					&mcpsdk.TextContent{Text: fmt.Sprintf("File edited successfully: %s", args.FilePath)},
+					&mcpsdk.TextContent{Text: "File edited successfully: " + args.FilePath},
 				},
 			}, nil, nil
 		}),

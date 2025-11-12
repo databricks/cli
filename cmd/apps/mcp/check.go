@@ -1,6 +1,7 @@
 package mcp
 
 import (
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
@@ -25,6 +26,7 @@ Use this command to troubleshoot connection issues before starting the MCP serve
 
   # Check with specific profile
   databricks apps mcp check --profile production`,
+		PreRunE: root.MustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 

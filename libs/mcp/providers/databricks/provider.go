@@ -11,8 +11,8 @@ import (
 )
 
 func init() {
-	providers.Register("databricks", func(cfg *mcp.Config, sess *session.Session, ctx context.Context) (providers.Provider, error) {
-		return NewProvider(cfg, sess, ctx)
+	providers.Register("databricks", func(ctx context.Context, cfg *mcp.Config, sess *session.Session) (providers.Provider, error) {
+		return NewProvider(ctx, cfg, sess)
 	}, providers.ProviderConfig{
 		Always: true,
 	})
@@ -26,8 +26,8 @@ type Provider struct {
 }
 
 // NewProvider creates a new Databricks provider
-func NewProvider(cfg *mcp.Config, sess *session.Session, ctx context.Context) (*Provider, error) {
-	client, err := NewClient(cfg, ctx)
+func NewProvider(ctx context.Context, cfg *mcp.Config, sess *session.Session) (*Provider, error) {
+	client, err := NewClient(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}

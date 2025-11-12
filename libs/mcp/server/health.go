@@ -48,8 +48,9 @@ func (s *Server) CheckHealth(ctx context.Context) *HealthStatus {
 // checkDatabricksHealth performs a basic health check for Databricks
 func (s *Server) checkDatabricksHealth(ctx context.Context) error {
 	// Create a short-lived context for the health check
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	timeoutCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
+	_ = timeoutCtx
 
 	// For now, just check if provider was registered successfully
 	// A more thorough check would call the Databricks API (e.g., list catalogs)

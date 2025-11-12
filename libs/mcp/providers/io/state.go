@@ -1,7 +1,9 @@
 package io
 
 import (
+	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -53,8 +55,8 @@ type DeployedData struct {
 
 // ProjectState tracks the current state and metadata of a scaffolded project.
 type ProjectState struct {
-	State StateType   `json:"state"`
-	Data  interface{} `json:"data,omitempty"`
+	State StateType `json:"state"`
+	Data  any       `json:"data,omitempty"`
 }
 
 func NewProjectState() *ProjectState {
@@ -78,14 +80,14 @@ func (ps *ProjectState) extractValidatedData() (*ValidatedData, error) {
 		return &data, nil
 	}
 
-	dataMap, ok := ps.Data.(map[string]interface{})
+	dataMap, ok := ps.Data.(map[string]any)
 	if !ok {
-		return nil, fmt.Errorf("invalid validated state data")
+		return nil, errors.New("invalid validated state data")
 	}
 
 	validatedAtStr, ok := dataMap["validated_at"].(string)
 	if !ok {
-		return nil, fmt.Errorf("missing validated_at in state data")
+		return nil, errors.New("missing validated_at in state data")
 	}
 
 	validatedAt, err := time.Parse(time.RFC3339, validatedAtStr)
@@ -95,7 +97,7 @@ func (ps *ProjectState) extractValidatedData() (*ValidatedData, error) {
 
 	checksum, ok := dataMap["checksum"].(string)
 	if !ok {
-		return nil, fmt.Errorf("missing checksum in state data")
+		return nil, errors.New("missing checksum in state data")
 	}
 
 	return &ValidatedData{
@@ -105,7 +107,7 @@ func (ps *ProjectState) extractValidatedData() (*ValidatedData, error) {
 }
 
 func (ps *ProjectState) extractChecksumFromMap() (string, bool) {
-	dataMap, ok := ps.Data.(map[string]interface{})
+	dataMap, ok := ps.Data.(map[string]any)
 	if !ok {
 		return "", false
 	}
@@ -116,10 +118,10 @@ func (ps *ProjectState) extractChecksumFromMap() (string, bool) {
 func (ps *ProjectState) Deploy() (*ProjectState, error) {
 	if !ps.CanTransitionTo(StateDeployed) {
 		if ps.State == StateScaffolded {
-			return nil, fmt.Errorf("cannot deploy: project not validated")
+			return nil, errors.New("cannot deploy: project not validated")
 		}
 		if ps.State == StateDeployed {
-			return nil, fmt.Errorf("cannot deploy: project already deployed (re-validate first)")
+			return nil, errors.New("cannot deploy: project already deployed (re-validate first)")
 		}
 		return nil, fmt.Errorf("invalid state transition: %s -> Deployed", ps.State)
 	}
@@ -151,6 +153,8 @@ func (ps *ProjectState) Checksum() (string, bool) {
 			return data.Checksum, true
 		}
 		return ps.extractChecksumFromMap()
+	case StateScaffolded:
+		return "", false
 	}
 	return "", false
 }
@@ -217,7 +221,7 @@ func SaveState(workDir string, state *ProjectState) error {
 		return fmt.Errorf("failed to serialize state: %w", err)
 	}
 
-	if err := fileutil.AtomicWriteFile(statePath, content, 0644); err != nil {
+	if err := fileutil.AtomicWriteFile(statePath, content, 0o644); err != nil {
 		return fmt.Errorf("failed to write state file: %w", err)
 	}
 
@@ -244,7 +248,7 @@ func ComputeChecksum(workDir string) (string, error) {
 	sort.Strings(filesToHash)
 
 	if len(filesToHash) == 0 {
-		return "", fmt.Errorf("no files to hash - project structure appears invalid")
+		return "", errors.New("no files to hash - project structure appears invalid")
 	}
 
 	hasher := blake3.New()
@@ -254,13 +258,13 @@ func ComputeChecksum(workDir string) (string, error) {
 		if err != nil {
 			return "", fmt.Errorf("failed to read %s: %w", filePath, err)
 		}
-		hasher.Write(content)
+		_, _ = hasher.Write(content)
 	}
 
-	return fmt.Sprintf("%x", hasher.Sum(nil)), nil
+	return hex.EncodeToString(hasher.Sum(nil)), nil
 }
 
-func VerifyChecksum(workDir string, expected string) (bool, error) {
+func VerifyChecksum(workDir, expected string) (bool, error) {
 	current, err := ComputeChecksum(workDir)
 	if err != nil {
 		return false, err

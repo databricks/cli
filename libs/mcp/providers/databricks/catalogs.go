@@ -66,7 +66,7 @@ func (c *Client) ListSchemas(ctx context.Context, args *ListSchemasArgs) (*ListS
 
 	// Apply filter if provided
 	if args.Filter != "" {
-		filtered := make([]string, 0)
+		var filtered []string
 		filterLower := strings.ToLower(args.Filter)
 		for _, name := range names {
 			if strings.Contains(strings.ToLower(name), filterLower) {

@@ -19,8 +19,8 @@ import (
 
 func init() {
 	// Register deployment provider with conditional enablement based on AllowDeployment
-	providers.Register("deployment", func(cfg *mcp.Config, sess *session.Session, ctx context.Context) (providers.Provider, error) {
-		return NewProvider(cfg, sess, ctx)
+	providers.Register("deployment", func(ctx context.Context, cfg *mcp.Config, sess *session.Session) (providers.Provider, error) {
+		return NewProvider(ctx, cfg, sess)
 	}, providers.ProviderConfig{
 		EnabledWhen: func(cfg *mcp.Config) bool {
 			return cfg.AllowDeployment
@@ -46,8 +46,8 @@ type DeployDatabricksAppInput struct {
 	Force       bool   `json:"force,omitempty" jsonschema_description:"Force re-deployment if the app already exists"`
 }
 
-func NewProvider(cfg *mcp.Config, sess *session.Session, ctx context.Context) (*Provider, error) {
-	client, err := databricks.NewClient(cfg, ctx)
+func NewProvider(ctx context.Context, cfg *mcp.Config, sess *session.Session) (*Provider, error) {
+	client, err := databricks.NewClient(ctx, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create databricks client: %w", err)
 	}
@@ -117,7 +117,7 @@ func (p *Provider) deployDatabricksApp(ctx context.Context, args *DeployDatabric
 	if _, err := os.Stat(workPath); os.IsNotExist(err) {
 		return &DeployResult{
 			Success: false,
-			Message: fmt.Sprintf("Work directory does not exist: %s", workPath),
+			Message: "Work directory does not exist: " + workPath,
 			AppName: args.Name,
 		}, nil
 	}
@@ -134,7 +134,7 @@ func (p *Provider) deployDatabricksApp(ctx context.Context, args *DeployDatabric
 	if !fileInfo.IsDir() {
 		return &DeployResult{
 			Success: false,
-			Message: fmt.Sprintf("Work path is not a directory: %s", workPath),
+			Message: "Work path is not a directory: " + workPath,
 			AppName: args.Name,
 		}, nil
 	}
@@ -313,7 +313,7 @@ func (p *Provider) getOrCreateApp(ctx context.Context, name, description string,
 	return databricks.CreateApp(ctx, p.client, createApp)
 }
 
-func (p *Provider) runCommand(dir string, name string, args ...string) error {
+func (p *Provider) runCommand(dir, name string, args ...string) error {
 	cmd := exec.Command(name, args...)
 	cmd.Dir = dir
 

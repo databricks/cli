@@ -13,8 +13,8 @@ import (
 )
 
 func init() {
-	providers.Register("io", func(cfg *mcp.Config, sess *session.Session, ctx context.Context) (providers.Provider, error) {
-		return NewProvider(cfg.IoConfig, sess, ctx)
+	providers.Register("io", func(ctx context.Context, cfg *mcp.Config, sess *session.Session) (providers.Provider, error) {
+		return NewProvider(ctx, cfg.IoConfig, sess)
 	}, providers.ProviderConfig{
 		Always: true,
 	})
@@ -29,7 +29,7 @@ type Provider struct {
 }
 
 // NewProvider creates a new I/O provider
-func NewProvider(cfg *mcp.IoConfig, sess *session.Session, ctx context.Context) (*Provider, error) {
+func NewProvider(ctx context.Context, cfg *mcp.IoConfig, sess *session.Session) (*Provider, error) {
 	return &Provider{
 		config:          cfg,
 		session:         sess,

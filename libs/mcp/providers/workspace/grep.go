@@ -63,7 +63,7 @@ func (p *Provider) Grep(ctx context.Context, args *GrepArgs) (*GrepResult, error
 		maxResults = 100
 	}
 
-	matches := []GrepMatch{}
+	var matches []GrepMatch
 	err = filepath.Walk(searchPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return nil // Skip errors

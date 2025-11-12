@@ -13,7 +13,7 @@ func TestMain(m *testing.M) {
 	code := m.Run()
 
 	// Cleanup global client after all tests
-	CloseGlobalClient()
+	_ = CloseGlobalClient()
 
 	os.Exit(code)
 }

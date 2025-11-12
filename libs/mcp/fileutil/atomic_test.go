@@ -12,7 +12,7 @@ func TestAtomicWriteFile(t *testing.T) {
 		filePath := filepath.Join(tempDir, "test.txt")
 		content := []byte("test content")
 
-		err := AtomicWriteFile(filePath, content, 0644)
+		err := AtomicWriteFile(filePath, content, 0o644)
 		if err != nil {
 			t.Fatalf("AtomicWriteFile() error = %v", err)
 		}
@@ -31,8 +31,8 @@ func TestAtomicWriteFile(t *testing.T) {
 			t.Fatalf("failed to stat file: %v", err)
 		}
 
-		if info.Mode().Perm() != 0644 {
-			t.Errorf("file mode = %o, want %o", info.Mode().Perm(), 0644)
+		if info.Mode().Perm() != 0o644 {
+			t.Errorf("file mode = %o, want %o", info.Mode().Perm(), 0o644)
 		}
 	})
 
@@ -41,7 +41,7 @@ func TestAtomicWriteFile(t *testing.T) {
 		filePath := filepath.Join(tempDir, "a", "b", "c", "test.txt")
 		content := []byte("nested content")
 
-		err := AtomicWriteFile(filePath, content, 0644)
+		err := AtomicWriteFile(filePath, content, 0o644)
 		if err != nil {
 			t.Fatalf("AtomicWriteFile() error = %v", err)
 		}
@@ -60,13 +60,13 @@ func TestAtomicWriteFile(t *testing.T) {
 		tempDir := t.TempDir()
 		filePath := filepath.Join(tempDir, "test.txt")
 
-		err := os.WriteFile(filePath, []byte("old content"), 0644)
+		err := os.WriteFile(filePath, []byte("old content"), 0o644)
 		if err != nil {
 			t.Fatalf("failed to create initial file: %v", err)
 		}
 
 		newContent := []byte("new content")
-		err = AtomicWriteFile(filePath, newContent, 0644)
+		err = AtomicWriteFile(filePath, newContent, 0o644)
 		if err != nil {
 			t.Fatalf("AtomicWriteFile() error = %v", err)
 		}
@@ -85,20 +85,22 @@ func TestAtomicWriteFile(t *testing.T) {
 		tempDir := t.TempDir()
 		filePath := filepath.Join(tempDir, "readonly", "test.txt")
 
-		if err := os.MkdirAll(filepath.Dir(filePath), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(filePath), 0o755); err != nil {
 			t.Fatalf("failed to create directory: %v", err)
 		}
 
-		if err := os.WriteFile(filePath, []byte("locked"), 0644); err != nil {
+		if err := os.WriteFile(filePath, []byte("locked"), 0o644); err != nil {
 			t.Fatalf("failed to create file: %v", err)
 		}
 
-		if err := os.Chmod(filepath.Dir(filePath), 0555); err != nil {
+		if err := os.Chmod(filepath.Dir(filePath), 0o555); err != nil {
 			t.Fatalf("failed to set read-only: %v", err)
 		}
-		defer os.Chmod(filepath.Dir(filePath), 0755)
+		defer func() {
+			_ = os.Chmod(filepath.Dir(filePath), 0o755)
+		}()
 
-		err := AtomicWriteFile(filePath, []byte("new content"), 0644)
+		err := AtomicWriteFile(filePath, []byte("new content"), 0o644)
 		if err == nil {
 			t.Fatal("expected error, got nil")
 		}
@@ -114,7 +116,7 @@ func TestAtomicWriteFile(t *testing.T) {
 		filePath := filepath.Join(tempDir, "test.txt")
 		content := []byte("test content")
 
-		err := AtomicWriteFile(filePath, content, 0600)
+		err := AtomicWriteFile(filePath, content, 0o600)
 		if err != nil {
 			t.Fatalf("AtomicWriteFile() error = %v", err)
 		}
@@ -124,8 +126,8 @@ func TestAtomicWriteFile(t *testing.T) {
 			t.Fatalf("failed to stat file: %v", err)
 		}
 
-		if info.Mode().Perm() != 0600 {
-			t.Errorf("file mode = %o, want %o", info.Mode().Perm(), 0600)
+		if info.Mode().Perm() != 0o600 {
+			t.Errorf("file mode = %o, want %o", info.Mode().Perm(), 0o600)
 		}
 	})
 }

@@ -245,7 +245,7 @@ func TestLocalSandbox_SetWorkdir(t *testing.T) {
 
 	// Create a subdirectory
 	subdir := "subdir"
-	err = os.MkdirAll(filepath.Join(baseDir, subdir), 0755)
+	err = os.MkdirAll(filepath.Join(baseDir, subdir), 0o755)
 	if err != nil {
 		t.Fatalf("MkdirAll() error = %v", err)
 	}
@@ -407,11 +407,11 @@ func TestLocalSandbox_Concurrent(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(numGoroutines)
 
-	for i := 0; i < numGoroutines; i++ {
+	for i := range numGoroutines {
 		go func(id int) {
 			defer wg.Done()
 
-			for j := 0; j < numOpsPerGoroutine; j++ {
+			for j := range numOpsPerGoroutine {
 				path := filepath.Join("concurrent", string(rune('a'+id)), "test.txt")
 				content := string(rune('0' + j%10))
 
@@ -481,7 +481,7 @@ func TestLocalSandbox_RefreshFromHost(t *testing.T) {
 	// Create a host directory with files
 	hostDir := t.TempDir()
 	hostFile := filepath.Join(hostDir, "host-file.txt")
-	err = os.WriteFile(hostFile, []byte("host content"), 0644)
+	err = os.WriteFile(hostFile, []byte("host content"), 0o644)
 	if err != nil {
 		t.Fatalf("WriteFile() error = %v", err)
 	}

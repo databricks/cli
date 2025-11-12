@@ -58,7 +58,7 @@ func (p *Provider) Scaffold(ctx context.Context, args *ScaffoldArgs) (*ScaffoldR
 	}
 
 	// Create directory
-	if err := os.MkdirAll(workDir, 0755); err != nil {
+	if err := os.MkdirAll(workDir, 0o755); err != nil {
 		return nil, fmt.Errorf("failed to create directory: %w", err)
 	}
 
@@ -75,12 +75,12 @@ func (p *Provider) Scaffold(ctx context.Context, args *ScaffoldArgs) (*ScaffoldR
 		targetPath := filepath.Join(workDir, path)
 
 		// Create parent directories
-		if err := os.MkdirAll(filepath.Dir(targetPath), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(targetPath), 0o755); err != nil {
 			return nil, fmt.Errorf("failed to create directory for %s: %w", path, err)
 		}
 
 		// Write file
-		if err := os.WriteFile(targetPath, []byte(content), 0644); err != nil {
+		if err := os.WriteFile(targetPath, []byte(content), 0o644); err != nil {
 			return nil, fmt.Errorf("failed to write %s: %w", path, err)
 		}
 
@@ -99,12 +99,8 @@ func (p *Provider) Scaffold(ctx context.Context, args *ScaffoldArgs) (*ScaffoldR
 }
 
 func (p *Provider) getTemplate() templates.Template {
-	if p.config != nil && p.config.Template != nil {
-		// Handle custom template if specified
-		if p.config.Template.Path != "" {
-			// TODO: Load from filesystem
-		}
-	}
+	// TODO: Support custom templates by checking p.config.Template.Path
+	// and loading from filesystem. Not yet implemented.
 
 	// Default to TRPC template
 	return p.defaultTemplate

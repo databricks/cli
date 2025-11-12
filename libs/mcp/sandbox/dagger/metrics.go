@@ -14,7 +14,6 @@ type DaggerMetrics struct {
 	SuccessCount    atomic.Int64
 	FallbackCount   atomic.Int64
 	TotalDurationMs atomic.Int64
-	validationCount int64
 }
 
 // GlobalMetrics provides global metrics tracking for all Dagger operations.
@@ -46,7 +45,7 @@ func RecordFallback(ctx context.Context, reason string) {
 }
 
 // GetMetrics returns a snapshot of current metrics.
-func GetMetrics() map[string]interface{} {
+func GetMetrics() map[string]any {
 	validations := GlobalMetrics.ValidationCount.Load()
 	totalDuration := GlobalMetrics.TotalDurationMs.Load()
 
@@ -55,7 +54,7 @@ func GetMetrics() map[string]interface{} {
 		avgDuration = float64(totalDuration) / float64(validations)
 	}
 
-	return map[string]interface{}{
+	return map[string]any{
 		"validation_count":  validations,
 		"success_count":     GlobalMetrics.SuccessCount.Load(),
 		"fallback_count":    GlobalMetrics.FallbackCount.Load(),

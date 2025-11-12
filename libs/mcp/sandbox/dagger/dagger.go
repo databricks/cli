@@ -167,7 +167,7 @@ func (d *DaggerSandbox) Exec(ctx context.Context, command string) (*sandbox.Exec
 
 // WriteFile writes content to a file in the container.
 // Parent directories are created automatically if they don't exist.
-func (d *DaggerSandbox) WriteFile(ctx context.Context, path string, content string) error {
+func (d *DaggerSandbox) WriteFile(ctx context.Context, path, content string) error {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
@@ -176,7 +176,7 @@ func (d *DaggerSandbox) WriteFile(ctx context.Context, path string, content stri
 
 	d.container = d.container.WithExec([]string{"mkdir", "-p", dir})
 	d.container = d.container.WithNewFile(fullPath, content, dagger.ContainerWithNewFileOpts{
-		Permissions: 0644,
+		Permissions: 0o644,
 	})
 
 	_, err := d.container.Sync(ctx)

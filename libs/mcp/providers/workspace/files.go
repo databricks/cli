@@ -64,7 +64,7 @@ func (p *Provider) WriteFile(ctx context.Context, args *WriteFileArgs) error {
 		return err
 	}
 
-	if err := fileutil.AtomicWriteFile(fullPath, []byte(args.Content), 0644); err != nil {
+	if err := fileutil.AtomicWriteFile(fullPath, []byte(args.Content), 0o644); err != nil {
 		return err
 	}
 
@@ -113,7 +113,7 @@ func (p *Provider) EditFile(ctx context.Context, args *EditFileArgs) error {
 	newContent := strings.Replace(contentStr, args.OldString, args.NewString, 1)
 
 	// Write back
-	if err := os.WriteFile(fullPath, []byte(newContent), 0644); err != nil {
+	if err := os.WriteFile(fullPath, []byte(newContent), 0o644); err != nil {
 		return fmt.Errorf("failed to write file: %w", err)
 	}
 

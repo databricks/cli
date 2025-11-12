@@ -26,7 +26,7 @@ type Server struct {
 
 // NewServer creates and initializes a new MCP server instance.
 // It creates a session, trajectory tracker, and prepares the server for provider registration.
-func NewServer(cfg *mcp.Config, ctx context.Context) *Server {
+func NewServer(ctx context.Context, cfg *mcp.Config) *Server {
 	impl := &mcpsdk.Implementation{
 		Name:    "go-mcp",
 		Version: version.GetVersion(),
@@ -35,7 +35,7 @@ func NewServer(cfg *mcp.Config, ctx context.Context) *Server {
 	server := mcpsdk.NewServer(impl, nil)
 	sess := session.NewSession()
 
-	tracker, err := trajectory.NewTracker(sess, cfg, ctx)
+	tracker, err := trajectory.NewTracker(ctx, sess, cfg)
 	if err != nil {
 		log.Warnf(ctx, "failed to create trajectory tracker: %v", err)
 		tracker = nil
@@ -94,7 +94,7 @@ func (s *Server) registerDatabricksProvider(ctx context.Context) error {
 	// Add session to context
 	ctx = session.WithSession(ctx, s.session)
 
-	provider, err := databricks.NewProvider(s.config, s.session, ctx)
+	provider, err := databricks.NewProvider(ctx, s.config, s.session)
 	if err != nil {
 		return err
 	}
@@ -113,7 +113,7 @@ func (s *Server) registerIOProvider(ctx context.Context) error {
 	// Add session to context
 	ctx = session.WithSession(ctx, s.session)
 
-	provider, err := io.NewProvider(s.config.IoConfig, s.session, ctx)
+	provider, err := io.NewProvider(ctx, s.config.IoConfig, s.session)
 	if err != nil {
 		return err
 	}
@@ -132,7 +132,7 @@ func (s *Server) registerWorkspaceProvider(ctx context.Context) error {
 	// Add session to context
 	ctx = session.WithSession(ctx, s.session)
 
-	provider, err := workspace.NewProvider(s.session, ctx)
+	provider, err := workspace.NewProvider(ctx, s.session)
 	if err != nil {
 		return err
 	}
@@ -151,7 +151,7 @@ func (s *Server) registerDeploymentProvider(ctx context.Context) error {
 	// Add session to context
 	ctx = session.WithSession(ctx, s.session)
 
-	provider, err := deployment.NewProvider(s.config, s.session, ctx)
+	provider, err := deployment.NewProvider(ctx, s.config, s.session)
 	if err != nil {
 		return err
 	}

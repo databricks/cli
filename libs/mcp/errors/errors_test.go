@@ -24,7 +24,7 @@ func TestError_Error(t *testing.T) {
 			err: &Error{
 				Code:    CodeInvalidParams,
 				Message: "invalid parameter",
-				Details: map[string]interface{}{
+				Details: map[string]any{
 					"field": "username",
 					"value": "invalid",
 				},
@@ -36,7 +36,7 @@ func TestError_Error(t *testing.T) {
 			err: &Error{
 				Code:    CodeInternalError,
 				Message: "error",
-				Details: map[string]interface{}{},
+				Details: map[string]any{},
 			},
 			expected: "[-32603] error",
 		},
@@ -78,12 +78,12 @@ func TestError_WithDetail(t *testing.T) {
 		err := &Error{
 			Code:    CodeInternalError,
 			Message: "error",
-			Details: map[string]interface{}{
+			Details: map[string]any{
 				"existing": "value",
 			},
 		}
 
-		err.WithDetail("new", "data")
+		err = err.WithDetail("new", "data")
 
 		if len(err.Details) != 2 {
 			t.Errorf("Details length = %d, want 2", len(err.Details))
@@ -104,7 +104,7 @@ func TestError_WithDetail(t *testing.T) {
 			Message: "error",
 		}
 
-		err.WithDetail("key1", "value1").WithDetail("key2", "value2")
+		err = err.WithDetail("key1", "value1").WithDetail("key2", "value2")
 
 		if len(err.Details) != 2 {
 			t.Errorf("Details length = %d, want 2", len(err.Details))

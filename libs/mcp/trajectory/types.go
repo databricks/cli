@@ -19,9 +19,9 @@ type HistoryEntry struct {
 }
 
 type SessionEntry struct {
-	SessionID string                 `json:"session_id"`
-	Timestamp string                 `json:"timestamp"`
-	Config    map[string]interface{} `json:"config"`
+	SessionID string         `json:"session_id"`
+	Timestamp string         `json:"timestamp"`
+	Config    map[string]any `json:"config"`
 }
 
 type ToolEntry struct {
@@ -34,7 +34,7 @@ type ToolEntry struct {
 	Error     *string          `json:"error,omitempty"`
 }
 
-func NewSessionEntry(sessionID string, config map[string]interface{}) HistoryEntry {
+func NewSessionEntry(sessionID string, config map[string]any) HistoryEntry {
 	return HistoryEntry{
 		EntryType: EntryTypeSession,
 		Session: &SessionEntry{

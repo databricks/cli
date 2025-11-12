@@ -14,11 +14,11 @@ type Writer struct {
 }
 
 func NewWriter(historyPath string) (*Writer, error) {
-	if err := os.MkdirAll(filepath.Dir(historyPath), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(historyPath), 0o755); err != nil {
 		return nil, fmt.Errorf("failed to create directory: %w", err)
 	}
 
-	file, err := os.OpenFile(historyPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile(historyPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open history file: %w", err)
 	}

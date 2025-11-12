@@ -20,11 +20,11 @@ func formatScaffoldResult(result *ScaffoldResult) string {
 // formatValidateResult formats a ValidateResult for display
 func formatValidateResult(result *ValidateResult) string {
 	if result.Success {
-		return fmt.Sprintf("✓ %s", result.Message)
+		return "✓ " + result.Message
 	}
 
 	if result.Details == nil {
-		return fmt.Sprintf("✗ %s", result.Message)
+		return "✗ " + result.Message
 	}
 
 	return fmt.Sprintf(

@@ -60,7 +60,7 @@ func TestValidatePath(t *testing.T) {
 			wantErr:  false,
 			setup: func() error {
 				targetDir := filepath.Join(baseDir, "target")
-				if err := os.MkdirAll(targetDir, 0755); err != nil {
+				if err := os.MkdirAll(targetDir, 0o755); err != nil {
 					return err
 				}
 				linkPath := filepath.Join(baseDir, "goodlink")

@@ -59,9 +59,9 @@ const (
 // Error represents a structured error following JSON-RPC 2.0 specification.
 // It includes an error code, message, and optional details for debugging.
 type Error struct {
-	Code    int                    `json:"code"`
-	Message string                 `json:"message"`
-	Details map[string]interface{} `json:"data,omitempty"`
+	Code    int            `json:"code"`
+	Message string         `json:"message"`
+	Details map[string]any `json:"data,omitempty"`
 }
 
 // Error implements the error interface, formatting the error with its code and message.
@@ -75,9 +75,9 @@ func (e *Error) Error() string {
 
 // WithDetail adds a key-value pair to the error's details map and returns the error for chaining.
 // This allows for adding contextual information to errors.
-func (e *Error) WithDetail(key string, value interface{}) *Error {
+func (e *Error) WithDetail(key string, value any) *Error {
 	if e.Details == nil {
-		e.Details = make(map[string]interface{})
+		e.Details = make(map[string]any)
 	}
 	e.Details[key] = value
 	return e
@@ -115,7 +115,7 @@ func InternalError(message string) *Error {
 func MethodNotFound(method string) *Error {
 	return &Error{
 		Code:    CodeMethodNotFound,
-		Message: fmt.Sprintf("method not found: %s", method),
+		Message: "method not found: " + method,
 	}
 }
 
@@ -124,7 +124,7 @@ func MethodNotFound(method string) *Error {
 func ProviderNotAvailable(provider string) *Error {
 	err := &Error{
 		Code:    CodeServerError,
-		Message: fmt.Sprintf("provider not available: %s", provider),
+		Message: "provider not available: " + provider,
 	}
 	return err.WithDetail("provider", provider)
 }
@@ -177,7 +177,7 @@ func ConfigInvalid(message string) *Error {
 
 // ConfigMissing creates an error for missing configuration.
 func ConfigMissing(param string) *Error {
-	err := NewWithCode(CodeConfigMissing, fmt.Sprintf("missing required configuration: %s", param))
+	err := NewWithCode(CodeConfigMissing, "missing required configuration: "+param)
 	return WithSuggestion(err, "Check your ~/.go-mcp/config.json or environment variables")
 }
 
@@ -210,7 +210,7 @@ func DatabricksAuth(message string) *Error {
 
 // DatabricksWarehouse creates an error for warehouse access issues.
 func DatabricksWarehouse(warehouseID string) *Error {
-	err := NewWithCode(CodeDatabricksWarehouse, fmt.Sprintf("warehouse not accessible: %s", warehouseID))
+	err := NewWithCode(CodeDatabricksWarehouse, "warehouse not accessible: "+warehouseID)
 	return WithSuggestion(err, "Verify the warehouse ID and ensure it is running")
 }
 
@@ -244,7 +244,7 @@ func DeploymentFailed(message string) *Error {
 // DeploymentState creates an error for invalid project state during deployment.
 func DeploymentState(currentState, message string) *Error {
 	err := NewWithCode(CodeDeploymentState, message)
-	err.WithDetail("current_state", currentState)
+	err = err.WithDetail("current_state", currentState)
 	return WithSuggestion(err, "Ensure the project is validated before deployment")
 }
 
@@ -258,5 +258,5 @@ func StateTransition(from, to, message string) *Error {
 
 // StateInvalid creates an error for invalid state values.
 func StateInvalid(state string) *Error {
-	return NewWithCode(CodeStateInvalid, fmt.Sprintf("invalid state: %s", state))
+	return NewWithCode(CodeStateInvalid, "invalid state: "+state)
 }

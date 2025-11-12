@@ -18,7 +18,7 @@ func BenchmarkLocalSandbox_WriteFile(b *testing.B) {
 	content := "benchmark content"
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for i := range b.N {
 		path := fmt.Sprintf("bench_%d.txt", i)
 		err := sb.WriteFile(ctx, path, content)
 		if err != nil {
@@ -45,7 +45,7 @@ func BenchmarkLocalSandbox_ReadFile(b *testing.B) {
 	}
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		_, err := sb.ReadFile(ctx, "bench.txt")
 		if err != nil {
 			b.Fatalf("ReadFile() error = %v", err)
@@ -73,7 +73,7 @@ func BenchmarkLocalSandbox_WriteFiles(b *testing.B) {
 	}
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for i := range b.N {
 		// Modify paths to avoid conflicts
 		benchFiles := make(map[string]string, len(files))
 		for path, content := range files {
@@ -98,7 +98,7 @@ func BenchmarkLocalSandbox_ListDirectory(b *testing.B) {
 	ctx := context.Background()
 
 	// Create some files
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		path := fmt.Sprintf("file_%d.txt", i)
 		err := sb.WriteFile(ctx, path, "content")
 		if err != nil {
@@ -107,7 +107,7 @@ func BenchmarkLocalSandbox_ListDirectory(b *testing.B) {
 	}
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		_, err := sb.ListDirectory(ctx, ".")
 		if err != nil {
 			b.Fatalf("ListDirectory() error = %v", err)
@@ -126,7 +126,7 @@ func BenchmarkLocalSandbox_Exec(b *testing.B) {
 	ctx := context.Background()
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		_, err := sb.Exec(ctx, "echo benchmark")
 		if err != nil {
 			b.Fatalf("Exec() error = %v", err)
@@ -151,7 +151,7 @@ func BenchmarkLocalSandbox_ExecComplex(b *testing.B) {
 	}
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		_, err := sb.Exec(ctx, "grep 'line' input.txt | wc -l")
 		if err != nil {
 			b.Fatalf("Exec() error = %v", err)
@@ -163,7 +163,7 @@ func BenchmarkValidatePath(b *testing.B) {
 	baseDir := b.TempDir()
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		_, err := ValidatePath(baseDir, "test/path/file.txt")
 		if err != nil {
 			b.Fatalf("ValidatePath() error = %v", err)
@@ -188,7 +188,7 @@ func BenchmarkValidatePath_Existing(b *testing.B) {
 	}
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		_, err := ValidatePath(baseDir, "existing.txt")
 		if err != nil {
 			b.Fatalf("ValidatePath() error = %v", err)

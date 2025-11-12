@@ -2,6 +2,7 @@ package databricks
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -267,7 +268,7 @@ func DeployApp(ctx context.Context, client *Client, appInfo *AppInfo) error {
 func ResourcesFromEnv() (*Resources, error) {
 	warehouseID := os.Getenv("DATABRICKS_WAREHOUSE_ID")
 	if warehouseID == "" {
-		return nil, fmt.Errorf("DATABRICKS_WAREHOUSE_ID environment variable is required for app deployment. Set this to your Databricks SQL warehouse ID")
+		return nil, errors.New("DATABRICKS_WAREHOUSE_ID environment variable is required for app deployment. Set this to your Databricks SQL warehouse ID")
 	}
 
 	return &Resources{

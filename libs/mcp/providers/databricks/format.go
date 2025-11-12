@@ -13,7 +13,7 @@ func formatCatalogsResult(result *ListCatalogsResult) string {
 
 	lines := []string{fmt.Sprintf("Found %d catalogs:", len(result.Catalogs)), ""}
 	for _, catalog := range result.Catalogs {
-		lines = append(lines, fmt.Sprintf("• %s", catalog))
+		lines = append(lines, "• "+catalog)
 	}
 	return strings.Join(lines, "\n")
 }
@@ -40,7 +40,7 @@ func formatSchemasResult(result *ListSchemasResult) string {
 
 	lines := []string{paginationInfo, ""}
 	for _, schema := range result.Schemas {
-		lines = append(lines, fmt.Sprintf("• %s", schema))
+		lines = append(lines, "• "+schema)
 	}
 	return strings.Join(lines, "\n")
 }
@@ -55,10 +55,10 @@ func formatTablesResult(result *ListTablesResult) string {
 	for _, table := range result.Tables {
 		info := fmt.Sprintf("• %s (%s)", table.FullName, table.TableType)
 		if table.Owner != nil {
-			info += fmt.Sprintf(" - Owner: %s", *table.Owner)
+			info += " - Owner: " + *table.Owner
 		}
 		if table.Comment != nil {
-			info += fmt.Sprintf(" - %s", *table.Comment)
+			info += " - " + *table.Comment
 		}
 		lines = append(lines, info)
 	}
@@ -69,15 +69,15 @@ func formatTablesResult(result *ListTablesResult) string {
 func formatTableDetails(details *TableDetails) string {
 	var lines []string
 
-	lines = append(lines, fmt.Sprintf("Table: %s", details.FullName))
-	lines = append(lines, fmt.Sprintf("Table Type: %s", details.TableType))
+	lines = append(lines, "Table: "+details.FullName)
+	lines = append(lines, "Table Type: "+details.TableType)
 
 	if details.Owner != nil {
-		lines = append(lines, fmt.Sprintf("Owner: %s", *details.Owner))
+		lines = append(lines, "Owner: "+*details.Owner)
 	}
 
 	if details.Comment != nil {
-		lines = append(lines, fmt.Sprintf("Comment: %s", *details.Comment))
+		lines = append(lines, "Comment: "+*details.Comment)
 	}
 
 	if details.RowCount != nil {
@@ -85,11 +85,11 @@ func formatTableDetails(details *TableDetails) string {
 	}
 
 	if details.StorageLocation != nil {
-		lines = append(lines, fmt.Sprintf("Storage Location: %s", *details.StorageLocation))
+		lines = append(lines, "Storage Location: "+*details.StorageLocation)
 	}
 
 	if details.DataSourceFormat != nil {
-		lines = append(lines, fmt.Sprintf("Data Source Format: %s", *details.DataSourceFormat))
+		lines = append(lines, "Data Source Format: "+*details.DataSourceFormat)
 	}
 
 	if len(details.Columns) > 0 {
@@ -109,7 +109,7 @@ func formatTableDetails(details *TableDetails) string {
 		if len(details.SampleData) < sampleLimit {
 			sampleLimit = len(details.SampleData)
 		}
-		for i := 0; i < sampleLimit; i++ {
+		for i := range sampleLimit {
 			row := details.SampleData[i]
 			var rowParts []string
 			for k, v := range row {
@@ -149,7 +149,7 @@ func formatQueryResult(rows []map[string]any) string {
 			columns = append(columns, key)
 		}
 
-		lines = append(lines, fmt.Sprintf("Columns: %s", strings.Join(columns, ", ")))
+		lines = append(lines, "Columns: "+strings.Join(columns, ", "))
 		lines = append(lines, "")
 		lines = append(lines, "Results:")
 
@@ -158,7 +158,7 @@ func formatQueryResult(rows []map[string]any) string {
 			limit = len(rows)
 		}
 
-		for i := 0; i < limit; i++ {
+		for i := range limit {
 			row := rows[i]
 			var rowParts []string
 			for _, col := range columns {

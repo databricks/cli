@@ -98,7 +98,7 @@ func (c *Client) DescribeTable(ctx context.Context, args *DescribeTableArgs) (*T
 	}
 
 	// Get row count
-	countQuery := fmt.Sprintf("SELECT COUNT(*) as count FROM %s", args.TableFullName)
+	countQuery := "SELECT COUNT(*) as count FROM " + args.TableFullName
 	countData, err := c.ExecuteQuery(ctx, countQuery)
 	if err == nil && len(countData) > 0 {
 		if count, ok := countData[0]["count"].(int64); ok {

@@ -3,6 +3,7 @@ package local
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -19,7 +20,7 @@ import (
 func init() {
 	sandbox.Register(sandbox.TypeLocal, func(cfg *sandbox.Config) (sandbox.Sandbox, error) {
 		if cfg.BaseDir == "" {
-			return nil, fmt.Errorf("base directory required for local sandbox")
+			return nil, errors.New("base directory required for local sandbox")
 		}
 		return NewLocalSandbox(cfg.BaseDir)
 	})
@@ -41,7 +42,7 @@ func NewLocalSandbox(baseDir string) (*LocalSandbox, error) {
 		return nil, fmt.Errorf("failed to get absolute path: %w", err)
 	}
 
-	if err := os.MkdirAll(absBase, 0755); err != nil {
+	if err := os.MkdirAll(absBase, 0o755); err != nil {
 		return nil, fmt.Errorf("failed to create base directory: %w", err)
 	}
 
@@ -109,7 +110,7 @@ func (s *LocalSandbox) WriteFile(ctx context.Context, path, content string) erro
 		return err
 	}
 
-	if err := fileutil.AtomicWriteFile(absPath, []byte(content), 0644); err != nil {
+	if err := fileutil.AtomicWriteFile(absPath, []byte(content), 0o644); err != nil {
 		return err
 	}
 
@@ -142,11 +143,11 @@ func (s *LocalSandbox) WriteFiles(ctx context.Context, files map[string]string) 
 		absPath := validatedPaths[path]
 
 		parentDir := filepath.Dir(absPath)
-		if err := os.MkdirAll(parentDir, 0755); err != nil {
+		if err := os.MkdirAll(parentDir, 0o755); err != nil {
 			return fmt.Errorf("failed to create parent directory for %s: %w", path, err)
 		}
 
-		if err := os.WriteFile(absPath, []byte(content), 0644); err != nil {
+		if err := os.WriteFile(absPath, []byte(content), 0o644); err != nil {
 			return fmt.Errorf("failed to write file %s: %w", path, err)
 		}
 	}
@@ -294,7 +295,7 @@ func (s *LocalSandbox) ExportDirectory(ctx context.Context, containerPath, hostP
 		return "", fmt.Errorf("invalid host path: %w", err)
 	}
 
-	if err := os.MkdirAll(absHostPath, 0755); err != nil {
+	if err := os.MkdirAll(absHostPath, 0o755); err != nil {
 		return "", fmt.Errorf("failed to create host directory: %w", err)
 	}
 

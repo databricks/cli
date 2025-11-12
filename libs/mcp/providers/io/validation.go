@@ -42,9 +42,9 @@ func (vr *ValidateResult) String() string {
 	}
 
 	if vr.Success {
-		result += fmt.Sprintf("✓ %s", vr.Message)
+		result += "✓ " + vr.Message
 	} else {
-		result += fmt.Sprintf("✗ %s", vr.Message)
+		result += "✗ " + vr.Message
 		if vr.Details != nil {
 			result += fmt.Sprintf("\n\nExit code: %d\n\nStdout:\n%s\n\nStderr:\n%s",
 				vr.Details.ExitCode, vr.Details.Stdout, vr.Details.Stderr)
@@ -232,7 +232,7 @@ func (v *ValidationCmd) Validate(ctx context.Context, sb sandbox.Sandbox) (*Vali
 	startTime := time.Now()
 	var progressLog []string
 
-	progressLog = append(progressLog, fmt.Sprintf("🔄 Starting custom validation: %s", v.Command))
+	progressLog = append(progressLog, "🔄 Starting custom validation: "+v.Command)
 
 	fullCommand := v.Command
 	result, err := sb.Exec(ctx, fullCommand)

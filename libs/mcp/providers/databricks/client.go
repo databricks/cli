@@ -15,7 +15,7 @@ type Client struct {
 }
 
 // NewClient creates a new Databricks client
-func NewClient(cfg *mcp.Config, ctx context.Context) (*Client, error) {
+func NewClient(ctx context.Context, cfg *mcp.Config) (*Client, error) {
 	var workspace *databricks.WorkspaceClient
 	var err error
 

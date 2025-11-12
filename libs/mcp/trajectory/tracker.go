@@ -20,7 +20,7 @@ type Tracker struct {
 	sessionID string
 }
 
-func NewTracker(sess *session.Session, cfg *mcp.Config, ctx context.Context) (*Tracker, error) {
+func NewTracker(ctx context.Context, sess *session.Session, cfg *mcp.Config) (*Tracker, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get home directory: %w", err)
@@ -48,7 +48,7 @@ func NewTracker(sess *session.Session, cfg *mcp.Config, ctx context.Context) (*T
 }
 
 func (t *Tracker) writeSessionEntry(cfg *mcp.Config) error {
-	configMap := make(map[string]interface{})
+	configMap := make(map[string]any)
 	configMap["allow_deployment"] = cfg.AllowDeployment
 	configMap["with_workspace_tools"] = cfg.WithWorkspaceTools
 
@@ -60,7 +60,7 @@ func (t *Tracker) writeSessionEntry(cfg *mcp.Config) error {
 	}
 
 	if cfg.IoConfig != nil {
-		ioConfigMap := make(map[string]interface{})
+		ioConfigMap := make(map[string]any)
 		if cfg.IoConfig.Template != nil {
 			ioConfigMap["template"] = fmt.Sprintf("%v", cfg.IoConfig.Template)
 		}
@@ -74,7 +74,7 @@ func (t *Tracker) writeSessionEntry(cfg *mcp.Config) error {
 	return t.writer.WriteEntry(entry)
 }
 
-func (t *Tracker) RecordToolCall(toolName string, args interface{}, result *mcpsdk.CallToolResult, err error) {
+func (t *Tracker) RecordToolCall(toolName string, args any, result *mcpsdk.CallToolResult, err error) {
 	if !t.enabled {
 		return
 	}
