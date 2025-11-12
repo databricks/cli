@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/databricks/cli/libs/mcp/config"
+	"github.com/databricks/cli/libs/mcp"
 	"github.com/databricks/cli/libs/mcp/providers"
 	"github.com/databricks/cli/libs/mcp/providers/databricks"
 	"github.com/databricks/cli/libs/mcp/providers/io"
@@ -19,10 +19,10 @@ import (
 
 func init() {
 	// Register deployment provider with conditional enablement based on AllowDeployment
-	providers.Register("deployment", func(cfg *config.Config, sess *session.Session, logger *slog.Logger) (providers.Provider, error) {
+	providers.Register("deployment", func(cfg *mcp.Config, sess *session.Session, logger *slog.Logger) (providers.Provider, error) {
 		return NewProvider(cfg, sess, logger)
 	}, providers.ProviderConfig{
-		EnabledWhen: func(cfg *config.Config) bool {
+		EnabledWhen: func(cfg *mcp.Config) bool {
 			return cfg.AllowDeployment
 		},
 	})
@@ -32,7 +32,7 @@ const deployRetries = 3
 
 // Provider implements Databricks app deployment functionality.
 type Provider struct {
-	config  *config.Config
+	config  *mcp.Config
 	session *session.Session
 	client  *databricks.Client
 	logger  *slog.Logger
@@ -46,7 +46,7 @@ type DeployDatabricksAppInput struct {
 	Force       bool   `json:"force,omitempty" jsonschema_description:"Force re-deployment if the app already exists"`
 }
 
-func NewProvider(cfg *config.Config, sess *session.Session, logger *slog.Logger) (*Provider, error) {
+func NewProvider(cfg *mcp.Config, sess *session.Session, logger *slog.Logger) (*Provider, error) {
 	client, err := databricks.NewClient(cfg, logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create databricks client: %w", err)

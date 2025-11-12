@@ -5,7 +5,7 @@ import (
 	"log/slog"
 
 	"github.com/databricks/cli/internal/mcp/templates"
-	"github.com/databricks/cli/libs/mcp/config"
+	"github.com/databricks/cli/libs/mcp"
 	"github.com/databricks/cli/libs/mcp/providers"
 	"github.com/databricks/cli/libs/mcp/session"
 	pkgtemplates "github.com/databricks/cli/libs/mcp/templates"
@@ -13,7 +13,7 @@ import (
 )
 
 func init() {
-	providers.Register("io", func(cfg *config.Config, sess *session.Session, logger *slog.Logger) (providers.Provider, error) {
+	providers.Register("io", func(cfg *mcp.Config, sess *session.Session, logger *slog.Logger) (providers.Provider, error) {
 		return NewProvider(cfg.IoConfig, sess, logger)
 	}, providers.ProviderConfig{
 		Always: true,
@@ -22,14 +22,14 @@ func init() {
 
 // Provider implements the I/O provider for scaffolding and validation
 type Provider struct {
-	config          *config.IoConfig
+	config          *mcp.IoConfig
 	session         *session.Session
 	logger          *slog.Logger
 	defaultTemplate pkgtemplates.Template
 }
 
 // NewProvider creates a new I/O provider
-func NewProvider(cfg *config.IoConfig, sess *session.Session, logger *slog.Logger) (*Provider, error) {
+func NewProvider(cfg *mcp.IoConfig, sess *session.Session, logger *slog.Logger) (*Provider, error) {
 	return &Provider{
 		config:          cfg,
 		session:         sess,

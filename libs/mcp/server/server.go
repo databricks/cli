@@ -5,7 +5,7 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/databricks/cli/libs/mcp/config"
+	"github.com/databricks/cli/libs/mcp"
 	"github.com/databricks/cli/libs/mcp/providers/databricks"
 	"github.com/databricks/cli/libs/mcp/providers/deployment"
 	"github.com/databricks/cli/libs/mcp/providers/io"
@@ -20,14 +20,14 @@ import (
 type Server struct {
 	server  *mcp.Server
 	logger  *slog.Logger
-	config  *config.Config
+	config  *mcp.Config
 	session *session.Session
 	tracker *trajectory.Tracker
 }
 
 // NewServer creates and initializes a new MCP server instance.
 // It creates a session, trajectory tracker, and prepares the server for provider registration.
-func NewServer(cfg *config.Config, logger *slog.Logger) *Server {
+func NewServer(cfg *mcp.Config, logger *slog.Logger) *Server {
 	impl := &mcp.Implementation{
 		Name:    "go-mcp",
 		Version: version.GetVersion(),
@@ -109,7 +109,7 @@ func (s *Server) registerDatabricksProvider() error {
 func (s *Server) registerIOProvider() error {
 	s.logger.Info("Registering I/O provider")
 
-	provider, err := io.NewProvider(s.config.IoConfig, s.session, s.logger)
+	provider, err := io.NewProvider(s.mcp.IoConfig, s.session, s.logger)
 	if err != nil {
 		return err
 	}

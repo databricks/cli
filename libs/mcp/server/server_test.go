@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/databricks/cli/libs/mcp/config"
+	"github.com/databricks/cli/libs/mcp"
 	"github.com/databricks/cli/libs/mcp/logging"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -17,7 +17,7 @@ func TestServer_Initialize(t *testing.T) {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
 
-	cfg := &config.Config{}
+	cfg := &mcp.Config{}
 
 	server := NewServer(cfg, logger)
 	if err := server.RegisterTools(); err != nil {
@@ -59,7 +59,7 @@ func TestNewServer(t *testing.T) {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
 
-	cfg := &config.Config{}
+	cfg := &mcp.Config{}
 	server := NewServer(cfg, logger)
 
 	if server == nil {
@@ -89,7 +89,7 @@ func TestRegisterTools_WithWorkspaceTools(t *testing.T) {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
 
-	cfg := &config.Config{
+	cfg := &mcp.Config{
 		WithWorkspaceTools: true,
 	}
 
@@ -109,7 +109,7 @@ func TestRegisterTools_WithDeployment(t *testing.T) {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
 
-	cfg := &config.Config{
+	cfg := &mcp.Config{
 		AllowDeployment: true,
 	}
 
@@ -129,7 +129,7 @@ func TestRegisterTools_AllProviders(t *testing.T) {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
 
-	cfg := &config.Config{
+	cfg := &mcp.Config{
 		WithWorkspaceTools: true,
 		AllowDeployment:    true,
 	}
@@ -146,7 +146,7 @@ func TestGetServer(t *testing.T) {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
 
-	cfg := &config.Config{}
+	cfg := &mcp.Config{}
 	server := NewServer(cfg, logger)
 
 	mcpServer := server.GetServer()
@@ -165,7 +165,7 @@ func TestGetTracker(t *testing.T) {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
 
-	cfg := &config.Config{}
+	cfg := &mcp.Config{}
 	server := NewServer(cfg, logger)
 
 	tracker := server.GetTracker()
@@ -180,7 +180,7 @@ func TestShutdown(t *testing.T) {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
 
-	cfg := &config.Config{}
+	cfg := &mcp.Config{}
 	server := NewServer(cfg, logger)
 
 	ctx := context.Background()
@@ -200,7 +200,7 @@ func TestShutdown_WithTracker(t *testing.T) {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
 
-	cfg := &config.Config{}
+	cfg := &mcp.Config{}
 	server := NewServer(cfg, logger)
 
 	if server.tracker == nil {
@@ -219,7 +219,7 @@ func TestCheckHealth_Minimal(t *testing.T) {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
 
-	cfg := &config.Config{}
+	cfg := &mcp.Config{}
 	server := NewServer(cfg, logger)
 
 	ctx := context.Background()
@@ -256,7 +256,7 @@ func TestCheckHealth_WithWorkspace(t *testing.T) {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
 
-	cfg := &config.Config{
+	cfg := &mcp.Config{
 		WithWorkspaceTools: true,
 	}
 	server := NewServer(cfg, logger)
@@ -275,7 +275,7 @@ func TestCheckHealth_WithDeployment(t *testing.T) {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
 
-	cfg := &config.Config{
+	cfg := &mcp.Config{
 		AllowDeployment: true,
 	}
 	server := NewServer(cfg, logger)
@@ -294,7 +294,7 @@ func TestCheckHealth_CancelledContext(t *testing.T) {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
 
-	cfg := &config.Config{}
+	cfg := &mcp.Config{}
 	server := NewServer(cfg, logger)
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -323,7 +323,7 @@ func TestNewServer_WithTrajectoryFailure(t *testing.T) {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
 
-	cfg := &config.Config{}
+	cfg := &mcp.Config{}
 	server := NewServer(cfg, logger)
 
 	if server == nil {

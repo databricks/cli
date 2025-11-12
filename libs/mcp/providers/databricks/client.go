@@ -4,19 +4,19 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/databricks/cli/libs/mcp/config"
+	"github.com/databricks/cli/libs/mcp"
 	"github.com/databricks/databricks-sdk-go"
 )
 
 // Client represents a Databricks client
 type Client struct {
 	workspace *databricks.WorkspaceClient
-	config    *config.Config
+	config    *mcp.Config
 	logger    *slog.Logger
 }
 
 // NewClient creates a new Databricks client
-func NewClient(cfg *config.Config, logger *slog.Logger) (*Client, error) {
+func NewClient(cfg *mcp.Config, logger *slog.Logger) (*Client, error) {
 	var workspace *databricks.WorkspaceClient
 	var err error
 

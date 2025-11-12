@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/databricks/cli/libs/mcp/config"
+	"github.com/databricks/cli/libs/mcp"
 	"github.com/databricks/cli/libs/mcp/session"
 )
 
@@ -81,7 +81,7 @@ func TestProvider_Scaffold(t *testing.T) {
 			dir := tt.setup(t)
 			tt.args.WorkDir = dir
 
-			cfg := &config.IoConfig{}
+			cfg := &mcp.IoConfig{}
 			sess := session.NewSession()
 			p, err := NewProvider(cfg, sess, slog.Default())
 			if err != nil {

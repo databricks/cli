@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"sync"
 
-	"github.com/databricks/cli/libs/mcp/config"
+	"github.com/databricks/cli/libs/mcp"
 	"github.com/databricks/cli/libs/mcp/session"
 )
 
@@ -21,7 +21,7 @@ type Provider interface {
 
 // ProviderFactory is a function that creates a new provider instance.
 // It receives configuration, session, and logger instances.
-type ProviderFactory func(cfg *config.Config, sess *session.Session, logger *slog.Logger) (Provider, error)
+type ProviderFactory func(cfg *mcp.Config, sess *session.Session, logger *slog.Logger) (Provider, error)
 
 // Registry manages provider registration and creation.
 type Registry struct {
@@ -36,7 +36,7 @@ type ProviderConfig struct {
 	Always bool
 	// EnabledWhen is a function that determines if the provider should be enabled.
 	// If nil and Always is false, the provider won't be registered.
-	EnabledWhen func(*config.Config) bool
+	EnabledWhen func(*mcp.Config) bool
 }
 
 var (
@@ -75,7 +75,7 @@ func (r *Registry) RegisterProvider(name string, factory ProviderFactory, cfg Pr
 }
 
 // Create creates a provider instance by name.
-func (r *Registry) Create(name string, cfg *config.Config, sess *session.Session, logger *slog.Logger) (Provider, error) {
+func (r *Registry) Create(name string, cfg *mcp.Config, sess *session.Session, logger *slog.Logger) (Provider, error) {
 	r.mu.RLock()
 	factory, exists := r.factories[name]
 	r.mu.RUnlock()
@@ -88,7 +88,7 @@ func (r *Registry) Create(name string, cfg *config.Config, sess *session.Session
 }
 
 // CreateAll creates all registered providers that are enabled according to their configuration.
-func (r *Registry) CreateAll(cfg *config.Config, sess *session.Session, logger *slog.Logger) ([]Provider, error) {
+func (r *Registry) CreateAll(cfg *mcp.Config, sess *session.Session, logger *slog.Logger) ([]Provider, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -132,6 +132,6 @@ func (r *Registry) List() []string {
 }
 
 // CreateAll is a convenience function that uses the global registry.
-func CreateAll(cfg *config.Config, sess *session.Session, logger *slog.Logger) ([]Provider, error) {
+func CreateAll(cfg *mcp.Config, sess *session.Session, logger *slog.Logger) ([]Provider, error) {
 	return GetRegistry().CreateAll(cfg, sess, logger)
 }

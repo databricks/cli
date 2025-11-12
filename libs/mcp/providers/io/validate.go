@@ -8,7 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/databricks/cli/libs/mcp/config"
+	"github.com/databricks/cli/libs/mcp"
 	"github.com/databricks/cli/libs/mcp/sandbox"
 	"github.com/databricks/cli/libs/mcp/sandbox/dagger"
 	"github.com/databricks/cli/libs/mcp/sandbox/local"
@@ -60,7 +60,7 @@ func (p *Provider) Validate(ctx context.Context, args *ValidateArgs) (*ValidateR
 
 	validationCfg := p.config.Validation
 	if validationCfg == nil {
-		validationCfg = &config.ValidationConfig{}
+		validationCfg = &mcp.ValidationConfig{}
 		validationCfg.SetDefaults()
 	} else {
 		validationCfg.SetDefaults()
@@ -142,7 +142,7 @@ func (p *Provider) Validate(ctx context.Context, args *ValidateArgs) (*ValidateR
 	return result, nil
 }
 
-func (p *Provider) createDaggerSandbox(ctx context.Context, workDir string, cfg *config.ValidationConfig) (sandbox.Sandbox, error) {
+func (p *Provider) createDaggerSandbox(ctx context.Context, workDir string, cfg *mcp.ValidationConfig) (sandbox.Sandbox, error) {
 	p.logger.Info("creating Dagger sandbox",
 		slog.String("image", cfg.DockerImage),
 		slog.Int("timeout", cfg.Timeout),

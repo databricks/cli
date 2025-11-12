@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/databricks/cli/libs/mcp/config"
+	"github.com/databricks/cli/libs/mcp"
 	"github.com/databricks/cli/libs/mcp/session"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/stretchr/testify/assert"
@@ -139,7 +139,7 @@ func TestTrackerNewTracker(t *testing.T) {
 	defer os.Unsetenv("HOME")
 
 	sess := &session.Session{ID: "test-session-id"}
-	cfg := &config.Config{
+	cfg := &mcp.Config{
 		AllowDeployment:    true,
 		WithWorkspaceTools: true,
 		WarehouseID:        "warehouse-123",
@@ -317,16 +317,16 @@ func TestTrackerWriteSessionEntryWithIoConfig(t *testing.T) {
 	}
 	defer tracker.Close()
 
-	cfg := &config.Config{
+	cfg := &mcp.Config{
 		AllowDeployment:    false,
 		WithWorkspaceTools: false,
 		DatabricksHost:     "https://example.databricks.com",
 		WarehouseID:        "warehouse-xyz",
-		IoConfig: &config.IoConfig{
+		IoConfig: &mcp.IoConfig{
 			Template: &config.TemplateConfig{
 				Name: "TRPC",
 			},
-			Validation: &config.ValidationConfig{
+			Validation: &mcp.ValidationConfig{
 				Command:   "npm test",
 				UseDagger: true,
 			},

@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/databricks/cli/libs/mcp/config"
+	"github.com/databricks/cli/libs/mcp"
 )
 
 // TestIntegration_RealWorkspace runs integration tests against a real Databricks workspace
@@ -17,7 +17,7 @@ func TestIntegration_RealWorkspace(t *testing.T) {
 	}
 
 	// Create config
-	cfg := &config.Config{
+	cfg := &mcp.Config{
 		WarehouseID: os.Getenv("DATABRICKS_WAREHOUSE_ID"),
 	}
 

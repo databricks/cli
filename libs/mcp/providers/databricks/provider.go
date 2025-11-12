@@ -4,14 +4,14 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/databricks/cli/libs/mcp/config"
+	"github.com/databricks/cli/libs/mcp"
 	"github.com/databricks/cli/libs/mcp/providers"
 	"github.com/databricks/cli/libs/mcp/session"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 func init() {
-	providers.Register("databricks", func(cfg *config.Config, sess *session.Session, logger *slog.Logger) (providers.Provider, error) {
+	providers.Register("databricks", func(cfg *mcp.Config, sess *session.Session, logger *slog.Logger) (providers.Provider, error) {
 		return NewProvider(cfg, sess, logger)
 	}, providers.ProviderConfig{
 		Always: true,
@@ -26,7 +26,7 @@ type Provider struct {
 }
 
 // NewProvider creates a new Databricks provider
-func NewProvider(cfg *config.Config, sess *session.Session, logger *slog.Logger) (*Provider, error) {
+func NewProvider(cfg *mcp.Config, sess *session.Session, logger *slog.Logger) (*Provider, error) {
 	client, err := NewClient(cfg, logger)
 	if err != nil {
 		return nil, err

@@ -6,17 +6,17 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/databricks/cli/libs/mcp/config"
+	"github.com/databricks/cli/libs/mcp"
 	"github.com/databricks/cli/libs/mcp/providers"
 	"github.com/databricks/cli/libs/mcp/session"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 func init() {
-	providers.Register("workspace", func(cfg *config.Config, sess *session.Session, logger *slog.Logger) (providers.Provider, error) {
+	providers.Register("workspace", func(cfg *mcp.Config, sess *session.Session, logger *slog.Logger) (providers.Provider, error) {
 		return NewProvider(sess, logger)
 	}, providers.ProviderConfig{
-		EnabledWhen: func(cfg *config.Config) bool {
+		EnabledWhen: func(cfg *mcp.Config) bool {
 			return cfg.WithWorkspaceTools
 		},
 	})

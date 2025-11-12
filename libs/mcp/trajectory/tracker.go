@@ -8,7 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/databricks/cli/libs/mcp/config"
+	"github.com/databricks/cli/libs/mcp"
 	"github.com/databricks/cli/libs/mcp/session"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -21,7 +21,7 @@ type Tracker struct {
 	sessionID string
 }
 
-func NewTracker(sess *session.Session, cfg *config.Config, logger *slog.Logger) (*Tracker, error) {
+func NewTracker(sess *session.Session, cfg *mcp.Config, logger *slog.Logger) (*Tracker, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get home directory: %w", err)
@@ -49,7 +49,7 @@ func NewTracker(sess *session.Session, cfg *config.Config, logger *slog.Logger) 
 	return tracker, nil
 }
 
-func (t *Tracker) writeSessionEntry(cfg *config.Config) error {
+func (t *Tracker) writeSessionEntry(cfg *mcp.Config) error {
 	configMap := make(map[string]interface{})
 	configMap["allow_deployment"] = cfg.AllowDeployment
 	configMap["with_workspace_tools"] = cfg.WithWorkspaceTools
