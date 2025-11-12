@@ -5,7 +5,8 @@ before:
     - go mod download
 
 builds:
-  - env:
+  - id: cli
+    env:
       - CGO_ENABLED=0
     mod_timestamp: '{{ .CommitTimestamp }}'
     flags:
@@ -38,18 +39,9 @@ builds:
       - arm64
     binary: databricks
 
-signs:
-  - cmd: signtool
-    args:
-      - sign
-      - /fd
-      - SHA256
-      - /tr
-      - http://timestamp.digicert.com
-      - /td
-      - SHA256
-      - ${artifact}
-    artifacts: binary
+    hooks:
+      post:
+        - cmd /c signtool sign /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 /dlib Azure.CodeSigning.Dlib.dll /dmdf metadata.json "{{ .Path }}"
 
 archives:
   - formats: ["zip"]
@@ -65,7 +57,7 @@ checksum:
   algorithm: sha256
 
 snapshot:
-  version_template: '{{ incpatch .Version }}-dev+{{ .ShortCommit }}'
+  version_template: 'v0.0.0-dev+{{ .ShortCommit }}'
 
 changelog:
   sort: asc

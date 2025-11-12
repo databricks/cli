@@ -65,6 +65,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   goreleaser-unix:
+    if: false  # Temporarily disabled for testing
     runs-on:
       group: databricks-deco-testing-runner-group
       labels: ubuntu-latest-deco
@@ -110,6 +111,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   create-setup-cli-release-pr:
+    if: false  # Temporarily disabled for testing
     runs-on:
       group: databricks-deco-testing-runner-group
       labels: ubuntu-latest-deco
@@ -138,6 +140,7 @@ jobs:
             });
 
   create-homebrew-tap-release-pr:
+    if: false  # Temporarily disabled for testing
     runs-on:
       group: databricks-deco-testing-runner-group
       labels: ubuntu-latest-deco
@@ -179,6 +182,7 @@ jobs:
             });
 
   create-vscode-extension-update-pr:
+    if: false  # Temporarily disabled for testing
     runs-on:
       group: databricks-deco-testing-runner-group
       labels: ubuntu-latest-deco
@@ -207,6 +211,7 @@ jobs:
             });
 
   pypi-publish:
+    if: false  # Temporarily disabled for testing
     runs-on:
       group: databricks-deco-testing-runner-group
       labels: ubuntu-latest-deco
@@ -244,6 +249,7 @@ jobs:
           packages-dir: python/dist
 
   publish-to-winget-pkgs:
+    if: false  # Temporarily disabled for testing
     runs-on:
       group: databricks-deco-testing-runner-group
       labels: ubuntu-latest-deco
