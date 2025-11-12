@@ -119,6 +119,27 @@ jobs:
           }
           $metadata | ConvertTo-Json | Out-File -FilePath "metadata.json" -Encoding utf8
 
+      - name: Create signing script
+        shell: pwsh
+        run: |
+          $script = @'
+          $env:AZURE_TENANT_ID = "${{ secrets.DECO_SIGN_AZURE_TENANT_ID }}"
+          $env:AZURE_CLIENT_ID = "${{ secrets.DECO_SIGN_AZURE_CLIENT_ID }}"
+          $env:AZURE_CLIENT_SECRET = "${{ secrets.DECO_SIGN_AZURE_CLIENT_SECRET }}"
+
+          $filePath = $args[0]
+          Write-Host "Signing: $filePath"
+
+          & signtool sign /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 /dlib Azure.CodeSigning.Dlib.dll /dmdf metadata.json "$filePath"
+
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "Signing failed with exit code $LASTEXITCODE"
+            exit $LASTEXITCODE
+          }
+          '@
+
+          $script | Out-File -FilePath "sign.ps1" -Encoding utf8
+
       - name: Run GoReleaser for Windows
         uses: goreleaser/goreleaser-action@e435ccd777264be153ace6237001ef4d979d3a7a # v6.4.0
         with:
