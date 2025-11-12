@@ -8,62 +8,6 @@ on:
   workflow_dispatch:
 
 jobs:
-  goreleaser-windows:
-    environment: sign
-    runs-on: windows-latest
-
-    steps:
-      - name: Checkout repository and submodules
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        with:
-          fetch-depth: 0
-          fetch-tags: true
-
-      - name: Setup Go
-        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
-        with:
-          go-version-file: go.mod
-          cache-dependency-path: |
-            go.sum
-            .goreleaser-windows.yaml
-
-      - name: Install Azure Code Signing tools
-        shell: pwsh
-        run: |
-          # Download and install Azure Code Signing tools
-          Invoke-WebRequest -Uri "https://www.nuget.org/api/v2/package/Microsoft.Trusted.Signing.Client" -OutFile "$env:TEMP\TrustedSigning.zip"
-          Expand-Archive -Path "$env:TEMP\TrustedSigning.zip" -DestinationPath "$env:TEMP\TrustedSigning" -Force
-
-          # Add to PATH so signtool can find the dlib
-          $dllPath = (Get-ChildItem -Path "$env:TEMP\TrustedSigning" -Recurse -Filter "Azure.CodeSigning.Dlib.dll" | Select-Object -First 1).DirectoryName
-          echo "$dllPath" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-
-      - name: Azure Login
-        shell: pwsh
-        run: |
-          az login --service-principal `
-            -u ${{ secrets.DECO_SIGN_AZURE_CLIENT_ID }} `
-            -p ${{ secrets.DECO_SIGN_AZURE_CLIENT_SECRET }} `
-            --tenant ${{ secrets.DECO_SIGN_AZURE_TENANT_ID }}
-
-      - name: Create Azure Code Signing metadata
-        shell: pwsh
-        run: |
-          $metadata = @{
-            "Endpoint" = "https://eus.codesigning.azure.net/"
-            "CodeSigningAccountName" = "deco-sign"
-            "CertificateProfileName" = "deco-sign"
-          }
-          $metadata | ConvertTo-Json | Out-File -FilePath "metadata.json" -Encoding utf8
-
-      - name: Run GoReleaser for Windows
-        uses: goreleaser/goreleaser-action@e435ccd777264be153ace6237001ef4d979d3a7a # v6.4.0
-        with:
-          version: ~> v2
-          args: release -f .goreleaser-windows.yaml --snapshot --skip docker
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
   goreleaser-unix:
     if: false  # Temporarily disabled for testing
     runs-on:
@@ -107,6 +51,93 @@ jobs:
         with:
           version: ~> v2
           args: release -f .goreleaser-unix.yaml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  goreleaser-windows:
+    environment: sign
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository and submodules
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Setup Go
+        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: |
+            go.sum
+            .goreleaser-windows.yaml
+
+      - name: Add signtool to PATH
+        shell: pwsh
+        run: |
+          # Find signtool in Windows SDK
+          $signtoolPath = Get-ChildItem -Path "C:\Program Files (x86)\Windows Kits\10\bin" -Recurse -Filter "signtool.exe" -ErrorAction SilentlyContinue |
+            Where-Object { $_.FullName -match "x64" } |
+            Select-Object -First 1 -ExpandProperty DirectoryName
+
+          if ($signtoolPath) {
+            Write-Host "Found signtool at: $signtoolPath"
+            echo "$signtoolPath" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          } else {
+            Write-Error "signtool not found"
+            exit 1
+          }
+
+      - name: Install Azure Code Signing tools
+        shell: pwsh
+        run: |
+          # Download and install Azure Code Signing tools
+          Invoke-WebRequest -Uri "https://www.nuget.org/api/v2/package/Microsoft.Trusted.Signing.Client" -OutFile "$env:TEMP\TrustedSigning.zip"
+          Expand-Archive -Path "$env:TEMP\TrustedSigning.zip" -DestinationPath "$env:TEMP\TrustedSigning" -Force
+
+          # Add to PATH so signtool can find the dlib
+          $dllPath = (Get-ChildItem -Path "$env:TEMP\TrustedSigning" -Recurse -Filter "Azure.CodeSigning.Dlib.dll" | Select-Object -First 1).DirectoryName
+          echo "$dllPath" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      - name: Azure Login
+        shell: pwsh
+        run: |
+          az login --service-principal `
+            -u ${{ secrets.DECO_SIGN_AZURE_CLIENT_ID }} `
+            -p ${{ secrets.DECO_SIGN_AZURE_CLIENT_SECRET }} `
+            --tenant ${{ secrets.DECO_SIGN_AZURE_TENANT_ID }}
+
+      - name: Create Azure Code Signing metadata
+        shell: pwsh
+        run: |
+          $metadata = @{
+            "Endpoint" = "https://eus.codesigning.azure.net/"
+            "CodeSigningAccountName" = "deco-sign"
+            "CertificateProfileName" = "deco-sign"
+          }
+          $metadata | ConvertTo-Json | Out-File -FilePath "metadata.json" -Encoding utf8
+
+      - name: Run GoReleaser for Windows
+        uses: goreleaser/goreleaser-action@e435ccd777264be153ace6237001ef4d979d3a7a # v6.4.0
+        with:
+          version: ~> v2
+          args: release -f .goreleaser-windows.yaml --snapshot --skip=publish
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Windows artifacts to release
+        if: false  # Temporarily disabled for testing
+        shell: pwsh
+        run: |
+          Get-ChildItem dist -Filter *.zip | ForEach-Object {
+            Write-Host "Uploading $($_.Name)"
+            gh release upload ${{ github.ref_name }} $_.FullName
+          }
+          Get-ChildItem dist -Filter *SHA256SUMS* | ForEach-Object {
+            Write-Host "Uploading $($_.Name)"
+            gh release upload ${{ github.ref_name }} $_.FullName
+          }
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
