@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/databricks/cli/libs/mcp/sandbox"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/mcp/sandbox"
 )
 
 // ValidationDetail contains detailed output from a failed validation.
@@ -56,7 +56,7 @@ func (vr *ValidateResult) String() string {
 
 // Validation defines the interface for project validation strategies.
 type Validation interface {
-	Validate(ctx context.Context, sb sandbox.Sandbox, ctx context.Context) (*ValidateResult, error)
+	Validate(ctx context.Context, sb sandbox.Sandbox) (*ValidateResult, error)
 	DockerImage() string
 }
 
@@ -71,19 +71,19 @@ func (v *ValidationTRPC) DockerImage() string {
 	return "node:20-alpine3.22"
 }
 
-func (v *ValidationTRPC) Validate(ctx context.Context, sb sandbox.Sandbox, ctx context.Context) (*ValidateResult, error) {
-	logger.Info("starting tRPC validation (build + type check + tests)")
+func (v *ValidationTRPC) Validate(ctx context.Context, sb sandbox.Sandbox) (*ValidateResult, error) {
+	log.Infof(ctx, "starting tRPC validation (build + type check + tests)")
 	startTime := time.Now()
 	var progressLog []string
 
 	progressLog = append(progressLog, "🔄 Starting validation: build + type check + tests")
 
-	logger.Info("step 1/3: running build...")
+	log.Infof(ctx, "step 1/3: running build...")
 	progressLog = append(progressLog, "⏳ Step 1/3: Running build...")
 	buildStart := time.Now()
 	if err := v.runBuild(ctx, sb); err != nil {
 		buildDuration := time.Since(buildStart)
-		logger.Error("build failed", slog.Duration("duration", buildDuration))
+		log.Errorf(ctx, "build failed (duration: %.1fs)", buildDuration.Seconds())
 		progressLog = append(progressLog, fmt.Sprintf("❌ Build failed (%.1fs)", buildDuration.Seconds()))
 		return &ValidateResult{
 			Success:     false,
@@ -93,15 +93,15 @@ func (v *ValidationTRPC) Validate(ctx context.Context, sb sandbox.Sandbox, ctx c
 		}, nil
 	}
 	buildDuration := time.Since(buildStart)
-	logger.Info("✓ build passed", slog.Duration("duration", buildDuration))
+	log.Infof(ctx, "✓ build passed (duration: %.1fs)", buildDuration.Seconds())
 	progressLog = append(progressLog, fmt.Sprintf("✅ Build passed (%.1fs)", buildDuration.Seconds()))
 
-	logger.Info("step 2/3: running type check...")
+	log.Infof(ctx, "step 2/3: running type check...")
 	progressLog = append(progressLog, "⏳ Step 2/3: Running type check...")
 	typeCheckStart := time.Now()
 	if err := v.runClientTypeCheck(ctx, sb); err != nil {
 		typeCheckDuration := time.Since(typeCheckStart)
-		logger.Error("type check failed", slog.Duration("duration", typeCheckDuration))
+		log.Errorf(ctx, "type check failed", "duration", typeCheckDuration.Seconds())
 		progressLog = append(progressLog, fmt.Sprintf("❌ Type check failed (%.1fs)", typeCheckDuration.Seconds()))
 		return &ValidateResult{
 			Success:     false,
@@ -111,15 +111,15 @@ func (v *ValidationTRPC) Validate(ctx context.Context, sb sandbox.Sandbox, ctx c
 		}, nil
 	}
 	typeCheckDuration := time.Since(typeCheckStart)
-	logger.Info("✓ type check passed", slog.Duration("duration", typeCheckDuration))
+	log.Infof(ctx, "✓ type check passed", "duration", typeCheckDuration.Seconds())
 	progressLog = append(progressLog, fmt.Sprintf("✅ Type check passed (%.1fs)", typeCheckDuration.Seconds()))
 
-	logger.Info("step 3/3: running tests...")
+	log.Infof(ctx, "step 3/3: running tests...")
 	progressLog = append(progressLog, "⏳ Step 3/3: Running tests...")
 	testStart := time.Now()
 	if err := v.runTests(ctx, sb); err != nil {
 		testDuration := time.Since(testStart)
-		logger.Error("tests failed", slog.Duration("duration", testDuration))
+		log.Errorf(ctx, "tests failed", "duration", testDuration.Seconds())
 		progressLog = append(progressLog, fmt.Sprintf("❌ Tests failed (%.1fs)", testDuration.Seconds()))
 		return &ValidateResult{
 			Success:     false,
@@ -129,13 +129,13 @@ func (v *ValidationTRPC) Validate(ctx context.Context, sb sandbox.Sandbox, ctx c
 		}, nil
 	}
 	testDuration := time.Since(testStart)
-	logger.Info("✓ tests passed", slog.Duration("duration", testDuration))
+	log.Infof(ctx, "✓ tests passed", "duration", testDuration.Seconds())
 	progressLog = append(progressLog, fmt.Sprintf("✅ Tests passed (%.1fs)", testDuration.Seconds()))
 
 	totalDuration := time.Since(startTime)
-	logger.Info("✓ all validation checks passed",
-		slog.Duration("total_duration", totalDuration),
-		slog.String("steps", "build + type check + tests"))
+	log.Infof(ctx, "✓ all validation checks passed",
+		"total_duration", totalDuration.Seconds(),
+		"steps", "build + type check + tests")
 	progressLog = append(progressLog, fmt.Sprintf("✅ All checks passed! Total: %.1fs", totalDuration.Seconds()))
 
 	return &ValidateResult{
@@ -228,8 +228,8 @@ func (v *ValidationCmd) DockerImage() string {
 	return v.DockerImg
 }
 
-func (v *ValidationCmd) Validate(ctx context.Context, sb sandbox.Sandbox, ctx context.Context) (*ValidateResult, error) {
-	logger.Info("starting custom validation", slog.String("command", v.Command))
+func (v *ValidationCmd) Validate(ctx context.Context, sb sandbox.Sandbox) (*ValidateResult, error) {
+	log.Infof(ctx, "starting custom validation", "command", v.Command)
 	startTime := time.Now()
 	var progressLog []string
 
@@ -239,9 +239,7 @@ func (v *ValidationCmd) Validate(ctx context.Context, sb sandbox.Sandbox, ctx co
 	result, err := sb.Exec(ctx, fullCommand)
 	if err != nil {
 		duration := time.Since(startTime)
-		logger.Error("custom validation command failed",
-			slog.Duration("duration", duration),
-			slog.String("error", err.Error()))
+		log.Errorf(ctx, "custom validation command failed (duration: %.1fs, error: %v)", duration.Seconds(), err)
 		progressLog = append(progressLog, fmt.Sprintf("❌ Command failed (%.1fs): %v", duration.Seconds(), err))
 		return &ValidateResult{
 			Success: false,
@@ -257,9 +255,7 @@ func (v *ValidationCmd) Validate(ctx context.Context, sb sandbox.Sandbox, ctx co
 
 	if result.ExitCode != 0 {
 		duration := time.Since(startTime)
-		logger.Error("custom validation failed",
-			slog.Duration("duration", duration),
-			slog.Int("exit_code", result.ExitCode))
+		log.Errorf(ctx, "custom validation failed (duration: %.1fs, exit_code: %d)", duration.Seconds(), result.ExitCode)
 		progressLog = append(progressLog, fmt.Sprintf("❌ Validation failed (%.1fs) - exit code: %d", duration.Seconds(), result.ExitCode))
 		return &ValidateResult{
 			Success: false,
@@ -274,7 +270,7 @@ func (v *ValidationCmd) Validate(ctx context.Context, sb sandbox.Sandbox, ctx co
 	}
 
 	duration := time.Since(startTime)
-	logger.Info("✓ custom validation passed", slog.Duration("duration", duration))
+	log.Infof(ctx, "✓ custom validation passed", "duration", duration.Seconds())
 	progressLog = append(progressLog, fmt.Sprintf("✅ Custom validation passed (%.1fs)", duration.Seconds()))
 	return &ValidateResult{
 		Success:     true,

@@ -5,16 +5,16 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/mcp"
 	"github.com/databricks/cli/libs/mcp/providers"
 	"github.com/databricks/cli/libs/mcp/session"
-	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/databricks/cli/libs/log"
+	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 func init() {
 	providers.Register("workspace", func(cfg *mcp.Config, sess *session.Session, ctx context.Context) (providers.Provider, error) {
-		return NewProvider(sess, logger)
+		return NewProvider(sess, ctx)
 	}, providers.ProviderConfig{
 		EnabledWhen: func(cfg *mcp.Config) bool {
 			return cfg.WithWorkspaceTools
@@ -25,13 +25,14 @@ func init() {
 // Provider implements the workspace provider for file operations
 type Provider struct {
 	session *session.Session
+	ctx     context.Context
 }
 
 // NewProvider creates a new workspace provider
 func NewProvider(sess *session.Session, ctx context.Context) (*Provider, error) {
 	return &Provider{
 		session: sess,
-		logger:  logger,
+		ctx:     ctx,
 	}, nil
 }
 
@@ -53,8 +54,8 @@ func (p *Provider) getWorkDir() (string, error) {
 }
 
 // RegisterTools registers all workspace tools with the MCP server
-func (p *Provider) RegisterTools(server *mcp.Server) error {
-	log.Infof(ctx, "Registering workspace tools")
+func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
+	log.Infof(p.ctx, "Registering workspace tools")
 
 	// Register read_file
 	type ReadFileInput struct {
@@ -63,12 +64,12 @@ func (p *Provider) RegisterTools(server *mcp.Server) error {
 		Limit    int    `json:"limit,omitempty" jsonschema_description:"Number of lines to read"`
 	}
 
-	mcp.AddTool(server,
-		&mcp.Tool{
+	mcpsdk.AddTool(server,
+		&mcpsdk.Tool{
 			Name:        "read_file",
 			Description: "Read file contents with line numbers. Default: reads up to 2000 lines from beginning. Lines >2000 chars truncated.",
 		},
-		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcp.CallToolRequest, args ReadFileInput) (*mcp.CallToolResult, any, error) {
+		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcpsdk.CallToolRequest, args ReadFileInput) (*mcpsdk.CallToolResult, any, error) {
 			log.Debugf(ctx, "read_file called", "file_path", args.FilePath)
 
 			readArgs := &ReadFileArgs{
@@ -82,9 +83,9 @@ func (p *Provider) RegisterTools(server *mcp.Server) error {
 				return nil, nil, err
 			}
 
-			return &mcp.CallToolResult{
-				Content: []mcp.Content{
-					&mcp.TextContent{Text: content},
+			return &mcpsdk.CallToolResult{
+				Content: []mcpsdk.Content{
+					&mcpsdk.TextContent{Text: content},
 				},
 			}, nil, nil
 		}),
@@ -96,12 +97,12 @@ func (p *Provider) RegisterTools(server *mcp.Server) error {
 		Content  string `json:"content" jsonschema:"required" jsonschema_description:"Content to write"`
 	}
 
-	mcp.AddTool(server,
-		&mcp.Tool{
+	mcpsdk.AddTool(server,
+		&mcpsdk.Tool{
 			Name:        "write_file",
 			Description: "Write content to a file",
 		},
-		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcp.CallToolRequest, args WriteFileInput) (*mcp.CallToolResult, any, error) {
+		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcpsdk.CallToolRequest, args WriteFileInput) (*mcpsdk.CallToolResult, any, error) {
 			log.Debugf(ctx, "write_file called", "file_path", args.FilePath)
 
 			writeArgs := &WriteFileArgs{
@@ -114,9 +115,9 @@ func (p *Provider) RegisterTools(server *mcp.Server) error {
 				return nil, nil, err
 			}
 
-			return &mcp.CallToolResult{
-				Content: []mcp.Content{
-					&mcp.TextContent{Text: fmt.Sprintf("File written successfully: %s", args.FilePath)},
+			return &mcpsdk.CallToolResult{
+				Content: []mcpsdk.Content{
+					&mcpsdk.TextContent{Text: fmt.Sprintf("File written successfully: %s", args.FilePath)},
 				},
 			}, nil, nil
 		}),
@@ -129,12 +130,12 @@ func (p *Provider) RegisterTools(server *mcp.Server) error {
 		NewString string `json:"new_string" jsonschema:"required" jsonschema_description:"Replacement string"`
 	}
 
-	mcp.AddTool(server,
-		&mcp.Tool{
+	mcpsdk.AddTool(server,
+		&mcpsdk.Tool{
 			Name:        "edit_file",
 			Description: "Edit file by replacing old_string with new_string. Fails if old_string not unique unless replace_all=true.",
 		},
-		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcp.CallToolRequest, args EditFileInput) (*mcp.CallToolResult, any, error) {
+		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcpsdk.CallToolRequest, args EditFileInput) (*mcpsdk.CallToolResult, any, error) {
 			log.Debugf(ctx, "edit_file called", "file_path", args.FilePath)
 
 			editArgs := &EditFileArgs{
@@ -148,9 +149,9 @@ func (p *Provider) RegisterTools(server *mcp.Server) error {
 				return nil, nil, err
 			}
 
-			return &mcp.CallToolResult{
-				Content: []mcp.Content{
-					&mcp.TextContent{Text: fmt.Sprintf("File edited successfully: %s", args.FilePath)},
+			return &mcpsdk.CallToolResult{
+				Content: []mcpsdk.Content{
+					&mcpsdk.TextContent{Text: fmt.Sprintf("File edited successfully: %s", args.FilePath)},
 				},
 			}, nil, nil
 		}),
@@ -162,12 +163,12 @@ func (p *Provider) RegisterTools(server *mcp.Server) error {
 		Timeout int    `json:"timeout,omitempty" jsonschema_description:"Timeout in seconds (default 120)"`
 	}
 
-	mcp.AddTool(server,
-		&mcp.Tool{
+	mcpsdk.AddTool(server,
+		&mcpsdk.Tool{
 			Name:        "bash",
 			Description: "Execute bash command in workspace directory. Use for terminal operations (npm, git, etc). Output truncated at 30000 chars.",
 		},
-		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcp.CallToolRequest, args BashInput) (*mcp.CallToolResult, any, error) {
+		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcpsdk.CallToolRequest, args BashInput) (*mcpsdk.CallToolResult, any, error) {
 			log.Debugf(ctx, "bash called", "command", args.Command)
 
 			bashArgs := &BashArgs{
@@ -183,9 +184,9 @@ func (p *Provider) RegisterTools(server *mcp.Server) error {
 			// Format result as JSON
 			resultJSON, _ := json.Marshal(result)
 
-			return &mcp.CallToolResult{
-				Content: []mcp.Content{
-					&mcp.TextContent{Text: string(resultJSON)},
+			return &mcpsdk.CallToolResult{
+				Content: []mcpsdk.Content{
+					&mcpsdk.TextContent{Text: string(resultJSON)},
 				},
 			}, nil, nil
 		}),
@@ -199,12 +200,12 @@ func (p *Provider) RegisterTools(server *mcp.Server) error {
 		MaxResults int    `json:"max_results,omitempty" jsonschema_description:"Maximum number of results (default 100)"`
 	}
 
-	mcp.AddTool(server,
-		&mcp.Tool{
+	mcpsdk.AddTool(server,
+		&mcpsdk.Tool{
 			Name:        "grep",
 			Description: "Search file contents with regex. Returns file:line:content by default. Limit results with head_limit.",
 		},
-		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcp.CallToolRequest, args GrepInput) (*mcp.CallToolResult, any, error) {
+		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcpsdk.CallToolRequest, args GrepInput) (*mcpsdk.CallToolResult, any, error) {
 			log.Debugf(ctx, "grep called", "pattern", args.Pattern)
 
 			grepArgs := &GrepArgs{
@@ -222,9 +223,9 @@ func (p *Provider) RegisterTools(server *mcp.Server) error {
 			// Format result as JSON
 			resultJSON, _ := json.Marshal(result)
 
-			return &mcp.CallToolResult{
-				Content: []mcp.Content{
-					&mcp.TextContent{Text: string(resultJSON)},
+			return &mcpsdk.CallToolResult{
+				Content: []mcpsdk.Content{
+					&mcpsdk.TextContent{Text: string(resultJSON)},
 				},
 			}, nil, nil
 		}),
@@ -235,12 +236,12 @@ func (p *Provider) RegisterTools(server *mcp.Server) error {
 		Pattern string `json:"pattern" jsonschema:"required" jsonschema_description:"File pattern to match (e.g., '*.go', 'src/**/*.ts')"`
 	}
 
-	mcp.AddTool(server,
-		&mcp.Tool{
+	mcpsdk.AddTool(server,
+		&mcpsdk.Tool{
 			Name:        "glob",
 			Description: "Find files matching a glob pattern",
 		},
-		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcp.CallToolRequest, args GlobInput) (*mcp.CallToolResult, any, error) {
+		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcpsdk.CallToolRequest, args GlobInput) (*mcpsdk.CallToolResult, any, error) {
 			log.Debugf(ctx, "glob called", "pattern", args.Pattern)
 
 			globArgs := &GlobArgs{
@@ -255,14 +256,14 @@ func (p *Provider) RegisterTools(server *mcp.Server) error {
 			// Format result as JSON
 			resultJSON, _ := json.Marshal(result)
 
-			return &mcp.CallToolResult{
-				Content: []mcp.Content{
-					&mcp.TextContent{Text: string(resultJSON)},
+			return &mcpsdk.CallToolResult{
+				Content: []mcpsdk.Content{
+					&mcpsdk.TextContent{Text: string(resultJSON)},
 				},
 			}, nil, nil
 		}),
 	)
 
-	log.Infof(ctx, "Registered workspace tools", "count", 6)
+	log.Infof(p.ctx, "Registered workspace tools", "count", 6)
 	return nil
 }

@@ -23,7 +23,7 @@ func setupTestProvider(t *testing.T) (*Provider, string) {
 
 	// Create provider
 	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelError}))
-	provider, err := NewProvider(sess, logger)
+	provider, err := NewProvider(sess, ctx)
 	require.NoError(t, err)
 
 	return provider, tmpDir

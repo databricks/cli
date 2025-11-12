@@ -3,16 +3,16 @@ package databricks
 import (
 	"context"
 
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/mcp"
 	"github.com/databricks/cli/libs/mcp/providers"
 	"github.com/databricks/cli/libs/mcp/session"
-	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/databricks/cli/libs/log"
+	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 func init() {
 	providers.Register("databricks", func(cfg *mcp.Config, sess *session.Session, ctx context.Context) (providers.Provider, error) {
-		return NewProvider(cfg, sess, logger)
+		return NewProvider(cfg, sess, ctx)
 	}, providers.ProviderConfig{
 		Always: true,
 	})
@@ -22,11 +22,12 @@ func init() {
 type Provider struct {
 	client  *Client
 	session *session.Session
+	ctx     context.Context
 }
 
 // NewProvider creates a new Databricks provider
 func NewProvider(cfg *mcp.Config, sess *session.Session, ctx context.Context) (*Provider, error) {
-	client, err := NewClient(cfg, logger)
+	client, err := NewClient(cfg, ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -34,7 +35,7 @@ func NewProvider(cfg *mcp.Config, sess *session.Session, ctx context.Context) (*
 	return &Provider{
 		client:  client,
 		session: sess,
-		logger:  logger,
+		ctx:     ctx,
 	}, nil
 }
 
@@ -44,16 +45,16 @@ func (p *Provider) Name() string {
 }
 
 // RegisterTools registers all Databricks tools with the MCP server
-func (p *Provider) RegisterTools(server *mcp.Server) error {
-	log.Infof(ctx, "Registering Databricks tools")
+func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
+	log.Infof(p.ctx, "Registering Databricks tools")
 
 	// Register databricks_list_catalogs
-	mcp.AddTool(server,
-		&mcp.Tool{
+	mcpsdk.AddTool(server,
+		&mcpsdk.Tool{
 			Name:        "databricks_list_catalogs",
 			Description: "List all available Databricks catalogs",
 		},
-		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcp.CallToolRequest, args struct{}) (*mcp.CallToolResult, any, error) {
+		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcpsdk.CallToolRequest, args struct{}) (*mcpsdk.CallToolResult, any, error) {
 			log.Debugf(ctx, "databricks_list_catalogs called")
 
 			result, err := p.client.ListCatalogs(ctx)
@@ -62,9 +63,9 @@ func (p *Provider) RegisterTools(server *mcp.Server) error {
 			}
 
 			text := formatCatalogsResult(result)
-			return &mcp.CallToolResult{
-				Content: []mcp.Content{
-					&mcp.TextContent{Text: text},
+			return &mcpsdk.CallToolResult{
+				Content: []mcpsdk.Content{
+					&mcpsdk.TextContent{Text: text},
 				},
 			}, nil, nil
 		}),
@@ -78,12 +79,12 @@ func (p *Provider) RegisterTools(server *mcp.Server) error {
 		Offset      int    `json:"offset,omitempty" jsonschema_description:"Offset for pagination (default: 0)"`
 	}
 
-	mcp.AddTool(server,
-		&mcp.Tool{
+	mcpsdk.AddTool(server,
+		&mcpsdk.Tool{
 			Name:        "databricks_list_schemas",
 			Description: "List all schemas in a Databricks catalog with pagination support",
 		},
-		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcp.CallToolRequest, args ListSchemasInput) (*mcp.CallToolResult, any, error) {
+		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcpsdk.CallToolRequest, args ListSchemasInput) (*mcpsdk.CallToolResult, any, error) {
 			log.Debugf(ctx, "databricks_list_schemas called", "catalog", args.CatalogName)
 
 			listArgs := &ListSchemasArgs{
@@ -99,9 +100,9 @@ func (p *Provider) RegisterTools(server *mcp.Server) error {
 			}
 
 			text := formatSchemasResult(result)
-			return &mcp.CallToolResult{
-				Content: []mcp.Content{
-					&mcp.TextContent{Text: text},
+			return &mcpsdk.CallToolResult{
+				Content: []mcpsdk.Content{
+					&mcpsdk.TextContent{Text: text},
 				},
 			}, nil, nil
 		}),
@@ -114,12 +115,12 @@ func (p *Provider) RegisterTools(server *mcp.Server) error {
 		ExcludeInaccessible bool   `json:"exclude_inaccessible,omitempty" jsonschema_description:"Exclude inaccessible tables (default: false)"`
 	}
 
-	mcp.AddTool(server,
-		&mcp.Tool{
+	mcpsdk.AddTool(server,
+		&mcpsdk.Tool{
 			Name:        "databricks_list_tables",
 			Description: "List tables in a Databricks catalog and schema",
 		},
-		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcp.CallToolRequest, args ListTablesInput) (*mcp.CallToolResult, any, error) {
+		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcpsdk.CallToolRequest, args ListTablesInput) (*mcpsdk.CallToolResult, any, error) {
 			log.Debugf(ctx, "databricks_list_tables called", "catalog", args.CatalogName, "schema", args.SchemaName)
 
 			listArgs := &ListTablesArgs{
@@ -134,9 +135,9 @@ func (p *Provider) RegisterTools(server *mcp.Server) error {
 			}
 
 			text := formatTablesResult(result)
-			return &mcp.CallToolResult{
-				Content: []mcp.Content{
-					&mcp.TextContent{Text: text},
+			return &mcpsdk.CallToolResult{
+				Content: []mcpsdk.Content{
+					&mcpsdk.TextContent{Text: text},
 				},
 			}, nil, nil
 		}),
@@ -148,12 +149,12 @@ func (p *Provider) RegisterTools(server *mcp.Server) error {
 		SampleSize    int    `json:"sample_size,omitempty" jsonschema_description:"Number of sample rows to return (default: 5)"`
 	}
 
-	mcp.AddTool(server,
-		&mcp.Tool{
+	mcpsdk.AddTool(server,
+		&mcpsdk.Tool{
 			Name:        "databricks_describe_table",
 			Description: "Get detailed information about a Databricks table including schema and optional sample data",
 		},
-		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcp.CallToolRequest, args DescribeTableInput) (*mcp.CallToolResult, any, error) {
+		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcpsdk.CallToolRequest, args DescribeTableInput) (*mcpsdk.CallToolResult, any, error) {
 			log.Debugf(ctx, "databricks_describe_table called", "table", args.TableFullName)
 
 			descArgs := &DescribeTableArgs{
@@ -167,9 +168,9 @@ func (p *Provider) RegisterTools(server *mcp.Server) error {
 			}
 
 			text := formatTableDetails(result)
-			return &mcp.CallToolResult{
-				Content: []mcp.Content{
-					&mcp.TextContent{Text: text},
+			return &mcpsdk.CallToolResult{
+				Content: []mcpsdk.Content{
+					&mcpsdk.TextContent{Text: text},
 				},
 			}, nil, nil
 		}),
@@ -180,12 +181,12 @@ func (p *Provider) RegisterTools(server *mcp.Server) error {
 		Query string `json:"query" jsonschema:"required" jsonschema_description:"SQL query to execute"`
 	}
 
-	mcp.AddTool(server,
-		&mcp.Tool{
+	mcpsdk.AddTool(server,
+		&mcpsdk.Tool{
 			Name:        "databricks_execute_query",
 			Description: "Execute SQL query in Databricks. Only single SQL statements are supported - do not send multiple statements separated by semicolons. For multiple statements, call this tool separately for each one. DO NOT create catalogs, schemas or tables - requires metastore admin privileges. Query existing data instead. Timeout: 60 seconds for query execution.",
 		},
-		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcp.CallToolRequest, args ExecuteQueryInput) (*mcp.CallToolResult, any, error) {
+		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcpsdk.CallToolRequest, args ExecuteQueryInput) (*mcpsdk.CallToolResult, any, error) {
 			log.Debugf(ctx, "databricks_execute_query called", "query", args.Query)
 
 			result, err := p.client.ExecuteQuery(ctx, args.Query)
@@ -194,14 +195,14 @@ func (p *Provider) RegisterTools(server *mcp.Server) error {
 			}
 
 			text := formatQueryResult(result)
-			return &mcp.CallToolResult{
-				Content: []mcp.Content{
-					&mcp.TextContent{Text: text},
+			return &mcpsdk.CallToolResult{
+				Content: []mcpsdk.Content{
+					&mcpsdk.TextContent{Text: text},
 				},
 			}, nil, nil
 		}),
 	)
 
-	log.Infof(ctx, "Registered Databricks tools")
+	log.Infof(p.ctx, "Registered Databricks tools")
 	return nil
 }

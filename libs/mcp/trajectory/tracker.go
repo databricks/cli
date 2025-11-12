@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"os"
 	"path/filepath"
 
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/mcp"
 	"github.com/databricks/cli/libs/mcp/session"
 	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
@@ -16,12 +16,11 @@ import (
 type Tracker struct {
 	writer    *Writer
 	session   *session.Session
-	logger    *slog.Logger
 	enabled   bool
 	sessionID string
 }
 
-func NewTracker(sess *session.Session, cfg *mcp.Config, logger *slog.Logger) (*Tracker, error) {
+func NewTracker(sess *session.Session, cfg *mcp.Config, ctx context.Context) (*Tracker, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get home directory: %w", err)
@@ -37,13 +36,12 @@ func NewTracker(sess *session.Session, cfg *mcp.Config, logger *slog.Logger) (*T
 	tracker := &Tracker{
 		writer:    writer,
 		session:   sess,
-		logger:    logger,
 		enabled:   true,
 		sessionID: sess.ID,
 	}
 
 	if err := tracker.writeSessionEntry(cfg); err != nil {
-		logger.Warn("failed to write session entry", "error", err)
+		log.Warnf(ctx, "failed to write session entry: %v", err)
 	}
 
 	return tracker, nil
@@ -108,9 +106,7 @@ func (t *Tracker) RecordToolCall(toolName string, args interface{}, result *mcps
 	}
 
 	entry := NewToolEntry(t.sessionID, toolName, argsJSON, success, resultJSON, errorStr)
-	if writeErr := t.writer.WriteEntry(entry); writeErr != nil {
-		t.logger.Warn("failed to record trajectory entry", "error", writeErr)
-	}
+	_ = t.writer.WriteEntry(entry)
 }
 
 func (t *Tracker) Close() error {

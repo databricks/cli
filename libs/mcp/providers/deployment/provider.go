@@ -8,19 +8,19 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/mcp"
 	"github.com/databricks/cli/libs/mcp/providers"
 	"github.com/databricks/cli/libs/mcp/providers/databricks"
 	"github.com/databricks/cli/libs/mcp/providers/io"
 	"github.com/databricks/cli/libs/mcp/session"
-	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/databricks/cli/libs/log"
+	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 func init() {
 	// Register deployment provider with conditional enablement based on AllowDeployment
 	providers.Register("deployment", func(cfg *mcp.Config, sess *session.Session, ctx context.Context) (providers.Provider, error) {
-		return NewProvider(cfg, sess, logger)
+		return NewProvider(cfg, sess, ctx)
 	}, providers.ProviderConfig{
 		EnabledWhen: func(cfg *mcp.Config) bool {
 			return cfg.AllowDeployment
@@ -34,6 +34,7 @@ const deployRetries = 3
 type Provider struct {
 	config  *mcp.Config
 	session *session.Session
+	ctx     context.Context
 	client  *databricks.Client
 }
 
@@ -46,7 +47,7 @@ type DeployDatabricksAppInput struct {
 }
 
 func NewProvider(cfg *mcp.Config, sess *session.Session, ctx context.Context) (*Provider, error) {
-	client, err := databricks.NewClient(cfg, logger)
+	client, err := databricks.NewClient(cfg, ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create databricks client: %w", err)
 	}
@@ -54,8 +55,8 @@ func NewProvider(cfg *mcp.Config, sess *session.Session, ctx context.Context) (*
 	return &Provider{
 		config:  cfg,
 		session: sess,
+		ctx:     ctx,
 		client:  client,
-		logger:  logger,
 	}, nil
 }
 
@@ -64,15 +65,15 @@ func (p *Provider) Name() string {
 	return "deployment"
 }
 
-func (p *Provider) RegisterTools(server *mcp.Server) error {
-	log.Infof(ctx, "Registering deployment tools")
+func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
+	log.Infof(p.ctx, "Registering deployment tools")
 
-	mcp.AddTool(server,
-		&mcp.Tool{
+	mcpsdk.AddTool(server,
+		&mcpsdk.Tool{
 			Name:        "deploy_databricks_app",
 			Description: "Deploy a generated app to Databricks Apps. Creates the app if it doesn't exist, syncs local files to workspace, and deploys the app. Returns deployment status and app URL. Only use after direct user request and running validation.",
 		},
-		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcp.CallToolRequest, args DeployDatabricksAppInput) (*mcp.CallToolResult, any, error) {
+		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcpsdk.CallToolRequest, args DeployDatabricksAppInput) (*mcpsdk.CallToolResult, any, error) {
 			log.Debugf(ctx, "deploy_databricks_app called",
 				"work_dir", args.WorkDir,
 				"name", args.Name,
@@ -93,9 +94,9 @@ func (p *Provider) RegisterTools(server *mcp.Server) error {
 			}
 
 			text := formatDeployResult(result)
-			return &mcp.CallToolResult{
-				Content: []mcp.Content{
-					&mcp.TextContent{Text: text},
+			return &mcpsdk.CallToolResult{
+				Content: []mcpsdk.Content{
+					&mcpsdk.TextContent{Text: text},
 				},
 			}, nil, nil
 		}),

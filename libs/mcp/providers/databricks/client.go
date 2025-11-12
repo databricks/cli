@@ -1,6 +1,7 @@
 package databricks
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/databricks/cli/libs/mcp"
@@ -34,6 +35,5 @@ func NewClient(cfg *mcp.Config, ctx context.Context) (*Client, error) {
 	return &Client{
 		workspace: workspace,
 		config:    cfg,
-		logger:    logger,
 	}, nil
 }

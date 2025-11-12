@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 
@@ -34,21 +35,19 @@ func (p *Provider) Validate(ctx context.Context, args *ValidateArgs) (*ValidateR
 
 	state, err := LoadState(workDir)
 	if err != nil {
-		log.Warnf(ctx, "failed to load project state", slog.String("error", err.Error()))
+		log.Warnf(ctx, "failed to load project state (error: %v)", err)
 	}
 	if state == nil {
 		state = NewProjectState()
 	}
 
-	log.Infof(ctx, "starting validation",
-		slog.String("work_dir", workDir),
-		slog.String("state", string(state.State)))
+	log.Infof(ctx, "starting validation (work_dir: %s, state: %s)", workDir, string(state.State))
 
 	var validation Validation
 	if p.config != nil && p.config.Validation != nil {
 		valConfig := p.config.Validation
 		if valConfig.Command != "" {
-			log.Infof(ctx, "using custom validation command", slog.String("command", valConfig.Command))
+			log.Infof(ctx, "using custom validation command (command: %s)", valConfig.Command)
 			validation = NewValidationCmd(valConfig.Command, valConfig.DockerImage)
 		}
 	}
@@ -73,7 +72,7 @@ func (p *Provider) Validate(ctx context.Context, args *ValidateArgs) (*ValidateR
 		daggerSb, err := p.createDaggerSandbox(ctx, workDir, validationCfg)
 		if err != nil {
 			log.Warnf(ctx, "failed to create Dagger sandbox, falling back to local",
-				slog.String("error", err.Error()))
+				"error", err.Error())
 			sb, err = p.createLocalSandbox(workDir)
 			if err != nil {
 				return nil, fmt.Errorf("failed to create local sandbox: %w", err)
@@ -101,23 +100,23 @@ func (p *Provider) Validate(ctx context.Context, args *ValidateArgs) (*ValidateR
 
 	defer func() {
 		if closeErr := sb.Close(); closeErr != nil {
-			log.Warnf(ctx, "failed to close sandbox", slog.String("error", closeErr.Error()))
+			log.Warnf(ctx, "failed to close sandbox", "error", closeErr.Error())
 		}
 	}()
 
-	result, err := validation.Validate(ctx, sb, p.logger)
+	result, err := validation.Validate(ctx, sb)
 	if err != nil {
 		return nil, fmt.Errorf("validation execution failed: %w", err)
 	}
 
 	if !result.Success {
-		log.Warnf(ctx, "validation failed", slog.String("message", result.Message))
+		log.Warnf(ctx, "validation failed", "message", result.Message)
 		return result, nil
 	}
 
 	checksum, err := ComputeChecksum(workDir)
 	if err != nil {
-		log.Warnf(ctx, "failed to compute checksum", slog.String("error", err.Error()))
+		log.Warnf(ctx, "failed to compute checksum", "error", err.Error())
 		return &ValidateResult{
 			Success: false,
 			Message: fmt.Sprintf("Validation passed but failed to compute checksum: %v", err),
@@ -126,7 +125,7 @@ func (p *Provider) Validate(ctx context.Context, args *ValidateArgs) (*ValidateR
 
 	validatedState := state.Validate(checksum)
 	if err := SaveState(workDir, validatedState); err != nil {
-		log.Warnf(ctx, "failed to save state", slog.String("error", err.Error()))
+		log.Warnf(ctx, "failed to save state", "error", err.Error())
 		return &ValidateResult{
 			Success: false,
 			Message: fmt.Sprintf("Validation passed but failed to save state: %v", err),
@@ -134,9 +133,9 @@ func (p *Provider) Validate(ctx context.Context, args *ValidateArgs) (*ValidateR
 	}
 
 	log.Infof(ctx, "validation successful",
-		slog.String("checksum", checksum),
-		slog.String("state", string(validatedState.State)),
-		slog.String("sandbox_type", sandboxType))
+		"checksum", checksum,
+		"state", string(validatedState.State),
+		"sandbox_type", sandboxType)
 
 	result.SandboxType = sandboxType
 	return result, nil
@@ -144,9 +143,9 @@ func (p *Provider) Validate(ctx context.Context, args *ValidateArgs) (*ValidateR
 
 func (p *Provider) createDaggerSandbox(ctx context.Context, workDir string, cfg *mcp.ValidationConfig) (sandbox.Sandbox, error) {
 	log.Infof(ctx, "creating Dagger sandbox",
-		slog.String("image", cfg.DockerImage),
+		"image", cfg.DockerImage,
 		slog.Int("timeout", cfg.Timeout),
-		slog.String("workDir", workDir))
+		"workDir", workDir)
 
 	sb, err := dagger.NewDaggerSandbox(ctx, dagger.Config{
 		Image:          cfg.DockerImage,
@@ -155,21 +154,21 @@ func (p *Provider) createDaggerSandbox(ctx context.Context, workDir string, cfg 
 	})
 	if err != nil {
 		log.Errorf(ctx, "failed to create Dagger sandbox",
-			slog.String("error", err.Error()),
-			slog.String("image", cfg.DockerImage))
+			"error", err.Error(),
+			"image", cfg.DockerImage)
 		return nil, err
 	}
 
-	log.Debugf(ctx, "propagating environment variables")
+	log.Debugf(p.ctx, "propagating environment variables")
 	if err := p.propagateEnvironment(sb); err != nil {
-		log.Errorf(ctx, "failed to propagate environment", slog.String("error", err.Error()))
+		log.Errorf(ctx, "failed to propagate environment", "error", err.Error())
 		sb.Close()
 		return nil, fmt.Errorf("failed to set environment: %w", err)
 	}
 
-	log.Debugf(ctx, "syncing files from host to container", slog.String("workDir", workDir))
+	log.Debugf(p.ctx, "syncing files from host to container", "workDir", workDir)
 	if err := sb.RefreshFromHost(ctx, workDir, "/workspace"); err != nil {
-		log.Errorf(ctx, "failed to sync files", slog.String("error", err.Error()))
+		log.Errorf(ctx, "failed to sync files", "error", err.Error())
 		sb.Close()
 		return nil, fmt.Errorf("failed to sync files: %w", err)
 	}
@@ -179,7 +178,7 @@ func (p *Provider) createDaggerSandbox(ctx context.Context, workDir string, cfg 
 }
 
 func (p *Provider) createLocalSandbox(workDir string) (sandbox.Sandbox, error) {
-	log.Infof(ctx, "creating local sandbox", slog.String("workDir", workDir))
+	log.Infof(p.ctx, "creating local sandbox", "workDir", workDir)
 	return local.NewLocalSandbox(workDir)
 }
 
@@ -198,7 +197,7 @@ func (p *Provider) propagateEnvironment(sb sandbox.Sandbox) error {
 	for _, key := range envVars {
 		if value := os.Getenv(key); value != "" {
 			daggerSb.WithEnv(key, value)
-			log.Debugf(ctx, "propagated environment variable", slog.String("key", key))
+			log.Debugf(p.ctx, "propagated environment variable", "key", key)
 		}
 	}
 
