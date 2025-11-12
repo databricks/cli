@@ -11,7 +11,20 @@ func newCheckCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "check",
 		Short: "Check MCP server environment",
-		Long:  "Verify that the environment is correctly configured for running the MCP server.",
+		Long: `Verify that the environment is correctly configured for running the MCP server.
+
+This command checks:
+- Databricks authentication (API token, profile, or other auth methods)
+- Workspace connectivity
+- MCP SDK availability
+- Dagger SDK availability (optional, for containerized validation)
+
+Use this command to troubleshoot connection issues before starting the MCP server.`,
+		Example: `  # Check environment configuration
+  databricks apps mcp check
+
+  # Check with specific profile
+  databricks apps mcp check --profile production`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 

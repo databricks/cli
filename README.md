@@ -36,5 +36,56 @@ This CLI follows the Databricks Unified Authentication principles.
 
 You can find a detailed description at https://github.com/databricks/databricks-sdk-go#authentication.
 
+## Apps Commands
+
+### MCP (Model Context Protocol)
+
+The `databricks apps mcp` command starts an MCP server that provides AI agents with tools to interact with Databricks.
+
+#### Features
+
+- **Databricks Integration**: Query catalogs, schemas, tables, and execute SQL
+- **Project Scaffolding**: Generate full-stack TypeScript applications from templates
+- **Workspace Tools**: File operations, bash execution, grep, and glob in project directories
+- **Sandboxed Execution**: Isolated file and command execution
+
+#### Usage
+
+Start the MCP server:
+
+```bash
+databricks apps mcp start --warehouse-id <warehouse-id>
+```
+
+Check your environment:
+
+```bash
+databricks apps mcp check
+```
+
+#### Configuration
+
+The MCP server requires:
+- **Warehouse ID**: Databricks SQL warehouse for query execution
+- **Databricks Authentication**: Via standard CLI auth (profile, environment variables)
+
+Optional flags:
+- `--allow-deployment`: Enable deployment operations
+- `--docker-image`: Docker image for validation (default: node:20-alpine)
+- `--use-dagger`: Use Dagger for containerized validation (default: true)
+
+#### Examples
+
+```bash
+# Basic usage
+databricks apps mcp start --warehouse-id abc123
+
+# With deployment enabled
+databricks apps mcp start --warehouse-id abc123 --allow-deployment
+
+# With custom Docker image
+databricks apps mcp start --warehouse-id abc123 --docker-image node:20-alpine
+```
+
 ## Privacy Notice
 Databricks CLI use is subject to the [Databricks License](https://github.com/databricks/cli/blob/main/LICENSE) and [Databricks Privacy Notice](https://www.databricks.com/legal/privacynotice), including any Usage Data provisions.

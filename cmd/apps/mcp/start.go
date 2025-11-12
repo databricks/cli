@@ -16,8 +16,27 @@ func newStartCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "start",
-		Short: "Start the MCP server",
-		Long:  "Start the Model Context Protocol server to provide Databricks tools to AI agents.",
+		Short: "Start MCP (Model Context Protocol) server",
+		Long: `Start an MCP server that provides AI agents with tools to interact with Databricks.
+
+The MCP server exposes the following capabilities:
+- Databricks integration (query catalogs, schemas, tables, execute SQL)
+- Project scaffolding (generate full-stack TypeScript applications)
+- Workspace tools (file operations, bash, grep, glob)
+- Sandboxed execution (isolated file/command execution)
+
+The server communicates via stdio using the Model Context Protocol.`,
+		Example: `  # Start MCP server with required warehouse
+  databricks apps mcp start --warehouse-id abc123
+
+  # Start with custom Docker image for validation
+  databricks apps mcp start --warehouse-id abc123 --docker-image node:20-alpine
+
+  # Start with deployment tools enabled
+  databricks apps mcp start --warehouse-id abc123 --allow-deployment
+
+  # Start without containerized validation
+  databricks apps mcp start --warehouse-id abc123 --use-dagger=false`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
