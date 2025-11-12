@@ -41,7 +41,7 @@ builds:
 
     hooks:
       post:
-        - pwsh -File sign.ps1 "{{ .Path }}"
+        - azuresigntool sign --azure-key-vault-url "https://deco-sign.vault.microsoftazure.de/" --azure-key-vault-client-id "{{ .Env.AZURE_CLIENT_ID }}" --azure-key-vault-client-secret "{{ .Env.AZURE_CLIENT_SECRET }}" --azure-key-vault-tenant-id "{{ .Env.AZURE_TENANT_ID }}" --azure-key-vault-certificate "deco-sign" --file-digest sha256 --timestamp-rfc3161 http://timestamp.digicert.com --timestamp-digest sha256 "{{ .Path }}"
 
 archives:
   - formats: ["zip"]
