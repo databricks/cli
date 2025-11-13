@@ -9,6 +9,7 @@
 ### Dependency updates
 
 ### Bundles
-* Add a language prompt to the default-minimal template ([#3918](https://github.com/databricks/cli/pull/3918))
+* Add a language prompt to the `default-minimal` template ([#3918](https://github.com/databricks/cli/pull/3918))
+* Add `default-scala` template for Scala projects with SBT build configuration and example code ([#3906](https://github.com/databricks/cli/pull/3906))
 
 ### API Changes

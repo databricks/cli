@@ -55,6 +55,7 @@ DIFF  clusters/current_can_manage/out.requests.destroy.direct.json
 +    "path": "/api/2.0/permissions/clusters/[UUID]"
 +  }
 +]
+MATCH clusters/target/out.requests.direct.json
 MATCH database_instances/current_can_manage/out.requests.deploy.direct.json
 DIFF  database_instances/current_can_manage/out.requests.destroy.direct.json
 --- database_instances/current_can_manage/out.requests.destroy.direct.json
