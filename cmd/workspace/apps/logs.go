@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"slices"
 	"strings"
 	"time"
 
@@ -29,10 +30,9 @@ const (
 	defaultTailLines      = 200
 	defaultPrefetchWindow = 2 * time.Second
 	tokenAcquireTimeout   = time.Minute
-	sourceApp             = "APP"
-	sourceSystem          = "SYSTEM"
-	sourceAny             = "ANY"
 )
+
+var allowedSources = []string{"APP", "SYSTEM"}
 
 func newLogsCommand() *cobra.Command {
 	var (
@@ -207,14 +207,13 @@ func buildSourceFilter(values []string) (map[string]struct{}, error) {
 	filter := make(map[string]struct{})
 	for _, v := range values {
 		trimmed := strings.ToUpper(strings.TrimSpace(v))
-		switch trimmed {
-		case "", sourceAny:
+		if trimmed == "" {
 			continue
-		case sourceApp, sourceSystem:
-			filter[trimmed] = struct{}{}
-		default:
-			return nil, fmt.Errorf("invalid --source value %q (valid: %s, %s)", v, sourceApp, sourceSystem)
 		}
+		if !slices.Contains(allowedSources, trimmed) {
+			return nil, fmt.Errorf("invalid --source value %q (valid: %s)", v, strings.Join(allowedSources, ", "))
+		}
+		filter[trimmed] = struct{}{}
 	}
 	if len(filter) == 0 {
 		return nil, nil
