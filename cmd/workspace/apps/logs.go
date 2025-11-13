@@ -18,6 +18,7 @@ import (
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdgroup"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logstream"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -123,6 +124,7 @@ via --source APP|SYSTEM. Use --output-file to mirror the stream to a local file 
 				defer file.Close()
 				writer = io.MultiWriter(writer, file)
 			}
+			colorizeLogs := outputPath == "" && cmdio.IsTTY(cmd.OutOrStdout())
 
 			sourceMap, err := buildSourceFilter(sourceFilters)
 			if err != nil {
@@ -143,6 +145,7 @@ via --source APP|SYSTEM. Use --output-file to mirror the stream to a local file 
 				Prefetch:      defaultPrefetchWindow,
 				Writer:        writer,
 				UserAgent:     "databricks-cli apps logs",
+				Colorize:      colorizeLogs,
 			})
 		},
 	}
