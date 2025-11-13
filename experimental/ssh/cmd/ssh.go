@@ -20,9 +20,9 @@ func New() *cobra.Command {
 SSH commands let you setup and establish ssh connections to Databricks compute.
 
 Common workflows:
-  databricks experimental ssh connect --cluster=<cluster-id> --profile=<profile-name>  # connect to a cluster without any setup
-  databricks experimental ssh setup --name=my-compute --cluster=<cluster-id>           # update local ssh config
-  ssh my-compute                                                                       # connect to the compute using ssh client
+  databricks ssh connect --cluster=<cluster-id> --profile=<profile-name>  # connect to a cluster without any setup
+  databricks ssh setup --name=my-compute --cluster=<cluster-id>           # update local ssh config
+  ssh my-compute                                                          # connect to the compute using ssh client
 
 ` + disclaimer,
 	}
