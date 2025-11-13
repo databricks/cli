@@ -48,3 +48,38 @@ func TestNewLogStreamDialerHonorsInsecureSkipVerify(t *testing.T) {
 	require.NotNil(t, dialer.TLSClientConfig, "expected TLS config when insecure skip verify is set")
 	assert.True(t, dialer.TLSClientConfig.InsecureSkipVerify)
 }
+
+func TestBuildLogsURLConvertsSchemes(t *testing.T) {
+	url, err := buildLogsURL("https://example.com/foo")
+	require.NoError(t, err)
+	assert.Equal(t, "wss://example.com/foo/logz/stream", url)
+
+	url, err = buildLogsURL("http://example.com/foo")
+	require.NoError(t, err)
+	assert.Equal(t, "ws://example.com/foo/logz/stream", url)
+}
+
+func TestBuildLogsURLRejectsUnknownScheme(t *testing.T) {
+	_, err := buildLogsURL("ftp://example.com/foo")
+	require.Error(t, err)
+}
+
+func TestNormalizeOrigin(t *testing.T) {
+	assert.Equal(t, "https://example.com", normalizeOrigin("https://example.com/foo"))
+	assert.Equal(t, "http://example.com", normalizeOrigin("ws://example.com/foo"))
+	assert.Equal(t, "https://example.com", normalizeOrigin("wss://example.com/foo"))
+	assert.Equal(t, "", normalizeOrigin("://invalid"))
+}
+
+func TestBuildSourceFilter(t *testing.T) {
+	filters, err := buildSourceFilter([]string{"app", "system", ""})
+	require.NoError(t, err)
+	assert.Equal(t, map[string]struct{}{"APP": {}, "SYSTEM": {}}, filters)
+
+	filters, err = buildSourceFilter(nil)
+	require.NoError(t, err)
+	assert.Nil(t, filters)
+
+	_, err = buildSourceFilter([]string{"foo"})
+	require.Error(t, err)
+}
