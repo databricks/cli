@@ -182,7 +182,7 @@ var testDeps = map[string]prepareWorkspace{
 		return &PermissionsState{
 			ObjectID: "/jobs/" + strconv.FormatInt(resp.JobId, 10),
 			Permissions: []iam.AccessControlRequest{{
-				PermissionLevel: "CAN_MANAGE",
+				PermissionLevel: "IS_OWNER",
 				UserName:        "user@example.com",
 			}},
 		}, nil

@@ -7,7 +7,7 @@ cleanup() {
 trap cleanup EXIT
 
 $CLI bundle plan > out.plan_.$DATABRICKS_BUNDLE_ENGINE.txt
-$CLI bundle debug plan > out.plan_.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan -o json > out.plan_.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 
 title "Cluster should exist with num_workers after bundle deployment:\n"
@@ -20,7 +20,7 @@ update_file.py databricks.yml "      num_workers: 2" "      autoscale:
         min_workers: 2
         max_workers: 4"
 $CLI bundle plan >> out.plan_.$DATABRICKS_BUNDLE_ENGINE.txt
-$CLI bundle debug plan >> out.plan_.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan -o json >> out.plan_.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 trace jq 'select(.method == "POST" and (.path | contains("/clusters/edit")))' out.requests.txt
 rm out.requests.txt
@@ -32,7 +32,7 @@ title "Changing autoscale should call update API on stopped cluster\n"
 update_file.py databricks.yml "min_workers: 2" "min_workers: 3"
 update_file.py databricks.yml "max_workers: 4" "max_workers: 5"
 $CLI bundle plan >> out.plan_.$DATABRICKS_BUNDLE_ENGINE.txt
-$CLI bundle debug plan >> out.plan_.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan -o json >> out.plan_.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 trace jq 'select(.method == "POST" and (.path | contains("/clusters/edit")))' out.requests.txt
 rm out.requests.txt
@@ -47,7 +47,7 @@ title "Changing autoscale should call resize API on running cluster\n"
 update_file.py databricks.yml "min_workers: 3" "min_workers: 4"
 update_file.py databricks.yml "max_workers: 5" "max_workers: 6"
 $CLI bundle plan >> out.plan_.$DATABRICKS_BUNDLE_ENGINE.txt
-$CLI bundle debug plan >> out.plan_.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan -o json >> out.plan_.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 trace jq 'select(.method == "POST" and (.path | contains("/clusters/resize")))' out.requests.txt
 rm out.requests.txt
@@ -60,7 +60,7 @@ update_file.py databricks.yml "      autoscale:
         min_workers: 4
         max_workers: 6" "      num_workers: 3"
 $CLI bundle plan >> out.plan_.$DATABRICKS_BUNDLE_ENGINE.txt
-$CLI bundle debug plan >> out.plan_.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan -o json >> out.plan_.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 trace jq 'select(.method == "POST" and (.path | contains("/clusters/resize")))' out.requests.txt
 rm out.requests.txt

@@ -121,7 +121,7 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 
 		// Reads (typed): b.Config.Workspace.CurrentUser.UserName (gets current user name)
 		// Updates (dynamic): resources.*.*.permissions
-		EnsureOwnerPermissions(),
+		FixPermissions(),
 	)
 }
 

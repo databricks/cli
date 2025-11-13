@@ -2,7 +2,6 @@ package bundle
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -34,16 +33,17 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 	cmd.Flags().StringVarP(&clusterId, "cluster-id", "c", "", "Override cluster in the deployment with the given cluster ID.")
 	cmd.Flags().MarkDeprecated("compute-id", "use --cluster-id instead")
 
-	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
-		if f := cmd.Flag("output"); f != nil && f.Changed {
-			return errors.New("the -o/--output flag is not supported for this command. Use an experimental 'databricks bundle debug plan' command instead")
-		}
-		return nil
-	}
-
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		opts := utils.ProcessOptions{
-			InitFunc: func(b *bundle.Bundle) {
+			AlwaysPull:    true,
+			FastValidate:  true,
+			Build:         true,
+			DeployPrepare: true,
+		}
+
+		// Only add InitFunc if we need to set force or cluster ID
+		if force || cmd.Flag("compute-id").Changed || cmd.Flag("cluster-id").Changed {
+			opts.InitFunc = func(b *bundle.Bundle) {
 				b.Config.Bundle.Force = force
 
 				if cmd.Flag("compute-id").Changed {
@@ -53,11 +53,7 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 				if cmd.Flag("cluster-id").Changed {
 					b.Config.Bundle.ClusterId = clusterId
 				}
-			},
-			AlwaysPull:    true,
-			FastValidate:  true,
-			Build:         true,
-			DeployPrepare: true,
+			}
 		}
 
 		b, stateDesc, err := utils.ProcessBundleRet(cmd, opts)
