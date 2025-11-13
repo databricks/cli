@@ -1,7 +1,6 @@
 
 >>> musterr as-test-sp [CLI] bundle destroy --auto-approve
 Warn: cannot read resources.jobs.foo id="[NUMID]": User [UUID] does not have View or Admin or Manage Run or Owner permissions on job [NUMID]
-Warn: cannot read resources.jobs.foo.permissions id="/jobs/[NUMID]": [UUID] does not have Manage permissions on Job with ID: ElasticJobId([NUMID]). Please contact the owner or an administrator for access.
 The following resources will be deleted:
   delete job foo
 

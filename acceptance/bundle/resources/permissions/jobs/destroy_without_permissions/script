@@ -2,19 +2,6 @@ envsubst < databricks.yml.tmpl > databricks.yml
 envsubst < take_ownership.json.tmpl > take_ownership.json
 trace cat take_ownership.json
 
-as-test-sp() {
-    if [[ -z "$TEST_SP_TOKEN" ]]; then
-        echo "Error: TEST_SP_TOKEN is not set." >&2
-        return 1
-    fi
-
-    DATABRICKS_TOKEN="$TEST_SP_TOKEN" \
-    DATABRICKS_CLIENT_SECRET="" \
-    DATABRICKS_CLIENT_ID="" \
-    DATABRICKS_AUTH_TYPE="" \
-    "$@"
-}
-
 trace as-test-sp $CLI current-user me | jq .displayName
 
 cleanup() {
