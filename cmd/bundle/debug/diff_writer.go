@@ -24,7 +24,8 @@ import (
 
 // DiffWriter handles writing diff changes back to YAML files
 type DiffWriter struct {
-	bundle *bundle.Bundle
+	bundle     *bundle.Bundle
+	saveToFile bool
 }
 
 // NewDiffWriter creates a new DiffWriter
@@ -33,12 +34,12 @@ func NewDiffWriter(b *bundle.Bundle) *DiffWriter {
 }
 
 // WriteJobDiff writes job diff changes back to the YAML file
-func (w *DiffWriter) WriteJobDiff(ctx context.Context, jobKey string, currentState any, changelog diff.Changelog) error {
+func (w *DiffWriter) WriteJobDiff(ctx context.Context, jobKey string, currentState any, changelog diff.Changelog) (*FileChange, error) {
 	return w.writeResourceDiff(ctx, "jobs", jobKey, currentState, changelog, extractJobSettings)
 }
 
 // WritePipelineDiff writes pipeline diff changes back to the YAML file
-func (w *DiffWriter) WritePipelineDiff(ctx context.Context, pipelineKey string, currentState any, changelog diff.Changelog) error {
+func (w *DiffWriter) WritePipelineDiff(ctx context.Context, pipelineKey string, currentState any, changelog diff.Changelog) (*FileChange, error) {
 	return w.writeResourceDiff(ctx, "pipelines", pipelineKey, currentState, changelog, extractPipelineSpec)
 }
 
@@ -142,20 +143,20 @@ func ensurePathExists(ctx context.Context, v dyn.Value, path dyn.Path) (dyn.Valu
 }
 
 // writeResourceDiff writes resource diff changes back to the YAML file
-func (w *DiffWriter) writeResourceDiff(ctx context.Context, resourceType, resourceKey string, currentState any, changelog diff.Changelog, extractor extractorFunc) error {
+func (w *DiffWriter) writeResourceDiff(ctx context.Context, resourceType, resourceKey string, currentState any, changelog diff.Changelog, extractor extractorFunc) (*FileChange, error) {
 	// Build the path to the resource in the bundle config
 	resourcePath := dyn.MustPathFromString(fmt.Sprintf("resources.%s.%s", resourceType, resourceKey))
 
 	// Get the current config value for this resource
 	resourceValue, err := dyn.GetByPath(w.bundle.Config.Value(), resourcePath)
 	if err != nil {
-		return fmt.Errorf("failed to get resource at path %s: %w", resourcePath, err)
+		return nil, fmt.Errorf("failed to get resource at path %s: %w", resourcePath, err)
 	}
 
 	// Get the file location for this resource
 	location := resourceValue.Location()
 	if location.File == "" {
-		return fmt.Errorf("resource %s.%s has no file location", resourceType, resourceKey)
+		return nil, fmt.Errorf("resource %s.%s has no file location", resourceType, resourceKey)
 	}
 
 	log.Infof(ctx, "Updating %s.%s in %s with %d changes", resourceType, resourceKey, location.File, len(changelog))
@@ -164,27 +165,27 @@ func (w *DiffWriter) writeResourceDiff(ctx context.Context, resourceType, resour
 	// (e.g., JobSettings from Job, PipelineSpec from Pipeline)
 	settings, err := extractor(currentState)
 	if err != nil {
-		return fmt.Errorf("failed to extract settings from current state: %w", err)
+		return nil, fmt.Errorf("failed to extract settings from current state: %w", err)
 	}
 
 	// Convert the entire remote settings to dyn.Value so we can extract specific field values
 	remoteValue, err := convert.FromTyped(settings, resourceValue)
 	if err != nil {
-		return fmt.Errorf("failed to convert settings to dyn.Value: %w", err)
+		return nil, fmt.Errorf("failed to convert settings to dyn.Value: %w", err)
 	}
 
 	log.Debugf(ctx, "Converted remote state to dyn.Value")
 
 	// Read the YAML file
-	content, err := os.ReadFile(location.File)
+	originalContent, err := os.ReadFile(location.File)
 	if err != nil {
-		return fmt.Errorf("failed to read file %s: %w", location.File, err)
+		return nil, fmt.Errorf("failed to read file %s: %w", location.File, err)
 	}
 
 	// Parse the YAML file to dyn.Value
-	fileValue, err := yamlloader.LoadYAML(location.File, bytes.NewReader(content))
+	fileValue, err := yamlloader.LoadYAML(location.File, bytes.NewReader(originalContent))
 	if err != nil {
-		return fmt.Errorf("failed to parse YAML file %s: %w", location.File, err)
+		return nil, fmt.Errorf("failed to parse YAML file %s: %w", location.File, err)
 	}
 
 	// Get the struct type for path conversion
@@ -256,12 +257,54 @@ func (w *DiffWriter) writeResourceDiff(ctx context.Context, resourceType, resour
 		}
 	}
 
+	// Generate the modified content
+	modifiedContent, err := w.generateYAMLContent(updatedFileValue)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate modified YAML: %w", err)
+	}
+
 	// Write the updated file
-	return w.writeYAMLFile(ctx, location.File, updatedFileValue)
+	err = w.writeYAMLFile(ctx, location.File, updatedFileValue)
+	if err != nil {
+		return nil, err
+	}
+
+	// Return the file change info
+	return &FileChange{
+		Path:            location.File,
+		OriginalContent: string(originalContent),
+		ModifiedContent: modifiedContent,
+	}, nil
+}
+
+// generateYAMLContent converts a dyn.Value to YAML string
+func (w *DiffWriter) generateYAMLContent(fileValue dyn.Value) (string, error) {
+	// Convert to yaml.Node directly from dyn.Value
+	yamlNode, err := dynValueToYamlNode(fileValue)
+	if err != nil {
+		return "", fmt.Errorf("failed to convert to YAML node: %w", err)
+	}
+
+	// Write the YAML to a buffer
+	var buf bytes.Buffer
+	enc := yaml.NewEncoder(&buf)
+	enc.SetIndent(2)
+	err = enc.Encode(yamlNode)
+	if err != nil {
+		return "", fmt.Errorf("failed to encode YAML: %w", err)
+	}
+
+	return buf.String(), nil
 }
 
 // writeYAMLFile writes a dyn.Value to a YAML file
 func (w *DiffWriter) writeYAMLFile(ctx context.Context, filePath string, fileValue dyn.Value) error {
+	// Skip writing if saveToFile is false
+	if !w.saveToFile {
+		log.Debugf(ctx, "Skipping file write (save flag not set)")
+		return nil
+	}
+
 	// Create directory if needed
 	err := os.MkdirAll(filepath.Dir(filePath), 0o755)
 	if err != nil {

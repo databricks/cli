@@ -19,9 +19,20 @@ type ResourceDiff struct {
 	Changes diff.Changelog `json:"changes"`
 }
 
-type DiffOutput struct {
+type FileChange struct {
+	Path            string `json:"path"`
+	OriginalContent string `json:"originalContent"`
+	ModifiedContent string `json:"modifiedContent"`
+}
+
+type ChangesSummary struct {
 	Jobs      map[string]*ResourceDiff `json:"jobs,omitempty"`
 	Pipelines map[string]*ResourceDiff `json:"pipelines,omitempty"`
+}
+
+type DiffOutput struct {
+	Files   []FileChange    `json:"files"`
+	Changes *ChangesSummary `json:"changes"`
 }
 
 func NewExpDiffCommand() *cobra.Command {
@@ -60,8 +71,11 @@ Note: This command is experimental and may change without notice.`,
 		}
 
 		output := &DiffOutput{
-			Jobs:      make(map[string]*ResourceDiff),
-			Pipelines: make(map[string]*ResourceDiff),
+			Files: []FileChange{},
+			Changes: &ChangesSummary{
+				Jobs:      make(map[string]*ResourceDiff),
+				Pipelines: make(map[string]*ResourceDiff),
+			},
 		}
 
 		// If no snapshot exists, return empty diff
@@ -72,11 +86,9 @@ Note: This command is experimental and may change without notice.`,
 
 		w := b.WorkspaceClient()
 
-		// Create diff writer if save flag is set
-		var writer *DiffWriter
-		if save {
-			writer = NewDiffWriter(b)
-		}
+		// Create diff writer
+		writer := NewDiffWriter(b)
+		writer.saveToFile = save
 
 		// Compare jobs
 		for key, job := range b.Config.Resources.Jobs {
@@ -120,18 +132,17 @@ Note: This command is experimental and may change without notice.`,
 
 			// Only add to output if there are changes
 			if len(changelog) > 0 {
-				output.Jobs[key] = &ResourceDiff{
+				output.Changes.Jobs[key] = &ResourceDiff{
 					Changes: changelog,
 				}
 				log.Debugf(ctx, "Found %d changes for job %s", len(changelog), key)
 
-				// Save changes back to YAML if save flag is set
-				if writer != nil {
-					// Filter out read-only fields before saving
-					err = writer.WriteJobDiff(ctx, key, currentJob, changelog)
-					if err != nil {
-						log.Warnf(ctx, "Failed to save job %s changes: %v", key, err)
-					}
+				// Generate file change (will save to file if save flag is set)
+				fileChange, err := writer.WriteJobDiff(ctx, key, currentJob, changelog)
+				if err != nil {
+					log.Warnf(ctx, "Failed to process job %s changes: %v", key, err)
+				} else if fileChange != nil {
+					output.Files = append(output.Files, *fileChange)
 				}
 			}
 		}
@@ -172,17 +183,17 @@ Note: This command is experimental and may change without notice.`,
 
 			// Only add to output if there are changes
 			if len(changelog) > 0 {
-				output.Pipelines[key] = &ResourceDiff{
+				output.Changes.Pipelines[key] = &ResourceDiff{
 					Changes: changelog,
 				}
 				log.Debugf(ctx, "Found %d changes for pipeline %s", len(changelog), key)
 
-				// Save changes back to YAML if save flag is set
-				if writer != nil {
-					err = writer.WritePipelineDiff(ctx, key, currentPipeline, changelog)
-					if err != nil {
-						log.Warnf(ctx, "Failed to save pipeline %s changes: %v", key, err)
-					}
+				// Generate file change (will save to file if save flag is set)
+				fileChange, err := writer.WritePipelineDiff(ctx, key, currentPipeline, changelog)
+				if err != nil {
+					log.Warnf(ctx, "Failed to process pipeline %s changes: %v", key, err)
+				} else if fileChange != nil {
+					output.Files = append(output.Files, *fileChange)
 				}
 			}
 		}

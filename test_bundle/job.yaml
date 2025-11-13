@@ -3,3 +3,6 @@ resources:
     test_exp_diff_job:
       queue:
         enabled: true
+      performance_target: PERFORMANCE_OPTIMIZED
+      tags:
+        new: taggg

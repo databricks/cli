@@ -9,3 +9,4 @@ targets:
 
 include:
   - job.yaml
+  - pipeline.yaml
