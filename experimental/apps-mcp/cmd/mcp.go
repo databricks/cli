@@ -24,7 +24,6 @@ func NewMcpCmd() *cobra.Command {
 The MCP server exposes the following capabilities:
 - Databricks integration (query catalogs, schemas, tables, execute SQL)
 - Project scaffolding (generate full-stack TypeScript applications)
-- Workspace tools (file operations, bash, grep, glob)
 - Sandboxed execution (isolated file/command execution)
 
 The server communicates via stdio using the Model Context Protocol.`,

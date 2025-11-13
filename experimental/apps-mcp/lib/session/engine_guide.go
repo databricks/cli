@@ -11,8 +11,6 @@ import (
 var initializationMessageText string
 
 // InitializationMessage is the initialization message injected on first tool call.
-// This matches the Rust edda_mcp implementation.
-// The message content is loaded from initialization_message.md at compile time.
 var InitializationMessage = initializationMessageText
 
 // TrajectoryTracker interface to avoid import cycle
@@ -22,7 +20,6 @@ type TrajectoryTracker interface {
 
 // WrapToolHandler wraps a tool handler to inject the ENGINE_GUIDE on first tool call
 // and record trajectory if enabled
-// This matches the behavior of the Rust edda_mcp implementation
 func WrapToolHandler[T any](session *Session, handler func(ctx context.Context, req *mcp.CallToolRequest, args T) (*mcp.CallToolResult, any, error)) func(ctx context.Context, req *mcp.CallToolRequest, args T) (*mcp.CallToolResult, any, error) {
 	return func(ctx context.Context, req *mcp.CallToolRequest, args T) (*mcp.CallToolResult, any, error) {
 		// Check if this is the first tool call

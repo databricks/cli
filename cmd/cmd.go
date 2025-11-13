@@ -77,11 +77,11 @@ func New(ctx context.Context) *cobra.Command {
 	cli.AddCommand(experimental.New())
 	cli.AddCommand(fs.New())
 	cli.AddCommand(labs.New(ctx))
-	cli.AddCommand(ssh.New())
 	cli.AddCommand(sync.New())
 	cli.AddCommand(version.New())
 	cli.AddCommand(selftest.New())
 	cli.AddCommand(pipelines.InstallPipelinesCLI())
+	cli.AddCommand(ssh.New())
 
 	// Add workspace command groups, filtering out empty groups or groups with only hidden commands.
 	allGroups := workspace.Groups()

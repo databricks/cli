@@ -11,7 +11,7 @@ import (
 	"github.com/databricks/cli/experimental/apps-mcp/lib/providers/workspace"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/session"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/trajectory"
-	"github.com/databricks/cli/experimental/apps-mcp/lib/version"
+	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/log"
 	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -28,8 +28,8 @@ type Server struct {
 // It creates a session, trajectory tracker, and prepares the server for provider registration.
 func NewServer(ctx context.Context, cfg *mcp.Config) *Server {
 	impl := &mcpsdk.Implementation{
-		Name:    "go-mcp",
-		Version: version.GetVersion(),
+		Name:    "databricks-apps-mcp",
+		Version: build.GetInfo().Version,
 	}
 
 	server := mcpsdk.NewServer(impl, nil)

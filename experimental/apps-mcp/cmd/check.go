@@ -17,8 +17,6 @@ func newCheckCmd() *cobra.Command {
 This command checks:
 - Databricks authentication (API token, profile, or other auth methods)
 - Workspace connectivity
-- MCP SDK availability
-- Dagger SDK availability (optional, for containerized validation)
 
 Use this command to troubleshoot connection issues before starting the MCP server.`,
 		Example: `  # Check environment configuration
@@ -42,12 +40,6 @@ Use this command to troubleshoot connection issues before starting the MCP serve
 			cmdio.LogString(ctx, "✓ Databricks authentication: OK")
 			cmdio.LogString(ctx, "  User: "+me.UserName)
 			cmdio.LogString(ctx, "  Host: "+w.Config.Host)
-
-			// Check MCP SDK
-			cmdio.LogString(ctx, "✓ MCP SDK: OK")
-
-			// Check Dagger (optional)
-			cmdio.LogString(ctx, "✓ Dagger SDK: OK (optional)")
 
 			cmdio.LogString(ctx, "\nEnvironment is ready for MCP server")
 
